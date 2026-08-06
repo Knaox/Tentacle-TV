@@ -272,14 +272,52 @@ dans la navigation oblige à le déplacer avant même de regarder. Enfin, le
 défilement est une **conséquence** du focus : un pas d'une rangée quand la
 cible n'est pas montée, rendu intégralement si aucun focus n'aboutit — la page
 ne défile jamais seule. Une exception, explicite : le défilement **connaît les
-bords** (`cadrage.ts` reçoit le MOU — ce qu'il reste à défiler de part et
-d'autre — et colle au bord quand le reliquat tiendrait dans la marge), et un
-pas qui a ACCOSTÉ un bord n'est pas rendu : appuyer « haut » au premier
-élément d'une bibliothèque demande la bannière entière, même sans focusable
-dedans — le bord est une destination. Les calques `position: fixed` — le
-rail — sont exclus de la passe fenêtre du cadrage : on écrivait pour eux un
-défilement qu'ils ne suivaient pas, et la page dérivait de quelques pixels à
-chaque focus.
+bords**. `cadrage.ts` reçoit le MOU — ce qu'il reste à défiler de part et
+d'autre — et colle au bord quand le reliquat tiendrait dans la marge ; et
+surtout, `bordure.ts` tranche AVANT d'agir entre un pas de révélation et une
+**destination**. Plus aucun candidat au-delà dans le document, et moins d'un
+écran de mou : alors on rejoint le bord d'un trait, et on y reste. Il faut les
+deux verrous, chacun a son contre-exemple — le banc d'essai pose une piste
+hors de la fenêtre de recensement, qui doit rester révélée par les pas ; une
+grille de bibliothèque retire ses rangées du document au-delà de son overscan,
+où « aucun candidat » devient vrai à tort mais où il reste des milliers de
+pixels. La règle ne vaut que pour la VERTICALE : horizontalement, la question
+se poserait au document alors que le mou est celui d'une piste. Sans elle, un
+pas vaut 144 px depuis un bouton, donc 288 pour deux, et le mou au-dessus du
+premier élément d'une page vaut 246 à 284 px — toutes les pages se pressaient
+sur cette falaise, et la barre montait puis redescendait. Deux compléments du
+même défaut : `deplacer` porte un **verrou de cycle**, car la répétition d'une
+télécommande en lançait une dizaine par seconde dont le dernier minuteur
+restaurait une position périmée ; et une **rangée vidée garde sa hauteur**
+(`PisteTv.tsx`), sans quoi la page se rallonge au-dessus du focus quand on
+remonte — invisible au bureau, où `contain-intrinsic-size` réserve la place,
+mais la passe de compatibilité retire cette propriété. Les calques
+`position: fixed` — le rail — sont exclus de la passe fenêtre du cadrage
+comme de la question du bord : on écrivait pour eux un défilement qu'ils ne
+suivaient pas, et leurs entrées répondraient « il y a un candidat au-dessus »
+depuis n'importe où.
+
+**Un menu de filtres pose son focus en s'ouvrant** (`MenuFiltreTv.tsx`). Le
+moteur ne peut pas s'en charger : il ne déplace le focus qu'aux appuis
+directionnels, et ses repose-focus renoncent dès qu'un élément est focalisé —
+ce qu'est la pastille. C'est donc l'affaire des enveloppes, et deux des quatre
+surfaces piégeantes posaient déjà le leur. `destinationEntreeDeZone`
+(`zones.ts`) expose la cascade pour cela, et son dernier rang **préfère les
+non-champs** : le repli en ordre de document désignait le champ de recherche
+des genres, donc faisait monter le clavier système à un simple appui vers le
+bas. Un panneau qui n'offre QUE de la saisie — les deux années — garde son
+entrée explicite : rien ne doit faire surgir un clavier sans geste de
+l'utilisateur.
+
+**Le clavier système suspend le moteur** (`clavierSysteme.ts`). Sur webOS il
+monte seul au focus d'un `<input>` et ne peut pas être désactivé ; tant qu'il
+est là, les flèches lui appartiennent, et les lui prendre produit le défaut de
+focus que LG documente sans contournement. `keyboardStateChange` suffit — un
+événement DOM ordinaire, sans `webOSTV.js` que le CSP interdit. **Ne jamais
+blurrer le champ quand `visibility` repasse à faux** : la séquence d'une
+dictée est vrai → faux → vrai, et c'est ce qui casserait la saisie vocale — la
+seule qui existe ici, le téléviseur transcrivant lui-même sans jamais donner
+l'audio à l'application.
 
 **Un maintien qui agit avale OK jusqu'au relâchement** (`focus/verrouTouche.ts`).
 L'action longue se déclenche au seuil, touche tenue — c'est ce qui donne la
@@ -303,6 +341,32 @@ seul état, et la carte visée montre exactement ce qu'elle montre au D-pad. Les
 champs de saisie en sont exclus : webOS ouvre son clavier système au focus d'un
 `<input>`, et un pointeur qui traverse un champ de recherche ferait surgir un
 clavier plein écran que personne n'a demandé.
+
+## L'anneau de focus
+
+Un trait **blanc** de 3 px qui épouse les coins, un **halo violet** derrière
+lui, une **ombre portée** dessous — et, sur une carte, autour de **l'affiche
+seule**, titre et métadonnées hors cadre. C'est la grammaire des clients
+natifs du même produit (`apps/tv/src/theme/focus.ts`) : le blanc désigne sur
+n'importe quelle jaquette, là où une couleur de marque se perd sur une affiche
+violette ; la marque revient dans le halo.
+
+**C'est un `box-shadow`, pas une `outline`, et la raison n'est pas
+esthétique** : Chromium ne fait suivre le `border-radius` par l'outline qu'à
+partir de la version 94, et la dalle en a 53. L'anneau y était un rectangle
+autour d'une affiche arrondie à 20 px — quatre oreilles à chaque angle,
+invisibles au bureau où le navigateur arrondit tout seul. L'échange se paie :
+une ombre se laisse rogner par un ancêtre en `overflow: hidden`, ce qu'une
+outline ne fait jamais ; les rangées réservent déjà la place (`pt-8`, `pb-6`),
+et `verif/reglesFocus.ts` a sa règle de rognage.
+
+Deux pièges à connaître avant d'y toucher. **Ne posez aucun `border-radius`
+dans `focus.css`** : les feuilles du portage ne sont dans aucune couche, et
+une règle sans couche l'emporte sur toutes — elle écraserait le
+`rounded-full` de chaque pastille au moment précis où on la vise. Et
+l'anneau d'une carte vit sur un DESCENDANT (`.media-tile::after`, en fondu
+d'opacité, jamais d'ombre animée) : on descend de l'enveloppe focalisée vers
+la boîte de l'affiche — pas besoin de `:has()`, qui n'existe pas ici.
 
 ## Le fond au focus
 
