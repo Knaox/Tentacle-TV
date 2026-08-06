@@ -5,25 +5,56 @@
  * devient impilotable — l'utilisateur appuie au hasard jusqu'à retrouver un
  * repère.
  *
- * D'où trois partis pris.
+ * D'où quatre partis pris.
  *
  * `:focus` et non `:focus-visible` : la passe PostCSS a converti l'un en
  * l'autre. Sur une dalle, la distinction n'a pas d'objet, et un polyfill
  * masquerait l'anneau après une remise au point programmée — précisément le
  * moment où l'on vient de perdre l'élément des yeux.
  *
- * `outline` et non `box-shadow` : l'outline ne participe pas à la mise en
- * page, ne peut pas être rognée par un `overflow: hidden` parent, et ne coûte
- * aucune passe de composition supplémentaire. Une carte fenêtrée qui vient
- * d'être montée porte donc son anneau immédiatement, sans reflux.
+ * **`box-shadow` et non `outline`, et c'est le correctif du lot.** L'outline
+ * ne suit le `border-radius` qu'à partir de Chromium 94 ; la dalle en a 53.
+ * L'anneau y était donc un RECTANGLE de quatre pixels autour d'une affiche
+ * arrondie à vingt : quatre oreilles à chaque angle, invisibles au bureau —
+ * où le navigateur, lui, arrondit — et laides sur le téléviseur. Le
+ * `box-shadow`, disponible depuis toujours, épouse le rayon. Il se paie d'un
+ * risque que l'outline n'avait pas : un ancêtre en `overflow: hidden` peut le
+ * rogner. Les rangées réservent déjà la place (`pt-8`, `pb-6`), et c'est ce
+ * qui rend l'échange acceptable.
  *
- * Aucune transition : l'anneau doit être là à l'image où le focus arrive. Un
- * fondu de 150 ms est agréable sur un bureau, il donne l'impression d'un
- * appareil qui traîne quand chaque appui sur la télécommande le rejoue. */
+ * **Trois couches, comme sur les clients natifs du même produit.** Un anneau
+ * BLANC pour désigner sans ambiguïté sur n'importe quelle affiche — une
+ * couleur de marque se perd sur une jaquette violette —, un halo violet
+ * derrière lui pour que la marque soit là quand même, et une ombre portée qui
+ * décolle la carte de son fond. C'est la grammaire des grandes plateformes,
+ * et celle de `apps/tv/src/theme/focus.ts`.
+ *
+ * Aucune transition ici : l'anneau doit être là à l'image où le focus arrive.
+ * Un fondu de 150 ms est agréable sur un bureau, il donne l'impression d'un
+ * appareil qui traîne quand chaque appui sur la télécommande le rejoue. Les
+ * cartes, elles, font exception : leur anneau accompagne l'agrandissement,
+ * déjà animé (cf. `cartes-tv.css`). */
 
 :root {
-  --tv-anneau-epaisseur: 4px;
-  --tv-anneau-ecart: 3px;
+  /* 3 px de canevas = 4,5 px sur une dalle 1080p, le canevas étant agrandi
+   * d'une fois et demie. Deux pixels physiques de plus que la bordure des
+   * clients natifs, ce qui compense l'absence de relief. */
+  --tv-anneau-epaisseur: 3px;
+  --tv-anneau-teinte: #ffffff;
+  --tv-anneau-halo: rgba(var(--brand-rgb), 0.5);
+
+  /* L'anneau complet. Ordre de peinture : le premier est le plus haut, donc le
+   * trait net passe devant le halo, qui passe devant l'ombre. */
+  --tv-anneau:
+    0 0 0 var(--tv-anneau-epaisseur) var(--tv-anneau-teinte),
+    0 0 18px 4px var(--tv-anneau-halo);
+
+  /* La variante des surfaces posées SUR une affiche — cartes et tuiles —, qui
+   * gagnent à se décoller de leur fond. La portée verticale reste sous les
+   * 24 px que les rangées réservent en bas. */
+  --tv-anneau-releve:
+    var(--tv-anneau),
+    0 14px 30px -10px rgba(0, 0, 0, 0.85);
 }
 
 /* Sélecteur volontairement large : tout ce qui peut recevoir le focus doit le
@@ -35,14 +66,26 @@
  * boutons, cartes — parce qu'il y porte le focus autrement : une bordure qui
  * change de teinte, une ombre qui s'épaissit. Ces signaux sont lisibles à
  * cinquante centimètres, pas à trois mètres. Or les utilitaires qui les posent
- * (`focus:outline-none`, `focus:ring-*`) ont une spécificité supérieure à
- * `:focus` et gagneraient. Les surcharger un par un supposerait de connaître
- * la liste, qui change à chaque écran ajouté ; l'anneau, lui, ne peut pas se
- * permettre de disparaître une seule fois. */
+ * (`focus:outline-none`, `focus:ring-*`, `shadow-*`) ont une spécificité au
+ * moins égale à `:focus` et gagneraient sur l'ordre de source. Les surcharger
+ * un par un supposerait de connaître la liste, qui change à chaque écran
+ * ajouté ; l'anneau, lui, ne peut pas se permettre de disparaître une seule
+ * fois. */
 :focus {
-  outline: var(--tv-anneau-epaisseur) solid var(--border-focus) !important;
-  outline-offset: var(--tv-anneau-ecart) !important;
+  outline: none !important;
+  box-shadow: var(--tv-anneau) !important;
 }
+
+/* Le rayon n'est PAS touché ici, et c'est délibéré.
+ *
+ * `apps/web` pose `border-radius: 4px` sur tout élément focalisé — un repli
+ * raisonnable pour un anneau rectangulaire de bureau. Sa règle vit dans la
+ * couche `base` de Tailwind, donc les utilitaires de rayon la battent : elle
+ * ne touche que ce qui n'a aucun rayon, où quatre pixels ne se voient pas.
+ * Y répondre par une règle de ce fichier serait pire que le mal : les
+ * feuilles du portage ne sont dans AUCUNE couche, et une règle sans couche
+ * l'emporte sur toutes les couches — un `border-radius` posé ici écraserait
+ * le `rounded-full` de chaque pastille au moment précis où on la vise. */
 
 /* Trois exceptions, qui reçoivent le focus sans être des cibles : la racine du
  * document au chargement, et les conteneurs rendus focusables uniquement pour
@@ -51,11 +94,25 @@
 body:focus,
 #root:focus,
 [tabindex="-1"]:focus {
-  outline: none !important;
+  box-shadow: none !important;
 }
 
-/* Sur une carte, l'anneau entoure le lien entier — affiche, titre et
- * métadonnées. Le porter sur la seule boîte de l'affiche demanderait de
- * neutraliser celui du lien, donc un `:has()` que Chrome 53 ne connaît pas
- * (il arrive avec Chrome 105). L'anneau englobant est un peu plus large que
- * nécessaire, mais il désigne sans ambiguïté, et c'est ce qu'on lui demande. */
+/* Sur une carte, l'anneau entoure l'AFFICHE SEULE — pas le titre ni les
+ * métadonnées qui la suivent.
+ *
+ * On l'a longtemps cru impossible sans `:has()`, que Chrome 53 ne connaît pas.
+ * C'est une erreur de raisonnement : on n'a pas besoin de remonter du contenu
+ * vers l'enveloppe, il suffit de DESCENDRE de l'enveloppe focalisée vers la
+ * boîte de l'affiche. `.media-tile` est exactement cette boîte — celle que la
+ * transition d'ouverture fait déjà voyager jusqu'à la fiche — et elle porte le
+ * rayon de l'affiche. Ses deux calques d'élévation existent déjà, en fondu
+ * d'opacité : le lot précédent les avait éteints faute d'emploi, l'anneau leur
+ * en rend un. */
+.carte-tv:focus {
+  box-shadow: none !important;
+}
+
+.carte-tv:focus .media-tile::after {
+  box-shadow: var(--tv-anneau-releve);
+  opacity: 1;
+}
