@@ -247,10 +247,20 @@ modifié, et le client web ne fait pas autrement — la sienne est un portail
 ouvert par un raccourci. La touche Retour la referme avant de reculer d'un
 écran, par la pile de consommateurs de `focus/retour.ts`.
 
-Quatre règles gouvernent les déplacements. Un mouvement horizontal reste dans
+Cinq règles gouvernent les déplacements. Un mouvement horizontal reste dans
 sa rangée tant qu'il y a une carte à atteindre, et cède au bout de la piste ;
 dans une grille, un mouvement vertical descend dans sa **colonne**, et une
-colonne sans suite s'arrête à la rangée d'après — jamais plus loin. Le rail
+colonne sans suite s'arrête à la rangée d'après — jamais plus loin. Hors
+grille, un mouvement vertical s'arrête à la **première bande** rencontrée — la
+ligne visuelle du candidat le plus proche, où le score départage, puis la
+redirection de zone s'applique au gagnant : la géométrie brute sur tout
+l'écran faisait gagner ce qui s'ALIGNE au départ plutôt que ce qui le SUIT, et
+sur une fiche « bas » depuis Retour filait à la tuile d'extras par-dessus la
+rangée d'actions, quand une ligne d'épisode pleine largeur — jamais désalignée
+de nulle part — enjambait extras et saisons. Un voisin qui **chevauche** reste
+un voisin (`geometrie.ts`) : la passe d'écarts PostCSS pose des marges
+négatives sur toute ligne `flex gap-*`, et exiger un franchissement de bord
+strict rendait les options d'un menu inatteignables une sur deux. Le rail
 n'est **jamais un candidat géométrique** — il couvre toute la hauteur, et sans
 cela « bas » y remonterait au lieu de descendre d'une rangée — : « gauche »
 sans voisin est sa porte, partout, et l'on y entre sur l'écran courant ;
@@ -261,7 +271,27 @@ active). Il reste écarté du focus initial : arriver sur un écran avec le focu
 dans la navigation oblige à le déplacer avant même de regarder. Enfin, le
 défilement est une **conséquence** du focus : un pas d'une rangée quand la
 cible n'est pas montée, rendu intégralement si aucun focus n'aboutit — la page
-ne défile jamais seule.
+ne défile jamais seule. Une exception, explicite : le défilement **connaît les
+bords** (`cadrage.ts` reçoit le MOU — ce qu'il reste à défiler de part et
+d'autre — et colle au bord quand le reliquat tiendrait dans la marge), et un
+pas qui a ACCOSTÉ un bord n'est pas rendu : appuyer « haut » au premier
+élément d'une bibliothèque demande la bannière entière, même sans focusable
+dedans — le bord est une destination. Les calques `position: fixed` — le
+rail — sont exclus de la passe fenêtre du cadrage : on écrivait pour eux un
+défilement qu'ils ne suivaient pas, et la page dérivait de quelques pixels à
+chaque focus.
+
+**Un maintien qui agit avale OK jusqu'au relâchement** (`focus/verrouTouche.ts`).
+L'action longue se déclenche au seuil, touche tenue — c'est ce qui donne la
+sensation d'un appareil qui répond — mais la touche tenue continue d'émettre,
+et ses répétitions atteignaient l'écran fraîchement ouvert : maintenir OK sur
+une carte traversait la fiche jusqu'au lecteur, le bouton « Lecture »
+synthétisant un `click` par Entrée. Le verrou, armé par l'action longue juste
+avant d'agir, avale la touche en capture sur `window` — avant le moteur et
+React, donc l'affinage d'entrée du nouvel écran survit — et se désarme au
+`keyup`, ou au silence de la répétition sur les modèles qui ne notifient pas
+le relâchement. Sur une affiche, le maintien ouvre la fiche comme l'appui
+court : un geste ne se juge pas à ce qu'il apprend mais à ce qu'il répond.
 
 **Le pointeur déplace le focus, et ne fait rien d'autre.** Un téléviseur LG en a
 un — la Magic Remote le fait apparaître dès qu'on agite la télécommande. Le
