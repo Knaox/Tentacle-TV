@@ -48,9 +48,6 @@ interface ProprietesCarteFocusable {
   itemId: string;
   /** L'item complet, pour les pastilles montées au focus. */
   item?: MediaItem;
-  /** Un maintien ouvre-t-il la fiche ? Faux sur une affiche, dont l'appui
-   *  court ouvre déjà la fiche — on n'invente pas un second geste. */
-  maintienOuvreFiche: boolean;
   /** Épinglage du fenêtrage : `null` au blur. */
   onIndexActif: (index: number | null) => void;
   children: ReactNode;
@@ -61,7 +58,6 @@ export function CarteFocusable({
   largeur,
   itemId,
   item,
-  maintienOuvreFiche,
   onIndexActif,
   children,
 }: ProprietesCarteFocusable) {
@@ -100,9 +96,18 @@ export function CarteFocusable({
     navigate(`/media/${itemId}`);
   }, [itemId, navigate]);
 
+  /**
+   * Le maintien ouvre TOUJOURS la fiche, au seuil — y compris sur une
+   * affiche, dont l'appui court l'ouvre déjà au relâchement. On refusait ce
+   * doublon (« on n'invente pas un second geste ») ; mais tenir OK est le
+   * geste ordinaire d'une télécommande, et une carte qui ne répond qu'au
+   * relâchement paraît sourde pendant tout le maintien. Le geste apprend
+   * peut-être peu, il RÉPOND — et le verrou armé par l'action longue avale la
+   * touche tenue, l'écran d'arrivée ne reçoit rien.
+   */
   const appui = useMemo(
-    () => creerAppuiLong({ court: actionCourte, long: maintienOuvreFiche ? actionLongue : undefined }),
-    [actionCourte, actionLongue, maintienOuvreFiche],
+    () => creerAppuiLong({ court: actionCourte, long: actionLongue }),
+    [actionCourte, actionLongue],
   );
 
   const surFocus = useCallback(() => {

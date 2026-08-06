@@ -39,7 +39,6 @@ export const LibraryGridCard = memo(function CarteGrilleTv({
       largeur={null}
       itemId={item.Id}
       item={item}
-      maintienOuvreFiche={false}
       onIndexActif={sansEpinglage}
     >
       <CarteWeb item={item} onNavigate={onNavigate} />
