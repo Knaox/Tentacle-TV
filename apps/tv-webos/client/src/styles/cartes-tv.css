@@ -114,7 +114,7 @@
   background-color: rgba(10, 10, 15, 0.92);
 }
 
-/* Pas d'ombre portée sur les cartes.
+/* Pas d'ombre portée sur les cartes AU REPOS.
  *
  * `theme/cards.css` pose deux calques d'élévation en pseudo-éléments, dont
  * celui du repos porte `0 6px 18px rgba(0,0,0,.6)`. Sur le client web, la page
@@ -126,10 +126,18 @@
  * visible que le fond est lumineux.
  *
  * Ce qu'elle faisait, l'anneau de focus le fait mieux et seulement là où c'est
- * utile : sur la carte visée. Les autres n'ont rien à signaler. */
-.carte-tv .media-tile::before,
-.carte-tv .media-tile::after {
+ * utile : sur la carte visée. Les autres n'ont rien à signaler. Le second
+ * calque, lui, PORTE désormais cet anneau (`focus.css`) : on n'éteint plus
+ * que celui du repos. */
+.carte-tv .media-tile::before {
   box-shadow: none;
+}
+
+/* Le calque d'état suit le tempo de l'agrandissement, pas celui du survol du
+ * web : l'anneau et l'échelle sont un seul mouvement, et deux durées
+ * différentes se verraient comme un décalage. */
+.carte-tv .media-tile::after {
+  transition: opacity var(--carte-focus-duree) ease-out;
 }
 
 /* ── L'affiche de la carte visée, en fond d'écran ────────────────────────

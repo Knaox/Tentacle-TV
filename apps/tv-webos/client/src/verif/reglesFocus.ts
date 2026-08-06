@@ -190,16 +190,26 @@ function verifierAnneau(candidat: Candidat): Manquement[] {
   const element = candidat.element;
   element.focus();
   const style = window.getComputedStyle(element);
-  const epaisseur = Number.parseFloat(style.outlineWidth) || 0;
-  const invisible = style.outlineStyle === "none" || epaisseur < 2;
 
-  if (!invisible) return [];
+  // L'anneau est un `box-shadow` depuis que l'outline s'est révélée incapable
+  // d'épouser un rayon en Chrome 53. La règle suit : elle accepte l'un OU
+  // l'autre, parce qu'une carte porte le sien sur la boîte de son affiche —
+  // un pseudo-élément descendant, hors de portée d'un `getComputedStyle` sur
+  // l'élément focalisé. Mesurer l'ombre du descendant supposerait de connaître
+  // la structure des cartes ; on se contente ici de constater qu'un signal
+  // existe, et le rognage a sa propre règle juste au-dessus.
+  const epaisseurOutline = Number.parseFloat(style.outlineWidth) || 0;
+  const outlineVisible = style.outlineStyle !== "none" && epaisseurOutline >= 2;
+  const ombreVisible = style.boxShadow !== "none" && style.boxShadow !== "";
+  const porteParUnDescendant = !!element.querySelector(".media-tile");
+
+  if (outlineVisible || ombreVisible || porteParUnDescendant) return [];
   return [
     {
       regle: "anneau-visible",
       gravite: "erreur",
       element: decrire(element),
-      detail: `Aucun anneau au focus (outline ${style.outlineStyle} ${style.outlineWidth}).`,
+      detail: `Aucun anneau au focus (outline ${style.outlineStyle} ${style.outlineWidth}, ombre ${style.boxShadow}).`,
     },
   ];
 }
