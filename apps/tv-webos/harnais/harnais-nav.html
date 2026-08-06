@@ -32,6 +32,26 @@
       .chrome { display: flex; gap: 12px; margin-bottom: 20px; }
       .chrome button { padding: 10px 18px; border-radius: 999px; border: 1px solid #555; background: #241d3a; color: #eee; }
 
+      /* Le menu de filtres, aux cotes RÉELLES du défaut : des lignes de 46 px
+         espacées de 38 — la passe d'écarts PostCSS pose `margin: -4px` sur
+         toute ligne qui est elle-même `flex gap-*`, et les boîtes de mise en
+         page se CHEVAUCHENT de 8 px. La géométrie qui exige un franchissement
+         de bord strict rejette alors chaque voisine ; « haut » ne trouve plus
+         rien et referme le menu, condamnant tout ce qui précède la cochée. */
+      .porte-menu { position: relative; }
+      [data-harnais-menu] {
+        position: absolute; left: 0; top: calc(100% + 8px); z-index: 50;
+        width: 380px; padding: 12px; border-radius: 14px; background: #1d1730;
+        display: flex; flex-direction: column;
+      }
+      [data-harnais-menu] button {
+        display: flex; gap: 8px; align-items: center; text-align: left;
+        height: 46px; margin: -4px 0; padding: 0 12px;
+        border: none; border-radius: 10px; background: none; font-size: 18px;
+      }
+      [data-harnais-menu] button[aria-checked="true"] { background: #6d28d9; }
+      [data-harnais-menu] .separateur { height: 1px; margin: 8px 0; background: #3a3357; }
+
       .grille { position: relative; max-width: 1000px; }
       .grille .ligne { position: absolute; left: 0; display: flex; gap: 16px; }
       .grille [data-tv-carte] {
@@ -69,7 +89,12 @@
       <div class="chrome">
         <button type="button" data-chrome="retour">← Retour</button>
         <button type="button" data-chrome="filtre-tous">Tous</button>
-        <button type="button" data-chrome="filtre-genres">Genres</button>
+        <span class="porte-menu">
+          <button type="button" data-chrome="filtre-tri" aria-haspopup="true" aria-expanded="false">
+            Titre A→Z
+          </button>
+          <!-- Monté/démonté par le script, comme le vrai FilterMenu. -->
+        </span>
         <button type="button" data-chrome="filtre-annee">Année</button>
       </div>
 
@@ -147,6 +172,50 @@
       setInterval(virtualiser, 100);
       virtualiser();
       window.__virtualiser = virtualiser;
+
+      // Le menu de tri : monté à l'ouverture, démonté à la fermeture — le
+      // cycle du vrai FilterMenu. Le panneau porte les marques que
+      // l'enveloppe MenuFiltreTv pose en production : `role="menu"` (le
+      // piège), la zone, et l'entrée sur la ligne cochée. Un Entrée
+      // synthétique n'activant pas un bouton, les séquences de banc ouvrent
+      // par `.click()`. Séquences attendues APRÈS correctif, entrée sur la
+      // cochée (tri-1) : « haut » → tri-0 ; « bas » ×3 → tri-2, tri-3,
+      // tri-ordre ; « haut » depuis tri-0 → fermé, focus rendu à la pastille.
+      const OPTIONS_TRI = ["Derniers ajouts", "Titre A→Z", "Année", "Meilleures notes"];
+      const porte = document.querySelector(".porte-menu");
+      const declencheur = porte.querySelector("[data-chrome='filtre-tri']");
+      declencheur.addEventListener("click", () => {
+        const ouvert = porte.querySelector("[data-harnais-menu]");
+        if (ouvert) {
+          ouvert.remove();
+          declencheur.setAttribute("aria-expanded", "false");
+          return;
+        }
+        const panneau = document.createElement("div");
+        panneau.setAttribute("data-harnais-menu", "");
+        panneau.setAttribute("role", "menu");
+        panneau.setAttribute("data-tv-zone", "menu-filtre");
+        OPTIONS_TRI.forEach((libelle, index) => {
+          const ligne = document.createElement("button");
+          ligne.type = "button";
+          ligne.setAttribute("role", "menuitemcheckbox");
+          ligne.setAttribute("aria-checked", index === 1 ? "true" : "false");
+          if (index === 1) ligne.setAttribute("data-tv-zone-entree", "");
+          ligne.setAttribute("data-cle", `tri-${index}`);
+          ligne.textContent = libelle;
+          panneau.appendChild(ligne);
+        });
+        const separateur = document.createElement("div");
+        separateur.className = "separateur";
+        panneau.appendChild(separateur);
+        const ordre = document.createElement("button");
+        ordre.type = "button";
+        ordre.setAttribute("data-cle", "tri-ordre");
+        ordre.textContent = "↑ Croissant";
+        panneau.appendChild(ordre);
+        porte.appendChild(panneau);
+        declencheur.setAttribute("aria-expanded", "true");
+      });
 
       const piste = document.querySelector("[data-harnais-piste]");
       for (let index = 0; index < 12; index++) {
