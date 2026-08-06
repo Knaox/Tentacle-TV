@@ -8,6 +8,7 @@ import { deplacer } from "./deplacement";
 import { invaliderContenu, retenirContenu } from "./zones";
 import { surveillerCurseur } from "./curseur";
 import { surveillerSurvol } from "./survolFocus";
+import { clavierSystemeVisible, surveillerClavierSysteme } from "./clavierSysteme";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
 
 /**
@@ -42,6 +43,10 @@ const CHEMIN_LECTEUR = "/watch";
 
 export function installerMoteurFocus(): () => void {
   const arreterCurseur = surveillerCurseur();
+  // Le clavier système du téléviseur : tant qu'il est monté, les flèches lui
+  // appartiennent. Branché en premier, comme le curseur — la suspension doit
+  // être connue avant le premier appui.
+  const arreterClavier = surveillerClavierSysteme();
   // Le pointeur déplace le focus, sous la même condition de suspension que les
   // flèches : ce qui vaut pour un mode d'entrée vaut pour l'autre.
   const arreterSurvol = surveillerSurvol(moteurSuspendu);
@@ -154,6 +159,7 @@ export function installerMoteurFocus(): () => void {
     clearInterval(garde);
     arreterRoute();
     arreterSurvol();
+    arreterClavier();
     arreterCurseur();
   };
 }
@@ -174,7 +180,16 @@ function surLecteur(): boolean {
   return chemin === base || chemin.startsWith(`${base}/`);
 }
 
-/** Le moteur ne rend la main que lorsque les commandes du lecteur sont là. */
+/**
+ * Le moteur ne rend la main que lorsque les commandes du lecteur sont là —
+ * et il se retire entièrement tant que le clavier système occupe l'écran.
+ *
+ * Ce second cas n'est pas un choix de confort : les flèches appartiennent
+ * alors au clavier, qui déplace la sélection sur ses touches. Les lui prendre
+ * produit le défaut que LG documente sans contournement — le focus qui
+ * « cascade » à travers la page après une validation.
+ */
 function moteurSuspendu(): boolean {
+  if (clavierSystemeVisible()) return true;
   return surLecteur() && !navigationOsdActive();
 }
