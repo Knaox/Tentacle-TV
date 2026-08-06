@@ -42,6 +42,19 @@
   flex-shrink: 0;
 }
 
+/* Les lignes d'un menu ne se chevauchent plus À L'ÉCRAN. Chaque ligne est
+ * elle-même `flex gap-2`, et la passe d'écarts PostCSS pose `margin: -4px`
+ * sur tout porteur de `gap` (la compensation d'un `gap` émulé) : des lignes
+ * de 46 px se retrouvaient au pas de 38, l'anneau de focus mordant ses deux
+ * voisines. La géométrie du moteur sait désormais naviguer un chevauchement,
+ * mais rien n'oblige à en montrer un. `button.flex` : il faut deux crans de
+ * spécificité pour battre `.flex.gap-2` à armes égales — l'axe horizontal
+ * garde sa marge négative, qui compense réellement le `gap` émulé. */
+[role="menu"] button.flex {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 /* Le champ de recherche interne à un menu (genres, studios) et les champs
    d'année : même gabarit que les lignes, sinon la frappe se fait à l'aveugle.
    Une seconde règle visait ce champ en FRÈRE du rôle ; le rôle est désormais
