@@ -106,6 +106,20 @@ function parLeNom(nom: string | undefined): Intention | null {
   return null;
 }
 
+/**
+ * OK/Entrée, par code ou à défaut par nom.
+ *
+ * Partagé entre la machine d'appui long et le verrou de touche : les deux
+ * doivent reconnaître la MÊME touche, y compris sur une source qui ne
+ * renseigne pas `keyCode` — le banc d'essai en est une, et `appuiLong` qui ne
+ * lisait que le code y prenait chaque répétition d'Entrée pour un déplacement,
+ * annulant le maintien qu'elle était censée prouver.
+ */
+export function estValidation(evenement: { keyCode?: number; key?: string }): boolean {
+  if (evenement.keyCode !== undefined && VALIDATION.has(evenement.keyCode)) return true;
+  return !!evenement.key && VALIDATION_PAR_NOM.has(evenement.key);
+}
+
 /** Axe de déplacement d'une direction. */
 export function estHorizontale(direction: Direction): boolean {
   return direction === "gauche" || direction === "droite";
