@@ -146,22 +146,33 @@ export function viser(direction: Direction): boolean {
   // carte agrandie par le focus, la pire à mesurer transformée.
   const depuis = boiteDeNavigation(depart);
 
-  // Un déplacement horizontal reste dans sa rangée. Sans cela, la dernière
-  // carte d'une piste voit à sa droite les éléments des rangées voisines — la
-  // géométrie ne dit rien de l'appartenance — et le focus part au hasard, ce
-  // qu'aucune interface de salon ne fait.
+  // Un déplacement horizontal reste dans sa rangée, et il y reste JUSQU'AU
+  // BOUT. Sans cela, la dernière carte d'une piste voit à sa droite les
+  // éléments des rangées voisines — la géométrie ne dit rien de
+  // l'appartenance — et le focus part au hasard, ce qu'aucune interface de
+  // salon ne fait.
   //
-  // Dans une PISTE, le confinement se lève au bout : la piste défile, ce qui
-  // suit est atteint par `defilerParPas`. Dans une GRILLE, il ne se lève
-  // pas — une ligne de grille est une fin, et « droite » depuis la dernière
-  // carte ne doit pas descendre en diagonale sur la première de la suivante.
-  // Une grille n'ayant aucun conteneur par ligne, la ligne se reconnaît aux
-  // ordonnées.
+  // Le confinement se levait au bout, au motif que la piste défile et que ce
+  // qui suit est atteint par `defilerParPas`. Le raisonnement se mordait la
+  // queue : une fois le confinement levé, la géométrie trouve toujours
+  // QUELQUE CHOSE — une carte de la rangée d'en dessous, en diagonale — donc
+  // `viser` réussit et l'on n'atteint jamais le pas de défilement. Vécu sur un
+  // carrousel : arrivé au bout de « Reprendre la lecture », le focus tombait
+  // dans la rangée suivante au lieu de s'arrêter.
+  //
+  // Confiné jusqu'au bout, le protocole reprend son sens : plus de voisin dans
+  // la piste, donc `viser` échoue, donc `defilerParPas` fait glisser la
+  // rangée, et l'on vise à nouveau DANS la piste — c'est ainsi qu'on parcourt
+  // une rangée dont la fin n'est pas montée. Au vrai bout, il n'y a plus de
+  // mou : le pas est refusé et le focus ne bouge pas. « Gauche » garde sa
+  // porte de sortie vers le rail, qui est traitée plus bas, faute de candidat.
+  //
+  // Une GRILLE se confine de la même façon, mais par les ordonnées : elle n'a
+  // aucun conteneur par ligne.
   if (estHorizontale(direction)) {
     const piste = depart.closest("[data-tv-piste]");
     if (piste) {
-      const dansLaPiste = candidats.filter((candidat) => piste.contains(candidat.element));
-      if (meilleur(depuis, dansLaPiste, direction)) candidats = dansLaPiste;
+      candidats = candidats.filter((candidat) => piste.contains(candidat.element));
     } else if (depart.closest("[data-tv-grille]")) {
       candidats = candidats.filter((candidat) => surLaMemeLigne(depuis, candidat.boite));
     }
