@@ -100,6 +100,15 @@ export function viser(direction: Direction): boolean {
   const racine = piege ?? document;
   let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
 
+  // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
+  // de l'écran : sans cette règle, « bas » depuis une carte y remonterait au
+  // lieu de descendre d'une rangée, la géométrie seule y voyant un candidat
+  // parfaitement valable. On y ENTRE par la règle d'en dessous — gauche sans
+  // issue —, jamais par un score. Écarté AVANT les confinements : une entrée
+  // du rail ne doit pas non plus servir de bande de référence à la
+  // restriction verticale.
+  candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
+
   // La boîte de mise en page, pas celle du rendu : le départ est justement la
   // carte agrandie par le focus, la pire à mesurer transformée.
   const depuis = boiteDeNavigation(depart);
@@ -129,10 +138,9 @@ export function viser(direction: Direction): boolean {
     // suffisait d'une rangée absente du recensement pour partir en diagonale,
     // deux rangées plus bas. La colonne d'abord ; si elle n'a pas de suite —
     // dernière rangée incomplète —, la première ligne rencontrée, et la carte
-    // la moins désalignée y gagne. Si la grille n'offre plus rien dans cette
-    // direction, la géométrie générale reprend : le chrome au-dessus, la suite
-    // de la page en dessous restent atteignables.
+    // la moins désalignée y gagne.
     const grille = depart.closest("[data-tv-grille]");
+    let confine = false;
     if (grille) {
       const dansLaGrille = candidats.filter((candidat) => grille.contains(candidat.element));
       const memeColonne = dansLaGrille.filter((candidat) =>
@@ -140,19 +148,32 @@ export function viser(direction: Direction): boolean {
       );
       if (meilleur(depuis, memeColonne, direction)) {
         candidats = memeColonne;
+        confine = true;
       } else {
         const premiereLigne = restreindreALaPremiereLigne(depuis, dansLaGrille, direction);
-        if (premiereLigne.length > 0) candidats = premiereLigne;
+        if (premiereLigne.length > 0) {
+          candidats = premiereLigne;
+          confine = true;
+        }
       }
     }
-  }
 
-  // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
-  // de l'écran : sans cette règle, « bas » depuis une carte y remonterait au
-  // lieu de descendre d'une rangée, la géométrie seule y voyant un candidat
-  // parfaitement valable. On y ENTRE par la règle d'en dessous — gauche sans
-  // issue —, jamais par un score.
-  candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
+    // Hors grille — et quand une grille n'offre plus rien dans la direction —,
+    // le mouvement s'arrête à la PREMIÈRE bande rencontrée : la ligne visuelle
+    // du candidat le plus proche, où le score existant départage, puis la
+    // redirection de zone s'applique au gagnant, inchangée. La géométrie brute
+    // sur tout l'écran faisait gagner ce qui s'ALIGNE au départ plutôt que ce
+    // qui le SUIT : sur une fiche, « bas » depuis Retour filait à la tuile
+    // d'extras qui partage sa gouttière — désalignement nul — par-dessus la
+    // rangée des actions, et « bas » depuis une pastille ronde enjambait
+    // extras et saisons jusqu'à la ligne d'épisode, pleine largeur donc
+    // jamais désalignée. S'arrêter à la première bande rend au « bas » de
+    // salon son sens : le bloc SUIVANT, jamais deux plus loin.
+    if (!confine) {
+      const bande = restreindreALaPremiereLigne(depuis, candidats, direction);
+      if (bande.length > 0) candidats = bande;
+    }
+  }
 
   const choisi = meilleur(depuis, candidats, direction);
   if (!choisi) {
