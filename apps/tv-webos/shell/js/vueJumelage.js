@@ -91,10 +91,16 @@
     return minutes + ":" + (reste < 10 ? "0" : "") + reste;
   }
 
+  /* La durée de vie annoncée à la première image, gardée pour que la jauge ait
+     un dénominateur. Le relais ne la répète pas à chaque sondage. */
+  var dureeInitiale = 0;
+
   function afficherCode(code, secondes) {
     var conteneur = vider();
-    conteneur.appendChild(element("h2", "titre-etape", t.titre));
+    dureeInitiale = secondes > 0 ? secondes : 0;
 
+    /* Ni titre ni sous-titre : l'écran d'Android TV n'en porte pas. Il montre
+       le logo, le code, l'instruction, le temps qui reste — dans cet ordre. */
     var cases = element("div", "code-cases");
     for (var i = 0; i < code.length; i++) {
       cases.appendChild(element("span", "code-case", code.charAt(i)));
@@ -106,11 +112,28 @@
     var rebours = element("p", "rebours", t.expireDans + " " + formaterRebours(secondes));
     rebours.id = "rebours";
     conteneur.appendChild(rebours);
+
+    /* La jauge d'Android TV : elle dit d'un coup d'œil, sans lire l'heure,
+       combien il reste — c'est ce qu'on regarde en tapant le code ailleurs. */
+    var jauge = element("div", "jauge");
+    var remplissage = element("div", "jauge-remplissage");
+    remplissage.id = "jauge-remplissage";
+    remplissage.style.width = "100%";
+    jauge.appendChild(remplissage);
+    conteneur.appendChild(jauge);
   }
 
   function majRebours(secondes) {
     var noeud = document.getElementById("rebours");
     if (noeud) noeud.textContent = t.expireDans + " " + formaterRebours(secondes);
+
+    var barre = document.getElementById("jauge-remplissage");
+    if (barre && dureeInitiale > 0) {
+      var part = secondes / dureeInitiale;
+      if (part < 0) part = 0;
+      if (part > 1) part = 1;
+      barre.style.width = (part * 100) + "%";
+    }
   }
 
   /**

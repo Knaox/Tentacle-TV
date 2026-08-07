@@ -1,8 +1,15 @@
 /* Coquille IPK — feuille autonome, sans dépendance au thème du client.
  *
- * Dimensionnée pour un canevas de 1280, que le téléviseur agrandit vers sa
- * dalle — le même parti que le client, pour que le passage de l'un à l'autre
- * ne change pas d'échelle sous les yeux.
+ * **C'est l'écran de jumelage d'Android TV et d'Apple TV, transposé.** Les
+ * valeurs viennent une à une de `apps/tv/src/components/pairing/RelayCodeDisplay.tsx`
+ * et de `apps/tv/src/theme/colors.ts` : carte de 600 de large, retrait de 48,
+ * cases de code de 100 × 120, caractère de 64 en graisse 800, jauge de 4 px.
+ * Un utilisateur qui jumelle une LG après une Android TV doit reconnaître
+ * l'écran, pas en découvrir un second.
+ *
+ * Canevas de 1920, celui de la dalle — `appinfo.json → resolution`. Les mêmes
+ * nombres qu'Android TV donnent donc la même taille apparente : les deux
+ * composent sur 1920 × 1080.
  *
  * **Mêmes valeurs que le client, écrites à la main.** Les variables CSS
  * arrivent en Chrome 49 et cette feuille doit s'afficher bien avant : le violet
@@ -19,6 +26,7 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
+  /* `bgDeep` d'Android TV : le noir pur des dalles OLED. */
   background: #000000;
   color: #FFFFFF;
   font-family: "LG Smart UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -38,104 +46,169 @@ body:after {
   pointer-events: none;
 }
 
-/* Marge d'overscan : les téléviseurs rognent jusqu'à 5 % de chaque bord.
-   Mêmes valeurs que le client — 64 en largeur, 36 en hauteur. */
+/* La carte est CENTRÉE dans l'écran, comme sur Android TV — et non ancrée en
+   bas à gauche comme l'était cette coquille. C'est la première chose qui
+   distinguait les deux écrans à l'œil. */
 .cadre {
   position: relative;
   z-index: 1;
-  padding: 36px 64px;
-  box-sizing: border-box;
+  width: 100%;
   height: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
   display: flex;
-  flex-direction: column;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
   justify-content: center;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
 }
 
-/* Le nom du produit est un sur-titre, pas le sujet de l'écran : il se pose en
-   haut, discret, et laisse la place au code. */
-.titre {
-  position: absolute;
-  top: 36px;
-  left: 64px;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  margin: 0;
-  color: #A78BFA;
+/* `styles.card` : 600 de large, 48 de retrait, `bgSurface` (#0a0a0a), rayon
+   `Radius.modal` (12), liseré de 1 px sur `glassBorder`. */
+.carte-jumelage {
+  width: 600px;
+  padding: 48px;
+  background: #0a0a0a;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  text-align: center;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-.etape {
-  max-width: 900px;
+/* `<TentacleLogo size={48} />`. Le rapport 560/512 est celui de la boîte de
+   vue du logo — le respecter évite de l'écraser. */
+.logo-jumelage {
+  display: block;
+  width: 48px;
+  height: 52px;
+  margin: 0 auto;
 }
 
-.titre-etape {
-  font-size: 46px;
-  font-weight: 700;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  margin: 0 0 20px 0;
+/* `styles.codeRow` : rangée, écart de 16, 32 au-dessus et 28 au-dessous.
+   `gap` est Chrome 84 en flexbox : on écarte par les marges des cases. */
+.code-cases {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  margin: 32px 0 28px;
+}
+
+/* `styles.codeBox` : 100 × 120, fond violet à 10 %, rayon `Radius.buttonLarge`
+   (10), liseré de 2 px sur `accentPurple`. */
+.code-case {
+  width: 100px;
+  height: 120px;
+  margin: 0 8px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid #8B5CF6;
+  border-radius: 10px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  /* `styles.codeChar` : 64, graisse 800, chasse fixe. La hauteur de ligne cale
+     le caractère au centre de la case sans recourir à un flexbox de plus. */
+  font-family: "LG Smart UI Mono", "Courier New", monospace;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 116px;
   color: #FFFFFF;
 }
 
+/* `styles.instruction` : 16, `textSecondary`, interligne 26, largeur 480. */
 .legende {
-  font-size: 22px;
-  line-height: 1.55;
-  margin: 0 0 32px 0;
-  max-width: 820px;
+  max-width: 480px;
+  margin: 0 auto 20px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 26px;
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* `styles.timer` : 14, `textTertiary`. */
 .rebours {
-  font-size: 19px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.52);
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
 }
 
-/* Les caractères du code sont le sujet de l'écran : assez grands pour être
-   recopiés depuis un canapé, sur un fond qui les détache de l'arrière-plan
-   sans les enfermer dans une boîte. */
-.code-cases {
-  margin: 0 0 36px 0;
+/* `styles.progressBg` / `progressFill` : 4 px de haut, rayon 2, fond blanc à
+   8 %, remplissage `accentPurple`. La largeur du remplissage est écrite en
+   ligne par `vueJumelage.js`, comme Android TV l'écrit dans son style. */
+.jauge {
+  width: 100%;
+  height: 4px;
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
 }
 
-.code-case {
-  display: inline-block;
-  width: 108px;
-  height: 140px;
-  line-height: 140px;
-  margin-right: 20px;
-  text-align: center;
-  font-family: "Courier New", monospace;
-  font-size: 84px;
-  font-weight: 700;
-  color: #FFFFFF;
-  background: #14141A;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  border-radius: 20px;
+.jauge-remplissage {
+  height: 4px;
+  background: #8B5CF6;
+  border-radius: 2px;
 }
 
-/* Le bouton reprend la forme du client : une pilule pleine, en violet de
-   marque, sans bordure au repos. */
-.bouton {
+/* `styles.expiredText` / `errorText` : `Colors.error`. */
+.titre-etape {
+  margin: 24px 0 20px;
   font-size: 22px;
-  font-weight: 700;
-  padding: 18px 44px;
-  margin-right: 20px;
-  color: #FFFFFF;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* `styles.retryButton` : 36 × 14 de retrait, fond `accentPurple`, rayon
+   `Radius.button` (8), libellé 16 en graisse 700. */
+.bouton {
+  display: inline-block;
+  margin-bottom: 16px;
+  padding: 14px 36px;
   background: #8B5CF6;
   border: 0;
-  border-radius: 999px;
-  outline: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
   cursor: pointer;
 }
 
-/* L'anneau de focus est la seule chose qui dise où l'on se trouve : il n'a pas
-   le droit de disparaître, ni d'attendre une transition. Mêmes épaisseur et
-   écart que la feuille du client — quatre pixels, décalés de trois — pour que
-   le geste se lise pareil des deux côtés de la navigation. */
+/* L'anneau de focus du client : trait blanc net, halo violet derrière.
+   `outline` ne suit pas le `border-radius` avant Chrome 94 — c'est une ombre,
+   pour la même raison que dans `focus.css`. */
 .bouton:focus {
-  outline: 4px solid #8B5CF6;
-  outline-offset: 3px;
-  background: #A78BFA;
+  outline: none;
+  box-shadow:
+    0 0 0 3px #FFFFFF,
+    0 0 18px 4px rgba(139, 92, 246, 0.5);
+}
+
+/* `styles.linkButton` / `linkText` : le second bouton n'est pas un bouton
+   plein, c'est un lien discret. */
+.bouton-lien {
+  display: inline-block;
+  margin: 0;
+  padding: 10px 20px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.bouton-lien:focus {
+  outline: none;
+  color: #FFFFFF;
+  box-shadow:
+    0 0 0 3px #FFFFFF,
+    0 0 18px 4px rgba(139, 92, 246, 0.5);
 }
