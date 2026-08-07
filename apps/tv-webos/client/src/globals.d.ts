@@ -18,6 +18,25 @@ declare const __PLAYER_DEBUG__: boolean;
 /** Vrai seulement pour un build de diagnostic — voir `verif/surcoucheDebug.ts`. */
 declare const __TV_DEBUG__: boolean;
 
+/**
+ * `?original` — le module qu'un remplacement enveloppe.
+ *
+ * Le suffixe est lu par `config/substitutionModules.ts` : sans lui, en
+ * développement, un remplacement qui importe le chemin qu'il remplace se
+ * récupère lui-même — l'URL y est l'identité — et se rend à l'infini.
+ *
+ * Déclaré module par module et non par un joker `*?original` : un joker rendrait
+ * `any`, et c'est précisément le typage qui fait qu'une propriété renommée dans
+ * `apps/web` casse le build plutôt que la dalle.
+ */
+declare module "@/components/SkipBadge?original" {
+  export * from "@/components/SkipBadge";
+}
+
+declare module "@/components/player/VideoPlayerOverlays?original" {
+  export * from "@/components/player/VideoPlayerOverlays";
+}
+
 interface ImportMetaEnv {
   readonly VITE_JELLYFIN_URL: string;
   readonly VITE_BACKEND_URL: string;
