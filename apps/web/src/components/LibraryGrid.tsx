@@ -5,6 +5,7 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { LibraryFilterBar, useLibraryFilters } from "./LibraryFilters";
+import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 
@@ -122,35 +123,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
 
   return (
     <div>
-      {/* Recherche — en verre, car elle chevauche le bas de la bannière : un
-          aplat opaque y ferait une marche visible. */}
-      <div className="mb-4 px-4 md:px-8">
-        <div className="relative w-full max-w-md">
-          {/* Le champ repose SUR la bannière : `bg-glass-tint` (une teinte à
-              peine posée) et `ring-line-subtle` s'y perdaient complètement —
-              sur une affiche lumineuse on ne distinguait plus ni le contour ni
-              le texte d'invite. Fond opaque de surface et liseré franc : c'est
-              un contrôle, il doit se lire comme tel avant même d'être survolé.
-              L'icône et l'invite montent d'un cran de contraste pour la même
-              raison. */}
-          <svg
-            aria-hidden
-            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-content-secondary"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-          </svg>
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t("common:searchInLibrary", { name: libraryName })}
-            className="w-full rounded-full bg-[color:var(--surface-2)] py-3 pl-11 pr-5 text-content-primary placeholder-content-tertiary shadow-[var(--elev-2)] outline-none ring-1 ring-line-strong transition-all focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.75)]"
-          />
-        </div>
-      </div>
+      <LibrarySearchField value={input} onChange={setInput} libraryName={libraryName} />
 
       {/* Filtres rapides + avancés */}
       <div className="mb-6 px-4 md:px-8">

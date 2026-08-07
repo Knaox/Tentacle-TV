@@ -159,6 +159,12 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // résolution où elle est affichée, et tout le rendu paraît mou.
   [resolve(API, "net/pixelDensity.ts")]: resolve(CLIENT, "shims/densitePixels.ts"),
 
+  // Le champ de recherche d'une bibliothèque. Le téléviseur a sa propre
+  // recherche, en surcouche plein écran ; un `<input>` posé sous la bannière
+  // faisait double emploi et ouvrait le clavier système à la première descente.
+  [resolve(WEB, "components/library/LibrarySearchField.tsx")]:
+    resolve(CLIENT, "shims/inerte.ts"),
+
   // La barre de filtres devient une ZONE : y remonter depuis la grille vise le
   // filtre ACTIF, et non la pastille que l'abscisse de la carte désignait.
   [resolve(WEB, "components/LibraryFilters.tsx")]:

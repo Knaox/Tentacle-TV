@@ -29,3 +29,22 @@ export function DownloadsEvents(): null {
 export function DetailDownloadAction(): null {
   return null;
 }
+
+/**
+ * Le champ de recherche d'une bibliothèque.
+ *
+ * Le téléviseur a SA recherche : une surcouche plein écran ouverte depuis le
+ * rail (`ui/recherche/EcranRechercheTv.tsx`), qui cherche dans toute la
+ * médiathèque et se pilote à la télécommande. Un second champ, posé sous la
+ * bannière d'une bibliothèque, faisait double emploi et coûtait cher : c'est
+ * l'élément le plus haut-gauche de l'écran, donc celui que le focus rencontre
+ * en premier, et webOS ouvre son clavier système dès qu'un `<input>` reçoit le
+ * focus. On ouvrait une bibliothèque sur un clavier plein écran que personne
+ * n'avait demandé.
+ *
+ * L'état reste chez `LibraryGrid` : `debounced` y demeure vide, aucun terme ne
+ * part au catalogue, et le message de vide continue de dire la bonne chose.
+ */
+export function LibrarySearchField(): null {
+  return null;
+}
