@@ -27,6 +27,7 @@ const ICI = dirname(fileURLToPath(import.meta.url));
 const CIBLE = resolve(ICI, "..");
 const WEB = resolve(CIBLE, "../web/src");
 const UI = resolve(CIBLE, "../../packages/ui/src");
+const API = resolve(CIBLE, "../../packages/api-client/src");
 const CLIENT = resolve(CIBLE, "client/src");
 
 /** Paquets npm remplacés — traités par `resolve.alias`. */
@@ -152,6 +153,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // la valeur, et la carte prend la largeur de son titre.
   [resolve(WEB, "components/cards/cardWidthStyle.ts")]:
     resolve(CLIENT, "ui/cartes/largeurCarteTv.ts"),
+
+  // La densité de la dalle. Le client compose à 1280 et le téléviseur agrandit
+  // vers 1920 : une image demandée à sa taille CSS arrive aux deux tiers de la
+  // résolution où elle est affichée, et tout le rendu paraît mou.
+  [resolve(API, "net/pixelDensity.ts")]: resolve(CLIENT, "shims/densitePixels.ts"),
 
   // La barre de filtres devient une ZONE : y remonter depuis la grille vise le
   // filtre ACTIF, et non la pastille que l'abscisse de la carte désignait.
