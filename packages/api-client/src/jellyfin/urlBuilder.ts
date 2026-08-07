@@ -1,5 +1,6 @@
 import { buildQuery } from "./types";
 import { imageBudget } from "../net/dataSaver";
+import { pixelDensity } from "../net/pixelDensity";
 
 /** Callback that rewrites a same-origin proxy URL to the direct-streaming URL
  *  when direct streaming is active, otherwise returns the proxy URL unchanged. */
@@ -33,9 +34,13 @@ export function buildImageUrl(
   resolveMediaUrl: ResolveMediaUrl,
 ): string {
   const { scale, maxQuality } = imageBudget();
+  // Les appelants demandent une taille CSS ; la densité la ramène à la
+  // résolution où l'image sera réellement rastérisée. Neutre partout sauf sur
+  // le téléviseur, qui compose à 1280 pour une dalle de 1920.
+  const densite = scale * pixelDensity();
   const p: Record<string, string> = {};
-  if (options?.width) p.maxWidth = String(Math.round(options.width * scale));
-  if (options?.height) p.maxHeight = String(Math.round(options.height * scale));
+  if (options?.width) p.maxWidth = String(Math.round(options.width * densite));
+  if (options?.height) p.maxHeight = String(Math.round(options.height * densite));
   if (options?.quality) p.quality = String(Math.min(options.quality, maxQuality));
   if (options?.tag) p.tag = options.tag;
   const idx = options?.index ?? 0;
