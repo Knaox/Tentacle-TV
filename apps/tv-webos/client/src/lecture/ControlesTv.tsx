@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
 import { inscrireRetour } from "../focus/retour";
-import { entrerDansPanneau, quitterPanneau } from "./focusOsd";
+import { entrerDansPanneau, oublierBoutonOsd, quitterPanneau } from "./focusOsd";
 import { creerMachineScrub, type MachineScrub } from "./machineScrub";
 import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./touchesLecteurTv";
 import {
@@ -103,6 +103,9 @@ export function PlayerControls(props: PlayerControlsProps) {
     return () => {
       poserMonte(false);
       document.documentElement.removeAttribute("data-tv-lecteur");
+      // La mémoire du focus ne survit pas au lecteur : rouvrir un film repart
+      // de Lecture, comme une première fois.
+      oublierBoutonOsd();
     };
   }, []);
 

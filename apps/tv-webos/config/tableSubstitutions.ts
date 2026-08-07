@@ -198,6 +198,12 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // dessin — le seek reste celui de `useSmartSeek`, câblé par les propriétés.
   [resolve(WEB, "components/PlayerControls.tsx")]: resolve(CLIENT, "lecture/ControlesTv.tsx"),
 
+  // Le badge de saut, cumulatif. Le dessin du web est repris tel quel — c'est
+  // le comptage qui change : on n'appuie pas une fois sur « +30 » à trois
+  // mètres, on appuie trois fois, et trois fois « +30 s » laisse l'addition à
+  // l'utilisateur.
+  [resolve(WEB, "components/SkipBadge.tsx")]: resolve(CLIENT, "lecture/BadgeSautTv.tsx"),
+
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
