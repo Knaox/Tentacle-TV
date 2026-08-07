@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { VideoPlayerOverlays as SurcouchesWeb } from "@/components/player/VideoPlayerOverlays";
+import { VideoPlayerOverlays as SurcouchesWeb } from "@/components/player/VideoPlayerOverlays?original";
 import { BoutonsSautTv } from "./BoutonSautTv";
 
 /**

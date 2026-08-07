@@ -16,7 +16,20 @@ import type { Plugin } from "vite";
  * Une substitution déclarée mais jamais déclenchée est presque toujours une
  * faute de frappe dans un chemin. Le plugin le signale en fin de build plutôt
  * que de laisser le module d'origine partir dans le bundle en silence.
+ *
+ * **Demander explicitement l'original : `?original`.** Un remplacement a le
+ * droit d'envelopper le module qu'il remplace, et la garde anti-cycle plus bas
+ * suffit à la CONSTRUCTION — Rollup y distingue les deux par leur identifiant.
+ * En développement, non : l'URL est l'identité, et le module remplacé est servi
+ * SOUS CELLE DE L'ORIGINAL. Un remplacement qui importe son propre chemin
+ * d'origine se récupère donc lui-même et se rend à l'infini, sans une erreur,
+ * l'onglet cessant simplement de répondre. Le suffixe donne au dev une URL
+ * distincte ; à la construction il est retiré, l'identifiant nu suffisant.
  */
+
+/** Ce qu'un remplacement écrit pour désigner le module qu'il remplace. */
+const MARQUE_ORIGINAL = "?original";
+
 export function substitutionModules(table: Record<string, string>): Plugin {
   const declenchees = new Set<string>();
 
@@ -27,6 +40,14 @@ export function substitutionModules(table: Record<string, string>): Plugin {
     async resolveId(source, importateur, options) {
       // Sans importateur, c'est un point d'entrée : il n'y a rien à détourner.
       if (!importateur) return null;
+
+      if (source.endsWith(MARQUE_ORIGINAL)) {
+        const nu = source.slice(0, -MARQUE_ORIGINAL.length);
+        const original = await this.resolve(nu, importateur, { ...options, skipSelf: true });
+        if (!original) return null;
+        // `watchMode` distingue le serveur de développement de la construction.
+        return this.meta.watchMode ? `${original.id}${MARQUE_ORIGINAL}` : original.id;
+      }
 
       const resolu = await this.resolve(source, importateur, { ...options, skipSelf: true });
       if (!resolu) return null;

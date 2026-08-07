@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SkipBadge as BadgeWeb, type SkipFlash } from "@/components/SkipBadge";
+import { SkipBadge as BadgeWeb, type SkipFlash } from "@/components/SkipBadge?original";
 import { cumuler, FENETRE_CUMUL_MS, type CumulSauts } from "./cumulSauts";
 
 /**
