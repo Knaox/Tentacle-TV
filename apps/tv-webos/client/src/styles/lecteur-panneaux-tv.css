@@ -5,10 +5,16 @@
  * neutralisation ci-dessous.
  */
 
+/* Le panneau tient ENTRE le titre et la barre de progression.
+ *
+ * Mesuré avant : pied à 588 px sur un canevas de 720, soit quarante-deux
+ * pixels dans la barre, et tête à 120 px, sur le sous-titre. Cent cinquante-
+ * quatre pixels depuis le bas de `.osd-tv-bas` posent le pied juste au-dessus
+ * de la barre ; la hauteur maximale de l'enfant détaché fait le reste. */
 .panneau-tv {
   position: absolute;
   right: 0;
-  bottom: 96px;
+  bottom: 154px;
   z-index: var(--z-lecteur-panneau);
   width: 460px;
   border-radius: var(--radius-lg);
@@ -97,6 +103,50 @@
 .panneau-tv button {
   min-height: 52px;
   font-size: 19px;
+}
+
+/* Sauf les onglets de saison, qui sont des pastilles et non des lignes : la
+   règle ci-dessus les étirait à cinquante-deux pixels de haut pour un texte de
+   douze, au milieu d'une rangée qui défile horizontalement. Ils restent des
+   cibles — quarante pixels de canevas en font soixante sur la dalle. */
+.panneau-tv .overflow-x-auto button {
+  min-height: 40px;
+  font-size: 17px;
+}
+
+/* ── La vignette d'épisode ────────────────────────────────────────────────
+ *
+ * `passeRatios` traduit `aspect-video` en `height: 0; padding-top: 56.25%` —
+ * et un pourcentage de padding se rapporte à la largeur du PARENT, jamais à
+ * celle de l'élément. La passe le documente et s'en tient à l'hypothèse qui
+ * vaut partout ailleurs dans le dépôt : une boîte à ratio occupe toute la
+ * largeur de son parent.
+ *
+ * Cette vignette-là ne la vérifie pas. Elle porte `w-28` — cent douze pixels
+ * fixes — dans une ligne large de quatre cent trente-six. Mesuré : 112 × 236
+ * au lieu de 112 × 63, un rapport de 0,47 pour 1,78 attendu, des lignes de
+ * 264 px, et **trois dixièmes de ligne visibles** sur onze épisodes.
+ *
+ * Ici la largeur est connue : on pose la hauteur, et la technique du padding
+ * n'a plus rien à calculer. On en profite pour donner à la vignette la taille
+ * d'un salon — cent soixante pixels de canevas en font deux cent quarante sur
+ * la dalle, et il reste largement de quoi écrire le titre à côté.
+ */
+.panneau-tv .aspect-video {
+  width: 160px;
+  height: 90px;
+  padding-top: 0;
+}
+
+/* La hauteur du panneau est celle de son enfant : `max-h-[65vh]`, soit 468 px
+ * sur un canevas de 720, débordait sous la barre autant que sur le titre.
+ *
+ * Le pied étant calé à 154 px du bas, il reste tout ce qui va jusqu'au bord
+ * d'overscan : deux cent soixante pixels retirés laissent quatre cent soixante
+ * de panneau et trente-quatre de marge sous le bord haut. Le titre passe
+ * dessous, ce qui n'a pas d'importance — il est assombri le temps du panneau. */
+.panneau-tv > [data-panneau-detache] {
+  max-height: calc(100vh - 260px);
 }
 
 .panneau-tv-bascule {

@@ -10,6 +10,10 @@ import { ATTRIBUT_ENTREE } from "../focus/zones";
  * atterrissait sur la croix de fermeture, la seule chose du panneau qu'on ne
  * veuille pas viser en l'ouvrant.
  *
+ * Et quand rien n'est actif — série jamais commencée, sous-titres coupés —,
+ * c'est la PREMIÈRE option de la liste qui est visée, jamais la croix : voir le
+ * repli d'`optionDEntree`.
+ *
  * **Comment on reconnaît l'option active, et pourquoi pas par sa classe.** Le
  * panneau du web ne pose aucun ARIA : sa sélection est un habillage, et rien
  * d'autre. On pourrait donc chercher `bg-tentacle-accent/25` — mais c'est une
@@ -68,11 +72,32 @@ const SIGNAUX: ((style: CSSStyleDeclaration) => boolean)[] = [
 ];
 
 /**
- * La première option active, en ordre de document.
+ * Un bouton de LISTE, par opposition aux commandes de l'en-tête.
+ *
+ * Distinction structurelle, sans vocabulaire de design : les options vivent
+ * dans la zone qui défile, la croix de fermeture n'en fait pas partie. C'est ce
+ * qui permet au repli ci-dessous de ne jamais la désigner.
+ */
+function dansUneListe(bouton: HTMLElement, panneau: HTMLElement): boolean {
+  for (let noeud = bouton.parentElement; noeud && panneau.contains(noeud); noeud = noeud.parentElement) {
+    const debordement = window.getComputedStyle(noeud).overflowY;
+    if (debordement === "auto" || debordement === "scroll") return true;
+  }
+  return false;
+}
+
+/**
+ * L'option à viser en ouvrant : l'active, et à défaut la première de la liste.
  *
  * `retenir` restreint la recherche quand le panneau mêle plusieurs listes.
+ *
+ * Le repli n'est pas décoratif. Rien n'est actif dans une série jamais
+ * commencée, ni dans une liste de sous-titres coupés ; la cascade de
+ * `focus/zones.ts` retombait alors sur son dernier rang — le premier focusable
+ * du panneau, c'est-à-dire la croix de fermeture. Ouvrir un menu pour y viser
+ * le bouton qui le referme est la seule entrée qu'on ne veuille jamais.
  */
-function optionActive(
+function optionDEntree(
   panneau: HTMLElement,
   retenir?: (bouton: HTMLElement) => boolean,
 ): HTMLElement | null {
@@ -85,6 +110,10 @@ function optionActive(
     for (const option of options) {
       if (signal(window.getComputedStyle(option))) return option;
     }
+  }
+
+  for (const option of options) {
+    if (dansUneListe(option, panneau)) return option;
   }
   return null;
 }
@@ -100,7 +129,7 @@ export function marquerEntreePanneau(
   retenir?: (bouton: HTMLElement) => boolean,
 ): void {
   const ancienne = panneau.querySelector<HTMLElement>(`[${ATTRIBUT_ENTREE}]`);
-  const voulue = optionActive(panneau, retenir);
+  const voulue = optionDEntree(panneau, retenir);
   if (ancienne === voulue) return;
   if (ancienne) ancienne.removeAttribute(ATTRIBUT_ENTREE);
   if (voulue) voulue.setAttribute(ATTRIBUT_ENTREE, "");
