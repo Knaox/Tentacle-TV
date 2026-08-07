@@ -6,7 +6,6 @@ import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
-import { plagesDynamiquesSupportees } from "../lib/deviceProfile/codecs";
 import { evaluerLecture, sourceEstHdr } from "./playbackVerdict";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
@@ -29,6 +28,26 @@ function construireProfil(
   if (lecteurNatif) return buildMpvDeviceProfile(bitrate);
   if (isMacOSTauri) return buildMacOSDeviceProfile(bitrate, options);
   return buildBrowserDeviceProfile(bitrate, options);
+}
+
+/**
+ * Les plages dynamiques que le profil ENVOYÉ déclare.
+ *
+ * Lues dans le profil, et non redemandées à une sonde. Les deux répondaient la
+ * même chose tant qu'il n'y avait que des navigateurs : la sonde EST ce qui
+ * construit le profil. Sur un téléviseur, le profil est substitué à la
+ * compilation et interroge `deviceInfo` — la sonde, elle, continuait de décrire
+ * Chromium. Le verdict jugeait donc le tone mapping sur des capacités qui
+ * n'étaient pas celles qu'on avait annoncées au serveur, et le journal de
+ * diagnostic mentait à l'endroit précis où on venait le consulter.
+ */
+function plagesDuProfil(profil: DeviceProfile): string[] {
+  for (const codec of profil.CodecProfiles ?? []) {
+    if (codec.Type !== "Video") continue;
+    const condition = codec.Conditions.find((c) => c.Property === "VideoRangeType");
+    if (condition) return condition.Value.split("|");
+  }
+  return [];
 }
 
 export interface PlaybackInfoState {
@@ -199,6 +218,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
       // critère d'acceptation du chantier : il doit rester faux.
       const transport = ds && url.startsWith(ds.mediaBaseUrl) ? "direct" : "proxy";
       const fluxVideo = ms.MediaStreams?.find((s) => s.Type === "Video");
+      const plages = plagesDuProfil(profile);
       const verdict = evaluerLecture({
         supportsDirectPlay: ms.SupportsDirectPlay,
         supportsDirectStream: ms.SupportsDirectStream,
@@ -206,7 +226,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
         transcodeReasons: ms.TranscodeReasons,
         codecVideoSource: fluxVideo?.Codec,
         sourceHdr: sourceEstHdr(fluxVideo),
-        clientAccepteHdr: plagesDynamiquesSupportees().length > 2, // au-delà de Unknown+SDR
+        clientAccepteHdr: plages.length > 2, // au-delà de Unknown+SDR
       });
       console.log("[Tentacle:Playback]", {
         mode: verdict.mode,
@@ -220,7 +240,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
         // décider s'il peut copier l'image. Sans les deux sous les yeux, on en
         // est réduit à deviner.
         plageSource: fluxVideo?.VideoRangeType,
-        plagesDeclarees: plagesDynamiquesSupportees().join("|"),
+        plagesDeclarees: plages.join("|"),
         transport,
         directStreamingConfigured: !!ds,
         isHls: url.includes(".m3u8"),
