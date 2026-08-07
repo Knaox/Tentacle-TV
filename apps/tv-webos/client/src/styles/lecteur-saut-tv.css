@@ -19,7 +19,7 @@
   position: absolute;
   right: var(--tv-overscan-x);
   bottom: 148px;
-  z-index: 50;
+  z-index: var(--z-lecteur-saut);
   padding: 14px 28px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
@@ -27,6 +27,24 @@
   color: #ffffff;
   font-size: 20px;
   font-weight: 600;
+  transition: transform 200ms ease-out;
+}
+
+/* ── Le bouton s'écarte quand les commandes paraissent ────────────────────
+ *
+ * Mesuré sur le canevas 1280 × 720 : le bouton occupe la bande 512-572, la
+ * barre de progression 546-576. Ils se recouvrent sur vingt-six pixels — le
+ * bouton, mieux placé dans l'échelle, passe par-dessus la barre et la coupe.
+ *
+ * Se placer PLUS HAUT vaut mieux que passer dessous : ce sont deux choses à
+ * lire, pas l'une derrière l'autre. La rangée de transport monte à 174 px du
+ * bas ; on s'en écarte de trente.
+ *
+ * `transform` et non `bottom` : une position animée relance la mise en page à
+ * chaque image, sur un calque posé au-dessus d'une vidéo en cours de décodage.
+ */
+html[data-tv-lecteur="osd"] .saut-tv {
+  transform: translateY(-56px);
 }
 
 /* ── La carte « épisode suivant » ─────────────────────────────────────────
@@ -44,7 +62,7 @@
   position: absolute;
   right: var(--tv-overscan-x);
   bottom: var(--tv-overscan-y);
-  z-index: 30;
+  z-index: var(--z-lecteur-suivant);
   width: 460px;
 }
 

@@ -1,0 +1,119 @@
+/* Le déplacement dans le flux — l'écran du curseur fantôme.
+ *
+ * Sorti de `lecteur-tv.css`, qui touchait les trois cents lignes. Rien n'a
+ * changé de place : ce fichier reprend les règles telles quelles et n'ajoute
+ * que les z-index de l'échelle, qui manquaient.
+ *
+ * Cet écran est exclusif de l'habillage — `ControlesTv` rend l'un OU l'autre —,
+ * mais il partage son conteneur avec les surcouches du client web, qui portent
+ * des z-index de leur côté. D'où l'échelle.
+ */
+
+.scrub-tv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-lecteur-osd);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--tv-overscan-y) var(--tv-overscan-x);
+  box-sizing: border-box;
+}
+
+/* ── La vignette du déplacement ───────────────────────────────────────────
+ *
+ * Plein écran, derrière tout le reste. C'est le parti d'`apps/tv` : pendant un
+ * déplacement, ce qu'on cherche est la SCÈNE, pas un horodatage — et une image
+ * de 320 px étirée reste parfaitement reconnaissable pour cet usage-là, seule
+ * définition que le serveur produise.
+ *
+ * Le voile est un calque à part et non le fond du bloc : il doit passer AU
+ * DESSUS de la vignette, qui en est un frère. Sans vignette il ne reste que
+ * lui, et l'écran est celui d'avant.
+ *
+ * `background-position` change à chaque tic, donc au plus quatre fois par
+ * seconde, et repeint tout le viewport. C'est ce que la règle des coûts
+ * proscrit — mais la vidéo est en pause pendant tout le déplacement : le
+ * décodeur est au repos, et c'est précisément le moment où l'appareil a de la
+ * marge. Rien de tout cela ne tourne hors du mode `scrub`.
+ */
+.scrub-tv-vignette,
+.scrub-tv-voile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.scrub-tv-vignette {
+  z-index: var(--z-lecteur-vignette);
+  background-repeat: no-repeat;
+  background-color: #000000;
+}
+
+.scrub-tv-voile {
+  z-index: var(--z-lecteur-voile);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Le texte passe au-dessus du voile et de la vignette, qui sont ses frères en
+   `absolute`. Un z-index le dit désormais explicitement, là où l'ordre du
+   document en tenait lieu. */
+.scrub-tv-haut,
+.scrub-tv-bas {
+  position: relative;
+  z-index: var(--z-lecteur-osd);
+}
+
+.scrub-tv-haut {
+  display: flex;
+  align-items: center;
+}
+
+.scrub-tv-titre {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.scrub-tv-palier {
+  margin-left: 20px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--progress-fill);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.scrub-tv-bas {
+  flex-shrink: 0;
+}
+
+.scrub-tv-horodatage {
+  margin: 0 0 16px 0;
+  text-align: center;
+  font-size: 64px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.85);
+}
+
+.scrub-tv-indices {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 0 0;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.scrub-tv-indices > span {
+  margin-left: 20px;
+  margin-right: 20px;
+}
