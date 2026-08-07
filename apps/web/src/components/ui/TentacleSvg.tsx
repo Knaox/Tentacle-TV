@@ -18,8 +18,12 @@ interface TentacleSvgProps {
  *   #7C3AED → var(--brand-dark)
  *   #EC4899 → var(--brand-accent)
  *   #F472B6 → var(--brand-accent-light)
- *   Mid-stops (#A855F7, #9333EA, #DB2777) derived via `color-mix` so they
- *   still blend smoothly when the admin overrides brand/accent.
+ *   Mid-stops (#A855F7, #9333EA, #DB2777) → var(--brand-mid),
+ *   var(--brand-mid-deep), var(--brand-accent-deep). Ces trois-là étaient
+ *   calculés en `color-mix()` directement dans l'attribut ; ils vivent
+ *   désormais dans `theme/tokens.css`, seul endroit où une valeur peut porter
+ *   un repli. Un attribut n'en a pas, et `color-mix` est Chrome 111 : sur un
+ *   téléviseur de 2018 l'arrêt retombait au noir.
  */
 export function TentacleSvg({ size, style }: TentacleSvgProps) {
   const u = useId().replace(/[^a-zA-Z0-9-]/g, "");
@@ -35,9 +39,13 @@ export function TentacleSvg({ size, style }: TentacleSvgProps) {
     shadow: `tg-shadow-${u}`,
     hatShadow: `tg-hatshadow-${u}`,
   };
-  const midBody = "color-mix(in srgb, var(--brand) 50%, var(--brand-accent) 50%)";
-  const midT2 = "color-mix(in srgb, var(--brand-dark) 50%, var(--brand-accent-light) 50%)";
-  const midT1End = "color-mix(in srgb, var(--brand-accent) 70%, black)";
+  // Les arrêts de mi-course viennent des JETONS et non d'un `color-mix()` écrit
+  // ici : un attribut n'a pas de repli, et `color-mix` est Chrome 111. Voir
+  // `theme/tokens.css`, où chaque jeton porte sa valeur littérale puis sa
+  // version calculée — un moteur ancien garde la première.
+  const midBody = "var(--brand-mid)";
+  const midT2 = "var(--brand-mid-deep)";
+  const midT1End = "var(--brand-accent-deep)";
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

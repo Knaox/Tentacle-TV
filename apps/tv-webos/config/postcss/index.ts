@@ -8,6 +8,7 @@ import { passeRatios } from "./passeRatios";
 import { passeVerre } from "./passeVerre";
 import { passeSurvol, survolsSurvivants } from "./passeSurvol";
 import { passeFonctionsMath } from "./passeFonctionsMath";
+import { passeRepliJeton } from "./passeRepliJeton";
 import { passeNettoyage } from "./passeNettoyage";
 import { gardeCompat, formaterSurvivances } from "./gardeCompat";
 
@@ -32,7 +33,12 @@ import { gardeCompat, formaterSurvivances } from "./gardeCompat";
  *      les grilles converties.
  *   5. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
  *      indépendantes.
- *   6. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
+ *   6. `repliJeton` avant `gardeCompat` — c'est elle qui retire la déclaration
+ *      trop récente d'un jeton qui porte DÉJÀ son repli, et sans elle la garde
+ *      refuserait une convention qu'on veut au contraire encourager. Elle ne
+ *      touche à rien qui n'ait pas de repli, donc elle n'affaiblit pas la
+ *      garde : une primitive déclarée seule la fait toujours échouer.
+ *   7. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
  *
  * `survol` est la seule passe qui ne traite pas une primitive trop récente :
  * `:hover` est parfaitement compris par Chrome 53, et c'est le problème. Elle
@@ -58,6 +64,7 @@ export function compatibiliteChrome53(): Plugin {
       passeVerre(racine, contexte);
       passeSurvol(racine, contexte);
       passeFonctionsMath(racine, contexte);
+      passeRepliJeton(racine, contexte);
       passeNettoyage(racine, contexte);
 
       // Auto-contrôle de la passe de survol : un reste ne signale pas une
