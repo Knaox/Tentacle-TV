@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UpNextCard } from "@/components/player/UpNextCard";
 import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen";
 import { donnerFocus } from "../focus/actif";
@@ -8,17 +8,18 @@ import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 /**
  * Ce qui s'affiche à la fin d'un épisode.
  *
- * **Deux formes, comme sur le bureau.** Pendant le générique, une simple
- * proposition : la bannière `UpNextCard`, dans un coin, qui n'annonce aucune
- * échéance. À la fin réelle, quand l'enchaînement automatique est lancé,
- * l'affiche PLEIN ÉCRAN — fond de série assombri, vignette de l'épisode
- * suivant, résumé, décompte cerclé. C'est ce que fait `DesktopPlayerOverlays`
- * (bannière, puis plein écran quand la source est l'EOF), et c'est ce qui
- * manquait ici : le téléviseur n'avait jamais que la bannière.
+ * **Deux formes, comme sur le bureau.** Tant que l'épisode dure — pendant le
+ * générique, ou dès que l'enchaînement automatique s'arme au `maxResumePct` de
+ * Jellyfin —, une simple proposition dans un coin : la bannière `UpNextCard`.
+ * **Au BOUT seulement**, l'affiche PLEIN ÉCRAN : fond assombri, vignette de
+ * l'épisode suivant, résumé, décompte cerclé. C'est ce que fait
+ * `DesktopPlayerOverlays` (bannière, puis plein écran quand la source est
+ * l'EOF), et c'est ce qui manquait ici — le téléviseur n'avait que la bannière.
  *
- * Le partage se lit sur `countdown` : `null` tant que rien n'est lancé, un
- * nombre dès que le décompte tourne. Aucune condition de plateforme à écrire —
- * `useUpNextCard` publie déjà exactement cette distinction.
+ * **Le partage tient à la fin réelle, pas au décompte.** L'enchaînement démarre
+ * plusieurs minutes avant le bout : s'en servir couvrirait la fin de l'épisode
+ * d'une affiche pleine dalle alors qu'il reste des scènes à voir. On interroge
+ * donc l'élément vidéo — voir `useLectureTerminee`.
  *
  * **On enveloppe, on ne recopie pas.** Les deux composants viennent du client
  * web tels quels ; ce qui change ici est le cadre et la portée.
@@ -64,6 +65,46 @@ function actionPrincipale(racine: HTMLElement): HTMLElement | null {
   return null;
 }
 
+/** À quelle distance du bout on considère l'épisode terminé. */
+const FIN_S = 1;
+
+/**
+ * L'épisode est-il ARRIVÉ AU BOUT ?
+ *
+ * Ce n'est pas la même question que « l'enchaînement est-il lancé » : celui-ci
+ * démarre au `maxResumePct` de Jellyfin, donc plusieurs minutes avant la fin.
+ * L'affiche pleine dalle appartient au bout — c'est un écran de fin, pas une
+ * proposition anticipée — et la bannière tient ces minutes-là.
+ *
+ * On interroge l'élément vidéo directement : le lecteur ne transmet ni le temps
+ * ni la durée à cette surcouche, et remonter jusqu'à lui demanderait de toucher
+ * au client web. `ended` couvre la fin naturelle ; la comparaison couvre le cas
+ * qu'on a demandé — arriver au bout en avance rapide.
+ */
+function useLectureTerminee(): boolean {
+  const [terminee, poser] = useState(false);
+
+  useEffect(() => {
+    const video = document.querySelector("video");
+    if (!video) return;
+
+    const revoir = () => {
+      const duree = video.duration;
+      poser(video.ended || (duree > 0 && video.currentTime >= duree - FIN_S));
+    };
+
+    revoir();
+    video.addEventListener("timeupdate", revoir);
+    video.addEventListener("ended", revoir);
+    return () => {
+      video.removeEventListener("timeupdate", revoir);
+      video.removeEventListener("ended", revoir);
+    };
+  }, []);
+
+  return terminee;
+}
+
 export function AutoPlayOverlay({
   countdown,
   episodeTitle,
@@ -74,7 +115,9 @@ export function AutoPlayOverlay({
   onCancel,
 }: ProprietesCarte) {
   const enveloppe = useRef<HTMLDivElement>(null);
-  const pleinEcran = countdown !== null;
+  // L'affiche pleine dalle porte un décompte : elle suppose donc que
+  // l'enchaînement est lancé, en plus d'être arrivé au bout.
+  const pleinEcran = useLectureTerminee() && countdown !== null;
 
   useEffect(() => {
     const racine = enveloppe.current;

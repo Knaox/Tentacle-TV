@@ -1,5 +1,5 @@
 import { lireIntention, estHorizontale, sens } from "../focus/touches";
-import { creerArbitreFleches } from "./arbitreFleches";
+import { creerArbitreFleches, DELAI_RALLUMAGE_MS } from "./arbitreFleches";
 import { creerMoteurMaintien } from "./moteurMaintien";
 import { activerSurcoucheFocalisee, surcoucheAffichee } from "./surcoucheOk";
 import type { MachineScrub } from "./machineScrub";
@@ -133,6 +133,9 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   /** Qui possède une flèche horizontale, appui par appui. */
   const arbitre = creerArbitreFleches();
 
+  /** Le rallumage en sursis, tant qu'un second appui peut encore l'annuler. */
+  let attenteRallumage: ReturnType<typeof setTimeout> | null = null;
+
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type === "retour") return;
@@ -161,8 +164,14 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
       if (surcoucheAffichee()) return;
 
       switch (arbitre.decider(code, etat.mode)) {
-        case "rallumer":
-          montrerOsd();
+        case "attendre":
+          // On laisse sa chance au second appui : les commandes ne paraissent
+          // qu'au terme du délai, et un saut demandé entre-temps les annule.
+          if (attenteRallumage !== null) clearTimeout(attenteRallumage);
+          attenteRallumage = setTimeout(() => {
+            attenteRallumage = null;
+            montrerOsd();
+          }, DELAI_RALLUMAGE_MS);
           return;
         case "focus":
           // Le focus a déjà été déplacé par le moteur, qui a tiré sur ce même
@@ -172,6 +181,11 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
           reporterMasquage();
           return;
         default:
+          // Un saut est demandé : les commandes n'ont plus à paraître.
+          if (attenteRallumage !== null) {
+            clearTimeout(attenteRallumage);
+            attenteRallumage = null;
+          }
           if (code === codeAbsorbeParOsd) return;
           moteur.appuyer(code, sens(intention.direction));
           return;
@@ -235,6 +249,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
 
   return () => {
     desabonner();
+    if (attenteRallumage !== null) clearTimeout(attenteRallumage);
     document.removeEventListener("keydown", surTouche, true);
     document.removeEventListener("keyup", surRelachement, true);
     // Sans quoi un tic de maintien survivrait au démontage du lecteur et

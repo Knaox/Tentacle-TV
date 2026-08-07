@@ -5,9 +5,11 @@ import type { ModeLecteur } from "./etatLecteurTv";
  *
  * Trois réponses possibles, et le partage ne tient pas au mode seul :
  *
- * - **rallumer** — habillage éteint, premier appui. Il RAMÈNE les commandes et
- *   ne déplace rien. C'est le comportement de l'Apple TV : on ne veut pas
- *   qu'une touche effleurée dans le noir fasse bouger la lecture.
+ * - **attendre** — habillage éteint, premier appui. Rien ne bouge : on ne veut
+ *   pas qu'une touche effleurée dans le noir déplace la lecture. L'appelant
+ *   arme alors le délai de `DELAI_RALLUMAGE_MS`, au terme duquel les commandes
+ *   reviennent — à moins qu'un second appui n'arrive d'ici là, auquel cas c'est
+ *   un saut qu'on demandait, et l'habillage n'a pas à paraître.
  * - **transport** — deuxième appui rapproché sur la même flèche, ou toute
  *   répétition d'une flèche déjà reconnue comme telle. Le saut part, et le
  *   maintien peut s'engager derrière.
@@ -22,7 +24,18 @@ import type { ModeLecteur } from "./etatLecteurTv";
  * l'arbitre des touches le rend testable sans DOM ni horloge réelle.
  */
 
-export type ProprietaireFleche = "rallumer" | "transport" | "focus";
+export type ProprietaireFleche = "attendre" | "transport" | "focus";
+
+/**
+ * Le temps qu'on laisse au second appui avant de ramener les commandes.
+ *
+ * Sans lui, le premier appui allumait l'habillage AVANT que le second n'arrive :
+ * un double appui pour sauter faisait donc paraître les commandes au passage,
+ * puisqu'on ne peut pas ne pas cliquer une première fois. Trois cents
+ * millisecondes suffisent à distinguer les deux gestes, et c'est assez court
+ * pour qu'un appui isolé n'ait pas l'air de rester sans réponse.
+ */
+export const DELAI_RALLUMAGE_MS = 300;
 
 /**
  * Fenêtre du double appui.
@@ -71,12 +84,18 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
     }
 
     if (mode === "repos") {
-      // Habillage éteint : on le ramène, et l'on retient de quelle flèche —
-      // c'est elle, et elle seule, qui pourra sauter au coup suivant.
+      // Habillage éteint. Un second appui sur la MÊME flèche, arrivé pendant
+      // qu'on attendait, est un saut — et il ne doit pas faire paraître les
+      // commandes au passage.
+      const suite = code === amorce && horloge() - instantAmorce <= FENETRE_DOUBLE_MS;
       amorce = code;
       instantAmorce = horloge();
-      transport = 0;
-      return "rallumer";
+      if (!suite) {
+        transport = 0;
+        return "attendre";
+      }
+      transport = code;
+      return "transport";
     }
 
     // Habillage à l'écran.
