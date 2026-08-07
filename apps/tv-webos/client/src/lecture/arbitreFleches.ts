@@ -31,11 +31,16 @@ export type ProprietaireFleche = "attendre" | "transport" | "focus";
  *
  * Sans lui, le premier appui allumait l'habillage AVANT que le second n'arrive :
  * un double appui pour sauter faisait donc paraître les commandes au passage,
- * puisqu'on ne peut pas ne pas cliquer une première fois. Trois cents
- * millisecondes suffisent à distinguer les deux gestes, et c'est assez court
- * pour qu'un appui isolé n'ait pas l'air de rester sans réponse.
+ * puisqu'on ne peut pas ne pas cliquer une première fois.
+ *
+ * **Pourquoi il a fallu l'allonger.** Un maintien commence lui aussi par un
+ * appui, et la première répétition — le seul signal qui dise qu'on TIENT — met
+ * environ une demi-seconde à venir sur une dalle. À trois cents millisecondes,
+ * le délai expirait le premier : l'habillage paraissait, puis l'avance rapide
+ * démarrait par-dessus. Quatre cent cinquante passent devant ce battement
+ * initial sans qu'un appui isolé ait l'air de rester sans réponse.
  */
-export const DELAI_RALLUMAGE_MS = 300;
+export const DELAI_RALLUMAGE_MS = 450;
 
 /**
  * Fenêtre du double appui.

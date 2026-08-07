@@ -29,9 +29,6 @@ import { BarreProgressionTv } from "./BarreProgressionTv";
  * déplacer » est précisément ce qui rend le curseur fantôme sûr.
  */
 
-/** La largeur du canevas. La dalle l'agrandit ensuite de moitié. */
-const CANEVAS_PX = 1280;
-
 interface ProprietesScrub {
   titre: string;
   position: number;
@@ -64,17 +61,35 @@ export function SurcoucheScrubTv({
     const image = getFrameAt(position * 1000);
     if (!image) return null;
 
-    const echelle = CANEVAS_PX / info.Width;
+    /**
+     * La mosaïque est cadrée en POURCENTAGES, pas en pixels.
+     *
+     * Le client web fixe la taille de son cadre — deux cent cinquante-six
+     * pixels — et en déduit l'échelle à appliquer à la mosaïque. Ici le cadre
+     * est l'écran : sa taille dépend de la dalle, et la calculer d'après une
+     * constante ne vaut que pour la dalle dont on est parti. Ailleurs, la
+     * mosaïque était trop petite pour la boîte et l'on voyait plusieurs
+     * vignettes côte à côte — chaque tuile voisine entrant dans le cadre.
+     *
+     * En pourcentages, la question ne se pose plus : la mosaïque fait toujours
+     * autant de fois la boîte qu'elle contient de tuiles, et la position se lit
+     * en rangs plutôt qu'en pixels. Rien ne dépend plus de la définition.
+     */
+    const colonnes = Math.max(1, info.TileWidth);
+    const rangees = Math.max(1, info.TileHeight);
+    const colonne = Math.round(image.xInTile / info.Width);
+    const rangee = Math.round(image.yInTile / info.Height);
+
     return {
       tuile: image.tileIndex,
       style: {
         backgroundImage: `url(${image.url})`,
-        backgroundSize: `${Math.round(info.Width * info.TileWidth * echelle)}px ${Math.round(
-          info.Height * info.TileHeight * echelle,
-        )}px`,
-        backgroundPosition: `-${Math.round(image.xInTile * echelle)}px -${Math.round(
-          image.yInTile * echelle,
-        )}px`,
+        backgroundSize: `${colonnes * 100}% ${rangees * 100}%`,
+        // Un fond en pourcentage aligne le point X% de l'IMAGE sur le point X%
+        // de la boîte : le dernier rang tombe donc à 100 %, et non au-delà.
+        backgroundPosition: `${(colonne / Math.max(1, colonnes - 1)) * 100}% ${
+          (rangee / Math.max(1, rangees - 1)) * 100
+        }%`,
       },
     };
   }, [available, info, getFrameAt, position]);
