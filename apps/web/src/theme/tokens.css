@@ -27,6 +27,30 @@
   --brand-accent-rgb: 236, 72, 153;
   --brand-accent-light: #F472B6;
 
+  /* ── Arrêts intermédiaires du dégradé de marque ─────────────────
+   *
+   * Les trois teintes de mi-course du logo. Elles étaient calculées en
+   * `color-mix()` DANS l'attribut `stop-color` du SVG — donc hors de portée de
+   * toute passe CSS et de la garde de compatibilité. `color-mix` est Chrome
+   * 111 : sur la dalle d'un téléviseur de 2018, la déclaration est invalide,
+   * l'arrêt retombe au noir, et le dégradé violet → rose passait par du noir.
+   *
+   * Ramenées ici, elles retrouvent le repli que seul un jeton permet : la
+   * VALEUR LITTÉRALE d'abord — celle du fichier `tentacle-logo-pirate.svg`
+   * d'origine —, la version calculée ensuite. Un moteur qui ne comprend pas
+   * `color-mix` jette la seconde déclaration et garde la première ; un moteur
+   * récent garde la seconde, et le mélange continue de suivre une couleur de
+   * marque redéfinie par l'administrateur.
+   *
+   * C'est aussi ce qui rend la primitive VISIBLE de `gardeCompat` : dans une
+   * feuille, elle se surveille ; dans un attribut, non. */
+  --brand-mid: #A855F7;
+  --brand-mid: color-mix(in srgb, var(--brand) 50%, var(--brand-accent) 50%);
+  --brand-mid-deep: #9333EA;
+  --brand-mid-deep: color-mix(in srgb, var(--brand-dark) 50%, var(--brand-accent-light) 50%);
+  --brand-accent-deep: #DB2777;
+  --brand-accent-deep: color-mix(in srgb, var(--brand-accent) 70%, black);
+
   /* ── Text ───────────────────────────────────────────────────── */
   --text-primary: #FFFFFF;
   --text-secondary: rgba(255, 255, 255, 0.78);
