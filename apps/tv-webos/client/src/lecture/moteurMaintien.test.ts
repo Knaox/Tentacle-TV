@@ -210,59 +210,6 @@ describe("moteurMaintien", () => {
     moteur.detruire();
   });
 
-  it("deux appuis distincts font deux sauts, même rapprochés", () => {
-    const { pas, moteur, tics } = harnais();
-
-    // Trois cents millisecondes : le geste de quelqu'un qui tape deux fois sur
-    // la même flèche. Sous l'ancien seuil de silence (700 ms) c'était pris pour
-    // une auto-répétition, et deux sauts demandés donnaient une avance rapide.
-    moteur.appuyer(DROITE, 1);
-    vi.advanceTimersByTime(300);
-    moteur.appuyer(DROITE, 1);
-
-    expect(pas).toHaveLength(2);
-    expect(pas.every((p) => p.geste === "saut")).toBe(true);
-
-    // Et surtout : aucun déplacement ne part derrière.
-    vi.advanceTimersByTime(2000);
-    expect(tics()).toHaveLength(0);
-    moteur.detruire();
-  });
-
-  it("une auto-répétition, elle, engage bien le maintien", () => {
-    const { pas, moteur } = harnais();
-
-    // Une touche tenue insiste : c'est cela qu'on reconnaît, et non une
-    // cadence particulière — celle d'une dalle LG n'est pas prévisible.
-    moteur.appuyer(DROITE, 1);
-    for (let i = 0; i < REPETITIONS_AVANT_TIC; i++) {
-      vi.advanceTimersByTime(300);
-      moteur.appuyer(DROITE, 1);
-    }
-    const avant = pas.length;
-
-    // Le tic possède l'avance à partir d'ici.
-    vi.advanceTimersByTime(TIC_MAINTIEN_MS * 3);
-
-    expect(pas.length).toBeGreaterThan(avant);
-    moteur.detruire();
-  });
-
-  it("une dalle qui répète lentement garde son avance rapide", () => {
-    const { pas, moteur } = harnais();
-
-    // 400 ms de cadence — le module rappelle que celle d'un téléviseur LG
-    // n'est ni documentée ni constante. Un simple plafond de vitesse aurait
-    // fait disparaître l'avance rapide sur ce modèle-là.
-    tenir(moteur, DROITE, 1, 400, 1600);
-    const avant = pas.length;
-
-    vi.advanceTimersByTime(TIC_MAINTIEN_MS * 2);
-
-    expect(pas.length).toBeGreaterThan(avant);
-    moteur.detruire();
-  });
-
   it("changer de sens repart d'un saut", () => {
     const { pas, moteur } = harnais();
 

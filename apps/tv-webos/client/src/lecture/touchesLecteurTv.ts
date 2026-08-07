@@ -195,7 +195,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
             attenteRallumage = null;
           }
           if (code === codeAbsorbeParOsd) return;
-          moteur.appuyer(code, sens(intention.direction));
+          moteur.appuyer(code, sens(intention.direction), evenement.repeat);
           return;
       }
     }
@@ -228,7 +228,11 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     }
 
     if (intention.commande === "avance" || intention.commande === "retour") {
-      moteur.appuyer(evenement.keyCode, intention.commande === "avance" ? 1 : -1);
+      moteur.appuyer(
+        evenement.keyCode,
+        intention.commande === "avance" ? 1 : -1,
+        evenement.repeat,
+      );
       return;
     }
 
