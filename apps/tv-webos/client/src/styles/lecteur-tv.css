@@ -241,38 +241,4 @@ html[data-tv-lecteur] #root {
   margin-right: 20px;
 }
 
-/* ── Les panneaux ─────────────────────────────────────────────────────── */
-
-.panneau-tv {
-  position: absolute;
-  right: 0;
-  bottom: 96px;
-  width: 460px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-dropdown);
-  box-shadow: var(--elev-3);
-}
-
-/* Le panneau du web est dessiné pour une souris : cibles de 32 px, texte de
-   14. En descendance simple, ce que Chrome 53 traite sans effort. */
-.panneau-tv button {
-  min-height: 52px;
-  font-size: 19px;
-}
-
-.panneau-tv-bascule {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px 20px;
-  border: 0;
-  border-top: 1px solid var(--border-subtle);
-  background: none;
-  color: var(--text-secondary);
-  text-align: left;
-  font-size: 19px;
-}
-
-.panneau-tv-bascule[data-actif="true"] {
-  color: var(--brand-light);
-}
+/* Les panneaux ont leur propre feuille — `lecteur-panneaux-tv.css`. */

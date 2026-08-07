@@ -3,6 +3,8 @@ import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tenta
 import type { ApplyToSeriesControl } from "@/hooks/useApplyToSeries";
 import { TrackSelector } from "@/components/TrackSelector";
 import { EpisodeSelectorPanel } from "@/components/player/EpisodeSelectorPanel";
+import { useMarqueur } from "../ui/marqueur";
+import { estLigneEpisode, marquerEntreePanneau } from "./entreePanneau";
 
 /**
  * Les deux panneaux du lecteur, habillés pour la télécommande.
@@ -46,9 +48,13 @@ interface ProprietesPanneauPistes {
 
 export function PanneauPistesTv({ applyToSeries, ...reste }: ProprietesPanneauPistes) {
   const { t } = useTranslation("player");
+  // La piste audio en cours est la première option teintée du panneau : la
+  // section audio ouvre la liste, et la croix de fermeture qui la précède n'a
+  // pas de fond.
+  const racine = useMarqueur<HTMLDivElement>(marquerEntreePanneau);
 
   return (
-    <div className="panneau-tv" role="dialog" aria-label={t("player:tracks")}>
+    <div className="panneau-tv" role="dialog" aria-label={t("player:tracks")} ref={racine}>
       <TrackSelector {...reste} />
       {applyToSeries && (
         <button
@@ -74,10 +80,15 @@ interface ProprietesPanneauEpisodes {
 
 export function PanneauEpisodesTv({ item, onClose }: ProprietesPanneauEpisodes) {
   const { t } = useTranslation("player");
+  // Ici deux choses sont teintées : l'onglet de la saison affichée, et
+  // l'épisode en cours. L'onglet vient avant dans le document, d'où le filtre.
+  const racine = useMarqueur<HTMLDivElement>((panneau) =>
+    marquerEntreePanneau(panneau, estLigneEpisode),
+  );
   if (!item.SeriesId) return null;
 
   return (
-    <div className="panneau-tv" role="dialog" aria-label={t("player:episodes")}>
+    <div className="panneau-tv" role="dialog" aria-label={t("player:episodes")} ref={racine}>
       <EpisodeSelectorPanel
         seriesId={item.SeriesId}
         currentEpisodeId={item.Id}
