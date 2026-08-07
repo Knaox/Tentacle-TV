@@ -78,6 +78,29 @@ section.bg-surface-0 {
   animation: banniere-tv-fondu 700ms ease-out both;
 }
 
+/* ── Les coins du cadre, que le rognage ne tenait pas ─────────────────────
+ *
+ * Le cadre porte `overflow: hidden` et son rayon, et cela suffit partout
+ * ailleurs. Pas ici : **Chrome 53 ne fait pas suivre le `border-radius` d'un
+ * parent `overflow: hidden` par un descendant COMPOSÉ**. Or l'image ci-dessus a
+ * précisément sa propre couche — c'est l'animation d'opacité qui la lui donne —
+ * et elle était donc peinte CARRÉE par-dessus les coins arrondis. La bannière
+ * sortait à angles droits sur la dalle, ronde au navigateur, sans qu'aucune
+ * mesure ne diffère : le rayon calculé du cadre valait bien 20 px des deux
+ * côtés.
+ *
+ * On donne donc le rayon aux calques eux-mêmes. `> *` couvre le fond, le voile
+ * et le bloc de texte — tous plein cadre —, et l'`img` est visée en propre
+ * parce qu'elle est imbriquée plus bas. Le jeton est celui du cadre : un seul
+ * endroit décide de la forme.
+ *
+ * `overflow: hidden` reste sur le cadre : il porte encore le rognage de tout ce
+ * qui n'est pas composé, et le retirer laisserait déborder le reste. */
+[data-hero-frame] > *,
+[data-hero-frame] img {
+  border-radius: var(--hero-frame-radius);
+}
+
 @keyframes banniere-tv-fondu {
   from {
     opacity: 0;
