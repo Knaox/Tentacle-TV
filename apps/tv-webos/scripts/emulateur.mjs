@@ -11,14 +11,13 @@
  * argument, c'est `emulator`. `inspect` ouvre l'inspecteur distant, seul moyen
  * de lire la console d'un client qui tourne sur le téléviseur.
  */
-import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { lancerAres } from "./aresCli.mjs";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE_CIBLE = resolve(ICI, "..");
-const RACINE_DEPOT = resolve(RACINE_CIBLE, "../..");
 const SORTIE = resolve(RACINE_CIBLE, "dist-ipk");
 
 const ACTIONS = new Set(["install", "launch", "inspect"]);
@@ -46,16 +45,10 @@ function dernierPaquet() {
   return resolve(SORTIE, paquets[paquets.length - 1]);
 }
 
-function outil(nom, parametres) {
-  const binaire = resolve(RACINE_DEPOT, `node_modules/.bin/${nom}`);
-  const commande = existsSync(binaire) ? binaire : nom;
-  execFileSync(commande, parametres, { stdio: "inherit" });
-}
-
 if (action === "install") {
-  outil("ares-install", ["--device", cible, dernierPaquet()]);
+  lancerAres("ares-install", ["--device", cible, dernierPaquet()]);
 } else if (action === "launch") {
-  outil("ares-launch", ["--device", cible, identifiantApplication()]);
+  lancerAres("ares-launch", ["--device", cible, identifiantApplication()]);
 } else {
-  outil("ares-inspect", ["--device", cible, "--app", identifiantApplication(), "--open"]);
+  lancerAres("ares-inspect", ["--device", cible, "--app", identifiantApplication(), "--open"]);
 }
