@@ -12,10 +12,10 @@
  * autres cibles du dépôt. Le script la reporte dans `appinfo.json` avant
  * d'empaqueter, pour que les deux ne puissent pas diverger.
  */
-import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { lancerAres } from "./aresCli.mjs";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE_CIBLE = resolve(ICI, "..");
@@ -63,9 +63,7 @@ function verifierRessources() {
 
 function empaqueter() {
   mkdirSync(SORTIE, { recursive: true });
-  const binaire = resolve(RACINE_DEPOT, "node_modules/.bin/ares-package");
-  const commande = existsSync(binaire) ? binaire : "ares-package";
-  execFileSync(commande, ["--outdir", SORTIE, COQUILLE], { stdio: "inherit" });
+  lancerAres("ares-package", ["--outdir", SORTIE, COQUILLE]);
 }
 
 const version = lireVersion();
