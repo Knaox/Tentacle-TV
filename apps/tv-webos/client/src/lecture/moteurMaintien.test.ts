@@ -21,6 +21,7 @@ import {
 
 const DROITE = 39;
 const GAUCHE = 37;
+const OK = 13;
 
 interface Pas {
   instant: number;
@@ -111,10 +112,56 @@ describe("moteurMaintien", () => {
     tenir(moteur, DROITE, 1, 100, 600);
     const avant = pas.length;
 
-    moteur.relacher();
+    moteur.relacher(DROITE);
     vi.advanceTimersByTime(2000);
 
     expect(pas).toHaveLength(avant);
+    moteur.detruire();
+  });
+
+  it("le relâchement d'une AUTRE touche ne coupe pas la flèche encore tenue", () => {
+    const { pas, moteur } = harnais();
+
+    tenir(moteur, DROITE, 1, 100, 600);
+    const avant = pas.length;
+
+    // On tient la flèche et l'on clique : la Magic Remote a un bouton central,
+    // et son `keyup` arrivait jusqu'ici couper un maintien qui ne le regardait
+    // pas.
+    moteur.relacher(OK);
+    vi.advanceTimersByTime(TIC_MAINTIEN_MS * 3);
+
+    expect(pas.length).toBeGreaterThan(avant);
+    moteur.detruire();
+  });
+
+  it("annuler coupe le maintien sans qu'on ait à nommer la touche", () => {
+    const { pas, moteur } = harnais();
+
+    tenir(moteur, DROITE, 1, 100, 600);
+    const avant = pas.length;
+
+    // Le mode du lecteur a changé sous la touche — personne n'a levé le doigt.
+    moteur.annuler();
+    vi.advanceTimersByTime(2000);
+
+    expect(pas).toHaveLength(avant);
+    moteur.detruire();
+  });
+
+  it("après annulation, la même touche encore tenue repart d'un appui simple", () => {
+    const { pas, moteur } = harnais();
+
+    tenir(moteur, DROITE, 1, 100, 2500);
+    moteur.annuler();
+    const avant = pas.length;
+
+    // La répétition suivante de la MÊME pression physique : elle ne doit pas
+    // reprendre à huit fois la vitesse là où le maintien s'était arrêté.
+    moteur.appuyer(DROITE, 1);
+
+    expect(pas).toHaveLength(avant + 1);
+    expect(pas[pas.length - 1].palier).toBe(1);
     moteur.detruire();
   });
 
