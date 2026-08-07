@@ -71,3 +71,44 @@ html[data-tv-lecteur="osd"] .saut-tv {
   width: auto;
   max-width: none;
 }
+
+/* ── L'affiche de fin, plein écran ────────────────────────────────────────
+ *
+ * Contrairement à la bannière, celle-ci n'a pas de géométrie à corriger : elle
+ * s'étend déjà d'un bord à l'autre, et c'est ce qu'on veut — le fond doit
+ * couvrir la dalle entière, overscan compris, sinon la zone rognée laisse
+ * paraître la vidéo dessous.
+ *
+ * Ce qui doit rentrer, c'est son CONTENU. La croix de fermeture est ancrée à
+ * vingt pixels du coin, le panneau central est centré — le premier tombe dans
+ * la zone rognée, le second n'en souffre pas. Le retrait se pose donc sur ce
+ * qui est ancré, pas sur le calque.
+ */
+.affiche-fin-tv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-lecteur-suivant);
+}
+
+/* La croix : hors overscan, et à la taille d'une cible de télécommande. */
+.affiche-fin-tv button[aria-label] {
+  top: var(--tv-overscan-y);
+  right: var(--tv-overscan-x);
+  width: 64px;
+  height: 64px;
+}
+
+/* Le panneau central respire : sur un canevas de 1280, la largeur maximale du
+   web (56rem) laisse déjà de la marge, mais le texte est réglé pour une
+   distance de lecture d'un bras. */
+.affiche-fin-tv h2 {
+  font-size: 40px;
+  line-height: 1.15;
+}
+
+.affiche-fin-tv p {
+  font-size: 19px;
+}
