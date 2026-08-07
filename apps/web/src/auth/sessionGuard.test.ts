@@ -46,4 +46,26 @@ describe("revalidateSession", () => {
     mockFetch({ ok: true, status: 200, json: async () => ({ hello: "world" }) });
     await expect(revalidateSession()).resolves.toBe("unreachable");
   });
+
+  // Le piège du bureau, deuxième acte. Là-bas il n'y a pas de cookie : le jeton
+  // vit dans le stockage local. S'il ne part pas dans le corps, la requête
+  // n'apporte aucune preuve d'identité et le serveur répond 401 « Token
+  // manquant » — verdict « expirée » à tous les coups, donc déconnexion à
+  // chaque démarrage.
+  it("joint le jeton au corps quand il n'y a pas de cookie", async () => {
+    mockFetch({ ok: true, status: 200, json: async () => ({ AccessToken: "abc", User: {} }) });
+    await revalidateSession("jeton-du-bureau");
+    const [, init] = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(JSON.parse(init.body)).toEqual({ token: "jeton-du-bureau" });
+    expect(init.credentials).toBe("include");
+  });
+
+  // Le navigateur n'a rien à joindre : son cookie httpOnly voyage seul, et lui
+  // envoyer un corps ne ferait qu'exposer le jeton hors du cookie.
+  it("n'envoie aucun corps quand le cookie fait foi", async () => {
+    mockFetch({ ok: true, status: 200, json: async () => ({ AccessToken: "abc", User: {} }) });
+    await revalidateSession(null);
+    const [, init] = (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(init.body).toBeUndefined();
+  });
 });
