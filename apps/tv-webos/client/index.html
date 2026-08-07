@@ -3,34 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <!--
-      Canevas 1280×720, agrandi ×1,5 par le téléviseur vers sa dalle 1080p.
+      Canevas 1920×1080 — la résolution de la dalle, au pixel près.
 
-      C'est la mise à l'échelle du client, et elle ne se fait pas autrement.
-      Agrandir la police racine ne met à l'échelle que les `rem` : les cent
-      trente-quatre classes en pixels d'`apps/web` ne suivent pas, les styles
-      en ligne non plus, et les media queries continuent d'évaluer contre la
-      largeur réelle — la bibliothèque sortait huit affiches par rangée avec du
-      texte agrandi, et la barre de navigation rendait son contenu hors écran.
+      **Ce n'est pas ce `meta` qui décide sur un téléviseur.** webOS ignore le
+      viewport : le canevas d'une application vient du champ `resolution`
+      d'`appinfo.json`, et LG le documente ainsi — « pour connaître la
+      résolution d'une application web, lire `window.innerWidth` ». Le `meta`
+      est ici pour que le navigateur de développement et le simulateur — qui,
+      lui, force un zoom de son propre chef — composent sur le même canevas que
+      la dalle. Les deux valeurs doivent rester d'accord.
 
-      En composant à 1280, tout suit d'un coup : rem, pixels, vh, bordures,
-      images, styles en ligne, et les rectangles que le moteur de focus mesure.
-      Les composants d'`apps/web` se retrouvent dans la configuration d'un
-      portable à 1280 — celle pour laquelle ils ont été écrits.
+      Composer en 1280 et laisser le téléviseur agrandir de moitié a été
+      essayé, et écarté : la couche graphique est alors rastérisée en 720p puis
+      étirée, et TOUT le texte s'en ressent. Aucun correctif ne rattrape ça,
+      parce que le mal est fait avant la mise à l'échelle.
 
-      **Mais ce n'est PAS ce `meta` qui l'obtient sur un téléviseur.** webOS
-      ignore le viewport : le canevas d'une application vient du champ
-      `resolution` d'`appinfo.json`, et LG le documente ainsi — « pour connaître
-      la résolution d'une application web, lire `window.innerWidth` ». Relevé
-      sur l'émulateur webOS 4.0 avec `resolution: "1920x1080"` : `innerWidth`
-      valait 1920, donc toute l'interface sortait aux deux tiers de sa taille,
-      texte compris. Le simulateur, lui, force un zoom à 1280 de son propre
-      chef : c'est pour cela, et pour cela seulement, qu'il paraissait juste.
-
-      Le `meta` reste, et il sert : c'est lui qui donne le même canevas au
-      navigateur de développement et au simulateur. Sur la dalle, c'est
-      `appinfo.json` qui fait autorité — les deux doivent rester d'accord.
+      En 1920, les composants d'`apps/web` gardent exactement les proportions du
+      client web — c'est le rendu de référence, et c'est voulu. Ce qui doit
+      grossir est le mobilier propre au salon : rail, overscan, anneau de focus,
+      plancher typographique. Chacun porte sa valeur et son commentaire, dans
+      les feuilles de `styles/`.
     -->
-    <meta name="viewport" content="width=1280, initial-scale=1" />
+    <meta name="viewport" content="width=1920, initial-scale=1" />
     <title>Tentacle TV</title>
     <!--
       Politique de sécurité de la variante téléviseur.
