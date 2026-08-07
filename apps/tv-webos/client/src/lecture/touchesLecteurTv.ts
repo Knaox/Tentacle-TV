@@ -161,7 +161,15 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
       // Une surcouche à l'écran — « passer l'intro », « épisode suivant » —
       // propose une action, et les flèches servent alors à la viser. Déplacer
       // la lecture derrière elle reviendrait à répondre à côté de la question.
-      if (surcoucheAffichee()) return;
+      //
+      // Sous l'habillage, elles continuent de le parcourir — le moteur a déjà
+      // tiré avant nous — et l'on garde les commandes à l'écran le temps d'y
+      // arriver : c'est le seul chemin vers ce bouton-là, qui ne prend pas le
+      // focus quand quelqu'un d'autre s'en sert.
+      if (surcoucheAffichee()) {
+        if (etat.mode === "osd") reporterMasquage();
+        return;
+      }
 
       switch (arbitre.decider(code, etat.mode)) {
         case "attendre":

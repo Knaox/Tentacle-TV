@@ -3,6 +3,7 @@ import { UpNextCard } from "@/components/player/UpNextCard";
 import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen";
 import { donnerFocus } from "../focus/actif";
 import { destinationEntreeDeZone } from "../focus/zones";
+import { lireEtat } from "./etatLecteurTv";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
 /**
@@ -123,9 +124,15 @@ export function AutoPlayOverlay({
     const racine = enveloppe.current;
     if (!racine) return;
 
-    // La surcouche prend le focus en paraissant, habillage compris : les
-    // flèches se taisent dès qu'elle est là, ne pas le prendre la rendrait
-    // inatteignable.
+    // Comme le bouton « passer » : on ne prend le focus que si personne d'autre
+    // ne s'en sert. Habillage affiché, l'anneau est déjà sous le doigt dans la
+    // rangée — le lui arracher déplacerait la main sans qu'on l'ait demandé.
+    //
+    // L'affiche PLEINE DALLE fait exception : elle recouvre tout, l'habillage
+    // compris. Laisser l'anneau sur un bouton devenu invisible ne servirait
+    // personne.
+    if (!pleinEcran && lireEtat().mode !== "repos") return;
+
     const cible = (pleinEcran ? actionPrincipale(racine) : null) ?? destinationEntreeDeZone(racine);
     if (cible) donnerFocus(cible);
 
