@@ -27,16 +27,20 @@ const OK = 13;
 interface Pas {
   instant: number;
   sens: 1 | -1;
+  /** Le palier du tic, ou `0` pour un saut — un geste n'accélère jamais. */
   palier: number;
+  geste: "saut" | "tic";
 }
 
 function harnais() {
   const depart = Date.now();
   const pas: Pas[] = [];
   const moteur = creerMoteurMaintien({
-    avancer: (sens, palier) => pas.push({ instant: Date.now() - depart, sens, palier }),
+    sauter: (sens) => pas.push({ instant: Date.now() - depart, sens, palier: 0, geste: "saut" }),
+    avancer: (sens, palier) => pas.push({ instant: Date.now() - depart, sens, palier, geste: "tic" }),
   });
-  return { pas, moteur };
+  return { pas, moteur, sauts: () => pas.filter((p) => p.geste === "saut"),
+    tics: () => pas.filter((p) => p.geste === "tic") };
 }
 
 /** Un maintien : un appui, puis des répétitions à `intervalle` pendant `duree`. */
@@ -52,17 +56,17 @@ describe("moteurMaintien", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("un appui simple avance d'un pas, au palier le plus bas", () => {
+  it("un appui simple est un saut sec, jamais une entrée en déplacement", () => {
     const { pas, moteur } = harnais();
 
     moteur.appuyer(DROITE, 1);
 
-    expect(pas).toEqual([{ instant: 0, sens: 1, palier: 1 }]);
+    expect(pas).toEqual([{ instant: 0, sens: 1, palier: 0, geste: "saut" }]);
     moteur.detruire();
   });
 
-  it("des appuis espacés restent des appuis simples, sans jamais accélérer", () => {
-    const { pas, moteur } = harnais();
+  it("des appuis espacés restent des sauts, sans jamais accélérer", () => {
+    const { pas, moteur, tics } = harnais();
 
     for (let i = 0; i < 8; i++) {
       moteur.appuyer(DROITE, 1);
@@ -70,7 +74,8 @@ describe("moteurMaintien", () => {
     }
 
     expect(pas).toHaveLength(8);
-    expect(pas.every((p) => p.palier === 1)).toBe(true);
+    expect(pas.every((p) => p.geste === "saut")).toBe(true);
+    expect(tics()).toHaveLength(0);
     moteur.detruire();
   });
 
@@ -81,12 +86,14 @@ describe("moteurMaintien", () => {
     // doit rester celui du tic, pas celui de la dalle.
     tenir(moteur, DROITE, 1, 400, 1200);
 
-    // Le tic ne prend la main qu'à la DEUXIÈME répétition — le temps de
-    // distinguer une touche tenue d'un doigt qui tape. Les deux premières
-    // avancent donc d'un pas chacune, puis le tic possède l'avance.
+    // À cette cadence, le tic ne prend la main qu'à la DEUXIÈME répétition — le
+    // temps de distinguer une touche tenue d'un doigt qui tape. L'appui et le
+    // battement d'attente sautent ; celui qui engage passe la main sans sauter,
+    // pour ne pas déplacer le point d'où le curseur part.
     const engagement = 400 * REPETITIONS_AVANT_TIC;
+    const sauts = REPETITIONS_AVANT_TIC;
     const tics = Math.floor((1200 - engagement) / TIC_MAINTIEN_MS);
-    expect(pas).toHaveLength(1 + REPETITIONS_AVANT_TIC + tics);
+    expect(pas).toHaveLength(sauts + tics);
     moteur.detruire();
   });
 
@@ -166,7 +173,7 @@ describe("moteurMaintien", () => {
     moteur.appuyer(DROITE, 1);
 
     expect(pas).toHaveLength(avant + 1);
-    expect(pas[pas.length - 1].palier).toBe(1);
+    expect(pas[pas.length - 1].geste).toBe("saut");
     moteur.detruire();
   });
 
@@ -203,22 +210,22 @@ describe("moteurMaintien", () => {
     moteur.detruire();
   });
 
-  it("deux appuis distincts restent deux pas, même rapprochés", () => {
-    const { pas, moteur } = harnais();
+  it("deux appuis distincts font deux sauts, même rapprochés", () => {
+    const { pas, moteur, tics } = harnais();
 
     // Trois cents millisecondes : le geste de quelqu'un qui tape deux fois sur
     // la même flèche. Sous l'ancien seuil de silence (700 ms) c'était pris pour
-    // une auto-répétition, et deux sauts lançaient une avance rapide.
+    // une auto-répétition, et deux sauts demandés donnaient une avance rapide.
     moteur.appuyer(DROITE, 1);
     vi.advanceTimersByTime(300);
     moteur.appuyer(DROITE, 1);
 
     expect(pas).toHaveLength(2);
-    expect(pas.every((p) => p.palier === 1)).toBe(true);
+    expect(pas.every((p) => p.geste === "saut")).toBe(true);
 
-    // Et surtout : aucun tic ne tourne derrière.
+    // Et surtout : aucun déplacement ne part derrière.
     vi.advanceTimersByTime(2000);
-    expect(pas).toHaveLength(2);
+    expect(tics()).toHaveLength(0);
     moteur.detruire();
   });
 
@@ -256,7 +263,7 @@ describe("moteurMaintien", () => {
     moteur.detruire();
   });
 
-  it("changer de sens repart d'un appui simple", () => {
+  it("changer de sens repart d'un saut", () => {
     const { pas, moteur } = harnais();
 
     tenir(moteur, DROITE, 1, 100, 2500);
@@ -266,7 +273,7 @@ describe("moteurMaintien", () => {
 
     expect(pas).toHaveLength(avant + 1);
     expect(pas[pas.length - 1].sens).toBe(-1);
-    expect(pas[pas.length - 1].palier).toBe(1);
+    expect(pas[pas.length - 1].geste).toBe("saut");
     moteur.detruire();
   });
 

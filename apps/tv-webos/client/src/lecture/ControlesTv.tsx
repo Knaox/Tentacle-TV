@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
-import { inscrireRetour } from "../focus/retour";
-import { entrerDansPanneau, oublierBoutonOsd, quitterPanneau } from "./focusOsd";
+import { entrerDansPanneau, quitterPanneau } from "./focusOsd";
 import { creerMachineScrub, type MachineScrub } from "./machineScrub";
-import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./touchesLecteurTv";
+import { useCycleLecteurTv } from "./cycleLecteurTv";
 import {
   entrerScrub,
-  lireEtat,
   majScrub,
   montrerOsd,
-  poserMonte,
   poserPanneau,
   sortirScrub,
   useEtatLecteurTv,
@@ -89,64 +86,27 @@ export function PlayerControls(props: PlayerControlsProps) {
 
   const quitter = useCallback(() => onBack(), [onBack]);
 
-  const actions = useRef<ActionsLecteurTv>({
-    basculerLecture: onTogglePlay,
-    quitter,
+  /**
+   * Le saut nu, sans rien allumer.
+   *
+   * C'est la forme qu'appellent les FLÈCHES, habillage éteint : y répondre en
+   * rallumant les commandes ferait d'un geste anodin un changement d'écran, et
+   * masquerait l'image au moment précis où l'on cherche à s'y retrouver. Le
+   * badge cumulatif suffit à dire ce qui se passe — c'est son emploi.
+   */
+  const sauterNu = useCallback(
+    (delta: number) => {
+      if (onSkip) onSkip(delta);
+      else onSeek(Math.max(0, position.current + delta));
+    },
+    [onSeek, onSkip],
+  );
+
+  useCycleLecteurTv({
+    mode: etat.mode,
+    actions: { basculerLecture: onTogglePlay, sauter: sauterNu, quitter, scrub },
     scrub,
   });
-  actions.current = { basculerLecture: onTogglePlay, quitter, scrub };
-
-  // Monté et démonté avec le lecteur : c'est cet indicateur que lisent le
-  // moteur de focus et les touches de transport globales pour se retirer.
-  useEffect(() => {
-    poserMonte(true);
-    return () => {
-      poserMonte(false);
-      document.documentElement.removeAttribute("data-tv-lecteur");
-      // La mémoire du focus ne survit pas au lecteur : rouvrir un film repart
-      // de Lecture, comme une première fois.
-      oublierBoutonOsd();
-    };
-  }, []);
-
-  useEffect(() => installerTouchesLecteurTv(() => actions.current), []);
-
-  /**
-   * Le mode, publié sur la racine du document.
-   *
-   * Deux choses en dépendent, et aucune n'est un enfant de l'habillage : le
-   * retrait d'overscan de `#root`, qu'il faut annuler tant que le lecteur est
-   * là, et les surcouches — bouton « passer », carte « à suivre » —, qui vivent
-   * dans l'autre arbre et doivent s'écarter quand les commandes paraissent.
-   * Un attribut est la seule prise que le CSS ait sur un état qui n'est nulle
-   * part dans son sous-arbre.
-   */
-  useEffect(() => {
-    document.documentElement.setAttribute("data-tv-lecteur", etat.mode);
-  }, [etat.mode]);
-
-  /**
-   * Le retour, en cascade : un panneau ouvert se ferme, un déplacement en cours
-   * s'annule SANS déplacer, et sinon on laisse la pile faire son travail — elle
-   * signale la sortie du lecteur avant de reculer, ce dont dépend la transition
-   * de retour vers la fiche.
-   */
-  useEffect(
-    () =>
-      inscrireRetour(() => {
-        const courant = lireEtat();
-        if (courant.panneau !== "aucun") {
-          poserPanneau("aucun");
-          return true;
-        }
-        if (courant.mode === "scrub") {
-          scrub.annuler();
-          return true;
-        }
-        return false;
-      }),
-    [scrub],
-  );
 
   const osd = useRef<HTMLDivElement>(null);
 
@@ -176,13 +136,13 @@ export function PlayerControls(props: PlayerControlsProps) {
     quitterPanneau(declencheur, osd.current);
   }, [etat.mode, etat.panneau]);
 
+  /** La forme des BOUTONS : le même saut, mais l'habillage reste à l'écran. */
   const sauter = useCallback(
     (delta: number) => {
       montrerOsd();
-      if (onSkip) onSkip(delta);
-      else onSeek(Math.max(0, currentTime + delta));
+      sauterNu(delta);
     },
-    [currentTime, onSeek, onSkip],
+    [sauterNu],
   );
 
   if (etat.mode === "repos") return null;

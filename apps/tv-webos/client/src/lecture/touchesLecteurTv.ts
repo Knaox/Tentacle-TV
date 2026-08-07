@@ -33,6 +33,12 @@ import { lireEtat, montrerOsd, reporterMasquage, sAbonner } from "./etatLecteurT
  * empêche un maintien de basculer tout seul dans le flux quand l'habillage
  * s'éteint.
  *
+ * **Au repos, une flèche horizontale saute ; tenue, elle déplace.** Le partage
+ * appartient au moteur de maintien, qui seul sait distinguer un doigt d'une
+ * dalle. Taper doit rester un geste sans conséquence — pas de pause, pas de
+ * mode, pas de confirmation à donner : le badge cumule les appuis et le seek
+ * différé fait le reste, exactement comme sur le client web.
+ *
  * Les touches de transport DÉDIÉES (⏪ ⏩ ▶ ⏸ ⏹) gardent leur fonction quel que
  * soit le mode : elles ne sont pas des flèches détournées, elles ne disent
  * qu'une chose, et une touche dédiée qui ne répond pas se lit comme une panne.
@@ -43,9 +49,22 @@ import { lireEtat, montrerOsd, reporterMasquage, sAbonner } from "./etatLecteurT
 
 export interface ActionsLecteurTv {
   basculerLecture: () => void;
+  /** Saut sec, sans allumer l'habillage : le badge suffit à dire ce qui se passe. */
+  sauter: (delta: number) => void;
   quitter: () => void;
   scrub: MachineScrub;
 }
+
+/**
+ * Ce que valent les flèches quand on les tape.
+ *
+ * Les mêmes valeurs que les boutons de la rangée, et que le client web :
+ * l'asymétrie n'est pas un oubli — on revient en arrière pour revoir une
+ * réplique, on avance pour passer un passage. Deux gestes de portées
+ * différentes.
+ */
+const SAUT_ARRIERE_S = -10;
+const SAUT_AVANT_S = 30;
 
 /**
  * Les actions sont lues à CHAQUE touche, jamais capturées à l'installation :
@@ -58,6 +77,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   // pas, tic compris — un tic qui part une seconde après l'appui doit joindre
   // le lecteur d'alors, pas celui d'avant.
   const moteur = creerMoteurMaintien({
+    sauter: (direction) => lire().sauter(direction === 1 ? SAUT_AVANT_S : SAUT_ARRIERE_S),
     avancer: (direction, palier) => lire().scrub.pas(direction, palier),
   });
 
