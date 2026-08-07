@@ -1,0 +1,75 @@
+/* Les panneaux du lecteur — pistes, épisodes.
+ *
+ * Sorti de `lecteur-tv.css`, qui approchait les trois cents lignes. Rien n'y a
+ * changé de place : ce fichier reprend les règles telles quelles et ajoute la
+ * neutralisation ci-dessous.
+ */
+
+.panneau-tv {
+  position: absolute;
+  right: 0;
+  bottom: 96px;
+  width: 460px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-dropdown);
+  box-shadow: var(--elev-3);
+}
+
+/* ── Rendre au flux ce que le panneau du web en avait sorti ───────────────
+ *
+ * `TrackSelector` et `EpisodeSelectorPanel` sont des panneaux DÉTACHÉS : ils
+ * portent leur propre `position: absolute`, leur propre ancrage (`bottom-20
+ * right-6`) et leur propre largeur (`w-80`, `w-[26rem]`). C'est juste sur le
+ * web, où ils flottent directement au-dessus du lecteur.
+ *
+ * Ici, ils sont ENVELOPPÉS. L'ancrage devient donc celui de l'enveloppe, et le
+ * contenu doit revenir dans son flux — faute de quoi l'enveloppe n'a plus
+ * d'enfant en flux et se rétracte à la hauteur du seul bouton qui lui reste.
+ * Mesuré sur la dalle de développement avant correction : `.panneau-tv` à
+ * 460 × 58 px, la liste des pistes flottant à 320 px de large quatre cents
+ * pixels plus haut, et le bouton « Appliquer à cette série » seul dans le
+ * cadre.
+ *
+ * L'accroche est `data-panneau-detache`, que le client web pose lui-même sur
+ * les quatre panneaux de ce genre. Un attribut, pas une classe du système de
+ * design : une classe peut être renommée sans que personne pense au
+ * téléviseur, et le portage a déjà payé cette leçon.
+ *
+ * On ne retire QUE ce qui relève du détachement — la géométrie et l'habillage
+ * du cadre, que l'enveloppe reprend à son compte. Le reste (colonne flex,
+ * hauteur maximale, débordement, remplissage) appartient au panneau et
+ * continue de le servir.
+ */
+.panneau-tv > [data-panneau-detache] {
+  position: static;
+  width: auto;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* Le panneau du web est dessiné pour une souris : cibles de 32 px, texte de
+   14. En descendance simple, ce que Chrome 53 traite sans effort. */
+.panneau-tv button {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+.panneau-tv-bascule {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 19px;
+}
+
+.panneau-tv-bascule[data-actif="true"] {
+  color: var(--brand-light);
+}
