@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 import { donnerFocus } from "../focus/actif";
 import { lireEtat } from "./etatLecteurTv";
+import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
 /**
  * « Passer l'intro », « Passer le générique ».
@@ -26,9 +27,6 @@ import { lireEtat } from "./etatLecteurTv";
  * seul geste change de propriétaire, OK — ce qui suffit, puisqu'il n'y a qu'une
  * chose à faire d'un bouton « passer ».
  */
-
-/** Ce que le contrôleur de touches cherche pour savoir à qui appartient OK. */
-export const ATTRIBUT_SAUT = "data-osd-saut";
 
 interface ProprietesSaut {
   visible: boolean;
@@ -63,7 +61,7 @@ function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
       ref={bouton}
       type="button"
       className="saut-tv"
-      {...{ [ATTRIBUT_SAUT]: "" }}
+      {...{ [ATTRIBUT_SURCOUCHE]: "" }}
       onClick={(evenement) => {
         evenement.stopPropagation();
         onSauter(segment.end);
@@ -117,14 +115,3 @@ export function BoutonsSautTv({
   );
 }
 
-/**
- * Active le bouton « passer » s'il tient le focus.
- *
- * Rend `false` quand ce n'est pas le cas — l'appelant reprend alors son cours.
- */
-export function activerSautFocalise(): boolean {
-  const actif = document.activeElement;
-  if (!(actif instanceof HTMLElement) || !actif.hasAttribute(ATTRIBUT_SAUT)) return false;
-  actif.click();
-  return true;
-}
