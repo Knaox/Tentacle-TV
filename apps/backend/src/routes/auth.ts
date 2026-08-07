@@ -21,6 +21,17 @@ const loginSchema = z.object({
   // l'envoient pas, on retombe alors sur le nom du compte. Le format est
   // contraint car la valeur finit dans un en-tête HTTP.
   deviceId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+  // Identité affichée du client — le couple que Jellyfin lit dans l'en-tête
+  // `MediaBrowser`. Il indexe ses sessions par (DeviceId, Client, compte) : si
+  // le token qu'on émet ici ne porte pas le MÊME couple que celui annoncé
+  // ensuite par le client, le même lecteur compte pour deux appareils. Les deux
+  // restent optionnels — un client antérieur retombe sur les valeurs
+  // historiques, au prix du dédoublement qu'il a déjà aujourd'hui.
+  //
+  // Aucun contrôle de forme : `buildAuthHeader` assainit lui-même ce qui
+  // casserait l'en-tête (hors-ASCII, guillemets). Seule la longueur est bridée.
+  client: z.string().max(64).optional(),
+  device: z.string().max(64).optional(),
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
@@ -44,7 +55,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // Jellyfin. Le compte est haché avec, pour que deux comptes ne retombent
       // jamais sur le même identifiant.
       const deviceId = await deviceIdForOpaque("web", body.deviceId ?? body.username, body.username);
-      const authHeader = buildAuthHeader({ device: "Web", deviceId });
+      // Le client et l'appareil viennent du CLIENT, pas d'un défaut maison : le
+      // token doit porter l'identité sous laquelle ce lecteur se présentera
+      // ensuite, sans quoi Jellyfin ouvre une session pour chacune des deux.
+      const authHeader = buildAuthHeader({
+        device: body.device ?? "Web",
+        deviceId,
+        client: body.client,
+      });
       const res = await fetch(`${jellyfinUrl}/Users/AuthenticateByName`, {
         method: "POST",
         headers: {
@@ -68,6 +86,10 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
         AccessToken: data.AccessToken,
         User: data.User,
         ServerId: data.ServerId,
+        // L'identifiant d'appareil réellement présenté à Jellyfin. Le client
+        // l'adopte pour son propre en-tête : le `client` ci-dessus ne suffit
+        // pas, les deux axes de l'index de session doivent coïncider.
+        DeviceId: deviceId,
       };
     } catch {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });

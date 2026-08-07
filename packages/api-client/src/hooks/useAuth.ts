@@ -23,10 +23,24 @@ export function useAuth() {
             // Jellyfin. Sans lui, toutes les sessions d'un même compte
             // partagent un seul appareil côté Jellyfin — et se déconnectent
             // les unes les autres au moindre logout.
+            // client/device : l'identité que ce lecteur annoncera ensuite dans
+            // son en-tête `MediaBrowser`. Jellyfin indexe ses sessions par
+            // (DeviceId, Client, compte), et sans ces deux champs le backend
+            // émettait le token sous une identité maison — le tableau de bord
+            // montrait alors DEUX appareils lisant le même épisode.
+            //
+            // Le `DeviceId` compte tout autant, et il ne suffit PAS que
+            // l'en-tête et l'URL de stream portent la même valeur : le token,
+            // lui, est accroché à l'identifiant dérivé par le backend. Mesuré —
+            // avec le seul `Client` aligné, il restait deux cartes au libellé
+            // identique, même compte, même épisode, même position. D'où
+            // l'adoption ci-dessous.
             body: JSON.stringify({
               username: credentials.username,
               password: credentials.password,
-              deviceId: client.getDeviceId(),
+              deviceId: client.getLoginDeviceId(),
+              client: client.getClientName(),
+              device: client.getDeviceName(),
             }),
             credentials: "include",
           });
@@ -35,6 +49,11 @@ export function useAuth() {
             throw new Error(err.message || "Login failed");
           }
           const data = await res.json();
+          // L'autre moitié de l'alignement. Le backend a haché la graine avant
+          // de la présenter à Jellyfin — on ne peut donc pas la deviner : il la
+          // renvoie, le client l'adopte. Absente d'un backend antérieur : on
+          // garde la graine brute, soit le comportement d'avant.
+          if (data.DeviceId) client.adopterDeviceIdJellyfin(data.DeviceId);
           // Token is in httpOnly cookie — also set accessToken for Jellyfin auth header
           client.setAccessToken(data.AccessToken);
           storage.setItem("tentacle_token", data.AccessToken);
@@ -109,6 +128,10 @@ export function useAuth() {
         }).catch(() => {});
       }
       client.setAccessToken(null);
+      // L'identité adoptée est dérivée d'un secret PROPRE au serveur qu'on
+      // quitte : la garder n'aurait aucun sens sur le suivant. La graine locale
+      // reste — c'est l'appareil, il ne change pas de serveur.
+      client.adopterDeviceIdJellyfin(null);
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
       storage.removeItem("tentacle_server_url");
