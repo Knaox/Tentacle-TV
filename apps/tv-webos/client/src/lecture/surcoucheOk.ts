@@ -29,3 +29,17 @@ export function activerSurcoucheFocalisee(): boolean {
   actif.click();
   return true;
 }
+
+/**
+ * Une surcouche est-elle à l'écran ?
+ *
+ * Quand il y a quelque chose à faire, les flèches servent à le viser — pas à
+ * déplacer la lecture derrière. C'est la même règle que sous l'habillage :
+ * **tant qu'une chose est affichée, les touches lui appartiennent.**
+ *
+ * Ces surcouches sont montées à la demande, jamais laissées en place à opacité
+ * nulle — leur seule présence dans le document vaut donc affichage.
+ */
+export function surcoucheAffichee(): boolean {
+  return !!document.querySelector(`[${ATTRIBUT_SURCOUCHE}]`);
+}

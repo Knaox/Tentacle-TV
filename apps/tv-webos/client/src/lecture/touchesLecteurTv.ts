@@ -1,6 +1,6 @@
 import { lireIntention, estHorizontale, sens } from "../focus/touches";
 import { creerMoteurMaintien } from "./moteurMaintien";
-import { activerSurcoucheFocalisee } from "./surcoucheOk";
+import { activerSurcoucheFocalisee, surcoucheAffichee } from "./surcoucheOk";
 import type { MachineScrub } from "./machineScrub";
 import { lireEtat, montrerOsd, reporterMasquage, sAbonner } from "./etatLecteurTv";
 
@@ -150,6 +150,10 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         return;
       }
       if (evenement.keyCode === codeAbsorbeParOsd) return;
+      // Une surcouche à l'écran — « passer l'intro », « épisode suivant » —
+      // propose une action, et les flèches servent alors à la viser. Déplacer
+      // la lecture derrière elle reviendrait à répondre à côté de la question.
+      if (surcoucheAffichee()) return;
       moteur.appuyer(evenement.keyCode, sens(intention.direction));
       return;
     }

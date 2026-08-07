@@ -37,6 +37,10 @@ declare module "@/components/player/VideoPlayerOverlays?original" {
   export * from "@/components/player/VideoPlayerOverlays";
 }
 
+declare module "@/hooks/useAutoNextCountdown?original" {
+  export * from "@/hooks/useAutoNextCountdown";
+}
+
 interface ImportMetaEnv {
   readonly VITE_JELLYFIN_URL: string;
   readonly VITE_BACKEND_URL: string;
