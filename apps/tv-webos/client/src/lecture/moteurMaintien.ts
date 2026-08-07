@@ -110,8 +110,15 @@ export interface OptionsMoteurMaintien {
 }
 
 export interface MoteurMaintien {
-  /** Un `keydown` directionnel. Le premier avance d'un pas, les suivants tiennent. */
-  appuyer: (code: number, sens: 1 | -1) => void;
+  /**
+   * Un `keydown` directionnel. Le premier saute, les suivants tiennent.
+   *
+   * @param repetition `KeyboardEvent.repeat` — la touche est TENUE, le
+   * navigateur le dit. C'est le seul signal qui ne dépende d'aucune cadence, et
+   * donc le seul qui vaille sur une dalle dont la vitesse d'auto-répétition
+   * n'est ni documentée ni constante d'un modèle à l'autre.
+   */
+  appuyer: (code: number, sens: 1 | -1, repetition?: boolean) => void;
   /**
    * Un `keyup`, quand la dalle en émet — et SEULEMENT celui de la touche tenue.
    *
@@ -187,16 +194,23 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
     tic = setInterval(() => options.avancer(sensCourant, palier()), TIC_MAINTIEN_MS);
   }
 
-  function appuyer(code: number, sens: 1 | -1): void {
+  function appuyer(code: number, sens: 1 | -1, repetition = false): void {
     const instant = horloge();
     // Ce qui qualifie une répétition est la CADENCE, pas le silence. Le seuil
     // de silence dit quand un maintien s'arrête ; s'en servir aussi pour dire
     // ce qui l'a commencé faisait passer deux appuis distincts pour un
     // maintien, et deux sauts pour une avance rapide.
+    // `repetition` l'emporte sur toute mesure de temps : le navigateur dit que
+    // la touche est TENUE, et aucun seuil ne saurait le dire mieux. Sans lui,
+    // une dalle qui répète plus lentement que le seuil ne produisait jamais
+    // d'enchaînement : chaque battement retombait en « nouvel appui », donc en
+    // saut, et le maintien ne donnait qu'une rafale de sauts — l'habillage
+    // restait à l'écran faute d'entrer en déplacement, et la position bougeait
+    // par bonds sans que rien n'ait été validé.
     const enchaine =
       code === dernierCode &&
       sens === sensCourant &&
-      instant - dernierInstant <= INTERVALLE_REPETITION_MS;
+      (repetition || instant - dernierInstant <= INTERVALLE_REPETITION_MS);
 
     if (!enchaine) {
       // Nouvel appui : un saut sec, sans accélération et sans mode. C'est la
@@ -220,10 +234,11 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
     repetitions += 1;
 
     if (debutMaintien === null) {
-      // Une cadence de dalle ne laisse aucun doute : on engage sans attendre.
-      // Un écart plus large peut venir d'un doigt — on lui laisse le bénéfice
-      // du doute, et un saut, jusqu'à ce qu'il insiste.
-      if (mesure <= AUTO_REPETITION_MS || repetitions >= REPETITIONS_AVANT_TIC) {
+      // Une touche que le navigateur déclare tenue, ou une cadence de dalle, ne
+      // laissent aucun doute : on engage sans attendre. Un écart plus large peut
+      // venir d'un doigt — on lui laisse le bénéfice du doute, et un saut,
+      // jusqu'à ce qu'il insiste.
+      if (repetition || mesure <= AUTO_REPETITION_MS || repetitions >= REPETITIONS_AVANT_TIC) {
         // Le battement qui engage ne saute PAS : il passe la main au curseur,
         // et un saut de plus déplacerait le point d'où celui-ci part.
         engager(instant);
