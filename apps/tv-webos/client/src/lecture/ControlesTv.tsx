@@ -179,6 +179,8 @@ export function PlayerControls(props: PlayerControlsProps) {
         currentTime={currentTime}
         duration={duration}
         buffered={buffered}
+        item={item}
+        mediaSourceId={mediaSourceId}
       />
     );
   }
@@ -237,9 +239,11 @@ export function PlayerControls(props: PlayerControlsProps) {
           onPistes={() => poserPanneau(etat.panneau === "pistes" ? "aucun" : "pistes")}
         />
       </div>
-      {/* `itemId` et `mediaSourceId` restent dans le contrat — ils servaient à
-          l'aperçu de vignettes au survol, qui n'a pas d'équivalent ici. */}
-      <span hidden data-item={itemId} data-source={mediaSourceId} />
+      {/* `itemId` reste dans le contrat sans emploi ici : le client web s'en
+          sert pour l'aperçu au survol, que la surcouche de déplacement rend
+          autrement. `mediaSourceId`, lui, y sert — c'est la clé du manifeste
+          de vignettes. */}
+      <span hidden data-item={itemId} />
     </div>
   );
 }
