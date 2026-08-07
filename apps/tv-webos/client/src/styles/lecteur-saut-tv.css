@@ -1,0 +1,30 @@
+/* Les boutons « passer l'intro / le générique ».
+ *
+ * Le vocabulaire visuel est celui du client web — trait blanc discret, fond
+ * noir translucide, coins arrondis, texte blanc appuyé. Seules la taille et
+ * l'ancrage changent, comme partout ailleurs sur cette cible.
+ *
+ * **L'ancrage est le correctif.** Le bouton du web vit à vingt-quatre pixels du
+ * bord droit. Le lecteur annule le retrait d'overscan posé sur `#root` — il
+ * rend sa racine en plein écran — de sorte que chaque surcouche doit reprendre
+ * ce retrait à son compte. Sans cela, sur une dalle qui rogne, le bouton
+ * arrive à moitié coupé, ou pas du tout.
+ *
+ * Pas de `backdrop-filter` : la passe le retirerait de toute façon, et un flou
+ * derrière un fond à 0,6 d'alpha coûterait une couche composée par image
+ * au-dessus d'une vidéo en cours de décodage.
+ */
+
+.saut-tv {
+  position: absolute;
+  right: var(--tv-overscan-x);
+  bottom: 148px;
+  z-index: 50;
+  padding: 14px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+}
