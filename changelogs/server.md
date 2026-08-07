@@ -11,6 +11,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.5]
+### FR
+- Vos choix de piste audio et de sous-titres, retenus contenu par contenu, sont de nouveau enregistrés. La table qui les conserve n'avait jamais été créée sur les serveurs installés : chaque démarrage d'une application se soldait par une erreur, et la copie consultée hors ligne restait vide. Elle est créée automatiquement au redémarrage du serveur, sans rien effacer d'existant
+### EN
+- Your audio and subtitle choices, remembered per title, are saved again. The table holding them had never been created on installed servers: every app launch ended in an error, and the copy used offline stayed empty. It is now created automatically when the server restarts, without erasing anything
+
 ## [1.12.4]
 ### FR
 - Regarder une vidéo depuis le navigateur ne compte plus pour deux appareils. Une seule lecture ouvrait deux sessions sur le serveur multimédia : l'une nourrie par la vidéo elle-même, l'autre par les informations de progression. Les deux se présentaient sous une identité différente, si bien que le tableau de bord affichait le même épisode en double, avec quelques secondes d'écart. Il faut se déconnecter puis se reconnecter une fois pour que les sessions déjà ouvertes se rejoignent

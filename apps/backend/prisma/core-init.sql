@@ -128,3 +128,28 @@ CREATE TABLE IF NOT EXISTS `watch_time_lease` (
   `expiresAt` datetime(3) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Préférences de pistes PAR CONTENU. Voir schema.prisma > ItemTrackPreference.
+--
+-- Elle manquait ici alors que le modèle existait depuis longtemps dans
+-- schema.prisma. En production le schéma n'arrive QUE par ce fichier : la table
+-- n'y a donc jamais été créée, `GET /api/preferences/items` répondait 500
+-- (Prisma P2021, « table does not exist ») à chaque démarrage de client, et le
+-- miroir hors ligne des préférences restait vide. Rien ne signalait l'oubli —
+-- en développement on passe par `prisma db push`, qui crée tout.
+--
+-- DDL relevé par `SHOW CREATE TABLE` sur une base où Prisma l'avait créée,
+-- plutôt qu'écrit à la main : types, valeurs par défaut et noms d'index sont
+-- donc exactement ceux que Prisma attend.
+CREATE TABLE IF NOT EXISTS `item_track_preferences` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `itemId` varchar(255) NOT NULL,
+  `audioLang` varchar(10) DEFAULT NULL,
+  `subtitleLang` varchar(10) DEFAULT NULL,
+  `subtitleMode` varchar(20) NOT NULL DEFAULT 'none',
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `item_track_preferences_jellyfinUserId_itemId_key` (`jellyfinUserId`,`itemId`),
+  KEY `item_track_preferences_jellyfinUserId_idx` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
