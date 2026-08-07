@@ -50,10 +50,25 @@
       de fermer l'application : c'est lui qui demande le code et sonde sa
       confirmation. La coquille, elle, y accédait sans rien déclarer — elle est
       servie depuis `file://`, où cette politique ne s'applique pas.
+
+      **Les bandes-annonces, et pourquoi la même liste est écrite DEUX fois.**
+      Cette politique avait été réécrite de zéro pour le téléviseur et n'avait
+      jamais repris l'autorisation d'embarquer YouTube que porte celle du client
+      web. Aucune bande-annonce ne pouvait donc s'ouvrir : le cadre était refusé
+      avant même qu'une requête ne parte.
+
+      `frame-src` est la directive du niveau 3, celle que lisent les moteurs
+      récents. Chromium 53 — les dalles de 2018 et 2019 — n'en est qu'au niveau
+      2, où les cadres sont gouvernés par `child-src`, `frame-src` y étant
+      déprécié. Une seule des deux ne couvrirait donc que la moitié du parc, et
+      elles doivent porter la même liste.
+
+      `worker-src` reste séparé pour les moteurs récents ; sur Chromium 53 les
+      workers retombent eux aussi sur `child-src`, dont le `blob:` les couvre.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self' ws: wss: https://pair.tentacletv.app; worker-src 'self' blob:; child-src 'self' blob:"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self' ws: wss: https://pair.tentacletv.app; worker-src 'self' blob:; frame-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com; child-src 'self' blob: https://www.youtube-nocookie.com https://www.youtube.com"
     />
     <script>
       /* Le thème avant le premier tracé, et il n'y en a qu'un.
