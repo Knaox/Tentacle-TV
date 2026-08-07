@@ -11,6 +11,14 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.4]
+### FR
+- Regarder une vidéo depuis le navigateur ne compte plus pour deux appareils. Une seule lecture ouvrait deux sessions sur le serveur multimédia : l'une nourrie par la vidéo elle-même, l'autre par les informations de progression. Les deux se présentaient sous une identité différente, si bien que le tableau de bord affichait le même épisode en double, avec quelques secondes d'écart. Il faut se déconnecter puis se reconnecter une fois pour que les sessions déjà ouvertes se rejoignent
+- Changer de qualité ou de piste audio en cours de lecture ne laisse plus de conversion à l'abandon. L'ancienne continuait de tourner sur le serveur jusqu'à ce qu'un minuteur l'arrête, une minute plus tard — du travail payé plein pot pour un flux que plus personne ne regardait. Elle est désormais arrêtée dès qu'une autre prend sa place, ce qui vaut aussi pour les sous-titres incrustés et les changements automatiques de mode de lecture
+### EN
+- Watching from the browser no longer counts as two devices. A single playback opened two sessions on the media server: one fed by the video itself, the other by progress reporting. Each presented a different identity, so the dashboard showed the same episode twice, a few seconds apart. Sign out and back in once for already-open sessions to merge
+- Switching quality or audio track mid-playback no longer strands a conversion. The old one kept running on the server until a timer stopped it a minute later — full cost for a stream nobody was watching. It is now stopped as soon as another takes its place, which also covers burned-in subtitles and automatic playback-mode changes
+
 ## [1.12.3]
 ### FR
 - Parcourir une bibliothèque rapidement ne coupe plus l'application. Les vignettes et les appels de données se partageaient la même limite de débit : quelques secondes de défilement suffisaient à l'épuiser, et tout tombait d'un coup — notifications, épisodes, catalogue — alors qu'il ne manquait que des affiches. Les images ont désormais leur propre compte
