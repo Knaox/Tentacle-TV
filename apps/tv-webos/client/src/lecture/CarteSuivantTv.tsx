@@ -3,7 +3,7 @@ import { UpNextCard } from "@/components/player/UpNextCard";
 import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen";
 import { donnerFocus } from "../focus/actif";
 import { destinationEntreeDeZone } from "../focus/zones";
-import { lireEtat } from "./etatLecteurTv";
+import { lireEtat, useEtatLecteurTv } from "./etatLecteurTv";
 import { quitterLecteur } from "./sortieLecteurTv";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
@@ -120,6 +120,7 @@ export function AutoPlayOverlay({
   onCancel,
 }: ProprietesCarte) {
   const enveloppe = useRef<HTMLDivElement>(null);
+  const etat = useEtatLecteurTv();
 
   /**
    * Arrivé au bout, c'est l'affiche — sans autre condition.
@@ -135,6 +136,16 @@ export function AutoPlayOverlay({
    * ce que le filet est sur le point de poser.
    */
   const pleinEcran = useLectureTerminee();
+
+  /**
+   * Rien pendant le déplacement — sauf si c'est fini.
+   *
+   * L'écran du curseur fantôme est un mode : on y cherche une position, et une
+   * carte posée dans le coin propose de partir ailleurs au moment où l'on vise.
+   * Passé le bout, la question ne se pose plus : il n'y a plus de position à
+   * chercher, et c'est l'affiche qui a raison.
+   */
+  const efface = etat.mode === "scrub" && !pleinEcran;
 
   useEffect(() => {
     const racine = enveloppe.current;
@@ -158,7 +169,9 @@ export function AutoPlayOverlay({
         if (actif instanceof HTMLElement) actif.blur();
       }
     };
-  }, [pleinEcran]);
+  }, [pleinEcran, efface]);
+
+  if (efface) return null;
 
   if (pleinEcran) {
     return (

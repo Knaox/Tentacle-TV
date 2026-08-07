@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 import { donnerFocus } from "../focus/actif";
-import { lireEtat } from "./etatLecteurTv";
+import { lireEtat, useEtatLecteurTv } from "./etatLecteurTv";
 import { poserFocusOsd } from "./focusOsd";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
@@ -38,7 +38,17 @@ interface ProprietesSaut {
 
 function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
   const bouton = useRef<HTMLButtonElement>(null);
-  const affiche = visible && !!segment;
+  const etat = useEtatLecteurTv();
+
+  /**
+   * Rien pendant le déplacement.
+   *
+   * L'écran du curseur fantôme est plein cadre — vignette, horodatage, palier —
+   * et c'est un mode : on y cherche une position, pas une action. Un bouton
+   * « passer l'intro » posé par-dessus propose de partir ailleurs au moment où
+   * l'on vise, et il traverse au passage la seule chose qu'on regarde.
+   */
+  const affiche = visible && !!segment && etat.mode !== "scrub";
 
   useEffect(() => {
     const element = bouton.current;
