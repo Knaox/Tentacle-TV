@@ -16,6 +16,19 @@
       images, styles en ligne, et les rectangles que le moteur de focus mesure.
       Les composants d'`apps/web` se retrouvent dans la configuration d'un
       portable à 1280 — celle pour laquelle ils ont été écrits.
+
+      **Mais ce n'est PAS ce `meta` qui l'obtient sur un téléviseur.** webOS
+      ignore le viewport : le canevas d'une application vient du champ
+      `resolution` d'`appinfo.json`, et LG le documente ainsi — « pour connaître
+      la résolution d'une application web, lire `window.innerWidth` ». Relevé
+      sur l'émulateur webOS 4.0 avec `resolution: "1920x1080"` : `innerWidth`
+      valait 1920, donc toute l'interface sortait aux deux tiers de sa taille,
+      texte compris. Le simulateur, lui, force un zoom à 1280 de son propre
+      chef : c'est pour cela, et pour cela seulement, qu'il paraissait juste.
+
+      Le `meta` reste, et il sert : c'est lui qui donne le même canevas au
+      navigateur de développement et au simulateur. Sur la dalle, c'est
+      `appinfo.json` qui fait autorité — les deux doivent rester d'accord.
     -->
     <meta name="viewport" content="width=1280, initial-scale=1" />
     <title>Tentacle TV</title>
