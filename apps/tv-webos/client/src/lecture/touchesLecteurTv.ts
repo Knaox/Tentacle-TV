@@ -1,5 +1,5 @@
 import { lireIntention, estHorizontale, sens } from "../focus/touches";
-import { creerCadence } from "./cadenceMaintien";
+import { creerMoteurMaintien } from "./moteurMaintien";
 import type { MachineScrub } from "./machineScrub";
 import { lireEtat, montrerOsd } from "./etatLecteurTv";
 
@@ -42,7 +42,31 @@ export interface ActionsLecteurTv {
  * écouteur en capture à chaque image lui ferait manquer des appuis.
  */
 export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => void {
-  const cadence = creerCadence();
+  // Le moteur possède l'avance : appui simple comme tic de maintien passent
+  // par lui, et lui seul décide du palier. Les actions sont relues à chaque
+  // pas, tic compris — un tic qui part une seconde après l'appui doit joindre
+  // le lecteur d'alors, pas celui d'avant.
+  const moteur = creerMoteurMaintien({
+    avancer: (direction, palier) => lire().scrub.pas(direction, palier),
+  });
+
+  /**
+   * Instant de la dernière sortie de déplacement, pour avaler son écho.
+   *
+   * Confirmer remet l'habillage à l'écran, boutons compris. La touche qui vient
+   * de confirmer est encore enfoncée, la dalle la répète — et cette répétition
+   * trouve désormais un bouton focalisé sous elle. Un OK tenu un peu trop
+   * longtemps validait la position PUIS mettait la lecture en pause, ce qui n'a
+   * l'air d'un défaut de plus que parce qu'on ne voit pas le lien.
+   *
+   * C'est le même écho qu'`apps/tv` avale sur 400 ms (`SCRUB_TWIN_PRESS_MS`),
+   * pour une cause différente — là-bas deux événements pour un seul appui, ici
+   * la répétition automatique. La parade est la même.
+   */
+  let finDeplacement = 0;
+  const ECHO_SORTIE_MS = 400;
+
+  const echoDeSortie = (): boolean => Date.now() - finDeplacement < ECHO_SORTIE_MS;
 
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
@@ -61,20 +85,21 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         if (etat.mode === "repos") montrerOsd();
         return;
       }
-      const palier = cadence.mesurer(evenement.keyCode, Date.now());
-      actions.scrub.pas(sens(intention.direction), palier);
+      moteur.appuyer(evenement.keyCode, sens(intention.direction));
       return;
     }
 
     if (intention.type === "valider") {
       if (etat.mode === "scrub") {
         actions.scrub.confirmer();
+        finDeplacement = Date.now();
         return;
       }
       if (etat.mode === "repos") {
         montrerOsd();
         return;
       }
+      if (echoDeSortie()) return;
       activerElementFocalise();
       return;
     }
@@ -87,9 +112,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     }
 
     if (intention.commande === "avance" || intention.commande === "retour") {
-      const direction = intention.commande === "avance" ? 1 : -1;
-      const palier = cadence.mesurer(evenement.keyCode, Date.now());
-      actions.scrub.pas(direction, palier);
+      moteur.appuyer(evenement.keyCode, intention.commande === "avance" ? 1 : -1);
       return;
     }
 
@@ -98,13 +121,15 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     // on a trouvé où l'on voulait aller.
     if (etat.mode === "scrub") {
       actions.scrub.confirmer();
+      finDeplacement = Date.now();
       return;
     }
+    if (echoDeSortie()) return;
     actions.basculerLecture();
     montrerOsd();
   };
 
-  const surRelachement = (): void => cadence.relacher();
+  const surRelachement = (): void => moteur.relacher();
 
   document.addEventListener("keydown", surTouche, true);
   document.addEventListener("keyup", surRelachement, true);
@@ -112,6 +137,9 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   return () => {
     document.removeEventListener("keydown", surTouche, true);
     document.removeEventListener("keyup", surRelachement, true);
+    // Sans quoi un tic de maintien survivrait au démontage du lecteur et
+    // continuerait de pousser le curseur d'un écran qui n'est plus là.
+    moteur.detruire();
   };
 }
 
