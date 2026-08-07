@@ -45,6 +45,33 @@ const FACTEUR_SILENCE = 2.5;
 /** Sous cette valeur, l'intervalle mesuré relève du rebond, pas de la répétition. */
 const INTERVALLE_MINIMAL_MS = 60;
 
+/**
+ * Au-delà de cet écart, deux appuis sont deux GESTES, pas une répétition.
+ *
+ * Le seuil de silence (350–700 ms) dit quand un maintien s'ARRÊTE ; il ne dit
+ * pas ce qui l'a commencé, et il servait pourtant aux deux. Or on tape
+ * volontiers deux fois sur la même flèche en trois cents millisecondes : le
+ * second appui tombait sous le seuil, passait pour une auto-répétition, et
+ * lançait le tic. Deux sauts demandés, une avance rapide obtenue.
+ */
+const INTERVALLE_REPETITION_MS = 450;
+
+/**
+ * Combien de répétitions consécutives avant que le tic prenne la main.
+ *
+ * Le seul plafond ne suffisait pas : une dalle dont l'auto-répétition tourne à
+ * quatre cents millisecondes — le module rappelle plus haut que cette cadence
+ * n'est ni documentée ni constante d'un modèle à l'autre — ne l'aurait jamais
+ * franchi, et l'avance rapide y aurait purement disparu. Ce qui distingue
+ * vraiment une dalle d'un doigt n'est pas la vitesse, c'est l'INSISTANCE.
+ *
+ * Deux répétitions suffisent : un doigt qui tape deux fois produit un seul
+ * enchaînement et garde ses deux sauts, une touche tenue en produit autant
+ * qu'on veut. Taper trois fois de suite déclenchera l'avance rapide — c'est
+ * assumé : à ce stade, c'est bien ce qu'on demande.
+ */
+export const REPETITIONS_AVANT_TIC = 2;
+
 export interface OptionsMoteurMaintien {
   /** Un pas d'avance : appui simple comme tic de maintien. */
   avancer: (sens: 1 | -1, palier: number) => void;
@@ -82,6 +109,9 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
   let dernierCode = 0;
   let dernierInstant = 0;
   let sensCourant: 1 | -1 = 1;
+
+  /** Répétitions consécutives de la même touche, remis à zéro à chaque geste. */
+  let repetitions = 0;
 
   /** Instant d'engagement du maintien, ou `null` tant qu'on est en appui simple. */
   let debutMaintien: number | null = null;
@@ -129,14 +159,21 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
 
   function appuyer(code: number, sens: 1 | -1): void {
     const instant = horloge();
+    // Ce qui qualifie une répétition est la CADENCE, pas le silence. Le seuil
+    // de silence dit quand un maintien s'arrête ; s'en servir aussi pour dire
+    // ce qui l'a commencé faisait passer deux appuis distincts pour un
+    // maintien, et deux sauts pour une avance rapide.
     const enchaine =
-      code === dernierCode && sens === sensCourant && instant - dernierInstant <= seuilSilence();
+      code === dernierCode &&
+      sens === sensCourant &&
+      instant - dernierInstant <= INTERVALLE_REPETITION_MS;
 
     if (!enchaine) {
       // Nouvel appui : un pas fixe, sans accélération. C'est la seule façon de
       // viser une position précise, et c'est ce que fait `stepScrub` d'`apps/tv`.
       arreterMaintien();
       intervalle = 0;
+      repetitions = 0;
       dernierCode = code;
       sensCourant = sens;
       dernierInstant = instant;
@@ -149,8 +186,15 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
       intervalle = intervalle > 0 ? Math.min(intervalle, mesure) : mesure;
     }
     dernierInstant = instant;
+    repetitions += 1;
 
-    if (debutMaintien === null) engager(instant);
+    if (debutMaintien === null) {
+      // Tant que le tic n'a pas pris la main, chaque événement vaut un pas :
+      // sans cela, les répétitions qui précèdent l'engagement n'avanceraient
+      // de rien et un double appui ne produirait qu'un seul saut.
+      options.avancer(sens, PALIERS[0]);
+      if (repetitions >= REPETITIONS_AVANT_TIC) engager(instant);
+    }
     armerVeille();
   }
 
@@ -159,6 +203,7 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
     dernierCode = 0;
     dernierInstant = 0;
     intervalle = 0;
+    repetitions = 0;
   }
 
   function relacher(code: number): void {

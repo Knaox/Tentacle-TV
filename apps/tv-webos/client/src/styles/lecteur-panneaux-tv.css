@@ -105,6 +105,29 @@
   font-size: 19px;
 }
 
+/* ── La croix de fermeture ────────────────────────────────────────────────
+ *
+ * `min-height` seul l'étirait sans lui donner de largeur : le glyphe « × » fait
+ * onze pixels de large, la boîte en faisait 11 × 52, et l'anneau de focus
+ * épousait cette bande verticale. Une cible de télécommande se dessine dans les
+ * deux sens.
+ *
+ * Le sélecteur est structurel, sans vocabulaire de design : le premier bloc
+ * d'un panneau détaché est son en-tête, et le seul bouton qu'il contient est la
+ * croix — vérifié sur les deux panneaux, pistes comme épisodes. Une classe
+ * utilitaire aurait pu être renommée sans que personne pense au téléviseur.
+ *
+ * Le rayon compte : l'anneau vient d'un `box-shadow`, qui suit les coins. Sans
+ * lui, l'anneau serait un rectangle net sur un glyphe rond. */
+.panneau-tv > [data-panneau-detache] > div:first-child > button {
+  width: 52px;
+  min-width: 52px;
+  border-radius: var(--radius-sm);
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+}
+
 /* Sauf les onglets de saison, qui sont des pastilles et non des lignes : la
    règle ci-dessus les étirait à cinquante-deux pixels de haut pour un texte de
    douze, au milieu d'une rangée qui défile horizontalement. Ils restent des
