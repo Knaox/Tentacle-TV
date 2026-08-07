@@ -171,7 +171,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         return;
       }
 
-      switch (arbitre.decider(code, etat.mode)) {
+      switch (arbitre.decider(code, etat.mode, evenement.repeat)) {
         case "attendre":
           // On laisse sa chance au second appui : les commandes ne paraissent
           // qu'au terme du délai, et un saut demandé entre-temps les annule.

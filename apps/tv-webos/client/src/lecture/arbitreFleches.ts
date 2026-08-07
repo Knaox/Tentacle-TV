@@ -52,7 +52,13 @@ export interface OptionsArbitre {
 }
 
 export interface ArbitreFleches {
-  decider: (code: number, mode: ModeLecteur) => ProprietaireFleche;
+  /**
+   * @param repetition `KeyboardEvent.repeat` — la touche est TENUE, le
+   * navigateur le dit lui-même. C'est le seul signal qui ne dépende ni d'une
+   * cadence ni d'une fenêtre de temps, et donc le seul qui tienne quel que soit
+   * le délai d'auto-répétition de la dalle.
+   */
+  decider: (code: number, mode: ModeLecteur, repetition?: boolean) => ProprietaireFleche;
   /** Un `keyup` : la flèche cesse de piloter le transport. */
   relacher: (code: number) => void;
   /** Rupture franche — démontage, changement de mode subi. */
@@ -75,10 +81,25 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
    */
   let transport = 0;
 
-  function decider(code: number, mode: ModeLecteur): ProprietaireFleche {
+  function decider(code: number, mode: ModeLecteur, repetition = false): ProprietaireFleche {
     // En déplacement, tout appartient au curseur : c'est le mode qui l'a
     // demandé, et il n'y a rien d'autre à viser.
     if (mode === "scrub") {
+      transport = code;
+      return "transport";
+    }
+
+    /**
+     * Une touche TENUE va au transport, sans autre condition.
+     *
+     * Le maintien passait jusqu'ici par la fenêtre du double appui, ce qui le
+     * rendait tributaire du délai d'auto-répétition de la dalle — ni documenté
+     * ni constant d'un modèle à l'autre. Trop long, la première répétition
+     * arrivait hors fenêtre : on obtenait l'habillage au lieu de l'avance
+     * rapide. `repeat` tranche la question à la source, et rend le geste
+     * indépendant de l'appareil.
+     */
+    if (repetition) {
       transport = code;
       return "transport";
     }

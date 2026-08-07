@@ -4,6 +4,7 @@ import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen
 import { donnerFocus } from "../focus/actif";
 import { destinationEntreeDeZone } from "../focus/zones";
 import { lireEtat } from "./etatLecteurTv";
+import { quitterLecteur } from "./sortieLecteurTv";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
 /**
@@ -159,7 +160,21 @@ export function AutoPlayOverlay({
           seriesBackdropUrl={episodeImageUrl}
           episodeThumbUrl={episodeImageUrl}
           onPlayNow={onPlay}
-          onDismiss={onCancel}
+          /**
+           * Refuser la suite, à ce moment-là, c'est en avoir fini.
+           *
+           * L'épisode est terminé — il ne reste rien à voir derrière l'affiche.
+           * La masquer laisserait devant un écran noir, sans commande et sans
+           * indication de la marche à suivre. On quitte donc le lecteur, et la
+           * pile ramène d'où l'on venait : la fiche de la série, ou l'accueil.
+           *
+           * `onCancel` d'abord : il interrompt l'enchaînement automatique, qui
+           * partirait sinon en pleine sortie.
+           */
+          onDismiss={() => {
+            onCancel();
+            quitterLecteur();
+          }}
         />
       </div>
     );
