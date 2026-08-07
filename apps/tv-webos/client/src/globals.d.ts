@@ -41,6 +41,10 @@ declare module "@/hooks/useAutoNextCountdown?original" {
   export * from "@/hooks/useAutoNextCountdown";
 }
 
+declare module "@/hooks/useWebPlaybackFallbacks?original" {
+  export * from "@/hooks/useWebPlaybackFallbacks";
+}
+
 interface ImportMetaEnv {
   readonly VITE_JELLYFIN_URL: string;
   readonly VITE_BACKEND_URL: string;

@@ -210,6 +210,14 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:
     resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
 
+  // Les filets de lecture. Ceux du web suffisent à un navigateur, dont le profil
+  // d'appareil vient d'une sonde ; celui du téléviseur vient d'une table
+  // documentée, et une table finit par se tromper. L'enveloppe ajoute l'échelle
+  // de replis de `repliLecture.ts`, déclenchée par l'erreur média — le seul
+  // signal qui dise sans ambiguïté que la puce a refusé le flux.
+  [resolve(WEB, "hooks/useWebPlaybackFallbacks.ts")]:
+    resolve(CLIENT, "lecture/repliLectureTv.ts"),
+
   // La barre de contrôle du web est une rangée de cibles de 44 px, un curseur
   // de volume révélé au survol, du plein écran et de l'incrustation d'image :
   // aucune de ces décisions ne survit à trois mètres. Ce qu'on remplace est du
