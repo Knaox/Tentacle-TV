@@ -28,6 +28,16 @@ import { CarteFocusable } from "../cartes/CarteFocusable";
  * défilement en Chrome 53, le haut de page s'éloignait à mesure qu'on le
  * cherchait. La piste garde désormais sa hauteur pleine, relevée pendant
  * qu'elle était garnie.
+ *
+ * **La porte d'entrée en vue ne ferme QUE le contenu.** Le scroller lui-même
+ * est monté d'emblée, et c'est essentiel : c'est lui qui porte `scrollRef`, et
+ * `useRowCardWidth`, `useRowWindow` et `useRowScroll` posent tous leur
+ * observateur au montage puis abandonnent si la référence est vide — leurs
+ * dépendances étant stables, l'effet ne rejoue jamais. Mettre le scroller
+ * derrière la porte laissait donc `largeurCarte` à `null` À VIE, ce qui faisait
+ * retomber `PosterCard` sur son repli `clamp()` — invalide sur Chrome 53, donc
+ * une largeur `max-content` DIFFÉRENTE PAR CARTE, dictée par la longueur du
+ * titre. C'est la structure de `MediaRow`, à laquelle celle-ci se conforme.
  */
 
 export interface ProprietesPiste {
@@ -37,6 +47,8 @@ export interface ProprietesPiste {
   posterImageMode?: PosterImageMode;
   largeurCarte: number | null;
   plage: { start: number; end: number; padStart: number; padEnd: number };
+  /** Faux tant que la rangée n'est pas approchée : seul le CONTENU est retenu. */
+  garnie: boolean;
   /** Épinglage du fenêtrage — voir `useRowWindow`. */
   onIndexActif: (index: number | null) => void;
   onScroll: () => void;
@@ -49,6 +61,7 @@ export function PisteTv({
   posterImageMode,
   largeurCarte,
   plage,
+  garnie,
   onIndexActif,
   onScroll,
 }: ProprietesPiste) {
@@ -99,39 +112,45 @@ export function PisteTv({
       // lueur d'élévation au bord de la boîte.
       className="row-dim row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide"
     >
-      {plage.padStart > 0 && (
-        <div aria-hidden style={{ width: plage.padStart, flexShrink: 0 }} />
-      )}
+      {garnie && (
+        <>
+          {plage.padStart > 0 && (
+            <div aria-hidden style={{ width: plage.padStart, flexShrink: 0 }} />
+          )}
 
-      {items.slice(plage.start, plage.end + 1).map((item, decalage) => {
-        const index = plage.start + decalage;
-        return (
-          <CarteFocusable
-            // Clé composite : Jellyfin peut renvoyer deux fois le même item
-            // dans un carrousel, et l'index de la LISTE garde les clés stables
-            // quand la fenêtre glisse.
-            key={`${item.Id}-${index}`}
-            index={index}
-            largeur={largeurCarte}
-            itemId={item.Id}
-            item={item}
-            onIndexActif={surIndex}
-          >
-            {variante === "episode" ? (
-              <EpisodeCard item={item} index={index} width={largeurCarte} />
-            ) : (
-              <PosterCard
-                item={item}
+          {items.slice(plage.start, plage.end + 1).map((item, decalage) => {
+            const index = plage.start + decalage;
+            return (
+              <CarteFocusable
+                // Clé composite : Jellyfin peut renvoyer deux fois le même item
+                // dans un carrousel, et l'index de la LISTE garde les clés
+                // stables quand la fenêtre glisse.
+                key={`${item.Id}-${index}`}
                 index={index}
-                width={largeurCarte}
-                posterImageMode={posterImageMode}
-              />
-            )}
-          </CarteFocusable>
-        );
-      })}
+                largeur={largeurCarte}
+                itemId={item.Id}
+                item={item}
+                onIndexActif={surIndex}
+              >
+                {variante === "episode" ? (
+                  <EpisodeCard item={item} index={index} width={largeurCarte} />
+                ) : (
+                  <PosterCard
+                    item={item}
+                    index={index}
+                    width={largeurCarte}
+                    posterImageMode={posterImageMode}
+                  />
+                )}
+              </CarteFocusable>
+            );
+          })}
 
-      {plage.padEnd > 0 && <div aria-hidden style={{ width: plage.padEnd, flexShrink: 0 }} />}
+          {plage.padEnd > 0 && (
+            <div aria-hidden style={{ width: plage.padEnd, flexShrink: 0 }} />
+          )}
+        </>
+      )}
     </div>
   );
 }

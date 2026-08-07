@@ -15,7 +15,8 @@ import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { resolveBannerImage } from "./resolveCardImage";
-import { EPISODE_WIDTH, type CardSize } from "./cardSizes";
+import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
+import { cardWidthStyle } from "./cardWidthStyle";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface EpisodeCardProps {
@@ -98,7 +99,7 @@ export const EpisodeCard = memo(function EpisodeCard({
       // milieu de l'une d'elles.
       className={`group/card row-dim-card relative flex-shrink-0 snap-start ${preview.panelActive ? "" : "cursor-pointer"}`}
       style={{
-        width: width != null ? `${width}px` : `clamp(${widths.base}px, 24vw, ${widths.lg}px)`,
+        width: cardWidthStyle(width, widths, EPISODE_VW),
         animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
         animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
         // Au-dessus des voisines pendant le survol : sans cela l'ombre

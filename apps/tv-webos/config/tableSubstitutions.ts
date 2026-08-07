@@ -147,6 +147,12 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // seule substitution les couvre.
   [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
 
+  // La largeur en ligne d'une carte. Le repli du web est un `clamp()`, que
+  // Chrome 53 ne reconnaît pas — il jette alors la DÉCLARATION, pas seulement
+  // la valeur, et la carte prend la largeur de son titre.
+  [resolve(WEB, "components/cards/cardWidthStyle.ts")]:
+    resolve(CLIENT, "ui/cartes/largeurCarteTv.ts"),
+
   // La barre de filtres devient une ZONE : y remonter depuis la grille vise le
   // filtre ACTIF, et non la pastille que l'abscisse de la carte désignait.
   [resolve(WEB, "components/LibraryFilters.tsx")]:
