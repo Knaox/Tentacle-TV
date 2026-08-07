@@ -71,6 +71,31 @@ export function EcranRechercheTv() {
   // La touche Retour ferme la recherche avant de reculer d'un écran.
   useEffect(() => inscrireRetour(() => fermerRecherche()), []);
 
+  /**
+   * Rouvrir le clavier système, et pourquoi ce n'est pas un simple `focus()`.
+   *
+   * webOS referme son clavier SANS retirer le focus du champ — le guide
+   * l'affirme, et l'émulateur webOS 4 le confirme : `keyboardStateChange` passe
+   * à faux, `document.activeElement` reste l'`<input>`. Or le clavier ne monte
+   * que sur une TRANSITION de focus. Rappeler `focus()` sur l'élément qui est
+   * déjà actif ne produit aucun événement et ne rouvre donc rien : mesuré, le
+   * compteur d'événements clavier ne bouge pas d'un cran.
+   *
+   * Il faut sortir du champ pour y revenir. Le `blur()` est reporté d'un tour de
+   * boucle avant le `focus()`, faute de quoi les deux se compensent dans la même
+   * tâche et la transition n'a pas lieu.
+   */
+  const rouvrirClavier = useCallback(() => {
+    const element = champ.current;
+    if (!element) return;
+    if (document.activeElement !== element) {
+      element.focus();
+      return;
+    }
+    element.blur();
+    setTimeout(() => champ.current?.focus(), 0);
+  }, []);
+
   const { data: resultats, isLoading } = useSearchItems(requete);
   const visibles = resultats?.slice(0, RESULTATS_MAX) ?? [];
 
@@ -97,6 +122,10 @@ export function EcranRechercheTv() {
           ref={champ}
           value={saisie}
           onChange={(evenement) => setSaisie(evenement.target.value)}
+          // OK sur le champ rouvre le clavier. Le moteur de focus active une
+          // cible par un `click()` : c'est donc ici qu'arrive l'appui, qu'on
+          // vienne du rail ou qu'on remonte depuis les résultats.
+          onClick={rouvrirClavier}
           placeholder={t("common:searchMediaLong")}
           className="recherche-tv-champ"
           aria-label={t("common:searchMediaLong")}

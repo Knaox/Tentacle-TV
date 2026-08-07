@@ -1,5 +1,6 @@
 import { lireIntention } from "./touches";
 import { conteneurPiegeant } from "./candidats";
+import { clavierSystemeVisible } from "./clavierSysteme";
 import { fermerMenuDeploye } from "./menuDeploye";
 import { markPlayerExit } from "@/components/detail/detailTransition";
 import { rendreLaMainAuTeleviseur } from "../auth/retourCoquille";
@@ -60,6 +61,14 @@ export function installerRetour(): () => void {
     // ouverte par-dessus le précédent : exactement le défaut que ce renvoi
     // existe pour éviter.
     if (renvoiEnCours) return;
+
+    // Le clavier système passe avant nous, exactement comme pour le moteur de
+    // déplacement (`moteur.ts`). Tant qu'il occupe l'écran, Retour lui
+    // appartient : c'est par là qu'on le referme. Le lui prendre faisait
+    // reculer d'un écran ENTIER au premier appui — la surcouche de recherche
+    // était démontée, ses résultats avec elle, et l'utilisateur se retrouvait
+    // sur l'accueil en croyant n'avoir refermé qu'un clavier.
+    if (clavierSystemeVisible()) return;
 
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "retour") return;

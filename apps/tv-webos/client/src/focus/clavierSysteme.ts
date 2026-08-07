@@ -25,11 +25,33 @@
  * ouverte et rien ne change.
  */
 
+import { estUnChampDeSaisie } from "./candidats";
+
 let clavierMonte = false;
 
-/** Le clavier système occupe-t-il l'écran ? */
+/**
+ * Le clavier système occupe-t-il l'écran ?
+ *
+ * Deux conditions, et la seconde est un filet.
+ *
+ * Le drapeau seul rendait le moteur définitivement muet si le `visibility:
+ * false` n'arrivait jamais — un événement manquant, et plus une flèche n'était
+ * traitée nulle part dans l'application, sans erreur ni trace. C'est un point
+ * de défaillance unique posé sur une notification de plateforme, et une
+ * notification de plateforme finit toujours par manquer à l'appel.
+ *
+ * La seconde condition n'en dépend pas : **le clavier de webOS n'existe que pour
+ * un champ de saisie.** Si le focus n'y est plus, il n'est plus là, quel que
+ * soit le dernier événement reçu.
+ *
+ * Elle ne casse pas la dictée, et c'est ce qui la rend utilisable : la séquence
+ * vrai → faux → vrai que LG documente se déroule sans que le champ perde le
+ * focus. On reste donc suspendu du début à la fin, comme il le faut.
+ */
 export function clavierSystemeVisible(): boolean {
-  return clavierMonte;
+  if (!clavierMonte) return false;
+  if (typeof document === "undefined") return false;
+  return estUnChampDeSaisie(document.activeElement as HTMLElement | null);
 }
 
 export function surveillerClavierSysteme(): () => void {

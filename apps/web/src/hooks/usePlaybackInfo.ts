@@ -228,7 +228,14 @@ export function usePlaybackInfo(lecteurNatif = false) {
         sourceHdr: sourceEstHdr(fluxVideo),
         clientAccepteHdr: plages.length > 2, // au-delà de Unknown+SDR
       });
-      console.log("[Tentacle:Playback]", {
+      // `warn` et non `log`, et ce n'est pas une question de gravité.
+      //
+      // Les builds de production évincent `console.log` (`pure:` d'esbuild, cf.
+      // la configuration du téléviseur). Ce relevé-ci est précisément celui
+      // qu'on vient chercher dans l'inspecteur d'une dalle, où il n'y a pas
+      // d'autre instrument — et il n'y était jamais. Mesuré sur l'émulateur
+      // webOS 4 : lecture directe en cours, console vide.
+      console.warn("[Tentacle:Playback]", {
         mode: verdict.mode,
         reencodage: verdict.reencodageVideo,
         // Jointes plutôt qu'en tableau : un `Array(1)` replié dans la console
@@ -255,7 +262,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
       // DeviceProfile : il ne lit que ces paramètres-là. Réservée au
       // transcodage — en lecture directe il n'y a rien à diagnostiquer.
       if (!directPlay) {
-        console.log(
+        console.warn(
           "[Tentacle:Playback] url →",
           url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
         );
