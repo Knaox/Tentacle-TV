@@ -2,7 +2,12 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=1280, initial-scale=1" />
+  <!-- Même canevas que le client : 1920, celui de la dalle. Sur webOS c'est
+       `appinfo.json → resolution` qui décide, le `meta` ne sert qu'au
+       simulateur et au navigateur de développement — mais les deux doivent
+       rester d'accord, sinon la coquille et le client ne composent pas à la
+       même échelle et le passage de l'un à l'autre se voit. -->
+  <meta name="viewport" content="width=1920, initial-scale=1" />
   <title>Tentacle TV</title>
   <link rel="stylesheet" href="css/coquille.css" type="text/css" />
   <script src="js/webOSTV.js" charset="utf-8"></script>
@@ -14,10 +19,15 @@
   <script src="js/shell.js" charset="utf-8"></script>
 </head>
 <body>
+  <!-- La carte centrée d'Android TV : le logo, puis le contenu de l'étape.
+       Pas de titre — l'écran natif n'en porte pas, et un titre en plus était
+       la seconde chose qui distinguait les deux à l'œil. -->
   <div class="cadre">
-    <h1 class="titre">Tentacle TV</h1>
-    <!-- Rempli par `vueJumelage.js` : code, compte à rebours, ou message. -->
-    <div id="etape-jumelage" class="etape"></div>
+    <div class="carte-jumelage">
+      <img class="logo-jumelage" src="images/tentacle-logo-pirate.svg" alt="Tentacle TV" />
+      <!-- Rempli par `vueJumelage.js` : code, compte à rebours, ou message. -->
+      <div id="etape-jumelage" class="etape"></div>
+    </div>
   </div>
 
   <script>window.demarrerCoquille();</script>
