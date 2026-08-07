@@ -41,7 +41,7 @@ export interface SourceQuality {
 
 export interface QualityPreset {
   /** Clé i18n stable (`original`, `quality1080p`, …) */
-  key: "original" | "quality1080p" | "quality720p" | "quality480p";
+  key: "original" | "quality1080pHigh" | "quality1080p" | "quality720p" | "quality480p";
   /** Débit max envoyé au serveur Jellyfin (bps). `null` = pas de cap (direct play). */
   bitrate: number | null;
   /** Largeur max pour le cap visuel (px). `null` = pas de redimensionnement. */
@@ -51,8 +51,10 @@ export interface QualityPreset {
 }
 
 /**
- * Presets de qualité partagés entre web, desktop Tauri, mobile Expo et Android TV.
- * Les débits sont alignés sur les valeurs convenues : 30/10/4 Mbps.
+ * Liste de REPLI, servie quand le débit de la source est inconnu — un barème
+ * approximatif vaut mieux qu'un sélecteur vide. Dans tous les autres cas, c'est
+ * `construireEchelleQualite` (utils/qualityLadder) qui fait foi : ces débits-là
+ * sont fixes et peuvent dépasser celui du fichier lu.
  */
 export const QUALITY_PRESETS: readonly QualityPreset[] = [
   { key: "original",     bitrate: null,        width: null, height: null },
@@ -62,10 +64,6 @@ export const QUALITY_PRESETS: readonly QualityPreset[] = [
 ] as const;
 
 export type QualityKey = QualityPreset["key"];
-
-export function findPreset(key: QualityKey): QualityPreset {
-  return QUALITY_PRESETS.find((p) => p.key === key) ?? QUALITY_PRESETS[0];
-}
 
 /** "30 Mbps", "4 Mbps", "1.5 Mbps" — null/0 → chaîne vide pour Original. */
 export function formatBitrateMbps(bps: number | null | undefined): string {
@@ -92,9 +90,22 @@ function sourceResolutionFromWidth(width?: number): SourceResolution | null {
   return "SD";
 }
 
+/**
+ * `VideoRangeType` en chaîne comparable. Jellyfin le sérialise en ENTIER sur
+ * certains points d'entrée : on ne devine pas l'index d'énumération, on rend
+ * une chaîne vide et on laisse les autres indices (DvProfile, HDR10+) parler.
+ */
+function texteDePlage(stream?: MediaStream): string {
+  const plage = stream?.VideoRangeType;
+  return typeof plage === "string" ? plage.toUpperCase() : "";
+}
+
 function detectDolbyVision(stream?: MediaStream): boolean {
   if (!stream) return false;
-  const range = stream.VideoRangeType?.toUpperCase() ?? "";
+  // `DvProfile` est renseigné même quand la plage arrive en entier — c'est le
+  // signal le plus fiable, et le seul disponible sur certains points d'entrée.
+  if (stream.DvProfile != null) return true;
+  const range = texteDePlage(stream);
   // Jellyfin uses DOVI / DOLBYVISION / "DOVI HDR10" depending on the source.
   return range.includes("DOVI") || range.includes("DOLBY");
 }
@@ -238,7 +249,7 @@ export function extractMediaQuality(item: MediaItem | undefined | null): MediaQu
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = video?.VideoRangeType?.toUpperCase() ?? "SDR";
+  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
   const vcodec = video?.Codec?.toLowerCase() ?? "";
   const acodec = audio?.Codec?.toLowerCase() ?? "";
@@ -274,7 +285,7 @@ export function extractSourceQuality(item: MediaItem | undefined | null): Source
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = video?.VideoRangeType?.toUpperCase() ?? "SDR";
+  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
 
   return {

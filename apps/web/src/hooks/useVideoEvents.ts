@@ -24,6 +24,8 @@ interface UseVideoEventsArgs {
   hasNextEpisode?: boolean;
   autoPlayCountdown: number | null;
   setPlaying: (v: boolean) => void;
+  /** Pendant réactif de `hasStartedRef` — cf. VideoPlayer. */
+  setADemarre: (v: boolean) => void;
   setLoading: (v: boolean) => void;
   setShowPlayButton: (v: boolean) => void;
   setBuffered: (v: number) => void;
@@ -91,7 +93,9 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       wtLog("web-video", "event play", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       a.sourceChangingRef.current = false;
       a.setPlaying(true); a.setLoading(false); a.setShowPlayButton(false);
-      if (!a.hasStartedRef.current) { a.hasStartedRef.current = true; a.onStarted?.(); }
+      if (!a.hasStartedRef.current) {
+        a.hasStartedRef.current = true; a.setADemarre(true); a.onStarted?.();
+      }
       a.onPlayStateChange?.(false);
     },
     onPause: () => {
@@ -144,6 +148,18 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       // MEDIA_ERR_DECODE / MEDIA_ERR_SRC_NOT_SUPPORTED : ce client ne peut
       // pas lire ce média (Watch Together : ne pas geler le groupe).
       if (err && (err.code === 3 || err.code === 4)) a.onFatalError?.();
+      // Échec PENDANT le chargement : rendre la main tout de suite. Aucun
+      // événement ne viendra plus de cet élément, et laisser tourner le spinner
+      // jusqu'aux 15 s du failsafe — voire indéfiniment si un repli l'a
+      // désarmé — donnait un écran noir muet, sans rien à quoi se raccrocher.
+      // En lecture établie on ne touche à rien : hls.js sait se remettre d'une
+      // erreur réseau passagère, et un bouton de lecture surgi en plein film
+      // serait un remède pire que le mal.
+      if (a.sourceChangingRef.current) {
+        a.sourceChangingRef.current = false;
+        a.setLoading(false);
+        a.setShowPlayButton(true);
+      }
     },
     onEnded: () => {
       if (a.autoplayNextEnabled && a.hasNextEpisode && a.autoPlayCountdown === null) a.startAutoPlay();

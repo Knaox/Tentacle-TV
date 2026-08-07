@@ -5,8 +5,6 @@ export {
   extractMediaQuality,
   extractSourceQuality,
   formatBitrateMbps,
-  findPreset,
-  QUALITY_PRESETS,
 } from "@tentacle-tv/shared";
 export type {
   Resolution,

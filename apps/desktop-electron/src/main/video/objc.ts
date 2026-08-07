@@ -15,11 +15,11 @@
  * disque : `ls /usr/lib/libobjc.A.dylib` échoue. Elles vivent dans le cache
  * dyld, où `dlopen` — donc `koffi.load` — les trouve quand même.
  *
- * # Sur arm64, une seule porte
+ * # Une porte par architecture
  *
- * Contrairement à x86_64, arm64 n'a ni `objc_msgSend_stret` ni `_fpret` : tout
- * passe par `objc_msgSend`. Il faut en revanche déclarer UNE signature par forme
- * d'appel, l'ABI variadique de C n'étant pas devinable.
+ * arm64 n'a ni `objc_msgSend_stret` ni `_fpret` ; x86_64 EXIGE le premier quand
+ * une méthode rend une `NSRect` (cf. `MSG_RECT`). Il faut de plus UNE signature
+ * par forme d'appel, l'ABI variadique de C n'étant pas devinable.
  *
  * ⚠️ **macOS uniquement** : `koffi.load` s'exécute à l'import.
  */
@@ -80,10 +80,18 @@ export interface Rect {
   height: number;
 }
 
+/**
+ * ⚠️ Sur x86_64, une `NSRect` (32 octets) revient par un pointeur caché en
+ * premier argument : `objc_msgSend` y décale tout d'un cran, le sélecteur finit
+ * déréférencé comme un objet et le processus meurt d'un SIGBUS au premier
+ * `frame`. arm64 n'a pas cette variante, et seul le RETOUR est concerné : en
+ * ARGUMENT — `send1rv`, `sendFrame` — rien ne change.
+ */
+const MSG_RECT = process.arch === "x64" ? "objc_msgSend_stret" : "objc_msgSend";
 /** `[cible sélecteur]` — retour NSRect. */
-const send0r = objc.func("objc_msgSend", "NSRect", ["void*", "void*"]);
+const send0r = objc.func(MSG_RECT, "NSRect", ["void*", "void*"]);
 /** `[cible sélecteur: rect]` — argument NSRect, retour NSRect. */
-const send1r = objc.func("objc_msgSend", "NSRect", ["void*", "void*", "NSRect"]);
+const send1r = objc.func(MSG_RECT, "NSRect", ["void*", "void*", "NSRect"]);
 /** `[vue setFrame: rect]` — une VUE, qui n'a pas le `display:` d'une fenêtre. */
 const send1rv = objc.func("objc_msgSend", "void", ["void*", "void*", "NSRect"]);
 /** `[cible setFrame: rect display: drapeau]`. */
