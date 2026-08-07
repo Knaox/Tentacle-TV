@@ -19,10 +19,23 @@ function harnais(depart = 1000) {
 }
 
 describe("arbitreFleches", () => {
-  it("habillage éteint, la première flèche RAMÈNE les commandes sans rien déplacer", () => {
+  it("habillage éteint, la première flèche ne déplace rien et laisse sa chance au second appui", () => {
     const { arbitre } = harnais();
 
-    expect(arbitre.decider(DROITE, "repos")).toBe("rallumer");
+    expect(arbitre.decider(DROITE, "repos")).toBe("attendre");
+  });
+
+  it("le second appui saute AUSSI quand les commandes n'ont pas encore paru", () => {
+    const { arbitre, avancer } = harnais();
+
+    arbitre.decider(DROITE, "repos");
+    avancer(150);
+
+    // Le délai de rallumage n'a pas expiré : le mode est encore `repos`. C'est
+    // le cas nominal d'un double appui rapide — et celui qui faisait paraître
+    // l'habillage au passage, puisqu'on ne peut pas ne pas cliquer une
+    // première fois.
+    expect(arbitre.decider(DROITE, "repos")).toBe("transport");
   });
 
   it("le second appui rapproché saute — c'est le double clic", () => {
@@ -99,7 +112,7 @@ describe("arbitreFleches", () => {
     expect(arbitre.decider(GAUCHE, "scrub")).toBe("transport");
   });
 
-  it("oublier ramène à la case départ : la flèche suivante rallume", () => {
+  it("oublier ramène à la case départ : la flèche suivante attend", () => {
     const { arbitre, avancer } = harnais();
 
     arbitre.decider(DROITE, "repos");
@@ -107,6 +120,6 @@ describe("arbitreFleches", () => {
     arbitre.oublier();
 
     // L'habillage s'est éteint tout seul entre-temps.
-    expect(arbitre.decider(DROITE, "repos")).toBe("rallumer");
+    expect(arbitre.decider(DROITE, "repos")).toBe("attendre");
   });
 });
