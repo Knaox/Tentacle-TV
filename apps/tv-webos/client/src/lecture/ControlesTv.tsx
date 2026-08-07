@@ -99,7 +99,6 @@ export function PlayerControls(props: PlayerControlsProps) {
   // moteur de focus et les touches de transport globales pour se retirer.
   useEffect(() => {
     poserMonte(true);
-    document.documentElement.setAttribute("data-tv-lecteur", "");
     return () => {
       poserMonte(false);
       document.documentElement.removeAttribute("data-tv-lecteur");
@@ -110,6 +109,20 @@ export function PlayerControls(props: PlayerControlsProps) {
   }, []);
 
   useEffect(() => installerTouchesLecteurTv(() => actions.current), []);
+
+  /**
+   * Le mode, publié sur la racine du document.
+   *
+   * Deux choses en dépendent, et aucune n'est un enfant de l'habillage : le
+   * retrait d'overscan de `#root`, qu'il faut annuler tant que le lecteur est
+   * là, et les surcouches — bouton « passer », carte « à suivre » —, qui vivent
+   * dans l'autre arbre et doivent s'écarter quand les commandes paraissent.
+   * Un attribut est la seule prise que le CSS ait sur un état qui n'est nulle
+   * part dans son sous-arbre.
+   */
+  useEffect(() => {
+    document.documentElement.setAttribute("data-tv-lecteur", etat.mode);
+  }, [etat.mode]);
 
   /**
    * Le retour, en cascade : un panneau ouvert se ferme, un déplacement en cours
@@ -209,7 +222,12 @@ export function PlayerControls(props: PlayerControlsProps) {
      * `PlayerControls` du web pose la même barrière sur chacune de ses deux
      * barres ; le portage ne l'avait pas reprise.
      */
-    <div className="osd-tv" ref={osd} onClick={(evenement) => evenement.stopPropagation()}>
+    <div
+      className="osd-tv"
+      ref={osd}
+      data-panneau={etat.panneau}
+      onClick={(evenement) => evenement.stopPropagation()}
+    >
       <div className="osd-tv-haut">
         <h2 className="osd-tv-titre">{title}</h2>
         {subtitle && <p className="osd-tv-sous-titre">{subtitle}</p>}

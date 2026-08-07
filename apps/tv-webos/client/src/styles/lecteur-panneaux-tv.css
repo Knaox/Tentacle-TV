@@ -9,10 +9,52 @@
   position: absolute;
   right: 0;
   bottom: 96px;
+  z-index: var(--z-lecteur-panneau);
   width: 460px;
   border-radius: var(--radius-lg);
   background: var(--surface-dropdown);
   box-shadow: var(--elev-3);
+}
+
+/* ── Un panneau ouvert assombrit ce qu'il recouvre ────────────────────────
+ *
+ * Le panneau est rendu DANS `.osd-tv-bas`, avant la barre de progression et la
+ * rangée de transport. Sans z-index, l'ordre du document décidait : le panneau
+ * étant le premier, ses deux frères se peignaient par-dessus lui. On voyait la
+ * barre traverser la liste des pistes.
+ *
+ * Le z-index règle l'empilement, pas la lecture : un panneau qui flotte au-
+ * dessus de commandes restées vives se lit mal, et rien ne dit où va le focus.
+ * Il assombrit donc ce qui n'est plus à portée — même geste que la modale du
+ * client web, dont on reprend le voile.
+ *
+ * Le voile n'existe QUE panneau ouvert : `content` est ce qui le monte. Un
+ * calque plein écran laissé en place à `opacity: 0` resterait une couche
+ * composée par-dessus une vidéo en cours de décodage, ce que la règle des
+ * coûts proscrit. Le fondu est donc une animation d'entrée, pas une
+ * transition d'opacité sur un calque permanent.
+ */
+.osd-tv[data-panneau="pistes"]::after,
+.osd-tv[data-panneau="episodes"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-lecteur-assombrissement);
+  background: rgba(0, 0, 0, 0.62);
+  animation: panneau-tv-fondu 180ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes panneau-tv-fondu {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Rendre au flux ce que le panneau du web en avait sorti ───────────────

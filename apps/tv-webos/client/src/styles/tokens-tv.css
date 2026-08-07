@@ -67,6 +67,32 @@
   --tv-overscan-x: 64px;
   --tv-overscan-y: 36px;
 
+  /* ── L'échelle du lecteur ─────────────────────────────────────────────
+   *
+   * Le lecteur empile sept choses sur une vidéo, réparties dans DEUX arbres
+   * React : l'habillage vit sous l'enveloppe d'opacité de `VideoPlayer`, les
+   * surcouches (saut, carte « à suivre ») en sont les frères. Rien ne garantit
+   * donc leur ordre de peinture — sauf ce qui est écrit ici.
+   *
+   * L'habillage n'avait AUCUN z-index : il se peignait à l'étape du flux, donc
+   * sous chacune des surcouches que le client web porte de son côté (10 pour
+   * le tampon et l'écran de chargement, 20 pour la pilule de son, 30 pour les
+   * badges, 40 pour le bouton de reprise, 50 pour les boutons « passer »). Un
+   * panneau ouvert passait sous sa propre barre de progression, et l'écran de
+   * chargement recouvrait un habillage déjà focalisé.
+   *
+   * L'échelle part donc AU-DESSUS de celles du web plutôt que de s'y mêler :
+   * ce qui appartient au lecteur téléviseur se trie entre soi, et le reste
+   * demeure dessous. Ne pas réutiliser ces valeurs ailleurs — hors lecteur,
+   * l'échelle du portage va de 1 (cartes) à 100 (recherche). */
+  --z-lecteur-vignette: 100;
+  --z-lecteur-voile: 110;
+  --z-lecteur-osd: 120;
+  --z-lecteur-saut: 130;
+  --z-lecteur-suivant: 140;
+  --z-lecteur-assombrissement: 150;
+  --z-lecteur-panneau: 160;
+
   /* ── Halo de bannière : NE PAS toucher au flou ────────────────────────
    *
    * `--hero-ambilight-blur` a été baissé une fois, de 48 à 22 px, en croyant
