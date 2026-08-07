@@ -14,6 +14,47 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.20.6]
+### FR
+- L'application ne vous déconnecte plus à chaque démarrage. Elle demandait au serveur de valider votre session sans lui joindre votre jeton d'identification : le serveur répondait qu'il ne la connaissait pas, et vous étiez renvoyé à l'écran de connexion. Le navigateur n'était pas concerné, il transmet cette preuve autrement
+- Un refus isolé du serveur ne ferme plus votre session : il en faut deux, confirmés à cinq secondes d'intervalle. Une coupure réseau ou un serveur qui redémarre ne vous déconnecte plus au passage
+### EN
+- The app no longer signs you out every time it starts. It was asking the server to validate your session without attaching your identification token: the server replied that it did not know the session, and you were sent back to the sign-in screen. The browser was unaffected — it presents that proof another way
+- A single refusal from the server no longer ends your session: two are required, confirmed five seconds apart. A network drop or a restarting server no longer signs you out along the way
+
+## [mac-1.20.6]
+<!-- Bloc macOS CUMULATIF : 1.20.6 + 1.20.5 + 1.20.4. Ces deux dernières ont été
+     publiées ailleurs mais PAS sur l'App Store ; sans ce cumul, leurs nouveautés
+     ne seraient jamais annoncées aux utilisateurs Mac. Repris tel quel par
+     asc-release-notes.mjs, qui cherche « mac-<version> » avant de se replier sur
+     le bloc nu — Windows et Linux gardent donc la 1.20.6 seule. Limite ASC :
+     4000 caractères PAR LANGUE, on est très en dessous.
+
+     ATTENTION au placement : un commentaire posé APRÈS les puces d'un bloc est
+     happé par la dernière sous-section (`grab` s'arrête au prochain `###`, pas
+     à la fin des puces). Ici il est avant `### FR`, donc hors de FR comme de EN.
+     Mesuré : placé plus bas, il ajoutait 6 fausses lignes aux notes anglaises. -->
+### FR
+- L'application ne vous déconnecte plus à chaque démarrage. Elle demandait au serveur de valider votre session sans lui joindre votre jeton d'identification : le serveur répondait qu'il ne la connaissait pas, et vous étiez renvoyé à l'écran de connexion
+- Un refus isolé du serveur ne ferme plus votre session : il en faut deux, confirmés à cinq secondes d'intervalle. Une coupure réseau ou un serveur qui redémarre ne vous déconnecte plus au passage
+- Vitesse de lecture réglable, de 0,5× à 4× : un bouton compteur dans la barre du lecteur
+- Les sous-titres n'affichent plus leur code de mise en forme. Un texte prévu en haut de l'image y est réellement placé, au lieu d'apparaître précédé de « {\an8} »
+- L'image n'est plus recompressée quand l'ordinateur sait déjà la lire : les fichiers 4K HDR et Dolby Vision sont transmis tels quels, et le serveur cesse de les ré-encoder en permanence
+- Disparition d'un plafond de débit de 42 Mb/s qui n'aurait jamais dû exister : un disque Blu-ray 4K n'est plus converti au seul motif qu'il est trop détaillé
+- Le démarrage d'une vidéo ne passe plus par un écran noir : une seule attente, puis l'image
+- Les paliers de qualité proposés sont calculés d'après le fichier lu : plus de « 1080p 30 Mb/s » offert sur une source qui n'en fait que 12
+- Correction d'un plantage au lancement d'une vidéo sur les Mac à processeur Intel
+### EN
+- The app no longer signs you out every time it starts. It was asking the server to validate your session without attaching your identification token: the server replied that it did not know the session, and you were sent back to the sign-in screen
+- A single refusal from the server no longer ends your session: two are required, confirmed five seconds apart. A network drop or a restarting server no longer signs you out along the way
+- Adjustable playback speed, from 0.5× to 4×: a speedometer button in the player bar
+- Subtitles no longer show their formatting codes. Text meant for the top of the picture is actually placed there, instead of appearing prefixed with "{\an8}"
+- The picture is no longer re-compressed when the computer can already play it: 4K HDR and Dolby Vision files are passed through as-is, and the server stops re-encoding them permanently
+- A 42 Mb/s bitrate ceiling that should never have existed is gone: a 4K Blu-ray disc is no longer converted purely for being too detailed
+- Starting a video no longer goes through a black screen: one wait, then the picture
+- The quality steps on offer are worked out from the file being played: no more "1080p 30 Mb/s" offered on a source that only runs at 12
+- Fixed a crash when starting a video on Intel-based Macs
+
 ## [1.20.5]
 ### FR
 - Vitesse de lecture réglable, de 0,5× à 4× : un bouton compteur dans la barre du lecteur
