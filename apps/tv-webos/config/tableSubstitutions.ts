@@ -213,6 +213,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
     "lecture/SurcouchesTv.tsx",
   ),
 
+  // La carte « épisode suivant » : même correction d'ancrage et de portée. Son
+  // COMPORTEMENT, lui, est déjà celui d'`apps/tv` — seuil au `maxResumePct` de
+  // Jellyfin, décompte de dix secondes — et vient du client web tel quel.
+  [resolve(WEB, "components/AutoPlayOverlay.tsx")]: resolve(CLIENT, "lecture/CarteSuivantTv.tsx"),
+
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.

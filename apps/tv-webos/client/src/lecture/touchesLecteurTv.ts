@@ -1,6 +1,6 @@
 import { lireIntention, estHorizontale, sens } from "../focus/touches";
 import { creerMoteurMaintien } from "./moteurMaintien";
-import { activerSautFocalise } from "./BoutonSautTv";
+import { activerSurcoucheFocalisee } from "./surcoucheOk";
 import type { MachineScrub } from "./machineScrub";
 import { lireEtat, montrerOsd } from "./etatLecteurTv";
 
@@ -97,10 +97,11 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         return;
       }
       if (etat.mode === "repos") {
-        // Un bouton « passer » paraît alors que l'habillage est éteint et
-        // prend le focus. Tant qu'il le tient, OK lui appartient — c'est le
-        // seul geste qui change de propriétaire, les flèches gardent le leur.
-        if (activerSautFocalise()) return;
+        // Une surcouche — bouton « passer », carte « épisode suivant » — paraît
+        // alors que l'habillage est éteint et prend le focus. Tant qu'elle le
+        // tient, OK lui appartient : c'est le seul geste qui change de
+        // propriétaire, les flèches gardent le leur.
+        if (activerSurcoucheFocalisee()) return;
         montrerOsd();
         return;
       }

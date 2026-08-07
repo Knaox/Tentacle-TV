@@ -28,3 +28,28 @@
   font-size: 20px;
   font-weight: 600;
 }
+
+/* ── La carte « épisode suivant » ─────────────────────────────────────────
+ *
+ * Même correction d'ancrage, même raison. La carte du web se pose elle-même en
+ * `absolute` à seize pixels du coin ; l'enveloppe reprend la géométrie et lui
+ * rend son flux, exactement comme pour les panneaux de pistes et d'épisodes.
+ *
+ * La largeur du web est `min(420px, 100vw - 2rem)`, que la passe des fonctions
+ * mathématiques traduit déjà. On la fixe ici : à trois mètres, une carte de
+ * quatre cent vingt pixels de canevas fait six cent trente pixels sur la dalle,
+ * ce qui est la bonne mesure pour un titre et deux boutons.
+ */
+.carte-suivant-tv {
+  position: absolute;
+  right: var(--tv-overscan-x);
+  bottom: var(--tv-overscan-y);
+  z-index: 30;
+  width: 460px;
+}
+
+.carte-suivant-tv > * {
+  position: static;
+  width: auto;
+  max-width: none;
+}
