@@ -83,6 +83,29 @@ export function quitterPanneau(declencheur: HTMLElement | null, racine: HTMLElem
 }
 
 /**
+ * Le dernier bouton de l'habillage qu'on ait visé, pour l'y retrouver.
+ *
+ * L'habillage s'éteint au bout de cinq secondes et se démonte avec. Le
+ * rallumer reposait le focus sur Lecture, quel que soit ce qu'on faisait juste
+ * avant : régler trois fois de suite le volume d'une piste demandait de
+ * retraverser la rangée à chaque fois. L'Apple TV rend le dernier bouton
+ * utilisé, et c'est ce qui fait qu'une rangée de sept boutons reste praticable.
+ *
+ * La mémoire ne survit pas au lecteur : `oublierBoutonOsd` est appelé à son
+ * démontage. Rouvrir un film repart de Lecture, comme une première fois.
+ */
+let dernierBouton: string | null = null;
+
+/** Appelé quand le focus entre dans un bouton de la rangée. */
+export function retenirBoutonOsd(cle: string | null): void {
+  if (cle) dernierBouton = cle;
+}
+
+export function oublierBoutonOsd(): void {
+  dernierBouton = null;
+}
+
+/**
  * Poser le focus au centre de gravité de l'habillage.
  *
  * L'habillage n'est pas un écran : le moteur ne repose pas le focus quand il
@@ -93,9 +116,15 @@ export function poserFocusOsd(racine: HTMLElement | null): void {
   reviserApresMontage(() => {
     if (!racine) return false;
     if (racine.contains(document.activeElement)) return true;
-    const defaut = racine.querySelector<HTMLElement>("[data-osd-defaut]");
-    if (!defaut) return false;
-    donnerFocus(defaut);
+
+    // Le dernier bouton visé d'abord — mais il peut avoir disparu depuis :
+    // « épisode suivant » n'existe pas sur le dernier de la saison.
+    const memoire = dernierBouton
+      ? racine.querySelector<HTMLElement>(`[data-osd-bouton="${dernierBouton}"]`)
+      : null;
+    const cible = memoire ?? racine.querySelector<HTMLElement>("[data-osd-defaut]");
+    if (!cible) return false;
+    donnerFocus(cible);
     return true;
   });
 }

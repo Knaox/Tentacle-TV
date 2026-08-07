@@ -1,4 +1,6 @@
+import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { retenirBoutonOsd } from "./focusOsd";
 import {
   PlayIcon,
   PauseIcon,
@@ -60,8 +62,16 @@ export function RangeeTransportTv({
 }: ProprietesTransport) {
   const { t } = useTranslation("player");
 
+  // Le focus est retenu ici plutôt que par un écouteur global : `onFocus`
+  // remonte en React, la rangée voit donc passer chacun de ses boutons, et rien
+  // ne subsiste quand elle se démonte.
+  const retenir = (evenement: FocusEvent<HTMLDivElement>): void => {
+    const cible = evenement.target as HTMLElement;
+    retenirBoutonOsd(cible.getAttribute("data-osd-bouton"));
+  };
+
   return (
-    <div className="osd-tv-transport">
+    <div className="osd-tv-transport" onFocus={retenir}>
       {aPrecedent && (
         <button
           type="button"
