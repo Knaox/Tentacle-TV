@@ -71,18 +71,32 @@ const RESIDUS_DE_SESSION = [
 export function consommerJumelage(): boolean {
   const recu = lireFragment();
   if (!recu) return false;
+  rangerJumelage(recu.jeton, recu.utilisateur);
+  effacerFragment();
+  return true;
+}
 
+/**
+ * Range un jumelage reçu, d'où qu'il vienne.
+ *
+ * Deux chemins y mènent désormais : le fragment posé par la coquille, et
+ * l'écran de jumelage du client — celui qu'on voit après avoir oublié
+ * l'appareil, quand le serveur est déjà connu. Les deux doivent écrire
+ * EXACTEMENT les mêmes clés sous la même forme, sinon l'un des deux produit une
+ * session que la garde de routes refuse. D'où ce point de passage unique.
+ */
+export function rangerJumelage(
+  jeton: string,
+  utilisateur: { Id: string; Name: string },
+): void {
   try {
     RESIDUS_DE_SESSION.forEach((cle) => localStorage.removeItem(cle));
-    localStorage.setItem("tentacle_token", recu.jeton);
-    localStorage.setItem("tentacle_user", JSON.stringify(recu.utilisateur));
+    localStorage.setItem("tentacle_token", jeton);
+    localStorage.setItem("tentacle_user", JSON.stringify(utilisateur));
   } catch {
     // Stockage indisponible : la session ne survivra pas au rechargement, mais
     // le jeton est en mémoire pour cette session-ci.
   }
-
-  effacerFragment();
-  return true;
 }
 
 /** Le jeton mémorisé, s'il y en a un. */
