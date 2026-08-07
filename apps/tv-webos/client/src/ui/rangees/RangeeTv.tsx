@@ -132,19 +132,24 @@ export function MediaRow({
     >
       <RowHeader title={title} href={href} />
 
+      {/* La piste est montée d'emblée et c'est `garnie` qui retient son
+          contenu. Le scroller porte `scrollRef`, et `useRowCardWidth`,
+          `useRowWindow` et `useRowScroll` posent tous leur observateur au
+          montage puis abandonnent si la référence est vide, sans jamais
+          rejouer. Derrière la porte, ils ne mesuraient donc RIEN — voir le
+          commentaire de `PisteTv`. */}
       <div ref={proche.ref} className="relative">
-        {visible && (
-          <PisteTv
-            scrollRef={scrollRef}
-            items={items}
-            variante={variant}
-            posterImageMode={posterImageMode}
-            largeurCarte={largeurCarte}
-            plage={track.range}
-            onIndexActif={surIndexActif}
-            onScroll={surDefilement}
-          />
-        )}
+        <PisteTv
+          scrollRef={scrollRef}
+          items={items}
+          variante={variant}
+          posterImageMode={posterImageMode}
+          largeurCarte={largeurCarte}
+          plage={track.range}
+          garnie={visible}
+          onIndexActif={surIndexActif}
+          onScroll={surDefilement}
+        />
       </div>
     </section>
   );

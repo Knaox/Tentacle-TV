@@ -10,7 +10,8 @@ import { MediaContextMenu } from "../MediaContextMenu";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { prefetchDetailRoute } from "./prefetchDetail";
 import { resolvePosterImage, type PosterImageMode } from "./resolveCardImage";
-import { POSTER_WIDTH, type CardSize } from "./cardSizes";
+import { POSTER_VW, POSTER_WIDTH, type CardSize } from "./cardSizes";
+import { cardWidthStyle } from "./cardWidthStyle";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface PosterCardProps {
@@ -107,7 +108,7 @@ export const PosterCard = memo(function PosterCard({
       // `snap-start` : point d'accroche de la rangée (cf. `MediaRow`).
       className="group/card row-dim-card relative flex-shrink-0 cursor-pointer snap-start"
       style={{
-        width: width != null ? `${width}px` : `clamp(${widths.base}px, 14vw, ${widths.lg}px)`,
+        width: cardWidthStyle(width, widths, POSTER_VW),
         animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
         animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
         // La carte survolée passe AU-DESSUS de ses voisines. Sans cela son ombre
