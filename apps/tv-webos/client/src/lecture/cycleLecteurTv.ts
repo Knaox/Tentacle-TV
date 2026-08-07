@@ -4,6 +4,7 @@ import { oublierBoutonOsd } from "./focusOsd";
 import type { MachineScrub } from "./machineScrub";
 import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./touchesLecteurTv";
 import { lireEtat, poserMonte, poserPanneau, type ModeLecteur } from "./etatLecteurTv";
+import { poserSortieLecteur } from "./sortieLecteurTv";
 
 /**
  * Ce que le lecteur déclare au reste de l'application, et qu'il retire en
@@ -29,6 +30,13 @@ export interface AttachesLecteurTv {
 export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): void {
   const vives = useRef(actions);
   vives.current = actions;
+
+  // La sortie, déposée pour les surcouches : elles vivent dans l'autre arbre
+  // React et ne reçoivent pas `onBack`.
+  useEffect(() => {
+    poserSortieLecteur(() => vives.current.quitter());
+    return () => poserSortieLecteur(null);
+  }, []);
 
   // Monté et démonté avec le lecteur : c'est cet indicateur que lisent le
   // moteur de focus et les touches de transport globales pour se retirer.

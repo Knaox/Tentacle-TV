@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 import { donnerFocus } from "../focus/actif";
 import { lireEtat } from "./etatLecteurTv";
+import { poserFocusOsd } from "./focusOsd";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
 /**
@@ -58,9 +59,17 @@ function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
     if (lireEtat().mode === "repos") donnerFocus(element);
 
     return () => {
-      // Le bouton disparaît avec le segment. S'il tenait le focus, le laisser
-      // sur un nœud démonté priverait la télécommande de toute cible.
-      if (document.activeElement === element) element.blur();
+      // Le bouton disparaît avec le segment — ou parce qu'on vient de l'user.
+      // S'il tenait le focus, le laisser sur un nœud démonté priverait la
+      // télécommande de toute cible.
+      if (document.activeElement !== element) return;
+      element.blur();
+
+      // Et s'il y a un habillage à l'écran, c'est là que la main doit revenir :
+      // sur la commande qu'on visait avant de partir dans le coin, ou à défaut
+      // sur Lecture. Sans cela, le focus retombe sur le corps du document et le
+      // moteur le repose où l'ordre de lecture veut bien.
+      poserFocusOsd(document.querySelector<HTMLElement>(".osd-tv"));
     };
   }, [affiche]);
 

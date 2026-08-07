@@ -104,6 +104,28 @@ describe("arbitreFleches", () => {
     expect(arbitre.decider(DROITE, "osd")).toBe("focus");
   });
 
+  it("une touche TENUE va au transport, quel que soit le délai de la dalle", () => {
+    const { arbitre, avancer } = harnais();
+
+    arbitre.decider(DROITE, "repos");
+    // Le délai d'auto-répétition d'un téléviseur n'est ni documenté ni constant.
+    // Celui-ci dépasse largement la fenêtre du double appui : sans le signal
+    // `repeat`, on obtenait l'habillage au lieu de l'avance rapide.
+    avancer(FENETRE_DOUBLE_MS * 2);
+
+    expect(arbitre.decider(DROITE, "osd", true)).toBe("transport");
+  });
+
+  it("une touche tenue prend la main même quand les commandes ne sont pas là", () => {
+    const { arbitre, avancer } = harnais();
+
+    arbitre.decider(DROITE, "repos");
+    avancer(FENETRE_DOUBLE_MS * 2);
+
+    // Le délai de rallumage n'a pas encore couru : le mode est toujours `repos`.
+    expect(arbitre.decider(DROITE, "repos", true)).toBe("transport");
+  });
+
   it("en déplacement, la flèche appartient toujours au curseur", () => {
     const { arbitre } = harnais();
 
