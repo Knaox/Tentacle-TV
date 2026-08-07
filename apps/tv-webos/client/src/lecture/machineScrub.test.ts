@@ -37,6 +37,32 @@ describe("machineScrub", () => {
     machine.detruire();
   });
 
+  it("entrer pose le curseur où l'on en est, sans avancer d'un pas", () => {
+    const { options, machine } = harnais(100, 1000);
+
+    machine.entrer();
+
+    expect(machine.estActif()).toBe(true);
+    expect(options.surEntree).toHaveBeenCalledWith(100, 1);
+    expect(options.surPause).toHaveBeenCalledWith(true);
+    // Le bouton dit « je veux me déplacer », pas encore « où » : rien ne bouge
+    // tant qu'une flèche n'a pas donné de direction.
+    expect(options.surChangement).not.toHaveBeenCalled();
+    machine.detruire();
+  });
+
+  it("entrer deux fois de suite ne réamorce pas ce qui est déjà en cours", () => {
+    const { options, machine } = harnais(100, 1000);
+
+    machine.entrer();
+    machine.pas(1, 1);
+    machine.entrer();
+
+    expect(options.surEntree).toHaveBeenCalledTimes(1);
+    expect(options.surChangement).toHaveBeenLastCalledWith(100 + PAS_SCRUB_S, 1);
+    machine.detruire();
+  });
+
   it("met en pause en entrant, et reprend en sortant", () => {
     const { options, machine } = harnais();
 

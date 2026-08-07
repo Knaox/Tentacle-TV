@@ -15,6 +15,7 @@ import {
   useEtatLecteurTv,
 } from "./etatLecteurTv";
 import { BarreProgressionTv } from "./BarreProgressionTv";
+import { EnteteTv } from "./EnteteTv";
 import { RangeeTransportTv } from "./RangeeTransportTv";
 import { SurcoucheScrubTv } from "./SurcoucheScrubTv";
 import { PanneauPistesTv, PanneauEpisodesTv } from "./PanneauxTv";
@@ -228,10 +229,7 @@ export function PlayerControls(props: PlayerControlsProps) {
       data-panneau={etat.panneau}
       onClick={(evenement) => evenement.stopPropagation()}
     >
-      <div className="osd-tv-haut">
-        <h2 className="osd-tv-titre">{title}</h2>
-        {subtitle && <p className="osd-tv-sous-titre">{subtitle}</p>}
-      </div>
+      <EnteteTv titre={title} sousTitre={subtitle} onQuitter={quitter} />
 
       <div className="osd-tv-bas">
         {etat.panneau === "pistes" && (
@@ -271,6 +269,9 @@ export function PlayerControls(props: PlayerControlsProps) {
             onTogglePlay();
           }}
           onSauter={sauter}
+          // Le curseur fantôme se pose où l'on en est, sans avancer : on a
+          // demandé à se déplacer, pas encore où.
+          onDeplacement={() => scrub.entrer()}
           onPrecedent={() => onPreviousEpisode?.()}
           onSuivant={() => onNextEpisode?.()}
           onEpisodes={() => poserPanneau(etat.panneau === "episodes" ? "aucun" : "episodes")}

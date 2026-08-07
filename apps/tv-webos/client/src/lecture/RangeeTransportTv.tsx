@@ -9,6 +9,7 @@ import {
   GearIcon,
   EpisodesIcon,
 } from "@/components/PlayerIcons";
+import { DeplacementIcon } from "./IconesTv";
 
 /**
  * La rangée de transport — la seule zone focusable du lecteur.
@@ -24,8 +25,15 @@ import {
  * télé et c'est encore trop bas » ; le curseur du web n'était de toute façon
  * révélé qu'au survol. **La vitesse de lecture** : personne ne regarde un film
  * en 1,25× dans un salon, et le décodeur d'une dalle rend soit un son
- * transposé, soit rien. **Le bouton Retour** : la télécommande en a un, et
- * doubler une touche physique dédiée n'allonge que la rangée à traverser.
+ * transposé, soit rien.
+ *
+ * **Le bouton Retour n'est pas ici non plus** — mais il existe désormais, en
+ * tête d'habillage, à gauche du titre. C'est la place qu'il occupe sur l'Apple
+ * TV comme sur le client web. L'argument qui le retirait (« la télécommande en
+ * a un ») valait pour la RANGÉE, qu'il aurait allongée sans rien apprendre ;
+ * il ne valait pas pour le lecteur, où quitter l'épisode n'était signalé nulle
+ * part. Une touche physique se devine d'autant moins que rien à l'écran ne la
+ * nomme.
  *
  * Le bouton lecture/pause porte `data-osd-defaut` : c'est le centre de gravité,
  * avec un saut de part et d'autre à une pression. Poser le focus initial sur le
@@ -41,6 +49,7 @@ interface ProprietesTransport {
   aPistes: boolean;
   onBasculer: () => void;
   onSauter: (delta: number) => void;
+  onDeplacement: () => void;
   onPrecedent: () => void;
   onSuivant: () => void;
   onEpisodes: () => void;
@@ -55,6 +64,7 @@ export function RangeeTransportTv({
   aPistes,
   onBasculer,
   onSauter,
+  onDeplacement,
   onPrecedent,
   onSuivant,
   onEpisodes,
@@ -113,6 +123,19 @@ export function RangeeTransportTv({
         aria-label={t("player:skipForward")}
       >
         <span className="osd-tv-saut">+30</span>
+      </button>
+
+      {/* Entre en déplacement. Cinquième position, celle qu'il occupe sur
+          l'Apple TV : après les sauts fixes, avant les changements d'épisode —
+          on va du plus fin au plus grossier, de gauche à droite. */}
+      <button
+        type="button"
+        className="osd-tv-bouton"
+        data-osd-bouton="deplacement"
+        onClick={onDeplacement}
+        aria-label={t("player:seekMode")}
+      >
+        <DeplacementIcon />
       </button>
 
       {aSuivant && (

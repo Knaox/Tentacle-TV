@@ -44,6 +44,16 @@ export interface OptionsMachineScrub {
 }
 
 export interface MachineScrub {
+  /**
+   * Entrer en déplacement SANS bouger : le curseur fantôme se pose là où l'on
+   * en est, et attend.
+   *
+   * C'est le geste du bouton dédié de la rangée, et celui d'`apps/tv`
+   * (`enterScrub` → `startScrubbing`). Une flèche, elle, entre en avançant —
+   * c'est `pas`, qui amorce au passage. Les deux amorcent la même machine ; ce
+   * qui les distingue est qu'on a désigné une direction, ou non.
+   */
+  entrer: () => void;
   pas: (sens: 1 | -1, palier: number) => void;
   confirmer: () => void;
   annuler: () => void;
@@ -76,15 +86,26 @@ export function creerMachineScrub(options: OptionsMachineScrub): MachineScrub {
     return Math.min(Math.max(0, valeur), duree);
   }
 
+  /** L'entrée en déplacement, commune au bouton et à la première flèche. */
+  function amorcer(palier: number): void {
+    actif = true;
+    position = borner(options.lirePosition());
+    options.surPause(true);
+    options.surEntree(position, palier);
+  }
+
+  function entrer(): void {
+    if (actif) return;
+    amorcer(PALIERS[0]);
+    // La veille d'inactivité vaut ici comme ailleurs : entrer en déplacement et
+    // reposer la télécommande ne doit pas laisser la vidéo en pause.
+    armerInactivite();
+  }
+
   function pas(sens: 1 | -1, palier: number): void {
     const multiplicateur = PALIERS.indexOf(palier as (typeof PALIERS)[number]) >= 0 ? palier : 1;
 
-    if (!actif) {
-      actif = true;
-      position = borner(options.lirePosition());
-      options.surPause(true);
-      options.surEntree(position, multiplicateur);
-    }
+    if (!actif) amorcer(multiplicateur);
 
     position = borner(position + sens * PAS_SCRUB_S * multiplicateur);
     options.surChangement(position, multiplicateur);
@@ -114,6 +135,7 @@ export function creerMachineScrub(options: OptionsMachineScrub): MachineScrub {
   }
 
   return {
+    entrer,
     pas,
     confirmer,
     annuler,
