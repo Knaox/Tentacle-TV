@@ -35,12 +35,25 @@
       négociation retombe sur une incrustation côté serveur — c'est-à-dire un
       transcodage complet là où la dalle n'avait qu'à décoder.
 
-      `connect-src` reste en `'self'` : le client est servi par le serveur
-      Tentacle, tout passe par le proxy same-origin.
+      `connect-src` couvre trois choses, et pas une de plus.
+
+      `'self'` — le client est servi par le serveur Tentacle et tout le reste
+      passe par son proxy same-origin.
+
+      `ws:` et `wss:` — Chrome 53 ne fait PAS entrer un WebSocket de même
+      origine dans `'self'`, là où les navigateurs récents le font. Sans eux,
+      `ws://…/api/ws` est refusé et le temps réel est muet sur webOS 4 : c'est
+      l'erreur qui remplissait la console de l'émulateur.
+
+      `https://pair.tentacletv.app` — le relais de jumelage. Le client en a
+      besoin depuis qu'« oublier cet appareil » mène à un écran de code au lieu
+      de fermer l'application : c'est lui qui demande le code et sonde sa
+      confirmation. La coquille, elle, y accédait sans rien déclarer — elle est
+      servie depuis `file://`, où cette politique ne s'applique pas.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; child-src 'self' blob:"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; font-src 'self' data:; connect-src 'self' ws: wss: https://pair.tentacletv.app; worker-src 'self' blob:; child-src 'self' blob:"
     />
     <script>
       /* Le thème avant le premier tracé, et il n'y en a qu'un.

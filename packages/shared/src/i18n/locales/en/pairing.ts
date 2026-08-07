@@ -61,6 +61,13 @@ export default {
   pairingUnavailable: "TV pairing is unavailable — this option must be enabled by the administrator.",
   pairingUnavailableAdmin: "Please first set the “Public Tentacle TV server URL” to enable TV pairing.",
   pairingConfigureNow: "Configure now",
+
+  // The CLIENT's pairing screen — the one shown after forgetting the device.
+  // It asks the relay for its own code: at that point the server is known, it
+  // is the one serving the page, and the detour through the shell is moot.
+  tvPreparingCode: "Preparing your code…",
+  tvRetry: "Try again",
+
   tvNonJumeleTitre: "TV not paired",
   tvNonJumeleTexte:
     "This device is no longer linked to your account.",
