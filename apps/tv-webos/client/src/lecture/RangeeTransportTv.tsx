@@ -1,5 +1,6 @@
 import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { ATTRIBUT_DEFAUT } from "../focus/defaut";
 import { retenirBoutonOsd } from "./focusOsd";
 import {
   PlayIcon,
@@ -104,11 +105,19 @@ export function RangeeTransportTv({
         <span className="osd-tv-saut">-10</span>
       </button>
 
+      {/* `ATTRIBUT_DEFAUT` en plus de `data-osd-defaut`, et ce n'est pas un
+          doublon : le second dit à `poserFocusOsd` où entrer, le premier le dit
+          au MOTEUR, qui amorce le focus de son côté à chaque changement de
+          route. Les deux couraient, et le moteur arrivait le premier — il
+          prenait alors le premier focusable en ordre de lecture, c'est-à-dire
+          le bouton « quitter » depuis qu'il existe. Démarrer un épisode posait
+          donc l'anneau sur la sortie. */}
       <button
         type="button"
         className="osd-tv-bouton osd-tv-bouton-principal"
         data-osd-bouton="lecture"
         data-osd-defaut
+        {...{ [ATTRIBUT_DEFAUT]: "" }}
         onClick={onBasculer}
         aria-label={playing ? t("player:pause") : t("player:play")}
       >

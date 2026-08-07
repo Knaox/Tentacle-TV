@@ -218,6 +218,15 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // Jellyfin, décompte de dix secondes — et vient du client web tel quel.
   [resolve(WEB, "components/AutoPlayOverlay.tsx")]: resolve(CLIENT, "lecture/CarteSuivantTv.tsx"),
 
+  // Ce qui DÉCLENCHE cette carte, en revanche, ne suffisait pas ici. Elle tient
+  // à un segment « Outro » déclaré dans Jellyfin, que beaucoup de bibliothèques
+  // n'ont pas, ou à un enchaînement automatique qui ne joue qu'une fois par
+  // épisode. Un déplacement rapide jusqu'à la fin passait donc au travers, et
+  // l'épisode s'achevait sans que rien ne soit proposé — devant une
+  // télécommande posée à trois mètres. L'enveloppe ajoute le filet, et rien
+  // d'autre.
+  [resolve(WEB, "hooks/useAutoNextCountdown.ts")]: resolve(CLIENT, "lecture/carteFinTv.ts"),
+
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
