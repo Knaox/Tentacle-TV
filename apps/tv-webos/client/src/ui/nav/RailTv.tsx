@@ -69,8 +69,14 @@ export function RailTv() {
 
           Pas focusable, et ce n'est pas un oubli : il ne mène nulle part, et la
           discipline du parcours veut qu'on ne vise que ce qui agit. */}
+      {/* `lg` (56 px) et non `md` (32) : le canevas du téléviseur est celui de
+          la dalle, 1920, alors que le `md` du web est dimensionné pour un
+          écran regardé à cinquante centimètres. À trois mètres, les tentacules
+          du poulpe tombaient sous la taille d'un détail lisible et la marque
+          se lisait comme une tache. C'est le seul élément du rail qui portait
+          encore une taille de bureau. */}
       <div className="rail-marque">
-        <TentacleLogo size="md" variant="bare" />
+        <TentacleLogo size="lg" variant="bare" />
         <span className="rail-marque-nom" data-deploye={deploye}>
           Tentacle TV
         </span>
