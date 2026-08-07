@@ -192,7 +192,24 @@ export function PlayerControls(props: PlayerControlsProps) {
   const aEpisodes = item?.Type === "Episode" && !!item.SeriesId;
 
   return (
-    <div className="osd-tv" ref={osd}>
+    /**
+     * Le clic s'arrête ici, et c'est vital.
+     *
+     * Le conteneur du `VideoPlayer` bascule la lecture à tout clic qui lui
+     * parvient (`VideoPlayer.tsx`, `onClick={togglePlay}`) — un geste de souris
+     * qui a du sens sur un écran d'ordinateur, aucun ici. Or `preventDefault`
+     * ayant tué l'activation native d'Entrée, `activerElementFocalise()` rejoue
+     * un VRAI `.click()`, qui remonte comme tel.
+     *
+     * Sans cette barrière, chaque appui sur OK agissait deux fois : le bouton
+     * faisait son travail, puis le conteneur basculait la lecture par-dessus.
+     * Sur Lecture/Pause les deux bascules s'annulaient — « OK ne fait rien » —,
+     * et partout ailleurs le symptôme était invisible : ouvrir les pistes
+     * mettait la vidéo en pause, +30 sautait ET mettait en pause. Le
+     * `PlayerControls` du web pose la même barrière sur chacune de ses deux
+     * barres ; le portage ne l'avait pas reprise.
+     */
+    <div className="osd-tv" ref={osd} onClick={(evenement) => evenement.stopPropagation()}>
       <div className="osd-tv-haut">
         <h2 className="osd-tv-titre">{title}</h2>
         {subtitle && <p className="osd-tv-sous-titre">{subtitle}</p>}

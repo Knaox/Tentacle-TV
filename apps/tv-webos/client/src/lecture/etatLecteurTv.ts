@@ -119,9 +119,19 @@ export function montrerOsd(): void {
   armerMasquage();
 }
 
-export function masquerOsd(): void {
-  arreterMinuteur();
-  poser({ mode: "repos" });
+/**
+ * Repousse l'extinction sans toucher au mode.
+ *
+ * `montrerOsd()` FORCE le mode à `osd` — ce n'est pas ce qu'on veut d'un simple
+ * déplacement de focus, qui doit dire « je suis là » sans rien décider. Sans ce
+ * report, le minuteur armé au dernier `montrerOsd()` expirait sous les doigts :
+ * l'habillage s'éteignait en pleine navigation, au bout de cinq secondes comptées
+ * depuis son apparition et non depuis le dernier geste. La flèche encore tenue
+ * se retrouvait alors du côté `repos`, où elle entre dans le flux.
+ */
+export function reporterMasquage(): void {
+  if (etat.mode !== "osd") return;
+  armerMasquage();
 }
 
 export function entrerScrub(position: number, palier: number): void {

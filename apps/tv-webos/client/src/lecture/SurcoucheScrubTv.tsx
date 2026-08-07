@@ -85,7 +85,11 @@ export function SurcoucheScrubTv({
   }, [tuile, preloadNeighbors]);
 
   return (
-    <div className="scrub-tv">
+    // Même barrière que sur l'habillage : le conteneur du `VideoPlayer` bascule
+    // la lecture à tout clic qui lui parvient. Ici c'est le clic de la Magic
+    // Remote qui est en cause — reprendre la lecture en plein déplacement
+    // laisserait le curseur fantôme courir sur une vidéo qui avance.
+    <div className="scrub-tv" onClick={(evenement) => evenement.stopPropagation()}>
       {vignette && <div className="scrub-tv-vignette" style={vignette.style} />}
       <div className="scrub-tv-voile" />
 

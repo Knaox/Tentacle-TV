@@ -2,7 +2,7 @@ import { lireIntention, estHorizontale, sens } from "../focus/touches";
 import { creerMoteurMaintien } from "./moteurMaintien";
 import { activerSurcoucheFocalisee } from "./surcoucheOk";
 import type { MachineScrub } from "./machineScrub";
-import { lireEtat, montrerOsd } from "./etatLecteurTv";
+import { lireEtat, montrerOsd, reporterMasquage, sAbonner } from "./etatLecteurTv";
 
 /**
  * L'arbitre unique des touches sur le lecteur.
@@ -22,10 +22,20 @@ import { lireEtat, montrerOsd } from "./etatLecteurTv";
  * secondes.
  *
  * En mode `osd`, les flèches ne lui appartiennent pas : le moteur de focus a
- * déjà tiré, sur le même nœud, avant lui. Il se contente de les absorber. Et il
- * le fait sans condition, parce que le moteur, lui, se retire quand le pointeur
- * de la Magic Remote est visible — laisser passer dans ce cas rendrait la main
- * à `usePlayerHotkeys`.
+ * déjà tiré, sur le même nœud, avant lui. Il se contente de les absorber — et
+ * sans condition, parce que le moteur peut se retirer de son côté (clavier
+ * système à l'écran) : laisser passer dans ce cas rendrait la main à
+ * `usePlayerHotkeys`, qui saute de trente secondes.
+ *
+ * **Une pression physique ne change pas de sens en cours de route.** Une flèche
+ * absorbée par l'habillage le reste jusqu'au relâchement, quoi qu'il advienne du
+ * mode entre-temps. C'est l'objet de `codeAbsorbeParOsd`, et c'est ce qui
+ * empêche un maintien de basculer tout seul dans le flux quand l'habillage
+ * s'éteint.
+ *
+ * Les touches de transport DÉDIÉES (⏪ ⏩ ▶ ⏸ ⏹) gardent leur fonction quel que
+ * soit le mode : elles ne sont pas des flèches détournées, elles ne disent
+ * qu'une chose, et une touche dédiée qui ne répond pas se lit comme une panne.
  *
  * La touche Retour n'est PAS traitée ici : elle a sa propre pile de
  * consommateurs, à laquelle le lecteur s'inscrit comme la recherche.
@@ -69,6 +79,31 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
 
   const echoDeSortie = (): boolean => Date.now() - finDeplacement < ECHO_SORTIE_MS;
 
+  /**
+   * Code de flèche absorbé par l'habillage, tant qu'on n'a pas levé le doigt.
+   *
+   * Seconde barrière contre le même défaut, et la seule qui tienne quoi qu'il
+   * arrive au minuteur : **un maintien commencé sous l'habillage ne peut pas
+   * devenir un déplacement dans le flux**. Il faut relâcher. Sans elle, il
+   * suffisait que le mode bascule à `repos` sous la touche pour que la
+   * répétition suivante — la même pression physique — soit lue comme un appui
+   * neuf, entre en déplacement et mette la vidéo en pause.
+   */
+  let codeAbsorbeParOsd = 0;
+
+  /**
+   * Le mode change AUSSI sans qu'aucune touche n'ait été pressée : le minuteur
+   * de masquage l'éteint tout seul. C'est justement ce cas-là qu'aucune garde
+   * posée sur le chemin des touches ne pourrait rattraper — d'où l'abonnement.
+   */
+  let modeConnu = lireEtat().mode;
+  const desabonner = sAbonner(() => {
+    const mode = lireEtat().mode;
+    if (mode === modeConnu) return;
+    modeConnu = mode;
+    moteur.annuler();
+  });
+
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type === "retour") return;
@@ -81,11 +116,20 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     evenement.stopPropagation();
 
     if (intention.type === "deplacer") {
-      if (etat.mode === "osd") return;
+      if (etat.mode === "osd") {
+        // Parcourir l'habillage le garde à l'écran : cinq secondes se comptent
+        // depuis le dernier geste, pas depuis l'apparition. Le focus, lui, a
+        // déjà été déplacé par le moteur, qui a tiré sur ce même nœud avant
+        // nous — on ne fait qu'absorber la touche.
+        codeAbsorbeParOsd = evenement.keyCode;
+        reporterMasquage();
+        return;
+      }
       if (!estHorizontale(intention.direction)) {
         if (etat.mode === "repos") montrerOsd();
         return;
       }
+      if (evenement.keyCode === codeAbsorbeParOsd) return;
       moteur.appuyer(evenement.keyCode, sens(intention.direction));
       return;
     }
@@ -135,12 +179,17 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     montrerOsd();
   };
 
-  const surRelachement = (): void => moteur.relacher();
+  const surRelachement = (evenement: KeyboardEvent): void => {
+    // Le doigt s'est levé : la flèche redevient disponible pour le flux.
+    if (evenement.keyCode === codeAbsorbeParOsd) codeAbsorbeParOsd = 0;
+    moteur.relacher(evenement.keyCode);
+  };
 
   document.addEventListener("keydown", surTouche, true);
   document.addEventListener("keyup", surRelachement, true);
 
   return () => {
+    desabonner();
     document.removeEventListener("keydown", surTouche, true);
     document.removeEventListener("keyup", surRelachement, true);
     // Sans quoi un tic de maintien survivrait au démontage du lecteur et

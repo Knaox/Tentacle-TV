@@ -55,8 +55,24 @@ export interface OptionsMoteurMaintien {
 export interface MoteurMaintien {
   /** Un `keydown` directionnel. Le premier avance d'un pas, les suivants tiennent. */
   appuyer: (code: number, sens: 1 | -1) => void;
-  /** Un `keyup`, quand la dalle en émet. */
-  relacher: () => void;
+  /**
+   * Un `keyup`, quand la dalle en émet — et SEULEMENT celui de la touche tenue.
+   *
+   * Le relâchement était jusqu'ici aveugle au code : le `keyup` d'OK, de Retour
+   * ou de n'importe quelle autre touche coupait un maintien de flèche encore
+   * enfoncée. Deux touches se croisent plus souvent qu'on ne croit — la Magic
+   * Remote a un bouton central, et l'on tient volontiers une flèche en cliquant.
+   */
+  relacher: (code: number) => void;
+  /**
+   * Rupture franche, sans passer par un code : le mode du lecteur a changé.
+   *
+   * Un maintien ne traverse pas une frontière de mode. Sans cela, une flèche
+   * tenue pendant que l'habillage s'éteint reprenait de l'autre côté comme un
+   * appui neuf — et un tic survivant à une confirmation de déplacement
+   * ressuscitait le déplacement qu'on venait de valider.
+   */
+  annuler: () => void;
   detruire: () => void;
 }
 
@@ -138,16 +154,25 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
     armerVeille();
   }
 
-  function relacher(): void {
+  function annuler(): void {
     arreterMaintien();
     dernierCode = 0;
     dernierInstant = 0;
     intervalle = 0;
   }
 
+  function relacher(code: number): void {
+    // Aucun maintien en cours, ou le `keyup` d'une autre touche : on ne touche
+    // à rien. `dernierCode` vaut zéro tant que rien n'est tenu, et aucun code
+    // de touche ne vaut zéro.
+    if (code !== dernierCode) return;
+    annuler();
+  }
+
   return {
     appuyer,
     relacher,
+    annuler,
     detruire: arreterMaintien,
   };
 }
