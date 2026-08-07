@@ -213,15 +213,33 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
       (repetition || instant - dernierInstant <= INTERVALLE_REPETITION_MS);
 
     if (!enchaine) {
-      // Nouvel appui : un saut sec, sans accélération et sans mode. C'est la
-      // seule façon de viser une position précise, et c'est ce qu'on attend
-      // d'une flèche qu'on tape.
       arreterMaintien();
       intervalle = 0;
       repetitions = 0;
       dernierCode = code;
       sensCourant = sens;
       dernierInstant = instant;
+
+      /**
+       * Une RÉPÉTITION n'est jamais un nouvel appui.
+       *
+       * Elle peut pourtant arriver ici sans rien à quoi s'enchaîner : quand
+       * l'appui initial a été absorbé ailleurs — l'arbitre le retient le temps
+       * de voir si un second suit —, le moteur n'en a jamais entendu parler et
+       * `dernierCode` vaut zéro. La traiter comme un appui neuf faisait sauter
+       * de trente secondes au premier battement d'un maintien, sans que rien
+       * n'ait été demandé. On engage donc directement : la touche est tenue,
+       * c'est un déplacement qui commence.
+       */
+      if (repetition) {
+        engager(instant);
+        armerVeille();
+        return;
+      }
+
+      // Nouvel appui : un saut sec, sans accélération et sans mode. C'est la
+      // seule façon de viser une position précise, et c'est ce qu'on attend
+      // d'une flèche qu'on tape.
       options.sauter(sens);
       return;
     }

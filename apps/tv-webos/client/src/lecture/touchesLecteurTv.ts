@@ -136,6 +136,47 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   /** Le rallumage en sursis, tant qu'un second appui peut encore l'annuler. */
   let attenteRallumage: ReturnType<typeof setTimeout> | null = null;
 
+  /** La flèche actuellement enfoncée, ou zéro. Effacée au relâchement. */
+  let flecheEnfoncee = 0;
+
+  /** Combien de fois on a déjà repoussé le rallumage sur une touche tenue. */
+  let sursis = 0;
+
+  /** Au-delà, on allume quoi qu'il arrive : la dalle n'émet peut-être pas de `keyup`. */
+  const SURSIS_MAX = 3;
+
+  const annulerRallumage = (): void => {
+    if (attenteRallumage === null) return;
+    clearTimeout(attenteRallumage);
+    attenteRallumage = null;
+  };
+
+  /**
+   * Ramène les commandes, sauf si le doigt est toujours dessus.
+   *
+   * Un maintien commence par un appui simple : à l'échéance, on ne sait pas
+   * encore si c'en est un — la première répétition, seul signal qui le dise,
+   * peut venir après. Tant que la touche n'est pas relâchée, on repousse donc
+   * plutôt que d'allumer ; si un déplacement s'engage entre-temps, le
+   * changement de mode annulera tout.
+   *
+   * Le sursis est borné : `keyup` n'est pas garanti sur toutes les dalles, et
+   * sans cette borne une touche dont le relâchement se perdrait laisserait le
+   * lecteur sans commandes pour de bon.
+   */
+  const armerRallumage = (): void => {
+    annulerRallumage();
+    attenteRallumage = setTimeout(() => {
+      attenteRallumage = null;
+      if (flecheEnfoncee !== 0 && sursis < SURSIS_MAX) {
+        sursis += 1;
+        armerRallumage();
+        return;
+      }
+      montrerOsd();
+    }, DELAI_RALLUMAGE_MS);
+  };
+
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type === "retour") return;
@@ -149,6 +190,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
 
     if (intention.type === "deplacer") {
       const code = evenement.keyCode;
+      flecheEnfoncee = code;
 
       // Les verticales n'ont jamais servi au transport : sous l'habillage elles
       // parcourent les boutons, au repos elles le ramènent.
@@ -175,11 +217,8 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         case "attendre":
           // On laisse sa chance au second appui : les commandes ne paraissent
           // qu'au terme du délai, et un saut demandé entre-temps les annule.
-          if (attenteRallumage !== null) clearTimeout(attenteRallumage);
-          attenteRallumage = setTimeout(() => {
-            attenteRallumage = null;
-            montrerOsd();
-          }, DELAI_RALLUMAGE_MS);
+          sursis = 0;
+          armerRallumage();
           return;
         case "focus":
           // Le focus a déjà été déplacé par le moteur, qui a tiré sur ce même
@@ -190,10 +229,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
           return;
         default:
           // Un saut est demandé : les commandes n'ont plus à paraître.
-          if (attenteRallumage !== null) {
-            clearTimeout(attenteRallumage);
-            attenteRallumage = null;
-          }
+          annulerRallumage();
           if (code === codeAbsorbeParOsd) return;
           moteur.appuyer(code, sens(intention.direction), evenement.repeat);
           return;
@@ -251,6 +287,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
 
   const surRelachement = (evenement: KeyboardEvent): void => {
     // Le doigt s'est levé : la flèche redevient disponible pour le flux.
+    if (evenement.keyCode === flecheEnfoncee) flecheEnfoncee = 0;
     if (evenement.keyCode === codeAbsorbeParOsd) codeAbsorbeParOsd = 0;
     arbitre.relacher(evenement.keyCode);
     moteur.relacher(evenement.keyCode);
