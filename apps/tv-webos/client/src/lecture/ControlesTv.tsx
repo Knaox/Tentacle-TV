@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
 import { entrerDansPanneau, quitterPanneau } from "./focusOsd";
+import { cumuler, type CumulSauts } from "./cumulSauts";
 import { creerMachineScrub, type MachineScrub } from "./machineScrub";
 import { useCycleLecteurTv } from "./cycleLecteurTv";
 import {
@@ -86,18 +87,34 @@ export function PlayerControls(props: PlayerControlsProps) {
 
   const quitter = useCallback(() => onBack(), [onBack]);
 
+  /** Ce que les sauts enchaînés ont demandé jusqu'ici, et quand. */
+  const cumul = useRef<CumulSauts | null>(null);
+
   /**
    * Le saut nu, sans rien allumer.
    *
    * C'est la forme qu'appellent les FLÈCHES, habillage éteint : y répondre en
    * rallumant les commandes ferait d'un geste anodin un changement d'écran, et
    * masquerait l'image au moment précis où l'on cherche à s'y retrouver. Le
-   * badge cumulatif suffit à dire ce qui se passe — c'est son emploi.
+   * badge suffit à dire ce qui se passe — c'est son emploi.
+   *
+   * **Pourquoi on passe le CUMUL et non le pas.** `skipBy` du client web
+   * calcule sa cible depuis la position RÉELLE de la vidéo. Or celle-ci ne
+   * bouge pas entre deux appuis enchaînés — le déplacement est différé, et sur
+   * un flux transcodé il l'est franchement. Trois « +30 » d'affilée
+   * demandaient donc trois fois la même chose : trente secondes, une seule
+   * fois, pendant que le badge en annonçait quatre-vingt-dix. On additionne
+   * ici, et l'on demande la somme.
+   *
+   * C'est aussi ce qui rend le badge juste sans qu'il ait à compter : il reçoit
+   * le total, il l'affiche.
    */
   const sauterNu = useCallback(
     (delta: number) => {
-      if (onSkip) onSkip(delta);
-      else onSeek(Math.max(0, position.current + delta));
+      const suivant = cumuler(cumul.current, delta, Date.now());
+      cumul.current = suivant;
+      if (onSkip) onSkip(suivant.total);
+      else onSeek(Math.max(0, position.current + suivant.total));
     },
     [onSeek, onSkip],
   );

@@ -1,20 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { SkipBadge as BadgeWeb, type SkipFlash } from "@/components/SkipBadge?original";
-import { cumuler, FENETRE_CUMUL_MS, type CumulSauts } from "./cumulSauts";
+import { FENETRE_CUMUL_MS } from "./cumulSauts";
 
 /**
- * Le badge de saut, cumulatif.
+ * Le badge de saut, tenu le temps qu'on puisse encore y ajouter.
  *
  * **On enveloppe, on ne recopie pas.** Le dessin du client web convient tel
- * quel — pilule du côté du saut, flèches, chiffres en chasse fixe. Ce qui
- * manque est ailleurs : sur un téléviseur, on n'appuie pas une fois sur « +30 »,
- * on appuie trois fois de suite pour passer une scène. Le badge du web repart
- * de zéro à chaque appui et affiche trois fois « +30 s » — l'utilisateur doit
- * faire l'addition lui-même, ce qui est précisément ce qu'un badge existe pour
- * éviter. L'Apple TV cumule : +30, +60, +90.
+ * quel — pilule du côté du saut, flèches, chiffres en chasse fixe.
  *
- * L'arithmétique elle-même vit dans `cumulSauts.ts` : c'est la seule chose du
- * badge qui puisse se tromper, et la seule qu'on puisse vérifier sans écran.
+ * **Le badge ne compte plus, il affiche.** Il additionnait autrefois les sauts
+ * successifs, parce que le web repart de zéro à chaque appui — trois fois
+ * « +30 s » là où l'Apple TV annonce +30, +60, +90. Mais cette addition-là ne
+ * vivait que dans le badge, et le DÉPLACEMENT, lui, n'en savait rien : `skipBy`
+ * calcule sa cible depuis la position réelle de la vidéo, qui ne bouge pas
+ * entre deux appuis enchaînés. Le badge promettait quatre-vingt-dix secondes
+ * quand le lecteur n'en passait que trente.
+ *
+ * Le cumul est donc remonté d'un cran, là où le saut se demande
+ * (`ControlesTv`) : ce qui arrive ici est déjà le total, et l'afficher suffit.
  *
  * **Pourquoi un minuteur à nous.** Le client web efface son éclair au bout
  * d'une seconde ; on ignore cet effacement et on tient notre propre échéance,
@@ -23,23 +26,18 @@ import { cumuler, FENETRE_CUMUL_MS, type CumulSauts } from "./cumulSauts";
  */
 
 export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
-  const [cumul, setCumul] = useState<SkipFlash | null>(null);
-  const dernier = useRef<CumulSauts | null>(null);
+  const [tenu, setTenu] = useState<SkipFlash | null>(null);
 
   useEffect(() => {
     // Le `null` du web est son effacement à lui : il ne nous concerne pas.
-    if (!flash) return;
-
-    const memoire = cumuler(dernier.current, flash.delta, Date.now());
-    dernier.current = memoire;
-    setCumul({ delta: memoire.total, id: flash.id });
+    if (flash) setTenu(flash);
   }, [flash]);
 
   useEffect(() => {
-    if (!cumul) return;
-    const minuteur = setTimeout(() => setCumul(null), FENETRE_CUMUL_MS);
+    if (!tenu) return;
+    const minuteur = setTimeout(() => setTenu(null), FENETRE_CUMUL_MS);
     return () => clearTimeout(minuteur);
-  }, [cumul]);
+  }, [tenu]);
 
-  return <BadgeWeb flash={cumul} />;
+  return <BadgeWeb flash={tenu} />;
 }
