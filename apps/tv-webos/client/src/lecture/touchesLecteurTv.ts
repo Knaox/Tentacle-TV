@@ -1,4 +1,5 @@
 import { lireIntention, estHorizontale, sens } from "../focus/touches";
+import { creerArbitreFleches } from "./arbitreFleches";
 import { creerMoteurMaintien } from "./moteurMaintien";
 import { activerSurcoucheFocalisee, surcoucheAffichee } from "./surcoucheOk";
 import type { MachineScrub } from "./machineScrub";
@@ -122,7 +123,15 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     if (mode === modeConnu) return;
     modeConnu = mode;
     moteur.annuler();
+    // Seulement quand l'habillage S'ÉTEINT : ce qui restait d'un double appui
+    // n'a plus de sens, on repart d'une flèche qui rallume. Surtout pas sur
+    // l'allumage — c'est la flèche elle-même qui vient de le provoquer, et
+    // effacer son amorce ici lui retirerait le second appui qu'elle attend.
+    if (mode === "repos") arbitre.oublier();
   });
+
+  /** Qui possède une flèche horizontale, appui par appui. */
+  const arbitre = creerArbitreFleches();
 
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
@@ -136,26 +145,37 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     evenement.stopPropagation();
 
     if (intention.type === "deplacer") {
-      if (etat.mode === "osd") {
-        // Parcourir l'habillage le garde à l'écran : cinq secondes se comptent
-        // depuis le dernier geste, pas depuis l'apparition. Le focus, lui, a
-        // déjà été déplacé par le moteur, qui a tiré sur ce même nœud avant
-        // nous — on ne fait qu'absorber la touche.
-        codeAbsorbeParOsd = evenement.keyCode;
-        reporterMasquage();
-        return;
-      }
+      const code = evenement.keyCode;
+
+      // Les verticales n'ont jamais servi au transport : sous l'habillage elles
+      // parcourent les boutons, au repos elles le ramènent.
       if (!estHorizontale(intention.direction)) {
         if (etat.mode === "repos") montrerOsd();
+        else reporterMasquage();
         return;
       }
-      if (evenement.keyCode === codeAbsorbeParOsd) return;
+
       // Une surcouche à l'écran — « passer l'intro », « épisode suivant » —
       // propose une action, et les flèches servent alors à la viser. Déplacer
       // la lecture derrière elle reviendrait à répondre à côté de la question.
       if (surcoucheAffichee()) return;
-      moteur.appuyer(evenement.keyCode, sens(intention.direction));
-      return;
+
+      switch (arbitre.decider(code, etat.mode)) {
+        case "rallumer":
+          montrerOsd();
+          return;
+        case "focus":
+          // Le focus a déjà été déplacé par le moteur, qui a tiré sur ce même
+          // nœud avant nous — on ne fait qu'absorber la touche, et garder
+          // l'habillage à l'écran tant qu'on le parcourt.
+          codeAbsorbeParOsd = code;
+          reporterMasquage();
+          return;
+        default:
+          if (code === codeAbsorbeParOsd) return;
+          moteur.appuyer(code, sens(intention.direction));
+          return;
+      }
     }
 
     if (intention.type === "valider") {
@@ -206,6 +226,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   const surRelachement = (evenement: KeyboardEvent): void => {
     // Le doigt s'est levé : la flèche redevient disponible pour le flux.
     if (evenement.keyCode === codeAbsorbeParOsd) codeAbsorbeParOsd = 0;
+    arbitre.relacher(evenement.keyCode);
     moteur.relacher(evenement.keyCode);
   };
 
