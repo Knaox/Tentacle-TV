@@ -6,6 +6,8 @@ import type { SegmentTimestamps } from "@tentacle-tv/shared";
 interface VideoPlayerOverlaysProps {
   loading: boolean;
   playing: boolean;
+  /** La première image a été rendue au moins une fois pour ce média. */
+  aDemarre: boolean;
   showPlayButton: boolean;
   policyMuted: boolean;
   posterUrl?: string;
@@ -16,8 +18,6 @@ interface VideoPlayerOverlaysProps {
   autoPlayCountdown: number | null;
   hasNextEpisode?: boolean;
   videoRef: MutableRefObject<HTMLVideoElement | null>;
-  sourceChangingRef: MutableRefObject<boolean>;
-  hasStartedRef: MutableRefObject<boolean>;
   userInteractedRef: MutableRefObject<boolean>;
   setShowPlayButton: (v: boolean) => void;
   setPolicyMuted: (v: boolean) => void;
@@ -33,32 +33,38 @@ interface VideoPlayerOverlaysProps {
  * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
-  loading, playing, showPlayButton, policyMuted, posterUrl,
+  loading, playing, aDemarre, showPlayButton, policyMuted, posterUrl,
   showSkipIntro, showSkipCredits, introSegment, creditsSegment,
   autoPlayCountdown, hasNextEpisode,
-  videoRef, sourceChangingRef, hasStartedRef, userInteractedRef,
+  videoRef, userInteractedRef,
   setShowPlayButton, setPolicyMuted, handleSeek,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
 
   return (
     <>
-      {loading && (playing || sourceChangingRef.current) && (
-        sourceChangingRef.current && !hasStartedRef.current ? (
-          // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
-          <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0a0a12]" onClick={(e) => e.stopPropagation()}>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.20),transparent_60%)]" />
-            {posterUrl && <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />}
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
-            <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20"><LoadingBar /></div>
-          </div>
-        ) : (
-          // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
+      {/* Ces deux écrans se décidaient sur `sourceChangingRef.current` et
+          `hasStartedRef.current`. Muter une ref ne re-rend rien : au montage du
+          lecteur elles valaient encore `false`, la condition était fausse, et
+          l'utilisateur voyait un ÉCRAN NOIR entre la bannière de la page et la
+          première image. Tout se lit désormais dans l'état. */}
+      {!showPlayButton && (aDemarre ? (
+        // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
+        loading && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
           </div>
         )
-      )}
+      ) : (
+        // Chargement INITIAL du média : bannière (backdrop) + barre de chargement.
+        // Tenue sans interruption du montage jusqu'à la première image.
+        <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden bg-[#0a0a12]" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_15%,rgba(var(--brand-rgb),0.20),transparent_60%)]" />
+          {posterUrl && <img src={posterUrl} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-black/35" />
+          <div className="absolute inset-x-0 bottom-0 px-8 pb-14 md:px-16 md:pb-20"><LoadingBar /></div>
+        </div>
+      ))}
 
       {showPlayButton && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60"

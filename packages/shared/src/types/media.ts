@@ -93,6 +93,13 @@ export interface MediaSource {
   SupportsTranscoding: boolean;
   MediaStreams: MediaStream[];
   // Fields returned by POST /Items/{id}/PlaybackInfo
+  /**
+   * Pourquoi Jellyfin a écarté la lecture directe. Tableau depuis 10.9, chaîne
+   * de drapeaux séparés par des virgules avant. C'est la SEULE information qui
+   * dise si l'image est recompressée ou simplement copiée — cf.
+   * `apps/web/src/hooks/playbackVerdict.ts`.
+   */
+  TranscodeReasons?: string[] | string;
   TranscodingUrl?: string;
   TranscodingSubProtocol?: string;
   TranscodingContainer?: string;
@@ -120,7 +127,14 @@ export interface MediaStream {
   BitRate?: number;
   Channels?: number;
   SampleRate?: number;
-  VideoRangeType?: string;
+  /**
+   * Plage dynamique (`SDR`, `HDR10`, `DOVIWithHDR10`…). ⚠️ Jellyfin la sérialise
+   * en CHAÎNE sur certains points d'entrée et en ENTIER (index d'énumération)
+   * sur d'autres — ne jamais comparer sa valeur brute à un littéral.
+   */
+  VideoRangeType?: string | number;
+  /** HDR10+ présent dans le flux (métadonnées dynamiques). */
+  Hdr10PlusPresentFlag?: boolean;
   /** Profil Dolby Vision (5, 7, 8…) — sert à router : P7 double couche = mur tvOS. */
   DvProfile?: number;
   DvBlSignalCompatibilityId?: number;

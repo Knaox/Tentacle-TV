@@ -1,4 +1,4 @@
-import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
@@ -35,6 +35,8 @@ export interface VideoPlayerProps {
   currentSubtitle: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
+  /** Paliers de qualité calculés d'après la source (cf. construireEchelleQualite). */
+  qualityPresets?: readonly QualityPreset[];
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */
@@ -46,6 +48,19 @@ export interface VideoPlayerProps {
   onStarted?: () => void;
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /**
+   * La lecture directe n'a rien produit — conteneur accepté puis muet. Fourni
+   * seulement quand un repli est possible ; son absence désarme la garde.
+   */
+  onDirectPlayNonFiable?: (seconds: number) => void;
+  /**
+   * Piste PGS à dessiner côté client (`.sup`), au lieu de la faire incruster
+   * par le serveur. `null` quand aucune piste image n'est active : l'overlay
+   * n'est alors pas monté du tout.
+   */
+  pgsSubtitleUrl?: string | null;
+  /** Le décodage PGS a échoué : rendre la main à l'incrustation serveur. */
+  onPgsEchec?: () => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   nextEpisodeTitle?: string;

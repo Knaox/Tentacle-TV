@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
@@ -17,6 +18,10 @@ import { AutoPlayOverlay } from "./AutoPlayOverlay";
 import { useUpNextCard } from "./player/useUpNextCard";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
+import { usePlayerVolume } from "../hooks/usePlayerVolume";
+import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
+import { useSanitizedSubtitles } from "../hooks/useSanitizedSubtitles";
 import type { VideoPlayerProps } from "./player/videoPlayer.types";
 
 export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
@@ -24,10 +29,11 @@ export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onProgress, onStarted, onSeekRequest, onSeekComplete,
+  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable,
+  pgsSubtitleUrl, onPgsEchec,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   autoplayNextEnabled = true, maxResumePct = 90,
@@ -57,23 +63,6 @@ export function VideoPlayer({
   const { showControls, scheduleHide } = useControlsAutoHide(playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
-  const [volume, setVolume] = useState(() => {
-    const s = localStorage.getItem("tentacle_player_volume");
-    if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
-    return 1;
-  });
-  // `volume` vaut 0 dès que le son est coupé — `handleToggleMute` le pose
-  // lui-même, il n'y a donc pas d'état muet séparé à tenir.
-  // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
-  // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
-  const { flash: playbackFlash } = usePlaybackFlash(!playing, volume === 0);
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.volume = volume;
-    // Mute persisté : survit aux changements d'épisode/média (remount).
-    if (localStorage.getItem("tentacle_player_muted") === "1") v.muted = true;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // 1Hz display timer — reduces re-renders from ~4Hz (onTimeUpdate) to 1Hz.
   // rawTimeRef is updated every onTimeUpdate; displayTime only triggers renders at 1Hz.
   useEffect(() => {
@@ -85,24 +74,30 @@ export function VideoPlayer({
   const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const creditsAutoPlayTriggered = useRef(false);
   const hasStartedRef = useRef(false);
+  // Le pendant RÉACTIF de `hasStartedRef` : l'écran de chargement se décide au
+  // rendu, et une ref mutée ne re-rend rien. Sans lui, le lecteur restait noir
+  // entre son montage et la première image (cf. VideoPlayerOverlays).
+  const [aDemarre, setADemarre] = useState(false);
   const sourceChangingRef = useRef(false);
   const currentTimeRef = useRef(0);
   const userInteractedRef = useRef(false);
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  // Touch gestures : swipe horizontal pour seek (-10s / +30s), tap simple pour play/pause.
-  // Le scrubber a son propre `onTouchStart` qui stopPropagation, donc pas de collision.
-  const touchStartRef = useRef<{ x: number; y: number; t: number } | null>(null);
-  const SWIPE_THRESHOLD_PX = 50;
-  const SWIPE_MAX_DURATION_MS = 600;
 
   const { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted } = useVideoSource({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
     effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
     seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-    lastKnownPositionRef, currentTimeRef, onSeekRequest,
+    lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
   });
+
+  const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({
+    videoRef, onSonRetabli: () => setPolicyMuted(false),
+  });
+  // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
+  // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
+  const { flash: playbackFlash } = usePlaybackFlash(!playing, volume === 0);
 
   const currentTime = effectiveOffsetRef.current + displayTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
@@ -111,6 +106,18 @@ export function VideoPlayer({
     const v = videoRef.current;
     if (!v) return;
     if (v.paused) v.play().catch(() => {}); else v.pause();
+  }, []);
+
+  // Vitesse de lecture. `defaultPlaybackRate` est posé EN PLUS de
+  // `playbackRate` : la spec remet playbackRate à defaultPlaybackRate au
+  // chargement de chaque nouvelle ressource, donc sans lui le taux choisi
+  // serait perdu à la moindre reconstruction de source (changement de qualité,
+  // repli CORS, seek qui relance le transcodage).
+  const appliquerVitesse = useCallback((taux: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.playbackRate = taux;
+    v.defaultPlaybackRate = taux;
   }, []);
 
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
@@ -140,7 +147,19 @@ export function VideoPlayer({
     if (v?.webkitEnterFullscreen) v.webkitEnterFullscreen();
   }, []);
 
-  useNativeMediaTracks({ videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
+  const swipe = usePlayerSwipe(skipBy, userInteractedRef);
+
+  // Seules les pistes TEXTE deviennent des <track> : un sous-titre image n'a
+  // pas de VTT à charger, et la correspondance index → textTracks doit rester
+  // exacte des deux côtés (cf. useNativeMediaTracks).
+  const pistesTexte = useMemo(
+    () => subtitleTracks.filter((t) => !BURN_IN_SUBTITLE_CODECS.test(t.codec ?? "")),
+    [subtitleTracks],
+  );
+  useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
+  // VTT de la piste active, débarrassé du balisage ASS que Jellyfin laisse
+  // fuiter dans le texte des cues (« {\an8} » affiché tel quel).
+  const urlSousTitreAssaini = useSanitizedSubtitles({ pistes: pistesTexte, selection: currentSubtitle, src });
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -160,29 +179,6 @@ export function VideoPlayer({
     };
   }, []);
 
-  const handleVolumeChange = useCallback((val: number) => {
-    setVolume(val);
-    const v = videoRef.current;
-    if (v) {
-      v.volume = val;
-      // Monter le volume démute (et efface le mute persisté).
-      if (val > 0 && v.muted) {
-        v.muted = false;
-        try { localStorage.setItem("tentacle_player_muted", "0"); } catch {}
-      }
-    }
-    try { localStorage.setItem("tentacle_player_volume", String(Math.round(val * 100))); } catch {}
-  }, []);
-
-  const handleToggleMute = useCallback(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-    if (!v.muted) setPolicyMuted(false);
-    try { localStorage.setItem("tentacle_player_muted", v.muted ? "1" : "0"); } catch {}
-    setVolume(v.muted ? 0 : 1);
-  }, []);
-
   usePlayerHotkeys({
     videoRef, volume, subtitleTracks, currentSubtitle, hasNextEpisode, hasPreviousEpisode,
     navigate, togglePlay, toggleFullscreen, handleSeek, skipBy, handleVolumeChange,
@@ -194,7 +190,7 @@ export function VideoPlayer({
     offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer, seekStallTimer,
     src, itemId, startPositionSeconds, jellyfinDuration, autoplayNextEnabled,
     hasNextEpisode, autoPlayCountdown,
-    setPlaying, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
+    setPlaying, setADemarre, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
     startAutoPlay, onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
   });
 
@@ -214,48 +210,46 @@ export function VideoPlayer({
         togglePlay();
       }}
       onDoubleClick={toggleFullscreen}
-      onTouchStart={(e) => {
-        userInteractedRef.current = true;
-        const t = e.touches[0];
-        if (t) touchStartRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-      }}
-      onTouchEnd={(e) => {
-        const start = touchStartRef.current;
-        touchStartRef.current = null;
-        if (!start) return;
-        const t = e.changedTouches[0];
-        if (!t) return;
-        const dx = t.clientX - start.x;
-        const dy = t.clientY - start.y;
-        const dt = Date.now() - start.t;
-        // Reconnaît un swipe horizontal franc — pas un drag lent ni un tap.
-        if (dt > SWIPE_MAX_DURATION_MS) return;
-        if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
-        if (Math.abs(dx) <= Math.abs(dy)) return; // composante verticale dominante = scroll
-        e.preventDefault();
-        e.stopPropagation();
-        if (dx > 0) skipBy(30);
-        else skipBy(-10);
-      }}
+      {...swipe}
       // Toile du lecteur (letterboxing derrière la vidéo) → bg-black
       // volontairement en dur dans les deux thèmes clair/sombre.
       className={`relative flex h-screen w-screen items-center justify-center bg-black ${showControls ? "" : "cursor-none"}`}>
+      {/* Pas de `crossOrigin` : l'attribut ferait exiger le CORS sur l'URL de
+          lecture directe, servie par le serveur Jellyfin — donc hors origine et
+          sans en-tête. Rien n'en a besoin ici : les pistes VTT et le `.sup` PGS
+          passent par le proxy, même origine, et personne ne dessine la vidéo
+          dans un canvas. */}
       <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
-        crossOrigin={useNativeHls ? undefined : "anonymous"}
       >
-        {subtitleTracks.map((t) => (
-          <track key={`${src}-${t.index}`} kind="subtitles" src={t.url} label={t.label} />
+        {/* Tous les <track> restent montés, sélectionnés ou non : la
+            correspondance index → textTracks de useNativeMediaTracks se fait
+            par POSITION, en omettre un décalerait toutes les suivantes.
+            Seule la piste active porte une `src` — le navigateur ne charge de
+            toute façon que celle dont le `mode` n'est pas `disabled`, et
+            l'attendre évite d'afficher une seconde le fichier brut. */}
+        {pistesTexte.map((t) => (
+          <track key={`${src}-${t.index}`} kind="subtitles" label={t.label}
+            src={t.index === currentSubtitle ? (urlSousTitreAssaini ?? undefined) : undefined} />
         ))}
       </video>
 
+      {/* Sous-titres image décodés ici plutôt qu'incrustés par le serveur —
+          monté uniquement quand une piste PGS est active (règle GPU). */}
+      {pgsSubtitleUrl && onPgsEchec && (
+        <PgsSubtitleOverlay
+          videoRef={videoRef} supUrl={pgsSubtitleUrl}
+          timeOffsetRef={effectiveOffsetRef} onEchec={onPgsEchec}
+        />
+      )}
+
       <VideoPlayerOverlays
-        loading={loading} playing={playing} showPlayButton={showPlayButton} policyMuted={policyMuted}
+        loading={loading} playing={playing} aDemarre={aDemarre}
+        showPlayButton={showPlayButton} policyMuted={policyMuted}
         posterUrl={posterUrl} showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
         introSegment={introSegment} creditsSegment={creditsSegment}
         autoPlayCountdown={autoPlayCountdown} hasNextEpisode={hasNextEpisode}
-        videoRef={videoRef} sourceChangingRef={sourceChangingRef} hasStartedRef={hasStartedRef}
-        userInteractedRef={userInteractedRef}
+        videoRef={videoRef} userInteractedRef={userInteractedRef}
         setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
         handleSeek={handleSeek}
       />
@@ -274,13 +268,14 @@ export function VideoPlayer({
           title={title} subtitle={subtitle}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
           currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality} sourceQuality={sourceQuality}
+          qualityPresets={qualityPresets}
           hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
           onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
           onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
-          applyToSeries={applyToSeries}
+          applyToSeries={applyToSeries} onPlaybackRateChange={appliquerVitesse}
         />
       </div>
 

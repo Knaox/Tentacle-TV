@@ -2,31 +2,11 @@ import { useRef, useState, useEffect, type MutableRefObject } from "react";
 import Hls from "hls.js";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 
+import {
+  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, GARDE_DIRECT_PLAY_MS, HAS_NATIVE_HLS,
+} from "./videoSourceHelpers";
+
 const DBG = "[Tentacle:VideoPlayer]";
-
-/** Safari-only: native HLS support detected via canPlayType.
- *  Returns "" on Chrome/Brave/Firefox/Edge → all Safari-specific code paths are inert. */
-const HAS_NATIVE_HLS = typeof document !== "undefined"
-  && document.createElement("video").canPlayType("application/vnd.apple.mpegurl") !== "";
-
-/** Max time (ms) to wait for canplaythrough before falling back to play anyway.
- *  Progressive transcode: video=copy is instant but audio transcode takes 1-3s.
- *  canplaythrough fires when the browser has decoded enough audio+video. */
-const BUFFER_GATE_TIMEOUT = 8_000;
-
-function attemptPlay(v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void) {
-  // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
-  // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
-  const wantMuted = localStorage.getItem("tentacle_player_muted") === "1";
-  v.muted = wantMuted;
-  v.play().catch(() => {
-    v.muted = true;
-    v.play().then(() => { if (!wantMuted) onPolicyMuted(); }).catch((err) => {
-      console.error(DBG, "muted play also failed:", err);
-      onPlayFailed();
-    });
-  });
-}
 
 interface UseVideoSourceOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -45,13 +25,19 @@ interface UseVideoSourceOptions {
   lastKnownPositionRef: MutableRefObject<number>;
   currentTimeRef: MutableRefObject<number>;
   onSeekRequest?: (seconds: number) => void;
+  /**
+   * Rattrapage d'une lecture directe muette. Fourni UNIQUEMENT quand il y a
+   * quelque chose à rattraper — un conteneur à risque, pas encore disqualifié.
+   * Son absence désarme la garde : un mp4 lent à charger ne déclenche rien.
+   */
+  onDirectPlayNonFiable?: (seconds: number) => void;
 }
 
 export function useVideoSource({
   videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
   effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
   seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-  lastKnownPositionRef, currentTimeRef, onSeekRequest,
+  lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
 }: UseVideoSourceOptions) {
   const hlsRef = useRef<Hls | null>(null);
   const jfClient = useJellyfinClient();
@@ -119,8 +105,25 @@ export function useVideoSource({
       }
     }, 15_000);
 
+    // Même schéma que le repli CORS plus bas : on désactive la capacité fautive
+    // pour la session, puis on demande au parent de relancer la lecture. Ici le
+    // parent refait un PlaybackInfo sans le MKV, Jellyfin répond en remux, et
+    // l'utilisateur ne voit qu'un démarrage un peu plus lent.
+    const gardeDirectPlay = isDirectPlay && !isHlsUrl && onDirectPlayNonFiable
+      ? setTimeout(() => {
+          if (!sourceChangingRef.current) return;
+          console.warn(DBG, "lecture directe muette a 0 ms — repli en remux");
+          // Le `failsafe` reste ARMÉ : si la source de repli n'arrive jamais,
+          // il rendra la main à l'utilisateur au lieu de laisser un spinner
+          // que plus rien ne relève. L'annuler ici supprimait le dernier filet.
+          sourceChangingRef.current = false;
+          onDirectPlayNonFiable(currentTimeRef.current);
+        }, GARDE_DIRECT_PLAY_MS)
+      : undefined;
+
     const onReady = () => {
       clearTimeout(failsafe);
+      clearTimeout(gardeDirectPlay);
       const ptsOffset = containerPtsOffsetRef.current;
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
@@ -157,35 +160,10 @@ export function useVideoSource({
       // hls.js: works on Chrome/Brave/Firefox/Edge (MSE) AND Safari 17.1+ (ManagedMediaSource).
       // Since hls.js v1.5, Hls.isSupported() returns true on Safari 17.1+ via ManagedMediaSource
       // → full buffer control, seeking, quality selection — same as Chrome.
-      const hls = new Hls({
-        enableWorker: true,
-        startPosition: seekTo > 0 ? seekTo : -1, // Seek to saved position in absolute-PTS manifest
-        lowLatencyMode: false,        // jellyfin-web pattern: disable low-latency mode
-        // Les sous-titres sont des <track> VTT sidecar gérés par React
-        // (useNativeMediaTracks) : hls.js ne doit ni créer ni piloter de
-        // TextTracks natifs — sinon il écrase les modes des pistes manuelles
-        // (hls.js #4032) et les sous-titres disparaissent en transcode.
-        renderTextTracksNatively: false,
-        backBufferLength: Infinity,    // VOD: keep all played segments — instant backward seek
-        maxBufferLength: 30,          // buffer 30s ahead for smooth playback
-        maxMaxBufferLength: 120,      // allow up to 120s buffer for sustained streaming
-        startFragPrefetch: true,      // prefetch next fragment during current load
-        // A/V sync: fix audio desync with transcoded streams (fMP4/TS segments).
-        // stretchShortVideoTrack extends the last audio frame to fill micro-gaps between segments.
-        // maxAudioFramesDrift forces audio resync when drift exceeds 1 frame.
-        // forceKeyFrameOnDiscontinuity forces keyframe at discontinuity points (seek, segment switch).
-        stretchShortVideoTrack: true,
-        maxAudioFramesDrift: 1,
-        forceKeyFrameOnDiscontinuity: true,
-        fragLoadPolicy: {
-          default: {
-            maxTimeToFirstByteMs: 20_000,
-            maxLoadTimeMs: 60_000,
-            timeoutRetry: { maxNumRetry: 5, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-            errorRetry: { maxNumRetry: 8, retryDelayMs: 1000, maxRetryDelayMs: 8000 },
-          },
-        },
-      });
+      // Configuration extraite (cf. `configHls`) : c'est elle qui porte
+      // `videoPreference.preferHDR`, le réglage qui décide de la copie ou du
+      // ré-encodage de l'image côté serveur.
+      const hls = new Hls(configHls(seekTo));
       hlsRef.current = hls;
       // HLS play timing:
       // - Source change (audio/quality switch): play immediately on MANIFEST_PARSED
@@ -205,16 +183,18 @@ export function useVideoSource({
           // Disable DS for this session (admin config stays ON) and ask the
           // parent to re-fetch PlaybackInfo, which will now go through the
           // same-origin proxy at /api/jellyfin/* (no CORS).
+          //
+          // Ce chemin ne sert plus qu'au serveur qui autorise `PlaybackInfo`
+          // mais pas `/Videos` : quand les deux sont refuses, le verrou est
+          // deja pose par `getPlaybackInfo` et l'URL est arrivee en proxy.
           if (
             data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
             jfClient.getDirectStreaming()
           ) {
-            console.warn(
-              DBG,
-              "manifestLoadError on direct streaming — disabling DS for this session and falling back to proxy",
-            );
-            jfClient.setDirectStreaming(null);
-            clearTimeout(failsafe);
+            jfClient.signalerDirectStreamingBloque("manifeste HLS direct refuse");
+            // `failsafe` conservé : hls.js est détruit juste après, plus aucun
+            // événement ne viendra de l'élément vidéo. Si la relance échoue,
+            // c'est lui — et lui seul — qui sortira du spinner.
             sourceChangingRef.current = false;
             hls.destroy();
             hlsRef.current = null;
@@ -270,6 +250,7 @@ export function useVideoSource({
 
     return () => {
       clearTimeout(failsafe);
+      clearTimeout(gardeDirectPlay);
       clearTimeout(bufferGateTimer);
       clearTimeout(seekStallTimer.current);
       v.removeEventListener("loadedmetadata", onReady);

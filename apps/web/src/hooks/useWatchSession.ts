@@ -2,10 +2,15 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import { ticksToSeconds, TICKS_PER_SECOND, findPreset, extractSourceQuality } from "@tentacle-tv/shared";
+import {
+  ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality,
+  construireEchelleQualite, trouverPreset, presetEstPropose,
+} from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
+import { useWebPlaybackFallbacks } from "./useWebPlaybackFallbacks";
+import { useDefaultTracks } from "./useDefaultTracks";
 import { useDesktopSource, mapSubtitlesToLocal } from "./useDesktopSource";
 import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
@@ -82,7 +87,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [audioIndex, setAudioIndex] = useState<number>(defaultAudio);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
-  const qualityPreset = findPreset(qualityKey);
+  // Les paliers dépendent de la source : proposer un transcodage plus lourd
+  // que l'original serait absurde (cf. construireEchelleQualite).
+  const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
+  const qualityPreset = trouverPreset(qualityKey, qualityPresets);
   const quality = qualityPreset.bitrate; // legacy bitrate ref (null = Original/direct)
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
@@ -98,6 +106,9 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // derrière `supportsMpv()`, et le repli web repasse par WatchWeb (isDesktop
   // faux) — le profil suit donc toujours le lecteur réellement à l'œuvre.
   const pbInfo = usePlaybackInfo(isDesktop);
+  // mpv lit les sous-titres image nativement ; le rendu canvas (libpgs) ne
+  // concerne que le lecteur web, et s'efface dès qu'il a échoué une fois.
+  const pgsClientOk = !isDesktop && !pbInfo.pgsClientIndisponible;
 
   useEffect(() => {
     setStartTicks(0); setQualityKey("original"); setSubtitleIndex(null); setPrefsReady(false);
@@ -107,20 +118,18 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (!isDesktop) pbInfo.reset();
   }, [itemId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (streams.length > 0 && !audioOverrideRef.current && !prefsApplied.current) {
-      const defAudio = streams.find((s) => s.Type === "Audio" && s.IsDefault)?.Index
-        ?? streams.find((s) => s.Type === "Audio")?.Index ?? 0;
-      setAudioIndex(defAudio);
-    }
-  }, [streams]);
+  useDefaultTracks({
+    streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
+    setAudioIndex, setSubtitleIndex,
+  });
 
+  // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
+  // sur un fichier peut disparaître sur le suivant. Sans ce repli, la clé
+  // survivrait sans correspondance — sélecteur sans sélection visible, et un
+  // débit rendu par `trouverPreset` qui ne serait plus celui affiché.
   useEffect(() => {
-    if (streams.length > 0 && !prefsApplied.current && !subtitleOverrideRef.current) {
-      const defSub = streams.find((s) => s.Type === "Subtitle" && s.IsDefault)?.Index ?? null;
-      if (defSub != null) setSubtitleIndex(defSub);
-    }
-  }, [streams]);
+    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+  }, [qualityPresets, qualityKey]);
 
   // Desktop: client-side playback mode computation
   const selectedAudioStream = streams.find((s) => s.Type === "Audio" && s.Index === audioIndex);
@@ -170,7 +179,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Neutralisée en lecture locale (résolution locale, zéro réseau).
   useServerTrackPrefs({
     item, streams, ancestors, isDesktop, isLocalPlayback, quality, defaultAudio,
-    supportsNativeAudioTracks, checkAudioTranscode,
+    supportsNativeAudioTracks, checkAudioTranscode, pgsClientOk,
     prefsApplied, resumeApplied, audioOverrideRef, subtitleOverrideRef,
     setAudioIndex, setSubtitleIndex, setBurnInSubtitleIndex, setStartTicks, setPrefsReady,
   });
@@ -184,10 +193,20 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     return () => clearTimeout(timer);
   }, [prefsReady, streams.length, item, isLoading]);
 
+  // Filets du lecteur web : lecture directe MKV et rendu PGS client. Déclaré
+  // AVANT la requête, qui dépend de son compteur de relance.
+  const {
+    onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs, relanceLecture, relancerLecture,
+  } = useWebPlaybackFallbacks({
+    isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
+    positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
+  });
+
   // ── Web: fetch PlaybackInfo when params change (extraction — cf. hook) ──
   useWebPlaybackInfoFetch({
     isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
     burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
+    prefsApplied, audioOverrideRef, relanceLecture,
   });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
@@ -259,12 +278,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality,
+    qualityKey, setQualityKey, sourceQuality, qualityPresets,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
-    streamUrl, streamOffset,
+    streamUrl, streamOffset, onDirectPlayNonFiable,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
