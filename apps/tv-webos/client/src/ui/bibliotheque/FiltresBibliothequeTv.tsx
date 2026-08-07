@@ -1,5 +1,10 @@
-import type { ComponentProps } from "react";
-import { LibraryFilterBar as BarreWeb } from "@/components/LibraryFilters";
+import { useEffect, useRef, type ComponentProps } from "react";
+import { useLocation } from "react-router-dom";
+import {
+  LibraryFilterBar as BarreWeb,
+  useLibraryFilters as useLibraryFiltersWeb,
+} from "@/components/LibraryFilters";
+import { filtresRetenus, rejouerFiltres, retenirFiltres } from "./memoireFiltres";
 
 /**
  * La barre de filtres d'une bibliothèque, déclarée comme ZONE.
@@ -25,8 +30,48 @@ import { LibraryFilterBar as BarreWeb } from "@/components/LibraryFilters";
  * `LibraryGrid`.
  */
 
-export { useLibraryFilters, CHIP_BASE } from "@/components/LibraryFilters";
+export { CHIP_BASE } from "@/components/LibraryFilters";
 export type { LibraryFilterState } from "@/components/LibraryFilters";
+
+/**
+ * Les filtres survivent à un aller-retour vers une fiche.
+ *
+ * Le hook du web n'est qu'un `useState` : ouvrir un média puis revenir démonte
+ * la grille et les filtres avec elle. Sur un écran d'ordinateur cela se
+ * remarque peu ; à la télécommande, entrer et sortir d'une fiche est LE geste
+ * de base, et l'on reposait ses trois filtres à chaque retour.
+ *
+ * L'enveloppe ne change rien au hook — elle mémorise ce qu'il publie, et le lui
+ * raconte au montage suivant. Voir `memoireFiltres.ts` pour le pourquoi de
+ * chaque choix.
+ */
+export function useLibraryFilters() {
+  const commandes = useLibraryFiltersWeb();
+  const { pathname } = useLocation();
+
+  // Les commandes changent d'identité à chaque rendu : les lire dans une ref
+  // évite de relancer la restauration à chacun d'eux.
+  const vives = useRef(commandes);
+  vives.current = commandes;
+
+  const restaure = useRef("");
+
+  useEffect(() => {
+    if (restaure.current === pathname) return;
+    restaure.current = pathname;
+    const garde = filtresRetenus(pathname);
+    if (garde) rejouerFiltres(vives.current, garde);
+  }, [pathname]);
+
+  useEffect(() => {
+    // Pas avant d'avoir restauré : on écraserait la mémoire avec l'état par
+    // défaut du premier rendu, c'est-à-dire avec rien.
+    if (restaure.current !== pathname) return;
+    retenirFiltres(pathname, commandes.filters);
+  }, [pathname, commandes.filters]);
+
+  return commandes;
+}
 
 export function LibraryFilterBar(proprietes: ComponentProps<typeof BarreWeb>) {
   return (
