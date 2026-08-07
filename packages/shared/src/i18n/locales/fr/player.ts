@@ -53,4 +53,9 @@ export default {
   // la rangee de transport du televiseur, elle, les lit sans repli.
   play: "Lecture",
   pause: "Pause",
+  // Le bouton qui ENTRE en mode deplacement. `scrubConfirmHint` et
+  // `scrubCancelHint` sont des indices affiches PENDANT ; celle-ci nomme
+  // l'action, et n'a d'emploi que la ou se deplacer est un mode — la
+  // telecommande.
+  seekMode: "Déplacement",
 } as const;

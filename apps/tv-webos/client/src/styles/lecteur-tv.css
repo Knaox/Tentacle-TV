@@ -40,8 +40,23 @@ html[data-tv-lecteur] #root {
   box-sizing: border-box;
 }
 
+/* Le bouton quitter, puis les textes. Une rangée, alignée sur la première ligne
+   du titre plutôt que sur son centre : le sous-titre tirerait l'icône vers le
+   bas. Pas de `gap` — la passe des écarts écraserait la marge de l'enfant. */
 .osd-tv-haut {
+  display: flex;
+  align-items: flex-start;
   flex-shrink: 0;
+}
+
+.osd-tv-quitter {
+  flex: 0 0 auto;
+  margin-right: 24px;
+}
+
+.osd-tv-textes {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .osd-tv-titre {
