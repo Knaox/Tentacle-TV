@@ -211,8 +211,22 @@ function poserFocusInitial(): boolean {
   const deja = elementActif();
   if (deja && estCiblePreferee(deja) && cibleAtteignable(deja)) return true;
 
+  // La mémoire ne ramène JAMAIS le focus dans un champ de saisie.
+  //
+  // C'était la seule des quatre portes d'entrée du focus à ne pas appliquer
+  // cette règle — `defaut.ts`, `zones.ts` et `survolFocus.ts` la respectent, et
+  // la ligne 221 ci-dessous aussi. L'oubli suffisait à piéger la recherche.
+  //
+  // Mesuré sur l'émulateur webOS 4 : un `blur()` sur le champ produit bien
+  // `keyboardStateChange visibility=false`, puis IMMÉDIATEMENT
+  // `visibility=true`, sans que `document.activeElement` ait cessé d'être
+  // l'`<input>`. C'est cette pose-ci qui l'y ramenait. webOS rouvrait donc son
+  // clavier, `moteurSuspendu()` redevenait vrai, et plus une flèche n'était
+  // traitée : ni pour descendre vers les résultats, ni pour remonter au champ.
+  // Les deux symptômes n'en faisaient qu'un.
   const memorise = entrant(retrouver(racine));
-  if (memorise) {
+  const memoireDansUnChamp = memorise !== null && estUnChampDeSaisie(memorise);
+  if (memorise && !memoireDansUnChamp) {
     poser(memorise);
     return true;
   }
@@ -225,7 +239,10 @@ function poserFocusInitial(): boolean {
   // détruirait le défilement restauré, si bien que la carte mémorisée ne serait
   // jamais montée. L'affinage la posera, et le filet de fin de budget garantit
   // que l'écran ne reste pas sans anneau.
-  if (aUneMemoire()) return true;
+  // Une trace dont la cible est un champ de saisie ne vaut pas d'attendre : la
+  // laisser gouverner ici rendrait l'écran sans anneau, la pose ci-dessus
+  // l'ayant justement refusée.
+  if (aUneMemoire() && !memoireDansUnChamp) return true;
 
   const defaut = focusParDefaut(racine, candidatsEntrants(racine));
   if (!defaut) return false;
