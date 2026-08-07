@@ -1,4 +1,4 @@
-import type { Plugin } from "vite";
+import { normalizePath, type Plugin } from "vite";
 
 /**
  * Remplace un module par un autre, à chemin résolu.
@@ -17,6 +17,18 @@ import type { Plugin } from "vite";
  * faute de frappe dans un chemin. Le plugin le signale en fin de build plutôt
  * que de laisser le module d'origine partir dans le bundle en silence.
  *
+ * **Les séparateurs de chemin, et pourquoi la comparaison passe par
+ * `normalizePath`.** La table est bâtie avec `path.resolve`, qui rend des
+ * ANTISLASHS sous Windows ; Rollup, lui, donne toujours des identifiants à
+ * SLASHS. Comparés tels quels, ils ne coïncident sur aucune plateforme sauf
+ * les systèmes de type UNIX. Le défaut est resté invisible longtemps parce
+ * qu'il ne se voit pas là où le produit se construit — Docker et le hook de
+ * déploiement tournent sous Linux : c'est une machine de développement Windows
+ * qui, sortant un build sans AUCUNE des trente-neuf substitutions, produisait
+ * le client web habillé des feuilles du téléviseur. Rien ne plantait ; le rail
+ * était simplement absent et les cartes reprenaient leur mise en page de
+ * bureau.
+ *
  * **Demander explicitement l'original : `?original`.** Un remplacement a le
  * droit d'envelopper le module qu'il remplace, et la garde anti-cycle plus bas
  * suffit à la CONSTRUCTION — Rollup y distingue les deux par leur identifiant.
@@ -31,6 +43,14 @@ import type { Plugin } from "vite";
 const MARQUE_ORIGINAL = "?original";
 
 export function substitutionModules(table: Record<string, string>): Plugin {
+  // Indexée à slashs une fois pour toutes : c'est la seule forme dans laquelle
+  // les deux côtés de la comparaison peuvent se rencontrer.
+  const parChemin = new Map(
+    Object.entries(table).map(([origine, remplacement]) => [
+      normalizePath(origine),
+      { origine, remplacement },
+    ]),
+  );
   const declenchees = new Set<string>();
 
   return {
@@ -54,25 +74,43 @@ export function substitutionModules(table: Record<string, string>): Plugin {
 
       // Vite suffixe les identifiants (`?url`, `?worker`, `?v=…`) ; la table
       // ne connaît que des chemins de fichier.
-      const chemin = resolu.id.split("?")[0];
-      const remplacement = table[chemin];
-      if (!remplacement) return null;
+      const chemin = normalizePath(resolu.id.split("?")[0]);
+      const entree = parChemin.get(chemin);
+      if (!entree) return null;
 
-      const cible = await this.resolve(remplacement, importateur, { ...options, skipSelf: true });
+      const cible = await this.resolve(entree.remplacement, importateur, {
+        ...options,
+        skipSelf: true,
+      });
 
       // Le remplacement a le droit d'importer l'original — c'est même tout
       // l'intérêt : un composant téléviseur enveloppe celui du web au lieu de
       // le recopier. Sans cette garde, cet import se substituerait à lui-même
       // et la résolution bouclerait, sur un `vite build` qui part sans jamais
       // rendre la main ni dire pourquoi.
-      if (cible && cible.id.split("?")[0] === importateur.split("?")[0]) return null;
+      if (cible && normalizePath(cible.id.split("?")[0]) === normalizePath(importateur.split("?")[0])) {
+        return null;
+      }
 
       declenchees.add(chemin);
       return cible;
     },
 
     buildEnd() {
-      const inutilisees = Object.keys(table).filter((chemin) => !declenchees.has(chemin));
+      // Aucune substitution du tout : ce n'est pas une faute de frappe, c'est le
+      // mécanisme qui ne fonctionne plus. Un client web habillé en téléviseur
+      // est pire qu'un build qui échoue — il se déploie.
+      if (declenchees.size === 0 && parChemin.size > 0) {
+        this.error(
+          "aucune des substitutions de modules n'a été déclenchée : le client " +
+            "produit serait celui d'apps/web, avec les seules feuilles du " +
+            "téléviseur. Voir config/substitutionModules.ts.",
+        );
+      }
+
+      const inutilisees = [...parChemin]
+        .filter(([chemin]) => !declenchees.has(chemin))
+        .map(([, entree]) => entree.origine);
       if (inutilisees.length === 0) return;
       this.warn(
         `substitutions jamais déclenchées (chemin erroné ou module devenu inatteignable) :\n  ${
