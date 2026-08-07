@@ -70,6 +70,9 @@ function actionPrincipale(racine: HTMLElement): HTMLElement | null {
 /** À quelle distance du bout on considère l'épisode terminé. */
 const FIN_S = 1;
 
+/** Le décompte du client web, repris ici pour l'instant où il manque encore. */
+const TOTAL_DECOMPTE_S = 10;
+
 /**
  * L'épisode est-il ARRIVÉ AU BOUT ?
  *
@@ -117,9 +120,21 @@ export function AutoPlayOverlay({
   onCancel,
 }: ProprietesCarte) {
   const enveloppe = useRef<HTMLDivElement>(null);
-  // L'affiche pleine dalle porte un décompte : elle suppose donc que
-  // l'enchaînement est lancé, en plus d'être arrivé au bout.
-  const pleinEcran = useLectureTerminee() && countdown !== null;
+
+  /**
+   * Arrivé au bout, c'est l'affiche — sans autre condition.
+   *
+   * Elle a d'abord exigé qu'un décompte tourne, l'affiche en portant un. Mais
+   * ce décompte peut manquer au moment précis où l'épisode se termine : on
+   * traverse la vidéo en avance rapide, on franchit le seuil pendant que la
+   * bannière est là, et le filet de `carteFinTv` n'a pas encore rejoué. La
+   * bannière restait alors affichée sur un épisode fini — un coin d'écran qui
+   * propose la suite devant une image arrêtée.
+   *
+   * La fin l'emporte donc, et le décompte manquant part de son total : c'est
+   * ce que le filet est sur le point de poser.
+   */
+  const pleinEcran = useLectureTerminee();
 
   useEffect(() => {
     const racine = enveloppe.current;
@@ -149,7 +164,7 @@ export function AutoPlayOverlay({
     return (
       <div className="affiche-fin-tv" ref={enveloppe} {...{ [ATTRIBUT_SURCOUCHE]: "" }}>
         <NextEpisodeFullscreen
-          countdown={countdown}
+          countdown={countdown ?? TOTAL_DECOMPTE_S}
           episodeTitle={episodeTitle}
           episodeLabel={episodeLabel}
           episodeDescription={episodeDescription}
