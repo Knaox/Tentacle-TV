@@ -3,6 +3,13 @@ import { PALIERS } from "./machineScrub";
 /**
  * Le maintien d'une flèche, et sa montée en vitesse.
  *
+ * **Deux gestes, deux réponses.** On tape : c'est un saut sec de −10 ou +30,
+ * la lecture continue, rien n'attend de confirmation — le geste des boutons de
+ * la rangée. On tient : le curseur fantôme part et accélère, et c'est le seul
+ * moyen de traverser un épisode sans cent appuis. Tout le travail de ce module
+ * est de dire lequel des deux on est en train de faire, à partir d'un flux
+ * d'événements où rien ne le déclare.
+ *
  * **Le débit ne doit pas dépendre de la dalle.** La version précédente avançait
  * d'un pas à chaque répétition clavier et montait d'un palier tous les six
  * appuis. Or la cadence d'auto-répétition d'un téléviseur LG n'est ni
@@ -72,8 +79,31 @@ const INTERVALLE_REPETITION_MS = 450;
  */
 export const REPETITIONS_AVANT_TIC = 2;
 
+/**
+ * En dessous de cet écart, aucun doigt ne peut être en cause : c'est la dalle.
+ *
+ * Le compteur de répétitions protège des doigts insistants, mais il coûte des
+ * sauts : chaque battement avant l'engagement en produit un, et sur une touche
+ * réellement tenue on n'en veut aucun de trop avant que le curseur fantôme
+ * parte. Une auto-répétition rapide se reconnaît sans hésitation possible, et
+ * l'on engage alors dès le premier battement.
+ *
+ * Une télécommande a de la course : deux appuis séparés par moins de deux
+ * cents millisecondes ne s'obtiennent pas au doigt, et la dalle émettrait de
+ * toute façon un `keyup` entre les deux — qui remet le compteur à zéro.
+ */
+const AUTO_REPETITION_MS = 200;
+
 export interface OptionsMoteurMaintien {
-  /** Un pas d'avance : appui simple comme tic de maintien. */
+  /**
+   * Un GESTE : appui simple, ou répétition tant que le maintien n'a pas pris.
+   *
+   * C'est un saut sec — la lecture continue, rien ne se met en pause, rien
+   * n'attend de confirmation. Ce que fait le bouton « −10 » ou « +30 » de la
+   * rangée, et ce qu'on attend d'une flèche qu'on tape.
+   */
+  sauter: (sens: 1 | -1) => void;
+  /** Un tic de MAINTIEN : le déplacement dans le flux, avec son palier. */
   avancer: (sens: 1 | -1, palier: number) => void;
   /** Horloge, injectable pour les tests. */
   maintenant?: () => number;
@@ -169,15 +199,16 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
       instant - dernierInstant <= INTERVALLE_REPETITION_MS;
 
     if (!enchaine) {
-      // Nouvel appui : un pas fixe, sans accélération. C'est la seule façon de
-      // viser une position précise, et c'est ce que fait `stepScrub` d'`apps/tv`.
+      // Nouvel appui : un saut sec, sans accélération et sans mode. C'est la
+      // seule façon de viser une position précise, et c'est ce qu'on attend
+      // d'une flèche qu'on tape.
       arreterMaintien();
       intervalle = 0;
       repetitions = 0;
       dernierCode = code;
       sensCourant = sens;
       dernierInstant = instant;
-      options.avancer(sens, PALIERS[0]);
+      options.sauter(sens);
       return;
     }
 
@@ -189,11 +220,17 @@ export function creerMoteurMaintien(options: OptionsMoteurMaintien): MoteurMaint
     repetitions += 1;
 
     if (debutMaintien === null) {
-      // Tant que le tic n'a pas pris la main, chaque événement vaut un pas :
-      // sans cela, les répétitions qui précèdent l'engagement n'avanceraient
-      // de rien et un double appui ne produirait qu'un seul saut.
-      options.avancer(sens, PALIERS[0]);
-      if (repetitions >= REPETITIONS_AVANT_TIC) engager(instant);
+      // Une cadence de dalle ne laisse aucun doute : on engage sans attendre.
+      // Un écart plus large peut venir d'un doigt — on lui laisse le bénéfice
+      // du doute, et un saut, jusqu'à ce qu'il insiste.
+      if (mesure <= AUTO_REPETITION_MS || repetitions >= REPETITIONS_AVANT_TIC) {
+        // Le battement qui engage ne saute PAS : il passe la main au curseur,
+        // et un saut de plus déplacerait le point d'où celui-ci part.
+        engager(instant);
+      } else {
+        // Sans cela, deux appuis rapprochés ne produiraient qu'un seul saut.
+        options.sauter(sens);
+      }
     }
     armerVeille();
   }
