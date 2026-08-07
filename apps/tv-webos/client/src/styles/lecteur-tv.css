@@ -43,7 +43,10 @@ html[data-tv-lecteur] #root {
 /* Le bouton quitter, puis les textes. Une rangée, alignée sur la première ligne
    du titre plutôt que sur son centre : le sous-titre tirerait l'icône vers le
    bas. Pas de `gap` — la passe des écarts écraserait la marge de l'enfant. */
+/* `relative` pour ancrer le dégradé de protection, qui déborde du retrait
+   d'overscan jusqu'au bord réel de la dalle — voir `lecteur-osd-tv.css`. */
 .osd-tv-haut {
+  position: relative;
   display: flex;
   align-items: flex-start;
   flex-shrink: 0;

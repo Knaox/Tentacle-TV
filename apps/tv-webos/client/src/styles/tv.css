@@ -19,6 +19,7 @@
 @import "./grille-tv.css";
 @import "./recherche-tv.css";
 @import "./lecteur-tv.css";
+@import "./lecteur-osd-tv.css";
 @import "./lecteur-scrub-tv.css";
 @import "./lecteur-panneaux-tv.css";
 @import "./lecteur-saut-tv.css";
