@@ -1,104 +1,150 @@
-import type { CapacitesTeleviseur } from "../amorce/webosGlobals";
+import { capacitesTeleviseur, type CapacitesTeleviseur } from "../amorce/webosGlobals";
+import { capacitesDe, type CapacitesTv, type MaterielTv } from "./capacitesWebos";
+import { lirePlateforme, type PlateformeTv } from "./generationWebos";
 
 /**
- * Ce que la puce de la dalle sait décoder.
+ * Ce que le téléviseur sait décoder — et d'où on le tient.
  *
- * Sondé à l'exécution par `canPlayType`, et par lui seul : `<video src>` est le
- * seul chemin de lecture du client téléviseur, donc c'est le décodeur natif
- * qu'il faut interroger. `MediaSource.isTypeSupported` décrirait un pipeline
- * qui n'est jamais emprunté ici — et il sous-déclare largement sur webOS, où
- * MSE ignore des formats que la puce ouvre sans difficulté.
+ * Ce module a changé de doctrine, et c'est le cœur du chantier.
+ *
+ * **Avant**, tout venait de `canPlayType`. C'était le défaut de fond : sur
+ * webOS, le moteur Chromium décrit ce que Chromium sait faire, pas ce que la
+ * puce de la dalle sait faire. Il répond `""` pour le HEVC, l'AC3, le DTS et le
+ * MKV que le téléviseur ouvre sans difficulté. Moonfin l'écrit en tête de son
+ * fichier — « canPlayType() is unreliable » — et `jellyfin-web` court-circuite
+ * carrément le test par `if (browser.web0s) return true`. Chez nous, une sonde
+ * muette vidait le profil de ses `DirectPlayProfiles` : tout partait en
+ * transcodage.
+ *
+ * **Maintenant**, la table documentée par LG fait autorité (`capacitesWebos.ts`),
+ * et trois signaux la RESTREIGNENT — jamais ne l'élargissent :
+ *
+ *   1. la génération webOS, pour le logiciel (`generationWebos.ts`) ;
+ *   2. l'année du modèle, pour le matériel — DTS, AV1 ;
+ *   3. `deviceInfo`, pour la dalle — 4K, HDR, Dolby Vision.
+ *
+ * `canPlayType` reste appelé, mais pour le seul journal de diagnostic : c'est
+ * une mesure, plus une décision. Le quatrième signal de restriction, le seul
+ * qui soit définitif, est un échec de lecture observé — il vit dans
+ * `repliLecture.ts`.
  */
 
-const sonde = typeof document !== "undefined" ? document.createElement("video") : null;
-
-function lit(type: string): boolean {
-  if (!sonde) return false;
-  // `canPlayType` rend "", "maybe" ou "probably". Sur webOS, un décodeur
-  // matériel présent répond souvent "maybe" faute de pouvoir garantir un
-  // profil précis — exiger "probably" écarterait justement les formats qui
-  // font l'intérêt d'un téléviseur.
-  return sonde.canPlayType(type) !== "";
+export interface DalleTv {
+  uhd: boolean;
+  uhd8K: boolean;
+  hdr10: boolean;
+  dolbyVision: boolean;
+  dolbyAtmos: boolean;
+  oled: boolean;
 }
 
-/** Conteneurs que le démultiplexeur de webOS ouvre. */
-export const CONTENEURS_TV = ["mp4,m4v,mov", "mkv", "ts,m2ts,mts", "avi", "webm"];
-
-export interface CodecsSondes {
-  video: string[];
-  audio: string[];
-  hevc10bits: boolean;
-  dts: boolean;
+export interface ProfilResolu {
+  plateforme: PlateformeTv;
+  capacites: CapacitesTv;
+  dalle: DalleTv;
 }
 
-export function sonderCodecs(): CodecsSondes {
-  const video: string[] = [];
-  if (lit('video/mp4; codecs="avc1.640029"')) video.push("h264");
-  if (lit('video/mp4; codecs="hvc1.1.6.L120.B0"') || lit('video/mp4; codecs="hev1.1.6.L120.B0"')) {
-    video.push("hevc");
-  }
-  if (lit('video/webm; codecs="vp9"') || lit('video/mp4; codecs="vp09.00.51.08"')) video.push("vp9");
-  if (lit('video/mp4; codecs="av01.0.15M.10"')) video.push("av1");
-  if (lit("video/mpeg")) video.push("mpeg2video");
+/**
+ * Normalise ce que `deviceInfo` a bien voulu rendre.
+ *
+ * Aucun champ n'est supposé présent : le forum développeur de LG documente des
+ * téléviseurs de 2019 et de 2022 qui ne renvoient que `modelName`,
+ * `screenWidth` et `screenHeight` — signalé, non reproduit par LG, jamais
+ * corrigé. Toute lecture doit donc survivre à l'absence.
+ *
+ * `uhd` se déduit de la définition de l'écran quand le champ manque, parce que
+ * c'est cette valeur-là qui gouverne le plafond de débit : la laisser à faux
+ * ferait recompresser un fichier 4K sur une dalle 4K.
+ */
+export function lireDalle(brut: CapacitesTeleviseur): DalleTv {
+  const largeur = brut.screenWidth ?? 0;
+  const uhd = brut.uhd ?? largeur >= 3840;
+  return {
+    uhd,
+    uhd8K: brut.uhd8K ?? largeur >= 7680,
+    // Le HDR10 se déduit de la définition faute de mieux, et c'est un choix
+    // mesuré. LG n'a plus vendu de dalle 4K sans HDR10 depuis 2016 ; refuser le
+    // HDR par précaution ferait convertir la plage dynamique côté serveur, donc
+    // RECOMPRESSER toute l'image — exactement ce que ce chantier supprime. Une
+    // dalle FHD, elle, n'a jamais de HDR : la déduction ne va que dans un sens.
+    hdr10: brut.hdr10 ?? uhd,
+    // Le Dolby Vision, lui, reste strictement déclaré. Il dépend du modèle et
+    // non de la définition, et aucune corrélation ne le remplace.
+    dolbyVision: brut.dolbyVision === true,
+    dolbyAtmos: brut.dolbyAtmos === true,
+    oled: brut.oled === true,
+  };
+}
 
-  const audio: string[] = [];
-  if (lit('audio/mp4; codecs="mp4a.40.2"')) audio.push("aac");
-  if (lit('audio/mp4; codecs="mp4a.69"') || lit("audio/mpeg")) audio.push("mp3");
-  if (lit('audio/mp4; codecs="ac-3"')) audio.push("ac3");
-  if (lit('audio/mp4; codecs="ec-3"')) audio.push("eac3");
-  if (lit('audio/mp4; codecs="flac"')) audio.push("flac");
-  if (lit('audio/mp4; codecs="opus"')) audio.push("opus");
-
-  // Le DTS se sonde et ne se suppose pas : son support varie d'un modèle à
-  // l'autre au sein d'une même version de webOS, selon les licences que LG a
-  // payées pour un marché donné. Le déduire de la version rendrait muettes les
-  // pistes DTS sur les modèles qui les décodent — ou ferait transcoder sur
-  // ceux qui ne les décodent pas.
-  const dts = lit('audio/mp4; codecs="dtsc"') || lit('audio/mp4; codecs="dtse"');
-  if (dts) audio.push("dts");
-
-  // TrueHD : rarement déclaré, souvent décodé. On ne le pousse que s'il est
-  // annoncé, faute de quoi une piste silencieuse serait pire qu'un transcodage.
-  if (lit('audio/mp4; codecs="mlpa"')) audio.push("truehd");
-
-  const hevc10bits =
-    lit('video/mp4; codecs="hvc1.2.4.L120.B0"') || lit('video/mp4; codecs="hev1.2.4.L120.B0"');
-
-  return { video, audio, hevc10bits, dts };
+/** Le tableau complet des capacités, tel qu'il servira à bâtir le profil. */
+export function resoudreProfil(agent: string = navigator.userAgent): ProfilResolu {
+  const brut = capacitesTeleviseur();
+  const plateforme = lirePlateforme(brut, agent);
+  const dalle = lireDalle(brut);
+  const materiel: MaterielTv = {
+    annee: plateforme.annee,
+    oled: dalle.oled,
+    uhd8K: dalle.uhd8K,
+  };
+  return { plateforme, capacites: capacitesDe(plateforme.generation, materiel), dalle };
 }
 
 /**
  * Plages dynamiques déclarées à Jellyfin.
  *
- * Croisement délibéré de deux sources. Le décodage 10 bits est une affaire de
- * puce, que `canPlayType` sait dire ; le HDR est une affaire de dalle, qu'il
- * ignore complètement. Une puce peut parfaitement décoder du HDR10 derrière un
- * écran qui ne l'affiche pas — déclarer le HDR dans ce cas ferait envoyer un
- * flux dont les couleurs seraient délavées, faute de conversion.
+ * C'est la condition décisive du profil : c'est elle, et non les
+ * `TranscodeReasons`, qui évite au serveur de convertir le HDR en SDR — une
+ * conversion qui recompresse l'image entière.
  *
- * `SDR` et `Unknown` sont toujours déclarés : ce sont les valeurs que Jellyfin
- * attribue aux fichiers dont il ne sait rien.
+ * `HDR10Plus` est déclaré avec le HDR10 bien que LG ne l'ait jamais supporté,
+ * y compris sur les gammes 2025. Ce n'est pas une erreur : un flux HDR10+ porte
+ * une couche de base HDR10 que le téléviseur lit correctement. Le déclarer, c'est
+ * obtenir la lecture directe et une image HDR10 juste ; le taire, c'est
+ * déclencher un ré-encodage 4K pour un résultat visuellement identique.
+ *
+ * `DOVIWithEL` et `DOVIWithELHDR10Plus` — le Dolby Vision profil 7, à deux
+ * couches — ne sont JAMAIS déclarés : aucun téléviseur LG ne les lit, et
+ * Jellyfin retombe alors sur la couche de base HDR10.
  */
-export function plagesDynamiquesTv(
-  dalle: CapacitesTeleviseur,
-  codecs: CodecsSondes,
-): string[] {
+export function plagesDynamiquesTv(dalle: DalleTv): string[] {
+  // `Unknown` et `SDR` sont ce que Jellyfin attribue aux fichiers dont il ne
+  // sait rien : les taire ferait transcoder la moitié d'une médiathèque.
   const plages = ["Unknown", "SDR"];
-  if (!codecs.hevc10bits) return plages;
-
   if (dalle.hdr10) plages.push("HDR10", "HDR10Plus", "HLG");
   if (dalle.dolbyVision) {
     plages.push("DOVI", "DOVIWithHDR10", "DOVIWithHLG", "DOVIWithSDR");
     if (dalle.hdr10) plages.push("DOVIWithHDR10Plus");
   }
-
-  // Aucune capacité remontée : `deviceInfo` n'a pas répondu — au développement
-  // dans un navigateur, ou si l'injection n'a pas eu lieu. On s'en tient alors
-  // à ce que la puce déclare, plutôt que de tout refuser et de faire
-  // transcoder chaque fichier HDR.
-  if (dalle.hdr10 === undefined && dalle.dolbyVision === undefined) {
-    plages.push("HDR10", "HLG");
-  }
-
   return plages;
+}
+
+/**
+ * Ce que `canPlayType` répond — pour le journal, et pour lui seul.
+ *
+ * Conservé parce que l'écart entre cette réponse et la table est justement la
+ * mesure qu'on veut sous les yeux le jour où une dalle se comporte mal : un
+ * moteur qui déclare le HEVC alors que la table le refuse, ou l'inverse, est
+ * une information. Aucune décision n'en dépend.
+ */
+export function diagnosticCodecs(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const sonde = document.createElement("video");
+  const types: Record<string, string> = {
+    h264: 'video/mp4; codecs="avc1.640029"',
+    hevc: 'video/mp4; codecs="hvc1.1.6.L120.B0"',
+    hevc10: 'video/mp4; codecs="hvc1.2.4.L120.B0"',
+    vp9: 'video/webm; codecs="vp9"',
+    av1: 'video/mp4; codecs="av01.0.15M.10"',
+    ac3: 'audio/mp4; codecs="ac-3"',
+    eac3: 'audio/mp4; codecs="ec-3"',
+    dts: 'audio/mp4; codecs="dtsc"',
+  };
+  const releve: Record<string, string> = {};
+  for (const nom of Object.keys(types)) {
+    // `canPlayType` rend "", "maybe" ou "probably". La chaîne nue est plus
+    // parlante qu'un booléen : « maybe » est la réponse habituelle d'un
+    // décodeur matériel qui ne peut garantir un profil précis.
+    releve[nom] = sonde.canPlayType(types[nom]) || "non";
+  }
+  return releve;
 }
