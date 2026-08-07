@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 import { donnerFocus } from "../focus/actif";
-import { lireEtat } from "./etatLecteurTv";
 import { ATTRIBUT_SURCOUCHE } from "./surcoucheOk";
 
 /**
@@ -43,9 +42,20 @@ function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
     const element = bouton.current;
     if (!affiche || !element) return;
 
-    // On ne prend le focus que si personne d'autre ne s'en sert : l'habillage
-    // visible a ses propres boutons, et le moteur les parcourt très bien.
-    if (lireEtat().mode === "repos") donnerFocus(element);
+    /**
+     * Le bouton prend le focus en paraissant — TOUJOURS, habillage compris.
+     *
+     * On ne le prenait d'abord qu'au repos, en se disant que l'habillage visible
+     * a ses propres boutons et que le moteur les parcourt très bien. C'était
+     * vrai tant que les flèches pouvaient encore atteindre celui-ci ; elles se
+     * taisent désormais dès qu'une surcouche paraît, précisément pour ne pas
+     * déplacer la lecture derrière elle. Ne pas prendre le focus le rendrait
+     * donc INATTEIGNABLE — un bouton affiché que rien ne peut viser.
+     *
+     * Et c'est le bon parti de toute façon : quand quelque chose est proposé,
+     * c'est cela qu'on veut sous la main.
+     */
+    donnerFocus(element);
 
     return () => {
       // Le bouton disparaît avec le segment. S'il tenait le focus, le laisser
