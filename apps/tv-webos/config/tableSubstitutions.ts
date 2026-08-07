@@ -204,6 +204,15 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // l'utilisateur.
   [resolve(WEB, "components/SkipBadge.tsx")]: resolve(CLIENT, "lecture/BadgeSautTv.tsx"),
 
+  // Les boutons « passer l'intro / le générique » sont ancrés à vingt-quatre
+  // pixels du bord — dans l'overscan — et paraissent quand l'habillage est
+  // éteint, donc quand le moteur de focus s'est retiré de la route. Tout le
+  // reste des surcouches convient tel quel.
+  [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(
+    CLIENT,
+    "lecture/SurcouchesTv.tsx",
+  ),
+
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
