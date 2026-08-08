@@ -40,6 +40,11 @@
   border-bottom: 1px solid var(--border-subtle);
 }
 
+/* La barre et son champ occupent la même case : l'un se voit, l'autre saisit. */
+.recherche-tv-barre {
+  position: relative;
+}
+
 .recherche-tv-champ {
   display: block;
   width: 100%;
@@ -51,6 +56,49 @@
   color: var(--text-primary);
   font-size: 30px;
   font-weight: 300;
+  /* La barre est un bouton : sans cela le texte se centrerait et la police
+     serait celle du système, pas celle de l'interface. */
+  text-align: left;
+  font-family: inherit;
+  line-height: 1.2;
+  /* Une ligne, toujours : une requête longue défile sous le curseur système
+     plutôt que de faire grandir la barre sous les résultats. */
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Le libellé d'invite, qui remplace le `placeholder` perdu avec l'`<input>`. */
+.recherche-tv-invite {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* Le champ véritable, exactement sur la barre et invisible.
+ *
+ * Posé là et non hors écran : c'est lui qui reçoit le curseur de saisie et la
+ * dictée, et webOS ancre son clavier sur la position du champ focalisé. Un
+ * champ relégué à moins neuf mille pixels ferait travailler la plateforme à
+ * l'aveugle.
+ *
+ * Les quatre côtés sont écrits séparément : `inset` est une propriété que le
+ * socle Chrome 53 ne connaît pas. */
+.recherche-tv-saisie {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: transparent;
+  font-size: 30px;
+  font-weight: 300;
+  font-family: inherit;
+  opacity: 0;
 }
 
 .recherche-tv-indice {
