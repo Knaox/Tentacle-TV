@@ -198,7 +198,20 @@ button[aria-label="Marquer comme non vu"] {
  * traduit. Si `apps/web` change sa mise en place, la règle cesse simplement de
  * s'appliquer et le bouton revient où il était — visible, mal placé, sans
  * casse. */
+/* DEUX fois le retrait, et c'est le point que la règle manquait.
+ *
+ * Le bouton est positionné par rapport au conteneur décrit ci-dessus, celui qui
+ * DÉCALE de moins un retrait pour que l'image aille d'un bord à l'autre. Un
+ * décalage d'un seul retrait ne fait donc que ramener le bouton à l'origine
+ * physique : -96 + 96 + 8, soit huit pixels du bord — précisément dans la bande
+ * rognée que la règle existait pour éviter. Le défaut ne se voyait pas au
+ * développement, où rien n'est rogné, et il ne se voyait pas non plus dans le
+ * calcul, les deux termes portant le même nom.
+ *
+ * Il en faut deux : un pour annuler le décalage du conteneur, un pour le
+ * retrait proprement dit. Plus huit pixels pour l'anneau de focus, qui se
+ * dessine hors de la boîte et serait rogné à son tour. */
 .min-h-screen button.absolute.left-4.top-4 {
-  left: calc(var(--tv-overscan-x) + 8px);
-  top: calc(var(--tv-overscan-y) + 8px);
+  left: calc(2 * var(--tv-overscan-x) + 8px);
+  top: calc(2 * var(--tv-overscan-y) + 8px);
 }
