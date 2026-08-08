@@ -34,6 +34,15 @@ const DELAI_FRAPPE_MS = 350;
 const LONGUEUR_MINIMALE = 2;
 const RESULTATS_MAX = 24;
 
+/**
+ * Délai de grâce avant de rendre la main à la barre quand le clavier se retire.
+ *
+ * La dictée fait passer `visibility` par faux AVANT de revenir à vrai — le
+ * clavier s'efface pendant que l'interface vocale s'affiche. Rendre le focus
+ * sur-le-champ casserait la saisie vocale, la seule que cette plateforme offre.
+ */
+const DELAI_RETOUR_BARRE_MS = 450;
+
 function surTeleviseur(): boolean {
   return typeof (window as unknown as { PalmSystem?: unknown }).PalmSystem !== "undefined";
 }
@@ -42,6 +51,19 @@ export function EcranRechercheTv() {
   const ouverte = useRechercheOuverte();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
+  // Deux éléments là où il n'y en avait qu'un, et c'est tout le correctif.
+  //
+  // Sur webOS, focaliser un `<input>` fait monter le clavier système — le guide
+  // l'affirme, et l'application n'a aucun moyen de s'y opposer. Tant que la
+  // barre de recherche ÉTAIT ce champ, la simple navigation au D-pad ouvrait un
+  // clavier plein écran que personne n'avait demandé, et le moteur de focus se
+  // suspendait dans la foulée.
+  //
+  // La barre est donc un bouton — focalisable, jamais éditable — et le champ
+  // véritable est retiré du parcours (`tabIndex={-1}`) et posé par-dessus, à
+  // l'identique mais transparent. Le clavier ne monte plus qu'au geste explicite
+  // qui le demande : OK sur la barre.
+  const barre = useRef<HTMLButtonElement>(null);
   const champ = useRef<HTMLInputElement>(null);
 
   const [saisie, setSaisie] = useState("");
@@ -53,8 +75,12 @@ export function EcranRechercheTv() {
     return () => clearTimeout(identifiant);
   }, [saisie]);
 
-  // Le focus du champ EST l'ouverture du clavier système : il ne doit pas
-  // attendre un appui de plus. Le report d'un tour de boucle laisse le temps au
+  // L'entrée se pose sur la BARRE, jamais sur le champ.
+  //
+  // Ouvrir la recherche ne doit pas ouvrir le clavier : on arrive souvent ici
+  // pour reprendre une recherche récente, ou simplement pour lire ce qu'on avait
+  // tapé. Un clavier plein écran qu'il faut refermer avant de voir l'écran est
+  // un péage, pas un service. Le report d'un tour de boucle laisse le temps au
   // portail d'être peint — un `focus()` sur un élément pas encore composé est
   // ignoré par WebKit comme par Blink.
   useEffect(() => {
@@ -64,7 +90,7 @@ export function EcranRechercheTv() {
       return;
     }
     setRecentes(readRecentSearches());
-    const identifiant = setTimeout(() => champ.current?.focus(), 60);
+    const identifiant = setTimeout(() => barre.current?.focus(), 60);
     return () => clearTimeout(identifiant);
   }, [ouverte]);
 
@@ -89,29 +115,53 @@ export function EcranRechercheTv() {
   useEffect(() => inscrireRetour(() => fermer()), [fermer]);
 
   /**
-   * Rouvrir le clavier système, et pourquoi ce n'est pas un simple `focus()`.
+   * OK sur la barre : c'est LE geste qui ouvre le clavier, et le seul.
    *
-   * webOS referme son clavier SANS retirer le focus du champ — le guide
-   * l'affirme, et l'émulateur webOS 4 le confirme : `keyboardStateChange` passe
-   * à faux, `document.activeElement` reste l'`<input>`. Or le clavier ne monte
-   * que sur une TRANSITION de focus. Rappeler `focus()` sur l'élément qui est
-   * déjà actif ne produit aucun événement et ne rouvre donc rien : mesuré, le
-   * compteur d'événements clavier ne bouge pas d'un cran.
+   * Donner le focus au champ suffit — c'est précisément ce que webOS interprète
+   * comme une demande de saisie. La barre n'étant pas éditable, aucun autre
+   * chemin n'y mène : ni la navigation au D-pad, ni l'entrée dans l'écran, ni
+   * une restitution de focus automatique.
    *
-   * Il faut sortir du champ pour y revenir. Le `blur()` est reporté d'un tour de
-   * boucle avant le `focus()`, faute de quoi les deux se compensent dans la même
-   * tâche et la transition n'a pas lieu.
+   * Idempotent par construction : si le champ a déjà le focus, le clavier est
+   * déjà là et il n'y a rien à faire. C'est le cas que l'ancienne version ne
+   * savait pas traiter — un `focus()` sur l'élément déjà actif ne produit aucune
+   * transition, donc ne rouvre rien.
    */
-  const rouvrirClavier = useCallback(() => {
-    const element = champ.current;
-    if (!element) return;
-    if (document.activeElement !== element) {
-      element.focus();
-      return;
-    }
-    element.blur();
-    setTimeout(() => champ.current?.focus(), 0);
+  const ouvrirClavier = useCallback(() => {
+    champ.current?.focus();
   }, []);
+
+  /**
+   * Le clavier se retire : la barre reprend le focus.
+   *
+   * Sans cela, le focus resterait sur un champ invisible et hors du parcours du
+   * D-pad — l'anneau disparaîtrait et plus aucune flèche n'aurait de point de
+   * départ. On rend donc la main à la barre, qui est la représentation visible
+   * de ce champ.
+   *
+   * Le délai n'est pas un confort : la dictée fait passer `visibility` par faux
+   * avant de revenir à vrai, et rendre le focus sur-le-champ interromprait la
+   * saisie vocale. Un retour à vrai dans l'intervalle annule le retour.
+   */
+  useEffect(() => {
+    if (!ouverte) return;
+    let retour: ReturnType<typeof setTimeout> | undefined;
+    const surClavier = (evenement: Event) => {
+      const detail = (evenement as CustomEvent<{ visibility?: boolean }>).detail;
+      if (detail?.visibility === true) {
+        clearTimeout(retour);
+        return;
+      }
+      retour = setTimeout(() => {
+        if (document.activeElement === champ.current) barre.current?.focus();
+      }, DELAI_RETOUR_BARRE_MS);
+    };
+    document.addEventListener("keyboardStateChange", surClavier);
+    return () => {
+      document.removeEventListener("keyboardStateChange", surClavier);
+      clearTimeout(retour);
+    };
+  }, [ouverte]);
 
   const { data: resultats, isLoading } = useSearchItems(requete);
   const visibles = resultats?.slice(0, RESULTATS_MAX) ?? [];
@@ -135,18 +185,34 @@ export function EcranRechercheTv() {
   return (
     <div className="recherche-tv" role="dialog" aria-label={t("common:searchPlaceholder")}>
       <div className="recherche-tv-entete">
-        <input
-          ref={champ}
-          value={saisie}
-          onChange={(evenement) => setSaisie(evenement.target.value)}
-          // OK sur le champ rouvre le clavier. Le moteur de focus active une
-          // cible par un `click()` : c'est donc ici qu'arrive l'appui, qu'on
-          // vienne du rail ou qu'on remonte depuis les résultats.
-          onClick={rouvrirClavier}
-          placeholder={t("common:searchMediaLong")}
-          className="recherche-tv-champ"
-          aria-label={t("common:searchMediaLong")}
-        />
+        <div className="recherche-tv-barre">
+          {/* La cible du D-pad. Un bouton, donc rien que webOS puisse prendre
+              pour une demande de saisie — c'est ce qui garde le clavier fermé
+              tant qu'on ne l'a pas demandé. Le moteur de focus active une cible
+              par un `click()` : c'est ici qu'arrive l'appui sur OK. */}
+          <button
+            ref={barre}
+            type="button"
+            className="recherche-tv-champ"
+            onClick={ouvrirClavier}
+            aria-label={t("common:searchMediaLong")}
+          >
+            {saisie || (
+              <span className="recherche-tv-invite">{t("common:searchMediaLong")}</span>
+            )}
+          </button>
+          {/* Le champ véritable, posé par-dessus la barre et transparent. Il
+              porte la saisie et reçoit la dictée ; `tabIndex={-1}` le retire du
+              recensement du moteur, donc aucune flèche ne peut l'atteindre. */}
+          <input
+            ref={champ}
+            tabIndex={-1}
+            value={saisie}
+            onChange={(evenement) => setSaisie(evenement.target.value)}
+            className="recherche-tv-saisie"
+            aria-hidden="true"
+          />
+        </div>
         {surTeleviseur() && <p className="recherche-tv-indice">{t("common:rechercheTvDictee")}</p>}
       </div>
 
