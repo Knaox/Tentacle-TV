@@ -136,15 +136,29 @@ export function estCiblePreferee(element: HTMLElement): boolean {
 const TOLERANCE_LIGNE = 4;
 
 function premierEnOrdreDeLecture(candidats: Candidat[]): HTMLElement | null {
-  const recevables = candidats.filter(
-    (candidat) =>
-      !candidat.element.closest(SELECTEUR_RAIL) && !estUnChampDeSaisie(candidat.element),
-  );
+  // Les champs de saisie sont écartés d'abord, et pour de bon.
+  //
+  // Le relâchement ci-dessous les reprenait, et c'était la porte par laquelle
+  // la recherche devenait un piège. La surcouche est un `role="dialog"`, donc
+  // le recensement s'y confine ; sitôt que le champ perdait le focus, le filet
+  // « il y a toujours exactement un élément focalisé » repassait ici, ne
+  // trouvait plus rien d'admissible et se rabattait sur le champ. webOS y
+  // rouvrait son clavier, `moteurSuspendu()` redevenait vrai, et plus une
+  // flèche n'était traitée : ni pour descendre vers les résultats, ni pour
+  // remonter au champ. Les deux symptômes n'en faisaient qu'un.
+  //
+  // Mesuré sur l'émulateur webOS 4, puis reproduit sur le Simulator 26 : un
+  // `blur()` sur le champ est suivi d'un unique appel à `focus()` qui l'y
+  // ramène, et le clavier remonte dans la foulée.
+  const sansChamp = candidats.filter((candidat) => !estUnChampDeSaisie(candidat.element));
+  const recevables = sansChamp.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
 
-  // Un écran qui n'offre que le rail — ou que des champs — vaut mieux qu'un
-  // écran sans anneau du tout : on relâche la contrainte plutôt que de rendre
-  // `null`.
-  const retenus = recevables.length > 0 ? recevables : candidats;
+  // Un écran qui n'offre que le rail vaut mieux qu'un écran sans anneau du
+  // tout : ce relâchement-là reste. Un écran qui n'offre qu'un champ, non —
+  // mieux vaut pas d'anneau qu'un anneau dont on ne peut plus sortir. Le champ
+  // reste atteignable à la flèche et par la pose explicite de l'écran de
+  // recherche ; c'est l'automatisme, et lui seul, qui s'en écarte.
+  const retenus = recevables.length > 0 ? recevables : sansChamp;
   if (retenus.length === 0) return null;
 
   let meilleur = retenus[0];
