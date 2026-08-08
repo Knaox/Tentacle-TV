@@ -44,6 +44,26 @@ export function passeRatios(racine: Root, contexte: ContexteCompat): void {
       bloc.append(
         creerDeclaration({ prop: "padding-top", value: `${(rapport * 100).toFixed(4)}%` }),
       );
+      // La pleine largeur, qui était SUPPOSÉE et jamais assurée.
+      //
+      // La technique s'appuie sur un `padding` en pourcentage, qui se rapporte à
+      // la largeur du bloc conteneur : elle n'a de sens que pour une boîte qui
+      // occupe toute la largeur de son parent. C'était vrai partout, jusqu'à ce
+      // qu'un parent cesse d'étirer ses enfants.
+      //
+      // Le cas mesuré est la vignette d'un extra : son bouton est
+      // `flex flex-col` avec `align-items: flex-start`, donc la boîte n'est pas
+      // étirée et se dimensionne sur son contenu — or la règle `> *` ci-dessous
+      // vient justement de sortir TOUT son contenu du flux. Largeur zéro, image
+      // en `object-fit: cover` sur zéro pixel, et un rectangle noir à la place
+      // de la bande-annonce. La hauteur, elle, restait juste : le pourcentage se
+      // rapporte au PARENT, pas à l'élément — d'où une boîte visiblement haute
+      // et invisiblement plate.
+      //
+      // `align-self` plutôt que `width: 100%` : il ne s'applique qu'à un enfant
+      // de flex ou de grille, ne dispute rien aux utilitaires de largeur de
+      // Tailwind, et cède de lui-même dès qu'une largeur explicite est posée.
+      bloc.append(creerDeclaration({ prop: "align-self", value: "stretch" }));
     }
 
     // Tous les enfants sortent du flux — la boîte a une hauteur nulle, un enfant
