@@ -50,6 +50,24 @@ export function inscrireRetour(consommateur: ConsommateurRetour): () => void {
   };
 }
 
+/**
+ * Un seul Retour peut être cédé au clavier système, jamais deux.
+ *
+ * Céder la touche est juste sur une vraie dalle : c'est par elle qu'on referme
+ * le clavier, et la lui prendre faisait reculer d'un écran entier au premier
+ * appui. Mais cela suppose que le clavier la CONSOMME — et ce n'est pas
+ * toujours vrai. Mesuré sur le Simulator webOS 26 : `keyboardStateChange`
+ * annonce le clavier, `document.hasFocus()` est faux, et pourtant ni le clavier
+ * ni nous ne traitons la touche. Plus de flèches, plus de Retour : l'écran de
+ * recherche devenait une pièce sans porte.
+ *
+ * Le drapeau garantit une issue en deux appuis. Le premier revient au clavier ;
+ * si le clavier est toujours annoncé au second, c'est qu'il n'a rien pris, et
+ * l'on reprend la main. Il se lève à chaque Retour traité, et retombe dès que
+ * le clavier n'est plus là — de sorte qu'un appui isolé, plus tard, cède encore.
+ */
+let retourCedeAuClavier = false;
+
 export function installerRetour(): () => void {
   const surTouche = (evenement: KeyboardEvent) => {
     // Notre propre renvoi d'Échap doit ATTEINDRE le dialogue.
@@ -68,10 +86,19 @@ export function installerRetour(): () => void {
     // reculer d'un écran ENTIER au premier appui — la surcouche de recherche
     // était démontée, ses résultats avec elle, et l'utilisateur se retrouvait
     // sur l'accueil en croyant n'avoir refermé qu'un clavier.
-    if (clavierSystemeVisible()) return;
-
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "retour") return;
+
+    if (clavierSystemeVisible()) {
+      if (!retourCedeAuClavier) {
+        retourCedeAuClavier = true;
+        return;
+      }
+    } else {
+      // Le clavier est parti : le prochain appui isolé aura de nouveau droit à
+      // sa politesse.
+      retourCedeAuClavier = false;
+    }
 
     evenement.preventDefault();
     evenement.stopPropagation();
