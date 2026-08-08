@@ -63,9 +63,15 @@
    *
    * Un téléviseur rogne jusqu'à 5 % de chaque bord, et rien ne permet de
    * savoir combien. Ce retrait remplace `env(safe-area-inset-*)`, que le
-   * moteur d'une dalle ne renseigne pas. */
-  --tv-overscan-x: 64px;
-  --tv-overscan-y: 36px;
+   * moteur d'une dalle ne renseigne pas.
+   *
+   * 5 % de 1920 et de 1080. Les valeurs précédentes — 64 et 36 — étaient 5 %
+   * de 1280 × 720 : elles datent du canevas que le client a porté quatre jours
+   * et qu'il a quitté depuis. Le canevas fait maintenant 1920 et la dalle ne
+   * l'agrandit plus (mesuré : rapport de 1,00), si bien que le retrait valait
+   * 64 pixels PHYSIQUES au lieu de 96 — les deux tiers de ce qu'il annonce. */
+  --tv-overscan-x: 96px;
+  --tv-overscan-y: 54px;
 
   /* ── L'échelle du lecteur ─────────────────────────────────────────────
    *
