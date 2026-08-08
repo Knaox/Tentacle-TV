@@ -68,8 +68,25 @@ export function EcranRechercheTv() {
     return () => clearTimeout(identifiant);
   }, [ouverte]);
 
+  /**
+   * Fermer, et faire redescendre le clavier avec.
+   *
+   * Le champ est démonté par le rendu suivant, et l'on aurait pu croire que
+   * cela suffisait : un élément qui disparaît perd le focus, et le clavier
+   * n'aurait plus de raison d'être. Mesuré sur le Simulator webOS 26, non — le
+   * clavier reste à l'écran par-dessus l'accueil, sans champ où écrire, et rien
+   * ne l'en fait partir.
+   *
+   * Le `blur()` est donc explicite, et il vient AVANT la fermeture : après, la
+   * référence est déjà vide.
+   */
+  const fermer = useCallback(() => {
+    champ.current?.blur();
+    return fermerRecherche();
+  }, []);
+
   // La touche Retour ferme la recherche avant de reculer d'un écran.
-  useEffect(() => inscrireRetour(() => fermerRecherche()), []);
+  useEffect(() => inscrireRetour(() => fermer()), [fermer]);
 
   /**
    * Rouvrir le clavier système, et pourquoi ce n'est pas un simple `focus()`.
@@ -105,10 +122,10 @@ export function EcranRechercheTv() {
       // route n'a rien donné, la ressortir en suggestion serait un mauvais
       // conseil.
       pushRecentSearch(requete);
-      fermerRecherche();
+      fermer();
       navigate(`/media/${item.Id}`);
     },
-    [navigate, requete],
+    [navigate, requete, fermer],
   );
 
   if (!ouverte) return null;
