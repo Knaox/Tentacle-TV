@@ -142,7 +142,13 @@ body {
 .text-\[11px\],
 .text-xs,
 .text-sm {
-  font-size: 16px;
+  /* 24 px, la convention prise au pied de la lettre — et c'est désormais la
+     seule lecture juste. Le raisonnement ci-dessus reste exact, sa prémisse ne
+     l'est plus : il n'y a PLUS d'agrandissement. Le canevas est repassé à 1920
+     (`3c41bf23`), la dalle le rend au rapport de 1,00 — mesuré sur le
+     Simulator — et 16 px de canevas font donc 16 px physiques, non 24. Tout ce
+     que cette feuille a calibré du temps du 1280 rend aux deux tiers. */
+  font-size: 24px;
   line-height: 1.45;
 }
 
