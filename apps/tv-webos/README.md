@@ -289,19 +289,31 @@ Reproduit à volonté, dans les deux sens.
 produit indépendamment du flux. Seul `videoInfo.hdrType` dit ce que la dalle
 reçoit.
 
-**Le DTS ne doit jamais être copié dans un fMP4.** Le téléviseur le décode très
-bien en lecture directe depuis un MKV — c'est même la piste que le serveur
-choisit quand un fichier propose DTS et TrueHD — mais copié dans un remux, il
-fait tomber tout le pipeline. Même fichier, même remux, seul l'audio change :
+**Le DTS est copié dans le remux, et le croire coupable a coûté cher.** Un
+premier relevé donnait « DTS copié : `hdrType` none ; converti en AAC :
+DolbyVision », et il a fait retirer le DTS du profil — donc convertir l'audio de
+tous les films Dolby Vision qui en portent. Il était faussé deux fois : le
+fichier d'essai avait un sous-titre PGS par défaut, qui suffit à faire incruster
+donc recompresser l'image, et le relevé datait d'avant le choix explicite de la
+variante, quand le téléviseur prenait encore un repli SDR une fois sur trois.
+Refait sur un fichier sans sous-titre image, variante désignée :
 
 | audio du remux | `hdrType` |
 |----------------|-----------|
-| DTS copié | `none` |
+| DTS copié | `DolbyVision` |
 | converti en AAC | `DolbyVision` |
 
-Ce n'était donc pas une piste muette qu'on risquait, mais le Dolby Vision
-entier. Le remux fMP4 s'en tient à `aac,mp3,ac3,eac3`, comme Moonfin et
-`jellyfin-web` ; la lecture directe, elle, garde le DTS.
+Le remux porte donc `aac,mp3,ac3,eac3,dts,dca`. Le PCM en reste dehors, mais par
+PRUDENCE et non par mesure — personne ne l'a essayé, et une piste muette se
+diagnostique moins bien qu'une conversion. Le **TrueHD** n'y sera jamais : webOS
+ne le démultiplexe dans aucun conteneur, il n'a donc jamais atteint la chaîne
+audio, barre de son ou pas. Un fichier qui n'aurait que cette piste-là est le
+seul à payer une conversion.
+
+**Une seule leçon vaut d'être retenue de ces deux erreurs** : ne jamais conclure
+d'une mesure prise sur un fichier dont on n'a pas inventorié les pistes. Un
+sous-titre image par défaut, une variante mal choisie — chacun suffit à
+travestir le résultat, et tous deux se lisent pareil dans `hdrType`.
 
 Le profil 5 suit le même chemin et sort lui aussi en `DolbyVision`, bien que le
 manifeste ne l'annonce pas — le serveur tague le flux sans le publier.
@@ -331,14 +343,90 @@ relatif (`/api/jellyfin/…`) qu'une balise `<video>` résout seule mais pas le
 constructeur — l'échec était silencieux et rendait simplement le manifeste
 maître.
 
-**Un sous-titre PGS par défaut coûte encore le Dolby Vision, et la cause est au
+**Un sous-titre PGS par défaut coûte le Dolby Vision, et la cause est au
 serveur.** Le rendu PGS côté client télécharge le sous-titre en `.sup` ; sur ce
 Jellyfin 10.11.8, l'extraction rend `HTTP 400 Error processing request` sur
 **tous** les fichiers, là où un sous-titre texte sort en 200. Le client fait
 alors ce qu'il doit — repli sur l'incrustation serveur — mais l'incrustation
-impose un ré-encodage, donc la perte de la plage dynamique. Tant que le serveur
-ne sait pas extraire un PGS, un film dont la piste par défaut en porte un ne
-peut pas sortir en Dolby Vision.
+impose un ré-encodage, donc la perte de la plage dynamique.
+
+Ce qui a été fait de ce côté : à langue égale, le sous-titre choisi d'office
+préfère désormais le TEXTE à l'image quand celle-ci coûterait un ré-encodage
+(`useDefaultTracks.ts`). On ne retire rien — un fichier qui n'a que de l'image
+garde son sous-titre, et l'arbitrage appartient alors à celui qui regarde. Le
+paramètre s'appelle `incrustationCouteuse` et non « le client sait dessiner un
+PGS » : sous mpv, il ne sait pas, mais mpv les rend nativement et gratuitement.
+
+**Le lecteur reçoit la variante, pas le manifeste maître — et l'URL ne doit
+jamais être vidée entre les deux.** La première version masquait `streamUrl` le
+temps de résoudre la variante ; `WatchWeb` monte le lecteur sous condition de
+cette URL, si bien qu'il était DÉMONTÉ. Il y perdait la dernière position lue,
+repartait de zéro, et — les PTS étant absolus par `CopyTimestamps` — les prenait
+pour un décalage de conteneur, affichait 0 et RAPPORTAIT 0 à Jellyfin. Changer
+de piste audio effaçait le point de reprise du film. On tient donc la variante
+précédente pendant l'aller-retour.
+
+**Changer de piste audio recharge la source, et c'est irréductible en remux.**
+Jellyfin n'écrit jamais de `#EXT-X-MEDIA:TYPE=AUDIO` — vérifié dans
+`DynamicHlsHelper.cs`, où le seul groupe de rendition câblé est celui des
+sous-titres, et mesuré sur le serveur : zéro piste alternative dans le
+manifeste, avec ou sans `AudioStreamIndex`. Une seule piste est mappée côté
+ffmpeg. Le préchargement dans un second lecteur est fermé lui aussi — LG répond
+qu'« une application webOS ne peut lire qu'une vidéo à la fois ».
+
+Reste à savoir si cela vaut qu'on s'en préoccupe. Chronométré sur la dalle,
+du clic à l'image :
+
+    +   27 ms  PlaybackInfo →        +  178 ms  vidéo:loadstart
+    +   59 ms  PlaybackInfo ←        + 1190 ms  vidéo:loadedmetadata
+    +   82 ms  master.m3u8 →         + 1211 ms  vidéo:canplay
+    +  111 ms  master.m3u8 ←         + 1242 ms  vidéo:playing
+
+**Soixante millisecondes de serveur**, et 1,06 s de lecteur natif. Pré-chauffer
+la session à la sélection — l'idée naturelle — ne gagnerait donc rien et
+laisserait des transcodages orphelins derrière chaque déplacement de focus dans
+le menu. `MinSegments: 1` fait déjà le travail. Sur les fichiers **non** Dolby
+Vision la question ne se pose pas : ils partent en lecture directe et la bascule
+se fait par l'API `audioTracks`, sans rien recharger.
+
+**Ce que fait le serveur s'affiche enfin**, en développement seulement :
+`verif/surcoucheLecture.ts` peint le verdict de `playbackVerdict.ts` pendant la
+lecture — mode, image copiée ou recompressée, audio copié ou converti, codec,
+plage, raisons. Garde `import.meta.env.DEV || __TV_DEBUG__` et import dynamique,
+comme la surcouche de focus ; vérifié absent du build livré jusqu'à ses chaînes
+de caractères. Sans raccourci — la télécommande n'a pas de modificateur — et
+sans élément focusable, sous peine de fausser le moteur de focus.
+
+Elle a servi le jour même : elle annonçait « image RECOMPRESSÉE » sur un Dolby
+Vision à l'image copiée. `VideoRangeTypeNotSupported` commence par « video » et
+tombait dans les raisons de ré-encodage — juste pour un tone mapping, faux pour
+le mécanisme qui va CHERCHER le remux. Le verdict s'appuie maintenant sur
+`AllowVideoStreamCopy=false`, que Jellyfin pose sur les replis ré-encodés et sur
+eux seuls.
+
+Elle ne s'affiche qu'avec les commandes (`data-tv-lecteur === "osd"`) : un
+panneau posé sur une image qu'on regarde n'est plus un instrument.
+
+**Une lecture peut se figer sans que rien ne le signale.** Sur un remux, après un
+saut ou à la reprise, l'élément vidéo s'arrêtait dans cet état :
+
+    currentTime immobile   paused true   readyState 4
+    buffered 19 s d'avance  error.code 2
+
+`error.code 2` est `MEDIA_ERR_NETWORK`, et l'échelle de repli ne l'écoutait pas —
+elle ne connaît que les codes 3 et 4, à raison : eux seuls disent qu'une puce a
+refusé un flux. Une coupure réseau sur un segment n'a rien à retirer du profil,
+elle a un flux à reprendre. Le film restait perdu.
+
+`lecture/relanceGel.ts` s'en charge, avec le remède mesuré — `load()` puis
+repositionnement, car `play()` est accepté sans effet et un micro-saut déplace
+la position sans rien relancer. Il faut reposer la position APRÈS `load()`, qui
+l'oublie. Trois relances au plus, puis l'abandon est écrit au journal.
+
+**Le taux d'images ne détecte pas un gel** : `videooutput/getStatus` rend
+`frameRate: 23.976` pendant le gel comme pendant la lecture — c'est la cadence
+nominale du flux. Le seul témoin est la position qui n'avance plus, avec
+`readyState >= 3` pour ne pas confondre avec un chargement.
 
 Ces lignes viennent de `luna://com.webos.service.videooutput/getStatus`,
 qui décrit ce qui sort réellement vers la dalle — `videoInfo.hdrType`,
