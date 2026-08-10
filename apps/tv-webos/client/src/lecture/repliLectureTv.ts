@@ -2,6 +2,17 @@ import { useEffect, useRef } from "react";
 import { useWebPlaybackFallbacks as repliWeb } from "@/hooks/useWebPlaybackFallbacks?original";
 import type { MediaSource } from "@tentacle-tv/shared";
 import { signalerEchecLecture } from "./repliLecture";
+import { observer, VEILLE_VIDE } from "./relanceGel";
+
+/**
+ * Période d'échantillonnage de la veille.
+ *
+ * Deux secondes : assez fin pour que quatre secondes de gel soient détectées
+ * sans qu'un utilisateur ait le temps de croire à une panne, assez espacé pour
+ * qu'une lecture d'une heure ne coûte que dix-huit cents relevés d'une propriété
+ * déjà en mémoire.
+ */
+const PERIODE_VEILLE_MS = 2000;
 
 /**
  * Le filet du téléviseur, par-dessus ceux du client web.
@@ -99,5 +110,71 @@ export function useWebPlaybackFallbacks(options: OptionsRepli) {
     return () => document.removeEventListener("error", surErreur, true);
   }, [relancer]);
 
+  useVeilleGel(source);
+
   return base;
+}
+
+/**
+ * Le filet des lectures qui se figent sans rien dire.
+ *
+ * Distinct de l'échelle ci-dessus, et il faut voir pourquoi : celle-ci retire
+ * des capacités au profil, parce qu'un code 3 ou 4 signifie qu'une puce a
+ * refusé un flux. Un gel ne dit rien de tel — le flux est bon, c'est le lecteur
+ * qui est resté en arrière. Lui appliquer le même remède ferait perdre un codec
+ * pour une coupure réseau passagère, et donc dégrader l'image durablement pour
+ * un incident d'une seconde.
+ *
+ * Le remède est celui qu'on a mesuré : `load()` puis repositionnement. `play()`
+ * seul est accepté sans effet, un micro-saut déplace la position sans relancer
+ * quoi que ce soit. Aucune renégociation auprès du serveur n'est nécessaire.
+ */
+function useVeilleGel(source: unknown): void {
+  const veille = useRef(VEILLE_VIDE);
+  useEffect(() => {
+    veille.current = VEILLE_VIDE;
+  }, [source]);
+
+  useEffect(() => {
+    const minuteur = window.setInterval(() => {
+      const v = document.querySelector("video");
+      if (!v) return;
+
+      const [suivant, verdict] = observer(veille.current, {
+        position: v.currentTime,
+        enPause: v.paused,
+        pret: v.readyState,
+        erreur: v.error?.code ?? null,
+      });
+      veille.current = suivant;
+      if (verdict === "rien") return;
+
+      if (verdict === "epuise") {
+        console.error("[Tentacle:TV] lecture figee — relances epuisees", {
+          position: Math.round(v.currentTime),
+        });
+        return;
+      }
+
+      console.warn("[Tentacle:TV] lecture figee — rechargement", {
+        position: Math.round(v.currentTime),
+        erreur: v.error?.code ?? null,
+      });
+      const position = v.currentTime;
+      // `load()` remet le pipeline à zéro et OUBLIE la position : il faut la
+      // reposer une fois les métadonnées relues, sinon la lecture repart du
+      // début — le défaut même qu'on vient de corriger ailleurs.
+      const reprendre = () => {
+        v.currentTime = position;
+        void v.play().catch(() => {
+          // Refus de lecture automatique : le filet du lecteur affichera le
+          // bouton. Rien à ajouter ici.
+        });
+      };
+      v.addEventListener("loadedmetadata", reprendre, { once: true });
+      v.load();
+    }, PERIODE_VEILLE_MS);
+
+    return () => window.clearInterval(minuteur);
+  }, []);
 }
