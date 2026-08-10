@@ -45,6 +45,10 @@ declare module "@/hooks/useWebPlaybackFallbacks?original" {
   export * from "@/hooks/useWebPlaybackFallbacks";
 }
 
+declare module "@/hooks/usePlaybackInfo?original" {
+  export * from "@/hooks/usePlaybackInfo";
+}
+
 /**
  * Le pont vers les services Luna, injecté par le gestionnaire d'applications.
  *
