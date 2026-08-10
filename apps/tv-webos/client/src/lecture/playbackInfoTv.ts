@@ -10,16 +10,26 @@ import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
  * qu'on lui prend est le CHOIX DE LA VARIANTE, que le téléviseur fait mal
  * (cf. `varianteDovi.ts`).
  *
- * **L'URL est masquée pendant la résolution**, et c'est le point délicat. Rendre
- * le manifeste maître en attendant paraîtrait plus doux, mais le lecteur s'en
- * saisirait aussitôt : la lecture démarrerait sur la variante que le téléviseur
- * aurait choisie — celle qu'on cherche justement à éviter — et changer de source
- * ensuite couperait l'image. Le spinner du lecteur couvre l'attente, qui est
- * d'un aller-retour sur un fichier de quelques kilo-octets.
+ * **On ne rend jamais une source vide**, et c'est tout le sujet de ce fichier.
+ * La première version masquait l'URL le temps de l'aller-retour, pour que le
+ * lecteur ne se saisisse pas du manifeste maître. Le raisonnement était juste,
+ * la conséquence désastreuse : `WatchWeb` monte le lecteur sous condition de
+ * `streamUrl`, si bien qu'une source vide le DÉMONTE. Il y perd les repères qui
+ * vivent en lui — la dernière position lue, le fait que la lecture avait
+ * commencé — et au remontage il repart de zéro. Pire, `CopyTimestamps` rend des
+ * PTS absolus : le lecteur, sans point de comparaison, les prend pour un
+ * décalage de conteneur, affiche 0, et RAPPORTE 0 à Jellyfin. Changer de piste
+ * audio effaçait donc le point de reprise du film.
+ *
+ * D'où la règle : tant que la nouvelle variante n'est pas connue, on continue
+ * de rendre la PRÉCÉDENTE. Le lecteur ne recharge rien — sa source n'a pas
+ * changé — et quand la variante arrive, le changement se fait normalement, avec
+ * ses repères intacts. Le prix est de quelques centaines de millisecondes sur
+ * l'ancienne piste audio, invisible à côté du remontage.
  *
  * L'état retient l'URL POUR LAQUELLE il a été calculé. Sans cela, un changement
  * de piste audio — qui produit un nouveau manifeste — se verrait servir la
- * variante du précédent.
+ * variante du précédent, définitivement.
  */
 export function usePlaybackInfo(lecteurNatif = false) {
   const socle = socleWeb(lecteurNatif);
@@ -41,13 +51,14 @@ export function usePlaybackInfo(lecteurNatif = false) {
 
   if (!brute || !estManifesteMaitre(brute)) return socle;
 
-  if (resolue && resolue.pour === brute) {
-    // `url` à `null` signifie « pas de variante Dolby Vision ici » : c'est le
-    // cas de tous les remux ordinaires, et le manifeste maître convient.
-    return resolue.url ? { ...socle, streamUrl: resolue.url } : socle;
-  }
+  // Résolue pour CETTE source : `url` à `null` signifie « pas de variante Dolby
+  // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
+  // convient. Résolue pour une AUTRE : on tient la précédente le temps de
+  // l'aller-retour plutôt que de faire démonter le lecteur.
+  if (resolue) return resolue.url ? { ...socle, streamUrl: resolue.url } : socle;
 
-  // Résolution en cours. `isLoading` garde le spinner et empêche le lecteur de
-  // conclure à une source manquante.
-  return { ...socle, streamUrl: "", isLoading: true };
+  // Tout premier manifeste de la session : il n'y a pas de source antérieure à
+  // tenir. `null` est ce que le lecteur voit avant toute lecture — il n'est pas
+  // encore monté, l'écran de chargement est le comportement attendu.
+  return { ...socle, streamUrl: null, isLoading: true };
 }
