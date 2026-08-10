@@ -210,6 +210,13 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:
     resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
 
+  // Le manifeste maître d'un remux Dolby Vision propose la variante copiée et
+  // deux replis ré-encodés en SDR, tous au MÊME débit annoncé. Le lecteur de
+  // webOS 23 ne les départage pas et se trompe une fois sur trois — au prix de
+  // la plage dynamique ET d'un ré-encodage 4K. L'enveloppe désigne la variante
+  // elle-même ; tout le reste du hook est celui du web.
+  [resolve(WEB, "hooks/usePlaybackInfo.ts")]: resolve(CLIENT, "lecture/playbackInfoTv.ts"),
+
   // Les filets de lecture. Ceux du web suffisent à un navigateur, dont le profil
   // d'appareil vient d'une sonde ; celui du téléviseur vient d'une table
   // documentée, et une table finit par se tromper. L'enveloppe ajoute l'échelle
