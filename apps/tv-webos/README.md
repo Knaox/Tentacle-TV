@@ -310,13 +310,35 @@ Sur webOS 25, `doviEnMkv` devient vrai, ce `CodecProfile` disparaît et le MKV
 repart en lecture directe : le remux n'est là que le temps que LG rattrape son
 démultiplexeur.
 
-**Reste une intermittence non expliquée.** La toute première lecture Dolby
-Vision qui suit le lancement de l'application sort parfois en `none` ; les
-suivantes sont fiables. Ce n'est pas le profil — il est identique dans les
-essais qui réussissent et ceux qui échouent — et une balise `<video>` posée à la
-main au même instant, elle, sort bien en `DolbyVision`. Trois pistes ont été
-écartées par la mesure : la position de reprise, l'ordre d'insertion du `src`, et
-une vidéo qui occuperait déjà le pipeline (l'accueil n'en monte aucune).
+**Le client désigne lui-même la variante, parce que le téléviseur la choisit
+mal.** Le manifeste maître d'un remux Dolby Vision propose la variante copiée et
+deux replis SDR ré-encodés, **tous au même `BANDWIDTH`**. Le lecteur HLS de
+webOS 23 ne les départage pas : une lecture sur trois partait sur un repli, ce
+qui coûtait la plage dynamique ET déclenchait un ré-encodage 4K permanent.
+Jellyfin place pourtant la variante Dolby Vision en tête — son commentaire vise
+« les clients conformes (Apple TV, webOS 24+) », et cette dalle est du mauvais
+côté de la limite.
+
+`lecture/varianteDovi.ts` lit le manifeste et retient la variante portant
+`SUPPLEMENTAL-CODECS` ; `lecture/playbackInfoTv.ts` enveloppe le hook du web pour
+lui substituer cette URL. Cinq titres d'affilée, cinq fois `DolbyVision`, image
+copiée — contre quatre sur six par le manifeste maître.
+
+Deux pièges de ce chemin. L'URL doit être **masquée pendant la résolution**,
+sans quoi le lecteur démarre sur le manifeste maître avant qu'on ait tranché. Et
+`new URL` a besoin d'une base absolue : le client parle au proxy par un chemin
+relatif (`/api/jellyfin/…`) qu'une balise `<video>` résout seule mais pas le
+constructeur — l'échec était silencieux et rendait simplement le manifeste
+maître.
+
+**Un sous-titre PGS par défaut coûte encore le Dolby Vision, et la cause est au
+serveur.** Le rendu PGS côté client télécharge le sous-titre en `.sup` ; sur ce
+Jellyfin 10.11.8, l'extraction rend `HTTP 400 Error processing request` sur
+**tous** les fichiers, là où un sous-titre texte sort en 200. Le client fait
+alors ce qu'il doit — repli sur l'incrustation serveur — mais l'incrustation
+impose un ré-encodage, donc la perte de la plage dynamique. Tant que le serveur
+ne sait pas extraire un PGS, un film dont la piste par défaut en porte un ne
+peut pas sortir en Dolby Vision.
 
 Ces lignes viennent de `luna://com.webos.service.videooutput/getStatus`,
 qui décrit ce qui sort réellement vers la dalle — `videoInfo.hdrType`,
