@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePlaybackInfo as socleWeb } from "@/hooks/usePlaybackInfo?original";
 import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
 
@@ -35,6 +35,52 @@ export function usePlaybackInfo(lecteurNatif = false) {
   const socle = socleWeb(lecteurNatif);
   const brute = socle.streamUrl;
   const [resolue, setResolue] = useState<{ pour: string; url: string | null } | null>(null);
+  const servie = resolue?.url ?? brute;
+
+  /**
+   * Le verdict, rendu juste par l'URL qu'on sert réellement.
+   *
+   * `usePlaybackInfo` l'évalue sur le manifeste MAÎTRE, qui ne dit rien du sort
+   * de l'image : le seul indice y est `VideoRangeTypeNotSupported`, classé raison
+   * de ré-encodage — à raison dans le cas général, celui d'un tone mapping. Mais
+   * c'est aussi la raison que produit le mécanisme qui va CHERCHER le remux, si
+   * bien que le verdict annonçait « recompressée » sur une image copiée.
+   *
+   * La variante, elle, tranche : Jellyfin marque `AllowVideoStreamCopy=false`
+   * sur les replis ré-encodés, et sur eux seuls. Et si une variante Dolby Vision
+   * est servie, il n'y a pas de tone mapping — le serveur ne l'aurait pas
+   * produite.
+   */
+  const verdict = useMemo(() => {
+    const base = socle.verdict;
+    if (!base || !base.reencodageVideo || !resolue?.url) return base;
+    if (/[?&]AllowVideoStreamCopy=false/i.test(resolue.url)) return base;
+    return { ...base, mode: "Remux" as const, reencodageVideo: false };
+  }, [socle.verdict, resolue]);
+
+  // Relevé pour la surcouche de diagnostic — DÉVELOPPEMENT UNIQUEMENT.
+  // `import.meta.env.DEV` est remplacé littéralement par Vite : en build livré,
+  // la branche entière est du code mort, et l'import dynamique qu'elle contient
+  // n'entraîne rien dans le fragment servi au téléviseur.
+  useEffect(() => {
+    if (!import.meta.env.DEV && !__TV_DEBUG__) return;
+    const releve = verdict;
+    void import("../verif/surcoucheLecture").then(({ publierLecture }) => {
+      const flux = socle.mediaSource?.MediaStreams?.find((s) => s.Type === "Video");
+      publierLecture(
+        releve
+          ? {
+              mode: releve.mode,
+              reencodageVideo: releve.reencodageVideo,
+              raisons: releve.raisons,
+              codecVideo: flux?.Codec,
+              plage: flux?.VideoRangeType,
+              url: servie,
+            }
+          : null,
+      );
+    });
+  }, [verdict, socle.mediaSource, servie]);
 
   useEffect(() => {
     if (!brute || !estManifesteMaitre(brute)) return;
@@ -55,7 +101,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
   // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
   // convient. Résolue pour une AUTRE : on tient la précédente le temps de
   // l'aller-retour plutôt que de faire démonter le lecteur.
-  if (resolue) return resolue.url ? { ...socle, streamUrl: resolue.url } : socle;
+  if (resolue) return { ...socle, streamUrl: servie, verdict };
 
   // Tout premier manifeste de la session : il n'y a pas de source antérieure à
   // tenir. `null` est ce que le lecteur voit avant toute lecture — il n'est pas
