@@ -18,11 +18,13 @@
  * Le verdict lui-même vient de `playbackVerdict.ts`, côté web : il est déjà
  * calculé et déjà testé. Ce fichier ne fait que le peindre.
  *
- * # Pourquoi pas de raccourci
+ * # Quand elle se montre
  *
- * `surcoucheDebug` s'ouvre par Ctrl+Maj+D, ce qui suppose un clavier. Celle-ci
- * doit se voir pendant qu'on regarde un film à la télécommande : elle s'affiche
- * donc d'office, dès qu'une lecture est négociée, et disparaît avec elle.
+ * `surcoucheDebug` s'ouvre par Ctrl+Maj+D, ce qui suppose un clavier — la
+ * télécommande n'a pas de modificateur. Celle-ci se montre donc d'elle-même,
+ * mais **seulement quand les commandes sont à l'écran** : un panneau posé sur
+ * une image qu'on regarde n'est plus un instrument, c'est une gêne. Les
+ * commandes se masquent d'elles-mêmes après cinq secondes, et le panneau avec.
  *
  * Écrite sans React, comme sa voisine : elle survit à un arbre cassé, et surtout
  * elle ne pose **aucun élément focusable** — le moteur de focus compte les
@@ -140,25 +142,49 @@ function dessiner(releve: ReleveLecture | null): void {
 }
 
 /**
+ * Le panneau ne s'affiche qu'avec les commandes, jamais par-dessus le film.
+ *
+ * `cycleLecteurTv` pose `data-tv-lecteur` sur la racine du document — `repos`,
+ * `osd` ou `scrub` — précisément parce qu'un état du lecteur n'est atteignable
+ * autrement ni par le CSS, ni par un module hors React. Les feuilles de style
+ * s'en servent déjà ; on s'y branche plutôt que d'inventer une seconde source.
+ *
+ * `osd` et non « pas repos » : le déplacement dans le flux occupe déjà tout
+ * l'écran, un panneau de plus par-dessus n'y aiderait personne.
+ */
+function osdVisible(): boolean {
+  return document.documentElement.getAttribute("data-tv-lecteur") === "osd";
+}
+
+/**
  * Installe la surveillance. Rend de quoi la retirer.
  *
- * Un intervalle plutôt qu'un abonnement : le relevé est déposé depuis un hook
- * React, et un pont d'événements entre les deux coûterait plus cher à lire
- * qu'un sondage à deux images par seconde qui ne tourne qu'en développement.
+ * Un intervalle pour le CONTENU du relevé, déposé depuis un hook React — un
+ * pont d'événements entre les deux coûterait plus cher à lire qu'un sondage à
+ * deux images par seconde qui ne tourne qu'en développement. Mais un
+ * `MutationObserver` pour la VISIBILITÉ : une demi-seconde de retard à chaque
+ * apparition des commandes se verrait, là où l'attribut change à l'instant près.
  */
 export function installerSurcoucheLecture(): () => void {
   let dernier: string | null = null;
-  const minuteur = window.setInterval(() => {
-    const releve = window.__TENTACLE_LECTURE__ ?? null;
-    // On ne repeint que si quelque chose a changé : sur une dalle, un
-    // `innerHTML` deux fois par seconde se voit au compteur d'images.
-    const empreinte = releve ? JSON.stringify(releve) : null;
+
+  const peindre = () => {
+    // La visibilité est pliée dans la valeur, et ce n'est pas un détail : un
+    // retour anticipé qui laisserait `dernier` intact empêcherait le panneau de
+    // se redessiner au retour des commandes — l'empreinte n'aurait pas bougé.
+    const effectif = osdVisible() ? (window.__TENTACLE_LECTURE__ ?? null) : null;
+    const empreinte = effectif ? JSON.stringify(effectif) : null;
     if (empreinte === dernier) return;
     dernier = empreinte;
-    dessiner(releve);
-  }, PERIODE_MS);
+    dessiner(effectif);
+  };
+
+  const minuteur = window.setInterval(peindre, PERIODE_MS);
+  const guetteur = new MutationObserver(peindre);
+  guetteur.observe(document.documentElement, { attributeFilter: ["data-tv-lecteur"] });
 
   return () => {
+    guetteur.disconnect();
     window.clearInterval(minuteur);
     document.getElementById(ID)?.remove();
   };
