@@ -16,6 +16,12 @@
 
 export interface CapacitesTeleviseur {
   modelName?: string;
+  /**
+   * `"OLED"` sur une dalle OLED — le seul champ de capacité que LG renseigne
+   * vraiment, et celui d'où `dalleWebos.ts` tire la gamme quand tous les
+   * booléens ci-dessous manquent.
+   */
+  panelType?: string;
   sdkVersion?: string;
   version?: string;
   versionMajor?: number;

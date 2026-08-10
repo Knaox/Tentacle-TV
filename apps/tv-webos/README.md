@@ -206,6 +206,144 @@ seule, la vidéo reste en pause, **aucun déplacement n'est appliqué avant
 confirmation**. OK confirme, Retour annule, sept secondes d'inactivité annulent
 aussi. `lecture/machineScrub.test.ts` vérifie ce qui ne se voit pas.
 
+## Ce que la dalle sait faire, et comment on l'apprend
+
+`deviceInfo` ment par omission, et c'est le défaut le plus coûteux de la cible.
+Relevé sur un OLED C3 de 2023, il ne rend que huit champs — `modelName`,
+`panelType`, les quatre `platformVersion*`, `screenWidth`, `screenHeight`. Ni
+`uhd`, ni `hdr10`, ni `dolbyVision`, ni `dolbyAtmos`, ni `oled` : aucun de ceux
+que la documentation de LG décrit.
+
+**Un champ absent n'est pas une réponse négative.** Le traiter comme un refus
+faisait convertir la plage dynamique côté serveur, c'est-à-dire recompresser
+une image 4K entière, sur une dalle qui lit le Dolby Vision nativement depuis
+dix ans.
+
+Trois sources répondent donc, du plus spécifique au plus général, et **chacune
+ne sert que là où la précédente s'est tue** : le champ de `deviceInfo`, puis le
+relevé du matériel, puis la déduction par gamme. Un `??` et non un `||`, pour
+qu'un `false` déclaré reste un refus.
+
+Le **relevé du matériel** (`lecture/configsTv.ts`) est la meilleure des trois
+quand il répond, parce qu'il est déclaratif : le service Luna
+`com.webos.service.config` expose les commutateurs de la carte mère, et il
+répond à une application ordinaire — sans permission dans `appinfo.json`,
+contrairement à `com.webos.settingsservice` qui rend « Access denied ». Le pont
+est `PalmServiceBridge`, injecté par le gestionnaire d'applications et qui
+survit à la navigation vers le serveur, alors même que la page change d'origine.
+
+    tv.model.supportDolbyVisionHDR  true      tv.hw.displayType     "OLED"
+    tv.config.supportDolbyTVATMOS   true      tv.hw.panelResolution "UD"
+    tv.model.supportHDR             true      bSupport_8K_resolution false
+
+**Ne jamais lire `tv.model.displayType`** : il vaut `"LCD DISPLAY"` sur une dalle
+OLED. Seul `tv.hw.displayType` dit vrai. Les deux existent, se contredisent, et
+rien dans leur nom ne signale lequel décrit le matériel.
+
+Le relevé est asynchrone et facultatif — rien ne l'attend. La **déduction par
+gamme** (`lecture/dalleWebos.ts`) reste donc le socle, pour les générations qui
+ne connaissent aucune de ces clés et pour la course perdue d'un démarrage très
+rapide. Elle tire de la GAMME et de l'ANNÉE ce que LG ne déclare pas.
+
+Elle ne va que dans un sens, et c'est ce qui la rend sûre : elle accorde ce que
+la TOTALITÉ d'une gamme possède, et n'ôte rien. Le Dolby Vision est sur toutes
+les dalles OLED depuis 2016 et sur les QNED depuis leur naissance ; les
+NanoCell et la gamme UHD l'ont reçu en 2019, les UK de 2018 ne l'ont pas. Le
+décodeur Atmos arrive sur les OLED en 2017, sur les NanoCell en 2020, et **la
+gamme UHD d'entrée n'en a jamais eu** — elle reçoit du Dolby Digital Plus sans
+la couche objet. Une gamme qu'on ne sait pas lire ne reçoit rien.
+
+`panelType` vaut `"OLED"` et n'était pas lu, ce qui refusait le DTS à tous les
+téléviseurs de 2023-2024 qui le décodent — le seul critère que `deviceInfo`
+sache nous en dire.
+
+**Le vrai Dolby Vision s'obtient en SORTANT du MKV, et cela demande un remux.**
+LG ne démultiplexe le RPU qu'en ISOBMFF et en flux de transport — la réponse
+d'un ingénieur LG sur le forum développeur est explicite, et le MKV n'y figure
+pas avant webOS 25. Un `CodecProfile` retire donc les plages Dolby Vision de
+tout conteneur qui ne les porte pas, par une liste NÉGATIVE
+(`Container: "-mp4,m4v,mov,ts,…"`) pour qu'un conteneur inconnu soit traité
+comme n'en portant pas. Jellyfin ne peut alors plus faire de lecture directe :
+il remuxe en fMP4, en copiant l'image et l'audio.
+
+| voie | `hdrType` |
+|------|-----------|
+| lecture directe du MKV | `HDR10` — la couche de base, le RPU est perdu |
+| remux HLS en fMP4 | `DolbyVision` |
+
+Sur la médiathèque qui a servi de banc d'essai, cela concerne 353 des 983
+fichiers 4K, tous en profil 8.1. Le saut dans le flux reste sous les deux
+secondes, mesuré à ±10 et ±25 minutes.
+
+**Un premier relevé avait conclu l'inverse**, et c'est ce qui a bloqué le sujet :
+le remux rendait alors `hdrType: "none"` en BT.709. Le chiffre était juste,
+l'interprétation fausse. Jellyfin ne marque un flux `-tag:v dvh1 -strict -2` —
+donc n'écrit la boîte `dvcC`, sans laquelle aucune dalle ne décode le Dolby
+Vision — que si le jeton **`DOVI`** figure dans la condition `VideoRangeType`.
+Le premier essai le retirait en même temps que le reste : la dalle recevait un
+flux annoncé Dolby Vision et non configuré, et retombait plus bas que le HDR10.
+Reproduit à volonté, dans les deux sens.
+
+**Le manifeste ment sur ce point, et c'est le piège à retenir.** Il annonce
+`SUPPLEMENTAL-CODECS="dvh1.08.06/db1p"` que le jeton soit là ou non — il est
+produit indépendamment du flux. Seul `videoInfo.hdrType` dit ce que la dalle
+reçoit.
+
+**Le DTS ne doit jamais être copié dans un fMP4.** Le téléviseur le décode très
+bien en lecture directe depuis un MKV — c'est même la piste que le serveur
+choisit quand un fichier propose DTS et TrueHD — mais copié dans un remux, il
+fait tomber tout le pipeline. Même fichier, même remux, seul l'audio change :
+
+| audio du remux | `hdrType` |
+|----------------|-----------|
+| DTS copié | `none` |
+| converti en AAC | `DolbyVision` |
+
+Ce n'était donc pas une piste muette qu'on risquait, mais le Dolby Vision
+entier. Le remux fMP4 s'en tient à `aac,mp3,ac3,eac3`, comme Moonfin et
+`jellyfin-web` ; la lecture directe, elle, garde le DTS.
+
+Le profil 5 suit le même chemin et sort lui aussi en `DolbyVision`, bien que le
+manifeste ne l'annonce pas — le serveur tague le flux sans le publier.
+
+Sur webOS 25, `doviEnMkv` devient vrai, ce `CodecProfile` disparaît et le MKV
+repart en lecture directe : le remux n'est là que le temps que LG rattrape son
+démultiplexeur.
+
+**Reste une intermittence non expliquée.** La toute première lecture Dolby
+Vision qui suit le lancement de l'application sort parfois en `none` ; les
+suivantes sont fiables. Ce n'est pas le profil — il est identique dans les
+essais qui réussissent et ceux qui échouent — et une balise `<video>` posée à la
+main au même instant, elle, sort bien en `DolbyVision`. Trois pistes ont été
+écartées par la mesure : la position de reprise, l'ordre d'insertion du `src`, et
+une vidéo qui occuperait déjà le pipeline (l'accueil n'en monte aucune).
+
+Ces lignes viennent de `luna://com.webos.service.videooutput/getStatus`,
+qui décrit ce qui sort réellement vers la dalle — `videoInfo.hdrType`,
+`videoInfo.vui`, et la géométrie de `displayOutput`. **C'est le seul instrument
+qui départage une hypothèse d'image d'un fait**, et il répond sans permission.
+Il tranche aussi la question des formats larges : un 2,40:1 y apparaît en
+`3840×2024` posé à `y = 68`, c'est-à-dire une image à son rapport exact avec
+ses bandes — jamais étirée.
+
+Vérifié de bout en bout sur la dalle : un MKV HEVC Dolby Vision 8.1 avec une
+piste DTS 5.1 et une piste TrueHD 7.1 part en lecture directe — le serveur
+choisit la piste DTS, ne touche pas à l'image, et sert
+`/Videos/{id}/stream`.
+
+**Une barre de son ne change rien à cette table, et c'est contre-intuitif.** Le
+blocage d'un TrueHD ou d'un DTS-HD MA n'est pas à la SORTIE mais au
+DÉMULTIPLEXAGE : LG ne liste ces codecs dans aucun conteneur, aucune
+génération, donc la piste n'est jamais extraite du fichier et n'atteint jamais
+l'eARC. C'est aussi pourquoi aucune application webOS n'en propose — l'Atmos de
+Netflix ou de Disney+ voyage en E-AC3 JOC, que la table couvre déjà. Ce qu'une
+chaîne audio change réellement est le nombre de CANAUX qu'un remux a le droit
+de porter, et cette valeur vient désormais du matériel
+(`tv.config.supportDolbyTVATMOS`) plutôt que d'une supposition. À ne pas
+confondre avec `tv.model.edidType`, qui vaut `"TrueHD+dts"` : il décrit ce que
+le téléviseur annonce à ses ENTRÉES HDMI, pas ce que son démultiplexeur
+applicatif sait ouvrir.
+
 ## Saisie de texte
 
 Rien n'est codé pour le clavier virtuel, et rien ne doit l'être : webOS

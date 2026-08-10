@@ -45,6 +45,22 @@ declare module "@/hooks/useWebPlaybackFallbacks?original" {
   export * from "@/hooks/useWebPlaybackFallbacks";
 }
 
+/**
+ * Le pont vers les services Luna, injecté par le gestionnaire d'applications.
+ *
+ * Il survit à la navigation de la coquille vers le serveur, alors même que la
+ * page change d'origine — c'est ce qui permet à `lecture/configsTv.ts`
+ * d'interroger le matériel depuis une page servie en HTTP.
+ */
+interface PalmServiceBridgeInstance {
+  onservicecallback: ((reponse: string) => void) | null;
+  call(uri: string, charge: string): void;
+}
+
+interface Window {
+  PalmServiceBridge?: new () => PalmServiceBridgeInstance;
+}
+
 interface ImportMetaEnv {
   readonly VITE_JELLYFIN_URL: string;
   readonly VITE_BACKEND_URL: string;

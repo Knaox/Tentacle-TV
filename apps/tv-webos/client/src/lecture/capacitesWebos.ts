@@ -57,6 +57,21 @@ export interface CapacitesTv {
   doviEnMkv: boolean;
 }
 
+/**
+ * Les seuls conteneurs où webOS démultiplexe le RPU Dolby Vision.
+ *
+ * Réponse d'un ingénieur LG sur le forum développeur : le lecteur média accepte
+ * le Dolby Vision « en MPEG-2 TS et en ISOBMFF », le premier via un descripteur
+ * dans le PMT, le second via la boîte `dvcC` du sample entry. **Le MKV n'y est
+ * pas**, et la question, reposée depuis, est restée sans réponse — jusqu'à
+ * webOS 25, qui l'ajoute (`doviEnMkv`).
+ *
+ * Cette liste sert en NÉGATIF (`profilWebos.ts → contraintes()`) : partout
+ * ailleurs, les plages Dolby Vision sont retirées pour que Jellyfin remuxe vers
+ * un conteneur qui, lui, porte les métadonnées.
+ */
+export const CONTENEURS_DOVI = "mp4,m4v,mov,ts,m2ts,mts,mpegts";
+
 /** Codecs vidéo par conteneur, socle commun à toutes les générations. */
 const VIDEO_MP4 = ["h264", "hevc", "mpeg4"];
 const VIDEO_MKV = ["h264", "hevc", "mpeg2video", "mpeg4", "vp8", "vp9"];

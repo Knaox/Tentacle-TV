@@ -223,6 +223,14 @@ export interface ProfileCondition {
 export interface CodecProfile {
   Type: "Video" | "VideoAudio" | "Audio";
   Codec?: string;
+  /**
+   * Conteneurs auxquels ce profil s'applique, séparés par des virgules.
+   *
+   * Absent, il s'applique à tous. C'est ainsi qu'on exprime une restriction qui
+   * tient au démultiplexeur et non au décodeur — le Dolby Vision dans un MKV,
+   * que webOS refuse avant sa version 25 tout en le lisant ailleurs.
+   */
+  Container?: string;
   Conditions: ProfileCondition[];
   ApplyConditions?: ProfileCondition[];
 }

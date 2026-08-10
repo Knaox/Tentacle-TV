@@ -140,6 +140,20 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
     expect(video[1].Container).toBe("ts");
   });
 
+  it("ne copie pas le DTS dans un fMP4 — il y ferait tomber le Dolby Vision", () => {
+    // Mesuré sur une C3 : même fichier, même remux, seul l'audio change.
+    // DTS copié → `hdrType: "none"` ; audio converti en AAC → « DolbyVision ».
+    // Le DTS reste déclaré en lecture directe, où le téléviseur le décode.
+    const p = profil(23, 2023, MEMOIRE_VIDE, { oled: true, dolbyVision: true });
+    const fmp4 = p.TranscodingProfiles.find((t) => t.Container === "mp4" && t.Type === "Video");
+    expect(fmp4?.AudioCodec).not.toContain("dts");
+    expect(fmp4?.AudioCodec).not.toContain("dca");
+    expect(fmp4?.AudioCodec).not.toContain("pcm");
+    expect(fmp4?.AudioCodec).toContain("eac3");
+    // La lecture directe, elle, le garde : c'est là qu'il fonctionne.
+    expect(directPlay(p, "mkv")?.AudioCodec).toContain("dts");
+  });
+
   it("n'annonce jamais en TS ce que le flux de transport ne porte pas", () => {
     const ts = profil(24, 2024).TranscodingProfiles.find((t) => t.Container === "ts");
     expect(ts?.VideoCodec).not.toContain("av1");
@@ -164,14 +178,90 @@ describe("plages dynamiques", () => {
     expect(plages).toContain("HLG");
   });
 
-  it("n'annonce le Dolby Vision que s'il est déclaré", () => {
-    const sans = (profil().CodecProfiles ?? []).find((c) => c.Codec === "hevc");
-    expect(sans?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value)
-      .not.toContain("DOVI");
+  it("n'annonce le profil 5 que sur une dalle qui décode le Dolby Vision", () => {
+    // `DOVI` nu commande le Dolby Vision côté serveur : Jellyfin ne marque un
+    // flux `-tag:v dvh1 -strict -2`, donc n'écrit la boîte `dvcC`, que si ce
+    // jeton précis est là. Mesuré sur une C3, même fichier, même remux fMP4 :
+    // avec, `hdrType: "DolbyVision"` ; sans, `hdrType: "none"`.
+    const plages = (p: DeviceProfile) =>
+      String(
+        (p.CodecProfiles ?? [])
+          .find((c) => c.Codec === "hevc" && !c.Container)
+          ?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
+      ).split("|");
 
-    const avec = (profil(25, 2023, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
-      .find((c) => c.Codec === "hevc");
-    expect(avec?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value).toContain("DOVI");
+    expect(plages(profil())).not.toContain("DOVI");
+    expect(plages(profil(25, 2023, MEMOIRE_VIDE, { dolbyVision: true }))).toContain("DOVI");
+  });
+
+  it("laisse une dalle sans Dolby Vision lire la couche de base des profils 8.x", () => {
+    // Leur couche de base est du HDR10, du HLG ou du SDR ordinaire, qu'un
+    // décodeur ignorant le RPU affiche juste et complète. Les taire ferait
+    // tone-mapper une image 4K pour un résultat visuellement identique.
+    const plages = String(
+      (profil().CodecProfiles ?? [])
+        .find((c) => c.Codec === "hevc")
+        ?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
+    ).split("|");
+    expect(plages).toContain("DOVIWithHDR10");
+    expect(plages).toContain("DOVIWithSDR");
+    // Le profil 5, lui, reste exclu : sa couche de base est en IPT-PQ-C2, donc
+    // verdâtre sans décodage Dolby Vision.
+    expect(plages).not.toContain("DOVI");
+  });
+
+  it("retire TOUT le Dolby Vision des conteneurs qui n'en portent pas le RPU", () => {
+    // webOS ne démultiplexe le RPU qu'en ISOBMFF et en flux de transport. Le
+    // MKV en est exclu jusqu'à webOS 25 — et c'est le conteneur de toute une
+    // médiathèque. Sans plage Dolby Vision, Jellyfin ne peut plus faire de
+    // lecture directe : il remuxe en fMP4, en copiant l'image, et le RPU passe.
+    //
+    // Mesuré sur une C3, même fichier : lecture directe du MKV rend
+    // `hdrType: "HDR10"` (la couche de base) ; le remux rend
+    // `hdrType: "DolbyVision"`.
+    const avant = (profil(23, 2023, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+      .filter((c) => c.Codec === "hevc");
+    const general = avant.find((c) => !c.Container);
+    const horsDovi = avant.find((c) => c.Container?.startsWith("-"));
+    const plagesHorsDovi = String(
+      horsDovi?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
+    ).split("|");
+
+    // Le général garde `DOVI`, sans quoi le remux ne serait pas marqué.
+    expect(general?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value)
+      .toContain("DOVI");
+    // La liste est négative : un conteneur inconnu est traité comme n'en
+    // portant pas, donc remuxé — le comportement sûr.
+    expect(horsDovi?.Container).toBe("-mp4,m4v,mov,ts,m2ts,mts,mpegts");
+    expect(plagesHorsDovi.some((plage) => plage.startsWith("DOVI"))).toBe(false);
+    // Le HDR10 ordinaire, lui, y reste : il n'a aucune raison de remuxer.
+    expect(plagesHorsDovi).toContain("HDR10");
+    expect(plagesHorsDovi).toContain("HLG");
+  });
+
+  it("garde le HEVC dans le remux, sans quoi l'image serait ré-encodée", () => {
+    // La condition de tout ce mécanisme : le `TranscodingProfile` fMP4 doit
+    // porter `hevc`, c'est ce qui autorise Jellyfin à copier l'image au lieu
+    // de la recompresser. Le fMP4 doit aussi venir EN PREMIER — le flux de
+    // transport produit des décrochages audio sur ce contenu.
+    const transcodage = (profil(23, 2023, MEMOIRE_VIDE, { dolbyVision: true })
+      .TranscodingProfiles ?? []).filter((p) => p.Type === "Video");
+    expect(transcodage[0]?.Container).toBe("mp4");
+    expect(transcodage[0]?.VideoCodec).toContain("hevc");
+  });
+
+  it("ne pose aucune restriction de conteneur quand webOS lit le DV en MKV", () => {
+    // Un C2 de 2022 passé à webOS 25 par le programme « Re:New » : la puce n'a
+    // pas changé, le démultiplexeur si. Le MKV repart alors en lecture directe,
+    // sans la session serveur qu'un remux imposerait.
+    const apres = (profil(25, 2022, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+      .filter((c) => c.Codec === "hevc");
+    expect(apres.some((c) => c.Container)).toBe(false);
+  });
+
+  it("ne pose pas de restriction sans objet quand le Dolby Vision est absent", () => {
+    const contraintes = (profil(23, 2023).CodecProfiles ?? []).filter((c) => c.Container);
+    expect(contraintes).toHaveLength(0);
   });
 
   it("n'annonce JAMAIS le Dolby Vision à deux couches", () => {
