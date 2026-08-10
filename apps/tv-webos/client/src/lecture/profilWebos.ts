@@ -16,7 +16,7 @@ import {
   SOUS_TITRES_TEXTE,
   type OptionsProfilWeb,
 } from "@/lib/deviceProfile/blocs";
-import { plafondDebit } from "./capacitesWebos";
+import { CONTENEURS_DOVI, plafondDebit } from "./capacitesWebos";
 import { plagesDynamiquesTv, resoudreProfil, type ProfilResolu } from "./codecsWebos";
 import {
   codecsRetenus,
@@ -175,7 +175,7 @@ function transcodage(resolu: ProfilResolu, memoire: MemoireReplis): TranscodingP
   }
 
   const canaux = maxCanaux(resolu);
-  const audioFmp4 = [...audio].join(",") || "aac";
+  const audioFmp4 = [...audio].filter((codec) => AUDIO_FMP4.has(codec));
   // Le flux de transport ne porte légalement ni l'AV1, ni le VP9, ni les codecs
   // audio exotiques : y annoncer autre chose obligerait le serveur à convertir.
   const videoTs = [...video].filter((codec) => CODECS_TS.has(codec));
@@ -186,7 +186,7 @@ function transcodage(resolu: ProfilResolu, memoire: MemoireReplis): TranscodingP
     // serveur de copier une image HEVC. Sans lui, une piste audio exotique
     // suffirait à faire ré-encoder une vidéo 4K pour une raison qui n'a rien de
     // visuel.
-    profilHlsFmp4([...video].join(",") || "h264", audioFmp4, canaux),
+    profilHlsFmp4([...video].join(",") || "h264", audioFmp4.join(",") || "aac", canaux),
     profilHlsTs(videoTs.join(",") || "h264", audioTs.join(","), canaux),
     PROFIL_AUDIO_SEUL,
   ];
@@ -194,6 +194,29 @@ function transcodage(resolu: ProfilResolu, memoire: MemoireReplis): TranscodingP
 
 /** Ce que le démultiplexeur TS de webOS sait porter. */
 const CODECS_TS = new Set(["h264", "hevc", "mpeg2video"]);
+
+/**
+ * Ce qu'un remux fMP4 a le droit de porter — et c'est plus étroit que ce que la
+ * dalle décode.
+ *
+ * Le DTS en est absent, et il faut le dire précisément : le téléviseur le
+ * décode très bien en lecture directe depuis un MKV (c'est même ce que le
+ * serveur choisit quand un fichier propose DTS et TrueHD). Mais **copié dans un
+ * fMP4, il fait tomber tout le pipeline**. Mesuré sur une C3, même fichier,
+ * même remux, seul l'audio change :
+ *
+ *     audio DTS copié       videoInfo.hdrType « none »
+ *     audio converti AAC    videoInfo.hdrType « DolbyVision »
+ *
+ * Ce n'est donc pas une piste muette qu'on risquait, c'est le Dolby Vision
+ * entier. Le PCM est écarté pour la même raison — le conteneur MP4 ne le porte
+ * pas plus naturellement — sans avoir été mesuré, lui.
+ *
+ * Le prix est une conversion audio sur les seuls fichiers dont AUCUNE piste
+ * n'est lisible autrement. C'est le compromis qu'ont retenu Moonfin et
+ * `jellyfin-web`, qui s'en tiennent tous deux à `aac,mp3,ac3,eac3`.
+ */
+const AUDIO_FMP4 = new Set(["aac", "mp3", "ac3", "eac3"]);
 
 /**
  * Canaux maximaux d'un remux.
@@ -233,5 +256,49 @@ function contraintes(resolu: ProfilResolu): CodecProfile[] {
       ],
     },
   ];
+
+  /**
+   * Le Dolby Vision hors des conteneurs qui le portent.
+   *
+   * C'est une limite du démultiplexeur et non du décodeur : la puce lit le
+   * Dolby Vision, mais webOS ne lui transmet le RPU qu'en ISOBMFF et en flux de
+   * transport (`CONTENEURS_DOVI`) — jamais en MKV avant webOS 25. Or **une
+   * médiathèque est faite de MKV** : sur celle qui a servi de banc d'essai, 353
+   * des 983 fichiers 4K sont en Dolby Vision, tous en MKV.
+   *
+   * Ce profil retire donc les plages Dolby Vision de tout conteneur qui ne les
+   * porte pas. Jellyfin ne peut plus faire de lecture directe : il REMUXE en
+   * fMP4, c'est-à-dire qu'il copie l'image et l'audio dans un conteneur qui,
+   * lui, transporte les métadonnées. Mesuré sur une C3, même fichier :
+   *
+   *     lecture directe du MKV   hdrType « HDR10 »        (la couche de base)
+   *     remux HLS en fMP4        hdrType « DolbyVision »  (le RPU passe)
+   *
+   * Le remux coûte une session ffmpeg, mais en `-codec:v copy -codec:a copy` :
+   * le serveur démultiplexe, il ne recompresse rien. Le saut dans le flux reste
+   * sous les deux secondes, mesuré à ±10 et ±25 minutes.
+   *
+   * **La liste est négative** (`-mp4,…`), et c'est ce qui la rend juste sur les
+   * gammes à venir : un conteneur inconnu est traité comme ne portant pas le
+   * Dolby Vision, donc remuxé, ce qui est toujours le comportement sûr.
+   *
+   * Un second profil plutôt qu'un retrait global : les conditions de tous les
+   * profils qui correspondent doivent être satisfaites, donc un MKV Dolby
+   * Vision échoue sur celui-ci pendant qu'un MP4 ne le rencontre jamais.
+   *
+   * La garde est ce qui fait dépendre le comportement du MODÈLE : sur webOS 25,
+   * `doviEnMkv` est vrai et ce profil disparaît — le MKV repart en lecture
+   * directe, sans aucune session serveur. Sans Dolby Vision sur la dalle, il
+   * n'aurait pas d'objet : le profil général n'y déclare déjà pas `DOVI`.
+   */
+  if (resolu.dalle.dolbyVision && !resolu.capacites.doviEnMkv) {
+    profils.push({
+      Type: "Video",
+      Codec: "hevc",
+      Container: `-${CONTENEURS_DOVI}`,
+      Conditions: [conditionPlageDynamique(plagesDynamiquesTv(resolu.dalle, true))],
+    });
+  }
+
   return profils;
 }

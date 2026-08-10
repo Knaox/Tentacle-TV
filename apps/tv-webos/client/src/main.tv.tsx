@@ -29,6 +29,7 @@ import { installerGardeSessionTv } from "./auth/gardeSessionTv";
 import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
+import { demarrerReleveConfigs } from "./lecture/configsTv";
 import { installerMoteurFocus } from "./focus/moteur";
 import { amorcerFocus } from "./focus/entree";
 import { installerRetour } from "./focus/retour";
@@ -60,6 +61,12 @@ installerPolyfills();
 // Lu tôt, pour que le profil d'appareil soit prêt à la première négociation de
 // lecture — et pour retirer `?tvinfo=` de l'URL avant que le routeur la voie.
 lireCapacitesTeleviseur();
+
+// Ce que `deviceInfo` ne dit pas, le matériel le déclare — Dolby Vision, Atmos,
+// type de dalle. Lancé ici et jamais attendu : la première négociation de
+// lecture est à plusieurs écrans d'ici, et la déduction par gamme tient lieu de
+// repli si la réponse tardait.
+demarrerReleveConfigs();
 
 // Le jumelage arrive de la coquille dans le fragment d'URL, jamais dans la
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de

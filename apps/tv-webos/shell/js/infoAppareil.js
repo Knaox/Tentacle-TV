@@ -18,8 +18,13 @@
 (function (global) {
   "use strict";
 
+  /* `panelType` vaut "OLED" sur une dalle OLED, et c'est le seul champ de
+   * capacite que LG renseigne reellement : sur un C3 de 2023, aucun des
+   * booleens ci-dessous n'est rendu. Le client en deduit la gamme, donc le
+   * Dolby Vision, l'Atmos et le DTS. L'oublier du repli reviendrait a faire
+   * transcoder tout ce que la dalle sait lire. */
   var CHAMPS_RETENUS = [
-    "modelName", "sdkVersion", "version", "versionMajor", "versionMinor",
+    "modelName", "panelType", "sdkVersion", "version", "versionMajor", "versionMinor",
     "uhd", "uhd8K", "oled", "hdr10", "dolbyVision", "dolbyAtmos",
     "screenWidth", "screenHeight"
   ];
