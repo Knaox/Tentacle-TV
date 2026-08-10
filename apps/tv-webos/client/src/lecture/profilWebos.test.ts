@@ -140,17 +140,22 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
     expect(video[1].Container).toBe("ts");
   });
 
-  it("ne copie pas le DTS dans un fMP4 — il y ferait tomber le Dolby Vision", () => {
-    // Mesuré sur une C3 : même fichier, même remux, seul l'audio change.
-    // DTS copié → `hdrType: "none"` ; audio converti en AAC → « DolbyVision ».
-    // Le DTS reste déclaré en lecture directe, où le téléviseur le décode.
+  it("copie le DTS dans un fMP4 plutôt que de le convertir", () => {
+    // Le DTS avait été retiré d'ici sur une mesure faussée — le fichier de test
+    // portait un sous-titre PGS par défaut, qui fait à lui seul recompresser
+    // l'image, et la variante Dolby Vision n'était pas encore désignée.
+    // Refaite proprement : `hdrType` reste « DolbyVision » avec le DTS copié.
     const p = profil(23, 2023, MEMOIRE_VIDE, { oled: true, dolbyVision: true });
     const fmp4 = p.TranscodingProfiles.find((t) => t.Container === "mp4" && t.Type === "Video");
-    expect(fmp4?.AudioCodec).not.toContain("dts");
-    expect(fmp4?.AudioCodec).not.toContain("dca");
-    expect(fmp4?.AudioCodec).not.toContain("pcm");
+    expect(fmp4?.AudioCodec).toContain("dts");
+    expect(fmp4?.AudioCodec).toContain("dca");
     expect(fmp4?.AudioCodec).toContain("eac3");
-    // La lecture directe, elle, le garde : c'est là qu'il fonctionne.
+    // Le PCM reste dehors par prudence — jamais mesuré, et une piste muette se
+    // diagnostique moins bien qu'une conversion.
+    expect(fmp4?.AudioCodec).not.toContain("pcm");
+    // Le TrueHD n'y sera jamais : webOS ne le démultiplexe nulle part.
+    expect(fmp4?.AudioCodec).not.toContain("truehd");
+    // La lecture directe garde le DTS, elle aussi.
     expect(directPlay(p, "mkv")?.AudioCodec).toContain("dts");
   });
 
