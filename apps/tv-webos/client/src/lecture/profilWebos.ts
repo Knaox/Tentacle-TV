@@ -196,27 +196,36 @@ function transcodage(resolu: ProfilResolu, memoire: MemoireReplis): TranscodingP
 const CODECS_TS = new Set(["h264", "hevc", "mpeg2video"]);
 
 /**
- * Ce qu'un remux fMP4 a le droit de porter — et c'est plus étroit que ce que la
- * dalle décode.
+ * Ce qu'un remux fMP4 a le droit de porter.
  *
- * Le DTS en est absent, et il faut le dire précisément : le téléviseur le
- * décode très bien en lecture directe depuis un MKV (c'est même ce que le
- * serveur choisit quand un fichier propose DTS et TrueHD). Mais **copié dans un
- * fMP4, il fait tomber tout le pipeline**. Mesuré sur une C3, même fichier,
- * même remux, seul l'audio change :
+ * **Le DTS y est, et il a été retiré à tort pendant un temps.** La mesure qui
+ * l'en avait chassé — « DTS copié : `hdrType` none ; converti en AAC :
+ * DolbyVision » — était faussée deux fois. Elle portait sur un fichier dont le
+ * sous-titre par défaut est un PGS, ce qui suffit à lui seul à faire incruster
+ * donc RECOMPRESSER l'image ; et elle datait d'avant le choix explicite de la
+ * variante Dolby Vision (`varianteDovi.ts`), quand le téléviseur prenait encore
+ * un repli SDR une fois sur trois. Refaite sur un fichier sans sous-titre image,
+ * variante désignée, elle rend :
  *
- *     audio DTS copié       videoInfo.hdrType « none »
+ *     audio DTS copié       videoInfo.hdrType « DolbyVision »
  *     audio converti AAC    videoInfo.hdrType « DolbyVision »
  *
- * Ce n'est donc pas une piste muette qu'on risquait, c'est le Dolby Vision
- * entier. Le PCM est écarté pour la même raison — le conteneur MP4 ne le porte
- * pas plus naturellement — sans avoir été mesuré, lui.
+ * Le DTS ne coûte donc rien, et le déclarer épargne une conversion sur le gros
+ * des remux Dolby Vision d'une médiathèque. Moonfin et `jellyfin-web` s'en
+ * tiennent à `aac,mp3,ac3,eac3` ; ils ne se privent de rien qu'ils aient mesuré,
+ * et cette table-ci a la dalle sous la main.
  *
- * Le prix est une conversion audio sur les seuls fichiers dont AUCUNE piste
- * n'est lisible autrement. C'est le compromis qu'ont retenu Moonfin et
- * `jellyfin-web`, qui s'en tiennent tous deux à `aac,mp3,ac3,eac3`.
+ * Le PCM reste dehors — et cette fois la raison est nommée pour ce qu'elle est :
+ * une PRUDENCE, pas une mesure. Le conteneur MP4 ne le porte pas naturellement,
+ * personne ne l'a essayé ici, et une piste muette est plus difficile à
+ * diagnostiquer qu'une conversion.
+ *
+ * Le TrueHD n'y sera jamais : webOS ne le démultiplexe dans AUCUN conteneur, si
+ * bien qu'il n'a jamais atteint la chaîne audio, avec ou sans barre de son. Un
+ * fichier qui n'aurait que cette piste-là paiera une conversion, et c'est le
+ * seul cas qui en paie une.
  */
-const AUDIO_FMP4 = new Set(["aac", "mp3", "ac3", "eac3"]);
+const AUDIO_FMP4 = new Set(["aac", "mp3", "ac3", "eac3", "dts", "dca"]);
 
 /**
  * Canaux maximaux d'un remux.
