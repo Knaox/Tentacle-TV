@@ -196,6 +196,17 @@ if (__TV_DEBUG__) {
   void import("./verif/surcoucheDebug").then((module) => module.installerSurcoucheDebug());
 }
 
+// Ce que le serveur fait de l'image — remux ou ré-encodage. Affichée d'office
+// pendant une lecture, sans raccourci : elle doit se voir en regardant un film
+// à la télécommande, qui n'a pas de modificateur.
+//
+// `import.meta.env.DEV` couvre `pnpm dev:webos` ; `__TV_DEBUG__` couvre le
+// build de diagnostic. Les deux sont faux dans l'image Docker, et Vite les
+// remplace littéralement — la branche et son import disparaissent alors.
+if (import.meta.env.DEV || __TV_DEBUG__) {
+  void import("./verif/surcoucheLecture").then((module) => module.installerSurcoucheLecture());
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

@@ -80,9 +80,25 @@ function raisonsDe(e: EntreeVerdict): string[] {
 
 function imageRecompressee(
   codecSortie: string | undefined, codecSource: string | undefined, raisons: string[],
+  url?: string,
 ): boolean {
   // Jellyfin l'annonce parfois lui-même.
   if (codecSortie?.toLowerCase() === "copy") return false;
+  // `AllowVideoStreamCopy=false` est le serveur qui le dit lui-même.
+  //
+  // Le manifeste maître d'un remux Dolby Vision propose la variante copiée puis
+  // deux replis, et c'est sur CES REPLIS que Jellyfin pose le drapeau : il
+  // désigne noir sur blanc ceux qui imposent un ré-encodage. Il n'apparaît que
+  // sur une playlist de variante — le client TV en sert une depuis qu'il
+  // choisit lui-même (`varianteDovi.ts`), là où un navigateur reçoit le maître.
+  //
+  // Son ABSENCE ne prouve rien en revanche, et il ne faut pas la lire comme une
+  // promesse de copie : Jellyfin ré-encodera quand même si le codec source ne
+  // figure pas dans la liste de sortie. C'est pourquoi on ne conclut ici que
+  // dans un sens, et que le cas Dolby Vision — où l'on SAIT, pour l'avoir
+  // mesuré, que l'image est copiée — est tranché par `lecture/playbackInfoTv.ts`,
+  // seul endroit qui sache quelle variante il a désignée.
+  if (url && lireParam(url, "AllowVideoStreamCopy")?.toLowerCase() === "false") return true;
   // Sinon les raisons font foi : elles disent ce qui a écarté la lecture
   // directe. Aucune raison vidéo (« AudioCodecNotSupported » seul, par
   // exemple) → ffmpeg copie le flux vidéo et ne touche qu'à l'audio.
@@ -120,7 +136,7 @@ export function evaluerLecture(e: EntreeVerdict): Verdict {
   // que le verdict a d'abord annoncé « Remux » à tort.
   const toneMapping = !!e.sourceHdr && e.clientAccepteHdr === false;
   const reencodageVideo = toneMapping || imageRecompressee(
-    lireParam(e.transcodingUrl, "VideoCodec"), e.codecVideoSource, raisons,
+    lireParam(e.transcodingUrl, "VideoCodec"), e.codecVideoSource, raisons, e.transcodingUrl,
   );
   return {
     mode: reencodageVideo ? "Transcode" : "Remux",

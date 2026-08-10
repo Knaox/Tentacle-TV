@@ -6,7 +6,7 @@ import {
   buildBrowserDeviceProfile, buildMacOSDeviceProfile, buildMpvDeviceProfile,
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
-import { evaluerLecture, sourceEstHdr } from "./playbackVerdict";
+import { evaluerLecture, sourceEstHdr, type Verdict } from "./playbackVerdict";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
@@ -65,6 +65,16 @@ export interface PlaybackInfoState {
   streamOffset: number;
   /** Whether a fetch is in progress */
   isLoading: boolean;
+  /**
+   * Ce que le serveur a réellement fait de l'image, et pourquoi.
+   *
+   * Les deux booléens ci-dessus décrivent ce que le fichier PERMET ; seul ce
+   * verdict distingue un remux — image copiée — d'un ré-encodage. Il était
+   * calculé puis jeté dans un `console.warn`, ce qui obligeait à ouvrir un
+   * inspecteur distant pour savoir si un film 4K se faisait recompresser.
+   * `null` tant qu'aucune lecture n'a été négociée.
+   */
+  verdict: Verdict | null;
 }
 
 /**
@@ -86,6 +96,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
     isDirectStream: false,
     streamOffset: 0,
     isLoading: false,
+    verdict: null,
   });
 
   // ⚠️ `isTauri()` est en réalité `isDesktopApp()` : il répond OUI sous Electron
@@ -198,19 +209,6 @@ export function usePlaybackInfo(lecteurNatif = false) {
       const offsetTicks = opts.startTimeTicks ?? 0;
       const streamOffset = !directPlay && offsetTicks > 0 ? offsetTicks / 10_000_000 : 0;
 
-      setState({
-        streamUrl: url,
-        playSessionId: result.PlaySessionId,
-        mediaSource: ms,
-        isDirectPlay: directPlay,
-        isDirectStream: directStream,
-        streamOffset,
-        isLoading: false,
-      });
-
-      // Synthetic log so users can see at a glance, in DevTools, whether
-      // Direct Streaming is engaged and which decode path is used.
-      //
       // `mode` vient de `evaluerLecture` et non des deux booléens ci-dessus :
       // ceux-ci disent ce que le fichier PERMET, pas ce que le serveur a fait.
       // Seul le verdict distingue un remux — image copiée, son converti, ce
@@ -228,6 +226,20 @@ export function usePlaybackInfo(lecteurNatif = false) {
         sourceHdr: sourceEstHdr(fluxVideo),
         clientAccepteHdr: plages.length > 2, // au-delà de Unknown+SDR
       });
+
+      setState({
+        streamUrl: url,
+        playSessionId: result.PlaySessionId,
+        mediaSource: ms,
+        isDirectPlay: directPlay,
+        isDirectStream: directStream,
+        streamOffset,
+        isLoading: false,
+        verdict,
+      });
+
+      // Synthetic log so users can see at a glance, in DevTools, whether
+      // Direct Streaming is engaged and which decode path is used.
       // `warn` et non `log`, et ce n'est pas une question de gravité.
       //
       // Les builds de production évincent `console.log` (`pure:` d'esbuild, cf.
@@ -278,7 +290,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
     ++fetchId.current; // Invalidate in-flight fetches
     setState({
       streamUrl: null, playSessionId: null, mediaSource: null,
-      isDirectPlay: false, isDirectStream: false, streamOffset: 0, isLoading: false,
+      isDirectPlay: false, isDirectStream: false, streamOffset: 0, isLoading: false, verdict: null,
     });
   }, []);
 

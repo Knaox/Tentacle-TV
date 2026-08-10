@@ -144,3 +144,53 @@ describe("normaliserRaisons", () => {
     expect(normaliserRaisons("")).toEqual([]);
   });
 });
+
+describe("AllowVideoStreamCopy — le signal explicite du serveur", () => {
+  /**
+   * Ces deux cas viennent d'un défaut vécu : la surcouche de diagnostic du
+   * téléviseur annonçait « image RECOMPRESSÉE » pendant que la dalle recevait
+   * un Dolby Vision à l'image copiée. `VideoRangeTypeNotSupported` commence par
+   * « video » et tombait donc dans les raisons de ré-encodage — à juste titre
+   * pour un tone mapping, à tort pour le mécanisme qui va CHERCHER le remux en
+   * retirant les plages Dolby Vision d'un conteneur.
+   */
+  const base = {
+    supportsDirectPlay: false,
+    supportsDirectStream: true,
+    codecVideoSource: "hevc",
+  };
+
+  it("ne lit pas l'absence du drapeau comme une promesse de copie", () => {
+    // Jellyfin ré-encode quand même si le codec source n'est pas dans la liste
+    // de sortie : l'absence ne prouve rien, on s'en remet aux raisons. Le cas
+    // Dolby Vision, où l'image EST copiée, est tranché par `playbackInfoTv.ts`,
+    // seul à savoir quelle variante il a désignée.
+    const v = evaluerLecture({
+      ...base,
+      transcodingUrl: "/videos/x/main.m3u8?VideoCodec=hevc,h264",
+      transcodeReasons: ["VideoRangeTypeNotSupported"],
+    });
+    expect(v.reencodageVideo).toBe(true);
+  });
+
+  it("conclut au ré-encodage quand le serveur interdit la copie", () => {
+    const v = evaluerLecture({
+      ...base,
+      transcodingUrl: "/videos/x/main.m3u8?VideoCodec=hevc&AllowVideoStreamCopy=false",
+      transcodeReasons: ["VideoRangeTypeNotSupported"],
+    });
+    expect(v.reencodageVideo).toBe(true);
+    expect(v.mode).toBe("Transcode");
+  });
+
+  it("laisse le manifeste maître aux raisons — il ne porte pas le drapeau", () => {
+    // Le paramètre n'existe que sur une playlist de variante. Sur le maître, le
+    // verdict doit continuer de s'en remettre aux raisons, comme avant.
+    const v = evaluerLecture({
+      ...base,
+      transcodingUrl: "/videos/x/master.m3u8?VideoCodec=hevc",
+      transcodeReasons: ["VideoBitrateNotSupported"],
+    });
+    expect(v.reencodageVideo).toBe(true);
+  });
+});
