@@ -121,6 +121,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   useDefaultTracks({
     streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
     setAudioIndex, setSubtitleIndex,
+    // mpv rend les sous-titres image lui-même : rien à éviter de ce côté.
+    incrustationCouteuse: !isDesktop && pbInfo.pgsClientIndisponible,
   });
 
   // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
