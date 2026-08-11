@@ -1,0 +1,184 @@
+# Tentacle TV — LG webOS (IPK sideload)
+#
+# Déclenché par le tag `webos-vX.Y.Z` ou MANUELLEMENT. Jamais sur un push :
+# pousser sur `main` ne doit rien livrer.
+#
+# La version vient de versions.json → champ `webos` (SOURCE UNIQUE). Le script
+# `ipk.mjs` la reporte lui-même dans `appinfo.json` avant d'empaqueter, pour que
+# les deux ne puissent pas diverger ; le job `version` vérifie en plus que le tag
+# correspond (garde-fou CI, comme les autres cibles).
+#
+# LE PAQUET NE CONTIENT QUE LA COQUILLE. Le client React est servi par le serveur
+# Tentacle sur `/tv` : corriger le client ne demande AUCUNE réinstallation. On ne
+# republie un IPK que pour l'icône, le titre, le splash, l'identifiant, ou le
+# comportement de la coquille elle-même.
+#
+# DEUX RELEASES, ET C'EST VOULU :
+#   • `webos-vX.Y.Z` — l'historique, une par version, avec ses notes.
+#   • `webos-latest` — un tag FIXE, réécrit à chaque livraison, qui porte l'IPK
+#     sous un nom lui aussi fixe. Cela donne une adresse de téléchargement qui ne
+#     change jamais, sur laquelle un script d'installation peut s'appuyer :
+#
+#         https://github.com/<dépôt>/releases/download/webos-latest/tentacle-tv.ipk
+#
+#     `releases/latest/download/…` ne conviendrait PAS : ce raccourci désigne la
+#     dernière release du DÉPÔT, toutes cibles confondues — une livraison desktop
+#     ou serveur la ferait pointer ailleurs.
+#
+# Notes de version : changelogs/webos.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+
+name: Release webOS
+
+on:
+  push:
+    tags: ["webos-v*"]
+  workflow_dispatch:
+    inputs:
+      publier:
+        description: "Publier les releases GitHub — sinon artefact du run seulement"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+env:
+  APP_ID: com.tentacletv.webos
+  # Le nom que le script d'installation attendra, et qui ne doit jamais changer.
+  IPK_STABLE: tentacle-tv.ipk
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.lire.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lire versions.json, et vérifier le tag
+        id: lire
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./versions.json').webos")"
+          if [ -z "$VERSION" ] || [ "$VERSION" = "undefined" ]; then
+            echo "::error::versions.json ne porte pas de champ « webos »."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version webOS : $VERSION"
+
+          # Garde-fou : sur un tag, les deux doivent coïncider. La source reste
+          # versions.json — le tag n'est qu'un déclencheur, jamais l'autorité.
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            ATTENDU="webos-v$VERSION"
+            if [ "$GITHUB_REF_NAME" != "$ATTENDU" ]; then
+              echo "::error::Le tag $GITHUB_REF_NAME ne correspond pas à versions.json ($ATTENDU)."
+              exit 1
+            fi
+          fi
+
+  paquet:
+    name: Construire l'IPK
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Contrôles
+        run: |
+          pnpm typecheck
+          pnpm --filter @tentacle-tv/tv-webos test
+
+      # Le client n'est pas dans l'IPK, mais on le construit quand même : une
+      # coquille livrée alors que le client ne compile pas ne servirait à rien,
+      # et l'échec doit tomber ici plutôt que sur la dalle.
+      - name: Construire le client servi sur /tv
+        run: pnpm --filter @tentacle-tv/tv-webos build
+
+      - name: Empaqueter la coquille
+        run: pnpm --filter @tentacle-tv/tv-webos ipk
+
+      - name: Nommer le paquet d'une façon stable
+        id: paquet
+        run: |
+          set -euo pipefail
+          SOURCE="$(find apps/tv-webos/dist-ipk -name '*.ipk' -print -quit)"
+          if [ -z "$SOURCE" ]; then
+            echo "::error::Aucun IPK produit dans apps/tv-webos/dist-ipk."
+            exit 1
+          fi
+          mkdir -p livraison
+          # Deux exemplaires du MÊME paquet : l'un versionné pour l'historique,
+          # l'autre au nom fixe pour l'adresse de téléchargement permanente.
+          cp "$SOURCE" "livraison/${{ env.IPK_STABLE }}"
+          cp "$SOURCE" "livraison/tentacle-tv-${{ needs.version.outputs.version }}.ipk"
+          ls -l livraison
+          echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webos-ipk-${{ needs.version.outputs.version }}
+          path: livraison/*.ipk
+          if-no-files-found: error
+
+      - name: Extraire les notes de version
+        id: notes
+        run: |
+          set -euo pipefail
+          V="${{ needs.version.outputs.version }}"
+          if [ -f changelogs/webos.md ]; then
+            # Le bloc « ## [X.Y.Z] » jusqu'au titre suivant.
+            awk -v v="$V" '
+              $0 ~ "^## \\[" v "\\]" { dans=1; next }
+              dans && /^## \[/ { exit }
+              dans { print }
+            ' changelogs/webos.md > notes.md
+          fi
+          if [ ! -s notes.md ]; then
+            printf 'Tentacle TV pour LG webOS — version %s.\n' "$V" > notes.md
+          fi
+          cat notes.md
+
+      # L'historique : une release par version, jamais réécrite.
+      - name: Release versionnée
+        if: github.event_name == 'push' || inputs.publier
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: webos-v${{ needs.version.outputs.version }}
+          name: webOS ${{ needs.version.outputs.version }}
+          body_path: notes.md
+          files: livraison/*.ipk
+          make_latest: false
+
+      # L'adresse permanente : même tag, réécrit à chaque fois.
+      - name: Release à adresse fixe
+        if: github.event_name == 'push' || inputs.publier
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: webos-latest
+          name: webOS — dernière version
+          body: |
+            Dernier paquet LG webOS — **version ${{ needs.version.outputs.version }}**.
+
+            Cette release est réécrite à chaque livraison : l'adresse de
+            téléchargement ne change jamais.
+
+            ```
+            https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.IPK_STABLE }}
+            ```
+
+            L'IPK ne contient que la coquille — le client est servi par le
+            serveur Tentacle sur `/tv`, donc une mise à jour du serveur suffit à
+            corriger l'application.
+          files: livraison/${{ env.IPK_STABLE }}
+          make_latest: false
