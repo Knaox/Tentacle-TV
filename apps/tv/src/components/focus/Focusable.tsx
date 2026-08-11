@@ -168,7 +168,6 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   return (
     <Pressable
       ref={ref}
-      // @ts-ignore react-native-tvos extends Pressable
       style={style}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}

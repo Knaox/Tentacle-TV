@@ -18,7 +18,6 @@ import { TVFocusBridgeRight } from "./TVFocusBridgeRight";
 export function TVScreenFrame({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
-      {/* @ts-ignore — TVFocusGuideView props (react-native-tvos) */}
       <TVFocusGuideView
         autoFocus={Platform.OS === "ios"}
         style={{ flex: 1, paddingLeft: RAIL_COLLAPSED }}

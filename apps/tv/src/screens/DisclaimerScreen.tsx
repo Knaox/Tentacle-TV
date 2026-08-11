@@ -44,7 +44,7 @@ export function DisclaimerScreen() {
 
   return (
     <View style={styles.root}>
-      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : fluidifie la nav
+      {/* @ts-expect-error — TVFocusGuideView (react-native-tvos) : fluidifie la nav
           verticale à travers le bloc de texte non-focusable. */}
       <TVFocusGuideView style={styles.card} autoFocus>
         {/* Logo */}

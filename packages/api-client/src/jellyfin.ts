@@ -21,6 +21,8 @@ export class JellyfinClient {
   private baseUrl: string;
   private accessToken: string | null = null;
   private deviceId: string;
+  /** Identité d'appareil adoptée depuis le token (cf. `getDeviceId`). */
+  private deviceIdJellyfin: string | null;
   private storage: StorageAdapter;
   private deviceName: string;
   private clientName: string;
@@ -63,6 +65,7 @@ export class JellyfinClient {
     this.clientName = clientName ?? APP_NAME;
     this.version = version ?? APP_VERSION;
     this.deviceId = this.getOrCreateDeviceId(uuid);
+    this.deviceIdJellyfin = this.storage.getItem("tentacle_device_id_jf");
   }
 
   setOnAuthExpired(cb: () => void | Promise<void>) { this.authExpiredCallback = cb; }
@@ -160,8 +163,53 @@ export class JellyfinClient {
     return url;
   };
 
+  /**
+   * L'identité d'appareil présentée à Jellyfin : en-tête `MediaBrowser`, URLs de
+   * stream, et le `deviceId` du `DELETE Videos/ActiveEncodings`.
+   *
+   * Ce n'est pas toujours la graine locale. Sur le web, c'est le BACKEND qui
+   * s'authentifie auprès de Jellyfin, et il y présente un identifiant dérivé
+   * (haché avec un secret serveur, pour qu'on ne puisse pas rejouer l'appareil
+   * d'autrui et le faire déconnecter). Le token reste accroché à celui-là.
+   * Tant que le navigateur annonçait sa graine brute, Jellyfin voyait deux
+   * appareils — mesuré : deux cartes au même nom, même compte, même épisode,
+   * même position, séparées par le seul `DeviceId`. Le client adopte donc
+   * l'identité du token.
+   *
+   * Les trois usages bougent ensemble : ce que le navigateur annonce dans son
+   * en-tête, Jellyfin le recopie dans la `TranscodingUrl`, et c'est encore lui
+   * qu'on renvoie pour tuer l'encodage. Aucun risque de dépareiller.
+   */
   getDeviceId() {
+    return this.deviceIdJellyfin ?? this.deviceId;
+  }
+
+  /**
+   * La graine locale, stable et jamais remplacée : c'est elle qu'on envoie au
+   * backend pour qu'il en dérive l'identité. Lui envoyer l'identité adoptée la
+   * ferait re-hacher à chaque connexion, et l'appareil changerait de nom à
+   * chaque fois — en cascade si l'on jongle entre deux serveurs Tentacle.
+   */
+  getLoginDeviceId() {
     return this.deviceId;
+  }
+
+  /**
+   * L'identité affichée de ce client, telle qu'elle part dans l'en-tête
+   * `MediaBrowser`. Exposée parce que la connexion web doit la TRANSMETTRE au
+   * backend : c'est lui qui s'authentifie à notre place, et le token doit porter
+   * le même `Client` que nos requêtes — Jellyfin indexe ses sessions par
+   * (DeviceId, Client, compte).
+   */
+  getClientName() { return this.clientName; }
+  getDeviceName() { return this.deviceName; }
+
+  /** Adopte l'identité d'appareil du token (cf. `getDeviceId`). Persistée : elle
+   *  doit survivre au rechargement de la page, comme le cookie de session. */
+  adopterDeviceIdJellyfin(id: string | null) {
+    this.deviceIdJellyfin = id;
+    if (id) this.storage.setItem("tentacle_device_id_jf", id);
+    else this.storage.removeItem("tentacle_device_id_jf");
   }
 
   private getOrCreateDeviceId(uuid: UuidGenerator): string {
@@ -177,7 +225,7 @@ export class JellyfinClient {
     const parts = [
       `MediaBrowser Client="${this.clientName}"`,
       `Device="${this.deviceName}"`,
-      `DeviceId="${this.deviceId}"`,
+      `DeviceId="${this.getDeviceId()}"`,
       `Version="${this.version}"`,
     ];
     if (t) parts.push(`Token="${t}"`);

@@ -69,7 +69,6 @@ export function TVNextEpisodeFullscreen({
 
   return (
     <Animated.View
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility="yes"
       style={[{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
@@ -148,7 +147,6 @@ export function TVNextEpisodeFullscreen({
             )}
 
             {/* Actions */}
-            {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
             <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight
               style={{ flexDirection: "row", alignItems: "center", gap: 16, marginTop: 28 }}>
               <Focusable ref={playBtnRef} variant="button" focusRadius={Radius.button} onPress={onPlayNow} hasTVPreferredFocus>

@@ -30,7 +30,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { useServerReachable } from "./hooks/useServerReachable";
 import { navigationRef } from "./navigation/navigationRef";
-import { runAuthRefreshFlow, doLogout } from "./auth/sessionFlow";
+import { runAuthRefreshFlow } from "./auth/sessionFlow";
 import { DirectStreamingSync } from "./components/DirectStreamingSync";
 import { PairingExpiredBanner } from "./components/PairingExpiredBanner";
 import { ForegroundDataRefresher } from "./components/ForegroundDataRefresher";

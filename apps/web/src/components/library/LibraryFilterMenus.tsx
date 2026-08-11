@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
-import type { LibraryFilterState } from "../LibraryFilters";
+import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 
 /**
  * Chaque critère porte son sens NATUREL.

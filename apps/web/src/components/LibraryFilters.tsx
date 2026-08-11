@@ -1,4 +1,3 @@
-import { useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { LibraryActiveFilterPills } from "./LibraryActiveFilterPills";
 import {
@@ -8,85 +7,7 @@ import {
   SortMenu,
   YearMenu,
 } from "./library/LibraryFilterMenus";
-
-export interface LibraryFilterState {
-  genreIds: string[];
-  studioIds: string[];
-  platformIds: number[];
-  yearFrom: number | null;
-  yearTo: number | null;
-  ratingMin: number | null;
-  statusFilter: string | null;
-  isFavorite: boolean;
-  sortBy: string;
-  sortOrder: string;
-}
-
-const DEFAULT: LibraryFilterState = {
-  genreIds: [],
-  studioIds: [],
-  platformIds: [],
-  yearFrom: null,
-  yearTo: null,
-  ratingMin: null,
-  statusFilter: null,
-  isFavorite: false,
-  sortBy: "SortName",
-  sortOrder: "Ascending",
-};
-
-export function useLibraryFilters() {
-  const [filters, setFilters] = useState<LibraryFilterState>(DEFAULT);
-
-  const toggleGenre = useCallback((id: string) => {
-    setFilters((f) => ({
-      ...f,
-      genreIds: f.genreIds.includes(id) ? f.genreIds.filter((g) => g !== id) : [...f.genreIds, id],
-    }));
-  }, []);
-
-  const toggleStudio = useCallback((id: string) => {
-    setFilters((f) => ({
-      ...f,
-      studioIds: f.studioIds.includes(id) ? f.studioIds.filter((s) => s !== id) : [...f.studioIds, id],
-    }));
-  }, []);
-
-  const togglePlatform = useCallback((id: number) => {
-    setFilters((f) => ({
-      ...f,
-      platformIds: f.platformIds.includes(id) ? f.platformIds.filter((p) => p !== id) : [...f.platformIds, id],
-    }));
-  }, []);
-  const setYearFrom = useCallback((v: number | null) => setFilters((f) => ({ ...f, yearFrom: v })), []);
-  const setYearTo = useCallback((v: number | null) => setFilters((f) => ({ ...f, yearTo: v })), []);
-  const setRatingMin = useCallback((v: number | null) => setFilters((f) => ({ ...f, ratingMin: v })), []);
-  const setStatusFilter = useCallback((v: string | null) => setFilters((f) => ({ ...f, statusFilter: v })), []);
-  const setIsFavorite = useCallback((v: boolean) => setFilters((f) => ({ ...f, isFavorite: v })), []);
-  const setSortBy = useCallback((v: string) => setFilters((f) => ({ ...f, sortBy: v })), []);
-  const setSortOrder = useCallback((v: string) => setFilters((f) => ({ ...f, sortOrder: v })), []);
-  const resetFilters = useCallback(() => setFilters(DEFAULT), []);
-  const clearYears = useCallback(() => setFilters((f) => ({ ...f, yearFrom: null, yearTo: null })), []);
-  const clearRating = useCallback(() => setFilters((f) => ({ ...f, ratingMin: null })), []);
-
-  const activeCount = useMemo(() => {
-    let c = 0;
-    if (filters.genreIds.length > 0) c++;
-    if (filters.studioIds.length > 0) c++;
-    if (filters.platformIds.length > 0) c++;
-    if (filters.yearFrom != null || filters.yearTo != null) c++;
-    if (filters.ratingMin != null) c++;
-    if (filters.statusFilter) c++;
-    if (filters.isFavorite) c++;
-    return c;
-  }, [filters]);
-
-  return {
-    filters, toggleGenre, toggleStudio, togglePlatform, setYearFrom, setYearTo,
-    setRatingMin, setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
-    resetFilters, clearYears, clearRating, activeCount, hasActiveFilters: activeCount > 0,
-  };
-}
+import type { LibraryFilterState } from "../hooks/useLibraryFilters";
 
 /**
  * Style commun à tous les chips de la barre de filtre (statut, favoris, filtres

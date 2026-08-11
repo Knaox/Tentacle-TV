@@ -68,7 +68,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const {
     paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
     displayTimeRef, bufferedTimeRef, lastDisplayUpdate, positionRef, controlsCurrentTimeRef,
-    pausedStateRef, deadSessionRef, endedRef, handleEndRef, pauseFrameUri,
+    pausedStateRef, endedRef, handleEndRef, pauseFrameUri,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
     reloadHold, reloadHoldRef,
     notifySeekRef, checkTriggerRef, resetLoadedRef, routeBackRef,

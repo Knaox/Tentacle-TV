@@ -52,7 +52,6 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
       <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" }} />
 
       <Animated.View
-        // @ts-ignore — Android TV accessibility
         importantForAccessibility="yes"
         style={[{
           position: "absolute", top: 0, right: 0, bottom: 0, width: PANEL_WIDTH,
@@ -61,12 +60,10 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
           paddingTop: 40, paddingBottom: 24,
         }, panelStyle]}
       >
-        {/* @ts-ignore — props TVFocusGuideView de react-native-tvos */}
         <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
           {/* Header : contexte série + titre + bouton Fermer.
               destinations → toute navigation HAUT entrant dans le header est
               redirigée vers le bouton Fermer (focusable sur tvOS ET Android). */}
-          {/* @ts-ignore — props TVFocusGuideView de react-native-tvos */}
           <TVFocusGuideView
             destinations={closeNode ? [closeNode] : []}
             style={{

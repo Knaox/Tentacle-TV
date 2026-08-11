@@ -116,11 +116,11 @@ export function TVPlayerView({
   item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
   useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
-  audioTracksList, subtitleTracksList, audioIndex, subtitleIndex,
-  qualityKey, sourceQuality, skipSegments, autoPlay, controls,
+  subtitleIndex,
+  skipSegments, autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onSeek, onBack, onToggleSettings,
-  onSelectAudio, onSelectSubtitle, onSelectQuality, onCloseSettings,
+  
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
 }: TVPlayerViewProps) {
@@ -164,7 +164,6 @@ export function TVPlayerView({
         ref={backgroundRef} activeOpacity={1}
         style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         onPress={controls.showOverlay}
-        // @ts-ignore react-native-tvos
         hasTVPreferredFocus={backgroundFocusable}
         focusable={backgroundFocusable}
         accessible={backgroundFocusable}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, Text, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
+import { View, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
 import Animated, {
   useSharedValue, useAnimatedStyle, withTiming, interpolate,
 } from "react-native-reanimated";
@@ -238,7 +238,6 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
         item focusé. L'atterrissage sur l'item actif est géré par TVFocusBridgeLeft,
         donc pas de `destinations` ici sur tvOS (qui empêcherait la nav interne).
       */}
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView
         trapFocusLeft
         autoFocus={Platform.OS === "ios"}

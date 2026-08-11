@@ -11,7 +11,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { SkeletonCardPortrait } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
+import { Colors, Spacing, Typography, CardConfig } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Search">;
 

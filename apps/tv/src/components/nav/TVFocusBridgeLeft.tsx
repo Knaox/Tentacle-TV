@@ -26,7 +26,6 @@ export function TVFocusBridgeLeft() {
   if (Platform.OS !== "ios" || !railActiveNode || railFocused) return null;
 
   return (
-    // @ts-ignore — props TVFocusGuideView (react-native-tvos)
     <TVFocusGuideView
       destinations={[railActiveNode]}
       // Bande non nulle pleine hauteur, sinon iOS ignore le guide. Largeur =

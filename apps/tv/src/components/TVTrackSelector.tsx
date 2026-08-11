@@ -89,7 +89,6 @@ export function TVTrackSelector({
 
   return (
     <Animated.View
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility="yes"
       style={[{
         position: "absolute", top: 0, right: 0, bottom: 0, width: 380,
@@ -98,7 +97,6 @@ export function TVTrackSelector({
         paddingVertical: 40, paddingHorizontal: 24,
       }, panelStyle]}
     >
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
         {/* Header */}
         <View style={{

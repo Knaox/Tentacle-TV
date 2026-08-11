@@ -10,7 +10,6 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useAmbientFocus } from "../../contexts/AmbientFocusContext";
 import { Colors, AmbientConfig } from "../../theme/colors";
-import { Durations } from "../../theme/motion";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
