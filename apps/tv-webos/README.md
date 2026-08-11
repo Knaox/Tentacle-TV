@@ -206,35 +206,82 @@ seule, la vidéo reste en pause, **aucun déplacement n'est appliqué avant
 confirmation**. OK confirme, Retour annule, sept secondes d'inactivité annulent
 aussi. `lecture/machineScrub.test.ts` vérifie ce qui ne se voit pas.
 
-## Pourquoi une lecture remuxée se fige, et ce qui n'y est pour rien
+## Le disque du serveur, à regarder AVANT tout le reste
 
-Mesuré sur la C3 le 11 août 2026, sur « Spider-Man : Across the Spider-Verse »
-(MKV, HEVC DOVIWithHDR10, remuxé en fMP4 HLS parce que webOS ne démultiplexe le
-RPU qu'en ISOBMFF). L'outil est `scripts/releveLecture.mjs`, côté dalle, et
-`TENTACLE_JOURNAL_FLUX=1` côté proxy.
+Le 11 août 2026, une campagne de mesure entière a conclu à un défaut de
+segmentation alors que la cause première était ailleurs : **le disque du serveur
+Jellyfin était plein**. 121 Go de transcodes orphelins dans
+`config/cache/transcodes`, et dans son journal :
 
-**La playlist ment sur les durées, et c'est tout le défaut.** Les `#EXTINF` de
-Jellyfin ne décrivent pas ce que ffmpeg produit :
+```
+No space left on device : '/config/log/FFmpeg.Remux-….log'
+Error processing request: "No space left on device" URL "GET" "/videos/…/hls1/main/11.mp4"
+```
 
-| segment | annoncé par la playlist | contenu réel (ffprobe) |
-|---|---|---|
-| 517 | 3105,31 → 3110,90 | 3105,311 → **3112,818** |
-| 518 | 3110,90 → 3115,11 | **3112,859** → 3117,740 |
-| 519 | 3115,11 → 3122,49 | **3117,781** → 3124,204 |
+ffmpeg ne pouvait plus écrire un seul segment. D'où les lectures qui se figeaient,
+les milliers de requêtes en boucle sur les mêmes segments, les 500 et les 416 —
+tout ce qu'on avait pris pour une incohérence de playlist. Après nettoyage, le
+même film passe de 36 s lues en 95 s à **61,6 s lues en 70 s**.
 
-Les segments s'enchaînent parfaitement **entre eux** — 41 ms d'écart, soit une
-image à 23,976 — donc le flux est sain. C'est l'index qui est faux, d'environ
-deux secondes : Jellyfin construit ses `#EXTINF` sur des points de coupe que
-ffmpeg n'utilise pas. La somme reste juste (8406,40 s pour 140 min), l'erreur
-est locale et se compense ; seul le **premier** segment d'une session ffmpeg est
-aligné, ce qui explique qu'un rechargement fasse repartir la lecture, et qu'elle
-se refige quarante secondes plus tard.
+**Deux causes se cumulaient**, et l'ordre compte :
 
-**La pile média de LG n'a aucune tolérance.** Elle redemande le segment qu'elle
-ne parvient pas à raccorder, sans plage `Range`, donc en repartant de zéro à
-chaque fois : **3883 requêtes pour 13 segments distincts en cent secondes**,
-chacune coupée après ~49 ms, 5,34 Go annoncés pour un film à 18,8 Mb/s. C'est
-aussi ce que l'utilisateur perçoit comme des saccades.
+1. **Le disque plein** — cause première, et elle rend tout le reste illisible. La
+   première chose à vérifier avant d'ouvrir une enquête sur la lecture :
+   `du -xh --max-depth=1 <config>/cache` et `df -h`.
+2. **Le décalage d'index** — réel, celui-là, mesuré serveur sain (ci-dessous). Il
+   ne produit qu'un hoquet, une relance de la veille toutes les ~70 s.
+
+**Pourquoi le disque se remplissait, et ce qui a été corrigé côté client** : un
+remux tourne à mille à trois mille fois le temps réel. Abandonné sans être tué,
+il écrit le film ENTIER en quelques secondes puis meurt en laissant ses segments,
+que le nettoyage de Jellyfin ne ramasse pas — ses minuteurs de purge
+(`EnableThrottling`, `EnableSegmentDeletion`) n'ont pas le temps de se déclencher
+sur un travail si court (jellyfin#16608, ouverte, 10.11.8). Or `WatchWeb` ne
+tuait l'encodage que sur un saut : changer de piste, de qualité ou d'incrustation
+en laissait un par clic, une dizaine de gigaoctets à chaque fois. C'est corrigé
+(`libererEncodage`), mais le réglage serveur reste à surveiller : **une seule
+lecture remuxée laisse déjà son film entier en cache** jusqu'à la tâche de
+nettoyage quotidienne.
+
+## Pourquoi une lecture remuxée hoquette, et ce qui n'y est pour rien
+
+Mesuré sur la C3 le 11 août 2026 (MKV, HEVC DOVIWithHDR10, remuxé en fMP4 HLS
+parce que webOS ne démultiplexe le RPU qu'en ISOBMFF). L'outil est
+`scripts/releveLecture.mjs`, côté dalle, et `TENTACLE_JOURNAL_FLUX=1` côté proxy.
+
+**La playlist ment sur les durées.** Relevé **serveur sain**, disque libéré, sur
+« Baby Driver » — les segments alignés et le premier décalé se suivent :
+
+| segment | annoncé | contenu réel (ffprobe) | écart | durée annoncée / réelle |
+|---|---|---|---|---|
+| 79 | 540,54 | 540,540 | 0,000 | 10,010 / 10,010 |
+| 80 | 550,55 | 550,549 | −0,001 | 4,463 / 4,464 |
+| 81 | 555,01 | 555,012 | −0,001 | **2,377 / 4,172** |
+| 82 | 557,39 | 559,183 | **+1,793** | 1,794 / 6,549 |
+| 83 | 559,18 | 565,731 | **+6,547** | 1,001 / 5,882 |
+
+Le décalage naît exactement là où la playlist annonce des segments **courts** (1 à
+2,4 s) que ffmpeg ne produit pas : il les fusionne en 4 à 6,5 s, et l'écart
+s'accumule ensuite. Les deux playlists relevées portent cette signature — 15 %
+de segments sous 3 s, un minimum à 0,042 s chez Baby Driver, soit UNE image.
+Aucun encodeur ne découpe comme ça : c'est l'index du conteneur qui liste des
+positions que ffmpeg n'honore pas.
+
+Les segments s'enchaînent en revanche parfaitement **entre eux** — 41 ms, soit une
+image à 23,976 — donc le flux est sain, et seul l'index est faux. La somme reste
+juste (8406,40 s pour 140 min) : l'erreur est locale et se compense.
+
+**La pile média de LG n'a aucune tolérance**, là où hls.js recale. Le client web
+officiel ne contourne rien : sa configuration hls.js tient en six options, et
+c'est `updateFragPTSDTS` (`level-helper.ts`) qui remplace les positions annoncées
+par les PTS réellement démultiplexés — il journalise même « media timestamps and
+playlist times differ ». hls.js traite les `#EXTINF` comme une estimation, la
+pile de LG comme une vérité. D'où le même flux qui passe chez l'un et hoquette
+chez l'autre.
+
+Le relevé de 3883 requêtes pour 13 segments distincts en cent secondes, lui,
+datait du disque plein : ffmpeg ne pouvait plus rien écrire. Serveur sain, il
+n'en reste qu'une relance toutes les ~70 s.
 
 Ce qui n'y est pour rien, et qu'il est inutile de re-suspecter : le débit (les
 segments sortent en 16 ms médians), `Range` (206 correct, `accept-ranges: bytes`),
