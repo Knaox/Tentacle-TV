@@ -12,20 +12,6 @@ interface UseSmartSeekOptions {
   streamOffset: number;
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
-  /**
-   * Allume l'indicateur de chargement du lecteur.
-   *
-   * Personne ne l'allumait sur un saut : `handleSeek` ne touchait ni `loading`
-   * ni `sourceChangingRef`, et il ne restait que l'événement `waiting` — émis
-   * au bon vouloir du moteur, et débouncé de 800 ms. Sur un téléviseur, cela
-   * faisait plus d'une seconde d'écran muet pendant laquelle rien ne disait si
-   * l'application travaillait ou si elle était morte.
-   *
-   * C'est ici, et non dans un écouteur d'événement, parce qu'ici seulement on
-   * sait à quel NIVEAU le saut se joue : un saut dans le tampon est résolu
-   * avant l'image suivante, et y faire clignoter un calque serait pire que rien.
-   */
-  signalerChargement?: (actif: boolean) => void;
 }
 
 /**
@@ -50,7 +36,7 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
 
 export function useSmartSeek({
   videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
-  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, signalerChargement,
+  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
   //
@@ -103,8 +89,6 @@ export function useSmartSeek({
     // If ffmpeg has advanced past this position (readrate=10x), the segment
     // already exists on disk and hls.js fetches it quickly.
     if (isHlsStream) {
-      // Le segment est à chercher : le lecteur va attendre, il faut le dire.
-      signalerChargement?.(true);
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
 
@@ -118,21 +102,16 @@ export function useSmartSeek({
         if (Math.abs(el.currentTime - ptsTarget) > 2) {
           seekTargetRef.current = clamped;
           onSeekRequest?.(clamped);
-          return;
         }
-        // La cible est atteinte sans que rien n'ait démarré : on n'escalade pas,
-        // mais on rend l'écran, sans quoi l'indicateur tiendrait indéfiniment.
-        signalerChargement?.(false);
       }, DELAI_CALAGE_SAUT_MS);
       return;
     }
 
     // --- Progressive transcode: always full restart (level 3) ---
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
-    signalerChargement?.(true);
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
-  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, signalerChargement]);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
 
   // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);

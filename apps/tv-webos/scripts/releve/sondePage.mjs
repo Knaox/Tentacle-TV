@@ -56,10 +56,6 @@ function sonde(evenements, periodeEtat, periodeSortie) {
       pret: v.readyState, reseau: v.networkState, enPause: v.paused,
       erreur: v.error ? v.error.code : null,
     };
-    // L'indicateur de chargement du téléviseur : présent ou non. Il paraît et
-    // disparaît en quelques centaines de millisecondes — le sonder à la main
-    // revient à ne jamais le voir.
-    e.chargement = !!document.querySelector(".chargement-tv");
     // Ces compteurs restent à zéro quand le décodage est matériel et hors
     // compositing : on les émet quand même, un zéro est une information.
     if (typeof v.getVideoPlaybackQuality === "function") {
