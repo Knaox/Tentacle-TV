@@ -2,7 +2,7 @@ import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { wtLog } from "../watchTogether/wtLog";
-import { DELAI_CHARGEMENT_MS } from "./calageSaut";
+import { DELAI_CHARGEMENT_MS } from "./seekLanding";
 import { fractionChargee } from "./bufferedProgress";
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -116,8 +116,8 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     // tous deux sont émis dès que le lecteur a FINI de se déplacer, ce qui ne dit
     // rien de l'arrivée des données à la cible. Sur la pile média native ils
     // partent bien avant le premier segment, si bien que le niveau 3 de
-    // `useSmartSeek` ne pouvait jamais jouer. C'est `jugerSaut` qui conclut
-    // désormais, et lui seul arrête sa veille (cf. `calageSaut.ts`).
+    // `useSmartSeek` ne pouvait jamais jouer. C'est `observerSaut` qui conclut
+    // désormais, et lui seul arrête sa veille (cf. `seekLanding.ts`).
     onSeeked: () => {
       wtLog("web-video", "event seeked", { pos: a.videoRef.current?.currentTime.toFixed(1) });
     },

@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
-import { observerSaut, SAUT_VIDE, PERIODE_VEILLE_SAUT_MS } from "./calageSaut";
+import { observerSaut, SAUT_VIDE, PERIODE_VEILLE_SAUT_MS } from "./seekLanding";
 
 interface UseSmartSeekOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
   containerPtsOffsetRef: MutableRefObject<number>;
   seekTargetRef: MutableRefObject<number | null>;
-  /** Veille de calage du saut — un INTERVALLE, cf. `calageSaut.ts`. */
+  /** Veille de calage du saut — un INTERVALLE, cf. `seekLanding.ts`. */
   seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   currentTimeRef: MutableRefObject<number>;
   src: string;
@@ -39,7 +39,7 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
  * Fin de la plage `buffered` la plus avancée, `null` s'il n'y en a aucune.
  *
  * La seule borne de `buffered` qui veuille dire quelque chose sur la pile média
- * du téléviseur — cf. `calageSaut.ts`, le début vaut toujours zéro.
+ * du téléviseur — cf. `seekLanding.ts`, le début vaut toujours zéro.
  */
 function finTampon(video: HTMLVideoElement): number | null {
   const n = video.buffered.length;
@@ -61,7 +61,7 @@ export function useSmartSeek({
    *
    * Périodique, et non un minuteur unique : un saut qui aboutit doit être
    * reconnu tout de suite, pas huit secondes plus tard. La décision est dans
-   * `calageSaut.ts` — pure, testée, et documentée sur ce que `buffered` vaut
+   * `seekLanding.ts` — pure, testée, et documentée sur ce que `buffered` vaut
    * réellement ici.
    */
   const armerVeille = useCallback((ptsTarget: number, clamped: number) => {
@@ -109,7 +109,7 @@ export function useSmartSeek({
 
   // Level 1: target in HTML5 buffer → v.currentTime (instant)
   // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)
-  //          with stall watcher (cf. `calageSaut.ts`) → fallback to level 3
+  //          with stall watcher (cf. `seekLanding.ts`) → fallback to level 3
   // Level 3: full restart → tuer l'encodage et renégocier une session à la
   //          position voulue (lent, 3-5 s). Le nom d'antan — « rebuild URL with
   //          StartTimeTicks » — décrivait un remède impossible : sur le chemin
