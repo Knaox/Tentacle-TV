@@ -81,6 +81,12 @@ export interface EntreeFlux {
   statut?: number;
   /** `content-length` annoncé par Jellyfin — un corps plus court est tronqué. */
   attendus?: number | null;
+  /**
+   * L'en-tête `Range` du client. Décisif sur un téléviseur : un lecteur qui
+   * redemande le même segment SANS plage recommence à zéro à chaque fois et ne
+   * progresse jamais ; avec plage, il avance.
+   */
+  plage?: string | null;
   cause?: string;
   /** Le client est parti avant la fin : ce n'est pas une panne. */
   annule?: boolean;
@@ -97,6 +103,7 @@ export function ligneFlux(e: EntreeFlux): Record<string, unknown> {
   };
   if (e.statut !== undefined) ligne.statut = e.statut;
   if (e.attendus !== undefined && e.attendus !== null) ligne.attendus = e.attendus;
+  if (e.plage) ligne.plage = e.plage;
   if (e.cause) ligne.cause = e.cause;
   if (e.annule) ligne.annule = true;
   return ligne;
