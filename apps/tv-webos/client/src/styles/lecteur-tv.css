@@ -195,5 +195,22 @@ html[data-tv-lecteur] #root {
   box-sizing: border-box;
 }
 
+/* Le témoin de chargement du lecteur web, à la taille d'un téléviseur.
+ *
+ * Le cercle du web fait quarante-huit pixels : lisible sur un écran qu'on
+ * regarde à cinquante centimètres, invisible sur une dalle à trois mètres.
+ * C'est la seule critique de fond qu'on lui faisait — on l'agrandit ici plutôt
+ * que d'ajouter un second indicateur, ce qui avait déjà été essayé et retiré :
+ * deux témoins se montraient alors en même temps.
+ *
+ * Rien d'autre ne change : c'est le même élément, monté uniquement quand la
+ * lecture attend, et son animation ne touche que `transform` — aucune peinture
+ * par image, et rien du tout quand il n'est pas affiché. */
+.spinner-lecture {
+  width: 96px;
+  height: 96px;
+  border-width: 6px;
+}
+
 /* Le déplacement a sa feuille — `lecteur-scrub-tv.css`. Les panneaux aussi —
    `lecteur-panneaux-tv.css`. */

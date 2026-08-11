@@ -14,6 +14,15 @@ interface UseSmartSeekOptions {
   streamOffset: number;
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /**
+   * Dire — ou cesser de dire — que le déplacement charge encore.
+   *
+   * Facultatif : un appelant qui ne le passe pas garde le comportement d'avant,
+   * ce qui laisse le lecteur du bureau et ses propres filets hors de portée.
+   * Câblé sur le `loading` du lecteur, il allume LE spinner qui existe déjà —
+   * on n'en ajoute pas un second, c'est précisément ce qui avait dû être retiré.
+   */
+  signalerChargement?: (charge: boolean) => void;
 }
 
 /** Check if a time (in PTS space) falls within any buffered range of the video element. */
@@ -39,7 +48,7 @@ function finTampon(video: HTMLVideoElement): number | null {
 
 export function useSmartSeek({
   videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
-  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
+  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, signalerChargement,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
   //
@@ -59,6 +68,10 @@ export function useSmartSeek({
     clearInterval(seekStallTimer.current);
     const arme = Date.now();
     let etat = SAUT_VIDE;
+    // On n'éteint que ce qu'on a allumé : `loading` sert AUSSI au chargement
+    // initial de la source, qui le tient jusqu'à la première image. L'éteindre
+    // parce qu'un saut a abouti laisserait un écran noir sans rien dire.
+    let allume = false;
     seekStallTimer.current = setInterval(() => {
       const el = videoRef.current;
       if (!el) {
@@ -75,14 +88,24 @@ export function useSmartSeek({
       });
       etat = suivant;
       if (verdict === "attendre") return;
+
+      // Le seul verdict qui n'arrête pas la veille : il DIT, il n'agit pas, et
+      // le saut peut encore aboutir de lui-même au relevé suivant.
+      if (verdict === "charge") {
+        allume = true;
+        signalerChargement?.(true);
+        return;
+      }
+
       clearInterval(seekStallTimer.current);
+      if (allume) signalerChargement?.(false);
       if (verdict === "renegocier") {
         console.warn("[Tentacle:Seek] saut sans effet — session neuve", { cible: Math.round(clamped) });
         seekTargetRef.current = clamped;
         onSeekRequest?.(clamped);
       }
     }, PERIODE_VEILLE_SAUT_MS);
-  }, [onSeekRequest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [onSeekRequest, signalerChargement]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Level 1: target in HTML5 buffer → v.currentTime (instant)
   // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)

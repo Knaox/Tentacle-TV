@@ -76,7 +76,13 @@ export interface EtatSaut {
 
 export const SAUT_VIDE: EtatSaut = { derniere: null };
 
-export type VerdictSaut = "attendre" | "abouti" | "renegocier";
+/**
+ * - `"abouti"` — des images sont sorties là où on les voulait.
+ * - `"charge"` — rien encore, mais il est trop tôt pour renoncer : c'est le
+ *   moment de le DIRE à l'utilisateur, pas d'agir.
+ * - `"renegocier"` — le déplacement n'a rien produit, il faut une session neuve.
+ */
+export type VerdictSaut = "attendre" | "abouti" | "charge" | "renegocier";
 
 /**
  * Au bout de combien de temps un saut HLS est considéré comme calé.
@@ -91,13 +97,28 @@ export type VerdictSaut = "attendre" | "abouti" | "renegocier";
 export const DELAI_CALAGE_SAUT_MS = 8000;
 
 /**
+ * Au bout de combien de temps on DIT que ça charge.
+ *
+ * Une demi-seconde. En dessous, le témoin clignoterait sur des sauts qui
+ * aboutissent tout de suite — c'est le défaut qui avait fait retirer l'ancien
+ * indicateur. Au-dessus, l'écran reste figé sans explication.
+ *
+ * Le même seuil sert à l'attente en cours de lecture (`useVideoEvents`), pour
+ * que le lecteur ne se contredise pas d'un chemin à l'autre.
+ */
+export const DELAI_CHARGEMENT_MS = 500;
+
+/**
  * À quelle cadence relever.
  *
  * Un minuteur unique ne pouvait conclure qu'une fois ; une veille périodique
  * s'arrête d'elle-même dès que la lecture est repartie, ce qui est le cas courant
  * et ne coûte alors qu'un ou deux relevés.
+ *
+ * Alignée sur `DELAI_CHARGEMENT_MS` : le premier relevé tombe donc AU seuil, et
+ * le témoin de chargement ne s'allume pas une demi-seconde en retard.
  */
-export const PERIODE_VEILLE_SAUT_MS = 1000;
+export const PERIODE_VEILLE_SAUT_MS = DELAI_CHARGEMENT_MS;
 
 /** De combien la position doit avancer entre deux relevés pour compter. */
 export const PROGRESSION_MINIMALE_S = 0.25;
@@ -126,9 +147,12 @@ export function observerSaut(etat: EtatSaut, e: EchantillonSaut): [EtatSaut, Ver
   if (e.enPause && e.pret >= 3 && auVoisinage && servi) return [suivant, "abouti"];
 
   // En pause voulue, renégocier ferait repartir la lecture sous les doigts de
-  // l'utilisateur. On ne conclut pas, on attend qu'il reprenne.
+  // l'utilisateur. On ne conclut pas, on attend qu'il reprenne — et surtout on
+  // ne dit pas « ça charge » : rien n'est censé avancer, un témoin allumé sur
+  // une pause resterait allumé pour toujours.
   if (e.enPause) return [suivant, "attendre"];
 
-  if (e.ecoule < DELAI_CALAGE_SAUT_MS) return [suivant, "attendre"];
-  return [suivant, "renegocier"];
+  if (e.ecoule >= DELAI_CALAGE_SAUT_MS) return [suivant, "renegocier"];
+  if (e.ecoule >= DELAI_CHARGEMENT_MS) return [suivant, "charge"];
+  return [suivant, "attendre"];
 }
