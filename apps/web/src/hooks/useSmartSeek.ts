@@ -1,11 +1,13 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
+import { jugerSaut, PERIODE_VEILLE_SAUT_MS } from "./calageSaut";
 
 interface UseSmartSeekOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
   containerPtsOffsetRef: MutableRefObject<number>;
   seekTargetRef: MutableRefObject<number | null>;
-  seekStallTimer: MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
+  /** Veille de calage du saut — un INTERVALLE, cf. `calageSaut.ts`. */
+  seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   currentTimeRef: MutableRefObject<number>;
   src: string;
   isDirectPlay: boolean;
@@ -13,16 +15,6 @@ interface UseSmartSeekOptions {
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
 }
-
-/**
- * Au bout de combien de temps un saut HLS est considéré comme calé.
- *
- * Huit secondes, et non trois comme l'annonçaient les commentaires : la valeur
- * est là depuis toujours, seule sa documentation était fausse. Descendre
- * échangerait de l'attente contre un redémarrage de transcodage de trois à cinq
- * secondes — qui n'était pas nécessaire.
- */
-const DELAI_CALAGE_SAUT_MS = 8000;
 
 /** Check if a time (in PTS space) falls within any buffered range of the video element. */
 function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
@@ -46,8 +38,15 @@ export function useSmartSeek({
   //
   // Level 1: target in HTML5 buffer → v.currentTime (instant)
   // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)
-  //          with stall watcher (cf. DELAI_CALAGE_SAUT_MS) → fallback to level 3
-  // Level 3: full restart → kill transcode + rebuild URL with StartTimeTicks (slow, 3-5s)
+  //          with stall watcher (cf. `calageSaut.ts`) → fallback to level 3
+  // Level 3: full restart → tuer l'encodage et renégocier une session à la
+  //          position voulue (lent, 3-5 s). Le nom d'antan — « rebuild URL with
+  //          StartTimeTicks » — décrivait un remède impossible : sur le chemin
+  //          HLS, AUCUNE URL ne peut porter la position. La playlist de Jellyfin
+  //          commence toujours au segment 0 (elle est bâtie sur la durée totale),
+  //          et son gestionnaire de segments refuse tout `StartTimeTicks` non
+  //          nul. Ce qui déplace vraiment la lecture est le nouveau POST
+  //          `PlaybackInfo` déclenché par `onSeekRequest`.
   const handleSeek = useCallback((targetSeconds: number) => {
     const v = videoRef.current;
     if (!v) return;
@@ -55,7 +54,7 @@ export function useSmartSeek({
     const ptsOffset = containerPtsOffsetRef.current;
 
     // Cancel any pending stall watcher from a previous seek
-    clearTimeout(seekStallTimer.current);
+    clearInterval(seekStallTimer.current);
 
     // Clamp to valid movie-position range.
     // For progressive transcode, v.duration is stream-relative (movieDuration - streamOffset).
@@ -92,18 +91,32 @@ export function useSmartSeek({
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
 
-      // --- LEVEL 3 fallback: stall watcher ---
-      // If the position hasn't reached the target, the segment doesn't
-      // exist yet (ffmpeg hasn't transcoded that far). Kill the current transcode
-      // and restart with StartTimeTicks at the target position.
-      seekStallTimer.current = setTimeout(() => {
+      // --- LEVEL 3 fallback: la veille de calage ---
+      // Elle relève périodiquement plutôt que de conclure une seule fois, et le
+      // fait sur `buffered` plutôt que sur `currentTime` : cf. `calageSaut.ts`,
+      // qui porte la décision et explique pourquoi l'ancienne comparaison ne
+      // pouvait rien détecter.
+      const arme = Date.now();
+      seekStallTimer.current = setInterval(() => {
         const el = videoRef.current;
-        if (!el) return;
-        if (Math.abs(el.currentTime - ptsTarget) > 2) {
+        if (!el) {
+          clearInterval(seekStallTimer.current);
+          return;
+        }
+        const verdict = jugerSaut({
+          cible: ptsTarget,
+          couverte: isTimeInBuffered(el, ptsTarget),
+          position: el.currentTime,
+          enPause: el.paused,
+          ecoule: Date.now() - arme,
+        });
+        if (verdict === "attendre") return;
+        clearInterval(seekStallTimer.current);
+        if (verdict === "renegocier") {
           seekTargetRef.current = clamped;
           onSeekRequest?.(clamped);
         }
-      }, DELAI_CALAGE_SAUT_MS);
+      }, PERIODE_VEILLE_SAUT_MS);
       return;
     }
 

@@ -83,7 +83,7 @@ export function VideoPlayer({
   const userInteractedRef = useRef(false);
   const waitingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const seekTargetRef = useRef<number | null>(null);
-  const seekStallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const seekStallTimer = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted } = useVideoSource({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
@@ -187,7 +187,7 @@ export function VideoPlayer({
 
   const videoEvents = useVideoEvents({
     videoRef, rawTimeRef, lastKnownPositionRef, effectiveOffsetRef, containerPtsOffsetRef,
-    offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer, seekStallTimer,
+    offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer,
     src, itemId, startPositionSeconds, jellyfinDuration, autoplayNextEnabled,
     hasNextEpisode, autoPlayCountdown,
     setPlaying, setADemarre, setLoading, setShowPlayButton, setBuffered, setVideoDuration,

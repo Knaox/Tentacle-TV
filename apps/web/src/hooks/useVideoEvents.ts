@@ -15,7 +15,6 @@ interface UseVideoEventsArgs {
   sourceChangingRef: MutableRefObject<boolean>;
   hasStartedRef: MutableRefObject<boolean>;
   waitingTimer: MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
-  seekStallTimer: MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
   src: string;
   itemId: string;
   startPositionSeconds?: number;
@@ -112,13 +111,18 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
         a.setLoading(true); a.onBufferingChange?.(true);
       }, 800);
     },
+    // `seeked` et `playing` n'ont plus le droit de désarmer la veille de calage :
+    // tous deux sont émis dès que le lecteur a FINI de se déplacer, ce qui ne dit
+    // rien de l'arrivée des données à la cible. Sur la pile média native ils
+    // partent bien avant le premier segment, si bien que le niveau 3 de
+    // `useSmartSeek` ne pouvait jamais jouer. C'est `jugerSaut` qui conclut
+    // désormais, et lui seul arrête sa veille (cf. `calageSaut.ts`).
     onSeeked: () => {
       wtLog("web-video", "event seeked", { pos: a.videoRef.current?.currentTime.toFixed(1) });
-      clearTimeout(a.seekStallTimer.current);
     },
     onPlaying: () => {
       wtLog("web-video", "event playing → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });
-      clearTimeout(a.waitingTimer.current); clearTimeout(a.seekStallTimer.current);
+      clearTimeout(a.waitingTimer.current);
       if (!a.sourceChangingRef.current) a.setLoading(false);
       a.onBufferingChange?.(false);
     },
