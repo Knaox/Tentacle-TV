@@ -33,6 +33,7 @@
  *       | node scripts/releveLecture.mjs --sortie logs/saut-avant.ndjson
  */
 import { createInterface } from "node:readline";
+import { writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ouvrirInspecteur, trouverCible, connecterSession } from "./releve/inspecteurCdp.mjs";
@@ -173,8 +174,22 @@ async function jouerOrdres(session, journal) {
     else if (ordre === "saut") await evaluer(session, `document.querySelector('video').currentTime=${Number(argument)}`, journal);
     else if (ordre === "touche") await envoyerTouche(session, reste[0], Number(reste[1] ?? 1), journal);
     else if (ordre === "js") journal.ecrire({ evt: "ordre-resultat", valeur: await evaluer(session, argument, journal) });
+    else if (ordre === "capture") await capturer(session, argument, journal);
     else journal.ecrire({ evt: "ordre-inconnu", ordre });
   }
+}
+
+/**
+ * Une capture des COUCHES DOM. L'image décodée n'y figure pas — le décodage est
+ * matériel et hors compositing — mais l'habillage, lui, s'y voit : c'est la
+ * seule façon de vérifier de loin qu'une surcouche est bien à l'écran.
+ */
+async function capturer(session, fichier, journal) {
+  const { data } = await session.envoyer("Page.captureScreenshot", { format: "png" });
+  const chemin = resolve(ICI, "..", fichier || `logs/capture-${horodatage()}.png`);
+  await writeFile(chemin, Buffer.from(data, "base64"));
+  journal.ecrire({ evt: "capture", fichier: chemin });
+  console.error(`  capture → ${chemin}`);
 }
 
 /** Le geste réel : la télécommande n'écrit pas dans `currentTime`, elle appuie

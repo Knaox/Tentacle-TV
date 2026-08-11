@@ -1,6 +1,7 @@
 import type { ComponentProps } from "react";
 import { VideoPlayerOverlays as SurcouchesWeb } from "@/components/player/VideoPlayerOverlays?original";
 import { BoutonsSautTv } from "./BoutonSautTv";
+import { IndicateurChargementTv } from "./IndicateurChargementTv";
 
 /**
  * Les surcouches du lecteur, moins les boutons « passer ».
@@ -31,6 +32,11 @@ export function VideoPlayerOverlays(props: ComponentProps<typeof SurcouchesWeb>)
   return (
     <>
       <SurcouchesWeb {...props} showSkipIntro={null} showSkipCredits={null} />
+      {/* Le spinner du web fait quarante-huit pixels : lisible sur un moniteur,
+          invisible à trois mètres. Celui-ci prend le relais une fois la lecture
+          commencée, et couvre en plus le rechargement de la veille de gel, qui
+          coupait l'image sans rien dire. */}
+      <IndicateurChargementTv loading={props.loading} aDemarre={props.aDemarre} />
       <BoutonsSautTv
         showSkipIntro={showSkipIntro}
         showSkipCredits={showSkipCredits}

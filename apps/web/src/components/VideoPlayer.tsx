@@ -123,6 +123,7 @@ export function VideoPlayer({
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
+    signalerChargement: setLoading,
   });
 
   const { autoPlayCountdown, startAutoPlay, cancelAutoNextLocal } = useAutoNextCountdown({

@@ -48,6 +48,7 @@ export default {
   noEpisodes: "No episodes",
   close: "Close",
   loading: "Loading…",
+  resuming: "Resuming playback…",
   loadingMedia: "Loading {{title}}…",
   // Appelees avec un defaut litteral anglais par `PlayerControls` du web ;
   // la rangee de transport du televiseur, elle, les lit sans repli.
