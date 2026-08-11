@@ -57,6 +57,15 @@ export interface PlaybackInfoState {
   playSessionId: string | null;
   /** Server-selected media source */
   mediaSource: MediaSource | null;
+  /**
+   * Combien de sources l'item propose.
+   *
+   * Le serveur en retient une (`mediaSource`), mais savoir s'il y en avait
+   * d'autres est parfois décisif : sur un item à source UNIQUE, désigner la
+   * source dans l'URL est une redondance dont on peut se passer, alors que sur
+   * un film à plusieurs versions c'est le seul moyen de lire la bonne.
+   */
+  nombreSources: number;
   /** true = raw file, no transcode */
   isDirectPlay: boolean;
   /** true = remux (video copy, audio transcode) */
@@ -92,6 +101,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
     streamUrl: null,
     playSessionId: null,
     mediaSource: null,
+    nombreSources: 0,
     isDirectPlay: false,
     isDirectStream: false,
     streamOffset: 0,
@@ -231,6 +241,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
         streamUrl: url,
         playSessionId: result.PlaySessionId,
         mediaSource: ms,
+        nombreSources: result.MediaSources?.length ?? 0,
         isDirectPlay: directPlay,
         isDirectStream: directStream,
         streamOffset,
@@ -289,7 +300,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
   const reset = useCallback(() => {
     ++fetchId.current; // Invalidate in-flight fetches
     setState({
-      streamUrl: null, playSessionId: null, mediaSource: null,
+      streamUrl: null, playSessionId: null, mediaSource: null, nombreSources: 0,
       isDirectPlay: false, isDirectStream: false, streamOffset: 0, isLoading: false, verdict: null,
     });
   }, []);

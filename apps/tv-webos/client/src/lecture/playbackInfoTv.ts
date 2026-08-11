@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePlaybackInfo as socleWeb } from "@/hooks/usePlaybackInfo?original";
 import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
+import { sansSourceDesignee } from "./sourceDesignee";
 
 /**
  * Le lecteur reçoit la variante Dolby Vision, pas le manifeste maître.
@@ -33,7 +34,10 @@ import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
  */
 export function usePlaybackInfo(lecteurNatif = false) {
   const socle = socleWeb(lecteurNatif);
-  const brute = socle.streamUrl;
+  const brute = useMemo(
+    () => sansSourceDesignee(socle.streamUrl, socle.nombreSources),
+    [socle.streamUrl, socle.nombreSources],
+  );
   const [resolue, setResolue] = useState<{ pour: string; url: string | null } | null>(null);
   const servie = resolue?.url ?? brute;
 
@@ -95,7 +99,10 @@ export function usePlaybackInfo(lecteurNatif = false) {
     };
   }, [brute]);
 
-  if (!brute || !estManifesteMaitre(brute)) return socle;
+  // `brute`, et non `socle.streamUrl` : le nettoyage de la source désignée doit
+  // survivre à ce chemin-là aussi, sinon il ne s'appliquerait qu'aux manifestes
+  // maîtres — c'est-à-dire pas à ceux que Jellyfin sert déjà résolus.
+  if (!brute || !estManifesteMaitre(brute)) return { ...socle, streamUrl: brute };
 
   // Résolue pour CETTE source : `url` à `null` signifie « pas de variante Dolby
   // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
