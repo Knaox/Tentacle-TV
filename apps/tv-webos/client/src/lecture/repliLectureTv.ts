@@ -116,18 +116,21 @@ export function useWebPlaybackFallbacks(options: OptionsRepli) {
 }
 
 /**
- * Le filet des lectures qui se figent sans rien dire.
+ * Le témoin des lectures qui se figent sans rien dire.
  *
  * Distinct de l'échelle ci-dessus, et il faut voir pourquoi : celle-ci retire
  * des capacités au profil, parce qu'un code 3 ou 4 signifie qu'une puce a
- * refusé un flux. Un gel ne dit rien de tel — le flux est bon, c'est le lecteur
- * qui est resté en arrière. Lui appliquer le même remède ferait perdre un codec
- * pour une coupure réseau passagère, et donc dégrader l'image durablement pour
- * un incident d'une seconde.
+ * refusé un flux. Un gel ne dit rien de tel — le flux est bon.
  *
- * Le remède est celui qu'on a mesuré : `load()` puis repositionnement. `play()`
- * seul est accepté sans effet, un micro-saut déplace la position sans relancer
- * quoi que ce soit. Aucune renégociation auprès du serveur n'est nécessaire.
+ * **Cette veille ne répare plus rien**, et `relanceGel.ts` dit pourquoi : pendant
+ * un gel le serveur répond 200 en 12 ms, ffmpeg a des minutes d'avance, et c'est
+ * le téléviseur qui rejette deux segments adjacents une trentaine de fois par
+ * seconde. Recharger jetait un tampon encore garni et faisait repartir un ffmpeg
+ * au début du film, sans jamais traiter la cause.
+ *
+ * Elle mesure donc, et c'est tout. Les deux nombres qui manquaient au journal :
+ * l'avance du tampon au moment du gel — c'est elle qui fond, de quarante-cinq
+ * secondes à dix — et la durée du gel avant que la lecture reparte seule.
  */
 function useVeilleGel(source: unknown): void {
   const veille = useRef(VEILLE_VIDE);
@@ -140,58 +143,38 @@ function useVeilleGel(source: unknown): void {
       const v = document.querySelector("video");
       if (!v) return;
 
-      const precedente = veille.current.historique.at(-1) ?? null;
+      const debut = veille.current.fige;
       const [suivant, verdict] = observer(veille.current, {
         position: v.currentTime,
         enPause: v.paused,
         pret: v.readyState,
         erreur: v.error?.code ?? null,
-        enSaut: v.seeking,
         instant: Date.now(),
       });
       veille.current = suivant;
       if (verdict === "rien") return;
 
-      // Deux fins distinctes, et il faut les distinguer au journal : l'une dit
-      // qu'on a trop insisté, l'autre qu'insister n'avait aucun sens.
-      if (verdict === "source-morte") {
-        console.error("[Tentacle:TV] source perdue — rechargement annule", {
+      if (verdict === "reprise") {
+        // Ça repart tout seul, et c'est le fait le plus instructif du dossier :
+        // rien n'a été relancé entre-temps.
+        console.warn("[Tentacle:TV] lecture repartie", {
           position: Math.round(v.currentTime),
-          relances: suivant.historique.length,
+          apresSecondes: debut === null ? null : Math.round((Date.now() - debut) / 1000),
         });
         return;
       }
 
-      if (verdict === "epuise") {
-        console.error("[Tentacle:TV] lecture figee — relances epuisees", {
-          position: Math.round(v.currentTime),
-          relances: suivant.historique.length,
-        });
-        return;
-      }
-
-      // Le CUMUL et l'ÉCART, pas seulement le fait. Une lecture relancée toutes
-      // les quarante secondes est inregardable même si elle « repart » à chaque
-      // fois : sans ces deux nombres, le journal donnait le change.
-      console.warn("[Tentacle:TV] lecture figee — rechargement", {
+      // L'AVANCE DU TAMPON, pas seulement la position : c'est elle qui fond
+      // pendant que le téléviseur tourne sur deux segments, et c'est en la
+      // voyant tomber à zéro qu'on comprend le gel. Sans ce nombre, le journal
+      // donnait le change.
+      const fin = v.buffered.length > 0 ? v.buffered.end(v.buffered.length - 1) : null;
+      console.warn("[Tentacle:TV] lecture figee", {
         position: Math.round(v.currentTime),
+        avanceTampon: fin === null ? null : Math.round((fin - v.currentTime) * 10) / 10,
+        pret: v.readyState,
         erreur: v.error?.code ?? null,
-        relances: suivant.historique.length,
-        depuisPrecedente: precedente === null ? null : Math.round((Date.now() - precedente) / 1000),
       });
-      const position = v.currentTime;
-      // `load()` remet le pipeline à zéro et OUBLIE la position : il faut la
-      // reposer une fois les métadonnées relues, sinon la lecture repart du
-      // début — le défaut même qu'on vient de corriger ailleurs.
-      const reprendre = () => {
-        v.currentTime = position;
-        void v.play().catch(() => {
-          // Refus de lecture automatique : le filet du lecteur affichera le
-          // bouton. Rien à ajouter ici.
-        });
-      };
-      v.addEventListener("loadedmetadata", reprendre, { once: true });
-      v.load();
     }, PERIODE_VEILLE_MS);
 
     return () => window.clearInterval(minuteur);

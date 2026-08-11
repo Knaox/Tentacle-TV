@@ -1,33 +1,35 @@
 /**
- * Reconnaître une lecture figée, et savoir quand la relancer.
+ * Reconnaître une lecture figée — et se contenter de le dire.
  *
- * # Ce qu'on a vu sur la dalle
+ * # Pourquoi ce module ne répare plus rien
  *
- * Un film Dolby Vision en remux, un saut de quarante minutes, et la lecture
- * s'arrête. L'élément vidéo dit alors :
+ * Il a longtemps rechargé la source (`load()` puis repositionnement), et cela
+ * paraissait justifié : mesuré une fois, le remède avait relancé la lecture en
+ * 2,4 secondes. Le journal du proxy a montré que le diagnostic était faux.
  *
- *     currentTime 2719.5 (immobile)   paused true    readyState 4
- *     buffered 0-2738 (19 s d'avance) error.code 2
+ * Pendant un gel, le serveur va parfaitement bien : il répond **200 en 12 ms**,
+ * les segments sont écrits sur son disque, ffmpeg a des minutes d'avance. Ce
+ * qu'on voit, c'est le téléviseur qui ouvre et abandonne **deux segments
+ * adjacents** une trentaine de fois par seconde, chaque tentative lâchée après
+ * 12 à 57 ms — quelques centaines de kilo-octets sur un segment de 9,6 Mo. Il ne
+ * tente pas de les télécharger : il les rejette presque aussitôt. La lecture
+ * continue pendant ce temps, mais l'avance du tampon fond de 45 à 10 secondes,
+ * et quand elle atteint zéro l'image se fige. Puis elle repart seule, l'obstacle
+ * franchi.
  *
- * Tout paraît sain — des données en avance, un état « prêt à lire » — sauf que
- * plus rien n'avance, et que rien ne le signale à l'utilisateur : ni roue de
- * chargement, ni message. Le film est perdu.
+ * Recharger là-dedans ne répare rien et coûte cher : `load()` jette un tampon qui
+ * contenait encore dix secondes d'avance, redemande 1,7 Mo de playlist, puis le
+ * segment d'initialisation et le segment 0 — ce qui fait relancer à Jellyfin un
+ * ffmpeg au tout début du film. Le remède coûtait plus que le mal.
  *
- * **`error.code === 2` est `MEDIA_ERR_NETWORK`**, et c'est le fond de l'affaire :
- * l'échelle de repli (`repliLecture.ts`) n'écoute que les codes 3
- * (`MEDIA_ERR_DECODE`) et 4 (`MEDIA_ERR_SRC_NOT_SUPPORTED`) — à raison, ce sont
- * les seuls qui disent qu'un codec a été refusé. Une coupure réseau sur un
- * segment n'est pas de cette nature : il n'y a aucune capacité à retirer du
- * profil, juste un flux à reprendre. Personne ne l'écoutait.
+ * La session n'est pas morte. Il n'y a rien à relancer.
  *
- * # Le remède, mesuré
+ * # Ce qu'il reste, et pourquoi c'est utile
  *
- * `play()` est accepté sans effet. Un micro-saut déplace la position sans que
- * la lecture reparte. Seul `load()` suivi d'un repositionnement débloque le
- * pipeline — vérifié : la lecture est repartie de 2718 et a poursuivi
- * normalement, l'erreur effacée. Il n'est donc pas nécessaire de renégocier une
- * source auprès du serveur : le flux est bon, c'est le lecteur qui est resté en
- * arrière.
+ * La détection, qui devient un instrument : elle date les gels, mesure leur
+ * durée et l'avance du tampon au moment où ils surviennent. C'est ce que
+ * l'enquête sur la pile média de LG a besoin de lire, et cela ne coûte qu'une
+ * ligne de journal.
  *
  * # Pourquoi ne pas se fier au taux d'images
  *
@@ -45,14 +47,6 @@ export interface EchantillonLecture {
   /** `HTMLMediaElement.error?.code`, `null` s'il n'y en a pas. */
   erreur: number | null;
   /**
-   * `HTMLMediaElement.seeking` — un déplacement cherche encore ses données.
-   *
-   * Optionnel comme `instant` : un appelant qui ne le renseigne pas retrouve le
-   * comportement d'avant, ce qui vaut aussi pour les cas de test qui n'ont rien
-   * à dire d'un déplacement.
-   */
-  enSaut?: boolean;
-  /**
    * `Date.now()` au moment du relevé. Le module reste pur : c'est l'appelant
    * qui lit l'horloge, et les tests la fabriquent.
    */
@@ -66,172 +60,66 @@ export const MEDIA_ERR_NETWORK = 2;
  * Combien de relevés immobiles avant de conclure.
  *
  * Trois à deux secondes d'intervalle, soit quatre secondes de position figée.
- * En dessous, une saccade de décodage suffirait à déclencher un rechargement —
- * qui coûte, lui, une vraie coupure.
+ * En dessous, une saccade de décodage suffirait à crier au gel.
  */
 export const RELEVES_AVANT_GEL = 3;
 
 /**
- * Combien de relances avant d'abandonner.
+ * De combien la position doit avancer entre deux relevés pour compter.
  *
- * Au-delà, la cause n'est pas passagère et insister ne ferait que hacher la
- * lecture. On préfère laisser l'image figée et le dire au journal : c'est
- * désagréable, mais au moins c'est diagnosticable.
+ * `currentTime` ne progresse pas au millième près : en dessous d'un quart de
+ * seconde en quatre secondes, il ne se passe rien de bon.
  */
-export const RELANCES_MAX = 3;
-
-/**
- * Combien de relances tolérées sur une fenêtre glissante, et sur quelle durée.
- *
- * `RELANCES_MAX` seul ne plafonnait rien : son compteur retombait à zéro dès que
- * la position avançait d'un quart de seconde, si bien qu'il ne bornait que des
- * échecs consécutifs SANS aucune progression entre eux. Un film qui se fige
- * toutes les quarante secondes — ce qu'on a mesuré sur la dalle — était donc
- * relancé indéfiniment, et le verdict « épuisé », le seul qui écrive quelque
- * chose de définitif au journal, ne sortait jamais. La veille masquait le
- * défaut au lieu de le signaler.
- *
- * Quatre relances en cinq minutes ne sont plus un incident : c'est une lecture
- * inregardable, et il vaut mieux le dire que la hacher un peu plus.
- */
-export const RELANCES_PAR_FENETRE = 4;
-export const FENETRE_CUMUL_MS = 5 * 60 * 1000;
-
-/**
- * Combien de relevés en déplacement avant de reprendre la main.
- *
- * Un saut et une reprise ont un remède MEILLEUR que le nôtre : tuer l'encodage
- * et redemander une session à la position voulue, ce que fait le filet de saut
- * du lecteur (cf. `calageSaut.ts`, huit secondes). Recharger par-dessus lui, ce
- * que `load()` fait, redemande le segment d'initialisation puis le segment 0 —
- * et Jellyfin relance alors son ffmpeg au tout début du film. C'est exactement
- * la première ligne de la cascade mesurée le 11 août : cinq encodages tués et
- * relancés en six secondes et demie, en reculant.
- *
- * Six relevés, soit douze secondes : au-dessus du filet, pour qu'il passe le
- * premier. Au-delà, plus personne ne viendra et la veille reprend ses droits —
- * une borne, pas un blanc-seing.
- */
-export const RELEVES_DE_SAUT_MAX = 6;
-
-/**
- * Où en est-on d'une erreur réseau.
- *
- * - `"aucun"` — rien à signaler.
- * - `"relance"` — un rechargement a répondu à un code 2, et rien n'a avancé depuis.
- * - `"morte"` — le code 2 est revenu APRÈS ce rechargement. C'est dit, on ne le
- *   répétera pas à chaque relevé.
- */
-export type EtatReseau = "aucun" | "relance" | "morte";
+export const TOLERANCE_PROGRESSION_S = 0.25;
 
 export interface EtatVeille {
   /** Position du dernier relevé, `null` avant le premier. */
   derniere: number | null;
   /** Relevés consécutifs sans progression. */
   immobiles: number;
-  /** Relances déjà tentées pour cette source. */
-  relances: number;
-  /** Instants des relances retenues dans la fenêtre glissante. */
-  historique: number[];
-  /** Cf. `EtatReseau`. */
-  reseau: EtatReseau;
-  /** Relevés consécutifs passés en déplacement, borné par `RELEVES_DE_SAUT_MAX`. */
-  deplacements: number;
+  /** Instant du gel en cours, `null` si la lecture avance. */
+  fige: number | null;
 }
 
-export const VEILLE_VIDE: EtatVeille = {
-  derniere: null, immobiles: 0, relances: 0, historique: [], reseau: "aucun", deplacements: 0,
-};
-
-export type Verdict = "rien" | "relancer" | "epuise" | "source-morte";
+export const VEILLE_VIDE: EtatVeille = { derniere: null, immobiles: 0, fige: null };
 
 /**
- * Un relevé de plus, et ce qu'il faut en faire.
+ * - `"fige"` — la position ne bouge plus. Dit UNE fois par gel.
+ * - `"reprise"` — elle est repartie, et l'appelant peut dire combien ça a duré.
+ */
+export type Verdict = "rien" | "fige" | "reprise";
+
+/**
+ * Un relevé de plus, et ce qu'il faut en dire.
  *
  * `pret >= 3` (HAVE_FUTURE_DATA) est la garde qui distingue un GEL d'un
  * chargement : pendant un buffering ordinaire la position stagne aussi, mais
- * l'état de préparation retombe. Sans elle, on rechargerait la source au moindre
- * ralentissement du réseau — en aggravant précisément ce qu'on veut corriger.
+ * l'état de préparation retombe.
  *
- * Une erreur réseau tranche immédiatement : elle est déjà la preuve que le
- * lecteur a renoncé, il n'y a rien à confirmer.
+ * Une erreur n'est plus traitée à part. Elle n'appelait un chemin propre que
+ * pour décider s'il fallait recharger ; maintenant qu'on ne recharge plus, elle
+ * n'est qu'un renseignement de plus à joindre au journal — l'appelant la lit
+ * directement sur l'élément.
  */
 export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, Verdict] {
   const instant = e.instant ?? 0;
 
-  // Un déplacement cherche encore ses données : ce n'est pas un gel, et son
-  // remède ne nous appartient pas (cf. `RELEVES_DE_SAUT_MAX`). La garde passe
-  // AVANT l'erreur réseau, et c'est tout l'enjeu : c'est pendant un saut que les
-  // codes 2 pleuvent — le téléviseur ouvre et abandonne des segments que le
-  // serveur n'a pas fini d'écrire — et ce chemin-là recharge sans même attendre
-  // ses trois relevés.
-  //
-  // `seeking` retombe quand le lecteur a TROUVÉ ses données : il couvre donc
-  // exactement la fenêtre à protéger, saut comme reprise sur position
-  // enregistrée, sans qu'on ait à deviner qu'un déplacement a eu lieu.
-  if (e.enSaut && etat.deplacements < RELEVES_DE_SAUT_MAX) {
-    return [{
-      ...etat, derniere: e.position, immobiles: 0, deplacements: etat.deplacements + 1,
-    }, "rien"];
-  }
-
-  if (e.erreur === MEDIA_ERR_NETWORK) {
-    // Déjà constaté et déjà dit : ne pas le répéter toutes les deux secondes.
-    if (etat.reseau === "morte") {
-      return [{ ...etat, derniere: e.position, immobiles: 0 }, "rien"];
-    }
-    // `load()` efface `error` ET refait la requête. Qu'un code 2 revienne sans
-    // qu'un octet n'ait avancé entre-temps n'est donc pas le même incident qui
-    // persiste : c'est un SECOND échec réseau, sur une source qu'on vient de
-    // redemander. Côté serveur, cela ne peut vouloir dire qu'une chose — la
-    // session de remux n'existe plus, son ffmpeg est mort, et les segments
-    // qu'annonce encore la playlist ne seront jamais écrits. Recharger de
-    // nouveau ne ferait que redemander ces segments-là : mesuré le 11 août,
-    // quatre-vingts secondes de 404 en rafale, pas une image.
-    if (etat.reseau === "relance") {
-      return [{ ...etat, derniere: e.position, immobiles: 0, reseau: "morte" }, "source-morte"];
-    }
-    return decider({ ...etat, derniere: e.position, immobiles: RELEVES_AVANT_GEL }, instant, true);
-  }
-
   // En pause voulue, ou pas assez de données : il n'y a rien à surveiller, et
-  // surtout rien à reprocher au lecteur.
+  // surtout rien à reprocher au lecteur. Un gel déjà constaté le reste — un
+  // buffering au milieu n'est pas une reprise.
   if (e.enPause || e.pret < 3) {
     return [{ ...etat, derniere: e.position, immobiles: 0 }, "rien"];
   }
 
-  // Une tolérance, parce que `currentTime` ne progresse pas au millième près
-  // entre deux relevés : en dessous d'un quart de seconde en quatre secondes,
-  // il ne se passe rien de bon.
-  const avance = etat.derniere !== null && e.position - etat.derniere > 0.25;
+  const avance = etat.derniere !== null && e.position - etat.derniere > TOLERANCE_PROGRESSION_S;
   if (avance || etat.derniere === null) {
-    return [{
-      ...etat, derniere: e.position, immobiles: 0,
-      relances: avance ? 0 : etat.relances,
-      // De la vidéo est sortie : la source est vivante, quoi qu'ait dit le
-      // relevé précédent. Le prochain code 2 aura droit à son rechargement, et
-      // le prochain déplacement à sa propre fenêtre.
-      reseau: avance ? "aucun" : etat.reseau,
-      deplacements: avance ? 0 : etat.deplacements,
-    }, "rien"];
+    const suivant: EtatVeille = { derniere: e.position, immobiles: 0, fige: null };
+    return [suivant, etat.fige !== null ? "reprise" : "rien"];
   }
 
-  return decider({ ...etat, derniere: e.position, immobiles: etat.immobiles + 1 }, instant);
-}
-
-function decider(etat: EtatVeille, instant: number, depuisReseau = false): [EtatVeille, Verdict] {
-  if (etat.immobiles < RELEVES_AVANT_GEL) return [etat, "rien"];
-  // La fenêtre glissante, elle, ne se laisse pas remettre à zéro par une
-  // poignée de secondes de lecture entre deux gels.
-  const recentes = etat.historique.filter((t) => instant - t < FENETRE_CUMUL_MS);
-  if (etat.relances >= RELANCES_MAX || recentes.length >= RELANCES_PAR_FENETRE) {
-    return [{ ...etat, immobiles: 0, historique: recentes }, "epuise"];
+  const immobiles = etat.immobiles + 1;
+  if (etat.fige === null && immobiles >= RELEVES_AVANT_GEL) {
+    return [{ derniere: e.position, immobiles, fige: instant }, "fige"];
   }
-  return [{
-    ...etat, immobiles: 0, relances: etat.relances + 1, historique: [...recentes, instant],
-    // Un rechargement déclenché par autre chose n'EFFACE pas la trace d'un
-    // échec réseau : deux tentatives infructueuses valent mieux qu'une pour
-    // conclure, et une seule suffit à ne pas marteler.
-    reseau: depuisReseau ? "relance" : etat.reseau,
-  }, "relancer"];
+  return [{ ...etat, derniere: e.position, immobiles }, "rien"];
 }
