@@ -140,11 +140,13 @@ function useVeilleGel(source: unknown): void {
       const v = document.querySelector("video");
       if (!v) return;
 
+      const precedente = veille.current.historique.at(-1) ?? null;
       const [suivant, verdict] = observer(veille.current, {
         position: v.currentTime,
         enPause: v.paused,
         pret: v.readyState,
         erreur: v.error?.code ?? null,
+        instant: Date.now(),
       });
       veille.current = suivant;
       if (verdict === "rien") return;
@@ -152,13 +154,19 @@ function useVeilleGel(source: unknown): void {
       if (verdict === "epuise") {
         console.error("[Tentacle:TV] lecture figee — relances epuisees", {
           position: Math.round(v.currentTime),
+          relances: suivant.historique.length,
         });
         return;
       }
 
+      // Le CUMUL et l'ÉCART, pas seulement le fait. Une lecture relancée toutes
+      // les quarante secondes est inregardable même si elle « repart » à chaque
+      // fois : sans ces deux nombres, le journal donnait le change.
       console.warn("[Tentacle:TV] lecture figee — rechargement", {
         position: Math.round(v.currentTime),
         erreur: v.error?.code ?? null,
+        relances: suivant.historique.length,
+        depuisPrecedente: precedente === null ? null : Math.round((Date.now() - precedente) / 1000),
       });
       const position = v.currentTime;
       // `load()` remet le pipeline à zéro et OUBLIE la position : il faut la

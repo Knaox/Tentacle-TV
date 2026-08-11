@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   observer, VEILLE_VIDE, RELEVES_AVANT_GEL, RELANCES_MAX,
-  MEDIA_ERR_NETWORK, type EchantillonLecture, type EtatVeille, type Verdict,
+  MEDIA_ERR_NETWORK, RELANCES_PAR_FENETRE, FENETRE_CUMUL_MS,
+  type EchantillonLecture, type EtatVeille, type Verdict,
 } from "./relanceGel";
 
 /**
@@ -83,5 +84,58 @@ describe("lecture figée", () => {
     }
     expect(verdicts.filter((v) => v === "relancer")).toHaveLength(RELANCES_MAX);
     expect(verdicts.at(-1)).toBe("epuise");
+  });
+});
+
+/**
+ * Le cas mesuré sur la dalle : la lecture tient quarante secondes, se fige,
+ * repart après rechargement, se refige. Le compteur consécutif retombant à zéro
+ * à chaque reprise, la veille relançait sans fin — et le film restait
+ * inregardable sans que rien ne le dise jamais.
+ */
+describe("gels répétés séparés par de vraies reprises", () => {
+  /** Un gel complet à l'instant donné, précédé d'une reprise de lecture. */
+  function gel(etat: EtatVeille, instant: number, position: number): [EtatVeille, Verdict] {
+    let courant = etat;
+    let dernier: Verdict = "rien";
+    // La reprise : la position avance, ce qui remettait `relances` à zéro.
+    [courant] = observer(courant, lecture(position, { instant }));
+    [courant] = observer(courant, lecture(position + 10, { instant: instant + 2000 }));
+    for (let i = 0; i <= RELEVES_AVANT_GEL; i += 1) {
+      [courant, dernier] = observer(courant, lecture(position + 10, { instant: instant + 4000 + i * 2000 }));
+      if (dernier !== "rien") break;
+    }
+    return [courant, dernier];
+  }
+
+  it("finit par abandonner quand les gels se répètent dans la fenêtre", () => {
+    let etat = VEILLE_VIDE;
+    const verdicts: Verdict[] = [];
+    for (let n = 0; n < RELANCES_PAR_FENETRE + 1; n += 1) {
+      const [suivant, verdict] = gel(etat, n * 40_000, 100 + n * 40);
+      etat = suivant;
+      verdicts.push(verdict);
+    }
+    expect(verdicts.filter((v) => v === "relancer")).toHaveLength(RELANCES_PAR_FENETRE);
+    expect(verdicts.at(-1)).toBe("epuise");
+  });
+
+  it("relance encore quand les gels sont espacés au-delà de la fenêtre", () => {
+    // Un incident par heure n'est pas une lecture hachée : on relance.
+    let etat = VEILLE_VIDE;
+    const verdicts: Verdict[] = [];
+    for (let n = 0; n < RELANCES_PAR_FENETRE + 2; n += 1) {
+      const [suivant, verdict] = gel(etat, n * (FENETRE_CUMUL_MS + 60_000), 100 + n * 40);
+      etat = suivant;
+      verdicts.push(verdict);
+    }
+    expect(verdicts.every((v) => v === "relancer")).toBe(true);
+  });
+
+  it("ne garde dans l'historique que les relances de la fenêtre", () => {
+    let etat = VEILLE_VIDE;
+    [etat] = gel(etat, 0, 100);
+    [etat] = gel(etat, FENETRE_CUMUL_MS + 10_000, 200);
+    expect(etat.historique).toHaveLength(1);
   });
 });
