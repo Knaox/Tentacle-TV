@@ -11,6 +11,30 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.5]
+### FR
+- Vos choix de piste audio et de sous-titres, retenus contenu par contenu, sont de nouveau enregistrés. La table qui les conserve n'avait jamais été créée sur les serveurs installés : chaque démarrage d'une application se soldait par une erreur, et la copie consultée hors ligne restait vide. Elle est créée automatiquement au redémarrage du serveur, sans rien effacer d'existant
+### EN
+- Your audio and subtitle choices, remembered per title, are saved again. The table holding them had never been created on installed servers: every app launch ended in an error, and the copy used offline stayed empty. It is now created automatically when the server restarts, without erasing anything
+
+## [1.12.4]
+### FR
+- Regarder une vidéo depuis le navigateur ne compte plus pour deux appareils. Une seule lecture ouvrait deux sessions sur le serveur multimédia : l'une nourrie par la vidéo elle-même, l'autre par les informations de progression. Les deux se présentaient sous une identité différente, si bien que le tableau de bord affichait le même épisode en double, avec quelques secondes d'écart. Il faut se déconnecter puis se reconnecter une fois pour que les sessions déjà ouvertes se rejoignent
+- Changer de qualité ou de piste audio en cours de lecture ne laisse plus de conversion à l'abandon. L'ancienne continuait de tourner sur le serveur jusqu'à ce qu'un minuteur l'arrête, une minute plus tard — du travail payé plein pot pour un flux que plus personne ne regardait. Elle est désormais arrêtée dès qu'une autre prend sa place, ce qui vaut aussi pour les sous-titres incrustés et les changements automatiques de mode de lecture
+### EN
+- Watching from the browser no longer counts as two devices. A single playback opened two sessions on the media server: one fed by the video itself, the other by progress reporting. Each presented a different identity, so the dashboard showed the same episode twice, a few seconds apart. Sign out and back in once for already-open sessions to merge
+- Switching quality or audio track mid-playback no longer strands a conversion. The old one kept running on the server until a timer stopped it a minute later — full cost for a stream nobody was watching. It is now stopped as soon as another takes its place, which also covers burned-in subtitles and automatic playback-mode changes
+
+## [1.12.3]
+### FR
+- Parcourir une bibliothèque rapidement ne coupe plus l'application. Les vignettes et les appels de données se partageaient la même limite de débit : quelques secondes de défilement suffisaient à l'épuiser, et tout tombait d'un coup — notifications, épisodes, catalogue — alors qu'il ne manquait que des affiches. Les images ont désormais leur propre compte
+- Une requête refusée pour cause de débit n'est plus retentée : la retenter doublait la facture au pire moment et prolongeait d'autant la minute de disette
+- Les affiches sont demandées quand elles approchent de l'écran, plus très en avance : défiler vite ne réclame plus les vignettes de rangées jamais regardées
+### EN
+- Browsing a library quickly no longer takes the app down. Artwork and data calls shared a single rate limit: a few seconds of scrolling drained it and everything failed at once — notifications, episodes, catalogue — when all that was missing were posters. Images now have a budget of their own
+- A request turned down for rate limiting is no longer retried: retrying doubled the bill at the worst possible moment and dragged the lean minute out further
+- Posters are requested as they approach the screen rather than far ahead: scrolling fast no longer asks for the artwork of rows you never looked at
+
 ## [1.12.2]
 ### FR
 - L'identité d'un appareil est désormais scellée par le serveur. Depuis la 1.12.1 elle était fournie par l'application : un utilisateur du serveur qui connaissait l'appareil d'un autre pouvait s'en servir pour le déconnecter. Aucun accès à son compte n'était possible, mais la gêne était réelle

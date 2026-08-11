@@ -31,7 +31,10 @@ interface ExoPlayerProps {
 }
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
-  function ExoPlayer({ audioPassthrough, ...rest }, ref) {
+  // `audioPassthrough` est extrait pour NE PAS être transmis : la surface AVPlayer
+  // ne le connaît pas, et le laisser passer poserait un attribut inconnu sur la
+  // vue native. Le tiret bas dit au linter que l'omission est voulue.
+  function ExoPlayer({ audioPassthrough: _audioPassthrough, ...rest }, ref) {
     // `textTracks` + `subtitleIndex` transmis à la surface (sous-titres natifs).
     return <AVPlayerSurface ref={ref} {...rest} />;
   },

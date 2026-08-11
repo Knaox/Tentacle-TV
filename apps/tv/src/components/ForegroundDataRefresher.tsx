@@ -30,7 +30,7 @@ export function ForegroundDataRefresher() {
       // Ignore l'event "active" spurieux du cold start.
       if (previous === "active" || previous === "unknown") return;
 
-      const task = InteractionManager.runAfterInteractions(() => {
+      InteractionManager.runAfterInteractions(() => {
         queryClient.invalidateQueries({ queryKey: ["featured"] });
         queryClient.invalidateQueries({ queryKey: ["resume-items"] });
         // exact : ne pas matcher ["next-up","unwatched-episodes"] & co (Limit 500)

@@ -42,6 +42,13 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
     );
   }, [storage, navigation, queryClient]);
 
+  // CONSERVÉ VOLONTAIREMENT, bien qu'aucun bouton ne l'appelle plus : le
+  // gestionnaire complet est là — mutation, navigation, nettoyage — mais la
+  // commande « Changer de serveur » a disparu du rendu de ce bandeau. Soit elle
+  // a été retirée sciemment et ce code doit suivre, soit c'est une régression
+  // et c'est le bouton qu'il faut remettre. Supprimer sans trancher effacerait
+  // la trace de la question.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleChangeServer = useCallback(() => {
     changeServer.mutate(undefined, {
       onSettled: () => {
@@ -56,11 +63,9 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
 
   return (
     <Animated.View
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility="yes"
       style={[styles.overlay, animStyle]}
     >
-      {/* @ts-ignore — TVFocusGuideView props from react-native-tvos */}
       <TVFocusGuideView
         autoFocus
         trapFocusUp trapFocusDown trapFocusLeft trapFocusRight

@@ -90,13 +90,12 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
       renderToHardwareTextureAndroid
       pointerEvents={isShown ? "box-none" : "none"}
       accessible={isShown}
-      // @ts-ignore — Android TV accessibility
       importantForAccessibility={isShown ? "auto" : "no-hide-descendants"}
       style={[{
         position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
       }, animStyle]}
     >
-      {/* @ts-ignore — TVFocusGuideView (react-native-tvos) : `autoFocus` mémorise
+      {/* @ts-expect-error — TVFocusGuideView (react-native-tvos) : `autoFocus` mémorise
           le dernier enfant focalisé (natif). Cohérent avec useOverlayFocus, qui
           cible le MÊME dernier bouton pour la ré-entrée depuis le fond et lève le
           focus préféré permanent qui causait le « saut » sur tvOS. */}

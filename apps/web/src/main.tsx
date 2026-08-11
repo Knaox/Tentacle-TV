@@ -37,6 +37,7 @@ import { ThemeProvider } from "./theme";
 import { isDesktopApp, isTauriShell } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { getBackendBase } from "./lib/backendBase";
+import { retenterSaufDebit } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
@@ -179,7 +180,9 @@ if (savedToken) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // Une tentative de rattrapage — sauf sur un 429, qu'on ne retente jamais
+      // (cf. lib/retryPolicy.ts : retenter double la facture au pire moment).
+      retry: retenterSaufDebit,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
       gcTime: 30 * 60 * 1000,

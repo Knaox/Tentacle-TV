@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "../hooks/usePlatformFilter";
-import type { LibraryFilterState } from "./LibraryFilters";
+import type { LibraryFilterState } from "../hooks/useLibraryFilters";
 
 interface Props {
   libraryId: string;

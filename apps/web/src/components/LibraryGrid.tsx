@@ -4,7 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
-import { LibraryFilterBar, useLibraryFilters } from "./LibraryFilters";
+import { LibraryFilterBar } from "./LibraryFilters";
+import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
@@ -20,19 +21,25 @@ const GAP = 16;
 
 export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const { t } = useTranslation("common");
-  const [input, setInput] = useState("");
-  const [debounced, setDebounced] = useState("");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(input.trim()), 300);
-    return () => clearTimeout(timer);
-  }, [input]);
-
   const {
-    filters, toggleGenre, togglePlatform, setYearFrom, setYearTo,
+    filters, search, setSearch, queryKey,
+    toggleGenre, togglePlatform, setYearFrom, setYearTo,
     setRatingMin, setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
     resetFilters, clearYears, clearRating, activeCount, hasActiveFilters,
   } = useLibraryFilters();
+
+  // La frappe reste locale — l'adresse ne prend que la valeur stabilisée, sans
+  // quoi chaque lettre écrirait dans l'historique. Le champ part de ce que
+  // porte l'adresse : revenir d'une fiche retrouve la recherche en cours.
+  const [input, setInput] = useState(search);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const value = input.trim();
+      if (value !== search) setSearch(value);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [input, search, setSearch]);
 
   // Construire les années pour le hook
   const yearsParam = useMemo(() => {
@@ -51,7 +58,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     fetchNextPage,
     isFetchingNextPage,
   } = useLibraryCatalog(libraryId, {
-    searchTerm: debounced,
+    searchTerm: search,
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
     genreIds: filters.genreIds.length > 0 ? filters.genreIds : undefined,
@@ -91,12 +98,17 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   const [scrollMargin, setScrollMargin] = useState(0);
   useEffect(() => {
     if (gridRef.current) setScrollMargin(gridRef.current.offsetTop);
-  }, [filters, debounced, isLoading]);
+  }, [queryKey, isLoading]);
 
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
     estimateSize,
-    overscan: 5,
+    // Cinq rangées de rab de chaque côté, c'était dix rangées de cartes montées
+    // en permanence — et, en défilement rapide, autant de rangées traversées
+    // qui réclamaient leurs affiches sans jamais avoir été regardées. Trois
+    // suffit à ne jamais laisser de trou (`CardImage` prend 400 px d'avance de
+    // son côté pour charger).
+    overscan: 3,
     scrollMargin,
   });
 
@@ -110,10 +122,16 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     }
   }, [virtualizer.getVirtualItems(), hasNextPage, isFetchingNextPage, fetchNextPage, rowCount]);
 
-  // Reset scroll when filters change
+  // Poser un filtre relance la grille depuis le début — mais un simple
+  // REMONTAGE ne doit rien bousculer : revenir d'une fiche doit rendre la page
+  // telle qu'on l'a laissée, ce dont `useScrollMemory` se charge. D'où la
+  // comparaison des états successifs plutôt qu'un effet au montage.
+  const dernierEtat = useRef(queryKey);
   useEffect(() => {
+    if (dernierEtat.current === queryKey) return;
+    dernierEtat.current = queryKey;
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [filters, debounced]);
+  }, [queryKey]);
 
   const navigate = useNavigate();
   const handleNavigate = useCallback(
@@ -158,7 +176,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
           </div>
         ) : items.length === 0 ? (
           <p className="py-20 text-center text-content-quaternary">
-            {debounced.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
+            {search.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
           </p>
         ) : (
           <div>

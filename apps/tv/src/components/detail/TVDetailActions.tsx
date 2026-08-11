@@ -62,7 +62,6 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
   }, [isSeries, watchState, onPlay, item.Id]);
 
   return (
-    // @ts-ignore — props TVFocusGuideView de react-native-tvos
     <TVFocusGuideView autoFocus style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
       {showPlay && (
         <Focusable ref={playBtnRef} variant="button" onPress={handlePlay} hasTVPreferredFocus onFocus={onFocusButtons}>

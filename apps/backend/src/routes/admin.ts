@@ -14,7 +14,10 @@ import { getPrisma } from "../services/db";
 import { injectCorsHosts } from "../services/jellyfinCors";
 import { adminUsersRoutes } from "./adminUsers";
 import { adminProvisioningRoutes } from "./adminProvisioning";
+import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
+import { adminWatchTimeRoutes } from "./adminWatchTime";
 import { restartJellyfinWs } from "../services/jellyfinWs";
+import { invaliderSanteCleAdmin } from "../services/jellyfinKeyHealth";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
@@ -50,6 +53,12 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Code de jumelage de provisionnement (hérite du hook requireAdmin).
   await app.register(adminProvisioningRoutes);
+
+  // Santé de la clé admin Jellyfin (hérite du hook requireAdmin).
+  await app.register(adminJellyfinKeyRoutes);
+
+  // Diagnostic du collecteur de temps de visionnage (hérite de requireAdmin).
+  await app.register(adminWatchTimeRoutes);
 
   /** GET /api/admin/services — Status of all configured services. */
   app.get("/services", async () => {
@@ -111,6 +120,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     await setConfigValue("jellyfin_url", url);
     await setConfigValue("jellyfin_api_key", body.apiKey);
     restartJellyfinWs();
+    // Le verdict précédent portait sur l'ancienne clé : le garder ferait
+    // survivre l'alerte à sa propre correction pendant cinq minutes.
+    invaliderSanteCleAdmin();
     return { success: true };
   });
 
