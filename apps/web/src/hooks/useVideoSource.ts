@@ -19,7 +19,7 @@ interface UseVideoSourceOptions {
   containerPtsOffsetRef: MutableRefObject<number>;
   offsetDetectedRef: MutableRefObject<boolean>;
   seekTargetRef: MutableRefObject<number | null>;
-  /** Veille de calage du saut — un INTERVALLE, cf. `calageSaut.ts`. */
+  /** Veille de calage du saut — un INTERVALLE, cf. `seekLanding.ts`. */
   seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   sourceChangingRef: MutableRefObject<boolean>;
   hasStartedRef: MutableRefObject<boolean>;
