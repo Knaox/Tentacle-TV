@@ -2,6 +2,7 @@ import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { wtLog } from "../watchTogether/wtLog";
+import { DELAI_CHARGEMENT_MS } from "./calageSaut";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -104,12 +105,12 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     onWaiting: () => {
       clearTimeout(a.waitingTimer.current);
       a.waitingTimer.current = setTimeout(() => {
-        wtLog("web-video", "waiting > 800ms → signal buffering=true", {
+        wtLog("web-video", `waiting > ${DELAI_CHARGEMENT_MS}ms → signal buffering=true`, {
           pos: a.lastKnownPositionRef.current.toFixed(1),
           readyState: a.videoRef.current?.readyState,
         });
         a.setLoading(true); a.onBufferingChange?.(true);
-      }, 800);
+      }, DELAI_CHARGEMENT_MS);
     },
     // `seeked` et `playing` n'ont plus le droit de désarmer la veille de calage :
     // tous deux sont émis dès que le lecteur a FINI de se déplacer, ce qui ne dit

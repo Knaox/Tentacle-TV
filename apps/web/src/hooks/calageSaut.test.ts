@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  observerSaut, SAUT_VIDE, DELAI_CALAGE_SAUT_MS, PERIODE_VEILLE_SAUT_MS,
+  observerSaut, SAUT_VIDE, DELAI_CALAGE_SAUT_MS, DELAI_CHARGEMENT_MS, PERIODE_VEILLE_SAUT_MS,
   PROGRESSION_MINIMALE_S, TOLERANCE_ATTERRISSAGE_S,
   type EchantillonSaut, type VerdictSaut,
 } from "./calageSaut";
@@ -81,7 +81,49 @@ describe("saut qui n'aboutit pas", () => {
   it("laisse au serveur le temps d'écrire avant de tout redemander", () => {
     // Un saut qui ABOUTIT a été mesuré à 4,5 s : l'échéance ne doit pas bouger.
     const attente = derouler([0, 1000, 4500, DELAI_CALAGE_SAUT_MS - 1].map((ms) => releve(ms)));
-    expect(attente.every((v) => v === "attendre")).toBe(true);
+    expect(attente).not.toContain("renegocier");
+  });
+});
+
+/**
+ * Dire que ça charge, sans le crier pour rien. L'ancien indicateur avait été
+ * retiré parce qu'il se montrait à CHAQUE saut, y compris ceux qui
+ * aboutissaient dans l'instant — un témoin qui clignote n'apprend rien et fatigue.
+ * Ce qui suit borne les deux erreurs.
+ */
+describe("témoin de chargement", () => {
+  it("se tait tant que le saut peut encore aboutir tout seul", () => {
+    expect(derouler([releve(0), releve(DELAI_CHARGEMENT_MS - 1)])).not.toContain("charge");
+  });
+
+  it("le dit une fois le seuil franchi", () => {
+    expect(derouler([releve(0), releve(DELAI_CHARGEMENT_MS)]).at(-1)).toBe("charge");
+  });
+
+  it("ne se montre jamais sur un saut qui aboutit dans l'instant", () => {
+    // Le cas de tous les sauts de ±30 s : la réserve fait quarante secondes.
+    const verdicts = derouler([
+      releve(0), releve(DELAI_CHARGEMENT_MS, { position: CIBLE + 1 }),
+    ]);
+    expect(verdicts).not.toContain("charge");
+    expect(verdicts.at(-1)).toBe("abouti");
+  });
+
+  /**
+   * La régression à ne pas commettre. En pause, la veille attend indéfiniment
+   * — elle ne doit pas renégocier sous les doigts de l'utilisateur. Si elle
+   * disait « ça charge » dans le même souffle, le témoin resterait allumé
+   * jusqu'à ce qu'il reprenne, par-dessus une image parfaitement figée.
+   */
+  it("ne s'allume pas sur une pause", () => {
+    const verdicts = derouler([
+      releve(0), releve(DELAI_CHARGEMENT_MS * 4, { enPause: true }),
+    ]);
+    expect(verdicts).not.toContain("charge");
+  });
+
+  it("laisse la place à la renégociation une fois le vrai délai atteint", () => {
+    expect(derouler([releve(0), releve(DELAI_CALAGE_SAUT_MS)]).at(-1)).toBe("renegocier");
   });
 });
 

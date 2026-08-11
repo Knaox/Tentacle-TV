@@ -52,7 +52,10 @@ export function VideoPlayerOverlays({
         // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
         loading && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+            {/* `spinner-lecture` n'habille rien ici : c'est la prise que le
+                téléviseur utilise pour l'agrandir, quarante-huit pixels étant
+                illisibles à trois mètres. Le web garde sa taille. */}
+            <div className="spinner-lecture h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
           </div>
         )
       ) : (
