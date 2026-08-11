@@ -34,6 +34,28 @@ describe("activerPisteAudio", () => {
     expect([natives[0].enabled, natives[1].enabled, natives[2].enabled]).toEqual([false, true, false]);
   });
 
+  it("n'écrit RIEN quand la piste voulue est déjà la seule active", () => {
+    // Le cas le plus fréquent, et celui qui rendait le téléviseur muet :
+    // réaffirmer `enabled` sur la piste courante pendant l'initialisation de la
+    // chaîne audio la fait taire. Un accesseur qui compte les écritures le dit.
+    let ecritures = 0;
+    const natives = listeNative(2);
+    for (let i = 0; i < 2; i++) {
+      const valeur = i === 0;
+      Object.defineProperty(natives, i, {
+        get: () => ({ get enabled() { return valeur; }, set enabled(_v: boolean) { ecritures += 1; } }),
+      });
+    }
+    expect(activerPisteAudio(natives, [piste(1), piste(2)], 1)).toBe(true);
+    expect(ecritures).toBe(0);
+  });
+
+  it("écrit bien quand la piste active n'est PAS celle voulue", () => {
+    const natives = listeNative(2, [0]);
+    expect(activerPisteAudio(natives, [piste(1), piste(2)], 2)).toBe(true);
+    expect([natives[0].enabled, natives[1].enabled]).toEqual([false, true]);
+  });
+
   it("ne touche à RIEN tant que la liste n'est pas peuplée", () => {
     // Le cas du défaut : l'effet tourne au montage, avant loadedmetadata.
     // Renoncer serait juste ; renoncer DÉFINITIVEMENT était le bug.

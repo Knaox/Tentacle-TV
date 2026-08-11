@@ -95,6 +95,20 @@ export function activerPisteAudio(
   if (natives.length < 2) return false;
   const rang = pistes.findIndex((t) => t.index === voulue);
   if (rang === -1 || rang >= natives.length) return false;
+  // RIEN À FAIRE si la piste voulue est déjà la seule active — et surtout, rien
+  // à écrire. Sur le téléviseur, réaffirmer `enabled` sur la piste courante
+  // pendant que la chaîne audio s'initialise la fait taire : le film démarrait
+  // muet, et il fallait changer de piste pour retrouver le son. Le cas est le
+  // plus fréquent de tous (la piste préférée est souvent celle du conteneur),
+  // et il ne demandait aucune écriture.
+  if (dejaSeuleActive(natives, rang)) return true;
   for (let i = 0; i < natives.length; i++) natives[i].enabled = (i === rang);
+  return true;
+}
+
+function dejaSeuleActive(natives: ListePistesNatives, rang: number): boolean {
+  for (let i = 0; i < natives.length; i++) {
+    if (natives[i].enabled !== (i === rang)) return false;
+  }
   return true;
 }
