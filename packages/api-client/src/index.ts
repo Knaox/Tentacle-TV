@@ -17,6 +17,9 @@ export { useAuth } from "./hooks/useAuth";
 export { useUserId, notifyUserChange } from "./hooks/useUserId";
 export { usePlaybackReporting } from "./hooks/usePlayback";
 export type { PlaybackReportingOptions } from "./hooks/usePlayback";
+// Destruction d'un transcode actif, hors du hook de reporting : les filets de
+// lecture renégocient une session sans en tenir un (cf. useWebPlaybackFallbacks).
+export { killActiveEncoding } from "./hooks/playbackTransport";
 export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export { useIntroSkipper, normalizeSkipSegments } from "./hooks/useIntroSkipper";

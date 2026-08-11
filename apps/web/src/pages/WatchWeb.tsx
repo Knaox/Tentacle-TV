@@ -29,7 +29,7 @@ export function WatchWeb() {
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture, libererEncodage,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
@@ -40,7 +40,7 @@ export function WatchWeb() {
   // par le matériel répondent oui, sans que ce fichier ait à les connaître.
   const useNativeHls = preferNativeHls();
 
-  const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
+  const { reportStart, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });
@@ -105,25 +105,10 @@ export function WatchWeb() {
     };
   }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
 
-  /**
-   * Tuer l'encodage en cours AVANT de renégocier — sans quoi il survit et
-   * remplit le disque du serveur.
-   *
-   * Chaque changement de piste, de qualité ou d'incrustation refait un
-   * `PlaybackInfo`, donc obtient un NOUVEAU `PlaySessionId`, donc un nouveau
-   * ffmpeg. L'ancien, lui, n'était prévenu de rien. Or un remux tourne à mille
-   * à trois mille fois le temps réel : il écrit le film ENTIER en quelques
-   * secondes, puis meurt en laissant ses segments derrière lui — et le
-   * nettoyage de Jellyfin ne les ramasse pas, ses minuteurs de purge n'ayant
-   * pas le temps de se déclencher sur un travail si court (jellyfin#16608).
-   * Une dizaine de gigaoctets par clic, jusqu'à saturer le disque : ce qu'on a
-   * mesuré, 121 Go de transcodes orphelins pour un serveur à l'arrêt.
-   *
-   * `WatchDesktop` le fait depuis toujours ; c'est ici qu'il manquait.
-   */
-  const libererEncodage = useCallback(() => {
-    if (!isDirectPlay) void killTranscode();
-  }, [isDirectPlay, killTranscode]);
+  // `libererEncodage` vient de `useWatchSession` : les gestes ci-dessous et les
+  // filets de lecture renégocient la même session, et doivent la libérer de la
+  // même façon. Deux implémentations auraient fini par diverger — c'est
+  // exactement ce qui laissait fuir le chemin des filets (cf. le hook).
 
   // Audio change: save position for potential transcode restart.
   // Server decides direct play vs transcode via PlaybackInfo.
@@ -166,7 +151,9 @@ export function WatchWeb() {
     setQualityKey(key);
   }, [getPositionTicks, setStartTicks, setQualityKey, libererEncodage]);
 
-  // HLS seek fallback: kill old transcode, PlaybackInfo re-fetches with new position.
+  // HLS seek fallback: PlaybackInfo re-fetches with new position. L'ancien
+  // encodage est tué par `relancerLecture` lui-même — le kill vivait ici, il
+  // vit désormais au point unique où la session est renégociée.
   //
   // `relancerLecture` n'est pas une précaution : ce callback sert AUSSI de
   // rattrapage au repli CORS de `useVideoSource`, qui le déclenche à la
@@ -174,10 +161,9 @@ export function WatchWeb() {
   // rejouait rien, hls.js venait d'être détruit, et la lecture ne démarrait
   // jamais — le « parfois ça ne se lance pas » du premier démarrage.
   const handleSeekRequest = useCallback((targetSeconds: number) => {
-    if (!isDirectPlay) killTranscode();
     setStartTicks(Math.floor(targetSeconds * TICKS_PER_SECOND));
     relancerLecture();
-  }, [isDirectPlay, killTranscode, setStartTicks, relancerLecture]);
+  }, [setStartTicks, relancerLecture]);
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;

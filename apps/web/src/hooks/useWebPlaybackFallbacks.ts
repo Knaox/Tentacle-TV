@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type MutableRefObject } from "react";
-import type { JellyfinClient } from "@tentacle-tv/api-client";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { killActiveEncoding, type JellyfinClient } from "@tentacle-tv/api-client";
 import {
   BURN_IN_SUBTITLE_CODECS, PGS_SUBTITLE_CODECS, TICKS_PER_SECOND,
 } from "@tentacle-tv/shared";
@@ -52,7 +52,50 @@ export function useWebPlaybackFallbacks({
   // donc rien. Le lecteur restait alors sur un spinner que plus rien ne
   // relevait. Un compteur, lui, change toujours.
   const [relanceLecture, setRelanceLecture] = useState(0);
-  const relancerLecture = useCallback(() => setRelanceLecture((n) => n + 1), []);
+
+  // La session du moment, tenue dans une référence plutôt qu'en dépendances.
+  //
+  // `relancerLecture` doit garder une identité STABLE : le repli du téléviseur
+  // en fait la dépendance de l'effet qui pose son écouteur d'erreur, et cet
+  // écouteur se reposerait alors à chaque PlaybackInfo — c'est-à-dire à chaque
+  // fois qu'on vient de renégocier. Il doit pourtant tuer la session réellement
+  // en cours, pas celle du rendu où il a été créé.
+  const sessionEnCours = useRef({ client, playSessionId: pbInfo.playSessionId, isDirectPlay: pbInfo.isDirectPlay });
+  sessionEnCours.current = { client, playSessionId: pbInfo.playSessionId, isDirectPlay: pbInfo.isDirectPlay };
+
+  /**
+   * Tuer l'encodage en cours AVANT de renégocier — sans quoi il survit et
+   * remplit le disque du serveur.
+   *
+   * Toute renégociation obtient un NOUVEAU `PlaySessionId`, donc un nouveau
+   * ffmpeg ; l'ancien, lui, n'était prévenu de rien. Or un remux tourne à mille
+   * à trois mille fois le temps réel : il écrit le film ENTIER en quelques
+   * secondes — 35 à 80 s pour 90 minutes de 4K, mesuré le 11 août 2026 — puis
+   * meurt en laissant ses segments derrière lui, que le nettoyage de Jellyfin
+   * ne ramasse pas (jellyfin#16608).
+   *
+   * Les gestes de l'utilisateur passent par les handlers de `WatchWeb` ; ce
+   * fichier-ci couvre ce que les FILETS renégocient tout seuls — l'échelle de
+   * replis du téléviseur, qui descend d'un cran à chaque erreur média, et le
+   * repli CORS comme le seek HLS, qui passent par le même compteur. La veille
+   * de gel, elle, ne renégocie rien : elle recharge la MÊME URL, donc le même
+   * `PlaySessionId`, et ne fuit que par les erreurs qu'elle peut provoquer.
+   *
+   * La garde `isDirectPlay` n'est pas une précaution : c'est ce qui distingue
+   * les deux filets. Celui du MKV muet part d'une lecture directe — aucun
+   * ffmpeg à tuer — quand celui du PGS et l'échelle du téléviseur peuvent
+   * partir d'un transcodage.
+   */
+  const libererEncodage = useCallback(() => {
+    const { client: jf, playSessionId, isDirectPlay } = sessionEnCours.current;
+    if (isDirectPlay || !playSessionId) return;
+    void killActiveEncoding(jf, playSessionId);
+  }, []);
+
+  const relancerLecture = useCallback(() => {
+    libererEncodage();
+    setRelanceLecture((n) => n + 1);
+  }, [libererEncodage]);
 
   // ── Filet de la lecture directe MKV (cf. lib/deviceProfile/browser.ts) ──
   // Le rattrapage n'est proposé que s'il y a matière à rattraper : un MKV, sur
@@ -88,10 +131,14 @@ export function useWebPlaybackFallbacks({
   // parce que mpv rend les PGS lui-même. Sans cette garde, choisir un
   // sous-titre image sous mpv aurait déclenché une incrustation serveur —
   // exactement le transcodage que ce chantier supprime.
+  //
+  // Ce filet-ci ne passe PAS par `relancerLecture` : il renégocie en changeant
+  // l'incrustation, et c'est un chemin distinct — d'où le kill posé à la main.
   useEffect(() => {
     if (isDesktop || pgsClientOk || subtitleIndex == null) return;
     const s = streams.find((st) => st.Type === "Subtitle" && st.Index === subtitleIndex);
     if (!s || !PGS_SUBTITLE_CODECS.test(s.Codec ?? "")) return;
+    libererEncodage();
     if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     setBurnInSubtitleIndex(subtitleIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,5 +150,6 @@ export function useWebPlaybackFallbacks({
     signalerEchecPgs: pbInfo.signalerPgsClientIndisponible,
     relanceLecture,
     relancerLecture,
+    libererEncodage,
   };
 }
