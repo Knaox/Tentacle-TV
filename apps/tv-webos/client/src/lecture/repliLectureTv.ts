@@ -3,6 +3,7 @@ import { useWebPlaybackFallbacks as repliWeb } from "@/hooks/useWebPlaybackFallb
 import type { MediaSource } from "@tentacle-tv/shared";
 import { signalerEchecLecture } from "./repliLecture";
 import { observer, VEILLE_VIDE } from "./relanceGel";
+import { poserGel } from "./etatGelTv";
 
 /**
  * Période d'échantillonnage de la veille.
@@ -136,7 +137,12 @@ function useVeilleGel(source: unknown): void {
   const veille = useRef(VEILLE_VIDE);
   useEffect(() => {
     veille.current = VEILLE_VIDE;
+    // Une source neuve n'hérite pas du gel de la précédente : le témoin
+    // resterait allumé par-dessus une lecture qui démarre normalement.
+    poserGel(false);
   }, [source]);
+
+  useEffect(() => () => poserGel(false), []);
 
   useEffect(() => {
     const minuteur = window.setInterval(() => {
@@ -157,12 +163,18 @@ function useVeilleGel(source: unknown): void {
       if (verdict === "reprise") {
         // Ça repart tout seul, et c'est le fait le plus instructif du dossier :
         // rien n'a été relancé entre-temps.
+        poserGel(false);
         console.warn("[Tentacle:TV] lecture repartie", {
           position: Math.round(v.currentTime),
           apresSecondes: debut === null ? null : Math.round((Date.now() - debut) / 1000),
         });
         return;
       }
+
+      // Le seul geste que cette veille s'autorise, et il ne touche pas au
+      // lecteur : allumer son témoin de chargement. Lui ne peut pas le faire —
+      // pendant ce gel il n'émet aucun événement et se déclare prêt.
+      poserGel(true);
 
       // L'AVANCE DU TAMPON, pas seulement la position : c'est elle qui fond
       // pendant que le téléviseur tourne sur deux segments, et c'est en la
