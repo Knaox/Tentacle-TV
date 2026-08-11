@@ -206,6 +206,55 @@ seule, la vidéo reste en pause, **aucun déplacement n'est appliqué avant
 confirmation**. OK confirme, Retour annule, sept secondes d'inactivité annulent
 aussi. `lecture/machineScrub.test.ts` vérifie ce qui ne se voit pas.
 
+## Pourquoi une lecture remuxée se fige, et ce qui n'y est pour rien
+
+Mesuré sur la C3 le 11 août 2026, sur « Spider-Man : Across the Spider-Verse »
+(MKV, HEVC DOVIWithHDR10, remuxé en fMP4 HLS parce que webOS ne démultiplexe le
+RPU qu'en ISOBMFF). L'outil est `scripts/releveLecture.mjs`, côté dalle, et
+`TENTACLE_JOURNAL_FLUX=1` côté proxy.
+
+**La playlist ment sur les durées, et c'est tout le défaut.** Les `#EXTINF` de
+Jellyfin ne décrivent pas ce que ffmpeg produit :
+
+| segment | annoncé par la playlist | contenu réel (ffprobe) |
+|---|---|---|
+| 517 | 3105,31 → 3110,90 | 3105,311 → **3112,818** |
+| 518 | 3110,90 → 3115,11 | **3112,859** → 3117,740 |
+| 519 | 3115,11 → 3122,49 | **3117,781** → 3124,204 |
+
+Les segments s'enchaînent parfaitement **entre eux** — 41 ms d'écart, soit une
+image à 23,976 — donc le flux est sain. C'est l'index qui est faux, d'environ
+deux secondes : Jellyfin construit ses `#EXTINF` sur des points de coupe que
+ffmpeg n'utilise pas. La somme reste juste (8406,40 s pour 140 min), l'erreur
+est locale et se compense ; seul le **premier** segment d'une session ffmpeg est
+aligné, ce qui explique qu'un rechargement fasse repartir la lecture, et qu'elle
+se refige quarante secondes plus tard.
+
+**La pile média de LG n'a aucune tolérance.** Elle redemande le segment qu'elle
+ne parvient pas à raccorder, sans plage `Range`, donc en repartant de zéro à
+chaque fois : **3883 requêtes pour 13 segments distincts en cent secondes**,
+chacune coupée après ~49 ms, 5,34 Go annoncés pour un film à 18,8 Mb/s. C'est
+aussi ce que l'utilisateur perçoit comme des saccades.
+
+Ce qui n'y est pour rien, et qu'il est inutile de re-suspecter : le débit (les
+segments sortent en 16 ms médians), `Range` (206 correct, `accept-ranges: bytes`),
+l'audio (DTS **copié**, pas transcodé — la surcouche de diagnostic le dit),
+la charge du proxy, et le Dolby Vision lui-même.
+
+**Deux voies écartées, avec leur raison.** Le flux progressif
+(`Videos/{id}/stream.mp4`) n'a pas de playlist pour mentir, mais il **perd le
+Dolby Vision** : pas de `DOVI configuration record`, `codec_tag` `hev1` là où le
+segment HLS porte `dvh1` et `dv_profile=8`. Et `BreakOnNonKeyFrames=True`
+n'aligne que le premier segment d'une session — les suivants dérivent comme
+avant. Le remède est côté serveur : c'est l'index de points de coupe de Jellyfin
+qu'il faut corriger.
+
+**Ce que le client fait de son côté**, faute de pouvoir corriger l'index : il ne
+masque plus le défaut. La veille de gel (`lecture/relanceGel.ts`) compte
+désormais ses relances sur une fenêtre glissante — son compteur retombait à zéro
+à la moindre reprise, elle pouvait donc relancer indéfiniment sans jamais le
+dire. Et `lecture/IndicateurChargementTv.tsx` montre enfin qu'on travaille.
+
 ## Ce que la dalle sait faire, et comment on l'apprend
 
 `deviceInfo` ment par omission, et c'est le défaut le plus coûteux de la cible.
