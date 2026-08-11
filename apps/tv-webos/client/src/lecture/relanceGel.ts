@@ -44,6 +44,11 @@ export interface EchantillonLecture {
   pret: number;
   /** `HTMLMediaElement.error?.code`, `null` s'il n'y en a pas. */
   erreur: number | null;
+  /**
+   * `Date.now()` au moment du relevé. Le module reste pur : c'est l'appelant
+   * qui lit l'horloge, et les tests la fabriquent.
+   */
+  instant?: number;
 }
 
 /** Erreur réseau : le flux est bon, c'est la liaison qui a manqué. */
@@ -67,6 +72,23 @@ export const RELEVES_AVANT_GEL = 3;
  */
 export const RELANCES_MAX = 3;
 
+/**
+ * Combien de relances tolérées sur une fenêtre glissante, et sur quelle durée.
+ *
+ * `RELANCES_MAX` seul ne plafonnait rien : son compteur retombait à zéro dès que
+ * la position avançait d'un quart de seconde, si bien qu'il ne bornait que des
+ * échecs consécutifs SANS aucune progression entre eux. Un film qui se fige
+ * toutes les quarante secondes — ce qu'on a mesuré sur la dalle — était donc
+ * relancé indéfiniment, et le verdict « épuisé », le seul qui écrive quelque
+ * chose de définitif au journal, ne sortait jamais. La veille masquait le
+ * défaut au lieu de le signaler.
+ *
+ * Quatre relances en cinq minutes ne sont plus un incident : c'est une lecture
+ * inregardable, et il vaut mieux le dire que la hacher un peu plus.
+ */
+export const RELANCES_PAR_FENETRE = 4;
+export const FENETRE_CUMUL_MS = 5 * 60 * 1000;
+
 export interface EtatVeille {
   /** Position du dernier relevé, `null` avant le premier. */
   derniere: number | null;
@@ -74,9 +96,11 @@ export interface EtatVeille {
   immobiles: number;
   /** Relances déjà tentées pour cette source. */
   relances: number;
+  /** Instants des relances retenues dans la fenêtre glissante. */
+  historique: number[];
 }
 
-export const VEILLE_VIDE: EtatVeille = { derniere: null, immobiles: 0, relances: 0 };
+export const VEILLE_VIDE: EtatVeille = { derniere: null, immobiles: 0, relances: 0, historique: [] };
 
 export type Verdict = "rien" | "relancer" | "epuise";
 
@@ -92,8 +116,9 @@ export type Verdict = "rien" | "relancer" | "epuise";
  * lecteur a renoncé, il n'y a rien à confirmer.
  */
 export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, Verdict] {
+  const instant = e.instant ?? 0;
   if (e.erreur === MEDIA_ERR_NETWORK) {
-    return decider({ ...etat, derniere: e.position, immobiles: RELEVES_AVANT_GEL });
+    return decider({ ...etat, derniere: e.position, immobiles: RELEVES_AVANT_GEL }, instant);
   }
 
   // En pause voulue, ou pas assez de données : il n'y a rien à surveiller, et
@@ -110,11 +135,18 @@ export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, 
     return [{ ...etat, derniere: e.position, immobiles: 0, relances: avance ? 0 : etat.relances }, "rien"];
   }
 
-  return decider({ ...etat, derniere: e.position, immobiles: etat.immobiles + 1 });
+  return decider({ ...etat, derniere: e.position, immobiles: etat.immobiles + 1 }, instant);
 }
 
-function decider(etat: EtatVeille): [EtatVeille, Verdict] {
+function decider(etat: EtatVeille, instant: number): [EtatVeille, Verdict] {
   if (etat.immobiles < RELEVES_AVANT_GEL) return [etat, "rien"];
-  if (etat.relances >= RELANCES_MAX) return [{ ...etat, immobiles: 0 }, "epuise"];
-  return [{ ...etat, immobiles: 0, relances: etat.relances + 1 }, "relancer"];
+  // La fenêtre glissante, elle, ne se laisse pas remettre à zéro par une
+  // poignée de secondes de lecture entre deux gels.
+  const recentes = etat.historique.filter((t) => instant - t < FENETRE_CUMUL_MS);
+  if (etat.relances >= RELANCES_MAX || recentes.length >= RELANCES_PAR_FENETRE) {
+    return [{ ...etat, immobiles: 0, historique: recentes }, "epuise"];
+  }
+  return [{
+    ...etat, immobiles: 0, relances: etat.relances + 1, historique: [...recentes, instant],
+  }, "relancer"];
 }
