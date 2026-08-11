@@ -90,6 +90,29 @@ export interface EntreeFlux {
   cause?: string;
   /** Le client est parti avant la fin : ce n'est pas une panne. */
   annule?: boolean;
+  /**
+   * Octets réellement écrits vers le client.
+   *
+   * Le chiffre qui manquait. `attendus` ne dit que ce que Jellyfin a ANNONCÉ ;
+   * seul celui-ci dit où le lecteur a lâché. Sur la dalle, un téléviseur qui
+   * abandonne un segment de 9,6 Mo au bout de quarante millisecondes n'a pas eu
+   * un problème de débit — il a lu l'en-tête du fragment et refermé.
+   */
+  octets?: number | null;
+  /** Millisecondes entre l'arrivée des en-têtes et le dernier octet écrit. */
+  msCorps?: number;
+}
+
+/**
+ * Débit effectif d'un transfert, en mégabits par seconde.
+ *
+ * `null` sur des valeurs qui ne veulent rien dire plutôt que `Infinity` ou
+ * `NaN` : une ligne de journal sans débit se lit, une ligne qui en annonce un
+ * faux se croit.
+ */
+export function debitMbps(octets: number | null | undefined, ms: number | undefined): number | null {
+  if (!octets || !ms || octets <= 0 || ms <= 0) return null;
+  return Math.round(((octets * 8) / (ms / 1000) / 1e6) * 100) / 100;
 }
 
 /** Une ligne de journal exploitable par `jq`, sans champ vide. */
@@ -103,6 +126,10 @@ export function ligneFlux(e: EntreeFlux): Record<string, unknown> {
   };
   if (e.statut !== undefined) ligne.statut = e.statut;
   if (e.attendus !== undefined && e.attendus !== null) ligne.attendus = e.attendus;
+  if (e.octets !== undefined && e.octets !== null) ligne.octets = e.octets;
+  if (e.msCorps !== undefined) ligne.msCorps = Math.round(e.msCorps);
+  const debit = debitMbps(e.octets, e.msCorps);
+  if (debit !== null) ligne.debitMbps = debit;
   if (e.plage) ligne.plage = e.plage;
   if (e.cause) ligne.cause = e.cause;
   if (e.annule) ligne.annule = true;

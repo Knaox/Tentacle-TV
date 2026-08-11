@@ -57,26 +57,48 @@ export function tracerEntetes(request: FastifyRequest, ctx: Contexte): void {
 export function tracerCorps(
   request: FastifyRequest, reply: FastifyReply, flux: Readable, ctx: Contexte,
 ): void {
+  // Le compteur est pris sur la SOCKET, pas sur le flux amont. Poser un
+  // écouteur `data` sur `flux` le basculerait en mode « flowing » avant que
+  // Fastify ne le branche sur la réponse, et les premiers morceaux seraient
+  // perdus — on mesurerait le transfert en le cassant.
+  //
+  // `bytesWritten` cumule sur une socket gardée ouverte : on retient sa valeur
+  // de départ et on soustrait. Les quelques centaines d'octets d'en-têtes HTTP
+  // de cette réponse-ci sont comptés dedans, ce qui est sans portée devant des
+  // segments de plusieurs mégaoctets.
+  const sortie = reply.raw.socket;
+  const octetsAvant = sortie?.bytesWritten ?? 0;
+  const debutCorps = performance.now();
+  const ecrits = () => (sortie ? sortie.bytesWritten - octetsAvant : null);
+
   flux.on("error", (e) => {
     request.log.warn(
       ligneFlux({
         chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
         statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
+        octets: ecrits(), msCorps: performance.now() - debutCorps,
         cause: raisonCoupure(e),
       }),
       "flux coupe",
     );
   });
   reply.raw.on("close", () => {
-    // Une fin normale ferme aussi la socket : seul un corps INACHEVÉ compte.
-    if (reply.raw.writableEnded) return;
-    request.log.warn(
-      ligneFlux({
-        chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-        statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request), annule: true,
-      }),
-      "flux abandonne",
-    );
+    const octets = ecrits();
+    const msCorps = performance.now() - debutCorps;
+    // Une fin normale ferme aussi la socket : seul un corps INACHEVÉ est une
+    // anomalie. Mais les deux valent d'être mesurés — c'est en comparant le
+    // débit d'un segment servi entier à celui d'un segment lâché qu'on saura si
+    // le téléviseur manque de bande passante ou refuse le contenu.
+    const entree = {
+      chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
+      statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
+      octets, msCorps,
+    };
+    if (reply.raw.writableEnded) {
+      if (suiviFluxActif()) request.log.info(ligneFlux(entree), "flux termine");
+      return;
+    }
+    request.log.warn(ligneFlux({ ...entree, annule: true }), "flux abandonne");
   });
 }
 
