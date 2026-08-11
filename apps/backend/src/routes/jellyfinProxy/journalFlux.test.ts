@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { genreDeChemin, ligneFlux, raisonCoupure } from "./journalFlux";
+import { debitMbps, genreDeChemin, ligneFlux, raisonCoupure } from "./journalFlux";
 
 describe("genreDeChemin", () => {
   it("distingue un segment de son manifeste sur la même route hls1", () => {
@@ -91,5 +91,37 @@ describe("ligneFlux", () => {
 
   it("marque une annulation, qui n'est pas une panne", () => {
     expect(ligneFlux({ chemin: "x", methode: "GET", ms: 1, annule: true })).toHaveProperty("annule", true);
+  });
+
+  /**
+   * Ce que ces trois cas rendent lisible : sur la dalle, le téléviseur abandonne
+   * des segments de plusieurs mégaoctets au bout de quarante millisecondes. Tant
+   * que le journal ne portait que le `content-length` ANNONCÉ, rien ne
+   * distinguait un lecteur à court de bande passante d'un lecteur qui refuse le
+   * contenu. Les octets écrits le disent, et eux seuls.
+   */
+  it("dit où le client a lâché, et à quel débit", () => {
+    const l = ligneFlux({
+      chemin: "Videos/a/hls1/main/91.mp4", methode: "GET", ms: 12, statut: 200,
+      attendus: 9_643_919, octets: 262_144, msCorps: 45, annule: true,
+    });
+    expect(l).toMatchObject({ attendus: 9_643_919, octets: 262_144, msCorps: 45, annule: true });
+    // 262144 octets en 45 ms — le lien n'était pas le problème.
+    expect(l.debitMbps).toBeCloseTo(46.6, 1);
+  });
+
+  it("n'invente pas un débit sur des valeurs qui n'en portent pas", () => {
+    expect(debitMbps(0, 45)).toBeNull();
+    expect(debitMbps(1000, 0)).toBeNull();
+    expect(debitMbps(null, 45)).toBeNull();
+    expect(debitMbps(1000, undefined)).toBeNull();
+    expect(ligneFlux({ chemin: "x", methode: "GET", ms: 1 })).not.toHaveProperty("debitMbps");
+  });
+
+  it("porte un transfert vide sans le confondre avec une absence de mesure", () => {
+    // Zéro octet écrit est un fait — le client est parti avant le premier octet.
+    const l = ligneFlux({ chemin: "x", methode: "GET", ms: 1, octets: 0, msCorps: 3 });
+    expect(l).toHaveProperty("octets", 0);
+    expect(l).not.toHaveProperty("debitMbps");
   });
 });
