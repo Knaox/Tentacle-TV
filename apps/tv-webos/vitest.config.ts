@@ -26,6 +26,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["client/src/**/*.test.ts"],
+    // Les outils de mesure (`scripts/releve/`) portent leurs propres fonctions
+    // pures : les laisser hors du filet reviendrait à déboguer l'instrument en
+    // même temps que ce qu'il mesure.
+    include: ["client/src/**/*.test.ts", "scripts/**/*.test.mjs"],
   },
 });
