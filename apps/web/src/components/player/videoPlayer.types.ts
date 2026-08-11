@@ -49,6 +49,11 @@ export interface VideoPlayerProps {
   onSeekRequest?: (seconds: number) => void;
   onSeekComplete?: (seconds: number, paused: boolean) => void;
   /**
+   * La piste audio demandée est absente du lecteur, alors qu'on lit le fichier
+   * en direct : la puce ne sait pas la décoder. Il faut la demander au serveur.
+   */
+  surPisteIntrouvable?: () => void;
+  /**
    * La lecture directe n'a rien produit — conteneur accepté puis muet. Fourni
    * seulement quand un repli est possible ; son absence désarme la garde.
    */

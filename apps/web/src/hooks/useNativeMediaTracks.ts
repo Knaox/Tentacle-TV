@@ -9,10 +9,18 @@ interface UseNativeMediaTracksOptions {
   audioTracks: AudioTrack[];
   currentAudio: number;
   isDirectPlay: boolean;
+  /**
+   * La piste voulue n'existe pas côté lecteur : il faut la demander au serveur.
+   *
+   * Facultatif — sans lui, le comportement est celui d'avant : on n'insiste pas,
+   * et la lecture reste sur la piste courante.
+   */
+  surPisteIntrouvable?: () => void;
 }
 
 export function useNativeMediaTracks({
   videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay,
+  surPisteIntrouvable,
 }: UseNativeMediaTracksOptions): void {
   // Subtitle track visibility — re-apply after source change and when tracks load.
   // Uses "disabled" (fully off) for non-selected tracks to prevent hls.js interference
@@ -59,7 +67,12 @@ export function useNativeMediaTracks({
     const elemTracks = (v as HTMLVideoElement & { audioTracks?: ListePistesNatives }).audioTracks;
     if (!elemTracks) return;
 
-    const appliquer = () => activerPisteAudio(elemTracks, audioTracks, currentAudio);
+    const appliquer = () => {
+      if (activerPisteAudio(elemTracks, audioTracks, currentAudio)) return;
+      // On ne renonce QUE sur une liste peuplée : autrement c'est le
+      // démultiplexeur qui n'a pas fini, et le signal suivant nous rappellera.
+      if (pisteIntrouvable(elemTracks, audioTracks, currentAudio)) surPisteIntrouvable?.();
+    };
     appliquer();
     // Ceinture et bretelles : certaines implémentations peuplent la liste sans
     // émettre `addtrack`, et `loadedmetadata` est alors le seul signal.
@@ -69,7 +82,10 @@ export function useNativeMediaTracks({
       elemTracks.removeEventListener?.("addtrack", appliquer);
       v.removeEventListener("loadedmetadata", appliquer);
     };
-  }, [currentAudio, isDirectPlay, audioTracks, src]);
+    // `surPisteIntrouvable` volontairement hors dépendances : l'appelant le
+    // reconstruit à chaque rendu, et le remettre ici rejouerait la bascule sans
+    // raison — écrire `enabled` pour rien fait taire le téléviseur.
+  }, [currentAudio, isDirectPlay, audioTracks, src]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** `HTMLMediaElement.audioTracks` n'est pas déclaré par la lib TS standard. */
@@ -95,6 +111,9 @@ export function activerPisteAudio(
   if (natives.length < 2) return false;
   const rang = pistes.findIndex((t) => t.index === voulue);
   if (rang === -1 || rang >= natives.length) return false;
+  // `false` ci-dessus recouvre DEUX choses très différentes — une liste pas
+  // encore peuplée et une piste réellement absente — et l'appelant qui doit
+  // décider de renégocier a besoin de les distinguer : cf. `pisteIntrouvable`.
   // RIEN À FAIRE si la piste voulue est déjà la seule active — et surtout, rien
   // à écrire. Sur le téléviseur, réaffirmer `enabled` sur la piste courante
   // pendant que la chaîne audio s'initialise la fait taire : le film démarrait
@@ -111,4 +130,24 @@ function dejaSeuleActive(natives: ListePistesNatives, rang: number): boolean {
     if (natives[i].enabled !== (i === rang)) return false;
   }
   return true;
+}
+
+/**
+ * La liste est peuplée, et la piste voulue n'y est pas.
+ *
+ * C'est le seul cas où renoncer à la bascule native veut dire quelque chose. Une
+ * liste de moins de deux entrées n'est pas un refus mais une liste pas encore
+ * peuplée — le démultiplexeur n'a pas fini — et conclure là-dessus renégocierait
+ * une session à chaque montage de lecteur, pour rien.
+ *
+ * Le cas réel : une piste présente dans le conteneur que la puce ne sait pas
+ * décoder. Le démultiplexeur ne la publie pas, le serveur, lui, l'aurait
+ * transcodée. Il faut alors le lui demander.
+ */
+export function pisteIntrouvable(
+  natives: ListePistesNatives, pistes: AudioTrack[], voulue: number,
+): boolean {
+  if (natives.length < 2) return false;
+  const rang = pistes.findIndex((t) => t.index === voulue);
+  return rang === -1 || rang >= natives.length;
 }

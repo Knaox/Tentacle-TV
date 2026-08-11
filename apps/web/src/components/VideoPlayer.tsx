@@ -32,7 +32,7 @@ export function VideoPlayer({
   currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable,
+  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable, surPisteIntrouvable,
   pgsSubtitleUrl, onPgsEchec,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
@@ -157,7 +157,7 @@ export function VideoPlayer({
     () => subtitleTracks.filter((t) => !BURN_IN_SUBTITLE_CODECS.test(t.codec ?? "")),
     [subtitleTracks],
   );
-  useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay });
+  useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay, surPisteIntrouvable });
   // VTT de la piste active, débarrassé du balisage ASS que Jellyfin laisse
   // fuiter dans le texte des cues (« {\an8} » affiché tel quel).
   const urlSousTitreAssaini = useSanitizedSubtitles({ pistes: pistesTexte, selection: currentSubtitle, src });
