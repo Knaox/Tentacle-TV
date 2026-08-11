@@ -241,6 +241,19 @@ segments sortent en 16 ms médians), `Range` (206 correct, `accept-ranges: bytes
 l'audio (DTS **copié**, pas transcodé — la surcouche de diagnostic le dit),
 la charge du proxy, et le Dolby Vision lui-même.
 
+**Ni le téléviseur, ni notre profil.** Le même film cale aussi sur un autre
+appareil, en TS avec l'audio converti en AAC. Le code de Jellyfin dit pourquoi :
+`DynamicHlsPlaylistGenerator` ne tente l'extraction des images-clés que
+`if (request.IsRemuxingVideo && … TryExtractKeyframes(…))`, et retombe sinon sur
+`ComputeEqualLengthSegments`. Le déclencheur est donc **« vidéo copiée depuis ce
+MKV »** — le conteneur de sortie et le sort de l'audio n'y changent rien.
+L'extraction elle-même passe par `MatroskaKeyframeExtractor`, qui lit les
+positions dans les **structures EBML du conteneur** au lieu de les chercher dans
+les images ; `IsExtractionAllowedForFile` la réserve aux extensions listées dans
+`AllowOnDemandMetadataBasedKeyframeExtractionForExtensions`. Retirer `mkv` de
+cette liste est donc le levier le plus direct — à vérifier, car des segments de
+durée fixe peuvent recréer un décalage d'une autre façon.
+
 **Deux voies écartées, avec leur raison.** Le flux progressif
 (`Videos/{id}/stream.mp4`) n'a pas de playlist pour mentir, mais il **perd le
 Dolby Vision** : pas de `DOVI configuration record`, `codec_tag` `hev1` là où le
@@ -253,7 +266,9 @@ qu'il faut corriger.
 masque plus le défaut. La veille de gel (`lecture/relanceGel.ts`) compte
 désormais ses relances sur une fenêtre glissante — son compteur retombait à zéro
 à la moindre reprise, elle pouvait donc relancer indéfiniment sans jamais le
-dire. Et `lecture/IndicateurChargementTv.tsx` montre enfin qu'on travaille.
+dire. Un indicateur de chargement a été essayé puis retiré : signaler l'attente
+ne la raccourcit pas, et un calque de plus sur l'image n'est utile que s'il
+apprend quelque chose.
 
 ## Ce que la dalle sait faire, et comment on l'apprend
 
