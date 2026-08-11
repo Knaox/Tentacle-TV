@@ -19,7 +19,8 @@ interface UseVideoSourceOptions {
   containerPtsOffsetRef: MutableRefObject<number>;
   offsetDetectedRef: MutableRefObject<boolean>;
   seekTargetRef: MutableRefObject<number | null>;
-  seekStallTimer: MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
+  /** Veille de calage du saut — un INTERVALLE, cf. `calageSaut.ts`. */
+  seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   sourceChangingRef: MutableRefObject<boolean>;
   hasStartedRef: MutableRefObject<boolean>;
   lastKnownPositionRef: MutableRefObject<number>;
@@ -252,14 +253,14 @@ export function useVideoSource({
       clearTimeout(failsafe);
       clearTimeout(gardeDirectPlay);
       clearTimeout(bufferGateTimer);
-      clearTimeout(seekStallTimer.current);
+      clearInterval(seekStallTimer.current);
       v.removeEventListener("loadedmetadata", onReady);
       v.removeEventListener("canplay", onReady);
       v.removeEventListener("canplaythrough", onReady);
     };
   }, [src]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => { hlsRef.current?.destroy(); clearTimeout(seekStallTimer.current); }, []);
+  useEffect(() => () => { hlsRef.current?.destroy(); clearInterval(seekStallTimer.current); }, []);
 
   return { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted };
 }
