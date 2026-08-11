@@ -35,7 +35,8 @@ interface ProprietesScrub {
   palier: number;
   currentTime: number;
   duration: number;
-  buffered: number;
+  /** Fraction déjà chargée, de 0 à 1 — cf. `BarreProgressionTv`. */
+  fractionChargee: number;
   item?: MediaItem;
   mediaSourceId?: string;
 }
@@ -46,7 +47,7 @@ export function SurcoucheScrubTv({
   palier,
   currentTime,
   duration,
-  buffered,
+  fractionChargee,
   item,
   mediaSourceId,
 }: ProprietesScrub) {
@@ -118,7 +119,7 @@ export function SurcoucheScrubTv({
         <BarreProgressionTv
           currentTime={currentTime}
           duration={duration}
-          buffered={buffered}
+          fractionChargee={fractionChargee}
           fantome={position}
         />
         <p className="scrub-tv-indices">

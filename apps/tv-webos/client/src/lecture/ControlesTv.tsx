@@ -42,6 +42,11 @@ import { PanneauPistesTv, PanneauEpisodesTv } from "./PanneauxTv";
 
 export function PlayerControls(props: PlayerControlsProps) {
   const {
+    // `buffered` du web est une FRACTION de 0 à 1, pas des secondes. La barre du
+    // téléviseur le redivisait par la durée et n'a donc jamais rien affiché ;
+    // c'est exactement la casse « en silence, sur une dalle » annoncée plus
+    // haut, et elle a duré parce que les deux unités sont des `number`. La
+    // propriété d'en face porte désormais son unité dans son nom.
     playing, currentTime, duration, buffered,
     item, itemId, mediaSourceId, title, subtitle,
     audioTracks, subtitleTracks, currentAudio, currentSubtitle,
@@ -172,7 +177,7 @@ export function PlayerControls(props: PlayerControlsProps) {
         palier={etat.scrub.palier}
         currentTime={currentTime}
         duration={duration}
-        buffered={buffered}
+        fractionChargee={buffered}
         item={item}
         mediaSourceId={mediaSourceId}
       />
@@ -232,7 +237,7 @@ export function PlayerControls(props: PlayerControlsProps) {
         <BarreProgressionTv
           currentTime={currentTime}
           duration={duration}
-          buffered={buffered}
+          fractionChargee={buffered}
         />
 
         <RangeeTransportTv
