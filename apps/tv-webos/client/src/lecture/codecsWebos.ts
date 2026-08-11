@@ -89,26 +89,40 @@ export function resoudreProfil(agent: string = navigator.userAgent): ProfilResol
  * produit indépendamment du flux, et s'y fier seul induit en erreur. Seul
  * `videooutput/getStatus` départage.
  *
- * `sansDolbyVision` sert les conteneurs où webOS ne démultiplexe PAS le RPU
- * (cf. `contraintes()`). Il retire TOUTES les plages Dolby Vision et non le seul
- * `DOVI` : y laisser les profils 8.x donnait une lecture directe, donc la couche
- * de base HDR10 et rien de plus.
+ * `conteneurSansRpu` sert les conteneurs où webOS ne démultiplexe PAS le RPU
+ * (cf. `contraintes()`). Il ne retire que **`DOVI` nu**, et c'est un arbitrage
+ * qui a changé.
  *
- * Sur une dalle **sans** Dolby Vision, les `DOVIWith…` restent déclarés — ce
- * sont les profils 8.x, dont la couche de base est du HDR10, du HLG ou du SDR
- * ordinaire, qu'un décodeur ignorant le RPU affiche juste et complète. Les
- * taire ferait tone-mapper une image 4K pour rien. `DOVI` nu, lui, n'y est
- * jamais : la couche de base du profil 5 est en IPT-PQ-C2, verdâtre sans
- * décodage Dolby Vision.
+ * Il retirait autrefois TOUTES les plages Dolby Vision, ce qui privait Jellyfin
+ * de lecture directe et le forçait à remuxer chaque MKV pour faire passer le
+ * RPU. On y gagnait le Dolby Vision, on y perdait beaucoup : une session ffmpeg
+ * par lecture, une playlist de 1,7 Mo, et le défaut de segmentation du serveur —
+ * qui annonce des frontières que ffmpeg n'honore pas — bloquant le téléviseur
+ * jusqu'à ne plus repartir du tout.
+ *
+ * Le remux est donc réservé à ce qui l'exige VRAIMENT. Les profils 8.x portent
+ * une couche de base HDR10, HLG ou SDR qu'un décodeur ignorant le RPU affiche
+ * juste et complète : ils repartent en lecture directe, sans serveur, avec une
+ * image HDR10 au lieu du Dolby Vision. Le profil 5, lui, n'a pas ce filet — sa
+ * couche de base est en IPT-PQ-C2, verdâtre sans décodage Dolby Vision — donc
+ * `DOVI` nu reste tu, et lui seul continue d'être remuxé.
+ *
+ * Sur webOS 25, la question ne se pose plus : `doviEnMkv` devient vrai, le
+ * profil restrictif disparaît, et le Dolby Vision revient en lecture directe.
+ *
+ * Sur une dalle **sans** Dolby Vision, les `DOVIWith…` restent déclarés pour la
+ * même raison : les taire ferait tone-mapper une image 4K pour rien.
  */
-export function plagesDynamiquesTv(dalle: DalleTv, sansDolbyVision = false): string[] {
+export function plagesDynamiquesTv(dalle: DalleTv, conteneurSansRpu = false): string[] {
   // `Unknown` et `SDR` sont ce que Jellyfin attribue aux fichiers dont il ne
   // sait rien : les taire ferait transcoder la moitié d'une médiathèque.
   const plages = ["Unknown", "SDR"];
   if (dalle.hdr10) plages.push("HDR10", "HDR10Plus", "HLG");
-  if (sansDolbyVision) return plages;
 
-  if (dalle.dolbyVision) plages.push("DOVI");
+  // `DOVI` nu commande le marquage `dvh1` côté serveur — cf. plus haut. Le
+  // déclarer sur un conteneur qui ne transporte pas le RPU donnerait une lecture
+  // directe du profil 5 sans ses métadonnées : une image verdâtre.
+  if (dalle.dolbyVision && !conteneurSansRpu) plages.push("DOVI");
   plages.push("DOVIWithSDR", "DOVIWithHLG");
   if (dalle.hdr10) plages.push("DOVIWithHDR10", "DOVIWithHDR10Plus");
   return plages;
