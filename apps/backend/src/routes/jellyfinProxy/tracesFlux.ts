@@ -74,18 +74,27 @@ export function tracerCorps(
 }
 
 /**
- * L'échec avant le premier octet. Rend la cause, que l'appelant réutilise pour
- * son message — `undici` enveloppe tout dans « fetch failed », et sans creuser
+ * L'échec avant le premier octet. Rend la cause, sur laquelle l'appelant décide
+ * quoi répondre — `undici` enveloppe tout dans « fetch failed », et sans creuser
  * `err.cause` un délai d'en-têtes dépassé s'écrivait comme une connexion
  * refusée.
+ *
+ * Le niveau suit la gravité, et une annulation n'en est pas une : depuis qu'on
+ * relaie le départ du client vers Jellyfin, chaque saut du téléviseur en
+ * produit une poignée. Les crier en `error` ferait passer le remède pour la
+ * panne.
  */
 export function tracerEchec(
-  request: FastifyRequest, chemin: string, depart: number, err: unknown, delaiAbsolu: boolean,
+  request: FastifyRequest, chemin: string, depart: number, err: unknown,
 ): string {
   const cause = raisonCoupure(err);
-  const ligne = ligneFlux({ chemin, methode: request.method, ms: performance.now() - depart, cause });
+  const ligne = ligneFlux({
+    chemin, methode: request.method, ms: performance.now() - depart, cause,
+    annule: cause === "annule" || undefined,
+  });
+  if (cause === "annule") request.log.info(ligne, "requete abandonnee par le client");
   // Muette jusqu'ici : la branche du délai rendait son 504 sans écrire un mot.
-  if (delaiAbsolu) request.log.warn(ligne, "Jellyfin timeout");
+  else if (cause === "delai-absolu") request.log.warn(ligne, "Jellyfin timeout");
   else request.log.error(ligne, "Proxy error");
   return cause;
 }

@@ -20,6 +20,7 @@ import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
 import { resolveSessionRouting } from "./jellyfinProxy/routageSession";
 import { urlCible } from "./jellyfinProxy/urlCible";
 import { tracerCorps, tracerEchec, tracerEntetes } from "./jellyfinProxy/tracesFlux";
+import { signalDeRequete } from "./jellyfinProxy/annulationClient";
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
@@ -117,7 +118,10 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const fetchInit: UndiciRequestInit = {
       method: effectiveMethod,
       headers,
-      signal: AbortSignal.timeout(timeout),
+      // Délai, MAIS AUSSI départ du client : un segment que le téléviseur a
+      // cessé d'attendre après un saut n'a plus à occuper une connexion ni à
+      // faire travailler ffmpeg (cf. annulationClient).
+      signal: signalDeRequete(request, reply, timeout),
       // Reuse the keep-alive pool to avoid a TCP+TLS handshake on every
       // HLS segment / API call (~30-50 ms saved per request).
       dispatcher: getJellyfinDispatcher(),
@@ -275,9 +279,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       tracerCorps(request, reply, nodeStream, traces);
       return reply.send(nodeStream);
     } catch (err) {
-      const delaiAbsolu = err instanceof DOMException && err.name === "TimeoutError";
-      tracerEchec(request, wildcardPath, depart, err, delaiAbsolu);
-      if (delaiAbsolu) return reply.status(504).send({ message: "Jellyfin timeout" });
+      const cause = tracerEchec(request, wildcardPath, depart, err);
+      // Le client est parti : il n'y a personne pour lire un code d'erreur, et
+      // ce n'en est pas une. On rend la main sans rien écrire sur une socket
+      // déjà fermée.
+      if (cause === "annule") return reply;
+      if (cause === "delai-absolu") return reply.status(504).send({ message: "Jellyfin timeout" });
       return reply.status(502).send({ message: err instanceof Error ? err.message : "Proxy error" });
     }
   });
