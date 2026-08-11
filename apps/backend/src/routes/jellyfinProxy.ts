@@ -18,6 +18,8 @@ import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminK
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
 import { resolveSessionRouting } from "./jellyfinProxy/routageSession";
+import { urlCible } from "./jellyfinProxy/urlCible";
+import { tracerCorps, tracerEchec, tracerEntetes } from "./jellyfinProxy/tracesFlux";
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
@@ -34,32 +36,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
-    let targetUrl = `${jellyfinUrl}/${wildcardPath}${qs}`;
-
-    // Strip api_key from proxied URLs — auth is handled via X-Emby-Token header.
-    // Prevents token leakage in server logs and downstream systems.
-    try {
-      const u = new URL(targetUrl);
-      if (u.searchParams.has("api_key") || u.searchParams.has("ApiKey")) {
-        u.searchParams.delete("api_key");
-        u.searchParams.delete("ApiKey");
-        targetUrl = u.toString();
-      }
-    } catch { /* leave targetUrl unchanged */ }
-
-    // Jellyfin bug workaround: its playlist generator (DynamicHlsPlaylistGenerator)
-    // propagates the full query string — including StartTimeTicks — from the
-    // main.m3u8 request into every segment URL.  But its segment handler
-    // (GetDynamicSegment) explicitly rejects StartTimeTicks > 0 with a 400.
-    // Strip it from HLS segment requests so transcoded playback works.
-    if (/\/hls1\//.test(wildcardPath) && !wildcardPath.endsWith(".m3u8")) {
-      try {
-        const u = new URL(targetUrl);
-        u.searchParams.delete("StartTimeTicks");
-        u.searchParams.delete("startTimeTicks");
-        targetUrl = u.toString();
-      } catch { /* leave targetUrl unchanged */ }
-    }
+    let targetUrl = urlCible(jellyfinUrl, wildcardPath, qs);
 
     // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header.
     // tvOS : react-native-video (VTT sideload), Image (trickplay) et sendBeacon
@@ -158,9 +135,16 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
+    const depart = performance.now();
     try {
       const response = await undiciFetch(targetUrl, fetchInit);
       reply.status(response.status);
+
+      const traces = {
+        chemin: wildcardPath, depart, statut: response.status,
+        attendus: Number(response.headers.get("content-length")) || null,
+      };
+      tracerEntetes(request, traces);
 
       // Auto-réparation : un report de session avec le token Jellyfin du device
       // qui prend un 401/403 ⇒ token probablement périmé. On le valide (/Users/Me)
@@ -288,14 +272,13 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
+      tracerCorps(request, reply, nodeStream, traces);
       return reply.send(nodeStream);
     } catch (err) {
-      if (err instanceof DOMException && err.name === "TimeoutError") {
-        return reply.status(504).send({ message: "Jellyfin timeout" });
-      }
-      const msg = err instanceof Error ? err.message : "Proxy error";
-      request.log.error({ path: wildcardPath, method: request.method, error: msg }, "Proxy error");
-      return reply.status(502).send({ message: msg });
+      const delaiAbsolu = err instanceof DOMException && err.name === "TimeoutError";
+      tracerEchec(request, wildcardPath, depart, err, delaiAbsolu);
+      if (delaiAbsolu) return reply.status(504).send({ message: "Jellyfin timeout" });
+      return reply.status(502).send({ message: err instanceof Error ? err.message : "Proxy error" });
     }
   });
 };
