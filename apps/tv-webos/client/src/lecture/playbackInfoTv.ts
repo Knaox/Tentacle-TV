@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePlaybackInfo as socleWeb } from "@/hooks/usePlaybackInfo?original";
 import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
+import { avecSegmentsCourts } from "./longueurSegment";
 
 /**
  * Le lecteur reçoit la variante Dolby Vision, pas le manifeste maître.
@@ -33,7 +34,7 @@ import { estManifesteMaitre, resoudreVarianteDovi } from "./varianteDovi";
  */
 export function usePlaybackInfo(lecteurNatif = false) {
   const socle = socleWeb(lecteurNatif);
-  const brute = socle.streamUrl;
+  const brute = useMemo(() => avecSegmentsCourts(socle.streamUrl), [socle.streamUrl]);
   const [resolue, setResolue] = useState<{ pour: string; url: string | null } | null>(null);
   const servie = resolue?.url ?? brute;
 
@@ -95,7 +96,9 @@ export function usePlaybackInfo(lecteurNatif = false) {
     };
   }, [brute]);
 
-  if (!brute || !estManifesteMaitre(brute)) return socle;
+  // `brute`, et non `socle.streamUrl` : la longueur de segment imposée doit
+  // survivre à ce chemin-là aussi.
+  if (!brute || !estManifesteMaitre(brute)) return { ...socle, streamUrl: brute };
 
   // Résolue pour CETTE source : `url` à `null` signifie « pas de variante Dolby
   // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
