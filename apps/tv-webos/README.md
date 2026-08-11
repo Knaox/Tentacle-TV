@@ -232,16 +232,45 @@ même film passe de 36 s lues en 95 s à **61,6 s lues en 70 s**.
    ne produit qu'un hoquet, une relance de la veille toutes les ~70 s.
 
 **Pourquoi le disque se remplissait, et ce qui a été corrigé côté client** : un
-remux tourne à mille à trois mille fois le temps réel. Abandonné sans être tué,
-il écrit le film ENTIER en quelques secondes puis meurt en laissant ses segments,
-que le nettoyage de Jellyfin ne ramasse pas — ses minuteurs de purge
-(`EnableThrottling`, `EnableSegmentDeletion`) n'ont pas le temps de se déclencher
-sur un travail si court (jellyfin#16608, ouverte, 10.11.8). Or `WatchWeb` ne
-tuait l'encodage que sur un saut : changer de piste, de qualité ou d'incrustation
-en laissait un par clic, une dizaine de gigaoctets à chaque fois. C'est corrigé
-(`libererEncodage`), mais le réglage serveur reste à surveiller : **une seule
-lecture remuxée laisse déjà son film entier en cache** jusqu'à la tâche de
-nettoyage quotidienne.
+remux tourne à cent fois le temps réel ou plus. Personne ne l'arrête à la
+position du lecteur — il court jusqu'à la fin du fichier. Or `WatchWeb` ne tuait
+l'encodage que sur un saut : changer de piste, de qualité ou d'incrustation en
+laissait un par clic. C'est corrigé (`libererEncodage`, partagé par le web, la
+TV, Tauri et Electron).
+
+**Le journal serveur du 11 août montre le mécanisme à l'œuvre** — chaque ligne
+est un travail lancé à ~51 min du film qui sort en `code 0`, c'est-à-dire ayant
+écrit les 88 minutes restantes :
+
+| lancé | fini | durée | ce qui a été écrit |
+|---|---|---|---|
+| 14:20:30 | 14:21:11 | 41 s | de 51:45 à la fin |
+| 14:21:20 | 14:22:30 | 70 s | de 51:30 à la fin |
+| 14:41:24 | 14:42:43 | 79 s | **le film entier** (`-f mp4`, un seul fichier) |
+| 14:44:22 | 14:44:57 | 35 s | de 51:51 à la fin |
+
+À 14:53:20, `No space left on device`. Le disque avait été vidé le matin même.
+
+**Correction de ce qui était écrit ici avant : la limitation de débit s'applique
+bel et bien à ces travaux.** L'argument de jellyfin#16608 — le minuteur du
+`TranscodingThrottler` ne se déclenche qu'après 5 s, les remux rapides finissent
+avant — ne tient pas pour un fichier de cette taille : ces travaux durent 35 à
+80 secondes, ils traversent ce contrôle une dizaine de fois. **Qu'ils atteignent
+la fin du fichier est la preuve que `EnableThrottling` est désactivé sur ce
+serveur.** Activé, ffmpeg serait suspendu à `ThrottleDelaySeconds` d'avance (180 s
+par défaut) au lieu de courir à l'octet final : quelques centaines de mégaoctets
+par session abandonnée, au lieu de dizaines de gigaoctets.
+
+Le cas de #16608 reste réel pour les épisodes courts remuxés en quelques
+secondes. Il ne dispense pas d'activer le réglage.
+
+**Et le cache partage son système de fichiers avec les journaux et la base.** Le
+même incident donne `No space left on device` sur `/config/log/FFmpeg.Remux-….log`,
+`SQLite Error 13: database or disk is full`, et des 500 sur
+`POST /Sessions/Playing/Progress`. Un cache de transcodage qui déborde n'abîme
+pas une lecture : il met le serveur à genoux, journaux compris — donc sans trace
+pour comprendre. Un volume dédié à taille plafonnée transforme la panne totale en
+une lecture qui échoue.
 
 ## Pourquoi une lecture remuxée hoquette, et ce qui n'y est pour rien
 
