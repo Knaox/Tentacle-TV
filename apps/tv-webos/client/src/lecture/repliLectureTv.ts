@@ -151,6 +151,16 @@ function useVeilleGel(source: unknown): void {
       veille.current = suivant;
       if (verdict === "rien") return;
 
+      // Deux fins distinctes, et il faut les distinguer au journal : l'une dit
+      // qu'on a trop insisté, l'autre qu'insister n'avait aucun sens.
+      if (verdict === "source-morte") {
+        console.error("[Tentacle:TV] source perdue — rechargement annule", {
+          position: Math.round(v.currentTime),
+          relances: suivant.historique.length,
+        });
+        return;
+      }
+
       if (verdict === "epuise") {
         console.error("[Tentacle:TV] lecture figee — relances epuisees", {
           position: Math.round(v.currentTime),

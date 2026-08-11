@@ -89,6 +89,16 @@ export const RELANCES_MAX = 3;
 export const RELANCES_PAR_FENETRE = 4;
 export const FENETRE_CUMUL_MS = 5 * 60 * 1000;
 
+/**
+ * Où en est-on d'une erreur réseau.
+ *
+ * - `"aucun"` — rien à signaler.
+ * - `"relance"` — un rechargement a répondu à un code 2, et rien n'a avancé depuis.
+ * - `"morte"` — le code 2 est revenu APRÈS ce rechargement. C'est dit, on ne le
+ *   répétera pas à chaque relevé.
+ */
+export type EtatReseau = "aucun" | "relance" | "morte";
+
 export interface EtatVeille {
   /** Position du dernier relevé, `null` avant le premier. */
   derniere: number | null;
@@ -98,11 +108,15 @@ export interface EtatVeille {
   relances: number;
   /** Instants des relances retenues dans la fenêtre glissante. */
   historique: number[];
+  /** Cf. `EtatReseau`. */
+  reseau: EtatReseau;
 }
 
-export const VEILLE_VIDE: EtatVeille = { derniere: null, immobiles: 0, relances: 0, historique: [] };
+export const VEILLE_VIDE: EtatVeille = {
+  derniere: null, immobiles: 0, relances: 0, historique: [], reseau: "aucun",
+};
 
-export type Verdict = "rien" | "relancer" | "epuise";
+export type Verdict = "rien" | "relancer" | "epuise" | "source-morte";
 
 /**
  * Un relevé de plus, et ce qu'il faut en faire.
@@ -118,7 +132,22 @@ export type Verdict = "rien" | "relancer" | "epuise";
 export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, Verdict] {
   const instant = e.instant ?? 0;
   if (e.erreur === MEDIA_ERR_NETWORK) {
-    return decider({ ...etat, derniere: e.position, immobiles: RELEVES_AVANT_GEL }, instant);
+    // Déjà constaté et déjà dit : ne pas le répéter toutes les deux secondes.
+    if (etat.reseau === "morte") {
+      return [{ ...etat, derniere: e.position, immobiles: 0 }, "rien"];
+    }
+    // `load()` efface `error` ET refait la requête. Qu'un code 2 revienne sans
+    // qu'un octet n'ait avancé entre-temps n'est donc pas le même incident qui
+    // persiste : c'est un SECOND échec réseau, sur une source qu'on vient de
+    // redemander. Côté serveur, cela ne peut vouloir dire qu'une chose — la
+    // session de remux n'existe plus, son ffmpeg est mort, et les segments
+    // qu'annonce encore la playlist ne seront jamais écrits. Recharger de
+    // nouveau ne ferait que redemander ces segments-là : mesuré le 11 août,
+    // quatre-vingts secondes de 404 en rafale, pas une image.
+    if (etat.reseau === "relance") {
+      return [{ ...etat, derniere: e.position, immobiles: 0, reseau: "morte" }, "source-morte"];
+    }
+    return decider({ ...etat, derniere: e.position, immobiles: RELEVES_AVANT_GEL }, instant, true);
   }
 
   // En pause voulue, ou pas assez de données : il n'y a rien à surveiller, et
@@ -132,13 +161,19 @@ export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, 
   // il ne se passe rien de bon.
   const avance = etat.derniere !== null && e.position - etat.derniere > 0.25;
   if (avance || etat.derniere === null) {
-    return [{ ...etat, derniere: e.position, immobiles: 0, relances: avance ? 0 : etat.relances }, "rien"];
+    return [{
+      ...etat, derniere: e.position, immobiles: 0,
+      relances: avance ? 0 : etat.relances,
+      // De la vidéo est sortie : la source est vivante, quoi qu'ait dit le
+      // relevé précédent. Le prochain code 2 aura droit à son rechargement.
+      reseau: avance ? "aucun" : etat.reseau,
+    }, "rien"];
   }
 
   return decider({ ...etat, derniere: e.position, immobiles: etat.immobiles + 1 }, instant);
 }
 
-function decider(etat: EtatVeille, instant: number): [EtatVeille, Verdict] {
+function decider(etat: EtatVeille, instant: number, depuisReseau = false): [EtatVeille, Verdict] {
   if (etat.immobiles < RELEVES_AVANT_GEL) return [etat, "rien"];
   // La fenêtre glissante, elle, ne se laisse pas remettre à zéro par une
   // poignée de secondes de lecture entre deux gels.
@@ -148,5 +183,9 @@ function decider(etat: EtatVeille, instant: number): [EtatVeille, Verdict] {
   }
   return [{
     ...etat, immobiles: 0, relances: etat.relances + 1, historique: [...recentes, instant],
+    // Un rechargement déclenché par autre chose n'EFFACE pas la trace d'un
+    // échec réseau : deux tentatives infructueuses valent mieux qu'une pour
+    // conclure, et une seule suffit à ne pas marteler.
+    reseau: depuisReseau ? "relance" : etat.reseau,
   }, "relancer"];
 }

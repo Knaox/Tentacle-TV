@@ -88,6 +88,50 @@ describe("lecture figée", () => {
 });
 
 /**
+ * Le cas où recharger ne peut RIEN donner.
+ *
+ * `load()` efface `error` et refait la requête. Un code 2 qui revient juste
+ * après, sans qu'un octet n'ait avancé, est donc un second échec réseau sur une
+ * source qu'on vient de redemander — côté serveur, la session de remux n'existe
+ * plus. Le 11 août, insister a produit quatre-vingts secondes de 404 en rafale
+ * et pas une image ; le rechargement suivant doit être annulé, pas retenté.
+ */
+describe("source perdue", () => {
+  const coupe = (position: number) => lecture(position, { erreur: MEDIA_ERR_NETWORK });
+
+  it("recharge une fois, puis renonce quand la coupure revient", () => {
+    const { verdicts } = derouler([lecture(100), coupe(100), coupe(100)]);
+    expect(verdicts[1]).toBe("relancer");
+    expect(verdicts[2]).toBe("source-morte");
+  });
+
+  it("ne répète pas l'abandon à chaque relevé", () => {
+    // Sans ce garde-fou, la veille écrirait une erreur toutes les deux secondes
+    // jusqu'à ce que l'utilisateur quitte — et noierait le journal.
+    const { verdicts } = derouler([lecture(100), coupe(100), coupe(100), coupe(100), coupe(100)]);
+    expect(verdicts.filter((v) => v === "source-morte")).toHaveLength(1);
+    expect(verdicts.slice(3)).toEqual(["rien", "rien"]);
+  });
+
+  it("recharge de nouveau si de la vidéo est sortie entre les deux coupures", () => {
+    // Une coupure passagère sur une source VIVANTE : le rechargement a marché,
+    // la position a bougé. La suivante a droit à son propre rechargement.
+    const { verdicts } = derouler([lecture(100), coupe(100), lecture(112), coupe(112)]);
+    expect(verdicts[1]).toBe("relancer");
+    expect(verdicts[3]).toBe("relancer");
+  });
+
+  it("laisse un gel sans erreur suivre son cours normal", () => {
+    // La régression à ne pas commettre : c'est ce rechargement-là qui rattrape
+    // le hoquet mesuré toutes les ~70 s sur un serveur sain.
+    const fige = Array.from({ length: RELEVES_AVANT_GEL + 1 }, () => lecture(2719.5));
+    const { verdicts } = derouler([lecture(2719.5), ...fige]);
+    expect(verdicts.filter((v) => v === "relancer")).toHaveLength(1);
+    expect(verdicts).not.toContain("source-morte");
+  });
+});
+
+/**
  * Le cas mesuré sur la dalle : la lecture tient quarante secondes, se fige,
  * repart après rechargement, se refige. Le compteur consécutif retombant à zéro
  * à chaque reprise, la veille relançait sans fin — et le film restait
