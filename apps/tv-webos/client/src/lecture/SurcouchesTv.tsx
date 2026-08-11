@@ -1,6 +1,7 @@
-import type { ComponentProps } from "react";
+import { useSyncExternalStore, type ComponentProps } from "react";
 import { VideoPlayerOverlays as SurcouchesWeb } from "@/components/player/VideoPlayerOverlays?original";
 import { BoutonsSautTv } from "./BoutonSautTv";
+import { abonnerGel, lireGel } from "./etatGelTv";
 
 /**
  * Les surcouches du lecteur, moins les boutons « passer ».
@@ -16,6 +17,13 @@ import { BoutonsSautTv } from "./BoutonSautTv";
  * case « appliquer à la série » du panneau des pistes : ce n'est pas le dessin
  * qui pose problème, c'est ce qu'un bouton doit être pour être atteint à la
  * télécommande.
+ *
+ * Une seule propriété est ENRICHIE : le chargement. Sur le gel propre à cette
+ * pile média, le lecteur n'émet aucun événement — cinquante secondes sans un
+ * signal, `readyState` à 4 — et son témoin ne peut donc pas s'allumer. La veille
+ * de gel, elle, le voit. On lui fait allumer LE cercle qui existe déjà, plutôt
+ * que d'ajouter un calque : c'est le second témoin simultané qui avait fait
+ * retirer la tentative précédente.
  */
 export function VideoPlayerOverlays(props: ComponentProps<typeof SurcouchesWeb>) {
   const {
@@ -28,9 +36,11 @@ export function VideoPlayerOverlays(props: ComponentProps<typeof SurcouchesWeb>)
     handleSeek,
   } = props;
 
+  const gele = useSyncExternalStore(abonnerGel, lireGel, lireGel);
+
   return (
     <>
-      <SurcouchesWeb {...props} showSkipIntro={null} showSkipCredits={null} />
+      <SurcouchesWeb {...props} loading={props.loading || gele} showSkipIntro={null} showSkipCredits={null} />
       <BoutonsSautTv
         showSkipIntro={showSkipIntro}
         showSkipCredits={showSkipCredits}
