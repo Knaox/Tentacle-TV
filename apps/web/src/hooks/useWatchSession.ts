@@ -199,6 +199,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // AVANT la requête, qui dépend de son compteur de relance.
   const {
     onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs, relanceLecture, relancerLecture,
+    libererEncodage,
   } = useWebPlaybackFallbacks({
     isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
     positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
@@ -286,7 +287,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
     streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture,
+    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture, libererEncodage,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
