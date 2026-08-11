@@ -19,7 +19,22 @@ import { formatDuration } from "@/components/playerControls/utils";
 interface ProprietesBarre {
   currentTime: number;
   duration: number;
-  buffered: number;
+  /**
+   * Ce qui est déjà chargé, en FRACTION de la durée — de 0 à 1.
+   *
+   * L'unité est dans le nom parce qu'elle a coûté cher : la propriété
+   * s'appelait `buffered` et cette barre la divisait par la durée, comme si
+   * c'était des secondes. Elle vient du lecteur web, qui rend déjà un rapport.
+   * Un film de deux heures chargé à 35 % affichait donc `0,35 / 7200` — zéro
+   * pixel, toujours, depuis le premier jour. La couche était bien rendue, elle
+   * n'a simplement jamais eu de largeur.
+   *
+   * L'erreur venait d'un portage depuis l'application Android TV, où la valeur
+   * était en secondes et documentée comme telle. Les deux types étant `number`,
+   * et la substitution de modules étant un greffon de build que `tsc` ne
+   * connaît pas, rien ne pouvait le signaler.
+   */
+  fractionChargee: number;
   /** Position du curseur fantôme, ou `null` hors déplacement. */
   fantome?: number | null;
 }
@@ -29,14 +44,20 @@ function pourcent(valeur: number, total: number): number {
   return Math.min(100, Math.max(0, (valeur / total) * 100));
 }
 
+/** Une fraction de 0 à 1, bornée, en pourcentage. */
+function pourcentDeFraction(fraction: number): number {
+  if (!Number.isFinite(fraction)) return 0;
+  return Math.min(100, Math.max(0, fraction * 100));
+}
+
 export function BarreProgressionTv({
   currentTime,
   duration,
-  buffered,
+  fractionChargee,
   fantome = null,
 }: ProprietesBarre) {
   const lu = pourcent(currentTime, duration);
-  const charge = pourcent(buffered, duration);
+  const charge = pourcentDeFraction(fractionChargee);
   const vise = fantome === null ? null : pourcent(fantome, duration);
 
   return (
