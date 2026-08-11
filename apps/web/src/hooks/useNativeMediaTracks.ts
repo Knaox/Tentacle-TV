@@ -35,23 +35,66 @@ export function useNativeMediaTracks({
 
   // jellyfin-web pattern (plugin.js:setAudioStreamIndex): In Direct Play, switch
   // audio tracks natively via HTML5 audioTracks API. This avoids URL rebuild and
-  // stream interruption. Supported in Firefox/Safari; Chrome requires transcoding
+  // stream interruption. Supported in Firefox/Safari and on webOS (mesuré sur une
+  // C3 : `"audioTracks" in video` y répond vrai) ; Chrome requires transcoding
   // fallback (handled by Watch.tsx rebuilding the URL when native switch unavailable).
+  //
+  // La bascule se RÉAPPLIQUE, comme celle des sous-titres juste au-dessus, et
+  // pour la même raison. Elle ne le faisait pas, et c'est ce qui rendait les
+  // préférences de piste inopérantes au premier coup : cet effet tourne au
+  // montage de la balise, donc AVANT `loadedmetadata`, donc avant que le
+  // démultiplexeur ait peuplé `v.audioTracks`. Il sortait alors sur une liste
+  // vide — et comme `currentAudio` portait déjà la valeur préférée et ne
+  // bougeait plus, plus rien ne le rejouait. Le lecteur restait sur la piste du
+  // conteneur, l'interface affichait la bonne, et il fallait cliquer une autre
+  // piste pour que la course se dénoue.
+  //
+  // Deuxième chemin réparé au passage : `load()` — celui de la veille de gel du
+  // téléviseur — vide les listes de pistes. Les sous-titres revenaient par leur
+  // `addtrack`, la piste audio choisie était perdue à chaque relance.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || !isDirectPlay) return;
     // HTMLMediaElement.audioTracks is not in standard TS lib — access via type cast.
-    const elemTracks = (v as HTMLVideoElement & {
-      audioTracks?: { readonly length: number; [i: number]: { enabled: boolean } };
-    }).audioTracks;
-    if (!elemTracks || elemTracks.length < 2) return;
-    // Map Jellyfin stream index to position in the <video> element's audioTracks list.
-    // audioTracks prop contains only Audio-type streams, in file order — same order
-    // as the browser's audioTracks on the <video> element.
-    const targetPos = audioTracks.findIndex((t) => t.index === currentAudio);
-    if (targetPos === -1 || targetPos >= elemTracks.length) return;
-    for (let i = 0; i < elemTracks.length; i++) {
-      elemTracks[i].enabled = (i === targetPos);
-    }
-  }, [currentAudio, isDirectPlay, audioTracks]);
+    const elemTracks = (v as HTMLVideoElement & { audioTracks?: ListePistesNatives }).audioTracks;
+    if (!elemTracks) return;
+
+    const appliquer = () => activerPisteAudio(elemTracks, audioTracks, currentAudio);
+    appliquer();
+    // Ceinture et bretelles : certaines implémentations peuplent la liste sans
+    // émettre `addtrack`, et `loadedmetadata` est alors le seul signal.
+    elemTracks.addEventListener?.("addtrack", appliquer);
+    v.addEventListener("loadedmetadata", appliquer);
+    return () => {
+      elemTracks.removeEventListener?.("addtrack", appliquer);
+      v.removeEventListener("loadedmetadata", appliquer);
+    };
+  }, [currentAudio, isDirectPlay, audioTracks, src]);
+}
+
+/** `HTMLMediaElement.audioTracks` n'est pas déclaré par la lib TS standard. */
+export interface ListePistesNatives {
+  readonly length: number;
+  [i: number]: { enabled: boolean };
+  addEventListener?: (type: string, ecouteur: () => void) => void;
+  removeEventListener?: (type: string, ecouteur: () => void) => void;
+}
+
+/**
+ * Active la piste demandée sur l'élément, et rend si elle l'a été.
+ *
+ * L'index Jellyfin est traduit en RANG dans la liste native : `audioTracks` ne
+ * porte que les flux de type Audio, dans l'ordre du fichier — le même que celui
+ * du démultiplexeur. Une liste de moins de deux entrées n'est pas un refus,
+ * c'est une liste pas encore peuplée : on ne touche à rien et on attend le
+ * signal suivant.
+ */
+export function activerPisteAudio(
+  natives: ListePistesNatives, pistes: AudioTrack[], voulue: number,
+): boolean {
+  if (natives.length < 2) return false;
+  const rang = pistes.findIndex((t) => t.index === voulue);
+  if (rang === -1 || rang >= natives.length) return false;
+  for (let i = 0; i < natives.length; i++) natives[i].enabled = (i === rang);
+  return true;
 }
