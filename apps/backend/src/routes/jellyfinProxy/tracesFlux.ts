@@ -11,6 +11,12 @@ import { ligneFlux, raisonCoupure, suiviFluxActif } from "./journalFlux";
  * trois appels.
  */
 
+/** L'en-tête `Range` tel que le client l'a posé, s'il l'a posé. */
+function plageDemandee(request: FastifyRequest): string | null {
+  const brut = request.headers.range;
+  return typeof brut === "string" ? brut : null;
+}
+
 interface Contexte {
   chemin: string;
   /** `performance.now()` au départ de la requête vers Jellyfin. */
@@ -34,7 +40,7 @@ export function tracerEntetes(request: FastifyRequest, ctx: Contexte): void {
   request.log.info(
     ligneFlux({
       chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-      statut: ctx.statut, attendus: ctx.attendus,
+      statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
     }),
     "flux servi",
   );
@@ -55,7 +61,8 @@ export function tracerCorps(
     request.log.warn(
       ligneFlux({
         chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-        statut: ctx.statut, attendus: ctx.attendus, cause: raisonCoupure(e),
+        statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
+        cause: raisonCoupure(e),
       }),
       "flux coupe",
     );
@@ -66,7 +73,7 @@ export function tracerCorps(
     request.log.warn(
       ligneFlux({
         chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-        statut: ctx.statut, attendus: ctx.attendus, annule: true,
+        statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request), annule: true,
       }),
       "flux abandonne",
     );
