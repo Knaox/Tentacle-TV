@@ -115,6 +115,11 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     onSeeked: () => {
       wtLog("web-video", "event seeked", { pos: a.videoRef.current?.currentTime.toFixed(1) });
       clearTimeout(a.seekStallTimer.current);
+      // Un saut confirmé PENDANT une pause n'émettra jamais `playing` : sans
+      // cette extinction, l'indicateur allumé par `useSmartSeek` resterait
+      // jusqu'à la reprise, c'est-à-dire aussi longtemps que l'utilisateur
+      // regarde l'image arrêtée qu'il vient de choisir.
+      if (a.videoRef.current?.paused) a.setLoading(false);
     },
     onPlaying: () => {
       wtLog("web-video", "event playing → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });

@@ -96,6 +96,9 @@
   --z-lecteur-osd: 120;
   --z-lecteur-saut: 130;
   --z-lecteur-suivant: 140;
+  /* Au-dessus de la carte « à suivre », sous l'assombrissement des panneaux :
+     un chargement doit se voir par-dessus l'image, jamais par-dessus un menu. */
+  --z-lecteur-chargement: 145;
   --z-lecteur-assombrissement: 150;
   --z-lecteur-panneau: 160;
 

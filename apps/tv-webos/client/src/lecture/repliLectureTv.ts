@@ -3,6 +3,7 @@ import { useWebPlaybackFallbacks as repliWeb } from "@/hooks/useWebPlaybackFallb
 import type { MediaSource } from "@tentacle-tv/shared";
 import { signalerEchecLecture } from "./repliLecture";
 import { observer, VEILLE_VIDE } from "./relanceGel";
+import { reinitialiserRelances, signalerRelance, signalerRelanceAboutie } from "./etatRelanceTv";
 
 /**
  * Période d'échantillonnage de la veille.
@@ -133,6 +134,7 @@ function useVeilleGel(source: unknown): void {
   const veille = useRef(VEILLE_VIDE);
   useEffect(() => {
     veille.current = VEILLE_VIDE;
+    reinitialiserRelances();
   }, [source]);
 
   useEffect(() => {
@@ -174,12 +176,15 @@ function useVeilleGel(source: unknown): void {
       // début — le défaut même qu'on vient de corriger ailleurs.
       const reprendre = () => {
         v.currentTime = position;
+        signalerRelanceAboutie();
         void v.play().catch(() => {
           // Refus de lecture automatique : le filet du lecteur affichera le
           // bouton. Rien à ajouter ici.
         });
       };
       v.addEventListener("loadedmetadata", reprendre, { once: true });
+      // Avant le rechargement, pas après : c'est pendant qu'il faut le dire.
+      signalerRelance();
       v.load();
     }, PERIODE_VEILLE_MS);
 

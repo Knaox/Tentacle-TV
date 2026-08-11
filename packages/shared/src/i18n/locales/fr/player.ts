@@ -48,6 +48,9 @@ export default {
   noEpisodes: "Aucun épisode",
   close: "Fermer",
   loading: "Chargement…",
+  // Le rechargement de la veille de gel : ce n'est pas un premier chargement,
+  // et le dire autrement évite de laisser croire que le film repart à zéro.
+  resuming: "Reprise de la lecture…",
   loadingMedia: "Chargement de {{title}}…",
   // Appelees avec un defaut litteral anglais par `PlayerControls` du web ;
   // la rangee de transport du televiseur, elle, les lit sans repli.
