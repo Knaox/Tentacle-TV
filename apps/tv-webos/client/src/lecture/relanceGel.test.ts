@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  observer, VEILLE_VIDE, RELEVES_AVANT_GEL, RELANCES_MAX,
+  observer, VEILLE_VIDE, RELEVES_AVANT_GEL, RELANCES_MAX, RELEVES_DE_SAUT_MAX,
   MEDIA_ERR_NETWORK, RELANCES_PAR_FENETRE, FENETRE_CUMUL_MS,
   type EchantillonLecture, type EtatVeille, type Verdict,
 } from "./relanceGel";
@@ -181,5 +181,70 @@ describe("gels répétés séparés par de vraies reprises", () => {
     [etat] = gel(etat, 0, 100);
     [etat] = gel(etat, FENETRE_CUMUL_MS + 10_000, 200);
     expect(etat.historique).toHaveLength(1);
+  });
+});
+
+/**
+ * Le cas d'où vient toute l'affaire : une lecture qui part de zéro ne se fige
+ * jamais, mais une reprise ou un saut la perd presque à coup sûr.
+ *
+ * Recharger pendant un déplacement est le pire remède : `load()` redemande le
+ * segment d'initialisation puis le segment 0, et Jellyfin relance alors son
+ * ffmpeg au tout début du film. C'est la première ligne de la cascade mesurée le
+ * 11 août — cinq encodages tués et relancés en six secondes et demie, en
+ * reculant — et chaque relance jette ce que la précédente avait écrit.
+ *
+ * `seeking` ne retombe que lorsque le lecteur a TROUVÉ ses données : il couvre
+ * donc exactement la fenêtre à protéger, sans qu'on ait à deviner qu'un
+ * déplacement a eu lieu.
+ */
+describe("déplacement en cours", () => {
+  const saut = (position: number, extra: Partial<EchantillonLecture> = {}) =>
+    lecture(position, { enSaut: true, ...extra });
+
+  it("ne prend pas un saut qui cherche ses données pour un gel", () => {
+    const fige = Array.from({ length: RELEVES_AVANT_GEL + 2 }, () => saut(2700));
+    const { verdicts } = derouler([lecture(2700), ...fige]);
+    expect(verdicts.every((v) => v === "rien")).toBe(true);
+  });
+
+  /**
+   * La régression à ne pas commettre. Pendant un saut, le téléviseur ouvre et
+   * abandonne des segments que le serveur n'a pas fini d'écrire : les codes 2
+   * pleuvent. Ce chemin-là rechargeait SANS attendre ses trois relevés, et
+   * c'est lui qui produisait le `-start_number 0` en tête de la cascade.
+   */
+  it("ne recharge pas sur une coupure réseau survenue pendant le saut", () => {
+    const { verdicts } = derouler([
+      lecture(2700), saut(2700, { erreur: MEDIA_ERR_NETWORK }), saut(2700, { erreur: MEDIA_ERR_NETWORK }),
+    ]);
+    expect(verdicts).not.toContain("relancer");
+    expect(verdicts).not.toContain("source-morte");
+  });
+
+  it("reprend la main si le déplacement n'aboutit jamais", () => {
+    // La garde est une borne, pas un blanc-seing : passé le filet de saut du
+    // lecteur, plus personne ne viendra et la veille redevient le dernier
+    // recours.
+    const interminable = Array.from({ length: RELEVES_DE_SAUT_MAX + RELEVES_AVANT_GEL + 1 }, () => saut(2700));
+    const { verdicts } = derouler([lecture(2700), ...interminable]);
+    expect(verdicts).toContain("relancer");
+  });
+
+  it("rend sa fenêtre au déplacement suivant une fois la lecture repartie", () => {
+    // Sans la remise à zéro, un premier saut long consommerait la borne et le
+    // saut d'après serait jugé comme un gel dès le premier relevé.
+    let etat = VEILLE_VIDE;
+    for (const e of [lecture(2700), ...Array.from({ length: RELEVES_DE_SAUT_MAX }, () => saut(2700))]) {
+      [etat] = observer(etat, e);
+    }
+    [etat] = observer(etat, lecture(2712));
+    expect(etat.deplacements).toBe(0);
+  });
+
+  it("laisse un gel sans déplacement suivre son cours normal", () => {
+    const fige = Array.from({ length: RELEVES_AVANT_GEL + 1 }, () => lecture(2700));
+    const { verdicts } = derouler([lecture(2700), ...fige]);
+    expect(verdicts.filter((v) => v === "relancer")).toHaveLength(1);
   });
 });

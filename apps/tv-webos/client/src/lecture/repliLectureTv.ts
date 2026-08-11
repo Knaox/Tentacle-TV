@@ -146,6 +146,7 @@ function useVeilleGel(source: unknown): void {
         enPause: v.paused,
         pret: v.readyState,
         erreur: v.error?.code ?? null,
+        enSaut: v.seeking,
         instant: Date.now(),
       });
       veille.current = suivant;

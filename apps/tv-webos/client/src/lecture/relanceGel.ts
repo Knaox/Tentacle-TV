@@ -45,6 +45,14 @@ export interface EchantillonLecture {
   /** `HTMLMediaElement.error?.code`, `null` s'il n'y en a pas. */
   erreur: number | null;
   /**
+   * `HTMLMediaElement.seeking` — un déplacement cherche encore ses données.
+   *
+   * Optionnel comme `instant` : un appelant qui ne le renseigne pas retrouve le
+   * comportement d'avant, ce qui vaut aussi pour les cas de test qui n'ont rien
+   * à dire d'un déplacement.
+   */
+  enSaut?: boolean;
+  /**
    * `Date.now()` au moment du relevé. Le module reste pur : c'est l'appelant
    * qui lit l'horloge, et les tests la fabriquent.
    */
@@ -90,6 +98,23 @@ export const RELANCES_PAR_FENETRE = 4;
 export const FENETRE_CUMUL_MS = 5 * 60 * 1000;
 
 /**
+ * Combien de relevés en déplacement avant de reprendre la main.
+ *
+ * Un saut et une reprise ont un remède MEILLEUR que le nôtre : tuer l'encodage
+ * et redemander une session à la position voulue, ce que fait le filet de saut
+ * du lecteur (cf. `calageSaut.ts`, huit secondes). Recharger par-dessus lui, ce
+ * que `load()` fait, redemande le segment d'initialisation puis le segment 0 —
+ * et Jellyfin relance alors son ffmpeg au tout début du film. C'est exactement
+ * la première ligne de la cascade mesurée le 11 août : cinq encodages tués et
+ * relancés en six secondes et demie, en reculant.
+ *
+ * Six relevés, soit douze secondes : au-dessus du filet, pour qu'il passe le
+ * premier. Au-delà, plus personne ne viendra et la veille reprend ses droits —
+ * une borne, pas un blanc-seing.
+ */
+export const RELEVES_DE_SAUT_MAX = 6;
+
+/**
  * Où en est-on d'une erreur réseau.
  *
  * - `"aucun"` — rien à signaler.
@@ -110,10 +135,12 @@ export interface EtatVeille {
   historique: number[];
   /** Cf. `EtatReseau`. */
   reseau: EtatReseau;
+  /** Relevés consécutifs passés en déplacement, borné par `RELEVES_DE_SAUT_MAX`. */
+  deplacements: number;
 }
 
 export const VEILLE_VIDE: EtatVeille = {
-  derniere: null, immobiles: 0, relances: 0, historique: [], reseau: "aucun",
+  derniere: null, immobiles: 0, relances: 0, historique: [], reseau: "aucun", deplacements: 0,
 };
 
 export type Verdict = "rien" | "relancer" | "epuise" | "source-morte";
@@ -131,6 +158,23 @@ export type Verdict = "rien" | "relancer" | "epuise" | "source-morte";
  */
 export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, Verdict] {
   const instant = e.instant ?? 0;
+
+  // Un déplacement cherche encore ses données : ce n'est pas un gel, et son
+  // remède ne nous appartient pas (cf. `RELEVES_DE_SAUT_MAX`). La garde passe
+  // AVANT l'erreur réseau, et c'est tout l'enjeu : c'est pendant un saut que les
+  // codes 2 pleuvent — le téléviseur ouvre et abandonne des segments que le
+  // serveur n'a pas fini d'écrire — et ce chemin-là recharge sans même attendre
+  // ses trois relevés.
+  //
+  // `seeking` retombe quand le lecteur a TROUVÉ ses données : il couvre donc
+  // exactement la fenêtre à protéger, saut comme reprise sur position
+  // enregistrée, sans qu'on ait à deviner qu'un déplacement a eu lieu.
+  if (e.enSaut && etat.deplacements < RELEVES_DE_SAUT_MAX) {
+    return [{
+      ...etat, derniere: e.position, immobiles: 0, deplacements: etat.deplacements + 1,
+    }, "rien"];
+  }
+
   if (e.erreur === MEDIA_ERR_NETWORK) {
     // Déjà constaté et déjà dit : ne pas le répéter toutes les deux secondes.
     if (etat.reseau === "morte") {
@@ -165,8 +209,10 @@ export function observer(etat: EtatVeille, e: EchantillonLecture): [EtatVeille, 
       ...etat, derniere: e.position, immobiles: 0,
       relances: avance ? 0 : etat.relances,
       // De la vidéo est sortie : la source est vivante, quoi qu'ait dit le
-      // relevé précédent. Le prochain code 2 aura droit à son rechargement.
+      // relevé précédent. Le prochain code 2 aura droit à son rechargement, et
+      // le prochain déplacement à sa propre fenêtre.
       reseau: avance ? "aucun" : etat.reseau,
+      deplacements: avance ? 0 : etat.deplacements,
     }, "rien"];
   }
 
