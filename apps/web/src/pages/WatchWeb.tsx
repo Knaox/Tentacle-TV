@@ -112,13 +112,33 @@ export function WatchWeb() {
 
   // Audio change: save position for potential transcode restart.
   // Server decides direct play vs transcode via PlaybackInfo.
+  //
+  // En lecture directe, il n'y a RIEN à redémarrer : le fichier porte toutes ses
+  // pistes et le lecteur bascule seul. Libérer un encodage qui n'existe pas et
+  // reposer une position qui ne bouge pas ne ferait que déclencher une
+  // renégociation pour rien — cf. `useWebPlaybackInfoFetch`, qui tient la garde.
   const handleAudioChange = useCallback((idx: number) => {
     audioOverrideRef.current = true;
-    libererEncodage();
+    if (!isDirectPlay) {
+      libererEncodage();
+      const ticks = getPositionTicks();
+      if (ticks > 0) setStartTicks(ticks);
+    }
+    setAudioIndex(idx);
+  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef, libererEncodage, isDirectPlay]);
+
+  /**
+   * La bascule native a échoué : la piste est dans le conteneur mais la puce ne
+   * sait pas la décoder. C'est au serveur de la transcoder, et il faut donc bien
+   * redemander une session — le compteur de relance garantit que la requête
+   * repart même si la position n'a pas bougé d'un tick.
+   */
+  const handlePisteAudioIntrouvable = useCallback(() => {
+    console.warn("[Tentacle:Playback] piste audio absente du lecteur — session neuve");
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
-    setAudioIndex(idx);
-  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef, libererEncodage]);
+    relancerLecture();
+  }, [getPositionTicks, setStartTicks, relancerLecture]);
 
   const handleSubtitleChange = useCallback((idx: number | null) => {
     subtitleOverrideRef.current = true;
@@ -246,6 +266,7 @@ export function WatchWeb() {
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           onDirectPlayNonFiable={onDirectPlayNonFiable}
+          surPisteIntrouvable={handlePisteAudioIntrouvable}
           pgsSubtitleUrl={pgsSubtitleUrl} onPgsEchec={signalerEchecPgs}
           introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}

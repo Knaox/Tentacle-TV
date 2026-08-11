@@ -1,4 +1,4 @@
-import { useEffect, type MutableRefObject } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import type { usePlaybackInfo } from "./usePlaybackInfo";
 
@@ -35,10 +35,26 @@ export function useWebPlaybackInfoFetch({
   burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
   prefsApplied, audioOverrideRef, relanceLecture,
 }: Options): void {
+  /** Tout ce qui, HORS piste audio, oblige à redemander une session. */
+  const contexteRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (isDesktop || !prefsReady || !itemId) return;
     const resumeTicks = item?.UserData?.PlaybackPositionTicks ?? 0;
     const ticks = startTicks > 0 ? startTicks : resumeTicks;
+
+    // En lecture directe, le fichier porte toutes ses pistes et le lecteur
+    // bascule seul (cf. `useNativeMediaTracks`) : l'URL rendue serait identique,
+    // aucun flux ne bougerait, et le serveur nous rendrait un `PlaySessionId`
+    // tout neuf pour rien. On ne le dérange donc pas quand SEULE la piste a
+    // changé — et si la bascule échoue, `surPisteIntrouvable` fait repartir
+    // cette requête par le compteur de relance. Le repli reste le comportement
+    // d'avant, jamais l'inverse.
+    const contexte = [itemId, mediaSourceId, burnInSubtitleIndex, ticks, quality,
+      relanceLecture, pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible].join("|");
+    const seulePisteAChange = contexteRef.current === contexte;
+    contexteRef.current = contexte;
+    if (seulePisteAChange && pbInfo.isDirectPlay && supportsNativeAudioTracks) return;
     // Edge/Chrome: no native audioTracks API — if user wants non-default audio,
     // force server-side audio selection (remux/transcode) instead of direct play.
     //

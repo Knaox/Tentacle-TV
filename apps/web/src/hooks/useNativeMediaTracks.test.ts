@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AudioTrack } from "../components/player/videoPlayer.types";
-import { activerPisteAudio, type ListePistesNatives } from "./useNativeMediaTracks";
+import { activerPisteAudio, pisteIntrouvable, type ListePistesNatives } from "./useNativeMediaTracks";
 
 /**
  * Ce que ces cas protègent : sur un téléviseur, la piste audio se choisit par
@@ -82,5 +82,33 @@ describe("activerPisteAudio", () => {
     const natives = listeNative(2);
     expect(activerPisteAudio(natives, [piste(1), piste(2), piste(3)], 3)).toBe(false);
     expect(natives[0].enabled).toBe(true);
+  });
+});
+
+/**
+ * Deux échecs que `activerPisteAudio` confond sous un même `false`, et qu'il
+ * faut séparer avant de décider quoi que ce soit : une liste pas encore peuplée
+ * n'est pas un refus. Conclure dessus renégocierait une session à CHAQUE montage
+ * de lecteur — cet effet tourne avant `loadedmetadata` — pour une piste qui
+ * serait arrivée une milliseconde plus tard.
+ */
+describe("pisteIntrouvable", () => {
+  it("ne conclut rien tant que la liste n'est pas peuplée", () => {
+    expect(pisteIntrouvable(listeNative(0), [piste(1), piste(2)], 2)).toBe(false);
+    expect(pisteIntrouvable(listeNative(1), [piste(1), piste(2)], 2)).toBe(false);
+  });
+
+  it("reconnaît une piste que le lecteur n'a pas publiée", () => {
+    // Le cas réel : elle est dans le conteneur, la puce ne sait pas la décoder,
+    // le démultiplexeur l'a passée sous silence. C'est au serveur de jouer.
+    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2)], 99)).toBe(true);
+  });
+
+  it("reconnaît un rang au-delà de ce que le lecteur expose", () => {
+    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2), piste(3)], 3)).toBe(true);
+  });
+
+  it("se tait quand la piste est bien là", () => {
+    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2)], 2)).toBe(false);
   });
 });
