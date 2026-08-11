@@ -312,10 +312,24 @@ Le relevé de 3883 requêtes pour 13 segments distincts en cent secondes, lui,
 datait du disque plein : ffmpeg ne pouvait plus rien écrire. Serveur sain, il
 n'en reste qu'une relance toutes les ~70 s.
 
-Ce qui n'y est pour rien, et qu'il est inutile de re-suspecter : le débit (les
-segments sortent en 16 ms médians), `Range` (206 correct, `accept-ranges: bytes`),
-l'audio (DTS **copié**, pas transcodé — la surcouche de diagnostic le dit),
-la charge du proxy, et le Dolby Vision lui-même.
+Ce qui n'y est pour rien, et qu'il est inutile de re-suspecter : le débit,
+`Range` (206 correct, `accept-ranges: bytes`), l'audio (DTS **copié**, pas
+transcodé — la surcouche de diagnostic le dit), la charge du proxy, et le Dolby
+Vision lui-même.
+
+> **Le débit : bonne conclusion, mauvais raisonnement — corrigé le 11 août.**
+> Il avait été écarté sur « les segments sortent en 16 ms médians ». Ce chiffre
+> est le temps d'arrivée des **en-têtes** (`journalFlux.ts`, champ `ms`) : il dit
+> que Jellyfin avait déjà écrit le fichier, et rien du transfert. Personne ne
+> mesurait le corps. Le proxy compte désormais les octets réellement écrits,
+> `msCorps` et `debitMbps` — mesuré sur la dalle : **120 à 190 Mbit/s de
+> médiane**, pour un flux qui demande 10 Mbit/s en médiane et 27 en pointe. Le
+> débit est bien hors de cause, et on peut maintenant le prouver.
+>
+> Au passage, la même campagne écarte le **proxy** et la **double traversée
+> Wi-Fi** (le backend de dev tourne sur un Mac en `en0`, donc chaque octet
+> traverse le Wi-Fi deux fois). Elle confirme aussi que le téléviseur n'émet
+> **aucun `Range`** : chaque réouverture d'un segment repart de zéro.
 
 **Ni le téléviseur, ni notre profil.** Le même film cale aussi sur un autre
 appareil, en TS avec l'audio converti en AAC. Le code de Jellyfin dit pourquoi :
