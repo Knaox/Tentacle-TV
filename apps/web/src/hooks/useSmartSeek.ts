@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
-import { jugerSaut, PERIODE_VEILLE_SAUT_MS } from "./calageSaut";
+import { observerSaut, SAUT_VIDE, PERIODE_VEILLE_SAUT_MS } from "./calageSaut";
 
 interface UseSmartSeekOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -26,6 +26,17 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
   return false;
 }
 
+/**
+ * Fin de la plage `buffered` la plus avancée, `null` s'il n'y en a aucune.
+ *
+ * La seule borne de `buffered` qui veuille dire quelque chose sur la pile média
+ * du téléviseur — cf. `calageSaut.ts`, le début vaut toujours zéro.
+ */
+function finTampon(video: HTMLVideoElement): number | null {
+  const n = video.buffered.length;
+  return n > 0 ? video.buffered.end(n - 1) : null;
+}
+
 export function useSmartSeek({
   videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
   src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
@@ -36,6 +47,43 @@ export function useSmartSeek({
   // CopyTimestamps streams have a container PTS offset — v.currentTime and v.buffered
   // are in PTS space (offset + movie_position). containerPtsOffsetRef bridges this gap.
   //
+  /**
+   * Arme la veille qui dira si ce saut a produit quelque chose.
+   *
+   * Périodique, et non un minuteur unique : un saut qui aboutit doit être
+   * reconnu tout de suite, pas huit secondes plus tard. La décision est dans
+   * `calageSaut.ts` — pure, testée, et documentée sur ce que `buffered` vaut
+   * réellement ici.
+   */
+  const armerVeille = useCallback((ptsTarget: number, clamped: number) => {
+    clearInterval(seekStallTimer.current);
+    const arme = Date.now();
+    let etat = SAUT_VIDE;
+    seekStallTimer.current = setInterval(() => {
+      const el = videoRef.current;
+      if (!el) {
+        clearInterval(seekStallTimer.current);
+        return;
+      }
+      const [suivant, verdict] = observerSaut(etat, {
+        cible: ptsTarget,
+        position: el.currentTime,
+        bufferFin: finTampon(el),
+        enPause: el.paused,
+        pret: el.readyState,
+        ecoule: Date.now() - arme,
+      });
+      etat = suivant;
+      if (verdict === "attendre") return;
+      clearInterval(seekStallTimer.current);
+      if (verdict === "renegocier") {
+        console.warn("[Tentacle:Seek] saut sans effet — session neuve", { cible: Math.round(clamped) });
+        seekTargetRef.current = clamped;
+        onSeekRequest?.(clamped);
+      }
+    }, PERIODE_VEILLE_SAUT_MS);
+  }, [onSeekRequest]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Level 1: target in HTML5 buffer → v.currentTime (instant)
   // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)
   //          with stall watcher (cf. `calageSaut.ts`) → fallback to level 3
@@ -71,6 +119,12 @@ export function useSmartSeek({
     if (isTimeInBuffered(v, ptsTarget)) {
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
+      // La veille est armée ICI AUSSI, et ce n'est pas de la prudence de trop :
+      // la pile média du téléviseur rend toujours une plage `buffered` unique
+      // partant de zéro, si bien que TOUT saut en arrière du film tombe dans ce
+      // niveau — données réellement en mémoire ou non. C'était le chemin le plus
+      // emprunté, et le seul à n'avoir jamais eu de filet.
+      if (isHlsStream) armerVeille(ptsTarget, clamped);
       return;
     }
 
@@ -90,33 +144,7 @@ export function useSmartSeek({
     if (isHlsStream) {
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
-
-      // --- LEVEL 3 fallback: la veille de calage ---
-      // Elle relève périodiquement plutôt que de conclure une seule fois, et le
-      // fait sur `buffered` plutôt que sur `currentTime` : cf. `calageSaut.ts`,
-      // qui porte la décision et explique pourquoi l'ancienne comparaison ne
-      // pouvait rien détecter.
-      const arme = Date.now();
-      seekStallTimer.current = setInterval(() => {
-        const el = videoRef.current;
-        if (!el) {
-          clearInterval(seekStallTimer.current);
-          return;
-        }
-        const verdict = jugerSaut({
-          cible: ptsTarget,
-          couverte: isTimeInBuffered(el, ptsTarget),
-          position: el.currentTime,
-          enPause: el.paused,
-          ecoule: Date.now() - arme,
-        });
-        if (verdict === "attendre") return;
-        clearInterval(seekStallTimer.current);
-        if (verdict === "renegocier") {
-          seekTargetRef.current = clamped;
-          onSeekRequest?.(clamped);
-        }
-      }, PERIODE_VEILLE_SAUT_MS);
+      armerVeille(ptsTarget, clamped);
       return;
     }
 
@@ -124,7 +152,7 @@ export function useSmartSeek({
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
-  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete]);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, armerVeille]);
 
   // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);
