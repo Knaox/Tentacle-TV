@@ -1,9 +1,10 @@
 import { useEffect, useRef, type ComponentProps } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  LibraryFilterBar as BarreWeb,
-  useLibraryFilters as useLibraryFiltersWeb,
-} from "@/components/LibraryFilters";
+import { LibraryFilterBar as BarreWeb } from "@/components/LibraryFilters";
+// Le hook et son état ont quitté le composant pour `hooks/` côté web : la
+// substitution est un greffon de build, `tsc` ne la connaît pas, et c'est ce
+// import-ci qui casse quand `apps/web` se réorganise.
+import { useLibraryFilters as useLibraryFiltersWeb } from "@/hooks/useLibraryFilters";
 import { filtresRetenus, rejouerFiltres, retenirFiltres } from "./memoireFiltres";
 
 /**
@@ -31,7 +32,7 @@ import { filtresRetenus, rejouerFiltres, retenirFiltres } from "./memoireFiltres
  */
 
 export { CHIP_BASE } from "@/components/LibraryFilters";
-export type { LibraryFilterState } from "@/components/LibraryFilters";
+export type { LibraryFilterState } from "@/hooks/useLibraryFilters";
 
 /**
  * Les filtres survivent à un aller-retour vers une fiche.

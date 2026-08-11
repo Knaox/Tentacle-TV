@@ -40,7 +40,11 @@ export function WatchWeb() {
   // par le matériel répondent oui, sans que ce fichier ait à les connaître.
   const useNativeHls = preferNativeHls();
 
-  const { reportStart, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
+  // `killTranscode` et `libererEncodage` ne font pas double emploi, et la fusion
+  // des deux branches a failli le laisser croire : le premier tue une session
+  // SUPPLANTÉE, qu'on désigne par son identifiant une fois qu'une autre a pris
+  // sa place ; le second libère la session COURANTE avant un changement voulu.
+  const { reportStart, updatePosition, reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex, subtitleStreamIndex: subtitleIndex,
   });

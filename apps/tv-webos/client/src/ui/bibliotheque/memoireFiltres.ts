@@ -1,4 +1,4 @@
-import type { LibraryFilterState } from "@/components/LibraryFilters";
+import type { LibraryFilterState } from "@/hooks/useLibraryFilters";
 
 /**
  * Les filtres d'une bibliothèque, gardés le temps d'un aller-retour.
