@@ -11,7 +11,8 @@
     "test": "vitest run",
     "ipk": "node scripts/ipk.mjs",
     "emu:install": "node scripts/emulateur.mjs install",
-    "emu:launch": "node scripts/emulateur.mjs launch"
+    "emu:launch": "node scripts/emulateur.mjs launch",
+    "releve": "node scripts/releveLecture.mjs"
   },
   "dependencies": {
     "@tentacle-tv/api-client": "workspace:*",
