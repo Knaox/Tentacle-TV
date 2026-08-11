@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { wtLog } from "../watchTogether/wtLog";
 import { DELAI_CHARGEMENT_MS } from "./calageSaut";
+import { fractionChargee } from "./bufferedProgress";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -72,19 +73,18 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     onProgress: () => {
       const v = a.videoRef.current;
       if (!v) return;
-      const buf = v.buffered;
       // Use jellyfinDuration for HLS event playlists where v.duration is Infinity
       const dur = a.jellyfinDuration && a.jellyfinDuration > 0 ? a.jellyfinDuration : v.duration;
-      if (!dur || !isFinite(dur) || buf.length === 0) return;
-      // Show buffered range ahead of current position (not stale high-water mark)
-      let bufEnd = 0;
-      for (let i = 0; i < buf.length; i++) {
-        if (v.currentTime >= buf.start(i) - 0.5 && v.currentTime <= buf.end(i) + 0.5) {
-          bufEnd = buf.end(i); break;
-        }
+      const plages = [];
+      for (let i = 0; i < v.buffered.length; i++) {
+        plages.push({ debut: v.buffered.start(i), fin: v.buffered.end(i) });
       }
-      if (bufEnd === 0) bufEnd = buf.end(buf.length - 1);
-      a.setBuffered(bufEnd / dur);
+      // La décision est dans `bufferedProgress.ts` : elle retranche le décalage
+      // d'horodatage du conteneur, que cette boucle-ci oubliait, et documente ce
+      // que `buffered` vaut réellement selon le lecteur — sur la pile média du
+      // téléviseur, une plage unique partant toujours de zéro.
+      const fraction = fractionChargee(plages, v.currentTime, dur, a.containerPtsOffsetRef.current);
+      if (fraction !== null) a.setBuffered(fraction);
     },
     onLoadedMetadata: (e: SyntheticEvent<HTMLVideoElement>) => {
       a.setVideoDuration(e.currentTarget.duration);
