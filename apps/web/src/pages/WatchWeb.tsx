@@ -105,14 +105,35 @@ export function WatchWeb() {
     };
   }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
 
+  /**
+   * Tuer l'encodage en cours AVANT de renégocier — sans quoi il survit et
+   * remplit le disque du serveur.
+   *
+   * Chaque changement de piste, de qualité ou d'incrustation refait un
+   * `PlaybackInfo`, donc obtient un NOUVEAU `PlaySessionId`, donc un nouveau
+   * ffmpeg. L'ancien, lui, n'était prévenu de rien. Or un remux tourne à mille
+   * à trois mille fois le temps réel : il écrit le film ENTIER en quelques
+   * secondes, puis meurt en laissant ses segments derrière lui — et le
+   * nettoyage de Jellyfin ne les ramasse pas, ses minuteurs de purge n'ayant
+   * pas le temps de se déclencher sur un travail si court (jellyfin#16608).
+   * Une dizaine de gigaoctets par clic, jusqu'à saturer le disque : ce qu'on a
+   * mesuré, 121 Go de transcodes orphelins pour un serveur à l'arrêt.
+   *
+   * `WatchDesktop` le fait depuis toujours ; c'est ici qu'il manquait.
+   */
+  const libererEncodage = useCallback(() => {
+    if (!isDirectPlay) void killTranscode();
+  }, [isDirectPlay, killTranscode]);
+
   // Audio change: save position for potential transcode restart.
   // Server decides direct play vs transcode via PlaybackInfo.
   const handleAudioChange = useCallback((idx: number) => {
     audioOverrideRef.current = true;
+    libererEncodage();
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
     setAudioIndex(idx);
-  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef]);
+  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef, libererEncodage]);
 
   const handleSubtitleChange = useCallback((idx: number | null) => {
     subtitleOverrideRef.current = true;
@@ -121,6 +142,7 @@ export function WatchWeb() {
       // Un PGS rendu côté client reste une piste ordinaire : pas d'incrustation,
       // donc pas de ré-encodage de l'image pour un sous-titre.
       if (necessiteIncrustation(sub?.Codec, pgsClientOk)) {
+        libererEncodage();
         const ticks = getPositionTicks();
         if (ticks > 0) setStartTicks(ticks);
         setBurnInSubtitleIndex(idx);
@@ -129,18 +151,20 @@ export function WatchWeb() {
       }
     }
     if (burnInSubtitleIndex != null) {
+      libererEncodage();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
       setBurnInSubtitleIndex(undefined);
     }
     setSubtitleIndex(idx);
-  }, [streams, getPositionTicks, burnInSubtitleIndex, pgsClientOk, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex]);
+  }, [streams, getPositionTicks, burnInSubtitleIndex, pgsClientOk, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex, libererEncodage]);
 
   const handleQualityChange = useCallback((key: QualityKey) => {
+    libererEncodage();
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
     setQualityKey(key);
-  }, [getPositionTicks, setStartTicks, setQualityKey]);
+  }, [getPositionTicks, setStartTicks, setQualityKey, libererEncodage]);
 
   // HLS seek fallback: kill old transcode, PlaybackInfo re-fetches with new position.
   //
