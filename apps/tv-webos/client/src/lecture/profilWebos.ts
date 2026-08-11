@@ -275,21 +275,31 @@ function contraintes(resolu: ProfilResolu): CodecProfile[] {
    * médiathèque est faite de MKV** : sur celle qui a servi de banc d'essai, 353
    * des 983 fichiers 4K sont en Dolby Vision, tous en MKV.
    *
-   * Ce profil retire donc les plages Dolby Vision de tout conteneur qui ne les
-   * porte pas. Jellyfin ne peut plus faire de lecture directe : il REMUXE en
-   * fMP4, c'est-à-dire qu'il copie l'image et l'audio dans un conteneur qui,
-   * lui, transporte les métadonnées. Mesuré sur une C3, même fichier :
+   * Ce profil ne retire donc, de ces conteneurs-là, que le seul `DOVI` nu —
+   * c'est-à-dire le profil 5. **On ne remuxe plus que ce qui l'exige.**
+   *
+   * L'arbitrage a changé, et il vaut d'être expliqué. Le profil retirait
+   * autrefois TOUTES les plages Dolby Vision : Jellyfin ne pouvait plus faire de
+   * lecture directe, il remuxait en fMP4, et le RPU passait. Mesuré sur une C3,
+   * même fichier :
    *
    *     lecture directe du MKV   hdrType « HDR10 »        (la couche de base)
    *     remux HLS en fMP4        hdrType « DolbyVision »  (le RPU passe)
    *
-   * Le remux coûte une session ffmpeg, mais en `-codec:v copy -codec:a copy` :
-   * le serveur démultiplexe, il ne recompresse rien. Le saut dans le flux reste
-   * sous les deux secondes, mesuré à ±10 et ±25 minutes.
+   * On y gagnait le Dolby Vision. On y perdait une session ffmpeg par lecture,
+   * une playlist de 1,7 Mo — et surtout le défaut de segmentation du serveur,
+   * qui annonce des frontières que ffmpeg n'honore pas : mesuré deux fois, le
+   * téléviseur finissait par ne plus pouvoir raccorder un fragment, redemandait
+   * ses voisins des milliers de fois et n'en repartait plus.
+   *
+   * Les profils 8.x portent une couche de base HDR10, HLG ou SDR qu'un décodeur
+   * ignorant le RPU affiche juste et complète : ils repartent en lecture directe,
+   * sans serveur. Le profil 5 n'a pas ce filet — sa couche de base est en
+   * IPT-PQ-C2, verdâtre — et reste donc remuxé, parce que là c'est nécessaire.
    *
    * **La liste est négative** (`-mp4,…`), et c'est ce qui la rend juste sur les
    * gammes à venir : un conteneur inconnu est traité comme ne portant pas le
-   * Dolby Vision, donc remuxé, ce qui est toujours le comportement sûr.
+   * RPU, donc son profil 5 est remuxé, ce qui est toujours le comportement sûr.
    *
    * Un second profil plutôt qu'un retrait global : les conditions de tous les
    * profils qui correspondent doivent être satisfaites, donc un MKV Dolby

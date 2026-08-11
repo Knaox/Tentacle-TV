@@ -215,15 +215,17 @@ describe("plages dynamiques", () => {
     expect(plages).not.toContain("DOVI");
   });
 
-  it("retire TOUT le Dolby Vision des conteneurs qui n'en portent pas le RPU", () => {
-    // webOS ne démultiplexe le RPU qu'en ISOBMFF et en flux de transport. Le
-    // MKV en est exclu jusqu'à webOS 25 — et c'est le conteneur de toute une
-    // médiathèque. Sans plage Dolby Vision, Jellyfin ne peut plus faire de
-    // lecture directe : il remuxe en fMP4, en copiant l'image, et le RPU passe.
+  it("ne remuxe, hors des conteneurs à RPU, que le Dolby Vision qui l'exige", () => {
+    // webOS ne démultiplexe le RPU qu'en ISOBMFF et en flux de transport, et le
+    // MKV en est exclu jusqu'à webOS 25. On y retirait autrefois TOUTE plage
+    // Dolby Vision, ce qui privait Jellyfin de lecture directe et faisait
+    // remuxer chaque film. On y gagnait le Dolby Vision et on y perdait le
+    // reste : une session ffmpeg par lecture, une playlist de 1,7 Mo, et le
+    // défaut de segmentation du serveur qui finissait par bloquer la dalle.
     //
-    // Mesuré sur une C3, même fichier : lecture directe du MKV rend
-    // `hdrType: "HDR10"` (la couche de base) ; le remux rend
-    // `hdrType: "DolbyVision"`.
+    // Les profils 8.x ont une couche de base HDR10 que la puce affiche juste :
+    // ils repartent en lecture directe. Le profil 5 — `DOVI` nu — n'en a pas,
+    // sa base est verdâtre sans le RPU, et lui seul continue d'être remuxé.
     const avant = (profil(23, 2023, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
       .filter((c) => c.Codec === "hevc");
     const general = avant.find((c) => !c.Container);
@@ -236,12 +238,31 @@ describe("plages dynamiques", () => {
     expect(general?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value)
       .toContain("DOVI");
     // La liste est négative : un conteneur inconnu est traité comme n'en
-    // portant pas, donc remuxé — le comportement sûr.
+    // portant pas le RPU, donc son profil 5 est remuxé — le comportement sûr.
     expect(horsDovi?.Container).toBe("-mp4,m4v,mov,ts,m2ts,mts,mpegts");
-    expect(plagesHorsDovi.some((plage) => plage.startsWith("DOVI"))).toBe(false);
+
+    // La régression à ne pas commettre, dans les deux sens : le profil 5 doit
+    // rester tu — sinon image verdâtre — et les profils 8.x doivent être
+    // déclarés, sinon on remuxe cent quarante et un films pour rien.
+    expect(plagesHorsDovi).not.toContain("DOVI");
+    expect(plagesHorsDovi).toContain("DOVIWithHDR10");
+    expect(plagesHorsDovi).toContain("DOVIWithHDR10Plus");
+    expect(plagesHorsDovi).toContain("DOVIWithSDR");
+    expect(plagesHorsDovi).toContain("DOVIWithHLG");
+    // Le profil 7 n'est jamais déclaré : aucune dalle LG ne lit sa seconde
+    // couche, et Jellyfin retombe de lui-même sur la base HDR10.
+    expect(plagesHorsDovi).not.toContain("DOVIWithEL");
     // Le HDR10 ordinaire, lui, y reste : il n'a aucune raison de remuxer.
     expect(plagesHorsDovi).toContain("HDR10");
     expect(plagesHorsDovi).toContain("HLG");
+  });
+
+  it("rend le Dolby Vision au MKV dès webOS 25, sans profil restrictif", () => {
+    // La bascule ne demande aucun code : `doviEnMkv` passe à vrai et le profil
+    // disparaît, donc `DOVI` nu vaut pour tous les conteneurs.
+    const apres = (profil(25, 2025, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+      .filter((c) => c.Codec === "hevc");
+    expect(apres.some((c) => c.Container?.startsWith("-"))).toBe(false);
   });
 
   it("garde le HEVC dans le remux, sans quoi l'image serait ré-encodée", () => {
