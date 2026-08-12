@@ -14,6 +14,25 @@ import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
  * (bascule expo-glass-effect ↔ fallback blur). L'onglet actif porte une capsule
  * teintée marque (pas de verre-sur-verre, déconseillé par Apple).
  */
+/** Marge basse minimale sous la pilule, sur un appareil sans encoche. */
+const MIN_BOTTOM_INSET = 10;
+
+/** Hauteur de la pilule elle-même (icône, capsule, libellé, marges internes). */
+const BAR_HEIGHT = 63;
+
+/**
+ * Hauteur TOTALE occupée par la barre flottante, inset bas compris.
+ *
+ * Le contenu passe DESSOUS (c'est tout l'intérêt du verre), donc personne n'a
+ * à la réserver — sauf ce qui est ancré en bas et ne défile pas. Les plugins,
+ * qui vivent dans une WebView descendant jusqu'au bord de l'écran, n'ont aucun
+ * moyen de la mesurer : on la leur publie (voir `pluginHtmlTemplate`).
+ */
+export function useGlassTabBarHeight(): number {
+  const insets = useSafeAreaInsets();
+  return BAR_HEIGHT + Math.max(insets.bottom, MIN_BOTTOM_INSET);
+}
+
 export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -27,7 +46,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   return (
     <View
       pointerEvents="box-none"
-      style={[st.wrap, { paddingBottom: Math.max(insets.bottom, 10) }]}
+      style={[st.wrap, { paddingBottom: Math.max(insets.bottom, MIN_BOTTOM_INSET) }]}
     >
       {/* En CLAIR, tintColor biaise la MATIÈRE du verre vers le clair (reste
           vitreux/réfractant) → icônes/texte sombres lisibles même sur image

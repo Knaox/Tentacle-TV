@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useEffect } from "react";
+import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
@@ -8,8 +8,9 @@ import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
 import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
-import { typography, FONT_FAMILY, RADIUS, useTheme } from "@/theme";
+import { typography, FONT_FAMILY, RADIUS, useTheme, useResponsive } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
+import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -28,6 +29,15 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const theme = useTheme();
   const { colors } = theme;
   const headerH = useHeaderHeight();
+  /* Le cadre du plugin descend jusqu'au bord de l'écran ; la barre d'onglets
+   * flotte dessus. On lui dit de combien, pour qu'il en écarte ce qu'il ancre
+   * en bas. En rail (tablette paysage) la nav occupe sa propre colonne : elle
+   * ne recouvre rien. */
+  const tabBarH = useGlassTabBarHeight();
+  const { isTablet, isLandscape } = useResponsive();
+  const chromeBottom = Math.round(isTablet && isLandscape ? 0 : tabBarH);
+  const chromeRef = useRef(chromeBottom);
+  const webRef = useRef<{ injectJavaScript: (js: string) => void } | null>(null);
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
@@ -69,8 +79,20 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       sharedDepsCode,
       pluginPath: navItem.path,
       appTheme: theme,
+      chromeBottom: chromeRef.current,
     });
   }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
+
+  /* La hauteur suit l'appareil : l'inset bas d'un iPhone n'est pas le même en
+   * portrait et en paysage. On la RÉINJECTE plutôt que de la mettre dans les
+   * dépendances du HTML — une rotation remonterait sinon la WebView entière,
+   * et le plugin repartirait du haut de sa page. */
+  useEffect(() => {
+    chromeRef.current = chromeBottom;
+    webRef.current?.injectJavaScript(
+      `document.documentElement.style.setProperty('--tentacle-chrome-bottom','${chromeBottom}px');true;`,
+    );
+  }, [chromeBottom]);
 
   // Timeout 15s : si la WebView ne répond jamais, on retire l'overlay
   useEffect(() => {
@@ -168,6 +190,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       {htmlContent ? (
         <WebViewComponent
           key={navKey}
+          ref={webRef as never}
           source={{ html: htmlContent, baseUrl: serverUrl }}
           onMessage={handleMessage}
           style={{ flex: 1, backgroundColor: colors.surface.s0 }}
