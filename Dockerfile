@@ -6,7 +6,12 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy workspace config and all package.json files
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+# `.npmrc` porte `node-linker=hoisted`, et il n'est pas facultatif : sans lui,
+# pnpm installe en arborescence isolée et un paquet n'est visible que du
+# `package.json` qui le déclare. Le client téléviseur compile les sources
+# d'apps/web (React Query, framer-motion, hls.js…) sans les redéclarer — en
+# isolé, leur résolution échoue et le build meurt sur `@tanstack/react-query`.
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml .npmrc ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/backend/package.json apps/backend/package.json
 # Client LG webOS : une variante de build d'apps/web, servie par ce serveur
@@ -23,6 +28,12 @@ COPY patches/ patches/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
+
+# En arborescence aplatie, un `node_modules` d'espace de travail n'existe que si
+# une version y entre en conflit avec la racine. L'étage de production recopie
+# celui du backend : on le garantit présent, faute de quoi le COPY échouerait
+# selon les seules versions résolues.
+RUN mkdir -p apps/backend/node_modules
 
 # Copy source code (web, backend, client téléviseur, and shared packages)
 COPY packages/ packages/
