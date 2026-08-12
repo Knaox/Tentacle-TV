@@ -170,6 +170,13 @@ export function buildPluginTailwindConfigScript(): string {
  */
 export function buildPluginThemeStyle(): string {
   return `
+    /* Inter, la police de l'application. Sans cet import, l'iframe retombait sur
+       la police système : le texte d'un plugin ne ressemblait à rien de ce qui
+       l'entoure, sur chaque mot de chaque écran. C'est le plus gros écart visuel
+       entre une page de plugin et le reste de Tentacle TV.
+       L'origine est déjà autorisée par la CSP de la page (style-src
+       fonts.googleapis.com, font-src fonts.gstatic.com), dont l'iframe hérite. */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     /* Tokens du host Tentacle — copiés depuis apps/web/src/theme/tokens.css à chaque build.
        Tout plugin peut désormais utiliser var(--brand), var(--surface-1), etc. */
     ${tentacleTokensCss}
@@ -199,7 +206,12 @@ export function buildPluginThemeStyle(): string {
     body {
       background: var(--surface-0);
       color: var(--text-primary);
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* Mêmes réglages que l'application : chiffres mieux dessinés et 'a'
+         alternatif. Précieux dans un calendrier, où les nombres s'alignent. */
+      font-feature-settings: "ss01", "cv11";
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     #plugin-root { min-height: 100vh; }
     .plugin-loading {
