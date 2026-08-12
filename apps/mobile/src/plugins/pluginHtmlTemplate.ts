@@ -1,4 +1,5 @@
 import type { AppTheme } from "../theme/palette.types";
+import { buildPluginBootstrapScript } from "./pluginBootstrapScript";
 import {
   buildPluginThemeVars,
   buildPluginTokenCss,
@@ -25,6 +26,15 @@ interface BuildPluginHtmlParams {
   pluginPath: string;
   /** Thème mobile actif : la palette WebView COMPLÈTE en est dérivée. */
   appTheme: AppTheme;
+  /**
+   * Hauteur du chrome de l'application qui FLOTTE au-dessus de la WebView, en
+   * bas (barre d'onglets en verre). La WebView descend jusqu'au bord de
+   * l'écran : un plugin n'a aucun moyen de la deviner, et tout ce qu'il ancre
+   * en bas — pied de panneau, feuille, toast — se retrouverait dessous.
+   * Publiée en `--tentacle-chrome-bottom`. Rien en haut : le cadre est déjà
+   * décalé du header (`paddingTop`).
+   */
+  chromeBottom?: number;
 }
 
 /**
@@ -41,6 +51,7 @@ export function buildPluginHtml({
   sharedDepsCode,
   pluginPath,
   appTheme,
+  chromeBottom = 0,
 }: BuildPluginHtmlParams): string {
   const theme = buildPluginThemeVars(appTheme);
   // Vocabulaire de tokens sémantique complet, dérivé du thème actif (clair/sombre).
@@ -123,6 +134,8 @@ export function buildPluginHtml({
       --surface: ${theme.surface};
       --accent: ${theme.accent};
       --text: ${theme.text};
+      /* Ce que la barre d'onglets flottante recouvre en bas du cadre. */
+      --tentacle-chrome-bottom: ${Math.max(0, Math.round(chromeBottom))}px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -180,120 +193,7 @@ export function buildPluginHtml({
   <!-- Shared deps inlinées (WKWebView bloque les requêtes HTTP depuis origin null) -->
   <script>${safeDepsCode}<\/script>
 
-  <script>
-    __perf.sharedDepsLoaded = performance.now();
-    (async function() {
-      try {
-        var deps = window.__SHARED_DEPS__;
-        if (!deps) throw new Error("shared-deps.js failed to initialize — window.__SHARED_DEPS__ is undefined");
-
-        var React = deps.React;
-        var JSXRuntime = deps.JSXRuntime;
-        var ReactDOMClient = deps.ReactDOMClient;
-        var TQ = deps.TQ;
-        var RI = deps.RI;
-
-        var i18n = deps.i18next.createInstance();
-        await i18n.use(RI.initReactI18next).init({
-          lng: ${JSON.stringify(lang)},
-          fallbackLng: "en",
-          resources: {},
-          interpolation: { escapeValue: false },
-        });
-
-        __perf.i18nReady = performance.now();
-        window.TentacleShared = {
-          React: React,
-          ReactJSXRuntime: JSXRuntime,
-          TanStackQuery: TQ,
-          ReactI18next: RI,
-          PluginsAPI: {},
-          i18n: i18n,
-        };
-
-        var queryClient = new TQ.QueryClient({
-          defaultOptions: { queries: { staleTime: 60000, retry: 1 } },
-        });
-
-        var pluginPath = ${JSON.stringify(pluginPath)};
-
-        window.__tentacle = {
-          backendUrl: ${JSON.stringify(backendUrl)},
-          async registerPlugin(plugin) {
-            try {
-              if (plugin.initialize) await plugin.initialize();
-              if (plugin.isConfigured) {
-                var configured = await plugin.isConfigured();
-                if (configured === false) {
-                  document.getElementById("plugin-root").innerHTML =
-                    '<div class="plugin-error">Plugin not configured</div>';
-                  window.ReactNativeWebView?.postMessage(JSON.stringify({
-                    type: "ERROR", message: "Plugin not configured",
-                  }));
-                  return;
-                }
-              }
-
-              var route = plugin.routes?.find(function(r) { return r.path === pluginPath; });
-              if (!route) {
-                document.getElementById("plugin-root").innerHTML =
-                  '<div class="plugin-error">Route not found: ' + pluginPath + '</div>';
-                window.ReactNativeWebView?.postMessage(JSON.stringify({
-                  type: "ERROR", message: "Route not found: " + pluginPath,
-                }));
-                return;
-              }
-
-              var root = ReactDOMClient.createRoot(document.getElementById("plugin-root"));
-              root.render(
-                React.createElement(TQ.QueryClientProvider, { client: queryClient },
-                  React.createElement(RI.I18nextProvider, { i18n: i18n },
-                    React.createElement(React.Suspense,
-                      { fallback: React.createElement("div", { className: "plugin-loading" }, "Loading…") },
-                      React.createElement(route.component)
-                    )
-                  )
-                )
-              );
-
-              __perf.rendered = performance.now();
-              window.ReactNativeWebView?.postMessage(JSON.stringify({ type: "READY" }));
-              window.ReactNativeWebView?.postMessage(JSON.stringify({
-                type: "PERF_TIMINGS",
-                timings: {
-                  sharedDeps: Math.round(__perf.sharedDepsLoaded - __perf.start),
-                  i18nInit: Math.round(__perf.i18nReady - __perf.sharedDepsLoaded),
-                  bundleInject: Math.round(__perf.afterBundle - __perf.beforeBundle),
-                  render: Math.round(__perf.rendered - __perf.afterBundle),
-                  total: Math.round(__perf.rendered - __perf.start),
-                },
-              }));
-            } catch (err) {
-              document.getElementById("plugin-root").innerHTML =
-                '<div class="plugin-error">' + (err.message || "Plugin error") + '</div>';
-              window.ReactNativeWebView?.postMessage(JSON.stringify({
-                type: "ERROR", message: String(err),
-              }));
-            }
-          },
-          unregisterPlugin: function() {},
-        };
-
-        // Injecter le bundle IIFE
-        __perf.beforeBundle = performance.now();
-        var script = document.createElement("script");
-        script.textContent = \`${escapedBundle}\`;
-        document.head.appendChild(script);
-        __perf.afterBundle = performance.now();
-      } catch (err) {
-        document.getElementById("plugin-root").innerHTML =
-          '<div class="plugin-error">Failed to load dependencies: ' + (err.message || err) + '</div>';
-        window.ReactNativeWebView?.postMessage(JSON.stringify({
-          type: "ERROR", message: "Deps loading failed: " + String(err),
-        }));
-      }
-    })();
-  <\/script>
+  <script>${buildPluginBootstrapScript({ backendUrl, lang, pluginPath, escapedBundle })}<\/script>
 </body>
 </html>`;
 }
