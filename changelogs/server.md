@@ -11,6 +11,21 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.6]
+### FR
+- Les pages ouvertes par un plugin s'affichent enfin dans la police de l'application. Elles tournaient en police système, ce qui les faisait détonner sur chaque écran
+- Les pages apportées par un plugin peuvent être retirées de la barre de navigation depuis le menu « Bibliothèques » — elles y figurent par défaut
+- Le raccourci de recherche affiche ⌘K sur Mac au lieu de « Ctrl+K » ; les deux fonctionnaient déjà, seul l'affichage était faux
+- Une page de plugin reçoit le clavier dès son ouverture : ⌘K y ouvre sa propre recherche au lieu de la recherche globale
+- Le README indique clairement que Tentacle TV n'est pas affilié au projet Jellyfin
+
+### EN
+- Pages opened by a plugin finally use the app's font. They were running on the system font, which made them stand out on every screen
+- Plugin pages can be removed from the navigation bar from the Libraries menu — they are pinned by default
+- The search shortcut hint shows ⌘K on Mac instead of "Ctrl+K"; both already worked, only the label was wrong
+- A plugin page receives the keyboard as soon as it opens: ⌘K opens its own search instead of the global one
+- The README now states clearly that Tentacle TV is not affiliated with the Jellyfin project
+
 ## [1.12.5]
 ### FR
 - Vos choix de piste audio et de sous-titres, retenus contenu par contenu, sont de nouveau enregistrés. La table qui les conserve n'avait jamais été créée sur les serveurs installés : chaque démarrage d'une application se soldait par une erreur, et la copie consultée hors ligne restait vide. Elle est créée automatiquement au redémarrage du serveur, sans rien effacer d'existant
