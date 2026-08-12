@@ -12,6 +12,7 @@
  * de liste plutôt qu'exclus, et leur code SxxEyy est simplement masqué.
  */
 
+import { correspondALaRecherche } from "@tentacle-tv/shared";
 import type { DownloadEntry } from "./api";
 
 export interface OfflineSeasonGroup {
@@ -124,11 +125,12 @@ export function groupWatchState(entries: DownloadEntry[]): OfflineWatchState {
 
 /** Le groupe correspond-il à la recherche (titre de série, de saison ou d'épisode) ? */
 export function seasonGroupMatches(group: OfflineSeasonGroup, needle: string): boolean {
-  if (!needle) return true;
-  const lower = needle.toLowerCase();
+  if (!needle.trim()) return true;
+  // Terme BRUT attendu ici : le comparateur normalise lui-même, et le
+  // minusculer avant lui laisserait deux conventions cohabiter.
   return (
-    group.seriesName.toLowerCase().includes(lower) ||
-    group.episodes.some((e) => (e.title ?? "").toLowerCase().includes(lower))
+    correspondALaRecherche(group.seriesName, needle) ||
+    group.episodes.some((e) => correspondALaRecherche(e.title ?? "", needle))
   );
 }
 

@@ -1,7 +1,8 @@
 export { JellyfinClient, JellyfinError } from "./jellyfin";
 export type { DirectStreamingState } from "./jellyfin";
 export { JellyfinClientContext, useJellyfinClient } from "./hooks/useJellyfinClient";
-export { useLibraries, useLibraryItems, useRandomLibraryBackdrop, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useSearchItems, useGenres, useStudios } from "./hooks/useLibrary";
+export { useLibraries, useLibraryItems, useRandomLibraryBackdrop, useSeasons, useEpisodes, useMediaItem, useItemAncestors, useSimilarItems, useCollectionItems, useGenres, useStudios } from "./hooks/useLibrary";
+export { useSearchItems } from "./hooks/useSearchItems";
 export { useLibraryCatalog, getLibraryCatalogKey, prefetchLibraryCatalog } from "./hooks/useLibraryCatalog";
 export type { CatalogFilters } from "./hooks/useLibraryCatalog";
 export { useResumeItems, useLatestItems, useNextUp, useWatchedItems, useFeaturedItems } from "./hooks/useHome";

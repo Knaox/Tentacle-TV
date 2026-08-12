@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { correspondALaRecherche } from "@tentacle-tv/shared";
 import { Navigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { BACKEND, hdrs, creds, cls } from "./adminUtils";
@@ -69,8 +70,10 @@ export function AdminUsers() {
 
   const filtered = useMemo(() => {
     if (!users) return [];
-    const q = search.trim().toLowerCase();
-    let list = q ? users.filter((u) => u.name.toLowerCase().includes(q)) : users;
+    const q = search.trim();
+    // Comparateur partagé : accents, casse et ponctuation ignorés, comme
+    // partout ailleurs. « jean luc » retrouve « Jean-Luc ».
+    let list = q ? users.filter((u) => correspondALaRecherche(u.name, q)) : users;
     if (filter === "admins") list = list.filter((u) => u.isAdministrator);
     else if (filter === "disabled") list = list.filter((u) => u.isDisabled);
     // Admins en tête (lecture rapide), puis ordre alphabétique.

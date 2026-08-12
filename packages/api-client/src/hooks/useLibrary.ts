@@ -167,25 +167,6 @@ export function useMediaItem(itemId: string | undefined, options?: { enabled?: b
   });
 }
 
-export function useSearchItems(query: string) {
-  const client = useJellyfinClient();
-  const userId = useUserId();
-
-  return useQuery({
-    queryKey: ["search", query],
-    queryFn: () =>
-      client
-        .fetch<{ Items: MediaItem[] }>(
-          `/Users/${userId}/Items?searchTerm=${encodeURIComponent(query)}&Recursive=true` +
-            `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio,MediaSources` +
-            `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
-        )
-        .then((r) => r.Items),
-    enabled: !!userId && query.length >= 2,
-    staleTime: 30 * 1000,
-  });
-}
-
 /** Fetch all ancestors of an item — used to find which library it belongs to. */
 export function useItemAncestors(itemId: string | undefined, options?: { enabled?: boolean }) {
   const client = useJellyfinClient();
