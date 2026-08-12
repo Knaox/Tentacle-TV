@@ -7,9 +7,9 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ## [Unreleased]
 ### FR
-- …
+- Les pages de plugins ne se terminent plus derrière la barre d'onglets : elle flotte au-dessus d'elles, et l'application lui indique désormais de combien s'écarter (le bouton d'un panneau de filtres, par exemple, se retrouvait entièrement dessous)
 ### EN
-- …
+- Plugin pages no longer end up behind the tab bar: it floats above them, and the app now tells them how far to stay clear (a filter panel's button, for one, ended up entirely underneath)
 
 ## [1.5.0]
 ### FR
