@@ -14,6 +14,19 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.20.7]
+### FR
+- Les pages ouvertes par un plugin s'affichent enfin dans la police de l'application. Elles tournaient en police système, ce qui les faisait détonner sur chaque écran
+- Les pages apportées par un plugin peuvent être retirées de la barre de navigation depuis le menu « Bibliothèques » — elles y figurent par défaut
+- Le raccourci de recherche affiche ⌘K sur Mac au lieu de « Ctrl+K » ; les deux fonctionnaient déjà, seul l'affichage était faux
+- Une page de plugin reçoit le clavier dès son ouverture : ⌘K y ouvre sa propre recherche au lieu de la recherche globale
+
+### EN
+- Pages opened by a plugin finally use the app's font. They were running on the system font, which made them stand out on every screen
+- Plugin pages can be removed from the navigation bar from the Libraries menu — they are pinned by default
+- The search shortcut hint shows ⌘K on Mac instead of "Ctrl+K"; both already worked, only the label was wrong
+- A plugin page receives the keyboard as soon as it opens: ⌘K opens its own search instead of the global one
+
 ## [1.20.6]
 ### FR
 - L'application ne vous déconnecte plus à chaque démarrage. Elle demandait au serveur de valider votre session sans lui joindre votre jeton d'identification : le serveur répondait qu'il ne la connaissait pas, et vous étiez renvoyé à l'écran de connexion. Le navigateur n'était pas concerné, il transmet cette preuve autrement
