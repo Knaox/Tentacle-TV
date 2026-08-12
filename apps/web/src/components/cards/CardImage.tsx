@@ -28,8 +28,15 @@ interface CardImageProps {
  * Used by both PosterCard and EpisodeCard.
  */
 export function CardImage({ src, alt, className, fallback, zoom = true }: CardImageProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
+  /* L'échec est attaché à l'ADRESSE, pas au composant.
+   *
+   * Les cartes sont recyclées au défilement : la même instance sert un autre
+   * média quand la rangée avance. Un `errored` qui ne redescend jamais faisait
+   * donc traîner l'icône de repli sur des affiches parfaitement valides, et
+   * gardait pour cassée une image que le serveur avait fini par récupérer. */
+  const [etat, setEtat] = useState({ src, loaded: false, errored: false });
+  if (etat.src !== src) setEtat({ src, loaded: false, errored: false });
+  const { loaded, errored } = etat;
   // Le squelette n'est monté que si la carte est REGARDÉE.
   //
   // Sans cette garde, les cartes situées hors du champ horizontal d'une rangée
@@ -85,8 +92,8 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           // quand elle est prête, comme avant.
           decoding="async"
           draggable={false}
-          onLoad={() => setLoaded(true)}
-          onError={() => setErrored(true)}
+          onLoad={() => setEtat((e) => (e.src === src ? { ...e, loaded: true } : e))}
+          onError={() => setEtat((e) => (e.src === src ? { ...e, errored: true } : e))}
           // Zoom interne discret au survol de la carte parente (`group/card`) —
           // le conteneur masque le débord (overflow-hidden côté carte).
           className={`h-full w-full object-cover motion-reduce:!transform-none ${

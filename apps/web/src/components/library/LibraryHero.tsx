@@ -5,6 +5,7 @@ import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
+import { useImageCassee } from "../../hooks/useImageCassee";
 
 interface LibraryHeroProps {
   libraryId: string;
@@ -35,6 +36,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
 
   const featured = randomItem ?? firstBackdropItem(latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
+  const { cassee, signalerEchec } = useImageCassee(backdropId ?? undefined);
   const url = backdropId
     ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 82 })
     : null;
@@ -63,7 +65,8 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 h-full w-full object-cover motion-reduce:!transform-none"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            style={{ display: cassee ? "none" : undefined }}
+            onError={signalerEchec}
           />
         )}
 

@@ -5,6 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
+import { useImageCassee } from "../../hooks/useImageCassee";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
@@ -87,6 +88,7 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
   // trace) mais au halo ci-dessous, qui est démonté et doit être remonté avant
   // d'entrer réellement dans le champ.
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
+  const { cassee, signalerEchec } = useImageCassee(backdropUrl);
 
   // Bouton retour + dégradés posés directement SUR le backdrop : restent en
   // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
@@ -125,8 +127,11 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
             // `animate-ken-burns` la relancerait de zéro, et un retour dans le
             // champ ferait sauter l'image d'un cran d'échelle. Tant que la
             // bannière est à l'écran, rien ne change.
-            style={{ animationPlayState: visible ? "running" : "paused" }}
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            style={{
+              animationPlayState: visible ? "running" : "paused",
+              display: cassee ? "none" : undefined,
+            }}
+            onError={signalerEchec}
           />
         )}
 
