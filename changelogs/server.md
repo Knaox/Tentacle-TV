@@ -18,6 +18,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - Le raccourci de recherche affiche ⌘K sur Mac au lieu de « Ctrl+K » ; les deux fonctionnaient déjà, seul l'affichage était faux
 - Une page de plugin reçoit le clavier dès son ouverture : ⌘K y ouvre sa propre recherche au lieu de la recherche globale
 - Le README indique clairement que Tentacle TV n'est pas affilié au projet Jellyfin
+- **La recherche retrouve les titres ponctués.** « Spider Man » ne rendait rien du tout, alors que « Spider-Man » rendait sept films : le serveur compare le terme au titre en ignorant la casse et les accents, mais pas les tirets ni les apostrophes. La recherche réessaie désormais d'elle-même quand une saisie ne donne rien, puis reclasse les résultats sur ce qui a réellement été tapé — « destin dun heros » ne rend que son film, pas tout ce qui contient « destin ». Une recherche qui aboutissait déjà part toujours en une seule requête et ressort dans le même ordre qu'avant
+- La même correction s'applique aux listes que l'on filtre en tapant : utilisateurs de l'administration, invitations, genres d'une bibliothèque et catalogue hors ligne. « jean luc » y retrouve « Jean-Luc »
+- **Une affiche absente n'est plus tenue pour définitivement absente.** Quatre bannières masquaient l'image en écrivant directement dans la page, hors du contrôle de l'application : celle qui suivait héritait du masquage, et une affiche récupérée entre-temps ne réapparaissait jamais. Même défaut sur les cartes, recyclées au défilement — un simple ralentissement du serveur condamnait des affiches parfaitement valides
+- Les hubs de l'accueil mémorisés pour un démarrage instantané ne réaffichent plus leurs cases vides sans rien redemander : une réponse à trous est affichée tout de suite, puis rafraîchie dans la foulée. Le fond d'une bibliothèque interrogée pendant une coupure n'est plus figé pour toute la session
+- Le champ de recherche du panneau d'assistance interrogeait le serveur à chaque caractère tapé
 
 ### EN
 - Pages opened by a plugin finally use the app's font. They were running on the system font, which made them stand out on every screen
@@ -25,6 +30,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - The search shortcut hint shows ⌘K on Mac instead of "Ctrl+K"; both already worked, only the label was wrong
 - A plugin page receives the keyboard as soon as it opens: ⌘K opens its own search instead of the global one
 - The README now states clearly that Tentacle TV is not affiliated with the Jellyfin project
+- **Search now finds punctuated titles.** "Spider Man" returned nothing at all while "Spider-Man" returned seven films: the server compares the term to the title ignoring case and accents, but not hyphens or apostrophes. Search now retries on its own when a query comes back empty, then reranks results against what was actually typed — "destin dun heros" returns only its film, not everything containing "destin". A search that already worked still goes out as a single request and comes back in the same order as before
+- The same fix applies to lists filtered by typing: admin users, invitations, library genres and the offline catalog. "jean luc" now finds "Jean-Luc"
+- **A missing poster is no longer treated as permanently missing.** Four banners hid the image by writing straight into the page, outside the app's control: the next one inherited the hiding, and a poster fetched in the meantime never came back. Same flaw on cards, which are recycled while scrolling — a brief server slowdown condemned perfectly valid posters
+- Home hubs kept for an instant cold start no longer redisplay their empty slots without asking again: a response with gaps is shown immediately, then refreshed right after. A library backdrop requested during an outage is no longer frozen for the whole session
+- The support panel's search field was querying the server on every keystroke
 
 ## [1.12.5]
 ### FR

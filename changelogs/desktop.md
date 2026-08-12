@@ -31,9 +31,13 @@ les notes Apple doivent rester génériques.
 ### FR
 - L'application ne vous déconnecte plus à chaque démarrage. Elle demandait au serveur de valider votre session sans lui joindre votre jeton d'identification : le serveur répondait qu'il ne la connaissait pas, et vous étiez renvoyé à l'écran de connexion. Le navigateur n'était pas concerné, il transmet cette preuve autrement
 - Un refus isolé du serveur ne ferme plus votre session : il en faut deux, confirmés à cinq secondes d'intervalle. Une coupure réseau ou un serveur qui redémarre ne vous déconnecte plus au passage
+- **La recherche retrouve les titres ponctués.** « Spider Man » ne rendait rien alors que « Spider-Man » rendait sept films : le serveur compare le terme au titre sans tenir compte de la casse ni des accents, mais les tirets et les apostrophes comptent. La recherche réessaie désormais d'elle-même quand une saisie ne donne rien, puis reclasse les résultats sur ce qui a été tapé. Les listes que l'on filtre en tapant en profitent aussi
+- **Une affiche absente n'est plus tenue pour définitivement absente** : les bannières et les cartes la redemandent, là où un simple ralentissement du serveur condamnait jusqu'ici des affiches parfaitement valides
 ### EN
 - The app no longer signs you out every time it starts. It was asking the server to validate your session without attaching your identification token: the server replied that it did not know the session, and you were sent back to the sign-in screen. The browser was unaffected — it presents that proof another way
 - A single refusal from the server no longer ends your session: two are required, confirmed five seconds apart. A network drop or a restarting server no longer signs you out along the way
+- **Search now finds punctuated titles.** "Spider Man" returned nothing while "Spider-Man" returned seven films: the server ignores case and accents when matching, but hyphens and apostrophes count. Search now retries on its own when a query comes back empty, then reranks results against what was typed. Lists filtered by typing benefit too
+- **A missing poster is no longer treated as permanently missing**: banners and cards ask for it again, where a brief server slowdown used to condemn perfectly valid artwork
 
 ## [mac-1.20.6]
 <!-- Bloc macOS CUMULATIF : 1.20.6 + 1.20.5 + 1.20.4. Ces deux dernières ont été
