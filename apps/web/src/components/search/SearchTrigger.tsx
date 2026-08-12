@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { searchShortcutLabel } from "../../lib/shortcutLabel";
 
 interface SearchTriggerProps {
   onClick: () => void;
@@ -23,7 +24,7 @@ export function SearchTrigger({ onClick }: SearchTriggerProps) {
       <kbd
         className="hidden rounded border border-line-subtle bg-fill-subtle px-1.5 py-0.5 text-[10px] font-medium text-content-quaternary sm:inline"
       >
-        {t("common:ctrlK")}
+        {searchShortcutLabel()}
       </kbd>
     </button>
   );

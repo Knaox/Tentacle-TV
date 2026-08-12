@@ -6,9 +6,20 @@ interface PinnedState {
   libraries: string[];
   favorites: boolean;
   watchlist: boolean;
+  /*
+   * Pages de plugin RETIRÉES de la navigation — et non celles qui y sont.
+   *
+   * Les bibliothèques sont désépinglées par défaut, les pages de plugin
+   * doivent l'être. En enregistrant les exclusions plutôt que les inclusions,
+   * une liste vide signifie « tout est épinglé » : le bon comportement dès la
+   * première ouverture, sans migration pour les installations existantes.
+   *
+   * Clé d'une entrée : `${pluginId}:${path}`.
+   */
+  pluginsUnpinned: string[];
 }
 
-const DEFAULT: PinnedState = { libraries: [], favorites: false, watchlist: false };
+const DEFAULT: PinnedState = { libraries: [], favorites: false, watchlist: false, pluginsUnpinned: [] };
 
 // Shared in-memory snapshot so all hook instances stay in sync
 let snapshot: PinnedState = readFromStorage();
@@ -39,6 +50,11 @@ function getSnapshot() {
   return snapshot;
 }
 
+/** Identifiant d'une page de plugin dans la navigation. */
+export function pluginNavKey(pluginId: string, path: string): string {
+  return `${pluginId}:${path}`;
+}
+
 export function usePinnedNav() {
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
@@ -60,9 +76,22 @@ export function usePinnedNav() {
     persist({ ...prev, watchlist: !prev.watchlist });
   }, []);
 
+  const togglePluginNav = useCallback((key: string) => {
+    const prev = getSnapshot();
+    const unpinned = prev.pluginsUnpinned.includes(key)
+      ? prev.pluginsUnpinned.filter((k) => k !== key)
+      : [...prev.pluginsUnpinned, key];
+    persist({ ...prev, pluginsUnpinned: unpinned });
+  }, []);
+
   const isLibraryPinned = useCallback(
     (id: string) => state.libraries.includes(id),
     [state.libraries]
+  );
+
+  const isPluginNavPinned = useCallback(
+    (key: string) => !state.pluginsUnpinned.includes(key),
+    [state.pluginsUnpinned]
   );
 
   return useMemo(
@@ -71,8 +100,10 @@ export function usePinnedNav() {
       toggleLibrary,
       toggleFavorites,
       toggleWatchlist,
+      togglePluginNav,
       isLibraryPinned,
+      isPluginNavPinned,
     }),
-    [state, toggleLibrary, toggleFavorites, toggleWatchlist, isLibraryPinned]
+    [state, toggleLibrary, toggleFavorites, toggleWatchlist, togglePluginNav, isLibraryPinned, isPluginNavPinned]
   );
 }

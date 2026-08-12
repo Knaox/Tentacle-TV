@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
-import { usePinnedNav } from "../../hooks/usePinnedNav";
+import { usePinnedNav, pluginNavKey } from "../../hooks/usePinnedNav";
 import { springSoft } from "../../theme/motion";
 
 interface NavLink {
@@ -44,6 +44,8 @@ export function TopNavLinks() {
       if (plugin.configEnabled !== true) continue;
       for (const nav of plugin.navItems || []) {
         if (nav.admin || !nav.platforms?.includes("web")) continue;
+        // Épinglées par défaut, retirables depuis le menu « Bibliothèques ».
+        if (!pinned.isPluginNavPinned(pluginNavKey(plugin.pluginId, nav.path))) continue;
         out.push({
           key: `plugin-${plugin.pluginId}-${nav.path}`,
           label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),

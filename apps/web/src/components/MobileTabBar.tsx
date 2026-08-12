@@ -5,7 +5,7 @@ import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
 import { PlusMenu } from "./PlusMenu";
-import { usePinnedNav } from "../hooks/usePinnedNav";
+import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
 import { AVATAR_GRADIENT_BG, getUserInfo } from "./userMenu/menuItems";
 
 interface Tab {
@@ -67,11 +67,12 @@ export function MobileTabBar() {
       }
     }
 
-    // Plugin nav items
+    // Plugin nav items — épinglés par défaut, retirables depuis le menu « + ».
     for (const plugin of activePluginsMeta) {
       if (plugin.configEnabled !== true) continue;
       for (const nav of plugin.navItems || []) {
         if (nav.admin || !nav.platforms?.includes("web")) continue;
+        if (!pinned.isPluginNavPinned(pluginNavKey(plugin.pluginId, nav.path))) continue;
         list.push({
           path: nav.path,
           label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
