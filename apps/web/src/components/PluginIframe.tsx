@@ -288,6 +288,19 @@ export function PluginIframe({
     bundleFetched.current = false;
   }, [bundleUrl, pluginPath]);
 
+  /*
+   * Le clavier appartient à la page affichée.
+   *
+   * Sans ce focus, tant que l'utilisateur n'a pas cliqué dans le cadre, les
+   * frappes vont à Tentacle TV : ⌘K ouvrait la recherche globale alors qu'on
+   * se trouve sur une page de plugin qui a la sienne. Générique, valable pour
+   * tout plugin.
+   */
+  useEffect(() => {
+    const id = requestAnimationFrame(() => iframeRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [pluginPath]);
+
   // Où monter le document : en ligne partout, sur une origine dédiée sous
   // Electron — dont la politique de sécurité refuse les scripts inline de la
   // page. Voir `desktop/pluginDocument.ts`.

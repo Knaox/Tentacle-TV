@@ -20,6 +20,15 @@
   Browse and stream your Jellyfin library through a sleek, dark-themed interface with glassmorphism design, smooth animations, and powerful features — all self-hosted.
 </p>
 
+> [!IMPORTANT]
+> **Tentacle TV is not affiliated with, endorsed by, or sponsored by the Jellyfin
+> project.** It is an independent third-party client that connects to a Jellyfin server
+> you run yourself. Official Jellyfin project: <https://jellyfin.org>.
+>
+> **Tentacle TV n'est ni affilié au projet Jellyfin, ni approuvé ou soutenu par lui.**
+> C'est un client tiers indépendant qui se connecte à un serveur Jellyfin que vous
+> hébergez vous-même.
+
 <p align="center">
   <img src="docs/screenshot-home.png" alt="Tentacle TV — Home" width="800" />
 </p>

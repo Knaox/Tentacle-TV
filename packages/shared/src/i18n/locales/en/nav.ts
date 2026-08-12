@@ -23,6 +23,7 @@ export default {
   tv: "TV",
   more: "More",
   libraries: "Libraries",
+  pluginPages: "Plugin pages",
   myList: "My List",
   myFavorites: "My Favorites",
   pinned: "Pinned",

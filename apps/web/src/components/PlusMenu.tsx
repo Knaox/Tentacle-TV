@@ -1,9 +1,11 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { usePinnedNav } from "../hooks/usePinnedNav";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
+import { getLucideIcon, resolvePluginLabel } from "./lucideIcon";
+import { usePinnedNav, pluginNavKey } from "../hooks/usePinnedNav";
 
 interface Props {
   onClose: () => void;
@@ -183,6 +185,8 @@ interface PanelContentProps {
 }
 
 function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
+  const pluginPages = usePluginPages();
+
   return (
     <div className="px-4 pb-5 pt-3">
       {/* ── Quick access: Watchlist & Favorites ── */}
@@ -232,8 +236,61 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
           />
         ))}
       </div>
+
+      {/* ── Pages apportées par les plugins ──
+          Épinglées par défaut, contrairement aux bibliothèques : une page
+          installée volontairement doit être visible sans avoir à la chercher. */}
+      {pluginPages.length > 0 && (
+        <>
+          <p className="mb-2 mt-4 px-1 text-[11px] font-semibold uppercase tracking-wider text-content-quaternary">
+            {t("nav:pluginPages")}
+          </p>
+          <div className="space-y-1">
+            {pluginPages.map((page) => (
+              <PinnableRow
+                key={page.key}
+                icon={page.icon}
+                label={page.label}
+                isPinned={pinned.isPluginNavPinned(page.key)}
+                onTogglePin={() => pinned.togglePluginNav(page.key)}
+                onNavigate={() => onNavigate(page.path)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
+}
+
+interface PluginPage {
+  key: string;
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+/** Pages de plugin épinglables — générique, aucun plugin nommé. */
+function usePluginPages(): PluginPage[] {
+  const activePluginsMeta = useActivePluginsMeta();
+  const { i18n } = useTranslation();
+
+  return useMemo(() => {
+    const out: PluginPage[] = [];
+    for (const plugin of activePluginsMeta) {
+      if (plugin.configEnabled !== true) continue;
+      for (const nav of plugin.navItems || []) {
+        if (nav.admin || !nav.platforms?.includes("web")) continue;
+        out.push({
+          key: pluginNavKey(plugin.pluginId, nav.path),
+          path: nav.path,
+          label: resolvePluginLabel(nav.labels ?? nav.label, i18n.language),
+          icon: getLucideIcon(nav.icon),
+        });
+      }
+    }
+    return out;
+  }, [activePluginsMeta, i18n.language]);
 }
 
 function TvPairIcon() {
@@ -260,6 +317,8 @@ function PinnableRow({
   onTogglePin: () => void;
   onNavigate: () => void;
 }) {
+  const { t } = useTranslation("nav");
+
   return (
     <div className="group flex items-center gap-2 rounded-xl transition-colors hover:bg-fill-subtle">
       <button
@@ -276,7 +335,7 @@ function PinnableRow({
             ? "text-[var(--brand)] hover:bg-[rgba(var(--brand-rgb),0.1)]"
             : "text-content-disabled hover:bg-fill-subtle hover:text-content-tertiary"
         }`}
-        title={isPinned ? "Unpin" : "Pin"}
+        title={isPinned ? t("nav:unpin") : t("nav:pin")}
       >
         <PinIcon filled={isPinned} />
       </button>
