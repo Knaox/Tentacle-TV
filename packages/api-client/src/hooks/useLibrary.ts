@@ -112,8 +112,14 @@ export function useRandomLibraryBackdrop(libraryId: string | undefined) {
         )
         .then((r) => r.Items[0]),
     enabled: !!userId && !!libraryId,
-    staleTime: Infinity,
-    gcTime: Infinity,
+    /* Longtemps, mais pas éternellement. Le tirage est volontairement stable —
+     * changer de fond à chaque visite serait agité — seulement, `Infinity` des
+     * deux côtés gravait AUSSI les échecs : une bibliothèque interrogée pendant
+     * une coupure, ou dont le fond n'était pas encore récupéré, restait sans
+     * bannière pour toute la session, sans qu'aucune navigation n'y change quoi
+     * que ce soit. Une heure garde la stabilité et laisse une seconde chance. */
+    staleTime: 60 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
   });
 }
 

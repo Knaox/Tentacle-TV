@@ -107,6 +107,38 @@ function readPayload(raw: string): PersistedPayload | null {
   return { owner: null, entries: parsed as Record<string, PersistedEntry> };
 }
 
+/**
+ * L'entrée décrit-elle une absence ? Un élément sans la moindre image en est le
+ * cas typique.
+ *
+ * Une affiche qui manque n'est pas un fait acquis : elle arrive souvent plus
+ * tard, quand le serveur a fini de récupérer ses métadonnées. Or ce cache rend
+ * la réponse telle qu'elle était, avec ses trous, et la donne pour aussi fraîche
+ * qu'au moment où elle a été reçue — jusqu'à vingt-quatre heures. Sur les hubs
+ * dont la fraîcheur se compte en dizaines de minutes, un démarrage à froid
+ * réaffichait donc les mêmes cases vides sans rien redemander.
+ *
+ * On ne jette pas ces données — l'écran resterait vide pour rien. On les rend
+ * simplement PÉRIMÉES, ce qui déclenche un rafraîchissement dès l'affichage.
+ *
+ * La description n'entre volontairement pas dans le test : plusieurs hubs ne la
+ * demandent pas dans leurs champs, tous seraient donc éternellement périmés.
+ */
+function decritUneAbsence(data: unknown): boolean {
+  const items = Array.isArray(data)
+    ? data
+    : (data as { Items?: unknown[] } | null)?.Items;
+  if (!Array.isArray(items) || items.length === 0) return false;
+
+  return items.some((brut) => {
+    if (!brut || typeof brut !== "object") return false;
+    const item = brut as { ImageTags?: Record<string, unknown>; BackdropImageTags?: unknown[] };
+    const sansAffiche = !item.ImageTags || Object.keys(item.ImageTags).length === 0;
+    const sansFond = !Array.isArray(item.BackdropImageTags) || item.BackdropImageTags.length === 0;
+    return sansAffiche && sansFond;
+  });
+}
+
 const DEFAULT_KEY = "tentacle_query_cache_v1";
 const DEFAULT_INTERVAL = 10_000;
 const DEFAULT_MAX_AGE = 24 * 60 * 60 * 1000; // 24 h
@@ -140,7 +172,10 @@ export async function hydrateQueryClient(
         if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
         const prefix = queryKey[0];
         if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
-        qc.setQueryData(queryKey, entry.data, { updatedAt: entry.dataUpdatedAt });
+        // Périmée d'office si elle décrit des absences : affichée tout de suite,
+        // mais redemandée dans la foulée plutôt que tenue pour acquise.
+        const updatedAt = decritUneAbsence(entry.data) ? 0 : entry.dataUpdatedAt;
+        qc.setQueryData(queryKey, entry.data, { updatedAt });
       } catch {
         // Une entrée corrompue ne doit pas bloquer le reste
       }

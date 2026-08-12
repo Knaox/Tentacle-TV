@@ -3,6 +3,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
+import { useImageCassee } from "../../hooks/useImageCassee";
 
 interface HeroBackdropProps {
   items: MediaItem[];
@@ -64,6 +65,16 @@ const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1
 export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   const client = useJellyfinClient();
   const item = items[activeIndex];
+
+  // URL résolue par `resolveBackdrop`, partagée avec la transition d'ouverture
+  // de fiche : celle-ci reprend donc un pixel DÉJÀ décodé, sans un octet de
+  // plus. Une URL recalculée d'un côté ou de l'autre (largeur ou qualité
+  // différente) suffirait à provoquer un second chargement, donc un blanc.
+  //
+  // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
+  // peut pas vivre après une sortie conditionnelle.
+  const url = item ? heroBackdropUrl(client, item) : null;
+  const { cassee, signalerEchec } = useImageCassee(url ?? undefined);
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
   const overlays = (
@@ -127,12 +138,6 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
     );
   }
 
-  // URL résolue par `resolveBackdrop`, partagée avec la transition d'ouverture
-  // de fiche : celle-ci reprend donc un pixel DÉJÀ décodé, sans un octet de
-  // plus. Une URL recalculée d'un côté ou de l'autre (largeur ou qualité
-  // différente) suffirait à provoquer un second chargement, donc un blanc.
-  const url = heroBackdropUrl(client, item);
-
   return (
     <>
       <div className="absolute inset-0 bg-surface-0" />
@@ -155,7 +160,8 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
               scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            style={{ display: cassee ? "none" : undefined }}
+            onError={signalerEchec}
           />
         )}
       </AnimatePresence>

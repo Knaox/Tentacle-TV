@@ -5,8 +5,11 @@ interface FadeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 }
 
 export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: FadeImageProps) {
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
+  /* L'échec suit l'ADRESSE. Sans cela, une liste recyclée — épisodes, casting —
+   * gardait une case vide sur une image devenue valide, jusqu'au démontage. */
+  const [etat, setEtat] = useState({ src: props.src, loaded: false, errored: false });
+  if (etat.src !== props.src) setEtat({ src: props.src, loaded: false, errored: false });
+  const { loaded, errored } = etat;
 
   if (errored) return null;
 
@@ -20,11 +23,11 @@ export function FadeImage({ duration = 0.3, style, onLoad, onError, ...props }: 
       decoding="async"
       {...props}
       onLoad={(e) => {
-        setLoaded(true);
+        setEtat((s) => (s.src === props.src ? { ...s, loaded: true } : s));
         onLoad?.(e);
       }}
       onError={(e) => {
-        setErrored(true);
+        setEtat((s) => (s.src === props.src ? { ...s, errored: true } : s));
         onError?.(e);
       }}
       style={{
