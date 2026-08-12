@@ -13,6 +13,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { correspondALaRecherche } from "@tentacle-tv/shared";
 import type { DownloadEntry } from "./api";
 import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
@@ -54,9 +55,10 @@ export function OfflineCatalog() {
   const { movies, seasons } = useMemo(() => groupOfflineEntries(complete), [complete]);
   const series = useMemo(() => groupSeasonsBySeries(seasons), [seasons]);
 
-  const needle = search.trim().toLowerCase();
+  // Terme brut : c'est le comparateur partagé qui normalise.
+  const needle = search.trim();
   const shownMovies = useMemo(
-    () => (filter === "series" ? [] : movies.filter((m) => (m.title ?? "").toLowerCase().includes(needle))),
+    () => (filter === "series" ? [] : movies.filter((m) => correspondALaRecherche(m.title ?? "", needle))),
     [movies, filter, needle],
   );
   const shownSeries = useMemo(

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
+import { correspondALaRecherche } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
@@ -105,8 +106,8 @@ export function GenreMenu({
   // pastilles était illisible et interminable à parcourir. Recherche d'abord.
   const shown = useMemo(() => {
     const list = genres ?? [];
-    const q = query.trim().toLowerCase();
-    return q ? list.filter((g) => g.Name.toLowerCase().includes(q)) : list;
+    const q = query.trim();
+    return q ? list.filter((g) => correspondALaRecherche(g.Name, q)) : list;
   }, [genres, query]);
 
   const count = filters.genreIds.length;

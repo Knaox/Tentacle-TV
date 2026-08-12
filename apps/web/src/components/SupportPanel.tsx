@@ -123,7 +123,16 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
   const containerRef = useRef<HTMLDivElement>(null);
   const client = useJellyfinClient();
 
-  const { data: results } = useSearchItems(search);
+  /* Ce champ était le seul à interroger le serveur à CHAQUE frappe, sans
+   * temporisation — un aller-retour par caractère. Aligné sur les autres barres
+   * de recherche de l'application. */
+  const [searchDiffere, setSearchDiffere] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setSearchDiffere(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const { data: results } = useSearchItems(searchDiffere);
   const { data: seasons } = useSeasons(pickedSeries?.Id);
   const { data: episodes } = useEpisodes(pickedSeries?.Id, pickedSeasonId ?? undefined);
 

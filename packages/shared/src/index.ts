@@ -5,6 +5,7 @@ export * from "./utils/mediaQuality";
 export * from "./utils/qualityLadder";
 export * from "./utils/playbackRates";
 export * from "./utils/episodeCode";
+export * from "./utils/rechercheTexte";
 export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";
