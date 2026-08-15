@@ -63,10 +63,11 @@ export function GroupPlaybackOverlay({
             className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2"
           >
             <div
-              className="flex items-center gap-2.5 rounded-full px-4 py-2"
+              /* Flou en CLASSE : un style en ligne échappe à la passe de
+                 verre du téléviseur (cf. `Toast.tsx`). */
+              className="flex items-center gap-2.5 rounded-full px-4 py-2 backdrop-blur-md"
               style={{
                 background: "rgba(15,15,25,0.85)",
-                backdropFilter: "blur(12px)",
                 border: "1px solid rgba(251,191,36,0.3)",
               }}
             >

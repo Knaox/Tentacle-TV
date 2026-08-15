@@ -152,8 +152,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
 
         <motion.h1
           variants={reduced ? undefined : fadeUp}
-          className="font-bold text-on-media-primary drop-shadow-[0_3px_14px_var(--on-media-shadow)] tracking-tight"
-          style={{ fontSize: "clamp(2rem, 4.2vw, 3.5rem)", lineHeight: 1.05, letterSpacing: "-0.028em" }}
+          className="titre-bibliotheque font-bold text-on-media-primary drop-shadow-[0_3px_14px_var(--on-media-shadow)]"
         >
           {libraryName}
         </motion.h1>

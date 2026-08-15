@@ -97,7 +97,10 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
             >
               <div
                 className="grid"
-                style={{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`, gap: GAP }}
+                /* Même mécanisme que `LibraryGrid` : `colonnesTv.ts` publie la largeur
+         et sonde le moteur, `grille-tv.css` pose l'écart.
+         tv-compat-ok: traité par colonnesTv.ts + grille-tv.css */
+      style={{ gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`, gap: GAP }}
               >
                 {items.slice(start, start + itemsPerRow).map((item) => (
                   <CollectionGridCard

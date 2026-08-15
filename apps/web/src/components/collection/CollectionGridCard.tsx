@@ -111,8 +111,10 @@ export const CollectionGridCard = memo(function CollectionGridCard({
       {isSelected && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 rounded-[var(--radius-lg)] ring-2 ring-[var(--brand)]"
-          style={{ aspectRatio: "2 / 3" }}
+          /* Le ratio en CLASSE : `aspect-ratio` en style en ligne échappe à la
+             passe qui le traduit pour les moteurs d'avant Chrome 88, et l'anneau
+             de sélection y aurait une hauteur nulle. */
+          className="pointer-events-none absolute inset-x-0 top-0 aspect-[2/3] rounded-[var(--radius-lg)] ring-2 ring-[var(--brand)]"
         />
       )}
 

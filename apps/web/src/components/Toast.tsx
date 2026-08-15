@@ -46,8 +46,12 @@ export function Toast({ type, message, onDismiss }: ToastProps) {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 50 }}
       transition={{ duration: 0.2 }}
-      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg"
-      style={{ background: c.bg, border: `1px solid ${c.border}`, backdropFilter: "blur(12px)" }}
+      /* `backdrop-blur-md` en classe et non en style en ligne : un attribut
+         `style` échappe à la passe de verre du portage téléviseur, où un flou
+         d'arrière-plan coûte une recopie et un recalcul par image sans rien
+         apporter. La classe rend le même flou sur le web. */
+      className="relative min-w-[280px] max-w-sm cursor-pointer overflow-hidden rounded-lg px-4 py-3 text-sm text-content-primary shadow-lg backdrop-blur-md"
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}
       onClick={onDismiss}
     >
       {message}
