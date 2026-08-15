@@ -22,25 +22,52 @@ le seul prérequis : le reste s'installe tout seul.
 2. SUR L'ORDINATEUR
 -------------------
 
-  macOS    double-cliquez sur « Installer-Tentacle-TV.command »
-  Windows  double-cliquez sur « Installer-Tentacle-TV.cmd »
-  Linux    ouvrez un terminal dans ce dossier et lancez ./installer.sh
+  WINDOWS
+    Double-cliquez sur « Installer-Tentacle-TV.cmd ».
+
+  MACOS
+    Ouvrez Terminal (Applications › Utilitaires), tapez « bash » suivi d'un
+    ESPACE, puis faites glisser « installer.sh » dans la fenêtre. Appuyez sur
+    Entrée.
+
+    Ne double-cliquez pas sur le fichier .command : macOS le bloque, voir plus
+    bas.
+
+  LINUX
+    Ouvrez un terminal dans ce dossier et lancez ./installer.sh
 
   Répondez aux deux questions. Le script fait le reste : il télécharge la
   dernière version depuis GitHub, l'installe, et l'ouvre sur le téléviseur.
 
 
-SI MACOS REFUSE D'OUVRIR LE FICHIER
------------------------------------
+POURQUOI MACOS REFUSE LE DOUBLE-CLIC
+------------------------------------
 
-  macOS met en quarantaine ce qui vient d'Internet. Faites un clic DROIT sur
-  « Installer-Tentacle-TV.command », choisissez « Ouvrir », puis confirmez.
-  Une seule fois suffit.
+  Si vous voyez « ... n'a pas pu être ouvert » avec les seuls boutons
+  « Placer dans la corbeille » et « Annuler », rien n'est cassé : macOS refuse
+  d'ouvrir depuis le Finder tout fichier téléchargé qui n'a pas été signé par
+  un développeur payant le programme Apple. Le clic droit › Ouvrir ne contourne
+  plus ce blocage depuis macOS 15.
 
-  Si le double-clic ne fait rien du tout, le fichier a perdu son droit
-  d'exécution en chemin. Dans un terminal, depuis ce dossier :
+  Ce refus ne concerne QUE le Finder. Lancé depuis Terminal comme indiqué
+  ci-dessus, le même fichier s'exécute normalement — c'est bash qui travaille,
+  et bash, lui, est signé par Apple.
 
-      chmod +x installer.sh Installer-Tentacle-TV.command
+  Si vous tenez au double-clic, débloquez le fichier une fois pour toutes :
+
+      Réglages Système › Confidentialité et sécurité › descendre jusqu'à
+      « Sécurité » › « Ouvrir quand même »
+
+  Le bouton n'apparaît que dans l'heure qui suit une tentative d'ouverture.
+
+
+TOUT FAIRE EN UNE SEULE COMMANDE
+--------------------------------
+
+  Sur macOS et Linux, cette ligne collée dans un terminal télécharge la
+  dernière version et la lance, sans rien laisser traîner sur le disque :
+
+  cd "$(mktemp -d)" && curl -fsSL -O https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip && unzip -q installateur-tentacle-tv.zip && node "Tentacle TV - LG webOS/installer.mjs"
 
 
 ENSUITE
