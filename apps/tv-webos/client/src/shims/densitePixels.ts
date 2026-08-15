@@ -1,7 +1,7 @@
 /**
  * La densité réelle de la dalle, mesurée.
  *
- * Substitué à `pixelDensity`. Le client compose sur un canevas de 1280 — c'est
+ * Substitué à `pixelDensity`. Le client compose sur un canevas de 1920 — c'est
  * `appinfo.json → resolution` qui le fixe — et le téléviseur l'agrandit vers sa
  * dalle. Une image demandée à sa taille CSS arrive donc à deux tiers de la
  * résolution où elle sera affichée, et TOUT paraît mou : les affiches, les
@@ -10,7 +10,7 @@
  * **`devicePixelRatio` ne sert à rien ici** : mesuré à `0` sur webOS 4.0. On
  * prend donc le rapport entre la dalle et le canevas, que les deux moteurs
  * renseignent correctement — relevé sur l'émulateur : `screen.width` 1920,
- * `innerWidth` 1280, soit 1,5.
+ * `innerWidth` 1920, soit 1,5.
  *
  * Mesurée une seule fois : la dalle ne change pas de résolution en cours de
  * route, et un rapport qui varierait ferait changer les URL d'images d'un rendu

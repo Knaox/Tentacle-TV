@@ -147,12 +147,20 @@
     transparent 78%
   );
 
-  --hero-page-fade: linear-gradient(
-    180deg,
-    rgba(var(--scrim-page-rgb), 0) 0%,
-    rgba(var(--scrim-page-rgb), 0.3) 45%,
-    rgba(var(--scrim-page-rgb), 0.6) 100%
-  );
+  /* PAS de `--hero-page-fade`, et c'est un RETRAIT.
+   *
+   * Le jeton n'existe que pour le thème clair : il rend une assise de page au
+   * texte thémé qu'on pose sur une affiche. Le téléviseur est figé en sombre,
+   * la raison d'être est donc vide. Il avait été ressuscité ici pour masquer un
+   * trait horizontal à mi-écran, et ce trait a été résolu autrement depuis —
+   * la bannière est devenue une carte cernée (`bibliotheque-tv.css`), et une
+   * carte n'a pas besoin d'un dégradé pour cacher son propre bord.
+   *
+   * Ce qu'il coûtait : une SIXIÈME rampe quantifiée sur huit bits, empilée sur
+   * les cinq autres dans la zone la plus sombre de l'image. Les erreurs de
+   * quantification se composent, et c'est le mécanisme de banding le mieux
+   * établi. L'accueil n'en a aucune et rend bien ; « même chemin » veut dire
+   * même chemin. */
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre

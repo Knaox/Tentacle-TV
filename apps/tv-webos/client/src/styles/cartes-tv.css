@@ -205,7 +205,13 @@
 }
 
 /* L'image, NETTE. Pas de `filter`, pas de mise à l'échelle : le Backdrop est
-   demandé à 1280 de large, c'est exactement le canevas.
+   demandé à la largeur du CANEVAS, c'est-à-dire 1920.
+ *
+ * Il l'était à 1280 — la valeur du canevas que le client a porté quatre jours,
+ * et que le commentaire d'ici a continué d'affirmer bien après. Depuis le
+ * retour à 1920, l'image arrivait donc rééchantillonnée d'un facteur 1,5, en
+ * JPEG de qualité 70, sous 55 % d'opacité et un dégradé : le grain le plus
+ * visible de l'interface, à l'endroit précis où il n'y a rien pour le cacher.
  *
  * Elle entre en fondu à son CHARGEMENT et non au montage du calque — sans quoi
  * l'animation courrait pendant que l'image est encore en vol, et l'image
