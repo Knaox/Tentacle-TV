@@ -1,7 +1,6 @@
 import type {
   DeviceProfile,
   DirectPlayProfile,
-  TranscodingProfile,
   CodecProfile,
 } from "@tentacle-tv/shared";
 import {
@@ -9,9 +8,6 @@ import {
   CONDITIONS_HEVC,
   conditionsH264,
   DEBIT_MUSIQUE,
-  PROFIL_AUDIO_SEUL,
-  profilHlsFmp4,
-  profilHlsTs,
   sousTitresBitmap,
   SOUS_TITRES_TEXTE,
   type OptionsProfilWeb,
@@ -24,6 +20,7 @@ import {
   memoireReplis,
   type MemoireReplis,
 } from "./repliLecture";
+import { transcodage } from "./remuxWebos";
 
 /**
  * Profil d'appareil d'un téléviseur LG.
@@ -81,7 +78,7 @@ export function construireProfilTv(
     MaxStaticBitrate: plafond,
     MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
     DirectPlayProfiles: lectureDirecte(resolu, memoire),
-    TranscodingProfiles: transcodage(resolu, memoire),
+    TranscodingProfiles: transcodage(resolu, memoire, options?.sourceDolbyVision),
     CodecProfiles: contraintes(resolu),
     SubtitleProfiles: [
       ...SOUS_TITRES_TEXTE,
@@ -144,98 +141,6 @@ function lectureDirecte(resolu: ProfilResolu, memoire: MemoireReplis): DirectPla
   }
 
   return profils;
-}
-
-/**
- * Transcodage — mais surtout : Direct Stream.
- *
- * C'est le point le plus contre-intuitif du profil. Un `TranscodingProfile`
- * n'est pas une autorisation de recompresser : c'est aussi, et d'abord, le
- * mécanisme par lequel Jellyfin REMUXE. Le serveur y copie l'image (`-codec:v
- * copy`) dès que le codec source figure dans la liste — d'où la règle qui
- * gouverne cette fonction :
- *
- *   **la liste des codecs de transcodage doit contenir tout ce que la dalle
- *   décode**, sans quoi un simple changement de conteneur ou de piste audio
- *   ferait ré-encoder une image que le téléviseur savait lire.
- *
- * Le défaut corrigé : l'ancien profil n'y listait que `hevc,h264`. Un MPEG-2 ou
- * un VC-1 dont seul le conteneur posait problème repartait recompressé.
- *
- * `BreakOnNonKeyFrames: false` est posé par `blocs.ts` et ne doit pas bouger :
- * à vrai, il oblige le serveur à savoir couper hors image clé, donc à en
- * fabriquer, donc à recompresser.
- */
-function transcodage(resolu: ProfilResolu, memoire: MemoireReplis): TranscodingProfile[] {
-  const video = new Set<string>();
-  const audio = new Set<string>();
-  for (const conteneur of resolu.capacites.conteneurs) {
-    for (const codec of codecsRetenus(memoire.video, conteneur.video)) video.add(codec);
-    for (const codec of codecsRetenus(memoire.audio, conteneur.audio)) audio.add(codec);
-  }
-
-  const canaux = maxCanaux(resolu);
-  const audioFmp4 = [...audio].filter((codec) => AUDIO_FMP4.has(codec));
-  // Le flux de transport ne porte légalement ni l'AV1, ni le VP9, ni les codecs
-  // audio exotiques : y annoncer autre chose obligerait le serveur à convertir.
-  const videoTs = [...video].filter((codec) => CODECS_TS.has(codec));
-  const audioTs = ["aac", ...[...audio].filter((codec) => codec === "ac3" || codec === "eac3")];
-
-  return [
-    // Le fMP4 en premier : c'est le seul conteneur segmenté qui permette au
-    // serveur de copier une image HEVC. Sans lui, une piste audio exotique
-    // suffirait à faire ré-encoder une vidéo 4K pour une raison qui n'a rien de
-    // visuel.
-    profilHlsFmp4([...video].join(",") || "h264", audioFmp4.join(",") || "aac", canaux),
-    profilHlsTs(videoTs.join(",") || "h264", audioTs.join(","), canaux),
-    PROFIL_AUDIO_SEUL,
-  ];
-}
-
-/** Ce que le démultiplexeur TS de webOS sait porter. */
-const CODECS_TS = new Set(["h264", "hevc", "mpeg2video"]);
-
-/**
- * Ce qu'un remux fMP4 a le droit de porter.
- *
- * **Le DTS y est, et il a été retiré à tort pendant un temps.** La mesure qui
- * l'en avait chassé — « DTS copié : `hdrType` none ; converti en AAC :
- * DolbyVision » — était faussée deux fois. Elle portait sur un fichier dont le
- * sous-titre par défaut est un PGS, ce qui suffit à lui seul à faire incruster
- * donc RECOMPRESSER l'image ; et elle datait d'avant le choix explicite de la
- * variante Dolby Vision (`varianteDovi.ts`), quand le téléviseur prenait encore
- * un repli SDR une fois sur trois. Refaite sur un fichier sans sous-titre image,
- * variante désignée, elle rend :
- *
- *     audio DTS copié       videoInfo.hdrType « DolbyVision »
- *     audio converti AAC    videoInfo.hdrType « DolbyVision »
- *
- * Le DTS ne coûte donc rien, et le déclarer épargne une conversion sur le gros
- * des remux Dolby Vision d'une médiathèque. Moonfin et `jellyfin-web` s'en
- * tiennent à `aac,mp3,ac3,eac3` ; ils ne se privent de rien qu'ils aient mesuré,
- * et cette table-ci a la dalle sous la main.
- *
- * Le PCM reste dehors — et cette fois la raison est nommée pour ce qu'elle est :
- * une PRUDENCE, pas une mesure. Le conteneur MP4 ne le porte pas naturellement,
- * personne ne l'a essayé ici, et une piste muette est plus difficile à
- * diagnostiquer qu'une conversion.
- *
- * Le TrueHD n'y sera jamais : webOS ne le démultiplexe dans AUCUN conteneur, si
- * bien qu'il n'a jamais atteint la chaîne audio, avec ou sans barre de son. Un
- * fichier qui n'aurait que cette piste-là paiera une conversion, et c'est le
- * seul cas qui en paie une.
- */
-const AUDIO_FMP4 = new Set(["aac", "mp3", "ac3", "eac3", "dts", "dca"]);
-
-/**
- * Canaux maximaux d'un remux.
- *
- * Huit quand le téléviseur annonce l'Atmos : il a alors une chaîne audio
- * capable de recevoir plus que du 5.1, et brider le remux à six canaux
- * l'obligerait à mélanger une piste 7.1 sans nécessité. Six sinon.
- */
-function maxCanaux(resolu: ProfilResolu): string {
-  return resolu.dalle.dolbyAtmos ? "8" : "6";
 }
 
 /**

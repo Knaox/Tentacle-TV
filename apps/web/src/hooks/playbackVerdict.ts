@@ -47,6 +47,28 @@ export function sourceEstHdr(
   return false;
 }
 
+/**
+ * La source est-elle en Dolby Vision ?
+ *
+ * Même double lecture que `sourceEstHdr`, et pour la même raison. `DvProfile`
+ * est le signal le plus sûr : il reste renseigné là où la plage arrive en
+ * entier, donc là où l'on ne peut rien conclure de son nom.
+ *
+ * Sert au profil d'appareil du téléviseur : le conteneur d'un remux ne porte
+ * pas le RPU de la même façon selon qu'il est en ISOBMFF ou en flux de
+ * transport, et cet arbitrage-là ne se pose que pour une source Dolby Vision.
+ */
+export function sourceEstDolbyVision(
+  stream: { VideoRangeType?: string | number; DvProfile?: number } | undefined,
+): boolean {
+  if (!stream) return false;
+  if (stream.DvProfile != null) return true;
+  const plage = stream.VideoRangeType;
+  if (typeof plage !== "string") return false;
+  const nom = plage.toUpperCase();
+  return nom.includes("DOVI") || nom.includes("DOLBY");
+}
+
 export interface Verdict {
   mode: ModeLecture;
   raisons: string[];

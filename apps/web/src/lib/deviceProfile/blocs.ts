@@ -28,6 +28,15 @@ export interface OptionsProfilWeb {
    * transcodage vidéo, et c'est pourquoi il n'arrive qu'après un vrai échec.
    */
   pgsClientIndisponible?: boolean;
+  /**
+   * La source lue est en Dolby Vision.
+   *
+   * Aucun navigateur n'en fait rien — un profil de navigateur ne remuxe pas, il
+   * transcode. Le téléviseur, lui, en dépend : le RPU voyage dans le PMT d'un
+   * flux de transport et dans une boîte de configuration en ISOBMFF, et les
+   * deux chemins ne se valent pas selon la dalle (cf. `remuxWebos.ts`).
+   */
+  sourceDolbyVision?: boolean;
 }
 
 /** Sous-titres image, selon que le client sait décoder le PGS ou non. */
