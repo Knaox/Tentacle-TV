@@ -19,6 +19,34 @@
     border-radius: 4px;
   }
 
+  /* Un bouton se dispose comme n'importe quelle autre boîte.
+   *
+   * La feuille de l'agent utilisateur pose `align-items: flex-start` sur
+   * `button`, et Preflight ne la reprend pas. Un `<button class="flex
+   * flex-col">` ne DIMENSIONNE donc pas ses enfants : ils prennent la largeur
+   * de leur contenu au lieu de celle du bouton.
+   *
+   * Ce qu'on y perd sans le voir : `truncate` cesse d'agir. La coupure
+   * s'appuie sur `overflow: hidden`, qui ne rogne que ce qui dépasse de la
+   * BOÎTE — et la boîte, non étirée, s'est agrandie pour contenir le texte.
+   * Mesuré sur la rangée d'extras d'une fiche : un titre de 299 px dans une
+   * tuile de 208, à cheval sur les deux voisines. Dix-huit chevauchements sur
+   * une seule page, la même page où l'utilisateur signalait « le texte se
+   * chevauche ».
+   *
+   * `normal` est la valeur INITIALE de la propriété, celle qu'a n'importe quel
+   * `<div>` — et pour un conteneur flex, elle se comporte comme `stretch`.
+   * Retirer une bizarrerie d'agent utilisateur, c'est le travail d'une couche
+   * de base ; ce n'est pas un choix de mise en page.
+   *
+   * Neutre partout ailleurs : sur les trente-deux boutons du dépôt qui sont des
+   * conteneurs flex ou grille, trente et un déclarent déjà leur `align-items`
+   * et ne voient rien changer. Un bouton qui n'est pas un conteneur flex ne lit
+   * pas cette propriété du tout. */
+  button {
+    align-items: normal;
+  }
+
   html, body {
     /* Repli en dur volontaire. La fenetre Tauri est `transparent: true` sur
      * macOS (overlay mpv) : si `--surface-0` ne resout pas — feuille pas encore
