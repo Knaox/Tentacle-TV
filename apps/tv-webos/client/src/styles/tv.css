@@ -152,23 +152,20 @@ body {
   line-height: 1.45;
 }
 
-/* ── Les titres que `clamp()` laissait nus ────────────────────────────────
+/* Le repli de taille de titre a disparu, et c'est un RETRAIT.
  *
- * La bannière d'accueil et l'en-tête de bibliothèque fixent leur taille de
- * titre en style EN LIGNE, avec `clamp()` — Chrome 79. Les passes PostCSS ne
- * lisent que la feuille produite : elles ne voient pas un attribut `style`, et
- * la garde de compatibilité laisse donc passer le build sans un mot. Sur la
- * dalle, la déclaration est simplement invalide, donc ignorée : le titre d'une
- * bibliothèque s'affichait à la taille héritée, seize pixels au milieu d'une
- * affiche plein écran.
+ * Il existait parce que les deux titres de bannière posaient leur `clamp()` en
+ * STYLE EN LIGNE, hors de portée des passes comme de la garde : là où `clamp()`
+ * n'est pas compris, la déclaration était ignorée et le titre retombait à seize
+ * pixels au milieu d'une affiche plein écran. Le repli le rattrapait — mais
+ * seulement là, si bien que le titre valait 46 px sur une génération et 52 sur
+ * l'autre.
  *
- * La règle n'a PAS besoin d'`!important`, et c'est ce qui la rend sûre : là où
- * `clamp()` est compris, la déclaration en ligne l'emporte et rien ne change ;
- * là où il ne l'est pas, il ne reste que celle-ci. */
-h1.text-on-media-primary {
-  font-size: 46px;
-  line-height: 1.08;
-}
+ * Les deux `clamp()` vivent maintenant dans `index.css` (`.titre-banniere`,
+ * `.titre-bibliotheque`), donc dans la feuille, donc résolus en pixels à la
+ * compilation. Il n'y a plus rien à rattraper, et une taille de moins qui
+ * dépend du moteur. */
+
 
 /* ── Mouvement ────────────────────────────────────────────────────────────
  *
@@ -200,3 +197,34 @@ h1.text-on-media-primary {
 /* Rien n'est prévu ici pour les commandes de défilement des rangées : elles
  * sont montées à la demande par `useHoverMount`, et sur une dalle il n'y a
  * pas de survol — elles n'entrent jamais dans le document. */
+
+/* ── Aucun flou d'arrière-plan, nulle part ───────────────────────────────
+ *
+ * `passeVerre` retire tous les `backdrop-filter` de la FEUILLE, et c'est le bon
+ * endroit pour vingt-six déclarations sur vingt-neuf. Les trois autres — non,
+ * les vingt-six autres — sont écrites en STYLE EN LIGNE dans `apps/web`, hors
+ * de portée de toute passe, et aucune règle ordinaire ne bat un attribut
+ * `style`.
+ *
+ * Elles y font deux dégâts. Sur Chrome 53 elles sont ignorées, sur Chrome 76 et
+ * au-delà elles s'appliquent : le même panneau est translucide sur une
+ * génération de dalle et opaque sur l'autre. Et là où elles s'appliquent, elles
+ * coûtent une recopie de l'arrière-plan et un recalcul de flou À CHAQUE IMAGE,
+ * sur un processeur qui n'en a pas les moyens — c'est la première des trois
+ * règles de coût du dépôt.
+ *
+ * `!important` sur un sélecteur universel est un instrument brutal, et c'est le
+ * seul qui atteigne un style en ligne. Il est justifié ici parce que la règle
+ * qu'il énonce est ABSOLUE pour cette cible : il n'existe aucune surface de
+ * téléviseur où un flou d'arrière-plan soit voulu. Convertir les vingt-six
+ * sites un par un aurait touché autant de fichiers d'`apps/web`, dont la
+ * moitié passent leur rayon par une variable de thème.
+ *
+ * C'est aussi pourquoi la garde des styles en ligne ne signale plus
+ * `backdrop-filter` : il est traité, universellement, ici. */
+*,
+*::before,
+*::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

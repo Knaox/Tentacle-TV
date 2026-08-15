@@ -251,6 +251,13 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
                     ) : (
                       <div
                         className="grid"
+                        /* La cible téléviseur substitue `useItemsPerRow`
+                           (`ui/grille/colonnesTv.ts`) : il publie la largeur de
+                           carte et sonde le moteur pour savoir s'il applique
+                           `gap` lui-même, et `grille-tv.css` pose l'écart en
+                           marges ou rien. Mesuré sur la dalle : 16 px dans les
+                           deux sens, sur les deux chemins.
+                           tv-compat-ok: traité par colonnesTv.ts + grille-tv.css */
                         style={{
                           gridTemplateColumns: `repeat(${itemsPerRow}, 1fr)`,
                           gap: GAP,

@@ -115,8 +115,7 @@ export function HeroContent({ item, animationKey }: HeroContentProps) {
         ) : (
           <motion.h1
             variants={itemVariants}
-            className="mb-4 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words tracking-tight"
-            style={{ fontSize: "clamp(1.75rem, 3.6vw, 3.25rem)", lineHeight: 1.1, letterSpacing: "-0.025em" }}
+            className="titre-banniere mb-4 font-bold text-on-media-primary drop-shadow-[0_3px_12px_var(--on-media-shadow)] line-clamp-2 break-words"
           >
             {displayName}
           </motion.h1>

@@ -277,10 +277,11 @@ export function WatchWeb() {
     <div className="relative h-screen w-screen bg-black">
       {showResumeIndicator && resumeTimeFormatted && (
         <div
-          className="absolute left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm text-white/80 transition-opacity duration-500"
+          /* Flou en CLASSE : un style en ligne échappe à la passe de verre du
+             téléviseur (cf. `Toast.tsx`). */
+          className="absolute left-1/2 top-16 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm text-white/80 backdrop-blur-sm transition-opacity duration-500"
           style={{
             background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(8px)",
             opacity: showResumeIndicator ? 1 : 0,
           }}
         >
