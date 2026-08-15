@@ -1,5 +1,5 @@
 import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie } from "./candidats";
-import { pointeurActif } from "./curseur";
+import { pointeurABougeDepuisScellement, pointeurActif } from "./curseur";
 
 /**
  * Le survol : capté avant React, et rendu au focus.
@@ -73,6 +73,13 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
     // pointeur qui vient se poser sur un élément a nécessairement traversé
     // l'écran — donc émis `mousemove`, donc rétabli le mode.
     if (!pointeurActif()) return;
+
+    // Et le mode ne suffit pas quand c'est le POINTEUR qui fait défiler. On est
+    // alors en mode pointeur par construction, et pourtant chaque image de
+    // défilement produit un `mouseover` sans qu'on ait bougé la télécommande.
+    // Le sceau distingue ces deux survols : il est posé avant chaque écriture
+    // de défilement et levé par tout `mousemove` réel.
+    if (!pointeurABougeDepuisScellement()) return;
 
     const cible = evenement.target;
     if (!(cible instanceof HTMLElement)) return;
