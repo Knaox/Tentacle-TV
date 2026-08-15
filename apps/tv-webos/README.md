@@ -123,12 +123,26 @@ dépôt, aucun `pnpm`. Il retrouve la CLI de LG si elle est là, l'installe dans
 **Le seul prérequis tolérable est Node.js.** Il l'est déjà de fait — la CLI de
 LG est un paquet npm — et tout le reste s'installe sans droits particuliers.
 
-**Un double-clic doit suffire.** D'où trois lanceurs pour une seule logique :
-`installer.sh` la porte, `Installer-Tentacle-TV.command` la délègue sous
-l'extension que le Finder sait ouvrir, `Installer-Tentacle-TV.cmd` fait de même
-sous Windows en basculant d'abord la console en UTF-8. Les deux premiers doivent
-garder leur bit d'exécution — le workflow le vérifie avant d'archiver, faute de
-quoi le double-clic ne ferait rien du tout.
+**Un double-clic doit suffire — sauf sur macOS, où il ne peut pas.** D'où trois
+lanceurs pour une seule logique : `installer.sh` la porte,
+`Installer-Tentacle-TV.command` la délègue sous l'extension que le Finder sait
+ouvrir, `Installer-Tentacle-TV.cmd` fait de même sous Windows en basculant
+d'abord la console en UTF-8. Les deux premiers doivent garder leur bit
+d'exécution — le workflow le vérifie avant d'archiver, faute de quoi le
+double-clic ne ferait rien du tout.
+
+Sur macOS, le Finder refuse d'ouvrir tout fichier sorti d'une archive
+téléchargée qui n'est pas signé par un développeur payant le programme Apple :
+« Placer dans la corbeille » ou « Annuler », sans troisième choix. Le clic droit
+› Ouvrir ne contourne plus rien depuis macOS 15, et aucune signature n'est
+possible ici — un `.command` n'est pas un bundle, il n'y a rien à notariser.
+
+Ce refus ne vise QUE le Finder : mesuré en posant `com.apple.quarantine` à la
+main sur les fichiers extraits, `bash installer.sh`, `node installer.mjs` et
+même `./Installer-Tentacle-TV.command` démarrent tous les trois sans un mot.
+C'est bash qui s'exécute, et bash est signé par Apple. La voie annoncée aux
+utilisateurs macOS est donc le terminal, et le `.command` n'est plus qu'un
+confort pour qui a débloqué le fichier dans les réglages.
 
 La phrase secrète est passée à `ares-novacom --getkey` par `--passphrase` plutôt
 que retapée au clavier, et mise en capitales au passage : LG l'affiche ainsi, la

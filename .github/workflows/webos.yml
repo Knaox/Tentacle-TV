@@ -212,18 +212,29 @@ jobs:
 
             ## Installer sur un téléviseur
 
-            Téléchargez l'archive, décompressez-la, et double-cliquez sur le
-            lanceur de votre système — `Installer-Tentacle-TV.command` sur macOS,
-            `Installer-Tentacle-TV.cmd` sur Windows, `installer.sh` sous Linux.
-            Il demande l'adresse du téléviseur et la phrase secrète affichées par
-            l'application « Developer Mode », puis fait tout le reste.
+            Le script demande l'adresse du téléviseur et la phrase secrète
+            affichées par l'application « Developer Mode », puis fait tout le
+            reste. Prérequis : Node.js sur l'ordinateur, et « Developer Mode »
+            installé sur le téléviseur avec un compte développeur LG.
+
+            **macOS et Linux** — une seule commande à coller dans un terminal :
+
+            ```bash
+            cd "$(mktemp -d)" && curl -fsSL -O https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }} && unzip -q ${{ env.INSTALLATEUR }} && node "Tentacle TV - LG webOS/installer.mjs"
+            ```
+
+            **Windows** — téléchargez l'archive, décompressez-la, double-cliquez
+            sur `Installer-Tentacle-TV.cmd` :
 
             ```
             https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }}
             ```
 
-            Prérequis : Node.js sur l'ordinateur, et « Developer Mode » installé
-            sur le téléviseur avec un compte développeur LG.
+            > Sur macOS, ne double-cliquez pas sur le `.command` : le Finder
+            > refuse d'ouvrir tout fichier téléchargé qui n'est pas signé par un
+            > développeur Apple payant, et le clic droit › Ouvrir ne contourne
+            > plus ce blocage depuis macOS 15. Le refus ne vise que le Finder —
+            > la commande ci-dessus, elle, passe sans rien avoir à débloquer.
 
             ## Le paquet seul
 
