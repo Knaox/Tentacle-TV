@@ -16,6 +16,27 @@ interface LibraryGridProps {
 }
 
 const POSTER_ASPECT = 2 / 3;
+/**
+ * Hauteur du bloc de légende, en pixels — une PREMIÈRE approximation, plus une
+ * vérité.
+ *
+ * Elle a longtemps été la seule chose que le virtualiseur connaissait de la
+ * hauteur d'une rangée, et elle est calée sur la typographie du navigateur.
+ * Toute typographie plus grande la dément : un plancher de taille de police —
+ * ce que pose la cible téléviseur, où l'on lit à trois mètres —, un zoom, une
+ * préférence système, ou simplement un titre qui passe sur deux lignes dans une
+ * autre langue.
+ *
+ * Mesuré sur la dalle avant correctif : légende de 80 px contre 52 annoncés,
+ * donc un pas de rangée de 342 px pour des cartes de 353. Les rangées étant
+ * positionnées en absolu, elles ne se contentaient pas de se serrer : elles se
+ * RECOUVRAIENT de onze pixels, les affiches d'une ligne mordant sur le titre de
+ * la précédente. C'est le « manque d'espacement » signalé.
+ *
+ * Le virtualiseur mesure désormais les rangées qu'il a montées
+ * (`measureElement`), et cette constante ne sert plus qu'à réserver la place
+ * avant la première mesure.
+ */
 const TEXT_HEIGHT = 52;
 const GAP = 16;
 
@@ -198,17 +219,32 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
                 return (
                   <div
                     key={virtualRow.key}
+                    // Mesurée, pas estimée. `data-index` est ce par quoi le
+                    // virtualiseur reconnaît la rangée qu'on lui rend ; sans
+                    // hauteur imposée, il lit celle du contenu et corrige son
+                    // estimation. Poser `height: virtualRow.size` ici, comme
+                    // c'était fait, revenait à lui faire mesurer sa propre
+                    // supposition.
+                    ref={virtualizer.measureElement}
+                    data-index={virtualRow.index}
                     style={{
                       position: "absolute",
                       top: 0,
                       left: 0,
                       width: "100%",
-                      height: virtualRow.size,
+                      // La gouttière appartient à la rangée, en PADDING et non
+                      // en marge : c'est la boîte que le virtualiseur mesure, et
+                      // une marge n'y entre pas. Elle était comptée dans
+                      // l'estimation ; mesurer sans elle collait les rangées les
+                      // unes aux autres.
+                      paddingBottom: GAP,
                       transform: `translateY(${virtualRow.start - virtualizer.options.scrollMargin}px)`,
                     }}
                   >
                     {isLoaderRow ? (
-                      <div className="flex h-full items-center justify-center">
+                      /* Hauteur explicite : la rangée n'en impose plus, donc
+                         `h-full` s'y résoudrait à zéro. */
+                      <div className="flex h-40 items-center justify-center">
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--brand)] border-t-transparent" />
                         <span className="ml-2 text-sm text-content-quaternary">{t("common:loadingMore")}</span>
                       </div>
