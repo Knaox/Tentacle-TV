@@ -5,6 +5,7 @@ import {
   SELECTEURS_INTERDITS,
   AFFICHAGES_INTERDITS,
 } from "./catalogueChrome53";
+import { formaterRefus } from "./messageCompat";
 
 export interface Survivance {
   primitive: string;
@@ -33,7 +34,16 @@ export function gardeCompat(racine: Root): Survivance[] {
     const ou = decrireEmplacement(declaration.parent);
 
     const interdite = DECLARATIONS_INTERDITES.find((entree) => entree.nom === declaration.prop);
-    if (interdite) {
+    // Une primitive mise à `none` est INERTE sur les deux moteurs, et c'est ce
+    // qui rend l'exception sûre : un moteur qui ignore la propriété n'en fait
+    // rien, un moteur qui la connaît en désactive l'effet. Dans les deux cas,
+    // le rendu est celui de l'absence — ce que la garde cherche justement à
+    // garantir. L'exception porte sur la VALEUR, jamais sur la propriété.
+    //
+    // Elle sert une seule règle, et une importante : la neutralisation
+    // universelle du flou d'arrière-plan par `tv.css`, seule chose qui atteigne
+    // les `backdropFilter` posés en style en ligne dans `apps/web`.
+    if (interdite && declaration.value.trim().toLowerCase() !== "none") {
       survivances.push({ ...interdite, primitive: interdite.nom, ou });
     }
 
@@ -64,22 +74,16 @@ export function gardeCompat(racine: Root): Survivance[] {
 
 /** Message d'erreur destiné à quelqu'un qui découvre le sujet. */
 export function formaterSurvivances(survivances: Survivance[]): string {
-  const lignes = survivances
-    .slice(0, 20)
-    .map((s) => `  ${s.primitive} (Chrome ${s.depuis}+) — ${s.consequence}\n      dans ${s.ou}`);
-
-  const reste = survivances.length > 20 ? `\n  … et ${survivances.length - 20} autres` : "";
-
-  return [
+  return formaterRefus(
     `${survivances.length} primitive(s) CSS trop récente(s) pour le socle du téléviseur :`,
-    ...lignes,
-    reste,
-    "",
-    "Le client téléviseur vise Chrome 53 (webOS 4.0). Soit la passe qui devait",
-    "traiter cette primitive ne la reconnaît pas, soit il en est apparu une",
-    "nouvelle — dans les deux cas, la corriger vaut mieux que la découvrir sur",
-    "une dalle. Les passes vivent dans config/postcss/.",
-  ].join("\n");
+    survivances.map((s) => `  ${s.primitive} (Chrome ${s.depuis}+) — ${s.consequence}\n      dans ${s.ou}`),
+    [
+      "Le client téléviseur vise Chrome 53 (webOS 4.0). Soit la passe qui devait",
+      "traiter cette primitive ne la reconnaît pas, soit il en est apparu une",
+      "nouvelle — dans les deux cas, la corriger vaut mieux que la découvrir sur",
+      "une dalle. Les passes vivent dans config/postcss/.",
+    ],
+  );
 }
 
 function decrireEmplacement(parent: unknown): string {

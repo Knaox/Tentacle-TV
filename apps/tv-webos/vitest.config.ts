@@ -29,6 +29,10 @@ export default defineConfig({
     // Les outils de mesure (`scripts/releve/`) portent leurs propres fonctions
     // pures : les laisser hors du filet reviendrait à déboguer l'instrument en
     // même temps que ce qu'il mesure.
-    include: ["client/src/**/*.test.ts", "scripts/**/*.test.mjs"],
+    // `config/` y entre aussi : les quatorze passes PostCSS décident de toute
+    // la mise en page du portage et n'avaient AUCUN test. Une passe est une
+    // fonction pure d'un arbre CSS vers un autre — le sujet le plus testable
+    // du dépôt, et le seul qu'on ne pouvait vérifier qu'en construisant.
+    include: ["client/src/**/*.test.ts", "config/**/*.test.ts", "scripts/**/*.test.mjs"],
   },
 });

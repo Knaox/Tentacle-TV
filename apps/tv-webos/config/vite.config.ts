@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { substitutionModules } from "./substitutionModules";
 import { servirHarnais } from "./servirHarnais";
+import { gardeStylesEnLigne } from "./gardeStylesEnLigne";
 import { PAQUETS_SUBSTITUES, FICHIERS_SUBSTITUES } from "./tableSubstitutions";
 import { OPTIONS_LEGACY, SOCLE_NAVIGATEUR } from "./legacy";
 import { compatibiliteChrome53 } from "./postcss";
@@ -61,6 +62,10 @@ export default defineConfig({
 
   plugins: [
     substitutionModules(FICHIERS_SUBSTITUES),
+    // Avant `react()` : le `transform` doit voir la source TSX, pas sa
+    // traduction. Et après la substitution, pour ne juger que les modules
+    // réellement embarqués.
+    gardeStylesEnLigne(),
     // Le banc d'essai du moteur de focus, hors du dossier public pour ne
     // jamais atteindre un téléviseur d'utilisateur.
     servirHarnais(resolve(CIBLE, "harnais")),
