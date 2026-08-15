@@ -23,6 +23,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   localiserAres,
+  aresUtilisable,
   installerAres,
   lancerAres,
   modeDeveloppeurRepond,
@@ -163,15 +164,27 @@ async function verifierTeleviseur(adresse) {
   );
 }
 
+/**
+ * La présence de la CLI ne suffit pas : une installation qui n'a rapatrié que
+ * le paquet racine laisse tous les fichiers en place et ne meurt qu'au premier
+ * `require`, trois étapes plus loin. On la fait donc parler avant de compter
+ * dessus, et on repart à neuf si elle se tait.
+ */
 function outillage() {
   annoncer("L'outillage de LG");
   const dejaLa = localiserAres();
-  if (dejaLa) {
+  if (aresUtilisable(dejaLa)) {
     console.log(`  ${vert("✓")} CLI webOS déjà présente`);
     return dejaLa;
   }
-  console.log(pale("    Première exécution : installation de la CLI webOS de LG…"));
-  const racine = installerAres();
+  console.log(
+    pale(
+      dejaLa
+        ? "    Installation précédente incomplète — on la refait à neuf…"
+        : "    Première exécution : installation de la CLI webOS de LG…"
+    )
+  );
+  const racine = installerAres({ purger: Boolean(dejaLa) });
   console.log(`  ${vert("✓")} CLI webOS installée`);
   return racine;
 }
