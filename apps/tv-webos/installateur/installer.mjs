@@ -37,6 +37,8 @@ const APPAREIL = "tentacle-tv";
 /** Le port SSH du mode développeur, et son compte. Ni l'un ni l'autre ne varie. */
 const PORT = "9922";
 const COMPTE = "prisoner";
+/** Le portail où se crée le compte développeur, sans lequel rien ne commence. */
+const COMPTE_LG = "https://webostv.developer.lge.com";
 
 const couleurs = process.stdout.isTTY;
 const gras = (t) => (couleurs ? `\x1b[1m${t}\x1b[0m` : t);
@@ -67,13 +69,22 @@ function accueil() {
   console.log(`
 ${cadre("Tentacle TV — installation sur téléviseur LG")}
 
-  Avant de commencer, sur le téléviseur :
+  Il faut d'abord un compte développeur LG — gratuit, trois minutes :
+
+    ${violet(COMPTE_LG)}
+    ${pale("« Sign In » en haut à droite, puis « CREATE ACCOUNT ».")}
+
+  Ensuite, sur le téléviseur :
 
     1. installez ${gras("Developer Mode")} depuis le LG Content Store ;
-    2. ouvrez-la et connectez-vous avec votre compte développeur LG ;
-    3. mettez ${gras("Dev Mode Status")} sur ${gras("ON")} ;
-    4. laissez cet écran affiché — il porte l'adresse IP et la
-       ${gras("phrase secrète")} que ce script va vous demander.
+    2. ouvrez-la et connectez-vous avec ce compte ;
+    3. mettez ${gras("Dev Mode Status")} sur ${gras("ON")} — le téléviseur redémarre ;
+    4. rouvrez l'application et activez ${gras("Key Server")} ;
+    5. laissez cet écran affiché — il porte l'adresse IP et la
+       ${gras("phrase secrète")} de six caractères, en bas à gauche.
+
+  ${gras("L'étape 4 n'est pas facultative")} : sans le Key Server, le téléviseur ne
+  ${pale("publie pas sa clé, et aucune installation n'est possible.")}
 
   ${pale("L'ordinateur et le téléviseur doivent être sur le même réseau.")}
 `);
@@ -119,9 +130,9 @@ async function dialogue(lecture) {
   );
   const phrase = await demander(
     lecture,
-    `  Phrase secrète ${pale("(le « key server passphrase », 6 caractères)")} : `,
+    `  Phrase secrète ${pale("(6 caractères, en bas à gauche de l'écran)")} : `,
     (valeur) => {
-      if (!valeur) return "Elle est affichée dans l'application Developer Mode.";
+      if (!valeur) return "Elle n'apparaît qu'une fois « Key Server » activé.";
       if (!/^[A-Za-z0-9]{4,16}$/.test(valeur)) return "Attendu : des lettres et des chiffres, sans espace.";
       return null;
     }
@@ -137,11 +148,16 @@ async function verifierTeleviseur(adresse) {
     console.log(`  ${vert("✓")} mode développeur joignable sur ${adresse}`);
     return;
   }
+  // Ce port n'est ouvert que par le Key Server, et par rien d'autre : c'est
+  // donc la première chose à vérifier, avant même l'adresse.
   throw new Error(
     `aucune réponse de ${adresse} sur le port 9991.\n\n` +
-      "  Les trois causes, dans l'ordre de fréquence :\n" +
-      "    • l'application Developer Mode n'est pas ouverte, ou Dev Mode Status\n" +
-      "      n'est pas sur ON (la session expire au bout de 50 heures) ;\n" +
+      "  Les causes, dans l'ordre de fréquence :\n" +
+      "    • KEY SERVER n'est pas activé dans l'application Developer Mode.\n" +
+      "      C'est lui, et lui seul, qui ouvre ce port — Dev Mode Status sur ON\n" +
+      "      ne suffit pas. Ouvrez l'application et activez-le ;\n" +
+      "    • l'application Developer Mode n'est pas ouverte, ou la session a\n" +
+      "      expiré (50 heures ; le bouton EXTEND la prolonge) ;\n" +
       "    • l'adresse IP n'est pas la bonne ;\n" +
       "    • l'ordinateur et le téléviseur ne sont pas sur le même réseau."
   );

@@ -5,21 +5,41 @@ Il faut Node.js sur l'ordinateur (https://nodejs.org, version « LTS »). C'est
 le seul prérequis : le reste s'installe tout seul.
 
 
-1. SUR LE TÉLÉVISEUR
+1. UN COMPTE DÉVELOPPEUR LG
+---------------------------
+
+  Gratuit, trois minutes, une seule fois :
+
+      https://webostv.developer.lge.com
+
+  « Sign In » en haut à droite, puis « CREATE ACCOUNT ». Choisissez votre
+  pays, acceptez les conditions, entrez une adresse e-mail et un mot de
+  passe, puis validez le lien de confirmation reçu par e-mail.
+
+
+2. SUR LE TÉLÉVISEUR
 --------------------
 
   a. Ouvrez le LG Content Store et installez « Developer Mode ».
-  b. Lancez-la et connectez-vous avec votre compte développeur LG
-     (celui créé sur webostv.developer.lge.com — gratuit).
+  b. Lancez-la et connectez-vous avec le compte créé à l'étape 1.
   c. Mettez « Dev Mode Status » sur ON. Le téléviseur redémarre.
-  d. Rouvrez « Developer Mode » et LAISSEZ CET ÉCRAN AFFICHÉ.
+  d. Rouvrez « Developer Mode » et activez « KEY SERVER ».
+  e. LAISSEZ CET ÉCRAN AFFICHÉ.
 
-  Il montre deux choses que le script va vous demander :
+  L'étape (d) n'est pas facultative. « Dev Mode Status » sur ON ne suffit
+  pas : c'est le Key Server, et lui seul, qui fait publier au téléviseur la
+  clé sans laquelle aucune installation n'est possible. C'est aussi lui qui
+  fait apparaître la phrase secrète.
+
+  L'écran montre alors les deux choses que le script va demander :
     • l'adresse IP du téléviseur ;
-    • la phrase secrète (« key server passphrase »), 6 caractères.
+    • la phrase secrète, 6 caractères, en bas à gauche.
+
+  Le champ « Remain Session » indique le temps restant — 50 heures. Le
+  bouton « EXTEND » le prolonge tant que la session n'a pas expiré.
 
 
-2. SUR L'ORDINATEUR
+3. SUR L'ORDINATEUR
 -------------------
 
   WINDOWS

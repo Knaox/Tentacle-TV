@@ -214,8 +214,15 @@ jobs:
 
             Le script demande l'adresse du téléviseur et la phrase secrète
             affichées par l'application « Developer Mode », puis fait tout le
-            reste. Prérequis : Node.js sur l'ordinateur, et « Developer Mode »
-            installé sur le téléviseur avec un compte développeur LG.
+            reste. Prérequis : Node.js sur l'ordinateur, et sur le téléviseur
+            « Developer Mode » installé avec un compte développeur LG — gratuit,
+            à créer sur <https://webostv.developer.lge.com>.
+
+            > Dans l'application « Developer Mode », il ne suffit PAS de mettre
+            > `Dev Mode Status` sur ON : il faut aussi activer **`Key Server`**,
+            > après le redémarrage. C'est lui, et lui seul, qui fait publier au
+            > téléviseur la clé sans laquelle rien ne s'installe — et qui fait
+            > apparaître la phrase secrète, en bas à gauche de l'écran.
 
             **macOS et Linux** — une seule commande à coller dans un terminal :
 

@@ -149,6 +149,13 @@ que retapée au clavier, et mise en capitales au passage : LG l'affiche ainsi, l
 clé est déchiffrée telle quelle, et une saisie en minuscules ne produirait qu'un
 « Unable to parse private key » que personne ne saurait interpréter.
 
+**Le port 9991 n'est ouvert que par le bouton « Key Server »** de l'application
+Developer Mode — pas par `Dev Mode Status`, qui ne fait qu'autoriser le mode. Un
+téléviseur en mode développeur, allumé, à la bonne adresse, reste donc muet tant
+que ce second bouton n'a pas été pressé, et c'est aussi lui qui fait apparaître
+la phrase secrète. C'est la panne la plus fréquente : le script sonde ce port
+avant toute chose et met cette cause en tête de son message d'échec.
+
 ## La sonde
 
 `/tv/sonde.html` est servie par le backend **avant même le premier build** — le
