@@ -53,7 +53,7 @@ export function FondFocusTv() {
   const visible = item !== null && surUnEcranDeParcours(pathname);
   const idImage = item && item.Type === "Episode" && item.SeriesId ? item.SeriesId : item?.Id;
   const url =
-    visible && idImage ? client.getImageUrl(idImage, "Backdrop", { width: 1280, quality: 70 }) : null;
+    visible && idImage ? client.getImageUrl(idImage, "Backdrop", { width: 1920, quality: 70 }) : null;
 
   const { calques, signalerEntre, signalerSorti } = useCalquesFond(url);
 
