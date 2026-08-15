@@ -34,6 +34,26 @@ type Mode = "dpad" | "pointeur";
 
 let mode: Mode = "dpad";
 
+/** Dernière position connue du pointeur, en coordonnées de fenêtre. */
+let position: { x: number; y: number } | null = null;
+
+/**
+ * Le sceau : « aucun mouvement réel depuis qu'on a écrit un défilement ».
+ *
+ * Il est posé par ce qui fait bouger la vue et levé par tout `mousemove`. Sa
+ * raison d'être est le paragraphe ci-dessus : un défilement refait le test de
+ * collision et signale ce qui passe sous un pointeur IMMOBILE. Le mode ne
+ * suffit pas à écarter ce survol-là, puisqu'on est bel et bien en mode
+ * pointeur ; seule la question « a-t-on bougé depuis ? » le distingue d'un
+ * vrai.
+ *
+ * Formulé ainsi plutôt qu'en comparant des coordonnées, et c'est le point
+ * délicat : un déplacement lent d'un pixel émet un `mousemove` puis un
+ * `mouseover` aux MÊMES coordonnées. Une comparaison stricte refuserait ce
+ * survol parfaitement légitime.
+ */
+let scelle = false;
+
 interface EvenementCurseur extends Event {
   detail?: { visibility?: boolean };
 }
@@ -55,6 +75,27 @@ export function pointeurActif(): boolean {
   return mode === "pointeur";
 }
 
+/** Où est le pointeur, ou `null` s'il n'a jamais bougé sur cette page. */
+export function positionPointeur(): { x: number; y: number } | null {
+  return position;
+}
+
+/**
+ * Scelle l'état avant d'écrire un défilement.
+ *
+ * Tout survol qui suivra sans mouvement réel du pointeur sera refusé par
+ * `survolFocus`. À appeler juste avant l'écriture, jamais après : entre les
+ * deux, le navigateur a déjà pu émettre son `mouseover`.
+ */
+export function scellerPointeur(): void {
+  scelle = true;
+}
+
+/** Le pointeur a-t-il réellement bougé depuis le dernier scellement ? */
+export function pointeurABougeDepuisScellement(): boolean {
+  return !scelle;
+}
+
 /**
  * Branche l'écoute et rend la fonction de débranchement.
  *
@@ -66,11 +107,26 @@ export function pointeurActif(): boolean {
 export function surveillerCurseur(): () => void {
   const surChangement = (evenement: Event) => {
     const visible = (evenement as EvenementCurseur).detail?.visibility;
+    // Chaque apparition du curseur a droit à son premier survol franc : le
+    // sceau tombe, sans quoi le pointeur qui revient à l'écran ne pourrait
+    // rien désigner avant d'avoir bougé.
+    if (visible) scelle = false;
+    else position = null;
     poser(visible ? "pointeur" : "dpad");
   };
 
-  const surMouvement = () => poser("pointeur");
-  const surTouche = () => poser("dpad");
+  const surMouvement = (evenement: Event) => {
+    const souris = evenement as MouseEvent;
+    position = { x: souris.clientX, y: souris.clientY };
+    scelle = false;
+    poser("pointeur");
+  };
+  const surTouche = () => {
+    // Le D-pad reprend la main : le pointeur n'a plus rien à désigner, et sa
+    // dernière position ne doit pas servir de prétexte à un survol.
+    scelle = true;
+    poser("dpad");
+  };
 
   document.addEventListener("cursorStateChange", surChangement);
   document.addEventListener("mousemove", surMouvement, { passive: true });
