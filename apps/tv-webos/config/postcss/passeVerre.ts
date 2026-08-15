@@ -22,6 +22,13 @@ export function passeVerre(racine: Root, contexte: ContexteCompat): void {
     if (declaration.prop !== "backdrop-filter" && declaration.prop !== "-webkit-backdrop-filter") {
       return;
     }
+    // `none` n'est pas un flou, c'est son ABSENCE — et retirer une déclaration
+    // qui dit « pas de flou » ne change rien, sauf dans le seul cas où elle est
+    // écrite exprès : la règle universelle `!important` de `tv.css`, seule
+    // chose qui atteigne les vingt-six `backdropFilter` posés en style en ligne
+    // dans `apps/web`. Cette passe l'avait mangée, ce qui la rendait inopérante
+    // sans que rien ne le signale.
+    if (declaration.value.trim().toLowerCase() === "none") return;
     declaration.remove();
     contexte.compter("verre");
   });

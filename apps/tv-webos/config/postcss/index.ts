@@ -2,6 +2,7 @@ import type { Plugin } from "postcss";
 import { creerContexte } from "./contexte";
 import { passeImportsDistants } from "./passeImportsDistants";
 import { passePseudoModernes } from "./passePseudoModernes";
+import { passeUnitesFixes } from "./passeUnitesFixes";
 import { passeGrille } from "./passeGrille";
 import { passeEcarts } from "./passeEcarts";
 import { passeRatios } from "./passeRatios";
@@ -25,20 +26,23 @@ import { gardeCompat, formaterSurvivances } from "./gardeCompat";
  *
  *   1. `importsDistants` d'abord — un `@import` doit rester en tête de
  *      feuille, aucune autre passe ne doit avoir à le contourner.
- *   2. `pseudoModernes` avant toute transformation géométrique : elle réécrit
- *      des sélecteurs, et les passes suivantes clonent des règles.
- *   3. `grille` avant `ecarts` : le calcul de largeur d'une colonne doit être
+ *   2. `unitesFixes` avant TOUTE transformation géométrique : les passes
+ *      suivantes voient alors des pixels partout, y compris dans les
+ *      demi-écarts qu'elles écrivent en `calc(… / 2)`.
+ *   3. `pseudoModernes` ensuite : elle réécrit des sélecteurs, et les passes
+ *      suivantes clonent des règles.
+ *   4. `grille` avant `ecarts` : le calcul de largeur d'une colonne doit être
  *      écrit tant que la relation à l'écart est encore lisible.
- *   4. `ecarts` ensuite, pour traiter d'un même geste les flexbox d'origine et
+ *   5. `ecarts` ensuite, pour traiter d'un même geste les flexbox d'origine et
  *      les grilles converties.
- *   5. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
+ *   6. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
  *      indépendantes.
- *   6. `repliJeton` avant `gardeCompat` — c'est elle qui retire la déclaration
+ *   7. `repliJeton` avant `gardeCompat` — c'est elle qui retire la déclaration
  *      trop récente d'un jeton qui porte DÉJÀ son repli, et sans elle la garde
  *      refuserait une convention qu'on veut au contraire encourager. Elle ne
  *      touche à rien qui n'ait pas de repli, donc elle n'affaiblit pas la
  *      garde : une primitive déclarée seule la fait toujours échouer.
- *   7. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
+ *   8. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
  *
  * `survol` est la seule passe qui ne traite pas une primitive trop récente :
  * `:hover` est parfaitement compris par Chrome 53, et c'est le problème. Elle
@@ -57,6 +61,7 @@ export function compatibiliteChrome53(): Plugin {
       const contexte = creerContexte();
 
       passeImportsDistants(racine, contexte);
+      passeUnitesFixes(racine, contexte);
       passePseudoModernes(racine, contexte);
       passeGrille(racine, contexte);
       passeEcarts(racine, contexte);

@@ -79,6 +79,17 @@ export const DECLARATIONS_INTERDITES: PrimitiveInterdite[] = [
 
 /** Valeurs de propriété qui invalident la déclaration qui les porte. */
 export const VALEURS_INTERDITES: PrimitiveInterdite[] = [
+  // Les trois variantes du viewport dynamique — Chrome 108, donc absentes
+  // jusqu'à webOS 23 incluse. Elles n'étaient pas au catalogue et sortaient
+  // dans la feuille livrée (`.min-h-dvh{min-height:100dvh}`) : la déclaration
+  // entière y était ignorée, et l'écran perdait sa hauteur sur une génération
+  // et pas sur l'autre. `passeUnitesFixes` les résout désormais en pixels ;
+  // celles qui lui échappent doivent faire échouer le build.
+  { nom: "dvh", depuis: 108, consequence: "la declaration entiere est ignoree — l'ecran perd sa hauteur" },
+  { nom: "svh", depuis: 108, consequence: "la declaration entiere est ignoree — l'ecran perd sa hauteur" },
+  { nom: "lvh", depuis: 108, consequence: "la declaration entiere est ignoree — l'ecran perd sa hauteur" },
+  { nom: "dvw", depuis: 108, consequence: "la declaration entiere est ignoree — l'ecran perd sa largeur" },
+
   { nom: "min(", depuis: 79, consequence: "la déclaration entière est ignorée" },
   { nom: "max(", depuis: 79, consequence: "idem" },
   { nom: "clamp(", depuis: 79, consequence: "idem" },
