@@ -97,6 +97,14 @@ jobs:
       - name: Installer les dépendances
         run: pnpm install --frozen-lockfile
 
+      # `pnpm typecheck` couvre TOUT le dépôt, backend compris, et le client
+      # Prisma de celui-ci est un stub tant que `prisma generate` n'a pas
+      # tourné : sans lui, chaque résultat de requête est `any` et une quinzaine
+      # d'erreurs TS7006 tombent sur du code parfaitement sain. Elles ne se
+      # voient jamais en local, où le client a été généré une fois pour toutes.
+      - name: Générer le client Prisma
+        run: pnpm --filter @tentacle-tv/backend db:generate
+
       - name: Contrôles
         run: |
           pnpm typecheck
@@ -139,9 +147,14 @@ jobs:
           test -x apps/tv-webos/installateur/installer.sh
           test -x apps/tv-webos/installateur/Installer-Tentacle-TV.command
           # Le dossier est renommé : ce qui apparaît après décompression doit
-          # dire ce que c'est, sur un bureau où il côtoiera autre chose.
+          # dire ce que c'est, sur un bureau où il côtoiera autre chose. Le nom
+          # reste en ASCII pur — un zip sans drapeau UTF-8 est relu en CP437 par
+          # l'Explorateur de Windows, et un tiret cadratin y devient un déchet.
           mkdir -p atelier
-          cp -R apps/tv-webos/installateur "atelier/Tentacle TV — LG webOS"
+          cp -R apps/tv-webos/installateur "atelier/Tentacle TV - LG webOS"
+          # Le test sert la CI, pas l'utilisateur : il n'a rien à faire dans une
+          # archive dont chaque fichier doit se justifier au premier coup d'oeil.
+          rm -f "atelier/Tentacle TV - LG webOS/"*.test.mjs
           (cd atelier && zip -r -X "../livraison/${{ env.INSTALLATEUR }}" .)
           unzip -l "livraison/${{ env.INSTALLATEUR }}"
 
