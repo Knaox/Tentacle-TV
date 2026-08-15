@@ -42,12 +42,22 @@ describe("transcodage", () => {
     expect(profils[0].Container).toBe("mp4");
   });
 
-  it("laisse le flux de transport porter l'E-AC3 en huit canaux", () => {
-    // C'est ce qui permet à un TrueHD 7.1 Atmos converti de rester en Atmos :
-    // l'E-AC3 JOC est exactement le format des applications de LG.
+  it("convertit vers l'E-AC3 avant l'AAC, en huit canaux", () => {
+    // Le rang décide de la CONVERSION, pas de la copie. L'E-AC3 devant, c'est
+    // du bitstream Dolby vers l'eARC ; l'AAC devant, c'est du PCM décodé par la
+    // dalle, donc plus d'Atmos.
     const ts = transcodage(resolu(true), vide, true)[0];
-    expect(ts.AudioCodec).toContain("eac3");
+    expect(ts.AudioCodec?.split(",")[0]).toBe("eac3");
+    expect(ts.AudioCodec).toContain("aac");
     expect(ts.MaxAudioChannels).toBe("8");
+  });
+
+  it("garde l'AAC en dernier recours quand la dalle ignore les Dolby", () => {
+    // Une liste vide ferait recompresser l'image faute de profil : l'AAC est le
+    // seul codec qu'aucune génération n'ait jamais refusé.
+    const sansDolby = { conteneurs: [], video: [], audio: ["ac3", "eac3"] };
+    const ts = transcodage(resolu(true), sansDolby, true)[0];
+    expect(ts.AudioCodec).toBe("aac");
   });
 
   it("n'annonce jamais l'AV1 ni le VP9 en flux de transport", () => {
