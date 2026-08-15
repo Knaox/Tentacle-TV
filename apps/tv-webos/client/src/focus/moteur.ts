@@ -8,6 +8,8 @@ import { deplacer } from "./deplacement";
 import { invaliderContenu, retenirContenu } from "./zones";
 import { surveillerCurseur } from "./curseur";
 import { surveillerSurvol } from "./survolFocus";
+import { surveillerDefilementCurseur } from "./defilementCurseur";
+import { dansLaFenetre } from "./mesure";
 import { clavierSystemeVisible, surveillerClavierSysteme } from "./clavierSysteme";
 import { navigationOsdActive } from "../lecture/etatLecteurTv";
 
@@ -50,6 +52,10 @@ export function installerMoteurFocus(): () => void {
   // Le pointeur déplace le focus, sous la même condition de suspension que les
   // flèches : ce qui vaut pour un mode d'entrée vaut pour l'autre.
   const arreterSurvol = surveillerSurvol(moteurSuspendu);
+  // Et il fait DÉFILER quand il vise un bord — le geste de webOS, sous la même
+  // condition de suspension. Le focus, lui, ne suit pas : il est réancré à
+  // l'arrêt, et seulement s'il a quitté la fenêtre (cf. `defilementCurseur.ts`).
+  const arreterDefilementCurseur = surveillerDefilementCurseur(moteurSuspendu, reancrerFocus);
 
   // Toute arrivée du focus est notée, quelle qu'en soit l'origine — flèche,
   // pointeur, clic, ou restitution. Un seul écouteur délégué : les cartes vont
@@ -158,6 +164,7 @@ export function installerMoteurFocus(): () => void {
     document.removeEventListener("focusout", surPerte, true);
     clearInterval(garde);
     arreterRoute();
+    arreterDefilementCurseur();
     arreterSurvol();
     arreterClavier();
     arreterCurseur();
@@ -192,4 +199,23 @@ function surLecteur(): boolean {
 function moteurSuspendu(): boolean {
   if (clavierSystemeVisible()) return true;
   return surLecteur() && !navigationOsdActive();
+}
+
+/**
+ * Reposer l'anneau après un défilement au pointeur.
+ *
+ * On ne cherche pas à SUIVRE la vue pendant le geste : ce serait un
+ * recensement complet par image, et le pointeur est de toute façon la
+ * désignation tant qu'il est là. Mais l'abandonner hors champ casserait la
+ * première règle du moteur — un appui de flèche ramènerait la vue là où
+ * l'anneau est resté, par `amenerEnVue`, annulant le geste qu'on vient de
+ * faire.
+ *
+ * Un seul passage, à l'arrêt, et seulement si l'anneau a réellement quitté la
+ * fenêtre. `amorcerFocus` sait choisir une cible sensée sur l'écran courant.
+ */
+function reancrerFocus(): void {
+  const actif = document.activeElement;
+  if (actif instanceof HTMLElement && actif !== document.body && dansLaFenetre(actif)) return;
+  amorcerFocus();
 }

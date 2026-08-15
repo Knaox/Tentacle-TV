@@ -112,3 +112,27 @@ export function boiteDeNavigation(element: HTMLElement, rectangle?: DOMRect): Bo
 
   return inverserEchelle(boite, echelle, origine);
 }
+
+/**
+ * L'élément est-il encore dans la fenêtre ?
+ *
+ * Sert au réancrage du focus après un défilement au pointeur : la vue a pu
+ * descendre de trois écrans sans que l'anneau bouge, et le laisser là ferait
+ * remonter toute la page au premier appui de flèche, par `amenerEnVue`.
+ *
+ * La marge est la même qu'au recensement — un demi-écran de part et d'autre —
+ * et il faut que ce soit la même : un élément que le recensement accepte encore
+ * comme voisin n'a aucune raison d'être considéré comme perdu ici.
+ */
+export function dansLaFenetre(element: HTMLElement, marge = 0.5): boolean {
+  const rectangle = element.getBoundingClientRect();
+  if (rectangle.width === 0 && rectangle.height === 0) return false;
+  const hauteur = window.innerHeight;
+  const largeur = window.innerWidth;
+  return (
+    rectangle.bottom >= -hauteur * marge
+    && rectangle.top <= hauteur * (1 + marge)
+    && rectangle.right >= -largeur * marge
+    && rectangle.left <= largeur * (1 + marge)
+  );
+}

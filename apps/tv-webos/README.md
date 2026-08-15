@@ -699,6 +699,32 @@ comme de la question du bord : on écrivait pour eux un défilement qu'ils ne
 suivaient pas, et leurs entrées répondraient « il y a un candidat au-dessus »
 depuis n'importe où.
 
+**Deuxième exception : le POINTEUR défile.** Viser un bord de l'écran avec la
+Magic Remote fait défiler la vue sans que le focus bouge — c'est le geste de
+webOS, où le pointeur EST la désignation, et sans lui la télécommande n'a aucun
+moyen d'atteindre une carte trois écrans plus bas autrement qu'à la flèche. La
+règle est tenue par les deux bouts. D'un côté le **sceau** (`curseur.ts`) :
+chaque écriture de défilement scelle l'état, et le survol refuse de prendre le
+focus tant que le pointeur n'a pas réellement bougé. Sans lui, le `mouseover`
+que le défilement provoque sous un pointeur IMMOBILE emmènerait l'anneau dans
+le sens du défilement, à chaque image — c'est le défaut que `curseur.ts`
+documentait déjà sans le corriger. De l'autre le **réancrage** : à l'arrêt, et
+seulement si l'anneau a quitté la fenêtre, on le repose sur l'écran courant.
+Sans lui, la première flèche appuyée ramènerait la vue là où l'anneau était
+resté, par `amenerEnVue`, annulant le geste qu'on vient de faire.
+
+Les cibles — le conteneur vertical, la piste horizontale — sont résolues au
+DÉMARRAGE du geste et gardées jusqu'à son terme. Les réévaluer à chaque image
+paraissait plus juste, et c'est le contraire : la page défile sous un pointeur
+immobile, `elementFromPoint` finit par désigner un calque fixe, et le geste
+s'arrêtait au milieu sans rien pour le reprendre — mesuré, 753 px puis plus
+rien alors qu'il restait du mou. La courbe de vitesse est quadratique, de 240 à
+1600 px/s (`zonesBord.ts`, pur et testé) : effleurer la bande fait ramper, ce
+qui permet de s'arrêter sur la bonne rangée, et s'y coller fait filer. Une
+droite donne trop de vitesse dès l'entrée dans la bande, et l'on dépasse
+toujours sa cible. Enfin, la boucle d'animation n'existe QUE pendant le
+défilement : au repos, aucune image n'est composée pour rien.
+
 **Un menu de filtres pose son focus en s'ouvrant** (`MenuFiltreTv.tsx`). Le
 moteur ne peut pas s'en charger : il ne déplace le focus qu'aux appuis
 directionnels, et ses repose-focus renoncent dès qu'un élément est focalisé —
