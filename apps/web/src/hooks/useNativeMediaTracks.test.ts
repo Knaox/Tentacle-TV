@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { AudioTrack } from "../components/player/videoPlayer.types";
-import { activerPisteAudio, pisteIntrouvable, type ListePistesNatives } from "./useNativeMediaTracks";
+import { apparier, rangDe } from "./appariementPistes";
+import {
+  activerPisteAudio,
+  listerNatives,
+  pisteIntrouvable,
+  type ListePistesNatives,
+} from "./useNativeMediaTracks";
 
 /**
  * Ce que ces cas protègent : sur un téléviseur, la piste audio se choisit par
@@ -10,7 +16,8 @@ import { activerPisteAudio, pisteIntrouvable, type ListePistesNatives } from "./
  * pendant que l'interface affiche « Français ».
  */
 
-const piste = (index: number): AudioTrack => ({ index, label: `piste ${index}` }) as AudioTrack;
+const piste = (index: number, lang?: string, codec?: string): AudioTrack =>
+  ({ index, label: `piste ${index}`, lang, codec });
 
 function listeNative(nombre: number, actives: number[] = [0]): ListePistesNatives {
   const liste = { length: nombre } as ListePistesNatives;
@@ -18,19 +25,20 @@ function listeNative(nombre: number, actives: number[] = [0]): ListePistesNative
   return liste;
 }
 
-describe("activerPisteAudio", () => {
-  it("traduit l'index Jellyfin en RANG dans la liste native", () => {
-    // Jellyfin numérote tous les flux (vidéo comprise) : la piste d'index 2 est
-    // la première AUDIO, donc le rang 0 côté élément.
-    const natives = listeNative(2);
-    expect(activerPisteAudio(natives, [piste(2), piste(3)], 3)).toBe(true);
-    expect(natives[0].enabled).toBe(false);
-    expect(natives[1].enabled).toBe(true);
-  });
+/** Le rang tel que le hook le calcule, pour tester les deux bouts ensemble. */
+function rangVoulu(
+  natives: ListePistesNatives,
+  pistes: AudioTrack[],
+  voulue: number,
+  publiable?: (p: AudioTrack) => boolean,
+): number | null {
+  return rangDe(apparier(listerNatives(natives), pistes, publiable), pistes, voulue);
+}
 
-  it("n'active qu'une piste, quel que soit l'état de départ", () => {
+describe("activerPisteAudio", () => {
+  it("n'active que le rang demandé, quel que soit l'état de départ", () => {
     const natives = listeNative(3, [0, 1, 2]);
-    activerPisteAudio(natives, [piste(1), piste(2), piste(3)], 2);
+    expect(activerPisteAudio(natives, 1)).toBe(true);
     expect([natives[0].enabled, natives[1].enabled, natives[2].enabled]).toEqual([false, true, false]);
   });
 
@@ -46,69 +54,71 @@ describe("activerPisteAudio", () => {
         get: () => ({ get enabled() { return valeur; }, set enabled(_v: boolean) { ecritures += 1; } }),
       });
     }
-    expect(activerPisteAudio(natives, [piste(1), piste(2)], 1)).toBe(true);
+    expect(activerPisteAudio(natives, 0)).toBe(false);
     expect(ecritures).toBe(0);
   });
 
-  it("écrit bien quand la piste active n'est PAS celle voulue", () => {
-    const natives = listeNative(2, [0]);
-    expect(activerPisteAudio(natives, [piste(1), piste(2)], 2)).toBe(true);
-    expect([natives[0].enabled, natives[1].enabled]).toEqual([false, true]);
-  });
-
-  it("ne touche à RIEN tant que la liste n'est pas peuplée", () => {
-    // Le cas du défaut : l'effet tourne au montage, avant loadedmetadata.
-    // Renoncer serait juste ; renoncer DÉFINITIVEMENT était le bug.
-    const natives = listeNative(0);
-    expect(activerPisteAudio(natives, [piste(1), piste(2)], 2)).toBe(false);
-  });
-
-  it("ne touche à rien sur une piste unique — il n'y a rien à choisir", () => {
-    const natives = listeNative(1);
-    expect(activerPisteAudio(natives, [piste(1)], 1)).toBe(false);
-    expect(natives[0].enabled).toBe(true);
-  });
-
-  it("laisse la piste en place quand l'index demandé n'existe pas", () => {
+  it("refuse un rang hors de la liste plutôt que de déborder", () => {
     const natives = listeNative(2);
-    expect(activerPisteAudio(natives, [piste(1), piste(2)], 99)).toBe(false);
-    expect(natives[0].enabled).toBe(true);
-  });
-
-  it("laisse la piste en place quand le démultiplexeur en a omis", () => {
-    // Trois pistes annoncées par Jellyfin, deux lues par le moteur : le rang
-    // demandé sort de la liste, mieux vaut la piste du conteneur qu'un
-    // débordement silencieux.
-    const natives = listeNative(2);
-    expect(activerPisteAudio(natives, [piste(1), piste(2), piste(3)], 3)).toBe(false);
+    expect(activerPisteAudio(natives, 5)).toBe(false);
+    expect(activerPisteAudio(natives, -1)).toBe(false);
     expect(natives[0].enabled).toBe(true);
   });
 });
 
+describe("listerNatives", () => {
+  it("copie la collection vivante en données inertes", () => {
+    const natives = { length: 2 } as ListePistesNatives;
+    natives[0] = { enabled: true, id: "1", language: "fr", label: "VFF" };
+    natives[1] = { enabled: false, id: "2", language: "en" };
+    expect(listerNatives(natives)).toEqual([
+      { id: "1", language: "fr", label: "VFF" },
+      { id: "2", language: "en", label: undefined },
+    ]);
+  });
+});
+
 /**
- * Deux échecs que `activerPisteAudio` confond sous un même `false`, et qu'il
- * faut séparer avant de décider quoi que ce soit : une liste pas encore peuplée
- * n'est pas un refus. Conclure dessus renégocierait une session à CHAQUE montage
- * de lecteur — cet effet tourne avant `loadedmetadata` — pour une piste qui
- * serait arrivée une milliseconde plus tard.
+ * Le verdict, et le défaut qu'il referme.
+ *
+ * L'ancien critère était la LONGUEUR de la liste : moins de deux entrées valait
+ * « pas encore peuplée ». Sur le MKV de référence — DTS-HD MA 5.1 français,
+ * TrueHD 7.1 Atmos anglais, mesuré sur une C3 en webOS 25 — le démultiplexeur
+ * n'en publie qu'une, définitivement. Le critère était donc vrai pour toujours,
+ * et demander l'anglais ne déclenchait RIEN : ni bascule, ni session serveur.
+ * C'est ce cas-là que le premier test ci-dessous inverse.
  */
 describe("pisteIntrouvable", () => {
-  it("ne conclut rien tant que la liste n'est pas peuplée", () => {
-    expect(pisteIntrouvable(listeNative(0), [piste(1), piste(2)], 2)).toBe(false);
-    expect(pisteIntrouvable(listeNative(1), [piste(1), piste(2)], 2)).toBe(false);
+  it("conclut sur une liste d'UNE seule entrée quand les métadonnées sont là", () => {
+    const natives = listeNative(1);
+    natives[0] = { enabled: true, id: "1", language: "fr" };
+    const pistes = [piste(1, "fra", "dts"), piste(2, "eng", "truehd")];
+    expect(rangVoulu(natives, pistes, 2)).toBeNull();
+    expect(pisteIntrouvable(true, rangVoulu(natives, pistes, 2))).toBe(true);
   });
 
-  it("reconnaît une piste que le lecteur n'a pas publiée", () => {
-    // Le cas réel : elle est dans le conteneur, la puce ne sait pas la décoder,
-    // le démultiplexeur l'a passée sous silence. C'est au serveur de jouer.
-    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2)], 99)).toBe(true);
+  it("trouve bien la piste qui, elle, est publiée", () => {
+    const natives = listeNative(1);
+    natives[0] = { enabled: true, id: "1", language: "fr" };
+    const pistes = [piste(1, "fra", "dts"), piste(2, "eng", "truehd")];
+    expect(rangVoulu(natives, pistes, 1)).toBe(0);
+    expect(pisteIntrouvable(true, rangVoulu(natives, pistes, 1))).toBe(false);
   });
 
-  it("reconnaît un rang au-delà de ce que le lecteur expose", () => {
-    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2), piste(3)], 3)).toBe(true);
+  it("ne conclut rien tant que les métadonnées ne sont pas là", () => {
+    // Quelle que soit la longueur : c'est `readyState` qui décide, et lui seul.
+    expect(pisteIntrouvable(false, null)).toBe(false);
+  });
+
+  it("reconnaît un index que le serveur n'annonce même pas", () => {
+    const natives = listeNative(2, [0]);
+    const pistes = [piste(1), piste(2)];
+    expect(pisteIntrouvable(true, rangVoulu(natives, pistes, 99))).toBe(true);
   });
 
   it("se tait quand la piste est bien là", () => {
-    expect(pisteIntrouvable(listeNative(2), [piste(1), piste(2)], 2)).toBe(false);
+    const natives = listeNative(2, [0]);
+    const pistes = [piste(1), piste(2)];
+    expect(pisteIntrouvable(true, rangVoulu(natives, pistes, 2))).toBe(false);
   });
 });
