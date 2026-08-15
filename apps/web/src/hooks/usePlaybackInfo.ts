@@ -143,6 +143,12 @@ export function usePlaybackInfo(lecteurNatif = false) {
     maxStreamingBitrate?: number;
     /** Force server-side audio selection (Edge/Chrome: no native audioTracks API). */
     forceTranscode?: boolean;
+    /**
+     * La source est en Dolby Vision — le profil du téléviseur en a besoin pour
+     * choisir le conteneur d'un éventuel remux. Sans elle, le profil ne sait
+     * rien de ce qu'on va lui demander de lire.
+     */
+    sourceDolbyVision?: boolean;
   }) => {
     if (!userId) return;
 
@@ -150,8 +156,13 @@ export function usePlaybackInfo(lecteurNatif = false) {
     setState((prev) => ({ ...prev, isLoading: true }));
 
     try {
-      let profile = opts.maxStreamingBitrate != null
-        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, optionsProfil)
+      // Le profil mémoïsé ne convient que si rien de propre à CETTE lecture ne
+      // le change. Un débit imposé ou une source Dolby Vision le rebâtissent.
+      const surMesure = opts.maxStreamingBitrate != null || opts.sourceDolbyVision === true;
+      let profile = surMesure
+        ? construireProfil(lecteurNatif, isMacOSTauri, opts.maxStreamingBitrate, {
+          ...optionsProfil, sourceDolbyVision: opts.sourceDolbyVision,
+        })
         : deviceProfile;
       // Edge/Chrome lack audioTracks API — strip DirectPlayProfiles so Jellyfin
       // returns a TranscodingUrl with the correct audio track selected server-side.

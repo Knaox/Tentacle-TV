@@ -1,6 +1,12 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import type { usePlaybackInfo } from "./usePlaybackInfo";
+import { sourceEstDolbyVision } from "./playbackVerdict";
+
+/** Le flux vidéo de la première source, seul endroit où la plage est décrite. */
+function fluxVideoDe(item: MediaItem | undefined): MediaStream | undefined {
+  return item?.MediaSources?.[0]?.MediaStreams?.find((s) => s.Type === "Video");
+}
 
 interface Options {
   /** Préférences de pistes du serveur appliquées (cf. useServerTrackPrefs). */
@@ -78,6 +84,10 @@ export function useWebPlaybackInfoFetch({
       // l'utilisateur, eux, imposent bien leur débit — c'est leur raison d'être.
       maxStreamingBitrate: quality ?? undefined,
       forceTranscode,
+      // Le profil ne voit jamais l'item : il faut lui dire ce qu'on s'apprête à
+      // lui faire lire. Seul le téléviseur s'en sert, pour choisir le conteneur
+      // d'un remux qui préserve le RPU.
+      sourceDolbyVision: sourceEstDolbyVision(fluxVideoDe(item)),
     });
     // Les deux drapeaux de repli SONT des dépendances de rendu : ce sont eux,
     // et eux seuls, qui relancent la requête après un échec. Passer par
