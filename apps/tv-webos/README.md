@@ -72,6 +72,69 @@ pnpm --filter @tentacle-tv/tv-webos emu:launch
 La version du paquet vient de `versions.json` (champ `webos`) ; `scripts/ipk.mjs`
 la reporte dans `appinfo.json` pour que les deux ne puissent pas diverger.
 
+## Les images de la coquille
+
+`pnpm --filter @tentacle-tv/tv-webos icones` les régénère **toutes** depuis le
+seul `shell/images/tentacle-logo-pirate.svg`. Les PNG sont versionnés ; le
+script ne sert qu'à les refaire, et demande librsvg et ImageMagick.
+
+Trois choses ne se devinent pas, et sont la raison d'être du script :
+
+**L'icône est posée au centre d'une tuile dont le fond est `iconColor`.** Un
+dessin sur fond transparent laisse voir cette couleur ; un dessin sur fond
+opaque pose un carré par-dessus. On prend le fond opaque — c'est le seul cas qui
+reste correct si `iconColor` n'est pas honoré — et le dégradé est construit pour
+valoir **exactement** `iconColor` sur ses quatre bords : rayon égal à la
+demi-largeur, donc les milieux de bord tombent sur la dernière butée et les
+coins sont au-delà. La jointure avec la tuile ne se voit pas. Changer l'un sans
+l'autre fait réapparaître un liseré.
+
+**Les deux icônes sont redimensionnées par le téléviseur, dans un sens ou dans
+l'autre selon le millésime** : webOS TV 1.0 affiche la petite en 100×100, webOS
+TV 2.0 affiche la grande en 115×115. On rend donc un maître de 5200 — multiple
+entier de 130 (×40), de 80 (×65) et du 400 du Seller Lounge (×13) — puis on
+réduit en Lanczos. Aucune des réductions ne tombe entre deux pixels, et les
+détails fins du crâne survivent, ce qu'un rendu vectoriel direct à 80 pixels ne
+garantit pas.
+
+**Le splash ne doit pas être un écran noir** — la référence LG le dit en toutes
+lettres. Le précédent était une vignette perdue au milieu de 1920×1080 de noir.
+
+Le 400×400 sort dans `store-assets/` et non dans `shell/` : LG le réclame au
+Seller Lounge, l'y substitue au `largeIcon` après redimensionnement, et il se
+téléverse à part — il n'a rien à faire dans l'IPK.
+
+## L'installateur, pour qui n'a pas cloné le dépôt
+
+`installateur/` s'adresse à quelqu'un qui possède un téléviseur LG et rien
+d'autre : ni ce dépôt, ni le SDK de LG, ni la moindre ligne de commande. Il pose
+deux questions — l'adresse du téléviseur et la phrase secrète que l'application
+« Developer Mode » affiche —, puis enregistre l'appareil, récupère sa clé SSH,
+rapatrie l'IPK depuis la release `webos-latest` et l'installe.
+
+Trois choses le contraignent, et expliquent sa forme :
+
+**Il voyage hors du dépôt.** Le workflow l'empaquette dans
+`installateur-tentacle-tv.zip`, attaché à la même release que l'IPK. Il ne peut
+donc rien supposer de son voisinage : aucun `node_modules`, aucun fichier du
+dépôt, aucun `pnpm`. Il retrouve la CLI de LG si elle est là, l'installe dans
+`~/.tentacle-tv/webos-cli` sinon.
+
+**Le seul prérequis tolérable est Node.js.** Il l'est déjà de fait — la CLI de
+LG est un paquet npm — et tout le reste s'installe sans droits particuliers.
+
+**Un double-clic doit suffire.** D'où trois lanceurs pour une seule logique :
+`installer.sh` la porte, `Installer-Tentacle-TV.command` la délègue sous
+l'extension que le Finder sait ouvrir, `Installer-Tentacle-TV.cmd` fait de même
+sous Windows en basculant d'abord la console en UTF-8. Les deux premiers doivent
+garder leur bit d'exécution — le workflow le vérifie avant d'archiver, faute de
+quoi le double-clic ne ferait rien du tout.
+
+La phrase secrète est passée à `ares-novacom --getkey` par `--passphrase` plutôt
+que retapée au clavier, et mise en capitales au passage : LG l'affiche ainsi, la
+clé est déchiffrée telle quelle, et une saisie en minuscules ne produirait qu'un
+« Unable to parse private key » que personne ne saurait interpréter.
+
 ## La sonde
 
 `/tv/sonde.html` est servie par le backend **avant même le premier build** — le

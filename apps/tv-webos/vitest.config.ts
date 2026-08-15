@@ -33,6 +33,13 @@ export default defineConfig({
     // la mise en page du portage et n'avaient AUCUN test. Une passe est une
     // fonction pure d'un arbre CSS vers un autre — le sujet le plus testable
     // du dépôt, et le seul qu'on ne pouvait vérifier qu'en construisant.
-    include: ["client/src/**/*.test.ts", "config/**/*.test.ts", "scripts/**/*.test.mjs"],
+    // `installateur/` enfin : il part chez des gens qui n'ont pas ce dépôt, et
+    // sa seule panne possible ne se voit qu'à l'exécution, chez eux.
+    include: [
+      "client/src/**/*.test.ts",
+      "config/**/*.test.ts",
+      "scripts/**/*.test.mjs",
+      "installateur/**/*.test.mjs",
+    ],
   },
 });

@@ -1,0 +1,53 @@
+Tentacle TV — installation sur un téléviseur LG
+===============================================
+
+Il faut Node.js sur l'ordinateur (https://nodejs.org, version « LTS »). C'est
+le seul prérequis : le reste s'installe tout seul.
+
+
+1. SUR LE TÉLÉVISEUR
+--------------------
+
+  a. Ouvrez le LG Content Store et installez « Developer Mode ».
+  b. Lancez-la et connectez-vous avec votre compte développeur LG
+     (celui créé sur webostv.developer.lge.com — gratuit).
+  c. Mettez « Dev Mode Status » sur ON. Le téléviseur redémarre.
+  d. Rouvrez « Developer Mode » et LAISSEZ CET ÉCRAN AFFICHÉ.
+
+  Il montre deux choses que le script va vous demander :
+    • l'adresse IP du téléviseur ;
+    • la phrase secrète (« key server passphrase »), 6 caractères.
+
+
+2. SUR L'ORDINATEUR
+-------------------
+
+  macOS    double-cliquez sur « Installer-Tentacle-TV.command »
+  Windows  double-cliquez sur « Installer-Tentacle-TV.cmd »
+  Linux    ouvrez un terminal dans ce dossier et lancez ./installer.sh
+
+  Répondez aux deux questions. Le script fait le reste : il télécharge la
+  dernière version depuis GitHub, l'installe, et l'ouvre sur le téléviseur.
+
+
+SI MACOS REFUSE D'OUVRIR LE FICHIER
+-----------------------------------
+
+  macOS met en quarantaine ce qui vient d'Internet. Faites un clic DROIT sur
+  « Installer-Tentacle-TV.command », choisissez « Ouvrir », puis confirmez.
+  Une seule fois suffit.
+
+  Si le double-clic ne fait rien du tout, le fichier a perdu son droit
+  d'exécution en chemin. Dans un terminal, depuis ce dossier :
+
+      chmod +x installer.sh Installer-Tentacle-TV.command
+
+
+ENSUITE
+-------
+
+  Les mises à jour se font toutes seules : l'interface est servie par votre
+  serveur Tentacle, ce paquet n'en est que la coquille. Vous n'avez à relancer
+  ce script que si l'application disparaît du téléviseur — le mode développeur
+  de LG désinstalle ce qu'il a installé quand la session expire (50 heures),
+  sauf si vous la prolongez depuis l'application « Developer Mode ».
