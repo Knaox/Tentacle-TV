@@ -24,6 +24,7 @@ lancement), ou une version de référence.
 - Lecture directe privilégiée : le téléviseur lit vos fichiers tels quels, sans que le serveur ait à les convertir
 - Dolby Vision pris en charge sur les conteneurs qui le transportent ; ailleurs, l'image reste en HDR
 - Reprise de lecture, déplacement dans le film et changement de piste audio ou de sous-titres
+- Installation depuis un Mac, un PC Windows ou une machine Linux : décompressez l'archive ci-dessous, double-cliquez, répondez à deux questions
 
 ### EN
 - First release for LG TVs (webOS 4 and later)
@@ -31,3 +32,4 @@ lancement), ou une version de référence.
 - Direct play first: the TV reads your files as they are, with no server-side conversion
 - Dolby Vision supported in the containers that carry it; elsewhere the picture stays HDR
 - Resume, in-movie seeking, and audio or subtitle track switching
+- Install from a Mac, a Windows PC or a Linux machine: unzip the archive below, double-click, answer two questions
