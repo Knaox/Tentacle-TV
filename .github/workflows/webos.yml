@@ -224,14 +224,23 @@ jobs:
             > téléviseur la clé sans laquelle rien ne s'installe — et qui fait
             > apparaître la phrase secrète, en bas à gauche de l'écran.
 
-            **macOS et Linux** — une seule commande à coller dans un terminal :
+            Une seule ligne à coller : elle télécharge la dernière version, ouvre
+            le mode d'emploi et lance l'installation.
+
+            **macOS et Linux** — dans Terminal :
 
             ```bash
-            cd "$(mktemp -d)" && curl -fsSL -O https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }} && unzip -q ${{ env.INSTALLATEUR }} && node "Tentacle TV - LG webOS/installer.mjs"
+            cd "$(mktemp -d)" && curl -fsSL -O https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }} && unzip -q ${{ env.INSTALLATEUR }} && cd "Tentacle TV - LG webOS" && open LISEZ-MOI.txt 2>/dev/null; node installer.mjs
             ```
 
-            **Windows** — téléchargez l'archive, décompressez-la, double-cliquez
-            sur `Installer-Tentacle-TV.cmd` :
+            **Windows** — dans PowerShell :
+
+            ```powershell
+            [Net.ServicePointManager]::SecurityProtocol='Tls12'; $ProgressPreference='SilentlyContinue'; $d="$env:TEMP\tentacle-tv"; Remove-Item $d -Recurse -Force -EA 0; mkdir $d | Out-Null; iwr https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }} -OutFile "$d\i.zip"; Expand-Archive "$d\i.zip" $d -Force; cd "$d\Tentacle TV - LG webOS"; ii LISEZ-MOI.txt; node installer.mjs
+            ```
+
+            Sinon, l'archive seule — à décompresser, puis double-clic sur
+            `Installer-Tentacle-TV.cmd` (Windows) :
 
             ```
             https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }}
