@@ -41,10 +41,10 @@ export function transcodage(
   // Le flux de transport ne porte légalement ni l'AV1, ni le VP9, ni les codecs
   // audio exotiques : y annoncer autre chose obligerait le serveur à convertir.
   const videoTs = [...video].filter((codec) => CODECS_TS.has(codec));
-  const audioTs = ["aac", ...[...audio].filter((codec) => codec === "ac3" || codec === "eac3")];
+  const audioTs = audioDuFluxDeTransport(audio);
 
   const fmp4 = profilHlsFmp4([...video].join(",") || "h264", audioFmp4.join(",") || "aac", canaux);
-  const ts = profilHlsTs(videoTs.join(",") || "h264", audioTs.join(","), canaux);
+  const ts = profilHlsTs(videoTs.join(",") || "h264", audioTs, canaux);
 
   return sourceDolbyVision && conserveLeRpu(resolu)
     ? [ts, fmp4, PROFIL_AUDIO_SEUL]
@@ -89,6 +89,27 @@ export function transcodage(
  */
 function conserveLeRpu(resolu: ProfilResolu): boolean {
   return resolu.dalle.dolbyVision;
+}
+
+/**
+ * L'audio d'un flux de transport, dans l'ordre qui décide de la CONVERSION.
+ *
+ * Le rang ne change rien à ce qui est COPIÉ — Jellyfin copie une piste dès que
+ * son codec figure dans la liste, où qu'il soit. Il désigne uniquement le codec
+ * vers lequel convertir ce qui ne peut pas l'être, et le premier gagne.
+ *
+ * L'E-AC3 passe donc devant : c'est le seul de ces trois formats qui reparte en
+ * bitstream vers une barre de son ou un ampli par l'eARC, et c'est exactement
+ * ainsi que Netflix et Disney+ font voyager l'Atmos sur webOS. L'AAC, lui, est
+ * décodé par la dalle et ressort en PCM — plus de canaux peut-être, mais plus
+ * de métadonnées d'objet, donc plus d'Atmos du tout.
+ *
+ * L'AAC reste en dernier, sans condition : il est décodé par toutes les
+ * générations, et une liste vide ferait recompresser l'image faute de profil.
+ */
+function audioDuFluxDeTransport(decodes: Set<string>): string {
+  const prefere = ["eac3", "ac3"].filter((codec) => decodes.has(codec));
+  return [...prefere, "aac"].join(",");
 }
 
 /** Ce que le démultiplexeur TS de webOS sait porter. */
