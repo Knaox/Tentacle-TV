@@ -9,14 +9,14 @@ import type { ProfilResolu } from "./codecsWebos";
  * de placer devant celui qui préserve le plus.
  */
 
+/** Une C3 de 2023 : la dalle qui a servi à toutes les mesures citées ici. */
 function resolu(dolbyVision: boolean, dolbyAtmos = true): ProfilResolu {
   const materiel = { annee: 2023, oled: true, uhd8K: false };
   return {
-    generation: 25,
-    materiel,
+    plateforme: { generation: 25, annee: 2023, source: "ua" },
     capacites: capacitesDe(25, materiel),
-    dalle: { uhd: true, uhd8K: false, dolbyVision, dolbyAtmos, hdr10: true, hlg: true },
-  } as ProfilResolu;
+    dalle: { uhd: true, uhd8K: false, hdr10: true, dolbyVision, dolbyAtmos, oled: true },
+  };
 }
 
 const vide = { conteneurs: [], video: [], audio: [] };
