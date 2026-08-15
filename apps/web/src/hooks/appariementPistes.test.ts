@@ -89,7 +89,7 @@ describe("apparier — par langue", () => {
     // filtre, la TrueHD prendrait le rang de la DTS et l'on entendrait du DTS.
     const natives = [natif(undefined, "fr")];
     const pistes = [piste(1, "fra", "truehd"), piste(2, "fra", "dts")];
-    const publiable = (p: AudioTrack) => (p as { codec?: string }).codec !== "truehd";
+    const publiable = (p: AudioTrack) => p.codec !== "truehd";
     expect(apparier(natives, pistes, publiable)).toEqual([null, 0]);
   });
 });

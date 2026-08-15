@@ -72,6 +72,26 @@ export interface CapacitesTv {
  */
 export const CONTENEURS_DOVI = "mp4,m4v,mov,ts,m2ts,mts,mpegts";
 
+/**
+ * Ce que webOS ne démultiplexe JAMAIS, quels que soient le conteneur, la
+ * génération et le matériel.
+ *
+ * C'est la contrepartie exécutable de l'avertissement d'en-tête — « ce qui
+ * n'est jamais listé n'existe pas ». Le profil d'appareil s'en sert par
+ * omission, en ne déclarant pas ces codecs ; `pistesPubliablesTv.ts` s'en sert
+ * en affirmation, pour savoir d'avance qu'une piste n'apparaîtra pas dans
+ * `video.audioTracks` et qu'il faudra la demander au serveur.
+ *
+ * Une barre de son ne change rien à cette liste, et c'est contre-intuitif : le
+ * blocage n'est pas à la SORTIE mais au démultiplexage. La piste n'est jamais
+ * extraite du fichier, donc elle n'atteint jamais l'eARC.
+ *
+ * **Le DTS n'y est pas, délibérément.** Il dépend de l'année du modèle
+ * (`dtsSupporte`), c'est-à-dire d'un « peut-être », et un peut-être se tranche
+ * à l'exécution en regardant ce que le lecteur a publié.
+ */
+export const CODECS_JAMAIS_DEMULTIPLEXES = new Set(["truehd", "mlp", "alac"]);
+
 /** Codecs vidéo par conteneur, socle commun à toutes les générations. */
 const VIDEO_MP4 = ["h264", "hevc", "mpeg4"];
 const VIDEO_MKV = ["h264", "hevc", "mpeg2video", "mpeg4", "vp8", "vp9"];

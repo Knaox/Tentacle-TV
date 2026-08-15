@@ -18,7 +18,19 @@ export interface SubtitleTrack {
    */
   external?: boolean;
 }
-export interface AudioTrack { index: number; label: string; lang?: string }
+export interface AudioTrack {
+  index: number;
+  label: string;
+  lang?: string;
+  /**
+   * Nom ffmpeg du codec (`dts`, `truehd`, `eac3`…), en minuscules.
+   *
+   * Sert à savoir d'avance si le lecteur publiera la piste : sur un téléviseur,
+   * certains codecs ne sont démultiplexés par aucune génération, et la piste
+   * n'apparaît alors jamais dans `video.audioTracks` (cf. `pistesLecteur.ts`).
+   */
+  codec?: string;
+}
 
 export interface VideoPlayerProps {
   src: string;
