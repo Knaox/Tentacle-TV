@@ -7,9 +7,22 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [Unreleased]
 ### FR
-- …
+- **Changer de piste audio fonctionne enfin sur le téléviseur LG.** En lecture directe, choisir une piste que la dalle ne sait pas ouvrir — un TrueHD Atmos, par exemple — ne faisait strictement rien : ni bascule, ni message, le film restait dans la langue précédente. Le lecteur demande désormais la piste au serveur quand il ne peut pas la fournir lui-même
+- **Et l'image y garde son Dolby Vision.** Le remux qui apporte la nouvelle piste audio passe par un conteneur qui préserve les métadonnées Dolby ; l'image reste copiée telle quelle, seul l'audio est converti — en E-AC3, le format que les barres de son reçoivent en Dolby plutôt qu'en son décodé
+- **Le texte ne se chevauche plus sur le téléviseur.** Les titres des bandes-annonces d'une fiche débordaient de leur vignette sur les deux voisines — dix-huit chevauchements sur une seule page. Un bouton se dispose maintenant comme n'importe quelle autre boîte, ce qui rend leur effet aux coupures de texte
+- **Les rangées d'une bibliothèque respirent.** Elles se recouvraient de onze pixels sur le téléviseur : la hauteur d'une rangée était supposée au lieu d'être mesurée, et toute typographie plus grande la démentait. Le même défaut apparaissait sur le web dès qu'un titre passait sur deux lignes
+- La bannière d'une bibliothèque emprunte exactement le même rendu que celle de l'accueil : mêmes voiles, même qualité d'image, un dégradé de moins. Les deux avaient dérivé l'une de l'autre, et l'écart se voyait surtout sur les dalles plus anciennes
+- **On peut défiler à la télécommande à pointeur.** Viser le bas ou le côté de l'écran fait défiler la page, doucement en effleurant le bord, vite en s'y collant — comme le fait webOS lui-même. Le curseur ne vole plus le focus pendant le défilement
+- Les tailles de texte ne dépendent plus de la génération du téléviseur : elles sont calculées une fois pour toutes, à la construction
+
 ### EN
-- …
+- **Switching the audio track finally works on the LG TV.** In direct play, picking a track the panel cannot open — a TrueHD Atmos, for instance — did nothing at all: no switch, no message, the film stayed in the previous language. The player now asks the server for the track when it cannot supply it itself
+- **And the picture keeps its Dolby Vision.** The remux that brings the new audio track goes through a container that preserves the Dolby metadata; the picture is still copied as-is, only the audio is converted — to E-AC3, the format soundbars receive as Dolby rather than as decoded sound
+- **Text no longer overlaps on the TV.** Trailer titles on a detail page spilled out of their thumbnail onto both neighbours — eighteen overlaps on a single page. A button now lays out like any other box, which gives text truncation its effect back
+- **Library rows have room to breathe.** They overlapped by eleven pixels on the TV: row height was assumed rather than measured, and any larger typography proved it wrong. The same flaw showed on the web as soon as a title wrapped to two lines
+- A library banner now renders exactly like the home one: same veils, same image quality, one gradient fewer. The two had drifted apart, and the gap showed most on older panels
+- **You can scroll with a pointer remote.** Aiming at the bottom or side of the screen scrolls the page, slowly when grazing the edge and fast when hugging it — the way webOS itself does. The cursor no longer steals focus while scrolling
+- Text sizes no longer depend on the TV generation: they are computed once and for all, at build time
 
 ## [1.12.6]
 ### FR
