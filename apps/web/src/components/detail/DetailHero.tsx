@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
+import { HeroScrims } from "../hero/HeroScrims";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useImageCassee } from "../../hooks/useImageCassee";
@@ -135,42 +136,18 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
           />
         )}
 
-        {/* Pile de degrades — chaines completes dans theme/scrims.css et
-            theme/surfaces.css : assise NOIRE constante sous le bloc titre
-            on-media dans les DEUX schemas (recette mobile, image vive — plus de
-            flou ni de voile clair). Seul le voile haut suit le theme.
-            Meme grammaire que la banniere d'accueil : scrim diagonal 72deg,
-            voile de marque, ligne de lumiere en couture basse. */}
-        <div className="absolute inset-0" style={{ background: "var(--detail-scrim-diagonal)" }} />
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: "var(--detail-brand-wash)" }}
-          aria-hidden
-        />
-        <div
-          className={`absolute inset-x-0 bottom-0 ${DETAIL_SCRIM_BOTTOM}`}
-          style={{ background: "var(--detail-scrim-bottom)" }}
-        />
-        {/* Raccord vers la page — `none` en sombre, fondu vers la couleur de
-            page en clair. Il est passé de 16 % à 46 % de la boîte : en thème
-            clair, la méta, le synopsis et les genres sous le titre sont en
-            texte THÉMÉ, donc sombre, et depuis que l'image se prolonge sous eux
-            ils se retrouvaient posés dessus — illisibles sur une affiche vive.
-            C'est ce calque qui leur rend leur assise de page. */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[46%]"
-          style={{ background: "var(--detail-page-fade)" }}
-          aria-hidden
-        />
-        <div
-          className="absolute inset-x-0 top-0 h-32"
-          style={{ background: "var(--detail-scrim-top)" }}
-        />
-        {/* PAS de ligne de lumière ici, contrairement à la bannière d'accueil.
-            Sur cette page le bloc titre remonte de 192 px (`-mt-48` dans
-            MediaDetail) : la couture du hero passe donc EN PLEIN MILIEU du
-            contenu, et la hairline y traçait un trait violet en travers du
-            synopsis. Le raccord n'a rien à souligner quand il est recouvert. */}
+        {/* La même pile que les deux autres bannières, sur le jeu de jetons
+            `detail`. Deux écarts, tous deux voulus et énoncés ici.
+
+            Le raccord de page passe à 46 % de la boîte : en thème clair, la
+            méta, le synopsis et les genres sous le titre sont en texte THÉMÉ,
+            donc sombre, et depuis que l'image se prolonge sous eux ils se
+            retrouvaient posés dessus — illisibles sur une affiche vive.
+
+            Pas de grain : la fiche porte déjà le sien par la vignette, et le
+            bloc titre y remonte de 192 px, si bien que la moitié basse de la
+            pile est recouverte de contenu. */}
+        <HeroScrims jeu="detail" bas={DETAIL_SCRIM_BOTTOM} haut="h-32" raccord="h-[46%]" grain={false} />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée, posée PAR-DESSUS le bas de la

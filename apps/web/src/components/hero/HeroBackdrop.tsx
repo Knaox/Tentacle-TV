@@ -4,6 +4,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
 import { useImageCassee } from "../../hooks/useImageCassee";
+import { HeroScrims } from "./HeroScrims";
 
 interface HeroBackdropProps {
   items: MediaItem[];
@@ -77,57 +78,23 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   const { cassee, signalerEchec } = useImageCassee(url ?? undefined);
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
-  const overlays = (
-    <>
-      {/* Pile de degrades cinema. Les chaines COMPLETES vivent dans
-          theme/scrims.css et theme/surfaces.css : assise NOIRE constante
-          (`--scrim-media-rgb`) sous le texte on-media dans les DEUX schemas —
-          recette mobile, l'affiche reste vive, aucun voile clair ni flou.
-          Seul le voile haut suit le theme (assise de la TopNav).
-
-          Le scrim principal est DIAGONAL (72deg) : son coin sombre tombe en
-          bas-gauche, pile sous la colonne de texte, la ou le 90deg d'origine
-          assombrissait tout le flanc gauche a hauteur egale. */}
-      <div className="absolute inset-0" style={{ background: "var(--hero-scrim-diagonal)" }} />
-      {/* Voile de marque : c'est lui qui rend l'ombre VIOLETTE plutot que
-          neutre. Alphas volontairement bas — au-dela l'affiche vire au
-          monochrome. Construit sur `--brand-rgb`, donc une surcharge de theme
-          depuis l'admin le suit sans une ligne de code. */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{ background: "var(--hero-brand-wash)" }}
-        aria-hidden
-      />
-      {/* 62 % et non 55 % : la rampe de `--hero-scrim-bottom` a été adoucie
-          (quatre paliers) et a besoin de plus de course pour atteindre
-          l'opacité sans marche visible. */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-[62%]"
-        style={{ background: "var(--hero-scrim-bottom)" }}
-      />
-      {/* PAS de raccord bas vers la page (`--hero-page-fade`, retiré). Il
-          existait pour fondre une bannière à FOND PERDU dans la page : la
-          première rangée la chevauchait, il fallait effacer la couture. La
-          bannière est désormais encadrée — son bord bas est un vrai bord, net,
-          et plus rien ne la chevauche. Le fondu n'y assombrissait plus que le
-          bas de la carte, sans rien raccorder. */}
-      {/* Vignette haute sous la TopNav — la nav est en texte theme, son assise
-          suit le schema. */}
-      <div
-        className="absolute inset-x-0 top-0 h-40"
-        style={{ background: "var(--hero-scrim-top)" }}
-      />
-      {/* Tiny grain to avoid banding on solid color zones — pas de mix-blend-mode
-       * pour éviter le rectangle blanc fantôme dans Tauri WKWebView. */}
-      <div className="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden />
-      {/* PAS de ligne de lumière en couture basse. L'idée supposait une couture
-          VISIBLE ; or les rangées remontent de 48-64 px (`-mt-12/-mt-16` dans
-          Home.tsx) et sont transparentes : la hairline se retrouvait tracée en
-          travers de la première rangée d'affiches, à 63 px sous son titre. Même
-          cause que sur la fiche média et l'en-tête de bibliothèque — le geste
-          ne tient sur aucune des trois surfaces, il est abandonné partout. */}
-    </>
-  );
+  //
+  // La pile elle-même vit dans `HeroScrims`, partagée avec la bibliothèque et
+  // la fiche média. Les trois pages posaient la même grammaire, recopiée trois
+  // fois, et les trois copies avaient dérivé — chaque écart se payant ensuite
+  // sur un téléviseur, où la même image ne rendait pas pareil selon la page
+  // qui la portait. Les chaînes COMPLÈTES des jetons restent dans
+  // `theme/scrims.css` et `theme/surfaces.css`.
+  //
+  // `h-[62%]` et non 55 % : la rampe de `--hero-scrim-bottom` a été adoucie
+  // (quatre paliers) et a besoin de plus de course pour atteindre l'opacité
+  // sans marche visible.
+  //
+  // PAS de raccord vers la page (`--hero-page-fade`). Il existait pour fondre
+  // une bannière à FOND PERDU dans la page : la première rangée la chevauchait,
+  // il fallait effacer la couture. La bannière est désormais encadrée — son
+  // bord bas est un vrai bord, net, et plus rien ne la chevauche.
+  const overlays = <HeroScrims bas="h-[62%]" />;
 
   if (!item) {
     return (

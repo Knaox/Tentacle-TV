@@ -2,10 +2,11 @@ import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@tentacle-tv/api-client";
 import { HeroAmbilight } from "../hero/HeroAmbilight";
-import { firstBackdropItem, resolveBackdropId } from "../hero/resolveBackdrop";
+import { firstBackdropItem, heroBackdropUrl, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useImageCassee } from "../../hooks/useImageCassee";
+import { HeroScrims } from "../hero/HeroScrims";
 
 interface LibraryHeroProps {
   libraryId: string;
@@ -37,9 +38,13 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
   const featured = randomItem ?? firstBackdropItem(latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
   const { cassee, signalerEchec } = useImageCassee(backdropId ?? undefined);
-  const url = backdropId
-    ? client.getImageUrl(backdropId, "Backdrop", { width: 1920, quality: 82 })
-    : null;
+  // La MÊME URL que l'accueil, à la lettre — `heroBackdropUrl` est la
+  // définition unique. Elle était recopiée ici à la main, et la copie avait
+  // dérivé d'un cran de qualité (82 contre 85). Trois pixels de moins par bloc
+  // JPEG dans un dégradé sombre, c'est exactement là que ça se voit ; et un
+  // second jeu de paramètres, c'est un second téléchargement là où le cache
+  // aurait suffi.
+  const url = heroBackdropUrl(client, featured ?? undefined);
 
   return (
     /**
@@ -64,29 +69,35 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             initial={{ opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 h-full w-full object-cover motion-reduce:!transform-none"
+            /* `will-change-transform` comme sur l'accueil, et pour la même
+               raison : la promotion en couche décide de la façon dont les
+               voiles sont composés par-dessus. Sans elle, les deux bannières
+               n'empruntaient pas le même chemin de composition — et deux
+               moteurs de générations différentes n'y répondent pas pareil. */
+            className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
             style={{ display: cassee ? "none" : undefined }}
             onError={signalerEchec}
           />
         )}
 
-        {/* Même pile que la bannière d'accueil, cf. theme/surfaces.css. */}
-        <div className="absolute inset-0" style={{ background: "var(--hero-scrim-diagonal)" }} />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "var(--hero-brand-wash)" }} aria-hidden />
-        {/* 76 % de la boîte IMAGE (qui déborde de 200 px) : le fondu court
-            au-delà du bas visible de la bannière. */}
-        <div className="absolute inset-x-0 bottom-0 h-[76%]" style={{ background: "var(--hero-scrim-bottom)" }} />
-        {/* Même rôle que sur la fiche média : en thème clair, la barre de
-            recherche et les filtres qui remontent sur la bannière reposent sur
-            du texte thémé — ce calque leur rend une assise de page. Porté de
-            22 % à 44 % depuis que l'image se prolonge sous eux. */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[44%]" style={{ background: "var(--hero-page-fade)" }} aria-hidden />
-        <div className="absolute inset-x-0 top-0 h-40" style={{ background: "var(--hero-scrim-top)" }} />
-        <div className="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden />
-        {/* Pas de ligne de lumière : la grille remonte de 40-56 px, la couture
-            tombe donc derrière la barre de recherche. Même piège que sur la
-            fiche média — une hairline sous du contenu se lit comme une rayure. */}
+        {/* La MÊME pile que l'accueil, au sens propre : le même composant, les
+            mêmes cotes. Elle en différait sur deux points, tous deux mesurés
+            comme coûteux sur une dalle.
 
+            La rampe basse valait `h-[76%]`, dimensionnée pour une boîte qui
+            DÉBORDE de 200 px sous le bas visible : ses quinze derniers pour
+            cent, la montée vers l'opaque, tombaient hors champ. Sur le
+            téléviseur la carte s'arrête à son bord (`bibliotheque-tv.css`) et
+            la même montée se jouait dans les cinquante derniers pixels — une
+            rampe vingt pour cent plus raide que celle de l'accueil, donc des
+            paliers là où l'accueil n'en a pas. On reprend sa proportion.
+
+            Et le raccord de page en plus. En thème sombre son jeton vaut
+            `none` sur le web : le calque ne peignait rien, et personne ne l'a
+            vu dériver. La feuille du téléviseur, elle, le redéfinit en vrai
+            dégradé — d'où une SIXIÈME couche quantifiée sur huit bits empilée
+            sur les cinq autres, dans la zone la plus sombre de l'image. */}
+        <HeroScrims bas="h-[62%]" />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée en fusion `screen` par-dessus le
