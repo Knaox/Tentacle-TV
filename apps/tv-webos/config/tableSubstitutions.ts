@@ -205,6 +205,14 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
   [resolve(WEB, "lib/deviceProfile/browser.ts")]: resolve(CLIENT, "lecture/profilWebos.ts"),
 
+  // Le pendant du profil, côté lecteur : ce que le démultiplexeur de la dalle
+  // n'ouvrira jamais, donc ce qui n'apparaîtra jamais dans `video.audioTracks`.
+  // Un navigateur ne sait pas répondre à cette question et dit oui ; une table
+  // documentée le sait, et l'appariement des pistes s'en sert pour ne pas
+  // donner un rang libre à la mauvaise piste.
+  [resolve(WEB, "lib/deviceProfile/pistesLecteur.ts")]:
+    resolve(CLIENT, "lecture/pistesPubliablesTv.ts"),
+
   // Le HLS est toujours confié au moteur : la puce de la dalle décode le
   // manifeste, là où le client web a besoin de hls.js.
   [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:

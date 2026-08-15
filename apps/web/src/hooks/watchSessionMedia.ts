@@ -32,7 +32,12 @@ export function formatTrackLabel(s: JfStream, t: TFunc): string {
 
 export function buildAudioTracks(streams: JfStream[], t: TFunc): AudioTrack[] {
   return streams.filter((s) => s.Type === "Audio")
-    .map((s) => ({ index: s.Index, label: formatTrackLabel(s, t), lang: s.Language?.toLowerCase() }));
+    .map((s) => ({
+      index: s.Index,
+      label: formatTrackLabel(s, t),
+      lang: s.Language?.toLowerCase(),
+      codec: s.Codec?.toLowerCase(),
+    }));
 }
 
 export function buildSubtitleTracks(
