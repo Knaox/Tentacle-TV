@@ -46,6 +46,9 @@ env:
   APP_ID: com.tentacletv.webos
   # Le nom que le script d'installation attendra, et qui ne doit jamais changer.
   IPK_STABLE: tentacle-tv.ipk
+  # L'archive de l'installateur, sous un nom lui aussi fixe : c'est le seul
+  # fichier qu'un utilisateur télécharge, et l'adresse est donnée telle quelle.
+  INSTALLATEUR: installateur-tentacle-tv.zip
 
 jobs:
   version:
@@ -125,10 +128,29 @@ jobs:
           ls -l livraison
           echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
 
+      # L'installateur voyage à part : il ne s'installe pas SUR le téléviseur,
+      # il tourne sur l'ordinateur de l'utilisateur et va chercher l'IPK à
+      # l'adresse fixe ci-dessous. Le `-X` évite les métadonnées d'archive
+      # inutiles ; `zip` conserve le bit d'exécution des lanceurs, sans lequel
+      # un double-clic ne ferait rien sur macOS et sous Linux.
+      - name: Empaqueter l'installateur
+        run: |
+          set -euo pipefail
+          test -x apps/tv-webos/installateur/installer.sh
+          test -x apps/tv-webos/installateur/Installer-Tentacle-TV.command
+          # Le dossier est renommé : ce qui apparaît après décompression doit
+          # dire ce que c'est, sur un bureau où il côtoiera autre chose.
+          mkdir -p atelier
+          cp -R apps/tv-webos/installateur "atelier/Tentacle TV — LG webOS"
+          (cd atelier && zip -r -X "../livraison/${{ env.INSTALLATEUR }}" .)
+          unzip -l "livraison/${{ env.INSTALLATEUR }}"
+
       - uses: actions/upload-artifact@v4
         with:
           name: webos-ipk-${{ needs.version.outputs.version }}
-          path: livraison/*.ipk
+          path: |
+            livraison/*.ipk
+            livraison/${{ env.INSTALLATEUR }}
           if-no-files-found: error
 
       - name: Extraire les notes de version
@@ -157,7 +179,9 @@ jobs:
           tag_name: webos-v${{ needs.version.outputs.version }}
           name: webOS ${{ needs.version.outputs.version }}
           body_path: notes.md
-          files: livraison/*.ipk
+          files: |
+            livraison/*.ipk
+            livraison/${{ env.INSTALLATEUR }}
           make_latest: false
 
       # L'adresse permanente : même tag, réécrit à chaque fois.
@@ -170,8 +194,25 @@ jobs:
           body: |
             Dernier paquet LG webOS — **version ${{ needs.version.outputs.version }}**.
 
-            Cette release est réécrite à chaque livraison : l'adresse de
-            téléchargement ne change jamais.
+            Cette release est réécrite à chaque livraison : les deux adresses de
+            téléchargement ci-dessous ne changent jamais.
+
+            ## Installer sur un téléviseur
+
+            Téléchargez l'archive, décompressez-la, et double-cliquez sur le
+            lanceur de votre système — `Installer-Tentacle-TV.command` sur macOS,
+            `Installer-Tentacle-TV.cmd` sur Windows, `installer.sh` sous Linux.
+            Il demande l'adresse du téléviseur et la phrase secrète affichées par
+            l'application « Developer Mode », puis fait tout le reste.
+
+            ```
+            https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.INSTALLATEUR }}
+            ```
+
+            Prérequis : Node.js sur l'ordinateur, et « Developer Mode » installé
+            sur le téléviseur avec un compte développeur LG.
+
+            ## Le paquet seul
 
             ```
             https://github.com/${{ github.repository }}/releases/download/webos-latest/${{ env.IPK_STABLE }}
@@ -180,5 +221,7 @@ jobs:
             L'IPK ne contient que la coquille — le client est servi par le
             serveur Tentacle sur `/tv`, donc une mise à jour du serveur suffit à
             corriger l'application.
-          files: livraison/${{ env.IPK_STABLE }}
+          files: |
+            livraison/${{ env.IPK_STABLE }}
+            livraison/${{ env.INSTALLATEUR }}
           make_latest: false
