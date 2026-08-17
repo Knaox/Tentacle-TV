@@ -9,18 +9,17 @@ import { pasDeScrub, SCRUB_STEP_MIN_S, SCRUB_STEP_MAX_S } from "./scrubStep";
 describe("pasDeScrub", () => {
   it("garde le pas historique sur les contenus courts", () => {
     expect(pasDeScrub(180)).toBe(SCRUB_STEP_MIN_S); // 3 min
-    expect(pasDeScrub(1200)).toBe(SCRUB_STEP_MIN_S); // 20 min
-    expect(pasDeScrub(1000)).toBe(SCRUB_STEP_MIN_S); // harnais machineScrub
+    expect(pasDeScrub(500)).toBe(SCRUB_STEP_MIN_S); // ~8 min (harnais machineScrub)
   });
 
-  it("grandit avec la durée (~0,8 % par pas, multiples de 5)", () => {
-    expect(pasDeScrub(30 * 60)).toBe(15); // 30 min → 14,4 → 15
-    expect(pasDeScrub(50 * 60)).toBe(25); // 50 min → 24
-    expect(pasDeScrub(90 * 60)).toBe(45); // 1 h 30 → 43,2 → 45
+  it("grandit avec la durée (2 % par pas, multiples de 5)", () => {
+    expect(pasDeScrub(20 * 60)).toBe(25); // 20 min → 24
+    expect(pasDeScrub(40 * 60)).toBe(50); // 40 min → 48 → 50
+    expect(pasDeScrub(50 * 60)).toBe(60); // 50 min → 60
   });
 
-  it("plafonne à soixante secondes sur les très longs contenus", () => {
-    expect(pasDeScrub(2 * 3600)).toBe(SCRUB_STEP_MAX_S); // 2 h → 57,6 → 60
+  it("plafonne à quatre-vingt-dix secondes sur les très longs contenus", () => {
+    expect(pasDeScrub(90 * 60)).toBe(SCRUB_STEP_MAX_S); // 1 h 30 → 108 → cap
     expect(pasDeScrub(4 * 3600)).toBe(SCRUB_STEP_MAX_S); // 4 h → cap
   });
 

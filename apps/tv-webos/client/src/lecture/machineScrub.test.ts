@@ -11,7 +11,9 @@ import { creerMachineScrub, PAS_SCRUB_S, type OptionsMachineScrub } from "./mach
  * il est invisible.
  */
 
-function harnais(position = 100, duree = 1000) {
+// 500 s (~8 min) : sous le seuil proportionnel — le pas vaut le plancher
+// historique de dix secondes, les invariants de la machine se lisent en clair.
+function harnais(position = 100, duree = 500) {
   const options: OptionsMachineScrub = {
     lirePosition: () => position,
     lireDuree: () => duree,
@@ -38,7 +40,7 @@ describe("machineScrub", () => {
   });
 
   it("entrer pose le curseur où l'on en est, sans avancer d'un pas", () => {
-    const { options, machine } = harnais(100, 1000);
+    const { options, machine } = harnais(100, 500);
 
     machine.entrer();
 
@@ -52,7 +54,7 @@ describe("machineScrub", () => {
   });
 
   it("entrer deux fois de suite ne réamorce pas ce qui est déjà en cours", () => {
-    const { options, machine } = harnais(100, 1000);
+    const { options, machine } = harnais(100, 500);
 
     machine.entrer();
     machine.pas(1, 1);
@@ -75,7 +77,7 @@ describe("machineScrub", () => {
   });
 
   it("confirme à la position visée, une seule fois", () => {
-    const { options, machine } = harnais(100, 1000);
+    const { options, machine } = harnais(100, 500);
 
     machine.pas(1, 1);
     machine.pas(1, 1);
@@ -129,7 +131,7 @@ describe("machineScrub", () => {
   });
 
   it("un palier plus haut avance plus vite, sans changer le nombre de sauts", () => {
-    // 10 000 s (~2 h 46) → pas de base plafonné à 60 s (pasDeScrub) : le
+    // 10 000 s (~2 h 46) → pas de base plafonné à 90 s (pasDeScrub) : le
     // rapport ×8 entre paliers, lui, est l'invariant que ce test protège.
     const lent = harnais(0, 10000);
     const rapide = harnais(0, 10000);
@@ -139,8 +141,8 @@ describe("machineScrub", () => {
     lent.machine.confirmer();
     rapide.machine.confirmer();
 
-    expect(lent.options.surSeek).toHaveBeenCalledWith(60);
-    expect(rapide.options.surSeek).toHaveBeenCalledWith(60 * 8);
+    expect(lent.options.surSeek).toHaveBeenCalledWith(90);
+    expect(rapide.options.surSeek).toHaveBeenCalledWith(90 * 8);
 
     lent.machine.detruire();
     rapide.machine.detruire();
@@ -160,12 +162,12 @@ describe("machineScrub", () => {
 });
 
 describe("pas proportionnel à la durée", () => {
-  it("avance de 25 s par pas sur un film de 50 minutes", () => {
+  it("avance de 60 s par pas sur un film de 50 minutes (2 % de la durée)", () => {
     const { options, machine } = harnais(100, 50 * 60);
 
     machine.pas(1, 1);
 
-    expect(options.surChangement).toHaveBeenLastCalledWith(125, 1);
+    expect(options.surChangement).toHaveBeenLastCalledWith(160, 1);
     machine.detruire();
   });
 
