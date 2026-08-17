@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaSource, MediaStream } from "../types/media";
-import { construireEchelleQualite, presetEstPropose, trouverPreset } from "./qualityLadder";
+import { capPourDebit, construireEchelleQualite, presetEstPropose, trouverPreset } from "./qualityLadder";
 import { QUALITY_PRESETS } from "./mediaQuality";
 
 /**
@@ -97,5 +97,34 @@ describe("trouverPreset", () => {
     const echelle = construireEchelleQualite(source({ bitrate: 12_000_000, height: 1080 }));
     expect(trouverPreset("quality720p", echelle).bitrate).toBe(4_500_000);
     expect(presetEstPropose("quality720p", echelle)).toBe(true);
+  });
+});
+
+describe("capPourDebit", () => {
+  it("ne cape jamais sans mesure — serveur sans BitrateTest, échec réseau", () => {
+    expect(capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), null)).toBeNull();
+  });
+
+  it("ne cape pas quand la connexion couvre la source avec marge", () => {
+    // 25 Mb/s × 1,2 = 30 Mb/s ≤ 40 mesurés → lecture directe tranquille.
+    expect(capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 40_000_000)).toBeNull();
+  });
+
+  it("ne cape pas quand le débit source est inconnu", () => {
+    expect(capPourDebit(source({}), 6_000_000)).toBeNull();
+  });
+
+  it("choisit le meilleur palier qui tient dans 80 % de la mesure", () => {
+    // 6 Mb/s mesurés × 0,8 = 4,8 : le 1080p (8) déborde, le 720p (4,5) tient.
+    const palier = capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 6_000_000);
+    expect(palier?.key).toBe("quality720p");
+    expect(palier?.bitrate).toBe(4_500_000);
+  });
+
+  it("retombe sur le palier le plus bas quand rien ne tient", () => {
+    // 1 Mb/s mesuré : même le 480p (1,4) déborde — on le prend quand même,
+    // une image modeste vaut mieux qu'un lecteur qui bufferise.
+    const palier = capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 1_000_000);
+    expect(palier?.key).toBe("quality480p");
   });
 });
