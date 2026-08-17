@@ -9,18 +9,21 @@
  * s'adapte, à ~0,8 % de la durée par pas.
  *
  * Bornes : plancher à dix secondes — les contenus courts gardent le réglage
- * historique à l'identique (rien ne bouge sous ~26 min) — et plafond à
- * soixante, pour qu'un appui simple reste un geste de visée même sur un
- * documentaire-fleuve. Au palier maximal, traverser N'IMPORTE quelle durée
- * prend ainsi le même ordre de grandeur de maintien (~4 s), c'est le but.
+ * historique à l'identique (rien ne bouge sous ~10 min) — et plafond à
+ * quatre-vingt-dix, pour qu'un appui simple reste un geste de visée même sur
+ * un documentaire-fleuve. À deux pour cent par pas et quatre pas par seconde
+ * (tick 250 ms des moteurs), la barre avance de ~8 % par seconde au palier 1
+ * et un film entier se traverse en ~1,5 s de maintien au palier maximal —
+ * même geste, même ressenti, quelle que soit la durée. (Première calibration
+ * à 0,8 % : encore « vraiment lent » sur un 40 min, verdict utilisateur.)
  */
 
 /** Plancher historique : le pas des contenus courts, inchangé. */
 export const SCRUB_STEP_MIN_S = 10;
 /** Plafond : au-delà, l'appui simple ne viserait plus rien. */
-export const SCRUB_STEP_MAX_S = 60;
-/** Part de la durée couverte par un pas de base (~0,8 %). */
-const PART_DE_DUREE = 1 / 125;
+export const SCRUB_STEP_MAX_S = 90;
+/** Part de la durée couverte par un pas de base (2 %). */
+const PART_DE_DUREE = 1 / 50;
 
 /** Pas de base (s) pour un média d'une durée donnée — arrondi au multiple de
  *  cinq (valeur lisible), borné [10..60]. Durée inconnue → plancher. */
