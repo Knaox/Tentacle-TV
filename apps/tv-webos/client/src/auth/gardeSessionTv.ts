@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { notifyUserChange } from "@tentacle-tv/api-client";
+import { acquireSocket, notifyUserChange, subscribeSocket } from "@tentacle-tv/api-client";
 import { jetonDAppareil } from "../amorce/jetonFragment";
 
 /**
@@ -142,6 +142,19 @@ export function installerGardeSessionTv(deps: {
   setInterval(() => {
     void purgerSiRevocationConfirmee();
   }, INTERVALLE_PROACTIF_MS);
+
+  // Révocation IMMÉDIATE, même en pleine lecture : le serveur pousse
+  // `session:revoked` par WebSocket à l'appareil supprimé. Le socket de
+  // l'accueil ne suffit pas — il est refcompté et meurt dès qu'on quitte la
+  // page (le lecteur n'en tient aucun). La garde prend donc SA référence,
+  // jamais relâchée : elle vit aussi longtemps que l'app du téléviseur.
+  const jeton = jetonDAppareil();
+  if (jeton) {
+    acquireSocket(jeton);
+    subscribeSocket((message) => {
+      if (message.type === "session:revoked") terminerSession();
+    });
+  }
 }
 
 function attendre(millisecondes: number): Promise<void> {
