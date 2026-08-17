@@ -40,6 +40,8 @@ export default {
   autoplayCountdown: "Next episode in {{seconds}}s",
   dismiss: "Dismiss",
   playbackError: "Video playback error",
+  playbackGiveUp: "This video can't be played on this TV",
+  qualityReduced: "Quality lowered to match your network speed",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   retry: "Retry",
   back: "Back",
