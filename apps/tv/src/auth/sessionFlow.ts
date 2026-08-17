@@ -98,12 +98,13 @@ export async function runAuthRefreshFlow(
       }
     }
 
-    // Plus aucun moyen de récupérer la session.
-    // softFail (ex. retour foreground) : on n'éjecte pas l'utilisateur — le
-    // token actuel marche peut-être pour Jellyfin (le refresh endpoint peut
-    // être plus strict que les routes proxy), et le cycle 5×401 légitime
-    // se chargera de logout en dernier recours.
-    if (!opts.softFail) doLogout(jfClient, storage, queryClient);
+    // Plus aucun moyen de récupérer la session — mais on ne déjumelle QUE sur
+    // révocation confirmée (refresh.revoked : la ligne paired_devices a été
+    // supprimée, verdict de DB). Un 401 nu — Jellyfin qui refuse le refresh,
+    // secret JWT en avarie, backend à moitié démarré — CONSERVE la session :
+    // les bannières d'état informent, et les deux seules voies de déjumelage
+    // restent le push WS session:revoked et ce revoked:true.
+    if (!opts.softFail && refresh.revoked === true) doLogout(jfClient, storage, queryClient);
   } finally {
     jfClient.setLoggingIn(false);
   }
