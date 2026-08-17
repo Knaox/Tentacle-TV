@@ -210,13 +210,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // Un navigateur ne sait pas répondre à cette question et dit oui ; une table
   // documentée le sait, et l'appariement des pistes s'en sert pour ne pas
   // donner un rang libre à la mauvaise piste.
-  [resolve(WEB, "lib/deviceProfile/pistesLecteur.ts")]:
-    resolve(CLIENT, "lecture/pistesPubliablesTv.ts"),
+  [resolve(WEB, "lib/deviceProfile/pistesLecteur.ts")]: resolve(CLIENT, "lecture/pistesPubliablesTv.ts"),
 
   // Le HLS est toujours confié au moteur : la puce de la dalle décode le
   // manifeste, là où le client web a besoin de hls.js.
-  [resolve(WEB, "hooks/useNativeHlsPreference.ts")]:
-    resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
+  [resolve(WEB, "hooks/useNativeHlsPreference.ts")]: resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
 
   // Le manifeste maître d'un remux Dolby Vision propose la variante copiée et
   // deux replis ré-encodés en SDR, tous au MÊME débit annoncé. Le lecteur de
@@ -249,10 +247,7 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // pixels du bord — dans l'overscan — et paraissent quand l'habillage est
   // éteint, donc quand le moteur de focus s'est retiré de la route. Tout le
   // reste des surcouches convient tel quel.
-  [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(
-    CLIENT,
-    "lecture/SurcouchesTv.tsx",
-  ),
+  [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(CLIENT, "lecture/SurcouchesTv.tsx"),
 
   // La carte « épisode suivant » : même correction d'ancrage et de portée. Son
   // COMPORTEMENT, lui, est déjà celui d'`apps/tv` — seuil au `maxResumePct` de
@@ -273,6 +268,11 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
   [resolve(WEB, "hooks/useControlsAutoHide.ts")]: resolve(CLIENT, "lecture/masquageAutoTv.ts"),
 
+  // Cap automatique de qualité : inerte au navigateur, actif au téléviseur —
+  // mesure du débit réel (BitrateTest) et palier imposé quand la connexion ne
+  // porte pas le fichier, « Originale » seulement (un choix manuel prime).
+  [resolve(WEB, "lib/politiqueDebit.ts")]: resolve(CLIENT, "lecture/politiqueDebitTv.ts"),
+
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
 
@@ -281,8 +281,7 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(UI, "glass/GlassFilters.tsx")]: resolve(CLIENT, "shims/glassFilters.ts"),
 
   // Visionnage synchronisé : suppose un second écran et une saisie de texte.
-  [resolve(WEB, "watchTogether/WatchTogetherProvider.tsx")]:
-    resolve(CLIENT, "shims/watchTogether.ts"),
+  [resolve(WEB, "watchTogether/WatchTogetherProvider.tsx")]: resolve(CLIENT, "shims/watchTogether.ts"),
 
   // Téléchargements hors ligne : le stockage d'un téléviseur ne s'y prête pas.
   [resolve(WEB, "downloads/DownloadsEngineBoot.tsx")]: resolve(CLIENT, "shims/inerte.ts"),

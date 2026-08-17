@@ -2,10 +2,7 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useItemAncestors, useJellyfinClient, useEpisodeNavigation } from "@tentacle-tv/api-client";
-import {
-  ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality,
-  construireEchelleQualite, trouverPreset, presetEstPropose,
-} from "@tentacle-tv/shared";
+import { ticksToSeconds, TICKS_PER_SECOND, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import { usePlaybackInfo } from "./usePlaybackInfo";
@@ -16,6 +13,7 @@ import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
 import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
 import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
+import { useQualiteEffective } from "./useQualiteEffective";
 import { useSkipSegmentsLocalFirst } from "./useSkipSegmentsLocalFirst";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId, resumeStartSeconds } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
@@ -87,12 +85,11 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [audioIndex, setAudioIndex] = useState<number>(defaultAudio);
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
-  // Les paliers dépendent de la source : proposer un transcodage plus lourd
-  // que l'original serait absurde (cf. construireEchelleQualite).
-  const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
-  const qualityPreset = trouverPreset(qualityKey, qualityPresets);
-  const quality = qualityPreset.bitrate; // legacy bitrate ref (null = Original/direct)
-  const qualityMaxHeight = qualityPreset.height ?? undefined; // cap visuel du palier (web + desktop)
+  // Échelle + preset + cap automatique selon le débit mesuré (téléviseur
+  // uniquement — politique inerte au navigateur) : cf. useQualiteEffective.
+  const { qualityPresets, quality, qualityMaxHeight } = useQualiteEffective({
+    mediaSource, itemId, qualityKey, setQualityKey,
+  });
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
@@ -125,14 +122,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     // mpv rend les sous-titres image lui-même : rien à éviter de ce côté.
     incrustationCouteuse: !isDesktop && pbInfo.pgsClientIndisponible,
   });
-
-  // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
-  // sur un fichier peut disparaître sur le suivant. Sans ce repli, la clé
-  // survivrait sans correspondance — sélecteur sans sélection visible, et un
-  // débit rendu par `trouverPreset` qui ne serait plus celui affiché.
-  useEffect(() => {
-    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
-  }, [qualityPresets, qualityKey]);
 
   // Desktop: client-side playback mode computation
   const selectedAudioStream = streams.find((s) => s.Type === "Audio" && s.Index === audioIndex);
