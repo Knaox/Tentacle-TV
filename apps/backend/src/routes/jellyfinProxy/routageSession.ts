@@ -26,12 +26,12 @@ export async function resolveSessionRouting(
   }
 
   const adminKey = getJellyfinApiKey();
-  const isSessionRoute = /^(Sessions\/(Playing|Logout)|Videos\/ActiveEncodings)/.test(wildcardPath);
+  const isSessionRoute = /^(Sessions\/Playing|Videos\/ActiveEncodings)/.test(wildcardPath);
   if (!isSessionRoute || !hasPrisma()) {
     return { apiKey: adminKey ?? undefined };
   }
 
-  // Routes de session (playstate / logout / active encodings) : on attribue à
+  // Routes de session (playstate / active encodings) : on attribue à
   // l'utilisateur via SON token Jellyfin stocké.
   //
   // IMPORTANT (Jellyfin 10.11) : les endpoints legacy `/Users/{userId}/PlayingItems/*`

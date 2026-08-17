@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getJellyfinUrl } from "../services/configStore";
+import { getPrisma, hasPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import { verifyImpersonationToken } from "../services/jwt";
 import { buildAuthHeader, deviceIdForOpaque } from "../services/jellyfinIdentity";
@@ -131,14 +132,31 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       || (request as any).cookies?.tentacle_token;
 
     if (jellyfinUrl && token) {
+      // Un appairage TV copie le token Jellyfin du navigateur confirmateur dans
+      // paired_devices.jellyfinAccessToken (routes/pair.ts) : révoquer ce token
+      // côté Jellyfin tuait le direct streaming et le playstate de TOUTES les TVs
+      // qui en dépendent. Si au moins un appareil jumelé s'en sert encore, on se
+      // contente d'effacer le cookie — la session Jellyfin survit pour les TVs.
+      // Erreur DB → même prudence : le pire ici est une session Jellyfin qui
+      // survit, pas des téléviseurs morts.
+      let partage = 1;
       try {
-        await fetch(`${jellyfinUrl}/Sessions/Logout`, {
-          method: "POST",
-          headers: { "X-Emby-Token": token },
-          signal: AbortSignal.timeout(5000),
-        });
-      } catch {
-        // Non-blocking: Jellyfin might be unreachable
+        partage = hasPrisma()
+          ? await getPrisma().pairedDevice.count({ where: { jellyfinAccessToken: token } })
+          : 1;
+      } catch { /* prudence : on saute la révocation */ }
+      if (partage > 0) {
+        request.log.info(`logout: token Jellyfin partagé par ${partage} appareil(s) jumelé(s) — révocation Jellyfin sautée`);
+      } else {
+        try {
+          await fetch(`${jellyfinUrl}/Sessions/Logout`, {
+            method: "POST",
+            headers: { "X-Emby-Token": token },
+            signal: AbortSignal.timeout(5000),
+          });
+        } catch {
+          // Non-blocking: Jellyfin might be unreachable
+        }
       }
     }
 

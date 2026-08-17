@@ -29,9 +29,12 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
   /^Shows\/NextUp$/,
   /^Shows\/[^/]+\/(Seasons|Episodes|NextUp)$/,
 
-  // Playback reporting
+  // Playback reporting. NB : Sessions/Logout n'est PLUS proxyfiable — le token
+  // Jellyfin d'un appareil jumelé est souvent PARTAGÉ (copié à l'appairage,
+  // regreffé par le self-healing) : un client qui l'appellerait révoquerait le
+  // token du web et de toutes les TVs sœurs d'un coup. Le seul logout Jellyfin
+  // légitime est celui du backend lui-même (routes/auth.ts, token non partagé).
   /^Sessions\/Playing(\/Progress|\/Stopped)?$/,
-  /^Sessions\/Logout$/,
 
   // Media analysis
   /^MediaSegments\/[^/]+$/,
