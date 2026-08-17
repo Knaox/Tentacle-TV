@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { amorcerMesureDebit, debitEnCache, useJellyfinClient } from "@tentacle-tv/api-client";
 import { capPourDebit } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
@@ -21,7 +21,16 @@ export function useTVAutoQualityCap(args: {
   mediaSource: MediaSource | undefined;
   itemId: string;
   qualityKey: QualityKey;
-}): { actif: boolean; maxBitrate?: number; maxHeight?: number; maxWidth?: number } {
+}): {
+  actif: boolean;
+  key?: QualityKey;
+  maxBitrate?: number;
+  maxHeight?: number;
+  maxWidth?: number;
+  /** Choix MANUEL dans le menu (y compris re-choisir « Originale ») : le cap se
+   *  désarme pour cet item — l'utilisateur a repris la main, on ne la reprend plus. */
+  desarmer: () => void;
+} {
   const { mediaSource, itemId, qualityKey } = args;
   const client = useJellyfinClient();
 
@@ -42,12 +51,17 @@ export function useTVAutoQualityCap(args: {
   }
   const cap = itemId === evalueRef.current ? capRef.current : null;
 
-  const actif = qualityKey === "original" && cap != null;
-  if (!actif || !cap) return { actif: false };
+  const desarmeRef = useRef<string | undefined>(undefined);
+  const desarmer = useCallback(() => { desarmeRef.current = itemId; }, [itemId]);
+
+  const actif = qualityKey === "original" && cap != null && desarmeRef.current !== itemId;
+  if (!actif || !cap) return { actif: false, desarmer };
   return {
     actif: true,
+    key: cap.key,
     maxBitrate: cap.bitrate ?? undefined,
     maxHeight: cap.height ?? undefined,
     maxWidth: cap.width ?? undefined,
+    desarmer,
   };
 }
