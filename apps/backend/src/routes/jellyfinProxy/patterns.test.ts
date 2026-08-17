@@ -16,3 +16,9 @@ describe("isAllowedProxyPath — routes de session", () => {
     expect(isAllowedProxyPath("System/Configuration")).toBe(false);
   });
 });
+
+describe("isAllowedProxyPath — mesure de débit", () => {
+  it("laisse passer le téléchargement témoin BitrateTest (cap qualité des TVs, dev = tout via proxy)", () => {
+    expect(isAllowedProxyPath("Playback/BitrateTest")).toBe(true);
+  });
+});

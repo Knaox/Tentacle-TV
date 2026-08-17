@@ -36,6 +36,12 @@ const ALLOWED_PROXY_PATTERNS: RegExp[] = [
   // légitime est celui du backend lui-même (routes/auth.ts, token non partagé).
   /^Sessions\/Playing(\/Progress|\/Stopped)?$/,
 
+  // Mesure de débit : les clients TV chronomètrent un téléchargement témoin
+  // pour réduire d'eux-mêmes la qualité quand la connexion ne suit pas. En dev
+  // TOUT passe par le proxy — sans cette entrée, la mesure échoue (403) et le
+  // cap automatique reste inerte (dégradation gracieuse voulue sur vieux serveur).
+  /^Playback\/BitrateTest$/,
+
   // Media analysis
   /^MediaSegments\/[^/]+$/,
   /^Episode\/[^/]+\/(IntroSkipperSegments|Timestamps)$/,
