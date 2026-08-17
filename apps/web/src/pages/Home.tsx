@@ -1,4 +1,6 @@
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useLibraries,
   useResumeItems,
@@ -9,6 +11,7 @@ import {
   useWatchlist,
   useHomeWebSocket,
   useJellyfinClient,
+  notifyUserChange,
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { MediaRow } from "../components/rows/MediaRow";
@@ -20,8 +23,19 @@ import { useDataSaverActive } from "../offline/useDataSaver";
 
 export function Home() {
   const client = useJellyfinClient();
+  const queryClient = useQueryClient();
   const wsToken = client.getAccessToken() || localStorage.getItem("tentacle_token");
-  useHomeWebSocket({ token: wsToken });
+  // Révocation explicite de l'appareil, poussée par le serveur (session:revoked) :
+  // purge immédiate de la session locale. Inerte sur navigateur desktop — le
+  // serveur ne cible que les sockets d'appareils jumelés (TV webOS notamment).
+  const onSessionRevoked = useCallback(() => {
+    client.setAccessToken(null);
+    localStorage.removeItem("tentacle_token");
+    localStorage.removeItem("tentacle_user");
+    queryClient.clear();
+    notifyUserChange();
+  }, [client, queryClient]);
+  useHomeWebSocket({ token: wsToken, onSessionRevoked });
   const { t } = useTranslation("common");
   const { data: featured, isLoading: featuredLoading, isError: featuredError } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
