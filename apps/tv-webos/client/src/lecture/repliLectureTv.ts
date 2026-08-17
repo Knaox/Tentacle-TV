@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useWebPlaybackFallbacks as repliWeb } from "@/hooks/useWebPlaybackFallbacks?original";
+import { useToast } from "@/contexts/ToastContext";
 import type { MediaSource } from "@tentacle-tv/shared";
 import { signalerEchecLecture } from "./repliLecture";
 import { observer, VEILLE_VIDE } from "./relanceGel";
@@ -69,6 +71,8 @@ function decrire(source: MediaSource | null | undefined) {
 
 export function useWebPlaybackFallbacks(options: OptionsRepli) {
   const base = repliWeb(options);
+  const { show: montrerToast } = useToast();
+  const { t } = useTranslation("player");
 
   // La source décrite au moment de l'échec, tenue dans une référence : l'écouteur
   // est posé une fois et ne doit pas se reposer à chaque changement de piste.
@@ -100,8 +104,11 @@ export function useWebPlaybackFallbacks(options: OptionsRepli) {
       if (repli.etage === "epuise") {
         // Plus rien à retirer : relancer produirait la même source et la même
         // erreur. On rend la main au lecteur, dont le filet de quinze secondes
-        // affichera le bouton de lecture plutôt qu'un écran noir.
+        // affichera le bouton de lecture plutôt qu'un écran noir — et on le DIT
+        // à l'utilisateur : jusqu'ici l'échec définitif restait muet à l'écran.
+        // Le toast s'efface seul (4 s, ToastContext).
         console.error("[Tentacle:TV] echelle de repli epuisee", description.current);
+        montrerToast("error", t("playbackGiveUp"));
         return;
       }
       relancer();
@@ -109,7 +116,7 @@ export function useWebPlaybackFallbacks(options: OptionsRepli) {
 
     document.addEventListener("error", surErreur, true);
     return () => document.removeEventListener("error", surErreur, true);
-  }, [relancer]);
+  }, [relancer, montrerToast, t]);
 
   useVeilleGel(source);
 

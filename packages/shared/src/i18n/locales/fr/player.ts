@@ -40,6 +40,8 @@ export default {
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   dismiss: "Masquer",
   playbackError: "Erreur de lecture vidéo",
+  playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
+  qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   retry: "Réessayer",
   back: "Retour",
