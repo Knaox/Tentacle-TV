@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { getConfigValue, setConfigValue } from "./configStore";
+import { getConfigValue } from "./configStore";
+import { getPrisma, hasPrisma } from "./db";
 
 export interface DeviceTokenPayload {
   userId: string;
@@ -23,23 +24,55 @@ export interface ImpersonationTokenPayload {
 }
 
 let cachedSecret: string | null = null;
+// Single-flight : deux requêtes concurrentes pendant la fenêtre froide (cache
+// configStore vidé/pas encore hydraté) ne doivent JAMAIS générer deux secrets.
+let secretEnVol: Promise<string> | null = null;
 
-export async function getOrCreateJwtSecret(): Promise<string> {
-  if (cachedSecret) return cachedSecret;
+export function getOrCreateJwtSecret(): Promise<string> {
+  if (cachedSecret) return Promise.resolve(cachedSecret);
+  if (secretEnVol) return secretEnVol;
+  secretEnVol = resolveJwtSecret().finally(() => { secretEnVol = null; });
+  return secretEnVol;
+}
 
-  const existing = getConfigValue("jwt_secret");
-  if (existing) {
-    cachedSecret = existing;
-    // Log non-sensible : empreinte courte du secret, permet de vérifier (via les
-    // logs serveur) que la même clé est rechargée à chaque redémarrage. Si
-    // l'empreinte change → la persistance DB est cassée et tous les clients
-    // verront leurs tokens invalidés. Ne PAS logger le secret entier.
-    console.log(`[JWT] secret loaded from DB — fingerprint=${existing.substring(0, 8)}…`);
-    return existing;
+// Un secret régénéré à tort invalide TOUS les jumelages d'un coup (TVs, mobiles) :
+// la résolution est donc paranoïaque. Ordre : mémo module → cache configStore →
+// lecture DB DIRECTE (parade à la fenêtre `cache.clear()` de detectAppState et aux
+// routes servies avant hydratation, ex. /api/ws) → génération UNIQUEMENT si la DB a
+// répondu « aucune ligne », via create (jamais d'écrasement ; course P2002 → on
+// adopte le secret du gagnant). DB injoignable → throw : pas de secret éphémère.
+async function resolveJwtSecret(): Promise<string> {
+  const fromCache = getConfigValue("jwt_secret");
+  if (fromCache) {
+    cachedSecret = fromCache;
+    // Log non-sensible : empreinte courte, permet de vérifier (logs serveur) que la
+    // même clé est rechargée à chaque redémarrage. Si l'empreinte change → la
+    // persistance DB est cassée et tous les clients verront leurs tokens invalidés.
+    console.log(`[JWT] secret loaded from DB — fingerprint=${fromCache.substring(0, 8)}…`);
+    return fromCache;
   }
-
+  if (!hasPrisma()) throw new Error("jwt_secret indisponible : base non connectée");
+  const prisma = getPrisma();
+  const row = await prisma.serverConfig.findUnique({ where: { key: "jwt_secret" } });
+  if (row?.value) {
+    cachedSecret = row.value;
+    console.log(`[JWT] secret loaded from DB (direct) — fingerprint=${row.value.substring(0, 8)}…`);
+    return row.value;
+  }
   const secret = crypto.randomBytes(64).toString("hex");
-  await setConfigValue("jwt_secret", secret);
+  try {
+    await prisma.serverConfig.create({ data: { key: "jwt_secret", value: secret } });
+  } catch {
+    // Course perdue (contrainte unique) ou DB tombée entre-temps : relire — si un
+    // autre worker a gagné, son secret fait foi ; sinon on échoue franchement.
+    const again = await prisma.serverConfig.findUnique({ where: { key: "jwt_secret" } });
+    if (again?.value) {
+      cachedSecret = again.value;
+      console.log(`[JWT] secret adopted after race — fingerprint=${again.value.substring(0, 8)}…`);
+      return again.value;
+    }
+    throw new Error("jwt_secret : écriture impossible");
+  }
   cachedSecret = secret;
   console.log(`[JWT] secret generated and persisted — fingerprint=${secret.substring(0, 8)}…`);
   return secret;
