@@ -87,9 +87,10 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   // Échelle + preset + cap automatique selon le débit mesuré (téléviseur
   // uniquement — politique inerte au navigateur) : cf. useQualiteEffective.
-  const { qualityPresets, quality, qualityMaxHeight } = useQualiteEffective({
-    mediaSource, itemId, qualityKey, setQualityKey,
-  });
+  // Le sélecteur reçoit la clé EFFECTIVE (palier servi, cap compris) et un
+  // setter qui désarme le cap — jamais le state brut, qui mentirait au menu.
+  const { qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManuel } =
+    useQualiteEffective({ mediaSource, itemId, qualityKey, setQualityKey });
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
@@ -270,7 +271,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality, qualityPresets,
+    qualityKey: qualityKeyEffective, setQualityKey: setQualityKeyManuel, sourceQuality, qualityPresets,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,

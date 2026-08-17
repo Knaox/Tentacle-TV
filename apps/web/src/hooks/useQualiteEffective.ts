@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { construireEchelleQualite, presetEstPropose, trouverPreset } from "@tentacle-tv/shared";
@@ -29,6 +29,12 @@ export function useQualiteEffective(args: {
   quality: number | null;
   qualityMaxHeight: number | undefined;
   capAutoActif: boolean;
+  /** Clé AFFICHÉE au sélecteur : le palier réellement servi, cap compris —
+   *  « Originale » cochée pendant un cap mentait au menu. */
+  qualityKeyEffective: QualityKey;
+  /** Sélection MANUELLE du menu : désarme d'abord le cap (re-choisir
+   *  « Originale » redevient possible et définitif pour cet item). */
+  setQualityKeyManuel: (k: QualityKey) => void;
 } {
   const { mediaSource, itemId, qualityKey, setQualityKey } = args;
   const client = useJellyfinClient();
@@ -62,7 +68,16 @@ export function useQualiteEffective(args: {
   }
   const capAuto = itemId === evalueRef.current ? capRef.current : null;
 
-  const capAutoActif = qualityKey === "original" && capAuto != null;
+  // L'utilisateur qui touche le menu reprend la main : le cap se désarme pour
+  // cet item, quel que soit son choix — y compris « Originale ».
+  const desarmeRef = useRef<string | undefined>(undefined);
+  const setQualityKeyManuel = useCallback((k: QualityKey) => {
+    desarmeRef.current = itemId;
+    setQualityKey(k);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemId, setQualityKey]);
+
+  const capAutoActif = qualityKey === "original" && capAuto != null && desarmeRef.current !== itemId;
   const presetEffectif = capAutoActif && capAuto ? capAuto : qualityPreset;
 
   // Le dire UNE fois par item — le toast s'efface seul (4 s).
@@ -80,5 +95,7 @@ export function useQualiteEffective(args: {
     quality: presetEffectif.bitrate,
     qualityMaxHeight: presetEffectif.height ?? undefined,
     capAutoActif,
+    qualityKeyEffective: capAutoActif && capAuto ? capAuto.key : qualityKey,
+    setQualityKeyManuel,
   };
 }
