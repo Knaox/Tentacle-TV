@@ -11,6 +11,18 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 ### EN
 - …
 
+## [1.2.0]
+### FR
+- Le jumelage ne se perd plus jamais tout seul : un redémarrage du serveur, une panne passagère ou une déconnexion du site web ne débranchent plus le téléviseur — seule une révocation volontaire depuis les réglages le fait, et elle agit immédiatement
+- Les messages d'erreur de lecture disparaissent d'eux-mêmes après quelques secondes, au lieu de rester à l'écran pour toujours
+- La qualité s'adapte à la connexion : l'application mesure le débit réel et réduit d'elle-même la qualité quand le réseau ne suit pas — jamais quand vous avez choisi un palier vous-même, et un badge le signale
+- L'écran ne se met plus jamais en veille pendant une lecture (en pause, la veille normale reprend pour protéger la dalle)
+### EN
+- Pairing never breaks on its own anymore: a server restart, a brief outage or a web sign-out no longer disconnects the TV — only a deliberate revocation from settings does, and it takes effect immediately
+- Playback error messages now fade away on their own after a few seconds instead of staying on screen forever
+- Quality adapts to your connection: the app measures the real throughput and lowers quality on its own when the network can't keep up — never when you picked a preset yourself, and a badge signals it
+- The screen never sleeps during playback anymore (while paused, normal sleep resumes to protect the panel)
+
 ## [1.1.0]
 ### FR
 - Avance rapide repensée : un seul bouton — un appui ouvre la navigation dans le film (flèches ou trackpad), OK lit à la position visée, Retour annule
