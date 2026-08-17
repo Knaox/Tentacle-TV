@@ -77,7 +77,12 @@ export function construireProfilTv(
     MaxStreamingBitrate: maxBitrate ?? plafond,
     MaxStaticBitrate: plafond,
     MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
-    DirectPlayProfiles: lectureDirecte(resolu, memoire),
+    // Un palier de qualité choisi (maxBitrate défini — usePlaybackInfo ne rebâtit
+    // le profil que dans ce cas) doit être EFFECTIF : avec des entrées de lecture
+    // directe, Jellyfin garde le fichier tel quel dès qu'il ne sait pas comparer
+    // son débit au plafond — « choisir 720p ne change rien ». On force donc le
+    // chemin transcode, comme le profil tvOS le fait déjà (buildTvosDeviceProfile).
+    DirectPlayProfiles: maxBitrate != null ? [] : lectureDirecte(resolu, memoire),
     TranscodingProfiles: transcodage(resolu, memoire, options?.sourceDolbyVision),
     CodecProfiles: contraintes(resolu),
     SubtitleProfiles: [
