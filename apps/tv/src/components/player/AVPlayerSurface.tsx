@@ -280,6 +280,10 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         // + garder ~10 s d'avance (moins de stalls). @ts-expect-error : props iOS de react-native-video.
         automaticallyWaitsToMinimizeStalling={true}
         preferredForwardBufferDuration={10}
+        // Anti-veille : défaut de la lib déjà true (RCTVideo) — gravé ici pour que la
+        // politique soit lisible. AVPlayer ne bloque QUE la lecture active ; la pause
+        // rend la main à la veille système (protection OLED), c'est l'arbitrage voulu.
+        preventsDisplaySleepDuringVideoPlayback={true}
         // jamais voler le focus de l'OSD.
         focusable={false}
         selectedAudioTrack={selectedAudioTrack}

@@ -184,6 +184,7 @@ class MpvPlayerView(
     fun loadFile(url: String) {
         Log.w(TAG, ">>> loadFile url=${url.take(120)}... initialized=$initialized destroyed=$destroyed")
         currentUrl = url
+        keepScreenOn = pendingPaused != true // anti-veille : une lecture démarre
         if (!initialized) {
             Log.w(TAG, ">>> loadFile DEFERRED (not initialized yet, saved to currentUrl)")
             return
@@ -231,6 +232,9 @@ class MpvPlayerView(
 
     fun setPaused(paused: Boolean) {
         Log.w(TAG, ">>> setPaused paused=$paused initialized=$initialized")
+        // Anti-veille : suit l'intention de lecture (JS = source de vérité) —
+        // écran éveillé en lecture, veille système rendue en pause (OLED).
+        keepScreenOn = !paused
         if (!initialized) {
             pendingPaused = paused
             Log.w(TAG, ">>> setPaused DEFERRED (pendingPaused=$paused)")
@@ -289,6 +293,7 @@ class MpvPlayerView(
             return
         }
         destroyed = true
+        keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
         if (!initialized) {
             Log.w(TAG, ">>> destroy SKIP MPV teardown (never initialized)")
             return
