@@ -10,7 +10,12 @@ const Remux = (NativeModules as { TVLocalRemux?: { prepareResume?: () => void } 
 const SEEK_DEBOUNCE_MS = 350;
 /** Seek DIFFÉRÉ (cible devant l'écrit) : cadence de re-vérification + délai avant repli re-remux. */
 const DEFER_POLL_MS = 300;
-const DEFER_TIMEOUT_MS = 7000;
+const DEFER_TIMEOUT_MS = 3500;
+/** Distance max (s) devant l'écrit pour DIFFÉRER plutôt que re-remuxer : au-delà, attendre la
+ *  production « petit à petit » est perdant — sur une connexion lente elle avance à un débit
+ *  famélique et l'utilisateur fixe une image figée. Une session fraîche à la cible
+ *  (av_seek_frame) démarre en un pré-buffer, quel que soit l'écart. */
+const DEFER_MAX_AHEAD_SEC = 15;
 /** Marge devant la fin d'écrit pour un seek natif (segment en cours d'écriture). */
 const WRITTEN_MARGIN_SEC = 1;
 
@@ -139,8 +144,11 @@ export function useTVRemuxSeek(args: {
       return;
     }
 
-    // 3. Devant l'écrit mais dans la fenêtre de pacing → seek natif DIFFÉRÉ (dès que produit).
-    if (!dead && info && !info.done && clamped > upperNative && clamped <= pos + 295 && clamped >= lower) {
+    // 3. JUSTE devant l'écrit (≤ DEFER_MAX_AHEAD_SEC) → seek natif DIFFÉRÉ (dès que produit).
+    // Plus loin → chemin 4 : attendre la production serait le « petit à petit » — une session
+    // fraîche à la cible est toujours plus courte, surtout à débit réseau famélique.
+    if (!dead && info && !info.done && clamped > upperNative
+        && clamped <= writtenAbs + DEFER_MAX_AHEAD_SEC && clamped <= pos + 295 && clamped >= lower) {
       plog("seek", `différé @${clamped.toFixed(1)}s (écrit=${writtenAbs.toFixed(0)}s, attente production)`);
       showOptimistic();
       notifySeekRef.current(clamped, DEFER_TIMEOUT_MS + 1500, false);
