@@ -122,3 +122,36 @@ export function trouverPreset(key: QualityKey, echelle: readonly QualityPreset[]
 export function presetEstPropose(key: QualityKey, echelle: readonly QualityPreset[]): boolean {
   return echelle.some((p) => p.key === key);
 }
+
+/** Le cap ne se déclenche que si le débit mesuré ne couvre pas source × 1,2 :
+ *  en deçà de cette marge, la lecture directe tiendrait sans doute, mais au
+ *  premier pic du fichier elle calerait. */
+export const MARGE_DECLENCHEMENT = 1.2;
+/** Part du débit mesuré qu'un palier peut consommer : viser 100 % laisserait
+ *  zéro place aux pics d'encodage et au reste du trafic du téléviseur. */
+export const MARGE_APPLICATION = 0.8;
+
+/**
+ * Palier à imposer quand la connexion MESURÉE ne porte pas le fichier.
+ *
+ * `null` = aucun cap : mesure absente (échec, serveur sans BitrateTest — la
+ * dégradation gracieuse par excellence), débit source inconnu, ou connexion
+ * assez large (≥ source × MARGE_DECLENCHEMENT). Sinon : le meilleur palier de
+ * l'échelle (hors « Originale ») dont le débit tient dans mesure ×
+ * MARGE_APPLICATION — et s'il n'en reste aucun, le plus bas proposé : mieux
+ * vaut une image modeste qu'un lecteur qui bufferise.
+ */
+export function capPourDebit(
+  source: MediaSource | null | undefined,
+  debitMesureBps: number | null,
+): QualityPreset | null {
+  if (debitMesureBps == null) return null;
+  const { bitrate } = lireSource(source);
+  if (bitrate == null) return null;
+  if (debitMesureBps >= bitrate * MARGE_DECLENCHEMENT) return null;
+
+  const paliers = construireEchelleQualite(source).filter((p) => p.bitrate != null);
+  if (paliers.length === 0) return null;
+  const budget = debitMesureBps * MARGE_APPLICATION;
+  return paliers.find((p) => (p.bitrate ?? 0) <= budget) ?? paliers[paliers.length - 1];
+}

@@ -58,6 +58,10 @@ export {
 } from "./socket/tentacleSocket";
 export type { SocketStatus } from "./socket/tentacleSocket";
 
+// Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le
+// cap automatique de qualité des clients TV.
+export { amorcerMesureDebit, debitEnCache, mesurerDebit } from "./jellyfin/bitrateMeasure";
+
 // Watch Together (REST : composition du groupe + utilisateurs invitables)
 export {
   fetchMyGroup, fetchMyInvites, createGroup, sendGroupInvites, respondToInvite,
