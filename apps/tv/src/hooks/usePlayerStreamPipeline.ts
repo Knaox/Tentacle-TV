@@ -4,6 +4,7 @@ import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { parseStart } from "../utils/playerHelpers";
 import { useTVPlaybackQuality } from "./useTVPlaybackQuality";
+import { useTVAutoQualityCap } from "./useTVAutoQualityCap";
 import { useTVReloadState } from "./useTVReloadState";
 import { useTVPlayerRouting } from "./useTVPlayerRouting";
 import { useTVAudioTrack } from "./useTVAudioTrack";
@@ -54,6 +55,12 @@ export function usePlayerStreamPipeline(args: {
   const mediaSource = item?.MediaSources?.[0];
 
   const quality = useTVPlaybackQuality(mediaSource);
+  // Cap automatique selon le débit mesuré : traité comme un choix de qualité
+  // par tout l'aval — le choix MANUEL de l'utilisateur prime (cf. hook).
+  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: quality.qualityKey });
+  const transcodeQualite = quality.isTranscodingQuality || cap.actif;
+  const maxBitrateEffectif = quality.maxBitrate ?? cap.maxBitrate;
+  const maxHeightEffectif = quality.maxHeight ?? cap.maxHeight;
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const mediaSourceId = mediaSource?.Id ?? itemId;
@@ -79,7 +86,7 @@ export function usePlayerStreamPipeline(args: {
 
   // Routage lecteur (ExoPlayer surface vs MPV) + dérivés de mode de lecture.
   const { useExoPlayer, playerRef, requestedDirectPlay, isDirectStream } = useTVPlayerRouting({
-    forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
+    forceTranscode, isTranscodingQuality: transcodeQualite,
     exoRef: refs.exoRef, mpvRef: refs.mpvRef,
   });
 
@@ -104,8 +111,8 @@ export function usePlayerStreamPipeline(args: {
   const { streamUrl, playSessionId, isDirectPlay, isLocalRemux, failed } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
-    forceTranscode, isTranscodingQuality: quality.isTranscodingQuality,
-    maxBitrate: quality.maxBitrate, maxHeight: quality.maxHeight,
+    forceTranscode, isTranscodingQuality: transcodeQualite,
+    maxBitrate: maxBitrateEffectif, maxHeight: maxHeightEffectif,
     isDirectPlay: requestedDirectPlay,
     reloadNonce,
   });
@@ -200,7 +207,7 @@ export function usePlayerStreamPipeline(args: {
   });
 
   return {
-    quality, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
+    quality, capAutoActif: cap.actif, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
