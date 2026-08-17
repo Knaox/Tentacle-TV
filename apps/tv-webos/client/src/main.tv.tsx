@@ -30,6 +30,7 @@ import { installerPolyfills } from "./amorce/polyfills";
 import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
 import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
 import { demarrerReleveConfigs } from "./lecture/configsTv";
+import { installerAntiVeille } from "./lecture/antiVeilleTv";
 import { installerMoteurFocus } from "./focus/moteur";
 import { amorcerFocus } from "./focus/entree";
 import { installerRetour } from "./focus/retour";
@@ -67,6 +68,10 @@ lireCapacitesTeleviseur();
 // lecture est à plusieurs écrans d'ici, et la déduction par gamme tient lieu de
 // repli si la réponse tardait.
 demarrerReleveConfigs();
+
+// L'écran ne veille jamais pendant une lecture ACTIVE (pause exclue — la dalle
+// OLED garde sa protection) : sentinelle Luna tvpower, cf. antiVeilleTv.
+installerAntiVeille();
 
 // Le jumelage arrive de la coquille dans le fragment d'URL, jamais dans la
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
