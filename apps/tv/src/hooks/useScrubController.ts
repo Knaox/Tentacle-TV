@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { Platform } from "react-native";
-import { getSpeedTier, SCRUB_STEP_SECONDS } from "./scrubAcceleration";
+import { pasDeScrub } from "@tentacle-tv/shared";
+import { getSpeedTier } from "./scrubAcceleration";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";
 
 /** Gap entre deux événements répétés au-delà duquel le hold est terminé */
@@ -140,7 +141,9 @@ export function useScrubController({
     releaseTimerRef.current = setTimeout(endHold, HOLD_RELEASE_MS);
 
     const speed = getSpeedTier(holdRef.current.startTime);
-    const delta = (dir === "forward" ? 1 : -1) * SCRUB_STEP_SECONDS * speed;
+    // Pas PROPORTIONNEL à la durée (pasDeScrub, partagé webOS) : même vitesse
+    // RELATIVE de barre sur un épisode de 3 min et un film de 50.
+    const delta = (dir === "forward" ? 1 : -1) * pasDeScrub(durationRef.current) * speed;
     const dur = durationRef.current || 0;
     const next = Math.max(0, dur > 0 ? Math.min(scrubPositionRef.current + delta, dur) : scrubPositionRef.current + delta);
     scrubPositionRef.current = next;
@@ -148,13 +151,13 @@ export function useScrubController({
     armIdleCancel();
   }, [endHold, durationRef, armIdleCancel]);
 
-  /** Appui SIMPLE ←/→ en scrub : pas FIXE de ±SCRUB_STEP_SECONDS, SANS
-   *  accélération — la montée 2x/4x/8x est réservée au MAINTIEN (tick du hold
-   *  motor, temps réel). Avant : chaque appui passait par moveScrub → des
-   *  appuis rapprochés héritaient du palier d'accélération (« tout à x8 »). */
+  /** Appui SIMPLE ←/→ en scrub : UN pas de base (pasDeScrub — proportionnel à
+   *  la durée du média), SANS accélération — la montée 2x/4x/8x est réservée au
+   *  MAINTIEN (tick du hold motor, temps réel). Avant : chaque appui passait
+   *  par moveScrub → des appuis rapprochés héritaient du palier (« tout à x8 »). */
   const stepScrub = useCallback((dir: "forward" | "backward") => {
     endHold();
-    const delta = (dir === "forward" ? 1 : -1) * SCRUB_STEP_SECONDS;
+    const delta = (dir === "forward" ? 1 : -1) * pasDeScrub(durationRef.current);
     const dur = durationRef.current || 0;
     const next = Math.max(0, dur > 0 ? Math.min(scrubPositionRef.current + delta, dur) : scrubPositionRef.current + delta);
     scrubPositionRef.current = next;

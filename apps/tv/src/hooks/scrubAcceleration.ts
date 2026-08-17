@@ -1,4 +1,5 @@
-export const SCRUB_STEP_SECONDS = 10;
+// Le pas de base vit désormais dans @tentacle-tv/shared (pasDeScrub) :
+// PROPORTIONNEL à la durée du média, partagé avec le scrub webOS.
 /** Paliers d'accélération du curseur selon la durée du hold (secondes) */
 export const SPEED_TIERS = [1, 2, 4, 8] as const;
 
