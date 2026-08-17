@@ -239,7 +239,10 @@ class ExoPlayerView(
                                     putDouble("duration", exo.duration.toDouble() / 1000.0)
                                 })
                             }
-                            Player.STATE_ENDED -> emitEvent("end", Arguments.createMap())
+                            Player.STATE_ENDED -> {
+                                keepScreenOn = false // anti-veille : la lecture est finie
+                                emitEvent("end", Arguments.createMap())
+                            }
                         }
                     }
 
@@ -422,6 +425,10 @@ class ExoPlayerView(
         if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
+        // Anti-veille : l'écran reste éveillé tant que la LECTURE est active
+        // (keepScreenOn, aucune permission requise). La pause rend la main à la
+        // veille système — protection des dalles OLED, arbitrage produit.
+        keepScreenOn = p.playWhenReady
     }
 
     /** MimeType d'une piste de sous-titre selon l'extension de l'URL Jellyfin.
@@ -491,6 +498,7 @@ class ExoPlayerView(
         p.setMediaItem(builder.build(), posMs)
         p.prepare()
         p.playWhenReady = wasPlaying
+        keepScreenOn = wasPlaying // anti-veille : reprend l'état d'avant le re-prepare
     }
 
     fun seekTo(seconds: Double) {
@@ -498,6 +506,7 @@ class ExoPlayerView(
     }
 
     fun setPaused(paused: Boolean) {
+        keepScreenOn = !paused // anti-veille : suit l'intention de lecture
         val p = player
         if (p == null) { pendingPaused = paused; return }
         pendingPaused = null
@@ -547,6 +556,7 @@ class ExoPlayerView(
         Log.w(TAG, ">>> destroy START viewId=$id")
         if (destroyed) return
         destroyed = true
+        keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
         removeCallbacks(progressRunnable)
         playerView.player = null
         player?.release()
