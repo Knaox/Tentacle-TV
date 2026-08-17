@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NativeModules } from "react-native";
 import { useTVReloadHold } from "./useTVReloadHold";
 
@@ -41,7 +41,26 @@ export function usePlayerMediaState() {
       .catch(() => {});
   }, []);
 
-  const [videoError, setVideoError] = useState<string | null>(null);
+  // Bandeau d'erreur AUTO-EFFAÇABLE : une erreur posée s'efface seule après
+  // ERROR_BANNER_TTL_MS (avant, rien ne l'éteignait hors changement d'item — le
+  // bandeau rouge restait à vie même lecture repartie). Wrapper transparent :
+  // les émetteurs (useTVErrorHandler, famine watchdog, direct-stream recovery)
+  // et les éteigneurs (bascule transcode, reset d'item) gardent la même API.
+  // Pattern skipFlash (useTVPlayerControls) : timer + ref d'annulation.
+  const ERROR_BANNER_TTL_MS = 8000;
+  const [videoError, setVideoErrorState] = useState<string | null>(null);
+  const videoErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setVideoError = useCallback((e: string | null) => {
+    if (videoErrorTimerRef.current) { clearTimeout(videoErrorTimerRef.current); videoErrorTimerRef.current = null; }
+    setVideoErrorState(e);
+    if (e != null) {
+      videoErrorTimerRef.current = setTimeout(() => {
+        videoErrorTimerRef.current = null;
+        setVideoErrorState(null);
+      }, ERROR_BANNER_TTL_MS);
+    }
+  }, []);
+  useEffect(() => () => { if (videoErrorTimerRef.current) clearTimeout(videoErrorTimerRef.current); }, []);
   const [isLoading, setIsLoading] = useState(true);
   // Premier onLoad reçu → les isLoading suivants sont du rebuffering (spinner
   // discret) et non plus le chargement initial (écran contextualisé).
