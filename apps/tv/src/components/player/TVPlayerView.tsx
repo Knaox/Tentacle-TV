@@ -11,6 +11,7 @@ import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScre
 import { TVReloadFrame } from "./TVReloadFrame";
 import { TVScrubFullscreen } from "./TVScrubFullscreen";
 import { TVSkipBadge } from "./TVSkipBadge";
+import { TVAutoCapBadge } from "./TVAutoCapBadge";
 import { TVSubtitleOverlay, type SubtitleCue } from "./TVSubtitleOverlay";
 import type { MPVPlayerHandle, MpvTrack } from "./MPVPlayer";
 import type { ExoTextTrack } from "./ExoPlayer";
@@ -45,6 +46,8 @@ export interface TVPlayerViewProps {
   /** Lecture déjà démarrée — distingue chargement initial / rebuffering */
   hasStarted: boolean;
   videoError: string | null;
+  /** Cap automatique de qualité actif (débit mesuré insuffisant) → badge 5 s. */
+  capAutoActif?: boolean;
   displayTime: number;
   bufferedTime: number;
   displayDuration: number;
@@ -113,7 +116,7 @@ export interface TVPlayerViewProps {
 }
 
 export function TVPlayerView({
-  item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, displayTime, bufferedTime,
+  item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, capAutoActif, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
   useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
@@ -199,6 +202,7 @@ export function TVPlayerView({
         </View>
       )}
       {isLoading && hasStarted && <TVBufferingSpinner />}
+      <TVAutoCapBadge actif={!!capAutoActif} />
       {videoError && (
         <View style={{
           position: "absolute", top: 60, left: 40, right: 40,

@@ -4,6 +4,7 @@ import {
   useJellyfinClient,
   useStreamingConfig,
   STREAMING_CONFIG_QUERY_KEY,
+  amorcerMesureDebit,
 } from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 
@@ -34,6 +35,12 @@ export function DirectStreamingSync({ storage }: Props) {
   }, [storage]);
 
   const { data, isError, isFetched } = useStreamingConfig(token);
+
+  // Préchauffe la mesure de débit (cache 10 min, fire-and-forget) dès qu'une
+  // session existe : la PREMIÈRE lecture peut ainsi être capée si la connexion
+  // ne suit pas — la décision de flux part au montage du player, trop tôt pour
+  // mesurer sur place (cf. useTVAutoQualityCap).
+  useEffect(() => { if (token) amorcerMesureDebit(client); }, [client, token]);
 
   useEffect(() => {
     if (data?.tokenExpired) {

@@ -269,7 +269,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
-      qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality}
+      qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} capAutoActif={p.capAutoActif}
       skipSegments={skipSegments} autoPlay={autoPlay} controls={controls}
       onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
       onError={handleError} onTracks={p.mpvTracks.handleTracks} onVideoSize={handleVideoSize}
