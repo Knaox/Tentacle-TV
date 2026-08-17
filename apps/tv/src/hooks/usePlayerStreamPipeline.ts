@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
-import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
+import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
 import { parseStart } from "../utils/playerHelpers";
 import { useTVPlaybackQuality } from "./useTVPlaybackQuality";
@@ -54,13 +54,27 @@ export function usePlayerStreamPipeline(args: {
 
   const mediaSource = item?.MediaSources?.[0];
 
-  const quality = useTVPlaybackQuality(mediaSource);
+  const qualityBrute = useTVPlaybackQuality(mediaSource);
   // Cap automatique selon le débit mesuré : traité comme un choix de qualité
   // par tout l'aval — le choix MANUEL de l'utilisateur prime (cf. hook).
-  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: quality.qualityKey });
-  const transcodeQualite = quality.isTranscodingQuality || cap.actif;
-  const maxBitrateEffectif = quality.maxBitrate ?? cap.maxBitrate;
-  const maxHeightEffectif = quality.maxHeight ?? cap.maxHeight;
+  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: qualityBrute.qualityKey });
+  const transcodeQualite = qualityBrute.isTranscodingQuality || cap.actif;
+  const maxBitrateEffectif = qualityBrute.maxBitrate ?? cap.maxBitrate;
+  const maxHeightEffectif = qualityBrute.maxHeight ?? cap.maxHeight;
+  // Sélection EXPOSÉE à l'UI : la clé affichée est le palier réellement servi
+  // (cap compris — « Originale » cochée pendant un cap mentait au sélecteur),
+  // et tout choix du menu désarme d'abord le cap : re-choisir « Originale »
+  // redevient possible et définitif pour cet item.
+  const setQualityKeyManuel = useCallback((k: QualityKey) => {
+    cap.desarmer();
+    qualityBrute.setQualityKey(k);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cap.desarmer, qualityBrute.setQualityKey]);
+  const quality = useMemo(() => ({
+    ...qualityBrute,
+    qualityKey: cap.actif && cap.key ? cap.key : qualityBrute.qualityKey,
+    setQualityKey: setQualityKeyManuel,
+  }), [qualityBrute, cap.actif, cap.key, setQualityKeyManuel]);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const mediaSourceId = mediaSource?.Id ?? itemId;
