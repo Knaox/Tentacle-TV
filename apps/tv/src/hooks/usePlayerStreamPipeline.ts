@@ -55,9 +55,35 @@ export function usePlayerStreamPipeline(args: {
   const mediaSource = item?.MediaSources?.[0];
 
   const qualityBrute = useTVPlaybackQuality(mediaSource);
+  const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
+
+  const mediaSourceId = mediaSource?.Id ?? itemId;
+  const streams: JfStream[] = useMemo(() => mediaSource?.MediaStreams ?? [], [mediaSource]);
+
+  const defaultAudio = useMemo(() =>
+    streams.find((st) => st.Type === "Audio" && st.IsDefault)?.Index
+    ?? streams.find((st) => st.Type === "Audio")?.Index ?? 0,
+    [streams],
+  );
+
+  // État de reload (nonce/startTicks/forceTranscode/softReload/reloadFrame…) +
+  // reset au changement d'itemId. PRODUIT avant useTVStreamUrl (qui le consomme).
+  const reload = useTVReloadState({
+    itemId, defaultAudio, isLoading,
+    positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError,
+    resetPrefsAppliedRef, qualityReset: qualityBrute.reset, deadSessionRef,
+  });
+  const {
+    reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
+    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
+  } = reload;
+
   // Cap automatique selon le débit mesuré : traité comme un choix de qualité
   // par tout l'aval — le choix MANUEL de l'utilisateur prime (cf. hook).
-  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: qualityBrute.qualityKey });
+  // `startTicks` : le cap se re-photographie à chaque reconstruction de session
+  // (seek re-remuxé, reload) — une lecture partie en Originale-remux parce que
+  // la mesure n'était pas prête bascule au premier seek au lieu de ramer à vie.
+  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: qualityBrute.qualityKey, startTicks });
   const transcodeQualite = qualityBrute.isTranscodingQuality || cap.actif;
   const maxBitrateEffectif = qualityBrute.maxBitrate ?? cap.maxBitrate;
   const maxHeightEffectif = qualityBrute.maxHeight ?? cap.maxHeight;
@@ -75,28 +101,6 @@ export function usePlayerStreamPipeline(args: {
     qualityKey: cap.actif && cap.key ? cap.key : qualityBrute.qualityKey,
     setQualityKey: setQualityKeyManuel,
   }), [qualityBrute, cap.actif, cap.key, setQualityKeyManuel]);
-  const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
-
-  const mediaSourceId = mediaSource?.Id ?? itemId;
-  const streams: JfStream[] = useMemo(() => mediaSource?.MediaStreams ?? [], [mediaSource]);
-
-  const defaultAudio = useMemo(() =>
-    streams.find((st) => st.Type === "Audio" && st.IsDefault)?.Index
-    ?? streams.find((st) => st.Type === "Audio")?.Index ?? 0,
-    [streams],
-  );
-
-  // État de reload (nonce/startTicks/forceTranscode/softReload/reloadFrame…) +
-  // reset au changement d'itemId. PRODUIT avant useTVStreamUrl (qui le consomme).
-  const reload = useTVReloadState({
-    itemId, defaultAudio, isLoading,
-    positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError,
-    resetPrefsAppliedRef, qualityReset: quality.reset, deadSessionRef,
-  });
-  const {
-    reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
-    startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
-  } = reload;
 
   // Routage lecteur (ExoPlayer surface vs MPV) + dérivés de mode de lecture.
   const { useExoPlayer, playerRef, requestedDirectPlay, isDirectStream } = useTVPlayerRouting({

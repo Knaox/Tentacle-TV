@@ -23,6 +23,9 @@ export function useQualiteEffective(args: {
   itemId: string | undefined;
   qualityKey: QualityKey;
   setQualityKey: (k: QualityKey) => void;
+  /** Position de relance de session : change quand le flux est reconstruit —
+   *  le cap se re-photographie à ce moment-là (jamais en lecture continue). */
+  startTicks?: number;
 }): {
   qualityPresets: QualityPreset[];
   qualityPreset: QualityPreset;
@@ -36,7 +39,7 @@ export function useQualiteEffective(args: {
    *  « Originale » redevient possible et définitif pour cet item). */
   setQualityKeyManuel: (k: QualityKey) => void;
 } {
-  const { mediaSource, itemId, qualityKey, setQualityKey } = args;
+  const { mediaSource, itemId, qualityKey, setQualityKey, startTicks = 0 } = args;
   const client = useJellyfinClient();
   const { show } = useToast();
   const { t } = useTranslation("player");
@@ -59,14 +62,18 @@ export function useQualiteEffective(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qualityPresets, qualityKey]);
 
-  // Cap figé par item : photographié UNE fois, à l'arrivée de la source.
+  // Cap photographié par (item, session) : pris à l'arrivée de la source,
+  // re-pris quand startTicks bouge (relance de flux) — une lecture partie en
+  // Originale parce que la mesure n'était pas prête bascule à la relance
+  // suivante au lieu de ramer à vie. Jamais recalculé en lecture continue.
+  const sessionCle = `${itemId}|${startTicks}`;
   const evalueRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
-  if (itemId !== evalueRef.current && mediaSource) {
-    evalueRef.current = itemId;
+  if (sessionCle !== evalueRef.current && mediaSource) {
+    evalueRef.current = sessionCle;
     capRef.current = capAutomatique(mediaSource);
   }
-  const capAuto = itemId === evalueRef.current ? capRef.current : null;
+  const capAuto = sessionCle === evalueRef.current ? capRef.current : null;
 
   // L'utilisateur qui touche le menu reprend la main : le cap se désarme pour
   // cet item, quel que soit son choix — y compris « Originale ».
