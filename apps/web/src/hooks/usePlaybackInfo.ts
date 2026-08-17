@@ -7,6 +7,7 @@ import {
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
 import { evaluerLecture, sourceEstHdr, type Verdict } from "./playbackVerdict";
+import { journaliserLecture } from "./journalPlayback";
 import { isMacOS } from "./useDesktopPlayer";
 import { isTauriShell } from "../desktop/bridge";
 
@@ -141,6 +142,8 @@ export function usePlaybackInfo(lecteurNatif = false) {
     subtitleStreamIndex?: number;
     startTimeTicks?: number;
     maxStreamingBitrate?: number;
+    /** Cap visuel du preset de qualité (Jellyfin MaxHeight). */
+    maxHeight?: number;
     /** Force server-side audio selection (Edge/Chrome: no native audioTracks API). */
     forceTranscode?: boolean;
     /**
@@ -178,6 +181,7 @@ export function usePlaybackInfo(lecteurNatif = false) {
         subtitleStreamIndex: opts.subtitleStreamIndex,
         startTimeTicks: opts.startTimeTicks,
         maxStreamingBitrate: opts.maxStreamingBitrate,
+        maxHeight: opts.maxHeight,
       });
 
       // Discard stale responses (newer fetch was started)
@@ -249,47 +253,11 @@ export function usePlaybackInfo(lecteurNatif = false) {
         verdict,
       });
 
-      // Synthetic log so users can see at a glance, in DevTools, whether
-      // Direct Streaming is engaged and which decode path is used.
-      // `warn` et non `log`, et ce n'est pas une question de gravité.
-      //
-      // Les builds de production évincent `console.log` (`pure:` d'esbuild, cf.
-      // la configuration du téléviseur). Ce relevé-ci est précisément celui
-      // qu'on vient chercher dans l'inspecteur d'une dalle, où il n'y a pas
-      // d'autre instrument — et il n'y était jamais. Mesuré sur l'émulateur
-      // webOS 4 : lecture directe en cours, console vide.
-      console.warn("[Tentacle:Playback]", {
-        mode: verdict.mode,
-        reencodage: verdict.reencodageVideo,
-        // Jointes plutôt qu'en tableau : un `Array(1)` replié dans la console
-        // ne dit rien, et c'est précisément la valeur qu'on vient y chercher.
-        raisons: verdict.raisons.join(",") || "(aucune)",
-        // Plage dynamique : la valeur BRUTE du serveur face à ce qu'on déclare.
-        // Jellyfin sérialise `VideoRangeType` tantôt en nom, tantôt en index —
-        // et c'est ce nom, côté serveur, qu'il compare à notre liste pour
-        // décider s'il peut copier l'image. Sans les deux sous les yeux, on en
-        // est réduit à deviner.
-        plageSource: fluxVideo?.VideoRangeType,
-        plagesDeclarees: plages.join("|"),
-        transport,
-        directStreamingConfigured: !!ds,
-        isHls: url.includes(".m3u8"),
+      // Relevé synthétique pour l'inspecteur d'une dalle (cf. journalPlayback).
+      journaliserLecture({
+        verdict, fluxVideo, plages, transport,
+        directStreamingConfigured: !!ds, url, directPlay,
       });
-      // Sur SA PROPRE ligne, en chaîne nue : la console replie les objets, et
-      // c'est justement le champ le plus long qu'elle cache derrière son « … ».
-      //
-      // Cette URL porte tout ce que le serveur relira pour décider de copier
-      // l'image ou de la recompresser — `hevc-rangetype`, `hevc-profile`,
-      // `hevc-level`, `hevc-videobitdepth`, `VideoBitrate`, `MaxFramerate`,
-      // `TranscodeReasons`. `EncodingHelper.CanStreamCopyVideo` ne lit pas le
-      // DeviceProfile : il ne lit que ces paramètres-là. Réservée au
-      // transcodage — en lecture directe il n'y a rien à diagnostiquer.
-      if (!directPlay) {
-        console.warn(
-          "[Tentacle:Playback] url →",
-          url.replace(/([?&])(api_key|apikey)=[^&]*/gi, "$1api_key=***"),
-        );
-      }
     } catch (err) {
       if (fetchId.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);

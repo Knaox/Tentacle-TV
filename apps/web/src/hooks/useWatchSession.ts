@@ -92,6 +92,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
   const qualityPreset = trouverPreset(qualityKey, qualityPresets);
   const quality = qualityPreset.bitrate; // legacy bitrate ref (null = Original/direct)
+  const qualityMaxHeight = qualityPreset.height ?? undefined; // cap visuel du palier (web + desktop)
   const [startTicks, setStartTicks] = useState<number>(0);
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
@@ -208,13 +209,12 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // ── Web: fetch PlaybackInfo when params change (extraction — cf. hook) ──
   useWebPlaybackInfoFetch({
     isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
-    burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
-    prefsApplied, audioOverrideRef, relanceLecture,
+    burnInSubtitleIndex, startTicks, quality, qualityMaxHeight, item,
+    supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, relanceLecture,
   });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
   // stream classique — construit dans useDesktopSource (chaîne inchangée). ──
-  const qualityMaxHeight = qualityPreset.height ?? undefined;
   const urlAudioIndex = desktopIsDirectPlay ? undefined : audioIndex;
 
   const { desktopStreamUrl } = useDesktopSource({

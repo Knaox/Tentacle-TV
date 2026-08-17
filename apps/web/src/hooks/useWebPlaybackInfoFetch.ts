@@ -27,6 +27,8 @@ interface Options {
   burnInSubtitleIndex: number | undefined;
   startTicks: number;
   quality: number | null;
+  /** Cap visuel du preset (MaxHeight Jellyfin) — indéfini sur « Originale ». */
+  qualityMaxHeight?: number;
   item: MediaItem | undefined;
   supportsNativeAudioTracks: boolean;
   pbInfo: ReturnType<typeof usePlaybackInfo>;
@@ -38,8 +40,8 @@ interface Options {
  */
 export function useWebPlaybackInfoFetch({
   isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
-  burnInSubtitleIndex, startTicks, quality, item, supportsNativeAudioTracks, pbInfo,
-  prefsApplied, audioOverrideRef, relanceLecture,
+  burnInSubtitleIndex, startTicks, quality, qualityMaxHeight, item,
+  supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, relanceLecture,
 }: Options): void {
   /** Tout ce qui, HORS piste audio, oblige à redemander une session. */
   const contexteRef = useRef<string | null>(null);
@@ -83,6 +85,9 @@ export function useWebPlaybackInfoFetch({
       // `MaxStreamingBitrate` du profil. Les paliers choisis par
       // l'utilisateur, eux, imposent bien leur débit — c'est leur raison d'être.
       maxStreamingBitrate: quality ?? undefined,
+      // Le cap visuel du palier accompagne son débit : sans lui, Jellyfin
+      // transcode au bitrate demandé mais garde la définition d'origine.
+      maxHeight: quality != null ? qualityMaxHeight : undefined,
       forceTranscode,
       // Le profil ne voit jamais l'item : il faut lui dire ce qu'on s'apprête à
       // lui faire lire. Seul le téléviseur s'en sert, pour choisir le conteneur
