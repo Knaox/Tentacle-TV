@@ -48,7 +48,11 @@ export const authRefreshRoutes: FastifyPluginAsync = async (app) => {
             where: { tokenHash: hashToken(token) },
           });
           if (!device) {
-            return reply.status(401).send({ message: "Appareil révoqué" });
+            // `revoked: true` = le SEUL feu vert de déjumelage passif des clients :
+            // JWT valide mais ligne paired_devices absente ⇒ révocation réelle
+            // (verdict de DB), à distinguer des 401 « aléatoires » (Jellyfin qui
+            // refuse, secret en avarie) qui ne doivent JAMAIS déjumeler une TV.
+            return reply.status(401).send({ message: "Appareil révoqué", revoked: true });
           }
           return {
             AccessToken: token,
