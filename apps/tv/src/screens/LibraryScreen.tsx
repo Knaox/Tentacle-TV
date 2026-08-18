@@ -8,6 +8,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { TVLibraryGrid, useTVGridLayout } from "../components/library/TVLibraryGrid";
 import { TVLibraryHero } from "../components/library/TVLibraryHero";
@@ -76,6 +77,9 @@ function LibraryScreenInner({ route, navigation }: Props) {
     },
   });
 
+  // Sélection d'une bibliothèque au rail → focus sur la 1ʳᵉ carte.
+  const contentEntry = useTVContentEntry();
+
   const navigateToDetail = useCallback((item: MediaItem) => {
     navigation.navigate("MediaDetail", { itemId: item.Id });
   }, [navigation]);
@@ -131,6 +135,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
             onEndReached={handleEndReached}
             isFetchingNextPage={isFetchingNextPage}
             resetToken={lf.queryKey}
+            entryRef={contentEntry}
           />
         )}
       </TVFocusGuideView>

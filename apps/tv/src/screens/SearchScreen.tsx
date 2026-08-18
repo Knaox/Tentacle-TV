@@ -12,6 +12,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { SkeletonCardPortrait } from "../components/SkeletonLoader";
 import { TVRecentSearches } from "../components/search/TVRecentSearches";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { pushRecentSearch, readRecentSearches } from "../storage/recentSearches";
@@ -52,6 +53,9 @@ export function SearchScreen({ navigation }: Props) {
 
   useTVRemote({ onBack: () => navigation.goBack() });
 
+  // Sélection « Rechercher » au rail → focus sur la 1ʳᵉ touche de la grille.
+  const contentEntry = useTVContentEntry();
+
   const handleKeyPress = (key: string) => setQuery((q) => q + key);
   const handleDelete = () => setQuery((q) => q.slice(0, -1));
   const handleClear = () => setQuery("");
@@ -85,6 +89,7 @@ export function SearchScreen({ navigation }: Props) {
             {t("nav:search")}
           </Text>
           <TVSearchKeyboard
+            entryRef={contentEntry}
             query={query}
             onKeyPress={handleKeyPress}
             onDelete={handleDelete}

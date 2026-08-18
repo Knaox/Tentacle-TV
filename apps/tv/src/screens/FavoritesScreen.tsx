@@ -11,6 +11,7 @@ import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryGrid } from "../components/library/TVLibraryGrid";
 import { TVCollectionEmpty } from "../components/library/TVCollectionEmpty";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { HeartIcon } from "../components/icons/TVActionIcons";
 import { Colors, Spacing, Typography } from "../theme/colors";
 
@@ -33,6 +34,8 @@ function FavoritesScreenInner({ navigation }: Props) {
   const { data, isLoading } = useFavoritesAll();
   const { setFocusedItem } = useAmbientFocus();
   useTVRemote({ onBack: () => navigation.goBack() });
+  // Sélection au rail → focus sur la 1ʳᵉ carte de la grille.
+  const contentEntry = useTVContentEntry();
 
   const openDetail = useCallback((item: MediaItem) => {
     navigation.navigate("MediaDetail", { itemId: item.Id });
@@ -61,7 +64,7 @@ function FavoritesScreenInner({ navigation }: Props) {
             hint={t("emptyFavoritesHint")}
           />
         ) : (
-          <TVLibraryGrid listKey="favorites" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} />
+          <TVLibraryGrid listKey="favorites" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} entryRef={contentEntry} />
         )}
       </View>
     </TVScreenFrame>

@@ -1,4 +1,5 @@
 import { View, Text, TextInput, Platform } from "react-native";
+import type { View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { MicIcon, SpaceIcon, BackspaceIcon, CloseIcon } from "./icons/TVIcons";
@@ -29,9 +30,12 @@ interface TVSearchKeyboardProps {
   onVoiceResult?: (text: string) => void;
   /** Remplace toute la query (clavier système tvOS / dictée). */
   onSetQuery?: (text: string) => void;
+  /** Publie la 1ʳᵉ touche de la grille comme focusable d'entrée du contenu
+   *  (sortie rail + auto-collapse — useTVContentEntry côté écran). */
+  entryRef?: (node: RNView | null) => void;
 }
 
-export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoiceResult, onSetQuery }: TVSearchKeyboardProps) {
+export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoiceResult, onSetQuery, entryRef }: TVSearchKeyboardProps) {
   const { t } = useTranslation("common");
 
   const { isListening, isPending, isAvailable, startListening, stopListening } = useSpeechRecognition({
@@ -102,7 +106,13 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
       {KEYS.map((row, rowIdx) => (
         <View key={rowIdx} style={{ flexDirection: "row", gap: 6, marginBottom: 4 }}>
           {row.map((key, keyIdx) => (
-            <Focusable key={key} variant="button" onPress={() => onKeyPress(key.toLowerCase())} hasTVPreferredFocus={rowIdx === 0 && keyIdx === 0}>
+            <Focusable
+              key={key}
+              ref={rowIdx === 0 && keyIdx === 0 ? entryRef : undefined}
+              variant="button"
+              onPress={() => onKeyPress(key.toLowerCase())}
+              hasTVPreferredFocus={rowIdx === 0 && keyIdx === 0}
+            >
               <View style={{
                 width: 36, height: 36, borderRadius: Radius.small,
                 backgroundColor: "rgba(255,255,255,0.08)",

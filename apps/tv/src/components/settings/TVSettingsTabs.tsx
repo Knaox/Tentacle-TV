@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import type { View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { Colors } from "../../theme/colors";
@@ -19,9 +20,12 @@ const SECTIONS: Array<{ id: SettingsSection; labelKey: string }> = [
 export function TVSettingsTabs({
   active,
   onSelect,
+  entryRef,
 }: {
   active: SettingsSection;
   onSelect: (id: SettingsSection) => void;
+  /** Publie l'onglet ACTIF comme focusable d'entrée du contenu (sortie rail). */
+  entryRef?: (node: RNView | null) => void;
 }) {
   const { t } = useTranslation(["preferences", "nav"]);
 
@@ -32,6 +36,7 @@ export function TVSettingsTabs({
         return (
           <Focusable
             key={section.id}
+            ref={isActive ? entryRef : undefined}
             variant="row"
             onPress={() => onSelect(section.id)}
             hasTVPreferredFocus={isActive}
