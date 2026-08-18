@@ -1,0 +1,190 @@
+/* Les panneaux du lecteur — pistes, épisodes.
+ *
+ * Sorti de `player-tv.css`, qui approchait les trois cents lignes. Rien n'y a
+ * changé de place : ce fichier reprend les règles telles quelles et ajoute la
+ * neutralisation ci-dessous.
+ */
+
+/* Le panneau tient ENTRE le titre et la barre de progression.
+ *
+ * Mesuré avant : pied à 588 px sur un canevas de 720, soit quarante-deux
+ * pixels dans la barre, et tête à 120 px, sur le sous-titre. Cent cinquante-
+ * quatre pixels depuis le bas de `.osd-tv-bas` posent le pied juste au-dessus
+ * de la barre ; la hauteur maximale de l'enfant détaché fait le reste. */
+.panneau-tv {
+  position: absolute;
+  right: 0;
+  bottom: 154px;
+  z-index: var(--z-lecteur-panneau);
+  width: 460px;
+  border-radius: var(--radius-lg);
+  background: var(--surface-dropdown);
+  box-shadow: var(--elev-3);
+}
+
+/* ── Un panneau ouvert assombrit ce qu'il recouvre ────────────────────────
+ *
+ * Le panneau est rendu DANS `.osd-tv-bas`, avant la barre de progression et la
+ * rangée de transport. Sans z-index, l'ordre du document décidait : le panneau
+ * étant le premier, ses deux frères se peignaient par-dessus lui. On voyait la
+ * barre traverser la liste des pistes.
+ *
+ * Le z-index règle l'empilement, pas la lecture : un panneau qui flotte au-
+ * dessus de commandes restées vives se lit mal, et rien ne dit où va le focus.
+ * Il assombrit donc ce qui n'est plus à portée — même geste que la modale du
+ * client web, dont on reprend le voile.
+ *
+ * Le voile n'existe QUE panneau ouvert : `content` est ce qui le monte. Un
+ * calque plein écran laissé en place à `opacity: 0` resterait une couche
+ * composée par-dessus une vidéo en cours de décodage, ce que la règle des
+ * coûts proscrit. Le fondu est donc une animation d'entrée, pas une
+ * transition d'opacité sur un calque permanent.
+ */
+.osd-tv[data-panneau="pistes"]::after,
+.osd-tv[data-panneau="episodes"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-lecteur-assombrissement);
+  background: rgba(0, 0, 0, 0.62);
+  animation: panneau-tv-fondu 180ms ease-out both;
+  pointer-events: none;
+}
+
+@keyframes panneau-tv-fondu {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Rendre au flux ce que le panneau du web en avait sorti ───────────────
+ *
+ * `TrackSelector` et `EpisodeSelectorPanel` sont des panneaux DÉTACHÉS : ils
+ * portent leur propre `position: absolute`, leur propre ancrage (`bottom-20
+ * right-6`) et leur propre largeur (`w-80`, `w-[26rem]`). C'est juste sur le
+ * web, où ils flottent directement au-dessus du lecteur.
+ *
+ * Ici, ils sont ENVELOPPÉS. L'ancrage devient donc celui de l'enveloppe, et le
+ * contenu doit revenir dans son flux — faute de quoi l'enveloppe n'a plus
+ * d'enfant en flux et se rétracte à la hauteur du seul bouton qui lui reste.
+ * Mesuré sur la dalle de développement avant correction : `.panneau-tv` à
+ * 460 × 58 px, la liste des pistes flottant à 320 px de large quatre cents
+ * pixels plus haut, et le bouton « Appliquer à cette série » seul dans le
+ * cadre.
+ *
+ * L'accroche est `data-panneau-detache`, que le client web pose lui-même sur
+ * les quatre panneaux de ce genre. Un attribut, pas une classe du système de
+ * design : une classe peut être renommée sans que personne pense au
+ * téléviseur, et le portage a déjà payé cette leçon.
+ *
+ * On ne retire QUE ce qui relève du détachement — la géométrie et l'habillage
+ * du cadre, que l'enveloppe reprend à son compte. Le reste (colonne flex,
+ * hauteur maximale, débordement, remplissage) appartient au panneau et
+ * continue de le servir.
+ */
+.panneau-tv > [data-panneau-detache] {
+  position: static;
+  width: auto;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* Le panneau du web est dessiné pour une souris : cibles de 32 px, texte de
+   14. En descendance simple, ce que Chrome 53 traite sans effort. */
+.panneau-tv button {
+  min-height: 52px;
+  font-size: 19px;
+}
+
+/* ── La croix de fermeture ────────────────────────────────────────────────
+ *
+ * `min-height` seul l'étirait sans lui donner de largeur : le glyphe « × » fait
+ * onze pixels de large, la boîte en faisait 11 × 52, et l'anneau de focus
+ * épousait cette bande verticale. Une cible de télécommande se dessine dans les
+ * deux sens.
+ *
+ * Le sélecteur est structurel, sans vocabulaire de design : le premier bloc
+ * d'un panneau détaché est son en-tête, et le seul bouton qu'il contient est la
+ * croix — vérifié sur les deux panneaux, pistes comme épisodes. Une classe
+ * utilitaire aurait pu être renommée sans que personne pense au téléviseur.
+ *
+ * Le rayon compte : l'anneau vient d'un `box-shadow`, qui suit les coins. Sans
+ * lui, l'anneau serait un rectangle net sur un glyphe rond. */
+.panneau-tv > [data-panneau-detache] > div:first-child > button {
+  width: 52px;
+  min-width: 52px;
+  border-radius: var(--radius-sm);
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Sauf les onglets de saison, qui sont des pastilles et non des lignes : la
+   règle ci-dessus les étirait à cinquante-deux pixels de haut pour un texte de
+   douze, au milieu d'une rangée qui défile horizontalement. Ils restent des
+   cibles — quarante pixels de canevas en font soixante sur la dalle. */
+.panneau-tv .overflow-x-auto button {
+  min-height: 40px;
+  font-size: 17px;
+}
+
+/* ── La vignette d'épisode ────────────────────────────────────────────────
+ *
+ * `passeRatios` traduit `aspect-video` en `height: 0; padding-top: 56.25%` —
+ * et un pourcentage de padding se rapporte à la largeur du PARENT, jamais à
+ * celle de l'élément. La passe le documente et s'en tient à l'hypothèse qui
+ * vaut partout ailleurs dans le dépôt : une boîte à ratio occupe toute la
+ * largeur de son parent.
+ *
+ * Cette vignette-là ne la vérifie pas. Elle porte `w-28` — cent douze pixels
+ * fixes — dans une ligne large de quatre cent trente-six. Mesuré : 112 × 236
+ * au lieu de 112 × 63, un rapport de 0,47 pour 1,78 attendu, des lignes de
+ * 264 px, et **trois dixièmes de ligne visibles** sur onze épisodes.
+ *
+ * Ici la largeur est connue : on pose la hauteur, et la technique du padding
+ * n'a plus rien à calculer. On en profite pour donner à la vignette la taille
+ * d'un salon — cent soixante pixels de canevas en font deux cent quarante sur
+ * la dalle, et il reste largement de quoi écrire le titre à côté.
+ */
+.panneau-tv .aspect-video {
+  width: 160px;
+  height: 90px;
+  padding-top: 0;
+}
+
+/* La hauteur du panneau est celle de son enfant : `max-h-[65vh]`, soit 468 px
+ * sur un canevas de 720, débordait sous la barre autant que sur le titre.
+ *
+ * Le pied étant calé à 154 px du bas, il reste tout ce qui va jusqu'au bord
+ * d'overscan : deux cent soixante pixels retirés laissent quatre cent soixante
+ * de panneau et trente-quatre de marge sous le bord haut. Le titre passe
+ * dessous, ce qui n'a pas d'importance — il est assombri le temps du panneau. */
+.panneau-tv > [data-panneau-detache] {
+  max-height: calc(100vh - 260px);
+}
+
+.panneau-tv-bascule {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  background: none;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 19px;
+}
+
+.panneau-tv-bascule[data-actif="true"] {
+  color: var(--brand-light);
+}

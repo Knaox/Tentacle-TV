@@ -107,7 +107,7 @@ export const SELECTEURS_INTERDITS: PrimitiveInterdite[] = [
     nom: ":where(",
     depuis: 88,
     consequence:
-      "la règle entière tombe ; sur le preflight, les boutons reprennent le style natif du moteur",
+      "la règle entière tombe ; sur le preflight, les boutons reprennent le style natif du engine",
   },
   { nom: ":is(", depuis: 88, consequence: "la règle entière tombe" },
   {

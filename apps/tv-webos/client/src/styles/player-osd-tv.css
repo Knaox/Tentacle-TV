@@ -1,0 +1,188 @@
+/* L'habillage du lecteur, dessiné.
+ *
+ * `player-tv.css` porte la GÉOMÉTRIE — ce qui est où, et de quelle taille.
+ * Cette feuille-ci porte le DESSIN, et elle est chargée après pour cela. La
+ * séparation n'est pas qu'un budget de lignes : la géométrie d'un lecteur de
+ * salon se raisonne en distance de lecture, son dessin en contraste sur une
+ * image qu'on ne choisit pas.
+ *
+ * Rien ici n'anime autre chose que `transform` et `opacity`. Pas de
+ * `box-shadow` animée, pas de `background` qui change : sur un calque plein
+ * écran posé au-dessus d'un décodeur vidéo, chacun de ces deux-là repeint le
+ * viewport à chaque image.
+ */
+
+/* ── Les dégradés de protection ───────────────────────────────────────────
+ *
+ * Le texte de l'habillage était posé nu sur l'image. Sur une scène claire — un
+ * ciel, un mur blanc, un dessin animé — le titre blanc disparaissait purement
+ * et simplement, et les `text-shadow` qui tenaient lieu de protection ne
+ * faisaient que le rendre sale sans le rendre lisible : une ombre portée ne
+ * sépare rien, elle épaissit.
+ *
+ * Le client web pose `from-black/70` en haut et en bas ; l'Apple TV monte le
+ * bas à 0,8, parce qu'il y a plus à lire en bas — deux horodatages, une barre,
+ * neuf boutons. On suit l'Apple TV.
+ *
+ * **Pourquoi des pseudo-éléments plutôt qu'un fond.** `.osd-tv` porte le
+ * retrait d'overscan : un dégradé posé sur `.osd-tv-haut` s'arrêterait à
+ * soixante-quatre pixels du bord et laisserait une bande d'image vive tout
+ * autour — exactement là où la dalle risque de rogner. Le pseudo déborde donc
+ * du retrait pour atteindre le bord réel. Il passe derrière le contenu par
+ * `z-index: -1`, ce qui le laisse DANS le contexte d'empilement de `.osd-tv`,
+ * donc toujours au-dessus de la vidéo.
+ *
+ * Statiques : ils apparaissent et disparaissent avec l'habillage, dont
+ * l'enveloppe d'opacité fait déjà le fondu. Aucun calque n'est laissé en place
+ * à opacité nulle.
+ */
+
+.osd-tv-haut::before,
+.osd-tv-bas::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--tv-overscan-x));
+  right: calc(-1 * var(--tv-overscan-x));
+  z-index: -1;
+  pointer-events: none;
+}
+
+.osd-tv-haut::before {
+  top: calc(-1 * var(--tv-overscan-y));
+  bottom: -72px;
+  background-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.42) 48%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.osd-tv-bas::before {
+  top: -96px;
+  bottom: calc(-1 * var(--tv-overscan-y));
+  background-image: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.82) 0%,
+    rgba(0, 0, 0, 0.5) 46%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+/* ── Titre et sous-titre ──────────────────────────────────────────────────
+ *
+ * Les ombres portées tombent : le dégradé les remplace, et c'est une passe de
+ * peinture de moins par image. Le sous-titre remonte de 0,72 à 0,84 — sous le
+ * titre plein, mais au-dessus du seuil où un numéro d'épisode se devine plus
+ * qu'il ne se lit.
+ */
+
+.osd-tv-titre {
+  font-size: 36px;
+  letter-spacing: -0.01em;
+  text-shadow: none;
+}
+
+.osd-tv-sous-titre {
+  margin-top: 4px;
+  font-size: 21px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.84);
+  text-shadow: none;
+}
+
+.barre-tv-temps {
+  text-shadow: none;
+}
+
+/* ── Les boutons de transport ─────────────────────────────────────────────
+ *
+ * Une rangée de ronds gris identiques ne dit pas ce qu'on est venu faire. Le
+ * parti est celui d'`apps/tv` : **une seule action primaire**, et elle se voit.
+ *
+ * Lecture/pause devient un disque blanc plein à icône noire — la commande que
+ * l'on cherche neuf fois sur dix, reconnaissable sans lire. Les autres perdent
+ * leur fond : posées sur le dégradé, leurs icônes blanches se lisent seules, et
+ * neuf pastilles grises alignées faisaient un bandeau qui concurrençait la
+ * barre juste au-dessus.
+ *
+ * Le focus reste le SEUL état de sélection — `:hover` est retiré au build. Il
+ * se marque par le fond qui revient, l'anneau de `focus.css` (blanc net, halo
+ * violet, en `!important` : ne jamais poser de `box-shadow` concurrente ici) et
+ * l'échelle. Rien d'autre ne bouge.
+ */
+
+.osd-tv-bouton {
+  background: transparent;
+  /* `background-color` n'est plus animée : elle repeint. Seule l'échelle l'est,
+     et le fond bascule d'un coup — à 160 ms, personne ne voit la différence. */
+  transition: transform 160ms ease-out;
+}
+
+.osd-tv-bouton:focus {
+  background: rgba(255, 255, 255, 0.24);
+  transform: scale(1.12);
+}
+
+.osd-tv-bouton-principal,
+.osd-tv-bouton-principal:focus {
+  background: var(--cta-primary-bg);
+}
+
+/* Les icônes de `PlayerIcons` portent `text-white` EN DUR — c'est juste, elles
+   sont toujours sur une vidéo. Sur le disque blanc il faut l'inverse, et la
+   descendance suffit à l'emporter sur l'utilitaire. */
+.osd-tv-bouton-principal svg {
+  color: var(--cta-primary-fg);
+}
+
+/* Les libellés de saut : leur graisse tient lieu d'icône. */
+.osd-tv-saut {
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+/* ── La barre de progression ──────────────────────────────────────────────
+ *
+ * `--progress-fill` est le jeton unique de la progression dans toute
+ * l'application — barre du lecteur, cartes, vignettes d'épisode. Le lecteur du
+ * téléviseur peignait un `--brand` plat : le seul endroit de l'application où
+ * une progression n'était pas le dégradé violet → rose. Le respecter suffit à
+ * lui rendre son identité.
+ *
+ * La pastille termine le dégradé plutôt que de le contredire : elle est à
+ * l'extrémité droite du remplissage, donc du côté rose.
+ */
+
+.barre-tv-piste {
+  height: 9px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Le tampon se détachait mal de la piste — quatre centièmes d'écart. */
+.barre-tv-tampon {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.barre-tv-lu {
+  background: var(--progress-fill);
+}
+
+.barre-tv-pastille {
+  width: 18px;
+  height: 18px;
+  margin-top: -9px;
+  margin-left: -9px;
+  background: var(--brand-accent);
+}
+
+/* Le curseur fantôme garde l'inversion d'`apps/tv` — blanc cerclé de couleur
+   contre couleur pleine — : c'est ce qui distingue d'un coup d'œil où l'on vise
+   de là où l'on en est. Il grossit d'autant que la pastille. */
+.barre-tv-fantome {
+  width: 24px;
+  height: 24px;
+  margin-top: -12px;
+  margin-left: -12px;
+  border-color: var(--brand-accent);
+}

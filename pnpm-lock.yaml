@@ -339,6 +339,9 @@ importers:
       '@tentacle-tv/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@tentacle-tv/tv-core':
+        specifier: workspace:*
+        version: link:../../packages/tv-core
       i18next:
         specifier: ^25.8.13
         version: 25.8.13(typescript@5.9.3)
@@ -418,6 +421,9 @@ importers:
       '@tentacle-tv/theme':
         specifier: workspace:*
         version: link:../../packages/theme
+      '@tentacle-tv/tv-core':
+        specifier: workspace:*
+        version: link:../../packages/tv-core
       '@tentacle-tv/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -637,6 +643,25 @@ importers:
       tailwindcss:
         specifier: ^3.4.17
         version: 3.4.19(tsx@4.21.0)(yaml@2.8.2)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.4(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/tv-core:
+    dependencies:
+      '@tentacle-tv/shared':
+        specifier: workspace:*
+        version: link:../shared
+      react:
+        specifier: '>=18'
+        version: 19.2.4
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

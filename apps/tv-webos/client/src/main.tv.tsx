@@ -25,16 +25,16 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
-import { installerGardeSessionTv } from "./auth/gardeSessionTv";
-import { installerPolyfills } from "./amorce/polyfills";
-import { lireCapacitesTeleviseur } from "./amorce/webosGlobals";
-import { consommerJumelage, jetonAppareil } from "./amorce/jetonFragment";
-import { demarrerReleveConfigs } from "./lecture/configsTv";
-import { installerAntiVeille } from "./lecture/antiVeilleTv";
-import { installerMoteurFocus } from "./focus/moteur";
-import { amorcerFocus } from "./focus/entree";
-import { installerRetour } from "./focus/retour";
-import { installerTouchesLecteur } from "./lecture/touchesLecteur";
+import { installerGardeSessionTv } from "./auth/sessionGuardTv";
+import { installerPolyfills } from "./bootstrap/polyfills";
+import { lireCapacitesTeleviseur } from "./bootstrap/webosGlobals";
+import { consommerJumelage, jetonAppareil } from "./bootstrap/fragmentToken";
+import { demarrerReleveConfigs } from "./playback/configsTv";
+import { installerAntiVeille } from "./playback/wakeLockTv";
+import { installerMoteurFocus } from "./focus/engine";
+import { amorcerFocus } from "./focus/entry";
+import { installerRetour } from "./focus/back";
+import { installerTouchesLecteur } from "./playback/playerKeys";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -198,7 +198,7 @@ installerTouchesLecteur();
 // faux par la configuration de build : l'import dynamique et tout ce qu'il tire
 // disparaissent du fragment servi à un téléviseur.
 if (__TV_DEBUG__) {
-  void import("./verif/surcoucheDebug").then((module) => module.installerSurcoucheDebug());
+  void import("./debug/debugOverlay").then((module) => module.installerSurcoucheDebug());
 }
 
 // Ce que le serveur fait de l'image — remux ou ré-encodage. Affichée d'office
@@ -209,7 +209,7 @@ if (__TV_DEBUG__) {
 // build de diagnostic. Les deux sont faux dans l'image Docker, et Vite les
 // remplace littéralement — la branche et son import disparaissent alors.
 if (import.meta.env.DEV || __TV_DEBUG__) {
-  void import("./verif/surcoucheLecture").then((module) => module.installerSurcoucheLecture());
+  void import("./debug/playbackOverlay").then((module) => module.installerSurcoucheLecture());
 }
 
 createRoot(document.getElementById("root")!).render(

@@ -33,7 +33,7 @@
  * Un fondu de 150 ms est agréable sur un bureau, il donne l'impression d'un
  * appareil qui traîne quand chaque appui sur la télécommande le rejoue. Les
  * cartes, elles, font exception : leur anneau accompagne l'agrandissement,
- * déjà animé (cf. `cartes-tv.css`). */
+ * déjà animé (cf. `cards-tv.css`). */
 
 :root {
   /* 3 px de canevas = 4,5 px sur une dalle 1080p, le canevas étant agrandi

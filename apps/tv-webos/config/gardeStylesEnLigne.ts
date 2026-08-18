@@ -200,7 +200,7 @@ function situer(code: string, lignes: string[], position: number, quoi: Omit<Tro
   const ligne = code.slice(0, position).split("\n").length;
   const texte = (lignes[ligne - 1] ?? "").trim();
   // Un commentaire qui PARLE d'une primitive n'en pose pas une. C'est le cas de
-  // l'en-tête de `colonnesTv.ts`, qui explique précisément pourquoi cette garde
+  // l'en-tête de `columnsTv.ts`, qui explique précisément pourquoi cette garde
   // existe — elle se refusait elle-même.
   if (texte.startsWith("*") || texte.startsWith("//") || texte.startsWith("/*")) return null;
   return { ...quoi, ligne, extrait: texte.slice(0, 90) };

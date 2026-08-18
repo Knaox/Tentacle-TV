@@ -1,6 +1,6 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidats";
-import { focusParDefaut } from "./defaut";
-import { retrouver } from "./memoire";
+import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidates";
+import { focusParDefaut } from "./default";
+import { retrouver } from "./memory";
 
 /**
  * Les zones : là où la géométrie ne suffit pas, une destination déclarée.
@@ -58,7 +58,7 @@ export function entreeDuRail(): HTMLElement | null {
  *
  * Une référence directe, pas une clé — elle ne sert qu'à la sortie du rail,
  * quelques secondes après l'entrée, sur un écran qui n'a pas changé. La
- * mémoire par CLÉ de `memoire.ts` reste le filet des retours d'écran, où le
+ * mémoire par CLÉ de `memory.ts` reste le filet des retours d'écran, où le
  * document a été reconstruit. L'invalidation au changement de route est ce qui
  * évite le focus mort : restituer un nœud d'un AUTRE écran, démonté avec lui.
  */

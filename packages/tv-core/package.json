@@ -1,0 +1,29 @@
+{
+  "name": "@tentacle-tv/tv-core",
+  "version": "1.0.0-beta",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./input": "./src/input/index.ts",
+    "./focus": "./src/focus/index.ts",
+    "./player": "./src/player/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tentacle-tv/shared": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}
