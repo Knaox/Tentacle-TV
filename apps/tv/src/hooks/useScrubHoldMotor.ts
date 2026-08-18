@@ -1,12 +1,7 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Platform } from "react-native";
+import { creerMoteurMaintien } from "@tentacle-tv/tv-core";
 
-/** Cadence d'avance du curseur pendant un MAINTIEN ←/→ : react-native-tvos
- *  n'émet PAS les répétitions système pendant un hold — sans ce tick JS, le
- *  scrub démarrait (pause) mais le curseur ne bougeait jamais.
- *  DOIT rester < HOLD_RELEASE_MS (useScrubController) pour entretenir le
- *  palier d'accélération. */
-const HOLD_SCRUB_TICK_MS = 250;
 /** Maintien ←/→ avant d'entrer en avance/recul rapide, APRÈS le signal
  *  long-press système (~300 ms). Android : ~550-600 ms de maintien total —
  *  assez pour ignorer un appui nerveux, assez court pour être senti comme
@@ -14,114 +9,125 @@ const HOLD_SCRUB_TICK_MS = 250;
  *  Remote effleure facilement la couronne). */
 const SCRUB_HOLD_EXTRA_MS = Platform.OS === "android" ? 250 : 700;
 /** Détection de maintien AUTONOME (Android) pilotée par down/up uniquement :
- *  le signal long-press natif (longLeft/longRight, basé sur le repeatCount
- *  des KeyEvents) n'est PAS fiable partout — l'émulateur (clavier hôte) ne
- *  le déclenche jamais → « un +10 puis plus rien ». Un key-DOWN sans key-UP
- *  au bout de ce délai = MAINTIEN. Le key-up (toujours émis : `right` OU
- *  `longRight` a=1) annule ou arrête. */
+ *  le signal long-press natif (longLeft/longRight) n'est PAS fiable partout —
+ *  l'émulateur (clavier hôte) ne le déclenche jamais. Un key-DOWN sans key-UP
+ *  au bout de ce délai = MAINTIEN. */
 const HOLD_FROM_DOWN_SCRUB_MS = 400;
 /** Idem, depuis la lecture (OSD caché) : délai avant d'ENGAGER le scrub. */
 const HOLD_FROM_DOWN_ENGAGE_MS = 550;
 
+type Dir = "forward" | "backward";
 type Ref<T> = React.MutableRefObject<T>;
 
+/** Codes internes du moteur — il ne s'en sert que pour l'égalité. Les touches
+ *  média ont les leurs : un maintien de flèche et un maintien FF ne doivent
+ *  pas s'enchaîner l'un l'autre. */
+const CODES: Record<"dpad" | "media", Record<Dir, number>> = {
+  dpad: { forward: 1, backward: 2 },
+  media: { forward: 3, backward: 4 },
+};
+const sensOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
+const dirOf = (sens: 1 | -1): Dir => (sens === 1 ? "forward" : "backward");
+
 /**
- * MOTEUR DE MAINTIEN ←/→ (extrait de useScrubController — budget 300 lignes) :
- * armement différé du scrub au long-press, tick JS d'avance continue, réveil
- * DIFFÉRÉ de l'OSD (Android) et arrêt NET au relâchement.
+ * L'ADAPTATEUR du maintien ←/→ — la mécanique (tic 250 ms, un palier par
+ * seconde, chien de garde de silence) vit dans `creerMoteurMaintien`
+ * (tv-core), la MÊME machine que la LG. Ne restent ici que les réalités
+ * de plateforme que la machine n'a pas à connaître :
  *
- * Réveil différé : sur Android le tap ←/→ n'affiche plus l'OSD au key-down
- * (l'OSD devenait visible avant le signal long-press et bloquait l'avance
- * rapide au maintien) — il s'affiche au key-up si aucun scrub n'a été engagé.
+ *  - la détection de maintien AUTONOME d'Android (down sans up = hold),
+ *    doublée du signal long-press quand il existe ;
+ *  - le délai d'armement avant d'engager (250 ms Android / 700 ms tvOS) ;
+ *  - le réveil DIFFÉRÉ de l'OSD au key-up (Android) ;
+ *  - l'arrêt NET au relâchement — la ceinture, quand la dalle émet le key-up
+ *    que le chien de garde de la machine sait déjà déduire du silence.
+ *
+ * Les touches média (FF/RW) passent AUSSI par la machine : elle sait dire
+ * cadence d'auto-répétition et appuis distincts — `sauter` fait le pas sec,
+ * l'enchaînement engage le tic. C'était un accéléromètre maison avant.
  */
 export function useScrubHoldMotor(args: {
   scrubbingRef: Ref<boolean>;
   panelOpenRef: Ref<boolean>;
   overlayVisibleRef: Ref<boolean>;
-  holdRef: Ref<{ dir: "forward" | "backward"; startTime: number } | null>;
-  startScrubbing: (dir: "forward" | "backward") => void;
-  moveScrub: (dir: "forward" | "backward") => void;
+  /** Un pas SEC du fantôme (appui média isolé) — palier 1. */
+  stepScrub: (dir: Dir) => void;
+  /** Un tic de MAINTIEN — la machine fournit le palier (1/2/4/8). */
+  tickScrub: (dir: Dir, palier: number) => void;
   showOverlay: () => void;
-  armIdleCancel: () => void;
-  endHold: () => void;
+  /** Fin de maintien : éteint la pastille de vitesse. */
+  onHoldEnd: () => void;
 }) {
-  const {
-    scrubbingRef, panelOpenRef, overlayVisibleRef, holdRef,
-    startScrubbing, moveScrub, showOverlay, armIdleCancel, endHold,
-  } = args;
+  const { scrubbingRef, panelOpenRef, overlayVisibleRef, stepScrub, tickScrub, showOverlay, onHoldEnd } = args;
 
-  const scrubHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holdScrubIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const holdScrubStoppedAtRef = useRef(0);
+  // Callbacks derrière des refs : le moteur est créé UNE fois.
+  const stepRef = useRef(stepScrub); stepRef.current = stepScrub;
+  const tickRef = useRef(tickScrub); tickRef.current = tickScrub;
+
+  const tickingRef = useRef(false);
+  const tickingStoppedAtRef = useRef(0);
+  const lastCodeRef = useRef(0);
   // Réveil OSD en attente (tap ←/→ Android, OSD caché) — consommé au key-up.
   const pendingWakeRef = useRef(false);
 
-  const stopHoldScrub = useCallback(() => {
-    if (holdScrubIntervalRef.current) {
-      clearInterval(holdScrubIntervalRef.current);
-      holdScrubIntervalRef.current = null;
-      holdScrubStoppedAtRef.current = Date.now();
-    }
-  }, []);
-  useEffect(() => () => stopHoldScrub(), [stopHoldScrub]);
+  const moteur = useMemo(
+    () =>
+      creerMoteurMaintien({
+        sauter: (sens) => stepRef.current(dirOf(sens)),
+        avancer: (sens, palier) => {
+          tickingRef.current = true;
+          tickRef.current(dirOf(sens), palier);
+        },
+      }),
+    [],
+  );
+  useEffect(() => () => moteur.detruire(), [moteur]);
 
+  const markTickingStopped = useCallback(() => {
+    if (tickingRef.current) tickingStoppedAtRef.current = Date.now();
+    tickingRef.current = false;
+  }, []);
+
+  /** Engagement du maintien — idempotent. `repetition: true` force le tic
+   *  immédiat de la machine ; le scrub s'AMORCE tout seul au premier tic
+   *  (machine.pas ouvre le déplacement si besoin). */
+  const engageHold = useCallback((dir: Dir) => {
+    pendingWakeRef.current = false;
+    tickingRef.current = true;
+    lastCodeRef.current = CODES.dpad[dir];
+    moteur.appuyer(CODES.dpad[dir], sensOf(dir), true);
+  }, [moteur]);
+
+  // --- Armement différé (signal long-press natif) ---
+  const scrubHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelScrubHold = useCallback(() => {
     if (scrubHoldTimerRef.current) { clearTimeout(scrubHoldTimerRef.current); scrubHoldTimerRef.current = null; }
   }, []);
   useEffect(() => () => cancelScrubHold(), [cancelScrubHold]);
 
-  // Direction du tick en cours — un maintien dans l'AUTRE sens re-démarre le
-  // tick avec la nouvelle direction au lieu d'être ignoré.
-  const tickDirRef = useRef<"forward" | "backward" | null>(null);
-
-  const startTicking = useCallback((dir: "forward" | "backward") => {
-    stopHoldScrub();
-    tickDirRef.current = dir;
-    holdScrubIntervalRef.current = setInterval(() => {
-      // Auto-guérison : scrub terminé (OK/Back/annulation) sans key-up reçu
-      // (event perdu/annulé côté système) → JAMAIS de tick fantôme résiduel.
-      if (!scrubbingRef.current) { stopHoldScrub(); return; }
-      moveScrub(dir);
-    }, HOLD_SCRUB_TICK_MS);
-  }, [stopHoldScrub, moveScrub, scrubbingRef]);
-
-  /** Engagement du maintien — idempotent : ouvre le scrub si besoin, (re)part
-   *  le tick si absent ou dans l'autre sens. Appelé par le signal long-press
-   *  natif ET par la détection autonome down/up — le premier arrivé gagne. */
-  const engageHold = useCallback((dir: "forward" | "backward") => {
-    pendingWakeRef.current = false;
-    if (!scrubbingRef.current) startScrubbing(dir);
-    if (!holdScrubIntervalRef.current || tickDirRef.current !== dir) startTicking(dir);
-  }, [startScrubbing, startTicking, scrubbingRef]);
-
-  const handleLongDirection = useCallback((dir: "forward" | "backward") => {
+  const handleLongDirection = useCallback((dir: Dir) => {
     if (panelOpenRef.current || overlayVisibleRef.current) return;
     if (scrubbingRef.current) {
-      // DÉJÀ en scrub (bouton ⏩, maintien précédent, appui simple) : le
-      // maintien accélère IMMÉDIATEMENT — pas de délai d'armement. Android
-      // n'émet NI répétition de ←/→ NI second longLeft/longRight pendant un
-      // hold : sans ce branchement, maintenir une flèche dans le scrub ne
-      // faisait qu'un pas (+10) puis plus rien.
+      // DÉJÀ en scrub : le maintien accélère IMMÉDIATEMENT — pas d'armement.
       engageHold(dir);
       return;
     }
     if (scrubHoldTimerRef.current) clearTimeout(scrubHoldTimerRef.current);
     scrubHoldTimerRef.current = setTimeout(() => {
       scrubHoldTimerRef.current = null;
-      engageHold(dir); // le maintien a engagé le scrub → pas de réveil OSD
+      engageHold(dir);
     }, SCRUB_HOLD_EXTRA_MS);
   }, [engageHold, panelOpenRef, overlayVisibleRef, scrubbingRef]);
 
   // --- Détection de maintien AUTONOME (Android) : armée au key-DOWN ←/→,
-  //     annulée par le key-up (onHoldRelease). Indépendante de longLeft/
-  //     longRight — seul mécanisme qui fonctionne sur émulateur. ---
+  //     annulée par le key-up. Seul mécanisme fiable sur émulateur. ---
   const holdFromDownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelHoldFromDown = useCallback(() => {
     if (holdFromDownTimerRef.current) { clearTimeout(holdFromDownTimerRef.current); holdFromDownTimerRef.current = null; }
   }, []);
   useEffect(() => () => cancelHoldFromDown(), [cancelHoldFromDown]);
 
-  const armHoldFromDown = useCallback((dir: "forward" | "backward") => {
+  const armHoldFromDown = useCallback((dir: Dir) => {
     cancelHoldFromDown();
     const delay = scrubbingRef.current ? HOLD_FROM_DOWN_SCRUB_MS : HOLD_FROM_DOWN_ENGAGE_MS;
     holdFromDownTimerRef.current = setTimeout(() => {
@@ -134,38 +140,44 @@ export function useScrubHoldMotor(args: {
     }, delay);
   }, [cancelHoldFromDown, engageHold, panelOpenRef, overlayVisibleRef, scrubbingRef]);
 
+  /** Touche média FF/RW : la machine départage appui isolé (pas sec) et
+   *  cadence de répétition (tic accéléré). */
+  const mediaPulse = useCallback((dir: Dir) => {
+    lastCodeRef.current = CODES.media[dir];
+    moteur.appuyer(CODES.media[dir], sensOf(dir), false);
+  }, [moteur]);
+
   /** Tap ←/→ OSD caché (Android) : demande un réveil au KEY-UP. */
   const requestDeferredWake = useCallback(() => { pendingWakeRef.current = true; }, []);
 
-  /** Nettoyage au key-up (fin de maintien) : stoppe armement + tick +
-   *  accélération, consomme le réveil différé. Un scrub laissé ouvert
-   *  s'annulera seul sur inactivité (aucun seek). */
+  /** Nettoyage au key-up (fin de maintien) : la ceinture explicite, en plus du
+   *  chien de garde de silence de la machine. */
   const onHoldRelease = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    stopHoldScrub();
-    if (holdRef.current) endHold();
-    if (scrubbingRef.current) armIdleCancel();
+    moteur.relacher(lastCodeRef.current);
+    markTickingStopped();
+    onHoldEnd();
     if (pendingWakeRef.current) {
       pendingWakeRef.current = false;
       if (!scrubbingRef.current && !panelOpenRef.current) showOverlay();
     }
-  }, [cancelScrubHold, cancelHoldFromDown, stopHoldScrub, endHold, armIdleCancel, showOverlay, holdRef, scrubbingRef, panelOpenRef]);
+  }, [cancelScrubHold, cancelHoldFromDown, moteur, markTickingStopped, onHoldEnd, showOverlay, scrubbingRef, panelOpenRef]);
 
-  /** Arrêt de TOUS les moteurs — appelé par confirmScrub/cancelScrub : même si
-   *  le key-up n'arrive jamais (long-press annulé par tvOS), valider ou
-   *  annuler le scrub tue l'armement ET le tick. */
+  /** Rupture franche — confirm/annulation du scrub : même si le key-up
+   *  n'arrive jamais, valider ou annuler tue l'armement ET le tic. */
   const stopAll = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    stopHoldScrub();
+    moteur.annuler();
+    markTickingStopped();
     pendingWakeRef.current = false;
-  }, [cancelScrubHold, cancelHoldFromDown, stopHoldScrub]);
+  }, [cancelScrubHold, cancelHoldFromDown, moteur, markTickingStopped]);
 
-  /** Tick de maintien actif (ou stoppé il y a < 400 ms) : les events ←/→
+  /** Tic de maintien actif (ou stoppé il y a < 400 ms) : les events ←/→
    *  concomitants sont des doublons parasites du hold. */
   const isHoldTicking = useCallback(() =>
-    holdScrubIntervalRef.current != null || Date.now() - holdScrubStoppedAtRef.current < 400, []);
+    tickingRef.current || Date.now() - tickingStoppedAtRef.current < 400, []);
 
-  return { handleLongDirection, onHoldRelease, requestDeferredWake, armHoldFromDown, stopAll, isHoldTicking };
+  return { handleLongDirection, onHoldRelease, requestDeferredWake, armHoldFromDown, mediaPulse, stopAll, isHoldTicking };
 }
