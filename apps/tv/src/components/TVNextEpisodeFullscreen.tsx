@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { PlayIcon } from "./icons/TVIcons";
-import { Colors, Fonts, Radius } from "../theme/colors";
+import { Colors, Fonts, Radius, brandAlpha } from "../theme/colors";
 
 const DEFAULT_TOTAL = 10;
 const RING_R = 30;
@@ -107,7 +107,7 @@ export function TVNextEpisodeFullscreen({
           {/* Vignette de l'épisode suivant */}
           <View style={{
             width: thumbWidth, aspectRatio: 16 / 9, borderRadius: 14, overflow: "hidden",
-            backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: "rgba(139,92,246,0.25)",
+            backgroundColor: Colors.bgCard, borderWidth: 1, borderColor: brandAlpha(0.25),
           }}>
             {episodeThumbUrl && (
               <Image source={{ uri: episodeThumbUrl }} style={{ width: "100%", height: "100%" }} resizeMode="cover" />

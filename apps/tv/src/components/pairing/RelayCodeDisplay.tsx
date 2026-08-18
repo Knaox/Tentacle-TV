@@ -5,7 +5,7 @@ import { useRelayGenerate, useRelayStatus } from "@tentacle-tv/api-client";
 import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { Colors, Radius } from "../../theme/colors";
+import { Colors, Radius, brandAlpha } from "../../theme/colors";
 
 interface RelayCodeDisplayProps {
   onConfirmed: (data: RelayStatusResponse) => void;
@@ -188,7 +188,7 @@ const styles = {
   codeBox: {
     width: 100,
     height: 120,
-    backgroundColor: "rgba(139, 92, 246, 0.1)",
+    backgroundColor: brandAlpha(0.1),
     borderRadius: Radius.buttonLarge,
     borderWidth: 2,
     borderColor: Colors.accentPurple,

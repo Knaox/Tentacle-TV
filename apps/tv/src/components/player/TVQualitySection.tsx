@@ -6,7 +6,7 @@ import {
 } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { CheckIcon } from "../icons/TVIcons";
-import { Colors, Radius } from "../../theme/colors";
+import { Colors, Radius, brandAlpha } from "../../theme/colors";
 
 const QUALITY_ITEM_HEIGHT = 52;
 
@@ -59,7 +59,7 @@ export function TVQualitySection({
               flexDirection: "row", alignItems: "center",
               paddingVertical: 14, paddingHorizontal: 16,
               borderRadius: Radius.small, marginBottom: 4,
-              backgroundColor: active ? "rgba(139, 92, 246, 0.15)" : "transparent",
+              backgroundColor: active ? brandAlpha(0.15) : "transparent",
             }}>
               <View style={{ width: 28, alignItems: "center" }}>
                 {active && <CheckIcon size={16} color={Colors.accentPurple} />}
@@ -93,7 +93,7 @@ export function TVQualitySection({
 
 function QualityChip({ label, tone }: { label: string; tone: "purple" | "amber" | "zinc" }) {
   const palette = tone === "purple"
-    ? { bg: "rgba(139,92,246,0.2)", fg: "#c4b5fd" }
+    ? { bg: brandAlpha(0.2), fg: Colors.accentPurpleLight }
     : tone === "amber"
       ? { bg: "rgba(245,158,11,0.2)", fg: "#fcd34d" }
       : { bg: "rgba(255,255,255,0.08)", fg: "rgba(255,255,255,0.55)" };

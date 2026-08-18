@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { Colors, Radius, Typography } from "../theme/colors";
+import { Colors, Radius, Typography, brandAlpha } from "../theme/colors";
 
 /**
  * Styles de l'écran de mention légale (CGU), 10-foot UI + parité avec le client
@@ -51,8 +51,8 @@ export const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   langButtonActive: {
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
-    borderColor: "rgba(139, 92, 246, 0.3)",
+    backgroundColor: brandAlpha(0.15),
+    borderColor: brandAlpha(0.3),
   },
   langText: {
     fontSize: 14,
@@ -107,8 +107,8 @@ export const styles = StyleSheet.create({
     alignItems: "center",
   },
   checkboxChecked: {
-    backgroundColor: "rgba(139, 92, 246, 0.18)",
-    borderColor: "rgba(139, 92, 246, 0.55)",
+    backgroundColor: brandAlpha(0.18),
+    borderColor: brandAlpha(0.55),
   },
   checkboxLabel: {
     fontSize: 16,

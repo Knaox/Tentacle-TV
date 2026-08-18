@@ -88,12 +88,17 @@ export const FocusRowStyle = {
 } as const;
 
 /**
- * Button variant — focus state for action buttons (Play, More info, etc.).
+ * Variante « bouton » — Lecture, Plus d'infos, filtres, réglages, fiche.
+ *
+ * La grammaire de la référence (`focus.css`) : au focus, un bouton reçoit
+ * l'ANNEAU blanc et le halo de marque — jamais un fond violet, qui n'existe
+ * sur aucun `:focus` de la LG. Le halo est porté par l'ombre du Focusable
+ * (`FocusGlow`), l'anneau par cette bordure.
  */
 export const FocusButtonStyle = {
-  bgColor: "rgba(139, 92, 246, 0.20)",
-  borderColor: "rgba(139, 92, 246, 0.6)",
-  borderWidth: 2,
+  bgColor: "transparent",
+  borderColor: TV_FOCUS_RING.teinte,
+  borderWidth: TV_FOCUS_RING.epaisseur,
 } as const;
 
 /**

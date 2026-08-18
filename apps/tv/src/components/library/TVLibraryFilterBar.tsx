@@ -6,7 +6,7 @@ import type { MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import { SORT_OPTIONS } from "./TVLibrarySortGenreMenus";
-import { Colors, Radius } from "../../theme/colors";
+import { Colors, Radius, brandAlpha } from "../../theme/colors";
 
 export type FilterMenuKind = "sort" | "genres" | "years" | "rating" | "platforms";
 
@@ -105,8 +105,8 @@ function FilterChip({
   accent?: "violet" | "rose";
   onPress: () => void;
 }) {
-  const activeBg = accent === "rose" ? "rgba(244, 114, 182, 0.22)" : "rgba(139, 92, 246, 0.24)";
-  const activeBorder = accent === "rose" ? "rgba(244, 114, 182, 0.55)" : "rgba(139, 92, 246, 0.6)";
+  const activeBg = accent === "rose" ? "rgba(244, 114, 182, 0.22)" : brandAlpha(0.24);
+  const activeBorder = accent === "rose" ? "rgba(244, 114, 182, 0.55)" : brandAlpha(0.6);
   const activeText = accent === "rose" ? Colors.accentPink : Colors.accentPurpleLight;
 
   return (

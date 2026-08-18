@@ -14,7 +14,7 @@ import { useTVRemote } from "./focus/useTVRemote";
 import { CheckIcon } from "./icons/TVIcons";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
-import { Colors, Radius } from "../theme/colors";
+import { Colors, Radius, brandAlpha } from "../theme/colors";
 import { TVQualitySection } from "./player/TVQualitySection";
 
 interface Track {
@@ -73,7 +73,7 @@ export function TVTrackSelector({
         flexDirection: "row", alignItems: "center",
         paddingVertical: 14, paddingHorizontal: 16,
         borderRadius: Radius.small, marginBottom: 4,
-        backgroundColor: isSelected ? "rgba(139, 92, 246, 0.15)" : "transparent",
+        backgroundColor: isSelected ? brandAlpha(0.15) : "transparent",
       }}>
         <View style={{ width: 28, alignItems: "center" }}>
           {isSelected && <CheckIcon size={16} color={Colors.accentPurple} />}

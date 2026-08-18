@@ -10,7 +10,7 @@ import { TV_OVERSCAN_PT, TV_PLAYER_NEXT_CARD } from "@tentacle-tv/theme";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { PlayIcon, CloseIcon } from "./icons/TVIcons";
-import { Colors, Fonts, Radius } from "../theme/colors";
+import { Colors, Fonts, Radius, brandAlpha } from "../theme/colors";
 
 const COUNTDOWN_TOTAL = 10;
 
@@ -57,7 +57,7 @@ export function TVAutoPlayOverlay({
         position: "absolute", bottom: TV_OVERSCAN_PT.y, right: TV_OVERSCAN_PT.x, width: TV_PLAYER_NEXT_CARD.largeur,
         borderRadius: 16,
         backgroundColor: "rgba(15, 15, 21, 0.96)",
-        borderWidth: 1, borderColor: "rgba(139, 92, 246, 0.18)",
+        borderWidth: 1, borderColor: brandAlpha(0.18),
         overflow: "hidden", zIndex: 60, elevation: 60,
       }, containerStyle]}
     >
@@ -84,7 +84,7 @@ export function TVAutoPlayOverlay({
         <View style={{ position: "absolute", left: 14, top: 10, flexDirection: "row", gap: 8, alignItems: "center" }}>
           <View style={{
             flexDirection: "row", alignItems: "center", gap: 6,
-            backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: "rgba(139,92,246,0.55)",
+            backgroundColor: "rgba(0,0,0,0.6)", borderWidth: 1, borderColor: brandAlpha(0.55),
             borderRadius: 6, paddingHorizontal: 9, paddingVertical: 4,
           }}>
             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.accentPurpleLight }} />

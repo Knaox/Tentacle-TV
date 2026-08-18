@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { View, Text } from "react-native";
 import { extractMediaQuality, type MediaItem } from "@tentacle-tv/shared";
-import { Colors, Fonts } from "../theme/colors";
+import { Colors, Fonts, brandAlpha } from "../theme/colors";
 
 /**
  * Chips qualité/langues — équivalent TV des MetaChips web : tokens texte
@@ -32,9 +32,9 @@ export const TVMetaChips = memo(function TVMetaChips({ item, compact = false }: 
             paddingVertical: 2,
             borderRadius: 4,
             borderWidth: 1,
-            borderColor: c.accent ? "rgba(139, 92, 246, 0.55)" : compact ? "rgba(255,255,255,0.18)" : Colors.border,
+            borderColor: c.accent ? brandAlpha(0.55) : compact ? "rgba(255,255,255,0.18)" : Colors.border,
             backgroundColor: c.accent
-              ? (compact ? "rgba(139, 92, 246, 0.40)" : "rgba(139, 92, 246, 0.18)")
+              ? (compact ? brandAlpha(0.40) : brandAlpha(0.18))
               : (compact ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.05)"),
           }}
         >

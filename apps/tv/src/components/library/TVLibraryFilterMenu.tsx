@@ -4,7 +4,7 @@ import Svg, { Path } from "react-native-svg";
 import { TV_OVERSCAN_PT, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
-import { Colors } from "../../theme/colors";
+import { Colors, brandAlpha } from "../../theme/colors";
 
 /** Largeur minimale d'un panneau, à trois mètres (`FilterMenuTv` webOS). */
 export const MENU_MIN_WIDTH = 380;
@@ -111,7 +111,7 @@ export function TVCheckRow({
           minHeight: 46,
           paddingHorizontal: 12,
           borderRadius: 8,
-          backgroundColor: checked ? "rgba(139, 92, 246, 0.16)" : "transparent",
+          backgroundColor: checked ? brandAlpha(0.16) : "transparent",
         }}
       >
         <View
