@@ -34,8 +34,10 @@ export function useSpeechRecognition({ onResult, locale }: UseSpeechRecognitionO
   onResultRef.current = onResult;
 
   useEffect(() => {
-    console.log("[VoiceRecognition] NativeModule:", VoiceRecognition ? "found" : "NULL");
+    // tvOS : pas de module natif (Apple interdit le micro aux apps tierces) —
+    // dégrader en silence, sans log à chaque montage de l'écran Recherche.
     if (!VoiceRecognition) return;
+    if (__DEV__) console.log("[VoiceRecognition] NativeModule: found");
     VoiceRecognition.isAvailable()
       .then((available: boolean) => {
         console.log("[VoiceRecognition] isAvailable:", available);
