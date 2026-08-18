@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { possessiveLibraryName } from "../../utils/libraryLabel";
 import {
-  HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
-  LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon, BookmarkIcon,
+  HomeIcon, SearchIcon, LibraryIcon, SettingsIcon,
+  TVIcon, MusicIcon, BookIcon, BookmarkIcon,
 } from "../icons/TVIcons";
 import { EyeIcon, HeartNavIcon } from "../icons/TVNavIcons";
 import { useEpinglageRail } from "./railPinning";
@@ -46,8 +46,8 @@ function iconeBibliotheque(collectionType?: string) {
  * empêche le masquage d'être une porte à sens unique, sans coûter une entrée
  * permanente à ceux qui n'y touchent jamais.
  *
- * Le groupe du bas — réglages, à propos, changement de serveur, déconnexion —
- * n'est pas masquable : ce n'est pas de la navigation qu'on parcourt.
+ * Le groupe du bas — les Réglages — n'est pas masquable : ce n'est pas de la
+ * navigation qu'on parcourt.
  */
 export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
   const { t, i18n } = useTranslation("nav");
@@ -99,11 +99,10 @@ export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
       });
     }
 
+    // Une seule entrée de service, comme la LG : « Changer de serveur » et
+    // « Déconnexion » ont déménagé dans Réglages → Compte (sans rien perdre).
     const bas: RailItem[] = [
-      { key: "Preferences", label: t("preferences"), icon: (c) => <SettingsIcon size={TAILLE_ICONE} color={c} /> },
-      { key: "About", label: t("about"), icon: (c) => <InfoIcon size={TAILLE_ICONE} color={c} /> },
-      { key: "ChangeServer", label: t("changeServer"), icon: (c) => <ServerIcon size={TAILLE_ICONE} color={c} /> },
-      { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={TAILLE_ICONE} color={c} />, danger: true },
+      { key: "Settings", label: t("preferences"), icon: (c) => <SettingsIcon size={TAILLE_ICONE} color={c} /> },
     ];
 
     return { haut, bas };
