@@ -75,7 +75,8 @@ export function FocusableRow<T>({
         <Text style={{
           color: Colors.textPrimary,
           ...Typography.sectionTitle,
-          marginBottom: 20,
+          // `mb-1` web : la piste porte déjà 32 pt de réserve haute.
+          marginBottom: 4,
           paddingHorizontal: Spacing.rowGutter,
         }}>
           {title}
@@ -89,7 +90,9 @@ export function FocusableRow<T>({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ overflow: "visible" }}
-        contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingVertical: 8 }}
+        // `pt-8 / pb-6` web : la réserve haute absorbe l'anneau et le scale
+        // 1.08 (origine bas) de la carte focusée, sans rognage ni chevauchement.
+        contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingTop: 32, paddingBottom: 24 }}
         keyExtractor={keyExtractor}
         initialNumToRender={6}
         windowSize={21}

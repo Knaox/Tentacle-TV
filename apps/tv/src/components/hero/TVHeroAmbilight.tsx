@@ -1,6 +1,8 @@
 import { memo } from "react";
 import { Image, View } from "react-native";
+import LinearGradient from "react-native-linear-gradient";
 import { TV_AMBILIGHT_BLUR } from "@tentacle-tv/theme";
+import { Colors } from "../../theme/colors";
 
 interface TVHeroAmbilightProps {
   /** L'image de la bannière. Le halo en est une copie floutée, pas une autre. */
@@ -14,8 +16,10 @@ interface TVHeroAmbilightProps {
   opacity?: number;
 }
 
-const DEBORDEMENT = 56;
+const DEBORDEMENT = 110;
 const OPACITE = 0.55;
+/** Fraction du débordement occupée par le fondu vers le noir. */
+const PART_FONDU = 0.82;
 
 /**
  * Le halo de bannière — la lueur qui fond le bord de la carte dans la page.
@@ -52,6 +56,16 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
 }: TVHeroAmbilightProps) {
   if (!uri) return null;
 
+  // Écart réel avec le CSS : `blur(48px)` fait déborder la LUMIÈRE au-delà du
+  // rectangle et s'y éteint tout seul ; `blurRadius` floute DANS le rectangle,
+  // dont l'arête reste nette. Sans correction, le halo se lit comme une dalle
+  // sombre à bord franc, pas comme une lueur. Les quatre dégradés ci-dessous
+  // fondent cette arête vers le noir de la page — même extinction progressive
+  // que la référence, pour une passe de composition statique (rien d'animé).
+  const fondu = Math.round(bleed * PART_FONDU);
+  const NOIR = Colors.bgDeep;
+  const T = "rgba(0, 0, 0, 0)";
+
   return (
     <View
       pointerEvents="none"
@@ -71,6 +85,26 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
         blurRadius={TV_AMBILIGHT_BLUR}
         resizeMode="cover"
         style={{ flex: 1, borderRadius: radius + bleed / 2 }}
+      />
+      <LinearGradient
+        colors={[NOIR, T]}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: fondu }}
+      />
+      <LinearGradient
+        colors={[T, NOIR]}
+        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: fondu }}
+      />
+      <LinearGradient
+        colors={[NOIR, T]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: fondu }}
+      />
+      <LinearGradient
+        colors={[T, NOIR]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: fondu }}
       />
     </View>
   );
