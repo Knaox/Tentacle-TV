@@ -15,6 +15,9 @@ interface TVEpisodeRowProps {
   badgeLabel: string | null;
   /** Focus initial D-pad sur cette row (panneau du lecteur) */
   autoFocus?: boolean;
+  /** Largeur de la vignette 16:9 — 200 sur la fiche, 160 dans le panneau du
+   *  lecteur (parité `.panneau-tv .aspect-video`). */
+  thumbWidth?: number;
   onPress: () => void;
   onFocus: () => void;
 }
@@ -25,7 +28,7 @@ interface TVEpisodeRowProps {
  * Mémoïsée : la liste re-rend à chaque déplacement de focus.
  */
 export const TVEpisodeRow = memo(function TVEpisodeRow({
-  episode: ep, thumbUrl, isCurrent, badgeLabel, autoFocus, onPress, onFocus,
+  episode: ep, thumbUrl, isCurrent, badgeLabel, autoFocus, thumbWidth = 200, onPress, onFocus,
 }: TVEpisodeRowProps) {
   const progress = ep.UserData?.PlayedPercentage ?? 0;
   const isWatched = ep.UserData?.Played === true;
@@ -47,7 +50,7 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
       }}>
         {/* Thumbnail */}
         <View style={{
-          width: 200, aspectRatio: 16 / 9,
+          width: thumbWidth, aspectRatio: 16 / 9,
           borderRadius: Radius.small, overflow: "hidden",
           backgroundColor: Colors.bgElevated,
         }}>

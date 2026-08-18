@@ -1,7 +1,7 @@
 import { BRAND } from "@tentacle-tv/shared";
-import { TV_CARD_FOCUS, TV_FOCUS_RING } from "@tentacle-tv/theme";
+import { TV_CARD_FOCUS, TV_FOCUS_RING, TV_OSD } from "@tentacle-tv/theme";
 
-export type FocusVariant = "card" | "button" | "row" | "default";
+export type FocusVariant = "card" | "button" | "playerButton" | "row" | "default";
 
 /** @deprecated Le focus n'est plus animé au ressort — voir `FocusTiming`. */
 export const FocusSpring = { damping: 18, stiffness: 200 } as const;
@@ -25,6 +25,8 @@ export const FocusTiming = { duration: TV_CARD_FOCUS.duree } as const;
 export const FocusScale = {
   card: TV_CARD_FOCUS.echelle,
   button: 1.07,
+  /** Boutons de l'OSD du lecteur — l'échelle de la LG (`player-osd-tv.css`). */
+  playerButton: TV_OSD.boutonFocusEchelle,
   row: 1.0,
   default: TV_CARD_FOCUS.echelle,
   normal: 1.0,
@@ -92,4 +94,17 @@ export const FocusButtonStyle = {
   bgColor: "rgba(139, 92, 246, 0.20)",
   borderColor: "rgba(139, 92, 246, 0.6)",
   borderWidth: 2,
+} as const;
+
+/**
+ * Variante « bouton d'OSD » — les ronds du lecteur, transparents au repos.
+ *
+ * Au focus, le FOND revient (blanc, comme la LG) : sur une vidéo, un fond
+ * violet se perd, et neuf pastilles teintées alignées feraient un bandeau qui
+ * concurrence la barre juste au-dessus. Pas de bordure : l'anneau de focus
+ * s'en charge. Ne PAS réutiliser `FocusButtonStyle` ici — il habille les
+ * boutons de page (filtres, réglages, fiche) et changerait tout l'app.
+ */
+export const FocusPlayerButtonStyle = {
+  bgColor: TV_OSD.boutonFocusFond,
 } as const;
