@@ -163,7 +163,7 @@ export function PreferencesScreen({ navigation }: Props) {
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ paddingHorizontal: 48, paddingVertical: 32, paddingBottom: 60 }}
+        contentContainerStyle={{ paddingHorizontal: 48, paddingBottom: 48 }}
       >
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>

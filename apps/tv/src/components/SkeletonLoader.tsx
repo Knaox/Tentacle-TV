@@ -9,6 +9,7 @@ import Animated, {
   interpolate,
 } from "react-native-reanimated";
 import { Colors, CardConfig, Radius, Spacing } from "../theme/colors";
+import { TV_RADIUS } from "@tentacle-tv/theme";
 
 interface SkeletonProps {
   width: number | string;
@@ -75,12 +76,12 @@ export function SkeletonCardLandscape() {
   );
 }
 
-/** Skeleton for the hero banner */
+/** Skeleton for the hero banner — la forme de la carte (rayon, gouttière). */
 export function SkeletonHero({ height }: { height: number }) {
   return (
-    <View style={{ width: "100%", height }}>
-      <Skeleton width="100%" height={height} borderRadius={0} />
-      <View style={{ position: "absolute", bottom: 48, left: Spacing.screenPadding }}>
+    <View style={{ height, marginHorizontal: Spacing.rowGutter }}>
+      <Skeleton width="100%" height={height} borderRadius={TV_RADIUS.lg} />
+      <View style={{ position: "absolute", bottom: 48, left: 48 }}>
         <Skeleton width={280} height={32} borderRadius={6} />
         <Skeleton width={200} height={14} borderRadius={4} style={{ marginTop: 10 }} />
         <Skeleton width={320} height={13} borderRadius={4} style={{ marginTop: 8 }} />

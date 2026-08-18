@@ -195,7 +195,7 @@
 }
 
 .recherche-tv-carte:focus {
-  transform: scale(1.06);
+  transform: scale(var(--carte-focus-echelle));
 }
 
 .recherche-tv-visuel {

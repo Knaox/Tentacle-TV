@@ -65,7 +65,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
             placeholderTextColor={Colors.textTertiary}
             returnKeyType="search"
             autoCorrect={false}
-            style={{ flex: 1, color: Colors.textPrimary, fontSize: 15, paddingVertical: 8 }}
+            style={{ flex: 1, color: Colors.textPrimary, fontSize: 20, fontWeight: "300", paddingVertical: 8 }}
           />
         </View>
       ) : (
@@ -77,7 +77,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
               padding: 10, minHeight: 40,
               borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
-              <Text style={{ color: Colors.textPrimary, fontSize: 14 }}>
+              <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: "300" }}>
                 {query || " "}
                 <Text style={{ color: Colors.accentPurple }}>|</Text>
               </Text>

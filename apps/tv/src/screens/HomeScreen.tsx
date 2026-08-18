@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { View, ScrollView, TVFocusGuideView, InteractionManager, Platform } from "react-native";
+import { ScrollView, TVFocusGuideView, InteractionManager, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -11,6 +11,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -18,23 +19,17 @@ import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { useTVNav } from "../context/TVNavContext";
 import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
-import { TVPosterCard } from "../components/cards/TVPosterCard";
-import { TVEpisodeCard } from "../components/cards/TVEpisodeCard";
-import { TV_POSTER_WIDTH, TV_EPISODE_WIDTH } from "../components/cards/cardSizes";
-import { FocusableRow } from "../components/focus/FocusableRow";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
-import { Spacing, HeroConfig } from "../theme/colors";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
+import { TVHomeRows } from "../components/home/TVHomeRows";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
-import { TVLibraryRow } from "../components/rows/TVLibraryRow";
-import { possessiveLibraryName } from "../utils/libraryLabel";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const SCREEN_H = require("react-native").Dimensions.get("window").height;
-const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
+const HERO_H = Math.round((SCREEN_H * TV_BANNER_CARD.hauteurAccueilVh) / 100);
 
 export function HomeScreen(props: Props) {
   return (
@@ -45,7 +40,7 @@ export function HomeScreen(props: Props) {
 }
 
 function HomeScreenInner({ navigation }: Props) {
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
@@ -165,10 +160,6 @@ function HomeScreenInner({ navigation }: Props) {
     navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
   }, [storage, navigation, queryClient]);
 
-  const renderPortraitCard = useCallback((item: MediaItem, _i: number, focused: boolean) => (
-    <TVPosterCard item={item} focused={focused} />
-  ), []);
-
   const handleCtxSelect = useCallback((value: string) => {
     const item = ctxItem;
     setCtxItem(null);
@@ -176,10 +167,6 @@ function HomeScreenInner({ navigation }: Props) {
     if (value === "details") navigateToDetail(item);
     else if (value === "play") navigateToPlay(item);
   }, [ctxItem, navigateToDetail, navigateToPlay]);
-
-  const renderLandscapeCard = useCallback((item: MediaItem, _i: number, focused: boolean) => (
-    <TVEpisodeCard item={item} focused={focused} />
-  ), []);
 
   return (
     <TVScreenFrame>
@@ -193,7 +180,7 @@ function HomeScreenInner({ navigation }: Props) {
       <ScrollView
         ref={scrollViewRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 96 }}
         overScrollMode="never"
       >
         {allFailed && (
@@ -232,90 +219,21 @@ function HomeScreenInner({ navigation }: Props) {
               />
             )}
 
-            {/* Les rangées CHEVAUCHENT le bas du hero (comme le web -mt-12)
-                pour supprimer la bande noire de transition. */}
-            <View
-              style={{ marginTop: heroItems.length > 0 ? -48 : 0, zIndex: 10 }}
-              onLayout={(e) => { rowsWrapperY.current = e.nativeEvent.layout.y; }}
-            >
-            {resume && resume.length > 0 && (
-              <FocusableRow
-                title={t("resumeWatching")}
-                data={resume}
-                renderItem={renderLandscapeCard}
-                keyExtractor={(item) => item.Id}
-                itemWidth={TV_EPISODE_WIDTH.md}
-                style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToPlay}
-                onItemLongPress={setCtxItem}
-                onItemFocus={(item) => setFocusedItem(item)}
-                onLayout={(e) => rowYMap.current.set("resume", e.nativeEvent.layout.y)}
-                onRowFocus={() => scrollToRow("resume")}
-              />
-            )}
-
-            {nextUp && nextUp.length > 0 && (
-              <FocusableRow
-                title={t("nextEpisodes")}
-                data={nextUp}
-                renderItem={renderLandscapeCard}
-                keyExtractor={(item) => item.Id}
-                itemWidth={TV_EPISODE_WIDTH.md}
-                style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToPlay}
-                onItemLongPress={setCtxItem}
-                onItemFocus={(item) => setFocusedItem(item)}
-                onLayout={(e) => rowYMap.current.set("nextUp", e.nativeEvent.layout.y)}
-                onRowFocus={() => scrollToRow("nextUp")}
-              />
-            )}
-
-            {watchlist && watchlist.length > 0 && (
-              <FocusableRow
-                title={t("myList")}
-                data={watchlist}
-                renderItem={renderPortraitCard}
-                keyExtractor={(item) => item.Id}
-                itemWidth={TV_POSTER_WIDTH.md}
-                style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToDetail}
-                onItemFocus={(item) => setFocusedItem(item)}
-                onLayout={(e) => rowYMap.current.set("watchlist", e.nativeEvent.layout.y)}
-                onRowFocus={() => scrollToRow("watchlist")}
-              />
-            )}
-
-            {/* « Déjà regardés » (16:9), comme le web */}
-            {watched && watched.length > 0 && (
-              <FocusableRow
-                title={t("alreadyWatched")}
-                data={watched}
-                renderItem={renderLandscapeCard}
-                keyExtractor={(item) => item.Id}
-                itemWidth={TV_EPISODE_WIDTH.md}
-                style={{ marginTop: Spacing.sectionGap }}
-                onItemPress={navigateToPlay}
-                onItemLongPress={setCtxItem}
-                onItemFocus={(item) => setFocusedItem(item)}
-                onLayout={(e) => rowYMap.current.set("watched", e.nativeEvent.layout.y)}
-                onRowFocus={() => scrollToRow("watched")}
-              />
-            )}
-
-            {(libraries ?? []).map((lib) => (
-              <TVLibraryRow
-                key={lib.Id}
-                libraryId={lib.Id}
-                libraryName={possessiveLibraryName(lib.Name, i18n.language)}
-                collectionType={lib.CollectionType}
-                renderCard={renderPortraitCard}
-                onItemPress={navigateToDetail}
-                onItemFocus={(item) => setFocusedItem(item)}
-                onLayout={(e) => rowYMap.current.set(`lib_${lib.Id}`, e.nativeEvent.layout.y)}
-                onRowFocus={() => scrollToRow(`lib_${lib.Id}`)}
-              />
-            ))}
-            </View>
+            <TVHomeRows
+              hasHero={heroItems.length > 0}
+              resume={resume}
+              nextUp={nextUp}
+              watchlist={watchlist}
+              watched={watched}
+              libraries={libraries}
+              onPlay={navigateToPlay}
+              onDetail={navigateToDetail}
+              onLongPress={setCtxItem}
+              onItemFocus={setFocusedItem}
+              onWrapperLayout={(y) => { rowsWrapperY.current = y; }}
+              onRowLayout={(key, y) => rowYMap.current.set(key, y)}
+              onRowFocus={scrollToRow}
+            />
           </>
         )}
       </ScrollView>

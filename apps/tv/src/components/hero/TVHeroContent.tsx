@@ -1,5 +1,6 @@
 import { memo, useCallback, useState, type ElementRef } from "react";
-import { View, Text, Image, Dimensions, TVFocusGuideView } from "react-native";
+import { View, Text, Image, TVFocusGuideView } from "react-native";
+import { TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
 import { formatDuration } from "@tentacle-tv/shared";
@@ -12,8 +13,6 @@ import { TVMetaChips } from "../TVMetaChips";
 import { useTVContentEntry } from "../../hooks/useTVContentEntry";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
-
-const { width: SCREEN_W } = Dimensions.get("window");
 
 interface TVHeroContentProps {
   item: MediaItem;
@@ -89,9 +88,10 @@ export const TVHeroContent = memo(function TVHeroContent({
     <View
       style={{
         position: "absolute",
-        bottom: 56,
-        left: Spacing.screenPadding,
-        right: SCREEN_W * 0.42,
+        bottom: 48,
+        left: 48,
+        // Largeur du bloc texte : 46 rem sur la LG (`banner-tv.css`).
+        maxWidth: TV_BANNER_CARD.texteLargeurMax,
       }}
     >
       {logoUri ? (

@@ -163,25 +163,6 @@
   display: none;
 }
 
-/* ── « Marquer comme vu » quitte le parcours de la fiche ──────────────────
- *
- * Même raison que sur une ligne d'épisode : l'état « vu » se lit déjà sur la
- * barre de progression, et un aller-retour dans une pastille de 44 px n'a pas
- * sa place à trois mètres. Un arrêt de moins entre les actions et le sélecteur
- * de saison.
- *
- * Par le LIBELLÉ, faute de mieux : `CircleAction` est un composant local de
- * `detail/DetailActions.tsx`, sans classe ni attribut qui le distingue de ses
- * quatre voisins, et forker deux cent quinze lignes pour retirer un bouton
- * coûterait plus qu'il ne rapporte. Ces deux chaînes sont écrites en dur dans
- * `apps/web` — elles ne passent pas par i18next —, donc aussi stables que le
- * composant lui-même. Le jour où elles seraient traduites, le bouton
- * réapparaîtrait : une régression visible et sans gravité, pas une panne. */
-button[aria-label="Marquer comme vu"],
-button[aria-label="Marquer comme non vu"] {
-  display: none;
-}
-
 /* ── La seule sortie visible de la fiche, ramenée dans la zone sûre ───────
  *
  * Le bouton « Retour » de la bannière est posé en `left-4 top-4` — seize

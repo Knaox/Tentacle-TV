@@ -186,3 +186,121 @@ export const TV_CARD_FOCUS = {
   duree: 180,
   origine: "center bottom",
 } as const;
+
+/** La bannière-CARTE — accueil et bibliothèque.
+ *
+ * Sur ces deux écrans, la bannière n'est pas le fond de la page : c'est le
+ * premier élément d'une liste, une carte arrondie cernée de son halo. Les
+ * hauteurs, le fondu et la gouttière viennent de `banner-tv.css` et
+ * `library-tv.css` ; le rayon est `radius.lg` du thème (20), le liseré et le
+ * halo empruntent leurs opacités au thème web (`surfaces.css`, thème sombre).
+ * `tvOnly.banner.test.ts` recroise chaque valeur contre ces feuilles.
+ *
+ * Côté natif : hauteur = écran × `hauteurVh / 100`, liseré = `borderWidth: 1`
+ * teinté de marque (un box-shadow interne n'existe pas en React Native), fondu
+ * = remount keyé sur l'item + opacité seule. */
+export const TV_BANNER_CARD = {
+  hauteurAccueilVh: 62,
+  hauteurBibliothequeVh: 44,
+  /** Gouttière latérale de la carte dans la colonne de contenu
+   *  (`--row-gutter-desktop`). */
+  gouttiere: 56,
+  fonduMs: 700,
+  /** Liseré : 1 px de couleur de marque à cette opacité. */
+  lisereOpacite: 0.22,
+  /** Opacité du halo ambilight derrière la carte
+   *  (`--hero-ambilight-opacity`). */
+  haloOpacite: 0.55,
+  /** Largeur maximale du bloc texte du héros : 46 rem. */
+  texteLargeurMax: 736,
+  /** Bibliothèque : écart entre la carte et la rangée recherche + filtres. */
+  ecartFiltres: 28,
+  /** La jauge d'indicateurs (pastilles en lecture seule, bas-droit de la
+   *  carte). Valeurs portées par `BannerGaugeTv.tsx` (classes utilitaires au
+   *  point d'arrêt `md`, actif sur un canevas de 1920) — pas de feuille à
+   *  recroiser, la source est ici. */
+  jauge: {
+    largeurActive: 44,
+    largeurInactive: 14,
+    hauteur: 4,
+    ecart: 8,
+    retrait: 40,
+    transitionMs: 500,
+  },
+} as const;
+
+/** La bannière de FICHE, elle, reste plein cadre : c'est le fond de l'écran,
+ *  pas un élément de liste. `detail-tv.css` force cette hauteur pour passer
+ *  sous les actions sans engloutir la page. */
+export const TV_DETAIL_BANNER = {
+  hauteurVh: 58,
+  supplementPx: 260,
+} as const;
+
+/** L'affiche de la fiche. Le composant web `DetailPoster` n'est pas substitué
+ *  sur webOS : ses classes (`md:w-56`, `md:w-[22rem]`) donnent ces largeurs
+ *  sur le canevas 1920. Film 2:3, épisode 16:9 ; rayon `radius.lg`. */
+export const TV_DETAIL_POSTER = {
+  largeurFilm: 224,
+  largeurEpisode: 352,
+} as const;
+
+/** L'OSD du lecteur — géométrie (`player-tv.css`) et dessin
+ *  (`player-osd-tv.css`). `tvOnly.player.test.ts` recroise le tout.
+ *
+ *  Les voiles de protection remplacent les ombres de texte : deux dégradés
+ *  statiques qui débordent du retrait d'overscan jusqu'aux bords réels de la
+ *  dalle (positions en pourcents entiers, prêtes pour `locations` de
+ *  LinearGradient). */
+export const TV_OSD = {
+  boutonPrincipal: 84,
+  boutonSecondaire: 64,
+  boutonFocusFond: "rgba(255, 255, 255, 0.24)",
+  boutonFocusEchelle: 1.12,
+  boutonTransitionMs: 160,
+  titreTaille: 36,
+  sousTitreTaille: 21,
+  sousTitreTeinte: "rgba(255, 255, 255, 0.84)",
+  voileHaut: { opacites: [0.72, 0.42, 0], positionsPct: [0, 48, 100], debordPx: 72 },
+  voileBas: { opacites: [0.82, 0.5, 0], positionsPct: [0, 46, 100], debordPx: 96 },
+  barre: {
+    hauteur: 9,
+    fond: "rgba(255, 255, 255, 0.18)",
+    tampon: "rgba(255, 255, 255, 0.42)",
+    pastille: 18,
+    fantome: 24,
+  },
+} as const;
+
+/** Les panneaux flottants du lecteur (pistes, épisodes) : ancrés au-dessus de
+ *  la barre de progression, jamais pleine hauteur. Le voile n'existe QUE
+ *  panneau ouvert — pas de calque permanent à opacité nulle au-dessus d'une
+ *  vidéo. */
+export const TV_PLAYER_PANEL = {
+  largeur: 460,
+  bas: 154,
+  voile: "rgba(0, 0, 0, 0.62)",
+  voileFonduMs: 180,
+  /** Hauteur maximale du contenu : tout l'écran moins ce retrait. */
+  hauteurMaxRetrait: 260,
+  boutonHauteurMin: 52,
+  boutonTexte: 19,
+  vignetteEpisode: { largeur: 160, hauteur: 90 },
+} as const;
+
+/** Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
+ *  il s'écarte de la barre quand l'habillage est visible (transform, jamais
+ *  `bottom` — une position animée relance la mise en page). */
+export const TV_PLAYER_SKIP = {
+  bas: 148,
+  montee: 56,
+  paddingV: 14,
+  paddingH: 28,
+  rayon: 10,
+  texte: 20,
+} as const;
+
+/** La carte « épisode suivant », au coin bas-droit du retrait d'overscan. */
+export const TV_PLAYER_NEXT_CARD = {
+  largeur: 460,
+} as const;

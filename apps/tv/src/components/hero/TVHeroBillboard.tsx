@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef, memo } from "react";
-import { View, Dimensions, Image } from "react-native";
+import { Image } from "react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { Colors, HeroConfig } from "../../theme/colors";
-import { TVHeroBackdrop } from "./TVHeroBackdrop";
+import { TV_BANNER_CARD } from "@tentacle-tv/theme";
+import { HeroConfig } from "../../theme/colors";
+import { TVBannerCardFrame } from "./TVBannerCardFrame";
+import { TVHeroBackdrop, backdropUriOf } from "./TVHeroBackdrop";
 import { TVHeroContent } from "./TVHeroContent";
 import { TVHeroIndicators } from "./TVHeroIndicators";
-
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-const HERO_H = Math.round(SCREEN_H * HeroConfig.heightRatio);
 
 interface TVHeroBillboardProps {
   items: MediaItem[];
@@ -20,12 +19,14 @@ interface TVHeroBillboardProps {
 }
 
 /**
- * Hero billboard de l'accueil. Le crossfade (anti-flicker) et le Ken Burns sont
- * gérés dans TVHeroBackdrop (double-buffer). Ici on ne fait que :
+ * Le billboard de l'accueil — une CARTE de 62 vh (parité webOS), plus un plein
+ * cadre. Ici on ne fait que :
  *  - faire tourner l'index (rotation continue, façon Netflix) ;
  *  - synchroniser le CONTENU (logo/titre) avec l'image RÉELLEMENT affichée :
  *    `displayItem` ne change qu'au `onSettled` du backdrop → pas de désync
  *    (le titre n'apparaît pas avant que son image soit là).
+ * Le halo derrière la carte suit l'image affichée, en source minuscule
+ * (128 px) — même économie que `HeroAmbilight` web.
  */
 export const TVHeroBillboard = memo(function TVHeroBillboard({
   items,
@@ -75,10 +76,12 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
   const content = displayItem ?? current;
 
   return (
-    <View style={{ width: SCREEN_W, height: HERO_H, overflow: "hidden", backgroundColor: Colors.bgDeep }}>
+    <TVBannerCardFrame
+      heightVh={TV_BANNER_CARD.hauteurAccueilVh}
+      ambilightUri={backdropUriOf(client, content, 128, 70)}
+    >
       <TVHeroBackdrop
         current={current}
-        height={HERO_H}
         onSettled={() => setDisplayItem(items[indexRef.current])}
       />
 
@@ -90,6 +93,6 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
       />
 
       <TVHeroIndicators count={items.length} activeIndex={index} />
-    </View>
+    </TVBannerCardFrame>
   );
 });

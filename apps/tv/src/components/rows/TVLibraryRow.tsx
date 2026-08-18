@@ -56,7 +56,7 @@ export function TVLibraryRow({
       renderItem={renderCard}
       keyExtractor={(item) => item.Id}
       itemWidth={TV_POSTER_WIDTH.md}
-      style={{ marginTop: Spacing.sectionGap }}
+      style={{ marginBottom: Spacing.rowGap }}
       onItemPress={onItemPress}
       onItemFocus={onItemFocus}
       onLayout={onLayout}

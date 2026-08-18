@@ -5,9 +5,9 @@ import { useLibraries } from "@tentacle-tv/api-client";
 import { possessiveLibraryName } from "../../utils/libraryLabel";
 import {
   HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
-  LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
+  LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon, BookmarkIcon,
 } from "../icons/TVIcons";
-import { EyeIcon } from "../icons/TVNavIcons";
+import { EyeIcon, HeartNavIcon } from "../icons/TVNavIcons";
 import { useEpinglageRail } from "./railPinning";
 
 const TAILLE_ICONE = 26;
@@ -59,6 +59,25 @@ export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
       { key: "Search", label: t("search"), icon: (c) => <SearchIcon size={TAILLE_ICONE} color={c} /> },
       { key: "Home", label: t("home"), icon: (c) => <HomeIcon size={TAILLE_ICONE} color={c} /> },
     ];
+
+    // Ma liste et Favoris — entre l'accueil et les bibliothèques, masquables,
+    // exactement l'ordre du rail de la LG.
+    if (!epinglage.estMasquee("Watchlist")) {
+      haut.push({
+        key: "Watchlist",
+        label: t("myList"),
+        icon: (c) => <BookmarkIcon size={TAILLE_ICONE} color={c} />,
+        masquable: true,
+      });
+    }
+    if (!epinglage.estMasquee("Favorites")) {
+      haut.push({
+        key: "Favorites",
+        label: t("common:myFavorites"),
+        icon: (c) => <HeartNavIcon size={TAILLE_ICONE} color={c} />,
+        masquable: true,
+      });
+    }
 
     for (const bibliotheque of bibliotheques ?? []) {
       const cle = `Library_${bibliotheque.Id}`;

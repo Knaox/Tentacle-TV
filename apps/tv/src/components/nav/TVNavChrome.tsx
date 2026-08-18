@@ -24,6 +24,8 @@ export function deriveRailKey(state: NavStateLike): string | null {
   switch (route.name) {
     case "Home": return "Home";
     case "Search": return "Search";
+    case "Watchlist": return "Watchlist";
+    case "Favorites": return "Favorites";
     case "Preferences": return "Preferences";
     case "About": return "About";
     case "Library":
@@ -85,6 +87,8 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
     pendingRef.current = true; // arme le focus contenu après navigation (tvOS)
     if (key === "Home") navigationRef.navigate("Home");
     else if (key === "Search") navigationRef.navigate("Search");
+    else if (key === "Watchlist") navigationRef.navigate("Watchlist");
+    else if (key === "Favorites") navigationRef.navigate("Favorites");
     else if (key === "Preferences") navigationRef.navigate("Preferences");
     else if (key === "About") navigationRef.navigate("About");
     else if (key.startsWith("Library_")) {

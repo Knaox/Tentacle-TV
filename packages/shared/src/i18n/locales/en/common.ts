@@ -134,6 +134,7 @@ export default {
   yearFrom: "From",
   yearTo: "To",
   ratingMin: "Minimum rating",
+  platforms: "Platforms",
   ratingAny: "Any",
   sortBy: "Sort by",
   sortOrder: "Order",
