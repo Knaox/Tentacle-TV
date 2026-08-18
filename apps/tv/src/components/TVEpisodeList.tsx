@@ -21,12 +21,14 @@ interface TVEpisodeListProps {
   autoFocusCurrent?: boolean;
   /** Liste en flex:1 (panneau plein écran) au lieu du maxHeight 500 (fiche média) */
   fillHeight?: boolean;
+  /** Largeur de vignette relayée aux lignes (160 dans le panneau du lecteur). */
+  thumbWidth?: number;
 }
 
 const EPISODE_ROW_HEIGHT = 170; // paddingVertical 14*2 + thumbnail 112 + méta/chips ~22 + gap 8
 
 export function TVEpisodeList({
-  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent, fillHeight,
+  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent, fillHeight, thumbWidth,
 }: TVEpisodeListProps) {
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
@@ -112,6 +114,7 @@ export function TVEpisodeList({
       >
         {(episodes ?? []).map((ep, epIndex) => (
           <TVEpisodeRow
+            thumbWidth={thumbWidth}
             key={ep.Id}
             episode={ep}
             thumbUrl={client.getImageUrl(ep.Id, "Primary", { width: 400, quality: 80 })}

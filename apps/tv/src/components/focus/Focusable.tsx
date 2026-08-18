@@ -8,7 +8,7 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import type { FocusVariant } from "../../theme/focus";
-import { FocusTiming, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusBorder } from "../../theme/focus";
+import { FocusTiming, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusPlayerButtonStyle, FocusBorder } from "../../theme/focus";
 import { Easings } from "../../theme/motion";
 import { TV_CARD_FOCUS } from "@tentacle-tv/theme";
 // Seuil du maintien, partagé avec la LG : le geste doit être le même partout.
@@ -57,6 +57,7 @@ const GLOW_VARIANTS: Record<FocusVariant, number> = {
   card: 0.5,
   default: 0.3,
   button: 0,
+  playerButton: 0,
   row: 0,
 };
 
@@ -64,6 +65,7 @@ const HAS_SHADOW: Record<FocusVariant, boolean> = {
   card: true,
   default: true,
   button: true,
+  playerButton: false,
   row: false,
 };
 
@@ -71,6 +73,7 @@ const HAS_GAP: Record<FocusVariant, boolean> = {
   card: true,
   default: true,
   button: false,
+  playerButton: false,
   row: false,
 };
 
@@ -124,8 +127,11 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   const hasShadow = HAS_SHADOW[variant];
   const hasGap = HAS_GAP[variant];
   const isRow = variant === "row";
-  const isButton = variant === "button";
+  const isButton = variant === "button" || variant === "playerButton";
   const isCard = variant === "card";
+  // L'OSD remplit d'un blanc translucide, sans bordure — l'anneau suffit.
+  const buttonFill = variant === "playerButton" ? FocusPlayerButtonStyle : FocusButtonStyle;
+  const buttonBorderWidth = variant === "playerButton" ? 0 : FocusButtonStyle.borderWidth;
 
   const scaleStyle = useAnimatedStyle(() => {
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
@@ -222,8 +228,8 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
               position: "absolute",
               top: 0, left: 0, right: 0, bottom: 0,
               borderRadius: focusRadius,
-              backgroundColor: FocusButtonStyle.bgColor,
-              borderWidth: FocusButtonStyle.borderWidth,
+              backgroundColor: buttonFill.bgColor,
+              borderWidth: buttonBorderWidth,
               borderColor: FocusButtonStyle.borderColor,
             }, buttonBgStyle]}
           />

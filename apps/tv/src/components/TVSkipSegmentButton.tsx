@@ -11,6 +11,7 @@ import { useTVRemote } from "./focus/useTVRemote";
 import { useTVFocusGrab } from "../hooks/useTVFocusGrab";
 import { osdPlayPauseNodeRef } from "./player/focus/osdFocusBus";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
+import { TV_OVERSCAN_PT, TV_PLAYER_SKIP } from "@tentacle-tv/theme";
 
 interface TVSkipSegmentButtonProps {
   type: "intro" | "credits";
@@ -54,13 +55,22 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
   }, [inRange]);
 
   const opacity = useSharedValue(0);
+  // L'habillage visible fait MONTER le bouton au-dessus de la barre de
+  // transport (transform, jamais `bottom` : une position animée relance la
+  // mise en page à chaque image au-dessus d'un décodeur).
+  const raise = useSharedValue(0);
 
   useEffect(() => {
     opacity.value = withTiming(visible ? 1 : 0, { duration: 250 });
   }, [visible, opacity]);
 
+  useEffect(() => {
+    raise.value = withTiming(overlayVisible ? -TV_PLAYER_SKIP.montee : 0, { duration: 200 });
+  }, [overlayVisible, raise]);
+
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
+    transform: [{ translateY: raise.value }],
   }));
 
   if (!segment || !visible) return null;
@@ -70,24 +80,23 @@ export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overla
       pointerEvents="auto"
       style={[{
         position: "absolute",
-        // Au-dessus de la barre de transport de l'OSD pour ne pas la chevaucher.
-        bottom: 220,
-        right: 40,
+        bottom: TV_PLAYER_SKIP.bas,
+        right: TV_OVERSCAN_PT.x,
         zIndex: 100,
       }, animStyle]}
     >
       <Focusable ref={skipRef} variant="button" onPress={onSkip} focusRadius={8} hasTVPreferredFocus={!overlayVisible && !showSettings && !showEpisodes}>
         <View style={{
-          paddingHorizontal: 20,
-          paddingVertical: 10,
-          backgroundColor: "rgba(0,0,0,0.60)",
+          paddingHorizontal: TV_PLAYER_SKIP.paddingH,
+          paddingVertical: TV_PLAYER_SKIP.paddingV,
+          backgroundColor: "rgba(0,0,0,0.6)",
           borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.20)",
-          borderRadius: 8,
+          borderColor: "rgba(255,255,255,0.2)",
+          borderRadius: TV_PLAYER_SKIP.rayon,
         }}>
           <Text style={{
             color: "#ffffff",
-            fontSize: 16,
+            fontSize: TV_PLAYER_SKIP.texte,
             fontWeight: "600",
           }}>
             {labelOverride ?? (type === "intro" ? t("skipIntro") : t("skipCredits"))}

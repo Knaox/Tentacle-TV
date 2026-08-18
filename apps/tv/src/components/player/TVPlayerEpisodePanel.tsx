@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, TVFocusGuideView } from "react-native";
+import { View, Text, TVFocusGuideView, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -11,9 +11,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { TVEpisodeList } from "../TVEpisodeList";
 import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
+import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
-
-const PANEL_WIDTH = 600;
 
 interface TVPlayerEpisodePanelProps {
   seriesId: string;
@@ -40,25 +39,33 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [closeNode, setCloseNode] = useState<any>(null);
 
-  const slideX = useSharedValue(PANEL_WIDTH);
+  const { height: screenH } = useWindowDimensions();
+  // Fondu d'entrée (180 ms, parité panneau-tv-fondu) — plus de glissement.
+  const fade = useSharedValue(0);
   useEffect(() => {
-    slideX.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) });
-  }, [slideX]);
-  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: slideX.value }] }));
+    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.voileFonduMs, easing: Easing.out(Easing.ease) });
+  }, [fade]);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
   return (
-    <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 80, elevation: 80 }}>
-      {/* Scrim plein écran : assombrit la vidéo pour la lisibilité du panneau. */}
-      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)" }} />
+    <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 80, elevation: 80 }, fadeStyle]}>
+      {/* Voile d'assombrissement (parité .panneau-tv) : la vidéo s'éteint. */}
+      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.voile }} />
 
-      <Animated.View
+      <View
         importantForAccessibility="yes"
-        style={[{
-          position: "absolute", top: 0, right: 0, bottom: 0, width: PANEL_WIDTH,
-          backgroundColor: Colors.glassBgHeavy,
-          borderLeftWidth: 1, borderLeftColor: Colors.glassBorder,
-          paddingTop: 40, paddingBottom: 24,
-        }, panelStyle]}
+        style={{
+          position: "absolute",
+          right: TV_OVERSCAN_PT.x,
+          bottom: TV_PLAYER_PANEL.bas,
+          width: TV_PLAYER_PANEL.largeur,
+          height: screenH - TV_PLAYER_PANEL.hauteurMaxRetrait,
+          borderRadius: TV_RADIUS.lg,
+          backgroundColor: "#14141a",
+          borderWidth: 1, borderColor: Colors.glassBorder,
+          paddingTop: 20, paddingBottom: 16,
+          ...TV_SHADOW.elev3,
+        }}
       >
         <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
           {/* Header : contexte série + titre + bouton Fermer.
@@ -87,7 +94,7 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
                 backgroundColor: "rgba(255,255,255,0.06)",
               }}>
                 <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
-                  {t("common:close", { defaultValue: "✕ Fermer" })}
+                  {t("common:close")}
                 </Text>
               </View>
             </Focusable>
@@ -99,12 +106,13 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
             onPlay={onSelectEpisode}
             currentEpisodeId={currentEpisode?.Id}
             initialSeasonId={currentEpisode?.SeasonId}
-            currentBadgeLabel={t("player:nowPlaying", { defaultValue: "En cours de visionnage" })}
+            currentBadgeLabel={t("player:nowPlaying")}
             autoFocusCurrent
             fillHeight
+            thumbWidth={TV_PLAYER_PANEL.vignetteEpisode.largeur}
           />
         </TVFocusGuideView>
-      </Animated.View>
-    </View>
+      </View>
+    </Animated.View>
   );
 }

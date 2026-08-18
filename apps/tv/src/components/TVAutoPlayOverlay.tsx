@@ -6,6 +6,7 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { BRAND } from "@tentacle-tv/shared";
+import { TV_OVERSCAN_PT, TV_PLAYER_NEXT_CARD } from "@tentacle-tv/theme";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { PlayIcon, CloseIcon } from "./icons/TVIcons";
@@ -53,7 +54,7 @@ export function TVAutoPlayOverlay({
     <Animated.View
       importantForAccessibility="yes"
       style={[{
-        position: "absolute", bottom: 36, right: 36, width: 420,
+        position: "absolute", bottom: TV_OVERSCAN_PT.y, right: TV_OVERSCAN_PT.x, width: TV_PLAYER_NEXT_CARD.largeur,
         borderRadius: 16,
         backgroundColor: "rgba(15, 15, 21, 0.96)",
         borderWidth: 1, borderColor: "rgba(139, 92, 246, 0.18)",

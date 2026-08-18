@@ -213,7 +213,13 @@ export function TVPlayerView({
         </View>
       )}
       <TVPlayerOverlay
-        title={item?.Name ?? ""}
+        // Épisode : la série en TITRE, « S02E05 · Titre » en sous-titre (LG).
+        title={item?.Type === "Episode" ? (item.SeriesName ?? item.Name ?? "") : (item?.Name ?? "")}
+        subtitle={
+          item?.Type === "Episode" && item.ParentIndexNumber != null && item.IndexNumber != null
+            ? `S${String(item.ParentIndexNumber).padStart(2, "0")}E${String(item.IndexNumber).padStart(2, "0")} · ${item.Name}`
+            : null
+        }
         currentTime={displayTime}
         bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused}

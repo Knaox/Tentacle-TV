@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { View, Text, ScrollView, TVFocusGuideView } from "react-native";
+import { View, Text, ScrollView, TVFocusGuideView, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -13,6 +13,7 @@ import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
 import { CheckIcon } from "./icons/TVIcons";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
+import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Colors, Radius } from "../theme/colors";
 import { TVQualitySection } from "./player/TVQualitySection";
 
@@ -50,20 +51,21 @@ export function TVTrackSelector({
   disableBackHandler = false,
 }: TVTrackSelectorProps) {
   const { t } = useTranslation("player");
+  const { height: screenH } = useWindowDimensions();
   // Overlay (Android, ou usage historique) : son BACK referme le panneau (LIFO).
   // En mode route modale (tvOS), le dismiss natif gère ESC → on désactive ici.
   useTVRemote({ onBack: disableBackHandler ? undefined : onClose });
-  const slideX = useSharedValue(380);
+  // Le voile et le panneau ENTRENT en fondu (180 ms, parité panneau-tv-fondu) ;
+  // rien ne reste monté à opacité nulle au-dessus d'une vidéo.
+  const fade = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
   const { makeOnFocus } = useTVScrollToFocused(scrollRef, 60);
 
   useEffect(() => {
-    slideX.value = withTiming(0, { duration: 250, easing: Easing.out(Easing.cubic) });
-  }, [slideX]);
+    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.voileFonduMs, easing: Easing.out(Easing.ease) });
+  }, [fade]);
 
-  const panelStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: slideX.value }],
-  }));
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
   const renderTrack = (track: Track, isSelected: boolean, onSelect: () => void, preferFocus = false, scrollIndex = 0) => (
     <Focusable key={track.index} variant="row" onPress={() => { onSelect(); onInteraction?.(); }} hasTVPreferredFocus={preferFocus} onFocus={makeOnFocus(scrollIndex, TRACK_ITEM_HEIGHT)}>
@@ -88,15 +90,30 @@ export function TVTrackSelector({
   );
 
   return (
-    <Animated.View
-      importantForAccessibility="yes"
-      style={[{
-        position: "absolute", top: 0, right: 0, bottom: 0, width: 380,
-        backgroundColor: Colors.glassBgHeavy,
-        borderLeftWidth: 1, borderLeftColor: Colors.glassBorder,
-        paddingVertical: 40, paddingHorizontal: 24,
-      }, panelStyle]}
-    >
+    <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, fadeStyle]}>
+      {/* Voile d'assombrissement : ce qui n'est plus à portée s'éteint. */}
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.voile }}
+      />
+      {/* Le panneau FLOTTE au-dessus de la barre (parité .panneau-tv) : ancré
+          bas-droit dans le retrait d'overscan, jamais pleine hauteur. */}
+      <View
+        importantForAccessibility="yes"
+        style={{
+          position: "absolute",
+          right: TV_OVERSCAN_PT.x,
+          bottom: TV_PLAYER_PANEL.bas,
+          width: TV_PLAYER_PANEL.largeur,
+          height: screenH - TV_PLAYER_PANEL.hauteurMaxRetrait,
+          borderRadius: TV_RADIUS.lg,
+          // `--surface-dropdown` du thème TV (tokens/tv.ts).
+          backgroundColor: "#14141a",
+          borderWidth: 1, borderColor: Colors.glassBorder,
+          paddingVertical: 24, paddingHorizontal: 20,
+          ...TV_SHADOW.elev3,
+        }}
+      >
       <TVFocusGuideView autoFocus trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={{ flex: 1 }}>
         {/* Header */}
         <View style={{
@@ -113,7 +130,7 @@ export function TVTrackSelector({
               backgroundColor: "rgba(255,255,255,0.06)",
             }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
-                {t("close", { defaultValue: "Close" })}
+                {t("close")}
               </Text>
             </View>
           </Focusable>
@@ -168,6 +185,7 @@ export function TVTrackSelector({
           )}
         </ScrollView>
       </TVFocusGuideView>
+      </View>
     </Animated.View>
   );
 }
