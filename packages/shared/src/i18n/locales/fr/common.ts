@@ -91,6 +91,7 @@ export default {
   extras: "Extras",
   openOnYoutube: "Ouvrir sur YouTube",
   trailerUnavailable: "Lecture YouTube indisponible. Ouvrez le lien externe ci-dessous.",
+  trailerUnavailableShort: "Indisponible",
   support: "Support",
   about: "À propos",
   sortRecent: "Récent",

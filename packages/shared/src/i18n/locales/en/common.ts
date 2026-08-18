@@ -91,6 +91,7 @@ export default {
   extras: "Extras",
   openOnYoutube: "Open on YouTube",
   trailerUnavailable: "YouTube playback unavailable. Use the external link below.",
+  trailerUnavailableShort: "Unavailable",
   support: "Support",
   about: "About",
   sortRecent: "Recent",

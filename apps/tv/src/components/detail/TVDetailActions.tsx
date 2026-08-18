@@ -34,6 +34,9 @@ interface TVDetailActionsProps {
   onPlay: (itemId: string) => void;
   onTrailer: (trailer: RichTrailer) => void;
   onFocusButtons: () => void;
+  /** HAUT depuis une action → la pilule Retour (aucun chevauchement horizontal
+   *  avec elle : la cible géométrique n'existe pas, il faut la désigner). */
+  nextFocusUp?: number;
 }
 
 /**
@@ -47,7 +50,7 @@ interface TVDetailActionsProps {
  * l'état au cache — l'appel direct `useToggleWatchlist(item.Id)` ne le
  * faisait pas.
  */
-export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer, onFocusButtons }: TVDetailActionsProps) {
+export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer, onFocusButtons, nextFocusUp }: TVDetailActionsProps) {
   const { t } = useTranslation("common");
   const isSeries = item.Type === "Series";
   const isBoxSet = item.Type === "BoxSet";
@@ -103,7 +106,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
   return (
     <TVFocusGuideView autoFocus style={{ flexDirection: "row", alignItems: "center", gap: Spacing.buttonGap }}>
       {showPlay && (
-        <Focusable ref={playBtnRef} variant="button" onPress={handlePlay} hasTVPreferredFocus onFocus={onFocusButtons}>
+        <Focusable ref={playBtnRef} variant="button" onPress={handlePlay} hasTVPreferredFocus onFocus={onFocusButtons} nextFocusUp={nextFocusUp}>
           <View style={{
             backgroundColor: Colors.ctaPrimaryBg,
             paddingHorizontal: 40, paddingVertical: 16,
@@ -121,6 +124,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
           onPress={() => onTrailer(trailers[0])}
           onFocus={onFocusButtons}
           accessibilityLabel={t("trailer")}
+          nextFocusUp={nextFocusUp}
         >
           <View style={{
             backgroundColor: Colors.ctaGhostBg,
@@ -144,6 +148,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
         preferred={!showPlay}
         onPress={() => (isFavorite ? removeFav.mutate() : addFav.mutate())}
         onFocus={onFocusButtons}
+        nextFocusUp={nextFocusUp}
         label={isFavorite ? t("removeFromFavorites") : t("addToFavorites")}
       >
         {isFavorite ? <HeartFilledIcon size={22} /> : <HeartIcon size={22} color={Colors.textSecondary} />}
@@ -152,6 +157,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
       <CircleAction
         onPress={() => (isInWatchlist ? removeWatchlist.mutate() : addWatchlist.mutate())}
         onFocus={onFocusButtons}
+        nextFocusUp={nextFocusUp}
         label={isInWatchlist ? t("removeFromMyList") : t("addToMyList")}
       >
         {isInWatchlist
@@ -162,6 +168,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
       <CircleAction
         onPress={() => (isWatched ? markUnwatched.mutate() : markWatched.mutate())}
         onFocus={onFocusButtons}
+        nextFocusUp={nextFocusUp}
         label={isWatched ? t("markUnwatched") : t("markWatched")}
       >
         {isWatched
@@ -179,6 +186,7 @@ function CircleAction({
   preferred,
   onPress,
   onFocus,
+  nextFocusUp,
   label,
   children,
 }: {
@@ -186,6 +194,7 @@ function CircleAction({
   preferred?: boolean;
   onPress: () => void;
   onFocus: () => void;
+  nextFocusUp?: number;
   label: string;
   children: React.ReactNode;
 }) {
@@ -196,6 +205,7 @@ function CircleAction({
       onPress={onPress}
       onFocus={onFocus}
       hasTVPreferredFocus={preferred}
+      nextFocusUp={nextFocusUp}
       accessibilityLabel={label}
     >
       <View

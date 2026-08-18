@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, type LayoutChangeEvent } from "react-native";
 import { useTranslation } from "react-i18next";
 import { parseYouTubeId, type RichTrailer } from "@tentacle-tv/shared";
 import { FocusableRow } from "../focus/FocusableRow";
@@ -12,17 +12,26 @@ interface TVExtrasRowProps {
   trailers: RichTrailer[];
   onSelect: (trailer: RichTrailer) => void;
   style?: object;
+  /** Position de la rangée dans la page — pour le défilement d'accompagnement. */
+  onLayout?: (event: LayoutChangeEvent) => void;
+  /** Une tuile de la rangée a le focus — la page s'ancre sur la rangée. */
+  onRowFocus?: () => void;
+  /** HAUT depuis une tuile → ce focusable (le bouton Lecture) : l'ancrage de
+   *  page fait sortir les actions de l'écran, la cible géométrique disparaît. */
+  tilesNextFocusUp?: number;
 }
 
 /**
  * Rangée « Extras » de la fiche média — équivalent TV de l'ExtrasRow web :
  * tuiles 16:9 avec miniature YouTube, libellé + type, lecture in-app au clic.
  *
- * Comme le web : on MASQUE les trailers indisponibles/privés. YouTube renvoie un
- * placeholder gris 120×90 sur `hqdefault.jpg` pour ces vidéos → on le détecte via
- * les dimensions au chargement de la vignette (`onLoad`) et on retire l'entrée.
+ * Trailers indisponibles/privés : YouTube renvoie un placeholder gris 120×90
+ * sur `hqdefault.jpg` → détecté via les dimensions au chargement (`onLoad`).
+ * La LG les MASQUE (pointer libre) ; ici on les GRISE sans les démonter : la
+ * vignette se résout pendant qu'on parcourt la rangée, et démonter la tuile
+ * FOCUSÉE laissait le focus orphelin — plus aucune flèche ne répondait.
  */
-export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style }: TVExtrasRowProps) {
+export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style, onLayout, onRowFocus, tilesNextFocusUp }: TVExtrasRowProps) {
   const { t } = useTranslation("common");
   const [unavailable, setUnavailable] = useState<Set<string>>(new Set());
 
@@ -35,24 +44,32 @@ export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style
     });
   }, []);
 
-  const visible = trailers.filter((tr) => !unavailable.has(tr.Url));
-  if (visible.length === 0) return null;
+  const handleSelect = useCallback((tr: RichTrailer) => {
+    if (!unavailable.has(tr.Url)) onSelect(tr);
+  }, [unavailable, onSelect]);
+
+  if (trailers.length === 0) return null;
 
   return (
     <FocusableRow
       title={t("extras")}
-      data={visible}
+      data={trailers}
       renderItem={(tr: RichTrailer) => (
         <ExtraTile
           trailer={tr}
           fallbackLabel={t("trailer")}
+          unavailableLabel={t("trailerUnavailableShort")}
+          unavailable={unavailable.has(tr.Url)}
           onUnavailable={() => markUnavailable(tr.Url)}
         />
       )}
       keyExtractor={(tr) => tr.Url}
       itemWidth={TILE_W}
       style={style}
-      onItemPress={onSelect}
+      onItemPress={handleSelect}
+      onLayout={onLayout}
+      onRowFocus={onRowFocus}
+      cellNextFocusUp={tilesNextFocusUp}
     />
   );
 });
@@ -60,10 +77,14 @@ export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style
 function ExtraTile({
   trailer,
   fallbackLabel,
+  unavailableLabel,
+  unavailable,
   onUnavailable,
 }: {
   trailer: RichTrailer;
   fallbackLabel: string;
+  unavailableLabel: string;
+  unavailable: boolean;
   onUnavailable: () => void;
 }) {
   const ytId = parseYouTubeId(trailer.Url);
@@ -71,7 +92,7 @@ function ExtraTile({
   const thumb = ytId && !imgFailed ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : null;
 
   return (
-    <View style={{ width: TILE_W }}>
+    <View style={{ width: TILE_W, opacity: unavailable ? 0.35 : 1 }}>
       <View style={{
         width: TILE_W, height: TILE_H,
         borderRadius: Radius.card,
@@ -103,7 +124,7 @@ function ExtraTile({
         {trailer.Name || fallbackLabel}
       </Text>
       <Text numberOfLines={1} style={{ color: Colors.textMuted, ...Typography.caption, width: TILE_W }}>
-        {trailer.type || "YouTube"}
+        {unavailable ? unavailableLabel : trailer.type || "YouTube"}
       </Text>
     </View>
   );

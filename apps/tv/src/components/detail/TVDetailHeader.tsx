@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { View, Text, Image, useWindowDimensions } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { View, Text, Image, findNodeHandle, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,6 +14,7 @@ import { formatDuration } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { TV_DETAIL_BANNER, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
+import { BackIcon } from "../icons/TVIcons";
 import { TVMetaChips } from "../TVMetaChips";
 import { TVDetailActions } from "./TVDetailActions";
 import { TVDetailPoster } from "./TVDetailPoster";
@@ -27,6 +28,9 @@ interface TVDetailHeaderProps {
   onTrailer: (trailer: RichTrailer) => void;
   onSeriesPress: (seriesId: string) => void;
   onFocusButtons: () => void;
+  /** Bouton « Retour » visible (parité LG `DetailHero`) — la télécommande
+   *  garde son propre retour, la pilule est une affordance de plus. */
+  onBack: () => void;
 }
 
 /**
@@ -44,10 +48,22 @@ export function TVDetailHeader({
   onTrailer,
   onSeriesPress,
   onFocusButtons,
+  onBack,
 }: TVDetailHeaderProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
   const { width: screenW, height: screenH } = useWindowDimensions();
+
+  // La pilule Retour n'a aucun chevauchement horizontal avec les actions : le
+  // moteur de focus ne l'atteint jamais par géométrie. On la désigne en
+  // `nextFocusUp` — au chip série quand il existe (fiche épisode), sinon aux
+  // actions directement.
+  const backRef = useRef<View>(null);
+  const [backHandle, setBackHandle] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    const handle = findNodeHandle(backRef.current);
+    if (handle) setBackHandle(handle);
+  }, []);
 
   const backdropH = Math.round((screenH * TV_DETAIL_BANNER.hauteurVh) / 100) + TV_DETAIL_BANNER.supplementPx;
   // Le bloc d'informations commence à ~32 % de l'écran : posé SUR l'image,
@@ -96,9 +112,16 @@ export function TVDetailHeader({
   }));
 
   return (
-    <>
-      {/* Backdrop plein cadre */}
-      <View style={{ width: screenW, height: backdropH }}>
+    // Conteneur relatif : le backdrop est un CALQUE absolu et le contenu vit
+    // en flux (paddingTop). L'ancienne version posait le backdrop dans le flux
+    // puis remontait le contenu d'une marge négative (~ -540) — layout fragile
+    // qui cassait dès que l'affiche ou le synopsis grandissait.
+    <View style={{ minHeight: backdropH }}>
+      {/* Backdrop plein cadre — la bannière d'une fiche EST le fond. */}
+      <View
+        pointerEvents="none"
+        style={{ position: "absolute", top: 0, left: 0, right: 0, height: backdropH }}
+      >
         <Image
           source={{ uri: backdrop }}
           style={{ width: "100%", height: "100%", position: "absolute" }}
@@ -118,11 +141,45 @@ export function TVDetailHeader({
         />
       </View>
 
+      {/* Pilule « Retour » — même position visuelle que la LG (overscan + 8),
+          même habillage : bord blanc 0.30, scrim noir 0.55. Ne vole pas le
+          focus initial (Lecture le garde). */}
+      <Focusable
+        ref={backRef}
+        variant="button"
+        onPress={onBack}
+        focusRadius={Radius.pill}
+        accessibilityLabel={t("back")}
+        style={{
+          position: "absolute",
+          top: TV_OVERSCAN_PT.y + 8,
+          left: TV_OVERSCAN_PT.x + 8,
+          zIndex: 20,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: Radius.pill,
+            borderWidth: 1,
+            borderColor: "rgba(255, 255, 255, 0.30)",
+            backgroundColor: "rgba(0, 0, 0, 0.55)",
+          }}
+        >
+          <BackIcon size={16} color={Colors.textSecondary} />
+          <Text style={{ color: Colors.textSecondary, fontSize: 15 }}>{t("back")}</Text>
+        </View>
+      </Focusable>
+
       {/* Rangée affiche + informations, posée sur l'image */}
       <View
         style={{
           paddingHorizontal: TV_OVERSCAN_PT.x,
-          marginTop: contentTop - backdropH,
+          paddingTop: contentTop,
           flexDirection: "row",
           gap: 32,
           alignItems: "flex-start",
@@ -145,6 +202,7 @@ export function TVDetailHeader({
                 variant="button"
                 onPress={() => onSeriesPress(item.SeriesId!)}
                 accessibilityLabel={item.SeriesName}
+                nextFocusUp={backHandle}
               >
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 8,
@@ -224,10 +282,11 @@ export function TVDetailHeader({
               onPlay={onPlay}
               onTrailer={onTrailer}
               onFocusButtons={onFocusButtons}
+              nextFocusUp={isEpisode && item.SeriesName && item.SeriesId ? undefined : backHandle}
             />
           </Animated.View>
         </View>
       </View>
-    </>
+    </View>
   );
 }

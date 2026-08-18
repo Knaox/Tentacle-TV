@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react";
-import { View, ScrollView, InteractionManager } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { View, ScrollView, InteractionManager, findNodeHandle } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMediaItem, useSimilarItems, useCollectionItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -38,6 +38,18 @@ export function MediaDetailScreen({ route, navigation }: Props) {
 
   const scrollRef = useRef<ScrollView>(null);
   const playBtnRef = useRef<View>(null);
+  // Positions Y des sections extras/épisodes (relatives au contenu de page) :
+  // leur focus fait défiler la PAGE — ces sections n'ont pas de scroll propre.
+  const extrasY = useRef(0);
+  const episodesY = useRef(0);
+  // HAUT depuis une tuile extras → bouton Lecture : l'ancrage de page sur la
+  // rangée sort les actions de l'écran, la cible géométrique n'existe plus.
+  const [playHandle, setPlayHandle] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    if (!item) return;
+    const handle = findNodeHandle(playBtnRef.current);
+    if (handle) setPlayHandle(handle);
+  }, [item]);
   useTVRemote({ onBack: () => navigation.goBack() });
 
   // Re-focus play button + refresh data when screen comes back to foreground.
@@ -86,6 +98,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
         onTrailer={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
         onSeriesPress={(seriesId) => navigation.push("MediaDetail", { itemId: seriesId })}
         onFocusButtons={scrollToButtons}
+        onBack={() => navigation.goBack()}
       />
 
       {/* Collection (BoxSet) : contenu navigable */}
@@ -107,18 +120,25 @@ export function MediaDetailScreen({ route, navigation }: Props) {
           trailers={trailers}
           onSelect={(tr) => navigation.navigate("Trailer", { url: tr.Url, name: tr.Name })}
           style={{ marginTop: Spacing.sectionGap }}
+          onLayout={(e) => { extrasY.current = e.nativeEvent.layout.y; }}
+          onRowFocus={() => scrollRef.current?.scrollTo({ y: Math.max(0, extrasY.current - 60), animated: true })}
+          tilesNextFocusUp={playHandle}
         />
       )}
 
       {/* Episodes — série, ou série parente d'un épisode (fiche centrée épisode,
           saison présélectionnée + épisode surligné, comme le web) */}
       {(isSeries || (isEpisode && item.SeriesId != null)) && (
-        <View style={{ marginTop: Spacing.sectionGap }}>
+        <View
+          style={{ marginTop: Spacing.sectionGap }}
+          onLayout={(e) => { episodesY.current = e.nativeEvent.layout.y; }}
+        >
           <TVEpisodeList
             seriesId={(isEpisode ? item.SeriesId : undefined) ?? item.Id}
             currentEpisodeId={isEpisode ? item.Id : undefined}
             initialSeasonId={isEpisode ? item.SeasonId : undefined}
             onPlay={(ep) => navigation.navigate("Player", { itemId: ep.Id })}
+            onEpisodeFocus={(y) => scrollRef.current?.scrollTo({ y: Math.max(0, episodesY.current + y - 100), animated: true })}
           />
         </View>
       )}

@@ -19,16 +19,22 @@ interface TVEpisodeListProps {
   currentBadgeLabel?: string;
   /** Focus D-pad initial sur la row de l'épisode surligné (panneau du lecteur) */
   autoFocusCurrent?: boolean;
-  /** Liste en flex:1 (panneau plein écran) au lieu du maxHeight 500 (fiche média) */
+  /** Liste en flex:1 avec son propre défilement (panneau plein écran du
+   *  lecteur). Sans lui (fiche média), la liste vit à hauteur NATURELLE dans
+   *  le défilement de la page : un ScrollView borné imbriqué dans celui de la
+   *  fiche piégeait le focus D-pad. */
   fillHeight?: boolean;
   /** Largeur de vignette relayée aux lignes (160 dans le panneau du lecteur). */
   thumbWidth?: number;
+  /** Fiche média : Y local (relatif à la liste) de la ligne focusée — la PAGE
+   *  défile pour la suivre, la liste n'ayant pas de défilement propre. */
+  onEpisodeFocus?: (y: number) => void;
 }
 
 const EPISODE_ROW_HEIGHT = 170; // paddingVertical 14*2 + thumbnail 112 + méta/chips ~22 + gap 8
 
 export function TVEpisodeList({
-  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent, fillHeight, thumbWidth,
+  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent, fillHeight, thumbWidth, onEpisodeFocus,
 }: TVEpisodeListProps) {
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
@@ -106,13 +112,10 @@ export function TVEpisodeList({
         })}
       </ScrollView>
 
-      {/* Episodes */}
-      <ScrollView
-        ref={episodeScrollRef}
-        style={fillHeight ? { marginTop: 24, flex: 1 } : { marginTop: 24, maxHeight: 500 }}
-        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8, ...(fillHeight ? { paddingBottom: 40 } : {}) }}
-      >
-        {(episodes ?? []).map((ep, epIndex) => (
+      {/* Episodes — panneau : défilement propre ; fiche : hauteur naturelle,
+          la ligne focusée publie son Y et la page défile. */}
+      {(() => {
+        const rows = (episodes ?? []).map((ep, epIndex) => (
           <TVEpisodeRow
             thumbWidth={thumbWidth}
             key={ep.Id}
@@ -122,10 +125,27 @@ export function TVEpisodeList({
             badgeLabel={badgeFor(ep)}
             autoFocus={autoFocusCurrent && ep.Id === highlightId}
             onPress={() => onPlay(ep)}
-            onFocus={makeOnFocus(epIndex, EPISODE_ROW_HEIGHT)}
+            onFocus={
+              fillHeight
+                ? makeOnFocus(epIndex, EPISODE_ROW_HEIGHT)
+                : () => onEpisodeFocus?.(epIndex * EPISODE_ROW_HEIGHT)
+            }
           />
-        ))}
-      </ScrollView>
+        ));
+        return fillHeight ? (
+          <ScrollView
+            ref={episodeScrollRef}
+            style={{ marginTop: 24, flex: 1 }}
+            contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8, paddingBottom: 40 }}
+          >
+            {rows}
+          </ScrollView>
+        ) : (
+          <View style={{ marginTop: 24, paddingHorizontal: Spacing.screenPadding, gap: 8 }}>
+            {rows}
+          </View>
+        );
+      })()}
     </View>
   );
 }
