@@ -24,6 +24,10 @@ interface FocusableRowProps<T> {
   /** Layout callback for tracking row Y position */
   onLayout?: (event: LayoutChangeEvent) => void;
   onItemLongPress?: (item: T) => void;
+  /** HAUT depuis une cellule → ce focusable (handle natif). Sert quand la cible
+   *  géométrique naturelle est hors écran (page défilée) : sans lui, le moteur
+   *  ne trouve rien et le focus reste bloqué dans la rangée. */
+  cellNextFocusUp?: number;
 }
 
 export function FocusableRow<T>({
@@ -40,6 +44,7 @@ export function FocusableRow<T>({
   onItemFocus,
   onLayout,
   onItemLongPress,
+  cellNextFocusUp,
 }: FocusableRowProps<T>) {
   const listRef = useRef<FlatList>(null);
   const focusedIndexRef = useRef(-1);
@@ -121,6 +126,7 @@ export function FocusableRow<T>({
             }}
             onPress={onItemPress ? () => onItemPress(item) : undefined}
             onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
+            nextFocusUp={cellNextFocusUp}
           />
         )}
       />
@@ -130,11 +136,12 @@ export function FocusableRow<T>({
 }
 
 /** Cellule à état de focus local — seule la cellule re-render au focus. */
-function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress }: {
+function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp }: {
   item: T; index: number; itemWidth: number; gap: number;
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
   onCellFocus: () => void; onCellBlur: () => void;
   onPress?: () => void; onLongPress?: () => void;
+  nextFocusUp?: number;
 }) {
   const [focused, setFocused] = useState(false);
   const cellRef = useRef<View>(null);
@@ -156,6 +163,7 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
         onBlur={() => { setFocused(false); onCellBlur(); }}
         onPress={onPress}
         onLongPress={onLongPress}
+        nextFocusUp={nextFocusUp}
         focusRadius={8}
       >
         {renderItem(item, index, focused)}
