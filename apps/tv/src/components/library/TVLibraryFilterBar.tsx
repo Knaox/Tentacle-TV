@@ -6,7 +6,7 @@ import type { MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import { SORT_OPTIONS } from "./TVLibrarySortGenreMenus";
-import { Colors, Radius, Spacing } from "../../theme/colors";
+import { Colors, Radius } from "../../theme/colors";
 
 export type FilterMenuKind = "sort" | "genres" | "years" | "rating" | "platforms";
 

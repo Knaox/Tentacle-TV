@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
@@ -31,6 +32,9 @@ export function TVSortMenu({
 }) {
   const { t } = useTranslation("common");
   const desc = filters.sortOrder === "Descending";
+  // Cible d'entrée FIGÉE à l'ouverture : suivre la sélection re-grabberait le
+  // focus à chaque cochage (le flip de hasTVPreferredFocus re-saisit côté natif).
+  const entreeRef = useRef(filters.sortBy);
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>
@@ -39,7 +43,7 @@ export function TVSortMenu({
           key={opt.value}
           label={t(opt.key)}
           checked={filters.sortBy === opt.value}
-          preferred={filters.sortBy === opt.value}
+          preferred={entreeRef.current === opt.value}
           onPress={() => { onSortByChange(opt.value); onSortOrderChange(opt.order); }}
         />
       ))}
@@ -73,8 +77,10 @@ export function TVGenreMenu({
   selectedIds: string[];
   onToggle: (id: string) => void;
 }) {
-  // Entrée sur la PREMIÈRE cochée, sinon la première ligne.
-  const firstChecked = genres.find((g) => selectedIds.includes(g.Id))?.Id ?? genres[0]?.Id;
+  // Entrée sur la PREMIÈRE cochée à l'OUVERTURE, sinon la première ligne —
+  // figée : cocher/décocher ne doit pas re-saisir le focus.
+  const entreeRef = useRef(genres.find((g) => selectedIds.includes(g.Id))?.Id ?? genres[0]?.Id);
+  const firstChecked = entreeRef.current;
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>

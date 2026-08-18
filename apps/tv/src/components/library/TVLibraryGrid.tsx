@@ -40,8 +40,6 @@ interface TVLibraryGridProps {
   onItemFocus?: (item: MediaItem) => void;
   onEndReached?: () => void;
   isFetchingNextPage?: boolean;
-  /** Change → retour en haut + oubli de la rangée suivie (filtres modifiés). */
-  resetToken?: unknown;
   /** Publie la 1ʳᵉ cellule comme focusable d'entrée du contenu (sortie rail +
    *  auto-collapse — useTVContentEntry côté écran). */
   entryRef?: (node: View | null) => void;
@@ -60,7 +58,6 @@ export function TVLibraryGrid({
   onItemFocus,
   onEndReached,
   isFetchingNextPage,
-  resetToken,
   entryRef,
 }: TVLibraryGridProps) {
   const { columns, cellW, cardW, estimatedItemSize } = useTVGridLayout();
@@ -80,11 +77,6 @@ export function TVLibraryGrid({
     }
     flashListRef.current?.scrollToIndex({ index: rowIndex * columns, animated: false, viewPosition: 0.3 });
   }, [columns]);
-
-  useEffect(() => {
-    lastScrolledRow.current = -1;
-    flashListRef.current?.scrollToOffset({ offset: 0, animated: false });
-  }, [resetToken]);
 
   // totalItems via ref : chaque page chargée ne doit pas invalider renderItem
   // (sinon toute la grille re-rend à chaque pagination).
@@ -111,9 +103,9 @@ export function TVLibraryGrid({
     <FlashList
       // Remonter la liste à CHAQUE changement de bibliothèque : sans `key`,
       // FlashList est réutilisée et conserve son contentOffset interne (offset
-      // résiduel = page « légèrement défilée »). Un conteneur neuf repart à 0
-      // (et item 0 reprend hasTVPreferredFocus). Le tri/les filtres ne changent
-      // PAS la key → pas de remontage → pas de vol de focus sur les commandes.
+      // résiduel = page « légèrement défilée »). Un conteneur neuf repart à 0.
+      // Le tri/les filtres ne changent PAS la key → pas de remontage → pas de
+      // vol de focus sur les commandes.
       key={`${listKey}-${columns}`}
       ref={flashListRef}
       data={items}
@@ -178,7 +170,11 @@ const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, is
         onPress={() => onPressItem(item)}
         onFocus={() => { setFocused(true); onItemFocus?.(item); onFocusRow(Math.floor(index / columns)); }}
         onBlur={() => setFocused(false)}
-        hasTVPreferredFocus={index === 0}
+        // JAMAIS de hasTVPreferredFocus sur une cellule de FlashList recyclée :
+        // chaque refiltre/recyclage qui replace une instance à l'index 0
+        // rappelait le focus natif — la grille VOLAIT le focus des puces de
+        // filtre (react-native-tvos #839/#552/#849). L'entrée de focus passe
+        // par `entryRef` (useTVContentEntry) et le guide de l'écran.
         focusRadius={8}
         nextFocusRight={isLastInRow ? nodeId : undefined}
         style={{ alignSelf: "flex-start" }}
