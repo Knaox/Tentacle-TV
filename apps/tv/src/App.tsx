@@ -23,7 +23,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RNStorageAdapter, RNUuidGenerator, IS_TVOS } from "./storage/RNStorageAdapter";
+import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { SidebarProvider } from "./context/SidebarContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -38,7 +38,9 @@ import { TVNavChrome, deriveRailKey } from "./components/nav/TVNavChrome";
 import { TVNavProvider } from "./context/TVNavContext";
 import { ThemeProvider, useTheme } from "./theme";
 
-const storage = new RNStorageAdapter();
+// Instance unique, définie dans son module pour que le magasin d'épinglage du
+// rail puisse s'y brancher sans dépendre de ce fichier.
+const storage = tvStorage;
 const uuid = new RNUuidGenerator();
 
 /** Mutex global anti-concurrence : empêche que onAuthExpired et le validateur

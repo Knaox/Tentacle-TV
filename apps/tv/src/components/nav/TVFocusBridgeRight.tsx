@@ -1,13 +1,12 @@
 import { Platform, TVFocusGuideView } from "react-native";
 import { useTVNav } from "../../context/TVNavContext";
-import { RAIL_EXPANDED } from "./TVSideRail";
+import { RAIL_COLLAPSED } from "./TVSideRail";
 
 /**
  * Pont de SORTIE du rail (tvOS uniquement).
  *
- * Sur l'Accueil, les focusables du contenu (boutons du hero) sont SOUS le rail
- * déployé (256px) → en appuyant à droite depuis le rail, le focus engine tvOS ne
- * trouve aucune cible (occlusion + pas d'alignement vertical) et on reste piégé.
+ * Sur l'Accueil, en appuyant à droite depuis le rail, le focus engine tvOS ne
+ * trouvait aucune cible (pas d'alignement vertical) et on restait piégé.
  *
  * Quand le focus est dans le rail (`railFocused`), on pose une zone de focus à
  * DROITE du rail déployé qui redirige vers le nœud d'entrée du contenu publié par
@@ -25,9 +24,10 @@ export function TVFocusBridgeRight() {
   return (
     <TVFocusGuideView
       destinations={[target]}
-      // À droite du rail déployé (ne chevauche pas les items → n'interfère pas
-      // avec la nav interne haut/bas).
-      style={{ position: "absolute", left: RAIL_EXPANDED, right: 0, top: 0, bottom: 0 }}
+      // À droite du rail — sa largeur réelle, désormais constante. Le panneau
+      // qui apparaît derrière déborde plus loin, mais il ne capte rien : partir
+      // de sa largeur laissait une bande de contenu hors d'atteinte.
+      style={{ position: "absolute", left: RAIL_COLLAPSED, right: 0, top: 0, bottom: 0 }}
     />
   );
 }
