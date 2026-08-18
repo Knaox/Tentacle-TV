@@ -1,6 +1,7 @@
 /** Tentacle TV — Premium Cinematic Design System */
 
 import { BRAND, SURFACE, TEXT, STATUS, BORDER } from "@tentacle-tv/shared";
+import { TV_BANNER_CARD } from "@tentacle-tv/theme";
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 // Brand + surface + text now come from packages/shared so web/TV/mobile
@@ -111,6 +112,11 @@ export { BRAND, SURFACE, TEXT, STATUS, BORDER };
 export const Spacing = {
   /** Padding from screen edges (TV overscan-safe). */
   screenPadding: 32,
+  /** Gouttière des rangées et des cartes bannière (`--row-gutter-desktop`). */
+  rowGutter: TV_BANNER_CARD.gouttiere,
+  /** Espace SOUS chaque rangée (web `mb-10`) — les rangées ne portent plus de
+   *  marge haute : la première doit chevaucher la carte bannière (-48). */
+  rowGap: 40,
   /** Gap between content sections/rows. */
   sectionGap: 28,
   /** Gap between cards in a carousel. */
@@ -175,16 +181,11 @@ export const Radius = {
 // ─── Hero Banner ─────────────────────────────────────────────────────────────
 
 export const HeroConfig = {
-  /** Percentage of screen height for hero — cinématique, aligné web (88-92vh ramené TV). */
-  heightRatio: 0.72,
   /** Auto-rotate interval in ms (aligné HeroBillboard web : 8 s). */
   rotateInterval: 8_000,
-  /** Crossfade duration in ms. */
-  crossfadeDuration: 800,
-  /** Ken Burns zoom target. */
-  kenBurnsScale: 1.05,
-  /** Ken Burns duration in ms. */
-  kenBurnsDuration: 15_000,
+  // Hauteur, fondu et forme de carte : `TV_BANNER_CARD` (@tentacle-tv/theme),
+  // recroisé contre les feuilles de la LG par tvOnly.banner.test.ts.
+  // Le Ken Burns a été retiré : la référence webOS n'en a pas.
 } as const;
 
 // ─── Focus Animation (legacy — see ./focus.ts for full token set) ───────────

@@ -47,8 +47,7 @@ export function AboutScreen({ navigation }: Props) {
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <ScrollView contentContainerStyle={{
         paddingHorizontal: 80,
-        paddingVertical: 32,
-        paddingBottom: 60,
+        paddingBottom: 48,
       }}>
 
         {/* Logo + title */}

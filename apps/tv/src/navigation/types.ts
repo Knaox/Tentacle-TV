@@ -11,6 +11,8 @@ export type RootStackParamList = {
   PlayerSettings: undefined;
   Trailer: { url: string; name?: string };
   Search: undefined;
+  Watchlist: undefined;
+  Favorites: undefined;
   Preferences: undefined;
   About: undefined;
 };

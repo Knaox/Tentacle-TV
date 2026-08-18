@@ -1,11 +1,15 @@
 import { TVFocusGuideView, Platform, View } from "react-native";
+import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { Colors } from "../../theme/colors";
 import { RAIL_COLLAPSED } from "./TVSideRail";
 import { TVFocusBridgeLeft } from "./TVFocusBridgeLeft";
 import { TVFocusBridgeRight } from "./TVFocusBridgeRight";
 
 /**
- * Cadre léger des pages top-level : réserve la marge gauche du rail replié.
+ * Cadre léger des pages top-level : réserve la marge gauche du rail replié et
+ * le retrait d'overscan sur les trois autres bords (54 pt haut/bas, 96 pt à
+ * droite — la LG le pose sur `#root`, ici c'est l'équivalent). Les écrans ne
+ * doivent plus improviser leurs propres marges de bord.
  * Le rail lui-même est monté UNE SEULE FOIS par TVNavChrome (overlay au niveau
  * navigation).
  *
@@ -20,7 +24,13 @@ export function TVScreenFrame({ children }: { children: React.ReactNode }) {
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <TVFocusGuideView
         autoFocus={Platform.OS === "ios"}
-        style={{ flex: 1, paddingLeft: RAIL_COLLAPSED }}
+        style={{
+          flex: 1,
+          paddingLeft: RAIL_COLLAPSED,
+          paddingRight: TV_OVERSCAN_PT.x,
+          paddingTop: TV_OVERSCAN_PT.y,
+          paddingBottom: TV_OVERSCAN_PT.y,
+        }}
       >
         {children}
       </TVFocusGuideView>

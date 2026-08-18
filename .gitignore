@@ -92,6 +92,7 @@ apps/mobile/ios/*.xcworkspace/contents.xcworkspacedata.bak
 # Apple TV — artefacts de build xcodebuild (simulateur + device) : régénérés.
 apps/tv/ios/build/
 apps/tv/ios/build-device/
+apps/tv/ios/build-sim/
 apps/tv/ios/DerivedData/
 
 # Outil de déploiement perso (repo public) — reste en local / sur le Bureau

@@ -105,13 +105,20 @@ export {
 } from "./tokens/tv";
 
 export {
+  TV_BANNER_CARD,
   TV_CARD_FOCUS,
+  TV_DETAIL_BANNER,
+  TV_DETAIL_POSTER,
   TV_FOCUS_RING,
   TV_HERO_AMBILIGHT,
   TV_HERO_SCRIM_DIAGONAL,
+  TV_OSD,
   TV_OVERSCAN,
   TV_PLAYER_LAYERS,
   TV_PLAYER_LAYER_VAR_NAMES,
+  TV_PLAYER_NEXT_CARD,
+  TV_PLAYER_PANEL,
+  TV_PLAYER_SKIP,
   tvOnlyCssVarEntries,
 } from "./tokens/tvOnly";
 

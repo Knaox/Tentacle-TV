@@ -50,7 +50,7 @@ export function FocusableRow<T>({
       listRef.current?.scrollToIndex({
         index,
         animated: true,
-        viewOffset: Spacing.screenPadding,
+        viewOffset: Spacing.rowGutter,
       });
     },
     []
@@ -76,7 +76,7 @@ export function FocusableRow<T>({
           color: Colors.textPrimary,
           ...Typography.sectionTitle,
           marginBottom: 20,
-          paddingHorizontal: Spacing.screenPadding,
+          paddingHorizontal: Spacing.rowGutter,
         }}>
           {title}
         </Text>
@@ -89,7 +89,7 @@ export function FocusableRow<T>({
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ overflow: "visible" }}
-        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, paddingVertical: 8 }}
+        contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingVertical: 8 }}
         keyExtractor={keyExtractor}
         initialNumToRender={6}
         windowSize={21}

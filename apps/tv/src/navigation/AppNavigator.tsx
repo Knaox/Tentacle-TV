@@ -19,6 +19,8 @@ const PreferencesScreen = React.lazy(() => import("../screens/PreferencesScreen"
 const AboutScreen = React.lazy(() => import("../screens/AboutScreen").then(m => ({ default: m.AboutScreen })));
 const LibraryScreen = React.lazy(() => import("../screens/LibraryScreen").then(m => ({ default: m.LibraryScreen })));
 const TrailerScreen = React.lazy(() => import("../screens/TrailerScreen").then(m => ({ default: m.TrailerScreen })));
+const WatchlistScreen = React.lazy(() => import("../screens/WatchlistScreen").then(m => ({ default: m.WatchlistScreen })));
+const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").then(m => ({ default: m.FavoritesScreen })));
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -85,6 +87,8 @@ export function AppNavigator() {
         />
         <Stack.Screen name="Trailer" component={TrailerScreen} />
         <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
+        <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ animation: "none" }} />
+        <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "none" }} />
         <Stack.Screen name="Preferences" component={PreferencesScreen} options={{ animation: "none" }} />
         <Stack.Screen name="About" component={AboutScreen} options={{ animation: "none" }} />
       </Stack.Navigator>

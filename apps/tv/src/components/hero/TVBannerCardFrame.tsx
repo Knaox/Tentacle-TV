@@ -1,0 +1,63 @@
+import { memo } from "react";
+import { useWindowDimensions, View, type ViewStyle } from "react-native";
+import { TV_BANNER_CARD, TV_RADIUS, withAlpha } from "@tentacle-tv/theme";
+import { Colors, Spacing } from "../../theme/colors";
+import { TVHeroAmbilight } from "./TVHeroAmbilight";
+
+interface TVBannerCardFrameProps {
+  /** Hauteur de la carte, en centièmes de la hauteur d'écran (62 accueil,
+   *  44 bibliothèque — `TV_BANNER_CARD`). */
+  heightVh: number;
+  /** Backdrop en TOUTE PETITE taille (≈128 px) : le halo est une copie floutée
+   *  à 48 px, un original fin n'apporterait rien — même économie que le web. */
+  ambilightUri?: string;
+  children: React.ReactNode;
+  style?: ViewStyle;
+}
+
+/**
+ * La carte bannière — le cadre commun de l'accueil et de la bibliothèque.
+ *
+ * Sur ces écrans, la bannière n'est pas le fond de la page : c'est le premier
+ * élément d'une liste. Une carte arrondie, cernée d'un liseré de marque et de
+ * son halo, dit cela ; une image plein écran dit « vous êtes dans une fiche »
+ * (la fiche, elle, reste plein cadre — `TV_DETAIL_BANNER`).
+ *
+ * Le halo est monté en FRÈRE PRÉCÉDENT de la carte : peint dessous, il ne
+ * dépasse que par son débordement flouté. C'est l'ordre que la LG a dû rétablir
+ * pour sa bibliothèque (`library-tv.css`) — on naît du bon côté.
+ */
+export const TVBannerCardFrame = memo(function TVBannerCardFrame({
+  heightVh,
+  ambilightUri,
+  children,
+  style,
+}: TVBannerCardFrameProps) {
+  const { height: screenH } = useWindowDimensions();
+  const height = Math.round((screenH * heightVh) / 100);
+
+  return (
+    <View style={[{ height, marginHorizontal: Spacing.rowGutter }, style]}>
+      <TVHeroAmbilight
+        uri={ambilightUri}
+        radius={TV_RADIUS.lg}
+        opacity={TV_BANNER_CARD.haloOpacite}
+      />
+      <View
+        style={{
+          flex: 1,
+          borderRadius: TV_RADIUS.lg,
+          borderWidth: 1,
+          borderColor: withAlpha(
+            Colors.accentPurple,
+            TV_BANNER_CARD.lisereOpacite,
+            "rgba(139, 92, 246, 0.22)",
+          ),
+          overflow: "hidden",
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  );
+});
