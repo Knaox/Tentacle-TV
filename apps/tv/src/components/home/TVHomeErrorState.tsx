@@ -19,7 +19,7 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: Spacing.screenPadding }}>
       <Text style={{ color: Colors.error, ...Typography.sectionTitle, marginBottom: 12 }}>
-        {t("connectionError", { defaultValue: "Connection error" })}
+        {t("connectionError")}
       </Text>
       <Text style={{ color: Colors.textMuted, ...Typography.body, textAlign: "center", marginBottom: 24 }}>
         {errorMessage ?? "Network request failed"}
@@ -36,7 +36,7 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
             }}
           >
             <Text style={{ color: Colors.bgDeep, ...Typography.buttonMedium }}>
-              {t("retry", { defaultValue: "Retry" })}
+              {t("retry")}
             </Text>
           </View>
         </Focusable>
@@ -52,7 +52,7 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
             }}
           >
             <Text style={{ color: Colors.textSecondary, ...Typography.buttonMedium }}>
-              {t("reconnect", { defaultValue: "Re-pair" })}
+              {t("reconnect")}
             </Text>
           </View>
         </Focusable>

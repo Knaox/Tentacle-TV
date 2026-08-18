@@ -135,6 +135,8 @@ export default {
   yearTo: "À",
   ratingMin: "Note minimum",
   platforms: "Plateformes",
+  connectionError: "Erreur de connexion",
+  reconnect: "Rejumeler",
   ratingAny: "Toutes",
   sortBy: "Trier par",
   sortOrder: "Ordre",
