@@ -19,8 +19,7 @@
         "Ouvrez Tentacle TV sur votre téléphone ou votre ordinateur, allez dans " +
         "Jumeler un appareil, et saisissez ce code.",
       expireDans: "Ce code expire dans",
-      chargement: "Préparation du code...",
-      attente: "Connexion à votre serveur...",
+      patience: "Chargement",
       expireTitre: "Code expiré",
       expireTexte: "Personne ne l'a saisi à temps. Demandez-en un nouveau.",
       nouveauCode: "Nouveau code",
@@ -35,8 +34,7 @@
         "Open Tentacle TV on your phone or computer, go to Pair a device, and " +
         "enter this code.",
       expireDans: "This code expires in",
-      chargement: "Preparing your code...",
-      attente: "Connecting to your server...",
+      patience: "Loading",
       expireTitre: "Code expired",
       expireTexte: "Nobody entered it in time. Ask for a new one.",
       nouveauCode: "New code",
@@ -58,6 +56,7 @@
   }
 
   function vider() {
+    document.body.classList.remove("attente");
     var conteneur = zone();
     while (conteneur.firstChild) conteneur.removeChild(conteneur.firstChild);
     return conteneur;
@@ -76,6 +75,24 @@
     noeud.onclick = action;
     if (premier) setTimeout(function () { noeud.focus(); }, 0);
     return noeud;
+  }
+
+  /**
+   * L'écran d'attente : le logo respire, un anneau tourne, aucun texte.
+   *
+   * Servi aussi bien avant la génération d'un code qu'au lancement d'une
+   * application déjà jumelée — un seul état de patience, du splash au client.
+   * L'anneau reste affiché pendant que le navigateur charge la page du
+   * client : la navigation ne remplace le document qu'à la réponse du
+   * serveur, l'animation couvre donc tout le trajet.
+   */
+  function afficherPatience() {
+    var conteneur = vider();
+    document.body.classList.add("attente");
+    var anneau = element("div", "anneau-attente");
+    anneau.setAttribute("role", "progressbar");
+    anneau.setAttribute("aria-label", t.patience);
+    conteneur.appendChild(anneau);
   }
 
   function message(titre, texte, libelleAction, action) {
@@ -144,7 +161,14 @@
    * fragment n'est envoyé nulle part.
    */
   function naviguer(adresse, jeton, utilisateur) {
-    var url = adresse + "/tv/" + global.InfoAppareil.enParametres();
+    var parametres = global.InfoAppareil.enParametres();
+    /* Le moteur web du téléviseur ressert volontiers un document déjà en
+       cache sans le revalider, malgré le `no-cache` du serveur : une URL
+       identique d'un lancement à l'autre peut figer l'appareil sur un vieux
+       bundle. L'horodatage rend chaque navigation unique — seul `index.html`
+       est retéléchargé, les ressources par empreinte restent en cache. */
+    var url = adresse + "/tv/" + parametres +
+      (parametres ? "&" : "?") + "relance=" + Date.now();
     if (jeton) {
       url += "#jeton=" + encodeURIComponent(jeton) +
         "&u=" + encodeURIComponent(utilisateur ? utilisateur.id : "") +
@@ -155,8 +179,8 @@
 
   global.VueJumelage = {
     preparer: choisirLangue,
-    afficherChargement: function () { message(t.chargement, "", null, null); },
-    afficherAttente: function () { message(t.attente, "", null, null); },
+    afficherChargement: afficherPatience,
+    afficherAttente: afficherPatience,
     afficherCode: afficherCode,
     majRebours: majRebours,
     afficherExpire: function (action) {
