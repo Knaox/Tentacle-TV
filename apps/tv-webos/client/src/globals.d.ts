@@ -15,7 +15,7 @@ declare const __MIN_SERVER_VERSION__: string;
 declare const __DIST_CHANNEL__: string;
 declare const __PLAYER_DEBUG__: boolean;
 
-/** Vrai seulement pour un build de diagnostic — voir `verif/surcoucheDebug.ts`. */
+/** Vrai seulement pour un build de diagnostic — voir `debug/debugOverlay.ts`. */
 declare const __TV_DEBUG__: boolean;
 
 /**
@@ -53,7 +53,7 @@ declare module "@/hooks/usePlaybackInfo?original" {
  * Le pont vers les services Luna, injecté par le gestionnaire d'applications.
  *
  * Il survit à la navigation de la coquille vers le serveur, alors même que la
- * page change d'origine — c'est ce qui permet à `lecture/configsTv.ts`
+ * page change d'origine — c'est ce qui permet à `playback/configsTv.ts`
  * d'interroger le matériel depuis une page servie en HTTP.
  */
 interface PalmServiceBridgeInstance {

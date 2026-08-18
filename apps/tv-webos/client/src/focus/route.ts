@@ -12,7 +12,7 @@
  * observe l'historique lui-même : `pushState` et `replaceState` sont les deux
  * seules portes par lesquelles React Router change d'adresse, et `popstate`
  * couvre le retour. C'est la même surface que celle qu'écoute déjà
- * `focus/retour.ts` de l'autre côté.
+ * `focus/back.ts` de l'autre côté.
  *
  * **On enveloppe, on ne remplace pas.** La méthode d'origine est appelée la
  * première, avec son `this` et ses arguments intacts ; nous n'ajoutons qu'une

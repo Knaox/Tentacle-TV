@@ -53,8 +53,8 @@ function CollectionTv({
       {/* `relative z-10` n'est pas décoratif : c'est ce qui remet cette page
           AU-DESSUS du décor de la carte visée.
 
-          `FondFocusTv` couvre l'écran en `position: fixed; z-index: 0`, et le
-          commentaire de `cartes-tv.css` supposait que cela suffisait à le
+          `FocusBackdropTv` couvre l'écran en `position: fixed; z-index: 0`, et le
+          commentaire de `cards-tv.css` supposait que cela suffisait à le
           garder sous le contenu. C'est faux en CSS : dans une même pile, un
           élément POSITIONNÉ à `z-index: 0` est peint après tout contenu
           statique. Les cartes, qui sont `relative`, restaient donc devant —

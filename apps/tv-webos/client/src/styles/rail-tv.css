@@ -42,7 +42,7 @@
    * figer la largeur l'a mis au jour.
    *
    * `--rail-largeur-repli` désigne désormais la colonne UTILE, celle que le
-   * contenu de la page décale (`DispositionTv`). C'est la même valeur des deux
+   * contenu de la page décale (`LayoutTv`). C'est la même valeur des deux
    * côtés, donc rien ne peut plus diverger. */
   width: calc(var(--rail-largeur-repli) + var(--tv-overscan-x));
   /* Le rail est `fixed` : il ignore le retrait d'overscan posé sur `#root` et

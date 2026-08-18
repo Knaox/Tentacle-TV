@@ -2,8 +2,8 @@ import { useCallback, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
-import { useEntreesRail, entreeActive } from "./entreesRail";
-import { RailEntree } from "./RailEntree";
+import { useEntreesRail, entreeActive } from "./railEntries";
+import { RailEntree } from "./RailEntry";
 
 /**
  * Navigation principale du téléviseur.

@@ -19,6 +19,7 @@
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
     "@tentacle-tv/theme": "workspace:*",
+    "@tentacle-tv/tv-core": "workspace:*",
     "i18next": "^25.8.13",
     "nativewind": "^4.1.0",
     "react": "18.3.1",

@@ -51,7 +51,7 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // pour les plugins, monte le panneau de diagnostic et le cadre de fenêtre du
   // bureau. Le téléviseur a son propre point d'entrée ; les quinze modules qui
   // importent `backendUrl` d'ici n'ont besoin que de cette valeur.
-  [resolve(WEB, "main.tsx")]: resolve(CLIENT, "shims/contexteApp.ts"),
+  [resolve(WEB, "main.tsx")]: resolve(CLIENT, "shims/appContext.ts"),
 
   // Sort du graphe les écrans qui n'ont pas de sens sur un téléviseur. C'est
   // ce qui retire réellement leur code du bundle, sans toucher au routeur.
@@ -64,14 +64,14 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // cartes du web sans les recopier. `ContinueWatchingRow` important la
   // rangée, l'accueil, la bibliothèque, la liste, les favoris et les extras de
   // fiche basculent d'un coup.
-  [resolve(WEB, "components/rows/MediaRow.tsx")]: resolve(CLIENT, "ui/rangees/RangeeTv.tsx"),
-  [resolve(WEB, "components/LibraryGridCard.tsx")]: resolve(CLIENT, "ui/cartes/CarteGrilleTv.tsx"),
+  [resolve(WEB, "components/rows/MediaRow.tsx")]: resolve(CLIENT, "ui/rows/RowTv.tsx"),
+  [resolve(WEB, "components/LibraryGridCard.tsx")]: resolve(CLIENT, "ui/cards/GridCardTv.tsx"),
 
   // Ma liste et Favoris passaient au travers : leur carte n'est ni la rangée ni
   // la grille de bibliothèque. Mesuré sur `/tv/favorites`, cinq focusables hors
   // rail — retour et filtres — et zéro carte, pour une carte affichée.
   [resolve(WEB, "components/collection/CollectionGridCard.tsx")]:
-    resolve(CLIENT, "ui/cartes/CarteCollectionTv.tsx"),
+    resolve(CLIENT, "ui/cards/CollectionCardTv.tsx"),
 
   // Ma liste et Favoris : la sélection multiple et le partage quittent la
   // cible. Le premier sortait TOUTES les cartes du parcours du D-pad dès qu'on
@@ -94,20 +94,20 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // ne pas compiler la sélection multiple, « marquer la saison comme vue » et
   // les téléchargements, qui n'ont pas de sens à la télécommande.
   [resolve(WEB, "components/EpisodeList.tsx")]:
-    resolve(CLIENT, "ui/episodes/ListeEpisodesTv.tsx"),
+    resolve(CLIENT, "ui/episodes/EpisodeListTv.tsx"),
 
   // La barre horizontale du web oblige à traverser tout l'écran pour changer
   // de section, et sa barre d'onglets mobile se déclenche sous 768 px. Le
   // téléviseur navigue par un rail latéral, toujours présent et déployé au
   // focus.
-  [resolve(WEB, "components/AppLayout.tsx")]: resolve(CLIENT, "ui/DispositionTv.tsx"),
+  [resolve(WEB, "components/AppLayout.tsx")]: resolve(CLIENT, "ui/LayoutTv.tsx"),
 
   // Les pastilles d'indicateur de la bannière sont des boutons de quatre pixels
   // de haut, posés sur le trajet du D-pad entre la bannière et la première
   // rangée. Viser une pastille n'apporte rien qu'un appui sur gauche ou droite
   // ne fasse déjà : elles restent affichées, mais cessent d'être des cibles.
   [resolve(WEB, "components/hero/HeroIndicators.tsx")]:
-    resolve(CLIENT, "ui/heros/JaugeBanniereTv.tsx"),
+    resolve(CLIENT, "ui/hero/BannerGaugeTv.tsx"),
 
   // Deux des cinq sections de réglages ouvraient l'écran « Indisponible » :
   // leurs écrans ne sont pas compilés ici. Une section qui mène à une
@@ -115,80 +115,80 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // dont une nouvelle qui recueille ce que la barre du haut emportait avec elle
   // — « À propos », et la déconnexion.
   [resolve(WEB, "components/settings/SettingsLayout.tsx")]:
-    resolve(CLIENT, "ui/reglages/ReglagesTv.tsx"),
+    resolve(CLIENT, "ui/settings/SettingsTv.tsx"),
 
   // L'apparence, figée en sombre. Ce module est le point de passage unique du
   // schéma de couleurs — `useThemeMode`, `ThemeProvider` et la section
   // Apparence en dépendent tous. Un téléviseur n'a pas de réglage système
   // clair/sombre à suivre : `prefers-color-scheme` n'y est pas renseigné, et le
   // mode clair n'a aucun emploi dans une pièce dont on a baissé la lumière.
-  [resolve(WEB, "theme/colorScheme.ts")]: resolve(CLIENT, "shims/themeSombre.ts"),
+  [resolve(WEB, "theme/colorScheme.ts")]: resolve(CLIENT, "shims/darkTheme.ts"),
 
   // `LibraryGrid` pose ses colonnes en style EN LIGNE, invisible aux passes
   // PostCSS comme à la garde de compatibilité : le build passe, et la grille
   // s'effondre sur la dalle. Ce hook est le seul endroit d'où la largeur est
-  // déjà connue — il la publie, la feuille `grille-tv.css` fait le reste, et le
+  // déjà connue — il la publie, la feuille `grid-tv.css` fait le reste, et le
   // composant de 258 lignes n'est pas forké pour une déclaration.
-  [resolve(WEB, "hooks/useItemsPerRow.ts")]: resolve(CLIENT, "ui/grille/colonnesTv.ts"),
+  [resolve(WEB, "hooks/useItemsPerRow.ts")]: resolve(CLIENT, "ui/grid/columnsTv.ts"),
 
   // Le survol, côté JavaScript. `passeSurvol` retire les règles `:hover` de la
   // feuille ; ces trois hooks portent ce que le CSS ne peut pas atteindre — les
   // gestionnaires `onMouseEnter` qui font basculer `data-hovered`, le panneau
   // d'aperçu, et un écouteur `pointermove` global posé À L'IMPORT du module.
   // Sur un téléviseur, le focus est la seule sélection ; le clic de la Magic
-  // Remote, lui, reste actif (`focus/curseur.ts`).
-  [resolve(WEB, "components/cards/useHoverPreview.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
-  [resolve(WEB, "hooks/useHoverGuard.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
-  [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/survolInerte.ts"),
+  // Remote, lui, reste actif (`focus/cursor.ts`).
+  [resolve(WEB, "components/cards/useHoverPreview.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
+  [resolve(WEB, "hooks/useHoverGuard.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
+  [resolve(WEB, "hooks/useHoverMount.ts")]: resolve(CLIENT, "shims/inertHover.ts"),
 
   // Les deux calques d'élévation de `.media-tile` sont pilotés par l'ATTRIBUT
   // `data-hovered`, hors de portée de toute passe CSS, et le lift est un
   // `transform` en style en ligne. Le cadre étant le point de passage unique de
   // toutes les cartes — affiches, vignettes, bibliothèque, collections — une
   // seule substitution les couvre.
-  [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cartes/CadreCarteTv.tsx"),
+  [resolve(WEB, "components/cards/CardFrame.tsx")]: resolve(CLIENT, "ui/cards/CardFrameTv.tsx"),
 
   // La largeur en ligne d'une carte. Le repli du web est un `clamp()`, que
   // Chrome 53 ne reconnaît pas — il jette alors la DÉCLARATION, pas seulement
   // la valeur, et la carte prend la largeur de son titre.
   [resolve(WEB, "components/cards/cardWidthStyle.ts")]:
-    resolve(CLIENT, "ui/cartes/largeurCarteTv.ts"),
+    resolve(CLIENT, "ui/cards/cardWidthTv.ts"),
 
   // La densité de la dalle. Le client compose à 1280 et le téléviseur agrandit
   // vers 1920 : une image demandée à sa taille CSS arrive aux deux tiers de la
   // résolution où elle est affichée, et tout le rendu paraît mou.
-  [resolve(API, "net/pixelDensity.ts")]: resolve(CLIENT, "shims/densitePixels.ts"),
+  [resolve(API, "net/pixelDensity.ts")]: resolve(CLIENT, "shims/pixelDensity.ts"),
 
   // Le champ de recherche d'une bibliothèque. Le téléviseur a sa propre
   // recherche, en surcouche plein écran ; un `<input>` posé sous la bannière
   // faisait double emploi et ouvrait le clavier système à la première descente.
   [resolve(WEB, "components/library/LibrarySearchField.tsx")]:
-    resolve(CLIENT, "shims/inerte.ts"),
+    resolve(CLIENT, "shims/inert.ts"),
 
   // La barre de filtres devient une ZONE : y remonter depuis la grille vise le
   // filtre ACTIF, et non la pastille que l'abscisse de la carte désignait.
   [resolve(WEB, "components/LibraryFilters.tsx")]:
-    resolve(CLIENT, "ui/bibliotheque/FiltresBibliothequeTv.tsx"),
+    resolve(CLIENT, "ui/library/LibraryFiltersTv.tsx"),
 
   // Les menus de filtres d'une bibliothèque : le rôle qui piège passe sur le
   // panneau — années et note n'en avaient aucun, et le D-pad s'en échappait en
   // les laissant déployés —, la largeur devient celle d'un salon, et l'on
   // entre par l'option en cours.
   [resolve(WEB, "components/library/FilterMenu.tsx")]:
-    resolve(CLIENT, "ui/bibliotheque/MenuFiltreTv.tsx"),
+    resolve(CLIENT, "ui/library/FilterMenuTv.tsx"),
 
   // Le bloc d'actions de la fiche devient une ZONE du moteur de focus :
   // descendre depuis « Retour » ou les infos techniques atterrit sur
   // « Lecture »/« Reprendre », plus sur le trailer que l'ordonnée désignait.
   // L'enveloppe rend l'original tel quel.
   [resolve(WEB, "components/detail/DetailActions.tsx")]:
-    resolve(CLIENT, "ui/fiche/ActionsFicheTv.tsx"),
+    resolve(CLIENT, "ui/detail/DetailActionsTv.tsx"),
 
   // La rangée des extras : son conteneur de défilement gagne `data-tv-piste`
   // — confinement horizontal, défilement suivi — et perd le `tabIndex` qui en
   // faisait une grande cible sans anneau.
   [resolve(WEB, "components/detail/ExtrasRow.tsx")]:
-    resolve(CLIENT, "ui/fiche/RangeeExtrasTv.tsx"),
+    resolve(CLIENT, "ui/detail/ExtrasRowTv.tsx"),
 
   // Le calque d'ouverture de la fiche est une chorégraphie écrite POUR
   // framer-motion : le shim en écarte `initial`, `animate` et `transition`, et
@@ -198,61 +198,61 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // disparition sèche. Ce qui le remplace existe déjà : `tv.css` anime
   // `#root > *` en opacité sur 180 ms.
   [resolve(WEB, "components/detail/DetailOpenOverlay.tsx")]:
-    resolve(CLIENT, "ui/fiche/CalqueOuvertureTv.tsx"),
+    resolve(CLIENT, "ui/detail/OpeningOverlayTv.tsx"),
 
   // Le profil d'appareil du téléviseur se compose des mêmes briques que celui
   // du navigateur, mais interroge `deviceInfo` en plus des sondes de codecs.
   // `construireProfil` de `usePlaybackInfo` n'est pas touché.
-  [resolve(WEB, "lib/deviceProfile/browser.ts")]: resolve(CLIENT, "lecture/profilWebos.ts"),
+  [resolve(WEB, "lib/deviceProfile/browser.ts")]: resolve(CLIENT, "playback/profileWebos.ts"),
 
   // Le pendant du profil, côté lecteur : ce que le démultiplexeur de la dalle
   // n'ouvrira jamais, donc ce qui n'apparaîtra jamais dans `video.audioTracks`.
   // Un navigateur ne sait pas répondre à cette question et dit oui ; une table
   // documentée le sait, et l'appariement des pistes s'en sert pour ne pas
   // donner un rang libre à la mauvaise piste.
-  [resolve(WEB, "lib/deviceProfile/pistesLecteur.ts")]: resolve(CLIENT, "lecture/pistesPubliablesTv.ts"),
+  [resolve(WEB, "lib/deviceProfile/pistesLecteur.ts")]: resolve(CLIENT, "playback/publishableTracksTv.ts"),
 
   // Le HLS est toujours confié au moteur : la puce de la dalle décode le
   // manifeste, là où le client web a besoin de hls.js.
-  [resolve(WEB, "hooks/useNativeHlsPreference.ts")]: resolve(CLIENT, "lecture/preferenceHlsNatif.ts"),
+  [resolve(WEB, "hooks/useNativeHlsPreference.ts")]: resolve(CLIENT, "playback/nativeHlsPreference.ts"),
 
   // Le manifeste maître d'un remux Dolby Vision propose la variante copiée et
   // deux replis ré-encodés en SDR, tous au MÊME débit annoncé. Le lecteur de
   // webOS 23 ne les départage pas et se trompe une fois sur trois — au prix de
   // la plage dynamique ET d'un ré-encodage 4K. L'enveloppe désigne la variante
   // elle-même ; tout le reste du hook est celui du web.
-  [resolve(WEB, "hooks/usePlaybackInfo.ts")]: resolve(CLIENT, "lecture/playbackInfoTv.ts"),
+  [resolve(WEB, "hooks/usePlaybackInfo.ts")]: resolve(CLIENT, "playback/playbackInfoTv.ts"),
 
   // Les filets de lecture. Ceux du web suffisent à un navigateur, dont le profil
   // d'appareil vient d'une sonde ; celui du téléviseur vient d'une table
   // documentée, et une table finit par se tromper. L'enveloppe ajoute l'échelle
-  // de replis de `repliLecture.ts`, déclenchée par l'erreur média — le seul
+  // de replis de `playbackFallback.ts`, déclenchée par l'erreur média — le seul
   // signal qui dise sans ambiguïté que la puce a refusé le flux.
   [resolve(WEB, "hooks/useWebPlaybackFallbacks.ts")]:
-    resolve(CLIENT, "lecture/repliLectureTv.ts"),
+    resolve(CLIENT, "playback/playbackFallbackTv.ts"),
 
   // La barre de contrôle du web est une rangée de cibles de 44 px, un curseur
   // de volume révélé au survol, du plein écran et de l'incrustation d'image :
   // aucune de ces décisions ne survit à trois mètres. Ce qu'on remplace est du
   // dessin — le seek reste celui de `useSmartSeek`, câblé par les propriétés.
-  [resolve(WEB, "components/PlayerControls.tsx")]: resolve(CLIENT, "lecture/ControlesTv.tsx"),
+  [resolve(WEB, "components/PlayerControls.tsx")]: resolve(CLIENT, "playback/ControlsTv.tsx"),
 
   // Le badge de saut, cumulatif. Le dessin du web est repris tel quel — c'est
   // le comptage qui change : on n'appuie pas une fois sur « +30 » à trois
   // mètres, on appuie trois fois, et trois fois « +30 s » laisse l'addition à
   // l'utilisateur.
-  [resolve(WEB, "components/SkipBadge.tsx")]: resolve(CLIENT, "lecture/BadgeSautTv.tsx"),
+  [resolve(WEB, "components/SkipBadge.tsx")]: resolve(CLIENT, "playback/BadgeSkipTv.tsx"),
 
   // Les boutons « passer l'intro / le générique » sont ancrés à vingt-quatre
   // pixels du bord — dans l'overscan — et paraissent quand l'habillage est
   // éteint, donc quand le moteur de focus s'est retiré de la route. Tout le
   // reste des surcouches convient tel quel.
-  [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(CLIENT, "lecture/SurcouchesTv.tsx"),
+  [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(CLIENT, "playback/OverlaysTv.tsx"),
 
   // La carte « épisode suivant » : même correction d'ancrage et de portée. Son
   // COMPORTEMENT, lui, est déjà celui d'`apps/tv` — seuil au `maxResumePct` de
   // Jellyfin, décompte de dix secondes — et vient du client web tel quel.
-  [resolve(WEB, "components/AutoPlayOverlay.tsx")]: resolve(CLIENT, "lecture/CarteSuivantTv.tsx"),
+  [resolve(WEB, "components/AutoPlayOverlay.tsx")]: resolve(CLIENT, "playback/NextCardTv.tsx"),
 
   // Ce qui DÉCLENCHE cette carte, en revanche, ne suffisait pas ici. Elle tient
   // à un segment « Outro » déclaré dans Jellyfin, que beaucoup de bibliothèques
@@ -261,17 +261,17 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // l'épisode s'achevait sans que rien ne soit proposé — devant une
   // télécommande posée à trois mètres. L'enveloppe ajoute le filet, et rien
   // d'autre.
-  [resolve(WEB, "hooks/useAutoNextCountdown.ts")]: resolve(CLIENT, "lecture/carteFinTv.ts"),
+  [resolve(WEB, "hooks/useAutoNextCountdown.ts")]: resolve(CLIENT, "playback/endCardTv.ts"),
 
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,
   // et l'habillage s'éteindrait au bout de trois secondes sans jamais revenir.
-  [resolve(WEB, "hooks/useControlsAutoHide.ts")]: resolve(CLIENT, "lecture/masquageAutoTv.ts"),
+  [resolve(WEB, "hooks/useControlsAutoHide.ts")]: resolve(CLIENT, "playback/autoHideTv.ts"),
 
   // Cap automatique de qualité : inerte au navigateur, actif au téléviseur —
   // mesure du débit réel (BitrateTest) et palier imposé quand la connexion ne
   // porte pas le fichier, « Originale » seulement (un choix manuel prime).
-  [resolve(WEB, "lib/politiqueDebit.ts")]: resolve(CLIENT, "lecture/politiqueDebitTv.ts"),
+  [resolve(WEB, "lib/politiqueDebit.ts")]: resolve(CLIENT, "playback/bitratePolicyTv.ts"),
 
   // Hôte des plugins : une iframe qui charge un bundle distant.
   [resolve(WEB, "components/PluginIframe.tsx")]: resolve(CLIENT, "shims/pluginIframe.ts"),
@@ -284,16 +284,16 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   [resolve(WEB, "watchTogether/WatchTogetherProvider.tsx")]: resolve(CLIENT, "shims/watchTogether.ts"),
 
   // Téléchargements hors ligne : le stockage d'un téléviseur ne s'y prête pas.
-  [resolve(WEB, "downloads/DownloadsEngineBoot.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
-  [resolve(WEB, "downloads/DownloadsEvents.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
+  [resolve(WEB, "downloads/DownloadsEngineBoot.tsx")]: resolve(CLIENT, "shims/inert.ts"),
+  [resolve(WEB, "downloads/DownloadsEvents.tsx")]: resolve(CLIENT, "shims/inert.ts"),
 
   // Le bouton de téléchargement de la fiche s'efface déjà sans le droit
   // Jellyfin, mais son import tirait tout l'arbre des téléchargements dans le
   // graphe de la fiche média.
-  [resolve(WEB, "downloads/DetailDownloadAction.tsx")]: resolve(CLIENT, "shims/inerte.ts"),
+  [resolve(WEB, "downloads/DetailDownloadAction.tsx")]: resolve(CLIENT, "shims/inert.ts"),
 
   // Outils de développement montés à la racine par `App.tsx`.
-  [resolve(WEB, "dev/soakPlayer.tsx")]: resolve(CLIENT, "shims/harnaisDev.ts"),
-  [resolve(WEB, "dev/autoWatch.tsx")]: resolve(CLIENT, "shims/harnaisDev.ts"),
+  [resolve(WEB, "dev/soakPlayer.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
+  [resolve(WEB, "dev/autoWatch.tsx")]: resolve(CLIENT, "shims/devHarness.ts"),
   [resolve(WEB, "dev/FrameMeter.tsx")]: resolve(CLIENT, "shims/frameMeter.ts"),
 };

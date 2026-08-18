@@ -38,7 +38,7 @@ export default defineConfig({
   // En production le backend sert lui-même cette variante — même origine, appels
   // relatifs, cookie de session same-site. Ici les deux sont séparés, et le proxy
   // rétablit cette origine unique : sans lui, le `/api/jellyfin` relatif de
-  // `shims/contexteApp.ts` partirait sur le port de Vite, où rien n'écoute.
+  // `shims/appContext.ts` partirait sur le port de Vite, où rien n'écoute.
   //
   // Un port distinct de celui du client web (5174) pour que les deux tournent
   // ensemble : sur cette cible on compare en permanence ce que le téléviseur

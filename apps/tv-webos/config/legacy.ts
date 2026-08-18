@@ -12,7 +12,7 @@
  * passage les objets manquants du langage (`Object.entries`, `padStart`,
  * `flatMap`, `Promise.allSettled`, `Array.at`…). Les API du DOM absentes ne
  * sont PAS de son ressort : `AbortController`, `ResizeObserver` et
- * `Element.scrollBy` sont chargés par `client/src/amorce/polyfills.ts`.
+ * `Element.scrollBy` sont chargés par `client/src/bootstrap/polyfills.ts`.
  */
 export const SOCLE_NAVIGATEUR = ["chrome >= 53"];
 

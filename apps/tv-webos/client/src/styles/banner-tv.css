@@ -1,0 +1,111 @@
+/* La bannière, à la hauteur d'un écran de salon.
+ *
+ * Le client web lui donne 76 % de la hauteur visible. Sur un moniteur, la
+ * première rangée affleure sous le pli et l'on comprend qu'il y a autre chose
+ * dessous. Sur un canevas de 720, elle tombait à `y = 618` : rien ne dépassait,
+ * et rien n'indiquait qu'on pouvait descendre — le défaut qu'on répare ici.
+ *
+ * 62 % laisse la première rangée entamer l'écran d'une centaine de pixels.
+ * C'est l'amorce que toutes les interfaces de salon ménagent : elle ne montre
+ * pas le contenu, elle montre qu'il y en a.
+ *
+ * Sélecteurs d'attribut, spécificité (0,1,0) comme les utilitaires qu'ils
+ * remplacent, et cette feuille est chargée après : pas de `!important`.
+ */
+
+/* La bannière d'accueil reste une CARTE.
+ *
+ * Elle a été mise en plein cadre un moment, par analogie avec les bibliothèques
+ * et la fiche. C'était une erreur de lecture : sur l'accueil, la bannière n'est
+ * pas le fond de l'écran, c'est le premier ÉLÉMENT d'une liste — la rangée qui
+ * la suit commence juste en dessous. Une carte posée sur la page, arrondie et
+ * cernée de sa lueur, dit cela ; une image plein écran dit « vous êtes dans une
+ * fiche ». Le client web fait exactement cette distinction, et elle vaut aussi
+ * à trois mètres.
+ *
+ * D'où le maintien de `--hero-frame-radius` et `--hero-frame-ring` tels que le
+ * thème les définit, et du halo d'`HeroAmbilight` qui déborde tout autour. Les
+ * bannières de bibliothèque et de fiche, elles, vont bien d'un bord à l'autre —
+ * voir `library-tv.css` et `detail-tv.css`. */
+[data-hero-frame] {
+  height: 62vh;
+}
+
+/* La gouttière de la bannière cesse de peindre du noir.
+ *
+ * La `<section>` qui porte la carte peint `--surface-0` — un noir opaque — sur
+ * toute sa surface, y compris ses 56 px de gouttière. Entre le rail, qui
+ * s'arrête à 154, et la carte, qui commence à 210, cela dessinait un rectangle
+ * noir franc collé à la navigation : le « carré » signalé.
+ *
+ * Sur un navigateur le défaut n'existe pas, la page ayant exactement cette
+ * couleur. Ici, le fond porte le dégradé de marque et la lueur de la carte le
+ * traverse — un aplat opaque par-dessus coupe les deux net. La section est donc
+ * transparente : la carte garde son cadre et son halo, la page garde son fond.
+ *
+ * `section.bg-surface-0` ne désigne qu'elle : vérifié, une seule occurrence
+ * dans le document, les deux autres porteurs de la classe étant des `<div>`. */
+section.bg-surface-0 {
+  background: transparent;
+}
+
+/* Le bloc de texte remonte d'autant, sinon il se décolle du bas du cadre. */
+[data-hero-frame] .max-w-xl {
+  max-width: 46rem;
+}
+
+/* Les flèches de défilement de la bannière sont montées au survol — elles
+   n'entrent jamais dans le document sur une dalle. Le rail des indicateurs,
+   lui, reste : il dit combien de mises en avant existent et où l'on en est. */
+
+/* ── Le fondu entre deux mises en avant ──────────────────────────────────
+ *
+ * `HeroBackdrop` s'appuyait sur `AnimatePresence` pour faire coexister l'image
+ * sortante et l'entrante une seconde deux durant. Sous le shim, ce composant
+ * est un fragment : il ne diffère aucun démontage, l'ancienne image disparaît
+ * net et la nouvelle apparaît sèchement.
+ *
+ * On ne le rétablit pas — on fait mieux pour cette cible. L'image est keyée sur
+ * l'identifiant de l'item : changer de diapositive remonte donc un ÉLÉMENT
+ * neuf, et une animation posée dessus rejoue par construction. La nouvelle
+ * entre en fondu par-dessus le voile permanent du cadre, et à aucun moment deux
+ * images plein écran ne sont composées ensemble — ce que le commentaire du
+ * composant web appelle « le moment le plus cher de toute l'application ».
+ *
+ * Opacité seule : rien à repeindre, et l'animation ne tourne pas en boucle.
+ * Elle joue une fois par diapositive, puis s'arrête d'elle-même. */
+[data-hero-frame] img {
+  animation: banniere-tv-fondu 700ms ease-out both;
+}
+
+/* ── Les coins du cadre, que le rognage ne tenait pas ─────────────────────
+ *
+ * Le cadre porte `overflow: hidden` et son rayon, et cela suffit partout
+ * ailleurs. Pas ici : **Chrome 53 ne fait pas suivre le `border-radius` d'un
+ * parent `overflow: hidden` par un descendant COMPOSÉ**. Or l'image ci-dessus a
+ * précisément sa propre couche — c'est l'animation d'opacité qui la lui donne —
+ * et elle était donc peinte CARRÉE par-dessus les coins arrondis. La bannière
+ * sortait à angles droits sur la dalle, ronde au navigateur, sans qu'aucune
+ * mesure ne diffère : le rayon calculé du cadre valait bien 20 px des deux
+ * côtés.
+ *
+ * On donne donc le rayon aux calques eux-mêmes. `> *` couvre le fond, le voile
+ * et le bloc de texte — tous plein cadre —, et l'`img` est visée en propre
+ * parce qu'elle est imbriquée plus bas. Le jeton est celui du cadre : un seul
+ * endroit décide de la forme.
+ *
+ * `overflow: hidden` reste sur le cadre : il porte encore le rognage de tout ce
+ * qui n'est pas composé, et le retirer laisserait déborder le reste. */
+[data-hero-frame] > *,
+[data-hero-frame] img {
+  border-radius: var(--hero-frame-radius);
+}
+
+@keyframes banniere-tv-fondu {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

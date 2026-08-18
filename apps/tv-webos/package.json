@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite --config config/vite.config.ts",
     "build": "vite build --config config/vite.config.ts",
+    "tokens": "vite-node scripts/tvTokens.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "ipk": "node scripts/ipk.mjs",
@@ -20,6 +21,7 @@
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
     "@tentacle-tv/theme": "workspace:*",
+    "@tentacle-tv/tv-core": "workspace:*",
     "@tentacle-tv/ui": "workspace:*",
     "@tentacle-tv/web": "workspace:*",
     "react": "^19.0.0",

@@ -1,10 +1,10 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
-import { EcranIndisponible } from "./ecranIndisponible";
-import { EcranNonJumele } from "../ui/ecrans/EcranNonJumele";
-import { EcranCompteTv } from "../ui/reglages/EcranCompteTv";
-import { EcranAProposTv } from "../ui/reglages/EcranAProposTv";
-import { EcranLectureTv } from "../ui/reglages/EcranLectureTv";
+import { EcranIndisponible } from "./unavailableScreen";
+import { EcranNonJumele } from "../ui/screens/UnpairedScreen";
+import { EcranCompteTv } from "../ui/settings/AccountScreenTv";
+import { EcranAProposTv } from "../ui/settings/AboutScreenTv";
+import { EcranLectureTv } from "../ui/settings/PlaybackScreenTv";
 
 /**
  * Sécurité n'existe plus, mais son adresse reste déclarée dans `App.tsx` — et

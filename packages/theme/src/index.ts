@@ -93,3 +93,39 @@ export {
 } from "./schemes";
 
 export { darken, hexToRgb, withAlpha, type Rgb } from "./utils/color";
+
+// ─── Couche téléviseur ──────────────────────────────────────────────────────
+//
+// Source unique des valeurs du salon, partagée par la LG (en variables CSS) et
+// par Apple TV / Android TV (en nombres). Voir `tokens/tv.ts`.
+
+export {
+  TV_THEME_TOKEN_OVERRIDES,
+  TV_THEME_TOKEN_OVERRIDES_LIGHT,
+} from "./tokens/tv";
+
+export {
+  TV_HERO_AMBILIGHT,
+  TV_HERO_SCRIM_DIAGONAL,
+  TV_OVERSCAN,
+  TV_PLAYER_LAYERS,
+  TV_PLAYER_LAYER_VAR_NAMES,
+  tvOnlyCssVarEntries,
+} from "./tokens/tvOnly";
+
+export {
+  parseMs,
+  parsePx,
+  parseScale,
+  parseShadow,
+  type NativeShadow,
+} from "./native/units";
+
+export {
+  TV_AMBILIGHT_BLUR,
+  TV_COLORS,
+  TV_LAYERS,
+  TV_OVERSCAN_PT,
+  TV_RADIUS,
+  TV_SHADOW,
+} from "./native/tvTokens";

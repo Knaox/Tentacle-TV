@@ -13,20 +13,20 @@
 @import "./tokens-tv.css";
 @import "./focus.css";
 @import "./rail-tv.css";
-@import "./banniere-tv.css";
-@import "./cartes-tv.css";
+@import "./banner-tv.css";
+@import "./cards-tv.css";
 @import "./collections-tv.css";
-@import "./grille-tv.css";
-@import "./recherche-tv.css";
-@import "./lecteur-tv.css";
-@import "./lecteur-osd-tv.css";
-@import "./lecteur-scrub-tv.css";
-@import "./lecteur-panneaux-tv.css";
-@import "./lecteur-saut-tv.css";
-@import "./bibliotheque-tv.css";
-@import "./fiche-tv.css";
-@import "./jumelage-tv.css";
-@import "./reglages-tv.css";
+@import "./grid-tv.css";
+@import "./search-tv.css";
+@import "./player-tv.css";
+@import "./player-osd-tv.css";
+@import "./player-scrub-tv.css";
+@import "./player-panels-tv.css";
+@import "./player-skip-tv.css";
+@import "./library-tv.css";
+@import "./detail-tv.css";
+@import "./pairing-tv.css";
+@import "./settings-tv.css";
 
 /* ── Police ───────────────────────────────────────────────────────────────
  *

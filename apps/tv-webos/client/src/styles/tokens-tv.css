@@ -1,96 +1,42 @@
 /* Jetons du téléviseur — ce que la distance de lecture change.
  *
- * Posés APRÈS `index.css`, donc après `theme/tokens.css` : mêmes noms, mêmes
- * rôles, valeurs adaptées. Rien n'est ajouté au vocabulaire du thème, ce qui
- * garde le contrat vérifié par `packages/theme/src/css/cssVars.test.ts` intact.
+ * FICHIER ENGENDRÉ — ne pas éditer à la main.
+ * Source : packages/theme/src/tokens/tv.ts et tvOnly.ts, où vivent aussi
+ * les commentaires qui justifient chaque valeur.
+ * Régénérer : pnpm --filter @tentacle-tv/tv-webos tokens
+ *
+ * Posés APRÈS `index.css`, donc après `theme/tokens.css` : mêmes noms,
+ * mêmes rôles, valeurs adaptées. Rien n'est ajouté au vocabulaire du thème,
+ * ce qui garde intact le contrat vérifié par `cssVars.test.ts`.
  *
  * Le thème du serveur peut encore surcharger ces valeurs à l'exécution — le
  * fournisseur écrit ses variables sur `:root` en style en ligne, qui l'emporte
  * sur toute feuille. C'est voulu : un téléviseur doit suivre le thème choisi
- * par l'utilisateur, il n'a pas à en imposer un autre.
- */
+ * par l'utilisateur, il n'a pas à en imposer un autre. */
 
 :root {
-  /* ── Surfaces opaques ─────────────────────────────────────────────────
-   *
-   * Sur le web, ces surfaces sont translucides parce qu'un flou d'arrière-plan
-   * les rend lisibles. Ce flou n'arrive qu'avec Chrome 76, et la passe
-   * `verre` l'a retiré : sans opacité, une barre de navigation ou un menu
-   * contextuel laisserait voir l'affiche nette qui passe dessous. À trois
-   * mètres, plus rien n'est lisible.
-   *
-   * L'alpha ne descend jamais sous 1 : le compositeur d'un téléviseur paie
-   * chaque couche transparente, et il n'y a rien à gagner à en laisser. */
-  --glass-tint: #14141a;
-  --glass-tint-strong: #0a0a12;
-  --glass-panel: #0a0a0a;
-  --glass-backdrop: rgba(0, 0, 0, 0.86);
-
+  --surface-overlay: rgba(0, 0, 0, 0.86);
   --surface-modal: #0f0f15;
   --surface-dropdown: #14141a;
   --surface-sheet: #0f0f15;
   --surface-toolbar: #14141a;
-  --surface-overlay: rgba(0, 0, 0, 0.86);
-
-  /* ── Bordures ─────────────────────────────────────────────────────────
-   *
-   * Relevées : une bordure à 8 % d'opacité disparaît sur une dalle vue de
-   * loin, et c'est elle qui sépare une carte de son voisin. */
   --border-subtle: rgba(255, 255, 255, 0.18);
   --border-strong: rgba(255, 255, 255, 0.32);
   --border-focus: rgba(var(--brand-rgb), 1);
-
-  /* ── Ombres franches ──────────────────────────────────────────────────
-   *
-   * Portées plus loin et plus denses. Une ombre douce ne se voit pas de loin ;
-   * ce qui se voit, c'est le décollement — et c'est lui qui dit quelle carte
-   * porte le focus. */
+  --glass-tint: #14141a;
+  --glass-tint-strong: #0a0a12;
+  --glass-panel: #0a0a0a;
+  --glass-backdrop: rgba(0, 0, 0, 0.86);
   --elev-1: 0 6px 18px rgba(0, 0, 0, 0.6);
   --elev-2: 0 12px 36px rgba(0, 0, 0, 0.72);
   --elev-3: 0 24px 64px rgba(0, 0, 0, 0.85);
-
-  /* ── Rayons ───────────────────────────────────────────────────────────
-   *
-   * Agrandis proportionnellement aux surfaces : un rayon de 4 px sur une carte
-   * de 300 px de large ne se lit pas comme un arrondi mais comme un défaut. */
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-xl: 26px;
-
-  /* ── Zone d'overscan ──────────────────────────────────────────────────
-   *
-   * Un téléviseur rogne jusqu'à 5 % de chaque bord, et rien ne permet de
-   * savoir combien. Ce retrait remplace `env(safe-area-inset-*)`, que le
-   * moteur d'une dalle ne renseigne pas.
-   *
-   * 5 % de 1920 et de 1080. Les valeurs précédentes — 64 et 36 — étaient 5 %
-   * de 1280 × 720 : elles datent du canevas que le client a porté quatre jours
-   * et qu'il a quitté depuis. Le canevas fait maintenant 1920 et la dalle ne
-   * l'agrandit plus (mesuré : rapport de 1,00), si bien que le retrait valait
-   * 64 pixels PHYSIQUES au lieu de 96 — les deux tiers de ce qu'il annonce. */
   --tv-overscan-x: 96px;
   --tv-overscan-y: 54px;
-
-  /* ── L'échelle du lecteur ─────────────────────────────────────────────
-   *
-   * Le lecteur empile sept choses sur une vidéo, réparties dans DEUX arbres
-   * React : l'habillage vit sous l'enveloppe d'opacité de `VideoPlayer`, les
-   * surcouches (saut, carte « à suivre ») en sont les frères. Rien ne garantit
-   * donc leur ordre de peinture — sauf ce qui est écrit ici.
-   *
-   * L'habillage n'avait AUCUN z-index : il se peignait à l'étape du flux, donc
-   * sous chacune des surcouches que le client web porte de son côté (10 pour
-   * le tampon et l'écran de chargement, 20 pour la pilule de son, 30 pour les
-   * badges, 40 pour le bouton de reprise, 50 pour les boutons « passer »). Un
-   * panneau ouvert passait sous sa propre barre de progression, et l'écran de
-   * chargement recouvrait un habillage déjà focalisé.
-   *
-   * L'échelle part donc AU-DESSUS de celles du web plutôt que de s'y mêler :
-   * ce qui appartient au lecteur téléviseur se trie entre soi, et le reste
-   * demeure dessous. Ne pas réutiliser ces valeurs ailleurs — hors lecteur,
-   * l'échelle du portage va de 1 (cartes) à 100 (recherche). */
   --z-lecteur-vignette: 100;
   --z-lecteur-voile: 110;
   --z-lecteur-osd: 120;
@@ -98,85 +44,23 @@
   --z-lecteur-suivant: 140;
   --z-lecteur-assombrissement: 150;
   --z-lecteur-panneau: 160;
-
-  /* ── Halo de bannière : NE PAS toucher au flou ────────────────────────
-   *
-   * `--hero-ambilight-blur` a été baissé une fois, de 48 à 22 px, en croyant
-   * corriger « les fonds trop flous ». C'était une faute d'analyse : un même
-   * jeton servait à DEUX choses opposées.
-   *
-   * Le halo de bannière est une LUEUR. Il reprend l'image, la réduit, la floute
-   * et la laisse déborder tout autour du cadre — et c'est ce débordement qui
-   * fond le bord de la carte dans la page. Baisser le flou l'a rétréci sous la
-   * carte : la lueur a disparu et le cadre est apparu comme un rectangle noir
-   * posé là. Le halo doit rester très flou, c'est sa définition.
-   *
-   * Le fond d'écran au focus, lui, est une IMAGE : il doit se reconnaître. Il ne
-   * passe plus par ce composant du tout — voir `ui/heros/FondFocusTv.tsx`, qui
-   * suit désormais le modèle d'Android TV et d'Apple TV : le Backdrop net,
-   * atténué par un dégradé, sans le moindre flou.
-   *
-   * Les valeurs du client web sont donc rétablies ici, explicitement, pour que
-   * personne ne refasse le même raccourci. */
   --hero-ambilight-blur: 48px;
   --hero-ambilight-sat: 1.7;
-
-  /* ── Les voiles de bannière, allégés ──────────────────────────────────
-   *
-   * Deux jetons du client web, réglés pour une bannière qui vit dans une page
-   * opaque. Sur la cible téléviseur, la bannière va d'un bord à l'autre et le
-   * décor de la carte visée occupe le fond : les mêmes valeurs y produisent une
-   * moitié gauche éteinte et une démarcation horizontale à mi-écran.
-   *
-   * Le voile DIAGONAL montait à 0,9 d'opacité au coin bas-gauche. Il protège le
-   * titre, mais à cette dose il efface le tiers gauche de l'affiche — celui qui
-   * porte le plus souvent le sujet. Ramené à 0,62 : le titre reste lisible et
-   * l'image redevient visible.
-   *
-   * Le fondu de PAGE terminait sur la couleur de page à PLEINE opacité. C'est
-   * lui qui coupait net la bannière : en dessous, le décor du fond reprenait, et
-   * la limite se lisait comme un trait sur toute la largeur. Il s'arrête
-   * désormais à 0,6 — la bannière s'éteint DANS le fond au lieu d'y buter, et
-   * les deux se mélangent, ce qui est le comportement voulu partout. */
-  --hero-scrim-diagonal: linear-gradient(
-    72deg,
-    rgba(var(--scrim-media-rgb), 0.62) 0%,
-    rgba(var(--scrim-media-rgb), 0.38) 26%,
-    rgba(var(--scrim-media-rgb), 0.14) 48%,
-    rgba(var(--scrim-media-rgb), 0.03) 66%,
-    transparent 78%
-  );
-
-  /* PAS de `--hero-page-fade`, et c'est un RETRAIT.
-   *
-   * Le jeton n'existe que pour le thème clair : il rend une assise de page au
-   * texte thémé qu'on pose sur une affiche. Le téléviseur est figé en sombre,
-   * la raison d'être est donc vide. Il avait été ressuscité ici pour masquer un
-   * trait horizontal à mi-écran, et ce trait a été résolu autrement depuis —
-   * la bannière est devenue une carte cernée (`bibliotheque-tv.css`), et une
-   * carte n'a pas besoin d'un dégradé pour cacher son propre bord.
-   *
-   * Ce qu'il coûtait : une SIXIÈME rampe quantifiée sur huit bits, empilée sur
-   * les cinq autres dans la zone la plus sombre de l'image. Les erreurs de
-   * quantification se composent, et c'est le mécanisme de banding le mieux
-   * établi. L'accueil n'en a aucune et rend bien ; « même chemin » veut dire
-   * même chemin. */
+  --hero-scrim-diagonal: linear-gradient(72deg, rgba(var(--scrim-media-rgb), 0.62) 0%, rgba(var(--scrim-media-rgb), 0.38) 26%, rgba(var(--scrim-media-rgb), 0.14) 48%, rgba(var(--scrim-media-rgb), 0.03) 66%, transparent 78%);
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre
  * en plein jour — mais ses surfaces doivent être opaques pour les mêmes
  * raisons. */
 :root[data-theme="light"] {
-  --glass-tint: #ffffff;
-  --glass-tint-strong: #f4f4f7;
-  --glass-panel: #ffffff;
-  --glass-backdrop: rgba(0, 0, 0, 0.5);
-
   --surface-modal: #ffffff;
   --surface-dropdown: #ffffff;
   --surface-sheet: #ffffff;
   --surface-toolbar: #f4f4f7;
-
   --border-subtle: rgba(0, 0, 0, 0.16);
   --border-strong: rgba(0, 0, 0, 0.3);
+  --glass-tint: #ffffff;
+  --glass-tint-strong: #f4f4f7;
+  --glass-panel: #ffffff;
+  --glass-backdrop: rgba(0, 0, 0, 0.5);
 }

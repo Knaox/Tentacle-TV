@@ -3,7 +3,7 @@
  * Ces deux pages sont les seules du parcours à n'avoir pas de bannière : leur
  * titre et leurs onglets commencent tout en haut de l'écran, là où le décor de
  * la carte visée est le plus dense. Elles ont donc leurs propres réglages, que
- * `cartes-tv.css` — déjà long, et qui parle de cartes — n'a pas à porter.
+ * `cards-tv.css` — déjà long, et qui parle de cartes — n'a pas à porter.
  *
  * Le défaut principal ne se corrige pas ici mais dans `CollectionsTv.tsx`, qui
  * pose `relative z-10` : sans ce conteneur positionné, le décor était peint
@@ -13,7 +13,7 @@
 
 /* Le titre d'une carte de collection est un `p` tronqué par `line-clamp`, là
    où les rangées et les bibliothèques emploient un `h3` tronqué par
-   `text-overflow`. La règle de `cartes-tv.css` ne visait que la seconde : sous
+   `text-overflow`. La règle de `cards-tv.css` ne visait que la seconde : sous
    le focus, ces titres-ci restaient gris et coupés.
 
    Le dépliage se fait donc dans la technique du `line-clamp` — porter le
