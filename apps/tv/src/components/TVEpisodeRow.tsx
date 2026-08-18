@@ -5,7 +5,7 @@ import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { CheckIcon } from "./icons/TVIcons";
 import { TVMetaChips } from "./TVMetaChips";
-import { Colors, Typography, Fonts, Radius, CardConfig } from "../theme/colors";
+import { Colors, Typography, Fonts, Radius, CardConfig, brandAlpha } from "../theme/colors";
 
 interface TVEpisodeRowProps {
   episode: MediaItem;
@@ -44,9 +44,9 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
         flexDirection: "row", alignItems: "center", gap: 20,
         paddingVertical: 14, paddingHorizontal: 16,
         borderRadius: Radius.card,
-        backgroundColor: isCurrent ? "rgba(139, 92, 246, 0.14)" : "rgba(255,255,255,0.04)",
+        backgroundColor: isCurrent ? brandAlpha(0.14) : "rgba(255,255,255,0.04)",
         borderWidth: isCurrent ? 1 : 0,
-        borderColor: isCurrent ? "rgba(139, 92, 246, 0.45)" : "transparent",
+        borderColor: isCurrent ? brandAlpha(0.45) : "transparent",
       }}>
         {/* Thumbnail */}
         <View style={{
@@ -88,10 +88,10 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             {ep.IndexNumber != null && (
               <View style={{
-                backgroundColor: "rgba(139, 92, 246, 0.15)",
+                backgroundColor: brandAlpha(0.15),
                 paddingHorizontal: 8, paddingVertical: 3,
                 borderRadius: 4, borderWidth: 1,
-                borderColor: "rgba(139, 92, 246, 0.25)",
+                borderColor: brandAlpha(0.25),
               }}>
                 <Text style={{ color: Colors.textSecondary, fontSize: 13, fontWeight: "700" }}>
                   E{String(ep.IndexNumber).padStart(2, "0")}

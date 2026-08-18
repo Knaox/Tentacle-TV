@@ -5,7 +5,7 @@ import { useDevicePairGenerate, useDevicePairStatus } from "@tentacle-tv/api-cli
 import type { DevicePairStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { Colors, Radius, Typography } from "../../theme/colors";
+import { Colors, Radius, Typography, brandAlpha } from "../../theme/colors";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
 
 interface ServerCodeDisplayStepProps {
@@ -175,7 +175,7 @@ const styles = {
   codeBox: {
     width: 100,
     height: 120,
-    backgroundColor: "rgba(139, 92, 246, 0.1)",
+    backgroundColor: brandAlpha(0.1),
     borderRadius: Radius.buttonLarge,
     borderWidth: 2,
     borderColor: Colors.accentPurple,

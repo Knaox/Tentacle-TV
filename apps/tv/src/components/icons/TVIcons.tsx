@@ -1,7 +1,10 @@
-import { View } from "react-native";
 import Svg, { Path, Rect, Line, Circle, Polyline } from "react-native-svg";
 
-const C = "#c4b5fd";
+// Défaut décoratif : la teinte claire de la marque, lue sur le token vivant
+// (chaque appelant passe sa couleur — ce défaut ne sert qu'aux oublis).
+import { Colors } from "../../theme/colors";
+
+const C = Colors.accentPurpleLight;
 const S = 24;
 
 interface IconProps {
@@ -235,28 +238,6 @@ export function BookmarkFilledIcon({ size = S, color = C }: IconProps) {
   );
 }
 
-/** Tentacle logo T — custom */
-export function TentacleIcon({ size = 32, color = "#8b5cf6" }: IconProps) {
-  const s = size;
-  return (
-    <View style={{ width: s, height: s, justifyContent: "center", alignItems: "center" }}>
-      <View style={{
-        width: s * 0.7, height: s * 0.14, backgroundColor: color,
-        borderRadius: s * 0.07, position: "absolute", top: s * 0.12,
-      }} />
-      <View style={{
-        width: s * 0.18, height: s * 0.58, backgroundColor: color,
-        borderRadius: s * 0.09, position: "absolute", top: s * 0.18,
-      }} />
-      <View style={{
-        width: s * 0.28, height: s * 0.14,
-        borderBottomWidth: s * 0.1, borderRightWidth: s * 0.1,
-        borderColor: color, borderBottomRightRadius: s * 0.14,
-        position: "absolute", bottom: s * 0.08, left: s * 0.38,
-      }} />
-    </View>
-  );
-}
 
 export function MicIcon({ size = S, color = C }: IconProps) {
   return (

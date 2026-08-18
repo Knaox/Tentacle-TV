@@ -6,7 +6,7 @@ import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client"
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BRAND } from "@tentacle-tv/shared";
-import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
+import { Colors, Spacing, Typography, Radius, brandAlpha } from "../../theme/colors";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon } from "../icons/TVIcons";
 import { TVMetaChips } from "../TVMetaChips";
@@ -257,7 +257,7 @@ export const TVHeroContent = memo(function TVHeroContent({
               paddingVertical: 12,
               borderRadius: Radius.buttonLarge,
               borderWidth: 1,
-              borderColor: "rgba(139, 92, 246, 0.45)",
+              borderColor: brandAlpha(0.45),
             }}
           >
             <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>

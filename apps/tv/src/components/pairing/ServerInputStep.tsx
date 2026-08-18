@@ -3,7 +3,7 @@ import { View, Text, TextInput, ActivityIndicator } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { Colors, Radius, Typography } from "../../theme/colors";
+import { Colors, Radius, Typography, brandAlpha } from "../../theme/colors";
 
 interface ServerInputStepProps {
   serverUrl: string;
@@ -204,7 +204,7 @@ const styles = {
     borderColor: Colors.glassBorder,
   },
   langBtnActive: {
-    backgroundColor: "rgba(139,92,246,0.3)",
+    backgroundColor: brandAlpha(0.3),
     borderColor: Colors.accentPurple,
   },
   langText: {

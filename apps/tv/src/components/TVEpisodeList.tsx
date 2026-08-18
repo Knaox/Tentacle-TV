@@ -6,7 +6,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
 import { TVEpisodeRow } from "./TVEpisodeRow";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
-import { Colors, Spacing, Fonts, Radius } from "../theme/colors";
+import { Colors, Spacing, Fonts, Radius, brandAlpha } from "../theme/colors";
 
 interface TVEpisodeListProps {
   seriesId: string;
@@ -94,9 +94,9 @@ export function TVEpisodeList({
               <Focusable variant="button" focusRadius={Radius.pill} onPress={() => setSelectedSeason(season.Id)}>
                 <View style={{
                   paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
-                  backgroundColor: active ? "rgba(139, 92, 246, 0.18)" : Colors.ctaGhostBg,
+                  backgroundColor: active ? brandAlpha(0.18) : Colors.ctaGhostBg,
                   borderWidth: 1,
-                  borderColor: active ? "rgba(139, 92, 246, 0.45)" : Colors.glassBorder,
+                  borderColor: active ? brandAlpha(0.45) : Colors.glassBorder,
                 }}>
                   <Text style={{
                     color: active ? Colors.accentPurpleLight : Colors.textSecondary,

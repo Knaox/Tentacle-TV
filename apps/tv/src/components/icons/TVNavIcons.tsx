@@ -1,4 +1,5 @@
 import Svg, { Circle, Path } from "react-native-svg";
+import { Colors } from "../../theme/colors";
 
 /**
  * Icônes propres à la navigation, hors de `TVIcons.tsx` — celui-ci atteint la
@@ -8,7 +9,7 @@ import Svg, { Circle, Path } from "react-native-svg";
  * arrondies, grille de 24.
  */
 
-const COULEUR = "#c4b5fd";
+const COULEUR = Colors.accentPurpleLight;
 const TAILLE = 24;
 
 interface IconProps {

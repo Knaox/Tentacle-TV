@@ -13,7 +13,7 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { Colors, Spacing, Fonts } from "../../theme/colors";
+import { Colors, Spacing, Fonts, brandAlpha } from "../../theme/colors";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -101,7 +101,7 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
     <View pointerEvents={failed ? "auto" : "none"} style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0a0a12", zIndex: 50, elevation: 50, overflow: "hidden" }]}>
       {/* Halo brand (équivalent du gradient radial web, visible avant le backdrop) */}
       <LinearGradient
-        colors={["rgba(139,92,246,0.20)", "transparent"]}
+        colors={[brandAlpha(0.20), "transparent"]}
         start={{ x: 0.15, y: 0 }} end={{ x: 0.75, y: 0.8 }}
         style={StyleSheet.absoluteFillObject}
       />

@@ -13,7 +13,7 @@ import {
 import { navigationRef } from "../../navigation/navigationRef";
 import { doLogout } from "../../auth/sessionFlow";
 import { Focusable } from "../focus/Focusable";
-import { Colors } from "../../theme/colors";
+import { Colors, brandAlpha } from "../../theme/colors";
 
 /** Le portrait, à la taille d'une dalle regardée de loin (parité LG : 132). */
 const TAILLE_PORTRAIT = 132;
@@ -114,7 +114,7 @@ function Profil() {
           borderRadius: TAILLE_PORTRAIT / 2,
           overflow: "hidden",
           borderWidth: 1,
-          borderColor: "rgba(139, 92, 246, 0.22)",
+          borderColor: brandAlpha(0.22),
         }}
       >
         <LinearGradient
@@ -186,11 +186,11 @@ function TwoPressButton({
           paddingVertical: 14,
           borderRadius: 999,
           backgroundColor: arme
-            ? (danger ? "rgba(239, 68, 68, 0.22)" : "rgba(139, 92, 246, 0.22)")
+            ? (danger ? "rgba(239, 68, 68, 0.22)" : brandAlpha(0.22))
             : Colors.ctaGhostBg,
           borderWidth: 1,
           borderColor: arme
-            ? (danger ? "rgba(239, 68, 68, 0.6)" : "rgba(139, 92, 246, 0.6)")
+            ? (danger ? "rgba(239, 68, 68, 0.6)" : brandAlpha(0.6))
             : Colors.ctaGhostBorder,
         }}
       >

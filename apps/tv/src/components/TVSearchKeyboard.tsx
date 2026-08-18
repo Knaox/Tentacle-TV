@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { MicIcon, SpaceIcon, BackspaceIcon, CloseIcon } from "./icons/TVIcons";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { Colors, Radius } from "../theme/colors";
+import { Colors, Radius, brandAlpha } from "../theme/colors";
 
 // tvOS : Apple ne donne AUCUN accès micro programmatique aux apps tierces
 // (erreur 'nohw' au runtime, AVAudioSession record indispo). La SEULE dictée
@@ -45,7 +45,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
   const micBg = isListening
     ? Colors.accentPurple
     : isPending
-      ? "rgba(139,92,246,0.3)"
+      ? brandAlpha(0.3)
       : "rgba(255,255,255,0.08)";
 
   return (

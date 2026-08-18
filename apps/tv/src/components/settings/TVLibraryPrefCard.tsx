@@ -2,7 +2,7 @@ import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
-import { Colors } from "../../theme/colors";
+import { Colors, brandAlpha } from "../../theme/colors";
 
 export interface ReglageTv {
   cle: "audio" | "mode" | "sousTitres";
@@ -39,7 +39,7 @@ export function TVLibraryPrefCard({
       style={{
         borderRadius: TV_RADIUS.lg,
         borderWidth: 1,
-        borderColor: "rgba(139, 92, 246, 0.22)",
+        borderColor: brandAlpha(0.22),
         backgroundColor: Colors.bgSurface,
         paddingVertical: 24,
         paddingHorizontal: 28,

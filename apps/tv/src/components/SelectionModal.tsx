@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Modal } from "react-native";
 import { Focusable } from "./focus/Focusable";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { CheckIcon } from "./icons/TVIcons";
-import { Colors, Radius } from "../theme/colors";
+import { Colors, Radius, brandAlpha } from "../theme/colors";
 
 interface SelectionOption {
   value: string;
@@ -78,7 +78,7 @@ export function SelectionModal({ title, options, selectedValue, onSelect, onClos
                     flexDirection: "row", alignItems: "center",
                     paddingVertical: 14, paddingHorizontal: 16,
                     borderRadius: Radius.small, marginBottom: 2,
-                    backgroundColor: isSelected ? "rgba(139, 92, 246, 0.15)" : "transparent",
+                    backgroundColor: isSelected ? brandAlpha(0.15) : "transparent",
                   }}>
                     <View style={{ width: 28, alignItems: "center" }}>
                       {isSelected && <CheckIcon size={16} color={Colors.accentPurple} />}

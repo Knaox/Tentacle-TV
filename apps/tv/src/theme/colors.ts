@@ -1,7 +1,7 @@
 /** Tentacle TV — Premium Cinematic Design System */
 
 import { BRAND, SURFACE, TEXT, STATUS, BORDER } from "@tentacle-tv/shared";
-import { TV_BANNER_CARD } from "@tentacle-tv/theme";
+import { TV_BANNER_CARD, withAlpha } from "@tentacle-tv/theme";
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 // Brand + surface + text now come from packages/shared so web/TV/mobile
@@ -108,6 +108,15 @@ export const Colors: TvColors = {
 export { BRAND, SURFACE, TEXT, STATUS, BORDER };
 
 // ─── Spacing ─────────────────────────────────────────────────────────────────
+
+/**
+ * Teinte de marque à l'alpha donné, lue AU RENDU sur le token vivant : un
+ * littéral `rgba(139, 92, 246, …)` court-circuite `applyThemeOverride()` — un
+ * admin qui change la couleur de marque voyait ces zones rester violettes.
+ */
+export function brandAlpha(alpha: number): string {
+  return withAlpha(BRAND.violet, alpha, `rgba(139, 92, 246, ${alpha})`);
+}
 
 export const Spacing = {
   /** Padding from screen edges (TV overscan-safe). */

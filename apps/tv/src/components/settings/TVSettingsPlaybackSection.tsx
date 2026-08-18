@@ -13,7 +13,7 @@ import { Focusable } from "../focus/Focusable";
 import { SelectionModal } from "../SelectionModal";
 import { TVLibraryPrefCard, type ReglageTv } from "./TVLibraryPrefCard";
 import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "../../utils/languageKeys";
-import { Colors } from "../../theme/colors";
+import { Colors, brandAlpha } from "../../theme/colors";
 
 /**
  * Les réglages de lecture — parité `PlaybackScreenTv` (LG) : la langue de
@@ -111,8 +111,8 @@ export function TVSettingsPlaybackSection() {
                   alignItems: "center",
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: actif ? "rgba(139, 92, 246, 0.6)" : Colors.glassBorder,
-                  backgroundColor: actif ? "rgba(139, 92, 246, 0.18)" : "transparent",
+                  borderColor: actif ? brandAlpha(0.6) : Colors.glassBorder,
+                  backgroundColor: actif ? brandAlpha(0.18) : "transparent",
                   paddingHorizontal: 18,
                   paddingVertical: 12,
                 }}
