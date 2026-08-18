@@ -58,3 +58,9 @@ export const largeurEntreeDeployee = (overscanX: number): number =>
 /** Largeur de l'indice d'usage, en bas du panneau déployé. */
 export const largeurIndiceRail = (overscanX: number): number =>
   RAIL.largeurPanneau - overscanX - 20;
+
+/** Borne droite des entrées déployées. Le pont de sortie du rail (tvOS) doit
+ *  se poser AU-DELÀ : posé à la largeur repliée, sa bande chevauchait les
+ *  entrées déployées et le moteur de focus lui détournait des HAUT/BAS. */
+export const borneDroiteEntreesDeployees = (overscanX: number): number =>
+  overscanX + largeurEntreeDeployee(overscanX);

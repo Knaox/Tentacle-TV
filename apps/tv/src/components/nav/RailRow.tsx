@@ -12,7 +12,6 @@ const LARGEUR_DEPLOYEE = largeurEntreeDeployee(TV_OVERSCAN_PT.x);
 
 interface RailRowProps {
   item: RailItem;
-  index?: number;
   active: boolean;
   deploye: boolean;
   /** Opacité + translation du libellé, partagées par tout le rail. */
@@ -23,7 +22,6 @@ interface RailRowProps {
   onCollapse: () => void;
   schedulePrefetch: (libraryId: string) => void;
   cancelPrefetch: () => void;
-  makeOnFocus: (index: number, pad: number) => () => void;
   setActiveRef: (node: View | null) => void;
   captureNode?: (node: View | null) => void;
   nextFocusUp?: number;
@@ -44,14 +42,13 @@ interface RailRowProps {
  * mais recalculé à chaque image de la transition.
  */
 export const RailRow = memo(function RailRow({
-  item, index, active, deploye, labelStyle, onNavigate, onMasquer, onExpand,
-  onCollapse, schedulePrefetch, cancelPrefetch, makeOnFocus, setActiveRef,
+  item, active, deploye, labelStyle, onNavigate, onMasquer, onExpand,
+  onCollapse, schedulePrefetch, cancelPrefetch, setActiveRef,
   captureNode, nextFocusUp, nextFocusDown,
 }: RailRowProps) {
   const couleurIcone = item.danger
     ? Colors.error
     : active ? Colors.textPrimary : Colors.textSecondary;
-  const defileVers = index != null ? makeOnFocus(index, RAIL.reserveHaut) : null;
   const libraryId = item.key.startsWith("Library_")
     ? item.key.slice("Library_".length)
     : null;
@@ -75,11 +72,15 @@ export const RailRow = memo(function RailRow({
       nextFocusUp={nextFocusUp}
       nextFocusDown={nextFocusDown}
       focusRadius={TV_RADIUS.md}
+      // La largeur vit sur le FOCUSABLE, pas sur la vue interne : le fond de
+      // focus (overlay de la variante « ligne ») épouse le Pressable — posée à
+      // l'intérieur, elle débordait et le fond focus s'arrêtait à l'icône,
+      // alors que la LG surligne l'entrée déployée entière.
+      style={{ width: deploye ? LARGEUR_DEPLOYEE : RAIL.largeurRepli }}
       onPress={() => onNavigate(item.key)}
       onLongPress={item.masquable ? surMaintien : undefined}
       onFocus={() => {
         onExpand();
-        defileVers?.();
         if (libraryId) schedulePrefetch(libraryId);
       }}
       onBlur={() => { onCollapse(); if (libraryId) cancelPrefetch(); }}
@@ -91,7 +92,6 @@ export const RailRow = memo(function RailRow({
           alignItems: "center",
           height: RAIL.hauteurEntree,
           minHeight: RAIL.hauteurEntreeMin,
-          width: deploye ? LARGEUR_DEPLOYEE : RAIL.largeurRepli,
           marginBottom: RAIL.ecartEntrees,
           paddingLeft: RAIL.retraitEntree,
           borderRadius: TV_RADIUS.md,

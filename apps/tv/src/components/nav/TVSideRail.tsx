@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, Text, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
+import { View, Text, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
@@ -11,7 +11,6 @@ import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
 import { useEpinglageRail } from "./railPinning";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { useTVScrollToFocused } from "../../hooks/useTVScrollToFocused";
 import { useTVNav } from "../../context/TVNavContext";
 import { Colors, Fonts } from "../../theme/colors";
 import { Easings } from "../../theme/motion";
@@ -52,8 +51,6 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const focusCount = useRef(0);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<View>(null);
-  const itemsScrollRef = useRef<ScrollView>(null);
-  const { makeOnFocus } = useTVScrollToFocused(itemsScrollRef, RAIL.reserveHaut);
 
   // Préchargement du catalogue au focus d'une bibliothèque, temporisé :
   // traverser le rail au D-pad ne doit pas précharger tout le serveur.
@@ -147,13 +144,11 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
 
   const rendre = (
     item: (typeof haut)[number],
-    index?: number,
     pont?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
   ) => (
     <RailRow
       key={item.key}
       item={item}
-      index={index}
       active={currentRoute === item.key}
       deploye={deploye}
       labelStyle={labelStyle}
@@ -163,7 +158,6 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       onCollapse={scheduleCollapse}
       schedulePrefetch={schedulePrefetch}
       cancelPrefetch={cancelPrefetch}
-      makeOnFocus={makeOnFocus}
       setActiveRef={setActiveItemRef}
       captureNode={pont?.captureNode}
       nextFocusUp={pont?.nextFocusUp}
@@ -211,14 +205,17 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
           </Animated.View>
         </View>
 
-        <ScrollView ref={itemsScrollRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          {haut.map((item, i) => rendre(item, i,
+        {/* Le rail ne défile PAS (spec tv-core) : un ScrollView rognait les
+            libellés posés en absolu, qui débordent volontairement du rail
+            replié. Les entrées se compriment (flexShrink) jusqu'au plancher. */}
+        <View style={{ flex: 1, overflow: "visible" }}>
+          {haut.map((item, i) => rendre(item,
             Platform.OS === "android" && i === haut.length - 1
               ? { captureNode: captureLastTop, nextFocusDown: firstBottomHandle ?? undefined }
               : undefined))}
-        </ScrollView>
+        </View>
 
-        {bas.map((item, bi) => rendre(item, undefined,
+        {bas.map((item, bi) => rendre(item,
           Platform.OS === "android" && bi === 0
             ? { captureNode: captureFirstBottom, nextFocusUp: lastTopHandle ?? undefined }
             : undefined))}
