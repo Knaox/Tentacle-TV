@@ -80,7 +80,7 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
           >
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text style={{ color: Colors.textPrimary, ...Typography.sectionTitle }}>
-                {t("common:seasonsEpisodes", { defaultValue: "Saisons & Épisodes" })}
+                {t("common:seasonsEpisodes")}
               </Text>
               {!!currentEpisode?.SeriesName && (
                 <Text style={{ color: Colors.textMuted, fontSize: 15, marginTop: 4 }} numberOfLines={1}>

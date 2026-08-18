@@ -61,7 +61,7 @@ export function PairingSuccessStep({ username }: PairingSuccessStepProps) {
         <View style={styles.redirectRow}>
           <ActivityIndicator size="small" color={Colors.textTertiary} />
           <Text style={styles.redirectText}>
-            {t("pairing:redirectingHome", { defaultValue: "Ouverture de l'accueil…" })}
+            {t("pairing:redirectingHome")}
           </Text>
         </View>
       </Animated.View>

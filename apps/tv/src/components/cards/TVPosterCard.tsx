@@ -102,7 +102,7 @@ export const TVPosterMeta = memo(function TVPosterMeta({ item, width }: { item: 
     ? `S${pad2(item.ParentIndexNumber)}E${pad2(item.IndexNumber)}`
     : null;
   const subtitle = addedCount > 1
-    ? t("addedEpisodes", { count: addedCount, defaultValue: "{{count}} épisodes ajoutés" })
+    ? t("addedEpisodes", { count: addedCount })
     : isEpisode
       ? [epLabel, item.Name].filter(Boolean).join(" · ")
       : item.ProductionYear ? String(item.ProductionYear) : null;

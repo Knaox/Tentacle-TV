@@ -7,7 +7,6 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
   useTentacleConfig, useHomeWebSocket, useJellyfinClient,
-  setPreferencesToken,
 } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -150,15 +149,11 @@ function HomeScreenInner({ navigation }: Props) {
     navigation.navigate("Player", { itemId: item.Id });
   }, [navigation]);
 
+  // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
+  // ici oubliait les credentials et le verrou « lecture en cours ».
   const handleLogout = useCallback(() => {
-    storage.removeItem("tentacle_token");
-    storage.removeItem("tentacle_user");
-    storage.removeItem("tentacle_jellyfin_token");
-    storage.removeItem("tentacle_jellyfin_url");
-    setPreferencesToken(null);
-    queryClient.clear();
-    navigation.reset({ index: 0, routes: [{ name: "PairCode" }] });
-  }, [storage, navigation, queryClient]);
+    doLogout(jfClient, storage, queryClient);
+  }, [jfClient, storage, queryClient]);
 
   const handleCtxSelect = useCallback((value: string) => {
     const item = ctxItem;
@@ -244,7 +239,7 @@ function HomeScreenInner({ navigation }: Props) {
         <SelectionModal
           title={ctxItem.Type === "Episode" ? (ctxItem.SeriesName ?? ctxItem.Name) : ctxItem.Name}
           options={[
-            { value: "details", label: t("moreInfo", { defaultValue: "Plus d'infos" }) },
+            { value: "details", label: t("moreInfo") },
             { value: "play", label: t("play") },
           ]}
           selectedValue={null}

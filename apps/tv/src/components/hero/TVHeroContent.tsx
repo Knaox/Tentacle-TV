@@ -238,7 +238,7 @@ export const TVHeroContent = memo(function TVHeroContent({
                 ...Typography.buttonLarge,
               }}
             >
-              {hasProgress ? t("resume", { defaultValue: "Reprendre" }) : t("play")}
+              {hasProgress ? t("resume") : t("play")}
             </Text>
           </View>
         </Focusable>

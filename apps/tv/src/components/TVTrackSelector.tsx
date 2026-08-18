@@ -160,7 +160,7 @@ export function TVTrackSelector({
 
           {/* Disabled option */}
           {renderTrack(
-            { index: -1, label: t("subtitlesDisabled", { defaultValue: "Disabled" }) },
+            { index: -1, label: t("subtitlesDisabled") },
             selectedSubtitle === -1,
             () => onSelectSubtitle(-1),
             false,

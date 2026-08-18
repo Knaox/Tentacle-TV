@@ -83,6 +83,7 @@ export default {
   tvServeur: "Server",
   tvVersion: "Version",
   tvOublierTitre: "Forget this pairing",
+  redirectingHome: "Opening home…",
   tvOublierConfirmer: "Confirm",
   tvOublierTexte:
     "This TV will no longer be linked to your account and the app will close. Relaunch it to show a new code.",

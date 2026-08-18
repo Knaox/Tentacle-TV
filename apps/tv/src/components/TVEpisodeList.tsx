@@ -53,9 +53,9 @@ export function TVEpisodeList({
   const badgeFor = useCallback((ep: MediaItem): string | null => {
     if (ep.Id !== highlightId) return null;
     if (currentBadgeLabel) return currentBadgeLabel;
-    if ((ep.UserData?.PlaybackPositionTicks ?? 0) > 0) return t("resume", { defaultValue: "Reprendre" });
-    if (ep.Id === currentEp?.Id) return t("nextEpisode", { defaultValue: "À suivre" });
-    return t("currentEpisode", { defaultValue: "Épisode actuel" });
+    if ((ep.UserData?.PlaybackPositionTicks ?? 0) > 0) return t("resume");
+    if (ep.Id === currentEp?.Id) return t("nextEpisode");
+    return t("currentEpisode");
   }, [highlightId, currentBadgeLabel, currentEp?.Id, t]);
 
   return (

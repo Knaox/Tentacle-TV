@@ -36,6 +36,7 @@ export default {
   scrubConfirmHint: "OK · Lire ici",
   scrubCancelHint: "Retour · Annuler",
   nowPlaying: "En cours de visionnage",
+  loadFailed: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie.",
   upNext: "À suivre",
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   dismiss: "Masquer",

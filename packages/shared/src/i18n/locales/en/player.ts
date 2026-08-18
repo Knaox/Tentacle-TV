@@ -36,6 +36,7 @@ export default {
   scrubConfirmHint: "OK · Play here",
   scrubCancelHint: "Back · Cancel",
   nowPlaying: "Now playing",
+  loadFailed: "Playback could not start. Check the server or try again.",
   upNext: "Up Next",
   autoplayCountdown: "Next episode in {{seconds}}s",
   dismiss: "Dismiss",
