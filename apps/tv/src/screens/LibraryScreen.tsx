@@ -5,6 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { usePreventRemove } from "@react-navigation/native";
 import type { RootStackParamList } from "../navigation/types";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -77,6 +78,12 @@ function LibraryScreenInner({ route, navigation }: Props) {
     },
   });
 
+  // tvOS : le bouton Menu déclenche le POP NATIF sans jamais passer par le JS
+  // (le BackHandler de useTVRemote est Android only). Menu de filtre ouvert →
+  // bloquer le pop et ne fermer QUE le menu — sans quoi Retour depuis un menu
+  // quittait toute la bibliothèque.
+  usePreventRemove(openMenu != null, () => setOpenMenu(null));
+
   // Sélection d'une bibliothèque au rail → focus sur la 1ʳᵉ carte.
   const contentEntry = useTVContentEntry();
 
@@ -134,7 +141,6 @@ function LibraryScreenInner({ route, navigation }: Props) {
             onItemFocus={setFocusedItem}
             onEndReached={handleEndReached}
             isFetchingNextPage={isFetchingNextPage}
-            resetToken={lf.queryKey}
             entryRef={contentEntry}
           />
         )}

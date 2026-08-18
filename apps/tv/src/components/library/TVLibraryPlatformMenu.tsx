@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 
@@ -12,7 +13,9 @@ export function TVPlatformMenu({
   selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
-  const firstChecked = PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id;
+  // Figée à l'ouverture : cocher ne doit pas re-saisir le focus.
+  const entreeRef = useRef(PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id);
+  const firstChecked = entreeRef.current;
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>
