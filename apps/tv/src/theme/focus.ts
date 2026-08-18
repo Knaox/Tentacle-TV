@@ -1,45 +1,68 @@
 import { BRAND } from "@tentacle-tv/shared";
+import { TV_CARD_FOCUS, TV_FOCUS_RING } from "@tentacle-tv/theme";
 
 export type FocusVariant = "card" | "button" | "row" | "default";
 
+/** @deprecated Le focus n'est plus animé au ressort — voir `FocusTiming`. */
 export const FocusSpring = { damping: 18, stiffness: 200 } as const;
 
 /**
- * Per-variant focus scale.
- * Bumped slightly vs. legacy to make the cinematic hover effect more apparent
- * on TV viewing distances (3m+).
+ * La durée du focus, reprise de la référence webOS.
+ *
+ * Un ressort donne un rebond, et un rebond sur une grille d'affiches se lit
+ * comme une hésitation : la carte dépasse sa taille puis revient, alors que
+ * l'utilisateur a déjà appuyé sur la flèche suivante. Une durée courte et une
+ * sortie franche collent au rythme d'une télécommande.
+ */
+export const FocusTiming = { duration: TV_CARD_FOCUS.duree } as const;
+
+/**
+ * L'agrandissement au focus, par variante.
+ *
+ * Les cartes reprennent la valeur de la référence — voir `TV_CARD_FOCUS`, où
+ * elle est partagée avec la LG.
  */
 export const FocusScale = {
-  card: 1.06,
+  card: TV_CARD_FOCUS.echelle,
   button: 1.07,
   row: 1.0,
-  default: 1.06,
+  default: TV_CARD_FOCUS.echelle,
   normal: 1.0,
   /** Hero CTA gets a subtle 1.02 scale — applied manually inside hero. */
   hero: 1.02,
 } as const;
 
 /**
- * Crisp violet border drawn around focused cards/buttons.
- * Replaces the old glow-only treatment, which was too soft on TV displays.
+ * L'anneau net dessiné autour de l'élément focalisé.
+ *
+ * **Blanc, et non violet.** Une affiche peut être de n'importe quelle couleur,
+ * y compris violette ; seul le blanc s'y détache à coup sûr. C'est le choix de
+ * la référence, et il est partagé — voir `TV_FOCUS_RING`.
+ *
+ * Pleinement opaque : un anneau translucide se confond avec le bord clair d'une
+ * affiche, exactement là où il doit trancher.
  */
 export const FocusBorder = {
-  width: 2,
-  color: BRAND.violet,
-  /** Slightly translucent so the border doesn't fight with the image edge. */
-  opacity: 0.85,
+  width: TV_FOCUS_RING.epaisseur,
+  color: TV_FOCUS_RING.teinte,
+  opacity: 1,
 } as const;
 
 /**
- * Ambient halo behind focused elements.
- * Implemented via shadow on iOS and elevation on Android (TV is Android only).
+ * Le halo de marque, derrière l'anneau.
+ *
+ * C'est lui qui décolle l'élément du fond : l'anneau blanc dit OÙ, le halo dit
+ * DEVANT. Ses mesures viennent de `TV_FOCUS_RING`, partagées avec la LG — où le
+ * même effet s'écrit `0 0 18px 4px rgba(brand, .5)`.
+ *
+ * L'étalement (`spread`) du CSS n'a pas d'équivalent natif ; le flou l'absorbe.
  */
 export const FocusGlow = {
   color: BRAND.glow,
-  opacity: 0.55,
+  opacity: TV_FOCUS_RING.haloOpacite,
   shadowColor: BRAND.violet,
-  shadowOpacity: 0.55,
-  shadowRadius: 24,
+  shadowOpacity: TV_FOCUS_RING.haloOpacite,
+  shadowRadius: TV_FOCUS_RING.haloFlou,
   elevation: 12,
 } as const;
 

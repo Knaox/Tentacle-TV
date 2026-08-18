@@ -3,12 +3,14 @@ import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "rea
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
   interpolate,
   interpolateColor,
 } from "react-native-reanimated";
 import type { FocusVariant } from "../../theme/focus";
-import { FocusSpring, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusBorder } from "../../theme/focus";
+import { FocusTiming, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusBorder } from "../../theme/focus";
+import { Easings } from "../../theme/motion";
+import { TV_CARD_FOCUS } from "@tentacle-tv/theme";
 // Seuil du maintien, partagé avec la LG : le geste doit être le même partout.
 import { SEUIL_APPUI_LONG_MS } from "@tentacle-tv/tv-core";
 
@@ -46,10 +48,10 @@ interface FocusableProps {
   phantomPressGuard?: boolean;
 }
 
-const SPRING_CONFIG = {
-  damping: FocusSpring.damping,
-  stiffness: FocusSpring.stiffness,
-};
+/** Durée et courbe du focus, reprises de la référence : 180 ms, sortie franche.
+ *  Le ressort d'avant faisait dépasser la carte puis revenir, ce qui se lit
+ *  comme une hésitation quand on parcourt une rangée à la flèche. */
+const TIMING_FOCUS = { duration: FocusTiming.duration, easing: Easings.out };
 
 const GLOW_VARIANTS: Record<FocusVariant, number> = {
   card: 0.5,
@@ -99,12 +101,12 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   const pressInRef = useRef(false);
 
   const handleFocus = useCallback(() => {
-    progress.value = withSpring(1, SPRING_CONFIG);
+    progress.value = withTiming(1, TIMING_FOCUS);
     onFocus?.();
   }, [onFocus, progress]);
 
   const handleBlur = useCallback(() => {
-    progress.value = withSpring(0, SPRING_CONFIG);
+    progress.value = withTiming(0, TIMING_FOCUS);
     pressInRef.current = false; // un pressIn non suivi de press ne doit pas persister
     onBlur?.();
   }, [onBlur, progress]);
@@ -129,6 +131,10 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
     return {
       transform: [{ scale: s }],
+      // Une affiche qui grandit par son centre empiète sur la rangée du dessus.
+      // En grandissant par le bas, elle pousse vers le haut, dans la marge que
+      // la rangée réserve déjà pour l'anneau.
+      transformOrigin: TV_CARD_FOCUS.origine,
       zIndex: interpolate(progress.value, [0, 1], [0, 10]),
       ...(hasShadow ? {
         shadowOpacity: interpolate(progress.value, [0, 1], [0, FocusGlow.shadowOpacity]),

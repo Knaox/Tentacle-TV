@@ -105,6 +105,8 @@ export {
 } from "./tokens/tv";
 
 export {
+  TV_CARD_FOCUS,
+  TV_FOCUS_RING,
   TV_HERO_AMBILIGHT,
   TV_HERO_SCRIM_DIAGONAL,
   TV_OVERSCAN,
