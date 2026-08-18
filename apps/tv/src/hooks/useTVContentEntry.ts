@@ -19,19 +19,34 @@ import { useTVNav } from "../context/TVNavContext";
 export function useTVContentEntry() {
   const { setContentFocusNode } = useTVNav();
   const nodeRef = useRef<View | null>(null);
+  // L'écran est-il actuellement focus ? Les écrans à données asynchrones
+  // (grilles) montent leur premier focusable APRÈS le focus d'écran : setRef
+  // doit alors publier lui-même, sinon le nœud n'est jamais exposé et le rail
+  // garde le focus (sélection au rail sans effet).
+  const screenFocusedRef = useRef(false);
 
   const setRef = useCallback((node: View | null) => {
     nodeRef.current = node;
-  }, []);
+    // Un détachement (null) n'écrase pas la publication : le cleanup du blur
+    // d'écran s'en charge, et un recyclage de cellule peut détacher APRÈS que
+    // la nouvelle cellule d'entrée a publié la sienne.
+    if (Platform.OS === "ios" && screenFocusedRef.current && node) {
+      setContentFocusNode(node);
+    }
+  }, [setContentFocusNode]);
 
   useFocusEffect(
     useCallback(() => {
       if (Platform.OS !== "ios") return;
+      screenFocusedRef.current = true;
       setContentFocusNode(nodeRef.current);
       // Au blur : ne nettoyer QUE si personne d'autre n'a déjà publié son nœud
       // (sur un pop-back, le focus du nouvel écran peut précéder ce cleanup →
       // ne pas écraser sa valeur). Mise à jour fonctionnelle.
-      return () => setContentFocusNode((prev) => (prev === nodeRef.current ? null : prev));
+      return () => {
+        screenFocusedRef.current = false;
+        setContentFocusNode((prev) => (prev === nodeRef.current ? null : prev));
+      };
     }, [setContentFocusNode]),
   );
 

@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVSettingsTabs, type SettingsSection } from "../components/settings/TVSettingsTabs";
 import { TVSettingsAccountSection } from "../components/settings/TVSettingsAccountSection";
 import { TVSettingsPlaybackSection } from "../components/settings/TVSettingsPlaybackSection";
@@ -28,6 +29,9 @@ export function SettingsScreen({ navigation }: Props) {
 
   useTVRemote({ onBack: () => navigation.goBack() });
 
+  // Sélection « Réglages » au rail → focus sur l'onglet affiché.
+  const contentEntry = useTVContentEntry();
+
   return (
     <TVScreenFrame>
       <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
@@ -36,7 +40,7 @@ export function SettingsScreen({ navigation }: Props) {
         </Text>
 
         <View style={{ flex: 1, flexDirection: "row", gap: 40 }}>
-          <TVSettingsTabs active={section} onSelect={setSection} />
+          <TVSettingsTabs active={section} onSelect={setSection} entryRef={contentEntry} />
 
           <ScrollView
             style={{ flex: 1 }}

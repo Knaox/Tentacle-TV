@@ -11,6 +11,7 @@ import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryGrid } from "../components/library/TVLibraryGrid";
 import { TVCollectionEmpty } from "../components/library/TVCollectionEmpty";
 import { useTVRemote } from "../components/focus/useTVRemote";
+import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { BookmarkIcon } from "../components/icons/TVIcons";
 import { Colors, Spacing, Typography } from "../theme/colors";
 
@@ -35,6 +36,8 @@ function WatchlistScreenInner({ navigation }: Props) {
   const { data, isLoading } = useWatchlistAll();
   const { setFocusedItem } = useAmbientFocus();
   useTVRemote({ onBack: () => navigation.goBack() });
+  // Sélection au rail → focus sur la 1ʳᵉ carte de la grille.
+  const contentEntry = useTVContentEntry();
 
   const openDetail = useCallback((item: MediaItem) => {
     navigation.navigate("MediaDetail", { itemId: item.Id });
@@ -63,7 +66,7 @@ function WatchlistScreenInner({ navigation }: Props) {
             hint={t("emptyWatchlistHint")}
           />
         ) : (
-          <TVLibraryGrid listKey="watchlist" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} />
+          <TVLibraryGrid listKey="watchlist" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} entryRef={contentEntry} />
         )}
       </View>
     </TVScreenFrame>

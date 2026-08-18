@@ -101,3 +101,30 @@ describe("masquer et rétablir", () => {
     expect(m.estMasquee("lib-1")).toBe(true);
   });
 });
+
+describe("rehydrater — le stockage s'hydrate après la création du magasin", () => {
+  it("relit l'état une fois le cache rempli et notifie", () => {
+    const stockage = stockageFactice();
+    const magasin = creerMagasinEpinglageRail(stockage);
+    expect(magasin.estMasquee("lib-3")).toBe(false);
+
+    // L'hydratation asynchrone (RNStorageAdapter, Android TV) remplit le
+    // cache APRÈS la création du magasin au chargement du module.
+    stockage.contenu.set(CLE_STOCKAGE_RAIL, '{"masquees":["lib-3"]}');
+    const auditeur = vi.fn();
+    magasin.sAbonner(auditeur);
+    magasin.rehydrater();
+
+    expect(magasin.estMasquee("lib-3")).toBe(true);
+    expect(magasin.lireInstantane().masquees).toEqual(["lib-3"]);
+    expect(auditeur).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne notifie pas quand rien n'a changé", () => {
+    const magasin = creerMagasinEpinglageRail(stockageFactice('{"masquees":["lib-3"]}'));
+    const auditeur = vi.fn();
+    magasin.sAbonner(auditeur);
+    magasin.rehydrater();
+    expect(auditeur).not.toHaveBeenCalled();
+  });
+});

@@ -51,6 +51,14 @@ export interface MagasinEpinglageRail {
   basculer: (cle: string) => void;
   toutAfficher: () => void;
   estMasquee: (cle: string) => boolean;
+  /**
+   * Relit le stockage et notifie si l'état a changé. Nécessaire quand le
+   * stockage s'hydrate APRÈS la création du magasin (RNStorageAdapter sur
+   * Android TV : `getItem` ne lit qu'un cache mémoire rempli par un
+   * `hydrate()` asynchrone — sans cette relecture, les entrées masquées
+   * réapparaissent à chaque redémarrage).
+   */
+  rehydrater: () => void;
 }
 
 /**
@@ -107,6 +115,15 @@ export function creerMagasinEpinglageRail(
       ecrire({ masquees: [] });
     },
     estMasquee: (cleEntree) => instantane.masquees.includes(cleEntree),
+    rehydrater() {
+      const lu = lireStockage();
+      const identique =
+        lu.masquees.length === instantane.masquees.length &&
+        lu.masquees.every((cle, i) => cle === instantane.masquees[i]);
+      if (identique) return;
+      instantane = lu;
+      auditeurs.forEach((auditeur) => auditeur());
+    },
   };
 }
 

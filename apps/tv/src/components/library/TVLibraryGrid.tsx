@@ -42,6 +42,9 @@ interface TVLibraryGridProps {
   isFetchingNextPage?: boolean;
   /** Change → retour en haut + oubli de la rangée suivie (filtres modifiés). */
   resetToken?: unknown;
+  /** Publie la 1ʳᵉ cellule comme focusable d'entrée du contenu (sortie rail +
+   *  auto-collapse — useTVContentEntry côté écran). */
+  entryRef?: (node: View | null) => void;
 }
 
 /**
@@ -58,6 +61,7 @@ export function TVLibraryGrid({
   onEndReached,
   isFetchingNextPage,
   resetToken,
+  entryRef,
 }: TVLibraryGridProps) {
   const { columns, cellW, cardW, estimatedItemSize } = useTVGridLayout();
   const flashListRef = useRef<FlashList<MediaItem>>(null);
@@ -99,8 +103,9 @@ export function TVLibraryGrid({
       onPressItem={onPressItem}
       onItemFocus={onItemFocus}
       onFocusRow={scrollToRow}
+      entryRef={entryRef}
     />
-  ), [columns, cellW, cardW, onPressItem, onItemFocus, scrollToRow, isLastItem]);
+  ), [columns, cellW, cardW, onPressItem, onItemFocus, scrollToRow, isLastItem, entryRef]);
 
   return (
     <FlashList
@@ -140,13 +145,21 @@ function FooterLoader() {
 
 // Mémoïsé : la grille FlashList re-rend au scroll/focus — seules les props
 // stables (callbacks par référence) évitent un re-render O(n) de la grille.
-const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, isLastItem, onPressItem, onItemFocus, onFocusRow }: {
+const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, isLastItem, onPressItem, onItemFocus, onFocusRow, entryRef }: {
   item: MediaItem; index: number; columns: number; cellW: number; cardW: number; isLastItem: boolean;
   onPressItem: (item: MediaItem) => void; onItemFocus?: (item: MediaItem) => void; onFocusRow: (rowIndex: number) => void;
+  entryRef?: (node: View | null) => void;
 }) {
-  const ref = useRef<View>(null);
+  const ref = useRef<View | null>(null);
   const [nodeId, setNodeId] = useState<number | undefined>(undefined);
   const [focused, setFocused] = useState(false);
+
+  // Ref combinée : la ref interne (nextFocusRight) + la publication d'entrée
+  // de contenu quand cette cellule est la première de la grille.
+  const attachRefs = useCallback((node: View | null) => {
+    ref.current = node;
+    if (index === 0) entryRef?.(node);
+  }, [index, entryRef]);
 
   useEffect(() => {
     const handle = findNodeHandle(ref.current);
@@ -160,7 +173,7 @@ const GridItem = memo(function GridItem({ item, index, columns, cellW, cardW, is
       {/* Le ring de focus n'entoure QUE l'affiche (comme le web) — les textes
           restent dessous, hors halo, sans déborder sur la rangée suivante. */}
       <Focusable
-        ref={ref}
+        ref={attachRefs}
         variant="card"
         onPress={() => onPressItem(item)}
         onFocus={() => { setFocused(true); onItemFocus?.(item); onFocusRow(Math.floor(index / columns)); }}
