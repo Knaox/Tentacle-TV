@@ -11,6 +11,13 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.8]
+### FR
+- **Le réglage de qualité revient sur le téléviseur LG.** Le panneau des pistes avait perdu sa section Qualité : une prudence héritée du lecteur de bureau masquait le sélecteur dès que la dalle décodait elle-même le flux. Le téléviseur change pourtant de palier en relançant la session — le sélecteur est de retour, avec le palier réellement servi affiché sous le cap automatique
+
+### EN
+- **The quality setting is back on LG TVs.** The tracks panel had lost its Quality section: a precaution inherited from the desktop player hid the selector whenever the panel decoded the stream natively. The TV switches tiers by restarting the session — the selector is back, showing the tier actually served under the automatic cap
+
 ## [1.12.7]
 ### FR
 - **Changer de piste audio fonctionne enfin sur le téléviseur LG.** En lecture directe, choisir une piste que la dalle ne sait pas ouvrir — un TrueHD Atmos, par exemple — ne faisait strictement rien : ni bascule, ni message, le film restait dans la langue précédente. Le lecteur demande désormais la piste au serveur quand il ne peut pas la fournir lui-même
