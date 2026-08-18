@@ -67,7 +67,7 @@ export function TrailerScreen({ route, navigation }: Props) {
       ) : (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 80 }}>
           <Text style={{ color: Colors.textSecondary, ...Typography.body, textAlign: "center" }}>
-            {t("trailerUnavailable", { defaultValue: "Bande-annonce indisponible" })}
+            {t("trailerUnavailable")}
           </Text>
         </View>
       )}
@@ -79,7 +79,7 @@ export function TrailerScreen({ route, navigation }: Props) {
           onPress={() => navigation.goBack()}
           hasTVPreferredFocus
           focusRadius={Radius.full}
-          accessibilityLabel={t("close", { defaultValue: "Fermer" })}
+          accessibilityLabel={t("close")}
           onFocus={() => { closeOpacity.value = withTiming(1, { duration: Durations.fast }); }}
         >
           <View style={{
@@ -91,7 +91,7 @@ export function TrailerScreen({ route, navigation }: Props) {
           }}>
             <CloseIcon size={16} color={Colors.textPrimary} />
             <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
-              {t("close", { defaultValue: "Fermer" })}
+              {t("close")}
             </Text>
           </View>
         </Focusable>

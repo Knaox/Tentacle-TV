@@ -150,14 +150,14 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
           {failed ? (
             <View>
               <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 16, marginBottom: 16 }}>
-                {t("loadFailed", { defaultValue: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie." })}
+                {t("loadFailed")}
               </Text>
               <Focusable
                 variant="button" hasTVPreferredFocus onPress={onRetry}
                 style={{ alignSelf: "flex-start", paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.14)" }}
               >
                 <Text style={{ color: "#fff", fontSize: 17, fontFamily: Fonts.bold }}>
-                  {t("retry", { defaultValue: "Réessayer" })}
+                  {t("retry")}
                 </Text>
               </Focusable>
             </View>

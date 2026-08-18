@@ -92,7 +92,11 @@ export function Watchlist() {
       isLoading={isLoading}
       messageVide={t("common:emptyWatchlist")}
       indiceVide={t("common:emptyWatchlistHint")}
-      icone={<span>&#128278;</span>}
+      icone={
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+        </svg>
+      }
     />
   );
 }

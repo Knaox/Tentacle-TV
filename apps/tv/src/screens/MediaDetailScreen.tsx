@@ -91,7 +91,7 @@ export function MediaDetailScreen({ route, navigation }: Props) {
       {/* Collection (BoxSet) : contenu navigable */}
       {isBoxSet && collectionItems && collectionItems.length > 0 && (
         <FocusableRow
-          title={t("collectionContent", { defaultValue: "Contenu de la collection" })}
+          title={t("collectionContent")}
           data={collectionItems}
           renderItem={(s: MediaItem, _i: number, focused: boolean) => <TVPosterCard item={s} focused={focused} />}
           keyExtractor={(s) => s.Id}

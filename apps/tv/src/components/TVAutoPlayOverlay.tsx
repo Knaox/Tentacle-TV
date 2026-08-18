@@ -135,7 +135,7 @@ export function TVAutoPlayOverlay({
           <Focusable variant="button" focusRadius={Radius.button} onPress={onDismiss}>
             <View style={{ paddingVertical: 11, paddingHorizontal: 16, borderRadius: Radius.button }}>
               <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 14, fontFamily: Fonts.medium }}>
-                {t("dismiss", { defaultValue: "Ignorer" })}
+                {t("dismiss")}
               </Text>
             </View>
           </Focusable>

@@ -180,7 +180,7 @@ export function TVNextEpisodeFullscreen({
                   borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", backgroundColor: "rgba(255,255,255,0.05)",
                 }}>
                   <Text style={{ color: "rgba(255,255,255,0.8)", fontSize: 17, fontFamily: Fonts.semibold }}>
-                    {t("dismiss", { defaultValue: "Ignorer" })}
+                    {t("dismiss")}
                   </Text>
                 </View>
               </Focusable>

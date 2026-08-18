@@ -40,12 +40,12 @@ export const TVExtrasRow = memo(function TVExtrasRow({ trailers, onSelect, style
 
   return (
     <FocusableRow
-      title={t("extras", { defaultValue: "Extras" })}
+      title={t("extras")}
       data={visible}
       renderItem={(tr: RichTrailer) => (
         <ExtraTile
           trailer={tr}
-          fallbackLabel={t("trailer", { defaultValue: "Bande-annonce" })}
+          fallbackLabel={t("trailer")}
           onUnavailable={() => markUnavailable(tr.Url)}
         />
       )}

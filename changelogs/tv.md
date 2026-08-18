@@ -17,11 +17,27 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Les messages d'erreur de lecture disparaissent d'eux-mêmes après quelques secondes, au lieu de rester à l'écran pour toujours
 - La qualité s'adapte à la connexion : l'application mesure le débit réel et réduit d'elle-même la qualité quand le réseau ne suit pas — jamais quand vous avez choisi un palier vous-même, et un badge le signale
 - L'écran ne se met plus jamais en veille pendant une lecture (en pause, la veille normale reprend pour protéger la dalle)
+- L'interface s'aligne sur la nouvelle référence visuelle du salon : bannières en carte arrondie cernée de leur halo (accueil et bibliothèques), anneau de sélection blanc et instantané, marges de sécurité d'écran systématiques
+- Les fiches se complètent : affiche, distribution et équipe, et trois nouvelles actions — Favori, Ma liste, Vu/Non vu
+- Nouvelles pages « Ma liste » et « Mes favoris » dans le menu, masquables d'un appui long comme les bibliothèques
+- Bibliothèques : de vrais filtres — statut vu, favoris, genres multiples, plage d'années, note minimale, plateformes de streaming — mémorisés au retour d'une fiche, avec compteur de résultats et réinitialisation
+- La recherche retient vos six dernières recherches et les propose dès l'ouverture
+- Réglages réunis en une seule page (Compte · Lecture · À propos) : 38 langues de préférence au lieu de 20, « réinitialiser » par bibliothèque, et changer de serveur ou se déconnecter s'y font désormais, en deux appuis de confirmation
+- Lecteur : habillage affiné — grand bouton central, panneaux flottants qui assombrissent la vidéo, barre de progression au dégradé de l'application, un épisode affiche sa série en titre
+- Plusieurs libellés qui restaient en anglais sont enfin traduits
 ### EN
 - Pairing never breaks on its own anymore: a server restart, a brief outage or a web sign-out no longer disconnects the TV — only a deliberate revocation from settings does, and it takes effect immediately
 - Playback error messages now fade away on their own after a few seconds instead of staying on screen forever
 - Quality adapts to your connection: the app measures the real throughput and lowers quality on its own when the network can't keep up — never when you picked a preset yourself, and a badge signals it
 - The screen never sleeps during playback anymore (while paused, normal sleep resumes to protect the panel)
+- The interface aligns with the new living-room visual reference: rounded card banners wrapped in their glow (home and libraries), a white instant selection ring, consistent screen-safe margins everywhere
+- Detail pages are now complete: poster, cast and crew, and three new actions — Favorite, My List, Watched/Unwatched
+- New "My List" and "My Favorites" pages in the menu, hideable with a long press like libraries
+- Libraries get real filters — watched status, favorites, multiple genres, year range, minimum rating, streaming platforms — remembered when you come back from a title, with a result count and a reset
+- Search remembers your last six searches and offers them as soon as it opens
+- Settings now live on a single page (Account · Playback · About): 38 preference languages instead of 20, a per-library reset, and changing server or signing out happens there, with a two-press confirmation
+- Player: refined chrome — a large central button, floating panels that dim the video, a progress bar in the app's gradient, and episodes show their series as the title
+- Several labels that stayed in English are finally translated
 
 ## [1.1.0]
 ### FR

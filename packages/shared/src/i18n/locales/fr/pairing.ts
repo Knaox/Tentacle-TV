@@ -86,6 +86,7 @@ export default {
   tvServeur: "Serveur",
   tvVersion: "Version",
   tvOublierTitre: "Oublier ce jumelage",
+  redirectingHome: "Ouverture de l'accueil…",
   tvOublierConfirmer: "Confirmer l'oubli",
   tvOublierTexte:
     "Ce téléviseur cessera d'être associé à votre compte et l'application se fermera. Relancez-la pour afficher un nouveau code.",

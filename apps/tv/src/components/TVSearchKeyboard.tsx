@@ -61,7 +61,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
           <TextInput
             value={query}
             onChangeText={onSetQuery}
-            placeholder={t("voiceOrType", { defaultValue: "Parler ou saisir…" })}
+            placeholder={t("voiceOrType")}
             placeholderTextColor={Colors.textTertiary}
             returnKeyType="search"
             autoCorrect={false}
@@ -117,7 +117,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
 
       {/* Special keys — icônes seules (labels via accessibilité, pas de texte UI) */}
       <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
-        <Focusable variant="button" onPress={() => onKeyPress(" ")} accessibilityLabel={t("space", { defaultValue: "Espace" })}>
+        <Focusable variant="button" onPress={() => onKeyPress(" ")} accessibilityLabel={t("space")}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
@@ -127,7 +127,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
             <SpaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onDelete} accessibilityLabel={t("delete", { defaultValue: "Supprimer" })}>
+        <Focusable variant="button" onPress={onDelete} accessibilityLabel={t("delete")}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(255,255,255,0.10)",
@@ -137,7 +137,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
             <BackspaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onClear} accessibilityLabel={t("clear", { defaultValue: "Effacer" })}>
+        <Focusable variant="button" onPress={onClear} accessibilityLabel={t("clear")}>
           <View style={{
             width: 78, height: 36, borderRadius: Radius.small,
             backgroundColor: "rgba(239,68,68,0.15)",

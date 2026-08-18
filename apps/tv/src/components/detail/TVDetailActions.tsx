@@ -120,7 +120,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
           variant="button"
           onPress={() => onTrailer(trailers[0])}
           onFocus={onFocusButtons}
-          accessibilityLabel={t("trailer", { defaultValue: "Bande-annonce" })}
+          accessibilityLabel={t("trailer")}
         >
           <View style={{
             backgroundColor: Colors.ctaGhostBg,
@@ -131,7 +131,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
           }}>
             <MovieIcon size={18} color={Colors.textPrimary} />
             <Text style={{ color: Colors.textPrimary, ...Typography.buttonLarge }}>
-              {t("trailer", { defaultValue: "Bande-annonce" })}
+              {t("trailer")}
             </Text>
           </View>
         </Focusable>
