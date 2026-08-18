@@ -12,7 +12,7 @@ export function TVPlatformMenu({
   selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
-  const firstChecked = PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0].id;
+  const firstChecked = PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id;
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>

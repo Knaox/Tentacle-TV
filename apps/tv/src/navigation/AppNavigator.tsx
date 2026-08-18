@@ -4,6 +4,7 @@ import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { Colors } from "../theme/colors";
 import type { RootStackParamList } from "./types";
 import { SkeletonLoader } from "./ScreenFallback";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 
 // Direct imports — initial screens, must load immediately
 import { DisclaimerScreen } from "../screens/DisclaimerScreen";
@@ -24,14 +25,21 @@ const FavoritesScreen = React.lazy(() => import("../screens/FavoritesScreen").th
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 /**
- * Préchauffe les écrans lazy les plus probables après le premier rendu de
- * l'accueil : le registre de modules étant partagé, React.lazy résout ensuite
- * instantanément (élimine le parse/exec au premier accès sur TV bas de gamme).
+ * Préchauffe les écrans lazy après le premier rendu de l'accueil : le registre
+ * de modules étant partagé, React.lazy résout ensuite instantanément (élimine
+ * le parse/exec au premier accès sur TV bas de gamme). Toutes les cibles du
+ * rail y passent — le fallback par écran ne se verra qu'exceptionnellement.
+ * Trailer reste à la demande : uniquement accessible depuis une fiche déjà
+ * chargée, jamais dans le chemin critique.
  */
 export function preloadCoreScreens() {
   void import("../screens/LibraryScreen");
   void import("../screens/MediaDetailScreen");
   void import("../screens/PlayerScreen");
+  void import("../screens/SearchScreen");
+  void import("../screens/SettingsScreen");
+  void import("../screens/WatchlistScreen");
+  void import("../screens/FavoritesScreen");
 }
 
 export function AppNavigator() {
@@ -49,47 +57,56 @@ export function AppNavigator() {
       : "PairCode";
 
   return (
-    <Suspense fallback={<SkeletonLoader />}>
-      <Stack.Navigator
-        initialRouteName={initialRouteName}
-        screenOptions={{
-          headerShown: false,
+    <Stack.Navigator
+      initialRouteName={initialRouteName}
+      screenOptions={{
+        headerShown: false,
+        animation: "fade",
+        contentStyle: { backgroundColor: Colors.bgDeep },
+        statusBarHidden: true,
+      }}
+      // Frontière de chargement PAR ÉCRAN, pas autour du Navigator : un
+      // Suspense global gèle tout l'arbre à la première navigation vers un
+      // écran lazy (react-native-screens fige les écrans inactifs via
+      // react-freeze) → squelette plein écran et focus natif perdu. Ici
+      // l'écran courant reste affiché pendant le chargement, et un crash ne
+      // remplace que l'écran fautif — le rail (sibling du Navigator) survit.
+      screenLayout={({ children }) => (
+        <ErrorBoundary>
+          <Suspense fallback={<SkeletonLoader />}>{children}</Suspense>
+        </ErrorBoundary>
+      )}
+    >
+      <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
+      <Stack.Screen name="PairCode" component={PairCodeScreen} />
+      {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
+          onglets) → nav snappy ET pas de course animation/focus qui empêchait
+          l'auto-collapse du rail au retour sur l'Accueil (pop). */}
+      <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
+      {/* `animation: none` : sur tvOS, le Menu déclenche un dismiss natif annulé
+          par usePreventRemove (panneau ouvert) ; sans animation, le pop-restore
+          est instantané → pas de flash de l'écran précédent. */}
+      <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: "none" }} />
+      {/* Réglages/Qualité en MODALE transparente : ESC ferme la modale
+          proprement (révèle l'épisode), pas de flash de page précédente. */}
+      <Stack.Screen
+        name="PlayerSettings"
+        component={PlayerSettingsScreen}
+        options={{
+          presentation: "transparentModal",
           animation: "fade",
-          contentStyle: { backgroundColor: Colors.bgDeep },
-          statusBarHidden: true,
+          // Sans ça, le `contentStyle` opaque global (bgDeep) masquerait la
+          // vidéo sous la modale → fond transparent pour voir l'épisode.
+          contentStyle: { backgroundColor: "transparent" },
         }}
-      >
-        <Stack.Screen name="Disclaimer" component={DisclaimerScreen} />
-        <Stack.Screen name="PairCode" component={PairCodeScreen} />
-        {/* Écrans top-level (cibles du rail) : transition INSTANTANÉE (façon
-            onglets) → nav snappy ET pas de course animation/focus qui empêchait
-            l'auto-collapse du rail au retour sur l'Accueil (pop). */}
-        <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
-        <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
-        <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
-        {/* `animation: none` : sur tvOS, le Menu déclenche un dismiss natif annulé
-            par usePreventRemove (panneau ouvert) ; sans animation, le pop-restore
-            est instantané → pas de flash de l'écran précédent. */}
-        <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: "none" }} />
-        {/* Réglages/Qualité en MODALE transparente : ESC ferme la modale
-            proprement (révèle l'épisode), pas de flash de page précédente. */}
-        <Stack.Screen
-          name="PlayerSettings"
-          component={PlayerSettingsScreen}
-          options={{
-            presentation: "transparentModal",
-            animation: "fade",
-            // Sans ça, le `contentStyle` opaque global (bgDeep) masquerait la
-            // vidéo sous la modale → fond transparent pour voir l'épisode.
-            contentStyle: { backgroundColor: "transparent" },
-          }}
-        />
-        <Stack.Screen name="Trailer" component={TrailerScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
-        <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ animation: "none" }} />
-        <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "none" }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: "none" }} />
-      </Stack.Navigator>
-    </Suspense>
+      />
+      <Stack.Screen name="Trailer" component={TrailerScreen} />
+      <Stack.Screen name="Search" component={SearchScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="Watchlist" component={WatchlistScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: "none" }} />
+    </Stack.Navigator>
   );
 }
