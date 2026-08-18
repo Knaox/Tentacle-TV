@@ -212,3 +212,67 @@ body:after {
     0 0 0 3px #FFFFFF,
     0 0 18px 4px rgba(139, 92, 246, 0.5);
 }
+
+/* ===== L'écran d'attente : le logo, sans la carte. =====
+ *
+ * Il remplace les messages « Connexion à votre serveur... » et « Préparation
+ * du code... » : au lancement d'une application déjà jumelée, on enchaîne
+ * splash → logo animé → client, sans texte technique. Le splash webOS montre
+ * déjà ce logo : le reprendre au même endroit fait une continuité, pas une
+ * coupure.
+ *
+ * Deux éléments animés, `transform` et `opacity` seulement — la règle GPU du
+ * dépôt vaut aussi pour la dalle. L'anneau est un simple bord dont un quart
+ * est teinté : sa rotation est une transformation, aucun dessin par image. */
+
+body.attente .carte-jumelage {
+  background: transparent;
+  border-color: transparent;
+}
+
+body.attente .logo-jumelage {
+  width: 96px;
+  height: 104px;
+  -webkit-animation: respiration-logo 2.4s ease-in-out infinite;
+  animation: respiration-logo 2.4s ease-in-out infinite;
+}
+
+.anneau-attente {
+  width: 40px;
+  height: 40px;
+  margin: 28px auto 0;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  border-top-color: #8B5CF6;
+  border-radius: 50%;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-animation: rotation-anneau 1.1s linear infinite;
+  animation: rotation-anneau 1.1s linear infinite;
+}
+
+/* En arrière-plan, la carte de l'application est gelée par webOS ; suspendre
+   aussi les animations garantit qu'aucune image n'est composée si la
+   plateforme continue, elle, de composer. */
+body.cachee .logo-jumelage,
+body.cachee .anneau-attente {
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+
+@-webkit-keyframes rotation-anneau {
+  from { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  to   { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@keyframes rotation-anneau {
+  from { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  to   { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-webkit-keyframes respiration-logo {
+  0%, 100% { opacity: 0.85; -webkit-transform: scale(1); transform: scale(1); }
+  50%      { opacity: 1;    -webkit-transform: scale(1.03); transform: scale(1.03); }
+}
+@keyframes respiration-logo {
+  0%, 100% { opacity: 0.85; -webkit-transform: scale(1); transform: scale(1); }
+  50%      { opacity: 1;    -webkit-transform: scale(1.03); transform: scale(1.03); }
+}

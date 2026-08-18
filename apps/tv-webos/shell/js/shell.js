@@ -89,8 +89,15 @@
     // ne justifie d'interroger le relais toutes les trois secondes pendant ce
     // temps-là.
     document.addEventListener("visibilitychange", function () {
-      if (document.hidden) machine.arreter();
-      else machine.demarrer();
+      // La classe suspend les animations de l'écran d'attente : rien ne doit
+      // se composer pendant que l'application est en arrière-plan.
+      if (document.hidden) {
+        document.body.classList.add("cachee");
+        machine.arreter();
+      } else {
+        document.body.classList.remove("cachee");
+        machine.demarrer();
+      }
     });
 
     machine.demarrer();
