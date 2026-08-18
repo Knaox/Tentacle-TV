@@ -87,9 +87,15 @@ TOUT FAIRE EN UNE SEULE COMMANDE
   Une seule ligne à coller : elle télécharge la dernière version, ouvre ce
   mode d'emploi et lance l'installation.
 
-  macOS et Linux — dans Terminal :
+  macOS et Linux — dans Terminal. La même ligne vaut pour les deux : macOS
+  ouvre le mode d'emploi avec « open », Linux avec « xdg-open », et si
+  aucun des deux n'aboutit l'installation démarre quand même.
 
-  cd "$(mktemp -d)" && curl -fsSL -O https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip && unzip -q installateur-tentacle-tv.zip && cd "Tentacle TV - LG webOS" && open LISEZ-MOI.txt 2>/dev/null; node installer.mjs
+  cd "$(mktemp -d)" && curl -fsSL -O https://github.com/Knaox/Tentacle-TV/releases/download/webos-latest/installateur-tentacle-tv.zip && unzip -q installateur-tentacle-tv.zip && cd "Tentacle TV - LG webOS" && { open LISEZ-MOI.txt || xdg-open LISEZ-MOI.txt; } 2>/dev/null; node installer.mjs
+
+  Sur une installation Linux minimale, « curl » et « unzip » peuvent manquer :
+  sudo apt install curl unzip   (Debian, Ubuntu)
+  sudo dnf install curl unzip   (Fedora)
 
   Windows — dans PowerShell (menu Démarrer › taper « powershell ») :
 
