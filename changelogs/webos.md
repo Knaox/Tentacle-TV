@@ -17,15 +17,6 @@ lancement), ou une version de référence.
 ### EN
 - …
 
-## [1.1.0]
-### FR
-- Le téléviseur recharge l'application à chaque lancement : les mises à jour du serveur arrivent désormais sans vider le cache ni réinstaller quoi que ce soit
-- Nouvel écran de lancement : le logo et un anneau discret remplacent le message « Connexion à votre serveur... »
-
-### EN
-- The TV now reloads the app on every launch: server updates arrive without clearing the cache or reinstalling anything
-- New launch screen: the logo and a subtle ring replace the "Connecting to your server..." message
-
 ## [1.0.0]
 ### FR
 - Première version pour téléviseurs LG (webOS 4 et ultérieurs)
