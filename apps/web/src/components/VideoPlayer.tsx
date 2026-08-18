@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
+import { nativeHlsSupportsQualitySwitch } from "../hooks/useNativeHlsPreference";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
@@ -274,7 +275,7 @@ export function VideoPlayer({
           onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
           onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
           onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
-          onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls ? undefined : onQualityChange}
+          onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
           applyToSeries={applyToSeries} onPlaybackRateChange={appliquerVitesse}
         />

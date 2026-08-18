@@ -17,3 +17,19 @@ import { isMacOS } from "./useDesktopPlayer";
 export function preferNativeHls(): boolean {
   return isTauriShell() && isMacOS();
 }
+
+/**
+ * Sous HLS natif, le sélecteur de qualité reste-t-il opérant ?
+ *
+ * Changer de palier ne passe pas par les niveaux de hls.js : la page recrée
+ * la session (`handleQualityChange` → nouvelle PlaybackInfo → nouvelle URL),
+ * ce qui fonctionne quel que soit le démultiplexeur. Historiquement le
+ * lecteur masquait pourtant le sélecteur dès que le moteur prenait le HLS —
+ * prudence héritée de la coquille macOS, où la lecture passe de toute façon
+ * par mpv. On garde ce comportement ici ; le client téléviseur, dont c'est
+ * l'unique mécanisme de changement de qualité, substitue ce module et répond
+ * oui.
+ */
+export function nativeHlsSupportsQualitySwitch(): boolean {
+  return false;
+}
