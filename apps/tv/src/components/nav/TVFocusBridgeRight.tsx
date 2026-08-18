@@ -1,6 +1,12 @@
 import { Platform, TVFocusGuideView } from "react-native";
+import { borneDroiteEntreesDeployees } from "@tentacle-tv/tv-core";
+import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { useTVNav } from "../../context/TVNavContext";
-import { RAIL_COLLAPSED } from "./TVSideRail";
+
+/** Le pont n'est monté que le rail focus, donc déployé : sa bande commence
+ *  après les ENTRÉES déployées (396), pas après le rail replié (186) — sinon
+ *  elle chevauche les entrées et capte des HAUT/BAS de navigation interne. */
+const BORD_GAUCHE_PONT = borneDroiteEntreesDeployees(TV_OVERSCAN_PT.x);
 
 /**
  * Pont de SORTIE du rail (tvOS uniquement).
@@ -24,10 +30,11 @@ export function TVFocusBridgeRight() {
   return (
     <TVFocusGuideView
       destinations={[target]}
-      // À droite du rail — sa largeur réelle, désormais constante. Le panneau
-      // qui apparaît derrière déborde plus loin, mais il ne capte rien : partir
-      // de sa largeur laissait une bande de contenu hors d'atteinte.
-      style={{ position: "absolute", left: RAIL_COLLAPSED, right: 0, top: 0, bottom: 0 }}
+      // À droite des entrées DÉPLOYÉES : le pont ne vit que rail focus, où
+      // les entrées s'étendent jusqu'à 396 pt. Posé plus à gauche (largeur
+      // repliée), il chevauchait les entrées et le moteur de focus pouvait le
+      // préférer à l'entrée suivante sur un simple HAUT/BAS dans le rail.
+      style={{ position: "absolute", left: BORD_GAUCHE_PONT, right: 0, top: 0, bottom: 0 }}
     />
   );
 }
