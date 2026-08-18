@@ -9,6 +9,8 @@ import Animated, {
 } from "react-native-reanimated";
 import type { FocusVariant } from "../../theme/focus";
 import { FocusSpring, FocusScale, FocusGlow, FocusRowStyle, FocusButtonStyle, FocusBorder } from "../../theme/focus";
+// Seuil du maintien, partagé avec la LG : le geste doit être le même partout.
+import { SEUIL_APPUI_LONG_MS } from "@tentacle-tv/tv-core";
 
 interface FocusableProps {
   onPress?: (e?: GestureResponderEvent) => void;
@@ -148,11 +150,6 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     ),
   }));
 
-  // Row variant: left bar opacity
-  const rowBarStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-  }));
-
   // Button variant: animated highlight overlay
   const buttonBgStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
@@ -173,7 +170,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
       onPressOut={handlePressOut}
       onPress={handlePress}
       onLongPress={onLongPress}
-      delayLongPress={500}
+      delayLongPress={SEUIL_APPUI_LONG_MS}
       onFocus={handleFocus}
       onBlur={handleBlur}
       hasTVPreferredFocus={hasTVPreferredFocus}
@@ -221,7 +218,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
           />
         )}
 
-        {/* Row variant: animated background + left bar */}
+        {/* Variante « ligne » : le fond se remplit, sans barre — cf. FocusRowStyle. */}
         {isRow && (
           <Animated.View
             pointerEvents="none"
@@ -230,15 +227,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
               top: 0, left: 0, right: 0, bottom: 0,
               borderRadius: focusRadius,
             }, rowBgStyle]}
-          >
-            <Animated.View style={[{
-              position: "absolute",
-              left: 0, top: 6, bottom: 6,
-              width: FocusRowStyle.barWidth,
-              backgroundColor: FocusRowStyle.barColor,
-              borderRadius: 2,
-            }, rowBarStyle]} />
-          </Animated.View>
+          />
         )}
 
         {children}

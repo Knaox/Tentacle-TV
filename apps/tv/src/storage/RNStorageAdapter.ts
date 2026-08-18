@@ -92,3 +92,16 @@ export class RNUuidGenerator implements UuidGenerator {
     });
   }
 }
+
+/**
+ * L'instance unique de l'application.
+ *
+ * Elle vivait dans `App.tsx`, ce qui la rendait inatteignable pour tout module
+ * qui n'est pas monté dans l'arbre React — le magasin d'épinglage du rail, par
+ * exemple, qui doit exister avant le premier rendu. La remonter ici évite un
+ * import circulaire vers `App.tsx`.
+ *
+ * `hydrate()` reste appelé une fois au démarrage, depuis `App.tsx` : sur
+ * Android TV, les lectures ne sont synchrones qu'après.
+ */
+export const tvStorage = new RNStorageAdapter();

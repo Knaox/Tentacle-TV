@@ -1,52 +1,72 @@
 import { memo, useCallback } from "react";
-import { View } from "react-native";
+import { View, Text } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { RAIL, largeurEntreeDeployee } from "@tentacle-tv/tv-core";
+import { TV_OVERSCAN_PT, TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
-import { Colors, Radius, Fonts } from "../../theme/colors";
-import { RAIL_COLLAPSED, type RailItem } from "./TVSideRail";
+import { Colors, Fonts } from "../../theme/colors";
+import { FocusRowStyle } from "../../theme/focus";
+import type { RailItem } from "./railEntries";
+
+const LARGEUR_DEPLOYEE = largeurEntreeDeployee(TV_OVERSCAN_PT.x);
 
 interface RailRowProps {
   item: RailItem;
-  /** Index dans le ScrollView (haut) — null pour les items du bas (fixes). */
   index?: number;
   active: boolean;
-  /** Style animé du libellé (opacity + translate), partagé par tout le rail. */
+  deploye: boolean;
+  /** Opacité + translation du libellé, partagées par tout le rail. */
   labelStyle: ReturnType<typeof useAnimatedStyle>;
   onNavigate: (key: string) => void;
+  onMasquer: (key: string) => void;
   onExpand: () => void;
   onCollapse: () => void;
   schedulePrefetch: (libraryId: string) => void;
   cancelPrefetch: () => void;
-  /** Fabrique le handler de scroll-into-view pour l'index donné. */
   makeOnFocus: (index: number, pad: number) => () => void;
-  /** Ref de l'item actif (cible du TVFocusGuideView quand on entre dans le rail). */
   setActiveRef: (node: View | null) => void;
-  /** Capture du nœud natif (pont de focus inter-groupes, cf. TVSideRail). */
   captureNode?: (node: View | null) => void;
-  /** Cibles de navigation explicites (Android : court-circuite la géométrie). */
   nextFocusUp?: number;
   nextFocusDown?: number;
 }
 
 /**
- * Une ligne du rail. Mémoïsée : au changement de route, seules les deux lignes
- * dont `active` bascule re-rendent — les autres restent figées. Les closures de
- * focus sont locales mais le composant ne re-rend pas tant que ses props sont
- * stables (handlers `useCallback` côté parent).
+ * Une entrée du rail, à la géométrie de la LG.
+ *
+ * Deux choses la distinguent de la version précédente. Sa largeur ne s'anime
+ * pas : elle change d'un état à l'autre sans transition, parce que le rail ne
+ * bouge plus — c'est un panneau posé derrière lui qui apparaît en fondu, et le
+ * moteur de focus vient de calculer sa géométrie sur ces positions.
+ *
+ * Et le libellé est posé en absolu : il déborde du rail replié sans élargir
+ * l'entrée, ce qui réserve sa place dans les deux états. Sans cela, le texte se
+ * replierait en colonne sur douze pixels quand le rail est fermé — invisible,
+ * mais recalculé à chaque image de la transition.
  */
 export const RailRow = memo(function RailRow({
-  item, index, active, labelStyle, onNavigate, onExpand, onCollapse,
-  schedulePrefetch, cancelPrefetch, makeOnFocus, setActiveRef, captureNode,
-  nextFocusUp, nextFocusDown,
+  item, index, active, deploye, labelStyle, onNavigate, onMasquer, onExpand,
+  onCollapse, schedulePrefetch, cancelPrefetch, makeOnFocus, setActiveRef,
+  captureNode, nextFocusUp, nextFocusDown,
 }: RailRowProps) {
-  const iconColor = item.danger ? Colors.error : active ? Colors.textPrimary : Colors.textTertiary;
-  const scrollFocus = index != null ? makeOnFocus(index, 48) : null;
-  const libraryId = item.key.startsWith("Library_") ? item.key.slice("Library_".length) : null;
-  // Ref composée : capture (pont inter-groupes) + item actif (entrée du rail).
+  const couleurIcone = item.danger
+    ? Colors.error
+    : active ? Colors.textPrimary : Colors.textSecondary;
+  const defileVers = index != null ? makeOnFocus(index, RAIL.reserveHaut) : null;
+  const libraryId = item.key.startsWith("Library_")
+    ? item.key.slice("Library_".length)
+    : null;
+
   const refCb = useCallback((node: View | null) => {
     captureNode?.(node);
     if (active) setActiveRef(node);
   }, [captureNode, active, setActiveRef]);
+
+  // Un maintien retire l'entrée du rail. Seules les destinations le permettent :
+  // la recherche, l'accueil et la navigation de service doivent rester
+  // atteignables, sinon le rail devient une impasse.
+  const surMaintien = useCallback(() => {
+    if (item.masquable) onMasquer(item.key);
+  }, [item.masquable, item.key, onMasquer]);
 
   return (
     <Focusable
@@ -54,38 +74,59 @@ export const RailRow = memo(function RailRow({
       variant="row"
       nextFocusUp={nextFocusUp}
       nextFocusDown={nextFocusDown}
-      focusRadius={Radius.buttonLarge}
+      focusRadius={TV_RADIUS.md}
       onPress={() => onNavigate(item.key)}
+      onLongPress={item.masquable ? surMaintien : undefined}
       onFocus={() => {
         onExpand();
-        scrollFocus?.();
+        defileVers?.();
         if (libraryId) schedulePrefetch(libraryId);
       }}
       onBlur={() => { onCollapse(); if (libraryId) cancelPrefetch(); }}
       accessibilityLabel={item.label}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", height: 48, borderRadius: Radius.buttonLarge }}>
-        <View style={{ width: RAIL_COLLAPSED - 24, alignItems: "center", justifyContent: "center" }}>
-          {/* Pastille violette derrière l'icône active (repère en mode replié) */}
-          {active && (
-            <View style={{
-              position: "absolute", width: 40, height: 40, borderRadius: 20,
-              backgroundColor: "rgba(139, 92, 246, 0.22)",
-            }} />
-          )}
-          {item.icon(iconColor)}
-        </View>
-        <Animated.Text
-          numberOfLines={1}
-          style={[{
-            flex: 1,
-            color: item.danger ? Colors.error : Colors.textPrimary,
-            fontSize: 15,
-            fontFamily: active ? Fonts.bold : Fonts.regular,
-          }, labelStyle]}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          height: RAIL.hauteurEntree,
+          minHeight: RAIL.hauteurEntreeMin,
+          width: deploye ? LARGEUR_DEPLOYEE : RAIL.largeurRepli,
+          marginBottom: RAIL.ecartEntrees,
+          paddingLeft: RAIL.retraitEntree,
+          borderRadius: TV_RADIUS.md,
+          // Le fond de l'entrée ACTIVE. Celui du focus est peint par-dessus par
+          // `Focusable` (variante « ligne »), et il l'emporte visuellement.
+          backgroundColor: active ? FocusRowStyle.activeBgColor : "transparent",
+        }}
+      >
+        <View
+          style={{
+            width: RAIL.largeurIcone,
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
         >
-          {item.label}
-        </Animated.Text>
+          {item.icon(couleurIcone)}
+        </View>
+        <Animated.View
+          pointerEvents="none"
+          style={[{ position: "absolute", left: RAIL.libelleGauche }, labelStyle]}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              color: item.danger
+                ? Colors.error
+                : active ? Colors.textPrimary : Colors.textSecondary,
+              fontSize: 20,
+              fontFamily: Fonts.semibold,
+            }}
+          >
+            {item.label}
+          </Text>
+        </Animated.View>
       </View>
     </Focusable>
   );

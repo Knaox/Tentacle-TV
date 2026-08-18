@@ -44,13 +44,22 @@ export const FocusGlow = {
 } as const;
 
 /**
- * Row variant — used for sidebar items, list rows.
- * No scale; uses an animated left bar + tinted bg instead.
+ * Variante « ligne » — entrées du rail, lignes de liste, panneaux de choix.
+ *
+ * Alignée sur la référence webOS, qui remplit la ligne d'un blanc translucide
+ * au lieu d'y poser une barre violette : `--fill-strong` au focus,
+ * `--fill-soft` pour la ligne active. La barre a disparu pour la même raison —
+ * elle n'existe sur aucune des trois cibles de référence, et deux repères
+ * concurrents sur la même ligne se disputent le regard.
+ *
+ * Les valeurs viennent des jetons partagés : ce sont exactement celles que la
+ * feuille de la LG applique à `.rail-entree:focus` et `[data-active="true"]`.
  */
 export const FocusRowStyle = {
-  bgColor: "rgba(139, 92, 246, 0.14)",
-  barColor: BRAND.violet,
-  barWidth: 3,
+  /** `--fill-strong` — la ligne qui porte le focus. */
+  bgColor: "rgba(255, 255, 255, 0.28)",
+  /** `--fill-soft` — la ligne de la page où l'on se trouve. */
+  activeBgColor: "rgba(255, 255, 255, 0.08)",
 } as const;
 
 /**

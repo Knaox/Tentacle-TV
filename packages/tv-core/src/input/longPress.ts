@@ -40,7 +40,15 @@ import { estValidation } from "./keys";
 
 /** Au-delà, c'est un maintien. En deçà de ~450 ms, un appui appuyé le
  *  déclencherait par mégarde ; au-delà de ~600 ms, on a l'impression d'attendre. */
-const SEUIL_MS = 550;
+/** Seuil du maintien, en millisecondes.
+ *
+ * Exporté parce que React Native ne peut pas réutiliser la machine telle
+ * quelle : `Pressable` mesure lui-même le maintien et prend le seuil en prop
+ * (`delayLongPress`). Partager la constante garde le geste identique sur les
+ * trois cibles même si le mécanisme diffère. */
+export const SEUIL_APPUI_LONG_MS = 550;
+
+const SEUIL_MS = SEUIL_APPUI_LONG_MS;
 
 /** Silence après lequel on considère la touche relâchée, faute de `keyup`. */
 const SILENCE_MS = 700;

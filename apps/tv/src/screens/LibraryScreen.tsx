@@ -13,6 +13,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Colors, Spacing, Typography, Radius, CardConfig } from "../theme/colors";
+import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -22,7 +23,9 @@ const ROW_GAP = 24;
 // (écran − rail − padding), sinon 5 × 180 dp déborde en 960 dp (1080p) →
 // cartes collées/rognées sans aucun espacement.
 const WINDOW_W = require("react-native").Dimensions.get("window").width as number;
-const RAIL_W = 76; // RAIL_COLLAPSED (TVScreenFrame réserve cette marge)
+// Reprise du rail, jamais recopiée : la valeur vivait ici en double et ne
+// suivait pas quand le rail changeait de géométrie.
+const RAIL_W = RAIL_COLLAPSED;
 const GRID_AVAIL = WINDOW_W - RAIL_W - Spacing.screenPadding * 2;
 const CELL_W = Math.floor(GRID_AVAIL / COLUMNS);
 const CARD_W = CELL_W - Spacing.cardGap;

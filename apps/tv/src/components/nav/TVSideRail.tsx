@@ -1,76 +1,62 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
-import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming, interpolate,
-} from "react-native-reanimated";
+import { View, Text, ScrollView, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useLibraries, useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
+import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { RAIL, largeurIndiceRail } from "@tentacle-tv/tv-core";
+import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { RailRow } from "./RailRow";
+import { useRailEntries } from "./railEntries";
+import { useEpinglageRail } from "./railPinning";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { possessiveLibraryName } from "../../utils/libraryLabel";
 import { useTVScrollToFocused } from "../../hooks/useTVScrollToFocused";
 import { useTVNav } from "../../context/TVNavContext";
-import {
-  HomeIcon, SearchIcon, LibraryIcon, SettingsIcon, InfoIcon,
-  LogoutIcon, TVIcon, MusicIcon, BookIcon, ServerIcon,
-} from "../icons/TVIcons";
 import { Colors, Fonts } from "../../theme/colors";
-import { Durations, Easings } from "../../theme/motion";
+import { Easings } from "../../theme/motion";
 
-/** Largeur du rail replié (icônes seules) — le contenu réserve cette marge. */
-export const RAIL_COLLAPSED = 76;
-/** Largeur étendue au focus (icônes + libellés), façon Apple TV / Netflix. */
-export const RAIL_EXPANDED = 256;
+/** Largeur du rail replié — le contenu réserve cette marge, overscan compris. */
+export const RAIL_COLLAPSED = RAIL.largeurRepli + TV_OVERSCAN_PT.x;
+/** Largeur du panneau qui apparaît derrière. Le rail, lui, ne bouge pas. */
+export const RAIL_EXPANDED = RAIL.largeurPanneau;
 
-const ICON_SIZE = 22;
-
-export interface RailItem {
-  key: string;
-  label: string;
-  icon: (color: string) => React.ReactNode;
-  danger?: boolean;
-}
+const LARGEUR_INDICE = largeurIndiceRail(TV_OVERSCAN_PT.x);
 
 interface TVSideRailProps {
   currentRoute: string;
   onNavigate: (key: string) => void;
-  /** Incrémenter pour redonner le focus à l'item actif (ex: BACK sur Accueil). */
+  /** Incrémenter pour redonner le focus à l'item actif (ex : Retour sur l'accueil). */
   grabFocusSignal?: number;
 }
 
-function libraryIcon(collectionType?: string) {
-  return (color: string) => {
-    switch (collectionType?.toLowerCase()) {
-      case "tvshows": return <TVIcon size={ICON_SIZE} color={color} />;
-      case "music": return <MusicIcon size={ICON_SIZE} color={color} />;
-      case "books": return <BookIcon size={ICON_SIZE} color={color} />;
-      default: return <LibraryIcon size={ICON_SIZE} color={color} />;
-    }
-  };
-}
-
 /**
- * Rail de navigation persistant type tvOS : toujours visible en colonne
- * d'icônes, s'étend avec un panneau verre dépoli quand le focus y entre.
+ * Le rail de navigation, à la géométrie de la LG.
+ *
+ * **Le rail ne change jamais de largeur.** La version précédente l'animait de
+ * 76 à 256 points, ce qui repoussait toutes les affiches dès que le focus
+ * entrait dans le menu. Ici, un panneau posé DERRIÈRE le rail apparaît en fondu
+ * d'opacité ; les icônes ne bougent pas d'un point, et la page non plus. Le
+ * moteur de focus vient de calculer sa géométrie sur ces positions — si elles
+ * bougeaient pendant la transition, il viserait des cases qui n'existent plus.
+ *
+ * Aucun fond au repos : le rail flotte au-dessus de l'affiche, et la lisibilité
+ * des icônes vient du voile de la bannière elle-même.
  */
 export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal }: TVSideRailProps) {
-  const { t, i18n } = useTranslation("nav");
-  const { data: libraries } = useLibraries();
+  const { t } = useTranslation("nav");
   const { storage } = useTentacleConfig();
+  const { haut, bas } = useRailEntries();
+  const epinglage = useEpinglageRail();
   const progress = useSharedValue(0);
   const focusCount = useRef(0);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<View>(null);
-  // Le ScrollView des items du haut doit suivre le focus D-pad (sinon une
-  // bibliothèque basse est focusée hors viewport).
   const itemsScrollRef = useRef<ScrollView>(null);
-  const { makeOnFocus } = useTVScrollToFocused(itemsScrollRef, 56);
+  const { makeOnFocus } = useTVScrollToFocused(itemsScrollRef, RAIL.reserveHaut);
 
-  // Prefetch du catalogue au focus d'une bibliothèque (debouncé : traverser le
-  // rail au D-pad ne doit pas précharger toutes les bibliothèques). Mêmes
-  // filtres que LibraryScreen → la grille s'affiche depuis le cache.
+  // Préchargement du catalogue au focus d'une bibliothèque, temporisé :
+  // traverser le rail au D-pad ne doit pas précharger tout le serveur.
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
   const userId = useUserId();
@@ -86,191 +72,165 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const cancelPrefetch = useCallback(() => {
     if (prefetchTimer.current) { clearTimeout(prefetchTimer.current); prefetchTimer.current = null; }
   }, []);
-  // Nœud de l'item actif pour TVFocusGuideView.destinations : entrer dans le
-  // rail (LEFT depuis le contenu) focalise TOUJOURS l'item actif — sans ça,
-  // Android choisit l'item géométriquement le plus proche (ex: Déconnexion !).
-  const [activeNode, setActiveNode] = useState<View | null>(null);
-  // Publie aussi le nœud actif au contexte : sur Apple TV, le pont de focus
-  // (TVFocusBridgeLeft, monté côté contenu) l'utilise comme destination pour que
-  // LEFT depuis le contenu atteigne le rail (overlay sibling, sinon injoignable
-  // au D-pad sur tvOS). Additif — le `destinations` interne ci-dessous reste
-  // utilisé tel quel (notamment Android).
-  // `railFocused` est dans le contexte : le pont de focus tvOS (TVFocusBridgeLeft)
-  // doit savoir si le focus est dans le rail pour se désactiver (sinon il piège).
-  const { setRailActiveNode, railFocused, setRailFocused, lastContentNodeRef } = useTVNav();
 
-  // Sélection d'un item = on QUITTE le rail pour le contenu. Replier IMMÉDIATEMENT (≠ le timer 30 ms de
-  // scheduleCollapse, qui course avec la navigation instantanée `animation:"none"` → rail resté étendu +
-  // focus piégé, surtout au retour Bibliothèque→Accueil). Et remettre `lastContentNodeRef=null` : sinon
-  // l'écran cible restaurerait le focus sur une node d'un AUTRE écran (démontée) → focus mort → piégé ;
-  // à null, l'écran cible retombe sur son `autoFocus` (TVFocusGuideView) → focus valide sur le contenu.
+  const [activeNode, setActiveNode] = useState<View | null>(null);
+  const { setRailActiveNode, railFocused, setRailFocused, lastContentNodeRef } = useTVNav();
+  const [deploye, setDeploye] = useState(false);
+
+  // Sélectionner, c'est QUITTER le rail : replier immédiatement, sans passer par
+  // le délai de `scheduleCollapse` qui courrait avec la navigation instantanée.
+  // Et remettre `lastContentNodeRef` à null, sinon l'écran d'arrivée
+  // restaurerait le focus sur un nœud d'un AUTRE écran, déjà démonté.
   const handleSelect = useCallback((key: string) => {
+    if (key === "RailShowAll") { epinglage.toutAfficher(); return; }
     lastContentNodeRef.current = null;
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current = 0;
     setRailFocused(false);
-    progress.value = withTiming(0, { duration: Durations.fast, easing: Easings.out });
+    setDeploye(false);
+    progress.value = withTiming(0, { duration: RAIL.duree, easing: Easings.out });
     onNavigate(key);
-  }, [onNavigate, progress, setRailFocused, lastContentNodeRef]);
+  }, [onNavigate, progress, setRailFocused, lastContentNodeRef, epinglage]);
+
   const setActiveItemRef = useCallback((node: View | null) => {
     (activeRef as React.MutableRefObject<View | null>).current = node;
     setActiveNode(node);
     setRailActiveNode(node);
   }, [setRailActiveNode]);
-  // Redirection vers l'item actif UNIQUEMENT quand le focus vient de
-  // l'extérieur : une fois dans le rail, la navigation interne (descendre
-  // jusqu'à Déconnexion) ne doit pas être re-routée vers l'item actif.
 
   const userName = (() => {
     try { return (JSON.parse(storage.getItem("tentacle_user") ?? "{}") as { Name?: string }).Name ?? ""; }
     catch { return ""; }
   })();
 
-  // BACK sur l'accueil → focus sur l'item actif du rail.
   useEffect(() => {
     if (grabFocusSignal) activeRef.current?.setNativeProps?.({ hasTVPreferredFocus: true });
   }, [grabFocusSignal]);
 
-  // Pont de focus ANDROID entre les DEUX groupes du rail : depuis le 1er item
-  // du bas (Préférences), UP doit atteindre la DERNIÈRE bibliothèque (fin du
-  // ScrollView du haut) — la recherche géométrique native préférait parfois un
-  // focusable de la PAGE (à droite) et « redescendait » dans le contenu
-  // (constaté sur Préférences/À propos). nextFocusUp/Down court-circuitent la
-  // géométrie. Android uniquement : tvOS a son propre moteur + ponts dédiés.
+  // Pont de focus ANDROID entre les deux groupes : depuis la première entrée du
+  // bas, HAUT doit atteindre la dernière du haut. La recherche géométrique
+  // native préférait parfois un focusable de la PAGE et redescendait dans le
+  // contenu. tvOS a ses propres ponts, montés côté contenu.
   const [lastTopHandle, setLastTopHandle] = useState<number | null>(null);
   const [firstBottomHandle, setFirstBottomHandle] = useState<number | null>(null);
-  const captureLastTop = useCallback((n: View | null) => {
-    setLastTopHandle(n ? findNodeHandle(n) : null);
-  }, []);
-  const captureFirstBottom = useCallback((n: View | null) => {
-    setFirstBottomHandle(n ? findNodeHandle(n) : null);
-  }, []);
+  const captureLastTop = useCallback((n: View | null) => setLastTopHandle(n ? findNodeHandle(n) : null), []);
+  const captureFirstBottom = useCallback((n: View | null) => setFirstBottomHandle(n ? findNodeHandle(n) : null), []);
 
   const expand = useCallback(() => {
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current += 1;
     setRailFocused(true);
-    progress.value = withTiming(1, { duration: Durations.base, easing: Easings.out });
-  }, [progress]);
+    setDeploye(true);
+    progress.value = withTiming(1, { duration: RAIL.duree, easing: Easings.out });
+  }, [progress, setRailFocused]);
 
   const scheduleCollapse = useCallback(() => {
     focusCount.current = Math.max(0, focusCount.current - 1);
     if (collapseTimer.current) clearTimeout(collapseTimer.current);
-    // Petit délai : le focus passe d'un item à l'autre sans replier le rail.
+    // Court délai : passer d'une entrée à l'autre ne doit pas replier le rail.
     collapseTimer.current = setTimeout(() => {
       if (focusCount.current <= 0) {
         setRailFocused(false);
-        progress.value = withTiming(0, { duration: Durations.fast, easing: Easings.out });
+        setDeploye(false);
+        progress.value = withTiming(0, { duration: RAIL.duree, easing: Easings.out });
       }
     }, 30);
-  }, [progress]);
+  }, [progress, setRailFocused]);
 
-  const railStyle = useAnimatedStyle(() => ({
-    width: interpolate(progress.value, [0, 1], [RAIL_COLLAPSED, RAIL_EXPANDED]),
-  }));
+  // Opacité seule, partout : rien ne se redimensionne, donc rien à recalculer.
   const panelStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
   const labelStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [-8, 0]) }],
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [-RAIL.libelleDecalage, 0]) }],
   }));
+  const hintStyle = useAnimatedStyle(() => ({ opacity: progress.value * 0.62 }));
 
-  const items: RailItem[] = [
-    { key: "Search", label: t("search"), icon: (c) => <SearchIcon size={ICON_SIZE} color={c} /> },
-    { key: "Home", label: t("home"), icon: (c) => <HomeIcon size={ICON_SIZE} color={c} /> },
-    ...(libraries ?? []).map((lib) => ({
-      key: `Library_${lib.Id}`,
-      label: possessiveLibraryName(lib.Name, i18n.language),
-      icon: libraryIcon(lib.CollectionType),
-    })),
-  ];
-  const bottomItems: RailItem[] = [
-    { key: "Preferences", label: t("preferences"), icon: (c) => <SettingsIcon size={ICON_SIZE} color={c} /> },
-    { key: "About", label: t("about"), icon: (c) => <InfoIcon size={ICON_SIZE} color={c} /> },
-    { key: "ChangeServer", label: t("changeServer"), icon: (c) => <ServerIcon size={ICON_SIZE} color={c} /> },
-    { key: "Logout", label: t("logout"), icon: (c) => <LogoutIcon size={ICON_SIZE} color={c} />, danger: true },
-  ];
-
-  const renderItem = (
-    item: RailItem,
+  const rendre = (
+    item: (typeof haut)[number],
     index?: number,
-    bridge?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
+    pont?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
   ) => (
     <RailRow
       key={item.key}
       item={item}
       index={index}
       active={currentRoute === item.key}
+      deploye={deploye}
       labelStyle={labelStyle}
       onNavigate={handleSelect}
+      onMasquer={epinglage.basculer}
       onExpand={expand}
       onCollapse={scheduleCollapse}
       schedulePrefetch={schedulePrefetch}
       cancelPrefetch={cancelPrefetch}
       makeOnFocus={makeOnFocus}
       setActiveRef={setActiveItemRef}
-      captureNode={bridge?.captureNode}
-      nextFocusUp={bridge?.nextFocusUp}
-      nextFocusDown={bridge?.nextFocusDown}
+      captureNode={pont?.captureNode}
+      nextFocusUp={pont?.nextFocusUp}
+      nextFocusDown={pont?.nextFocusDown}
     />
   );
 
   return (
-    <Animated.View
-      style={[{ position: "absolute", top: 0, left: 0, bottom: 0, zIndex: 100, overflow: "hidden" }, railStyle]}
+    <View
+      pointerEvents="box-none"
+      style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED, zIndex: 100 }}
     >
-      {/* Panneau verre dépoli — n'apparaît qu'en mode étendu */}
-      <Animated.View pointerEvents="none" style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, panelStyle]}>
-        <View style={{ flex: 1, backgroundColor: Colors.glassBgHeavy, borderRightWidth: 1, borderRightColor: Colors.glassBorder }} />
-      </Animated.View>
-      {/* Liseré sombre permanent pour la lisibilité des icônes en mode replié */}
-      <LinearGradient
+      {/* Le panneau, DERRIÈRE le rail : il déborde largement à droite et s'y
+          éteint, ce qui évite une arête verticale au milieu de l'affiche. */}
+      <Animated.View
         pointerEvents="none"
-        colors={["rgba(0,0,0,0.78)", "rgba(0,0,0,0)"]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED + 40 }}
-      />
+        style={[{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_EXPANDED }, panelStyle]}
+      >
+        <LinearGradient
+          colors={[Colors.bgDeep, Colors.bgDeep, "rgba(0,0,0,0.86)", "transparent"]}
+          locations={[0, 0.62, 0.82, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={{ flex: 1 }}
+        />
+      </Animated.View>
 
-      {/*
-        Android : `destinations` redirige l'entrée géométrique vers l'item actif.
-        tvOS : `autoFocus` fait du rail un VRAI groupe de focus navigable (sans ça,
-        on entre mais on ne peut pas se déplacer ni sortir) ; il mémorise le dernier
-        item focusé. L'atterrissage sur l'item actif est géré par TVFocusBridgeLeft,
-        donc pas de `destinations` ici sur tvOS (qui empêcherait la nav interne).
-      */}
       <TVFocusGuideView
         trapFocusLeft
         autoFocus={Platform.OS === "ios"}
-        destinations={
-          Platform.OS === "ios"
-            ? undefined
-            : (!railFocused && activeNode ? [activeNode] : undefined)
-        }
-        style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 24 }}
+        destinations={Platform.OS === "ios" ? undefined : (!railFocused && activeNode ? [activeNode] : undefined)}
+        style={{
+          flex: 1,
+          paddingLeft: TV_OVERSCAN_PT.x,
+          paddingTop: TV_OVERSCAN_PT.y,
+          paddingBottom: TV_OVERSCAN_PT.y,
+        }}
       >
-        {/* Avatar utilisateur (décoratif) */}
-        <View style={{ flexDirection: "row", alignItems: "center", height: 48, marginBottom: 16 }}>
-          <View style={{ width: RAIL_COLLAPSED - 24, alignItems: "center" }}>
-            <TentacleLogo size={30} />
-          </View>
-          <Animated.Text numberOfLines={1} style={[{ flex: 1, color: Colors.textSecondary, fontSize: 14, fontFamily: Fonts.semibold }, labelStyle]}>
-            {userName || "Tentacle TV"}
-          </Animated.Text>
+        <View style={{ flexDirection: "row", alignItems: "center", height: RAIL.hauteurMarque, paddingLeft: RAIL.retraitEntree }}>
+          <TentacleLogo size={34} />
+          <Animated.View style={[{ marginLeft: RAIL.ecartMarque }, labelStyle]} pointerEvents="none">
+            <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 20, fontFamily: Fonts.bold }}>
+              {userName || "Tentacle TV"}
+            </Text>
+          </Animated.View>
         </View>
 
         <ScrollView ref={itemsScrollRef} showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-          {items.map((item, i) => renderItem(item, i,
-            Platform.OS === "android" && i === items.length - 1
+          {haut.map((item, i) => rendre(item, i,
+            Platform.OS === "android" && i === haut.length - 1
               ? { captureNode: captureLastTop, nextFocusDown: firstBottomHandle ?? undefined }
               : undefined))}
         </ScrollView>
 
-        <View style={{ height: 1, backgroundColor: Colors.divider, marginVertical: 10 }} />
-        {bottomItems.map((item, bi) => renderItem(item, undefined,
+        {bas.map((item, bi) => rendre(item, undefined,
           Platform.OS === "android" && bi === 0
             ? { captureNode: captureFirstBottom, nextFocusUp: lastTopHandle ?? undefined }
             : undefined))}
+
+        {/* L'indice n'apparaît qu'avec le panneau : hors focus, il n'a personne
+            à instruire, et il occuperait la place pour rien. */}
+        <Animated.View pointerEvents="none" style={[{ width: LARGEUR_INDICE }, hintStyle]}>
+          <Text style={{ color: Colors.textSecondary, fontSize: 15, lineHeight: 20 }}>
+            {t("railHint")}
+          </Text>
+        </Animated.View>
       </TVFocusGuideView>
-    </Animated.View>
+    </View>
   );
 });
