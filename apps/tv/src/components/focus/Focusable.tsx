@@ -131,10 +131,6 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
     return {
       transform: [{ scale: s }],
-      // Une affiche qui grandit par son centre empiète sur la rangée du dessus.
-      // En grandissant par le bas, elle pousse vers le haut, dans la marge que
-      // la rangée réserve déjà pour l'anneau.
-      transformOrigin: TV_CARD_FOCUS.origine,
       zIndex: interpolate(progress.value, [0, 1], [0, 10]),
       ...(hasShadow ? {
         shadowOpacity: interpolate(progress.value, [0, 1], [0, FocusGlow.shadowOpacity]),
@@ -188,6 +184,15 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
       accessibilityLabel={accessibilityLabel}
     >
       <Animated.View style={[
+        // Hors du style ANIMÉ : Reanimated ne sait pas évaluer `transformOrigin`
+        // dans un worklet et lève à chaque image. Il n'a de toute façon pas à
+        // s'animer — seule l'échelle bouge, l'origine est fixe.
+        //
+        // Une affiche qui grandit par son centre empiète sur la rangée du
+        // dessus, où le regard n'a rien à faire ; en grandissant par le bas,
+        // elle pousse vers le haut, dans la marge que la rangée réserve déjà
+        // pour l'anneau.
+        { transformOrigin: TV_CARD_FOCUS.origine },
         scaleStyle,
         hasGap && { margin: -RING_GAP, padding: RING_GAP },
         hasShadow && {
