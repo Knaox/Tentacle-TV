@@ -17,7 +17,6 @@ interface LibrarySummary {
 }
 
 interface TVHomeRowsProps {
-  hasHero: boolean;
   resume?: MediaItem[];
   nextUp?: MediaItem[];
   watchlist?: MediaItem[];
@@ -37,12 +36,11 @@ interface TVHomeRowsProps {
  * Prochains épisodes, Ma liste, Déjà vu, puis « Derniers ajouts de … » par
  * bibliothèque. Extraites de `HomeScreen` pour le budget de 300 lignes.
  *
- * Le wrapper CHEVAUCHE le bas de la carte bannière (−48, web `-mt-12`) et
- * chaque rangée porte sa marge BASSE (web `mb-10`) — pas de marge haute, sinon
- * le chevauchement fond.
+ * AUCUN chevauchement avec la bannière : la référence l'a supprimé (le `-mt-12`
+ * web masquait la couture d'une bannière à fond perdu, qui n'existe plus — la
+ * carte porte son écart bas). Chaque rangée garde sa marge BASSE (web `mb-10`).
  */
 export function TVHomeRows({
-  hasHero,
   resume,
   nextUp,
   watchlist,
@@ -72,10 +70,7 @@ export function TVHomeRows({
   );
 
   return (
-    <View
-      style={{ marginTop: hasHero ? -48 : 0, zIndex: 10 }}
-      onLayout={(e) => onWrapperLayout(e.nativeEvent.layout.y)}
-    >
+    <View onLayout={(e) => onWrapperLayout(e.nativeEvent.layout.y)}>
       {resume && resume.length > 0 && (
         <FocusableRow
           title={t("resumeWatching")}

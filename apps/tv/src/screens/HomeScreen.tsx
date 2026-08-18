@@ -215,7 +215,6 @@ function HomeScreenInner({ navigation }: Props) {
             )}
 
             <TVHomeRows
-              hasHero={heroItems.length > 0}
               resume={resume}
               nextUp={nextUp}
               watchlist={watchlist}

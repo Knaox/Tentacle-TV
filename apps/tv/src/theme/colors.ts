@@ -114,8 +114,8 @@ export const Spacing = {
   screenPadding: 32,
   /** Gouttière des rangées et des cartes bannière (`--row-gutter-desktop`). */
   rowGutter: TV_BANNER_CARD.gouttiere,
-  /** Espace SOUS chaque rangée (web `mb-10`) — les rangées ne portent plus de
-   *  marge haute : la première doit chevaucher la carte bannière (-48). */
+  /** Espace SOUS chaque rangée (web `mb-10`) et sous la carte bannière
+   *  (hero web `pb-10`) — les rangées ne portent pas de marge haute. */
   rowGap: 40,
   /** Gap between content sections/rows. */
   sectionGap: 28,
