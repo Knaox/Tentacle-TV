@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { View, Text, TextInput, Platform } from "react-native";
 import type { View as RNView } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -42,6 +43,23 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
     onResult: (text) => onVoiceResult?.(text),
   });
 
+  // tvOS — champ réel + retour de focus. La 1ʳᵉ touche de la grille sert de
+  // point de retour quand le clavier système se ferme : le moteur de focus ne
+  // restaure pas toujours seul, et la touche portant déjà
+  // `hasTVPreferredFocus` en prop, seule une re-saisie cycle false→true agit
+  // (react-native-tvos #849).
+  const inputRef = useRef<TextInput>(null);
+  const firstKeyNode = useRef<RNView | null>(null);
+  const setFirstKeyRef = useCallback((node: RNView | null) => {
+    firstKeyNode.current = node;
+    entryRef?.(node);
+  }, [entryRef]);
+  const refocusGrid = useCallback(() => {
+    const node = firstKeyNode.current as { setNativeProps?: (p: object) => void } | null;
+    node?.setNativeProps?.({ hasTVPreferredFocus: false });
+    setTimeout(() => node?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+  }, []);
+
   const micBg = isListening
     ? Colors.accentPurple
     : isPending
@@ -52,26 +70,44 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
     <View style={{ width: 260 }}>
       {/* Query row */}
       {IS_TVOS ? (
-        // tvOS : TextInput natif → sélectionner ouvre le clavier système plein
-        // écran ; là, hold du bouton micro Siri Remote = dictée. La grille reste
-        // dispo en dessous pour la saisie au pad. Champ contrôlé par `query`.
-        <View style={{
-          flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8,
-          backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
-          paddingHorizontal: 10, minHeight: 44,
-          borderWidth: 1, borderColor: Colors.glassBorder,
-        }}>
-          <MicIcon size={18} color={Colors.accentPurpleLight} />
+        // tvOS — parité LG (`SearchScreenTv`) : « la barre est un BOUTON, le
+        // champ réel est masqué ». Un TextInput focusable au D-pad ouvrait le
+        // clavier système plein écran au simple passage du focus ; ici seule
+        // la SÉLECTION de la barre le fait monter (focus programmatique), et
+        // la dictée Siri Remote y reste accessible. Fermeture → retour du
+        // focus à la grille.
+        <>
+          <Focusable
+            variant="button"
+            onPress={() => inputRef.current?.focus()}
+            accessibilityLabel={t("voiceOrType")}
+          >
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8,
+              backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+              paddingHorizontal: 10, minHeight: 44,
+              borderWidth: 1, borderColor: Colors.glassBorder,
+            }}>
+              <MicIcon size={18} color={Colors.accentPurpleLight} />
+              <Text
+                numberOfLines={1}
+                style={{ flex: 1, fontSize: 20, fontWeight: "300", paddingVertical: 8, color: query ? Colors.textPrimary : Colors.textTertiary }}
+              >
+                {query || t("voiceOrType")}
+              </Text>
+            </View>
+          </Focusable>
+          {/* Champ RÉEL : hors écran, jamais candidat du moteur géométrique. */}
           <TextInput
+            ref={inputRef}
             value={query}
             onChangeText={onSetQuery}
-            placeholder={t("voiceOrType")}
-            placeholderTextColor={Colors.textTertiary}
+            onEndEditing={refocusGrid}
             returnKeyType="search"
             autoCorrect={false}
-            style={{ flex: 1, color: Colors.textPrimary, fontSize: 20, fontWeight: "300", paddingVertical: 8 }}
+            style={{ position: "absolute", left: -1000, top: 0, width: 1, height: 1, opacity: 0 }}
           />
-        </View>
+        </>
       ) : (
         // Android TV : accès micro réel → bouton inline (useSpeechRecognition).
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -108,7 +144,7 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
           {row.map((key, keyIdx) => (
             <Focusable
               key={key}
-              ref={rowIdx === 0 && keyIdx === 0 ? entryRef : undefined}
+              ref={rowIdx === 0 && keyIdx === 0 ? setFirstKeyRef : undefined}
               variant="button"
               onPress={() => onKeyPress(key.toLowerCase())}
               hasTVPreferredFocus={rowIdx === 0 && keyIdx === 0}
