@@ -14,3 +14,14 @@
 export function preferNativeHls(): boolean {
   return true;
 }
+
+/**
+ * Le palier se change par relance de session — nouvelle PlaybackInfo, nouvelle
+ * URL de manifeste, que la dalle recharge comme n'importe quelle source. Le
+ * masquage du sélecteur sous HLS natif est une prudence de coquille de bureau
+ * qui n'a pas cours ici : sans cette réponse, le téléviseur n'aurait aucun
+ * réglage de qualité.
+ */
+export function nativeHlsSupportsQualitySwitch(): boolean {
+  return true;
+}
