@@ -112,10 +112,10 @@ export function MediaDetailScreen({ route, navigation }: Props) {
 
       {/* Episodes — série, ou série parente d'un épisode (fiche centrée épisode,
           saison présélectionnée + épisode surligné, comme le web) */}
-      {(isSeries || (isEpisode && item.SeriesId)) && (
+      {(isSeries || (isEpisode && item.SeriesId != null)) && (
         <View style={{ marginTop: Spacing.sectionGap }}>
           <TVEpisodeList
-            seriesId={isEpisode ? item.SeriesId! : item.Id}
+            seriesId={(isEpisode ? item.SeriesId : undefined) ?? item.Id}
             currentEpisodeId={isEpisode ? item.Id : undefined}
             initialSeasonId={isEpisode ? item.SeasonId : undefined}
             onPlay={(ep) => navigation.navigate("Player", { itemId: ep.Id })}

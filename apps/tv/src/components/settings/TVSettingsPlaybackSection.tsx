@@ -147,7 +147,10 @@ export function TVSettingsPlaybackSection() {
               cle: "mode",
               intitule: t("subtitleMode"),
               valeur: t(
-                MODES_SOUS_TITRES.find((mode) => mode.valeur === (pref?.subtitleMode ?? "none"))!.cle,
+                // Une valeur persistée hors liste (legacy) ne doit pas faire
+                // tomber l'écran : repli sur « désactivés ».
+                (MODES_SOUS_TITRES.find((mode) => mode.valeur === (pref?.subtitleMode ?? "none")) ??
+                  MODES_SOUS_TITRES[0]).cle,
               ),
               choix: modes,
               selection: pref?.subtitleMode ?? "none",
