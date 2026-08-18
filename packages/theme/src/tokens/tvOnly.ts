@@ -134,3 +134,55 @@ export const tvOnlyCssVarEntries = (): Array<[string, string]> => [
   ["--hero-ambilight-sat", TV_HERO_AMBILIGHT.saturation],
   ["--hero-scrim-diagonal", TV_HERO_SCRIM_DIAGONAL],
 ];
+
+/**
+ * L'anneau de focus du salon.
+ *
+ * C'est le seul repère qui dit où l'on est : il n'y a ni souris ni doigt sur un
+ * téléviseur, et l'œil le suit en permanence. Sa forme est donc plus arrêtée
+ * que celle d'un survol web.
+ *
+ * Trois couches empilées : un anneau blanc NET, un halo violet de marque qui le
+ * décolle du fond, et — sur une carte — une ombre portée qui la fait avancer.
+ * Le blanc plutôt que le violet parce qu'une affiche peut être de n'importe
+ * quelle couleur, et que seul le blanc s'y détache toujours.
+ *
+ * **Aucune transition sur l'anneau lui-même** : il apparaît à l'image où le
+ * focus arrive. Un anneau qui monte en fondu donne l'impression d'un appareil
+ * qui traîne — et le mouvement, s'il en faut un, appartient à la carte, qui
+ * s'agrandit.
+ *
+ * Côté CSS, l'anneau est un `box-shadow` et non un `outline` : l'outline ne
+ * suit le rayon des angles qu'à partir de Chromium 94, et la cible en est loin.
+ * Côté natif, c'est une bordure plus une ombre — React Native ne sait pas
+ * empiler deux ombres sur une même vue, d'où deux calques.
+ */
+export const TV_FOCUS_RING = {
+  /** Épaisseur de l'anneau blanc. */
+  epaisseur: 3,
+  teinte: "#ffffff",
+  /** Opacité du halo violet, appliquée à la couleur de marque. */
+  haloOpacite: 0.5,
+  /** Rayon de flou du halo. */
+  haloFlou: 18,
+  /** Débordement du halo au-delà de l'anneau. Sans équivalent natif : React
+   *  Native n'a pas de notion d'étalement d'ombre, le flou l'absorbe. */
+  haloEtalement: 4,
+
+  /** L'ombre qui décolle une carte focalisée du fond. */
+  releveDecalageY: 14,
+  releveFlou: 30,
+  releveOpacite: 0.85,
+} as const;
+
+/** L'agrandissement d'une carte au focus, et sa courbe.
+ *
+ * L'origine est le BAS de la carte : une affiche qui grandit par son centre
+ * empiète sur la rangée du dessus, où le regard n'a rien à faire. En grandissant
+ * par le bas, elle pousse vers le haut, dans l'espace que la rangée réserve
+ * déjà pour l'anneau. */
+export const TV_CARD_FOCUS = {
+  echelle: 1.08,
+  duree: 180,
+  origine: "center bottom",
+} as const;
