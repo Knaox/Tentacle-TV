@@ -106,6 +106,11 @@ export default {
   hdrAutoTitle: "Basculer l'écran en HDR pendant la lecture",
   hdrAutoHint:
     "Un film HDR s'affiche alors avec toutes ses couleurs. Le changement de mode noircit l'écran une seconde ou deux, et l'état d'origine est rétabli à la fin de la lecture. Désactivé, le film est adapté à votre écran sans changer son mode.",
+  // Saut d'intro automatique (réglage par appareil)
+  autoSkipIntroTitle: "Passer l'intro automatiquement",
+  autoSkipIntroHint:
+    "Quand une série signale son générique de début, le lecteur le passe au bout de trois secondes. Une croix reste offerte pendant le décompte pour garder l'intro sur l'épisode en cours.",
+
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
 } as const;

@@ -9,6 +9,7 @@ import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
+import { AutoSkipIntroToggle } from "../components/settings/AutoSkipIntroToggle";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -193,6 +194,12 @@ export function Preferences() {
               <option key={lang.code} value={lang.code}>{lang.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Sauter l'intro tout seul — partout, contrairement à la bascule
+            HDR qui ne concerne qu'un bureau Windows. */}
+        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
+          <AutoSkipIntroToggle />
         </div>
 
         {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté

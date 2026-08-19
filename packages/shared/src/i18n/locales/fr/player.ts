@@ -39,6 +39,7 @@ export default {
   loadFailed: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie.",
   upNext: "À suivre",
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
+  skipIntroIn: "Passer l'intro dans {{seconds}} s",
   dismiss: "Masquer",
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
