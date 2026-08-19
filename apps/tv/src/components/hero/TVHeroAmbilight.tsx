@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Animated, Easing, View } from "react-native";
 import { rampeHalo } from "@tentacle-tv/tv-core";
 import { TV_AMBILIGHT } from "@tentacle-tv/theme";
@@ -26,6 +26,9 @@ const FONDU_MS = 1_400;
  *  recompositions. Échantillonnée une fois par le pilote natif, donc gratuite. */
 const CADENCE = Math.round((SOUFFLE_MS / 1000) * 30);
 const AMBIANCE = (t: number) => Math.floor(t * CADENCE) / CADENCE;
+
+/** Délai après lequel le fondu part sans avoir eu de nouvelles de l'image. */
+const REPLI_MS = 500;
 
 /**
  * Le halo de bannière — la lueur qui fond le bord de la carte dans la page.
@@ -84,14 +87,28 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   );
 });
 
-/** Le fondu d'entrée et le souffle, en transform et opacité seules — donc
- *  gratuits sur une couche déjà rastérisée. Ils partent quand l'image arrive. */
+/**
+ * Le fondu d'entrée et le souffle, en transform et opacité seules — donc
+ * gratuits sur une couche déjà rastérisée. Ils partent quand l'image arrive,
+ * et au plus tard au bout de `REPLI_MS`.
+ *
+ * Ce repli n'est pas une ceinture de sécurité : sur Android, `react-native-svg`
+ * n'émet JAMAIS `onLoad` pour une image distante — vérifié au logcat, le
+ * rappel n'arrive pas une seule fois. Sans lui, le fondu ne démarre pas, le
+ * halo reste à l'opacité zéro, et la lueur est purement et simplement absente
+ * en production alors qu'elle est bien rendue.
+ *
+ * Un demi-quart de la durée du fondu : tvOS, où `onLoad` arrive, ne voit pas la
+ * différence ; Android part sans attendre plus longtemps qu'un battement de
+ * cils. La référence web n'attend d'ailleurs rien du tout — elle anime dès le
+ * montage.
+ */
 function Souffle({ children }: { children: (onReady: () => void) => ReactNode }) {
   const fondu = useRef(new Animated.Value(0)).current;
   const souffle = useRef(new Animated.Value(1)).current;
   const lance = useRef(false);
 
-  const onReady = () => {
+  const partir = useCallback(() => {
     if (lance.current) return;
     lance.current = true;
     Animated.parallel([
@@ -108,7 +125,12 @@ function Souffle({ children }: { children: (onReady: () => void) => ReactNode })
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [fondu, souffle]);
+
+  useEffect(() => {
+    const repli = setTimeout(partir, REPLI_MS);
+    return () => clearTimeout(repli);
+  }, [partir]);
 
   return (
     <Animated.View
@@ -122,7 +144,7 @@ function Souffle({ children }: { children: (onReady: () => void) => ReactNode })
         transform: [{ scale: souffle }],
       }}
     >
-      {children(onReady)}
+      {children(partir)}
     </Animated.View>
   );
 }
