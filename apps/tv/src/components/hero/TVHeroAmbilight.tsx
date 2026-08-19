@@ -1,16 +1,15 @@
-import { memo, useMemo, useRef, useState, type ReactNode } from "react";
-import { Animated, Easing, Platform, View } from "react-native";
+import { memo, useMemo, useRef, type ReactNode } from "react";
+import { Animated, Easing, View } from "react-native";
 import { rampeHalo } from "@tentacle-tv/tv-core";
 import { TV_AMBILIGHT } from "@tentacle-tv/theme";
-import { TVHeroAmbilightCouches } from "./TVHeroAmbilightCouches";
 import { TVHeroAmbilightFiltre } from "./TVHeroAmbilightFiltre";
 
 interface TVHeroAmbilightProps {
   /** L'image de la bannière. Le halo en est une copie floutée, pas une autre. */
   uri?: string;
   /** La carte, MESURÉE. Le halo se dimensionne dessus et sur rien d'autre :
-   *  c'est ce qui le rend juste sur tvOS (1920 pt) comme sur Android TV
-   *  (960 dp), où la même carte fait la moitié des points. */
+   *  c'est ce qui le rend juste quelle que soit la densité rapportée par la
+   *  plateforme. */
   cardW: number;
   cardH: number;
   /** Opacité d'ensemble de la lueur (le jeton `haloOpacite` de la carte). */
@@ -35,17 +34,20 @@ const AMBIANCE = (t: number) => Math.floor(t * CADENCE) / CADENCE;
  * floutée derrière la carte. Aucune couleur n'est extraite, aucun dégradé n'est
  * inventé — le halo EST l'image.
  *
- * Ce fichier ne fait que trois choses : dériver la géométrie de la carte
- * mesurée, jouer le fondu et le souffle, et choisir le rendu.
+ * Ce fichier ne fait que deux choses : dériver la géométrie de la carte
+ * mesurée, et jouer le fondu et le souffle.
  *
- * - tvOS → `TVHeroAmbilightFiltre` : le pipeline littéral (`FeGaussianBlur` +
- *   `FeColorMatrix`), donc un vrai débordement gaussien ET la saturation de la
- *   référence, celle qui fait la différence entre une lueur colorée et un lavis
- *   gris.
- * - Android TV → `TVHeroAmbilightCouches` : le repli portable, sans filtre. Le
- *   chemin Android de react-native-svg plafonne les flous à un rayon de 25 et
- *   ignore l'échelle du canevas ; le calibrer sans dalle sous les yeux serait
- *   deviner. À rebasculer le jour où quelqu'un le vérifie sur un vrai appareil.
+ * Le rendu est le même sur les deux plateformes : `TVHeroAmbilightFiltre`, le
+ * pipeline littéral (`FeGaussianBlur` + `FeColorMatrix`), donc un vrai
+ * débordement gaussien ET la saturation de la référence — celle qui fait la
+ * différence entre une lueur colorée et un lavis gris.
+ *
+ * Android en était privé, sur le soupçon que react-native-svg y plafonne les
+ * flous à un rayon de 25 et ignore l'échelle du canevas. Vérifié sur émulateur
+ * Android TV : le soupçon ne tenait pas — le rendu se fait à 1/K, le
+ * `stdDeviation` transmis vaut 8, et l'échelle est celle de la vue, pas du
+ * canevas. Ce qui manquait vraiment était ailleurs, dans l'ancrage du halo
+ * (`TVHeroAmbilightFiltre`).
  */
 export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   uri,
@@ -53,10 +55,6 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   cardH,
   opacity,
 }: TVHeroAmbilightProps) {
-  // La largeur du bitmap effectivement décodé — elle ne vaut pas toujours
-  // `largeurSource` (le mode économie de données rétrécit ce que Jellyfin
-  // renvoie), et le rayon de flou natif se calcule DANS cet espace.
-  const [sourceW, setSourceW] = useState<number>(TV_AMBILIGHT.largeurSource);
   const rampe = useMemo(() => rampeHalo(cardW, TV_AMBILIGHT), [cardW]);
 
   if (!uri || cardW <= 0 || cardH <= 0) return null;
@@ -70,29 +68,17 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
           entre en fondu et rejoue son souffle depuis 1 — la référence fait
           exactement cela, et c'est ce qui évite le saut d'échelle. */}
       <Souffle key={uri}>
-        {(onReady) =>
-          Platform.OS === "ios" ? (
-            <TVHeroAmbilightFiltre
-              uri={uri}
-              cardW={cardW}
-              cardH={cardH}
-              sigma={rampe.sigma}
-              saturation={TV_AMBILIGHT.saturation}
-              sourceW={sourceW}
-              onReady={onReady}
-            />
-          ) : (
-            <TVHeroAmbilightCouches
-              uri={uri}
-              cardW={cardW}
-              cardH={cardH}
-              rampe={rampe}
-              sourceW={sourceW}
-              onSourceWidth={setSourceW}
-              onReady={onReady}
-            />
-          )
-        }
+        {(onReady) => (
+          <TVHeroAmbilightFiltre
+            uri={uri}
+            cardW={cardW}
+            cardH={cardH}
+            sigma={rampe.sigma}
+            saturation={TV_AMBILIGHT.saturation}
+            sourceW={TV_AMBILIGHT.largeurSource}
+            onReady={onReady}
+          />
+        )}
       </Souffle>
     </View>
   );

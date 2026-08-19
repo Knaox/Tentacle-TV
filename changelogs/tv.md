@@ -7,9 +7,9 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [Unreleased]
 ### FR
-- Le halo des bannières redevient une vraie lueur colorée : il reprend les couleurs de l'affiche et déborde tout autour de la carte, comme sur l'ordinateur, au lieu de la plaque grise à contours visibles qu'il était devenu — et il respire lentement au rythme de la bannière
+- Le halo des bannières redevient une vraie lueur colorée, identique sur Apple TV et sur Android TV : il reprend les couleurs de l'affiche, déborde tout autour de la carte comme sur l'ordinateur, et respire lentement. Sur Android il partait en haut à gauche, tranché net sur deux bords ; il est maintenant centré et s'éteint en douceur
 ### EN
-- The banner halo is a real coloured glow again: it picks up the artwork's colours and spills all around the card, just like on desktop, instead of the grey slab with visible edges it had become — and it breathes slowly in step with the banner
+- The banner halo is a real coloured glow again, identical on Apple TV and Android TV: it picks up the artwork's colours, spills all around the card just like on desktop, and breathes slowly. On Android it used to sit up and to the left, cut off on two edges; it is now centred and fades out smoothly
 
 ## [1.2.0]
 ### FR
