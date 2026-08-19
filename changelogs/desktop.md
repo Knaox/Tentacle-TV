@@ -14,6 +14,15 @@ les notes Apple doivent rester génériques.
 ### EN
 - …
 
+## [1.20.8]
+### FR
+- Nouveau réglage dans Réglages > Lecture : passer l'intro automatiquement. Éteint par défaut ; une fois allumé, le générique de début d'une série est passé au bout de trois secondes
+- Le décompte se lit sur le bouton habituel, qui ne bouge pas de place, et une croix discrète garde l'intro sur l'épisode en cours — sans renoncer au saut manuel
+
+### EN
+- New setting under Settings > Playback: skip the intro automatically. Off by default; once on, a series' opening titles are skipped after three seconds
+- The countdown reads on the usual button, which does not move, and a discreet cross keeps the intro on the episode you are watching — without giving up the manual skip
+
 ## [1.20.7]
 ### FR
 - Les pages ouvertes par un plugin s'affichent enfin dans la police de l'application. Elles tournaient en police système, ce qui les faisait détonner sur chaque écran
