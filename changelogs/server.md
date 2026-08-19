@@ -11,6 +11,17 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.9]
+### FR
+- **Tous les téléviseurs redemandent leur code de jumelage.** La mise à jour qui arrive sur Android TV, Apple TV et LG repart d'un jumelage neuf : chaque téléviseur revient de lui-même sur l'écran de code, sans qu'il faille aller le révoquer un par un. Le serveur porte désormais une « époque de jumelage » qu'il suffira d'incrémenter pour redemander la même chose lors d'une prochaine mise à jour
+- **Vos téléviseurs portent enfin leur nom.** Dans Réglages > Sécurité, la liste des appareils jumelés affichait « TV », « TV », « TV » — impossible de savoir lequel révoquer. Elle affiche maintenant « LG TV », « Apple TV » ou « Android TV », et numérote les homonymes quand deux téléviseurs de la même marque sont sur le même compte. Rien à faire : le nom se remplit au premier écran affiché après le jumelage
+- **Le lecteur peut passer l'intro tout seul.** Nouveau réglage dans Réglages > Lecture, éteint par défaut : quand une série signale son générique de début, il est passé au bout de trois secondes. Une croix discrète, pendant le décompte, garde l'intro sur l'épisode en cours
+
+### EN
+- **Every television asks for its pairing code again.** The update landing on Android TV, Apple TV and LG starts from a fresh pairing: each television returns to the code screen on its own, with no need to revoke them one by one. The server now carries a "pairing epoch" that only needs incrementing to ask the same again on a future update
+- **Your televisions finally carry their name.** Under Settings > Security, the list of paired devices read "TV", "TV", "TV" — there was no telling which one to revoke. It now reads "LG TV", "Apple TV" or "Android TV", and numbers duplicates when two televisions of the same make sit on one account. Nothing to do: the name fills in on the first screen shown after pairing
+- **The player can skip the intro on its own.** A new setting under Settings > Playback, off by default: when a series marks its opening titles, they are skipped after three seconds. A discreet cross, during the countdown, keeps the intro on the episode you are watching
+
 ## [1.12.8]
 ### FR
 - **Ouvrir un film depuis le catalogue d'un plugin ne fait plus clignoter sa fiche.** Le bouton « Regarder » d'une fiche Vigie amenait bien sur la page du média, mais celle-ci rejouait toute son animation d'ouverture — fondu de la bannière, dézoom, montée du texte — par-dessus un écran qui venait de se vider : l'image apparaissait, disparaissait, revenait. Une page de plugin vit dans un cadre isolé, elle ne peut pas passer le relais à l'animation d'ouverture comme le fait une vignette de l'application ; la fiche se pose donc d'emblée dans son état final, exactement comme au retour du lecteur
