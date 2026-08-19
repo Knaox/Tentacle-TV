@@ -11,6 +11,15 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### EN
 - …
 
+## [1.12.8]
+### FR
+- **Ouvrir un film depuis le catalogue d'un plugin ne fait plus clignoter sa fiche.** Le bouton « Regarder » d'une fiche Vigie amenait bien sur la page du média, mais celle-ci rejouait toute son animation d'ouverture — fondu de la bannière, dézoom, montée du texte — par-dessus un écran qui venait de se vider : l'image apparaissait, disparaissait, revenait. Une page de plugin vit dans un cadre isolé, elle ne peut pas passer le relais à l'animation d'ouverture comme le fait une vignette de l'application ; la fiche se pose donc d'emblée dans son état final, exactement comme au retour du lecteur
+- **Et la barre du haut reste utilisable en arrivant.** Une fiche de plugin assombrit et floute le bandeau de Tentacle le temps de son affichage. Il n'était jamais remis au net quand on quittait le plugin depuis cette fiche : la barre restait floue et ne répondait plus au clic — jusqu'au rechargement complet de la page
+
+### EN
+- **Opening a film from a plugin's catalogue no longer makes its detail page flicker.** The "Watch" button on a Vigie sheet did take you to the media page, but that page replayed its whole opening animation — banner fade, zoom-out, text rising — over a screen that had just emptied: the image appeared, vanished, came back. A plugin page lives in an isolated frame and cannot hand over to the opening animation the way an in-app thumbnail does; the detail page now lands straight in its final state, exactly as it does when returning from the player
+- **And the top bar stays usable on arrival.** A plugin sheet dims and blurs the Tentacle bar while it is shown. It was never restored when you left the plugin from that sheet: the bar stayed blurred and stopped responding to clicks — until a full page reload
+
 ## [1.12.7]
 ### FR
 - **Changer de piste audio fonctionne enfin sur le téléviseur LG.** En lecture directe, choisir une piste que la dalle ne sait pas ouvrir — un TrueHD Atmos, par exemple — ne faisait strictement rien : ni bascule, ni message, le film restait dans la langue précédente. Le lecteur demande désormais la piste au serveur quand il ne peut pas la fournir lui-même

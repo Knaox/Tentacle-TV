@@ -4,6 +4,8 @@ import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
 import { resolveBridgeUrl } from "./pluginIframe/resolveBridgeUrl";
+import { setHostChromeVeil } from "./pluginIframe/hostChromeVeil";
+import { markPluginNavigation } from "./detail/detailTransition";
 import { openExternal } from "../lib/openExternal";
 import { TrailerModal } from "./detail/TrailerModal";
 
@@ -230,7 +232,14 @@ export function PluginIframe({
         }
 
         case "NAVIGATE":
-          if (typeof data.path === "string") navigate(data.path);
+          if (typeof data.path === "string") {
+            // Le cadre du greffon va être détruit : son `OVERLAY_CLOSE` ne
+            // partira pas, et la fiche d'arrivée n'a aucune origine à jouer.
+            // Les deux se règlent ICI, avant que la route ne change.
+            setHostChromeVeil(false);
+            markPluginNavigation();
+            navigate(data.path);
+          }
           break;
 
         // Lien externe demandé par le plugin (sandbox sans allow-popups) —
@@ -253,22 +262,13 @@ export function PluginIframe({
         }
 
 
-        case "OVERLAY_OPEN": {
-          document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
-            el.style.filter = "blur(4px) brightness(0.5)";
-            el.style.pointerEvents = "none";
-            el.style.transition = "filter 300ms ease";
-          });
+        case "OVERLAY_OPEN":
+          setHostChromeVeil(true);
           break;
-        }
 
-        case "OVERLAY_CLOSE": {
-          document.querySelectorAll<HTMLElement>("[data-host-chrome]").forEach((el) => {
-            el.style.filter = "";
-            el.style.pointerEvents = "";
-          });
+        case "OVERLAY_CLOSE":
+          setHostChromeVeil(false);
           break;
-        }
 
         case "READY":
         case "PLUGIN_REGISTER":
@@ -287,6 +287,16 @@ export function PluginIframe({
   useEffect(() => {
     bundleFetched.current = false;
   }, [bundleUrl, pluginPath]);
+
+  /*
+   * Le voile du chrome ne survit pas au cadre qui l'a demandé.
+   *
+   * Le greffon lève le sien au démontage de sa surface modale — sauf quand ce
+   * démontage est la destruction du cadre lui-même : sortie par la barre
+   * latérale, retour navigateur, changement de page de greffon. Le voile est
+   * posé sur le DOM de l'hôte, il lui survivrait sans ceci.
+   */
+  useEffect(() => () => setHostChromeVeil(false), []);
 
   /*
    * Le clavier appartient à la page affichée.
