@@ -18,6 +18,7 @@ import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminK
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
 import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
 import { resolveSessionRouting } from "./jellyfinProxy/routageSession";
+import { nommerAppareilDepuisEntete } from "../services/deviceNaming";
 import { urlCible } from "./jellyfinProxy/urlCible";
 import { tracerCorps, tracerEchec, tracerEntetes } from "./jellyfinProxy/tracesFlux";
 import { signalDeRequete } from "./jellyfinProxy/annulationClient";
@@ -48,6 +49,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     const q = request.query as Record<string, string | undefined> | undefined;
     const queryToken = q?.api_key || q?.ApiKey;
     const incomingToken = (request.headers["x-emby-token"] as string | undefined) || cookieToken || queryToken;
+
+    // Un téléviseur jumelé par le relais naît sous le nom « TV » — le relais ne
+    // transporte pas son identité. Il l'annonce en revanche ici, à chaque
+    // requête, dans l'en-tête qu'il destine à Jellyfin. En oubli volontaire, et
+    // une seule fois par appareil.
+    nommerAppareilDepuisEntete(incomingToken, request.headers["x-emby-authorization"]);
 
     // Un appareil jumelé ne parle que pour SON compte.
     //
