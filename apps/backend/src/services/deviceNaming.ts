@@ -17,9 +17,14 @@ import { hashToken } from "./jwt";
  * à Jellyfin par `X-Emby-Authorization`, qui transite par le proxy. webOS s'y
  * annonce « LG TV », tvOS « Apple TV », Android TV « AndroidTV ». Il suffit de
  * la lire — rien à livrer côté téléviseur.
+ *
+ * La marque voyage dans `Device="…"`, PAS dans `Client="…"`. Le quatrième
+ * argument de `JellyfinClient` s'appelle `deviceName`, et c'est lui que les
+ * trois applications de salon renseignent ; `Client` y vaut « Tentacle TV - TV »
+ * pour Android TV comme pour tvOS, donc ne distingue rien.
  */
 
-/** Ce que les clients annoncent, et ce qu'on en affiche. */
+/** Ce que les appareils annoncent, et ce qu'on en affiche. */
 const ETIQUETTES: Record<string, string> = {
   "LG TV": "LG TV",
   "Apple TV": "Apple TV",
@@ -39,7 +44,7 @@ const PLAFOND_VUS = 2_000;
 
 export function nommerAppareilDepuisEntete(jeton: string | undefined, entete: unknown): void {
   if (!jeton || !hasPrisma() || typeof entete !== "string") return;
-  const etiquette = ETIQUETTES[clientAnnonce(entete) ?? ""];
+  const etiquette = ETIQUETTES[appareilAnnonce(entete) ?? ""];
   if (!etiquette) return;
 
   const empreinte = hashToken(jeton);
@@ -53,9 +58,9 @@ export function nommerAppareilDepuisEntete(jeton: string | undefined, entete: un
   });
 }
 
-/** `MediaBrowser Client="LG TV", Device="…"` → `LG TV`. */
-function clientAnnonce(entete: string): string | null {
-  return /Client="([^"]*)"/.exec(entete)?.[1] ?? null;
+/** `MediaBrowser Client="Tentacle TV - TV", Device="AndroidTV", …` → `AndroidTV`. */
+function appareilAnnonce(entete: string): string | null {
+  return /Device="([^"]*)"/.exec(entete)?.[1] ?? null;
 }
 
 async function renommer(empreinte: string, etiquette: string): Promise<void> {
