@@ -39,6 +39,7 @@ export default {
   loadFailed: "Playback could not start. Check the server or try again.",
   upNext: "Up Next",
   autoplayCountdown: "Next episode in {{seconds}}s",
+  skipIntroIn: "Skip intro in {{seconds}}s",
   dismiss: "Dismiss",
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",

@@ -1,6 +1,8 @@
 import type { MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { LoadingBar } from "./PlayerLoadingScreen";
+import { SkipIntroButton } from "./SkipIntroButton";
+import { useSkipIntroCountdown } from "./useSkipIntroCountdown";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
@@ -40,6 +42,13 @@ export function VideoPlayerOverlays({
   setShowPlayButton, setPolicyMuted, handleSeek,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
+  // Saut d'intro automatique — inerte tant que la préférence est éteinte, et
+  // réarmé à chaque épisode par le début du segment.
+  const sautIntro = useSkipIntroCountdown({
+    visible: Boolean(showSkipIntro && introSegment),
+    cle: introSegment?.start,
+    sauter: () => { if (introSegment) handleSeek(introSegment.end); },
+  });
 
   return (
     <>
@@ -95,10 +104,13 @@ export function VideoPlayerOverlays({
       )}
 
       {showSkipIntro && introSegment && (
-        <button onClick={(e) => { e.stopPropagation(); handleSeek(introSegment.end); }}
-          className="absolute bottom-28 right-6 z-50 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {t("player:skipIntro")}
-        </button>
+        <SkipIntroButton
+          compte={sautIntro.compte}
+          onSauter={() => handleSeek(introSegment.end)}
+          onAnnuler={sautIntro.annuler}
+          couche="z-50"
+          flou
+        />
       )}
       {/* Bouton réservé au cas où il n'y a RIEN après : quand un épisode suit,
           c'est la carte « à suivre » qui prend sa place — avec la vignette et le

@@ -5,6 +5,8 @@ import { LoadingBar } from "./PlayerLoadingScreen";
 import { NextEpisodeOverlay } from "../NextEpisodeOverlay";
 import { NextEpisodeFullscreen } from "./NextEpisodeFullscreen";
 import { useUpNextCard } from "./useUpNextCard";
+import { SkipIntroButton } from "./SkipIntroButton";
+import { useSkipIntroCountdown } from "./useSkipIntroCountdown";
 import type { SegmentTimestamps } from "@tentacle-tv/shared";
 
 interface DesktopPlayerOverlaysProps {
@@ -62,6 +64,18 @@ export function DesktopPlayerOverlays({
   seek, onNextEpisode, cancelAutoPlay, onAutoNextDismiss,
 }: DesktopPlayerOverlaysProps) {
   const { t } = useTranslation("player");
+  // Saut d'intro automatique — inerte tant que la préférence est éteinte. La
+  // cible se calcule AU MOMENT du saut : `effectiveMpvOffset` est une ref, sa
+  // valeur au rendu ne vaut rien.
+  const sauterIntro = () => {
+    if (!introSegment) return;
+    void seek(isDirectPlay ? introSegment.end : Math.max(0, introSegment.end - effectiveMpvOffset.current));
+  };
+  const sautIntro = useSkipIntroCountdown({
+    visible: Boolean(showSkipIntro && introSegment),
+    cle: introSegment?.start,
+    sauter: sauterIntro,
+  });
   // Carte « à suivre » : proposée dès le générique quand un épisode suivant
   // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si
   // l'enchaînement automatique démarre. Partagé avec le lecteur web.
@@ -107,10 +121,12 @@ export function DesktopPlayerOverlays({
 
       {/* Skip intro / credits buttons */}
       {showSkipIntro && introSegment && (
-        <button onClick={() => seek(isDirectPlay ? introSegment.end : Math.max(0, introSegment.end - effectiveMpvOffset.current))}
-          className="absolute bottom-28 right-6 z-20 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20">
-          {t("player:skipIntro")}
-        </button>
+        <SkipIntroButton
+          compte={sautIntro.compte}
+          onSauter={sauterIntro}
+          onAnnuler={sautIntro.annuler}
+          couche="z-20"
+        />
       )}
       {/* Bouton réservé au cas où il n'y a RIEN après : quand un épisode suit,
           c'est la carte « à suivre » qui prend sa place — avec la vignette et le
