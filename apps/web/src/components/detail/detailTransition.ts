@@ -99,6 +99,31 @@ export function arrivesFromPlayer(): boolean {
 }
 
 /**
+ * Instant de la dernière navigation demandée par un GREFFON. Zéro : jamais.
+ *
+ * La seule arrivée où l'écran de départ ne PEUT PAS déposer d'origine. Un
+ * greffon vit dans une iframe sandboxée : il ne voit pas ce module, il demande
+ * la navigation par `postMessage` (cf. `PluginIframe`), et son document est
+ * détruit d'un bloc au changement de route. Le rectangle de son visuel est dans
+ * un repère qui n'existe déjà plus quand la fiche se monte.
+ *
+ * Le marqueur n'est pas posé selon la route visée : il dit d'où vient la
+ * navigation, et seule la fiche média s'en sert. Rien à craindre d'une origine
+ * posée entre-temps — le calque l'emporte, et le régime est le même.
+ */
+let pluginNavAt = 0;
+
+/** À appeler juste AVANT `navigate()` sur demande d'un greffon. */
+export function markPluginNavigation(): void {
+  pluginNavAt = Date.now();
+}
+
+/** Vrai si la navigation en cours vient d'un greffon. Lecture non destructive. */
+export function arrivesFromPlugin(): boolean {
+  return pluginNavAt > 0 && Date.now() - pluginNavAt <= MAX_AGE_MS;
+}
+
+/**
  * Chemin d'atterrissage du DOCUMENT — figé à l'import, donc une fois par
  * chargement de page. `BrowserRouter` (cf. `main.tsx`) : le chemin de la route
  * EST celui de l'URL.
@@ -108,7 +133,7 @@ const landingPath = typeof window === "undefined" ? "" : window.location.pathnam
 /**
  * La fiche rend-elle son état FINAL d'emblée, sans jouer son entrée ?
  *
- * Trois façons d'arriver sur une fiche sans l'ouvrir, une seule règle : cette
+ * Quatre façons d'arriver sur une fiche sans l'ouvrir, une seule règle : cette
  * page ne s'OUVRE pas, donc elle ne joue rien.
  *
  * 1. **Le calque s'en charge** (`origin`). Il recouvre l'écran pendant que la
@@ -122,14 +147,19 @@ const landingPath = typeof window === "undefined" ? "" : window.location.pathnam
  *    lecture, on ne l'ouvre pas, on la retrouve.
  * 3. **Le document vient d'être chargé sur cette fiche** (`landingPath`) :
  *    rechargement, lien direct, onglet restauré. Personne n'a cliqué sur rien.
+ * 4. **La navigation vient d'un greffon** (`arrivesFromPlugin`) : quelqu'un a
+ *    bien cliqué, mais dans une iframe sandboxée qui ne peut rien déposer ici.
+ *    Le cadre du greffon disparaît d'un bloc et la fiche se monte sur du vide —
+ *    le décor de l'ouverture n'a alors PLUS RIEN à quoi s'enchaîner.
  *
- * Dans les cas 2 et 3, l'entrée se jouait en entier par-dessus un écran encore
+ * Dans les cas 2, 3 et 4, l'entrée se jouait en entier par-dessus un écran encore
  * noir — dont le fondu plein cadre du backdrop, le geste MÊME du calque. Ça se
  * lit comme une transition qui rate son départ, pas comme une arrivée.
  */
 export function skipsEntrance(origin: DetailOrigin | null): boolean {
   return origin !== null
     || arrivesFromPlayer()
+    || arrivesFromPlugin()
     || (typeof window !== "undefined" && window.location.pathname === landingPath);
 }
 
