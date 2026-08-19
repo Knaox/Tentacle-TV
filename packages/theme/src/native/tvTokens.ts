@@ -45,8 +45,24 @@ export const TV_OVERSCAN_PT = {
   y: parsePx(TV_OVERSCAN.y),
 } as const;
 
-/** Le rayon de flou du halo de bannière, pour `<Image blurRadius>`. */
-export const TV_AMBILIGHT_BLUR = parsePx(TV_HERO_AMBILIGHT.blur);
+/** Le halo de bannière, en nombres.
+ *
+ *  Il n'y a PAS de `TV_AMBILIGHT_BLUR` : un rayon en pixels d'écran branché
+ *  sur `<Image blurRadius>`, qui compte en pixels de bitmap, est exactement ce
+ *  qui a produit la plaque grise. Ce qui se transpose, c'est le RAPPORT du
+ *  flou à la largeur de la carte ; le rayon s'en déduit à la mesure, par
+ *  plateforme (`@tentacle-tv/tv-core` → `rayonFlou`).
+ *
+ *  `saturation` n'a pas d'équivalent dans `<Image>` : elle passe par le filtre
+ *  SVG du chemin tvOS. Le repli Android s'en dispense — voir
+ *  `TVHeroAmbilightFiltre`. */
+export const TV_AMBILIGHT = {
+  rapportFlou: parsePx(TV_HERO_AMBILIGHT.blur) / parsePx(TV_HERO_AMBILIGHT.largeurCarteReference),
+  largeurSource: TV_HERO_AMBILIGHT.largeurSource,
+  couches: TV_HERO_AMBILIGHT.couches,
+  saturation: Number.parseFloat(TV_HERO_AMBILIGHT.saturation),
+  plancher: TV_HERO_AMBILIGHT.alphaPlancher,
+} as const;
 
 /** Les rangs de peinture du lecteur — mêmes valeurs que la feuille webOS. */
 export const TV_LAYERS = TV_PLAYER_LAYERS;

@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Text, View } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient, useLatestItems, useRandomLibraryBackdrop } from "@tentacle-tv/api-client";
-import { TV_BANNER_CARD } from "@tentacle-tv/theme";
+import { TV_AMBILIGHT, TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import { TVBannerCardFrame } from "../hero/TVBannerCardFrame";
 import { TVHeroBackdrop, backdropUriOf } from "../hero/TVHeroBackdrop";
@@ -35,7 +35,7 @@ export const TVLibraryHero = memo(function TVLibraryHero({
   return (
     <TVBannerCardFrame
       heightVh={TV_BANNER_CARD.hauteurBibliothequeVh}
-      ambilightUri={featured ? backdropUriOf(client, featured, 128, 70) : undefined}
+      ambilightUri={featured ? backdropUriOf(client, featured, TV_AMBILIGHT.largeurSource, 70) : undefined}
     >
       {featured && <TVHeroBackdrop current={featured} />}
 

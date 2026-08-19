@@ -27,7 +27,7 @@ export {
 // Elles ne remplacent pas encore `Radius`/`Spacing` ci-dessous — l'alignement
 // visuel est une décision qui se voit, et il se fait en P3, devant l'écran.
 export {
-  TV_AMBILIGHT_BLUR,
+  TV_AMBILIGHT,
   TV_COLORS,
   TV_LAYERS,
   TV_OVERSCAN_PT,

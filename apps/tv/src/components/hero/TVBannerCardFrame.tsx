@@ -1,5 +1,5 @@
-import { memo } from "react";
-import { useWindowDimensions, View, type ViewStyle } from "react-native";
+import { memo, useCallback, useState } from "react";
+import { useWindowDimensions, View, type LayoutChangeEvent, type ViewStyle } from "react-native";
 import { TV_BANNER_CARD, TV_RADIUS, withAlpha } from "@tentacle-tv/theme";
 import { Colors, Spacing } from "../../theme/colors";
 import { TVHeroAmbilight } from "./TVHeroAmbilight";
@@ -8,8 +8,10 @@ interface TVBannerCardFrameProps {
   /** Hauteur de la carte, en centièmes de la hauteur d'écran (62 accueil,
    *  44 bibliothèque — `TV_BANNER_CARD`). */
   heightVh: number;
-  /** Backdrop en TOUTE PETITE taille (≈128 px) : le halo est une copie floutée
-   *  à 48 px, un original fin n'apporterait rien — même économie que le web. */
+  /** Backdrop en PETITE taille (`TV_AMBILIGHT.largeurSource`) : le halo est une
+   *  copie floutée, un original fin n'apporterait rien — même économie que le
+   *  web, à ceci près qu'en natif le noyau de flou se quantifie sur la source,
+   *  ce qui interdit de descendre aussi bas que les 128 px du navigateur. */
   ambilightUri?: string;
   children: React.ReactNode;
   style?: ViewStyle;
@@ -36,11 +38,24 @@ export const TVBannerCardFrame = memo(function TVBannerCardFrame({
   const { height: screenH } = useWindowDimensions();
   const height = Math.round((screenH * heightVh) / 100);
 
+  // Le halo se dimensionne sur la carte MESURÉE, pas sur des points en dur :
+  // Android TV compose en 960 dp là où tvOS travaille en 1920 pt, et un
+  // débordement écrit en points y paraîtrait deux fois plus gros.
+  const [cardW, setCardW] = useState(0);
+  const mesurer = useCallback((e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    setCardW((precedent) => (precedent === w ? precedent : w));
+  }, []);
+
   return (
-    <View style={[{ height, marginHorizontal: Spacing.rowGutter }, style]}>
+    <View
+      style={[{ height, marginHorizontal: Spacing.rowGutter }, style]}
+      onLayout={mesurer}
+    >
       <TVHeroAmbilight
         uri={ambilightUri}
-        radius={TV_RADIUS.lg}
+        cardW={cardW}
+        cardH={height}
         opacity={TV_BANNER_CARD.haloOpacite}
       />
       <View

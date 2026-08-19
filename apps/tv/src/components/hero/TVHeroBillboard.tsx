@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, memo } from "react";
 import { Image } from "react-native";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { TV_BANNER_CARD } from "@tentacle-tv/theme";
+import { TV_AMBILIGHT, TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { HeroConfig, Spacing } from "../../theme/colors";
 import { TVBannerCardFrame } from "./TVBannerCardFrame";
 import { TVHeroBackdrop, backdropUriOf } from "./TVHeroBackdrop";
@@ -78,7 +78,7 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
   return (
     <TVBannerCardFrame
       heightVh={TV_BANNER_CARD.hauteurAccueilVh}
-      ambilightUri={backdropUriOf(client, content, 128, 70)}
+      ambilightUri={backdropUriOf(client, content, TV_AMBILIGHT.largeurSource, 70)}
       // L'écart carte → première rangée de la référence (hero web `pb-10`).
       style={{ marginBottom: Spacing.rowGap }}
     >
