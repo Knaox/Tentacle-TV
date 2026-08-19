@@ -38,10 +38,9 @@ const PORTEE = 3;
  * est un nombre de pixels du bitmap de filtre. À l'échelle de l'écran il
  * vaudrait 48 ; à 1/6 il vaut 8, ce qui reste dans les clous partout.
  *
- * Réservé à tvOS pour l'instant : le chemin Android de react-native-svg passe
- * les flous par RenderScript avec un rayon PLAFONNÉ à 25 et sans tenir compte
- * de l'échelle du canevas — calibrer ça sans dalle sous les yeux serait deviner.
- * Le repli (`TVHeroAmbilightCouches`) n'a, lui, besoin d'aucun filtre.
+ * Les deux plateformes l'empruntent. Le plafond de rayon que l'on prêtait au
+ * chemin Android de react-native-svg ne mord pas ici : `stdDeviation` vaut 8
+ * dans l'espace du filtre, très en deçà.
  */
 export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   uri,
@@ -60,16 +59,26 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   const h = (cardH + 2 * bleed) / k;
   const marge = bleed / k;
 
+  // Posé par son CENTRE, et mis à l'échelle autour de ce centre.
+  //
+  // La version d'avant ancrait le coin (`top/left: -bleed` + `transformOrigin:
+  // "0% 0%"`). Android n'honore pas `transformOrigin` : il met l'échelle au
+  // centre quoi qu'on écrive, et la lueur partait en haut à gauche de la carte,
+  // tranchée net sur deux bords — pile le défaut qu'on a filmé sur l'émulateur.
+  //
+  // Le centre du halo est celui de la carte, par construction : la boîte
+  // déborde d'autant de chaque côté. S'y ancrer donne donc EXACTEMENT la même
+  // géométrie finale qu'avant sur tvOS, sans plus rien devoir à une propriété
+  // que les deux plateformes n'interprètent pas pareil.
   return (
     <View
       style={{
         position: "absolute",
-        top: -bleed,
-        left: -bleed,
+        left: cardW / 2 - w / 2,
+        top: cardH / 2 - h / 2,
         width: w,
         height: h,
         transform: [{ scale: k }],
-        transformOrigin: "0% 0%",
       }}
     >
       <Svg width={w} height={h}>
