@@ -4,5 +4,6 @@
   "webos": "1.0.0",
   "mobile": "1.5.0",
   "server": "1.12.8",
-  "minServer": "1.12.0"
+  "minServer": "1.12.0",
+  "tvPairingEpoch": 1
 }

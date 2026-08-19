@@ -9,6 +9,7 @@ import websocket from "@fastify/websocket";
 
 import { enregistrerClientsStatiques } from "./static/clientsStatiques";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
+import { appliquerEpoqueJumelage } from "./services/pairingEpoch";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -272,6 +273,9 @@ async function main() {
       await ensureInstallId().catch((err) => {
         console.warn("[Identity] install id unavailable at boot:", err?.message ?? err);
       });
+      // Rejumelage général des téléviseurs quand `versions.json` le demande.
+      // Après `detectAppState`, qui a chargé `server_config` en mémoire.
+      await appliquerEpoqueJumelage();
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }
