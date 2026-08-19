@@ -1,111 +1,142 @@
-import { memo } from "react";
-import { Image, View } from "react-native";
-import LinearGradient from "react-native-linear-gradient";
-import { TV_AMBILIGHT_BLUR } from "@tentacle-tv/theme";
-import { Colors } from "../../theme/colors";
+import { memo, useMemo, useRef, useState, type ReactNode } from "react";
+import { Animated, Easing, Platform, View } from "react-native";
+import { rampeHalo } from "@tentacle-tv/tv-core";
+import { TV_AMBILIGHT } from "@tentacle-tv/theme";
+import { TVHeroAmbilightCouches } from "./TVHeroAmbilightCouches";
+import { TVHeroAmbilightFiltre } from "./TVHeroAmbilightFiltre";
 
 interface TVHeroAmbilightProps {
   /** L'image de la bannière. Le halo en est une copie floutée, pas une autre. */
   uri?: string;
-  /** Rayon des angles de la carte, pour que la lueur en épouse la forme. */
-  radius: number;
-  /** Débordement de la lueur au-delà du cadre, en points. */
-  bleed?: number;
-  /** Opacité de la lueur. Réglée au-dessous de 1 : c'est une lueur, pas un
-   *  second fond — l'image nette doit rester le sujet. */
-  opacity?: number;
+  /** La carte, MESURÉE. Le halo se dimensionne dessus et sur rien d'autre :
+   *  c'est ce qui le rend juste sur tvOS (1920 pt) comme sur Android TV
+   *  (960 dp), où la même carte fait la moitié des points. */
+  cardW: number;
+  cardH: number;
+  /** Opacité d'ensemble de la lueur (le jeton `haloOpacite` de la carte). */
+  opacity: number;
 }
 
-const DEBORDEMENT = 110;
-const OPACITE = 0.55;
-/** Fraction du débordement occupée par le fondu vers le noir. */
-const PART_FONDU = 0.82;
+/** Le zoom lent de la référence : 1 → 1,12 sur la durée d'une diapositive. */
+const SOUFFLE = 1.12;
+const SOUFFLE_MS = 8_000;
+const FONDU_MS = 1_400;
+
+/** Cadence d'ambiance du dépôt (30 Hz) : la limite basse à laquelle un
+ *  travelling lent reste indistinguable du plein régime, pour moitié moins de
+ *  recompositions. Échantillonnée une fois par le pilote natif, donc gratuite. */
+const CADENCE = Math.round((SOUFFLE_MS / 1000) * 30);
+const AMBIANCE = (t: number) => Math.floor(t * CADENCE) / CADENCE;
 
 /**
  * Le halo de bannière — la lueur qui fond le bord de la carte dans la page.
  *
- * Sur la LG, l'effet s'écrit en CSS : l'image est reprise, floutée à 48 px,
- * saturée, et laissée déborder derrière le cadre en mode de fusion « écran ».
- * Aucune de ces trois choses n'existe telle quelle en React Native — et il se
- * trouve que ça n'a pas d'importance.
+ * Même matière que la référence web : l'affiche elle-même, servie en petit et
+ * floutée derrière la carte. Aucune couleur n'est extraite, aucun dégradé n'est
+ * inventé — le halo EST l'image.
  *
- * **Le flou** est natif : `blurRadius` sur une `Image`. Il est appliqué UNE FOIS
- * à l'image décodée puis mis en cache, au lieu d'être une passe de compositing
- * par image comme le `filter` CSS. La version native coûte donc moins cher que
- * celle de la LG, ce qui va dans le sens de la règle du dépôt : ce qui n'est pas
- * regardé ne doit rien consommer.
+ * Ce fichier ne fait que trois choses : dériver la géométrie de la carte
+ * mesurée, jouer le fondu et le souffle, et choisir le rendu.
  *
- * **Le mode de fusion « écran »** est inutile ici. `screen(a, 0) = a` : sur du
- * noir, il ne fait rien. Le fond du téléviseur est `#000000`, et le halo ne
- * déborde que sur lui — là où il recouvrirait autre chose, le dégradé de
- * l'estompage l'a déjà éteint. Un rendu normal produit donc les mêmes pixels.
- * (Il n'existe de toute façon pas : `mixBlendMode` demande la nouvelle
- * architecture, et l'application tourne sur l'ancienne.)
- *
- * **La saturation** est le seul écart réel. Elle compense sur le web le
- * délavage dû au flou ; `react-native-svg` saurait le faire, mais son filtre de
- * flou diverge entre iOS et Android (issue amont #2636, ouverte). On s'en passe
- * et on rattrape à l'opacité — un halo à 48 px de flou n'a plus de détail dont
- * la couleur puisse manquer.
+ * - tvOS → `TVHeroAmbilightFiltre` : le pipeline littéral (`FeGaussianBlur` +
+ *   `FeColorMatrix`), donc un vrai débordement gaussien ET la saturation de la
+ *   référence, celle qui fait la différence entre une lueur colorée et un lavis
+ *   gris.
+ * - Android TV → `TVHeroAmbilightCouches` : le repli portable, sans filtre. Le
+ *   chemin Android de react-native-svg plafonne les flous à un rayon de 25 et
+ *   ignore l'échelle du canevas ; le calibrer sans dalle sous les yeux serait
+ *   deviner. À rebasculer le jour où quelqu'un le vérifie sur un vrai appareil.
  */
 export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   uri,
-  radius,
-  bleed = DEBORDEMENT,
-  opacity = OPACITE,
+  cardW,
+  cardH,
+  opacity,
 }: TVHeroAmbilightProps) {
-  if (!uri) return null;
+  // La largeur du bitmap effectivement décodé — elle ne vaut pas toujours
+  // `largeurSource` (le mode économie de données rétrécit ce que Jellyfin
+  // renvoie), et le rayon de flou natif se calcule DANS cet espace.
+  const [sourceW, setSourceW] = useState<number>(TV_AMBILIGHT.largeurSource);
+  const rampe = useMemo(() => rampeHalo(cardW, TV_AMBILIGHT), [cardW]);
 
-  // Écart réel avec le CSS : `blur(48px)` fait déborder la LUMIÈRE au-delà du
-  // rectangle et s'y éteint tout seul ; `blurRadius` floute DANS le rectangle,
-  // dont l'arête reste nette. Sans correction, le halo se lit comme une dalle
-  // sombre à bord franc, pas comme une lueur. Les quatre dégradés ci-dessous
-  // fondent cette arête vers le noir de la page — même extinction progressive
-  // que la référence, pour une passe de composition statique (rien d'animé).
-  const fondu = Math.round(bleed * PART_FONDU);
-  const NOIR = Colors.bgDeep;
-  const T = "rgba(0, 0, 0, 0)";
+  if (!uri || cardW <= 0 || cardH <= 0) return null;
 
   return (
     <View
       pointerEvents="none"
-      style={{
-        position: "absolute",
-        top: -bleed,
-        left: -bleed,
-        right: -bleed,
-        bottom: -bleed,
-        opacity,
-        // Sous la carte, jamais devant : la lueur est un fond.
-        zIndex: -1,
-      }}
+      style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity }}
     >
-      <Image
-        source={{ uri }}
-        blurRadius={TV_AMBILIGHT_BLUR}
-        resizeMode="cover"
-        style={{ flex: 1, borderRadius: radius + bleed / 2 }}
-      />
-      <LinearGradient
-        colors={[NOIR, T]}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, height: fondu }}
-      />
-      <LinearGradient
-        colors={[T, NOIR]}
-        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: fondu }}
-      />
-      <LinearGradient
-        colors={[NOIR, T]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: fondu }}
-      />
-      <LinearGradient
-        colors={[T, NOIR]}
-        start={{ x: 0, y: 0.5 }}
-        end={{ x: 1, y: 0.5 }}
-        style={{ position: "absolute", top: 0, bottom: 0, right: 0, width: fondu }}
-      />
+      {/* Keyé sur l'URL : changer de mise en avant monte un halo neuf, qui
+          entre en fondu et rejoue son souffle depuis 1 — la référence fait
+          exactement cela, et c'est ce qui évite le saut d'échelle. */}
+      <Souffle key={uri}>
+        {(onReady) =>
+          Platform.OS === "ios" ? (
+            <TVHeroAmbilightFiltre
+              uri={uri}
+              cardW={cardW}
+              cardH={cardH}
+              sigma={rampe.sigma}
+              saturation={TV_AMBILIGHT.saturation}
+              sourceW={sourceW}
+              onReady={onReady}
+            />
+          ) : (
+            <TVHeroAmbilightCouches
+              uri={uri}
+              cardW={cardW}
+              cardH={cardH}
+              rampe={rampe}
+              sourceW={sourceW}
+              onSourceWidth={setSourceW}
+              onReady={onReady}
+            />
+          )
+        }
+      </Souffle>
     </View>
   );
 });
+
+/** Le fondu d'entrée et le souffle, en transform et opacité seules — donc
+ *  gratuits sur une couche déjà rastérisée. Ils partent quand l'image arrive. */
+function Souffle({ children }: { children: (onReady: () => void) => ReactNode }) {
+  const fondu = useRef(new Animated.Value(0)).current;
+  const souffle = useRef(new Animated.Value(1)).current;
+  const lance = useRef(false);
+
+  const onReady = () => {
+    if (lance.current) return;
+    lance.current = true;
+    Animated.parallel([
+      Animated.timing(fondu, {
+        toValue: 1,
+        duration: FONDU_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(souffle, {
+        toValue: SOUFFLE,
+        duration: SOUFFLE_MS,
+        easing: AMBIANCE,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Animated.View
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: fondu,
+        transform: [{ scale: souffle }],
+      }}
+    >
+      {children(onReady)}
+    </Animated.View>
+  );
+}

@@ -7,9 +7,9 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [Unreleased]
 ### FR
-- …
+- Le halo des bannières redevient une vraie lueur colorée : il reprend les couleurs de l'affiche et déborde tout autour de la carte, comme sur l'ordinateur, au lieu de la plaque grise à contours visibles qu'il était devenu — et il respire lentement au rythme de la bannière
 ### EN
-- …
+- The banner halo is a real coloured glow again: it picks up the artwork's colours and spills all around the card, just like on desktop, instead of the grey slab with visible edges it had become — and it breathes slowly in step with the banner
 
 ## [1.2.0]
 ### FR

@@ -51,6 +51,33 @@ export const TV_OVERSCAN = {
 export const TV_HERO_AMBILIGHT = {
   blur: "48px",
   saturation: "1.7",
+
+  // — Ce qui suit ne part PAS dans le CSS (tvOnlyCssVarEntries liste ses paires
+  //   une à une) : c'est la traduction du flou pour React Native.
+
+  /** La carte sur laquelle `blur` a été réglé. `blur / largeurCarteReference`
+   *  est le seul nombre transposable : `filter` travaille en pixels d'écran,
+   *  `blurRadius` en pixels du bitmap décodé. Poser 48 sur une source de
+   *  128 px, c'est un noyau de 18 % de la largeur — l'affiche est écrasée en
+   *  une couleur moyenne, et le halo devient une plaque grise. */
+  largeurCarteReference: "1524px",
+
+  /** Largeur de la source demandée à Jellyfin, en pixels. Le web se contente
+   *  de 128 parce qu'il floute APRÈS avoir agrandi ; en natif le flou est cuit
+   *  dans le bitmap, donc son noyau se quantifie sur la source — à 128 px on
+   *  vise σ ≈ 3,5 et le cran vaut 14 %, à 256 px on vise ≈ 7 et il tombe
+   *  sous 8 %. */
+  largeurSource: 256,
+
+  /** Nombre de couches de l'extinction. `blurRadius` ne déborde pas de son
+   *  rectangle : le débordement est reconstruit par des rectangles concentriques
+   *  dont l'alpha suit la gaussienne. Seize suffisent pour que le saut d'un
+   *  anneau au suivant reste sous 0,031. */
+  couches: 16,
+
+  /** Où l'on coupe la queue de la gaussienne. Fixe le débordement à
+   *  Φ⁻¹(1 − plancher) ≈ 2,33 σ. */
+  alphaPlancher: 0.01,
 } as const;
 
 /** Le voile diagonal de bannière, allégé pour la dalle.

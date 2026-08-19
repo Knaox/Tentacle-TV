@@ -10,11 +10,12 @@ import {
 } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { TV_BANNER_CARD } from "@tentacle-tv/theme";
+import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
+import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { useTVNav } from "../context/TVNavContext";
 import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
@@ -109,8 +110,9 @@ function HomeScreenInner({ navigation }: Props) {
 
   const scrollViewRef = useRef<ScrollView>(null);
   const rowYMap = useRef<Map<string, number>>(new Map());
-  // Les rangées vivent dans un wrapper qui chevauche le hero (marginTop
-  // négatif) : leurs onLayout sont relatifs au wrapper → on ajoute son offset.
+  // Les rangées vivent dans un wrapper : leurs onLayout sont relatifs à lui →
+  // on ajoute son offset. (Il ne chevauche PAS le hero : la carte porte son
+  // écart bas, cf. TVHomeRows.)
   const rowsWrapperY = useRef(0);
 
   const scrollToRow = useCallback((key: string) => {
@@ -172,10 +174,18 @@ function HomeScreenInner({ navigation }: Props) {
           l'écran regagne le focus (retour d'un player figé qui avait perdu le
           focus) — sinon l'Accueil restait sans focus → blocage. */}
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
+      {/* Les retraits de `TVScreenFrame` sont repris à l'intérieur du défilement :
+          la fenêtre de clip va jusqu'aux bords de l'écran, le contenu ne bouge pas
+          d'un point. Sans cela le halo de la bannière était rogné à la gouttière
+          de 56 pt — il ourlait la carte au lieu de l'entourer. */}
       <ScrollView
         ref={scrollViewRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 96 }}
+        style={{ flex: 1, marginLeft: -RAIL_COLLAPSED, marginRight: -TV_OVERSCAN_PT.x }}
+        contentContainerStyle={{
+          paddingLeft: RAIL_COLLAPSED,
+          paddingRight: TV_OVERSCAN_PT.x,
+          paddingBottom: 96,
+        }}
         overScrollMode="never"
       >
         {allFailed && (

@@ -131,7 +131,7 @@ export {
 } from "./native/units";
 
 export {
-  TV_AMBILIGHT_BLUR,
+  TV_AMBILIGHT,
   TV_COLORS,
   TV_LAYERS,
   TV_OVERSCAN_PT,
