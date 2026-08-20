@@ -1,82 +1,89 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAutoSkipIntro } from "../../hooks/useAutoSkipIntro";
+import {
+  REPOS,
+  compteAffiche,
+  deciderSautIntro,
+  montrerPilule,
+  type EntreeSautIntro,
+  type EtatSautIntro,
+} from "./sautIntro";
 
-/**
- * Trois secondes : le temps de voir la pilule apparaître et d'y opposer la
- * croix, sans que l'attente n'annule l'intérêt d'avoir demandé le saut.
- */
-export const DEPART_SAUT_INTRO = 3;
+const PERIODE_MS = 1000;
 
 interface Options {
-  /** Le bouton « Passer l'intro » est-il à l'écran ? */
+  /** La fenêtre d'intro, telle que le lecteur la calcule déjà. */
   visible: boolean;
-  /**
-   * Change à chaque épisode — le début du segment d'intro suffit, il est déjà
-   * descendu jusqu'ici. Sert à réarmer : une croix cliquée vaut pour l'épisode
-   * en cours, pas pour toute la saison.
-   */
-  cle: number | undefined;
-  /** Le saut lui-même, exactement le geste du clic sur la pilule. */
+  /** Le saut lui-même — le geste du clic sur la pilule. */
   sauter: () => void;
+  /** Un autre membre du groupe s'est opposé : on s'aligne, sans le rediffuser. */
+  refusDistant?: number;
 }
 
 interface Etat {
-  /** Secondes restantes, `null` quand aucun saut n'est armé. */
+  /** La pilule se rend-elle ? Non pendant un saut : il a déjà été demandé. */
+  montrer: boolean;
+  /** Secondes restantes, `null` quand la pilule est un simple bouton. */
   compte: number | null;
-  /** L'utilisateur s'y oppose : le décompte s'arrête pour cet épisode. */
+  /** L'utilisateur s'y oppose, pour ce passage sur l'intro. */
   annuler: () => void;
+  /** Le saut demandé à la main — même masquage que le saut automatique. */
+  sauterMaintenant: () => void;
 }
 
 /**
- * Le compte à rebours du saut d'intro automatique — partagé par les deux
- * moteurs de lecture (web HLS et desktop mpv).
+ * La coquille React autour de `sautIntro.ts` — partagée par les deux moteurs de
+ * lecture (web HLS et bureau mpv).
  *
- * Il ne décide de rien d'autre que du décompte : c'est l'appelant qui sait si
- * le bouton est visible et comment déplacer la tête de lecture. Annuler ne fait
- * pas disparaître la pilule, elle retombe sur son libellé manuel — retirer le
- * bouton priverait du saut celui qui a seulement refusé de le subir.
+ * Elle ne décide de rien : elle bat la seconde, lit la préférence, et pousse au
+ * réducteur les fronts de `visible`. Toute la logique — et les deux défauts
+ * qu'elle corrige — est décrite et testée dans le module pur.
  */
-export function useSkipIntroCountdown({ visible, cle, sauter }: Options): Etat {
+export function useSkipIntroCountdown({ visible, sauter, refusDistant }: Options): Etat {
   const actif = useAutoSkipIntro();
-  const [compte, setCompte] = useState<number | null>(null);
-  const [refuse, setRefuse] = useState(false);
-  const minuterie = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  // `sauter` est une fonction fraîche à chaque rendu ; la lire dans une ref
-  // évite de relancer le décompte à chaque image du lecteur.
+  const [etat, setEtat] = useState<EtatSautIntro>(REPOS);
+
+  // Le réducteur a besoin du `visible` PRÉCÉDENT pour reconnaître une entrée
+  // dans l'intro ; l'état React, lui, ne le porte pas.
+  const visiblePrecedent = useRef(false);
+  // `sauter` est une fonction fraîche à chaque rendu : la lire dans une ref
+  // évite de relancer la minuterie à chaque image du lecteur.
   const sauterRef = useRef(sauter);
   sauterRef.current = sauter;
 
-  useEffect(() => {
-    setRefuse(false);
-  }, [cle]);
-
-  useEffect(() => () => clearInterval(minuterie.current), []);
-
-  const annuler = useCallback(() => {
-    clearInterval(minuterie.current);
-    setRefuse(true);
-    setCompte(null);
+  const pousser = useCallback((entree: EntreeSautIntro) => {
+    setEtat((precedent) => {
+      const [suivant, action] = deciderSautIntro(precedent, entree, visiblePrecedent.current);
+      if (action === "sauter") sauterRef.current();
+      return suivant;
+    });
+    if (entree.type === "cadre") visiblePrecedent.current = entree.visible;
   }, []);
 
+  // Les fronts, tout de suite : entrer dans l'intro doit armer le décompte sans
+  // attendre le prochain battement, et en sortir doit tout éteindre net.
   useEffect(() => {
-    if (!actif || !visible || refuse) {
-      clearInterval(minuterie.current);
-      setCompte(null);
-      return;
-    }
-    setCompte(DEPART_SAUT_INTRO);
-    minuterie.current = setInterval(() => {
-      setCompte((precedent) => {
-        if (precedent === null || precedent <= 1) {
-          clearInterval(minuterie.current);
-          sauterRef.current();
-          return null;
-        }
-        return precedent - 1;
-      });
-    }, 1000);
-    return () => clearInterval(minuterie.current);
-  }, [actif, visible, refuse, cle]);
+    pousser({ type: "cadre", visible, actif, ecouleMs: 0 });
+  }, [visible, actif, pousser]);
 
-  return { compte, annuler };
+  // La seconde, seulement quand il y a quelque chose à décompter.
+  useEffect(() => {
+    if (!visible) return;
+    const id = setInterval(() => {
+      pousser({ type: "cadre", visible: true, actif, ecouleMs: PERIODE_MS });
+    }, PERIODE_MS);
+    return () => clearInterval(id);
+  }, [visible, actif, pousser]);
+
+  // Watch Together : le refus d'un autre membre vaut pour la séance.
+  useEffect(() => {
+    if (refusDistant) pousser({ type: "croix" });
+  }, [refusDistant, pousser]);
+
+  return {
+    montrer: montrerPilule(etat, visible),
+    compte: compteAffiche(etat),
+    annuler: useCallback(() => pousser({ type: "croix" }), [pousser]),
+    sauterMaintenant: useCallback(() => pousser({ type: "sauteMaintenant" }), [pousser]),
+  };
 }

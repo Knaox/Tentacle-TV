@@ -73,7 +73,6 @@ export function DesktopPlayerOverlays({
   };
   const sautIntro = useSkipIntroCountdown({
     visible: Boolean(showSkipIntro && introSegment),
-    cle: introSegment?.start,
     sauter: sauterIntro,
   });
   // Carte « à suivre » : proposée dès le générique quand un épisode suivant
@@ -120,10 +119,10 @@ export function DesktopPlayerOverlays({
       )}
 
       {/* Skip intro / credits buttons */}
-      {showSkipIntro && introSegment && (
+      {sautIntro.montrer && (
         <SkipIntroButton
           compte={sautIntro.compte}
-          onSauter={sauterIntro}
+          onSauter={sautIntro.sauterMaintenant}
           onAnnuler={sautIntro.annuler}
           couche="z-20"
         />
