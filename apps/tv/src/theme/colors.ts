@@ -1,7 +1,7 @@
 /** Tentacle TV — Premium Cinematic Design System */
 
 import { BRAND, SURFACE, TEXT, STATUS, BORDER } from "@tentacle-tv/shared";
-import { TV_BANNER_CARD, withAlpha } from "@tentacle-tv/theme";
+import { TV_BANNER_CARD, TV_RADIUS, withAlpha } from "@tentacle-tv/theme";
 
 // ─── Color Palette ───────────────────────────────────────────────────────────
 // Brand + surface + text now come from packages/shared so web/TV/mobile
@@ -177,14 +177,35 @@ export const Typography = {
 
 // ─── Border Radius ───────────────────────────────────────────────────────────
 
+/**
+ * Les rayons du téléviseur, DÉRIVÉS de l'échelle partagée.
+ *
+ * Ils étaient figés en dur — `card: 8, button: 8, buttonLarge: 10, modal: 12` —
+ * sur l'échelle du WEB (4/6/8/12/16), alors que le téléviseur en a une qui lui
+ * est propre et bien plus ronde : `6 / 10 / 14 / 20 / 26`
+ * (`packages/theme` → `TV_TOKENS.radius`, que la LG écrit tel quel dans
+ * `tokens-tv.css`). Un bouton à huit contre quatorze, c'est la différence entre
+ * un angle droit et un coin arrondi — exactement ce qu'on voyait entre l'Apple
+ * TV et le téléviseur LG.
+ *
+ * Chaque entrée est reliée à la surface que la LG rend, pas choisie au jugé :
+ *
+ *   `small`       → xs   les petits aplats (badges, jauges)
+ *   `card`        → md   `.ligne-episode-tv` vaut `--radius-md`
+ *   `button`      → md   `.bouton-reglage-tv` vaut 14, `.saison-tv` vaut md
+ *   `buttonLarge` → lg   les grands appels à l'action, d'un cran au-dessus
+ *   `modal`       → lg   `.panneau-*` et la recherche valent `--radius-lg`
+ *   `pill`        → pill une pilule est ronde ; à quatorze ce n'en était pas une
+ *   `full`        → pill le même, sous son autre nom
+ */
 export const Radius = {
-  card: 8,
-  button: 8,
-  buttonLarge: 10,
-  pill: 14,
-  modal: 12,
-  small: 6,
-  full: 9999,
+  card: TV_RADIUS.md,
+  button: TV_RADIUS.md,
+  buttonLarge: TV_RADIUS.lg,
+  pill: TV_RADIUS.pill,
+  modal: TV_RADIUS.lg,
+  small: TV_RADIUS.xs,
+  full: TV_RADIUS.pill,
 } as const;
 
 // ─── Hero Banner ─────────────────────────────────────────────────────────────
