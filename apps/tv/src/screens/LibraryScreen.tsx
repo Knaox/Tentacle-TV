@@ -21,6 +21,7 @@ import { TVPlatformMenu } from "../components/library/TVLibraryPlatformMenu";
 import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
+import { filtrePlateformeActif } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Colors, Spacing, Typography } from "../theme/colors";
@@ -48,20 +49,13 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const { data: libraries } = useLibraries();
   const collectionType = libraries?.find((l) => l.Id === libraryId)?.CollectionType;
 
-  const platformActive = lf.filters.platformIds.length > 0;
-  // fields:"light" : payload minimum pour la grille. Plateformes actives →
-  // limite montée à 500 : la base du post-filtre client (parité web).
-  const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } = useLibraryCatalog(libraryId, {
-    sortBy: lf.filters.sortBy,
-    sortOrder: lf.filters.sortOrder,
-    genreIds: lf.filters.genreIds.length > 0 ? lf.filters.genreIds : undefined,
-    years: lf.yearsParam,
-    statusFilter: lf.filters.statusFilter ?? undefined,
-    minCommunityRating: lf.filters.ratingMin ?? undefined,
-    isFavorite: lf.filters.isFavorite || undefined,
-    limit: platformActive ? 500 : 30,
-    fields: "light",
-  });
+  const platformActive = filtrePlateformeActif(lf.filters);
+  // Les paramètres ne sont PAS écrits ici : ils viennent de `catalogueParams`,
+  // la même fabrication que le préchargement du rail. Recopiés des deux côtés,
+  // ils divergeaient — et le préchargement visait une clé de cache que cet
+  // écran ne demandait jamais (cf. `libraryCatalogParams`).
+  const { data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useLibraryCatalog(libraryId, lf.params);
 
   const allItems = useMemo(() => data?.pages.flatMap((p) => p.Items) ?? [], [data]);
   const { filteredItems } = usePlatformFilter(allItems, lf.filters.platformIds);

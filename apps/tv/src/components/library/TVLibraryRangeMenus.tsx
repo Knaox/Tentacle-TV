@@ -10,7 +10,7 @@ import { Colors } from "../../theme/colors";
  * Le menu des années : deux champs numériques (1900-2100), SANS auto-focus —
  * rien ne doit faire monter un clavier sans un geste explicite (règle
  * `FilterMenuTv` webOS). L'énumération des années pour Jellyfin est faite par
- * `useLibraryFilters.yearsParam`.
+ * `libraryCatalogParams.anneesEnumerees`.
  */
 export function TVYearMenu({
   anchor,
