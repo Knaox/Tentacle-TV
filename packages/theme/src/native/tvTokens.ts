@@ -54,7 +54,7 @@ export const TV_OVERSCAN_PT = {
  *  plateforme (`@tentacle-tv/tv-core` → `reglageFlouAndroid`).
  *
  *  `saturation` n'a pas d'équivalent dans `<Image>` : elle passe par le filtre
- *  SVG du chemin tvOS. Le repli Android s'en dispense — voir
+ *  SVG, que les DEUX téléviseurs empruntent désormais — voir
  *  `TVHeroAmbilightFiltre`. */
 export const TV_AMBILIGHT = {
   rapportFlou: parsePx(TV_HERO_AMBILIGHT.blur) / parsePx(TV_HERO_AMBILIGHT.largeurCarteReference),
