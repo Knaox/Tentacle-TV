@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DEPART_SAUT_INTRO } from "./sautIntro";
+import { DEPART_SAUT_INTRO } from "@tentacle-tv/shared";
 
 interface SkipIntroButtonProps {
   /** Secondes restantes avant le saut automatique, `null` s'il n'est pas armé. */

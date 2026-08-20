@@ -13,6 +13,9 @@ export * from "./constants";
 export * from "./subtitles/vtt";
 export * from "./subtitles/sanitize";
 export * from "./watchState";
+// La décision « faut-il sauter l'intro, et quand » — une machine à états pure,
+// partagée par le web, le bureau, l'Apple TV, l'Android TV et la LG.
+export * from "./player/sautIntro";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
 export * from "./preferences";

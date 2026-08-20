@@ -8,7 +8,7 @@ import {
   montrerPilule,
   type EntreeSautIntro,
   type EtatSautIntro,
-} from "./sautIntro";
+} from "@tentacle-tv/shared";
 
 const PERIODE_MS = 1000;
 

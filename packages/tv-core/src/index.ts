@@ -12,3 +12,4 @@ export * from "./focus";
 export * from "./hero";
 export * from "./nav";
 export * from "./player";
+export * from "./reglages";

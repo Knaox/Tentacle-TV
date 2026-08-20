@@ -23,7 +23,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
-import { magasinEpinglageRail } from "./components/nav/railPinning";
+import { rehydraterMagasins } from "./lib/magasins";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -250,10 +250,9 @@ export function App() {
   useEffect(() => {
     (async () => {
       await storage.hydrate();
-      // Le magasin d'épinglage du rail est créé au chargement du module, AVANT
-      // cette hydratation : relire maintenant que le cache est rempli (sinon
-      // les entrées masquées réapparaissent à chaque démarrage sur Android TV).
-      magasinEpinglageRail.rehydrater();
+      // Les magasins de réglages naissent avant cette hydratation : les relire
+      // maintenant que le cache est rempli (voir `lib/magasins.ts`).
+      rehydraterMagasins();
       const tentacleUrl = storage.getItem("tentacle_server_url");
       const savedLang = storage.getItem("tentacle_language") ?? "en";
       initI18n({ lng: savedLang });

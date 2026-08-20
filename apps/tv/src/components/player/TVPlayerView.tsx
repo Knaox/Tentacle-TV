@@ -257,7 +257,7 @@ export function TVPlayerView({
       )}
       {!autoPlayActive && (
         <>
-          <TVSkipSegmentButton type="intro" segment={skipSegments.intro}
+          <TVSkipSegmentButton scrubbing={controls.scrubbing} type="intro" segment={skipSegments.intro}
             currentTime={displayTime} onSkip={controls.guardScrub(() => onSeek(skipSegments.intro!.end))}
             overlayVisible={controls.overlayVisible} showSettings={showSettings}
             showEpisodes={!!showEpisodes} />
