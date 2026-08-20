@@ -1,17 +1,25 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePairedDevices, useRevokePairedDevice } from "@tentacle-tv/api-client";
 import { cls } from "../../pages/adminUtils";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { ConfirmDialog } from "../ui/ConfirmDialog";
 
 /**
  * Section "Appareils appairés" admin — extraite depuis Admin.tsx. Liste
  * déroulante FERMÉE par défaut (page Jumeler TV). Layout responsive :
  * stack vertical sur mobile, row sur ≥480px.
+ *
+ * La confirmation passe par `ConfirmDialog` : `window.confirm()` répond bien
+ * sous Electron (Windows, macOS — c'est du Chromium), mais renvoie false SANS
+ * RIEN AFFICHER dans le webview de Tauri, qui est la coquille Linux (wry
+ * #460). La révocation y avait donc l'air morte.
  */
 export function PairedDevicesSection() {
-  const { t } = useTranslation("admin");
+  const { t } = useTranslation(["admin", "common"]);
   const { data: devices } = usePairedDevices();
   const revokeMut = useRevokePairedDevice();
+  const [aRevoquer, setARevoquer] = useState<string | null>(null);
 
   return (
     <div className={cls.card}>
@@ -34,7 +42,7 @@ export function PairedDevicesSection() {
                 </div>
               </div>
               <button
-                onClick={() => { if (confirm(t("revokeConfirm"))) revokeMut.mutate(device.id); }}
+                onClick={() => setARevoquer(device.id)}
                 disabled={revokeMut.isPending}
                 className={cls.bd}
               >
@@ -45,6 +53,18 @@ export function PairedDevicesSection() {
         </div>
       )}
       </CollapsibleSection>
+
+      <ConfirmDialog
+        open={aRevoquer !== null}
+        title={t("admin:revoke")}
+        message={t("admin:revokeConfirm")}
+        confirmLabel={t("admin:revoke")}
+        cancelLabel={t("common:cancel")}
+        onConfirm={() => { if (aRevoquer) revokeMut.mutate(aRevoquer); setARevoquer(null); }}
+        onCancel={() => setARevoquer(null)}
+        pending={revokeMut.isPending}
+        danger
+      />
     </div>
   );
 }
