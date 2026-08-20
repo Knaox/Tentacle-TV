@@ -154,6 +154,7 @@ export default {
   emptyFavorites: "No favorites",
   emptyWatchlistHint: "Add movies and series from their detail page",
   emptyFavoritesHint: "Mark your favorite movies and series",
+  browseLibraries: "Browse libraries",
   invite: "Invite",
   you: "you",
   shareMyList: "Share my list",

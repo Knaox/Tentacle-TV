@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { View, Text, TVFocusGuideView } from "react-native";
+import { View, TVFocusGuideView } from "react-native";
 import { useGenres, useLibraries, useLibraryCatalog } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD } from "@tentacle-tv/theme";
@@ -13,6 +13,7 @@ import { useTVContentEntry } from "../hooks/useTVContentEntry";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { TVLibraryGrid, useTVGridLayout } from "../components/library/TVLibraryGrid";
 import { TVLibraryHero } from "../components/library/TVLibraryHero";
+import { TVLibraryEmpty } from "../components/library/TVLibraryEmpty";
 import { TVLibraryFilterBar, type FilterMenuKind } from "../components/library/TVLibraryFilterBar";
 import type { MenuAnchor } from "../components/library/TVLibraryFilterMenu";
 import { TVSortMenu, TVGenreMenu } from "../components/library/TVLibrarySortGenreMenus";
@@ -24,7 +25,7 @@ import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { filtrePlateformeActif } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { possessiveLibraryName } from "../utils/libraryLabel";
-import { Colors, Spacing, Typography } from "../theme/colors";
+import { Spacing } from "../theme/colors";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -38,7 +39,7 @@ export function LibraryScreen(props: Props) {
 
 function LibraryScreenInner({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
-  const { t, i18n } = useTranslation("common");
+  const { i18n } = useTranslation("common");
   const displayName = possessiveLibraryName(libraryName, i18n.language);
   const setFocusedItem = usePoseurAmbiant();
 
@@ -123,14 +124,13 @@ function LibraryScreenInner({ route, navigation }: Props) {
         {isLoading && items.length === 0 ? (
           <LibraryLoading header={header} />
         ) : !isLoading && items.length === 0 ? (
-          <View>
-            {header}
-            <View style={{ alignItems: "center", paddingTop: 80 }}>
-              <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
-                {t("noResults")}
-              </Text>
-            </View>
-          </View>
+          <TVLibraryEmpty
+            header={header}
+            filtree={lf.hasActiveFilters}
+            onReinitialiser={lf.resetFilters}
+            onParcourir={() => navigation.navigate("Home")}
+            entryRef={contentEntry}
+          />
         ) : (
           <TVLibraryGrid
             listKey={libraryId}
