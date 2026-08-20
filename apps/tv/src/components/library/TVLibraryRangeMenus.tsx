@@ -5,6 +5,7 @@ import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
 import { TVLibraryFilterMenu, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { Colors } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 /**
  * Le menu des années : deux champs numériques (1900-2100), SANS auto-focus —
@@ -110,6 +111,7 @@ export function TVRatingMenu({
         </View>
         <Focusable
           variant="button"
+          focusRadius={Bouton.moyen.borderRadius}
           hasTVPreferredFocus
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

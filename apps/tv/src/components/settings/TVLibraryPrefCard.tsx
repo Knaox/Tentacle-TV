@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 export interface ReglageTv {
   cle: "audio" | "mode" | "sousTitres";
@@ -52,6 +53,7 @@ export function TVLibraryPrefCard({
           <Focusable
             key={reglage.cle}
             variant="button"
+            focusRadius={Bouton.moyen.borderRadius}
             scaleOverride={1.04}
             onPress={() => onOuvrir(reglage)}
             accessibilityLabel={`${reglage.intitule} : ${reglage.valeur}`}
@@ -59,7 +61,7 @@ export function TVLibraryPrefCard({
             <View
               style={{
                 minWidth: 220,
-                borderRadius: 14,
+                ...Bouton.moyen,
                 borderWidth: 1,
                 borderColor: Colors.glassBorder,
                 paddingHorizontal: 18,
@@ -89,12 +91,12 @@ export function TVLibraryPrefCard({
 
       {personnalisee && (
         <View style={{ flexDirection: "row", marginTop: 20 }}>
-          <Focusable variant="button" onPress={onReinitialiser} accessibilityLabel={t("reset")}>
+          <Focusable variant="button" focusRadius={Bouton.pilule.borderRadius} onPress={onReinitialiser} accessibilityLabel={t("reset")}>
             <View
               style={{
                 paddingHorizontal: 22,
                 paddingVertical: 11,
-                borderRadius: 999,
+                ...Bouton.pilule,
                 backgroundColor: Colors.ctaGhostBg,
                 borderWidth: 1,
                 borderColor: Colors.ctaGhostBorder,

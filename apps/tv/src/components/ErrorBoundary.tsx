@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text } from "react-native";
 import { Colors } from "../theme/colors";
 import { Focusable } from "./focus/Focusable";
+import { Bouton } from "../theme/boutons";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -35,11 +36,11 @@ export class ErrorBoundary extends React.Component<
           <Text style={{ color: Colors.textSecondary, fontSize: 15, textAlign: "center", marginBottom: 28 }}>
             {this.state.error?.message ?? "An unexpected error occurred."}
           </Text>
-          <Focusable variant="button" onPress={this.handleRetry} hasTVPreferredFocus>
+          <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={this.handleRetry} hasTVPreferredFocus>
             <View style={{
               backgroundColor: Colors.accentPurple,
               paddingHorizontal: 28, paddingVertical: 12,
-              borderRadius: 10,
+              ...Bouton.moyen,
             }}>
               <Text style={{ color: Colors.textPrimary, fontSize: 16, fontWeight: "600" }}>
                 Retry

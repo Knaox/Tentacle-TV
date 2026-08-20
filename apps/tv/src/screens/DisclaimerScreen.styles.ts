@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { Colors, Radius, Typography, brandAlpha } from "../theme/colors";
+import { Bouton } from "../theme/boutons";
 
 /**
  * Styles de l'écran de mention légale (CGU), 10-foot UI + parité avec le client
@@ -46,7 +47,7 @@ export const styles = StyleSheet.create({
   langButton: {
     paddingHorizontal: 18,
     paddingVertical: 7,
-    borderRadius: 10,
+    ...Bouton.moyen,
     borderWidth: 1,
     borderColor: "transparent",
   },

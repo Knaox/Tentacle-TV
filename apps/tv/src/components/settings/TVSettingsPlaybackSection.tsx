@@ -16,6 +16,7 @@ import { TVSautIntroToggle } from "./TVSautIntroToggle";
 import { TVCarteASuivreToggle, TVDecompteEnchainementToggle } from "./TVEnchainementToggles";
 import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "../../utils/languageKeys";
 import { Colors, brandAlpha } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 /**
  * Les réglages de lecture — parité `PlaybackScreenTv` (LG) : la langue de
@@ -108,6 +109,7 @@ export function TVSettingsPlaybackSection() {
             <Focusable
               key={langue.code}
               variant="button"
+              focusRadius={Bouton.moyen.borderRadius}
               scaleOverride={1.04}
               onPress={() => changerLangueInterface(langue.code)}
               accessibilityLabel={langue.libelle}
@@ -116,7 +118,7 @@ export function TVSettingsPlaybackSection() {
                 style={{
                   minWidth: 160,
                   alignItems: "center",
-                  borderRadius: 14,
+                  ...Bouton.moyen,
                   borderWidth: 1,
                   borderColor: actif ? brandAlpha(0.6) : Colors.glassBorder,
                   backgroundColor: actif ? brandAlpha(0.18) : "transparent",

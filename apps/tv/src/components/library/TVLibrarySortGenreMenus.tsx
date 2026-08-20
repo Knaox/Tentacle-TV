@@ -6,6 +6,7 @@ import { Focusable } from "../focus/Focusable";
 import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { Colors } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 /**
  * Chaque critère porte son sens NATUREL (parité `LibraryFilterMenus` web) :
@@ -50,6 +51,7 @@ export function TVSortMenu({
       <View style={{ height: 1, backgroundColor: Colors.glassBorder, marginVertical: 8 }} />
       <Focusable
         variant="button"
+        focusRadius={Bouton.moyen.borderRadius}
         onPress={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
         accessibilityLabel={desc ? t("sortOrderDesc") : t("sortOrderAsc")}
       >

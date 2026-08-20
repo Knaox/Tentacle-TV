@@ -9,6 +9,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { CheckIcon } from "../components/icons/TVIcons";
 import { styles } from "./DisclaimerScreen.styles";
+import { Bouton } from "../theme/boutons";
 
 const LANGS = [
   { code: "fr", label: "FR" },
@@ -56,7 +57,7 @@ export function DisclaimerScreen() {
         {/* Language switcher */}
         <View style={styles.langRow}>
           {LANGS.map((l) => (
-            <Focusable key={l.code} variant="button" onPress={() => switchLang(l.code)}>
+            <Focusable key={l.code} variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={() => switchLang(l.code)}>
               <View style={[styles.langButton, lang === l.code && styles.langButtonActive]}>
                 <Text style={[styles.langText, lang === l.code && styles.langTextActive]}>{l.label}</Text>
               </View>
@@ -78,6 +79,7 @@ export function DisclaimerScreen() {
         {/* Checkbox — focus initial (action principale, atteignable d'emblée) */}
         <Focusable
           variant="button"
+          focusRadius={Bouton.moyen.borderRadius}
           onPress={() => setChecked((v) => !v)}
           accessibilityLabel={t("checkboxLabel")}
           hasTVPreferredFocus
@@ -95,7 +97,7 @@ export function DisclaimerScreen() {
           <Focusable
             variant="button"
             onPress={checked ? handleAccept : undefined}
-            focusRadius={10}
+            focusRadius={Bouton.grand.borderRadius}
             hasTVPreferredFocus={false}
           >
             <View style={[styles.acceptButton, !checked && styles.acceptButtonDisabled]}>
@@ -103,7 +105,7 @@ export function DisclaimerScreen() {
             </View>
           </Focusable>
 
-          <Focusable variant="button" onPress={handleDecline} focusRadius={10}>
+          <Focusable variant="button" onPress={handleDecline} focusRadius={Bouton.grand.borderRadius}>
             <View style={styles.declineButton}>
               <Text style={styles.declineText}>{t("decline")}</Text>
             </View>

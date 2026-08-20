@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { magasinSautIntro, useSautIntroAuto } from "../../lib/sautIntroAuto";
+import { Bouton } from "../../theme/boutons";
 
 /**
  * « Passer l'intro automatiquement », à la télécommande.
@@ -51,6 +52,7 @@ export function TVSautIntroToggle() {
             <Focusable
               key={String(choix.valeur)}
               variant="button"
+              focusRadius={Bouton.moyen.borderRadius}
               scaleOverride={1.04}
               onPress={() => magasinSautIntro.definir(choix.valeur)}
               accessibilityLabel={choix.libelle}
@@ -59,7 +61,7 @@ export function TVSautIntroToggle() {
                 style={{
                   minWidth: 160,
                   alignItems: "center",
-                  borderRadius: 14,
+                  ...Bouton.moyen,
                   borderWidth: 1,
                   borderColor: choisi ? brandAlpha(0.6) : Colors.glassBorder,
                   backgroundColor: choisi ? brandAlpha(0.18) : "transparent",
