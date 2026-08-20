@@ -31,6 +31,26 @@
   transition: transform 180ms ease-out;
 }
 
+/* La valeur EN COURS, reconnaissable sans le focus.
+ *
+ * `data-actif` était posé sur ces boutons depuis toujours — la langue de
+ * l'interface, puis les trois réglages de lecture — mais rien ne le dessinait :
+ * la règle n'existait que pour `.panneau-choix-tv-entree` et
+ * `.panneau-tv-bascule`. On ne voyait donc jamais lequel des deux choix était
+ * actif, seulement lequel avait le focus. Ce sont deux questions différentes.
+ *
+ * Les valeurs viennent de l'Apple TV et de l'Android TV, qui rendent déjà ce
+ * réglage juste (`TVSautIntroToggle`) : liseré de marque à 0,6, fond à 0,18,
+ * libellé en teinte claire. */
+.bouton-reglage-tv[data-actif="true"] {
+  border-color: rgba(var(--brand-rgb), 0.6);
+  background: rgba(var(--brand-rgb), 0.18);
+}
+
+.bouton-reglage-tv[data-actif="true"] .bouton-reglage-tv-valeur {
+  color: var(--brand-light);
+}
+
 .bouton-reglage-tv:focus {
   /* L'anneau de focus est posé par `focus.css` ; on n'ajoute que le mouvement,
      et seulement du `transform` — le compositeur n'a alors rien à repeindre. */
