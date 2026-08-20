@@ -53,6 +53,8 @@ export default {
   noPairedDevices: "No paired devices.",
   lastActive: "Last active: {{date}}",
   revoke: "Revoke",
+  revokeConfirm: "Revoke this device? It will have to be paired again to be used.",
+  devicesLoadError: "Could not load your paired devices.",
 
   // "Pairing expired" banner (device Jellyfin token dead server-side)
   pairingExpiredBanner: "Pairing expired — reconfirm pairing from your profile to restore progress saving.",
