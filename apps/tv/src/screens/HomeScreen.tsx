@@ -81,19 +81,31 @@ function HomeScreenInner({ navigation }: Props) {
   // sidebar (Android). Sur 1er mount, lastContentNodeRef est null → autoFocus.
   useFocusEffect(
     useCallback(() => {
-      const node = lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
-      if (!node?.setNativeProps) return;
+      /**
+       * Le nœud est relu AU MOMENT DE POSER LE FOCUS, jamais capturé à
+       * l'armement.
+       *
+       * Entre les deux, il s'écoule soixante millisecondes pendant lesquelles
+       * l'effet ci-dessus invalide « Reprendre », « Prochains épisodes » et
+       * « Ma liste » : la liste peut recycler la cellule que la mémoire de
+       * focus désigne. Celle-ci s'efface alors elle-même (`FocusableRow`), et
+       * relire ici suffit à ne rien envoyer à une vue détruite — ce qui levait
+       * « Trying to update non-existent view with tag N ».
+       */
+      const viser = (): ({ setNativeProps?: (p: object) => void } | null) =>
+        lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
+      if (!viser()?.setNativeProps) return;
       if (Platform.OS === "ios") {
         // tvOS : hasTVPreferredFocus n'est honoré que sur un cycle false→true.
         let id2: ReturnType<typeof setTimeout>;
         const id1 = setTimeout(() => {
-          node.setNativeProps?.({ hasTVPreferredFocus: false });
-          id2 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+          viser()?.setNativeProps?.({ hasTVPreferredFocus: false });
+          id2 = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
         }, 60);
         return () => { clearTimeout(id1); clearTimeout(id2); };
       }
       // Android : le set vaut requestFocus() immédiat (one-shot).
-      const id = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
+      const id = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
       return () => clearTimeout(id);
     }, [lastContentNodeRef])
   );
