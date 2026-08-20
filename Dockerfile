@@ -24,6 +24,11 @@ COPY packages/api-client/package.json packages/api-client/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/plugins-api/package.json packages/plugins-api/package.json
 COPY packages/theme/package.json packages/theme/package.json
+# tv-core : le socle partagé des trois téléviseurs. Oublié ici, pnpm ne voit
+# pas le paquet de l'espace de travail et ne lui crée pas son lien vers
+# `@tentacle-tv/shared` ; la source arrive ensuite par le COPY global, et
+# rollup meurt sur un import qu'il ne peut plus résoudre.
+COPY packages/tv-core/package.json packages/tv-core/package.json
 COPY patches/ patches/
 
 # Install dependencies
