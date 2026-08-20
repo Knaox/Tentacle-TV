@@ -14,6 +14,7 @@ import { navigationRef } from "../../navigation/navigationRef";
 import { doLogout } from "../../auth/sessionFlow";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 /** Le portrait, à la taille d'une dalle regardée de loin (parité LG : 132). */
 const TAILLE_PORTRAIT = 132;
@@ -172,6 +173,7 @@ function TwoPressButton({
   return (
     <Focusable
       variant="button"
+      focusRadius={Bouton.pilule.borderRadius}
       onPress={() => {
         if (!arme) { setArme(true); return; }
         setArme(false);
@@ -184,7 +186,7 @@ function TwoPressButton({
         style={{
           paddingHorizontal: 26,
           paddingVertical: 14,
-          borderRadius: 999,
+          ...Bouton.pilule,
           backgroundColor: arme
             ? (danger ? "rgba(239, 68, 68, 0.22)" : brandAlpha(0.22))
             : Colors.ctaGhostBg,

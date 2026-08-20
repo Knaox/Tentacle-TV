@@ -19,6 +19,7 @@ import { TVMetaChips } from "../TVMetaChips";
 import { TVDetailActions } from "./TVDetailActions";
 import { TVDetailPoster } from "./TVDetailPoster";
 import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 interface TVDetailHeaderProps {
   item: MediaItem;
@@ -200,6 +201,7 @@ export function TVDetailHeader({
             <Animated.View style={[{ alignSelf: "flex-start", marginTop: 8 }, metaStyle]}>
               <Focusable
                 variant="button"
+                focusRadius={Bouton.grand.borderRadius}
                 onPress={() => onSeriesPress(item.SeriesId!)}
                 accessibilityLabel={item.SeriesName}
                 nextFocusUp={backHandle}
@@ -207,7 +209,7 @@ export function TVDetailHeader({
                 <View style={{
                   flexDirection: "row", alignItems: "center", gap: 8,
                   paddingHorizontal: 14, paddingVertical: 8,
-                  borderRadius: Radius.buttonLarge,
+                  ...Bouton.grand,
                   backgroundColor: "rgba(255,255,255,0.06)",
                 }}>
                   <Text style={{ color: Colors.textSecondary, fontSize: 16 }}>

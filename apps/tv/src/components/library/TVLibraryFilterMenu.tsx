@@ -5,6 +5,7 @@ import { TV_OVERSCAN_PT, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
 import { Colors, brandAlpha } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 /** Largeur minimale d'un panneau, à trois mètres (`FilterMenuTv` webOS). */
 export const MENU_MIN_WIDTH = 380;
@@ -99,6 +100,7 @@ export function TVCheckRow({
   return (
     <Focusable
       variant="button"
+      focusRadius={Bouton.moyen.borderRadius}
       onPress={onPress}
       hasTVPreferredFocus={preferred}
       accessibilityLabel={label}
@@ -110,7 +112,7 @@ export function TVCheckRow({
           gap: 10,
           minHeight: 46,
           paddingHorizontal: 12,
-          borderRadius: 8,
+          ...Bouton.moyen,
           backgroundColor: checked ? brandAlpha(0.16) : "transparent",
         }}
       >

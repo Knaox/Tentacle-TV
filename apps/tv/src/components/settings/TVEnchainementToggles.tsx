@@ -2,6 +2,7 @@ import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 import {
   magasinCarteASuivre,
   magasinDecompteEnchainement,
@@ -66,6 +67,7 @@ function ReglageDeuxBoutons({ titre, aide, actif, onChoisir }: ReglageProps) {
             <Focusable
               key={String(choix.valeur)}
               variant="button"
+              focusRadius={Bouton.moyen.borderRadius}
               scaleOverride={1.04}
               onPress={() => onChoisir(choix.valeur)}
               accessibilityLabel={choix.libelle}
@@ -74,7 +76,7 @@ function ReglageDeuxBoutons({ titre, aide, actif, onChoisir }: ReglageProps) {
                 style={{
                   minWidth: 160,
                   alignItems: "center",
-                  borderRadius: 14,
+                  ...Bouton.moyen,
                   borderWidth: 1,
                   borderColor: choisi ? brandAlpha(0.6) : Colors.glassBorder,
                   backgroundColor: choisi ? brandAlpha(0.18) : "transparent",

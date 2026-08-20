@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { MicIcon, SpaceIcon, BackspaceIcon, CloseIcon } from "./icons/TVIcons";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
-import { Colors, Radius, brandAlpha } from "../theme/colors";
+import { Colors, brandAlpha } from "../theme/colors";
+import { Bouton } from "../theme/boutons";
 
 // tvOS : Apple ne donne AUCUN accès micro programmatique aux apps tierces
 // (erreur 'nohw' au runtime, AVAudioSession record indispo). La SEULE dictée
@@ -79,12 +80,13 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
         <>
           <Focusable
             variant="button"
+            focusRadius={Bouton.petit.borderRadius}
             onPress={() => inputRef.current?.focus()}
             accessibilityLabel={t("voiceOrType")}
           >
             <View style={{
               flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8,
-              backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+              backgroundColor: "rgba(255,255,255,0.06)", ...Bouton.petit,
               paddingHorizontal: 10, minHeight: 44,
               borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
@@ -111,9 +113,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
       ) : (
         // Android TV : accès micro réel → bouton inline (useSpeechRecognition).
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <Focusable variant="button" onPress={onDelete} style={{ flex: 1 }}>
+          <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={onDelete} style={{ flex: 1 }}>
             <View style={{
-              backgroundColor: "rgba(255,255,255,0.06)", borderRadius: Radius.small,
+              backgroundColor: "rgba(255,255,255,0.06)", ...Bouton.petit,
               padding: 10, minHeight: 40,
               borderWidth: 1, borderColor: Colors.glassBorder,
             }}>
@@ -125,9 +127,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
           </Focusable>
 
           {isAvailable && (
-            <Focusable variant="button" onPress={isListening ? stopListening : startListening}>
+            <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={isListening ? stopListening : startListening}>
               <View style={{
-                width: 40, height: 40, borderRadius: Radius.small,
+                width: 40, height: 40, ...Bouton.petit,
                 backgroundColor: micBg,
                 justifyContent: "center", alignItems: "center",
               }}>
@@ -146,11 +148,12 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
               key={key}
               ref={rowIdx === 0 && keyIdx === 0 ? setFirstKeyRef : undefined}
               variant="button"
+            focusRadius={Bouton.petit.borderRadius}
               onPress={() => onKeyPress(key.toLowerCase())}
               hasTVPreferredFocus={rowIdx === 0 && keyIdx === 0}
             >
               <View style={{
-                width: 36, height: 36, borderRadius: Radius.small,
+                width: 36, height: 36, ...Bouton.petit,
                 backgroundColor: "rgba(255,255,255,0.08)",
                 justifyContent: "center", alignItems: "center",
               }}>
@@ -163,9 +166,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
 
       {/* Special keys — icônes seules (labels via accessibilité, pas de texte UI) */}
       <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
-        <Focusable variant="button" onPress={() => onKeyPress(" ")} accessibilityLabel={t("space")}>
+        <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={() => onKeyPress(" ")} accessibilityLabel={t("space")}>
           <View style={{
-            width: 78, height: 36, borderRadius: Radius.small,
+            width: 78, height: 36, ...Bouton.petit,
             backgroundColor: "rgba(255,255,255,0.10)",
             borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
             justifyContent: "center", alignItems: "center",
@@ -173,9 +176,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
             <SpaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onDelete} accessibilityLabel={t("delete")}>
+        <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={onDelete} accessibilityLabel={t("delete")}>
           <View style={{
-            width: 78, height: 36, borderRadius: Radius.small,
+            width: 78, height: 36, ...Bouton.petit,
             backgroundColor: "rgba(255,255,255,0.10)",
             borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
             justifyContent: "center", alignItems: "center",
@@ -183,9 +186,9 @@ export function TVSearchKeyboard({ query, onKeyPress, onDelete, onClear, onVoice
             <BackspaceIcon size={20} color={Colors.textPrimary} />
           </View>
         </Focusable>
-        <Focusable variant="button" onPress={onClear} accessibilityLabel={t("clear")}>
+        <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={onClear} accessibilityLabel={t("clear")}>
           <View style={{
-            width: 78, height: 36, borderRadius: Radius.small,
+            width: 78, height: 36, ...Bouton.petit,
             backgroundColor: "rgba(239,68,68,0.15)",
             borderWidth: 1, borderColor: "rgba(239,68,68,0.3)",
             justifyContent: "center", alignItems: "center",

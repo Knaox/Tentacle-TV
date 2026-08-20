@@ -12,7 +12,8 @@ import { TVEpisodeList } from "../TVEpisodeList";
 import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
 import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
-import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
+import { Colors, Spacing, Typography } from "../../theme/colors";
+import { Bouton } from "../../theme/boutons";
 
 interface TVPlayerEpisodePanelProps {
   seriesId: string;
@@ -88,9 +89,9 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
                 </Text>
               )}
             </View>
-            <Focusable ref={setCloseNode} variant="button" onPress={onClose}>
+            <Focusable ref={setCloseNode} variant="button" focusRadius={Bouton.petit.borderRadius} onPress={onClose}>
               <View style={{
-                paddingHorizontal: 16, paddingVertical: 8, borderRadius: Radius.small,
+                paddingHorizontal: 16, paddingVertical: 8, ...Bouton.petit,
                 backgroundColor: "rgba(255,255,255,0.06)",
               }}>
                 <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>

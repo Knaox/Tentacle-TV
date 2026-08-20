@@ -6,11 +6,12 @@ import { useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client"
 import { formatDuration } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { BRAND } from "@tentacle-tv/shared";
-import { Colors, Spacing, Typography, Radius, brandAlpha } from "../../theme/colors";
+import { Colors, Spacing, Typography, brandAlpha } from "../../theme/colors";
 import { Focusable } from "../focus/Focusable";
 import { PlayIcon } from "../icons/TVIcons";
 import { TVMetaChips } from "../TVMetaChips";
 import { useTVContentEntry } from "../../hooks/useTVContentEntry";
+import { Bouton } from "../../theme/boutons";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -214,6 +215,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         <Focusable
           ref={setPlayRef}
           variant="button"
+          focusRadius={Bouton.grand.borderRadius}
           onPress={handlePlay}
           hasTVPreferredFocus
           onFocus={onButtonFocus}
@@ -225,7 +227,7 @@ export const TVHeroContent = memo(function TVHeroContent({
               backgroundColor: Colors.textPrimary,
               paddingHorizontal: 26,
               paddingVertical: 12,
-              borderRadius: Radius.buttonLarge,
+              ...Bouton.grand,
               flexDirection: "row",
               alignItems: "center",
               gap: 8,
@@ -245,6 +247,7 @@ export const TVHeroContent = memo(function TVHeroContent({
 
         <Focusable
           variant="button"
+          focusRadius={Bouton.grand.borderRadius}
           onPress={() => onDetail(item)}
           onFocus={onButtonFocus}
           onBlur={onButtonBlur}
@@ -255,7 +258,7 @@ export const TVHeroContent = memo(function TVHeroContent({
               backgroundColor: BRAND.ghost,
               paddingHorizontal: 22,
               paddingVertical: 12,
-              borderRadius: Radius.buttonLarge,
+              ...Bouton.grand,
               borderWidth: 1,
               borderColor: brandAlpha(0.45),
             }}

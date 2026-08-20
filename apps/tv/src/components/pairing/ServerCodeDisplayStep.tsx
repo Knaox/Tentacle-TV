@@ -7,6 +7,7 @@ import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, Typography, brandAlpha } from "../../theme/colors";
 import { TV_PLATFORM_LABEL } from "../../lib/platformLabel";
+import { Bouton } from "../../theme/boutons";
 
 interface ServerCodeDisplayStepProps {
   onConfirmed: (data: { token: string; user: { id: string; name: string } }) => void;
@@ -86,12 +87,12 @@ export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCod
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.errorText}>{t("pairing:relayError")}</Text>
-          <Focusable variant="button" onPress={generate} hasTVPreferredFocus>
+          <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={generate} hasTVPreferredFocus>
             <View style={styles.buttonPrimary}>
               <Text style={styles.buttonPrimaryText}>{t("common:retry")}</Text>
             </View>
           </Focusable>
-          <Focusable variant="button" onPress={onChangeServer}>
+          <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onChangeServer}>
             <View style={[styles.buttonGhost, { marginTop: 12 }]}>
               <Text style={styles.buttonGhostText}>{t("pairing:changeServer")}</Text>
             </View>
@@ -109,7 +110,7 @@ export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCod
         {expired ? (
           <>
             <Text style={styles.expiredText}>{t("pairing:codeExpired")}</Text>
-            <Focusable variant="button" onPress={generate} hasTVPreferredFocus>
+            <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={generate} hasTVPreferredFocus>
               <View style={styles.buttonPrimary}>
                 <Text style={styles.buttonPrimaryText}>{t("pairing:generateNewCode")}</Text>
               </View>
@@ -140,7 +141,7 @@ export function ServerCodeDisplayStep({ onConfirmed, onChangeServer }: ServerCod
           </>
         )}
 
-        <Focusable variant="button" onPress={onChangeServer}>
+        <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onChangeServer}>
           <View style={styles.buttonGhost}>
             <Text style={styles.buttonGhostText}>{t("pairing:changeServer")}</Text>
           </View>
@@ -176,7 +177,6 @@ const styles = {
     width: 100,
     height: 120,
     backgroundColor: brandAlpha(0.1),
-    borderRadius: Radius.buttonLarge,
     borderWidth: 2,
     borderColor: Colors.accentPurple,
     justifyContent: "center" as const,
@@ -230,8 +230,8 @@ const styles = {
   },
   // CTA core (fiche média) : primaire blanc + ghost translucide
   buttonPrimary: {
+    ...Bouton.grand,
     backgroundColor: Colors.ctaPrimaryBg,
-    borderRadius: Radius.buttonLarge,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: "center" as const,
@@ -241,10 +241,10 @@ const styles = {
     ...Typography.buttonLarge,
   },
   buttonGhost: {
+    ...Bouton.grand,
     backgroundColor: Colors.ctaGhostBg,
     borderWidth: 1,
     borderColor: Colors.ctaGhostBorder,
-    borderRadius: Radius.buttonLarge,
     paddingVertical: 16,
     paddingHorizontal: 32,
     alignItems: "center" as const,

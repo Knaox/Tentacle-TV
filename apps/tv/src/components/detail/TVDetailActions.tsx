@@ -19,7 +19,8 @@ import {
   HeartFilledIcon,
   HeartIcon,
 } from "../icons/TVActionIcons";
-import { Colors, Spacing, Typography, Radius } from "../../theme/colors";
+import { Colors, Spacing, Typography } from "../../theme/colors";
+import { Bouton, boutonRond } from "../../theme/boutons";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -106,11 +107,11 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
   return (
     <TVFocusGuideView autoFocus style={{ flexDirection: "row", alignItems: "center", gap: Spacing.buttonGap }}>
       {showPlay && (
-        <Focusable ref={playBtnRef} variant="button" onPress={handlePlay} hasTVPreferredFocus onFocus={onFocusButtons} nextFocusUp={nextFocusUp}>
+        <Focusable ref={playBtnRef} variant="button" focusRadius={Bouton.grand.borderRadius} onPress={handlePlay} hasTVPreferredFocus onFocus={onFocusButtons} nextFocusUp={nextFocusUp}>
           <View style={{
             backgroundColor: Colors.ctaPrimaryBg,
             paddingHorizontal: 40, paddingVertical: 16,
-            borderRadius: Radius.buttonLarge,
+            ...Bouton.grand,
             flexDirection: "row", alignItems: "center", gap: 10,
           }}>
             <PlayIcon size={20} color={Colors.ctaPrimaryFg} />
@@ -121,6 +122,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
       {trailers.length > 0 && (
         <Focusable
           variant="button"
+          focusRadius={Bouton.grand.borderRadius}
           onPress={() => onTrailer(trailers[0])}
           onFocus={onFocusButtons}
           accessibilityLabel={t("trailer")}
@@ -129,7 +131,7 @@ export function TVDetailActions({ item, trailers, playBtnRef, onPlay, onTrailer,
           <View style={{
             backgroundColor: Colors.ctaGhostBg,
             paddingHorizontal: 28, paddingVertical: 16,
-            borderRadius: Radius.buttonLarge,
+            ...Bouton.grand,
             borderWidth: 1, borderColor: Colors.ctaGhostBorder,
             flexDirection: "row", alignItems: "center", gap: 10,
           }}>
@@ -202,6 +204,7 @@ function CircleAction({
     <Focusable
       ref={focusRef}
       variant="button"
+      focusRadius={boutonRond(CIRCLE).borderRadius}
       onPress={onPress}
       onFocus={onFocus}
       hasTVPreferredFocus={preferred}
@@ -210,9 +213,7 @@ function CircleAction({
     >
       <View
         style={{
-          width: CIRCLE,
-          height: CIRCLE,
-          borderRadius: CIRCLE / 2,
+          ...boutonRond(CIRCLE),
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: Colors.ctaGhostBg,
