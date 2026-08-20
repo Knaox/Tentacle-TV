@@ -39,7 +39,7 @@ import { nativeHandle } from "./video/native";
  *
  * macOS a le sien, pour une raison différente — voir `PLEIN_ECRAN_NATIF`.
  */
-const PARADE_WINDOWS = process.platform === "win32";
+export const PARADE_WINDOWS = process.platform === "win32";
 
 /**
  * Sur macOS : le plein écran du SYSTÈME, avec son espace dédié.
@@ -100,6 +100,18 @@ let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = n
  * fenêtre à chaque question.
  */
 let hote: BrowserWindow | null = null;
+
+/**
+ * Retient la fenêtre à interroger. Sans effet sous Windows, qui tient son état
+ * dans `avant`.
+ *
+ * Le geste reste écrit en ligne dans les bascules de ce module ; il n'est nommé
+ * que pour la session du lecteur, sortie dans son propre fichier
+ * (`sessionLecteurPleinEcran.ts`) et qui doit le faire elle aussi.
+ */
+export function noterFenetre(win: BrowserWindow): void {
+  if (!PARADE_WINDOWS) hote = win;
+}
 
 export function estEnPleinEcran(): boolean {
   if (PARADE_WINDOWS) return avant !== null;
@@ -206,119 +218,6 @@ function sortir(win: BrowserWindow): void {
   // taille de l'écran au premier clic sur « restaurer ».
   win.setBounds(memoire.normales);
   if (memoire.maximisee) win.maximize();
-}
-
-/**
- * Session plein écran du lecteur : dans quel mode la fenêtre était-elle quand la
- * vidéo a commencé ? `null` = aucune session ouverte.
- *
- * C'est toute la question à laquelle il faut répondre pour rendre la fenêtre au
- * mode qui était le sien : le plein écran d'un film n'appartient pas au même que
- * celui d'un utilisateur qui parcourt son catalogue en plein écran.
- *
- * `maximisee` est mémorisé à part, et pour macOS : le plein écran fenêtré — la
- * fenêtre ZOOMÉE — est un troisième état, ni fenêtré ni plein écran, et le
- * rendre demande de le connaître. Windows, lui, le tient déjà dans `avant`.
- */
-let sessionLecteur: { dejaEnPleinEcran: boolean; maximisee: boolean } | null = null;
-
-/**
- * Ouvre la session, et rend l'état COURANT du plein écran.
- *
- * ⚠️ Ouverte UNE SEULE FOIS, et c'est le point délicat. Un changement d'épisode
- * remonte le lecteur (`key={itemId}`) alors que la fenêtre, elle, reste en plein
- * écran : relire son état à ce moment-là ferait conclure que le plein écran était
- * celui de l'utilisateur, et la fenêtre ne redescendrait plus jamais.
- *
- * La fenêtre est passée en argument plutôt que déduite de `hote` : celui-ci
- * n'est posé que par NOS bascules, et une fenêtre mise en plein écran au bouton
- * vert avant même d'ouvrir un film y aurait été comptée pour fenêtrée.
- */
-export function ouvrirSessionLecteur(win: BrowserWindow): boolean {
-  if (!PARADE_WINDOWS) hote = win;
-  const enPleinEcran = estEnPleinEcran();
-  sessionLecteur ??= { dejaEnPleinEcran: enPleinEcran, maximisee: win.isMaximized() };
-  return enPleinEcran;
-}
-
-/**
- * Ferme la session et rend la fenêtre au mode qui était le sien. Windows seul.
- *
- * # Ce que ça règle
- *
- * Le plein écran de Windows est ici une PARADE : la fenêtre reste à l'état
- * normal, on lui retire son cadre et on la pose sur tout l'écran (voir l'en-tête
- * du module). Il survivait à la vidéo, si bien qu'on parcourait ensuite tout le
- * catalogue dans une fenêtre sans barre de titre, sans bouton de fermeture, et
- * par-dessus la barre des tâches.
- *
- * La fenêtre retrouve donc EXACTEMENT le mode d'avant le film : fenêtrée si elle
- * l'était, agrandie si elle l'était, et en plein écran si elle y était déjà —
- * auquel cas on ne touche à rien, ce plein écran-là est celui de l'utilisateur et
- * pas celui du film.
- *
- * # macOS suit la même règle, et il a fallu la lui donner
- *
- * Là-bas le plein écran est celui du système, avec son espace dédié, et l'on a
- * longtemps pensé qu'il n'y avait rien à corriger. C'est faux dans un cas : le
- * plein écran POSÉ PAR LE FILM. Quand la fenêtre était fenêtrée et qu'on a
- * appuyé sur « plein écran » dans le lecteur, quitter le film laissait ensuite
- * tout le catalogue dans un espace dédié que personne n'avait demandé.
- *
- * La règle est donc la même que sur Windows, et elle a trois branches et non
- * deux : fenêtrée si elle l'était, ZOOMÉE si elle l'était — le plein écran
- * fenêtré du bouton vert, qui n'est ni l'un ni l'autre —, et en plein écran si
- * elle y était déjà, auquel cas on ne touche à rien.
- */
-export function fermerSessionLecteur(win: BrowserWindow): void {
-  const session = sessionLecteur;
-  sessionLecteur = null;
-  if (session === null) return;
-  // Le plein écran était le sien avant le film : il lui appartient.
-  if (session.dejaEnPleinEcran) return;
-  if (!estEnPleinEcran()) return;
-  if (PARADE_WINDOWS) {
-    sortir(win);
-    return;
-  }
-  rendreModeMacos(win, session.maximisee);
-}
-
-/**
- * Sortir du plein écran de macOS, puis rendre l'état zoomé — dans cet ordre, et
- * pas dans le même tour de boucle.
- *
- * `toggleFullScreen:` est ASYNCHRONE : l'animation d'espace dure de l'ordre de
- * la seconde, et tao met son état à jour AVANT de l'appeler. Zoomer tout de
- * suite reviendrait donc à zoomer une fenêtre encore en plein écran, et le
- * serveur de fenêtres tranche cette course comme il veut. On attend l'évènement
- * d'AppKit, qui est la seule annonce fiable que la transition est finie.
- *
- * `once` : la fenêtre vit plus longtemps que la session, et un écouteur laissé
- * en place rezoomerait à la prochaine sortie de plein écran, celle-là voulue.
- */
-function rendreModeMacos(win: BrowserWindow, maximisee: boolean): void {
-  hote = win;
-  const rendreLeZoom = (): void => {
-    if (win.isDestroyed()) return;
-    if (maximisee && !win.isMaximized()) win.maximize();
-    else if (!maximisee && win.isMaximized()) win.unmaximize();
-  };
-
-  if (win.isSimpleFullScreen()) {
-    // Le plein écran SIMPLE ne change pas d'espace : il n'a pas d'animation à
-    // attendre. Une session ouverte avant la bascule vers le natif peut encore
-    // s'y trouver.
-    win.setSimpleFullScreen(false);
-    rendreLeZoom();
-    return;
-  }
-  if (!win.isFullScreen()) {
-    rendreLeZoom();
-    return;
-  }
-  win.once("leave-full-screen", rendreLeZoom);
-  win.setFullScreen(false);
 }
 
 /** Bascule, et renvoie le nouvel état. */

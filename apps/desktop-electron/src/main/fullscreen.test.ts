@@ -9,9 +9,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  * qui était le sien — sans quoi on parcourt le catalogue dans une fenêtre sans
  * barre de titre, sans bouton de fermeture, par-dessus la barre des tâches.
  *
- * Sur macOS, rien de tout cela ne s'applique : le plein écran y est celui du
- * système, avec son espace dédié et ses commandes de fenêtre intactes. C'est la
- * contrainte que ce fichier garde.
+ * Sur macOS, rien de tout cela ne s'applique, et la règle est même l'INVERSE :
+ * quitter un film ne touche PLUS à la fenêtre. Le plein écran y est celui du
+ * système, avec son espace dédié — en sortir fait glisser tout l'écran vers le
+ * bureau d'origine, et cette transition, ouverte à l'instant où mpv meurt,
+ * laissait sa fenêtre noire seule à l'écran. Fenêtrée, zoomée ou en plein écran,
+ * l'état de la fenêtre appartient désormais à l'utilisateur. C'est la contrainte
+ * que ce fichier garde, des deux côtés.
  *
  * ⚠️ Ce qui n'est PAS couvert, et c'est assumé : le chemin où la sortie doit
  * réellement défaire le plein écran de Windows. Il passe par `entrer()`, donc par
@@ -78,14 +82,17 @@ const platformeReelle = process.platform;
 async function chargerPour(plateforme: string) {
   Object.defineProperty(process, "platform", { value: plateforme, configurable: true });
   vi.resetModules();
-  return import("./fullscreen");
+  // La bascule et la session vivent dans deux modules depuis que le second a
+  // cessé de décider quoi que ce soit sur macOS. Les tests interrogent les deux :
+  // c'est leur ACCORD qui est la contrainte.
+  return { ...(await import("./fullscreen")), ...(await import("./sessionLecteurPleinEcran")) };
 }
 
 afterEach(() => {
   Object.defineProperty(process, "platform", { value: platformeReelle, configurable: true });
 });
 
-describe("macOS — la fenêtre retrouve le mode d'avant le film", () => {
+describe("macOS — la fenêtre garde l'état que l'utilisateur lui a donné", () => {
   it("ne touche à rien quand le film s'est joué en fenêtré", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre();
@@ -98,7 +105,7 @@ describe("macOS — la fenêtre retrouve le mode d'avant le film", () => {
     expect(win.setFullScreen).not.toHaveBeenCalled();
   });
 
-  it("rend une fenêtre FENÊTRÉE au plein écran posé par le film", async () => {
+  it("GARDE le plein écran posé depuis le lecteur", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre();
 
@@ -110,30 +117,46 @@ describe("macOS — la fenêtre retrouve le mode d'avant le film", () => {
 
     fs.fermerSessionLecteur(win as never);
 
-    expect(win.setFullScreen).toHaveBeenLastCalledWith(false);
-    expect(win.maximize).not.toHaveBeenCalled();
+    // Et c'est tout : aucune sortie, donc aucune animation d'espace à traverser
+    // pendant que mpv meurt — c'est elle qui laissait sa fenêtre noire à l'écran.
+    expect(win.setFullScreen).not.toHaveBeenCalledWith(false);
+    expect(win.isFullScreen()).toBe(true);
   });
 
-  it("rend le PLEIN ÉCRAN FENÊTRÉ à celle qui y était", async () => {
+  it("laisse ZOOMÉE la fenêtre qui l'était", async () => {
+    const fs = await chargerPour("darwin");
+    const win = fenetre({ zoomee: true });
+
+    fs.ouvrirSessionLecteur(win as never);
+    fs.fermerSessionLecteur(win as never);
+
+    expect(win.isMaximized()).toBe(true);
+    expect(win.unmaximize).not.toHaveBeenCalled();
+    expect(win.setFullScreen).not.toHaveBeenCalled();
+  });
+
+  it("ne rezoome PAS une fenêtre que le plein écran avait dézoomée", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre({ zoomee: true });
 
     fs.ouvrirSessionLecteur(win as never);
     fs.basculer(win as never);
-    // Le plein écran natif défait le zoom : c'est lui qu'il faudra rendre.
+    // Le plein écran natif défait le zoom. On le lui laissait rendre ; plus
+    // maintenant — la fenêtre est là où l'utilisateur l'a mise en dernier.
     win.unmaximize();
+    win.maximize.mockClear();
 
     fs.fermerSessionLecteur(win as never);
 
-    expect(win.setFullScreen).toHaveBeenLastCalledWith(false);
-    expect(win.maximize).toHaveBeenCalled();
+    expect(win.maximize).not.toHaveBeenCalled();
   });
 
   it("laisse le plein écran de l'UTILISATEUR intact", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre({ pleinEcran: true });
 
-    // Il y était AVANT le film : ce plein écran-là ne nous appartient pas.
+    // Il y était AVANT le film, et il y est encore après : rien ne le distingue
+    // plus du plein écran posé par le lecteur, et c'est bien le but.
     expect(fs.ouvrirSessionLecteur(win as never)).toBe(true);
     fs.fermerSessionLecteur(win as never);
 
@@ -142,18 +165,19 @@ describe("macOS — la fenêtre retrouve le mode d'avant le film", () => {
     expect(win.unmaximize).not.toHaveBeenCalled();
   });
 
-  it("ne relit PAS l'état à chaque épisode", async () => {
+  it("rend l'état COURANT à chaque montage — c'est lui qui amorce le lecteur", async () => {
     const fs = await chargerPour("darwin");
     const win = fenetre();
 
-    // Le lecteur est remonté sur `key={itemId}` alors que la fenêtre, elle,
-    // reste en plein écran : relire son état ferait conclure qu'il appartient à
-    // l'utilisateur, et la fenêtre ne redescendrait plus jamais.
+    // Le lecteur est remonté sur `key={itemId}` à chaque épisode, et il doit
+    // retrouver l'icône, la touche Échap et les gardes de sortie en accord avec
+    // la fenêtre réelle — laquelle reste en plein écran d'un épisode à l'autre.
     expect(fs.ouvrirSessionLecteur(win as never)).toBe(false);
     fs.basculer(win as never);
-    expect(fs.ouvrirSessionLecteur(win as never)).toBe(true); // état COURANT rendu…
+    expect(fs.ouvrirSessionLecteur(win as never)).toBe(true);
+
     fs.fermerSessionLecteur(win as never);
-    expect(win.setFullScreen).toHaveBeenLastCalledWith(false); // …mais session inchangée
+    expect(win.setFullScreen).not.toHaveBeenCalledWith(false);
   });
 
   it("garde le plein écran du SYSTÈME pour la bascule, sans parade", async () => {
@@ -165,6 +189,18 @@ describe("macOS — la fenêtre retrouve le mode d'avant le film", () => {
     expect(win.setFullScreen).toHaveBeenCalledWith(true);
     // Aucune géométrie posée à la main : c'est le système qui place la fenêtre.
     expect(win.setBounds).not.toHaveBeenCalled();
+  });
+
+  it("sort quand l'UTILISATEUR le demande — bouton du lecteur, ou Échap", async () => {
+    const fs = await chargerPour("darwin");
+    const win = fenetre();
+
+    fs.ouvrirSessionLecteur(win as never);
+    fs.basculer(win as never);
+    // Ce chemin-là ne change pas, et c'est le seul qui doive encore redescendre.
+    expect(fs.basculer(win as never)).toBe(false);
+
+    expect(win.setFullScreen).toHaveBeenLastCalledWith(false);
   });
 
   it("sort par les deux portes — natif et plein écran simple d'avant", async () => {
