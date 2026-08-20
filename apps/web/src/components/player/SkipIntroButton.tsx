@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { DEPART_SAUT_INTRO } from "./useSkipIntroCountdown";
+import { DEPART_SAUT_INTRO } from "./sautIntro";
 
 interface SkipIntroButtonProps {
   /** Secondes restantes avant le saut automatique, `null` s'il n'est pas armé. */

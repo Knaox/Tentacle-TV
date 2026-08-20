@@ -42,11 +42,10 @@ export function VideoPlayerOverlays({
   setShowPlayButton, setPolicyMuted, handleSeek,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
-  // Saut d'intro automatique — inerte tant que la préférence est éteinte, et
-  // réarmé à chaque épisode par le début du segment.
+  // Saut d'intro automatique — inerte tant que la préférence est éteinte. Il
+  // décide seul de l'affichage de la pilule : pendant un saut, elle s'efface.
   const sautIntro = useSkipIntroCountdown({
     visible: Boolean(showSkipIntro && introSegment),
-    cle: introSegment?.start,
     sauter: () => { if (introSegment) handleSeek(introSegment.end); },
   });
 
@@ -103,10 +102,10 @@ export function VideoPlayerOverlays({
         </button>
       )}
 
-      {showSkipIntro && introSegment && (
+      {sautIntro.montrer && (
         <SkipIntroButton
           compte={sautIntro.compte}
-          onSauter={() => handleSeek(introSegment.end)}
+          onSauter={sautIntro.sauterMaintenant}
           onAnnuler={sautIntro.annuler}
           couche="z-50"
           flou
