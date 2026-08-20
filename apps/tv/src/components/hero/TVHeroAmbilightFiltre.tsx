@@ -44,6 +44,32 @@ const PORTEE = 3;
  * à 25 sans le dire. La valeur y est donc pré-compensée et le canevas réduit
  * d'autant qu'il faut — voir `reglageFlouAndroid`. iOS reçoit exactement ce
  * qu'il recevait.
+ *
+ * # Le `viewBox`, et pourquoi il n'est pas décoratif
+ *
+ * Sans lui, les nombres écrits dans le SVG ne sont PAS ceux de la mise en page.
+ * `react-native-svg` résout une longueur nue dans sa propre échelle (`mScale`,
+ * la densité que lui rapporte l'affichage) ; React Native, lui, pose la vue
+ * dans son espace de points. Sur l'Android TV de banc les deux ne coïncident
+ * pas — `PixelRatio.get()` y rend 1 pour une dalle en densité 320 — et l'image
+ * était donc dessinée à une échelle, la boîte censée la contenir à une autre.
+ * L'image débordait sa propre région de filtre : la gaussienne n'avait plus de
+ * vide où s'éteindre.
+ *
+ * Ce que cela donnait à l'écran, mesuré à l'émulateur par différence entre deux
+ * captures identiques, halo allumé puis éteint : une DALLE pleine, à bords
+ * francs, tout autour de la carte. Sur la ligne médiane, la contribution du
+ * halo valait 115 contre le bord de la carte et encore 106 à cent quarante
+ * pixels de là — plate, puis coupée net. Aucune extinction, nulle part.
+ *
+ * Avec le `viewBox`, l'unité utilisateur est arrimée au viewport et les deux
+ * espaces se rejoignent. Même mesure, même image : 78 contre la carte, puis 63,
+ * 45, 28, 12 — une extinction monotone sur exactement les trois σ prévus, et
+ * plus aucune couture visible. C'est le seul changement nécessaire ; poser en
+ * plus les sous-régions des primitives donnait, au pixel près, le même profil.
+ *
+ * `0 0 w h` sur un viewport de `w × h` est l'identité : rien ne bouge sur tvOS,
+ * qui rendait déjà le halo juste.
  */
 export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   uri,
@@ -76,9 +102,10 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   // Posé par son CENTRE, et mis à l'échelle autour de ce centre.
   //
   // La version d'avant ancrait le coin (`top/left: -bleed` + `transformOrigin:
-  // "0% 0%"`). Android n'honore pas `transformOrigin` : il met l'échelle au
-  // centre quoi qu'on écrive, et la lueur partait en haut à gauche de la carte,
-  // tranchée net sur deux bords — pile le défaut qu'on a filmé sur l'émulateur.
+  // "0% 0%"`), ce qu'Android n'honore pas : il met l'échelle au centre quoi
+  // qu'on écrive. L'ancrage au centre lève cette divergence — il ne réglait pas,
+  // en revanche, l'absence de lueur qu'on lui a longtemps imputée : celle-là
+  // venait des unités du SVG, voir l'en-tête.
   //
   // Le centre du halo est celui de la carte, par construction : la boîte
   // déborde d'autant de chaque côté. S'y ancrer donne donc EXACTEMENT la même
@@ -95,7 +122,7 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
         transform: [{ scale: k }],
       }}
     >
-      <Svg width={w} height={h}>
+      <Svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
         <Defs>
           <Filter id="halo" x={0} y={0} width={w} height={h} filterUnits="userSpaceOnUse">
             <FeGaussianBlur stdDeviation={stdDeviation} />

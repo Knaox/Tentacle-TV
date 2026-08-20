@@ -39,8 +39,10 @@ export const TVBannerCardFrame = memo(function TVBannerCardFrame({
   const height = Math.round((screenH * heightVh) / 100);
 
   // Le halo se dimensionne sur la carte MESURÉE, pas sur des points en dur :
-  // Android TV compose en 960 dp là où tvOS travaille en 1920 pt, et un
-  // débordement écrit en points y paraîtrait deux fois plus gros.
+  // l'espace de points d'un téléviseur n'est pas celui d'un autre — la même
+  // dalle 1920×1080 se compose en 1920 pt sur l'Android TV de banc
+  // (`PixelRatio.get()` y rend 1) et un débordement écrit en dur y changerait
+  // de taille d'un appareil au suivant.
   const [cardW, setCardW] = useState(0);
   const mesurer = useCallback((e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);

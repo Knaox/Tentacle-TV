@@ -45,12 +45,11 @@ const REPLI_MS = 500;
  * débordement gaussien ET la saturation de la référence — celle qui fait la
  * différence entre une lueur colorée et un lavis gris.
  *
- * Android en était privé, sur le soupçon que react-native-svg y plafonne les
- * flous à un rayon de 25 et ignore l'échelle du canevas. Vérifié sur émulateur
- * Android TV : le soupçon ne tenait pas — le rendu se fait à 1/K, le
- * `stdDeviation` transmis vaut 8, et l'échelle est celle de la vue, pas du
- * canevas. Ce qui manquait vraiment était ailleurs, dans l'ancrage du halo
- * (`TVHeroAmbilightFiltre`).
+ * Android a longtemps rendu ce halo sans qu'on le voie, et deux soupçons
+ * successifs se sont révélés faux : ni le plafond de rayon de
+ * `react-native-svg` (le `stdDeviation` transmis vaut 9, on est loin des 25),
+ * ni l'ancrage de la mise à l'échelle. La vraie cause est dans les UNITÉS du
+ * SVG, et elle est mesurée dans l'en-tête de `TVHeroAmbilightFiltre`.
  */
 export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   uri,
