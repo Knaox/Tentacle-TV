@@ -17,17 +17,18 @@ import { Colors, Typography } from "../../theme/colors";
  * focalisée démonte la cellule qui portait le focus. Sans rien à reprendre, le
  * D-pad devient muet et il ne reste que le retour arrière.
  *
- * L'en-tête (bannière et barre de filtres) reste au-dessus : on ne retire pas à
- * l'utilisateur les commandes qui l'ont mené là.
+ * L'en-tête (bannière et barre de filtres) reste au-dessus, et surtout MONTÉ :
+ * ce bloc est rendu par la liste elle-même (`ListEmptyComponent`), pas à sa
+ * place. Rendu à sa place, il démontait tout l'arbre de la liste — la puce que
+ * l'utilisateur venait d'actionner comprise — et le focus partait se perdre
+ * dans le rail.
  */
 export function TVLibraryEmpty({
-  header,
   filtree,
   onReinitialiser,
   onParcourir,
   entryRef,
 }: {
-  header: React.ReactElement;
   /** Vrai quand des filtres sont actifs — donc que le vide est réversible. */
   filtree: boolean;
   onReinitialiser: () => void;
@@ -37,35 +38,32 @@ export function TVLibraryEmpty({
   const { t } = useTranslation("common");
 
   return (
-    <View>
-      {header}
-      <View style={{ alignItems: "center", paddingTop: 64, gap: 20 }}>
-        <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
-          {filtree ? t("noResults") : t("emptyLibrary")}
-        </Text>
-        <Focusable
-          ref={entryRef}
-          variant="button"
-          focusRadius={Bouton.grand.borderRadius}
-          onPress={filtree ? onReinitialiser : onParcourir}
-          accessibilityLabel={filtree ? t("resetFilters") : t("browseLibraries")}
+    <View style={{ alignItems: "center", paddingTop: 64, gap: 20 }}>
+      <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
+        {filtree ? t("noResults") : t("emptyLibrary")}
+      </Text>
+      <Focusable
+        ref={entryRef}
+        variant="button"
+        focusRadius={Bouton.grand.borderRadius}
+        onPress={filtree ? onReinitialiser : onParcourir}
+        accessibilityLabel={filtree ? t("resetFilters") : t("browseLibraries")}
+      >
+        <View
+          style={{
+            ...Bouton.grand,
+            paddingHorizontal: 32,
+            paddingVertical: 14,
+            backgroundColor: Colors.ctaGhostBg,
+            borderWidth: 1,
+            borderColor: Colors.ctaGhostBorder,
+          }}
         >
-          <View
-            style={{
-              ...Bouton.grand,
-              paddingHorizontal: 32,
-              paddingVertical: 14,
-              backgroundColor: Colors.ctaGhostBg,
-              borderWidth: 1,
-              borderColor: Colors.ctaGhostBorder,
-            }}
-          >
-            <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
-              {filtree ? t("resetFilters") : t("browseLibraries")}
-            </Text>
-          </View>
-        </Focusable>
-      </View>
+          <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
+            {filtree ? t("resetFilters") : t("browseLibraries")}
+          </Text>
+        </View>
+      </Focusable>
     </View>
   );
 }
