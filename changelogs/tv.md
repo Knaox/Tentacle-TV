@@ -7,15 +7,19 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [Unreleased]
 ### FR
-- Android TV répond mieux à la télécommande : parcourir les rangées ne fait plus saccader l'interface, y compris sur les boîtiers puissants
-- Le halo des bannières est enfin là sur Android TV : les couleurs de l'affiche débordent autour de la carte et s'éteignent en douceur, comme sur l'Apple TV
-- « Passer l'intro automatiquement » est désormais activé d'origine
-- Deux nouveaux réglages de fin d'épisode : proposer l'épisode suivant, et enchaîner tout seul
+- Navigation nettement plus fluide : parcourir les rangées, ouvrir le menu et changer de page ne saccadent plus, même sur les boîtiers puissants
+- Le halo des bannières est enfin là sur Android TV, comme sur l'Apple TV
+- Boutons, cartes et pastilles reprennent les coins arrondis du téléviseur LG
+- « Passer l'intro » est activé d'origine, et ne part plus pendant le chargement
+- Deux nouveaux réglages de fin d'épisode
+- Revenir d'une fiche ne provoque plus d'erreur
 ### EN
-- Android TV answers the remote better: moving through the rows no longer stutters, even on powerful boxes
-- The banner halo has finally arrived on Android TV: the artwork's colours spill all around the card and fade out smoothly, just like on Apple TV and desktop
-- "Skip the intro automatically" is now on out of the box
-- Two new end-of-episode settings: offer the next episode, and play it on its own. Each turns off separately
+- Navigation is markedly smoother: moving through rows, opening the menu and switching pages no longer stutter, even on powerful boxes
+- The banner halo has finally arrived on Android TV, just like on Apple TV
+- Buttons, cards and pills take on the LG television's rounded corners
+- "Skip the intro" is on out of the box, and no longer fires during loading
+- Two new end-of-episode settings
+- Coming back from a media page no longer raises an error
 
 ## [1.2.0]
 ### FR
