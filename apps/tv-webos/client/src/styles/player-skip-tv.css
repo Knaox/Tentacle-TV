@@ -112,3 +112,43 @@ html[data-tv-lecteur="osd"] .saut-tv {
 .affiche-fin-tv p {
   font-size: 19px;
 }
+
+/* ── Le décompte : deux boutons, le temps de trois secondes ───────────────
+ *
+ * Pendant que le saut se décompte, un second bouton propose de garder l'intro.
+ * L'îlot reprend l'ancrage du bouton seul et redevient positionné en absolu ;
+ * les deux boutons, eux, retombent en flux pour se ranger côte à côte.
+ *
+ * Pas une croix : à trois mètres, une cible de trente-deux pixels ne se vise
+ * pas — et il n'y a pas de pointeur pour aller la chercher.
+ */
+.saut-tv-ilot {
+  position: absolute;
+  right: var(--tv-overscan-x);
+  bottom: 148px;
+  z-index: var(--z-lecteur-saut);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 200ms ease-out;
+}
+
+.saut-tv-ilot .saut-tv {
+  position: static;
+  right: auto;
+  bottom: auto;
+  z-index: auto;
+  transition: none;
+}
+
+.saut-tv--refus {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* L'îlot s'écarte des commandes comme le bouton seul le fait déjà. */
+html[data-tv-lecteur="osd"] .saut-tv-ilot {
+  transform: translateY(-56px);
+}
