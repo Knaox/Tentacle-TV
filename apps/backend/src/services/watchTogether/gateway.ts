@@ -92,6 +92,17 @@ export function handleWtMessage(
     return;
   }
 
+  if (msg.type === "wt:skipIntroDismiss") {
+    // Même nature que l'auto-next : transient, hors state/epoch. Refuser le
+    // saut d'intro vaut pour la séance — la position est commune.
+    for (const memberId of room.members.keys()) {
+      if (memberId !== user.userId) {
+        sendToUser(memberId, { type: "wt:skipIntroDismiss", originUserId: user.userId });
+      }
+    }
+    return;
+  }
+
   if (msg.type === "wt:autonextDismiss") {
     // Événement transient (hors state/epoch) : relayer aux AUTRES membres —
     // la bannière « épisode suivant » se masque partout.

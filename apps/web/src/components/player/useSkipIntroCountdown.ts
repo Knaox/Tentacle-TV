@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAutoSkipIntro } from "../../hooks/useAutoSkipIntro";
+import { annoncerRefusLocal, useRefusSautIntro } from "../../watchTogether/refusSautIntro";
 import {
   REPOS,
   compteAffiche,
@@ -16,8 +17,6 @@ interface Options {
   visible: boolean;
   /** Le saut lui-même — le geste du clic sur la pilule. */
   sauter: () => void;
-  /** Un autre membre du groupe s'est opposé : on s'aligne, sans le rediffuser. */
-  refusDistant?: number;
 }
 
 interface Etat {
@@ -39,8 +38,9 @@ interface Etat {
  * réducteur les fronts de `visible`. Toute la logique — et les deux défauts
  * qu'elle corrige — est décrite et testée dans le module pur.
  */
-export function useSkipIntroCountdown({ visible, sauter, refusDistant }: Options): Etat {
+export function useSkipIntroCountdown({ visible, sauter }: Options): Etat {
   const actif = useAutoSkipIntro();
+  const refusDistant = useRefusSautIntro();
   const [etat, setEtat] = useState<EtatSautIntro>(REPOS);
 
   // Le réducteur a besoin du `visible` PRÉCÉDENT pour reconnaître une entrée
@@ -83,7 +83,10 @@ export function useSkipIntroCountdown({ visible, sauter, refusDistant }: Options
   return {
     montrer: montrerPilule(etat, visible),
     compte: compteAffiche(etat),
-    annuler: useCallback(() => pousser({ type: "croix" }), [pousser]),
+    annuler: useCallback(() => {
+      pousser({ type: "croix" });
+      annoncerRefusLocal();
+    }, [pousser]),
     sauterMaintenant: useCallback(() => pousser({ type: "sauteMaintenant" }), [pousser]),
   };
 }

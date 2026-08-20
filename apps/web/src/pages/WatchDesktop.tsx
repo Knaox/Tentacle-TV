@@ -10,6 +10,7 @@ import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
+import { useSautIntroGroupe } from "../watchTogether/refusSautIntro";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
@@ -69,6 +70,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   const groupSync = useGroupSyncEngine({
     itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
+  // Le refus du saut d'intro voyage avec le groupe : la position de lecture
+  // est commune, laisser partir le décompte de l'autre annulerait la croix.
+  useSautIntroGroupe(groupSync.notifySkipIntroDismiss);
 
   // Rebuild de source local (changement qualité/audio/burn-in) : le groupe
   // attend ce membre pendant le rechargement (fileLoaded+playing → false).
