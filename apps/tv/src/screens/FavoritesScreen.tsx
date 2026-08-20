@@ -62,6 +62,13 @@ function FavoritesScreenInner({ navigation }: Props) {
             icon={<HeartIcon size={44} color={Colors.textTertiary} />}
             title={t("emptyFavorites")}
             hint={t("emptyFavoritesHint")}
+            // Sans action, cet écran n'a aucun focusable : l'anneau n'a nulle
+            // part où se poser et la télécommande devient muette.
+            action={{
+              libelle: t("browseLibraries"),
+              onPress: () => navigation.navigate("Home"),
+              entryRef: contentEntry,
+            }}
           />
         ) : (
           <TVLibraryGrid listKey="favorites" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} entryRef={contentEntry} />

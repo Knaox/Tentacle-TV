@@ -64,6 +64,13 @@ function WatchlistScreenInner({ navigation }: Props) {
             icon={<BookmarkIcon size={44} color={Colors.textTertiary} />}
             title={t("emptyWatchlist")}
             hint={t("emptyWatchlistHint")}
+            // Sans action, cet écran n'a aucun focusable : l'anneau n'a nulle
+            // part où se poser et la télécommande devient muette.
+            action={{
+              libelle: t("browseLibraries"),
+              onPress: () => navigation.navigate("Home"),
+              entryRef: contentEntry,
+            }}
           />
         ) : (
           <TVLibraryGrid listKey="watchlist" items={items} onPressItem={openDetail} onItemFocus={setFocusedItem} entryRef={contentEntry} />

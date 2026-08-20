@@ -154,6 +154,7 @@ export default {
   emptyFavorites: "Aucun favori",
   emptyWatchlistHint: "Ajoutez des films et séries depuis leur page détail",
   emptyFavoritesHint: "Marquez vos films et séries préférés comme favoris",
+  browseLibraries: "Parcourir les bibliothèques",
   invite: "Inviter",
   you: "vous",
   shareMyList: "Partager ma liste",

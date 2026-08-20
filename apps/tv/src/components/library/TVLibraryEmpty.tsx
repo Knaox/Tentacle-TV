@@ -1,0 +1,71 @@
+import { Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
+import { Focusable } from "../focus/Focusable";
+import { Bouton } from "../../theme/boutons";
+import { Colors, Typography } from "../../theme/colors";
+
+/**
+ * Une bibliothèque qui ne rend rien — et la sortie qui va avec.
+ *
+ * Deux situations que l'utilisateur ne vit pas de la même façon, d'où deux
+ * réponses. **Filtrée à zéro** : c'est lui qui a fermé la porte, on lui rend la
+ * clé (« Réinitialiser »). **Réellement vide** : la bibliothèque n'a rien à
+ * montrer, et la seule chose utile est d'aller voir ailleurs.
+ *
+ * Dans les deux cas il y a un focusable, et c'est le fond du sujet. Le cas qui
+ * casse n'est pas d'arriver ici, c'est d'y tomber : filtrer depuis une affiche
+ * focalisée démonte la cellule qui portait le focus. Sans rien à reprendre, le
+ * D-pad devient muet et il ne reste que le retour arrière.
+ *
+ * L'en-tête (bannière et barre de filtres) reste au-dessus : on ne retire pas à
+ * l'utilisateur les commandes qui l'ont mené là.
+ */
+export function TVLibraryEmpty({
+  header,
+  filtree,
+  onReinitialiser,
+  onParcourir,
+  entryRef,
+}: {
+  header: React.ReactElement;
+  /** Vrai quand des filtres sont actifs — donc que le vide est réversible. */
+  filtree: boolean;
+  onReinitialiser: () => void;
+  onParcourir: () => void;
+  entryRef?: (node: View | null) => void;
+}) {
+  const { t } = useTranslation("common");
+
+  return (
+    <View>
+      {header}
+      <View style={{ alignItems: "center", paddingTop: 64, gap: 20 }}>
+        <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
+          {filtree ? t("noResults") : t("emptyLibrary")}
+        </Text>
+        <Focusable
+          ref={entryRef}
+          variant="button"
+          focusRadius={Bouton.grand.borderRadius}
+          onPress={filtree ? onReinitialiser : onParcourir}
+          accessibilityLabel={filtree ? t("resetFilters") : t("browseLibraries")}
+        >
+          <View
+            style={{
+              ...Bouton.grand,
+              paddingHorizontal: 32,
+              paddingVertical: 14,
+              backgroundColor: Colors.ctaGhostBg,
+              borderWidth: 1,
+              borderColor: Colors.ctaGhostBorder,
+            }}
+          >
+            <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
+              {filtree ? t("resetFilters") : t("browseLibraries")}
+            </Text>
+          </View>
+        </Focusable>
+      </View>
+    </View>
+  );
+}
