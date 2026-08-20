@@ -12,6 +12,7 @@ import {
 import { Focusable } from "../focus/Focusable";
 import { SelectionModal } from "../SelectionModal";
 import { TVLibraryPrefCard, type ReglageTv } from "./TVLibraryPrefCard";
+import { TVSautIntroToggle } from "./TVSautIntroToggle";
 import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "../../utils/languageKeys";
 import { Colors, brandAlpha } from "../../theme/colors";
 
@@ -82,6 +83,7 @@ export function TVSettingsPlaybackSection() {
 
   return (
     <View>
+      <TVSautIntroToggle />
       <Text
         style={{
           color: Colors.textTertiary,

@@ -108,6 +108,10 @@ export default {
     "Un film HDR s'affiche alors avec toutes ses couleurs. Le changement de mode noircit l'écran une seconde ou deux, et l'état d'origine est rétabli à la fin de la lecture. Désactivé, le film est adapté à votre écran sans changer son mode.",
   // Saut d'intro automatique (réglage par appareil)
   autoSkipIntroTitle: "Passer l'intro automatiquement",
+  // Deux boutons plutôt qu'un interrupteur sur le téléviseur : à la
+  // télécommande, un pouce qui coulisse ne veut rien dire.
+  reglageActive: "Activé",
+  reglageDesactive: "Désactivé",
   autoSkipIntroHint:
     "Quand une série signale son générique de début, le lecteur le passe au bout de trois secondes. Une croix reste offerte pendant le décompte pour garder l'intro sur l'épisode en cours.",
 
