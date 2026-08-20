@@ -6,9 +6,9 @@ import { ToggleSwitch } from "./ToggleSwitch";
 /**
  * Sauter l'intro sans avoir à le demander à chaque épisode.
  *
- * Éteint par défaut : déplacer la tête de lecture tout seul est une liberté que
- * le lecteur ne prend pas sans qu'on la lui ait donnée. Allumé, chaque saut
- * reste réfutable — la pilule compte trois secondes et porte une croix.
+ * Allumé par défaut : on enchaîne les épisodes le soir, et chaque saut reste
+ * réfutable — la pilule compte trois secondes et porte une croix. Le refus,
+ * lui, est mémorisé (cf. `lib/autoSkipIntro`).
  *
  * Réglage par appareil, comme la bascule HDR : on enchaîne les épisodes devant
  * le téléviseur du salon, pas forcément sur le portable.
