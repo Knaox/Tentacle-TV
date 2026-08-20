@@ -20,12 +20,7 @@ import type { BrowserWindow } from "electron";
 import { setPlayerSurfaceTransparent } from "../window";
 import { sansFaillir, trace } from "./native";
 import { depuisHandle, msg, type Rect } from "./objc";
-import {
-  fenetresApp,
-  numeroFenetre,
-  numerosFenetres,
-  trouverFenetreNeuve,
-} from "./objcFenetres";
+import { fenetreDisparue, guetterFenetreMpv, vestigesMpv } from "./macosGuetFenetre";
 import { attacherSousLaPage, cadreSansLisere, reordonnerSousLaPage } from "./macosChildWindow";
 import { guetterEdr, oublierEdr } from "./macosEdr";
 import { cibleVideo, poserCadre } from "./macosFrame";
@@ -33,17 +28,6 @@ import { retraitBandeau } from "../macosTitleBar";
 import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
-/**
- * Cadence du sondage, et nombre maximal de tentatives (10 s en tout).
- *
- * ⚠️ 10 ms, et non 100, mais pas pour gagner une course : mpv crée ET affiche sa
- * fenêtre dans un unique bloc sur le thread principal, où aucun minuteur ne peut
- * s'intercaler. La raison est qu'une lecture démarrée en plein écran n'affiche
- * PAS sa fenêtre (`macosOptionsFenetre.ts`) — c'est nous qui le faisons en
- * l'attachant, et ce délai est donc celui de la PREMIÈRE IMAGE.
- */
-const SONDAGE_MS = 10;
-const SONDAGES_MAX = 1000;
 /** Un recalage par image suffit — voir `planifierCalage`. */
 const CALAGE_MS = 16;
 /**
@@ -56,27 +40,15 @@ const CALAGE_MS = 16;
  */
 const VEILLE_MS = 100;
 
-/** Classe de la fenêtre de mpv : `Window` de `video/out/mac/window.swift`, que
- *  le préfixe de module fait apparaître ainsi. Vérifié sur mpv 0.41.0. */
-const CLASSE_FENETRE_MPV = "swift.Window";
-
 export class MacosSurface implements VideoSurface {
   /** La `NSWindow` d'Electron, obtenue depuis sa `NSView` racine. */
   private readonly parent: unknown;
   private mpvWindow: unknown = null;
-  private recherche: ReturnType<typeof setInterval> | null = null;
+  private recherche: (() => void) | null = null;
   private calage: ReturnType<typeof setTimeout> | null = null;
   private veille: ReturnType<typeof setInterval> | null = null;
   private attache = false;
 
-  /**
-   * Les fenêtres mpv déjà là quand cette surface a commencé à chercher : des
-   * VESTIGES. Le cœur de mpv se termine sur ses propres threads, après que la
-   * commande d'arrêt a rendu la main, et sa fenêtre lui survit quelques instants.
-   * Sans cette mémoire, un changement d'épisode cale la vidéo sur une fenêtre
-   * morte.
-   */
-  private vestiges: ReadonlySet<number> = new Set();
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
   private numero = 0;
 
@@ -116,7 +88,7 @@ export class MacosSurface implements VideoSurface {
     this.attache = true;
     // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture qui
     // commence n'existe pas encore, tout ce qu'on voit est donc un vestige.
-    this.vestiges = numerosFenetres(CLASSE_FENETRE_MPV);
+    const vestiges = vestigesMpv();
     this.host.on("resize", this.suivre);
     this.host.on("move", this.suivre);
     // Le plein écran est celui du système : ces deux évènements arrivent, qu'il
@@ -124,27 +96,11 @@ export class MacosSurface implements VideoSurface {
     this.host.on("enter-full-screen", this.transitionPleinEcran);
     this.host.on("leave-full-screen", this.transitionPleinEcran);
 
-    let essais = 0;
-    this.recherche = setInterval(() => {
-      sansFaillir("recherche de la fenetre mpv", () => {
-        const trouvee = trouverFenetreNeuve(CLASSE_FENETRE_MPV, this.vestiges);
-        if (trouvee !== null) {
-          this.stopSearch();
-          this.mpvWindow = trouvee;
-          this.numero = numeroFenetre(trouvee);
-          this.brancher();
-          return;
-        }
-        essais += 1;
-        // Seul l'ÉCHEC est tracé, avec la liste des fenêtres : « mpv n'a créé
-        // aucune fenêtre » et « elle existe mais nous échappe » demandent des
-        // corrections opposées, et rien ne les distingue après coup.
-        if (essais > SONDAGES_MAX) {
-          this.stopSearch();
-          trace(`fenetre mpv introuvable apres 10 s — ${fenetresApp()}`);
-        }
-      });
-    }, SONDAGE_MS);
+    this.recherche = guetterFenetreMpv(vestiges, (fenetre, numero) => {
+      this.mpvWindow = fenetre;
+      this.numero = numero;
+      this.brancher();
+    });
   }
 
   /** Pose la fenêtre trouvée sous la page — voir `macosChildWindow.ts`. */
@@ -272,8 +228,7 @@ export class MacosSurface implements VideoSurface {
    * principal. On interroge AppKit, jamais mpv.
    */
   videoDisparue(): boolean {
-    if (this.numero === 0) return true;
-    return !numerosFenetres(CLASSE_FENETRE_MPV).has(this.numero);
+    return fenetreDisparue(this.numero);
   }
 
   detach(): void {
@@ -318,7 +273,7 @@ export class MacosSurface implements VideoSurface {
   }
 
   private stopSearch(): void {
-    if (this.recherche !== null) clearInterval(this.recherche);
+    this.recherche?.();
     this.recherche = null;
   }
 }
