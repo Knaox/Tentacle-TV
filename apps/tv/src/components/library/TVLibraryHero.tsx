@@ -27,8 +27,19 @@ export const TVLibraryHero = memo(function TVLibraryHero({
 }: TVLibraryHeroProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const { data: randomItem } = useRandomLibraryBackdrop(libraryId);
-  const { data: latest } = useLatestItems(libraryId, { collectionType });
+  const tirage = useRandomLibraryBackdrop(libraryId);
+  const randomItem = tirage.data;
+  // Le repli n'est demandé QUE si le tirage a répondu sans rien donner.
+  //
+  // « Derniers ajouts » rapporte jusqu'à cent épisodes avec leurs champs : sur
+  // une bibliothèque de séries, c'est la requête la plus lourde de l'écran — et
+  // dans neuf cas sur dix elle ne sert à rien, le tirage ayant fourni son fond.
+  // La demander d'emblée, c'était la mettre en concurrence avec le catalogue,
+  // dont l'affichage de la grille dépend, pour un repli hypothétique.
+  const { data: latest } = useLatestItems(libraryId, {
+    collectionType,
+    enabled: tirage.isFetched && !randomItem,
+  });
 
   const featured = randomItem ?? latest?.[0];
 

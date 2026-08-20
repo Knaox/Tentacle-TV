@@ -92,6 +92,16 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   // le délai de `scheduleCollapse` qui courrait avec la navigation instantanée.
   // Et remettre `lastContentNodeRef` à null, sinon l'écran d'arrivée
   // restaurerait le focus sur un nœud d'un AUTRE écran, déjà démonté.
+  //
+  // **La navigation part à l'image SUIVANTE**, et c'est tout ce qui sépare un
+  // appui qui répond d'un appui qui semble mort. Appelée ici, elle était
+  // groupée par React avec le repli : un seul rendu portait à la fois la
+  // rétraction des entrées et le montage complet de l'écran d'arrivée, si bien
+  // que rien ne peignait entre l'appui et la fin du montage. Une image de
+  // décalage — seize millisecondes, imperceptibles — suffit à commiter le
+  // repli d'abord. L'utilisateur voit le rail se refermer tout de suite, puis
+  // la page arriver.
+  const navFrame = useRef<number | null>(null);
   const handleSelect = useCallback((key: string) => {
     if (key === "RailShowAll") { epinglage.toutAfficher(); return; }
     lastContentNodeRef.current = null;
@@ -100,8 +110,16 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     setRailFocused(false);
     setDeploye(false);
     progress.value = withTiming(0, { duration: RAIL.duree, easing: Easings.out });
-    onNavigate(key);
+    if (navFrame.current != null) cancelAnimationFrame(navFrame.current);
+    navFrame.current = requestAnimationFrame(() => {
+      navFrame.current = null;
+      onNavigate(key);
+    });
   }, [onNavigate, progress, setRailFocused, lastContentNodeRef, epinglage]);
+
+  useEffect(() => () => {
+    if (navFrame.current != null) cancelAnimationFrame(navFrame.current);
+  }, []);
 
   const setActiveItemRef = useCallback((node: View | null) => {
     (activeRef as React.MutableRefObject<View | null>).current = node;
