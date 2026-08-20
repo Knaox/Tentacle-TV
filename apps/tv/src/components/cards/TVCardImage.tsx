@@ -36,6 +36,11 @@ export function TVCardImage({ uri, style }: TVCardImageProps) {
       source={{ uri }}
       style={[{ backgroundColor: Colors.bgElevated }, style as object]}
       resizeMode="cover"
+      // Android (Fresco) fond CHAQUE image sur 300 ms par défaut : sur une
+      // rangée qui défile, c'est autant de couches redessinées à chaque image
+      // pendant un tiers de seconde, pour une transition que personne n'a
+      // demandée. Les cartes apparaissent d'un coup, comme sur tvOS.
+      fadeDuration={0}
       onError={() => setErrored(true)}
     />
   );

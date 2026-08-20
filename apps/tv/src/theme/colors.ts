@@ -236,4 +236,7 @@ export const AmbientConfig = {
   imageOpacity: 0.32,
   /** Subtle vertical scrim to keep content legible. */
   scrimOpacity: 0.55,
+  /** Largeur de la source. L'image est à 0,32 d'opacité sous un scrim — la
+   *  servir en 1280 revenait à décoder un détail que personne ne voit. */
+  sourceWidth: 854,
 } as const;

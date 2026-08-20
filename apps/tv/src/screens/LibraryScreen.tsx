@@ -18,7 +18,7 @@ import type { MenuAnchor } from "../components/library/TVLibraryFilterMenu";
 import { TVSortMenu, TVGenreMenu } from "../components/library/TVLibrarySortGenreMenus";
 import { TVYearMenu, TVRatingMenu } from "../components/library/TVLibraryRangeMenus";
 import { TVPlatformMenu } from "../components/library/TVLibraryPlatformMenu";
-import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
+import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
@@ -39,7 +39,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
   const { t, i18n } = useTranslation("common");
   const displayName = possessiveLibraryName(libraryName, i18n.language);
-  const { setFocusedItem } = useAmbientFocus();
+  const setFocusedItem = usePoseurAmbiant();
 
   const lf = useLibraryFilters(libraryId);
   const [openMenu, setOpenMenu] = useState<{ kind: FilterMenuKind; anchor: MenuAnchor } | null>(null);
