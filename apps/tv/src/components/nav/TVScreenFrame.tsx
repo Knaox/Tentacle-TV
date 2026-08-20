@@ -1,4 +1,4 @@
-import { TVFocusGuideView, Platform, View } from "react-native";
+import { TVFocusGuideView, View } from "react-native";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { Colors } from "../../theme/colors";
 import { RAIL_COLLAPSED } from "./TVSideRail";
@@ -23,7 +23,7 @@ export function TVScreenFrame({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
       <TVFocusGuideView
-        autoFocus={Platform.OS === "ios"}
+        autoFocus
         style={{
           flex: 1,
           paddingLeft: RAIL_COLLAPSED,

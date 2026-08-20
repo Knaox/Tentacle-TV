@@ -1,10 +1,10 @@
 import { useCallback, useRef } from "react";
-import { Platform, type View } from "react-native";
+import type { View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useTVNavActions } from "../context/TVNavContext";
 
 /**
- * Publie le focusable « d'entrée » du contenu dans TVNavContext (tvOS).
+ * Publie le focusable « d'entrée » du contenu dans TVNavContext.
  *
  * `contentFocusNode` doit être un VRAI Focusable (Pressable) : c'est la cible du
  * pont droit (sortie rail) ET du focus impératif d'auto-collapse à la sélection
@@ -30,14 +30,13 @@ export function useTVContentEntry() {
     // Un détachement (null) n'écrase pas la publication : le cleanup du blur
     // d'écran s'en charge, et un recyclage de cellule peut détacher APRÈS que
     // la nouvelle cellule d'entrée a publié la sienne.
-    if (Platform.OS === "ios" && screenFocusedRef.current && node) {
+    if (screenFocusedRef.current && node) {
       setContentFocusNode(node);
     }
   }, [setContentFocusNode]);
 
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS !== "ios") return;
       screenFocusedRef.current = true;
       setContentFocusNode(nodeRef.current);
       // Au blur : ne nettoyer QUE si personne d'autre n'a déjà publié son nœud
