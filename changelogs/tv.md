@@ -7,9 +7,15 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [Unreleased]
 ### FR
-- Le halo des bannières redevient une vraie lueur colorée, identique sur Apple TV et sur Android TV : il reprend les couleurs de l'affiche, déborde tout autour de la carte comme sur l'ordinateur, et respire lentement. Sur Android il partait en haut à gauche, tranché net sur deux bords ; il est maintenant centré et s'éteint en douceur
+- Android TV répond mieux à la télécommande : parcourir les rangées ne fait plus saccader l'interface, y compris sur les boîtiers puissants
+- Le halo des bannières est enfin là sur Android TV : les couleurs de l'affiche débordent autour de la carte et s'éteignent en douceur, comme sur l'Apple TV
+- « Passer l'intro automatiquement » est désormais activé d'origine
+- Deux nouveaux réglages de fin d'épisode : proposer l'épisode suivant, et enchaîner tout seul
 ### EN
-- The banner halo is a real coloured glow again, identical on Apple TV and Android TV: it picks up the artwork's colours, spills all around the card just like on desktop, and breathes slowly. On Android it used to sit up and to the left, cut off on two edges; it is now centred and fades out smoothly
+- Android TV answers the remote better: moving through the rows no longer stutters, even on powerful boxes
+- The banner halo has finally arrived on Android TV: the artwork's colours spill all around the card and fade out smoothly, just like on Apple TV and desktop
+- "Skip the intro automatically" is now on out of the box
+- Two new end-of-episode settings: offer the next episode, and play it on its own. Each turns off separately
 
 ## [1.2.0]
 ### FR

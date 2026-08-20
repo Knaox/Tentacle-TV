@@ -7,9 +7,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [Unreleased]
 ### FR
-- …
+- **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture, sur le web comme sur le téléviseur LG. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte. Les deux valent par appareil, et fonctionnent hors ligne comme en séance partagée
+- **« Passer l'intro automatiquement » est désormais activé d'origine.** Si vous l'aviez éteint, il le reste
 ### EN
-- …
+- **Two new end-of-episode settings**, under Settings > Playback, on the web and on the LG television alike. "Offer the next episode" governs the small card shown over the closing credits; "Play the next episode on its own" governs the countdown, on the card and on the end screen alike. Turn the second off and nothing starts without you: the card and the end screen still appear, simply without a countdown. Both are per device, and work offline as well as in a shared session
+- **"Skip the intro automatically" is now on out of the box.** If you had turned it off, it stays off
 
 ## [1.12.9]
 ### FR
