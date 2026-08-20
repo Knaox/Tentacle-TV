@@ -37,7 +37,10 @@ export function TVAutoPlaySwitch({ autoPlay, active, onEofDismiss }: {
     ? `S${String(autoPlay.nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(autoPlay.nextEpisode.IndexNumber).padStart(2, "0")}`
     : undefined;
 
-  if (autoPlay.source === "eof" && autoPlay.countdown !== null) {
+  // L'affiche de fin ne dépend PAS du décompte : éteint, elle reste la
+  // proposition — vignette, résumé, « Lire maintenant » — et n'annonce
+  // simplement plus d'échéance.
+  if (autoPlay.source === "eof") {
     return (
       <TVNextEpisodeFullscreen
         countdown={autoPlay.countdown}
@@ -53,7 +56,7 @@ export function TVAutoPlaySwitch({ autoPlay, active, onEofDismiss }: {
   if (!active) return null;
   return (
     <TVAutoPlayOverlay
-      countdown={autoPlay.countdown!} episodeTitle={autoPlay.nextEpisodeTitle}
+      countdown={autoPlay.countdown} episodeTitle={autoPlay.nextEpisodeTitle}
       episodeLabel={episodeLabel}
       episodeDescription={autoPlay.nextEpisodeDescription}
       episodeImageUrl={autoPlay.nextEpisodeImageUrl}

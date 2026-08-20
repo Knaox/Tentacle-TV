@@ -13,6 +13,7 @@ import { Focusable } from "../focus/Focusable";
 import { SelectionModal } from "../SelectionModal";
 import { TVLibraryPrefCard, type ReglageTv } from "./TVLibraryPrefCard";
 import { TVSautIntroToggle } from "./TVSautIntroToggle";
+import { TVCarteASuivreToggle, TVDecompteEnchainementToggle } from "./TVEnchainementToggles";
 import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "../../utils/languageKeys";
 import { Colors, brandAlpha } from "../../theme/colors";
 
@@ -84,6 +85,10 @@ export function TVSettingsPlaybackSection() {
   return (
     <View>
       <TVSautIntroToggle />
+      {/* Fin d'épisode : montrer la suite, et la lancer. Deux gestes distincts,
+          donc deux réglages — cf. `TVEnchainementToggles`. */}
+      <TVCarteASuivreToggle />
+      <TVDecompteEnchainementToggle />
       <Text
         style={{
           color: Colors.textTertiary,

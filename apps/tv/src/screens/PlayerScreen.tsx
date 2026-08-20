@@ -144,7 +144,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   // seule voie de ce bouton, cf. hook) + source de vérité des chemins Retour JS.
   const back = useTVPlayerBack({
     scrubbing: controls.scrubbing, cancelScrub: controls.cancelScrub,
-    countdown: autoPlay.countdown, countdownRef: autoPlay.countdownRef,
+    surfaceActive: autoPlay.source !== null, surfaceRef: autoPlay.sourceRef,
     dismissAutoPlay,
   });
   routeBackRef.current = back.routeBack;
@@ -242,8 +242,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const { handleVideoSize, playerStyle } = useTVPlayerStyle();
 
   const displayDuration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : 0;
-  const autoPlayActive = autoPlay.countdown !== null;
-  eofActiveRef.current = autoPlay.source === "eof" && autoPlay.countdown !== null;
+  // Une surface est montée — carte ou affiche de fin — décompte ou non. C'est
+  // elle qui neutralise l'habillage du lecteur, pas le chiffre.
+  const autoPlayActive = autoPlay.source !== null;
+  eofActiveRef.current = autoPlay.source === "eof";
   // Item/URL pas encore résolus : écran de chargement contextualisé — avec issue de
   // secours si la résolution du flux a échoué (erreur + « Réessayer »).
   if (!item || !streamUrl) {

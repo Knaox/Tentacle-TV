@@ -10,7 +10,7 @@ import {
 import { CarteBibliothequeTv, type ReglageTv } from "./LibraryCardTv";
 import { PanneauChoixTv, type ChoixTv } from "./ChoicePanelTv";
 import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "./languagesTv";
-import { magasinSautIntro, useSautIntroAuto } from "../../playback/sautIntroAuto";
+import { ReglagesLectureTv } from "./ReglagesLectureTv";
 
 /**
  * Les réglages de lecture, pilotables à la télécommande.
@@ -89,37 +89,11 @@ export function EcranLectureTv() {
     [enregistrer, ouvert, preferences],
   );
 
-  const sautIntroActif = useSautIntroAuto();
-
   return (
     <div>
-      {/* Deux boutons plutôt qu'un interrupteur : à la télécommande, un pouce
-          qui coulisse ne veut rien dire. Même grammaire que la langue,
-          juste en dessous. */}
-      <section className="mb-12">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">
-          {t("autoSkipIntroTitle")}
-        </h2>
-        <p className="mb-4 max-w-3xl text-[15px] leading-relaxed text-content-tertiary">
-          {t("autoSkipIntroHint")}
-        </p>
-        <div className="flex gap-4">
-          {[
-            { valeur: true, libelle: t("reglageActive") },
-            { valeur: false, libelle: t("reglageDesactive") },
-          ].map((choix) => (
-            <button
-              key={String(choix.valeur)}
-              type="button"
-              className="bouton-reglage-tv"
-              data-actif={sautIntroActif === choix.valeur}
-              onClick={() => magasinSautIntro.definir(choix.valeur)}
-            >
-              <span className="bouton-reglage-tv-valeur">{choix.libelle}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* Ce que le lecteur a le droit de faire tout seul — saut d'intro et fin
+          d'épisode. Extrait pour le budget de 300 lignes. */}
+      <ReglagesLectureTv />
 
       <section className="mb-12">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">

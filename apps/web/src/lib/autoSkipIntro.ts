@@ -1,3 +1,5 @@
+import { CLES_REGLAGE_APPAREIL, creerMagasinBooleen } from "@tentacle-tv/shared";
+
 /**
  * Préférence « sauter l'intro toute seule » — réglage PAR APPAREIL, comme la
  * bascule HDR et le Liquid Glass.
@@ -8,46 +10,28 @@
  * stockage local a aussi l'avantage de répondre hors ligne, là où une
  * préférence serveur laisserait le lecteur sans réponse.
  *
- * ALLUMÉE par défaut, sur tous les appareils. On enchaîne les épisodes le soir,
- * et regarder trois fois le même générique en une heure n'a jamais été le but ;
- * le saut reste annulable au cas par cas — trois secondes et une croix.
- *
- * Ce qui est lu, c'est donc l'ABSENCE de refus : seule la chaîne `"false"`,
- * écrite par quelqu'un qui a explicitement éteint le réglage, l'éteint. Un
- * stockage vide, une session privée, un appareil neuf : allumé. Un choix déjà
- * posé, dans un sens ou dans l'autre, est respecté tel quel.
+ * ALLUMÉE par défaut. On enchaîne les épisodes le soir, et revoir trois fois le
+ * même générique en une heure n'a jamais été le but ; le saut reste annulable
+ * au cas par cas — trois secondes et une croix. Clé, défaut et mécanique
+ * viennent de `@tentacle-tv/shared`, que les téléviseurs natifs lisent aussi :
+ * un seul endroit à changer, pas quatre.
  */
 
-export const AUTO_SKIP_INTRO_STORAGE_KEY = "tentacle_auto_skip_intro";
+export const AUTO_SKIP_INTRO_STORAGE_KEY = CLES_REGLAGE_APPAREIL.sautIntroAuto;
 
-const read = (): boolean => {
-  try {
-    // `!== "false"` et non `=== "true"` : c'est ce qui fait du défaut un OUI
-    // sans rien avoir à écrire à la première visite.
-    return localStorage.getItem(AUTO_SKIP_INTRO_STORAGE_KEY) !== "false";
-  } catch {
-    return true;
-  }
-};
+const magasin = creerMagasinBooleen(
+  {
+    getItem: (cle) => localStorage.getItem(cle),
+    setItem: (cle, valeur) => localStorage.setItem(cle, valeur),
+  },
+  AUTO_SKIP_INTRO_STORAGE_KEY,
+);
 
-let enabled = read();
-const listeners = new Set<() => void>();
-
-export const getAutoSkipIntro = (): boolean => enabled;
+export const getAutoSkipIntro = (): boolean => magasin.lireInstantane();
 
 export function setAutoSkipIntro(next: boolean): void {
-  enabled = next;
-  try {
-    localStorage.setItem(AUTO_SKIP_INTRO_STORAGE_KEY, String(next));
-  } catch {
-    /* Persistance impossible : vaut pour la session en cours. */
-  }
-  for (const l of listeners) l();
+  magasin.definir(next);
 }
 
-export function subscribeAutoSkipIntro(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
+export const subscribeAutoSkipIntro = (listener: () => void): (() => void) =>
+  magasin.sAbonner(listener);

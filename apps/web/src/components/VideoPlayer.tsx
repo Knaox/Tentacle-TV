@@ -127,7 +127,7 @@ export function VideoPlayer({
     signalerChargement: setLoading,
   });
 
-  const { autoPlayCountdown, startAutoPlay, cancelAutoNextLocal } = useAutoNextCountdown({
+  const { autoPlayCountdown, startAutoPlay, cancelAutoNextLocal, propositionFinale } = useAutoNextCountdown({
     hasNextEpisode, onNextEpisode, autoplayNextEnabled, maxResumePct,
     duration, currentTime, hasStartedRef, autoPlayTimerRef, creditsAutoPlayTriggered,
   });
@@ -201,7 +201,7 @@ export function VideoPlayer({
   // Carte « à suivre » : proposée dès le générique quand un épisode suivant
   // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si
   // l'enchaînement automatique démarre.
-  const upNext = useUpNextCard({ itemId, hasNextEpisode, duringCredits: showSkipCredits, autoPlayCountdown });
+  const upNext = useUpNextCard({ itemId, hasNextEpisode, duringCredits: showSkipCredits, autoPlayCountdown, propositionFinale });
 
   return (
     <div ref={containerRef} onMouseMove={scheduleHide}

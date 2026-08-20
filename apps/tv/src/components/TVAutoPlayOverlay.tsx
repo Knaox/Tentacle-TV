@@ -15,7 +15,13 @@ import { Colors, Fonts, Radius, brandAlpha } from "../theme/colors";
 const COUNTDOWN_TOTAL = 10;
 
 interface TVAutoPlayOverlayProps {
-  countdown: number;
+  /**
+   * Secondes restantes, ou `null` quand la carte est une simple PROPOSITION —
+   * le compte à rebours a été éteint dans les réglages. Ni chiffre ni barre
+   * alors : il n'y a aucune échéance à annoncer, et en afficher une qui
+   * n'arrive jamais serait un mensonge à l'écran.
+   */
+  countdown: number | null;
   episodeTitle?: string;
   /** Libellé « S03E08 » (parité UpNextCard web). */
   episodeLabel?: string;
@@ -35,7 +41,8 @@ export function TVAutoPlayOverlay({
   onPlayNow, onDismiss,
 }: TVAutoPlayOverlayProps) {
   const { t } = useTranslation("player");
-  const progress = ((COUNTDOWN_TOTAL - countdown) / COUNTDOWN_TOTAL) * 100;
+  const decompte = countdown !== null;
+  const progress = decompte ? ((COUNTDOWN_TOTAL - countdown) / COUNTDOWN_TOTAL) * 100 : 0;
 
   useTVRemote({ onBack: onDismiss });
 
@@ -61,14 +68,16 @@ export function TVAutoPlayOverlay({
         overflow: "hidden", zIndex: 60, elevation: 60,
       }, containerStyle]}
     >
-      {/* Barre de progression — gradient brand (web) */}
-      <View style={{ height: 3, backgroundColor: "rgba(255, 255, 255, 0.1)" }}>
-        <LinearGradient
-          colors={[Colors.accentPurpleLight, BRAND.violet]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={{ height: 3, width: `${progress}%` }}
-        />
-      </View>
+      {/* Barre de progression — gradient brand (web). Absente sans décompte. */}
+      {decompte && (
+        <View style={{ height: 3, backgroundColor: "rgba(255, 255, 255, 0.1)" }}>
+          <LinearGradient
+            colors={[Colors.accentPurpleLight, BRAND.violet]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={{ height: 3, width: `${progress}%` }}
+          />
+        </View>
+      )}
 
       {/* Bandeau backdrop 16:7 + scrim (web) */}
       <View style={{ width: "100%", aspectRatio: 16 / 7, backgroundColor: Colors.bgCard }}>
@@ -92,11 +101,13 @@ export function TVAutoPlayOverlay({
               {t("upNext")}
             </Text>
           </View>
-          <View style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
-            <Text style={{ color: "#fff", fontSize: 11, fontFamily: Fonts.semibold, fontVariant: ["tabular-nums"] }}>
-              {countdown}{t("secondsShort")}
-            </Text>
-          </View>
+          {decompte && (
+            <View style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Text style={{ color: "#fff", fontSize: 11, fontFamily: Fonts.semibold, fontVariant: ["tabular-nums"] }}>
+                {countdown}{t("secondsShort")}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 

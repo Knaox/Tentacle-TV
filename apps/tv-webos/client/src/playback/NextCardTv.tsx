@@ -4,6 +4,7 @@ import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen
 import { donnerFocus } from "../focus/active";
 import { destinationEntreeDeZone } from "../focus/zones";
 import { lireEtat, useEtatLecteurTv } from "@tentacle-tv/tv-core";
+import { useDecompteEnchainement } from "@/hooks/useEnchainementEpisode";
 import { quitterLecteur } from "./playerExitTv";
 import { ATTRIBUT_SURCOUCHE } from "./okOverlay";
 
@@ -121,6 +122,7 @@ export function AutoPlayOverlay({
 }: ProprietesCarte) {
   const enveloppe = useRef<HTMLDivElement>(null);
   const etat = useEtatLecteurTv();
+  const decompteAutorise = useDecompteEnchainement();
 
   /**
    * Arrivé au bout, c'est l'affiche — sans autre condition.
@@ -177,7 +179,16 @@ export function AutoPlayOverlay({
     return (
       <div className="affiche-fin-tv" ref={enveloppe} {...{ [ATTRIBUT_SURCOUCHE]: "" }}>
         <NextEpisodeFullscreen
-          countdown={countdown ?? TOTAL_DECOMPTE_S}
+          /**
+           * Le total de secours ne vaut que si l'enchaînement est AUTORISÉ.
+           *
+           * Il existe parce que le décompte peut manquer à l'instant précis où
+           * l'épisode se termine — le filet de `endCardTv` n'a pas encore
+           * rejoué — et qu'afficher zéro serait faux. Décompte éteint, en
+           * revanche, `null` est la valeur juste : l'affiche est une
+           * proposition, et n'annonce aucune échéance.
+           */
+          countdown={decompteAutorise ? (countdown ?? TOTAL_DECOMPTE_S) : null}
           episodeTitle={episodeTitle}
           episodeLabel={episodeLabel}
           episodeDescription={episodeDescription}

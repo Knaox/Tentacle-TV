@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useCarteASuivre } from "../../hooks/useEnchainementEpisode";
 
 interface UpNextCardState {
   /** Faut-il monter la carte « à suivre » ? */
@@ -20,6 +21,15 @@ interface UpNextCardOptions {
   duringCredits: boolean | null | undefined;
   /** Décompte de l'enchaînement automatique, `null` s'il n'est pas lancé. */
   autoPlayCountdown: number | null;
+  /**
+   * L'épisode est FINI et la suite doit être proposée, décompte ou non.
+   *
+   * Sert au téléviseur LG, dont l'écran de fin partage cette monture avec la
+   * carte. Il passe OUTRE le réglage de carte, à dessein : ce réglage gouverne
+   * la fiche du générique, pas l'écran de fin, qui est une autre surface à un
+   * autre moment.
+   */
+  propositionFinale?: boolean;
 }
 
 /**
@@ -44,14 +54,21 @@ interface UpNextCardOptions {
  * Le rejet est mémorisé par ÉPISODE : refermer la carte la fait taire pour la
  * fin de la vidéo en cours, mais elle se réarme au suivant — sans quoi un seul
  * refus vaudrait pour toute une saison.
+ *
+ * La préférence d'appareil est lue ICI plutôt que passée en propriété : les
+ * deux lecteurs qui montent cette carte sont au plafond des 300 lignes, et le
+ * réglage n'a pas à traverser leurs signatures pour un booléen — même
+ * arbitrage que le refus de saut d'intro, qui passe par un bus.
  */
 export function useUpNextCard({
   itemId,
   hasNextEpisode,
   duringCredits,
   autoPlayCountdown,
+  propositionFinale = false,
 }: UpNextCardOptions): UpNextCardState {
   const [dismissed, setDismissed] = useState(false);
+  const carteAutorisee = useCarteASuivre();
 
   useEffect(() => {
     setDismissed(false);
@@ -60,8 +77,12 @@ export function useUpNextCard({
   const counting = autoPlayCountdown !== null;
   // Le décompte l'emporte sur le rejet : si l'enchaînement automatique est
   // lancé, l'utilisateur doit pouvoir l'interrompre — masquer la carte lui
-  // retirerait le seul moyen de le faire.
-  const visible = counting || Boolean(duringCredits && hasNextEpisode && !dismissed);
+  // retirerait le seul moyen de le faire. Il ne l'emporte pas sur la
+  // PRÉFÉRENCE : quand la carte est éteinte, rien ne s'arme non plus (cf.
+  // `lib/enchainementEpisode`), donc `counting` y est toujours faux.
+  const visible =
+    propositionFinale ||
+    (carteAutorisee && (counting || Boolean(duringCredits && hasNextEpisode && !dismissed)));
 
   return {
     visible,

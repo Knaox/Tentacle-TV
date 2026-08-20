@@ -14,7 +14,9 @@ const RING_R = 30;
 const RING_C = 2 * Math.PI * RING_R;
 
 interface TVNextEpisodeFullscreenProps {
-  countdown: number;
+  /** Secondes restantes, ou `null` quand l'affiche est une simple PROPOSITION
+   *  — le compte à rebours a été éteint dans les réglages. */
+  countdown: number | null;
   /** Libellé « S03E08 ». */
   episodeLabel?: string;
   episodeTitle?: string;
@@ -42,7 +44,10 @@ export function TVNextEpisodeFullscreen({
 }: TVNextEpisodeFullscreenProps) {
   const { t } = useTranslation("player");
   const { width: sw } = useWindowDimensions();
-  const progress = Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds));
+  const decompte = countdown !== null;
+  const progress = decompte
+    ? Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds))
+    : 0;
 
   useTVRemote({ onBack: onDismiss });
 
@@ -92,16 +97,19 @@ export function TVNextEpisodeFullscreen({
       />
 
       <View style={{ paddingHorizontal: 88, maxWidth: 1280, alignSelf: "center", width: "100%" }}>
-        {/* Compte à rebours */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 24 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accentPurpleLight }} />
-          <Text style={{
-            color: "rgba(255,255,255,0.9)", fontSize: 15, fontFamily: Fonts.bold,
-            letterSpacing: 2.2, textTransform: "uppercase", fontVariant: ["tabular-nums"],
-          }}>
-            {t("autoplayCountdown", { seconds: countdown })}
-          </Text>
-        </View>
+        {/* Compte à rebours. Absent quand il est éteint : l'affiche porte déjà
+            son libellé « À suivre » plus bas. */}
+        {decompte && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 24 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accentPurpleLight }} />
+            <Text style={{
+              color: "rgba(255,255,255,0.9)", fontSize: 15, fontFamily: Fonts.bold,
+              letterSpacing: 2.2, textTransform: "uppercase", fontVariant: ["tabular-nums"],
+            }}>
+              {t("autoplayCountdown", { seconds: countdown })}
+            </Text>
+          </View>
+        )}
 
         <View style={{ flexDirection: "row", gap: 32 }}>
           {/* Vignette de l'épisode suivant */}
@@ -157,15 +165,17 @@ export function TVNextEpisodeFullscreen({
                 }}>
                   {/* Anneau de progression du compte à rebours */}
                   <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-                    <Svg width={44} height={44} viewBox="0 0 72 72" style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
-                      <Circle cx={36} cy={36} r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={6} />
-                      <Circle
-                        cx={36} cy={36} r={RING_R} fill="none"
-                        stroke={Colors.accentPurple} strokeWidth={6} strokeLinecap="round"
-                        strokeDasharray={`${RING_C}`}
-                        strokeDashoffset={RING_C * (1 - progress)}
-                      />
-                    </Svg>
+                    {decompte && (
+                      <Svg width={44} height={44} viewBox="0 0 72 72" style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
+                        <Circle cx={36} cy={36} r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={6} />
+                        <Circle
+                          cx={36} cy={36} r={RING_R} fill="none"
+                          stroke={Colors.accentPurple} strokeWidth={6} strokeLinecap="round"
+                          strokeDasharray={`${RING_C}`}
+                          strokeDashoffset={RING_C * (1 - progress)}
+                        />
+                      </Svg>
+                    )}
                     <PlayIcon size={18} color="#000" />
                   </View>
                   <Text style={{ color: "#000", fontSize: 17, fontFamily: Fonts.bold }}>
