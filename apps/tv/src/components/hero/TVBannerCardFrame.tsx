@@ -3,6 +3,7 @@ import { useWindowDimensions, View, type LayoutChangeEvent, type ViewStyle } fro
 import { TV_BANNER_CARD, TV_RADIUS, withAlpha } from "@tentacle-tv/theme";
 import { Colors, Spacing } from "../../theme/colors";
 import { TVHeroAmbilight } from "./TVHeroAmbilight";
+import { useMontageDiffere } from "../../hooks/useMontageDiffere";
 
 interface TVBannerCardFrameProps {
   /** Hauteur de la carte, en centièmes de la hauteur d'écran (62 accueil,
@@ -49,17 +50,25 @@ export const TVBannerCardFrame = memo(function TVBannerCardFrame({
     setCardW((precedent) => (precedent === w ? precedent : w));
   }, []);
 
+  // Le halo attend que l'écran soit interactif. C'est un flou gaussien SVG :
+  // monté avec le reste, sa passe de rastérisation tombe pile dans l'instant
+  // où l'on veut voir la page arriver. Il entre en fondu sur 1,4 s de toute
+  // façon — le décalage ne se voit pas, l'attente en moins se voit.
+  const haloMontable = useMontageDiffere();
+
   return (
     <View
       style={[{ height, marginHorizontal: Spacing.rowGutter }, style]}
       onLayout={mesurer}
     >
-      <TVHeroAmbilight
-        uri={ambilightUri}
-        cardW={cardW}
-        cardH={height}
-        opacity={TV_BANNER_CARD.haloOpacite}
-      />
+      {haloMontable && (
+        <TVHeroAmbilight
+          uri={ambilightUri}
+          cardW={cardW}
+          cardH={height}
+          opacity={TV_BANNER_CARD.haloOpacite}
+        />
+      )}
       <View
         style={{
           flex: 1,
