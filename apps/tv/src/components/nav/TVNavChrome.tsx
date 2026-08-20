@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { useCallback, useRef } from "react";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { navigationRef } from "../../navigation/navigationRef";
 import { TVSideRail } from "./TVSideRail";
 import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
+import { useSaisieFocusContenu } from "../../hooks/useSaisieFocusContenu";
 
 type NavStateLike =
   | { index: number; routes: Array<{ name: string; params?: object }> }
@@ -46,32 +46,17 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
   const railKeyRef = useRef(railKey);
   railKeyRef.current = railKey;
 
-  // Auto-collapse du rail à la sélection (tvOS) : après navigation, on déplace
-  // explicitement le focus vers le contenu (sinon le rail, overlay persistant,
-  // garde le focus → reste déployé). `contentFocusNode` est désormais un VRAI
-  // Focusable publié par l'écran focus (useTVContentEntry). Cycle false→true :
-  // le nœud a déjà hasTVPreferredFocus=true en prop, donc un simple true serait
-  // un no-op → il faut forcer false PUIS true (workaround RN-tvos #849).
-  // On grab le focus quand le NOUVEL écran a publié son `contentFocusNode` (et
-  // pas sur un timer fixe : un pop-back vers l'Accueil publie plus tard qu'un
-  // push). `pendingRef` est armé à la sélection d'un item du rail.
-  const pendingRef = useRef(false);
-  useEffect(() => {
-    if (Platform.OS !== "ios") return;
-    if (!pendingRef.current || !contentFocusNode) return;
-    pendingRef.current = false;
-    const n = contentFocusNode as { setNativeProps?: (p: object) => void };
-    let id2: ReturnType<typeof setTimeout>;
-    const id1 = setTimeout(() => {
-      n.setNativeProps?.({ hasTVPreferredFocus: false });
-      id2 = setTimeout(() => n.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
-    }, 40);
-    return () => { clearTimeout(id1); clearTimeout(id2); };
-  }, [contentFocusNode]);
+  // Après navigation, on déplace explicitement le focus vers le contenu —
+  // sinon le rail, overlay persistant jamais démonté, garde le focus et l'écran
+  // d'arrivée reste sans anneau. Longtemps réservé à tvOS ; c'était la raison
+  // pour laquelle, sur Android, sélectionner une bibliothèque ne visait jamais
+  // sa première affiche. Voir `useSaisieFocusContenu` pour l'asymétrie des deux
+  // téléviseurs.
+  const armerFocusContenu = useSaisieFocusContenu(contentFocusNode);
 
   const handleNavigate = useCallback((key: string) => {
     if (key === railKeyRef.current) return;
-    pendingRef.current = true; // arme le focus contenu après navigation (tvOS)
+    armerFocusContenu(); // le focus ira au contenu dès que l'écran l'aura publié
     if (key === "Home") navigationRef.navigate("Home");
     else if (key === "Search") navigationRef.navigate("Search");
     else if (key === "Watchlist") navigationRef.navigate("Watchlist");
@@ -82,7 +67,7 @@ export function TVNavChrome({ railKey }: { railKey: string | null }) {
       const lib = libraries?.find((l) => l.Id === libId);
       navigationRef.navigate("Library", { libraryId: libId, libraryName: lib?.Name ?? "" });
     }
-  }, [libraries]);
+  }, [libraries, armerFocusContenu]);
 
   // Écran plein écran (lecture, fiche, jumelage) → pas de rail.
   if (!railKey) return null;

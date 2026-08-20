@@ -114,7 +114,12 @@ function LibraryScreenInner({ route, navigation }: Props) {
   return (
     <TVScreenFrame>
       <TVAmbientBackdrop />
-      <TVFocusGuideView style={{ flex: 1 }}>
+      {/* @ts-expect-error — TVFocusGuideView (react-native-tvos). `autoFocus` le
+          rend guide de focus au sens du moteur natif : il devient le plus proche
+          ancêtre de la grille, donc celui vers qui la récupération de focus se
+          tourne quand la cellule focalisée se démonte — un filtre qui ne rend
+          plus rien, par exemple. Sans lui, la télécommande devenait muette. */}
+      <TVFocusGuideView autoFocus style={{ flex: 1 }}>
         {isLoading && items.length === 0 ? (
           <LibraryLoading header={header} />
         ) : !isLoading && items.length === 0 ? (
