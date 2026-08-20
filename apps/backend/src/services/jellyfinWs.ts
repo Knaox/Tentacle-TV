@@ -220,6 +220,11 @@ function connect(): void {
     keepAliveTimer = setInterval(() => {
       if (socket.readyState === WebSocket.OPEN) {
         socket.send(JSON.stringify({ MessageType: "KeepAlive" }));
+        // Doublure au niveau du protocole : Jellyfin répond à nos KeepAlive
+        // applicatifs (mesuré en 10.11), mais le `pong` est dû par TOUTE
+        // implémentation. Le guet ci-dessous ne dépend donc pas de la version
+        // d'en face — sans quoi un serveur muet le ferait rouvrir en boucle.
+        socket.ping();
       }
     }, KEEP_ALIVE_MS);
 
@@ -237,6 +242,9 @@ function connect(): void {
   });
 
   socket.on("message", (data) => { if (aMoi()) handleMessage(data); });
+
+  // Signe de vie protocolaire : il compte comme un message pour le guet.
+  socket.on("pong", () => { if (aMoi()) dernierMessageMs = Date.now(); });
 
   socket.on("close", () => {
     if (!aMoi()) return;
