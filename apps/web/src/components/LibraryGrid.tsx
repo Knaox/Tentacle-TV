@@ -8,6 +8,7 @@ import { LibraryFilterBar } from "./LibraryFilters";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
 import { LibrarySearchField } from "./library/LibrarySearchField";
 import { LibraryGridCard } from "./LibraryGridCard";
+import { LibraryGridEmpty } from "./library/LibraryGridEmpty";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 
 interface LibraryGridProps {
@@ -196,9 +197,10 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="py-20 text-center text-content-quaternary">
-            {search.length >= 2 ? t("common:noResults") : t("common:emptyLibrary")}
-          </p>
+          <LibraryGridEmpty
+            filtered={search.length >= 2 || hasActiveFilters}
+            onReset={() => { setInput(""); resetFilters(); }}
+          />
         ) : (
           <div>
             {/* `row-dim` : survoler la grille éteint les affiches voisines,
