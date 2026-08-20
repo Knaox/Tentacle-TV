@@ -51,7 +51,7 @@ export const TV_OVERSCAN_PT = {
  *  sur `<Image blurRadius>`, qui compte en pixels de bitmap, est exactement ce
  *  qui a produit la plaque grise. Ce qui se transpose, c'est le RAPPORT du
  *  flou à la largeur de la carte ; le rayon s'en déduit à la mesure, par
- *  plateforme (`@tentacle-tv/tv-core` → `rayonFlou`).
+ *  plateforme (`@tentacle-tv/tv-core` → `reglageFlouAndroid`).
  *
  *  `saturation` n'a pas d'équivalent dans `<Image>` : elle passe par le filtre
  *  SVG du chemin tvOS. Le repli Android s'en dispense — voir
