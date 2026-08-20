@@ -106,6 +106,7 @@ export type WtClientMessage =
   | { type: "wt:presence"; inPlayback: boolean; itemId?: string }
   | { type: "wt:playbackError"; itemId: string }
   | { type: "wt:autonextDismiss" }
+  | { type: "wt:skipIntroDismiss" }
   | { type: "wt:goodbye" }
   | { type: "wt:syncRequest" }
   | { type: "wt:chat"; text: string }
@@ -126,6 +127,7 @@ export type WtDissolvedReason = "kicked" | "expired" | "dissolved";
 export type WtServerMessage =
   | { type: "wt:state"; state: WtRoomStateDto; originUserId: string | null; cause: WtStateCause }
   | { type: "wt:autonextDismiss"; originUserId: string }
+  | { type: "wt:skipIntroDismiss"; originUserId: string }
   | { type: "wt:invite"; invite: WtInviteDto }
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
   | { type: "wt:dissolved"; groupId: string; reason: WtDissolvedReason }
@@ -225,6 +227,8 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
       return { type: "wt:playbackError", itemId: msg.itemId };
     case "wt:autonextDismiss":
       return { type: "wt:autonextDismiss" };
+    case "wt:skipIntroDismiss":
+      return { type: "wt:skipIntroDismiss" };
     case "wt:goodbye":
       return { type: "wt:goodbye" };
     case "wt:syncRequest":

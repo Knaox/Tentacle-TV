@@ -281,8 +281,15 @@ export function useGroupSyncEngine({
     sendRef.current({ type: "wt:autonextDismiss" });
   }, [active, itemId]);
 
+  const notifySkipIntroDismiss = useCallback(() => {
+    const r = roomRef.current;
+    if (!active || !r || r.itemId !== itemId) return;
+    sendRef.current({ type: "wt:skipIntroDismiss" });
+  }, [active, itemId]);
+
   return {
     active, onGroupItem,
     notifyPlayState, notifySeek, notifyBuffering, notifyFatalError, notifyAutoNextDismiss,
+    notifySkipIntroDismiss,
   };
 }

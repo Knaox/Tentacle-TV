@@ -10,6 +10,7 @@ import { useWatchSession } from "../hooks/useWatchSession";
 import { necessiteIncrustation } from "../hooks/useWebPlaybackFallbacks";
 import { preferNativeHls } from "../hooks/useNativeHlsPreference";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
+import { useSautIntroGroupe } from "../watchTogether/refusSautIntro";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
@@ -58,6 +59,9 @@ export function WatchWeb() {
   const groupSync = useGroupSyncEngine({
     itemId, transportRef, claimStartSeconds: group.groupStartPositionSeconds,
   });
+  // Le refus du saut d'intro voyage avec le groupe : la position de lecture
+  // est commune, laisser partir le décompte de l'autre annulerait la croix.
+  useSautIntroGroupe(groupSync.notifySkipIntroDismiss);
 
   // Rebuild de source local (changement qualité/audio/burn-in → nouvelle URL de
   // stream) : signaler le buffering pour que le groupe ATTENDE ce membre
