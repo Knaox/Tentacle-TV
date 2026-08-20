@@ -10,12 +10,12 @@ les notes Apple doivent rester génériques.
 
 ## [Unreleased]
 ### FR
-- **Quitter un film rend la fenêtre telle qu'elle était** (macOS). Un film lancé en fenêtré puis passé en plein écran depuis le lecteur laissait ensuite tout le catalogue en plein écran. La fenêtre retrouve maintenant son mode exact : fenêtrée, plein écran fenêtré, ou plein écran si elle y était déjà avant le film
+- **Quitter un film ne déplace plus la fenêtre** (macOS). Elle reste exactement comme vous l'avez laissée — en plein écran si vous y étiez, en plein écran fenêtré ou fenêtrée sinon — sans transition et sans changement de bureau. Le rectangle noir qui restait parfois par-dessus l'application en sortant d'un film en plein écran disparaît avec : il venait de cette transition, ouverte à l'instant où la vidéo s'arrête
 - **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte
 - **« Passer l'intro automatiquement » est désormais activé d'origine.** Si vous l'aviez éteint, il le reste
 - **Le saut d'intro ne part plus pendant le chargement** : la pilule apparaissait par-dessus l'écran de chargement et le saut se déclenchait à l'instant du lancement
 ### EN
-- **Leaving a film gives the window back exactly as it was** (macOS). A film started windowed and then set to full screen from the player used to leave the whole catalogue in full screen afterwards. The window now returns to its exact mode: windowed, zoomed, or full screen if it was already there before the film
+- **Leaving a film no longer moves the window** (macOS). It stays exactly as you left it — full screen if you were in full screen, zoomed or windowed otherwise — with no transition and no desktop switch. The black rectangle that sometimes stayed on top of the app after leaving a full-screen film goes with it: it came from that very transition, opening at the moment playback stops
 - **Two new end-of-episode settings**, under Settings > Playback. "Offer the next episode" governs the small card shown over the closing credits; "Play the next episode on its own" governs the countdown, on the card and on the end screen alike. Turn the second off and nothing starts without you: the card and the end screen still appear, simply without a countdown
 - **"Skip the intro automatically" is now on out of the box.** If you had turned it off, it stays off
 - **Intro skipping no longer fires during loading**: the pill used to appear over the loading screen and the skip triggered the moment playback was launched
