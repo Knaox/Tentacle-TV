@@ -10,9 +10,13 @@ les notes Apple doivent rester génériques.
 
 ## [Unreleased]
 ### FR
-- …
+- **Quitter un film rend la fenêtre telle qu'elle était** (macOS). Un film lancé en fenêtré puis passé en plein écran depuis le lecteur laissait ensuite tout le catalogue en plein écran. La fenêtre retrouve maintenant son mode exact : fenêtrée, plein écran fenêtré, ou plein écran si elle y était déjà avant le film
+- **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte
+- **« Passer l'intro automatiquement » est désormais activé d'origine.** Si vous l'aviez éteint, il le reste
 ### EN
-- …
+- **Leaving a film gives the window back exactly as it was** (macOS). A film started windowed and then set to full screen from the player used to leave the whole catalogue in full screen afterwards. The window now returns to its exact mode: windowed, zoomed, or full screen if it was already there before the film
+- **Two new end-of-episode settings**, under Settings > Playback. "Offer the next episode" governs the small card shown over the closing credits; "Play the next episode on its own" governs the countdown, on the card and on the end screen alike. Turn the second off and nothing starts without you: the card and the end screen still appear, simply without a countdown
+- **"Skip the intro automatically" is now on out of the box.** If you had turned it off, it stays off
 
 ## [1.20.8]
 ### FR
