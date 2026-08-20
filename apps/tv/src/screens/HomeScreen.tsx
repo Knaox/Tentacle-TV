@@ -16,7 +16,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
-import { useTVNav } from "../context/TVNavContext";
+import { useTVNavActions } from "../context/TVNavContext";
 import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
@@ -53,7 +53,7 @@ function HomeScreenInner({ navigation }: Props) {
     onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
   });
   const setFocusedItem = usePoseurAmbiant();
-  const { requestRailFocus, lastContentNodeRef } = useTVNav();
+  const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
 

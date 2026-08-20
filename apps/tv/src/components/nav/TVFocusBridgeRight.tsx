@@ -1,7 +1,11 @@
 import { Platform, TVFocusGuideView } from "react-native";
 import { borneDroiteEntreesDeployees } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
-import { useTVNav } from "../../context/TVNavContext";
+import {
+  useContentFocusNode,
+  useRailFocused,
+  useTVNavActions,
+} from "../../context/TVNavContext";
 
 /** Le pont n'est monté que le rail focus, donc déployé : sa bande commence
  *  après les ENTRÉES déployées (396), pas après le rail replié (186) — sinon
@@ -20,7 +24,9 @@ const BORD_GAUCHE_PONT = borneDroiteEntreesDeployees(TV_OVERSCAN_PT.x);
  * nœud publié → les écrans qui sortent déjà bien (grilles) ne sont pas affectés.
  */
 export function TVFocusBridgeRight() {
-  const { railFocused, contentFocusNode, lastContentNodeRef } = useTVNav();
+  const railFocused = useRailFocused();
+  const contentFocusNode = useContentFocusNode();
+  const { lastContentNodeRef } = useTVNavActions();
 
   // Sortie du rail : revenir sur le DERNIER élément de contenu focalisé (mémoire),
   // sinon sur le nœud d'entrée publié par l'écran.
