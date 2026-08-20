@@ -260,11 +260,11 @@ export function TVPlayerView({
           <TVSkipSegmentButton scrubbing={controls.scrubbing} type="intro" segment={skipSegments.intro}
             currentTime={displayTime} onSkip={controls.guardScrub(() => onSeek(skipSegments.intro!.end))}
             overlayVisible={controls.overlayVisible} showSettings={showSettings}
-            showEpisodes={!!showEpisodes} />
+            showEpisodes={!!showEpisodes} lectureDemarree={hasStarted} />
           {/* Générique : avec un épisode suivant, le bouton devient
               « Épisode suivant » et lance la carte À suivre (comme le web). */}
           <TVSkipSegmentButton type="credits" segment={skipSegments.credits}
-            currentTime={displayTime}
+            currentTime={displayTime} lectureDemarree={hasStarted}
             labelOverride={autoPlay.nextEpisode ? t("nextEpisodeLabel") : undefined}
             onSkip={controls.guardScrub(() => {
               if (autoPlay.nextEpisode) autoPlay.startAutoPlay();

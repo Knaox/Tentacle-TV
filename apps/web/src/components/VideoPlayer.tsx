@@ -196,7 +196,12 @@ export function VideoPlayer({
     startAutoPlay, onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
   });
 
-  const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
+  // La lecture doit avoir VRAIMENT commencé. La fenêtre d'intro se calcule sur
+  // la position, qui vaut zéro avant la première image — et la plupart des
+  // génériques commencent à zéro : la pilule paraissait donc par-dessus l'écran
+  // de chargement, et le saut automatique partait à l'instant du lancement, sur
+  // une vidéo qui n'avait pas encore d'image.
+  const showSkipIntro = aDemarre && introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
   const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
   // Carte « à suivre » : proposée dès le générique quand un épisode suivant
   // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si

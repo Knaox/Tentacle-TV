@@ -28,14 +28,28 @@ interface TVSkipSegmentButtonProps {
   labelOverride?: string;
   /** L'utilisateur vise une position : le décompte se suspend le temps du geste. */
   scrubbing?: boolean;
+  /**
+   * La lecture a-t-elle VRAIMENT commencé ?
+   *
+   * Sans cette garde, la pilule paraissait par-dessus l'écran de chargement et
+   * le saut automatique partait à l'instant du lancement : la fenêtre d'intro
+   * se calcule sur `currentTime`, qui vaut zéro avant la première image — et la
+   * plupart des génériques commencent à zéro. On annonçait donc un saut sur une
+   * vidéo qui n'avait pas encore d'image.
+   *
+   * C'est le même signal que l'écran de chargement (`TVPlayerView`), et donc la
+   * même vérité : tant qu'il est faux, il n'y a rien à passer.
+   */
+  lectureDemarree?: boolean;
 }
 
-export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false, showEpisodes = false, labelOverride, scrubbing = false }: TVSkipSegmentButtonProps) {
+export function TVSkipSegmentButton({ type, segment, currentTime, onSkip, overlayVisible = false, showSettings = false, showEpisodes = false, labelOverride, scrubbing = false, lectureDemarree = true }: TVSkipSegmentButtonProps) {
   const { t } = useTranslation("player");
   const [dismissed, setDismissed] = useState(false);
   const skipRef = useRef<View>(null);
 
-  const inRange = !!segment
+  const inRange = lectureDemarree
+    && !!segment
     && currentTime >= segment.start
     && currentTime < segment.end - 1;
   const estIntro = type === "intro";
