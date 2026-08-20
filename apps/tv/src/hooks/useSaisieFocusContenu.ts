@@ -14,6 +14,19 @@ const DELAI_POSE_MS = 60;
  *  un simple `true` serait donc sans effet. */
 const CYCLE_TVOS_MS = 50;
 
+/**
+ * Au-delà, l'armement est caduc.
+ *
+ * Sans péremption, un armement que personne ne vient consommer survit à la
+ * session entière — l'écran visé peut très bien republier le nœud qu'il
+ * exposait déjà, auquel cas l'état ne change pas et l'effet ne rejoue jamais.
+ * Il se déclenchait alors au prochain changement venu, des minutes plus tard,
+ * en plein démontage d'un autre écran. Une intention de focus qui n'a pas
+ * trouvé preneur en trois secondes ne veut plus rien dire ; c'est le même
+ * budget que le moteur de la LG accorde à l'arrivée sur un écran.
+ */
+const PEREMPTION_MS = 3000;
+
 type NoeudFocalisable = { setNativeProps?: (p: object) => void } | null;
 
 /**
@@ -29,34 +42,62 @@ type NoeudFocalisable = { setNativeProps?: (p: object) => void } | null;
  * moment : un retour vers l'accueil publie plus tard qu'une entrée en
  * bibliothèque, dont la première cellule attend le réseau.
  *
- * Les deux téléviseurs ne se pilotent pas de la même façon. Sur Android, poser
- * la propriété vaut `requestFocus()` immédiat, une fois pour toutes
+ * **Le nœud est relu au moment de poser, jamais capturé à l'armement.** Entre
+ * les deux il s'écoule soixante millisecondes, et elles suffisent : une liste
+ * peut recycler la cellule visée, un écran peut finir de se démonter. Envoyer
+ * la propriété à la vue qu'on avait en main, c'est lever « Trying to update
+ * non-existent view with tag N » — le défaut que l'accueil avait déjà rencontré
+ * et corrigé de la même façon.
+ *
+ * Les deux téléviseurs ne se pilotent pas pareil. Sur Android, poser la
+ * propriété vaut `requestFocus()` immédiat, une fois pour toutes
  * (`ReactViewManager.setTVPreferredFocus`). Sur Apple, il faut la faire
  * BASCULER — d'où le faux, puis le vrai.
  */
 export function useSaisieFocusContenu(contentFocusNode: View | null): () => void {
-  const enAttente = useRef(false);
+  // La dernière publication en date, tenue dans une référence : c'est elle
+  // qu'on relit au moment de poser, pas la valeur qu'on avait à l'armement.
+  const noeudRef = useRef<View | null>(null);
+  noeudRef.current = contentFocusNode;
 
-  const armer = useCallback(() => { enAttente.current = true; }, []);
+  const enAttente = useRef(false);
+  const peremption = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const desarmer = useCallback(() => {
+    enAttente.current = false;
+    if (peremption.current) { clearTimeout(peremption.current); peremption.current = null; }
+  }, []);
+
+  const armer = useCallback(() => {
+    enAttente.current = true;
+    if (peremption.current) clearTimeout(peremption.current);
+    peremption.current = setTimeout(desarmer, PEREMPTION_MS);
+  }, [desarmer]);
 
   useEffect(() => {
     if (!enAttente.current || !contentFocusNode) return;
-    enAttente.current = false;
-    const noeud = contentFocusNode as NoeudFocalisable;
-    if (!noeud?.setNativeProps) return;
+    desarmer();
+
+    const viser = (): NoeudFocalisable => noeudRef.current as NoeudFocalisable;
 
     if (Platform.OS !== "ios") {
-      const id = setTimeout(() => noeud.setNativeProps?.({ hasTVPreferredFocus: true }), DELAI_POSE_MS);
+      const id = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), DELAI_POSE_MS);
       return () => clearTimeout(id);
     }
 
     let idVrai: ReturnType<typeof setTimeout>;
     const idFaux = setTimeout(() => {
-      noeud.setNativeProps?.({ hasTVPreferredFocus: false });
-      idVrai = setTimeout(() => noeud.setNativeProps?.({ hasTVPreferredFocus: true }), CYCLE_TVOS_MS);
+      viser()?.setNativeProps?.({ hasTVPreferredFocus: false });
+      idVrai = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), CYCLE_TVOS_MS);
     }, DELAI_POSE_MS);
     return () => { clearTimeout(idFaux); clearTimeout(idVrai); };
-  }, [contentFocusNode]);
+  }, [contentFocusNode, desarmer]);
+
+  // Le chrome de navigation vit aussi longtemps que l'application ; le
+  // minuteur de péremption, lui, ne doit pas survivre à un démontage.
+  useEffect(() => () => {
+    if (peremption.current) clearTimeout(peremption.current);
+  }, []);
 
   return armer;
 }

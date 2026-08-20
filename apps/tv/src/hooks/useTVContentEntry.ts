@@ -27,12 +27,27 @@ export function useTVContentEntry() {
 
   const setRef = useCallback((node: View | null) => {
     nodeRef.current = node;
-    // Un détachement (null) n'écrase pas la publication : le cleanup du blur
-    // d'écran s'en charge, et un recyclage de cellule peut détacher APRÈS que
-    // la nouvelle cellule d'entrée a publié la sienne.
-    if (screenFocusedRef.current && node) {
-      setContentFocusNode(node);
+    if (node) {
+      if (screenFocusedRef.current) setContentFocusNode(node);
+      return;
     }
+    /**
+     * Détachement — et la question n'est pas tranchable dans l'instant.
+     *
+     * Le recyclage d'une cellule détache l'ancienne et attache celle qui la
+     * remplace, dans un ordre que rien ne garantit : effacer tout de suite
+     * effacerait parfois la publication de la SUIVANTE. On attend donc un tour.
+     * Si plus rien ne s'est rattaché, c'est que la cible a bien disparu.
+     *
+     * Et une cible disparue qu'on laisse publiée finit en `setNativeProps` sur
+     * une vue morte — « Trying to update non-existent view with tag N ». C'est
+     * la même précaution que `FocusableRow` prend pour la mémoire de focus.
+     */
+    setTimeout(() => {
+      if (nodeRef.current === null && screenFocusedRef.current) {
+        setContentFocusNode(null);
+      }
+    }, 0);
   }, [setContentFocusNode]);
 
   useFocusEffect(
