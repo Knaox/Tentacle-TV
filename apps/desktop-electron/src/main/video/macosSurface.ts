@@ -238,6 +238,20 @@ export class MacosSurface implements VideoSurface {
     this.stopVeille();
     if (this.mpvWindow !== null) {
       sansFaillir("detachement de la fenetre video", () => {
+        // ⚠️ HORS DE L'ÉCRAN D'ABORD, et ce n'est pas une précaution de style.
+        //
+        // Cette fenêtre est OPAQUE et NOIRE par construction — c'est elle qui
+        // garantit le noir sous une page transparente (`attacherSousLaPage`).
+        // Détachée de son parent alors qu'elle vit encore, elle ne le suit plus
+        // et ne se recale plus : il reste un rectangle noir grand comme le
+        // moniteur, posé par-dessus l'application.
+        //
+        // L'ordre d'arrêt l'évite déjà — mpv part AVANT le détachement
+        // (`ipc/video.ts`) — mais cette attente est BORNÉE à trois secondes, et
+        // au-delà on détache quand même. `orderOut:` ferme ce cas-là : la
+        // fenêtre quitte l'écran sans être détruite, et mpv la détruira ensuite
+        // comme il l'a toujours fait.
+        msg.orderOut(this.mpvWindow);
         msg.removeChildWindow(this.parent, this.mpvWindow);
       });
       this.mpvWindow = null;
