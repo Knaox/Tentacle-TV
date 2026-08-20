@@ -1,7 +1,7 @@
 import { useCallback, useRef } from "react";
 import { Platform, type View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { useTVNav } from "../context/TVNavContext";
+import { useTVNavActions } from "../context/TVNavContext";
 
 /**
  * Publie le focusable « d'entrée » du contenu dans TVNavContext (tvOS).
@@ -17,7 +17,7 @@ import { useTVNav } from "../context/TVNavContext";
  * Usage : `const ref = useTVContentEntry();` puis `<Focusable ref={ref} … />`.
  */
 export function useTVContentEntry() {
-  const { setContentFocusNode } = useTVNav();
+  const { setContentFocusNode } = useTVNavActions();
   const nodeRef = useRef<View | null>(null);
   // L'écran est-il actuellement focus ? Les écrans à données asynchrones
   // (grilles) montent leur premier focusable APRÈS le focus d'écran : setRef

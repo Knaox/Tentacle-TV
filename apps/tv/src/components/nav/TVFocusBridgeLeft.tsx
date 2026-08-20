@@ -1,5 +1,5 @@
 import { Platform, TVFocusGuideView } from "react-native";
-import { useTVNav } from "../../context/TVNavContext";
+import { useRailActiveNode, useRailFocused } from "../../context/TVNavContext";
 import { RAIL_COLLAPSED } from "./TVSideRail";
 
 /**
@@ -17,7 +17,8 @@ import { RAIL_COLLAPSED } from "./TVSideRail";
  * hors tvOS : zéro impact sur Android TV.
  */
 export function TVFocusBridgeLeft() {
-  const { railActiveNode, railFocused } = useTVNav();
+  const railActiveNode = useRailActiveNode();
+  const railFocused = useRailFocused();
 
   // Désactivé quand le focus est déjà dans le rail : sinon cette bande (qui
   // chevauche les items) recapte chaque déplacement et le redirige vers l'item

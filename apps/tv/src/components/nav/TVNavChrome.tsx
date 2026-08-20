@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { useLibraries } from "@tentacle-tv/api-client";
 import { navigationRef } from "../../navigation/navigationRef";
 import { TVSideRail } from "./TVSideRail";
-import { useTVNav } from "../../context/TVNavContext";
+import { useContentFocusNode, useRailFocusSignal } from "../../context/TVNavContext";
 
 type NavStateLike =
   | { index: number; routes: Array<{ name: string; params?: object }> }
@@ -37,7 +37,8 @@ export function deriveRailKey(state: NavStateLike): string | null {
  * NavigationContainer) ; la navigation passe par `navigationRef`.
  */
 export function TVNavChrome({ railKey }: { railKey: string | null }) {
-  const { railFocusSignal, contentFocusNode } = useTVNav();
+  const railFocusSignal = useRailFocusSignal();
+  const contentFocusNode = useContentFocusNode();
   const { data: libraries } = useLibraries();
 
   // railKey via ref : handleNavigate reste stable → RailRow mémoïsé pleinement

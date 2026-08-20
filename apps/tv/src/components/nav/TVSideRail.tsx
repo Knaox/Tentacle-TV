@@ -11,7 +11,7 @@ import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
 import { useEpinglageRail } from "./railPinning";
 import { TentacleLogo } from "../icons/TentacleLogo";
-import { useTVNav } from "../../context/TVNavContext";
+import { useRailFocused, useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Fonts } from "../../theme/colors";
 import { Easings } from "../../theme/motion";
 
@@ -71,7 +71,8 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   }, []);
 
   const [activeNode, setActiveNode] = useState<View | null>(null);
-  const { setRailActiveNode, railFocused, setRailFocused, lastContentNodeRef } = useTVNav();
+  const { setRailActiveNode, setRailFocused, lastContentNodeRef } = useTVNavActions();
+  const railFocused = useRailFocused();
   const [deploye, setDeploye] = useState(false);
 
   // Sélectionner, c'est QUITTER le rail : replier immédiatement, sans passer par

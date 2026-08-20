@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
-import { useTVNav } from "../../context/TVNavContext";
+import { useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
 interface FocusableRowProps<T> {
@@ -145,7 +145,7 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
 }) {
   const [focused, setFocused] = useState(false);
   const cellRef = useRef<View>(null);
-  const { lastContentNodeRef } = useTVNav();
+  const { lastContentNodeRef } = useTVNavActions();
 
   /**
    * La cellule EFFACE la mémoire de focus en mourant, tant qu'elle la désigne.
