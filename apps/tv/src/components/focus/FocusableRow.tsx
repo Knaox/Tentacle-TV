@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
@@ -146,6 +146,26 @@ function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCe
   const [focused, setFocused] = useState(false);
   const cellRef = useRef<View>(null);
   const { lastContentNodeRef } = useTVNav();
+
+  /**
+   * La cellule EFFACE la mémoire de focus en mourant, tant qu'elle la désigne.
+   *
+   * Sans cela, `lastContentNodeRef` survit à la vue qu'il nomme : la liste
+   * recycle ses cellules dès que les données changent — et revenir d'une fiche
+   * invalide justement « Reprendre », « Prochains épisodes » et « Ma liste`
+   * (`HomeScreen`). La restauration de focus tire alors, soixante millisecondes
+   * plus tard, un `setNativeProps` sur une vue détruite, et React Native lève
+   * « Trying to update non-existent view with tag N ».
+   *
+   * Le garde tient à `=== cellRef.current` : une autre cellule a pu publier la
+   * sienne entre-temps, et ce n'est pas à celle qui part de l'effacer.
+   */
+  useEffect(
+    () => () => {
+      if (lastContentNodeRef.current === cellRef.current) lastContentNodeRef.current = null;
+    },
+    [lastContentNodeRef],
+  );
   return (
     <View style={{ width: itemWidth, marginRight: gap, overflow: "visible" }}>
       <Focusable
