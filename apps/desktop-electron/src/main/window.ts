@@ -227,16 +227,17 @@ export function toggleFullscreen(): boolean {
  * qui amorce l'état React du lecteur, remonté à chaque épisode.
  */
 export function enterPlayerFullscreenScope(): boolean {
-  if (!mainWindow) return false;
-  return ouvrirSessionLecteur();
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return false;
+  return ouvrirSessionLecteur(win);
 }
 
 /**
  * Ferme la session plein écran du lecteur.
  *
- * Sur Windows, la fenêtre retrouve EXACTEMENT le mode qui était le sien avant le
- * film — fenêtrée, agrandie, ou en plein écran si elle y était déjà. Sur macOS,
- * rien ne bouge. Le détail, et pourquoi les deux diffèrent, sont dans
+ * La fenêtre retrouve EXACTEMENT le mode qui était le sien avant le film —
+ * fenêtrée, zoomée, ou en plein écran si elle y était déjà. Même règle sur les
+ * deux systèmes ; ce qui diffère est la mécanique, détaillée dans
  * `fermerSessionLecteur`.
  */
 export function leavePlayerFullscreenScope(): void {
