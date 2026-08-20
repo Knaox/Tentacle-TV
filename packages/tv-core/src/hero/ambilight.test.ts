@@ -9,6 +9,9 @@ import {
   sigmaHalo,
   sigmaSource,
   sousEchelle,
+  reglageFlouAndroid,
+  sigmaEcranAndroid,
+  sigmaHalo,
 } from "./ambilight";
 
 /** Les nombres de la référence web : blur(48px) sur une carte de 1524 px. */
@@ -158,5 +161,43 @@ describe("flou natif", () => {
     expect(cible / 256).toBeCloseTo(RAPPORT / (boite / CARTE_TVOS), 4);
     expect(rayonFlou(cible, "ios", 1)).toBeGreaterThan(10);
     expect(rayonFlou(cible, "ios", 1)).toBeLessThan(20);
+  });
+});
+
+describe("reglageFlouAndroid", () => {
+  // La référence : 48 px de σ pour une carte de 1526, sur les trois plateformes.
+  const RAPPORT = 48 / 1524;
+  const CARTE = 1526;
+  const SOURCE = 256;
+  const cible = sigmaHalo(CARTE, RAPPORT);
+
+  it("rend à l'écran le σ visé, à densité 1", () => {
+    const { k, stdDeviation } = reglageFlouAndroid(cible, CARTE, SOURCE, 1);
+    expect(sigmaEcranAndroid(stdDeviation, k)).toBeCloseTo(cible * 1, 6);
+  });
+
+  it("rend à l'écran le σ visé, à densité 2", () => {
+    const { k, stdDeviation } = reglageFlouAndroid(cible, CARTE, SOURCE, 2);
+    expect(sigmaEcranAndroid(stdDeviation, k)).toBeCloseTo(cible * 2, 6);
+  });
+
+  // Le plafond de 25 saturait le flou sans rien dire ; on rend plus petit.
+  it("réduit le canevas plutôt que de laisser le rayon saturer", () => {
+    const { k, stdDeviation } = reglageFlouAndroid(cible, CARTE, SOURCE, 2);
+    expect(2 * stdDeviation).toBeLessThanOrEqual(25);
+    expect(k).toBeGreaterThan(Math.round(CARTE / SOURCE));
+  });
+
+  it("garde la sous-échelle naturelle quand le plafond ne mord pas", () => {
+    const { k } = reglageFlouAndroid(cible, CARTE, SOURCE, 1);
+    expect(k).toBe(Math.round(CARTE / SOURCE));
+  });
+
+  // Ce que le code actuel produit, et qui motive tout l'exercice.
+  it("mesure l'écart de l'ancienne valeur transmise telle quelle", () => {
+    const kNaturel = Math.round(CARTE / SOURCE);
+    const avant = sigmaEcranAndroid(cible / kNaturel, kNaturel);
+    expect(avant / (cible * 1)).toBeCloseTo(0.875, 3);
+    expect(avant / (cible * 2)).toBeCloseTo(0.437, 3);
   });
 });

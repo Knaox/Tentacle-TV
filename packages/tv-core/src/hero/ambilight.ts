@@ -184,3 +184,80 @@ export function sousEchelle(couches: readonly CoucheHalo[]): number {
   }
   return Math.max(1, Math.floor(mini));
 }
+
+// ── Le flou d'Android : inverser ce que react-native-svg lui fait subir ────
+
+/**
+ * Le plafond dur de `FeGaussianBlurView` (`Math.min(stdDeviation, 25f)`), au-delà
+ * duquel le flou cesse d'obéir sans rien dire.
+ */
+export const RAYON_MAX_ANDROID = 25;
+
+/** σ de `ScriptIntrinsicBlur` pour un rayon donné (AOSP, `rsCpuIntrinsicBlur`). */
+export const sigmaRenderScript = (rayon: number): number => 0.4 * rayon + 0.6;
+
+export interface ReglageFlouAndroid {
+  /** Sous-échelle de rendu : le canevas fait 1/K, la vue le remet à l'échelle. */
+  k: number;
+  /** La valeur à transmettre à `FeGaussianBlur`. */
+  stdDeviation: number;
+}
+
+/**
+ * Le `stdDeviation` à transmettre sur Android pour obtenir le σ visé À L'ÉCRAN.
+ *
+ * # Pourquoi il faut le pré-compenser
+ *
+ * Les deux implémentations natives de `react-native-svg` ne font pas la même
+ * chose de la valeur qu'on leur donne. Côté Apple, elle est multipliée par
+ * l'échelle d'écran, avec un commentaire qui dit pourquoi :
+ *
+ *     // We need to multiply stdDeviation by screenScale to achive the same
+ *     // results as on web
+ *
+ * Côté Android, rien de tel — un `× 2` en dur, censé compenser RenderScript,
+ * puis un plafond :
+ *
+ *     float stdDeviation = Math.max(mStdDeviationX, mStdDeviationY) * 2;
+ *     float radius = Math.min(stdDeviation, 25.0f);
+ *
+ * Or `ScriptIntrinsicBlur` rend σ = 0,4·r + 0,6. Le `× 2` rate donc le 0,4 de
+ * vingt pour cent, et la densité n'entre jamais en compte. Le rapport obtenu
+ * sur visé vaut `(0,8·s + 0,6) / (s · densité)` : 0,87 à densité 1, 0,43 à
+ * densité 2. Jamais un. La lueur ourle la carte au lieu de l'entourer, et
+ * d'autant moins que la dalle est fine.
+ *
+ * # Ce que fait cette fonction
+ *
+ * Elle remonte la chaîne. Le bitmap du canevas est à la densité de l'écran, et
+ * la vue le remet à l'échelle ×K : le σ obtenu À L'ÉCRAN, en pixels, vaut donc
+ * `(0,4·min(2s ; 25) + 0,6) × K`. On veut `sigmaCible × densité`, d'où
+ * `s = (sigmaCible · densité / K − 0,6) / 0,8`.
+ *
+ * Reste le plafond. Si `s` dépasse 12,5, le rayon sature à 25 et le flou
+ * s'arrête là, en silence. Plutôt que de le subir, on RÉDUIT le canevas : rendre
+ * à 1/12 au lieu de 1/6 demande deux fois moins de rayon pour le même résultat
+ * à l'écran. C'est exactement le levier que la référence web utilise déjà —
+ * douze et demi pour cent, puis `scale(8)`.
+ */
+export function reglageFlouAndroid(
+  sigmaCible: number,
+  largeurCarte: number,
+  largeurSource: number,
+  densite: number,
+): ReglageFlouAndroid {
+  const kNaturel = Math.max(1, Math.round(largeurCarte / largeurSource));
+  const sigmaBitmapMax = sigmaRenderScript(RAYON_MAX_ANDROID);
+
+  // La sous-échelle minimale qui garde le rayon sous le plafond.
+  const kMinimal = Math.ceil((sigmaCible * densite) / sigmaBitmapMax);
+  const k = Math.max(kNaturel, kMinimal, 1);
+
+  const sigmaBitmap = (sigmaCible * densite) / k;
+  const stdDeviation = Math.max(0, (sigmaBitmap - 0.6) / 0.8);
+  return { k, stdDeviation };
+}
+
+/** Le σ qu'Android rendra VRAIMENT à l'écran, en pixels — pour les bancs. */
+export const sigmaEcranAndroid = (stdDeviation: number, k: number): number =>
+  sigmaRenderScript(Math.min(2 * stdDeviation, RAYON_MAX_ANDROID)) * k;

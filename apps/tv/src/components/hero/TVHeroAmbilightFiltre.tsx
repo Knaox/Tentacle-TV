@@ -1,5 +1,6 @@
 import { memo } from "react";
-import { View } from "react-native";
+import { PixelRatio, Platform, View } from "react-native";
+import { reglageFlouAndroid } from "@tentacle-tv/tv-core";
 import Svg, {
   Defs,
   FeColorMatrix,
@@ -38,9 +39,11 @@ const PORTEE = 3;
  * est un nombre de pixels du bitmap de filtre. À l'échelle de l'écran il
  * vaudrait 48 ; à 1/6 il vaut 8, ce qui reste dans les clous partout.
  *
- * Les deux plateformes l'empruntent. Le plafond de rayon que l'on prêtait au
- * chemin Android de react-native-svg ne mord pas ici : `stdDeviation` vaut 8
- * dans l'espace du filtre, très en deçà.
+ * Les deux plateformes l'empruntent, mais pas avec la même valeur de flou :
+ * Android n'applique pas l'échelle d'écran à `stdDeviation` et sature son rayon
+ * à 25 sans le dire. La valeur y est donc pré-compensée et le canevas réduit
+ * d'autant qu'il faut — voir `reglageFlouAndroid`. iOS reçoit exactement ce
+ * qu'il recevait.
  */
 export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   uri,
@@ -53,8 +56,18 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
 }: Props) {
   // Une unité SVG ≈ un pixel de la source : le filtre travaille alors dans
   // l'espace où la matière existe vraiment, et pas un pixel plus fin.
-  const k = Math.max(1, Math.round(cardW / sourceW));
-  console.log("[HALO-MESURE]", JSON.stringify({ os: require("react-native").Platform.OS, densite: require("react-native").PixelRatio.get(), fenetre: require("react-native").Dimensions.get("window"), cardW, cardH, sigma, k, stdDeviation: sigma / k }));
+  //
+  // Sur Android il faut en plus PRÉ-COMPENSER : `react-native-svg` y multiplie
+  // le rayon par deux au lieu de tenir compte de RenderScript et de la densité,
+  // là où sa branche Apple applique l'échelle d'écran (et dit pourquoi en
+  // commentaire). Le détail, et la mesure de l'écart, sont dans
+  // `reglageFlouAndroid`. iOS garde EXACTEMENT la valeur d'avant.
+  const naturel = { k: Math.max(1, Math.round(cardW / sourceW)), stdDeviation: 0 };
+  const reglage =
+    Platform.OS === "android"
+      ? reglageFlouAndroid(sigma, cardW, sourceW, PixelRatio.get())
+      : { ...naturel, stdDeviation: sigma / naturel.k };
+  const { k, stdDeviation } = reglage;
   const bleed = PORTEE * sigma;
   const w = (cardW + 2 * bleed) / k;
   const h = (cardH + 2 * bleed) / k;
@@ -85,7 +98,7 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
       <Svg width={w} height={h}>
         <Defs>
           <Filter id="halo" x={0} y={0} width={w} height={h} filterUnits="userSpaceOnUse">
-            <FeGaussianBlur stdDeviation={sigma / k} />
+            <FeGaussianBlur stdDeviation={stdDeviation} />
             <FeColorMatrix type="saturate" values={String(saturation)} />
           </Filter>
         </Defs>
