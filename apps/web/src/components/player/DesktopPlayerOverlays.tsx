@@ -148,7 +148,10 @@ export function DesktopPlayerOverlays({
               upNext.dismiss();
             }} />
         )}
-        {autoPlayCountdown !== null && autoPlaySource === "eof" && (
+        {/* L'affiche de fin ne dépend PAS du décompte : éteint, elle reste la
+            proposition — vignette, résumé, « Lire maintenant » — et n'annonce
+            simplement plus d'échéance. */}
+        {autoPlaySource === "eof" && (
           <NextEpisodeFullscreen countdown={autoPlayCountdown} episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription} seriesBackdropUrl={nextSeriesBackdropUrl}
             episodeThumbUrl={nextEpisodeThumbUrl}

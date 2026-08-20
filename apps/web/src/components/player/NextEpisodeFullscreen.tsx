@@ -3,8 +3,13 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ombreSurVideo } from "../../lib/ombreSurVideo";
 
 interface NextEpisodeFullscreenProps {
-  /** Secondes restantes avant lecture auto (piloté par le lecteur). */
-  countdown: number;
+  /**
+   * Secondes restantes avant lecture auto, ou `null` quand l'affiche est une
+   * simple PROPOSITION — le compte à rebours a été éteint dans les réglages.
+   * Ni chiffre ni anneau alors : il n'y aurait aucune échéance à annoncer, et
+   * en afficher une qui n'arrive jamais serait un mensonge à l'écran.
+   */
+  countdown: number | null;
   /** Titre pré-formaté "S03E08 — Nom" (label et nom séparés au rendu si besoin). */
   episodeTitle?: string;
   /** Label "S03E08" optionnel (sinon extrait de `episodeTitle`). */
@@ -59,7 +64,10 @@ export function NextEpisodeFullscreen({
     }
   }
 
-  const progress = Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds));
+  const decompte = countdown !== null;
+  const progress = decompte
+    ? Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds))
+    : 0;
 
   return (
     <motion.div
@@ -113,16 +121,19 @@ export function NextEpisodeFullscreen({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: reduce ? 0 : 0.1 }}
       >
-        {/* Compte à rebours — bien visible */}
-        <div className="mb-5 flex items-center gap-2.5">
-          <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand-light)", boxShadow: "0 0 10px var(--brand)" }} />
-          <span
-            className="text-sm font-bold uppercase tracking-[0.16em] text-white/90"
-            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
-          >
-            {t("player:autoplayCountdown", { seconds: countdown })}
-          </span>
-        </div>
+        {/* Compte à rebours — bien visible. Absent quand il est éteint : le
+            panneau porte déjà son libellé « À suivre » plus bas. */}
+        {decompte && (
+          <div className="mb-5 flex items-center gap-2.5">
+            <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand-light)", boxShadow: "0 0 10px var(--brand)" }} />
+            <span
+              className="text-sm font-bold uppercase tracking-[0.16em] text-white/90"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
+            >
+              {t("player:autoplayCountdown", { seconds: countdown })}
+            </span>
+          </div>
+        )}
 
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
           {/* Vignette de l'épisode suivant */}
@@ -179,16 +190,18 @@ export function NextEpisodeFullscreen({
                 style={{ boxShadow: "0 8px 28px var(--brand-glow)" }}
               >
                 <span className="relative flex h-10 w-10 items-center justify-center">
-                  <svg className="absolute inset-0 h-10 w-10 -rotate-90" viewBox="0 0 72 72" aria-hidden="true">
-                    <circle cx="36" cy="36" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth="5" />
-                    <circle
-                      cx="36" cy="36" r={RING_R} fill="none"
-                      stroke="var(--brand)" strokeWidth="5" strokeLinecap="round"
-                      strokeDasharray={RING_C}
-                      strokeDashoffset={RING_C * (1 - progress)}
-                      style={{ transition: "stroke-dashoffset 1s linear" }}
-                    />
-                  </svg>
+                  {decompte && (
+                    <svg className="absolute inset-0 h-10 w-10 -rotate-90" viewBox="0 0 72 72" aria-hidden="true">
+                      <circle cx="36" cy="36" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth="5" />
+                      <circle
+                        cx="36" cy="36" r={RING_R} fill="none"
+                        stroke="var(--brand)" strokeWidth="5" strokeLinecap="round"
+                        strokeDasharray={RING_C}
+                        strokeDashoffset={RING_C * (1 - progress)}
+                        style={{ transition: "stroke-dashoffset 1s linear" }}
+                      />
+                    </svg>
+                  )}
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
                 </span>
                 {t("player:playNow")}

@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useEpisodeNavigation, useJellyfinClient, useAutoplayConfig } from "@tentacle-tv/api-client";
+import { useCarteASuivre, useDecompteEnchainement } from "../lib/enchainementEpisode";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 const COUNTDOWN_TOTAL = 10;
@@ -35,6 +36,10 @@ interface AutoPlayState {
    *  du même dispatch d'événement — la valeur d'état du dernier rendu serait périmée
    *  quand deux handlers consomment le même appui. */
   countdownRef: React.MutableRefObject<number | null>;
+  /** Miroir SYNCHRONE de source. C'est LUI que le routage Retour interroge : une
+   *  surface peut être montée SANS décompte (réglage éteint), et le Retour doit
+   *  alors la fermer plutôt que quitter le lecteur. */
+  sourceRef: React.MutableRefObject<AutoPlaySource | null>;
 }
 
 export function useAutoPlay(
@@ -59,15 +64,34 @@ export function useAutoPlay(
   // Affiche de FIN écartée (dismiss) : ne plus la représenter (parité desktop).
   const eofTriggeredRef = useRef(false);
   const countdownRef = useRef<number | null>(null);
+  const sourceRef = useRef<AutoPlaySource | null>(null);
 
   // Keep countdown ref in sync for checkTrigger
   countdownRef.current = countdown;
+  sourceRef.current = source;
+
+  /**
+   * Les deux réglages d'appareil, en refs — les déclencheurs sont appelés
+   * depuis des rappels natifs de lecture, où la valeur du dernier rendu serait
+   * périmée.
+   *
+   * Portées volontairement différentes. La CARTE ne gouverne que la petite
+   * fiche du générique : l'affiche de fin est une autre surface, à un autre
+   * moment. Le DÉCOMPTE gouverne le droit de partir tout seul, sur les deux.
+   */
+  const carteAutorisee = useCarteASuivre();
+  const decompteAutorise = useDecompteEnchainement();
+  const carteRef = useRef(true);
+  const decompteRef = useRef(true);
+  carteRef.current = carteAutorisee;
+  decompteRef.current = decompteAutorise;
 
   // Reset state when item changes
   useEffect(() => {
     creditsTriggered.current = false;
     eofTriggeredRef.current = false;
     countdownRef.current = null;
+    sourceRef.current = null;
     setCountdown(null);
     setSource(null);
     clearInterval(autoPlayTimerRef.current);
@@ -85,6 +109,7 @@ export function useAutoPlay(
     clearInterval(autoPlayTimerRef.current);
     countdownRef.current = null;
     setCountdown(null);
+    sourceRef.current = null;
     setSource(null);
     const ep = nextEpisodeRef.current;
     if (ep) {
@@ -95,8 +120,17 @@ export function useAutoPlay(
   const startAutoPlay = useCallback((src: AutoPlaySource = "credits") => {
     const ep = nextEpisodeRef.current;
     if (!ep) return;
+    // Le générique n'a que la carte pour surface : sans elle, rien à montrer,
+    // et donc rien à enchaîner non plus — un saut invisible serait un saut
+    // qu'on ne peut pas annuler.
+    if (src === "credits" && !carteRef.current) return;
 
     setSource(src);
+    sourceRef.current = src;
+    // Décompte éteint : la surface reste une PROPOSITION. Elle garde sa
+    // vignette et son bouton, elle n'annonce simplement plus d'échéance et ne
+    // part pas toute seule.
+    if (!decompteRef.current) return;
     countdownRef.current = COUNTDOWN_TOTAL;   // miroir synchrone (routage Retour)
     setCountdown(COUNTDOWN_TOTAL);
     clearInterval(autoPlayTimerRef.current);
@@ -120,10 +154,9 @@ export function useAutoPlay(
     // Écarter l'affiche de FIN empêche sa réapparition (notifyEnd re-déclenché
     // par des onEnd répétés). La bannière crédits a sa propre garde
     // (creditsTriggered reste vrai).
-    setSource((s) => {
-      if (s === "eof") eofTriggeredRef.current = true;
-      return null;
-    });
+    if (sourceRef.current === "eof") eofTriggeredRef.current = true;
+    sourceRef.current = null;
+    setSource(null);
   }, []);
 
   const startAutoPlayRef = useRef(startAutoPlay);
@@ -133,8 +166,11 @@ export function useAutoPlay(
   const notifyEnd = useCallback(() => {
     if (!nextEpisodeRef.current) return;
     if (eofTriggeredRef.current) return;      // écarté → pas de réapparition
-    if (countdownRef.current !== null) {
-      // Bannière crédits déjà ouverte → ESCALADE en plein écran, countdown conservé.
+    if (sourceRef.current !== null) {
+      // Bannière crédits déjà ouverte → ESCALADE en plein écran, countdown
+      // conservé. La condition porte sur la SOURCE et non sur le décompte :
+      // celui-ci peut être éteint alors qu'une carte est bien montée.
+      sourceRef.current = "eof";
       setSource("eof");
       return;
     }
@@ -150,6 +186,9 @@ export function useAutoPlay(
   const checkTrigger = useCallback((currentTime: number) => {
     if (creditsTriggered.current || countdownRef.current !== null) return;
     if (!enabledRef.current) return;
+    // AVANT de brûler `creditsTriggered` : rallumer la carte en cours d'épisode
+    // doit encore pouvoir l'armer.
+    if (!carteRef.current) return;
     const ep = nextEpisodeRef.current;
     const dur = durationRef.current;
     if (!ep || dur <= 0) return;
@@ -208,5 +247,6 @@ export function useAutoPlay(
     notifyEnd,
     checkTrigger,
     countdownRef,
+    sourceRef,
   };
 }

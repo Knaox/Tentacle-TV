@@ -14,7 +14,7 @@ const BACK_GRACE_MS = 600;
  * bouton — c'est pour ça qu'un Retour sur l'overlay « épisode suivant » quittait la
  * vidéo. La SEULE interception qui fonctionne est `usePreventRemove` (le mécanisme du
  * panneau épisodes, pop-restore react-native-screens, invisible avec animation:"none") :
- * tant que scrub / compte à rebours / grâce est actif, le pop natif est annulé et
+ * tant que scrub / surface « épisode suivant » / grâce est actif, le pop natif est annulé et
  * `routeBack` consomme l'appui. Android : le BackHandler LIFO consomme l'appui AVANT la
  * navigation → cette prévention n'y est jamais atteinte par Retour (inerte).
  *
@@ -25,14 +25,24 @@ export function useTVPlayerBack(args: {
   /** État de scrub RENDU (la prévention native se base sur le dernier rendu). */
   scrubbing: boolean;
   cancelScrub: () => void;
-  /** Compte à rebours auto-play RENDU + miroir synchrone (lecture au sein du dispatch). */
-  countdown: number | null;
-  countdownRef: React.MutableRefObject<number | null>;
+  /**
+   * Une SURFACE « épisode suivant » est-elle montée ? — état rendu + miroir
+   * synchrone (lecture au sein du dispatch).
+   *
+   * La surface et non le décompte : celui-ci peut être éteint dans les réglages
+   * alors que la carte ou l'affiche de fin sont bien là. S'en remettre au
+   * décompte ferait quitter le lecteur sur un Retour qui devait seulement
+   * fermer l'affiche.
+   */
+  surfaceActive: boolean;
+  /** La SOURCE de la surface (`"credits"` / `"eof"` / `null`), en miroir
+   *  synchrone — `useAutoPlay.sourceRef`. */
+  surfaceRef: React.MutableRefObject<string | null>;
   /** Ferme l'overlay auto-play ; renvoie true si un départ (navigation) est engagé —
    *  dans ce cas la grâce n'est PAS armée (elle bloquerait le dispatch différé). */
   dismissAutoPlay: () => boolean;
 }) {
-  const { scrubbing, cancelScrub, countdown, countdownRef, dismissAutoPlay } = args;
+  const { scrubbing, cancelScrub, surfaceActive, surfaceRef, dismissAutoPlay } = args;
 
   const scrubbingRef = useRef(scrubbing);
   scrubbingRef.current = scrubbing;
@@ -61,15 +71,15 @@ export function useTVPlayerBack(args: {
       armGrace();
       return true;
     }
-    if (countdownRef.current !== null) {
+    if (surfaceRef.current !== null) {
       const navigating = dismissRef.current();
       if (!navigating) armGrace();   // navigation engagée → la grâce bloquerait son dispatch
       return true;
     }
     return false;
-  }, [armGrace, countdownRef]);
+  }, [armGrace, surfaceRef]);
 
-  usePreventRemove(scrubbing || countdown !== null || graceActive, () => { routeBack(); });
+  usePreventRemove(scrubbing || surfaceActive || graceActive, () => { routeBack(); });
 
   return { routeBack };
 }

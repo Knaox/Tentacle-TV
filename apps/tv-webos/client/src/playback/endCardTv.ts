@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAutoNextCountdown as useAutoNextCountdownWeb } from "@/hooks/useAutoNextCountdown?original";
+import { useDecompteEnchainement } from "@/hooks/useEnchainementEpisode";
 
 /**
  * Le filet qui garantit la carte « à suivre » à la toute fin.
@@ -46,13 +47,38 @@ export function useAutoNextCountdown(options: OptionsWeb) {
   const { autoPlayCountdown, startAutoPlay } = resultat;
   const { duration, currentTime, hasNextEpisode, onNextEpisode } = options;
 
+  /**
+   * Le décompte éteint ne doit pas emporter l'AFFICHE DE FIN.
+   *
+   * Ici, la carte et l'affiche partagent une seule monture — c'est
+   * `NextCardTv` qui choisit laquelle rendre, selon que l'épisode est arrivé au
+   * bout. Cette monture est gouvernée par `useUpNextCard`, qui ne la montre
+   * qu'à la faveur d'un décompte ou d'un générique déclaré. Sans le drapeau
+   * ci-dessous, éteindre l'enchaînement automatique laisserait donc la LG sur
+   * une image arrêtée, sans rien pour lancer la suite.
+   *
+   * On distingue donc les deux moitiés du filet : ARMER l'enchaînement quand il
+   * est autorisé, PROPOSER la suite quand il ne l'est pas.
+   */
+  const decompteAutorise = useDecompteEnchainement();
+  const [propositionFinale, poserProposition] = useState(false);
+
   useEffect(() => {
     if (autoPlayCountdown !== null) return;
     if (!hasNextEpisode || !onNextEpisode) return;
     if (!(duration > 0)) return;
-    if (currentTime < duration - FIN_S) return;
-    startAutoPlay();
-  }, [autoPlayCountdown, currentTime, duration, hasNextEpisode, onNextEpisode, startAutoPlay]);
+    if (currentTime < duration - FIN_S) {
+      // Retour en arrière avant la fin (rembobinage, changement d'épisode) :
+      // l'affiche n'a plus lieu d'être.
+      if (propositionFinale) poserProposition(false);
+      return;
+    }
+    if (decompteAutorise) startAutoPlay();
+    else poserProposition(true);
+  }, [
+    autoPlayCountdown, currentTime, duration, hasNextEpisode, onNextEpisode,
+    startAutoPlay, decompteAutorise, propositionFinale,
+  ]);
 
-  return resultat;
+  return { ...resultat, propositionFinale };
 }

@@ -115,6 +115,14 @@ export default {
   autoSkipIntroHint:
     "Quand une série signale son générique de début, le lecteur le passe au bout de trois secondes. Une croix reste offerte pendant le décompte pour garder l'intro sur l'épisode en cours.",
 
+  // Fin d'épisode — deux réglages par appareil, comme le saut d'intro.
+  upNextCardTitle: "Proposer l'épisode suivant",
+  upNextCardHint:
+    "Pendant le générique de fin, une petite fiche propose l'épisode suivant dans un coin de l'image. Désactivée, la fin de l'épisode reste nue. L'écran de fin, lui, continue de s'afficher au tout dernier instant.",
+  upNextCountdownTitle: "Enchaîner tout seul",
+  upNextCountdownHint:
+    "Le lecteur lance l'épisode suivant à la fin d'un compte à rebours. Désactivé, la fiche et l'écran de fin restent affichés, mais sans décompte : l'épisode suivant n'est lancé que si vous le demandez.",
+
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
 } as const;

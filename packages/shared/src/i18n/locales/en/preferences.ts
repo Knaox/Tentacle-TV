@@ -115,6 +115,14 @@ export default {
   autoSkipIntroHint:
     "When a series marks its opening titles, the player skips them after three seconds. A cross stays available during the countdown to keep the intro on the episode you are watching.",
 
+  // End of episode — two per-device settings, like automatic intro skipping.
+  upNextCardTitle: "Offer the next episode",
+  upNextCardHint:
+    "During the closing credits, a small card offers the next episode in a corner of the picture. Turned off, the end of the episode stays bare. The end screen still appears at the very last moment.",
+  upNextCountdownTitle: "Play the next episode on its own",
+  upNextCountdownHint:
+    "The player starts the next episode when a countdown runs out. Turned off, the card and the end screen still appear, but without a countdown: the next episode only starts when you ask for it.",
+
   hdrAutoUnsupported:
     "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",
 } as const;

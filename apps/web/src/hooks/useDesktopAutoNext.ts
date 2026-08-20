@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
+import { useCarteASuivre, useDecompteEnchainement } from "./useEnchainementEpisode";
 import type { MpvState } from "./useDesktopPlayer";
 
 const DBG = "[DesktopPlayer]";
@@ -74,9 +75,36 @@ export function useDesktopAutoNext({
     navigate(-1);
   }, [navigate, leaveFullscreenScope]);
 
+  /**
+   * Les deux réglages d'appareil, en ref : ce callback est appelé depuis des
+   * effets et des rappels natifs où la valeur du dernier rendu serait périmée.
+   *
+   * Ils n'ont pas la même portée, et c'est voulu. La CARTE ne gouverne que la
+   * petite fiche du générique — l'affiche de fin est une autre surface, à un
+   * autre moment. Le DÉCOMPTE gouverne le droit de partir tout seul, sur les
+   * deux.
+   */
+  const carteAutorisee = useCarteASuivre();
+  const decompteAutorise = useDecompteEnchainement();
+  const carteRef = useRef(true);
+  const decompteRef = useRef(true);
+  carteRef.current = carteAutorisee;
+  decompteRef.current = decompteAutorise;
+
+  /**
+   * Le décompte éteint n'efface PAS l'affiche de fin : elle reste l'endroit
+   * d'où l'on lance la suite, avec sa vignette et son résumé. Ce qu'on lui
+   * retire, c'est le droit de partir sans qu'on le lui demande — `countdown`
+   * reste alors `null`, et les deux surfaces savent déjà rendre cet état.
+   */
   const startAutoPlayCountdown = useCallback((source: "credits" | "eof") => {
     if (!hasNextEpisode || !onNextEpisode) return;
+    // Le générique n'a que la carte pour surface : sans elle, rien à montrer,
+    // et donc rien à enchaîner non plus — un saut invisible serait un saut
+    // qu'on ne peut pas annuler.
+    if (source === "credits" && !carteRef.current) return;
     setAutoPlaySource(source);
+    if (!decompteRef.current) return;
     setAutoPlayCountdown(10);
     clearInterval(autoPlayTimerRef.current);
     autoPlayTimerRef.current = setInterval(() => {
@@ -106,6 +134,9 @@ export function useDesktopAutoNext({
     if (!fileLoaded) return; // position du fichier précédent (remount) — ignorer
     if (creditsAutoPlayTriggered.current || autoPlayCountdown !== null) return;
     if (!autoplayNextEnabled || !hasNextEpisode || !hasStartedRef.current) return;
+    // AVANT de brûler `creditsAutoPlayTriggered` : rallumer la carte en cours
+    // d'épisode doit encore pouvoir l'armer.
+    if (!carteRef.current) return;
     const pos = state.position + effectiveMpvOffset.current;
     const d = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
     const triggerAt = d > 0 ? d * (maxResumePct / 100) : null;
