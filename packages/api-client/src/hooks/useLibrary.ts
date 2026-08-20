@@ -84,45 +84,6 @@ export function useLibraryItems(
   });
 }
 
-/**
- * Un item ALÉATOIRE de la bibliothèque possédant un backdrop — pour l'image de
- * la bannière de bibliothèque.
- *
- * `SortBy=Random` + `HasBackdrop=true` + `Limit=1` : le serveur tire l'item, on
- * n'a pas à filtrer côté client. Le tirage est gardé toute la SESSION
- * (`staleTime`/`gcTime: Infinity`) : une seule requête par bibliothèque, quels
- * que soient les allers-venues, et l'image (déjà en cache navigateur) ne se
- * recharge pas. Elle change au prochain lancement de l'app, quand le cache
- * mémoire est reparti de zéro — assez de variété sans un appel réseau à chaque
- * visite. Renvoie `MediaItem | undefined`.
- */
-export function useRandomLibraryBackdrop(libraryId: string | undefined) {
-  const client = useJellyfinClient();
-  const userId = useUserId();
-
-  return useQuery({
-    queryKey: ["library", libraryId, "random-backdrop"],
-    queryFn: () =>
-      client
-        .fetch<{ Items: MediaItem[] }>(
-          `/Users/${userId}/Items?ParentId=${libraryId}` +
-            `&IncludeItemTypes=Movie,Series&Recursive=true&ExcludeLocationTypes=Virtual&IsMissing=false` +
-            `&HasBackdrop=true&SortBy=Random&Limit=1` +
-            `&Fields=Overview,PrimaryImageAspectRatio&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1`
-        )
-        .then((r) => r.Items[0]),
-    enabled: !!userId && !!libraryId,
-    /* Longtemps, mais pas éternellement. Le tirage est volontairement stable —
-     * changer de fond à chaque visite serait agité — seulement, `Infinity` des
-     * deux côtés gravait AUSSI les échecs : une bibliothèque interrogée pendant
-     * une coupure, ou dont le fond n'était pas encore récupéré, restait sans
-     * bannière pour toute la session, sans qu'aucune navigation n'y change quoi
-     * que ce soit. Une heure garde la stabilité et laisse une seconde chance. */
-    staleTime: 60 * 60 * 1000,
-    gcTime: 2 * 60 * 60 * 1000,
-  });
-}
-
 export function useSeasons(seriesId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();

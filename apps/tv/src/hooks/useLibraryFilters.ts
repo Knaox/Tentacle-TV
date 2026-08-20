@@ -1,4 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
+import {
+  DEFAULT_FILTERS,
+  catalogueParams,
+  filtresMemorises,
+  memoriserFiltres,
+  type LibraryFilterState,
+} from "./libraryCatalogParams";
 
 /**
  * L'état des filtres de bibliothèque — mêmes champs et mêmes défauts que le
@@ -7,42 +14,21 @@ import { useCallback, useMemo, useState } from "react";
  * on ouvre une fiche — le retour retrouve les filtres tels quels, ce que la LG
  * obtient par `filtersMemory` (et qui, comme elle, ne survit pas au
  * redémarrage : c'est voulu).
+ *
+ * Le modèle lui-même — le type, les défauts, la mémoire de session et la
+ * fabrication des paramètres de requête — vit dans `libraryCatalogParams`, hors
+ * de React : le rail doit pouvoir le consulter pour précharger le catalogue
+ * avec EXACTEMENT la clé que l'écran demandera. Ce hook n'en est que la liaison.
  */
-export interface LibraryFilterState {
-  genreIds: string[];
-  platformIds: number[];
-  yearFrom: number | null;
-  yearTo: number | null;
-  ratingMin: number | null;
-  statusFilter: string | null;
-  isFavorite: boolean;
-  sortBy: string;
-  sortOrder: string;
-}
-
-export const DEFAULT_FILTERS: LibraryFilterState = {
-  genreIds: [],
-  platformIds: [],
-  yearFrom: null,
-  yearTo: null,
-  ratingMin: null,
-  statusFilter: null,
-  isFavorite: false,
-  sortBy: "SortName",
-  sortOrder: "Ascending",
-};
+export type { LibraryFilterState } from "./libraryCatalogParams";
+export { DEFAULT_FILTERS } from "./libraryCatalogParams";
 
 const toggleIn = <T,>(list: T[], id: T): T[] =>
   list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 
-/** La mémoire de session, PAR bibliothèque — parité `filtersMemory` webOS :
- *  une Map en mémoire JS, jamais persistée. Revenir sur une bibliothèque
- *  retrouve ses filtres, redémarrer l'app les oublie (voulu). */
-const memory = new Map<string, LibraryFilterState>();
-
 export function useLibraryFilters(libraryId: string) {
   const [filters, setFilters] = useState<LibraryFilterState>(
-    () => memory.get(libraryId) ?? DEFAULT_FILTERS,
+    () => filtresMemorises(libraryId),
   );
 
   // Changement de bibliothèque (écran réutilisé par navigate) : rejouer la
@@ -50,13 +36,13 @@ export function useLibraryFilters(libraryId: string) {
   const [lastLibraryId, setLastLibraryId] = useState(libraryId);
   if (libraryId !== lastLibraryId) {
     setLastLibraryId(libraryId);
-    setFilters(memory.get(libraryId) ?? DEFAULT_FILTERS);
+    setFilters(filtresMemorises(libraryId));
   }
 
   const patch = useCallback((p: (f: LibraryFilterState) => LibraryFilterState) => {
     setFilters((f) => {
       const next = p(f);
-      memory.set(libraryId, next);
+      memoriserFiltres(libraryId, next);
       return next;
     });
   }, [libraryId]);
@@ -74,7 +60,7 @@ export function useLibraryFilters(libraryId: string) {
   const clearYears = useCallback(() => patch((f) => ({ ...f, yearFrom: null, yearTo: null })), [patch]);
   const clearRating = useCallback(() => patch((f) => ({ ...f, ratingMin: null })), [patch]);
   const resetFilters = useCallback(() => {
-    memory.set(libraryId, DEFAULT_FILTERS);
+    memoriserFiltres(libraryId, DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
   }, [libraryId]);
 
@@ -89,16 +75,9 @@ export function useLibraryFilters(libraryId: string) {
     return c;
   }, [filters]);
 
-  /** L'API Jellyfin n'accepte pas une plage : chaque année est ÉNUMÉRÉE
-   *  (repli 1900 / année courante sur la borne ouverte), comme le web. */
-  const yearsParam = useMemo(() => {
-    if (filters.yearFrom == null && filters.yearTo == null) return undefined;
-    const from = filters.yearFrom ?? 1900;
-    const to = filters.yearTo ?? new Date().getFullYear();
-    const arr: string[] = [];
-    for (let y = from; y <= to; y++) arr.push(String(y));
-    return arr;
-  }, [filters.yearFrom, filters.yearTo]);
+  /** Ce qu'on demandera au serveur — la MÊME fabrication que le préchargement
+   *  du rail, sans quoi les deux clés de cache divergent (cf. le module). */
+  const params = useMemo(() => catalogueParams(filters), [filters]);
 
   /** Signature stable de l'état — de quoi remonter le défilement quand un
    *  filtre change réellement. */
@@ -110,6 +89,6 @@ export function useLibraryFilters(libraryId: string) {
     setStatusFilter, setIsFavorite, setSortBy, setSortOrder,
     clearYears, clearRating, resetFilters,
     activeCount, hasActiveFilters: activeCount > 0,
-    yearsParam, queryKey,
+    params, queryKey,
   };
 }

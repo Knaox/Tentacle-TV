@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { View, Text, TVFocusGuideView, Platform, findNodeHandle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
-import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog } from "@tentacle-tv/api-client";
+import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog, prefetchLibraryBackdrop } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { RAIL, largeurIndiceRail } from "@tentacle-tv/tv-core";
@@ -10,6 +10,7 @@ import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
 import { useEpinglageRail } from "./railPinning";
+import { catalogueParams, filtresMemorises } from "../../hooks/libraryCatalogParams";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { useRailFocused, useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Fonts } from "../../theme/colors";
@@ -52,8 +53,18 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<View>(null);
 
-  // Préchargement du catalogue au focus d'une bibliothèque, temporisé :
-  // traverser le rail au D-pad ne doit pas précharger tout le serveur.
+  // Préchargement au focus d'une bibliothèque, temporisé : traverser le rail au
+  // D-pad ne doit pas précharger tout le serveur.
+  //
+  // Les paramètres du catalogue sont FABRIQUÉS, jamais écrits ici. Ils l'étaient
+  // — `DateCreated` / `Descending` en dur — quand l'écran, lui, demandait le tri
+  // par défaut `SortName` / `Ascending` : le tri occupe les positions 3 et 4 de
+  // la clé de cache, les deux ne se rencontraient donc JAMAIS. Le préchargement
+  // ne servait à rien et sa requête disputait la bande passante à celle dont
+  // l'écran dépendait — le temps mort qu'on voyait à chaque Entrée.
+  //
+  // Les deux requêtes du chemin critique y passent : le catalogue ET le fond de
+  // la bannière. Précharger l'un sans l'autre laisse la moitié de l'attente.
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
   const userId = useUserId();
@@ -61,9 +72,11 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const schedulePrefetch = useCallback((libraryId: string) => {
     if (prefetchTimer.current) clearTimeout(prefetchTimer.current);
     prefetchTimer.current = setTimeout(() => {
-      void prefetchLibraryCatalog(queryClient, jfClient, userId, libraryId, {
-        sortBy: "DateCreated", sortOrder: "Descending", limit: 30, fields: "light",
-      });
+      void prefetchLibraryCatalog(
+        queryClient, jfClient, userId, libraryId,
+        catalogueParams(filtresMemorises(libraryId)),
+      );
+      void prefetchLibraryBackdrop(queryClient, jfClient, userId, libraryId);
     }, 300);
   }, [queryClient, jfClient, userId]);
   const cancelPrefetch = useCallback(() => {
