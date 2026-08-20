@@ -11,7 +11,6 @@ import {
   sousEchelle,
   reglageFlouAndroid,
   sigmaEcranAndroid,
-  sigmaHalo,
 } from "./ambilight";
 
 /** Les nombres de la référence web : blur(48px) sur une carte de 1524 px. */
