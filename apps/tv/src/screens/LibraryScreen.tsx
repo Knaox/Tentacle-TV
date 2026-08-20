@@ -123,15 +123,11 @@ function LibraryScreenInner({ route, navigation }: Props) {
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
         {isLoading && items.length === 0 ? (
           <LibraryLoading header={header} />
-        ) : !isLoading && items.length === 0 ? (
-          <TVLibraryEmpty
-            header={header}
-            filtree={lf.hasActiveFilters}
-            onReinitialiser={lf.resetFilters}
-            onParcourir={() => navigation.navigate("Home")}
-            entryRef={contentEntry}
-          />
         ) : (
+          /* La grille est rendue MÊME vide : son état vide vit dedans, ce qui
+             garde la barre de filtres montée quand le dernier résultat
+             disparaît — sans quoi la puce qu'on vient d'actionner est démontée
+             sous le doigt et le focus s'en va dans le rail. */
           <TVLibraryGrid
             listKey={libraryId}
             items={items}
@@ -141,6 +137,14 @@ function LibraryScreenInner({ route, navigation }: Props) {
             onEndReached={handleEndReached}
             isFetchingNextPage={isFetchingNextPage}
             entryRef={contentEntry}
+            emptyComponent={
+              <TVLibraryEmpty
+                filtree={lf.hasActiveFilters}
+                onReinitialiser={lf.resetFilters}
+                onParcourir={() => navigation.navigate("Home")}
+                entryRef={contentEntry}
+              />
+            }
           />
         )}
       </TVFocusGuideView>

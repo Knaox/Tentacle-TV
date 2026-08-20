@@ -43,6 +43,13 @@ interface TVLibraryGridProps {
   /** Publie la 1ʳᵉ cellule comme focusable d'entrée du contenu (sortie rail +
    *  auto-collapse — useTVContentEntry côté écran). */
   entryRef?: (node: View | null) => void;
+  /** Ce qu'on montre à la place des cellules quand il n'y en a aucune.
+   *
+   *  Rendu PAR la liste, et non à sa place : c'est ce qui garde l'en-tête —
+   *  donc la barre de filtres — monté d'un état à l'autre. Rendre l'état vide
+   *  en dehors de la liste démontait tout l'arbre, y compris la puce que
+   *  l'utilisateur venait d'actionner, et le focus partait se perdre. */
+  emptyComponent?: React.ReactElement | null;
 }
 
 /**
@@ -59,6 +66,7 @@ export function TVLibraryGrid({
   onEndReached,
   isFetchingNextPage,
   entryRef,
+  emptyComponent,
 }: TVLibraryGridProps) {
   const { columns, cellW, cardW, estimatedItemSize } = useTVGridLayout();
   const flashListRef = useRef<FlashList<MediaItem>>(null);
@@ -114,6 +122,7 @@ export function TVLibraryGrid({
       renderItem={renderItem}
       keyExtractor={(item) => item.Id}
       ListHeaderComponent={header}
+      ListEmptyComponent={emptyComponent}
       contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingBottom: 80 }}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
