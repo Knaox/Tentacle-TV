@@ -11,8 +11,15 @@ import { useSyncExternalStore } from "react";
  * Même clé que le web (`tentacle_auto_skip_intro`) : le vocabulaire reste
  * identique d'une plateforme à l'autre, comme pour le Liquid Glass.
  *
- * Éteint par défaut : déplacer la tête de lecture tout seul est une liberté que
- * le lecteur ne prend pas sans qu'on la lui ait donnée.
+ * ALLUMÉ par défaut, sur tous les appareils. On enchaîne les épisodes le soir
+ * devant sa télévision, et regarder trois fois le même générique en une heure
+ * n'a jamais été le but ; le saut reste d'ailleurs réfutable au cas par cas —
+ * la pilule compte quelques secondes et porte une croix.
+ *
+ * Ce que le magasin lit, c'est donc l'ABSENCE de refus : seule la chaîne
+ * `"false"`, écrite par quelqu'un qui a explicitement éteint le réglage,
+ * l'éteint. Un stockage vide, un premier démarrage, un profil neuf : allumé.
+ * Un choix déjà posé, dans un sens ou dans l'autre, est respecté tel quel.
  */
 
 export const CLE_SAUT_INTRO_AUTO = "tentacle_auto_skip_intro";
@@ -42,10 +49,12 @@ export function creerMagasinSautIntro(
 
   const lireStockage = (): boolean => {
     try {
-      return stockage.getItem(cle) === "true";
+      // `!== "false"` et non `=== "true"` : c'est ce qui fait du défaut un OUI
+      // sans rien avoir à écrire au premier démarrage.
+      return stockage.getItem(cle) !== "false";
     } catch {
-      // Stockage illisible : éteint, ce qui est le pire cas acceptable.
-      return false;
+      // Stockage illisible : on rend le défaut, comme si rien n'avait été posé.
+      return true;
     }
   };
 
