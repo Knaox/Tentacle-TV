@@ -92,11 +92,13 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
  * gratuits sur une couche déjà rastérisée. Ils partent quand l'image arrive,
  * et au plus tard au bout de `REPLI_MS`.
  *
- * Ce repli n'est pas une ceinture de sécurité : sur Android, `react-native-svg`
- * n'émet JAMAIS `onLoad` pour une image distante — vérifié au logcat, le
- * rappel n'arrive pas une seule fois. Sans lui, le fondu ne démarre pas, le
- * halo reste à l'opacité zéro, et la lueur est purement et simplement absente
- * en production alors qu'elle est bien rendue.
+ * Ce repli n'est pas une ceinture de sécurité. Sur Android, `react-native-svg`
+ * n'émet `SvgLoadEvent` que depuis `loadBitmap` — jamais depuis le chemin qui
+ * sert une image déjà en cache Fresco. Une bannière revue ne prévient donc
+ * personne, et c'est ce qu'on a relevé au logcat : le composant se monte à
+ * chaque diapositive, le rappel n'arrive pas une seule fois. Sans ce repli, le
+ * fondu ne démarre pas, le halo reste à l'opacité zéro, et la lueur est
+ * purement et simplement absente alors qu'elle est bien rendue.
  *
  * Un demi-quart de la durée du fondu : tvOS, où `onLoad` arrive, ne voit pas la
  * différence ; Android part sans attendre plus longtemps qu'un battement de
