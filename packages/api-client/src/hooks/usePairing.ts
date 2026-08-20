@@ -167,12 +167,19 @@ export function useDevicePairStatus(code: string | null) {
 
 /** Téléphone/web : confirme le code affiché par la TV (auth requise). */
 export function useDevicePairConfirm() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { code: string }) =>
       pairFetch<{ success: boolean; deviceName?: string }>("/device/confirm", {
         method: "POST",
         body: JSON.stringify({ code: data.code.toUpperCase() }),
       }),
+    // Le jumelage vient de créer une ligne d'appareil : les listes qui la
+    // montrent (la sienne, celle de l'admin) sont périmées à l'instant même.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
+      qc.invalidateQueries({ queryKey: ["paired-devices"] });
+    },
   });
 }
 
@@ -184,9 +191,15 @@ export interface TvTokenResponse {
 
 /** Generate a long-lived TV token (web/mobile, requires auth) */
 export function useGenerateTvToken() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
       pairFetch<TvTokenResponse>("/tv-token", { method: "POST" }),
+    // Comme `useDevicePairConfirm` : une ligne d'appareil vient de naître.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-paired-devices"] });
+      qc.invalidateQueries({ queryKey: ["paired-devices"] });
+    },
   });
 }
 

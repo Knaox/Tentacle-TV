@@ -53,6 +53,8 @@ export default {
   noPairedDevices: "Aucun appareil jumelé.",
   lastActive: "Dernière activité : {{date}}",
   revoke: "Révoquer",
+  revokeConfirm: "Révoquer cet appareil ? Il faudra le jumeler à nouveau pour l'utiliser.",
+  devicesLoadError: "Impossible de charger vos appareils jumelés.",
 
   // Bandeau « jumelage expiré » (token Jellyfin de l'appareil mort côté serveur)
   pairingExpiredBanner: "Jumelage expiré — reconfirmez le jumelage depuis votre profil pour réactiver la sauvegarde de progression.",

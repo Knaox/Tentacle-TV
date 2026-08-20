@@ -6,6 +6,7 @@ import { getUserInfo } from "../components/userMenu/menuItems";
 import { PairingLockedNotice } from "../components/pair/PairingLockedNotice";
 import { PairedDevicesSection } from "../components/admin/PairedDevicesSection";
 import { ProvisioningCodeSection } from "../components/admin/ProvisioningCodeSection";
+import { MyDevicesSection } from "../components/settings/MyDevicesSection";
 
 /**
  * Résout l'URL serveur à transmettre à la TV au jumelage.
@@ -241,13 +242,23 @@ export function PairDevice() {
           </>
         )}
 
-        {/* Gestion admin : appareils jumelés + code de provisionnement */}
-        {isAdmin && (
-          <div className="mt-10">
-            <PairedDevicesSection />
-            <ProvisioningCodeSection />
-          </div>
-        )}
+        {/* Appareils jumelés — l'admin voit ceux de tout le monde (plus le code
+            de provisionnement), chacun voit les siens.
+
+            Cette page n'offrait la liste QU'À l'administrateur. Un compte
+            ordinaire pouvait donc jumeler un téléviseur ici, et n'avait ensuite
+            aucun endroit pour le voir ni le révoquer — la seule liste de ses
+            propres appareils était enterrée dans Réglages > Sécurité. */}
+        <div className="mt-10">
+          {isAdmin ? (
+            <>
+              <PairedDevicesSection />
+              <ProvisioningCodeSection />
+            </>
+          ) : (
+            <MyDevicesSection />
+          )}
+        </div>
       </main>
     </div>
   );
