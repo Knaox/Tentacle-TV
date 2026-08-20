@@ -1,6 +1,6 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
-import { isJellyfinWsConnected } from "./jellyfinWs";
+import { sessionsSuiviesEnDirect } from "./jellyfinWs";
 
 const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -28,9 +28,15 @@ async function jfFetch<T>(path: string): Promise<T | null> {
 }
 
 async function poll(): Promise<void> {
-  // Si le WebSocket Jellyfin est connecté, il gère déjà les notifications en
-  // temps réel — inutile de poller (économie de 3 requêtes / 5 min).
-  if (isJellyfinWsConnected()) return;
+  // Le WebSocket ne dispense QUE de ce qu'il livre vraiment.
+  //
+  // Il dispensait de tout : « socket ouverte » suffisait à sauter le relevé
+  // entier. Or une socket ouverte sur une clé d'API ne pousse RIEN d'elle-même
+  // (mesuré — voir l'en-tête de `jellyfinWs.ts`) : le secours dormait derrière
+  // un canal muet, et l'accueil ne bougeait plus jamais tout seul. Depuis
+  // l'abonnement `SessionsStart`, la socket couvre les lectures, et rien
+  // d'autre : les ajouts de bibliothèque restent à notre charge.
+  const lecturesEnDirect = sessionsSuiviesEnDirect();
   try {
     // 1. Check item count changes (recently added)
     const counts = await jfFetch<{ MovieCount?: number; SeriesCount?: number; EpisodeCount?: number }>(
@@ -59,7 +65,11 @@ async function poll(): Promise<void> {
       lastLatestIds = ids;
     }
 
-    // 3. Check active sessions (playback activity)
+    // 3. Check active sessions (playback activity) — sauf si le WebSocket les
+    //    suit déjà, auquel cas ce relevé arriverait après la bataille. On
+    //    repart alors froid : le compte d'avant la veille ne vaut plus rien et
+    //    ferait diffuser un faux changement au réveil.
+    if (lecturesEnDirect) { lastSessionCount = null; return; }
     const sessions = await jfFetch<Array<{ NowPlayingItem?: unknown }>>(
       "/Sessions",
     );
