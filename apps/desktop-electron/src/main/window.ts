@@ -12,12 +12,8 @@ import { windowIconPath } from "./appIcon";
 import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { lockNavigation } from "./security";
-import {
-  basculer as basculerPleinEcran,
-  estEnPleinEcran,
-  fermerSessionLecteur,
-  ouvrirSessionLecteur,
-} from "./fullscreen";
+import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
+import { fermerSessionLecteur, ouvrirSessionLecteur } from "./sessionLecteurPleinEcran";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -235,10 +231,10 @@ export function enterPlayerFullscreenScope(): boolean {
 /**
  * Ferme la session plein écran du lecteur.
  *
- * La fenêtre retrouve EXACTEMENT le mode qui était le sien avant le film —
- * fenêtrée, zoomée, ou en plein écran si elle y était déjà. Même règle sur les
- * deux systèmes ; ce qui diffère est la mécanique, détaillée dans
- * `fermerSessionLecteur`.
+ * Sur macOS la fenêtre ne bouge PAS : fenêtrée, zoomée ou en plein écran, elle
+ * reste comme l'utilisateur l'a laissée. Sous Windows elle retrouve le mode
+ * d'avant le film, parce que le plein écran y est une parade qui la laisserait
+ * sans cadre. Tout est dans `fermerSessionLecteur`.
  */
 export function leavePlayerFullscreenScope(): void {
   const win = mainWindow;
