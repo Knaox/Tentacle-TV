@@ -4,6 +4,7 @@ import type { SegmentTimestamps } from "@tentacle-tv/shared";
 import { donnerFocus } from "../focus/active";
 import { lireEtat, useEtatLecteurTv } from "@tentacle-tv/tv-core";
 import { poserFocusOsd } from "./focusOsd";
+import { useDecompteSautIntro } from "./sautIntroAuto";
 import { ATTRIBUT_SURCOUCHE } from "./okOverlay";
 
 /**
@@ -34,9 +35,13 @@ interface ProprietesSaut {
   segment: SegmentTimestamps | null | undefined;
   libelle: string;
   onSauter: (secondes: number) => void;
+  /** Secondes restantes du saut automatique, `null` s'il n'est pas armé. */
+  compte?: number | null;
+  /** Refuser le saut automatique pour ce passage sur l'intro. */
+  onAnnuler?: () => void;
 }
 
-function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
+function BoutonSaut({ visible, segment, libelle, onSauter, compte = null, onAnnuler }: ProprietesSaut) {
   const bouton = useRef<HTMLButtonElement>(null);
   const etat = useEtatLecteurTv();
 
@@ -85,7 +90,7 @@ function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
 
   if (!affiche || !segment) return null;
 
-  return (
+  const sauter = (
     <button
       ref={bouton}
       type="button"
@@ -97,6 +102,42 @@ function BoutonSaut({ visible, segment, libelle, onSauter }: ProprietesSaut) {
       }}
     >
       {libelle}
+    </button>
+  );
+
+  // Hors décompte, le bouton reste exactement ce qu'il était : seul, à sa
+  // place. L'îlot n'apparaît que le temps des trois secondes.
+  if (compte === null || !onAnnuler) return sauter;
+
+  return (
+    <div className="saut-tv-ilot">
+      {sauter}
+      <BoutonRefus onAnnuler={onAnnuler} />
+    </div>
+  );
+}
+
+/**
+ * Le refus, à côté du saut.
+ *
+ * Pas une croix : à trois mètres, on ne vise pas une cible de trente-deux
+ * pixels. Un second bouton, que les flèches atteignent depuis le premier — et
+ * qui ne paraît que pendant le décompte, pour ne pas encombrer un écran où il
+ * n'y a rien à refuser.
+ */
+function BoutonRefus({ onAnnuler }: { onAnnuler: () => void }) {
+  const { t } = useTranslation("player");
+  return (
+    <button
+      type="button"
+      className="saut-tv saut-tv--refus"
+      {...{ [ATTRIBUT_SURCOUCHE]: "" }}
+      onClick={(evenement) => {
+        evenement.stopPropagation();
+        onAnnuler();
+      }}
+    >
+      {t("player:dismiss")}
     </button>
   );
 }
@@ -122,13 +163,26 @@ export function BoutonsSautTv({
 }: ProprietesSauts) {
   const { t } = useTranslation("player");
 
+  // Le saut automatique ne concerne que l'intro : ce qui suit un générique,
+  // c'est l'épisode d'après, et la carte « à suivre » a son propre décompte.
+  const sautIntro = useDecompteSautIntro({
+    visible: !!showSkipIntro && !!introSegment,
+    sauter: () => { if (introSegment) handleSeek(introSegment.end); },
+  });
+
   return (
     <>
       <BoutonSaut
-        visible={!!showSkipIntro}
+        visible={sautIntro.montrer}
         segment={introSegment}
-        libelle={t("player:skipIntro")}
+        libelle={
+          sautIntro.compte !== null
+            ? t("player:skipIntroIn", { seconds: sautIntro.compte })
+            : t("player:skipIntro")
+        }
         onSauter={handleSeek}
+        compte={sautIntro.compte}
+        onAnnuler={sautIntro.annuler}
       />
       {/* Réservé au cas où il n'y a RIEN après : quand un épisode suit, c'est
           la carte « à suivre » qui prend sa place — avec la vignette et le

@@ -54,6 +54,7 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   // Une unité SVG ≈ un pixel de la source : le filtre travaille alors dans
   // l'espace où la matière existe vraiment, et pas un pixel plus fin.
   const k = Math.max(1, Math.round(cardW / sourceW));
+  console.log("[HALO-MESURE]", JSON.stringify({ os: require("react-native").Platform.OS, densite: require("react-native").PixelRatio.get(), fenetre: require("react-native").Dimensions.get("window"), cardW, cardH, sigma, k, stdDeviation: sigma / k }));
   const bleed = PORTEE * sigma;
   const w = (cardW + 2 * bleed) / k;
   const h = (cardH + 2 * bleed) / k;
