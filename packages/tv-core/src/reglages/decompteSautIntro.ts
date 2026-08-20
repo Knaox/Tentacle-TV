@@ -52,13 +52,30 @@ export function creerUseDecompteSautIntro(usePreference: () => boolean) {
     const sauterRef = useRef(sauter);
     sauterRef.current = sauter;
 
+    /**
+     * L'état courant en MIROIR, et le saut joué HORS du réducteur.
+     *
+     * Il était joué dedans — `setEtat(precedent => { … sauterRef.current() … })`
+     * — et React exécute les fonctions de mise à jour pendant la phase de
+     * RENDU. Sauter, c'est déplacer la tête de lecture, donc poser un état sur
+     * le lecteur : React le signalait mot pour mot, « Cannot update a component
+     * (`PlayerScreen`) while rendering a different component
+     * (`TVSkipSegmentButton`) ». Rien ne garantit non plus qu'un réducteur ne
+     * soit appelé qu'une fois — le saut pouvait partir deux fois.
+     *
+     * La décision reste pure et testée dans `@tentacle-tv/shared` ; on la lit
+     * simplement sur un miroir plutôt que dans le réducteur. `pousser` n'est
+     * appelé que depuis des effets, un minuteur et un gestionnaire de touche :
+     * jamais pendant un rendu.
+     */
+    const etatRef = useRef<EtatSautIntro>(REPOS);
+
     const pousser = useCallback((entree: EntreeSautIntro) => {
-      setEtat((precedent) => {
-        const [suivant, action] = deciderSautIntro(precedent, entree, visiblePrecedent.current);
-        if (action === "sauter") sauterRef.current();
-        return suivant;
-      });
+      const [suivant, action] = deciderSautIntro(etatRef.current, entree, visiblePrecedent.current);
+      etatRef.current = suivant;
+      setEtat(suivant);
       if (entree.type === "cadre") visiblePrecedent.current = entree.visible;
+      if (action === "sauter") sauterRef.current();
     }, []);
 
     // Viser une position suspend le décompte sans valoir refus : le lâcher le

@@ -222,7 +222,12 @@ export function DesktopPlayer({
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
   // Skip intro / credits segments
-  const showSkipIntro = introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;
+  // La lecture doit avoir VRAIMENT commencé. La fenêtre d'intro se calcule sur
+  // la position, qui vaut zéro avant la première image — et la plupart des
+  // génériques commencent à zéro : la pilule paraissait donc par-dessus l'écran
+  // de chargement, et le saut automatique partait à l'instant du lancement, sur
+  // une vidéo qui n'avait pas encore d'image.
+  const showSkipIntro = hasStartedRef.current && introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;
   const showSkipCredits = creditsSegment && actualPos >= creditsSegment.start && actualPos < creditsSegment.end - 1;
 
   // Show loading overlay: initial load OR source change (quality/audio switch).
