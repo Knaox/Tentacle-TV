@@ -1,5 +1,5 @@
-import { memo, forwardRef, useCallback, useRef } from "react";
-import { Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
+import { memo, forwardRef, useCallback, useRef, useState } from "react";
+import { Platform, Pressable, View, type ViewStyle, type GestureResponderEvent } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -53,6 +53,16 @@ interface FocusableProps {
  *  comme une hésitation quand on parcourt une rangée à la flèche. */
 const TIMING_FOCUS = { duration: FocusTiming.duration, easing: Easings.out };
 
+/**
+ * L'ombre s'anime-t-elle sans rien coûter ?
+ *
+ * Sur Apple, oui : `shadowOpacity` est une propriété de `CALayer`, animée par
+ * le compositeur. Sur Android, `shadowOpacity` ne dessine rien du tout (c'est
+ * `elevation` qui fait l'ombre) et `elevation` fait retrier tout le groupe de
+ * vues à chaque changement. On ne l'anime donc pas là-bas.
+ */
+const OMBRE_ANIMABLE = Platform.OS === "ios";
+
 const GLOW_VARIANTS: Record<FocusVariant, number> = {
   card: 0.5,
   default: 0.3,
@@ -99,17 +109,41 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   phantomPressGuard = false,
 }: FocusableProps, ref) {
   const progress = useSharedValue(0);
+  /**
+   * Le rang de peinture, en ÉTAT et non dans le worklet — c'est ce qui a rendu
+   * la navigation fluide sur Android.
+   *
+   * `zIndex` et `elevation` ne sont pas des propriétés de `RenderNode` comme
+   * `transform` : ce sont des propriétés de GROUPE. Les changer fait retrier au
+   * conteneur l'ordre de dessin de tous ses enfants, et l'invalide entièrement.
+   * Dans le worklet, cela se produisait à chaque image, pendant les 180 ms de
+   * chaque changement de focus, sur une rangée où une centaine de cellules sont
+   * montées — et pour deux `Focusable` à la fois, celui qui prend le focus et
+   * celui qui le perd. Mesuré au `dumpsys gfxinfo` : 23 % d'images en retard,
+   * dont 212 sur 217 imputées à « slow issue draw commands ».
+   *
+   * En état, le rang ne change plus que DEUX fois par déplacement. L'effet
+   * visuel est identique — l'échelle, elle, reste dans le worklet, où elle ne
+   * coûte rien.
+   *
+   * tvOS n'était pas concerné : `zPosition` et `shadowOpacity` s'y animent sur
+   * la couche, sans rien retrier. C'est toute l'asymétrie entre les deux
+   * téléviseurs.
+   */
+  const [aLeFocus, setALeFocus] = useState(false);
   // Anti clic-fantôme : un vrai press émet onPressIn (key-down) PUIS onPress
   // (key-up). Le press parasite d'un hold (key-down ailleurs) n'a pas d'onPressIn.
   const pressInRef = useRef(false);
 
   const handleFocus = useCallback(() => {
     progress.value = withTiming(1, TIMING_FOCUS);
+    setALeFocus(true);
     onFocus?.();
   }, [onFocus, progress]);
 
   const handleBlur = useCallback(() => {
     progress.value = withTiming(0, TIMING_FOCUS);
+    setALeFocus(false);
     pressInRef.current = false; // un pressIn non suivi de press ne doit pas persister
     onBlur?.();
   }, [onBlur, progress]);
@@ -133,17 +167,25 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   const buttonFill = variant === "playerButton" ? FocusPlayerButtonStyle : FocusButtonStyle;
   const buttonBorderWidth = variant === "playerButton" ? 0 : FocusButtonStyle.borderWidth;
 
+  // Le worklet ne porte plus QUE l'échelle — et, sur Apple, l'opacité de
+  // l'ombre, qui y est une propriété de couche. Voir `aLeFocus`.
   const scaleStyle = useAnimatedStyle(() => {
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
     return {
       transform: [{ scale: s }],
-      zIndex: interpolate(progress.value, [0, 1], [0, 10]),
-      ...(hasShadow ? {
-        shadowOpacity: interpolate(progress.value, [0, 1], [0, FocusGlow.shadowOpacity]),
-        elevation: interpolate(progress.value, [0, 1], [0, FocusGlow.elevation]),
-      } : {}),
+      ...(hasShadow && OMBRE_ANIMABLE
+        ? { shadowOpacity: interpolate(progress.value, [0, 1], [0, FocusGlow.shadowOpacity]) }
+        : {}),
     };
   });
+
+  /** Rang de peinture et relief, posés d'un coup au focus puis retirés au flou.
+   *  `elevation` ne sert qu'à Android — `shadowOpacity` et consorts n'y
+   *  dessinent rien — et c'est là qu'il coûte cher à animer. */
+  const rang: ViewStyle | false = aLeFocus && {
+    zIndex: 10,
+    ...(hasShadow && !OMBRE_ANIMABLE ? { elevation: FocusGlow.elevation } : {}),
+  };
 
   const glowBgStyle = useAnimatedStyle(() => ({
     opacity: interpolate(progress.value, [0, 1], [0, glowOpacity]),
@@ -200,6 +242,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
         // pour l'anneau.
         { transformOrigin: TV_CARD_FOCUS.origine },
         scaleStyle,
+        rang,
         hasGap && { margin: -RING_GAP, padding: RING_GAP },
         hasShadow && {
           shadowColor: FocusGlow.shadowColor,

@@ -23,7 +23,7 @@ import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
 import { TVHomeRows } from "../components/home/TVHomeRows";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
-import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
+import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
@@ -52,7 +52,7 @@ function HomeScreenInner({ navigation }: Props) {
     token: storage.getItem("tentacle_token"),
     onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
   });
-  const { setFocusedItem } = useAmbientFocus();
+  const setFocusedItem = usePoseurAmbiant();
   const { requestRailFocus, lastContentNodeRef } = useTVNav();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);

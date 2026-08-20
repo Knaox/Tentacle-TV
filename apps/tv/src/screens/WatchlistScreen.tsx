@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
-import { AmbientFocusProvider, useAmbientFocus } from "../contexts/AmbientFocusContext";
+import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { TVLibraryGrid } from "../components/library/TVLibraryGrid";
 import { TVCollectionEmpty } from "../components/library/TVCollectionEmpty";
@@ -34,7 +34,7 @@ export function WatchlistScreen(props: Props) {
 function WatchlistScreenInner({ navigation }: Props) {
   const { t } = useTranslation("common");
   const { data, isLoading } = useWatchlistAll();
-  const { setFocusedItem } = useAmbientFocus();
+  const setFocusedItem = usePoseurAmbiant();
   useTVRemote({ onBack: () => navigation.goBack() });
   // Sélection au rail → focus sur la 1ʳᵉ carte de la grille.
   const contentEntry = useTVContentEntry();

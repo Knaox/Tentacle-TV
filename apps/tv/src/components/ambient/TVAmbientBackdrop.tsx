@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, memo } from "react";
+import { useCallback, useEffect, useRef, useState, memo } from "react";
 import { View, Image, AccessibilityInfo, Dimensions } from "react-native";
 import Animated, {
+  runOnJS,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -8,7 +9,7 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useAmbientFocus } from "../../contexts/AmbientFocusContext";
+import { useItemAmbiant } from "../../contexts/AmbientFocusContext";
 import { Colors, AmbientConfig } from "../../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -23,7 +24,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
  * accessibility settings.
  */
 export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
-  const { focusedItem } = useAmbientFocus();
+  const focusedItem = useItemAmbiant();
   const client = useJellyfinClient();
   const [reduceMotion, setReduceMotion] = useState(false);
   const [layers, setLayers] = useState<{ a: MediaItem | null; b: MediaItem | null }>({
@@ -55,6 +56,8 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
   const pendingLayerRef = useRef<"a" | "b" | null>(null);
   const pendingItemIdRef = useRef<string | null>(null);
 
+  // PAS d'anti-rebond ici : `AmbientFocusProvider` en tient déjà un, et deux
+  // attentes en série feraient traîner le fond loin derrière la sélection.
   useEffect(() => {
     if (focusedItem == null) {
       pendingLayerRef.current = null;
@@ -69,17 +72,29 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
     setLayers((prev) => ({ ...prev, [incomingLayer]: focusedItem }));
   }, [focusedItem, aOpacity, bOpacity]);
 
+  /**
+   * La couche éteinte est DÉMONTÉE, pas laissée à zéro.
+   *
+   * C'est la première règle GPU du dépôt : ce qui n'est pas affiché ne doit
+   * rien consommer. Une image plein écran gardée à l'opacité nulle reste une
+   * texture à téléverser et une couche à composer.
+   */
+  const demonter = useCallback((couche: "a" | "b") => {
+    if (activeLayerRef.current === couche || pendingLayerRef.current === couche) return;
+    setLayers((prev) => (prev[couche] ? { ...prev, [couche]: null } : prev));
+  }, []);
+
   const handleLayerLoaded = (layer: "a" | "b", itemId: string) => {
     // Ignore les onLoad obsolètes (la sélection a déjà changé)
     if (pendingLayerRef.current !== layer || pendingItemIdRef.current !== itemId) return;
     const dur = reduceMotion ? 0 : AmbientConfig.crossfadeDuration;
-    if (layer === "a") {
-      aOpacity.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
-      bOpacity.value = withTiming(0, { duration: dur });
-    } else {
-      bOpacity.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
-      aOpacity.value = withTiming(0, { duration: dur });
-    }
+    const sortante = layer === "a" ? "b" : "a";
+    const entrante = layer === "a" ? aOpacity : bOpacity;
+    const partante = layer === "a" ? bOpacity : aOpacity;
+    entrante.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
+    partante.value = withTiming(0, { duration: dur }, (fini) => {
+      if (fini) runOnJS(demonter)(sortante);
+    });
     activeLayerRef.current = layer;
     pendingLayerRef.current = null;
   };
@@ -127,7 +142,10 @@ interface LayerProps {
 function Layer({ item, client, style, onLoaded }: LayerProps) {
   if (!item) return null;
   const backdropId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
-  const uri = client.getImageUrl(backdropId, "Backdrop", { width: 1280, quality: 70 });
+  // Source volontairement étroite : l'image vit à 0,32 d'opacité sous un scrim
+  // qui l'écrase encore. Aucun détail n'en réchappe, et chaque pixel de moins
+  // est un pixel de moins à décoder, à téléverser et à échantillonner.
+  const uri = client.getImageUrl(backdropId, "Backdrop", { width: AmbientConfig.sourceWidth, quality: 60 });
 
   return (
     <Animated.View style={[{ position: "absolute", inset: 0 }, style]}>
@@ -135,6 +153,10 @@ function Layer({ item, client, style, onLoaded }: LayerProps) {
         source={{ uri }}
         style={{ width: SCREEN_W, height: SCREEN_H }}
         resizeMode="cover"
+        // Fresco enchaîne un fondu de 300 ms sur CHAQUE image d'Android, en
+        // plus du nôtre : deux fondus superposés, et une couche redessinée à
+        // chaque image pendant un tiers de seconde. Le nôtre suffit.
+        fadeDuration={0}
         onLoad={() => onLoaded(item.Id)}
         // Suppress error visuals — backdrop is decorative
         onError={() => {}}
