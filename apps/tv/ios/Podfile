@@ -8,10 +8,12 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :tvos, min_ios_version_supported
 
 # Ancienne architecture, pour s'ALIGNER sur Android (`newArchEnabled=false`
-# dans android/gradle.properties). RN 0.76 active la New Architecture par
-# défaut ; on la désactive ici. Sinon le C++ Fabric de react-native-svg
-# (RNSVGLayoutableShadowNode) ne compile pas contre le Yoga de RN 0.76
+# dans android/gradle.properties). RN l'active par défaut depuis 0.76 ; on la
+# désactive ici. Sinon le C++ Fabric de react-native-svg
+# (RNSVGLayoutableShadowNode) ne compile pas contre le Yoga de RN
 # (`StyleSizeLength` absent) — incompatibilité propre à la New Arch.
+# NB : 0.81 est le DERNIER palier qui supporte encore l'ancienne architecture —
+# 0.82 la supprime. Ce sera le chantier de la prochaine montée de version.
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
 prepare_react_native_project!

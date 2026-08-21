@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { BackHandler, Platform } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 
-// react-native-tvos 0.76 exports useTVEventHandler as a hook (not a class)
+// react-native-tvos exports useTVEventHandler as a hook (not a class)
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { useTVEventHandler } = require("react-native") as {
   useTVEventHandler: (callback: (evt: { eventType: string; eventKeyAction?: number }) => void) => void;

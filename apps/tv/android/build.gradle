@@ -2,15 +2,28 @@ buildscript {
     ext {
         buildToolsVersion = "36.1.0"
         minSdkVersion = 26
-        compileSdkVersion = 35
+        // RN 0.81 : ses AAR sont compilés en compileSdk 36 — AGP refuse de les
+        // consommer depuis un compileSdk inférieur. targetSdk reste 34 (niveau
+        // exigé par Play pour le form factor TV) : le monter changerait le
+        // comportement runtime sans rien apporter ici.
+        compileSdkVersion = 36
         targetSdkVersion = 34
-        ndkVersion = "26.1.10909125"
-        kotlinVersion = "1.9.24"
+        // NDK 27 EXIGÉ par la règle Play « tailles de page de mémoire de 16 Ko » :
+        // lui seul aligne les segments ELF sur 16 Ko, et lui seul honore le
+        // -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON que reanimated et screens
+        // passent DÉJÀ à CMake — le NDK 26 l'ignorait en silence, d'où des
+        // libreanimated/libworklets/librnscreens à 4 Ko et l'AAB rejeté.
+        // Le workflow tv.yml installe la MÊME version (sdkmanager "ndk;…").
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
     }
 }
 
 plugins {
-    id("com.android.application") version "8.2.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
+    // AGP ≥ 8.5.1 aligne aussi les .so non compressées sur 16 Ko DANS le zip
+    // de l'AAB — l'autre moitié de la règle 16 Ko, que l'AGP 8.2.2 précédent
+    // ne faisait pas. 8.11.0 = version de référence de RN 0.81.
+    id("com.android.application") version "8.11.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.1.20" apply false
     id("com.facebook.react.rootproject")
 }
