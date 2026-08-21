@@ -211,10 +211,11 @@ export function usePlaybackReporting({
   useEffect(() => {
     return () => {
       clearProgressInterval();
+      // Le kill passe DEVANT le garde « la lecture a démarré » (cf. reportStop).
+      killActiveEncoding(clientRef.current, playSessionIdRef.current);
       const id = itemIdRef.current;
       if (!id || !startedRef.current) return;
       startedRef.current = false;
-      killActiveEncoding(clientRef.current, playSessionIdRef.current);
       lastStopPromiseRef.current = sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
         ItemId: id,
         MediaSourceId: msIdRef.current ?? id,
@@ -229,10 +230,17 @@ export function usePlaybackReporting({
   // the final position before invalidating caches.
   const reportStop = useCallback((): Promise<void> => {
     clearProgressInterval();
+    // Le transcodage est lancé par la REQUÊTE DE FLUX, pas par `reportStart` :
+    // ffmpeg tourne déjà pendant que le lecteur charge. Tant que le kill était
+    // derrière le garde ci-dessous, sortir avant la première image laissait un
+    // encodage vivant et ses fichiers temporaires sur le serveur. Il passe donc
+    // devant : sans `playSessionId`, killActiveEncoding ne fait rien de toute
+    // façon. Le `/Sessions/Playing/Stopped`, lui, reste gardé — rapporter
+    // l'arrêt d'une lecture jamais commencée serait faux.
+    killActiveEncoding(clientRef.current, playSessionIdRef.current);
     const id = itemIdRef.current;
     if (!id || !startedRef.current) return Promise.resolve();
     startedRef.current = false;
-    killActiveEncoding(clientRef.current, playSessionIdRef.current);
     return sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
       ItemId: id,
       MediaSourceId: msIdRef.current ?? id,
