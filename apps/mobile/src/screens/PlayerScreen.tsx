@@ -1,15 +1,12 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
-import Video, { type OnProgressData, type OnLoadData, type VideoRef, SelectedTrackType } from "react-native-video";
-import { useRouter } from "expo-router";
-import { backOrHome } from "@/utils/backOrHome";
+import Video, { type VideoRef, SelectedTrackType } from "react-native-video";
 import { PLAYER } from "@/theme";
-import { useQueryClient } from "@tanstack/react-query";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { Feather } from "@expo/vector-icons";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
+import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
@@ -22,13 +19,9 @@ interface Props { itemId: string }
 
 export function PlayerScreen({ itemId }: Props) {
   const { t } = useTranslation("player");
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const videoRef = useRef<VideoRef>(null);
 
   const pb = usePlayerPlayback(itemId);
-  const jfClient = useJellyfinClient();
-  const userId = useUserId();
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -119,113 +112,16 @@ export function PlayerScreen({ itemId }: Props) {
     [pb.streams],
   );
 
-  const handleLoad = useCallback((_data: OnLoadData) => {
-    setIsBuffering(false);
-    setVideoReady(true);
-    hasEverPlayed.current = true;
-
-    // First load: resume from metadata; subsequent loads (track change): use current position
-    const targetPosition = resumeApplied.current
-      ? pb.positionRef.current
-      : (pb.item?.UserData?.PlaybackPositionTicks ?? 0) / TICKS_PER_SECOND;
-    resumeApplied.current = true;
-
-    if (targetPosition > 0) {
-      if (pb.isDirectPlay) {
-        // Direct play: seek absolute (startPosition should already have positioned,
-        // but seek as backup)
-        videoRef.current?.seek(targetPosition);
-      } else {
-        // Transcode: HLS stream starts at streamOffset,
-        // so seek to (target - streamOffset) within the stream
-        const seekInStream = targetPosition - pb.streamOffset;
-        if (seekInStream > 1) {
-          videoRef.current?.seek(seekInStream);
-        }
-      }
-    }
-
-    pb.reporting.reportStart(targetPosition);
-  }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef]);
-
-  const handleProgress = useCallback((data: OnProgressData) => {
-    const raw = Math.max(0, data.currentTime);
-    const pos = raw + pb.streamOffset;
-    setCurrentTime(pos);
-    setBufferedTime(data.playableDuration > 0 ? data.playableDuration + pb.streamOffset : 0);
-    pb.positionRef.current = pos;
-    pb.reporting.updatePosition(pos, paused);
-  }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]);
-
-  const handleEnd = useCallback(() => {
-    pb.reporting.reportStop();
-    invalidateAndGoBack();
-  }, [router, pb.reporting]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleError = useCallback((e: unknown) => {
-    // Guard against duplicate onError from ExoPlayer or race with retryingRef
-    if (retryingRef.current) return;
-    const errorDetail = e && typeof e === "object" ? JSON.stringify(e) : String(e);
-    if (retryCount.current < 1) {
-      // First error = expected on emulators / unsupported codecs → auto-retry with transcode
-      console.log("[Tentacle:Player] onError — retrying with transcode fallback", errorDetail);
-      retryCount.current++;
-      retryingRef.current = true;
-      pb.retry();
-    } else {
-      // All retries exhausted — show error screen
-      console.error("[Tentacle:Player] onError — all retries exhausted", errorDetail);
-      setPlayerError(t("playbackError"));
-    }
-  }, [pb, t]);
-
-  const handleSeek = useCallback((seconds: number) => {
-    const dur = pb.jellyfinDuration || 0;
-    const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
-    const offset = pb.streamOffset;
-    videoRef.current?.seek(Math.max(0, clamped - offset));
-    pb.reporting.reportSeek(clamped, paused);
-  }, [pb.jellyfinDuration, pb.streamOffset, paused, pb.reporting]);
-
-  // Invalidate home queries so watch state refreshes
-  const invalidateAndGoBack = useCallback(() => {
-    pb.reporting.reportStop();
-    // Remove from personal watchlist if fully watched
-    jfClient.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    backOrHome(router);
-  }, [router, pb.reporting, queryClient, itemId, jfClient, userId]);
-
-  const handleNextEpisode = useCallback(() => {
-    const next = pb.episodeNav.nextEpisode;
-    if (!next) return;
-    pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    router.replace(`/watch/${next.Id}`);
-  }, [pb.episodeNav.nextEpisode, pb.reporting, queryClient, router]);
-
-  const handlePrevEpisode = useCallback(() => {
-    const prev = pb.episodeNav.previousEpisode;
-    if (!prev) return;
-    pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    router.replace(`/watch/${prev.Id}`);
-  }, [pb.episodeNav.previousEpisode, pb.reporting, queryClient, router]);
+  const {
+    handleLoad, handleProgress, handleEnd, handleError, handleSeek,
+    invalidateAndGoBack, handleNextEpisode, handlePrevEpisode,
+  } = usePlayerHandlers({
+    itemId, pb, videoRef, paused,
+    resumeApplied, retryCount, retryingRef, hasEverPlayed,
+    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
+  });
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
-
-  // Cleanup on unmount — report stop + refresh resume lists
-  // Note: don't invalidate ["item", itemId] here — it's already done in
-  // invalidateAndGoBack, and double-invalidation resets MediaDetail animations
-  useEffect(() => () => {
-    pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Error screen — from playback hook (HTTP error) or player (codec/stream error)
   if ((pb.error || playerError) && !pb.isLoading) {

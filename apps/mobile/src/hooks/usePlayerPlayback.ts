@@ -43,6 +43,9 @@ const INITIAL_STATE: PlaybackState = {
   startPositionMs: 0, headers: {},
 };
 
+/** Tout ce que le hook rend à l'écran — repris tel quel par `usePlayerHandlers`. */
+export type PlayerPlayback = ReturnType<typeof usePlayerPlayback>;
+
 export function usePlayerPlayback(itemId: string) {
   const client = useJellyfinClient();
   const userId = useUserId();
