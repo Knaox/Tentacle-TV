@@ -119,6 +119,7 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
 - **Performance**: use `memo`, `useCallback`, `useMemo` to prevent re-renders; lazy load images with shimmer skeletons
 - **Video**: direct play first, 30s pre-buffer, automatic transcode fallback on codec errors
+- **Un commit par étape** — chaque correctif, extraction ou bump se commite seul, dès qu'il tient debout (`lint` + `typecheck` passés). Jamais un gros commit fourre-tout en fin de chantier : une étape qui se révèle mauvaise doit pouvoir être annulée sans emporter les autres. Commiter ne vaut PAS publier — pas de tag, pas de `push`, pas de dispatch CI sans demande explicite.
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
