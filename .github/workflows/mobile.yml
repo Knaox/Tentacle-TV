@@ -133,11 +133,13 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      # NB : PAS de `sdkmanager "ndk;26.1.10909125"` — c'est la NDK figée de la TV.
-      # Le mobile (Expo SDK 54 / RN 0.81) résout sa NDK via expo-root-project et
-      # s'appuie sur la NDK préinstallée du runner, comme le faisait release-play.yml.
-      # Si un jour « NDK not configured » apparaît : ajouter android-actions/setup-android@v3
-      # puis `sdkmanager "ndk;27.1.12297006"` (NDK d'Expo, PAS celle de la TV).
+      # NB : aucune installation explicite de NDK ici — le mobile (Expo SDK 54 /
+      # RN 0.81) résout la sienne via expo-root-project et s'appuie sur celle,
+      # préinstallée, du runner, comme le faisait release-play.yml. Depuis que la
+      # TV est passée à RN 0.81 elle aussi, les deux visent la MÊME 27.1.12297006
+      # (celle qui aligne les .so sur 16 Ko) ; tv.yml, lui, l'installe en clair.
+      # Si un jour « NDK not configured » apparaît : ajouter
+      # android-actions/setup-android@v3 puis `sdkmanager "ndk;27.1.12297006"`.
       - name: Decode upload keystore
         id: keystore
         env:

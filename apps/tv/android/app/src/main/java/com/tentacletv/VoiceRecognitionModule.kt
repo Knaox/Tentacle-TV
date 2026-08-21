@@ -80,7 +80,7 @@ class VoiceRecognitionModule(reactContext: ReactApplicationContext) :
             }
         }
 
-        val activity = currentActivity
+        val activity = reactApplicationContext.currentActivity
         if (activity != null && intent.resolveActivity(context.packageManager) != null) {
             activity.startActivityForResult(intent, VOICE_REQUEST_CODE)
         } else {
@@ -102,7 +102,7 @@ class VoiceRecognitionModule(reactContext: ReactApplicationContext) :
 
     private fun createAndStartRecognizer(locale: String?) {
         // Prefer Activity context (required on some Android TV devices), fallback to app context
-        val ctx: Context = currentActivity ?: reactApplicationContext
+        val ctx: Context = reactApplicationContext.currentActivity ?: reactApplicationContext
         try {
             Log.d(TAG, "createAndStartRecognizer with context=${ctx.javaClass.simpleName}")
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(ctx).apply {
@@ -187,7 +187,7 @@ class VoiceRecognitionModule(reactContext: ReactApplicationContext) :
     }
 
     // ActivityEventListener — handle result from fallback intent and permission requests
-    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == VOICE_REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK && data != null) {
                 val matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
@@ -199,15 +199,19 @@ class VoiceRecognitionModule(reactContext: ReactApplicationContext) :
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         // Not needed
     }
 
-    override fun onCatalystInstanceDestroy() {
+    /** `onCatalystInstanceDestroy()` existe toujours — méthode par défaut de
+     *  NativeModule — mais RN 0.81 ne l'appelle PLUS : la destruction passe par
+     *  `invalidate()` (ModuleHolder, TurboModuleManager). La garder aurait laissé
+     *  le SpeechRecognizer vivant après le démontage du module. */
+    override fun invalidate() {
         UiThreadUtil.runOnUiThread {
             stopRecognizerInternal()
         }
-        super.onCatalystInstanceDestroy()
+        super.invalidate()
     }
 
     @ReactMethod

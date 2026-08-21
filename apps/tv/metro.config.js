@@ -6,8 +6,9 @@ const monorepoRoot = path.resolve(projectRoot, "../..");
 
 // Packages qui DOIVENT se résoudre vers une copie physique UNIQUE.
 //
-// 1. Instances React : api-client embarque React 19, l'app TV React 18 →
-//    deux instances React dans le bundle = crash de contexte.
+// 1. Instances React : api-client et l'app TV sont tous deux en React 19,
+//    mais deux COPIES physiques dans le bundle = deux instances = crash de
+//    contexte. Le singleton vaut donc même à versions identiques.
 // 2. Modules natifs avec ViewManagers : si deux copies JS du module finissent
 //    dans le bundle, la vue native est enregistrée deux fois →
 //    « Invariant Violation: Tried to register two views with the same name
