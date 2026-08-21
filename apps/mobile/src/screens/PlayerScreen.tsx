@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
+import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
@@ -120,6 +121,10 @@ export function PlayerScreen({ itemId }: Props) {
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
     setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
   });
+
+  // Android : libère l'encodage après un arrière-plan prolongé, et relance le
+  // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
+  usePlayerBackground(pb);
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
