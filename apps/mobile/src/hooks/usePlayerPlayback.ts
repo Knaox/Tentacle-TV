@@ -13,6 +13,7 @@ import {
   buildPlatformDeviceProfile, extractActualStartTicks,
   type TextTrackEntry,
 } from "./usePlaybackInfoFetch";
+import { noterSessionEncodage } from "../lib/transcodeSession";
 
 const DBG = "[Tentacle:Playback]";
 
@@ -188,10 +189,13 @@ export function usePlayerPlayback(itemId: string) {
     if (!courante) return;
     const precedente = sessionPrecedenteRef.current;
     sessionPrecedenteRef.current = courante;
+    // Trace sur disque, relue au lancement suivant : c'est le seul recours
+    // contre une application tuée en pleine lecture (cf. transcodeSession).
+    noterSessionEncodage(courante, client.getBaseUrl());
     if (!precedente || precedente === courante) return;
     console.log(DBG, "session supplantée — ancien transcodage libéré", { precedente, courante });
     void killTranscode(precedente);
-  }, [state.playSessionId, killTranscode]);
+  }, [state.playSessionId, killTranscode, client]);
 
   /** Direct play : update selectedAudioTrack only. Transcode : refetch with new audio. */
   const changeAudio = useCallback((newIndex: number) => {
