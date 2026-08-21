@@ -1,11 +1,11 @@
 {
   "$comment": "Source de vérité des versions publiées sur les stores desktop, lue par l'app (apps/web/src/lib/storeVersions.ts) via raw.githubusercontent.com. MAINTENU AUTOMATIQUEMENT par le job « manifest » de desktop.yml à chaque tag desktop-v* (.github/scripts/patch-store-manifest.mjs : version + notes FR/EN depuis changelogs/desktop.md ; patch-linux-manifest.mjs : assets linux). Les APIs stores ne sont pas fiables (iTunes Lookup ignore la fiche macOS d'une app en achat universel, WinRT n'expose pas la version d'une MAJ MSIX). Repli manuel si la CI échoue : node .github/scripts/patch-store-manifest.mjs <version>.",
   "macAppStore": {
-    "version": "1.20.7",
+    "version": "1.20.8",
     "appId": "6760205634",
     "notes": {
-      "fr": "• Les pages ouvertes par un plugin s'affichent enfin dans la police de l'application. Elles tournaient en police système, ce qui les faisait détonner sur chaque écran\n• Les pages apportées par un plugin peuvent être retirées de la barre de navigation depuis le menu « Bibliothèques » — elles y figurent par défaut\n• Le raccourci de recherche affiche ⌘K sur Mac au lieu de « Ctrl+K » ; les deux fonctionnaient déjà, seul l'affichage était faux\n• Une page de plugin reçoit le clavier dès son ouverture : ⌘K y ouvre sa propre recherche au lieu de la recherche globale",
-      "en": "• Pages opened by a plugin finally use the app's font. They were running on the system font, which made them stand out on every screen\n• Plugin pages can be removed from the navigation bar from the Libraries menu — they are pinned by default\n• The search shortcut hint shows ⌘K on Mac instead of \"Ctrl+K\"; both already worked, only the label was wrong\n• A plugin page receives the keyboard as soon as it opens: ⌘K opens its own search instead of the global one"
+      "fr": "• Nouveau réglage dans Réglages > Lecture : passer l'intro automatiquement. Éteint par défaut ; une fois allumé, le générique de début d'une série est passé au bout de trois secondes\n• Le décompte se lit sur le bouton habituel, qui ne bouge pas de place, et une croix discrète garde l'intro sur l'épisode en cours — sans renoncer au saut manuel",
+      "en": "• New setting under Settings > Playback: skip the intro automatically. Off by default; once on, a series' opening titles are skipped after three seconds\n• The countdown reads on the usual button, which does not move, and a discreet cross keeps the intro on the episode you are watching — without giving up the manual skip"
     }
   },
   "microsoftStore": {
