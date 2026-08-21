@@ -166,6 +166,30 @@ export function usePlayerPlayback(itemId: string) {
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
 
+  /**
+   * Une session en supplante une autre à CHAQUE `fetchPlaybackInfo` : palier de
+   * qualité, piste audio en transcodage, sous-titre bitmap à incruster, reprise
+   * après erreur de codec, épisode suivant. Jellyfin ouvre alors un nouvel
+   * encodage sans fermer le précédent — l'ancien ffmpeg continue d'écrire ses
+   * fichiers jusqu'au bout du film. On le libère à l'instant où son remplaçant
+   * apparaît, comme le fait le web (cf. `WatchWeb.tsx`).
+   *
+   * La comparaison porte sur DEUX identifiants explicites, jamais sur un ref
+   * partagé : c'est ce qui garantit qu'on ne tue pas la session qui vient de
+   * naître.
+   */
+  const { killTranscode } = reporting;
+  const sessionPrecedenteRef = useRef<string | null>(null);
+  useEffect(() => {
+    const courante = state.playSessionId;
+    if (!courante) return;
+    const precedente = sessionPrecedenteRef.current;
+    sessionPrecedenteRef.current = courante;
+    if (!precedente || precedente === courante) return;
+    console.log(DBG, "session supplantée — ancien transcodage libéré", { precedente, courante });
+    void killTranscode(precedente);
+  }, [state.playSessionId, killTranscode]);
+
   /** Direct play : update selectedAudioTrack only. Transcode : refetch with new audio. */
   const changeAudio = useCallback((newIndex: number) => {
     audioIndexRef.current = newIndex;
