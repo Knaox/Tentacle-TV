@@ -5,11 +5,13 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
-## [Unreleased]
+## [1.5.1]
 ### FR
-- Les pages de plugins ne se terminent plus derrière la barre d'onglets : elle flotte au-dessus d'elles, et l'application lui indique désormais de combien s'écarter (le bouton d'un panneau de filtres, par exemple, se retrouvait entièrement dessous)
+- Le serveur libère enfin la conversion vidéo dans tous les cas : changement de qualité ou de piste, sortie pendant le chargement, mise en veille prolongée, application fermée d'un coup. Plus de fichiers temporaires laissés derrière
+- Les pages de plugins ne se terminent plus derrière la barre d'onglets : elle flotte au-dessus d'elles, et l'application lui indique de combien s'écarter
 ### EN
-- Plugin pages no longer end up behind the tab bar: it floats above them, and the app now tells them how far to stay clear (a filter panel's button, for one, ended up entirely underneath)
+- The server now releases the video conversion in every case: quality or track change, leaving while it loads, a long spell in the background, a force-close. No leftover temporary files
+- Plugin pages no longer end up behind the tab bar: it floats above them, and the app now tells them how far to stay clear
 
 ## [1.5.0]
 ### FR
