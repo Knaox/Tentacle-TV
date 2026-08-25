@@ -8,8 +8,14 @@
 
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import { coucheEnHdr, espaceCouche } from "../video/coucheMetal";
-import { basculeEnCours, edrCapable, hdrActif, hdrSupporte } from "../video/displayHdr";
+import {
+  basculeEnCours,
+  edrCapable,
+  espaceRendu,
+  hdrActif,
+  hdrSupporte,
+  renduEnHdr,
+} from "../video/displayHdr";
 import { autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
@@ -276,8 +282,8 @@ export function registerVideoCommands(registry: CommandRegistry): void {
           // (mesuré, même film : 1,00 puis 12,82). `coucheHdr` dit ce que mpv
           // rapporte de sa couche Metal, ce qui ne dépend pas de la scène.
           // `null` = mpv n'a rien dit, et surtout pas « non ».
-          coucheHdr: coucheEnHdr(),
-          espaceCouche: espaceCouche(),
+          coucheHdr: renduEnHdr(),
+          espaceCouche: espaceRendu(),
         };
       },
     })
