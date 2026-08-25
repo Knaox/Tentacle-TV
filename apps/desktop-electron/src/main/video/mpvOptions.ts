@@ -34,6 +34,8 @@
  * protection sur tout le processus. Le prix est absurde.
  */
 
+import { montageLinux } from "../linux/session";
+import { socleLinux } from "../linux/optionsMpv";
 import { mpvApi } from "./mpvFfi";
 
 /**
@@ -80,4 +82,10 @@ export function poserOptions(
     api.setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
   }
   for (const [k, v] of Object.entries(SANS_SCRIPTS)) api.setOptionString(ctx, k, v);
+  // Sous Linux, le contexte GPU, la transmission HDR et le plein écran dépendent
+  // de la SESSION, que la page ne connaît pas. Voir `linux/optionsMpv.ts`.
+  const montage = montageLinux();
+  if (montage !== null) {
+    for (const [k, v] of Object.entries(socleLinux(montage))) api.setOptionString(ctx, k, v);
+  }
 }
