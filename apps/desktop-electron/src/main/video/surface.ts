@@ -138,7 +138,10 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
       const { SurfaceWayland } = require("../linux/surfaceWayland") as typeof import("../linux/surfaceWayland");
       return new SurfaceWayland(host);
     }
-    return new SurfaceInerte();
+    // ⚠️ `require` et non `import` : `x11.ts` ouvre `libX11.so.6` dès son
+    // chargement, comme `win32.ts` avec `user32.dll`.
+    const { SurfaceX11 } = require("../linux/surfaceX11") as typeof import("../linux/surfaceX11");
+    return new SurfaceX11(host);
   }
   if (process.platform === "darwin") {
     if (montageMacos() === "fenetre") {

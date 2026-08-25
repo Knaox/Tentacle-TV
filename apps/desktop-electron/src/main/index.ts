@@ -18,7 +18,7 @@ import {
 } from "./appProtocol";
 import { demarrerBattement } from "./battement";
 import { dossierDonnees } from "./cheminsDonnees";
-import { appliquerSessionGraphique } from "./linux/session";
+import { appliquerSessionGraphique, montageLinux } from "./linux/session";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -259,6 +259,12 @@ function main(): void {
     rendreVeilleEcran();
     stopDownloadsRuntime();
     closeLocalDb();
+    // La connexion X reste ouverte tant que la surface vidéo peut caler une
+    // fenêtre. Chargement paresseux : hors X11, le module n'est jamais importé,
+    // et `libX11.so.6` n'est jamais ouverte.
+    if (montageLinux() === "x11") {
+      (require("./linux/x11") as typeof import("./linux/x11")).fermerAffichageX11();
+    }
   });
 
   /**
