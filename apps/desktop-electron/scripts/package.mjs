@@ -103,14 +103,14 @@ function preparerRessources(stage) {
   // `webRoot()` et `libmpvPath()` cherchent `resources/web` et `resources/lib`.
   copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
   copier(
-    path.resolve(RACINE, "apps/desktop/src-tauri/lib/libmpv-2.dll"),
+    path.resolve(RACINE, "apps/desktop-electron/lib/mpv/libmpv-2.dll"),
     path.join(ressources, "lib", "libmpv-2.dll"),
     "libmpv-2.dll",
   );
   // L'icône est gravée dans l'exe par packager, mais `windowIconPath()` la
   // cherche aussi à l'exécution — même visuel des deux côtés.
   copier(
-    path.resolve(RACINE, "apps/desktop/src-tauri/icons/icon.ico"),
+    path.resolve(RACINE, "apps/desktop-electron/icons/icon.ico"),
     path.join(ressources, "icon.ico"),
     "icone",
   );
@@ -145,7 +145,7 @@ const chemins = await packager({
   // chargé au DÉMARRAGE : un échec ne dégraderait pas la lecture, il
   // empêcherait l'application de s'ouvrir.
   asar: { unpack: "**/*.node" },
-  icon: path.resolve(RACINE, "apps/desktop/src-tauri/icons/icon.ico"),
+  icon: path.resolve(RACINE, "apps/desktop-electron/icons/icon.ico"),
   extraResource,
   appCopyright: "Damien ROUGE",
 });

@@ -9,12 +9,12 @@
 # ENCODEURS ; le décodage H.264/HEVC/AV1/VP9 reste assuré par les décodeurs LGPL de
 # FFmpeg + VideoToolbox matériel). Le FFI Rust (dlopen libmpv.dylib) est inchangé.
 #
-# Sortie : dylibs LGPL pour l'ARCH HÔTE dans `src-tauri/lib/` (remplace les GPL).
+# Sortie : dylibs LGPL pour l'ARCH HÔTE dans `lib/mpv/` (remplace les GPL).
 # Pour un binaire UNIVERSAL (Intel + Apple Silicon), la CI lance ce script sur un
 # runner arm64 ET un runner x86_64, puis `lipo` les deux jeux (voir
 # build-mpv-lgpl-universal.sh / release-appstore.yml).
 #
-# Usage : bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
+# Usage : bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -22,13 +22,13 @@ FFMPEG_TAG="n7.1.1"   # libavcodec 62.x — aligné sur le bundle actuel
 MPV_TAG="v0.40.0"     # libmpv 2.x
 
 ARCH="$(uname -m)"    # arm64 | x86_64
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"          # apps/desktop
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"          # apps/desktop-electron
 # IMPORTANT : FFmpeg/mpv ne se compilent PAS dans un chemin contenant des espaces
 # (le repo est sous « Projet - local »). On build dans /tmp (sans espace) puis on
 # copie les dylibs finales dans le repo (collect-dylibs gère les espaces).
 WORK="/tmp/tentacle-mpv-lgpl/$ARCH"
 PREFIX="$WORK/prefix"
-OUT="$ROOT/src-tauri/lib"
+OUT="$ROOT/lib/mpv"
 export MACOSX_DEPLOYMENT_TARGET=14.0
 
 echo "==> Build LGPL libmpv/FFmpeg ($ARCH) — prefix=$PREFIX"
