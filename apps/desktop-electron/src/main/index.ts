@@ -18,6 +18,7 @@ import {
 } from "./appProtocol";
 import { demarrerBattement } from "./battement";
 import { dossierDonnees } from "./cheminsDonnees";
+import { appliquerSessionGraphique } from "./linux/session";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -139,6 +140,11 @@ function main(): void {
   }
 
   useExistingUserData();
+  // ⚠️ APRÈS le dossier de données — le choix s'y lit — et AVANT `whenReady` :
+  // Electron fixe sa plateforme d'affichage à ce moment-là, et un drapeau posé
+  // ensuite n'a plus d'effet. C'est ce choix qui décide du HDR et du montage
+  // de la fenêtre vidéo ; voir `linux/sessionGraphique.ts`.
+  appliquerSessionGraphique();
   registerAppScheme();
 
   // ⚠️ Le `.catch` n'est pas une précaution de style.
