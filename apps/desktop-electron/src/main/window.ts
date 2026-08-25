@@ -11,6 +11,7 @@ import path from "node:path";
 import { windowIconPath } from "./appIcon";
 import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
+import { optionsCadreLinux } from "./linux/fenetre";
 import { lockNavigation } from "./security";
 import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
 import { fermerSessionLecteur, ouvrirSessionLecteur } from "./sessionLecteurPleinEcran";
@@ -141,6 +142,9 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     // se retrouvent sur le contenu, et c'est la page qui doit leur rendre une
     // bande. Voir `macosTitleBar.ts`, qui porte aussi leur position.
     ...optionsCadreMacos(),
+    // Linux se range du côté de macOS : le drapeau à la construction, sans rien
+    // perdre du cadre ni du redimensionnement. Mesuré — voir `linux/fenetre.ts`.
+    ...optionsCadreLinux(),
     backgroundColor: "#000000",
     show: false,
     webPreferences: {
