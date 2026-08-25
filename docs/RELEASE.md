@@ -8,8 +8,8 @@
 
 - Node.js >= 20
 - pnpm >= 10
-- Rust stable + Tauri CLI (`pnpm add -Dg @tauri-apps/cli`) — **Linux** uniquement.
-  Windows et macOS sortent d’Electron et n’en ont plus besoin.
+- Rien de plus : les trois systèmes de bureau sortent d’Electron. La chaîne Rust
+  et Tauri ont disparu avec la migration de Linux.
 
 ## 1. Préparer une release
 
@@ -20,14 +20,12 @@
 ```
 
 - Le champ de la plateforme est la **source unique** : la CI injecte cette version
-  dans tous les artefacts (tauri.conf, Info.plist, versionName…).
+  dans tous les artefacts (package.json Electron, Info.plist, versionName…).
 - Les numéros de build (CFBundleVersion / versionCode) sont **auto-incrémentés**
   par la CI — plus rien à gérer.
 - Optionnel (builds desktop locaux) : garder `apps/desktop-electron/package.json`
-  (Electron — Windows, macOS) et `apps/desktop/src-tauri/tauri.conf.json`,
-  `Cargo.toml`, `apps/desktop/package.json` (Tauri — Linux) alignés sur
-  `versions.json → desktop`. La CI, elle, injecte la version dans le paquet
-  Electron avant l’empaquetage.
+  aligné sur `versions.json → desktop`. La CI, elle, injecte la version dans le
+  paquet Electron avant l’empaquetage — pour les trois systèmes.
 - Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`).
 
 ### Commit et tag
@@ -129,14 +127,21 @@ node scripts/package-macos.mjs --lib ../desktop/src-tauri/lib --arch arm64
 
 ### Linux
 
-- Coquille : **Tauri v2** (`apps/desktop`) — seule plateforme encore sur Tauri
-  (chaîne Rust + WebKitGTK requises).
-- Runner ubuntu-22.04 (glibc/webkit anciens = compat large), `.deb`/`.rpm`/AppImage
-  + repackage pacman (`.pkg.tar.zst`) dans un conteneur Arch.
-- libmpv chargé au runtime (dlopen) ; deps déclarées par les paquets
-  (libmpv + GStreamer good/bad/libav). AppImage : `mpv`/`fuse2` requis côté user.
+- Coquille : **Electron**, comme Windows et macOS. Même `apps/desktop-electron`,
+  même libmpv pilotée par koffi.
+- Runner **ubuntu-22.04**, et le choix n’est pas historique : la glibc est
+  compatible vers l’avant et jamais vers l’arrière. Une chaîne bâtie là tourne
+  sur Arch ; bâtie sur Arch, elle ne tournerait pas sur Ubuntu.
+- Les quatre formats sortent du même job — electron-builder produit le paquet
+  pacman lui-même, il n’y a plus de conteneur Arch.
+- **mpv est embarqué** (`scripts/build-mpv-linux.sh`, mis en cache sur l’empreinte
+  du script). FFmpeg en LGPL, mpv en **GPL** : son backend X11 vient de MPlayer et
+  meson le refuse hors GPL — sans lui, aucune vidéo sur les sessions X11.
 - Release GitHub `desktop-vX.Y.Z` + `SHA256SUMS` + manifeste auto-update commité
   sur `main` par le job `manifest`.
+- HDR : sessions **Wayland** seulement, avec un compositeur qui gère la couleur.
+  X.Org n’a pas de gestion de couleur et n’en aura pas. Voir
+  `docs/LINUX-FENETRE-VIDEO.md` pour le relevé complet.
 
 ### Android TV (Play Console uniquement)
 
@@ -172,5 +177,4 @@ de la piste de tests fermés « Alpha », puis installent depuis le Play Store d
 - [Microsoft Partner Center](https://partner.microsoft.com/dashboard)
 - [Google Play Console](https://play.google.com/console)
 - [App Store Connect](https://appstoreconnect.apple.com)
-- [Tauri v2 Documentation](https://v2.tauri.app) (coquille Linux)
 - [Electron Documentation](https://www.electronjs.org/docs/latest) (coquilles Windows et macOS)

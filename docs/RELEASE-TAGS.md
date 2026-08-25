@@ -64,7 +64,7 @@ auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
 
 | Tag | Workflow | Cibles |
 |-----|----------|--------|
-| `desktop-vX.Y.Z` | `desktop.yml` | macOS → App Store/TestFlight (universal LGPL, sandbox) · Windows → Microsoft Store (MSIX auto) · Linux → Release GitHub `desktop-v*` (.deb/.rpm/AppImage/.pkg.tar.zst) + manifeste auto-update |
+| `desktop-vX.Y.Z` | `desktop.yml` | macOS → App Store/TestFlight (universal LGPL, sandbox) · Windows → Microsoft Store (MSIX auto) · Linux → Release GitHub `desktop-v*` (.deb/.rpm/.pkg.tar.zst/AppImage, mpv embarqué) + manifeste auto-update |
 | `tv-vX.Y.Z` | `tv.yml` | Android TV → Play Console UNIQUEMENT (AAB, MÊME app que mobile `com.tentacletv.mobile`, **piste de tests fermés TV dédiée** — homonyme de la piste mobile mais identifiant API distinct, env `PLAY_TV_TRACK` ; AAB archivé en artefact ; plus d'APK GitHub) · Apple TV → TestFlight (`continue-on-error`) |
 | push `main` (sans tag) | `server.yml` | Image `ghcr.io/knaox/tentacle-tv` `:latest` + `:v<server>` ; Release GitHub `server-vX.Y.Z` **si** `versions.json → server` change dans le push |
 | `mobile-vX.Y.Z` | `mobile.yml` | iOS → TestFlight (`com.tentacle.mobile`, Info.plist patché) · Android → Play Console (AAB, MÊME fiche `com.tentacletv.mobile` que la TV, **piste de tests fermés mobile `alpha`** — id API distinct de la piste TV `tv:Alpha`, `versionCode = build` nu sous le préfixe TV `2e9+`). UN tag → iOS ET Android, notes `changelogs/mobile.md`. Dispatch `target` : `all`/`android`/`ios`. |
