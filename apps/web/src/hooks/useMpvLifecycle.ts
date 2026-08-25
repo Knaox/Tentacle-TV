@@ -1,7 +1,7 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { invoke, isElectronShell } from "../desktop/bridge";
 import { surfaceOpaque, surfaceTransparente } from "../lib/surfaceLecteur";
-import type { MpvEndFileEvent } from "tauri-plugin-libmpv-api";
+import type { MpvEndFileEvent } from "../lib/mpvTypes";
 import { queryTrackList } from "./mpvTrackList";
 import {
   awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
@@ -58,17 +58,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       if (!loaded || cancelled || !api) return;
 
       try {
-        // Render API custom sur macOS ET Linux SOUS TAURI (mpv dessine dans
-        // notre surface GL, pas de fenêtre native).
-        //
-        // ⚠️ La coquille Electron macOS est le cas contraire, et il ne se
-        // devine pas depuis le système seul : mpv y crée SA fenêtre, qu'on
-        // attache sous la nôtre. C'est même ce qu'on veut — c'est cette
-        // fenêtre qui porte la couche Metal, donc tout le HDR. La distinction
-        // porte sur la COQUILLE, pas sur la plateforme.
-        const renderApi = !isElectronShell() && (isMacOS() || isLinux());
         await withTimeout(api.init({
-          initialOptions: buildMpvInitOptions(renderApi),
+          initialOptions: buildMpvInitOptions(),
           observedProperties: OBSERVED_PROPERTIES,
         }), 8000, "mpv-init");
         if (cancelled) return;
@@ -316,7 +307,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           }
           case "end-file": {
             // Only set eof for real EOF — not for loadfile replacements (Bug 7)
-            const reason = (event as MpvEndFileEvent).reason;
+            const reason = (event as unknown as MpvEndFileEvent).reason;
             wtLog("mpv", `end-file (reason=${reason})`, { pos: positionRef.current.toFixed(1) });
             setState((prev) => ({ ...prev, playing: false, eof: reason === "eof" }));
             break;
