@@ -19,6 +19,8 @@
 
 import type { BrowserWindow } from "electron";
 
+import { montageLinux } from "../linux/session";
+
 /**
  * Ce qu'une surface vidéo doit savoir faire, quel que soit le système.
  *
@@ -73,8 +75,7 @@ export interface VideoSurface {
  * Elle existe pour que l'application DÉMARRE et se diagnostique là où la vidéo
  * n'est pas prête, plutôt que de tomber à la première commande. Le panneau de
  * diagnostic reste donc lisible sur un système en cours de portage — c'est
- * précisément là qu'on en a le plus besoin. Linux tient encore sur Tauri ; le
- * jour où il passera ici, c'est cette classe qu'il remplacera.
+ * précisément là qu'on en a le plus besoin.
  */
 class SurfaceInerte implements VideoSurface {
   attach(): void {}
@@ -129,6 +130,16 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
     const { VideoWindow } = require("./videoWindow") as typeof import("./videoWindow");
     return new VideoWindow(host);
   }
+  if (process.platform === "linux") {
+    // Deux montages, décidés par la session au démarrage (`linux/session.ts`).
+    // Wayland : deux fenêtres plein écran, rien à caler, HDR possible.
+    // X11     : calage et empilement à la main, comme Windows, sans HDR.
+    if (montageLinux() === "wayland") {
+      const { SurfaceWayland } = require("../linux/surfaceWayland") as typeof import("../linux/surfaceWayland");
+      return new SurfaceWayland(host);
+    }
+    return new SurfaceInerte();
+  }
   if (process.platform === "darwin") {
     if (montageMacos() === "fenetre") {
       const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
@@ -142,6 +153,7 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
 
 /** Le montage en vigueur, pour le journal et le diagnostic. */
 export function montageVideo(): string {
+  if (process.platform === "linux") return `linux/${montageLinux() ?? "inconnu"}`;
   if (process.platform !== "darwin") return process.platform;
   return montageMacos();
 }
