@@ -19,13 +19,13 @@
  * # Le lecteur, et pourquoi il vient d'ailleurs
  *
  * Les dylibs livrées sont celles que
- * `apps/desktop/scripts/build-mpv-lgpl-macos.sh` recompile en **LGPL** (mpv sans
+ * `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh` recompile en **LGPL** (mpv sans
  * `gpl=true`, FFmpeg sans `--enable-gpl`, ni x264 ni x265) — exactement la chaîne
  * déjà validée par Apple pour le paquet Tauri. On les reçoit par `--lib`,
  * universelles, et on les pose dans `Contents/Frameworks` : Apple refuse du code
  * exécutable sous `Resources`, et c'est là que `libmpvPath()` les cherche.
  *
- * Le développement charge la MÊME chaîne, depuis `apps/desktop/src-tauri/lib`
+ * Le développement charge la MÊME chaîne, depuis `apps/desktop-electron/lib/mpv`
  * (`mpvLib.ts`) : la mpv de Homebrew est GPL et n'est plus qu'un repli explicite.
  *
  *   node scripts/package-macos.mjs --lib <dossier de dylibs> [options]
@@ -135,7 +135,7 @@ function preparerRessources(stage) {
   // cherche `resources/web`, `appImagePath()` cherche `resources/icon.png`.
   copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
   copier(
-    path.resolve(RACINE, "apps/desktop/src-tauri/icons/icon.png"),
+    path.resolve(RACINE, "apps/desktop-electron/icons/icon.png"),
     path.join(ressources, "icon.png"),
     "icone du Dock",
   );
@@ -172,7 +172,7 @@ function poserDylibs(appPath) {
   if (!existsSync(path.join(frameworks, "libMoltenVK.dylib"))) {
     throw new Error(
       "libMoltenVK.dylib absente du jeu de dylibs : le paquet n'afficherait aucune image.\n" +
-        "  → relancer apps/desktop/scripts/build-mpv-lgpl-macos.sh, qui la copie désormais.",
+        "  → relancer apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh, qui la copie désormais.",
     );
   }
   writeFileSync(
@@ -269,7 +269,7 @@ const chemins = await packager({
   // l'option dit « x64 » ; sa sémantique est « ces fichiers-là sont mono-arch
   // volontairement ».
   osxUniversal: { x64ArchFiles: "**/*.node" },
-  icon: path.resolve(RACINE, "apps/desktop/src-tauri/icons/icon.icns"),
+  icon: path.resolve(RACINE, "apps/desktop-electron/icons/icon.icns"),
   extraResource,
   appBundleId: IDENTIFIANT,
   appVersion: version,

@@ -19,7 +19,7 @@ Conformément à la LGPL v2.1+ :
 - Le **code source** des versions utilisées est disponible publiquement :
   - mpv — https://mpv.io / https://github.com/mpv-player/mpv (tag du build : voir `scripts/build-mpv-lgpl-macos.sh`)
   - FFmpeg — https://ffmpeg.org / https://github.com/FFmpeg/FFmpeg (tag du build : voir `scripts/build-mpv-lgpl-macos.sh`)
-- La recette de compilation LGPL exacte est versionnée : `apps/desktop/scripts/build-mpv-lgpl-macos.sh`.
+- La recette de compilation LGPL exacte est versionnée : `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`.
 
 > Note : x264 et x265 (encodeurs, GPL) ne sont **pas** inclus. Un lecteur ne fait que **décoder** ;
 > le décodage H.264/HEVC/AV1/VP9 est assuré par les décodeurs LGPL de FFmpeg + VideoToolbox (Apple).
@@ -32,7 +32,7 @@ déclaré par `MoltenVK_icd.json`).
 
 - Source : https://github.com/KhronosGroup/MoltenVK — version livrée : celle de la
   formule Homebrew `molten-vk` au moment du build (voir
-  `apps/desktop/scripts/build-mpv-lgpl-macos.sh`).
+  `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`).
 - Rôle : mpv rend l'image par `gpu-context=macvk`, c'est-à-dire Vulkan traduit
   vers Metal. `libvulkan.1.dylib` n'est que le chargeur ; sans ce pilote il
   n'énumère aucun périphérique, et l'application n'affiche aucune image dans le

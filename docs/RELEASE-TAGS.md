@@ -136,5 +136,5 @@ Scripts : `.github/scripts/release-notes.mjs` (CLI — `--changelog changelogs/t
 | Mobile Android (Play) | keystore d'upload mobile (`MOBILE_KEYSTORE_BASE64/_PASSWORD`, `MOBILE_KEY_ALIAS/_PASSWORD`) + `PLAY_SERVICE_ACCOUNT_JSON` — piste « alpha » sur `com.tentacletv.mobile` | ✅ en place |
 
 > macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails build :
-> `apps/desktop/scripts/build-mpv-lgpl-macos.sh`. Voir aussi `docs/RELEASE.md`.
+> `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`. Voir aussi `docs/RELEASE.md`.
 > Conformité chiffrement déclarée exemptée (`ITSAppUsesNonExemptEncryption=false`).

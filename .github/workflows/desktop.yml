@@ -115,7 +115,7 @@ jobs:
       # script échoue de lui-même si un composant GPL ou un symbole `_lzma_*`
       # s'invite. C'est la chaîne déjà validée par Apple.
       - name: Build LGPL libmpv/FFmpeg
-        run: bash apps/desktop/scripts/build-mpv-lgpl-macos.sh
+        run: bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh
 
       # Le binaire natif de koffi n'existe QUE pour l'architecture du runner :
       # `pnpm install` n'installe pas le paquet de l'autre (contrainte `cpu` du
@@ -124,7 +124,7 @@ jobs:
       - name: Rassembler dylibs + paquet natif koffi
         run: |
           mkdir -p sortie/lib
-          cp apps/desktop/src-tauri/lib/*.dylib sortie/lib/
+          cp apps/desktop-electron/lib/mpv/*.dylib sortie/lib/
           cp -R "node_modules/@koromix/koffi-darwin-${{ matrix.arch }}" sortie/koffi-pkg
 
       - name: Upload libs artifact
@@ -421,7 +421,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/tentacle-mpv-linux
-          key: mpv-lgpl-linux-${{ hashFiles('apps/desktop-electron/scripts/build-mpv-lgpl-linux.sh') }}
+          key: mpv-lgpl-linux-${{ hashFiles('apps/desktop-electron/scripts/build-mpv-linux.sh') }}
 
       - name: Chaîne mpv LGPL (bâtie si absente du cache)
         run: |
@@ -429,7 +429,7 @@ jobs:
             echo "Chaîne restaurée depuis le cache :"
             ls -l "$HOME/.cache/tentacle-mpv-linux" | head -20
           else
-            bash apps/desktop-electron/scripts/build-mpv-lgpl-linux.sh \
+            bash apps/desktop-electron/scripts/build-mpv-linux.sh \
               --sortie "$HOME/.cache/tentacle-mpv-linux"
           fi
 

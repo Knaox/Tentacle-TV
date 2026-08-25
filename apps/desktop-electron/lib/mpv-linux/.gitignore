@@ -1,0 +1,9 @@
+# La chaîne mpv de Linux — libmpv, FFmpeg, libplacebo et leurs dépendances non
+# systèmes — est PRODUITE, jamais versionnée : une quarantaine de `.so` pour une
+# centaine de mégaoctets, et elle se rebâtit à l'identique depuis sa recette.
+#
+#   bash apps/desktop-electron/scripts/build-mpv-linux.sh
+#
+# La CI la met en cache sur l'empreinte de ce script (voir desktop.yml).
+*
+!.gitignore

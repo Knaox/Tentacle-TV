@@ -26,7 +26,7 @@
     "package:macos": "pnpm build:appstore && node scripts/package-macos.mjs",
     "//package:linux": "Empaquetage Linux : @electron/packager assemble le dossier, electron-builder en tire les quatre formats. Voir scripts/package-linux.mjs.",
     "package:linux": "pnpm build && node scripts/package-linux.mjs",
-    "//package:macos:debug": "Le paquet macOS a l identique — canal appstore, dylibs LGPL, MoltenVK vendoree, entitlements, signature — mais instrumente : panneau de diagnostic, sonde reseau, __tentacleSimulateUpdate(). Pour juger sur la vraie chaine ce que le dev ne montre pas (ombre de fenetre, lisere, icone du Dock). Args apres -- : pnpm package:macos:debug -- --arch arm64 --lib \"$PWD/apps/desktop/src-tauri/lib\"",
+    "//package:macos:debug": "Le paquet macOS a l identique — canal appstore, dylibs LGPL, MoltenVK vendoree, entitlements, signature — mais instrumente : panneau de diagnostic, sonde reseau, __tentacleSimulateUpdate(). Pour juger sur la vraie chaine ce que le dev ne montre pas (ombre de fenetre, lisere, icone du Dock). Args apres -- : pnpm package:macos:debug -- --arch arm64 --lib \"$PWD/apps/desktop-electron/lib/mpv\"",
     "package:macos:debug": "pnpm build:web:appstore:debug && pnpm build:ts && node scripts/package-macos.mjs",
     "nom:dev": "node scripts/nom-dev-macos.mjs",
     "dev": "pnpm nom:dev && pnpm build:web:debug && pnpm build:ts && electron .",

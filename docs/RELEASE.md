@@ -106,10 +106,10 @@ raw.githubusercontent.com, `apps/web/src/lib/storeVersions.ts`) :
 
 Test local (paquet universel non distribuable, signature ad hoc) :
 ```bash
-bash apps/desktop/scripts/build-mpv-lgpl-macos.sh    # dylibs LGPL de l'arch hôte
+bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh    # dylibs LGPL de l'arch hôte
 cd apps/desktop-electron
 pnpm build:appstore
-node scripts/package-macos.mjs --lib ../desktop/src-tauri/lib --arch arm64
+node scripts/package-macos.mjs --lib ./lib/mpv --arch arm64
 ```
 
 ### Windows (Microsoft Store)
@@ -117,7 +117,7 @@ node scripts/package-macos.mjs --lib ../desktop/src-tauri/lib --arch arm64
 - Construit par **Electron** depuis la 1.20.0 (`apps/desktop-electron`), plus par
   Tauri : pas de chaîne Rust dans ce job. Même libmpv, piloté par koffi.
 - MSIX **non signé** (`makeappx`) — le Store signe. Identité
-  `DamienROUGE.Tentacle` (`apps/desktop/msix/Package.appxmanifest`, patché
+  `DamienROUGE.Tentacle` (`apps/desktop-electron/msix/Package.appxmanifest`, patché
   `Version="X.Y.Z.0"` par la CI).
 - Essai local du paquet : `pnpm --filter @tentacle-tv/desktop-electron package`,
   puis lancer `apps/desktop-electron/release/Tentacle TV-win32-x64/Tentacle TV.exe`.

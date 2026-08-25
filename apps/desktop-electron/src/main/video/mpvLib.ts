@@ -21,7 +21,7 @@
  * sienne. Relevé le 2026-07-30 sur le paquet, une lecture HDR en cours :
  * headroom EDR de l'écran à 8,48 pour un potentiel de 16.
  *
- * ⚠️ Ces dylibs ne sont PAS versionnées : `apps/desktop/src-tauri/lib/.gitignore`
+ * ⚠️ Ces dylibs ne sont PAS versionnées : `apps/desktop-electron/lib/mpv/.gitignore`
  * ignore tout sauf quatre fichiers, et c'est le script de compilation qui les
  * produit. Un clone frais ne les a donc pas — d'où le repli, qui n'est jamais
  * silencieux.
@@ -74,13 +74,19 @@ const HOMEBREW = "homebrew";
 const MPV_HOMEBREW = "/opt/homebrew/lib/libmpv.2.dylib";
 
 /**
- * Le dossier des dylibs vendorées, depuis `dist/main/video`.
+ * Le dossier des bibliothèques vendorées, depuis `dist/main/video`.
+ *
+ * ⚠️ Un dossier PAR plateforme. Les chaînes ne se ressemblent pas — celle de
+ * Linux compte une quarantaine de `.so`, celle de macOS autant de `.dylib` — et
+ * l'empaquetage copie le dossier ENTIER dans les ressources : les mélanger
+ * ferait voyager les bibliothèques de macOS dans le paquet Linux.
  *
  * Chargées depuis leur dossier d'origine : elles se retrouvent entre elles par
- * `@loader_path`, où qu'elles soient.
+ * `@loader_path` (macOS) ou `$ORIGIN` (Linux), où qu'elles soient.
  */
 function dossierLivre(): string {
-  return path.resolve(__dirname, "../../../../desktop/src-tauri/lib");
+  const nom = process.platform === "linux" ? "mpv-linux" : "mpv";
+  return path.resolve(__dirname, `../../../lib/${nom}`);
 }
 
 /**
@@ -144,7 +150,7 @@ function avertirRepli(): string {
     `[mpv] chaîne LGPL vendorée absente (${path.join(dossierLivre(), NOM_LIB)}).\n` +
       "      Repli sur Homebrew : mpv 0.41 GPL et le MoltenVK du système. Ce n'est PAS\n" +
       "      ce que l'utilisateur recevra — n'y juger ni le HDR ni le rendu.\n" +
-      "      → bash apps/desktop/scripts/build-mpv-lgpl-macos.sh",
+      "      → bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh",
   );
   return MPV_HOMEBREW;
 }

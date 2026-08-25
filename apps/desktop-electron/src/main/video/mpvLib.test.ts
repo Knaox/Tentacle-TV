@@ -33,8 +33,8 @@ vi.mock("electron", () => ({
 }));
 
 const RACINE = path.resolve(__dirname, "../../..");
-const LIB_LIVREE = path.resolve(RACINE, "../desktop/src-tauri/lib/libmpv.2.dylib");
-const MOLTENVK = path.resolve(RACINE, "../desktop/src-tauri/lib/libMoltenVK.dylib");
+const LIB_LIVREE = path.resolve(RACINE, "lib/mpv/libmpv.2.dylib");
+const MOLTENVK = path.resolve(RACINE, "lib/mpv/libMoltenVK.dylib");
 const ICD_DEV = path.resolve(RACINE, "dev/MoltenVK_icd.json");
 const HOMEBREW = "/opt/homebrew/lib/libmpv.2.dylib";
 
@@ -153,7 +153,7 @@ describe("libmpvPath — le paquet", () => {
  * le dire quand il ne l'a pas.
  */
 describe("libmpvPath — Linux", () => {
-  const VENDOREE = path.resolve(RACINE, "../desktop/src-tauri/lib/libmpv.so.2");
+  const VENDOREE = path.resolve(RACINE, "lib/mpv-linux/libmpv.so.2");
 
   it("le paquet prend la libmpv qu'il embarque", async () => {
     etat.isPackaged = true;

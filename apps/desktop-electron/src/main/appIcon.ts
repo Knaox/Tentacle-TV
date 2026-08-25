@@ -40,7 +40,7 @@ import path from "node:path";
 function resoudre(fichier: string): string | null {
   const empaquetee = path.join(process.resourcesPath, fichier);
   if (app.isPackaged && existsSync(empaquetee)) return empaquetee;
-  const partagee = path.resolve(__dirname, `../../../desktop/src-tauri/icons/${fichier}`);
+  const partagee = path.resolve(__dirname, `../../icons/${fichier}`);
   return existsSync(partagee) ? partagee : null;
 }
 

@@ -63,7 +63,7 @@ function copier(source, cible, quoi) {
 const arch = argument("--arch", "x64");
 const sortie = path.resolve(APP, argument("--out", "release-linux"));
 const stage = path.join(sortie, "stage", "app");
-const libSource = path.resolve(argument("--lib", path.join(RACINE, "apps/desktop/src-tauri/lib")));
+const libSource = path.resolve(argument("--lib", path.join(RACINE, "apps/desktop-electron/lib/mpv-linux")));
 
 /** Assemble ce que packager doit voir comme « l'application ». */
 function preparer() {
@@ -94,7 +94,7 @@ function preparer() {
  * floue partout où le bureau demande autre chose que du 512.
  */
 function preparerIcones() {
-  const source = path.resolve(RACINE, "apps/desktop/src-tauri/icons");
+  const source = path.resolve(RACINE, "apps/desktop-electron/icons");
   const cible = path.join(sortie, "icones");
   rmSync(cible, { recursive: true, force: true });
   mkdirSync(cible, { recursive: true });
@@ -115,7 +115,7 @@ function preparerRessources() {
   const ressources = path.join(sortie, "resources-linux");
   rmSync(ressources, { recursive: true, force: true });
   copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
-  copier(path.resolve(RACINE, "apps/desktop/src-tauri/icons/icon.png"), path.join(ressources, "icon.png"), "icone");
+  copier(path.resolve(RACINE, "apps/desktop-electron/icons/icon.png"), path.join(ressources, "icon.png"), "icone");
 
   // La chaîne mpv est facultative au moment de l'empaquetage — un paquet sans
   // elle se rabat sur celle du système, en le disant (`mpvLib.ts`). Le taire

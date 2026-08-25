@@ -49,7 +49,7 @@ PLACEBO_TAG="v7.351.0"     # exigée par mpv 0.41 (>= 7.349)
 MPV_TAG="v0.41.0"          # première à savoir parler couleur à Wayland
 
 ICI="$(cd "$(dirname "$0")" && pwd)"
-SORTIE="$ICI/../vendor/mpv-linux"
+SORTIE="$ICI/../lib/mpv-linux"
 while [ $# -gt 0 ]; do
   case "$1" in
     --sortie) SORTIE="$2"; shift 2 ;;
