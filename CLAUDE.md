@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows and macOS, Tauri on Linux — both driving the same native mpv), an Expo mobile app, an Android TV app, and a Fastify backend with MariaDB. The project is written primarily in French (comments, context docs, commit messages).
+Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It features a React web client, a desktop app (Electron on Windows, macOS and Linux, driving a native mpv through koffi), an Expo mobile app, an Android TV app, and a Fastify backend with MariaDB. The project is written primarily in French (comments, context docs, commit messages).
 
 ## Commands
 
@@ -12,8 +12,7 @@ Tentacle TV is a premium multi-platform media client ecosystem for Jellyfin. It 
 # Development (run web + backend together for full stack)
 pnpm dev:web          # Web client on port 5173 (proxies /api to :3001)
 pnpm dev:backend      # Backend API on port 3001
-pnpm dev:desktop      # Tauri desktop app (Linux)
-pnpm dev:electron     # Electron desktop app (Windows, macOS)
+pnpm dev:electron     # Electron desktop app (Windows, macOS, Linux)
 pnpm dev:mobile       # Expo mobile app
 pnpm dev:tv           # Android TV app
 
@@ -45,11 +44,11 @@ git push production main  # Triggers post-receive hook on server
 
 ## Releases / Tags (CI)
 
-**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`, `minServer` (version serveur minimale exigée par les clients — bannière de compat `useServerCompat.ts`). On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Exception desktop : reporter AUSSI le numéro dans le paquet de la coquille concernée — `apps/desktop-electron/package.json` (Electron : Windows, macOS) et `apps/desktop/src-tauri/tauri.conf.json` + `apps/desktop/package.json` (Tauri : Linux). C'est la version du bundle lue par « À propos » ; la CI l'injecte aux builds mac/win/linux, mais le dev lit les fichiers. Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
+**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`, `minServer` (version serveur minimale exigée par les clients — bannière de compat `useServerCompat.ts`). On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Exception desktop : reporter AUSSI le numéro dans `apps/desktop-electron/package.json`. C'est la version du bundle lue par « À propos » ; la CI l'injecte aux builds mac/win/linux, mais le dev lit le fichier. Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
 
 | Déclencheur | Workflow | Cible |
 |-------------|----------|-------|
-| tag `desktop-vX.Y.Z` | `.github/workflows/desktop.yml` | **macOS** (App Store/TestFlight, universal LGPL) + **Windows** (Microsoft Store MSIX) + **Linux** (deb/rpm/AppImage/pacman → Release GitHub `desktop-v*` + manifeste auto-update) |
+| tag `desktop-vX.Y.Z` | `.github/workflows/desktop.yml` | **macOS** (App Store/TestFlight, universal LGPL) + **Windows** (Microsoft Store MSIX) + **Linux** (deb/rpm/pacman/AppImage, **mpv embarqué** → Release GitHub `desktop-v*` + manifeste auto-update) |
 | tag `tv-vX.Y.Z` | `.github/workflows/tv.yml` | **Android TV** (AAB → Play Console UNIQUEMENT — MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha », plus d'APK GitHub ; AAB archivé en artefact) + **Apple TV** (tvOS → TestFlight, `continue-on-error`) |
 | push `main` | `.github/workflows/server.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`) ; si `versions.json → server` change dans le push → Release GitHub `server-vX.Y.Z` |
 | tag `mobile-vX.Y.Z` | `.github/workflows/mobile.yml` | **iOS** (TestFlight, `com.tentacle.mobile`) + **Android** (AAB → Play Console, piste tests fermés « alpha », MÊME fiche `com.tentacletv.mobile` que la TV) — build auto-incrémenté (`versionCode = build` nu, sous le préfixe TV `2e9+`), notes `changelogs/mobile.md`. `target` (dispatch) : `all`/`android`/`ios`. |
@@ -57,7 +56,7 @@ git push production main  # Triggers post-receive hook on server
 **Publier** : bump `versions.json` + remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`), commit, puis `git tag desktop-v1.12.0 && git push origin main desktop-v1.12.0`. Le fichier `Tentacle Deploy.html` (hors repo, Desktop) génère la commande complète. Re-livrer une même version (nouveau build) : relancer via `workflow_dispatch` (`gh workflow run tv.yml`) — le build est auto-incrémenté.
 
 - **Changelogs par domaine** : `changelogs/{desktop,tv,server,mobile}.md`. Limites stores gérées (`.github/scripts/lib/changelog.mjs`) : ASC 4000, MS Store 1500, Play 500 caractères. `CHANGELOG.md` racine = archive pure (les anciens blocs `ios-`/`play-` y restent, mais `mobile.yml` lit désormais `changelogs/mobile.md`).
-- **Desktop = stores uniquement** (macOS App Store, Windows Microsoft Store) ; Linux = Release GitHub. Un échec d'un OS ne bloque pas les autres (jobs indépendants).
+- **Desktop = stores uniquement** (macOS App Store, Windows Microsoft Store) ; Linux = Release GitHub, avec auto-updater intégré (deb/rpm/pacman/AppImage). Un échec d'un OS ne bloque pas les autres (jobs indépendants).
 - **Android TV = Play Console uniquement** : même fiche que le mobile (`com.tentacletv.mobile`), keystore d'upload mobile réutilisé (secrets `MOBILE_*`), `versionCode = 2000000000 + build` (préfixe form-factor, jamais en collision avec le mobile qui utilise `build` nu). Piste TV = `tv:Alpha` (id API préfixé) ≠ piste mobile = `alpha`. **Plus d'APK GitHub ni de `tv-latest`** : la distribution passe par la piste de tests fermés (opt-in Play) — le site `tentacletv.app` doit pointer vers le lien d'opt-in du test, plus vers un APK.
 - **Apple TV** : signature MANUELLE (profil `TVOS_PROVISIONING_PROFILE_BASE64`) ; l'app tvOS reste à finaliser (icône placeholder).
 - Versions affichées (À propos) : web = `versions.json → server`, desktop = version du bundle (injectée depuis `versions.json`), TV = `versions.json → tv` (`AboutScreen.tsx`).
@@ -68,8 +67,7 @@ git push production main  # Triggers post-receive hook on server
 
 ```
 apps/web/        → React 19 + Vite 6 + Tailwind CSS (main web client)
-apps/desktop/    → Tauri v2 (Linux — wraps web build for native desktop)
-apps/desktop-electron/ → Electron (Windows, macOS — same web build, same libmpv)
+apps/desktop-electron/ → Electron (Windows, macOS, Linux — same web build, same libmpv)
 apps/mobile/     → Expo 52 + React Native 0.76 (iOS/Android)
 apps/tv/         → React Native for Android TV
 apps/backend/    → Fastify 5 + Prisma 6 + MariaDB
@@ -83,8 +81,7 @@ packages/plugins-api/ → Plugin system interfaces
 ### Dependency Graph
 
 - `web` → `ui`, `api-client`, `shared`, `plugins-api`
-- `desktop` → wraps `web` build via Tauri (Linux)
-- `desktop-electron` → wraps the same `web` build via Electron (Windows, macOS)
+- `desktop-electron` → wraps the `web` build via Electron (Windows, macOS, Linux)
 - `mobile` → `api-client`, `shared` (own UI with NativeWind)
 - `backend` → `shared` only
 
@@ -120,6 +117,33 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 - **Performance**: use `memo`, `useCallback`, `useMemo` to prevent re-renders; lazy load images with shimmer skeletons
 - **Video**: direct play first, 30s pre-buffer, automatic transcode fallback on codec errors
 - **Un commit par étape** — chaque correctif, extraction ou bump se commite seul, dès qu'il tient debout (`lint` + `typecheck` passés). Jamais un gros commit fourre-tout en fin de chantier : une étape qui se révèle mauvaise doit pouvoir être annulée sans emporter les autres. Commiter ne vaut PAS publier — pas de tag, pas de `push`, pas de dispatch CI sans demande explicite.
+
+### Linux — le compromis Wayland / X11, et pourquoi il n'y a pas de troisième voie
+
+Deux vérités s'opposent, et toute l'architecture du lecteur Linux en découle.
+
+1. **X.Org n'aura jamais de HDR.** Ce n'est pas un manque de temps : il n'y a pas
+   de protocole et il n'y en aura pas. Le HDR sous Linux passe par
+   `wp-color-management-v1`, un protocole **Wayland**.
+2. **Sur Wayland, un client ne place pas ses fenêtres.** C'est une règle du
+   protocole. La fenêtre de mpv ne peut donc être calée sur la nôtre qu'en
+   **plein écran**, où la position ne se discute plus.
+
+D'où deux montages, choisis par la session au démarrage (`linux/sessionGraphique.ts`) :
+Wayland → HDR réel, lecture plein écran ; X11 → lecture fenêtrée comme sur
+Windows, pas de HDR. Un réglage permet de forcer l'un ou l'autre (relance).
+
+Trois conséquences à ne pas défaire :
+- **`transparent: true` à la CONSTRUCTION** de la fenêtre (comme macOS, PAS comme
+  Windows). Mesuré : posé à l'exécution, la page peint du noir sur la vidéo.
+- **`target-colorspace-hint=yes`** sans condition sur Wayland. `auto` n'y décide
+  de rien (mpv#16305) et `no` supprime la transmission.
+- **Un compositeur est nécessaire sous X11.** Sans composition, X11 ne mélange
+  pas le canal alpha et l'overlay masque la vidéo.
+
+Le verdict HDR se lit sur le COUPLE `video-params` / `video-target-params`, jamais
+sur l'un des deux : sur un écran laissé en HDR, un contenu SDR sort lui aussi en
+PQ. Relevé complet : `docs/LINUX-FENETRE-VIDEO.md`.
 
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
@@ -157,7 +181,7 @@ un **build de production** (le compteur d'images de `dev/` tient une boucle
 | Layer | Technology |
 |-------|-----------|
 | Web | React 19, Vite 6, Tailwind 3, Framer Motion 11 |
-| Desktop | Electron 43 (Windows, macOS), Tauri v2 / Rust (Linux) |
+| Desktop | Electron 43 (Windows, macOS, Linux), libmpv via koffi |
 | Mobile | React Native 0.76, Expo 52, NativeWind 4 |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | Data | TanStack Query v5 |
