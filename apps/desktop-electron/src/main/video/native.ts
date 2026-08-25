@@ -44,7 +44,21 @@ export function sansFaillir(quoi: string, action: () => void): void {
  * Le tampon rendu par Electron porte un `HWND` sous Windows et un pointeur de
  * `NSView` sous macOS — deux mots de 64 bits, lus de la même façon. C'est
  * précisément ce qui permet de passer `--wid` à mpv sur les deux systèmes.
+ *
+ * ⚠️ **Sous Linux il n'en fait que QUATRE**, et l'ignorer coûtait toute la
+ * vidéo. `readBigUInt64LE` y levait `ERR_BUFFER_OUT_OF_BOUNDS`, dans
+ * `ipc/video.ts` qui calcule le `wid` AVANT de savoir s'il en aura l'usage :
+ * `mpv_init` échouait donc net, sans qu'aucune image ne soit jamais demandée.
+ * Le panneau de diagnostic annonçait « SDR » — et il avait raison, il n'y avait
+ * simplement aucune sortie à décrire.
+ *
+ * On lit donc ce que le tampon contient. Sous X11 c'est le numéro de fenêtre
+ * réel ; sous Wayland, Electron rend `1`, une valeur sans signification — ce
+ * qui n'est pas gênant, mpv n'y reçoit jamais de `wid`.
  */
 export function nativeHandle(win: BrowserWindow): bigint {
-  return win.getNativeWindowHandle().readBigUInt64LE(0);
+  const tampon = win.getNativeWindowHandle();
+  if (tampon.length >= 8) return tampon.readBigUInt64LE(0);
+  if (tampon.length >= 4) return BigInt(tampon.readUInt32LE(0));
+  return 0n;
 }
