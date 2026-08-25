@@ -67,6 +67,18 @@ function assertPlatform(value: string): "win32" | "darwin" | "linux" {
 }
 
 /**
+ * Le montage vidéo de Linux, ou `undefined` ailleurs.
+ *
+ * Ce n'est pas une coquetterie de diagnostic : c'est lui qui dit si le HDR est
+ * possible et si la lecture sera forcément en plein écran. La page ne peut pas
+ * le déduire — elle ne voit qu'un `linux`.
+ */
+const montage = ((): "wayland" | "x11" | undefined => {
+  const brut = argValue("--tentacle-montage=");
+  return brut === "wayland" || brut === "x11" ? brut : undefined;
+})();
+
+/**
  * Rejoue le stockage local sauvé par l'app Tauri, une fois pour toutes.
  *
  * C'est ICI et nulle part ailleurs : le preload s'exécute avant le premier
@@ -127,6 +139,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   version,
   platform: assertPlatform(platform),
   capabilities,
+  ...(montage === undefined ? {} : { montage }),
   titleBarHeight,
 
   openExternal(url: string): Promise<void> {

@@ -78,3 +78,15 @@ export function desktopPlatform(): DesktopPlatform {
   }
   return "linux";
 }
+
+/**
+ * Le montage vidéo sous Linux — `null` partout ailleurs.
+ *
+ * Deux mondes derrière un seul `platform: "linux"`, et ils ne promettent pas la
+ * même chose : `wayland` fait le HDR mais impose la lecture en plein écran ;
+ * `x11` rend la lecture fenêtrée et ne fera jamais de HDR. La valeur vient de la
+ * coquille, qui seule connaît la session.
+ */
+export function montageLinux(): "wayland" | "x11" | null {
+  return window.tentacle?.montage ?? null;
+}

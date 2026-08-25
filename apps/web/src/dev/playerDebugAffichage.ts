@@ -105,6 +105,7 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
     return { titre: "HDR — état natif", lignes: [["commande", "indisponible", false]] };
   }
   const mac = desktopPlatform() === "macos";
+  const linux = desktopPlatform() === "linux";
   const lignes: DebugSection["lignes"] = [
     // Le même champ ne dit pas la même chose des deux côtés, et le libellé
     // unique faisait mal lire les deux. Windows : l'écran EST en mode HDR, un
@@ -115,7 +116,14 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
     // verdict sur macOS : ce n'est pas un défaut, c'est une scène sombre.
     mac
       ? ["plage étendue accordée (instantané)", etat.actif ? "oui" : "non", null]
-      : ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
+      : linux
+        // Sous Linux la question ne se pose pas à l'écran mais à la SURFACE :
+        // le compositeur alloue l'espace colorimétrique surface par surface. Un
+        // contenu SDR sort lui aussi en PQ sur un écran laissé en HDR — d'où
+        // « sortie » et non « écran », et pas de verdict : c'est la ligne
+        // « sortie mpv » plus bas qui tranche.
+        ? ["sortie en HDR", etat.actif ? "oui" : "non", null]
+        : ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
   ];
   // macOS seulement, et à ne PAS confondre avec la ligne du dessus : « l'écran
   // SAIT faire de la plage étendue » n'est pas « il en reçoit en ce moment ».
@@ -129,7 +137,11 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
   if (etat.supporte !== undefined) {
     lignes.push([
       "bascule d'écran",
-      etat.supporte ? (etat.bascule ? "en cours par l'app" : "disponible") : "sans objet (macOS)",
+      etat.supporte
+        ? etat.bascule
+          ? "en cours par l'app"
+          : "disponible"
+        : `sans objet (${linux ? "Linux" : "macOS"})`,
       null,
     ]);
   } else {
@@ -146,8 +158,17 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
   // Ce que mpv dit de SA couche — la seule mesure qui ne dépende pas de la
   // scène affichée, contrairement à « écran en HDR » juste au-dessus.
   if (etat.coucheHdr !== undefined) {
+    // La formulation du RENDU, pas celle de l'écran. Sous Linux `espaceCouche`
+    // porte déjà le verdict complet — « contenu pq → sortie pq · pic 3,81× », ou
+    // « — TONE-MAPPÉ » — et se suffit donc à lui-même.
     const dit = etat.coucheHdr === null ? "inconnue" : etat.coucheHdr ? "plage etendue" : "SDR";
-    lignes.push(["couche Metal", `${dit}${etat.espaceCouche ? ` (${etat.espaceCouche})` : ""}`, etat.coucheHdr]);
+    lignes.push([
+      linux ? "sortie mpv" : "couche Metal",
+      linux
+        ? (etat.espaceCouche ?? "rien relevé")
+        : `${dit}${etat.espaceCouche ? ` (${etat.espaceCouche})` : ""}`,
+      linux ? !etat.espaceCouche?.includes("TONE-MAPPÉ") : etat.coucheHdr,
+    ]);
   }
   return { titre: "HDR — état natif", lignes };
 }
