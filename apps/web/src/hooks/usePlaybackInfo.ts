@@ -8,8 +8,6 @@ import {
 } from "../lib/deviceProfile";
 import { evaluerLecture, sourceEstHdr, type Verdict } from "./playbackVerdict";
 import { journaliserLecture } from "./journalPlayback";
-import { isMacOS } from "./useDesktopPlayer";
-import { isTauriShell } from "../desktop/bridge";
 
 const DBG = "[Tentacle:PlaybackInfo]";
 
@@ -100,16 +98,15 @@ export function usePlaybackInfo(lecteurNatif = false) {
     verdict: null,
   });
 
-  // ⚠️ `isTauri()` est en réalité `isDesktopApp()` : il répond OUI sous Electron
-  // aussi. Sans `isTauriShell()`, la coquille Electron macOS réclamait donc à
-  // Jellyfin un PlaybackInfo taillé pour AVFoundation — ce que la WKWebView de
-  // Tauri sait lire — alors que c'est **mpv** qui lit. Le serveur renvoyait une
-  // source inexploitable par le lecteur, `loadfile` n'était jamais appelé, et
-  // l'écran de chargement tournait indéfiniment.
+  // Le profil AVFoundation servait la WKWebView de la coquille Tauri macOS. Il
+  // n'y a plus de WKWebView : c'est **mpv** qui lit, sur les trois systèmes, et
+  // c'est le profil navigateur qu'il faut lui demander.
   //
-  // Le défaut ne pouvait pas se voir sous Windows : `isMacOS()` y est faux, donc
-  // c'est le profil navigateur — le bon pour mpv — qui servait déjà.
-  const isMacOSTauri = isTauriShell() && isMacOS();
+  // ⚠️ Le laisser derrière `isTauri()` aurait été un piège : ce nom ment, la
+  // fonction répond en réalité `isDesktopApp()`. Le défaut a existé — Jellyfin
+  // renvoyait une source qu'mpv ne savait pas ouvrir, `loadfile` n'était jamais
+  // appelé, et l'écran de chargement tournait indéfiniment.
+  const isMacOSTauri = false;
 
   // Hors de `state` : `reset()` le vide à chaque changement d'épisode, alors
   // que la disqualification du MKV vaut pour toute la session. Un moteur qui a

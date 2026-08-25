@@ -1,39 +1,31 @@
 /**
- * Ce que le shell natif sait réellement faire.
+ * Ce que la coquille native sait réellement faire.
  *
  * # Pourquoi ce fichier existe
  *
- * Pendant la migration vers Electron, la coquille Windows n'implémente qu'une
- * partie de l'inventaire des commandes : le lecteur, les téléchargements et les
- * mises à jour arrivent par phases. Sans porte, l'interface affiche des boutons
- * dont l'appel est rejeté — l'utilisateur voit une fonctionnalité qui ne
- * répond pas, et la console se remplit d'erreurs qui masquent les vraies.
+ * Les trois systèmes n'implémentent pas le même inventaire : les mises à jour du
+ * Microsoft Store n'existent que sous Windows, la sonde de surface que sur macOS
+ * en développement. Sans porte, l'interface afficherait des boutons dont l'appel
+ * est rejeté — l'utilisateur voit une fonctionnalité qui ne répond pas, et la
+ * console se remplit d'erreurs qui masquent les vraies.
  *
  * Le processus principal annonce donc les commandes qu'il a branchées, et
- * l'interface demande ici « sais-tu télécharger ? » plutôt que « quelle version
- * de quel shell es-tu ? ». La liste s'allonge d'elle-même à mesure que les
- * phases livrent : rien à tenir à jour à la main.
+ * l'interface demande ici « sais-tu télécharger ? » plutôt que « sur quel
+ * système tourne-je ? ». La liste suit ce qui est réellement enregistré : rien à
+ * tenir à jour à la main.
  *
- * Le mécanisme survit à la migration — c'est lui qui distinguera un shell
- * Windows d'un shell Linux sans interroger la plateforme.
+ * ⚠️ Le revers, et il est silencieux : une commande oubliée côté principal fait
+ * disparaître une section ENTIÈRE de l'interface, sans erreur nulle part. C'est
+ * pourquoi le démarrage NOMME les commandes manquantes (`index.ts`).
  */
 
 import { desktopKind } from "./detect";
 import { isAppStoreBuild } from "./channel";
 
-/**
- * Le shell expose-t-il cette commande ?
- *
- * Tauri répond toujours oui : il implémente l'inventaire complet, et son
- * comportement ne doit pas bouger d'un iota — il livre encore macOS et Linux.
- * Les gardes de plateforme qui l'entourent déjà (`isWindows`, `isLinux`,
- * `isAppStoreBuild`) restent les seules à décider chez lui.
- */
+/** La coquille expose-t-elle cette commande ? */
 function hasNativeCommand(command: string): boolean {
-  const kind = desktopKind();
-  if (kind === "tauri") return true;
-  if (kind === "electron") return window.tentacle?.capabilities.includes(command) ?? false;
-  return false;
+  if (desktopKind() !== "electron") return false;
+  return window.tentacle?.capabilities.includes(command) ?? false;
 }
 
 /** Téléchargements et lecture hors ligne (moteur, catalogue local, purge). */

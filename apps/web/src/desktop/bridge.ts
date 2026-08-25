@@ -1,14 +1,14 @@
 /**
- * Pont unique vers la couche native. Route vers Tauri ou Electron.
+ * Pont unique vers la couche native.
  *
- * Tout le code de `apps/web` passe par ici plutôt que d'importer
- * `@tauri-apps/*` directement. Deux raisons :
+ * Tout le code de `apps/web` passe par ici plutôt que d'appeler la coquille
+ * directement. Le point de passage a servi à mener la migration de Tauri vers
+ * Electron sans toucher aux appelants ; il reste utile pour la même raison
+ * qu'avant — un seul endroit sait ce qui est sous la page.
  *
- *  1. La même interface est servie par deux applications de bureau pendant la
- *     migration. Sans ce point de passage, il faudrait deux frontends.
- *  2. Le chemin Tauri reste STRICTEMENT identique à ce qu'il était : mêmes
- *     imports dynamiques, mêmes noms de commandes, mêmes évènements. L'app
- *     Tauri livre encore macOS et Linux, elle ne doit rien voir changer.
+ * ⚠️ L'enveloppe `{ payload }` que rend `listen` est un héritage de Tauri.
+ * Electron transmet la charge nue ; on la ré-enveloppe ici plutôt que de
+ * toucher aux dizaines d'appelants qui la déballent.
  *
  * Hors application de bureau, tout est silencieux : `invoke` rejette, `listen`
  * renvoie un désabonnement inerte. C'est le contrat qu'avaient déjà les
@@ -23,7 +23,6 @@ export {
   desktopPlatform,
   isDesktopApp,
   isElectronShell,
-  isTauriShell,
   montageLinux,
 } from "./detect";
 export {
@@ -47,10 +46,6 @@ export async function invoke<T>(command: string, args?: Record<string, unknown>)
     return (await bridge.invoke(command, args)) as T;
   }
 
-  if (kind === "tauri") {
-    const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
-    return await tauriInvoke<T>(command, args);
-  }
 
   throw new Error(`${NOT_DESKTOP} : ${command}`);
 }
@@ -67,10 +62,6 @@ export async function listen<T>(event: string, handler: DesktopEventHandler<T>):
     return bridge.on(event, (payload) => handler({ payload: payload as T }));
   }
 
-  if (kind === "tauri") {
-    const { listen: tauriListen } = await import("@tauri-apps/api/event");
-    return await tauriListen<T>(event, (e) => handler({ payload: e.payload }));
-  }
 
   return () => undefined;
 }
@@ -83,10 +74,6 @@ export async function getVersion(): Promise<string> {
     return window.tentacle?.version ?? "";
   }
 
-  if (kind === "tauri") {
-    const { getVersion: tauriGetVersion } = await import("@tauri-apps/api/app");
-    return await tauriGetVersion();
-  }
 
   return "";
 }
@@ -100,10 +87,6 @@ export async function relaunch(): Promise<void> {
     return;
   }
 
-  if (kind === "tauri") {
-    const { relaunch: tauriRelaunch } = await import("@tauri-apps/plugin-process");
-    await tauriRelaunch();
-  }
 }
 
 /**
@@ -120,11 +103,6 @@ export async function openUrl(url: string): Promise<void> {
     return;
   }
 
-  if (kind === "tauri") {
-    const { openUrl: tauriOpenUrl } = await import("@tauri-apps/plugin-opener");
-    await tauriOpenUrl(url);
-    return;
-  }
 
   window.open(url, "_blank", "noopener,noreferrer");
 }
@@ -137,11 +115,6 @@ export async function pickFolder(): Promise<string | null> {
     return (await window.tentacle?.pickFolder()) ?? null;
   }
 
-  if (kind === "tauri") {
-    const { open } = await import("@tauri-apps/plugin-dialog");
-    const chosen = await open({ directory: true, multiple: false });
-    return typeof chosen === "string" ? chosen : null;
-  }
 
   return null;
 }

@@ -1,10 +1,10 @@
 /**
- * Détection du shell de bureau, une fois pour toutes au démarrage.
+ * Détection de la coquille de bureau, une fois pour toutes au démarrage.
  *
- * Le résultat est figé au chargement du module : ni Tauri ni Electron
- * n'apparaissent en cours de session, et une détection paresseuse ouvrirait
- * la porte aux courses observées sur WebKitGTK (cf. `mpvRuntime.isTauri`,
- * où `__TAURI_INTERNALS__` pouvait n'être pas encore visible au routage).
+ * Le résultat est figé au chargement du module : une coquille n'apparaît pas en
+ * cours de session, et une détection paresseuse ouvrirait la porte aux courses
+ * observées du temps de WebKitGTK, où le pont n'était pas toujours visible au
+ * moment du routage.
  */
 
 import type { DesktopKind } from "./types";
@@ -14,13 +14,6 @@ function detect(): DesktopKind | null {
 
   // Electron : le preload a posé le pont AVANT tout script de la page.
   if (typeof window.tentacle === "object" && window.tentacle !== null) return "electron";
-
-  // Tauri : trois signaux, comme l'ancien `isTauriApp`. Sur certaines
-  // webviews Linux, `__TAURI_INTERNALS__` peut manquer au premier examen —
-  // d'où les deux replis, conservés à l'identique.
-  if ("__TAURI_INTERNALS__" in window) return "tauri";
-  if ("__TAURI__" in window) return "tauri";
-  if (typeof navigator !== "undefined" && navigator.userAgent.includes("Tauri")) return "tauri";
 
   return null;
 }
@@ -37,11 +30,6 @@ export function isDesktopApp(): boolean {
   return kind !== null;
 }
 
-/** `true` uniquement dans l'app Tauri (macOS, Linux pendant la migration). */
-export function isTauriShell(): boolean {
-  return kind === "tauri";
-}
-
 /** `true` uniquement dans l'app Electron. */
 export function isElectronShell(): boolean {
   return kind === "electron";
@@ -50,9 +38,9 @@ export function isElectronShell(): boolean {
 /**
  * Plateforme réelle.
  *
- * Sous Electron elle vient du processus principal, donc elle est exacte.
- * Sous Tauri on garde l'analyse du user agent, faute de mieux — c'est ce que
- * faisait déjà `mpvRuntime`.
+ * Elle vient du processus principal (`process.platform`), donc elle est exacte.
+ * Le repli sur l'analyse du user agent ne sert plus qu'au web, où il n'y a de
+ * toute façon aucune capacité native à annoncer.
  */
 export type DesktopPlatform = "windows" | "macos" | "linux" | "web";
 

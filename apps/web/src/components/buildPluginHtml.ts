@@ -5,7 +5,7 @@
 import { buildPluginTailwindConfigScript, buildPluginThemeStyle } from "./pluginIframe/buildPluginTheme";
 import { buildPluginBridgeScript, buildPluginBootstrapScript } from "./pluginIframe/buildPluginBridge";
 import type { PluginHostEnv } from "./pluginIframe/buildPluginBridge";
-import { isDesktopApp, isTauriShell } from "../desktop/bridge";
+import { isDesktopApp } from "../desktop/bridge";
 
 interface BuildPluginHtmlParams {
   backendUrl: string;
@@ -37,7 +37,10 @@ export function buildPluginHtml({
   // window parente ni aux marqueurs du shell). Permet de répliquer les
   // comportements plateforme du core (ex: trailers YouTube sur macOS DMG).
   const hostEnv: PluginHostEnv = {
-    tauri: isTauriShell(),
+    // ⚠️ Conservé, et figé à faux. C'est une API PUBLIQUE : des greffons tiers
+    // lisent ce drapeau, et le retirer casserait ceux qui le consultent. Il n'y
+    // a simplement plus de coquille Tauri à annoncer.
+    tauri: false,
     desktop: isDesktopApp(),
     mac: typeof navigator !== "undefined" && /mac/i.test(navigator.userAgent),
     prod: import.meta.env.PROD,
