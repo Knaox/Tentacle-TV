@@ -60,6 +60,12 @@ export function socleLinux(montage: Montage): Readonly<Record<string, string>> {
   return {
     ...commun,
     "gpu-context": "x11vk",
+    // ⚠️ mpv demande par défaut au compositeur de se retirer quand sa fenêtre
+    // est en plein écran (`fs-only`). Ce retrait supprime la composition — donc
+    // la transparence de NOTRE fenêtre, qui laisse voir la vidéo. On ne le
+    // déclenche pas aujourd'hui, puisque mpv n'est jamais en plein écran ici,
+    // mais le laisser armé, c'est laisser une trappe ouverte sous l'overlay.
+    "x11-bypass-compositor": "no",
     // ⚠️ Explicitement NON : sous X11 la fenêtre est calée par nous, au pixel.
     // Un plein écran posé par mpv lui ferait couvrir l'écran entier et masquer
     // l'interface, que la page soit fenêtrée ou non.

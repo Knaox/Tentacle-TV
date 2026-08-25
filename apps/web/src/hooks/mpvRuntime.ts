@@ -153,13 +153,15 @@ export const OBSERVED_PROPERTIES = [
 
 /** Options d'init mpv. `renderApi` = macOS/Linux SOUS TAURI (Render API custom :
  *  mpv dessine dans notre surface GL, aucune fenêtre native) ; sinon une fenêtre
- *  mpv existe — enfant `--wid` sous Windows, NSWindow attachée sous macOS. */
+ *  mpv existe — enfant `--wid` sous Windows, NSWindow attachée sous macOS,
+ *  fenêtre calée sous la nôtre sous Linux/Electron. */
 export function buildMpvInitOptions(renderApi: boolean): Record<string, string | number | boolean> {
   // Trois mondes, pas deux. Le durcissement ci-dessous vise la fenêtre ENFANT
   // Win32 et ses messages ; macOS n'a ni `window-dragging` ni `native-touch`,
   // et sa fenêtre est désarmée côté natif (`setIgnoresMouseEvents:`).
   const fenetreWin32 = !renderApi && isWindows();
   const fenetreMacos = !renderApi && isMacOS();
+  const fenetreLinux = !renderApi && isLinux();
 
   return {
     vo: "gpu-next",
@@ -255,6 +257,33 @@ export function buildMpvInitOptions(renderApi: boolean): Record<string, string |
       // d'épisode — et le lecteur est remonté à CHAQUE épisode (`key={itemId}`).
       "auto-window-resize": "no",
       "input-cursor": "no",
+      "input-media-keys": "no",
+      "cursor-autohide": "no",
+    }),
+    // ── Linux : la fenêtre de mpv, telle que la coquille l'attend ────────────
+    //
+    // ⚠️ Ce bloc ne contient PAS le HDR. `gpu-api`, `gpu-context`,
+    // `target-colorspace-hint` et `fullscreen` dépendent de la SESSION — Wayland
+    // ou X11 — que la page ne connaît pas : elle ne voit qu'un `linux`. Le
+    // processus principal les pose après, voir `linux/optionsMpv.ts`.
+    //
+    // Ce qui reste ici est ce qui ne dépend que du montage « fenêtre » :
+    ...(fenetreLinux && {
+      // Même raison que sur macOS : la fenêtre naît AVEC la vidéo, donc avec son
+      // espace colorimétrique. En `yes`, mpv ouvrirait d'abord une fenêtre vide,
+      // et sur Wayland elle serait plein écran — un rectangle noir installé sur
+      // toute la sortie avant même que le film ne commence.
+      "force-window": "no",
+      // La fenêtre est calée sous la nôtre : ni cadre, ni titre.
+      border: "no",
+      // ⚠️ Sans cela, mpv REDIMENSIONNE sa fenêtre à la taille de chaque nouveau
+      // fichier. Aucun évènement d'Electron n'accompagne ce changement, donc le
+      // calage n'est pas rejoué — et le lecteur est remonté à CHAQUE épisode.
+      "auto-window-resize": "no",
+      // La fenêtre ne traite aucune entrée : l'interface est intégralement en
+      // HTML, et c'est notre fenêtre qui la reçoit.
+      "input-cursor": "no",
+      "input-builtin-bindings": "no",
       "input-media-keys": "no",
       "cursor-autohide": "no",
     }),
