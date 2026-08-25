@@ -117,7 +117,54 @@ Le paquet est bâti contre un FFmpeg amputé des codecs brevetés. Un client Jel
 ne lit pas la moitié d'une médiathèque. **C'est la justification, mesurée, de la décision de
 livrer notre propre libmpv** — LGPL, comme sur macOS — plutôt que de dépendre du système.
 
-## La réserve : X11 n'a pas pu être validé ici
+## X11, validé — dans un serveur X imbriqué
+
+La première tentative avait échoué et la conclusion était prématurée : voir la
+réserve plus bas. Un serveur X **imbriqué** (`Xephyr :5`) avec `openbox` et
+`picom` donne un vrai environnement X11 depuis une session Wayland, et le
+montage y a été éprouvé de bout en bout — vraie fenêtre Electron, vraie fenêtre
+mpv, vrai fichier vidéo.
+
+| Mesure | Résultat |
+|---|---|
+| Fenêtre de mpv trouvée par `_NET_CLIENT_LIST` | `WM_CLASS = "mpvk", "mpv"`, même PID que nous |
+| Numéro de notre fenêtre (`getNativeWindowHandle`) | 4 octets, XID réel — `1` sur Wayland, donc inutilisable |
+| Calage sur la zone client | au pixel : 900×532+120+118 |
+| Suivi d'un déplacement + redimensionnement | 1000×572+300+228, vidéo suivie |
+| Vidéo visible sous le repère HTML | 36,2 % de l'écran pour une fenêtre qui en occupe 39,7 % — l'écart EST le repère |
+
+⚠️ **Un compositeur est nécessaire, et c'est la découverte qui compte.** Mêmes
+fenêtres, même film, seul le compositeur change :
+
+```
+openbox seul      vidéo visible sur  0,0 % de l'écran, noir sur 92,7 %
+openbox + picom   vidéo visible sur 92,7 % de l'écran, noir sur  0,0 %
+```
+
+Sans composition, X11 ne mélange pas le canal alpha : notre fenêtre transparente
+peint du noir opaque et masque la vidéo. Tous les bureaux modernes composent
+(KWin, Mutter, Xfwm, Cinnamon) ; un gestionnaire de fenêtres nu, non.
+
+## ⚠️ Le backend X11 de mpv est GPL — et sans lui, aucune image
+
+Découvert en compilant la chaîne. `meson` refuse net :
+
+```
+ERROR: Feature x11 cannot be enabled: the build is not GPL!
+```
+
+Le code X11 de mpv vient de MPlayer et n'est pas relicenciable. **Une libmpv
+LGPL n'a donc AUCUNE sortie vidéo sous X11.** Sur macOS la question ne se posait
+pas — il n'y a pas de X11 — mais ici, livrer une chaîne LGPL reviendrait à
+n'afficher strictement rien pour tous les utilisateurs restés sur X11.
+
+mpv est donc bâti en **GPL** pour Linux, FFmpeg restant en LGPL (ni x264 ni
+x265 : ce sont des encodeurs). Le prix est nul du côté de la distribution —
+Linux n'a pas de store à satisfaire, MIT et GPL sont compatibles, la recette
+est publiée dans le dépôt et les sources de mpv et FFmpeg sont publiques. La
+contrainte qui a fait retirer VLC de l'App Store ne concerne qu'Apple.
+
+## La réserve initiale : XWayland, sur ce poste
 
 Sous `--ozone-platform=x11`, le processus GPU de Chromium meurt en boucle :
 
@@ -148,7 +195,9 @@ virtuelle ou sur un autre poste, avant la livraison.
 3. Sur X11 : calage et empilement par libX11, à l'image de `win32.ts`.
 4. Témoin HDR : `video-target-params/gamma` et `sig-peak`, jamais `video-params`.
 5. `setlocale(LC_NUMERIC, "C")` avant `mpv_create`, sans exception.
-6. libmpv livrée avec l'application.
+6. libmpv livrée avec l'application, mpv bâti en **GPL** (X11), FFmpeg en LGPL.
+7. Sous X11, un compositeur est requis — à dire dans la documentation, pas à
+   supposer.
 
 ## Reproduire
 
