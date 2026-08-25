@@ -17,6 +17,7 @@ import type { Creds } from "./downloads/worker";
 import { localDb } from "./localDb";
 import { sendToPage } from "./pageEvents";
 import { creerVeilleSysteme } from "./powerSave";
+import { combiner, creerRenfortLogind, lanceurSysteme } from "./linux/veilleLogind";
 
 /** Tour de purge, comme côté Rust. */
 const PURGE_TICK_MS = 60_000;
@@ -34,7 +35,10 @@ let reveilBranche = false;
  * endort le PC au bout de son délai d'inactivité et coupe le flux. L'écran, lui,
  * reste libre de s'éteindre.
  */
-const veilleSysteme = creerVeilleSysteme(powerSaveBlocker);
+const veilleSysteme =
+  process.platform === "linux"
+    ? combiner(creerVeilleSysteme(powerSaveBlocker), creerRenfortLogind(lanceurSysteme))
+    : creerVeilleSysteme(powerSaveBlocker);
 
 /** Racine de téléchargement effective. */
 export function downloadsRoot(): string {
