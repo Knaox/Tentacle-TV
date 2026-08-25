@@ -9,6 +9,7 @@
 import koffi from "koffi";
 import { app } from "electron";
 import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
+import { poserLocaleNumeriqueC } from "./localeC";
 import { oublierEtat } from "./mpvEtat";
 import { oublierCouche } from "./coucheMetal";
 import { lireAsync, oublierLectures } from "./mpvLecture";
@@ -208,6 +209,14 @@ const FORMAT_BY_NAME: Readonly<Record<string, number>> = {
 /** Démarre mpv. Détruit l'instance précédente s'il y en a une. */
 export function init(opts: InitOptions, sink: Sink): string | null {
   destroy();
+
+  // ⚠️ AVANT `mpv_create`, et à chaque lecture : sous Linux, GTK peut avoir
+  // basculé `LC_NUMERIC` sur la locale du système entre-temps, et libmpv y lit
+  // `0.5` comme `0`. Voir `localeC.ts` — sans objet ailleurs.
+  const localeAvant = poserLocaleNumeriqueC();
+  if (localeAvant !== null && localeAvant !== "C") {
+    console.info(`[mpv] LC_NUMERIC ramené de ${localeAvant} à C`);
+  }
 
   const handle = mpvApi().create() as unknown;
   if (!handle) return "mpv_create a echoue";
