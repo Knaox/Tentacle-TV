@@ -60,12 +60,14 @@ export function supportsSmtc(): boolean {
  * `check_msix_update`, et c'est justifié, cette commande est Windows —, si bien
  * que la pop-up ne s'affichait jamais alors que tout ce qu'il lui faut existe.
  *
- * Le second cas reste l'inventaire des commandes : sous Windows, c'est WinRT qui
- * découvre la mise à jour en attente et la déclenche depuis l'application.
+ * Le second cas reste l'inventaire des commandes : sous Windows c'est WinRT qui
+ * découvre la mise à jour en attente et la déclenche depuis l'application ; sous
+ * Linux, où il n'y a pas de guichet, c'est notre updater — et c'est la détection
+ * du format installé qui commande, puisque sans elle on ne propose rien.
  */
 export function supportsAppUpdates(): boolean {
   if (isAppStoreBuild()) return true;
-  return hasNativeCommand("check_msix_update");
+  return hasNativeCommand("check_msix_update") || hasNativeCommand("detect_linux_install_format");
 }
 
 /** Session hors ligne conservée par le natif (cache de session, avatars). */

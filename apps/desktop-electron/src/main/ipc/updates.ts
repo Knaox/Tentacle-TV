@@ -45,7 +45,48 @@ function msix(): typeof import("../msixUpdate") {
   return require("../msixUpdate") as typeof import("../msixUpdate");
 }
 
+/**
+ * Les trois commandes de Linux.
+ *
+ * ⚠️ Chargement paresseux, comme WinRT juste au-dessus : rien de tout cela ne
+ * doit être importé sur les autres systèmes.
+ */
+function registerLinuxUpdateCommands(registry: CommandRegistry): void {
+  const maj = require("../linux/miseAJour") as typeof import("../linux/miseAJour");
+  registry
+    .add("detect_linux_install_format", {
+      schema: NO_ARGS,
+      run: () => maj.detecterFormat(),
+    })
+    .add("download_update", {
+      schema: z.object({
+        url: z.string().url(),
+        sha256: z.string(),
+        fileName: z.string().min(1),
+      }),
+      run: ({ url, sha256, fileName }) =>
+        maj.telecharger({
+          url,
+          sha256,
+          nomFichier: fileName,
+          // Le même nom d'évènement que côté Tauri : la page écoute déjà.
+          progres: (f) => { sendToPage("linux-update-progress", f); },
+        }),
+    })
+    .add("install_linux_update", {
+      schema: z.object({
+        path: z.string().min(1),
+        format: z.enum(["appimage", "deb", "rpm", "pacman"]),
+      }),
+      run: ({ path, format }) => maj.installer(path, format),
+    });
+}
+
 export function registerUpdateCommands(registry: CommandRegistry): void {
+  if (process.platform === "linux") {
+    registerLinuxUpdateCommands(registry);
+    return;
+  }
   if (process.platform !== "win32") return;
 
   registry
