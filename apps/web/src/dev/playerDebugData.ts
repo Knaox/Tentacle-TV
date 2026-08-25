@@ -9,7 +9,7 @@
  * que la liste des propriétés est de la donnée, pas de l'affichage.
  */
 
-import { desktopKind, desktopPlatform } from "../desktop/bridge";
+import { desktopKind, desktopPlatform, montageLinux } from "../desktop/bridge";
 import {
   supportsAppUpdates,
   supportsDownloads,
@@ -142,6 +142,17 @@ function sectionShell(): DebugSection {
     lignes: [
       ["shell", desktopKind() ?? "web", desktopKind() !== null],
       ["plateforme", desktopPlatform(), null],
+      // Sous Linux, `plateforme` ne dit pas l'essentiel : c'est le montage qui
+      // décide du HDR et de la lecture plein écran. Absent ailleurs.
+      ...(montageLinux() === null
+        ? []
+        : ([[
+            "montage vidéo",
+            montageLinux() === "wayland"
+              ? "wayland — HDR possible, lecture plein écran"
+              : "x11 — lecture fenêtrée, pas de HDR",
+            null,
+          ]] as const)),
       ["lecteur mpv", supportsMpv() ? "disponible" : "absent", supportsMpv()],
       ["téléchargements", supportsDownloads() ? "disponible" : "absent", supportsDownloads()],
       ["contrôles média", supportsSmtc() ? "disponible" : "absent", supportsSmtc()],

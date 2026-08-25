@@ -48,6 +48,15 @@ export interface ElectronBridge {
    */
   readonly capabilities: readonly string[];
   /**
+   * Linux seulement : sur quel serveur d'affichage la vidéo est montée.
+   *
+   * `wayland` — HDR possible, lecture forcément en plein écran (le protocole
+   * n'autorise pas un client à placer ses fenêtres).
+   * `x11` — lecture fenêtrée comme sur Windows, mais aucun HDR : X.Org n'a pas
+   * de gestion de couleur et n'en aura pas.
+   */
+  readonly montage?: "wayland" | "x11";
+  /**
    * Hauteur, en points, du bandeau que la page doit dessiner elle-même.
    *
    * Zéro partout où la fenêtre garde son vrai cadre — Windows, et le web. Sur

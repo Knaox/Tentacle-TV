@@ -18,7 +18,14 @@
 import { desktopKind } from "./detect";
 import type { DesktopEventHandler, Unlisten } from "./types";
 
-export { desktopKind, desktopPlatform, isDesktopApp, isElectronShell, isTauriShell } from "./detect";
+export {
+  desktopKind,
+  desktopPlatform,
+  isDesktopApp,
+  isElectronShell,
+  isTauriShell,
+  montageLinux,
+} from "./detect";
 export {
   supportsAppUpdates,
   supportsDownloads,

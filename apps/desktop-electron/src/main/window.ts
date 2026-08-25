@@ -12,6 +12,7 @@ import { windowIconPath } from "./appIcon";
 import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { optionsCadreLinux } from "./linux/fenetre";
+import { montageLinux } from "./linux/session";
 import { lockNavigation } from "./security";
 import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
 import { fermerSessionLecteur, ouvrirSessionLecteur } from "./sessionLecteurPleinEcran";
@@ -164,6 +165,11 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         // ayant son vrai cadre. Une constante en double côté web finirait par
         // diverger de celle qui place les feux et retranche à la vidéo.
         `--tentacle-titlebar=${process.platform === "darwin" ? HAUTEUR_BANDEAU : 0}`,
+        // Le montage vidéo de Linux — `wayland` ou `x11`, vide ailleurs. Il
+        // décide du HDR et de la lecture plein écran ; la page doit pouvoir le
+        // DIRE, et le panneau de diagnostic est le premier endroit où on le
+        // cherche. Par argument comme le reste : disponible dès le preload.
+        `--tentacle-montage=${montageLinux() ?? ""}`,
       ],
     },
   });
