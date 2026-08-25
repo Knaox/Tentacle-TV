@@ -213,7 +213,10 @@ function main(): void {
       // les phases suivantes (lecteur, telechargements, mises a jour).
       const missing = registry.missing(COMMANDS);
       if (missing.length > 0) {
-        console.info(`[tentacle] ${missing.length} commandes restent a implementer`);
+        // Les NOMMER, et pas seulement les compter : sous Linux, une commande
+        // absente fait disparaître en silence une section entière de l'interface
+        // (`capabilities.ts`), et le compte seul ne dit pas laquelle.
+        console.info(`[tentacle] ${missing.length} commandes restent a implementer : ${missing.join(", ")}`);
       }
 
       // La page reçoit la liste de ce qui EST branché, pas de ce qui manque :
