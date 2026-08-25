@@ -42,7 +42,7 @@
 | **Web** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | Self-hosted | React 19 + Vite 6 + Tailwind CSS |
 | **macOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + native mpv player |
 | **Windows** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + native mpv player |
-| **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + native mpv player |
+| **Linux** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + native mpv player (HDR on Wayland) |
 | **iOS** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
 | **Android TV** | ![Available](https://img.shields.io/badge/Available-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
@@ -56,7 +56,7 @@
 | **Web** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | Auto-hébergé | React 19 + Vite 6 + Tailwind CSS |
 | **macOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | Electron + lecteur mpv natif |
 | **Windows** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.microsoft.com/detail/9NKHL0T84245"><img src="https://img.shields.io/badge/Microsoft_Store-0078D4?style=flat-square&logo=microsoftstore&logoColor=white" alt="Microsoft Store" /></a> | Electron + lecteur mpv natif |
-| **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Tauri v2 + lecteur mpv natif |
+| **Linux** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://github.com/Knaox/Tentacle-TV/releases"><img src="https://img.shields.io/badge/deb%20%C2%B7%20rpm%20%C2%B7%20pacman%20%C2%B7%20AppImage-FCC624?style=flat-square&logo=linux&logoColor=black" alt="Linux" /></a> | Electron + lecteur mpv natif (HDR sous Wayland) |
 | **iOS** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://apps.apple.com/app/id6760205634"><img src="https://img.shields.io/badge/App_Store-000000?style=flat-square&logo=apple&logoColor=white" alt="App Store" /></a> | React Native + Expo |
 | **Android** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + Expo |
 | **Android TV** | ![Disponible](https://img.shields.io/badge/Disponible-22c55e?style=flat-square) | <a href="https://play.google.com/store/apps/details?id=com.tentacletv.mobile"><img src="https://img.shields.io/badge/Google_Play-414141?style=flat-square&logo=googleplay&logoColor=white" alt="Google Play" /></a> | React Native + ExoPlayer/Media3 |
@@ -382,7 +382,7 @@ The `directStreamingConfigured: true` confirms the admin toggle stays ON; `trans
 
 ## Desktop App
 
-The desktop app wraps the web client — [Electron](https://www.electronjs.org/) on Windows and macOS, [Tauri v2](https://v2.tauri.app/) on Linux — and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos).
+The desktop app wraps the web client with [Electron](https://www.electronjs.org/) on all three systems, and adds a native **mpv** video player for superior playback (Direct Play, Dolby Vision, Atmos).
 
 ### Installation
 
@@ -394,22 +394,51 @@ The desktop app wraps the web client — [Electron](https://www.electronjs.org/)
 
 ### Linux
 
-The Linux build ships three packages. **mpv/libmpv** is required for video playback — it is pulled in automatically by the `.deb`/`.rpm`, and must be installed manually for the AppImage.
+Four packages, and **mpv is bundled in every one of them** — nothing else to install.
+
+**One command, any distribution** — detects the format, installs the right package
+and adds the menu entry (`--uninstall` removes both):
 
 ```bash
-# Debian / Ubuntu / Mint / Pop!_OS
-sudo apt install ./Tentacle.TV_*_amd64.deb
-
-# Fedora / openSUSE / RHEL
-sudo dnf install ./Tentacle.TV-*.x86_64.rpm
-
-# Arch / Manjaro / EndeavourOS — the AppImage runs as-is
-sudo pacman -S mpv fuse2          # libmpv + FUSE (AppImage runtime), once
-chmod +x Tentacle.TV_*.AppImage
-./Tentacle.TV_*.AppImage
+curl -fsSL https://raw.githubusercontent.com/Knaox/Tentacle-TV/main/scripts/install-linux.sh | sh
 ```
 
-> Windows and macOS update through their respective stores. The Linux packages have no auto-updater — grab the newest one from GitHub Releases.
+Or by hand:
+
+```bash
+sudo apt install ./tentacle-tv_*_amd64.deb        # Debian / Ubuntu / Mint / Pop!_OS
+sudo dnf install ./tentacle-tv_*.x86_64.rpm       # Fedora / openSUSE / RHEL
+sudo pacman -U ./tentacle-tv_*.pkg.tar.zst        # Arch / Manjaro / EndeavourOS
+chmod +x tentacle-tv_*.AppImage && ./tentacle-tv_*.AppImage   # any distribution
+```
+
+The AppImage needs FUSE (`fuse2` on Arch, `libfuse2t64` on Ubuntu); the install
+script above says so if it is missing.
+
+#### HDR, Wayland and X11
+
+Linux forces a trade-off no other system does, and the app adapts to your session:
+
+| Session | Video window | HDR |
+|---------|--------------|-----|
+| **Wayland** | fullscreen while playing | **yes**, real PQ / BT.2020 passthrough |
+| **X11** | windowed, like Windows and macOS | no — tone-mapped to SDR |
+
+Two facts are behind it. **X.Org will never support HDR** — it has been stated
+officially, there is no protocol and there will not be one; HDR on Linux goes
+through the Wayland `wp-color-management-v1` protocol. And **Wayland does not let
+an application position its own windows**, so the video window can only be pinned
+to the interface in fullscreen, where there is only one possible position.
+
+HDR needs a Wayland session with a colour-managed compositor (KDE Plasma 6.2+,
+GNOME 48+, Hyprland), plus Mesa 25.1+ or NVIDIA 595+. X11 sessions need a
+compositing window manager — every modern desktop has one — otherwise the
+controls paint black over the video.
+
+> Windows and macOS update through their stores. **Linux has a built-in
+> updater**: it detects how the app was installed (`.deb`, `.rpm`, pacman or
+> AppImage), verifies the SHA-256 and installs through polkit — or swaps the
+> AppImage file in place.
 
 ### First Launch
 
@@ -585,8 +614,7 @@ pnpm docker:reset   # Full teardown + rebuild (deletes data!)
 apps/
   web/             React 19 + Vite 6 + Tailwind CSS (main web client)
   backend/         Fastify 5 + Prisma 6 + MariaDB (API server)
-  desktop/         Tauri v2 (wraps web build for Linux desktop)
-  desktop-electron/ Electron (same web build for Windows and macOS)
+  desktop-electron/ Electron (same web build for Windows, macOS and Linux)
   mobile/          Expo 52 + React Native (iOS + Android)
   tv/              React Native for Android TV (ExoPlayer/Media3)
 
@@ -671,7 +699,7 @@ See [Plugin Registry Documentation](docs/plugin-registry-README.md) for the full
 | Layer | Technology |
 |-------|------------|
 | Web Frontend | React 19, Vite 6, Tailwind CSS 3, Framer Motion 11 |
-| Desktop | Electron (Windows, macOS) · Tauri v2 / Rust (Linux), mpv native player |
+| Desktop | Electron (Windows, macOS, Linux), native mpv player via koffi |
 | Backend | Fastify 5, Prisma 6, MariaDB 11 |
 | API Client | TanStack Query v5 |
 | Language | TypeScript 5.7 (strict mode) |
