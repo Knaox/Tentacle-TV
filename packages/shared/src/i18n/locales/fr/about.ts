@@ -19,7 +19,7 @@ export default {
   technologies: "Technologies",
   compatibleServices: "Services compatibles",
   license: "Licence",
-  licenseText: "Tentacle TV est distribué sous licence MIT. Les bibliothèques tierces utilisées sont soumises à leurs licences respectives (MIT, Apache 2.0, BSD, etc.). Le lecteur desktop embarque mpv et FFmpeg ; les versions Mac App Store et Microsoft Store en utilisent des builds sous licence LGPL v2.1+. Les paquets Linux embarquent FFmpeg sous LGPL v2.1+ et mpv sous GPL v2+ — sa sortie vidéo X11 n\'existe pas autrement. Code source disponible sur mpv.io et ffmpeg.org ; la recette de compilation est publiée dans le dépôt.",
+  licenseText: "Tentacle TV est distribué sous licence MIT. Les bibliothèques tierces utilisées sont soumises à leurs licences respectives (MIT, Apache 2.0, BSD, etc.). Le lecteur desktop embarque mpv et FFmpeg ; les versions Mac App Store et Microsoft Store en utilisent des builds sous licence LGPL v2.1+. Les paquets Linux embarquent FFmpeg sous LGPL v2.1+ et mpv sous GPL v2+ — sa sortie vidéo X11 n'existe pas autrement. Code source disponible sur mpv.io et ffmpeg.org ; la recette de compilation est publiée dans le dépôt.",
   creditsDisclaimer: "Cette page est fournie à titre informatif. Les noms et marques appartiennent à leurs propriétaires respectifs.",
   techReact: "Interface utilisateur",
   techTypeScript: "Typage statique",

@@ -1,16 +1,15 @@
 /**
  * Contrat entre l'interface et la couche native, quel que soit le shell.
  *
- * `apps/web` est servi par DEUX applications de bureau pendant la migration :
- * l'app Tauri (macOS, Linux) et l'app Electron (Windows). Ce fichier définit
- * la seule forme qu'elles doivent présenter, pour que le reste du code ignore
- * laquelle est en face.
+ * `apps/web` est servi par une application de bureau — Electron, sur les trois
+ * systèmes — et par le navigateur. Ce fichier définit la seule forme que la
+ * coquille doit présenter, pour que le reste du code n'ait rien à savoir d'elle.
  */
 
-/** Shell de bureau détecté, ou `null` sur le web. */
-export type DesktopKind = "tauri" | "electron";
+/** Coquille de bureau détectée, ou `null` sur le web. */
+export type DesktopKind = "electron";
 
-/** Désabonnement d'un évènement. Même forme que `UnlistenFn` de Tauri. */
+/** Désabonnement d'un évènement. */
 export type Unlisten = () => void;
 
 /** Charge utile d'un évènement natif, dans l'enveloppe attendue par le code. */

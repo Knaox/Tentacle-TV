@@ -34,12 +34,11 @@ import * as PluginsAPI from "@tentacle-tv/plugins-api";
 import { PluginProvider, registerPlugin, unregisterPlugin } from "@tentacle-tv/plugins-api";
 import { App } from "./App";
 import { ThemeProvider } from "./theme";
-import { isDesktopApp, isTauriShell } from "./desktop/bridge";
+import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { getBackendBase } from "./lib/backendBase";
 import { retenterSaufDebit } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
-import { startLocalStorageExport } from "./migration/localStorageExport";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installerSondeReseau } from "./dev/networkProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
@@ -122,11 +121,6 @@ if (isDesktop) setRequestTimeoutMs(12_000);
 // origine ; sans cette copie, la première version Electron déconnecterait TOUS
 // les utilisateurs. Silencieux, sans effet sur le web.
 //
-// Gardé sur `isTauriShell()` et NON sur `isDesktopApp()` : c'est le côté
-// ÉCRITURE de la migration. Electron lit ce dépôt au premier démarrage, il ne
-// le réécrit pas — le relancer depuis Electron écraserait la sauvegarde par le
-// contenu d'une origine encore vide.
-if (isTauriShell()) startLocalStorageExport();
 
 // Plugin registration (legacy — plugins now run in sandboxed iframes on web)
 // Mobile/desktop still use inline registration.
