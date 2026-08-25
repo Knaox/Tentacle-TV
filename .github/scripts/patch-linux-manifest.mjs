@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Patche le bloc `linux` de updates/store-versions.json à partir du SHA256SUMS
-// d'une release linux-v*. Le manifeste est lu par l'app via raw.githubusercontent
-// (apps/web/src/lib/linuxUpdate.ts) pour proposer la MAJ du bon format.
+// d'une release `desktop-v*`. Le manifeste est lu par l'app via
+// raw.githubusercontent (apps/web/src/lib/linuxUpdate.ts) pour proposer la mise
+// à jour du bon format.
 //
 // Usage : node patch-linux-manifest.mjs <version> <tag> <SHA256SUMS>
 import { readFileSync, writeFileSync } from "node:fs";
