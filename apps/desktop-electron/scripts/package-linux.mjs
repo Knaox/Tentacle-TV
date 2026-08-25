@@ -127,7 +127,7 @@ function preparerRessources() {
     console.warn(
       `⚠️  libmpv.so.2 absente de ${libSource} : le paquet se rabattra sur celle de\n` +
         "    la distribution, qui n'a pas forcément de décodeur HEVC.\n" +
-        "    → bash apps/desktop-electron/scripts/build-mpv-lgpl-linux.sh",
+        "    → bash apps/desktop-electron/scripts/build-mpv-linux.sh",
     );
   }
   return [path.join(ressources, "web"), path.join(ressources, "icon.png"),

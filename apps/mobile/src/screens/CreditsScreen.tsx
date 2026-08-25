@@ -19,9 +19,8 @@ const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "TanStack Query", descKey: "techTanStackQuery" },
   { name: "i18next", descKey: "techReact" },
   { name: "Fastify", descKey: "techFastify" },
-  // Les deux coquilles de bureau : Electron (Windows, macOS) et Tauri (Linux).
+  // La coquille de bureau, désormais unique pour les trois systèmes.
   { name: "Electron", descKey: "techElectron" },
-  { name: "Tauri", descKey: "techTauri" },
 ];
 
 const sectionHeaderStyle = (t: AppTheme): TextStyle => ({
