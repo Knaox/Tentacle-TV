@@ -94,6 +94,13 @@ export const COMMANDS = [
   // d'un Jellyfin quelconque. Voir `ipc/jellyfin.ts`.
   "jellyfin_session_post",
 
+  // Mises à jour — Linux. Il n'y a pas de guichet unique : c'est le format
+  // d'installation qui décide de la façon de mettre à jour, et la page a besoin
+  // de le connaître avant de proposer quoi que ce soit.
+  "detect_linux_install_format",
+  "download_update",
+  "install_linux_update",
+
   // Greffons — dépôt du document à servir sous son origine dédiée.
   // Propre à Electron : Tauri monte les greffons en `srcdoc`, la question de
   // l'origine ne s'y pose pas de la même façon.
@@ -109,6 +116,7 @@ export const EVENTS = [
   "window://fullscreen",
   "smtc-button",
   "msix-update-progress",
+  "linux-update-progress",
 ] as const;
 
 /**
