@@ -12,6 +12,7 @@ import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
 import { poserLocaleNumeriqueC } from "./localeC";
 import { oublierEtat } from "./mpvEtat";
 import { oublierCouche } from "./coucheMetal";
+import { oublierSortie } from "../linux/hdr";
 import { lireAsync, oublierLectures } from "./mpvLecture";
 import { drain, oublierCadence, type Sink } from "./mpvDrain";
 import { poserOptions } from "./mpvOptions";
@@ -50,6 +51,7 @@ export function nettoyerEtat(): void {
   oublierCadence();
   oublierEtat();
   oublierCouche();
+  oublierSortie();
   oublierLectures();
   for (const resolve of enVol.values()) resolve("instance mpv detruite");
   enVol.clear();
@@ -297,6 +299,7 @@ export function destroy(): void {
   oublierCadence();
   oublierEtat();
   oublierCouche();
+  oublierSortie();
   oublierLectures();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une

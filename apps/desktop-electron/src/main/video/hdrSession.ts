@@ -107,6 +107,12 @@ function transmettre(actif: boolean): void {
  * À appeler sur `file-loaded` ET `video-reconfig`.
  */
 export function accorder(): void {
+  // Sous Linux il n'y a rien à négocier non plus, mais il y a quelque chose à
+  // CONSTATER : ce que mpv envoie réellement à l'écran. C'est le seul témoin
+  // qui distingue une transmission d'un tone-mapping. Voir `linux/hdr.ts`.
+  if (process.platform === "linux") {
+    (require("../linux/hdr") as typeof import("../linux/hdr")).releverSortie();
+  }
   // ⚠️ SORTIE IMMÉDIATE SUR macOS : il n'y a rien à accorder, l'EDR y étant
   // alloué par le compositeur fenêtre par fenêtre (voir `displayHdr.ts`).
   if (!NEGOCIE_AVEC_L_ECRAN) return;

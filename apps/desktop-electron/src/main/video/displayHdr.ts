@@ -13,7 +13,11 @@
  * basculer, rien à rendre, et surtout rien à restaurer si l'application meurt
  * brutalement — le défaut que `hdr.ts` passe l'essentiel de son code à éviter.
  *
- * Ce module donne aux deux systèmes le même vocabulaire, pour que
+ * **Linux (Wayland)** se range du côté de macOS : le compositeur alloue l'espace
+ * colorimétrique surface par surface, il n'y a rien à basculer. Sous X11 il n'y
+ * a rien du tout — X.Org n'a pas de gestion de couleur et n'en aura pas.
+ *
+ * Ce module donne aux trois systèmes le même vocabulaire, pour que
  * `hdrSession.ts` n'ait pas à choisir son camp.
  *
  * ⚠️ Chargement PARESSEUX de `hdr.ts` : il appelle `koffi.load("user32.dll")` à
@@ -35,6 +39,11 @@
 export function hdrActif(fenetreVideo?: unknown): boolean {
   if (process.platform === "win32") {
     return (require("./hdr") as typeof import("./hdr")).hdrActif();
+  }
+  // Sous Linux la question ne se pose pas à l'écran mais au RENDU : c'est
+  // `video-target-params` qui dit ce qui sort, et lui seul. Voir `linux/hdr.ts`.
+  if (process.platform === "linux") {
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).sortieHdr() === true;
   }
   if (process.platform !== "darwin") return false;
   const { lireEdr } = require("./macosEdr") as typeof import("./macosEdr");
@@ -83,4 +92,37 @@ export function activerHdr(): boolean {
 export function restaurerHdr(): void {
   if (process.platform !== "win32") return;
   (require("./hdr") as typeof import("./hdr")).restaurerHdr();
+}
+
+/**
+ * Ce que le RENDU dit de lui-même — pas ce que l'écran promet.
+ *
+ * macOS lit le journal de la couche Metal, Linux la propriété
+ * `video-target-params`. Les deux répondent à la même question : l'image sort-
+ * elle vraiment en plage étendue ? `null` = on ne sait pas, et surtout pas
+ * « non ».
+ *
+ * ⚠️ À NE PAS confondre avec `hdrActif` sur macOS, qui est instantané et dépend
+ * de la SCÈNE — une scène de nuit retombe à 1,00 sur une lecture parfaitement
+ * HDR. Celui-ci ne dépend pas de l'image.
+ */
+export function renduEnHdr(): boolean | null {
+  if (process.platform === "darwin") {
+    return (require("./coucheMetal") as typeof import("./coucheMetal")).coucheEnHdr();
+  }
+  if (process.platform === "linux") {
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).sortieHdr();
+  }
+  return null;
+}
+
+/** L'espace de sortie en une ligne lisible, pour le panneau de diagnostic. */
+export function espaceRendu(): string | null {
+  if (process.platform === "darwin") {
+    return (require("./coucheMetal") as typeof import("./coucheMetal")).espaceCouche();
+  }
+  if (process.platform === "linux") {
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).espaceSortie();
+  }
+  return null;
 }
