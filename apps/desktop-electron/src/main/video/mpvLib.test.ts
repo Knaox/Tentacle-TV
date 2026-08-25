@@ -139,9 +139,61 @@ describe("libmpvPath — le paquet", () => {
     );
   });
 
-  it("aucune libmpv connue hors macOS et Windows", async () => {
-    const { libmpvPath } = await chargerPour("linux");
+  it("aucune libmpv connue hors macOS, Windows et Linux", async () => {
+    const { libmpvPath } = await chargerPour("freebsd");
 
     expect(() => libmpvPath()).toThrow(/TENTACLE_MPV_LIB/);
+  });
+});
+
+/**
+ * Sous Linux, le repli sur la distribution n'est PAS équivalent : `mpv-libs` y
+ * est bâtie contre un FFmpeg amputé, sans décodeur HEVC (mesuré sur Fedora 44,
+ * cf. `docs/LINUX-FENETRE-VIDEO.md`). Le paquet doit donc préférer la sienne, et
+ * le dire quand il ne l'a pas.
+ */
+describe("libmpvPath — Linux", () => {
+  const VENDOREE = path.resolve(RACINE, "../desktop/src-tauri/lib/libmpv.so.2");
+
+  it("le paquet prend la libmpv qu'il embarque", async () => {
+    etat.isPackaged = true;
+    Object.defineProperty(process, "resourcesPath", { value: "/opt/tentacle/resources", configurable: true });
+    fichiers.add("/opt/tentacle/resources/lib/libmpv.so.2").add("/usr/lib64/libmpv.so.2");
+    const { libmpvPath } = await chargerPour("linux");
+
+    expect(libmpvPath()).toBe("/opt/tentacle/resources/lib/libmpv.so.2");
+    expect(console.warn).not.toHaveBeenCalled();
+  });
+
+  it("un paquet sans la sienne se rabat sur le système, et le dit", async () => {
+    etat.isPackaged = true;
+    Object.defineProperty(process, "resourcesPath", { value: "/opt/tentacle/resources", configurable: true });
+    fichiers.add("/usr/lib/x86_64-linux-gnu/libmpv.so.2");
+    const { libmpvPath } = await chargerPour("linux");
+
+    expect(libmpvPath()).toBe("/usr/lib/x86_64-linux-gnu/libmpv.so.2");
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it("en développement, la chaîne construite passe avant celle du système", async () => {
+    fichiers.add(VENDOREE).add("/usr/lib64/libmpv.so.2");
+    const { libmpvPath } = await chargerPour("linux");
+
+    expect(libmpvPath()).toBe(VENDOREE);
+  });
+
+  it("sans aucun fichier connu, le nom nu laisse chercher le chargeur dynamique", async () => {
+    const { libmpvPath } = await chargerPour("linux");
+
+    expect(libmpvPath()).toBe("libmpv.so.2");
+  });
+
+  it("ne pose aucun pilote Vulkan : le chargeur du système fait l'affaire", async () => {
+    fichiers.add(VENDOREE);
+    const { libmpvPath } = await chargerPour("linux");
+
+    libmpvPath();
+    expect(process.env["VK_DRIVER_FILES"]).toBeUndefined();
+    expect(process.env["VK_ICD_FILENAMES"]).toBeUndefined();
   });
 });
