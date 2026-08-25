@@ -10,6 +10,7 @@
 import { app, dialog, ipcMain, powerSaveBlocker, type IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
 import { creerVeilleEcran } from "../powerSave";
+import { combiner, creerRenfortLogind, lanceurSysteme } from "../linux/veilleLogind";
 import { openExternalSafely } from "../security";
 import {
   enterPlayerFullscreenScope,
@@ -21,8 +22,17 @@ import { CommandRegistry, isTrustedSender } from "./registry";
 
 const NO_ARGS = z.object({}).passthrough();
 
-/** Instance unique : c'est elle qui garde l'identifiant du blocage en cours. */
-const veilleEcran = creerVeilleEcran(powerSaveBlocker);
+/**
+ * Instance unique : c'est elle qui garde l'identifiant du blocage en cours.
+ *
+ * Sous Linux, `powerSaveBlocker` tient l'écran par le compositeur mais ne
+ * retient PAS logind — mesuré, `systemd-inhibit --list` ne montre alors rien de
+ * nous. Le renfort le complète. Voir `linux/veilleLogind.ts`.
+ */
+const veilleEcran =
+  process.platform === "linux"
+    ? combiner(creerVeilleEcran(powerSaveBlocker), creerRenfortLogind(lanceurSysteme))
+    : creerVeilleEcran(powerSaveBlocker);
 
 /**
  * Rend l'écran à sa veille normale, quoi qu'il arrive.
