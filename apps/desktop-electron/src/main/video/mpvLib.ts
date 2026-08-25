@@ -33,6 +33,14 @@
  * ⚠️ Le repli Homebrew ne vaut QUE pour le développement : cette mpv est GPL, et
  * un paquet qui la chargerait serait indistribuable. Un paquet dont les dylibs
  * manquent échoue donc bruyamment plutôt que de se rattraper sur elle.
+ *
+ * # Linux
+ *
+ * Même principe, autre raison. Il n'y a pas de MoltenVK à déclarer — le chargeur
+ * Vulkan du système trouve son pilote tout seul — mais la libmpv des
+ * distributions est bâtie contre un FFmpeg amputé des codecs brevetés : **pas de
+ * décodeur HEVC**. Le paquet emporte donc la sienne, et le repli sur celle du
+ * système est un aveu, pas un choix (`libmpvSysteme`).
  */
 
 import { app } from "electron";
@@ -40,7 +48,23 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 /** Nom du fichier de bibliothèque, selon le système. */
-export const NOM_LIB = process.platform === "win32" ? "libmpv-2.dll" : "libmpv.2.dylib";
+export const NOM_LIB =
+  process.platform === "win32" ? "libmpv-2.dll"
+  : process.platform === "linux" ? "libmpv.so.2"
+  : "libmpv.2.dylib";
+
+/**
+ * Les dossiers où les distributions posent leurs bibliothèques 64 bits.
+ *
+ * Fedora et openSUSE utilisent `lib64`, Debian et Ubuntu un dossier par triplet,
+ * Arch un `lib` nu. L'ordre n'a pas d'importance — un seul répond.
+ */
+const DOSSIERS_SYSTEME_LINUX = [
+  "/usr/lib64",
+  "/usr/lib/x86_64-linux-gnu",
+  "/usr/lib",
+  "/usr/local/lib",
+];
 
 /** Vise la chaîne LGPL vendorée — celle que le paquet embarque. */
 const LIVREE = "livree";
@@ -125,6 +149,53 @@ function avertirRepli(): string {
   return MPV_HOMEBREW;
 }
 
+/**
+ * La libmpv de la DISTRIBUTION, quand on n'a pas la nôtre.
+ *
+ * ⚠️ Ce n'est pas un repli équivalent, et le dire compte. Mesuré le 25.08.2026
+ * sur Fedora 44, `mpv-libs` 0.41 du dépôt officiel, sur un fichier HEVC :
+ *
+ *     [vd] (no decoders)
+ *     [vd] Failed to initialize a decoder for codec 'hevc'.
+ *
+ * Les distributions bâtissent mpv contre un FFmpeg amputé des codecs brevetés.
+ * Un client Jellyfin sans HEVC ne lit pas la moitié d'une médiathèque — d'où la
+ * chaîne LGPL que nous livrons, et l'avertissement quand on ne l'a pas.
+ *
+ * Rendre le nom nu en dernier recours n'est pas un aveu d'échec : le chargeur
+ * dynamique sait chercher dans `LD_LIBRARY_PATH` et le cache de `ldconfig`, que
+ * cette liste ne couvre pas.
+ */
+function libmpvSysteme(): string {
+  for (const dossier of DOSSIERS_SYSTEME_LINUX) {
+    const candidat = path.join(dossier, NOM_LIB);
+    if (existsSync(candidat)) return candidat;
+  }
+  return NOM_LIB;
+}
+
+/**
+ * Emplacement de la libmpv sous Linux.
+ *
+ * En paquet, elle voyage avec l'application (`resources/lib`) : c'est ce qui rend
+ * le HDR et le HEVC identiques d'une distribution à l'autre. En développement on
+ * emprunte celle que la CI a construite, et à défaut celle du système.
+ */
+function libmpvLinux(): string {
+  if (app.isPackaged) {
+    const livree = path.join(process.resourcesPath, "lib", NOM_LIB);
+    if (existsSync(livree)) return livree;
+    console.warn(
+      "[mpv] paquet sans libmpv livrée : repli sur celle de la distribution.\n" +
+        "      Le HEVC et le HDR ne sont alors plus garantis.",
+    );
+    return libmpvSysteme();
+  }
+  const vendoree = path.join(dossierLivre(), NOM_LIB);
+  if (existsSync(vendoree)) return vendoree;
+  return libmpvSysteme();
+}
+
 /** Emplacement de la bibliothèque mpv, empaquetée ou en développement. */
 export function libmpvPath(): string {
   const choisi = process.env["TENTACLE_MPV_LIB"];
@@ -144,9 +215,9 @@ export function libmpvPath(): string {
     return chaineLivree() ?? avertirRepli();
   }
 
+  if (process.platform === "linux") return libmpvLinux();
+
   if (process.platform !== "win32") {
-    // Aucune autre plateforme ne sort d'Electron : Linux reste sur Tauri, et un
-    // chemin inventé ici ne serait jamais éprouvé.
     throw new Error(`Aucune libmpv connue pour ${process.platform} — définir TENTACLE_MPV_LIB.`);
   }
 
