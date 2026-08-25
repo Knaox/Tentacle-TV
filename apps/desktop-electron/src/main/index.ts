@@ -17,6 +17,7 @@ import {
   webRoot,
 } from "./appProtocol";
 import { demarrerBattement } from "./battement";
+import { dossierDonnees } from "./cheminsDonnees";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -39,15 +40,6 @@ import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy }
 import { installerMenu } from "./menu";
 import { appliquerIdentiteSysteme } from "./appIdentity";
 import { createMainWindow, getMainWindow } from "./window";
-
-/**
- * Identifiant hérité de l'app Tauri.
- *
- * Il fixe le dossier de données, donc l'accès à `tentacle-local.db` et aux
- * téléchargements DÉJÀ présents chez l'utilisateur. En changer rendrait
- * invisibles les films qu'il a téléchargés.
- */
-const TAURI_IDENTIFIER = "com.tentacle.media";
 
 /**
  * Ce qu'on ajoute à l'adresse de départ. Vide, sauf en mise au point.
@@ -88,7 +80,13 @@ function routeDeDepart(): string {
 function useExistingUserData(): void {
   // Sous MSIX, %APPDATA% est redirigé de façon transparente vers le conteneur
   // du paquet — le même dossier que celui de l'app Tauri. Rien à migrer.
-  app.setPath("userData", path.join(app.getPath("appData"), TAURI_IDENTIFIER));
+  // Sur Linux, c'est `cheminsDonnees.ts` qui redresse la divergence XDG.
+  app.setPath("userData", dossierDonnees({
+    plateforme: process.platform,
+    appData: app.getPath("appData"),
+    home: app.getPath("home"),
+    env: process.env,
+  }));
 }
 
 /**
