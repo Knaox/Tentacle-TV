@@ -1,5 +1,5 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
-import { getMpvApi, isLinux, isMacOS, isTauri, setPendingDestroy, type MpvState } from "./mpvRuntime";
+import { getMpvApi, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
 import { noterAid, noterSid } from "./mpvTrackIntent";
 import { tracerCommande } from "./startupTrace";
@@ -11,19 +11,18 @@ import { invoke, isElectronShell, listen } from "../desktop/bridge";
  * Extraction mécanique de useDesktopPlayer — logique inchangée.
  */
 
-// Aucun de nos shells ne peut compter sur le `stop-screensaver` de mpv.
+// La coquille tient l'écran éveillé, jamais mpv — et sur les trois systèmes.
 //
-// macOS et Linux : Render API (vo=libmpv) → mpv n'a AUCUNE fenêtre native, son
-// `stop-screensaver` n'a rien à quoi s'accrocher. On gère l'anti-veille
-// nous-mêmes côté Rust : IOPMAssertion sur macOS (macos/sleep_assertion.rs),
-// inhibiteurs D-Bus ScreenSaver/SessionManager/PowerManagement + logind sur
-// Linux (linux/sleep_inhibit.rs).
+// Windows : mpv a bien sa fenêtre (`--wid`), mais c'est une fenêtre ENFANT, et
+// le système n'envoie `SC_SCREENSAVE`/`SC_MONITORPOWER` qu'à la fenêtre de
+// premier plan. Son `stop-screensaver` n'a donc rien à quoi s'accrocher.
 //
-// Windows : mpv a bien sa fenêtre (--wid), mais c'est une fenêtre ENFANT, et le
-// système n'envoie SC_SCREENSAVE/SC_MONITORPOWER qu'à la fenêtre de premier
-// plan. La coquille Electron pose donc un powerSaveBlocker (main/powerSave.ts).
+// Linux : `powerSaveBlocker` tient l'écran par le compositeur, mais ne retient
+// PAS logind — un film de deux heures sans une touche pressée se ferait
+// endormir sur une machine réglée en `IdleAction=suspend`. Le renfort est dans
+// `linux/veilleLogind.ts`, mesures à l'appui.
 function needsKeepAwake(): boolean {
-  return isElectronShell() || (isTauri() && (isMacOS() || isLinux()));
+  return isElectronShell();
 }
 
 export function useMpvCommands({

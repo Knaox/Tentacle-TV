@@ -1,10 +1,10 @@
-import type { MpvObservableProperty } from "tauri-plugin-libmpv-api";
+import type { MpvObservableProperty } from "../lib/mpvElectronApi";
 import { desktopPlatform, isDesktopApp, isElectronShell } from "../desktop/bridge";
 import type { MpvTrack } from "./mpvTrackList";
 
 /**
  * Runtime mpv partagé : détection de plateforme, singleton du plugin
- * (Windows/Linux : tauri-plugin-libmpv-api ; macOS : adaptateur render API),
+ * (un seul adaptateur, `mpvElectronApi`),
  * porte de sérialisation init/destroy, options d'init et propriétés observées.
  * Extraction mécanique de useDesktopPlayer (limite 300 lignes/fichier).
  */
@@ -68,11 +68,15 @@ export function isLinux(): boolean {
  *  en a besoin et ne peut pas importer ce fichier-ci sans créer un cycle. */
 export { isAppStoreBuild } from "../desktop/channel";
 
-// Lazy-loaded plugin API — only available in Tauri context
-// On macOS & Linux: uses our custom mpv Render API adapter (mêmes commandes Rust
-//   `mpv_*` + évènements `mpv://*`, deux adaptateurs identiques).
-// On Windows: uses tauri-plugin-libmpv-api (embarquement `--wid`).
-export type PluginApi = typeof import("tauri-plugin-libmpv-api");
+/**
+ * L'API du lecteur, chargée à la demande.
+ *
+ * Un seul adaptateur depuis que la coquille est unique : `mpvElectronApi`
+ * traduit les appels en commandes `mpv_*` et écoute les évènements `mpv://*`.
+ * Le type reste nommé `PluginApi` — les appelants s'en servent — mais il vient
+ * désormais de l'adaptateur lui-même.
+ */
+export type PluginApi = typeof import("../lib/mpvElectronApi");
 let api: PluginApi | null = null;
 
 export function getMpvApi(): PluginApi | null {
@@ -80,23 +84,10 @@ export function getMpvApi(): PluginApi | null {
 }
 
 export const loadMpvApi = async (): Promise<boolean> => {
+  if (!isElectronShell()) return false;
   try {
-    // Electron pilote libmpv depuis son processus principal, par koffi. Les
-    // commandes et les évènements sont les mêmes que côté Rust : l'adaptateur
-    // est donc le même, seul le nom du module dit lequel des deux répond.
-    if (isElectronShell()) {
-      api = await import("../lib/mpvElectronApi") as unknown as PluginApi;
-      return true;
-    }
-    if (isMacOS()) {
-      api = await import("../lib/mpvMacosApi") as unknown as PluginApi;
-    } else if (isLinux()) {
-      // Linux : Render API custom (GtkGLArea + GtkOverlay) — l'overlay HTML des
-      // contrôles s'affiche au-dessus de la vidéo dans une seule fenêtre.
-      api = await import("../lib/mpvLinuxApi") as unknown as PluginApi;
-    } else {
-      api = await import("tauri-plugin-libmpv-api");
-    }
+    // Electron pilote libmpv depuis son processus principal, par koffi.
+    api = await import("../lib/mpvElectronApi");
     return true;
   } catch {
     return false;
@@ -151,25 +142,28 @@ export const OBSERVED_PROPERTIES = [
   ["eof-reached", "flag"],
 ] as const satisfies readonly MpvObservableProperty[];
 
-/** Options d'init mpv. `renderApi` = macOS/Linux SOUS TAURI (Render API custom :
- *  mpv dessine dans notre surface GL, aucune fenêtre native) ; sinon une fenêtre
- *  mpv existe — enfant `--wid` sous Windows, NSWindow attachée sous macOS,
- *  fenêtre calée sous la nôtre sous Linux/Electron. */
-export function buildMpvInitOptions(renderApi: boolean): Record<string, string | number | boolean> {
-  // Trois mondes, pas deux. Le durcissement ci-dessous vise la fenêtre ENFANT
-  // Win32 et ses messages ; macOS n'a ni `window-dragging` ni `native-touch`,
-  // et sa fenêtre est désarmée côté natif (`setIgnoresMouseEvents:`).
-  const fenetreWin32 = !renderApi && isWindows();
-  const fenetreMacos = !renderApi && isMacOS();
-  const fenetreLinux = !renderApi && isLinux();
+/**
+ * Options d'init mpv.
+ *
+ * mpv a TOUJOURS sa propre fenêtre, sur les trois systèmes — enfant `--wid`
+ * sous Windows, NSWindow attachée sous macOS, fenêtre calée sous la nôtre sous
+ * Linux. Le montage « Render API », où mpv dessinait dans une surface GL à nous
+ * sans fenêtre native, appartenait à la coquille Tauri et a disparu avec elle.
+ */
+export function buildMpvInitOptions(): Record<string, string | number | boolean> {
+  // Trois mondes. Le durcissement ci-dessous vise la fenêtre ENFANT Win32 et ses
+  // messages ; macOS n'a ni `window-dragging` ni `native-touch`, et sa fenêtre
+  // est désarmée côté natif (`setIgnoresMouseEvents:`) ; Linux n'a rien à
+  // désarmer, sa fenêtre étant sous la nôtre et sans entrées.
+  const fenetreWin32 = isWindows();
+  const fenetreMacos = isMacOS();
+  const fenetreLinux = isLinux();
 
   return {
     vo: "gpu-next",
     hwdec: "auto-safe",
     "keep-open": "yes",
-    // Render API (macOS/Linux) : mpv dessine dans notre FBO (vo=libmpv, forcé
-    // côté Rust) — pas de fenêtre native, donc ni force-window ni durcissement
-    // des entrées. Windows (--wid) : la fenêtre vidéo mpv est une fenêtre enfant
+    // Windows (--wid) : la fenêtre vidéo mpv est une fenêtre enfant
     // vivant sur son propre thread, dont la file d'entrée est attachée à celle
     // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
     // image continuent, plus rien n'est cliquable). On lui retire donc tout

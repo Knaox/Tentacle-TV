@@ -13,7 +13,7 @@ export interface MpvTrack {
   external?: boolean;
 }
 
-type PluginApi = typeof import("tauri-plugin-libmpv-api");
+type PluginApi = typeof import("../lib/mpvElectronApi");
 
 /** Safe property fetch — returns null on error (property unavailable). */
 const safeProp = <T>(p: Promise<T>): Promise<T | null> => p.catch(() => null);
