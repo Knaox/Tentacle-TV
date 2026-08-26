@@ -21,10 +21,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ombreSurVideo } from "../lib/ombreSurVideo";
+import { BoutonDebug } from "./BoutonDebug";
 import { collecterDebug } from "./playerDebugData";
 import type { DebugSection } from "./playerDebugTypes";
 import { ACTIONS } from "./playerDebugActions";
 import { usePanelDrag } from "./usePanelDrag";
+import { usePanelResize } from "./usePanelResize";
 
 const INTERVALLE_MS = 500;
 
@@ -50,7 +52,16 @@ export function PlayerDebugPanel() {
   const [ouvert, setOuvert] = useState(ouvertAuDemarrage);
   const [sections, setSections] = useState<DebugSection[]>([]);
   const [retour, setRetour] = useState<string | null>(null);
-  const { position, element, onPointerDown } = usePanelDrag({ x: 16, y: 16 });
+  const { position, element, onPointerDown, recontenir } = usePanelDrag(
+    { x: 16, y: 16 },
+    { cle: "tentacle_debug_panel_pos" },
+  );
+  const { taille, demarrerResize } = usePanelResize(
+    "tentacle_debug_panel_size",
+    { w: 480, h: Math.round(window.innerHeight * 0.88) },
+    // Un panneau agrandi vers le bas/la droite peut déborder : le ramener.
+    recontenir,
+  );
 
   const rafraichir = useCallback(() => {
     void collecterDebug().then(setSections);
@@ -84,32 +95,32 @@ export function PlayerDebugPanel() {
   }, [ouvert]);
 
   if (!ouvert) {
-    return (
-      <button
-        onClick={() => setOuvert(true)}
-        className="fixed bottom-3 right-3 z-[9999] rounded-md bg-black/80 px-2.5 py-1 font-mono text-[10px] font-bold tracking-wider text-emerald-400 ring-1 ring-emerald-400/40 transition hover:bg-black"
-        title="Diagnostic du lecteur (F9) — développement uniquement"
-      >
-        DEBUG
-      </button>
-    );
+    return <BoutonDebug onOuvrir={() => setOuvert(true)} />;
   }
 
   return (
     <div
-      ref={element}
+      ref={(el) => {
+        element.current = el;
+      }}
       onPointerDown={onPointerDown}
       style={{
         left: position.x,
         top: position.y,
+        // Taille pilotée par la poignée du coin — plus de largeur figée.
+        width: taille.w,
+        height: taille.h,
         // Opaque, franchement : voir l'en-tête du fichier.
         background: "#0a0a10",
         // Et pas d'ombre floue là où la surface a un canal alpha : elle y sort
         // en aplat noir bien plus grand que le panneau. Voir `ombreSurVideo`.
         boxShadow: ombreSurVideo("0 24px 64px -12px rgba(0,0,0,0.9)", "none"),
       }}
-      className="fixed z-[9999] max-h-[88vh] w-[480px] cursor-move select-none overflow-y-auto rounded-lg p-3.5 font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
+      className="fixed z-[9999] cursor-move select-none rounded-lg font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
     >
+      {/* Le contenu défile DANS ce conteneur ; la poignée, elle, reste collée
+          au coin du panneau — absolue dans le parent fixe, hors du défilement. */}
+      <div className="h-full overflow-y-auto p-3.5">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[11px] font-bold tracking-wider text-emerald-400">
           DIAGNOSTIC LECTEUR
@@ -166,6 +177,16 @@ export function PlayerDebugPanel() {
         ))}
       </div>
       {retour && <div className="mt-2 text-[10px] text-amber-300">{retour}</div>}
+      </div>
+      <div
+        onPointerDown={demarrerResize}
+        className="absolute bottom-0 right-0 flex h-4 w-4 cursor-nwse-resize items-end justify-end p-0.5 text-white/30 hover:text-white/80"
+        title="Redimensionner"
+      >
+        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5">
+          <path d="M9 1v8H1" fill="none" stroke="currentColor" />
+        </svg>
+      </div>
     </div>
   );
 }
