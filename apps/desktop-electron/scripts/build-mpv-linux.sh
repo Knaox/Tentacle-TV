@@ -39,6 +39,9 @@
 # sur le plus ancien socle qu'on veuille servir.
 #
 # Usage : bash apps/desktop-electron/scripts/build-mpv-linux.sh [--sortie <dossier>]
+#         bash apps/desktop-electron/scripts/build-mpv-linux.sh --audit <dossier>
+#           (ne compile rien : rejoue seulement l'audit des NEEDED sur une
+#            chaîne déjà collectée — le même que celui de fin de compilation)
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -50,13 +53,55 @@ MPV_TAG="v0.41.0"          # première à savoir parler couleur à Wayland
 
 ICI="$(cd "$(dirname "$0")" && pwd)"
 SORTIE="$ICI/../lib/mpv-linux"
+AUDIT_SEUL=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --sortie) SORTIE="$2"; shift 2 ;;
+    --audit) AUDIT_SEUL=1; SORTIE="$2"; shift 2 ;;
     *) echo "argument inconnu : $1" >&2; exit 2 ;;
   esac
 done
 SORTIE="$(mkdir -p "$SORTIE" && cd "$SORTIE" && pwd)"
+
+# ── Audit de chargeabilité — indépendant de la machine qui compile. ──────────
+#
+# ⚠️ L'ancienne vérification (`ldd | grep "not found"`) tournait dans le
+# conteneur de compilation, où TOUT se résout : elle passait toujours, y compris
+# quand la chaîne était inchargeable ailleurs. Mesuré sur Fedora 44 : onze
+# bibliothèques réclamaient `libbz2.so.1.0`, un SONAME que seuls Debian/Ubuntu
+# fournissent (Fedora et Arch n'exposent que `libbz2.so.1`) — `dlopen` échouait
+# net, donc aucune vidéo, sur toute installation hors Debian.
+#
+# Ici on lit les NEEDED au `readelf` : chacun doit être un fichier de la chaîne
+# (le rpath `$ORIGIN` le trouvera), ou un SONAME de la liste blanche ci-dessous
+# — épelés et VERSIONNÉS, identiques sur Debian, Ubuntu, Fedora, Arch et
+# openSUSE. Tout le reste est une erreur de collecte, et fait échouer le build.
+UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
+
+auditer() {
+  echo "==> Audit des NEEDED de $SORTIE (readelf)"
+  local manques="" f besoin
+  for f in "$SORTIE"/*.so*; do
+    [ -L "$f" ] && continue
+    while read -r besoin; do
+      [ -z "$besoin" ] && continue
+      [ -e "$SORTIE/$besoin" ] && continue
+      case "$UNIVERSELS" in *" $besoin "*) continue ;; esac
+      manques="$manques  $(basename "$f") → $besoin"$'\n'
+    done < <(readelf -d "$f" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\].*/\1/p')
+  done
+  if [ -n "$manques" ]; then
+    echo "⚠️  NEEDED hors chaîne et hors liste blanche — la chaîne ne se chargera pas partout :"
+    printf '%s' "$manques"
+    exit 1
+  fi
+  echo "==> Audit propre : chaque NEEDED est dans la chaîne ou dans la liste blanche."
+}
+
+if [ "$AUDIT_SEUL" = 1 ]; then
+  auditer
+  exit 0
+fi
 
 # Hors du dépôt : les chemins du projet peuvent contenir des espaces, ce que ni
 # FFmpeg ni meson ne supportent partout.
@@ -166,9 +211,19 @@ fi
 #   - les protocoles du bureau (X11, Wayland, xkbcommon) parlent à un serveur
 #     dont la version est celle de la machine ;
 #   - le son (ALSA, PulseAudio, PipeWire) parle de même à un démon local.
+#
+# ⚠️ Et une règle d'admission : ne reste au système qu'un SONAME IDENTIQUE sur
+# toutes les distributions. `libbz2` l'a payée : Debian/Ubuntu exposent
+# `libbz2.so.1.0`, Fedora/Arch seulement `libbz2.so.1` — la chaîne compilée ici
+# était inchargeable partout hors Debian. Elle est donc EMBARQUÉE, comme toute
+# bibliothèque au SONAME divergent.
+#
+# ⚠️ Chaque motif est ancré sur `\.so` : la version non ancrée laissait `libm`
+# avaler `libmp3lame`/`libmpg123`/`libmd` et `libz` avaler `libzimg` — quatre
+# bibliothèques restées au système par accident, absentes de bien des machines.
 echo "==> Collecte vers $SORTIE"
 rm -rf "$SORTIE"; mkdir -p "$SORTIE"
-SYSTEME='^(libc|libm|libdl|libpthread|librt|libgcc_s|libstdc\+\+|ld-linux.*|libvulkan|libX.*|libxcb.*|libwayland.*|libxkbcommon|libdrm|libgbm|libEGL.*|libGL.*|libGLX.*|libGLdispatch|libasound|libpulse.*|libpipewire.*|libspa.*|libdbus.*|libsystemd|libudev|libcap|libselinux|libffi|libz|liblzma|libzstd|libbz2|libpcre.*|libgomp|libatomic|libnuma|libmvec)'
+SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
 
 copier_recursif() {
   local fichier="$1"
@@ -200,5 +255,4 @@ done
 
 echo "==> Chaîne prête :"
 ls -la "$SORTIE" | head -30
-echo "==> Vérification des dépendances non résolues :"
-LD_LIBRARY_PATH="$SORTIE" ldd "$SORTIE/libmpv.so.2" | grep -E "not found" && echo "⚠️  dépendances manquantes" || echo "aucune."
+auditer
