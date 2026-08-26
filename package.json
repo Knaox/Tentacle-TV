@@ -47,7 +47,7 @@
     },
     "patchedDependencies": {
       "react-native-video@6.19.0": "patches/react-native-video@6.19.0.patch",
-      "react-native-tvos@0.81.5-2": "patches/react-native-tvos@0.81.5-2.patch"
+      "react-native-tvos@0.80.1-0": "patches/react-native-tvos@0.80.1-0.patch"
     }
   },
   "devDependencies": {
