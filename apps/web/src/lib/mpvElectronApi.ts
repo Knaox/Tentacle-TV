@@ -30,8 +30,24 @@ export interface MpvConfig {
  * fonction avale ses erreurs, et l'absence de bascule n'est pas une panne — mpv
  * retombe sur le tone-mapping, qui donne une image correcte.
  */
+/**
+ * Electron préfixe tout rejet d'`invoke` de « Error invoking remote method
+ * 'tentacle:mpv_init': Error: … ». C'est du bruit de transport : ce message
+ * finit à l'écran (bandeau d'erreur du lecteur) et dans la décision de repli —
+ * seule la cause courte compte.
+ */
+function nettoyerErreur(e: unknown): Error {
+  const brut = e instanceof Error ? e.message : String(e);
+  return new Error(brut.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, ""));
+}
+
 export async function init(config?: MpvConfig): Promise<string> {
-  const resultat = await invoke<string>("mpv_init", { options: config ?? {} });
+  let resultat: string;
+  try {
+    resultat = await invoke<string>("mpv_init", { options: config ?? {} });
+  } catch (e) {
+    throw nettoyerErreur(e);
+  }
   await pousserHdrAuto();
   return resultat;
 }
