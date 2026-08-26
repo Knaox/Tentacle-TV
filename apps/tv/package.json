@@ -24,7 +24,7 @@
     "nativewind": "^4.1.0",
     "react": "19.1.0",
     "react-i18next": "^16.5.4",
-    "react-native": "npm:react-native-tvos@0.81.5-2",
+    "react-native": "npm:react-native-tvos@0.80.1-0",
     "react-native-css-interop": "^0.2.2",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-reanimated": "~3.19.5",
@@ -35,12 +35,12 @@
     "react-native-webview": "13.15.0"
   },
   "devDependencies": {
-    "@react-native-community/cli": "^20.2.0",
-    "@react-native-community/cli-platform-android": "^20.2.0",
-    "@react-native-community/cli-server-api": "^20.2.0",
-    "@react-native/babel-preset": "^0.81.5",
-    "@react-native/gradle-plugin": "0.81.5",
-    "@react-native/metro-config": "^0.81.5",
+    "@react-native-community/cli": "^19.0.0",
+    "@react-native-community/cli-platform-android": "^19.0.0",
+    "@react-native-community/cli-server-api": "^19.0.0",
+    "@react-native/babel-preset": "^0.80.1",
+    "@react-native/gradle-plugin": "0.80.1",
+    "@react-native/metro-config": "^0.80.1",
     "@types/react": "^19.2.14",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.0"
