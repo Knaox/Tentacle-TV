@@ -201,7 +201,12 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     win.webContents.on("render-process-gone", (_e, details) => {
       console.error(`[rendu] processus perdu: ${JSON.stringify(details)}`);
     });
-    win.webContents.openDevTools({ mode: "detach" });
+    // `TENTACLE_SANS_DEVTOOLS=1` : une session de mesure à l'écran (captures,
+    // pixels comptés) n'a que faire d'une fenêtre DevTools posée par-dessus le
+    // panneau de diagnostic — elle faussait chaque cliché du banc.
+    if (process.env["TENTACLE_SANS_DEVTOOLS"] !== "1") {
+      win.webContents.openDevTools({ mode: "detach" });
+    }
   }
 
   // Plein écran : AppKit, F11, et la sortie de session du lecteur. Tout est dans
