@@ -91,6 +91,14 @@ interface EtatHdrNatif {
   /** La couche Metal de mpv, telle que mpv la rapporte. `null` = il n'a rien dit. */
   coucheHdr?: boolean | null;
   espaceCouche?: string | null;
+  /**
+   * Linux : le film est-il TRANSMIS en HDR ? Le verdict du couple
+   * video-params / video-target-params, en booléen — `null` quand la question
+   * ne se pose pas (contenu SDR, rien relevé, autre plateforme).
+   */
+  transmission?: boolean | null;
+  /** Linux : la plage accordée par le compositeur, en multiples du blanc SDR. */
+  pic?: number | null;
 }
 
 /** État HDR vu par le NATIF, plus fiable que la requête média du navigateur. */
@@ -123,8 +131,13 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
         // le compositeur alloue l'espace colorimétrique surface par surface. Un
         // contenu SDR sort lui aussi en PQ sur un écran laissé en HDR — d'où
         // « sortie » et non « écran », et pas de verdict : c'est la ligne
-        // « sortie mpv » plus bas qui tranche.
-        ? ["sortie en HDR", etat.actif ? "oui" : "non", null]
+        // « sortie mpv » plus bas qui tranche. Le pic est l'équivalent du
+        // headroom EDR : la plage que le compositeur accorde, en × du blanc SDR.
+        ? [
+            "sortie en HDR",
+            `${etat.actif ? "oui" : "non"}${typeof etat.pic === "number" ? ` · pic ${etat.pic.toFixed(2)}×` : ""}`,
+            null,
+          ]
         : ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
   ];
   // macOS SEULEMENT — et le garde-fou est la plateforme, pas la présence du
@@ -171,7 +184,10 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
       linux
         ? (etat.espaceCouche ?? "rien relevé")
         : `${dit}${etat.espaceCouche ? ` (${etat.espaceCouche})` : ""}`,
-      linux ? !etat.espaceCouche?.includes("TONE-MAPPÉ") : etat.coucheHdr,
+      // Linux : le BOOLÉEN de transmission, pas un reniflage de « TONE-MAPPÉ »
+      // dans la chaîne lisible — qui jugeait de plus « bon » un contenu SDR.
+      // `null` (SDR, rien relevé) = pas de verdict à porter.
+      linux ? (etat.transmission ?? null) : etat.coucheHdr,
     ]);
   }
   return { titre: "HDR — état natif", lignes };
