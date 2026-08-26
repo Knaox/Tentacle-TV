@@ -31,6 +31,9 @@ export default {
   subtitlesLabel: "SOUS-TITRES",
   trackFallback: "Piste {{index}}",
   mpvError: "Erreur mpv : {{error}}",
+  fallbackPlayerTitle: "Lecteur de secours",
+  fallbackPlayerHint:
+    "Le lecteur intégré n'a pas pu démarrer ; la lecture continue avec le lecteur web. HDR et HEVC peuvent être limités.",
   secondsShort: "sec",
   nextEpisodeLabel: "Épisode suivant",
   scrubConfirmHint: "OK · Lire ici",
