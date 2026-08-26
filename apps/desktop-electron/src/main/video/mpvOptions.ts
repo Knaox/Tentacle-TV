@@ -78,14 +78,22 @@ export function poserOptions(
   page: Readonly<Record<string, string | number | boolean>>,
 ): void {
   const api = mpvApi();
+  const poser = (k: string, v: string): void => {
+    const code = api.setOptionString(ctx, k, v);
+    // Journal seulement — jamais fatal —, mais dire QUELLE option un libmpv
+    // refuse a manqué à plus d'un diagnostic : jusqu'ici le refus était muet.
+    if (typeof code === "number" && code < 0) {
+      console.warn(`[mpv] option refusée (${code}) : ${k}=${v}`);
+    }
+  };
   for (const [k, v] of Object.entries(page)) {
-    api.setOptionString(ctx, k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+    poser(k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
   }
-  for (const [k, v] of Object.entries(SANS_SCRIPTS)) api.setOptionString(ctx, k, v);
+  for (const [k, v] of Object.entries(SANS_SCRIPTS)) poser(k, v);
   // Sous Linux, le contexte GPU, la transmission HDR et le plein écran dépendent
   // de la SESSION, que la page ne connaît pas. Voir `linux/optionsMpv.ts`.
   const montage = montageLinux();
   if (montage !== null) {
-    for (const [k, v] of Object.entries(socleLinux(montage))) api.setOptionString(ctx, k, v);
+    for (const [k, v] of Object.entries(socleLinux(montage))) poser(k, v);
   }
 }

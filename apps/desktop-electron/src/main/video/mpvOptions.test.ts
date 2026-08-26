@@ -10,13 +10,16 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 // `vi.hoisted` : la fabrique de `vi.mock` est remontée AU-DESSUS des imports,
 // elle ne peut donc pas fermer sur une variable ordinaire de ce module.
-const { posees } = vi.hoisted(() => ({ posees: [] as Array<[string, string]> }));
+const { posees, refusees } = vi.hoisted(() => ({
+  posees: [] as Array<[string, string]>,
+  refusees: new Set<string>(),
+}));
 
 vi.mock("./mpvFfi", () => ({
   mpvApi: () => ({
     setOptionString: (_ctx: unknown, nom: string, valeur: string) => {
       posees.push([nom, valeur]);
-      return 0;
+      return refusees.has(nom) ? -5 : 0;
     },
   }),
 }));
@@ -25,6 +28,7 @@ import { poserOptions } from "./mpvOptions";
 
 beforeEach(() => {
   posees.length = 0;
+  refusees.clear();
 });
 
 describe("poserOptions", () => {
@@ -63,5 +67,16 @@ describe("poserOptions", () => {
 
     expect(posees).toContainEqual(["keep-open", "yes"]);
     expect(posees).toContainEqual(["input-default-bindings", "no"]);
+  });
+
+  it("dit au journal quelle option un libmpv refuse, sans jamais lever", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    refusees.add("hwdec");
+
+    expect(() => poserOptions(null, { hwdec: "auto-safe" })).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("hwdec=auto-safe"));
+    // Une option acceptée, elle, ne fait pas de bruit.
+    expect(warn.mock.calls.filter(([m]) => String(m).includes("keep-open"))).toHaveLength(0);
+    warn.mockRestore();
   });
 });
