@@ -9,6 +9,7 @@ import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
+import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
 import { AutoSkipIntroToggle } from "../components/settings/AutoSkipIntroToggle";
 import { UpNextCardToggle, UpNextCountdownToggle } from "../components/settings/EnchainementToggles";
 
@@ -214,6 +215,12 @@ export function Preferences() {
             du lecteur natif, le composant s'efface ailleurs. */}
         <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
           <HdrAutoToggle />
+        </div>
+
+        {/* Choix de session graphique — coquille Linux seulement, même geste
+            d'effacement que la bascule HDR. Relance proposée, jamais imposée. */}
+        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
+          <LinuxSessionSelect />
         </div>
 
         {!offline && !libraries && (
