@@ -197,3 +197,50 @@ describe("libmpvPath — Linux", () => {
     expect(process.env["VK_ICD_FILENAMES"]).toBeUndefined();
   });
 });
+
+/**
+ * `candidatsLibmpv` rend la LISTE à essayer : l'existence d'un fichier ne dit
+ * pas qu'il s'ouvre (la chaîne vendorée a été inchargeable un jour entier —
+ * libbz2, SONAME Debian-only — pendant qu'`existsSync` répondait oui).
+ */
+describe("candidatsLibmpv — l'ordre des replis Linux", () => {
+  const VENDOREE = path.resolve(RACINE, "lib/mpv-linux/libmpv.so.2");
+
+  it("vendorée d'abord, distribution ensuite, nom nu en dernier", async () => {
+    fichiers.add(VENDOREE).add("/usr/lib64/libmpv.so.2");
+    const { candidatsLibmpv } = await chargerPour("linux");
+
+    expect(candidatsLibmpv()).toEqual([VENDOREE, "/usr/lib64/libmpv.so.2", "libmpv.so.2"]);
+  });
+
+  it("sans aucun fichier connu, le nom nu seul — pas de doublon", async () => {
+    const { candidatsLibmpv } = await chargerPour("linux");
+
+    expect(candidatsLibmpv()).toEqual(["libmpv.so.2"]);
+  });
+
+  it("TENTACLE_MPV_LIB est un choix explicite : une seule candidate, aucun repli", async () => {
+    process.env["TENTACLE_MPV_LIB"] = "/essai/libmpv.so.2";
+    fichiers.add(VENDOREE);
+    const { candidatsLibmpv } = await chargerPour("linux");
+
+    expect(candidatsLibmpv()).toEqual(["/essai/libmpv.so.2"]);
+  });
+
+  it("un paquet sans la sienne le dit, et propose la distribution", async () => {
+    etat.isPackaged = true;
+    Object.defineProperty(process, "resourcesPath", { value: "/opt/tentacle/resources", configurable: true });
+    fichiers.add("/usr/lib64/libmpv.so.2");
+    const { candidatsLibmpv } = await chargerPour("linux");
+
+    expect(candidatsLibmpv()).toEqual(["/usr/lib64/libmpv.so.2", "libmpv.so.2"]);
+    expect(console.warn).toHaveBeenCalled();
+  });
+
+  it("hors Linux, le chemin unique de libmpvPath", async () => {
+    fichiers.add(LIB_LIVREE).add(MOLTENVK).add(ICD_DEV);
+    const { candidatsLibmpv } = await chargerPour("darwin");
+
+    expect(candidatsLibmpv()).toEqual([LIB_LIVREE]);
+  });
+});

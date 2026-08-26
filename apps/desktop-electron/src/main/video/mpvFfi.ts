@@ -32,7 +32,8 @@
  */
 
 import koffi from "koffi";
-import { libmpvPath } from "./mpvLib";
+import { chargerPremiereDisponible } from "./mpvChargement";
+import { candidatsLibmpv } from "./mpvLib";
 
 /** Formats de propriété mpv (`client.h`). */
 export const FORMAT = {
@@ -137,15 +138,25 @@ export type MpvApi = ReturnType<typeof lier>;
  */
 let cache: MpvApi | null = null;
 
-/** La libmpv chargée. Lève si elle est introuvable — l'appelant décide. */
+/** La libmpv chargée. Lève si aucune candidate ne s'ouvre — l'appelant décide. */
 export function mpvApi(): MpvApi {
   if (cache !== null) return cache;
-  const chemin = libmpvPath();
-  // Tracé ICI et non dans `libmpvPath()`, qui a deux appelants : la ligne dirait
-  // deux fois la même chose. C'est le seul témoin de la chaîne réellement jouée,
-  // et la première chose à lire quand le rendu ou le HDR surprend.
-  console.info(`[mpv] bibliothèque : ${chemin}`);
-  cache = lier(koffi.load(chemin));
+  // Sur Linux, plusieurs candidates (vendorée → distribution → nom nu) ; une
+  // seule ailleurs. Chaque écartée est DITE : une chaîne vendorée inchargeable
+  // a déjà coûté un jour de silence (libbz2, SONAME Debian-only).
+  const resultat = chargerPremiereDisponible(candidatsLibmpv(), (chemin) =>
+    lier(koffi.load(chemin)),
+  );
+  for (const { chemin, cause } of resultat.ecartes) {
+    console.warn(
+      `[mpv] candidate écartée : ${chemin} — ${cause}\n` +
+        "      repli sur la suivante ; hors chaîne livrée, HEVC et HDR ne sont plus garantis.",
+    );
+  }
+  // Le seul témoin de la chaîne réellement jouée, et la première chose à lire
+  // quand le rendu ou le HDR surprend.
+  console.info(`[mpv] bibliothèque : ${resultat.chemin}`);
+  cache = resultat.lib;
   return cache;
 }
 
