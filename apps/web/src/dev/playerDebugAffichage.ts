@@ -41,13 +41,15 @@ export function sectionFenetreChromium(): DebugSection {
   const videoHdr = matchMedia("(video-dynamic-range: high)").matches;
   const rec2020 = matchMedia("(color-gamut: rec2020)").matches;
   const p3 = matchMedia("(color-gamut: p3)").matches;
-  // Sur macOS ces requêtes ne peuvent RIEN dire de la vidéo : aucun verdict.
+  // Sur macOS ET Linux ces requêtes ne peuvent RIEN dire de la vidéo — mpv y
+  // vit dans une fenêtre native que Chromium ne compose pas, et la page reste
+  // une surface SDR même pendant une lecture HDR parfaite : aucun verdict.
   // `desktopPlatform()` vient de la coquille (`process.platform`), pas d'un
   // reniflage d'agent utilisateur.
-  const mac = desktopPlatform() === "macos";
-  const juge = <T,>(v: T): T | null => (mac ? null : v);
+  const horsChromium = desktopPlatform() === "macos" || desktopPlatform() === "linux";
+  const juge = <T,>(v: T): T | null => (horsChromium ? null : v);
   return {
-    titre: mac ? "Fenêtre Chromium (ne décrit PAS la vidéo)" : "Écran",
+    titre: horsChromium ? "Fenêtre Chromium (ne décrit PAS la vidéo)" : "Écran",
     lignes: [
       ["dynamic-range", hdr ? "high" : "standard", juge(hdr)],
       ["video-dynamic-range", videoHdr ? "high" : "standard", juge(videoHdr)],
@@ -125,27 +127,27 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
         ? ["sortie en HDR", etat.actif ? "oui" : "non", null]
         : ["écran en HDR", etat.actif ? "oui" : "non", etat.actif],
   ];
-  // macOS seulement, et à ne PAS confondre avec la ligne du dessus : « l'écran
-  // SAIT faire de la plage étendue » n'est pas « il en reçoit en ce moment ».
-  // Le natif le renvoyait déjà, le panneau n'en faisait rien.
-  if (etat.edrCapable !== undefined) {
+  // macOS SEULEMENT — et le garde-fou est la plateforme, pas la présence du
+  // champ : le natif renvoie `edrCapable: false` partout (l'EDR n'existe pas
+  // ailleurs), et la ligne s'affichait « non » EN ROUGE sur Windows et Linux —
+  // une info macOS qui faisait accuser un défaut inexistant.
+  if (mac && etat.edrCapable !== undefined) {
     lignes.push(["écran capable EDR", etat.edrCapable ? "oui" : "non", etat.edrCapable]);
   }
-  // L'interrupteur d'écran n'existe que sur Windows. Afficher « basculé par
-  // l'app : non » sur macOS laissait croire à une bascule ratée, alors qu'il n'y
-  // a rien à basculer — le compositeur alloue l'EDR fenêtre par fenêtre.
-  if (etat.supporte !== undefined) {
+  // L'interrupteur d'écran n'existe que sur Windows : macOS alloue l'EDR
+  // fenêtre par fenêtre, Linux négocie la surface au compositeur. La ligne
+  // n'apparaît QUE là où il y a un interrupteur — les « sans objet (macOS) »
+  // étaient du bruit d'une autre plateforme.
+  if (!mac && !linux) {
     lignes.push([
       "bascule d'écran",
       etat.supporte
         ? etat.bascule
           ? "en cours par l'app"
           : "disponible"
-        : `sans objet (${linux ? "Linux" : "macOS"})`,
+        : "indisponible",
       null,
     ]);
-  } else {
-    lignes.push(["basculé par l'app", etat.bascule ? "oui" : "non", null]);
   }
   // LE réglage qui compte sur macOS : sans lui, mpv ne transmet pas le signal.
   if (etat.autoAutorise !== undefined) {
@@ -157,7 +159,9 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
   }
   // Ce que mpv dit de SA couche — la seule mesure qui ne dépende pas de la
   // scène affichée, contrairement à « écran en HDR » juste au-dessus.
-  if (etat.coucheHdr !== undefined) {
+  // macOS et Linux seulement : Windows n'a ni couche Metal ni sortie négociée,
+  // et affichait « couche Metal : inconnue » — une ligne d'une autre plateforme.
+  if (etat.coucheHdr !== undefined && (mac || linux)) {
     // La formulation du RENDU, pas celle de l'écran. Sous Linux `espaceCouche`
     // porte déjà le verdict complet — « contenu pq → sortie pq · pic 3,81× », ou
     // « — TONE-MAPPÉ » — et se suffit donc à lui-même.
@@ -192,5 +196,7 @@ export function sectionSurface(s: SondeSurface | null): DebugSection | null {
   if (s.image !== null) {
     lignes.push(["capture", `${String(s.image.largeur)}x${String(s.image.hauteur)}`, null]);
   }
-  return { titre: "Surface macOS (C pour recapturer)", lignes };
+  // Déjà autogardée (la sonde n'existe qu'en dev macOS) ; la déclaration rend
+  // la restriction lisible et survivrait à un relâchement de la sonde.
+  return { titre: "Surface macOS (C pour recapturer)", lignes, plateformes: ["macos"] };
 }

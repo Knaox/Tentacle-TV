@@ -199,5 +199,9 @@ export async function collecterDebug(): Promise<DebugSection[]> {
     { titre: "mpv — couleur", lignes: hdr },
     { titre: "mpv — lecture", lignes: lecture },
   ];
-  return sections.filter((s): s is DebugSection => s !== null);
+  // Le filtre plateforme est ICI, pas dans chaque section : une section qui se
+  // déclare (`plateformes`) n'a pas à savoir où elle tourne.
+  return sections.filter(
+    (s): s is DebugSection => s !== null && (s.plateformes?.includes(desktopPlatform()) ?? true),
+  );
 }
