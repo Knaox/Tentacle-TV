@@ -76,7 +76,7 @@ SORTIE="$(mkdir -p "$SORTIE" && cd "$SORTIE" && pwd)"
 # (le rpath `$ORIGIN` le trouvera), ou un SONAME de la liste blanche ci-dessous
 # — épelés et VERSIONNÉS, identiques sur Debian, Ubuntu, Fedora, Arch et
 # openSUSE. Tout le reste est une erreur de collecte, et fait échouer le build.
-UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
+UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
 
 auditer() {
   echo "==> Audit des NEEDED de $SORTIE (readelf)"
@@ -164,13 +164,25 @@ if [ ! -f "$PREFIX/lib/libplacebo.so" ] && [ ! -f "$PREFIX/lib/x86_64-linux-gnu/
 fi
 
 # 4. FFmpeg — LGPL. Pas de `--enable-gpl`, pas de x264/x265, pas de nonfree.
-if [ ! -f "$PREFIX/lib/libavcodec.so" ]; then
-  echo "==> FFmpeg $FFMPEG_TAG (LGPL)"
+#
+# ⚠️ STATIQUE, et c'est mesuré : Electron embarque le FFmpeg de Chromium
+# (`libffmpeg.so`, 858 symboles `av*` exportés, non versionnés). Une libmpv qui
+# référence dynamiquement `av_*` les lie à la portée GLOBALE du processus —
+# donc à Chromium — et meurt : « libavcodec: build version 61.19.101
+# incompatible with runtime version 62.33.100 ». RTLD_DEEPBIND a été essayé et
+# écarté : il sépare les allocateurs (celui de Chromium interpose malloc), et
+# tout ce qui alloue d'un côté pour libérer de l'autre finit en SIGSEGV —
+# pw_free_strv, pa_xfree, piles lues au core dump. Le lien STATIQUE, symboles
+# cachés au lien de mpv (--exclude-libs), supprime le problème à la racine :
+# plus aucune référence dynamique `av*`. Licence inchangée : la libmpv Linux
+# est déjà GPL (voir l'en-tête), la recette est publique.
+if [ ! -f "$PREFIX/lib/libavcodec.a" ]; then
+  echo "==> FFmpeg $FFMPEG_TAG (LGPL, statique)"
   cloner https://github.com/FFmpeg/FFmpeg.git "$FFMPEG_TAG" "$TRAVAIL/ffmpeg"
   cd "$TRAVAIL/ffmpeg"
   ./configure \
     --prefix="$PREFIX" --libdir="$PREFIX/lib" \
-    --enable-shared --disable-static \
+    --disable-shared --enable-static --enable-pic \
     --disable-programs --disable-doc --disable-debug \
     --disable-gpl --disable-nonfree \
     --extra-cflags="-I$PREFIX/include" --extra-ldflags="-L$PREFIX/lib" \
@@ -178,6 +190,18 @@ if [ ! -f "$PREFIX/lib/libavcodec.so" ]; then
     --enable-vaapi --enable-vdpau --enable-vulkan --enable-nvdec
   make -j"$(nproc)"
   make install
+  # Un prefix qui garde des libav*.so d'une passe précédente ferait relier mpv
+  # en dynamique : le linker préfère toujours le .so au .a.
+  rm -f "$PREFIX"/lib/libav*.so* "$PREFIX"/lib/libsw*.so*
+  # En statique, les dépendances de FFmpeg (dav1d, opus, va…) doivent apparaître
+  # sur la ligne de lien de mpv — elles vivent dans `Libs.private`, que meson ne
+  # lit pas sans `prefer_static` global (essayé : il statifie AUSSI libass,
+  # fontconfig et glib, dont les .a d'Ubuntu ne sont pas PIC — lien impossible).
+  # On fusionne donc Libs.private dans Libs, pour FFmpeg seulement.
+  for pc in "$PREFIX"/lib/pkgconfig/libav*.pc "$PREFIX"/lib/pkgconfig/libsw*.pc; do
+    priv="$(sed -n 's/^Libs.private: //p' "$pc")"
+    [ -n "$priv" ] && sed -i "s|^Libs: \(.*\)|Libs: \1 $priv|" "$pc"
+  done
 fi
 
 # 5. mpv — bibliothèque seule, LGPL.
@@ -193,14 +217,26 @@ if [ ! -f "$PREFIX/lib/libmpv.so" ]; then
   # seule amenait libxml2, qui amène ICU — trente mégaoctets pour lire une vidéo
   # dans une archive, ce qu'un client Jellyfin ne fait jamais. Rubberband est en
   # outre GPL, et serait détectée toute seule.
-  meson setup "$TRAVAIL/mpv/build" "$TRAVAIL/mpv" \
+  # `--exclude-libs,ALL` : les symboles des .a (dont les 4000 `av_*`) restent
+  # INTERNES à libmpv — ni exportés, ni interposables par le libffmpeg de
+  # Chromium (voir le bloc FFmpeg ci-dessus). Les dépendances de FFmpeg, elles,
+  # arrivent par les .pc retouchés à l'installation de FFmpeg.
+  LDFLAGS="-Wl,--exclude-libs,ALL" meson setup "$TRAVAIL/mpv/build" "$TRAVAIL/mpv" \
     --prefix="$PREFIX" --libdir=lib --buildtype=release \
     -Dgpl=true -Dlibmpv=true -Dcplayer=false \
     -Dvulkan=enabled -Dwayland=enabled -Dx11=enabled -Degl=enabled \
     -Dlua=disabled -Djavascript=disabled \
     -Drubberband=disabled -Dvapoursynth=disabled -Duchardet=disabled \
     -Dlibbluray=disabled -Dlibarchive=disabled -Dsixel=disabled -Dcaca=disabled \
-    -Ddvdnav=disabled -Dcdda=disabled -Ddvbin=disabled -Dopenal=disabled
+    -Ddvdnav=disabled -Dcdda=disabled -Ddvbin=disabled -Dopenal=disabled \
+    -Dpipewire=disabled
+  # ⚠️ `pipewire=disabled` n'est pas une préférence : l'ABI de SPA est faite de
+  # macros inline figées à la compilation, et un ao_pipewire bâti sur les
+  # en-têtes 1.0.5 d'Ubuntu 24.04 MEURT dans la boucle de données de la 1.6.8 de
+  # Fedora 44 (SIGSEGV dans libspa-audioconvert, pile lue au core dump — deux
+  # autres visages du même crash avant lui). Le son passe par libpulse, qui
+  # parle un PROTOCOLE versionné sur un socket : pipewire-pulse le sert
+  # partout, et `alsa` reste le repli des postes sans serveur de son.
   ninja -C "$TRAVAIL/mpv/build" install
 fi
 
@@ -212,7 +248,10 @@ fi
 #     AUCUN pilote ;
 #   - les protocoles du bureau (X11, Wayland, xkbcommon) parlent à un serveur
 #     dont la version est celle de la machine ;
-#   - le son (ALSA, PulseAudio, PipeWire) parle de même à un démon local.
+#   - le son (ALSA, PulseAudio, PipeWire) parle de même à un démon local ;
+#   - `libglib-2.0` est un singleton de fait : Electron la charge déjà (GTK), et
+#     deux glib actives dans un même processus finissent en abort. Celle du
+#     système sert les deux — son SONAME est identique partout.
 #
 # ⚠️ Et une règle d'admission : ne reste au système qu'un SONAME IDENTIQUE sur
 # toutes les distributions. `libbz2` l'a payée : Debian/Ubuntu exposent
@@ -225,17 +264,26 @@ fi
 # bibliothèques restées au système par accident, absentes de bien des machines.
 echo "==> Collecte vers $SORTIE"
 rm -rf "$SORTIE"; mkdir -p "$SORTIE"
-SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
+SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
 
 copier_recursif() {
   local fichier="$1"
   local base; base="$(basename "$fichier")"
   [ -e "$SORTIE/$base" ] && return 0
   cp -L "$fichier" "$SORTIE/$base"
-  ldd "$fichier" 2>/dev/null | awk '/=> \//{print $3}' | while read -r dep; do
-    local nom; nom="$(basename "$dep")"
+  # ⚠️ Les NEEDED DIRECTS seulement (readelf), et non la sortie brute de `ldd` :
+  # `ldd` liste la fermeture transitive ENTIÈRE, dépendances privées des
+  # bibliothèques laissées au système comprises — libgcrypt, libgpg-error,
+  # libpulsecommon-16.1 (privée d'Ubuntu !) embarquées alors que rien dans la
+  # chaîne ne les référence. `ldd` ne sert plus qu'à résoudre un SONAME en
+  # chemin, dans le conteneur de compilation où tout se résout.
+  local besoins table nom dep
+  besoins="$(readelf -d "$fichier" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\].*/\1/p')"
+  table="$(ldd "$fichier" 2>/dev/null || true)"
+  for nom in $besoins; do
     echo "$nom" | grep -Eq "$SYSTEME" && continue
-    copier_recursif "$dep"
+    dep="$(printf '%s\n' "$table" | awk -v n="$nom" '$1 == n && $2 == "=>" { print $3; exit }')"
+    [ -n "$dep" ] && [ -e "$dep" ] && copier_recursif "$dep"
   done
 }
 copier_recursif "$(readlink -f "$PREFIX/lib/libmpv.so")"
