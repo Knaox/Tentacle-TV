@@ -15,7 +15,9 @@ import {
   espaceRendu,
   hdrActif,
   hdrSupporte,
+  picRendu,
   renduEnHdr,
+  transmissionRendu,
 } from "../video/displayHdr";
 import { autoriserBascule, basculeAutorisee } from "../video/hdrSession";
 import type { VideoSurface } from "../video/surface";
@@ -52,6 +54,11 @@ export function registerDisplayHdrCommands(
           // `null` = mpv n'a rien dit, et surtout pas « non ».
           coucheHdr: renduEnHdr(),
           espaceCouche: espaceRendu(),
+          // Linux : le verdict de transmission en BOOLÉEN (le panneau reniflait
+          // « TONE-MAPPÉ » dans la chaîne lisible), et le pic accordé par le
+          // compositeur — l'équivalent du headroom EDR. `null` ailleurs.
+          transmission: transmissionRendu(),
+          pic: picRendu(),
         };
       },
     })

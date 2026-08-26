@@ -126,3 +126,26 @@ export function espaceRendu(): string | null {
   }
   return null;
 }
+
+/**
+ * Le film est-il TRANSMIS en HDR, ou tone-mappé ? Linux seulement — c'est le
+ * verdict du COUPLE `video-params`/`video-target-params` (`linux/hdr.ts`), en
+ * booléen : le panneau le lisait en cherchant « TONE-MAPPÉ » dans la chaîne
+ * lisible, ce qui casse au premier changement de formulation.
+ *
+ * `null` = la question ne se pose pas (rien relevé, contenu SDR, autre
+ * plateforme — macOS a `renduEnHdr`, qui répond autrement à autre chose).
+ */
+export function transmissionRendu(): boolean | null {
+  if (process.platform !== "linux") return null;
+  return (require("../linux/hdr") as typeof import("../linux/hdr")).transmissionHdr();
+}
+
+/**
+ * La plage accordée par le compositeur, en multiples du blanc SDR — l'équivalent
+ * Linux du headroom EDR de macOS. `null` hors Linux ou hors lecture.
+ */
+export function picRendu(): number | null {
+  if (process.platform !== "linux") return null;
+  return (require("../linux/hdr") as typeof import("../linux/hdr")).picSortie();
+}
