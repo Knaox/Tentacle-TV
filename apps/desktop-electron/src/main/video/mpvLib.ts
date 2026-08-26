@@ -236,3 +236,40 @@ export function libmpvPath(): string {
   // que d'en dupliquer 95 Mo dans le dépôt.
   return path.join(dossierLivre(), NOM_LIB);
 }
+
+/**
+ * Les candidates, dans l'ordre où les ESSAYER — Linux seulement.
+ *
+ * `libmpvPath()` rend UN chemin, et l'existence d'un fichier ne dit pas qu'il
+ * s'ouvre : la chaîne vendorée a été inchargeable un jour entier (libbz2,
+ * SONAME Debian-only) pendant qu'`existsSync` répondait oui. Sur Linux on rend
+ * donc la liste complète — vendorée, puis distribution, puis nom nu laissé au
+ * chargeur — et c'est `mpvFfi.ts` qui essaie dans l'ordre et DIT ce qu'il
+ * écarte (`mpvChargement.ts`).
+ *
+ * `TENTACLE_MPV_LIB` court-circuite tout : un choix explicite ne se voit pas
+ * offrir de repli silencieux. Les autres plateformes gardent leur chemin
+ * unique — leurs replis ont d'autres règles (licence, signature).
+ */
+export function candidatsLibmpv(): string[] {
+  const choisi = process.env["TENTACLE_MPV_LIB"];
+  if (process.platform !== "linux" || (choisi !== undefined && choisi !== "")) {
+    return [libmpvPath()];
+  }
+  const candidats: string[] = [];
+  const vendoree = app.isPackaged
+    ? path.join(process.resourcesPath, "lib", NOM_LIB)
+    : path.join(dossierLivre(), NOM_LIB);
+  if (existsSync(vendoree)) {
+    candidats.push(vendoree);
+  } else if (app.isPackaged) {
+    console.warn(
+      "[mpv] paquet sans libmpv livrée : repli sur celle de la distribution.\n" +
+        "      Le HEVC et le HDR ne sont alors plus garantis.",
+    );
+  }
+  const systeme = libmpvSysteme();
+  candidats.push(systeme);
+  if (systeme !== NOM_LIB) candidats.push(NOM_LIB);
+  return candidats;
+}
