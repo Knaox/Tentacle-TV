@@ -8,17 +8,10 @@
 
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import {
-  basculeEnCours,
-  edrCapable,
-  espaceRendu,
-  hdrActif,
-  hdrSupporte,
-  renduEnHdr,
-} from "../video/displayHdr";
-import { autoriserBascule, basculeAutorisee, terminer } from "../video/hdrSession";
+import { terminer } from "../video/hdrSession";
 import { arreter } from "../video/mpvArret";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
+import { libmpvDisponible } from "../video/mpvFfi";
 import {
   filtrerOptionsInit,
   refuserCommande,
@@ -29,6 +22,7 @@ import { nativeHandle, trace } from "../video/native";
 import { adapterAuPleinEcran } from "../video/macosOptionsFenetre";
 import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
 import { relaisEvenements } from "./videoEvenements";
+import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, reinitialiserRapport } from "./videoSonde";
 import { CommandRegistry } from "./registry";
 
@@ -105,6 +99,28 @@ function optionsRenderApi(
 }
 
 export function registerVideoCommands(registry: CommandRegistry): void {
+  // Sans libmpv chargeable, les commandes mpv ne sont pas DÉCLARÉES : la liste
+  // des capacités les tait, `supportsMpv()` côté page devient honnête, et le
+  // lecteur route de lui-même sur le lecteur web — sans payer huit secondes
+  // d'init vouée à l'échec. Linux seulement : c'est la seule plateforme où la
+  // bibliothèque peut légitimement manquer (repli sur la distribution) ;
+  // macOS et Windows gardent leur échec bruyant, qui a valeur d'alerte.
+  // Les commandes HDR, elles, restent déclarées sans condition (`videoHdr.ts`).
+  const lecteurNatif = process.platform !== "linux" || libmpvDisponible();
+  if (!lecteurNatif) {
+    console.warn(
+      "[mpv] aucune libmpv chargeable : lecteur natif tu, la page utilisera le lecteur web",
+    );
+  }
+  if (lecteurNatif) enregistrerCommandesMpv(registry);
+  registerDisplayHdrCommands(registry, () => video);
+
+  // Sans effet hors macOS et hors développement — la commande n'est alors même
+  // pas déclarée, et la page cesse d'elle-même de proposer la sonde.
+  registerVideoProbe(registry, () => video);
+}
+
+function enregistrerCommandesMpv(registry: CommandRegistry): void {
   registry
     .add("mpv_init", {
       schema: INIT,
@@ -260,41 +276,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
       // rien n'était jamais désarmé. Conservée parce que le contrat avec la page
       // est partagé avec l'app Tauri, et qu'elle ne coûte rien.
       run: () => video?.harden() ?? false,
-    })
-    .add("display_hdr_state", {
-      schema: NO_ARGS,
-      run: () => {
-        // La fenêtre vidéo désigne l'écran à interroger sur macOS. Absente
-        // ailleurs, et absente aussi hors lecture — la sonde retombe alors sur
-        // l'écran principal, ce qui reste la bonne réponse.
-        const fenetre = video?.fenetreVideo?.();
-        return {
-          supporte: hdrSupporte(),
-          actif: hdrActif(fenetre),
-          bascule: basculeEnCours(),
-          autoAutorise: basculeAutorisee(),
-          // Diagnostic seul : dit que l'écran SAIT faire de la plage étendue,
-          // sans rien promettre d'une bascule qui n'existe pas sur macOS.
-          edrCapable: edrCapable(fenetre),
-          // ⚠️ À NE PAS confondre avec `actif`. Celui-ci est instantané et
-          // dépend de l'IMAGE affichée : une scène de nuit ne réclame aucune
-          // haute lumière et retombe à 1,00 sur une lecture parfaitement HDR
-          // (mesuré, même film : 1,00 puis 12,82). `coucheHdr` dit ce que mpv
-          // rapporte de sa couche Metal, ce qui ne dépend pas de la scène.
-          // `null` = mpv n'a rien dit, et surtout pas « non ».
-          coucheHdr: renduEnHdr(),
-          espaceCouche: espaceRendu(),
-        };
-      },
-    })
-    .add("display_hdr_auto", {
-      schema: SURFACE,
-      run: ({ on }) => autoriserBascule(on),
     });
-
-  // Sans effet hors macOS et hors développement — la commande n'est alors même
-  // pas déclarée, et la page cesse d'elle-même de proposer la sonde.
-  registerVideoProbe(registry, () => video);
 }
 
 /**
