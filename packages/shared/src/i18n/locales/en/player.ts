@@ -31,6 +31,9 @@ export default {
   subtitlesLabel: "SUBTITLES",
   trackFallback: "Track {{index}}",
   mpvError: "mpv error: {{error}}",
+  fallbackPlayerTitle: "Backup player",
+  fallbackPlayerHint:
+    "The built-in player could not start; playback continues with the web player. HDR and HEVC may be limited.",
   secondsShort: "sec",
   nextEpisodeLabel: "Next episode",
   scrubConfirmHint: "OK · Play here",

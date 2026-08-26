@@ -245,8 +245,15 @@ export function DesktopPlayer({
     ? false
     : sourceChanging || (!state.playing && !hasStartedRef.current));
 
+  // La bascule de secours est un setState du PARENT : elle part d'un effet,
+  // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode
+  // strict (« setState during render »).
+  useEffect(() => {
+    if (error && onFallbackToWeb) onFallbackToWeb();
+  }, [error, onFallbackToWeb]);
+
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
-  if (error && onFallbackToWeb) { onFallbackToWeb(); return null; }
+  if (error && onFallbackToWeb) return null;
   if (error) return <DesktopPlayerError error={error} onBack={goBack} />;
   if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} />;
 

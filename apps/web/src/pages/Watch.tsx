@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { supportsMpv } from "../desktop/bridge";
+import { BandeauLecteurSecours } from "../components/player/BandeauLecteurSecours";
+import { signalerBasculeSecours, useLecteurSecours } from "../lib/lecteurSecours";
 import { WatchWeb } from "./WatchWeb";
 import { WatchDesktop } from "./WatchDesktop";
 
@@ -13,7 +14,18 @@ export function Watch() {
   // migration, la coquille Electron est une app de bureau qui n'a pas encore
   // son adaptateur mpv. Sans cette distinction, elle partait sur le lecteur
   // natif et n'avait personne au bout du fil.
-  const [forceWeb, setForceWeb] = useState(false);
-  if (supportsMpv() && !forceWeb) return <WatchDesktop onFallbackToWeb={() => setForceWeb(true)} />;
-  return <WatchWeb />;
+  //
+  // La bascule vit dans un store de session (`lib/lecteurSecours.ts`) et non
+  // dans un état local : naviguer vers un autre film ne doit pas repayer
+  // l'échec de mpv — et le bandeau DIT ce qui s'est passé.
+  const secours = useLecteurSecours();
+  if (supportsMpv() && !secours) {
+    return <WatchDesktop onFallbackToWeb={signalerBasculeSecours} />;
+  }
+  return (
+    <>
+      {secours ? <BandeauLecteurSecours /> : null}
+      <WatchWeb />
+    </>
+  );
 }
