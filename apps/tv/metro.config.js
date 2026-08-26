@@ -61,7 +61,7 @@ const config = {
     ],
     unstable_enableSymlinks: true,
     unstable_enablePackageExports: true,
-    unstable_conditionNames: ["require", "import", "react-native"],
+    unstable_conditionNames: ["require", "react-native"],
     extraNodeModules,
     resolveRequest: (context, moduleName, platform) => {
       // Nom de package « nu » (gère les sous-chemins : react/jsx-runtime,
