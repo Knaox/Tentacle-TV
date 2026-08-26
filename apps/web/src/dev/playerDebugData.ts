@@ -18,6 +18,7 @@ import {
   supportsSmtc,
 } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
+import { mpvDesactiveParDebug } from "../lib/lecteurNatif";
 import { sectionDemarrage } from "./playerDebugDemarrage";
 import { sectionReseau } from "./playerDebugReseau";
 import type { DebugSection } from "./playerDebugTypes";
@@ -153,7 +154,11 @@ function sectionShell(): DebugSection {
               : "x11 — lecture fenêtrée, pas de HDR",
             null,
           ]] as const)),
-      ["lecteur mpv", supportsMpv() ? "disponible" : "absent", supportsMpv()],
+      // Trois états : l'interrupteur de debug (touche M) prime — dire
+      // « disponible » pendant qu'il est coupé ferait chercher un défaut.
+      mpvDesactiveParDebug()
+        ? (["lecteur mpv", "désactivé (debug, touche M)", false] as const)
+        : (["lecteur mpv", supportsMpv() ? "disponible" : "absent", supportsMpv()] as const),
       ["téléchargements", supportsDownloads() ? "disponible" : "absent", supportsDownloads()],
       ["contrôles média", supportsSmtc() ? "disponible" : "absent", supportsSmtc()],
       ["mises à jour", supportsAppUpdates() ? "disponible" : "absent", supportsAppUpdates()],
