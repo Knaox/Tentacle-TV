@@ -66,8 +66,18 @@ export const PARADE_WINDOWS = process.platform === "win32";
  * encoche — au lieu de déborder sur les 33 points de la barre de menus. La
  * contrainte que mpv impose au cadre de sa fenêtre ne mord donc plus, et tout le
  * détour qui la désarmait a pu être retiré.
+ *
+ * # Linux : natif aussi — la parade Windows n'a pas de raison d'être ici
+ *
+ * `transparent: true` y est posé à la CONSTRUCTION de la fenêtre
+ * (`linux/fenetre.ts`), pas à l'exécution comme sur Windows : l'alpha survit au
+ * plein écran (mesuré sur Wayland, vidéo visible au travers en plein écran —
+ * 19,2 % de rouge au banc). Avant cette ligne, `entrer()` traversait la branche
+ * « ni parade ni natif » et SORTAIT SANS RIEN FAIRE : le bouton plein écran du
+ * lecteur était inopérant sur Linux — masqué sur Wayland par `SurfaceWayland`,
+ * qui force le sien, et nu sous X11 où mpv reste fenêtré.
  */
-const PLEIN_ECRAN_NATIF = process.platform === "darwin";
+const PLEIN_ECRAN_NATIF = process.platform === "darwin" || process.platform === "linux";
 
 /** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
 function win32(): typeof import("./video/win32") {

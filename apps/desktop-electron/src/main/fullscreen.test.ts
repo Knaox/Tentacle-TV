@@ -261,3 +261,66 @@ describe("Windows — session du lecteur", () => {
     expect(win.setBounds).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Linux : le plein écran NATIF, comme macOS — la parade Windows n'existe pas
+ * ici. Avant la ligne `PLEIN_ECRAN_NATIF = darwin || linux`, `entrer()` sortait
+ * sans rien faire : le bouton plein écran du lecteur était inopérant, et aucun
+ * test ne le voyait.
+ */
+describe("Linux — plein écran natif, sans parade", () => {
+  it("entre par setFullScreen, sans jamais toucher aux bounds", async () => {
+    const fs = await chargerPour("linux");
+    const win = fenetre();
+
+    expect(fs.basculer(win as never)).toBe(true);
+
+    expect(win.setFullScreen).toHaveBeenCalledWith(true);
+    expect(win.setBounds).not.toHaveBeenCalled();
+    expect(win.isFullScreen()).toBe(true);
+  });
+
+  it("re-basculer sort du plein écran", async () => {
+    const fs = await chargerPour("linux");
+    const win = fenetre();
+
+    fs.basculer(win as never);
+    expect(fs.basculer(win as never)).toBe(false);
+
+    expect(win.setFullScreen).toHaveBeenCalledWith(false);
+    expect(win.isFullScreen()).toBe(false);
+  });
+
+  it("lit l'état sur la FENÊTRE : un plein écran posé ailleurs est vu", async () => {
+    const fs = await chargerPour("linux");
+    const win = fenetre({ pleinEcran: true });
+
+    // `ouvrirSessionLecteur` note la fenêtre puis interroge l'état courant —
+    // c'est la valeur qui amorce l'état React du lecteur.
+    expect(fs.ouvrirSessionLecteur(win as never)).toBe(true);
+  });
+
+  it("quitter le lecteur ne touche à RIEN, comme sur macOS", async () => {
+    const fs = await chargerPour("linux");
+    const win = fenetre();
+
+    fs.ouvrirSessionLecteur(win as never);
+    fs.basculer(win as never);
+    fs.fermerSessionLecteur(win as never);
+
+    // Le plein écran reste : l'état de la fenêtre appartient à l'utilisateur.
+    expect(win.setFullScreen).not.toHaveBeenCalledWith(false);
+    expect(win.isFullScreen()).toBe(true);
+  });
+
+  it("quitter() force la sortie, quel que soit l'appelant", async () => {
+    const fs = await chargerPour("linux");
+    const win = fenetre({ pleinEcran: true });
+
+    fs.ouvrirSessionLecteur(win as never);
+    fs.quitter(win as never);
+
+    expect(win.setFullScreen).toHaveBeenCalledWith(false);
+    expect(win.isFullScreen()).toBe(false);
+  });
+});
