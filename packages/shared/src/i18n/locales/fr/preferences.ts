@@ -106,6 +106,16 @@ export default {
   hdrAutoTitle: "Basculer l'écran en HDR pendant la lecture",
   hdrAutoHint:
     "Un film HDR s'affiche alors avec toutes ses couleurs. Le changement de mode noircit l'écran une seconde ou deux, et l'état d'origine est rétabli à la fin de la lecture. Désactivé, le film est adapté à votre écran sans changer son mode.",
+  // Choix de session graphique (bureau Linux avec lecteur natif)
+  linuxSessionTitle: "Affichage vidéo (Wayland ou X11)",
+  linuxSessionHint:
+    "Wayland permet le HDR et lit en plein écran ; X11 lit dans la fenêtre, sans HDR. « Auto » suit la session du bureau. Le changement prend effet au prochain lancement.",
+  linuxSessionAuto: "Auto — suivre le bureau",
+  linuxSessionWayland: "Wayland — HDR, lecture plein écran",
+  linuxSessionX11: "X11 — lecture fenêtrée, sans HDR",
+  linuxSessionCurrent: "Montage actuel : {{montage}}",
+  linuxSessionRestart: "Relancer maintenant",
+
   // Saut d'intro automatique (réglage par appareil)
   autoSkipIntroTitle: "Passer l'intro automatiquement",
   // Deux boutons plutôt qu'un interrupteur sur le téléviseur : à la

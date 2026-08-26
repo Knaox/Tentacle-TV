@@ -107,6 +107,16 @@ export default {
   hdrAutoHint:
     "HDR films then show their full range of colour. Changing mode blacks the screen out for a second or two, and the original state is restored when playback ends. Left off, the film is adapted to your display without changing its mode.",
   // Automatic intro skipping (per-device setting)
+  // Graphics session choice (Linux desktop with native player)
+  linuxSessionTitle: "Video display (Wayland or X11)",
+  linuxSessionHint:
+    "Wayland enables HDR and plays fullscreen; X11 plays in the window, without HDR. “Auto” follows the desktop session. The change takes effect on next launch.",
+  linuxSessionAuto: "Auto — follow the desktop",
+  linuxSessionWayland: "Wayland — HDR, fullscreen playback",
+  linuxSessionX11: "X11 — windowed playback, no HDR",
+  linuxSessionCurrent: "Current mode: {{montage}}",
+  linuxSessionRestart: "Restart now",
+
   autoSkipIntroTitle: "Skip the intro automatically",
   // Two buttons rather than a switch on television: with a remote, a sliding
   // thumb means nothing.

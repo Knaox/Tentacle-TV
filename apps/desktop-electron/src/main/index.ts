@@ -36,6 +36,7 @@ import { registerPluginCommands } from "./ipc/plugins";
 import { registerSessionCommands } from "./ipc/session";
 import { registerShellCapabilities, registerShellCommands, rendreVeilleEcran } from "./ipc/shell";
 import { registerUpdateCommands } from "./ipc/updates";
+import { registerLinuxSessionCommands } from "./ipc/linuxSession";
 import { registerVideoCommands, restaurerEcran } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { installerMenu } from "./menu";
@@ -200,6 +201,7 @@ function main(): void {
       registerSessionCommands(registry);
       registerUpdateCommands(registry);
       registerVideoCommands(registry);
+      registerLinuxSessionCommands(registry);
       // Stockage et lecture AVANT le moteur : c'est `downloads_list`, enregistrée
       // en dernier par lui, qui fait basculer `supportsDownloads()` côté page. Dès
       // qu'elle répond, toute la section réapparaît et appelle les autres.

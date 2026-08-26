@@ -64,6 +64,12 @@ export const COMMANDS = [
   // l'autorisation donnée par la préférence de l'utilisateur.
   "display_hdr_state",
   "display_hdr_auto",
+
+  // Linux : le choix de session graphique (Auto / Wayland / X11) des
+  // Préférences. La décision se fige au démarrage — l'écriture ne prend effet
+  // qu'à la relance, que la page demande par `relaunch()`.
+  "linux_session_get",
+  "linux_session_set",
   // Sonde de la surface vidéo — géométrie, plage étendue et COMPTAGE DES
   // PIXELS de la fenêtre de mpv. ⚠️ macOS et développement seulement : elle
   // lance `screencapture`, elle n'est donc jamais branchée dans un paquet

@@ -43,6 +43,11 @@ export function supportsSmtc(): boolean {
   return hasNativeCommand("smtc_init");
 }
 
+/** Le choix de session graphique Wayland/X11 — coquille Linux seulement. */
+export function supportsLinuxSession(): boolean {
+  return hasNativeCommand("linux_session_get");
+}
+
 /**
  * L'application peut-elle proposer sa propre mise à jour ?
  *
