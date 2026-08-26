@@ -177,4 +177,21 @@ export const ACTIONS: readonly DebugAction[] = [
       }
     },
   },
+  {
+    touche: "m",
+    libelle: "M · couper/rallumer le lecteur mpv (repli web)",
+    /**
+     * L'interrupteur qui permet d'ÉPROUVER le lecteur de secours : coupé, la
+     * page route sur le lecteur web comme si mpv n'existait pas — y compris en
+     * pleine lecture (WatchDesktop se démonte, mpv_destroy, le web reprend).
+     * Persisté : il survit au relancement, pour tester aussi le démarrage.
+     */
+    executer: async () => {
+      const { basculerMpvDebug } = await import("../lib/lecteurNatif");
+      const coupe = basculerMpvDebug();
+      return coupe
+        ? "lecteur mpv COUPÉ — la lecture passe au lecteur web (persiste au relancement)"
+        : "lecteur mpv rallumé — effectif à la prochaine lecture";
+    },
+  },
 ] as const;
