@@ -107,7 +107,9 @@ fi
 # FFmpeg ni meson ne supportent partout.
 TRAVAIL="/tmp/tentacle-mpv-lgpl-linux"
 PREFIX="$TRAVAIL/prefix"
-mkdir -p "$TRAVAIL"
+# `include` compris : la copie des en-têtes Vulkan est le premier écrivain du
+# prefix, et `cp -r` ne crée pas le dossier cible. Un /tmp vierge le montrait.
+mkdir -p "$TRAVAIL" "$PREFIX/include"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH:-}"
 export LD_LIBRARY_PATH="$PREFIX/lib:${LD_LIBRARY_PATH:-}"
 export CPATH="$PREFIX/include:${CPATH:-}"
