@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, ScrollView, Alert, TVFocusGuideView } from "react-native";
+import { View, Text, ScrollView, TVFocusGuideView } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
@@ -21,6 +21,7 @@ export function DisclaimerScreen() {
   const navigation = useNavigation();
   const { storage } = useTentacleConfig();
   const [checked, setChecked] = useState(false);
+  const [refusOuvert, setRefusOuvert] = useState(false);
   const [lang, setLang] = useState(() => {
     const saved = storage.getItem("tentacle_language");
     return saved?.startsWith("fr") ? "fr" : "en";
@@ -40,8 +41,8 @@ export function DisclaimerScreen() {
   }, [storage, navigation]);
 
   const handleDecline = useCallback(() => {
-    Alert.alert(t("declineTitle"), t("declineMessage"));
-  }, [t]);
+    setRefusOuvert(true);
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -112,6 +113,34 @@ export function DisclaimerScreen() {
           </Focusable>
         </View>
       </TVFocusGuideView>
+
+      {refusOuvert && (
+        /* @ts-expect-error — TVFocusGuideView (react-native-tvos) : autoFocus pose
+           le focus sur le bouton, les trapFocus* empechent d'en sortir. */
+        <TVFocusGuideView
+          style={styles.overlay}
+          autoFocus
+          trapFocusUp
+          trapFocusDown
+          trapFocusLeft
+          trapFocusRight
+        >
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>{t("declineTitle")}</Text>
+            <Text style={styles.dialogMessage}>{t("declineMessage")}</Text>
+            <Focusable
+              variant="button"
+              focusRadius={Bouton.grand.borderRadius}
+              onPress={() => setRefusOuvert(false)}
+              hasTVPreferredFocus
+            >
+              <View style={styles.acceptButton}>
+                <Text style={styles.acceptText}>OK</Text>
+              </View>
+            </Focusable>
+          </View>
+        </TVFocusGuideView>
+      )}
     </View>
   );
 }

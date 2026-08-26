@@ -160,4 +160,38 @@ export const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: "center",
   },
+  // ── Boîte de dialogue « refus » (remplace Alert.alert) ──
+  // Un AlertDialog Android donne le focus d'ouverture à son TITRE, pas au
+  // bouton : sur une TV, « OK » ne répond alors pas et la boîte paraît bloquée.
+  // On la rend donc avec nos propres Focusable, focus piégé à l'intérieur.
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.72)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 48,
+  },
+  dialog: {
+    width: "100%",
+    maxWidth: 460,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.09)",
+    backgroundColor: Colors.bgDeep,
+    padding: 22,
+  },
+  dialogTitle: {
+    ...Typography.pageTitle,
+    fontSize: 18,
+    color: Colors.textPrimary,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  dialogMessage: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+    textAlign: "center",
+    marginBottom: 18,
+  },
 });
