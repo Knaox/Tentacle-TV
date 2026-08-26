@@ -200,7 +200,7 @@ if [ ! -f "$PREFIX/lib/libmpv.so" ]; then
     -Dlua=disabled -Djavascript=disabled \
     -Drubberband=disabled -Dvapoursynth=disabled -Duchardet=disabled \
     -Dlibbluray=disabled -Dlibarchive=disabled -Dsixel=disabled -Dcaca=disabled \
-    -Ddvdnav=disabled -Dcdda=disabled -Ddvbin=disabled -Dopenal=disabled -Dsdl2=disabled
+    -Ddvdnav=disabled -Dcdda=disabled -Ddvbin=disabled -Dopenal=disabled
   ninja -C "$TRAVAIL/mpv/build" install
 fi
 
