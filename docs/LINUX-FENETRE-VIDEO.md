@@ -54,7 +54,7 @@ est ce qui fait la preuve — un carré partiellement masqué se verrait au comp
 | libmpv chargée par koffi depuis le processus principal | **oui** — `mpv_initialize -> 0` |
 | `setlocale(LC_NUMERIC, "C")` par koffi sur la libc | **oui**, indispensable (cf. plus bas) |
 | Fenêtre Electron `transparent: true` sur Wayland | **oui** |
-| Interface au-dessus de mpv plein écran, sur KWin Wayland | **oui** |
+| Interface au-dessus de mpv plein écran, sur KWin Wayland | **oui, si remappée en dernier** — voir l'empilement multi-écrans |
 | mpv `fullscreen=yes` + `focus-on=never` | **oui**, mpv ne prend jamais le focus |
 | HDR réel transmis à l'écran | **oui** — détail ci-dessous |
 | Electron sous XWayland (`--ozone-platform=x11`) sur CE poste | **non** — voir la réserve |
@@ -116,6 +116,54 @@ Sur un fichier HEVC, la `mpv-libs` de Fedora 44 rend :
 Le paquet est bâti contre un FFmpeg amputé des codecs brevetés. Un client Jellyfin sans HEVC
 ne lit pas la moitié d'une médiathèque. **C'est la justification, mesurée, de la décision de
 livrer notre propre libmpv** — LGPL, comme sur macOS — plutôt que de dépendre du système.
+
+### L'empilement multi-écrans : deux gestes, chacun mesuré seul (27.08.2026)
+
+Sur un poste à trois écrans, deux questions distinctes décident de ce que voit
+l'utilisateur : **sur quel écran** la fenêtre de mpv naît-elle, et **qui est
+devant** quand les deux fenêtres partagent le même écran. Les mesures
+précédentes mélangeaient les remèdes ; celles-ci isolent chaque geste, avec un
+comptage **par écran** (`zones.mjs`) — le comptage global comptait le bureau
+(un navigateur ouvert sur le Samsung pèse 0,5 % de rouge) et surtout ne
+distinguait pas deux écrans de même définition.
+
+Disposition : DP-3 Dell 1440p portrait en (0,0) ; DP-4 ASUS 4K à l'échelle 2
+(celui qui porte la fenêtre Electron) ; DP-2 Samsung 1080p à l'échelle 1.
+Clip `rouge.mp4`, repères HTML vert/bleu de 240×240 points dans notre fenêtre.
+
+| Variante (montage identique, gestes isolés) | mpv finit sur | rouge/vert/bleu sur l'ASUS | Verdict |
+|---|---|---|---|
+| témoin — visée par bounds d'`attach()` | **Dell** (letterbox 31,6 % du Dell) | 0 / 2,8 / 2,8 % | mauvais écran |
+| re-visée tardive (après `file-loaded`) | **Dell**, identique au témoin | 0 / 2,8 / 2,8 % | **sans aucun effet** |
+| visée MESURÉE avant `loadfile` | **ASUS** | **100** / 0 / 0 % | bon écran, mais mpv DEVANT |
+| re-mappage seul (hide/show/plein écran/focus) | **Dell** | 0 / 2,8 / 2,8 % | inutile sans cible |
+| **visée avant `loadfile` + re-mappage après `file-loaded`** | **ASUS** | **94,4 / 2,8 / 2,8 %** | **complet — 3 runs sur 3** |
+
+94,4 + 2,8 + 2,8 = 100,0 : l'écran se partage exactement entre la vidéo, vue
+au travers de notre fenêtre transparente, et les deux repères posés dessus.
+
+**Deux illusions dissipées au passage.**
+
+1. Les « 20,29 % » du relevé précédent valaient « un écran 3840×2160 entier » —
+   or l'ASUS et le Samsung pèsent **la même aire** dans la capture. Les runs
+   « gagnants » d'alors avaient mpv plein écran sur le *Samsung*, où la visée
+   par bounds (tributaire du curseur au lancement) l'avait envoyé **à la
+   naissance**. La « re-visée qui fait rejoindre mpv » n'a jamais existé :
+   rejouée seule, elle ne déplace rien. `fs-screen-name` n'est lu qu'à
+   l'ENTRÉE en plein écran de mpv — après, c'est trop tard.
+2. Les « 7,30 % » du témoin étaient la vidéo plein écran **letterboxée sur le
+   Dell portrait** : 1152×648 points sur 1152×2048, soit 31,6 % de cet
+   écran-là — et non « un peu de vidéo » sur le bon.
+
+**Ce que ce relevé fixe.** (1) `fs-screen-name` doit être écrit **avant le
+premier `loadfile`**, avec l'écran identifié par le trio
+`innerWidth`/`innerHeight`/`devicePixelRatio` mesuré par la page une fois la
+fenêtre mappée en plein écran — 202-203 ms de stabilisation mesurés, sur les
+trois runs. La visée par `getBounds()` est fausse par construction sur Wayland
+et disparaît. (2) mpv, né au `loadfile`, est mappé en dernier et passe donc
+devant : notre fenêtre doit se **re-mapper** (hide/show/plein écran/focus,
+300 ms après `file-loaded`) pour reprendre le dessus. Le « oui » de la ligne
+« interface au-dessus » du tableau des résultats vaut à cette condition-là.
 
 ## X11, validé — dans un serveur X imbriqué
 
