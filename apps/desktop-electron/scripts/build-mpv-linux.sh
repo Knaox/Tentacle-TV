@@ -122,7 +122,7 @@ if command -v apt-get >/dev/null; then
   $SUDO apt-get update -qq
   $SUDO apt-get install -y -qq --no-install-recommends \
     build-essential git meson ninja-build nasm pkg-config python3 patchelf ca-certificates \
-    libvulkan-dev glslang-tools libshaderc-dev liblcms2-dev libunwind-dev \
+    libvulkan-dev glslang-tools glslang-dev liblcms2-dev libunwind-dev \
     libdav1d-dev libass-dev libfreetype-dev libfontconfig-dev libfribidi-dev libharfbuzz-dev \
     libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxext-dev libxrandr-dev \
     libxpresent-dev libxss-dev libxinerama-dev libdrm-dev libgbm-dev libegl-dev libgl-dev \
@@ -157,9 +157,20 @@ if [ ! -f "$PREFIX/lib/libplacebo.so" ] && [ ! -f "$PREFIX/lib/x86_64-linux-gnu/
   echo "==> libplacebo $PLACEBO_TAG"
   cloner https://code.videolan.org/videolan/libplacebo.git "$PLACEBO_TAG" "$TRAVAIL/placebo"
   git -C "$TRAVAIL/placebo" submodule update --init --recursive --depth 1
+  # ⚠️ glslang, PAS shaderc — et c'est mesuré au pixel, sur le même clip et la
+  # même machine (Fedora 44, NVIDIA 610, KWin Wayland) :
+  #
+  #     libplacebo bâtie avec libshaderc 2023.8   rouge.mp4 → (127,0,255) VIOLET
+  #     libplacebo bâtie avec glslang 15.1        rouge.mp4 → (255,24,0)  rouge
+  #
+  # Le libshaderc d'Ubuntu 24.04 est figé en 2023 ; les nuanceurs qu'il compile
+  # sortent des couleurs fausses avec cette libplacebo. Rien dans le journal de
+  # mpv ne le signale — la swapchain choisie est la même — d'où la mesure.
+  # Corollaire : un rendu aux couleurs suspectes se vérifie sur un aplat connu
+  # AVANT de soupçonner le HDR ou l'espace colorimétrique.
   meson setup "$TRAVAIL/placebo/build" "$TRAVAIL/placebo" \
     --prefix="$PREFIX" --libdir=lib --buildtype=release \
-    -Dvulkan=enabled -Dshaderc=enabled -Dlcms=enabled -Dopengl=enabled -Ddemos=false
+    -Dvulkan=enabled -Dshaderc=disabled -Dglslang=enabled -Dlcms=enabled -Dopengl=enabled -Ddemos=false
   ninja -C "$TRAVAIL/placebo/build" install
 fi
 
