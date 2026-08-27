@@ -169,7 +169,11 @@ export function DesktopPlayer({
   const { show: montrerToast } = useToast();
   const { t: tPreferences } = useTranslation("preferences");
   useEffect(() => {
-    if (!ready || montageLinux() !== "wayland" || avisPleinEcranDejaVu()) return;
+    // `hasFocus` : une lecture SANS geste (reprise automatique) laisse la page
+    // DERRIÈRE la fenêtre mpv — l'avis y serait invisible ET consommé. Il
+    // attend donc une lecture au premier plan (mesuré le 28.08 : la première
+    // version a brûlé sa cartouche hors de toute vue).
+    if (!ready || montageLinux() !== "wayland" || !document.hasFocus() || avisPleinEcranDejaVu()) return;
     marquerAvisPleinEcranVu();
     montrerToast("info", tPreferences("linuxSessionFullscreenToast"));
   }, [ready, montrerToast, tPreferences]);

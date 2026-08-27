@@ -10,7 +10,10 @@
  * stockage manque.
  */
 
-const CLE = "tentacle_wayland_fullscreen_notice";
+// « seen » et pas « notice » : la première clé s'était consommée INVISIBLE sur
+// le poste de dev (lecture automatique sans geste, page derrière la vidéo) —
+// jamais livrée, renommée sans coût pour repartir vierge.
+const CLE = "tentacle_wayland_fullscreen_seen";
 
 /** L'avis a-t-il déjà été montré sur cet appareil ? */
 export function avisPleinEcranDejaVu(): boolean {
