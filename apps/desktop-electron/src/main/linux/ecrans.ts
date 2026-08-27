@@ -85,6 +85,48 @@ export function ecransConnectes(racine = "/sys/class/drm"): EcranConnecte[] {
   return trouves;
 }
 
+/**
+ * Ce que la PAGE mesure de sa fenêtre plein écran : taille logique et densité.
+ *
+ * ⚠️ C'est la SEULE identification d'écran fiable sur Wayland : Electron y rend
+ * toutes les positions de fenêtre à (0,0) — mesuré, trois écrans, la fenêtre
+ * plein écran sur l'ASUS rendait `getBounds()` = 0,0 et `getDisplayMatching`
+ * désignait donc l'écran posé en 0,0 (le Dell), envoyant mpv sur le mauvais
+ * moniteur. Le trio (largeur, hauteur, densité) d'une fenêtre PLEIN ÉCRAN, lui,
+ * est celui de son moniteur.
+ */
+export interface MesurePage {
+  largeur: number;
+  hauteur: number;
+  densite: number;
+}
+
+/** Un écran candidat, réduit à ce que la mesure sait comparer. */
+export interface EcranCandidat {
+  label: string;
+  largeur: number;
+  hauteur: number;
+  densite: number;
+}
+
+/**
+ * Le libellé de l'écran qui correspond à la mesure — ou `null` si aucun, ou si
+ * PLUSIEURS écrans identiques rendent la mesure ambiguë (deux moniteurs de même
+ * taille et même densité) : dans le doute, on ne force rien.
+ */
+export function ecranPourMesure(
+  mesure: MesurePage,
+  ecrans: readonly EcranCandidat[],
+): string | null {
+  const trouves = ecrans.filter(
+    (e) =>
+      e.largeur === mesure.largeur &&
+      e.hauteur === mesure.hauteur &&
+      Math.abs(e.densite - mesure.densite) < 0.01,
+  );
+  return trouves.length === 1 ? (trouves[0]?.label ?? null) : null;
+}
+
 /** Normalise pour comparer deux noms écrits par deux fabricants différents. */
 function reduire(texte: string): string {
   return texte.toLowerCase().replace(/[^a-z0-9]/g, "");
