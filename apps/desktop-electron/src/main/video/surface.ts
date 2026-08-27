@@ -29,7 +29,12 @@ import { montageLinux } from "../linux/session";
  * La page traite déjà ce cas : la commande est un rappel, pas une garantie.
  */
 export interface VideoSurface {
-  attach(): void;
+  /**
+   * Asynchrone quand la surface a quelque chose à garantir AVANT que la page
+   * n'envoie `loadfile` — Wayland y pose `fs-screen-name`, qui n'est lu qu'à
+   * la naissance de la fenêtre mpv. L'appelant attend la promesse.
+   */
+  attach(): void | Promise<void>;
   align(): void;
   harden(): boolean;
   detach(): void;
