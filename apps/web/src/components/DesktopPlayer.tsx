@@ -17,6 +17,10 @@ import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { useToast } from "../contexts/ToastContext";
+import { useTranslation } from "react-i18next";
+import { montageLinux } from "../desktop/detect";
+import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "../lib/waylandFullscreenNotice";
 import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
@@ -157,6 +161,18 @@ export function DesktopPlayer({
     document.documentElement.style.background = "transparent";
     return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
   }, [ready]);
+
+  // Pédagogie du plein écran Wayland — UNE fois par appareil. La lecture
+  // native y est obligatoirement plein écran (règle du protocole, prix du
+  // HDR — cf. lib/waylandFullscreenNotice.ts), et le réglage X11 des
+  // Préférences reste inconnu tant que rien n'y renvoie.
+  const { show: montrerToast } = useToast();
+  const { t: tPreferences } = useTranslation("preferences");
+  useEffect(() => {
+    if (!ready || montageLinux() !== "wayland" || avisPleinEcranDejaVu()) return;
+    marquerAvisPleinEcranVu();
+    montrerToast("info", tPreferences("linuxSessionFullscreenToast"));
+  }, [ready, montrerToast, tPreferences]);
 
   // Chargement de la source + détection PTS + report de progression
   const { sourceChanging } = useMpvSource({
