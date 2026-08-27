@@ -27,6 +27,15 @@
  * la mesure ne désigne rien (écrans jumeaux, page muette), on n'écrit RIEN :
  * mpv choisit seul, et un choix libre vaut mieux qu'un ordre faux.
  *
+ * # Qui est devant : le dernier mappé — donc nous, en nous re-mappant
+ *
+ * Le compositeur met la dernière fenêtre plein écran mappée devant. Celle de
+ * mpv naît au `loadfile`, APRÈS la nôtre : visée juste ou pas, la vidéo
+ * recouvrait l'interface (mesuré : 100 % de vidéo, 0 % de repères). Le remède,
+ * mesuré 3 runs sur 3 : se RE-mapper — hide, show, plein écran, focus — 300 ms
+ * après `file-loaded`, une fois la fenêtre de mpv née. L'interface repasse
+ * devant, la vidéo se voit au travers (94,4 % / 2,8 % / 2,8 %).
+ *
  * # Ce que ça coûte, et qui l'a décidé
  *
  * La lecture en fenêtre n'existe pas sur Wayland. C'est le prix du HDR, qui
@@ -44,6 +53,13 @@ import { libelleUneFoisMappee } from "./displayTarget";
 import { setProperty } from "../video/mpv";
 import type { VideoSurface } from "../video/surface";
 
+/**
+ * Le délai entre `file-loaded` et le re-mappage, MESURÉ au banc — le temps que
+ * la fenêtre de mpv soit effectivement mappée. Ne pas retoucher sans re-mesurer
+ * (docs/LINUX-FENETRE-VIDEO.md, « L'empilement multi-écrans »).
+ */
+const DELAI_REMAPPAGE_MS = 300;
+
 export class SurfaceWayland implements VideoSurface {
   /** L'état du plein écran avant la lecture, pour le rendre en sortant. */
   private avant: boolean | null = null;
@@ -53,6 +69,8 @@ export class SurfaceWayland implements VideoSurface {
   private dernierAvertissement: string | null = null;
   /** Coupe les visées en vol : `detach()` ouvre une ère nouvelle. */
   private ere = 0;
+  /** Le re-mappage en attente — un seul à la fois, annulé au détachement. */
+  private minuterieRemap: ReturnType<typeof setTimeout> | null = null;
   private readonly reprendrePleinEcran = (): void => {
     if (this.avant === null || this.host.isDestroyed()) return;
     // Deux fenêtres plein écran, dont une seule est commandable : en sortir
@@ -118,6 +136,31 @@ export class SurfaceWayland implements VideoSurface {
     }
   }
 
+  /** mpv vient d'ouvrir un fichier : sa fenêtre naît, mappée en dernier. */
+  fichierCharge(): void {
+    // Un re-mappage à la fois : un second `file-loaded` pendant l'attente n'en
+    // rajoute pas, et une surface détachée ou jamais attachée ne bouge plus.
+    if (this.minuterieRemap !== null || this.avant === null || this.host.isDestroyed()) return;
+    this.minuterieRemap = setTimeout(() => {
+      this.minuterieRemap = null;
+      this.remapperAuDessus();
+    }, DELAI_REMAPPAGE_MS);
+  }
+
+  /** La séquence du banc, geste pour geste : le dernier mappé, c'est nous. */
+  private remapperAuDessus(): void {
+    if (this.avant === null || this.host.isDestroyed()) return;
+    // Les quatre gestes tiennent dans un seul bloc synchrone : aucun évènement
+    // ne peut s'y intercaler, `reprendrePleinEcran` n'a pas à être désarmé. Si
+    // le compositeur émet un `leave-full-screen` pour le `hide()`, il arrivera
+    // APRÈS le bloc, sur une fenêtre déjà revenue en plein écran — sans effet.
+    this.host.hide();
+    this.host.show();
+    this.host.setFullScreen(true);
+    this.host.focus();
+    console.info("[video] Wayland : fenêtre re-mappée au-dessus de la vidéo");
+  }
+
   /** Un avertissement par cause : la visée se rejoue, le journal ne doit pas. */
   private avertirUneFois(cle: string, message: string): void {
     if (this.dernierAvertissement === cle) return;
@@ -132,6 +175,10 @@ export class SurfaceWayland implements VideoSurface {
 
   detach(): void {
     this.ere++;
+    if (this.minuterieRemap !== null) {
+      clearTimeout(this.minuterieRemap);
+      this.minuterieRemap = null;
+    }
     if (this.host.isDestroyed()) return;
     this.host.removeListener("leave-full-screen", this.reprendrePleinEcran);
     const avant = this.avant;

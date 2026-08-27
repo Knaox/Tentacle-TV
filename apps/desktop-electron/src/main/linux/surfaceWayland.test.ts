@@ -41,6 +41,8 @@ function fenetre(options: { pleinEcran?: boolean } = {}) {
       etat.pleinEcran = v;
     }),
     focus: vi.fn(() => journal.push("focus")),
+    hide: vi.fn(() => journal.push("hide")),
+    show: vi.fn(() => journal.push("show")),
     getBounds: vi.fn(() => ({ x: 0, y: 0, width: 1280, height: 800 })),
     on: (evt: string, fn: () => void) => {
       if (!auditeurs.has(evt)) auditeurs.set(evt, new Set());
@@ -62,7 +64,10 @@ beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
 
 describe("attach — la visée se joue avant de rendre la main", () => {
   it("pose le plein écran et le focus, puis vise et écrit le connecteur", async () => {
@@ -157,5 +162,51 @@ describe("detach — tout ce qui vole retombe", () => {
     surface.detach();
     win.emettre("leave-full-screen");
     expect(win.journal.filter((l) => l === "setFullScreen(true)").length).toBe(rappels);
+  });
+});
+
+describe("fichierCharge — se re-mapper au-dessus de la fenêtre de mpv", () => {
+  it("attend le délai mesuré puis rejoue la séquence du banc, dans l'ordre", async () => {
+    vi.useFakeTimers();
+    const win = fenetre();
+    const surface = new SurfaceWayland(win as never);
+    await surface.attach();
+    const avant = win.journal.length;
+    surface.fichierCharge();
+    expect(win.journal.length).toBe(avant); // rien avant le délai : mpv n'est pas mappée
+    await vi.advanceTimersByTimeAsync(300);
+    expect(win.journal.slice(avant)).toEqual(["hide", "show", "setFullScreen(true)", "focus"]);
+  });
+
+  it("un second file-loaded pendant l'attente n'arme qu'un re-mappage", async () => {
+    vi.useFakeTimers();
+    const win = fenetre();
+    const surface = new SurfaceWayland(win as never);
+    await surface.attach();
+    surface.fichierCharge();
+    surface.fichierCharge();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(win.hide).toHaveBeenCalledTimes(1);
+  });
+
+  it("détachée, la surface ne se re-mappe plus", async () => {
+    // Fin de lecture éclair, changement d'épisode : le minuteur part avec elle.
+    vi.useFakeTimers();
+    const win = fenetre();
+    const surface = new SurfaceWayland(win as never);
+    await surface.attach();
+    surface.fichierCharge();
+    surface.detach();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(win.hide).not.toHaveBeenCalled();
+  });
+
+  it("jamais attachée, elle ne bouge pas", async () => {
+    vi.useFakeTimers();
+    const win = fenetre();
+    const surface = new SurfaceWayland(win as never);
+    surface.fichierCharge();
+    await vi.advanceTimersByTimeAsync(600);
+    expect(win.hide).not.toHaveBeenCalled();
   });
 });
