@@ -13,6 +13,7 @@ import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { optionsCadreLinux } from "./linux/fenetre";
 import { montageLinux } from "./linux/session";
+import { sessionAffichee } from "./linux/sessionRescue";
 import { lockNavigation } from "./security";
 import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
 import { fermerSessionLecteur, ouvrirSessionLecteur } from "./sessionLecteurPleinEcran";
@@ -216,7 +217,12 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
-  win.once("ready-to-show", () => win.show());
+  win.once("ready-to-show", () => {
+    win.show();
+    // La fenêtre a prouvé qu'elle s'affiche : l'essai d'un choix de session
+    // explicite est concluant (sans effet sinon — voir `linux/sessionRescue.ts`).
+    sessionAffichee();
+  });
 
   win.on("closed", () => {
     mainWindow = null;
