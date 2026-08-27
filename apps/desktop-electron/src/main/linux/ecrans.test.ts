@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { connecteurPourLibelle, ecransConnectes, nomEdid } from "./ecrans";
+import { connecteurPourLibelle, ecranPourMesure, ecransConnectes, nomEdid } from "./ecrans";
 
 /** Un EDID minimal portant un nom de moniteur dans le descripteur 0xFC. */
 function edid(nom: string): Buffer {
@@ -79,5 +79,54 @@ describe("connecteurPourLibelle", () => {
   it("rend null plutôt qu'un mauvais écran quand rien ne correspond", () => {
     expect(connecteurPourLibelle("Écran inconnu", ecrans)).toBeNull();
     expect(connecteurPourLibelle("", ecrans)).toBeNull();
+  });
+});
+
+/**
+ * Sur Wayland, `getBounds()` rend (0,0) pour TOUTE fenêtre — mesuré sur ce
+ * poste à trois écrans, la fenêtre en plein écran sur l'ASUS rendait `x=0 y=0`.
+ * `getDisplayMatching` désignait donc l'écran posé à l'origine (le Dell), et
+ * mpv partait sur le mauvais moniteur. La mesure faite par la PAGE — taille
+ * logique et densité de sa fenêtre plein écran — identifie l'écran, elle.
+ */
+describe("ecranPourMesure", () => {
+  const ECRANS = [
+    { label: "Dell Inc. DELL S2721DGF", largeur: 1152, hauteur: 2048, densite: 1.25 },
+    { label: "ASUSTek COMPUTER INC XG27UCDMG", largeur: 1920, hauteur: 1080, densite: 2 },
+    { label: "Samsung Electric Company Odyssey G40B", largeur: 1920, hauteur: 1080, densite: 1 },
+  ];
+
+  it("désigne l'écran dont la taille ET la densité correspondent", () => {
+    // Mêmes 1920x1080 que le Samsung : c'est la DENSITÉ qui les sépare.
+    expect(ecranPourMesure({ largeur: 1920, hauteur: 1080, densite: 2 }, ECRANS)).toBe(
+      "ASUSTek COMPUTER INC XG27UCDMG",
+    );
+    expect(ecranPourMesure({ largeur: 1920, hauteur: 1080, densite: 1 }, ECRANS)).toBe(
+      "Samsung Electric Company Odyssey G40B",
+    );
+    expect(ecranPourMesure({ largeur: 1152, hauteur: 2048, densite: 1.25 }, ECRANS)).toBe(
+      "Dell Inc. DELL S2721DGF",
+    );
+  });
+
+  it("ne force rien quand deux écrans sont indiscernables", () => {
+    const jumeaux = [
+      { label: "Écran gauche", largeur: 1920, hauteur: 1080, densite: 1 },
+      { label: "Écran droit", largeur: 1920, hauteur: 1080, densite: 1 },
+    ];
+    expect(ecranPourMesure({ largeur: 1920, hauteur: 1080, densite: 1 }, jumeaux)).toBeNull();
+  });
+
+  it("rend null quand aucun écran ne correspond", () => {
+    expect(ecranPourMesure({ largeur: 800, hauteur: 600, densite: 1 }, ECRANS)).toBeNull();
+    expect(ecranPourMesure({ largeur: 1920, hauteur: 1080, densite: 1.5 }, ECRANS)).toBeNull();
+  });
+
+  it("tolère l'imprécision d'une densité fractionnaire", () => {
+    // `devicePixelRatio` traverse le pont IPC en flottant : 1.25 peut revenir
+    // en 1.2500000001. Une égalité stricte manquerait l'écran.
+    expect(ecranPourMesure({ largeur: 1152, hauteur: 2048, densite: 1.2500000001 }, ECRANS)).toBe(
+      "Dell Inc. DELL S2721DGF",
+    );
   });
 });
