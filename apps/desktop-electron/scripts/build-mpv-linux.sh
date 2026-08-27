@@ -76,7 +76,7 @@ SORTIE="$(mkdir -p "$SORTIE" && cd "$SORTIE" && pwd)"
 # (le rpath `$ORIGIN` le trouvera), ou un SONAME de la liste blanche ci-dessous
 # — épelés et VERSIONNÉS, identiques sur Debian, Ubuntu, Fedora, Arch et
 # openSUSE. Tout le reste est une erreur de collecte, et fait échouer le build.
-UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
+UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libgnutls.so.30 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
 
 auditer() {
   echo "==> Audit des NEEDED de $SORTIE (readelf)"
@@ -127,7 +127,7 @@ if command -v apt-get >/dev/null; then
     libwayland-dev wayland-protocols libxkbcommon-dev libx11-dev libxext-dev libxrandr-dev \
     libxpresent-dev libxss-dev libxinerama-dev libdrm-dev libgbm-dev libegl-dev libgl-dev \
     libasound2-dev libpulse-dev libpipewire-0.3-dev \
-    libva-dev libvdpau-dev libzimg-dev \
+    libva-dev libvdpau-dev libzimg-dev libgnutls28-dev \
     libopus-dev libvorbis-dev libogg-dev libmp3lame-dev libsoxr-dev
 fi
 
@@ -187,6 +187,15 @@ fi
 # cachés au lien de mpv (--exclude-libs), supprime le problème à la racine :
 # plus aucune référence dynamique `av*`. Licence inchangée : la libmpv Linux
 # est déjà GPL (voir l'en-tête), la recette est publique.
+#
+# ⚠️ TLS : `--enable-gnutls`, en DYNAMIQUE sur la gnutls du système. Sans
+# backend TLS, FFmpeg n'a pas de protocole https : un flux Jellyfin meurt en
+# « No protocol handler found » — end-file(4), MPV_ERROR_LOADING_FAILED
+# (mesuré ; le seul test réel d'avant ce correctif était un fichier LOCAL).
+# GnuTLS et pas OpenSSL : son SONAME `libgnutls.so.30` est identique sur
+# Debian, Ubuntu, Fedora, Arch et openSUSE (libssl diverge : .so.3 / .so.1.1),
+# et la gnutls du SYSTÈME est la seule à connaître le magasin de certificats
+# de SA distribution — embarquée, elle chercherait les CA aux chemins d'Ubuntu.
 if [ ! -f "$PREFIX/lib/libavcodec.a" ]; then
   echo "==> FFmpeg $FFMPEG_TAG (LGPL, statique)"
   cloner https://github.com/FFmpeg/FFmpeg.git "$FFMPEG_TAG" "$TRAVAIL/ffmpeg"
@@ -198,6 +207,7 @@ if [ ! -f "$PREFIX/lib/libavcodec.a" ]; then
     --disable-gpl --disable-nonfree \
     --extra-cflags="-I$PREFIX/include" --extra-ldflags="-L$PREFIX/lib" \
     --enable-libdav1d --enable-libopus --enable-libvorbis --enable-libsoxr \
+    --enable-gnutls \
     --enable-vaapi --enable-vdpau --enable-vulkan --enable-nvdec
   make -j"$(nproc)"
   make install
@@ -263,6 +273,9 @@ fi
 #   - `libglib-2.0` est un singleton de fait : Electron la charge déjà (GTK), et
 #     deux glib actives dans un même processus finissent en abort. Celle du
 #     système sert les deux — son SONAME est identique partout.
+#   - le TLS (`libgnutls.so.30`) : le magasin de certificats appartient à la
+#     distribution — une gnutls embarquée chercherait les CA aux chemins de
+#     celle qui a compilé (voir le bloc FFmpeg).
 #
 # ⚠️ Et une règle d'admission : ne reste au système qu'un SONAME IDENTIQUE sur
 # toutes les distributions. `libbz2` l'a payée : Debian/Ubuntu exposent
@@ -275,7 +288,7 @@ fi
 # bibliothèques restées au système par accident, absentes de bien des machines.
 echo "==> Collecte vers $SORTIE"
 rm -rf "$SORTIE"; mkdir -p "$SORTIE"
-SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
+SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libgnutls|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
 
 copier_recursif() {
   local fichier="$1"
