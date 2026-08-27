@@ -64,6 +64,15 @@ export interface VideoSurface {
   /** L'état géométrique des deux fenêtres, en une ligne lisible. */
   geometrie?(): string;
   /**
+   * mpv vient d'ouvrir un fichier : sa fenêtre naît maintenant, mappée en
+   * dernier — donc DEVANT la nôtre là où c'est le compositeur qui empile.
+   *
+   * Facultatif : seule Wayland en a besoin, pour se re-mapper par-dessus
+   * (mesuré, docs/LINUX-FENETRE-VIDEO.md). Les surfaces qui calent au pixel
+   * n'ont rien à en faire.
+   */
+  fichierCharge?(): void;
+  /**
    * Ce qu'il faut défaire AVANT que mpv ne s'arrête.
    *
    * Facultatif, et seule la Render API en a besoin : le contexte de rendu doit
