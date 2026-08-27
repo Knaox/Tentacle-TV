@@ -165,40 +165,48 @@ describe("detach — tout ce qui vole retombe", () => {
   });
 });
 
-describe("fichierCharge — se re-mapper au-dessus de la fenêtre de mpv", () => {
-  it("attend le délai mesuré puis rejoue la séquence du banc, dans l'ordre", async () => {
+describe("fichierCharge — repasser devant par l'activation, jamais par un geste", () => {
+  it("attend la naissance de la fenêtre mpv puis demande le focus, rien d'autre", async () => {
+    // hide()/show() mesurés NUISIBLES : ils donnent l'activation à mpv et
+    // laissent le compositeur replacer la fenêtre n'importe où. Le seul geste
+    // permis est la demande d'activation — et après le délai mesuré, pas
+    // avant : une fenêtre mpv née APRÈS notre focus reprendrait le dessus.
     vi.useFakeTimers();
     const win = fenetre();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
     const avant = win.journal.length;
     surface.fichierCharge();
-    expect(win.journal.length).toBe(avant); // rien avant le délai : mpv n'est pas mappée
+    expect(win.journal.length).toBe(avant); // rien avant le délai
     await vi.advanceTimersByTimeAsync(300);
-    expect(win.journal.slice(avant)).toEqual(["hide", "show", "setFullScreen(true)", "focus"]);
+    expect(win.journal.slice(avant)).toEqual(["focus"]);
+    expect(win.hide).not.toHaveBeenCalled();
+    expect(win.show).not.toHaveBeenCalled();
   });
 
-  it("un second file-loaded pendant l'attente n'arme qu'un re-mappage", async () => {
+  it("un second file-loaded pendant l'attente n'arme qu'une reprise", async () => {
     vi.useFakeTimers();
     const win = fenetre();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
+    const avant = win.focus.mock.calls.length;
     surface.fichierCharge();
     surface.fichierCharge();
     await vi.advanceTimersByTimeAsync(600);
-    expect(win.hide).toHaveBeenCalledTimes(1);
+    expect(win.focus.mock.calls.length).toBe(avant + 1);
   });
 
-  it("détachée, la surface ne se re-mappe plus", async () => {
+  it("détachée, la surface ne demande plus rien", async () => {
     // Fin de lecture éclair, changement d'épisode : le minuteur part avec elle.
     vi.useFakeTimers();
     const win = fenetre();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
+    const avant = win.focus.mock.calls.length;
     surface.fichierCharge();
     surface.detach();
     await vi.advanceTimersByTimeAsync(600);
-    expect(win.hide).not.toHaveBeenCalled();
+    expect(win.focus.mock.calls.length).toBe(avant);
   });
 
   it("jamais attachée, elle ne bouge pas", async () => {
@@ -207,6 +215,6 @@ describe("fichierCharge — se re-mapper au-dessus de la fenêtre de mpv", () =>
     const surface = new SurfaceWayland(win as never);
     surface.fichierCharge();
     await vi.advanceTimersByTimeAsync(600);
-    expect(win.hide).not.toHaveBeenCalled();
+    expect(win.focus).not.toHaveBeenCalled();
   });
 });

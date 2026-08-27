@@ -41,9 +41,9 @@ export function relaisEvenements(surface: () => VideoSurface | null): {
       // paramètres seraient déjà là, puis `video-reconfig`, où ils le sont à
       // coup sûr.
       if (p.event === "file-loaded" || p.event === "video-reconfig") accorder();
-      // La fenêtre de mpv naît à l'ouverture du fichier, mappée en dernier —
-      // donc devant la nôtre. La surface qui doit se re-mapper par-dessus
-      // l'apprend ici (Wayland seulement, voir `surfaceWayland.ts`).
+      // La fenêtre de mpv naît à l'ouverture du fichier, et le compositeur
+      // peut la mettre devant la nôtre. La surface qui doit redemander
+      // l'activation l'apprend ici (Wayland seulement, voir `surfaceWayland.ts`).
       if (p.event === "file-loaded") surface()?.fichierCharge?.();
       if (TRACES.has(p.event)) {
         const raison = p.event === "end-file" ? ` (raison ${String(p["reason"])})` : "";
