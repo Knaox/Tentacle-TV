@@ -182,7 +182,7 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // et le lecteur est remonté à chaque épisode.
         video?.detach();
         video = creerSurfaceVideo(win);
-        video.attach();
+        await video.attach();
         reinitialiserRapport();
 
         return "ok";

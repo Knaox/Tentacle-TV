@@ -6,32 +6,26 @@
  * Wayland n'autorise pas un client à donner une position à ses fenêtres — c'est
  * une règle du protocole, pas un manque. La fenêtre de mpv ne peut donc pas être
  * posée sur la nôtre au pixel près, comme le fait `videoWindow.ts` sous Windows.
+ * Le plein écran est la seule géométrie où la question ne se pose plus : les
+ * deux fenêtres couvrent la même sortie, et le compositeur s'occupe du reste.
  *
- * Le plein écran est la seule géométrie où la question ne se pose plus : les deux
- * fenêtres couvrent la même sortie, et le compositeur s'occupe du reste.
- * `align()` est donc vide, et ce vide est le montage lui-même.
+ * # Le seul calage qui reste : l'ÉCRAN, et il se joue AVANT le loadfile
  *
- * # Pourquoi la nôtre reste au-dessus
+ * mpv sait viser un écran (`fs-screen-name`, nom de CONNECTEUR — `DP-4`), mais
+ * ne le lit qu'à l'ENTRÉE en plein écran de sa fenêtre — c'est-à-dire à sa
+ * naissance, au premier `loadfile`. Écrit après coup, le réglage ne déplace
+ * plus rien : mesuré, la « re-visée tardive » du banc ne changeait strictement
+ * rien (docs/LINUX-FENETRE-VIDEO.md, « L'empilement multi-écrans »).
  *
- * Mesuré le 25.08.2026 sur KWin 6.7.4, capture à l'appui : notre fenêtre
- * transparente plein écran reste devant la fenêtre plein écran de mpv, et la
- * vidéo se voit au travers. Deux conditions, toutes deux posées ailleurs :
+ * D'où la forme d'`attach()` : il est ASYNCHRONE, et le handler `mpv_init` ne
+ * répond à la page qu'une fois `fs-screen-name` posé. La page n'envoie
+ * `loadfile` qu'après la réponse — la course n'existe pas.
  *
- *  - `transparent: true` à la CONSTRUCTION (`linux/fenetre.ts`) — sans quoi la
- *    page peint du noir par-dessus la vidéo ;
- *  - `focus-on=never` côté mpv (`mpvRuntime.ts`) — sa fenêtre ne réclame jamais
- *    l'activation, donc le compositeur ne la remonte jamais devant la nôtre.
- *
- * # Le seul calage qui reste : l'ÉCRAN
- *
- * Ni nous ni mpv ne choisissons où le compositeur met une fenêtre en plein
- * écran. Sur un poste à plusieurs moniteurs, les deux partaient donc sur des
- * écrans différents — mesuré : notre fenêtre sur le Dell, la surface de mpv sur
- * l'ASUS. L'utilisateur voyait son interface d'un côté et rien de l'autre.
- *
- * mpv sait viser un écran (`fs-screen-name`), mais n'accepte que le nom de
- * CONNECTEUR — `DP-3`, pas « Dell Inc. DELL S2721DGF ». Le rapprochement passe
- * par l'EDID que publie le noyau ; voir `ecrans.ts`.
+ * L'écran lui-même est identifié par ce que la PAGE mesure (`displayTarget.ts`) :
+ * sur Wayland, `getBounds()` rend (0,0) pour toute fenêtre et la visée par
+ * bounds désignait l'écran posé à l'origine — mesurée fausse, supprimée. Quand
+ * la mesure ne désigne rien (écrans jumeaux, page muette), on n'écrit RIEN :
+ * mpv choisit seul, et un choix libre vaut mieux qu'un ordre faux.
  *
  * # Ce que ça coûte, et qui l'a décidé
  *
@@ -39,22 +33,26 @@
  * n'existe QUE là (X11 n'en aura jamais). L'utilisateur qui préfère l'inverse
  * bascule le réglage de session sur `x11` — voir `sessionGraphique.ts`.
  *
- * Conséquence directe : tant qu'une vidéo est attachée, la fenêtre RESTE en plein
- * écran. En sortir laisserait la vidéo de mpv couvrir tout l'écran derrière une
- * fenêtre réduite — le bureau montrerait un film que plus rien ne commande.
+ * Conséquence directe : tant qu'une vidéo est attachée, la fenêtre RESTE en
+ * plein écran. En sortir laisserait la vidéo de mpv couvrir tout l'écran
+ * derrière une fenêtre réduite — un film que plus rien ne commande.
  */
 
-import { screen, type BrowserWindow } from "electron";
+import type { BrowserWindow } from "electron";
 import { connecteurPourLibelle, ecransConnectes } from "./ecrans";
+import { libelleUneFoisMappee } from "./displayTarget";
 import { setProperty } from "../video/mpv";
 import type { VideoSurface } from "../video/surface";
 
 export class SurfaceWayland implements VideoSurface {
   /** L'état du plein écran avant la lecture, pour le rendre en sortant. */
   private avant: boolean | null = null;
-  /** Dernier écran visé, pour ne pas réécrire ni ré-avertir à chaque évènement. */
+  /** Dernier écran visé, pour ne pas réécrire la même propriété. */
   private dernierConnecteur: string | null = null;
-  private dernierLibelle: string | null = null;
+  /** Dernier motif d'échec tracé, pour n'avertir qu'une fois par cause. */
+  private dernierAvertissement: string | null = null;
+  /** Coupe les visées en vol : `detach()` ouvre une ère nouvelle. */
+  private ere = 0;
   private readonly reprendrePleinEcran = (): void => {
     if (this.avant === null || this.host.isDestroyed()) return;
     // Deux fenêtres plein écran, dont une seule est commandable : en sortir
@@ -65,48 +63,66 @@ export class SurfaceWayland implements VideoSurface {
 
   constructor(private readonly host: BrowserWindow) {}
 
-  attach(): void {
+  async attach(): Promise<void> {
     if (this.host.isDestroyed()) return;
-    // AVANT le plein écran, et avant que mpv ne crée sa fenêtre au premier
-    // `loadfile` : c'est le seul moment où le réglage porte.
-    this.viserNotreEcran();
     this.avant = this.host.isFullScreen();
     this.host.setFullScreen(true);
     // L'activation est ce qui fixe l'ordre : notre fenêtre devient la dernière
-    // servie, celle de mpv ne le demande jamais.
+    // servie, celle de mpv ne le demande jamais (`focus-on=never`).
     this.host.focus();
     this.host.on("leave-full-screen", this.reprendrePleinEcran);
+    // La visée AVANT de rendre la main — voir l'en-tête. Le compositeur met
+    // ~200 ms à mapper le plein écran ; l'attente vit dans `displayTarget.ts`.
+    await this.viserALaMesure();
   }
 
   /**
-   * Wayland ne place pas les fenêtres : il n'y a rien à caler, et c'est voulu.
-   *
-   * L'écran, lui, se rejoue — un changement de géométrie peut vouloir dire que
-   * l'utilisateur a déplacé la fenêtre sur un autre moniteur.
+   * L'écran se rejoue — un changement de géométrie peut vouloir dire que la
+   * fenêtre a changé de moniteur. Sans effet sur le fichier en cours (mpv ne
+   * relit `fs-screen-name` qu'en entrant en plein écran) : c'est pour le
+   * prochain chargement.
    */
   align(): void {
-    this.viserNotreEcran();
+    void this.viserALaMesure();
   }
 
-  /** Dit à mpv d'aller en plein écran sur NOTRE moniteur, s'il est identifiable. */
-  private viserNotreEcran(): void {
+  /** Mesure la page, rapproche un connecteur, écrit `fs-screen-name`. */
+  private async viserALaMesure(): Promise<void> {
     if (this.host.isDestroyed()) return;
-    const libelle = screen.getDisplayMatching(this.host.getBounds()).label;
+    const ere = this.ere;
+    const libelle = await libelleUneFoisMappee(this.host, {
+      encore: () => this.ere === ere,
+    });
+    if (this.ere !== ere || this.host.isDestroyed()) return;
+    if (libelle === null) {
+      this.avertirUneFois(
+        "mesure",
+        "[video] écran non identifié par la mesure de la page — mpv choisira",
+      );
+      return;
+    }
     const connecteur = connecteurPourLibelle(libelle, ecransConnectes());
     if (connecteur === null) {
-      // Sans correspondance on ne force rien : mpv choisira, ce qui reste mieux
-      // que de l'envoyer sur un écran arbitraire. Tracé une fois par écran.
-      if (this.dernierLibelle !== libelle) {
-        console.warn(`[video] écran « ${libelle} » non rapproché d'un connecteur — mpv choisira`);
-        this.dernierLibelle = libelle;
-      }
+      this.avertirUneFois(
+        `libelle:${libelle}`,
+        `[video] écran « ${libelle} » non rapproché d'un connecteur — mpv choisira`,
+      );
       return;
     }
     if (connecteur === this.dernierConnecteur) return;
     this.dernierConnecteur = connecteur;
-    this.dernierLibelle = libelle;
     console.info(`[video] mpv visera ${connecteur} (${libelle})`);
-    void setProperty("fs-screen-name", connecteur);
+    const erreur = await setProperty("fs-screen-name", connecteur);
+    if (erreur !== null) {
+      console.warn(`[video] fs-screen-name → ${connecteur} refusé : ${erreur}`);
+    }
+  }
+
+  /** Un avertissement par cause : la visée se rejoue, le journal ne doit pas. */
+  private avertirUneFois(cle: string, message: string): void {
+    if (this.dernierAvertissement === cle) return;
+    this.dernierAvertissement = cle;
+    console.warn(message);
   }
 
   /** Rien à désarmer : `focus-on=never` suffit, la fenêtre de mpv ne prend rien. */
@@ -115,11 +131,13 @@ export class SurfaceWayland implements VideoSurface {
   }
 
   detach(): void {
+    this.ere++;
     if (this.host.isDestroyed()) return;
     this.host.removeListener("leave-full-screen", this.reprendrePleinEcran);
     const avant = this.avant;
     this.avant = null;
     this.dernierConnecteur = null;
+    this.dernierAvertissement = null;
     // On ne défait QUE le plein écran qu'on a posé : celui d'un utilisateur qui
     // parcourait déjà son catalogue ainsi ne nous appartient pas.
     if (avant === false) this.host.setFullScreen(false);
