@@ -163,7 +163,11 @@ export function sectionHdrNatif(etat: EtatHdrNatif | null): DebugSection {
     ]);
   }
   // LE réglage qui compte sur macOS : sans lui, mpv ne transmet pas le signal.
-  if (etat.autoAutorise !== undefined) {
+  // Pas sous Linux : `target-colorspace-hint=yes` y est posé SANS CONDITION par
+  // la coquille (linux/optionsMpv.ts), la préférence est inerte — et la ligne
+  // affichait « non (touche H) » en rouge, accusant un défaut inexistant (même
+  // famille que `edrCapable` et « bascule d'écran » ci-dessus).
+  if (!linux && etat.autoAutorise !== undefined) {
     lignes.push([
       "transmission HDR autorisée",
       etat.autoAutorise ? "oui" : "non (touche H)",
