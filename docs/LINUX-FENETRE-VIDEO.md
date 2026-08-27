@@ -137,7 +137,7 @@ Clip `rouge.mp4`, repères HTML vert/bleu de 240×240 points dans notre fenêtre
 | re-visée tardive (après `file-loaded`) | **Dell**, identique au témoin | 0 / 2,8 / 2,8 % | **sans aucun effet** |
 | visée MESURÉE avant `loadfile` | **ASUS** | **100** / 0 / 0 % | bon écran, mais mpv DEVANT |
 | re-mappage seul (hide/show/plein écran/focus) | **Dell** | 0 / 2,8 / 2,8 % | inutile sans cible |
-| **visée avant `loadfile` + re-mappage après `file-loaded`** | **ASUS** | **94,4 / 2,8 / 2,8 %** | **complet — 3 runs sur 3** |
+| **visée avant `loadfile` + re-mappage après `file-loaded`** | **ASUS** | **94,4 / 2,8 / 2,8 %** | complet **sur bureau au repos** — voir la suite |
 
 94,4 + 2,8 + 2,8 = 100,0 : l'écran se partage exactement entre la vidéo, vue
 au travers de notre fenêtre transparente, et les deux repères posés dessus.
@@ -155,14 +155,47 @@ au travers de notre fenêtre transparente, et les deux repères posés dessus.
    Dell portrait** : 1152×648 points sur 1152×2048, soit 31,6 % de cet
    écran-là — et non « un peu de vidéo » sur le bon.
 
-**Ce que ce relevé fixe.** (1) `fs-screen-name` doit être écrit **avant le
-premier `loadfile`**, avec l'écran identifié par le trio
+**Ce que ce relevé fixe.** `fs-screen-name` doit être écrit **avant le premier
+`loadfile`**, avec l'écran identifié par le trio
 `innerWidth`/`innerHeight`/`devicePixelRatio` mesuré par la page une fois la
 fenêtre mappée en plein écran — 202-203 ms de stabilisation mesurés, sur les
 trois runs. La visée par `getBounds()` est fausse par construction sur Wayland
-et disparaît. (2) mpv, né au `loadfile`, est mappé en dernier et passe donc
-devant : notre fenêtre doit se **re-mapper** (hide/show/plein écran/focus,
-300 ms après `file-loaded`) pour reprendre le dessus. Le « oui » de la ligne
+et disparaît.
+
+#### La suite, le même jour : le re-mappage meurt dès que l'utilisateur vit
+
+Rejoué dans l'application réelle pendant que l'utilisateur se servait de la
+machine, le re-mappage a produit l'inverse du banc, et le relevé de l'ordre
+d'empilement de KWin (script D-Bus `Scripting`, couches lues sur pièce) dit
+pourquoi :
+
+```
+tentacle-tv | sortie=DP-2 | pleinEcran=false | couche=2   notre fenêtre : Samsung, FENÊTRÉE
+mpv         | sortie=DP-4 | pleinEcran=true  | couche=5   seul sur l'ASUS, couche « plein écran actif »
+```
+
+Le `hide()` DONNE l'activation à mpv (la fenêtre active disparue, KWin active
+la suivante — `focus-on=never` n'empêche que mpv de la *demander*) ; le
+`show()` replace la fenêtre sur l'écran où l'utilisateur s'active ; le
+`focus()` est refusé (anti-vol de focus). Le banc, lui, tournait sur un bureau
+au repos : focus accordé, replacement au même endroit. Deux remèdes de plus,
+mesurés morts dans la foulée :
+
+| Remède | Relevé | Verdict |
+|---|---|---|
+| `setAlwaysOnTop(true)` (couches) | Electron répond `true`, la fenêtre reste **couche 2** | inerte sur Wayland |
+| `app.focus({steal:true})` après `file-loaded` | mpv reste couche 5, repères 0 % | refusé sans geste utilisateur frais |
+| **activer notre fenêtre** (script KWin, l'équivalent d'un clic) | **mpv retombe couche 2, nous couche 5 — 94,4 / 2,8 / 2,8 %** | **c'est l'activation qui décide, à elle seule** |
+
+**La règle, mesurée : la fenêtre plein écran ACTIVE est promue (couche 5),
+l'autre retombe (couche 2).** Aucun geste de fenêtre ne contourne ça — et il
+n'y a rien à contourner : il suffit d'être la fenêtre active. D'où le montage
+retenu : (1) visée mesurée avant `loadfile` ; (2) une demande de focus 300 ms
+après `file-loaded` — la fenêtre de mpv doit être née, sinon elle arrive après
+nous et reprend le dessus. Portée par le jeton du clic « lecture », la demande
+est honorée ; lancée sans geste utilisateur (reprise automatique), elle peut
+être refusée et l'interface reste derrière **jusqu'à la première activation
+venue** — clic, alt-tab — qui remet tout en ordre. Le « oui » de la ligne
 « interface au-dessus » du tableau des résultats vaut à cette condition-là.
 
 ## X11, validé — dans un serveur X imbriqué
