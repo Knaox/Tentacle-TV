@@ -17,6 +17,7 @@ import {
   type Montage,
   type SessionDecidee,
 } from "./sessionGraphique";
+import { poserTemoin, redresserChoixCondamne, surveillerGpu } from "./sessionRescue";
 
 let decidee: SessionDecidee | null = null;
 
@@ -27,13 +28,32 @@ let decidee: SessionDecidee | null = null;
  */
 export function appliquerSessionGraphique(): SessionDecidee | null {
   if (process.platform !== "linux") return null;
-  decidee = deciderSession(process.env, lireChoixSession(app.getPath("userData")));
+  const dossier = app.getPath("userData");
+  // `TENTACLE_LINUX_SESSION` est l'outil d'essai des développeurs : il ne
+  // touche pas au réglage, le garde-fou ne doit ni le juger ni le corriger.
+  const essaiDev = process.env["TENTACLE_LINUX_SESSION"] !== undefined;
+  if (!essaiDev) {
+    const condamne = redresserChoixCondamne(dossier, lireChoixSession(dossier));
+    if (condamne !== null) {
+      console.error(
+        `[session] ⚠️ le choix « ${condamne} » n'a jamais affiché de fenêtre au lancement précédent — retour en auto`,
+      );
+    }
+  }
+  decidee = deciderSession(process.env, lireChoixSession(dossier));
   if (decidee.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decidee.ozone);
   console.info(
     `[session] bureau=${decidee.session} choix=${decidee.choix} ` +
       `ozone=${decidee.ozone ?? "auto"} montage=${decidee.montage}` +
       (decidee.montage === "wayland" ? " (HDR possible, lecture plein écran)" : " (pas de HDR)"),
   );
+  // Un choix explicite peut ne JAMAIS afficher — réglage persistant, fenêtre
+  // introuvable, application briquée (vécu avec x11 sur XWayland cassé). Le
+  // témoin et la surveillance GPU sont les deux filets ; voir `sessionRescue.ts`.
+  if (!essaiDev && decidee.choix !== "auto") {
+    poserTemoin(dossier, decidee.choix);
+    surveillerGpu(dossier, app);
+  }
   return decidee;
 }
 
