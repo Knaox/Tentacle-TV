@@ -287,3 +287,58 @@ refaire : un `package.json` Electron minimal, `koffi.load("libmpv.so.2")`, les o
 ci-dessus, une page transparente à carrés témoins, `spectacle -f -b -n -o` pour la capture,
 et `ffmpeg -vf scale=iw/4:ih/4:flags=neighbor -f rawvideo -pix_fmt rgb24` pour compter les
 pixels sans rien interpréter.
+
+## Le verdict HDR réel — TRANSMIS (28.08.2026)
+
+Conditions : même poste, KDE 6.7.4 Wayland, HDR **activé** dans KDE sur l'ASUS
+XG27UCDMG (DP-4, 3840x2160@240) — pic 1015 nits plafonné à 980, blanc SDR 260 nits,
+Wide Color Gamut actif (`kscreen-doctor -o`). Les deux autres écrans sont SDR.
+
+### Le barrage sur la route : FFmpeg sans TLS
+
+Premier essai sur un film de la médiathèque (réseau, https) : `start-file` →
+`end-file (raison 4)`, deux fois, puis bascule de secours. Sonde sur la libmpv
+livrée : `https` → « No protocol handler found … disabled at compile-time »,
+`MPV_ERROR_LOADING_FAILED (-13)` ; `http` → réponse HTTP du serveur (le réseau
+existe, seul TLS manque). **Le seul test réel d'avant était un fichier local.**
+Correctif : `--enable-gnutls`, en DYNAMIQUE sur la gnutls du système — SONAME
+`libgnutls.so.30` identique sur toutes les distributions (libssl diverge), et le
+magasin de certificats reste celui de la distribution. Vérifié : audit NEEDED
+propre, 0 symbole `av_` exporté, https ouvert contre le serveur Jellyfin réel.
+Découvert au passage : le lecteur web de secours ne peut PAS lire un média
+réseau depuis la coquille — `PlaybackInfo`/`ActiveEncodings` bloqués par CORS
+depuis l'origine `tentacle://app` (fiche dédiée créée).
+
+### La mesure, dans l'application réelle
+
+Film HDR 4K (HEVC main10, PQ) de la médiathèque, lecture directe réseau :
+
+```
+[video] mpv visera DP-4 (ASUSTek COMPUTER INC XG27UCDMG)
+[video] mpv → file-loaded
+[hdr] contenu pq → sortie pq/bt.2020 · pic 3.81×
+```
+
+Panneau F9 (capture `~/.cache/tentacle-bench-linux/capture-panneau2.png`) :
+« HDR : RÉEL — pq / bt.2020, pic 3.813229, couche en plage étendue », flux
+RÉSEAU 5,6 Mo/s en lecture directe, décodage matériel Vulkan, 23.976 → écran
+240 Hz, 0 image perdue, première image en 1,06 s. Le pic se lit à sa source :
+`sig-peak = 3.813 ≈ 980 nits (plafond KDE) / 260 nits (blanc SDR KDE)`.
+
+### La contre-mesure — le piège vérifié en vrai
+
+Sur l'écran laissé en HDR, un clip SDR sort LUI AUSSI en PQ (banc
+`hdr-couple.py`, options exactes de l'app) : `rouge.mp4` (bt.1886/bt.709) →
+sortie `pq/bt.2020 · sig-peak 3.813`. Le verdict qui ne lit que la sortie
+mentirait ; celui du COUPLE dit « SDR converti » et ne porte aucun verdict
+(`transmissionHdr() = null`). `hdrpq.mp4` → `pq → pq/bt.2020` : transmis.
+
+### Leçon d'empilement au passage
+
+Une lecture SANS geste (reprise automatique) laisse l'overlay derrière la
+fenêtre mpv — connu — et tout ce que la page affiche alors se joue hors de
+toute vue : l'avis « première fois » du plein écran s'y est consommé invisible.
+D'où la garde `document.hasFocus()` sur cet avis. L'activation par script KWin
+(`activate-tentacle.js`, classe `tentacle-tv`) repasse l'overlay devant — la
+règle des couches (« la fenêtre plein écran ACTIVE est promue ») rejouée en
+sens inverse, pile à l'appui.
