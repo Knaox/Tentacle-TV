@@ -18,10 +18,14 @@
  * `Qt.rect` : la géométrie s'écrit — contre-lecture à l'appui — et
  * `Workspace.raiseWindow` y existe aussi.
  *
- * ⚠️ Deux pièges mesurés, à ne pas redécouvrir :
- * - le moteur QML met les composants en CACHE PAR CHEMIN : recharger un fichier
- *   modifié sous le même nom sert l'ANCIEN code — d'où le hachage du contenu
- *   dans le nom de fichier (`kwinGlue.ts`) ;
+ * ⚠️ Trois pièges mesurés, à ne pas redécouvrir :
+ * - un script chargé SURVIT au processus qui l'a posé : il faut le décharger,
+ *   et un lancement tué en cours de lecture laisse son instance dans KWin
+ *   jusqu'au redémarrage du compositeur (relevé : deux fantômes sur `/Scripting`
+ *   sans aucune instance de l'application) — d'où le greffon NOMMÉ, seule prise
+ *   pour reprendre ce qu'un lancement mort a laissé ;
+ * - le moteur QML ne voit pas un fichier apparu dans un dossier qu'il a déjà
+ *   servi (`kwinGlue.ts`, « un dossier NEUF à chaque pose ») ;
  * - l'écriture de géométrie est ASYNCHRONE : la relire dans la foulée rend
  *   l'ancienne valeur ; seule une contre-lecture différée fait foi.
  *
@@ -30,11 +34,14 @@
  * ne justifient pas une dépendance de plus.
  */
 
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 
 /** Large : gdbus répond en millisecondes, mais un compositeur gelé ne doit pas
  * suspendre l'attache du lecteur plus longtemps que ça. */
 const DELAI_MS = 3000;
+
+/** Court : au départ de l'application, on ne fait pas attendre la fermeture. */
+const DELAI_DEPART_MS = 500;
 
 function gdbus(args: readonly string[]): Promise<string | null> {
   return new Promise((resolve) => {
@@ -43,6 +50,15 @@ function gdbus(args: readonly string[]): Promise<string | null> {
     });
   });
 }
+
+const CIBLE_SCRIPTING = [
+  "--session",
+  "--dest",
+  "org.kde.KWin",
+  "--object-path",
+  "/Scripting",
+  "--method",
+] as const;
 
 let disponibilite: Promise<boolean> | null = null;
 
@@ -71,19 +87,21 @@ export function oublierDisponibiliteKwin(): void {
 
 /**
  * Charge un script déclaratif (QML) et rend son numéro, `null` si KWin refuse.
- * Le numéro négatif est le refus de KWin lui-même (chemin illisible…).
+ *
+ * Le NOM DE GREFFON est la clé de reprise : KWin refuse (`-1`) un nom déjà
+ * chargé, et `dechargerScript` ne sait décrocher que par lui. Le numéro
+ * négatif est le refus de KWin lui-même (chemin illisible, nom pris…).
  */
-export async function chargerScriptDeclaratif(chemin: string): Promise<number | null> {
+export async function chargerScriptDeclaratif(
+  chemin: string,
+  nomGreffon?: string,
+): Promise<number | null> {
   const sortie = await gdbus([
     "call",
-    "--session",
-    "--dest",
-    "org.kde.KWin",
-    "--object-path",
-    "/Scripting",
-    "--method",
+    ...CIBLE_SCRIPTING,
     "org.kde.kwin.Scripting.loadDeclarativeScript",
     chemin,
+    ...(nomGreffon === undefined ? [] : [nomGreffon]),
   ]);
   if (sortie === null) return null;
   // Le DERNIER nombre : gdbus peut typer sa réponse — « (int32 7,) » — et le
@@ -95,8 +113,9 @@ export async function chargerScriptDeclaratif(chemin: string): Promise<number | 
   return id < 0 ? null : id;
 }
 
-function commandeScript(id: number, methode: "run" | "stop"): Promise<string | null> {
-  return gdbus([
+/** Instancie le script chargé — c'est `run` qui exécute le QML. */
+export async function lancerScript(id: number): Promise<boolean> {
+  const sortie = await gdbus([
     "call",
     "--session",
     "--dest",
@@ -104,16 +123,39 @@ function commandeScript(id: number, methode: "run" | "stop"): Promise<string | n
     "--object-path",
     `/Scripting/Script${String(id)}`,
     "--method",
-    `org.kde.kwin.Script.${methode}`,
+    "org.kde.kwin.Script.run",
   ]);
+  return sortie !== null;
 }
 
-/** Instancie le script chargé — c'est `run` qui exécute le QML. */
-export async function lancerScript(id: number): Promise<boolean> {
-  return (await commandeScript(id, "run")) !== null;
+/**
+ * Décharge le greffon nommé : son instance QML est détruite, ses connexions de
+ * signaux meurent avec elle. Rend faux si aucun greffon ne portait ce nom —
+ * ce n'est pas une erreur, c'est la réponse à « reste-t-il quelque chose ? ».
+ */
+export async function dechargerScript(nomGreffon: string): Promise<boolean> {
+  const sortie = await gdbus([
+    "call",
+    ...CIBLE_SCRIPTING,
+    "org.kde.kwin.Scripting.unloadScript",
+    nomGreffon,
+  ]);
+  return sortie?.includes("true") ?? false;
 }
 
-/** Arrête et détruit l'instance : ses connexions de signaux meurent avec elle. */
-export async function arreterScript(id: number): Promise<boolean> {
-  return (await commandeScript(id, "stop")) !== null;
+/**
+ * Le même déchargement, SYNCHRONE : `will-quit` ne rend pas la main à la
+ * boucle d'événements, une promesse n'y serait jamais tenue. Silencieux et
+ * borné — au pire, le balayage du prochain lancement reprendra le fantôme.
+ */
+export function dechargerScriptSync(nomGreffon: string): void {
+  try {
+    execFileSync(
+      "gdbus",
+      ["call", ...CIBLE_SCRIPTING, "org.kde.kwin.Scripting.unloadScript", nomGreffon],
+      { timeout: DELAI_DEPART_MS, stdio: "ignore" },
+    );
+  } catch {
+    /* bus absent, compositeur parti, délai dépassé : rien à sauver ici */
+  }
 }

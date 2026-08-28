@@ -15,25 +15,32 @@ import { vi } from "vitest";
 const { pont } = vi.hoisted(() => ({
   pont: {
     chemins: [] as string[],
+    noms: [] as (string | undefined)[],
     lances: [] as number[],
-    arretes: [] as number[],
-    chargerRend: 0 as number | null,
+    decroches: [] as string[],
+    /** Les numéros rendus tour à tour ; le dernier vaut pour tous les suivants. */
+    chargerRend: [0] as (number | null)[],
     lancerRend: true,
   },
 }));
 
 vi.mock("./kwinScripting", () => ({
-  chargerScriptDeclaratif: (chemin: string) => {
+  chargerScriptDeclaratif: (chemin: string, nom?: string) => {
     pont.chemins.push(chemin);
-    return Promise.resolve(pont.chargerRend);
+    pont.noms.push(nom);
+    const rendu = pont.chargerRend.length > 1 ? pont.chargerRend.shift() : pont.chargerRend[0];
+    return Promise.resolve(rendu ?? null);
   },
   lancerScript: (id: number) => {
     pont.lances.push(id);
     return Promise.resolve(pont.lancerRend);
   },
-  arreterScript: (id: number) => {
-    pont.arretes.push(id);
+  dechargerScript: (nom: string) => {
+    pont.decroches.push(nom);
     return Promise.resolve(true);
+  },
+  dechargerScriptSync: (nom: string) => {
+    pont.decroches.push(nom);
   },
 }));
 
@@ -41,11 +48,14 @@ import { ColleKwin, gabaritColle } from "./kwinGlue";
 
 beforeEach(() => {
   pont.chemins.length = 0;
+  pont.noms.length = 0;
   pont.lances.length = 0;
-  pont.arretes.length = 0;
-  pont.chargerRend = 0;
+  pont.decroches.length = 0;
+  pont.chargerRend = [0];
   pont.lancerRend = true;
 });
+
+const GREFFON = `tentacle-colle-${String(process.pid)}`;
 
 describe("gabaritColle", () => {
   it("inline le pid — l'appariement des fenêtres en dépend", () => {
@@ -104,6 +114,33 @@ describe("ColleKwin", () => {
     await colle.retirer();
   });
 
+  it("charge SOUS le greffon du processus, décroché d'abord", async () => {
+    const colle = new ColleKwin();
+    await colle.poser();
+    // Une seule colle vivante par processus : KWin refuserait un nom déjà pris.
+    expect(pont.decroches).toEqual([GREFFON]);
+    expect(pont.noms).toEqual([GREFFON]);
+    await colle.retirer();
+    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
+  });
+
+  it("refus au chargement : une seconde tentative, une seule", async () => {
+    // Le déchargement de KWin est différé : le nom peut n'être rendu qu'après.
+    pont.chargerRend = [null, 3];
+    const colle = new ColleKwin();
+    expect(await colle.poser()).toBe(true);
+    expect(pont.chemins).toHaveLength(2);
+    expect(pont.lances).toEqual([3]);
+    await colle.retirer();
+
+    pont.chemins.length = 0;
+    pont.chargerRend = [null, null];
+    const obstinee = new ColleKwin();
+    expect(await obstinee.poser()).toBe(false);
+    expect(pont.chemins).toHaveLength(2);
+    expect(existsSync(path.dirname(pont.chemins[0] ?? ""))).toBe(false);
+  });
+
   it("deux poses ne partagent jamais un dossier", async () => {
     const a = new ColleKwin();
     const b = new ColleKwin();
@@ -115,21 +152,21 @@ describe("ColleKwin", () => {
     await b.retirer();
   });
 
-  it("retire : arrête le script et efface le DOSSIER, pas seulement le fichier", async () => {
+  it("retire : décroche le greffon et efface le DOSSIER, pas seulement le fichier", async () => {
     const colle = new ColleKwin();
     await colle.poser();
     const chemin = pont.chemins[0] ?? "";
     await colle.retirer();
-    expect(pont.arretes).toEqual([0]);
+    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
     expect(existsSync(chemin)).toBe(false);
     expect(existsSync(path.dirname(chemin))).toBe(false);
     // Un second retrait ne refait rien : la colle est déjà levée.
     await colle.retirer();
-    expect(pont.arretes).toEqual([0]);
+    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
   });
 
   it("pose refusée par KWin : faux, et aucun dossier orphelin", async () => {
-    pont.chargerRend = null;
+    pont.chargerRend = [null];
     const colle = new ColleKwin();
     expect(await colle.poser()).toBe(false);
     const chemin = pont.chemins[0] ?? "";

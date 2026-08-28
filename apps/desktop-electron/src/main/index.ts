@@ -18,7 +18,12 @@ import {
 } from "./appProtocol";
 import { demarrerBattement } from "./battement";
 import { dossierDonnees } from "./cheminsDonnees";
-import { appliquerSessionGraphique, detecterFenetrage, montageLinux } from "./linux/session";
+import {
+  appliquerSessionGraphique,
+  detecterFenetrage,
+  fenetrageLinux,
+  montageLinux,
+} from "./linux/session";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -270,6 +275,13 @@ function main(): void {
     // et `libX11.so.6` n'est jamais ouverte.
     if (montageLinux() === "x11") {
       (require("./linux/x11") as typeof import("./linux/x11")).fermerAffichageX11();
+    }
+    // La colle KWin SURVIT au processus qui l'a posée : quitter en pleine
+    // lecture laisserait son instance QML vivante dans le compositeur, et son
+    // dossier dans le répertoire temporaire. Synchrone à dessein — `will-quit`
+    // ne rend pas la main à la boucle d'événements (`glueCleanup.ts`).
+    if (fenetrageLinux() === "libre") {
+      (require("./linux/glueCleanup") as typeof import("./linux/glueCleanup")).retirerColleAuDepart();
     }
   });
 

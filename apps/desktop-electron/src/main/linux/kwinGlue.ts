@@ -42,6 +42,14 @@
  * `run` réussit, et seul le journal du compositeur dit que le composant n'a
  * jamais été construit. C'est `glueCheck.ts` qui rattrape ce mensonge.
  *
+ * # Un greffon NOMMÉ, `tentacle-colle-<pid>`
+ *
+ * Un script chargé survit au processus qui l'a posé : quitter en pleine
+ * lecture — ou se faire tuer — laisse son instance QML vivante dans le
+ * compositeur. Le nom est la seule prise pour la décrocher : on décroche avant
+ * chaque pose (une seule colle vivante par processus), au départ de
+ * l'application, et au lancement suivant pour les pids qui ne répondent plus.
+ *
  * Chaque pose écrit donc son QML dans un dossier qui n'a JAMAIS servi —
  * `tentacle-colle-<pid>-<n>/glue.qml` (banc : deux dossiers neufs d'affilée,
  * deux chargements réussis). Ce dossier ne contient qu'un fichier, en
@@ -56,14 +64,10 @@
  * sinon « Non-existent attached object » et tue le composant entier.
  */
 
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import {
-  arreterScript,
-  chargerScriptDeclaratif,
-  lancerScript,
-} from "./kwinScripting";
+import { dossierPose, effacerDossier, nomGreffon } from "./glueCleanup";
+import { chargerScriptDeclaratif, dechargerScript, lancerScript } from "./kwinScripting";
 
 const GABARIT = `import QtQml as Qml
 import org.kde.kwin as Kwin
@@ -146,17 +150,11 @@ export function gabaritColle(pid: number): string {
 /** Numéro de pose du processus : deux poses ne partagent JAMAIS un dossier. */
 let poses = 0;
 
-/** Le dossier de la n-ième pose de ce processus. Exporté pour les tests. */
-export function dossierPose(pid: number, numero: number): string {
-  return path.join(tmpdir(), `tentacle-colle-${String(pid)}-${String(numero)}`);
-}
+/** Le temps que KWin rende un nom : son déchargement est différé. */
+const RESPIRATION_MS = 100;
 
-function effacerDossier(dossier: string): void {
-  try {
-    rmSync(dossier, { recursive: true, force: true });
-  } catch {
-    /* déjà absent, ou /tmp balayé sous nos pieds */
-  }
+function attendre(ms: number): Promise<void> {
+  return new Promise((resoudre) => setTimeout(resoudre, ms));
 }
 
 /**
@@ -164,7 +162,6 @@ function effacerDossier(dossier: string): void {
  * dans KWin. Voir l'en-tête pour la raison du dossier neuf.
  */
 export class ColleKwin {
-  private id: number | null = null;
   private dossier: string | null = null;
 
   async poser(): Promise<boolean> {
@@ -177,23 +174,32 @@ export class ColleKwin {
     } catch {
       return false;
     }
-    const id = await chargerScriptDeclaratif(chemin);
+    // UNE seule colle vivante par processus : la pose précédente — ou le
+    // reliquat d'un lancement mort dont le pid a été réattribué — est
+    // décrochée d'abord, sinon KWin refuse un greffon déjà chargé.
+    const nom = nomGreffon(process.pid);
+    await dechargerScript(nom);
+    let id = await chargerScriptDeclaratif(chemin, nom);
+    if (id === null) {
+      // Le déchargement de KWin est différé (`deleteLater`) : une seconde
+      // chance, une seule, le temps qu'il ait rendu le nom.
+      await attendre(RESPIRATION_MS);
+      id = await chargerScriptDeclaratif(chemin, nom);
+    }
     if (id === null || !(await lancerScript(id))) {
       effacerDossier(dossier);
       return false;
     }
-    this.id = id;
     this.dossier = dossier;
     return true;
   }
 
-  /** L'arrêt du script détruit l'instance QML : la colle cesse de suivre. */
+  /** Décrocher le greffon détruit l'instance QML : la colle cesse de suivre. */
   async retirer(): Promise<void> {
-    const id = this.id;
     const dossier = this.dossier;
-    this.id = null;
     this.dossier = null;
-    if (id !== null) await arreterScript(id);
-    if (dossier !== null) effacerDossier(dossier);
+    if (dossier === null) return;
+    await dechargerScript(nomGreffon(process.pid));
+    effacerDossier(dossier);
   }
 }

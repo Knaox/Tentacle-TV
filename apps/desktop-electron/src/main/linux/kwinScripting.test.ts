@@ -15,6 +15,12 @@ const { faux } = vi.hoisted(() => ({
 }));
 
 vi.mock("node:child_process", () => ({
+  execFileSync: (_cmd: string, args: string[]) => {
+    faux.commandes.push(args);
+    const r = faux.reponses.shift() ?? { erreur: new Error("aucune réponse prévue"), sortie: "" };
+    if (r.erreur !== null) throw r.erreur;
+    return r.sortie;
+  },
   execFile: (
     _cmd: string,
     args: string[],
@@ -29,8 +35,9 @@ vi.mock("node:child_process", () => ({
 
 import {
   apiScriptKwinDisponible,
-  arreterScript,
   chargerScriptDeclaratif,
+  dechargerScript,
+  dechargerScriptSync,
   lancerScript,
   oublierDisponibiliteKwin,
 } from "./kwinScripting";
@@ -82,14 +89,43 @@ describe("chargerScriptDeclaratif", () => {
     faux.reponses.push({ erreur: new Error("timeout"), sortie: "" });
     expect(await chargerScriptDeclaratif("/tmp/colle.qml")).toBeNull();
   });
+
+  it("passe le nom de greffon quand il y en a un — la prise du déchargement", async () => {
+    faux.reponses.push({ erreur: null, sortie: "(0,)\n" });
+    await chargerScriptDeclaratif("/tmp/colle.qml", "tentacle-colle-42");
+    expect(faux.commandes[0]?.slice(-2)).toEqual(["/tmp/colle.qml", "tentacle-colle-42"]);
+    // Sans nom, KWin reçoit le seul chemin : la forme à un argument existe.
+    faux.reponses.push({ erreur: null, sortie: "(1,)\n" });
+    await chargerScriptDeclaratif("/tmp/colle.qml");
+    expect(faux.commandes[1]?.at(-1)).toBe("/tmp/colle.qml");
+  });
 });
 
-describe("lancer et arrêter", () => {
-  it("visent /Scripting/Script<id> et rendent le succès", async () => {
+describe("lancerScript", () => {
+  it("vise /Scripting/Script<id> et rend le succès", async () => {
     faux.reponses.push({ erreur: null, sortie: "()\n" });
     expect(await lancerScript(4)).toBe(true);
     expect(faux.commandes[0]).toContain("/Scripting/Script4");
     faux.reponses.push({ erreur: new Error("mort"), sortie: "" });
-    expect(await arreterScript(4)).toBe(false);
+    expect(await lancerScript(4)).toBe(false);
+  });
+});
+
+describe("dechargerScript", () => {
+  it("rend vrai quand KWin avait bien ce greffon, faux sinon", async () => {
+    faux.reponses.push({ erreur: null, sortie: "(true,)\n" });
+    expect(await dechargerScript("tentacle-colle-42")).toBe(true);
+    // « (false,) » n'est pas une erreur : c'est la réponse à « reste-t-il
+    // quelque chose ? », posée avant chaque pose.
+    faux.reponses.push({ erreur: null, sortie: "(false,)\n" });
+    expect(await dechargerScript("tentacle-colle-42")).toBe(false);
+    faux.reponses.push({ erreur: new Error("pas de bus"), sortie: "" });
+    expect(await dechargerScript("tentacle-colle-42")).toBe(false);
+  });
+
+  it("la variante synchrone ne jette jamais — le départ ne doit pas échouer", () => {
+    faux.reponses.push({ erreur: new Error("délai dépassé"), sortie: "" });
+    expect(() => { dechargerScriptSync("tentacle-colle-42"); }).not.toThrow();
+    expect(faux.commandes[0]).toContain("org.kde.kwin.Scripting.unloadScript");
   });
 });
