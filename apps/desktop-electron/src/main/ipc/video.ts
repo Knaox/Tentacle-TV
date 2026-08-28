@@ -20,6 +20,8 @@ import {
 } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { adapterAuPleinEcran } from "../video/macosOptionsFenetre";
+import { initialGeometryOption } from "../linux/initialGeometry";
+import { fenetrageLinux, montageLinux } from "../linux/session";
 import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
 import { relaisEvenements } from "./videoEvenements";
 import { registerDisplayHdrCommands } from "./videoHdr";
@@ -157,9 +159,13 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
           montageVideo() === "gl"
             ? optionsRenderApi(retenues)
             : adapterAuPleinEcran(retenues, win);
+        // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
+        // sans quoi il naît à la taille du média, plein écran apparent pendant
+        // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
+        const geometrie = initialGeometryOption(montageLinux(), fenetrageLinux(), win.getBounds());
         const parent = nativeHandle(win);
         const err = init(
-          { options: optionsMpv, observed, wid: parent },
+          { options: { ...optionsMpv, ...geometrie }, observed, wid: parent },
           relaisEvenements(() => video),
         );
         if (err) throw new Error(err);
