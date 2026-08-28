@@ -6,6 +6,7 @@
  * n'est dupliqué.
  */
 
+import { screen } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { terminer } from "../video/hdrSession";
@@ -162,7 +163,13 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
         // sans quoi il naît à la taille du média, plein écran apparent pendant
         // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
-        const geometrie = initialGeometryOption(montageLinux(), fenetrageLinux(), win.getBounds());
+        const bornes = win.getBounds();
+        const geometrie = initialGeometryOption(
+          montageLinux(),
+          fenetrageLinux(),
+          bornes,
+          screen.getDisplayMatching(bornes).scaleFactor,
+        );
         const parent = nativeHandle(win);
         const err = init(
           { options: { ...optionsMpv, ...geometrie }, observed, wid: parent },
