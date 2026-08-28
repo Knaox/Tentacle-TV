@@ -35,6 +35,7 @@ export * from "./playback/resolveSegments";
 export * from "./playback/playbackSettings";
 export * from "./playback/segmentWindow";
 export * from "./playback/overlayArbiter";
+export * from "./playback/autoNextEngine";
 export * from "./player/reglagesAppareil";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
