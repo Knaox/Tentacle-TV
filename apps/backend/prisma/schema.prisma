@@ -312,6 +312,47 @@ model WatchTimeLease {
   @@map("watch_time_lease")
 }
 
+// Réglages de lecture d'UN compte : segments (intro/générique/récap/aperçu)
+// et enchaînement d'épisode. Ils remplacent les trois clés d'appareil
+// (tentacle_auto_skip_intro, tentacle_up_next_card, tentacle_up_next_countdown) :
+// ces choix suivent désormais l'utilisateur d'un écran à l'autre.
+//
+// Nommé PlaybackSettings et non PlaybackSegment* : WatchSegment (temps de
+// visionnage, ci-dessus) existe déjà et n'a rien à voir.
+//
+// Colonnes TYPÉES, et TOUTES posées dès la première création : en production
+// le schéma est appliqué par des `CREATE TABLE IF NOT EXISTS` (core-init.sql),
+// qui n'ajoutent JAMAIS une colonne à une table déjà créée. Le contrat côté
+// code vit dans src/playback/playbackSettings.ts (miroir de shared).
+model PlaybackSettings {
+  id                   String   @id @default(cuid())
+  jellyfinUserId       String   @unique @db.VarChar(255)
+
+  introAction          String   @default("auto") @db.VarChar(10)
+  introCountdown       Boolean  @default(true)
+  introDelayMs         Int      @default(3000)
+  outroAction          String   @default("button") @db.VarChar(10)
+  outroCountdown       Boolean  @default(true)
+  outroDelayMs         Int      @default(3000)
+  recapAction          String   @default("off") @db.VarChar(10)
+  recapCountdown       Boolean  @default(true)
+  recapDelayMs         Int      @default(3000)
+  previewAction        String   @default("off") @db.VarChar(10)
+  previewCountdown     Boolean  @default(true)
+  previewDelayMs       Int      @default(3000)
+
+  nextCard             Boolean  @default(true)
+  nextCountdown        Boolean  @default(true)
+  nextAutoPlay         Boolean  @default(true)
+  nextTrigger          String   @default("outroStart") @db.VarChar(16)
+  nextBeforeEndSeconds Int      @default(45)
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("playback_settings")
+}
+
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
 // seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
 // créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).
