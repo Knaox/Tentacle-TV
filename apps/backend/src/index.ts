@@ -26,6 +26,7 @@ import { notificationRoutes } from "./routes/notifications";
 import { pushRoutes } from "./routes/push";
 import { jellyfinProxyRoutes } from "./routes/jellyfinProxy";
 import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
+import { playbackSegmentRoutes } from "./routes/playbackSegments";
 import { adminRoutes } from "./routes/admin";
 import { adminDownloadRoutes } from "./routes/adminDownloads";
 import { downloadRoutes } from "./routes/downloads";
@@ -237,6 +238,9 @@ async function main() {
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
+  // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —
+  // aucun rapport d'ordre avec le proxy générique).
+  await app.register(playbackSegmentRoutes, { prefix: "/api/playback" });
 
   // ── Jellyfin trickplay tiles (specific route — must register BEFORE the wildcard proxy) ──
   await app.register(jellyfinTrickplayRoutes, { prefix: "/api/jellyfin" });
