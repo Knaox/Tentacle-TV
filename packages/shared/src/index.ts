@@ -32,6 +32,7 @@ export {
   type SegmentType,
 } from "./playback/segmentTypes";
 export * from "./playback/resolveSegments";
+export * from "./playback/playbackSettings";
 export * from "./player/reglagesAppareil";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
