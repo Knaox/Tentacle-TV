@@ -115,7 +115,8 @@ export async function snapshot(
   }
 
   if (await poserBibliotheque(fetchBytes, db, base, spec.itemId)) reussis.push("library");
-  if (await segments.fetchAndSave(fetchBytes, base, root, spec.itemId, spec.kind === "episode")) {
+  // Les segments viennent du résolveur du backend, pas du proxy Jellyfin.
+  if (await segments.fetchAndSave(fetchBytes, serverUrl, root, spec.itemId)) {
     reussis.push("segments");
   }
 

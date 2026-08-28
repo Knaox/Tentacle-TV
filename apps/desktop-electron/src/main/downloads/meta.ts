@@ -17,11 +17,12 @@ import { integer, integerOrNull, text, textOrNull } from "./rows";
 /**
  * Version du CONTENU du snapshot.
  *
- * 2 = DTO enrichi (Chapters, Overview, MediaStreams…) et `segments.json` pour
- * « passer l'intro ». Un item sous cette version est re-snapshotté par la
- * réparation au prochain démarrage en ligne.
+ * 2 = DTO enrichi (Chapters, Overview, MediaStreams…) et `segments.json` brut.
+ * 3 = `segments.json` au CONTRAT RÉSOLU v1 (réponse du résolveur backend,
+ *     cinq types de segments) — les anciens fichiers bruts restent lisibles,
+ *     mais la réparation re-photographie tout au prochain démarrage en ligne.
  */
-export const CURRENT_META_VERSION = 2;
+export const CURRENT_META_VERSION = 3;
 
 export interface MetaSpec {
   itemId: string;
