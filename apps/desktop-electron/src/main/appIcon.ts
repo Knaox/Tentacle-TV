@@ -47,9 +47,17 @@ function resoudre(fichier: string): string | null {
 /**
  * Icône de la FENÊTRE. `null` sur macOS : il n'en pose pas sur ses fenêtres, et
  * lui donner un `.ico` n'y introduirait qu'une image vide.
+ *
+ * Linux reçoit le PNG, pour la raison dite plus haut : l'ICO n'est décodé que
+ * sous Windows — le passer ici rendait une image VIDE en développement, et en
+ * paquet le chemin n'existait même pas (`resources/` n'embarque que le PNG).
+ * Sous Wayland, l'icône de la barre des tâches vient du `.desktop` installé
+ * (app_id ↔ StartupWMClass), pas de cette option — elle sert la décoration de
+ * fenêtre, X11, et les environnements qui savent la lire.
  */
 export function windowIconPath(): string | null {
   if (process.platform === "darwin") return null;
+  if (process.platform === "linux") return resoudre("icon.png");
   return resoudre("icon.ico");
 }
 
