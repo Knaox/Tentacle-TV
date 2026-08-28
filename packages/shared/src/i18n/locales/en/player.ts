@@ -41,6 +41,9 @@ export default {
   nowPlaying: "Now playing",
   loadFailed: "Playback could not start. Check the server or try again.",
   streamStartFailed: "The video stream did not start. Retry or change quality.",
+  mediaMissingTitle: "File not found",
+  mediaMissingHint:
+    "The downloaded file is no longer on disk. Retry will restart playback — streaming if the server is reachable.",
   upNext: "Up Next",
   autoplayCountdown: "Next episode in {{seconds}}s",
   skipIntroIn: "Skip intro in {{seconds}}s",
