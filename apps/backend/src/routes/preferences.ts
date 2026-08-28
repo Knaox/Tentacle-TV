@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { registerResolveRoute } from "./preferences.resolve";
+import { registerPlaybackSettingsRoutes } from "./preferences.playback";
 
 const upsertSchema = z.object({
   libraryId: z.string().min(1),
@@ -222,4 +223,5 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   });
 
   registerResolveRoute(app);
+  registerPlaybackSettingsRoutes(app);
 };

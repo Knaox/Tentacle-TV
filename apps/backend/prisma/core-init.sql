@@ -153,3 +153,37 @@ CREATE TABLE IF NOT EXISTS `item_track_preferences` (
   UNIQUE KEY `item_track_preferences_jellyfinUserId_itemId_key` (`jellyfinUserId`,`itemId`),
   KEY `item_track_preferences_jellyfinUserId_idx` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Réglages de lecture par compte. Voir schema.prisma > PlaybackSettings.
+--
+-- DDL écrit sur le modèle EXACT des blocs relevés par `SHOW CREATE TABLE`
+-- ci-dessus (varchar(191) pour un id cuid, tinyint(1) pour un Boolean,
+-- datetime(3) et default current_timestamp(3) pour @default(now())) : en
+-- production le schéma n'arrive QUE par ce fichier — un modèle Prisma sans
+-- son bloc ici est une table qui n'existera jamais (incident
+-- item_track_preferences, ci-dessus).
+CREATE TABLE IF NOT EXISTS `playback_settings` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `introAction` varchar(10) NOT NULL DEFAULT 'auto',
+  `introCountdown` tinyint(1) NOT NULL DEFAULT 1,
+  `introDelayMs` int(11) NOT NULL DEFAULT 3000,
+  `outroAction` varchar(10) NOT NULL DEFAULT 'button',
+  `outroCountdown` tinyint(1) NOT NULL DEFAULT 1,
+  `outroDelayMs` int(11) NOT NULL DEFAULT 3000,
+  `recapAction` varchar(10) NOT NULL DEFAULT 'off',
+  `recapCountdown` tinyint(1) NOT NULL DEFAULT 1,
+  `recapDelayMs` int(11) NOT NULL DEFAULT 3000,
+  `previewAction` varchar(10) NOT NULL DEFAULT 'off',
+  `previewCountdown` tinyint(1) NOT NULL DEFAULT 1,
+  `previewDelayMs` int(11) NOT NULL DEFAULT 3000,
+  `nextCard` tinyint(1) NOT NULL DEFAULT 1,
+  `nextCountdown` tinyint(1) NOT NULL DEFAULT 1,
+  `nextAutoPlay` tinyint(1) NOT NULL DEFAULT 1,
+  `nextTrigger` varchar(16) NOT NULL DEFAULT 'outroStart',
+  `nextBeforeEndSeconds` int(11) NOT NULL DEFAULT 45,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `playback_settings_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

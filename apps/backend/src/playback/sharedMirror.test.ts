@@ -27,7 +27,7 @@ function racineDepot(): string {
 }
 
 describe("miroir du résolveur partagé", () => {
-  it.each(["segmentTypes.ts", "resolveSegments.ts"])(
+  it.each(["segmentTypes.ts", "resolveSegments.ts", "playbackSettings.ts"])(
     "%s est identique octet pour octet à packages/shared",
     (nom) => {
       const racine = racineDepot();
