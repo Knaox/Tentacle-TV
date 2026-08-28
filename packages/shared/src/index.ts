@@ -16,6 +16,22 @@ export * from "./watchState";
 // La décision « faut-il sauter l'intro, et quand » — une machine à états pure,
 // partagée par le web, le bureau, l'Apple TV, l'Android TV et la LG.
 export * from "./player/sautIntro";
+// Le contrat des segments de lecture (v1) et son résolveur — UNE implémentation,
+// appelée par le backend (via miroir, cf. l'en-tête de segmentTypes.ts) et par
+// la lecture locale hors ligne du bureau. Ré-exports NOMMÉS : TICKS_PER_MS y
+// reste interne (le nom est déjà exporté par types/watchTogether).
+export {
+  PLAYBACK_SEGMENTS_VERSION,
+  POST_CREDITS_THRESHOLD_MS,
+  SEGMENT_TYPES,
+  emptyPlaybackSegments,
+  findSegment,
+  isSegmentType,
+  type PlaybackSegmentsResponse,
+  type ResolvedSegment,
+  type SegmentType,
+} from "./playback/segmentTypes";
+export * from "./playback/resolveSegments";
 export * from "./player/reglagesAppareil";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
