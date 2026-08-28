@@ -15,7 +15,6 @@ import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
 import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
 import { useQualiteEffective } from "./useQualiteEffective";
 import { useSegmentsLocalFirst } from "./useSegmentsLocalFirst";
-import { findSegment, type ResolvedSegment, type SegmentTimestamps } from "@tentacle-tv/shared";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId, resumeStartSeconds } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
 import { useServerTrackPrefs } from "./useServerTrackPrefs";
@@ -149,18 +148,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Segments de lecture RÉSOLUS : snapshot disque en lecture locale (zéro
   // réseau), résolveur unique du backend en streaming.
   const segments = useSegmentsLocalFirst(itemId, item, isLocalPlayback);
-  // FAÇADE transitoire : les lecteurs consomment encore {intro, credits} en
-  // secondes — ils basculent sur `segments` (contrat, ms) aux commits
-  // suivants, et cette façade part avec eux.
-  const versSecondes = (s: ResolvedSegment | null): SegmentTimestamps | null =>
-    s ? { start: s.startMs / 1000, end: s.endMs / 1000 } : null;
-  const skipSegments = useMemo(
-    () => ({
-      intro: versSecondes(findSegment(segments.segments, "Intro")),
-      credits: versSecondes(findSegment(segments.segments, "Outro")),
-    }),
-    [segments], // eslint-disable-line react-hooks/exhaustive-deps
-  );
 
   const getPositionTicks = useCallback((): number => {
     if (positionRef.current > 0) return Math.floor(positionRef.current * TICKS_PER_SECOND);
@@ -295,7 +282,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    segments, autoplayNextEnabled, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource,
   };
 }
