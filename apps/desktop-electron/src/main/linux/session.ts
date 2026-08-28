@@ -45,6 +45,13 @@ export function appliquerSessionGraphique(): SessionDecidee | null {
   }
   decidee = deciderSession(process.env, lireChoixSession(dossier));
   if (decidee.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decidee.ozone);
+  // Budget de tuiles du compositeur Chromium. Le défaut (quelques centaines de
+  // Mo) ne tient pas les transitions de pages sur un bureau 4K à échelle ×2 :
+  // plusieurs calques plein viewport animés d'un coup → « tile memory limits
+  // exceeded, some content may not draw » en rafale, et des morceaux de page
+  // qui manquent pendant l'animation (artefacts mesurés le 28.08, journal de
+  // l'utilisateur — bibliothèque et fiche média, fenêtré comme maximisé).
+  app.commandLine.appendSwitch("force-gpu-mem-available-mb", "2048");
   console.info(
     `[session] bureau=${decidee.session} choix=${decidee.choix} ` +
       `ozone=${decidee.ozone ?? "auto"} montage=${decidee.montage}` +
