@@ -5,6 +5,7 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
+import type { PlaybackFailure } from "./playbackFailure";
 import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
 import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
@@ -27,7 +28,10 @@ export function useDesktopPlayer() {
   // forcé par le watchdog, contrairement à fileLoaded. Signal « prêt » fiable
   // pour Watch Together (un watchdog-forcé ferait repartir le groupe sans nous).
   const [mediaReady, setMediaReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Échec courant, TYPÉ : « media » (fichier local disparu — écran dédié, mpv
+  // épargné) ou « player » (défaut du lecteur — bascule de secours). Voir
+  // `playbackFailure.ts` pour la règle de classement.
+  const [failure, setFailure] = useState<PlaybackFailure | null>(null);
   // État mute courant (observé) — lu par toggleMute/setVolume pour persister.
   const mutedRef = useRef(false);
   // Miroir synchrone de fileLoaded — lu par l'observer (mpv émet la valeur
@@ -58,7 +62,7 @@ export function useDesktopPlayer() {
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
-    setState, setReady, setError, setFileLoaded, setMediaReady,
+    setState, setReady, setFailure, setFileLoaded, setMediaReady,
     positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
   });
@@ -112,9 +116,9 @@ export function useDesktopPlayer() {
         tracerCommande("WATCHDOG — retry loadfile", `${watchdogMs / 1000} s sans playback-restart`);
         void play(options, 2);
       } else {
-        wtLog("mpv", "WATCHDOG: playback-restart absent après retry — flux en échec (setError → fallback web)");
+        wtLog("mpv", "WATCHDOG: playback-restart absent après retry — flux en échec (setFailure → fallback web)");
         setFileLoaded(true); // débloque l'UI (spinner/preferences)
-        setError("Le flux vidéo n'a pas démarré. Réessayez ou changez de qualité.");
+        setFailure({ kind: "player", messageKey: "player:streamStartFailed" });
       }
     }, watchdogMs);
 
@@ -211,15 +215,15 @@ export function useDesktopPlayer() {
         options.startPosition != null && options.startPosition > 0
           ? `${options.startPosition.toFixed(0)} s` : "début"}`);
       await api.command("loadfile", [options.url]);
-      setError(null);
+      setFailure(null);
     } catch (e) {
       wtLog("mpv", "play() FAILED (commande mpv en erreur)", { error: String(e) });
-      setError(String(e));
+      setFailure({ kind: "player", detail: String(e) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const commands = useMpvCommands({ state, setState, mutedRef });
 
-  return { state, ready, fileLoaded, mediaReady, error, play, ...commands };
+  return { state, ready, fileLoaded, mediaReady, failure, play, ...commands };
 }

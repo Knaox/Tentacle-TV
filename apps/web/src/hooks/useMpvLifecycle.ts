@@ -2,6 +2,7 @@ import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } 
 import { invoke, isElectronShell } from "../desktop/bridge";
 import { surfaceOpaque, surfaceTransparente } from "../lib/surfaceLecteur";
 import { MPV_END_FILE_REASON, type MpvEndFileEvent } from "../lib/mpvTypes";
+import type { PlaybackFailure } from "./playbackFailure";
 import { queryTrackList } from "./mpvTrackList";
 import {
   awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
@@ -14,7 +15,7 @@ import { wtLog } from "../watchTogether/wtLog";
 export interface MpvLifecycleCtx {
   setState: Dispatch<SetStateAction<MpvState>>;
   setReady: (v: boolean) => void;
-  setError: (v: string | null) => void;
+  setFailure: (v: PlaybackFailure | null) => void;
   setFileLoaded: (v: boolean) => void;
   setMediaReady: (v: boolean) => void;
   positionRef: MutableRefObject<number>;
@@ -40,7 +41,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     let cancelled = false;
     const unlisteners: (() => void)[] = [];
     const {
-      setState, setReady, setError, setFileLoaded, setMediaReady,
+      setState, setReady, setFailure, setFileLoaded, setMediaReady,
       positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
       playbackWatchdogRef, wakeupRef, loadfileAtRef,
     } = ctx;
@@ -92,7 +93,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           api.setProperty("mute", true).catch(() => {});
         }
       } catch (e) {
-        setError(String(e));
+        // Échec ou timeout d'init : un défaut de LECTEUR, par nature.
+        setFailure({ kind: "player", detail: String(e) });
         return;
       }
 

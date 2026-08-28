@@ -40,6 +40,7 @@ export default {
   scrubCancelHint: "Back · Cancel",
   nowPlaying: "Now playing",
   loadFailed: "Playback could not start. Check the server or try again.",
+  streamStartFailed: "The video stream did not start. Retry or change quality.",
   upNext: "Up Next",
   autoplayCountdown: "Next episode in {{seconds}}s",
   skipIntroIn: "Skip intro in {{seconds}}s",

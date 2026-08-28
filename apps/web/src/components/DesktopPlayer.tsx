@@ -96,7 +96,7 @@ export function DesktopPlayer({
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
   onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
-  const { state, ready, fileLoaded, mediaReady, error, play, togglePause, setPause, seek, seekRelative,
+  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
@@ -277,12 +277,12 @@ export function DesktopPlayer({
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode
   // strict (« setState during render »).
   useEffect(() => {
-    if (error && onFallbackToWeb) onFallbackToWeb();
-  }, [error, onFallbackToWeb]);
+    if (failure && onFallbackToWeb) onFallbackToWeb();
+  }, [failure, onFallbackToWeb]);
 
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
-  if (error && onFallbackToWeb) return null;
-  if (error) return <DesktopPlayerError error={error} onBack={goBack} />;
+  if (failure && onFallbackToWeb) return null;
+  if (failure) return <DesktopPlayerError failure={failure} onBack={goBack} />;
   if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} />;
 
   return (

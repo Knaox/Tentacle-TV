@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { PlaybackFailure } from "../../hooks/playbackFailure";
 
 /**
  * Les deux toiles plein écran du lecteur desktop : l'erreur mpv, et l'attente
@@ -13,11 +14,14 @@ import { useTranslation } from "react-i18next";
  * l'interface.
  */
 
-export function DesktopPlayerError({ error, onBack }: { error: string; onBack: () => void }) {
+export function DesktopPlayerError({ failure, onBack }: { failure: PlaybackFailure; onBack: () => void }) {
   const { t } = useTranslation("player");
+  const message = failure.messageKey
+    ? t(failure.messageKey)
+    : t("player:mpvError", { error: failure.detail ?? "?" });
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-black">
-      <p className="text-lg text-red-400">{t("player:mpvError", { error })}</p>
+      <p className="text-lg text-red-400">{message}</p>
       <button
         onClick={onBack}
         className="h-11 rounded-lg bg-white px-5 font-bold text-black hover:bg-white/90"

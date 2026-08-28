@@ -40,6 +40,7 @@ export default {
   scrubCancelHint: "Retour · Annuler",
   nowPlaying: "En cours de visionnage",
   loadFailed: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie.",
+  streamStartFailed: "Le flux vidéo n'a pas démarré. Réessayez ou changez de qualité.",
   upNext: "À suivre",
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   skipIntroIn: "Passer l'intro dans {{seconds}} s",
