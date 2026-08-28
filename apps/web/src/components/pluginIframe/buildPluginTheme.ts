@@ -5,6 +5,7 @@
 // pas de couleurs hardcodées côté plugin.
 import tentacleTokensCss from "../../theme/tokens.css?inline";
 import tentacleMotionReduceCss from "../../theme/motion-reduce.css?inline";
+import { pluginInterFontFaceCss } from "./pluginInterFontFace";
 
 /**
  * Script `tailwind.config = …` du runtime Tailwind de l'iframe (sans balises
@@ -170,13 +171,12 @@ export function buildPluginTailwindConfigScript(): string {
  */
 export function buildPluginThemeStyle(): string {
   return `
-    /* Inter, la police de l'application. Sans cet import, l'iframe retombait sur
-       la police système : le texte d'un plugin ne ressemblait à rien de ce qui
-       l'entoure, sur chaque mot de chaque écran. C'est le plus gros écart visuel
-       entre une page de plugin et le reste de Tentacle TV.
-       L'origine est déjà autorisée par la CSP de la page (style-src
-       fonts.googleapis.com, font-src fonts.gstatic.com), dont l'iframe hérite. */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    /* Inter, la police de l'application — en @font-face INLINE. L'@import
+       d'autrefois était REFUSÉ sous Electron (CSP des greffons : style-src
+       'unsafe-inline' seul), sans un mot : le texte retombait sur la police
+       système — quasi invisible sous Windows/macOS (Segoe UI, SF Pro),
+       criant sous Linux (DejaVu). Voir pluginInterFontFace.ts. */
+    ${pluginInterFontFaceCss()}
     /* Tokens du host Tentacle — copiés depuis apps/web/src/theme/tokens.css à chaque build.
        Tout plugin peut désormais utiliser var(--brand), var(--surface-1), etc. */
     ${tentacleTokensCss}
@@ -206,7 +206,9 @@ export function buildPluginThemeStyle(): string {
     body {
       background: var(--surface-0);
       color: var(--text-primary);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* Replis dignes sur les trois OS : hors ligne (woff2 inaccessibles),
+         Linux tombait droit sur DejaVu. */
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', 'Cantarell', 'DejaVu Sans', sans-serif;
       /* Mêmes réglages que l'application : chiffres mieux dessinés et 'a'
          alternatif. Précieux dans un calendrier, où les nombres s'alignent. */
       font-feature-settings: "ss01", "cv11";
