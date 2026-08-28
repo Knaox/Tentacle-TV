@@ -48,7 +48,8 @@ export function appliquerSessionGraphique(): SessionDecidee | null {
   console.info(
     `[session] bureau=${decidee.session} choix=${decidee.choix} ` +
       `ozone=${decidee.ozone ?? "auto"} montage=${decidee.montage}` +
-      (decidee.montage === "wayland" ? " (HDR possible, lecture plein écran)" : " (pas de HDR)"),
+      // Le fenêtré n'est pas encore connu ici — `detecterFenetrage` le dira.
+      (decidee.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)"),
   );
   // Un choix explicite peut ne JAMAIS afficher — réglage persistant, fenêtre
   // introuvable, application briquée (vécu avec x11 sur XWayland cassé). Le
