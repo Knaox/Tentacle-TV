@@ -1,5 +1,11 @@
 /**
- * La surface vidéo sur Wayland : deux fenêtres plein écran, et rien à caler.
+ * La surface vidéo sur Wayland SANS colle : deux fenêtres plein écran.
+ *
+ * ⚠️ Depuis le 28.08, c'est le montage de REPLI : quand le compositeur offre
+ * une API de placement (KWin), `waylandGlueSurface.ts` colle la fenêtre mpv
+ * sous la nôtre et la lecture est fenêtrée comme sur Windows. Ici, c'est le
+ * cas des compositeurs sans API (GNOME, wlroots…) — le plein écran reste la
+ * seule géométrie garantissable, et tout ce qui suit reste mesuré et vrai.
  *
  * # Pourquoi il n'y a rien à caler
  *

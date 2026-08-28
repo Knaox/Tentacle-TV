@@ -18,7 +18,7 @@ import {
 } from "./appProtocol";
 import { demarrerBattement } from "./battement";
 import { dossierDonnees } from "./cheminsDonnees";
-import { appliquerSessionGraphique, montageLinux } from "./linux/session";
+import { appliquerSessionGraphique, detecterFenetrage, montageLinux } from "./linux/session";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -158,7 +158,11 @@ function main(): void {
   // échantillonnage de pile pour établir ce qu'une ligne aurait dit.
   void app
     .whenReady()
-    .then(() => {
+    .then(async () => {
+      // AVANT la fenêtre : la page reçoit le verdict par argument de ligne de
+      // commande, et la surface vidéo choisit son montage avec. Un ping D-Bus,
+      // quelques dizaines de millisecondes — hors Linux/Wayland, rien.
+      await detecterFenetrage();
       // AVANT le menu : celui-ci porte `app.getName()` comme libellé de son
       // entrée d'application, et le panneau « À propos » qu'il ouvre lit les
       // options posées ici.

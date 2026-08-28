@@ -23,7 +23,17 @@ vi.mock("electron", () => ({
   },
 }));
 
-import { enregistrerChoixSession } from "./session";
+vi.mock("./kwinScripting", () => ({
+  apiScriptKwinDisponible: () => Promise.resolve(dispoKwin.valeur),
+}));
+const { dispoKwin } = vi.hoisted(() => ({ dispoKwin: { valeur: true } }));
+
+import {
+  appliquerSessionGraphique,
+  detecterFenetrage,
+  enregistrerChoixSession,
+  fenetrageLinux,
+} from "./session";
 import { lireChoixSession } from "./sessionGraphique";
 
 let dossier: string;
@@ -49,5 +59,27 @@ describe("le choix de session, écrit puis relu", () => {
 
   it("sans fichier, le choix reste « auto »", () => {
     expect(lireChoixSession(dossier)).toBe("auto");
+  });
+});
+
+describe("detecterFenetrage", () => {
+  it("Wayland + API KWin → fenêtré libre ; sans API → plein écran forcé", async () => {
+    process.env["TENTACLE_LINUX_SESSION"] = "wayland";
+    appliquerSessionGraphique();
+
+    dispoKwin.valeur = true;
+    await detecterFenetrage();
+    expect(fenetrageLinux()).toBe("libre");
+
+    dispoKwin.valeur = false;
+    await detecterFenetrage();
+    expect(fenetrageLinux()).toBe("plein-ecran");
+  });
+
+  it("sous X11 la question ne se pose pas : null", async () => {
+    process.env["TENTACLE_LINUX_SESSION"] = "x11";
+    appliquerSessionGraphique();
+    await detecterFenetrage();
+    expect(fenetrageLinux()).toBeNull();
   });
 });

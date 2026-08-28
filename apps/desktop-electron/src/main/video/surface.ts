@@ -19,7 +19,7 @@
 
 import type { BrowserWindow } from "electron";
 
-import { montageLinux } from "../linux/session";
+import { fenetrageLinux, montageLinux } from "../linux/session";
 
 /**
  * Ce qu'une surface vidéo doit savoir faire, quel que soit le système.
@@ -145,10 +145,17 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
     return new VideoWindow(host);
   }
   if (process.platform === "linux") {
-    // Deux montages, décidés par la session au démarrage (`linux/session.ts`).
-    // Wayland : deux fenêtres plein écran, rien à caler, HDR possible.
-    // X11     : calage et empilement à la main, comme Windows, sans HDR.
+    // Trois montages, décidés par la session au démarrage (`linux/session.ts`).
+    // Wayland + colle KWin : mpv collé sous la fenêtre par le compositeur —
+    //   la lecture SUIT la fenêtre, fenêtrée ou plein écran, comme Windows.
+    // Wayland sans colle    : deux fenêtres plein écran, rien à caler.
+    // X11                   : calage et empilement à la main, sans HDR.
     if (montageLinux() === "wayland") {
+      if (fenetrageLinux() === "libre") {
+        const { SurfaceWaylandColle } =
+          require("../linux/waylandGlueSurface") as typeof import("../linux/waylandGlueSurface");
+        return new SurfaceWaylandColle(host);
+      }
       const { SurfaceWayland } = require("../linux/surfaceWayland") as typeof import("../linux/surfaceWayland");
       return new SurfaceWayland(host);
     }
@@ -170,7 +177,10 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
 
 /** Le montage en vigueur, pour le journal et le diagnostic. */
 export function montageVideo(): string {
-  if (process.platform === "linux") return `linux/${montageLinux() ?? "inconnu"}`;
+  if (process.platform === "linux") {
+    const colle = fenetrageLinux() === "libre" ? "+colle" : "";
+    return `linux/${montageLinux() ?? "inconnu"}${colle}`;
+  }
   if (process.platform !== "darwin") return process.platform;
   return montageMacos();
 }

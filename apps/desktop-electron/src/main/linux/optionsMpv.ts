@@ -40,7 +40,10 @@
 import type { Montage } from "./sessionGraphique";
 
 /** Le socle Linux, selon le montage. Posé après les options de la page. */
-export function socleLinux(montage: Montage): Readonly<Record<string, string>> {
+export function socleLinux(
+  montage: Montage,
+  colleKwin = false,
+): Readonly<Record<string, string>> {
   const commun = {
     // libplacebo n'a de HDR que par Vulkan ; le contexte OpenGL ne sait pas
     // décrire l'espace de sortie au compositeur.
@@ -50,6 +53,21 @@ export function socleLinux(montage: Montage): Readonly<Record<string, string>> {
     "focus-on": "never",
   };
   if (montage === "wayland") {
+    // La saveur COLLÉE (fenêtré libre, `kwinGlue.ts`) : la fenêtre mpv est
+    // calée par le compositeur sur la nôtre — elle ne doit JAMAIS être plein
+    // écran d'elle-même (elle serait promue en couche haute, devant
+    // l'interface), et elle REMPLIT le rectangle de l'hôte : le letterbox vit
+    // DANS la fenêtre (mesuré au banc : avec `keepaspect-window`, mpv rognait
+    // la hauteur au ratio du clip et laissait un vide sous l'overlay).
+    if (colleKwin) {
+      return {
+        ...commun,
+        "gpu-context": "waylandvk",
+        "target-colorspace-hint": "yes",
+        fullscreen: "no",
+        "keepaspect-window": "no",
+      };
+    }
     return {
       ...commun,
       "gpu-context": "waylandvk",
