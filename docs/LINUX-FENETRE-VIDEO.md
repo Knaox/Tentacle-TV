@@ -365,10 +365,10 @@ Mesuré pas à pas sur KWin 6.7.4, contre-lecture indépendante à chaque essai 
 Le moteur DÉCLARATIF (QML, `loadDeclarativeScript`) : `Workspace` (majuscule,
 wrapper différent — `windows` est une propriété, pas `windowList()`),
 `Qt.rect` converti, écriture EFFECTIVE (fenêtre déplacée, contre-lue), et
-`Workspace.raiseWindow` présent. Trois pièges mesurés : le cache QML par
-CHEMIN (recharger un fichier modifié sert l'ancien code → hachage du contenu
-dans le nom), l'écriture ASYNCHRONE (la relire aussitôt rend l'ancienne
-valeur), et la réponse gdbus typée (`(int32 7,)` → le DERNIER nombre fait foi).
+`Workspace.raiseWindow` présent. Deux pièges mesurés : l'écriture ASYNCHRONE
+(la relire aussitôt rend l'ancienne valeur) et la réponse gdbus typée
+(`(int32 7,)` → le DERNIER nombre fait foi). Le troisième — le chargement du
+fichier QML lui-même — a demandé une nuit de plus : voir « Le dossier neuf ».
 
 ### La colle, mesurée au banc puis dans l'application
 
@@ -390,6 +390,53 @@ Dans l'app réelle (film 4K HEVC PQ, réseau, lecture directe) :
 - **HDR fenêtré : `contenu pq → sortie pq/bt.2020 · pic 3.81×` DANS une
   fenêtre de 1200x700** — KWin sert le PQ aux surfaces fenêtrées, rien n'est
   sacrifié. Captures : `app-colle-{1,2,3}.png`.
+
+### Le dossier neuf, ou pourquoi la colle mourait au 2e lancement (28.08, soir)
+
+Symptôme rapporté : « parfois quand je lance un média, la fenêtre mpv n'est plus
+rattachée ; quand je redémarre le PC c'est bon ». Le journal du compositeur, lui,
+est sans ambiguïté :
+
+    Component failed to load: QList(file:///tmp/tentacle-colle/colle-19277-…qml:
+                                    File name case mismatch)
+
+Le fichier existe pourtant, avec ce nom exact, lisible par KWin (même
+propriétaire, `user_tmp_t`, KWin `unconfined_t`, aucun AVC dans le journal
+d'audit). Ce n'est ni les droits, ni un `/tmp` privé, ni une histoire de casse.
+**Le moteur QML de KWin ne voit pas un fichier apparu dans un dossier qu'il a
+déjà servi.** Relevé sur une journée entière :
+
+| Ce qui est demandé | Résultat |
+|---|---|
+| 1re pose après un démarrage de KWin | chargée — `[tentacle-colle] posée, hote=true` |
+| 9 poses suivantes, MÊME chemin (même pid) | chargées |
+| tout NOUVEAU nom dans le MÊME dossier | `File name case mismatch` |
+| le même QML dans un dossier NEUF | chargé |
+| un second dossier neuf, d'affilée | chargé |
+
+D'où le montage actuel : **un dossier neuf par pose**,
+`tentacle-colle-<pid>-<n>/glue.qml`. Le redémarrage du poste « réparait » parce
+qu'il relançait KWin ; le deuxième lancement de l'application échouait toujours.
+
+Deux corollaires du même banc :
+
+- **les types QML sont qualifiés** (`Qml.QtObject`, `Qml.Timer`, `Kwin.Workspace`)
+  — un type nu se résout d'abord contre le dossier du fichier, ce qui avait déjà
+  tué la colle une première fois (un fichier parasite de `/tmp` à la place de
+  `Timer`). L'objet attaché `Component` doit être qualifié LUI AUSSI, sinon
+  « Non-existent attached object » emporte le composant entier ;
+- **un script chargé survit au processus qui l'a posé.** Deux fantômes traînaient
+  sur `/Scripting` sans aucune instance de l'application. La colle porte donc un
+  nom, `tentacle-colle-<pid>` : KWin refuse (`-1`) un nom déjà chargé, on décroche
+  donc avant chaque pose, au départ de l'application, et au lancement suivant pour
+  les pids qui ne répondent plus (`linux/glueCleanup.ts`).
+
+Enfin, l'échec était MUET : `loadDeclarativeScript` rend un numéro et `run`
+réussit même quand le composant n'a jamais été construit. On ne peut donc pas
+croire la pose sur parole — 400 ms après `file-loaded`, la taille de la fenêtre
+mpv (`osd-dimensions`) est comparée à celle de l'hôte ; si elle ne suit pas, la
+colle est reposée une fois, et le journal porte les deux tailles
+(`linux/glueCheck.ts`).
 
 ### La frontière, assumée
 
