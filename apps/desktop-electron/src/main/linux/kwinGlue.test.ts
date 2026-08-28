@@ -5,9 +5,11 @@ import { vi } from "vitest";
 
 /**
  * La colle KWin, sans KWin : le pont est joué. Ce qui se garde : le gabarit
- * porte le pid (l'appariement des fenêtres en dépend), le chemin porte un
- * hachage du contenu (le cache QML de KWin sert l'ancien code sinon — mesuré),
- * et la pose comme le retrait nettoient leurs traces.
+ * porte le pid (l'appariement des fenêtres en dépend), ses types sont
+ * QUALIFIÉS (un type nu se résout contre le dossier du fichier), chaque pose
+ * écrit dans un dossier NEUF (le moteur QML de KWin est aveugle aux fichiers
+ * apparus dans un dossier qu'il a déjà servi — mesuré), et le retrait ne
+ * laisse rien derrière lui.
  */
 
 const { pont } = vi.hoisted(() => ({
@@ -55,14 +57,26 @@ describe("gabaritColle", () => {
   it("copie la géométrie et tient la paire par raiseWindow", () => {
     const qml = gabaritColle(1);
     expect(qml).toContain("Qt.rect(g.x, g.y, g.width, g.height)");
-    expect(qml).toContain("Workspace.raiseWindow(racine.video)");
-    expect(qml).toContain("Workspace.raiseWindow(racine.hote)");
+    expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.video)");
+    expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.hote)");
+  });
+
+  it("qualifie TOUS ses types, l'objet attaché Component compris", () => {
+    const qml = gabaritColle(1);
+    expect(qml).toContain("import QtQml as Qml");
+    expect(qml).toContain("import org.kde.kwin as Kwin");
+    expect(qml).toContain("Qml.QtObject");
+    expect(qml).toContain("Qml.Timer");
+    // Nu, `Component.onCompleted` rend « Non-existent attached object » et le
+    // composant entier meurt — mesuré au banc du 28.08.
+    expect(qml).toContain("Qml.Component.onCompleted");
+    expect(qml).not.toMatch(/(^|[^.])\bComponent\.onCompleted/m);
   });
 
   it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
     const qml = gabaritColle(1);
     // La minuterie one-shot, redémarrée à l'adoption de la fenêtre vidéo.
-    expect(qml).toContain("Timer");
+    expect(qml).toContain("Qml.Timer");
     expect(qml).toContain("repeat: false");
     expect(qml).toContain("racine.rattrapage.restart()");
     // Connecter frameGeometryChanged de la VIDÉO bouclerait : notre écriture
@@ -72,39 +86,53 @@ describe("gabaritColle", () => {
 });
 
 describe("ColleKwin", () => {
-  it("pose : écrit le QML (pid + hachage dans le nom), charge, lance", async () => {
+  it("pose : un dossier neuf, le QML dedans, chargé et lancé", async () => {
     const colle = new ColleKwin();
     expect(await colle.poser()).toBe(true);
     expect(pont.chemins).toHaveLength(1);
     const chemin = pont.chemins[0] ?? "";
-    // Sous-dossier PRIVÉ, jamais la racine de /tmp : le répertoire du fichier
-    // a priorité dans la résolution des types QML, et un fichier parasite de
-    // /tmp a déjà tué la colle entière (« File name case mismatch », 28.08).
-    expect(chemin).toContain(`tentacle-colle${path.sep}colle-${String(process.pid)}-`);
-    expect(chemin.endsWith(".qml")).toBe(true);
+    // Un dossier PAR POSE : le moteur QML de KWin ne voit pas un fichier
+    // apparu dans un dossier qu'il a déjà servi (« File name case mismatch »,
+    // mesuré le 28.08 — la colle mourait dès le 2e lancement).
+    expect(path.basename(chemin)).toBe("glue.qml");
+    expect(path.basename(path.dirname(chemin))).toMatch(
+      new RegExp(`^tentacle-colle-${String(process.pid)}-\\d+$`),
+    );
     expect(existsSync(chemin)).toBe(true);
     expect(readFileSync(chemin, "utf8")).toBe(gabaritColle(process.pid));
     expect(pont.lances).toEqual([0]);
     await colle.retirer();
   });
 
-  it("retire : arrête le script et efface le fichier", async () => {
+  it("deux poses ne partagent jamais un dossier", async () => {
+    const a = new ColleKwin();
+    const b = new ColleKwin();
+    await a.poser();
+    await b.poser();
+    const [premier, second] = pont.chemins;
+    expect(path.dirname(premier ?? "")).not.toBe(path.dirname(second ?? ""));
+    await a.retirer();
+    await b.retirer();
+  });
+
+  it("retire : arrête le script et efface le DOSSIER, pas seulement le fichier", async () => {
     const colle = new ColleKwin();
     await colle.poser();
     const chemin = pont.chemins[0] ?? "";
     await colle.retirer();
     expect(pont.arretes).toEqual([0]);
     expect(existsSync(chemin)).toBe(false);
+    expect(existsSync(path.dirname(chemin))).toBe(false);
     // Un second retrait ne refait rien : la colle est déjà levée.
     await colle.retirer();
     expect(pont.arretes).toEqual([0]);
   });
 
-  it("pose refusée par KWin : faux, et aucun fichier orphelin", async () => {
+  it("pose refusée par KWin : faux, et aucun dossier orphelin", async () => {
     pont.chargerRend = null;
     const colle = new ColleKwin();
     expect(await colle.poser()).toBe(false);
     const chemin = pont.chemins[0] ?? "";
-    expect(existsSync(chemin)).toBe(false);
+    expect(existsSync(path.dirname(chemin))).toBe(false);
   });
 });
