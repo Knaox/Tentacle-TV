@@ -4,7 +4,6 @@ import { PlaybackBadge } from "./PlaybackBadge";
 import { useMpvPrebuffer } from "../hooks/useMpvPrebuffer";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
-import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
@@ -12,80 +11,15 @@ import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
 import { useDesktopPlayerExit } from "../hooks/useDesktopPlayerExit";
-import { usePlaybackOverlay } from "@tentacle-tv/api-client";
-import { annoncerRefusLocal, useRefusSautIntro } from "../watchTogether/refusSautIntro";
+import { useDesktopSegmentsOverlay } from "../hooks/useDesktopSegmentsOverlay";
+import { useWaylandFullscreenNotice } from "../hooks/useWaylandFullscreenNotice";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
-import { useToast } from "../contexts/ToastContext";
-import { useTranslation } from "react-i18next";
-import { fenetrageLinux, montageLinux } from "../desktop/detect";
-import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "../lib/waylandFullscreenNotice";
-import type { MediaItem, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
-import type { LocalSubtitleFile } from "../downloads/playbackApi";
-import type { PlayerTransportRef } from "../watchTogether/playerTransport";
-import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
-
-/** Référence stable : une valeur par défaut inline relancerait les mémos. */
-const EMPTY_SUBTITLE_FILES: LocalSubtitleFile[] = [];
-
-interface DesktopPlayerProps {
-  src: string; title: string; subtitle?: string;
-  startPositionSeconds?: number; jellyfinDuration?: number;
-  audioTracks?: AudioTrack[]; subtitleTracks?: SubtitleTrack[];
-  currentAudio: number; currentSubtitle: number | null; currentQuality: QualityKey;
-  sourceQuality?: SourceQuality;
-  qualityPresets?: readonly QualityPreset[];
-  onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
-  /** Absent en lecture locale : le sélecteur de qualité est alors masqué. */
-  onQualityChange?: (key: QualityKey) => void;
-  /** Lecture depuis un fichier local (masque la qualité, pistes via mpv). */
-  isLocalPlayback?: boolean;
-  /** Mode hors ligne (préférences de pistes résolues localement). */
-  offline?: boolean;
-  /** Bibliothèque de l'item local (préférences de pistes hors ligne). */
-  localLibraryId?: string | null;
-  /** Side-cars de sous-titres téléchargés (menus en lecture locale). */
-  localSubtitleFiles?: LocalSubtitleFile[];
-  onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;
-  isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
-  /** Les segments RÉSOLUS du média (contrat v1, ms) — l'arbitre décide de tout. */
-  segments?: readonly ResolvedSegment[];
-  /** Durée du contrat, en ms — 0 = inconnue (la durée mpv fait alors foi). */
-  runtimeMs?: number;
-  hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
-  nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
-  nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;
-  /** Garde serveur admin « Déclenchement auto-play » (carte + écran de fin). */
-  serverAutoplayEnabled?: boolean;
-  itemId?: string;
-  item?: MediaItem;
-  mediaSourceId?: string;
-  onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
-  /**
-   * Erreur de MÉDIA (fichier local disparu, prouvé par la sonde) : le parent
-   * démonte le lecteur et affiche l'écran dédié — la bascule de secours n'est
-   * PAS mémorisée, mpv reste le lecteur des médias suivants.
-   */
-  onMediaMissing?: () => void;
-  /** Watch Together — surface de commande impérative (play/pause/seek/speed). */
-  transportRef?: PlayerTransportRef;
-  /** Watch Together — transition lecture/pause observée (état mpv). */
-  onPlayStateChange?: (paused: boolean) => void;
-  /** Watch Together — buffering mpv (paused-for-cache) + premier « prêt ». */
-  onBufferingChange?: (buffering: boolean) => void;
-  /** Watch Together — seek local détecté (saut de position discontinu). */
-  onSeekComplete?: (seconds: number, paused: boolean) => void;
-  /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
-  onAutoNextDismiss?: () => void;
-  /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
-  onControlsVisibilityChange?: (visible: boolean) => void;
-  /** Épisode : case « Appliquer à cette série » (préférence de langues). */
-  applyToSeries?: ApplyToSeriesControl;
-}
+import { EMPTY_SUBTITLE_FILES, type DesktopPlayerProps } from "./player/desktopPlayer.types";
 
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
@@ -118,6 +52,11 @@ export function DesktopPlayer({
   const [showEpisodes, setShowEpisodes] = useState(false);
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const hasStartedRef = useRef(false);
+  // `hasStartedRef` est écrit par useMpvSource (contrat existant) ; ce MIROIR
+  // réactif garantit que l'arbitre et l'écran de chargement voient le
+  // démarrage à l'instant même — une ref seule dépendait d'un re-rendu
+  // fortuit (bug latent, corrigé en parité avec `aDemarre` de VideoPlayer).
+  const [aDemarre, setADemarre] = useState(false);
   const prevSrcRef = useRef("");
   // Pistes externes déjà sub-add sur la source courante : jfIndex → sid mpv.
   const loadedExternalSubs = useRef<Map<number, number>>(new Map());
@@ -175,29 +114,8 @@ export function DesktopPlayer({
     return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
   }, [ready]);
 
-  // Pédagogie du plein écran Wayland — UNE fois par appareil, et SEULEMENT là
-  // où le plein écran est réellement imposé (compositeur sans colle KWin,
-  // `fenetrage === "plein-ecran"`) : quand la lecture suit la fenêtre, il n'y
-  // a rien à expliquer. Cf. lib/waylandFullscreenNotice.ts.
-  const { show: montrerToast } = useToast();
-  const { t: tPreferences } = useTranslation("preferences");
-  useEffect(() => {
-    // `hasFocus` : une lecture SANS geste (reprise automatique) laisse la page
-    // DERRIÈRE la fenêtre mpv — l'avis y serait invisible ET consommé. Il
-    // attend donc une lecture au premier plan (mesuré le 28.08 : la première
-    // version a brûlé sa cartouche hors de toute vue).
-    if (
-      !ready ||
-      montageLinux() !== "wayland" ||
-      fenetrageLinux() !== "plein-ecran" ||
-      !document.hasFocus() ||
-      avisPleinEcranDejaVu()
-    ) {
-      return;
-    }
-    marquerAvisPleinEcranVu();
-    montrerToast("info", tPreferences("linuxSessionFullscreenToast"));
-  }, [ready, montrerToast, tPreferences]);
+  // Pédagogie du plein écran Wayland (une fois, et seulement où il est imposé).
+  useWaylandFullscreenNotice(ready);
 
   // Chargement de la source + détection PTS + report de progression
   const { sourceChanging } = useMpvSource({
@@ -209,6 +127,13 @@ export function DesktopPlayer({
     // jamais en lecture locale, où les pistes réelles ne sont connues qu'après.
     audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
   });
+
+  // Le miroir réactif du démarrage — armé dès que useMpvSource a posé la ref,
+  // au premier battement de position ; réarmé à chaque nouvelle source.
+  useEffect(() => { setADemarre(false); }, [src]);
+  useEffect(() => {
+    if (!aDemarre && hasStartedRef.current) setADemarre(true);
+  }, [aDemarre, state.position, state.playing]);
 
   // Badge central, déclaré APRÈS `useMpvSource` : un rechargement de source fait
   // repasser mpv par la pause, et `inerte` empêche d'en faire un badge.
@@ -256,36 +181,17 @@ export function DesktopPlayer({
 
   // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
   // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
-  // coquille commune aux six surfaces. La cible d'un seek se corrige de
-  // l'offset mpv AU MOMENT du saut (la valeur au rendu ne vaut rien). ──
-  const playback = usePlaybackOverlay({
-    itemId,
-    isEpisode,
-    hasNextEpisode: !!hasNextEpisode,
-    positionSeconds: actualPos,
-    durationSeconds: dur,
-    hasStarted: hasStartedRef.current,
-    playbackEnded: fileLoaded && state.eof && hasStartedRef.current,
-    segments,
-    runtimeMs,
-    serverAutoplayEnabled,
+  // coquille commune aux six surfaces (Watch Together câblé dans le hook). ──
+  const playback = useDesktopSegmentsOverlay({
+    itemId, isEpisode, hasNextEpisode,
+    positionSeconds: actualPos, durationSeconds: dur,
+    hasStarted: aDemarre, playbackEnded: fileLoaded && state.eof && aDemarre,
+    segments, runtimeMs, serverAutoplayEnabled,
     scrubbing: seekbar.dragProgress != null,
-    onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },
-    onNextEpisode: () => onNextEpisode?.(),
-    onEndOfPlayback: () => { void goToDetail(); },
-    // Watch Together : le refus local part au groupe par le bus existant.
-    onSegmentDismissNotify: () => annoncerRefusLocal(),
-    onNextDismissNotify: onAutoNextDismiss,
+    isDirectPlay, effectiveMpvOffset, seek,
+    onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
+    onAutoNextDismiss,
   });
-
-  // Watch Together entrant : un membre a refusé le saut d'intro — on s'aligne.
-  const refusDistants = useRefusSautIntro();
-  const refusVusRef = useRef(refusDistants);
-  useEffect(() => {
-    if (refusDistants === refusVusRef.current) return;
-    refusVusRef.current = refusDistants;
-    playback.signalRemoteSegmentDismiss("Intro");
-  }, [refusDistants, playback.signalRemoteSegmentDismiss]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.
   // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
@@ -311,7 +217,7 @@ export function DesktopPlayer({
   const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
   const showLoadingOverlay = prebuffering || (lectureAvance
     ? false
-    : sourceChanging || (!state.playing && !hasStartedRef.current));
+    : sourceChanging || (!state.playing && !aDemarre));
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode
