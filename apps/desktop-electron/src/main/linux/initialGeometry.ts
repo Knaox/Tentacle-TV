@@ -13,13 +13,15 @@
  * Sous Wayland, la position d'une `geometry` est ignorée — le compositeur
  * place. La colle recopie la géométrie complète de l'hôte dès l'adoption.
  *
- * # Pourquoi PAS de facteur d'échelle
+ * # Le facteur d'échelle est OBLIGATOIRE — mesuré le 28.08
  *
- * Selon que mpv lit la valeur en pixels physiques ou logiques (écran à
- * échelle fractionnaire), multiplier par l'échelle pourrait DOUBLER la
- * fenêtre — pire que le mal. La valeur logique nue donne au pire une fenêtre
- * plus petite que la cible, jamais une illusion de plein écran, et le premier
- * `coller()` corrige. À réviser au banc si l'écart se voit.
+ * mpv lit `geometry` en pixels PHYSIQUES : nourri des bounds logiques
+ * d'Electron sur l'écran ×2 du poste, il naissait moitié plus petit que
+ * l'overlay (constaté par l'utilisateur, la colle étant morte par ailleurs).
+ * On multiplie donc par l'échelle de l'écran de la fenêtre. Taille de
+ * naissance SEULEMENT : `getDisplayMatching` peut se tromper d'écran sur
+ * Wayland (`getBounds` ment — REPRISE §3.4) et l'échelle serait alors celle
+ * d'un voisin — le premier `coller()` de la colle reste le juge de paix.
  *
  * # Pourquoi seulement wayland+libre
  *
@@ -31,10 +33,15 @@ export function initialGeometryOption(
   montage: "wayland" | "x11" | null,
   fenetrage: "libre" | "plein-ecran" | null,
   bounds: { width: number; height: number },
+  scaleFactor: number,
 ): Readonly<Record<string, string>> {
   if (montage !== "wayland" || fenetrage !== "libre") return {};
-  const largeur = Math.floor(bounds.width);
-  const hauteur = Math.floor(bounds.height);
+  // Une échelle folle ne doit pas fabriquer une fenêtre géante : repli à 1.
+  const echelle = Number.isFinite(scaleFactor) && scaleFactor >= 1 && scaleFactor <= 4
+    ? scaleFactor
+    : 1;
+  const largeur = Math.round(bounds.width * echelle);
+  const hauteur = Math.round(bounds.height * echelle);
   // Des bornes dégénérées (fenêtre pas encore mappée, valeurs folles) ne
   // doivent pas produire une geometry absurde : mieux vaut aucune option.
   if (!Number.isFinite(largeur) || !Number.isFinite(hauteur)) return {};
