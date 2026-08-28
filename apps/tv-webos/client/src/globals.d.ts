@@ -37,10 +37,6 @@ declare module "@/components/player/VideoPlayerOverlays?original" {
   export * from "@/components/player/VideoPlayerOverlays";
 }
 
-declare module "@/hooks/useAutoNextCountdown?original" {
-  export * from "@/hooks/useAutoNextCountdown";
-}
-
 declare module "@/hooks/useWebPlaybackFallbacks?original" {
   export * from "@/hooks/useWebPlaybackFallbacks";
 }
