@@ -119,22 +119,54 @@ export default {
   linuxSessionFullscreenToast:
     "Lecture en plein écran : sous Wayland, c'est le prix du HDR. Pour regarder en fenêtré, un réglage X11 existe dans les Préférences.",
 
-  // Saut d'intro automatique (réglage par appareil)
-  autoSkipIntroTitle: "Passer l'intro automatiquement",
+  // Passages d'un épisode et fin d'épisode. Ces réglages suivent le COMPTE et
+  // non l'appareil : celui posé sur le portable vaut devant le téléviseur.
+  playbackSegmentsTitle: "Passages d'un épisode",
+  playbackSegmentsHint:
+    "Quand le serveur signale un passage — générique, résumé, aperçu — le lecteur peut proposer de le passer, le passer tout seul, ou ne rien faire. Sans signalement, rien ne s'affiche : ces réglages ne devinent jamais.",
+  playbackSettingsAccount: "Ces réglages suivent votre compte, sur tous vos appareils.",
   // Deux boutons plutôt qu'un interrupteur sur le téléviseur : à la
   // télécommande, un pouce qui coulisse ne veut rien dire.
   reglageActive: "Activé",
   reglageDesactive: "Désactivé",
-  autoSkipIntroHint:
-    "Quand une série signale son générique de début, le lecteur le passe au bout de trois secondes. Une croix reste offerte pendant le décompte pour garder l'intro sur l'épisode en cours.",
 
-  // Fin d'épisode — deux réglages par appareil, comme le saut d'intro.
+  segmentIntroTitle: "Générique de début",
+  segmentIntroHint: "L'ouverture d'une série, celle qui revient à chaque épisode.",
+  segmentOutroTitle: "Générique de fin",
+  segmentOutroHint:
+    "Quand un épisode suivant existe, c'est la fiche « à suivre » qui occupe le générique. Le bouton n'apparaît que s'il mène ailleurs : une scène après le générique, ou la fin d'un film.",
+  segmentRecapTitle: "Résumé de l'épisode précédent",
+  segmentRecapHint: "Le « précédemment », au début d'un épisode.",
+  segmentPreviewTitle: "Aperçu du prochain épisode",
+  segmentPreviewHint: "Les images du prochain épisode, montées après le générique de fin.",
+  segmentActionLabel: "Ce que fait le lecteur",
+  segmentActionButton: "Proposer un bouton",
+  segmentActionAuto: "Passer tout seul",
+  segmentActionOff: "Ne rien faire",
+  segmentCountdownTitle: "Montrer le décompte",
+  segmentCountdownHint:
+    "Le bouton se remplit pendant le délai, et une croix reste offerte pour garder le passage sur cet épisode.",
+  segmentDelayLabel: "Délai avant le saut (millisecondes)",
+  segmentDelayHint: "Le temps laissé pour refuser. 3000 vaut trois secondes ; 0 passe sans rien demander.",
+
+  // Fin d'épisode — TROIS réglages strictement indépendants : montrer la
+  // fiche, décompter, lancer. Couper le décompte ne masque plus la fiche.
+  upNextTitle: "À la fin d'un épisode",
   upNextCardTitle: "Proposer l'épisode suivant",
   upNextCardHint:
     "Pendant le générique de fin, une petite fiche propose l'épisode suivant dans un coin de l'image. Désactivée, la fin de l'épisode reste nue. L'écran de fin, lui, continue de s'afficher au tout dernier instant.",
-  upNextCountdownTitle: "Enchaîner tout seul",
+  upNextCountdownTitle: "Montrer un compte à rebours",
   upNextCountdownHint:
-    "Le lecteur lance l'épisode suivant à la fin d'un compte à rebours. Désactivé, la fiche et l'écran de fin restent affichés, mais sans décompte : l'épisode suivant n'est lancé que si vous le demandez.",
+    "La fiche et l'écran de fin annoncent le temps qu'il reste. Sans lui, la fiche est une simple proposition, qui attend votre geste.",
+  upNextAutoPlayTitle: "Enchaîner tout seul",
+  upNextAutoPlayHint:
+    "À la fin du compte à rebours, l'épisode suivant démarre. Ce réglage demande donc le compte à rebours ci-dessus : sans lui, rien ne se déclenche.",
+  upNextTriggerLabel: "Quand proposer la suite",
+  upNextTriggerOutroStart: "Au début du générique de fin",
+  upNextTriggerBeforeEnd: "Peu avant la fin",
+  upNextBeforeEndLabel: "Combien de temps avant la fin (secondes)",
+  upNextBeforeEndHint:
+    "Sert aussi quand le générique de fin n'est pas signalé : la fiche paraît alors ce temps-là avant la fin.",
 
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
