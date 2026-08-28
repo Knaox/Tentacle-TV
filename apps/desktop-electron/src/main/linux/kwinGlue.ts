@@ -30,7 +30,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -131,8 +131,17 @@ export class ColleKwin {
   async poser(): Promise<boolean> {
     const contenu = gabaritColle(process.pid);
     const hachage = createHash("sha256").update(contenu).digest("hex").slice(0, 12);
-    const chemin = path.join(tmpdir(), `tentacle-colle-${String(process.pid)}-${hachage}.qml`);
+    // ⚠️ SOUS-DOSSIER PRIVÉ, jamais la racine de /tmp. En QML, le répertoire
+    // du fichier a PRIORITÉ dans la résolution des types : posé à la racine de
+    // /tmp, le moteur y cherchait « Timer » et tombait sur un fichier parasite
+    // à casse voisine — « Component failed to load: File name case mismatch »,
+    // la colle entière morte (mesuré le 28.08, journal KWin à l'appui). Dans
+    // notre dossier, seuls vivent nos propres fichiers en minuscules — jamais
+    // candidats à un nom de type.
+    const dossier = path.join(tmpdir(), "tentacle-colle");
+    const chemin = path.join(dossier, `colle-${String(process.pid)}-${hachage}.qml`);
     try {
+      mkdirSync(dossier, { recursive: true });
       writeFileSync(chemin, contenu, "utf8");
     } catch {
       return false;
