@@ -1,63 +1,48 @@
 /**
- * Segments « passer l'intro » et « passer le générique », persistés au
- * snapshot.
+ * Les segments de lecture, persistés au snapshot — au format RÉSOLU.
  *
- * Les trois sources qu'interroge `useIntroSkipper` — `MediaSegments` natif de
- * Jellyfin 10.9+, et le greffon intro-skipper dans ses deux formats — sont
- * enregistrées BRUTES dans `meta/<itemId>/segments.json`. La normalisation
- * reste côté TypeScript (`normalizeSkipSegments`, `api-client`) : aucune
- * logique n'est dupliquée ici, et la lecture locale ne demande rien au réseau.
+ * Depuis la refonte, le résolveur unique vit côté backend
+ * (`GET /api/playback/segments/:itemId`) : on enregistre sa réponse (contrat
+ * v1) TELLE QUELLE dans `meta/<itemId>/segments.json`. Plus aucune source
+ * brute ici — trois requêtes deviennent une, et la lecture locale n'a plus
+ * rien à décider.
  *
- * Portage de `apps/desktop/src-tauri/src/downloads/segments_snapshot.rs`.
+ * La garde d'écriture est MINIMALE (c'est bien le contrat, pas une page
+ * d'erreur) : la relecture qui fait foi vit côté renderer, dans
+ * `parsePlaybackSegmentsResponse` (@tentacle-tv/shared) — le main est compilé
+ * par tsc sans dépendre de shared, comme le backend. Les fichiers de l'ANCIEN
+ * format (trois payloads bruts) restent lisibles côté renderer, et la
+ * réparation (meta v3) les re-photographie au prochain démarrage en ligne.
  */
 
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { parseJson } from "./json";
 import { saveBytes } from "./meta";
 
-/**
- * Le JSON brut si les octets en sont, sinon `null`.
- *
- * Une source muette rend souvent autre chose que du JSON — un 404 du greffon
- * absent, une page d'erreur HTML. L'écrire tel quel casserait le fichier
- * entier au moment de le relire.
- */
-function jsonOuNull(bytes: Uint8Array | null): string {
-  if (bytes === null) return "null";
-  return parseJson(bytes) === null ? "null" : Buffer.from(bytes).toString("utf8");
+/** Le corps est-il un contrat v1 plausible ? (relecture stricte côté lecture) */
+function contratPlausible(brut: unknown): boolean {
+  if (typeof brut !== "object" || brut === null) return false;
+  const o = brut as Record<string, unknown>;
+  return o.version === 1 && typeof o.itemId === "string" && Array.isArray(o.segments);
 }
 
 /**
- * Récupère les trois sources et écrit `segments.json`.
+ * Récupère la réponse du résolveur et écrit `segments.json`.
  *
- * `true` si au moins une source a répondu ET que le fichier est écrit. Sinon
- * rien n'est écrit, et le lecteur local retombe sur les chapitres du DTO.
+ * `true` si le contrat est plausible ET écrit. Sinon rien n'est écrit — la
+ * lecture locale retombe sur un ancien fichier s'il existe, ou sur rien.
  */
 export async function fetchAndSave(
   fetchBytes: FetchBytes,
-  base: string,
+  serverUrl: string,
   root: string,
   itemId: string,
-  isEpisode: boolean,
 ): Promise<boolean> {
-  const mediaSegments = await fetchBytes(
-    `${base}/MediaSegments/${itemId}?includeSegmentTypes=Intro,Outro`,
-    MAX_JSON_BYTES,
-  );
+  const bytes = await fetchBytes(`${serverUrl}/api/playback/segments/${itemId}`, MAX_JSON_BYTES);
+  if (bytes === null) return false;
 
-  // Les routes du greffon intro-skipper n'existent que pour les épisodes.
-  const pluginDict = isEpisode
-    ? await fetchBytes(`${base}/Episode/${itemId}/IntroSkipperSegments`, MAX_JSON_BYTES)
-    : null;
-  const pluginTs = isEpisode
-    ? await fetchBytes(`${base}/Episode/${itemId}/Timestamps`, MAX_JSON_BYTES)
-    : null;
+  const contrat = parseJson(bytes);
+  if (!contratPlausible(contrat)) return false;
 
-  if (mediaSegments === null && pluginDict === null && pluginTs === null) return false;
-
-  const corps =
-    `{"mediaSegments":${jsonOuNull(mediaSegments)},` +
-    `"pluginDict":${jsonOuNull(pluginDict)},` +
-    `"pluginTs":${jsonOuNull(pluginTs)}}`;
-  return saveBytes(root, `meta/${itemId}/segments.json`, Buffer.from(corps, "utf8"));
+  return saveBytes(root, `meta/${itemId}/segments.json`, Buffer.from(bytes));
 }

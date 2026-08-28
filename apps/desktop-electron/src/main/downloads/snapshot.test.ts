@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { openInMemory } from "./db";
 import * as episodeNumbers from "./episodeNumbers";
 import type { FetchBytes } from "./fetcher";
-import { getSpec, metaVersion, snapshotExists, upsertItemMeta, type MetaSpec } from "./meta";
+import { CURRENT_META_VERSION, getSpec, metaVersion, snapshotExists, upsertItemMeta, type MetaSpec } from "./meta";
 import { ensureLayout } from "./paths";
 import { snapshot } from "./snapshot";
 import { parseSpecs, sanitizeTag, subtitleRelPath } from "./subs";
@@ -88,7 +88,7 @@ describe("snapshot", () => {
     expect(spec?.indexNumber).toBe(4);
     expect(spec?.parentIndexNumber).toBe(2);
     expect(spec?.libraryId).toBe("lib-42");
-    expect(metaVersion(db, "ep1")).toBe(2);
+    expect(metaVersion(db, "ep1")).toBe(CURRENT_META_VERSION);
     // Le jeton ne part JAMAIS en query.
     expect(vues.every((u) => !u.includes("token") && !u.includes("api_key"))).toBe(true);
   });
@@ -104,7 +104,7 @@ describe("snapshot", () => {
     ).resolves.toBeUndefined();
 
     // La version est posee quand meme : la reparation reprendra le reste.
-    expect(metaVersion(db, "ep1")).toBe(2);
+    expect(metaVersion(db, "ep1")).toBe(CURRENT_META_VERSION);
     expect(snapshotExists(root, "ep1")).toBe(false);
   });
 
@@ -227,23 +227,24 @@ describe("trickplay", () => {
 });
 
 describe("segments", () => {
-  it("une source qui ne rend pas du JSON devient null, pas un fichier casse", async () => {
+  // Le détail (garde d'écriture, réponses hors contrat) vit dans
+  // segments.test.ts ; ici, seulement le câblage : le snapshot interroge le
+  // RÉSOLVEUR du backend, pas le proxy Jellyfin, et persiste sa réponse.
+  it("le snapshot persiste la réponse du résolveur backend", async () => {
     const db = openInMemory();
     const root = racinePreparee();
     upsertItemMeta(db, specEpisode(), 1_000);
-    // Le greffon absent rend une page d'erreur HTML : l'ecrire telle quelle
-    // casserait segments.json au moment de le relire.
-    const { fetchBytes } = reseau({
+    const contrat = '{"version":1,"itemId":"ep1","runtimeMs":0,"segments":[],"resolvedAt":""}';
+    const { fetchBytes, vues } = reseau({
       "/Items/ep1?fields=": "{}",
-      "/MediaSegments/": '[{"Type":"Intro"}]',
-      "/IntroSkipperSegments": "<html>404</html>",
+      "/api/playback/segments/ep1": contrat,
     });
 
     await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
 
+    expect(vues).toContain("https://tv.exemple/api/playback/segments/ep1");
+    expect(vues.some((u) => u.includes("/MediaSegments/"))).toBe(false);
     const brut = readFileSync(path.join(root, "meta", "ep1", "segments.json"), "utf8");
-    const parsed = JSON.parse(brut) as { mediaSegments: unknown; pluginDict: unknown };
-    expect(parsed.mediaSegments).toEqual([{ Type: "Intro" }]);
-    expect(parsed.pluginDict).toBeNull();
+    expect(JSON.parse(brut)).toEqual(JSON.parse(contrat));
   });
 });
