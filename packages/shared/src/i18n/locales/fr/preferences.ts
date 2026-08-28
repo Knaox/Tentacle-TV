@@ -111,8 +111,8 @@ export default {
   linuxSessionHint:
     "Wayland permet le HDR. Sur KDE Plasma, la lecture suit votre fenêtre — fenêtrée ou plein écran, comme partout ailleurs. Sur les autres bureaux Wayland, la lecture native passe obligatoirement en plein écran (le système n'y laisse pas une application placer ses fenêtres) ; X11 reste alors le recours fenêtré, sans HDR. « Auto » suit la session du bureau. Le changement prend effet au prochain lancement.",
   linuxSessionAuto: "Auto — suivre le bureau",
-  linuxSessionWayland: "Wayland — HDR, lecture plein écran",
-  linuxSessionX11: "X11 — lecture fenêtrée, sans HDR",
+  linuxSessionWayland: "Wayland — support HDR intégré",
+  linuxSessionX11: "X11 — sans HDR",
   linuxSessionCurrent: "Montage actuel : {{montage}}",
   linuxSessionRestart: "Relancer maintenant",
   // Toast unique, à la première lecture native sous Wayland — renvoie ici.
