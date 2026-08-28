@@ -129,6 +129,29 @@ export class JellyfinClient {
     body: string,
   ) => Promise<number>;
 
+  /**
+   * `PlaybackInfo` par la couche native — même doctrine que `nativeSessionPost`
+   * (28.08 : le lecteur web de secours butait sur le même mur CORS pour un
+   * média réseau, et l'échec coupait le direct pour toute la session).
+   */
+  nativePlaybackInfo?: (
+    baseUrl: string,
+    itemId: string,
+    query: string,
+    token: string,
+    authHeader: string,
+    body: string,
+  ) => Promise<{ status: number; body: string }>;
+
+  /** `DELETE /Videos/ActiveEncodings` par la couche native — même doctrine. */
+  nativeKillEncodings?: (
+    baseUrl: string,
+    deviceId: string,
+    playSessionId: string,
+    token: string,
+    authHeader: string,
+  ) => Promise<number>;
+
   setOnDirectStreamingFail(cb: () => void) { this.directStreamingFailCallback = cb; }
 
   /** Report a direct streaming media failure. After DS_ERROR_THRESHOLD consecutive
@@ -294,6 +317,7 @@ export class JellyfinClient {
         getAuthHeader: (t) => this.getAuthHeader(t),
         signalerDirectBloque: (raison) => this.signalerDirectStreamingBloque(raison),
         viaProxy: (path, init) => this.fetch<PlaybackInfoResponse>(path, init),
+        nativePlaybackInfo: this.nativePlaybackInfo,
       },
       itemId,
       options,

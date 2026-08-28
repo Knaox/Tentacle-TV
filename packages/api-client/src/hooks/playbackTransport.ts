@@ -53,6 +53,14 @@ export type JfClient = {
     authHeader: string,
     body: string,
   ) => Promise<number>;
+  /** Le `DELETE /Videos/ActiveEncodings` par la couche native — même doctrine. */
+  nativeKillEncodings?: (
+    baseUrl: string,
+    deviceId: string,
+    playSessionId: string,
+    token: string,
+    authHeader: string,
+  ) => Promise<number>;
 };
 
 /** La route DIRECTE de télémétrie a échoué (CORS WebView typiquement) : on
@@ -213,6 +221,28 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
         console.error("[WT kill] proxy FAILED — l'ancien ffmpeg SURVIT (risque d'écran noir au prochain stream)", e instanceof Error ? e.message : String(e));
       });
   };
+
+  // La voie NATIVE d'abord, quand l'hôte en a une : sur la coquille, le DELETE
+  // de la page est voué au mur CORS depuis l'origine applicative (voir
+  // sessionPost). Un échec natif est une panne de transport — proxy, sans
+  // condamner la voie pour la suite.
+  const dsNatif = client.getDirectStreaming?.();
+  if (dsNatif?.enabled && dsNatif.mediaBaseUrl && dsNatif.jellyfinToken && client.nativeKillEncodings) {
+    killLog("[WT kill] DELETE ActiveEncodings via NATIF", { playSessionId, deviceId });
+    return client
+      .nativeKillEncodings(
+        dsNatif.mediaBaseUrl,
+        deviceId,
+        playSessionId,
+        dsNatif.jellyfinToken,
+        client.getAuthHeader(dsNatif.jellyfinToken),
+      )
+      .then((status) => {
+        if (status < 200 || status >= 300) return viaProxy(`natif HTTP ${status}`);
+        killLog("[WT kill] natif → OK (ffmpeg tué)");
+      })
+      .catch((e) => viaProxy(`natif erreur réseau: ${e instanceof Error ? e.message : String(e)}`));
+  }
 
   // Direct route when available (bypass proxy admin token issue) — MAIS un
   // DELETE cross-origin est bloqué par le CORS des WebViews : sans fallback
