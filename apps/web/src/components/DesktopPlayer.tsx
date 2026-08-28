@@ -11,7 +11,9 @@ import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
-import { useDesktopAutoNext } from "../hooks/useDesktopAutoNext";
+import { useDesktopPlayerExit } from "../hooks/useDesktopPlayerExit";
+import { usePlaybackOverlay } from "@tentacle-tv/api-client";
+import { annoncerRefusLocal, useRefusSautIntro } from "../watchTogether/refusSautIntro";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
@@ -22,7 +24,7 @@ import { useToast } from "../contexts/ToastContext";
 import { useTranslation } from "react-i18next";
 import { fenetrageLinux, montageLinux } from "../desktop/detect";
 import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "../lib/waylandFullscreenNotice";
-import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../hooks/useApplyToSeries";
@@ -50,14 +52,15 @@ interface DesktopPlayerProps {
   localSubtitleFiles?: LocalSubtitleFile[];
   onProgress?: (seconds: number, paused: boolean) => void; onStarted?: () => void;
   isDirectPlay?: boolean; streamOffset?: number; posterUrl?: string;
-  introSegment?: SegmentTimestamps | null; creditsSegment?: SegmentTimestamps | null;
+  /** Les segments RÉSOLUS du média (contrat v1, ms) — l'arbitre décide de tout. */
+  segments?: readonly ResolvedSegment[];
+  /** Durée du contrat, en ms — 0 = inconnue (la durée mpv fait alors foi). */
+  runtimeMs?: number;
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
   nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;
-  /** Interrupteur admin « Déclenchement auto-play » (bannière + écran de fin). */
-  autoplayNextEnabled?: boolean;
-  /** Seuil (%) = MaxResumePct Jellyfin : la bannière apparaît à ce % de lecture. */
-  maxResumePct?: number;
+  /** Garde serveur admin « Déclenchement auto-play » (carte + écran de fin). */
+  serverAutoplayEnabled?: boolean;
   itemId?: string;
   item?: MediaItem;
   mediaSourceId?: string;
@@ -93,11 +96,11 @@ export function DesktopPlayer({
   localSubtitleFiles = EMPTY_SUBTITLE_FILES,
   onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
-  introSegment, creditsSegment,
+  segments = [], runtimeMs = 0,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  autoplayNextEnabled = true, maxResumePct = 90,
+  serverAutoplayEnabled = true,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
@@ -215,18 +218,10 @@ export function DesktopPlayer({
     sourceChanging,
   );
 
-  // Auto-next (bannière crédits / affiche EOF) + navigations de sortie
-  const { autoPlayCountdown, autoPlaySource, cancelAutoPlay, goBack } = useDesktopAutoNext({
-    state, fileLoaded, itemId, jellyfinDuration, autoplayNextEnabled, maxResumePct,
-    hasNextEpisode, onNextEpisode, hasStartedRef, effectiveMpvOffset,
-  });
-
-  // Watch Together : transport impératif + signaux prêt/buffering/pause
-  useDesktopTransport({
-    transportRef, state, mediaReady, isDirectPlay,
-    lastAbsolutePosRef, effectiveMpvOffset,
-    setPause, seek, setSpeed, cancelAutoPlay,
-    onPlayStateChange, onBufferingChange,
+  // Sorties du lecteur (retour, fiche, fermeture de session plein écran) —
+  // le moteur d'enchaînement, lui, vit dans l'arbitre partagé (plus bas).
+  const { goBack, goToDetail } = useDesktopPlayerExit({
+    state, fileLoaded, itemId, hasNextEpisode, serverAutoplayEnabled, hasStartedRef,
   });
 
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
@@ -259,14 +254,49 @@ export function DesktopPlayer({
   const bufProg = dur > 0 ? Math.min((actualPos + state.buffered) / dur, 1) : 0;
   const hasSettings = displayAudio.length > 0 || displaySubs.length > 0 || !!onQualityChange;
 
-  // Skip intro / credits segments
-  // La lecture doit avoir VRAIMENT commencé. La fenêtre d'intro se calcule sur
-  // la position, qui vaut zéro avant la première image — et la plupart des
-  // génériques commencent à zéro : la pilule paraissait donc par-dessus l'écran
-  // de chargement, et le saut automatique partait à l'instant du lancement, sur
-  // une vidéo qui n'avait pas encore d'image.
-  const showSkipIntro = hasStartedRef.current && introSegment && actualPos >= introSegment.start && actualPos < introSegment.end - 1;
-  const showSkipCredits = creditsSegment && actualPos >= creditsSegment.start && actualPos < creditsSegment.end - 1;
+  // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
+  // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
+  // coquille commune aux six surfaces. La cible d'un seek se corrige de
+  // l'offset mpv AU MOMENT du saut (la valeur au rendu ne vaut rien). ──
+  const playback = usePlaybackOverlay({
+    itemId,
+    isEpisode,
+    hasNextEpisode: !!hasNextEpisode,
+    positionSeconds: actualPos,
+    durationSeconds: dur,
+    hasStarted: hasStartedRef.current,
+    playbackEnded: fileLoaded && state.eof && hasStartedRef.current,
+    segments,
+    runtimeMs,
+    serverAutoplayEnabled,
+    scrubbing: seekbar.dragProgress != null,
+    onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },
+    onNextEpisode: () => onNextEpisode?.(),
+    onEndOfPlayback: () => { void goToDetail(); },
+    // Watch Together : le refus local part au groupe par le bus existant.
+    onSegmentDismissNotify: () => annoncerRefusLocal(),
+    onNextDismissNotify: onAutoNextDismiss,
+  });
+
+  // Watch Together entrant : un membre a refusé le saut d'intro — on s'aligne.
+  const refusDistants = useRefusSautIntro();
+  const refusVusRef = useRef(refusDistants);
+  useEffect(() => {
+    if (refusDistants === refusVusRef.current) return;
+    refusVusRef.current = refusDistants;
+    playback.signalRemoteSegmentDismiss("Intro");
+  }, [refusDistants, playback.signalRemoteSegmentDismiss]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Watch Together : transport impératif + signaux prêt/buffering/pause.
+  // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
+  // que la croix locale, sans ré-annonce au groupe.
+  useDesktopTransport({
+    transportRef, state, mediaReady, isDirectPlay,
+    lastAbsolutePosRef, effectiveMpvOffset,
+    setPause, seek, setSpeed,
+    cancelAutoPlay: playback.signalRemoteNextDismiss,
+    onPlayStateChange, onBufferingChange,
+  });
 
   // Show loading overlay: initial load OR source change (quality/audio switch).
   // Sécurité anti-spinner-éternel : mpv qui lit sans le dire (event "playing"
@@ -307,16 +337,12 @@ export function DesktopPlayer({
       <DesktopPlayerOverlays
         showLoadingOverlay={showLoadingOverlay} buffering={state.buffering}
         buffered={state.buffered} posterUrl={posterUrl}
-        showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
-        introSegment={introSegment} creditsSegment={creditsSegment}
-        isDirectPlay={isDirectPlay} effectiveMpvOffset={effectiveMpvOffset}
-        hasNextEpisode={hasNextEpisode} itemId={itemId}
-        autoPlayCountdown={autoPlayCountdown} autoPlaySource={autoPlaySource}
+        overlay={playback.overlay} countdownTotals={playback.countdownTotals}
+        onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
+        onPlayNow={playback.playNow}
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
-        seek={seek} onNextEpisode={onNextEpisode}
-        cancelAutoPlay={cancelAutoPlay} onAutoNextDismiss={onAutoNextDismiss}
       />
 
       {/* Badge « +30s / −10s » après un saut */}
