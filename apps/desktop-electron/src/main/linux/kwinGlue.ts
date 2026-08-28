@@ -46,6 +46,17 @@ QtObject {
     id: racine
     property var hote: null
     property var video: null
+    // Rattrapage du PREMIER coller : l'écriture de géométrie est asynchrone
+    // et windowAdded précède le mappage effectif — la copie posée à l'adoption
+    // peut être perdue, et sans elle mpv reste à sa taille de naissance
+    // jusqu'au détour d'activation (~0,5 s d'éclair, mesuré). Une minuterie
+    // UNIQUE la rejoue. JAMAIS via frameGeometryChanged de la vidéo : notre
+    // propre écriture déclencherait le signal qu'elle écoute (boucle).
+    property var rattrapage: Timer {
+        interval: 150
+        repeat: false
+        onTriggered: racine.coller()
+    }
 
     function coller() {
         if (racine.hote === null || racine.video === null) return;
@@ -77,6 +88,7 @@ QtObject {
             racine.reprendreActivation();
             racine.suivreMinimise();
             racine.coller();
+            racine.rattrapage.restart();
             return;
         }
         if (racine.hote !== null) return;
