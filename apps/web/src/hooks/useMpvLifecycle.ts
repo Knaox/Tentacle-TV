@@ -1,7 +1,7 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { invoke, isElectronShell } from "../desktop/bridge";
 import { surfaceOpaque, surfaceTransparente } from "../lib/surfaceLecteur";
-import type { MpvEndFileEvent } from "../lib/mpvTypes";
+import { MPV_END_FILE_REASON, type MpvEndFileEvent } from "../lib/mpvTypes";
 import { queryTrackList } from "./mpvTrackList";
 import {
   awaitPendingDestroy, buildMpvInitOptions, getMpvApi, isLinux, isMacOS, isTauri,
@@ -307,9 +307,9 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           }
           case "end-file": {
             // Only set eof for real EOF — not for loadfile replacements (Bug 7)
-            const reason = (event as unknown as MpvEndFileEvent).reason;
-            wtLog("mpv", `end-file (reason=${reason})`, { pos: positionRef.current.toFixed(1) });
-            setState((prev) => ({ ...prev, playing: false, eof: reason === "eof" }));
+            const fin = event as unknown as MpvEndFileEvent;
+            wtLog("mpv", `end-file (reason=${fin.reason} error=${fin.error ?? "-"})`, { pos: positionRef.current.toFixed(1) });
+            setState((prev) => ({ ...prev, playing: false, eof: fin.reason === MPV_END_FILE_REASON.EOF }));
             break;
           }
           case "idle":
