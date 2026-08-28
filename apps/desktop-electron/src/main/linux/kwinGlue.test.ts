@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { vi } from "vitest";
 
@@ -76,7 +77,10 @@ describe("ColleKwin", () => {
     expect(await colle.poser()).toBe(true);
     expect(pont.chemins).toHaveLength(1);
     const chemin = pont.chemins[0] ?? "";
-    expect(chemin).toContain(`tentacle-colle-${String(process.pid)}-`);
+    // Sous-dossier PRIVÉ, jamais la racine de /tmp : le répertoire du fichier
+    // a priorité dans la résolution des types QML, et un fichier parasite de
+    // /tmp a déjà tué la colle entière (« File name case mismatch », 28.08).
+    expect(chemin).toContain(`tentacle-colle${path.sep}colle-${String(process.pid)}-`);
     expect(chemin.endsWith(".qml")).toBe(true);
     expect(existsSync(chemin)).toBe(true);
     expect(readFileSync(chemin, "utf8")).toBe(gabaritColle(process.pid));
