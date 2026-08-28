@@ -49,12 +49,21 @@ export interface ElectronBridge {
   /**
    * Linux seulement : sur quel serveur d'affichage la vidéo est montée.
    *
-   * `wayland` — HDR possible, lecture forcément en plein écran (le protocole
+   * `wayland` — HDR possible ; la lecture est fenêtrée si le compositeur porte
+   * la colle KWin (voir `fenetrage`), plein écran forcé sinon (le protocole
    * n'autorise pas un client à placer ses fenêtres).
    * `x11` — lecture fenêtrée comme sur Windows, mais aucun HDR : X.Org n'a pas
    * de gestion de couleur et n'en aura pas.
    */
   readonly montage?: "wayland" | "x11";
+  /**
+   * Wayland seulement : `libre` quand la colle KWin cale la vidéo sous la
+   * fenêtre (lecture fenêtrée ou plein écran, au choix de l'utilisateur),
+   * `plein-ecran` quand le compositeur n'offre pas de placement — la lecture
+   * native y force le plein écran, et c'est là que l'avis pédagogique a lieu
+   * d'exister.
+   */
+  readonly fenetrage?: "libre" | "plein-ecran";
   /**
    * Hauteur, en points, du bandeau que la page doit dessiner elle-même.
    *

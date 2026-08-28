@@ -78,3 +78,15 @@ export function desktopPlatform(): DesktopPlatform {
 export function montageLinux(): "wayland" | "x11" | null {
   return window.tentacle?.montage ?? null;
 }
+
+/**
+ * Le fenêtré sous Wayland — `null` hors Wayland.
+ *
+ * `libre` : la colle KWin cale la vidéo sous la fenêtre, la lecture suit la
+ * fenêtre comme sur Windows. `plein-ecran` : le compositeur n'offre pas de
+ * placement, la lecture native force le plein écran — le seul cas où l'avis
+ * pédagogique du plein écran ait quelque chose à dire.
+ */
+export function fenetrageLinux(): "libre" | "plein-ecran" | null {
+  return window.tentacle?.fenetrage ?? null;
+}

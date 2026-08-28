@@ -109,7 +109,7 @@ export default {
   // Graphics session choice (Linux desktop with native player)
   linuxSessionTitle: "Video display (Wayland or X11)",
   linuxSessionHint:
-    "Under Wayland, native playback is always fullscreen: the display system does not let an application position its windows, and fullscreen is the price of HDR. To watch in a window, choose X11 — without HDR. “Auto” follows the desktop session. The change takes effect on next launch.",
+    "Wayland enables HDR. On KDE Plasma, playback follows your window — windowed or fullscreen, like everywhere else. On other Wayland desktops, native playback is always fullscreen (the display system does not let an application position its windows); X11 then remains the windowed fallback, without HDR. “Auto” follows the desktop session. The change takes effect on next launch.",
   linuxSessionAuto: "Auto — follow the desktop",
   linuxSessionWayland: "Wayland — HDR, fullscreen playback",
   linuxSessionX11: "X11 — windowed playback, no HDR",

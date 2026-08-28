@@ -109,7 +109,7 @@ export default {
   // Choix de session graphique (bureau Linux avec lecteur natif)
   linuxSessionTitle: "Affichage vidéo (Wayland ou X11)",
   linuxSessionHint:
-    "Sous Wayland, la lecture native s'affiche obligatoirement en plein écran : le système d'affichage interdit à une application d'y placer ses fenêtres, et le plein écran est le prix du HDR. Pour regarder dans une fenêtre, choisissez X11 — sans HDR. « Auto » suit la session du bureau. Le changement prend effet au prochain lancement.",
+    "Wayland permet le HDR. Sur KDE Plasma, la lecture suit votre fenêtre — fenêtrée ou plein écran, comme partout ailleurs. Sur les autres bureaux Wayland, la lecture native passe obligatoirement en plein écran (le système n'y laisse pas une application placer ses fenêtres) ; X11 reste alors le recours fenêtré, sans HDR. « Auto » suit la session du bureau. Le changement prend effet au prochain lancement.",
   linuxSessionAuto: "Auto — suivre le bureau",
   linuxSessionWayland: "Wayland — HDR, lecture plein écran",
   linuxSessionX11: "X11 — lecture fenêtrée, sans HDR",
