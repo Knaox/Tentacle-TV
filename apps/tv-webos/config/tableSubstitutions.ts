@@ -243,25 +243,15 @@ export const FICHIERS_SUBSTITUES: Record<string, string> = {
   // l'utilisateur.
   [resolve(WEB, "components/SkipBadge.tsx")]: resolve(CLIENT, "playback/BadgeSkipTv.tsx"),
 
-  // Les boutons « passer l'intro / le générique » sont ancrés à vingt-quatre
-  // pixels du bord — dans l'overscan — et paraissent quand l'habillage est
-  // éteint, donc quand le moteur de focus s'est retiré de la route. Tout le
-  // reste des surcouches convient tel quel.
+  // La projection de l'ARBITRE (bouton de saut, carte « à suivre », affiche de
+  // fin) est ancrée pour un écran d'ordinateur — dans l'overscan — et paraît
+  // quand l'habillage est éteint, donc quand le moteur de focus s'est retiré
+  // de la route. L'enveloppe la neutralise et la rend elle-même
+  // (PlaybackOverlayTv) ; tout le reste des surcouches convient tel quel.
+  // Depuis la refonte des segments, c'est la SEULE couture de lecture — la
+  // carte et son déclencheur viennent de l'arbitre partagé, plus d'enveloppes
+  // séparées (NextCardTv, endCardTv).
   [resolve(WEB, "components/player/VideoPlayerOverlays.tsx")]: resolve(CLIENT, "playback/OverlaysTv.tsx"),
-
-  // La carte « épisode suivant » : même correction d'ancrage et de portée. Son
-  // COMPORTEMENT, lui, est déjà celui d'`apps/tv` — seuil au `maxResumePct` de
-  // Jellyfin, décompte de dix secondes — et vient du client web tel quel.
-  [resolve(WEB, "components/AutoPlayOverlay.tsx")]: resolve(CLIENT, "playback/NextCardTv.tsx"),
-
-  // Ce qui DÉCLENCHE cette carte, en revanche, ne suffisait pas ici. Elle tient
-  // à un segment « Outro » déclaré dans Jellyfin, que beaucoup de bibliothèques
-  // n'ont pas, ou à un enchaînement automatique qui ne joue qu'une fois par
-  // épisode. Un déplacement rapide jusqu'à la fin passait donc au travers, et
-  // l'épisode s'achevait sans que rien ne soit proposé — devant une
-  // télécommande posée à trois mètres. L'enveloppe ajoute le filet, et rien
-  // d'autre.
-  [resolve(WEB, "hooks/useAutoNextCountdown.ts")]: resolve(CLIENT, "playback/endCardTv.ts"),
 
   // Seule prise sur l'enveloppe qui masque les commandes. Le hook du web n'est
   // réarmé que par un mouvement de souris — une télécommande n'en produit pas,

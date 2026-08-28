@@ -1,9 +1,8 @@
 import type { MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { LoadingBar } from "./PlayerLoadingScreen";
-import { SkipIntroButton } from "./SkipIntroButton";
-import { useSkipIntroCountdown } from "./useSkipIntroCountdown";
-import type { SegmentTimestamps } from "@tentacle-tv/shared";
+import { PlaybackOverlay } from "./PlaybackOverlay";
+import type { PlayerOverlay } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
   loading: boolean;
@@ -13,41 +12,40 @@ interface VideoPlayerOverlaysProps {
   showPlayButton: boolean;
   policyMuted: boolean;
   posterUrl?: string;
-  showSkipIntro: boolean | null | undefined;
-  showSkipCredits: boolean | null | undefined;
-  introSegment?: SegmentTimestamps | null;
-  creditsSegment?: SegmentTimestamps | null;
-  autoPlayCountdown: number | null;
-  hasNextEpisode?: boolean;
+  overlay: PlayerOverlay;
+  countdownTotals: { skipMs: number; nextMs: number };
+  onSkip: () => void;
+  onDismissOverlay: () => void;
+  onPlayNow: () => void;
+  nextEpisodeTitle?: string;
+  nextEpisodeDescription?: string;
+  nextEpisodeImageUrl?: string;
+  nextSeriesBackdropUrl?: string;
+  nextEpisodeThumbUrl?: string;
   videoRef: MutableRefObject<HTMLVideoElement | null>;
   userInteractedRef: MutableRefObject<boolean>;
   setShowPlayButton: (v: boolean) => void;
   setPolicyMuted: (v: boolean) => void;
-  handleSeek: (seconds: number) => void;
 }
 
 /**
  * Overlays du player web : chargement (bannière initiale / spinner en cours de
- * lecture), bouton play (autoplay policy), badge « appuyer pour le son »,
- * boutons « passer l'intro / le générique ». Extraction mécanique de VideoPlayer.
+ * lecture), bouton play (autoplay policy), badge « appuyer pour le son », et
+ * la projection de l'ARBITRE (bouton de saut blanc, carte, affiche de fin).
+ * Plus aucune décision de segments ici — tout vient de la coquille partagée.
  *
  * Tout est posé sur la vidéo → text-white/bg-black volontairement en dur,
  * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
   loading, playing, aDemarre, showPlayButton, policyMuted, posterUrl,
-  showSkipIntro, showSkipCredits, introSegment, creditsSegment,
-  autoPlayCountdown, hasNextEpisode,
+  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow,
+  nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
+  nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   videoRef, userInteractedRef,
-  setShowPlayButton, setPolicyMuted, handleSeek,
+  setShowPlayButton, setPolicyMuted,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
-  // Saut d'intro automatique — inerte tant que la préférence est éteinte. Il
-  // décide seul de l'affichage de la pilule : pendant un saut, elle s'efface.
-  const sautIntro = useSkipIntroCountdown({
-    visible: Boolean(showSkipIntro && introSegment),
-    sauter: () => { if (introSegment) handleSeek(introSegment.end); },
-  });
 
   return (
     <>
@@ -102,24 +100,19 @@ export function VideoPlayerOverlays({
         </button>
       )}
 
-      {sautIntro.montrer && (
-        <SkipIntroButton
-          compte={sautIntro.compte}
-          onSauter={sautIntro.sauterMaintenant}
-          onAnnuler={sautIntro.annuler}
-          couche="z-50"
-          flou
-        />
-      )}
-      {/* Bouton réservé au cas où il n'y a RIEN après : quand un épisode suit,
-          c'est la carte « à suivre » qui prend sa place — avec la vignette et le
-          titre, de quoi décider plutôt qu'un simple libellé. */}
-      {showSkipCredits && creditsSegment && !autoPlayCountdown && !hasNextEpisode && (
-        <button onClick={(e) => { e.stopPropagation(); handleSeek(creditsSegment.end); }}
-          className="absolute bottom-28 right-6 z-50 rounded-lg border border-white/20 bg-black/60 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all hover:bg-white/20">
-          {t("player:skipCredits")}
-        </button>
-      )}
+      <PlaybackOverlay
+        overlay={overlay}
+        countdownTotals={countdownTotals}
+        onSkip={onSkip}
+        onDismiss={onDismissOverlay}
+        onPlayNow={onPlayNow}
+        couche="z-50"
+        nextEpisodeTitle={nextEpisodeTitle}
+        nextEpisodeDescription={nextEpisodeDescription}
+        nextEpisodeImageUrl={nextEpisodeImageUrl}
+        nextSeriesBackdropUrl={nextSeriesBackdropUrl}
+        nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+      />
     </>
   );
 }
