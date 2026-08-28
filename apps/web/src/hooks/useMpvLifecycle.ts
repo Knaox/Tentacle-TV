@@ -27,6 +27,12 @@ export interface MpvLifecycleCtx {
   playbackWatchdogRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   wakeupRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
   loadfileAtRef: MutableRefObject<number>;
+  /**
+   * `end-file(reason=ERROR)` reçu pendant un chargement (watchdog armé) : le
+   * chargement est MORT, inutile d'attendre le watchdog — le hook décide
+   * (retry immédiat, puis classement média/lecteur).
+   */
+  onEndFileFailure: (event: MpvEndFileEvent) => void;
 }
 
 /**
@@ -43,7 +49,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const {
       setState, setReady, setFailure, setFileLoaded, setMediaReady,
       positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
-      playbackWatchdogRef, wakeupRef, loadfileAtRef,
+      playbackWatchdogRef, wakeupRef, loadfileAtRef, onEndFileFailure,
     } = ctx;
 
     (async () => {
@@ -312,6 +318,17 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
             const fin = event as unknown as MpvEndFileEvent;
             wtLog("mpv", `end-file (reason=${fin.reason} error=${fin.error ?? "-"})`, { pos: positionRef.current.toFixed(1) });
             setState((prev) => ({ ...prev, playing: false, eof: fin.reason === MPV_END_FILE_REASON.EOF }));
+            // Chargement mort — SEULEMENT reason=ERROR et watchdog armé. Jamais
+            // sur STOP (un rebuild de source émet le end-file(stop) de l'ANCIEN
+            // fichier juste après l'armement du watchdog du nouveau) ; jamais en
+            // pleine lecture (watchdog désarmé — une coupure à mi-film garde le
+            // comportement d'aujourd'hui, hors périmètre).
+            if (fin.reason === MPV_END_FILE_REASON.ERROR && playbackWatchdogRef.current !== null) {
+              clearTimeout(playbackWatchdogRef.current);
+              playbackWatchdogRef.current = null;
+              if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
+              onEndFileFailure(fin);
+            }
             break;
           }
           case "idle":
