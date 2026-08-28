@@ -57,6 +57,17 @@ describe("gabaritColle", () => {
     expect(qml).toContain("Workspace.raiseWindow(racine.video)");
     expect(qml).toContain("Workspace.raiseWindow(racine.hote)");
   });
+
+  it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
+    const qml = gabaritColle(1);
+    // La minuterie one-shot, redémarrée à l'adoption de la fenêtre vidéo.
+    expect(qml).toContain("Timer");
+    expect(qml).toContain("repeat: false");
+    expect(qml).toContain("racine.rattrapage.restart()");
+    // Connecter frameGeometryChanged de la VIDÉO bouclerait : notre écriture
+    // déclencherait le signal écouté. Seule la connexion de l'HÔTE existe.
+    expect(qml.match(/frameGeometryChanged\.connect/g)?.length).toBe(1);
+  });
 });
 
 describe("ColleKwin", () => {
