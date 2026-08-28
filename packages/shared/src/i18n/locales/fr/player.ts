@@ -48,6 +48,16 @@ export default {
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   skipIntroIn: "Passer l'intro dans {{seconds}} s",
   dismiss: "Masquer",
+  // Les segments au-delà de l'intro — chaque libellé a sa forme décomptée.
+  skipRecap: "Passer le résumé",
+  skipRecapIn: "Passer le résumé dans {{seconds}} s",
+  skipPreview: "Passer l'aperçu",
+  skipPreviewIn: "Passer l'aperçu dans {{seconds}} s",
+  skipCreditsIn: "Passer le générique dans {{seconds}} s",
+  // Le générique s'arrête AVANT la fin : « passer » rejoint la scène qui suit,
+  // il ne la saute jamais.
+  skipToPostCredits: "Aller à la scène post-générique",
+  skipToPostCreditsIn: "Scène post-générique dans {{seconds}} s",
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
