@@ -5,7 +5,8 @@ import {
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
-import type { PlaybackFailure } from "./playbackFailure";
+import { classifyEndFileFailure, type PlaybackFailure } from "./playbackFailure";
+import type { MpvEndFileEvent } from "../lib/mpvTypes";
 import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
 import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
@@ -59,12 +60,19 @@ export function useDesktopPlayer() {
   const bufferingRef = useRef(false);
   // Diagnostic : horodatage du dernier loadfile — mesure loadfile→restart.
   const loadfileAtRef = useRef(0);
+  // Dernier play() lancé — relu quand un end-file(ERROR) tue le chargement :
+  // il porte l'URL à rejouer et le numéro de tentative.
+  const lastPlayRef = useRef<{ options: PlayOptions; attempt: number } | null>(null);
+  // Trampoline : le ctx du cycle de vie est construit AVANT que `play` (donc le
+  // vrai gestionnaire) n'existe — la ref se remplit plus bas, par effet.
+  const endFileFailureRef = useRef<(fin: MpvEndFileEvent) => void>(() => {});
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setFailure, setFileLoaded, setMediaReady,
     positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
+    onEndFileFailure: (fin) => endFileFailureRef.current(fin),
   });
 
   // Throttle position/buffer sync to React state at ~4Hz
@@ -83,6 +91,7 @@ export function useDesktopPlayer() {
   const play = useCallback(async (options: PlayOptions, attempt = 1) => {
     const api = getMpvApi();
     if (!api) return;
+    lastPlayRef.current = { options, attempt };
     setFileLoaded(false); // Reset — will be set again on file-loaded event
     setMediaReady(false);
     // Purge des restes du fichier précédent (un eof=true collé afficherait
@@ -222,6 +231,29 @@ export function useDesktopPlayer() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // end-file(ERROR) pendant un chargement (le cycle de vie a déjà désarmé le
+  // watchdog) : même sémantique deux-tentatives que le watchdog, mais SANS les
+  // attentes mortes — l'échec est explicite, 2×8 s n'apporteraient rien.
+  // Mesuré (rejeu du 28.08) : fichier local illisible = end-file(4) immédiat,
+  // deux fois, puis 16 s de watchdog avant la bascule. Désormais < 1 s.
+  const handleEndFileFailure = useCallback((fin: MpvEndFileEvent) => {
+    const dernier = lastPlayRef.current;
+    if (dernier !== null && dernier.attempt === 1) {
+      wtLog("mpv", `end-file en erreur pendant le chargement (error=${fin.error ?? "-"}) — retry immédiat`);
+      tracerCommande("retry loadfile (end-file en erreur)", `error=${fin.error ?? "-"}`);
+      void play(dernier.options, 2);
+      return;
+    }
+    wtLog("mpv", `end-file en erreur après retry (error=${fin.error ?? "-"}) — échec définitif`);
+    setFileLoaded(true); // débloque l'UI, comme le watchdog
+    setFailure(classifyEndFileFailure({
+      errorCode: fin.error,
+      isLocalPlayback: false,
+      localFilePresent: null,
+    }));
+  }, [play, setFileLoaded]);
+  useEffect(() => { endFileFailureRef.current = handleEndFileFailure; }, [handleEndFileFailure]);
 
   const commands = useMpvCommands({ state, setState, mutedRef });
 
