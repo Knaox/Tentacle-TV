@@ -36,6 +36,7 @@ import { App } from "./App";
 import { ThemeProvider } from "./theme";
 import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
+import { nativeKillEncodings, nativePlaybackInfo, supportsNativePlayerRelay } from "./desktop/playerRelay";
 import { getBackendBase } from "./lib/backendBase";
 import { retenterSaufDebit } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
@@ -163,6 +164,16 @@ if (!isDesktop) {
 // répond non et le `fetch` d'origine reste en place.
 if (supportsNativeSessionPost()) {
   jellyfinClient.nativeSessionPost = nativeSessionPost;
+}
+
+// Le LECTEUR aussi : `PlaybackInfo` (la session de transcodage doit naître
+// sous le jeton utilisateur) et `ActiveEncodings` (tuer le ffmpeg supplanté)
+// visent Jellyfin en direct, et le fetch de la page y est voué au mur CORS —
+// mesuré le 28.08, l'échec coupait le direct pour toute la session, URLs
+// médias du lecteur natif comprises. Voir `desktop/playerRelay.ts`.
+if (supportsNativePlayerRelay()) {
+  jellyfinClient.nativePlaybackInfo = nativePlaybackInfo;
+  jellyfinClient.nativeKillEncodings = nativeKillEncodings;
 }
 
 // Restore token from storage (mobile/desktop only — web uses httpOnly cookies)

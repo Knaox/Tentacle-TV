@@ -7,6 +7,7 @@ import {
   type OptionsProfilWeb,
 } from "../lib/deviceProfile";
 import { evaluerLecture, sourceEstHdr, type Verdict } from "./playbackVerdict";
+import { desktopKind } from "../desktop/detect";
 import { journaliserLecture } from "./journalPlayback";
 
 const DBG = "[Tentacle:PlaybackInfo]";
@@ -201,11 +202,20 @@ export function usePlaybackInfo(lecteurNatif = false) {
         const token = ds ? ds.jellyfinToken : client.getAccessToken();
         url = `${baseUrl}/Videos/${opts.itemId}/stream?Static=true&MediaSourceId=${ms.Id}&api_key=${token}`;
       } else if (ms.TranscodingUrl) {
-        const baseUrl = ds ? ds.mediaBaseUrl : client.getBaseUrl();
+        // Transcodage = HLS chargé par hls.js (XHR), donc soumis au CORS. Sur
+        // la coquille Electron (origine applicative), le manifeste direct part
+        // au mur : hls.js échouait, et l'auto-guérison COUPAIT le direct
+        // streaming pour toute la session — URLs médias de mpv comprises
+        // (mesuré le 28.08 : manifestLoadError puis « coupe pour la session »).
+        // Le flux transcodé du LECTEUR WEB y naît donc sur le PROXY ; mpv
+        // (hors moteur web) et le direct play (<video>, sans CORS) restent en
+        // direct.
+        const hlsSansCors = !lecteurNatif && desktopKind() === "electron";
+        const baseUrl = ds && !hlsSansCors ? ds.mediaBaseUrl : client.getBaseUrl();
         // TranscodingUrl from proxy contains the admin API key (from token swap).
         // Replace it with the user's own Jellyfin token for direct streaming.
         let transcodingPath = ms.TranscodingUrl;
-        if (ds) {
+        if (ds && !hlsSansCors) {
           transcodingPath = transcodingPath.replace(
             /([?&])(api_key|ApiKey)=[^&]*/i,
             `$1ApiKey=${encodeURIComponent(ds.jellyfinToken)}`
