@@ -95,10 +95,12 @@ export const COMMANDS = [
   "check_msix_update",
   "download_and_install_msix_update",
 
-  // Télémétrie de lecture postée DEPUIS LE PROCESSUS PRINCIPAL.
+  // Télémétrie et LECTEUR relayés DEPUIS LE PROCESSUS PRINCIPAL.
   // Propre à Electron : l'origine `tentacle://app` n'obtiendra jamais de CORS
-  // d'un Jellyfin quelconque. Voir `ipc/jellyfin.ts`.
+  // d'un Jellyfin quelconque. Voir `ipc/jellyfin.ts` — chemins bornés là-bas.
   "jellyfin_session_post",
+  "jellyfin_playback_info",
+  "jellyfin_kill_encodings",
 
   // Mises à jour — Linux. Il n'y a pas de guichet unique : c'est le format
   // d'installation qui décide de la façon de mettre à jour, et la page a besoin
