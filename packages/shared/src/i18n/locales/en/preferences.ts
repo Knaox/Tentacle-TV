@@ -111,8 +111,8 @@ export default {
   linuxSessionHint:
     "Wayland enables HDR. On KDE Plasma, playback follows your window — windowed or fullscreen, like everywhere else. On other Wayland desktops, native playback is always fullscreen (the display system does not let an application position its windows); X11 then remains the windowed fallback, without HDR. “Auto” follows the desktop session. The change takes effect on next launch.",
   linuxSessionAuto: "Auto — follow the desktop",
-  linuxSessionWayland: "Wayland — HDR, fullscreen playback",
-  linuxSessionX11: "X11 — windowed playback, no HDR",
+  linuxSessionWayland: "Wayland — built-in HDR support",
+  linuxSessionX11: "X11 — no HDR",
   linuxSessionCurrent: "Current mode: {{montage}}",
   linuxSessionRestart: "Restart now",
   // One-time toast on the first native playback under Wayland — points here.
