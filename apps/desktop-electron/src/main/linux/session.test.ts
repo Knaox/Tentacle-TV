@@ -28,6 +28,16 @@ vi.mock("./kwinScripting", () => ({
 }));
 const { dispoKwin } = vi.hoisted(() => ({ dispoKwin: { valeur: true } }));
 
+// Le ménage part au verdict « libre » : joué ici, il ne doit ni toucher au
+// répertoire temporaire de la machine, ni parler au bus.
+vi.mock("./glueCleanup", () => ({
+  balayerCollesOrphelines: () => {
+    menage.balayages += 1;
+    return Promise.resolve(0);
+  },
+}));
+const { menage } = vi.hoisted(() => ({ menage: { balayages: 0 } }));
+
 import {
   appliquerSessionGraphique,
   detecterFenetrage,
@@ -39,6 +49,7 @@ import { lireChoixSession } from "./sessionGraphique";
 let dossier: string;
 
 beforeEach(() => {
+  menage.balayages = 0;
   dossier = mkdtempSync(path.join(tmpdir(), "tentacle-session-"));
   etat.userData = dossier;
   delete process.env["TENTACLE_LINUX_SESSION"];
@@ -74,6 +85,20 @@ describe("detecterFenetrage", () => {
     dispoKwin.valeur = false;
     await detecterFenetrage();
     expect(fenetrageLinux()).toBe("plein-ecran");
+  });
+
+  it("reprend les colles d'un lancement mort — mais seulement là où il y en a", async () => {
+    process.env["TENTACLE_LINUX_SESSION"] = "wayland";
+    appliquerSessionGraphique();
+
+    dispoKwin.valeur = true;
+    await detecterFenetrage();
+    expect(menage.balayages).toBe(1);
+
+    // Sans API de script, personne n'a jamais posé de colle ici : rien à reprendre.
+    dispoKwin.valeur = false;
+    await detecterFenetrage();
+    expect(menage.balayages).toBe(1);
   });
 
   it("sous X11 la question ne se pose pas : null", async () => {

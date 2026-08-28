@@ -21,6 +21,7 @@ import { poserTemoin, redresserChoixCondamne, surveillerGpu } from "./sessionRes
 // Sans risque à l'import (aucune bibliothèque native) — contrairement aux
 // surfaces, pas besoin de `require` paresseux.
 import { apiScriptKwinDisponible } from "./kwinScripting";
+import { balayerCollesOrphelines } from "./glueCleanup";
 
 let decidee: SessionDecidee | null = null;
 
@@ -96,6 +97,10 @@ export async function detecterFenetrage(): Promise<void> {
     return;
   }
   fenetrage = (await apiScriptKwinDisponible()) ? "libre" : "plein-ecran";
+  // Ce qu'un lancement mort a laissé dans le compositeur se reprend ici, une
+  // fois qu'on sait qu'il y a un compositeur scriptable. Sans attendre : le
+  // démarrage de la fenêtre ne dépend pas du ménage.
+  if (fenetrage === "libre") void balayerCollesOrphelines();
   console.info(
     fenetrage === "libre"
       ? "[session] fenêtré libre : l'API de script du compositeur porte la colle KWin"
