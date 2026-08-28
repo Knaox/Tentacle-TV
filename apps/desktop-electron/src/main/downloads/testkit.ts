@@ -174,10 +174,17 @@ export function poserPause(db: DatabaseSync, fileId: number, parUtilisateur: boo
 
 // Les racines jetables partent à la fin de chaque test, et la racine mémorisée
 // avec elles : un cache de module survivrait sinon d'un test à l'autre.
+// `maxRetries` : un transfert que le test n'a pas attendu peut encore écrire
+// sous `media/` PENDANT la marche récursive — un fichier né entre le listing
+// et le rmdir final fait échouer `rm` en ENOTEMPTY (vu le 28.08). Node
+// réessaie précisément sur ce code ; cinq tours à 20 ms absorbent tout
+// écrivain retardataire sans masquer un vrai défaut.
 afterEach(() => {
   forgetRoot();
   while (dossiers.length > 0) {
     const dir = dossiers.pop();
-    if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
+    if (dir !== undefined) {
+      rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    }
   }
 });

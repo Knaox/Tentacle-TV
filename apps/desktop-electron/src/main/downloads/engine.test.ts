@@ -11,7 +11,7 @@
  * système, comptage pour la garde de sortie — vit dans `engineActivity.test.ts`.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "./db";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
@@ -107,6 +107,13 @@ describe("gestes de l'utilisateur", () => {
     // Pause EXPLICITE : elle survivra au redemarrage.
     expect(Number(brut?.["p"])).toBe(1);
     retenu.liberer();
+    // `liberer` relance la CASCADE (item1 finit, item2 s'enchaîne) : rendre la
+    // main en pleine écriture faisait courir le moteur contre le `rmSync` du
+    // kit — ENOTEMPTY intermittent quand un fichier naissait sous `media/`
+    // pendant la marche récursive (vu le 28.08, suite complète chargée).
+    await vi.waitFor(() => {
+      expect(engine.pending()).toBe(0);
+    });
   });
 
   it("reprendre remet en file et relance", async () => {
