@@ -10,6 +10,8 @@
 
 import type { BrowserWindow } from "electron";
 import { estEnPleinEcran, noterFenetre, PARADE_WINDOWS, quitter } from "./fullscreen";
+import { fenetrageLinux, montageLinux } from "./linux/session";
+import { decidePlayerExitAction } from "./playerExitWindowState";
 
 /**
  * Session plein écran du lecteur : la fenêtre était-elle DÉJÀ en plein écran quand
@@ -62,6 +64,15 @@ export function ouvrirSessionLecteur(win: BrowserWindow): boolean {
  * film — sauf si elle y était déjà, auquel cas ce plein écran-là est celui de
  * l'utilisateur et pas celui du film.
  *
+ * # Linux rend une fenêtre MAXIMISÉE
+ *
+ * Le « ne rien défaire » de macOS avait été hérité sans ses raisons (elles
+ * sont toutes macOS — voir plus bas), et le plein écran du film survivait à la
+ * sortie. Règle choisie par l'utilisateur (28.08) : plein écran posé PENDANT
+ * la lecture → fenêtre maximisée à la sortie ; plein écran antérieur (F11 à
+ * lui) → on le laisse. La décision est pure (`playerExitWindowState.ts`) et
+ * refuse le montage Wayland imposé, qui garde sa propre restauration.
+ *
  * # macOS ne défait RIEN, et c'est la règle
  *
  * ⚠️ Le contraire a été livré, et il coûtait deux défauts d'un coup.
@@ -88,10 +99,33 @@ export function fermerSessionLecteur(win: BrowserWindow): void {
   // Noté même quand il n'y a rien à faire : `estEnPleinEcran` interroge cette
   // fenêtre-là, et c'est la réponse que `leavePlayerFullscreenScope` rediffuse.
   noterFenetre(win);
+  appliquerSortieLinux(win, session);
   if (!PARADE_WINDOWS) return;
   if (session === null) return;
   // Le plein écran était le sien avant le film : il lui appartient.
   if (session.dejaEnPleinEcran) return;
   if (!estEnPleinEcran()) return;
   quitter(win);
+}
+
+/** Linux : rend une fenêtre maximisée si le plein écran était celui du film. */
+function appliquerSortieLinux(
+  win: BrowserWindow,
+  session: { dejaEnPleinEcran: boolean } | null,
+): void {
+  const action = decidePlayerExitAction({
+    platform: process.platform,
+    montage: montageLinux(),
+    fenetrage: fenetrageLinux(),
+    dejaEnPleinEcran: session === null ? null : session.dejaEnPleinEcran,
+    enPleinEcran: estEnPleinEcran(),
+  });
+  if (action !== "quitterPleinEcranPuisMaximiser") return;
+  // `setFullScreen(false)` est ASYNCHRONE sur Wayland : un `maximize()` dans
+  // la foulée serait avalé — il part sur l'évènement de sortie, une fois.
+  win.once("leave-full-screen", () => {
+    if (!win.isDestroyed()) win.maximize();
+  });
+  quitter(win);
+  console.info("[fenetre] sortie lecteur : plein écran du film rendu — fenêtre maximisée");
 }
