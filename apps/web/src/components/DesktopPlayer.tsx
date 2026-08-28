@@ -6,6 +6,7 @@ import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import type { AudioTrack, SubtitleTrack } from "./VideoPlayer";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
+import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
@@ -61,6 +62,12 @@ interface DesktopPlayerProps {
   item?: MediaItem;
   mediaSourceId?: string;
   onNextEpisode?: () => void; onPreviousEpisode?: () => void; onFallbackToWeb?: () => void;
+  /**
+   * Erreur de MÉDIA (fichier local disparu, prouvé par la sonde) : le parent
+   * démonte le lecteur et affiche l'écran dédié — la bascule de secours n'est
+   * PAS mémorisée, mpv reste le lecteur des médias suivants.
+   */
+  onMediaMissing?: () => void;
   /** Watch Together — surface de commande impérative (play/pause/seek/speed). */
   transportRef?: PlayerTransportRef;
   /** Watch Together — transition lecture/pause observée (état mpv). */
@@ -92,12 +99,15 @@ export function DesktopPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   autoplayNextEnabled = true, maxResumePct = 90,
   itemId, item, mediaSourceId,
-  onNextEpisode, onPreviousEpisode, onFallbackToWeb,
+  onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
   onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
+  // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
+  // échec de chargement (voir playbackFailure.ts). Absente hors lecture locale.
+  const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
   const { state, ready, fileLoaded, mediaReady, failure, play, togglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer();
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer({ probeLocalMedia });
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
@@ -275,13 +285,16 @@ export function DesktopPlayer({
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode
-  // strict (« setState during render »).
+  // strict (« setState during render »). L'erreur de MÉDIA prend sa propre
+  // porte : écran dédié chez le parent, mpv épargné.
   useEffect(() => {
-    if (failure && onFallbackToWeb) onFallbackToWeb();
-  }, [failure, onFallbackToWeb]);
+    if (!failure) return;
+    if (failure.kind === "media" && onMediaMissing) { onMediaMissing(); return; }
+    if (onFallbackToWeb) onFallbackToWeb();
+  }, [failure, onFallbackToWeb, onMediaMissing]);
 
   // Pas encore d'image : le repli occupe seul l'écran (cf. DesktopPlayerFallback).
-  if (failure && onFallbackToWeb) return null;
+  if (failure && (failure.kind === "media" ? onMediaMissing : onFallbackToWeb)) return null;
   if (failure) return <DesktopPlayerError failure={failure} onBack={goBack} />;
   if (!ready) return <DesktopPlayerLoading posterUrl={posterUrl} />;
 

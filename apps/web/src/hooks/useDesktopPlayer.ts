@@ -6,6 +6,7 @@ import {
 import { useMpvLifecycle } from "./useMpvLifecycle";
 import { useMpvCommands } from "./useMpvCommands";
 import { classifyEndFileFailure, type PlaybackFailure } from "./playbackFailure";
+import type { LocalMediaProbe } from "./useLocalMediaProbe";
 import type { MpvEndFileEvent } from "../lib/mpvTypes";
 import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
 import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
@@ -17,7 +18,10 @@ export { isTauri, isMacOS, isWindows, isLinux, isAppStoreBuild } from "./mpvRunt
 export type { MpvState, PlayOptions } from "./mpvRuntime";
 export type { MpvTrack } from "./mpvTrackList";
 
-export function useDesktopPlayer() {
+export function useDesktopPlayer(opts?: {
+  /** Sonde d'existence du média local — présente UNIQUEMENT en lecture locale. */
+  probeLocalMedia?: LocalMediaProbe;
+}) {
   const [state, setState] = useState<MpvState>(() => {
     const sv = localStorage.getItem("tentacle_player_volume");
     const vol = sv != null ? Number(sv) : 100;
@@ -245,14 +249,18 @@ export function useDesktopPlayer() {
       void play(dernier.options, 2);
       return;
     }
-    wtLog("mpv", `end-file en erreur après retry (error=${fin.error ?? "-"}) — échec définitif`);
+    wtLog("mpv", `end-file en erreur après retry (error=${fin.error ?? "-"}) — échec définitif, classement`);
     setFileLoaded(true); // débloque l'UI, comme le watchdog
-    setFailure(classifyEndFileFailure({
-      errorCode: fin.error,
-      isLocalPlayback: false,
-      localFilePresent: null,
-    }));
-  }, [play, setFileLoaded]);
+    const sonde = opts?.probeLocalMedia;
+    void (async () => {
+      const present = sonde !== undefined ? await sonde() : null;
+      setFailure(classifyEndFileFailure({
+        errorCode: fin.error,
+        isLocalPlayback: sonde !== undefined,
+        localFilePresent: present,
+      }));
+    })();
+  }, [play, setFileLoaded, opts?.probeLocalMedia]);
   useEffect(() => { endFileFailureRef.current = handleEndFileFailure; }, [handleEndFileFailure]);
 
   const commands = useMpvCommands({ state, setState, mutedRef });

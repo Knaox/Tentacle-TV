@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
@@ -8,6 +9,9 @@ import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { DesktopPlayer } from "../components/DesktopPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
+import { MediaMissingScreen } from "../components/player/MediaMissingScreen";
+import { markPlayerExit } from "../components/detail/detailTransition";
+import { invoke } from "../desktop/bridge";
 import { useWatchSession, BURN_IN_SUBTITLE_CODECS } from "../hooks/useWatchSession";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
 import { useSautIntroGroupe } from "../watchTogether/refusSautIntro";
@@ -22,6 +26,11 @@ import { useNextEpisodeArtwork } from "../hooks/useNextEpisodeArtwork";
 
 export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void } = {}) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  // Erreur de MÉDIA (fichier local disparu) : le lecteur est DÉMONTÉ — son
+  // cleanup éprouvé fait le destroy/detach (pas d'orpheline) — et cet écran
+  // prend sa place. La bascule de secours n'est PAS mémorisée.
+  const [mediaMissing, setMediaMissing] = useState(false);
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
@@ -36,6 +45,26 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     isLocalPlayback, localSource,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
   const { t: tDownloads } = useTranslation("downloads");
+
+  // Changement d'épisode : l'écran « fichier introuvable » ne survit pas à
+  // l'item qui l'a causé (la route /watch/:itemId ne remonte pas WatchDesktop).
+  useEffect(() => { setMediaMissing(false); }, [itemId]);
+
+  const handleMediaMissing = useCallback(() => setMediaMissing(true), []);
+  const handleMediaRetry = useCallback(async () => {
+    // Re-résolution AVANT le remontage : remonter sur la donnée périmée du
+    // cache rejouerait le même chemin local mort. Fichier revenu → lecture
+    // locale ; toujours absent → localSource null → l'URL distante prend.
+    await queryClient.refetchQueries({ queryKey: ["local-source"] });
+    setMediaMissing(false);
+  }, [queryClient]);
+  const handleMediaBack = useCallback(async () => {
+    // Les trois gestes de useDesktopAutoNext.goBack — le lecteur est démonté,
+    // son hook n'est plus là pour les faire.
+    try { await invoke("player_fullscreen_leave"); } catch { /* on navigue quand même */ }
+    markPlayerExit();
+    navigate(-1);
+  }, [navigate]);
 
   const { reportStart, updatePosition, reportSeek: _reportSeek, killTranscode, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
@@ -204,6 +233,15 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
   }
 
+  if (mediaMissing) {
+    return (
+      <MediaMissingScreen
+        onRetry={() => { void handleMediaRetry(); }}
+        onBack={() => { void handleMediaBack(); }}
+      />
+    );
+  }
+
   const nextEpTitle = nextEpisode
     ? `${formatEpisodeCode(nextEpisode.ParentIndexNumber, nextEpisode.IndexNumber, { style: "padded" })} — ${nextEpisode.Name}` : undefined;
 
@@ -232,7 +270,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
-        onFallbackToWeb={onFallbackToWeb}
+        onFallbackToWeb={onFallbackToWeb} onMediaMissing={handleMediaMissing}
         transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
         onBufferingChange={groupSync.notifyBuffering}
         onSeekComplete={(seconds) => groupSync.notifySeek(seconds)}

@@ -41,6 +41,9 @@ export default {
   nowPlaying: "En cours de visionnage",
   loadFailed: "Impossible de démarrer la lecture. Vérifie le serveur ou réessaie.",
   streamStartFailed: "Le flux vidéo n'a pas démarré. Réessayez ou changez de qualité.",
+  mediaMissingTitle: "Fichier introuvable",
+  mediaMissingHint:
+    "Le fichier téléchargé n'est plus sur le disque. Réessayer relancera la lecture — en streaming si le serveur est joignable.",
   upNext: "À suivre",
   autoplayCountdown: "Épisode suivant dans {{seconds}} s",
   skipIntroIn: "Passer l'intro dans {{seconds}} s",
