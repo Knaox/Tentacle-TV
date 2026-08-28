@@ -34,7 +34,7 @@ export function WatchWeb() {
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    skipSegments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    segments, autoplayNextEnabled, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
   // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
@@ -303,7 +303,7 @@ export function WatchWeb() {
           onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-          nextEpisodeDescription={nextEpisodeDescription} autoplayNextEnabled={autoplayNextEnabled} maxResumePct={maxResumePct}
+          nextEpisodeDescription={nextEpisodeDescription} serverAutoplayEnabled={autoplayNextEnabled}
           onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
@@ -311,7 +311,7 @@ export function WatchWeb() {
           onDirectPlayNonFiable={onDirectPlayNonFiable}
           surPisteIntrouvable={handlePisteAudioIntrouvable}
           pgsSubtitleUrl={pgsSubtitleUrl} onPgsEchec={signalerEchecPgs}
-          introSegment={skipSegments.intro} creditsSegment={skipSegments.credits}
+          segments={segments.segments} runtimeMs={segments.runtimeMs}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss}

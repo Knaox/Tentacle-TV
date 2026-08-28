@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import { useNavigate } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
 import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
@@ -11,12 +10,11 @@ import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useVideoEvents } from "../hooks/useVideoEvents";
-import { useAutoNextCountdown } from "../hooks/useAutoNextCountdown";
+import { usePlaybackOverlay } from "@tentacle-tv/api-client";
+import { annoncerRefusLocal, useRefusSautIntro } from "../watchTogether/refusSautIntro";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
-import { AutoPlayOverlay } from "./AutoPlayOverlay";
-import { useUpNextCard } from "./player/useUpNextCard";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
@@ -37,9 +35,10 @@ export function VideoPlayer({
   pgsSubtitleUrl, onPgsEchec,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
-  autoplayNextEnabled = true, maxResumePct = 90,
+  nextSeriesBackdropUrl, nextEpisodeThumbUrl,
+  serverAutoplayEnabled = true,
   onNextEpisode, onPreviousEpisode,
-  introSegment, creditsSegment, posterUrl,
+  segments = [], runtimeMs = 0, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
   onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
@@ -72,8 +71,9 @@ export function VideoPlayer({
   }, []);
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
-  const autoPlayTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const creditsAutoPlayTriggered = useRef(false);
+  // Fin réelle du média (onEnded) — l'arbitre en fait l'écran de fin, ou la
+  // sortie quand aucune suite n'est possible.
+  const [ended, setEnded] = useState(false);
   const hasStartedRef = useRef(false);
   // Le pendant RÉACTIF de `hasStartedRef` : l'écran de chargement se décide au
   // rendu, et une ref mutée ne re-rend rien. Sans lui, le lecteur restait noir
@@ -127,15 +127,54 @@ export function VideoPlayer({
     signalerChargement: setLoading,
   });
 
-  const { autoPlayCountdown, startAutoPlay, cancelAutoNextLocal, propositionFinale } = useAutoNextCountdown({
-    hasNextEpisode, onNextEpisode, autoplayNextEnabled, maxResumePct,
-    duration, currentTime, hasStartedRef, autoPlayTimerRef, creditsAutoPlayTriggered,
+  // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
+  // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
+  // coquille commune aux six surfaces. ──
+  const playback = usePlaybackOverlay({
+    itemId,
+    isEpisode: item?.Type === "Episode" && !!item.SeriesId,
+    hasNextEpisode: !!hasNextEpisode,
+    positionSeconds: currentTime,
+    durationSeconds: duration,
+    hasStarted: aDemarre,
+    playbackEnded: ended,
+    segments,
+    runtimeMs,
+    serverAutoplayEnabled,
+    onSeekSeconds: handleSeek,
+    onNextEpisode: () => onNextEpisode?.(),
+    // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
+    onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
+    // Watch Together : le refus local part au groupe par le bus existant.
+    onSegmentDismissNotify: () => annoncerRefusLocal(),
+    onNextDismissNotify: onAutoNextDismiss,
   });
 
+  // Watch Together entrant : un membre a refusé le saut d'intro — on s'aligne.
+  const refusDistants = useRefusSautIntro();
+  const refusVusRef = useRef(refusDistants);
+  const { signalRemoteSegmentDismiss } = playback;
+  useEffect(() => {
+    if (refusDistants === refusVusRef.current) return;
+    refusVusRef.current = refusDistants;
+    signalRemoteSegmentDismiss("Intro");
+  }, [refusDistants, signalRemoteSegmentDismiss]);
+
+  // Fin de média sans écran de fin possible : retour fiche — l'équivalent de
+  // l'ancienne navigation d'onEnded, décidée ici et plus dans les événements.
+  useEffect(() => {
+    if (!ended) return;
+    if (hasNextEpisode && serverAutoplayEnabled) return;
+    markPlayerExit();
+    navigate(`/media/${itemId}`, { replace: true });
+  }, [ended, hasNextEpisode, serverAutoplayEnabled, itemId, navigate]);
+  useEffect(() => { setEnded(false); }, [src, itemId]);
+
   // Watch Together : surface de commande impérative pour le moteur de sync.
+  // `wt:cancelAutoNext` = refus de carte distant, même sémantique que la croix.
   useWebTransport({
     transportRef, videoRef, lastKnownPositionRef, sourceChangingRef,
-    handleSeek, cancelAutoNextLocal,
+    handleSeek, cancelAutoNextLocal: playback.signalRemoteNextDismiss,
   });
 
   const toggleFullscreen = useCallback(() => {
@@ -190,23 +229,11 @@ export function VideoPlayer({
   const videoEvents = useVideoEvents({
     videoRef, rawTimeRef, lastKnownPositionRef, effectiveOffsetRef, containerPtsOffsetRef,
     offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer,
-    src, itemId, startPositionSeconds, jellyfinDuration, autoplayNextEnabled,
-    hasNextEpisode, autoPlayCountdown,
+    src, itemId, startPositionSeconds, jellyfinDuration,
     setPlaying, setADemarre, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
-    startAutoPlay, onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
+    onPlaybackEnded: () => setEnded(true),
+    onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
   });
-
-  // La lecture doit avoir VRAIMENT commencé. La fenêtre d'intro se calcule sur
-  // la position, qui vaut zéro avant la première image — et la plupart des
-  // génériques commencent à zéro : la pilule paraissait donc par-dessus l'écran
-  // de chargement, et le saut automatique partait à l'instant du lancement, sur
-  // une vidéo qui n'avait pas encore d'image.
-  const showSkipIntro = aDemarre && introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
-  const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1;
-  // Carte « à suivre » : proposée dès le générique quand un épisode suivant
-  // existe (elle remplace alors le bouton texte), puis dotée d'un décompte si
-  // l'enchaînement automatique démarre.
-  const upNext = useUpNextCard({ itemId, hasNextEpisode, duringCredits: showSkipCredits, autoPlayCountdown, propositionFinale });
 
   return (
     <div ref={containerRef} onMouseMove={scheduleHide}
@@ -253,12 +280,15 @@ export function VideoPlayer({
       <VideoPlayerOverlays
         loading={loading} playing={playing} aDemarre={aDemarre}
         showPlayButton={showPlayButton} policyMuted={policyMuted}
-        posterUrl={posterUrl} showSkipIntro={showSkipIntro} showSkipCredits={showSkipCredits}
-        introSegment={introSegment} creditsSegment={creditsSegment}
-        autoPlayCountdown={autoPlayCountdown} hasNextEpisode={hasNextEpisode}
+        posterUrl={posterUrl}
+        overlay={playback.overlay} countdownTotals={playback.countdownTotals}
+        onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
+        onPlayNow={playback.playNow}
+        nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
+        nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
+        nextEpisodeThumbUrl={nextEpisodeThumbUrl}
         videoRef={videoRef} userInteractedRef={userInteractedRef}
         setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
-        handleSeek={handleSeek}
       />
 
       <SkipBadge flash={skipFlash} />
@@ -286,21 +316,6 @@ export function VideoPlayer({
         />
       </div>
 
-      <AnimatePresence>
-        {upNext.visible && (
-          <AutoPlayOverlay
-            countdown={upNext.countdown} episodeTitle={nextEpisodeTitle}
-            episodeDescription={nextEpisodeDescription} episodeImageUrl={nextEpisodeImageUrl}
-            onPlay={() => onNextEpisode?.()}
-            onCancel={() => {
-              // Fermer la carte vaut aussi annulation quand un enchaînement
-              // court : c'est le seul moyen offert de l'interrompre.
-              if (upNext.countdown !== null) { cancelAutoNextLocal(); onAutoNextDismiss?.(); }
-              upNext.dismiss();
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

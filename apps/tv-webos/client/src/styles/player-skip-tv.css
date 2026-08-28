@@ -15,18 +15,21 @@
  * au-dessus d'une vidéo en cours de décodage.
  */
 
+/* BLANC, comme les boutons principaux de l'application (refonte segments) :
+ * même vocabulaire que le « Lire » d'une fiche. Le refus, lui, reste sombre —
+ * c'est le rôle secondaire (.saut-tv--refus, plus bas). */
 .saut-tv {
   position: absolute;
   right: var(--tv-overscan-x);
   bottom: 148px;
   z-index: var(--z-lecteur-saut);
   padding: 14px 28px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid transparent;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   transition: transform 200ms ease-out;
 }
 

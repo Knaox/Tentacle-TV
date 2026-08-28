@@ -73,8 +73,10 @@ export function PlaybackOverlay({
             totalSeconds={countdownTotals.nextMs / 1000}
             episodeTitle={nextEpisodeTitle}
             episodeDescription={nextEpisodeDescription}
-            seriesBackdropUrl={nextSeriesBackdropUrl}
-            episodeThumbUrl={nextEpisodeThumbUrl}
+            // Sans bannière de série (web, LG), la vignette de l'épisode fait
+            // un fond tout aussi juste — assombrie par le composant lui-même.
+            seriesBackdropUrl={nextSeriesBackdropUrl ?? nextEpisodeImageUrl}
+            episodeThumbUrl={nextEpisodeThumbUrl ?? nextEpisodeImageUrl}
             onPlayNow={onPlayNow}
             onDismiss={onDismiss}
           />

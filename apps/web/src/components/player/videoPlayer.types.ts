@@ -1,4 +1,4 @@
-import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, ResolvedSegment, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "../../watchTogether/playerTransport";
 import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 
@@ -83,14 +83,16 @@ export interface VideoPlayerProps {
   nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string;
   nextEpisodeDescription?: string;
-  /** Interrupteur admin « Déclenchement auto-play » (bannière + auto-next). */
-  autoplayNextEnabled?: boolean;
-  /** Seuil (%) = MaxResumePct Jellyfin : la bannière apparaît à ce % de lecture. */
-  maxResumePct?: number;
+  nextSeriesBackdropUrl?: string;
+  nextEpisodeThumbUrl?: string;
+  /** Garde serveur admin « Déclenchement auto-play » (carte + écran de fin). */
+  serverAutoplayEnabled?: boolean;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
-  introSegment?: SegmentTimestamps | null;
-  creditsSegment?: SegmentTimestamps | null;
+  /** Les segments RÉSOLUS du média (contrat v1, ms) — l'arbitre décide de tout. */
+  segments?: readonly ResolvedSegment[];
+  /** Durée du contrat, en ms — 0 = inconnue (la durée vidéo fait alors foi). */
+  runtimeMs?: number;
   /** Backdrop affiché pendant le chargement initial du média. */
   posterUrl?: string;
   /** Watch Together — surface de commande impérative (play/pause/seek/rate). */

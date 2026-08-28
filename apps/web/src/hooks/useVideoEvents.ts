@@ -1,6 +1,4 @@
 import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { markPlayerExit } from "../components/detail/detailTransition";
 import { wtLog } from "../watchTogether/wtLog";
 import { DELAI_CHARGEMENT_MS } from "./seekLanding";
 import { fractionChargee } from "./bufferedProgress";
@@ -21,9 +19,6 @@ interface UseVideoEventsArgs {
   itemId: string;
   startPositionSeconds?: number;
   jellyfinDuration?: number;
-  autoplayNextEnabled: boolean;
-  hasNextEpisode?: boolean;
-  autoPlayCountdown: number | null;
   setPlaying: (v: boolean) => void;
   /** Pendant réactif de `hasStartedRef` — cf. VideoPlayer. */
   setADemarre: (v: boolean) => void;
@@ -31,7 +26,8 @@ interface UseVideoEventsArgs {
   setShowPlayButton: (v: boolean) => void;
   setBuffered: (v: number) => void;
   setVideoDuration: (v: number) => void;
-  startAutoPlay: () => void;
+  /** Fin réelle du média — c'est l'ARBITRE (VideoPlayer) qui décide de la suite. */
+  onPlaybackEnded: () => void;
   onProgress?: (seconds: number, paused: boolean) => void;
   onStarted?: () => void;
   onPlayStateChange?: (paused: boolean) => void;
@@ -46,8 +42,6 @@ interface UseVideoEventsArgs {
  * VideoPlayer — le shell étale l'objet retourné sur `<video {...handlers}>`.
  */
 export function useVideoEvents(a: UseVideoEventsArgs) {
-  const navigate = useNavigate();
-
   return useMemo(() => ({
     onTimeUpdate: (e: SyntheticEvent<HTMLVideoElement>) => {
       const t = e.currentTarget.currentTime;
@@ -167,9 +161,8 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       }
     },
     onEnded: () => {
-      if (a.autoplayNextEnabled && a.hasNextEpisode && a.autoPlayCountdown === null) a.startAutoPlay();
-      else if (!a.hasNextEpisode || !a.autoplayNextEnabled) { markPlayerExit(); navigate(`/media/${a.itemId}`, { replace: true }); }
+      a.onPlaybackEnded();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [a.src, a.itemId, a.startPositionSeconds, a.jellyfinDuration, a.autoplayNextEnabled, a.hasNextEpisode, a.autoPlayCountdown, a.startAutoPlay, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError, navigate]);
+  }), [a.src, a.itemId, a.startPositionSeconds, a.jellyfinDuration, a.onPlaybackEnded, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError]);
 }
