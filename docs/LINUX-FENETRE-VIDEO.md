@@ -342,3 +342,58 @@ D'où la garde `document.hasFocus()` sur cet avis. L'activation par script KWin
 (`activate-tentacle.js`, classe `tentacle-tv`) repasse l'overlay devant — la
 règle des couches (« la fenêtre plein écran ACTIVE est promue ») rejouée en
 sens inverse, pile à l'appui.
+
+## Le fenêtré Wayland — la colle KWin (28.08.2026, nuit)
+
+La consigne utilisateur a rouvert l'arbitrage : « la lecture doit suivre la
+fenêtre, comme sur Windows — au pire on sacrifie le HDR en fenêtré ». Un client
+Wayland ne place pas ses fenêtres, mais le COMPOSITEUR fait ce qu'il veut, et
+KWin expose une API de script publique (`org.kde.KWin /Scripting`, D-Bus).
+
+### Le moteur JS de KWin ne sait PAS écrire la géométrie — le déclaratif, si
+
+Mesuré pas à pas sur KWin 6.7.4, contre-lecture indépendante à chaque essai :
+
+| Écriture de `frameGeometry` depuis un script JS (D-Bus) | Résultat |
+|---|---|
+| objet nu `{x,y,width,height}` | ignorée EN SILENCE |
+| `Qt.rect(...)` | `ReferenceError: Qt is not defined` |
+| copie mutée puis réassignée | la copie est IMMUABLE (`g.x` ne change pas) |
+| assignation même-type (`b.frameGeometry = h.frameGeometry`) | ignorée en silence |
+| chaîne | `Cannot assign QString to KWin::RectF` — le type maison, inconstructible |
+
+Le moteur DÉCLARATIF (QML, `loadDeclarativeScript`) : `Workspace` (majuscule,
+wrapper différent — `windows` est une propriété, pas `windowList()`),
+`Qt.rect` converti, écriture EFFECTIVE (fenêtre déplacée, contre-lue), et
+`Workspace.raiseWindow` présent. Trois pièges mesurés : le cache QML par
+CHEMIN (recharger un fichier modifié sert l'ancien code → hachage du contenu
+dans le nom), l'écriture ASYNCHRONE (la relire aussitôt rend l'ancienne
+valeur), et la réponse gdbus typée (`(int32 7,)` → le DERNIER nombre fait foi).
+
+### La colle, mesurée au banc puis dans l'application
+
+Le gabarit (`linux/kwinGlue.ts`) apparie par PID (libmpv vit dans notre
+processus : les deux fenêtres portent le même), copie la géométrie de l'hôte
+vers mpv sur `frameGeometryChanged`, tient la paire par
+`raiseWindow(video)` + `raiseWindow(hote)` sans toucher au focus, rend
+l'activation à l'hôte quand le compositeur active la fenêtre mpv naissante, et
+habille mpv (`noBorder`, `skipTaskbar`, `skipSwitcher`). Côté mpv, la saveur
+collée pose `fullscreen=no` (jamais promue couche 5) et `keepaspect-window=no`
+(mesuré au banc : sinon mpv rogne sa fenêtre au ratio du clip).
+
+Dans l'app réelle (film 4K HEVC PQ, réseau, lecture directe) :
+- lecture lancée FENÊTRÉE : mpv collé exactement (1152x828), ordre
+  `mpv < tentacle-tv`, hôte actif ;
+- déplacement/redimensionnement : suivi au pixel (1250,620 1200x700) ;
+- plein écran (hôte) : les deux à 1920x1080, hôte couche 5, mpv juste
+  dessous ; SORTIE : retour exact à l'état d'avant ;
+- **HDR fenêtré : `contenu pq → sortie pq/bt.2020 · pic 3.81×` DANS une
+  fenêtre de 1200x700** — KWin sert le PQ aux surfaces fenêtrées, rien n'est
+  sacrifié. Captures : `app-colle-{1,2,3}.png`.
+
+### La frontière, assumée
+
+La colle demande l'API de script de KWin : **KDE Plasma seulement**. Ailleurs
+sous Wayland (GNOME, wlroots), `surfaceWayland.ts` — plein écran forcé —
+reste le montage, avec l'avis pédagogique. X11 inchangé. La détection
+(`detecterFenetrage`, un ping D-Bus avant la fenêtre) choisit seule.

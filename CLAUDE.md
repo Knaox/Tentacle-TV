@@ -118,7 +118,7 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 - **Video**: direct play first, 30s pre-buffer, automatic transcode fallback on codec errors
 - **Un commit par étape** — chaque correctif, extraction ou bump se commite seul, dès qu'il tient debout (`lint` + `typecheck` passés). Jamais un gros commit fourre-tout en fin de chantier : une étape qui se révèle mauvaise doit pouvoir être annulée sans emporter les autres. Commiter ne vaut PAS publier — pas de tag, pas de `push`, pas de dispatch CI sans demande explicite.
 
-### Linux — le compromis Wayland / X11, et pourquoi il n'y a pas de troisième voie
+### Linux — le compromis Wayland / X11, et la troisième voie du compositeur
 
 Deux vérités s'opposent, et toute l'architecture du lecteur Linux en découle.
 
@@ -126,12 +126,17 @@ Deux vérités s'opposent, et toute l'architecture du lecteur Linux en découle.
    de protocole et il n'y en aura pas. Le HDR sous Linux passe par
    `wp-color-management-v1`, un protocole **Wayland**.
 2. **Sur Wayland, un client ne place pas ses fenêtres.** C'est une règle du
-   protocole. La fenêtre de mpv ne peut donc être calée sur la nôtre qu'en
-   **plein écran**, où la position ne se discute plus.
+   protocole — mais elle ne lie que le CLIENT : le **compositeur** place ce
+   qu'il veut, et KWin expose une API de script publique. La **colle KWin**
+   (`linux/kwinGlue.ts`, script QML : le moteur JS de KWin ne sait pas écrire
+   une géométrie — mesuré) cale la fenêtre mpv sous la nôtre et la suit.
 
-D'où deux montages, choisis par la session au démarrage (`linux/sessionGraphique.ts`) :
-Wayland → HDR réel, lecture plein écran ; X11 → lecture fenêtrée comme sur
-Windows, pas de HDR. Un réglage permet de forcer l'un ou l'autre (relance).
+D'où les montages, choisis au démarrage (`linux/sessionGraphique.ts`, puis
+`detecterFenetrage`) : Wayland + compositeur scriptable (KDE) → **lecture qui
+suit la fenêtre** — fenêtrée ou plein écran, comme Windows — et HDR réel, même
+fenêtré (mesuré : KWin sert le PQ aux surfaces fenêtrées) ; Wayland sans API de
+placement (GNOME, wlroots) → HDR réel, lecture plein écran forcée ; X11 →
+lecture fenêtrée à la main, pas de HDR. Un réglage force Wayland/X11 (relance).
 
 Trois conséquences à ne pas défaire :
 - **`transparent: true` à la CONSTRUCTION** de la fenêtre (comme macOS, PAS comme
