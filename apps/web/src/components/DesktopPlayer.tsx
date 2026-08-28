@@ -19,7 +19,7 @@ import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayer
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { useToast } from "../contexts/ToastContext";
 import { useTranslation } from "react-i18next";
-import { montageLinux } from "../desktop/detect";
+import { fenetrageLinux, montageLinux } from "../desktop/detect";
 import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "../lib/waylandFullscreenNotice";
 import type { MediaItem, SegmentTimestamps, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
@@ -162,10 +162,10 @@ export function DesktopPlayer({
     return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
   }, [ready]);
 
-  // Pédagogie du plein écran Wayland — UNE fois par appareil. La lecture
-  // native y est obligatoirement plein écran (règle du protocole, prix du
-  // HDR — cf. lib/waylandFullscreenNotice.ts), et le réglage X11 des
-  // Préférences reste inconnu tant que rien n'y renvoie.
+  // Pédagogie du plein écran Wayland — UNE fois par appareil, et SEULEMENT là
+  // où le plein écran est réellement imposé (compositeur sans colle KWin,
+  // `fenetrage === "plein-ecran"`) : quand la lecture suit la fenêtre, il n'y
+  // a rien à expliquer. Cf. lib/waylandFullscreenNotice.ts.
   const { show: montrerToast } = useToast();
   const { t: tPreferences } = useTranslation("preferences");
   useEffect(() => {
@@ -173,7 +173,15 @@ export function DesktopPlayer({
     // DERRIÈRE la fenêtre mpv — l'avis y serait invisible ET consommé. Il
     // attend donc une lecture au premier plan (mesuré le 28.08 : la première
     // version a brûlé sa cartouche hors de toute vue).
-    if (!ready || montageLinux() !== "wayland" || !document.hasFocus() || avisPleinEcranDejaVu()) return;
+    if (
+      !ready ||
+      montageLinux() !== "wayland" ||
+      fenetrageLinux() !== "plein-ecran" ||
+      !document.hasFocus() ||
+      avisPleinEcranDejaVu()
+    ) {
+      return;
+    }
     marquerAvisPleinEcranVu();
     montrerToast("info", tPreferences("linuxSessionFullscreenToast"));
   }, [ready, montrerToast, tPreferences]);
