@@ -93,4 +93,27 @@ describe("deciderSautIntro", () => {
     expect(etat).toEqual(REPOS);
     expect(montrerPilule(etat, false)).toBe(false);
   });
+
+  // Le délai vient désormais du réglage utilisateur, en millisecondes.
+  it("respecte un délai personnalisé", () => {
+    const long = (): EntreeSautIntro =>
+      ({ type: "cadre", visible: true, actif: true, ecouleMs: 1000, delaiMs: 5000 });
+    const { etat, sauts } = derouler([long(), long(), long(), long()]);
+    expect(sauts).toEqual([]);
+    expect(compteAffiche(etat)).toBe(2);
+    const complet = derouler(Array.from({ length: 6 }, long));
+    expect(complet.sauts).toEqual([5]);
+  });
+
+  // La cadence mobile est de 250 ms : le décompte en ms l'absorbe sans biais.
+  it("tient la cadence 4 Hz du mobile", () => {
+    const quart = (): EntreeSautIntro =>
+      ({ type: "cadre", visible: true, actif: true, ecouleMs: 250 });
+    // Le premier cadre ARME sans décrémenter : 3000 ms = 1 + 12 cadres.
+    const { etat, sauts } = derouler(Array.from({ length: 13 }, quart));
+    expect(sauts).toEqual([12]);
+    expect(etat.nom).toBe("saute");
+    const partiel = derouler(Array.from({ length: 5 }, quart));
+    expect(compteAffiche(partiel.etat)).toBe(2); // 2000 ms restants → « 2 »
+  });
 });
