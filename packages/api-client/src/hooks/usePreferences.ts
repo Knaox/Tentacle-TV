@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-let _backendBase = "/api/preferences";
+let _backendRoot = "";
 let _tokenOverride: string | null = null;
 
 export function setPreferencesBackendUrl(url: string) {
-  _backendBase = `${url.replace(/\/$/, "")}/api/preferences`;
+  _backendRoot = url.replace(/\/$/, "");
 }
 
 /** Set auth token for non-web platforms (React Native) where localStorage is unavailable. */
@@ -18,19 +18,28 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function prefFetch<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * Un appel authentifié vers le backend Tentacle (chemin absolu `/api/...`),
+ * avec la même base et le même jeton que les préférences — réutilisé par les
+ * segments de lecture et les réglages, qui vivent sous d'autres préfixes.
+ */
+export async function tentacleApiFetch<T>(cheminApi: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
   const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
-  const res = await fetch(`${_backendBase}${path}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
+  const res = await fetch(`${_backendRoot}${cheminApi}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);
   }
   return res.json();
+}
+
+async function prefFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  return tentacleApiFetch<T>(`/api/preferences${path}`, init);
 }
 
 // ---------- Types ----------
@@ -224,7 +233,7 @@ export async function fetchInterfaceLanguage(token: string): Promise<string | nu
     if (token !== "__cookie__") {
       headers.Authorization = `Bearer ${token}`;
     }
-    const res = await fetch(`${_backendBase}/language`, {
+    const res = await fetch(`${_backendRoot}/api/preferences/language`, {
       headers,
       credentials: token === "__cookie__" ? "include" : undefined,
     });
