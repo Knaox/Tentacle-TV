@@ -75,7 +75,13 @@ function preparer() {
   writeFileSync(
     path.join(stage, "package.json"),
     `${JSON.stringify(
+      // `desktopName` : c'est CE package.json (embarqué dans l'asar) qu'Electron
+      // lit à l'exécution pour poser l'app_id Wayland / WM_CLASS. Sans lui,
+      // l'app_id ne tenait que par la dérivation de productName — « Tentacle
+      // TV » → tentacle-tv.desktop, une coïncidence qu'un renommage briserait
+      // en silence (icône de barre des tâches perdue).
       { name: EXECUTABLE, productName: NOM, version: source.version, main: source.main,
+        desktopName: `${EXECUTABLE}.desktop`,
         author: "Damien ROUGE", license: source.license ?? "UNLICENSED" },
       null, 2,
     )}\n`,
