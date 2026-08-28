@@ -119,22 +119,55 @@ export default {
   linuxSessionFullscreenToast:
     "Fullscreen playback: under Wayland, it is the price of HDR. To watch in a window, an X11 setting is available in Preferences.",
 
-  // Automatic intro skipping (per-device setting)
-  autoSkipIntroTitle: "Skip the intro automatically",
+  // Episode passages and end of episode. These settings follow the ACCOUNT,
+  // not the device: what you set on the laptop applies in front of the TV.
+  playbackSegmentsTitle: "Passages within an episode",
+  playbackSegmentsHint:
+    "When the server marks a passage — opening titles, recap, preview — the player can offer to skip it, skip it on its own, or do nothing. Nothing is shown when nothing is marked: these settings never guess.",
+  playbackSettingsAccount: "These settings follow your account, on every device.",
   // Two buttons rather than a switch on television: with a remote, a sliding
   // thumb means nothing.
   reglageActive: "On",
   reglageDesactive: "Off",
-  autoSkipIntroHint:
-    "When a series marks its opening titles, the player skips them after three seconds. A cross stays available during the countdown to keep the intro on the episode you are watching.",
 
-  // End of episode — two per-device settings, like automatic intro skipping.
+  segmentIntroTitle: "Opening titles",
+  segmentIntroHint: "A series' opening, the one that comes back every episode.",
+  segmentOutroTitle: "Closing credits",
+  segmentOutroHint:
+    "When a next episode exists, the “up next” card takes over the credits. The button only appears when it leads somewhere else: a scene after the credits, or the end of a film.",
+  segmentRecapTitle: "Recap of the previous episode",
+  segmentRecapHint: "The “previously on”, at the start of an episode.",
+  segmentPreviewTitle: "Preview of the next episode",
+  segmentPreviewHint: "Glimpses of the next episode, cut in after the closing credits.",
+  segmentActionLabel: "What the player does",
+  segmentActionButton: "Offer a button",
+  segmentActionAuto: "Skip on its own",
+  segmentActionOff: "Do nothing",
+  segmentCountdownTitle: "Show the countdown",
+  segmentCountdownHint:
+    "The button fills up during the delay, and a cross stays available to keep the passage on this episode.",
+  segmentDelayLabel: "Delay before skipping (milliseconds)",
+  segmentDelayHint: "How long you get to refuse. 3000 is three seconds; 0 skips without asking.",
+
+  // End of episode — THREE strictly independent settings: show the card, run
+  // the countdown, play the next episode. Turning the countdown off no longer
+  // hides the card.
+  upNextTitle: "At the end of an episode",
   upNextCardTitle: "Offer the next episode",
   upNextCardHint:
     "During the closing credits, a small card offers the next episode in a corner of the picture. Turned off, the end of the episode stays bare. The end screen still appears at the very last moment.",
-  upNextCountdownTitle: "Play the next episode on its own",
+  upNextCountdownTitle: "Show a countdown",
   upNextCountdownHint:
-    "The player starts the next episode when a countdown runs out. Turned off, the card and the end screen still appear, but without a countdown: the next episode only starts when you ask for it.",
+    "The card and the end screen announce the time left. Without it, the card is simply an offer, waiting for you.",
+  upNextAutoPlayTitle: "Play the next episode on its own",
+  upNextAutoPlayHint:
+    "When the countdown runs out, the next episode starts. This setting therefore needs the countdown above: without it, nothing fires.",
+  upNextTriggerLabel: "When to offer what follows",
+  upNextTriggerOutroStart: "At the start of the closing credits",
+  upNextTriggerBeforeEnd: "Shortly before the end",
+  upNextBeforeEndLabel: "How long before the end (seconds)",
+  upNextBeforeEndHint:
+    "Also used when the closing credits are not marked: the card then appears that long before the end.",
 
   hdrAutoUnsupported:
     "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",

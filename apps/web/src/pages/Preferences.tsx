@@ -10,8 +10,7 @@ import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
-import { AutoSkipIntroToggle } from "../components/settings/AutoSkipIntroToggle";
-import { UpNextCardToggle, UpNextCountdownToggle } from "../components/settings/EnchainementToggles";
+import { PlaybackSettingsSection } from "../components/settings/PlaybackSettingsSection";
 
 const LANGUAGE_CODES = [
   "fre", "fre-vff", "fre-vfq", "eng", "jpn", "ger", "spa", "ita", "por", "rus", "kor", "chi",
@@ -198,18 +197,9 @@ export function Preferences() {
           </select>
         </div>
 
-        {/* Sauter l'intro tout seul — partout, contrairement à la bascule
-            HDR qui ne concerne qu'un bureau Windows. */}
-        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-          <AutoSkipIntroToggle />
-        </div>
-
-        {/* Fin d'épisode : montrer la suite, et la lancer. Deux gestes
-            distincts, donc deux bascules — cf. `EnchainementToggles`. */}
-        <div className="mb-8 space-y-5 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-          <UpNextCardToggle />
-          <UpNextCountdownToggle />
-        </div>
+        {/* Ce que le lecteur fait tout seul : les passages d'un épisode, et sa
+            fin. Réglages de COMPTE — la section porte ses propres cartes. */}
+        <PlaybackSettingsSection />
 
         {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté
             du lecteur natif, le composant s'efface ailleurs. */}

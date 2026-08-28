@@ -1,34 +1,37 @@
 import { useTranslation } from "react-i18next";
-import { magasinCarteASuivre, magasinDecompteEnchainement } from "@/lib/enchainementEpisode";
-import { useCarteASuivre, useDecompteEnchainement } from "@/hooks/useEnchainementEpisode";
-import { magasinSautIntro, useSautIntroAuto } from "../../playback/sautIntroAuto";
+import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-client";
+import type { SegmentAction, SegmentSettings } from "@tentacle-tv/shared";
 
 /**
- * Les réglages d'appareil de l'écran de lecture — ce que le lecteur a le droit
- * de faire tout seul.
+ * Ce que le lecteur a le droit de faire tout seul, à la télécommande.
  *
- * Deux boutons plutôt qu'un interrupteur : à la télécommande, un pouce qui
- * coulisse ne veut rien dire. Même grammaire que la langue d'interface, juste
- * en dessous.
+ * Des boutons plutôt qu'un interrupteur : un pouce qui coulisse ne veut rien
+ * dire sur une dalle. Même grammaire que la langue d'interface, juste au-dessus.
  *
- * Extrait de `PlaybackScreenTv` pour tenir le budget de 300 lignes par fichier.
+ * Les réglages viennent du magasin de COMPTE (`playback_settings`), le même que
+ * lisent les surcouches du lecteur sur cette cible : un réglage changé ici est
+ * su du lecteur dans la seconde, et vaut sur les autres appareils du foyer.
  *
- * Les deux réglages de fin d'épisode empruntent le magasin du CLIENT WEB
- * (`@/lib/enchainementEpisode`) et non un magasin local : c'est celui que lisent
- * les surcouches du lecteur sur cette même cible. Deux magasins pour une seule
- * clé de `localStorage` s'accorderaient au redémarrage, mais pas pendant la
- * session — le réglage changé ici ne préviendrait pas le lecteur.
+ * Le DÉLAI du saut automatique n'est pas offert ici, à dessein : saisir un
+ * nombre à la télécommande est une punition, et le réglage suit le compte —
+ * il se pose une fois depuis un ordinateur ou un téléphone, et il vaut pour la
+ * télévision. Extrait de `PlaybackScreenTv` pour tenir les 300 lignes.
  */
+
+interface Choix {
+  valeur: string;
+  libelle: string;
+}
 
 interface SectionProps {
   titre: string;
   aide: string;
-  actif: boolean;
-  onChoisir: (actif: boolean) => void;
+  valeur: string;
+  choix: Choix[];
+  onChoisir: (valeur: string) => void;
 }
 
-function SectionReglage({ titre, aide, actif, onChoisir }: SectionProps) {
-  const { t } = useTranslation("preferences");
+function SectionReglage({ titre, aide, valeur, choix, onChoisir }: SectionProps) {
   return (
     <section className="mb-12">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">
@@ -36,18 +39,15 @@ function SectionReglage({ titre, aide, actif, onChoisir }: SectionProps) {
       </h2>
       <p className="mb-4 max-w-3xl text-[15px] leading-relaxed text-content-tertiary">{aide}</p>
       <div className="flex gap-4">
-        {[
-          { valeur: true, libelle: t("reglageActive") },
-          { valeur: false, libelle: t("reglageDesactive") },
-        ].map((choix) => (
+        {choix.map((c) => (
           <button
-            key={String(choix.valeur)}
+            key={c.valeur}
             type="button"
             className="bouton-reglage-tv"
-            data-actif={actif === choix.valeur}
-            onClick={() => onChoisir(choix.valeur)}
+            data-actif={valeur === c.valeur}
+            onClick={() => onChoisir(c.valeur)}
           >
-            <span className="bouton-reglage-tv-valeur">{choix.libelle}</span>
+            <span className="bouton-reglage-tv-valeur">{c.libelle}</span>
           </button>
         ))}
       </div>
@@ -55,33 +55,101 @@ function SectionReglage({ titre, aide, actif, onChoisir }: SectionProps) {
   );
 }
 
-/** Les trois réglages d'appareil, dans l'ordre où ils surviennent à l'écran :
- *  le générique de début, puis la fin de l'épisode. */
+function estAction(valeur: string): valeur is SegmentAction {
+  return valeur === "button" || valeur === "auto" || valeur === "off";
+}
+
+/**
+ * Les passages d'un épisode, puis sa fin — dans l'ordre où ils surviennent.
+ * Les trois réglages de fin restent STRICTEMENT indépendants : montrer la
+ * fiche, décompter, enchaîner.
+ */
 export function ReglagesLectureTv() {
   const { t } = useTranslation("preferences");
-  const sautIntroActif = useSautIntroAuto();
-  const carteActive = useCarteASuivre();
-  const decompteActif = useDecompteEnchainement();
+  const reglages = usePlaybackSettings();
+
+  const actions: Choix[] = [
+    { valeur: "button", libelle: t("segmentActionButton") },
+    { valeur: "auto", libelle: t("segmentActionAuto") },
+    { valeur: "off", libelle: t("segmentActionOff") },
+  ];
+  const ouiNon: Choix[] = [
+    { valeur: "oui", libelle: t("reglageActive") },
+    { valeur: "non", libelle: t("reglageDesactive") },
+  ];
+
+  const passages: { cle: string; titre: string; aide: string; etat: SegmentSettings;
+    appliquer: (patch: Partial<SegmentSettings>) => void }[] = [
+    {
+      cle: "intro",
+      titre: t("segmentIntroTitle"),
+      aide: t("segmentIntroHint"),
+      etat: reglages.intro,
+      appliquer: (intro) => { setPlaybackSettings({ intro }); },
+    },
+    {
+      cle: "recap",
+      titre: t("segmentRecapTitle"),
+      aide: t("segmentRecapHint"),
+      etat: reglages.recap,
+      appliquer: (recap) => { setPlaybackSettings({ recap }); },
+    },
+    {
+      cle: "outro",
+      titre: t("segmentOutroTitle"),
+      aide: t("segmentOutroHint"),
+      etat: reglages.outro,
+      appliquer: (outro) => { setPlaybackSettings({ outro }); },
+    },
+    {
+      cle: "preview",
+      titre: t("segmentPreviewTitle"),
+      aide: t("segmentPreviewHint"),
+      etat: reglages.preview,
+      appliquer: (preview) => { setPlaybackSettings({ preview }); },
+    },
+  ];
+
+  const suivant = reglages.next;
 
   return (
     <>
-      <SectionReglage
-        titre={t("autoSkipIntroTitle")}
-        aide={t("autoSkipIntroHint")}
-        actif={sautIntroActif}
-        onChoisir={(actif) => magasinSautIntro.definir(actif)}
-      />
+      {passages.map((passage) => (
+        <SectionReglage
+          key={passage.cle}
+          titre={passage.titre}
+          aide={passage.aide}
+          valeur={passage.etat.action}
+          choix={actions}
+          onChoisir={(valeur) => {
+            if (estAction(valeur)) passage.appliquer({ action: valeur });
+          }}
+        />
+      ))}
       <SectionReglage
         titre={t("upNextCardTitle")}
         aide={t("upNextCardHint")}
-        actif={carteActive}
-        onChoisir={(actif) => magasinCarteASuivre.definir(actif)}
+        valeur={suivant.nextCard ? "oui" : "non"}
+        choix={ouiNon}
+        onChoisir={(valeur) => { setPlaybackSettings({ next: { nextCard: valeur === "oui" } }); }}
       />
       <SectionReglage
         titre={t("upNextCountdownTitle")}
         aide={t("upNextCountdownHint")}
-        actif={decompteActif}
-        onChoisir={(actif) => magasinDecompteEnchainement.definir(actif)}
+        valeur={suivant.nextCountdown ? "oui" : "non"}
+        choix={ouiNon}
+        onChoisir={(valeur) => {
+          setPlaybackSettings({ next: { nextCountdown: valeur === "oui" } });
+        }}
+      />
+      <SectionReglage
+        titre={t("upNextAutoPlayTitle")}
+        aide={t("upNextAutoPlayHint")}
+        valeur={suivant.nextAutoPlay ? "oui" : "non"}
+        choix={ouiNon}
+        onChoisir={(valeur) => {
+          setPlaybackSettings({ next: { nextAutoPlay: valeur === "oui" } });
+        }}
       />
     </>
   );
