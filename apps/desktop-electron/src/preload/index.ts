@@ -79,6 +79,17 @@ const montage = ((): "wayland" | "x11" | undefined => {
 })();
 
 /**
+ * Le fenêtré Wayland : `libre` (la colle KWin cale la vidéo sous la fenêtre)
+ * ou `plein-ecran` (compositeur sans placement — la lecture force le plein
+ * écran). La page s'en sert pour ne montrer l'avis pédagogique que là où le
+ * plein écran est réellement imposé.
+ */
+const fenetrage = ((): "libre" | "plein-ecran" | undefined => {
+  const brut = argValue("--tentacle-fenetrage=");
+  return brut === "libre" || brut === "plein-ecran" ? brut : undefined;
+})();
+
+/**
  * Rejoue le stockage local sauvé par l'app Tauri, une fois pour toutes.
  *
  * C'est ICI et nulle part ailleurs : le preload s'exécute avant le premier
@@ -140,6 +151,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   platform: assertPlatform(platform),
   capabilities,
   ...(montage === undefined ? {} : { montage }),
+  ...(fenetrage === undefined ? {} : { fenetrage }),
   titleBarHeight,
 
   openExternal(url: string): Promise<void> {

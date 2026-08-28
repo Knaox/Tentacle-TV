@@ -34,7 +34,7 @@
  * protection sur tout le processus. Le prix est absurde.
  */
 
-import { montageLinux } from "../linux/session";
+import { fenetrageLinux, montageLinux } from "../linux/session";
 import { socleLinux } from "../linux/optionsMpv";
 import { mpvApi } from "./mpvFfi";
 
@@ -94,6 +94,7 @@ export function poserOptions(
   // de la SESSION, que la page ne connaît pas. Voir `linux/optionsMpv.ts`.
   const montage = montageLinux();
   if (montage !== null) {
-    for (const [k, v] of Object.entries(socleLinux(montage))) poser(k, v);
+    const socle = socleLinux(montage, fenetrageLinux() === "libre");
+    for (const [k, v] of Object.entries(socle)) poser(k, v);
   }
 }

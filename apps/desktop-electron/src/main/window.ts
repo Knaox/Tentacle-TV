@@ -12,7 +12,7 @@ import { windowIconPath } from "./appIcon";
 import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
 import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
 import { optionsCadreLinux } from "./linux/fenetre";
-import { montageLinux } from "./linux/session";
+import { fenetrageLinux, montageLinux } from "./linux/session";
 import { sessionAffichee } from "./linux/sessionRescue";
 import { lockNavigation } from "./security";
 import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
@@ -171,6 +171,10 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         // DIRE, et le panneau de diagnostic est le premier endroit où on le
         // cherche. Par argument comme le reste : disponible dès le preload.
         `--tentacle-montage=${montageLinux() ?? ""}`,
+        // Le fenêtré Wayland — `libre` (colle KWin) ou `plein-ecran` (forcé).
+        // La page en a besoin pour SE TAIRE : l'avis pédagogique du plein
+        // écran n'a de sens que là où il est réellement imposé.
+        `--tentacle-fenetrage=${fenetrageLinux() ?? ""}`,
       ],
     },
   });

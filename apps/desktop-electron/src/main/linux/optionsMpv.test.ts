@@ -31,4 +31,20 @@ describe("socleLinux", () => {
       expect(socleLinux(m)["gpu-api"]).toBe("vulkan");
     }
   });
+
+  it("la saveur COLLÉE : jamais plein écran, remplit le rectangle de l'hôte", () => {
+    const colle = socleLinux("wayland", true);
+    // Plein écran d'elle-même, la fenêtre mpv serait promue en couche haute,
+    // devant l'interface ; et `keepaspect-window` rognerait la fenêtre au
+    // ratio du média au lieu de laisser le letterbox DANS le rectangle collé.
+    expect(colle["fullscreen"]).toBe("no");
+    expect(colle["keepaspect-window"]).toBe("no");
+    // Le HDR reste demandé : KWin sait servir une surface PQ même fenêtrée.
+    expect(colle["target-colorspace-hint"]).toBe("yes");
+    expect(colle["gpu-context"]).toBe("waylandvk");
+  });
+
+  it("la colle ne change rien à X11 — le calage y est déjà à nous", () => {
+    expect(socleLinux("x11", true)).toEqual(socleLinux("x11"));
+  });
 });

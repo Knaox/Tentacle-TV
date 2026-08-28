@@ -18,6 +18,9 @@ import {
   type SessionDecidee,
 } from "./sessionGraphique";
 import { poserTemoin, redresserChoixCondamne, surveillerGpu } from "./sessionRescue";
+// Sans risque à l'import (aucune bibliothèque native) — contrairement aux
+// surfaces, pas besoin de `require` paresseux.
+import { apiScriptKwinDisponible } from "./kwinScripting";
 
 let decidee: SessionDecidee | null = null;
 
@@ -66,6 +69,35 @@ export function appliquerSessionGraphique(): SessionDecidee | null {
  */
 export function montageLinux(): Montage | null {
   return decidee?.montage ?? null;
+}
+
+let fenetrage: "libre" | "plein-ecran" | null = null;
+
+/**
+ * Le fenêtré est-il possible sous Wayland ? Décidé UNE fois, avant la fenêtre.
+ *
+ * `libre` = le compositeur offre une API de placement (la colle KWin,
+ * `kwinGlue.ts`) : la lecture suit la fenêtre, comme sur Windows.
+ * `plein-ecran` = pas d'API (GNOME, wlroots…) : le montage plein écran forcé
+ * de `surfaceWayland.ts` reste le seul possible. `null` hors Wayland — sous
+ * X11 le fenêtré est natif, la question ne se pose pas.
+ */
+export async function detecterFenetrage(): Promise<void> {
+  if (process.platform !== "linux" || decidee?.montage !== "wayland") {
+    fenetrage = null;
+    return;
+  }
+  fenetrage = (await apiScriptKwinDisponible()) ? "libre" : "plein-ecran";
+  console.info(
+    fenetrage === "libre"
+      ? "[session] fenêtré libre : l'API de script du compositeur porte la colle KWin"
+      : "[session] plein écran forcé : compositeur sans API de placement (pas de colle)",
+  );
+}
+
+/** Le verdict de `detecterFenetrage`, pour la surface, la page et le panneau. */
+export function fenetrageLinux(): "libre" | "plein-ecran" | null {
+  return fenetrage;
 }
 
 /** Le verdict complet, pour le panneau de diagnostic. */
