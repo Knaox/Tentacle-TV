@@ -34,11 +34,18 @@ import { desktopPlatform, isElectronShell } from "../desktop/bridge";
 /**
  * La surface de la page a-t-elle un canal alpha par pixel ?
  *
+ * macOS ET Linux : les deux fabriquent leur fenêtre `transparent: true` à la
+ * construction (linux/fenetre.ts — mesuré, posé après coup la page peint du
+ * noir sur la vidéo). Windows reste sans alpha, ses ombres se fondent dans le
+ * fond. Oublier Linux ici, c'était redessiner les aplats opaques du défaut
+ * macOS par-dessus mpv sur toute nouvelle surface.
+ *
  * Figé au chargement : ni la coquille ni la plateforme ne changent en cours de
  * session, et cette fonction est appelée à chaque rendu de la vignette de
  * survol — laquelle suit le curseur.
  */
-const SURFACE_ALPHA = isElectronShell() && desktopPlatform() === "macos";
+const SURFACE_ALPHA =
+  isElectronShell() && (desktopPlatform() === "macos" || desktopPlatform() === "linux");
 
 export function surfaceAvecAlpha(): boolean {
   return SURFACE_ALPHA;
