@@ -26,8 +26,14 @@ export { useEpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export type { EpisodeNavigation } from "./hooks/useEpisodeNavigation";
 export { useIntroSkipper, normalizeSkipSegments } from "./hooks/useIntroSkipper";
 export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegmentDict, PluginTimestamps } from "./hooks/useIntroSkipper";
+// Segments de lecture — le contrat résolu par le backend, les réglages
+// partagés du compte, et LA coquille d'overlay des six surfaces.
+export { usePlaybackSegments } from "./hooks/usePlaybackSegments";
+export { usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, initPlaybackSettingsStore } from "./hooks/usePlaybackSettings";
+export { usePlaybackOverlay } from "./playback/usePlaybackOverlay";
+export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/usePlaybackOverlay";
 // Library language/subtitle preferences
-export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken } from "./hooks/usePreferences";
+export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken, tentacleApiFetch } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
 // Langues retenues par contenu (film, épisode) — prioritaires sur la série et la bibliothèque
 export { useItemTrackPreference, useSetItemTrackPreference, useDeleteItemTrackPreference } from "./hooks/usePreferences";

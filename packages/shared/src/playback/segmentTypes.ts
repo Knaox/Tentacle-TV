@@ -90,3 +90,45 @@ export function findSegment(
 ): ResolvedSegment | null {
   return segments.find((segment) => segment.type === type) ?? null;
 }
+
+/**
+ * Relit le contrat depuis le monde extérieur — réponse HTTP, `segments.json`
+ * du snapshot hors ligne. `null` si ce n'en est pas un (autre version, forme
+ * étrangère) : à l'appelant de retomber sur du vide ou sur l'ancien format.
+ * Les segments illisibles sont écartés un à un, jamais toute la réponse.
+ */
+export function parsePlaybackSegmentsResponse(brut: unknown): PlaybackSegmentsResponse | null {
+  if (typeof brut !== "object" || brut === null) return null;
+  const o = brut as Record<string, unknown>;
+  if (o.version !== PLAYBACK_SEGMENTS_VERSION) return null;
+  if (typeof o.itemId !== "string" || !Array.isArray(o.segments)) return null;
+
+  const nombre = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+
+  const segments: ResolvedSegment[] = [];
+  for (const brutSegment of o.segments as unknown[]) {
+    if (typeof brutSegment !== "object" || brutSegment === null) continue;
+    const s = brutSegment as Record<string, unknown>;
+    const startMs = nombre(s.startMs);
+    const endMs = nombre(s.endMs);
+    if (!isSegmentType(s.type) || startMs === null || endMs === null || endMs <= startMs) continue;
+    segments.push({
+      type: s.type,
+      startMs,
+      endMs,
+      source: s.source === "chapters" ? "chapters" : "jellyfin",
+      endsAtMediaEnd: s.endsAtMediaEnd === true,
+      hasContentAfter: s.hasContentAfter === true,
+    });
+  }
+
+  const runtimeMs = nombre(o.runtimeMs);
+  return {
+    version: PLAYBACK_SEGMENTS_VERSION,
+    itemId: o.itemId,
+    runtimeMs: runtimeMs !== null && runtimeMs > 0 ? Math.round(runtimeMs) : 0,
+    segments,
+    resolvedAt: typeof o.resolvedAt === "string" ? o.resolvedAt : "",
+  };
+}

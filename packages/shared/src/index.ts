@@ -27,6 +27,7 @@ export {
   emptyPlaybackSegments,
   findSegment,
   isSegmentType,
+  parsePlaybackSegmentsResponse,
   type PlaybackSegmentsResponse,
   type ResolvedSegment,
   type SegmentType,

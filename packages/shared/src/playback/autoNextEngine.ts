@@ -108,7 +108,12 @@ export function decideAutoNext(
     resteMs = config.nextCountdown ? NEXT_COUNTDOWN_MS : null;
   }
 
-  if (resteMs === null) return [{ ...etat, phase, resteMs: null }, "rien"];
+  if (resteMs === null) {
+    // Référence STABLE quand rien ne change : l'appelant React s'appuie sur
+    // l'identité de l'état pour ne pas re-rendre à chaque battement.
+    if (etat.phase === phase && etat.resteMs === null) return [etat, "rien"];
+    return [{ ...etat, phase, resteMs: null }, "rien"];
+  }
 
   resteMs -= Math.max(0, entree.ecouleMs);
   if (resteMs > 0) return [{ ...etat, phase, resteMs }, "rien"];
