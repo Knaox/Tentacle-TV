@@ -596,6 +596,12 @@ jobs:
       - name: Patch du bloc linux (version/tag/assets/sha256)
         run: |
           node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${{ needs.version.outputs.tag }}" SHA256SUMS
+      - name: Patch des notes du bloc linux
+        # Elles étaient écrites par le job des stores, dans la même branche que
+        # `microsoftStore`. Livrer Linux seul laissait donc la bannière de mise
+        # à jour annoncer la nouvelle version avec les nouveautés de l'ancienne.
+        run: |
+          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}" --only=linux
       - name: Commit + push sur main
         run: |
           git config user.name "tentacle-bot"

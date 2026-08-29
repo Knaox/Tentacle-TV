@@ -7,7 +7,7 @@
 // Lancé par le job « manifest » de desktop.yml à chaque tag desktop-v* — fini
 // la recopie manuelle (macAppStore était fossilisé à 1.2.1, détection morte).
 //
-// Usage : node patch-store-manifest.mjs <version> [--changelog=...] [--only=mac|ms]
+// Usage : node patch-store-manifest.mjs <version> [--changelog=...] [--only=mac|ms|linux]
 //
 // --only=ms  : au TAG — le bloc macAppStore n'est PLUS patche a la livraison.
 //              La pop-up de mise a jour macOS ne doit annoncer que ce qui est
@@ -20,14 +20,14 @@ import { loadNotes } from "./lib/changelog.mjs";
 
 const [, , version, ...rest] = process.argv;
 if (!version) {
-  console.error("usage: patch-store-manifest.mjs <version> [--changelog=...] [--only=mac|ms]");
+  console.error("usage: patch-store-manifest.mjs <version> [--changelog=...] [--only=mac|ms|linux]");
   process.exit(1);
 }
 const changelog = rest.find((a) => a.startsWith("--changelog="))?.slice("--changelog=".length)
   ?? "changelogs/desktop.md";
 const only = rest.find((a) => a.startsWith("--only="))?.slice("--only=".length) ?? null;
-if (only && only !== "mac" && only !== "ms") {
-  console.error(`--only invalide: ${only} (attendu mac|ms)`);
+if (only && only !== "mac" && only !== "ms" && only !== "linux") {
+  console.error(`--only invalide: ${only} (attendu mac|ms|linux)`);
   process.exit(1);
 }
 
@@ -56,14 +56,22 @@ if (!asc || !msstore || !ascMac) {
 const path = "updates/store-versions.json";
 const json = JSON.parse(readFileSync(path, "utf8"));
 const touched = [];
-if (only !== "ms") {
+// Trois blocs INDÉPENDANTS. `linux.notes` voyageait avec `microsoftStore`,
+// dans la même branche : livrer Linux seul laissait donc ses notes sur la
+// version précédente — la bannière de mise à jour annonçait la nouvelle
+// version avec les nouveautés de l'ancienne. Chaque bloc appartient désormais
+// au job de son système, et `--only` sait nommer les trois.
+if (only === null || only === "mac") {
   json.macAppStore = { ...(json.macAppStore ?? {}), version, notes: ascMac };
   touched.push("macAppStore");
 }
-if (only !== "mac") {
+if (only === null || only === "ms") {
   json.microsoftStore = { ...(json.microsoftStore ?? {}), version, notes: msstore };
+  touched.push("microsoftStore");
+}
+if (only === null || only === "linux") {
   json.linux = { ...(json.linux ?? {}), notes: asc };
-  touched.push("microsoftStore", "linux.notes");
+  touched.push("linux.notes");
 }
 writeFileSync(path, JSON.stringify(json, null, 2) + "\n");
 console.log(
