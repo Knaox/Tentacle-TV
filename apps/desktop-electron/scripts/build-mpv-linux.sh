@@ -50,6 +50,16 @@ VULKAN_HEADERS_TAG="v1.4.309"   # Ubuntu 24.04 s'arrête à 1.3.275, FFmpeg exig
 NVCODEC_TAG="n13.0.19.0"        # en-têtes NVDEC/NVENC (MIT), sans lesquels pas de nvdec
 PLACEBO_TAG="v7.351.0"     # exigée par mpv 0.41 (>= 7.349)
 MPV_TAG="v0.41.0"          # première à savoir parler couleur à Wayland
+# ⚠️ mpv 0.41 exige wayland-client >= 1.21 et Ubuntu 22.04 s'arrête à 1.20.0 —
+# on bâtit donc wayland dans le prefix, comme libplacebo. La version retenue est
+# le MINIMUM exigé, pas la plus récente : c'est elle qui décide de ce que l'on
+# demandera au wayland du POSTE à l'exécution (la bibliothèque n'est pas
+# embarquée, cf. la liste `SYSTEME`), et viser plus haut n'y gagnerait rien.
+WAYLAND_TAG="1.21.0"
+# Les protocoles, eux, doivent être RÉCENTS : `wp-color-management-v1` — le HDR
+# de Wayland — n'existe qu'à partir de 1.41. Ce ne sont que des fichiers XML,
+# rien ne s'exécute, il n'y a aucune contrainte de compatibilité à l'exécution.
+WAYLAND_PROTOCOLS_TAG="1.44"
 
 ICI="$(cd "$(dirname "$0")" && pwd)"
 SORTIE="$ICI/../lib/mpv-linux"
@@ -110,9 +120,13 @@ PREFIX="$TRAVAIL/prefix"
 # `include` compris : la copie des en-têtes Vulkan est le premier écrivain du
 # prefix, et `cp -r` ne crée pas le dossier cible. Un /tmp vierge le montrait.
 mkdir -p "$TRAVAIL" "$PREFIX/include"
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH:-}"
+# `share/pkgconfig` : c'est là que wayland-protocols dépose son fichier .pc.
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/lib/x86_64-linux-gnu/pkgconfig:$PREFIX/share/pkgconfig:${PKG_CONFIG_PATH:-}"
 export LD_LIBRARY_PATH="$PREFIX/lib:${LD_LIBRARY_PATH:-}"
 export CPATH="$PREFIX/include:${CPATH:-}"
+# `wayland-scanner` est bâti ici : sans ce PATH, meson prend celui d'apt, plus
+# ancien que les protocoles qu'on lui donne à lire.
+export PATH="$PREFIX/bin:$PATH"
 
 echo "==> Chaîne mpv pour Linux — prefix=$PREFIX, sortie=$SORTIE"
 
@@ -129,7 +143,7 @@ if command -v apt-get >/dev/null; then
     libasound2-dev libpulse-dev libpipewire-0.3-dev \
     libva-dev libvdpau-dev libzimg-dev libgnutls28-dev \
     libopus-dev libvorbis-dev libogg-dev libmp3lame-dev libsoxr-dev \
-    python3-pip
+    python3-pip libffi-dev libexpat1-dev
 fi
 
 # ⚠️ meson d'apt est TROP VIEUX là où l'on bâtit.
@@ -174,6 +188,34 @@ if [ ! -f "$PREFIX/lib/pkgconfig/ffnvcodec.pc" ]; then
   echo "==> En-têtes NVDEC $NVCODEC_TAG"
   cloner https://github.com/FFmpeg/nv-codec-headers.git "$NVCODEC_TAG" "$TRAVAIL/nvcodec"
   make -C "$TRAVAIL/nvcodec" PREFIX="$PREFIX" install
+fi
+
+# 2bis. Wayland — parce que la distribution où l'on bâtit est trop ancienne.
+#
+# ⚠️ Ce qui est bâti ici ne PART PAS dans le paquet : `libwayland-client.so.0` et
+# ses sœurs figurent dans la liste `SYSTEME` (plus bas), et restent donc celles
+# du poste à l'exécution. Ce qu'on gagne, c'est de pouvoir COMPILER contre
+# 1.21 — la version qu'exige mpv 0.41 — sur une machine qui n'a que 1.20.
+#
+# La contrepartie, dite franchement : le mpv livré réclamera un wayland >= 1.21
+# à l'exécution. Toutes les distributions de 2023 et après l'ont ; Ubuntu 22.04
+# non, et la lecture y retombera sur X11. C'est le prix du HDR Wayland, qui
+# n'existe pas avant mpv 0.41.
+if [ ! -f "$PREFIX/lib/pkgconfig/wayland-client.pc" ]; then
+  echo "==> wayland $WAYLAND_TAG"
+  cloner https://gitlab.freedesktop.org/wayland/wayland.git "$WAYLAND_TAG" "$TRAVAIL/wayland"
+  meson setup "$TRAVAIL/wayland/build" "$TRAVAIL/wayland" \
+    --prefix="$PREFIX" --libdir=lib --buildtype=release \
+    -Ddocumentation=false -Dtests=false -Ddtd_validation=false
+  ninja -C "$TRAVAIL/wayland/build" install
+fi
+if [ ! -f "$PREFIX/share/pkgconfig/wayland-protocols.pc" ]; then
+  echo "==> wayland-protocols $WAYLAND_PROTOCOLS_TAG"
+  cloner https://gitlab.freedesktop.org/wayland/wayland-protocols.git \
+    "$WAYLAND_PROTOCOLS_TAG" "$TRAVAIL/wayland-protocols"
+  meson setup "$TRAVAIL/wayland-protocols/build" "$TRAVAIL/wayland-protocols" \
+    --prefix="$PREFIX" --buildtype=release -Dtests=false
+  ninja -C "$TRAVAIL/wayland-protocols/build" install
 fi
 
 # 3. libplacebo — le moteur de rendu de `gpu-next`, et donc tout le HDR.
