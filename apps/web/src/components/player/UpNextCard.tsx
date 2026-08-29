@@ -97,10 +97,14 @@ export function UpNextCard({
           n'existe pas. */}
       {counting && (
         <div className="h-[3px] w-full overflow-hidden bg-fill-soft">
+          {/* `scaleX`, jamais `width` : animer une largeur repeint la barre à
+              chaque image, et cette carte flotte au-dessus d'une vidéo en
+              lecture (règle du dépôt, § coût GPU — même correction que le
+              balayage de `SkipSegmentButton`). */}
           <div
-            className="h-full transition-[width] duration-1000 ease-linear"
+            className="h-full w-full origin-left transition-transform duration-1000 ease-linear motion-reduce:transition-none"
             style={{
-              width: `${progress}%`,
+              transform: `scaleX(${String(progress / 100)})`,
               background: "linear-gradient(90deg, var(--brand-light), var(--brand))",
               boxShadow: "0 0 12px rgba(var(--brand-rgb), 0.6)",
             }}
@@ -134,11 +138,13 @@ export function UpNextCard({
         <div className="absolute left-4 top-3 flex items-center gap-2">
           <span
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white"
+            /* PAS de `backdrop-filter` : le fond est à 0,72 d'alpha, un flou
+               n'y floute rien de visible — et il coûterait une recopie de
+               région et une passe de flou PAR IMAGE, au-dessus d'une vidéo en
+               lecture. Même arbitrage que la carte elle-même, ci-dessus. */
             style={{
-              background: "rgba(0, 0, 0, 0.6)",
+              background: "rgba(0, 0, 0, 0.72)",
               border: "1px solid rgba(var(--brand-rgb), 0.55)",
-              backdropFilter: "blur(8px)",
-              WebkitBackdropFilter: "blur(8px)",
               textShadow: "0 1px 3px rgba(0,0,0,0.85)",
             }}
           >
@@ -159,9 +165,7 @@ export function UpNextCard({
             <span
               className="rounded-md px-2 py-1 text-[11px] font-semibold tabular-nums text-white"
               style={{
-                background: "rgba(0, 0, 0, 0.55)",
-                backdropFilter: "blur(8px)",
-                WebkitBackdropFilter: "blur(8px)",
+                background: "rgba(0, 0, 0, 0.72)",
                 textShadow: "0 1px 3px rgba(0,0,0,0.85)",
               }}
             >
@@ -177,8 +181,11 @@ export function UpNextCard({
           type="button"
           onClick={onDismiss}
           aria-label={t("player:dismiss")}
-          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full text-white/85 transition-colors hover:bg-black/40 hover:text-white"
-          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}
+          /* 44 px de cible, comme la croix de la pilule de saut : les 32 px
+             d'avant étaient sous le plancher tactile. La couleur seule change
+             au survol — un fond animé repeindrait au-dessus de la vidéo. */
+          className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-white/85 transition-colors duration-150 motion-reduce:transition-none hover:text-white"
+          style={{ background: "rgba(0,0,0,0.55)" }}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -210,7 +217,10 @@ export function UpNextCard({
         <button
           type="button"
           onClick={onPlay}
-          className="group/play mt-3.5 flex w-full items-center justify-center gap-2 rounded-md bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-all duration-150 hover:scale-[1.02] hover:bg-cta-primary-bg-hover"
+          /* `transition-transform` et non `transition-all` : ce dernier animait
+             aussi le fond et l'ombre, donc une peinture par image au-dessus de
+             la vidéo. Le survol ne garde que la transformée, qui se compose. */
+          className="group/play mt-3.5 flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-transform duration-150 motion-reduce:transition-none hover:scale-[1.02]"
           style={{ boxShadow: "0 6px 22px var(--brand-glow)" }}
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
