@@ -17,8 +17,21 @@
  * à refuser, et proposer de se priver du geste ne gagnerait rien.
  *
  * Elle appartient à la pilule au lieu de flotter à côté d'elle en noir : un
- * seul objet, un séparateur, deux surfaces également cliquables. Cible ≥ 44 px
- * de haut des deux côtés (l'ancienne croix faisait 32).
+ * seul objet, deux surfaces également cliquables, cible 44 × 44 px pour la
+ * croix (l'ancienne en faisait 32, et sans `shrink-0` le flex la rabotait à 36
+ * dès que le libellé s'allongeait).
+ *
+ * # Le dessin des deux moitiés
+ *
+ * Le trait de séparation courait sur toute la hauteur et coupait la pilule en
+ * deux comme un ticket. Il s'inscrit désormais dans la hauteur (`my-3`), à dix
+ * pour cent de noir : il délimite sans trancher.
+ *
+ * Le survol ne repeint plus le fond de la pilule. Il le faisait en passant à
+ * `--cta-primary-bg-hover`, un blanc à 85 % d'alpha — sur une vidéo, la moitié
+ * survolée devenait translucide et laissait passer l'image. Chaque moitié porte
+ * maintenant son propre voile noir, en FONDU D'OPACITÉ : la croix reçoit un
+ * disque inscrit, le libellé un voile à ses dimensions.
  *
  * # Ce qui bouge, et ce qui ne bouge pas
  *
@@ -94,8 +107,9 @@ export function SkipSegmentButton({
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
-            className="relative min-h-11 px-6 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+            className="group/skip relative min-h-11 px-6 text-sm font-bold text-cta-primary-fg"
           >
+            <Veil className="rounded-l-full group-hover/skip:opacity-100" />
             {/* AVANT le libellé, donc dessous : un élément positionné peint
                 par-dessus le contenu de flux, et le texte doit rester net. */}
             {armed && <Sweep key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
@@ -109,15 +123,19 @@ export function SkipSegmentButton({
           {/* Présente tant que le passage n'est pas en sourdine — voir l'en-tête. */}
           {onDismiss && (
             <>
-              <span aria-hidden="true" className="my-2 w-px bg-black/15" />
+              <span aria-hidden="true" className="my-3 w-px shrink-0 bg-black/10" />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                 aria-label={t("player:dismiss")}
                 title={t("player:dismiss")}
-                className="flex min-h-11 w-11 items-center justify-center text-black/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-black"
+                className="group/x relative flex min-h-11 w-11 shrink-0 items-center justify-center text-black/55 transition-colors duration-150 hover:text-black"
               >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+                {/* Un disque INSCRIT plutôt que la cellule entière : le rayon de
+                    la pilule rognerait un rectangle par le coin, et il en
+                    resterait une écaille. */}
+                <Veil className="inset-1 rounded-full group-hover/x:opacity-100" />
+                <svg className="relative h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -126,6 +144,22 @@ export function SkipSegmentButton({
         </div>
       </Rising>
     </div>
+  );
+}
+
+/**
+ * Le voile de survol d'une moitié — posé en permanence, révélé en OPACITÉ.
+ *
+ * Jamais une `background-color` qui s'anime : elle repeint à chaque image, et
+ * ces pilules flottent au-dessus d'une vidéo en lecture. Le calque, lui, se
+ * compose (règle de `cards.css`, mesurée là-bas).
+ */
+function Veil({ className }: { className: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`pointer-events-none absolute inset-0 bg-black/[0.07] opacity-0 transition-opacity duration-150 motion-reduce:transition-none ${className}`}
+    />
   );
 }
 
