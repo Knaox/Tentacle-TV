@@ -1,4 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Inter, EMBARQUÉE — plus jamais réclamée au réseau.
+   Elle venait de fonts.googleapis.com. Sans internet, ou quand la requête
+   n'aboutit pas, il ne restait que la pile de repli — `system-ui`, `sans-serif`.
+   Sur une machine où Chromium n'en résout aucune (mesuré sous Linux :
+   « Could not find any font: Noto Sans, sans »), l'application s'affichait
+   alors SANS AUCUN TEXTE : mise en page, fonds et icônes intacts, tous les
+   libellés invisibles. Un client de bureau, qui sert souvent un serveur de
+   salon sans accès extérieur, ne peut pas dépendre d'un tiers pour rester
+   lisible. La feuille `wght` porte les poids 100 à 900 en un seul fichier
+   variable par sous-ensemble ; le navigateur ne télécharge que ceux dont
+   l'`unicode-range` correspond. */
+@import "@fontsource-variable/inter/wght.css";
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
 @import "./theme/surfaces.css";
