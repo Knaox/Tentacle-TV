@@ -7,6 +7,7 @@ import {
   updateItemUserDataInCache, patchSeriesIdSet, hoistResumeItem, invalidateSeriesWatchViews,
 } from "./cacheUtils";
 import { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY } from "./watchlistEffects";
+import { clearPlayedWhenResumable } from "./resumeOverPlayed";
 
 /**
  * Hubs de la home à rafraîchir à l'arrêt. « resume-items » est traité à part :
@@ -46,6 +47,20 @@ export function useWatchStopInvalidation() {
       // Ce qu'on vient de lire est le plus récent, on n'a personne à qui le
       // demander (cf. `hoistResumeItem`).
       hoistResumeItem(qc, itemId);
+
+      // AVANT les invalidations, et c'est tout l'ordre qui compte : les hubs
+      // repartent chercher leur vérité juste après, et ils doivent la trouver
+      // corrigée. Sans effet dans l'écrasante majorité des sorties de lecture —
+      // voir `resumeOverPlayed.ts` pour la seule situation qu'elle vise.
+      const resumed = await clearPlayedWhenResumable(client, itemId);
+      if (resumed !== null) {
+        // `PlayedPercentage` n'est PAS repeint : il se déduit de la position
+        // côté serveur, et la réponse qui arrive dans la seconde le corrige.
+        updateItemUserDataInCache(qc, itemId, () => ({
+          Played: false,
+          PlaybackPositionTicks: resumed,
+        }));
+      }
 
       if (itemType === "Episode" && seriesId) {
         await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
