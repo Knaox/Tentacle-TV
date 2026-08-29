@@ -5,6 +5,7 @@ import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
+import { rangeFill } from "../../lib/rangeFill";
 
 /**
  * Chaque critère porte son sens NATUREL.
@@ -208,7 +209,8 @@ export function RatingMenu({
           const v = parseFloat(e.target.value);
           onRatingMinChange(v > 0 ? v : null);
         }}
-        className="w-full accent-[var(--brand)]"
+        style={rangeFill(current, 0, 10)}
+        className="ctl-range w-full"
       />
       <div className="mt-0.5 flex justify-between text-[10px] text-content-disabled">
         <span>0</span><span>5</span><span>10</span>

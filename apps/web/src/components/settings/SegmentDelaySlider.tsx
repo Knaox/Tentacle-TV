@@ -12,6 +12,7 @@
  */
 
 import { useTranslation } from "react-i18next";
+import { rangeFill } from "../../lib/rangeFill";
 
 /** Au-delà, ce n'est plus un délai avant un saut, c'est une hésitation. */
 const MAX_SECONDS = 15;
@@ -46,7 +47,8 @@ export function SegmentDelaySlider({ id, valueMs, onChange }: SegmentDelaySlider
         step={STEP_SECONDS}
         value={seconds}
         onChange={(e) => { onChange(Math.round(Number(e.target.value) * 1000)); }}
-        className="mt-3 h-6 w-full max-w-xs cursor-pointer accent-brand"
+        style={rangeFill(seconds, 0, MAX_SECONDS)}
+        className="ctl-range mt-3 w-full max-w-xs"
       />
     </div>
   );

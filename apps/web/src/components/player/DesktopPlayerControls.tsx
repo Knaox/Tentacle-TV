@@ -16,6 +16,7 @@ import type { ApplyToSeriesControl } from "../../hooks/useApplyToSeries";
 import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
 import type { MpvState } from "../../hooks/useDesktopPlayer";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
+import { rangeFill } from "../../lib/rangeFill";
 
 interface DesktopPlayerControlsProps {
   visible: boolean;
@@ -202,13 +203,14 @@ export function DesktopPlayerControls({
                     ? <MuteIcon />
                     : <VolumeIcon bars={state.volume <= 33 ? 1 : state.volume <= 66 ? 2 : 3} />}
                 </button>
-                {/* `accent-color` d'un input natif ne prend qu'une couleur
-                    unie — pas le dégradé du token. On pose donc le rose plein
-                    (`--brand-accent`), la teinte dominante de la barre de
-                    progression, pour que les deux se lisent de la même couleur. */}
+                {/* Le curseur porte enfin le DÉGRADÉ, comme la barre de
+                    progression — `accent-color` ne savait prendre qu'une
+                    couleur unie, et l'agent utilisateur peignait la piste en
+                    gris clair sur fond noir. Tout est dans `.ctl-range`. */}
                 <input type="range" min={0} max={100} step={1} value={state.volume}
                   onChange={(e) => setVolume(Number(e.target.value))}
-                  className="hidden w-20 accent-[color:var(--brand-accent)] group-hover/vol:block" />
+                  style={rangeFill(state.volume, 0, 100)}
+                  className="ctl-range hidden w-20 group-hover/vol:block" />
               </div>
               <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>

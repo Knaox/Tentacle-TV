@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BACKEND, hdrs, cls, creds } from "../../pages/adminUtils";
+import { ToggleSwitch } from "../settings/ToggleSwitch";
 
 /**
  * Section "Lecture" — interrupteur « Déclenchement auto-play ». Le SEUIL n'est
@@ -61,16 +62,15 @@ export function PlaybackSection() {
       <div className={cls.sub}>
         <div className="flex flex-wrap items-center gap-3">
           <label className={cls.lbl}>{t("autoplayNextEnabled")}</label>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
+          {/* L'interrupteur PARTAGÉ, comme partout ailleurs : celui qui vivait
+              ici était une copie au violet plat, dont le pouce s'animait par
+              `left` — donc en repeignant à chaque image. */}
+          <ToggleSwitch
+            checked={enabled}
+            onChange={(next) => save(next)}
+            label={t("autoplayNextEnabled")}
             disabled={busy}
-            onClick={() => save(!enabled)}
-            className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-150 ${enabled ? "bg-[var(--brand)]" : "bg-fill-medium"}`}
-          >
-            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-cta-primary-bg transition-all duration-150 ${enabled ? "left-[22px]" : "left-0.5"}`} />
-          </button>
+          />
           {msg && <span className={`text-xs ${msg.ok ? "text-[var(--status-success-fg)]" : "text-[var(--status-error-fg)]"}`}>{msg.t}</span>}
         </div>
         <p className="mt-2 text-xs text-content-quaternary">{t("autoplayNextHelp")}</p>

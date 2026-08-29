@@ -1,0 +1,268 @@
+/* ── Les trois contrôles de réglage : choix segmenté, interrupteur, curseur ──
+ *
+ * Ils avaient trois défauts communs, et c'est pour cela qu'ils vivent
+ * désormais dans une seule feuille.
+ *
+ * 1. Ils peignaient du VIOLET PLAT (`--brand` seul) là où toute l'application
+ *    porte le dégradé signature violet → rose. Un aplat saturé posé dans une
+ *    carte de verre ne ressemble à rien d'autre dans le produit : il se lit
+ *    comme un bouton tombé là, pas comme un état.
+ * 2. Le curseur n'était même pas dessiné : `accent-color` laissait l'agent
+ *    utilisateur peindre sa piste GRIS CLAIR, sur fond noir.
+ * 3. Aucun n'avait d'état pressé, et deux n'avaient pas de survol.
+ *
+ * ── Ce qui est commun aux trois
+ *
+ * Le repos est une surface de VERRE (`--fill-*` + liseré `--border-subtle`) ;
+ * l'état actif porte le dégradé de marque ; l'élévation vient d'une LUEUR
+ * posée en permanence sur un calque séparé, dont seule l'opacité change.
+ *
+ * ⚠️ Jamais de `box-shadow` animée, jamais de `background-color` animée :
+ * l'une comme l'autre repeignent à chaque image. Seuls `transform` et
+ * `opacity` composent. C'est la règle de `cards.css`, mesurée là-bas, et elle
+ * vaut ici pour la même raison — ces contrôles s'alignent par dizaines dans un
+ * écran de réglages.
+ *
+ * Les durées viennent des jetons : « animations réduites » les met à 0 ms, la
+ * préférence est donc respectée par construction, sans `!important`. */
+
+/* Le dégradé signature, une seule fois. Les trois contrôles le réutilisent —
+ * changer la marque ne demande alors qu'une ligne. */
+:root {
+  --ctl-gradient: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-accent) 100%);
+  --ctl-glow: 0 2px 10px rgba(var(--brand-rgb), 0.35), 0 0 0 1px rgba(var(--brand-rgb), 0.45);
+}
+
+/* ══ 1. Le choix segmenté ══════════════════════════════════════════════════
+ *
+ * L'option retenue n'est plus un pavé plein : c'est un CALQUE de dégradé posé
+ * sous son libellé, avec son liseré et sa lueur. La différence se voit — le
+ * pavé plein occupait toute sa cellule jusqu'au bord du cadre, ce qui le
+ * faisait déborder visuellement du groupe au lieu d'y appartenir.
+ *
+ * Le calque existe sur TOUTES les options, à opacité nulle : le passage d'une
+ * option à l'autre est alors un fondu croisé que le compositeur joue seul. */
+.ctl-segment {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  font-weight: 500;
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    transform var(--duration-instant) var(--ease-out);
+}
+
+.ctl-segment::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ctl-gradient);
+  box-shadow: var(--ctl-glow);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Le survol d'une option NON retenue : un simple voile, sur son propre calque
+ * pour ne pas entrer en concurrence avec le dégradé ci-dessus. */
+.ctl-segment::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: inherit;
+  background: var(--fill-soft);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.ctl-segment:hover {
+  color: var(--text-primary);
+}
+
+.ctl-segment:hover::after {
+  opacity: 1;
+}
+
+.ctl-segment:active {
+  transform: scale(0.97);
+}
+
+.ctl-segment[aria-checked="true"] {
+  color: var(--cta-brand-fg);
+  font-weight: 600;
+}
+
+.ctl-segment[aria-checked="true"]::before {
+  opacity: 1;
+}
+
+/* Retenue ET survolée : la lueur ne bouge pas, le libellé ne bouge pas — il
+ * n'y a rien à signaler de plus, l'option est déjà celle qui est active. */
+.ctl-segment[aria-checked="true"]::after {
+  opacity: 0;
+}
+
+/* ══ 2. L'interrupteur ════════════════════════════════════════════════════
+ *
+ * Piste de verre au repos, dégradé de marque une fois allumé — et le pouce
+ * garde sa propre ombre, qui ne s'anime pas : il se DÉPLACE (`translate`), il
+ * ne se repeint pas. */
+.ctl-switch {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--radius-pill);
+  background: var(--fill-strong);
+  border: 1px solid var(--border-subtle);
+  transition: transform var(--duration-instant) var(--ease-out);
+}
+
+.ctl-switch::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ctl-gradient);
+  box-shadow: var(--ctl-glow);
+  opacity: 0;
+  transition: opacity var(--duration-base) var(--ease-out);
+}
+
+.ctl-switch[aria-checked="true"]::before {
+  opacity: 1;
+}
+
+.ctl-switch:active {
+  transform: scale(0.94);
+}
+
+.ctl-switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ctl-switch-thumb {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  height: 20px;
+  width: 20px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transform: translateX(2px);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+/* ⚠️ `left: 0` ci-dessus est INDISPENSABLE : un absolu sans ancre horizontale
+ * garde sa position statique, et un `<button>` centre son contenu — le pouce
+ * partait alors du milieu de la piste. Défaut déjà corrigé une fois, il ne
+ * doit pas revenir. */
+.ctl-switch[aria-checked="true"] .ctl-switch-thumb {
+  transform: translateX(22px);
+}
+
+/* ══ 3. Le curseur ════════════════════════════════════════════════════════
+ *
+ * `accent-color` laissait l'agent utilisateur dessiner : piste gris clair sur
+ * fond noir, pouce d'un violet qui n'était celui de personne. Tout est repris.
+ *
+ * La portion REMPLIE se peint en fond de la piste, dimensionnée par
+ * `--range-fill` — un pourcentage que l'appelant pose en style en ligne
+ * (`rangeFill()`, `lib/rangeFill.ts`). C'est la seule voie portable : WebKit et
+ * Blink n'exposent aucun pseudo-élément pour le côté bas de la course, là où
+ * Firefox a `::-moz-range-progress`. Les deux sont servis ci-dessous. */
+.ctl-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ctl-range:focus-visible {
+  outline: none;
+}
+
+/* ── Piste ── */
+.ctl-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background:
+    var(--ctl-gradient) 0 / var(--range-fill, 0%) 100% no-repeat,
+    var(--fill-medium);
+}
+
+.ctl-range::-moz-range-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--fill-medium);
+}
+
+.ctl-range::-moz-range-progress {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ctl-gradient);
+}
+
+/* ── Pouce ──
+ *
+ * Blanc et non coloré : il doit rester lisible PAR-DESSUS la portion remplie,
+ * qui est déjà le dégradé. Un pouce de marque sur une piste de marque, c'est
+ * un pouce qu'on ne trouve plus.
+ *
+ * ⚠️ Ombre TRÈS courte, et c'est délibéré : deux de ces curseurs vivent sur la
+ * vidéo, et la fenêtre du bureau a un canal alpha sur macOS comme sur Linux —
+ * une ombre large y sort en aplat noir au lieu de s'estomper (cf.
+ * `lib/videoShadow.ts`). Le liseré de marque suffit à détacher le pouce ; le
+ * flou n'est là que pour le poser, pas pour l'élever. */
+.ctl-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  margin-top: -7px; /* (18 − 6) / 2 + 1px de liseré : centre le pouce sur la piste */
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  border: 2px solid rgba(var(--brand-rgb), 0.9);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.ctl-range::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: var(--radius-pill);
+  background: #ffffff;
+  border: 2px solid rgba(var(--brand-rgb), 0.9);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.ctl-range:hover::-webkit-slider-thumb,
+.ctl-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.ctl-range:hover::-moz-range-thumb,
+.ctl-range:focus-visible::-moz-range-thumb {
+  transform: scale(1.15);
+}
+
+/* L'anneau de focus se pose sur le POUCE, pas sur la boîte du champ : celle-ci
+ * fait toute la largeur, et un anneau de 400 px ne désigne rien. */
+.ctl-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.3);
+}
+
+.ctl-range:focus-visible::-moz-range-thumb {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px rgba(var(--brand-rgb), 0.3);
+}
