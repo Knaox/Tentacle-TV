@@ -94,10 +94,15 @@ export function handleWtMessage(
 
   if (msg.type === "wt:skipIntroDismiss") {
     // Même nature que l'auto-next : transient, hors state/epoch. Refuser le
-    // saut d'intro vaut pour la séance — la position est commune.
+    // saut d'un passage vaut pour la séance — la position est commune. Le type
+    // voyage tel quel, absence comprise : c'est le client qui sait quoi en faire.
     for (const memberId of room.members.keys()) {
       if (memberId !== user.userId) {
-        sendToUser(memberId, { type: "wt:skipIntroDismiss", originUserId: user.userId });
+        sendToUser(memberId, {
+          type: "wt:skipIntroDismiss",
+          originUserId: user.userId,
+          segmentType: msg.segmentType,
+        });
       }
     }
     return;

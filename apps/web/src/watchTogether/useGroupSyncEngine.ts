@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { sampleClock, subscribeSocket } from "@tentacle-tv/api-client";
 import {
   TICKS_PER_SECOND, WT_CLOCK_BURST_COUNT, WT_CLOCK_BURST_SPACING_MS,
-  WT_SEEK_LOOKAHEAD_S, wtPositionSecondsAt,
+  WT_SEEK_LOOKAHEAD_S, wtPositionSecondsAt, type SegmentType,
 } from "@tentacle-tv/shared";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import type { PlayerTransportRef } from "./playerTransport";
@@ -281,10 +281,10 @@ export function useGroupSyncEngine({
     sendRef.current({ type: "wt:autonextDismiss" });
   }, [active, itemId]);
 
-  const notifySkipIntroDismiss = useCallback(() => {
+  const notifySkipIntroDismiss = useCallback((segmentType: SegmentType) => {
     const r = roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
-    sendRef.current({ type: "wt:skipIntroDismiss" });
+    sendRef.current({ type: "wt:skipIntroDismiss", segmentType });
   }, [active, itemId]);
 
   return {

@@ -1,9 +1,10 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { subscribeSocket } from "@tentacle-tv/api-client";
+import type { SegmentType } from "@tentacle-tv/shared";
 import { wtLog } from "./wtLog";
 
 /**
- * Le refus du saut d'intro, partagé par le groupe.
+ * Le refus du saut d'un PASSAGE, partagé par le groupe.
  *
  * # Pourquoi un bus plutôt qu'une propriété de plus
  *
@@ -22,13 +23,21 @@ import { wtLog } from "./wtLog";
  * quand même et traînerait hors de l'intro celui qui venait de la garder.
  */
 
-let refus = 0;
+/** Le compteur porte le front, le type dit QUEL passage a été gardé. */
+export interface RefusDistant {
+  readonly compteur: number;
+  readonly type: SegmentType;
+}
+
+let refus: RefusDistant = { compteur: 0, type: "Intro" };
 const auditeurs = new Set<() => void>();
 
-const lire = (): number => refus;
+// L'instantané est REMPLACÉ, jamais muté : `useSyncExternalStore` compare les
+// identités, et rendre un objet neuf à chaque lecture boucherait le rendu.
+const lire = (): RefusDistant => refus;
 
-const emettre = (): void => {
-  refus += 1;
+const emettre = (type: SegmentType): void => {
+  refus = { compteur: refus.compteur + 1, type };
   for (const auditeur of auditeurs) auditeur();
 };
 
@@ -39,8 +48,8 @@ const sAbonner = (auditeur: () => void): (() => void) => {
   };
 };
 
-/** Combien de refus ont été prononcés — le décompte n'en lit que les fronts. */
-export function useRefusSautIntro(): number {
+/** Le dernier refus reçu — le décompte n'en lit que les fronts (le compteur). */
+export function useRefusSautIntro(): RefusDistant {
   return useSyncExternalStore(sAbonner, lire, lire);
 }
 
@@ -51,12 +60,17 @@ export const signalerRefusDistant = emettre;
  * Le pont, monté par les pages de lecture : il diffuse le refus local au groupe
  * et relaie celui des autres. Sans groupe actif, il ne fait rien.
  */
-export function useSautIntroGroupe(notifier: (() => void) | undefined): void {
+export function useSautIntroGroupe(
+  notifier: ((type: SegmentType) => void) | undefined,
+): void {
   useEffect(() => {
     return subscribeSocket((msg) => {
       if (msg.type === "wt:skipIntroDismiss") {
-        wtLog("engine", "refus du saut d'intro distant", { from: msg.originUserId });
-        signalerRefusDistant();
+        // Type absent : un client d'avant la refonte, qui ne savait sauter que
+        // l'intro. C'est la compatibilité ascendante du protocole.
+        const type = msg.segmentType ?? "Intro";
+        wtLog("engine", "refus de saut distant", { from: msg.originUserId, type });
+        signalerRefusDistant(type);
       }
     });
   }, []);
@@ -69,7 +83,7 @@ export function useSautIntroGroupe(notifier: (() => void) | undefined): void {
   }, [notifier]);
 }
 
-let notifierLocal: (() => void) | undefined;
+let notifierLocal: ((type: SegmentType) => void) | undefined;
 
 /** La croix vient d'être cliquée : l'annoncer au groupe, s'il y en a un. */
-export const annoncerRefusLocal = (): void => notifierLocal?.();
+export const annoncerRefusLocal = (type: SegmentType): void => notifierLocal?.(type);
