@@ -80,6 +80,7 @@ les notes Apple doivent rester génériques.
 - **Votre machine ne s'endort plus en pleine séance**, même réglée pour se suspendre au bout d'un moment d'inactivité
 - **L'AppImage s'installe vraiment** : la commande d'installation unique lui pose son entrée de menu et son icône, et sait la désinstaller. Le paquet Arch est produit directement, plus par recompression du paquet Debian
 - Les **touches média** du clavier et l'intégration au bureau (icône, épinglage) fonctionnent comme sur les autres systèmes
+- **L'application n'emprunte plus sa police à un service extérieur.** Elle voyage désormais dans le paquet : le texte s'affiche même sans accès à Internet — un serveur sur votre réseau suffit — et plus rien n'est demandé à Google au lancement
 
 ### EN
 - **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
@@ -109,7 +110,7 @@ les notes Apple doivent rester génériques.
 - **Your machine no longer falls asleep mid-film**, even when set to suspend after a while idle
 - **The AppImage really installs**: the one-line install command gives it a menu entry and an icon, and knows how to remove it. The Arch package is now built directly rather than repacked from the Debian one
 - Keyboard **media keys** and desktop integration (icon, pinning) work as they do on the other systems
-
+- **The app no longer borrows its font from an outside service.** It now travels inside the package: text shows even with no Internet access — a server on your own network is enough — and nothing is requested from Google at start-up
 ## [1.20.8]
 ### FR
 - Nouveau réglage dans Réglages > Lecture : passer l'intro automatiquement. Éteint par défaut ; une fois allumé, le générique de début d'une série est passé au bout de trois secondes
