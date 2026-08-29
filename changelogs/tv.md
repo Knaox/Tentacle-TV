@@ -7,6 +7,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.2.2]
 ### FR
+- L'épisode qu'on vient de terminer est coché sur la fiche de la série, saisons et compteurs compris
 - L'épisode suivant est celui d'APRÈS celui que vous venez de regarder : commencer une saison par son épisode 6 proposait le 1, et remettre un épisode en « non lu » le faisait revenir en tête
 - Navigation nettement plus fluide : parcourir les rangées, ouvrir le menu et changer de page ne saccadent plus, même sur les boîtiers puissants
 - Le halo des bannières est enfin là sur Android TV, comme sur l'Apple TV
@@ -18,6 +19,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Trois réglages de fin d'épisode, indépendants : la fiche, son décompte, l'enchaînement
 - Revenir d'une fiche ne provoque plus d'erreur
 ### EN
+- The episode you have just finished is ticked on the series page, seasons and counters included
 - The next episode is the one AFTER what you just watched: starting a season at episode 6 used to offer episode 1, and marking an episode unwatched brought it back to the front
 - Navigation is markedly smoother: moving through rows, opening the menu and switching pages no longer stutter, even on powerful boxes
 - The banner halo has finally arrived on Android TV, just like on Apple TV

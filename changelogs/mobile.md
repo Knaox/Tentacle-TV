@@ -7,6 +7,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ## [1.5.2]
 ### FR
+- L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série : rien ne rafraîchissait la liste en sortant du lecteur
 - L'épisode suivant est celui d'APRÈS celui que vous venez de regarder : commencer une saison par son épisode 6 proposait le 1, et remettre un épisode en « non lu » le faisait revenir en tête
 - Les quatre passages d'un épisode ont leur bouton : générique de début, résumé, générique de fin, aperçu du suivant. Un seul bouton, qui compte et se refuse d'une croix — celle-ci ne paraît que sur l'image nue, l'habillage affiché le bouton reste là
 - Des réglages de lecture, enfin : pour chaque passage, proposer un bouton, passer tout seul ou ne rien faire — avec le délai du saut automatique
@@ -14,6 +15,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - Un écran de fin à la fin d'un épisode, au lieu d'un retour sec à la fiche
 - Le bouton « Passer l'intro » ne disparaît plus avec les commandes au bout de quatre secondes
 ### EN
+- The episode you have just finished is at last ticked on the series page: nothing refreshed the list when leaving the player
 - The next episode is the one AFTER what you just watched: starting a season at episode 6 used to offer episode 1, and marking an episode unwatched brought it back to the front
 - All four passages within an episode get a button: opening titles, recap, closing credits, preview of the next. One button, which counts down and can be refused with a cross — the cross only appears over the bare picture; with the controls up, the button stays
 - Playback settings, at last: for each passage, offer a button, skip on its own or do nothing — with the automatic skip delay

@@ -10,6 +10,8 @@ les notes Apple doivent rester génériques.
 
 ## [mac-1.21.0]
 ### FR
+- **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
+- **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La proposition suit désormais votre dernière lecture — sur la fiche, sur l'accueil et dans le lecteur —, et la fin d'une saison enchaîne sur le premier épisode de la suivante
 - **L'habillage du lecteur ne se pose plus sur l'écran de chargement.** La barre de commandes s'affichait pendant l'attente, avec une progression à zéro qui ne mesurait rien — et sur le web elle restait cliquable tout en étant invisible
 - **Une invitation à regarder ensemble s'ouvre d'elle-même quand vous êtes à l'accueil** : il ne reste qu'à accepter. Ailleurs elle ne vous interrompt pas — le logo Watch Together porte désormais le NOMBRE d'invitations en attente, là où un simple point ne disait pas combien
@@ -23,6 +25,8 @@ les notes Apple doivent rester génériques.
 - **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son compte à rebours, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
 
 ### EN
+- **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
+- **The playback speed menu has a cross to close it**, and no longer opens on top of the episode list or the track picker: one panel at a time
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The suggestion now follows your last viewing — on the details page, on the home screen and in the player — and the end of a season carries on to the first episode of the next
 - **The player controls no longer sit on top of the loading screen.** The control bar showed during the wait, with a progress bar at zero that measured nothing — and on the web it stayed clickable while being invisible
 - **A Watch Together invitation opens on its own when you are on the home screen**: all that is left is to accept. Elsewhere it does not interrupt you — the Watch Together icon now carries the NUMBER of pending invitations, where a plain dot never said how many
@@ -37,6 +41,8 @@ les notes Apple doivent rester génériques.
 
 ## [1.21.0]
 ### FR
+- **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
+- **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La proposition suit désormais votre dernière lecture — sur la fiche, sur l'accueil et dans le lecteur —, et la fin d'une saison enchaîne sur le premier épisode de la suivante
 - **L'habillage du lecteur ne se pose plus sur l'écran de chargement.** La barre de commandes s'affichait pendant l'attente, avec une progression à zéro qui ne mesurait rien — et sur le web elle restait cliquable tout en étant invisible
 - **Une invitation à regarder ensemble s'ouvre d'elle-même quand vous êtes à l'accueil** : il ne reste qu'à accepter. Ailleurs elle ne vous interrompt pas — le logo Watch Together porte désormais le NOMBRE d'invitations en attente, là où un simple point ne disait pas combien
@@ -58,6 +64,8 @@ les notes Apple doivent rester génériques.
 - Les **touches média** du clavier et l'intégration au bureau (icône, épinglage) fonctionnent comme sur les autres systèmes
 
 ### EN
+- **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
+- **The playback speed menu has a cross to close it**, and no longer opens on top of the episode list or the track picker: one panel at a time
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The suggestion now follows your last viewing — on the details page, on the home screen and in the player — and the end of a season carries on to the first episode of the next
 - **The player controls no longer sit on top of the loading screen.** The control bar showed during the wait, with a progress bar at zero that measured nothing — and on the web it stayed clickable while being invisible
 - **A Watch Together invitation opens on its own when you are on the home screen**: all that is left is to accept. Elsewhere it does not interrupt you — the Watch Together icon now carries the NUMBER of pending invitations, where a plain dot never said how many

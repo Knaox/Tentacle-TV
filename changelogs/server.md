@@ -7,6 +7,8 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [1.14.0]
 ### FR
+- **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
+- **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
 - **Le carrousel « Prochains épisodes » ne propose plus un épisode situé EN ARRIÈRE de votre dernière lecture.** Quand le serveur en désigne un, la suite réelle est recalculée
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La fiche, le carrousel « Prochains épisodes » et le lecteur suivent désormais la même règle — votre dernière lecture — et la fin d'une saison enchaîne sur le premier épisode de la suivante
 - **Une invitation à regarder ensemble s'ouvre d'elle-même quand vous êtes à l'accueil** : il ne reste qu'à accepter. Ailleurs elle ne vous interrompt pas — le logo Watch Together porte désormais le NOMBRE d'invitations en attente
@@ -19,6 +21,8 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Une nouvelle section d'administration** liste les greffons de détection des passages : sans l'un d'eux, aucun bouton de saut ne peut apparaître, et rien ne le disait
 - **En séance partagée**, refuser un saut se propage avec le passage concerné : refuser le résumé n'éteint plus le décompte d'intro de vos invités
 ### EN
+- **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
+- **The playback speed menu has a cross to close it**, and no longer opens on top of the episode list or the track picker: one panel at a time
 - **The "Up next" carousel no longer offers an episode that sits BEHIND your last viewing.** When the server points at one, the real successor is worked out instead
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The details page, the "Up next" carousel and the player now follow the same rule — your last viewing — and the end of a season carries on to the first episode of the next
 - **A Watch Together invitation opens on its own when you are on the home screen**: all that is left is to accept. Elsewhere it does not interrupt you — the Watch Together icon now carries the NUMBER of pending invitations
