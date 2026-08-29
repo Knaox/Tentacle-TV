@@ -61,7 +61,7 @@ export function FocusableCard({
   onActiveIndex,
   children,
 }: FocusableCardProps) {
-  const racine = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [focused, setFocused] = useState(false);
 
@@ -75,8 +75,8 @@ export function FocusableCard({
    * l'épisode à reprendre — sans en dupliquer une ligne.
    */
   const shortAction = useCallback(() => {
-    const carte = racine.current?.firstElementChild;
-    if (carte instanceof HTMLElement) carte.click();
+    const card = root.current?.firstElementChild;
+    if (card instanceof HTMLElement) card.click();
   }, []);
 
   /**
@@ -87,11 +87,11 @@ export function FocusableCard({
    * composant partagé.
    */
   const longAction = useCallback(() => {
-    const visual = racine.current?.querySelector<HTMLElement>("[data-card-visual]");
+    const visual = root.current?.querySelector<HTMLElement>("[data-card-visual]");
     if (visual) {
-      const rayon = Number.parseFloat(window.getComputedStyle(visual).borderTopLeftRadius) || 0;
+      const radius = Number.parseFloat(window.getComputedStyle(visual).borderTopLeftRadius) || 0;
       const image = visual.querySelector("img");
-      captureDetailOrigin(visual, itemId, image?.currentSrc || image?.src || "", rayon);
+      captureDetailOrigin(visual, itemId, image?.currentSrc || image?.src || "", radius);
     }
     navigate(`/media/${itemId}`);
   }, [itemId, navigate]);
@@ -110,12 +110,12 @@ export function FocusableCard({
     [shortAction, longAction],
   );
 
-  const surFocus = useCallback(() => {
+  const onFocus = useCallback(() => {
     setFocused(true);
     if (item) aimItem(item);
     onActiveIndex(index);
   }, [index, item, onActiveIndex]);
-  const surBlur = useCallback(() => {
+  const onBlur = useCallback(() => {
     setFocused(false);
     releaseItem();
     press.onBlur();
@@ -124,7 +124,7 @@ export function FocusableCard({
 
   return (
     <div
-      ref={racine}
+      ref={root}
       // `role="button"` et non `<button>` : ce dernier synthétise un `click`
       // sur Entrée, et l'action serait jouée deux fois.
       role="button"
@@ -134,8 +134,8 @@ export function FocusableCard({
       style={width ? { width: width } : undefined}
       onKeyDown={press.onKeyDown}
       onKeyUp={press.onKeyUp}
-      onFocus={surFocus}
-      onBlur={surBlur}
+      onFocus={onFocus}
+      onBlur={onBlur}
     >
       {children}
       {/* Monté au focus seulement, et démonté au blur : une passe de

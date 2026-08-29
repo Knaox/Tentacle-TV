@@ -60,18 +60,18 @@ export function reviewAfterMount(attempt: Attempt, options: ReviewOptions = {}):
     if (!succeeded) options.onTimeout?.();
   };
 
-  const essayer = () => {
+  const tick = () => {
     if (done) return;
     if (frames < MIN_FRAMES) {
       frames++;
-      requestAnimationFrame(essayer);
+      requestAnimationFrame(tick);
       return;
     }
     if (attempt()) stop(true);
   };
 
   const observer = new MutationObserver(() => {
-    if (!done) requestAnimationFrame(essayer);
+    if (!done) requestAnimationFrame(tick);
   });
 
   observer.observe(document.body, {
@@ -94,5 +94,5 @@ export function reviewAfterMount(attempt: Attempt, options: ReviewOptions = {}):
   });
   const timer = setTimeout(() => stop(false), budgetMs);
 
-  requestAnimationFrame(essayer);
+  requestAnimationFrame(tick);
 }

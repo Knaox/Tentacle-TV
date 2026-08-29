@@ -37,14 +37,14 @@ export function tokenFallbackPass(root: Root, context: CompatContext): void {
     // preuve qu'il reste quelque chose après le retrait.
     const declared = new Set<string>();
 
-    rule.each((noeud) => {
-      if (noeud.type !== "decl") return;
-      if (!COMPUTED.test(noeud.value)) {
-        declared.add(noeud.prop);
+    rule.each((node) => {
+      if (node.type !== "decl") return;
+      if (!COMPUTED.test(node.value)) {
+        declared.add(node.prop);
         return;
       }
-      if (!declared.has(noeud.prop)) return;
-      noeud.remove();
+      if (!declared.has(node.prop)) return;
+      node.remove();
       context.count("replis-de-jeton");
     });
   });

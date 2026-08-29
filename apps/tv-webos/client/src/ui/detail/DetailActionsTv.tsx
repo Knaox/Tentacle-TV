@@ -34,27 +34,27 @@ interface DetailActionsProps {
  * celui-ci et sans que l'enveloppe soit re-rendue.
  */
 export function DetailActions({ item }: DetailActionsProps) {
-  const bloc = useMarker<HTMLDivElement>(markDetail);
+  const block = useMarker<HTMLDivElement>(markDetail);
 
   return (
-    <div ref={bloc}>
+    <div ref={block}>
       <WebActions item={item} />
     </div>
   );
 }
 
 /** Idempotent : n'écrit que si la cible a changé, et ne laisse jamais deux marques. */
-function markDetail(bloc: HTMLElement): void {
-  const column = bloc.parentElement;
+function markDetail(block: HTMLElement): void {
+  const column = block.parentElement;
   if (column && column.getAttribute("data-tv-zone") !== "actions-fiche") {
     column.setAttribute("data-tv-zone", "actions-fiche");
   }
 
-  const premier = bloc.querySelector<HTMLElement>("button, a[href]");
-  const holder = column ?? bloc;
+  const first = block.querySelector<HTMLElement>("button, a[href]");
+  const holder = column ?? block;
   const current = holder.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
-  if (current === premier) return;
+  if (current === first) return;
 
   current?.removeAttribute(ENTRY_ATTRIBUTE);
-  premier?.setAttribute(ENTRY_ATTRIBUTE, "");
+  first?.setAttribute(ENTRY_ATTRIBUTE, "");
 }

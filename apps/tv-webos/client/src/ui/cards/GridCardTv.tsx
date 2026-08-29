@@ -1,6 +1,6 @@
 import { memo, useCallback } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { LibraryGridCard as CarteWeb } from "@/components/LibraryGridCard";
+import { LibraryGridCard as WebCard } from "@/components/LibraryGridCard";
 import { FocusableCard } from "./FocusableCard";
 
 interface GridCardProps {
@@ -24,7 +24,7 @@ interface GridCardProps {
  * Pas de maintien ici : dans une grille, l'appui court ouvre déjà la fiche.
  * Un second geste vers la même destination n'apprendrait rien.
  */
-export const LibraryGridCard = memo(function CarteGrilleTv({
+export const LibraryGridCard = memo(function GridCardTv({
   item,
   onNavigate,
 }: GridCardProps) {
@@ -41,7 +41,7 @@ export const LibraryGridCard = memo(function CarteGrilleTv({
       item={item}
       onActiveIndex={withoutPinning}
     >
-      <CarteWeb item={item} onNavigate={onNavigate} />
+      <WebCard item={item} onNavigate={onNavigate} />
     </FocusableCard>
   );
 });

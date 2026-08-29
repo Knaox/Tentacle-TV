@@ -38,17 +38,17 @@ export function inRail(element: HTMLElement | null): boolean {
  * entrée courante — une fiche média —, la première entrée atteignable fait
  * l'affaire : on vient y CHOISIR une destination, autant partir du haut.
  */
-export function entreeDuRail(): HTMLElement | null {
+export function railEntry(): HTMLElement | null {
   const rail = document.querySelector<HTMLElement>(RAIL_SELECTOR);
   if (!rail) return null;
 
-  const courante = rail.querySelector<HTMLElement>('[aria-current="page"]');
-  if (courante && courante.matches(FOCUSABLE_SELECTOR) && reachableTarget(courante)) {
-    return courante;
+  const current = rail.querySelector<HTMLElement>('[aria-current="page"]');
+  if (current && current.matches(FOCUSABLE_SELECTOR) && reachableTarget(current)) {
+    return current;
   }
 
-  for (const entree of rail.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
-    if (reachableTarget(entree)) return entree;
+  for (const entry of rail.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+    if (reachableTarget(entry)) return entry;
   }
   return null;
 }
@@ -81,7 +81,7 @@ export function invalidateContent(): void {
  * pendant qu'on parcourait le rail —, celui que la clé de route retrouve,
  * sinon le focus par défaut de l'écran, hors rail.
  */
-export function sortieDuRail(): HTMLElement | null {
+export function railExit(): HTMLElement | null {
   if (lastContent && document.contains(lastContent) && reachableTarget(lastContent)) {
     return lastContent;
   }
@@ -112,7 +112,7 @@ export const ENTRY_ATTRIBUTE = "data-tv-zone-entree";
  * la main à la géométrie, laquelle choisissait sur tout l'écran. Déclarer une
  * zone garantit désormais un atterrissage à l'intérieur, toujours.
  */
-const CASCADE_ENTREE = [
+const ENTRY_CASCADE = [
   `[${ENTRY_ATTRIBUTE}]`,
   '[class*="cta-primary"]',
   '[aria-selected="true"]',
@@ -136,8 +136,8 @@ const CASCADE_ENTREE = [
  * un veto : le menu de la note n'offre qu'un curseur, et un curseur ne fait
  * monter aucun clavier — mieux vaut y entrer que nulle part.
  */
-export function destinationEntreeDeZone(zone: HTMLElement): HTMLElement | null {
-  for (const selector of CASCADE_ENTREE) {
+export function zoneEntryDestination(zone: HTMLElement): HTMLElement | null {
+  for (const selector of ENTRY_CASCADE) {
     const found: HTMLElement[] = [];
     for (const target of zone.querySelectorAll<HTMLElement>(selector)) {
       if (!target.matches(FOCUSABLE_SELECTOR)) continue;
@@ -166,7 +166,7 @@ export function redirectZoneEntry(
   if (!zone) return null;
   if (start && zone.contains(start)) return null;
 
-  const target = destinationEntreeDeZone(zone);
+  const target = zoneEntryDestination(zone);
   if (!target || target === arrival) return null;
   return target;
 }

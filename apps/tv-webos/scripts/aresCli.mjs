@@ -18,20 +18,20 @@ const TARGET_ROOT = resolve(HERE, "..");
 const REPO_ROOT = resolve(TARGET_ROOT, "../..");
 
 /** Le paquet est déclaré par cette cible, mais pnpm peut l'avoir lié à la racine. */
-function pointEntree(nom) {
-  const candidates = [TARGET_ROOT, REPO_ROOT].map((racine) =>
-    resolve(racine, `node_modules/@webos-tools/cli/bin/${nom}.js`)
+function entryPoint(name) {
+  const candidates = [TARGET_ROOT, REPO_ROOT].map((root) =>
+    resolve(root, `node_modules/@webos-tools/cli/bin/${name}.js`)
   );
   return candidates.find(existsSync);
 }
 
-export function runAres(nom, params) {
-  const entree = pointEntree(nom);
+export function runAres(name, params) {
+  const entry = entryPoint(name);
   // Sans le paquet, on tente l'outil du PATH : un SDK LG installé à part le
   // fournit, et le message d'erreur reste alors celui de l'outil.
-  if (!entree) {
-    execFileSync(nom, params, { stdio: "inherit" });
+  if (!entry) {
+    execFileSync(name, params, { stdio: "inherit" });
     return;
   }
-  execFileSync(process.execPath, [entree, ...params], { stdio: "inherit" });
+  execFileSync(process.execPath, [entry, ...params], { stdio: "inherit" });
 }

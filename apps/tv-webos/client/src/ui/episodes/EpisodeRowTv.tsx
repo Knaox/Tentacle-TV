@@ -22,7 +22,7 @@ import { createLongPress } from "../../focus/longPress";
  * C'est la convention d'Apple TV, celle que le geste rend naturelle, et c'est
  * déjà celle des cartes d'épisode de l'accueil.
  *
- * `data-tv-key` porte l'identifiant Jellyfin : c'est ce qui permet à la mémoire
+ * `data-tv-cle` porte l'identifiant Jellyfin : c'est ce qui permet à la mémoire
  * de focus de retrouver CET épisode au retour du lecteur, là où un libellé
  * traduit ou une position dans la liste ne le garantiraient pas.
  */
@@ -35,7 +35,7 @@ interface EpisodeRowTvProps {
 }
 
 export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
-  const racine = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   /**
@@ -47,7 +47,7 @@ export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
    * sans en dupliquer une ligne.
    */
   const shortAction = useCallback(() => {
-    const line = racine.current?.firstElementChild;
+    const line = root.current?.firstElementChild;
     if (line instanceof HTMLElement) line.click();
   }, []);
 
@@ -62,13 +62,13 @@ export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
 
   return (
     <div
-      ref={racine}
+      ref={root}
       // `role="button"` et non `<button>` : ce dernier synthétise un `click` sur
       // Entrée, et l'action serait jouée deux fois.
       role="button"
       tabIndex={0}
       data-tv-carte
-      data-tv-key={episodeId}
+      data-tv-cle={episodeId}
       className="ligne-episode-tv"
       onKeyDown={press.onKeyDown}
       onKeyUp={press.onKeyUp}

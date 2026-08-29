@@ -35,51 +35,51 @@ interface ScrollOptions2 {
 type ScrollTarget = Element | Window;
 
 /** Pose une position absolue sur la cible. Diffère entre un élément et la fenêtre. */
-type Poseur = (target: ScrollTarget, x: number, y: number) => void;
+type Setter = (target: ScrollTarget, x: number, y: number) => void;
 
 function isOptions(value: unknown): value is ScrollOptions2 {
   return typeof value === "object" && value !== null;
 }
 
-function positionCourante(target: ScrollTarget): { x: number; y: number } {
+function currentPosition(target: ScrollTarget): { x: number; y: number } {
   if (target instanceof Window) {
     return { x: target.pageXOffset, y: target.pageYOffset };
   }
   return { x: target.scrollLeft, y: target.scrollTop };
 }
 
-function createScrollTo(poser: Poseur) {
+function createScrollTo(setPosition: Setter) {
   return function (this: ScrollTarget, a: unknown, b?: unknown): void {
     if (isOptions(a)) {
-      const current2 = positionCourante(this);
-      poser(this, a.left ?? current2.x, a.top ?? current2.y);
+      const current2 = currentPosition(this);
+      setPosition(this, a.left ?? current2.x, a.top ?? current2.y);
       return;
     }
-    poser(this, Number(a) || 0, Number(b) || 0);
+    setPosition(this, Number(a) || 0, Number(b) || 0);
   };
 }
 
-function createScrollBy(poser: Poseur) {
+function createScrollBy(setPosition: Setter) {
   return function (this: ScrollTarget, a: unknown, b?: unknown): void {
-    const current2 = positionCourante(this);
+    const current2 = currentPosition(this);
     if (isOptions(a)) {
-      poser(this, current2.x + (a.left ?? 0), current2.y + (a.top ?? 0));
+      setPosition(this, current2.x + (a.left ?? 0), current2.y + (a.top ?? 0));
       return;
     }
-    poser(this, current2.x + (Number(a) || 0), current2.y + (Number(b) || 0));
+    setPosition(this, current2.x + (Number(a) || 0), current2.y + (Number(b) || 0));
   };
 }
 
-function installerSurElement(): void {
-  const objet = Element.prototype as unknown as Record<string, unknown>;
-  const poser: Poseur = (target, x, y) => {
+function installOnElement(): void {
+  const proto = Element.prototype as unknown as Record<string, unknown>;
+  const setPosition: Setter = (target, x, y) => {
     const element = target as Element;
     element.scrollLeft = x;
     element.scrollTop = y;
   };
 
-  if (typeof objet.scrollTo !== "function") objet.scrollTo = createScrollTo(poser);
-  if (typeof objet.scrollBy !== "function") objet.scrollBy = createScrollBy(poser);
+  if (typeof proto.scrollTo !== "function") proto.scrollTo = createScrollTo(setPosition);
+  if (typeof proto.scrollBy !== "function") proto.scrollBy = createScrollBy(setPosition);
 }
 
 /**
@@ -90,8 +90,8 @@ function installerSurElement(): void {
  * et un moteur qui refuse la forme lève avant d'avoir bougé quoi que ce soit.
  * La sonde est donc sans effet dans les deux cas.
  */
-function acceptsObject(window: Window, nom: string): boolean {
-  const method = (window as unknown as Record<string, unknown>)[nom];
+function acceptsObject(window: Window, name: string): boolean {
+  const method = (window as unknown as Record<string, unknown>)[name];
   if (typeof method !== "function") return false;
   try {
     (method as (options: ScrollOptions2) => void).call(window, {});
@@ -102,24 +102,24 @@ function acceptsObject(window: Window, nom: string): boolean {
 }
 
 function installOnWindow(window: Window): void {
-  const objet = window as unknown as Record<string, unknown>;
+  const proto = window as unknown as Record<string, unknown>;
 
   // Capturée AVANT toute enveloppe : c'est elle qui déplace réellement la page,
   // et les trois enveloppes s'appuient dessus. La prendre après reviendrait à
   // s'appeler soi-même.
-  const native = objet.scrollTo as ((x: number, y: number) => void) | undefined;
-  const poser: Poseur = (target, x, y) => {
+  const native = proto.scrollTo as ((x: number, y: number) => void) | undefined;
+  const setPosition: Setter = (target, x, y) => {
     if (typeof native === "function") native.call(target, x, y);
   };
 
   // `scroll` est l'alias historique de `scrollTo` — même défaut, même correctif.
-  for (const nom of ["scrollTo", "scroll"]) {
-    if (!acceptsObject(window, nom)) objet[nom] = createScrollTo(poser);
+  for (const name of ["scrollTo", "scroll"]) {
+    if (!acceptsObject(window, name)) proto[name] = createScrollTo(setPosition);
   }
-  if (!acceptsObject(window, "scrollBy")) objet.scrollBy = createScrollBy(poser);
+  if (!acceptsObject(window, "scrollBy")) proto.scrollBy = createScrollBy(setPosition);
 }
 
 export function installScrollPolyfill(): void {
-  if (typeof Element !== "undefined") installerSurElement();
+  if (typeof Element !== "undefined") installOnElement();
   if (typeof window !== "undefined") installOnWindow(window);
 }

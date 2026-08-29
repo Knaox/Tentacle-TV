@@ -40,7 +40,7 @@
  * coûts proscrit. Le fondu est donc une animation d'entrée, pas une
  * transition d'opacité sur un calque permanent.
  */
-.osd-tv[data-panneau="pistes"]::after,
+.osd-tv[data-panneau="tracks"]::after,
 .osd-tv[data-panneau="episodes"]::after {
   content: "";
   position: absolute;

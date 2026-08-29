@@ -38,7 +38,7 @@ export interface RelayPairing {
 const DEFAULT_DURATION = 300;
 
 export function usePairingRelay(
-  surConfirmation: (data: RelayStatusResponse) => void,
+  onConfirmed: (data: RelayStatusResponse) => void,
 ): RelayPairing {
   const generation = useRelayGenerate();
   const [code, setCode] = useState<string | null>(null);
@@ -61,10 +61,10 @@ export function usePairingRelay(
     setRemaining(DEFAULT_DURATION);
     request.current(undefined, {
       onSuccess: (data) => {
-        const vie = data.expiresIn > 0 ? data.expiresIn : DEFAULT_DURATION;
+        const lifetime = data.expiresIn > 0 ? data.expiresIn : DEFAULT_DURATION;
         setCode(data.code);
-        setDuration(vie);
-        setRemaining(vie);
+        setDuration(lifetime);
+        setRemaining(lifetime);
         setIssuedAt(Date.now());
       },
     });
@@ -80,17 +80,17 @@ export function usePairingRelay(
      le relais — il annoncerait un code encore valide là où il ne l'est plus. */
   useEffect(() => {
     if (issuedAt === null) return;
-    const battement = setInterval(() => {
+    const ticker = setInterval(() => {
       const elapsed = Math.floor((Date.now() - issuedAt) / 1000);
       setRemaining(Math.max(0, duration - elapsed));
     }, 1000);
-    return () => clearInterval(battement);
+    return () => clearInterval(ticker);
   }, [issuedAt, duration]);
 
   useEffect(() => {
-    if (status?.status === "confirmed") surConfirmation(status);
+    if (status?.status === "confirmed") onConfirmed(status);
     if (status?.status === "expired") setRemaining(0);
-  }, [status, surConfirmation]);
+  }, [status, onConfirmed]);
 
   let state: PairingState = "chargement";
   if (code && !expire) state = "code";

@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /** Là où l'on installe la CLI si l'ordinateur ne l'a pas déjà. */
-export const ATELIER = join(homedir(), ".tentacle-tv", "webos-cli");
+export const WORKSHOP = join(homedir(), ".tentacle-tv", "webos-cli");
 
 /**
  * Le point d'entrée JavaScript d'un outil `ares-*`.
@@ -30,8 +30,8 @@ export const ATELIER = join(homedir(), ".tentacle-tv", "webos-cli");
  * Node interdit d'exécuter un `.bat`/`.cmd` hors shell — EINVAL. Le même geste
  * vaut alors sur les trois systèmes.
  */
-function pointEntree(racine, nom) {
-  const path = resolve(racine, "node_modules/@webos-tools/cli/bin", `${nom}.js`);
+function entryPoint(root, name) {
+  const path = resolve(root, "node_modules/@webos-tools/cli/bin", `${name}.js`);
   return existsSync(path) ? path : null;
 }
 
@@ -41,13 +41,13 @@ function pointEntree(racine, nom) {
  * lui-même, puis dans notre atelier d'une exécution précédente.
  */
 function possibleRoots() {
-  return [HERE, resolve(HERE, ".."), resolve(HERE, "../../.."), ATELIER];
+  return [HERE, resolve(HERE, ".."), resolve(HERE, "../../.."), WORKSHOP];
 }
 
 /** La première racine qui porte la CLI, ou `null`. C'est bien la RACINE qui est
  *  rendue, pas le chemin de l'outil : `runAres` en dérive tous les autres. */
-export function locateAres(nom = "ares-install") {
-  return possibleRoots().find((racine) => pointEntree(racine, nom)) ?? null;
+export function locateAres(name = "ares-install") {
+  return possibleRoots().find((root) => entryPoint(root, name)) ?? null;
 }
 
 /**
@@ -59,10 +59,10 @@ export function locateAres(nom = "ares-install") {
  * une trace Node incompréhensible pour qui voulait juste installer une
  * application. On lui fait donc dire sa version avant de compter dessus.
  */
-export function aresUsable(racine) {
-  if (!racine) return false;
+export function aresUsable(root) {
+  if (!root) return false;
   try {
-    return runAres(racine, "ares-setup-device", ["--version"]).code === 0;
+    return runAres(root, "ares-setup-device", ["--version"]).code === 0;
   } catch {
     return false;
   }
@@ -76,11 +76,11 @@ export function aresUsable(racine) {
  * reproductible : npm y écrit son `package-lock.json` et ne va rien chercher
  * dans les dossiers parents.
  */
-function poserLAtelier(purger) {
-  if (purger) rmSync(ATELIER, { recursive: true, force: true });
-  mkdirSync(ATELIER, { recursive: true });
+function setUpWorkshop(purge) {
+  if (purge) rmSync(WORKSHOP, { recursive: true, force: true });
+  mkdirSync(WORKSHOP, { recursive: true });
   writeFileSync(
-    join(ATELIER, "package.json"),
+    join(WORKSHOP, "package.json"),
     `${JSON.stringify({ name: "tentacle-tv-webos-cli", version: "1.0.0", private: true }, null, 2)}\n`,
     "utf8"
   );
@@ -111,7 +111,7 @@ export const NPM_COMMAND =
   "npm install @webos-tools/cli@3 --omit=dev --no-audit --no-fund --loglevel=error";
 
 function runNpm() {
-  const issue = spawnSync(NPM_COMMAND, { shell: true, stdio: "inherit", cwd: ATELIER });
+  const issue = spawnSync(NPM_COMMAND, { shell: true, stdio: "inherit", cwd: WORKSHOP });
   if (issue.error && issue.error.code === "ENOENT") {
     throw new Error(
       "npm est introuvable. Il est livré avec Node.js — réinstallez Node.js " +
@@ -126,20 +126,20 @@ function runNpm() {
  * tentative repart d'un dossier vide : un arbre incomplet est un arbre que npm
  * tient pour satisfait, et qu'il ne complétera donc jamais.
  */
-export function installerAres({ purger = false } = {}) {
-  poserLAtelier(purger);
+export function installAres({ purge = false } = {}) {
+  setUpWorkshop(purge);
   runNpm();
-  let racine = locateAres();
-  if (aresUsable(racine)) return racine;
+  let root = locateAres();
+  if (aresUsable(root)) return root;
 
-  poserLAtelier(true);
+  setUpWorkshop(true);
   runNpm();
-  racine = locateAres();
-  if (aresUsable(racine)) return racine;
+  root = locateAres();
+  if (aresUsable(root)) return root;
 
   throw new Error(
     "la CLI webOS de LG s'est installée mais ne fonctionne pas.\n\n" +
-      `  Le dossier concerné est :\n    ${ATELIER}\n\n` +
+      `  Le dossier concerné est :\n    ${WORKSHOP}\n\n` +
       "  Supprimez-le et relancez ce script. Si le problème persiste, c'est\n" +
       "  que npm n'a pas pu tout télécharger — vérifiez la connexion, ou un\n" +
       "  antivirus ou pare-feu d'entreprise qui filtrerait registry.npmjs.org."
@@ -153,15 +153,15 @@ export function installerAres({ purger = false } = {}) {
  * `show` laisse la sortie de l'outil s'afficher ; sinon elle est capturée et
  * rendue à l'appelant, qui décide seul de ce qu'il en montre.
  */
-export function runAres(racine, nom, params, { show = false } = {}) {
-  const entree = pointEntree(racine, nom);
-  if (!entree) throw new Error(`${nom} est introuvable dans ${racine}`);
-  const issue = spawnSync(process.execPath, [entree, ...params], {
+export function runAres(root, name, params, { show = false } = {}) {
+  const entry = entryPoint(root, name);
+  if (!entry) throw new Error(`${name} est introuvable dans ${root}`);
+  const issue = spawnSync(process.execPath, [entry, ...params], {
     stdio: show ? "inherit" : "pipe",
     encoding: "utf8",
   });
-  const sortie = `${issue.stdout ?? ""}${issue.stderr ?? ""}`.trim();
-  return { code: issue.status, sortie };
+  const output = `${issue.stdout ?? ""}${issue.stderr ?? ""}`.trim();
+  return { code: issue.status, output };
 }
 
 /**

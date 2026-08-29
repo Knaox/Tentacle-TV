@@ -27,7 +27,7 @@
 
 import { isInputField } from "./candidates";
 
-let clavierMonte = false;
+let keyboardUp = false;
 
 /**
  * Le clavier système occupe-t-il l'écran ?
@@ -49,7 +49,7 @@ let clavierMonte = false;
  * focus. On reste donc suspendu du début à la fin, comme il le faut.
  */
 export function systemKeyboardVisible(): boolean {
-  if (!clavierMonte) return false;
+  if (!keyboardUp) return false;
   if (typeof document === "undefined") return false;
   return isInputField(document.activeElement as HTMLElement | null);
 }
@@ -57,12 +57,12 @@ export function systemKeyboardVisible(): boolean {
 export function watchSystemKeyboard(): () => void {
   const onChange = (event: Event) => {
     const detail = (event as CustomEvent<{ visibility?: boolean }>).detail;
-    clavierMonte = detail?.visibility === true;
+    keyboardUp = detail?.visibility === true;
   };
 
   document.addEventListener("keyboardStateChange", onChange);
   return () => {
     document.removeEventListener("keyboardStateChange", onChange);
-    clavierMonte = false;
+    keyboardUp = false;
   };
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ComponentProps } from "react";
 import { useLocation } from "react-router-dom";
-import { LibraryFilterBar as BarreWeb } from "@/components/LibraryFilters";
+import { LibraryFilterBar as WebBar } from "@/components/LibraryFilters";
 // Le hook et son état ont quitté le composant pour `hooks/` côté web : la
 // substitution est un greffon de build, `tsc` ne la connaît pas, et c'est ce
 // import-ci qui casse quand `apps/web` se réorganise.
@@ -74,10 +74,10 @@ export function useLibraryFilters() {
   return controls;
 }
 
-export function LibraryFilterBar(props: ComponentProps<typeof BarreWeb>) {
+export function LibraryFilterBar(props: ComponentProps<typeof WebBar>) {
   return (
     <div data-tv-zone="filtres-bibliotheque">
-      <BarreWeb {...props} />
+      <WebBar {...props} />
     </div>
   );
 }

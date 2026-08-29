@@ -27,7 +27,7 @@ import type { CompatContext } from "./context";
  */
 export function ratiosPass(root: Root, context: CompatContext): void {
   root.walkDecls("aspect-ratio", (declaration) => {
-    const parent = declaration.parent as { selector?: string; after?(noeud: unknown): void } | undefined;
+    const parent = declaration.parent as { selector?: string; after?(node: unknown): void } | undefined;
     const report = readReport(declaration.value);
 
     if (!report || !parent?.selector) {
@@ -38,7 +38,7 @@ export function ratiosPass(root: Root, context: CompatContext): void {
 
     const container = declaration.parent;
     if (container && "append" in container) {
-      const block = container as { append(...noeuds: unknown[]): void };
+      const block = container as { append(...nodes: unknown[]): void };
       block.append(createDecl({ prop: "position", value: "relative" }));
       block.append(createDecl({ prop: "height", value: "0" }));
       block.append(

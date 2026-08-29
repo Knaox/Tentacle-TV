@@ -28,11 +28,11 @@ import { sortProps } from "./framerMotionProps";
  */
 
 type Props = Record<string, unknown>;
-type Rappel = () => void;
+type Callback = () => void;
 
 /** Exécute au tick suivant, jamais pendant le rendu. */
-function onNextTick(rappel: Rappel): void {
-  Promise.resolve().then(rappel);
+function onNextTick(callback: Callback): void {
+  Promise.resolve().then(callback);
 }
 
 function createComponent(tag: string) {
@@ -47,7 +47,7 @@ function createComponent(tag: string) {
     useEffect(() => {
       // Joué au montage, et là seulement : sans animation réelle, il n'existe
       // aucun autre instant où une animation pourrait « se terminer ».
-      if (typeof done.current === "function") onNextTick(done.current as Rappel);
+      if (typeof done.current === "function") onNextTick(done.current as Callback);
     }, []);
 
     return createElement(tag, { ...dom, ref });
@@ -82,16 +82,16 @@ export const motion = new Proxy({} as Record<string, unknown>, {
  * signaler au tick suivant lui laisse le temps d'avoir été démonté.
  */
 export function AnimatePresence(
-  props: { children?: ReactNode; onExitComplete?: Rappel },
+  props: { children?: ReactNode; onExitComplete?: Callback },
 ): ReactElement | null {
   const count = Children.count(props.children);
-  const precedent = useRef(count);
+  const previous = useRef(count);
 
   useEffect(() => {
-    if (precedent.current > 0 && count === 0 && props.onExitComplete) {
+    if (previous.current > 0 && count === 0 && props.onExitComplete) {
       onNextTick(props.onExitComplete);
     }
-    precedent.current = count;
+    previous.current = count;
   }, [count, props.onExitComplete]);
 
   return createElement(Fragment, null, props.children);

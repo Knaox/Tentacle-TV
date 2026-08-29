@@ -39,7 +39,7 @@ export function PlaybackScreenTv() {
   const { data: preferences } = useLibraryPreferences();
   const save = useSetLibraryPreference();
   const remove2 = useDeleteLibraryPreference();
-  const poserLangue = useSetInterfaceLanguage();
+  const setLanguage = useSetInterfaceLanguage();
 
   /** Le réglage dont on est en train de choisir la valeur, s'il y en a un. */
   const [open, setOpen] = useState<{ library: string; setting: SettingTv } | null>(null);
@@ -54,18 +54,18 @@ export function PlaybackScreenTv() {
   );
 
   const languageName = useCallback(
-    (code: string | null | undefined, vide: string) =>
-      code ? (LANGUAGE_KEYS[code] ? t(LANGUAGE_KEYS[code]) : code) : vide,
+    (code: string | null | undefined, fallback: string) =>
+      code ? (LANGUAGE_KEYS[code] ? t(LANGUAGE_KEYS[code]) : code) : fallback,
     [t],
   );
 
-  const changerLangueInterface = useCallback(
+  const changeInterfaceLanguage = useCallback(
     (code: string) => {
       i18n.changeLanguage(code);
       localStorage.setItem("tentacle_language", code);
-      poserLangue.mutate(code);
+      setLanguage.mutate(code);
     },
-    [i18n, poserLangue],
+    [i18n, setLanguage],
   );
 
   const apply = useCallback(
@@ -100,33 +100,33 @@ export function PlaybackScreenTv() {
           {t("interfaceLanguage")}
         </h2>
         <div className="flex gap-4">
-          {INTERFACE_LANGUAGES.map((langue) => (
+          {INTERFACE_LANGUAGES.map((language) => (
             <button
-              key={langue.code}
+              key={language.code}
               type="button"
               className="bouton-reglage-tv"
-              data-active={i18n.language.startsWith(langue.code)}
-              onClick={() => changerLangueInterface(langue.code)}
+              data-actif={i18n.language.startsWith(language.code)}
+              onClick={() => changeInterfaceLanguage(language.code)}
             >
-              <span className="bouton-reglage-tv-valeur">{langue.label}</span>
+              <span className="bouton-reglage-tv-valeur">{language.label}</span>
             </button>
           ))}
         </div>
       </section>
 
       {(libraries ?? []).map((library) => {
-        const pref = preferences?.find((entree) => entree.libraryId === library.Id);
+        const pref = preferences?.find((entry) => entry.libraryId === library.Id);
         const settings: SettingTv[] = [
           {
             key: "audio",
-            intitule: t("audio"),
+            label: t("audio"),
             value: languageName(pref?.audioLang, t("default")),
             choice: [{ value: "", label: t("default") }, ...languages],
             selection: pref?.audioLang ?? "",
           },
           {
             key: "mode",
-            intitule: t("subtitleMode"),
+            label: t("subtitleMode"),
             value: t(
               SUBTITLE_MODES.find((mode) => mode.value === (pref?.subtitleMode ?? "none"))!.key,
             ),
@@ -135,7 +135,7 @@ export function PlaybackScreenTv() {
           },
           {
             key: "sousTitres",
-            intitule: t("subtitles"),
+            label: t("subtitles"),
             value: languageName(pref?.subtitleLang, t("none")),
             choice: [{ value: "", label: t("none") }, ...languages],
             selection: pref?.subtitleLang ?? "",
@@ -145,7 +145,7 @@ export function PlaybackScreenTv() {
         return (
           <section key={library.Id} className="mb-6">
             <LibraryCardTv
-              nom={library.Name}
+              name={library.Name}
               settings={settings}
               custom={!!pref}
               onOpen={(setting) => setOpen({ library: library.Id, setting })}
@@ -157,7 +157,7 @@ export function PlaybackScreenTv() {
 
       {open && (
         <ChoicePanelTv
-          title={open.setting.intitule}
+          title={open.setting.label}
           choice={open.setting.choice}
           selection={open.setting.selection}
           onChoose={apply}

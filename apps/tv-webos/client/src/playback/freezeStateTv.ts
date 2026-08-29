@@ -33,7 +33,7 @@ export function subscribeFreeze(onChange: () => void): () => void {
 }
 
 /** `useSyncExternalStore` : lire l'état courant. */
-export function lireGel(): boolean {
+export function readFreeze(): boolean {
   return frozen2;
 }
 
@@ -42,7 +42,7 @@ export function lireGel(): boolean {
  * veille, toutes les deux secondes, pour une valeur identique, serait payé par
  * la dalle sans rien apporter.
  */
-export function poserGel(value: boolean): void {
+export function setFreeze(value: boolean): void {
   if (frozen2 === value) return;
   frozen2 = value;
   for (const subscriber of subscribers) subscriber();

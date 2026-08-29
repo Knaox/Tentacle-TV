@@ -20,7 +20,7 @@
     457: "info"
   };
 
-  function cellule(text, cssClass) {
+  function cell(text, cssClass) {
     var td = document.createElement("td");
     td.className = cssClass;
     td.appendChild(document.createTextNode(text));
@@ -41,15 +41,15 @@
     for (var i = 0; i < section.lines.length; i++) {
       var line = section.lines[i];
       var tr = document.createElement("tr");
-      tr.appendChild(cellule(line.key, "cle"));
-      tr.appendChild(cellule(line.sonde.value, classForState(line.sonde.state)));
+      tr.appendChild(cell(line.key, "cle"));
+      tr.appendChild(cell(line.probe.value, classForState(line.probe.state)));
       table.appendChild(tr);
     }
 
-    var bloc = document.createDocumentFragment();
-    bloc.appendChild(title);
-    bloc.appendChild(table);
-    return bloc;
+    var fragment = document.createDocumentFragment();
+    fragment.appendChild(title);
+    fragment.appendChild(table);
+    return fragment;
   }
 
   /* Les capacites materielles arrivent par deux chemins : l'API officielle si
@@ -83,25 +83,25 @@
     onResult(null, null);
   }
 
-  function renderDeviceInfo(rapport) {
+  function renderDeviceInfo(report) {
     readDeviceInfo(function (origin, data) {
       var lines = [];
       if (!data) {
         lines.push({
           key: "deviceInfo",
-          sonde: { state: "ko", value: "indisponible — ni API, ni parametre d'URL" }
+          probe: { state: "ko", value: "indisponible — ni API, ni parametre d'URL" }
         });
       } else {
-        lines.push({ key: "origine", sonde: { state: "ok", value: origin } });
+        lines.push({ key: "origine", probe: { state: "ok", value: origin } });
         for (var key in data) {
           if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
           lines.push({
             key: key,
-            sonde: { state: "info", value: String(data[key]) }
+            probe: { state: "info", value: String(data[key]) }
           });
         }
       }
-      rapport.appendChild(renderSection({ title: "Televiseur", lines: lines }));
+      report.appendChild(renderSection({ title: "Televiseur", lines: lines }));
     });
   }
 
@@ -109,13 +109,13 @@
     var zone = document.getElementById("touche");
     document.addEventListener("keydown", function (event) {
       var code = event.keyCode;
-      var nom = KEY_NAMES[code] || "inconnue";
+      var name = KEY_NAMES[code] || "inconnue";
       /* `code` et `repeat` autant que `keyCode` : le lecteur du client web lit
        * `e.code`, et si la telecommande le renseigne, chaque fleche declenche
        * AUSSI son saut dans le flux. La cadence de repetition, elle, cale la
        * detection du maintien. */
       zone.textContent =
-        "keyCode " + code + "  —  " + nom +
+        "keyCode " + code + "  —  " + name +
         "\ncode " + (event.code || "(vide)") +
         "   repeat " + (event.repeat ? "oui" : "non");
       /* Retour : on laisse le comportement par defaut, la sonde n'est pas une
@@ -127,16 +127,16 @@
    * a la telecommande ou dictee au micro. Un texte qui apparait sans qu'aucun
    * `keydown` ne passe est la signature de la dictee. */
   function installInputCapture() {
-    var champ = document.getElementById("saisie");
+    var field = document.getElementById("saisie");
     var zone = document.getElementById("dictee");
-    if (!champ || !zone) return;
+    if (!field || !zone) return;
     var keystrokes = 0;
-    champ.addEventListener("keydown", function () { keystrokes++; });
-    champ.addEventListener("input", function () {
+    field.addEventListener("keydown", function () { keystrokes++; });
+    field.addEventListener("input", function () {
       zone.textContent =
-        "recu : « " + champ.value + " »   —   " + keystrokes + " frappe(s) observee(s)";
+        "recu : « " + field.value + " »   —   " + keystrokes + " frappe(s) observee(s)";
     });
-    champ.addEventListener("focus", function () {
+    field.addEventListener("focus", function () {
       keystrokes = 0;
       zone.textContent = "champ focalise — le clavier systeme doit s'ouvrir";
     });
@@ -149,9 +149,9 @@
    * du relais arrivent après le premier tracé, et le lecteur doit les voir
    * apparaître sans recharger.
    */
-  function renderPanelMeasures(rapport) {
+  function renderPanelMeasures(report) {
     var section = document.createElement("div");
-    rapport.appendChild(section);
+    report.appendChild(section);
 
     var lines = global.PanelProbe.canvas();
     var redraw = function () {
@@ -174,7 +174,7 @@
       redraw();
     };
 
-    add([{ key: "maintien de OK", sonde: { state: "info", value: "maintenez OK trois secondes" } }]);
+    add([{ key: "maintien de OK", probe: { state: "info", value: "maintenez OK trois secondes" } }]);
     global.PanelProbe.installHoldCapture(add);
     global.PanelProbe.probeRelay(add);
     global.PanelProbe.measureObserverBox(add);
@@ -182,13 +182,13 @@
   }
 
   function start() {
-    var rapport = document.getElementById("rapport");
+    var report = document.getElementById("rapport");
     var sections = global.WebosProbes.sections();
     for (var i = 0; i < sections.length; i++) {
-      rapport.appendChild(renderSection(sections[i]));
+      report.appendChild(renderSection(sections[i]));
     }
-    renderPanelMeasures(rapport);
-    renderDeviceInfo(rapport);
+    renderPanelMeasures(report);
+    renderDeviceInfo(report);
     installKeyCapture();
     installInputCapture();
 

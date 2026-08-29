@@ -1,7 +1,7 @@
 import { useSyncExternalStore, type ComponentProps } from "react";
 import { VideoPlayerOverlays as WebOverlays } from "@/components/player/VideoPlayerOverlays?original";
 import { PlaybackOverlayTv } from "./PlaybackOverlayTv";
-import { subscribeFreeze, lireGel } from "./freezeStateTv";
+import { subscribeFreeze, readFreeze } from "./freezeStateTv";
 
 /**
  * Les surcouches du lecteur, moins la projection de l'arbitre.
@@ -18,7 +18,7 @@ import { subscribeFreeze, lireGel } from "./freezeStateTv";
  * voit, et allume LE cercle qui existe déjà.
  */
 export function VideoPlayerOverlays(props: ComponentProps<typeof WebOverlays>) {
-  const frozen2 = useSyncExternalStore(subscribeFreeze, lireGel, lireGel);
+  const frozen2 = useSyncExternalStore(subscribeFreeze, readFreeze, readFreeze);
 
   return (
     <>

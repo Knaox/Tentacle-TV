@@ -103,10 +103,10 @@ const pendingChange = localStorage.getItem("tentacle_language_pending");
 if (hasUser && !pendingChange) {
   const token = localStorage.getItem("tentacle_token");
   fetchInterfaceLanguage(token || "__cookie__")
-    .then((langue) => {
-      if (langue && langue !== i18n.language) {
-        i18n.changeLanguage(langue);
-        localStorage.setItem("tentacle_language", langue);
+    .then((language) => {
+      if (language && language !== i18n.language) {
+        i18n.changeLanguage(language);
+        localStorage.setItem("tentacle_language", language);
       }
     })
     .catch(() => {});
@@ -155,7 +155,7 @@ const queryClient = new QueryClient({
 
 installTvSessionGuard({ client: jellyfinClient, storage, queryClient });
 
-const stockagePersistant = {
+const persistentStorage = {
   getItem: (key: string) => localStorage.getItem(key),
   setItem: (key: string, value: string) => localStorage.setItem(key, value),
   removeItem: (key: string) => localStorage.removeItem(key),
@@ -172,11 +172,11 @@ const cacheOwner = ((): string | null => {
   }
 })();
 
-void hydrateQueryClient(queryClient, stockagePersistant, {
+void hydrateQueryClient(queryClient, persistentStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: cacheOwner,
 });
-attachQueryPersister(queryClient, stockagePersistant, {
+attachQueryPersister(queryClient, persistentStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
   owner: cacheOwner,
 });

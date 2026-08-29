@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withShortSegments, LONGUEUR_SEGMENT_S } from "./segmentLength";
+import { withShortSegments, SEGMENT_LENGTH_S } from "./segmentLength";
 
 /**
  * La leçon qui a coûté une régression : sur ce manifeste, on AJOUTE, on ne
@@ -13,7 +13,7 @@ const MANIFEST = "/api/jellyfin/videos/abc/master.m3u8"
 
 describe("manifeste HLS", () => {
   it("impose la longueur de segment", () => {
-    expect(withShortSegments(MANIFEST)).toContain(`segmentLength=${LONGUEUR_SEGMENT_S}`);
+    expect(withShortSegments(MANIFEST)).toContain(`segmentLength=${SEGMENT_LENGTH_S}`);
   });
 
   it("ne retire ni ne modifie aucun paramètre existant", () => {

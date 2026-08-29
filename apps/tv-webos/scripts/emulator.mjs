@@ -18,7 +18,7 @@ import { runAres } from "./aresCli.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TARGET_ROOT = resolve(HERE, "..");
-const SORTIE = resolve(TARGET_ROOT, "dist-ipk");
+const OUTPUT = resolve(TARGET_ROOT, "dist-ipk");
 
 const ACTIONS = new Set(["install", "launch", "inspect"]);
 const action = process.argv[2];
@@ -35,14 +35,14 @@ function applicationId() {
 }
 
 function lastPackage() {
-  if (!existsSync(SORTIE)) {
+  if (!existsSync(OUTPUT)) {
     throw new Error("aucun paquet : lancez d'abord `pnpm ipk`");
   }
-  const packages = readdirSync(SORTIE).filter((nom) => nom.endsWith(".ipk")).sort();
+  const packages = readdirSync(OUTPUT).filter((name) => name.endsWith(".ipk")).sort();
   if (packages.length === 0) {
     throw new Error("aucun .ipk dans dist-ipk : lancez d'abord `pnpm ipk`");
   }
-  return resolve(SORTIE, packages[packages.length - 1]);
+  return resolve(OUTPUT, packages[packages.length - 1]);
 }
 
 if (action === "install") {

@@ -76,10 +76,10 @@ export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
  * hauteur qui ne correspond à rien de ce qui est dessiné.
  */
 function publish(element: HTMLElement, width: number, columns: number): void {
-  const carte = columns > 0 ? (width - GAP * (columns - 1)) / columns : 0;
-  element.style.setProperty("--tv-grille-carte", `${Math.max(0, Math.floor(carte))}px`);
+  const card = columns > 0 ? (width - GAP * (columns - 1)) / columns : 0;
+  element.style.setProperty("--tv-grille-carte", `${Math.max(0, Math.floor(card))}px`);
   // Zéro quand le moteur pose déjà l'écart lui-même : la marge s'y AJOUTERAIT.
-  element.style.setProperty("--tv-grille-ecart", `${gapFlexApplique() ? 0 : GAP}px`);
+  element.style.setProperty("--tv-grille-ecart", `${flexGapApplies() ? 0 : GAP}px`);
 }
 
 /**
@@ -104,22 +104,22 @@ function publish(element: HTMLElement, width: number, columns: number): void {
  */
 let gapFlex: boolean | null = null;
 
-function gapFlexApplique(): boolean {
+function flexGapApplies(): boolean {
   if (gapFlex !== null) return gapFlex;
 
-  const sonde = document.createElement("div");
-  sonde.style.cssText =
+  const probe = document.createElement("div");
+  probe.style.cssText =
     "display:flex;flex-wrap:nowrap;gap:8px;position:absolute;top:-1000px;left:-1000px;visibility:hidden";
-  const premier = document.createElement("span");
+  const first = document.createElement("span");
   const second = document.createElement("span");
-  premier.style.cssText = "width:20px;height:4px;flex:0 0 auto";
-  second.style.cssText = premier.style.cssText;
-  sonde.appendChild(premier);
-  sonde.appendChild(second);
-  document.body.appendChild(sonde);
+  first.style.cssText = "width:20px;height:4px;flex:0 0 auto";
+  second.style.cssText = first.style.cssText;
+  probe.appendChild(first);
+  probe.appendChild(second);
+  document.body.appendChild(probe);
 
-  const separation = second.getBoundingClientRect().left - premier.getBoundingClientRect().right;
-  sonde.parentNode?.removeChild(sonde);
+  const separation = second.getBoundingClientRect().left - first.getBoundingClientRect().right;
+  probe.parentNode?.removeChild(probe);
 
   gapFlex = separation > 4;
   return gapFlex;

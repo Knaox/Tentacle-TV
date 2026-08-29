@@ -41,7 +41,7 @@ export function transcode(
   // Le flux de transport ne porte légalement ni l'AV1, ni le VP9, ni les codecs
   // audio exotiques : y annoncer autre chose obligerait le serveur à convertir.
   const videoTs = [...video].filter((codec) => CODECS_TS.has(codec));
-  const audioTs = audioDuFluxDeTransport(audio);
+  const audioTs = transportStreamAudio(audio);
 
   const fmp4 = hlsFmp4Profile([...video].join(",") || "h264", audioFmp4.join(",") || "aac", channels);
   const ts = hlsTsProfile(videoTs.join(",") || "h264", audioTs, channels);
@@ -107,7 +107,7 @@ function keepsRpu(resolved: ResolvedProfile): boolean {
  * L'AAC reste en dernier, sans condition : il est décodé par toutes les
  * générations, et une liste vide ferait recompresser l'image faute de profil.
  */
-function audioDuFluxDeTransport(decoded: Set<string>): string {
+function transportStreamAudio(decoded: Set<string>): string {
   const preferred = ["eac3", "ac3"].filter((codec) => decoded.has(codec));
   return [...preferred, "aac"].join(",");
 }

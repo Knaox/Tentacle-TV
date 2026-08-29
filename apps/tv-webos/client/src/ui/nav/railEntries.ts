@@ -33,7 +33,7 @@ export type RailIcon =
   | "reglages"
   | "restaurer";
 
-export interface EntreeRail {
+export interface RailEntryItem {
   key: string;
   label: string;
   path: string;
@@ -46,13 +46,13 @@ export interface EntreeRail {
   searching?: boolean;
 }
 
-export function useRailEntries(): EntreeRail[] {
+export function useRailEntries(): RailEntryItem[] {
   const { t } = useTranslation("nav");
   const { data: libraries } = useLibraries();
   const pinning = useRailPinning();
 
   return useMemo(() => {
-    const entries: EntreeRail[] = [
+    const entries: RailEntryItem[] = [
       {
         key: "recherche",
         label: t("search"),
@@ -68,7 +68,7 @@ export function useRailEntries(): EntreeRail[] {
       { key: "accueil", label: t("home"), path: "/", icon: "accueil", hideable: false },
     ];
 
-    const offered: EntreeRail[] = [
+    const offered: RailEntryItem[] = [
       {
         key: "watchlist",
         label: t("myList"),
@@ -95,8 +95,8 @@ export function useRailEntries(): EntreeRail[] {
       });
     }
 
-    for (const entree of offered) {
-      if (!pinning.isHidden(entree.key)) entries.push(entree);
+    for (const entry of offered) {
+      if (!pinning.isHidden(entry.key)) entries.push(entry);
     }
 
     if (pinning.masquees.length > 0) {
@@ -125,14 +125,14 @@ export function useRailEntries(): EntreeRail[] {
 }
 
 /** L'entrée active, au chemin courant. */
-export function entreeActive(entries: EntreeRail[], path: string): string | null {
-  for (const entree of entries) {
-    if (entree.restored || entree.searching) continue;
-    if (entree.path === "/") {
-      if (path === "/") return entree.key;
+export function activeEntry(entries: RailEntryItem[], path: string): string | null {
+  for (const entry of entries) {
+    if (entry.restored || entry.searching) continue;
+    if (entry.path === "/") {
+      if (path === "/") return entry.key;
       continue;
     }
-    if (path === entree.path || path.startsWith(`${entree.path}/`)) return entree.key;
+    if (path === entry.path || path.startsWith(`${entry.path}/`)) return entry.key;
   }
   return null;
 }

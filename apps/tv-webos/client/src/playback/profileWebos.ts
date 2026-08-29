@@ -12,7 +12,7 @@ import {
   TEXT_SUBTITLES,
   type WebProfileOptions,
 } from "@/lib/deviceProfile/blocks";
-import { DOVI_CONTAINERS, plafondDebit } from "./capabilitiesWebos";
+import { DOVI_CONTAINERS, bitrateCeiling } from "./capabilitiesWebos";
 import { tvDynamicRanges, resolveProfile, type ResolvedProfile } from "./codecsWebos";
 import {
   keptCodecs,
@@ -71,11 +71,11 @@ export function buildTvProfile(
   options?: WebProfileOptions,
 ): DeviceProfile {
   const memory = memoryWithOptions(rawMemory, options);
-  const plafond = plafondDebit(resolved.panel.uhd, resolved.panel.uhd8K);
+  const ceiling = bitrateCeiling(resolved.panel.uhd, resolved.panel.uhd8K);
 
   return {
-    MaxStreamingBitrate: maxBitrate ?? plafond,
-    MaxStaticBitrate: plafond,
+    MaxStreamingBitrate: maxBitrate ?? ceiling,
+    MaxStaticBitrate: ceiling,
     MusicStreamingTranscodingBitrate: MUSIC_BITRATE,
     // Un palier de qualité choisi (maxBitrate défini — usePlaybackInfo ne rebâtit
     // le profil que dans ce cas) doit être EFFECTIF : avec des entrées de lecture
@@ -121,12 +121,12 @@ function directPlay(resolved: ResolvedProfile, memory: FallbackMemory): DirectPl
   const profiles: DirectPlayProfile[] = [];
 
   for (const container of resolved.capabilities.containers) {
-    if (!keptContainer(memory, container.nom)) continue;
+    if (!keptContainer(memory, container.name)) continue;
     const video = keptCodecs(memory.video, container.video);
     const audio = keptCodecs(memory.audio, container.audio);
     if (video.length === 0 || audio.length === 0) continue;
     profiles.push({
-      Container: container.nom,
+      Container: container.name,
       Type: "Video",
       VideoCodec: video.join(","),
       AudioCodec: audio.join(","),
@@ -216,11 +216,11 @@ function constraints(resolved: ResolvedProfile): CodecProfile[] {
    * Vision échoue sur celui-ci pendant qu'un MP4 ne le rencontre jamais.
    *
    * La garde est ce qui fait dépendre le comportement du MODÈLE : sur webOS 25,
-   * `doviEnMkv` est vrai et ce profil disparaît — le MKV repart en lecture
+   * `doviInMkv` est vrai et ce profil disparaît — le MKV repart en lecture
    * directe, sans aucune session serveur. Sans Dolby Vision sur la dalle, il
    * n'aurait pas d'objet : le profil général n'y déclare déjà pas `DOVI`.
    */
-  if (resolved.panel.dolbyVision && !resolved.capabilities.doviEnMkv) {
+  if (resolved.panel.dolbyVision && !resolved.capabilities.doviInMkv) {
     profiles.push({
       Type: "Video",
       Codec: "hevc",

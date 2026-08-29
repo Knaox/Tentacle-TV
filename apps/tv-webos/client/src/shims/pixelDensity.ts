@@ -27,10 +27,10 @@ export function pixelDensity(): number {
   measured = 1;
   try {
     const canvas = window.innerWidth;
-    const dalle = window.screen && window.screen.width;
-    if (canvas > 0 && dalle > 0) {
-      const rapport = dalle / canvas;
-      if (rapport > 1 && rapport <= 2) measured = rapport;
+    const panel = window.screen && window.screen.width;
+    if (canvas > 0 && panel > 0) {
+      const ratio = panel / canvas;
+      if (ratio > 1 && ratio <= 2) measured = ratio;
     }
   } catch {
     // Pas de `screen` : on reste à 1, c'est-à-dire au comportement du web.

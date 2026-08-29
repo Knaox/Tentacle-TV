@@ -5,7 +5,7 @@ import { useToast } from "@/contexts/ToastContext";
 import type { MediaSource } from "@tentacle-tv/shared";
 import { reportPlaybackFailure } from "./playbackFallback";
 import { observer, EMPTY_WATCH } from "./freezeRestart";
-import { poserGel } from "./freezeStateTv";
+import { setFreeze } from "./freezeStateTv";
 
 /**
  * Période d'échantillonnage de la veille.
@@ -53,15 +53,15 @@ type FallbackOptions = Parameters<typeof webFallback>[0];
 /** Ce que Jellyfin dit de la source qu'on vient d'essayer de lire. */
 function describeSource(source: MediaSource | null | undefined) {
   if (!source) return {};
-  const flux = source.MediaStreams ?? [];
-  const video = flux.find((piste) => piste.Type === "Video");
+  const streams = source.MediaStreams ?? [];
+  const video = streams.find((track) => track.Type === "Video");
   // La piste audio RETENUE, et non la première venue : sur un film à plusieurs
   // doublages, disqualifier le codec d'une piste qu'on n'écoutait pas ferait
   // descendre l'échelle pour rien.
   const indexAudio = source.DefaultAudioStreamIndex;
   const audio =
-    flux.find((piste) => piste.Type === "Audio" && piste.Index === indexAudio) ??
-    flux.find((piste) => piste.Type === "Audio");
+    streams.find((track) => track.Type === "Audio" && track.Index === indexAudio) ??
+    streams.find((track) => track.Type === "Audio");
   return {
     container: source.Container,
     videoCodec: video?.Codec,
@@ -146,21 +146,21 @@ function useFreezeWatch(source: unknown): void {
     watch.current = EMPTY_WATCH;
     // Une source neuve n'hérite pas du gel de la précédente : le témoin
     // resterait allumé par-dessus une lecture qui démarre normalement.
-    poserGel(false);
+    setFreeze(false);
   }, [source]);
 
-  useEffect(() => () => poserGel(false), []);
+  useEffect(() => () => setFreeze(false), []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       const v = document.querySelector("video");
       if (!v) return;
 
-      const debut = watch.current.frozen;
+      const wasFrozen = watch.current.frozen;
       const [next, verdict] = observer(watch.current, {
         position: v.currentTime,
-        enPause: v.paused,
-        pret: v.readyState,
+        paused: v.paused,
+        ready: v.readyState,
         error: v.error?.code ?? null,
         instant: Date.now(),
       });
@@ -170,10 +170,10 @@ function useFreezeWatch(source: unknown): void {
       if (verdict === "resumed") {
         // Ça repart tout seul, et c'est le fait le plus instructif du dossier :
         // rien n'a été relancé entre-temps.
-        poserGel(false);
+        setFreeze(false);
         console.warn("[Tentacle:TV] lecture repartie", {
           position: Math.round(v.currentTime),
-          afterSeconds: debut === null ? null : Math.round((Date.now() - debut) / 1000),
+          afterSeconds: wasFrozen === null ? null : Math.round((Date.now() - wasFrozen) / 1000),
         });
         return;
       }
@@ -181,17 +181,17 @@ function useFreezeWatch(source: unknown): void {
       // Le seul geste que cette veille s'autorise, et il ne touche pas au
       // lecteur : allumer son témoin de chargement. Lui ne peut pas le faire —
       // pendant ce gel il n'émet aucun événement et se déclare prêt.
-      poserGel(true);
+      setFreeze(true);
 
       // L'AVANCE DU TAMPON, pas seulement la position : c'est elle qui fond
       // pendant que le téléviseur tourne sur deux segments, et c'est en la
       // voyant tomber à zéro qu'on comprend le gel. Sans ce nombre, le journal
       // donnait le change.
-      const fin = v.buffered.length > 0 ? v.buffered.end(v.buffered.length - 1) : null;
+      const bufferEnd = v.buffered.length > 0 ? v.buffered.end(v.buffered.length - 1) : null;
       console.warn("[Tentacle:TV] lecture figee", {
         position: Math.round(v.currentTime),
-        bufferProgress: fin === null ? null : Math.round((fin - v.currentTime) * 10) / 10,
-        pret: v.readyState,
+        bufferProgress: bufferEnd === null ? null : Math.round((bufferEnd - v.currentTime) * 10) / 10,
+        ready: v.readyState,
         error: v.error?.code ?? null,
       });
     }, WATCH_PERIOD_MS);

@@ -16,14 +16,14 @@ import type { ChoiceTv } from "./ChoicePanelTv";
 
 export interface SettingTv {
   key: "audio" | "mode" | "sousTitres";
-  intitule: string;
+  label: string;
   value: string;
   choice: ChoiceTv[];
   selection: string | null;
 }
 
 interface LibraryCardTvProps {
-  nom: string;
+  name: string;
   settings: SettingTv[];
   /** Vrai dès qu'une préférence existe : rien à réinitialiser sinon. */
   custom: boolean;
@@ -32,7 +32,7 @@ interface LibraryCardTvProps {
 }
 
 export function LibraryCardTv({
-  nom,
+  name,
   settings,
   custom,
   onOpen,
@@ -42,7 +42,7 @@ export function LibraryCardTv({
 
   return (
     <div className="carte-reglage-tv">
-      <p className="text-xl font-semibold text-content-primary">{nom}</p>
+      <p className="text-xl font-semibold text-content-primary">{name}</p>
 
       <div className="mt-5 flex flex-wrap gap-4">
         {settings.map((setting) => (
@@ -52,7 +52,7 @@ export function LibraryCardTv({
             className="bouton-reglage-tv"
             onClick={() => onOpen(setting)}
           >
-            <span className="bouton-reglage-tv-intitule">{setting.intitule}</span>
+            <span className="bouton-reglage-tv-intitule">{setting.label}</span>
             <span className="bouton-reglage-tv-valeur">{setting.value}</span>
           </button>
         ))}

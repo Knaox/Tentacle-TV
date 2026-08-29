@@ -42,7 +42,7 @@ import { giveFocus, activeElement } from "./active";
  * posé ailleurs, et l'utilisateur qui appuie annule tout. C'est un délai de
  * grâce, pas une latence.
  */
-const BUDGET_ENTREE_MS = 3000;
+const ENTRY_BUDGET_MS = 3000;
 
 /**
  * Durée pendant laquelle on tient l'écran précédent pour sortant.
@@ -145,7 +145,7 @@ export function primeFocus(leavingScreen = false): void {
 
   // Tout de suite, avec ce qui est déjà là : un écran sans anneau est le pire
   // des cas, et il durerait aussi longtemps que le réseau.
-  reviewAfterMount(poserFocusInitial);
+  reviewAfterMount(setInitialFocus);
 
   // Puis, le temps que les données arrivent.
   reviewAfterMount(
@@ -154,7 +154,7 @@ export function primeFocus(leavingScreen = false): void {
       return refineFocus();
     },
     {
-      budgetMs: BUDGET_ENTREE_MS,
+      budgetMs: ENTRY_BUDGET_MS,
       // Filet, et la règle qu'il fait tenir : il y a TOUJOURS exactement un
       // élément focalisé. Un écran dont les données n'arrivent pas — réseau
       // coupé, bibliothèque vide — perdrait sinon son anneau au démontage de
@@ -171,7 +171,7 @@ export function primeFocus(leavingScreen = false): void {
         // retiré, réseau muet. On renonce à elle plutôt que de laisser l'écran
         // sans anneau : c'est la règle qui prime sur toutes les autres.
         forget();
-        if (poserFocusInitial()) {
+        if (setInitialFocus()) {
           retries = 0;
           return;
         }
@@ -196,8 +196,8 @@ export function primeFocus(leavingScreen = false): void {
  *    `<input>` ne l'est pas, parce que webOS y ouvrirait son clavier système.
  * 3. **Le focus par défaut de l'écran**, résolu par `default.ts`.
  */
-function poserFocusInitial(): boolean {
-  const racine = trappingContainer() ?? document;
+function setInitialFocus(): boolean {
+  const root = trappingContainer() ?? document;
 
   // Un écran qui a DÉJÀ désigné sa cible d'entrée a raison contre nous, et
   // avant tout le reste — y compris avant le filtre de l'écran sortant.
@@ -224,15 +224,15 @@ function poserFocusInitial(): boolean {
   // clavier, `engineSuspended()` redevenait vrai, et plus une flèche n'était
   // traitée : ni pour descendre vers les résultats, ni pour remonter au champ.
   // Les deux symptômes n'en faisaient qu'un.
-  const remembered = entrant(recover(racine));
+  const remembered = incoming(recover(root));
   const memoryInField = remembered !== null && isInputField(remembered);
   if (remembered && !memoryInField) {
-    poser(remembered);
+    place(remembered);
     return true;
   }
 
   const active = activeElement();
-  if (active && entrant(active) && reachableTarget(active) && !isInputField(active)) return true;
+  if (active && incoming(active) && reachableTarget(active) && !isInputField(active)) return true;
 
   // Une trace existe, mais sa cible n'est pas encore montée. On ne pose RIEN :
   // amener une carte par défaut en vue remettrait la grille en haut et
@@ -244,21 +244,21 @@ function poserFocusInitial(): boolean {
   // l'ayant justement refusée.
   if (hasMemory() && !memoryInField) return true;
 
-  const fallback = defaultFocus(racine, incomingCandidates(racine));
+  const fallback = defaultFocus(root, incomingCandidates(root));
   if (!fallback) return false;
-  poser(fallback);
+  place(fallback);
   return true;
 }
 
 /** L'élément appartient-il à l'écran qui ARRIVE ? `null` passe au travers. */
-function entrant(element: HTMLElement | null): HTMLElement | null {
+function incoming(element: HTMLElement | null): HTMLElement | null {
   if (!element) return null;
   if (outgoingScreen !== null && outgoingScreen.has(element)) return null;
   return element;
 }
 
-function incomingCandidates(racine: ParentNode) {
-  const all = collect(racine);
+function incomingCandidates(root: ParentNode) {
+  const all = collect(root);
   if (outgoingScreen === null) return all;
   const remaining = all.filter((candidate) => !outgoingScreen?.has(candidate.element));
   // Tout appartient encore à l'écran sortant : rien n'est monté, on attend.
@@ -273,12 +273,12 @@ function incomingCandidates(racine: ParentNode) {
  * pas montée, ce qui relance l'attente jusqu'à l'épuisement du budget.
  */
 function refineFocus(): boolean {
-  const racine = trappingContainer() ?? document;
-  const active = entrant(activeElement());
+  const root = trappingContainer() ?? document;
+  const active = incoming(activeElement());
 
-  const remembered = entrant(recover(racine));
+  const remembered = incoming(recover(root));
   if (remembered) {
-    if (remembered !== active) poser(remembered);
+    if (remembered !== active) place(remembered);
     outgoingScreen = null;
     return true;
   }
@@ -298,16 +298,16 @@ function refineFocus(): boolean {
   // au lieu de celle qu'on avait quittée.
   if (hasMemory()) return false;
 
-  const preferred = preferredTarget(racine, incomingCandidates(racine));
+  const preferred = preferredTarget(root, incomingCandidates(root));
   if (!preferred) return false;
 
-  poser(preferred);
+  place(preferred);
   outgoingScreen = null;
   return true;
 }
 
 /** Pose le focus sans que la mémoire y voie un geste de l'utilisateur. */
-function poser(element: HTMLElement): void {
+function place(element: HTMLElement): void {
   autoPlacement = true;
   try {
     giveFocus(element);

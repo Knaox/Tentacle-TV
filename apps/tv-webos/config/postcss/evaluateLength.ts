@@ -52,7 +52,7 @@ export function evaluateLength(value: string): number | null {
   try {
     const reader = new Reader(text);
     const result = reader.expression();
-    return reader.fini() && Number.isFinite(result) ? result : null;
+    return reader.atEnd() && Number.isFinite(result) ? result : null;
   } catch {
     return null;
   }
@@ -79,13 +79,13 @@ class Reader {
 
   constructor(private readonly text: string) {}
 
-  fini(): boolean {
+  atEnd(): boolean {
     this.spaces();
     return this.i >= this.text.length;
   }
 
   expression(): number {
-    let left = this.produit();
+    let left = this.product();
     for (;;) {
       this.spaces();
       const sign = this.text[this.i];
@@ -94,30 +94,30 @@ class Reader {
       // sans quoi `-4px` serait un nombre signé. On s'appuie sur la même règle.
       if (!/\s/.test(this.text[this.i - 1] ?? "")) return left;
       this.i += 1;
-      const right = this.produit();
+      const right = this.product();
       left = sign === "+" ? left + right : left - right;
     }
   }
 
-  private produit(): number {
-    let left = this.terme();
+  private product(): number {
+    let left = this.term();
     for (;;) {
       this.spaces();
       const sign = this.text[this.i];
       if (sign !== "*" && sign !== "/") return left;
       this.i += 1;
-      const right = this.terme();
+      const right = this.term();
       if (sign === "/" && right === 0) throw new Error("division par zéro");
       left = sign === "*" ? left * right : left / right;
     }
   }
 
-  private terme(): number {
+  private term(): number {
     this.spaces();
     if (this.text[this.i] === "(") {
       this.i += 1;
       const value = this.expression();
-      this.attendre(")");
+      this.expect(")");
       return value;
     }
     const fn = /^(calc|clamp|min|max)\(/i.exec(this.text.slice(this.i));
@@ -138,7 +138,7 @@ class Reader {
         this.i += 1;
         continue;
       }
-      this.attendre(")");
+      this.expect(")");
       return values;
     }
   }
@@ -158,7 +158,7 @@ class Reader {
     return raw * factor;
   }
 
-  private attendre(character: string): void {
+  private expect(character: string): void {
     this.spaces();
     if (this.text[this.i] !== character) throw new Error(`« ${character} » attendu`);
     this.i += 1;
@@ -176,8 +176,8 @@ function apply(name: string, args: number[]): number {
   }
   if (name === "clamp") {
     if (args.length !== 3) throw new Error("clamp() prend trois arguments");
-    const [plancher, voulu, plafond] = args;
-    return Math.max(plancher, Math.min(voulu, plafond));
+    const [low, preferred, high] = args;
+    return Math.max(low, Math.min(preferred, high));
   }
   if (args.length === 0) throw new Error(`${name}() sans argument`);
   return name === "min" ? Math.min(...args) : Math.max(...args);

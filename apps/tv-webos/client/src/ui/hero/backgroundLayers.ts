@@ -20,7 +20,7 @@ import { useCallback, useEffect, useState } from "react";
  * creux qu'on verrait si les deux se croisaient à mi-course.
  */
 
-export interface CalqueFond {
+export interface BackdropLayer {
   /** L'URL de l'image — c'est aussi son identité de rendu. */
   url: string;
   /** Vrai quand le calque s'efface : plus rien à afficher derrière lui. */
@@ -28,7 +28,7 @@ export interface CalqueFond {
 }
 
 interface BackdropLayers {
-  layers: CalqueFond[];
+  layers: BackdropLayer[];
   /** Le fondu d'entrée est terminé : ce calque tient l'écran, seul. */
   reportEntered: (url: string) => void;
   /** Le fondu de sortie est terminé : le calque peut être démonté. */
@@ -36,7 +36,7 @@ interface BackdropLayers {
 }
 
 export function useBackdropLayers(url: string | null): BackdropLayers {
-  const [layers, setLayers] = useState<CalqueFond[]>([]);
+  const [layers, setLayers] = useState<BackdropLayer[]>([]);
 
   useEffect(() => {
     setLayers((currents) => next(currents, url));
@@ -44,7 +44,7 @@ export function useBackdropLayers(url: string | null): BackdropLayers {
 
   const reportEntered = useCallback((entered: string) => {
     setLayers((currents) => {
-      const index = currents.findIndex((calque) => calque.url === entered);
+      const index = currents.findIndex((layer) => layer.url === entered);
       // Tout ce qui était dessous n'a plus de raison d'être : le calque entrant
       // est désormais opaque et le recouvre entièrement.
       return index <= 0 ? currents : currents.slice(index);
@@ -52,7 +52,7 @@ export function useBackdropLayers(url: string | null): BackdropLayers {
   }, []);
 
   const reportExited = useCallback((exited: string) => {
-    setLayers((currents) => currents.filter((calque) => calque.url !== exited));
+    setLayers((currents) => currents.filter((layer) => layer.url !== exited));
   }, []);
 
   return { layers, reportEntered, reportExited };
@@ -65,11 +65,11 @@ export function useBackdropLayers(url: string | null): BackdropLayers {
  * lit d'un bloc, et `calquesFond.test.ts` la vérifie — ce qu'on ne pourrait pas
  * faire d'un enchaînement de rendus.
  */
-export function next(currents: CalqueFond[], url: string | null): CalqueFond[] {
+export function next(currents: BackdropLayer[], url: string | null): BackdropLayer[] {
   if (url === null) {
     if (currents.length === 0) return currents;
-    if (currents.every((calque) => calque.leaving)) return currents;
-    return currents.map((calque) => ({ url: calque.url, leaving: true }));
+    if (currents.every((layer) => layer.leaving)) return currents;
+    return currents.map((layer) => ({ url: layer.url, leaving: true }));
   }
 
   const last = currents[currents.length - 1];
@@ -85,6 +85,6 @@ export function next(currents: CalqueFond[], url: string | null): CalqueFond[] {
     return currents.slice(0, -1).concat([{ url, leaving: false }]);
   }
 
-  const socle = currents.filter((calque) => !calque.leaving).slice(-1);
-  return socle.concat([{ url, leaving: false }]);
+  const kept = currents.filter((layer) => !layer.leaving).slice(-1);
+  return kept.concat([{ url, leaving: false }]);
 }

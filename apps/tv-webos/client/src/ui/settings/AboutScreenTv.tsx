@@ -47,8 +47,8 @@ function accountName(): string {
   try {
     const raw = localStorage.getItem("tentacle_user");
     if (!raw) return "—";
-    const nom = (JSON.parse(raw) as { Name?: unknown }).Name;
-    return typeof nom === "string" && nom.length > 0 ? nom : "—";
+    const name = (JSON.parse(raw) as { Name?: unknown }).Name;
+    return typeof name === "string" && name.length > 0 ? name : "—";
   } catch {
     return "—";
   }
@@ -86,9 +86,9 @@ export function AboutScreenTv() {
 
       <section className="mb-12">
         <dl className="flex flex-col gap-5">
-          <InfoRowTv intitule={tPairing("tvServeur")} value={server} />
-          <InfoRowTv intitule={tPairing("tvCompteJumele")} value={accountName()} />
-          <InfoRowTv intitule={tPairing("tvPlateforme")} value={PLATFORM} />
+          <InfoRowTv label={tPairing("tvServeur")} value={server} />
+          <InfoRowTv label={tPairing("tvCompteJumele")} value={accountName()} />
+          <InfoRowTv label={tPairing("tvPlateforme")} value={PLATFORM} />
         </dl>
       </section>
 

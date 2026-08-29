@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { RailTv } from "./nav/RailTv";
-import { FondFocusTv } from "./hero/FocusBackdropTv";
+import { FocusBackdropTv } from "./hero/FocusBackdropTv";
 import { SearchScreenTv } from "./search/SearchScreenTv";
 
 /**
@@ -28,7 +28,7 @@ export function AppLayout() {
       <div className="brand-ambient" aria-hidden />
       {/* L'affiche de la carte visée, floutée en fond. Ne rend rien tant
           qu'aucune carte n'a le focus depuis un quart de seconde. */}
-      <FondFocusTv />
+      <FocusBackdropTv />
       <RailTv />
       {/* La marge gauche vaut la largeur du rail replié : le contenu commence
           après les icônes, et ne bouge plus quand elles se déploient. */}

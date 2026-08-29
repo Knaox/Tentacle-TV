@@ -24,20 +24,20 @@ import { compatGuard, formatSurvivals } from "./compatGuard";
  *
  * L'ordre des passes n'est pas arbitraire :
  *
- *   1. `importsDistants` d'abord — un `@import` doit rester en tête de
+ *   1. `remoteImportsPass` d'abord — un `@import` doit rester en tête de
  *      feuille, aucune autre passe ne doit avoir à le contourner.
- *   2. `unitesFixes` avant TOUTE transformation géométrique : les passes
+ *   2. `fixedUnitsPass` avant TOUTE transformation géométrique : les passes
  *      suivantes voient alors des pixels partout, y compris dans les
  *      demi-écarts qu'elles écrivent en `calc(… / 2)`.
- *   3. `pseudoModernes` ensuite : elle réécrit des sélecteurs, et les passes
+ *   3. `modernPseudoPass` ensuite : elle réécrit des sélecteurs, et les passes
  *      suivantes clonent des règles.
- *   4. `grille` avant `gaps` : le calcul de largeur d'une colonne doit être
+ *   4. `gridPass` avant `gapPass` : le calcul de largeur d'une colonne doit être
  *      écrit tant que la relation à l'écart est encore lisible.
- *   5. `gaps` ensuite, pour traiter d'un même geste les flexbox d'origine et
+ *   5. `gapPass` ensuite, pour traiter d'un même geste les flexbox d'origine et
  *      les grilles converties.
- *   6. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
+ *   6. `ratiosPass`, `glassPass`, `hoverPass`, `mathFunctionsPass` et `cleanupPass` sont
  *      indépendantes.
- *   7. `repliJeton` avant `compatGuard` — c'est elle qui retire la déclaration
+ *   7. `tokenFallbackPass` avant `compatGuard` — c'est elle qui retire la déclaration
  *      trop récente d'un jeton qui porte DÉJÀ son repli, et sans elle la garde
  *      refuserait une convention qu'on veut au contraire encourager. Elle ne
  *      touche à rien qui n'ait pas de repli, donc elle n'affaiblit pas la

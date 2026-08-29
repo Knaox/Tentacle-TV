@@ -10,29 +10,29 @@ import { revalidateSession } from "./sessionGuardTv";
  */
 describe("revaliderSession", () => {
   // Environnement node : pas de localStorage — un Map fait l'affaire.
-  const entrepot = new Map<string, string>();
+  const store = new Map<string, string>();
   beforeEach(() => {
     vi.stubGlobal("localStorage", {
-      getItem: (key: string) => entrepot.get(key) ?? null,
-      setItem: (key: string, value: string) => void entrepot.set(key, value),
-      removeItem: (key: string) => void entrepot.delete(key),
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => void store.set(key, value),
+      removeItem: (key: string) => void store.delete(key),
     });
-    entrepot.set(
+    store.set(
       "tentacle_token",
       "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl",
     );
   });
 
   afterEach(() => {
-    entrepot.clear();
+    store.clear();
     vi.unstubAllGlobals();
   });
 
-  const response = (status: number, corps: unknown) =>
+  const response = (status: number, body: unknown) =>
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(corps), { status }),
+        new Response(JSON.stringify(body), { status }),
       ),
     );
 

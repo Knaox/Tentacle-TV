@@ -48,7 +48,7 @@ export interface PlayerActionsTv {
   togglePlayback: () => void;
   /** Saut sec, sans allumer l'habillage : le badge suffit à dire ce qui se passe. */
   skip: (delta: number) => void;
-  quitter: () => void;
+  exit: () => void;
   scrub: ScrubMachine;
 }
 
@@ -68,14 +68,14 @@ const SKIP_FORWARD_S = 30;
  * les rappels du lecteur changent d'identité à chaque rendu, et réattacher un
  * écouteur en capture à chaque image lui ferait manquer des appuis.
  */
-export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
+export function installTvPlayerKeys(read: () => PlayerActionsTv): () => void {
   // Le moteur possède l'avance : appui simple comme tic de maintien passent
   // par lui, et lui seul décide du palier. Les actions sont relues à chaque
   // pas, tic compris — un tic qui part une seconde après l'appui doit joindre
   // le lecteur d'alors, pas celui d'avant.
   const engine = createHoldMotor({
-    jump: (direction) => lire().skip(direction === 1 ? SKIP_FORWARD_S : SKIP_BACK_S),
-    advance: (direction, tier) => lire().scrub.step(direction, tier),
+    jump: (direction) => read().skip(direction === 1 ? SKIP_FORWARD_S : SKIP_BACK_S),
+    advance: (direction, tier) => read().scrub.step(direction, tier),
   });
 
   /**
@@ -92,9 +92,9 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
    * la répétition automatique. La parade est la même.
    */
   let moveEnd = 0;
-  const ECHO_SORTIE_MS = 400;
+  const EXIT_ECHO_MS = 400;
 
-  const echoDeSortie = (): boolean => Date.now() - moveEnd < ECHO_SORTIE_MS;
+  const exitEcho = (): boolean => Date.now() - moveEnd < EXIT_ECHO_MS;
 
   /**
    * Code de flèche absorbé par l'habillage, tant qu'on n'a pas levé le doigt.
@@ -173,14 +173,14 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
     }, RELIGHT_DELAY_MS);
   };
 
-  const surTouche = (event: KeyboardEvent): void => {
+  const onKey = (event: KeyboardEvent): void => {
     const intention = readIntent(event);
     if (!intention || intention.type === "retour") return;
 
     const state = readState();
     if (!state.mounted) return;
 
-    const actions = lire();
+    const actions = read();
     event.preventDefault();
     event.stopPropagation();
 
@@ -247,7 +247,7 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
         showOsd();
         return;
       }
-      if (echoDeSortie()) return;
+      if (exitEcho()) return;
       enableFocusedElement();
       return;
     }
@@ -255,7 +255,7 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
     // Transport.
     if (intention.command === "arret") {
       if (state.mode === "scrub") actions.scrub.cancel();
-      actions.quitter();
+      actions.exit();
       return;
     }
 
@@ -276,7 +276,7 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
       moveEnd = Date.now();
       return;
     }
-    if (echoDeSortie()) return;
+    if (exitEcho()) return;
     actions.togglePlayback();
     showOsd();
   };
@@ -289,13 +289,13 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
     engine.release(event.keyCode);
   };
 
-  document.addEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
   document.addEventListener("keyup", onRelease, true);
 
   return () => {
     unsubscribe();
     if (relightWait !== null) clearTimeout(relightWait);
-    document.removeEventListener("keydown", surTouche, true);
+    document.removeEventListener("keydown", onKey, true);
     document.removeEventListener("keyup", onRelease, true);
     // Sans quoi un tic de maintien survivrait au démontage du lecteur et
     // continuerait de pousser le curseur d'un écran qui n'est plus là.

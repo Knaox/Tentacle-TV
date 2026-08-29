@@ -24,7 +24,7 @@ const ID = "tv-debug";
 let visible = false;
 
 export function installDebugOverlay(): () => void {
-  const surTouche = (event: KeyboardEvent) => {
+  const onKey = (event: KeyboardEvent) => {
     // Un raccourci à deux doigts : la télécommande n'a pas de modificateur, donc
     // aucun risque de l'activer par mégarde depuis un canapé.
     if (!event.ctrlKey || !event.shiftKey) return;
@@ -33,9 +33,9 @@ export function installDebugOverlay(): () => void {
     toggle();
   };
 
-  document.addEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
   return () => {
-    document.removeEventListener("keydown", surTouche, true);
+    document.removeEventListener("keydown", onKey, true);
     remove3();
   };
 }
@@ -53,10 +53,10 @@ function remove3(): void {
 function draw(): void {
   remove3();
 
-  const racine = document.createElement("div");
-  racine.id = ID;
-  racine.setAttribute("aria-hidden", "true");
-  racine.style.cssText = [
+  const root = document.createElement("div");
+  root.id = ID;
+  root.setAttribute("aria-hidden", "true");
+  root.style.cssText = [
     "position:fixed",
     "left:0;top:0;right:0;bottom:0",
     "z-index:2147483647",
@@ -65,38 +65,38 @@ function draw(): void {
     "font-size:13px",
   ].join(";");
 
-  racine.appendChild(cadreZoneSure());
+  root.appendChild(safeZoneFrame());
   for (const { element, rect } of focusableRects()) {
-    racine.appendChild(targetFrame(rect, element === document.activeElement));
+    root.appendChild(targetFrame(rect, element === document.activeElement));
   }
-  racine.appendChild(panel(checkScreen()));
+  root.appendChild(panel(checkScreen()));
 
-  document.body.appendChild(racine);
+  document.body.appendChild(root);
 }
 
-function cadreZoneSure(): HTMLElement {
-  const cadre = document.createElement("div");
+function safeZoneFrame(): HTMLElement {
+  const frame = document.createElement("div");
   const x = window.innerWidth * 0.05;
   const y = window.innerHeight * 0.05;
-  cadre.style.cssText = [
+  frame.style.cssText = [
     "position:absolute",
     `left:${x}px;top:${y}px`,
     `width:${window.innerWidth - 2 * x}px`,
     `height:${window.innerHeight - 2 * y}px`,
     "border:1px dashed rgba(255,180,0,0.9)",
   ].join(";");
-  return cadre;
+  return frame;
 }
 
 function targetFrame(rect: DOMRect, active: boolean): HTMLElement {
-  const cadre = document.createElement("div");
-  cadre.style.cssText = [
+  const frame = document.createElement("div");
+  frame.style.cssText = [
     "position:absolute",
     `left:${rect.left}px;top:${rect.top}px`,
     `width:${rect.width}px;height:${rect.height}px`,
     `border:1px solid ${active ? "rgba(0,255,120,0.95)" : "rgba(0,160,255,0.55)"}`,
   ].join(";");
-  return cadre;
+  return frame;
 }
 
 function panel(violations: Violation[]): HTMLElement {

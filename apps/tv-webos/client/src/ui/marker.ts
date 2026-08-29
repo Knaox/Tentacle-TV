@@ -17,9 +17,9 @@ import { useEffect, useRef, type RefObject } from "react";
  * animation. Écrire seulement quand la valeur change est la règle.
  */
 export function useMarker<T extends HTMLElement>(
-  mark: (racine: T) => void,
+  mark: (root: T) => void,
 ): RefObject<T | null> {
-  const racine = useRef<T>(null);
+  const root = useRef<T>(null);
   // La fonction est relue à chaque appel plutôt que capturée : l'appelant peut
   // la redéfinir à chaque rendu — c'est le cas courant d'une fermeture sur des
   // propriétés — sans que l'observateur soit débranché puis rebranché.
@@ -27,7 +27,7 @@ export function useMarker<T extends HTMLElement>(
   last.current = mark;
 
   useEffect(() => {
-    const target = racine.current;
+    const target = root.current;
     if (!target) return;
 
     const apply = () => last.current(target);
@@ -38,5 +38,5 @@ export function useMarker<T extends HTMLElement>(
     return () => observer.disconnect();
   }, []);
 
-  return racine;
+  return root;
 }

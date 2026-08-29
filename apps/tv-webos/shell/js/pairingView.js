@@ -19,7 +19,7 @@
         "Ouvrez Tentacle TV sur votre téléphone ou votre ordinateur, allez dans " +
         "Jumeler un appareil, et saisissez ce code.",
       expiresInMs: "Ce code expire dans",
-      patience: "Chargement",
+      loading: "Chargement",
       expiredTitle: "Code expiré",
       expiredText: "Personne ne l'a saisi à temps. Demandez-en un nouveau.",
       newCode: "Nouveau code",
@@ -34,7 +34,7 @@
         "Open Tentacle TV on your phone or computer, go to Pair a device, and " +
         "enter this code.",
       expiresInMs: "This code expires in",
-      patience: "Loading",
+      loading: "Loading",
       expiredTitle: "Code expired",
       expiredText: "Nobody entered it in time. Ask for a new one.",
       newCode: "New code",
@@ -47,8 +47,8 @@
   var t = T.en;
 
   function chooseLanguage() {
-    var langue = String(global.navigator.language || "en").toLowerCase();
-    t = langue.indexOf("fr") === 0 ? T.fr : T.en;
+    var language = String(global.navigator.language || "en").toLowerCase();
+    t = language.indexOf("fr") === 0 ? T.fr : T.en;
   }
 
   function zone() {
@@ -69,11 +69,11 @@
     return node;
   }
 
-  function button(label, action, premier) {
+  function button(label, action, first) {
     var node = element("button", "bouton", label);
     node.type = "button";
     node.onclick = action;
-    if (premier) setTimeout(function () { node.focus(); }, 0);
+    if (first) setTimeout(function () { node.focus(); }, 0);
     return node;
   }
 
@@ -91,7 +91,7 @@
     document.body.classList.add("attente");
     var ring = element("div", "anneau-attente");
     ring.setAttribute("role", "progressbar");
-    ring.setAttribute("aria-label", t.patience);
+    ring.setAttribute("aria-label", t.loading);
     container.appendChild(ring);
   }
 
@@ -144,12 +144,12 @@
     var node = document.getElementById("rebours");
     if (node) node.textContent = t.expiresInMs + " " + formatCountdown(seconds);
 
-    var barre = document.getElementById("jauge-remplissage");
-    if (barre && initialDuration > 0) {
+    var bar = document.getElementById("jauge-remplissage");
+    if (bar && initialDuration > 0) {
       var part = seconds / initialDuration;
       if (part < 0) part = 0;
       if (part > 1) part = 1;
-      barre.style.width = (part * 100) + "%";
+      bar.style.width = (part * 100) + "%";
     }
   }
 
@@ -160,14 +160,14 @@
    * les journaux d'accès du serveur et dans les en-têtes `Referer`. Un
    * fragment n'est envoyé nulle part.
    */
-  function navigate(adresse, token, user) {
+  function navigate(address, token, user) {
     var params = global.DeviceInfo.inParams();
     /* Le moteur web du téléviseur ressert volontiers un document déjà en
        cache sans le revalider, malgré le `no-cache` du serveur : une URL
        identique d'un lancement à l'autre peut figer l'appareil sur un vieux
        bundle. L'horodatage rend chaque navigation unique — seul `index.html`
        est retéléchargé, les ressources par empreinte restent en cache. */
-    var url = adresse + "/tv/" + params +
+    var url = address + "/tv/" + params +
       (params ? "&" : "?") + "relance=" + Date.now();
     if (token) {
       url += "#jeton=" + encodeURIComponent(token) +

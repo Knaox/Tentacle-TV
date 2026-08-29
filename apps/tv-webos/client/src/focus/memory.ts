@@ -43,7 +43,7 @@ const MAX_LABEL = 48;
  */
 const GUARDED_ROUTES = 32;
 
-const parRoute = new Map<string, string>();
+const byRoute = new Map<string, string>();
 
 /**
  * De quoi retrouver un élément dans un document reconstruit.
@@ -53,8 +53,8 @@ const parRoute = new Map<string, string>();
  * que de restituer le focus au mauvais bouton.
  */
 export function elementKey(element: HTMLElement): string | null {
-  const marque = element.getAttribute("data-tv-cle");
-  if (marque) return `m|${marque}`;
+  const mark = element.getAttribute("data-tv-cle");
+  if (mark) return `m|${mark}`;
 
   const address = element.getAttribute("href");
   if (address) return `h|${address}`;
@@ -72,7 +72,7 @@ function normalize(raw: string): string {
   return raw.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL);
 }
 
-function routeCourante(): string {
+function currentRoute(): string {
   return window.location.pathname;
 }
 
@@ -97,24 +97,24 @@ export function remember(element: HTMLElement): void {
   const key = elementKey(element);
   if (!key) return;
 
-  const route = routeCourante();
+  const route = currentRoute();
   // Réinsérer remet la route en fin de file : les écrans qu'on fréquente
   // survivent à l'élagage, ceux qu'on a traversés une fois s'effacent.
-  parRoute.delete(route);
-  parRoute.set(route, key);
+  byRoute.delete(route);
+  byRoute.set(route, key);
 
-  if (parRoute.size > GUARDED_ROUTES) {
-    const oldest = parRoute.keys().next();
-    if (!oldest.done) parRoute.delete(oldest.value);
+  if (byRoute.size > GUARDED_ROUTES) {
+    const oldest = byRoute.keys().next();
+    if (!oldest.done) byRoute.delete(oldest.value);
   }
 }
 
 /** L'élément à qui rendre le focus sur l'écran courant, s'il est retrouvé. */
-export function recover(racine: ParentNode = document): HTMLElement | null {
-  const key = parRoute.get(routeCourante());
+export function recover(root: ParentNode = document): HTMLElement | null {
+  const key = byRoute.get(currentRoute());
   if (!key) return null;
 
-  for (const node of racine.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+  for (const node of root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
     if (elementKey(node) !== key) continue;
     // Retrouvé mais inatteignable — masqué, désactivé, dans une enveloppe
     // transparente : ce serait un trou noir. On laisse la main au focus par
@@ -141,11 +141,11 @@ export function recover(racine: ParentNode = document): HTMLElement | null {
  * reparaît pas.
  */
 export function hasMemory(): boolean {
-  return parRoute.has(routeCourante());
+  return byRoute.has(currentRoute());
 }
 
 /** Efface la trace de l'écran courant. Pour les tests, et pour un écran dont
  *  le contenu a changé de sens — une liste vidée, un compte déconnecté. */
-export function forget(route: string = routeCourante()): void {
-  parRoute.delete(route);
+export function forget(route: string = currentRoute()): void {
+  byRoute.delete(route);
 }

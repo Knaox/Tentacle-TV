@@ -87,9 +87,9 @@ export function unscale(box: Box, scale: PureScale, origin: Origin): Box {
 
 /** L'origine calculée est toujours « Xpx Ypx » ; au moindre doute, on renonce. */
 function readOrigin(transformOrigin: string): Origin | null {
-  const [brutX, brutY] = transformOrigin.split(" ");
-  const x = Number.parseFloat(brutX);
-  const y = Number.parseFloat(brutY);
+  const [rawX, rawY] = transformOrigin.split(" ");
+  const x = Number.parseFloat(rawX);
+  const y = Number.parseFloat(rawY);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   return { x, y };
 }
@@ -127,11 +127,11 @@ export function navBox(element: HTMLElement, rect?: DOMRect): Box {
 export function inWindow(element: HTMLElement, margin = 0.5): boolean {
   const rect = element.getBoundingClientRect();
   if (rect.width === 0 && rect.height === 0) return false;
-  const hauteur = window.innerHeight;
+  const height = window.innerHeight;
   const width = window.innerWidth;
   return (
-    rect.bottom >= -hauteur * margin
-    && rect.top <= hauteur * (1 + margin)
+    rect.bottom >= -height * margin
+    && rect.top <= height * (1 + margin)
     && rect.right >= -width * margin
     && rect.left <= width * (1 + margin)
   );

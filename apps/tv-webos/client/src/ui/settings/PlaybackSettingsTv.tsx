@@ -25,26 +25,26 @@ interface Choice {
 
 interface SectionProps {
   title: string;
-  aide: string;
+  hint: string;
   value: string;
   choice: Choice[];
   onChoose: (value: string) => void;
 }
 
-function SettingSection({ title, aide, value, choice, onChoose }: SectionProps) {
+function SettingSection({ title, hint, value, choice, onChoose }: SectionProps) {
   return (
     <section className="mb-12">
       <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">
         {title}
       </h2>
-      <p className="mb-4 max-w-3xl text-[15px] leading-relaxed text-content-tertiary">{aide}</p>
+      <p className="mb-4 max-w-3xl text-[15px] leading-relaxed text-content-tertiary">{hint}</p>
       <div className="flex gap-4">
         {choice.map((c) => (
           <button
             key={c.value}
             type="button"
             className="bouton-reglage-tv"
-            data-active={value === c.value}
+            data-actif={value === c.value}
             onClick={() => onChoose(c.value)}
           >
             <span className="bouton-reglage-tv-valeur">{c.label}</span>
@@ -55,7 +55,7 @@ function SettingSection({ title, aide, value, choice, onChoose }: SectionProps) 
   );
 }
 
-function estAction(value: string): value is SegmentAction {
+function isAction(value: string): value is SegmentAction {
   return value === "button" || value === "auto" || value === "off";
 }
 
@@ -73,38 +73,38 @@ export function PlaybackSettingsTv() {
     { value: "auto", label: t("segmentActionAuto") },
     { value: "off", label: t("segmentActionOff") },
   ];
-  const ouiNon: Choice[] = [
+  const yesNo: Choice[] = [
     { value: "oui", label: t("reglageActive") },
     { value: "non", label: t("reglageDesactive") },
   ];
 
-  const segments: { key: string; title: string; aide: string; state: SegmentSettings;
+  const segments: { key: string; title: string; hint: string; state: SegmentSettings;
     apply: (patch: Partial<SegmentSettings>) => void }[] = [
     {
       key: "intro",
       title: t("segmentIntroTitle"),
-      aide: t("segmentIntroHint"),
+      hint: t("segmentIntroHint"),
       state: settings.intro,
       apply: (intro) => { setPlaybackSettings({ intro }); },
     },
     {
       key: "recap",
       title: t("segmentRecapTitle"),
-      aide: t("segmentRecapHint"),
+      hint: t("segmentRecapHint"),
       state: settings.recap,
       apply: (recap) => { setPlaybackSettings({ recap }); },
     },
     {
       key: "outro",
       title: t("segmentOutroTitle"),
-      aide: t("segmentOutroHint"),
+      hint: t("segmentOutroHint"),
       state: settings.outro,
       apply: (outro) => { setPlaybackSettings({ outro }); },
     },
     {
       key: "preview",
       title: t("segmentPreviewTitle"),
-      aide: t("segmentPreviewHint"),
+      hint: t("segmentPreviewHint"),
       state: settings.preview,
       apply: (preview) => { setPlaybackSettings({ preview }); },
     },
@@ -114,39 +114,39 @@ export function PlaybackSettingsTv() {
 
   return (
     <>
-      {segments.map((passage) => (
+      {segments.map((segment) => (
         <SettingSection
-          key={passage.key}
-          title={passage.title}
-          aide={passage.aide}
-          value={passage.state.action}
+          key={segment.key}
+          title={segment.title}
+          hint={segment.hint}
+          value={segment.state.action}
           choice={actions}
           onChoose={(value) => {
-            if (estAction(value)) passage.apply({ action: value });
+            if (isAction(value)) segment.apply({ action: value });
           }}
         />
       ))}
       <SettingSection
         title={t("upNextCardTitle")}
-        aide={t("upNextCardHint")}
+        hint={t("upNextCardHint")}
         value={next.nextCard ? "oui" : "non"}
-        choice={ouiNon}
+        choice={yesNo}
         onChoose={(value) => { setPlaybackSettings({ next: { nextCard: value === "oui" } }); }}
       />
       <SettingSection
         title={t("upNextCountdownTitle")}
-        aide={t("upNextCountdownHint")}
+        hint={t("upNextCountdownHint")}
         value={next.nextCountdown ? "oui" : "non"}
-        choice={ouiNon}
+        choice={yesNo}
         onChoose={(value) => {
           setPlaybackSettings({ next: { nextCountdown: value === "oui" } });
         }}
       />
       <SettingSection
         title={t("upNextAutoPlayTitle")}
-        aide={t("upNextAutoPlayHint")}
+        hint={t("upNextAutoPlayHint")}
         value={next.nextAutoPlay ? "oui" : "non"}
-        choice={ouiNon}
+        choice={yesNo}
         onChoose={(value) => {
           setPlaybackSettings({ next: { nextAutoPlay: value === "oui" } });
         }}

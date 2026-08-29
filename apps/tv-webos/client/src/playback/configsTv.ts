@@ -80,40 +80,40 @@ export function resetTvConfigs(): void {
  * `displayType`, et une table de correspondance qui se vérifie mieux sur des
  * valeurs relevées que sur une dalle.
  */
-export function lireConfigs(configs: Record<string, unknown>): ConfigsTv {
-  const lu: ConfigsTv = {};
+export function readConfigs(configs: Record<string, unknown>): ConfigsTv {
+  const result: ConfigsTv = {};
 
   const boolean = (key: string): boolean | undefined =>
     typeof configs[key] === "boolean" ? (configs[key] as boolean) : undefined;
 
   const dolbyVision = boolean(KEYS.dolbyVision);
-  if (dolbyVision !== undefined) lu.dolbyVision = dolbyVision;
+  if (dolbyVision !== undefined) result.dolbyVision = dolbyVision;
 
   const atmos = boolean(KEYS.dolbyAtmos);
-  if (atmos !== undefined) lu.dolbyAtmos = atmos;
+  if (atmos !== undefined) result.dolbyAtmos = atmos;
 
   const hdr = boolean(KEYS.hdr);
-  if (hdr !== undefined) lu.hdr = hdr;
+  if (hdr !== undefined) result.hdr = hdr;
 
   const panel = configs[KEYS.panel];
-  if (typeof panel === "string") lu.oled = panel.toUpperCase().indexOf("OLED") !== -1;
+  if (typeof panel === "string") result.oled = panel.toUpperCase().indexOf("OLED") !== -1;
 
   const eightK = boolean(KEYS.eightK);
-  if (eightK !== undefined) lu.uhd8K = eightK;
+  if (eightK !== undefined) result.uhd8K = eightK;
 
   // `UD` est le nom que LG donne à l'ultra-définition dans ses configurations —
   // pas `UHD`, ni `4K`. `FHD` et `HD` désignent les dalles qui n'y arrivent pas.
   const definition = configs[KEYS.definition];
   if (typeof definition === "string") {
     const value = definition.toUpperCase();
-    if (value === "UD" || value === "UHD" || value === "8K") lu.uhd = true;
-    else if (value === "FHD" || value === "HD") lu.uhd = false;
+    if (value === "UD" || value === "UHD" || value === "8K") result.uhd = true;
+    else if (value === "FHD" || value === "HD") result.uhd = false;
   }
   // Une dalle 8K est 4K par construction ; la déclarer évite de dépendre de
   // l'ordre dans lequel les deux clés sont renseignées.
-  if (lu.uhd8K) lu.uhd = true;
+  if (result.uhd8K) result.uhd = true;
 
-  return lu;
+  return result;
 }
 
 /**
@@ -138,16 +138,16 @@ export function startConfigCapture(): void {
   if (typeof bridge !== "function") return;
 
   try {
-    const appel = new bridge();
-    appel.onservicecallback = (response: string) => {
+    const service = new bridge();
+    service.onservicecallback = (response: string) => {
       try {
         const loaded = JSON.parse(response) as { configs?: Record<string, unknown> };
-        if (loaded && loaded.configs) sample = lireConfigs(loaded.configs);
+        if (loaded && loaded.configs) sample = readConfigs(loaded.configs);
       } catch {
         // Une réponse illisible laisse le relevé vide, donc la déduction en place.
       }
     };
-    appel.call(
+    service.call(
       "luna://com.webos.service.config/getConfigs",
       JSON.stringify({ configNames: Object.values(KEYS) }),
     );

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { configsTv, startConfigCapture, lireConfigs, resetTvConfigs } from "./configsTv";
+import { configsTv, startConfigCapture, readConfigs, resetTvConfigs } from "./configsTv";
 import { inferPanel } from "./panelWebos";
 
 /**
@@ -20,9 +20,9 @@ const C3 = {
   "tv.hw.bSupport_8K_resolution": false,
 };
 
-describe("lireConfigs", () => {
+describe("readConfigs", () => {
   it("traduit le relevé d'un OLED C3", () => {
-    expect(lireConfigs(C3)).toEqual({
+    expect(readConfigs(C3)).toEqual({
       dolbyVision: true,
       dolbyAtmos: true,
       hdr: true,
@@ -35,28 +35,28 @@ describe("lireConfigs", () => {
   it("ignore `tv.model.displayType`, qui annonce « LCD DISPLAY » sur un OLED", () => {
     // Les deux clés existent et se contredisent ; rien dans leur nom ne dit
     // laquelle décrit le matériel. Prendre la mauvaise coûterait le DTS.
-    expect(lireConfigs({ "tv.model.displayType": "LCD DISPLAY" }).oled).toBeUndefined();
-    expect(lireConfigs({ "tv.hw.displayType": "OLED" }).oled).toBe(true);
-    expect(lireConfigs({ "tv.hw.displayType": "LCD DISPLAY" }).oled).toBe(false);
+    expect(readConfigs({ "tv.model.displayType": "LCD DISPLAY" }).oled).toBeUndefined();
+    expect(readConfigs({ "tv.hw.displayType": "OLED" }).oled).toBe(true);
+    expect(readConfigs({ "tv.hw.displayType": "LCD DISPLAY" }).oled).toBe(false);
   });
 
   it("lit « UD », le nom que LG donne à l'ultra-définition", () => {
-    expect(lireConfigs({ "tv.hw.panelResolution": "UD" }).uhd).toBe(true);
-    expect(lireConfigs({ "tv.hw.panelResolution": "FHD" }).uhd).toBe(false);
+    expect(readConfigs({ "tv.hw.panelResolution": "UD" }).uhd).toBe(true);
+    expect(readConfigs({ "tv.hw.panelResolution": "FHD" }).uhd).toBe(false);
     // Une définition inconnue ne conclut rien plutôt que de conclure faux.
-    expect(lireConfigs({ "tv.hw.panelResolution": "XYZ" }).uhd).toBeUndefined();
+    expect(readConfigs({ "tv.hw.panelResolution": "XYZ" }).uhd).toBeUndefined();
   });
 
   it("tient une dalle 8K pour 4K, quel que soit l'ordre des clés", () => {
-    expect(lireConfigs({ "tv.hw.bSupport_8K_resolution": true }))
+    expect(readConfigs({ "tv.hw.bSupport_8K_resolution": true }))
       .toEqual({ uhd: true, uhd8K: true });
   });
 
   it("ne conclut RIEN d'une clé absente", () => {
     // C'est tout l'intérêt du module : une propriété absente laisse la
     // déduction par gamme reprendre la main, là où un `false` la condamnerait.
-    expect(lireConfigs({})).toEqual({});
-    expect(lireConfigs({ "tv.model.supportDolbyVisionHDR": "peut-être" })).toEqual({});
+    expect(readConfigs({})).toEqual({});
+    expect(readConfigs({ "tv.model.supportDolbyVisionHDR": "peut-être" })).toEqual({});
   });
 });
 

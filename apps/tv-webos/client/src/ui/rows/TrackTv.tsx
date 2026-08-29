@@ -54,7 +54,7 @@ export interface TrackProps {
   onScroll: () => void;
 }
 
-export function PisteTv({
+export function TrackTv({
   scrollRef,
   items,
   variant,
@@ -80,11 +80,11 @@ export function PisteTv({
 
   useLayoutEffect(() => {
     if (emptied) return;
-    const piste = scrollRef.current;
-    if (piste && piste.offsetHeight > 0) fullHeight.current = piste.offsetHeight;
+    const track = scrollRef.current;
+    if (track && track.offsetHeight > 0) fullHeight.current = track.offsetHeight;
   }, [scrollRef, emptied, cardWidth, variant]);
 
-  const surIndex = useCallback(
+  const onIndex = useCallback(
     (index: number | null) => {
       setInternalFocus(index !== null);
       onActiveIndex(index);
@@ -94,7 +94,7 @@ export function PisteTv({
 
   return (
     <div
-      data-focus-internal={internalFocus}
+      data-focus-interne={internalFocus}
       ref={scrollRef}
       onScroll={onScroll}
       style={emptied && fullHeight.current > 0 ? { minHeight: fullHeight.current } : undefined}
@@ -130,7 +130,7 @@ export function PisteTv({
                 width={cardWidth}
                 itemId={item.Id}
                 item={item}
-                onActiveIndex={surIndex}
+                onActiveIndex={onIndex}
               >
                 {variant === "episode" ? (
                   <EpisodeCard item={item} index={index} width={cardWidth} />

@@ -110,11 +110,11 @@ export function stepDown(memory: FallbackMemory, source: FailedSource): Fallback
 }
 
 /** Le conteneur survit-il à ce que la session a disqualifié ? */
-export function keptContainer(memory: FallbackMemory, nom: string): boolean {
+export function keptContainer(memory: FallbackMemory, name: string): boolean {
   // Un conteneur se déclare par groupes — « ts,m2ts,mts ». Il suffit qu'une des
   // extensions ait échoué pour que le groupe entier tombe : le démultiplexeur
   // est le même.
-  for (const extension of nom.split(",")) {
+  for (const extension of name.split(",")) {
     if (contains(memory.containers, extension.trim().toLowerCase())) return false;
   }
   return true;

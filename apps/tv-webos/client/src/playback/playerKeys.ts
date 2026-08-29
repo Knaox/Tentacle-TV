@@ -28,7 +28,7 @@ import { tvPlayerActive } from "@tentacle-tv/tv-core";
 const STEP_SECONDS = 30;
 
 export function installPlayerKeys(): () => void {
-  const surTouche = (event: KeyboardEvent) => {
+  const onKey = (event: KeyboardEvent) => {
     const intention = readIntent(event);
     if (!intention || intention.type !== "transport") return;
     if (tvPlayerActive()) return;
@@ -41,8 +41,8 @@ export function installPlayerKeys(): () => void {
     apply(video, intention.command);
   };
 
-  document.addEventListener("keydown", surTouche, true);
-  return () => document.removeEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
+  return () => document.removeEventListener("keydown", onKey, true);
 }
 
 function apply(video: HTMLVideoElement, command: TransportCommand): void {

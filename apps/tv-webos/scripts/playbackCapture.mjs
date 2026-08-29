@@ -38,19 +38,19 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { openInspector, findTarget, connectSession } from "./capture/cdpInspector.mjs";
 import { createLog, classifyRequest, effectiveBitrate } from "./capture/ndjsonLog.mjs";
-import { codeSonde } from "./capture/pageProbe.mjs";
+import { probeCode } from "./capture/pageProbe.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TAG = "[TTV-RELEVE] ";
 
 function options(argv) {
-  const lu = { device: "tv", application: "com.tentacletv.webos", sortie: null };
+  const parsed = { device: "tv", application: "com.tentacletv.webos", sortie: null };
   for (let i = 0; i < argv.length; i += 2) {
     const key = argv[i]?.replace(/^--/, "");
-    if (key && lu[key] !== undefined) lu[key] = argv[i + 1];
+    if (key && parsed[key] !== undefined) parsed[key] = argv[i + 1];
   }
-  lu.sortie = resolve(HERE, "..", lu.sortie ?? `logs/releve-${timestamp()}.ndjson`);
-  return lu;
+  parsed.sortie = resolve(HERE, "..", parsed.sortie ?? `logs/releve-${timestamp()}.ndjson`);
+  return parsed;
 }
 
 function timestamp() {
@@ -59,9 +59,9 @@ function timestamp() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function principal() {
+async function main() {
   const opts = options(process.argv.slice(2));
-  const journal = createLog(opts.sortie);
+  const log = createLog(opts.sortie);
   console.error(`relevé → ${opts.sortie}`);
 
   const inspector = await openInspector(opts);
@@ -69,8 +69,8 @@ async function principal() {
   const session = await connectSession(target.webSocketDebuggerUrl);
   console.error(`session ouverte sur ${target.url}`);
 
-  wireConsole(session, journal);
-  wireNetwork(session, journal);
+  wireConsole(session, log);
+  wireNetwork(session, log);
 
   await session.send("Runtime.enable");
   await session.send("Log.enable");
@@ -78,79 +78,79 @@ async function principal() {
   await session.send("Network.enable", { maxTotalBufferSize: 1_000_000, maxResourceBufferSize: 100_000 });
   // Les deux voies, et il en faut deux : la première couvre la page DÉJÀ
   // chargée, la seconde toute navigation ultérieure — dont `aller`.
-  await session.send("Page.addScriptToEvaluateOnNewDocument", { source: codeSonde() });
-  await evaluate(session, codeSonde(), journal);
+  await session.send("Page.addScriptToEvaluateOnNewDocument", { source: probeCode() });
+  await evaluate(session, probeCode(), log);
 
-  await runOrders(session, journal);
+  await runOrders(session, log);
 
-  journal.write({ evt: "fin", lines: journal.lines });
-  console.error(`${journal.lines} lignes → ${opts.sortie}`);
+  log.write({ evt: "fin", lines: log.lines });
+  console.error(`${log.lines} lignes → ${opts.sortie}`);
   session.close();
   inspector.stopIt();
-  await journal.close();
+  await log.close();
 }
 
 /** La console de la page : les relevés de la sonde ET les traces du client. */
-function wireConsole(session, journal) {
-  session.sur("Runtime.consoleAPICalled", ({ type, args }) => {
+function wireConsole(session, log) {
+  session.on("Runtime.consoleAPICalled", ({ type, args }) => {
     const text = (args ?? []).map((a) => a.value ?? a.description ?? a.unserializableValue ?? "").join(" ");
     if (text.startsWith(TAG)) {
       try {
-        journal.write(JSON.parse(text.slice(TAG.length)));
+        log.write(JSON.parse(text.slice(TAG.length)));
         return;
       } catch { /* relevé illisible : on le garde en brut ci-dessous */ }
     }
-    journal.write({ evt: "console", level: type, text: text.slice(0, 500) });
+    log.write({ evt: "console", level: type, text: text.slice(0, 500) });
   });
-  session.sur("Runtime.exceptionThrown", ({ exceptionDetails }) => {
-    journal.write({ evt: "exception", text: (exceptionDetails?.text ?? "") + " " + (exceptionDetails?.exception?.description ?? "") });
+  session.on("Runtime.exceptionThrown", ({ exceptionDetails }) => {
+    log.write({ evt: "exception", text: (exceptionDetails?.text ?? "") + " " + (exceptionDetails?.exception?.description ?? "") });
   });
 }
 
 /** Les échanges vus par le MOTEUR. Ce que la pile média fait de son côté ne
  *  passe pas forcément par là — c'est justement ce qu'on vérifie. */
-function wireNetwork(session, journal) {
+function wireNetwork(session, log) {
   const inProgress = new Map();
 
-  session.sur("Network.requestWillBeSent", ({ requestId, request, timestamp }) => {
+  session.on("Network.requestWillBeSent", ({ requestId, request, timestamp }) => {
     const genre = classifyRequest(request.url);
     if (genre === "autre") return;
-    inProgress.set(requestId, { url: request.url, genre, debut: timestamp * 1000 });
+    inProgress.set(requestId, { url: request.url, genre, start: timestamp * 1000 });
   });
-  session.sur("Network.responseReceived", ({ requestId, response, timestamp }) => {
+  session.on("Network.responseReceived", ({ requestId, response, timestamp }) => {
     const tracked = inProgress.get(requestId);
     if (!tracked) return;
     tracked.status = response.status;
-    tracked.headers = timestamp * 1000 - tracked.debut;
+    tracked.headers = timestamp * 1000 - tracked.start;
   });
-  session.sur("Network.loadingFinished", ({ requestId, encodedDataLength, timestamp }) => {
+  session.on("Network.loadingFinished", ({ requestId, encodedDataLength, timestamp }) => {
     const tracked = inProgress.get(requestId);
     if (!tracked) return;
     inProgress.delete(requestId);
-    const ms = timestamp * 1000 - tracked.debut;
-    journal.write({
+    const ms = timestamp * 1000 - tracked.start;
+    log.write({
       evt: "reseau", genre: tracked.genre, url: short(tracked.url), status: tracked.status,
       ms: Math.round(ms), headersMs: Math.round(tracked.headers ?? 0),
       bytes: encodedDataLength, bitrateMbps: effectiveBitrate(encodedDataLength, ms),
     });
   });
-  session.sur("Network.loadingFailed", ({ requestId, errorText, canceled, timestamp }) => {
+  session.on("Network.loadingFailed", ({ requestId, errorText, canceled, timestamp }) => {
     const tracked = inProgress.get(requestId);
     if (!tracked) return;
     inProgress.delete(requestId);
-    journal.write({
+    log.write({
       evt: "reseau", genre: tracked.genre, url: short(tracked.url), failure: errorText,
-      cancelled: !!canceled, ms: Math.round(timestamp * 1000 - tracked.debut),
+      cancelled: !!canceled, ms: Math.round(timestamp * 1000 - tracked.start),
     });
   });
 }
 
 const short = (url) => (url.length > 160 ? `${url.slice(0, 160)}…` : url);
 
-async function evaluate(session, expression, journal) {
+async function evaluate(session, expression, log) {
   const res = await session.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
   if (res.exceptionDetails) {
-    journal.write({ evt: "ordre-echoue", text: res.exceptionDetails.text });
+    log.write({ evt: "ordre-echoue", text: res.exceptionDetails.text });
     return null;
   }
   return res.result?.value ?? null;
@@ -158,24 +158,24 @@ async function evaluate(session, expression, journal) {
 
 /** Les ordres arrivent sur l'entrée standard : le relevé reste scriptable
  *  depuis un shell, et manipulable à la main pendant qu'il tourne. */
-async function runOrders(session, journal) {
+async function runOrders(session, log) {
   const reader = createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const raw of reader) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
     const [order, ...rest] = line.split(/\s+/);
     const argument = rest.join(" ");
-    journal.write({ evt: "ordre", order, argument });
+    log.write({ evt: "ordre", order, argument });
     console.error(`→ ${line}`);
 
     if (order === "attendre") await sleep(Number(argument) * 1000);
     else if (order === "note") continue;
-    else if (order === "aller") await evaluate(session, `location.href='/tv/watch/${argument}'`, journal);
-    else if (order === "saut") await evaluate(session, `document.querySelector('video').currentTime=${Number(argument)}`, journal);
-    else if (order === "touche") await sendKey(session, rest[0], Number(rest[1] ?? 1), journal);
-    else if (order === "js") journal.write({ evt: "ordre-resultat", value: await evaluate(session, argument, journal) });
-    else if (order === "capture") await capture(session, argument, journal);
-    else journal.write({ evt: "ordre-inconnu", order });
+    else if (order === "aller") await evaluate(session, `location.href='/tv/watch/${argument}'`, log);
+    else if (order === "saut") await evaluate(session, `document.querySelector('video').currentTime=${Number(argument)}`, log);
+    else if (order === "touche") await sendKey(session, rest[0], Number(rest[1] ?? 1), log);
+    else if (order === "js") log.write({ evt: "ordre-resultat", value: await evaluate(session, argument, log) });
+    else if (order === "capture") await capture(session, argument, log);
+    else log.write({ evt: "ordre-inconnu", order });
   }
 }
 
@@ -184,20 +184,20 @@ async function runOrders(session, journal) {
  * matériel et hors compositing — mais l'habillage, lui, s'y voit : c'est la
  * seule façon de vérifier de loin qu'une surcouche est bien à l'écran.
  */
-async function capture(session, file, journal) {
+async function capture(session, file, log) {
   const { data } = await session.send("Page.captureScreenshot", { format: "png" });
   const path = resolve(HERE, "..", file || `logs/capture-${timestamp()}.png`);
   await writeFile(path, Buffer.from(data, "base64"));
-  journal.write({ evt: "capture", file: path });
+  log.write({ evt: "capture", file: path });
   console.error(`  capture → ${path}`);
 }
 
 /** Le geste réel : la télécommande n'écrit pas dans `currentTime`, elle appuie
  *  sur une touche, et c'est tout le chemin du lecteur qu'on veut éprouver. */
-async function sendKey(session, nom, times, journal) {
+async function sendKey(session, nom, times, log) {
   const codes = { ArrowRight: 39, ArrowLeft: 37, ArrowUp: 38, ArrowDown: 40, Enter: 13, Escape: 27 };
   const code = codes[nom];
-  if (!code) return journal.write({ evt: "touche-inconnue", nom });
+  if (!code) return log.write({ evt: "touche-inconnue", nom });
   for (let i = 0; i < times; i += 1) {
     await session.send("Input.dispatchKeyEvent", { type: "rawKeyDown", windowsVirtualKeyCode: code, code: nom, key: nom });
     await session.send("Input.dispatchKeyEvent", { type: "keyUp", windowsVirtualKeyCode: code, code: nom, key: nom });
@@ -205,7 +205,7 @@ async function sendKey(session, nom, times, journal) {
   }
 }
 
-principal().catch((err) => {
+main().catch((err) => {
   console.error(err.message);
   process.exit(1);
 });

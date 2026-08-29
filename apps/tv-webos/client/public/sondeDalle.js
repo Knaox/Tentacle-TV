@@ -29,7 +29,7 @@
   var CODE_OK = 13;
 
   function line(key, state, value) {
-    return { key: key, sonde: { state: state, value: String(value) } };
+    return { key: key, probe: { state: state, value: String(value) } };
   }
 
   /* ── 1. Canevas ──────────────────────────────────────────────────────── */
@@ -61,8 +61,8 @@
 
   /* ── 2. Répétition et relâchement de OK ──────────────────────────────── */
 
-  function installHoldCapture(auRapport) {
-    var debut = 0;
+  function installHoldCapture(report) {
+    var start = 0;
     var repeats = 0;
     var last = 0;
     var intervals = [];
@@ -71,8 +71,8 @@
     document.addEventListener("keydown", function (event) {
       if (event.keyCode !== CODE_OK) return;
       var now = new Date().getTime();
-      if (debut === 0) {
-        debut = now;
+      if (start === 0) {
+        start = now;
         last = now;
         return;
       }
@@ -82,12 +82,12 @@
     });
 
     document.addEventListener("keyup", function (event) {
-      if (event.keyCode !== CODE_OK || debut === 0) return;
+      if (event.keyCode !== CODE_OK || start === 0) return;
       sawKeyup = true;
-      var duration = new Date().getTime() - debut;
+      var duration = new Date().getTime() - start;
       var mean = intervals.length > 0 ? average(intervals) : 0;
 
-      auRapport([
+      report([
         line("keyup reçu", "ok", "oui — le maintien peut se mesurer directement"),
         line("durée du maintien", "info", duration + " ms"),
         line("répétitions observées", repeats > 0 ? "ok" : "ko", repeats),
@@ -95,7 +95,7 @@
           mean > 0 ? Math.round(mean) + " ms" : "aucune répétition"),
       ]);
 
-      debut = 0;
+      start = 0;
       repeats = 0;
       intervals = [];
     });
@@ -103,36 +103,36 @@
     // Chien de garde : si aucun `keyup` n'arrive dans les deux secondes qui
     // suivent la dernière répétition, c'est que le modèle ne le notifie pas.
     setInterval(function () {
-      if (debut === 0 || sawKeyup) return;
+      if (start === 0 || sawKeyup) return;
       var silence = new Date().getTime() - last;
       if (silence < 2000) return;
-      auRapport([
+      report([
         line("keyup reçu", "ko", "NON — il faudra déduire le relâchement du silence"),
         line("intervalle de répétition", "info",
           intervals.length > 0 ? Math.round(average(intervals)) + " ms" : "aucune"),
       ]);
-      debut = 0;
+      start = 0;
       repeats = 0;
       intervals = [];
     }, 500);
   }
 
   function average(values) {
-    var somme = 0;
-    for (var i = 0; i < values.length; i++) somme += values[i];
-    return somme / values.length;
+    var sum = 0;
+    for (var i = 0; i < values.length; i++) sum += values[i];
+    return sum / values.length;
   }
 
   /* ── 3. Le relais depuis file:// ─────────────────────────────────────── */
 
-  function probeRelay(auRapport) {
+  function probeRelay(report) {
     var xhr = new global.XMLHttpRequest();
     var origin = global.location.protocol === "file:" ? "null (file://)" : global.location.origin;
 
     try {
       xhr.open("POST", RELAY + "/generate", true);
     } catch (e) {
-      auRapport([line("relais joignable", "ko", "open() a échoué : " + e.message)]);
+      report([line("relais joignable", "ko", "open() a échoué : " + e.message)]);
       return;
     }
 
@@ -143,7 +143,7 @@
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
       var ok = xhr.status >= 200 && xhr.status < 300;
-      auRapport([
+      report([
         line("origine de la coquille", "info", origin),
         line("relais joignable", ok ? "ok" : "ko",
           ok ? "oui — code obtenu" : "statut " + xhr.status + " (0 = bloqué par CORS)"),
@@ -151,16 +151,16 @@
       ]);
     };
     xhr.ontimeout = function () {
-      auRapport([line("relais joignable", "ko", "délai dépassé (8 s)")]);
+      report([line("relais joignable", "ko", "délai dépassé (8 s)")]);
     };
     xhr.send(null);
   }
 
   /* ── 4. La boîte rendue par le ResizeObserver natif ──────────────────── */
 
-  function measureObserverBox(auRapport) {
+  function measureObserverBox(report) {
     if (typeof global.ResizeObserver !== "function") {
-      auRapport([
+      report([
         line("ResizeObserver.contentRect", "info",
           "pas d'observateur natif — c'est le polyfill du client qui répond"),
       ]);
@@ -174,7 +174,7 @@
     document.body.appendChild(box);
 
     var answered = false;
-    var ranger = function () {
+    var cleanup = function () {
       if (box.parentNode) box.parentNode.removeChild(box);
     };
 
@@ -182,8 +182,8 @@
       answered = true;
       var width = Math.round(entries[0].contentRect.width);
       observer.disconnect();
-      ranger();
-      auRapport([
+      cleanup();
+      report([
         line("ResizeObserver.contentRect", width === 200 ? "ok" : "ko",
           width === 200
             ? "boîte de contenu (200 px) — conforme"
@@ -198,8 +198,8 @@
     setTimeout(function () {
       if (answered) return;
       observer.disconnect();
-      ranger();
-      auRapport([
+      cleanup();
+      report([
         line("ResizeObserver.contentRect", "ko",
           "aucune notification en 2 s — présent mais inerte"),
       ]);
@@ -213,10 +213,10 @@
    * disent pas la même chose, et c'est précisément la distinction cherchée :
    * savoir si une application tierce peut approcher la dictée, ou si le clavier
    * système reste le seul chemin. */
-  function probeVoiceServices(auRapport) {
+  function probeVoiceServices(report) {
     var service = global.webOS && global.webOS.service;
     if (!service || typeof service.request !== "function") {
-      auRapport([
+      report([
         line("services Luna", "info",
           "webOS.service absent — déposez webOSTV.js dans la coquille pour trancher"),
       ]);
@@ -230,26 +230,26 @@
     ];
 
     for (var i = 0; i < candidates.length; i++) {
-      callService(service, candidates[i][0], candidates[i][1], auRapport);
+      callService(service, candidates[i][0], candidates[i][1], report);
     }
   }
 
-  function callService(service, nom, method, auRapport) {
-    var key = "luna://" + nom;
-    auRapport([line(key, "info", "interrogation…")]);
+  function callService(service, name, method, report) {
+    var key = "luna://" + name;
+    report([line(key, "info", "interrogation…")]);
     try {
       service.request(key, {
         method: method,
         parameters: {},
         onSuccess: function (response) {
-          auRapport([line(key, "ok", "répond : " + summarize(response))]);
+          report([line(key, "ok", "répond : " + summarize(response))]);
         },
         onFailure: function (error) {
-          auRapport([line(key, "ko", "refuse : " + summarize(error))]);
+          report([line(key, "ko", "refuse : " + summarize(error))]);
         },
       });
     } catch (e) {
-      auRapport([line(key, "ko", "appel impossible : " + e.message)]);
+      report([line(key, "ko", "appel impossible : " + e.message)]);
     }
   }
 

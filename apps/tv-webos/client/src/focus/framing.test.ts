@@ -8,10 +8,10 @@ import { correction, type Segment } from "./framing";
  */
 
 const MARGIN = 96;
-const VIEW: Segment = { debut: 0, fin: 720 };
+const VIEW: Segment = { start: 0, end: 720 };
 
-function segment(debut: number, taille: number): Segment {
-  return { debut, fin: debut + taille };
+function segment(start: number, size: number): Segment {
+  return { start, end: start + size };
 }
 
 describe("correction", () => {
@@ -30,14 +30,14 @@ describe("correction", () => {
     const line = segment(-5, 100);
     const delta = correction(line, VIEW, MARGIN);
     expect(delta).toBe(-101);
-    expect(line.debut - delta).toBe(MARGIN);
+    expect(line.start - delta).toBe(MARGIN);
   });
 
   it("remonte ce qui déborde en bas, jusqu'à la marge et pas au-delà", () => {
     const line = segment(700, 100);
     const delta = correction(line, VIEW, MARGIN);
     expect(delta).toBe(176);
-    expect(line.fin - delta).toBe(VIEW.fin - MARGIN);
+    expect(line.end - delta).toBe(VIEW.end - MARGIN);
   });
 
   it("aligne le début de ce qui est plus grand que la vue", () => {
@@ -50,20 +50,20 @@ describe("correction", () => {
   it("centre dans une vue trop courte pour la marge demandée", () => {
     // Un panneau de choix de trois lignes : deux fois 96 px valent plus que sa
     // hauteur. La marge se ramène à ce que la vue peut offrir.
-    const short: Segment = { debut: 0, fin: 200 };
+    const short: Segment = { start: 0, end: 200 };
     const line = segment(10, 50);
     const delta = correction(line, short, MARGIN);
-    expect(line.debut - delta).toBe(75);
-    expect(short.fin - (line.fin - delta)).toBe(75);
+    expect(line.start - delta).toBe(75);
+    expect(short.end - (line.end - delta)).toBe(75);
   });
 
   it("est stable : corriger deux fois ne bouge plus", () => {
     // La garantie qui compte à l'usage — sans elle, maintenir une flèche fait
     // vibrer la page.
-    const kase: Segment[] = [segment(-5, 100), segment(700, 100), segment(10, 50)];
-    for (const element of kase) {
+    const cases: Segment[] = [segment(-5, 100), segment(700, 100), segment(10, 50)];
+    for (const element of cases) {
       const delta = correction(element, VIEW, MARGIN);
-      const after = { debut: element.debut - delta, fin: element.fin - delta };
+      const after = { start: element.start - delta, end: element.end - delta };
       expect(correction(after, VIEW, MARGIN)).toBe(0);
     }
   });
@@ -71,10 +71,10 @@ describe("correction", () => {
   it("traite un axe horizontal comme un axe vertical", () => {
     // Le module ne connaît pas les axes : une piste qui défile latéralement
     // pose exactement la même question.
-    const view: Segment = { debut: 154, fin: 1280 };
-    const carte = segment(1200, 200);
-    const delta = correction(carte, view, MARGIN);
-    expect(carte.fin - delta).toBe(view.fin - MARGIN);
+    const view: Segment = { start: 154, end: 1280 };
+    const card = segment(1200, 200);
+    const delta = correction(card, view, MARGIN);
+    expect(card.end - delta).toBe(view.end - MARGIN);
   });
 });
 
@@ -116,7 +116,7 @@ describe("correction avec le mou — les bords du document", () => {
     // Une fois au bord, le mou de ce côté est nul : corriger encore rend zéro.
     const line = segment(-5, 100);
     const delta = correction(line, VIEW, MARGIN, { before: 150, after: 5000 });
-    const after = { debut: line.debut - delta, fin: line.fin - delta };
+    const after = { start: line.start - delta, end: line.end - delta };
     expect(correction(after, VIEW, MARGIN, { before: 0, after: 5150 })).toBe(0);
   });
 

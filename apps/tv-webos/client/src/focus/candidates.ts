@@ -36,7 +36,7 @@ export interface Candidate {
  * bondir le focus hors de vue. Ce qui se trouve au-delà est atteint par le
  * défilement, un pas à la fois.
  */
-export function collect(racine: ParentNode = document): Candidate[] {
+export function collect(root: ParentNode = document): Candidate[] {
   const candidates: Candidate[] = [];
   const viewHeight = window.innerHeight;
   const viewWidth = window.innerWidth;
@@ -46,7 +46,7 @@ export function collect(racine: ParentNode = document): Candidate[] {
   // centaines, sur un processeur qui n'en a pas les moyens.
   const styles = new Map<Element, CSSStyleDeclaration>();
 
-  for (const node of racine.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+  for (const node of root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
     if (!isReachable(node)) continue;
     if (!visibleAncestors(node, styles)) continue;
 
@@ -97,8 +97,8 @@ function visibleAncestors(
   // le chrome de page ne dissimule pas ses commandes derrière une enveloppe
   // transparente, et remonter plus haut ne rencontrerait que les calques de
   // transition de la page.
-  const borne = element.closest(STRUCTURE_BOUNDS);
-  if (!borne) return true;
+  const bound = element.closest(STRUCTURE_BOUNDS);
+  if (!bound) return true;
 
   let parent = element.parentElement;
   while (parent) {
@@ -109,7 +109,7 @@ function visibleAncestors(
     }
     if (style.opacity === "0") return false;
     if (style.visibility === "hidden") return false;
-    if (parent === borne) return true;
+    if (parent === bound) return true;
     parent = parent.parentElement;
   }
   return true;
@@ -250,8 +250,8 @@ export function trappingContainer(): ParentNode | null {
     '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],dialog[open]',
   );
   for (let index = dialogs.length - 1; index >= 0; index--) {
-    const dialogue = dialogs[index];
-    if (isReachable(dialogue) || dialogue.getBoundingClientRect().height > 0) return dialogue;
+    const dialog = dialogs[index];
+    if (isReachable(dialog) || dialog.getBoundingClientRect().height > 0) return dialog;
   }
   return null;
 }

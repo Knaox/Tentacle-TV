@@ -41,7 +41,7 @@ const BACK = new Set([461, 27]);
 /** OK de la télécommande, et Entrée. Doublon assumé de `estValidation` du
  * socle partagé : `readIntent` classe par code AVANT de tenter le nom, et
  * doit donc connaître le code ici. */
-const VALIDATION = new Set([13]);
+const SELECT = new Set([13]);
 
 /**
  * Repli par le NOM de la touche, quand `keyCode` n'est pas renseigné.
@@ -76,7 +76,7 @@ const TRANSPORTS_BY_NAME: Record<string, TransportCommand> = {
   MediaRewind: "retour",
 };
 
-const VALIDATION_PAR_NOM = new Set(["Enter"]);
+const SELECT_BY_NAME = new Set(["Enter"]);
 const BACK_BY_NAME = new Set(["Escape", "BrowserBack", "GoBack"]);
 
 export function readIntent(event: KeyboardEvent): Intent | null {
@@ -85,25 +85,25 @@ export function readIntent(event: KeyboardEvent): Intent | null {
   const direction = DIRECTIONS[code];
   if (direction) return { type: "move", direction };
 
-  if (VALIDATION.has(code)) return { type: "select" };
+  if (SELECT.has(code)) return { type: "select" };
   if (BACK.has(code)) return { type: "retour" };
 
   const command = TRANSPORTS[code];
   if (command) return { type: "transport", command };
 
-  return parLeNom(event.key);
+  return byName(event.key);
 }
 
-function parLeNom(nom: string | undefined): Intent | null {
-  if (!nom) return null;
+function byName(name: string | undefined): Intent | null {
+  if (!name) return null;
 
-  const direction = DIRECTIONS_BY_NAME[nom];
+  const direction = DIRECTIONS_BY_NAME[name];
   if (direction) return { type: "move", direction };
 
-  if (VALIDATION_PAR_NOM.has(nom)) return { type: "select" };
-  if (BACK_BY_NAME.has(nom)) return { type: "retour" };
+  if (SELECT_BY_NAME.has(name)) return { type: "select" };
+  if (BACK_BY_NAME.has(name)) return { type: "retour" };
 
-  const command = TRANSPORTS_BY_NAME[nom];
+  const command = TRANSPORTS_BY_NAME[name];
   if (command) return { type: "transport", command };
 
   return null;

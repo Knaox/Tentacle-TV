@@ -37,12 +37,12 @@ const IMAGES = resolve(HERE, "../shell/images");
 const LOGO = resolve(IMAGES, "tentacle-logo-pirate.svg");
 
 /** Le dessin utile dans le viewBox 512×560 du logo — mesuré sur les tracés. */
-const SUBJECT = { x: 40, y: 8, width: 432, hauteur: 542 };
+const SUBJECT = { x: 40, y: 8, width: 432, height: 542 };
 
 /** La teinte des bords. `appinfo.json → iconColor` doit valoir la même. */
 const EDGE = "#1A0932";
-const CŒUR = "#2E1257";
-const FOND_SPLASH = "#140628";
+const CORE = "#2E1257";
+const SPLASH_BACKGROUND = "#140628";
 
 /** Rendu intermédiaire : multiple entier de 130 (×40), 80 (×65) et 400 (×13). */
 const MASTER = 5200;
@@ -53,24 +53,24 @@ const MASTER = 5200;
  * automatique — il se téléverse à part, donc il n'a rien à faire dans l'IPK.
  */
 const ICONS = [
-  { taille: 130, path: resolve(IMAGES, "icon-130.png") },
-  { taille: 80, path: resolve(IMAGES, "icon-80.png") },
-  { taille: 400, path: resolve(HERE, "../../../store-assets/webos-icon-400.png") },
+  { size: 130, path: resolve(IMAGES, "icon-130.png") },
+  { size: 80, path: resolve(IMAGES, "icon-80.png") },
+  { size: 400, path: resolve(HERE, "../../../store-assets/webos-icon-400.png") },
 ];
 
-function toolMissing(nom) {
+function toolMissing(name) {
   return new Error(
-    `${nom} est introuvable. Les images sont des artefacts versionnés : ce ` +
+    `${name} est introuvable. Les images sont des artefacts versionnés : ce ` +
       `script ne sert qu'à les régénérer, sur un poste qui a librsvg et ` +
       `ImageMagick (brew install librsvg imagemagick).`
   );
 }
 
-function lancer(nom, params) {
+function run(name, params) {
   try {
-    execFileSync(nom, params, { stdio: ["ignore", "ignore", "inherit"] });
+    execFileSync(name, params, { stdio: ["ignore", "ignore", "inherit"] });
   } catch (error) {
-    if (error.code === "ENOENT") throw toolMissing(nom);
+    if (error.code === "ENOENT") throw toolMissing(name);
     throw error;
   }
 }
@@ -81,7 +81,7 @@ function lancer(nom, params) {
  * plutôt que par une copie du tracé garantit qu'icône et splash suivent le
  * logo quand il change — une seule source, pas trois.
  */
-function corpsDuLogo() {
+function logoBody() {
   const source = readFileSync(LOGO, "utf8");
   const opening = source.indexOf(">", source.indexOf("<svg"));
   const closing = source.lastIndexOf("</svg>");
@@ -96,16 +96,16 @@ function corpsDuLogo() {
  * et centré sur `centreX` / `centerY`. Le viewBox du `<svg>` imbriqué fait le
  * recadrage, donc la boîte reçue correspond au dessin et à rien d'autre.
  */
-function placedLogo(corps, { canvasWidth, canvasHeight, partHauteur, centerY }) {
-  const hauteur = canvasHeight * partHauteur;
-  const width = (hauteur * SUBJECT.width) / SUBJECT.hauteur;
+function placedLogo(body, { canvasWidth, canvasHeight, heightFraction, centerY }) {
+  const height = canvasHeight * heightFraction;
+  const width = (height * SUBJECT.width) / SUBJECT.height;
   const x = (canvasWidth - width) / 2;
-  const y = centerY * canvasHeight - hauteur / 2;
-  const boîte = `${SUBJECT.x} ${SUBJECT.y} ${SUBJECT.width} ${SUBJECT.hauteur}`;
+  const y = centerY * canvasHeight - height / 2;
+  const viewBox = `${SUBJECT.x} ${SUBJECT.y} ${SUBJECT.width} ${SUBJECT.height}`;
   return (
     `<svg x="${x.toFixed(2)}" y="${y.toFixed(2)}" ` +
-    `width="${width.toFixed(2)}" height="${hauteur.toFixed(2)}" ` +
-    `viewBox="${boîte}" preserveAspectRatio="xMidYMid meet">${corps}</svg>`
+    `width="${width.toFixed(2)}" height="${height.toFixed(2)}" ` +
+    `viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">${body}</svg>`
   );
 }
 
@@ -116,12 +116,12 @@ function placedLogo(corps, { canvasWidth, canvasHeight, partHauteur, centerY }) 
  * tuile du Launcher s'y raccorde sans ligne visible. Le halo qui donne le
  * relief est un second dégradé, éteint bien avant d'atteindre un bord.
  */
-function iconSvg(corps) {
+function iconSvg(body) {
   const C = 512;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${C}" height="${C}" viewBox="0 0 ${C} ${C}">
   <defs>
     <radialGradient id="fondIcone" gradientUnits="userSpaceOnUse" cx="256" cy="256" r="256">
-      <stop offset="0%" stop-color="${CŒUR}"/>
+      <stop offset="0%" stop-color="${CORE}"/>
       <stop offset="62%" stop-color="#231041"/>
       <stop offset="100%" stop-color="${EDGE}"/>
     </radialGradient>
@@ -133,10 +133,10 @@ function iconSvg(corps) {
   <rect width="${C}" height="${C}" fill="${EDGE}"/>
   <rect width="${C}" height="${C}" fill="url(#fondIcone)"/>
   <rect width="${C}" height="${C}" fill="url(#haloIcone)"/>
-  ${placedLogo(corps, {
+  ${placedLogo(body, {
     canvasWidth: C,
     canvasHeight: C,
-    partHauteur: 0.84,
+    heightFraction: 0.84,
     centerY: 0.5,
   })}
 </svg>`;
@@ -152,15 +152,15 @@ function iconSvg(corps) {
  * versionné, donc ce que voit le téléviseur est ce qu'a produit le poste qui a
  * lancé ce script, pas la police installée chez le suivant.
  */
-function svgSplash(corps) {
+function svgSplash(body) {
   const L = 1920;
   const H = 1080;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${L}" height="${H}" viewBox="0 0 ${L} ${H}">
   <defs>
     <radialGradient id="fondSplash" gradientUnits="userSpaceOnUse" cx="960" cy="470" r="880">
-      <stop offset="0%" stop-color="${CŒUR}"/>
+      <stop offset="0%" stop-color="${CORE}"/>
       <stop offset="55%" stop-color="#1D0B39"/>
-      <stop offset="100%" stop-color="${FOND_SPLASH}"/>
+      <stop offset="100%" stop-color="${SPLASH_BACKGROUND}"/>
     </radialGradient>
     <radialGradient id="haloSplash" gradientUnits="userSpaceOnUse" cx="960" cy="430" r="420">
       <stop offset="0%" stop-color="#A855F7" stop-opacity="0.22"/>
@@ -171,13 +171,13 @@ function svgSplash(corps) {
       <stop offset="100%" stop-color="#F9A8D4"/>
     </linearGradient>
   </defs>
-  <rect width="${L}" height="${H}" fill="${FOND_SPLASH}"/>
+  <rect width="${L}" height="${H}" fill="${SPLASH_BACKGROUND}"/>
   <rect width="${L}" height="${H}" fill="url(#fondSplash)"/>
   <rect width="${L}" height="${H}" fill="url(#haloSplash)"/>
-  ${placedLogo(corps, {
+  ${placedLogo(body, {
     canvasWidth: L,
     canvasHeight: H,
-    partHauteur: 0.52,
+    heightFraction: 0.52,
     centerY: 0.42,
   })}
   <!-- L'espacement des lettres s'applique AUSSI après la dernière : la boîte que
@@ -189,37 +189,37 @@ function svgSplash(corps) {
 </svg>`;
 }
 
-const atelier = mkdtempSync(join(tmpdir(), "tentacle-icons-"));
+const workshop = mkdtempSync(join(tmpdir(), "tentacle-icons-"));
 try {
-  const corps = corpsDuLogo();
+  const body = logoBody();
 
-  const iconSource = join(atelier, "icone.svg");
-  const master = join(atelier, "maitre.png");
-  writeFileSync(iconSource, iconSvg(corps), "utf8");
-  lancer("rsvg-convert", ["-w", String(MASTER), "-h", String(MASTER), iconSource, "-o", master]);
+  const iconSource = join(workshop, "icone.svg");
+  const master = join(workshop, "maitre.png");
+  writeFileSync(iconSource, iconSvg(body), "utf8");
+  run("rsvg-convert", ["-w", String(MASTER), "-h", String(MASTER), iconSource, "-o", master]);
 
-  for (const { taille, path } of ICONS) {
+  for (const { size, path } of ICONS) {
     // Lanczos sur un multiple entier : les détails fins du crâne survivent à la
     // réduction, ce qu'un rendu vectoriel direct à 80 pixels ne garantit pas.
-    lancer("magick", [
+    run("magick", [
       master,
       "-filter", "Lanczos",
-      "-resize", `${taille}x${taille}`,
+      "-resize", `${size}x${size}`,
       "-alpha", "off",
       "-strip",
       path,
     ]);
-    console.log(`[icons] ${path.split("/").slice(-2).join("/")} — ${taille}×${taille}`);
+    console.log(`[icons] ${path.split("/").slice(-2).join("/")} — ${size}×${size}`);
   }
 
-  const sourceSplash = join(atelier, "splash.svg");
-  const splashLarge = join(atelier, "splash-large.png");
+  const sourceSplash = join(workshop, "splash.svg");
+  const splashLarge = join(workshop, "splash-large.png");
   const splash = resolve(IMAGES, "splash.png");
-  writeFileSync(sourceSplash, svgSplash(corps), "utf8");
+  writeFileSync(sourceSplash, svgSplash(body), "utf8");
   // Rendu au double puis réduit : le dégradé plein écran ne montre pas ses
   // paliers, et le texte reçoit le même suréchantillonnage que le dessin.
-  lancer("rsvg-convert", ["-w", "3840", "-h", "2160", sourceSplash, "-o", splashLarge]);
-  lancer("magick", [
+  run("rsvg-convert", ["-w", "3840", "-h", "2160", sourceSplash, "-o", splashLarge]);
+  run("magick", [
     splashLarge,
     "-filter", "Lanczos",
     "-resize", "1920x1080",
@@ -229,5 +229,5 @@ try {
   ]);
   console.log(`[icons] splash.png — 1920×1080`);
 } finally {
-  rmSync(atelier, { recursive: true, force: true });
+  rmSync(workshop, { recursive: true, force: true });
 }

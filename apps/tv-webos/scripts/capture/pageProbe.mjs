@@ -22,12 +22,12 @@ const EVENTS = [
 const STATE_PERIOD_MS = 250;
 const EXIT_PERIOD_MS = 2000;
 
-export function codeSonde() {
-  return `(${sonde.toString()})(${JSON.stringify(EVENTS)}, ${STATE_PERIOD_MS}, ${EXIT_PERIOD_MS});`;
+export function probeCode() {
+  return `(${probeBody.toString()})(${JSON.stringify(EVENTS)}, ${STATE_PERIOD_MS}, ${EXIT_PERIOD_MS});`;
 }
 
 /* eslint-disable */
-function sonde(events, statePeriod, exitPeriod) {
+function probeBody(events, statePeriod, exitPeriod) {
   if (window.__ttvCapture) return "deja-en-place";
   window.__ttvCapture = true;
 
@@ -80,12 +80,12 @@ function sonde(events, statePeriod, exitPeriod) {
 
   // ── Événements média, en CAPTURE sur le document : ils ne remontent pas,
   //    mais ils descendent — et la balise appartient au lecteur, pas à nous ──
-  events.forEach(function (nom) {
-    document.addEventListener(nom, function (ev) {
+  events.forEach(function (name) {
+    document.addEventListener(name, function (ev) {
       if (!(ev.target instanceof HTMLVideoElement)) return;
       var rec = state(ev.target);
       rec.evt = "media";
-      rec.nom = nom;
+      rec.nom = name;
       emit(rec);
     }, true);
   });
@@ -109,13 +109,13 @@ function sonde(events, statePeriod, exitPeriod) {
         var bridge = new window.PalmServiceBridge();
         bridge.onservicecallback = function (response) {
           try {
-            var charge = JSON.parse(response);
-            var info = (charge && charge.video && charge.video[0]) || {};
+            var payload = JSON.parse(response);
+            var info = (payload && payload.video && payload.video[0]) || {};
             emit({
               evt: "sortie",
               hdrType: info.hdrType, frameRate: info.frameRate,
               sourceRect: info.sourceRect, videoRect: info.videoRect,
-              adaptive: info.adaptive, connected: charge && charge.connectedSource,
+              adaptive: info.adaptive, connected: payload && payload.connectedSource,
             });
           } catch (e) { /* réponse illisible : on saute ce relevé */ }
         };

@@ -31,14 +31,14 @@ import { forgetPairing } from "../../auth/returnToShell";
  */
 
 /** Le portrait, à la taille d'une dalle regardée de loin. */
-const TAILLE_PORTRAIT = 132;
+const PORTRAIT_SIZE = 132;
 
 function accountName(): string | null {
   try {
     const raw = localStorage.getItem("tentacle_user");
     if (!raw) return null;
-    const nom = (JSON.parse(raw) as { Name?: unknown }).Name;
-    return typeof nom === "string" && nom.length > 0 ? nom : null;
+    const name = (JSON.parse(raw) as { Name?: unknown }).Name;
+    return typeof name === "string" && name.length > 0 ? name : null;
   } catch {
     return null;
   }
@@ -73,7 +73,7 @@ export function AccountScreenTv() {
     // détaillée dans `AboutScreenTv.tsx`.
     <div>
       <section className="mb-14">
-        <Profile nom={account} />
+        <Profile name={account} />
       </section>
 
       <section>
@@ -106,7 +106,7 @@ export function AccountScreenTv() {
  * d'avoir essayé, donc on essaie, et `onError` retombe sur l'initiale sans que
  * rien ne clignote : l'image n'est montée qu'une fois chargée.
  */
-function Profile({ nom }: { nom: string | null }) {
+function Profile({ name }: { name: string | null }) {
   const { t } = useTranslation("pairing");
   const client = useJellyfinClient();
   const userId = useUserId();
@@ -114,18 +114,18 @@ function Profile({ nom }: { nom: string | null }) {
 
   const url =
     userId && !failed
-      ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${TAILLE_PORTRAIT * 2}&quality=90`
+      ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${PORTRAIT_SIZE * 2}&quality=90`
       : null;
 
-  const initial = (nom ?? "?").charAt(0).toUpperCase();
+  const initial = (name ?? "?").charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-8">
       <div
         className="flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full"
         style={{
-          width: TAILLE_PORTRAIT,
-          height: TAILLE_PORTRAIT,
+          width: PORTRAIT_SIZE,
+          height: PORTRAIT_SIZE,
           // L'anneau de marque plutôt qu'une bordure : il se pose sur l'image
           // sans en manger un pixel, et reste lisible sur un portrait clair
           // comme sur un portrait sombre.
@@ -149,7 +149,7 @@ function Profile({ nom }: { nom: string | null }) {
         <p className="text-sm uppercase tracking-[0.08em] text-content-tertiary">
           {t("tvCompteJumele")}
         </p>
-        <p className="mt-2 text-4xl font-bold tracking-tight text-content-primary">{nom ?? "—"}</p>
+        <p className="mt-2 text-4xl font-bold tracking-tight text-content-primary">{name ?? "—"}</p>
       </div>
     </div>
   );

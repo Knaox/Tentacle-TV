@@ -24,7 +24,7 @@ import { join } from "node:path";
 import {
   locateAres,
   aresUsable,
-  installerAres,
+  installAres,
   runAres,
   devModeAnswers,
   download,
@@ -43,37 +43,37 @@ const LG_ACCOUNT = "https://webostv.developer.lge.com";
 
 const colors = process.stdout.isTTY;
 const bold = (t) => (colors ? `\x1b[1m${t}\x1b[0m` : t);
-const pale = (t) => (colors ? `\x1b[2m${t}\x1b[0m` : t);
-const violet = (t) => (colors ? `\x1b[35m${t}\x1b[0m` : t);
-const vert = (t) => (colors ? `\x1b[32m${t}\x1b[0m` : t);
+const dim = (t) => (colors ? `\x1b[2m${t}\x1b[0m` : t);
+const purple = (t) => (colors ? `\x1b[35m${t}\x1b[0m` : t);
+const green = (t) => (colors ? `\x1b[32m${t}\x1b[0m` : t);
 
 let step = 0;
-const announce = (title) => console.log(`\n${violet(`[${++step}]`)} ${bold(title)}`);
+const announce = (title) => console.log(`\n${purple(`[${++step}]`)} ${bold(title)}`);
 
 /**
  * Le cadre est calculé, pas dessiné à la main : la coloration insère des codes
  * d'échappement qui comptent dans la longueur de la chaîne mais pas à l'écran,
  * et un cadre écrit au jugé finit toujours par déborder d'un caractère.
  */
-function cadre(title) {
-  const marge = 3;
-  const barre = "─".repeat(title.length + marge * 2);
-  const blanc = " ".repeat(marge);
+function frame(title) {
+  const padding = 3;
+  const line = "─".repeat(title.length + padding * 2);
+  const blank = " ".repeat(padding);
   return [
-    violet(`  ╭${barre}╮`),
-    `${violet("  │")}${blanc}${bold(title)}${blanc}${violet("│")}`,
-    violet(`  ╰${barre}╯`),
+    purple(`  ╭${line}╮`),
+    `${purple("  │")}${blank}${bold(title)}${blank}${purple("│")}`,
+    purple(`  ╰${line}╯`),
   ].join("\n");
 }
 
 function welcome() {
   console.log(`
-${cadre("Tentacle TV — installation sur téléviseur LG")}
+${frame("Tentacle TV — installation sur téléviseur LG")}
 
   Il faut d'abord un compte développeur LG — gratuit, trois minutes :
 
-    ${violet(LG_ACCOUNT)}
-    ${pale("« Sign In » en haut à droite, puis « CREATE ACCOUNT ».")}
+    ${purple(LG_ACCOUNT)}
+    ${dim("« Sign In » en haut à droite, puis « CREATE ACCOUNT ».")}
 
   Ensuite, sur le téléviseur :
 
@@ -85,9 +85,9 @@ ${cadre("Tentacle TV — installation sur téléviseur LG")}
        ${bold("phrase secrète")} de six caractères, en bas à gauche.
 
   ${bold("L'étape 4 n'est pas facultative")} : sans le Key Server, le téléviseur ne
-  ${pale("publie pas sa clé, et aucune installation n'est possible.")}
+  ${dim("publie pas sa clé, et aucune installation n'est possible.")}
 
-  ${pale("L'ordinateur et le téléviseur doivent être sur le même réseau.")}
+  ${dim("L'ordinateur et le téléviseur doivent être sur le même réseau.")}
 `);
 }
 
@@ -102,9 +102,9 @@ function checkNode() {
   }
 }
 
-async function ask(lecture, question, validate) {
+async function ask(reader, prompt, validate) {
   for (;;) {
-    const response = (await lecture.question(question)).trim();
+    const response = (await reader.prompt(prompt)).trim();
     const issue = validate(response);
     if (!issue) return response;
     console.log(`  ${issue}`);
@@ -114,24 +114,24 @@ async function ask(lecture, question, validate) {
 const IS_IPV4 =
   /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/;
 
-async function dialogue(lecture) {
+async function askDetails(reader) {
   announce("Les informations affichées sur le téléviseur");
   console.log(
-    pale("    L'adresse IP figure sur l'écran de Developer Mode, et aussi dans\n") +
-      pale("    Paramètres › Général › À propos de ce téléviseur › Réseau.\n")
+    dim("    L'adresse IP figure sur l'écran de Developer Mode, et aussi dans\n") +
+      dim("    Paramètres › Général › À propos de ce téléviseur › Réseau.\n")
   );
   const address = await ask(
-    lecture,
-    `  Adresse IP du téléviseur ${pale("(ex. 192.168.1.42)")} : `,
+    reader,
+    `  Adresse IP du téléviseur ${dim("(ex. 192.168.1.42)")} : `,
     (value) => {
       if (!value) return "Il en faut une pour joindre le téléviseur.";
       if (!IS_IPV4.test(value)) return "Ce n'est pas une adresse IPv4 (quatre nombres séparés par des points).";
       return null;
     }
   );
-  const phrase = await ask(
-    lecture,
-    `  Phrase secrète ${pale("(6 caractères, en bas à gauche de l'écran)")} : `,
+  const passphrase = await ask(
+    reader,
+    `  Phrase secrète ${dim("(6 caractères, en bas à gauche de l'écran)")} : `,
     (value) => {
       if (!value) return "Elle n'apparaît qu'une fois « Key Server » activé.";
       if (!/^[A-Za-z0-9]{4,16}$/.test(value)) return "Attendu : des lettres et des chiffres, sans espace.";
@@ -140,13 +140,13 @@ async function dialogue(lecture) {
   );
   // LG l'affiche en capitales et la clé est déchiffrée telle quelle : une saisie
   // en minuscules donnerait un « Unable to parse private key » incompréhensible.
-  return { address, phrase: phrase.toUpperCase() };
+  return { address, passphrase: passphrase.toUpperCase() };
 }
 
 async function checkTv(address) {
   announce("Le téléviseur répond-il ?");
   if (await devModeAnswers(address)) {
-    console.log(`  ${vert("✓")} mode développeur joignable sur ${address}`);
+    console.log(`  ${green("✓")} mode développeur joignable sur ${address}`);
     return;
   }
   // Ce port n'est ouvert que par le Key Server, et par rien d'autre : c'est
@@ -174,19 +174,19 @@ function tooling() {
   announce("L'outillage de LG");
   const alreadyThere = locateAres();
   if (aresUsable(alreadyThere)) {
-    console.log(`  ${vert("✓")} CLI webOS déjà présente`);
+    console.log(`  ${green("✓")} CLI webOS déjà présente`);
     return alreadyThere;
   }
   console.log(
-    pale(
+    dim(
       alreadyThere
         ? "    Installation précédente incomplète — on la refait à neuf…"
         : "    Première exécution : installation de la CLI webOS de LG…"
     )
   );
-  const racine = installerAres({ purger: Boolean(alreadyThere) });
-  console.log(`  ${vert("✓")} CLI webOS installée`);
-  return racine;
+  const root = installAres({ purge: Boolean(alreadyThere) });
+  console.log(`  ${green("✓")} CLI webOS installée`);
+  return root;
 }
 
 /**
@@ -194,23 +194,23 @@ function tooling() {
  * le cas dès la deuxième exécution —, et il n'existe pas d'option « ajouter ou
  * mettre à jour ». On tente l'un, on retombe sur l'autre.
  */
-function record(racine, address) {
+function record(root, address) {
   announce("Enregistrement du téléviseur");
   const info = [
     "-i", `host=${address}`,
     "-i", `port=${PORT}`,
     "-i", `username=${ACCOUNT}`,
   ];
-  const added = runAres(racine, "ares-setup-device", ["-a", DEVICE, ...info]);
+  const added = runAres(root, "ares-setup-device", ["-a", DEVICE, ...info]);
   if (added.code === 0) {
-    console.log(`  ${vert("✓")} téléviseur enregistré sous « ${DEVICE} »`);
+    console.log(`  ${green("✓")} téléviseur enregistré sous « ${DEVICE} »`);
     return;
   }
-  const revision = runAres(racine, "ares-setup-device", ["-m", DEVICE, ...info]);
+  const revision = runAres(root, "ares-setup-device", ["-m", DEVICE, ...info]);
   if (revision.code !== 0) {
     throw new Error(`enregistrement impossible.\n\n${revision.sortie || added.sortie}`);
   }
-  console.log(`  ${vert("✓")} enregistrement mis à jour (adresse : ${address})`);
+  console.log(`  ${green("✓")} enregistrement mis à jour (adresse : ${address})`);
 }
 
 /**
@@ -218,10 +218,10 @@ function record(racine, address) {
  * l'outil la réclamerait au clavier : on la lui passe pour que l'utilisateur
  * n'ait pas à la retaper.
  */
-function fetchKey(racine, phrase) {
+function fetchKey(root, passphrase) {
   announce("Récupération de la clé du téléviseur");
-  const issue = runAres(racine, "ares-novacom", [
-    "--getkey", "-d", DEVICE, "--passphrase", phrase,
+  const issue = runAres(root, "ares-novacom", [
+    "--getkey", "-d", DEVICE, "--passphrase", passphrase,
   ]);
   if (issue.code !== 0) {
     throw new Error(
@@ -231,79 +231,79 @@ function fetchKey(racine, phrase) {
         `  le téléviseur — elle change à chaque session.\n\n${issue.sortie}`
     );
   }
-  console.log(`  ${vert("✓")} clé en place`);
+  console.log(`  ${green("✓")} clé en place`);
 }
 
-async function fetchBack(dossier) {
+async function fetchBack(directory) {
   announce("Téléchargement de Tentacle TV");
-  console.log(pale(`    ${PACKAGE_URL}`));
-  const ipkFile = join(dossier, "tentacle-tv.ipk");
+  console.log(dim(`    ${PACKAGE_URL}`));
+  const ipkFile = join(directory, "tentacle-tv.ipk");
   await download(PACKAGE_URL, ipkFile);
-  console.log(`  ${vert("✓")} paquet rapatrié`);
+  console.log(`  ${green("✓")} paquet rapatrié`);
   return ipkFile;
 }
 
-function installer(racine, ipkFile) {
+function installer(root, ipkFile) {
   announce("Installation sur le téléviseur");
-  const issue = runAres(racine, "ares-install", ["-d", DEVICE, ipkFile]);
+  const issue = runAres(root, "ares-install", ["-d", DEVICE, ipkFile]);
   if (issue.code !== 0) {
     throw new Error(`l'installation a échoué.\n\n${issue.sortie}`);
   }
-  console.log(`  ${vert("✓")} Tentacle TV est installée`);
+  console.log(`  ${green("✓")} Tentacle TV est installée`);
 }
 
-function start(racine) {
+function start(root) {
   announce("Démarrage");
-  const issue = runAres(racine, "ares-launch", ["-d", DEVICE, IDENTIFIER]);
+  const issue = runAres(root, "ares-launch", ["-d", DEVICE, IDENTIFIER]);
   if (issue.code !== 0) {
     // Un lancement raté ne remet pas l'installation en cause : l'application est
     // sur le téléviseur, et la télécommande sait l'ouvrir.
-    console.log(`  ${pale("l'ouverture automatique a échoué — ouvrez-la depuis le menu du téléviseur.")}`);
+    console.log(`  ${dim("l'ouverture automatique a échoué — ouvrez-la depuis le menu du téléviseur.")}`);
     return;
   }
-  console.log(`  ${vert("✓")} Tentacle TV s'ouvre sur le téléviseur`);
+  console.log(`  ${green("✓")} Tentacle TV s'ouvre sur le téléviseur`);
 }
 
-async function principal() {
+async function main() {
   welcome();
   checkNode();
 
-  const lecture = createInterface({ input: process.stdin, output: process.stdout });
+  const reader = createInterface({ input: process.stdin, output: process.stdout });
   let address;
-  let phrase;
+  let passphrase;
   try {
-    ({ address, phrase } = await dialogue(lecture));
+    ({ address, passphrase } = await askDetails(reader));
   } finally {
-    lecture.close();
+    reader.close();
   }
 
   await checkTv(address);
-  const racine = tooling();
-  record(racine, address);
-  fetchKey(racine, phrase);
+  const root = tooling();
+  record(root, address);
+  fetchKey(root, passphrase);
 
-  const dossier = mkdtempSync(join(tmpdir(), "tentacle-webos-"));
+  const directory = mkdtempSync(join(tmpdir(), "tentacle-webos-"));
   try {
-    installer(racine, await fetchBack(dossier));
+    installer(root, await fetchBack(directory));
   } finally {
-    rmSync(dossier, { recursive: true, force: true });
+    rmSync(directory, { recursive: true, force: true });
   }
-  start(racine);
+  start(root);
 
   console.log(`
-  ${vert(bold("Terminé."))}
+  ${green(bold("Terminé."))}
 
   L'application vit maintenant sur le téléviseur, dans la liste des
   applications. ${bold("Les mises à jour se font toutes seules")} : l'interface est
   servie par votre serveur Tentacle, ce paquet n'en est que la coquille.
 
-  ${pale("Relancez ce script uniquement si l'application disparaît — le mode")}
-  ${pale("développeur de LG désinstalle les applications à l'expiration de la")}
-  ${pale("session s'il n'a pas été prolongé.")}
+  ${dim("Relancez ce script uniquement si l'application disparaît — le mode")}
+  ${dim("développeur de LG désinstalle les applications à l'expiration de la")}
+  ${dim("session s'il n'a pas été prolongé.")}
 `);
 }
 
-principal().catch((error) => {
+main().catch((error) => {
   console.error(`\n  ${colors ? "\x1b[31m" : ""}Échec${colors ? "\x1b[0m" : ""} : ${error.message}\n`);
   process.exitCode = 1;
 });

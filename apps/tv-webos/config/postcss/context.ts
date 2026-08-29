@@ -11,7 +11,7 @@
  * endroit de la chaîne.
  */
 export interface CompatContext {
-  count(passe: string, number?: number): void;
+  count(pass: string, number?: number): void;
   report(): string;
   total(): number;
 }
@@ -20,14 +20,14 @@ export function createContext(): CompatContext {
   const counters = new Map<string, number>();
 
   return {
-    count(passe, number = 1) {
-      counters.set(passe, (counters.get(passe) ?? 0) + number);
+    count(pass, number = 1) {
+      counters.set(pass, (counters.get(pass) ?? 0) + number);
     },
     report() {
       if (counters.size === 0) return "aucune transformation";
       return [...counters.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([passe, number]) => `${passe} ${number}`)
+        .map(([pass, number]) => `${pass} ${number}`)
         .join(", ");
     },
     total() {

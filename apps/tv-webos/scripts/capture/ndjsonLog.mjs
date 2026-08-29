@@ -39,20 +39,20 @@ export function effectiveBitrate(bytes, ms) {
 /** Écriture sans tampon applicatif : un relevé interrompu reste exploitable. */
 export function createLog(path) {
   mkdirSync(dirname(path), { recursive: true });
-  const flux = createWriteStream(path, { flags: "a" });
+  const stream = createWriteStream(path, { flags: "a" });
   let lines = 0;
 
   return {
     path,
     write(recording) {
       lines += 1;
-      flux.write(`${JSON.stringify({ t: Date.now(), ...recording })}\n`);
+      stream.write(`${JSON.stringify({ t: Date.now(), ...recording })}\n`);
     },
     get lines() {
       return lines;
     },
     close() {
-      return new Promise((resolve) => flux.end(resolve));
+      return new Promise((resolve) => stream.end(resolve));
     },
   };
 }

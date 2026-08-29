@@ -34,14 +34,14 @@ let active = true;
 let deferred: ReturnType<typeof setTimeout> | null = null;
 const listeners = new Set<() => void>();
 
-function notifier(): void {
+function notify(): void {
   listeners.forEach((listener) => listener());
 }
 
-function poser(item: MediaItem | null): void {
+function setCurrent(item: MediaItem | null): void {
   if (current === item) return;
   current = item;
-  notifier();
+  notify();
 }
 
 function cancelDeferred(): void {
@@ -56,7 +56,7 @@ export function aimItem(item: MediaItem): void {
   if (!active) return;
   deferred = setTimeout(() => {
     deferred = null;
-    poser(item);
+    setCurrent(item);
   }, DELAY_MS);
 }
 
@@ -69,7 +69,7 @@ export function releaseItem(): void {
   cancelDeferred();
   deferred = setTimeout(() => {
     deferred = null;
-    poser(null);
+    setCurrent(null);
   }, CLEAR_DELAY_MS);
 }
 
@@ -83,14 +83,14 @@ export function enableFocusBackdrop(value: boolean): void {
   active = value;
   if (!value) {
     cancelDeferred();
-    poser(null);
+    setCurrent(null);
   }
 }
 
-function sAbonner(rappel: () => void): () => void {
-  listeners.add(rappel);
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback);
   return () => {
-    listeners.delete(rappel);
+    listeners.delete(callback);
   };
 }
 
@@ -99,5 +99,5 @@ function readSnapshot(): MediaItem | null {
 }
 
 export function useFocusedItem(): MediaItem | null {
-  return useSyncExternalStore(sAbonner, readSnapshot);
+  return useSyncExternalStore(subscribe, readSnapshot);
 }

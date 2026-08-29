@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration } from "@/components/playerControls/utils";
 import { useTrickplay } from "@/hooks/useTrickplay";
-import { BarreProgressionTv } from "./ProgressBarTv";
+import { ProgressBarTv } from "./ProgressBarTv";
 
 /**
  * L'écran de déplacement dans le flux.
@@ -54,7 +54,7 @@ export function ScrubOverlayTv({
   const { t } = useTranslation("player");
   const { available, info, getFrameAt, preloadNeighbors } = useTrickplay(item, mediaSourceId);
 
-  const vignette = useMemo(() => {
+  const thumbnail = useMemo(() => {
     if (!available || !info) return null;
     // `getFrameAt` met la mosaïque en cache au passage. L'opération est
     // idempotente — une entrée de `Map` — et n'a lieu qu'aux quatre tics par
@@ -95,7 +95,7 @@ export function ScrubOverlayTv({
     };
   }, [available, info, getFrameAt, position]);
 
-  const tile = vignette ? vignette.tile : null;
+  const tile = thumbnail ? thumbnail.tile : null;
   useEffect(() => {
     if (tile !== null) preloadNeighbors(tile);
   }, [tile, preloadNeighbors]);
@@ -106,7 +106,7 @@ export function ScrubOverlayTv({
     // Remote qui est en cause — reprendre la lecture en plein déplacement
     // laisserait le curseur fantôme courir sur une vidéo qui avance.
     <div className="scrub-tv" onClick={(event) => event.stopPropagation()}>
-      {vignette && <div className="scrub-tv-vignette" style={vignette.style} />}
+      {thumbnail && <div className="scrub-tv-vignette" style={thumbnail.style} />}
       <div className="scrub-tv-voile" />
 
       <div className="scrub-tv-haut">
@@ -116,7 +116,7 @@ export function ScrubOverlayTv({
 
       <div className="scrub-tv-bas">
         <p className="scrub-tv-horodatage">{formatDuration(position)}</p>
-        <BarreProgressionTv
+        <ProgressBarTv
           currentTime={currentTime}
           duration={duration}
           bufferedFraction={bufferedFraction}

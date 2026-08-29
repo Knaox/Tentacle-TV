@@ -20,11 +20,11 @@ import { locateAres, aresUsable, runAres, NPM_COMMAND } from "./tooling.mjs";
  */
 describe("le repérage de la CLI de LG", () => {
   it("rend une racine que lancerAres sait exploiter", () => {
-    const racine = locateAres();
-    expect(racine, "la CLI webOS doit être installée (devDependency du paquet)").toBeTruthy();
+    const root = locateAres();
+    expect(root, "la CLI webOS doit être installée (devDependency du paquet)").toBeTruthy();
 
     for (const tool of ["ares-setup-device", "ares-novacom", "ares-install", "ares-launch"]) {
-      const issue = runAres(racine, tool, ["--version"]);
+      const issue = runAres(root, tool, ["--version"]);
       expect(issue.code, `${tool} devait répondre`).toBe(0);
     }
   });
@@ -48,18 +48,18 @@ describe("le repérage de la CLI de LG", () => {
  */
 describe("une CLI présente mais amputée de ses dépendances", () => {
   it("est reconnue comme inutilisable", () => {
-    const faux = mkdtempSync(join(tmpdir(), "tentacle-cli-ampute-"));
+    const fake = mkdtempSync(join(tmpdir(), "tentacle-cli-ampute-"));
     try {
-      const bin = join(faux, "node_modules/@webos-tools/cli/bin");
+      const bin = join(fake, "node_modules/@webos-tools/cli/bin");
       mkdirSync(bin, { recursive: true });
       for (const tool of ["ares-setup-device", "ares-install"]) {
         writeFileSync(join(bin, `${tool}.js`), "require('async');\n", "utf8");
       }
       // Le repérage, lui, la trouve : c'est bien pour cela qu'il ne suffit pas.
       expect(locateAres.length).toBeGreaterThanOrEqual(0);
-      expect(aresUsable(faux)).toBe(false);
+      expect(aresUsable(fake)).toBe(false);
     } finally {
-      rmSync(faux, { recursive: true, force: true });
+      rmSync(fake, { recursive: true, force: true });
     }
   });
 

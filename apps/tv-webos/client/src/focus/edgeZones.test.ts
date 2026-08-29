@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   band,
-  MARGE_UTILE_X,
-  MARGE_UTILE_Y,
+  USABLE_MARGIN_X,
+  USABLE_MARGIN_Y,
   push,
   depth,
   speed,
@@ -12,10 +12,10 @@ import {
 } from "./edgeZones";
 
 /** Le canevas réel de la cible, et son retrait d'overscan. */
-const CANVAS = { width: 1920, hauteur: 1080 };
+const CANVAS = { width: 1920, height: 1080 };
 const INSET = { x: 96, y: 54 };
-const BAND_Y = band(INSET.y, MARGE_UTILE_Y);
-const BAND_X = band(INSET.x, MARGE_UTILE_X);
+const BAND_Y = band(INSET.y, USABLE_MARGIN_Y);
+const BAND_X = band(INSET.x, USABLE_MARGIN_X);
 
 describe("profondeur", () => {
   it("vaut zéro hors de la bande", () => {
@@ -56,9 +56,9 @@ describe("vitesse", () => {
   it("est quadratique : à mi-course, bien en dessous de la moyenne", () => {
     // Une droite rendrait 920. La courbe doit rester nettement en dessous,
     // sinon effleurer la bande fait déjà filer la page.
-    const milieu = speed(0.5);
-    expect(milieu).toBeLessThan((MIN_SPEED + MAX_SPEED) / 2);
-    expect(milieu).toBeGreaterThan(MIN_SPEED);
+    const middle = speed(0.5);
+    expect(middle).toBeLessThan((MIN_SPEED + MAX_SPEED) / 2);
+    expect(middle).toBeGreaterThan(MIN_SPEED);
   });
 });
 
@@ -81,14 +81,14 @@ describe("poussee", () => {
   });
 
   it("ne bouge pas au bord intérieur de la bande", () => {
-    expect(p(960, CANVAS.hauteur - BAND_Y).y).toBe(0);
+    expect(p(960, CANVAS.height - BAND_Y).y).toBe(0);
     expect(p(960, BAND_Y).y).toBe(0);
   });
 
   it("rampe quand on effleure la bande", () => {
     // Vingt pixels après l'entrée dans la bande : on veut un déplacement lent,
     // celui qui permet de s'arrêter sur la bonne rangée.
-    const { y } = p(960, CANVAS.hauteur - BAND_Y + 20);
+    const { y } = p(960, CANVAS.height - BAND_Y + 20);
     expect(y).toBeGreaterThan(0);
     expect(y).toBeLessThan(MIN_SPEED * 2);
   });
@@ -110,7 +110,7 @@ describe("poussee", () => {
   });
 
   it("choisit le bord le plus proche dans une fenêtre plus étroite que deux bandes", () => {
-    const narrow = { width: 200, hauteur: 200 };
+    const narrow = { width: 200, height: 200 };
     expect(push(20, 100, narrow, INSET).x).toBeLessThan(0);
     expect(push(180, 100, narrow, INSET).x).toBeGreaterThan(0);
   });

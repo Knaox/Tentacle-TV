@@ -9,10 +9,10 @@
  * c'est le contraste de taille qui dit lequel des deux on cherche, pas la
  * position.
  */
-export function InfoRowTv({ intitule, value }: { intitule: string; value: string }) {
+export function InfoRowTv({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <dt className="text-sm uppercase tracking-[0.08em] text-content-tertiary">{intitule}</dt>
+      <dt className="text-sm uppercase tracking-[0.08em] text-content-tertiary">{label}</dt>
       <dd className="text-xl font-semibold text-content-primary">{value}</dd>
     </div>
   );

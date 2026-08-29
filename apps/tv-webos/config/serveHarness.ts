@@ -31,18 +31,18 @@ const TYPES: Record<string, string> = {
 /** Le nom de fichier, et lui seul : pas de `..`, pas de sous-chemin. */
 const EXPECTED_NAME = /^harness-[a-z0-9-]+\.(html|js)$/;
 
-export function serveHarness(dossier: string): Plugin {
+export function serveHarness(directory: string): Plugin {
   return {
     name: "tentacle-servir-harness",
     apply: "serve",
-    configureServer(serveur) {
-      serveur.middlewares.use((requete, response, suivant) => {
-        const path = (requete.url ?? "").split("?")[0];
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const path = (request.url ?? "").split("?")[0];
         const name = path.replace(/^\/tv\//, "");
-        if (!EXPECTED_NAME.test(name)) return suivant();
+        if (!EXPECTED_NAME.test(name)) return next();
 
         const extension = name.slice(name.lastIndexOf("."));
-        readFile(resolve(dossier, name))
+        readFile(resolve(directory, name))
           .then((content) => {
             response.setHeader("Content-Type", TYPES[extension]);
             // Un banc d'essai qu'on modifie entre deux rafales : le relire à
