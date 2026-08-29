@@ -149,6 +149,32 @@ function structuredCloneSettings(settings: PlaybackSettings): PlaybackSettings {
 }
 
 /**
+ * Les clés i18n de chaque mode — ici, et pas dans chaque interface.
+ *
+ * Les quatre surfaces listaient leurs options à la main, et l'ajout de « Par
+ * défaut » n'en a atteint aucune : un compte neuf se retrouvait sur un mode
+ * qu'aucun bouton ne portait, donc sans aucune option cochée, sous une aide
+ * qui lui annonçait des réglages « personnalisés ». Dériver la liste d'ici
+ * rend cette dérive impossible.
+ *
+ * ⚠️ Ce sont des CLÉS i18n, pas des identifiants : les renommer casse
+ * l'affichage en silence.
+ */
+export const PRESET_LABEL_KEYS: Readonly<Record<PlaybackPreset, string>> = {
+  default: "playbackModeDefault",
+  manual: "playbackModeManual",
+  automatic: "playbackModeAutomatic",
+  custom: "playbackModeCustom",
+};
+
+export const PRESET_HINT_KEYS: Readonly<Record<PlaybackPreset, string>> = {
+  default: "playbackModeDefaultHint",
+  manual: "playbackModeManualHint",
+  automatic: "playbackModeAutomaticHint",
+  custom: "playbackModeCustomHint",
+};
+
+/**
  * Quel mode décrit ces réglages ? `custom` dès qu'un seul champ s'écarte —
  * y compris un délai, sans quoi l'étiquette mentirait sur ce qui va se passer.
  */

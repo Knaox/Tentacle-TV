@@ -126,6 +126,9 @@ export default {
   // gens se posent ; le détail vit sous un repli.
   playbackModeTitle: "Skipping and autoplay",
   playbackModeLabel: "What the player does",
+  playbackModeDefault: "Default",
+  playbackModeDefaultHint:
+    "What ships out of the box: opening titles and the next-episode preview skip themselves after five seconds, the recap and closing credits are offered to you, and the next episode plays on.",
   playbackModeManual: "Offer it to me",
   playbackModeAutomatic: "Do it for me",
   playbackModeCustom: "Custom",
