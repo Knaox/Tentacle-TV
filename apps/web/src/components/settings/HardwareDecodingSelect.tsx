@@ -44,7 +44,7 @@ export function HardwareDecodingSelect() {
           setChoice(next);
           setHardwareDecoding(next);
         }}
-        className="mt-4 w-full max-w-md"
+        className="mt-4 max-w-full"
       />
       <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
         {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}

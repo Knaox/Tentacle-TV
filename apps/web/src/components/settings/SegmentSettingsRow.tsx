@@ -42,7 +42,7 @@ export function SegmentSettingsRow({
           { value: "off", label: t("segmentActionOff") },
         ]}
         onChange={(action) => onChange({ action })}
-        className="mt-3 w-full max-w-sm"
+        className="mt-3 max-w-full"
       />
 
       {auto && (
