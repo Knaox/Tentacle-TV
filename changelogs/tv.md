@@ -5,19 +5,26 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
-## [Unreleased]
+## [1.2.2]
 ### FR
 - Navigation nettement plus fluide : parcourir les rangées, ouvrir le menu et changer de page ne saccadent plus, même sur les boîtiers puissants
 - Le halo des bannières est enfin là sur Android TV, comme sur l'Apple TV
 - Boutons, cartes et pastilles reprennent les coins arrondis du téléviseur LG
 - « Passer l'intro » est activé d'origine, et ne part plus pendant le chargement
-- Deux nouveaux réglages de fin d'épisode
+- Résumé, aperçu et générique de fin ont eux aussi leur bouton — un seul bouton pour les quatre passages
+- Chaque passage se règle : proposer un bouton, passer tout seul, ou ne rien faire
+- Les réglages de lecture suivent votre compte : posez-les sur le téléphone, ils valent devant la télévision
+- Trois réglages de fin d'épisode, indépendants : la fiche, son décompte, l'enchaînement
 - Revenir d'une fiche ne provoque plus d'erreur
 ### EN
 - Navigation is markedly smoother: moving through rows, opening the menu and switching pages no longer stutter, even on powerful boxes
 - The banner halo has finally arrived on Android TV, just like on Apple TV
 - Buttons, cards and pills take on the LG television's rounded corners
 - "Skip the intro" is on out of the box, and no longer fires during loading
+- Recaps, previews and closing credits get a button too — one button for all four passages
+- Every passage can be set: offer a button, skip on its own, or do nothing
+- Playback settings follow your account: set them on the phone, they apply in front of the television
+- Three end-of-episode settings, independent: the card, its countdown, the automatic advance
 - Two new end-of-episode settings
 - Coming back from a media page no longer raises an error
 

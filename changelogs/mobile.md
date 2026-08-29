@@ -5,6 +5,20 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.5.2]
+### FR
+- Les quatre passages d'un épisode ont leur bouton : générique de début, résumé, générique de fin, aperçu du suivant. Un seul bouton, qui compte et se refuse d'une croix
+- Des réglages de lecture, enfin : pour chaque passage, proposer un bouton, passer tout seul ou ne rien faire — avec le délai du saut automatique
+- Ces réglages suivent votre compte : posés sur le téléphone, ils valent sur la télévision et l'ordinateur
+- Un écran de fin à la fin d'un épisode, au lieu d'un retour sec à la fiche
+- Le bouton « Passer l'intro » ne disparaît plus avec les commandes au bout de quatre secondes
+### EN
+- All four passages within an episode get a button: opening titles, recap, closing credits, preview of the next. One button, which counts down and can be refused with a cross
+- Playback settings, at last: for each passage, offer a button, skip on its own or do nothing — with the automatic skip delay
+- Those settings follow your account: set on the phone, they apply on the television and the computer
+- An end screen when an episode finishes, instead of dropping straight back to the details page
+- The "Skip intro" button no longer vanishes with the controls after four seconds
+
 ## [1.5.1]
 ### FR
 - Le serveur libère enfin la conversion vidéo dans tous les cas : changement de qualité ou de piste, sortie pendant le chargement, mise en veille prolongée, application fermée d'un coup. Plus de fichiers temporaires laissés derrière

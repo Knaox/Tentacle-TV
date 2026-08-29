@@ -14,12 +14,20 @@ les notes Apple doivent rester génériques.
 - **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte
 - **« Passer l'intro automatiquement » est désormais activé d'origine.** Si vous l'aviez éteint, il le reste
 - **Le saut d'intro ne part plus pendant le chargement** : la pilule apparaissait par-dessus l'écran de chargement et le saut se déclenchait à l'instant du lancement
+- **Les passages d'un épisode se règlent un par un**, dans Réglages > Lecture : générique de début, résumé de l'épisode précédent, générique de fin, aperçu du suivant. Pour chacun, trois choix — proposer un bouton, passer tout seul, ne rien faire — et, pour le saut automatique, le décompte et son **délai au millième de seconde près**
+- **Un seul bouton, blanc, partout.** Il compte, il se refuse d'une croix, et il dit où il mène : pendant un générique de fin suivi d'une scène, il propose de sauter jusqu'à la scène, pas jusqu'à l'épisode suivant
+- **Les réglages de lecture suivent votre COMPTE**, plus l'appareil : ce que vous posez sur l'ordinateur vaut devant la télévision et sur le téléphone
+- **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son compte à rebours, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
 
 ### EN
 - **Leaving a film no longer moves the window** (macOS). It stays exactly as you left it — full screen if you were in full screen, zoomed or windowed otherwise — with no transition and no desktop switch. The black rectangle that sometimes stayed on top of the app after leaving a full-screen film goes with it: it came from that very transition, opening at the moment playback stops
 - **Two new end-of-episode settings**, under Settings > Playback. "Offer the next episode" governs the small card shown over the closing credits; "Play the next episode on its own" governs the countdown, on the card and on the end screen alike. Turn the second off and nothing starts without you: the card and the end screen still appear, simply without a countdown
 - **"Skip the intro automatically" is now on out of the box.** If you had turned it off, it stays off
 - **Intro skipping no longer fires during loading**: the pill used to appear over the loading screen and the skip triggered the moment playback was launched
+- **Passages within an episode are set one by one**, under Settings > Playback: opening titles, recap of the previous episode, closing credits, preview of the next. For each, three choices — offer a button, skip on its own, do nothing — and, for automatic skipping, the countdown and its **delay to the millisecond**
+- **One button, white, everywhere.** It counts down, it can be refused with a cross, and it says where it leads: during closing credits followed by a scene, it offers to skip to the scene, not to the next episode
+- **Playback settings follow your ACCOUNT**, not the device: what you set on the computer applies in front of the television and on the phone
+- **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
 
 ## [1.21.0]
 ### FR
@@ -27,10 +35,15 @@ les notes Apple doivent rester génériques.
 - **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte
 - **« Passer l'intro automatiquement » est désormais activé d'origine.** Si vous l'aviez éteint, il le reste
 - **Le saut d'intro ne part plus pendant le chargement** : la pilule apparaissait par-dessus l'écran de chargement et le saut se déclenchait à l'instant du lancement
+- **Les passages d'un épisode se règlent un par un**, dans Réglages > Lecture : générique de début, résumé de l'épisode précédent, générique de fin, aperçu du suivant. Pour chacun, trois choix — proposer un bouton, passer tout seul, ne rien faire — et, pour le saut automatique, le décompte et son **délai au millième de seconde près**
+- **Un seul bouton, blanc, partout.** Il compte, il se refuse d'une croix, et il dit où il mène : pendant un générique de fin suivi d'une scène, il propose de sauter jusqu'à la scène, pas jusqu'à l'épisode suivant
+- **Les réglages de lecture suivent votre COMPTE**, plus l'appareil : ce que vous posez sur l'ordinateur vaut devant la télévision et sur le téléphone
+- **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son compte à rebours, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
+- **Linux : la fenêtre vidéo ne se détache plus.** Au deuxième lancement de l'application — et à tous les suivants — la vidéo s'ouvrait dans une fenêtre libre, flottant par-dessus l'interface, jusqu'au redémarrage du poste. Elle suit de nouveau la fenêtre, et l'application vérifie désormais qu'elle la suit vraiment
 - **Linux tourne enfin sur la même application que Windows et macOS.** Vos films téléchargés, votre session et vos réglages sont repris tels quels à la mise à jour — rien à refaire
 - **Le HDR arrive sur Linux.** Sur une session Wayland avec un bureau récent (KDE Plasma 6.2+, GNOME 48+, Hyprland), un film HDR est transmis tel quel à votre écran, sans être aplati. Sous X11 il reste converti : X.Org ne gère pas les couleurs étendues et ne les gérera jamais
 - **Le lecteur vidéo voyage dans le paquet.** Plus rien à installer à côté, et le HEVC fonctionne enfin — les versions de mpv fournies par les distributions en sont dépourvues
-- **Contrepartie du HDR** : sur Wayland, la lecture occupe tout l'écran. Le protocole n'autorise pas une application à placer ses fenêtres, et c'est la seule position qui puisse être garantie. Un réglage permet de repasser en X11 pour retrouver la lecture en fenêtre
+- **Sur Wayland, la lecture suit votre fenêtre** — fenêtrée ou plein écran, comme sur Windows et macOS — sur KDE Plasma, où le compositeur sait placer la vidéo pour nous. Le HDR y fonctionne dans les deux cas. Sur les autres bureaux Wayland (GNOME, wlroots), le protocole n'autorise pas une application à placer ses fenêtres : la lecture y occupe tout l'écran. Un réglage permet de repasser en X11 pour retrouver la fenêtre partout, sans HDR
 - **Votre machine ne s'endort plus en pleine séance**, même réglée pour se suspendre au bout d'un moment d'inactivité
 - **L'AppImage s'installe vraiment** : la commande d'installation unique lui pose son entrée de menu et son icône, et sait la désinstaller. Le paquet Arch est produit directement, plus par recompression du paquet Debian
 - Les **touches média** du clavier et l'intégration au bureau (icône, épinglage) fonctionnent comme sur les autres systèmes
@@ -40,10 +53,15 @@ les notes Apple doivent rester génériques.
 - **Two new end-of-episode settings**, under Settings > Playback. "Offer the next episode" governs the small card shown over the closing credits; "Play the next episode on its own" governs the countdown, on the card and on the end screen alike. Turn the second off and nothing starts without you: the card and the end screen still appear, simply without a countdown
 - **"Skip the intro automatically" is now on out of the box.** If you had turned it off, it stays off
 - **Intro skipping no longer fires during loading**: the pill used to appear over the loading screen and the skip triggered the moment playback was launched
+- **Passages within an episode are set one by one**, under Settings > Playback: opening titles, recap of the previous episode, closing credits, preview of the next. For each, three choices — offer a button, skip on its own, do nothing — and, for automatic skipping, the countdown and its **delay to the millisecond**
+- **One button, white, everywhere.** It counts down, it can be refused with a cross, and it says where it leads: during closing credits followed by a scene, it offers to skip to the scene, not to the next episode
+- **Playback settings follow your ACCOUNT**, not the device: what you set on the computer applies in front of the television and on the phone
+- **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
+- **Linux: the video window no longer detaches.** From the second launch of the app onwards, video opened in a free-floating window over the interface until the machine was restarted. It follows the app window again — and the app now checks that it really does
 - **Linux now runs the same application as Windows and macOS.** Your downloaded films, your session and your settings carry over as they are — nothing to redo
 - **HDR comes to Linux.** On a Wayland session with a recent desktop (KDE Plasma 6.2+, GNOME 48+, Hyprland), an HDR film is passed to your screen untouched instead of being flattened. Under X11 it is still converted: X.Org does not handle extended colour and never will
 - **The video player travels inside the package.** Nothing left to install alongside, and HEVC finally works — the mpv builds shipped by distributions do not carry it
-- **The price of HDR**: on Wayland, playback takes the whole screen. The protocol does not let an application place its own windows, and full screen is the only position that can be guaranteed. A setting switches back to X11 for windowed playback
+- **On Wayland, playback follows your window** — windowed or full screen, as on Windows and macOS — on KDE Plasma, where the compositor can place the video for us. HDR works in both cases. On other Wayland desktops (GNOME, wlroots) the protocol does not let an application place its own windows, so playback takes the whole screen there. A setting switches back to X11 for windowed playback everywhere, without HDR
 - **Your machine no longer falls asleep mid-film**, even when set to suspend after a while idle
 - **The AppImage really installs**: the one-line install command gives it a menu entry and an icon, and knows how to remove it. The Arch package is now built directly rather than repacked from the Debian one
 - Keyboard **media keys** and desktop integration (icon, pinning) work as they do on the other systems

@@ -5,6 +5,24 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.14.0]
+### FR
+- **Les passages d'un épisode sont désormais résolus par le SERVEUR**, une fois pour toutes les applications : générique de début, résumé, générique de fin, aperçu. Il lit `MediaSegments`, les greffons de détection et, à défaut, vos chapitres nommés — le client ne devine plus rien
+- **Les réglages de lecture suivent le COMPTE** et non l'appareil : ce que vous posez sur l'ordinateur vaut sur le téléphone et devant la télévision. Vos anciens réglages d'appareil sont repris automatiquement la première fois
+- **Chaque passage se règle** dans Réglages > Lecture : proposer un bouton, passer tout seul, ou ne rien faire, avec le délai du saut automatique et l'affichage du décompte
+- **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son décompte, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
+- **Un écran de fin sur le web**, qui n'en avait aucun
+- **Une nouvelle section d'administration** liste les greffons de détection des passages : sans l'un d'eux, aucun bouton de saut ne peut apparaître, et rien ne le disait
+- **En séance partagée**, refuser un saut se propage avec le passage concerné : refuser le résumé n'éteint plus le décompte d'intro de vos invités
+### EN
+- **Passages within an episode are now resolved by the SERVER**, once for every app: opening titles, recap, closing credits, preview. It reads `MediaSegments`, the detection plugins and, failing that, your named chapters — the client no longer guesses anything
+- **Playback settings follow the ACCOUNT** rather than the device: what you set on the computer applies on the phone and in front of the television. Your previous per-device settings are carried over the first time
+- **Every passage can be set** under Settings > Playback: offer a button, skip on its own, or do nothing, with the automatic skip delay and the countdown display
+- **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
+- **An end screen on the web**, which had none
+- **A new administration section** lists the passage-detection plugins: without one of them no skip button can ever appear, and nothing said so
+- **In a shared session**, refusing a skip now travels with the passage concerned: refusing a recap no longer cancels your guests' intro countdown
+
 ## [1.13.0]
 ### FR
 - **Deux nouveaux réglages de fin d'épisode**, dans Réglages > Lecture, sur le web comme sur le téléviseur LG. « Proposer l'épisode suivant » gouverne la petite fiche du générique ; « Enchaîner tout seul » gouverne le compte à rebours, sur la fiche comme sur l'écran de fin. Coupez le second et rien ne démarre sans vous : la fiche et l'écran de fin restent affichés, simplement sans décompte. Les deux valent par appareil, et fonctionnent hors ligne comme en séance partagée
