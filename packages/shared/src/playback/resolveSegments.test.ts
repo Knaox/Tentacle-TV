@@ -334,6 +334,26 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
     expect(findSegment(segments, "Outro")).toMatchObject({ endMs: runtime, hasContentAfter: false });
   });
 
+  it("Malcolm : un générique de sitcom est court, et c'est un vrai", () => {
+    // Le plancher absolu de 45 s le rejetait ; proportionné à 22 minutes, il
+    // tombe à 13 s et laisse passer les 44 s de générique.
+    const runtime = minutes(22, 23);
+    const { segments } = resolve(
+      { mediaSegments: { Items: [segment("Outro", minutes(21, 39), runtime)] } },
+      runtime,
+    );
+    expect(findSegment(segments, "Outro")).not.toBeNull();
+  });
+
+  it("Jerry Maguire : vingt secondes sur deux heures, ce n'est pas un générique", () => {
+    const runtime = minutes(138, 34);
+    const { segments } = resolve(
+      { mediaSegments: { Items: [segment("Outro", minutes(138, 14), runtime)] } },
+      runtime,
+    );
+    expect(findSegment(segments, "Outro")).toBeNull();
+  });
+
   it("One Piece : un générique qui s'arrête avant la fin garde son aperçu", () => {
     const runtime = minutes(23, 36);
     const { segments } = resolve(
