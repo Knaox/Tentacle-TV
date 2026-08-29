@@ -17,7 +17,6 @@ export function useTVSeekControl(args: {
   reportSeek: (seconds: number, paused: boolean) => void;
   setDisplayTime: (v: number) => void;
   notifySeekRef: React.MutableRefObject<(target: number, windowMs?: number, afterReload?: boolean) => void>;
-  checkTriggerRef: React.MutableRefObject<(seconds: number) => void>;
   /** Base des skips ±10/30 (useTVPlayerControls) : synchronisée à chaque commit de seek —
    *  sinon un +30 juste après un seek repartait de l'ancienne position (progress pas encore accepté). */
   controlsCurrentTimeRef?: React.MutableRefObject<number>;
@@ -25,7 +24,7 @@ export function useTVSeekControl(args: {
   const {
     jellyfinDuration, playerRef, paused,
     displayTimeRef, positionRef, lastDisplayUpdate, lastProgressTime,
-    reportSeek, setDisplayTime, notifySeekRef, checkTriggerRef, controlsCurrentTimeRef,
+    reportSeek, setDisplayTime, notifySeekRef, controlsCurrentTimeRef,
   } = args;
 
   const handleSeek = useCallback((seconds: number) => {
@@ -41,7 +40,8 @@ export function useTVSeekControl(args: {
     // Timeline absolue dans tous les modes (cf. note reprise plus haut)
     playerRef.current?.seek(clamped);
     reportSeek(clamped, paused);
-    checkTriggerRef.current(clamped);
+    // Plus rien à réévaluer à la main : la position est une ENTRÉE de l'arbitre,
+    // qui recalcule ce qu'il propose à chaque changement.
   }, [jellyfinDuration, paused, reportSeek, playerRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleSeek };

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreventRemove } from "@react-navigation/native";
+import type { PlayerOverlay } from "@tentacle-tv/shared";
 
 /** Fenêtre de grâce après chaque consommation d'un Retour : un double-appui (ou un
  *  appui pendant l'animation de fermeture d'un overlay) est AVALÉ au lieu de quitter. */
@@ -35,9 +36,9 @@ export function useTVPlayerBack(args: {
    * fermer l'affiche.
    */
   surfaceActive: boolean;
-  /** La SOURCE de la surface (`"credits"` / `"eof"` / `null`), en miroir
-   *  synchrone — `useAutoPlay.sourceRef`. */
-  surfaceRef: React.MutableRefObject<string | null>;
+  /** L'overlay COURANT en miroir synchrone (`usePlaybackOverlay.overlayRef`) :
+   *  une carte « à suivre » ou une affiche de fin est une surface montée. */
+  surfaceRef: { readonly current: PlayerOverlay };
   /** Ferme l'overlay auto-play ; renvoie true si un départ (navigation) est engagé —
    *  dans ce cas la grâce n'est PAS armée (elle bloquerait le dispatch différé). */
   dismissAutoPlay: () => boolean;
@@ -71,7 +72,7 @@ export function useTVPlayerBack(args: {
       armGrace();
       return true;
     }
-    if (surfaceRef.current !== null) {
+    if (surfaceRef.current.kind === "nextCard") {
       const navigating = dismissRef.current();
       if (!navigating) armGrace();   // navigation engagée → la grâce bloquerait son dispatch
       return true;

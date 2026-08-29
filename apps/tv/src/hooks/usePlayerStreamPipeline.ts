@@ -48,7 +48,7 @@ export function usePlayerStreamPipeline(args: {
     setDisplayTime, setVideoError, setPauseFrameUri, capturePauseFrame,
     reloadHoldRef, holdForReload,
     isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, subtitleTrackMapRef,
-    notifySeekRef, checkTriggerRef, setAudioIndexRef, setSubtitleIndexRef,
+    notifySeekRef, setAudioIndexRef, setSubtitleIndexRef,
     resetPrefsAppliedRef, resetLoadedRef,
   } = s;
 
@@ -212,7 +212,7 @@ export function usePlayerStreamPipeline(args: {
   const { handleSeek } = useTVSeekControl({
     jellyfinDuration, playerRef, paused,
     displayTimeRef, positionRef, lastDisplayUpdate, lastProgressTime,
-    reportSeek, setDisplayTime, notifySeekRef, checkTriggerRef, controlsCurrentTimeRef,
+    reportSeek, setDisplayTime, notifySeekRef, controlsCurrentTimeRef,
   });
 
   // SEEK tvOS REMUX : natif dans la fenêtre ÉCRITE, différé devant l'écrit, re-remux hors fenêtre.

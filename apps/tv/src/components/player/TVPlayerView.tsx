@@ -1,10 +1,10 @@
 import type { ElementRef } from "react";
 import { View, Text, TouchableOpacity, Platform, type ViewStyle } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { MediaItem, SegmentTimestamps, QualityKey, SourceQuality } from "@tentacle-tv/shared";
+import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
-import { TVSkipSegmentButton } from "../TVSkipSegmentButton";
+import { TVPlaybackOverlay } from "../TVPlaybackOverlay";
 import { TVAutoPlaySwitch, type AutoPlayCtx } from "./TVAutoPlaySwitch";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
 import { TVPlayerLoadingScreen, TVBufferingSpinner } from "./TVPlayerLoadingScreen";
@@ -71,7 +71,11 @@ export interface TVPlayerViewProps {
   subtitleIndex: number;
   qualityKey: QualityKey;
   sourceQuality?: SourceQuality;
-  skipSegments: { intro: SegmentTimestamps | null; credits: SegmentTimestamps | null };
+  /** Ce que l'arbitre partagé demande d'afficher — un passage, une carte, rien. */
+  overlay: PlayerOverlay;
+  /** Saut manuel du bouton, et refus du passage courant. */
+  onSkipSegment: () => void;
+  onDismissSegment: () => void;
   autoPlay: AutoPlayCtx;
   controls: ControlsCtx;
 
@@ -83,7 +87,6 @@ export interface TVPlayerViewProps {
   onTracks: (tracks: MpvTrack[]) => void;
   onVideoSize: (width: number, height: number, pixelRatio: number) => void;
   onPlayPause: () => void;
-  onSeek: (seconds: number) => void;
   onBack: () => void;
   onToggleSettings: () => void;
   onSelectAudio: (index: number) => void;
@@ -120,12 +123,13 @@ export function TVPlayerView({
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
   useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
-  skipSegments, autoPlay, controls,
+  autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
-  onPlayPause, onSeek, onBack, onToggleSettings,
+  onPlayPause, onBack, onToggleSettings,
   
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
+  overlay, onSkipSegment, onDismissSegment,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -137,11 +141,12 @@ export function TVPlayerView({
   const panelOpen = showSettings || autoPlayActive || !!showEpisodes;
   const backgroundFocusable = !overlayShown && !panelOpen;
 
-  // Un segment skip (intro/générique) dans sa plage garde le focus (cf. skip
-  // button), sinon c'est le fond qui doit le récupérer.
-  const inSeg = (s?: { start: number; end: number } | null) =>
-    !!s && displayTime >= s.start && displayTime < s.end - 1;
-  const skipActive = inSeg(skipSegments.intro) || inSeg(skipSegments.credits);
+  // Un bouton de saut monté garde le focus, sinon c'est le fond qui doit le
+  // récupérer. La question se pose à l'ARBITRE et non à une fenêtre recalculée
+  // ici : l'ancienne règle ignorait le refus, le panneau épisodes et le
+  // démarrage de lecture (le fond renonçait au focus sans qu'aucun bouton
+  // existe : D-pad muet sur tvOS), et ne connaissait que deux types sur cinq.
+  const skipActive = overlay.kind === "skip";
 
   // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
   // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
@@ -255,25 +260,18 @@ export function TVPlayerView({
           trickplay={trickplay}
         />
       )}
-      {!autoPlayActive && (
-        <>
-          <TVSkipSegmentButton scrubbing={controls.scrubbing} type="intro" segment={skipSegments.intro}
-            currentTime={displayTime} onSkip={controls.guardScrub(() => onSeek(skipSegments.intro!.end))}
-            overlayVisible={controls.overlayVisible} showSettings={showSettings}
-            showEpisodes={!!showEpisodes} lectureDemarree={hasStarted} />
-          {/* Générique : avec un épisode suivant, le bouton devient
-              « Épisode suivant » et lance la carte À suivre (comme le web). */}
-          <TVSkipSegmentButton type="credits" segment={skipSegments.credits}
-            currentTime={displayTime} lectureDemarree={hasStarted}
-            labelOverride={autoPlay.nextEpisode ? t("nextEpisodeLabel") : undefined}
-            onSkip={controls.guardScrub(() => {
-              if (autoPlay.nextEpisode) autoPlay.startAutoPlay();
-              else onSeek(skipSegments.credits!.end);
-            })}
-            overlayVisible={controls.overlayVisible} showSettings={showSettings}
-            showEpisodes={!!showEpisodes} />
-        </>
-      )}
+      {/* Le bouton de saut — un seul, pour les cinq types de passage. Ce qu'il
+          propose et où il mène est tranché par l'arbitre : le générique d'un
+          épisode qui a une suite n'en a plus (c'est la carte « à suivre » qui
+          l'occupe), et une scène post-générique en a un qui y saute. */}
+      <TVPlaybackOverlay
+        overlay={overlay}
+        onSkip={controls.guardScrub(onSkipSegment)}
+        onDismiss={onDismissSegment}
+        overlayVisible={controls.overlayVisible}
+        showSettings={showSettings}
+        showEpisodes={!!showEpisodes}
+      />
       {showEpisodes && item?.SeriesId && onSelectEpisode && onCloseEpisodes && (
         <TVPlayerEpisodePanel
           seriesId={item.SeriesId}

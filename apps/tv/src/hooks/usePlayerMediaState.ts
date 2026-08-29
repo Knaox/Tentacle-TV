@@ -82,7 +82,6 @@ export function usePlayerMediaState() {
   const subtitleTrackMapRef = useRef<Record<number, number>>({});
   // notifySeek/checkTrigger : remplis après useTVPlayerEventHandlers.
   const notifySeekRef = useRef<(target: number, windowMs?: number, afterReload?: boolean) => void>(() => {});
-  const checkTriggerRef = useRef<(seconds: number) => void>(() => {});
   // setAudioIndex/setSubtitleIndex : remplis par le pipeline (hooks audio/sous-titre).
   const setAudioIndexRef = useRef<(i: number) => void>(() => {});
   const setSubtitleIndexRef = useRef<(i: number) => void>(() => {});
@@ -103,7 +102,7 @@ export function usePlayerMediaState() {
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
     reloadHold, reloadHoldRef, holdForReload,
     isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, subtitleTrackMapRef,
-    notifySeekRef, checkTriggerRef, setAudioIndexRef, setSubtitleIndexRef,
+    notifySeekRef, setAudioIndexRef, setSubtitleIndexRef,
     resetPrefsAppliedRef, resetLoadedRef, sessionStartRef, routeBackRef,
   };
 }

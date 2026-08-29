@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, type ElementRef } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementRef } from "react";
 import { View, TouchableOpacity } from "react-native";
 import { useMediaItem, useItemAncestors } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
-import { formatTrackLabel, parseStart } from "../utils/playerHelpers";
+import { formatTrackLabel } from "../utils/playerHelpers";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { TVPlayerView } from "../components/player/TVPlayerView";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
@@ -16,6 +16,9 @@ import { useTVTrickplay } from "../hooks/useTVTrickplay";
 import { useTVPlayerStyle } from "../hooks/useTVPlayerStyle";
 import { useTVQualityChange } from "../hooks/useTVQualityChange";
 import { useTVEpisodeNav } from "../hooks/useTVEpisodeNav";
+import { useTVPlaybackOverlay } from "../hooks/useTVPlaybackOverlay";
+import { useTVPlaybackExit } from "../hooks/useTVPlaybackExit";
+import { useTVSourceReset } from "../hooks/useTVSourceReset";
 import { useTVEndFallback } from "../hooks/useTVEndFallback";
 import { useTVPlayerBack } from "../hooks/useTVPlayerBack";
 import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
@@ -71,7 +74,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     pausedStateRef, endedRef, handleEndRef, pauseFrameUri,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
     reloadHold, reloadHoldRef,
-    notifySeekRef, checkTriggerRef, resetLoadedRef, routeBackRef,
+    notifySeekRef, resetLoadedRef, routeBackRef,
   } = s;
   const { streamUrl, isDirectPlay, isLocalRemux, jellyfinDuration, seekOrRemux, quality } = p;
 
@@ -89,14 +92,30 @@ export function PlayerScreen({ route, navigation }: Props) {
     onForeground: () => { if (!showSettingsRef.current && !showEpisodesRef.current) bumpOsdFocus(); },
   });
 
-  // Navigation inter-épisodes : auto-play (générique → suivant), skip intro/crédits.
+  // Navigation inter-épisodes (aller à un épisode, transport). Le moteur
+  // d'enchaînement, lui, est dans l'arbitre partagé, monté juste après.
   const {
-    autoPlay, skipSegments, previousEpisode,
-    navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
+    previousEpisode, navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
   } = useTVEpisodeNav({
-    item, jellyfinDuration, reportStop: p.reportStop, queryClient, itemId, navigation,
+    item, reportStop: p.reportStop, queryClient, itemId, navigation,
     handleSeek: seekOrRemux, setPaused,
   });
+
+  /** La fin du média, en état : c'est une ENTRÉE de l'arbitre. */
+  const [ended, setEnded] = useState(false);
+  // Le scrub en MIROIR d'état : l'arbitre en a besoin (il suspend son décompte)
+  // et les contrôles ont besoin de l'arbitre (`panelOpen`) — quelqu'un doit
+  // passer en premier. Un rendu de retard, invisible ; une ref resterait périmée.
+  const [scrubbing, setScrubbing] = useState(false);
+
+  const playback = useTVPlaybackOverlay({
+    itemId, item, displayTime, displayDuration: jellyfinDuration ?? 0,
+    hasStarted, ended, scrubbing,
+    onSeek: seekOrRemux,
+    navigateToEpisode,
+    onFinished: () => { void lifecycle.handleFinished(); },
+  });
+  const autoPlay = playback.autoPlay;
 
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
@@ -124,27 +143,19 @@ export function PlayerScreen({ route, navigation }: Props) {
     // lecteur ET son Back JS — le Retour est routé par useTVPlayerBack (preventRemove).
     panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
   });
+  useEffect(() => { setScrubbing(controls.scrubbing); }, [controls.scrubbing]);
 
-  // Fermeture de l'overlay auto-play : à la VRAIE fin (endedRef), « ignorer » l'écran de
-  // fin = retour à la fiche média (avant : player gelé sur la dernière frame). Renvoie
-  // true si une navigation part (la grâce Retour ne doit alors PAS être armée).
-  // Dispatch différé d'un tick : usePreventRemove bloque un dispatch du même tick.
-  const dismissAutoPlay = useCallback(() => {
-    const wasEof = autoPlay.source === "eof";
-    autoPlay.cancelAutoPlay();
-    if (wasEof && endedRef.current) {
-      setTimeout(() => { void lifecycle.handleFinished(); }, 0);
-      return true;
-    }
-    return false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPlay, lifecycle]);
+  // Sortie du lecteur : croix de l'affiche de fin, et fin atteinte sans suite.
+  const { dismissAutoPlay } = useTVPlaybackExit({
+    ended, playback, endedRef,
+    handleFinished: () => { void lifecycle.handleFinished(); },
+  });
 
   // Interception du bouton Retour PHYSIQUE tvOS (usePreventRemove — le pop natif est la
   // seule voie de ce bouton, cf. hook) + source de vérité des chemins Retour JS.
   const back = useTVPlayerBack({
     scrubbing: controls.scrubbing, cancelScrub: controls.cancelScrub,
-    surfaceActive: autoPlay.source !== null, surfaceRef: autoPlay.sourceRef,
+    surfaceActive: autoPlay.source !== null, surfaceRef: playback.surfaceRef,
     dismissAutoPlay,
   });
   routeBackRef.current = back.routeBack;
@@ -176,11 +187,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     reportStart: p.reportStart, updatePosition: p.updatePosition,
     // L'écran de chargement reste affiché jusqu'à la première position réelle
     onPlaybackActive: () => setHasStarted(true),
-    autoPlay, handleFinished: lifecycle.handleFinished, endedRef,
+    onEnded: () => { setEnded(true); },
+    endedRef,
   });
   const { handleLoad, handleProgress, handleEnd } = events;
   notifySeekRef.current = events.notifySeek;
-  checkTriggerRef.current = events.checkTriggerRef.current;
   resetLoadedRef.current = events.resetLoaded;
   handleEndRef.current = handleEnd;
 
@@ -192,26 +203,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     reloadHoldRef, softReloadRef: p.softReloadRef, endedRef, onEndRef: handleEndRef,
   });
 
-  // À chaque (re)chargement de source : réafficher l'écran de chargement jusqu'à la
-  // première position réelle du nouveau flux, et armer la fenêtre post-seek sur la
-  // position de départ RÉELLE (frag de l'URL) — les progress parasites sont ignorés.
-  useEffect(() => {
-    if (!streamUrl) return;
-    resetLoadedRef.current();
-    endedRef.current = false;   // nouvelle source (épisode suivant, reload piste) → fin ré-armable
-    // Reload DOUX (piste/qualité, même contenu) : garder la dernière image + spinner discret.
-    if (p.softReloadRef.current) {
-      p.softReloadRef.current = false;
-    } else {
-      setHasStarted(false);
-    }
-    setIsLoading(true);
-    // Cible = origine RÉELLE portée par le frag de l'URL (atomique avec elle) : armer sur le
-    // T demandé ratait la convergence quand la session démarre à la keyframe ≤ T.
-    const armAt = parseStart(streamUrl).startSec;
-    if (armAt > 1) notifySeekRef.current(armAt, 8000, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streamUrl]);
+  // Remise à zéro de la source — voir `useTVSourceReset`.
+  useTVSourceReset({
+    streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef,
+    setEnded, setHasStarted, setIsLoading,
+  });
 
   const { handleQualityChange } = useTVQualityChange({
     setQualityKey: quality.setQualityKey, positionRef, captureReloadTicks: p.captureReloadTicks,
@@ -272,10 +268,12 @@ export function PlayerScreen({ route, navigation }: Props) {
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
       qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} capAutoActif={p.capAutoActif}
-      skipSegments={skipSegments} autoPlay={autoPlay} controls={controls}
+      overlay={playback.overlay} onSkipSegment={playback.skipNow}
+      onDismissSegment={playback.dismissOverlay}
+      autoPlay={autoPlay} controls={controls}
       onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
       onError={handleError} onTracks={p.mpvTracks.handleTracks} onVideoSize={handleVideoSize}
-      onPlayPause={handlePlayPause} onSeek={seekOrRemux}
+      onPlayPause={handlePlayPause}
       // Bouton Retour de l'OSD : MÊME routage que le bouton physique (avant : sortie
       // brute qui bypassait overlay auto-play/scrub — quittait même bannière ouverte).
       onBack={() => { if (!routeBackRef.current()) void lifecycle.invalidateAndGoBack(); }}

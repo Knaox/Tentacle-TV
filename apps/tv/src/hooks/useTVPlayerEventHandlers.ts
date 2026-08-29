@@ -1,24 +1,12 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { MediaItem } from "@tentacle-tv/shared";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
-
-interface AutoPlayCtx {
-  checkTrigger: (t: number) => void;
-  nextEpisode: MediaItem | null;
-  countdown: number | null;
-  /** Interrupteur admin « Déclenchement auto-play ». */
-  autoplayEnabled: boolean;
-  startAutoPlay: () => void;
-  /** Vraie fin du média : écran plein « épisode suivant » (idempotent). */
-  notifyEnd: () => void;
-}
 
 /**
  * Regroupe les callbacks transmis aux players ExoPlayer/MPV :
  *  - handleLoad : fin de préparation + reportStart (la position de départ est
  *    gérée nativement via le fragment #tnt-start de l'URL)
  *  - handleProgress : maj position/buffered (timeline absolue), throttling 1s
- *  - handleEnd : autoPlay ou retour navigation
+ *  - handleEnd : annonce la fin (l'arbitre en tire l'affiche ou la sortie)
  *  - rebuffering watchdog
  *
  * Refs internes (...Ref) garantissent que les callbacks restent stables
@@ -43,8 +31,8 @@ export function useTVPlayerEventHandlers(args: {
   /** Premier progress ACCEPTÉ (position réelle validée) — la lecture est
    *  effectivement visible : masquer l'écran de chargement. */
   onPlaybackActive?: () => void;
-  autoPlay: AutoPlayCtx;
-  handleFinished: () => void;
+  /** La fin du média est atteinte — l'écran la donne à l'arbitre. */
+  onEnded: () => void;
   /** FIN atteinte (onEnd natif OU détecteur de stagnation) — possédé par PlayerScreen,
    *  reset au changement de source. Gate le watchdog de rebuffering : à la fin, les progress
    *  s'arrêtent → sans ce gate, le spinner « rebuffering » se latchait pour toujours. */
@@ -55,21 +43,17 @@ export function useTVPlayerEventHandlers(args: {
     positionRef, pausedStateRef, displayTimeRef, bufferedTimeRef,
     lastDisplayUpdate, lastProgressTime, controlsCurrentTimeRef,
     setDisplayTime, setBufferedTime, setIsLoading,
-    reportStart, updatePosition, onPlaybackActive, autoPlay, handleFinished, endedRef,
+    reportStart, updatePosition, onPlaybackActive, onEnded, endedRef,
   } = args;
   const onPlaybackActiveRef = useRef(onPlaybackActive);
   onPlaybackActiveRef.current = onPlaybackActive;
 
-  const checkTriggerRef = useRef(autoPlay.checkTrigger);
-  checkTriggerRef.current = autoPlay.checkTrigger;
   const reportStartRef = useRef(reportStart);
   reportStartRef.current = reportStart;
   const updatePositionRef = useRef(updatePosition);
   updatePositionRef.current = updatePosition;
-  const handleFinishedRef = useRef(handleFinished);
-  handleFinishedRef.current = handleFinished;
-  const autoPlayRef = useRef(autoPlay);
-  autoPlayRef.current = autoPlay;
+  const onEndedRef = useRef(onEnded);
+  onEndedRef.current = onEnded;
 
   // Fenêtre post-seek : le natif peut rapporter PLUSIEURS positions périmées
   // après un seek (un simple compteur n'en bloquait qu'une → la barre se
@@ -151,7 +135,6 @@ export function useTVPlayerEventHandlers(args: {
       setBufferedTime(bufferedAbs);
     }
     updatePositionRef.current(t, pausedStateRef.current);
-    checkTriggerRef.current(t);
   }, [bufferedTimeRef, controlsCurrentTimeRef, displayTimeRef, lastDisplayUpdate, lastProgressTime, pausedStateRef, positionRef, setBufferedTime, setDisplayTime, setIsLoading]);
 
   // Rebuffering watchdog : aucun progress callback pendant >2s. Gated `!ended` :
@@ -167,18 +150,15 @@ export function useTVPlayerEventHandlers(args: {
 
   const handleEnd = useCallback(() => {
     // Fin atteinte (onEnd natif OU détecteur de stagnation) : coupe le watchdog
-    // spinner et mémorise l'état pour le dismiss de l'écran de fin (retour fiche).
+    // spinner, mémorise l'état pour le dismiss de l'écran de fin (retour fiche),
+    // et ANNONCE la fin. Ce qu'il faut en faire — affiche de fin ou sortie —
+    // est tranché par l'arbitre, plus ici. Idempotent : les onEnd répétés d'une
+    // playlist EVENT ne font que reposer le même drapeau.
     if (endedRef) endedRef.current = true;
     setIsLoading(false);
-    const ap = autoPlayRef.current;
-    // Vraie fin + épisode suivant → écran plein « eof » (escalade la bannière
-    // crédits si elle est déjà ouverte, countdown conservé). Idempotent : les
-    // onEnd répétés d'une playlist EVENT sont absorbés par notifyEnd.
-    // Auto-play désactivé (admin) → comportement « pas d'épisode suivant ».
-    if (ap.autoplayEnabled && ap.nextEpisode) ap.notifyEnd();
-    else if (ap.countdown === null) handleFinishedRef.current();
+    onEndedRef.current();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { handleLoad, handleProgress, handleEnd, notifySeek, resetLoaded, checkTriggerRef };
+  return { handleLoad, handleProgress, handleEnd, notifySeek, resetLoaded };
 }

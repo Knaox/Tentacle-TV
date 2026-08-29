@@ -1,22 +1,21 @@
 import { useCallback, useMemo, useRef } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useIntroSkipper, useEpisodeNavigation } from "@tentacle-tv/api-client";
+import { useEpisodeNavigation } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useAutoPlay } from "./useAutoPlay";
 import type { RootStackParamList } from "../navigation/types";
 
 /**
- * Navigation inter-épisodes du lecteur Apple TV : auto-play (générique →
- * épisode suivant), skip intro/crédits, et les handlers de transport liés
- * (précédent/suivant/play-pause). Enveloppe useAutoPlay + useEpisodeNavigation
- * + useIntroSkipper — extraits VERBATIM de PlayerScreen (ordre des hooks
- * préservé : useIntroSkipper → navigateToEpisode → useAutoPlay →
- * useEpisodeNavigation → handlers).
+ * Navigation inter-épisodes du lecteur téléviseur : aller à un épisode, et
+ * les handlers de transport liés (précédent / suivant / play-pause).
+ *
+ * Le MOTEUR d'enchaînement n'est plus ici : segments, décomptes et surfaces
+ * sont tranchés par l'arbitre partagé, monté par l'écran
+ * (`useTVPlaybackOverlay`). Ce qui restait — la navigation elle-même — tient
+ * en trois rappels, et son piège est intact : le dispatch DIFFÉRÉ d'un tick.
  */
 export function useTVEpisodeNav(args: {
   item: MediaItem | undefined;
-  jellyfinDuration?: number;
   reportStop: () => void;
   queryClient: QueryClient;
   itemId: string;
@@ -24,11 +23,7 @@ export function useTVEpisodeNav(args: {
   handleSeek: (seconds: number) => void;
   setPaused: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
-  const {
-    item, jellyfinDuration, reportStop, queryClient, itemId, navigation, handleSeek, setPaused,
-  } = args;
-
-  const skipSegments = useIntroSkipper(itemId, item);
+  const { item, reportStop, queryClient, itemId, navigation, handleSeek, setPaused } = args;
 
   const navigateToEpisode = useCallback((episodeId: string) => {
     reportStop();
@@ -42,8 +37,7 @@ export function useTVEpisodeNav(args: {
     setTimeout(() => navigation.replace("Player", { itemId: episodeId }), 0);
   }, [reportStop, queryClient, itemId, navigation]);
 
-  const autoPlay = useAutoPlay(item, jellyfinDuration ?? 0, navigateToEpisode);
-  const { previousEpisode } = useEpisodeNavigation(item);
+  const { nextEpisode, previousEpisode } = useEpisodeNavigation(item);
 
   const prevClickTimeRef = useRef(0);
   const handlePrevEpisode = useCallback(() => {
@@ -57,13 +51,13 @@ export function useTVEpisodeNav(args: {
   }, [previousEpisode, navigateToEpisode, handleSeek]);
 
   const handleNextEpisode = useCallback(() => {
-    if (autoPlay.nextEpisode) navigateToEpisode(autoPlay.nextEpisode.Id);
-  }, [autoPlay.nextEpisode, navigateToEpisode]);
+    if (nextEpisode) navigateToEpisode(nextEpisode.Id);
+  }, [nextEpisode, navigateToEpisode]);
 
   const handlePlayPause = useCallback(() => setPaused((p) => !p), [setPaused]);
 
   return useMemo(() => ({
-    autoPlay, skipSegments, previousEpisode,
+    previousEpisode,
     navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
-  }), [autoPlay, skipSegments, previousEpisode, navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause]);
+  }), [previousEpisode, navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause]);
 }
