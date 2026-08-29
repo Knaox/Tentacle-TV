@@ -1,17 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { crediter, TICK_MS, CREDIT_MAX_MS } from "./credit";
-import type { Echantillon, EtatSession } from "./types";
+import { credit, TICK_MS, CREDIT_MAX_MS } from "./credit";
+import type { Sample, SessionState } from "./types";
 
 /**
- * Toute la justesse de la mesure se joue ici. `crediter` étant pure, chaque
+ * Toute la justesse de la mesure se joue ici. `credit` étant pure, chaque
  * scénario est une suite d'échantillons et d'horloges — y compris des cas qu'on
  * ne sait pas provoquer à la main : horloge qui recule, trou de cinq minutes,
  * client fantôme.
  */
 
-const TICKS_PAR_SECONDE = 10_000_000;
+const TICKS_PER_SECOND = 10_000_000;
 
-function ech(over: Partial<Echantillon> = {}): Echantillon {
+function sample(over: Partial<Sample> = {}): Sample {
   return {
     sessionKey: "s1",
     userId: "u1",
@@ -32,177 +32,177 @@ function ech(over: Partial<Echantillon> = {}): Echantillon {
 }
 
 /** Déroule une suite de relevés et rend les secondes accumulées par session. */
-function derouler(
-  images: { avanceMs: number; echantillons: Echantillon[] }[],
-): { etat: Map<string, EtatSession>; secondes: (k: string) => number } {
-  let etat = new Map<string, EtatSession>();
+function run(
+  frames: { advanceMs: number; samples: Sample[] }[],
+): { state: Map<string, SessionState>; seconds: (k: string) => number } {
+  let state = new Map<string, SessionState>();
   let mono = 1_000_000;
-  let horloge = Date.parse("2026-08-05T20:00:00Z");
-  for (const img of images) {
-    mono += img.avanceMs;
-    horloge += img.avanceMs;
-    etat = crediter(etat, img.echantillons, mono, horloge).etat;
+  let clock = Date.parse("2026-08-05T20:00:00Z");
+  for (const frame of frames) {
+    mono += frame.advanceMs;
+    clock += frame.advanceMs;
+    state = credit(state, frame.samples, mono, clock).state;
   }
   return {
-    etat,
-    secondes: (k) => Math.round(etat.get(k)?.secondes ?? 0),
+    state,
+    seconds: (k) => Math.round(state.get(k)?.seconds ?? 0),
   };
 }
 
 /** Position qui avance normalement, en ticks. */
-const pos = (secondes: number) => secondes * TICKS_PAR_SECONDE;
+const pos = (seconds: number) => seconds * TICKS_PER_SECOND;
 
-describe("crediter", () => {
+describe("credit", () => {
   it("ne crédite rien au tout premier relevé", () => {
-    const { secondes } = derouler([{ avanceMs: 0, echantillons: [ech()] }]);
-    expect(secondes("s1::film1")).toBe(0);
+    const { seconds } = run([{ advanceMs: 0, samples: [sample()] }]);
+    expect(seconds("s1::film1")).toBe(0);
   });
 
   it("crédite le temps écoulé sur une lecture normale", () => {
-    const images = Array.from({ length: 11 }, (_, i) => ({
-      avanceMs: i === 0 ? 0 : TICK_MS,
-      echantillons: [ech({ positionTicks: pos(i * 15) })],
+    const frames = Array.from({ length: 11 }, (_, i) => ({
+      advanceMs: i === 0 ? 0 : TICK_MS,
+      samples: [sample({ positionTicks: pos(i * 15) })],
     }));
     // 11 relevés → 10 intervalles de 15 s.
-    expect(derouler(images).secondes("s1::film1")).toBe(150);
+    expect(run(frames).seconds("s1::film1")).toBe(150);
   });
 
   it("ne compte pas le temps en pause", () => {
-    const { secondes } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15), paused: true })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15), paused: true })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(30) })] },
+    const { seconds } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15), paused: true })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15), paused: true })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(30) })] },
     ]);
     // Seuls le 1er et le dernier intervalle sont en lecture des deux côtés.
-    expect(secondes("s1::film1")).toBe(30);
+    expect(seconds("s1::film1")).toBe(30);
   });
 
   it("écrête un trou de cinq minutes au maximum autorisé", () => {
-    const { secondes } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] },
-      { avanceMs: 300_000, echantillons: [ech({ positionTicks: pos(300) })] },
+    const { seconds } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] },
+      { advanceMs: 300_000, samples: [sample({ positionTicks: pos(300) })] },
     ]);
-    expect(secondes("s1::film1")).toBe(CREDIT_MAX_MS / 1000);
+    expect(seconds("s1::film1")).toBe(CREDIT_MAX_MS / 1000);
   });
 
   it("cesse de créditer une lecture dont la position est figée", () => {
     // Le client est mort mais Jellyfin croit encore qu'il joue : ni pause, ni
     // inactivité — seule la position immobile trahit le fantôme.
-    const images = [{ avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] }];
-    for (let i = 0; i < 20; i++) images.push({ avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(0) })] });
+    const frames = [{ advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] }];
+    for (let i = 0; i < 20; i++) frames.push({ advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(0) })] });
     // 120 s de tolérance, soit 8 intervalles de 15 s, puis plus rien.
-    expect(derouler(images).secondes("s1::film1")).toBe(120);
+    expect(run(frames).seconds("s1::film1")).toBe(120);
   });
 
   it("ne crédite pas quand le signe de vie du client est périmé", () => {
-    const horlogeDepart = Date.parse("2026-08-05T20:00:00Z");
-    let etat = new Map<string, EtatSession>();
-    etat = crediter(etat, [ech({ positionTicks: pos(0) })], 1000, horlogeDepart).etat;
-    const bilan = crediter(
-      etat,
-      [ech({ positionTicks: pos(15), checkInMs: horlogeDepart - 200_000 })],
+    const clockStart = Date.parse("2026-08-05T20:00:00Z");
+    let state = new Map<string, SessionState>();
+    state = credit(state, [sample({ positionTicks: pos(0) })], 1000, clockStart).state;
+    const tally = credit(
+      state,
+      [sample({ positionTicks: pos(15), checkInMs: clockStart - 200_000 })],
       1000 + TICK_MS,
-      horlogeDepart + TICK_MS,
+      clockStart + TICK_MS,
     );
-    expect(Math.round(bilan.etat.get("s1::film1")!.secondes)).toBe(0);
+    expect(Math.round(tally.state.get("s1::film1")!.seconds)).toBe(0);
   });
 
   it("crédite quand le signe de vie est inconnu — inconnu n'est pas périmé", () => {
-    const { secondes } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0), checkInMs: null })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15), checkInMs: null })] },
+    const { seconds } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0), checkInMs: null })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15), checkInMs: null })] },
     ]);
-    expect(secondes("s1::film1")).toBe(15);
+    expect(seconds("s1::film1")).toBe(15);
   });
 
   it("repart de zéro quand la session change de titre", () => {
-    const { secondes, etat } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ itemId: "film2", positionTicks: pos(0) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ itemId: "film2", positionTicks: pos(15) })] },
+    const { seconds, state } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15) })] },
+      { advanceMs: TICK_MS, samples: [sample({ itemId: "film2", positionTicks: pos(0) })] },
+      { advanceMs: TICK_MS, samples: [sample({ itemId: "film2", positionTicks: pos(15) })] },
     ]);
-    expect(secondes("s1::film2")).toBe(15);
-    expect(etat.has("s1::film1")).toBe(false);
+    expect(seconds("s1::film2")).toBe(15);
+    expect(state.has("s1::film1")).toBe(false);
   });
 
   it("crédite l'intervalle de clôture quand la session disparaît", () => {
-    let etat = new Map<string, EtatSession>();
+    let state = new Map<string, SessionState>();
     let mono = 1000;
     const h = Date.parse("2026-08-05T20:00:00Z");
-    etat = crediter(etat, [ech({ positionTicks: pos(0) })], mono, h).etat;
+    state = credit(state, [sample({ positionTicks: pos(0) })], mono, h).state;
     mono += TICK_MS;
-    etat = crediter(etat, [ech({ positionTicks: pos(15) })], mono, h + TICK_MS).etat;
+    state = credit(state, [sample({ positionTicks: pos(15) })], mono, h + TICK_MS).state;
     mono += 10_000;
-    const bilan = crediter(etat, [], mono, h + TICK_MS + 10_000);
-    expect(bilan.aFermer).toHaveLength(1);
+    const tally = credit(state, [], mono, h + TICK_MS + 10_000);
+    expect(tally.toClose).toHaveLength(1);
     // 15 s mesurées, plus les 10 s écoulées jusqu'à l'arrêt.
-    expect(Math.round(bilan.aFermer[0].secondes)).toBe(25);
+    expect(Math.round(tally.toClose[0].seconds)).toBe(25);
   });
 
   it("ne crédite pas la clôture d'une session déjà en pause", () => {
-    let etat = new Map<string, EtatSession>();
+    let state = new Map<string, SessionState>();
     const h = Date.parse("2026-08-05T20:00:00Z");
-    etat = crediter(etat, [ech({ positionTicks: pos(0), paused: true })], 1000, h).etat;
-    const bilan = crediter(etat, [], 1000 + TICK_MS, h + TICK_MS);
-    expect(Math.round(bilan.aFermer[0].secondes)).toBe(0);
+    state = credit(state, [sample({ positionTicks: pos(0), paused: true })], 1000, h).state;
+    const tally = credit(state, [], 1000 + TICK_MS, h + TICK_MS);
+    expect(Math.round(tally.toClose[0].seconds)).toBe(0);
   });
 
   it("plafonne un compte qui joue sur deux appareils à la fois", () => {
     // Deux sessions du même utilisateur, chacune en lecture : le temps réel
     // écoulé reste 15 s, pas 30.
-    const deux = (p: number) => [
-      ech({ sessionKey: "s1", positionTicks: pos(p) }),
-      ech({ sessionKey: "s2", itemId: "film2", positionTicks: pos(p) }),
+    const two = (p: number) => [
+      sample({ sessionKey: "s1", positionTicks: pos(p) }),
+      sample({ sessionKey: "s2", itemId: "film2", positionTicks: pos(p) }),
     ];
-    const { etat } = derouler([
-      { avanceMs: 0, echantillons: deux(0) },
-      { avanceMs: TICK_MS, echantillons: deux(15) },
+    const { state } = run([
+      { advanceMs: 0, samples: two(0) },
+      { advanceMs: TICK_MS, samples: two(15) },
     ]);
-    const total = (etat.get("s1::film1")?.secondes ?? 0) + (etat.get("s2::film2")?.secondes ?? 0);
+    const total = (state.get("s1::film1")?.seconds ?? 0) + (state.get("s2::film2")?.seconds ?? 0);
     expect(Math.round(total)).toBe(15);
   });
 
   it("ne plafonne pas deux comptes distincts qui regardent en même temps", () => {
-    const deux = (p: number) => [
-      ech({ sessionKey: "s1", userId: "u1", positionTicks: pos(p) }),
-      ech({ sessionKey: "s2", userId: "u2", itemId: "film2", positionTicks: pos(p) }),
+    const two = (p: number) => [
+      sample({ sessionKey: "s1", userId: "u1", positionTicks: pos(p) }),
+      sample({ sessionKey: "s2", userId: "u2", itemId: "film2", positionTicks: pos(p) }),
     ];
-    const { etat } = derouler([
-      { avanceMs: 0, echantillons: deux(0) },
-      { avanceMs: TICK_MS, echantillons: deux(15) },
+    const { state } = run([
+      { advanceMs: 0, samples: two(0) },
+      { advanceMs: TICK_MS, samples: two(15) },
     ]);
-    expect(Math.round(etat.get("s1::film1")!.secondes)).toBe(15);
-    expect(Math.round(etat.get("s2::film2")!.secondes)).toBe(15);
+    expect(Math.round(state.get("s1::film1")!.seconds)).toBe(15);
+    expect(Math.round(state.get("s2::film2")!.seconds)).toBe(15);
   });
 
   it("ne crédite rien si l'horloge monotone recule", () => {
-    let etat = new Map<string, EtatSession>();
+    let state = new Map<string, SessionState>();
     const h = Date.parse("2026-08-05T20:00:00Z");
-    etat = crediter(etat, [ech({ positionTicks: pos(0) })], 500_000, h).etat;
-    etat = crediter(etat, [ech({ positionTicks: pos(15) })], 400_000, h + TICK_MS).etat;
-    expect(Math.round(etat.get("s1::film1")!.secondes)).toBe(0);
+    state = credit(state, [sample({ positionTicks: pos(0) })], 500_000, h).state;
+    state = credit(state, [sample({ positionTicks: pos(15) })], 400_000, h + TICK_MS).state;
+    expect(Math.round(state.get("s1::film1")!.seconds)).toBe(0);
   });
 
   it("continue de créditer malgré une avance rapide ou un retour arrière", () => {
-    const { secondes } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(600) })] }, // saut avant
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(120) })] }, // saut arrière
+    const { seconds } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(600) })] }, // saut avant
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(120) })] }, // saut arrière
     ]);
     // Le temps réellement passé devant l'écran reste 30 s : la position sert de
     // preuve de vie, jamais de mesure.
-    expect(secondes("s1::film1")).toBe(30);
+    expect(seconds("s1::film1")).toBe(30);
   });
 
   it("ignore une session marquée inactive", () => {
-    const { secondes } = derouler([
-      { avanceMs: 0, echantillons: [ech({ positionTicks: pos(0) })] },
-      { avanceMs: TICK_MS, echantillons: [ech({ positionTicks: pos(15), active: false })] },
+    const { seconds } = run([
+      { advanceMs: 0, samples: [sample({ positionTicks: pos(0) })] },
+      { advanceMs: TICK_MS, samples: [sample({ positionTicks: pos(15), active: false })] },
     ]);
-    expect(secondes("s1::film1")).toBe(0);
+    expect(seconds("s1::film1")).toBe(0);
   });
 });

@@ -12,9 +12,9 @@
  *  • `mixte`       mesuré depuis l'époque, estimé avant ;
  *  • `estimation`  rien n'a encore été mesuré.
  */
-export type SourceClassement = "mesure" | "mixte" | "estimation";
+export type LeaderboardSource = "mesure" | "mixte" | "estimation";
 
-export interface LigneClassement {
+export interface LeaderboardEntry {
   userId: string;
   name: string;
   hasAvatar: boolean;
@@ -36,8 +36,8 @@ export interface LigneClassement {
   lastPlayedDate: string | null;
 }
 
-export interface Classement {
-  source: SourceClassement;
+export interface Leaderboard {
+  source: LeaderboardSource;
   /** Instant depuis lequel Tentacle chronomètre, ISO. `null` avant la 1re mesure. */
   measuredSince: string | null;
   /**
@@ -48,10 +48,10 @@ export interface Classement {
    */
   estimated: boolean;
   generatedAt: string;
-  entries: LigneClassement[];
+  entries: LeaderboardEntry[];
 }
 
-export interface SerieFavorite {
+export interface FavoriteSeries {
   seriesId: string;
   name: string;
   episodesPlayed: number;

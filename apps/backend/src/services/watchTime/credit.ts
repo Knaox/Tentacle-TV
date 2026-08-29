@@ -1,4 +1,4 @@
-import type { Bilan, Echantillon, EtatSession } from "./types";
+import type { Tally, Sample, SessionState } from "./types";
 
 /**
  * Le cœur de la mesure. Fonction PURE : aucune horloge lue ici, aucune écriture,
@@ -23,29 +23,29 @@ export const TICK_MS = 15_000;
 export const CREDIT_MAX_MS = 2 * TICK_MS;
 
 /** Au-delà, le client ne donne plus signe de vie : on cesse de créditer. */
-const CHECKIN_PERIME_MS = 90_000;
+const CHECKIN_STALE_MS = 90_000;
 
 /** Position figée plus longtemps que ça : la lecture est fantôme. */
-const GEL_MS = 120_000;
+const FROZEN_MS = 120_000;
 
-const cle = (e: { sessionKey: string; itemId: string }) => `${e.sessionKey}::${e.itemId}`;
+const key = (e: { sessionKey: string; itemId: string }) => `${e.sessionKey}::${e.itemId}`;
 
 /**
  * Portes 2 à 4 — celles qui ne regardent que les deux échantillons. Les portes
  * 5 (fraîcheur du signe de vie) et 6 (position figée) ont besoin de l'horloge et
- * de l'historique de mouvement : elles sont évaluées dans `crediter`.
+ * de l'historique de mouvement : elles sont évaluées dans `credit`.
  *
  * Toutes doivent passer pour créditer l'intervalle qui vient de s'écouler ; une
  * seule qui tombe et le crédit vaut zéro — jamais une valeur approchée.
  */
-function memeLectureContinue(precedent: EtatSession, actuel: Echantillon): boolean {
+function samePlaybackContinues(previous: SessionState, current: Sample): boolean {
   // 2. Même titre qu'au relevé précédent (sinon c'est un autre segment).
-  if (precedent.itemId !== actuel.itemId) return false;
+  if (previous.itemId !== current.itemId) return false;
   // 3. En lecture aux DEUX bouts de l'intervalle. Une pause posée juste après le
   //    relevé précédent ne doit pas être payée comme du temps de lecture.
-  if (precedent.paused || actuel.paused) return false;
+  if (previous.paused || current.paused) return false;
   // 4. Session encore tenue pour active par Jellyfin.
-  if (!actuel.active) return false;
+  if (!current.active) return false;
   return true;
 }
 
@@ -58,109 +58,109 @@ function memeLectureContinue(precedent: EtatSession, actuel: Echantillon): boole
  * @param monoMs     horloge MONOTONE, immunisée contre les sauts d'heure
  * @param horlogeMs  heure murale, uniquement pour les horodatages
  */
-export function crediter(
-  precedent: Map<string, EtatSession>,
-  actuels: Echantillon[],
+export function credit(
+  previous: Map<string, SessionState>,
+  samples: Sample[],
   monoMs: number,
-  horlogeMs: number,
-): Bilan {
-  const etat = new Map<string, EtatSession>();
-  const aEcrire: EtatSession[] = [];
-  const vus = new Set<string>();
+  clockMs: number,
+): Tally {
+  const state = new Map<string, SessionState>();
+  const toWrite: SessionState[] = [];
+  const seen = new Set<string>();
 
   // Crédits bruts, avant plafonnement par utilisateur.
-  const bruts = new Map<string, number>();
+  const rawMs = new Map<string, number>();
 
-  for (const e of actuels) {
-    const k = cle(e);
-    vus.add(k);
-    const avant = precedent.get(k);
+  for (const e of samples) {
+    const k = key(e);
+    seen.add(k);
+    const before = previous.get(k);
 
     // 1. Première apparition : on pose la ligne de base, on ne crédite rien.
     //    Le temps d'avant n'a pas été observé, il n'existe pas.
-    if (!avant || avant.itemId !== e.itemId) {
-      etat.set(k, {
+    if (!before || before.itemId !== e.itemId) {
+      state.set(k, {
         sessionKey: e.sessionKey,
         userId: e.userId,
         itemId: e.itemId,
         monoMs,
-        horlogeMs,
+        clockMs,
         paused: e.paused,
         positionTicks: e.positionTicks,
-        bougeMs: monoMs,
-        vivant: !e.paused && e.active,
-        secondes: 0,
+        movedMs: monoMs,
+        alive: !e.paused && e.active,
+        seconds: 0,
         segmentId: null,
-        debutMs: horlogeMs,
-        echantillon: e,
+        startMs: clockMs,
+        sample: e,
       });
       continue;
     }
 
-    const aBouge = e.positionTicks !== avant.positionTicks;
-    const bougeMs = aBouge ? monoMs : avant.bougeMs;
-    const checkInFrais =
-      e.checkInMs === null || horlogeMs - e.checkInMs <= CHECKIN_PERIME_MS;
+    const hasMoved = e.positionTicks !== before.positionTicks;
+    const movedMs = hasMoved ? monoMs : before.movedMs;
+    const checkInFresh =
+      e.checkInMs === null || clockMs - e.checkInMs <= CHECKIN_STALE_MS;
 
-    const suivant: EtatSession = {
-      ...avant,
+    const next: SessionState = {
+      ...before,
       monoMs,
-      horlogeMs,
+      clockMs,
       paused: e.paused,
       positionTicks: e.positionTicks,
-      bougeMs,
-      echantillon: e,
-      vivant: false,
+      movedMs,
+      sample: e,
+      alive: false,
     };
 
     // Porte 6 : la position a bougé récemment. C'est elle qui tue les fantômes
     // qu'aucune autre ne voit — un onglet fermé brutalement laisse une session
     // qui prétend jouer jusqu'à ce que Jellyfin l'expire, parfois des minutes.
-    const portes =
-      memeLectureContinue(avant, e) && checkInFrais && monoMs - bougeMs <= GEL_MS;
+    const gates =
+      samePlaybackContinues(before, e) && checkInFresh && monoMs - movedMs <= FROZEN_MS;
 
-    if (portes) {
-      const brut = Math.min(Math.max(0, monoMs - avant.monoMs), CREDIT_MAX_MS);
-      bruts.set(k, brut);
-      suivant.vivant = true;
+    if (gates) {
+      const raw = Math.min(Math.max(0, monoMs - before.monoMs), CREDIT_MAX_MS);
+      rawMs.set(k, raw);
+      next.alive = true;
     }
 
-    etat.set(k, suivant);
+    state.set(k, next);
   }
 
   // Plafond par UTILISATEUR : personne ne peut accumuler plus que le temps
   // réellement écoulé, quel que soit le nombre d'appareils. C'est aussi ce qui
   // rattrape une même lecture vue comme deux sessions (relance de transcodage,
   // proxy et direct en parallèle).
-  const parUtilisateur = new Map<string, number>();
-  for (const [k, ms] of bruts) {
-    const u = etat.get(k)!.userId;
-    parUtilisateur.set(u, (parUtilisateur.get(u) ?? 0) + ms);
+  const perUser = new Map<string, number>();
+  for (const [k, ms] of rawMs) {
+    const u = state.get(k)!.userId;
+    perUser.set(u, (perUser.get(u) ?? 0) + ms);
   }
 
-  for (const [k, ms] of bruts) {
-    const s = etat.get(k)!;
-    const total = parUtilisateur.get(s.userId) ?? 0;
-    const plafond = Math.min(
-      Math.max(0, monoMs - (precedent.get(k)?.monoMs ?? monoMs)),
+  for (const [k, ms] of rawMs) {
+    const s = state.get(k)!;
+    const total = perUser.get(s.userId) ?? 0;
+    const cap = Math.min(
+      Math.max(0, monoMs - (previous.get(k)?.monoMs ?? monoMs)),
       CREDIT_MAX_MS,
     );
-    const retenu = total > plafond ? (ms * plafond) / total : ms;
-    s.secondes += retenu / 1000;
-    aEcrire.push(s);
+    const kept = total > cap ? (ms * cap) / total : ms;
+    s.seconds += kept / 1000;
+    toWrite.push(s);
   }
 
   // Sessions disparues : crédit de CLÔTURE si le dernier relevé les voyait
   // vivantes. Ce n'est pas inventer du temps — c'est traiter l'arrêt comme un
   // dernier échantillon, avec le même écrêtage que les autres.
-  const aFermer: EtatSession[] = [];
-  for (const [k, avant] of precedent) {
-    if (vus.has(k)) continue;
-    if (avant.vivant) {
-      avant.secondes += Math.min(Math.max(0, monoMs - avant.monoMs), CREDIT_MAX_MS) / 1000;
+  const toClose: SessionState[] = [];
+  for (const [k, before] of previous) {
+    if (seen.has(k)) continue;
+    if (before.alive) {
+      before.seconds += Math.min(Math.max(0, monoMs - before.monoMs), CREDIT_MAX_MS) / 1000;
     }
-    aFermer.push(avant);
+    toClose.push(before);
   }
 
-  return { etat, aEcrire, aFermer };
+  return { state, toWrite, toClose };
 }

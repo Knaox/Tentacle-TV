@@ -53,9 +53,9 @@ describe("buildOpaqueDiscriminant", () => {
   // l'appareil d'un autre ne doit pas retomber sur l'identifiant de sa victime,
   // sans quoi Jellyfin révoquerait la session de celle-ci.
   it("sépare deux comptes rejouant le MÊME appareil", () => {
-    const victime = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "victime"]);
-    const attaquant = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "attaquant"]);
-    expect(attaquant).not.toBe(victime);
+    const victim = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "victime"]);
+    const attacker = buildOpaqueDiscriminant(SECRET, ["uuid-de-la-victime", "attaquant"]);
+    expect(attacker).not.toBe(victim);
   });
 
   it("sépare deux appareils d'un même compte", () => {
@@ -65,9 +65,9 @@ describe("buildOpaqueDiscriminant", () => {
   });
 
   it("n'est pas reproductible sans le secret du serveur", () => {
-    const avec = buildOpaqueDiscriminant(SECRET, ["uuid", "damien"]);
-    const sans = buildOpaqueDiscriminant("autre-secret", ["uuid", "damien"]);
-    expect(avec).not.toBe(sans);
+    const withSecret = buildOpaqueDiscriminant(SECRET, ["uuid", "damien"]);
+    const withoutSecret = buildOpaqueDiscriminant("autre-secret", ["uuid", "damien"]);
+    expect(withSecret).not.toBe(withoutSecret);
   });
 
   // Sans séparateur, ("ab","c") et ("a","bc") donneraient le même haché — donc

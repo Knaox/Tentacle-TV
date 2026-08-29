@@ -30,27 +30,27 @@
  */
 
 /** Un membre douteux, décrit en clair — ou `null` si l'archive est saine. */
-export function membreDangereux(membres: readonly string[]): string | null {
-  for (const brut of membres) {
-    const membre = brut.trim();
-    if (membre === "") continue;
+export function unsafeMember(members: readonly string[]): string | null {
+  for (const raw of members) {
+    const member = raw.trim();
+    if (member === "") continue;
 
     // Chemin absolu POSIX. `tar` le strippe en général, « en général » ne
     // suffit pas.
-    if (membre.startsWith("/") || membre.startsWith("\\")) {
-      return `chemin absolu : ${membre}`;
+    if (member.startsWith("/") || member.startsWith("\\")) {
+      return `chemin absolu : ${member}`;
     }
 
     // Lettre de lecteur Windows, et flux de données alternatif NTFS.
-    if (/^[a-z]:/i.test(membre) || membre.includes(":")) {
-      return `chemin absolu ou flux NTFS : ${membre}`;
+    if (/^[a-z]:/i.test(member) || member.includes(":")) {
+      return `chemin absolu ou flux NTFS : ${member}`;
     }
 
     // Remontée. On teste les SEGMENTS, pas la sous-chaîne : un fichier nommé
     // `..donnees` est parfaitement légitime et ne doit pas être refusé.
-    const segments = membre.split(/[/\\]/);
+    const segments = member.split(/[/\\]/);
     if (segments.includes("..")) {
-      return `remontee de dossier : ${membre}`;
+      return `remontee de dossier : ${member}`;
     }
   }
   return null;
@@ -62,8 +62,8 @@ export function membreDangereux(membres: readonly string[]): string | null {
  * Séparée pour que le contrôle ci-dessus se teste sans invoquer `tar`, et pour
  * qu'un jour où la sortie changerait de forme, un seul endroit soit à reprendre.
  */
-export function membresDeLaSortie(sortie: string): string[] {
-  return sortie.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== "");
+export function membersFromListing(listing: string): string[] {
+  return listing.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== "");
 }
 
 /**
@@ -78,15 +78,15 @@ export function membresDeLaSortie(sortie: string): string[] {
  * réseau local est un usage légitime ici — tout Tentacle vit sur un réseau
  * local. Le refuser casserait un cas normal pour un gain théorique.
  */
-export function urlDeTelechargementRefusee(url: string): string | null {
-  let parsee: URL;
+export function rejectedDownloadUrl(url: string): string | null {
+  let parsed: URL;
   try {
-    parsee = new URL(url);
+    parsed = new URL(url);
   } catch {
     return "URL de telechargement illisible";
   }
-  if (parsee.protocol !== "https:" && parsee.protocol !== "http:") {
-    return `schema refuse pour un telechargement : ${parsee.protocol}`;
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    return `schema refuse pour un telechargement : ${parsed.protocol}`;
   }
   return null;
 }

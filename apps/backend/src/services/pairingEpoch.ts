@@ -4,7 +4,7 @@ import { revokeDeviceByTokenHash } from "./wsManager";
 import { TV_PAIRING_EPOCH } from "./version";
 
 /** L'époque déjà appliquée par CE serveur, dans `server_config`. */
-export const CLE_EPOQUE_JUMELAGE = "tv_pairing_epoch";
+export const PAIRING_EPOCH_KEY = "tv_pairing_epoch";
 
 /**
  * Rejumelage général des téléviseurs, armé depuis `versions.json`.
@@ -33,27 +33,27 @@ export const CLE_EPOQUE_JUMELAGE = "tv_pairing_epoch";
  * enregistrée, redémarrer ne redéclenche rien, et redescendre le champ dans
  * `versions.json` non plus — seul un incrément vaut ordre.
  */
-export async function appliquerEpoqueJumelage(): Promise<void> {
+export async function applyPairingEpoch(): Promise<void> {
   if (!hasPrisma()) return;
 
-  const brute = getConfigValue(CLE_EPOQUE_JUMELAGE);
-  const analysee = brute === undefined ? NaN : Number.parseInt(brute, 10);
-  const appliquee = Number.isFinite(analysee) ? analysee : 0;
+  const raw = getConfigValue(PAIRING_EPOCH_KEY);
+  const parsed = raw === undefined ? NaN : Number.parseInt(raw, 10);
+  const applied = Number.isFinite(parsed) ? parsed : 0;
 
-  if (TV_PAIRING_EPOCH <= appliquee) return;
+  if (TV_PAIRING_EPOCH <= applied) return;
 
   try {
     const prisma = getPrisma();
-    const appareils = await prisma.pairedDevice.findMany({
+    const devices = await prisma.pairedDevice.findMany({
       select: { tokenHash: true },
     });
-    for (const appareil of appareils) revokeDeviceByTokenHash(appareil.tokenHash);
+    for (const device of devices) revokeDeviceByTokenHash(device.tokenHash);
 
     const { count } = await prisma.pairedDevice.deleteMany({});
-    await setConfigValue(CLE_EPOQUE_JUMELAGE, String(TV_PAIRING_EPOCH));
+    await setConfigValue(PAIRING_EPOCH_KEY, String(TV_PAIRING_EPOCH));
 
     console.log(
-      `[Jumelage] Époque ${appliquee} → ${TV_PAIRING_EPOCH} : ${count} appareil(s) révoqué(s), rejumelage requis`,
+      `[Jumelage] Époque ${applied} → ${TV_PAIRING_EPOCH} : ${count} appareil(s) révoqué(s), rejumelage requis`,
     );
   } catch (err) {
     // Non bloquant, et surtout NON enregistré : le démarrage suivant retentera.

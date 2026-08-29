@@ -1,7 +1,7 @@
 import { getJellyfinUsers } from "../watchTogether/usersCache";
 import { statsCore } from "./coreStats";
-import { mesuresVisionnage } from "./measured";
-import type { Classement, LigneClassement } from "./types";
+import { watchMeasures } from "./measured";
+import type { Leaderboard, LeaderboardEntry } from "./types";
 
 /**
  * Classement de visionnage — assemblage des deux paliers.
@@ -18,16 +18,16 @@ import type { Classement, LigneClassement } from "./types";
 
 const TTL_MS = 5 * 60_000;
 
-let cache: { classement: Classement; a: number } | null = null;
-let enCours: Promise<Classement | null> | null = null;
+let cache: { leaderboard: Leaderboard; a: number } | null = null;
+let inFlight: Promise<Leaderboard | null> | null = null;
 
 /**
  * Le plus regardé d'abord. À égalité de durée — deux comptes neufs, deux
  * `null` — on départage sur le nombre de titres puis sur le nom, pour que
  * l'ordre ne saute pas d'un rafraîchissement à l'autre.
  */
-function trier(lignes: LigneClassement[]): LigneClassement[] {
-  return [...lignes].sort((a, b) => {
+function sortRows(rows: LeaderboardEntry[]): LeaderboardEntry[] {
+  return [...rows].sort((a, b) => {
     const da = a.watchSeconds ?? -1;
     const db = b.watchSeconds ?? -1;
     if (db !== da) return db - da;
@@ -36,13 +36,13 @@ function trier(lignes: LigneClassement[]): LigneClassement[] {
   });
 }
 
-async function construire(): Promise<Classement | null> {
-  const comptes = await getJellyfinUsers();
-  if (!comptes) return null;
+async function build(): Promise<Leaderboard | null> {
+  const accounts = await getJellyfinUsers();
+  if (!accounts) return null;
 
   // Les comptes désactivés ne jouent plus : les laisser dans le classement
   // reviendrait à faire figurer d'anciens membres au tableau d'honneur.
-  const actifs = comptes
+  const active = accounts
     .filter((u) => !u.isDisabled)
     .map((u) => ({ id: u.id, name: u.name, hasAvatar: u.hasAvatar }));
 
@@ -54,54 +54,54 @@ async function construire(): Promise<Classement | null> {
   // personne ne repart de zéro — le total affiché est exactement celui de la
   // veille, et chaque heure regardée ensuite est une heure vraie. La part
   // estimée ne fait plus que décroître.
-  const mesures = await mesuresVisionnage();
-  const epoque = mesures?.epoque ?? null;
+  const measures = await watchMeasures();
+  const epoch = measures?.epoch ?? null;
 
-  const lignes = await statsCore(actifs, epoque);
+  const rows = await statsCore(active, epoch);
 
-  let totalMesure = 0;
-  for (const ligne of lignes) {
-    const m = mesures?.parUtilisateur.get(ligne.userId);
-    ligne.measuredSeconds = m?.secondes ?? 0;
-    totalMesure += ligne.measuredSeconds;
+  let measuredTotal = 0;
+  for (const row of rows) {
+    const m = measures?.perUser.get(row.userId);
+    row.measuredSeconds = m?.seconds ?? 0;
+    measuredTotal += row.measuredSeconds;
 
-    const total = ligne.estimatedSeconds + ligne.measuredSeconds;
+    const total = row.estimatedSeconds + row.measuredSeconds;
     // `null` et non `0` : « on ne sait pas » ne se dit pas comme « n'a rien
     // regardé », et le tri s'appuie sur cette distinction.
-    ligne.watchSeconds = ligne.totalPlayed > 0 || total > 0 ? total : null;
+    row.watchSeconds = row.totalPlayed > 0 || total > 0 ? total : null;
 
-    const vue = m?.derniere?.toISOString();
-    if (vue && (!ligne.lastPlayedDate || vue > ligne.lastPlayedDate)) {
-      ligne.lastPlayedDate = vue;
+    const playedAt = m?.latest?.toISOString();
+    if (playedAt && (!row.lastPlayedDate || playedAt > row.lastPlayedDate)) {
+      row.lastPlayedDate = playedAt;
     }
   }
 
-  const totalEstime = lignes.reduce((n, l) => n + l.estimatedSeconds, 0);
-  const source = totalMesure === 0 ? "estimation" : totalEstime === 0 ? "mesure" : "mixte";
+  const estimatedTotal = rows.reduce((n, l) => n + l.estimatedSeconds, 0);
+  const source = measuredTotal === 0 ? "estimation" : estimatedTotal === 0 ? "mesure" : "mixte";
 
   return {
     source,
     // Conservé pour le panneau web, qui n'a pas à changer pour cette livraison.
-    estimated: totalEstime > 0,
-    measuredSince: epoque?.toISOString() ?? null,
+    estimated: estimatedTotal > 0,
+    measuredSince: epoch?.toISOString() ?? null,
     generatedAt: new Date().toISOString(),
-    entries: trier(lignes),
+    entries: sortRows(rows),
   };
 }
 
 /** Deux ouvertures simultanées ne déclenchent qu'une seule collecte. */
-export async function classementVisionnage(): Promise<Classement | null> {
-  if (cache && Date.now() - cache.a < TTL_MS) return cache.classement;
-  if (enCours) return enCours;
+export async function watchLeaderboard(): Promise<Leaderboard | null> {
+  if (cache && Date.now() - cache.a < TTL_MS) return cache.leaderboard;
+  if (inFlight) return inFlight;
 
-  enCours = construire()
+  inFlight = build()
     .then((c) => {
-      if (c) cache = { classement: c, a: Date.now() };
+      if (c) cache = { leaderboard: c, a: Date.now() };
       return c;
     })
     .finally(() => {
-      enCours = null;
+      inFlight = null;
     });
 
-  return enCours;
+  return inFlight;
 }

@@ -7,9 +7,9 @@ import rateLimit from "@fastify/rate-limit";
 import { ZodError } from "zod";
 import websocket from "@fastify/websocket";
 
-import { enregistrerClientsStatiques } from "./static/clientsStatiques";
+import { registerStaticClients } from "./static/staticClients";
 import { initPrisma, hasDatabaseUrl, getDatabaseUrl, reconnectPrisma } from "./services/db";
-import { appliquerEpoqueJumelage } from "./services/pairingEpoch";
+import { applyPairingEpoch } from "./services/pairingEpoch";
 import { detectAppState, getAppState } from "./services/configStore";
 import { ensureInstallId } from "./services/jellyfinIdentity";
 
@@ -52,7 +52,7 @@ import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
 import { registerBodyParsers } from "./services/bodyParsers";
-import { cleDeDebit, plafondDeDebit } from "./services/rateLimitPolicy";
+import { rateLimitKey, rateLimitMax } from "./services/rateLimitPolicy";
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || "0.0.0.0";
@@ -142,8 +142,8 @@ async function main() {
   await app.register(compress, { threshold: 1024 });
   // Images et API ne partagent plus le même compteur — cf. rateLimitPolicy.ts.
   await app.register(rateLimit, {
-    max: (request) => plafondDeDebit(request),
-    keyGenerator: (request) => cleDeDebit(request),
+    max: (request) => rateLimitMax(request),
+    keyGenerator: (request) => rateLimitKey(request),
     timeWindow: "1 minute",
   });
   await app.register(websocket);
@@ -248,7 +248,7 @@ async function main() {
   // ── Jellyfin proxy (all Jellyfin API calls go through here) ──
   await app.register(jellyfinProxyRoutes, { prefix: "/api/jellyfin" });
 
-  await enregistrerClientsStatiques(app);
+  await registerStaticClients(app);
 
   // ── Initialize database (with retry for Docker Compose / slow DB starts) ──
   const dbUrl = getDatabaseUrl();
@@ -279,7 +279,7 @@ async function main() {
       });
       // Rejumelage général des téléviseurs quand `versions.json` le demande.
       // Après `detectAppState`, qui a chargé `server_config` en mémoire.
-      await appliquerEpoqueJumelage();
+      await applyPairingEpoch();
     } else {
       console.warn("[DB] All connection attempts failed — entering setup mode");
     }

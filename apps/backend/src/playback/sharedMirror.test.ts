@@ -16,27 +16,27 @@ import { dirname, join } from "path";
 import { describe, expect, it } from "vitest";
 
 /** La racine du dépôt, trouvée depuis le cwd (pnpm place le cwd dans le paquet). */
-function racineDepot(): string {
-  let dossier = process.cwd();
-  while (!existsSync(join(dossier, "pnpm-workspace.yaml"))) {
-    const parent = dirname(dossier);
-    if (parent === dossier) throw new Error("racine du dépôt introuvable");
-    dossier = parent;
+function repoRoot(): string {
+  let folder = process.cwd();
+  while (!existsSync(join(folder, "pnpm-workspace.yaml"))) {
+    const parent = dirname(folder);
+    if (parent === folder) throw new Error("racine du dépôt introuvable");
+    folder = parent;
   }
-  return dossier;
+  return folder;
 }
 
 describe("miroir du résolveur partagé", () => {
   it.each(["segmentTypes.ts", "resolveSegments.ts", "playbackSettings.ts"])(
     "%s est identique octet pour octet à packages/shared",
-    (nom) => {
-      const racine = racineDepot();
-      const canonique = readFileSync(
-        join(racine, "packages/shared/src/playback", nom),
+    (name) => {
+      const root = repoRoot();
+      const canonical = readFileSync(
+        join(root, "packages/shared/src/playback", name),
         "utf8",
       );
-      const miroir = readFileSync(join(racine, "apps/backend/src/playback", nom), "utf8");
-      expect(miroir).toBe(canonique);
+      const mirror = readFileSync(join(root, "apps/backend/src/playback", name), "utf8");
+      expect(mirror).toBe(canonical);
     },
   );
 });

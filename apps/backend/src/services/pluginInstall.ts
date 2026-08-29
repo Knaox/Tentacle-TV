@@ -16,9 +16,9 @@ import { dirname, join, relative, resolve, sep } from "path";
 import { pipeline } from "stream/promises";
 import { assertPathUnderDataDir, DATA_DIR, isValidPluginId } from "./pluginManager";
 import {
-  membreDangereux,
-  membresDeLaSortie,
-  urlDeTelechargementRefusee,
+  unsafeMember,
+  membersFromListing,
+  rejectedDownloadUrl,
 } from "./pluginArchiveGuard";
 
 /**
@@ -52,8 +52,8 @@ export async function downloadPlugin(
         "installation refused. The registry entry must carry a `checksum` field.",
     );
   }
-  const schemaRefuse = urlDeTelechargementRefusee(downloadUrl);
-  if (schemaRefuse) throw new Error(schemaRefuse);
+  const rejectedScheme = rejectedDownloadUrl(downloadUrl);
+  if (rejectedScheme) throw new Error(rejectedScheme);
 
   const tmpDir = resolve(DATA_DIR, ".tmp");
   if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
@@ -108,10 +108,10 @@ export async function extractPlugin(archivePath: string, pluginId: string): Prom
   const listing = execSync(`tar -tzf "${rel(archivePath)}"`, {
     cwd, stdio: "pipe", timeout: 30_000, encoding: "utf8",
   });
-  const danger = membreDangereux(membresDeLaSortie(listing));
-  if (danger) {
+  const unsafe = unsafeMember(membersFromListing(listing));
+  if (unsafe) {
     rmSync(archivePath, { force: true });
-    throw new Error(`Refused plugin archive: ${danger}`);
+    throw new Error(`Refused plugin archive: ${unsafe}`);
   }
 
   execSync(`tar -xzf "${rel(archivePath)}" -C "${rel(destDir)}"`, {

@@ -2,13 +2,13 @@
  * Mesure du temps de visionnage — formes de données.
  *
  * Trois niveaux, à ne pas confondre :
- *  • `SessionBrute`   ce que Jellyfin renvoie sur GET /Sessions ;
- *  • `Echantillon`    ce qu'on en retient, normalisé, à un instant donné ;
- *  • `EtatSession`    ce qu'on garde en mémoire d'un relevé à l'autre.
+ *  • `RawSession`     ce que Jellyfin renvoie sur GET /Sessions ;
+ *  • `Sample`         ce qu'on en retient, normalisé, à un instant donné ;
+ *  • `SessionState`   ce qu'on garde en mémoire d'un relevé à l'autre.
  */
 
 /** Sous-ensemble de la réponse Jellyfin réellement lu. */
-export interface SessionBrute {
+export interface RawSession {
   Id?: string;
   UserId?: string;
   UserName?: string;
@@ -32,7 +32,7 @@ export interface SessionBrute {
 }
 
 /** Une session en lecture, à un relevé donné. */
-export interface Echantillon {
+export interface Sample {
   /** `Session.Id` de Jellyfin — stable pendant toute la vie de la session. */
   sessionKey: string;
   userId: string;
@@ -57,35 +57,35 @@ export interface Echantillon {
 }
 
 /** Ce qu'on retient d'un relevé pour pouvoir créditer au suivant. */
-export interface EtatSession {
+export interface SessionState {
   sessionKey: string;
   userId: string;
   itemId: string;
   /** Horloge MONOTONE du dernier relevé — jamais l'heure murale. */
   monoMs: number;
   /** Heure murale du dernier relevé, pour les horodatages en base. */
-  horlogeMs: number;
+  clockMs: number;
   paused: boolean;
   positionTicks: number;
   /** Dernier instant (monotone) où la position a bougé. */
-  bougeMs: number;
+  movedMs: number;
   /** Vrai si le relevé précédent remplissait toutes les conditions de crédit. */
-  vivant: boolean;
+  alive: boolean;
   /** Total accumulé sur ce segment, en secondes. Écrit tel quel en base. */
-  secondes: number;
+  seconds: number;
   /** Identité du segment en base, une fois la ligne créée. */
   segmentId: string | null;
   /** Début du segment, heure murale. */
-  debutMs: number;
-  echantillon: Echantillon;
+  startMs: number;
+  sample: Sample;
 }
 
 /** Ce qu'un relevé produit. */
-export interface Bilan {
+export interface Tally {
   /** Nouvel état à conserver pour le relevé suivant. */
-  etat: Map<string, EtatSession>;
+  state: Map<string, SessionState>;
   /** Segments dont le total a changé — à écrire. */
-  aEcrire: EtatSession[];
+  toWrite: SessionState[];
   /** Segments dont la session a disparu — à clore. */
-  aFermer: EtatSession[];
+  toClose: SessionState[];
 }

@@ -31,11 +31,11 @@ import type { FastifyRequest } from "fastify";
  */
 
 /** Affiches, backdrops, logos et vignettes de trickplay servis par le proxy. */
-const CHEMIN_IMAGE = /^\/api\/jellyfin\/(Items\/[^/]+\/Images\/|items\/[^/]+\/trickplay\/)/i;
+const IMAGE_PATH = /^\/api\/jellyfin\/(Items\/[^/]+\/Images\/|items\/[^/]+\/trickplay\/)/i;
 
-export function estUneImage(url: string): boolean {
-  const chemin = url.split("?")[0];
-  return CHEMIN_IMAGE.test(chemin);
+export function isImage(url: string): boolean {
+  const path = url.split("?")[0];
+  return IMAGE_PATH.test(path);
 }
 
 /** Plafond d'API — celui que la variable d'environnement pilote. */
@@ -45,10 +45,10 @@ export const RATE_LIMIT_API = Number(process.env.RATE_LIMIT) || 1000;
 export const RATE_LIMIT_IMAGES = Number(process.env.RATE_LIMIT_IMAGES) || 6000;
 
 /** Un seau par famille ET par client — le préfixe suffit à les séparer. */
-export function cleDeDebit(request: FastifyRequest): string {
-  return estUneImage(request.url) ? `img:${request.ip}` : request.ip;
+export function rateLimitKey(request: FastifyRequest): string {
+  return isImage(request.url) ? `img:${request.ip}` : request.ip;
 }
 
-export function plafondDeDebit(request: FastifyRequest): number {
-  return estUneImage(request.url) ? RATE_LIMIT_IMAGES : RATE_LIMIT_API;
+export function rateLimitMax(request: FastifyRequest): number {
+  return isImage(request.url) ? RATE_LIMIT_IMAGES : RATE_LIMIT_API;
 }

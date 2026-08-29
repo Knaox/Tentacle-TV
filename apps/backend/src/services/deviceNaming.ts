@@ -25,55 +25,55 @@ import { hashToken } from "./jwt";
  */
 
 /** Ce que les appareils annoncent, et ce qu'on en affiche. */
-const ETIQUETTES: Record<string, string> = {
+const LABELS: Record<string, string> = {
   "LG TV": "LG TV",
   "Apple TV": "Apple TV",
   AndroidTV: "Android TV",
 };
 
 /** Noms de remplissage écrits par les flux de jumelage, à remplacer. */
-const REMPLISSAGE = new Set(["", "TV", "Provisioning"]);
+const PLACEHOLDERS = new Set(["", "TV", "Provisioning"]);
 
 /**
  * Une seule tentative par jeton et par vie du processus : sans cela, chaque
  * requête du proxy — il y en a des dizaines par écran — coûterait une lecture
  * en base pour ne rien changer.
  */
-const vus = new Set<string>();
-const PLAFOND_VUS = 2_000;
+const seen = new Set<string>();
+const SEEN_CAP = 2_000;
 
-export function nommerAppareilDepuisEntete(jeton: string | undefined, entete: unknown): void {
-  if (!jeton || !hasPrisma() || typeof entete !== "string") return;
-  const etiquette = ETIQUETTES[appareilAnnonce(entete) ?? ""];
-  if (!etiquette) return;
+export function nameDeviceFromHeader(token: string | undefined, header: unknown): void {
+  if (!token || !hasPrisma() || typeof header !== "string") return;
+  const label = LABELS[announcedDevice(header) ?? ""];
+  if (!label) return;
 
-  const empreinte = hashToken(jeton);
-  if (vus.has(empreinte)) return;
-  if (vus.size >= PLAFOND_VUS) vus.clear();
-  vus.add(empreinte);
+  const fingerprint = hashToken(token);
+  if (seen.has(fingerprint)) return;
+  if (seen.size >= SEEN_CAP) seen.clear();
+  seen.add(fingerprint);
 
-  void renommer(empreinte, etiquette).catch(() => {
+  void rename(fingerprint, label).catch(() => {
     // Réessayable au prochain passage : l'appareil garde son nom d'origine.
-    vus.delete(empreinte);
+    seen.delete(fingerprint);
   });
 }
 
 /** `MediaBrowser Client="Tentacle TV - TV", Device="AndroidTV", …` → `AndroidTV`. */
-function appareilAnnonce(entete: string): string | null {
-  return /Device="([^"]*)"/.exec(entete)?.[1] ?? null;
+function announcedDevice(header: string): string | null {
+  return /Device="([^"]*)"/.exec(header)?.[1] ?? null;
 }
 
-async function renommer(empreinte: string, etiquette: string): Promise<void> {
+async function rename(fingerprint: string, label: string): Promise<void> {
   const prisma = getPrisma();
-  const appareil = await prisma.pairedDevice.findUnique({
-    where: { tokenHash: empreinte },
+  const device = await prisma.pairedDevice.findUnique({
+    where: { tokenHash: fingerprint },
     select: { id: true, name: true, jellyfinUserId: true },
   });
-  if (!appareil || !REMPLISSAGE.has(appareil.name)) return;
+  if (!device || !PLACEHOLDERS.has(device.name)) return;
 
-  const name = await nomDisponible(appareil.jellyfinUserId, etiquette);
-  await prisma.pairedDevice.update({ where: { id: appareil.id }, data: { name } });
-  console.log(`[Jumelage] Appareil ${appareil.id} nommé « ${name} »`);
+  const name = await availableName(device.jellyfinUserId, label);
+  await prisma.pairedDevice.update({ where: { id: device.id }, data: { name } });
+  console.log(`[Jumelage] Appareil ${device.id} nommé « ${name} »`);
 }
 
 /**
@@ -85,18 +85,18 @@ async function renommer(empreinte: string, etiquette: string): Promise<void> {
  * unique en base, donc rien ne casse, et l'utilisateur reste libre de révoquer
  * celui qu'il ne reconnaît pas.
  */
-async function nomDisponible(jellyfinUserId: string, etiquette: string): Promise<string> {
+async function availableName(jellyfinUserId: string, label: string): Promise<string> {
   const prisma = getPrisma();
-  const pris = new Set(
+  const taken = new Set(
     (await prisma.pairedDevice.findMany({
       where: { jellyfinUserId },
       select: { name: true },
     })).map((a: { name: string }) => a.name),
   );
-  if (!pris.has(etiquette)) return etiquette;
-  for (let rang = 2; rang < 100; rang++) {
-    const candidat = `${etiquette} ${rang}`;
-    if (!pris.has(candidat)) return candidat;
+  if (!taken.has(label)) return label;
+  for (let rank = 2; rank < 100; rank++) {
+    const candidate = `${label} ${rank}`;
+    if (!taken.has(candidate)) return candidate;
   }
-  return etiquette;
+  return label;
 }

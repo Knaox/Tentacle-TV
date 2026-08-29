@@ -1,8 +1,8 @@
-import { crediter, TICK_MS } from "./credit";
-import { prendreBail, libererBail, MOI } from "./lease";
-import { lireSessions, normaliser } from "./sessions";
-import { adopterOuCreer, balayerOrphelins, ecrireSegments, fermerSegments } from "./store";
-import type { EtatSession } from "./types";
+import { credit, TICK_MS } from "./credit";
+import { takeLease, releaseLease, ME } from "./lease";
+import { readSessions, normalize } from "./sessions";
+import { adoptOrCreate, sweepOrphans, writeSegments, closeSegments } from "./store";
+import type { SessionState } from "./types";
 
 /**
  * Collecteur de temps de visionnage — la boucle.
@@ -19,20 +19,26 @@ import type { EtatSession } from "./types";
  */
 
 /** Le balayage des orphelins est rare : il ne rattrape que les arrêts brutaux. */
-const BALAYAGE_MS = 5 * 60_000;
+const SWEEP_MS = 5 * 60_000;
 
 /** Anti-rebond des réveils : trois signaux d'affilée ne font qu'un relevé. */
-const REBOND_MS = 3_000;
+const DEBOUNCE_MS = 3_000;
 
 let timer: NodeJS.Timeout | null = null;
-let timerBalayage: NodeJS.Timeout | null = null;
-let enCours = false;
-let dernierReveilMs = 0;
+let sweepTimer: NodeJS.Timeout | null = null;
+let running = false;
+let lastPokeMs = 0;
 
-let etat = new Map<string, EtatSession>();
+let state = new Map<string, SessionState>();
 
-/** Photographie du dernier relevé, pour la route de diagnostic. */
-export interface EtatCollecteur {
+/**
+ * Photographie du dernier relevé, pour la route de diagnostic.
+ *
+ * ⚠️ Ces noms de champs SONT le corps de la réponse `GET /api/admin/watch-time`
+ * : ils partent tels quels sur le fil. Ils restent donc en français, comme le
+ * reste du contrat de cette route.
+ */
+export interface CollectorState {
   actif: boolean;
   instance: string;
   bail: boolean;
@@ -41,91 +47,91 @@ export interface EtatCollecteur {
   segments: { user: string; item: string; secondes: number; vivant: boolean }[];
 }
 
-let dernierTick: string | null = null;
-let sessionsVues = 0;
-let bailTenu = false;
+let lastTick: string | null = null;
+let seenSessions = 0;
+let leaseHeld = false;
 
-export function etatCollecteur(): EtatCollecteur {
+export function collectorState(): CollectorState {
   return {
     actif: timer !== null,
-    instance: MOI,
-    bail: bailTenu,
-    dernierTick,
-    sessionsVues,
-    segments: [...etat.values()].map((s) => ({
+    instance: ME,
+    bail: leaseHeld,
+    dernierTick: lastTick,
+    sessionsVues: seenSessions,
+    segments: [...state.values()].map((s) => ({
       user: s.userId,
-      item: s.echantillon.itemName || s.itemId,
-      secondes: Math.round(s.secondes),
-      vivant: s.vivant,
+      item: s.sample.itemName || s.itemId,
+      secondes: Math.round(s.seconds),
+      vivant: s.alive,
     })),
   };
 }
 
 /** Un relevé complet. Jamais réentrant : un relevé lent ne se chevauche pas. */
-async function releve(): Promise<void> {
-  if (enCours) return;
-  enCours = true;
+async function poll(): Promise<void> {
+  if (running) return;
+  running = true;
   try {
-    bailTenu = await prendreBail();
-    if (!bailTenu) {
+    leaseHeld = await takeLease();
+    if (!leaseHeld) {
       // Une autre instance mesure. On oublie tout : au retour du bail, le
       // premier relevé repartira froid, sans créditer l'intervalle aveugle.
-      etat = new Map();
+      state = new Map();
       return;
     }
 
-    const brutes = await lireSessions();
-    if (!brutes) return; // Jellyfin muet : on ne crédite rien, on ne touche à rien.
+    const raw = await readSessions();
+    if (!raw) return; // Jellyfin muet : on ne crédite rien, on ne touche à rien.
 
-    const horlogeMs = Date.now();
-    const echantillons = normaliser(brutes, horlogeMs);
-    sessionsVues = echantillons.length;
+    const clockMs = Date.now();
+    const samples = normalize(raw, clockMs);
+    seenSessions = samples.length;
 
-    const bilan = crediter(etat, echantillons, performance.now(), horlogeMs);
-    etat = bilan.etat;
-    dernierTick = new Date(horlogeMs).toISOString();
+    const tally = credit(state, samples, performance.now(), clockMs);
+    state = tally.state;
+    lastTick = new Date(clockMs).toISOString();
 
     // Les lignes ne sont créées qu'au premier crédit : une session qui n'a
     // jamais rien accumulé ne laisse pas de trace.
-    for (const s of bilan.aEcrire) await adopterOuCreer(s);
-    await ecrireSegments(bilan.aEcrire);
-    await fermerSegments(bilan.aFermer.filter((s) => s.segmentId));
+    for (const s of tally.toWrite) await adoptOrCreate(s);
+    await writeSegments(tally.toWrite);
+    await closeSegments(tally.toClose.filter((s) => s.segmentId));
   } catch {
     // Un relevé raté est sans conséquence : l'état vit en mémoire et l'écriture
     // est absolue, le suivant réécrira le bon total.
   } finally {
-    enCours = false;
+    running = false;
   }
 }
 
 /** Réveil provoqué par le WebSocket Jellyfin (début / progression / fin). */
 export function pokeWatchTime(): void {
   if (!timer) return;
-  const maintenant = Date.now();
-  if (maintenant - dernierReveilMs < REBOND_MS) return;
-  dernierReveilMs = maintenant;
-  void releve();
+  const now = Date.now();
+  if (now - lastPokeMs < DEBOUNCE_MS) return;
+  lastPokeMs = now;
+  void poll();
 }
 
 export function startWatchTime(): void {
   if (timer) return;
-  timer = setInterval(() => void releve(), TICK_MS);
+  timer = setInterval(() => void poll(), TICK_MS);
   // Le premier relevé est différé : il ne servirait qu'à poser des lignes de
   // base, et le balayage doit passer APRÈS la fenêtre de reprise pour ne pas
   // fermer les segments que ce relevé va réadopter.
-  setTimeout(() => void releve(), 5_000);
-  timerBalayage = setInterval(() => void balayerOrphelins(), BALAYAGE_MS);
+  setTimeout(() => void poll(), 5_000);
+  sweepTimer = setInterval(() => void sweepOrphans(), SWEEP_MS);
   console.log("[WatchTime] collecteur démarré (relevé toutes les 15 s)");
 }
 
 export async function stopWatchTime(): Promise<void> {
   if (timer) clearInterval(timer);
-  if (timerBalayage) clearInterval(timerBalayage);
+  if (sweepTimer) clearInterval(sweepTimer);
   timer = null;
-  timerBalayage = null;
+  sweepTimer = null;
   // Dernière écriture : les segments en cours gardent le temps déjà mesuré, et
   // restent OUVERTS — un redémarrage les réadoptera au lieu d'en créer d'autres.
-  const ouverts = [...etat.values()].filter((s) => s.segmentId);
-  await ecrireSegments(ouverts);
-  await libererBail();
+  const open = [...state.values()].filter((s) => s.segmentId);
+  await writeSegments(open);
+  await releaseLease();
 }

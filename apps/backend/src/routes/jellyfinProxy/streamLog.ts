@@ -22,7 +22,7 @@
  */
 
 /** Famille de chemin, pour trier un journal de plusieurs milliers de lignes. */
-export type GenreFlux = "segment" | "manifeste" | "flux" | "image" | "api";
+export type StreamKind = "segment" | "manifeste" | "flux" | "image" | "api";
 
 /**
  * À quoi sert un chemin proxy.
@@ -31,11 +31,11 @@ export type GenreFlux = "segment" | "manifeste" | "flux" | "image" | "api";
  * un segment et son manifeste empruntent la même route `hls1/`, mais l'un se
  * demande mille fois par film et l'autre trois.
  */
-export function genreDeChemin(chemin: string): GenreFlux {
-  if (/\/hls1\//.test(chemin)) return chemin.endsWith(".m3u8") ? "manifeste" : "segment";
-  if (/\.m3u8$/.test(chemin)) return "manifeste";
-  if (/^(Videos|Audio)\/.*\/(stream|universal)/.test(chemin)) return "flux";
-  if (/\/Images\//.test(chemin) || /^Items\/.*\/Images/.test(chemin)) return "image";
+export function kindFromPath(path: string): StreamKind {
+  if (/\/hls1\//.test(path)) return path.endsWith(".m3u8") ? "manifeste" : "segment";
+  if (/\.m3u8$/.test(path)) return "manifeste";
+  if (/^(Videos|Audio)\/.*\/(stream|universal)/.test(path)) return "flux";
+  if (/\/Images\//.test(path) || /^Items\/.*\/Images/.test(path)) return "image";
   return "api";
 }
 
@@ -48,12 +48,12 @@ export function genreDeChemin(chemin: string): GenreFlux {
  * `UND_ERR_BODY_TIMEOUT`, `UND_ERR_SOCKET`, `ECONNRESET`, `ECONNREFUSED`.
  * Distinguer ces cas est tout l'intérêt : ils appellent des remèdes opposés.
  */
-export function raisonCoupure(err: unknown): string {
-  const direct = verdictParNom(err);
+export function cutoffReason(err: unknown): string {
+  const direct = verdictByName(err);
   if (direct) return direct;
 
   const cause = (err as { cause?: unknown } | null | undefined)?.cause;
-  const indirect = verdictParNom(cause);
+  const indirect = verdictByName(cause);
   if (indirect) return indirect;
 
   if (typeof cause === "object" && cause !== null && "code" in cause) {
@@ -66,14 +66,23 @@ export function raisonCoupure(err: unknown): string {
 }
 
 /** Les deux annulations que Node nomme lui-même, à ne surtout pas confondre. */
-function verdictParNom(e: unknown): string | null {
+function verdictByName(e: unknown): string | null {
   if (!(e instanceof Error) && !(e instanceof DOMException)) return null;
   if (e.name === "TimeoutError") return "delai-absolu";
   if (e.name === "AbortError") return "annule";
   return null;
 }
 
-export interface EntreeFlux {
+/**
+ * Une ligne de journal, champ par champ.
+ *
+ * ⚠️ Ces noms de champs SONT le format du journal : ils ressortent tels quels
+ * dans le JSON que `jq` filtre, et le relevé de la dalle
+ * (`apps/tv-webos/scripts/releveLecture.mjs`) émet les mêmes clés pour qu'on
+ * puisse recouper les deux. Ils restent donc en français, comme le reste du
+ * format — les traduire changerait la sortie, pas seulement du code.
+ */
+export interface StreamEntry {
   chemin: string;
   methode: string;
   /** Millisecondes écoulées depuis le départ de la requête vers Jellyfin. */
@@ -110,30 +119,30 @@ export interface EntreeFlux {
  * `NaN` : une ligne de journal sans débit se lit, une ligne qui en annonce un
  * faux se croit.
  */
-export function debitMbps(octets: number | null | undefined, ms: number | undefined): number | null {
-  if (!octets || !ms || octets <= 0 || ms <= 0) return null;
-  return Math.round(((octets * 8) / (ms / 1000) / 1e6) * 100) / 100;
+export function throughputMbps(bytes: number | null | undefined, ms: number | undefined): number | null {
+  if (!bytes || !ms || bytes <= 0 || ms <= 0) return null;
+  return Math.round(((bytes * 8) / (ms / 1000) / 1e6) * 100) / 100;
 }
 
 /** Une ligne de journal exploitable par `jq`, sans champ vide. */
-export function ligneFlux(e: EntreeFlux): Record<string, unknown> {
-  const ligne: Record<string, unknown> = {
+export function streamLine(e: StreamEntry): Record<string, unknown> {
+  const line: Record<string, unknown> = {
     evt: "flux",
-    genre: genreDeChemin(e.chemin),
+    genre: kindFromPath(e.chemin),
     chemin: e.chemin,
     methode: e.methode,
     ms: Math.round(e.ms),
   };
-  if (e.statut !== undefined) ligne.statut = e.statut;
-  if (e.attendus !== undefined && e.attendus !== null) ligne.attendus = e.attendus;
-  if (e.octets !== undefined && e.octets !== null) ligne.octets = e.octets;
-  if (e.msCorps !== undefined) ligne.msCorps = Math.round(e.msCorps);
-  const debit = debitMbps(e.octets, e.msCorps);
-  if (debit !== null) ligne.debitMbps = debit;
-  if (e.plage) ligne.plage = e.plage;
-  if (e.cause) ligne.cause = e.cause;
-  if (e.annule) ligne.annule = true;
-  return ligne;
+  if (e.statut !== undefined) line.statut = e.statut;
+  if (e.attendus !== undefined && e.attendus !== null) line.attendus = e.attendus;
+  if (e.octets !== undefined && e.octets !== null) line.octets = e.octets;
+  if (e.msCorps !== undefined) line.msCorps = Math.round(e.msCorps);
+  const mbps = throughputMbps(e.octets, e.msCorps);
+  if (mbps !== null) line.debitMbps = mbps;
+  if (e.plage) line.plage = e.plage;
+  if (e.cause) line.cause = e.cause;
+  if (e.annule) line.annule = true;
+  return line;
 }
 
 /**
@@ -141,6 +150,6 @@ export function ligneFlux(e: EntreeFlux): Record<string, unknown> {
  * heures fait plus de mille segments. On ne l'allume que pour une campagne de
  * mesure, jamais en production.
  */
-export function suiviFluxActif(): boolean {
+export function streamTrackingEnabled(): boolean {
   return process.env.TENTACLE_JOURNAL_FLUX === "1";
 }

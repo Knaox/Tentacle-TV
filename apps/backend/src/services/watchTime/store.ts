@@ -1,5 +1,5 @@
 import { getPrisma, hasPrisma } from "../db";
-import type { EtatSession } from "./types";
+import type { SessionState } from "./types";
 
 /**
  * Persistance des segments de visionnage.
@@ -16,10 +16,10 @@ import type { EtatSession } from "./types";
  */
 
 /** Un segment ouvert plus vieux que ça ne sera pas réadopté au démarrage. */
-const REPRISE_MS = 15 * 60_000;
+const RESUME_MS = 15 * 60_000;
 
 /** Un segment sans nouvelle depuis ce délai est clos par le balayage. */
-const ORPHELIN_MS = 10 * 60_000;
+const ORPHAN_MS = 10 * 60_000;
 
 /**
  * Donne une ligne en base à un segment qui n'en a pas encore : soit en
@@ -31,31 +31,31 @@ const ORPHELIN_MS = 10 * 60_000;
  * l'écriture absolue, repartie de zéro en mémoire, effacerait le temps déjà
  * mesuré.
  */
-export async function adopterOuCreer(s: EtatSession): Promise<void> {
+export async function adoptOrCreate(s: SessionState): Promise<void> {
   if (s.segmentId || !hasPrisma()) return;
   const prisma = getPrisma();
-  const e = s.echantillon;
+  const e = s.sample;
 
   try {
-    const ouvert = await prisma.watchSegment.findFirst({
+    const open = await prisma.watchSegment.findFirst({
       where: {
         sessionKey: s.sessionKey,
         itemId: s.itemId,
         closedAt: null,
-        lastSeenAt: { gte: new Date(Date.now() - REPRISE_MS) },
+        lastSeenAt: { gte: new Date(Date.now() - RESUME_MS) },
       },
       orderBy: { lastSeenAt: "desc" },
       select: { id: true, seconds: true, startedAt: true },
     });
 
-    if (ouvert) {
-      s.segmentId = ouvert.id;
-      s.secondes += ouvert.seconds;
-      s.debutMs = ouvert.startedAt.getTime();
+    if (open) {
+      s.segmentId = open.id;
+      s.seconds += open.seconds;
+      s.startMs = open.startedAt.getTime();
       return;
     }
 
-    const cree = await prisma.watchSegment.create({
+    const created = await prisma.watchSegment.create({
       data: {
         jellyfinUserId: s.userId,
         sessionKey: s.sessionKey,
@@ -68,12 +68,12 @@ export async function adopterOuCreer(s: EtatSession): Promise<void> {
         deviceName: e.deviceName,
         runtimeSeconds: e.runtimeSeconds,
         seconds: 0,
-        startedAt: new Date(s.debutMs),
-        lastSeenAt: new Date(s.horlogeMs),
+        startedAt: new Date(s.startMs),
+        lastSeenAt: new Date(s.clockMs),
       },
       select: { id: true },
     });
-    s.segmentId = cree.id;
+    s.segmentId = created.id;
   } catch {
     // La ligne sera retentée au relevé suivant ; le total vit en mémoire, rien
     // n'est perdu tant que le processus tourne.
@@ -81,7 +81,7 @@ export async function adopterOuCreer(s: EtatSession): Promise<void> {
 }
 
 /** Écrit les totaux. Absolu, donc rejouable sans dommage. */
-export async function ecrireSegments(segments: EtatSession[]): Promise<void> {
+export async function writeSegments(segments: SessionState[]): Promise<void> {
   if (!hasPrisma() || segments.length === 0) return;
   const prisma = getPrisma();
 
@@ -90,7 +90,7 @@ export async function ecrireSegments(segments: EtatSession[]): Promise<void> {
     try {
       await prisma.watchSegment.updateMany({
         where: { id: s.segmentId },
-        data: { seconds: Math.round(s.secondes), lastSeenAt: new Date(s.horlogeMs) },
+        data: { seconds: Math.round(s.seconds), lastSeenAt: new Date(s.clockMs) },
       });
     } catch {
       // Ignoré volontairement : le relevé suivant réécrira le même total.
@@ -103,7 +103,7 @@ export async function ecrireSegments(segments: EtatSession[]): Promise<void> {
  * l'instant présent : dater la clôture de maintenant allongerait la lecture de
  * tout le temps écoulé depuis que le client s'est tu.
  */
-export async function fermerSegments(segments: EtatSession[]): Promise<void> {
+export async function closeSegments(segments: SessionState[]): Promise<void> {
   if (!hasPrisma() || segments.length === 0) return;
   const prisma = getPrisma();
 
@@ -113,9 +113,9 @@ export async function fermerSegments(segments: EtatSession[]): Promise<void> {
       await prisma.watchSegment.updateMany({
         where: { id: s.segmentId },
         data: {
-          seconds: Math.round(s.secondes),
-          lastSeenAt: new Date(s.horlogeMs),
-          closedAt: new Date(s.horlogeMs),
+          seconds: Math.round(s.seconds),
+          lastSeenAt: new Date(s.clockMs),
+          closedAt: new Date(s.clockMs),
         },
       });
     } catch {
@@ -129,10 +129,10 @@ export async function fermerSegments(segments: EtatSession[]): Promise<void> {
  * ouverts par un backend tué net. À ne lancer qu'APRÈS la fenêtre de reprise,
  * sinon on fermerait ce que le premier relevé allait réadopter.
  */
-export async function balayerOrphelins(): Promise<number> {
+export async function sweepOrphans(): Promise<number> {
   if (!hasPrisma()) return 0;
   try {
-    const limite = new Date(Date.now() - ORPHELIN_MS);
+    const cutoff = new Date(Date.now() - ORPHAN_MS);
     // SQL brut parce que `closedAt` doit recopier `lastSeenAt`, colonne à
     // colonne : Prisma ne sait pas exprimer cette référence dans un
     // `updateMany`, et dater la clôture d'une constante ajouterait du temps qui
@@ -141,7 +141,7 @@ export async function balayerOrphelins(): Promise<number> {
       UPDATE watch_segments
          SET closedAt = lastSeenAt
        WHERE closedAt IS NULL
-         AND lastSeenAt < ${limite}
+         AND lastSeenAt < ${cutoff}
     `;
   } catch {
     return 0;

@@ -3,7 +3,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeWatchTime } from "./watchTime/collector";
-import { signaturesSessions } from "./jellyfinWsSessions";
+import { sessionSignatures } from "./jellyfinWsSessions";
 
 /**
  * Le WebSocket Jellyfin — ce qu'il livre vraiment, et à quelles conditions.
@@ -39,16 +39,16 @@ const KEEP_ALIVE_MS = 30_000;
 
 /** Jellyfin répond à CHAQUE KeepAlive : trois silences d'affilée = socket morte. */
 const SILENCE_MAX_MS = 95_000;
-const GUET_MS = 15_000;
+const WATCHDOG_MS = 15_000;
 
 /** Au-delà, on ne considère plus que le WebSocket couvre les sessions. */
-const FRAICHEUR_SESSIONS_MS = 120_000;
+const SESSIONS_FRESH_MS = 120_000;
 
 // État du module
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
-let guetTimer: ReturnType<typeof setInterval> | null = null;
+let watchdogTimer: ReturnType<typeof setInterval> | null = null;
 let backoff = INITIAL_BACKOFF;
 let stopped = true;
 let wsConnected = false;
@@ -59,12 +59,12 @@ let wsConnected = false;
  *  vivante, et deux sockets se disputaient l'état du module. */
 let generation = 0;
 
-let dernierMessageMs = 0;
-let derniereTrameSessionsMs = 0;
-let signatureLectures = "";
-let signatureEtats = "";
+let lastMessageMs = 0;
+let lastSessionsFrameMs = 0;
+let playingSignature = "";
+let statesSignature = "";
 /** La toute première trame sert d'empreinte de départ, pas de nouvelle. */
-let sessionsAmorcees = false;
+let sessionsPrimed = false;
 
 /** Le WebSocket tient-il vraiment le direct des sessions ?
  *
@@ -72,8 +72,8 @@ let sessionsAmorcees = false;
  *  une socket ouverte et muette suffisait à endormir le poller de secours, et
  *  l'application restait figée sans que rien ne le signale. La question utile
  *  est « livre-t-il ? », pas « est-il branché ? ». */
-export function sessionsSuiviesEnDirect(): boolean {
-  return wsConnected && Date.now() - derniereTrameSessionsMs < FRAICHEUR_SESSIONS_MS;
+export function sessionsLive(): boolean {
+  return wsConnected && Date.now() - lastSessionsFrameMs < SESSIONS_FRESH_MS;
 }
 
 /** Construit l'URL WebSocket Jellyfin à partir de la config */
@@ -85,25 +85,25 @@ function buildWsUrl(): string | null {
 }
 
 /** Trame `Sessions` : ne réveiller la maison que sur un vrai changement. */
-function traiterSessions(data: unknown): void {
-  derniereTrameSessionsMs = Date.now();
-  const { lectures, etats } = signaturesSessions(data as never);
+function handleSessions(data: unknown): void {
+  lastSessionsFrameMs = Date.now();
+  const { playing, states } = sessionSignatures(data as never);
 
-  const bordDeSegment = etats !== signatureEtats;
-  const listesABouger = lectures !== signatureLectures;
-  signatureEtats = etats;
-  signatureLectures = lectures;
+  const segmentEdge = states !== statesSignature;
+  const listsMoved = playing !== playingSignature;
+  statesSignature = states;
+  playingSignature = playing;
 
   // Première trame de la vie du processus : elle décrit l'état que les clients
   // ont déjà reçu en se connectant. La diffuser ferait re-piocher toute la
   // maison au démarrage du serveur, pour rien. Les trames suivantes — y compris
   // la première d'APRÈS une reconnexion — sont comparées normalement : une
   // lecture démarrée pendant la coupure doit se voir.
-  if (!sessionsAmorcees) { sessionsAmorcees = true; return; }
+  if (!sessionsPrimed) { sessionsPrimed = true; return; }
 
   // Début, fin, pause, reprise : autant de bords de segment pour la mesure.
-  if (bordDeSegment) pokeWatchTime();
-  if (listesABouger) {
+  if (segmentEdge) pokeWatchTime();
+  if (listsMoved) {
     broadcastAll("continue_watching");
     broadcastAll("next_up");
   }
@@ -111,13 +111,13 @@ function traiterSessions(data: unknown): void {
 
 /** Gère les messages entrants de Jellyfin */
 function handleMessage(data: WebSocket.Data): void {
-  dernierMessageMs = Date.now();
+  lastMessageMs = Date.now();
   try {
     const msg = JSON.parse(String(data));
     const type: string = msg.MessageType;
     switch (type) {
       case "Sessions":
-        traiterSessions(msg.Data);
+        handleSessions(msg.Data);
         break;
       case "LibraryChanged":
         broadcastAll("recently_added");
@@ -153,14 +153,14 @@ function handleMessage(data: WebSocket.Data): void {
   }
 }
 
-function arreterTimers(): void {
+function stopTimers(): void {
   if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-  if (guetTimer) { clearInterval(guetTimer); guetTimer = null; }
+  if (watchdogTimer) { clearInterval(watchdogTimer); watchdogTimer = null; }
 }
 
 /** Nettoyage des timers et de la connexion */
 function cleanup(): void {
-  arreterTimers();
+  stopTimers();
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   generation++; // Ce qui tenait la génération précédente ne pilote plus rien.
   if (ws) {
@@ -171,7 +171,7 @@ function cleanup(): void {
     ws = null;
   }
   wsConnected = false;
-  derniereTrameSessionsMs = 0;
+  lastSessionsFrameMs = 0;
 }
 
 /** Planifie une reconnexion avec backoff exponentiel */
@@ -193,8 +193,8 @@ function connect(): void {
     return;
   }
 
-  const moi = ++generation;
-  const aMoi = () => moi === generation;
+  const mine = ++generation;
+  const isMine = () => mine === generation;
 
   try {
     ws = new WebSocket(wsUrl);
@@ -207,11 +207,11 @@ function connect(): void {
   const socket = ws;
 
   socket.on("open", () => {
-    if (!aMoi()) return;
+    if (!isMine()) return;
     console.log("[JellyfinWs] Connecté à Jellyfin");
     backoff = INITIAL_BACKOFF;
     wsConnected = true;
-    dernierMessageMs = Date.now();
+    lastMessageMs = Date.now();
 
     // Sans cet abonnement, la socket ne dit RIEN (cf. l'en-tête du fichier).
     // La période est une politesse : Jellyfin pousse sur événement de lecture.
@@ -232,31 +232,31 @@ function connect(): void {
     // table NAT vidée) reste OPEN pour toujours : les KeepAlive partent dans le
     // vide, aucun `close` n'arrive, et le poller se croit couvert. Le silence
     // est le seul symptôme observable, on l'observe.
-    guetTimer = setInterval(() => {
-      if (!aMoi()) return;
-      if (Date.now() - dernierMessageMs < SILENCE_MAX_MS) return;
+    watchdogTimer = setInterval(() => {
+      if (!isMine()) return;
+      if (Date.now() - lastMessageMs < SILENCE_MAX_MS) return;
       console.warn("[JellyfinWs] Silence de plus de 95 s — socket réputée morte, on rouvre");
-      arreterTimers();
+      stopTimers();
       socket.terminate();
-    }, GUET_MS);
+    }, WATCHDOG_MS);
   });
 
-  socket.on("message", (data) => { if (aMoi()) handleMessage(data); });
+  socket.on("message", (data) => { if (isMine()) handleMessage(data); });
 
   // Signe de vie protocolaire : il compte comme un message pour le guet.
-  socket.on("pong", () => { if (aMoi()) dernierMessageMs = Date.now(); });
+  socket.on("pong", () => { if (isMine()) lastMessageMs = Date.now(); });
 
   socket.on("close", () => {
-    if (!aMoi()) return;
-    arreterTimers();
+    if (!isMine()) return;
+    stopTimers();
     wsConnected = false;
-    derniereTrameSessionsMs = 0;
+    lastSessionsFrameMs = 0;
     ws = null;
     if (!stopped) scheduleReconnect();
   });
 
   socket.on("error", (err) => {
-    if (aMoi()) console.error("[JellyfinWs] Erreur:", err.message);
+    if (isMine()) console.error("[JellyfinWs] Erreur:", err.message);
   });
 }
 

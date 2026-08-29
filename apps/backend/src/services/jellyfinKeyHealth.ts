@@ -14,10 +14,15 @@ import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
  * Ce module donne à l'administrateur un moyen de l'apprendre autrement.
  */
 
-export type EtatCleAdmin = "ok" | "revoquee" | "sansDroits" | "absente" | "injoignable";
+export type AdminKeyState = "ok" | "revoquee" | "sansDroits" | "absente" | "injoignable";
 
-export interface SanteCleAdmin {
-  etat: EtatCleAdmin;
+/**
+ * ⚠️ Ces noms de champs, et les valeurs de `AdminKeyState`, SONT le corps de
+ * `GET /api/admin/jellyfin-key` : `apps/web/src/components/AdminKeyBanner.tsx`
+ * les lit tels quels. Ils restent donc en français.
+ */
+export interface AdminKeyHealth {
+  etat: AdminKeyState;
   /** Horodatage du dernier contrôle réel, pas de la lecture du cache. */
   verifieA: string;
 }
@@ -29,31 +34,31 @@ export interface SanteCleAdmin {
  */
 const TTL_MS = 5 * 60_000;
 
-let cache: { sante: SanteCleAdmin; a: number } | null = null;
-let enCours: Promise<SanteCleAdmin> | null = null;
+let cache: { health: AdminKeyHealth; a: number } | null = null;
+let inFlight: Promise<AdminKeyHealth> | null = null;
 
 /**
  * `/Users` et non `/System/Info` : le premier exige les droits
  * d'administration, le second se contente d'une clé valide. On veut distinguer
  * « la clé n'existe plus » de « la clé existe mais ne peut plus rien faire ».
  */
-async function controler(): Promise<SanteCleAdmin> {
-  const verifieA = new Date().toISOString();
+async function check(): Promise<AdminKeyHealth> {
+  const checkedAt = new Date().toISOString();
   const url = getJellyfinUrl();
-  const cle = getJellyfinApiKey();
-  if (!url || !cle) return { etat: "absente", verifieA };
+  const key = getJellyfinApiKey();
+  if (!url || !key) return { etat: "absente", verifieA: checkedAt };
 
   try {
     const res = await fetch(`${url}/Users`, {
-      headers: { "X-Emby-Token": cle },
+      headers: { "X-Emby-Token": key },
       signal: AbortSignal.timeout(5000),
     });
-    if (res.ok) return { etat: "ok", verifieA };
-    if (res.status === 401) return { etat: "revoquee", verifieA };
-    if (res.status === 403) return { etat: "sansDroits", verifieA };
-    return { etat: "injoignable", verifieA };
+    if (res.ok) return { etat: "ok", verifieA: checkedAt };
+    if (res.status === 401) return { etat: "revoquee", verifieA: checkedAt };
+    if (res.status === 403) return { etat: "sansDroits", verifieA: checkedAt };
+    return { etat: "injoignable", verifieA: checkedAt };
   } catch {
-    return { etat: "injoignable", verifieA };
+    return { etat: "injoignable", verifieA: checkedAt };
   }
 }
 
@@ -61,23 +66,23 @@ async function controler(): Promise<SanteCleAdmin> {
  * Un seul contrôle en vol à la fois : deux administrateurs qui ouvrent
  * l'application en même temps ne déclenchent qu'un appel.
  */
-export async function santeCleAdmin(forcer = false): Promise<SanteCleAdmin> {
-  if (!forcer && cache && Date.now() - cache.a < TTL_MS) return cache.sante;
-  if (enCours) return enCours;
+export async function adminKeyHealth(force = false): Promise<AdminKeyHealth> {
+  if (!force && cache && Date.now() - cache.a < TTL_MS) return cache.health;
+  if (inFlight) return inFlight;
 
-  enCours = controler()
-    .then((sante) => {
-      cache = { sante, a: Date.now() };
-      return sante;
+  inFlight = check()
+    .then((health) => {
+      cache = { health, a: Date.now() };
+      return health;
     })
     .finally(() => {
-      enCours = null;
+      inFlight = null;
     });
 
-  return enCours;
+  return inFlight;
 }
 
 /** À appeler dès que la configuration Jellyfin change : le verdict est périmé. */
-export function invaliderSanteCleAdmin(): void {
+export function invalidateAdminKeyHealth(): void {
   cache = null;
 }
