@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
-import { updateItemUserDataInCache, patchSeriesIdSet, hoistResumeItem } from "./cacheUtils";
+import {
+  updateItemUserDataInCache, patchSeriesIdSet, hoistResumeItem, invalidateSeriesWatchViews,
+} from "./cacheUtils";
 import { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY } from "./watchlistEffects";
 
 /**
@@ -13,6 +15,7 @@ import { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY } fro
  */
 const STOP_INVALIDATE_KEYS = ["next-up", "watched-items", "watchlist"] as const;
 const RESUME_HUB = ["resume-items"] as const;
+
 
 interface StopArgs {
   itemId?: string;
@@ -47,6 +50,9 @@ export function useWatchStopInvalidation() {
       if (itemType === "Episode" && seriesId) {
         await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
         await retireSeriesFromWatchlistIfFullyWatched(qc, client, userId, seriesId);
+        // La fiche de la série, ses saisons et sa liste d'épisodes — voir
+        // `invalidateSeriesWatchViews`, partagée avec le mobile et le téléviseur.
+        invalidateSeriesWatchViews(qc, seriesId);
       } else {
         const fresh = await client
           .fetch<MediaItem>(`/Users/${userId}/Items/${itemId}?EnableUserData=true`)
