@@ -58,7 +58,7 @@ export default {
   skipToPostCreditsIn: "Post-credits scene in {{seconds}}s",
   // Film ou dernier épisode : il n'y a rien à passer, le générique va au bout.
   // Le bouton dit donc ce qu'il fait — et reste manuel, jamais décompté.
-  endPlayback: "Finish",
+  endPlayback: "End playback",
   // La pilule qui prend le relais de la fiche « à suivre » — pendant une
   // scène post-générique, ou quand la fiche est éteinte ou refusée.
   goToNextEpisode: "Go to next episode",

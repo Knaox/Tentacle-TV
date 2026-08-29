@@ -7,7 +7,7 @@
  * l'écran de chargement et le saut partait avant la première image).
  */
 
-import { findSegment, type ResolvedSegment, type SegmentType } from "./segmentTypes";
+import { findSegment, findSegments, type ResolvedSegment, type SegmentType } from "./segmentTypes";
 
 /**
  * La fenêtre se ferme UNE SECONDE avant la fin du segment : la position est
@@ -35,15 +35,25 @@ export function isInSegmentWindow({ segment, positionMs, hasStarted }: SegmentWi
  */
 const ACTIVE_PRIORITY: readonly SegmentType[] = ["Recap", "Intro", "Commercial", "Preview", "Outro"];
 
-/** Le segment actif à cette position, ou null. */
+/**
+ * Le segment actif à cette position, ou null.
+ *
+ * ⚠️ TOUS les segments d'un type sont examinés, pas seulement le premier. Un
+ * média peut en porter deux — c'est le modèle de Plex, que `nextTriggers.ts`
+ * connaît déjà : générique, scène post-générique, générique FINAL. Ne regarder
+ * que le premier laissait le générique final MUET : la scène finie, le bouton
+ * « Terminer la lecture » ne paraissait pas, et il restait des minutes de
+ * défilement sans rien pour en sortir.
+ */
 export function findActiveSegment(
   segments: readonly ResolvedSegment[],
   positionMs: number,
   hasStarted: boolean,
 ): ResolvedSegment | null {
   for (const type of ACTIVE_PRIORITY) {
-    const segment = findSegment(segments, type);
-    if (isInSegmentWindow({ segment, positionMs, hasStarted })) return segment;
+    for (const segment of findSegments(segments, type)) {
+      if (isInSegmentWindow({ segment, positionMs, hasStarted })) return segment;
+    }
   }
   return null;
 }
@@ -61,6 +71,7 @@ export function playbackPhase(
   if (active?.type === "Recap") return "RECAP";
   if (active?.type === "Intro") return "INTRO";
   if (active?.type === "Outro") return "OUTRO";
+  // Le PREMIER générique : c'est lui qui décide s'il y a une scène derrière.
   const outro = findSegment(segments, "Outro");
   if (outro && outro.hasContentAfter && positionMs >= outro.endMs) return "POST_CREDITS";
   return "CONTENT";
