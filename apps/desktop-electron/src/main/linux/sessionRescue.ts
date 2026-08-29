@@ -9,12 +9,12 @@
  * fautif est PERSISTANT : chaque relance rejoue l'échec. Sans fenêtre, pas de
  * Préférences — l'application est briquée. Le choix `wayland` imposé porte le
  * même risque (un compositeur qui refuse, et plus aucun repli — voir
- * `sessionGraphique.ts`). Seul `auto` est sans danger : Electron y garde son
+ * `graphicsSession.ts`). Seul `auto` est sans danger : Electron y garde son
  * propre repli.
  *
  * # Les deux filets, indépendants
  *
- * 1. **La surveillance du processus GPU** (`surveillerGpu`) : trois morts
+ * 1. **La surveillance du processus GPU** (`watchGpu`) : trois morts
  *    violentes pendant qu'un choix explicite est en vigueur → le choix est
  *    réécrit en `auto` et l'application se RELANCE d'elle-même. L'utilisateur
  *    voit un clignotement, puis une fenêtre — pas un écran vide.
@@ -31,34 +31,34 @@
 
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { FICHIER_SESSION, type ChoixSession } from "./sessionGraphique";
+import { SESSION_FILE, type SessionChoice } from "./graphicsSession";
 
 /** Le témoin : « un choix explicite est à l'essai, l'affichage n'a pas encore eu lieu ». */
-export const FICHIER_TEMOIN = "session-essai.json";
+export const WITNESS_FILE = "session-essai.json";
 
 /** Nombre de morts du processus GPU avant de conclure que ce montage n'affichera pas. */
-const MORTS_GPU_FATALES = 3;
+const FATAL_GPU_DEATHS = 3;
 
-let dossierTemoin: string | null = null;
+let witnessFolder: string | null = null;
 
 /** Le choix consigné dans le témoin, ou `null` (absent, illisible, farfelu). */
-export function lireTemoin(dossier: string): ChoixSession | null {
+export function readWitness(folder: string): SessionChoice | null {
   try {
-    const brut: unknown = JSON.parse(readFileSync(path.join(dossier, FICHIER_TEMOIN), "utf8"));
-    const v = typeof brut === "object" && brut !== null ? (brut as { choix?: unknown }).choix : null;
+    const raw: unknown = JSON.parse(readFileSync(path.join(folder, WITNESS_FILE), "utf8"));
+    const v = typeof raw === "object" && raw !== null ? (raw as { choix?: unknown }).choix : null;
     return v === "wayland" || v === "x11" ? v : null;
   } catch {
     return null;
   }
 }
 
-/** Pose le témoin — et retient le dossier pour `sessionAffichee()`. */
-export function poserTemoin(dossier: string, choix: ChoixSession): void {
-  dossierTemoin = dossier;
+/** Pose le témoin — et retient le dossier pour `sessionShown()`. */
+export function writeWitness(folder: string, choice: SessionChoice): void {
+  witnessFolder = folder;
   try {
     writeFileSync(
-      path.join(dossier, FICHIER_TEMOIN),
-      `${JSON.stringify({ choix, depuis: new Date().toISOString() }, null, 2)}\n`,
+      path.join(folder, WITNESS_FILE),
+      `${JSON.stringify({ choix: choice, depuis: new Date().toISOString() }, null, 2)}\n`,
       "utf8",
     );
   } catch {
@@ -66,9 +66,9 @@ export function poserTemoin(dossier: string, choix: ChoixSession): void {
   }
 }
 
-export function effacerTemoin(dossier: string): void {
+export function clearWitness(folder: string): void {
   try {
-    rmSync(path.join(dossier, FICHIER_TEMOIN), { force: true });
+    rmSync(path.join(folder, WITNESS_FILE), { force: true });
   } catch {
     // Rien à effacer, ou rien à pouvoir faire — dans les deux cas on continue.
   }
@@ -79,8 +79,8 @@ export function effacerTemoin(dossier: string): void {
  * explicite est concluant. Sans effet si aucun témoin n'est posé (choix auto,
  * autre plateforme).
  */
-export function sessionAffichee(): void {
-  if (dossierTemoin !== null) effacerTemoin(dossierTemoin);
+export function sessionShown(): void {
+  if (witnessFolder !== null) clearWitness(witnessFolder);
 }
 
 /**
@@ -90,22 +90,22 @@ export function sessionAffichee(): void {
  * Un témoin d'un AUTRE choix (l'utilisateur a changé entre-temps) est
  * simplement effacé : le nouveau choix a droit à son propre essai.
  */
-export function redresserChoixCondamne(dossier: string, choixDemande: ChoixSession): ChoixSession | null {
-  const temoin = lireTemoin(dossier);
-  if (temoin === null) return null;
-  effacerTemoin(dossier);
-  if (temoin !== choixDemande || choixDemande === "auto") return null;
+export function recoverDoomedChoice(folder: string, requestedChoice: SessionChoice): SessionChoice | null {
+  const witness = readWitness(folder);
+  if (witness === null) return null;
+  clearWitness(folder);
+  if (witness !== requestedChoice || requestedChoice === "auto") return null;
   writeFileSync(
-    path.join(dossier, FICHIER_SESSION),
+    path.join(folder, SESSION_FILE),
     `${JSON.stringify({ session: "auto" }, null, 2)}\n`,
     "utf8",
   );
-  return temoin;
+  return witness;
 }
 
 /** Le strict nécessaire d'`app` — et ce qu'un test sait imiter. */
-export interface AppSurveillable {
-  on(evenement: "child-process-gone", ecouteur: (e: unknown, details: { type: string; reason: string }) => void): unknown;
+export interface WatchableApp {
+  on(event: "child-process-gone", listener: (e: unknown, details: { type: string; reason: string }) => void): unknown;
   relaunch(): void;
   exit(code?: number): void;
 }
@@ -115,24 +115,24 @@ export interface AppSurveillable {
  * et l'application réécrit `auto` puis SE RELANCE. Après la relance le choix
  * n'est plus explicite : la surveillance ne peut pas boucler.
  */
-export function surveillerGpu(dossier: string, application: AppSurveillable): void {
-  let morts = 0;
-  let secouru = false;
+export function watchGpu(folder: string, application: WatchableApp): void {
+  let dead = 0;
+  let rescued = false;
   application.on("child-process-gone", (_e, details) => {
-    if (secouru || details.type !== "GPU") return;
+    if (rescued || details.type !== "GPU") return;
     if (details.reason !== "crashed" && details.reason !== "abnormal-exit" && details.reason !== "launch-failed") return;
-    morts += 1;
-    if (morts < MORTS_GPU_FATALES) return;
-    secouru = true;
+    dead += 1;
+    if (dead < FATAL_GPU_DEATHS) return;
+    rescued = true;
     console.error(
-      `[session] ⚠️ ${morts} morts du processus GPU : ce montage n'affichera pas — retour en auto et relance`,
+      `[session] ⚠️ ${dead} morts du processus GPU : ce montage n'affichera pas — retour en auto et relance`,
     );
     writeFileSync(
-      path.join(dossier, FICHIER_SESSION),
+      path.join(folder, SESSION_FILE),
       `${JSON.stringify({ session: "auto" }, null, 2)}\n`,
       "utf8",
     );
-    effacerTemoin(dossier);
+    clearWitness(folder);
     application.relaunch();
     application.exit(0);
   });

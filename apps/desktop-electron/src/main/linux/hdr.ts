@@ -38,7 +38,7 @@
  * `auto` ne décide de rien sous Wayland : mpv n'y sait pas lire l'état HDR de
  * l'écran (mpv#16305) et sort du HDR quoi qu'il arrive. `no` supprime la
  * transmission, y compris pour un film qui en a besoin. D'où `yes`, posé sans
- * condition dans `optionsMpv.ts` — et le contenu SDR n'y perd rien : mpv le
+ * condition dans `mpvBaseOptions.ts` — et le contenu SDR n'y perd rien : mpv le
  * convertit vers le blanc de référence que le compositeur lui déclare.
  *
  * `sig-peak` est l'équivalent Linux du headroom EDR de macOS : le rapport entre
@@ -49,7 +49,7 @@
  *
  * Aucune bascule. Wayland alloue l'espace colorimétrique surface par surface,
  * comme macOS le fait fenêtre par fenêtre : le contenu SDR affiché à côté n'est
- * jamais remappé, il n'y a donc rien à prendre ni à rendre. `hdrSupporte()`
+ * jamais remappé, il n'y a donc rien à prendre ni à rendre. `hdrSupported()`
  * reste faux sous Linux, et le réglage de bascule disparaît de lui-même.
  *
  * Sous X11, il n'y a rien du tout : X.Org n'a pas de gestion de couleur et n'en
@@ -58,22 +58,22 @@
 
 import { getProperty } from "../video/mpv";
 
-export interface Releve {
+export interface Reading {
   /** Ce que le FILM est. */
-  contenu: string | null;
+  content: string | null;
   /** Ce que la SURFACE est — donc ce que l'écran reçoit. */
-  sortie: string;
-  primaires: string | null;
+  output: string;
+  primaries: string | null;
   /** Pic du signal rapporté à la référence — le « headroom » de Linux. */
-  pic: number | null;
+  peak: number | null;
 }
 
-function estHdr(gamma: string | null): boolean {
+function isHdr(gamma: string | null): boolean {
   return gamma === "pq" || gamma === "hlg";
 }
 
-let derniere: Releve | null = null;
-let enCours = false;
+let last: Reading | null = null;
+let inProgress = false;
 
 /**
  * Relève ce que mpv envoie à l'écran. À appeler sur `file-loaded` ET
@@ -81,33 +81,33 @@ let enCours = false;
  *
  * ⚠️ `video-target-params/*` n'est pas renseigné à `file-loaded` : mpv a ouvert
  * le fichier mais n'a pas encore configuré sa sortie. On n'y journalise rien, et
- * le second appel tranche. Même précaution que `hdrSession.accorder`.
+ * le second appel tranche. Même précaution que `hdrSession.grant`.
  */
-export function releverSortie(): void {
-  if (enCours) return;
-  enCours = true;
+export function recordOutput(): void {
+  if (inProgress) return;
+  inProgress = true;
   void getProperty("video-target-params/gamma")
-    .then(async (sortie) => {
-      if (sortie === null || sortie === "") return;
-      const [contenu, primaires, pic] = await Promise.all([
+    .then(async (output) => {
+      if (output === null || output === "") return;
+      const [content, primaries, peak] = await Promise.all([
         getProperty("video-params/gamma"),
         getProperty("video-target-params/primaries"),
         getProperty("video-target-params/sig-peak"),
       ]);
-      const valeur = pic === null ? Number.NaN : Number.parseFloat(pic);
-      const releve: Releve = {
-        contenu,
-        sortie,
-        primaires,
-        pic: Number.isFinite(valeur) ? valeur : null,
+      const value = peak === null ? Number.NaN : Number.parseFloat(peak);
+      const reading: Reading = {
+        content,
+        output,
+        primaries,
+        peak: Number.isFinite(value) ? value : null,
       };
-      if (derniere?.sortie !== releve.sortie || derniere.contenu !== releve.contenu) {
-        console.info(`[hdr] ${decrire(releve)}`);
+      if (last?.output !== reading.output || last.content !== reading.content) {
+        console.info(`[hdr] ${describeReading(reading)}`);
       }
-      derniere = releve;
+      last = reading;
     })
     .finally(() => {
-      enCours = false;
+      inProgress = false;
     });
 }
 
@@ -117,11 +117,11 @@ export function releverSortie(): void {
  * La forme reprend celle du panneau F9 — « contenu X → sortie Y » — parce que
  * c'est le couple qui parle, et que la ligne doit se lire sans rien savoir.
  */
-export function decrire(r: Releve): string {
-  const pic = r.pic === null ? "" : ` · pic ${r.pic.toFixed(2)}×`;
-  const base = `contenu ${r.contenu ?? "?"} → sortie ${r.sortie}/${r.primaires ?? "?"}${pic}`;
-  if (estHdr(r.contenu) && !estHdr(r.sortie)) return `${base} — TONE-MAPPÉ`;
-  if (!estHdr(r.contenu) && estHdr(r.sortie)) return `${base} — SDR converti`;
+export function describeReading(r: Reading): string {
+  const peak = r.peak === null ? "" : ` · pic ${r.peak.toFixed(2)}×`;
+  const base = `contenu ${r.content ?? "?"} → sortie ${r.output}/${r.primaries ?? "?"}${peak}`;
+  if (isHdr(r.content) && !isHdr(r.output)) return `${base} — TONE-MAPPÉ`;
+  if (!isHdr(r.content) && isHdr(r.output)) return `${base} — SDR converti`;
   return base;
 }
 
@@ -132,9 +132,9 @@ export function decrire(r: Releve): string {
  * un contenu SDR sort lui aussi en PQ, converti par mpv. Le verdict de
  * transmission est `transmissionHdr`, et la ligne lisible les porte tous les deux.
  */
-export function sortieHdr(): boolean | null {
-  if (derniere === null) return null;
-  return estHdr(derniere.sortie);
+export function outputHdr(): boolean | null {
+  if (last === null) return null;
+  return isHdr(last.output);
 }
 
 /**
@@ -144,22 +144,22 @@ export function sortieHdr(): boolean | null {
  * `false` est le seul cas qui doive alerter : un film HDR sorti en SDR, c'est
  * mpv qui tone-mappe parce que la transmission n'a pas pu être posée.
  */
-export function transmissionHdr(): boolean | null {
-  if (derniere === null || !estHdr(derniere.contenu)) return null;
-  return estHdr(derniere.sortie);
+export function hdrTransmission(): boolean | null {
+  if (last === null || !isHdr(last.content)) return null;
+  return isHdr(last.output);
 }
 
 /** Le relevé en une ligne lisible, ou `null` si rien n'a été relevé. */
-export function espaceSortie(): string | null {
-  return derniere === null ? null : decrire(derniere);
+export function outputSpace(): string | null {
+  return last === null ? null : describeReading(last);
 }
 
 /** La plage accordée, en multiples du blanc de référence. */
-export function picSortie(): number | null {
-  return derniere?.pic ?? null;
+export function outputPeak(): number | null {
+  return last?.peak ?? null;
 }
 
 /** Oublie le relevé — à l'arrêt de mpv, pour ne pas décrire une lecture finie. */
-export function oublierSortie(): void {
-  derniere = null;
+export function forgetOutput(): void {
+  last = null;
 }

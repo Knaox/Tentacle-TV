@@ -27,36 +27,36 @@
  * « collée » de « libre », et 10 % séparent ces deux mondes sans ambiguïté.
  */
 
-export type VerdictColle = "collée" | "libre" | "indécidable";
+export type GlueVerdict = "collée" | "libre" | "indécidable";
 
 /** Assez lâche pour absorber décorations et échelle fractionnaire. */
 const TOLERANCE = 0.1;
 
-export interface TailleFenetre {
-  largeur: number;
-  hauteur: number;
+export interface WindowSize {
+  width: number;
+  height: number;
 }
 
 /** Une propriété mpv rendue en texte, en nombre — `null` si elle ne dit rien. */
-export function nombreMpv(valeur: string | null): number | null {
-  if (valeur === null) return null;
-  const nombre = Number.parseFloat(valeur.trim());
-  return Number.isFinite(nombre) && nombre > 0 ? nombre : null;
+export function mpvNumber(value: string | null): number | null {
+  if (value === null) return null;
+  const count = Number.parseFloat(value.trim());
+  return Number.isFinite(count) && count > 0 ? count : null;
 }
 
-function saine(taille: TailleFenetre | null): taille is TailleFenetre {
+function sane(size: WindowSize | null): size is WindowSize {
   return (
-    taille !== null &&
-    Number.isFinite(taille.largeur) &&
-    Number.isFinite(taille.hauteur) &&
-    taille.largeur > 0 &&
-    taille.hauteur > 0
+    size !== null &&
+    Number.isFinite(size.width) &&
+    Number.isFinite(size.height) &&
+    size.width > 0 &&
+    size.height > 0
   );
 }
 
 /** La taille attendue de la fenêtre mpv : celle de l'hôte, en pixels. */
-function attendue(hote: TailleFenetre, echelle: number): TailleFenetre {
-  return { largeur: hote.largeur * echelle, hauteur: hote.hauteur * echelle };
+function expected(host: WindowSize, scale: number): WindowSize {
+  return { width: host.width * scale, height: host.height * scale };
 }
 
 /**
@@ -64,31 +64,31 @@ function attendue(hote: TailleFenetre, echelle: number): TailleFenetre {
  * vidéo pas encore montée : on ne conclut RIEN, et surtout on ne repose pas
  * une colle qui marche peut-être très bien.
  */
-export function verdictColle(
-  mpv: TailleFenetre | null,
-  hote: TailleFenetre,
-  echelle: number,
-): VerdictColle {
-  if (!saine(mpv) || !saine(hote) || !Number.isFinite(echelle) || echelle <= 0) {
+export function glueVerdict(
+  mpv: WindowSize | null,
+  host: WindowSize,
+  scale: number,
+): GlueVerdict {
+  if (!sane(mpv) || !sane(host) || !Number.isFinite(scale) || scale <= 0) {
     return "indécidable";
   }
-  const cible = attendue(hote, echelle);
-  const ecart = (mesure: number, visee: number): number => Math.abs(mesure - visee) / visee;
-  return ecart(mpv.largeur, cible.largeur) <= TOLERANCE &&
-    ecart(mpv.hauteur, cible.hauteur) <= TOLERANCE
+  const target = expected(host, scale);
+  const gap = (measure: number, aim: number): number => Math.abs(measure - aim) / aim;
+  return gap(mpv.width, target.width) <= TOLERANCE &&
+    gap(mpv.height, target.height) <= TOLERANCE
     ? "collée"
     : "libre";
 }
 
 /** La mesure en une ligne de journal — les deux tailles, jamais le seul verdict. */
-export function descriptionMesure(
-  mpv: TailleFenetre | null,
-  hote: TailleFenetre,
-  echelle: number,
+export function measureDescription(
+  mpv: WindowSize | null,
+  host: WindowSize,
+  scale: number,
 ): string {
-  const cible = attendue(hote, echelle);
-  const rond = (n: number): string => String(Math.round(n));
-  const vue = saine(mpv) ? `${rond(mpv.largeur)}x${rond(mpv.hauteur)}` : "?";
-  return `mpv ${vue} · attendu ${rond(cible.largeur)}x${rond(cible.hauteur)}` +
-    ` (hôte ${rond(hote.largeur)}x${rond(hote.hauteur)} ×${String(echelle)})`;
+  const target = expected(host, scale);
+  const round = (n: number): string => String(Math.round(n));
+  const view = sane(mpv) ? `${round(mpv.width)}x${round(mpv.height)}` : "?";
+  return `mpv ${view} · attendu ${round(target.width)}x${round(target.height)}` +
+    ` (hôte ${round(host.width)}x${round(host.height)} ×${String(scale)})`;
 }

@@ -20,24 +20,24 @@ import {
 } from "./playback";
 import { getFile } from "./queue";
 import { claimOrCreateFile } from "./store";
-import { ecrireMedia, racinePreparee, spec } from "./testkit";
+import { writeMedia, preparedRoot, spec } from "./testkit";
 
 const REL = "media/item1/original-ms1.mkv";
 
-function semerComplet(db: DatabaseSync, taille: number): number {
-  const fileId = claimOrCreateFile(db, spec({ expectedSize: taille })).fileId;
-  db.prepare("UPDATE files SET status = 'complete', bytes_done = ? WHERE id = ?").run(taille, fileId);
+function seedComplete(db: DatabaseSync, size: number): number {
+  const fileId = claimOrCreateFile(db, spec({ expectedSize: size })).fileId;
+  db.prepare("UPDATE files SET status = 'complete', bytes_done = ? WHERE id = ?").run(size, fileId);
   return fileId;
 }
 
 describe("source locale", () => {
   it("rend le chemin, la progression et les sous-titres", () => {
-    const root = racinePreparee("tentacle-playback-");
-    ecrireMedia(root, REL, "1234");
-    ecrireMedia(root, "media/item1/subs/3-fre.srt", "1");
-    ecrireMedia(root, "media/item1/subs/1-eng.srt", "1");
+    const root = preparedRoot("tentacle-playback-");
+    writeMedia(root, REL, "1234");
+    writeMedia(root, "media/item1/subs/3-fre.srt", "1");
+    writeMedia(root, "media/item1/subs/1-eng.srt", "1");
     const db = openInMemory();
-    semerComplet(db, 4);
+    seedComplete(db, 4);
     setPlaybackState(db, "u", "item1", 5_000, false, false, 2_000);
 
     const source = localSource(db, root, "u", "item1", 3_000);
@@ -50,20 +50,20 @@ describe("source locale", () => {
   });
 
   it("est cloisonnee par utilisateur", () => {
-    const root = racinePreparee("tentacle-playback-");
-    ecrireMedia(root, REL, "1234");
+    const root = preparedRoot("tentacle-playback-");
+    writeMedia(root, REL, "1234");
     const db = openInMemory();
-    semerComplet(db, 4);
+    seedComplete(db, 4);
 
     expect(localSource(db, root, "u", "item1", 3_000)).not.toBeNull();
     expect(localSource(db, root, "autre", "item1", 3_000)).toBeNull();
   });
 
   it("un fichier tronque hors application est marque en defaut", () => {
-    const root = racinePreparee("tentacle-playback-");
-    ecrireMedia(root, REL, "12"); // 2 octets au lieu de 4
+    const root = preparedRoot("tentacle-playback-");
+    writeMedia(root, REL, "12"); // 2 octets au lieu de 4
     const db = openInMemory();
-    const fileId = semerComplet(db, 4);
+    const fileId = seedComplete(db, 4);
 
     expect(localSource(db, root, "u", "item1", 3_000)).toBeNull();
 
@@ -73,9 +73,9 @@ describe("source locale", () => {
   });
 
   it("un fichier disparu est marque manquant", () => {
-    const root = racinePreparee("tentacle-playback-");
+    const root = preparedRoot("tentacle-playback-");
     const db = openInMemory();
-    const fileId = semerComplet(db, 4);
+    const fileId = seedComplete(db, 4);
 
     expect(localSource(db, root, "u", "item1", 3_000)).toBeNull();
 
@@ -83,9 +83,9 @@ describe("source locale", () => {
   });
 
   it("l'Allege n'est pas soumis au controle de taille", () => {
-    const root = racinePreparee("tentacle-playback-");
+    const root = preparedRoot("tentacle-playback-");
     const rel = "media/item1/light-ms1-p720.mp4";
-    ecrireMedia(root, rel, "court");
+    writeMedia(root, rel, "court");
     const db = openInMemory();
     const fileId = claimOrCreateFile(
       db,
@@ -98,10 +98,10 @@ describe("source locale", () => {
   });
 
   it("la meta denormalisee accompagne la source", () => {
-    const root = racinePreparee("tentacle-playback-");
-    ecrireMedia(root, REL, "1234");
+    const root = preparedRoot("tentacle-playback-");
+    writeMedia(root, REL, "1234");
     const db = openInMemory();
-    semerComplet(db, 4);
+    seedComplete(db, 4);
     db.prepare(
       `INSERT INTO item_meta (item_id, kind, series_name, title, index_number,
                               parent_index_number, library_id, created_at, updated_at)
@@ -124,8 +124,8 @@ describe("progression et resynchronisation", () => {
     setPlaybackState(db, "u", "item1", 1_000, false, true, 2_000);
     setPlaybackState(db, "u", "item1", 9_000, true, true, 3_000);
 
-    const enFile = db.prepare("SELECT COUNT(*) AS n FROM report_queue WHERE synced = 0").get();
-    expect(Number(enFile?.["n"])).toBe(2);
+    const queued = db.prepare("SELECT COUNT(*) AS n FROM report_queue WHERE synced = 0").get();
+    expect(Number(queued?.["n"])).toBe(2);
   });
 
   it("« vu » ne redescend jamais", () => {
@@ -145,18 +145,18 @@ describe("progression et resynchronisation", () => {
     setPlaybackState(db, "u", "item2", 4_000, false, true, 4_000);
     setPlaybackState(db, "autre", "item1", 7_000, false, true, 5_000);
 
-    const enAttente = pendingReports(db, "u");
+    const pending = pendingReports(db, "u");
 
-    expect(enAttente).toHaveLength(2); // un seul rapport par item, cloisonne
-    const item1 = enAttente.find((r) => r.itemId === "item1");
+    expect(pending).toHaveLength(2); // un seul rapport par item, cloisonne
+    const item1 = pending.find((r) => r.itemId === "item1");
     expect(item1?.positionTicks).toBe(9_000); // le plus recent gagne
     expect(item1?.played).toBe(true);
 
     markItemSynced(db, "u", "item1", item1?.id ?? 0);
 
-    const reste = pendingReports(db, "u");
-    expect(reste).toHaveLength(1);
-    expect(reste[0]?.itemId).toBe("item2");
+    const rest = pendingReports(db, "u");
+    expect(rest).toHaveLength(1);
+    expect(rest[0]?.itemId).toBe("item2");
     // Le compte « autre » n'est pas touche.
     expect(pendingReports(db, "autre")).toHaveLength(1);
   });
@@ -180,12 +180,12 @@ describe("recommencer un item vu", () => {
 
     restartPlayback(db, "u", "item1", 5_000);
 
-    const etat = db
+    const state = db
       .prepare("SELECT position_ticks, played, updated_at FROM playback_state WHERE item_id = ?")
       .get("item1");
-    expect(etat?.position_ticks).toBe(0);
-    expect(etat?.played).toBe(0);
-    expect(etat?.updated_at).toBe(5_000);
+    expect(state?.position_ticks).toBe(0);
+    expect(state?.played).toBe(0);
+    expect(state?.updated_at).toBe(5_000);
   });
 
   it("leve l'echeance de suppression", () => {
@@ -206,11 +206,11 @@ describe("recommencer un item vu", () => {
     // Jellyfin ne de-marque pas un episode parce qu'on le relance.
     const db = openInMemory();
     setPlaybackState(db, "u", "item1", 9_000, true, true, 2_000);
-    const avant = pendingReports(db, "u");
+    const before = pendingReports(db, "u");
 
     restartPlayback(db, "u", "item1", 5_000);
 
-    expect(pendingReports(db, "u")).toEqual(avant);
+    expect(pendingReports(db, "u")).toEqual(before);
   });
 
   it("ne touche pas au meme item d'un AUTRE compte", () => {
@@ -220,11 +220,11 @@ describe("recommencer un item vu", () => {
 
     restartPlayback(db, "u", "item1", 5_000);
 
-    const autre = db
+    const other = db
       .prepare("SELECT position_ticks, played FROM playback_state WHERE jellyfin_user_id = ?")
       .get("autre");
-    expect(autre?.position_ticks).toBe(8_000);
-    expect(autre?.played).toBe(1);
+    expect(other?.position_ticks).toBe(8_000);
+    expect(other?.played).toBe(1);
   });
 
   it("ne cree rien pour un item jamais lu", () => {

@@ -40,25 +40,25 @@ export const MpvRenderParam = koffi.struct("mpv_render_param", {
  * le premier champ est un POINTEUR DE FONCTION, et il doit recevoir l'adresse
  * du rappel enregistré, pas une valeur convertie.
  */
-export const TAILLE_INIT_PARAMS = 16;
+export const INIT_PARAMS_SIZE = 16;
 
 /** `mpv_opengl_fbo` : { int fbo; int w; int h; int internal_format; } */
-export const TAILLE_FBO = 16;
+export const FBO_SIZE = 16;
 
 /** Le prototype du rappel que mpv appelle pour résoudre les symboles OpenGL. */
 export const GetProcAddress = koffi.proto(
   "void *GetProcAddress(void *ctx, const char *name)",
 );
 
-let cache: ReturnType<typeof lier> | null = null;
+let cache: ReturnType<typeof bind> | null = null;
 
 /** Les fonctions de rendu de la libmpv chargée. Lève si elle est introuvable. */
-export function renderApi(): ReturnType<typeof lier> {
-  if (cache === null) cache = lier(koffi.load(libmpvPath()));
+export function renderApi(): ReturnType<typeof bind> {
+  if (cache === null) cache = bind(koffi.load(libmpvPath()));
   return cache;
 }
 
-function lier(lib: ReturnType<typeof koffi.load>) {
+function bind(lib: ReturnType<typeof koffi.load>) {
   return {
     /**
      * Crée le contexte de rendu. `res` est un pointeur de sortie : on passe un
@@ -101,9 +101,9 @@ export const UPDATE_FRAME = 1n;
  * pendant la création du contexte. On ne peut donc pas les déclarer à l'avance :
  * il faut une résolution dynamique, et `dlsym` est faite pour ça.
  */
-const systeme = koffi.load("/usr/lib/libSystem.B.dylib");
-const dlopen = systeme.func("void *dlopen(const char *path, int mode)");
-const dlsym = systeme.func("void *dlsym(void *handle, const char *symbol)");
+const system = koffi.load("/usr/lib/libSystem.B.dylib");
+const dlopen = system.func("void *dlopen(const char *path, int mode)");
+const dlsym = system.func("void *dlsym(void *handle, const char *symbol)");
 
 /** `RTLD_LAZY` — les symboles sont résolus au premier appel. */
 const RTLD_LAZY = 1;
@@ -111,7 +111,7 @@ const RTLD_LAZY = 1;
 let openGl: unknown = null;
 
 /** La bibliothèque OpenGL du système, ouverte une seule fois. */
-export function frameworkOpenGl(): unknown {
+export function openGlFramework(): unknown {
   if (openGl === null) {
     openGl = dlopen("/System/Library/Frameworks/OpenGL.framework/OpenGL", RTLD_LAZY);
   }
@@ -119,10 +119,10 @@ export function frameworkOpenGl(): unknown {
 }
 
 /** Résout un symbole OpenGL par son nom. `null` s'il n'existe pas. */
-export function symboleOpenGl(nom: string): unknown {
-  const lib = frameworkOpenGl();
+export function openGlSymbol(name: string): unknown {
+  const lib = openGlFramework();
   if (!lib) return null;
-  return dlsym(lib, nom);
+  return dlsym(lib, name);
 }
 
 /**

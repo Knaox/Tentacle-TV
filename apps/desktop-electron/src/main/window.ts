@@ -9,14 +9,14 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { windowIconPath } from "./appIcon";
-import { diffuserPleinEcran, installerSyncPleinEcran } from "./fullscreenSync";
-import { HAUTEUR_BANDEAU, optionsCadreMacos } from "./macosTitleBar";
-import { optionsCadreLinux } from "./linux/fenetre";
-import { fenetrageLinux, montageLinux } from "./linux/session";
-import { sessionAffichee } from "./linux/sessionRescue";
+import { broadcastFullscreen, installFullscreenSync } from "./fullscreenSync";
+import { BANNER_HEIGHT, macosFrameOptions } from "./macosTitleBar";
+import { linuxFrameOptions } from "./linux/window";
+import { linuxWindowing, linuxMontage } from "./linux/session";
+import { sessionShown } from "./linux/sessionRescue";
 import { lockNavigation } from "./security";
-import { basculer as basculerPleinEcran, estEnPleinEcran } from "./fullscreen";
-import { fermerSessionLecteur, ouvrirSessionLecteur } from "./sessionLecteurPleinEcran";
+import { toggle as toggleWindowFullscreen, isFullscreen } from "./fullscreen";
+import { closePlayerSession, openPlayerSession } from "./playerFullscreenSession";
 
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
@@ -143,10 +143,10 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     // Ce que ce style ne fait PAS, c'est retirer les feux de circulation : ils
     // se retrouvent sur le contenu, et c'est la page qui doit leur rendre une
     // bande. Voir `macosTitleBar.ts`, qui porte aussi leur position.
-    ...optionsCadreMacos(),
+    ...macosFrameOptions(),
     // Linux se range du côté de macOS : le drapeau à la construction, sans rien
-    // perdre du cadre ni du redimensionnement. Mesuré — voir `linux/fenetre.ts`.
-    ...optionsCadreLinux(),
+    // perdre du cadre ni du redimensionnement. Mesuré — voir `linux/window.ts`.
+    ...linuxFrameOptions(),
     backgroundColor: "#000000",
     show: false,
     webPreferences: {
@@ -165,16 +165,16 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
         // Zéro hors macOS : la page ne dessine alors aucun bandeau, la fenêtre
         // ayant son vrai cadre. Une constante en double côté web finirait par
         // diverger de celle qui place les feux et retranche à la vidéo.
-        `--tentacle-titlebar=${process.platform === "darwin" ? HAUTEUR_BANDEAU : 0}`,
+        `--tentacle-titlebar=${process.platform === "darwin" ? BANNER_HEIGHT : 0}`,
         // Le montage vidéo de Linux — `wayland` ou `x11`, vide ailleurs. Il
         // décide du HDR et de la lecture plein écran ; la page doit pouvoir le
         // DIRE, et le panneau de diagnostic est le premier endroit où on le
         // cherche. Par argument comme le reste : disponible dès le preload.
-        `--tentacle-montage=${montageLinux() ?? ""}`,
+        `--tentacle-montage=${linuxMontage() ?? ""}`,
         // Le fenêtré Wayland — `libre` (colle KWin) ou `plein-ecran` (forcé).
         // La page en a besoin pour SE TAIRE : l'avis pédagogique du plein
         // écran n'a de sens que là où il est réellement imposé.
-        `--tentacle-fenetrage=${fenetrageLinux() ?? ""}`,
+        `--tentacle-fenetrage=${linuxWindowing() ?? ""}`,
       ],
     },
   });
@@ -217,7 +217,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
   // Plein écran : AppKit, F11, et la sortie de session du lecteur. Tout est dans
   // `fullscreenSync.ts` — trois sources à réconcilier, ce n'est plus un détail
   // de fabrication.
-  installerSyncPleinEcran(win);
+  installFullscreenSync(win);
 
   // Fenêtre révélée seulement quand la page est prête : sinon on montre un
   // rectangle vide le temps du premier rendu.
@@ -225,7 +225,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
     win.show();
     // La fenêtre a prouvé qu'elle s'affiche : l'essai d'un choix de session
     // explicite est concluant (sans effet sinon — voir `linux/sessionRescue.ts`).
-    sessionAffichee();
+    sessionShown();
   });
 
   win.on("closed", () => {
@@ -240,7 +240,7 @@ export function createMainWindow(commands: readonly string[]): BrowserWindow {
 export function toggleFullscreen(): boolean {
   const win = mainWindow;
   if (!win) return false;
-  return basculerPleinEcran(win);
+  return toggleWindowFullscreen(win);
 }
 
 /**
@@ -250,7 +250,7 @@ export function toggleFullscreen(): boolean {
 export function enterPlayerFullscreenScope(): boolean {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return false;
-  return ouvrirSessionLecteur(win);
+  return openPlayerSession(win);
 }
 
 /**
@@ -264,9 +264,9 @@ export function enterPlayerFullscreenScope(): boolean {
 export function leavePlayerFullscreenScope(): void {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
-  fermerSessionLecteur(win);
+  closePlayerSession(win);
   // L'état doit redescendre à la page : sans cela l'icône du bouton plein écran
   // et la touche Échap restaient en désaccord avec la fenêtre réelle. Conservé
   // pour Windows, où la parade ne fait naître aucun évènement d'AppKit.
-  diffuserPleinEcran(win, estEnPleinEcran());
+  broadcastFullscreen(win, isFullscreen());
 }

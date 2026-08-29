@@ -56,7 +56,7 @@
  *
  * La lecture en fenêtre n'existe pas sur Wayland. C'est le prix du HDR, qui
  * n'existe QUE là (X11 n'en aura jamais). L'utilisateur qui préfère l'inverse
- * bascule le réglage de session sur `x11` — voir `sessionGraphique.ts`.
+ * bascule le réglage de session sur `x11` — voir `graphicsSession.ts`.
  *
  * Conséquence directe : tant qu'une vidéo est attachée, la fenêtre RESTE en
  * plein écran. En sortir laisserait la vidéo de mpv couvrir tout l'écran
@@ -64,8 +64,8 @@
  */
 
 import type { BrowserWindow } from "electron";
-import { connecteurPourLibelle, ecransConnectes } from "./ecrans";
-import { libelleUneFoisMappee } from "./displayTarget";
+import { connectorForLabel, connectedDisplays } from "./displays";
+import { labelOnceMapped } from "./displayTarget";
 import { setProperty } from "../video/mpv";
 import type { VideoSurface } from "../video/surface";
 
@@ -76,21 +76,21 @@ import type { VideoSurface } from "../video/surface";
  * reprendrait le dessus. Ne pas retoucher sans re-mesurer
  * (docs/LINUX-FENETRE-VIDEO.md, « L'empilement multi-écrans »).
  */
-const DELAI_ACTIVATION_MS = 300;
+const ACTIVATION_DELAY_MS = 300;
 
 export class SurfaceWayland implements VideoSurface {
   /** L'état du plein écran avant la lecture, pour le rendre en sortant. */
-  private avant: boolean | null = null;
+  private before: boolean | null = null;
   /** Dernier écran visé, pour ne pas réécrire la même propriété. */
-  private dernierConnecteur: string | null = null;
+  private lastConnector: string | null = null;
   /** Dernier motif d'échec tracé, pour n'avertir qu'une fois par cause. */
-  private dernierAvertissement: string | null = null;
+  private lastWarning: string | null = null;
   /** Coupe les visées en vol : `detach()` ouvre une ère nouvelle. */
-  private ere = 0;
+  private epoch = 0;
   /** La reprise d'activation en attente — une à la fois, annulée au détachement. */
-  private minuterieActivation: ReturnType<typeof setTimeout> | null = null;
-  private readonly reprendrePleinEcran = (): void => {
-    if (this.avant === null || this.host.isDestroyed()) return;
+  private activationTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly resumeFullscreen = (): void => {
+    if (this.before === null || this.host.isDestroyed()) return;
     // Deux fenêtres plein écran, dont une seule est commandable : en sortir
     // laisserait la vidéo couvrir l'écran sans plus rien pour l'arrêter.
     console.info("[video] Wayland : plein écran réaffirmé, la vidéo y est liée");
@@ -101,15 +101,15 @@ export class SurfaceWayland implements VideoSurface {
 
   async attach(): Promise<void> {
     if (this.host.isDestroyed()) return;
-    this.avant = this.host.isFullScreen();
+    this.before = this.host.isFullScreen();
     this.host.setFullScreen(true);
     // L'activation est ce qui fixe l'ordre : notre fenêtre devient la dernière
     // servie, celle de mpv ne le demande jamais (`focus-on=never`).
     this.host.focus();
-    this.host.on("leave-full-screen", this.reprendrePleinEcran);
+    this.host.on("leave-full-screen", this.resumeFullscreen);
     // La visée AVANT de rendre la main — voir l'en-tête. Le compositeur met
     // ~200 ms à mapper le plein écran ; l'attente vit dans `displayTarget.ts`.
-    await this.viserALaMesure();
+    await this.aimAtMeasure();
   }
 
   /**
@@ -119,63 +119,63 @@ export class SurfaceWayland implements VideoSurface {
    * prochain chargement.
    */
   align(): void {
-    void this.viserALaMesure();
+    void this.aimAtMeasure();
   }
 
   /** Mesure la page, rapproche un connecteur, écrit `fs-screen-name`. */
-  private async viserALaMesure(): Promise<void> {
+  private async aimAtMeasure(): Promise<void> {
     if (this.host.isDestroyed()) return;
-    const ere = this.ere;
-    const libelle = await libelleUneFoisMappee(this.host, {
-      encore: () => this.ere === ere,
+    const epoch = this.epoch;
+    const label = await labelOnceMapped(this.host, {
+      still: () => this.epoch === epoch,
     });
-    if (this.ere !== ere || this.host.isDestroyed()) return;
-    if (libelle === null) {
-      this.avertirUneFois(
+    if (this.epoch !== epoch || this.host.isDestroyed()) return;
+    if (label === null) {
+      this.warnOnce(
         "mesure",
         "[video] écran non identifié par la mesure de la page — mpv choisira",
       );
       return;
     }
-    const connecteur = connecteurPourLibelle(libelle, ecransConnectes());
-    if (connecteur === null) {
-      this.avertirUneFois(
-        `libelle:${libelle}`,
-        `[video] écran « ${libelle} » non rapproché d'un connecteur — mpv choisira`,
+    const connector = connectorForLabel(label, connectedDisplays());
+    if (connector === null) {
+      this.warnOnce(
+        `libelle:${label}`,
+        `[video] écran « ${label} » non rapproché d'un connecteur — mpv choisira`,
       );
       return;
     }
-    if (connecteur === this.dernierConnecteur) return;
-    this.dernierConnecteur = connecteur;
-    console.info(`[video] mpv visera ${connecteur} (${libelle})`);
-    const erreur = await setProperty("fs-screen-name", connecteur);
-    if (erreur !== null) {
-      console.warn(`[video] fs-screen-name → ${connecteur} refusé : ${erreur}`);
+    if (connector === this.lastConnector) return;
+    this.lastConnector = connector;
+    console.info(`[video] mpv visera ${connector} (${label})`);
+    const error = await setProperty("fs-screen-name", connector);
+    if (error !== null) {
+      console.warn(`[video] fs-screen-name → ${connector} refusé : ${error}`);
     }
   }
 
   /** mpv vient d'ouvrir un fichier : sa fenêtre naît, et sera peut-être activée. */
-  fichierCharge(): void {
+  fileLoaded(): void {
     // Une reprise à la fois : un second `file-loaded` pendant l'attente n'en
     // rajoute pas, et une surface détachée ou jamais attachée ne bouge plus.
-    if (this.minuterieActivation !== null || this.avant === null || this.host.isDestroyed()) return;
-    this.minuterieActivation = setTimeout(() => {
-      this.minuterieActivation = null;
-      this.repasserDevant();
-    }, DELAI_ACTIVATION_MS);
+    if (this.activationTimer !== null || this.before === null || this.host.isDestroyed()) return;
+    this.activationTimer = setTimeout(() => {
+      this.activationTimer = null;
+      this.bringForwardAgain();
+    }, ACTIVATION_DELAY_MS);
   }
 
   /** Demander l'activation — RIEN d'autre : jamais de hide(), voir l'en-tête. */
-  private repasserDevant(): void {
-    if (this.avant === null || this.host.isDestroyed()) return;
+  private bringForwardAgain(): void {
+    if (this.before === null || this.host.isDestroyed()) return;
     this.host.focus();
     console.info("[video] Wayland : activation demandée pour repasser devant la vidéo");
   }
 
   /** Un avertissement par cause : la visée se rejoue, le journal ne doit pas. */
-  private avertirUneFois(cle: string, message: string): void {
-    if (this.dernierAvertissement === cle) return;
-    this.dernierAvertissement = cle;
+  private warnOnce(key: string, message: string): void {
+    if (this.lastWarning === key) return;
+    this.lastWarning = key;
     console.warn(message);
   }
 
@@ -185,26 +185,26 @@ export class SurfaceWayland implements VideoSurface {
   }
 
   detach(): void {
-    this.ere++;
-    if (this.minuterieActivation !== null) {
-      clearTimeout(this.minuterieActivation);
-      this.minuterieActivation = null;
+    this.epoch++;
+    if (this.activationTimer !== null) {
+      clearTimeout(this.activationTimer);
+      this.activationTimer = null;
     }
     if (this.host.isDestroyed()) return;
-    this.host.removeListener("leave-full-screen", this.reprendrePleinEcran);
-    const avant = this.avant;
-    this.avant = null;
-    this.dernierConnecteur = null;
-    this.dernierAvertissement = null;
+    this.host.removeListener("leave-full-screen", this.resumeFullscreen);
+    const before = this.before;
+    this.before = null;
+    this.lastConnector = null;
+    this.lastWarning = null;
     // On ne défait QUE le plein écran qu'on a posé : celui d'un utilisateur qui
     // parcourait déjà son catalogue ainsi ne nous appartient pas.
-    if (avant === false) this.host.setFullScreen(false);
+    if (before === false) this.host.setFullScreen(false);
   }
 
   geometrie(): string {
     if (this.host.isDestroyed()) return "fenêtre détruite";
     const b = this.host.getBounds();
-    const ecran = this.dernierConnecteur ?? "auto";
-    return `wayland hôte=${b.width}x${b.height}+${b.x}+${b.y} pleinÉcran=${this.host.isFullScreen()} écran=${ecran}`;
+    const display = this.lastConnector ?? "auto";
+    return `wayland hôte=${b.width}x${b.height}+${b.x}+${b.y} pleinÉcran=${this.host.isFullScreen()} écran=${display}`;
   }
 }

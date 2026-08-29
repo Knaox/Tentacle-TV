@@ -56,13 +56,13 @@ export interface EngineDeps {
 
 export class DownloadEngine {
   private creds: Creds | null = null;
-  private readonly actifs = new Map<number, TransferFlags>();
+  private readonly active = new Map<number, TransferFlags>();
   private busy = false;
 
   constructor(private readonly deps: EngineDeps) {}
 
   isActive(fileId: number): boolean {
-    return this.actifs.has(fileId);
+    return this.active.has(fileId);
   }
 
   /**
@@ -74,7 +74,7 @@ export class DownloadEngine {
    */
   pending(): number {
     if (this.creds === null) return 0;
-    return this.actifs.size + countQueued(this.deps.db);
+    return this.active.size + countQueued(this.deps.db);
   }
 
   /** « Quelque chose a changé » : l'interface invalide ses listes. */
@@ -103,52 +103,52 @@ export class DownloadEngine {
    * Lance des transferts tant qu'il y a des places ET des fichiers en file.
    *
    * PASSAGE OBLIGÉ de toute variation d'activité : `start`, la mise en file,
-   * `resume` et la fin d'un transfert (`terminer`) appellent tous `pump`. La
+   * `resume` et la fin d'un transfert (`finish`) appellent tous `pump`. La
    * bascule occupé/inoccupé est donc calculée ici, une fois, plutôt que
    * dispersée dans quatre appelants qui finiraient par en oublier un.
    */
   pump(): void {
-    this.demarrerCeQuiPeut();
-    this.majActivite();
+    this.startWhatCanRun();
+    this.updateActivity();
   }
 
-  private demarrerCeQuiPeut(): void {
+  private startWhatCanRun(): void {
     const creds = this.creds;
     if (creds === null) return;
-    while (this.actifs.size < MAX_PARALLEL) {
+    while (this.active.size < MAX_PARALLEL) {
       const file = nextQueued(this.deps.db);
       if (file === null) return;
       // Le statut passe à `downloading` AVANT le premier `await` : sans ça, le
       // tour de boucle suivant reprendrait le même fichier.
       setStatus(this.deps.db, file.id, "downloading", null, this.deps.now());
       const flags = new TransferFlags();
-      this.actifs.set(file.id, flags);
-      void this.travailler(creds, file.id, flags);
+      this.active.set(file.id, flags);
+      void this.work(creds, file.id, flags);
     }
   }
 
   /** Ne notifie qu'aux transitions — voir `EngineDeps.onBusy`. */
-  private majActivite(): void {
-    const busy = this.actifs.size > 0;
+  private updateActivity(): void {
+    const busy = this.active.size > 0;
     if (busy === this.busy) return;
     this.busy = busy;
     this.deps.onBusy?.(busy);
   }
 
-  private async travailler(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
+  private async work(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
     const file = getFile(this.deps.db, fileId);
-    let fin: TransferEnd;
+    let end: TransferEnd;
     if (file === null) {
-      fin = { kind: "failed", code: "io", bytesDone: 0 };
+      end = { kind: "failed", code: "io", bytesDone: 0 };
     } else {
       try {
-        fin = await runWorker(
+        end = await runWorker(
           {
             db: this.deps.db,
             root: this.deps.root(),
             net: this.deps.net,
             fetchBytes: this.deps.makeFetcher(creds.token),
-            onProgress: (id, bytes) => this.progresser(id, bytes, file.expectedSize),
+            onProgress: (id, bytes) => this.progress(id, bytes, file.expectedSize),
           },
           creds,
           file,
@@ -158,29 +158,29 @@ export class DownloadEngine {
       } catch {
         // Un défaut inattendu ne doit pas laisser le fichier en `downloading`
         // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
-        fin = { kind: "failed", code: "io", bytesDone: file.bytesDone };
+        end = { kind: "failed", code: "io", bytesDone: file.bytesDone };
       }
     }
-    this.terminer(fileId, fin);
+    this.finish(fileId, end);
   }
 
-  private progresser(fileId: number, bytes: number, expectedSize: number | null): void {
+  private progress(fileId: number, bytes: number, expectedSize: number | null): void {
     setBytesDone(this.deps.db, fileId, bytes, this.deps.now());
     this.deps.emit("downloads://progress", { fileId, bytesDone: bytes, expectedSize });
   }
 
-  private terminer(fileId: number, fin: TransferEnd): void {
-    this.actifs.delete(fileId);
+  private finish(fileId: number, end: TransferEnd): void {
+    this.active.delete(fileId);
     const now = this.deps.now();
     const db = this.deps.db;
 
-    switch (fin.kind) {
+    switch (end.kind) {
       case "complete":
-        setBytesDone(db, fileId, fin.finalSize, now);
+        setBytesDone(db, fileId, end.finalSize, now);
         setStatus(db, fileId, "complete", null, now);
         break;
       case "paused":
-        setBytesDone(db, fileId, fin.bytesDone, now);
+        setBytesDone(db, fileId, end.bytesDone, now);
         setStatus(db, fileId, "paused", null, now);
         break;
       case "canceled":
@@ -188,15 +188,15 @@ export class DownloadEngine {
         setStatus(db, fileId, "canceled", null, now);
         break;
       case "failed":
-        setBytesDone(db, fileId, fin.bytesDone, now);
-        if (fin.code === "network") {
+        setBytesDone(db, fileId, end.bytesDone, now);
+        if (end.code === "network") {
           // Coupure réseau = pause SYSTÈME, donc reprise automatique au retour.
           // La marquer `error` demanderait un geste à l'utilisateur pour un
           // incident qui se résout tout seul.
           setPausedByUser(db, fileId, false);
           setStatus(db, fileId, "paused", null, now);
         } else {
-          setStatus(db, fileId, "error", fin.code, now);
+          setStatus(db, fileId, "error", end.code, now);
         }
         break;
     }
@@ -207,7 +207,7 @@ export class DownloadEngine {
 
   pause(fileId: number): void {
     setPausedByUser(this.deps.db, fileId, true);
-    const flags = this.actifs.get(fileId);
+    const flags = this.active.get(fileId);
     if (flags !== undefined) {
       flags.pause = true;
     } else {
@@ -246,7 +246,7 @@ export class DownloadEngine {
   }
 
   cancel(fileId: number): void {
-    const flags = this.actifs.get(fileId);
+    const flags = this.active.get(fileId);
     if (flags !== undefined) {
       // Le transfert nettoie son `.part` et pose le statut lui-même.
       flags.cancel = true;
@@ -266,8 +266,8 @@ export class DownloadEngine {
    * ne coure pas contre un worker qui écrit encore.
    */
   async waitNotActive(fileId: number, timeoutMs: number): Promise<void> {
-    const limite = this.deps.now() + timeoutMs;
-    while (this.isActive(fileId) && this.deps.now() < limite) {
+    const limit = this.deps.now() + timeoutMs;
+    while (this.isActive(fileId) && this.deps.now() < limit) {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }

@@ -98,8 +98,8 @@ export function neededBytesFor(db: DatabaseSync, items: readonly EnqueueItem[]):
   let needed = pendingBytes(db);
   for (const item of items) {
     const existing = findFile(db, item);
-    const compte = existing === null || existing.status === "canceled";
-    if (compte) needed += item.estimatedSize ?? item.expectedSize ?? 0;
+    const count = existing === null || existing.status === "canceled";
+    if (count) needed += item.estimatedSize ?? item.expectedSize ?? 0;
   }
   return needed;
 }

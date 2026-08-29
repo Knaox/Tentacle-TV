@@ -20,9 +20,9 @@ import { parseJson } from "./json";
 import { saveBytes } from "./meta";
 
 /** Le corps est-il un contrat v1 plausible ? (relecture stricte côté lecture) */
-function contratPlausible(brut: unknown): boolean {
-  if (typeof brut !== "object" || brut === null) return false;
-  const o = brut as Record<string, unknown>;
+function plausibleContract(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null) return false;
+  const o = raw as Record<string, unknown>;
   return o.version === 1 && typeof o.itemId === "string" && Array.isArray(o.segments);
 }
 
@@ -41,8 +41,8 @@ export async function fetchAndSave(
   const bytes = await fetchBytes(`${serverUrl}/api/playback/segments/${itemId}`, MAX_JSON_BYTES);
   if (bytes === null) return false;
 
-  const contrat = parseJson(bytes);
-  if (!contratPlausible(contrat)) return false;
+  const contract = parseJson(bytes);
+  if (!plausibleContract(contract)) return false;
 
   return saveBytes(root, `meta/${itemId}/segments.json`, Buffer.from(bytes));
 }

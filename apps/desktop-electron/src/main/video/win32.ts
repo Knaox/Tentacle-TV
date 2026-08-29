@@ -14,7 +14,7 @@ import koffi from "koffi";
 // Réexportées, et non redéfinies : elles n'ont rien de Windows et vivent
 // désormais dans `native.ts`, que macOS peut importer sans réclamer
 // `user32.dll`. Les appelants historiques gardent leur import d'origine.
-export { nativeHandle, sansFaillir, trace } from "./native";
+export { nativeHandle, neverThrow, trace } from "./native";
 
 // Enregistre le type auprès de koffi ; il est ensuite désigné par son NOM dans
 // les signatures ci-dessous, d'où l'absence de variable.
@@ -61,9 +61,9 @@ const SWP_ASYNCWINDOWPOS = 0x4000;
  * soit des dizaines d'appels par seconde. Même partage que l'app Tauri
  * (`mpv_window.rs:66`) : ne pas les retirer en croyant simplifier.
  */
-const SWP_CALAGE = SWP_NOACTIVATE | SWP_NOSENDCHANGING | SWP_ASYNCWINDOWPOS;
+const SWP_ALIGN = SWP_NOACTIVATE | SWP_NOSENDCHANGING | SWP_ASYNCWINDOWPOS;
 /** Recalcul du cadre, sans rien déplacer ni redimensionner. */
-const SWP_CADRE = SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
+const SWP_FRAME = SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
 
 const GWL_STYLE = -16;
 const GWL_EXSTYLE = -20;
@@ -82,12 +82,12 @@ const WS_EX_NOACTIVATE = 0x08000000n;
  * mot de style est petit : c'est donc toujours un Number qui arrive. Mélanger
  * les deux lève un `TypeError`, fatal dans le processus principal.
  */
-function bits(valeur: unknown): bigint {
-  return typeof valeur === "bigint" ? valeur : BigInt(valeur as number);
+function bits(value: unknown): bigint {
+  return typeof value === "bigint" ? value : BigInt(value as number);
 }
 
 /** La fenêtre « mpv » fille de `parent`, ou `0n` si elle n'existe pas encore. */
-export function trouverFenetreMpv(parent: bigint): bigint {
+export function findMpvWindow(parent: bigint): bigint {
   return bits(FindWindowExW(parent, 0, "mpv", null));
 }
 
@@ -100,10 +100,10 @@ export function trouverFenetreMpv(parent: bigint): bigint {
  * 3840x2160 physiques et la vidéo débordait du cadre. `GetClientRect` donne
  * directement la bonne unité, sans deviner l'échelle.
  */
-export function calerSous(hwnd: bigint, parent: bigint): void {
+export function alignBelow(hwnd: bigint, parent: bigint): void {
   const r = { left: 0, top: 0, right: 0, bottom: 0 };
   if (!GetClientRect(parent, r)) return;
-  SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, r.right - r.left, r.bottom - r.top, SWP_CALAGE);
+  SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, r.right - r.left, r.bottom - r.top, SWP_ALIGN);
 }
 
 /**
@@ -117,12 +117,12 @@ export function calerSous(hwnd: bigint, parent: bigint): void {
  *
  * Idempotente. Hérité de l'app Tauri (`mpv_window.rs:48`).
  */
-export function desarmer(hwnd: bigint): void {
+export function disarm(hwnd: bigint): void {
   const style = bits(GetWindowLongPtrW(hwnd, GWL_STYLE));
   SetWindowLongPtrW(hwnd, GWL_STYLE, style | WS_DISABLED);
   const exStyle = bits(GetWindowLongPtrW(hwnd, GWL_EXSTYLE));
-  const durci = exStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
-  if (durci !== exStyle) SetWindowLongPtrW(hwnd, GWL_EXSTYLE, durci);
+  const hardened = exStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE;
+  if (hardened !== exStyle) SetWindowLongPtrW(hwnd, GWL_EXSTYLE, hardened);
 }
 
 /**
@@ -132,15 +132,15 @@ export function desarmer(hwnd: bigint): void {
  * fabrication. `SWP_FRAMECHANGED` n'est pas optionnel : Windows met en cache la
  * zone non-cliente, et sans lui le cadre resterait dessiné.
  */
-export function retirerLeCadre(hwnd: bigint): bigint {
+export function stripFrame(hwnd: bigint): bigint {
   const style = bits(GetWindowLongPtrW(hwnd, GWL_STYLE));
   SetWindowLongPtrW(hwnd, GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME));
-  SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_CADRE);
+  SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAME);
   return style;
 }
 
-/** Rend à la fenêtre le style qu'elle avait avant `retirerLeCadre`. */
-export function rendreLeCadre(hwnd: bigint, style: bigint): void {
+/** Rend à la fenêtre le style qu'elle avait avant `stripFrame`. */
+export function restoreFrame(hwnd: bigint, style: bigint): void {
   SetWindowLongPtrW(hwnd, GWL_STYLE, style);
-  SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_CADRE);
+  SetWindowPos(hwnd, 0, 0, 0, 0, 0, SWP_FRAME);
 }

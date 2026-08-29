@@ -34,44 +34,44 @@ import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 import { Arch, build, Platform } from "electron-builder";
 
-const ICI = path.dirname(fileURLToPath(import.meta.url));
-const APP = path.resolve(ICI, "..");
-const RACINE = path.resolve(APP, "../..");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const APP_DIR = path.resolve(HERE, "..");
+const ROOT = path.resolve(APP_DIR, "../..");
 
 /** Nom affiché. L'exécutable, lui, garde la forme courte des binaires Unix. */
-const NOM = "Tentacle TV";
+const PRODUCT_NAME = "Tentacle TV";
 /**
  * Nom de l'exécutable — et, par ricochet, celui que le bureau associe à la
  * fenêtre. `StartupWMClass` doit lui correspondre, sinon la fenêtre ouverte
  * n'est pas reconnue comme étant celle du lanceur : deux icônes dans la barre
  * des tâches, et un « épingler » qui épingle la mauvaise.
  */
-const EXECUTABLE = "tentacle-tv";
-const IDENTIFIANT = "com.tentacle.media";
+const EXECUTABLE_NAME = "tentacle-tv";
+const IDENTIFIER = "com.tentacle.media";
 
-function argument(nom, defaut) {
-  const i = process.argv.indexOf(nom);
-  return i >= 0 && process.argv[i + 1] !== undefined ? process.argv[i + 1] : defaut;
+function argFlag(name, fallback) {
+  const i = process.argv.indexOf(name);
+  return i >= 0 && process.argv[i + 1] !== undefined ? process.argv[i + 1] : fallback;
 }
 
-function copier(source, cible, quoi) {
-  if (!existsSync(source)) throw new Error(`${quoi} introuvable : ${source}`);
-  mkdirSync(path.dirname(cible), { recursive: true });
-  cpSync(source, cible, { recursive: true });
+function copyInto(source, target, what) {
+  if (!existsSync(source)) throw new Error(`${what} introuvable : ${source}`);
+  mkdirSync(path.dirname(target), { recursive: true });
+  cpSync(source, target, { recursive: true });
 }
 
-const arch = argument("--arch", "x64");
-const sortie = path.resolve(APP, argument("--out", "release-linux"));
-const stage = path.join(sortie, "stage", "app");
-const libSource = path.resolve(argument("--lib", path.join(RACINE, "apps/desktop-electron/lib/mpv-linux")));
+const arch = argFlag("--arch", "x64");
+const output = path.resolve(APP_DIR, argFlag("--out", "release-linux"));
+const stage = path.join(output, "stage", "app");
+const libSource = path.resolve(argFlag("--lib", path.join(ROOT, "apps/desktop-electron/lib/mpv-linux")));
 
 /** Assemble ce que packager doit voir comme « l'application ». */
-function preparer() {
+function prepare() {
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
-  copier(path.join(APP, "dist"), path.join(stage, "dist"), "build de la coquille");
+  copyInto(path.join(APP_DIR, "dist"), path.join(stage, "dist"), "build de la coquille");
 
-  const source = JSON.parse(readFileSync(path.join(APP, "package.json"), "utf8"));
+  const source = JSON.parse(readFileSync(path.join(APP_DIR, "package.json"), "utf8"));
   writeFileSync(
     path.join(stage, "package.json"),
     `${JSON.stringify(
@@ -80,8 +80,8 @@ function preparer() {
       // l'app_id ne tenait que par la dérivation de productName — « Tentacle
       // TV » → tentacle-tv.desktop, une coïncidence qu'un renommage briserait
       // en silence (icône de barre des tâches perdue).
-      { name: EXECUTABLE, productName: NOM, version: source.version, main: source.main,
-        desktopName: `${EXECUTABLE}.desktop`,
+      { name: EXECUTABLE_NAME, productName: PRODUCT_NAME, version: source.version, main: source.main,
+        desktopName: `${EXECUTABLE_NAME}.desktop`,
         author: "Damien ROUGE", license: source.license ?? "UNLICENSED" },
       null, 2,
     )}\n`,
@@ -90,7 +90,7 @@ function preparer() {
   // `koffi` charge son binaire depuis un paquet SÉPARÉ : l'oublier donne une
   // erreur au premier `mpv_create`, c'est-à-dire au premier film.
   for (const module of ["koffi", `@koromix/koffi-linux-${arch}`, "zod"]) {
-    copier(path.join(RACINE, "node_modules", module), path.join(stage, "node_modules", module), module);
+    copyInto(path.join(ROOT, "node_modules", module), path.join(stage, "node_modules", module), module);
   }
 }
 
@@ -99,36 +99,36 @@ function preparer() {
  * taille. Donné un seul PNG, il n'en installe qu'une — et l'application paraît
  * floue partout où le bureau demande autre chose que du 512.
  */
-function preparerIcones() {
-  const source = path.resolve(RACINE, "apps/desktop-electron/icons");
-  const cible = path.join(sortie, "icones");
-  rmSync(cible, { recursive: true, force: true });
-  mkdirSync(cible, { recursive: true });
-  for (const [depuis, vers] of [
+function prepareIcons() {
+  const source = path.resolve(ROOT, "apps/desktop-electron/icons");
+  const target = path.join(output, "icones");
+  rmSync(target, { recursive: true, force: true });
+  mkdirSync(target, { recursive: true });
+  for (const [from, to] of [
     ["32x32.png", "32x32.png"],
     ["64x64.png", "64x64.png"],
     ["128x128.png", "128x128.png"],
     ["128x128@2x.png", "256x256.png"],
     ["icon.png", "512x512.png"],
   ]) {
-    copier(path.join(source, depuis), path.join(cible, vers), `icône ${vers}`);
+    copyInto(path.join(source, from), path.join(target, to), `icône ${to}`);
   }
-  return cible;
+  return target;
 }
 
 /** Ressources hors application : le build web, libmpv, l'icône. */
-function preparerRessources() {
-  const ressources = path.join(sortie, "resources-linux");
-  rmSync(ressources, { recursive: true, force: true });
-  copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
-  copier(path.resolve(RACINE, "apps/desktop-electron/icons/icon.png"), path.join(ressources, "icon.png"), "icone");
+function prepareResources() {
+  const resources = path.join(output, "resources-linux");
+  rmSync(resources, { recursive: true, force: true });
+  copyInto(path.resolve(ROOT, "apps/web/dist"), path.join(resources, "web"), "build web");
+  copyInto(path.resolve(ROOT, "apps/desktop-electron/icons/icon.png"), path.join(resources, "icon.png"), "icone");
 
   // La chaîne mpv est facultative au moment de l'empaquetage — un paquet sans
   // elle se rabat sur celle du système, en le disant (`mpvLib.ts`). Le taire
   // ferait livrer un lecteur sans HEVC sans que personne ne s'en aperçoive.
   const lib = path.join(libSource, "libmpv.so.2");
   if (existsSync(lib)) {
-    copier(libSource, path.join(ressources, "lib"), "chaîne mpv");
+    copyInto(libSource, path.join(resources, "lib"), "chaîne mpv");
   } else {
     console.warn(
       `⚠️  libmpv.so.2 absente de ${libSource} : le paquet se rabattra sur celle de\n` +
@@ -136,16 +136,16 @@ function preparerRessources() {
         "    → bash apps/desktop-electron/scripts/build-mpv-linux.sh",
     );
   }
-  return [path.join(ressources, "web"), path.join(ressources, "icon.png"),
-    ...(existsSync(lib) ? [path.join(ressources, "lib")] : [])];
+  return [path.join(resources, "web"), path.join(resources, "icon.png"),
+    ...(existsSync(lib) ? [path.join(resources, "lib")] : [])];
 }
 
-preparer();
-const extraResource = preparerRessources();
-const dossierIcones = preparerIcones();
+prepare();
+const extraResource = prepareResources();
+const iconsFolder = prepareIcons();
 
-const [dossierPaquet] = await packager({
-  dir: stage, out: sortie, name: EXECUTABLE, executableName: EXECUTABLE,
+const [bundleFolder] = await packager({
+  dir: stage, out: output, name: EXECUTABLE_NAME, executableName: EXECUTABLE_NAME,
   platform: "linux", arch, overwrite: true,
   // `prune` lancerait `npm prune` dans un workspace pnpm hoisté : le dossier de
   // préparation ne contient DÉJÀ que ce qu'il faut.
@@ -157,7 +157,7 @@ const [dossierPaquet] = await packager({
   extraResource,
   appCopyright: "Damien ROUGE",
 });
-console.log(`Dossier assemblé : ${dossierPaquet}`);
+console.log(`Dossier assemblé : ${bundleFolder}`);
 
 /**
  * La version d'Electron, lue dans le module INSTALLÉ.
@@ -167,25 +167,25 @@ console.log(`Dossier assemblé : ${dossierPaquet}`);
  * de figer ce que `pnpm` gère très bien, et garantit que le paquet est bâti sur
  * l'Electron avec lequel on vient de tester.
  */
-const versionElectron = JSON.parse(
-  readFileSync(path.join(RACINE, "node_modules/electron/package.json"), "utf8"),
+const electronVersion = JSON.parse(
+  readFileSync(path.join(ROOT, "node_modules/electron/package.json"), "utf8"),
 ).version;
 
-const formats = argument("--targets", "deb,rpm,AppImage,pacman").split(",").filter(Boolean);
-const resultats = await build({
+const formats = argFlag("--targets", "deb,rpm,AppImage,pacman").split(",").filter(Boolean);
+const results = await build({
   targets: Platform.LINUX.createTarget(formats, arch === "arm64" ? Arch.arm64 : Arch.x64),
-  prepackaged: dossierPaquet,
+  prepackaged: bundleFolder,
   config: {
-    electronVersion: versionElectron,
-    appId: IDENTIFIANT,
+    electronVersion,
+    appId: IDENTIFIER,
     // ⚠️ La forme COURTE, et pas le nom affiché. `productName` sert ici de nom
     // de PAQUET et de dossier d'installation : « Tentacle TV » y mettrait une
     // espace, ce que rpm refuse dans un nom de paquet et que personne ne veut
     // dans un chemin. Le nom affiché, lui, est posé sur l'entrée de bureau et
     // dans le `package.json` de l'application — l'utilisateur ne voit que celui-là.
-    productName: EXECUTABLE,
+    productName: EXECUTABLE_NAME,
     copyright: "Damien ROUGE",
-    directories: { output: path.join(sortie, "paquets") },
+    directories: { output: path.join(output, "paquets") },
     // ⚠️ Sans cette ligne, le fichier s'appelle « @tentacle-tv/desktop-electron_… » :
     // electron-builder nomme d'après le `name` du package.json, qui est ici un
     // nom d'espace pnpm. Le manifeste d'auto-update et le script d'installation
@@ -193,12 +193,12 @@ const resultats = await build({
     // tel quel sur la page de release.
     artifactName: "tentacle-tv_${version}_${arch}.${ext}",
     linux: {
-      executableName: EXECUTABLE,
+      executableName: EXECUTABLE_NAME,
       // Fait poser à Electron le même `app_id` Wayland / `WM_CLASS` X11 que le
       // nom du fichier `.desktop`. Sans elle, le bureau ne rattache pas la
       // fenêtre au lanceur — et electron-builder le dit lui-même à chaque build.
       syncDesktopName: true,
-      icon: dossierIcones,
+      icon: iconsFolder,
       category: "AudioVideo;Video;Player;",
       // `description` devient le `Comment=` du fichier `.desktop` : une ligne,
       // pas un paragraphe — c'est l'infobulle du menu des applications.
@@ -207,12 +207,12 @@ const resultats = await build({
       maintainer: "Damien ROUGE <damienrouge@hotmail.com>",
       desktop: {
         entry: {
-          Name: NOM,
+          Name: PRODUCT_NAME,
           Keywords: "jellyfin;media;video;film;serie;streaming;",
           // ⚠️ Sans cette ligne, la fenêtre ouverte n'est pas rattachée au
           // lanceur : deux entrées dans la barre des tâches, et « épingler »
           // épingle celle qui ne relance rien.
-          StartupWMClass: EXECUTABLE,
+          StartupWMClass: EXECUTABLE_NAME,
         },
       },
     },
@@ -230,4 +230,4 @@ const resultats = await build({
     publish: null,
   },
 });
-console.log(`Paquets produits :\n  ${resultats.join("\n  ")}`);
+console.log(`Paquets produits :\n  ${results.join("\n  ")}`);

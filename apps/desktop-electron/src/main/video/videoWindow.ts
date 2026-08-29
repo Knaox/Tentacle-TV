@@ -26,21 +26,21 @@
 
 import type { BrowserWindow } from "electron";
 import {
-  calerSous,
-  desarmer,
+  alignBelow,
+  disarm,
   nativeHandle,
-  sansFaillir,
+  neverThrow,
   trace,
-  trouverFenetreMpv,
+  findMpvWindow,
 } from "./win32";
 
 export { nativeHandle } from "./win32";
 
 /** Cadence du sondage, et nombre maximal de tentatives (10 s en tout). */
-const SONDAGE_MS = 100;
-const SONDAGES_MAX = 100;
-/** Un repositionnement par image suffit — voir `planifierCalage`. */
-const CALAGE_MS = 16;
+const POLL_MS = 100;
+const POLL_MAX = 100;
+/** Un repositionnement par image suffit — voir `scheduleAlign`. */
+const ALIGN_MS = 16;
 
 /**
  * Suit la fenêtre vidéo de mpv et la maintient calée sous l'interface.
@@ -57,12 +57,12 @@ const CALAGE_MS = 16;
 export class VideoWindow {
   private readonly parent: bigint;
   private mpvHwnd = 0n;
-  private recherche: ReturnType<typeof setInterval> | null = null;
-  private attache = false;
-  private calage: ReturnType<typeof setTimeout> | null = null;
+  private search: ReturnType<typeof setInterval> | null = null;
+  private attached = false;
+  private alignTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
-  private readonly suivre = (): void => this.planifierCalage();
+  private readonly follow = (): void => this.scheduleAlign();
 
   constructor(private readonly host: BrowserWindow) {
     this.parent = nativeHandle(host);
@@ -78,29 +78,29 @@ export class VideoWindow {
    * Côté Tauri, la commande fait elle-même la recherche (`mpv_window.rs:35`).
    */
   attach(): void {
-    if (this.attache) return;
-    this.attache = true;
-    this.host.on("resize", this.suivre);
-    this.host.on("enter-full-screen", this.suivre);
-    this.host.on("leave-full-screen", this.suivre);
+    if (this.attached) return;
+    this.attached = true;
+    this.host.on("resize", this.follow);
+    this.host.on("enter-full-screen", this.follow);
+    this.host.on("leave-full-screen", this.follow);
 
-    let essais = 0;
-    this.recherche = setInterval(() => {
-      sansFaillir("recherche de la fenetre mpv", () => {
-        const trouvee = trouverFenetreMpv(this.parent);
-        if (trouvee) {
+    let tries = 0;
+    this.search = setInterval(() => {
+      neverThrow("recherche de la fenetre mpv", () => {
+        const found = findMpvWindow(this.parent);
+        if (found) {
           this.stopSearch();
-          this.mpvHwnd = trouvee;
+          this.mpvHwnd = found;
           this.align();
           trace(`fenetre mpv trouvee, desarmement ${this.harden() ? "ok" : "REFUSE"}`);
-        } else if (++essais > SONDAGES_MAX) {
+        } else if (++tries > POLL_MAX) {
           this.stopSearch();
           // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme
           // le plus coûteux à diagnostiquer.
           trace("fenetre mpv introuvable apres 10 s, desarmement ignore");
         }
       });
-    }, SONDAGE_MS);
+    }, POLL_MS);
   }
 
   /**
@@ -111,25 +111,25 @@ export class VideoWindow {
   align(): void {
     if (!this.mpvHwnd) return;
     // Le calage part aussi d'un minuteur : la garde vaut pour les deux chemins.
-    sansFaillir("calage de la fenetre video", () => calerSous(this.mpvHwnd, this.parent));
+    neverThrow("calage de la fenetre video", () => alignBelow(this.mpvHwnd, this.parent));
   }
 
   /** Désarme la fenêtre vidéo. `false` si elle n'est pas encore connue. */
   harden(): boolean {
     if (!this.mpvHwnd) return false;
-    desarmer(this.mpvHwnd);
+    disarm(this.mpvHwnd);
     return true;
   }
 
   detach(): void {
     this.stopSearch();
-    if (this.calage !== null) clearTimeout(this.calage);
-    this.calage = null;
-    if (this.attache) {
-      this.host.off("resize", this.suivre);
-      this.host.off("enter-full-screen", this.suivre);
-      this.host.off("leave-full-screen", this.suivre);
-      this.attache = false;
+    if (this.alignTimer !== null) clearTimeout(this.alignTimer);
+    this.alignTimer = null;
+    if (this.attached) {
+      this.host.off("resize", this.follow);
+      this.host.off("enter-full-screen", this.follow);
+      this.host.off("leave-full-screen", this.follow);
+      this.attached = false;
     }
     this.mpvHwnd = 0n;
   }
@@ -141,16 +141,16 @@ export class VideoWindow {
    * seconde. Front descendant : le premier évènement arme le minuteur, les
    * suivants sont absorbés, et le calage a lieu juste après le dernier.
    */
-  private planifierCalage(): void {
-    if (this.calage !== null) return;
-    this.calage = setTimeout(() => {
-      this.calage = null;
+  private scheduleAlign(): void {
+    if (this.alignTimer !== null) return;
+    this.alignTimer = setTimeout(() => {
+      this.alignTimer = null;
       this.align();
-    }, CALAGE_MS);
+    }, ALIGN_MS);
   }
 
   private stopSearch(): void {
-    if (this.recherche !== null) clearInterval(this.recherche);
-    this.recherche = null;
+    if (this.search !== null) clearInterval(this.search);
+    this.search = null;
   }
 }

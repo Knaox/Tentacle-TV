@@ -39,7 +39,7 @@ export const electronTransferNet: TransferNet = {
     return {
       status: response.status,
       header: (name) => response.headers.get(name),
-      chunks: blocs(response),
+      chunks: chunks(response),
     };
   },
 
@@ -60,17 +60,17 @@ export const electronTransferNet: TransferNet = {
  * donne une suite vide, que la boucle traite comme un fichier de zéro octet —
  * donc un échec d'intégrité, ce qui est le verdict juste.
  */
-async function* blocs(response: Response): AsyncIterable<Uint8Array> {
+async function* chunks(response: Response): AsyncIterable<Uint8Array> {
   const body = response.body;
   if (body === null) return;
-  const lecteur = body.getReader();
+  const reader = body.getReader();
   try {
     for (;;) {
-      const { done, value } = await lecteur.read();
+      const { done, value } = await reader.read();
       if (done) return;
       if (value !== undefined) yield value;
     }
   } finally {
-    lecteur.releaseLock();
+    reader.releaseLock();
   }
 }

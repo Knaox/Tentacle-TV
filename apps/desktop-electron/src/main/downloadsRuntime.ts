@@ -16,15 +16,15 @@ import { electronTransferNet } from "./downloads/transferNet";
 import type { Creds } from "./downloads/worker";
 import { localDb } from "./localDb";
 import { sendToPage } from "./pageEvents";
-import { creerVeilleSysteme } from "./powerSave";
-import { combiner, creerRenfortLogind, lanceurSysteme } from "./linux/veilleLogind";
+import { createSystemWakeLock } from "./powerSave";
+import { combine, createLogindBackup, systemLauncher } from "./linux/logindInhibitor";
 
 /** Tour de purge, comme côté Rust. */
 const PURGE_TICK_MS = 60_000;
 
 let engine: DownloadEngine | null = null;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
-let reveilBranche = false;
+let wakeConnected = false;
 
 /**
  * Anti-suspension du système, posée tant qu'un transfert tourne.
@@ -35,10 +35,10 @@ let reveilBranche = false;
  * endort le PC au bout de son délai d'inactivité et coupe le flux. L'écran, lui,
  * reste libre de s'éteindre.
  */
-const veilleSysteme =
+const systemWakeLock =
   process.platform === "linux"
-    ? combiner(creerVeilleSysteme(powerSaveBlocker), creerRenfortLogind(lanceurSysteme))
-    : creerVeilleSysteme(powerSaveBlocker);
+    ? combine(createSystemWakeLock(powerSaveBlocker), createLogindBackup(systemLauncher))
+    : createSystemWakeLock(powerSaveBlocker);
 
 /** Racine de téléchargement effective. */
 export function downloadsRoot(): string {
@@ -56,13 +56,13 @@ export function downloadsEngine(): DownloadEngine {
     emit: sendToPage,
     now: () => Date.now(),
     onBusy: (busy) => {
-      if (busy) veilleSysteme.empecher();
-      else veilleSysteme.rendre();
+      if (busy) systemWakeLock.prevent();
+      else systemWakeLock.release();
     },
     onStarted: (creds) => {
-      demarrerPurgePeriodique();
-      brancherReveil();
-      lancerReparation(creds);
+      startPeriodicPurge();
+      connectWake();
+      runHeal(creds);
     },
   });
   return engine;
@@ -75,7 +75,7 @@ export function downloadsEngine(): DownloadEngine {
  * n'ouvre pas la base de données juste pour répondre à une fermeture de
  * fenêtre.
  */
-export function transfertsEnCours(): number {
+export function transfersInFlight(): number {
   try {
     return engine?.pending() ?? 0;
   } catch {
@@ -93,9 +93,9 @@ export function transfertsEnCours(): number {
  * seul `start` la rattrapait : le téléchargement restait à l'arrêt jusqu'au
  * prochain lancement de l'application. `Once` de fait, comme la purge.
  */
-function brancherReveil(): void {
-  if (reveilBranche) return;
-  reveilBranche = true;
+function connectWake(): void {
+  if (wakeConnected) return;
+  wakeConnected = true;
   powerMonitor.on("resume", () => {
     engine?.resumeSystemPauses();
   });
@@ -109,9 +109,9 @@ function brancherReveil(): void {
  * `Once` de fait — un moteur redémarré (reconnexion) ne pose pas un second
  * minuteur.
  */
-function demarrerPurgePeriodique(): void {
+function startPeriodicPurge(): void {
   if (purgeTimer !== null) return;
-  const tour = (): void => {
+  const tick = (): void => {
     try {
       if (purgeDueClaims(localDb(), downloadsRoot(), Date.now(), null) > 0) {
         sendToPage("downloads://changed", undefined);
@@ -120,17 +120,17 @@ function demarrerPurgePeriodique(): void {
       // Racine sur un disque débranché : on retentera dans une minute.
     }
   };
-  tour();
-  purgeTimer = setInterval(tour, PURGE_TICK_MS);
+  tick();
+  purgeTimer = setInterval(tick, PURGE_TICK_MS);
   // Le minuteur ne doit pas retenir le processus à la fermeture.
   purgeTimer.unref?.();
 }
 
 /** Réparation en tâche de fond, jamais attendue. */
-function lancerReparation(creds: Creds): void {
+function runHeal(creds: Creds): void {
   void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsRoot(), Date.now())
-    .then((repares) => {
-      if (repares > 0) sendToPage("downloads://changed", undefined);
+    .then((healed) => {
+      if (healed > 0) sendToPage("downloads://changed", undefined);
     })
     .catch(() => {
       // Best-effort : elle repassera au prochain démarrage.
@@ -141,7 +141,7 @@ function lancerReparation(creds: Creds): void {
 export function stopDownloadsRuntime(): void {
   if (purgeTimer !== null) clearInterval(purgeTimer);
   purgeTimer = null;
-  // Même devoir que l'anti-veille de l'écran (`rendreVeilleEcran`) : un blocage
+  // Même devoir que l'anti-veille de l'écran (`releaseDisplayWakeLock`) : un blocage
   // laissé actif tient jusqu'à la fin du processus.
-  veilleSysteme.rendre();
+  systemWakeLock.release();
 }

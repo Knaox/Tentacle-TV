@@ -37,11 +37,11 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 /** Icône empaquetée si elle existe, icône partagée de l'app Tauri sinon. */
-function resoudre(fichier: string): string | null {
-  const empaquetee = path.join(process.resourcesPath, fichier);
-  if (app.isPackaged && existsSync(empaquetee)) return empaquetee;
-  const partagee = path.resolve(__dirname, `../../icons/${fichier}`);
-  return existsSync(partagee) ? partagee : null;
+function resolve(file: string): string | null {
+  const packaged = path.join(process.resourcesPath, file);
+  if (app.isPackaged && existsSync(packaged)) return packaged;
+  const shared = path.resolve(__dirname, `../../icons/${file}`);
+  return existsSync(shared) ? shared : null;
 }
 
 /**
@@ -57,8 +57,8 @@ function resoudre(fichier: string): string | null {
  */
 export function windowIconPath(): string | null {
   if (process.platform === "darwin") return null;
-  if (process.platform === "linux") return resoudre("icon.png");
-  return resoudre("icon.ico");
+  if (process.platform === "linux") return resolve("icon.png");
+  return resolve("icon.ico");
 }
 
 /**
@@ -68,5 +68,5 @@ export function windowIconPath(): string | null {
  * silencieux. 512 px suffisent, macOS met à l'échelle.
  */
 export function appImagePath(): string | null {
-  return resoudre("icon.png");
+  return resolve("icon.png");
 }

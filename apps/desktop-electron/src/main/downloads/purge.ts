@@ -59,7 +59,7 @@ export function purgeDueClaims(
   nowMs: number,
   exemptItem: string | null,
 ): number {
-  const dus = db
+  const dueClaims = db
     .prepare(
       `SELECT c.jellyfin_user_id, c.file_id, f.item_id
        FROM claims c JOIN files f ON f.id = c.file_id
@@ -75,13 +75,13 @@ export function purgeDueClaims(
     }));
 
   let purges = 0;
-  for (const du of dus) {
-    if (du.itemId !== exemptItem && playbackActive(db, du.userId, du.itemId, nowMs)) {
+  for (const dueClaim of dueClaims) {
+    if (dueClaim.itemId !== exemptItem && playbackActive(db, dueClaim.userId, dueClaim.itemId, nowMs)) {
       // Re-visionnage en cours : sauté, retenté au prochain tour.
       continue;
     }
     try {
-      deleteClaim(db, root, du.userId, du.fileId);
+      deleteClaim(db, root, dueClaim.userId, dueClaim.fileId);
       // On compte le CLAIM retiré, pas le fichier effacé : avec deux comptes,
       // le premier passage ne touche pas le disque et compte quand même.
       purges += 1;

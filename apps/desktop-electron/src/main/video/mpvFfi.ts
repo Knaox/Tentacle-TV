@@ -32,8 +32,8 @@
  */
 
 import koffi from "koffi";
-import { chargerPremiereDisponible } from "./mpvChargement";
-import { candidatsLibmpv } from "./mpvLib";
+import { loadFirstAvailable } from "./mpvLoad";
+import { libmpvCandidates } from "./mpvLib";
 
 /** Formats de propriété mpv (`client.h`). */
 export const FORMAT = {
@@ -125,7 +125,7 @@ export const MpvEventLogMessage = koffi.struct("mpv_event_log_message", {
 });
 
 /** L'ensemble des fonctions de libmpv dont l'application se sert. */
-export type MpvApi = ReturnType<typeof lier>;
+export type MpvApi = ReturnType<typeof bind>;
 
 /**
  * Chargement PARESSEUX, et c'est délibéré.
@@ -144,24 +144,24 @@ export function mpvApi(): MpvApi {
   // Sur Linux, plusieurs candidates (vendorée → distribution → nom nu) ; une
   // seule ailleurs. Chaque écartée est DITE : une chaîne vendorée inchargeable
   // a déjà coûté un jour de silence (libbz2, SONAME Debian-only).
-  const resultat = chargerPremiereDisponible(candidatsLibmpv(), (chemin) =>
-    lier(koffi.load(chemin)),
+  const result = loadFirstAvailable(libmpvCandidates(), (path) =>
+    bind(koffi.load(path)),
   );
-  for (const { chemin, cause } of resultat.ecartes) {
+  for (const { path, cause } of result.skipped) {
     console.warn(
-      `[mpv] candidate écartée : ${chemin} — ${cause}\n` +
+      `[mpv] candidate écartée : ${path} — ${cause}\n` +
         "      repli sur la suivante ; hors chaîne livrée, HEVC et HDR ne sont plus garantis.",
     );
   }
   // Le seul témoin de la chaîne réellement jouée, et la première chose à lire
   // quand le rendu ou le HDR surprend.
-  console.info(`[mpv] bibliothèque : ${resultat.chemin}`);
-  cache = resultat.lib;
+  console.info(`[mpv] bibliothèque : ${result.path}`);
+  cache = result.lib;
   return cache;
 }
 
 /** La bibliothèque est-elle chargeable ? Ne lève jamais. */
-export function libmpvDisponible(): boolean {
+export function libmpvAvailable(): boolean {
   try {
     mpvApi();
     return true;
@@ -170,7 +170,7 @@ export function libmpvDisponible(): boolean {
   }
 }
 
-function lier(lib: ReturnType<typeof koffi.load>) {
+function bind(lib: ReturnType<typeof koffi.load>) {
   return {
   create: lib.func("void* mpv_create()"),
   initialize: lib.func("int mpv_initialize(void* ctx)"),
@@ -232,7 +232,7 @@ function lier(lib: ReturnType<typeof koffi.load>) {
    * n'y rend la main qu'une fois la sortie vidéo démontée, or ce démontage exige
    * le thread principal — celui-là même qui appelle. Chacun attend l'autre.
    * Ici le cœur se termine seul, sur ses propres threads, une fois son dernier
-   * client parti. Voir `mpvArret.ts`.
+   * client parti. Voir `mpvShutdown.ts`.
    */
   destroyClient: lib.func("void mpv_destroy(void* ctx)"),
   /** Abonne le client aux messages de journal de mpv, par niveau. */

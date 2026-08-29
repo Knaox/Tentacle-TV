@@ -2,7 +2,7 @@
  * Le choix de session graphique (Auto / Wayland / X11), exposé aux Préférences.
  *
  * Le fichier `session-graphique.json` et sa lecture au démarrage existaient
- * (`linux/sessionGraphique.ts`) mais rien ne les branchait à l'interface :
+ * (`linux/graphicsSession.ts`) mais rien ne les branchait à l'interface :
  * le réglage ne se changeait que par variable d'environnement ou à la main.
  * Ces deux commandes ferment la boucle — la décision reste figée au
  * démarrage, l'écriture ne prend effet qu'à la relance (`relaunch()`, que la
@@ -13,7 +13,7 @@
  */
 
 import { z } from "zod";
-import { enregistrerChoixSession, sessionCourante } from "../linux/session";
+import { saveSessionChoice, currentSession } from "../linux/session";
 import { CommandRegistry } from "./registry";
 
 const NO_ARGS = z.object({}).passthrough();
@@ -25,18 +25,18 @@ export function registerLinuxSessionCommands(registry: CommandRegistry): void {
     .add("linux_session_get", {
       schema: NO_ARGS,
       run: () => {
-        const decidee = sessionCourante();
+        const decided = currentSession();
         return {
-          choix: decidee?.choix ?? "auto",
-          montage: decidee?.montage ?? null,
-          bureau: decidee?.session ?? null,
+          choix: decided?.choice ?? "auto",
+          montage: decided?.montage ?? null,
+          bureau: decided?.session ?? null,
         };
       },
     })
     .add("linux_session_set", {
       schema: SET,
-      run: ({ choix }) => {
-        enregistrerChoixSession(choix);
+      run: ({ choix: choice }) => {
+        saveSessionChoice(choice);
       },
     });
 }

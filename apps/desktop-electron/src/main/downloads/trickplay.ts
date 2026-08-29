@@ -38,10 +38,10 @@ interface LocalTrickplay {
 }
 
 /** Largeur visée : l'aperçu fait environ 320 px de large dans l'interface. */
-const LARGEUR_CIBLE = 320;
+const TARGET_WIDTH = 320;
 
 /** Garde-fou : au-delà, le manifeste ment ou l'item est aberrant. */
-const PLANCHES_MAX = 10_000;
+const MAX_SHEETS = 10_000;
 
 /**
  * Marqueur « le serveur n'a pas de trickplay pour cet item ».
@@ -55,22 +55,22 @@ const PLANCHES_MAX = 10_000;
  * monter `PRAGMA user_version` la rendrait illisible pour elle. Ce fichier-ci
  * lui est simplement invisible : elle ne lit que des noms précis.
  */
-const MARQUEUR = "trickplay.none";
+const MARKER = "trickplay.none";
 
 /** Au-delà, on redemande au serveur. */
-export const RECONTROLE_APRES_MS = 30 * 24 * 60 * 60 * 1000;
+export const RECHECK_AFTER_MS = 30 * 24 * 60 * 60 * 1000;
 
 function infoFromValue(value: unknown): TrickplayInfo | null {
-  const positif = (key: string): number | null => {
+  const positive = (key: string): number | null => {
     const n = asInteger(field(value, key));
     return n !== null && n > 0 ? n : null;
   };
   const width = asInteger(field(value, "Width"));
   const height = asInteger(field(value, "Height"));
-  const tileWidth = positif("TileWidth");
-  const tileHeight = positif("TileHeight");
-  const thumbnailCount = positif("ThumbnailCount");
-  const interval = positif("Interval");
+  const tileWidth = positive("TileWidth");
+  const tileHeight = positive("TileHeight");
+  const thumbnailCount = positive("ThumbnailCount");
+  const interval = positive("Interval");
   if (
     width === null ||
     height === null ||
@@ -96,35 +96,35 @@ export function pickWidth(
   manifest: unknown,
   mediaSourceId: string,
 ): { mediaSourceId: string; width: number; info: TrickplayInfo } | null {
-  const parSource = asRecord(manifest);
-  if (parSource === null) return null;
+  const bySource = asRecord(manifest);
+  if (bySource === null) return null;
 
   // La source demandée d'abord ; à défaut la première — un manifeste ne porte
   // qu'une source dans l'immense majorité des cas.
-  const cle = mediaSourceId in parSource ? mediaSourceId : Object.keys(parSource)[0];
-  if (cle === undefined) return null;
-  const largeurs = asRecord(parSource[cle]);
-  if (largeurs === null) return null;
+  const key = mediaSourceId in bySource ? mediaSourceId : Object.keys(bySource)[0];
+  if (key === undefined) return null;
+  const widths = asRecord(bySource[key]);
+  if (widths === null) return null;
 
-  let meilleur: { width: number; info: TrickplayInfo } | null = null;
-  for (const [brut, valeur] of Object.entries(largeurs)) {
-    const width = Number.parseInt(brut, 10);
+  let best: { width: number; info: TrickplayInfo } | null = null;
+  for (const [raw, value] of Object.entries(widths)) {
+    const width = Number.parseInt(raw, 10);
     if (!Number.isFinite(width)) continue;
-    const info = infoFromValue(valeur);
+    const info = infoFromValue(value);
     if (info === null) continue;
-    const plusProche =
-      meilleur === null ||
-      Math.abs(width - LARGEUR_CIBLE) < Math.abs(meilleur.width - LARGEUR_CIBLE);
-    if (plusProche) meilleur = { width, info };
+    const closest =
+      best === null ||
+      Math.abs(width - TARGET_WIDTH) < Math.abs(best.width - TARGET_WIDTH);
+    if (closest) best = { width, info };
   }
-  return meilleur === null ? null : { mediaSourceId: cle, ...meilleur };
+  return best === null ? null : { mediaSourceId: key, ...best };
 }
 
 /** Nombre de planches, arrondi AU SUPÉRIEUR. */
 export function tileCount(info: TrickplayInfo): number {
-  const parPlanche = info.TileWidth * info.TileHeight;
-  if (parPlanche <= 0) return 0;
-  return Math.ceil(info.ThumbnailCount / parPlanche);
+  const perSheet = info.TileWidth * info.TileHeight;
+  if (perSheet <= 0) return 0;
+  return Math.ceil(info.ThumbnailCount / perSheet);
 }
 
 /**
@@ -153,54 +153,54 @@ export async function download(
     return 0;
   }
 
-  const choix = pickWidth(manifest, mediaSourceId);
-  if (choix === null) {
+  const choice = pickWidth(manifest, mediaSourceId);
+  if (choice === null) {
     markNone(root, itemId, nowMs);
     return 0;
   }
-  const planches = tileCount(choix.info);
-  if (planches <= 0 || planches > PLANCHES_MAX) {
+  const sheets = tileCount(choice.info);
+  if (sheets <= 0 || sheets > MAX_SHEETS) {
     markNone(root, itemId, nowMs);
     return 0;
   }
 
-  const dossier = `meta/${itemId}/trickplay/${choix.width}`;
-  let obtenues = 0;
-  for (let index = 0; index < planches; index += 1) {
+  const folder = `meta/${itemId}/trickplay/${choice.width}`;
+  let fetched = 0;
+  for (let index = 0; index < sheets; index += 1) {
     let target: string;
     try {
-      target = safeJoin(root, `${dossier}/${index}.jpg`);
+      target = safeJoin(root, `${folder}/${index}.jpg`);
     } catch {
       continue;
     }
     if (existsSync(target)) {
-      obtenues += 1;
+      fetched += 1;
       continue;
     }
 
     const url =
-      `${serverUrl}/api/jellyfin/items/${itemId}/trickplay/${choix.width}/${index}.jpg` +
-      `?mediaSourceId=${choix.mediaSourceId}`;
+      `${serverUrl}/api/jellyfin/items/${itemId}/trickplay/${choice.width}/${index}.jpg` +
+      `?mediaSourceId=${choice.mediaSourceId}`;
     const bytes = await fetchBytes(url, MAX_TILE_BYTES);
     if (bytes === null || bytes.byteLength === 0) continue;
 
     try {
       mkdirSync(path.dirname(target), { recursive: true });
       writeFileSync(target, bytes);
-      obtenues += 1;
+      fetched += 1;
     } catch {
       // Une planche manquante dégrade l'aperçu, elle ne casse rien.
     }
   }
 
-  if (obtenues > 0) {
+  if (fetched > 0) {
     // Un marqueur d'un passage précédent n'a plus lieu d'être : la
     // bibliothèque s'est mise à générer des planches depuis.
-    oublierMarqueur(root, itemId);
+    forgetMarker(root, itemId);
     const resume: LocalTrickplay = {
-      mediaSourceId: choix.mediaSourceId,
-      width: choix.width,
-      info: choix.info,
+      mediaSourceId: choice.mediaSourceId,
+      width: choice.width,
+      info: choice.info,
     };
     try {
       writeFileSync(safeJoin(root, `meta/${itemId}/trickplay.json`), JSON.stringify(resume));
@@ -208,7 +208,7 @@ export async function download(
       // Sans résumé, le lecteur retombe sur l'aperçu serveur : pas bloquant.
     }
   }
-  return obtenues;
+  return fetched;
 }
 
 /** Le manifeste trickplay local est-il déjà là ? */
@@ -216,9 +216,9 @@ export function exists(root: string, itemId: string): boolean {
   return mediaFileExists(root, `meta/${itemId}/trickplay.json`);
 }
 
-function marqueurPath(root: string, itemId: string): string | null {
+function markerPath(root: string, itemId: string): string | null {
   try {
-    return safeJoin(root, `meta/${itemId}/${MARQUEUR}`);
+    return safeJoin(root, `meta/${itemId}/${MARKER}`);
   } catch {
     return null;
   }
@@ -232,11 +232,11 @@ function marqueurPath(root: string, itemId: string): string | null {
  * pour un mois.
  */
 export function markNone(root: string, itemId: string, nowMs: number): void {
-  const cible = marqueurPath(root, itemId);
-  if (cible === null) return;
+  const target = markerPath(root, itemId);
+  if (target === null) return;
   try {
-    mkdirSync(path.dirname(cible), { recursive: true });
-    writeFileSync(cible, String(nowMs));
+    mkdirSync(path.dirname(target), { recursive: true });
+    writeFileSync(target, String(nowMs));
   } catch {
     // Sans marqueur, on redemandera : c'est le comportement d'avant, pas une panne.
   }
@@ -244,21 +244,21 @@ export function markNone(root: string, itemId: string, nowMs: number): void {
 
 /** Item constaté sans trickplay, et depuis moins d'un mois ? */
 export function noneRecently(root: string, itemId: string, nowMs: number): boolean {
-  const cible = marqueurPath(root, itemId);
-  if (cible === null) return false;
+  const target = markerPath(root, itemId);
+  if (target === null) return false;
   try {
-    const pose = Number.parseInt(readFileSync(cible, "utf8"), 10);
-    return Number.isFinite(pose) && nowMs - pose < RECONTROLE_APRES_MS;
+    const writtenAt = Number.parseInt(readFileSync(target, "utf8"), 10);
+    return Number.isFinite(writtenAt) && nowMs - writtenAt < RECHECK_AFTER_MS;
   } catch {
     return false;
   }
 }
 
-function oublierMarqueur(root: string, itemId: string): void {
-  const cible = marqueurPath(root, itemId);
-  if (cible === null) return;
+function forgetMarker(root: string, itemId: string): void {
+  const target = markerPath(root, itemId);
+  if (target === null) return;
   try {
-    rmSync(cible, { force: true });
+    rmSync(target, { force: true });
   } catch {
     // Un marqueur qui traîne à côté d'un trickplay.json présent est inerte :
     // `exists()` est consulté en premier.

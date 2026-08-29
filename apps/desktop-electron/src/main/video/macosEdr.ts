@@ -31,18 +31,18 @@ import { app } from "electron";
 import { trace } from "./native";
 import { cls, msg } from "./objc";
 
-export interface EtatEdr {
+export interface EdrState {
   /** Facteur accordé en ce moment. 1.0 = aucune plage étendue. */
   courant: number;
   /** Ce que l'écran saurait donner, contenu mis à part. */
   potentiel: number;
   /** La plage étendue est-elle effectivement accordée ? */
-  obtenue: boolean;
+  granted: boolean;
   /** L'écran en est-il seulement capable ? */
   capable: boolean;
 }
 
-const INDISPONIBLE: EtatEdr = { courant: 0, potentiel: 0, obtenue: false, capable: false };
+const UNAVAILABLE: EdrState = { courant: 0, potentiel: 0, granted: false, capable: false };
 
 /**
  * L'écran à interroger.
@@ -51,9 +51,9 @@ const INDISPONIBLE: EtatEdr = { courant: 0, potentiel: 0, obtenue: false, capabl
  * un XDR et un écran SDR ne rapportent pas la même chose, et c'est celui qui
  * affiche la vidéo qui compte. `mainScreen` sinon.
  */
-function ecran(fenetreVideo: unknown): unknown {
-  if (fenetreVideo) {
-    const e = msg.get(fenetreVideo, "screen");
+function display(videoWindow: unknown): unknown {
+  if (videoWindow) {
+    const e = msg.get(videoWindow, "screen");
     if (e) return e;
   }
   const nsScreen = cls("NSScreen");
@@ -62,21 +62,21 @@ function ecran(fenetreVideo: unknown): unknown {
 }
 
 /** État de la plage étendue, vu depuis ce processus. */
-export function lireEdr(fenetreVideo: unknown): EtatEdr {
-  const e = ecran(fenetreVideo);
-  if (!e) return INDISPONIBLE;
+export function readEdr(videoWindow: unknown): EdrState {
+  const e = display(videoWindow);
+  if (!e) return UNAVAILABLE;
 
-  const courant = msg.double(e, "maximumExtendedDynamicRangeColorComponentValue");
-  const potentiel = msg.double(e, "maximumPotentialExtendedDynamicRangeColorComponentValue");
+  const current = msg.double(e, "maximumExtendedDynamicRangeColorComponentValue");
+  const potential = msg.double(e, "maximumPotentialExtendedDynamicRangeColorComponentValue");
 
   // Marge volontaire plutôt qu'une comparaison stricte à 1.0 : la valeur est un
   // flottant calculé par le compositeur, et un `> 1` nu ferait passer pour un
   // succès une valeur de 1.0000001 sans aucune signification visuelle.
-  return { courant, potentiel, obtenue: courant > 1.01, capable: potentiel > 1.01 };
+  return { courant: current, potentiel: potential, granted: current > 1.01, capable: potential > 1.01 };
 }
 
 /** Dernier headroom tracé, pour n'écrire que les CHANGEMENTS. */
-let dernierVu = -1;
+let lastSeen = -1;
 
 /**
  * Trace le headroom quand il change, avec ce qui vient de se passer.
@@ -91,20 +91,20 @@ let dernierVu = -1;
  * Appelée depuis la veille de `macosSurface.ts`, donc dix fois par seconde :
  * elle sort AVANT le moindre appel ObjC dans un paquet livré.
  */
-export function guetterEdr(fenetreVideo: unknown, quand: string): void {
+export function watchEdr(videoWindow: unknown, when: string): void {
   if (app.isPackaged) return;
-  const { courant } = lireEdr(fenetreVideo);
+  const { courant: current } = readEdr(videoWindow);
   // Au centième : le compositeur fait varier la valeur de quelques millièmes
   // sans que cela signifie quoi que ce soit, et le journal serait illisible.
-  const arrondi = Math.round(courant * 100) / 100;
-  if (arrondi === dernierVu) return;
-  const avant = dernierVu;
-  dernierVu = arrondi;
-  if (avant >= 0) trace(`headroom EDR ${avant.toFixed(2)} → ${arrondi.toFixed(2)} (${quand})`);
-  else trace(`headroom EDR ${arrondi.toFixed(2)} (${quand})`);
+  const rounded = Math.round(current * 100) / 100;
+  if (rounded === lastSeen) return;
+  const before = lastSeen;
+  lastSeen = rounded;
+  if (before >= 0) trace(`headroom EDR ${before.toFixed(2)} → ${rounded.toFixed(2)} (${when})`);
+  else trace(`headroom EDR ${rounded.toFixed(2)} (${when})`);
 }
 
 /** Oublie le dernier headroom vu — entre deux lectures, tout est à refaire. */
-export function oublierEdr(): void {
-  dernierVu = -1;
+export function forgetEdr(): void {
+  lastSeen = -1;
 }

@@ -27,7 +27,7 @@ const TIMEOUT_MS = 20_000;
 export function makeFetcher(token: string): FetchBytes {
   return async (url: string, maxBytes: number): Promise<Uint8Array | null> => {
     const abort = new AbortController();
-    const minuteur = setTimeout(() => abort.abort(), TIMEOUT_MS);
+    const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
     try {
       const response = await net.fetch(url, {
         headers: { "X-Emby-Token": token },
@@ -42,7 +42,7 @@ export function makeFetcher(token: string): FetchBytes {
     } catch {
       return null;
     } finally {
-      clearTimeout(minuteur);
+      clearTimeout(timer);
     }
   };
 }

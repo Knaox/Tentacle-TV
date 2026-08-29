@@ -1,5 +1,5 @@
 /**
- * Le branchement de `sessionGraphique.ts` sur Electron.
+ * Le branchement de `graphicsSession.ts` sur Electron.
  *
  * Séparé pour que la décision, elle, reste une fonction pure vérifiable sans
  * Electron. Ici, uniquement le geste : poser le drapeau, retenir le verdict,
@@ -10,42 +10,42 @@ import { app } from "electron";
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import {
-  deciderSession,
-  FICHIER_SESSION,
-  lireChoixSession,
-  type ChoixSession,
+  decideSession,
+  SESSION_FILE,
+  readSessionChoice,
+  type SessionChoice,
   type Montage,
-  type SessionDecidee,
-} from "./sessionGraphique";
-import { poserTemoin, redresserChoixCondamne, surveillerGpu } from "./sessionRescue";
+  type DecidedSession,
+} from "./graphicsSession";
+import { writeWitness, recoverDoomedChoice, watchGpu } from "./sessionRescue";
 // Sans risque à l'import (aucune bibliothèque native) — contrairement aux
 // surfaces, pas besoin de `require` paresseux.
-import { apiScriptKwinDisponible } from "./kwinScripting";
-import { balayerCollesOrphelines } from "./glueCleanup";
+import { kwinScriptApiAvailable } from "./kwinScripting";
+import { sweepOrphanGlue } from "./glueCleanup";
 
-let decidee: SessionDecidee | null = null;
+let decided: DecidedSession | null = null;
 
 /**
  * Décide de la plateforme d'affichage et la pose. À appeler AVANT `whenReady` :
  * Electron initialise Ozone à ce moment-là, et un drapeau posé après n'a plus
  * aucun effet.
  */
-export function appliquerSessionGraphique(): SessionDecidee | null {
+export function applyGraphicsSession(): DecidedSession | null {
   if (process.platform !== "linux") return null;
-  const dossier = app.getPath("userData");
+  const folder = app.getPath("userData");
   // `TENTACLE_LINUX_SESSION` est l'outil d'essai des développeurs : il ne
   // touche pas au réglage, le garde-fou ne doit ni le juger ni le corriger.
-  const essaiDev = process.env["TENTACLE_LINUX_SESSION"] !== undefined;
-  if (!essaiDev) {
-    const condamne = redresserChoixCondamne(dossier, lireChoixSession(dossier));
-    if (condamne !== null) {
+  const devTry = process.env["TENTACLE_LINUX_SESSION"] !== undefined;
+  if (!devTry) {
+    const doomed = recoverDoomedChoice(folder, readSessionChoice(folder));
+    if (doomed !== null) {
       console.error(
-        `[session] ⚠️ le choix « ${condamne} » n'a jamais affiché de fenêtre au lancement précédent — retour en auto`,
+        `[session] ⚠️ le choix « ${doomed} » n'a jamais affiché de fenêtre au lancement précédent — retour en auto`,
       );
     }
   }
-  decidee = deciderSession(process.env, lireChoixSession(dossier));
-  if (decidee.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decidee.ozone);
+  decided = decideSession(process.env, readSessionChoice(folder));
+  if (decided.ozone !== null) app.commandLine.appendSwitch("ozone-platform", decided.ozone);
   // Budget de tuiles du compositeur Chromium. Le défaut (quelques centaines de
   // Mo) ne tient pas les transitions de pages sur un bureau 4K à échelle ×2 :
   // plusieurs calques plein viewport animés d'un coup → « tile memory limits
@@ -54,19 +54,19 @@ export function appliquerSessionGraphique(): SessionDecidee | null {
   // l'utilisateur — bibliothèque et fiche média, fenêtré comme maximisé).
   app.commandLine.appendSwitch("force-gpu-mem-available-mb", "2048");
   console.info(
-    `[session] bureau=${decidee.session} choix=${decidee.choix} ` +
-      `ozone=${decidee.ozone ?? "auto"} montage=${decidee.montage}` +
+    `[session] bureau=${decided.session} choix=${decided.choice} ` +
+      `ozone=${decided.ozone ?? "auto"} montage=${decided.montage}` +
       // Le fenêtré n'est pas encore connu ici — `detecterFenetrage` le dira.
-      (decidee.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)"),
+      (decided.montage === "wayland" ? " (HDR possible)" : " (pas de HDR)"),
   );
   // Un choix explicite peut ne JAMAIS afficher — réglage persistant, fenêtre
   // introuvable, application briquée (vécu avec x11 sur XWayland cassé). Le
   // témoin et la surveillance GPU sont les deux filets ; voir `sessionRescue.ts`.
-  if (!essaiDev && decidee.choix !== "auto") {
-    poserTemoin(dossier, decidee.choix);
-    surveillerGpu(dossier, app);
+  if (!devTry && decided.choice !== "auto") {
+    writeWitness(folder, decided.choice);
+    watchGpu(folder, app);
   }
-  return decidee;
+  return decided;
 }
 
 /**
@@ -76,11 +76,11 @@ export function appliquerSessionGraphique(): SessionDecidee | null {
  * sur X11 si la connexion Wayland échoue ; c'est la surface vidéo qui recoupe,
  * au moment où elle tient une vraie fenêtre.
  */
-export function montageLinux(): Montage | null {
-  return decidee?.montage ?? null;
+export function linuxMontage(): Montage | null {
+  return decided?.montage ?? null;
 }
 
-let fenetrage: "libre" | "plein-ecran" | null = null;
+let windowing: "libre" | "plein-ecran" | null = null;
 
 /**
  * Le fenêtré est-il possible sous Wayland ? Décidé UNE fois, avant la fenêtre.
@@ -91,31 +91,31 @@ let fenetrage: "libre" | "plein-ecran" | null = null;
  * de `surfaceWayland.ts` reste le seul possible. `null` hors Wayland — sous
  * X11 le fenêtré est natif, la question ne se pose pas.
  */
-export async function detecterFenetrage(): Promise<void> {
-  if (process.platform !== "linux" || decidee?.montage !== "wayland") {
-    fenetrage = null;
+export async function detectWindowing(): Promise<void> {
+  if (process.platform !== "linux" || decided?.montage !== "wayland") {
+    windowing = null;
     return;
   }
-  fenetrage = (await apiScriptKwinDisponible()) ? "libre" : "plein-ecran";
+  windowing = (await kwinScriptApiAvailable()) ? "libre" : "plein-ecran";
   // Ce qu'un lancement mort a laissé dans le compositeur se reprend ici, une
   // fois qu'on sait qu'il y a un compositeur scriptable. Sans attendre : le
   // démarrage de la fenêtre ne dépend pas du ménage.
-  if (fenetrage === "libre") void balayerCollesOrphelines();
+  if (windowing === "libre") void sweepOrphanGlue();
   console.info(
-    fenetrage === "libre"
+    windowing === "libre"
       ? "[session] fenêtré libre : l'API de script du compositeur porte la colle KWin"
       : "[session] plein écran forcé : compositeur sans API de placement (pas de colle)",
   );
 }
 
 /** Le verdict de `detecterFenetrage`, pour la surface, la page et le panneau. */
-export function fenetrageLinux(): "libre" | "plein-ecran" | null {
-  return fenetrage;
+export function linuxWindowing(): "libre" | "plein-ecran" | null {
+  return windowing;
 }
 
 /** Le verdict complet, pour le panneau de diagnostic. */
-export function sessionCourante(): SessionDecidee | null {
-  return decidee;
+export function currentSession(): DecidedSession | null {
+  return decided;
 }
 
 /**
@@ -123,10 +123,10 @@ export function sessionCourante(): SessionDecidee | null {
  * plateforme d'affichage se fixe au démarrage du processus et ne se change pas
  * à chaud. C'est l'appelant qui décide de relancer.
  */
-export function enregistrerChoixSession(choix: ChoixSession): void {
+export function saveSessionChoice(choice: SessionChoice): void {
   writeFileSync(
-    path.join(app.getPath("userData"), FICHIER_SESSION),
-    `${JSON.stringify({ session: choix }, null, 2)}\n`,
+    path.join(app.getPath("userData"), SESSION_FILE),
+    `${JSON.stringify({ session: choice }, null, 2)}\n`,
     "utf8",
   );
 }

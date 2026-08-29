@@ -19,11 +19,11 @@
  * # Deux exigences, et rien d'autre
  *
  * **Idempotence.** Le lecteur est démonté et remonté à chaque épisode
- * (`key={itemId}`) : `empecher()` est appelé plusieurs fois par série. Empiler
+ * (`key={itemId}`) : `prevent()` est appelé plusieurs fois par série. Empiler
  * les blocages en laisserait autant d'orphelins.
  *
  * **Libération.** Un blocage actif tient jusqu'à la fin du processus : sans
- * `rendre()` à l'extinction, l'écran de l'utilisateur ne s'éteindrait plus de
+ * `release()` à l'extinction, l'écran de l'utilisateur ne s'éteindrait plus de
  * la session, longtemps après la fermeture de l'application. Même devoir que
  * les touches média (`ipc/mediaKeys.ts`).
  *
@@ -32,20 +32,20 @@
  */
 
 /** Les deux seuls types qu'on demande à Electron. */
-export type TypeBlocage = "prevent-display-sleep" | "prevent-app-suspension";
+export type BlockerKind = "prevent-display-sleep" | "prevent-app-suspension";
 
 /** Ce qu'on demande à `powerSaveBlocker`, et rien de plus. */
-export interface BloqueurVeille {
-  start(type: TypeBlocage): number;
+export interface SleepBlocker {
+  start(type: BlockerKind): number;
   stop(id: number): void;
   isStarted(id: number): boolean;
 }
 
-export interface Veille {
+export interface WakeLock {
   /** Pose le blocage. Sans effet s'il est déjà posé. */
-  empecher(): void;
+  prevent(): void;
   /** Rend le système à son comportement normal. Sans effet s'il n'y a rien à rendre. */
-  rendre(): void;
+  release(): void;
 }
 
 /**
@@ -54,31 +54,31 @@ export interface Veille {
  * Chaque appel produit un état INDÉPENDANT : l'anti-veille de l'écran et
  * l'anti-suspension des téléchargements cohabitent sans se marcher dessus.
  */
-function creerBlocage(bloqueur: BloqueurVeille, type: TypeBlocage): Veille {
-  let blocage: number | null = null;
+function createBlocker(blocker: SleepBlocker, type: BlockerKind): WakeLock {
+  let blocking: number | null = null;
 
   return {
-    empecher(): void {
+    prevent(): void {
       // `isStarted` plutôt que la seule présence de l'identifiant : le système
       // peut avoir levé le blocage de son côté, et on se retrouverait alors à
       // croire l'écran protégé sans qu'il le soit.
-      if (blocage !== null && bloqueur.isStarted(blocage)) return;
-      blocage = bloqueur.start(type);
+      if (blocking !== null && blocker.isStarted(blocking)) return;
+      blocking = blocker.start(type);
     },
-    rendre(): void {
-      if (blocage === null) return;
-      if (bloqueur.isStarted(blocage)) bloqueur.stop(blocage);
-      blocage = null;
+    release(): void {
+      if (blocking === null) return;
+      if (blocker.isStarted(blocking)) blocker.stop(blocking);
+      blocking = null;
     },
   };
 }
 
 /** Empêche l'écran de s'éteindre. Pour la lecture. */
-export function creerVeilleEcran(bloqueur: BloqueurVeille): Veille {
-  return creerBlocage(bloqueur, "prevent-display-sleep");
+export function createDisplayWakeLock(blocker: SleepBlocker): WakeLock {
+  return createBlocker(blocker, "prevent-display-sleep");
 }
 
 /** Empêche la mise en veille du PC. Pour les téléchargements. */
-export function creerVeilleSysteme(bloqueur: BloqueurVeille): Veille {
-  return creerBlocage(bloqueur, "prevent-app-suspension");
+export function createSystemWakeLock(blocker: SleepBlocker): WakeLock {
+  return createBlocker(blocker, "prevent-app-suspension");
 }

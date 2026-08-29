@@ -39,41 +39,41 @@ const METADATA = z.object({}).passthrough();
  * `MediaPlayPause` devient `toggle` et non `play` : la touche bascule, elle ne
  * connaît pas l'état courant. C'est déjà ce que le relais Tauri envoie.
  */
-const TOUCHES: ReadonlyArray<readonly [string, string]> = [
+const MEDIA_KEYS: ReadonlyArray<readonly [string, string]> = [
   ["MediaPlayPause", "toggle"],
   ["MediaStop", "stop"],
   ["MediaNextTrack", "next"],
   ["MediaPreviousTrack", "previous"],
 ];
 
-let posees = false;
+let applied = false;
 
-function poser(): void {
-  if (posees) return;
-  posees = true;
-  const refusees: string[] = [];
-  for (const [accelerateur, bouton] of TOUCHES) {
+function apply(): void {
+  if (applied) return;
+  applied = true;
+  const refused: string[] = [];
+  for (const [accelerator, button] of MEDIA_KEYS) {
     // `register` rend `false` quand une autre application tient déjà la touche.
     // Tracé : sans ça, « la touche ne fait rien » n'a aucune explication.
-    if (!globalShortcut.register(accelerateur, () => sendToPage("smtc-button", bouton))) {
-      refusees.push(accelerateur);
+    if (!globalShortcut.register(accelerator, () => sendToPage("smtc-button", button))) {
+      refused.push(accelerator);
     }
   }
-  if (refusees.length > 0) {
-    console.warn(`[touches media] refusees par le systeme : ${refusees.join(", ")}`);
+  if (refused.length > 0) {
+    console.warn(`[touches media] refusees par le systeme : ${refused.join(", ")}`);
   }
 }
 
 /** Rend les touches au système. Idempotent. */
 export function releaseMediaKeys(): void {
-  if (!posees) return;
-  posees = false;
-  for (const [accelerateur] of TOUCHES) globalShortcut.unregister(accelerateur);
+  if (!applied) return;
+  applied = false;
+  for (const [accelerator] of MEDIA_KEYS) globalShortcut.unregister(accelerator);
 }
 
 export function registerMediaKeyCommands(registry: CommandRegistry): void {
   registry
-    .add("smtc_init", { schema: NO_ARGS, run: () => poser() })
+    .add("smtc_init", { schema: NO_ARGS, run: () => apply() })
     .add("smtc_clear", { schema: NO_ARGS, run: () => releaseMediaKeys() })
     // Les trois suivantes n'ont pas d'équivalent sans session SMTC. Voir
     // l'en-tête : présentes pour que la page n'ait rien à savoir de la coquille.

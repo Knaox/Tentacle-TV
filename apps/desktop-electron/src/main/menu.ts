@@ -30,7 +30,7 @@ import type { MenuItemConstructorOptions } from "electron";
  * inexistantes est pire que pas de menu du tout. Reste donc ce que macOS
  * attend vraiment : l'entrée d'application, l'édition, et les fenêtres.
  */
-function modele(): MenuItemConstructorOptions[] {
+function template(): MenuItemConstructorOptions[] {
   return [
     {
       label: app.getName(),
@@ -62,7 +62,7 @@ function modele(): MenuItemConstructorOptions[] {
  *
  * À appeler une seule fois, après `whenReady`.
  */
-export function installerMenu(): void {
+export function installMenu(): void {
   if (process.platform !== "darwin") {
     // Electron pose un menu par défaut — Fichier, Édition, Affichage, Fenêtre.
     // Il se voyait en haut de la fenêtre pendant la lecture et abîmait le plein
@@ -70,5 +70,5 @@ export function installerMenu(): void {
     Menu.setApplicationMenu(null);
     return;
   }
-  Menu.setApplicationMenu(Menu.buildFromTemplate(modele()));
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template()));
 }

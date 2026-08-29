@@ -53,17 +53,17 @@ export interface LocalSource {
 
 /** Side-cars présents sur le disque, triés par nom pour un ordre stable. */
 function listSubtitles(root: string, itemId: string): LocalSubtitleFile[] {
-  let entrees: string[];
+  let entries: string[];
   try {
     const dir = safeJoin(root, `media/${itemId}/subs`);
-    entrees = readdirSync(dir).filter((nom) => {
+    entries = readdirSync(dir).filter((name) => {
       try {
-        return statSync(path.join(dir, nom)).isFile();
+        return statSync(path.join(dir, name)).isFile();
       } catch {
         return false;
       }
     });
-    return entrees
+    return entries
       .sort((a, b) => a.localeCompare(b))
       .map((fileName) => ({ absolutePath: path.join(dir, fileName), fileName }));
   } catch {
@@ -89,16 +89,16 @@ export function localSource(
   if (file === null) return null;
 
   let absolutePath: string;
-  let taille: number;
+  let size: number;
   try {
     absolutePath = safeJoin(root, file.relPath);
-    taille = statSync(absolutePath).size;
+    size = statSync(absolutePath).size;
   } catch {
     setStatus(db, file.id, "error", "missing", nowMs);
     return null;
   }
   if (file.variant === "original" && file.expectedSize !== null && file.expectedSize > 0) {
-    if (taille !== file.expectedSize) {
+    if (size !== file.expectedSize) {
       setStatus(db, file.id, "error", "integrity", nowMs);
       return null;
     }

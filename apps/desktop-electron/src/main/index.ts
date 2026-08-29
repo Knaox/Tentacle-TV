@@ -16,13 +16,13 @@ import {
   serveApp,
   webRoot,
 } from "./appProtocol";
-import { demarrerBattement } from "./battement";
-import { dossierDonnees } from "./cheminsDonnees";
+import { startHeartbeat } from "./heartbeat";
+import { dataFolder } from "./dataPaths";
 import {
-  appliquerSessionGraphique,
-  detecterFenetrage,
-  fenetrageLinux,
-  montageLinux,
+  applyGraphicsSession,
+  detectWindowing,
+  linuxWindowing,
+  linuxMontage,
 } from "./linux/session";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
@@ -32,20 +32,20 @@ import { registerDownloadsEngineCommands } from "./ipc/downloadsEngine";
 import { registerDownloadsPlaybackCommands } from "./ipc/downloadsPlayback";
 import { registerDownloadsStorageCommands } from "./ipc/downloadsStorage";
 import { registerJellyfinCommands } from "./ipc/jellyfin";
-import { stopDownloadsRuntime, transfertsEnCours } from "./downloadsRuntime";
+import { stopDownloadsRuntime, transfersInFlight } from "./downloadsRuntime";
 import { closeLocalDb } from "./localDb";
-import { demanderNatif, installerGardeSortie } from "./quitGuard";
+import { askNative, installQuitGuard } from "./quitGuard";
 import { registerMediaKeyCommands, releaseMediaKeys } from "./ipc/mediaKeys";
 import { registerMigrationBridge } from "./ipc/migration";
 import { registerPluginCommands } from "./ipc/plugins";
 import { registerSessionCommands } from "./ipc/session";
-import { registerShellCapabilities, registerShellCommands, rendreVeilleEcran } from "./ipc/shell";
+import { registerShellCapabilities, registerShellCommands, releaseDisplayWakeLock } from "./ipc/shell";
 import { registerUpdateCommands } from "./ipc/updates";
 import { registerLinuxSessionCommands } from "./ipc/linuxSession";
-import { registerVideoCommands, restaurerEcran } from "./ipc/video";
+import { registerVideoCommands, restoreDisplay } from "./ipc/video";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
-import { installerMenu } from "./menu";
-import { appliquerIdentiteSysteme } from "./appIdentity";
+import { installMenu } from "./menu";
+import { applySystemIdentity } from "./appIdentity";
 import { createMainWindow, getMainWindow } from "./window";
 
 /**
@@ -62,12 +62,12 @@ import { createMainWindow, getMainWindow } from "./window";
  * n'y serait qu'une curiosité dans la barre d'adresse. `debugpanel`, lui, passe
  * même en paquet : voir plus bas.
  */
-function routeDeDepart(): string {
-  const parametres: string[] = [];
+function startRoute(): string {
+  const params: string[] = [];
   if (!app.isPackaged) {
-    const cible = process.env["TENTACLE_AUTOWATCH"];
-    if (cible !== undefined && cible !== "") {
-      parametres.push(`autowatch=${encodeURIComponent(cible)}`);
+    const target = process.env["TENTACLE_AUTOWATCH"];
+    if (target !== undefined && target !== "") {
+      params.push(`autowatch=${encodeURIComponent(target)}`);
     }
   }
   // `TENTACLE_DEBUG_PANEL=1` ouvre le panneau de diagnostic d'office : juger le
@@ -80,16 +80,16 @@ function routeDeDepart(): string {
   // bouton DEBUG restait, à ouvrir à la main. Aucun risque pour un paquet
   // livré : le panneau n'existe dans le bundle que si `__PLAYER_DEBUG__` est
   // vrai (figé au build par `TENTACLE_DEBUG=1`), sinon le paramètre est inerte.
-  if (process.env["TENTACLE_DEBUG_PANEL"] === "1") parametres.push("debugpanel=1");
-  return parametres.length === 0 ? "" : `?${parametres.join("&")}`;
+  if (process.env["TENTACLE_DEBUG_PANEL"] === "1") params.push("debugpanel=1");
+  return params.length === 0 ? "" : `?${params.join("&")}`;
 }
 
 function useExistingUserData(): void {
   // Sous MSIX, %APPDATA% est redirigé de façon transparente vers le conteneur
   // du paquet — le même dossier que celui de l'app Tauri. Rien à migrer.
-  // Sur Linux, c'est `cheminsDonnees.ts` qui redresse la divergence XDG.
-  app.setPath("userData", dossierDonnees({
-    plateforme: process.platform,
+  // Sur Linux, c'est `dataPaths.ts` qui redresse la divergence XDG.
+  app.setPath("userData", dataFolder({
+    platform: process.platform,
     appData: app.getPath("appData"),
     home: app.getPath("home"),
     env: process.env,
@@ -126,21 +126,21 @@ function useExistingUserData(): void {
  * « osxbundle » des chemins de configuration ne trouve rien dans nos
  * `Resources` ; et la barre de menus de mpv n'en dépend pas.
  */
-function declarerMpvEnPaquet(): void {
+function declarePackagedMpv(): void {
   if (process.platform !== "darwin") return;
   process.env["MPVBUNDLE"] = "true";
 }
 
 function main(): void {
-  declarerMpvEnPaquet();
+  declarePackagedMpv();
 
-  const solo = claimSingleInstance(() => {
+  const singleInstance = claimSingleInstance(() => {
     const win = getMainWindow();
     if (!win) return;
     if (win.isMinimized()) win.restore();
     win.focus();
   });
-  if (!solo) {
+  if (!singleInstance) {
     app.quit();
     return;
   }
@@ -149,8 +149,8 @@ function main(): void {
   // ⚠️ APRÈS le dossier de données — le choix s'y lit — et AVANT `whenReady` :
   // Electron fixe sa plateforme d'affichage à ce moment-là, et un drapeau posé
   // ensuite n'a plus d'effet. C'est ce choix qui décide du HDR et du montage
-  // de la fenêtre vidéo ; voir `linux/sessionGraphique.ts`.
-  appliquerSessionGraphique();
+  // de la fenêtre vidéo ; voir `linux/graphicsSession.ts`.
+  applyGraphicsSession();
   registerAppScheme();
 
   // ⚠️ Le `.catch` n'est pas une précaution de style.
@@ -167,18 +167,18 @@ function main(): void {
       // AVANT la fenêtre : la page reçoit le verdict par argument de ligne de
       // commande, et la surface vidéo choisit son montage avec. Un ping D-Bus,
       // quelques dizaines de millisecondes — hors Linux/Wayland, rien.
-      await detecterFenetrage();
+      await detectWindowing();
       // AVANT le menu : celui-ci porte `app.getName()` comme libellé de son
       // entrée d'application, et le panneau « À propos » qu'il ouvre lit les
       // options posées ici.
-      appliquerIdentiteSysteme();
+      applySystemIdentity();
       // Retiré sous Windows, fourni sur macOS — où l'absence de menu prive les
       // champs de saisie de Cmd+C, Cmd+V et Cmd+A. Voir `menu.ts`.
-      installerMenu();
+      installMenu();
 
       // Le pouls du thread principal : il ne dit rien tant que tout va bien, et
       // date le gel à la milliseconde le jour où il y en a un.
-      demarrerBattement();
+      startHeartbeat();
 
       denyAllPermissions();
       // Empreintes calculées sur le HTML réellement servi : le script inline
@@ -237,21 +237,21 @@ function main(): void {
 
       // La garde de sortie est posée à la fabrication, jamais après : entre les
       // deux, un Alt+F4 emporterait un téléchargement sans un mot.
-      const ouvrir = (): void => {
-        const fenetre = createMainWindow(capabilities);
-        installerGardeSortie(fenetre, transfertsEnCours, demanderNatif(fenetre));
-        void fenetre.loadURL(`${APP_ORIGIN}/${routeDeDepart()}`);
+      const open = (): void => {
+        const window = createMainWindow(capabilities);
+        installQuitGuard(window, transfersInFlight, askNative(window));
+        void window.loadURL(`${APP_ORIGIN}/${startRoute()}`);
       };
 
-      ouvrir();
+      open();
 
       app.on("activate", () => {
-        if (BrowserWindow.getAllWindows().length === 0) ouvrir();
+        if (BrowserWindow.getAllWindows().length === 0) open();
       });
     })
-    .catch((erreur: unknown) => {
-      console.error(`[tentacle] demarrage impossible : ${String(erreur)}`);
-      if (erreur instanceof Error && erreur.stack !== undefined) console.error(erreur.stack);
+    .catch((error: unknown) => {
+      console.error(`[tentacle] demarrage impossible : ${String(error)}`);
+      if (error instanceof Error && error.stack !== undefined) console.error(error.stack);
       app.quit();
     });
 
@@ -260,28 +260,28 @@ function main(): void {
   // foulée — WAL laisse sinon un journal à rejouer au prochain lecteur du
   // fichier, qui peut être l'app Tauri sur une machine de développement.
   app.on("will-quit", () => {
-    restaurerEcran();
+    restoreDisplay();
     // Les touches média sont captées pour TOUT le système : les rendre est un
     // devoir, pas un nettoyage. Une fermeture qui court-circuite `smtc_clear`
     // les laisserait prises jusqu'au redémarrage de la session.
     releaseMediaKeys();
     // Même devoir pour l'anti-veille : un blocage laissé actif empêcherait
     // l'écran de s'éteindre longtemps après la fermeture de l'application.
-    rendreVeilleEcran();
+    releaseDisplayWakeLock();
     stopDownloadsRuntime();
     closeLocalDb();
     // La connexion X reste ouverte tant que la surface vidéo peut caler une
     // fenêtre. Chargement paresseux : hors X11, le module n'est jamais importé,
     // et `libX11.so.6` n'est jamais ouverte.
-    if (montageLinux() === "x11") {
-      (require("./linux/x11") as typeof import("./linux/x11")).fermerAffichageX11();
+    if (linuxMontage() === "x11") {
+      (require("./linux/x11") as typeof import("./linux/x11")).closeX11Display();
     }
     // La colle KWin SURVIT au processus qui l'a posée : quitter en pleine
     // lecture laisserait son instance QML vivante dans le compositeur, et son
     // dossier dans le répertoire temporaire. Synchrone à dessein — `will-quit`
     // ne rend pas la main à la boucle d'événements (`glueCleanup.ts`).
-    if (fenetrageLinux() === "libre") {
-      (require("./linux/glueCleanup") as typeof import("./linux/glueCleanup")).retirerColleAuDepart();
+    if (linuxWindowing() === "libre") {
+      (require("./linux/glueCleanup") as typeof import("./linux/glueCleanup")).removeGlueAtStartup();
     }
   });
 

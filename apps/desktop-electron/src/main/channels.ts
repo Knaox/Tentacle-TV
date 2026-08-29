@@ -136,8 +136,8 @@ export const EVENTS = [
  * preload puisse importer sans traîner tout le processus principal dans son
  * bundle — voir l'avertissement en tête de `preload/index.ts`.
  */
-export const CANAL_MIGRATION_PRISE = "tentacle:migration-take";
-export const CANAL_MIGRATION_RAPPORT = "tentacle:migration-report";
+export const MIGRATION_TAKE_CHANNEL = "tentacle:migration-take";
+export const MIGRATION_REPORT_CHANNEL = "tentacle:migration-report";
 
 export type Command = (typeof COMMANDS)[number];
 export type EventName = (typeof EVENTS)[number];

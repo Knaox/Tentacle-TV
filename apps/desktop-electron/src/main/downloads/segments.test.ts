@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fetchAndSave } from "./segments";
 import type { FetchBytes } from "./fetcher";
 
-const CONTRAT = {
+const CONTRACT = {
   version: 1,
   itemId: "ep-1",
   runtimeMs: 1_440_000,
@@ -31,10 +31,10 @@ const CONTRAT = {
 let root = "";
 let urls: string[] = [];
 
-const repondre = (corps: string | null): FetchBytes => {
+const settle = (body: string | null): FetchBytes => {
   return async (url) => {
     urls.push(url);
-    return corps === null ? null : new Uint8Array(Buffer.from(corps, "utf8"));
+    return body === null ? null : new Uint8Array(Buffer.from(body, "utf8"));
   };
 };
 
@@ -47,33 +47,33 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-const CHEMIN = () => path.join(root, "meta", "ep-1", "segments.json");
+const PATH = () => path.join(root, "meta", "ep-1", "segments.json");
 
 describe("fetchAndSave", () => {
   it("interroge le résolveur du backend et persiste le contrat tel quel", async () => {
-    const ok = await fetchAndSave(repondre(JSON.stringify(CONTRAT)), "http://srv.test", root, "ep-1");
+    const ok = await fetchAndSave(settle(JSON.stringify(CONTRACT)), "http://srv.test", root, "ep-1");
     expect(ok).toBe(true);
     expect(urls).toEqual(["http://srv.test/api/playback/segments/ep-1"]);
-    expect(JSON.parse(readFileSync(CHEMIN(), "utf8"))).toEqual(CONTRAT);
+    expect(JSON.parse(readFileSync(PATH(), "utf8"))).toEqual(CONTRACT);
   });
 
   it("réponse hors contrat (HTML, ancien format brut) : rien n'est écrit", async () => {
-    const html = await fetchAndSave(repondre("<html>proxy</html>"), "http://srv.test", root, "ep-1");
+    const html = await fetchAndSave(settle("<html>proxy</html>"), "http://srv.test", root, "ep-1");
     expect(html).toBe(false);
 
-    const ancien = await fetchAndSave(
-      repondre(JSON.stringify({ mediaSegments: null, pluginDict: null, pluginTs: null })),
+    const previous = await fetchAndSave(
+      settle(JSON.stringify({ mediaSegments: null, pluginDict: null, pluginTs: null })),
       "http://srv.test",
       root,
       "ep-1",
     );
-    expect(ancien).toBe(false);
-    expect(existsSync(CHEMIN())).toBe(false);
+    expect(previous).toBe(false);
+    expect(existsSync(PATH())).toBe(false);
   });
 
   it("réseau muet : faux, sans fichier", async () => {
-    const ok = await fetchAndSave(repondre(null), "http://srv.test", root, "ep-1");
+    const ok = await fetchAndSave(settle(null), "http://srv.test", root, "ep-1");
     expect(ok).toBe(false);
-    expect(existsSync(CHEMIN())).toBe(false);
+    expect(existsSync(PATH())).toBe(false);
   });
 });

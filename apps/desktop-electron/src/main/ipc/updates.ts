@@ -32,7 +32,7 @@ import { CommandRegistry } from "./registry";
 const NO_ARGS = z.object({}).passthrough();
 
 /** Page de mises à jour du Store — le repli qui fonctionne toujours. */
-const PAGE_MISES_A_JOUR = "ms-windows-store://downloadsandupdates";
+const UPDATES_PAGE = "ms-windows-store://downloadsandupdates";
 
 /**
  * WinRT à la demande.
@@ -52,11 +52,11 @@ function msix(): typeof import("../msixUpdate") {
  * doit être importé sur les autres systèmes.
  */
 function registerLinuxUpdateCommands(registry: CommandRegistry): void {
-  const maj = require("../linux/miseAJour") as typeof import("../linux/miseAJour");
+  const linuxUpdate = require("../linux/update") as typeof import("../linux/update");
   registry
     .add("detect_linux_install_format", {
       schema: NO_ARGS,
-      run: () => maj.detecterFormat(),
+      run: () => linuxUpdate.detectFormat(),
     })
     .add("download_update", {
       schema: z.object({
@@ -65,12 +65,12 @@ function registerLinuxUpdateCommands(registry: CommandRegistry): void {
         fileName: z.string().min(1),
       }),
       run: ({ url, sha256, fileName }) =>
-        maj.telecharger({
+        linuxUpdate.download({
           url,
           sha256,
-          nomFichier: fileName,
+          fileName,
           // Le même nom d'évènement que côté Tauri : la page écoute déjà.
-          progres: (f) => { sendToPage("linux-update-progress", f); },
+          onProgress: (f) => { sendToPage("linux-update-progress", f); },
         }),
     })
     .add("install_linux_update", {
@@ -78,7 +78,7 @@ function registerLinuxUpdateCommands(registry: CommandRegistry): void {
         path: z.string().min(1),
         format: z.enum(["appimage", "deb", "rpm", "pacman"]),
       }),
-      run: ({ path, format }) => maj.installer(path, format),
+      run: ({ path, format }) => linuxUpdate.install(path, format),
     });
 }
 
@@ -127,7 +127,7 @@ export function registerUpdateCommands(registry: CommandRegistry): void {
           // Repli : la page de mises à jour du Store. L'utilisateur obtient sa
           // mise à jour dans tous les cas — seul le chemin change.
           console.warn(`[maj] installation directe impossible (${String(error)}), ouverture du Store`);
-          await shell.openExternal(PAGE_MISES_A_JOUR);
+          await shell.openExternal(UPDATES_PAGE);
           // On lève quand même : la page ne doit PAS enchaîner sur un
           // redémarrage, puisque rien n'a encore été installé.
           throw new Error("store-page-opened");

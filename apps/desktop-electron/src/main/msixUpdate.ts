@@ -38,7 +38,7 @@ import {
 } from "./winrt/com";
 import { IID, IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE, parameterizedIid } from "./winrt/guid";
 
-const CLASSE = "Windows.Services.Store.StoreContext";
+const CLASS_NAME = "Windows.Services.Store.StoreContext";
 
 /*
  * Fentes de vtable, relevées dans les en-têtes du SDK Windows — jamais devinées.
@@ -80,11 +80,11 @@ const SLOT_RESULTS = 8;
 const SLOT_RESULTS_WITH_PROGRESS = 10;
 
 /** `StorePackageUpdateState::Completed`. */
-const ETAT_TERMINE = 0;
+const STATE_DONE = 0;
 
 /** La recherche est rapide ; l'installation passe par le Store et l'utilisateur. */
-const DELAI_RECHERCHE_MS = 30_000;
-const DELAI_INSTALLATION_MS = 30 * 60_000;
+const SEARCH_DELAY_MS = 30_000;
+const INSTALL_DELAY_MS = 30 * 60_000;
 
 export interface MsixUpdateInfo {
   /**
@@ -102,7 +102,7 @@ export interface MsixUpdateInfo {
 
 /** Le `StoreContext` par défaut, ou `null` hors paquet installé. */
 function storeContext(): ComPtr | null {
-  const factory = activationFactory(CLASSE, IID.storeContextStatics);
+  const factory = activationFactory(CLASS_NAME, IID.storeContextStatics);
   if (factory === null) return null;
   try {
     return callForPointer(factory, SLOT_GET_DEFAULT);
@@ -116,7 +116,7 @@ async function pendingUpdates(context: ComPtr): Promise<ComPtr | null> {
   const operation = callForPointer(context, SLOT_GET_UPDATES);
   if (operation === null) return null;
   try {
-    return await awaitOperation(operation, SLOT_RESULTS, DELAI_RECHERCHE_MS);
+    return await awaitOperation(operation, SLOT_RESULTS, SEARCH_DELAY_MS);
   } finally {
     release(operation);
   }
@@ -130,15 +130,15 @@ export async function checkMsixUpdate(): Promise<MsixUpdateInfo | null> {
     const updates = await pendingUpdates(context);
     if (updates === null) return null;
     try {
-      const taille = callForUint32(updates, SLOT_SIZE);
-      if (taille === null || taille === 0) return null;
+      const size = callForUint32(updates, SLOT_SIZE);
+      if (size === null || size === 0) return null;
 
-      const premiere = vectorGetAt(updates, 0);
-      if (premiere === null) return { version: "", mandatory: false };
+      const first = vectorGetAt(updates, 0);
+      if (first === null) return { version: "", mandatory: false };
       try {
-        return { version: "", mandatory: callForBoolean(premiere, SLOT_MANDATORY) ?? false };
+        return { version: "", mandatory: callForBoolean(first, SLOT_MANDATORY) ?? false };
       } finally {
-        release(premiere);
+        release(first);
       }
     } finally {
       release(updates);
@@ -178,7 +178,7 @@ export async function downloadAndInstallMsixUpdate(hwnd: bigint): Promise<void> 
       const iterable = queryInterface(updates, iid);
       if (iterable === null) throw new Error("iterable-unavailable");
       try {
-        await lancerInstallation(context, iterable);
+        await startInstall(context, iterable);
       } finally {
         release(iterable);
       }
@@ -190,23 +190,23 @@ export async function downloadAndInstallMsixUpdate(hwnd: bigint): Promise<void> 
   }
 }
 
-async function lancerInstallation(context: ComPtr, iterable: ComPtr): Promise<void> {
+async function startInstall(context: ComPtr, iterable: ComPtr): Promise<void> {
   const operation = callWithPointer(context, SLOT_INSTALL_UPDATES, iterable);
   if (operation === null) throw new Error("install-refused");
   try {
-    const resultat = await awaitOperation(
+    const result = await awaitOperation(
       operation,
       SLOT_RESULTS_WITH_PROGRESS,
-      DELAI_INSTALLATION_MS,
+      INSTALL_DELAY_MS,
     );
-    if (resultat === null) throw new Error("install-failed");
+    if (result === null) throw new Error("install-failed");
     try {
-      const etat = callForInt32(resultat, SLOT_OVERALL_STATE);
+      const state = callForInt32(result, SLOT_OVERALL_STATE);
       // `GetResults` peut réussir alors que l'installation a échoué : refus de
       // l'utilisateur, réseau, batterie faible.
-      if (etat !== ETAT_TERMINE) throw new Error(`install-state-${String(etat)}`);
+      if (state !== STATE_DONE) throw new Error(`install-state-${String(state)}`);
     } finally {
-      release(resultat);
+      release(result);
     }
   } finally {
     release(operation);

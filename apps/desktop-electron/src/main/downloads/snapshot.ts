@@ -27,7 +27,7 @@ import * as trickplay from "./trickplay";
  * Pas d'`EnableUserData` : figée au téléchargement, la progression serait
  * périmée, et elle vit de toute façon dans `playback_state`.
  */
-const CHAMPS_ITEM =
+const ITEM_FIELDS =
   "Overview,Genres,Taglines,MediaSources,MediaStreams,People,Studios,ProviderIds," +
   "Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status";
 
@@ -48,23 +48,23 @@ export async function snapshot(
 ): Promise<void> {
   const base = `${serverUrl}/api/jellyfin`;
   const dir = `meta/${spec.itemId}`;
-  const reussis: string[] = [];
+  const succeeded: string[] = [];
 
-  const itemJson = await recupererJson(
+  const itemJson = await fetchJson(
     fetchBytes,
-    `${base}/Items/${spec.itemId}?fields=${CHAMPS_ITEM}`,
+    `${base}/Items/${spec.itemId}?fields=${ITEM_FIELDS}`,
     root,
     `${dir}/item.json`,
   );
-  if (itemJson !== null) reussis.push("item");
+  if (itemJson !== null) succeeded.push("item");
 
   if (spec.seriesId !== null) {
-    const ok = await recupererJson(fetchBytes, `${base}/Items/${spec.seriesId}`, root, `${dir}/series.json`);
-    if (ok !== null) reussis.push("series");
+    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seriesId}`, root, `${dir}/series.json`);
+    if (ok !== null) succeeded.push("series");
   }
   if (spec.seasonId !== null) {
-    const ok = await recupererJson(fetchBytes, `${base}/Items/${spec.seasonId}`, root, `${dir}/season.json`);
-    if (ok !== null) reussis.push("season");
+    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seasonId}`, root, `${dir}/season.json`);
+    if (ok !== null) succeeded.push("season");
   }
 
   if (itemJson !== null) {
@@ -73,7 +73,7 @@ export async function snapshot(
     episodeNumbers.apply(db, spec.itemId, itemJson);
 
     const mediaSourceId = firstMediaSourceId(db, spec.itemId) ?? spec.itemId;
-    const planches = await trickplay.download(
+    const sheets = await trickplay.download(
       fetchBytes,
       serverUrl,
       root,
@@ -82,12 +82,12 @@ export async function snapshot(
       parseJson(itemJson),
       nowMs,
     );
-    if (planches > 0) reussis.push("trickplay");
+    if (sheets > 0) succeeded.push("trickplay");
   }
 
   // L'affiche vient de l'item, mais la bannière et le logo de la SÉRIE pour un
   // épisode : c'est ce qui rend la fiche cohérente hors ligne.
-  const visuel = spec.seriesId ?? spec.itemId;
+  const visual = spec.seriesId ?? spec.itemId;
   const images: ReadonlyArray<readonly [string, string, string]> = [
     [
       `${base}/Items/${spec.itemId}/Images/Primary?maxWidth=600&quality=90&format=Jpg`,
@@ -95,36 +95,36 @@ export async function snapshot(
       "primary",
     ],
     [
-      `${base}/Items/${visuel}/Images/Backdrop?maxWidth=1280&quality=90&format=Jpg`,
+      `${base}/Items/${visual}/Images/Backdrop?maxWidth=1280&quality=90&format=Jpg`,
       `${dir}/backdrop.jpg`,
       "backdrop",
     ],
-    [`${base}/Items/${visuel}/Images/Logo?maxWidth=800&format=Png`, `${dir}/logo.png`, "logo"],
+    [`${base}/Items/${visual}/Images/Logo?maxWidth=800&format=Png`, `${dir}/logo.png`, "logo"],
   ];
-  for (const [url, rel, nom] of images) {
+  for (const [url, rel, name] of images) {
     const bytes = await fetchBytes(url, MAX_JSON_BYTES);
-    if (bytes !== null && bytes.byteLength > 0 && saveBytes(root, rel, bytes)) reussis.push(nom);
+    if (bytes !== null && bytes.byteLength > 0 && saveBytes(root, rel, bytes)) succeeded.push(name);
   }
 
   if (spec.seriesId !== null) {
     const url = `${base}/Items/${spec.seriesId}/Images/Primary?maxWidth=600&quality=90&format=Jpg`;
     const bytes = await fetchBytes(url, MAX_JSON_BYTES);
     if (bytes !== null && saveBytes(root, `${dir}/series-primary.jpg`, bytes)) {
-      reussis.push("seriesPrimary");
+      succeeded.push("seriesPrimary");
     }
   }
 
-  if (await poserBibliotheque(fetchBytes, db, base, spec.itemId)) reussis.push("library");
+  if (await setLibrary(fetchBytes, db, base, spec.itemId)) succeeded.push("library");
   // Les segments viennent du résolveur du backend, pas du proxy Jellyfin.
   if (await segments.fetchAndSave(fetchBytes, serverUrl, root, spec.itemId)) {
-    reussis.push("segments");
+    succeeded.push("segments");
   }
 
-  markSnapshotDone(db, spec.itemId, JSON.stringify({ ok: reussis }), nowMs);
+  markSnapshotDone(db, spec.itemId, JSON.stringify({ ok: succeeded }), nowMs);
 }
 
 /** Récupère un JSON et l'enregistre. Rend les octets, ou `null`. */
-async function recupererJson(
+async function fetchJson(
   fetchBytes: FetchBytes,
   url: string,
   root: string,
@@ -142,7 +142,7 @@ async function recupererJson(
  * liste : c'est lui qui porte les préférences de pistes par bibliothèque, et
  * elles doivent fonctionner hors ligne.
  */
-async function poserBibliotheque(
+async function setLibrary(
   fetchBytes: FetchBytes,
   db: DatabaseSync,
   base: string,
@@ -150,12 +150,12 @@ async function poserBibliotheque(
 ): Promise<boolean> {
   const bytes = await fetchBytes(`${base}/Items/${itemId}/Ancestors`, MAX_JSON_BYTES);
   if (bytes === null) return false;
-  const ancetres = asArray(parseJson(bytes));
-  if (ancetres === null) return false;
+  const ancestors = asArray(parseJson(bytes));
+  if (ancestors === null) return false;
 
-  for (const ancetre of [...ancetres].reverse()) {
-    if (asString(field(ancetre, "Type")) !== "CollectionFolder") continue;
-    const id = asString(field(ancetre, "Id"));
+  for (const ancestor of [...ancestors].reverse()) {
+    if (asString(field(ancestor, "Type")) !== "CollectionFolder") continue;
+    const id = asString(field(ancestor, "Id"));
     if (id === null) continue;
     setLibraryId(db, itemId, id);
     return true;

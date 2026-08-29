@@ -35,7 +35,7 @@ import type { BrowserWindow } from "electron";
  * prendre plus de place qu'une barre de titre de macOS (28) augmentée du confort
  * qu'attend une fenêtre sans cadre.
  */
-export const HAUTEUR_BANDEAU = 38;
+export const BANNER_HEIGHT = 38;
 
 /**
  * Position des feux de circulation — le coin haut-gauche de leur groupe.
@@ -43,13 +43,13 @@ export const HAUTEUR_BANDEAU = 38;
  * Le groupe fait 12 points de haut ; `(38 - 12) / 2 = 13` le centre dans la
  * bande. En `x`, 16 points de marge : la même que celle du contenu de la page.
  */
-const FEUX = { x: 16, y: 13 } as const;
+const TRAFFIC_LIGHTS = { x: 16, y: 13 } as const;
 
 /**
  * De combien la fenêtre de mpv passe SOUS le bandeau, en points.
  *
  * ⚠️ Sans ce recouvrement, on voit les COINS ARRONDIS de la fenêtre de mpv en
- * plein milieu de la nôtre. Elle est titrée — `cadreSansLisere` ne lui retire
+ * plein milieu de la nôtre. Elle est titrée — `frameWithoutSeam` ne lui retire
  * son cadre qu'en plein écran — et AppKit arrondit toute fenêtre titrée. Tant
  * qu'elle couvrait le cadre entier, ses coins coïncidaient avec les nôtres et ne
  * se voyaient pas ; calée sous une bande, ils apparaissent. Le liseré d'AppKit
@@ -65,7 +65,7 @@ const FEUX = { x: 16, y: 13 } as const;
  * la `CAMetalLayer` peut faire perdre le headroom EDR silencieusement (voir
  * `macosEdr.ts`). On ne troque pas un risque sur le HDR contre un coin.
  */
-const RECOUVREMENT = 16;
+const OVERLAP = 16;
 
 /**
  * Ce que macOS ajoute à la fabrication de la fenêtre.
@@ -73,16 +73,16 @@ const RECOUVREMENT = 16;
  * Rendu en bloc plutôt qu'épelé sur place : les trois options ne se comprennent
  * qu'ensemble, et `window.ts` porte déjà tout ce que Windows exige.
  */
-export function optionsCadreMacos(): Record<string, unknown> {
+export function macosFrameOptions(): Record<string, unknown> {
   if (process.platform !== "darwin") return {};
-  return { transparent: true, titleBarStyle: "hidden", trafficLightPosition: FEUX };
+  return { transparent: true, titleBarStyle: "hidden", trafficLightPosition: TRAFFIC_LIGHTS };
 }
 
 /**
  * Le retrait haut que la vidéo doit laisser au bandeau.
  *
  * Moins que la hauteur de la bande, exprès : la fenêtre de mpv passe dessous de
- * `RECOUVREMENT` points, et y laisse ses coins arrondis.
+ * `OVERLAP` points, et y laisse ses coins arrondis.
  *
  * ⚠️ Nul en plein écran : la bande y est démontée par la page, et une vidéo qui
  * garderait le retrait laisserait une bande noire en haut de l'écran.
@@ -91,9 +91,9 @@ export function optionsCadreMacos(): Record<string, unknown> {
  * Windows, mais elle est interrogeable partout et une fenêtre qui l'emprunterait
  * un jour serait servie correctement sans qu'une ligne change ici.
  */
-export function retraitBandeau(host: BrowserWindow): number {
+export function bannerInset(host: BrowserWindow): number {
   if (process.platform !== "darwin") return 0;
   if (host.isDestroyed()) return 0;
   if (host.isFullScreen() || host.isSimpleFullScreen()) return 0;
-  return HAUTEUR_BANDEAU - RECOUVREMENT;
+  return BANNER_HEIGHT - OVERLAP;
 }

@@ -37,9 +37,9 @@ import { nativeHandle } from "./video/native";
 /**
  * Tout ce qui précède décrit un contournement STRICTEMENT Windows.
  *
- * macOS a le sien, pour une raison différente — voir `PLEIN_ECRAN_NATIF`.
+ * macOS a le sien, pour une raison différente — voir `NATIVE_FULLSCREEN`.
  */
-export const PARADE_WINDOWS = process.platform === "win32";
+export const WINDOWS_WORKAROUND = process.platform === "win32";
 
 /**
  * Sur macOS : le plein écran du SYSTÈME, avec son espace dédié.
@@ -70,14 +70,14 @@ export const PARADE_WINDOWS = process.platform === "win32";
  * # Linux : natif aussi — la parade Windows n'a pas de raison d'être ici
  *
  * `transparent: true` y est posé à la CONSTRUCTION de la fenêtre
- * (`linux/fenetre.ts`), pas à l'exécution comme sur Windows : l'alpha survit au
+ * (`linux/window.ts`), pas à l'exécution comme sur Windows : l'alpha survit au
  * plein écran (mesuré sur Wayland, vidéo visible au travers en plein écran —
- * 19,2 % de rouge au banc). Avant cette ligne, `entrer()` traversait la branche
+ * 19,2 % de rouge au banc). Avant cette ligne, `enter()` traversait la branche
  * « ni parade ni natif » et SORTAIT SANS RIEN FAIRE : le bouton plein écran du
  * lecteur était inopérant sur Linux — masqué sur Wayland par `SurfaceWayland`,
  * qui force le sien, et nu sous X11 où mpv reste fenêtré.
  */
-const PLEIN_ECRAN_NATIF = process.platform === "darwin" || process.platform === "linux";
+const NATIVE_FULLSCREEN = process.platform === "darwin" || process.platform === "linux";
 
 /** Les appels Win32 de la parade, réclamés seulement là où ils existent. */
 function win32(): typeof import("./video/win32") {
@@ -87,19 +87,19 @@ function win32(): typeof import("./video/win32") {
 /**
  * État d'avant le plein écran, à rendre tel quel. `null` = fenêtré.
  *
- * `maximisee` est mémorisé à part : une fenêtre agrandie doit être rendue à son
+ * `maximized` est mémorisé à part : une fenêtre agrandie doit être rendue à son
  * ÉTAT, pas à sa géométrie. Reposer ses seuls bounds donnerait une fenêtre qui
  * a l'air agrandie sans l'être — bouton « restaurer » inversé, double-clic sur
  * la barre de titre incohérent.
  *
- * `normales` est la géométrie que Windows rendra le jour où l'utilisateur
+ * `normalBounds` est la géométrie que Windows rendra le jour où l'utilisateur
  * restaurera la fenêtre. Le plein écran l'ÉCRASE — `unmaximize` puis un
  * redimensionnement à la taille de l'écran la remplacent par cette taille-là —
  * et sans elle, sortir du plein écran d'une fenêtre agrandie puis la restaurer
  * donnait une fenêtre grande comme l'écran. Mesuré : `460x241` devenait
  * `1920x1106`.
  */
-let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = null;
+let before: { normalBounds: Rectangle; style: bigint; maximized: boolean } | null = null;
 
 /**
  * La fenêtre servie en dernier, pour interroger macOS à la source.
@@ -109,27 +109,27 @@ let avant: { normales: Rectangle; style: bigint; maximisee: boolean } | null = n
  * mémoire locale mentirait dès le premier de ces gestes ; on lit donc la
  * fenêtre à chaque question.
  */
-let hote: BrowserWindow | null = null;
+let host: BrowserWindow | null = null;
 
 /**
  * Retient la fenêtre à interroger. Sans effet sous Windows, qui tient son état
- * dans `avant`.
+ * dans `before`.
  *
  * Le geste reste écrit en ligne dans les bascules de ce module ; il n'est nommé
  * que pour la session du lecteur, sortie dans son propre fichier
- * (`sessionLecteurPleinEcran.ts`) et qui doit le faire elle aussi.
+ * (`playerFullscreenSession.ts`) et qui doit le faire elle aussi.
  */
-export function noterFenetre(win: BrowserWindow): void {
-  if (!PARADE_WINDOWS) hote = win;
+export function noteWindow(win: BrowserWindow): void {
+  if (!WINDOWS_WORKAROUND) host = win;
 }
 
-export function estEnPleinEcran(): boolean {
-  if (PARADE_WINDOWS) return avant !== null;
-  if (hote === null || hote.isDestroyed()) return false;
+export function isFullscreen(): boolean {
+  if (WINDOWS_WORKAROUND) return before !== null;
+  if (host === null || host.isDestroyed()) return false;
   // Le SIMPLE est encore interrogé : il n'est plus posé par nous, mais une
   // session ouverte avant une mise à jour peut encore s'y trouver, et une
   // fenêtre dont on ne sait pas qu'elle est en plein écran est une souricière.
-  return hote.isFullScreen() || hote.isSimpleFullScreen();
+  return host.isFullScreen() || host.isSimpleFullScreen();
 }
 
 /**
@@ -140,7 +140,7 @@ export function estEnPleinEcran(): boolean {
 /**
  * Deux mesures existent, et une seule compte.
  *
- * `GetClientRect` (Win32) est ce que `calerSous` donne à mpv, donc ce qui
+ * `GetClientRect` (Win32) est ce que `alignBelow` donne à mpv, donc ce qui
  * décide des bandes noires. `getContentBounds()` d'Electron est la vision de
  * Chromium, qui réserve une hauteur de barre de titre même quand le style
  * Win32 n'en a plus — les deux DIVERGENT, et se fier à la seconde conduit à
@@ -155,15 +155,15 @@ export function estEnPleinEcran(): boolean {
  * fait déborder la fenêtre de 52 px vers le haut — et Windows ne masque la
  * barre des tâches que pour une fenêtre couvrant EXACTEMENT le moniteur.
  */
-function entrer(win: BrowserWindow): void {
-  if (avant !== null) return;
+function enter(win: BrowserWindow): void {
+  if (before !== null) return;
 
   // macOS : le plein écran du système, avec son espace dédié — voir
-  // `PLEIN_ECRAN_NATIF`. `avant` reste `null` : c'est la fenêtre elle-même qui
-  // porte l'état, et `estEnPleinEcran` le lui demande.
-  if (!PARADE_WINDOWS) {
-    hote = win;
-    if (PLEIN_ECRAN_NATIF) win.setFullScreen(true);
+  // `NATIVE_FULLSCREEN`. `before` reste `null` : c'est la fenêtre elle-même qui
+  // porte l'état, et `isFullscreen` le lui demande.
+  if (!WINDOWS_WORKAROUND) {
+    host = win;
+    if (NATIVE_FULLSCREEN) win.setFullScreen(true);
     // ⚠️ NON VÉRIFIÉ, et assumé comme tel. Une fenêtre qui vient de changer
     // d'espace peut ne plus être la fenêtre CLÉ, et AppKit ne livre pas
     // `mouseMoved:` à une fenêtre qui ne l'est pas — c'est la cause la plus
@@ -175,22 +175,22 @@ function entrer(win: BrowserWindow): void {
     return;
   }
 
-  const maximisee = win.isMaximized();
+  const maximized = win.isMaximized();
   // Capturés AVANT `unmaximize`, et pour deux usages distincts : `bounds` dit
   // où la fenêtre se trouve pour l'utilisateur, donc sur quel écran ouvrir ;
-  // `normales` est la géométrie de restauration, que la suite va écraser.
+  // `normalBounds` est la géométrie de restauration, que la suite va écraser.
   const bounds = win.getBounds();
-  const normales = win.getNormalBounds();
+  const normalBounds = win.getNormalBounds();
 
   // 1. Lever l'état agrandi D'ABORD. Windows contraint la géométrie tant qu'il
   //    dure, et Chromium recalcule sa zone non-cliente avec les marges
   //    d'agrandissement — d'où les 12 DIP de largeur perdus quand on le laisse.
-  //    L'état est rendu en sortant, c'est `maximisee` qui le porte.
-  if (maximisee) win.unmaximize();
+  //    L'état est rendu en sortant, c'est `maximized` qui le porte.
+  if (maximized) win.unmaximize();
 
   // 2. Retirer le cadre ensuite : posé avant, `unmaximize` le défait.
-  const style = win32().retirerLeCadre(nativeHandle(win));
-  avant = { normales, style, maximisee };
+  const style = win32().stripFrame(nativeHandle(win));
+  before = { normalBounds, style, maximized };
 
   // 3. `setBounds` et NON `setContentBounds` : voir l'en-tête de la fonction.
   //    La fenêtre doit couvrir exactement le moniteur — c'est à cette
@@ -207,9 +207,9 @@ function entrer(win: BrowserWindow): void {
   win.setBounds(screen.getDisplayMatching(bounds).bounds);
 }
 
-function sortir(win: BrowserWindow): void {
-  if (!PARADE_WINDOWS) {
-    hote = win;
+function exit(win: BrowserWindow): void {
+  if (!WINDOWS_WORKAROUND) {
+    host = win;
     // Les deux, dans cet ordre : une session ouverte avant la bascule vers le
     // natif peut encore être en plein écran simple, et la touche Échap doit
     // rendre la main dans les deux cas.
@@ -218,42 +218,42 @@ function sortir(win: BrowserWindow): void {
     return;
   }
 
-  const memoire = avant;
-  if (memoire === null) return;
-  avant = null;
-  win32().rendreLeCadre(nativeHandle(win), memoire.style);
+  const memory = before;
+  if (memory === null) return;
+  before = null;
+  win32().restoreFrame(nativeHandle(win), memory.style);
   // La géométrie normale D'ABORD, agrandissement ensuite. C'est elle que
   // Windows retiendra comme taille de restauration ; la reposer seulement
   // quand la fenêtre était fenêtrée laisserait une fenêtre agrandie rendre la
   // taille de l'écran au premier clic sur « restaurer ».
-  win.setBounds(memoire.normales);
-  if (memoire.maximisee) win.maximize();
+  win.setBounds(memory.normalBounds);
+  if (memory.maximized) win.maximize();
 }
 
 /** Bascule, et renvoie le nouvel état. */
-export function basculer(win: BrowserWindow): boolean {
-  // macOS : c'est la fenêtre qui sait où elle en est, `avant` restant toujours
+export function toggle(win: BrowserWindow): boolean {
+  // macOS : c'est la fenêtre qui sait où elle en est, `before` restant toujours
   // `null`. S'en remettre à lui ferait entrer en plein écran une fenêtre qui y
   // est déjà, donc ne jamais en sortir.
-  if (!PARADE_WINDOWS) {
-    hote = win;
-    if (estEnPleinEcran()) {
-      sortir(win);
+  if (!WINDOWS_WORKAROUND) {
+    host = win;
+    if (isFullscreen()) {
+      exit(win);
       return false;
     }
-    entrer(win);
+    enter(win);
     return true;
   }
 
-  if (avant === null) {
-    entrer(win);
+  if (before === null) {
+    enter(win);
     return true;
   }
-  sortir(win);
+  exit(win);
   return false;
 }
 
 /** Sort du plein écran, quoi qu'il arrive. */
-export function quitter(win: BrowserWindow): void {
-  sortir(win);
+export function leave(win: BrowserWindow): void {
+  exit(win);
 }

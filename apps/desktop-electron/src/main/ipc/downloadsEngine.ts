@@ -80,29 +80,29 @@ const ENQUEUE = z.object({
   items: z.array(ITEM),
 });
 
-function normaliser(brut: z.infer<typeof ITEM>): EnqueueItem {
+function normalize(raw: z.infer<typeof ITEM>): EnqueueItem {
   return {
-    itemId: brut.itemId,
-    mediaSourceId: brut.mediaSourceId,
-    variant: brut.variant,
-    preset: brut.preset ?? null,
-    containerExt: brut.containerExt,
-    expectedSize: brut.expectedSize ?? null,
-    estimatedSize: brut.estimatedSize ?? null,
-    kind: brut.kind,
-    seriesId: brut.seriesId ?? null,
-    seasonId: brut.seasonId ?? null,
-    libraryId: brut.libraryId ?? null,
-    runtimeTicks: brut.runtimeTicks ?? null,
-    title: brut.title ?? null,
-    seriesName: brut.seriesName ?? null,
-    indexNumber: brut.indexNumber ?? null,
-    parentIndexNumber: brut.parentIndexNumber ?? null,
-    autoDeleteAfterWatch: brut.autoDeleteAfterWatch,
-    autoDeleteDelayMinutes: brut.autoDeleteDelayMinutes ?? 0,
-    audioStreamIndex: brut.audioStreamIndex ?? null,
-    burnSubtitleIndex: brut.burnSubtitleIndex ?? null,
-    subtitles: brut.subtitles ?? null,
+    itemId: raw.itemId,
+    mediaSourceId: raw.mediaSourceId,
+    variant: raw.variant,
+    preset: raw.preset ?? null,
+    containerExt: raw.containerExt,
+    expectedSize: raw.expectedSize ?? null,
+    estimatedSize: raw.estimatedSize ?? null,
+    kind: raw.kind,
+    seriesId: raw.seriesId ?? null,
+    seasonId: raw.seasonId ?? null,
+    libraryId: raw.libraryId ?? null,
+    runtimeTicks: raw.runtimeTicks ?? null,
+    title: raw.title ?? null,
+    seriesName: raw.seriesName ?? null,
+    indexNumber: raw.indexNumber ?? null,
+    parentIndexNumber: raw.parentIndexNumber ?? null,
+    autoDeleteAfterWatch: raw.autoDeleteAfterWatch,
+    autoDeleteDelayMinutes: raw.autoDeleteDelayMinutes ?? 0,
+    audioStreamIndex: raw.audioStreamIndex ?? null,
+    burnSubtitleIndex: raw.burnSubtitleIndex ?? null,
+    subtitles: raw.subtitles ?? null,
   };
 }
 
@@ -112,7 +112,7 @@ function normaliser(brut: z.infer<typeof ITEM>): EnqueueItem {
  * cent pour cent hors ligne — contrairement à la réparation, qui exige le
  * réseau.
  */
-let rattrapageFait = false;
+let backfillDone = false;
 
 export function registerDownloadsEngineCommands(registry: CommandRegistry): void {
   registry
@@ -130,7 +130,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
         const outcome = enqueueBatch(
           localDb(),
           userId,
-          items.map(normaliser),
+          items.map(normalize),
           freeSpace(downloadsRoot()),
           Date.now(),
         );
@@ -175,8 +175,8 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
       schema: USER,
       run: ({ userId }) => {
         const db = localDb();
-        if (!rattrapageFait) {
-          rattrapageFait = true;
+        if (!backfillDone) {
+          backfillDone = true;
           try {
             backfill(db, downloadsRoot());
           } catch {

@@ -14,43 +14,43 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SurfaceWayland } from "./surfaceWayland";
 
 const h = vi.hoisted(() => ({
-  libelleUneFoisMappee: vi.fn<() => Promise<string | null>>(),
-  connecteurPourLibelle: vi.fn<() => string | null>(),
-  ecransConnectes: vi.fn(() => []),
+  labelOnceMapped: vi.fn<() => Promise<string | null>>(),
+  connectorForLabel: vi.fn<() => string | null>(),
+  connectedDisplays: vi.fn(() => []),
   setProperty: vi.fn<() => Promise<string | null>>(),
 }));
-vi.mock("./displayTarget", () => ({ libelleUneFoisMappee: h.libelleUneFoisMappee }));
-vi.mock("./ecrans", () => ({
-  connecteurPourLibelle: h.connecteurPourLibelle,
-  ecransConnectes: h.ecransConnectes,
+vi.mock("./displayTarget", () => ({ labelOnceMapped: h.labelOnceMapped }));
+vi.mock("./displays", () => ({
+  connectorForLabel: h.connectorForLabel,
+  connectedDisplays: h.connectedDisplays,
 }));
 vi.mock("../video/mpv", () => ({ setProperty: h.setProperty }));
 
 /** Une fenêtre à état réel : le journal dit l'ordre, l'état dit l'effet. */
-function fenetre(options: { pleinEcran?: boolean } = {}) {
-  const auditeurs = new Map<string, Set<() => void>>();
-  const etat = { pleinEcran: options.pleinEcran ?? false, detruite: false };
-  const journal: string[] = [];
+function window(options: { fullscreen?: boolean } = {}) {
+  const listeners = new Map<string, Set<() => void>>();
+  const state = { fullscreen: options.fullscreen ?? false, destroyed: false };
+  const log: string[] = [];
   return {
-    etat,
-    journal,
-    isDestroyed: () => etat.detruite,
-    isFullScreen: () => etat.pleinEcran,
+    state,
+    log,
+    isDestroyed: () => state.destroyed,
+    isFullScreen: () => state.fullscreen,
     setFullScreen: vi.fn((v: boolean) => {
-      journal.push(`setFullScreen(${v})`);
-      etat.pleinEcran = v;
+      log.push(`setFullScreen(${v})`);
+      state.fullscreen = v;
     }),
-    focus: vi.fn(() => journal.push("focus")),
-    hide: vi.fn(() => journal.push("hide")),
-    show: vi.fn(() => journal.push("show")),
+    focus: vi.fn(() => log.push("focus")),
+    hide: vi.fn(() => log.push("hide")),
+    show: vi.fn(() => log.push("show")),
     getBounds: vi.fn(() => ({ x: 0, y: 0, width: 1280, height: 800 })),
     on: (evt: string, fn: () => void) => {
-      if (!auditeurs.has(evt)) auditeurs.set(evt, new Set());
-      auditeurs.get(evt)?.add(fn);
+      if (!listeners.has(evt)) listeners.set(evt, new Set());
+      listeners.get(evt)?.add(fn);
     },
-    removeListener: (evt: string, fn: () => void) => auditeurs.get(evt)?.delete(fn),
-    emettre: (evt: string) => {
-      for (const fn of auditeurs.get(evt) ?? []) fn();
+    removeListener: (evt: string, fn: () => void) => listeners.get(evt)?.delete(fn),
+    emit: (evt: string) => {
+      for (const fn of listeners.get(evt) ?? []) fn();
     },
     webContents: { executeJavaScript: vi.fn() },
   };
@@ -58,8 +58,8 @@ function fenetre(options: { pleinEcran?: boolean } = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  h.libelleUneFoisMappee.mockResolvedValue("ASUSTek COMPUTER INC XG27UCDMG");
-  h.connecteurPourLibelle.mockReturnValue("DP-4");
+  h.labelOnceMapped.mockResolvedValue("ASUSTek COMPUTER INC XG27UCDMG");
+  h.connectorForLabel.mockReturnValue("DP-4");
   h.setProperty.mockResolvedValue(null);
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -71,33 +71,33 @@ afterEach(() => {
 
 describe("attach — la visée se joue avant de rendre la main", () => {
   it("pose le plein écran et le focus, puis vise et écrit le connecteur", async () => {
-    const win = fenetre();
+    const win = window();
     await new SurfaceWayland(win as never).attach();
-    expect(win.journal.slice(0, 2)).toEqual(["setFullScreen(true)", "focus"]);
+    expect(win.log.slice(0, 2)).toEqual(["setFullScreen(true)", "focus"]);
     expect(h.setProperty).toHaveBeenCalledWith("fs-screen-name", "DP-4");
   });
 
   it("ne rend la main qu'une fois fs-screen-name posé", async () => {
     // C'est le contrat qui retient le `loadfile` : la page n'envoie rien tant
     // que `mpv_init` n'a pas répondu, et `mpv_init` attend cet attach.
-    let poser: (v: string | null) => void = () => {};
-    h.setProperty.mockReturnValue(new Promise((r) => { poser = r; }));
-    const win = fenetre();
-    let rendu = false;
-    const promesse = new SurfaceWayland(win as never).attach().then(() => { rendu = true; });
+    let apply: (v: string | null) => void = () => {};
+    h.setProperty.mockReturnValue(new Promise((r) => { apply = r; }));
+    const win = window();
+    let render = false;
+    const promise = new SurfaceWayland(win as never).attach().then(() => { render = true; });
     await Promise.resolve();
     await Promise.resolve();
-    expect(rendu).toBe(false);
-    poser(null);
-    await promesse;
-    expect(rendu).toBe(true);
+    expect(render).toBe(false);
+    apply(null);
+    await promise;
+    expect(render).toBe(true);
   });
 
   it("sans correspondance, n'écrit rien — et ne consulte jamais les bounds", async () => {
     // La visée par bounds désignait l'écran posé en (0,0) : mesurée fausse,
     // supprimée. Dans le doute, mpv choisit seul.
-    h.libelleUneFoisMappee.mockResolvedValue(null);
-    const win = fenetre();
+    h.labelOnceMapped.mockResolvedValue(null);
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
     expect(h.setProperty).not.toHaveBeenCalled();
@@ -109,17 +109,17 @@ describe("attach — la visée se joue avant de rendre la main", () => {
   });
 
   it("un connecteur déjà posé ne se réécrit pas", async () => {
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
     surface.align();
-    await vi.waitFor(() => expect(h.libelleUneFoisMappee).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(h.labelOnceMapped).toHaveBeenCalledTimes(2));
     expect(h.setProperty).toHaveBeenCalledTimes(1);
   });
 
   it("une écriture refusée est tracée, jamais fatale", async () => {
     h.setProperty.mockResolvedValue("property not found");
-    const win = fenetre();
+    const win = window();
     await new SurfaceWayland(win as never).attach();
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("refusé"));
   });
@@ -127,41 +127,41 @@ describe("attach — la visée se joue avant de rendre la main", () => {
 
 describe("detach — tout ce qui vole retombe", () => {
   it("coupe une visée en vol : rien ne s'écrit après lui", async () => {
-    let livrer: (v: string | null) => void = () => {};
-    h.libelleUneFoisMappee.mockReturnValue(new Promise((r) => { livrer = r; }));
-    const win = fenetre();
+    let deliver: (v: string | null) => void = () => {};
+    h.labelOnceMapped.mockReturnValue(new Promise((r) => { deliver = r; }));
+    const win = window();
     const surface = new SurfaceWayland(win as never);
-    const promesse = surface.attach();
+    const promise = surface.attach();
     surface.detach();
-    livrer("ASUSTek COMPUTER INC XG27UCDMG");
-    await promesse;
+    deliver("ASUSTek COMPUTER INC XG27UCDMG");
+    await promise;
     expect(h.setProperty).not.toHaveBeenCalled();
   });
 
   it("rend le plein écran seulement s'il l'avait posé", async () => {
-    const posee = fenetre({ pleinEcran: false });
-    const surfacePosee = new SurfaceWayland(posee as never);
-    await surfacePosee.attach();
-    surfacePosee.detach();
-    expect(posee.journal).toContain("setFullScreen(false)");
+    const applied = window({ fullscreen: false });
+    const appliedSurface = new SurfaceWayland(applied as never);
+    await appliedSurface.attach();
+    appliedSurface.detach();
+    expect(applied.log).toContain("setFullScreen(false)");
 
-    const heritee = fenetre({ pleinEcran: true });
-    const surfaceHeritee = new SurfaceWayland(heritee as never);
-    await surfaceHeritee.attach();
-    surfaceHeritee.detach();
-    expect(heritee.journal).not.toContain("setFullScreen(false)");
+    const inherited = window({ fullscreen: true });
+    const inheritedSurface = new SurfaceWayland(inherited as never);
+    await inheritedSurface.attach();
+    inheritedSurface.detach();
+    expect(inherited.log).not.toContain("setFullScreen(false)");
   });
 
   it("retire la réaffirmation du plein écran avec lui", async () => {
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
-    win.emettre("leave-full-screen");
-    const rappels = win.journal.filter((l) => l === "setFullScreen(true)").length;
-    expect(rappels).toBe(2); // l'attach, puis la réaffirmation
+    win.emit("leave-full-screen");
+    const callbacks = win.log.filter((l) => l === "setFullScreen(true)").length;
+    expect(callbacks).toBe(2); // l'attach, puis la réaffirmation
     surface.detach();
-    win.emettre("leave-full-screen");
-    expect(win.journal.filter((l) => l === "setFullScreen(true)").length).toBe(rappels);
+    win.emit("leave-full-screen");
+    expect(win.log.filter((l) => l === "setFullScreen(true)").length).toBe(callbacks);
   });
 });
 
@@ -172,48 +172,48 @@ describe("fichierCharge — repasser devant par l'activation, jamais par un gest
     // permis est la demande d'activation — et après le délai mesuré, pas
     // avant : une fenêtre mpv née APRÈS notre focus reprendrait le dessus.
     vi.useFakeTimers();
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
-    const avant = win.journal.length;
-    surface.fichierCharge();
-    expect(win.journal.length).toBe(avant); // rien avant le délai
+    const before = win.log.length;
+    surface.fileLoaded();
+    expect(win.log.length).toBe(before); // rien avant le délai
     await vi.advanceTimersByTimeAsync(300);
-    expect(win.journal.slice(avant)).toEqual(["focus"]);
+    expect(win.log.slice(before)).toEqual(["focus"]);
     expect(win.hide).not.toHaveBeenCalled();
     expect(win.show).not.toHaveBeenCalled();
   });
 
   it("un second file-loaded pendant l'attente n'arme qu'une reprise", async () => {
     vi.useFakeTimers();
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
-    const avant = win.focus.mock.calls.length;
-    surface.fichierCharge();
-    surface.fichierCharge();
+    const before = win.focus.mock.calls.length;
+    surface.fileLoaded();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(600);
-    expect(win.focus.mock.calls.length).toBe(avant + 1);
+    expect(win.focus.mock.calls.length).toBe(before + 1);
   });
 
   it("détachée, la surface ne demande plus rien", async () => {
     // Fin de lecture éclair, changement d'épisode : le minuteur part avec elle.
     vi.useFakeTimers();
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
     await surface.attach();
-    const avant = win.focus.mock.calls.length;
-    surface.fichierCharge();
+    const before = win.focus.mock.calls.length;
+    surface.fileLoaded();
     surface.detach();
     await vi.advanceTimersByTimeAsync(600);
-    expect(win.focus.mock.calls.length).toBe(avant);
+    expect(win.focus.mock.calls.length).toBe(before);
   });
 
   it("jamais attachée, elle ne bouge pas", async () => {
     vi.useFakeTimers();
-    const win = fenetre();
+    const win = window();
     const surface = new SurfaceWayland(win as never);
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(600);
     expect(win.focus).not.toHaveBeenCalled();
   });

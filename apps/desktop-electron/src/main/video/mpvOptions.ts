@@ -34,8 +34,8 @@
  * protection sur tout le processus. Le prix est absurde.
  */
 
-import { fenetrageLinux, montageLinux } from "../linux/session";
-import { socleLinux } from "../linux/optionsMpv";
+import { linuxWindowing, linuxMontage } from "../linux/session";
+import { linuxBase } from "../linux/mpvBaseOptions";
 import { mpvApi } from "./mpvFfi";
 
 /**
@@ -43,7 +43,7 @@ import { mpvApi } from "./mpvFfi";
  * rallumer. Une option qu'un libmpv plus ancien ne connaît pas est simplement
  * signalée dans son journal, jamais fatale.
  */
-const SANS_SCRIPTS: Readonly<Record<string, string>> = {
+const NO_SCRIPTS: Readonly<Record<string, string>> = {
   /** Scripts du dossier de configuration de l'utilisateur. */
   "load-scripts": "no",
   /** Liste explicite, vidée : `--scripts=` ne laisse rien passer. */
@@ -73,12 +73,12 @@ const SANS_SCRIPTS: Readonly<Record<string, string>> = {
  * Une option inconnue du libmpv embarqué n'est jamais fatale : mpv la signale
  * dans son journal et continue. On ne remonte donc aucune erreur.
  */
-export function poserOptions(
+export function applyOptions(
   ctx: unknown,
   page: Readonly<Record<string, string | number | boolean>>,
 ): void {
   const api = mpvApi();
-  const poser = (k: string, v: string): void => {
+  const apply = (k: string, v: string): void => {
     const code = api.setOptionString(ctx, k, v);
     // Journal seulement — jamais fatal —, mais dire QUELLE option un libmpv
     // refuse a manqué à plus d'un diagnostic : jusqu'ici le refus était muet.
@@ -87,14 +87,14 @@ export function poserOptions(
     }
   };
   for (const [k, v] of Object.entries(page)) {
-    poser(k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
+    apply(k, typeof v === "boolean" ? (v ? "yes" : "no") : String(v));
   }
-  for (const [k, v] of Object.entries(SANS_SCRIPTS)) poser(k, v);
+  for (const [k, v] of Object.entries(NO_SCRIPTS)) apply(k, v);
   // Sous Linux, le contexte GPU, la transmission HDR et le plein écran dépendent
-  // de la SESSION, que la page ne connaît pas. Voir `linux/optionsMpv.ts`.
-  const montage = montageLinux();
+  // de la SESSION, que la page ne connaît pas. Voir `linux/mpvBaseOptions.ts`.
+  const montage = linuxMontage();
   if (montage !== null) {
-    const socle = socleLinux(montage, fenetrageLinux() === "libre");
-    for (const [k, v] of Object.entries(socle)) poser(k, v);
+    const base = linuxBase(montage, linuxWindowing() === "libre");
+    for (const [k, v] of Object.entries(base)) apply(k, v);
   }
 }

@@ -18,37 +18,37 @@ import { snapshot } from "./snapshot";
 import { parseSpecs, sanitizeTag, subtitleRelPath } from "./subs";
 import { pickWidth, tileCount, type TrickplayInfo } from "./trickplay";
 
-const dossiers: string[] = [];
+const folders: string[] = [];
 
-function racinePreparee(): string {
+function preparedRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), "tentacle-snap-"));
-  dossiers.push(root);
+  folders.push(root);
   ensureLayout(root);
   return root;
 }
 
 afterEach(() => {
-  while (dossiers.length > 0) {
-    const dir = dossiers.pop();
+  while (folders.length > 0) {
+    const dir = folders.pop();
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
   }
 });
 
-function octets(texte: string): Uint8Array {
-  return new Uint8Array(Buffer.from(texte, "utf8"));
+function bytes(text: string): Uint8Array {
+  return new Uint8Array(Buffer.from(text, "utf8"));
 }
 
 /** Réseau simulé : une carte URL → réponse, et le journal des URL demandées. */
-function reseau(reponses: Record<string, string>): { fetchBytes: FetchBytes; vues: string[] } {
-  const vues: string[] = [];
+function net(responses: Record<string, string>): { fetchBytes: FetchBytes; views: string[] } {
+  const views: string[] = [];
   const fetchBytes: FetchBytes = async (url) => {
-    vues.push(url);
-    for (const [motif, corps] of Object.entries(reponses)) {
-      if (url.includes(motif)) return octets(corps);
+    views.push(url);
+    for (const [pattern, body] of Object.entries(responses)) {
+      if (url.includes(pattern)) return bytes(body);
     }
     return null;
   };
-  return { fetchBytes, vues };
+  return { fetchBytes, views };
 }
 
 function specEpisode(): MetaSpec {
@@ -69,9 +69,9 @@ function specEpisode(): MetaSpec {
 describe("snapshot", () => {
   it("ecrit les DTO, pose les numeros et la bibliotheque", async () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     upsertItemMeta(db, specEpisode(), 1_000);
-    const { fetchBytes, vues } = reseau({
+    const { fetchBytes, views } = net({
       "/Items/ep1?fields=": '{"Name":"Un episode","IndexNumber":4,"ParentIndexNumber":2}',
       "/Items/serie1": '{"Name":"Une serie"}',
       "/Items/saison1": '{"Name":"Saison 2"}',
@@ -90,14 +90,14 @@ describe("snapshot", () => {
     expect(spec?.libraryId).toBe("lib-42");
     expect(metaVersion(db, "ep1")).toBe(CURRENT_META_VERSION);
     // Le jeton ne part JAMAIS en query.
-    expect(vues.every((u) => !u.includes("token") && !u.includes("api_key"))).toBe(true);
+    expect(views.every((u) => !u.includes("token") && !u.includes("api_key"))).toBe(true);
   });
 
   it("un serveur entierement muet ne fait pas echouer le snapshot", async () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     upsertItemMeta(db, specEpisode(), 1_000);
-    const { fetchBytes } = reseau({});
+    const { fetchBytes } = net({});
 
     await expect(
       snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000),
@@ -110,22 +110,22 @@ describe("snapshot", () => {
 
   it("un film ne demande ni serie, ni saison, ni segments de greffon", async () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     const film: MetaSpec = { ...specEpisode(), itemId: "f1", kind: "movie", seriesId: null, seasonId: null };
     upsertItemMeta(db, film, 1_000);
-    const { fetchBytes, vues } = reseau({ "/Items/f1?fields=": '{"Name":"Un film"}' });
+    const { fetchBytes, views } = net({ "/Items/f1?fields=": '{"Name":"Un film"}' });
 
     await snapshot(fetchBytes, db, "https://tv.exemple", root, film, 2_000);
 
-    expect(vues.some((u) => u.includes("IntroSkipperSegments"))).toBe(false);
-    expect(vues.some((u) => u.includes("series-primary"))).toBe(false);
+    expect(views.some((u) => u.includes("IntroSkipperSegments"))).toBe(false);
+    expect(views.some((u) => u.includes("series-primary"))).toBe(false);
   });
 
   it("le resume dit ce qui a reussi", async () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     upsertItemMeta(db, specEpisode(), 1_000);
-    const { fetchBytes } = reseau({ "/Items/ep1?fields=": '{"Name":"Un episode"}' });
+    const { fetchBytes } = net({ "/Items/ep1?fields=": '{"Name":"Un episode"}' });
 
     await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
 
@@ -137,7 +137,7 @@ describe("snapshot", () => {
 describe("numeros d'episode", () => {
   it("le rattrapage lit les snapshots du disque", () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     upsertItemMeta(db, specEpisode(), 1_000);
     mkdirSync(path.join(root, "meta", "ep1"), { recursive: true });
     writeFileSync(path.join(root, "meta", "ep1", "item.json"), '{"IndexNumber":4,"ParentIndexNumber":2}');
@@ -150,12 +150,12 @@ describe("numeros d'episode", () => {
 
   it("un JSON casse laisse les numeros nuls", () => {
     const db = openInMemory();
-    expect(episodeNumbers.apply(db, "ep1", octets("{ pas du json"))).toBe(false);
+    expect(episodeNumbers.apply(db, "ep1", bytes("{ pas du json"))).toBe(false);
   });
 
   it("les films sont ignores", () => {
     const db = openInMemory();
-    expect(episodeNumbers.apply(db, "f1", octets('{"Name":"Un film"}'))).toBe(false);
+    expect(episodeNumbers.apply(db, "f1", bytes('{"Name":"Un film"}'))).toBe(false);
   });
 
   it("un re-upsert sans numeros les conserve", () => {
@@ -232,19 +232,19 @@ describe("segments", () => {
   // RÉSOLVEUR du backend, pas le proxy Jellyfin, et persiste sa réponse.
   it("le snapshot persiste la réponse du résolveur backend", async () => {
     const db = openInMemory();
-    const root = racinePreparee();
+    const root = preparedRoot();
     upsertItemMeta(db, specEpisode(), 1_000);
-    const contrat = '{"version":1,"itemId":"ep1","runtimeMs":0,"segments":[],"resolvedAt":""}';
-    const { fetchBytes, vues } = reseau({
+    const contract = '{"version":1,"itemId":"ep1","runtimeMs":0,"segments":[],"resolvedAt":""}';
+    const { fetchBytes, views } = net({
       "/Items/ep1?fields=": "{}",
-      "/api/playback/segments/ep1": contrat,
+      "/api/playback/segments/ep1": contract,
     });
 
     await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
 
-    expect(vues).toContain("https://tv.exemple/api/playback/segments/ep1");
-    expect(vues.some((u) => u.includes("/MediaSegments/"))).toBe(false);
-    const brut = readFileSync(path.join(root, "meta", "ep1", "segments.json"), "utf8");
-    expect(JSON.parse(brut)).toEqual(JSON.parse(contrat));
+    expect(views).toContain("https://tv.exemple/api/playback/segments/ep1");
+    expect(views.some((u) => u.includes("/MediaSegments/"))).toBe(false);
+    const raw = readFileSync(path.join(root, "meta", "ep1", "segments.json"), "utf8");
+    expect(JSON.parse(raw)).toEqual(JSON.parse(contract));
   });
 });

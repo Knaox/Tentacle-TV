@@ -19,15 +19,15 @@
 
 import { app, ipcMain, type IpcMainEvent } from "electron";
 import { isAppOrigin } from "../appProtocol";
-import { CANAL_MIGRATION_PRISE, CANAL_MIGRATION_RAPPORT } from "../channels";
+import { MIGRATION_TAKE_CHANNEL, MIGRATION_REPORT_CHANNEL } from "../channels";
 import { takeMigrationDump } from "../downloads/migrationDump";
 import { localDb } from "../localDb";
 
 export function registerMigrationBridge(): void {
-  ipcMain.on(CANAL_MIGRATION_PRISE, (event: IpcMainEvent) => {
+  ipcMain.on(MIGRATION_TAKE_CHANNEL, (event: IpcMainEvent) => {
     let entries: Record<string, string> | null = null;
     try {
-      entries = consommer(event);
+      entries = consume(event);
     } catch (error) {
       console.warn(`[migration] lecture impossible : ${String(error)}`);
     }
@@ -36,13 +36,13 @@ export function registerMigrationBridge(): void {
     event.returnValue = entries;
   });
 
-  ipcMain.on(CANAL_MIGRATION_RAPPORT, (event: IpcMainEvent, ecrites: unknown) => {
+  ipcMain.on(MIGRATION_REPORT_CHANNEL, (event: IpcMainEvent, written: unknown) => {
     if (!isAppOrigin(event.senderFrame?.url ?? "")) return;
-    console.info(`[migration] ${String(ecrites)} cles ecrites dans le stockage local`);
+    console.info(`[migration] ${String(written)} cles ecrites dans le stockage local`);
   });
 }
 
-function consommer(event: IpcMainEvent): Record<string, string> | null {
+function consume(event: IpcMainEvent): Record<string, string> | null {
   // L'origine, jamais l'URL : le routeur change de chemin en permanence. Le
   // refus est journalisé — « rien ne s'est passé » est le symptôme le plus
   // coûteux à diagnostiquer, et cette restitution n'a qu'une occasion.
@@ -51,26 +51,26 @@ function consommer(event: IpcMainEvent): Record<string, string> | null {
     return null;
   }
 
-  const prise = takeMigrationDump(localDb(), Date.now());
-  switch (prise.etat) {
+  const take = takeMigrationDump(localDb(), Date.now());
+  switch (take.state) {
     case "aucune":
     case "deja-faite":
       // Silencieux en production — c'est le cas de tous les lancements après
       // le premier. Sur un build de diagnostic on le dit quand même : sans
       // cette ligne, « aucune sauvegarde » et « le canal n'a jamais répondu »
       // se ressemblent trait pour trait dans le terminal.
-      if (!app.isPackaged) console.info(`[migration] rien a rejouer (${prise.etat})`);
+      if (!app.isPackaged) console.info(`[migration] rien a rejouer (${take.state})`);
       return null;
     case "illisible":
       // Ni suppression ni trace côté base : un analyseur corrigé plus tard doit
       // pouvoir retenter. Le journal, lui, dit qu'il y avait quelque chose.
-      console.warn(`[migration] sauvegarde illisible, conservee : ${prise.raison}`);
+      console.warn(`[migration] sauvegarde illisible, conservee : ${take.reason}`);
       return null;
     case "prise":
       console.info(
-        `[migration] sauvegarde trouvee (${Object.keys(prise.entries).length} cles,` +
-          ` origine ${prise.origine ?? "inconnue"}), ligne retiree`,
+        `[migration] sauvegarde trouvee (${Object.keys(take.entries).length} cles,` +
+          ` origine ${take.origin ?? "inconnue"}), ligne retiree`,
       );
-      return prise.entries;
+      return take.entries;
   }
 }

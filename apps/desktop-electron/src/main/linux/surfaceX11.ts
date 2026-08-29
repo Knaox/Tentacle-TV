@@ -20,63 +20,63 @@
 
 import { screen, type BrowserWindow } from "electron";
 import {
-  affichageX11,
-  numeroFenetreX11,
-  passerSous,
-  poserRectangle,
-  synchroniser,
-  trouverFenetreMpv,
+  x11Display,
+  x11WindowNumber,
+  moveBelow,
+  setRectangle,
+  sync,
+  findMpvWindow,
 } from "./x11";
 import type { VideoSurface } from "../video/surface";
 
 /** Cadence du sondage, et nombre maximal de tentatives (10 s en tout). */
-const SONDAGE_MS = 100;
-const SONDAGES_MAX = 100;
+const POLL_MS = 100;
+const POLL_MAX = 100;
 /** Un repositionnement par image suffit. */
-const CALAGE_MS = 16;
+const ALIGN_MS = 16;
 
 export class SurfaceX11 implements VideoSurface {
-  private hote = 0n;
+  private hostWid = 0n;
   private video: bigint | null = null;
-  private recherche: ReturnType<typeof setInterval> | null = null;
-  private calage: ReturnType<typeof setTimeout> | null = null;
-  private attache = false;
+  private search: ReturnType<typeof setInterval> | null = null;
+  private alignTimer: ReturnType<typeof setTimeout> | null = null;
+  private attached = false;
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
-  private readonly suivre = (): void => this.planifierCalage();
+  private readonly follow = (): void => this.scheduleAlign();
 
   constructor(private readonly host: BrowserWindow) {}
 
   attach(): void {
-    if (this.attache || this.host.isDestroyed()) return;
-    this.attache = true;
-    this.hote = numeroFenetreX11(this.host.getNativeWindowHandle());
+    if (this.attached || this.host.isDestroyed()) return;
+    this.attached = true;
+    this.hostWid = x11WindowNumber(this.host.getNativeWindowHandle());
     // Épelés plutôt que parcourus : la signature d'`on` est surchargée par
     // évènement, et une union de noms ne s'y résout pas.
-    this.host.on("resize", this.suivre);
-    this.host.on("move", this.suivre);
-    this.host.on("enter-full-screen", this.suivre);
-    this.host.on("leave-full-screen", this.suivre);
+    this.host.on("resize", this.follow);
+    this.host.on("move", this.follow);
+    this.host.on("enter-full-screen", this.follow);
+    this.host.on("leave-full-screen", this.follow);
 
     // La fenêtre de mpv n'existe qu'au premier `loadfile` (`force-window=no`) :
     // elle se cherche à plusieurs reprises, pas une fois.
-    let essais = 0;
-    this.recherche = setInterval(() => {
-      const dpy = affichageX11();
-      if (dpy === null) return this.arreterRecherche();
-      const trouvee = trouverFenetreMpv(dpy);
-      if (trouvee !== null) {
-        this.arreterRecherche();
-        this.video = trouvee;
-        console.info(`[x11] fenêtre mpv trouvée : 0x${trouvee.toString(16)}`);
+    let tries = 0;
+    this.search = setInterval(() => {
+      const dpy = x11Display();
+      if (dpy === null) return this.stopSearch();
+      const found = findMpvWindow(dpy);
+      if (found !== null) {
+        this.stopSearch();
+        this.video = found;
+        console.info(`[x11] fenêtre mpv trouvée : 0x${found.toString(16)}`);
         this.align();
-      } else if (++essais > SONDAGES_MAX) {
-        this.arreterRecherche();
+      } else if (++tries > POLL_MAX) {
+        this.stopSearch();
         // Tracé même en cas d'échec : « rien ne s'est passé » est le symptôme le
         // plus coûteux à diagnostiquer.
         console.warn("[x11] fenêtre mpv introuvable après 10 s");
       }
-    }, SONDAGE_MS);
+    }, POLL_MS);
   }
 
   /**
@@ -87,15 +87,15 @@ export class SurfaceX11 implements VideoSurface {
    * échelle 2, s'en dispenser donnerait une vidéo au quart de la fenêtre.
    */
   align(): void {
-    const dpy = affichageX11();
+    const dpy = x11Display();
     if (this.video === null || dpy === null || this.host.isDestroyed()) return;
     const c = this.host.getContentBounds();
     const f = screen.getDisplayMatching(c).scaleFactor || 1;
-    poserRectangle(dpy, this.video,
+    setRectangle(dpy, this.video,
       Math.round(c.x * f), Math.round(c.y * f),
       Math.round(c.width * f), Math.round(c.height * f));
-    passerSous(dpy, this.video, this.hote);
-    synchroniser(dpy);
+    moveBelow(dpy, this.video, this.hostWid);
+    sync(dpy);
   }
 
   /**
@@ -108,16 +108,16 @@ export class SurfaceX11 implements VideoSurface {
   }
 
   detach(): void {
-    this.arreterRecherche();
-    if (this.calage !== null) clearTimeout(this.calage);
-    this.calage = null;
-    if (this.attache && !this.host.isDestroyed()) {
-      this.host.off("resize", this.suivre);
-      this.host.off("move", this.suivre);
-      this.host.off("enter-full-screen", this.suivre);
-      this.host.off("leave-full-screen", this.suivre);
+    this.stopSearch();
+    if (this.alignTimer !== null) clearTimeout(this.alignTimer);
+    this.alignTimer = null;
+    if (this.attached && !this.host.isDestroyed()) {
+      this.host.off("resize", this.follow);
+      this.host.off("move", this.follow);
+      this.host.off("enter-full-screen", this.follow);
+      this.host.off("leave-full-screen", this.follow);
     }
-    this.attache = false;
+    this.attached = false;
     this.video = null;
   }
 
@@ -125,7 +125,7 @@ export class SurfaceX11 implements VideoSurface {
     if (this.host.isDestroyed()) return "fenêtre détruite";
     const c = this.host.getContentBounds();
     const v = this.video === null ? "aucune" : `0x${this.video.toString(16)}`;
-    return `x11 hôte=0x${this.hote.toString(16)} client=${c.width}x${c.height}+${c.x}+${c.y} vidéo=${v}`;
+    return `x11 hôte=0x${this.hostWid.toString(16)} client=${c.width}x${c.height}+${c.x}+${c.y} vidéo=${v}`;
   }
 
   /**
@@ -135,16 +135,16 @@ export class SurfaceX11 implements VideoSurface {
    * seconde. Front descendant : le premier arme le minuteur, les suivants sont
    * absorbés, et le calage a lieu juste après le dernier.
    */
-  private planifierCalage(): void {
-    if (this.calage !== null) return;
-    this.calage = setTimeout(() => {
-      this.calage = null;
+  private scheduleAlign(): void {
+    if (this.alignTimer !== null) return;
+    this.alignTimer = setTimeout(() => {
+      this.alignTimer = null;
       this.align();
-    }, CALAGE_MS);
+    }, ALIGN_MS);
   }
 
-  private arreterRecherche(): void {
-    if (this.recherche !== null) clearInterval(this.recherche);
-    this.recherche = null;
+  private stopSearch(): void {
+    if (this.search !== null) clearInterval(this.search);
+    this.search = null;
   }
 }

@@ -9,13 +9,13 @@
 import koffi from "koffi";
 import { app } from "electron";
 import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
-import { poserLocaleNumeriqueC } from "./localeC";
-import { oublierEtat } from "./mpvEtat";
-import { oublierCouche } from "./coucheMetal";
-import { oublierSortie } from "../linux/hdr";
-import { lireAsync, oublierLectures } from "./mpvLecture";
-import { drain, oublierCadence, type Sink } from "./mpvDrain";
-import { poserOptions } from "./mpvOptions";
+import { setNumericLocaleC } from "./cLocale";
+import { forgetState } from "./mpvState";
+import { forgetLayer } from "./metalLayer";
+import { forgetOutput } from "../linux/hdr";
+import { readAsync, forgetReads } from "./mpvRead";
+import { drain, forgetCadence, type Sink } from "./mpvDrain";
+import { applyOptions } from "./mpvOptions";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 
@@ -27,14 +27,14 @@ export function isRunning(): boolean {
   return ctx !== null;
 }
 
-/** La poignée courante, pour `mpvArret.ts`. `null` si mpv ne tourne pas. */
-export function poignee(): unknown {
+/** La poignée courante, pour `mpvShutdown.ts`. `null` si mpv ne tourne pas. */
+export function handle(): unknown {
   return ctx;
 }
 
 /** Abandonne la poignée sans rien détruire. Réservé à l'arrêt asynchrone. */
-export function poserPoignee(valeur: unknown): void {
-  ctx = valeur;
+export function setHandle(value: unknown): void {
+  ctx = value;
 }
 
 /**
@@ -44,30 +44,30 @@ export function poserPoignee(valeur: unknown): void {
  * retiendrait pour toujours l'appelant — et donc la poignée IPC qui l'attend,
  * ce qui vaut une commande native perdue à chaque changement d'épisode.
  */
-export function nettoyerEtat(): void {
+export function clearState(): void {
   if (pump !== null) clearInterval(pump);
   pump = null;
   observedIds = new Map();
-  oublierCadence();
-  oublierEtat();
-  oublierCouche();
-  oublierSortie();
-  oublierLectures();
-  for (const resolve of enVol.values()) resolve("instance mpv detruite");
-  enVol.clear();
+  forgetCadence();
+  forgetState();
+  forgetLayer();
+  forgetOutput();
+  forgetReads();
+  for (const resolve of inFlight.values()) resolve("instance mpv detruite");
+  inFlight.clear();
 }
 
 /**
  * Prévenu quand mpv annonce son arrêt.
  *
  * ⚠️ C'est le seul instant où libérer la poignée ne bloque pas — d'où ce
- * détour plutôt qu'un import direct, qui serait circulaire (`mpvArret` a besoin
+ * détour plutôt qu'un import direct, qui serait circulaire (`mpvShutdown` a besoin
  * de la poignée que ce module tient).
  */
-let auShutdown: (() => void) | null = null;
+let onShutdown: (() => void) | null = null;
 
-export function poserAuShutdown(rappel: (() => void) | null): void {
-  auShutdown = rappel;
+export function setOnShutdown(callback: (() => void) | null): void {
+  onShutdown = callback;
 }
 
 /**
@@ -88,12 +88,12 @@ export function poserAuShutdown(rappel: (() => void) | null): void {
  * de la phase 1, rencontré deux fois.
  *
  * `mpv_get_property_async` répond par la file d'évènements, qu'on vide déjà :
- * on peut donc tout lire sans rien attendre. Voir `mpvLecture.ts`, qui garde le
+ * on peut donc tout lire sans rien attendre. Voir `mpvRead.ts`, qui garde le
  * souvenir des propriétés observées en REPLI quand mpv ne répond pas.
  */
 export function getProperty(name: string): Promise<string | null> {
   if (!ctx) return Promise.resolve(null);
-  if (process.platform === "darwin") return lireAsync(ctx, name);
+  if (process.platform === "darwin") return readAsync(ctx, name);
   const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
   if (!ptr) return Promise.resolve(null);
   const value = koffi.decode(ptr, "char", -1) as string;
@@ -143,9 +143,9 @@ export function setProperty(name: string, value: string): Promise<string | null>
  * le champ `reply_userdata` des évènements, et les confondre à la lecture d'un
  * journal coûterait cher.
  */
-const COMMANDE_ID_BASE = 1_000_000;
-const enVol = new Map<number, (err: string | null) => void>();
-let prochaineCommande = COMMANDE_ID_BASE;
+const COMMAND_ID_BASE = 1_000_000;
+const inFlight = new Map<number, (err: string | null) => void>();
+let nextCommand = COMMAND_ID_BASE;
 
 /**
  * Exécute une commande mpv SANS bloquer le processus principal.
@@ -167,25 +167,25 @@ let prochaineCommande = COMMANDE_ID_BASE;
 export function command(args: readonly string[]): Promise<string | null> {
   if (!ctx) return Promise.resolve("mpv n'est pas demarre");
 
-  const id = prochaineCommande;
-  prochaineCommande += 1;
+  const id = nextCommand;
+  nextCommand += 1;
   return new Promise<string | null>((resolve) => {
-    enVol.set(id, resolve);
-    const envoi = mpvError(mpvApi().commandAsync(ctx, id, [...args, null]) as number);
+    inFlight.set(id, resolve);
+    const sent = mpvError(mpvApi().commandAsync(ctx, id, [...args, null]) as number);
     // Refus à l'ENVOI (arguments invalides, file pleine) : aucune réponse ne
     // viendra jamais, la promesse ne doit pas rester en suspens.
-    if (envoi !== null) {
-      enVol.delete(id);
-      resolve(envoi);
+    if (sent !== null) {
+      inFlight.delete(id);
+      resolve(sent);
     }
   });
 }
 
 /** Règle une commande en vol. Un identifiant inconnu est ignoré sans bruit. */
-function repondre(id: number, code: number): void {
-  const resolve = enVol.get(id);
+function settle(id: number, code: number): void {
+  const resolve = inFlight.get(id);
   if (resolve === undefined) return;
-  enVol.delete(id);
+  inFlight.delete(id);
   resolve(mpvError(code));
 }
 
@@ -214,10 +214,10 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 
   // ⚠️ AVANT `mpv_create`, et à chaque lecture : sous Linux, GTK peut avoir
   // basculé `LC_NUMERIC` sur la locale du système entre-temps, et libmpv y lit
-  // `0.5` comme `0`. Voir `localeC.ts` — sans objet ailleurs.
-  const localeAvant = poserLocaleNumeriqueC();
-  if (localeAvant !== null && localeAvant !== "C") {
-    console.info(`[mpv] LC_NUMERIC ramené de ${localeAvant} à C`);
+  // `0.5` comme `0`. Voir `cLocale.ts` — sans objet ailleurs.
+  const localeBefore = setNumericLocaleC();
+  if (localeBefore !== null && localeBefore !== "C") {
+    console.info(`[mpv] LC_NUMERIC ramené de ${localeBefore} à C`);
   }
 
   const handle = mpvApi().create() as unknown;
@@ -227,7 +227,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   // Les options de la page, puis un socle non négociable : sans lui, mpv charge
   // sept scripts Lua, LuaJIT écrit du code machine, et la signature durcie du
   // paquet Mac App Store fait TUER le processus — voir `mpvOptions.ts`.
-  poserOptions(ctx, opts.options);
+  applyOptions(ctx, opts.options);
   // ⚠️ `wid` est POSÉ SOUS WINDOWS UNIQUEMENT, et l'omettre ailleurs n'est pas
   // un détail : c'est la différence entre une lecture et une application figée.
   //
@@ -271,8 +271,8 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
   // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
-  pump = setInterval(() => drain(ctx, sink, { repondre, auShutdown: () => {
-    if (auShutdown !== null) auShutdown();
+  pump = setInterval(() => drain(ctx, sink, { settle, onShutdown: () => {
+    if (onShutdown !== null) onShutdown();
   } }), 20);
   return null;
 }
@@ -282,7 +282,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
  *
  * ⚠️ Sur macOS, `terminateDestroy` FIGE le processus : elle attend le démontage
  * de la sortie vidéo, qui réclame le thread principal — celui-là même qui
- * appelle. Le chemin normal y passe donc par `mpvArret.ts`, qui démonte la
+ * appelle. Le chemin normal y passe donc par `mpvShutdown.ts`, qui démonte la
  * vidéo d'abord. Cette fonction reste la sortie de secours : elle sert quand
  * `mpv_initialize` a échoué, cas où aucune sortie vidéo n'existe encore et où
  * `mpv_destroy` rend donc la main sans attendre personne.
@@ -296,16 +296,16 @@ export function destroy(): void {
   }
   ctx = null;
   observedIds = new Map();
-  oublierCadence();
-  oublierEtat();
-  oublierCouche();
-  oublierSortie();
-  oublierLectures();
+  forgetCadence();
+  forgetState();
+  forgetLayer();
+  forgetOutput();
+  forgetReads();
 
   // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
   // commande laissée en suspens retiendrait pour toujours l'appelant — et donc
   // la poignée IPC qui l'attend, ce qui vaut une commande native perdue à
   // chaque changement d'épisode.
-  for (const resolve of enVol.values()) resolve("instance mpv detruite");
-  enVol.clear();
+  for (const resolve of inFlight.values()) resolve("instance mpv detruite");
+  inFlight.clear();
 }

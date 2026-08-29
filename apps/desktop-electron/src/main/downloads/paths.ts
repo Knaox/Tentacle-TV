@@ -87,7 +87,7 @@ export function setRoot(db: DatabaseSync, newRoot: string): string {
     // `EACCES` une ACL, `EROFS` un volume monté en lecture seule — trois
     // conduites à tenir différentes, que « pas accessible en écriture »
     // confondait en une seule.
-    throw new Error(`root-not-writable: ${causeSysteme(error)}`);
+    throw new Error(`root-not-writable: ${systemCause(error)}`);
   }
 
   settingSet(db, STORAGE_ROOT_KEY, newRoot);
@@ -102,12 +102,12 @@ export function setRoot(db: DatabaseSync, newRoot: string): string {
  * la sonde en écrit un troisième, savoir LEQUEL a cédé oriente le diagnostic.
  * Le message verbeux de Node est écarté — il répète le code et l'appel système.
  */
-function causeSysteme(error: unknown): string {
+function systemCause(error: unknown): string {
   const errno = error as NodeJS.ErrnoException;
   const code = errno?.code ?? "";
   if (code === "") return String(error);
-  const cible = errno?.path ?? "";
-  return cible === "" ? code : `${code} ${cible}`;
+  const target = errno?.path ?? "";
+  return target === "" ? code : `${code} ${target}`;
 }
 
 /** Espace libre du volume portant la racine, en octets. */

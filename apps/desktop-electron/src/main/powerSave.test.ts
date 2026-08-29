@@ -6,106 +6,106 @@
 
 import { describe, expect, it } from "vitest";
 import {
-  creerVeilleEcran,
-  creerVeilleSysteme,
-  type BloqueurVeille,
-  type TypeBlocage,
+  createDisplayWakeLock,
+  createSystemWakeLock,
+  type SleepBlocker,
+  type BlockerKind,
 } from "./powerSave";
 
-interface Factice extends BloqueurVeille {
-  actifs: () => number[];
-  demarrages: () => number;
-  types: () => TypeBlocage[];
+interface Fake extends SleepBlocker {
+  active: () => number[];
+  startups: () => number;
+  types: () => BlockerKind[];
 }
 
 /** `powerSaveBlocker` de bureau, en mémoire. */
-function bloqueurFactice(): Factice {
-  const actifs = new Set<number>();
-  const types: TypeBlocage[] = [];
-  let suivant = 1;
-  let demarrages = 0;
+function fakeBlocker(): Fake {
+  const active = new Set<number>();
+  const types: BlockerKind[] = [];
+  let next = 1;
+  let startups = 0;
   return {
     start(type) {
-      demarrages += 1;
+      startups += 1;
       types.push(type);
-      const id = suivant;
-      suivant += 1;
-      actifs.add(id);
+      const id = next;
+      next += 1;
+      active.add(id);
       return id;
     },
     stop(id) {
-      actifs.delete(id);
+      active.delete(id);
     },
     isStarted(id) {
-      return actifs.has(id);
+      return active.has(id);
     },
-    actifs: () => [...actifs],
-    demarrages: () => demarrages,
+    active: () => [...active],
+    startups: () => startups,
     types: () => [...types],
   };
 }
 
 describe("veille de l'ecran", () => {
   it("pose un blocage, et un seul", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleEcran(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createDisplayWakeLock(blocker);
 
-    veille.empecher();
-    veille.empecher();
-    veille.empecher();
+    wakeLock.prevent();
+    wakeLock.prevent();
+    wakeLock.prevent();
 
-    expect(bloqueur.demarrages()).toBe(1);
-    expect(bloqueur.actifs()).toHaveLength(1);
-    expect(bloqueur.types()).toEqual(["prevent-display-sleep"]);
+    expect(blocker.startups()).toBe(1);
+    expect(blocker.active()).toHaveLength(1);
+    expect(blocker.types()).toEqual(["prevent-display-sleep"]);
   });
 
   it("rend le blocage", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleEcran(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createDisplayWakeLock(blocker);
 
-    veille.empecher();
-    veille.rendre();
+    wakeLock.prevent();
+    wakeLock.release();
 
-    expect(bloqueur.actifs()).toHaveLength(0);
+    expect(blocker.active()).toHaveLength(0);
   });
 
   it("ne fait rien quand il n'y a rien a rendre", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleEcran(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createDisplayWakeLock(blocker);
 
-    veille.rendre();
-    veille.rendre();
+    wakeLock.release();
+    wakeLock.release();
 
-    expect(bloqueur.demarrages()).toBe(0);
-    expect(bloqueur.actifs()).toHaveLength(0);
+    expect(blocker.startups()).toBe(0);
+    expect(blocker.active()).toHaveLength(0);
   });
 
   it("repose un blocage apres l'avoir rendu", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleEcran(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createDisplayWakeLock(blocker);
 
-    veille.empecher();
-    veille.rendre();
-    veille.empecher();
+    wakeLock.prevent();
+    wakeLock.release();
+    wakeLock.prevent();
 
-    expect(bloqueur.demarrages()).toBe(2);
-    expect(bloqueur.actifs()).toHaveLength(1);
+    expect(blocker.startups()).toBe(2);
+    expect(blocker.active()).toHaveLength(1);
   });
 
   // Le systeme peut lever un blocage de son cote : le croire encore actif
   // laisserait l'ecran s'eteindre en pleine lecture, sans que rien ne le dise.
   it("repose un blocage que le systeme a leve", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleEcran(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createDisplayWakeLock(blocker);
 
-    veille.empecher();
-    const pose = bloqueur.actifs()[0];
-    expect(pose).toBeDefined();
-    if (pose !== undefined) bloqueur.stop(pose);
-    veille.empecher();
+    wakeLock.prevent();
+    const applied = blocker.active()[0];
+    expect(applied).toBeDefined();
+    if (applied !== undefined) blocker.stop(applied);
+    wakeLock.prevent();
 
-    expect(bloqueur.demarrages()).toBe(2);
-    expect(bloqueur.actifs()).toHaveLength(1);
+    expect(blocker.startups()).toBe(2);
+    expect(blocker.active()).toHaveLength(1);
   });
 });
 
@@ -114,31 +114,31 @@ describe("veille du systeme", () => {
   // Se tromper de type et le telechargement s'arreterait quand meme, ou bien
   // l'ecran resterait allume toute la nuit pour un transfert.
   it("demande l'anti-suspension, pas l'anti-veille de l'ecran", () => {
-    const bloqueur = bloqueurFactice();
+    const blocker = fakeBlocker();
 
-    creerVeilleSysteme(bloqueur).empecher();
+    createSystemWakeLock(blocker).prevent();
 
-    expect(bloqueur.types()).toEqual(["prevent-app-suspension"]);
+    expect(blocker.types()).toEqual(["prevent-app-suspension"]);
   });
 
   it("pose un blocage, et un seul", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleSysteme(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createSystemWakeLock(blocker);
 
-    veille.empecher();
-    veille.empecher();
+    wakeLock.prevent();
+    wakeLock.prevent();
 
-    expect(bloqueur.demarrages()).toBe(1);
+    expect(blocker.startups()).toBe(1);
   });
 
   it("rend le blocage", () => {
-    const bloqueur = bloqueurFactice();
-    const veille = creerVeilleSysteme(bloqueur);
+    const blocker = fakeBlocker();
+    const wakeLock = createSystemWakeLock(blocker);
 
-    veille.empecher();
-    veille.rendre();
+    wakeLock.prevent();
+    wakeLock.release();
 
-    expect(bloqueur.actifs()).toHaveLength(0);
+    expect(blocker.active()).toHaveLength(0);
   });
 });
 
@@ -147,18 +147,18 @@ describe("veille du systeme", () => {
 // pleine lecture.
 describe("les deux blocages cohabitent", () => {
   it("rendre l'un laisse l'autre pose", () => {
-    const bloqueur = bloqueurFactice();
-    const ecran = creerVeilleEcran(bloqueur);
-    const systeme = creerVeilleSysteme(bloqueur);
+    const blocker = fakeBlocker();
+    const display = createDisplayWakeLock(blocker);
+    const system = createSystemWakeLock(blocker);
 
-    ecran.empecher();
-    systeme.empecher();
-    systeme.rendre();
+    display.prevent();
+    system.prevent();
+    system.release();
 
-    expect(bloqueur.actifs()).toHaveLength(1);
+    expect(blocker.active()).toHaveLength(1);
 
-    ecran.rendre();
+    display.release();
 
-    expect(bloqueur.actifs()).toHaveLength(0);
+    expect(blocker.active()).toHaveLength(0);
   });
 });
