@@ -30,6 +30,8 @@ interface PlaybackOverlayProps {
   onPlayNow: () => void;
   /** Couche du bouton de saut : `z-50` web, `z-20` bureau (mpv). */
   layer?: string;
+  /** La barre de contrôles est-elle à l'écran ? (le bouton lui cède la place). */
+  controlsVisible?: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -39,6 +41,7 @@ interface PlaybackOverlayProps {
 
 export function PlaybackOverlay({
   overlay, countdownTotals, onSkip, onDismiss, onPlayNow, layer = "z-20",
+  controlsVisible,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: PlaybackOverlayProps) {
@@ -53,6 +56,7 @@ export function PlaybackOverlay({
           onSkip={onSkip}
           onDismiss={onDismiss}
           layer={layer}
+          controlsVisible={controlsVisible}
         />
       )}
       <AnimatePresence>

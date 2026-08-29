@@ -1,22 +1,35 @@
 /**
- * LE bouton de saut — intro, résumé, aperçu, générique : une seule pilule,
- * BLANCHE, alignée sur les boutons principaux de l'application (tokens
- * `--cta-primary-*`, mêmes que « Lire » sur une fiche). Elle remplace
- * l'ancienne pilule noire de l'intro et le bouton de générique copié-collé.
+ * LE bouton de saut — intro, résumé, aperçu, générique, fin : une seule
+ * pilule, BLANCHE, alignée sur les boutons principaux de l'application
+ * (tokens `--cta-primary-*`, mêmes que « Lire » sur une fiche).
  *
- * Le langage ne change pas : même place, même poids. Le décompte n'ajoute que
- * trois choses — le libellé qui compte, une glissière qui court, une croix
- * pour s'y opposer. Annuler ne retire pas le bouton : il redevient manuel.
+ * # La croix, et pourquoi elle est toujours là
  *
- * PAS de `backdrop-filter` : la pilule vit au-dessus de la vidéo (que le
- * moteur web ne voit même pas côté mpv), et son fond blanc est opaque —
- * un flou ne flouterait rien et coûterait une couche composée par image.
- * Animations en CSS pur : `scaleX` seul, jamais `width`.
+ * Elle n'apparaissait que pendant le décompte : sans décompte, aucun moyen de
+ * dire « ne me le propose plus ». Elle est désormais permanente, quel que soit
+ * le réglage — et elle appartient à la pilule au lieu de flotter à côté d'elle
+ * en noir : un seul objet, un séparateur, deux surfaces également cliquables.
+ * Cible ≥ 44 px de haut des deux côtés (l'ancienne croix faisait 32).
+ *
+ * # Ce qui bouge, et ce qui ne bouge pas
+ *
+ * Le bouton monte au-dessus de la barre de contrôles quand elle est là, et
+ * redescend quand elle s'efface — en `translate`, jamais en `bottom` (animer
+ * une position repeint ; animer une transformée compose). Même règle pour
+ * l'entrée et la glissière du décompte : `transform` et `opacity`, rien
+ * d'autre. Sous « animations réduites », tout se pose sans transition.
+ *
+ * PAS de `backdrop-filter` : la pilule vit au-dessus de mpv, que le moteur web
+ * ne voit même pas, et son fond blanc est opaque — un flou ne flouterait rien
+ * et coûterait une couche composée par image. L'ombre passe par
+ * `videoShadow()` : macOS et Linux ont un canal alpha, où un flou large sort
+ * en aplat noir.
  */
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SkipLabelKey } from "@tentacle-tv/shared";
+import { videoShadow } from "../../lib/videoShadow";
 
 interface SkipSegmentButtonProps {
   /** Clé i18n du libellé (`player:<clé>` et sa forme décomptée `<clé>In`). */
@@ -27,42 +40,82 @@ interface SkipSegmentButtonProps {
   countdownTotalMs: number;
   /** Le saut — clic sur la pilule (le décompte, lui, agit tout seul). */
   onSkip: () => void;
-  /** Refuser le saut automatique pour ce passage. */
+  /** Ne plus proposer ce passage de la lecture (la croix). */
   onDismiss: () => void;
   /** Couche d'empilement : `z-50` sur le web, `z-20` sur le bureau. */
   layer: string;
+  /** La barre de contrôles est-elle à l'écran ? La pilule lui cède la place. */
+  controlsVisible?: boolean;
 }
+
+const PILL_SHADOW = videoShadow(
+  "shadow-[0_8px_28px_rgba(0,0,0,0.45)]",
+  "ring-1 ring-black/15",
+);
 
 export function SkipSegmentButton({
   labelKey, countdownSeconds, countdownTotalMs, onSkip, onDismiss, layer,
+  controlsVisible = false,
 }: SkipSegmentButtonProps) {
   const { t } = useTranslation("player");
   const armed = countdownSeconds !== null;
 
   return (
-    <div className={`absolute bottom-28 right-6 flex items-center gap-2 ${layer}`}>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onSkip(); }}
-        className="relative overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg px-6 py-2.5 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
-      >
-        {armed
-          ? t(`player:${labelKey}In`, { seconds: countdownSeconds })
-          : t(`player:${labelKey}`)}
-        {armed && <Slider durationMs={countdownTotalMs} />}
-      </button>
-      {armed && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-          aria-label={t("player:dismiss")}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white/85 transition-colors hover:bg-black/80 hover:text-white"
+    <div
+      className={`absolute bottom-10 right-6 transition-transform duration-300 ease-out motion-reduce:transition-none ${
+        controlsVisible ? "-translate-y-16" : "translate-y-0"
+      } ${layer}`}
+    >
+      <Rising>
+        <div
+          className={`flex items-stretch overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg ${PILL_SHADOW}`}
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onSkip(); }}
+            className="relative min-h-11 px-6 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+          >
+            {armed
+              ? t(`player:${labelKey}In`, { seconds: countdownSeconds })
+              : t(`player:${labelKey}`)}
+            {/* La glissière repart à chaque réarmement : la clé porte le
+                décompte total ET le libellé, donc tout changement de passage. */}
+            {armed && <Slider key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
+          </button>
+
+          <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+            aria-label={t("player:dismiss")}
+            title={t("player:dismiss")}
+            className="flex min-h-11 w-11 items-center justify-center text-cta-primary-fg/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-cta-primary-fg"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </Rising>
+    </div>
+  );
+}
+
+/** L'entrée : la pilule monte et se révèle, en une seule image composée. */
+function Rising({ children }: { children: React.ReactNode }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <div
+      className={`origin-bottom-right transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none ${
+        shown ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+      }`}
+    >
+      {children}
     </div>
   );
 }
