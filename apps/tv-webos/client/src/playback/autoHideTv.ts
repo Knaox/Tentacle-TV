@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { montrerOsd, poserLecture, useEtatLecteurTv } from "@tentacle-tv/tv-core";
+import { showOsd, setPlaying, useTvPlayerState } from "@tentacle-tv/tv-core";
 
 /**
  * L'auto-masquage des commandes, version téléviseur.
@@ -29,17 +29,17 @@ export function useControlsAutoHide(playing: boolean): {
   showControls: boolean;
   scheduleHide: () => void;
 } {
-  const etat = useEtatLecteurTv();
+  const etat = useTvPlayerState();
 
   useEffect(() => {
-    poserLecture(playing);
+    setPlaying(playing);
   }, [playing]);
 
   // Le web appelle ceci sur `onMouseMove` — donc sous le pointeur de la Magic
   // Remote, et là seulement. Les touches passent par le contrôleur, qui écrit
   // dans le même magasin.
   const scheduleHide = useCallback(() => {
-    montrerOsd();
+    showOsd();
   }, []);
 
   return { showControls: etat.mode !== "repos", scheduleHide };

@@ -100,8 +100,8 @@ function cadreCible(rect: DOMRect, actif: boolean): HTMLElement {
 }
 
 function panneau(manquements: Manquement[]): HTMLElement {
-  const boite = document.createElement("div");
-  boite.style.cssText = [
+  const box = document.createElement("div");
+  box.style.cssText = [
     "position:absolute",
     "right:12px;top:12px",
     "max-width:520px;max-height:70vh;overflow:hidden",
@@ -131,6 +131,6 @@ function panneau(manquements: Manquement[]): HTMLElement {
   ];
   if (manquements.length > 14) lignes.push(`… et ${manquements.length - 14} de plus`);
 
-  boite.textContent = lignes.join("\n");
-  return boite;
+  box.textContent = lignes.join("\n");
+  return box;
 }

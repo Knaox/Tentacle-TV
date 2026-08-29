@@ -163,11 +163,11 @@ function premierEnOrdreDeLecture(candidats: Candidat[]): HTMLElement | null {
 
   let meilleur = retenus[0];
   for (const candidat of retenus) {
-    if (candidat.boite.haut < meilleur.boite.haut - TOLERANCE_LIGNE) {
+    if (candidat.box.top < meilleur.box.top - TOLERANCE_LIGNE) {
       meilleur = candidat;
     } else if (
-      Math.abs(candidat.boite.haut - meilleur.boite.haut) <= TOLERANCE_LIGNE &&
-      candidat.boite.gauche < meilleur.boite.gauche
+      Math.abs(candidat.box.top - meilleur.box.top) <= TOLERANCE_LIGNE &&
+      candidat.box.left < meilleur.box.left
     ) {
       meilleur = candidat;
     }

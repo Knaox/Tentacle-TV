@@ -56,7 +56,7 @@ export function LigneEpisodeTv({ episodeId, children }: ProprietesLigneEpisodeTv
   }, [episodeId, navigate]);
 
   const appui = useMemo(
-    () => creerAppuiLong({ court: actionCourte, long: actionLongue }),
+    () => creerAppuiLong({ short: actionCourte, long: actionLongue }),
     [actionCourte, actionLongue],
   );
 

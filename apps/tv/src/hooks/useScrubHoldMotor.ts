@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Platform } from "react-native";
-import { creerMoteurMaintien } from "@tentacle-tv/tv-core";
+import { createHoldMotor } from "@tentacle-tv/tv-core";
 
 /** Maintien ←/→ avant d'entrer en avance/recul rapide, APRÈS le signal
  *  long-press système (~300 ms). Android : ~550-600 ms de maintien total —
@@ -72,16 +72,16 @@ export function useScrubHoldMotor(args: {
 
   const moteur = useMemo(
     () =>
-      creerMoteurMaintien({
-        sauter: (sens) => stepRef.current(dirOf(sens)),
-        avancer: (sens, palier) => {
+      createHoldMotor({
+        jump: (sens) => stepRef.current(dirOf(sens)),
+        advance: (sens, palier) => {
           tickingRef.current = true;
           tickRef.current(dirOf(sens), palier);
         },
       }),
     [],
   );
-  useEffect(() => () => moteur.detruire(), [moteur]);
+  useEffect(() => () => moteur.destroy(), [moteur]);
 
   const markTickingStopped = useCallback(() => {
     if (tickingRef.current) tickingStoppedAtRef.current = Date.now();
@@ -95,7 +95,7 @@ export function useScrubHoldMotor(args: {
     pendingWakeRef.current = false;
     tickingRef.current = true;
     lastCodeRef.current = CODES.dpad[dir];
-    moteur.appuyer(CODES.dpad[dir], sensOf(dir), true);
+    moteur.press(CODES.dpad[dir], sensOf(dir), true);
   }, [moteur]);
 
   // --- Armement différé (signal long-press natif) ---
@@ -144,7 +144,7 @@ export function useScrubHoldMotor(args: {
    *  cadence de répétition (tic accéléré). */
   const mediaPulse = useCallback((dir: Dir) => {
     lastCodeRef.current = CODES.media[dir];
-    moteur.appuyer(CODES.media[dir], sensOf(dir), false);
+    moteur.press(CODES.media[dir], sensOf(dir), false);
   }, [moteur]);
 
   /** Tap ←/→ OSD caché (Android) : demande un réveil au KEY-UP. */
@@ -155,7 +155,7 @@ export function useScrubHoldMotor(args: {
   const onHoldRelease = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    moteur.relacher(lastCodeRef.current);
+    moteur.release(lastCodeRef.current);
     markTickingStopped();
     onHoldEnd();
     if (pendingWakeRef.current) {
@@ -169,7 +169,7 @@ export function useScrubHoldMotor(args: {
   const stopAll = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    moteur.annuler();
+    moteur.cancel();
     markTickingStopped();
     pendingWakeRef.current = false;
   }, [cancelScrubHold, cancelHoldFromDown, moteur, markTickingStopped]);

@@ -17,7 +17,7 @@ import {
 } from "@tentacle-tv/shared";
 import { tentacleApiFetch } from "./usePreferences";
 
-const VIDE: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
+const EMPTY: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
 
 export function usePlaybackSegments(
   itemId: string | undefined,
@@ -29,8 +29,8 @@ export function usePlaybackSegments(
     queryKey: ["playback-segments", itemId],
     queryFn: async (): Promise<PlaybackSegmentsResponse | null> => {
       try {
-        const brut = await tentacleApiFetch<unknown>(`/api/playback/segments/${itemId}`);
-        return parsePlaybackSegmentsResponse(brut);
+        const raw = await tentacleApiFetch<unknown>(`/api/playback/segments/${itemId}`);
+        return parsePlaybackSegmentsResponse(raw);
       } catch {
         return null;
       }
@@ -40,5 +40,5 @@ export function usePlaybackSegments(
     retry: false,
   });
 
-  return data ?? VIDE;
+  return data ?? EMPTY;
 }

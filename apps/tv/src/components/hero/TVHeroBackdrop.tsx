@@ -81,7 +81,7 @@ function FadingBackdrop({ uri, onSettled }: { uri: string; onSettled?: () => voi
       onLoad={() => {
         Animated.timing(opacity, {
           toValue: 1,
-          duration: TV_BANNER_CARD.fonduMs,
+          duration: TV_BANNER_CARD.fadeMs,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
         }).start(({ finished }) => {

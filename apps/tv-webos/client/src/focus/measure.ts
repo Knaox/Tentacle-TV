@@ -1,4 +1,4 @@
-import { boiteDepuisRectangle, type Boite } from "@tentacle-tv/tv-core";
+import { boxFromRect, type Box } from "@tentacle-tv/tv-core";
 
 /**
  * La boîte qui sert à naviguer : celle de la mise en page, pas celle du rendu.
@@ -73,15 +73,15 @@ export function lireEchellePure(transform: string): EchellePure | null {
  * Fonction pure, et testée : c'est de l'arithmétique de rectangles, exactement
  * ce qu'un test sait juger.
  */
-export function inverserEchelle(boite: Boite, echelle: EchellePure, origine: Origine): Boite {
-  const gauche = boite.gauche - origine.x * (1 - echelle.a) - echelle.tx;
-  const haut = boite.haut - origine.y * (1 - echelle.d) - echelle.ty;
+export function inverserEchelle(box: Box, echelle: EchellePure, origine: Origine): Box {
+  const left = box.left - origine.x * (1 - echelle.a) - echelle.tx;
+  const top = box.top - origine.y * (1 - echelle.d) - echelle.ty;
 
   return {
-    gauche,
-    haut,
-    droite: gauche + (boite.droite - boite.gauche) / echelle.a,
-    bas: haut + (boite.bas - boite.haut) / echelle.d,
+    left,
+    top,
+    right: left + (box.right - box.left) / echelle.a,
+    bottom: top + (box.bottom - box.top) / echelle.d,
   };
 }
 
@@ -100,17 +100,17 @@ function lireOrigine(transformOrigin: string): Origine | null {
  * `rectangle` évite une seconde mesure quand l'appelant vient d'en faire une —
  * le recensement mesure déjà chaque candidat pour la fenêtre de viewport.
  */
-export function boiteDeNavigation(element: HTMLElement, rectangle?: DOMRect): Boite {
-  const boite = boiteDepuisRectangle(rectangle ?? element.getBoundingClientRect());
+export function boiteDeNavigation(element: HTMLElement, rectangle?: DOMRect): Box {
+  const box = boxFromRect(rectangle ?? element.getBoundingClientRect());
 
   const style = window.getComputedStyle(element);
   const echelle = lireEchellePure(style.transform);
-  if (!echelle) return boite;
+  if (!echelle) return box;
 
   const origine = lireOrigine(style.transformOrigin);
-  if (!origine) return boite;
+  if (!origine) return box;
 
-  return inverserEchelle(boite, echelle, origine);
+  return inverserEchelle(box, echelle, origine);
 }
 
 /**

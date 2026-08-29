@@ -9,7 +9,7 @@ interface TVBannerCardFrameProps {
   /** Hauteur de la carte, en centièmes de la hauteur d'écran (62 accueil,
    *  44 bibliothèque — `TV_BANNER_CARD`). */
   heightVh: number;
-  /** Backdrop en PETITE taille (`TV_AMBILIGHT.largeurSource`) : le halo est une
+  /** Backdrop en PETITE taille (`TV_AMBILIGHT.sourceWidth`) : le halo est une
    *  copie floutée, un original fin n'apporterait rien — même économie que le
    *  web, à ceci près qu'en natif le noyau de flou se quantifie sur la source,
    *  ce qui interdit de descendre aussi bas que les 128 px du navigateur. */
@@ -66,7 +66,7 @@ export const TVBannerCardFrame = memo(function TVBannerCardFrame({
           uri={ambilightUri}
           cardW={cardW}
           cardH={height}
-          opacity={TV_BANNER_CARD.haloOpacite}
+          opacity={TV_BANNER_CARD.haloOpacity}
         />
       )}
       <View
@@ -76,7 +76,7 @@ export const TVBannerCardFrame = memo(function TVBannerCardFrame({
           borderWidth: 1,
           borderColor: withAlpha(
             Colors.accentPurple,
-            TV_BANNER_CARD.lisereOpacite,
+            TV_BANNER_CARD.borderOpacity,
             "rgba(139, 92, 246, 0.22)",
           ),
           overflow: "hidden",

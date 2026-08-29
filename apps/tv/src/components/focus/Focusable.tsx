@@ -7,7 +7,7 @@ import { Easings } from "../../theme/motion";
 import { CalqueBouton, CalqueCarte, CalqueHalo, CalqueLigne } from "./FocusOverlays";
 import { TV_CARD_FOCUS } from "@tentacle-tv/theme";
 // Seuil du maintien, partagé avec la LG : le geste doit être le même partout.
-import { SEUIL_APPUI_LONG_MS } from "@tentacle-tv/tv-core";
+import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
 
 interface FocusableBaseProps {
   onPress?: (e?: GestureResponderEvent) => void;
@@ -204,7 +204,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
       onPressOut={handlePressOut}
       onPress={handlePress}
       onLongPress={onLongPress}
-      delayLongPress={SEUIL_APPUI_LONG_MS}
+      delayLongPress={LONG_PRESS_THRESHOLD_MS}
       onFocus={handleFocus}
       onBlur={handleBlur}
       hasTVPreferredFocus={hasTVPreferredFocus}
@@ -224,7 +224,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
         // dessus, où le regard n'a rien à faire ; en grandissant par le bas,
         // elle pousse vers le haut, dans la marge que la rangée réserve déjà
         // pour l'anneau.
-        { transformOrigin: TV_CARD_FOCUS.origine },
+        { transformOrigin: TV_CARD_FOCUS.origin },
         scaleStyle,
         rang,
         hasGap && { margin: -RING_GAP, padding: RING_GAP },

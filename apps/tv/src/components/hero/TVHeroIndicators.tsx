@@ -4,7 +4,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { TV_BANNER_CARD } from "@tentacle-tv/theme";
 import { Colors } from "../../theme/colors";
 
-const JAUGE = TV_BANNER_CARD.jauge;
+const GAUGE = TV_BANNER_CARD.gauge;
 
 interface TVHeroIndicatorsProps {
   count: number;
@@ -29,10 +29,10 @@ export const TVHeroIndicators = memo(function TVHeroIndicators({
     <View
       style={{
         position: "absolute",
-        bottom: JAUGE.retrait,
-        right: JAUGE.retrait,
+        bottom: GAUGE.inset,
+        right: GAUGE.inset,
         flexDirection: "row",
-        gap: JAUGE.ecart,
+        gap: GAUGE.gap,
         zIndex: 10,
       }}
     >
@@ -45,13 +45,13 @@ export const TVHeroIndicators = memo(function TVHeroIndicators({
 
 function GaugePill({ active }: { active: boolean }) {
   const width = useRef(
-    new Animated.Value(active ? JAUGE.largeurActive : JAUGE.largeurInactive),
+    new Animated.Value(active ? GAUGE.activeWidth : GAUGE.inactiveWidth),
   ).current;
 
   useEffect(() => {
     Animated.timing(width, {
-      toValue: active ? JAUGE.largeurActive : JAUGE.largeurInactive,
-      duration: JAUGE.transitionMs,
+      toValue: active ? GAUGE.activeWidth : GAUGE.inactiveWidth,
+      duration: GAUGE.transitionMs,
       easing: Easing.out(Easing.ease),
       useNativeDriver: false,
     }).start();
@@ -61,8 +61,8 @@ function GaugePill({ active }: { active: boolean }) {
     <Animated.View
       style={{
         width,
-        height: JAUGE.hauteur,
-        borderRadius: JAUGE.hauteur / 2,
+        height: GAUGE.height,
+        borderRadius: GAUGE.height / 2,
         overflow: "hidden",
         backgroundColor: active ? "transparent" : "rgba(255,255,255,0.28)",
         shadowColor: active ? Colors.accentPurple : "transparent",

@@ -101,11 +101,11 @@ describe("parité des clés entre schémas", () => {
     const light = walk(buildLightPalette());
     const dark = walk(buildDarkPalette());
 
-    const seulementClair = light.filter((p) => !dark.includes(p));
-    const seulementSombre = dark.filter((p) => !light.includes(p));
+    const lightOnly = light.filter((p) => !dark.includes(p));
+    const darkOnly = dark.filter((p) => !light.includes(p));
 
-    expect(seulementClair.sort()).toEqual([...OPTIONNELS_ADMIS].sort());
-    expect(seulementSombre).toEqual([]);
+    expect(lightOnly.sort()).toEqual([...OPTIONNELS_ADMIS].sort());
+    expect(darkOnly).toEqual([]);
   });
 });
 

@@ -23,14 +23,14 @@ function getAuthHeader(): Record<string, string> {
  * avec la même base et le même jeton que les préférences — réutilisé par les
  * segments de lecture et les réglages, qui vivent sous d'autres préfixes.
  */
-export async function tentacleApiFetch<T>(cheminApi: string, init?: RequestInit): Promise<T> {
+export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...getAuthHeader(),
     ...(init?.headers as Record<string, string>),
   };
   if (init?.body) headers["Content-Type"] = "application/json";
   const hasToken = !!(_tokenOverride || (typeof localStorage !== "undefined" && localStorage.getItem("tentacle_token")));
-  const res = await fetch(`${_backendRoot}${cheminApi}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
+  const res = await fetch(`${_backendRoot}${apiPath}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
     throw new Error(msg);

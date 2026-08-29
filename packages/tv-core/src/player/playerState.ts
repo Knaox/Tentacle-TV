@@ -22,49 +22,49 @@ import { useSyncExternalStore } from "react";
  * fabrication d'objet.
  */
 
-export type ModeLecteur = "repos" | "osd" | "scrub";
-export type PanneauOuvert = "aucun" | "pistes" | "episodes";
+export type PlayerMode = "repos" | "osd" | "scrub";
+export type OpenPanel = "aucun" | "pistes" | "episodes";
 
-export interface EtatScrubPartage {
+export interface SharedScrubState {
   position: number;
-  palier: number;
+  tier: number;
 }
 
-export interface EtatLecteurTv {
-  monte: boolean;
-  mode: ModeLecteur;
-  panneau: PanneauOuvert;
-  scrub: EtatScrubPartage | null;
+export interface TvPlayerState {
+  mounted: boolean;
+  mode: PlayerMode;
+  panel: OpenPanel;
+  scrub: SharedScrubState | null;
 }
 
 /** Cinq secondes : le temps de lire un titre sans que l'habillage s'installe. */
-const MASQUAGE_MS = 5000;
+const AUTOHIDE_MS = 5000;
 
-const INITIAL: EtatLecteurTv = { monte: false, mode: "osd", panneau: "aucun", scrub: null };
+const INITIAL: TvPlayerState = { mounted: false, mode: "osd", panel: "aucun", scrub: null };
 
-let etat: EtatLecteurTv = INITIAL;
-let enLecture = false;
-let minuteur: ReturnType<typeof setTimeout> | null = null;
-const auditeurs = new Set<() => void>();
+let state: TvPlayerState = INITIAL;
+let playing = false;
+let timer: ReturnType<typeof setTimeout> | null = null;
+const listeners = new Set<() => void>();
 
-function poser(suivant: Partial<EtatLecteurTv>): void {
-  const fusion: EtatLecteurTv = { ...etat, ...suivant };
+function set(next: Partial<TvPlayerState>): void {
+  const merged: TvPlayerState = { ...state, ...next };
   if (
-    fusion.monte === etat.monte &&
-    fusion.mode === etat.mode &&
-    fusion.panneau === etat.panneau &&
-    fusion.scrub === etat.scrub
+    merged.mounted === state.mounted &&
+    merged.mode === state.mode &&
+    merged.panel === state.panel &&
+    merged.scrub === state.scrub
   ) {
     return;
   }
-  etat = fusion;
-  auditeurs.forEach((auditeur) => auditeur());
+  state = merged;
+  listeners.forEach((listener) => listener());
 }
 
-function arreterMinuteur(): void {
-  if (minuteur === null) return;
-  clearTimeout(minuteur);
-  minuteur = null;
+function stopTimer(): void {
+  if (timer === null) return;
+  clearTimeout(timer);
+  timer = null;
 }
 
 /**
@@ -72,91 +72,91 @@ function arreterMinuteur(): void {
  * commandes — c'est le retour visuel qu'on attend d'un lecteur — et un panneau
  * ouvert n'a aucune raison de disparaître sous le doigt.
  */
-function armerMasquage(): void {
-  arreterMinuteur();
-  if (!enLecture || etat.panneau !== "aucun" || etat.mode !== "osd") return;
-  minuteur = setTimeout(() => {
-    minuteur = null;
-    poser({ mode: "repos" });
-  }, MASQUAGE_MS);
+function armAutoHide(): void {
+  stopTimer();
+  if (!playing || state.panel !== "aucun" || state.mode !== "osd") return;
+  timer = setTimeout(() => {
+    timer = null;
+    set({ mode: "repos" });
+  }, AUTOHIDE_MS);
 }
 
-export function sAbonner(rappel: () => void): () => void {
-  auditeurs.add(rappel);
+export function subscribe(callback: () => void): () => void {
+  listeners.add(callback);
   return () => {
-    auditeurs.delete(rappel);
+    listeners.delete(callback);
   };
 }
 
-export function lireEtat(): EtatLecteurTv {
-  return etat;
+export function readState(): TvPlayerState {
+  return state;
 }
 
-export function useEtatLecteurTv(): EtatLecteurTv {
-  return useSyncExternalStore(sAbonner, lireEtat);
+export function useTvPlayerState(): TvPlayerState {
+  return useSyncExternalStore(subscribe, readState);
 }
 
-export function poserMonte(monte: boolean): void {
-  if (!monte) {
-    arreterMinuteur();
-    enLecture = false;
-    poser({ monte: false, mode: "osd", panneau: "aucun", scrub: null });
+export function setMounted(mounted: boolean): void {
+  if (!mounted) {
+    stopTimer();
+    playing = false;
+    set({ mounted: false, mode: "osd", panel: "aucun", scrub: null });
     return;
   }
-  poser({ monte: true, mode: "osd", panneau: "aucun", scrub: null });
-  armerMasquage();
+  set({ mounted: true, mode: "osd", panel: "aucun", scrub: null });
+  armAutoHide();
 }
 
-export function poserLecture(lecture: boolean): void {
-  if (enLecture === lecture) return;
-  enLecture = lecture;
-  armerMasquage();
+export function setPlaying(next: boolean): void {
+  if (playing === next) return;
+  playing = next;
+  armAutoHide();
 }
 
-export function montrerOsd(): void {
-  if (etat.mode === "scrub") return;
-  poser({ mode: "osd" });
-  armerMasquage();
+export function showOsd(): void {
+  if (state.mode === "scrub") return;
+  set({ mode: "osd" });
+  armAutoHide();
 }
 
 /**
  * Repousse l'extinction sans toucher au mode.
  *
- * `montrerOsd()` FORCE le mode à `osd` — ce n'est pas ce qu'on veut d'un simple
+ * `showOsd()` FORCE le mode à `osd` — ce n'est pas ce qu'on veut d'un simple
  * déplacement de focus, qui doit dire « je suis là » sans rien décider. Sans ce
- * report, le minuteur armé au dernier `montrerOsd()` expirait sous les doigts :
+ * report, le minuteur armé au dernier `showOsd()` expirait sous les doigts :
  * l'habillage s'éteignait en pleine navigation, au bout de cinq secondes comptées
  * depuis son apparition et non depuis le dernier geste. La flèche encore tenue
  * se retrouvait alors du côté `repos`, où elle entre dans le flux.
  */
-export function reporterMasquage(): void {
-  if (etat.mode !== "osd") return;
-  armerMasquage();
+export function deferAutoHide(): void {
+  if (state.mode !== "osd") return;
+  armAutoHide();
 }
 
-export function entrerScrub(position: number, palier: number): void {
-  arreterMinuteur();
-  poser({ mode: "scrub", panneau: "aucun", scrub: { position, palier } });
+export function enterScrub(position: number, tier: number): void {
+  stopTimer();
+  set({ mode: "scrub", panel: "aucun", scrub: { position, tier } });
 }
 
-export function majScrub(position: number, palier: number): void {
-  if (etat.mode !== "scrub") return;
-  poser({ scrub: { position, palier } });
+export function updateScrub(position: number, tier: number): void {
+  if (state.mode !== "scrub") return;
+  set({ scrub: { position, tier } });
 }
 
-export function sortirScrub(): void {
-  poser({ mode: "osd", scrub: null });
-  armerMasquage();
+export function exitScrub(): void {
+  set({ mode: "osd", scrub: null });
+  armAutoHide();
 }
 
-export function poserPanneau(panneau: PanneauOuvert): void {
-  poser({ panneau, mode: panneau === "aucun" ? etat.mode : "osd" });
-  armerMasquage();
+export function setPanel(panel: OpenPanel): void {
+  set({ panel, mode: panel === "aucun" ? state.mode : "osd" });
+  armAutoHide();
 }
 
 /** Le lecteur téléviseur est-il monté ? Lu par les touches globales. */
-export function lecteurTvActif(): boolean {
-  return etat.monte;
+export function tvPlayerActive(): boolean {
+  return state.mounted;
 }
 
 /**
@@ -166,6 +166,6 @@ export function lecteurTvActif(): boolean {
  * et le moteur les parcourt sans qu'on écrive une ligne. Non le reste du temps :
  * les flèches y appartiennent au déplacement dans le flux.
  */
-export function navigationOsdActive(): boolean {
-  return etat.monte && etat.mode === "osd";
+export function osdNavigationActive(): boolean {
+  return state.mounted && state.mode === "osd";
 }

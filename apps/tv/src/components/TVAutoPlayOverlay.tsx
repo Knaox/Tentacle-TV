@@ -61,7 +61,7 @@ export function TVAutoPlayOverlay({
     <Animated.View
       importantForAccessibility="yes"
       style={[{
-        position: "absolute", bottom: TV_OVERSCAN_PT.y, right: TV_OVERSCAN_PT.x, width: TV_PLAYER_NEXT_CARD.largeur,
+        position: "absolute", bottom: TV_OVERSCAN_PT.y, right: TV_OVERSCAN_PT.x, width: TV_PLAYER_NEXT_CARD.width,
         borderRadius: 16,
         backgroundColor: "rgba(15, 15, 21, 0.96)",
         borderWidth: 1, borderColor: brandAlpha(0.18),

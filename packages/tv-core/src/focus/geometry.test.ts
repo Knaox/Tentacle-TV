@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  meilleur,
-  noter,
-  restreindreALaPremiereLigne,
-  surLaMemeColonne,
-  surLaMemeLigne,
-  type Boite,
+  best,
+  scoreCandidate,
+  restrictToFirstRow,
+  onSameColumn,
+  onSameRow,
+  type Box,
 } from "./geometry";
 
 /**
@@ -15,156 +15,156 @@ import {
  * colonne. D'où ces tests.
  */
 
-function boite(gauche: number, haut: number, largeur: number, hauteur: number): Boite {
-  return { gauche, haut, droite: gauche + largeur, bas: haut + hauteur };
+function box(left: number, top: number, width: number, height: number): Box {
+  return { left, top, right: left + width, bottom: top + height };
 }
 
-const CARTE = { l: 200, h: 300 };
+const CARD = { w: 200, h: 300 };
 
-describe("noter", () => {
-  const depart = boite(0, 0, CARTE.l, CARTE.h);
+describe("scoreCandidate", () => {
+  const from = box(0, 0, CARD.w, CARD.h);
 
   it("écarte ce qui se trouve derrière", () => {
-    const derriere = boite(-400, 0, CARTE.l, CARTE.h);
-    expect(noter(depart, derriere, "droite")).toBeNull();
+    const behind = box(-400, 0, CARD.w, CARD.h);
+    expect(scoreCandidate(from, behind, "droite")).toBeNull();
   });
 
   it("accepte ce qui se trouve devant", () => {
-    const devant = boite(220, 0, CARTE.l, CARTE.h);
-    expect(noter(depart, devant, "droite")).toBe(20);
+    const ahead = box(220, 0, CARD.w, CARD.h);
+    expect(scoreCandidate(from, ahead, "droite")).toBe(20);
   });
 
   it("écarte un candidat qui occupe la même place sur l'axe visé", () => {
-    const superpose = boite(10, 0, CARTE.l, CARTE.h);
-    expect(noter(depart, superpose, "droite")).toBeNull();
+    const overlapping = box(10, 0, CARD.w, CARD.h);
+    expect(scoreCandidate(from, overlapping, "droite")).toBeNull();
   });
 
   it("ignore un désalignement tant que les projections se chevauchent", () => {
-    const aligne = boite(220, 0, CARTE.l, CARTE.h);
-    const decale = boite(220, 40, CARTE.l, CARTE.h);
-    expect(noter(depart, decale, "droite")).toBe(noter(depart, aligne, "droite"));
+    const aligned = box(220, 0, CARD.w, CARD.h);
+    const offset = box(220, 40, CARD.w, CARD.h);
+    expect(scoreCandidate(from, offset, "droite")).toBe(scoreCandidate(from, aligned, "droite"));
   });
 
   it("pénalise un désalignement franc", () => {
-    const aligne = boite(220, 0, CARTE.l, CARTE.h);
-    const ailleurs = boite(220, 400, CARTE.l, CARTE.h);
-    const scoreAligne = noter(depart, aligne, "droite");
-    const scoreAilleurs = noter(depart, ailleurs, "droite");
-    expect(scoreAligne).not.toBeNull();
-    expect(scoreAilleurs).not.toBeNull();
-    expect(scoreAilleurs as number).toBeGreaterThan(scoreAligne as number);
+    const aligned = box(220, 0, CARD.w, CARD.h);
+    const elsewhere = box(220, 400, CARD.w, CARD.h);
+    const scoreAligned = scoreCandidate(from, aligned, "droite");
+    const scoreElsewhere = scoreCandidate(from, elsewhere, "droite");
+    expect(scoreAligned).not.toBeNull();
+    expect(scoreElsewhere).not.toBeNull();
+    expect(scoreElsewhere as number).toBeGreaterThan(scoreAligned as number);
   });
 
   it("tolère quelques pixels de dépassement", () => {
     // Deux cartes d'une même rangée ne sont pas toujours alignées au pixel ;
     // exiger un franchissement strict en rendrait certaines inatteignables.
-    const affleure = boite(198, 0, CARTE.l, CARTE.h);
-    expect(noter(depart, affleure, "droite")).not.toBeNull();
+    const flush = box(198, 0, CARD.w, CARD.h);
+    expect(scoreCandidate(from, flush, "droite")).not.toBeNull();
   });
 });
 
-describe("noter — voisines chevauchantes", () => {
+describe("scoreCandidate — voisines chevauchantes", () => {
   // Les lignes d'un menu de filtres : 46 px de haut pour un pas de 38 — la
   // passe d'écarts PostCSS pose margin -4px sur toute ligne qui est
   // elle-même flex gap-*, et les boîtes se chevauchent de 8 px, deux fois
   // la tolérance. Cotes relevées sur la dalle.
-  const LIGNE = { l: 358, h: 46 };
-  const cochee = boite(562, 399, LIGNE.l, LIGNE.h);
-  const dessus = boite(562, 361, LIGNE.l, LIGNE.h);
-  const dessous = boite(562, 437, LIGNE.l, LIGNE.h);
+  const ROW = { w: 358, h: 46 };
+  const checked = box(562, 399, ROW.w, ROW.h);
+  const above = box(562, 361, ROW.w, ROW.h);
+  const below = box(562, 437, ROW.w, ROW.h);
 
   it("accepte la voisine du dessous malgré le chevauchement", () => {
-    expect(noter(cochee, dessous, "bas")).toBe(0);
+    expect(scoreCandidate(checked, below, "bas")).toBe(0);
   });
 
   it("accepte la voisine du dessus malgré le chevauchement", () => {
     // Le cas qui refermait le menu : « haut » depuis l'option cochée ne
     // trouvait aucun candidat, et la première option restait inatteignable.
-    expect(noter(cochee, dessus, "haut")).toBe(0);
+    expect(scoreCandidate(checked, above, "haut")).toBe(0);
   });
 
   it("la voisine chevauchante bat la ligne d'après", () => {
-    const dApres = boite(562, 475, LIGNE.l, LIGNE.h);
-    const candidats = [
-      { element: "d-apres", boite: dApres },
-      { element: "voisine", boite: dessous },
+    const nextLine = box(562, 475, ROW.w, ROW.h);
+    const candidates = [
+      { element: "d-apres", box: nextLine },
+      { element: "voisine", box: below },
     ];
-    expect(meilleur(cochee, candidats, "bas")?.element).toBe("voisine");
+    expect(best(checked, candidates, "bas")?.element).toBe("voisine");
   });
 
   it("n'accepte pas pour autant la voisine du mauvais côté", () => {
     // Celle du dessus chevauche aussi — son centre n'a pas franchi celui du
     // départ dans la direction, elle reste écartée de « bas ».
-    expect(noter(cochee, dessus, "bas")).toBeNull();
+    expect(scoreCandidate(checked, above, "bas")).toBeNull();
   });
 
   it("continue d'écarter ce qui est au même endroit", () => {
     // Superposition franche (plus de la moitié) : ce n'est pas un voisin.
-    const presqueMemePlace = boite(562, 411, LIGNE.l, LIGNE.h);
-    expect(noter(cochee, presqueMemePlace, "bas")).toBeNull();
+    const almostSamePlace = box(562, 411, ROW.w, ROW.h);
+    expect(scoreCandidate(checked, almostSamePlace, "bas")).toBeNull();
   });
 
   it("accepte le miroir horizontal — deux pastilles qui se mordent", () => {
-    const pastille = boite(100, 0, 120, 36);
-    const mordue = boite(212, 0, 120, 36);
-    expect(noter(pastille, mordue, "droite")).toBe(0);
-    expect(noter(mordue, pastille, "gauche")).toBe(0);
+    const pill = box(100, 0, 120, 36);
+    const bitten = box(212, 0, 120, 36);
+    expect(scoreCandidate(pill, bitten, "droite")).toBe(0);
+    expect(scoreCandidate(bitten, pill, "gauche")).toBe(0);
   });
 });
 
-describe("meilleur", () => {
+describe("best", () => {
   it("descend dans la même colonne plutôt qu'en diagonale", () => {
     // Le piège classique d'une grille : la carte en diagonale a son coin plus
     // proche que celle située juste dessous.
-    const depart = boite(0, 0, CARTE.l, CARTE.h);
-    const dessous = { element: "dessous", boite: boite(0, 320, CARTE.l, CARTE.h) };
-    const diagonale = { element: "diagonale", boite: boite(220, 310, CARTE.l, CARTE.h) };
+    const from = box(0, 0, CARD.w, CARD.h);
+    const below = { element: "dessous", box: box(0, 320, CARD.w, CARD.h) };
+    const diagonal = { element: "diagonale", box: box(220, 310, CARD.w, CARD.h) };
 
-    expect(meilleur(depart, [diagonale, dessous], "bas")?.element).toBe("dessous");
+    expect(best(from, [diagonal, below], "bas")?.element).toBe("dessous");
   });
 
   it("préfère le voisin immédiat au lointain", () => {
-    const depart = boite(0, 0, CARTE.l, CARTE.h);
-    const proche = { element: "proche", boite: boite(220, 0, CARTE.l, CARTE.h) };
-    const loin = { element: "loin", boite: boite(900, 0, CARTE.l, CARTE.h) };
+    const from = box(0, 0, CARD.w, CARD.h);
+    const near = { element: "proche", box: box(220, 0, CARD.w, CARD.h) };
+    const far = { element: "loin", box: box(900, 0, CARD.w, CARD.h) };
 
-    expect(meilleur(depart, [loin, proche], "droite")?.element).toBe("proche");
+    expect(best(from, [far, near], "droite")?.element).toBe("proche");
   });
 
   it("ne rend rien quand la direction est vide", () => {
-    const depart = boite(500, 0, CARTE.l, CARTE.h);
-    const aGauche = { element: "gauche", boite: boite(0, 0, CARTE.l, CARTE.h) };
+    const from = box(500, 0, CARD.w, CARD.h);
+    const toTheLeft = { element: "gauche", box: box(0, 0, CARD.w, CARD.h) };
 
-    expect(meilleur(depart, [aGauche], "droite")).toBeNull();
+    expect(best(from, [toTheLeft], "droite")).toBeNull();
   });
 
   it("passe d'une rangée à la suivante en gardant la colonne", () => {
     // Rangée du haut, troisième carte : « bas » doit viser la troisième carte
     // de la rangée du bas, pas la première.
-    const depart = boite(440, 0, CARTE.l, CARTE.h);
-    const rangeeBasse = [0, 220, 440, 660].map((x) => ({
+    const from = box(440, 0, CARD.w, CARD.h);
+    const bottomRow = [0, 220, 440, 660].map((x) => ({
       element: `x${x}`,
-      boite: boite(x, 340, CARTE.l, CARTE.h),
+      box: box(x, 340, CARD.w, CARD.h),
     }));
 
-    expect(meilleur(depart, rangeeBasse, "bas")?.element).toBe("x440");
+    expect(best(from, bottomRow, "bas")?.element).toBe("x440");
   });
 
   it("descend droit même quand la colonne voisine est plus haute", () => {
     // Une carte dont le titre tient sur deux lignes remonte le bord haut de sa
     // voisine. « Bas » doit continuer de viser SA colonne, pas celle dont le
     // bord se trouve être quelques pixels plus proche.
-    const depart = boite(440, 0, CARTE.l, CARTE.h);
-    const dessous = { element: "dessous", boite: boite(440, 340, CARTE.l, CARTE.h) };
-    const voisineHaute = { element: "voisine", boite: boite(660, 330, CARTE.l, CARTE.h) };
+    const from = box(440, 0, CARD.w, CARD.h);
+    const below = { element: "dessous", box: box(440, 340, CARD.w, CARD.h) };
+    const tallNeighbour = { element: "voisine", box: box(660, 330, CARD.w, CARD.h) };
 
-    expect(meilleur(depart, [voisineHaute, dessous], "bas")?.element).toBe("dessous");
+    expect(best(from, [tallNeighbour, below], "bas")?.element).toBe("dessous");
   });
 });
 
-describe("surLaMemeLigne", () => {
+describe("onSameRow", () => {
   it("reconnaît deux cartes alignées en haut", () => {
-    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, CARTE.h))).toBe(
+    expect(onSameRow(box(0, 340, CARD.w, CARD.h), box(220, 340, CARD.w, CARD.h))).toBe(
       true,
     );
   });
@@ -172,7 +172,7 @@ describe("surLaMemeLigne", () => {
   it("tolère quelques pixels, comme le reste du module", () => {
     // Les lignes d'une grille en flex ne sont pas alignées au pixel quand les
     // cartes n'ont pas toutes la même hauteur de titre.
-    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 343, CARTE.l, CARTE.h))).toBe(
+    expect(onSameRow(box(0, 340, CARD.w, CARD.h), box(220, 343, CARD.w, CARD.h))).toBe(
       true,
     );
   });
@@ -180,7 +180,7 @@ describe("surLaMemeLigne", () => {
   it("sépare deux lignes distinctes", () => {
     // Le cas qui compte : « droite » depuis la dernière carte d'une ligne ne
     // doit pas descendre en diagonale sur la première de la suivante.
-    expect(surLaMemeLigne(boite(880, 340, CARTE.l, CARTE.h), boite(0, 680, CARTE.l, CARTE.h))).toBe(
+    expect(onSameRow(box(880, 340, CARD.w, CARD.h), box(0, 680, CARD.w, CARD.h))).toBe(
       false,
     );
   });
@@ -188,7 +188,7 @@ describe("surLaMemeLigne", () => {
   it("garde ensemble deux cartes de hauteurs différentes", () => {
     // Un titre qui passe sur deux lignes allonge une carte. Elle reste sur la
     // même ligne que sa voisine — leurs centres, eux, sont éloignés de 75 px.
-    expect(surLaMemeLigne(boite(0, 340, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, 450))).toBe(
+    expect(onSameRow(box(0, 340, CARD.w, CARD.h), box(220, 340, CARD.w, 450))).toBe(
       true,
     );
   });
@@ -199,25 +199,25 @@ describe("surLaMemeLigne", () => {
     // bibliothèque, 26 px d'écart, six fois l'ancienne tolérance. Plus aucune
     // voisine n'était « sur la même ligne », la liste de candidats devenait
     // vide, et gauche comme droite ne faisaient plus rien.
-    const voisine = boite(0, 0, 185, 328);
-    const focalisee = boite(194, -26, 200, 354);
-    expect(surLaMemeLigne(focalisee, voisine)).toBe(true);
-    expect(surLaMemeLigne(voisine, focalisee)).toBe(true);
+    const neighbour = box(0, 0, 185, 328);
+    const focused = box(194, -26, 200, 354);
+    expect(onSameRow(focused, neighbour)).toBe(true);
+    expect(onSameRow(neighbour, focused)).toBe(true);
   });
 
   it("ne fait pas mordre une carte agrandie sur la ligne suivante", () => {
     // Le pendant du précédent, et la raison de ne pas simplement élargir la
     // tolérance : l'agrandissement ne doit pas rendre voisine la ligne d'en
     // dessous, sinon « droite » y redescendrait en diagonale.
-    const focalisee = boite(194, -26, 200, 354);
-    const ligneSuivante = boite(0, 346, 185, 328);
-    expect(surLaMemeLigne(focalisee, ligneSuivante)).toBe(false);
+    const focused = box(194, -26, 200, 354);
+    const nextRow = box(0, 346, 185, 328);
+    expect(onSameRow(focused, nextRow)).toBe(false);
   });
 });
 
-describe("surLaMemeColonne", () => {
+describe("onSameColumn", () => {
   it("reconnaît deux cartes empilées", () => {
-    expect(surLaMemeColonne(boite(220, 0, CARTE.l, CARTE.h), boite(220, 340, CARTE.l, CARTE.h))).toBe(
+    expect(onSameColumn(box(220, 0, CARD.w, CARD.h), box(220, 340, CARD.w, CARD.h))).toBe(
       true,
     );
   });
@@ -225,62 +225,62 @@ describe("surLaMemeColonne", () => {
   it("sépare deux colonnes voisines malgré l'agrandissement au focus", () => {
     // La carte focalisée déborde de ~7 px dans une gouttière de 16 : ses flancs
     // mordent la colonne voisine sans jamais en recouvrir la moitié.
-    const focalisee = boite(212, -26, 200, 354);
-    const colonneVoisine = boite(421, 340, 185, 328);
-    expect(surLaMemeColonne(focalisee, colonneVoisine)).toBe(false);
+    const focused = box(212, -26, 200, 354);
+    const neighbourColumn = box(421, 340, 185, 328);
+    expect(onSameColumn(focused, neighbourColumn)).toBe(false);
   });
 
   it("garde ensemble deux cartes de largeurs différentes", () => {
-    expect(surLaMemeColonne(boite(220, 0, CARTE.l, CARTE.h), boite(200, 340, 260, CARTE.h))).toBe(
+    expect(onSameColumn(box(220, 0, CARD.w, CARD.h), box(200, 340, 260, CARD.h))).toBe(
       true,
     );
   });
 });
 
-describe("restreindreALaPremiereLigne", () => {
+describe("restrictToFirstRow", () => {
   it("s'arrête à la rangée suivante quand la colonne est orpheline", () => {
     // Dernière rangée incomplète : depuis la colonne 4, « bas » doit proposer
     // la rangée d'en dessous — pas celle d'encore après, même mieux alignée.
-    const depart = boite(880, 0, CARTE.l, CARTE.h);
-    const rangeeIncomplete = [0, 220].map((x) => ({
+    const from = box(880, 0, CARD.w, CARD.h);
+    const partialRow = [0, 220].map((x) => ({
       element: `r1x${x}`,
-      boite: boite(x, 340, CARTE.l, CARTE.h),
+      box: box(x, 340, CARD.w, CARD.h),
     }));
-    const rangeeLointaine = [880].map((x) => ({
+    const farRow = [880].map((x) => ({
       element: `r2x${x}`,
-      boite: boite(x, 680, CARTE.l, CARTE.h),
+      box: box(x, 680, CARD.w, CARD.h),
     }));
 
-    const retenus = restreindreALaPremiereLigne(
-      depart,
-      [...rangeeLointaine, ...rangeeIncomplete],
+    const kept = restrictToFirstRow(
+      from,
+      [...farRow, ...partialRow],
       "bas",
     );
-    expect(retenus.map((candidat) => candidat.element).sort()).toEqual(["r1x0", "r1x220"]);
-    expect(meilleur(depart, retenus, "bas")?.element).toBe("r1x220");
+    expect(kept.map((candidate) => candidate.element).sort()).toEqual(["r1x0", "r1x220"]);
+    expect(best(from, kept, "bas")?.element).toBe("r1x220");
   });
 
   it("ne rend rien quand la direction est vide", () => {
-    const depart = boite(0, 680, CARTE.l, CARTE.h);
-    const auDessus = [{ element: "dessus", boite: boite(0, 340, CARTE.l, CARTE.h) }];
-    expect(restreindreALaPremiereLigne(depart, auDessus, "bas")).toEqual([]);
+    const from = box(0, 680, CARD.w, CARD.h);
+    const auDessus = [{ element: "dessus", box: box(0, 340, CARD.w, CARD.h) }];
+    expect(restrictToFirstRow(from, auDessus, "bas")).toEqual([]);
   });
 
   it("écarte ce qui recouvre le départ sur l'axe visé", () => {
-    const depart = boite(0, 0, CARTE.l, CARTE.h);
-    const memePlace = [{ element: "ici", boite: boite(10, 4, CARTE.l, CARTE.h) }];
-    expect(restreindreALaPremiereLigne(depart, memePlace, "bas")).toEqual([]);
+    const from = box(0, 0, CARD.w, CARD.h);
+    const samePlace = [{ element: "ici", box: box(10, 4, CARD.w, CARD.h) }];
+    expect(restrictToFirstRow(from, samePlace, "bas")).toEqual([]);
   });
 
   it("prend une voisine chevauchante comme première ligne", () => {
     // Sans la même acceptation que `noter`, la bande de référence serait la
     // ligne d'APRÈS la voisine à marge négative — et la restriction
     // reproduirait le saut qu'elle est censée empêcher.
-    const cochee = boite(562, 399, 358, 46);
-    const voisine = { element: "voisine", boite: boite(562, 437, 358, 46) };
-    const dApres = { element: "d-apres", boite: boite(562, 475, 358, 46) };
+    const checked = box(562, 399, 358, 46);
+    const neighbour = { element: "voisine", box: box(562, 437, 358, 46) };
+    const nextLine = { element: "d-apres", box: box(562, 475, 358, 46) };
 
-    const retenus = restreindreALaPremiereLigne(cochee, [dApres, voisine], "bas");
-    expect(retenus.map((candidat) => candidat.element)).toEqual(["voisine"]);
+    const kept = restrictToFirstRow(checked, [nextLine, neighbour], "bas");
+    expect(kept.map((candidate) => candidate.element)).toEqual(["voisine"]);
   });
 });

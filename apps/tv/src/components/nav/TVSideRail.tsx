@@ -5,7 +5,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog, prefetchLibraryBackdrop } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { RAIL, largeurIndiceRail } from "@tentacle-tv/tv-core";
+import { RAIL, railHintWidth } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
@@ -17,11 +17,11 @@ import { Colors, Fonts } from "../../theme/colors";
 import { Easings } from "../../theme/motion";
 
 /** Largeur du rail replié — le contenu réserve cette marge, overscan compris. */
-export const RAIL_COLLAPSED = RAIL.largeurRepli + TV_OVERSCAN_PT.x;
+export const RAIL_COLLAPSED = RAIL.collapsedWidth + TV_OVERSCAN_PT.x;
 /** Largeur du panneau qui apparaît derrière. Le rail, lui, ne bouge pas. */
-export const RAIL_EXPANDED = RAIL.largeurPanneau;
+export const RAIL_EXPANDED = RAIL.panelWidth;
 
-const LARGEUR_INDICE = largeurIndiceRail(TV_OVERSCAN_PT.x);
+const LARGEUR_INDICE = railHintWidth(TV_OVERSCAN_PT.x);
 
 interface TVSideRailProps {
   currentRoute: string;
@@ -103,13 +103,13 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   // la page arriver.
   const navFrame = useRef<number | null>(null);
   const handleSelect = useCallback((key: string) => {
-    if (key === "RailShowAll") { epinglage.toutAfficher(); return; }
+    if (key === "RailShowAll") { epinglage.showAll(); return; }
     lastContentNodeRef.current = null;
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current = 0;
     setRailFocused(false);
     setDeploye(false);
-    progress.value = withTiming(0, { duration: RAIL.duree, easing: Easings.out });
+    progress.value = withTiming(0, { duration: RAIL.duration, easing: Easings.out });
     if (navFrame.current != null) cancelAnimationFrame(navFrame.current);
     navFrame.current = requestAnimationFrame(() => {
       navFrame.current = null;
@@ -150,7 +150,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     focusCount.current += 1;
     setRailFocused(true);
     setDeploye(true);
-    progress.value = withTiming(1, { duration: RAIL.duree, easing: Easings.out });
+    progress.value = withTiming(1, { duration: RAIL.duration, easing: Easings.out });
   }, [progress, setRailFocused]);
 
   const scheduleCollapse = useCallback(() => {
@@ -161,7 +161,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       if (focusCount.current <= 0) {
         setRailFocused(false);
         setDeploye(false);
-        progress.value = withTiming(0, { duration: RAIL.duree, easing: Easings.out });
+        progress.value = withTiming(0, { duration: RAIL.duration, easing: Easings.out });
       }
     }, 30);
   }, [progress, setRailFocused]);
@@ -170,7 +170,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const panelStyle = useAnimatedStyle(() => ({ opacity: progress.value }));
   const labelStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [-RAIL.libelleDecalage, 0]) }],
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [-RAIL.labelOffset, 0]) }],
   }));
   const hintStyle = useAnimatedStyle(() => ({ opacity: progress.value * 0.62 }));
 
@@ -185,7 +185,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       deploye={deploye}
       labelStyle={labelStyle}
       onNavigate={handleSelect}
-      onMasquer={epinglage.basculer}
+      onMasquer={epinglage.toggle}
       onExpand={expand}
       onCollapse={scheduleCollapse}
       schedulePrefetch={schedulePrefetch}
@@ -228,9 +228,9 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
           paddingBottom: TV_OVERSCAN_PT.y,
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center", height: RAIL.hauteurMarque, paddingLeft: RAIL.retraitEntree }}>
+        <View style={{ flexDirection: "row", alignItems: "center", height: RAIL.brandHeight, paddingLeft: RAIL.itemInset }}>
           <TentacleLogo size={34} />
-          <Animated.View style={[{ marginLeft: RAIL.ecartMarque }, labelStyle]} pointerEvents="none">
+          <Animated.View style={[{ marginLeft: RAIL.brandGap }, labelStyle]} pointerEvents="none">
             <Text numberOfLines={1} style={{ color: Colors.textPrimary, fontSize: 20, fontFamily: Fonts.bold }}>
               {userName || "Tentacle TV"}
             </Text>

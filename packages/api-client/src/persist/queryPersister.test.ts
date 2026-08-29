@@ -11,38 +11,38 @@
 import { describe, expect, it } from "vitest";
 import { attachQueryPersister, hydrateQueryClient, type PersistStorage } from "./queryPersister";
 
-const CLE = "tentacle_query_cache_v1";
+const KEY = "tentacle_query_cache_v1";
 const ADMIN = "admin-1";
-const CIBLE = "cible-2";
+const TARGET = "cible-2";
 const WHITELIST = ["resume-items"] as const;
 
-function stockage(initial?: string): PersistStorage & { lu(): string | null } {
-  let valeur: string | null = initial ?? null;
+function storage(initial?: string): PersistStorage & { loaded(): string | null } {
+  let value: string | null = initial ?? null;
   return {
-    getItem: () => valeur,
+    getItem: () => value,
     setItem: (_k: string, v: string) => {
-      valeur = v;
+      value = v;
     },
     removeItem: () => {
-      valeur = null;
+      value = null;
     },
-    lu: () => valeur,
+    loaded: () => value,
   };
 }
 
-interface EtatQuery {
+interface QueryState {
   queryKey: unknown;
   state: { status: string; data: unknown; dataUpdatedAt: number };
 }
 
 /** Faux QueryClient : on n'a besoin que des deux méthodes que le persister utilise. */
-function client(queries: EtatQuery[] = []) {
-  const hydratees: Array<{ key: unknown; data: unknown }> = [];
+function client(queries: QueryState[] = []) {
+  const hydrated: Array<{ key: unknown; data: unknown }> = [];
   return {
-    hydratees,
+    hydrated,
     qc: {
       setQueryData: (queryKey: unknown, data: unknown): unknown => {
-        hydratees.push({ key: queryKey, data });
+        hydrated.push({ key: queryKey, data });
         return data;
       },
       getQueryCache: () => ({ findAll: () => queries }),
@@ -50,96 +50,96 @@ function client(queries: EtatQuery[] = []) {
   };
 }
 
-function sauvegarde(owner: string | null, entries: Record<string, unknown>): string {
+function save(owner: string | null, entries: Record<string, unknown>): string {
   return JSON.stringify({ owner, entries });
 }
 
-function entree(data: unknown): { data: unknown; dataUpdatedAt: number } {
+function entry(data: unknown): { data: unknown; dataUpdatedAt: number } {
   return { data, dataUpdatedAt: Date.now() };
 }
 
 describe("hydratation", () => {
   it("rend le cache a son proprietaire", async () => {
-    const store = stockage(sauvegarde(ADMIN, { '["resume-items"]': entree(["film-admin"]) }));
-    const { qc, hydratees } = client();
+    const store = storage(save(ADMIN, { '["resume-items"]': entry(["film-admin"]) }));
+    const { qc, hydrated } = client();
 
     await hydrateQueryClient(qc, store, { whitelist: WHITELIST, owner: ADMIN });
 
-    expect(hydratees).toHaveLength(1);
-    expect(hydratees[0]?.data).toEqual(["film-admin"]);
+    expect(hydrated).toHaveLength(1);
+    expect(hydrated[0]?.data).toEqual(["film-admin"]);
   });
 
   it("refuse et efface le cache d'un autre compte", async () => {
-    const store = stockage(sauvegarde(CIBLE, { '["resume-items"]': entree(["film-de-la-cible"]) }));
-    const { qc, hydratees } = client();
+    const store = storage(save(TARGET, { '["resume-items"]': entry(["film-de-la-cible"]) }));
+    const { qc, hydrated } = client();
 
     await hydrateQueryClient(qc, store, { whitelist: WHITELIST, owner: ADMIN });
 
-    expect(hydratees).toHaveLength(0);
+    expect(hydrated).toHaveLength(0);
     // Le contenu de quelqu'un d'autre n'a pas a rester en attente.
-    expect(store.lu()).toBeNull();
+    expect(store.loaded()).toBeNull();
   });
 
   it("ecarte une sauvegarde heritee des qu'un proprietaire est exige", async () => {
     // Ancien format : la carte d'entrees NUE, sans proprietaire connu.
-    const store = stockage(JSON.stringify({ '["resume-items"]': entree(["ancien"]) }));
-    const { qc, hydratees } = client();
+    const store = storage(JSON.stringify({ '["resume-items"]': entry(["ancien"]) }));
+    const { qc, hydrated } = client();
 
     await hydrateQueryClient(qc, store, { whitelist: WHITELIST, owner: ADMIN });
 
-    expect(hydratees).toHaveLength(0);
+    expect(hydrated).toHaveLength(0);
   });
 
   it("hydrate le format herite quand aucun proprietaire n'est exige", async () => {
     // Mobile et TV n'etiquettent pas : leur comportement ne doit pas bouger.
-    const store = stockage(JSON.stringify({ '["resume-items"]': entree(["ancien"]) }));
-    const { qc, hydratees } = client();
+    const store = storage(JSON.stringify({ '["resume-items"]': entry(["ancien"]) }));
+    const { qc, hydrated } = client();
 
     await hydrateQueryClient(qc, store, { whitelist: WHITELIST });
 
-    expect(hydratees).toHaveLength(1);
-    expect(hydratees[0]?.data).toEqual(["ancien"]);
+    expect(hydrated).toHaveLength(1);
+    expect(hydrated[0]?.data).toEqual(["ancien"]);
   });
 });
 
 describe("sauvegarde", () => {
   it("etiquette au compte dont les donnees sont EN MEMOIRE", () => {
-    const store = stockage();
+    const store = storage();
     const { qc } = client([
       { queryKey: ["resume-items"], state: { status: "success", data: ["x"], dataUpdatedAt: Date.now() } },
     ]);
 
     // Detacher declenche la meme sauvegarde que `pagehide`.
-    attachQueryPersister(qc, store, { whitelist: WHITELIST, owner: CIBLE })();
+    attachQueryPersister(qc, store, { whitelist: WHITELIST, owner: TARGET })();
 
-    const ecrit = JSON.parse(store.lu() ?? "{}") as { owner?: string };
-    expect(ecrit.owner).toBe(CIBLE);
+    const written = JSON.parse(store.loaded() ?? "{}") as { owner?: string };
+    expect(written.owner).toBe(TARGET);
   });
 
   it("la sortie d'impersonation ne rend pas le contenu de l'autre", async () => {
-    const store = stockage();
+    const store = storage();
 
     // 1. Session impersonee : le cache en memoire est celui de la cible.
-    const impersonee = client([
+    const impersonated = client([
       {
         queryKey: ["resume-items"],
         state: { status: "success", data: ["film-de-la-cible"], dataUpdatedAt: Date.now() },
       },
     ]);
-    const detacher = attachQueryPersister(impersonee.qc, store, {
+    const detach = attachQueryPersister(impersonated.qc, store, {
       whitelist: WHITELIST,
-      owner: CIBLE,
+      owner: TARGET,
     });
 
     // 2. Sortie : le code efface le stockage, puis navigue — et la navigation
     //    declenche une derniere sauvegarde du cache en memoire.
-    store.removeItem(CLE);
-    detacher();
-    expect(store.lu()).not.toBeNull(); // la sauvegarde a bien eu lieu
+    store.removeItem(KEY);
+    detach();
+    expect(store.loaded()).not.toBeNull(); // la sauvegarde a bien eu lieu
 
     // 3. Rechargement en admin : rien de la cible ne doit remonter.
     const admin = client();
     await hydrateQueryClient(admin.qc, store, { whitelist: WHITELIST, owner: ADMIN });
-    expect(admin.hydratees).toHaveLength(0);
+    expect(admin.hydrated).toHaveLength(0);
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { inscrireRetour } from "../focus/back";
 import { oublierBoutonOsd } from "./focusOsd";
-import { MachineScrub, lireEtat, poserMonte, poserPanneau, type ModeLecteur } from "@tentacle-tv/tv-core";
+import { ScrubMachine, readState, setMounted, setPanel, type PlayerMode } from "@tentacle-tv/tv-core";
 import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./playerKeysTv";
 import { poserSortieLecteur } from "./playerExitTv";
 
@@ -19,11 +19,11 @@ import { poserSortieLecteur } from "./playerExitTv";
 
 export interface AttachesLecteurTv {
   /** Le mode courant, publié sur la racine du document. */
-  mode: ModeLecteur;
+  mode: PlayerMode;
   /** Relues à chaque touche : les rappels changent d'identité à chaque rendu. */
   actions: ActionsLecteurTv;
   /** Pour annuler un déplacement en cours sur la touche Retour. */
-  scrub: MachineScrub;
+  scrub: ScrubMachine;
 }
 
 export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): void {
@@ -40,9 +40,9 @@ export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): 
   // Monté et démonté avec le lecteur : c'est cet indicateur que lisent le
   // moteur de focus et les touches de transport globales pour se retirer.
   useEffect(() => {
-    poserMonte(true);
+    setMounted(true);
     return () => {
-      poserMonte(false);
+      setMounted(false);
       document.documentElement.removeAttribute("data-tv-lecteur");
       // La mémoire du focus ne survit pas au lecteur : rouvrir un film repart
       // de Lecture, comme une première fois.
@@ -75,13 +75,13 @@ export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): 
   useEffect(
     () =>
       inscrireRetour(() => {
-        const courant = lireEtat();
-        if (courant.panneau !== "aucun") {
-          poserPanneau("aucun");
+        const courant = readState();
+        if (courant.panel !== "aucun") {
+          setPanel("aucun");
           return true;
         }
         if (courant.mode === "scrub") {
-          scrub.annuler();
+          scrub.cancel();
           return true;
         }
         return false;

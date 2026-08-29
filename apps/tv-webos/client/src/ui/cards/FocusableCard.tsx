@@ -106,7 +106,7 @@ export function CarteFocusable({
    * touche tenue, l'écran d'arrivée ne reçoit rien.
    */
   const appui = useMemo(
-    () => creerAppuiLong({ court: actionCourte, long: actionLongue }),
+    () => creerAppuiLong({ short: actionCourte, long: actionLongue }),
     [actionCourte, actionLongue],
   );
 

@@ -226,16 +226,16 @@ export function killActiveEncoding(client: JfClient, playSessionId: string | und
   // de la page est voué au mur CORS depuis l'origine applicative (voir
   // sessionPost). Un échec natif est une panne de transport — proxy, sans
   // condamner la voie pour la suite.
-  const dsNatif = client.getDirectStreaming?.();
-  if (dsNatif?.enabled && dsNatif.mediaBaseUrl && dsNatif.jellyfinToken && client.nativeKillEncodings) {
+  const nativeDs = client.getDirectStreaming?.();
+  if (nativeDs?.enabled && nativeDs.mediaBaseUrl && nativeDs.jellyfinToken && client.nativeKillEncodings) {
     killLog("[WT kill] DELETE ActiveEncodings via NATIF", { playSessionId, deviceId });
     return client
       .nativeKillEncodings(
-        dsNatif.mediaBaseUrl,
+        nativeDs.mediaBaseUrl,
         deviceId,
         playSessionId,
-        dsNatif.jellyfinToken,
-        client.getAuthHeader(dsNatif.jellyfinToken),
+        nativeDs.jellyfinToken,
+        client.getAuthHeader(nativeDs.jellyfinToken),
       )
       .then((status) => {
         if (status < 200 || status >= 300) return viaProxy(`natif HTTP ${status}`);

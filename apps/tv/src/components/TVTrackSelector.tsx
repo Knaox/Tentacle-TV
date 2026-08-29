@@ -63,7 +63,7 @@ export function TVTrackSelector({
   const { makeOnFocus } = useTVScrollToFocused(scrollRef, 60);
 
   useEffect(() => {
-    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.voileFonduMs, easing: Easing.out(Easing.ease) });
+    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.scrimFadeMs, easing: Easing.out(Easing.ease) });
   }, [fade]);
 
   const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
@@ -95,7 +95,7 @@ export function TVTrackSelector({
       {/* Voile d'assombrissement : ce qui n'est plus à portée s'éteint. */}
       <View
         pointerEvents="none"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.voile }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.scrim }}
       />
       {/* Le panneau FLOTTE au-dessus de la barre (parité .panneau-tv) : ancré
           bas-droit dans le retrait d'overscan, jamais pleine hauteur. */}
@@ -104,9 +104,9 @@ export function TVTrackSelector({
         style={{
           position: "absolute",
           right: TV_OVERSCAN_PT.x,
-          bottom: TV_PLAYER_PANEL.bas,
-          width: TV_PLAYER_PANEL.largeur,
-          height: screenH - TV_PLAYER_PANEL.hauteurMaxRetrait,
+          bottom: TV_PLAYER_PANEL.bottom,
+          width: TV_PLAYER_PANEL.width,
+          height: screenH - TV_PLAYER_PANEL.maxHeightInset,
           borderRadius: TV_RADIUS.lg,
           // `--surface-dropdown` du thème TV (tokens/tv.ts).
           backgroundColor: "#14141a",

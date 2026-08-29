@@ -1,7 +1,7 @@
 import {
-  creerMagasinEpinglageRail,
-  creerUseEpinglageRail,
-  type EpinglageRail,
+  createRailPinningStore,
+  createUseRailPinning,
+  type RailPinning,
 } from "@tentacle-tv/tv-core";
 
 /**
@@ -16,7 +16,7 @@ import {
  * `setItem` synchrones. C'est aussi ce qu'offre `RNStorageAdapter` côté natif,
  * une fois hydraté — d'où un magasin unique pour les trois cibles.
  */
-const magasin = creerMagasinEpinglageRail(localStorage);
+const magasin = createRailPinningStore(localStorage);
 
-export const useEpinglageRail = creerUseEpinglageRail(magasin);
-export type { EpinglageRail };
+export const useEpinglageRail = createUseRailPinning(magasin);
+export type { RailPinning };

@@ -30,22 +30,22 @@ export function useSearchItems(query: string) {
   return useQuery({
     queryKey: ["search", query],
     queryFn: async () => {
-      const chercher = (terme: string) =>
+      const fetchSearch = (term: string) =>
         client
           .fetch<{ Items: MediaItem[] }>(
-            `/Users/${userId}/Items?searchTerm=${encodeURIComponent(terme)}&Recursive=true` +
+            `/Users/${userId}/Items?searchTerm=${encodeURIComponent(term)}&Recursive=true` +
               `&IncludeItemTypes=Movie,Series&Limit=24&Fields=Overview,PrimaryImageAspectRatio,MediaSources` +
               `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`
           )
           .then((r) => r.Items ?? []);
 
-      const direct = await chercher(query);
+      const direct = await fetchSearch(query);
       if (direct.length > 0) return direct;
 
-      const repli = fallbackTerm(query);
-      if (!repli) return direct;
+      const fallback = fallbackTerm(query);
+      if (!fallback) return direct;
 
-      return classerResultats(await chercher(repli), query);
+      return rankResults(await fetchSearch(fallback), query);
     },
     enabled: !!userId && query.length >= 2,
     staleTime: 30 * 1000,
@@ -60,16 +60,16 @@ export function useSearchItems(query: string) {
  * entière est écarté plutôt que relégué en fin de liste — sauf si rien ne
  * répond, auquel cas l'approchant vaut mieux que la page vide qu'on avait.
  */
-export function classerResultats(items: MediaItem[], query: string): MediaItem[] {
-  const notes = items.map((item, rang) => ({
+export function rankResults(items: MediaItem[], query: string): MediaItem[] {
+  const scored = items.map((item, rank) => ({
     item,
-    rang,
+    rank,
     score: searchScore(item.Name ?? "", query),
   }));
 
-  const retenus = notes.filter((n) => n.score > 0);
-  const liste = retenus.length > 0 ? retenus : notes;
+  const kept = scored.filter((n) => n.score > 0);
+  const list = kept.length > 0 ? kept : scored;
 
-  // `rang` en second critère : à score égal, l'ordre de Jellyfin tranche.
-  return liste.sort((a, b) => b.score - a.score || a.rang - b.rang).map((n) => n.item);
+  // `rank` en second critère : à score égal, l'ordre de Jellyfin tranche.
+  return list.sort((a, b) => b.score - a.score || a.rank - b.rank).map((n) => n.item);
 }

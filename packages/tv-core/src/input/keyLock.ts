@@ -1,4 +1,4 @@
-import { estValidation } from "./keys";
+import { isSelectKey } from "./keys";
 
 /**
  * Le verrou d'OK : un maintien qui a agi avale la touche jusqu'au relâchement.
@@ -30,57 +30,57 @@ import { estValidation } from "./keys";
 /** Silence après lequel la touche est réputée relâchée, faute de `keyup`. */
 const SILENCE_MS = 700;
 
-interface EtatVerrou {
-  arme: boolean;
-  minuteurSilence: ReturnType<typeof setTimeout> | null;
-  surDesarmement: (() => void) | null;
+interface LockState {
+  armed: boolean;
+  silenceTimer: ReturnType<typeof setTimeout> | null;
+  onDisarm: (() => void) | null;
 }
 
 /** La machine seule, pour les tests ; l'application passe par `armerVerrouOk`. */
-export function creerVerrouOk(silenceMs: number = SILENCE_MS) {
-  const etat: EtatVerrou = { arme: false, minuteurSilence: null, surDesarmement: null };
+export function createSelectKeyLock(silenceMs: number = SILENCE_MS) {
+  const state: LockState = { armed: false, silenceTimer: null, onDisarm: null };
 
-  function desarmer(): void {
-    if (!etat.arme) return;
-    etat.arme = false;
-    if (etat.minuteurSilence !== null) clearTimeout(etat.minuteurSilence);
-    etat.minuteurSilence = null;
-    const rappel = etat.surDesarmement;
-    etat.surDesarmement = null;
-    rappel?.();
+  function disarm(): void {
+    if (!state.armed) return;
+    state.armed = false;
+    if (state.silenceTimer !== null) clearTimeout(state.silenceTimer);
+    state.silenceTimer = null;
+    const callback = state.onDisarm;
+    state.onDisarm = null;
+    callback?.();
   }
 
-  function armerSilence(): void {
-    if (etat.minuteurSilence !== null) clearTimeout(etat.minuteurSilence);
-    etat.minuteurSilence = setTimeout(desarmer, silenceMs);
+  function armSilence(): void {
+    if (state.silenceTimer !== null) clearTimeout(state.silenceTimer);
+    state.silenceTimer = setTimeout(disarm, silenceMs);
   }
 
   return {
-    armer(surDesarmement?: () => void): void {
-      etat.arme = true;
-      etat.surDesarmement = surDesarmement ?? null;
-      armerSilence();
+    arm(onDisarm?: () => void): void {
+      state.armed = true;
+      state.onDisarm = onDisarm ?? null;
+      armSilence();
     },
 
     /** Vrai si l'événement doit être avalé ; chaque répétition avalée
      *  rafraîchit le silence — elle prouve que la touche est encore tenue. */
-    surKeydown(evenement: { keyCode?: number; key?: string }): boolean {
-      if (!etat.arme) return false;
-      if (!estValidation(evenement)) return false;
-      armerSilence();
+    onKeyDown(event: { keyCode?: number; key?: string }): boolean {
+      if (!state.armed) return false;
+      if (!isSelectKey(event)) return false;
+      armSilence();
       return true;
     },
 
     /** Vrai si c'était le relâchement d'OK : le verrou vient de se désarmer. */
-    surKeyup(evenement: { keyCode?: number; key?: string }): boolean {
-      if (!etat.arme) return false;
-      if (!estValidation(evenement)) return false;
-      desarmer();
+    onKeyUp(event: { keyCode?: number; key?: string }): boolean {
+      if (!state.armed) return false;
+      if (!isSelectKey(event)) return false;
+      disarm();
       return true;
     },
 
-    estArme(): boolean {
-      return etat.arme;
+    isArmed(): boolean {
+      return state.armed;
     },
   };
 }

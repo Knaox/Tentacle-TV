@@ -1,14 +1,14 @@
 import { memo, useCallback } from "react";
 import { View, Text } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
-import { RAIL, largeurEntreeDeployee } from "@tentacle-tv/tv-core";
+import { RAIL, expandedItemWidth } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT, TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { Colors, Fonts } from "../../theme/colors";
 import { FocusRowStyle } from "../../theme/focus";
 import type { RailItem } from "./railEntries";
 
-const LARGEUR_DEPLOYEE = largeurEntreeDeployee(TV_OVERSCAN_PT.x);
+const LARGEUR_DEPLOYEE = expandedItemWidth(TV_OVERSCAN_PT.x);
 
 interface RailRowProps {
   item: RailItem;
@@ -76,7 +76,7 @@ export const RailRow = memo(function RailRow({
       // focus (overlay de la variante « ligne ») épouse le Pressable — posée à
       // l'intérieur, elle débordait et le fond focus s'arrêtait à l'icône,
       // alors que la LG surligne l'entrée déployée entière.
-      style={{ width: deploye ? LARGEUR_DEPLOYEE : RAIL.largeurRepli }}
+      style={{ width: deploye ? LARGEUR_DEPLOYEE : RAIL.collapsedWidth }}
       onPress={() => onNavigate(item.key)}
       onLongPress={item.masquable ? surMaintien : undefined}
       onFocus={() => {
@@ -90,10 +90,10 @@ export const RailRow = memo(function RailRow({
         style={{
           flexDirection: "row",
           alignItems: "center",
-          height: RAIL.hauteurEntree,
-          minHeight: RAIL.hauteurEntreeMin,
-          marginBottom: RAIL.ecartEntrees,
-          paddingLeft: RAIL.retraitEntree,
+          height: RAIL.itemHeight,
+          minHeight: RAIL.itemMinHeight,
+          marginBottom: RAIL.itemGap,
+          paddingLeft: RAIL.itemInset,
           borderRadius: TV_RADIUS.md,
           // Le fond de l'entrée ACTIVE. Celui du focus est peint par-dessus par
           // `Focusable` (variante « ligne »), et il l'emporte visuellement.
@@ -102,7 +102,7 @@ export const RailRow = memo(function RailRow({
       >
         <View
           style={{
-            width: RAIL.largeurIcone,
+            width: RAIL.iconWidth,
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
@@ -112,7 +112,7 @@ export const RailRow = memo(function RailRow({
         </View>
         <Animated.View
           pointerEvents="none"
-          style={[{ position: "absolute", left: RAIL.libelleGauche }, labelStyle]}
+          style={[{ position: "absolute", left: RAIL.labelLeft }, labelStyle]}
         >
           <Text
             numberOfLines={1}

@@ -34,11 +34,11 @@ export class JellyfinClient {
   private static readonly DS_ERROR_THRESHOLD = 3;
   /**
    * Ce navigateur ne peut PAS joindre le serveur média en direct : verrou de
-   * session, posé sur constat (cf. `signalerDirectStreamingBloque`). Il survit
+   * session, posé sur constat (cf. `signalDirectStreamingBlocked`). Il survit
    * aux resynchronisations de la config admin, sans quoi celle-ci rallumerait
    * aussitôt un chemin dont on vient de mesurer qu'il ne passe pas.
    */
-  private directStreamingBloque = false;
+  private directStreamingLocked = false;
   private _isLoggingIn = false;
   // Seuil à 5 (et non 3) pour absorber les 401 transitoires (Jellyfin qui rotate
   // ses tokens, glitches DNS, redémarrage serveur de quelques secondes) sans
@@ -84,7 +84,7 @@ export class JellyfinClient {
   getBaseUrl() { return this.baseUrl; }
 
   setDirectStreaming(config: DirectStreamingState | null) {
-    if (config && this.directStreamingBloque) return;
+    if (config && this.directStreamingLocked) return;
     this.directStreaming = config;
     if (config) this.directStreamingErrors = 0;
   }
@@ -107,12 +107,12 @@ export class JellyfinClient {
    * Le prix d'une erreur réseau passagère prise pour un refus est faible : le
    * proxy sert tout, et un rechargement de page repart de zéro.
    */
-  signalerDirectStreamingBloque(raison: string) {
-    if (this.directStreamingBloque) return;
-    this.directStreamingBloque = true;
+  signalDirectStreamingBlocked(reason: string) {
+    if (this.directStreamingLocked) return;
+    this.directStreamingLocked = true;
     this.directStreaming = null;
     this.directStreamingErrors = 0;
-    console.warn("[Tentacle:DirectStreaming] coupe pour la session —", raison);
+    console.warn("[Tentacle:DirectStreaming] coupe pour la session —", reason);
   }
 
   /**
@@ -229,7 +229,7 @@ export class JellyfinClient {
 
   /** Adopte l'identité d'appareil du token (cf. `getDeviceId`). Persistée : elle
    *  doit survivre au rechargement de la page, comme le cookie de session. */
-  adopterDeviceIdJellyfin(id: string | null) {
+  adoptJellyfinDeviceId(id: string | null) {
     this.deviceIdJellyfin = id;
     if (id) this.storage.setItem("tentacle_device_id_jf", id);
     else this.storage.removeItem("tentacle_device_id_jf");
@@ -315,7 +315,7 @@ export class JellyfinClient {
       {
         directStreaming: this.directStreaming,
         getAuthHeader: (t) => this.getAuthHeader(t),
-        signalerDirectBloque: (raison) => this.signalerDirectStreamingBloque(raison),
+        signalDirectBlocked: (reason) => this.signalDirectStreamingBlocked(reason),
         viaProxy: (path, init) => this.fetch<PlaybackInfoResponse>(path, init),
         nativePlaybackInfo: this.nativePlaybackInfo,
       },

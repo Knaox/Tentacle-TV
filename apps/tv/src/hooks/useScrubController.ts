@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Platform } from "react-native";
-import { creerMachineScrub, INACTIVITE_ANNULE_MS } from "@tentacle-tv/tv-core";
+import { createScrubMachine, IDLE_CANCEL_MS } from "@tentacle-tv/tv-core";
 import { useScrubHoldMotor } from "./useScrubHoldMotor";
 
 type Dir = "forward" | "backward";
@@ -86,10 +86,10 @@ export function useScrubController({
   }, []);
   useEffect(() => () => clearPanIdle(), [clearPanIdle]);
 
-  const machine = useMemo(() => creerMachineScrub({
-    lirePosition: () => currentTimeRef.current,
-    lireDuree: () => durationRef.current || 0,
-    surEntree: (position) => {
+  const machine = useMemo(() => createScrubMachine({
+    readPosition: () => currentTimeRef.current,
+    readDuration: () => durationRef.current || 0,
+    onEnter: (position) => {
       scrubStartedAtRef.current = Date.now();
       scrubbingRef.current = true;
       setScrubbing(true);
@@ -99,20 +99,20 @@ export function useScrubController({
       // le fond redevient focusable et capte OK/←/→ sans navigation.
       hideOverlay();
     },
-    surChangement: (position) => {
+    onChange: (position) => {
       const delta = position - machineLastRef.current;
       machineLastRef.current = position;
       setDisplay(clampDisplay(scrubPositionRef.current + delta));
     },
-    surPause: (pause) => onScrubPauseRef.current(pause),
-    surSeek: () => {
+    onPause: (pause) => onScrubPauseRef.current(pause),
+    onSeek: () => {
       // La position AFFICHÉE fait foi (elle intègre le pan tvOS). Base des
       // skips ±10/30 synchronisée AVANT le seek : un +30 immédiat après la
       // confirmation ne doit pas repartir de la position pré-scrub.
       currentTimeRef.current = scrubPositionRef.current;
       onSeekRef.current(scrubPositionRef.current);
     },
-    surSortie: () => {
+    onExit: () => {
       clearPanIdle();
       stopMotorsRef.current();
       scrubEndedAtRef.current = Date.now();
@@ -124,34 +124,34 @@ export function useScrubController({
     // Machine unique : toutes les entrées passent par des refs stables.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), []);
-  useEffect(() => () => machine.detruire(), [machine]);
+  useEffect(() => () => machine.destroy(), [machine]);
 
   const armPanIdle = useCallback(() => {
     clearPanIdle();
     panIdleTimerRef.current = setTimeout(() => {
       panIdleTimerRef.current = null;
-      machine.annuler();
-    }, INACTIVITE_ANNULE_MS);
+      machine.cancel();
+    }, IDLE_CANCEL_MS);
   }, [clearPanIdle, machine]);
 
   const startScrubbing = useCallback((dir?: Dir) => {
     // Déjà en scrub (ex. shuttle tvOS : doigt levé puis reposé) → NE PAS
     // réinitialiser la position fantôme ; on repousse juste l'annulation.
-    if (machine.estActif()) { armPanIdle(); return; }
-    machine.entrer();
-    if (dir) machine.pas(sensOf(dir), 1);
+    if (machine.isActive()) { armPanIdle(); return; }
+    machine.enter();
+    if (dir) machine.step(sensOf(dir), 1);
   }, [machine, armPanIdle]);
 
   /** Un pas SEC (appui simple ←/→ ou touche média isolée) : palier 1, jamais
    *  d'accélération — elle est réservée au MAINTIEN (tic du moteur). */
   const stepScrub = useCallback((dir: Dir) => {
     setSpeedLabel(null);
-    machine.pas(sensOf(dir), 1);
+    machine.step(sensOf(dir), 1);
   }, [machine]);
 
   /** Un tic de MAINTIEN : le moteur fournit le palier (1 par seconde). */
   const tickScrub = useCallback((dir: Dir, palier: number) => {
-    machine.pas(sensOf(dir), palier);
+    machine.step(sensOf(dir), palier);
     setSpeedLabel(palier > 1 ? `${dir === "forward" ? ">>" : "<<"}${palier}x` : null);
   }, [machine]);
 
@@ -159,13 +159,13 @@ export function useScrubController({
     if (__DEV__) console.log(`[SCRUB] confirmScrub (scrubbing=${scrubbingRef.current})`);
     clearPanIdle();
     stopMotorsRef.current();
-    machine.confirmer();
+    machine.confirm();
   }, [machine, clearPanIdle]);
 
   const cancelScrub = useCallback(() => {
     clearPanIdle();
     stopMotorsRef.current();
-    machine.annuler();
+    machine.cancel();
   }, [machine, clearPanIdle]);
 
   // Avance CONTINUE de la position fantôme (shuttle tvOS) : delta signé en

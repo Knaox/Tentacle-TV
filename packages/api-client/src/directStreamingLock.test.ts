@@ -17,19 +17,19 @@ const CONFIG = {
   jellyfinToken: "jeton-utilisateur",
 };
 
-function stockage(): StorageAdapter {
-  const donnees = new Map<string, string>();
+function storage(): StorageAdapter {
+  const data = new Map<string, string>();
   return {
-    getItem: (k) => donnees.get(k) ?? null,
-    setItem: (k, v) => { donnees.set(k, v); },
-    removeItem: (k) => { donnees.delete(k); },
+    getItem: (k) => data.get(k) ?? null,
+    setItem: (k, v) => { data.set(k, v); },
+    removeItem: (k) => { data.delete(k); },
   };
 }
 
 const uuid: UuidGenerator = { randomUUID: () => "device-fixe" };
 
 function client(): JellyfinClient {
-  return new JellyfinClient("/api/jellyfin", stockage(), uuid);
+  return new JellyfinClient("/api/jellyfin", storage(), uuid);
 }
 
 describe("verrou du Direct Streaming", () => {
@@ -42,14 +42,14 @@ describe("verrou du Direct Streaming", () => {
   it("coupe le direct dès le premier refus constaté", () => {
     const c = client();
     c.setDirectStreaming(CONFIG);
-    c.signalerDirectStreamingBloque("test");
+    c.signalDirectStreamingBlocked("test");
     expect(c.getDirectStreaming()).toBeNull();
   });
 
   it("tient face à une resynchronisation de la config admin", () => {
     const c = client();
     c.setDirectStreaming(CONFIG);
-    c.signalerDirectStreamingBloque("test");
+    c.signalDirectStreamingBlocked("test");
     // Ce que fait DirectStreamingSync à chaque refetch de la config.
     c.setDirectStreaming(CONFIG);
     expect(c.getDirectStreaming()).toBeNull();
@@ -57,7 +57,7 @@ describe("verrou du Direct Streaming", () => {
 
   it("laisse toujours passer une coupure explicite (admin qui désactive)", () => {
     const c = client();
-    c.signalerDirectStreamingBloque("test");
+    c.signalDirectStreamingBlocked("test");
     c.setDirectStreaming(null);
     expect(c.getDirectStreaming()).toBeNull();
   });
@@ -65,8 +65,8 @@ describe("verrou du Direct Streaming", () => {
   it("se pose une seule fois, même signalé plusieurs fois", () => {
     const c = client();
     c.setDirectStreaming(CONFIG);
-    c.signalerDirectStreamingBloque("premier");
-    c.signalerDirectStreamingBloque("second");
+    c.signalDirectStreamingBlocked("premier");
+    c.signalDirectStreamingBlocked("second");
     expect(c.getDirectStreaming()).toBeNull();
   });
 });

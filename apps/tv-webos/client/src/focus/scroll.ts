@@ -1,4 +1,4 @@
-import { estHorizontale, sens, type Direction } from "./keys";
+import { isHorizontal, directionSign, type Direction } from "./keys";
 import { correction, type Mou } from "./framing";
 import { candidatAuDela, dansUnCalqueFixe } from "./beyond";
 import { decider } from "./border";
@@ -158,8 +158,8 @@ export function defilerParPas(
     return scroller;
   };
 
-  const versLaFin = sens(direction) === 1;
-  const horizontal = estHorizontale(direction);
+  const versLaFin = directionSign(direction) === 1;
+  const horizontal = isHorizontal(direction);
 
   const scroller = recevable(
     depuis ? (horizontal ? scrollerHorizontal(depuis) : scrollerVertical(depuis)) : null,
@@ -221,8 +221,8 @@ function mouDisponible(
 
 function tailleDe(element: HTMLElement | null, horizontal: boolean): number {
   if (!element) return 0;
-  const boite = element.getBoundingClientRect();
-  return horizontal ? boite.width : boite.height;
+  const box = element.getBoundingClientRect();
+  return horizontal ? box.width : box.height;
 }
 
 /** Écrit le défilement et rend de quoi le rendre — ou `null` s'il n'a pas pris. */

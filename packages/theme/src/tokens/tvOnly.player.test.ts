@@ -30,162 +30,162 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const STYLES = resolve(HERE, "../../../../apps/tv-webos/client/src/styles");
 
-const geometrie = readSheet(resolve(STYLES, "player-tv.css"));
-const dessin = readSheet(resolve(STYLES, "player-osd-tv.css"));
-const panneaux = readSheet(resolve(STYLES, "player-panels-tv.css"));
-const surcouches = readSheet(resolve(STYLES, "player-skip-tv.css"));
+const geometry = readSheet(resolve(STYLES, "player-tv.css"));
+const paint = readSheet(resolve(STYLES, "player-osd-tv.css"));
+const panels = readSheet(resolve(STYLES, "player-panels-tv.css"));
+const overlays = readSheet(resolve(STYLES, "player-skip-tv.css"));
 
 describe("l'OSD suit TV_OSD", () => {
   it("l'habillage porte le retrait d'overscan", () => {
-    expect(propIn(blockFor(geometrie, ".osd-tv"), "padding")).toBe(
+    expect(propIn(blockFor(geometry, ".osd-tv"), "padding")).toBe(
       "var(--tv-overscan-y) var(--tv-overscan-x)",
     );
   });
 
   it("bouton secondaire", () => {
-    const bloc = blockFor(geometrie, ".osd-tv-bouton");
-    expect(propIn(bloc, "width")).toBe(`${TV_OSD.boutonSecondaire}px`);
-    expect(propIn(bloc, "height")).toBe(`${TV_OSD.boutonSecondaire}px`);
+    const block = blockFor(geometry, ".osd-tv-bouton");
+    expect(propIn(block, "width")).toBe(`${TV_OSD.secondaryButton}px`);
+    expect(propIn(block, "height")).toBe(`${TV_OSD.secondaryButton}px`);
   });
 
   it("bouton principal", () => {
-    const bloc = blockFor(geometrie, ".osd-tv-bouton-principal");
-    expect(propIn(bloc, "width")).toBe(`${TV_OSD.boutonPrincipal}px`);
-    expect(propIn(bloc, "height")).toBe(`${TV_OSD.boutonPrincipal}px`);
+    const block = blockFor(geometry, ".osd-tv-bouton-principal");
+    expect(propIn(block, "width")).toBe(`${TV_OSD.primaryButton}px`);
+    expect(propIn(block, "height")).toBe(`${TV_OSD.primaryButton}px`);
   });
 
   it("focus d'un bouton : fond et échelle", () => {
-    const bloc = blockFor(dessin, ".osd-tv-bouton:focus");
-    expect(propIn(bloc, "background")).toBe(TV_OSD.boutonFocusFond);
-    expect(propIn(bloc, "transform")).toBe(
-      `scale(${TV_OSD.boutonFocusEchelle})`,
+    const block = blockFor(paint, ".osd-tv-bouton:focus");
+    expect(propIn(block, "background")).toBe(TV_OSD.buttonFocusBg);
+    expect(propIn(block, "transform")).toBe(
+      `scale(${TV_OSD.buttonFocusScale})`,
     );
   });
 
   it("transition d'un bouton : l'échelle seule, à la durée du jeton", () => {
-    expect(propIn(blockFor(dessin, ".osd-tv-bouton"), "transition")).toBe(
-      `transform ${TV_OSD.boutonTransitionMs}ms ease-out`,
+    expect(propIn(blockFor(paint, ".osd-tv-bouton"), "transition")).toBe(
+      `transform ${TV_OSD.buttonTransitionMs}ms ease-out`,
     );
   });
 
   it("titre et sous-titre", () => {
-    expect(propIn(blockFor(dessin, ".osd-tv-titre"), "font-size")).toBe(
-      `${TV_OSD.titreTaille}px`,
+    expect(propIn(blockFor(paint, ".osd-tv-titre"), "font-size")).toBe(
+      `${TV_OSD.titleSize}px`,
     );
-    const sousTitre = blockFor(dessin, ".osd-tv-sous-titre");
-    expect(propIn(sousTitre, "font-size")).toBe(`${TV_OSD.sousTitreTaille}px`);
-    expect(propIn(sousTitre, "color")).toBe(TV_OSD.sousTitreTeinte);
+    const subtitle = blockFor(paint, ".osd-tv-sous-titre");
+    expect(propIn(subtitle, "font-size")).toBe(`${TV_OSD.subtitleSize}px`);
+    expect(propIn(subtitle, "color")).toBe(TV_OSD.subtitleTint);
   });
 
-  const degrade = (
-    bloc: string,
-    voile: { opacites: readonly number[]; positionsPct: readonly number[] },
+  const gradient = (
+    block: string,
+    scrim: { opacities: readonly number[]; positionsPct: readonly number[] },
   ) => {
-    const image = propIn(bloc, "background-image");
+    const image = propIn(block, "background-image");
     expect(image).not.toBeNull();
-    voile.opacites.forEach((opacite, i) => {
+    scrim.opacities.forEach((opacity, i) => {
       expect(image).toContain(
-        `rgba(0, 0, 0, ${opacite}) ${voile.positionsPct[i]}%`,
+        `rgba(0, 0, 0, ${opacity}) ${scrim.positionsPct[i]}%`,
       );
     });
   };
 
   it("voile de protection du haut", () => {
-    const bloc = blockWithProp(dessin, ".osd-tv-haut::before", "background-image");
-    expect(propIn(bloc, "bottom")).toBe(`-${TV_OSD.voileHaut.debordPx}px`);
-    degrade(bloc, TV_OSD.voileHaut);
+    const block = blockWithProp(paint, ".osd-tv-haut::before", "background-image");
+    expect(propIn(block, "bottom")).toBe(`-${TV_OSD.topScrim.bleedPx}px`);
+    gradient(block, TV_OSD.topScrim);
   });
 
   it("voile de protection du bas", () => {
-    const bloc = blockWithProp(dessin, ".osd-tv-bas::before", "background-image");
-    expect(propIn(bloc, "top")).toBe(`-${TV_OSD.voileBas.debordPx}px`);
-    degrade(bloc, TV_OSD.voileBas);
+    const block = blockWithProp(paint, ".osd-tv-bas::before", "background-image");
+    expect(propIn(block, "top")).toBe(`-${TV_OSD.bottomScrim.bleedPx}px`);
+    gradient(block, TV_OSD.bottomScrim);
   });
 
   it("barre de progression : piste, tampon, pastille, fantôme", () => {
-    const piste = blockFor(dessin, ".barre-tv-piste");
-    expect(propIn(piste, "height")).toBe(`${TV_OSD.barre.hauteur}px`);
-    expect(propIn(piste, "background")).toBe(TV_OSD.barre.fond);
-    expect(propIn(blockFor(dessin, ".barre-tv-tampon"), "background")).toBe(
-      TV_OSD.barre.tampon,
+    const track = blockFor(paint, ".barre-tv-piste");
+    expect(propIn(track, "height")).toBe(`${TV_OSD.bar.height}px`);
+    expect(propIn(track, "background")).toBe(TV_OSD.bar.bg);
+    expect(propIn(blockFor(paint, ".barre-tv-tampon"), "background")).toBe(
+      TV_OSD.bar.buffer,
     );
-    expect(propIn(blockFor(dessin, ".barre-tv-pastille"), "width")).toBe(
-      `${TV_OSD.barre.pastille}px`,
+    expect(propIn(blockFor(paint, ".barre-tv-pastille"), "width")).toBe(
+      `${TV_OSD.bar.knob}px`,
     );
-    expect(propIn(blockFor(dessin, ".barre-tv-fantome"), "width")).toBe(
-      `${TV_OSD.barre.fantome}px`,
+    expect(propIn(blockFor(paint, ".barre-tv-fantome"), "width")).toBe(
+      `${TV_OSD.bar.ghost}px`,
     );
   });
 });
 
 describe("les panneaux suivent TV_PLAYER_PANEL", () => {
   it("géométrie du panneau flottant", () => {
-    const bloc = blockFor(panneaux, ".panneau-tv");
-    expect(propIn(bloc, "width")).toBe(`${TV_PLAYER_PANEL.largeur}px`);
-    expect(propIn(bloc, "bottom")).toBe(`${TV_PLAYER_PANEL.bas}px`);
+    const block = blockFor(panels, ".panneau-tv");
+    expect(propIn(block, "width")).toBe(`${TV_PLAYER_PANEL.width}px`);
+    expect(propIn(block, "bottom")).toBe(`${TV_PLAYER_PANEL.bottom}px`);
   });
 
   it("voile d'assombrissement, monté seulement panneau ouvert", () => {
-    const bloc = blockFor(
-      panneaux,
+    const block = blockFor(
+      panels,
       '.osd-tv[data-panneau="episodes"]::after',
     );
-    expect(propIn(bloc, "background")).toBe(TV_PLAYER_PANEL.voile);
-    expect(propIn(bloc, "animation")).toContain(
-      `${TV_PLAYER_PANEL.voileFonduMs}ms`,
+    expect(propIn(block, "background")).toBe(TV_PLAYER_PANEL.scrim);
+    expect(propIn(block, "animation")).toContain(
+      `${TV_PLAYER_PANEL.scrimFadeMs}ms`,
     );
   });
 
   it("hauteur maximale du contenu", () => {
-    const bloc = blockWithProp(
-      panneaux,
+    const block = blockWithProp(
+      panels,
       ".panneau-tv > [data-panneau-detache]",
       "max-height",
     );
-    expect(propIn(bloc, "max-height")).toBe(
-      `calc(100vh - ${TV_PLAYER_PANEL.hauteurMaxRetrait}px)`,
+    expect(propIn(block, "max-height")).toBe(
+      `calc(100vh - ${TV_PLAYER_PANEL.maxHeightInset}px)`,
     );
   });
 
   it("cibles et vignettes", () => {
-    const bouton = blockFor(panneaux, ".panneau-tv button");
-    expect(propIn(bouton, "min-height")).toBe(
-      `${TV_PLAYER_PANEL.boutonHauteurMin}px`,
+    const button = blockFor(panels, ".panneau-tv button");
+    expect(propIn(button, "min-height")).toBe(
+      `${TV_PLAYER_PANEL.buttonMinHeight}px`,
     );
-    expect(propIn(bouton, "font-size")).toBe(`${TV_PLAYER_PANEL.boutonTexte}px`);
-    const vignette = blockFor(panneaux, ".panneau-tv .aspect-video");
-    expect(propIn(vignette, "width")).toBe(
-      `${TV_PLAYER_PANEL.vignetteEpisode.largeur}px`,
+    expect(propIn(button, "font-size")).toBe(`${TV_PLAYER_PANEL.buttonText}px`);
+    const thumb = blockFor(panels, ".panneau-tv .aspect-video");
+    expect(propIn(thumb, "width")).toBe(
+      `${TV_PLAYER_PANEL.episodeThumb.width}px`,
     );
-    expect(propIn(vignette, "height")).toBe(
-      `${TV_PLAYER_PANEL.vignetteEpisode.hauteur}px`,
+    expect(propIn(thumb, "height")).toBe(
+      `${TV_PLAYER_PANEL.episodeThumb.height}px`,
     );
   });
 });
 
 describe("les surcouches suivent TV_PLAYER_SKIP et TV_PLAYER_NEXT_CARD", () => {
   it("bouton passer : ancrage et habillage", () => {
-    const bloc = blockFor(surcouches, ".saut-tv");
-    expect(propIn(bloc, "bottom")).toBe(`${TV_PLAYER_SKIP.bas}px`);
-    expect(propIn(bloc, "right")).toBe("var(--tv-overscan-x)");
-    expect(propIn(bloc, "padding")).toBe(
+    const block = blockFor(overlays, ".saut-tv");
+    expect(propIn(block, "bottom")).toBe(`${TV_PLAYER_SKIP.bottom}px`);
+    expect(propIn(block, "right")).toBe("var(--tv-overscan-x)");
+    expect(propIn(block, "padding")).toBe(
       `${TV_PLAYER_SKIP.paddingV}px ${TV_PLAYER_SKIP.paddingH}px`,
     );
-    expect(propIn(bloc, "border-radius")).toBe(`${TV_PLAYER_SKIP.rayon}px`);
-    expect(propIn(bloc, "font-size")).toBe(`${TV_PLAYER_SKIP.texte}px`);
+    expect(propIn(block, "border-radius")).toBe(`${TV_PLAYER_SKIP.radius}px`);
+    expect(propIn(block, "font-size")).toBe(`${TV_PLAYER_SKIP.text}px`);
   });
 
   it("bouton passer : il s'écarte quand l'habillage est visible", () => {
-    const bloc = blockFor(surcouches, 'html[data-tv-lecteur="osd"] .saut-tv');
-    expect(propIn(bloc, "transform")).toBe(
-      `translateY(-${TV_PLAYER_SKIP.montee}px)`,
+    const block = blockFor(overlays, 'html[data-tv-lecteur="osd"] .saut-tv');
+    expect(propIn(block, "transform")).toBe(
+      `translateY(-${TV_PLAYER_SKIP.lift}px)`,
     );
   });
 
   it("carte épisode suivant : largeur et coin d'overscan", () => {
-    const bloc = blockFor(surcouches, ".carte-suivant-tv");
-    expect(propIn(bloc, "width")).toBe(`${TV_PLAYER_NEXT_CARD.largeur}px`);
-    expect(propIn(bloc, "bottom")).toBe("var(--tv-overscan-y)");
-    expect(propIn(bloc, "right")).toBe("var(--tv-overscan-x)");
+    const block = blockFor(overlays, ".carte-suivant-tv");
+    expect(propIn(block, "width")).toBe(`${TV_PLAYER_NEXT_CARD.width}px`);
+    expect(propIn(block, "bottom")).toBe("var(--tv-overscan-y)");
+    expect(propIn(block, "right")).toBe("var(--tv-overscan-x)");
   });
 });

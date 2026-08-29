@@ -1,4 +1,4 @@
-import type { Boite } from "@tentacle-tv/tv-core";
+import type { Box } from "@tentacle-tv/tv-core";
 import { boiteDeNavigation } from "./measure";
 
 /**
@@ -25,7 +25,7 @@ export const SELECTEUR_FOCUSABLE = [
 
 export interface Candidat {
   element: HTMLElement;
-  boite: Boite;
+  box: Box;
 }
 
 /**
@@ -63,7 +63,7 @@ export function recenser(racine: ParentNode = document): Candidat[] {
 
     // La boîte de NAVIGATION, débarrassée de l'agrandissement au focus : la
     // fenêtre ci-dessus juge la position à l'écran, le rect brut lui suffit.
-    candidats.push({ element: noeud, boite: boiteDeNavigation(noeud, rectangle) });
+    candidats.push({ element: noeud, box: boiteDeNavigation(noeud, rectangle) });
   }
 
   return sansEnveloppes(candidats);

@@ -92,7 +92,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         bottom: 48,
         left: 48,
         // Largeur du bloc texte : 46 rem sur la LG (`banner-tv.css`).
-        maxWidth: TV_BANNER_CARD.texteLargeurMax,
+        maxWidth: TV_BANNER_CARD.textMaxWidth,
       }}
     >
       {logoUri ? (

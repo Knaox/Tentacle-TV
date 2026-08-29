@@ -72,7 +72,7 @@ export function TVPlaybackOverlay({
   }, [visible, opacity]);
 
   useEffect(() => {
-    raise.value = withTiming(overlayVisible ? -TV_PLAYER_SKIP.montee : 0, { duration: 200 });
+    raise.value = withTiming(overlayVisible ? -TV_PLAYER_SKIP.lift : 0, { duration: 200 });
   }, [overlayVisible, raise]);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -87,7 +87,7 @@ export function TVPlaybackOverlay({
       pointerEvents="auto"
       style={[{
         position: "absolute",
-        bottom: TV_PLAYER_SKIP.bas,
+        bottom: TV_PLAYER_SKIP.bottom,
         right: TV_OVERSCAN_PT.x,
         zIndex: 100,
       }, animStyle]}
@@ -105,11 +105,11 @@ export function TVPlaybackOverlay({
             backgroundColor: "rgba(0,0,0,0.6)",
             borderWidth: 1,
             borderColor: "rgba(255,255,255,0.2)",
-            borderRadius: TV_PLAYER_SKIP.rayon,
+            borderRadius: TV_PLAYER_SKIP.radius,
           }}>
             <Text style={{
               color: "#ffffff",
-              fontSize: TV_PLAYER_SKIP.texte,
+              fontSize: TV_PLAYER_SKIP.text,
               fontWeight: "600",
             }}>
               {compte !== null
@@ -128,11 +128,11 @@ export function TVPlaybackOverlay({
               backgroundColor: "rgba(0,0,0,0.45)",
               borderWidth: 1,
               borderColor: "rgba(255,255,255,0.12)",
-              borderRadius: TV_PLAYER_SKIP.rayon,
+              borderRadius: TV_PLAYER_SKIP.radius,
             }}>
               <Text style={{
                 color: "rgba(255,255,255,0.7)",
-                fontSize: TV_PLAYER_SKIP.texte,
+                fontSize: TV_PLAYER_SKIP.text,
                 fontWeight: "500",
               }}>
                 {t("dismiss")}

@@ -17,13 +17,13 @@
 
 export type Direction = "haut" | "bas" | "gauche" | "droite";
 
-export type TransportCommande = "lecture" | "pause" | "arret" | "avance" | "retour";
+export type TransportCommand = "lecture" | "pause" | "arret" | "avance" | "retour";
 
-export type Intention =
+export type Intent =
   | { type: "deplacer"; direction: Direction }
   | { type: "valider" }
   | { type: "retour" }
-  | { type: "transport"; commande: TransportCommande };
+  | { type: "transport"; command: TransportCommand };
 
 /**
  * OK/Entrée — la seule touche que ce module sache reconnaître lui-même.
@@ -40,22 +40,22 @@ export type Intention =
  * n'y a pas de `KeyboardEvent` du tout : l'adaptateur y fabrique
  * `{ key: "Enter" }` pour un événement « select », et tout fonctionne.
  */
-const CODES_VALIDATION = new Set([13]);
-const NOMS_VALIDATION = new Set(["Enter"]);
+const SELECT_KEY_CODES = new Set([13]);
+const SELECT_KEY_NAMES = new Set(["Enter"]);
 
-export function estValidation(evenement: { keyCode?: number; key?: string }): boolean {
-  if (evenement.keyCode !== undefined && CODES_VALIDATION.has(evenement.keyCode)) {
+export function isSelectKey(event: { keyCode?: number; key?: string }): boolean {
+  if (event.keyCode !== undefined && SELECT_KEY_CODES.has(event.keyCode)) {
     return true;
   }
-  return !!evenement.key && NOMS_VALIDATION.has(evenement.key);
+  return !!event.key && SELECT_KEY_NAMES.has(event.key);
 }
 
 /** Axe de déplacement d'une direction. */
-export function estHorizontale(direction: Direction): boolean {
+export function isHorizontal(direction: Direction): boolean {
   return direction === "gauche" || direction === "droite";
 }
 
 /** Sens : +1 vers la droite ou le bas, -1 vers la gauche ou le haut. */
-export function sens(direction: Direction): 1 | -1 {
+export function directionSign(direction: Direction): 1 | -1 {
   return direction === "droite" || direction === "bas" ? 1 : -1;
 }

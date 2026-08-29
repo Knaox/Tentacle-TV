@@ -19,7 +19,7 @@ import { UpNextCard } from "@/components/player/UpNextCard";
 import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen";
 import { donnerFocus } from "../focus/active";
 import { destinationEntreeDeZone } from "../focus/zones";
-import { lireEtat, useEtatLecteurTv } from "@tentacle-tv/tv-core";
+import { readState, useTvPlayerState } from "@tentacle-tv/tv-core";
 import { poserFocusOsd } from "./focusOsd";
 import { quitterLecteur } from "./playerExitTv";
 import { ATTRIBUT_SURCOUCHE } from "./okOverlay";
@@ -58,7 +58,7 @@ function useFocusSurcouche(
   useEffect(() => {
     const racine = ref.current;
     if (!actif || !racine) return;
-    if (!imposer && lireEtat().mode !== "repos") return;
+    if (!imposer && readState().mode !== "repos") return;
     const element = cible(racine);
     if (element) donnerFocus(element);
     return () => {
@@ -77,7 +77,7 @@ export function PlaybackOverlayTv({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: ProprietesTv) {
   const { t } = useTranslation("player");
-  const etat = useEtatLecteurTv();
+  const etat = useTvPlayerState();
   const refSaut = useRef<HTMLDivElement>(null);
   const refCarte = useRef<HTMLDivElement>(null);
   const refAffiche = useRef<HTMLDivElement>(null);

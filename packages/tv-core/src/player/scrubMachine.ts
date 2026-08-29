@@ -24,32 +24,32 @@
  *
  * Module pur — ni React, ni DOM, horloge injectable. C'est ce qui le rend
  * testable, et ce qui permet de vérifier la seule chose qui compte vraiment :
- * qu'`annuler()` n'appelle jamais `surSeek`.
+ * que `cancel()` n'appelle jamais `onSeek`.
  */
 
 import { scrubStep, SCRUB_STEP_MIN_S } from "@tentacle-tv/shared";
 
 /** Plancher historique du pas (contenus courts / durée inconnue) — réexporté
  *  pour les tests ; la valeur effective vient de `scrubStep(duree)`. */
-export const PAS_SCRUB_S = SCRUB_STEP_MIN_S;
+export const SCRUB_STEP_S = SCRUB_STEP_MIN_S;
 
 /** Les paliers du maintien. Au-delà de huit, on ne vise plus rien. */
-export const PALIERS = [1, 2, 4, 8] as const;
+export const SCRUB_TIERS = [1, 2, 4, 8] as const;
 
 /** Sans nouvelle touche, on annule. Sept secondes : on a reposé la télécommande. */
-export const INACTIVITE_ANNULE_MS = 7000;
+export const IDLE_CANCEL_MS = 7000;
 
-export interface OptionsMachineScrub {
-  lirePosition: () => number;
-  lireDuree: () => number;
-  surEntree: (position: number, palier: number) => void;
-  surChangement: (position: number, palier: number) => void;
-  surPause: (pause: boolean) => void;
-  surSeek: (secondes: number) => void;
-  surSortie: () => void;
+export interface ScrubMachineOptions {
+  readPosition: () => number;
+  readDuration: () => number;
+  onEnter: (position: number, tier: number) => void;
+  onChange: (position: number, tier: number) => void;
+  onPause: (pause: boolean) => void;
+  onSeek: (seconds: number) => void;
+  onExit: () => void;
 }
 
-export interface MachineScrub {
+export interface ScrubMachine {
   /**
    * Entrer en déplacement SANS bouger : le curseur fantôme se pose là où l'on
    * en est, et attend.
@@ -59,96 +59,96 @@ export interface MachineScrub {
    * c'est `pas`, qui amorce au passage. Les deux amorcent la même machine ; ce
    * qui les distingue est qu'on a désigné une direction, ou non.
    */
-  entrer: () => void;
-  pas: (sens: 1 | -1, palier: number) => void;
-  confirmer: () => void;
-  annuler: () => void;
-  estActif: () => boolean;
-  detruire: () => void;
+  enter: () => void;
+  step: (sign: 1 | -1, tier: number) => void;
+  confirm: () => void;
+  cancel: () => void;
+  isActive: () => boolean;
+  destroy: () => void;
 }
 
-export function creerMachineScrub(options: OptionsMachineScrub): MachineScrub {
-  let actif = false;
+export function createScrubMachine(options: ScrubMachineOptions): ScrubMachine {
+  let active = false;
   let position = 0;
-  let inactivite: ReturnType<typeof setTimeout> | null = null;
+  let idle: ReturnType<typeof setTimeout> | null = null;
 
-  function armerInactivite(): void {
-    if (inactivite !== null) clearTimeout(inactivite);
-    inactivite = setTimeout(() => {
-      inactivite = null;
-      annuler();
-    }, INACTIVITE_ANNULE_MS);
+  function armIdle(): void {
+    if (idle !== null) clearTimeout(idle);
+    idle = setTimeout(() => {
+      idle = null;
+      cancel();
+    }, IDLE_CANCEL_MS);
   }
 
-  function desarmer(): void {
-    if (inactivite === null) return;
-    clearTimeout(inactivite);
-    inactivite = null;
+  function disarm(): void {
+    if (idle === null) return;
+    clearTimeout(idle);
+    idle = null;
   }
 
-  function borner(valeur: number): number {
-    const duree = options.lireDuree();
-    if (!(duree > 0)) return Math.max(0, valeur);
-    return Math.min(Math.max(0, valeur), duree);
+  function clamp(value: number): number {
+    const duration = options.readDuration();
+    if (!(duration > 0)) return Math.max(0, value);
+    return Math.min(Math.max(0, value), duration);
   }
 
   /** L'entrée en déplacement, commune au bouton et à la première flèche. */
-  function amorcer(palier: number): void {
-    actif = true;
-    position = borner(options.lirePosition());
-    options.surPause(true);
-    options.surEntree(position, palier);
+  function begin(tier: number): void {
+    active = true;
+    position = clamp(options.readPosition());
+    options.onPause(true);
+    options.onEnter(position, tier);
   }
 
-  function entrer(): void {
-    if (actif) return;
-    amorcer(PALIERS[0]);
+  function enter(): void {
+    if (active) return;
+    begin(SCRUB_TIERS[0]);
     // La veille d'inactivité vaut ici comme ailleurs : entrer en déplacement et
     // reposer la télécommande ne doit pas laisser la vidéo en pause.
-    armerInactivite();
+    armIdle();
   }
 
-  function pas(sens: 1 | -1, palier: number): void {
-    const multiplicateur = PALIERS.indexOf(palier as (typeof PALIERS)[number]) >= 0 ? palier : 1;
+  function step(sign: 1 | -1, tier: number): void {
+    const multiplier = SCRUB_TIERS.indexOf(tier as (typeof SCRUB_TIERS)[number]) >= 0 ? tier : 1;
 
-    if (!actif) amorcer(multiplicateur);
+    if (!active) begin(multiplier);
 
-    position = borner(position + sens * scrubStep(options.lireDuree()) * multiplicateur);
-    options.surChangement(position, multiplicateur);
-    armerInactivite();
+    position = clamp(position + sign * scrubStep(options.readDuration()) * multiplier);
+    options.onChange(position, multiplier);
+    armIdle();
   }
 
-  function confirmer(): void {
-    if (!actif) return;
-    const cible = position;
-    actif = false;
-    desarmer();
-    options.surSortie();
+  function confirm(): void {
+    if (!active) return;
+    const target = position;
+    active = false;
+    disarm();
+    options.onExit();
     // Le déplacement d'abord, la reprise ensuite : reprendre avant de déplacer
     // ferait jouer une seconde de l'ancienne position.
-    options.surSeek(cible);
-    options.surPause(false);
+    options.onSeek(target);
+    options.onPause(false);
   }
 
-  function annuler(): void {
-    if (!actif) return;
-    actif = false;
-    desarmer();
-    options.surSortie();
-    // Aucun `surSeek` : c'est toute la différence avec une confirmation, et
+  function cancel(): void {
+    if (!active) return;
+    active = false;
+    disarm();
+    options.onExit();
+    // Aucun `onSeek` : c'est toute la différence avec une confirmation, et
     // c'est ce qui rend l'abandon sur inactivité inoffensif.
-    options.surPause(false);
+    options.onPause(false);
   }
 
   return {
-    entrer,
-    pas,
-    confirmer,
-    annuler,
-    estActif: () => actif,
-    detruire: () => {
-      desarmer();
-      actif = false;
+    enter,
+    step,
+    confirm,
+    cancel,
+    isActive: () => active,
+    destroy: () => {
+      disarm();
+      active = false;
     },
   };
 }

@@ -1,4 +1,4 @@
-import { estValidation } from "./keys";
+import { isSelectKey } from "./keys";
 
 /**
  * Appui court et maintien de OK.
@@ -32,7 +32,7 @@ import { estValidation } from "./keys";
  * **Tout est annulé par un déplacement.** Une flèche pendant l'appui abandonne
  * les deux actions : l'utilisateur a changé d'avis, pas confirmé.
  *
- * OK se reconnaît par `estValidation` — le code, sinon le nom. Ne lire que
+ * OK se reconnaît par `isSelectKey` — le code, sinon le nom. Ne lire que
  * `keyCode` prenait, au banc d'essai où il vaut zéro, chaque répétition
  * d'Entrée pour un déplacement : la première annulait le maintien qu'elle
  * était censée prouver.
@@ -46,15 +46,15 @@ import { estValidation } from "./keys";
  * quelle : `Pressable` mesure lui-même le maintien et prend le seuil en prop
  * (`delayLongPress`). Partager la constante garde le geste identique sur les
  * trois cibles même si le mécanisme diffère. */
-export const SEUIL_APPUI_LONG_MS = 550;
+export const LONG_PRESS_THRESHOLD_MS = 550;
 
-const SEUIL_MS = SEUIL_APPUI_LONG_MS;
+const THRESHOLD_MS = LONG_PRESS_THRESHOLD_MS;
 
 /** Silence après lequel on considère la touche relâchée, faute de `keyup`. */
 const SILENCE_MS = 700;
 
-export interface ActionsAppui {
-  court: () => void;
+export interface PressActions {
+  short: () => void;
   long?: () => void;
   /**
    * Appelé juste AVANT l'action longue, pour armer le verrou de touche.
@@ -65,22 +65,22 @@ export interface ActionsAppui {
    * Côté LG, `focus/appuiLong.ts` le câble pour que les appelants n'aient
    * rien à savoir de tout ceci.
    */
-  verrouiller?: () => void;
+  lock?: () => void;
 }
 
-interface EtatAppui {
+interface PressState {
   /** La touche OK est enfoncée. **Suivi à part du minuteur**, et c'est le
    *  correctif : quand aucune action longue n'est déclarée — une affiche, dont
    *  l'appui court ouvre déjà la fiche — il n'y a pas de minuteur à armer. Le
-   *  déduire de `minuteurLong !== null` faisait donc croire à un relâchement
+   *  déduire de `longTimer !== null` faisait donc croire à un relâchement
    *  sans appui, et **tout OK maintenu plus d'une demi-seconde ne faisait
    *  rien**. Sur une télécommande, tenir OK une demi-seconde est le geste
    *  ordinaire, pas un cas limite. */
-  enfonce: boolean;
-  minuteurLong: ReturnType<typeof setTimeout> | null;
-  minuteurSilence: ReturnType<typeof setTimeout> | null;
-  longDeclenche: boolean;
-  aRepete: boolean;
+  down: boolean;
+  longTimer: ReturnType<typeof setTimeout> | null;
+  silenceTimer: ReturnType<typeof setTimeout> | null;
+  longFired: boolean;
+  didRepeat: boolean;
 }
 
 /**
@@ -90,88 +90,88 @@ interface EtatAppui {
  * synthétise un `click` sur Entrée, et l'action serait jouée deux fois — une
  * par ici, une par le `onClick` du composant enveloppé.
  */
-export function creerAppuiLong(actions: ActionsAppui) {
-  const etat: EtatAppui = {
-    enfonce: false,
-    minuteurLong: null,
-    minuteurSilence: null,
-    longDeclenche: false,
-    aRepete: false,
+export function createLongPress(actions: PressActions) {
+  const state: PressState = {
+    down: false,
+    longTimer: null,
+    silenceTimer: null,
+    longFired: false,
+    didRepeat: false,
   };
 
-  function nettoyer(): void {
-    if (etat.minuteurLong !== null) clearTimeout(etat.minuteurLong);
-    if (etat.minuteurSilence !== null) clearTimeout(etat.minuteurSilence);
-    etat.enfonce = false;
-    etat.minuteurLong = null;
-    etat.minuteurSilence = null;
-    etat.longDeclenche = false;
-    etat.aRepete = false;
+  function reset(): void {
+    if (state.longTimer !== null) clearTimeout(state.longTimer);
+    if (state.silenceTimer !== null) clearTimeout(state.silenceTimer);
+    state.down = false;
+    state.longTimer = null;
+    state.silenceTimer = null;
+    state.longFired = false;
+    state.didRepeat = false;
   }
 
-  function armerSilence(): void {
-    if (etat.minuteurSilence !== null) clearTimeout(etat.minuteurSilence);
-    etat.minuteurSilence = setTimeout(() => {
+  function armSilence(): void {
+    if (state.silenceTimer !== null) clearTimeout(state.silenceTimer);
+    state.silenceTimer = setTimeout(() => {
       // Silence : la touche est relâchée. Si le maintien n'a pas encore
       // atteint son seuil, c'était un appui court.
-      if (!etat.longDeclenche) actions.court();
-      nettoyer();
+      if (!state.longFired) actions.short();
+      reset();
     }, SILENCE_MS);
   }
 
   return {
-    onKeyDown(evenement: { keyCode?: number; key?: string; preventDefault(): void }): void {
-      if (!estValidation(evenement)) {
+    onKeyDown(event: { keyCode?: number; key?: string; preventDefault(): void }): void {
+      if (!isSelectKey(event)) {
         // Un déplacement pendant l'appui annule tout.
-        if (etat.enfonce) nettoyer();
+        if (state.down) reset();
         return;
       }
-      evenement.preventDefault();
+      event.preventDefault();
 
-      if (etat.enfonce) {
+      if (state.down) {
         // Répétition automatique : elle ne relance rien, mais elle prouve que
         // la touche est toujours enfoncée.
-        etat.aRepete = true;
-        armerSilence();
+        state.didRepeat = true;
+        armSilence();
         return;
       }
 
-      etat.enfonce = true;
+      state.down = true;
 
       // Le minuteur n'est armé que s'il y a un maintien à déclencher. Sans
       // action longue, l'appui reste un appui court quelle que soit sa durée —
       // c'est le relâchement qui le joue.
       if (!actions.long) return;
 
-      etat.minuteurLong = setTimeout(() => {
-        etat.minuteurLong = null;
-        etat.longDeclenche = true;
+      state.longTimer = setTimeout(() => {
+        state.longTimer = null;
+        state.longFired = true;
         // Le verrou d'abord : si l'action navigue, la touche encore tenue ne
         // doit rien atteindre du nouvel écran.
-        actions.verrouiller?.();
+        actions.lock?.();
         actions.long?.();
-      }, SEUIL_MS);
+      }, THRESHOLD_MS);
     },
 
-    onKeyUp(evenement: { keyCode?: number; key?: string }): void {
-      if (!estValidation(evenement)) return;
-      const long = etat.longDeclenche;
-      const enfonce = etat.enfonce;
-      nettoyer();
+    onKeyUp(event: { keyCode?: number; key?: string }): void {
+      if (!isSelectKey(event)) return;
+      const long = state.longFired;
+      const down = state.down;
+      reset();
       // Rien à faire si le maintien a déjà agi ; sinon c'était un appui court,
       // long ou bref — la durée ne le distingue que lorsqu'un maintien existe.
-      if (enfonce && !long) actions.court();
+      if (down && !long) actions.short();
     },
 
     /** À appeler sur `blur` : après une navigation, le `keyup` arriverait sur
      *  un élément démonté et laisserait l'état armé pour la carte suivante. */
     onBlur(): void {
-      nettoyer();
+      reset();
     },
 
     /** Exposé pour les tests : la répétition a-t-elle été observée ? */
-    aRepete(): boolean {
-      return etat.aRepete;
+    didRepeat(): boolean {
+      return state.didRepeat;
     },
   };
 }

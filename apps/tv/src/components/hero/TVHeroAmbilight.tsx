@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Animated, Easing, View } from "react-native";
-import { sigmaHalo } from "@tentacle-tv/tv-core";
+import { haloSigma } from "@tentacle-tv/tv-core";
 import { TV_AMBILIGHT } from "@tentacle-tv/theme";
 import { TVHeroAmbilightFiltre } from "./TVHeroAmbilightFiltre";
 
@@ -57,7 +57,7 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
   cardH,
   opacity,
 }: TVHeroAmbilightProps) {
-  const sigma = useMemo(() => sigmaHalo(cardW, TV_AMBILIGHT.rapportFlou), [cardW]);
+  const sigma = useMemo(() => haloSigma(cardW, TV_AMBILIGHT.blurRatio), [cardW]);
 
   if (!uri || cardW <= 0 || cardH <= 0) return null;
 
@@ -77,7 +77,7 @@ export const TVHeroAmbilight = memo(function TVHeroAmbilight({
             cardH={cardH}
             sigma={sigma}
             saturation={TV_AMBILIGHT.saturation}
-            sourceW={TV_AMBILIGHT.largeurSource}
+            sourceW={TV_AMBILIGHT.sourceWidth}
             onReady={onReady}
           />
         )}

@@ -1,4 +1,4 @@
-import { lireIntention, estHorizontale } from "./keys";
+import { lireIntention, isHorizontal } from "./keys";
 import { estUnChampDeSaisie } from "./candidates";
 import { retenir } from "./memory";
 import { surveillerRoute } from "./route";
@@ -11,7 +11,7 @@ import { surveillerSurvol } from "./hoverFocus";
 import { surveillerDefilementCurseur } from "./cursorScroll";
 import { dansLaFenetre } from "./measure";
 import { clavierSystemeVisible, surveillerClavierSysteme } from "./systemKeyboard";
-import { navigationOsdActive } from "@tentacle-tv/tv-core";
+import { osdNavigationActive } from "@tentacle-tv/tv-core";
 
 /**
  * Navigation spatiale à la télécommande.
@@ -149,7 +149,7 @@ export function installerMoteurFocus(): () => void {
     // c'est par eux qu'on sort du champ. Sans cette distinction, entrer dans un
     // formulaire à la télécommande serait un aller sans retour.
     const cible = evenement.target instanceof HTMLElement ? evenement.target : null;
-    if (estHorizontale(intention.direction) && estUnChampDeSaisie(cible)) return;
+    if (isHorizontal(intention.direction) && estUnChampDeSaisie(cible)) return;
 
     evenement.preventDefault();
     evenement.stopPropagation();
@@ -198,7 +198,7 @@ function surLecteur(): boolean {
  */
 function moteurSuspendu(): boolean {
   if (clavierSystemeVisible()) return true;
-  return surLecteur() && !navigationOsdActive();
+  return surLecteur() && !osdNavigationActive();
 }
 
 /**

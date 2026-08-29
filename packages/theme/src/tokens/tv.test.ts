@@ -88,34 +88,34 @@ describe("l'anneau de focus est le même des deux côtés", () => {
     HERE,
     "../../../../apps/tv-webos/client/src/styles/focus.css",
   );
-  const feuille = stripComments(readFileSync(FOCUS_CSS, "utf8"));
-  const valeur = (nom: string): string => cssVarValue(feuille, nom);
+  const sheet = stripComments(readFileSync(FOCUS_CSS, "utf8"));
+  const value = (nom: string): string => cssVarValue(sheet, nom);
 
   it("a la même épaisseur", () => {
-    expect(valeur("--tv-anneau-epaisseur")).toBe(`${TV_FOCUS_RING.epaisseur}px`);
+    expect(value("--tv-anneau-epaisseur")).toBe(`${TV_FOCUS_RING.thickness}px`);
   });
 
   it("a la même teinte", () => {
-    expect(valeur("--tv-anneau-teinte")).toBe(TV_FOCUS_RING.teinte);
+    expect(value("--tv-anneau-teinte")).toBe(TV_FOCUS_RING.tint);
   });
 
   it("a le même halo", () => {
-    expect(valeur("--tv-anneau-halo")).toBe(
-      `rgba(var(--brand-rgb), ${TV_FOCUS_RING.haloOpacite})`,
+    expect(value("--tv-anneau-halo")).toBe(
+      `rgba(var(--brand-rgb), ${TV_FOCUS_RING.haloOpacity})`,
     );
   });
 
   it("compose l'anneau avec les mêmes mesures", () => {
-    expect(valeur("--tv-anneau")).toBe(
+    expect(value("--tv-anneau")).toBe(
       `0 0 0 var(--tv-anneau-epaisseur) var(--tv-anneau-teinte), ` +
-        `0 0 ${TV_FOCUS_RING.haloFlou}px ${TV_FOCUS_RING.haloEtalement}px var(--tv-anneau-halo)`,
+        `0 0 ${TV_FOCUS_RING.haloBlur}px ${TV_FOCUS_RING.haloSpread}px var(--tv-anneau-halo)`,
     );
   });
 
   it("relève une carte avec la même ombre", () => {
-    expect(valeur("--tv-anneau-releve")).toBe(
-      `var(--tv-anneau), 0 ${TV_FOCUS_RING.releveDecalageY}px ` +
-        `${TV_FOCUS_RING.releveFlou}px -10px rgba(0, 0, 0, ${TV_FOCUS_RING.releveOpacite})`,
+    expect(value("--tv-anneau-releve")).toBe(
+      `var(--tv-anneau), 0 ${TV_FOCUS_RING.liftOffsetY}px ` +
+        `${TV_FOCUS_RING.liftBlur}px -10px rgba(0, 0, 0, ${TV_FOCUS_RING.liftOpacity})`,
     );
   });
 });
