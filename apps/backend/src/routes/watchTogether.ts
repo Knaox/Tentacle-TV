@@ -33,11 +33,17 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** GET /group — groupe courant de l'utilisateur (resync au boot). */
-  app.get("/group", async (request, reply) => {
+  /**
+   * ⚠️ Ne pas repasser en 404. « L'utilisateur n'est dans aucun groupe » est
+   * l'état NORMAL, et cette route est appelée à chaque montage de l'app : le
+   * 404 remplissait la console du navigateur d'erreurs rouges qu'aucun code
+   * ne peut faire taire (le journal vient du moteur, pas de nous). Un corps
+   * `null` dit la même chose sans mentir sur la santé du serveur. Les clients
+   * d'avant traduisent déjà le 404 en `null` : les deux formes se lisent.
+   */
+  app.get("/group", async (request) => {
     const user = (request as any).user as JellyfinUser;
-    const room = getRoomOf(user.userId);
-    if (!room) return reply.status(404).send({ code: "not_in_group" });
-    return roomToDto(room);
+    return getRoomOf(user.userId) ? roomToDto(getRoomOf(user.userId)!) : null;
   });
 
   /** POST /group/leave — quitte le groupe (transfert d'hôte / GC automatiques). */
