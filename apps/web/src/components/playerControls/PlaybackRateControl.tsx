@@ -10,6 +10,16 @@
  * boucle de dérive (useGroupDriftLoop) pilote elle-même le taux pour rattraper
  * les écarts ; laisser le menu ouvert, c'était offrir un réglage que le groupe
  * écrasait silencieusement la seconde d'après.
+ *
+ * # Un seul panneau à la fois
+ *
+ * Le menu tenait son ouverture pour lui seul, là où les deux autres panneaux du
+ * lecteur (pistes, épisodes) se fermaient déjà l'un l'autre : on pouvait donc
+ * ouvrir la vitesse PAR-DESSUS la liste des épisodes, et les deux se
+ * chevauchaient. Il ne lève pas l'état pour autant — deux barres différentes le
+ * montent, et leur ajouter un état partagé aurait fait deux fois le même
+ * câblage. Il ANNONCE son ouverture (`onOpen`) et se ferme quand on lui dit
+ * qu'un autre est ouvert (`otherPanelOpen`) : la barre reste seule juge.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -26,9 +36,15 @@ interface PlaybackRateControlProps {
   resetKey?: string;
   /** Classes du bouton, la barre web et la barre desktop n'ont pas le même padding. */
   buttonClass?: string;
+  /** Un AUTRE panneau du lecteur est ouvert : celui-ci se retire. */
+  otherPanelOpen?: boolean;
+  /** Ce menu vient de s'ouvrir — à la barre de fermer les siens. */
+  onOpen?: () => void;
 }
 
-export function PlaybackRateControl({ apply, resetKey, buttonClass = "" }: PlaybackRateControlProps) {
+export function PlaybackRateControl({
+  apply, resetKey, buttonClass = "", otherPanelOpen = false, onOpen,
+}: PlaybackRateControlProps) {
   const { t } = useTranslation("player");
   const { isInGroup } = useWatchTogether();
   const [rate, setRate] = useState<number>(NORMAL_RATE);
@@ -49,6 +65,11 @@ export function PlaybackRateControl({ apply, resetKey, buttonClass = "" }: Playb
     setOpen(false);
   }, [resetKey, isInGroup]);
 
+  // Un autre panneau prend la place : celui-ci se retire sans discuter.
+  useEffect(() => {
+    if (otherPanelOpen) setOpen(false);
+  }, [otherPanelOpen]);
+
   // Fermeture au clic à l'extérieur. Les barres de contrôle arrêtent la
   // propagation, le clic sur la vidéo ne parvient donc jamais jusqu'ici.
   useEffect(() => {
@@ -66,12 +87,21 @@ export function PlaybackRateControl({ apply, resetKey, buttonClass = "" }: Playb
     setOpen(false);
   }, []);
 
+  const openRef = useRef(onOpen);
+  openRef.current = onOpen;
+  const toggle = useCallback(() => {
+    setOpen((previous) => {
+      if (!previous) openRef.current?.();
+      return !previous;
+    });
+  }, []);
+
   if (isInGroup) return null;
 
   return (
     <div ref={containerRef} className="relative">
       <button
-        onClick={() => setOpen((p) => !p)}
+        onClick={toggle}
         className={`relative rounded-full hover:bg-white/10 ${open ? "bg-white/10" : ""} ${buttonClass}`}
         title={t("player:speed")}
         aria-label={t("player:speed")}
@@ -100,9 +130,28 @@ export function PlaybackRateControl({ apply, resetKey, buttonClass = "" }: Playb
             exit={{ opacity: 0, y: 8 }}
             role="menu"
             aria-label={t("player:speed")}
-            className="absolute bottom-full right-0 z-50 mb-3 max-h-[60vh] w-36 overflow-y-auto rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-2 scrollbar-thin"
+            className="absolute bottom-full right-0 z-50 mb-3 max-h-[60vh] w-40 overflow-y-auto rounded-xl border border-line-subtle bg-[var(--surface-dropdown)] p-2 scrollbar-thin"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Une croix pour refermer : le clic à l'extérieur marche, mais il
+                ne se devine pas — et les deux autres panneaux du lecteur en ont
+                une. */}
+            <div className="mb-1 flex items-center justify-between gap-2 px-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-content-tertiary">
+                {t("player:speed")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={t("player:close")}
+                title={t("player:close")}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
             {PLAYBACK_RATES.map((value) => {
               const active = value === rate;
               return (

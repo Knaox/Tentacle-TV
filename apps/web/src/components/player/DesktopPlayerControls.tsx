@@ -215,7 +215,13 @@ export function DesktopPlayerControls({
               <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <PlaybackRateControl apply={setSpeed} resetKey={itemId} buttonClass="p-2" />
+              <PlaybackRateControl
+                apply={setSpeed} resetKey={itemId} buttonClass="p-2"
+                // Un seul panneau à la fois : pistes et épisodes se fermaient
+                // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
+                otherPanelOpen={showSettings || showEpisodes}
+                onOpen={() => { setShowSettings(() => false); setShowEpisodes(() => false); }}
+              />
               {isEpisode && (
                 <button
                   onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}
