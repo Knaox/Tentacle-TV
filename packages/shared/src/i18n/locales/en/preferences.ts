@@ -156,6 +156,15 @@ export default {
   previewCaptionAuto: "The button fills up, then the passage is skipped. The cross stops the countdown.",
   previewCaptionAutoSilent: "The passage is skipped after {{seconds}}s, with nothing announcing it.",
 
+  // L'aperçu de la fin d'épisode : les trois réglages y sont indépendants, et
+  // c'est ce que les mots peinent à dire. Voir `NextEpisodePreview.tsx`.
+  previewNextCaptionOff: "The end of the episode stays bare: no card appears.",
+  previewNextCaptionCard: "The card waits for your click. Nothing starts without you.",
+  previewNextCaptionCountdown: "The card counts down {{seconds}}s — then it stops there, starting nothing.",
+  previewNextCaptionAuto: "After {{seconds}}s, the next episode starts.",
+  previewNextEpisodeLabel: "S01E02",
+  previewNextEpisodeTitle: "The next episode",
+
   // Le détail qui encombrait chaque réglage, réuni derrière un repli.
   segmentsMoreTitle: "More about this",
   segmentsMoreNothing: "With no passage marked by the server, nothing is shown — whatever the setting above.",

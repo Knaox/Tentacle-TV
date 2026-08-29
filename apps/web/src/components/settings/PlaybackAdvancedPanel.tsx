@@ -18,13 +18,12 @@
  * de lisibilité — pas de couplage.
  */
 
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlaybackSettings, SegmentSettings, SkipLabelKey } from "@tentacle-tv/shared";
-import { PlaybackPreview } from "./PlaybackPreview";
 import { BeforeEndRules } from "./BeforeEndRules";
 import { NextCountdownSlider } from "./NextCountdownSlider";
+import { NextEpisodePreview } from "./NextEpisodePreview";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingsDisclosure } from "./SettingsDisclosure";
@@ -64,9 +63,6 @@ type PassageKey = (typeof PASSAGES)[number]["key"];
 export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings }) {
   const { t } = useTranslation("preferences");
   const next = settings.next;
-  // Le passage que l'aperçu montre. Il suit la ligne qu'on touche — clic ou
-  // clavier — et démarre sur l'intro, celle que tout le monde cherche.
-  const [focus, setFocus] = useState<PassageKey>("intro");
 
   return (
     <div className="space-y-6">
@@ -78,16 +74,6 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
           {t("playbackSegmentsHint")}
         </p>
 
-        {/* EN TÊTE du groupe : on voit l'effet avant de toucher au réglage,
-            et l'aperçu reste sous les yeux pendant qu'on l'ajuste. */}
-        <div className="mt-4">
-          <PlaybackPreview
-            settings={settings[focus]}
-            labelKey={PREVIEW_LABELS[focus]}
-            passage={t(TITLE_KEYS[focus][0])}
-          />
-        </div>
-
         <div className="mt-6 space-y-6">
           {PASSAGES.map((passage) => (
             <SegmentSettingsRow
@@ -96,9 +82,8 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
               title={t(TITLE_KEYS[passage.key][0])}
               hint={t(TITLE_KEYS[passage.key][1])}
               settings={settings[passage.key]}
-              onChange={(patch) => { setFocus(passage.key); passage.apply(patch); }}
-              active={focus === passage.key}
-              onFocus={() => { setFocus(passage.key); }}
+              onChange={passage.apply}
+              labelKey={PREVIEW_LABELS[passage.key]}
             />
           ))}
         </div>
@@ -144,6 +129,10 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
               onChange={(nextCountdownMs) => { setPlaybackSettings({ next: { nextCountdownMs } }); }}
             />
           </div>
+
+          {/* Les trois réglages ci-dessus sont indépendants, et c'est ce qui se
+              comprend mal en mots : ici on VOIT ce que chaque combinaison donne. */}
+          <NextEpisodePreview next={next} />
 
           <div>
             <p className="text-sm font-medium text-content-primary">{t("upNextTriggerLabel")}</p>

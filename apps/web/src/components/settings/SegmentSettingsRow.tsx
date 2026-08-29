@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import type { SegmentSettings } from "@tentacle-tv/shared";
+import type { SegmentSettings, SkipLabelKey } from "@tentacle-tv/shared";
+import { PlaybackPreview } from "./PlaybackPreview";
 import { SegmentDelaySlider } from "./SegmentDelaySlider";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingToggleRow } from "./SettingToggleRow";
@@ -11,10 +12,8 @@ interface SegmentSettingsRowProps {
   fieldId: string;
   settings: SegmentSettings;
   onChange: (patch: Partial<SegmentSettings>) => void;
-  /** Cette ligne est-elle celle que l'aperçu montre ? */
-  active?: boolean;
-  /** L'utilisateur vient de venir ici : l'aperçu doit la suivre. */
-  onFocus?: () => void;
+  /** Le libellé que porte le bouton de CE passage, dans l'aperçu. */
+  labelKey: SkipLabelKey;
 }
 
 /**
@@ -28,22 +27,13 @@ interface SegmentSettingsRowProps {
  * trois possibilités se lisent d'un coup d'œil, ce qui est tout l'enjeu ici.
  */
 export function SegmentSettingsRow({
-  title, hint, fieldId, settings, onChange, active = false, onFocus,
+  title, hint, fieldId, settings, onChange, labelKey,
 }: SegmentSettingsRowProps) {
   const { t } = useTranslation("preferences");
   const auto = settings.action === "auto";
 
   return (
-    // `onFocusCapture` autant que le clic : au clavier aussi, l'aperçu doit
-    // suivre la ligne où l'on se trouve. Le liseré dit LAQUELLE est montrée —
-    // sans lui, l'aperçu semblerait parler d'autre chose.
-    <div
-      onFocusCapture={onFocus}
-      onPointerDown={onFocus}
-      className={`border-l-2 pl-3 transition-colors motion-reduce:transition-none ${
-        active ? "border-tentacle-accent" : "border-transparent"
-      }`}
-    >
+    <div>
       <p className="text-sm font-medium text-content-primary">{title}</p>
       <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>
       <SegmentedChoice
@@ -57,6 +47,10 @@ export function SegmentSettingsRow({
         onChange={(action) => onChange({ action })}
         className="mt-3 max-w-full"
       />
+
+      {/* L'aperçu de CE passage, sous ses propres choix : il n'y a rien à
+          relier, et rien à comprendre avant de le lire. */}
+      <PlaybackPreview settings={settings} labelKey={labelKey} />
 
       {auto && (
         <div className="mt-4 space-y-4 border-l border-line-subtle pl-4">

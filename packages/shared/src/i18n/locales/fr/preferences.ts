@@ -156,6 +156,15 @@ export default {
   previewCaptionAuto: "Le bouton se remplit, puis le passage est sauté. La croix arrête le décompte.",
   previewCaptionAutoSilent: "Le passage est sauté au bout de {{seconds}} s, sans que rien ne l'annonce.",
 
+  // L'aperçu de la fin d'épisode : les trois réglages y sont indépendants, et
+  // c'est ce que les mots peinent à dire. Voir `NextEpisodePreview.tsx`.
+  previewNextCaptionOff: "La fin de l'épisode reste nue : aucune fiche ne paraît.",
+  previewNextCaptionCard: "La fiche attend votre clic. Rien ne démarre sans vous.",
+  previewNextCaptionCountdown: "La fiche décompte {{seconds}} s — puis elle s'arrête là, sans rien lancer.",
+  previewNextCaptionAuto: "Au bout de {{seconds}} s, l'épisode suivant démarre.",
+  previewNextEpisodeLabel: "S01E02",
+  previewNextEpisodeTitle: "Le prochain épisode",
+
   // Le détail qui encombrait chaque réglage, réuni derrière un repli.
   segmentsMoreTitle: "En savoir plus",
   segmentsMoreNothing: "Sans passage signalé par le serveur, rien ne s'affiche — quel que soit le réglage ci-dessus.",
