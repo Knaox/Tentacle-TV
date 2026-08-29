@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { POST_CREDITS_THRESHOLD_MS, findSegment } from "./segmentTypes";
+import { POST_CREDITS_MIN_MS, POST_CREDITS_THRESHOLD_MS, findSegment } from "./segmentTypes";
 import { resolvePlaybackSegments, type SegmentSources } from "./resolveSegments";
 
 /** ms → ticks Jellyfin (1 tick = 100 ns). */
@@ -176,7 +176,17 @@ describe("resolvePlaybackSegments — fin de média et assainissement", () => {
     expect(exactly.segments[0]).toMatchObject({ endsAtMediaEnd: true, hasContentAfter: false });
 
     const before = resolve(nativeOutro(RUNTIME_MS - POST_CREDITS_THRESHOLD_MS - 1));
-    expect(before.segments[0]).toMatchObject({ endsAtMediaEnd: false, hasContentAfter: true });
+    expect(before.segments[0]).toMatchObject({ endsAtMediaEnd: false });
+  });
+
+  it("les deux seuils ne se répondent pas : quitter la fin ne fait pas une scène", () => {
+    // 17 s du bout : le segment ne touche plus la fin, mais ce qui reste est
+    // un fondu, pas une scène — on ne promet pas de scène post-générique.
+    const grise = resolve(nativeOutro(RUNTIME_MS - 17_000));
+    expect(grise.segments[0]).toMatchObject({ endsAtMediaEnd: false, hasContentAfter: false });
+
+    const scene = resolve(nativeOutro(RUNTIME_MS - POST_CREDITS_MIN_MS));
+    expect(scene.segments[0]).toMatchObject({ endsAtMediaEnd: false, hasContentAfter: true });
   });
 
   it("durée inconnue : verdict conservateur — jamais de scène post-générique promise", () => {
@@ -230,5 +240,123 @@ describe("resolvePlaybackSegments — fin de média et assainissement", () => {
       resolvedAt: "2026-08-28T00:00:00.000Z",
       segments: [],
     });
+  });
+});
+
+/**
+ * Les cas réels, relevés le 29.08 sur l'instance de test (Jellyfin 10.11.8,
+ * quatre greffons de segments). Ce sont eux qui commandent `pickBounds` et
+ * l'affinage par chapitres — pas une intuition.
+ */
+describe("resolvePlaybackSegments — le corpus mesuré", () => {
+  const minutes = (m: number, s = 0) => (m * 60 + s) * 1_000;
+  const segment = (type: string, startMs: number, endMs: number) => ({
+    Type: type,
+    StartTicks: ticks(startMs),
+    EndTicks: ticks(endMs),
+  });
+  const chapterAt = (ms: number, name: string) => ({
+    StartPositionTicks: ticks(ms),
+    Name: name,
+  });
+
+  it("Iron Man : un « générique » de 17 s collé à la fin n'est pas un générique", () => {
+    const runtime = minutes(126);
+    const { segments } = resolve(
+      { mediaSegments: { Items: [segment("Outro", minutes(125, 43), runtime)] } },
+      runtime,
+    );
+    // Aucun Outro : le film se termine tout seul, et la scène de Nick Fury est vue.
+    expect(findSegment(segments, "Outro")).toBeNull();
+  });
+
+  it("Deadpool & Wolverine : le chapitre dans le générique EST la scène post-générique", () => {
+    const runtime = minutes(127, 55);
+    const { segments } = resolve(
+      {
+        mediaSegments: { Items: [segment("Outro", minutes(119, 49), runtime)] },
+        chapters: [
+          chapterAt(0, "Chapter 01"),
+          chapterAt(minutes(7, 13), "Chapter 02"),
+          chapterAt(minutes(28, 30), "Chapter 05"),
+          chapterAt(minutes(53, 10), "Chapter 09"),
+          chapterAt(minutes(90, 24), "Chapter 14"),
+          chapterAt(minutes(119, 49), "Chapter 18"),
+          chapterAt(minutes(126, 47), "Chapter 19"),
+        ],
+      },
+      runtime,
+    );
+    const outro = findSegment(segments, "Outro");
+    expect(outro).toMatchObject({ endMs: minutes(126, 47), hasContentAfter: true });
+  });
+
+  it("Endgame : un chapitre « End Credits » à l'heure pile, et rien après — pas de scène inventée", () => {
+    const runtime = minutes(181, 12);
+    const { segments } = resolve(
+      {
+        // Deux fournisseurs disent la même chose : l'union porte le doublon.
+        mediaSegments: {
+          Items: [
+            segment("Outro", minutes(169, 6), runtime),
+            segment("Outro", minutes(169, 6), runtime),
+          ],
+        },
+        chapters: [
+          chapterAt(0, "One Last Surprise"),
+          chapterAt(minutes(48, 44), "Assembling The Avengers"),
+          chapterAt(minutes(117, 27), "I Was Made For This"),
+          chapterAt(minutes(154, 38), "Part Of The Journey Is The End"),
+          chapterAt(minutes(169, 6), "End Credits"),
+        ],
+      },
+      runtime,
+    );
+    const outro = findSegment(segments, "Outro");
+    expect(outro).toMatchObject({ startMs: minutes(169, 6), endMs: runtime, hasContentAfter: false });
+    expect(segments.filter((s) => s.type === "Outro")).toHaveLength(1);
+  });
+
+  it("des chapitres régulièrement espacés n'affinent RIEN — ils sont posés à la machine", () => {
+    const runtime = minutes(120);
+    const auto = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110].map((m) =>
+      chapterAt(minutes(m), `Chapter ${m / 10 + 1}`),
+    );
+    const { segments } = resolve(
+      {
+        mediaSegments: { Items: [segment("Outro", minutes(105), runtime)] },
+        chapters: auto,
+      },
+      runtime,
+    );
+    // Le chapitre à 110 min tombe en plein générique : le suivre enverrait le
+    // spectateur au milieu du défilement.
+    expect(findSegment(segments, "Outro")).toMatchObject({ endMs: runtime, hasContentAfter: false });
+  });
+
+  it("One Piece : un générique qui s'arrête avant la fin garde son aperçu", () => {
+    const runtime = minutes(23, 36);
+    const { segments } = resolve(
+      { mediaSegments: { Items: [segment("Outro", minutes(21, 27), minutes(23, 7))] } },
+      runtime,
+    );
+    expect(findSegment(segments, "Outro")).toMatchObject({ hasContentAfter: true });
+  });
+
+  it("les doublons d'un même passage se réduisent au plus large", () => {
+    const runtime = minutes(23, 40);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            segment("Intro", minutes(1, 41), minutes(3, 10)),
+            segment("Intro", minutes(1, 41), minutes(3, 11)),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(segments.filter((s) => s.type === "Intro")).toHaveLength(1);
+    expect(findSegment(segments, "Intro")).toMatchObject({ endMs: minutes(3, 11) });
   });
 });
