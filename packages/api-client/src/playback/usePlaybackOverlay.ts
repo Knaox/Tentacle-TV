@@ -9,6 +9,9 @@
  * le même dispatch d'événement, où un état React serait périmé.
  *
  * La CROIX d'un bouton met le passage en sourdine — voir `useMutedSegments.ts`.
+ * Le SAUT VERS UNE SCÈNE post-générique la revendique — voir
+ * `usePostCreditsClaim.ts` : tant qu'elle tient, la carte « à suivre » se tait,
+ * car sa fenêtre de position se referme sur la cible même du saut.
  * Le RETOUR EN ARRIÈRE dans un passage qu'on vient de sauter réarme la pilule :
  * l'état `skipped` la masque le temps que la position rattrape la cible, mais
  * qui revient derrière la cible n'attend plus rien — il redemande son bouton,
@@ -26,6 +29,7 @@ import {
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
 import { useMutedSegments } from "./useMutedSegments";
+import { usePostCreditsClaim } from "./usePostCreditsClaim";
 import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
 
 export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
@@ -36,6 +40,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
   const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
   const { muted, mutedRef, mute } = useMutedSegments(input.itemId);
+  const postCredits = usePostCreditsClaim(input.itemId);
+  const { claim: claimPostCredits, releaseIfBehind: releasePostCredits } = postCredits;
 
   // Miroirs synchrones : les rappels lisent le présent, pas le rendu d'avant.
   const inputRef = useRef(input);
@@ -66,10 +72,13 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const runAction = useCallback((candidate: SkipCandidate | null) => {
     if (!candidate) return;
     const p = inputRef.current;
+    // Rejoindre la scène, c'est demander à la VOIR : la carte se taira jusqu'à
+    // ce qu'on rembobine avant le générique, ou qu'on change d'épisode.
+    if (candidate.labelKey === "skipToPostCredits") claimPostCredits(candidate.segment.startMs);
     if (candidate.action.kind === "seek") p.onSeekSeconds(candidate.action.toMs / 1000);
     else if (candidate.action.kind === "nextEpisode") p.onNextEpisode();
     else p.onEndOfPlayback();
-  }, []);
+  }, [claimPostCredits]);
 
   const currentCandidate = useCallback((): SkipCandidate | null => {
     const p = inputRef.current;
@@ -108,6 +117,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
       const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
 
+      releasePostCredits(Math.round(p.positionSeconds * 1000));
       if (hasRewoundPastSkip(Math.round(p.positionSeconds * 1000), skipTargetMsRef.current)) {
         skipTargetMsRef.current = null;
         if (skipStateRef.current.name === "skipped") commitSkipState(INTRO_SKIP_IDLE);
@@ -146,7 +156,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         elapsedMs,
       });
     },
-    [currentCandidate, dispatchNext, runAction, commitSkipState],
+    [currentCandidate, dispatchNext, runAction, commitSkipState, releasePostCredits],
   );
 
   // Changement d'épisode : tout se réarme.
@@ -209,6 +219,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       serverAutoplayEnabled: input.serverAutoplayEnabled,
       libraryId: input.libraryId ?? null,
       controlsVisible: input.controlsVisible,
+      postCreditsClaimed: postCredits.claimed,
       dismissed: {
         // Trois raisons de ne pas montrer la pilule, et une seule d'insister :
         // le saut demandé (la position rattrape la cible), le refus du passage
@@ -226,7 +237,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       },
       countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
     });
-  }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted]);
+  }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted, postCredits.claimed]);
 
   const overlayRef = useRef<PlayerOverlay>(overlay);
   overlayRef.current = overlay;

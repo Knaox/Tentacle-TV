@@ -95,6 +95,17 @@ export interface ArbiterInput {
   libraryId?: string | null;
   /** Les contrôles du lecteur sont-ils à l'écran ? (la pilule n'existe que là). */
   controlsVisible?: boolean;
+  /**
+   * L'utilisateur a demandé à REJOINDRE la scène post-générique.
+   *
+   * Une intention ponctuelle, que nulle comparaison de position ne rend
+   * fidèlement : la fenêtre de la carte se referme sur la cible du saut, donc
+   * tout atterrissage imprécis la rouvre. Tant qu'elle tient, la carte se
+   * tait — la scène qu'on a choisi de voir ne se fait pas couvrir. La pilule
+   * et l'écran de fin, eux, ne sont pas concernés : le premier n'est là qu'avec
+   * l'habillage, le second arrive quand il n'y a plus rien à regarder.
+   */
+  postCreditsClaimed?: boolean;
   /** Garde serveur `autoplay_next_enabled` (admin). */
   serverAutoplayEnabled: boolean;
   dismissed: OverlayDismissals;
@@ -217,6 +228,7 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
     chainable &&
     settings.next.nextCard &&
     !dismissed.nextCard &&
+    !input.postCreditsClaimed &&
     nextCardTriggerReached(
       input.positionMs,
       input.runtimeMs,
