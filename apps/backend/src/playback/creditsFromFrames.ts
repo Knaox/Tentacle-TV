@@ -29,6 +29,22 @@
  *   119:40 → 126:50   (Jellyfin dit 119:49 — dix secondes, soit une vignette)
  *   126:50 → 127:40   la scène (le chapitre du disque la place à 126:47)
  *
+ * # ⚠️ Le noir ne suffit PAS, et c'est la leçon d'un premier essai raté
+ *
+ * « Sombre et peu coloré » désigne aussi les scènes de nuit — et sur ces
+ * mêmes films, elles durent des minutes. Le premier montage prenait la bataille
+ * nocturne de « No Way Home » (89 → 94 min, noir 90 %, saturation 8) pour le
+ * générique, et proposait de passer le troisième acte.
+ *
+ * Ce qui sépare vraiment les deux, mesuré sur quatre films : **tout vrai
+ * générique porte une plage à saturation quasi NULLE** — le défilement du texte,
+ * relevé entre 0,0 et 0,5 sur les quatre. Aucune scène sombre n'y descend : le
+ * minimum observé est 4,8 (« Deadpool & Wolverine », 67 → 76 min).
+ *
+ * D'où deux classements superposés : un LARGE, qui donne l'étendue du générique
+ * (il doit accepter les génériques illustrés, dont les premières minutes sont en
+ * couleur), et un NOYAU, strict, sans lequel un passage large n'est pas retenu.
+ *
  * # Le lissage, sans lequel ce serait faux
  *
  * Trois pièges MESURÉS, tous absorbés par la même règle : un passage de moins de
@@ -65,6 +81,16 @@ const DARK_MIN = 0.72;
 const SATURATION_MAX = 18;
 
 /**
+ * Le NOYAU : la saturation d'un défilement de texte sur fond noir.
+ *
+ * Relevé 0,0 à 0,5 sur les quatre films ; la scène sombre la plus terne du
+ * corpus est à 4,8. Trois est au milieu, et du bon côté des deux.
+ */
+const CORE_SATURATION_MAX = 3;
+/** Durée minimale de ce noyau — jamais plus que le plancher d'un générique. */
+const MIN_CORE_MS = 30_000;
+
+/**
  * En deçà, un passage n'existe pas : c'est une image isolée.
  *
  * Trente secondes, soit trois vignettes à la cadence habituelle. C'est aussi le
@@ -88,12 +114,26 @@ interface Block {
   endMs: number;
 }
 
+/** Le classement LARGE : ce qui pourrait être un générique. */
+function looksLikeCredits(sample: FrameSample): boolean {
+  return sample.dark >= DARK_MIN && sample.saturation <= SATURATION_MAX;
+}
+
+/** Le classement du NOYAU : du texte qui défile sur du noir, et rien d'autre. */
+function isCore(sample: FrameSample): boolean {
+  return sample.dark >= DARK_MIN && sample.saturation <= CORE_SATURATION_MAX;
+}
+
 /** Découpe la suite en passages homogènes, sans encore rien lisser. */
-function toBlocks(samples: readonly FrameSample[], runtimeMs: number): Block[] {
+function toBlocks(
+  samples: readonly FrameSample[],
+  runtimeMs: number,
+  classify: (sample: FrameSample) => boolean,
+): Block[] {
   const blocks: Block[] = [];
   for (let i = 0; i < samples.length; i++) {
     const sample = samples[i];
-    const credits = sample.dark >= DARK_MIN && sample.saturation <= SATURATION_MAX;
+    const credits = classify(sample);
     // La vignette vaut jusqu'à la suivante ; la dernière, jusqu'à la fin du média.
     const endMs = i + 1 < samples.length ? samples[i + 1].ms : runtimeMs;
     const last = blocks[blocks.length - 1];
@@ -155,15 +195,25 @@ export function creditsFromFrames(
   const kept = [...samples].filter((s) => s.ms >= 0 && s.ms < runtimeMs).sort((a, b) => a.ms - b.ms);
   if (kept.length === 0) return null;
 
-  const blocks = smooth(toBlocks(kept, runtimeMs));
+  const blocks = smooth(toBlocks(kept, runtimeMs, looksLikeCredits));
   const floor = minCredibleOutroMs(runtimeMs);
-
-  // Le PREMIER générique crédible de la seconde moitié : c'est celui qui sépare
-  // le film de sa fin. Ceux d'après — un générique final après une scène — sont
-  // trop courts pour compter, et de toute façon on ne propose qu'un saut.
-  const index = blocks.findIndex(
-    (b) => b.credits && b.endMs - b.startMs >= floor && b.startMs >= runtimeMs / 2,
+  // Jamais plus de noyau que le plancher d'un générique : un épisode de vingt
+  // minutes a droit à un générique de treize secondes, noyau compris.
+  const coreFloor = Math.min(MIN_CORE_MS, floor);
+  const cores = smooth(toBlocks(kept, runtimeMs, isCore)).filter(
+    (b) => b.credits && b.endMs - b.startMs >= coreFloor,
   );
+
+  // Le PLUS LONG passage crédible qui porte un noyau. Le plus long, et non le
+  // dernier : une queue de fichier noire assez longue pour survivre au lissage
+  // serait un candidat parfait, et elle ne dure jamais ce que dure un générique.
+  let index = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (!b.credits || b.endMs - b.startMs < floor || b.startMs < runtimeMs / 2) continue;
+    if (!cores.some((core) => core.startMs >= b.startMs && core.endMs <= b.endMs)) continue;
+    if (index < 0 || b.endMs - b.startMs > blocks[index].endMs - blocks[index].startMs) index = i;
+  }
   if (index < 0) return null;
 
   const outro = blocks[index];
@@ -190,14 +240,21 @@ export function creditsFromFrames(
  * Verse le verdict dans les bornes déjà résolues — sans jamais gêner ce qui
  * marche.
  *
- * Trois cas, et c'est toute la règle :
+ * Quatre cas, et c'est toute la règle :
  *
  *  1. **un générique crédible qui ne finit PAS à la fin du fichier** — un
  *     chapitre nommé l'a donné, ou un greffon l'a bien vu : on ne touche à rien ;
- *  2. **un générique qui finit à la fin du fichier** — on ne corrige QUE sa fin,
- *     et seulement pour révéler une scène. Son début reste celui du fournisseur,
- *     qui l'a mesuré sur la vidéo et non sur une vignette ;
- *  3. **aucun générique** — le verdict en fournit un.
+ *  2. **un générique qui finit à la fin du fichier et qui CHEVAUCHE le nôtre** —
+ *     on ne corrige QUE sa fin, et seulement pour révéler une scène. Son début
+ *     reste celui du fournisseur, qui l'a mesuré sur la vidéo, pas sur une
+ *     vignette ;
+ *  3. **un marqueur qui commence APRÈS la fin du générique qu'on a vu** — il ne
+ *     décrit pas le générique mais la queue du fichier, et il se REMPLACE.
+ *     Mesuré sur « No Way Home » : Jellyfin y pose un « générique » de 46
+ *     secondes à 147:25 sur 148:09, quarante minutes après le vrai. Il survit au
+ *     filtre de crédibilité d'une seconde, et le bouton propose alors de
+ *     terminer le film — juste avant la scène post-générique ;
+ *  4. **aucun générique** — le verdict en fournit un.
  *
  * Les autres types ne sont jamais touchés : intro, résumé et aperçu marchent.
  */
@@ -212,14 +269,22 @@ export function applyFrameVerdict(
     bounds.set("Outro", [verdict.outro]);
     return;
   }
-  if (!verdict.sceneAfter) return;
 
   const last = existing[existing.length - 1];
   const endsAtMediaEnd = runtimeMs > 0 && last.endMs >= runtimeMs - POST_CREDITS_THRESHOLD_MS;
   if (!endsAtMediaEnd) return;
-  // La scène doit être APRÈS ce que le fournisseur a signalé, et laisser de quoi
-  // regarder : sinon on raccourcirait un générique pour rien.
-  if (verdict.outro.endMs <= last.startMs) return;
+
+  // Cas 3 : le marqueur commence après la fin de CE QU'ON A VU. Il ne décrit pas
+  // le générique. On ne remplace toutefois que par plus long : un verdict plus
+  // court qu'un marqueur qu'on ne comprend pas ne vaut pas mieux que lui.
+  if (verdict.outro.endMs <= last.startMs) {
+    const seen = verdict.outro.endMs - verdict.outro.startMs;
+    if (seen > last.endMs - last.startMs) bounds.set("Outro", [verdict.outro]);
+    return;
+  }
+
+  // Cas 2 : la fin seule, et seulement pour révéler une scène qui vaut le geste.
+  if (!verdict.sceneAfter) return;
   if (runtimeMs - verdict.outro.endMs < POST_CREDITS_MIN_MS) return;
   last.endMs = verdict.outro.endMs;
 }
