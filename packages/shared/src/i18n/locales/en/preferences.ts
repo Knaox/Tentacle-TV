@@ -191,6 +191,19 @@ export default {
   upNextBeforeEndHint:
     "Also used when the closing credits are not marked: the card then appears that long before the end.",
 
+  // Décodage matériel — réglage d'APPAREIL, visible seulement sur le bureau.
+  hwDecodeTitle: "Hardware decoding",
+  hwDecodeHint:
+    "What decodes the video: the graphics card, or the processor. If some videos show up as large coloured blocks while they look fine elsewhere, this is the setting to change.",
+  hwDecodeAuto: "Automatic",
+  hwDecodeCopy: "Memory copy",
+  hwDecodeOff: "Software",
+  hwDecodeAutoHint: "The player picks the decoder best suited to your graphics card.",
+  hwDecodeCopyHint:
+    "The card decodes, but the picture goes through memory before display. Slightly more costly, and it fixes broken images caused by a temperamental driver.",
+  hwDecodeOffHint:
+    "The processor decodes on its own. The safest and the hungriest — keep it for when the other two fail.",
+
   hdrAutoUnsupported:
     "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",
 } as const;

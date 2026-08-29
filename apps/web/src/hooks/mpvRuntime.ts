@@ -1,6 +1,7 @@
 import type { MpvObservableProperty } from "../lib/mpvElectronApi";
 import { desktopPlatform, isDesktopApp, isElectronShell } from "../desktop/bridge";
 import type { MpvTrack } from "./mpvTrackList";
+import { mpvHwdecValue } from "../lib/hardwareDecoding";
 
 /**
  * Runtime mpv partagé : détection de plateforme, singleton du plugin
@@ -161,7 +162,10 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
 
   return {
     vo: "gpu-next",
-    hwdec: "auto-safe",
+    // Sous Linux, l'ordre par défaut n'est pas `auto-safe` : VA-API y est
+    // souvent une traduction (`nvidia-vaapi-driver`) dont l'export de trames
+    // rend des macroblocs. Voir `lib/hardwareDecoding.ts`, tout y est.
+    hwdec: mpvHwdecValue(onLinux),
     "keep-open": "yes",
     // Windows (--wid) : la fenêtre vidéo mpv est une fenêtre enfant
     // vivant sur son propre thread, dont la file d'entrée est attachée à celle

@@ -190,6 +190,19 @@ export default {
   upNextBeforeEndHint:
     "Sert aussi quand le générique de fin n'est pas signalé : la fiche paraît alors ce temps-là avant la fin.",
 
+  // Décodage matériel — réglage d'APPAREIL, visible seulement sur le bureau.
+  hwDecodeTitle: "Décodage matériel",
+  hwDecodeHint:
+    "Qui décode la vidéo : la carte graphique, ou le processeur. Si certaines vidéos apparaissent en gros carrés colorés alors qu'elles sont nettes ailleurs, c'est ici que ça se règle.",
+  hwDecodeAuto: "Automatique",
+  hwDecodeCopy: "Copie mémoire",
+  hwDecodeOff: "Logiciel",
+  hwDecodeAutoHint: "Le lecteur choisit le décodeur le mieux adapté à votre carte graphique.",
+  hwDecodeCopyHint:
+    "La carte décode, mais l'image repasse par la mémoire avant l'affichage. Un peu plus coûteux, et cela corrige les images cassées dues à un pilote capricieux.",
+  hwDecodeOffHint:
+    "Le processeur décode seul. C'est le plus sûr, et le plus gourmand — à réserver au cas où les deux autres échouent.",
+
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
 } as const;
