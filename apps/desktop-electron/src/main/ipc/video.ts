@@ -67,8 +67,11 @@ let video: VideoSurface | null = null;
  *
  * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
  * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à l'écran.
+ *
+ * EXPORTÉE pour un second appelant : la séquence de fermeture (`closeSequence.ts`)
+ * s'en sert sous Linux, où la fenêtre de mpv survivrait sinon à la nôtre.
  */
-async function stopPlayer(): Promise<void> {
+export async function stopPlayer(): Promise<void> {
   const surface = video;
   video = null;
   // ⚠️ AVANT l'arrêt, et seule la Render API s'en sert : son contexte de rendu
