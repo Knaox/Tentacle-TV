@@ -53,6 +53,14 @@ export interface WtEventHelpers {
   isOnWatchPage: (itemId: string) => boolean;
   /** Sur N'IMPORTE QUELLE page de lecture (l'utilisateur est « en train de regarder »). */
   isWatching: () => boolean;
+  /**
+   * Une invitation vient d'arriver.
+   *
+   * Le fournisseur décide seul ce qu'il en fait — ouvrir la modale à l'accueil,
+   * se contenter du compteur ailleurs. Ce module ne connaît pas les routes, et
+   * n'a pas à les apprendre pour cela.
+   */
+  onInviteArrived?: (invite: WtInviteDto) => void;
 }
 
 function username(state: WtRoomStateDto, userId: string | null): string {
@@ -148,6 +156,7 @@ export function handleWtServerMessage(msg: WsServerMessage, h: WtEventHelpers): 
     }
     case "wt:invite":
       h.dispatch({ type: "add_invite", invite: msg.invite });
+      h.onInviteArrived?.(msg.invite);
       h.toast("info", msg.invite.itemName
         ? h.t("invitedByWithItem", { name: msg.invite.fromUsername, title: msg.invite.itemName })
         : h.t("invitedBy", { name: msg.invite.fromUsername }));

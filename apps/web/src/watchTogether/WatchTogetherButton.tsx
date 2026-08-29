@@ -7,8 +7,15 @@ interface WatchTogetherButtonProps {
   dropdownPosition?: "below" | "right";
 }
 
-/** Icône header Watch Together : badge des invitations reçues, point violet si
- *  groupe actif, dropdown panneau (pattern NotificationBell). */
+/**
+ * Icône header Watch Together — dropdown panneau (motif `NotificationBell`).
+ *
+ * La pastille dit deux choses, jamais les deux à la fois : un COMPTEUR violet
+ * pulsé quand des invitations attendent (« +2 »), un point vert fixe quand on
+ * est déjà dans un groupe. Le compteur remplace le point d'avant : « il se
+ * passe quelque chose » ne disait pas combien, et une invitation reçue alors
+ * qu'on en avait déjà une ne changeait rien à l'écran.
+ */
 export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogetherButtonProps) {
   const { invites, isInGroup } = useWatchTogether();
   const [open, setOpen] = useState(false);
@@ -34,10 +41,14 @@ export function WatchTogetherButton({ dropdownPosition = "below" }: WatchTogethe
       >
         <GroupIcon active={isInGroup} />
         {invites.length > 0 ? (
-          <div
-            className="animate-pulse-glow absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
+          <span
+            // Au-delà de neuf, le compte exact n'apprend plus rien et la
+            // pastille déborderait du bouton.
+            className="animate-pulse-glow absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none tabular-nums text-cta-brand-fg"
             style={{ background: "var(--brand)", boxShadow: "0 0 6px rgba(var(--brand-rgb), 0.6)" }}
-          />
+          >
+            +{Math.min(invites.length, 9)}
+          </span>
         ) : isInGroup ? (
           <div
             className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full"
