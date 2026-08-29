@@ -57,15 +57,16 @@ export function PlaybackOverlayMobile({
     );
   }
 
-  // La pilule « aller à l'épisode suivant » : MÊME bouton que les sauts, sans
-  // croix — elle n'apparaît qu'avec l'habillage, elle ne s'impose donc jamais.
-  // C'est elle qui garde l'accès à la suite pendant une scène post-générique.
+  // La pilule « aller à l'épisode suivant » : MÊME bouton que les sauts, et même
+  // règle — elle se montre tant qu'on ne l'a pas refusée. C'est elle qui garde
+  // l'accès à la suite pendant une scène post-générique.
   if (overlay.kind === "nextButton") {
     return (
       <SkipButton
         label={t("player:goToNextEpisode")}
         countdownTotalMs={null}
         onPress={onPlayNow}
+        onDismiss={overlay.dismissible ? onDismiss : undefined}
         bottom={bottom}
         right={right}
       />

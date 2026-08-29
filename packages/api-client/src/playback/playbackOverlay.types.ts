@@ -54,7 +54,7 @@ export interface PlaybackOverlayResult {
   /** La croix de l'overlay courant : met le passage en sourdine, prévient le groupe. */
   dismissOverlay: () => void;
   /** Les types mis en sourdine pour cette lecture. */
-  mutedSegments: ReadonlySet<SegmentType>;
+  mutedSegments: ReadonlyMap<SegmentType, number>;
   /** Saut manuel du bouton courant ; « lire maintenant » de la carte. */
   skipNow: () => void;
   playNow: () => void;

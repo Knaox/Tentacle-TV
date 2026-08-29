@@ -12,9 +12,10 @@
  * ré-exporte, aucun appelant n'a bougé.
  */
 
-import { findSegments, type ResolvedSegment, type SegmentType } from "./segmentTypes";
+import { findSegments, type ResolvedSegment } from "./segmentTypes";
 import { WINDOW_TAIL_MS } from "./segmentWindow";
 import { findSkipCandidate, type SkipCandidateInput } from "./skipCandidate";
+import type { MutedSegments } from "./skipMuting";
 import {
   beforeEndPositionMs,
   resolveBeforeEnd,
@@ -124,7 +125,7 @@ export interface AutoNextEligibilityInput extends SkipCandidateInput {
   runtimeMs: number;
   libraryId?: string | null;
   /** Les passages mis en sourdine par la croix. */
-  mutedSegments?: ReadonlySet<SegmentType>;
+  mutedSegments?: MutedSegments;
   /** La scène post-générique a été revendiquée (cf. `overlayArbiter`). */
   postCreditsClaimed?: boolean;
 }
