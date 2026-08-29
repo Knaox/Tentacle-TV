@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import { CSS_VAR_NAMES, cssVar } from "../css/varNames";
+import { DEFAULT_TYPOGRAPHY_TOKENS } from "../tokens/typography";
 
 /**
  * Tailwind preset that mirrors the token-driven entries of
@@ -21,7 +22,11 @@ export const tentacleTailwindPreset: Partial<Config> = {
         xs: "360px",
       },
       fontFamily: {
-        sans: ['"Inter"', "system-ui", "-apple-system", "sans-serif"],
+        // DÉRIVÉE du jeton, jamais recopiée. La pile était écrite deux fois —
+        // ici et dans `tokens/typography.ts` — et c'est cette copie-ci que
+        // Tailwind lit : corriger le jeton seul ne changeait rien au CSS
+        // produit. Le doublon a coûté une police embarquée qui ne servait pas.
+        sans: DEFAULT_TYPOGRAPHY_TOKENS.fontFamily.sans.split(", "),
       },
       colors: {
         surface: {
