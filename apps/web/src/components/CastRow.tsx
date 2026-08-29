@@ -76,7 +76,7 @@ export function CastRow({ people, studios }: CastRowProps) {
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {actors.map((person) => (
               <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24 group/actor">
-                <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface transition-all duration-300 group-hover/actor:scale-105 group-hover/actor:ring-2 group-hover/actor:ring-tentacle-accent/50 sm:h-24 sm:w-24">
+                <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface transition-all duration-300 group-hover/actor:scale-105 group-hover/actor:ring-2 group-hover/actor:ring-[rgba(var(--brand-rgb),0.5)] sm:h-24 sm:w-24">
                   {person.PrimaryImageTag ? (
                     <FadeImage
                       src={client.getImageUrl(person.Id, "Primary", { width: 200, quality: 85 })}

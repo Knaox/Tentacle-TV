@@ -165,7 +165,7 @@ function QualityOption({
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-        active ? "bg-tentacle-accent/25 text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
+        active ? "bg-[rgba(var(--brand-rgb),0.25)] text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
       }`}
     >
       <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
@@ -188,7 +188,7 @@ function TrackOption({ label, active, onClick }: { label: string; active: boolea
     <button
       onClick={onClick}
       className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-        active ? "bg-tentacle-accent/25 text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
+        active ? "bg-[rgba(var(--brand-rgb),0.25)] text-content-primary font-medium" : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
       }`}
     >
       <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />

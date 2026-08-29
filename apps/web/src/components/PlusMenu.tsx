@@ -213,11 +213,11 @@ function PanelContent({ libraries, pinned, onNavigate, t }: PanelContentProps) {
       {/* ── Action : jumeler une TV ── */}
       <button
         onClick={() => onNavigate("/pair-device")}
-        className="mb-3 flex w-full items-center gap-3 rounded-xl bg-tentacle-accent/10 px-3 py-3 text-left text-sm font-medium text-tentacle-accent ring-1 ring-tentacle-accent/30 transition-colors hover:bg-tentacle-accent/15"
+        className="mb-3 flex w-full items-center gap-3 rounded-xl bg-[rgba(var(--brand-rgb),0.1)] px-3 py-3 text-left text-sm font-medium text-tentacle-accent ring-1 ring-[rgba(var(--brand-rgb),0.3)] transition-colors hover:bg-[rgba(var(--brand-rgb),0.15)]"
       >
         <span className="flex-shrink-0"><TvPairIcon /></span>
         <span className="truncate">{t("nav:pairDevice")}</span>
-        <span className="ml-auto text-xs text-tentacle-accent/60">›</span>
+        <span className="ml-auto text-xs text-[rgba(var(--brand-rgb),0.6)]">›</span>
       </button>
 
       {/* ── Libraries ── */}

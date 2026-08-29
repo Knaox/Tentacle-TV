@@ -5,11 +5,11 @@ import { useTranslation } from "react-i18next";
  * sous `prefers-reduced-motion`, barre pleine en pulsation douce plutôt qu'un
  * mouvement continu. Réutilisée par l'écran de chargement et l'overlay player.
  *
- * Toujours posée sur un backdrop/vidéo → bg-white/12 volontairement en dur.
+ * Toujours posée sur un backdrop/vidéo → bg-white/10 volontairement en dur.
  */
 export function LoadingBar({ className = "" }: { className?: string }) {
   return (
-    <div className={`relative h-[3px] w-full overflow-hidden rounded-full bg-white/12 ${className}`}>
+    <div className={`relative h-[3px] w-full overflow-hidden rounded-full bg-white/10 ${className}`}>
       <div className="absolute inset-y-0 left-0 w-1/4 rounded-full bg-gradient-to-r from-transparent via-[var(--brand-light)] to-transparent animate-loading-bar motion-reduce:w-full motion-reduce:bg-[var(--brand)] motion-reduce:from-[var(--brand)] motion-reduce:to-[var(--brand)] motion-reduce:animate-pulse" />
     </div>
   );

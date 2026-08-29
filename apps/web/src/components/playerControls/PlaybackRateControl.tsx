@@ -162,7 +162,7 @@ export function PlaybackRateControl({
                   onClick={() => choose(value)}
                   className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                     active
-                      ? "bg-tentacle-accent/25 font-medium text-content-primary"
+                      ? "bg-[rgba(var(--brand-rgb),0.25)] font-medium text-content-primary"
                       : "text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
                   }`}
                 >
