@@ -6,6 +6,7 @@ import {
   setHardwareDecoding,
   type HardwareDecoding,
 } from "../../lib/hardwareDecoding";
+import { SettingsSection } from "@tentacle-tv/ui";
 import { SegmentedChoice } from "./SegmentedChoice";
 
 /**
@@ -29,26 +30,27 @@ export function HardwareDecodingSelect() {
   if (!supportsMpv() || desktopPlatform() === null) return null;
 
   return (
-    <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <h3 className="text-sm font-semibold text-content-primary">{t("hwDecodeTitle")}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{t("hwDecodeHint")}</p>
-      <SegmentedChoice
-        label={t("hwDecodeTitle")}
-        value={choice}
-        options={[
-          { value: "auto", label: t("hwDecodeAuto") },
-          { value: "copy", label: t("hwDecodeCopy") },
-          { value: "off", label: t("hwDecodeOff") },
-        ]}
-        onChange={(next: HardwareDecoding) => {
-          setChoice(next);
-          setHardwareDecoding(next);
-        }}
-        className="mt-4 max-w-full"
-      />
-      <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
-        {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}
-      </p>
-    </div>
+    <SettingsSection title={t("hwDecodeTitle")}>
+      <div className="p-5">
+        <p className="text-xs leading-relaxed text-content-tertiary">{t("hwDecodeHint")}</p>
+        <SegmentedChoice
+          label={t("hwDecodeTitle")}
+          value={choice}
+          options={[
+            { value: "auto", label: t("hwDecodeAuto") },
+            { value: "copy", label: t("hwDecodeCopy") },
+            { value: "off", label: t("hwDecodeOff") },
+          ]}
+          onChange={(next: HardwareDecoding) => {
+            setChoice(next);
+            setHardwareDecoding(next);
+          }}
+          className="mt-4 max-w-full"
+        />
+        <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
+          {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}
+        </p>
+      </div>
+    </SettingsSection>
   );
 }

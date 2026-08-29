@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SettingsSection } from "@tentacle-tv/ui";
 import { desktopPlatform, invoke, supportsMpv } from "../../desktop/bridge";
 import { hdrAutoActive, setHdrAuto } from "../../lib/hdrPreference";
 import { ToggleSwitch } from "./ToggleSwitch";
@@ -55,22 +56,22 @@ export function HdrAutoToggle() {
   };
 
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <p className="text-sm font-medium text-content-primary">{t("preferences:hdrAutoTitle")}</p>
-        <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+    <SettingsSection title={t("preferences:hdrAutoTitle")}>
+      <div className="flex items-start justify-between gap-4 p-5">
+        <p className="text-xs leading-relaxed text-content-tertiary">
           {supporte ? t("preferences:hdrAutoHint") : t("preferences:hdrAutoUnsupported")}
         </p>
+        {/* Désactivé plutôt que masqué quand aucun écran ne sait faire du HDR :
+            l'utilisateur voit que la fonction existe, et pourquoi elle ne lui
+            est pas offerte — un réglage qui disparaît sans explication
+            inquiète. */}
+        <ToggleSwitch
+          checked={supporte && active}
+          onChange={changer}
+          disabled={!supporte}
+          label={t("preferences:hdrAutoTitle")}
+        />
       </div>
-      {/* Désactivé plutôt que masqué quand aucun écran ne sait faire du HDR :
-          l'utilisateur voit que la fonction existe, et pourquoi elle ne lui est
-          pas offerte — un réglage qui disparaît sans explication inquiète. */}
-      <ToggleSwitch
-        checked={supporte && active}
-        onChange={changer}
-        disabled={!supporte}
-        label={t("preferences:hdrAutoTitle")}
-      />
-    </div>
+    </SettingsSection>
   );
 }
