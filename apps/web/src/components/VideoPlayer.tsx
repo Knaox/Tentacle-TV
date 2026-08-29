@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import { useNavigate } from "react-router-dom";
-import { PlayerControls } from "./PlayerControls";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
 import { nativeHlsSupportsQualitySwitch } from "../hooks/useNativeHlsPreference";
@@ -16,7 +15,10 @@ import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
 import { VideoPlayerOverlays } from "./player/VideoPlayerOverlays";
+import { VideoPlayerControlsLayer } from "./player/VideoPlayerControlsLayer";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
+import { useVideoClock } from "../hooks/useVideoClock";
+import { useVideoCommands } from "../hooks/useVideoCommands";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
@@ -47,28 +49,16 @@ export function VideoPlayer({
   const navigate = useNavigate();
 
   const [playing, setPlaying] = useState(false);
-  const rawTimeRef = useRef(0);
-  const [displayTime, setDisplayTime] = useState(0);
-  const lastKnownPositionRef = useRef(0);
-
-  // CopyTimestamps=true preserves the original container's PTS base.
-  // Some media have a non-zero PTS start (e.g., broadcast recordings with PTS offset 677s).
-  // effectiveOffsetRef subtracts this so displayed time = movie position (0 to duration).
-  // containerPtsOffsetRef stores the raw offset for converting seek targets back to PTS.
-  const effectiveOffsetRef = useRef(0);
-  const containerPtsOffsetRef = useRef(0);
-  const offsetDetectedRef = useRef(false);
+  // L'horloge à 1 Hz et les décalages de PTS du conteneur — voir `useVideoClock`.
+  const {
+    rawTimeRef, displayTime, lastKnownPositionRef,
+    effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
+  } = useVideoClock();
 
   const [videoDuration, setVideoDuration] = useState(0);
   const { showControls, scheduleHide } = useControlsAutoHide(playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
-  // 1Hz display timer — reduces re-renders from ~4Hz (onTimeUpdate) to 1Hz.
-  // rawTimeRef is updated every onTimeUpdate; displayTime only triggers renders at 1Hz.
-  useEffect(() => {
-    const id = setInterval(() => setDisplayTime(rawTimeRef.current), 1000);
-    return () => clearInterval(id);
-  }, []);
   const [fullscreen, setFullscreen] = useState(false);
   const [buffered, setBuffered] = useState(0);
   // Fin réelle du média (onEnded) — l'arbitre en fait l'écran de fin, ou la
@@ -103,23 +93,8 @@ export function VideoPlayer({
   const currentTime = effectiveOffsetRef.current + displayTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
-  const togglePlay = useCallback(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) v.play().catch(() => {}); else v.pause();
-  }, []);
-
-  // Vitesse de lecture. `defaultPlaybackRate` est posé EN PLUS de
-  // `playbackRate` : la spec remet playbackRate à defaultPlaybackRate au
-  // chargement de chaque nouvelle ressource, donc sans lui le taux choisi
-  // serait perdu à la moindre reconstruction de source (changement de qualité,
-  // repli CORS, seek qui relance le transcodage).
-  const applyRate = useCallback((rate: number) => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.playbackRate = rate;
-    v.defaultPlaybackRate = rate;
-  }, []);
+  // Lecture/pause et vitesse — les deux ordres donnés à l'élément lui-même.
+  const { togglePlay, applyRate } = useVideoCommands(videoRef);
 
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
@@ -300,34 +275,25 @@ export function VideoPlayer({
           tap sur mobile. */}
       <PlaybackBadge flash={playbackFlash} />
 
-      {/* L'habillage ne se pose pas sur l'écran de CHARGEMENT : tant que la
-          première image n'est pas rendue, il n'y a rien à commander, et une
-          barre de progression à zéro par-dessus une jaquette ne dit que du
-          faux. Il était jusqu'ici peint SOUS la bannière (`z-auto` contre son
-          `z-10`) : invisible, mais toujours cliquable — et l'inverse du bureau,
-          où il passait par-dessus. Une seule règle désormais, et `z-20` pour
-          que l'empilement soit dit plutôt que subi. */}
-      {hasStarted && (
-      <div className={`absolute inset-0 z-20 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
-        <PlayerControls
-          playing={playing} currentTime={currentTime} duration={duration}
-          buffered={buffered} volume={volume} fullscreen={fullscreen}
-          item={item} itemId={itemId} mediaSourceId={mediaSourceId}
-          title={title} subtitle={subtitle}
-          audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-          currentAudio={currentAudio} currentSubtitle={currentSubtitle} currentQuality={currentQuality} sourceQuality={sourceQuality}
-          qualityPresets={qualityPresets}
-          hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
-          onTogglePlay={togglePlay} onSeek={handleSeek} onSkip={skipBy}
-          onVolumeChange={handleVolumeChange} onToggleMute={handleToggleMute}
-          onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
-          onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange}
-          onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
-          applyToSeries={applyToSeries} onPlaybackRateChange={applyRate}
-        />
-      </div>
-      )}
-
+      <VideoPlayerControlsLayer
+        hasStarted={hasStarted}
+        visible={showControls}
+        controls={{
+          playing, currentTime, duration, buffered, volume, fullscreen,
+          item, itemId, mediaSourceId, title, subtitle,
+          audioTracks, subtitleTracks, qualityPresets,
+          currentAudio, currentSubtitle, currentQuality, sourceQuality,
+          hasNextEpisode, hasPreviousEpisode,
+          onTogglePlay: togglePlay, onSeek: handleSeek, onSkip: skipBy,
+          onVolumeChange: handleVolumeChange, onToggleMute: handleToggleMute,
+          onToggleFullscreen: toggleFullscreen,
+          onBack: () => { markPlayerExit(); navigate(-1); },
+          onAudioChange, onSubtitleChange,
+          onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange,
+          onNextEpisode, onPreviousEpisode,
+          applyToSeries, onPlaybackRateChange: applyRate,
+        }}
+      />
     </div>
   );
 }
