@@ -134,7 +134,7 @@ describe("getSegmentSourceBundle", () => {
   it("échec total sans photo : du vide, jamais mis en cache", async () => {
     scenario = [[/./, "reject"]];
     const empty = await getSegmentSourceBundle("ep-7");
-    expect(empty).toEqual({ runtimeMs: 0, libraryId: null, sources: {} });
+    expect(empty).toEqual({ runtimeMs: 0, libraryId: null, trickplay: null, sources: {} });
 
     scenario = [
       [/\/Items\//, { json: ITEM }],
@@ -148,7 +148,7 @@ describe("getSegmentSourceBundle", () => {
 describe("l'URL de l'item", () => {
   it("porte le userId — sans lui, Jellyfin 10.11 rend 400 et le paquet part sans durée", async () => {
     scenario = [
-      [/\/Items\/x\?userId=admin-user-id&fields=Chapters$/, { json: ITEM }],
+      [/\/Items\/x\?userId=admin-user-id&fields=Chapters,Trickplay$/, { json: ITEM }],
       [/MediaSegments/, { json: NATIVE }],
     ];
     const bundle = await getSegmentSourceBundle("x");

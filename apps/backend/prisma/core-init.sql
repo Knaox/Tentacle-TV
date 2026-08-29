@@ -198,3 +198,15 @@ ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndEnabled` tiny
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndMode` varchar(8) NOT NULL DEFAULT 'percent';
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndValue` int(11) NOT NULL DEFAULT 98;
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndRules` text DEFAULT NULL;
+
+-- Le verdict des vignettes sur le générique de fin (services/frameAnalysis.ts).
+-- Un cache, jamais une source : la table peut être vidée sans rien perdre
+-- d'autre qu'une demi-seconde de calcul au prochain lancement du média.
+CREATE TABLE IF NOT EXISTS `media_frame_analysis` (
+  `itemId` varchar(64) NOT NULL,
+  `version` int(11) NOT NULL,
+  `runtimeMs` int(11) NOT NULL,
+  `verdict` text DEFAULT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`itemId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

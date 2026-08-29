@@ -7,6 +7,11 @@
  * méconnaissable — rend le contrat VIDE, jamais une erreur : un lecteur privé
  * de segments doit lire quand même (dégradation gracieuse, testée côté
  * backend ; le hors ligne desktop, lui, lit le snapshot local).
+ *
+ * Une seule exception au `staleTime: Infinity` : quand le serveur annonce qu'il
+ * analyse les vignettes du média (`analysisPending`), le contrat est encore
+ * incomplet et on le redemande. Un serveur plus ancien ne pose jamais ce
+ * drapeau — le comportement d'avant est donc intact.
  */
 
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +23,9 @@ import {
 import { tentacleApiFetch } from "./usePreferences";
 
 const EMPTY: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
+
+/** Cadence de relance tant que le serveur analyse les vignettes d'un média. */
+const ANALYSIS_POLL_MS = 10_000;
 
 export function usePlaybackSegments(
   itemId: string | undefined,
@@ -38,6 +46,13 @@ export function usePlaybackSegments(
     enabled: !!itemId && on,
     staleTime: Infinity,
     retry: false,
+    // Une analyse des vignettes tourne côté serveur : on redemande le contrat
+    // de loin en loin, jusqu'à ce qu'il cesse de le dire. Elle prend moins
+    // d'une seconde, mais elle peut attendre son tour derrière un autre média —
+    // et de toute façon le générique n'arrive qu'à la fin, on a le temps.
+    refetchInterval: (query) =>
+      query.state.data?.analysisPending === true ? ANALYSIS_POLL_MS : false,
+    refetchIntervalInBackground: false,
   });
 
   return data ?? EMPTY;

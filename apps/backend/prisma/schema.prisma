@@ -364,6 +364,26 @@ model PlaybackSettings {
   @@map("playback_settings")
 }
 
+/// Ce que les VIGNETTES d'un média ont dit de son générique de fin.
+///
+/// Une ligne par média, écrite une seule fois : l'analyse coûte une demi-seconde
+/// de processeur et deux mégaoctets lus chez Jellyfin, et son résultat ne change
+/// pas tant que le fichier ne change pas. `runtimeMs` sert justement de témoin —
+/// une durée différente veut dire un autre fichier, et la ligne est refaite.
+model MediaFrameAnalysis {
+  itemId    String   @id @db.VarChar(64)
+  /// Version de l'algorithme (`FRAME_ANALYSIS_VERSION`) : la faire monter
+  /// périme toutes les lignes sans avoir à les effacer.
+  version   Int
+  runtimeMs Int
+  /// Le verdict sérialisé, ou `null` quand l'analyse n'a rien conclu — et il
+  /// FAUT garder ce « rien », sinon on réanalyse le même média à chaque lecture.
+  verdict   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("media_frame_analysis")
+}
+
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
 // seer_user_settings) ne sont volontairement PAS déclarées ici. Elles sont
 // créées et migrées par le plugin lui-même (raw SQL, colonnes snake_case).
