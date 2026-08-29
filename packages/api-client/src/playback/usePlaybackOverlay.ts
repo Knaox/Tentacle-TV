@@ -8,14 +8,12 @@
  * et `overlayRef` est un miroir SYNCHRONE : le bouton Retour TV le lit dans
  * le même dispatch d'événement, où un état React serait périmé.
  *
- * Les DEUX REFUS — la croix, qui met le passage en sourdine
- * (`useMutedSegments.ts`), et le saut vers une scène post-générique, qui la
- * revendique (`usePostCreditsClaim.ts`) — font taire la carte « à suivre » ET
- * son minuteur, par le sélecteur PARTAGÉ `autoNextEligible`. Les séparer, c'est
- * laisser l'épisode partir sans qu'aucune surface l'ait annoncé.
- * Le RETOUR EN ARRIÈRE dans un passage qu'on vient de sauter réarme la pilule :
- * l'état `skipped` la masque le temps que la position rattrape la cible, mais
- * qui revient derrière la cible n'attend plus rien — il redemande son bouton.
+ * Les DEUX REFUS — la croix (`useMutedSegments.ts`) et la scène post-générique
+ * revendiquée (`usePostCreditsClaim.ts`) — font taire la carte « à suivre » ET
+ * son minuteur, par le sélecteur PARTAGÉ `autoNextEligible` : les séparer, c'est
+ * laisser l'épisode partir sans qu'aucune surface l'ait annoncé. Le RETOUR EN
+ * ARRIÈRE les lève tous les trois, saut compris — qui revient derrière l'endroit
+ * d'un geste le redemande.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -39,7 +37,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
 
   const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
   const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
-  const { muted, mutedRef, mute } = useMutedSegments(input.itemId);
+  const { muted, mutedRef, mute, releaseRewound } = useMutedSegments(input.itemId);
   const postCredits = usePostCreditsClaim(input.itemId);
   const { claim: claimPostCredits, releaseIfBehind: releasePostCredits, claimedRef: postCreditsClaimedRef } = postCredits;
 
@@ -117,14 +115,18 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const tick = useCallback(
     (elapsedMs: number) => {
       const p = inputRef.current;
+      const nowMs = Math.round(p.positionSeconds * 1000);
       const candidate = currentCandidate();
       const visible = candidate !== null && !p.scrubbing;
       // Un passage mis en sourdine ne compte plus : la croix a aussi coupé ça.
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
       const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
 
-      releasePostCredits(Math.round(p.positionSeconds * 1000));
-      if (hasRewoundPastSkip(Math.round(p.positionSeconds * 1000), skipTargetMsRef.current)) {
+      // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée,
+      // les passages refusés, et le saut qu'on attendait encore.
+      releasePostCredits(nowMs);
+      releaseRewound(nowMs);
+      if (hasRewoundPastSkip(nowMs, skipTargetMsRef.current)) {
         skipTargetMsRef.current = null;
         if (skipStateRef.current.name === "skipped") commitSkipState(INTRO_SKIP_IDLE);
       }
@@ -144,8 +146,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       commitSkipState(state);
       if (action === "skip") runAction(candidate);
 
-      const pRuntimeMs =
-        p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
+      const pRuntimeMs = p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
       dispatchNext({
         type: "frame",
         // LE MÊME sélecteur que l'arbitre, refus compris : le minuteur ne
@@ -165,7 +166,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         elapsedMs,
       });
     },
-    [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, mutedRef, postCreditsClaimedRef],
+    [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, releaseRewound, mutedRef, postCreditsClaimedRef],
   );
 
   // Changement d'épisode : tout se réarme.
@@ -249,9 +250,10 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     const current = overlayRef.current;
     if (current.kind === "skip") {
       commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
-      mute(current.segmentType);
+      mute(current.segmentType, Math.round(inputRef.current.positionSeconds * 1000));
       inputRef.current.onSegmentDismissNotify?.(current.segmentType);
-    } else if (current.kind === "nextCard") {
+    } else if (current.kind === "nextCard" || current.kind === "nextButton") {
+      // Un seul refus de la suite, quelle que soit la surface qui l'a porté.
       dispatchNext({ type: "dismiss" });
       inputRef.current.onNextDismissNotify?.();
     }
@@ -265,15 +267,13 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     runAction(candidate);
   }, [currentCandidate, runAction, commitSkipState]);
 
-  const playNow = useCallback(() => {
-    dispatchNext({ type: "playNow" });
-  }, [dispatchNext]);
+  const playNow = useCallback(() => { dispatchNext({ type: "playNow" }); }, [dispatchNext]);
 
   const signalRemoteSegmentDismiss = useCallback(
     (type: SegmentType) => {
       // Le refus d'un membre vaut pour le groupe, et pour toute la lecture —
       // même s'il porte sur un passage que NOTRE position n'a pas atteint.
-      mute(type);
+      mute(type, Math.round(inputRef.current.positionSeconds * 1000));
       const candidate = currentCandidate();
       if (candidate?.segment.type !== type) return;
       commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
@@ -281,9 +281,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     [currentCandidate, commitSkipState, mute],
   );
 
-  const signalRemoteNextDismiss = useCallback(() => {
-    dispatchNext({ type: "dismiss" });
-  }, [dispatchNext]);
+  const signalRemoteNextDismiss = useCallback(() => { dispatchNext({ type: "dismiss" }); }, [dispatchNext]);
 
   const skipMs = currentCandidate()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
   return {

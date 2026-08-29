@@ -28,6 +28,7 @@ import { type ResolvedSegment, type SegmentType } from "./segmentTypes";
 import type { PlaybackSettings, SegmentSettings } from "./playbackSettings";
 import { autoNextEligible, nextEpisodeReachable } from "./nextTriggers";
 import { findSkipCandidate, type SkipAction, type SkipLabelKey } from "./skipCandidate";
+import type { MutedSegments } from "./skipMuting";
 
 // Les frontières du module n'ont pas bougé pour les appelants : tout ce qui
 // vivait ici s'y ré-exporte, seuls les fichiers ont été redécoupés.
@@ -66,16 +67,19 @@ export type PlayerOverlay =
    * La PILULE « aller à l'épisode suivant » — même bouton que les sauts.
    *
    * Elle existe parce que la fiche ne peut pas tout couvrir : pendant une
-   * scène post-générique, on ne veut rien poser sur l'image, et pourtant
-   * l'accès à la suite doit rester atteignable. Sans elle, sauter le générique
-   * d'un média à scène finale faisait DISPARAÎTRE la suite jusqu'à la fin du
-   * fichier — le défaut qui a motivé tout ceci.
+   * scène post-générique, la carte se retire pour ne pas couvrir l'image, et
+   * pourtant l'accès à la suite doit rester atteignable. Sans elle, sauter le
+   * générique d'un média à scène finale faisait DISPARAÎTRE la suite jusqu'à la
+   * fin du fichier — le défaut qui a motivé tout ceci.
    *
-   * Elle ne paraît qu'avec les contrôles du lecteur : jamais sur l'image nue.
-   * C'est le geste de Netflix — l'accès à la suite ne disparaît jamais, il ne
-   * s'impose jamais non plus.
+   * Elle n'a paru un temps QU'AVEC les contrôles, pour ne rien poser sur
+   * l'image. C'était une exception de trop : un bouton qu'on n'a pas refusé se
+   * montre, comme tous les autres, et se refuse d'une croix. Une fois refusée,
+   * elle rejoint la règle commune — plus rien sur l'image nue, et elle reste
+   * atteignable le temps de l'habillage, sans croix puisqu'il n'y a plus rien à
+   * refuser.
    */
-  | { kind: "nextButton" };
+  | { kind: "nextButton"; dismissible: boolean };
 
 export interface OverlayDismissals {
   readonly segments: Partial<Record<SegmentType, boolean>>;
@@ -110,7 +114,7 @@ export interface ArbiterInput {
   /** Garde serveur `autoplay_next_enabled` (admin). */
   serverAutoplayEnabled: boolean;
   /** Les passages mis en sourdine — ils gouvernent la croix, pas l'affichage. */
-  mutedSegments?: ReadonlySet<SegmentType>;
+  mutedSegments?: MutedSegments;
   dismissed: OverlayDismissals;
   /** Décomptes tenus par les réducteurs, déjà en secondes affichables. */
   countdowns: { skip: number | null; next: number | null };
@@ -170,10 +174,8 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
 
   // 4. La pilule, quand la carte ne parle pas — fiche éteinte, refusée, ou
   //    simplement hors de sa fenêtre parce qu'une scène post-générique passe.
-  //    Elle n'existe qu'avec les contrôles : jamais posée sur l'image nue.
   if (
     chainable &&
-    input.controlsVisible === true &&
     nextEpisodeReachable(
       input.positionMs,
       input.runtimeMs,
@@ -182,7 +184,19 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
       libraryId,
     )
   ) {
-    return { kind: "nextButton" };
+    // Le refus de la suite est UN SEUL refus, qu'il vienne de la carte ou de la
+    // pilule : les deux disent la même chose, et un utilisateur qui a écarté
+    // l'une ne veut pas voir l'autre revenir par la fenêtre.
+    const refusedNext = dismissed.nextCard;
+    // Un passage REFUSÉ demande le silence, et la pilule le doit aussi : sans
+    // cela, croiser « aller à la scène post-générique » faisait surgir « aller
+    // à l'épisode suivant » au même endroit, dans la seconde — la croix
+    // n'aurait servi à rien. Elle reste atteignable avec l'habillage.
+    const hushed = candidate !== null && input.mutedSegments?.has(candidate.segment.type) === true;
+    if (!refusedNext && !hushed) return { kind: "nextButton", dismissible: true };
+    if (input.controlsVisible === true) {
+      return { kind: "nextButton", dismissible: !refusedNext };
+    }
   }
 
   return { kind: "none" };

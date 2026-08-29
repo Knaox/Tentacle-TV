@@ -62,15 +62,17 @@ export function PlaybackOverlay({
           controlsVisible={controlsVisible}
         />
       )}
-      {/* La pilule « aller à l'épisode suivant » — MÊME bouton que les sauts,
-          sans croix : elle ne se propose pas d'elle-même, elle attend qu'on
-          montre les contrôles, et il n'y a donc rien à refuser. */}
+      {/* La pilule « aller à l'épisode suivant » — MÊME bouton que les sauts, et
+          désormais MÊME règle : elle se montre tant qu'on ne l'a pas refusée,
+          puis se retire de l'image nue. Sa croix vaut refus de LA SUITE, le
+          même que celui de la carte. */}
       {overlay.kind === "nextButton" && (
         <SkipSegmentButton
           labelKey="goToNextEpisode"
           countdownSeconds={null}
           countdownTotalMs={countdownTotals.nextMs}
           onSkip={onPlayNow}
+          onDismiss={overlay.dismissible ? onDismiss : undefined}
           layer={layer}
           controlsVisible={controlsVisible}
         />
