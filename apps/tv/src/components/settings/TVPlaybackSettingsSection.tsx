@@ -1,23 +1,26 @@
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-client";
-import type { SegmentAction, SegmentSettings } from "@tentacle-tv/shared";
+import { detectPreset, presetSettings } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
 /**
- * Ce que le lecteur a le droit de faire tout seul, à la télécommande.
+ * Ce que le lecteur a le droit de faire tout seul, à la télécommande : UN choix.
+ *
+ * Le téléviseur alignait sept blocs de boutons — quatre passages, trois
+ * bascules — à traverser au pavé directionnel. Le réglage fin n'a pas sa place
+ * ici : il se fait sur ordinateur, il suit le COMPTE, et il s'applique donc
+ * devant la télévision sans qu'on ait à le répéter.
  *
  * Pas d'interrupteur à glissière : il n'en existe aucun dans l'application, et
  * un pouce qui coulisse ne veut rien dire sans doigt pour le pousser. Des
  * boutons, comme la langue d'interface juste en dessous — celui qui est actif
  * se cerne de la teinte de marque.
  *
- * Les réglages viennent du magasin de COMPTE, le même que lisent les surcouches
- * du lecteur : un choix posé ici vaut sur le téléphone, et réciproquement. Le
- * DÉLAI du saut automatique n'est pas offert ici, à dessein — saisir un nombre
- * à la télécommande est une punition, et le réglage suit le compte.
+ * « Personnalisé » n'est pas proposé : c'est ce qu'on lit quand les réglages
+ * viennent de l'ordinateur, et le toucher les remplacerait.
  */
 
 interface Choice {
@@ -84,70 +87,42 @@ function SettingBlock({ title, hint, value, choices, onChoose }: {
   );
 }
 
-function isAction(value: string): value is SegmentAction {
-  return value === "button" || value === "auto" || value === "off";
-}
-
 export function TVPlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
   const settings = usePlaybackSettings();
-  const next = settings.next;
+  const preset = detectPreset(settings);
 
-  const actions: Choice[] = [
-    { value: "button", label: t("segmentActionButton") },
-    { value: "auto", label: t("segmentActionAuto") },
-    { value: "off", label: t("segmentActionOff") },
-  ];
-  const yesNo: Choice[] = [
-    { value: "oui", label: t("reglageActive") },
-    { value: "non", label: t("reglageDesactive") },
+  const choices: Choice[] = [
+    { value: "manual", label: t("playbackModeManual") },
+    { value: "automatic", label: t("playbackModeAutomatic") },
+    ...(preset === "custom" ? [{ value: "custom", label: t("playbackModeCustom") }] : []),
   ];
 
-  const segments: {
-    key: string; title: string; hint: string; state: SegmentSettings;
-    apply: (patch: Partial<SegmentSettings>) => void;
-  }[] = [
-    { key: "intro", title: t("segmentIntroTitle"), hint: t("segmentIntroHint"), state: settings.intro,
-      apply: (intro) => { setPlaybackSettings({ intro }); } },
-    { key: "recap", title: t("segmentRecapTitle"), hint: t("segmentRecapHint"), state: settings.recap,
-      apply: (recap) => { setPlaybackSettings({ recap }); } },
-    { key: "outro", title: t("segmentOutroTitle"), hint: t("segmentOutroHint"), state: settings.outro,
-      apply: (outro) => { setPlaybackSettings({ outro }); } },
-    { key: "preview", title: t("segmentPreviewTitle"), hint: t("segmentPreviewHint"), state: settings.preview,
-      apply: (preview) => { setPlaybackSettings({ preview }); } },
-  ];
-
-  const toggles: { key: string; title: string; hint: string; active: boolean; set: (v: boolean) => void }[] = [
-    { key: "card", title: t("upNextCardTitle"), hint: t("upNextCardHint"), active: next.nextCard,
-      set: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
-    { key: "countdown", title: t("upNextCountdownTitle"), hint: t("upNextCountdownHint"), active: next.nextCountdown,
-      set: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
-    { key: "auto", title: t("upNextAutoPlayTitle"), hint: t("upNextAutoPlayHint"), active: next.nextAutoPlay,
-      set: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },
-  ];
+  const hint =
+    preset === "manual"
+      ? "playbackModeManualHint"
+      : preset === "automatic"
+        ? "playbackModeAutomaticHint"
+        : "playbackModeCustomHint";
 
   return (
     <>
-      {segments.map((segment) => (
-        <SettingBlock
-          key={segment.key}
-          title={segment.title}
-          hint={segment.hint}
-          value={segment.state.action}
-          choices={actions}
-          onChoose={(value) => { if (isAction(value)) segment.apply({ action: value }); }}
-        />
-      ))}
-      {toggles.map((toggle) => (
-        <SettingBlock
-          key={toggle.key}
-          title={toggle.title}
-          hint={toggle.hint}
-          value={toggle.active ? "oui" : "non"}
-          choices={yesNo}
-          onChoose={(value) => { toggle.set(value === "oui"); }}
-        />
-      ))}
+      <SettingBlock
+        title={t("playbackModeLabel")}
+        hint={t(hint)}
+        value={preset}
+        choices={choices}
+        onChoose={(value) => {
+          if (value === "manual" || value === "automatic") {
+            setPlaybackSettings(presetSettings(value));
+          }
+        }}
+      />
+      <Text style={{
+        color: Colors.textTertiary, fontSize: 15, lineHeight: 22, maxWidth: 900,
+      }}>
+        {t("playbackAdvancedOnDesktop")}
+      </Text>
     </>
   );
 }

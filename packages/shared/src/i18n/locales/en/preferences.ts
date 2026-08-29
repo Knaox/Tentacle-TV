@@ -136,6 +136,8 @@ export default {
   playbackModeCustomHint:
     "Your settings match neither mode. The detail is below; picking a mode will replace it.",
   playbackAdvancedToggle: "Advanced settings",
+  playbackAdvancedOnDesktop:
+    "Fine tuning — which passage, which delay, which trigger — is done from Tentacle on a computer. It follows your account and applies here.",
   playbackSegmentsTitle: "Passages within an episode",
   playbackSegmentsHint:
     "When the server marks a passage — opening titles, recap, preview — the player can offer to skip it, skip it on its own, or do nothing. Nothing is shown when nothing is marked: these settings never guess.",
