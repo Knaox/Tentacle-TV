@@ -29,13 +29,17 @@ interface Options {
   /** Le flux est arrivé au bout (`onEnd` de react-native-video). */
   ended: boolean;
   hasStarted: boolean;
+  /** L'habillage du lecteur est-il à l'écran ? (un passage mis en sourdine par
+   *  la croix n'est plus rendu qu'avec lui). */
+  controlsVisible: boolean;
   onSeek: (seconds: number) => void;
   onNextEpisode: () => void;
   onEndOfPlayback: () => void;
 }
 
 export function usePlaybackOverlayMobile({
-  itemId, pb, currentTime, ended, hasStarted, onSeek, onNextEpisode, onEndOfPlayback,
+  itemId, pb, currentTime, ended, hasStarted, controlsVisible,
+  onSeek, onNextEpisode, onEndOfPlayback,
 }: Options): PlaybackOverlayResult {
   // `active` : la config d'auto-play est repollée pendant la lecture, comme
   // sur le web — un interrupteur admin s'applique sans relancer l'app.
@@ -48,6 +52,7 @@ export function usePlaybackOverlayMobile({
     positionSeconds: currentTime,
     durationSeconds: pb.jellyfinDuration || 0,
     hasStarted,
+    controlsVisible,
     playbackEnded: ended,
     segments: pb.segments.segments,
     runtimeMs: pb.segments.runtimeMs,

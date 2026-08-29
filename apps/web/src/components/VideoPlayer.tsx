@@ -141,6 +141,7 @@ export function VideoPlayer({
     segments,
     runtimeMs,
     serverAutoplayEnabled,
+    controlsVisible: showControls,
     onSeekSeconds: handleSeek,
     onNextEpisode: () => onNextEpisode?.(),
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.

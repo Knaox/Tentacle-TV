@@ -130,6 +130,7 @@ export function PlayerScreen({ itemId }: Props) {
   useEffect(() => { setEnded(false); }, [itemId, pb.streamUrl]);
   const playback = usePlaybackOverlayMobile({
     itemId, pb, currentTime, ended, hasStarted: videoReady,
+    controlsVisible: overlayVisible,
     onSeek: handleSeek,
     onNextEpisode: handleNextEpisode,
     onEndOfPlayback: invalidateAndGoBack,
