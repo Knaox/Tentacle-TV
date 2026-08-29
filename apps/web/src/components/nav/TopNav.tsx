@@ -42,7 +42,7 @@ export function TopNav({ showSearch = true }: TopNavProps) {
 
   return (
     <header
-      data-host-chrome="topbar"
+      data-hote-bandeau="topbar"
       className="fixed inset-x-0 z-40 h-[68px]"
       style={{
         // Sous le bandeau d'hôte, quand il y en a un : une position fixe se
