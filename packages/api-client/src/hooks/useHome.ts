@@ -7,8 +7,12 @@ import {
   dedupResumeBySeries,
   filterNextUpAgainstResume,
   buildSmartNextUp,
+  buildWatchAnchors,
+  findStaleSuggestions,
+  realignNextUp,
   groupLatestByRuns,
 } from "../utils/mediaFilters";
+import { useNextUpSuccessors } from "./useNextUpSuccessors";
 import { homeLimits, staleFactor } from "../net/dataSaver";
 
 // MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
@@ -170,8 +174,23 @@ export function useNextUp() {
     retry: 1,
   });
 
+  // L'ancre de chaque série — sa dernière lecture. C'est elle qui commande, et
+  // non ce que le serveur croit savoir : sur une série dont quelques épisodes
+  // épars sont marqués vus, `/Shows/NextUp` repropose le tout premier.
+  const anchors = useMemo(
+    () => buildWatchAnchors(engagement.data ?? []),
+    [engagement.data],
+  );
+  // Les propositions situées DERRIÈRE l'ancre. Vide dans le cas courant : la
+  // requête de résolution ne part que là où il y a un défaut à réparer.
+  const stale = useMemo(
+    () => findStaleSuggestions(primary.data ?? [], anchors),
+    [primary.data, anchors],
+  );
+  const successors = useNextUpSuccessors(stale);
+
   const data = useMemo(() => {
-    const primaryItems = primary.data ?? [];
+    const primaryItems = realignNextUp(primary.data ?? [], anchors, successors);
 
     // Engagement rank map: SeriesId → position in DatePlayed-desc timeline
     // (rank 0 = the show the user watched most recently). Used at the end to
@@ -219,7 +238,7 @@ export function useNextUp() {
     // Hide series with an in-progress episode (those live in "Reprendre").
     const filtered = filterNextUpAgainstResume(merged, resume.data ?? []);
     return filtered.slice(0, 12);
-  }, [primary.data, unwatched.data, engagement.data, resume.data]);
+  }, [primary.data, unwatched.data, engagement.data, resume.data, anchors, successors]);
 
   return {
     data,
