@@ -11,6 +11,7 @@ import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 import { HardwareDecodingSelect } from "../components/settings/HardwareDecodingSelect";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
+import { SettingsSection } from "@tentacle-tv/ui";
 import { PlaybackSettingsSection } from "../components/settings/PlaybackSettingsSection";
 
 const LANGUAGE_CODES = [
@@ -185,18 +186,19 @@ export function Preferences() {
         )}
 
         {/* Interface language */}
-        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-          <h3 className="mb-3 text-sm font-semibold text-content-primary">{t("preferences:interfaceLanguage")}</h3>
-          <select
-            value={i18n.language}
-            onChange={(e) => handleInterfaceLangChange(e.target.value)}
-            className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
-          >
-            {INTERFACE_LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>{lang.label}</option>
-            ))}
-          </select>
-        </div>
+        <SettingsSection title={t("preferences:interfaceLanguage")}>
+          <div className="p-5">
+            <select
+              value={i18n.language}
+              onChange={(e) => handleInterfaceLangChange(e.target.value)}
+              className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
+            >
+              {INTERFACE_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>{lang.label}</option>
+              ))}
+            </select>
+          </div>
+        </SettingsSection>
 
         {!offline && !libraries && (
           <div className="flex justify-center py-20">
@@ -236,15 +238,11 @@ export function Preferences() {
 
         {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté
             du lecteur natif, le composant s'efface ailleurs. */}
-        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
-          <HdrAutoToggle />
-        </div>
+        <HdrAutoToggle />
 
         {/* Choix de session graphique — coquille Linux seulement, même geste
             d'effacement que la bascule HDR. Relance proposée, jamais imposée. */}
-        <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
-          <LinuxSessionSelect />
-        </div>
+        <LinuxSessionSelect />
 
         {/* Mot de passe, appareils jumeles et changement de serveur ont ete
             regroupes dans Reglages > Securite : ils etaient enterres ici, sous

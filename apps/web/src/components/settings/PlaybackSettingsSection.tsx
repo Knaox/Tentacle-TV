@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { SettingsSection } from "@tentacle-tv/ui";
 import { useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset } from "@tentacle-tv/shared";
 import { PlaybackAdvancedPanel } from "./PlaybackAdvancedPanel";
@@ -27,21 +28,22 @@ export function PlaybackSettingsSection() {
   const advancedOpen = detectPreset(settings) === "custom";
 
   return (
-    <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
-      <h3 className="text-sm font-semibold text-content-primary">{t("playbackModeTitle")}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-content-quaternary">
-        {t("playbackSettingsAccount")}
-      </p>
+    <SettingsSection title={t("playbackModeTitle")}>
+      <div className="p-5">
+        <p className="text-xs leading-relaxed text-content-quaternary">
+          {t("playbackSettingsAccount")}
+        </p>
 
-      <div className="mt-4">
-        <PlaybackPresetPicker settings={settings} />
-      </div>
+        <div className="mt-4">
+          <PlaybackPresetPicker settings={settings} />
+        </div>
 
-      <div className="mt-6 border-t border-line-subtle pt-5">
-        <SettingsDisclosure title={t("playbackAdvancedToggle")} defaultOpen={advancedOpen}>
-          <PlaybackAdvancedPanel settings={settings} />
-        </SettingsDisclosure>
+        <div className="mt-6 border-t border-line-subtle pt-5">
+          <SettingsDisclosure title={t("playbackAdvancedToggle")} defaultOpen={advancedOpen}>
+            <PlaybackAdvancedPanel settings={settings} />
+          </SettingsDisclosure>
+        </div>
       </div>
-    </div>
+    </SettingsSection>
   );
 }
