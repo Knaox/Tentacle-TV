@@ -8,7 +8,11 @@ import type { TypographyTokens } from "../types";
  */
 export const DEFAULT_TYPOGRAPHY_TOKENS: TypographyTokens = {
   fontFamily: {
-    sans: '"Inter", system-ui, -apple-system, sans-serif',
+    // « Inter Variable » d'abord : c'est le nom de famille que déclare la
+    // police EMBARQUÉE (@fontsource-variable/inter, importée par index.css).
+    // « Inter » reste derrière pour les plateformes qui ne l'embarquent pas
+    // encore et pour l'utilisateur qui l'a installée sur son système.
+    sans: '"Inter Variable", "Inter", system-ui, -apple-system, sans-serif',
   },
   fontSize: {
     display1: "4.5rem",
