@@ -1,7 +1,23 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 
-const STORAGE_KEYS = ["tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url", "tentacle_language", "tentacle_credentials", "tentacle_theme_mode", "tentacle_liquid_glass"];
+/**
+ * ⚠️ Liste FERMÉE, et c'est le piège du fichier : `hydrate()` ne précharge que
+ * ces clés. Une clé absente s'écrit très bien, mais n'est jamais relue au
+ * démarrage — le réglage a l'air de tenir, et repart à son défaut au prochain
+ * lancement. Toute nouvelle clé persistée doit donc atterrir ici.
+ */
+const STORAGE_KEYS = [
+  "tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url",
+  "tentacle_language", "tentacle_credentials", "tentacle_theme_mode", "tentacle_liquid_glass",
+  // Réglages de lecture : le cache local du magasin de compte, qui répond
+  // AVANT le serveur (et à sa place, hors ligne).
+  "tentacle_playback_settings",
+  // Les trois clés d'appareil héritées : elles ne sont plus écrites, mais le
+  // magasin les lit UNE fois pour semer les réglages d'un compte qui n'en a
+  // pas encore. Sans elles au préchargement, le semis ne verrait rien.
+  "tentacle_auto_skip_intro", "tentacle_up_next_card", "tentacle_up_next_countdown",
+];
 
 /** Keys stored in Keychain via SecureStore instead of AsyncStorage. */
 const SECURE_KEYS = new Set(["tentacle_token", "tentacle_credentials"]);

@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
+import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
@@ -35,6 +36,8 @@ export function PlayerScreen({ itemId }: Props) {
   const hasEverPlayed = useRef(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [isAirPlaying, setIsAirPlaying] = useState(false);
+  /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
+  const [ended, setEnded] = useState(false);
 
   // Orientation: handled declaratively at the Stack.Screen level in
   // `app/_layout.tsx` (`watch/[itemId]` has `orientation: "all"` while the
@@ -120,6 +123,16 @@ export function PlayerScreen({ itemId }: Props) {
     itemId, pb, videoRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
     setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
+    onEnded: () => { setEnded(true); },
+  });
+
+  // L'arbitre partagé — mêmes règles que le web, le bureau et le téléviseur.
+  useEffect(() => { setEnded(false); }, [itemId, pb.streamUrl]);
+  const playback = usePlaybackOverlayMobile({
+    itemId, pb, currentTime, ended, hasStarted: videoReady,
+    onSeek: handleSeek,
+    onNextEpisode: handleNextEpisode,
+    onEndOfPlayback: invalidateAndGoBack,
   });
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
@@ -250,8 +263,7 @@ export function PlayerScreen({ itemId }: Props) {
         selectedSubtitle={pb.subtitleIndex}
         qualityKey={pb.qualityKey}
         qualityPresets={pb.qualityPresets}
-        introSegment={pb.skipSegments.intro}
-        creditsSegment={pb.skipSegments.credits}
+        playback={playback}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}

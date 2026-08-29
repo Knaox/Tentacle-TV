@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
-  usePlaybackReporting, useIntroSkipper, useEpisodeNavigation,
+  usePlaybackReporting, usePlaybackSegments, useEpisodeNavigation,
 } from "@tentacle-tv/api-client";
 import {
   TICKS_PER_SECOND, ticksToSeconds,
@@ -75,7 +75,10 @@ export function usePlayerPlayback(itemId: string) {
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const episodeNav = useEpisodeNavigation(item);
-  const skipSegments = useIntroSkipper(itemId, item);
+  // Les segments RÉSOLUS par le backend — plus de cascade de sources côté
+  // client, et le contrat rend « rien » plutôt qu'une erreur (serveur ancien,
+  // réseau coupé) : la lecture n'en dépend jamais.
+  const segments = usePlaybackSegments(itemId);
 
   /** Core fetch: POST PlaybackInfo with platform DeviceProfile */
   const fetchPlaybackInfo = useCallback(async (opts?: {
@@ -260,7 +263,7 @@ export function usePlayerPlayback(itemId: string) {
     ...state,
     audioIndex, subtitleIndex, qualityKey, qualityPresets, positionRef,
     audioTrackSelectedIndex, subtitleVttUrl,
-    episodeNav, skipSegments, reporting,
+    episodeNav, segments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,
   };
 }
