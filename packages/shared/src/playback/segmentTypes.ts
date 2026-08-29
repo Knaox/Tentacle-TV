@@ -99,8 +99,15 @@ export interface ResolvedSegment {
   type: SegmentType;
   startMs: number;
   endMs: number;
-  /** D'où vient la borne : segments Jellyfin (natif ou greffon), ou chapitres nommés. */
-  source: "jellyfin" | "chapters";
+  /**
+   * D'où vient la borne : segments Jellyfin (natif ou greffon), chapitres
+   * nommés, ou l'analyse des vignettes (`creditsFromFrames.ts`).
+   *
+   * Champ ADDITIF au fil des versions : un client qui ne connaît pas une valeur
+   * ne fait rien de moins — personne ne branche sur elle, elle sert au journal
+   * et au diagnostic.
+   */
+  source: "jellyfin" | "chapters" | "frames";
   /** `endMs` touche la fin du média (au seuil POST_CREDITS_THRESHOLD_MS près). */
   endsAtMediaEnd: boolean;
   /** Il reste quelque chose à voir après ce segment — une scène post-générique. */
