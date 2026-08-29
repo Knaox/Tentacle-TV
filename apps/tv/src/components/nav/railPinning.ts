@@ -12,6 +12,6 @@ import { tvStorage } from "../../storage/RNStorageAdapter";
  * `hydrate()` passé, comme `localStorage`. C'est ce qui permet au magasin
  * d'être exactement le même code sur les trois cibles.
  */
-export const magasinEpinglageRail = createRailPinningStore(tvStorage);
+export const railPinningStore = createRailPinningStore(tvStorage);
 
-export const useEpinglageRail = createUseRailPinning(magasinEpinglageRail);
+export const useRailPinning = createUseRailPinning(railPinningStore);

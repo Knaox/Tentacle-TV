@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, Typography, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 interface ServerInputStepProps {
   serverUrl: string;
@@ -28,7 +28,7 @@ export function ServerInputStep({
       {/* Language toggle — Focusable so D-pad can reach it */}
       <View style={styles.langToggle}>
         {(["fr", "en"] as const).map((lng) => (
-          <Focusable key={lng} variant="button" focusRadius={Bouton.petit.borderRadius} onPress={() => onSwitchLang(lng)}>
+          <Focusable key={lng} variant="button" focusRadius={Button.small.borderRadius} onPress={() => onSwitchLang(lng)}>
             <View style={[styles.langBtn, currentLang === lng && styles.langBtnActive]}>
               <Text style={[styles.langText, currentLang === lng && styles.langTextActive]}>
                 {lng.toUpperCase()}
@@ -46,7 +46,7 @@ export function ServerInputStep({
 
         {/* URL input — wrapped in Focusable so D-pad can reach it, press opens keyboard */}
         <View style={{ width: "100%" }}>
-          <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={() => inputRef.current?.focus()} hasTVPreferredFocus>
+          <Focusable variant="button" focusRadius={Button.medium.borderRadius} onPress={() => inputRef.current?.focus()} hasTVPreferredFocus>
             <View style={styles.inputWrapper}>
               <TextInput
                 ref={inputRef}
@@ -73,7 +73,7 @@ export function ServerInputStep({
 
         {/* CTA core (fiche média) : primaire blanc + ghost translucide */}
         <View style={{ marginTop: 24, width: "100%", gap: 12 }}>
-          <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onSubmit}>
+          <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onSubmit}>
             <View style={[styles.buttonPrimary, (testing || !serverUrl.trim()) && styles.buttonDisabled]}>
               {testing ? (
                 <ActivityIndicator color={Colors.ctaPrimaryFg} />
@@ -82,7 +82,7 @@ export function ServerInputStep({
               )}
             </View>
           </Focusable>
-          <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onBack} accessibilityLabel={t("common:back")}>
+          <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onBack} accessibilityLabel={t("common:back")}>
             <View style={styles.buttonGhost}>
               <Text style={styles.buttonGhostText}>{t("common:back")}</Text>
             </View>
@@ -157,7 +157,7 @@ const styles = {
     textAlign: "center" as const,
   },
   buttonPrimary: {
-    ...Bouton.grand,
+    ...Button.large,
     backgroundColor: Colors.ctaPrimaryBg,
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -169,7 +169,7 @@ const styles = {
     ...Typography.buttonLarge,
   },
   buttonGhost: {
-    ...Bouton.grand,
+    ...Button.large,
     backgroundColor: Colors.ctaGhostBg,
     borderWidth: 1,
     borderColor: Colors.ctaGhostBorder,
@@ -196,7 +196,7 @@ const styles = {
     gap: 4,
   },
   langBtn: {
-    ...Bouton.petit,
+    ...Button.small,
     paddingHorizontal: 14,
     paddingVertical: 8,
     backgroundColor: "rgba(255,255,255,0.04)",

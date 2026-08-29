@@ -22,14 +22,14 @@ import type { MediaItem } from "@tentacle-tv/shared";
  */
 
 /** Ce qui CHANGE — lu par le seul fond ambiant. */
-const ItemAmbiantContext = createContext<MediaItem | null>(null);
+const AmbientItemContext = createContext<MediaItem | null>(null);
 
-type PoseurAmbiant = (item: MediaItem | null) => void;
+type AmbientSetter = (item: MediaItem | null) => void;
 
-const NE_RIEN_FAIRE: PoseurAmbiant = () => {};
+const NO_OP: AmbientSetter = () => {};
 
 /** Ce qui NE CHANGE PAS — appelé par les écrans et les cartes. */
-const PoseurAmbiantContext = createContext<PoseurAmbiant>(NE_RIEN_FAIRE);
+const AmbientSetterContext = createContext<AmbientSetter>(NO_OP);
 
 interface AmbientFocusProviderProps {
   children: ReactNode;
@@ -53,7 +53,7 @@ export function AmbientFocusProvider({
   const [focusedItem, setFocusedItemState] = useState<MediaItem | null>(null);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const setFocusedItem = useCallback<PoseurAmbiant>(
+  const setFocusedItem = useCallback<AmbientSetter>(
     (item) => {
       if (pendingTimer.current) clearTimeout(pendingTimer.current);
       // Clear instantly — never debounce the "go to nothing" transition.
@@ -69,9 +69,9 @@ export function AmbientFocusProvider({
   );
 
   return (
-    <PoseurAmbiantContext.Provider value={setFocusedItem}>
-      <ItemAmbiantContext.Provider value={focusedItem}>{children}</ItemAmbiantContext.Provider>
-    </PoseurAmbiantContext.Provider>
+    <AmbientSetterContext.Provider value={setFocusedItem}>
+      <AmbientItemContext.Provider value={focusedItem}>{children}</AmbientItemContext.Provider>
+    </AmbientSetterContext.Provider>
   );
 }
 
@@ -81,8 +81,8 @@ export function AmbientFocusProvider({
  * S'abonner ici, c'est se re-rendre à chaque déplacement de la télécommande :
  * ne l'appeler que si l'on affiche vraiment quelque chose de cet item.
  */
-export function useItemAmbiant(): MediaItem | null {
-  return useContext(ItemAmbiantContext);
+export function useAmbientItem(): MediaItem | null {
+  return useContext(AmbientItemContext);
 }
 
 /**
@@ -91,6 +91,6 @@ export function useItemAmbiant(): MediaItem | null {
  * Stable : hors d'un fournisseur, il ne fait rien, et les composants de carte
  * n'ont donc pas à savoir si la couche ambiante est montée.
  */
-export function usePoseurAmbiant(): PoseurAmbiant {
-  return useContext(PoseurAmbiantContext);
+export function useAmbientSetter(): AmbientSetter {
+  return useContext(AmbientSetterContext);
 }

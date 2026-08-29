@@ -26,8 +26,8 @@ const CODES: Record<"dpad" | "media", Record<Dir, number>> = {
   dpad: { forward: 1, backward: 2 },
   media: { forward: 3, backward: 4 },
 };
-const sensOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
-const dirOf = (sens: 1 | -1): Dir => (sens === 1 ? "forward" : "backward");
+const signOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
+const dirOf = (sign: 1 | -1): Dir => (sign === 1 ? "forward" : "backward");
 
 /**
  * L'ADAPTATEUR du maintien ←/→ — la mécanique (tic 250 ms, un palier par
@@ -53,7 +53,7 @@ export function useScrubHoldMotor(args: {
   /** Un pas SEC du fantôme (appui média isolé) — palier 1. */
   stepScrub: (dir: Dir) => void;
   /** Un tic de MAINTIEN — la machine fournit le palier (1/2/4/8). */
-  tickScrub: (dir: Dir, palier: number) => void;
+  tickScrub: (dir: Dir, tier: number) => void;
   showOverlay: () => void;
   /** Fin de maintien : éteint la pastille de vitesse. */
   onHoldEnd: () => void;
@@ -70,18 +70,18 @@ export function useScrubHoldMotor(args: {
   // Réveil OSD en attente (tap ←/→ Android, OSD caché) — consommé au key-up.
   const pendingWakeRef = useRef(false);
 
-  const moteur = useMemo(
+  const motor = useMemo(
     () =>
       createHoldMotor({
-        jump: (sens) => stepRef.current(dirOf(sens)),
-        advance: (sens, palier) => {
+        jump: (sign) => stepRef.current(dirOf(sign)),
+        advance: (sign, tier) => {
           tickingRef.current = true;
-          tickRef.current(dirOf(sens), palier);
+          tickRef.current(dirOf(sign), tier);
         },
       }),
     [],
   );
-  useEffect(() => () => moteur.destroy(), [moteur]);
+  useEffect(() => () => motor.destroy(), [motor]);
 
   const markTickingStopped = useCallback(() => {
     if (tickingRef.current) tickingStoppedAtRef.current = Date.now();
@@ -95,8 +95,8 @@ export function useScrubHoldMotor(args: {
     pendingWakeRef.current = false;
     tickingRef.current = true;
     lastCodeRef.current = CODES.dpad[dir];
-    moteur.press(CODES.dpad[dir], sensOf(dir), true);
-  }, [moteur]);
+    motor.press(CODES.dpad[dir], signOf(dir), true);
+  }, [motor]);
 
   // --- Armement différé (signal long-press natif) ---
   const scrubHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,8 +144,8 @@ export function useScrubHoldMotor(args: {
    *  cadence de répétition (tic accéléré). */
   const mediaPulse = useCallback((dir: Dir) => {
     lastCodeRef.current = CODES.media[dir];
-    moteur.press(CODES.media[dir], sensOf(dir), false);
-  }, [moteur]);
+    motor.press(CODES.media[dir], signOf(dir), false);
+  }, [motor]);
 
   /** Tap ←/→ OSD caché (Android) : demande un réveil au KEY-UP. */
   const requestDeferredWake = useCallback(() => { pendingWakeRef.current = true; }, []);
@@ -155,24 +155,24 @@ export function useScrubHoldMotor(args: {
   const onHoldRelease = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    moteur.release(lastCodeRef.current);
+    motor.release(lastCodeRef.current);
     markTickingStopped();
     onHoldEnd();
     if (pendingWakeRef.current) {
       pendingWakeRef.current = false;
       if (!scrubbingRef.current && !panelOpenRef.current) showOverlay();
     }
-  }, [cancelScrubHold, cancelHoldFromDown, moteur, markTickingStopped, onHoldEnd, showOverlay, scrubbingRef, panelOpenRef]);
+  }, [cancelScrubHold, cancelHoldFromDown, motor, markTickingStopped, onHoldEnd, showOverlay, scrubbingRef, panelOpenRef]);
 
   /** Rupture franche — confirm/annulation du scrub : même si le key-up
    *  n'arrive jamais, valider ou annuler tue l'armement ET le tic. */
   const stopAll = useCallback(() => {
     cancelScrubHold();
     cancelHoldFromDown();
-    moteur.cancel();
+    motor.cancel();
     markTickingStopped();
     pendingWakeRef.current = false;
-  }, [cancelScrubHold, cancelHoldFromDown, moteur, markTickingStopped]);
+  }, [cancelScrubHold, cancelHoldFromDown, motor, markTickingStopped]);
 
   /** Tic de maintien actif (ou stoppé il y a < 400 ms) : les events ←/→
    *  concomitants sont des doublons parasites du hold. */

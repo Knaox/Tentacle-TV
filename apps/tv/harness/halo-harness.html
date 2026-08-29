@@ -12,17 +12,17 @@
       `--hero-ambilight-*` (surfaces.css) : source 128 px posée dans une boîte à
       12,5 % puis `scale(8)`, donc `blur(6px)` y vaut 48 px effectifs.
 
-      PROTOCOLE (voir aussi TVHeroAmbilightFiltre.tsx) :
+      PROTOCOLE (voir aussi TVHeroAmbilightFilter.tsx) :
         1. Capturer le simulateur — `xcrun simctl io booted screenshot tv.png`.
            Le panneau simulateur intégré ne rend rien pour tvOS : Simulator.app.
         2. En extraire l'œuvre, pour comparer la MÊME affiche des deux côtés :
-             magick tv.png -crop 1526x670+242+54 +repage carte-ref.png
-             magick carte-ref.png -resize 128x carte-ref-128.png
+             magick tv.png -crop 1526x670+242+54 +repage card-ref.png
+             magick card-ref.png -resize 128x card-ref-128.png
         3. Rendre CETTE page à l'échelle 1 :
              "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
                --headless --disable-gpu --hide-scrollbars --window-size=1920,1080 \
                --default-background-color=000000ff --screenshot=web.png \
-               file://$PWD/harnais-halo.html
+               file://$PWD/halo-harness.html
            Réémuler `filter: blur()` à ImageMagick ne marche PAS : la gamme et
            la prémultiplication font dériver le résultat d'environ 1,7×.
         4. Comparer par PROFIL de colonnes, pas à l'œil :
@@ -61,8 +61,8 @@
   </head>
   <body>
     <div class="cadre">
-      <div class="halo"><div class="boite"><img src="carte-ref-128.png" alt="" /></div></div>
-      <div class="carte"><img src="carte-ref.png" alt="" /></div>
+      <div class="halo"><div class="boite"><img src="card-ref-128.png" alt="" /></div></div>
+      <div class="carte"><img src="card-ref.png" alt="" /></div>
     </div>
   </body>
 </html>

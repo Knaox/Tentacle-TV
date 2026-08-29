@@ -14,7 +14,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, Spacing, Fonts, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -154,8 +154,8 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
                 {t("loadFailed")}
               </Text>
               <Focusable
-                variant="button" focusRadius={Bouton.moyen.borderRadius} hasTVPreferredFocus onPress={onRetry}
-                style={{ alignSelf: "flex-start", paddingHorizontal: 28, paddingVertical: 12, ...Bouton.moyen, backgroundColor: "rgba(255,255,255,0.14)" }}
+                variant="button" focusRadius={Button.medium.borderRadius} hasTVPreferredFocus onPress={onRetry}
+                style={{ alignSelf: "flex-start", paddingHorizontal: 28, paddingVertical: 12, ...Button.medium, backgroundColor: "rgba(255,255,255,0.14)" }}
               >
                 <Text style={{ color: "#fff", fontSize: 17, fontFamily: Fonts.bold }}>
                   {t("retry")}

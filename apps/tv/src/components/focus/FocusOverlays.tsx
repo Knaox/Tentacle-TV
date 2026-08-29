@@ -28,21 +28,21 @@ import {
  * `Pressable` est au-dessus d'eux dans l'arbre, pas en dessous.
  */
 
-const REMPLIR = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
+const FILL = { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 } as const;
 
 /** Le halo de marque, derrière l'anneau — ce qui décolle l'élément du fond.
  *  Il déborde de six points, donc son rayon aussi. */
-export function CalqueHalo({
+export function GlowLayer({
   progress,
-  opacite,
-  rayon,
+  glowOpacity,
+  radius,
 }: {
   progress: SharedValue<number>;
-  opacite: number;
-  rayon: number;
+  glowOpacity: number;
+  radius: number;
 }) {
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, opacite]),
+    opacity: interpolate(progress.value, [0, 1], [0, glowOpacity]),
   }));
 
   return (
@@ -51,7 +51,7 @@ export function CalqueHalo({
       style={[{
         position: "absolute",
         top: -6, left: -6, right: -6, bottom: -6,
-        borderRadius: rayon + 6,
+        borderRadius: radius + 6,
         backgroundColor: FocusGlow.color,
       }, style]}
     />
@@ -60,13 +60,13 @@ export function CalqueHalo({
 
 /** Variante « bouton » : l'anneau blanc, et pour l'OSD un fond translucide.
  *  Les ronds du lecteur n'ont pas de bordure — l'anneau s'en charge. */
-export function CalqueBouton({
+export function ButtonLayer({
   progress,
-  rayon,
+  radius,
   osd,
 }: {
   progress: SharedValue<number>;
-  rayon: number;
+  radius: number;
   osd: boolean;
 }) {
   const style = useAnimatedStyle(() => ({ opacity: progress.value }));
@@ -75,8 +75,8 @@ export function CalqueBouton({
     <Animated.View
       pointerEvents="none"
       style={[{
-        ...REMPLIR,
-        borderRadius: rayon,
+        ...FILL,
+        borderRadius: radius,
         backgroundColor: osd ? FocusPlayerButtonStyle.bgColor : FocusButtonStyle.bgColor,
         borderWidth: osd ? 0 : FocusButtonStyle.borderWidth,
         borderColor: FocusButtonStyle.borderColor,
@@ -86,12 +86,12 @@ export function CalqueBouton({
 }
 
 /** Variante « ligne » : le fond se remplit, sans barre — cf. `FocusRowStyle`. */
-export function CalqueLigne({
+export function RowLayer({
   progress,
-  rayon,
+  radius,
 }: {
   progress: SharedValue<number>;
-  rayon: number;
+  radius: number;
 }) {
   const style = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(
@@ -101,16 +101,16 @@ export function CalqueLigne({
     ),
   }));
 
-  return <Animated.View pointerEvents="none" style={[{ ...REMPLIR, borderRadius: rayon }, style]} />;
+  return <Animated.View pointerEvents="none" style={[{ ...FILL, borderRadius: radius }, style]} />;
 }
 
 /** Variante « carte » : l'anneau net, dessiné PAR-DESSUS l'affiche. */
-export function CalqueCarte({
+export function CardLayer({
   progress,
-  rayon,
+  radius,
 }: {
   progress: SharedValue<number>;
-  rayon: number;
+  radius: number;
 }) {
   const style = useAnimatedStyle(() => ({ opacity: progress.value * FocusBorder.opacity }));
 
@@ -118,8 +118,8 @@ export function CalqueCarte({
     <Animated.View
       pointerEvents="none"
       style={[{
-        ...REMPLIR,
-        borderRadius: rayon,
+        ...FILL,
+        borderRadius: radius,
         borderWidth: FocusBorder.width,
         borderColor: FocusBorder.color,
       }, style]}

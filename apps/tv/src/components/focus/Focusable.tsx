@@ -4,7 +4,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } f
 import type { FocusVariant } from "../../theme/focus";
 import { FocusTiming, FocusScale, FocusGlow } from "../../theme/focus";
 import { Easings } from "../../theme/motion";
-import { CalqueBouton, CalqueCarte, CalqueHalo, CalqueLigne } from "./FocusOverlays";
+import { ButtonLayer, CardLayer, GlowLayer, RowLayer } from "./FocusOverlays";
 import { TV_CARD_FOCUS } from "@tentacle-tv/theme";
 // Seuil du maintien, partagé avec la LG : le geste doit être le même partout.
 import { LONG_PRESS_THRESHOLD_MS } from "@tentacle-tv/tv-core";
@@ -48,7 +48,7 @@ interface FocusableBaseProps {
  * d'affichage et non comme un style.
  *
  * Le rendre obligatoire là où la forme varie, c'est confier au compilateur ce
- * qu'une relecture ne rattrape pas — et `theme/boutons.ts` tient les rayons
+ * qu'une relecture ne rattrape pas — et `theme/buttons.ts` tient les rayons
  * appariés à chaque forme, pour qu'il n'y ait rien à deviner.
  *
  * Les cartes et les lignes gardent leur défaut : leur forme, elle, est unique.
@@ -71,7 +71,7 @@ const TIMING_FOCUS = { duration: FocusTiming.duration, easing: Easings.out };
  * `elevation` qui fait l'ombre) et `elevation` fait retrier tout le groupe de
  * vues à chaque changement. On ne l'anime donc pas là-bas.
  */
-const OMBRE_ANIMABLE = Platform.OS === "ios";
+const ANIMATABLE_SHADOW = Platform.OS === "ios";
 
 const GLOW_VARIANTS: Record<FocusVariant, number> = {
   card: 0.5,
@@ -180,7 +180,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
     const s = interpolate(progress.value, [0, 1], [FocusScale.normal, scaleTarget]);
     return {
       transform: [{ scale: s }],
-      ...(hasShadow && OMBRE_ANIMABLE
+      ...(hasShadow && ANIMATABLE_SHADOW
         ? { shadowOpacity: interpolate(progress.value, [0, 1], [0, FocusGlow.shadowOpacity]) }
         : {}),
     };
@@ -191,7 +191,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
    *  dessinent rien — et c'est là qu'il coûte cher à animer. */
   const rang: ViewStyle | false = aLeFocus && {
     zIndex: 10,
-    ...(hasShadow && !OMBRE_ANIMABLE ? { elevation: FocusGlow.elevation } : {}),
+    ...(hasShadow && !ANIMATABLE_SHADOW ? { elevation: FocusGlow.elevation } : {}),
   };
 
   const RING_GAP = 4;
@@ -235,17 +235,17 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
         },
       ]}>
         {glowOpacity > 0 && (
-          <CalqueHalo progress={progress} opacite={glowOpacity} rayon={focusRadius} />
+          <GlowLayer progress={progress} glowOpacity={glowOpacity} radius={focusRadius} />
         )}
         {isButton && (
-          <CalqueBouton progress={progress} rayon={focusRadius} osd={variant === "playerButton"} />
+          <ButtonLayer progress={progress} radius={focusRadius} osd={variant === "playerButton"} />
         )}
-        {isRow && <CalqueLigne progress={progress} rayon={focusRadius} />}
+        {isRow && <RowLayer progress={progress} radius={focusRadius} />}
 
         {children}
 
         {/* L'anneau de la carte se pose PAR-DESSUS l'affiche. */}
-        {isCard && <CalqueCarte progress={progress} rayon={focusRadius} />}
+        {isCard && <CardLayer progress={progress} radius={focusRadius} />}
       </Animated.View>
     </Pressable>
   );

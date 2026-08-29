@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { Focusable } from "../focus/Focusable";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 import { Colors, Typography } from "../../theme/colors";
 
 /**
@@ -27,7 +27,7 @@ export function TVCollectionEmpty({
   title: string;
   hint: string;
   action?: {
-    libelle: string;
+    label: string;
     onPress: () => void;
     entryRef?: (node: View | null) => void;
   };
@@ -44,13 +44,13 @@ export function TVCollectionEmpty({
           <Focusable
             ref={action.entryRef}
             variant="button"
-            focusRadius={Bouton.grand.borderRadius}
+            focusRadius={Button.large.borderRadius}
             onPress={action.onPress}
-            accessibilityLabel={action.libelle}
+            accessibilityLabel={action.label}
           >
             <View
               style={{
-                ...Bouton.grand,
+                ...Button.large,
                 paddingHorizontal: 32,
                 paddingVertical: 14,
                 backgroundColor: Colors.ctaGhostBg,
@@ -59,7 +59,7 @@ export function TVCollectionEmpty({
               }}
             >
               <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
-                {action.libelle}
+                {action.label}
               </Text>
             </View>
           </Focusable>

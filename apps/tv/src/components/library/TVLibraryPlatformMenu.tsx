@@ -14,8 +14,8 @@ export function TVPlatformMenu({
   onToggle: (id: number) => void;
 }) {
   // Figée à l'ouverture : cocher ne doit pas re-saisir le focus.
-  const entreeRef = useRef(PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id);
-  const firstChecked = entreeRef.current;
+  const entryRef = useRef(PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id);
+  const firstChecked = entryRef.current;
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>

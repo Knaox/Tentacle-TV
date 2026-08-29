@@ -1,5 +1,5 @@
 import { initPlaybackSettingsStore, rehydratePlaybackSettings } from "@tentacle-tv/api-client";
-import { magasinEpinglageRail } from "../components/nav/railPinning";
+import { railPinningStore } from "../components/nav/railPinning";
 import { tvStorage } from "../storage/RNStorageAdapter";
 
 /**
@@ -16,8 +16,8 @@ import { tvStorage } from "../storage/RNStorageAdapter";
  *
  * À appeler une fois, juste après `hydrate()`.
  */
-export function rehydraterMagasins(): void {
-  magasinEpinglageRail.rehydrate();
+export function rehydrateStores(): void {
+  railPinningStore.rehydrate();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
 }

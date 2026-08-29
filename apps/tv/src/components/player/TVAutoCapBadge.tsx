@@ -11,17 +11,17 @@ const BADGE_MS = 5000;
  * Même arbitrage que TVSkipBadge : rendu conditionnel SANS opacité animée
  * (Reanimated n'applique pas un style animé à une View montée après coup).
  */
-export function TVAutoCapBadge({ actif }: { actif: boolean }) {
+export function TVAutoCapBadge({ active }: { active: boolean }) {
   const { t } = useTranslation("player");
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!actif) { setVisible(false); return; }
+    if (!active) { setVisible(false); return; }
     setVisible(true);
     timerRef.current = setTimeout(() => setVisible(false), BADGE_MS);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [actif]);
+  }, [active]);
 
   if (!visible) return null;
   return (

@@ -17,24 +17,24 @@ import { Radius } from "./colors";
  * Les valeurs viennent de l'échelle du téléviseur (`TV_TOKENS.radius`, que la
  * LG écrit tel quel dans `tokens-tv.css`), jamais choisies au jugé.
  */
-export const Bouton = {
+export const Button = {
   /** Les grands appels à l'action — Lecture, Reprendre, Plus d'infos. */
-  grand: { borderRadius: Radius.buttonLarge },
+  large: { borderRadius: Radius.buttonLarge },
   /** Les petites touches — clavier de recherche, bascules de langue. À cette
    *  taille, un rayon de page serait un galet. */
-  petit: { borderRadius: Radius.small },
+  small: { borderRadius: Radius.small },
   /** Les boutons de page — réglages, menus, saisons, choix de langue. */
-  moyen: { borderRadius: Radius.button },
+  medium: { borderRadius: Radius.button },
   /** Les pilules — puces de filtre, recherches récentes, onglets. */
-  pilule: { borderRadius: Radius.pill },
+  pill: { borderRadius: Radius.pill },
 } as const;
 
 /**
- * Un rond parfait de `taille` points — actions de fiche, boutons de l'OSD.
+ * Un rond parfait de `size` points — actions de fiche, boutons de l'OSD.
  *
  * C'est la forme où l'écart se voyait le plus : un anneau à douze autour d'un
  * disque de cinquante-six ne suit pas du tout son bord.
  */
-export function boutonRond(taille: number) {
-  return { width: taille, height: taille, borderRadius: taille / 2 } as const;
+export function roundButton(size: number) {
+  return { width: size, height: size, borderRadius: size / 2 } as const;
 }

@@ -9,7 +9,7 @@ import { Focusable } from "../components/focus/Focusable";
 import { TentacleLogo } from "../components/icons/TentacleLogo";
 import { CheckIcon } from "../components/icons/TVIcons";
 import { styles } from "./DisclaimerScreen.styles";
-import { Bouton } from "../theme/boutons";
+import { Button } from "../theme/buttons";
 
 const LANGS = [
   { code: "fr", label: "FR" },
@@ -21,7 +21,7 @@ export function DisclaimerScreen() {
   const navigation = useNavigation();
   const { storage } = useTentacleConfig();
   const [checked, setChecked] = useState(false);
-  const [refusOuvert, setRefusOuvert] = useState(false);
+  const [declineOpen, setDeclineOpen] = useState(false);
   const [lang, setLang] = useState(() => {
     const saved = storage.getItem("tentacle_language");
     return saved?.startsWith("fr") ? "fr" : "en";
@@ -41,7 +41,7 @@ export function DisclaimerScreen() {
   }, [storage, navigation]);
 
   const handleDecline = useCallback(() => {
-    setRefusOuvert(true);
+    setDeclineOpen(true);
   }, []);
 
   return (
@@ -58,7 +58,7 @@ export function DisclaimerScreen() {
         {/* Language switcher */}
         <View style={styles.langRow}>
           {LANGS.map((l) => (
-            <Focusable key={l.code} variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={() => switchLang(l.code)}>
+            <Focusable key={l.code} variant="button" focusRadius={Button.medium.borderRadius} onPress={() => switchLang(l.code)}>
               <View style={[styles.langButton, lang === l.code && styles.langButtonActive]}>
                 <Text style={[styles.langText, lang === l.code && styles.langTextActive]}>{l.label}</Text>
               </View>
@@ -80,7 +80,7 @@ export function DisclaimerScreen() {
         {/* Checkbox — focus initial (action principale, atteignable d'emblée) */}
         <Focusable
           variant="button"
-          focusRadius={Bouton.moyen.borderRadius}
+          focusRadius={Button.medium.borderRadius}
           onPress={() => setChecked((v) => !v)}
           accessibilityLabel={t("checkboxLabel")}
           hasTVPreferredFocus
@@ -98,7 +98,7 @@ export function DisclaimerScreen() {
           <Focusable
             variant="button"
             onPress={checked ? handleAccept : undefined}
-            focusRadius={Bouton.grand.borderRadius}
+            focusRadius={Button.large.borderRadius}
             hasTVPreferredFocus={false}
           >
             <View style={[styles.acceptButton, !checked && styles.acceptButtonDisabled]}>
@@ -106,7 +106,7 @@ export function DisclaimerScreen() {
             </View>
           </Focusable>
 
-          <Focusable variant="button" onPress={handleDecline} focusRadius={Bouton.grand.borderRadius}>
+          <Focusable variant="button" onPress={handleDecline} focusRadius={Button.large.borderRadius}>
             <View style={styles.declineButton}>
               <Text style={styles.declineText}>{t("decline")}</Text>
             </View>
@@ -114,7 +114,7 @@ export function DisclaimerScreen() {
         </View>
       </TVFocusGuideView>
 
-      {refusOuvert && (
+      {declineOpen && (
         /* @ts-expect-error — TVFocusGuideView (react-native-tvos) : autoFocus pose
            le focus sur le bouton, les trapFocus* empechent d'en sortir. */
         <TVFocusGuideView
@@ -130,8 +130,8 @@ export function DisclaimerScreen() {
             <Text style={styles.dialogMessage}>{t("declineMessage")}</Text>
             <Focusable
               variant="button"
-              focusRadius={Bouton.grand.borderRadius}
-              onPress={() => setRefusOuvert(false)}
+              focusRadius={Button.large.borderRadius}
+              onPress={() => setDeclineOpen(false)}
               hasTVPreferredFocus
             >
               <View style={styles.acceptButton}>

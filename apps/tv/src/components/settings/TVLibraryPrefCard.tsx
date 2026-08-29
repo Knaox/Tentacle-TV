@@ -3,13 +3,13 @@ import { useTranslation } from "react-i18next";
 import { TV_RADIUS } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
-export interface ReglageTv {
-  cle: "audio" | "mode" | "sousTitres";
-  intitule: string;
-  valeur: string;
-  choix: Array<{ value: string; label: string }>;
+export interface TvSetting {
+  key: "audio" | "mode" | "sousTitres";
+  label: string;
+  value: string;
+  choices: Array<{ value: string; label: string }>;
   selection: string | null;
 }
 
@@ -21,17 +21,17 @@ export interface ReglageTv {
  * lui qui porte la liste et le confinement du focus.
  */
 export function TVLibraryPrefCard({
-  nom,
-  reglages,
-  personnalisee,
-  onOuvrir,
-  onReinitialiser,
+  name,
+  settings,
+  customized,
+  onOpen,
+  onReset,
 }: {
-  nom: string;
-  reglages: ReglageTv[];
-  personnalisee: boolean;
-  onOuvrir: (reglage: ReglageTv) => void;
-  onReinitialiser: () => void;
+  name: string;
+  settings: TvSetting[];
+  customized: boolean;
+  onOpen: (setting: TvSetting) => void;
+  onReset: () => void;
 }) {
   const { t } = useTranslation("preferences");
 
@@ -46,22 +46,22 @@ export function TVLibraryPrefCard({
         paddingHorizontal: 28,
       }}
     >
-      <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: "600" }}>{nom}</Text>
+      <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: "600" }}>{name}</Text>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16, marginTop: 20 }}>
-        {reglages.map((reglage) => (
+        {settings.map((setting) => (
           <Focusable
-            key={reglage.cle}
+            key={setting.key}
             variant="button"
-            focusRadius={Bouton.moyen.borderRadius}
+            focusRadius={Button.medium.borderRadius}
             scaleOverride={1.04}
-            onPress={() => onOuvrir(reglage)}
-            accessibilityLabel={`${reglage.intitule} : ${reglage.valeur}`}
+            onPress={() => onOpen(setting)}
+            accessibilityLabel={`${setting.label} : ${setting.value}`}
           >
             <View
               style={{
                 minWidth: 220,
-                ...Bouton.moyen,
+                ...Button.medium,
                 borderWidth: 1,
                 borderColor: Colors.glassBorder,
                 paddingHorizontal: 18,
@@ -76,27 +76,27 @@ export function TVLibraryPrefCard({
                   textTransform: "uppercase",
                 }}
               >
-                {reglage.intitule}
+                {setting.label}
               </Text>
               <Text
                 numberOfLines={1}
                 style={{ color: Colors.textPrimary, fontSize: 17, fontWeight: "600", marginTop: 4 }}
               >
-                {reglage.valeur}
+                {setting.value}
               </Text>
             </View>
           </Focusable>
         ))}
       </View>
 
-      {personnalisee && (
+      {customized && (
         <View style={{ flexDirection: "row", marginTop: 20 }}>
-          <Focusable variant="button" focusRadius={Bouton.pilule.borderRadius} onPress={onReinitialiser} accessibilityLabel={t("reset")}>
+          <Focusable variant="button" focusRadius={Button.pill.borderRadius} onPress={onReset} accessibilityLabel={t("reset")}>
             <View
               style={{
                 paddingHorizontal: 22,
                 paddingVertical: 11,
-                ...Bouton.pilule,
+                ...Button.pill,
                 backgroundColor: Colors.ctaGhostBg,
                 borderWidth: 1,
                 borderColor: Colors.ctaGhostBorder,

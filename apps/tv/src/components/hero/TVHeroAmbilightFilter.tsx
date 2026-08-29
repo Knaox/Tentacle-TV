@@ -23,7 +23,7 @@ interface Props {
 }
 
 /** Trois σ : au-delà, la gaussienne ne dépose plus rien de visible. */
-const PORTEE = 3;
+const REACH = 3;
 
 /**
  * Le halo, pipeline LITTÉRAL de la référence : un flou gaussien qui déborde
@@ -71,7 +71,7 @@ const PORTEE = 3;
  * `0 0 w h` sur un viewport de `w × h` est l'identité : rien ne bouge sur tvOS,
  * qui rendait déjà le halo juste.
  */
-export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
+export const TVHeroAmbilightFilter = memo(function TVHeroAmbilightFilter({
   uri,
   cardW,
   cardH,
@@ -88,16 +88,16 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   // là où sa branche Apple applique l'échelle d'écran (et dit pourquoi en
   // commentaire). Le détail, et la mesure de l'écart, sont dans
   // `reglageFlouAndroid`. iOS garde EXACTEMENT la valeur d'avant.
-  const naturel = { k: Math.max(1, Math.round(cardW / sourceW)), stdDeviation: 0 };
-  const reglage =
+  const natural = { k: Math.max(1, Math.round(cardW / sourceW)), stdDeviation: 0 };
+  const setting =
     Platform.OS === "android"
       ? androidBlurSetting(sigma, cardW, sourceW, PixelRatio.get())
-      : { ...naturel, stdDeviation: sigma / naturel.k };
-  const { k, stdDeviation } = reglage;
-  const bleed = PORTEE * sigma;
+      : { ...natural, stdDeviation: sigma / natural.k };
+  const { k, stdDeviation } = setting;
+  const bleed = REACH * sigma;
   const w = (cardW + 2 * bleed) / k;
   const h = (cardH + 2 * bleed) / k;
-  const marge = bleed / k;
+  const margin = bleed / k;
 
   // Posé par son CENTRE, et mis à l'échelle autour de ce centre.
   //
@@ -131,8 +131,8 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
         </Defs>
         <SvgImage
           href={{ uri }}
-          x={marge}
-          y={marge}
+          x={margin}
+          y={margin}
           width={cardW / k}
           height={cardH / k}
           preserveAspectRatio="xMidYMid slice"

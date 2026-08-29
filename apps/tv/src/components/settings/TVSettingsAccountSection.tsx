@@ -14,10 +14,10 @@ import { navigationRef } from "../../navigation/navigationRef";
 import { doLogout } from "../../auth/sessionFlow";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 /** Le portrait, à la taille d'une dalle regardée de loin (parité LG : 132). */
-const TAILLE_PORTRAIT = 132;
+const PORTRAIT_SIZE = 132;
 
 /**
  * Le compte : qui regarde, et comment cesser de l'être.
@@ -59,7 +59,7 @@ export function TVSettingsAccountSection() {
 
   return (
     <View>
-      <Profil />
+      <Profile />
 
       <View style={{ flexDirection: "row", alignItems: "baseline", gap: 16, marginTop: 36, marginBottom: 36 }}>
         <Text style={{ color: Colors.textTertiary, fontSize: 14, width: 140 }}>
@@ -84,35 +84,35 @@ export function TVSettingsAccountSection() {
 /** Le portrait et le nom. L'image vient de Jellyfin par le proxy du serveur ;
  *  le repli est l'initiale — 404 (pas de portrait) et échec réseau se
  *  traitent pareil, sans clignoter. */
-function Profil() {
+function Profile() {
   const { t } = useTranslation("pairing");
   const { storage } = useTentacleConfig();
   const client = useJellyfinClient();
   const userId = useUserId();
-  const [echoue, setEchoue] = useState(false);
+  const [failed, setFailed] = useState(false);
 
-  let nom: string | null = null;
+  let name: string | null = null;
   try {
     const brut = storage.getItem("tentacle_user");
     if (brut) {
       const parsed = JSON.parse(brut) as { Name?: unknown };
-      if (typeof parsed.Name === "string" && parsed.Name.length > 0) nom = parsed.Name;
+      if (typeof parsed.Name === "string" && parsed.Name.length > 0) name = parsed.Name;
     }
   } catch { /* nom absent : l'initiale de repli suffit */ }
 
   const url =
-    userId && !echoue
-      ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${TAILLE_PORTRAIT * 2}&quality=90`
+    userId && !failed
+      ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${PORTRAIT_SIZE * 2}&quality=90`
       : null;
-  const initiale = (nom ?? "?").charAt(0).toUpperCase();
+  const initial = (name ?? "?").charAt(0).toUpperCase();
 
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 28 }}>
       <View
         style={{
-          width: TAILLE_PORTRAIT,
-          height: TAILLE_PORTRAIT,
-          borderRadius: TAILLE_PORTRAIT / 2,
+          width: PORTRAIT_SIZE,
+          height: PORTRAIT_SIZE,
+          borderRadius: PORTRAIT_SIZE / 2,
           overflow: "hidden",
           borderWidth: 1,
           borderColor: brandAlpha(0.22),
@@ -128,10 +128,10 @@ function Profil() {
             <Image
               source={{ uri: url }}
               style={{ width: "100%", height: "100%" }}
-              onError={() => setEchoue(true)}
+              onError={() => setFailed(true)}
             />
           ) : (
-            <Text style={{ color: "#ffffff", fontSize: 48, fontWeight: "700" }}>{initiale}</Text>
+            <Text style={{ color: "#ffffff", fontSize: 48, fontWeight: "700" }}>{initial}</Text>
           )}
         </LinearGradient>
       </View>
@@ -148,7 +148,7 @@ function Profil() {
           {t("tvCompteJumele")}
         </Text>
         <Text style={{ color: Colors.textPrimary, fontSize: 34, fontWeight: "700", marginTop: 6 }}>
-          {nom ?? "—"}
+          {name ?? "—"}
         </Text>
       </View>
     </View>
@@ -168,42 +168,42 @@ function TwoPressButton({
   danger?: boolean;
   onConfirmed: () => void;
 }) {
-  const [arme, setArme] = useState(false);
+  const [armed, setArmed] = useState(false);
 
   return (
     <Focusable
       variant="button"
-      focusRadius={Bouton.pilule.borderRadius}
+      focusRadius={Button.pill.borderRadius}
       onPress={() => {
-        if (!arme) { setArme(true); return; }
-        setArme(false);
+        if (!armed) { setArmed(true); return; }
+        setArmed(false);
         onConfirmed();
       }}
-      onBlur={() => setArme(false)}
-      accessibilityLabel={arme ? confirmLabel : label}
+      onBlur={() => setArmed(false)}
+      accessibilityLabel={armed ? confirmLabel : label}
     >
       <View
         style={{
           paddingHorizontal: 26,
           paddingVertical: 14,
-          ...Bouton.pilule,
-          backgroundColor: arme
+          ...Button.pill,
+          backgroundColor: armed
             ? (danger ? "rgba(239, 68, 68, 0.22)" : brandAlpha(0.22))
             : Colors.ctaGhostBg,
           borderWidth: 1,
-          borderColor: arme
+          borderColor: armed
             ? (danger ? "rgba(239, 68, 68, 0.6)" : brandAlpha(0.6))
             : Colors.ctaGhostBorder,
         }}
       >
         <Text
           style={{
-            color: arme && danger ? "#fca5a5" : Colors.textPrimary,
+            color: armed && danger ? "#fca5a5" : Colors.textPrimary,
             fontSize: 16,
             fontWeight: "600",
           }}
         >
-          {arme ? `${confirmLabel} — ${label}` : label}
+          {armed ? `${confirmLabel} — ${label}` : label}
         </Text>
       </View>
     </Focusable>

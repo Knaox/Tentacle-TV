@@ -27,8 +27,8 @@ export const TVLibraryHero = memo(function TVLibraryHero({
 }: TVLibraryHeroProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const tirage = useRandomLibraryBackdrop(libraryId);
-  const randomItem = tirage.data;
+  const randomQuery = useRandomLibraryBackdrop(libraryId);
+  const randomItem = randomQuery.data;
   // Le repli n'est demandé QUE si le tirage a répondu sans rien donner.
   //
   // « Derniers ajouts » rapporte jusqu'à cent épisodes avec leurs champs : sur
@@ -38,7 +38,7 @@ export const TVLibraryHero = memo(function TVLibraryHero({
   // dont l'affichage de la grille dépend, pour un repli hypothétique.
   const { data: latest } = useLatestItems(libraryId, {
     collectionType,
-    enabled: tirage.isFetched && !randomItem,
+    enabled: randomQuery.isFetched && !randomItem,
   });
 
   const featured = randomItem ?? latest?.[0];

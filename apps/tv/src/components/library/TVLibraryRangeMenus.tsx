@@ -5,13 +5,13 @@ import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
 import { TVLibraryFilterMenu, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { Colors } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 /**
  * Le menu des années : deux champs numériques (1900-2100), SANS auto-focus —
  * rien ne doit faire monter un clavier sans un geste explicite (règle
  * `FilterMenuTv` webOS). L'énumération des années pour Jellyfin est faite par
- * `libraryCatalogParams.anneesEnumerees`.
+ * `libraryCatalogParams.enumeratedYears`.
  */
 export function TVYearMenu({
   anchor,
@@ -111,7 +111,7 @@ export function TVRatingMenu({
         </View>
         <Focusable
           variant="button"
-          focusRadius={Bouton.moyen.borderRadius}
+          focusRadius={Button.medium.borderRadius}
           hasTVPreferredFocus
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

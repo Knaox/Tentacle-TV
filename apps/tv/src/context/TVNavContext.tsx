@@ -37,7 +37,7 @@ import type { View } from "react-native";
  */
 
 /** Ce qui NE CHANGE JAMAIS : poseurs et références. */
-interface ActionsNav {
+interface NavActions {
   /** Focalise l'item actif du rail (pattern tvOS/Netflix). */
   requestRailFocus: () => void;
   setRailActiveNode: (node: View | null) => void;
@@ -56,14 +56,14 @@ interface ActionsNav {
   lastContentNodeRef: MutableRefObject<View | null>;
 }
 
-const REF_VIDE: MutableRefObject<View | null> = { current: null };
+const EMPTY_REF: MutableRefObject<View | null> = { current: null };
 
-const ActionsContext = createContext<ActionsNav>({
+const ActionsContext = createContext<NavActions>({
   requestRailFocus: () => {},
   setRailActiveNode: () => {},
   setRailFocused: () => {},
   setContentFocusNode: () => {},
-  lastContentNodeRef: REF_VIDE,
+  lastContentNodeRef: EMPTY_REF,
 });
 
 /** Incrémenté à chaque demande de focus rail — le rail réagit via un effet. */
@@ -76,7 +76,7 @@ const SignalContext = createContext(0);
  * comme `destinations` d'un `TVFocusGuideView` pour rediriger GAUCHE vers le
  * rail. (Inutilisé sur Android, dont le moteur de focus est global.)
  */
-const NoeudRailContext = createContext<View | null>(null);
+const RailNodeContext = createContext<View | null>(null);
 
 /**
  * `true` quand le focus est DANS le rail. Sert à désactiver le pont de focus
@@ -84,7 +84,7 @@ const NoeudRailContext = createContext<View | null>(null);
  * les items, recapte tout déplacement et le redirige vers l'item actif — on
  * reste piégé. Le pont ne doit agir QUE depuis le contenu.
  */
-const RailFocuseContext = createContext(false);
+const RailFocusedContext = createContext(false);
 
 /**
  * Nœud du focusable « d'entrée » du contenu (ex. bouton Lecture du héros),
@@ -92,7 +92,7 @@ const RailFocuseContext = createContext(false);
  * comme destination pour SORTIR du rail : sur l'accueil, les focusables du contenu
  * sont sous le rail déployé (occlusion) → un DROITE géométrique ne les atteint pas.
  */
-const NoeudContenuContext = createContext<View | null>(null);
+const ContentNodeContext = createContext<View | null>(null);
 
 export function TVNavProvider({ children }: { children: ReactNode }) {
   const [railFocusSignal, setSignal] = useState(0);
@@ -106,7 +106,7 @@ export function TVNavProvider({ children }: { children: ReactNode }) {
   // Les poseurs d'état de React sont déjà stables ; cet objet doit l'être
   // autant, sans quoi la séparation ne servirait à rien. Aucune dépendance :
   // il est construit une fois pour la vie du fournisseur.
-  const actions = useMemo<ActionsNav>(
+  const actions = useMemo<NavActions>(
     () => ({
       requestRailFocus,
       setRailActiveNode,
@@ -120,13 +120,13 @@ export function TVNavProvider({ children }: { children: ReactNode }) {
   return (
     <ActionsContext.Provider value={actions}>
       <SignalContext.Provider value={railFocusSignal}>
-        <NoeudRailContext.Provider value={railActiveNode}>
-          <RailFocuseContext.Provider value={railFocused}>
-            <NoeudContenuContext.Provider value={contentFocusNode}>
+        <RailNodeContext.Provider value={railActiveNode}>
+          <RailFocusedContext.Provider value={railFocused}>
+            <ContentNodeContext.Provider value={contentFocusNode}>
               {children}
-            </NoeudContenuContext.Provider>
-          </RailFocuseContext.Provider>
-        </NoeudRailContext.Provider>
+            </ContentNodeContext.Provider>
+          </RailFocusedContext.Provider>
+        </RailNodeContext.Provider>
       </SignalContext.Provider>
     </ActionsContext.Provider>
   );
@@ -136,13 +136,13 @@ export function TVNavProvider({ children }: { children: ReactNode }) {
  * Les poseurs et les références — c'est CE hook que doivent appeler les
  * composants nombreux ou coûteux. Il ne re-rend jamais.
  */
-export function useTVNavActions(): ActionsNav {
+export function useTVNavActions(): NavActions {
   return useContext(ActionsContext);
 }
 
 /** Les valeurs qui bougent. S'y abonner, c'est se re-rendre avec elles :
  *  n'appeler que celle dont on dessine vraiment quelque chose. */
 export const useRailFocusSignal = (): number => useContext(SignalContext);
-export const useRailActiveNode = (): View | null => useContext(NoeudRailContext);
-export const useRailFocused = (): boolean => useContext(RailFocuseContext);
-export const useContentFocusNode = (): View | null => useContext(NoeudContenuContext);
+export const useRailActiveNode = (): View | null => useContext(RailNodeContext);
+export const useRailFocused = (): boolean => useContext(RailFocusedContext);
+export const useContentFocusNode = (): View | null => useContext(ContentNodeContext);

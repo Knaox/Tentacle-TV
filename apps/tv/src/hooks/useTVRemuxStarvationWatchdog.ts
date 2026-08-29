@@ -30,7 +30,7 @@ const GUARD_WINDOW_MS = 120000;
  * (>4 en <8 s) ne peut mathématiquement pas attraper un déclencheur espacé de
  * 8 s — chaque déclencheur porte la sienne.
  */
-export function useTVRemuxFamineWatchdog(args: {
+export function useTVRemuxStarvationWatchdog(args: {
   isLocalRemux: boolean;
   hasStarted: boolean;
   pausedStateRef: MutableRefObject<boolean>;

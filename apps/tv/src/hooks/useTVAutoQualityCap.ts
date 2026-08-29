@@ -29,14 +29,14 @@ export function useTVAutoQualityCap(args: {
    *  session — c'est le moment sûr pour re-photographier le cap. */
   startTicks: number;
 }): {
-  actif: boolean;
+  active: boolean;
   key?: QualityKey;
   maxBitrate?: number;
   maxHeight?: number;
   maxWidth?: number;
   /** Choix MANUEL dans le menu (y compris re-choisir « Originale ») : le cap se
    *  désarme pour cet item — l'utilisateur a repris la main, on ne la reprend plus. */
-  desarmer: () => void;
+  disarm: () => void;
 } {
   const { mediaSource, itemId, qualityKey, startTicks } = args;
   const client = useJellyfinClient();
@@ -49,29 +49,29 @@ export function useTVAutoQualityCap(args: {
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
   // seek re-remuxé ou un reload reconstruit le flux de toute façon, c'est le
   // seul moment où changer de palier ne coûte rien de plus.
-  const sessionCle = `${itemId}|${startTicks}`;
-  const evalueRef = useRef<string | undefined>(undefined);
+  const sessionKey = `${itemId}|${startTicks}`;
+  const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);
-  if (sessionCle !== evalueRef.current && mediaSource) {
-    evalueRef.current = sessionCle;
+  if (sessionKey !== evaluatedRef.current && mediaSource) {
+    evaluatedRef.current = sessionKey;
     capRef.current = capForBitrate(mediaSource, cachedBitrate());
     if (capRef.current) {
       plog("cap", `debit mesure ${(cachedBitrate() ?? 0) / 1e6 | 0} Mb/s < source → palier ${capRef.current.key} (${(capRef.current.bitrate ?? 0) / 1e6} Mb/s)`);
     }
   }
-  const cap = sessionCle === evalueRef.current ? capRef.current : null;
+  const cap = sessionKey === evaluatedRef.current ? capRef.current : null;
 
-  const desarmeRef = useRef<string | undefined>(undefined);
-  const desarmer = useCallback(() => { desarmeRef.current = itemId; }, [itemId]);
+  const disarmedRef = useRef<string | undefined>(undefined);
+  const disarm = useCallback(() => { disarmedRef.current = itemId; }, [itemId]);
 
-  const actif = qualityKey === "original" && cap != null && desarmeRef.current !== itemId;
-  if (!actif || !cap) return { actif: false, desarmer };
+  const active = qualityKey === "original" && cap != null && disarmedRef.current !== itemId;
+  if (!active || !cap) return { active: false, disarm };
   return {
-    actif: true,
+    active: true,
     key: cap.key,
     maxBitrate: cap.bitrate ?? undefined,
     maxHeight: cap.height ?? undefined,
     maxWidth: cap.width ?? undefined,
-    desarmer,
+    disarm,
   };
 }

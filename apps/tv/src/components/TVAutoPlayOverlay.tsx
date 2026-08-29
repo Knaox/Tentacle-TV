@@ -41,8 +41,8 @@ export function TVAutoPlayOverlay({
   onPlayNow, onDismiss,
 }: TVAutoPlayOverlayProps) {
   const { t } = useTranslation("player");
-  const decompte = countdown !== null;
-  const progress = decompte ? ((COUNTDOWN_TOTAL - countdown) / COUNTDOWN_TOTAL) * 100 : 0;
+  const hasCountdown = countdown !== null;
+  const progress = hasCountdown ? ((COUNTDOWN_TOTAL - countdown) / COUNTDOWN_TOTAL) * 100 : 0;
 
   useTVRemote({ onBack: onDismiss });
 
@@ -69,7 +69,7 @@ export function TVAutoPlayOverlay({
       }, containerStyle]}
     >
       {/* Barre de progression — gradient brand (web). Absente sans décompte. */}
-      {decompte && (
+      {hasCountdown && (
         <View style={{ height: 3, backgroundColor: "rgba(255, 255, 255, 0.1)" }}>
           <LinearGradient
             colors={[Colors.accentPurpleLight, BRAND.violet]}
@@ -101,7 +101,7 @@ export function TVAutoPlayOverlay({
               {t("upNext")}
             </Text>
           </View>
-          {decompte && (
+          {hasCountdown && (
             <View style={{ backgroundColor: "rgba(0,0,0,0.55)", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
               <Text style={{ color: "#fff", fontSize: 11, fontFamily: Fonts.semibold, fontVariant: ["tabular-nums"] }}>
                 {countdown}{t("secondsShort")}

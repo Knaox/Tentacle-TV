@@ -19,10 +19,10 @@ import type { MenuAnchor } from "../components/library/TVLibraryFilterMenu";
 import { TVSortMenu, TVGenreMenu } from "../components/library/TVLibrarySortGenreMenus";
 import { TVYearMenu, TVRatingMenu } from "../components/library/TVLibraryRangeMenus";
 import { TVPlatformMenu } from "../components/library/TVLibraryPlatformMenu";
-import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
+import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
-import { filtrePlateformeActif } from "../hooks/libraryCatalogParams";
+import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Spacing } from "../theme/colors";
@@ -41,7 +41,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const { libraryId, libraryName } = route.params;
   const { i18n } = useTranslation("common");
   const displayName = possessiveLibraryName(libraryName, i18n.language);
-  const setFocusedItem = usePoseurAmbiant();
+  const setFocusedItem = useAmbientSetter();
 
   const lf = useLibraryFilters(libraryId);
   const [openMenu, setOpenMenu] = useState<{ kind: FilterMenuKind; anchor: MenuAnchor } | null>(null);
@@ -50,8 +50,8 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const { data: libraries } = useLibraries();
   const collectionType = libraries?.find((l) => l.Id === libraryId)?.CollectionType;
 
-  const platformActive = filtrePlateformeActif(lf.filters);
-  // Les paramètres ne sont PAS écrits ici : ils viennent de `catalogueParams`,
+  const platformActive = hasPlatformFilter(lf.filters);
+  // Les paramètres ne sont PAS écrits ici : ils viennent de `catalogParams`,
   // la même fabrication que le préchargement du rail. Recopiés des deux côtés,
   // ils divergeaient — et le préchargement visait une clé de cache que cet
   // écran ne demandait jamais (cf. `libraryCatalogParams`).
@@ -139,9 +139,9 @@ function LibraryScreenInner({ route, navigation }: Props) {
             entryRef={contentEntry}
             emptyComponent={
               <TVLibraryEmpty
-                filtree={lf.hasActiveFilters}
-                onReinitialiser={lf.resetFilters}
-                onParcourir={() => navigation.navigate("Home")}
+                filtered={lf.hasActiveFilters}
+                onReset={lf.resetFilters}
+                onBrowse={() => navigation.navigate("Home")}
                 entryRef={contentEntry}
               />
             }

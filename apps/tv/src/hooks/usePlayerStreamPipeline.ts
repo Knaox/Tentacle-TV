@@ -14,7 +14,7 @@ import { useTVStreamUrl } from "./useTVStreamUrl";
 import { useTVRemuxInfo } from "./useTVRemuxInfo";
 import { useTVRemuxLogPump } from "./useTVRemuxLogPump";
 import { useTVRemuxStallRecovery } from "./useTVRemuxStallRecovery";
-import { useTVRemuxFamineWatchdog } from "./useTVRemuxFamineWatchdog";
+import { useTVRemuxStarvationWatchdog } from "./useTVRemuxStarvationWatchdog";
 import { useTVRemuxPause } from "./useTVRemuxPause";
 import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
@@ -54,7 +54,7 @@ export function usePlayerStreamPipeline(args: {
 
   const mediaSource = item?.MediaSources?.[0];
 
-  const qualityBrute = useTVPlaybackQuality(mediaSource);
+  const rawQuality = useTVPlaybackQuality(mediaSource);
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
   const mediaSourceId = mediaSource?.Id ?? itemId;
@@ -71,7 +71,7 @@ export function usePlayerStreamPipeline(args: {
   const reload = useTVReloadState({
     itemId, defaultAudio, isLoading,
     positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError,
-    resetPrefsAppliedRef, qualityReset: qualityBrute.reset, deadSessionRef,
+    resetPrefsAppliedRef, qualityReset: rawQuality.reset, deadSessionRef,
   });
   const {
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
@@ -83,28 +83,28 @@ export function usePlayerStreamPipeline(args: {
   // `startTicks` : le cap se re-photographie à chaque reconstruction de session
   // (seek re-remuxé, reload) — une lecture partie en Originale-remux parce que
   // la mesure n'était pas prête bascule au premier seek au lieu de ramer à vie.
-  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: qualityBrute.qualityKey, startTicks });
-  const transcodeQualite = qualityBrute.isTranscodingQuality || cap.actif;
-  const maxBitrateEffectif = qualityBrute.maxBitrate ?? cap.maxBitrate;
-  const maxHeightEffectif = qualityBrute.maxHeight ?? cap.maxHeight;
+  const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: rawQuality.qualityKey, startTicks });
+  const transcodingQuality = rawQuality.isTranscodingQuality || cap.active;
+  const effectiveMaxBitrate = rawQuality.maxBitrate ?? cap.maxBitrate;
+  const effectiveMaxHeight = rawQuality.maxHeight ?? cap.maxHeight;
   // Sélection EXPOSÉE à l'UI : la clé affichée est le palier réellement servi
   // (cap compris — « Originale » cochée pendant un cap mentait au sélecteur),
   // et tout choix du menu désarme d'abord le cap : re-choisir « Originale »
   // redevient possible et définitif pour cet item.
-  const setQualityKeyManuel = useCallback((k: QualityKey) => {
-    cap.desarmer();
-    qualityBrute.setQualityKey(k);
+  const setQualityKeyManual = useCallback((k: QualityKey) => {
+    cap.disarm();
+    rawQuality.setQualityKey(k);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cap.desarmer, qualityBrute.setQualityKey]);
+  }, [cap.disarm, rawQuality.setQualityKey]);
   const quality = useMemo(() => ({
-    ...qualityBrute,
-    qualityKey: cap.actif && cap.key ? cap.key : qualityBrute.qualityKey,
-    setQualityKey: setQualityKeyManuel,
-  }), [qualityBrute, cap.actif, cap.key, setQualityKeyManuel]);
+    ...rawQuality,
+    qualityKey: cap.active && cap.key ? cap.key : rawQuality.qualityKey,
+    setQualityKey: setQualityKeyManual,
+  }), [rawQuality, cap.active, cap.key, setQualityKeyManual]);
 
   // Routage lecteur (ExoPlayer surface vs MPV) + dérivés de mode de lecture.
   const { useExoPlayer, playerRef, requestedDirectPlay, isDirectStream } = useTVPlayerRouting({
-    forceTranscode, isTranscodingQuality: transcodeQualite,
+    forceTranscode, isTranscodingQuality: transcodingQuality,
     exoRef: refs.exoRef, mpvRef: refs.mpvRef,
   });
 
@@ -129,8 +129,8 @@ export function usePlayerStreamPipeline(args: {
   const { streamUrl, playSessionId, isDirectPlay, isLocalRemux, failed } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
-    forceTranscode, isTranscodingQuality: transcodeQualite,
-    maxBitrate: maxBitrateEffectif, maxHeight: maxHeightEffectif,
+    forceTranscode, isTranscodingQuality: transcodingQuality,
+    maxBitrate: effectiveMaxBitrate, maxHeight: effectiveMaxHeight,
     isDirectPlay: requestedDirectPlay,
     reloadNonce,
   });
@@ -164,7 +164,7 @@ export function usePlayerStreamPipeline(args: {
 
   // Filet ANTI-FAMINE : un stall SANS -11866 (famine post-reprise, race de production)
   // n'avait aucune récupération (spinner infini) — même chemin de remount que le -11866.
-  useTVRemuxFamineWatchdog({
+  useTVRemuxStarvationWatchdog({
     isLocalRemux, hasStarted,
     pausedStateRef, endedRef, deadSessionRef, softReloadRef, reloadHoldRef,
     lastProgressTime, positionRef, infoRef: remuxInfoRef,
@@ -225,7 +225,7 @@ export function usePlayerStreamPipeline(args: {
   });
 
   return {
-    quality, capAutoActif: cap.actif, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
+    quality, autoCapActive: cap.active, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,

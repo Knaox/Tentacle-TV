@@ -4,7 +4,7 @@ import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-clien
 import type { SegmentAction, SegmentSettings } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 /**
  * Ce que le lecteur a le droit de faire tout seul, à la télécommande.
@@ -20,17 +20,17 @@ import { Bouton } from "../../theme/boutons";
  * à la télécommande est une punition, et le réglage suit le compte.
  */
 
-interface Choix {
-  valeur: string;
-  libelle: string;
+interface Choice {
+  value: string;
+  label: string;
 }
 
-function BlocReglage({ titre, aide, valeur, choix, onChoisir }: {
-  titre: string;
-  aide: string;
-  valeur: string;
-  choix: Choix[];
-  onChoisir: (valeur: string) => void;
+function SettingBlock({ title, hint, value, choices, onChoose }: {
+  title: string;
+  hint: string;
+  value: string;
+  choices: Choice[];
+  onChoose: (value: string) => void;
 }) {
   return (
     <View style={{ marginBottom: 36 }}>
@@ -38,42 +38,42 @@ function BlocReglage({ titre, aide, valeur, choix, onChoisir }: {
         color: Colors.textTertiary, fontSize: 13, fontWeight: "600",
         letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14,
       }}>
-        {titre}
+        {title}
       </Text>
       <Text style={{
         color: Colors.textTertiary, fontSize: 15, lineHeight: 22,
         maxWidth: 900, marginBottom: 14,
       }}>
-        {aide}
+        {hint}
       </Text>
       <View style={{ flexDirection: "row", gap: 14 }}>
-        {choix.map((c) => {
-          const choisi = valeur === c.valeur;
+        {choices.map((c) => {
+          const selected = value === c.value;
           return (
             <Focusable
-              key={c.valeur}
+              key={c.value}
               variant="button"
-              focusRadius={Bouton.moyen.borderRadius}
+              focusRadius={Button.medium.borderRadius}
               scaleOverride={1.04}
-              onPress={() => { onChoisir(c.valeur); }}
-              accessibilityLabel={c.libelle}
+              onPress={() => { onChoose(c.value); }}
+              accessibilityLabel={c.label}
             >
               <View style={{
                 minWidth: 160,
                 alignItems: "center",
-                ...Bouton.moyen,
+                ...Button.medium,
                 borderWidth: 1,
-                borderColor: choisi ? brandAlpha(0.6) : Colors.glassBorder,
-                backgroundColor: choisi ? brandAlpha(0.18) : "transparent",
+                borderColor: selected ? brandAlpha(0.6) : Colors.glassBorder,
+                backgroundColor: selected ? brandAlpha(0.18) : "transparent",
                 paddingHorizontal: 18,
                 paddingVertical: 12,
               }}>
                 <Text style={{
-                  color: choisi ? Colors.accentPurpleLight : Colors.textPrimary,
+                  color: selected ? Colors.accentPurpleLight : Colors.textPrimary,
                   fontSize: 17,
                   fontWeight: "600",
                 }}>
-                  {c.libelle}
+                  {c.label}
                 </Text>
               </View>
             </Focusable>
@@ -84,68 +84,68 @@ function BlocReglage({ titre, aide, valeur, choix, onChoisir }: {
   );
 }
 
-function estAction(valeur: string): valeur is SegmentAction {
-  return valeur === "button" || valeur === "auto" || valeur === "off";
+function isAction(value: string): value is SegmentAction {
+  return value === "button" || value === "auto" || value === "off";
 }
 
 export function TVPlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
-  const reglages = usePlaybackSettings();
-  const suivant = reglages.next;
+  const settings = usePlaybackSettings();
+  const next = settings.next;
 
-  const actions: Choix[] = [
-    { valeur: "button", libelle: t("segmentActionButton") },
-    { valeur: "auto", libelle: t("segmentActionAuto") },
-    { valeur: "off", libelle: t("segmentActionOff") },
+  const actions: Choice[] = [
+    { value: "button", label: t("segmentActionButton") },
+    { value: "auto", label: t("segmentActionAuto") },
+    { value: "off", label: t("segmentActionOff") },
   ];
-  const ouiNon: Choix[] = [
-    { valeur: "oui", libelle: t("reglageActive") },
-    { valeur: "non", libelle: t("reglageDesactive") },
+  const yesNo: Choice[] = [
+    { value: "oui", label: t("reglageActive") },
+    { value: "non", label: t("reglageDesactive") },
   ];
 
-  const passages: {
-    cle: string; titre: string; aide: string; etat: SegmentSettings;
-    appliquer: (patch: Partial<SegmentSettings>) => void;
+  const segments: {
+    key: string; title: string; hint: string; state: SegmentSettings;
+    apply: (patch: Partial<SegmentSettings>) => void;
   }[] = [
-    { cle: "intro", titre: t("segmentIntroTitle"), aide: t("segmentIntroHint"), etat: reglages.intro,
-      appliquer: (intro) => { setPlaybackSettings({ intro }); } },
-    { cle: "recap", titre: t("segmentRecapTitle"), aide: t("segmentRecapHint"), etat: reglages.recap,
-      appliquer: (recap) => { setPlaybackSettings({ recap }); } },
-    { cle: "outro", titre: t("segmentOutroTitle"), aide: t("segmentOutroHint"), etat: reglages.outro,
-      appliquer: (outro) => { setPlaybackSettings({ outro }); } },
-    { cle: "preview", titre: t("segmentPreviewTitle"), aide: t("segmentPreviewHint"), etat: reglages.preview,
-      appliquer: (preview) => { setPlaybackSettings({ preview }); } },
+    { key: "intro", title: t("segmentIntroTitle"), hint: t("segmentIntroHint"), state: settings.intro,
+      apply: (intro) => { setPlaybackSettings({ intro }); } },
+    { key: "recap", title: t("segmentRecapTitle"), hint: t("segmentRecapHint"), state: settings.recap,
+      apply: (recap) => { setPlaybackSettings({ recap }); } },
+    { key: "outro", title: t("segmentOutroTitle"), hint: t("segmentOutroHint"), state: settings.outro,
+      apply: (outro) => { setPlaybackSettings({ outro }); } },
+    { key: "preview", title: t("segmentPreviewTitle"), hint: t("segmentPreviewHint"), state: settings.preview,
+      apply: (preview) => { setPlaybackSettings({ preview }); } },
   ];
 
-  const bascules: { cle: string; titre: string; aide: string; actif: boolean; poser: (v: boolean) => void }[] = [
-    { cle: "carte", titre: t("upNextCardTitle"), aide: t("upNextCardHint"), actif: suivant.nextCard,
-      poser: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
-    { cle: "decompte", titre: t("upNextCountdownTitle"), aide: t("upNextCountdownHint"), actif: suivant.nextCountdown,
-      poser: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
-    { cle: "auto", titre: t("upNextAutoPlayTitle"), aide: t("upNextAutoPlayHint"), actif: suivant.nextAutoPlay,
-      poser: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },
+  const toggles: { key: string; title: string; hint: string; active: boolean; set: (v: boolean) => void }[] = [
+    { key: "carte", title: t("upNextCardTitle"), hint: t("upNextCardHint"), active: next.nextCard,
+      set: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
+    { key: "decompte", title: t("upNextCountdownTitle"), hint: t("upNextCountdownHint"), active: next.nextCountdown,
+      set: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
+    { key: "auto", title: t("upNextAutoPlayTitle"), hint: t("upNextAutoPlayHint"), active: next.nextAutoPlay,
+      set: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },
   ];
 
   return (
     <>
-      {passages.map((passage) => (
-        <BlocReglage
-          key={passage.cle}
-          titre={passage.titre}
-          aide={passage.aide}
-          valeur={passage.etat.action}
-          choix={actions}
-          onChoisir={(valeur) => { if (estAction(valeur)) passage.appliquer({ action: valeur }); }}
+      {segments.map((segment) => (
+        <SettingBlock
+          key={segment.key}
+          title={segment.title}
+          hint={segment.hint}
+          value={segment.state.action}
+          choices={actions}
+          onChoose={(value) => { if (isAction(value)) segment.apply({ action: value }); }}
         />
       ))}
-      {bascules.map((bascule) => (
-        <BlocReglage
-          key={bascule.cle}
-          titre={bascule.titre}
-          aide={bascule.aide}
-          valeur={bascule.actif ? "oui" : "non"}
-          choix={ouiNon}
-          onChoisir={(valeur) => { bascule.poser(valeur === "oui"); }}
+      {toggles.map((toggle) => (
+        <SettingBlock
+          key={toggle.key}
+          title={toggle.title}
+          hint={toggle.hint}
+          value={toggle.active ? "oui" : "non"}
+          choices={yesNo}
+          onChoose={(value) => { toggle.set(value === "oui"); }}
         />
       ))}
     </>

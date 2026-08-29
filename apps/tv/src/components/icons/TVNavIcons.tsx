@@ -9,8 +9,8 @@ import { Colors } from "../../theme/colors";
  * arrondies, grille de 24.
  */
 
-const COULEUR = Colors.accentPurpleLight;
-const TAILLE = 24;
+const COLOR = Colors.accentPurpleLight;
+const SIZE = 24;
 
 interface IconProps {
   size?: number;
@@ -18,7 +18,7 @@ interface IconProps {
 }
 
 /** L'œil de « Tout afficher » : rend au rail les entrées qu'on y avait cachées. */
-export function EyeIcon({ size = TAILLE, color = COULEUR }: IconProps) {
+export function EyeIcon({ size = SIZE, color = COLOR }: IconProps) {
   return (
     <Svg
       width={size}
@@ -37,7 +37,7 @@ export function EyeIcon({ size = TAILLE, color = COULEUR }: IconProps) {
 }
 
 /** Le cœur des Favoris, au trait du rail (2, extrémités rondes). */
-export function HeartNavIcon({ size = TAILLE, color = COULEUR }: IconProps) {
+export function HeartNavIcon({ size = SIZE, color = COLOR }: IconProps) {
   return (
     <Svg
       width={size}
