@@ -61,7 +61,7 @@ const COLOR_VARS = flatten(CSS_VAR_NAMES.color);
  * Tokens couleur DÉLIBÉRÉMENT non redéclarés en clair. Toute autre omission
  * est une erreur : elle laisserait une valeur sombre fuiter en thème clair.
  */
-const CONSTANTS_ENTRE_SCHEMAS = [
+const CONSTANTS_ACROSS_SCHEMES = [
   // Le texte sur affiche reste blanc + voile sombre dans les deux schémas :
   // la luminosité d'un poster ne dépend pas du thème choisi.
   "--on-media-primary",
@@ -87,7 +87,7 @@ describe("tokens.css ↔ CSS_VAR_NAMES", () => {
 
   it("chaque token couleur est redéclaré en clair, sauf les constantes documentées", () => {
     const manquantes = COLOR_VARS.filter(
-      (name) => !LIGHT.has(name) && !CONSTANTS_ENTRE_SCHEMAS.includes(name),
+      (name) => !LIGHT.has(name) && !CONSTANTS_ACROSS_SCHEMES.includes(name),
     );
     expect(manquantes).toEqual([]);
   });
@@ -95,7 +95,7 @@ describe("tokens.css ↔ CSS_VAR_NAMES", () => {
   it("les constantes documentées ne sont effectivement PAS redéclarées en clair", () => {
     // Si l'une d'elles apparaît un jour dans le bloc clair, soit la décision a
     // changé (mettre à jour la liste), soit c'est un ajout involontaire.
-    const redeclarees = CONSTANTS_ENTRE_SCHEMAS.filter((name) => LIGHT.has(name));
+    const redeclarees = CONSTANTS_ACROSS_SCHEMES.filter((name) => LIGHT.has(name));
     expect(redeclarees).toEqual([]);
   });
 });

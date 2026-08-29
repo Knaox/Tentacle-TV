@@ -24,8 +24,8 @@ function box(left: number, top: number, width: number, height: number): Box {
 
 const RETOUR = box(72, 40, 95, 46);
 const VOIR_PLUS = box(304, 464, 70, 24);
-const LECTURE = box(304, 501, 181, 56);
-const MA_LISTE = box(715, 501, 56, 56);
+const PLAY = box(304, 501, 181, 56);
+const MY_LIST = box(715, 501, 56, 56);
 const EXTRA_1 = box(56, 677, 208, 117);
 const EXTRA_4 = box(728, 677, 208, 117);
 const SAISON_1 = box(32, 947, 106, 42);
@@ -54,8 +54,8 @@ describe("la fiche, bloc par bloc", () => {
     // la zone élargie de la fiche redirigera ensuite vers « Lecture ».
     const candidates = named({
       voirPlus: VOIR_PLUS,
-      lecture: LECTURE,
-      maListe: MA_LISTE,
+      lecture: PLAY,
+      maListe: MY_LIST,
       extra1: EXTRA_1,
       saison1: SAISON_1,
       episode1: EPISODE_1,
@@ -70,7 +70,7 @@ describe("la fiche, bloc par bloc", () => {
       saison1: SAISON_1,
       episode1: EPISODE_1,
     });
-    expect(winner(MA_LISTE, candidates, "bas")).toBe("extra4");
+    expect(winner(MY_LIST, candidates, "bas")).toBe("extra4");
   });
 
   it("sans extras, « bas » depuis une pastille ronde vise un onglet, jamais la ligne d'épisode", () => {
@@ -83,7 +83,7 @@ describe("la fiche, bloc par bloc", () => {
       saison3: SAISON_3,
       episode1: EPISODE_1,
     });
-    expect(winner(MA_LISTE, candidates, "bas")).toBe("saison3");
+    expect(winner(MY_LIST, candidates, "bas")).toBe("saison3");
   });
 
   it("« bas » depuis une tuile d'extras vise un onglet, jamais la ligne d'épisode", () => {
@@ -99,7 +99,7 @@ describe("la fiche, bloc par bloc", () => {
   it("la remontée est symétrique : « haut » depuis un onglet vise les extras", () => {
     const candidates = named({
       voirPlus: VOIR_PLUS,
-      lecture: LECTURE,
+      lecture: PLAY,
       extra1: EXTRA_1,
       extra4: EXTRA_4,
     });
@@ -109,7 +109,7 @@ describe("la fiche, bloc par bloc", () => {
   it("sans bande dans la direction, le mouvement ne rend rien", () => {
     // Tout est au-dessus : la restriction rend vide, le repli géométrique
     // aussi — c'est le cas « bord de page », traité par le défilement.
-    const candidates = named({ retour: RETOUR, lecture: LECTURE });
+    const candidates = named({ retour: RETOUR, lecture: PLAY });
     expect(winner(EPISODE_1, candidates, "bas")).toBeUndefined();
   });
 });

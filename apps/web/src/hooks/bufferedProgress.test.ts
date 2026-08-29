@@ -5,7 +5,7 @@ import { bufferedFraction, RANGE_TOLERANCE_S, type BufferRange } from "./buffere
  * Cette valeur ne pilote rien : elle ne fait que dessiner la couche de
  * préchargement de la barre. Mais c'est le seul endroit où l'utilisateur voit sa
  * réserve fondre avant que l'image ne se fige — et sur le téléviseur, elle a
- * affiché zéro pendant des mois sans que personne ne s'en aperçoive. Une barre
+ * affiché zéro pendant des mois withoutOffset que personne ne s'en aperçoive. Une barre
  * qui ment est pire qu'une barre absente : on la croit.
  */
 
@@ -53,14 +53,14 @@ describe("conteneur dont les horodatages ne partent pas de zéro", () => {
   });
 
   it("ne devance plus la lecture du décalage entier", () => {
-    const avec = bufferedFraction([range(OFFSET, OFFSET + 720)], OFFSET + 300, DURATION, OFFSET)!;
-    const sans = bufferedFraction([range(OFFSET, OFFSET + 720)], OFFSET + 300, DURATION, 0)!;
-    expect(sans - avec).toBeCloseTo(OFFSET / DURATION, 5);
+    const withOffset = bufferedFraction([range(OFFSET, OFFSET + 720)], OFFSET + 300, DURATION, OFFSET)!;
+    const withoutOffset = bufferedFraction([range(OFFSET, OFFSET + 720)], OFFSET + 300, DURATION, 0)!;
+    expect(withoutOffset - withOffset).toBeCloseTo(OFFSET / DURATION, 5);
   });
 });
 
 describe("ce dont on ne peut rien dire", () => {
-  it("ne rend rien sans durée exploitable", () => {
+  it("ne rend rien withoutOffset durée exploitable", () => {
     expect(bufferedFraction([range(0, 720)], 300, 0, 0)).toBeNull();
     expect(bufferedFraction([range(0, 720)], 300, Infinity, 0)).toBeNull();
   });

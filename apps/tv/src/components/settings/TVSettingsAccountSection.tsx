@@ -93,9 +93,9 @@ function Profile() {
 
   let name: string | null = null;
   try {
-    const brut = storage.getItem("tentacle_user");
-    if (brut) {
-      const parsed = JSON.parse(brut) as { Name?: unknown };
+    const raw = storage.getItem("tentacle_user");
+    if (raw) {
+      const parsed = JSON.parse(raw) as { Name?: unknown };
       if (typeof parsed.Name === "string" && parsed.Name.length > 0) name = parsed.Name;
     }
   } catch { /* nom absent : l'initiale de repli suffit */ }
