@@ -13,6 +13,7 @@
  */
 
 import { findSegments, type ResolvedSegment } from "./segmentTypes";
+import { WINDOW_TAIL_MS } from "./segmentWindow";
 import {
   beforeEndPositionMs,
   resolveBeforeEnd,
@@ -51,7 +52,16 @@ export function nextCardTriggerReached(
     const main = outros[0];
     const final = outros.length > 1 ? outros[outros.length - 1] : null;
     if (final && positionMs >= final.startMs) return true;
-    if (main.hasContentAfter) return positionMs >= main.startMs && positionMs < main.endMs;
+    // La fenêtre se ferme au MÊME endroit que celle du bouton de saut
+    // (`WINDOW_TAIL_MS`), et c'est tout l'enjeu : le bouton cède sa dernière
+    // seconde, et la carte s'y engouffrait. Pire, le saut « aller à la scène »
+    // vise `endMs` — le bord même de la fenêtre — et tout atterrissage
+    // imprécis (image-clé mpv, hls.js, décalage de flux, échantillonnage à
+    // 1 Hz) reposait la position DEDANS, bouton effacé : la carte paraissait
+    // par-dessus la scène qu'on venait justement de choisir de regarder.
+    if (main.hasContentAfter) {
+      return positionMs >= main.startMs && positionMs < main.endMs - WINDOW_TAIL_MS;
+    }
     return positionMs >= main.startMs;
   }
 

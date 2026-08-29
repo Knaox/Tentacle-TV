@@ -389,3 +389,50 @@ describe("la pilule « épisode suivant » — le trou de la scène post-génér
     ).toEqual({ kind: "none" });
   });
 });
+
+describe("la scène post-générique n'est jamais couverte", () => {
+  it("le bouton refusé ne passe pas la main à la fiche dans sa dernière seconde", () => {
+    // Le bouton cède sa fenêtre une seconde avant la fin du segment ; sans
+    // garde symétrique, la fiche s'y posait — juste avant la scène.
+    const overlay = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_SCENE],
+        positionMs: 1_319_500,
+        dismissed: { segments: { Outro: true }, nextCard: false },
+      }),
+    );
+    expect(overlay).toEqual({ kind: "none" });
+  });
+
+  it("la scène revendiquée fait taire la fiche, pas la pilule", () => {
+    const claimed = { segments: [OUTRO_SCENE], postCreditsClaimed: true };
+    // Image nue : rien ne se pose sur la scène.
+    expect(arbitrateOverlay(makeInput({ ...claimed, positionMs: 1_330_000 }))).toEqual({
+      kind: "none",
+    });
+    // Habillage affiché : l'accès à la suite reste offert, comme sans scène.
+    expect(
+      arbitrateOverlay(makeInput({ ...claimed, positionMs: 1_330_000, controlsVisible: true })),
+    ).toEqual({ kind: "nextButton" });
+  });
+
+  it("la revendication n'atteint pas l'écran de fin — il n'y a plus rien à regarder", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_SCENE],
+        positionMs: RUNTIME_MS,
+        playbackEnded: true,
+        postCreditsClaimed: true,
+      }),
+    );
+    expect(overlay).toMatchObject({ kind: "nextCard", final: true });
+  });
+
+  it("un SECOND générique bat la revendication : la scène est passée", () => {
+    const segments = [OUTRO_SCENE, seg("Outro", 1_400_000, RUNTIME_MS, { endsAtMediaEnd: true, hasContentAfter: false })];
+    const overlay = arbitrateOverlay(
+      makeInput({ segments, positionMs: 1_405_000, postCreditsClaimed: false }),
+    );
+    expect(overlay).toMatchObject({ kind: "nextCard", final: false });
+  });
+});

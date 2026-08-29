@@ -51,6 +51,20 @@ describe("nextCardTriggerReached — la fiche", () => {
     expect(nextCardTriggerReached(1_380_000, RUNTIME, segments, next())).toBe(false);
   });
 
+  it("la fenêtre se ferme AVANT la cible du saut — l'atterrissage n'est jamais exact", () => {
+    const segments = [outro(1_200_000, 1_380_000, true)];
+    // Le bouton cède sa dernière seconde (`WINDOW_TAIL_MS`) ; la fiche ne doit
+    // pas s'y engouffrer, sans quoi elle paraît juste avant la scène — et y
+    // reste dès que le seek retombe derrière sa cible (image-clé mpv, hls.js,
+    // décalage de flux, position échantillonnée à 1 Hz).
+    expect(nextCardTriggerReached(1_379_000, RUNTIME, segments, next())).toBe(false);
+    expect(nextCardTriggerReached(1_379_500, RUNTIME, segments, next())).toBe(false);
+    expect(nextCardTriggerReached(1_380_000, RUNTIME, segments, next())).toBe(false);
+    expect(nextCardTriggerReached(1_382_000, RUNTIME, segments, next())).toBe(false);
+    // Elle reste ouverte partout ailleurs dans le générique.
+    expect(nextCardTriggerReached(1_378_999, RUNTIME, segments, next())).toBe(true);
+  });
+
   it("un SECOND générique après la scène rouvre la fiche — la donnée la plus sûre", () => {
     const segments = [outro(1_200_000, 1_380_000, true), outro(1_410_000, RUNTIME)];
     expect(nextCardTriggerReached(1_390_000, RUNTIME, segments, next())).toBe(false);
