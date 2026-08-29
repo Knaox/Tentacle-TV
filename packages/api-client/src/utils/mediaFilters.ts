@@ -66,6 +66,92 @@ function episodeOrder(episode: MediaItem): number {
 }
 
 /**
+ * L'ANCRE de chaque série : l'épisode joué le plus récemment.
+ *
+ * `engagedEpisodes` arrive trié par `DatePlayed` décroissant, donc la première
+ * occurrence d'un `SeriesId` EST sa dernière lecture. C'est la seule référence
+ * qui vaille pour « le prochain épisode » : ni le premier trou, ni ce que le
+ * serveur croit savoir.
+ */
+export function buildWatchAnchors(engagedEpisodes: MediaItem[]): Map<string, MediaItem> {
+  const anchors = new Map<string, MediaItem>();
+  for (const ep of engagedEpisodes) {
+    if (!ep.SeriesId || anchors.has(ep.SeriesId)) continue;
+    anchors.set(ep.SeriesId, ep);
+  }
+  return anchors;
+}
+
+/** Une proposition PÉRIMÉE : elle se situe derrière la dernière lecture. */
+export interface StaleSuggestion {
+  seriesId: string;
+  /** L'épisode proposé à tort — celui qu'il faut remplacer. */
+  suggested: MediaItem;
+  /** La dernière lecture, point de départ de la recherche du successeur. */
+  anchor: MediaItem;
+}
+
+/**
+ * Les propositions que `/Shows/NextUp` place DERRIÈRE la dernière lecture.
+ *
+ * Jellyfin le fait : sur une série dont on a marqué quelques épisodes épars, il
+ * repropose le tout premier. Mesuré sur une série de 1 434 épisodes dont dix de
+ * la saison 2 étaient marqués vus — il rendait S01E01. La règle du produit dit
+ * le successeur de la dernière lecture ; il faut donc le recalculer.
+ *
+ * Le vivier « épisodes non vus » ne peut pas y répondre : il est trié
+ * GLOBALEMENT par saison puis numéro, toutes séries mêlées, et borné — au-delà
+ * de la saison 1, aucun successeur ne s'y trouve jamais. Il faut le demander au
+ * serveur, série par série, d'où le plafond.
+ */
+export function findStaleSuggestions(
+  items: MediaItem[],
+  anchors: Map<string, MediaItem>,
+  limit = 4,
+): StaleSuggestion[] {
+  const out: StaleSuggestion[] = [];
+  for (const item of items) {
+    if (item.Type !== "Episode" || !item.SeriesId) continue;
+    const anchor = anchors.get(item.SeriesId);
+    if (!anchor) continue;
+    if (episodeOrder(item) > episodeOrder(anchor)) continue;
+    out.push({ seriesId: item.SeriesId, suggested: item, anchor });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
+ * Remplace les propositions périmées par les successeurs résolus.
+ *
+ * Une proposition périmée dont le successeur n'est pas ENCORE résolu est
+ * retirée, pas conservée : montrer un épisode qu'on sait faux, même une
+ * seconde, est pire qu'une rangée à un élément près. Un successeur résolu à
+ * `null` — il n'y a rien après — retire la série de la rangée.
+ */
+export function realignNextUp(
+  items: MediaItem[],
+  anchors: Map<string, MediaItem>,
+  successors: Map<string, MediaItem | null>,
+): MediaItem[] {
+  const out: MediaItem[] = [];
+  for (const item of items) {
+    if (item.Type !== "Episode" || !item.SeriesId) {
+      out.push(item);
+      continue;
+    }
+    const anchor = anchors.get(item.SeriesId);
+    if (!anchor || episodeOrder(item) > episodeOrder(anchor)) {
+      out.push(item);
+      continue;
+    }
+    const resolved = successors.get(item.SeriesId);
+    if (resolved) out.push(resolved);
+  }
+  return out;
+}
+
+/**
  * Keep only the most recently played episode per series in the Resume feed,
  * and exclude items the user has marked as fully watched.
  *
