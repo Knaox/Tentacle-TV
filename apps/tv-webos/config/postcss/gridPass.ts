@@ -80,7 +80,7 @@ function convertColumns(
   context: CompatContext,
 ): void {
   const match = /^repeat\(\s*(\d+)\s*,/.exec(value.trim());
-  const parent = declaration.parent as { selector?: string; after?(noeud: unknown): void } | undefined;
+  const parent = declaration.parent as { selector?: string; after?(node: unknown): void } | undefined;
 
   if (!match || !parent?.selector) {
     // Forme non reconnue : la retirer quand même, sinon la règle entière est

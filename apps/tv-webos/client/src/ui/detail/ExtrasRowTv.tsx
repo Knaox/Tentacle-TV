@@ -18,15 +18,15 @@ import { useMarker } from "../marker";
  * enveloppe ne re-rende.
  */
 export function ExtrasRow(props: ComponentProps<typeof WebRow>) {
-  const cadre = useMarker<HTMLDivElement>((racine) => {
-    const scroller = racine.querySelector<HTMLElement>('[role="group"][tabindex]');
+  const frame = useMarker<HTMLDivElement>((root) => {
+    const scroller = root.querySelector<HTMLElement>('[role="group"][tabindex]');
     if (!scroller || scroller.hasAttribute("data-tv-piste")) return;
     scroller.setAttribute("data-tv-piste", "");
     scroller.setAttribute("tabindex", "-1");
   });
 
   return (
-    <div ref={cadre}>
+    <div ref={frame}>
       <WebRow {...props} />
     </div>
   );

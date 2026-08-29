@@ -111,8 +111,8 @@ function checkNature(candidate: Candidate): Violation[] {
 
 function checkSafeZone(candidate: Candidate): Violation[] {
   const { box } = candidate;
-  const margeX = window.innerWidth * SAFE_MARGIN_X;
-  const margeY = window.innerHeight * SAFE_MARGIN_Y;
+  const marginX = window.innerWidth * SAFE_MARGIN_X;
+  const marginY = window.innerHeight * SAFE_MARGIN_Y;
 
   // La zone sûre ne se juge que sur ce qui est ENTIÈREMENT à l'écran.
   //
@@ -125,17 +125,17 @@ function checkSafeZone(candidate: Candidate): Violation[] {
 
   const overflows: string[] = [];
   if (inScreenHorizontally) {
-    if (box.left < margeX) {
-      overflows.push(`gauche ${Math.round(box.left)} < ${Math.round(margeX)}`);
+    if (box.left < marginX) {
+      overflows.push(`gauche ${Math.round(box.left)} < ${Math.round(marginX)}`);
     }
-    if (box.right > window.innerWidth - margeX) {
-      overflows.push(`droite ${Math.round(box.right)} > ${Math.round(window.innerWidth - margeX)}`);
+    if (box.right > window.innerWidth - marginX) {
+      overflows.push(`droite ${Math.round(box.right)} > ${Math.round(window.innerWidth - marginX)}`);
     }
   }
   if (inScreenVertically) {
-    if (box.top < margeY) overflows.push(`haut ${Math.round(box.top)} < ${Math.round(margeY)}`);
-    if (box.bottom > window.innerHeight - margeY) {
-      overflows.push(`bas ${Math.round(box.bottom)} > ${Math.round(window.innerHeight - margeY)}`);
+    if (box.top < marginY) overflows.push(`haut ${Math.round(box.top)} < ${Math.round(marginY)}`);
+    if (box.bottom > window.innerHeight - marginY) {
+      overflows.push(`bas ${Math.round(box.bottom)} > ${Math.round(window.innerHeight - marginY)}`);
     }
   }
 
@@ -159,15 +159,15 @@ function checkClipping(candidate: Candidate): Violation[] {
   if (style.overflowX !== "hidden" && style.overflowY !== "hidden") return [];
 
   const box = element.getBoundingClientRect();
-  const cadre = scroller.getBoundingClientRect();
+  const frame = scroller.getBoundingClientRect();
   // Sept pixels : l'épaisseur de l'anneau plus son écart.
   const ring = 7;
 
   const clipped =
-    box.left - ring < cadre.left - 1 ||
-    box.right + ring > cadre.right + 1 ||
-    box.top - ring < cadre.top - 1 ||
-    box.bottom + ring > cadre.bottom + 1;
+    box.left - ring < frame.left - 1 ||
+    box.right + ring > frame.right + 1 ||
+    box.top - ring < frame.top - 1 ||
+    box.bottom + ring > frame.bottom + 1;
 
   if (!clipped) return [];
   return [
@@ -201,9 +201,9 @@ function checkRing(candidate: Candidate): Violation[] {
   const outlineThickness = Number.parseFloat(style.outlineWidth) || 0;
   const outlineVisible = style.outlineStyle !== "none" && outlineThickness >= 2;
   const shadowVisible = style.boxShadow !== "none" && style.boxShadow !== "";
-  const porteParUnDescendant = !!element.querySelector(".media-tile");
+  const carriedByDescendant = !!element.querySelector(".media-tile");
 
-  if (outlineVisible || shadowVisible || porteParUnDescendant) return [];
+  if (outlineVisible || shadowVisible || carriedByDescendant) return [];
   return [
     {
       rule: "anneau-visible",
@@ -216,7 +216,7 @@ function checkRing(candidate: Candidate): Violation[] {
 
 function checkDeadEnds(candidate: Candidate, all: Candidate[]): Violation[] {
   const others = all.filter((other) => other.element !== candidate.element);
-  const sansIssue = DIRECTIONS.filter(
+  const deadEnds = DIRECTIONS.filter(
     (direction) =>
       !atScreenEdge(candidate, direction) && best(candidate.box, others, direction) === null,
   );
@@ -224,14 +224,14 @@ function checkDeadEnds(candidate: Candidate, all: Candidate[]): Violation[] {
   // Les quatre directions vides : l'élément est seul à l'écran, ce qui est un
   // état légitime — un écran d'erreur, une liste vide. Le manquement, c'est
   // d'être coincé alors qu'il y a un ailleurs.
-  if (sansIssue.length === 0 || sansIssue.length === 4) return [];
+  if (deadEnds.length === 0 || deadEnds.length === 4) return [];
 
   return [
     {
       rule: "impasse",
       severity: "avertissement",
       element: describeIt(candidate.element),
-      detail: `Aucune destination vers : ${sansIssue.join(", ")}.`,
+      detail: `Aucune destination vers : ${deadEnds.join(", ")}.`,
     },
   ];
 }
@@ -246,19 +246,19 @@ function checkDeadEnds(candidate: Candidate, all: Candidate[]): Violation[] {
  * ce qu'elles sont — l'élément touche déjà la zone sûre de ce côté-là.
  */
 function atScreenEdge(candidate: Candidate, direction: Direction): boolean {
-  const margeX = window.innerWidth * SAFE_MARGIN_X;
-  const margeY = window.innerHeight * SAFE_MARGIN_Y;
+  const marginX = window.innerWidth * SAFE_MARGIN_X;
+  const marginY = window.innerHeight * SAFE_MARGIN_Y;
   const { box } = candidate;
 
   switch (direction) {
     case "gauche":
-      return box.left <= margeX + 1;
+      return box.left <= marginX + 1;
     case "droite":
-      return box.right >= window.innerWidth - margeX - 1;
+      return box.right >= window.innerWidth - marginX - 1;
     case "haut":
-      return box.top <= margeY + 1;
+      return box.top <= marginY + 1;
     case "bas":
-      return box.bottom >= window.innerHeight - margeY - 1;
+      return box.bottom >= window.innerHeight - marginY - 1;
   }
 }
 

@@ -8,14 +8,14 @@ import type { Box } from "@tentacle-tv/tv-core";
  * recréer les diagonales qu'on cherche à éteindre.
  */
 
-function box(left: number, top: number, width: number, hauteur: number): Box {
-  return { left, top, right: left + width, bottom: top + hauteur };
+function box(left: number, top: number, width: number, height: number): Box {
+  return { left, top, right: left + width, bottom: top + height };
 }
 
 /** Applique la transformation comme le moteur de rendu : autour de l'origine. */
 function transformer(source: Box, scale: PureScale, origin: Origin): Box {
-  const towardsRender = (point: number, debut: number, axis: "x" | "y") => {
-    const o = debut + origin[axis];
+  const towardsRender = (point: number, start: number, axis: "x" | "y") => {
+    const o = start + origin[axis];
     const factor = axis === "x" ? scale.a : scale.d;
     const translation = axis === "x" ? scale.tx : scale.ty;
     return o + factor * (point - o) + translation;
@@ -66,34 +66,34 @@ describe("lireEchellePure", () => {
 });
 
 describe("inverserEchelle", () => {
-  const CARTE = box(194, 120, 185, 328);
+  const CARD = box(194, 120, 185, 328);
 
   it("retrouve la carte sous son agrandissement au focus", () => {
     // Le cas réel : scale(1.08), origine « center bottom ». Le bas ne bouge
     // pas, le bord haut remonte de 26 px, les flancs mordent la gouttière.
     const scale: PureScale = { a: 1.08, d: 1.08, tx: 0, ty: 0 };
     const origin: Origin = { x: 92.5, y: 328 };
-    const rendered = transformer(CARTE, scale, origin);
+    const rendered = transformer(CARD, scale, origin);
 
-    expect(rendered.bottom).toBeCloseTo(CARTE.bottom, 6);
-    expect(rendered.top).toBeCloseTo(CARTE.top - 0.08 * 328, 6);
+    expect(rendered.bottom).toBeCloseTo(CARD.bottom, 6);
+    expect(rendered.top).toBeCloseTo(CARD.top - 0.08 * 328, 6);
 
     const recovered = unscale(rendered, scale, origin);
-    expect(recovered.left).toBeCloseTo(CARTE.left, 6);
-    expect(recovered.right).toBeCloseTo(CARTE.right, 6);
-    expect(recovered.top).toBeCloseTo(CARTE.top, 6);
-    expect(recovered.bottom).toBeCloseTo(CARTE.bottom, 6);
+    expect(recovered.left).toBeCloseTo(CARD.left, 6);
+    expect(recovered.right).toBeCloseTo(CARD.right, 6);
+    expect(recovered.top).toBeCloseTo(CARD.top, 6);
+    expect(recovered.bottom).toBeCloseTo(CARD.bottom, 6);
   });
 
   it("retrouve la carte quelle que soit l'origine", () => {
     const scale: PureScale = { a: 1.05, d: 1.12, tx: 0, ty: 0 };
     const origin: Origin = { x: 20, y: 47 };
-    const recovered = unscale(transformer(CARTE, scale, origin), scale, origin);
+    const recovered = unscale(transformer(CARD, scale, origin), scale, origin);
 
-    expect(recovered.left).toBeCloseTo(CARTE.left, 6);
-    expect(recovered.right).toBeCloseTo(CARTE.right, 6);
-    expect(recovered.top).toBeCloseTo(CARTE.top, 6);
-    expect(recovered.bottom).toBeCloseTo(CARTE.bottom, 6);
+    expect(recovered.left).toBeCloseTo(CARD.left, 6);
+    expect(recovered.right).toBeCloseTo(CARD.right, 6);
+    expect(recovered.top).toBeCloseTo(CARD.top, 6);
+    expect(recovered.bottom).toBeCloseTo(CARD.bottom, 6);
   });
 
   it("défait aussi la translation qui accompagne une échelle", () => {
@@ -101,10 +101,10 @@ describe("inverserEchelle", () => {
     // seule matrice : l'inversion doit défaire l'ensemble, pas la moitié.
     const scale: PureScale = { a: 1.05, d: 1.05, tx: -4, ty: -4 };
     const origin: Origin = { x: 92.5, y: 164 };
-    const recovered = unscale(transformer(CARTE, scale, origin), scale, origin);
+    const recovered = unscale(transformer(CARD, scale, origin), scale, origin);
 
-    expect(recovered.left).toBeCloseTo(CARTE.left, 6);
-    expect(recovered.bottom).toBeCloseTo(CARTE.bottom, 6);
+    expect(recovered.left).toBeCloseTo(CARD.left, 6);
+    expect(recovered.bottom).toBeCloseTo(CARD.bottom, 6);
   });
 
   it("l'identité pendant la transition rend la boîte inchangée", () => {
@@ -112,9 +112,9 @@ describe("inverserEchelle", () => {
     // l'inversion doit être continue, sans saut au démarrage.
     const scale: PureScale = { a: 1.0001, d: 1.0001, tx: 0, ty: 0 };
     const origin: Origin = { x: 92.5, y: 328 };
-    const recovered = unscale(transformer(CARTE, scale, origin), scale, origin);
+    const recovered = unscale(transformer(CARD, scale, origin), scale, origin);
 
-    expect(recovered.left).toBeCloseTo(CARTE.left, 3);
-    expect(recovered.top).toBeCloseTo(CARTE.top, 3);
+    expect(recovered.left).toBeCloseTo(CARD.left, 3);
+    expect(recovered.top).toBeCloseTo(CARD.top, 3);
   });
 });

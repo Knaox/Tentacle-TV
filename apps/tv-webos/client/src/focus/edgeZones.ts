@@ -14,7 +14,7 @@
 /** Le canevas de l'application, en pixels CSS. */
 export interface Canvas {
   width: number;
-  hauteur: number;
+  height: number;
 }
 
 /** Le retrait d'overscan, par axe. */
@@ -42,8 +42,8 @@ export interface Push {
  * simplement une carte de la dernière rangée. Aller à droite dans une rangée
  * est plus rare, et plus intentionnel.
  */
-export const MARGE_UTILE_X = 64;
-export const MARGE_UTILE_Y = 66;
+export const USABLE_MARGIN_X = 64;
+export const USABLE_MARGIN_Y = 66;
 
 /** Vitesses extrêmes, en pixels par seconde. */
 export const MIN_SPEED = 240;
@@ -58,8 +58,8 @@ export const MAX_SPEED = 1600;
 export const DEAD_ZONE = 0.06;
 
 /** Profondeur d'une bande sur un axe, retrait d'overscan compris. */
-export function band(inset: number, margeUtile: number): number {
-  return inset + margeUtile;
+export function band(inset: number, usableMargin: number): number {
+  return inset + usableMargin;
 }
 
 /**
@@ -69,9 +69,9 @@ export function band(inset: number, margeUtile: number): number {
  */
 export function depth(distanceToEdge: number, bandDepth: number): number {
   if (bandDepth <= 0) return 0;
-  const dedans = (bandDepth - distanceToEdge) / bandDepth;
-  if (dedans <= 0) return 0;
-  return dedans > 1 ? 1 : dedans;
+  const inside = (bandDepth - distanceToEdge) / bandDepth;
+  if (inside <= 0) return 0;
+  return inside > 1 ? 1 : inside;
 }
 
 /**
@@ -88,8 +88,8 @@ export function depth(distanceToEdge: number, bandDepth: number): number {
  */
 export function speed(fraction: number): number {
   if (fraction <= DEAD_ZONE) return 0;
-  const utile = (fraction - DEAD_ZONE) / (1 - DEAD_ZONE);
-  return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * utile * utile;
+  const usable = (fraction - DEAD_ZONE) / (1 - DEAD_ZONE);
+  return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * usable * usable;
 }
 
 /**
@@ -100,11 +100,11 @@ export function speed(fraction: number): number {
  * faire bouger — la page pour la verticale, une rangée pour l'horizontale.
  */
 export function push(x: number, y: number, canvas: Canvas, inset: Inset): Push {
-  const bandX = band(inset.x, MARGE_UTILE_X);
-  const bandY = band(inset.y, MARGE_UTILE_Y);
+  const bandX = band(inset.x, USABLE_MARGIN_X);
+  const bandY = band(inset.y, USABLE_MARGIN_Y);
   return {
     x: component(x, canvas.width, bandX),
-    y: component(y, canvas.hauteur, bandY),
+    y: component(y, canvas.height, bandY),
   };
 }
 
@@ -115,9 +115,9 @@ export function push(x: number, y: number, canvas: Canvas, inset: Inset): Push {
  * bandes — cas d'école sur un canevas de téléviseur, mais un panneau modal
  * peut, lui, être étroit.
  */
-function component(position: number, taille: number, bandDepth: number): number {
+function component(position: number, size: number, bandDepth: number): number {
   const towardsStart = depth(position, bandDepth);
-  const towardsEnd = depth(taille - position, bandDepth);
+  const towardsEnd = depth(size - position, bandDepth);
   if (towardsStart > towardsEnd) return -speed(towardsStart);
   if (towardsEnd > 0) return speed(towardsEnd);
   return 0;

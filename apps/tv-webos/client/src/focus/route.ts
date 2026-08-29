@@ -21,10 +21,10 @@
  * laisse pas une chaîne d'enveloppes derrière lui.
  */
 
-type Poseur = History["pushState"];
+type Setter = History["pushState"];
 
 export function watchRoute(onChange: (path: string) => void): () => void {
-  let precedent = window.location.pathname;
+  let previous = window.location.pathname;
 
   const check = () => {
     const path = window.location.pathname;
@@ -32,8 +32,8 @@ export function watchRoute(onChange: (path: string) => void): () => void {
     // paramètres — un filtre de bibliothèque, une saison. Ce n'est pas un
     // changement d'écran, et reposer le focus à ce moment-là le ferait sauter
     // sous les doigts de l'utilisateur.
-    if (path === precedent) return;
-    precedent = path;
+    if (path === previous) return;
+    previous = path;
     onChange(path);
   };
 
@@ -41,8 +41,8 @@ export function watchRoute(onChange: (path: string) => void): () => void {
   const replaceOrigin = window.history.replaceState;
 
   const wrapper =
-    (origin: Poseur): Poseur =>
-    function (this: History, ...arguments_: Parameters<Poseur>) {
+    (origin: Setter): Setter =>
+    function (this: History, ...arguments_: Parameters<Setter>) {
       origin.apply(this, arguments_);
       check();
     };

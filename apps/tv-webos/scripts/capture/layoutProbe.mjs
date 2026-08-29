@@ -91,8 +91,8 @@ export const LAYOUT_PROBE = `(function () {
  * d'autre.
  */
 export function defaultRoutes({ library, item }) {
-  const routes = [{ path: "/tv/", nom: "Accueil" }, { path: "/tv/settings", nom: "Réglages" }];
-  if (library) routes.push({ path: `/tv/library/${library}`, nom: "Bibliothèque" });
-  if (item) routes.push({ path: `/tv/media/${item}`, nom: "Fiche" });
+  const routes = [{ path: "/tv/", name: "Accueil" }, { path: "/tv/settings", name: "Réglages" }];
+  if (library) routes.push({ path: `/tv/library/${library}`, name: "Bibliothèque" });
+  if (item) routes.push({ path: `/tv/media/${item}`, name: "Fiche" });
   return routes;
 }

@@ -63,8 +63,8 @@ export function SearchScreenTv() {
   // véritable est retiré du parcours (`tabIndex={-1}`) et posé par-dessus, à
   // l'identique mais transparent. Le clavier ne monte plus qu'au geste explicite
   // qui le demande : OK sur la barre.
-  const barre = useRef<HTMLButtonElement>(null);
-  const champ = useRef<HTMLInputElement>(null);
+  const bar = useRef<HTMLButtonElement>(null);
+  const field = useRef<HTMLInputElement>(null);
 
   const [input, setInput] = useState("");
   const [query, setQuery] = useState("");
@@ -90,7 +90,7 @@ export function SearchScreenTv() {
       return;
     }
     setRecents(readRecentSearches());
-    const identifier = setTimeout(() => barre.current?.focus(), 60);
+    const identifier = setTimeout(() => bar.current?.focus(), 60);
     return () => clearTimeout(identifier);
   }, [opened]);
 
@@ -107,7 +107,7 @@ export function SearchScreenTv() {
    * référence est déjà vide.
    */
   const close = useCallback(() => {
-    champ.current?.blur();
+    field.current?.blur();
     return closeSearch();
   }, []);
 
@@ -128,7 +128,7 @@ export function SearchScreenTv() {
    * transition, donc ne rouvre rien.
    */
   const openKeyboard = useCallback(() => {
-    champ.current?.focus();
+    field.current?.focus();
   }, []);
 
   /**
@@ -146,19 +146,19 @@ export function SearchScreenTv() {
   useEffect(() => {
     if (!opened) return;
     let back: ReturnType<typeof setTimeout> | undefined;
-    const surClavier = (event: Event) => {
+    const onKeyboard = (event: Event) => {
       const detail = (event as CustomEvent<{ visibility?: boolean }>).detail;
       if (detail?.visibility === true) {
         clearTimeout(back);
         return;
       }
       back = setTimeout(() => {
-        if (document.activeElement === champ.current) barre.current?.focus();
+        if (document.activeElement === field.current) bar.current?.focus();
       }, BAR_RETURN_DELAY_MS);
     };
-    document.addEventListener("keyboardStateChange", surClavier);
+    document.addEventListener("keyboardStateChange", onKeyboard);
     return () => {
-      document.removeEventListener("keyboardStateChange", surClavier);
+      document.removeEventListener("keyboardStateChange", onKeyboard);
       clearTimeout(back);
     };
   }, [opened]);
@@ -191,7 +191,7 @@ export function SearchScreenTv() {
               tant qu'on ne l'a pas demandé. Le moteur de focus active une cible
               par un `click()` : c'est ici qu'arrive l'appui sur OK. */}
           <button
-            ref={barre}
+            ref={bar}
             type="button"
             className="recherche-tv-champ"
             onClick={openKeyboard}
@@ -205,7 +205,7 @@ export function SearchScreenTv() {
               porte la saisie et reçoit la dictée ; `tabIndex={-1}` le retire du
               recensement du moteur, donc aucune flèche ne peut l'atteindre. */}
           <input
-            ref={champ}
+            ref={field}
             tabIndex={-1}
             value={input}
             onChange={(event) => setInput(event.target.value)}

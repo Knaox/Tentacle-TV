@@ -52,7 +52,7 @@
  * réintroduirait le défaut sur les contenus aux images-clés rapprochées — ceux
  * de l'animation, précisément là où on l'a mesuré.
  */
-export const LONGUEUR_SEGMENT_S = 1;
+export const SEGMENT_LENGTH_S = 1;
 
 /** Un manifeste HLS, et lui seul : la lecture directe n'a pas de segments. */
 function isManifest(path: string): boolean {
@@ -67,7 +67,7 @@ function isManifest(path: string): boolean {
  * répondre 400, ce qui a été mesuré à nos dépens. Un paramètre déjà posé par
  * l'appelant est respecté.
  */
-export function withShortSegments(url: string | null, seconds = LONGUEUR_SEGMENT_S): string | null {
+export function withShortSegments(url: string | null, seconds = SEGMENT_LENGTH_S): string | null {
   if (!url) return url;
   let parsed: URL;
   try {

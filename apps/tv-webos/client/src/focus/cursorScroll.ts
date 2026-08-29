@@ -39,7 +39,7 @@ export function watchCursorScroll(
   reanchor: Reanchor,
 ): () => void {
   let image: number | null = null;
-  let precedent = 0;
+  let previous = 0;
   /**
    * Les cibles, résolues au DÉMARRAGE et gardées pour toute la durée du geste.
    *
@@ -77,11 +77,11 @@ export function watchCursorScroll(
     targetY = verticalTarget(element);
     targetX = element?.closest<HTMLElement>("[data-tv-piste]") ?? null;
     if (targetY === null && targetX === null) return;
-    precedent = 0;
-    image = requestAnimationFrame(tour);
+    previous = 0;
+    image = requestAnimationFrame(tick);
   };
 
-  const tour = (now: number) => {
+  const tick = (now: number) => {
     image = null;
     if (suspended() || !pointerActive()) {
       stop();
@@ -96,14 +96,14 @@ export function watchCursorScroll(
     // La première image n'a pas de précédente : on ne défile pas encore, on
     // pose l'horloge. Écrire `now - 0` ferait un bond de plusieurs
     // secondes de vue.
-    const gap = precedent === 0 ? 0 : Math.min(now - precedent, MAX_STEP_MS);
-    precedent = now;
+    const gap = previous === 0 ? 0 : Math.min(now - previous, MAX_STEP_MS);
+    previous = now;
 
     if (gap > 0 && !write(request, gap / 1000)) {
       stop();
       return;
     }
-    image = requestAnimationFrame(tour);
+    image = requestAnimationFrame(tick);
   };
 
   /** Rend `false` quand plus rien n'a bougé — il n'y a plus de mou. */
@@ -136,27 +136,27 @@ export function watchCursorScroll(
     if (image === null) start();
   };
 
-  const surSortie = () => stop();
+  const onExit = () => stop();
 
   document.addEventListener("mousemove", onMove, { passive: true });
-  document.addEventListener("mouseleave", surSortie);
-  document.addEventListener("cursorStateChange", surSortie);
-  document.addEventListener("visibilitychange", surSortie);
+  document.addEventListener("mouseleave", onExit);
+  document.addEventListener("cursorStateChange", onExit);
+  document.addEventListener("visibilitychange", onExit);
   // Un appui directionnel reprend la main : `cursor.ts` repasse en `dpad`, et
   // le tour suivant s'arrêterait de lui-même — mais une image plus tard, donc
   // avec un dernier soubresaut de vue sous l'anneau qui vient de se déplacer.
-  document.addEventListener("keydown", surSortie, true);
-  window.addEventListener("blur", surSortie);
+  document.addEventListener("keydown", onExit, true);
+  window.addEventListener("blur", onExit);
 
   return () => {
     if (image !== null) cancelAnimationFrame(image);
     image = null;
     document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseleave", surSortie);
-    document.removeEventListener("cursorStateChange", surSortie);
-    document.removeEventListener("visibilitychange", surSortie);
-    document.removeEventListener("keydown", surSortie, true);
-    window.removeEventListener("blur", surSortie);
+    document.removeEventListener("mouseleave", onExit);
+    document.removeEventListener("cursorStateChange", onExit);
+    document.removeEventListener("visibilitychange", onExit);
+    document.removeEventListener("keydown", onExit, true);
+    window.removeEventListener("blur", onExit);
   };
 }
 
@@ -167,7 +167,7 @@ function currentRequest(): Push | null {
   return push(
     point.x,
     point.y,
-    { width: window.innerWidth, hauteur: window.innerHeight },
+    { width: window.innerWidth, height: window.innerHeight },
     overscanInset(),
   );
 }
@@ -179,10 +179,10 @@ function currentRequest(): Push | null {
  * dupliquer ici les ferait diverger le jour où une gamme demandera autre chose.
  */
 function overscanInset(): { x: number; y: number } {
-  const racine = getComputedStyle(document.documentElement);
+  const root = getComputedStyle(document.documentElement);
   return {
-    x: pixels(racine.getPropertyValue("--tv-overscan-x"), 96),
-    y: pixels(racine.getPropertyValue("--tv-overscan-y"), 54),
+    x: pixels(root.getPropertyValue("--tv-overscan-x"), 96),
+    y: pixels(root.getPropertyValue("--tv-overscan-y"), 54),
   };
 }
 
@@ -241,8 +241,8 @@ function scrollVertical(target: HTMLElement | "fenetre", delta: number): boolean
  * c'est ce qui empêche la bande gauche de traîner quoi que ce soit pendant
  * qu'on vise le rail.
  */
-function scrollHorizontal(piste: HTMLElement, delta: number): boolean {
-  const before = piste.scrollLeft;
-  piste.scrollLeft += delta;
-  return piste.scrollLeft !== before;
+function scrollHorizontal(track: HTMLElement, delta: number): boolean {
+  const before = track.scrollLeft;
+  track.scrollLeft += delta;
+  return track.scrollLeft !== before;
 }

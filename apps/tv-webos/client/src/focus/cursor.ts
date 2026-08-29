@@ -58,7 +58,7 @@ interface CursorEvent extends Event {
   detail?: { visibility?: boolean };
 }
 
-function poser(fresh: Mode): void {
+function applyMode(fresh: Mode): void {
   if (mode === fresh) return;
   mode = fresh;
   document.documentElement.setAttribute(ATTRIBUTE, fresh);
@@ -112,31 +112,31 @@ export function watchCursor(): () => void {
     // rien désigner avant d'avoir bougé.
     if (visible) sealed = false;
     else position = null;
-    poser(visible ? "pointeur" : "dpad");
+    applyMode(visible ? "pointeur" : "dpad");
   };
 
   const onMove = (event: Event) => {
     const mouse = event as MouseEvent;
     position = { x: mouse.clientX, y: mouse.clientY };
     sealed = false;
-    poser("pointeur");
+    applyMode("pointeur");
   };
-  const surTouche = () => {
+  const onKey = () => {
     // Le D-pad reprend la main : le pointeur n'a plus rien à désigner, et sa
     // dernière position ne doit pas servir de prétexte à un survol.
     sealed = true;
-    poser("dpad");
+    applyMode("dpad");
   };
 
   document.addEventListener("cursorStateChange", onChange);
   document.addEventListener("mousemove", onMove, { passive: true });
-  document.addEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
 
   document.documentElement.setAttribute(ATTRIBUTE, mode);
 
   return () => {
     document.removeEventListener("cursorStateChange", onChange);
     document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("keydown", surTouche, true);
+    document.removeEventListener("keydown", onKey, true);
   };
 }

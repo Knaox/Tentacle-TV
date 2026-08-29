@@ -101,19 +101,19 @@
     }
 
     /** Le serveur mémorisé répond-il encore ? */
-    function toVerification(adresse) {
+    function toVerification(address) {
       view.showWaiting();
       var xhr = new global.XMLHttpRequest();
       var concluded = false;
       var conclude = function (ok) {
         if (concluded) return;
         concluded = true;
-        if (ok) view.navigate(adresse, null, null);
+        if (ok) view.navigate(address, null, null);
         else toGeneration();
       };
 
       try {
-        xhr.open("GET", adresse + "/api/health", true);
+        xhr.open("GET", address + "/api/health", true);
       } catch (e) {
         conclude(false);
         return;

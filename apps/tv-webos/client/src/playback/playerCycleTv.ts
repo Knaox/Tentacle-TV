@@ -33,7 +33,7 @@ export function usePlayerCycleTv({ mode, actions, scrub }: PlayerBindingsTv): vo
   // La sortie, déposée pour les surcouches : elles vivent dans l'autre arbre
   // React et ne reçoivent pas `onBack`.
   useEffect(() => {
-    setPlayerExit(() => vivid.current.quitter());
+    setPlayerExit(() => vivid.current.exit());
     return () => setPlayerExit(null);
   }, []);
 

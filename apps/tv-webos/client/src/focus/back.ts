@@ -30,7 +30,7 @@ export type BackConsumer = () => boolean;
 
 const ROOT_PATHS = ["/tv", "/tv/"];
 
-const pile: BackConsumer[] = [];
+const stack: BackConsumer[] = [];
 
 /** Garde de réentrance pour le renvoi d'Échap aux dialogues. */
 let bouncing = false;
@@ -43,10 +43,10 @@ let bouncing = false;
  * plus là.
  */
 export function registerBack(consumer: BackConsumer): () => void {
-  pile.push(consumer);
+  stack.push(consumer);
   return () => {
-    const position = pile.indexOf(consumer);
-    if (position >= 0) pile.splice(position, 1);
+    const position = stack.indexOf(consumer);
+    if (position >= 0) stack.splice(position, 1);
   };
 }
 
@@ -69,7 +69,7 @@ export function registerBack(consumer: BackConsumer): () => void {
 let backYieldsToKeyboard = false;
 
 export function installBack(): () => void {
-  const surTouche = (event: KeyboardEvent) => {
+  const onKey = (event: KeyboardEvent) => {
     // Notre propre renvoi d'Échap doit ATTEINDRE le dialogue.
     //
     // Depuis que `keys.ts` lit aussi `key`, l'Échap synthétique émis par
@@ -105,13 +105,13 @@ export function installBack(): () => void {
     goBack();
   };
 
-  document.addEventListener("keydown", surTouche, true);
-  return () => document.removeEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
+  return () => document.removeEventListener("keydown", onKey, true);
 }
 
 function goBack(): void {
-  for (let position = pile.length - 1; position >= 0; position--) {
-    if (pile[position]()) return;
+  for (let position = stack.length - 1; position >= 0; position--) {
+    if (stack[position]()) return;
   }
 
   // Le piège d'abord : c'est lui qui désigne le menu qu'on regarde, quand il y

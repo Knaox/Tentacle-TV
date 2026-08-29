@@ -69,9 +69,9 @@ function readGaps(rule: Rule): ReadGaps | null {
 
   rule.walkDecls((declaration) => {
     if (declaration.prop === "gap") {
-      const [premier, second] = declaration.value.trim().split(/\s+/);
-      row = premier;
-      column = second ?? premier;
+      const [first, second] = declaration.value.trim().split(/\s+/);
+      row = first;
+      column = second ?? first;
       declaration.remove();
     } else if (declaration.prop === "column-gap") {
       column = declaration.value;

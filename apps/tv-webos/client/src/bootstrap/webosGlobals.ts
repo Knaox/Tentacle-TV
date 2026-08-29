@@ -38,7 +38,7 @@ export interface CapabilitiesTv {
 
 let capabilities: CapabilitiesTv | null = null;
 
-function lirePalmSystem(): CapabilitiesTv | null {
+function readPalmSystem(): CapabilitiesTv | null {
   const global = window as unknown as { PalmSystem?: { deviceInfo?: string } };
   const raw = global.PalmSystem?.deviceInfo;
   if (!raw) return null;
@@ -54,7 +54,7 @@ function readParameter(): CapabilitiesTv | null {
   const raw = params.get("tvinfo");
   if (!raw) return null;
   try {
-    const lues = JSON.parse(raw) as CapabilitiesTv;
+    const parsed = JSON.parse(raw) as CapabilitiesTv;
     params.delete("tvinfo");
     const query = params.toString();
     window.history.replaceState(
@@ -62,7 +62,7 @@ function readParameter(): CapabilitiesTv | null {
       "",
       window.location.pathname + (query ? `?${query}` : "") + window.location.hash,
     );
-    return lues;
+    return parsed;
   } catch {
     return null;
   }
@@ -71,7 +71,7 @@ function readParameter(): CapabilitiesTv | null {
 /** À appeler une fois, avant le premier rendu. */
 export function readTvCapabilities(): CapabilitiesTv {
   if (capabilities) return capabilities;
-  capabilities = lirePalmSystem() ?? readParameter() ?? {};
+  capabilities = readPalmSystem() ?? readParameter() ?? {};
   return capabilities;
 }
 

@@ -47,11 +47,11 @@ interface LayerProps {
  * place et la ferait rejouer à l'ouverture suivante.
  */
 export function DetailOpenOverlay({ origin, onDone }: LayerProps) {
-  const rendu = useRef(false);
+  const rendered = useRef(false);
 
   useEffect(() => {
-    if (!origin || rendu.current) return;
-    rendu.current = true;
+    if (!origin || rendered.current) return;
+    rendered.current = true;
     onDone();
   }, [origin, onDone]);
 

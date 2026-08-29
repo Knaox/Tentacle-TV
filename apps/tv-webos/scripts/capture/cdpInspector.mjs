@@ -20,9 +20,9 @@ const TARGET_ROOT = resolve(HERE, "../..");
 const REPO_ROOT = resolve(TARGET_ROOT, "../..");
 const PORT_DELAY_MS = 30_000;
 
-function pointEntree(nom) {
+function entryPoint(name) {
   return [TARGET_ROOT, REPO_ROOT]
-    .map((racine) => resolve(racine, `node_modules/@webos-tools/cli/bin/${nom}.js`))
+    .map((root) => resolve(root, `node_modules/@webos-tools/cli/bin/${name}.js`))
     .find(existsSync);
 }
 
@@ -31,31 +31,31 @@ function pointEntree(nom) {
  * à appeler, sinon le téléviseur garde un inspecteur ouvert.
  */
 export async function openInspector({ device, application }) {
-  const entree = pointEntree("ares-inspect");
-  if (!entree) throw new Error("ares-inspect introuvable : installer @webos-tools/cli");
+  const entry = entryPoint("ares-inspect");
+  if (!entry) throw new Error("ares-inspect introuvable : installer @webos-tools/cli");
 
-  const child = spawn(process.execPath, [entree, "--device", device, "--app", application], {
+  const child = spawn(process.execPath, [entry, "--device", device, "--app", application], {
     stdio: ["ignore", "pipe", "pipe"],
   });
 
   const url = await new Promise((resolve, reject) => {
-    let tampon = "";
+    let buffer = "";
     const timer = setTimeout(() => {
-      reject(new Error(`aucune adresse d'inspection en ${PORT_DELAY_MS / 1000} s — mode developpeur expire ?\n${tampon}`));
+      reject(new Error(`aucune adresse d'inspection en ${PORT_DELAY_MS / 1000} s — mode developpeur expire ?\n${buffer}`));
     }, PORT_DELAY_MS);
 
-    const lire = (morceau) => {
-      tampon += morceau.toString();
-      const found = tampon.match(/https?:\/\/[\w.\-]+:\d+/);
+    const read = (chunk) => {
+      buffer += chunk.toString();
+      const found = buffer.match(/https?:\/\/[\w.\-]+:\d+/);
       if (!found) return;
       clearTimeout(timer);
       resolve(found[0]);
     };
-    child.stdout.on("data", lire);
-    child.stderr.on("data", lire);
+    child.stdout.on("data", read);
+    child.stderr.on("data", read);
     child.on("exit", (code) => {
       clearTimeout(timer);
-      reject(new Error(`ares-inspect a quitte (code ${code})\n${tampon}`));
+      reject(new Error(`ares-inspect a quitte (code ${code})\n${buffer}`));
     });
   });
 
@@ -97,7 +97,7 @@ export async function connectSession(urlWebSocket) {
       else promise.resolve(message.result);
       return;
     }
-    for (const rappel of subscribers.get(message.method) ?? []) rappel(message.params);
+    for (const callback of subscribers.get(message.method) ?? []) callback(message.params);
   });
 
   return {
@@ -108,9 +108,9 @@ export async function connectSession(urlWebSocket) {
         grab.send(JSON.stringify({ id, method: method, params: params }));
       });
     },
-    sur(event, rappel) {
+    on(event, callback) {
       const list = subscribers.get(event) ?? [];
-      list.push(rappel);
+      list.push(callback);
       subscribers.set(event, list);
     },
     close() {

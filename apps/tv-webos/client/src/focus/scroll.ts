@@ -74,7 +74,7 @@ export function bringIntoView(element: HTMLElement): void {
 
   const delta = correction(
     segmentVertical(element.getBoundingClientRect()),
-    { debut: 0, fin: window.innerHeight },
+    { start: 0, end: window.innerHeight },
     MARGIN,
     windowSlack(),
   );
@@ -82,11 +82,11 @@ export function bringIntoView(element: HTMLElement): void {
 }
 
 function segmentVertical(rect: DOMRect) {
-  return { debut: rect.top, fin: rect.bottom };
+  return { start: rect.top, end: rect.bottom };
 }
 
 function segmentHorizontal(rect: DOMRect) {
-  return { debut: rect.left, fin: rect.right };
+  return { start: rect.left, end: rect.right };
 }
 
 /** Ce que la fenêtre peut encore défiler, de part et d'autre. */
@@ -191,7 +191,7 @@ export function scrollByStep(
     slack: availableSlack(scroller, towardsEnd, horizontal),
     // Un pas horizontal ne se mesure pas à l'élément de départ mais à la
     // piste : `Infinity` laisse le plafond décider seul, ce qu'il faisait déjà.
-    startHeight: horizontal ? Number.POSITIVE_INFINITY : tailleDe(since, false),
+    startHeight: horizontal ? Number.POSITIVE_INFINITY : sizeOf(since, false),
     view,
     margin: MARGIN,
     ceiling: horizontal ? HORIZONTAL_STEP : MAX_VERTICAL_STEP,
@@ -219,7 +219,7 @@ function availableSlack(
   return towardsEnd ? verticalRest(scroller) : scroller.scrollTop;
 }
 
-function tailleDe(element: HTMLElement | null, horizontal: boolean): number {
+function sizeOf(element: HTMLElement | null, horizontal: boolean): number {
   if (!element) return 0;
   const box = element.getBoundingClientRect();
   return horizontal ? box.width : box.height;

@@ -136,7 +136,7 @@ export function installFocusEngine(): () => void {
   // ainsi que webOS traite la bascule, et refuser la flèche laisserait
   // l'utilisateur devant une télécommande muette jusqu'à ce qu'il bouge la
   // souris. Le survol, lui, se tait de son côté dès que le focus a changé.
-  const surTouche = (event: KeyboardEvent) => {
+  const onKey = (event: KeyboardEvent) => {
     notePress();
     if (engineSuspended()) return;
 
@@ -156,10 +156,10 @@ export function installFocusEngine(): () => void {
     move(intention.direction);
   };
 
-  document.addEventListener("keydown", surTouche, true);
+  document.addEventListener("keydown", onKey, true);
 
   return () => {
-    document.removeEventListener("keydown", surTouche, true);
+    document.removeEventListener("keydown", onKey, true);
     document.removeEventListener("focusin", onArrival, true);
     document.removeEventListener("focusout", onLoss, true);
     clearInterval(guard);

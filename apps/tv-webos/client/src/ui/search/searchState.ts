@@ -34,14 +34,14 @@ const listeners = new Set<() => void>();
  */
 let trigger: HTMLElement | null = null;
 
-function notifier(): void {
+function notify(): void {
   listeners.forEach((listener) => listener());
 }
 
-function sAbonner(rappel: () => void): () => void {
-  listeners.add(rappel);
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback);
   return () => {
-    listeners.delete(rappel);
+    listeners.delete(callback);
   };
 }
 
@@ -54,14 +54,14 @@ export function openSearch(): void {
   const active = document.activeElement;
   trigger = active instanceof HTMLElement ? active : null;
   opened = true;
-  notifier();
+  notify();
 }
 
 /** Rend vrai si la recherche était ouverte — c'est ce qu'attend la pile Retour. */
 export function closeSearch(): boolean {
   if (!opened) return false;
   opened = false;
-  notifier();
+  notify();
 
   // Après le rendu qui démonte la surcouche : lui rendre le focus avant
   // reviendrait à le poser sur un élément que React s'apprête à recouvrir.
@@ -77,5 +77,5 @@ export function closeSearch(): boolean {
 }
 
 export function useSearchOpen(): boolean {
-  return useSyncExternalStore(sAbonner, readSnapshot);
+  return useSyncExternalStore(subscribe, readSnapshot);
 }

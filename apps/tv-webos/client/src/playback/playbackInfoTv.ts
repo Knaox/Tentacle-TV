@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { usePlaybackInfo as socleWeb } from "@/hooks/usePlaybackInfo?original";
+import { usePlaybackInfo as webBase } from "@/hooks/usePlaybackInfo?original";
 import { isMasterManifest, resolveDoviVariant } from "./doviVariant";
 import { withShortSegments } from "./segmentLength";
 
@@ -33,10 +33,10 @@ import { withShortSegments } from "./segmentLength";
  * variante du précédent, définitivement.
  */
 export function usePlaybackInfo(nativePlayer = false) {
-  const socle = socleWeb(nativePlayer);
-  const brute = useMemo(() => withShortSegments(socle.streamUrl), [socle.streamUrl]);
-  const [resolvedVariant, setResolvedVariant] = useState<{ pour: string; url: string | null } | null>(null);
-  const served = resolvedVariant?.url ?? brute;
+  const webInfo = webBase(nativePlayer);
+  const raw = useMemo(() => withShortSegments(webInfo.streamUrl), [webInfo.streamUrl]);
+  const [resolvedVariant, setResolvedVariant] = useState<{ forUrl: string; url: string | null } | null>(null);
+  const served = resolvedVariant?.url ?? raw;
 
   /**
    * Le verdict, rendu juste par l'URL qu'on sert réellement.
@@ -53,11 +53,11 @@ export function usePlaybackInfo(nativePlayer = false) {
    * produite.
    */
   const verdict = useMemo(() => {
-    const base = socle.verdict;
+    const base = webInfo.verdict;
     if (!base || !base.videoReencoded || !resolvedVariant?.url) return base;
     if (/[?&]AllowVideoStreamCopy=false/i.test(resolvedVariant.url)) return base;
     return { ...base, mode: "Remux" as const, videoReencoded: false };
-  }, [socle.verdict, resolvedVariant]);
+  }, [webInfo.verdict, resolvedVariant]);
 
   // Relevé pour la surcouche de diagnostic — DÉVELOPPEMENT UNIQUEMENT.
   // `import.meta.env.DEV` est remplacé littéralement par Vite : en build livré,
@@ -67,47 +67,47 @@ export function usePlaybackInfo(nativePlayer = false) {
     if (!import.meta.env.DEV && !__TV_DEBUG__) return;
     const sample = verdict;
     void import("../debug/playbackOverlay").then(({ publishPlayback }) => {
-      const flux = socle.mediaSource?.MediaStreams?.find((s) => s.Type === "Video");
+      const streams = webInfo.mediaSource?.MediaStreams?.find((s) => s.Type === "Video");
       publishPlayback(
         sample
           ? {
               mode: sample.mode,
               videoReencoded: sample.videoReencoded,
               reasons: sample.reasons,
-              videoCodec: flux?.Codec,
-              range: flux?.VideoRangeType,
+              videoCodec: streams?.Codec,
+              range: streams?.VideoRangeType,
               url: served,
             }
           : null,
       );
     });
-  }, [verdict, socle.mediaSource, served]);
+  }, [verdict, webInfo.mediaSource, served]);
 
   useEffect(() => {
-    if (!brute || !isMasterManifest(brute)) return;
+    if (!raw || !isMasterManifest(raw)) return;
     let alive = true;
-    void resolveDoviVariant(brute).then((url) => {
+    void resolveDoviVariant(raw).then((url) => {
       // `alive` : la source a pu changer pendant l'aller-retour. Écrire ici
       // remplacerait la variante courante par celle d'une source abandonnée.
-      if (alive) setResolvedVariant({ pour: brute, url });
+      if (alive) setResolvedVariant({ forUrl: raw, url });
     });
     return () => {
       alive = false;
     };
-  }, [brute]);
+  }, [raw]);
 
-  // `brute`, et non `socle.streamUrl` : la longueur de segment imposée doit
+  // `raw`, et non `webInfo.streamUrl` : la longueur de segment imposée doit
   // survivre à ce chemin-là aussi.
-  if (!brute || !isMasterManifest(brute)) return { ...socle, streamUrl: brute };
+  if (!raw || !isMasterManifest(raw)) return { ...webInfo, streamUrl: raw };
 
   // Résolue pour CETTE source : `url` à `null` signifie « pas de variante Dolby
   // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
   // convient. Résolue pour une AUTRE : on tient la précédente le temps de
   // l'aller-retour plutôt que de faire démonter le lecteur.
-  if (resolvedVariant) return { ...socle, streamUrl: served, verdict };
+  if (resolvedVariant) return { ...webInfo, streamUrl: served, verdict };
 
   // Tout premier manifeste de la session : il n'y a pas de source antérieure à
   // tenir. `null` est ce que le lecteur voit avant toute lecture — il n'est pas
   // encore monté, l'écran de chargement est le comportement attendu.
-  return { ...socle, streamUrl: null, isLoading: true };
+  return { ...webInfo, streamUrl: null, isLoading: true };
 }

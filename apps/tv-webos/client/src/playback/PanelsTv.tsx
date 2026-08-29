@@ -51,10 +51,10 @@ export function TracksPanelTv({ applyToSeries, ...rest }: TracksPanelProps) {
   // La piste audio en cours est la première option teintée du panneau : la
   // section audio ouvre la liste, et la croix de fermeture qui la précède n'a
   // pas de fond.
-  const racine = useMarker<HTMLDivElement>(markPanelEntry);
+  const root = useMarker<HTMLDivElement>(markPanelEntry);
 
   return (
-    <div className="panneau-tv" role="dialog" aria-label={t("player:tracks")} ref={racine}>
+    <div className="panneau-tv" role="dialog" aria-label={t("player:tracks")} ref={root}>
       <TrackSelector {...rest} />
       {applyToSeries && (
         <button
@@ -64,7 +64,7 @@ export function TracksPanelTv({ applyToSeries, ...rest }: TracksPanelProps) {
           disabled={applyToSeries.pending}
           onClick={() => applyToSeries.toggle(!applyToSeries.checked)}
           className="panneau-tv-bascule"
-          data-active={applyToSeries.checked}
+          data-actif={applyToSeries.checked}
         >
           {t("player:applyToSeries")}
         </button>
@@ -82,13 +82,13 @@ export function EpisodesPanelTv({ item, onClose }: EpisodesPanelProps) {
   const { t } = useTranslation("player");
   // Ici deux choses sont teintées : l'onglet de la saison affichée, et
   // l'épisode en cours. L'onglet vient avant dans le document, d'où le filtre.
-  const racine = useMarker<HTMLDivElement>((panel) =>
+  const root = useMarker<HTMLDivElement>((panel) =>
     markPanelEntry(panel, isEpisodeRow),
   );
   if (!item.SeriesId) return null;
 
   return (
-    <div className="panneau-tv" role="dialog" aria-label={t("player:episodes")} ref={racine}>
+    <div className="panneau-tv" role="dialog" aria-label={t("player:episodes")} ref={root}>
       <EpisodeSelectorPanel
         seriesId={item.SeriesId}
         currentEpisodeId={item.Id}

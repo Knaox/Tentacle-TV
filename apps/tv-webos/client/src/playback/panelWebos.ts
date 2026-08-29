@@ -62,13 +62,13 @@ export function rangeFromModel(raw: CapabilitiesTv): RangeTv {
   if (typeof raw.panelType === "string" && raw.panelType.toUpperCase() === "OLED") {
     return "oled";
   }
-  const nom = (raw.modelName ?? "").toUpperCase();
-  if (nom.startsWith("OLED")) return "oled";
-  if (nom.includes("QNED")) return "qned";
-  if (nom.includes("NANO")) return "nano";
+  const name = (raw.modelName ?? "").toUpperCase();
+  if (name.startsWith("OLED")) return "oled";
+  if (name.includes("QNED")) return "qned";
+  if (name.includes("NANO")) return "nano";
   // La gamme UHD d'entrée : `50UR78006LK`, `43UQ75006LF` — deux chiffres de
   // diagonale, `U`, la lettre de millésime, puis la série.
-  if (/\d{2}U[A-Z]\d/.test(nom)) return "uhd";
+  if (/\d{2}U[A-Z]\d/.test(name)) return "uhd";
   return null;
 }
 

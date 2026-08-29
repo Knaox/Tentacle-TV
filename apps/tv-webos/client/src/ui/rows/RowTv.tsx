@@ -7,7 +7,7 @@ import { useRowScroll } from "@/components/rows/useRowScroll";
 import { useRowCardWidth } from "@/components/rows/useRowCardWidth";
 import { useRowWindow } from "@/components/rows/useRowWindow";
 import { useInViewport } from "@/hooks/useInViewport";
-import { PisteTv } from "./TrackTv";
+import { TrackTv } from "./TrackTv";
 
 export type CardVariant = "poster" | "episode";
 
@@ -69,7 +69,7 @@ export function MediaRow({
     onScreen: near.visible,
   });
 
-  const surDefilement = useCallback(() => {
+  const handleScroll = useCallback(() => {
     onScroll();
     track.onScroll();
   }, [onScroll, track]);
@@ -87,7 +87,7 @@ export function MediaRow({
       return;
     }
     const observer = new IntersectionObserver(
-      ([entree]) => entree.isIntersecting && setVisible(true),
+      ([entry]) => entry.isIntersecting && setVisible(true),
       { threshold: 0.1 },
     );
     observer.observe(element);
@@ -139,7 +139,7 @@ export function MediaRow({
           rejouer. Derrière la porte, ils ne mesuraient donc RIEN — voir le
           commentaire de `TrackTv`. */}
       <div ref={near.ref} className="relative">
-        <PisteTv
+        <TrackTv
           scrollRef={scrollRef}
           items={items}
           variant={variant}
@@ -148,7 +148,7 @@ export function MediaRow({
           range={track.range}
           filled={visible}
           onActiveIndex={onActiveIndexChange}
-          onScroll={surDefilement}
+          onScroll={handleScroll}
         />
       </div>
     </section>

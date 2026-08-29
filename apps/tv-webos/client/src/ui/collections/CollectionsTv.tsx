@@ -35,14 +35,14 @@ function CollectionTv({
   title,
   items,
   isLoading,
-  messageVide,
+  emptyMessage,
   emptyHint,
   icon,
 }: {
   title: string;
   items: ReturnType<typeof useWatchlistAll>["data"];
   isLoading: boolean;
-  messageVide: string;
+  emptyMessage: string;
   emptyHint: string;
   icon?: React.ReactNode;
 }) {
@@ -71,7 +71,7 @@ function CollectionTv({
           title={title}
           items={items}
           isLoading={isLoading}
-          emptyMessage={messageVide}
+          emptyMessage={emptyMessage}
           emptyHint={emptyHint}
           emptyIcon={icon}
           selectionMode={selection}
@@ -90,7 +90,7 @@ export function Watchlist() {
       title={t("common:myList")}
       items={items}
       isLoading={isLoading}
-      messageVide={t("common:emptyWatchlist")}
+      emptyMessage={t("common:emptyWatchlist")}
       emptyHint={t("common:emptyWatchlistHint")}
       icon={
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -110,7 +110,7 @@ export function Favorites() {
       title={t("common:myFavorites")}
       items={items}
       isLoading={isLoading}
-      messageVide={t("common:emptyFavorites")}
+      emptyMessage={t("common:emptyFavorites")}
       emptyHint={t("common:emptyFavoritesHint")}
     />
   );

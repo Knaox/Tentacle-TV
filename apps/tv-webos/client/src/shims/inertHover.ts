@@ -79,7 +79,7 @@ export function useHoverPreview(_disabled = false): HoverPreview {
 export function useHoverGuard(
   _ref: React.RefObject<HTMLElement | null>,
   _active: boolean,
-  _sortie: () => void,
+  _onExit: () => void,
 ): void {
   /* Aucun écouteur global. */
 }
@@ -88,7 +88,7 @@ export function useHoverGuard(
 export function useHoverEscape(
   _ref: React.RefObject<HTMLElement | null>,
   _active: boolean,
-  _sortie: () => void,
+  _onExit: () => void,
 ): void {
   /* Aucun écouteur global. */
 }
@@ -106,7 +106,7 @@ export function pointerStillOn(_element: HTMLElement | null): boolean {
  * `mounted` toujours faux : les commandes révélées au survol ne sont jamais
  * montées. `hovered` suit, pour que le style de l'appelant reste cohérent.
  */
-export function useHoverMount(_sortieMs: number): {
+export function useHoverMount(_exitMs: number): {
   hovered: boolean;
   mounted: boolean;
   onMouseEnter: () => void;

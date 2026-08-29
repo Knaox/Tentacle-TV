@@ -54,12 +54,12 @@ const CONTENT_SELECTOR = "[data-tv-piste], [data-tv-grille]";
 const MAIN_ACTION_SELECTOR = '[class*="cta-primary"]';
 
 export function defaultFocus(
-  racine: ParentNode = document,
-  candidates: Candidate[] = collect(racine),
+  root: ParentNode = document,
+  candidates: Candidate[] = collect(root),
 ): HTMLElement | null {
   if (candidates.length === 0) return null;
 
-  return preferredTarget(racine, candidates) ?? firstInReadingOrder(candidates);
+  return preferredTarget(root, candidates) ?? firstInReadingOrder(candidates);
 }
 
 /**
@@ -76,8 +76,8 @@ export function defaultFocus(
  * l'utilisateur n'a pas pris la main.
  */
 export function preferredTarget(
-  racine: ParentNode = document,
-  candidates: Candidate[] = collect(racine),
+  root: ParentNode = document,
+  candidates: Candidate[] = collect(root),
 ): HTMLElement | null {
   const designates = candidates.find((candidate) => candidate.element.hasAttribute(DEFAULT_ATTRIBUTE));
   if (designates) return designates.element;
@@ -97,21 +97,21 @@ export function preferredTarget(
   //
   // Le rail en est exclu comme partout : on n'entre jamais dans un écran par sa
   // navigation.
-  const courante = candidates.find(
+  const current = candidates.find(
     (candidate) =>
       !candidate.element.closest(RAIL_SELECTOR) &&
       candidate.element.matches('[aria-current]:not([aria-current="false"])'),
   );
-  if (courante) return courante.element;
+  if (current) return current.element;
 
-  const content = racine.querySelector(CONTENT_SELECTOR);
+  const content = root.querySelector(CONTENT_SELECTOR);
   if (!content) return null;
 
-  const carte = candidates.find(
+  const card = candidates.find(
     (candidate) =>
       content.contains(candidate.element) && candidate.element.hasAttribute("data-tv-carte"),
   );
-  return carte ? carte.element : null;
+  return card ? card.element : null;
 }
 
 /** L'élément est-il déjà une cible d'entrée légitime ? */
@@ -150,15 +150,15 @@ function firstInReadingOrder(candidates: Candidate[]): HTMLElement | null {
   // Mesuré sur l'émulateur webOS 4, puis reproduit sur le Simulator 26 : un
   // `blur()` sur le champ est suivi d'un unique appel à `focus()` qui l'y
   // ramène, et le clavier remonte dans la foulée.
-  const sansChamp = candidates.filter((candidate) => !isInputField(candidate.element));
-  const acceptables = sansChamp.filter((candidate) => !candidate.element.closest(RAIL_SELECTOR));
+  const withoutField = candidates.filter((candidate) => !isInputField(candidate.element));
+  const acceptables = withoutField.filter((candidate) => !candidate.element.closest(RAIL_SELECTOR));
 
   // Un écran qui n'offre que le rail vaut mieux qu'un écran sans anneau du
   // tout : ce relâchement-là reste. Un écran qui n'offre qu'un champ, non —
   // mieux vaut pas d'anneau qu'un anneau dont on ne peut plus sortir. Le champ
   // reste atteignable à la flèche et par la pose explicite de l'écran de
   // recherche ; c'est l'automatisme, et lui seul, qui s'en écarte.
-  const kept = acceptables.length > 0 ? acceptables : sansChamp;
+  const kept = acceptables.length > 0 ? acceptables : withoutField;
   if (kept.length === 0) return null;
 
   let best = kept[0];

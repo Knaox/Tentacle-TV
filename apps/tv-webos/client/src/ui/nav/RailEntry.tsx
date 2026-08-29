@@ -5,7 +5,7 @@ import { createLongPress } from "../../focus/longPress";
 import { primeFocus } from "../../focus/entry";
 import { openSearch } from "../search/searchState";
 import { useRailPinning } from "./pinningTv";
-import type { EntreeRail, RailIcon } from "./railEntries";
+import type { RailEntryItem, RailIcon } from "./railEntries";
 
 /**
  * Une entrée du rail : une icône, et un libellé qui n'apparaît qu'au déploiement.
@@ -38,15 +38,15 @@ const ICONS: Record<RailIcon, typeof Home> = {
 };
 
 interface RailEntryProps {
-  entree: EntreeRail;
+  entry: RailEntryItem;
   active: boolean;
   expanded: boolean;
 }
 
-export function RailEntree({ entree, active, expanded }: RailEntryProps) {
-  const Icon = ICONS[entree.icon];
+export function RailEntry({ entry, active, expanded }: RailEntryProps) {
+  const Icon = ICONS[entry.icon];
   const navigate = useNavigate();
-  const lien = useRef<HTMLAnchorElement>(null);
+  const link = useRef<HTMLAnchorElement>(null);
   const pinning = useRailPinning();
 
   /**
@@ -67,18 +67,18 @@ export function RailEntree({ entree, active, expanded }: RailEntryProps) {
    * l'autre pour que le rail se referme.
    */
   const shortAction = useCallback(() => {
-    if (entree.searching) {
+    if (entry.searching) {
       openSearch();
       return;
     }
-    if (entree.restored) {
+    if (entry.restored) {
       pinning.showAll();
       return;
     }
-    navigate(entree.path);
-    lien.current?.blur();
+    navigate(entry.path);
+    link.current?.blur();
     window.setTimeout(() => primeFocus(), 0);
-  }, [entree.path, entree.searching, entree.restored, pinning, navigate]);
+  }, [entry.path, entry.searching, entry.restored, pinning, navigate]);
 
   /**
    * Masquer l'entrée la retire du document, donc emporte le focus avec elle.
@@ -87,30 +87,30 @@ export function RailEntree({ entree, active, expanded }: RailEntryProps) {
    * quand la liste a été redessinée.
    */
   const longAction = useCallback(() => {
-    const item = lien.current?.closest("li");
+    const item = link.current?.closest("li");
     const neighbor = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
     const target = neighbor ? neighbor.querySelector<HTMLElement>(".rail-entree") : null;
 
-    pinning.toggle(entree.key);
+    pinning.toggle(entry.key);
     if (target) window.setTimeout(() => target.focus(), 0);
-  }, [entree.key, pinning]);
+  }, [entry.key, pinning]);
 
   const press = useMemo(
     () =>
       createLongPress({
         short: shortAction,
-        long: entree.hideable ? longAction : undefined,
+        long: entry.hideable ? longAction : undefined,
       }),
-    [shortAction, longAction, entree.hideable],
+    [shortAction, longAction, entry.hideable],
   );
 
   return (
     <Link
-      ref={lien}
-      to={entree.path}
+      ref={link}
+      to={entry.path}
       className="rail-entree"
       data-active={active}
-      data-hideable={entree.hideable || undefined}
+      data-masquable={entry.hideable || undefined}
       aria-current={active ? "page" : undefined}
       /* Le pointeur de la Magic Remote passe par le clic, pas par les touches :
          sans cette interception, viser « Rechercher » suivrait le `href` au lieu
@@ -127,8 +127,8 @@ export function RailEntree({ entree, active, expanded }: RailEntryProps) {
       <span className="rail-entree-icone" aria-hidden>
         <Icon size={26} strokeWidth={2} />
       </span>
-      <span className="rail-entree-libelle" data-expanded={expanded}>
-        {entree.label}
+      <span className="rail-entree-libelle" data-deploye={expanded}>
+        {entry.label}
       </span>
     </Link>
   );

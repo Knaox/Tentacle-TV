@@ -85,9 +85,9 @@ export function SettingsLayout() {
    * mécanisme prévu — `default.ts` le lit en premier —, et il reste confiné à
    * notre substitution : `apps/web` n'apprend rien.
    */
-  const cadre = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const button = cadre.current?.querySelector<HTMLElement>(
+    const button = frame.current?.querySelector<HTMLElement>(
       'button[aria-current]:not([aria-current="false"])',
     );
     if (!button) return;
@@ -113,7 +113,7 @@ export function SettingsLayout() {
   }, [activeIdentifier]);
 
   return (
-    <div className="pt-6" ref={cadre}>
+    <div className="pt-6" ref={frame}>
       <SettingsShell
         sections={sections}
         activeId={activeIdentifier}

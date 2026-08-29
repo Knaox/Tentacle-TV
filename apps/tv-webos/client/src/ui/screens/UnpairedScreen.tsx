@@ -4,7 +4,7 @@ import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
 import { storePairing } from "../../bootstrap/fragmentToken";
 import { usePairingRelay } from "../../auth/usePairingRelay";
-import { BasculeLangueTv } from "./LanguageToggleTv";
+import { LanguageToggleTv } from "./LanguageToggleTv";
 
 /**
  * L'écran de jumelage du client.
@@ -47,7 +47,7 @@ export function UnpairedScreen() {
    * cache lisent le jeton au démarrage, et un simple changement de route les
    * laisserait sur l'ancien.
    */
-  const surConfirmation = useCallback((data: RelayStatusResponse) => {
+  const onConfirmed = useCallback((data: RelayStatusResponse) => {
     if (!data.token || !data.user) return;
     const user = { Id: data.user.id, Name: data.user.name };
     const target = (data.serverUrl ?? "").replace(/\/+$/, "");
@@ -64,7 +64,7 @@ export function UnpairedScreen() {
     window.location.href = `${window.location.origin}/tv/`;
   }, []);
 
-  const pairing = usePairingRelay(surConfirmation);
+  const pairing = usePairingRelay(onConfirmed);
 
   const minutes = Math.floor(pairing.remaining / 60);
   const seconds = pairing.remaining % 60;
@@ -73,7 +73,7 @@ export function UnpairedScreen() {
   return (
     <div className="ecran-jumelage">
       <div className="brand-ambient" aria-hidden />
-      <BasculeLangueTv />
+      <LanguageToggleTv />
 
       <div className="carte-jumelage">
         <TentacleLogo size="xl" variant="bare" />
@@ -81,8 +81,8 @@ export function UnpairedScreen() {
         {pairing.state === "code" && pairing.code && (
           <>
             <div className="code-cases">
-              {pairing.code.split("").map((character, rang) => (
-                <span className="code-case" key={`${character}-${rang}`}>
+              {pairing.code.split("").map((character, index) => (
+                <span className="code-case" key={`${character}-${index}`}>
                   {character}
                 </span>
               ))}

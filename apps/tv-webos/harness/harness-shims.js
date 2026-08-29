@@ -14,8 +14,8 @@
  * `__where` relève l'élément focalisé et le défilement.
  */
 if (document.hidden) {
-  window.requestAnimationFrame = (rappel) => {
-    Promise.resolve().then(() => rappel(performance.now()));
+  window.requestAnimationFrame = (callback) => {
+    Promise.resolve().then(() => callback(performance.now()));
     return 0;
   };
 

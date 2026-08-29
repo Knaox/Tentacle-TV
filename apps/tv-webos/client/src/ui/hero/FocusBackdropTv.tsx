@@ -45,7 +45,7 @@ function onBrowseScreen(path: string): boolean {
   return false;
 }
 
-export function FondFocusTv() {
+export function FocusBackdropTv() {
   const { pathname } = useLocation();
   const item = useFocusedItem();
   const client = useJellyfinClient();
@@ -62,11 +62,11 @@ export function FondFocusTv() {
   return (
     <div className="fond-focus" aria-hidden>
       <span className="fond-focus-couche">
-        {layers.map((calque) => (
-          <ImageDeFond
-            key={calque.url}
-            url={calque.url}
-            leaving={calque.leaving}
+        {layers.map((layer) => (
+          <BackdropImage
+            key={layer.url}
+            url={layer.url}
+            leaving={layer.leaving}
             onEnter={reportEntered}
             onExited={reportExited}
           />
@@ -85,11 +85,11 @@ export function FondFocusTv() {
  * Le fondu posé sur le conteneur courait pendant que l'image était encore en
  * vol : quand elle arrivait, l'animation était finie et elle surgissait d'un
  * coup. `apps/tv` traite ce point en ne déclenchant le fondu croisé que sur
- * `onLoad` — on fait pareil, d'où `data-loaded`.
+ * `onLoad` — on fait pareil, d'où `data-charge`.
  *
  * Mais avec une TRANSITION, le cas de l'image déjà en cache retombait dans le
  * même défaut par l'autre bout : `complete` étant vrai dès la première ref,
- * `data-loaded` passait à vrai au premier rendu, l'état initial et l'état final
+ * `data-charge` passait à vrai au premier rendu, l'état initial et l'état final
  * se confondaient, et la transition n'avait rien à interpoler. Revenir sur une
  * carte déjà visitée faisait donc apparaître son décor d'un bloc.
  *
@@ -102,7 +102,7 @@ export function FondFocusTv() {
  * `onLoad` ne part jamais, et le fond resterait invisible. C'est le mode de
  * panne classique de ce motif.
  */
-function ImageDeFond({
+function BackdropImage({
   url,
   leaving,
   onEnter,
@@ -113,15 +113,15 @@ function ImageDeFond({
   onEnter: (url: string) => void;
   onExited: (url: string) => void;
 }) {
-  const [loaded, setCharge] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const attach = useCallback((element: HTMLImageElement | null) => {
-    if (element?.complete && element.naturalWidth > 0) setCharge(true);
+    if (element?.complete && element.naturalWidth > 0) setLoaded(true);
   }, []);
 
   // Une seule fin d'animation à traiter par calque : celle de son entrée le
   // rend seul à l'écran, celle de sa sortie le démonte.
-  const surFinAnimation = useCallback(() => {
+  const onAnimationEnd = useCallback(() => {
     if (leaving) onExited(url);
     else onEnter(url);
   }, [leaving, url, onEnter, onExited]);
@@ -130,12 +130,12 @@ function ImageDeFond({
     <img
       ref={attach}
       className="fond-focus-image"
-      data-loaded={loaded}
-      data-leaving={leaving}
+      data-charge={loaded}
+      data-sortant={leaving}
       src={url}
       alt=""
-      onLoad={() => setCharge(true)}
-      onAnimationEnd={surFinAnimation}
+      onLoad={() => setLoaded(true)}
+      onAnimationEnd={onAnimationEnd}
     />
   );
 }

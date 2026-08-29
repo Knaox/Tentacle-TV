@@ -12,7 +12,7 @@ import { ENTRY_ATTRIBUTE } from "../focus/zones";
  *
  * Et quand rien n'est actif — série jamais commencée, sous-titres coupés —,
  * c'est la PREMIÈRE option de la liste qui est visée, jamais la croix : voir le
- * repli d'`optionDEntree`.
+ * repli d'`entryOption`.
  *
  * **Comment on reconnaît l'option active, et pourquoi pas par sa classe.** Le
  * panneau du web ne pose aucun ARIA : sa sélection est un habillage, et rien
@@ -97,7 +97,7 @@ function inList(button: HTMLElement, panel: HTMLElement): boolean {
  * du panneau, c'est-à-dire la croix de fermeture. Ouvrir un menu pour y viser
  * le bouton qui le referme est la seule entrée qu'on ne veuille jamais.
  */
-function optionDEntree(
+function entryOption(
   panel: HTMLElement,
   remember?: (button: HTMLElement) => boolean,
 ): HTMLElement | null {
@@ -129,7 +129,7 @@ export function markPanelEntry(
   remember?: (button: HTMLElement) => boolean,
 ): void {
   const old = panel.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
-  const wanted = optionDEntree(panel, remember);
+  const wanted = entryOption(panel, remember);
   if (old === wanted) return;
   if (old) old.removeAttribute(ENTRY_ATTRIBUTE);
   if (wanted) wanted.setAttribute(ENTRY_ATTRIBUTE, "");

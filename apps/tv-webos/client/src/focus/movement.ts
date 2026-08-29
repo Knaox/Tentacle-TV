@@ -15,9 +15,9 @@ import { closeExpandedMenu } from "./expandedMenu";
 import {
   RAIL_SELECTOR,
   inRail,
-  entreeDuRail,
+  railEntry,
   redirectZoneEntry,
-  sortieDuRail,
+  railExit,
 } from "./zones";
 
 /**
@@ -89,8 +89,8 @@ export function move(direction: Direction): void {
   // Aucun voisin : soit on est au bord, soit la cible n'est pas montée. Le
   // fenêtrage des rangées vide une rangée entière dès qu'elle sort de l'écran,
   // et une carte non montée ne peut pas recevoir le focus.
-  const premier = scrollByStep(activeElement(), direction, trap);
-  if (!premier) return;
+  const first = scrollByStep(activeElement(), direction, trap);
+  if (!first) return;
 
   reviewAfterMount(() => aim(direction), {
     budgetMs: STEP_BUDGET_MS,
@@ -102,16 +102,16 @@ export function move(direction: Direction): void {
       // différent — sauf ce qui a accosté un bord.
       const second = scrollByStep(activeElement(), direction, trap);
       if (!second) {
-        if (!premier.docked) premier.cancel();
+        if (!first.docked) first.cancel();
         return;
       }
       reviewAfterMount(() => aim(direction), {
         budgetMs: STEP_BUDGET_MS,
         onTimeout: () => {
           if (stale()) return;
-          if (second.docked || premier.docked) return;
+          if (second.docked || first.docked) return;
           second.cancel();
-          premier.cancel();
+          first.cancel();
         },
       });
     },
@@ -130,8 +130,8 @@ export function aim(direction: Direction): boolean {
   // contenu ce qu'on lui avait pris, la gauche est le bord du monde.
   if (!trap && inRail(start)) return aimInRail(start, direction);
 
-  const racine = trap ?? document;
-  let candidates = collect(racine).filter((candidate) => candidate.element !== start);
+  const root = trap ?? document;
+  let candidates = collect(root).filter((candidate) => candidate.element !== start);
 
   // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
   // de l'écran : sans cette règle, « bas » depuis une carte y remonterait au
@@ -170,9 +170,9 @@ export function aim(direction: Direction): boolean {
   // Une GRILLE se confine de la même façon, mais par les ordonnées : elle n'a
   // aucun conteneur par ligne.
   if (isHorizontal(direction)) {
-    const piste = start.closest("[data-tv-piste]");
-    if (piste) {
-      candidates = candidates.filter((candidate) => piste.contains(candidate.element));
+    const track = start.closest("[data-tv-piste]");
+    if (track) {
+      candidates = candidates.filter((candidate) => track.contains(candidate.element));
     } else if (start.closest("[data-tv-grille]")) {
       candidates = candidates.filter((candidate) => onSameRow(since, candidate.box));
     }
@@ -183,10 +183,10 @@ export function aim(direction: Direction): boolean {
     // deux rangées plus bas. La colonne d'abord ; si elle n'a pas de suite —
     // dernière rangée incomplète —, la première ligne rencontrée, et la carte
     // la moins désalignée y gagne.
-    const grille = start.closest("[data-tv-grille]");
+    const grid = start.closest("[data-tv-grille]");
     let confine = false;
-    if (grille) {
-      const inGrid = candidates.filter((candidate) => grille.contains(candidate.element));
+    if (grid) {
+      const inGrid = candidates.filter((candidate) => grid.contains(candidate.element));
       const sameColumn = inGrid.filter((candidate) =>
         onSameColumn(since, candidate.box),
       );
@@ -226,9 +226,9 @@ export function aim(direction: Direction): boolean {
     // destination est l'écran COURANT, pas l'entrée la plus proche. Un
     // dialogue ouvert garde son piège : on ne s'en évade pas vers le rail.
     if (direction === "gauche" && !trap) {
-      const entree = entreeDuRail();
-      if (entree) {
-        giveFocus(entree);
+      const entry = railEntry();
+      if (entry) {
+        giveFocus(entry);
         return true;
       }
     }
@@ -266,8 +266,8 @@ function aimInRail(start: HTMLElement, direction: Direction): boolean {
   if (direction === "gauche") return true;
 
   if (direction === "droite") {
-    const sortie = sortieDuRail();
-    if (sortie) giveFocus(sortie);
+    const exit = railExit();
+    if (exit) giveFocus(exit);
     return true;
   }
 

@@ -15,8 +15,8 @@ import { NEVER_DEMUXED_CODECS } from "./capabilitiesWebos";
  * Autrement dit : ce module ne remplace pas la mesure, il ne lève que
  * l'ambiguïté que la mesure ne peut pas lever seule.
  */
-export function isPublishableTrack(piste: AudioTrack): boolean {
-  const codec = piste.codec?.toLowerCase();
+export function isPublishableTrack(track: AudioTrack): boolean {
+  const codec = track.codec?.toLowerCase();
   if (!codec) return true;
   return !NEVER_DEMUXED_CODECS.has(codec);
 }

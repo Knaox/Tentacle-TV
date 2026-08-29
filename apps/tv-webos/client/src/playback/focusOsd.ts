@@ -1,6 +1,6 @@
 import { reviewAfterMount } from "../focus/wait";
 import { giveFocus } from "../focus/active";
-import { ENTRY_ATTRIBUTE, destinationEntreeDeZone } from "../focus/zones";
+import { ENTRY_ATTRIBUTE, zoneEntryDestination } from "../focus/zones";
 
 /**
  * Où se pose le focus dans le lecteur, et quand.
@@ -46,7 +46,7 @@ export function enterPanel(): void {
   if (!panel) return;
   if (panel.contains(document.activeElement)) return;
 
-  const provisional = destinationEntreeDeZone(panel);
+  const provisional = zoneEntryDestination(panel);
   if (provisional) giveFocus(provisional);
 
   reviewAfterMount(
@@ -74,12 +74,12 @@ export function enterPanel(): void {
  * « Pistes », et non au milieu de la rangée. S'il a disparu — un changement
  * d'épisode démonte l'habillage — on retombe sur le bouton par défaut.
  */
-export function exitPanel(trigger: HTMLElement | null, racine: HTMLElement | null): void {
+export function exitPanel(trigger: HTMLElement | null, root: HTMLElement | null): void {
   if (trigger && trigger.isConnected) {
     giveFocus(trigger);
     return;
   }
-  poserFocusOsd(racine);
+  setOsdFocus(root);
 }
 
 /**
@@ -112,17 +112,17 @@ export function forgetOsdButton(): void {
  * paraît, puisque la route ne change pas. La rangée dépend en outre de
  * l'épisode suivant, qui arrive après une requête — d'où la révision.
  */
-export function poserFocusOsd(racine: HTMLElement | null): void {
+export function setOsdFocus(root: HTMLElement | null): void {
   reviewAfterMount(() => {
-    if (!racine) return false;
-    if (racine.contains(document.activeElement)) return true;
+    if (!root) return false;
+    if (root.contains(document.activeElement)) return true;
 
     // Le dernier bouton visé d'abord — mais il peut avoir disparu depuis :
     // « épisode suivant » n'existe pas sur le dernier de la saison.
     const memory = lastButton
-      ? racine.querySelector<HTMLElement>(`[data-osd-bouton="${lastButton}"]`)
+      ? root.querySelector<HTMLElement>(`[data-osd-button="${lastButton}"]`)
       : null;
-    const target = memory ?? racine.querySelector<HTMLElement>("[data-osd-defaut]");
+    const target = memory ?? root.querySelector<HTMLElement>("[data-osd-fallback]");
     if (!target) return false;
     giveFocus(target);
     return true;

@@ -4,7 +4,7 @@ import { enterPanel, exitPanel } from "./focusOsd";
 import { accumulate, type SkipTotal } from "./cumulativeSkips";
 import { createScrubMachine, enterScrub, updateScrub, showOsd, setPanel, exitScrub, type ScrubMachine, useTvPlayerState } from "@tentacle-tv/tv-core";
 import { usePlayerCycleTv } from "./playerCycleTv";
-import { BarreProgressionTv } from "./ProgressBarTv";
+import { ProgressBarTv } from "./ProgressBarTv";
 import { HeaderTv } from "./HeaderTv";
 import { TransportRowTv } from "./TransportRowTv";
 import { ScrubOverlayTv } from "./ScrubOverlayTv";
@@ -56,10 +56,10 @@ export function PlayerControls(props: PlayerControlsProps) {
   // que de se reconstruire à chaque image du compteur de temps.
   const position = useRef(currentTime);
   const total = useRef(duration);
-  const lecture = useRef(playing);
+  const playingRef = useRef(playing);
   position.current = currentTime;
   total.current = duration;
-  lecture.current = playing;
+  playingRef.current = playing;
 
   const scrub = useMemo<ScrubMachine>(
     () =>
@@ -71,7 +71,7 @@ export function PlayerControls(props: PlayerControlsProps) {
         onPause: (pause) => {
           // La bascule du lecteur est la seule qu'on connaisse : on ne s'en
           // sert que si l'état courant ne correspond pas à ce qu'on veut.
-          if (pause === !lecture.current) return;
+          if (pause === !playingRef.current) return;
           onTogglePlay();
         },
         onSeek: (seconds) => onSeek(seconds),
@@ -82,7 +82,7 @@ export function PlayerControls(props: PlayerControlsProps) {
 
   useEffect(() => () => scrub.destroy(), [scrub]);
 
-  const quitter = useCallback(() => onBack(), [onBack]);
+  const exit = useCallback(() => onBack(), [onBack]);
 
   /** Ce que les sauts enchaînés ont demandé jusqu'ici, et quand. */
   const skipTotal = useRef<SkipTotal | null>(null);
@@ -118,7 +118,7 @@ export function PlayerControls(props: PlayerControlsProps) {
 
   usePlayerCycleTv({
     mode: state.mode,
-    actions: { togglePlayback: onTogglePlay, skip: skipRaw, quitter, scrub },
+    actions: { togglePlayback: onTogglePlay, skip: skipRaw, exit, scrub },
     scrub,
   });
 
@@ -200,10 +200,10 @@ export function PlayerControls(props: PlayerControlsProps) {
     <div
       className="osd-tv"
       ref={osd}
-      data-panel={state.panel}
+      data-panneau={state.panel}
       onClick={(event) => event.stopPropagation()}
     >
-      <HeaderTv title={title} subtitle={subtitle} onQuitter={quitter} />
+      <HeaderTv title={title} subtitle={subtitle} onExit={exit} />
 
       <div className="osd-tv-bas">
         {state.panel === "tracks" && (
@@ -226,7 +226,7 @@ export function PlayerControls(props: PlayerControlsProps) {
           <EpisodesPanelTv item={item} onClose={() => setPanel("none")} />
         )}
 
-        <BarreProgressionTv
+        <ProgressBarTv
           currentTime={currentTime}
           duration={duration}
           bufferedFraction={buffered}
@@ -234,7 +234,7 @@ export function PlayerControls(props: PlayerControlsProps) {
 
         <TransportRowTv
           playing={playing}
-          aPrecedent={!!hasPreviousEpisode}
+          hasPrevious={!!hasPreviousEpisode}
           hasNext={!!hasNextEpisode}
           hasEpisodes={hasEpisodes}
           hasTracks={hasTracks}
@@ -246,7 +246,7 @@ export function PlayerControls(props: PlayerControlsProps) {
           // Le curseur fantôme se pose où l'on en est, sans avancer : on a
           // demandé à se déplacer, pas encore où.
           onMove={() => scrub.enter()}
-          onPrecedent={() => onPreviousEpisode?.()}
+          onPrevious={() => onPreviousEpisode?.()}
           onNext={() => onNextEpisode?.()}
           onEpisodes={() => setPanel(state.panel === "episodes" ? "none" : "episodes")}
           onTracks={() => setPanel(state.panel === "tracks" ? "none" : "tracks")}

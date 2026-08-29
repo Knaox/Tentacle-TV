@@ -24,7 +24,7 @@ const PERIOD_MS = 4 * 60_000;
 let started = false;
 
 /** Vrai si une lecture est ACTIVE à l'écran (vidéo montée, ni pause ni fin). */
-function lectureActive(): boolean {
+function playbackActive(): boolean {
   const video = document.querySelector("video");
   return video != null && !video.paused && !video.ended;
 }
@@ -33,11 +33,11 @@ function clearScreensaver(): void {
   const bridge = window.PalmServiceBridge;
   if (typeof bridge !== "function") return;
   try {
-    const appel = new bridge();
+    const service = new bridge();
     // Réponse ignorée : l'appel est idempotent et sans retour utile — un refus
     // (service absent) ne change rien à la lecture en cours.
-    appel.onservicecallback = null;
-    appel.call("luna://com.webos.service.tvpower/power/turnOffScreenSaver", JSON.stringify({}));
+    service.onservicecallback = null;
+    service.call("luna://com.webos.service.tvpower/power/turnOffScreenSaver", JSON.stringify({}));
   } catch {
     // Le pont existe mais refuse l'appel : la veille système s'appliquera.
   }
@@ -49,6 +49,6 @@ export function installWakeLock(): void {
   started = true;
   if (typeof window === "undefined" || typeof window.PalmServiceBridge !== "function") return;
   setInterval(() => {
-    if (lectureActive()) clearScreensaver();
+    if (playbackActive()) clearScreensaver();
   }, PERIOD_MS);
 }

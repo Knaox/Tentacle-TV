@@ -11,10 +11,10 @@
  */
 const MAX_LINES = 20;
 
-export function formatRefusal(entete: string, lines: string[], renvoi: string[]): string {
+export function formatRefusal(header: string, lines: string[], footer: string[]): string {
   const rest = lines.length > MAX_LINES
     ? `\n  … et ${lines.length - MAX_LINES} autres`
     : "";
 
-  return [entete, ...lines.slice(0, MAX_LINES), rest, "", ...renvoi].join("\n");
+  return [header, ...lines.slice(0, MAX_LINES), rest, "", ...footer].join("\n");
 }

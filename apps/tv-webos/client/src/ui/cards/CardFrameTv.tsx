@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CardFrame as CadreWeb } from "@/components/cards/CardFrame";
+import { CardFrame as WebFrame } from "@/components/cards/CardFrame";
 
 interface CardFrameProps {
   hovered: boolean;
@@ -34,8 +34,8 @@ interface CardFrameProps {
  */
 export function CardFrame({ aspect, lift, children }: CardFrameProps) {
   return (
-    <CadreWeb hovered={false} aspect={aspect} lift={lift} concealed={false}>
+    <WebFrame hovered={false} aspect={aspect} lift={lift} concealed={false}>
       {children}
-    </CadreWeb>
+    </WebFrame>
   );
 }

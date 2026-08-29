@@ -51,12 +51,12 @@ export function resolveProfile(agent: string = navigator.userAgent): ResolvedPro
   const raw = readTvCaps();
   const platform = readPlatform(raw, agent);
   const panel = inferPanel(raw, platform.year, configsTv());
-  const materiel: HardwareTv = {
+  const hardware: HardwareTv = {
     year: platform.year,
     oled: panel.oled,
     uhd8K: panel.uhd8K,
   };
-  return { platform, capabilities: capabilitiesOf(platform.generation, materiel), panel };
+  return { platform, capabilities: capabilitiesOf(platform.generation, hardware), panel };
 }
 
 /**
@@ -107,7 +107,7 @@ export function resolveProfile(agent: string = navigator.userAgent): ResolvedPro
  * couche de base est en IPT-PQ-C2, verdâtre sans décodage Dolby Vision — donc
  * `DOVI` nu reste tu, et lui seul continue d'être remuxé.
  *
- * Sur webOS 25, la question ne se pose plus : `doviEnMkv` devient vrai, le
+ * Sur webOS 25, la question ne se pose plus : `doviInMkv` devient vrai, le
  * profil restrictif disparaît, et le Dolby Vision revient en lecture directe.
  *
  * Sur une dalle **sans** Dolby Vision, les `DOVIWith…` restent déclarés pour la
@@ -138,7 +138,7 @@ export function tvDynamicRanges(panel: PanelTv, containerWithoutRpu = false): st
  */
 export function codecDiagnostics(): Record<string, string> {
   if (typeof document === "undefined") return {};
-  const sonde = document.createElement("video");
+  const probe = document.createElement("video");
   const types: Record<string, string> = {
     h264: 'video/mp4; codecs="avc1.640029"',
     hevc: 'video/mp4; codecs="hvc1.1.6.L120.B0"',
@@ -150,11 +150,11 @@ export function codecDiagnostics(): Record<string, string> {
     dts: 'audio/mp4; codecs="dtsc"',
   };
   const sample: Record<string, string> = {};
-  for (const nom of Object.keys(types)) {
+  for (const name of Object.keys(types)) {
     // `canPlayType` rend "", "maybe" ou "probably". La chaîne nue est plus
     // parlante qu'un booléen : « maybe » est la réponse habituelle d'un
     // décodeur matériel qui ne peut garantir un profil précis.
-    sample[nom] = sonde.canPlayType(types[nom]) || "non";
+    sample[name] = probe.canPlayType(types[name]) || "non";
   }
   return sample;
 }

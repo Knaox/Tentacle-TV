@@ -71,10 +71,10 @@
     if (pollInFlight) return;
     pollInFlight = true;
 
-    var done = function (rappel) {
+    var done = function (callback) {
       return function (argument) {
         pollInFlight = false;
-        rappel(argument);
+        callback(argument);
       };
     };
 

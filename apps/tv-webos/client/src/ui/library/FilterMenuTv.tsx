@@ -1,7 +1,7 @@
 import { useRef, type ComponentProps } from "react";
 import { FilterMenu as MenuWeb } from "@/components/library/FilterMenu";
 import { useMarker } from "../marker";
-import { ENTRY_ATTRIBUTE, destinationEntreeDeZone } from "../../focus/zones";
+import { ENTRY_ATTRIBUTE, zoneEntryDestination } from "../../focus/zones";
 import { giveFocus } from "../../focus/active";
 import { reviewAfterMount } from "../../focus/wait";
 
@@ -62,18 +62,18 @@ export function FilterMenu(props: ComponentProps<typeof MenuWeb>) {
   // des genres. Sans cette mémoire, on reprendrait le focus à l'utilisateur en
   // train de saisir.
   const served = useRef<HTMLElement | null>(null);
-  const cadre = useMarker<HTMLDivElement>((element) => equipPanel(element, served));
+  const frame = useMarker<HTMLDivElement>((element) => equipPanel(element, served));
 
   return (
-    <div ref={cadre}>
+    <div ref={frame}>
       <MenuWeb {...props} width={Math.max(props.width ?? 0, MIN_WIDTH)} />
     </div>
   );
 }
 
 /** Idempotent : chaque écriture est gardée par la valeur qu'elle poserait. */
-function equipPanel(cadre: HTMLElement, served: { current: HTMLElement | null }): void {
-  const trigger = cadre.querySelector<HTMLElement>('[aria-haspopup="true"]');
+function equipPanel(frame: HTMLElement, served: { current: HTMLElement | null }): void {
+  const trigger = frame.querySelector<HTMLElement>('[aria-haspopup="true"]');
   const panel = trigger?.nextElementSibling;
   if (!(panel instanceof HTMLElement)) {
     served.current = null;
@@ -121,7 +121,7 @@ function enterThePanel(panel: HTMLElement): void {
   // réseau — et un rectangle de taille nulle n'est pas recensé. On attend le
   // montage plutôt que de viser dans le vide.
   reviewAfterMount(() => {
-    const target = destinationEntreeDeZone(panel);
+    const target = zoneEntryDestination(panel);
     if (!target) return false;
     // Un panneau qui n'offre que de la SAISIE — les deux années — garde son
     // entrée explicite : pas de clavier système sans geste de l'utilisateur.

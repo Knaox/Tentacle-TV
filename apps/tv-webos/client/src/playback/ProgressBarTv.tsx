@@ -50,15 +50,15 @@ function percentOfFraction(fraction: number): number {
   return Math.min(100, Math.max(0, fraction * 100));
 }
 
-export function BarreProgressionTv({
+export function ProgressBarTv({
   currentTime,
   duration,
   bufferedFraction,
   ghost = null,
 }: BarProps) {
-  const lu = percent(currentTime, duration);
+  const played = percent(currentTime, duration);
   const loaded = percentOfFraction(bufferedFraction);
-  const vise = ghost === null ? null : percent(ghost, duration);
+  const aimed = ghost === null ? null : percent(ghost, duration);
 
   return (
     <div className="barre-tv">
@@ -72,9 +72,9 @@ export function BarreProgressionTv({
         aria-valuenow={Math.round(ghost ?? currentTime)}
       >
         <span className="barre-tv-tampon" style={{ width: `${loaded}%` }} />
-        <span className="barre-tv-lu" style={{ width: `${lu}%` }} />
-        <span className="barre-tv-pastille" style={{ left: `${lu}%` }} />
-        {vise !== null && <span className="barre-tv-fantome" style={{ left: `${vise}%` }} />}
+        <span className="barre-tv-lu" style={{ width: `${played}%` }} />
+        <span className="barre-tv-pastille" style={{ left: `${played}%` }} />
+        {aimed !== null && <span className="barre-tv-fantome" style={{ left: `${aimed}%` }} />}
       </div>
 
       <span className="barre-tv-temps">{formatDuration(duration)}</span>

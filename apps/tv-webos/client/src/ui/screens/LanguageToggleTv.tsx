@@ -18,7 +18,7 @@ import { useTranslation } from "react-i18next";
  * Le choix est mémorisé sous la même clé que partout — `tentacle_language` —
  * donc il survit au jumelage et le client démarre dans la bonne langue.
  */
-export function BasculeLangueTv() {
+export function LanguageToggleTv() {
   const { i18n } = useTranslation();
   const current2 = i18n.language?.slice(0, 2) === "fr" ? "fr" : "en";
   const target = current2 === "fr" ? "en" : "fr";

@@ -88,10 +88,10 @@ export function EpisodeList({
     if (!aimTheFirst.current) return;
     if (episodesLoading || !episodes?.length) return;
     aimTheFirst.current = false;
-    const premiere = list.current?.querySelector<HTMLElement>(".ligne-episode-tv");
+    const first = list.current?.querySelector<HTMLElement>(".ligne-episode-tv");
     // Par le moteur, jamais `focus()` nu : sur la dalle, le focus natif
     // recentre la ligne au lieu de la poser sous la bande des saisons.
-    if (premiere) giveFocus(premiere);
+    if (first) giveFocus(first);
   }, [episodes, episodesLoading]);
 
   const chooseSeason = useCallback((seasonId: string) => {

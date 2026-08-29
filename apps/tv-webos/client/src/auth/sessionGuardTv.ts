@@ -37,7 +37,7 @@ const PROACTIVE_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
 interface ClientSession {
   setAccessToken(token: string | null): void;
-  setOnAuthExpired(rappel: () => void): void;
+  setOnAuthExpired(callback: () => void): void;
 }
 
 interface SessionStorage {
@@ -71,16 +71,16 @@ export async function revalidateSession(): Promise<VerdictSession> {
 
     if (response.status === 401) {
       // Seul `revoked: true` transforme un refus en verdict de révocation.
-      const corps = (await response.json().catch(() => null)) as { revoked?: boolean } | null;
-      return corps?.revoked === true ? "revoked" : "expired";
+      const body = (await response.json().catch(() => null)) as { revoked?: boolean } | null;
+      return body?.revoked === true ? "revoked" : "expired";
     }
     if (!response.ok) return "unreachable";
 
     // Double ceinture, reprise du garde web : un repli monopage renvoie
     // `index.html` avec un statut 200. Une réponse qui ne parle pas de jeton
     // n'est pas une réponse d'authentification.
-    const corps = await response.text();
-    return corps.includes("AccessToken") || corps.includes("token") ? "ok" : "unreachable";
+    const body = await response.text();
+    return body.includes("AccessToken") || body.includes("token") ? "ok" : "unreachable";
   } catch {
     return "unreachable";
   }
@@ -113,7 +113,7 @@ export function installTvSessionGuard(deps: {
     checkInProgress = true;
     try {
       let confirmations = 0;
-      for (let tour = 0; tour < REVOCATION_CONFIRMATIONS; tour++) {
+      for (let round = 0; round < REVOCATION_CONFIRMATIONS; round++) {
         const verdict = await revalidateSession();
         if (verdict === "ok") return;
         if (verdict === "expired") {

@@ -13,7 +13,7 @@
 
   var ADDRESS_KEY = "tentacle_webos_serveur";
 
-  function lire() {
+  function read() {
     try {
       return global.localStorage.getItem(ADDRESS_KEY) || "";
     } catch (e) {
@@ -21,9 +21,9 @@
     }
   }
 
-  function write(adresse) {
+  function write(address) {
     try {
-      global.localStorage.setItem(ADDRESS_KEY, adresse);
+      global.localStorage.setItem(ADDRESS_KEY, address);
     } catch (e) {
       /* Quota ou stockage desactive : on continue sans memoriser. */
     }
@@ -40,16 +40,16 @@
   /* Normalise ce que l'utilisateur a saisi a la telecommande :
    * ajoute le schema s'il manque, retire les espaces et le slash final. */
   function normalize(input) {
-    var adresse = String(input || "").replace(/^\s+|\s+$/g, "");
-    if (adresse === "") return "";
-    if (!/^https?:\/\//i.test(adresse)) {
-      adresse = "http://" + adresse;
+    var address = String(input || "").replace(/^\s+|\s+$/g, "");
+    if (address === "") return "";
+    if (!/^https?:\/\//i.test(address)) {
+      address = "http://" + address;
     }
-    return adresse.replace(/\/+$/, "");
+    return address.replace(/\/+$/, "");
   }
 
   global.ShellStorage = {
-    lire: lire,
+    read: read,
     write: write,
     forget: forget,
     normalize: normalize

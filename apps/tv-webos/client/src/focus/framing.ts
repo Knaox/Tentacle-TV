@@ -21,8 +21,8 @@
 
 /** Une étendue sur un axe : bord d'entrée, bord de sortie. */
 export interface Segment {
-  debut: number;
-  fin: number;
+  start: number;
+  end: number;
 }
 
 /**
@@ -48,7 +48,7 @@ export interface Slack {
  * étroite. Nulle quand l'élément est plus grand que la vue.
  */
 function tenableMargin(element: Segment, view: Segment, requested: number): number {
-  const rest = view.fin - view.debut - (element.fin - element.debut);
+  const rest = view.end - view.start - (element.end - element.start);
   return Math.max(0, Math.min(requested, rest / 2));
 }
 
@@ -76,12 +76,12 @@ function tenableMargin(element: Segment, view: Segment, requested: number): numb
  * suivante rend zéro.
  */
 export function correction(element: Segment, view: Segment, margin: number, slack?: Slack): number {
-  const utile = tenableMargin(element, view, margin);
+  const usable = tenableMargin(element, view, margin);
 
-  const manqueAuDebut = element.debut - utile - view.debut;
-  if (manqueAuDebut < 0) return towardsEdge(manqueAuDebut, slack, margin);
+  const missingAtStart = element.start - usable - view.start;
+  if (missingAtStart < 0) return towardsEdge(missingAtStart, slack, margin);
 
-  const overshootsAtEnd = element.fin + utile - view.fin;
+  const overshootsAtEnd = element.end + usable - view.end;
   if (overshootsAtEnd > 0) return towardsEdge(overshootsAtEnd, slack, margin);
 
   return 0;
@@ -93,9 +93,9 @@ function towardsEdge(delta: number, slack: Slack | undefined, margin: number): n
   if (!slack) return delta;
 
   if (delta < 0) {
-    const borne = Math.max(delta, -slack.before);
-    return slack.before + borne <= margin ? -slack.before : borne;
+    const bound = Math.max(delta, -slack.before);
+    return slack.before + bound <= margin ? -slack.before : bound;
   }
-  const borne = Math.min(delta, slack.after);
-  return slack.after - borne <= margin ? slack.after : borne;
+  const bound = Math.min(delta, slack.after);
+  return slack.after - bound <= margin ? slack.after : bound;
 }

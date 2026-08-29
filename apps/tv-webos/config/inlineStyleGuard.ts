@@ -60,7 +60,7 @@ const PROPERTIES = FORBIDDEN_DECLARATIONS
   .filter((entry) => entry.name !== "backdrop-filter")
   .map((entry) => ({
     ...entry,
-    camel: entry.name.replace(/-([a-z])/g, (_, lettre: string) => lettre.toUpperCase()),
+    camel: entry.name.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase()),
   }));
 
 /** Régions d'un fichier où une valeur CSS peut être écrite à la main. */

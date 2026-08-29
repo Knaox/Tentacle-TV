@@ -33,12 +33,12 @@ export function mathFunctionsPass(root: Root, context: CompatContext): void {
     const arguments_ = splitArguments(fn[2]);
     if (arguments_.length !== 2) return;
 
-    const [value, borne] = arguments_;
+    const [value, bound] = arguments_;
     declaration.value = value;
     declaration.after(
       createDecl({
         prop: fn[1] === "min" ? bounds.max : bounds.min,
-        value: borne,
+        value: bound,
       }),
     );
     context.count("fonctions-de-comparaison");

@@ -41,9 +41,9 @@
 /** Ce qu'on observe d'un élément vidéo, sans dépendre du DOM pour les tests. */
 export interface PlaybackSample {
   position: number;
-  enPause: boolean;
+  paused: boolean;
   /** `HTMLMediaElement.readyState` — 4 = HAVE_ENOUGH_DATA. */
-  pret: number;
+  ready: number;
   /** `HTMLMediaElement.error?.code`, `null` s'il n'y en a pas. */
   error: number | null;
   /**
@@ -107,7 +107,7 @@ export function observer(state: WatchState, e: PlaybackSample): [WatchState, Ver
   // En pause voulue, ou pas assez de données : il n'y a rien à surveiller, et
   // surtout rien à reprocher au lecteur. Un gel déjà constaté le reste — un
   // buffering au milieu n'est pas une reprise.
-  if (e.enPause || e.pret < 3) {
+  if (e.paused || e.ready < 3) {
     return [{ ...state, last: e.position, still: 0 }, "none"];
   }
 

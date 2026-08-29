@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { next, type CalqueFond } from "./backgroundLayers";
+import { next, type BackdropLayer } from "./backgroundLayers";
 
 /**
  * Ce que la machine des calques doit tenir, et qu'un rendu ne montrerait pas.
@@ -12,7 +12,7 @@ import { next, type CalqueFond } from "./backgroundLayers";
 const A = "https://serveur/Items/aaa/Images/Backdrop";
 const B = "https://serveur/Items/bbb/Images/Backdrop";
 
-function present(url: string): CalqueFond {
+function present(url: string): BackdropLayer {
   return { url, leaving: false };
 }
 
@@ -49,8 +49,8 @@ describe("suivant", () => {
   });
 
   it("ne fait rien quand il n'y a rien à effacer", () => {
-    const vide: CalqueFond[] = [];
-    expect(next(vide, null)).toBe(vide);
+    const empty: BackdropLayer[] = [];
+    expect(next(empty, null)).toBe(empty);
   });
 
   it("annule le départ d'un calque qui revient, plutôt que d'en monter un second", () => {

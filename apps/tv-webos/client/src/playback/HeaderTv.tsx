@@ -25,17 +25,17 @@ import { rememberOsdButton } from "./focusOsd";
 interface HeaderProps {
   title: string;
   subtitle?: string;
-  onQuitter: () => void;
+  onExit: () => void;
 }
 
-export function HeaderTv({ title, subtitle, onQuitter }: HeaderProps) {
+export function HeaderTv({ title, subtitle, onExit }: HeaderProps) {
   const { t } = useTranslation("player");
 
   // Même mémorisation que dans la rangée : `onFocus` remonte en React, et rien
   // ne subsiste quand l'habillage se démonte.
   const remember = (event: FocusEvent<HTMLDivElement>): void => {
     const target = event.target as HTMLElement;
-    rememberOsdButton(target.getAttribute("data-osd-bouton"));
+    rememberOsdButton(target.getAttribute("data-osd-button"));
   };
 
   return (
@@ -44,7 +44,7 @@ export function HeaderTv({ title, subtitle, onQuitter }: HeaderProps) {
         type="button"
         className="osd-tv-bouton osd-tv-quitter"
         data-osd-button="quitter"
-        onClick={onQuitter}
+        onClick={onExit}
         aria-label={t("player:back")}
       >
         <BackIcon />

@@ -28,8 +28,8 @@ export function ResultCardTv({ item, onOpen }: ResultCardProps) {
   const client = useJellyfinClient();
   const visual = useRef<HTMLDivElement>(null);
 
-  const estEpisode = item.Type === "Episode";
-  const imageIdentifier = estEpisode && item.SeriesId ? item.SeriesId : item.Id;
+  const isEpisode = item.Type === "Episode";
+  const imageIdentifier = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const urlImage = client.getImageUrl(imageIdentifier, "Primary", { height: 360, quality: 85 });
 
   const open2 = useCallback(() => {

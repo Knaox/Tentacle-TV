@@ -47,7 +47,7 @@ const PERIOD_MS = 200;
 
 interface Dimensions {
   width: number;
-  hauteur: number;
+  height: number;
 }
 
 /**
@@ -69,7 +69,7 @@ interface ContentRect {
   bottom: number;
 }
 
-type RappelObservation = (
+type ObserverCallback = (
   entries: Array<{ target: Element; contentRect: ContentRect }>,
   observer: SizeObserver,
 ) => void;
@@ -78,7 +78,7 @@ class SizeObserver {
   private readonly observed = new Map<Element, Dimensions>();
   private timer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private readonly rappel: RappelObservation) {}
+  constructor(private readonly callback: ObserverCallback) {}
 
   observe(target: Element): void {
     if (this.observed.has(target)) return;
@@ -86,7 +86,7 @@ class SizeObserver {
     this.start();
     // Première notification immédiate : le vrai ResizeObserver livre toujours
     // une entrée initiale, et les appelants s'y fient pour leur premier calcul.
-    this.notifier([target]);
+    this.notify([target]);
   }
 
   unobserve(target: Element): void {
@@ -114,17 +114,17 @@ class SizeObserver {
     const changes: Element[] = [];
     for (const [target, previous] of this.observed) {
       const currents2 = measure(target);
-      if (currents2.width === previous.width && currents2.hauteur === previous.hauteur) {
+      if (currents2.width === previous.width && currents2.height === previous.height) {
         continue;
       }
       this.observed.set(target, currents2);
       changes.push(target);
     }
-    if (changes.length > 0) this.notifier(changes);
+    if (changes.length > 0) this.notify(changes);
   }
 
-  private notifier(targets: Element[]): void {
-    this.rappel(
+  private notify(targets: Element[]): void {
+    this.callback(
       targets.map((target) => ({ target, contentRect: contentBox(target) })),
       this,
     );
@@ -133,16 +133,16 @@ class SizeObserver {
 
 function measure(target: Element): Dimensions {
   const rectangle = target.getBoundingClientRect();
-  return { width: Math.round(rectangle.width), hauteur: Math.round(rectangle.height) };
+  return { width: Math.round(rectangle.width), height: Math.round(rectangle.height) };
 }
 
 function contentBox(target: Element): ContentRect {
   const rectangle = target.getBoundingClientRect();
   const style = window.getComputedStyle(target);
 
-  const gauche = pixels(style.paddingLeft);
+  const left = pixels(style.paddingLeft);
   const top = pixels(style.paddingTop);
-  const horizontal = gauche + pixels(style.paddingRight)
+  const horizontal = left + pixels(style.paddingRight)
     + pixels(style.borderLeftWidth) + pixels(style.borderRightWidth);
   const vertical = top + pixels(style.paddingBottom)
     + pixels(style.borderTopWidth) + pixels(style.borderBottomWidth);
@@ -154,13 +154,13 @@ function contentBox(target: Element): ContentRect {
   // c'est le retrait supérieur gauche. Personne ne la lit ici, mais un
   // rectangle à moitié juste est plus coûteux qu'un rectangle entièrement faux.
   return {
-    x: gauche,
+    x: left,
     y: top,
     width,
     height,
-    left: gauche,
+    left: left,
     top: top,
-    right: gauche + width,
+    right: left + width,
     bottom: top + height,
   };
 }
@@ -181,10 +181,10 @@ function completeIntersectionEntry(): void {
   const global = window as unknown as {
     IntersectionObserverEntry?: { prototype: object };
   };
-  const Entree = global.IntersectionObserverEntry;
-  if (!Entree || "isIntersecting" in Entree.prototype) return;
+  const Entry = global.IntersectionObserverEntry;
+  if (!Entry || "isIntersecting" in Entry.prototype) return;
 
-  Object.defineProperty(Entree.prototype, "isIntersecting", {
+  Object.defineProperty(Entry.prototype, "isIntersecting", {
     configurable: true,
     get(this: { intersectionRatio: number }): boolean {
       return this.intersectionRatio > 0;

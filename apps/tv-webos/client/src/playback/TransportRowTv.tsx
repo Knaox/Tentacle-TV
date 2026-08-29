@@ -44,14 +44,14 @@ import { MoveIcon } from "./IconsTv";
 
 interface TransportProps {
   playing: boolean;
-  aPrecedent: boolean;
+  hasPrevious: boolean;
   hasNext: boolean;
   hasEpisodes: boolean;
   hasTracks: boolean;
   onToggle: () => void;
   onSkip: (delta: number) => void;
   onMove: () => void;
-  onPrecedent: () => void;
+  onPrevious: () => void;
   onNext: () => void;
   onEpisodes: () => void;
   onTracks: () => void;
@@ -59,14 +59,14 @@ interface TransportProps {
 
 export function TransportRowTv({
   playing,
-  aPrecedent,
+  hasPrevious,
   hasNext,
   hasEpisodes,
   hasTracks,
   onToggle,
   onSkip,
   onMove,
-  onPrecedent,
+  onPrevious,
   onNext,
   onEpisodes,
   onTracks,
@@ -78,17 +78,17 @@ export function TransportRowTv({
   // ne subsiste quand elle se démonte.
   const remember = (event: FocusEvent<HTMLDivElement>): void => {
     const target = event.target as HTMLElement;
-    rememberOsdButton(target.getAttribute("data-osd-bouton"));
+    rememberOsdButton(target.getAttribute("data-osd-button"));
   };
 
   return (
     <div className="osd-tv-transport" onFocus={remember}>
-      {aPrecedent && (
+      {hasPrevious && (
         <button
           type="button"
           className="osd-tv-bouton"
           data-osd-button="precedent"
-          onClick={onPrecedent}
+          onClick={onPrevious}
           aria-label={t("player:previousEpisode")}
         >
           <PrevEpIcon />
@@ -106,7 +106,7 @@ export function TransportRowTv({
       </button>
 
       {/* `DEFAULT_ATTRIBUTE` en plus de `data-osd-fallback`, et ce n'est pas un
-          doublon : le second dit à `poserFocusOsd` où entrer, le premier le dit
+          doublon : le second dit à `setOsdFocus` où entrer, le premier le dit
           au MOTEUR, qui amorce le focus de son côté à chaque changement de
           route. Les deux couraient, et le moteur arrivait le premier — il
           prenait alors le premier focusable en ordre de lecture, c'est-à-dire

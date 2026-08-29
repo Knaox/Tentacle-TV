@@ -31,7 +31,7 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TARGET = resolve(HERE, "../client/src/styles/tokens-tv.css");
 
-const bloc = (selector, entries) =>
+const block = (selector, entries) =>
   `${selector} {\n${entries.map(([n, v]) => `  ${n}: ${v};`).join("\n")}\n}`;
 
 const sheet = [
@@ -51,7 +51,7 @@ const sheet = [
   " * sur toute feuille. C'est voulu : un téléviseur doit suivre le thème choisi",
   " * par l'utilisateur, il n'a pas à en imposer un autre. */",
   "",
-  bloc(":root", [
+  block(":root", [
     ...partialThemeToCssVarEntries(TV_THEME_TOKEN_OVERRIDES),
     ...tvOnlyCssVarEntries(),
   ]),
@@ -59,7 +59,7 @@ const sheet = [
   "/* Le thème clair reste possible — certains préfèrent une dalle moins sombre",
   " * en plein jour — mais ses surfaces doivent être opaques pour les mêmes",
   " * raisons. */",
-  bloc(
+  block(
     ':root[data-theme="light"]',
     partialThemeToCssVarEntries(TV_THEME_TOKEN_OVERRIDES_LIGHT),
   ),

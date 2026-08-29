@@ -60,18 +60,18 @@ export function ChoicePanelTv({
       <div className="panneau-choix-tv-boite">
         <p className="panneau-choix-tv-titre">{title}</p>
         <ul className="panneau-choix-tv-liste">
-          {choice.map((entree) => {
-            const active = entree.value === selection;
+          {choice.map((entry) => {
+            const active = entry.value === selection;
             return (
-              <li key={entree.value}>
+              <li key={entry.value}>
                 <button
                   type="button"
                   ref={active ? selected : undefined}
-                  data-active={active}
+                  data-actif={active}
                   className="panneau-choix-tv-entree"
-                  onClick={() => onChoose(entree.value)}
+                  onClick={() => onChoose(entry.value)}
                 >
-                  {entree.label}
+                  {entry.label}
                 </button>
               </li>
             );

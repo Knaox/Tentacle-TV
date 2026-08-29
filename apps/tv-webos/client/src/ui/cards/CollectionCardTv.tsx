@@ -1,6 +1,6 @@
 import { memo, useCallback } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { CollectionGridCard as CarteWeb } from "@/components/collection/CollectionGridCard";
+import { CollectionGridCard as WebCard } from "@/components/collection/CollectionGridCard";
 import type { SelectionMode } from "@/components/collection/selectionMode";
 import { FocusableCard } from "./FocusableCard";
 
@@ -34,7 +34,7 @@ interface CollectionCardProps {
  * au focus et le `.hover-reveal { display: none }` de `cards-tv.css`, dont ces
  * deux écrans étaient privés.
  */
-export const CollectionGridCard = memo(function CarteCollectionTv({
+export const CollectionGridCard = memo(function CollectionCardTv({
   item,
   onNavigate,
   selectionMode,
@@ -52,7 +52,7 @@ export const CollectionGridCard = memo(function CarteCollectionTv({
       item={item}
       onActiveIndex={withoutPinning}
     >
-      <CarteWeb item={item} onNavigate={onNavigate} selectionMode={selectionMode} />
+      <WebCard item={item} onNavigate={onNavigate} selectionMode={selectionMode} />
     </FocusableCard>
   );
 });

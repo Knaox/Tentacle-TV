@@ -16,7 +16,7 @@ import {
 const MKV_HEVC_TRUEHD = { container: "mkv", videoCodec: "hevc", audioCodec: "truehd" };
 
 /** Enchaîne les échecs d'une même source et rend les étages atteints. */
-function chute(source: typeof MKV_HEVC_TRUEHD, times: number): string[] {
+function fall(source: typeof MKV_HEVC_TRUEHD, times: number): string[] {
   let memory: FallbackMemory = EMPTY_MEMORY;
   const stages: string[] = [];
   for (let i = 0; i < times; i++) {
@@ -29,16 +29,16 @@ function chute(source: typeof MKV_HEVC_TRUEHD, times: number): string[] {
 
 describe("descendre", () => {
   it("descend d'un étage à la fois, du moins cher au plus cher", () => {
-    expect(chute(MKV_HEVC_TRUEHD, 4)).toEqual(["conteneur", "audio", "video", "epuise"]);
+    expect(fall(MKV_HEVC_TRUEHD, 4)).toEqual(["conteneur", "audio", "video", "epuise"]);
   });
 
   it("ne recompresse l'image qu'au troisième étage", () => {
     // Les deux premiers replis sont un remux, puis un remux avec conversion
     // audio : l'image y est copiée dans les deux cas.
     let memory: FallbackMemory = EMPTY_MEMORY;
-    const premier = stepDown(memory, MKV_HEVC_TRUEHD);
-    expect(premier.videoReencoded).toBe(false);
-    memory = premier.memory;
+    const first = stepDown(memory, MKV_HEVC_TRUEHD);
+    expect(first.videoReencoded).toBe(false);
+    memory = first.memory;
 
     const second = stepDown(memory, MKV_HEVC_TRUEHD);
     expect(second.videoReencoded).toBe(false);

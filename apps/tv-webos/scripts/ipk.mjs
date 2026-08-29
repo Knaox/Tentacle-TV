@@ -20,11 +20,11 @@ import { runAres } from "./aresCli.mjs";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const TARGET_ROOT = resolve(HERE, "..");
 const REPO_ROOT = resolve(TARGET_ROOT, "../..");
-const COQUILLE = resolve(TARGET_ROOT, "shell");
-const SORTIE = resolve(TARGET_ROOT, "dist-ipk");
-const APPINFO = resolve(COQUILLE, "appinfo.json");
+const SHELL = resolve(TARGET_ROOT, "shell");
+const OUTPUT = resolve(TARGET_ROOT, "dist-ipk");
+const APPINFO = resolve(SHELL, "appinfo.json");
 
-function lireVersion() {
+function readVersion() {
   const versions = JSON.parse(readFileSync(resolve(REPO_ROOT, "versions.json"), "utf8"));
   const version = versions.webos;
   if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
@@ -53,23 +53,23 @@ function checkResources() {
   const appinfo = JSON.parse(readFileSync(APPINFO, "utf8"));
   const declared = ["main", "icon", "largeIcon", "bgImage", "splashBackground"];
   const missing = declared
-    .map((champ) => appinfo[champ])
+    .map((field) => appinfo[field])
     .filter((path) => typeof path === "string" && path.length > 0)
-    .filter((path) => !existsSync(resolve(COQUILLE, path)));
+    .filter((path) => !existsSync(resolve(SHELL, path)));
   if (missing.length > 0) {
     throw new Error(`ressources déclarées mais absentes de shell/ : ${missing.join(", ")}`);
   }
 }
 
 function pack() {
-  mkdirSync(SORTIE, { recursive: true });
-  runAres("ares-package", ["--outdir", SORTIE, COQUILLE]);
+  mkdirSync(OUTPUT, { recursive: true });
+  runAres("ares-package", ["--outdir", OUTPUT, SHELL]);
 }
 
-const version = lireVersion();
+const version = readVersion();
 if (syncAppinfo(version)) {
   console.log(`[ipk] appinfo.json aligné sur versions.json → ${version}`);
 }
 checkResources();
 pack();
-console.log(`[ipk] paquet écrit dans ${SORTIE}`);
+console.log(`[ipk] paquet écrit dans ${OUTPUT}`);

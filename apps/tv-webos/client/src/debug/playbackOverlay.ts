@@ -50,7 +50,7 @@ export interface PlaybackReport {
 
 declare global {
   interface Window {
-    __TENTACLE_LECTURE__?: PlaybackReport | null;
+    __TENTACLE_PLAYBACK__?: PlaybackReport | null;
   }
 }
 
@@ -64,7 +64,7 @@ declare global {
  */
 export function publishPlayback(report: PlaybackReport | null): void {
   if (typeof window === "undefined") return;
-  window.__TENTACLE_LECTURE__ = report;
+  window.__TENTACLE_PLAYBACK__ = report;
 }
 
 /**
@@ -74,7 +74,7 @@ export function publishPlayback(report: PlaybackReport | null): void {
  * la piste. Toute autre valeur est une conversion — la chose même qu'on cherche
  * à faire disparaître, et qui ne se voit ni ne s'entend franchement.
  */
-function sortDeLAudio(url?: string | null): [string, boolean | null] {
+function audioFate(url?: string | null): [string, boolean | null] {
   if (!url) return ["—", null];
   if (!url.includes(".m3u8")) return ["source", true];
   const codec = /[?&]AudioCodec=([^&]*)/i.exec(url)?.[1];
@@ -83,13 +83,13 @@ function sortDeLAudio(url?: string | null): [string, boolean | null] {
 }
 
 /** La variante Dolby Vision est-elle celle qui joue ? */
-function sortDeLImage(report: PlaybackReport): [string, boolean] {
+function videoFate(report: PlaybackReport): [string, boolean] {
   if (report.videoReencoded) return ["RECOMPRESSÉE", false];
   return [report.mode === "DirectPlay" ? "fichier d'origine" : "copiée", true];
 }
 
-function line(key: string, value: string, bon: boolean | null): string {
-  const color = bon === null ? "#d4d4d8" : bon ? "#34d399" : "#fb7185";
+function line(key: string, value: string, good: boolean | null): string {
+  const color = good === null ? "#d4d4d8" : good ? "#34d399" : "#fb7185";
   return (
     `<div style="display:flex;gap:12px;justify-content:space-between">` +
     `<span style="color:#a1a1aa">${key}</span>` +
@@ -104,13 +104,13 @@ function draw(report: PlaybackReport | null): void {
     return;
   }
 
-  const racine = existing ?? document.createElement("div");
+  const root = existing ?? document.createElement("div");
   if (!existing) {
-    racine.id = ID;
-    racine.setAttribute("aria-hidden", "true");
+    root.id = ID;
+    root.setAttribute("aria-hidden", "true");
     // Fond OPAQUE : posé sur une image claire, un panneau translucide devient
     // illisible au moment précis où l'on cherche à y lire une valeur.
-    racine.style.cssText = [
+    root.style.cssText = [
       "position:fixed",
       "left:24px",
       "top:24px",
@@ -124,14 +124,14 @@ function draw(report: PlaybackReport | null): void {
       "min-width:340px",
       "opacity:0.94",
     ].join(";");
-    document.body.appendChild(racine);
+    document.body.appendChild(root);
   }
 
-  const [image, imageOk] = sortDeLImage(report);
-  const [audio, audioOk] = sortDeLAudio(report.url);
+  const [image, imageOk] = videoFate(report);
+  const [audio, audioOk] = audioFate(report.url);
   const reasons = report.reasons.length ? report.reasons.join(", ") : "aucune";
 
-  racine.innerHTML =
+  root.innerHTML =
     `<div style="color:#71717a;font-size:12px;letter-spacing:.08em;margin-bottom:6px">LECTURE — DEV</div>` +
     line("mode", report.mode, !report.videoReencoded) +
     line("image", image, imageOk) +
@@ -172,7 +172,7 @@ export function installPlaybackOverlay(): () => void {
     // La visibilité est pliée dans la valeur, et ce n'est pas un détail : un
     // retour anticipé qui laisserait `last` intact empêcherait le panneau de
     // se redessiner au retour des commandes — l'empreinte n'aurait pas bougé.
-    const effective = osdVisible() ? (window.__TENTACLE_LECTURE__ ?? null) : null;
+    const effective = osdVisible() ? (window.__TENTACLE_PLAYBACK__ ?? null) : null;
     const fingerprint = effective ? JSON.stringify(effective) : null;
     if (fingerprint === last) return;
     last = fingerprint;

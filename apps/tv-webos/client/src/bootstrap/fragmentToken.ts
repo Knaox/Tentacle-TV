@@ -20,17 +20,17 @@ interface ReceivedPairing {
   user: { Id: string; Name: string };
 }
 
-function lireFragment(): ReceivedPairing | null {
+function readFragment(): ReceivedPairing | null {
   const fragment = window.location.hash.replace(/^#/, "");
   if (!fragment) return null;
 
   const params = new URLSearchParams(fragment);
   const token = params.get("jeton");
   const identifier = params.get("u");
-  const nom = params.get("n");
+  const name = params.get("n");
   if (!token || !identifier) return null;
 
-  return { token, user: { Id: identifier, Name: nom ?? "" } };
+  return { token, user: { Id: identifier, Name: name ?? "" } };
 }
 
 function clearFragment(): void {
@@ -69,7 +69,7 @@ const SESSION_RESIDUE = [
  * serveur mais redirigé vers l'écran de jumelage par son propre routeur.
  */
 export function consumePairing(): boolean {
-  const received = lireFragment();
+  const received = readFragment();
   if (!received) return false;
   storePairing(received.token, received.user);
   clearFragment();

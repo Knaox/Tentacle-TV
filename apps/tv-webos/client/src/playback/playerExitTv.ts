@@ -14,11 +14,11 @@
  * déjà quitté.
  */
 
-let sortie: (() => void) | null = null;
+let handler: (() => void) | null = null;
 
 /** Déposé par le lecteur, retiré en partant. */
-export function setPlayerExit(quitter: (() => void) | null): void {
-  sortie = quitter;
+export function setPlayerExit(exit: (() => void) | null): void {
+  handler = exit;
 }
 
 /**
@@ -29,7 +29,7 @@ export function setPlayerExit(quitter: (() => void) | null): void {
  * quelqu'un d'autre s'en est déjà chargé.
  */
 export function exitPlayer(): boolean {
-  if (!sortie) return false;
-  sortie();
+  if (!handler) return false;
+  handler();
   return true;
 }

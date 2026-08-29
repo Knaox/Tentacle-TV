@@ -67,8 +67,8 @@ async function sweep(options) {
       await session.send("Runtime.enable", {});
 
       const capture = await sample(session, LAYOUT_PROBE);
-      captures[route.nom] = capture;
-      console.log(summarize(route.nom, capture, overlaps(capture.boxes)));
+      captures[route.name] = capture;
+      console.log(summarize(route.name, capture, overlaps(capture.boxes)));
     }
     session.close?.();
     return captures;
@@ -80,15 +80,15 @@ async function sweep(options) {
 function compare(pathA, pathB) {
   const a = JSON.parse(readFileSync(pathA, "utf8"));
   const b = JSON.parse(readFileSync(pathB, "utf8"));
-  for (const nom of Object.keys(a)) {
-    if (!b[nom]) {
-      console.log(`${nom} — absent du second relevé`);
+  for (const name of Object.keys(a)) {
+    if (!b[name]) {
+      console.log(`${name} — absent du second relevé`);
       continue;
     }
-    const gaps = divergences(a[nom].boxes, b[nom].boxes);
-    const clashesA = overlaps(a[nom].boxes).length;
-    const clashesB = overlaps(b[nom].boxes).length;
-    console.log(`\n${nom} — chevauchements ${clashesA} → ${clashesB}, ${gaps.length} boîte(s) différente(s)`);
+    const gaps = divergences(a[name].boxes, b[name].boxes);
+    const clashesA = overlaps(a[name].boxes).length;
+    const clashesB = overlaps(b[name].boxes).length;
+    console.log(`\n${name} — chevauchements ${clashesA} → ${clashesB}, ${gaps.length} boîte(s) différente(s)`);
     for (const e of gaps.slice(0, 10)) {
       const detail = e.genre === "deplacee"
         ? `Δx ${e.dx} Δy ${e.dy} Δl ${e.dw} Δh ${e.dh}`

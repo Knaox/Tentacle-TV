@@ -160,9 +160,9 @@ export function yearFromModel(
   generation: GenerationWebos,
 ): number | null {
   if (!modelName) return null;
-  const nom = modelName.toUpperCase();
+  const name = modelName.toUpperCase();
 
-  const oled = /OLED\d{2}[A-Z]([0-9X])/.exec(nom);
+  const oled = /OLED\d{2}[A-Z]([0-9X])/.exec(name);
   if (oled) {
     const year = OLED_YEAR[oled[1]];
     // `C6` désigne 2016 et redésignera 2026 : la lettre de gamme a fait le tour.
@@ -176,7 +176,7 @@ export function yearFromModel(
   // `65UM7400` la place avant la série ; `65NANO86TNA` après, sur deux chiffres
   // de série (Amérique) ; `65NANO866NA` après, sur trois (Europe) — d'où la
   // plage `{2,3}`, gourmande, qui s'arrête d'elle-même sur la lettre.
-  const lcd = /(?:NANO|QNED)(\d{2,3})([A-Z])|\d{2}U([A-Z])\d/.exec(nom);
+  const lcd = /(?:NANO|QNED)(\d{2,3})([A-Z])|\d{2}U([A-Z])\d/.exec(name);
   if (lcd) {
     const letter = lcd[2] ?? lcd[3];
     // Une lettre hors table n'est pas un millésime — `65NANO85UNA` porte un `U`
@@ -198,9 +198,9 @@ export function yearFromModel(
  */
 export function readPlatform(panel: CapabilitiesTv, agent: string): PlatformTv {
   const chromium = versionChromium(agent);
-  const parUa = chromium === null ? null : generationFromChromium(chromium);
-  if (parUa !== null) {
-    return { generation: parUa, year: yearFromModel(panel.modelName, parUa), source: "ua" };
+  const byUa = chromium === null ? null : generationFromChromium(chromium);
+  if (byUa !== null) {
+    return { generation: byUa, year: yearFromModel(panel.modelName, byUa), source: "ua" };
   }
 
   const bySdk = generationFromSdk(panel.sdkVersion);

@@ -35,7 +35,7 @@
    * `PalmSystem` reste injecté par le gestionnaire d'applications et fait
    * exactement le même travail.
    */
-  function quitter() {
+  function exit() {
     if (global.webOS && typeof global.webOS.platformBack === "function") {
       global.webOS.platformBack();
       return;
@@ -57,7 +57,7 @@
       var code = event.keyCode;
 
       if (code === BACK_CODE || code === ESCAPE_CODE) {
-        quitter();
+        exit();
         return;
       }
 

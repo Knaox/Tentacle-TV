@@ -11,7 +11,7 @@ import { decide, stepSize, type ScrollState } from "./border";
 
 const VIEW = 720;
 const MARGIN = 96;
-const PLAFOND = 0.4;
+const CEILING = 0.4;
 
 function state(partial: Partial<ScrollState>): ScrollState {
   return {
@@ -19,7 +19,7 @@ function state(partial: Partial<ScrollState>): ScrollState {
     startHeight: 48,
     view: VIEW,
     margin: MARGIN,
-    ceiling: PLAFOND,
+    ceiling: CEILING,
     threshold: VIEW,
     candidateBeyond: false,
     ...partial,
@@ -28,13 +28,13 @@ function state(partial: Partial<ScrollState>): ScrollState {
 
 describe("tailleDuPas", () => {
   it("vaut une rangée : la hauteur du départ plus la marge", () => {
-    expect(stepSize(48, VIEW, MARGIN, PLAFOND)).toBe(144);
+    expect(stepSize(48, VIEW, MARGIN, CEILING)).toBe(144);
   });
 
   it("est plafonnée à une fraction de l'écran", () => {
     // Une affiche de 300 px donnerait un pas de 396 : plus d'un demi-écran, et
     // la fenêtre de recensement glisserait de plusieurs rangées d'un coup.
-    expect(stepSize(300, VIEW, MARGIN, PLAFOND)).toBe(288);
+    expect(stepSize(300, VIEW, MARGIN, CEILING)).toBe(288);
   });
 });
 

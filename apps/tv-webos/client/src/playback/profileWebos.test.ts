@@ -49,7 +49,7 @@ function profile(
 
 /** Entrée de lecture directe d'un conteneur donné. */
 function directPlay(p: DeviceProfile, container: string) {
-  return p.DirectPlayProfiles.find((entree) => entree.Container === container);
+  return p.DirectPlayProfiles.find((entry) => entry.Container === container);
 }
 
 describe("lecture directe", () => {
@@ -71,13 +71,13 @@ describe("lecture directe", () => {
   it("garde un plancher même si la session a tout disqualifié", () => {
     // C'est le défaut corrigé : l'ancien profil pouvait ne produire AUCUNE
     // entrée vidéo, et toute la médiathèque partait alors en transcodage.
-    const tout: FallbackMemory = {
+    const all: FallbackMemory = {
       containers: ["mkv", "mp4", "ts", "avi", "asf", "mpg", "vob", "3gp"],
       audio: [],
       video: [],
     };
-    const p = buildTvProfile(resolved(), tout);
-    const video = p.DirectPlayProfiles.filter((entree) => entree.Type === "Video");
+    const p = buildTvProfile(resolved(), all);
+    const video = p.DirectPlayProfiles.filter((entry) => entry.Type === "Video");
     expect(video.length).toBeGreaterThan(0);
     expect(video[0].VideoCodec).toBe("h264");
   });
@@ -95,9 +95,9 @@ describe("lecture directe", () => {
 
   it("ne déclare le FLAC que comme fichier autonome", () => {
     const p = profile();
-    const video = p.DirectPlayProfiles.filter((entree) => entree.Type === "Video");
-    expect(video.some((entree) => entree.AudioCodec?.includes("flac"))).toBe(false);
-    expect(p.DirectPlayProfiles.some((entree) => entree.Container === "flac")).toBe(true);
+    const video = p.DirectPlayProfiles.filter((entry) => entry.Type === "Video");
+    expect(video.some((entry) => entry.AudioCodec?.includes("flac"))).toBe(false);
+    expect(p.DirectPlayProfiles.some((entry) => entry.Container === "flac")).toBe(true);
   });
 });
 
@@ -107,19 +107,19 @@ describe("canaux audio — le passthrough", () => {
     // canaux : une piste 7.1 partait en transcodage. Son absence est ce qui
     // donne son passthrough à ce profil.
     const constraints = profile().CodecProfiles ?? [];
-    expect(constraints.some((entree) => entree.Type === "VideoAudio")).toBe(false);
+    expect(constraints.some((entry) => entry.Type === "VideoAudio")).toBe(false);
   });
 
   it("laisse passer huit canaux en remux quand le téléviseur annonce l'Atmos", () => {
     const p = profile(24, 2024, EMPTY_MEMORY, { dolbyAtmos: true });
-    for (const entree of p.TranscodingProfiles.filter((t) => t.Type === "Video")) {
-      expect(entree.MaxAudioChannels).toBe("8");
+    for (const entry of p.TranscodingProfiles.filter((t) => t.Type === "Video")) {
+      expect(entry.MaxAudioChannels).toBe("8");
     }
   });
 
   it("s'en tient à six sans chaîne Atmos", () => {
     const video = profile().TranscodingProfiles.filter((t) => t.Type === "Video");
-    expect(video.every((entree) => entree.MaxAudioChannels === "6")).toBe(true);
+    expect(video.every((entry) => entry.MaxAudioChannels === "6")).toBe(true);
   });
 });
 
@@ -171,7 +171,7 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
     // clés, donc à recompresser — mesuré à 4,7x le temps réel contre 60x en
     // copie.
     const video = profile().TranscodingProfiles.filter((t) => t.Type === "Video");
-    expect(video.every((entree) => entree.BreakOnNonKeyFrames === false)).toBe(true);
+    expect(video.every((entry) => entry.BreakOnNonKeyFrames === false)).toBe(true);
   });
 });
 
@@ -258,7 +258,7 @@ describe("plages dynamiques", () => {
   });
 
   it("rend le Dolby Vision au MKV dès webOS 25, sans profil restrictif", () => {
-    // La bascule ne demande aucun code : `doviEnMkv` passe à vrai et le profil
+    // La bascule ne demande aucun code : `doviInMkv` passe à vrai et le profil
     // disparaît, donc `DOVI` nu vaut pour tous les conteneurs.
     const after = (profile(25, 2025, EMPTY_MEMORY, { dolbyVision: true }).CodecProfiles ?? [])
       .filter((c) => c.Codec === "hevc");

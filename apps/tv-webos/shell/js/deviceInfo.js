@@ -43,7 +43,7 @@
     return kept;
   }
 
-  function lirePalmSystem() {
+  function readPalmSystem() {
     try {
       if (!global.PalmSystem || !global.PalmSystem.deviceInfo) return null;
       return JSON.parse(global.PalmSystem.deviceInfo);
@@ -53,7 +53,7 @@
   }
 
   function collect() {
-    var immediate = lirePalmSystem();
+    var immediate = readPalmSystem();
     if (immediate) collection = filter(immediate);
 
     if (global.webOS && typeof global.webOS.deviceInfo === "function") {
