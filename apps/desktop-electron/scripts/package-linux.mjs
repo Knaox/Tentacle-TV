@@ -32,6 +32,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
+import { prepareLegacyCompat } from "./linux/legacyCompat.mjs";
 import { Arch, build, Platform } from "electron-builder";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -143,6 +144,7 @@ function prepareResources() {
 prepare();
 const extraResource = prepareResources();
 const iconsFolder = prepareIcons();
+const legacyCompat = prepareLegacyCompat(output, PRODUCT_NAME, EXECUTABLE_NAME);
 
 const [bundleFolder] = await packager({
   dir: stage, out: output, name: EXECUTABLE_NAME, executableName: EXECUTABLE_NAME,
@@ -219,12 +221,15 @@ const results = await build({
     // Ce que le paquet ne peut pas emporter : le chargeur Vulkan, qui doit être
     // celui du système pour trouver les pilotes installés, et les bibliothèques
     // du bureau dont Electron dépend.
-    deb: { depends: ["libgtk-3-0 | libgtk-3-0t64", "libnotify4", "libnss3", "libxtst6",
+    //
+    // `fpm: legacyCompat` ajoute les deux fichiers hérités de l'app Tauri — pas
+    // l'AppImage, qui n'installe rien dans le système (voir `prepareLegacyCompat`).
+    deb: { fpm: legacyCompat, depends: ["libgtk-3-0 | libgtk-3-0t64", "libnotify4", "libnss3", "libxtst6",
       "xdg-utils", "libatspi2.0-0 | libatspi2.0-0t64", "libsecret-1-0", "libvulkan1",
       "libasound2 | libasound2t64"] },
-    rpm: { depends: ["gtk3", "libnotify", "nss", "libXtst", "xdg-utils", "at-spi2-core",
+    rpm: { fpm: legacyCompat, depends: ["gtk3", "libnotify", "nss", "libXtst", "xdg-utils", "at-spi2-core",
       "libsecret", "vulkan-loader", "alsa-lib"] },
-    pacman: { depends: ["gtk3", "libnotify", "nss", "libxtst", "xdg-utils", "at-spi2-core",
+    pacman: { fpm: legacyCompat, depends: ["gtk3", "libnotify", "nss", "libxtst", "xdg-utils", "at-spi2-core",
       "libsecret", "vulkan-icd-loader", "alsa-lib"] },
     // Rien à publier depuis ici : la CI attache les fichiers à la release.
     publish: null,
