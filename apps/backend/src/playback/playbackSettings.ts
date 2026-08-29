@@ -51,6 +51,18 @@ export interface NextEpisodeSettings {
   nextCard: boolean;
   /** Afficher un compte à rebours sur la fiche et l'écran de fin. */
   nextCountdown: boolean;
+  /**
+   * Durée de ce compte à rebours, en millisecondes.
+   *
+   * Elle était figée à dix secondes dans le moteur. C'est un réglage comme le
+   * délai d'un saut — même unité, même raison : c'est la seule où l'on puisse
+   * demander une seconde et demie.
+   *
+   * ⚠️ Ce n'est qu'un PLAFOND. Le moteur ne la retient que si le média a
+   * encore ce temps-là devant lui (`autoNextEngine.ts`) : une fiche qui paraît
+   * quatre secondes avant la fin ne décompte pas dix secondes.
+   */
+  nextCountdownMs: number;
   /** Lancer l'épisode suivant à l'expiration du décompte. */
   nextAutoPlay: boolean;
   /** Quand proposer la suite : au début du générique, ou peu avant la fin. */
@@ -83,6 +95,15 @@ export interface PlaybackSettings {
  */
 export const SEGMENT_AUTO_DELAY_DEFAULT_MS = 5_000;
 export const SEGMENT_AUTO_DELAY_MAX_MS = 30_000;
+
+/**
+ * Le compte à rebours livré. Dix secondes : le temps de lire le titre de
+ * l'épisode suivant et de dire non.
+ */
+export const NEXT_COUNTDOWN_DEFAULT_MS = 10_000;
+/** En deçà, la fiche n'aurait pas le temps d'être lue. */
+export const NEXT_COUNTDOWN_MIN_MS = 1_000;
+export const NEXT_COUNTDOWN_MAX_MS = 60_000;
 
 export const NEXT_BEFORE_END_SECONDS_MIN = 5;
 export const NEXT_BEFORE_END_SECONDS_MAX = 300;
@@ -124,6 +145,7 @@ export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
   next: {
     nextCard: true,
     nextCountdown: true,
+    nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
     nextAutoPlay: true,
     nextTrigger: "outroStart",
     beforeEndEnabled: true,
@@ -194,6 +216,12 @@ function normalizeNext(raw: unknown, defaults: NextEpisodeSettings): NextEpisode
   return {
     nextCard: booleanField(o.nextCard, defaults.nextCard),
     nextCountdown: booleanField(o.nextCountdown, defaults.nextCountdown),
+    nextCountdownMs: clampInt(
+      o.nextCountdownMs,
+      NEXT_COUNTDOWN_MIN_MS,
+      NEXT_COUNTDOWN_MAX_MS,
+      defaults.nextCountdownMs,
+    ),
     nextAutoPlay: booleanField(o.nextAutoPlay, defaults.nextAutoPlay),
     nextTrigger:
       o.nextTrigger === "outroStart" || o.nextTrigger === "beforeEnd"

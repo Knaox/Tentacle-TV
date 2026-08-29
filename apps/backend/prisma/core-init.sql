@@ -199,6 +199,10 @@ ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndMode` varchar
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndValue` int(11) NOT NULL DEFAULT 98;
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndRules` text DEFAULT NULL;
 
+-- La durée du compte à rebours « épisode suivant », réglable depuis la 1.20.9
+-- (elle était figée à dix secondes dans le moteur). Additif, idempotent.
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `nextCountdownMs` int(11) NOT NULL DEFAULT 10000;
+
 -- Le verdict des vignettes sur le générique de fin (services/frameAnalysis.ts).
 -- Un cache, jamais une source : la table peut être vidée sans rien perdre
 -- d'autre qu'une demi-seconde de calcul au prochain lancement du média.

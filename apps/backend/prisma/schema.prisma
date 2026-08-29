@@ -343,6 +343,9 @@ model PlaybackSettings {
 
   nextCard             Boolean  @default(true)
   nextCountdown        Boolean  @default(true)
+  /// Durée du compte à rebours « épisode suivant ». Un PLAFOND : le moteur le
+  /// raccourcit quand la fin du média approche (`autoNextEngine.ts`).
+  nextCountdownMs      Int      @default(10000)
   nextAutoPlay         Boolean  @default(true)
   nextTrigger          String   @default("outroStart") @db.VarChar(16)
   /// CONSERVÉE : un serveur d'avant la démarre en NOT NULL. Plus lue.

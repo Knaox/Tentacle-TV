@@ -104,6 +104,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         serverEnabled: p.serverAutoplayEnabled,
         nextCountdown: settingsRef.current.next.nextCountdown,
         nextAutoPlay: settingsRef.current.next.nextAutoPlay,
+        nextCountdownMs: settingsRef.current.next.nextCountdownMs,
       });
       commitNextState(state);
       if (effect === "nextEpisode") p.onNextEpisode();
@@ -164,6 +165,10 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
           }),
         ended: p.playbackEnded,
         elapsedMs,
+        // Ce qu'il reste de média : le moteur ne le lit qu'à l'armement, pour
+        // que le décompte expire AVANT la fin. Une fiche qui paraît quatre
+        // secondes avant le bout n'en décompte pas dix.
+        remainingMediaMs: Math.max(0, pRuntimeMs - nowMs),
       });
     },
     [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, releaseRewound, mutedRef, postCreditsClaimedRef],
@@ -284,10 +289,14 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const signalRemoteNextDismiss = useCallback(() => { dispatchNext({ type: "dismiss" }); }, [dispatchNext]);
 
   const skipMs = currentCandidate()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
+  // La durée dont le minuteur est PARTI, pas celle qu'on a réglée : le moteur
+  // la raccourcit quand la fin approche, et la barre de progression doit
+  // mesurer ce qui court réellement.
+  const nextMs = nextState.armedMs ?? settingsRef.current.next.nextCountdownMs ?? NEXT_COUNTDOWN_MS;
   return {
     overlay,
     overlayRef,
-    countdownTotals: { skipMs, nextMs: NEXT_COUNTDOWN_MS },
+    countdownTotals: { skipMs, nextMs },
     dismissOverlay,
     mutedSegments: muted,
     skipNow,

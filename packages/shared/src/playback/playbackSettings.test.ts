@@ -3,6 +3,9 @@ import {
   BEFORE_END_DEFAULT,
   DEFAULT_PLAYBACK_SETTINGS,
   NEXT_BEFORE_END_SECONDS_MAX,
+  NEXT_COUNTDOWN_DEFAULT_MS,
+  NEXT_COUNTDOWN_MAX_MS,
+  NEXT_COUNTDOWN_MIN_MS,
   SEGMENT_AUTO_DELAY_MAX_MS,
   beforeEndPositionMs,
   normalizePlaybackSettings,
@@ -69,6 +72,17 @@ describe("normalizePlaybackSettings", () => {
     expect(settings.next.beforeEndDefault.value).toBe(NEXT_BEFORE_END_SECONDS_MAX);
   });
 
+  it("borne la durée du décompte « épisode suivant »", () => {
+    const of = (raw: unknown) =>
+      normalizePlaybackSettings({ next: { nextCountdownMs: raw } }).next.nextCountdownMs;
+    expect(of(2_500)).toBe(2_500);
+    // Hors bornes, illisible ou absente : le défaut livré, jamais une exception.
+    expect(of(50)).toBe(NEXT_COUNTDOWN_MIN_MS);
+    expect(of(999_999)).toBe(NEXT_COUNTDOWN_MAX_MS);
+    expect(of("dix secondes")).toBe(NEXT_COUNTDOWN_DEFAULT_MS);
+    expect(of(undefined)).toBe(NEXT_COUNTDOWN_DEFAULT_MS);
+  });
+
   it("des réglages déjà sains ressortent inchangés", () => {
     const sane = {
       intro: { action: "off", countdownVisible: false, autoDelayMs: 1_500 },
@@ -78,6 +92,7 @@ describe("normalizePlaybackSettings", () => {
       next: {
         nextCard: false,
         nextCountdown: true,
+        nextCountdownMs: 7_500,
         nextAutoPlay: false,
         nextTrigger: "beforeEnd",
         beforeEndEnabled: true,

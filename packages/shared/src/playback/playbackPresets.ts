@@ -26,6 +26,7 @@
 
 import {
   BEFORE_END_DEFAULT,
+  NEXT_COUNTDOWN_DEFAULT_MS,
   SEGMENT_AUTO_DELAY_DEFAULT_MS,
   type NextEpisodeSettings,
   type PlaybackSettings,
@@ -74,6 +75,7 @@ const DEFAULT: PlaybackSettings = {
   next: {
     nextCard: true,
     nextCountdown: true,
+    nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
     nextAutoPlay: true,
     nextTrigger: "outroStart",
     ...beforeEnd,
@@ -88,6 +90,7 @@ const MANUAL: PlaybackSettings = {
   next: {
     nextCard: true,
     nextCountdown: false,
+    nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
     nextAutoPlay: false,
     nextTrigger: "outroStart",
     ...beforeEnd,
@@ -111,6 +114,7 @@ const AUTOMATIC: PlaybackSettings = {
   next: {
     nextCard: true,
     nextCountdown: true,
+    nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
     nextAutoPlay: true,
     nextTrigger: "outroStart",
     ...beforeEnd,
@@ -177,6 +181,14 @@ export const PRESET_HINT_KEYS: Readonly<Record<PlaybackPreset, string>> = {
 /**
  * Quel mode décrit ces réglages ? `custom` dès qu'un seul champ s'écarte —
  * y compris un délai, sans quoi l'étiquette mentirait sur ce qui va se passer.
+ */
+/**
+ * ⚠️ La comparaison est un `JSON.stringify` : l'ORDRE DES CLÉS compte. Un champ
+ * ajouté aux préréglages doit l'être à la MÊME place que dans
+ * `normalizePlaybackSettings` — sinon des réglages identiques se lisent
+ * « personnalisé », et le mode choisi ne se coche plus. Éprouvé : le seul ajout
+ * de `nextCountdownMs` par un spread en fin d'objet a suffi à casser les trois
+ * modes.
  */
 export function detectPreset(settings: PlaybackSettings): PlaybackPreset {
   for (const preset of SELECTABLE_PRESETS) {

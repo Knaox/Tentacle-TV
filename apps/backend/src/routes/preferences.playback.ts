@@ -24,7 +24,10 @@ import {
   NEXT_BEFORE_END_PERCENT_MIN,
   NEXT_BEFORE_END_SECONDS_MAX,
   NEXT_BEFORE_END_SECONDS_MIN,
+  NEXT_COUNTDOWN_MAX_MS,
+  NEXT_COUNTDOWN_MIN_MS,
   SEGMENT_AUTO_DELAY_MAX_MS,
+  normalizePlaybackSettings,
 } from "../playback/playbackSettings";
 
 const segmentSchema = z.object({
@@ -53,6 +56,14 @@ const settingsSchema = z.object({
   next: z.object({
     nextCard: z.boolean(),
     nextCountdown: z.boolean(),
+    // Facultatif : un client d'avant la 1.20.9 n'envoie pas ce champ, et sa
+    // requête ne doit pas être rejetée — la normalisation pose le défaut.
+    nextCountdownMs: z
+      .number()
+      .int()
+      .min(NEXT_COUNTDOWN_MIN_MS)
+      .max(NEXT_COUNTDOWN_MAX_MS)
+      .optional(),
     nextAutoPlay: z.boolean(),
     nextTrigger: z.enum(["outroStart", "beforeEnd"]),
     beforeEndEnabled: z.boolean(),
@@ -85,7 +96,10 @@ export function registerPlaybackSettingsRoutes(app: FastifyInstance): void {
   app.put("/playback", async (request) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
-    const settings = settingsSchema.parse(request.body);
+    // La normalisation APRÈS la validation, et pas seulement à la relecture :
+    // le schéma laisse `nextCountdownMs` facultatif pour les clients d'avant la
+    // 1.20.9, et c'est elle qui pose le défaut sur un objet complet.
+    const settings = normalizePlaybackSettings(settingsSchema.parse(request.body));
 
     const columns = settingsToColumns(settings);
     const row = await prisma.playbackSettings.upsert({

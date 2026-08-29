@@ -133,3 +133,76 @@ describe("cycle de vie", () => {
     expect(withoutNext.effects).toEqual([]);
   });
 });
+
+describe("le décompte tient dans le temps qui reste", () => {
+  const config = {
+    hasNextEpisode: true,
+    serverEnabled: true,
+    nextCountdown: true,
+    nextAutoPlay: true,
+    nextCountdownMs: 10_000,
+  };
+
+  it("garde la durée réglée quand le média a le temps devant lui", () => {
+    const [state] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0, remainingMediaMs: 120_000 },
+      config,
+    );
+    expect(state.remainingMs).toBe(10_000);
+    expect(state.armedMs).toBe(10_000);
+  });
+
+  it("le raccourcit quand la fiche paraît quatre secondes avant la fin", () => {
+    // La demande, mot pour mot : fiche à 4 s de la fin, enchaînement à 3,5 s.
+    const [state] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0, remainingMediaMs: 4_000 },
+      config,
+    );
+    expect(state.remainingMs).toBe(3_500);
+    expect(state.armedMs).toBe(3_500);
+  });
+
+  it("enchaîne tout de suite quand il ne reste plus rien", () => {
+    const [, effect] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0, remainingMediaMs: 300 },
+      config,
+    );
+    expect(effect).toBe("nextEpisode");
+  });
+
+  it("s'en tient au réglage quand la durée restante est inconnue", () => {
+    const [state] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0 },
+      config,
+    );
+    expect(state.remainingMs).toBe(10_000);
+  });
+
+  it("honore une durée réglée courte", () => {
+    const [state] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0, remainingMediaMs: 120_000 },
+      { ...config, nextCountdownMs: 2_500 },
+    );
+    expect(state.remainingMs).toBe(2_500);
+  });
+
+  it("ne réarme PAS en cours de route — la marge se calcule une fois", () => {
+    let [state] = decideAutoNext(
+      AUTO_NEXT_IDLE,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 0, remainingMediaMs: 120_000 },
+      config,
+    );
+    [state] = decideAutoNext(
+      state,
+      { type: "frame", eligible: true, ended: false, elapsedMs: 1_000, remainingMediaMs: 4_000 },
+      config,
+    );
+    expect(state.remainingMs).toBe(9_000);
+    expect(state.armedMs).toBe(10_000);
+  });
+});
