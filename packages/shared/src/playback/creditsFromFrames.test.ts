@@ -106,6 +106,31 @@ describe("le générique lu dans les vignettes", () => {
     expect(creditsFromFrames(noCredits, 120 * 60_000)).toBeNull();
   });
 
+  it("ne prend pas une bataille NOCTURNE pour un générique", () => {
+    // Le défaut du premier montage, mesuré sur « No Way Home » : 89 → 94 min,
+    // noir 90 %, saturation 8 — le troisième acte, de nuit. Il passait pour le
+    // générique, et le bouton proposait de sauter la fin du film.
+    const samples = series([
+      { fromMin: 89, toMin: 94, dark: 0.9, saturation: 8 },
+      { fromMin: 94, toMin: 138.67, dark: 0.4, saturation: 30 },
+      { fromMin: 138.67, toMin: 146, dark: 0.9, saturation: 0.1 },
+      { fromMin: 146, toMin: 148.2, dark: 0.2, saturation: 40 },
+    ]);
+    const verdict = creditsFromFrames(samples, NO_WAY_HOME_MS);
+    expect(verdict?.outro.startMs).toBe(138 * 60_000 + 40_000);
+  });
+
+  it("ne retient pas un passage sombre SANS noyau, même sans concurrent", () => {
+    // La même bataille, seule : rien ne porte de défilement de texte, donc rien
+    // n'est proposé. Le silence vaut mieux qu'un saut au hasard.
+    const samples = series([
+      { fromMin: 60, toMin: 89, dark: 0.4, saturation: 30 },
+      { fromMin: 89, toMin: 94, dark: 0.9, saturation: 8 },
+      { fromMin: 94, toMin: 100, dark: 0.4, saturation: 30 },
+    ]);
+    expect(creditsFromFrames(samples, 100 * 60_000)).toBeNull();
+  });
+
   it("ne prend pas un passage sombre de la PREMIÈRE moitié pour un générique", () => {
     const nightScene = series([
       { fromMin: 0, toMin: 20, dark: 0.95, saturation: 1 },
@@ -145,6 +170,29 @@ describe("ce que le verdict a le droit de changer", () => {
     expect(bounds.get("Outro")).toEqual([
       { startMs: 7_189_000, endMs: 8_760_000, source: "jellyfin" },
     ]);
+  });
+
+  it("REMPLACE un marqueur posé après la fin du générique qu'on a vu", () => {
+    // « No Way Home » : Jellyfin pose un « générique » de 46 s à 147:25, soit
+    // quarante minutes après le vrai — la queue du fichier. Il survit au filtre
+    // de crédibilité d'une seconde, et le bouton proposait de terminer le film.
+    const bounds: BoundsByType = new Map([
+      ["Outro", [{ startMs: 8_845_000, endMs: runtime, source: "jellyfin" as const }]],
+    ]);
+    applyFrameVerdict(bounds, verdict, runtime);
+    expect(bounds.get("Outro")).toEqual([verdict.outro]);
+  });
+
+  it("ne remplace pas un marqueur par plus court que lui", () => {
+    const long = { startMs: 8_500_000, endMs: runtime, source: "jellyfin" as const };
+    const bounds: BoundsByType = new Map([["Outro", [{ ...long }]]]);
+    // Un verdict de 30 s posé avant lui : plus court, donc pas plus digne de foi.
+    applyFrameVerdict(
+      bounds,
+      { outro: { startMs: 8_400_000, endMs: 8_430_000, source: "frames" }, sceneAfter: true },
+      runtime,
+    );
+    expect(bounds.get("Outro")).toEqual([long]);
   });
 
   it("ne raccourcit rien quand il n'a pas vu de scène", () => {
