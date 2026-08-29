@@ -5,6 +5,7 @@ const CONTRACT = {
   version: 1,
   itemId: "ep-1",
   runtimeMs: 1_440_000,
+  libraryId: "lib-series",
   resolvedAt: "2026-08-28T00:00:00.000Z",
   segments: [
     {
@@ -47,5 +48,17 @@ describe("parsePlaybackSegmentsResponse", () => {
     expect(reread).not.toBeNull();
     expect(reread?.segments).toEqual(CONTRACT.segments);
     expect(reread?.runtimeMs).toBe(0);
+  });
+});
+
+describe("libraryId — le champ additif", () => {
+  it("un snapshot d'AVANT, qui ne le porte pas, se relit et vaut null", () => {
+    const { libraryId: _ignored, ...ancien } = CONTRACT;
+    expect(parsePlaybackSegmentsResponse(ancien)?.libraryId).toBeNull();
+  });
+
+  it("une valeur vide vaut null — le seuil global s'appliquera", () => {
+    expect(parsePlaybackSegmentsResponse({ ...CONTRACT, libraryId: "" })?.libraryId).toBeNull();
+    expect(parsePlaybackSegmentsResponse({ ...CONTRACT, libraryId: 42 })?.libraryId).toBeNull();
   });
 });

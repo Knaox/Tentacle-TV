@@ -113,6 +113,18 @@ export interface PlaybackSegmentsResponse {
   /** Durée du média en ms ; 0 quand elle n'a pas pu être établie. */
   runtimeMs: number;
   segments: ResolvedSegment[];
+  /**
+   * La bibliothèque du média (`CollectionFolder` racine), `null` si inconnue.
+   *
+   * Elle voyage ICI et pas ailleurs pour une raison précise : le contrat est
+   * déjà résolu côté serveur, déjà mis en cache, et déjà persisté tel quel
+   * dans le snapshot hors ligne. Les règles « avant la fin » par bibliothèque
+   * marchent donc hors ligne sans une ligne de code de plus.
+   *
+   * Champ ADDITIF : un snapshot d'avant, qui ne le porte pas, se relit et vaut
+   * `null` — le seuil global s'applique alors, ce qui est le bon repli.
+   */
+  libraryId: string | null;
   /** Horodatage ISO de la résolution — injecté par l'appelant, jamais lu ici. */
   resolvedAt: string;
 }
@@ -122,12 +134,14 @@ export function emptyPlaybackSegments(
   itemId: string,
   resolvedAt: string,
   runtimeMs = 0,
+  libraryId: string | null = null,
 ): PlaybackSegmentsResponse {
   return {
     version: PLAYBACK_SEGMENTS_VERSION,
     itemId,
     runtimeMs,
     segments: [],
+    libraryId,
     resolvedAt,
   };
 }
@@ -192,6 +206,7 @@ export function parsePlaybackSegmentsResponse(raw: unknown): PlaybackSegmentsRes
     itemId: o.itemId,
     runtimeMs: runtimeMs !== null && runtimeMs > 0 ? Math.round(runtimeMs) : 0,
     segments,
+    libraryId: typeof o.libraryId === "string" && o.libraryId !== "" ? o.libraryId : null,
     resolvedAt: typeof o.resolvedAt === "string" ? o.resolvedAt : "",
   };
 }

@@ -260,7 +260,7 @@ describe("priorités et gardes", () => {
     const overlay = arbitrateOverlay(
       makeInput({
         playbackEnded: true,
-        settings: makeSettings({ next: { nextCard: false } }),
+        settings: makeSettings({ outro: { action: "off" }, next: { nextCard: false } }),
         countdowns: { skip: null, next: 10 },
       }),
     );
@@ -304,5 +304,88 @@ describe("quitter la lecture n'est jamais automatique", () => {
     expect(candidate?.labelKey).toBe("skipToPostCredits");
     expect(candidate?.action).toEqual({ kind: "seek", toMs: 1_350_000 });
     expect(candidate?.settings.action).toBe("auto");
+  });
+});
+
+describe("la pilule « épisode suivant » — le trou de la scène post-générique", () => {
+  const OUTRO_WITH_SCENE: ResolvedSegment = {
+    type: "Outro",
+    startMs: 1_200_000,
+    endMs: 1_380_000,
+    source: "jellyfin",
+    endsAtMediaEnd: false,
+    hasContentAfter: true,
+  };
+
+  it("pendant la scène : rien sur l'image, la pilule avec les contrôles", () => {
+    const base = { segments: [OUTRO_WITH_SCENE], positionMs: 1_390_000 };
+    expect(arbitrateOverlay(makeInput(base))).toEqual({ kind: "none" });
+    expect(arbitrateOverlay(makeInput({ ...base, controlsVisible: true }))).toEqual({
+      kind: "nextButton",
+    });
+  });
+
+  it("pendant le générique, le BOUTON DE SAUT bat tout le reste", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({ segments: [OUTRO_WITH_SCENE], positionMs: 1_250_000, controlsVisible: true }),
+    );
+    expect(overlay).toMatchObject({ kind: "skip", labelKey: "skipToPostCredits" });
+  });
+
+  it("sans bouton de saut, c'est la FICHE qui parle — la pilule ne double pas", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_WITH_SCENE],
+        positionMs: 1_250_000,
+        controlsVisible: true,
+        settings: makeSettings({ outro: { action: "off" } }),
+      }),
+    );
+    expect(overlay.kind).toBe("nextCard");
+  });
+
+  it("fiche éteinte ou refusée : la pilule prend le relais", () => {
+    const eteinte = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_WITH_SCENE],
+        positionMs: 1_250_000,
+        controlsVisible: true,
+        settings: makeSettings({ outro: { action: "off" }, next: { nextCard: false } }),
+      }),
+    );
+    expect(eteinte).toEqual({ kind: "nextButton" });
+
+    const refusee = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_WITH_SCENE],
+        positionMs: 1_250_000,
+        controlsVisible: true,
+        settings: makeSettings({ outro: { action: "off" } }),
+        dismissed: { segments: {}, nextCard: true },
+      }),
+    );
+    expect(refusee).toEqual({ kind: "nextButton" });
+  });
+
+  it("avant le générique, rien — un bouton « suivant » en plein épisode n'a aucun sens", () => {
+    expect(
+      arbitrateOverlay(
+        makeInput({ segments: [OUTRO_WITH_SCENE], positionMs: 600_000, controlsVisible: true }),
+      ),
+    ).toEqual({ kind: "none" });
+  });
+
+  it("sans épisode suivant, jamais de pilule", () => {
+    expect(
+      arbitrateOverlay(
+        makeInput({
+          segments: [OUTRO_WITH_SCENE],
+          positionMs: 1_390_000,
+          controlsVisible: true,
+          hasNextEpisode: false,
+          isEpisode: false,
+        }),
+      ),
+    ).toEqual({ kind: "none" });
   });
 });

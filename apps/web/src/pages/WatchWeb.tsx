@@ -311,7 +311,7 @@ export function WatchWeb() {
           onDirectPlayNonFiable={onDirectPlayNonFiable}
           onTrackNotFound={handleAudioTrackNotFound}
           pgsSubtitleUrl={pgsSubtitleUrl} onPgsFailure={reportPgsFailure}
-          segments={segments.segments} runtimeMs={segments.runtimeMs}
+          segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss}

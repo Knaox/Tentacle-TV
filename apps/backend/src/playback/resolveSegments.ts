@@ -119,6 +119,26 @@ function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | n
  * Pour les autres types, les candidats ne diffèrent que d'une seconde ou deux
  * (deux greffons qui disent la même chose) : le plus long les englobe.
  */
+/**
+ * Groupe les candidats qui se CHEVAUCHENT.
+ *
+ * C'est ce qui distingue deux fournisseurs disant la même chose à une seconde
+ * près — mesuré sur Endgame et la plupart des animés — de deux marqueurs
+ * vraiment distincts : le générique, puis le générique FINAL d'après une scène
+ * post-générique.
+ */
+function groupOverlapping(candidates: readonly RawBounds[]): RawBounds[][] {
+  const sorted = [...candidates].sort((a, b) => a.startMs - b.startMs);
+  const groups: RawBounds[][] = [];
+  for (const bound of sorted) {
+    const last = groups[groups.length - 1];
+    const lastEnd = last ? Math.max(...last.map((b) => b.endMs)) : -1;
+    if (last && bound.startMs < lastEnd) last.push(bound);
+    else groups.push([bound]);
+  }
+  return groups;
+}
+
 function pickBounds(
   type: SegmentType,
   candidates: readonly RawBounds[],
@@ -166,8 +186,20 @@ function collectNative(
 
   const bounds: BoundsByType = new Map();
   for (const [type, list] of candidates) {
-    const picked = pickBounds(type, list, runtimeMs);
-    if (picked) bounds.set(type, picked);
+    if (type !== "Outro") {
+      const picked = pickBounds(type, list, runtimeMs);
+      if (picked) bounds.set(type, [picked]);
+      continue;
+    }
+    // Générique : au plus DEUX marqueurs disjoints — le principal et le final.
+    // Le filtre de crédibilité ne s'applique qu'au marqueur SOLITAIRE : un
+    // générique final court, après une scène, est parfaitement légitime, alors
+    // qu'un marqueur unique et court n'est que la queue du fichier.
+    const groups = groupOverlapping(list);
+    const kept = (groups.length > 2 ? [groups[0], groups[groups.length - 1]] : groups)
+      .map((group) => pickBounds(groups.length === 1 ? "Outro" : "Recap", group, runtimeMs))
+      .filter((bound): bound is RawBounds => bound !== null);
+    if (kept.length > 0) bounds.set("Outro", kept);
   }
   // Des Items présents = la source native fait foi, même vidée par le filtrage
   // (comportement historique : les greffons ne sont pas re-consultés).
@@ -187,7 +219,7 @@ function collectDict(payload: IntroSkipperDictPayload | null | undefined): Bound
   const bounds: BoundsByType = new Map();
   for (const [type, pascal, camel] of DICT_KEYS) {
     const ms = pluginBoundsToMs(payload[pascal] ?? payload[camel]);
-    if (ms) bounds.set(type, ms);
+    if (ms) bounds.set(type, [ms]);
   }
   return bounds.size > 0 ? bounds : null;
 }
@@ -206,7 +238,7 @@ function collectTimestamps(
   const bounds: BoundsByType = new Map();
   for (const [type, raw] of fields) {
     const ms = pluginBoundsToMs(raw);
-    if (ms) bounds.set(type, ms);
+    if (ms) bounds.set(type, [ms]);
   }
   return bounds.size > 0 ? bounds : null;
 }
@@ -243,6 +275,7 @@ export function resolvePlaybackSegments(
   runtimeMs: number,
   sources: SegmentSources,
   resolvedAt = "",
+  libraryId: string | null = null,
 ): PlaybackSegmentsResponse {
   const runtime = Number.isFinite(runtimeMs) && runtimeMs > 0 ? Math.round(runtimeMs) : 0;
 
@@ -255,7 +288,7 @@ export function resolvePlaybackSegments(
   refineOutroWithChapters(bounds, sources.chapters, runtime);
 
   const segments = [...bounds.entries()]
-    .map(([type, bound]) => finalize(type, bound, runtime))
+    .flatMap(([type, list]) => list.map((bound) => finalize(type, bound, runtime)))
     .filter((segment): segment is ResolvedSegment => segment !== null)
     .sort((a, b) => a.startMs - b.startMs);
 
@@ -264,6 +297,7 @@ export function resolvePlaybackSegments(
     itemId,
     runtimeMs: runtime,
     segments,
+    libraryId,
     resolvedAt,
   };
 }

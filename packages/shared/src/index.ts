@@ -39,6 +39,7 @@ export * from "./playback/resolveSegments";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
+export * from "./playback/nextTriggers";
 export * from "./playback/overlayArbiter";
 export * from "./playback/skipMuting";
 export * from "./playback/autoNextEngine";

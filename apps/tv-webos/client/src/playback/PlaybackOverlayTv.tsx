@@ -82,7 +82,7 @@ export function PlaybackOverlayTv({
   const cardRef = useRef<HTMLDivElement>(null);
   const posterRef = useRef<HTMLDivElement>(null);
 
-  const isSkip = overlay.kind === "skip";
+  const isSkip = overlay.kind === "skip" || overlay.kind === "nextButton";
   const isCard = overlay.kind === "nextCard" && !overlay.final;
   const isPoster = overlay.kind === "nextCard" && overlay.final;
 
@@ -132,6 +132,24 @@ export function PlaybackOverlayTv({
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
         >
           {t("player:dismiss")}
+        </button>
+      </div>
+    );
+  }
+
+  // La pilule « aller à l'épisode suivant » : même bouton que les sauts, à la
+  // même place. Elle prend le relais quand la fiche ne parle pas — éteinte,
+  // refusée, ou retirée le temps d'une scène post-générique.
+  if (overlay.kind === "nextButton") {
+    return (
+      <div ref={skipRef}>
+        <button
+          type="button"
+          className="saut-tv"
+          {...{ [OVERLAY_ATTRIBUTE]: "" }}
+          onClick={(e) => { e.stopPropagation(); onPlayNow(); }}
+        >
+          {t("player:goToNextEpisode")}
         </button>
       </div>
     );

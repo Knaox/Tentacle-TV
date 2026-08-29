@@ -61,6 +61,9 @@ export default {
   // Film ou dernier épisode : il n'y a rien à passer, le générique va au bout.
   // Le bouton dit donc ce qu'il fait — et reste manuel, jamais décompté.
   endPlayback: "Terminer",
+  // La pilule qui prend le relais de la fiche « à suivre » — pendant une
+  // scène post-générique, ou quand la fiche est éteinte ou refusée.
+  goToNextEpisode: "Aller à l'épisode suivant",
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
