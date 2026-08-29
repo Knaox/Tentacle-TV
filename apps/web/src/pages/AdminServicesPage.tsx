@@ -6,6 +6,7 @@ import { PublicUrlSection } from "../components/admin/PublicUrlSection";
 import { ServicesSection } from "../components/admin/ServicesSection";
 import { DirectStreamingSection } from "./AdminDirectStreaming";
 import { PlaybackSection } from "../components/admin/PlaybackSection";
+import { SegmentPluginsSection } from "../components/admin/SegmentPluginsSection";
 
 /**
  * Page dédiée « Services » (route /admin/services, admin only). Regroupe les
@@ -27,6 +28,7 @@ export function AdminServicesPage() {
           <ServicesSection />
           <DirectStreamingSection />
           <PlaybackSection />
+          <SegmentPluginsSection />
         </div>
       </div>
     </PageTransition>

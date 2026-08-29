@@ -63,8 +63,19 @@ export default {
   playback: "Lecture",
   playbackDescription: "Configurer le passage automatique à l'épisode suivant.",
   autoplayNextEnabled: "Déclenchement auto-play",
-  autoplayNextHelp: "Affiche la bannière « À suivre » et enchaîne automatiquement l'épisode suivant. Le seuil de déclenchement suit le « pourcentage maximal de reprise » (MaxResumePct) configuré dans Jellyfin — une mise à jour côté Jellyfin est prise en compte automatiquement.",
-  autoplayCurrentThreshold: "Seuil actuel : {{pct}} % de l'épisode (MaxResumePct Jellyfin).",
+  autoplayNextHelp: "Interrupteur maître : éteint, aucune fiche « à suivre » ni enchaînement, sur aucun appareil. Le MOMENT où la fiche paraît, lui, est un réglage de compte (début du générique de fin, ou peu avant la fin) et se change dans les Préférences de chaque utilisateur.",
+  autoplayCurrentThreshold: "Seuil « vu » : {{pct}} % de l'épisode (MaxResumePct Jellyfin). Il marque un épisode comme vu — il ne déclenche plus aucune fiche.",
+  // Greffons de segments — une carte au trésor, pas un réglage : Tentacle ne
+  // détecte rien, il lit ce que le serveur publie.
+  segmentPlugins: "Détection des passages",
+  segmentPluginsDescription:
+    "Tentacle ne détecte aucun générique lui-même : il lit ce que Jellyfin publie. Sans greffon de détection installé côté serveur, aucun bouton de saut ne paraîtra, quels que soient les réglages des appareils.",
+  segmentPlugin_introSkipper: "Détection par empreinte audio — générique de début et de fin.",
+  segmentPlugin_chapterSegments: "Convertit les chapitres nommés en passages, sans analyse.",
+  segmentPlugin_introDb: "Base communautaire de repères, sans analyse locale.",
+  segmentPlugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
+  segmentPluginsScanHelp:
+    "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte, et en installer deux ne crée pas de conflit. Après installation, lancez la tâche planifiée « Media segment scan » de Jellyfin — les passages n'apparaissent qu'une fois la bibliothèque analysée.",
   publicUrl: "URL publique du serveur Tentacle TV",
   publicUrlDescription: "URL publique par laquelle les appareils joignent le serveur après jumelage (domaine Cloudflare). Indispensable pour que le jumelage TV fonctionne depuis l'extérieur.",
   publicUrlLabel: "URL publique",
