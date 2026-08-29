@@ -86,7 +86,13 @@ SORTIE="$(mkdir -p "$SORTIE" && cd "$SORTIE" && pwd)"
 # (le rpath `$ORIGIN` le trouvera), ou un SONAME de la liste blanche ci-dessous
 # — épelés et VERSIONNÉS, identiques sur Debian, Ubuntu, Fedora, Arch et
 # openSUSE. Tout le reste est une erreur de collecte, et fait échouer le build.
-UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libgnutls.so.30 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 "
+#
+# `libfontconfig.so.1` et `libexpat.so.1` y figurent PAR CHOIX, et non parce
+# qu'on aurait oublié de les collecter : cf. le commentaire de `SYSTEME` plus
+# bas — fontconfig lit la configuration de l'hôte, elle ne peut donc pas
+# voyager. Les deux SONAME sont universels : toute machine capable de lancer
+# Electron a déjà une fontconfig, puisque Chromium en dépend.
+UNIVERSELS=" libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 librt.so.1 libresolv.so.2 ld-linux-x86-64.so.2 libgcc_s.so.1 libstdc++.so.6 libgomp.so.1 libatomic.so.1 libnuma.so.1 libvulkan.so.1 libX11.so.6 libX11-xcb.so.1 libxcb.so.1 libxcb-randr.so.0 libxcb-shape.so.0 libxcb-shm.so.0 libxcb-xfixes.so.0 libxcb-present.so.0 libxcb-xkb.so.1 libxcb-dri2.so.0 libxcb-dri3.so.0 libxcb-sync.so.1 libXext.so.6 libXfixes.so.3 libXrandr.so.2 libXss.so.1 libXpresent.so.1 libXinerama.so.1 libxkbcommon.so.0 libxkbcommon-x11.so.0 libdrm.so.2 libgbm.so.1 libEGL.so.1 libGL.so.1 libGLX.so.0 libGLdispatch.so.0 libGLESv2.so.2 libwayland-client.so.0 libwayland-cursor.so.0 libwayland-egl.so.1 libasound.so.2 libpulse.so.0 libpulse-simple.so.0 libpipewire-0.3.so.0 libdbus-1.so.3 libsystemd.so.0 libudev.so.1 libglib-2.0.so.0 libgnutls.so.30 libz.so.1 liblzma.so.5 libzstd.so.1 libpcre2-8.so.0 libfontconfig.so.1 libexpat.so.1 "
 
 auditer() {
   echo "==> Audit des NEEDED de $SORTIE (readelf)"
