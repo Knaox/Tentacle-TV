@@ -27,12 +27,12 @@
  */
 
 import {
-  MIN_CREDIBLE_OUTRO_MS,
   PLAYBACK_SEGMENTS_VERSION,
   POST_CREDITS_MIN_MS,
   POST_CREDITS_THRESHOLD_MS,
   TICKS_PER_MS,
   isSegmentType,
+  minCredibleOutroMs,
   type PlaybackSegmentsResponse,
   type ResolvedSegment,
   type SegmentType,
@@ -103,13 +103,14 @@ function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | n
  *
  * Pour un OUTRO, deux règles, dans cet ordre :
  *
- *  1. **Écarter l'incrédible** : plus court que `MIN_CREDIBLE_OUTRO_MS` ET
- *     collé à la fin du fichier. C'est la signature d'un détecteur d'images
- *     noires qui a trouvé la queue du média — dix-sept secondes sur Iron Man
- *     et sur Far From Home. Le garder, c'est proposer de « passer le
- *     générique » dix-sept secondes avant la fin, donc terminer le film.
- *     Si tous les candidats sont incrédibles, il n'y a pas d'Outro : le film
- *     se termine tout seul, et sa scène post-générique est vue.
+ *  1. **Écarter l'incrédible** : plus court que le plancher de la durée
+ *     (`minCredibleOutroMs`, proportionné au format) ET collé à la fin du
+ *     fichier. C'est la signature d'un détecteur d'images noires qui a trouvé
+ *     la queue du média — dix-sept secondes sur Iron Man et sur Far From Home.
+ *     Le garder, c'est proposer de « passer le générique » dix-sept secondes
+ *     avant la fin, donc terminer le film. Si tous les candidats sont
+ *     incrédibles, il n'y a pas d'Outro : le film se termine tout seul, et sa
+ *     scène post-générique est vue.
  *  2. **Préférer celui qui laisse une scène après lui** — il en dit plus que
  *     les autres. Encore faut-il qu'il soit plausible : un générique de fin ne
  *     commence pas dans la première moitié du média. À défaut, le plus long,
@@ -130,10 +131,10 @@ function pickBounds(
   if (candidates.length === 0) return null;
   if (type !== "Outro" || runtimeMs <= 0) return longest(candidates);
 
+  const floor = minCredibleOutroMs(runtimeMs);
   const credible = candidates.filter(
     (bound) =>
-      duration(bound) >= MIN_CREDIBLE_OUTRO_MS ||
-      bound.endMs < runtimeMs - POST_CREDITS_THRESHOLD_MS,
+      duration(bound) >= floor || bound.endMs < runtimeMs - POST_CREDITS_THRESHOLD_MS,
   );
   if (credible.length === 0) return null;
 

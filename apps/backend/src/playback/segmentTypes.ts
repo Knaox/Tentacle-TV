@@ -60,17 +60,40 @@ export const POST_CREDITS_THRESHOLD_MS = 15_000;
 export const POST_CREDITS_MIN_MS = 20_000;
 
 /**
- * Sous cette durée, un « générique de fin » n'en est pas un.
+ * Sous cette durée, un « générique de fin » n'en est pas un — pour un long
+ * métrage. Voir `MIN_CREDIBLE_OUTRO_RATIO` pour les formats courts.
  *
  * Mesuré sur l'instance de test : Iron Man porte un Outro de 17 s
  * (125:43 → 126:00) et Far From Home un de 17 s aussi — la queue noire du
  * fichier, pas le générique, produite par un détecteur d'images noires dont
  * le plancher est à 15 s. Les accepter, c'est proposer « passer le générique »
- * dix-sept secondes avant la fin, donc terminer le film. Un vrai générique de
- * film dure des minutes ; le plus court générique d'épisode tourne autour de
- * la minute.
+ * dix-sept secondes avant la fin, donc terminer le film.
  */
 export const MIN_CREDIBLE_OUTRO_MS = 45_000;
+
+/**
+ * Le même plancher, mais proportionnel — et c'est lui qui sauve les formats
+ * courts.
+ *
+ * Un générique est proportionné à la production : celui d'un long métrage
+ * court des minutes, celui d'une sitcom de vingt minutes tient en quarante
+ * secondes. Un plancher absolu de 45 s punissait donc les seconds : audité sur
+ * la médiathèque, il rejetait Malcolm (44 s sur 22:23) et How I Met Your
+ * Mother (27 s sur 21:42), qui sont de VRAIS génériques.
+ *
+ * Le plancher retenu est donc `min(45 s, 1 % de la durée)`. Sur ce même audit
+ * il garde les deux sitcoms et rejette toujours les fausses détections : Iron
+ * Man (0,22 %), Far From Home (0,22 %), Jerry Maguire (0,24 %), Hôtel
+ * Transylvanie (0,55 %).
+ */
+export const MIN_CREDIBLE_OUTRO_RATIO = 0.01;
+
+/** Le plancher effectif d'un générique crédible, pour une durée donnée. */
+export function minCredibleOutroMs(runtimeMs: number): number {
+  return runtimeMs > 0
+    ? Math.min(MIN_CREDIBLE_OUTRO_MS, runtimeMs * MIN_CREDIBLE_OUTRO_RATIO)
+    : MIN_CREDIBLE_OUTRO_MS;
+}
 
 export interface ResolvedSegment {
   type: SegmentType;
