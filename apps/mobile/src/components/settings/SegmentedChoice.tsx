@@ -47,7 +47,10 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel }
               pressed && { opacity: 0.75 },
             ]}
           >
-            <Text style={[st.label, isActive && st.labelActive]} numberOfLines={1}>
+            {/* Deux lignes, pas une : « Faire tout seul » ou « Personnalisé »
+                se faisaient tronquer par une ellipse — un libellé de choix
+                doit se lire en entier. */}
+            <Text style={[st.label, isActive && st.labelActive]} numberOfLines={2}>
               {option.label}
             </Text>
           </Pressable>
@@ -65,7 +68,8 @@ const makeStyles = (t: AppTheme) =>
       minHeight: 44,
       alignItems: "center",
       justifyContent: "center",
-      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      paddingHorizontal: spacing.xs,
       borderRadius: RADIUS.md,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.colors.border.subtle,
