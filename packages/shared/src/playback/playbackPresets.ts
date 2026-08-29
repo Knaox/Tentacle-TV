@@ -11,6 +11,10 @@
  * PROPOSE, ou je veux que ça se FASSE. Le reste est du réglage fin, et le
  * réglage fin se mérite — il vit derrière un repli, sur grand écran.
  *
+ * Le mode « Par défaut » n'est pas un troisième goût : c'est LE jeu de valeurs
+ * livré (`DEFAULT_PLAYBACK_SETTINGS` le recopie). Un compte qui n'a jamais
+ * rien réglé s'y trouve donc sans avoir rien fait, et l'étiquette le lui dit.
+ *
  * # Ce que « personnalisé » veut dire
  *
  * Rien. Ce n'est pas un mode, c'est un constat : les réglages ne
@@ -21,26 +25,61 @@
  */
 
 import {
-  DEFAULT_PLAYBACK_SETTINGS,
+  BEFORE_END_DEFAULT,
   SEGMENT_AUTO_DELAY_DEFAULT_MS,
+  type NextEpisodeSettings,
   type PlaybackSettings,
 } from "./playbackSettings";
 
-export type PlaybackPreset = "manual" | "automatic" | "custom";
+export type PlaybackPreset = "default" | "manual" | "automatic" | "custom";
 
 /** Les modes qu'on peut CHOISIR — « personnalisé » ne s'écrit pas. */
 export const SELECTABLE_PRESETS: readonly Exclude<PlaybackPreset, "custom">[] = [
+  "default",
   "manual",
   "automatic",
 ];
 
 const delay = SEGMENT_AUTO_DELAY_DEFAULT_MS;
 
+/** Le repli temporel, identique dans les trois modes : il ne les distingue pas. */
+const beforeEnd: Pick<
+  NextEpisodeSettings,
+  "beforeEndEnabled" | "beforeEndDefault" | "beforeEndRules"
+> = {
+  beforeEndEnabled: true,
+  beforeEndDefault: { ...BEFORE_END_DEFAULT },
+  beforeEndRules: [],
+};
+
 /**
  * MANUEL : le lecteur propose, il n'agit jamais seul. La fiche « à suivre »
  * reste — c'est une proposition, pas un acte — mais elle ne décompte pas et
  * n'enchaîne pas.
  */
+/**
+ * PAR DÉFAUT : ce que le lecteur fait sans qu'on lui ait rien demandé.
+ *
+ * Le début d'épisode et l'aperçu du suivant se passent seuls — ce sont les
+ * deux passages qu'on a déjà vus, et le décompte les rend réfutables. Le
+ * résumé et le générique de fin se PROPOSENT : sauter un « précédemment »
+ * d'office prive d'un rappel utile, et sauter un générique d'office prive
+ * d'une scène post-générique.
+ */
+const DEFAULT: PlaybackSettings = {
+  intro: { action: "auto", countdownVisible: true, autoDelayMs: delay },
+  outro: { action: "button", countdownVisible: true, autoDelayMs: delay },
+  recap: { action: "button", countdownVisible: true, autoDelayMs: delay },
+  preview: { action: "auto", countdownVisible: true, autoDelayMs: delay },
+  next: {
+    nextCard: true,
+    nextCountdown: true,
+    nextAutoPlay: true,
+    nextTrigger: "outroStart",
+    ...beforeEnd,
+  },
+};
+
 const MANUAL: PlaybackSettings = {
   intro: { action: "button", countdownVisible: true, autoDelayMs: delay },
   outro: { action: "button", countdownVisible: true, autoDelayMs: delay },
@@ -51,7 +90,7 @@ const MANUAL: PlaybackSettings = {
     nextCountdown: false,
     nextAutoPlay: false,
     nextTrigger: "outroStart",
-    nextBeforeEndSeconds: DEFAULT_PLAYBACK_SETTINGS.next.nextBeforeEndSeconds,
+    ...beforeEnd,
   },
 };
 
@@ -74,17 +113,20 @@ const AUTOMATIC: PlaybackSettings = {
     nextCountdown: true,
     nextAutoPlay: true,
     nextTrigger: "outroStart",
-    nextBeforeEndSeconds: DEFAULT_PLAYBACK_SETTINGS.next.nextBeforeEndSeconds,
+    ...beforeEnd,
   },
 };
 
-export const PLAYBACK_PRESETS: Readonly<Record<"manual" | "automatic", PlaybackSettings>> = {
+export type SelectablePreset = Exclude<PlaybackPreset, "custom">;
+
+export const PLAYBACK_PRESETS: Readonly<Record<SelectablePreset, PlaybackSettings>> = {
+  default: DEFAULT,
   manual: MANUAL,
   automatic: AUTOMATIC,
 };
 
 /** Les réglages complets d'un mode — à écrire tels quels. */
-export function presetSettings(preset: "manual" | "automatic"): PlaybackSettings {
+export function presetSettings(preset: SelectablePreset): PlaybackSettings {
   return structuredCloneSettings(PLAYBACK_PRESETS[preset]);
 }
 
@@ -95,7 +137,14 @@ function structuredCloneSettings(settings: PlaybackSettings): PlaybackSettings {
     outro: { ...settings.outro },
     recap: { ...settings.recap },
     preview: { ...settings.preview },
-    next: { ...settings.next },
+    next: {
+      ...settings.next,
+      beforeEndDefault: { ...settings.next.beforeEndDefault },
+      beforeEndRules: settings.next.beforeEndRules.map((rule) => ({
+        ...rule,
+        libraryIds: [...rule.libraryIds],
+      })),
+    },
   };
 }
 

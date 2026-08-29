@@ -140,6 +140,21 @@ export function findSegment(
 }
 
 /**
+ * TOUS les segments d'un type, dans l'ordre de lecture.
+ *
+ * Un média peut en porter deux du même type, et c'est le modèle de Plex :
+ * générique, scène post-générique, générique FINAL. Le second marqueur est la
+ * donnée la plus sûre qui existe sur « quand la suite peut se proposer » — il
+ * ne doit pas être écrasé par le premier.
+ */
+export function findSegments(
+  segments: readonly ResolvedSegment[],
+  type: SegmentType,
+): ResolvedSegment[] {
+  return segments.filter((segment) => segment.type === type);
+}
+
+/**
  * Relit le contrat depuis le monde extérieur — réponse HTTP, `segments.json`
  * du snapshot hors ligne. `null` si ce n'en est pas un (autre version, forme
  * étrangère) : à l'appelant de retomber sur du vide ou sur l'ancien format.

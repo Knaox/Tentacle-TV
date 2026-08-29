@@ -47,8 +47,19 @@ describe("les préréglages de lecture", () => {
     expect(presetSettings("manual").intro.action).toBe("button");
   });
 
-  it("les défauts livrés ne sont ni l'un ni l'autre — ils restent « personnalisé »", () => {
-    // Défaut : intro auto, générique en bouton, récap et aperçu éteints.
-    expect(detectPreset(DEFAULT_PLAYBACK_SETTINGS)).toBe("custom");
+  it("les défauts livrés SONT le mode « Par défaut » — un seul jeu de valeurs", () => {
+    // C'est ce qui fait qu'un compte jamais réglé se trouve sur ce mode sans
+    // avoir rien fait, et que l'étiquette ne ment pas.
+    expect(detectPreset(DEFAULT_PLAYBACK_SETTINGS)).toBe("default");
+    expect(presetSettings("default")).toEqual(DEFAULT_PLAYBACK_SETTINGS);
+  });
+
+  it("PAR DÉFAUT : début et aperçu automatiques, résumé et générique proposés", () => {
+    const preset = presetSettings("default");
+    expect(preset.intro).toMatchObject({ action: "auto", autoDelayMs: 5_000, countdownVisible: true });
+    expect(preset.preview).toMatchObject({ action: "auto", autoDelayMs: 5_000, countdownVisible: true });
+    expect(preset.recap.action).toBe("button");
+    expect(preset.outro.action).toBe("button");
+    expect(preset.next).toMatchObject({ nextCard: true, nextCountdown: true, nextAutoPlay: true });
   });
 });
