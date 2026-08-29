@@ -34,20 +34,20 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel }
   return (
     <View style={st.row} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
       {options.map((option) => {
-        const actif = option.value === value;
+        const isActive = option.value === value;
         return (
           <Pressable
             key={option.value}
             onPress={() => { onChange(option.value); }}
             accessibilityRole="radio"
-            accessibilityState={{ selected: actif }}
+            accessibilityState={{ selected: isActive }}
             style={({ pressed }) => [
-              st.bouton,
-              actif && st.boutonActif,
+              st.button,
+              isActive && st.buttonActive,
               pressed && { opacity: 0.75 },
             ]}
           >
-            <Text style={[st.libelle, actif && st.libelleActif]} numberOfLines={1}>
+            <Text style={[st.label, isActive && st.labelActive]} numberOfLines={1}>
               {option.label}
             </Text>
           </Pressable>
@@ -60,7 +60,7 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel }
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     row: { flexDirection: "row", gap: spacing.xs },
-    bouton: {
+    button: {
       flex: 1,
       minHeight: 44,
       alignItems: "center",
@@ -71,15 +71,15 @@ const makeStyles = (t: AppTheme) =>
       borderColor: t.colors.border.subtle,
       backgroundColor: t.colors.fill.subtle,
     },
-    boutonActif: {
+    buttonActive: {
       borderColor: t.colors.brand.violet,
       backgroundColor: t.colors.brand.soft,
     },
-    libelle: {
+    label: {
       ...typography.small,
       fontFamily: FONT_FAMILY.semibold,
       color: t.colors.text.tertiary,
       textAlign: "center",
     },
-    libelleActif: { color: t.colors.text.primary },
+    labelActive: { color: t.colors.text.primary },
   });

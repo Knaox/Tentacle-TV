@@ -11,7 +11,7 @@ const DBG = "[Tentacle:Playback]";
  * coup d'œil à un autre écran : l'interruption courte ne doit rien coûter —
  * relancer un flux HLS, c'est plusieurs secondes de noir au retour.
  */
-const DELAI_GRACE_MS = 60_000;
+const GRACE_DELAY_MS = 60_000;
 
 /**
  * Libération de l'encodage quand l'application quitte le premier plan.
@@ -34,47 +34,47 @@ export function usePlayerBackground(pb: PlayerPlayback): void {
   // on se réabonnerait à `AppState` à chaque rendu du lecteur.
   const pbRef = useRef(pb);
   pbRef.current = pb;
-  const minuterieRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const libereRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const releasedRef = useRef(false);
 
   useEffect(() => {
     if (Platform.OS !== "android") return;
 
-    const annulerMinuterie = () => {
-      if (!minuterieRef.current) return;
-      clearTimeout(minuterieRef.current);
-      minuterieRef.current = null;
+    const cancelTimer = () => {
+      if (!timerRef.current) return;
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
     };
 
-    const sub = AppState.addEventListener("change", (etat) => {
-      if (etat === "active") {
-        annulerMinuterie();
-        if (!libereRef.current) return;
-        libereRef.current = false;
-        const courant = pbRef.current;
-        const ticks = Math.floor(courant.positionRef.current * TICKS_PER_SECOND);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        cancelTimer();
+        if (!releasedRef.current) return;
+        releasedRef.current = false;
+        const current = pbRef.current;
+        const ticks = Math.floor(current.positionRef.current * TICKS_PER_SECOND);
         console.log(DBG, "retour au premier plan — relance du flux", { ticks });
-        courant.fetchPlaybackInfo({ startTimeTicks: ticks > 0 ? ticks : undefined });
+        current.fetchPlaybackInfo({ startTimeTicks: ticks > 0 ? ticks : undefined });
         return;
       }
 
       // `inactive` (iOS) ou `background` : on arme, sans réarmer ni doubler.
-      if (libereRef.current || minuterieRef.current) return;
-      const courant = pbRef.current;
+      if (releasedRef.current || timerRef.current) return;
+      const current = pbRef.current;
       // Direct play : aucun encodage côté serveur, rien à libérer — et rien qui
       // justifie d'imposer un rechargement au retour.
-      if (courant.isDirectPlay || !courant.playSessionId) return;
+      if (current.isDirectPlay || !current.playSessionId) return;
 
-      minuterieRef.current = setTimeout(() => {
-        minuterieRef.current = null;
-        libereRef.current = true;
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        releasedRef.current = true;
         console.log(DBG, "arrière-plan prolongé — encodage libéré");
         void pbRef.current.reporting.reportStop();
-      }, DELAI_GRACE_MS);
+      }, GRACE_DELAY_MS);
     });
 
     return () => {
-      annulerMinuterie();
+      cancelTimer();
       sub.remove();
     };
   }, []);

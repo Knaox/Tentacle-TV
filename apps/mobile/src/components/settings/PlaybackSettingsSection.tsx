@@ -31,34 +31,34 @@ export function PlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const reglages = usePlaybackSettings();
-  const suivant = reglages.next;
+  const settings = usePlaybackSettings();
+  const next = settings.next;
 
   // Dans l'ordre où les passages surviennent à l'écran.
-  const passages: {
-    cle: string;
-    titre: string;
-    aide: string;
-    etat: SegmentSettings;
-    appliquer: (patch: Partial<SegmentSettings>) => void;
+  const segments: {
+    key: string;
+    title: string;
+    hint: string;
+    state: SegmentSettings;
+    apply: (patch: Partial<SegmentSettings>) => void;
   }[] = [
-    { cle: "intro", titre: t("segmentIntroTitle"), aide: t("segmentIntroHint"), etat: reglages.intro,
-      appliquer: (intro) => { setPlaybackSettings({ intro }); } },
-    { cle: "recap", titre: t("segmentRecapTitle"), aide: t("segmentRecapHint"), etat: reglages.recap,
-      appliquer: (recap) => { setPlaybackSettings({ recap }); } },
-    { cle: "outro", titre: t("segmentOutroTitle"), aide: t("segmentOutroHint"), etat: reglages.outro,
-      appliquer: (outro) => { setPlaybackSettings({ outro }); } },
-    { cle: "preview", titre: t("segmentPreviewTitle"), aide: t("segmentPreviewHint"), etat: reglages.preview,
-      appliquer: (preview) => { setPlaybackSettings({ preview }); } },
+    { key: "intro", title: t("segmentIntroTitle"), hint: t("segmentIntroHint"), state: settings.intro,
+      apply: (intro) => { setPlaybackSettings({ intro }); } },
+    { key: "recap", title: t("segmentRecapTitle"), hint: t("segmentRecapHint"), state: settings.recap,
+      apply: (recap) => { setPlaybackSettings({ recap }); } },
+    { key: "outro", title: t("segmentOutroTitle"), hint: t("segmentOutroHint"), state: settings.outro,
+      apply: (outro) => { setPlaybackSettings({ outro }); } },
+    { key: "preview", title: t("segmentPreviewTitle"), hint: t("segmentPreviewHint"), state: settings.preview,
+      apply: (preview) => { setPlaybackSettings({ preview }); } },
   ];
 
-  const bascules: { cle: string; titre: string; aide: string; actif: boolean; poser: (v: boolean) => void }[] = [
-    { cle: "carte", titre: t("upNextCardTitle"), aide: t("upNextCardHint"), actif: suivant.nextCard,
-      poser: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
-    { cle: "decompte", titre: t("upNextCountdownTitle"), aide: t("upNextCountdownHint"), actif: suivant.nextCountdown,
-      poser: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
-    { cle: "auto", titre: t("upNextAutoPlayTitle"), aide: t("upNextAutoPlayHint"), actif: suivant.nextAutoPlay,
-      poser: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },
+  const toggles: { key: string; title: string; hint: string; active: boolean; set: (v: boolean) => void }[] = [
+    { key: "card", title: t("upNextCardTitle"), hint: t("upNextCardHint"), active: next.nextCard,
+      set: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
+    { key: "countdown", title: t("upNextCountdownTitle"), hint: t("upNextCountdownHint"), active: next.nextCountdown,
+      set: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
+    { key: "auto", title: t("upNextAutoPlayTitle"), hint: t("upNextAutoPlayHint"), active: next.nextAutoPlay,
+      set: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },
   ];
 
   return (
@@ -67,42 +67,42 @@ export function PlaybackSettingsSection() {
         title={t("playbackSegmentsTitle")}
         caption={`${t("playbackSegmentsHint")}\n${t("playbackSettingsAccount")}`}
       >
-        {passages.map((passage, index) => (
+        {segments.map((segment, index) => (
           <SegmentSettingsRow
-            key={passage.cle}
-            titre={passage.titre}
-            aide={passage.aide}
-            reglages={passage.etat}
-            onChange={passage.appliquer}
-            last={index === passages.length - 1}
+            key={segment.key}
+            title={segment.title}
+            hint={segment.hint}
+            settings={segment.state}
+            onChange={segment.apply}
+            last={index === segments.length - 1}
           />
         ))}
       </SettingsSection>
 
       <SettingsSection title={t("upNextTitle")}>
-        {bascules.map((bascule) => (
-          <View key={bascule.cle} style={st.bloc}>
-            <View style={st.ligne}>
-              <View style={st.texte}>
-                <Text style={st.titre}>{bascule.titre}</Text>
-                <Text style={st.aide}>{bascule.aide}</Text>
+        {toggles.map((toggle) => (
+          <View key={toggle.key} style={st.block}>
+            <View style={st.row}>
+              <View style={st.text}>
+                <Text style={st.title}>{toggle.title}</Text>
+                <Text style={st.hint}>{toggle.hint}</Text>
               </View>
               <Switch
-                value={bascule.actif}
-                onValueChange={bascule.poser}
+                value={toggle.active}
+                onValueChange={toggle.set}
                 trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
                 thumbColor={theme.colors.cta.brandFg}
                 ios_backgroundColor={theme.colors.fill.medium}
-                accessibilityLabel={bascule.titre}
+                accessibilityLabel={toggle.title}
               />
             </View>
           </View>
         ))}
-        <View style={st.bloc}>
-          <Text style={st.titre}>{t("upNextTriggerLabel")}</Text>
+        <View style={st.block}>
+          <Text style={st.title}>{t("upNextTriggerLabel")}</Text>
           <SegmentedChoice
             accessibilityLabel={t("upNextTriggerLabel")}
-            value={suivant.nextTrigger}
+            value={next.nextTrigger}
             onChange={(nextTrigger) => {
               if (nextTrigger === "outroStart" || nextTrigger === "beforeEnd") {
                 setPlaybackSettings({ next: { nextTrigger } });
@@ -114,26 +114,26 @@ export function PlaybackSettingsSection() {
             ]}
           />
         </View>
-        <View style={[st.bloc, st.dernier]}>
-          <View style={st.ligne}>
-            <View style={st.texte}>
-              <Text style={st.titre}>{t("upNextBeforeEndLabel")}</Text>
-              <Text style={st.aide}>{t("upNextBeforeEndHint")}</Text>
+        <View style={[st.block, st.last]}>
+          <View style={st.row}>
+            <View style={st.text}>
+              <Text style={st.title}>{t("upNextBeforeEndLabel")}</Text>
+              <Text style={st.hint}>{t("upNextBeforeEndHint")}</Text>
             </View>
             <TextInput
-              value={String(suivant.nextBeforeEndSeconds)}
-              onChangeText={(texte) => {
-                const saisi = Number.parseInt(texte, 10);
-                if (!Number.isFinite(saisi)) return;
-                const borne = Math.min(
+              value={String(next.nextBeforeEndSeconds)}
+              onChangeText={(text) => {
+                const entered = Number.parseInt(text, 10);
+                if (!Number.isFinite(entered)) return;
+                const clamped = Math.min(
                   NEXT_BEFORE_END_SECONDS_MAX,
-                  Math.max(NEXT_BEFORE_END_SECONDS_MIN, saisi),
+                  Math.max(NEXT_BEFORE_END_SECONDS_MIN, entered),
                 );
-                setPlaybackSettings({ next: { nextBeforeEndSeconds: borne } });
+                setPlaybackSettings({ next: { nextBeforeEndSeconds: clamped } });
               }}
               keyboardType="number-pad"
               maxLength={3}
-              style={st.champ}
+              style={st.field}
               accessibilityLabel={t("upNextBeforeEndLabel")}
             />
           </View>
@@ -145,19 +145,19 @@ export function PlaybackSettingsSection() {
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    bloc: {
+    block: {
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: t.colors.border.subtle,
       gap: spacing.sm,
     },
-    dernier: { borderBottomWidth: 0 },
-    ligne: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-    texte: { flex: 1 },
-    titre: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
-    aide: { ...typography.small, color: t.colors.text.tertiary, lineHeight: 17, marginTop: 2 },
-    champ: {
+    last: { borderBottomWidth: 0 },
+    row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    text: { flex: 1 },
+    title: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
+    hint: { ...typography.small, color: t.colors.text.tertiary, lineHeight: 17, marginTop: 2 },
+    field: {
       minWidth: 72,
       minHeight: 44,
       paddingHorizontal: spacing.sm,

@@ -14,9 +14,9 @@ import {
 import { SegmentedChoice } from "./SegmentedChoice";
 
 interface Props {
-  titre: string;
-  aide: string;
-  reglages: SegmentSettings;
+  title: string;
+  hint: string;
+  settings: SegmentSettings;
   onChange: (patch: Partial<SegmentSettings>) => void;
   last?: boolean;
 }
@@ -29,19 +29,19 @@ interface Props {
  * mentirait sur ce qui va se passer. Le délai est en millisecondes, comme
  * partout ailleurs — c'est l'unité du moteur, et un téléphone a un clavier.
  */
-export function SegmentSettingsRow({ titre, aide, reglages, onChange, last }: Props) {
+export function SegmentSettingsRow({ title, hint, settings, onChange, last }: Props) {
   const { t } = useTranslation("preferences");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const auto = reglages.action === "auto";
+  const auto = settings.action === "auto";
 
   return (
-    <View style={[st.bloc, last && st.dernier]}>
-      <Text style={st.titre}>{titre}</Text>
-      <Text style={st.aide}>{aide}</Text>
+    <View style={[st.block, last && st.last]}>
+      <Text style={st.title}>{title}</Text>
+      <Text style={st.hint}>{hint}</Text>
       <SegmentedChoice
-        accessibilityLabel={`${titre} — ${t("segmentActionLabel")}`}
-        value={reglages.action}
+        accessibilityLabel={`${title} — ${t("segmentActionLabel")}`}
+        value={settings.action}
         onChange={(action) => {
           if (action === "button" || action === "auto" || action === "off") onChange({ action });
         }}
@@ -52,11 +52,11 @@ export function SegmentSettingsRow({ titre, aide, reglages, onChange, last }: Pr
         ]}
       />
       {auto && (
-        <View style={st.replis}>
-          <View style={st.ligne}>
-            <Text style={st.libelle}>{t("segmentCountdownTitle")}</Text>
+        <View style={st.nested}>
+          <View style={st.row}>
+            <Text style={st.label}>{t("segmentCountdownTitle")}</Text>
             <Switch
-              value={reglages.countdownVisible}
+              value={settings.countdownVisible}
               onValueChange={(countdownVisible) => { onChange({ countdownVisible }); }}
               trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
               thumbColor={theme.colors.cta.brandFg}
@@ -64,22 +64,22 @@ export function SegmentSettingsRow({ titre, aide, reglages, onChange, last }: Pr
               accessibilityLabel={t("segmentCountdownTitle")}
             />
           </View>
-          <View style={st.ligne}>
-            <Text style={st.libelle}>{t("segmentDelayLabel")}</Text>
+          <View style={st.row}>
+            <Text style={st.label}>{t("segmentDelayLabel")}</Text>
             <TextInput
-              value={String(reglages.autoDelayMs)}
-              onChangeText={(texte) => {
-                const saisi = Number.parseInt(texte, 10);
+              value={String(settings.autoDelayMs)}
+              onChangeText={(text) => {
+                const entered = Number.parseInt(text, 10);
                 // Un champ vidé ne vaut pas zéro : sans nombre, on n'écrit rien
                 // — le délai tomberait à 0 entre deux frappes, et le passage
                 // serait sauté sans rien demander.
-                if (Number.isFinite(saisi)) {
-                  onChange({ autoDelayMs: Math.min(saisi, SEGMENT_AUTO_DELAY_MAX_MS) });
+                if (Number.isFinite(entered)) {
+                  onChange({ autoDelayMs: Math.min(entered, SEGMENT_AUTO_DELAY_MAX_MS) });
                 }
               }}
               keyboardType="number-pad"
               maxLength={5}
-              style={st.champ}
+              style={st.field}
               accessibilityLabel={t("segmentDelayLabel")}
             />
           </View>
@@ -91,20 +91,20 @@ export function SegmentSettingsRow({ titre, aide, reglages, onChange, last }: Pr
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
-    bloc: {
+    block: {
       paddingVertical: spacing.md,
       paddingHorizontal: spacing.md,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: t.colors.border.subtle,
       gap: spacing.sm,
     },
-    dernier: { borderBottomWidth: 0 },
-    titre: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
-    aide: { ...typography.small, color: t.colors.text.tertiary, lineHeight: 17 },
-    replis: { gap: spacing.sm, paddingLeft: spacing.sm },
-    ligne: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
-    libelle: { ...typography.small, color: t.colors.text.secondary, flex: 1 },
-    champ: {
+    last: { borderBottomWidth: 0 },
+    title: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
+    hint: { ...typography.small, color: t.colors.text.tertiary, lineHeight: 17 },
+    nested: { gap: spacing.sm, paddingLeft: spacing.sm },
+    row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.md },
+    label: { ...typography.small, color: t.colors.text.secondary, flex: 1 },
+    field: {
       minWidth: 88,
       minHeight: 44,
       paddingHorizontal: spacing.sm,

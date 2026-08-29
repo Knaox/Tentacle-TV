@@ -37,16 +37,16 @@ export function PlaybackOverlayMobile({
   const { t } = useTranslation("player");
 
   if (overlay.kind === "skip") {
-    const compte = overlay.countdownSeconds;
+    const count = overlay.countdownSeconds;
     return (
       <SkipButton
         key={overlay.segmentType}
         label={
-          compte === null
+          count === null
             ? t(`player:${overlay.labelKey}`)
-            : t(`player:${overlay.labelKey}In`, { seconds: compte })
+            : t(`player:${overlay.labelKey}In`, { seconds: count })
         }
-        countdownTotalMs={compte === null ? null : countdownTotals.skipMs}
+        countdownTotalMs={count === null ? null : countdownTotals.skipMs}
         onPress={onSkip}
         onDismiss={onDismiss}
         bottom={bottom}
