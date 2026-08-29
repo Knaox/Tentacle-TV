@@ -30,6 +30,8 @@ interface DesktopPlayerOverlaysProps {
   onSkip: () => void;
   onDismissOverlay: () => void;
   onPlayNow: () => void;
+  /** La barre de contrôles est-elle à l'écran ? */
+  controlsVisible: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -39,7 +41,7 @@ interface DesktopPlayerOverlaysProps {
 
 export function DesktopPlayerOverlays({
   showLoadingOverlay, buffering, buffered, posterUrl,
-  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow,
+  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: DesktopPlayerOverlaysProps) {
@@ -80,6 +82,7 @@ export function DesktopPlayerOverlays({
         onDismiss={onDismissOverlay}
         onPlayNow={onPlayNow}
         layer="z-20"
+        controlsVisible={controlsVisible}
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}

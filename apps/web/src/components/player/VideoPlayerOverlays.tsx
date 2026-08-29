@@ -17,6 +17,8 @@ interface VideoPlayerOverlaysProps {
   onSkip: () => void;
   onDismissOverlay: () => void;
   onPlayNow: () => void;
+  /** La barre de contrôles est-elle à l'écran ? (le bouton lui cède la place). */
+  controlsVisible: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -39,7 +41,7 @@ interface VideoPlayerOverlaysProps {
  */
 export function VideoPlayerOverlays({
   loading, playing, hasStarted, showPlayButton, policyMuted, posterUrl,
-  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow,
+  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   videoRef, userInteractedRef,
@@ -107,6 +109,7 @@ export function VideoPlayerOverlays({
         onDismiss={onDismissOverlay}
         onPlayNow={onPlayNow}
         layer="z-50"
+        controlsVisible={controlsVisible}
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}

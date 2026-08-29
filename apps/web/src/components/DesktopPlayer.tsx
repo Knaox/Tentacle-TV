@@ -246,7 +246,7 @@ export function DesktopPlayer({
         buffered={state.buffered} posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
         onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
-        onPlayNow={playback.playNow}
+        onPlayNow={playback.playNow} controlsVisible={showControls}
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
