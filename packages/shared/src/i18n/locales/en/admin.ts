@@ -80,8 +80,19 @@ export default {
   playback: "Playback",
   playbackDescription: "Configure automatic episode advancement behavior.",
   autoplayNextEnabled: "Auto-play trigger",
-  autoplayNextHelp: "Shows the \"Up Next\" banner and automatically plays the next episode. The trigger point follows the \"maximum resume percentage\" (MaxResumePct) configured in Jellyfin — updates on the Jellyfin side are picked up automatically.",
-  autoplayCurrentThreshold: "Current threshold: {{pct}}% of the episode (Jellyfin MaxResumePct).",
+  autoplayNextHelp: "Master switch: turned off, there is no “up next” card and no automatic advance, on any device. WHEN the card appears is an account setting (start of the closing credits, or shortly before the end), changed in each user's preferences.",
+  autoplayCurrentThreshold: "“Watched” threshold: {{pct}}% of the episode (Jellyfin MaxResumePct). It marks an episode as watched — it no longer triggers any card.",
+  // Segment plugins — a treasure map, not a setting: Tentacle detects nothing,
+  // it reads what the server publishes.
+  segmentPlugins: "Passage detection",
+  segmentPluginsDescription:
+    "Tentacle never detects credits itself: it reads what Jellyfin publishes. With no detection plugin installed on the server, no skip button will ever appear, whatever the devices are set to.",
+  segmentPlugin_introSkipper: "Audio-fingerprint detection — opening and closing credits.",
+  segmentPlugin_chapterSegments: "Turns named chapters into passages, with no analysis.",
+  segmentPlugin_introDb: "Community database of markers, with no local analysis.",
+  segmentPlugin_skipmeDb: "Shared database of markers, alongside Intro Skipper.",
+  segmentPluginsScanHelp:
+    "They stack: each reports what it knows, the most precise wins, and installing two creates no conflict. Once installed, run Jellyfin's “Media segment scan” scheduled task — passages only appear after the library has been scanned.",
   publicUrl: "Public Tentacle TV server URL",
   publicUrlDescription: "Public URL devices use to reach the server after pairing (Cloudflare domain). Required for TV pairing to work from outside the local network.",
   publicUrlLabel: "Public URL",
