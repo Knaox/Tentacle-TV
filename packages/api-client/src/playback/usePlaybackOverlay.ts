@@ -7,75 +7,35 @@
  * (le « Cannot update while rendering » corrigé côté TV, latent côté web) —
  * et `overlayRef` est un miroir SYNCHRONE : le bouton Retour TV le lit dans
  * le même dispatch d'événement, où un état React serait périmé.
+ *
+ * La CROIX d'un bouton met le passage en sourdine — voir `useMutedSegments.ts`.
+ * Le RETOUR EN ARRIÈRE dans un passage qu'on vient de sauter réarme la pilule :
+ * l'état `skipped` la masque le temps que la position rattrape la cible, mais
+ * qui revient derrière la cible n'attend plus rien — il redemande son bouton,
+ * et l'attendre pendant les dix secondes du garde-fou n'avait aucun sens.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AUTO_NEXT_IDLE,
-  SKIP_DELAY_DEFAULT_MS,
-  NEXT_COUNTDOWN_MS,
-  INTRO_SKIP_IDLE,
-  arbitrateOverlay,
-  displayedCountdown,
-  displayedNextCountdown,
-  decideAutoNext,
-  decideIntroSkip,
-  findSkipCandidate,
+  AUTO_NEXT_IDLE, SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
+  arbitrateOverlay, displayedCountdown, displayedNextCountdown, decideAutoNext,
+  decideIntroSkip, findSkipCandidate, hasRewoundPastSkip, isSegmentSilenced,
   nextCardTriggerReached,
-  type AutoNextInput,
-  type AutoNextState,
-  type IntroSkipState,
-  type PlayerOverlay,
-  type ResolvedSegment,
-  type SegmentType,
-  type SkipCandidate,
+  type AutoNextInput, type AutoNextState, type IntroSkipState,
+  type PlayerOverlay, type SegmentType, type SkipCandidate,
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
+import { useMutedSegments } from "./useMutedSegments";
+import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
 
-export interface PlaybackOverlayInput {
-  itemId: string | undefined;
-  isEpisode: boolean;
-  hasNextEpisode: boolean;
-  /** Position AFFICHÉE par le lecteur, offsets de flux déjà appliqués. */
-  positionSeconds: number;
-  durationSeconds: number;
-  hasStarted: boolean;
-  playbackEnded: boolean;
-  segments: readonly ResolvedSegment[];
-  /** Durée du contrat (ms) ; à défaut, `durationSeconds` fait foi. */
-  runtimeMs?: number;
-  serverAutoplayEnabled: boolean;
-  /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
-  scrubbing?: boolean;
-  onSeekSeconds: (seconds: number) => void;
-  onNextEpisode: () => void;
-  onEndOfPlayback: () => void;
-  /** Watch Together : annoncer un refus local au groupe. */
-  onSegmentDismissNotify?: (type: SegmentType) => void;
-  onNextDismissNotify?: () => void;
-}
-
-export interface PlaybackOverlayResult {
-  overlay: PlayerOverlay;
-  /** Miroir synchrone — pour le bouton Retour TV. */
-  overlayRef: { readonly current: PlayerOverlay };
-  /** Durées totales des glissières de décompte. */
-  countdownTotals: { skipMs: number; nextMs: number };
-  /** La croix de l'overlay courant (et l'annonce au groupe). */
-  dismissOverlay: () => void;
-  /** Saut manuel du bouton courant ; « lire maintenant » de la carte. */
-  skipNow: () => void;
-  playNow: () => void;
-  /** Watch Together entrant : un membre a refusé. */
-  signalRemoteSegmentDismiss: (type: SegmentType) => void;
-  signalRemoteNextDismiss: () => void;
-}
+export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
 
 export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlayResult {
   const settings = usePlaybackSettings();
 
   const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
   const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
+  const { muted, mutedRef, mute } = useMutedSegments(input.itemId);
 
   // Miroirs synchrones : les rappels lisent le présent, pas le rendu d'avant.
   const inputRef = useRef(input);
@@ -85,6 +45,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const skipStateRef = useRef(skipState);
   const nextStateRef = useRef(nextState);
   const previousVisibleRef = useRef(false);
+  /** Position visée par le dernier saut — repasser derrière elle réarme. */
+  const skipTargetMsRef = useRef<number | null>(null);
 
   const commitSkipState = useCallback((state: IntroSkipState) => {
     skipStateRef.current = state;
@@ -142,7 +104,14 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const p = inputRef.current;
       const candidate = currentCandidate();
       const visible = candidate !== null && !p.scrubbing;
-      const active = visible && candidate !== null && candidate.settings.action === "auto";
+      // Un passage mis en sourdine ne compte plus : la croix a aussi coupé ça.
+      const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
+      const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
+
+      if (hasRewoundPastSkip(Math.round(p.positionSeconds * 1000), skipTargetMsRef.current)) {
+        skipTargetMsRef.current = null;
+        if (skipStateRef.current.name === "skipped") commitSkipState(INTRO_SKIP_IDLE);
+      }
 
       const [state, action] = decideIntroSkip(
         skipStateRef.current,
@@ -185,6 +154,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     dispatchNext({ type: "item", itemId: input.itemId });
     commitSkipState(INTRO_SKIP_IDLE);
     previousVisibleRef.current = false;
+    skipTargetMsRef.current = null;
   }, [input.itemId, dispatchNext, commitSkipState]);
 
   // Réévaluation immédiate à chaque changement d'entrée (sans consommer de temps).
@@ -237,16 +207,23 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       settings,
       serverAutoplayEnabled: input.serverAutoplayEnabled,
       dismissed: {
-        // « refusé » ET « saut demandé » masquent le bouton (la pilule ne se
-        // remontre pas pendant que la position rattrape la cible).
+        // Trois raisons de ne pas montrer la pilule, et une seule d'insister :
+        // le saut demandé (la position rattrape la cible), le refus du passage
+        // en cours, et la SOURDINE — qui, elle, ne cède que le temps où les
+        // contrôles du lecteur sont à l'écran.
         segments: candidate
-          ? { [candidate.segment.type]: skipState.name === "dismissed" || skipState.name === "skipped" }
+          ? {
+              [candidate.segment.type]:
+                isSegmentSilenced(muted, candidate.segment.type, input.controlsVisible) ||
+                (!muted.has(candidate.segment.type) &&
+                  (skipState.name === "dismissed" || skipState.name === "skipped")),
+            }
           : {},
         nextCard: nextState.dismissed || nextState.chained,
       },
       countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
     });
-  }, [input, positionMs, runtimeMs, settings, skipState, nextState]);
+  }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted]);
 
   const overlayRef = useRef<PlayerOverlay>(overlay);
   overlayRef.current = overlay;
@@ -255,17 +232,19 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     const current = overlayRef.current;
     if (current.kind === "skip") {
       commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
+      mute(current.segmentType);
       inputRef.current.onSegmentDismissNotify?.(current.segmentType);
     } else if (current.kind === "nextCard") {
       dispatchNext({ type: "dismiss" });
       inputRef.current.onNextDismissNotify?.();
     }
-  }, [dispatchNext, commitSkipState]);
+  }, [dispatchNext, commitSkipState, mute]);
 
   const skipNow = useCallback(() => {
     const candidate = currentCandidate();
     if (!candidate) return;
     commitSkipState(decideIntroSkip(skipStateRef.current, { type: "skipNow" }, true)[0]);
+    skipTargetMsRef.current = candidate.action.kind === "seek" ? candidate.action.toMs : null;
     runAction(candidate);
   }, [currentCandidate, runAction, commitSkipState]);
 
@@ -275,11 +254,14 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
 
   const signalRemoteSegmentDismiss = useCallback(
     (type: SegmentType) => {
+      // Le refus d'un membre vaut pour le groupe, et pour toute la lecture —
+      // même s'il porte sur un passage que NOTRE position n'a pas atteint.
+      mute(type);
       const candidate = currentCandidate();
       if (candidate?.segment.type !== type) return;
       commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
     },
-    [currentCandidate, commitSkipState],
+    [currentCandidate, commitSkipState, mute],
   );
 
   const signalRemoteNextDismiss = useCallback(() => {
@@ -292,6 +274,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     overlayRef,
     countdownTotals: { skipMs, nextMs: NEXT_COUNTDOWN_MS },
     dismissOverlay,
+    mutedSegments: muted,
     skipNow,
     playNow,
     signalRemoteSegmentDismiss,

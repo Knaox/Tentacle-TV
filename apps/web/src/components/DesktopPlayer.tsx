@@ -188,6 +188,7 @@ export function DesktopPlayer({
     hasStarted: hasStarted, playbackEnded: fileLoaded && state.eof && hasStarted,
     segments, runtimeMs, serverAutoplayEnabled,
     scrubbing: seekbar.dragProgress != null,
+    controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
     onAutoNextDismiss,

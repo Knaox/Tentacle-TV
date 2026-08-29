@@ -23,6 +23,9 @@ interface UseDesktopSegmentsOverlayArgs {
   runtimeMs: number;
   serverAutoplayEnabled: boolean;
   scrubbing: boolean;
+  /** Les contrôles du lecteur sont-ils à l'écran ? (un passage mis en sourdine
+   *  par la croix n'est plus rendu qu'avec eux). */
+  controlsVisible: boolean;
   isDirectPlay: boolean;
   effectiveMpvOffset: MutableRefObject<number>;
   seek: (pos: number) => Promise<void>;
@@ -34,7 +37,7 @@ interface UseDesktopSegmentsOverlayArgs {
 export function useDesktopSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
   hasStarted, playbackEnded, segments, runtimeMs, serverAutoplayEnabled,
-  scrubbing, isDirectPlay, effectiveMpvOffset, seek,
+  scrubbing, controlsVisible, isDirectPlay, effectiveMpvOffset, seek,
   onNextEpisode, onEndOfPlayback, onAutoNextDismiss,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
   const playback = usePlaybackOverlay({
@@ -49,6 +52,7 @@ export function useDesktopSegmentsOverlay({
     runtimeMs,
     serverAutoplayEnabled,
     scrubbing,
+    controlsVisible,
     onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },
     onNextEpisode: () => onNextEpisode?.(),
     onEndOfPlayback,

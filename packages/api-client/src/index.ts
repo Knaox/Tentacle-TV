@@ -31,7 +31,8 @@ export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegment
 export { usePlaybackSegments } from "./hooks/usePlaybackSegments";
 export { usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, initPlaybackSettingsStore } from "./hooks/usePlaybackSettings";
 export { usePlaybackOverlay } from "./playback/usePlaybackOverlay";
-export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/usePlaybackOverlay";
+export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/playbackOverlay.types";
+export { useMutedSegments, NO_MUTED_SEGMENTS } from "./playback/useMutedSegments";
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken, tentacleApiFetch, TentacleApiError } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";

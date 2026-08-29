@@ -117,3 +117,39 @@ describe("decideIntroSkip", () => {
     expect(displayedCountdown(partial.state)).toBe(2); // 2000 ms restants → « 2 »
   });
 });
+
+describe("sauter puis revenir dans le passage", () => {
+  it("le bouton se réaffiche dès que la fenêtre est ré-entrée", () => {
+    // On saute : l'état masque la pilule le temps que la position rattrape.
+    const [apresSaut, action] = decideIntroSkip(INTRO_SKIP_IDLE, { type: "skipNow" }, true);
+    expect(action).toBe("skip");
+    expect(showSkipPill(apresSaut, true)).toBe(false);
+
+    // La position sort de l'intro : tout retombe.
+    const [dehors] = decideIntroSkip(
+      apresSaut,
+      { type: "frame", visible: false, active: false, elapsedMs: 1_000 },
+      true,
+    );
+    expect(dehors).toEqual(INTRO_SKIP_IDLE);
+
+    // Retour en arrière DANS l'intro : front montant, la pilule revient.
+    const [dedans] = decideIntroSkip(
+      dehors,
+      { type: "frame", visible: true, active: false, elapsedMs: 1_000 },
+      false,
+    );
+    expect(showSkipPill(dedans, true)).toBe(true);
+  });
+
+  it("un REFUS, lui, ne se défait pas par une simple ré-entrée du passage", () => {
+    // (la sourdine posée par la croix vit dans la coquille — voir skipMuting.ts)
+    const [refuse] = decideIntroSkip(INTRO_SKIP_IDLE, { type: "dismiss" }, true);
+    const [encore] = decideIntroSkip(
+      refuse,
+      { type: "frame", visible: true, active: true, elapsedMs: 1_000 },
+      true,
+    );
+    expect(encore.name).toBe("dismissed");
+  });
+});
