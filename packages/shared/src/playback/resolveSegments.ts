@@ -103,18 +103,15 @@ function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | n
  *
  * Pour un OUTRO, deux règles, dans cet ordre :
  *
- *  1. **Écarter l'incrédible** : plus court que le plancher de la durée
- *     (`minCredibleOutroMs`, proportionné au format) ET collé à la fin du
- *     fichier. C'est la signature d'un détecteur d'images noires qui a trouvé
- *     la queue du média — dix-sept secondes sur Iron Man et sur Far From Home.
- *     Le garder, c'est proposer de « passer le générique » dix-sept secondes
- *     avant la fin, donc terminer le film. Si tous les candidats sont
- *     incrédibles, il n'y a pas d'Outro : le film se termine tout seul, et sa
- *     scène post-générique est vue.
- *  2. **Préférer celui qui laisse une scène après lui** — il en dit plus que
- *     les autres. Encore faut-il qu'il soit plausible : un générique de fin ne
- *     commence pas dans la première moitié du média. À défaut, le plus long,
- *     qui couvre le passage entier plutôt qu'un bout.
+ *  1. **Écarter l'incrédible** : plus court que `minCredibleOutroMs` ET collé
+ *     à la fin. C'est la signature d'un détecteur d'images noires qui a trouvé
+ *     la queue du média — dix-sept secondes sur Iron Man. Le garder, c'est
+ *     proposer de « passer le générique » dix-sept secondes avant la fin, donc
+ *     terminer le film. Tous incrédibles = pas d'Outro : le film se termine
+ *     seul, et sa scène post-générique est vue.
+ *  2. **Préférer celui qui laisse une scène après lui** — il en dit plus. Et
+ *     qu'il soit plausible : un générique ne commence pas dans la première
+ *     moitié du média. À défaut, le plus long.
  *
  * Pour les autres types, les candidats ne diffèrent que d'une seconde ou deux
  * (deux greffons qui disent la même chose) : le plus long les englobe.
