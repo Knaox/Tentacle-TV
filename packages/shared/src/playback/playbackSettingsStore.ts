@@ -43,6 +43,7 @@ export const SETTINGS_CACHE_KEY = "tentacle_playback_settings";
 export interface PlaybackSettingsPatch {
   intro?: Partial<SegmentSettings>;
   outro?: Partial<SegmentSettings>;
+  outroFilm?: Partial<SegmentSettings>;
   recap?: Partial<SegmentSettings>;
   preview?: Partial<SegmentSettings>;
   next?: Partial<NextEpisodeSettings>;
@@ -165,6 +166,7 @@ export function createPlaybackSettingsStore(deps: SettingsStoreDeps): PlaybackSe
       const merged = normalizePlaybackSettings({
         intro: { ...snapshot.intro, ...patch.intro },
         outro: { ...snapshot.outro, ...patch.outro },
+        outroFilm: { ...snapshot.outroFilm, ...patch.outroFilm },
         recap: { ...snapshot.recap, ...patch.recap },
         preview: { ...snapshot.preview, ...patch.preview },
         next: { ...snapshot.next, ...patch.next },

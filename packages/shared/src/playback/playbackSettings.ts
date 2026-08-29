@@ -83,7 +83,19 @@ export interface NextEpisodeSettings {
 
 export interface PlaybackSettings {
   intro: SegmentSettings;
+  /** Générique de fin d'un ÉPISODE. */
   outro: SegmentSettings;
+  /**
+   * Générique de fin d'un FILM — un réglage à lui, et il le faut.
+   *
+   * Sur un épisode, le générique de fin est occupé par la fiche « à suivre » :
+   * le bouton n'y paraît que s'il mène ailleurs, et le passer d'office
+   * entrerait en concurrence avec l'enchaînement. Sur un film il n'y a rien
+   * d'autre, et « passer le générique » veut dire soit rejoindre la scène
+   * post-générique, soit terminer — deux gestes qu'on ne règle pas comme on
+   * règle un épisode.
+   */
+  outroFilm: SegmentSettings;
   recap: SegmentSettings;
   preview: SegmentSettings;
   next: NextEpisodeSettings;
@@ -140,6 +152,12 @@ export const BEFORE_END_MAX_RULES = 12;
 export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
   intro: { action: "auto", countdownVisible: true, autoDelayMs: SEGMENT_AUTO_DELAY_DEFAULT_MS },
   outro: { action: "button", countdownVisible: true, autoDelayMs: SEGMENT_AUTO_DELAY_DEFAULT_MS },
+  // Le film passe son générique TOUT SEUL, et c'est sans danger par
+  // construction : quand rien ne suit le générique, « passer » voudrait dire
+  // quitter le film, et le bouton s'impose alors quel que soit ce réglage
+  // (`skipCandidate.ts`). L'automatique ne sert donc qu'à rejoindre une scène
+  // post-générique — ou à terminer, une fois cette scène passée.
+  outroFilm: { action: "auto", countdownVisible: true, autoDelayMs: SEGMENT_AUTO_DELAY_DEFAULT_MS },
   recap: { action: "button", countdownVisible: true, autoDelayMs: SEGMENT_AUTO_DELAY_DEFAULT_MS },
   preview: { action: "auto", countdownVisible: true, autoDelayMs: SEGMENT_AUTO_DELAY_DEFAULT_MS },
   next: {
@@ -276,6 +294,7 @@ export function normalizePlaybackSettings(raw: unknown): PlaybackSettings {
   return {
     intro: normalizeSegment(o.intro, d.intro),
     outro: normalizeSegment(o.outro, d.outro),
+    outroFilm: normalizeSegment(o.outroFilm, d.outroFilm),
     recap: normalizeSegment(o.recap, d.recap),
     preview: normalizeSegment(o.preview, d.preview),
     next: normalizeNext(o.next, d.next),

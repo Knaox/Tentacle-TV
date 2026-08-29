@@ -31,12 +31,21 @@ const SKIP_LABELS: Partial<Record<SegmentType, SkipLabelKey>> = {
   Preview: "skipPreview",
 };
 
+/**
+ * Le réglage qui gouverne ce passage.
+ *
+ * ⚠️ Le générique de fin en a DEUX — un pour les épisodes, un pour les films
+ * (voir `playbackSettings.ts`). L'appelant dit lequel : sur un épisode, la
+ * fiche « à suivre » occupe déjà le générique ; sur un film il n'y a rien
+ * d'autre, et « passer » veut dire rejoindre une scène ou terminer.
+ */
 export function segmentSettingsFor(
   settings: PlaybackSettings,
   type: SegmentType,
+  isEpisode: boolean,
 ): SegmentSettings | null {
   if (type === "Intro") return settings.intro;
-  if (type === "Outro") return settings.outro;
+  if (type === "Outro") return isEpisode ? settings.outro : settings.outroFilm;
   if (type === "Recap") return settings.recap;
   if (type === "Preview") return settings.preview;
   return null; // Commercial : pas de réglage, pas d'overlay.
@@ -64,7 +73,7 @@ export interface SkipCandidateInput {
 export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | null {
   const active = findActiveSegment(input.segments, input.positionMs, input.hasStarted);
   if (!active) return null;
-  const settings = segmentSettingsFor(input.settings, active.type);
+  const settings = segmentSettingsFor(input.settings, active.type, input.isEpisode);
   if (!settings || settings.action === "off") return null;
 
   if (active.type !== "Outro") {
@@ -88,17 +97,34 @@ export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | nu
     // scène post-générique Marvel se perdait : le bouton disait « passer le
     // générique » et fermait le film).
     //
-    // Et jamais en automatique, quel que soit le réglage : un décompte qui
-    // quitte le film tout seul au bout de trois secondes de générique est
-    // exactement le geste qu'on ne peut pas rattraper. `action: "button"` est
-    // imposé ici, pas lu.
+    // Le décompte n'est autorisé que sur le générique FINAL — celui qui
+    // reprend après une scène post-générique. Là, tout a été vu, et rester
+    // devant des minutes de défilement est le geste qu'on ne veut pas imposer.
+    // Sur le générique PRINCIPAL d'un film, le bouton reste imposé quel que
+    // soit le réglage : un décompte qui ferme un film au bout de cinq secondes
+    // de générique — sa musique, un plan qu'aucun détecteur n'a vu — ne se
+    // rattrape pas.
     return {
       segment: active,
       labelKey: "endPlayback",
       action: { kind: "endOfPlayback" },
-      settings: { ...settings, action: "button" },
+      settings: isFinalCredits(input.segments, active) ? settings : { ...settings, action: "button" },
     };
   }
   // Épisode + suivant + générique jusqu'au bout : la carte parle.
   return null;
+}
+
+/**
+ * Ce générique est-il celui qui REPREND après une scène post-générique ?
+ *
+ * Le témoin est qu'un autre générique s'est terminé avant lui : la scène a donc
+ * déjà été proposée, et vue. Aucune position n'entre en jeu — c'est la
+ * structure du média qui répond, pas l'endroit où l'on se trouve.
+ */
+function isFinalCredits(
+  segments: readonly ResolvedSegment[],
+  active: ResolvedSegment,
+): boolean {
+  return segments.some((s) => s.type === "Outro" && s !== active && s.endMs <= active.startMs);
 }

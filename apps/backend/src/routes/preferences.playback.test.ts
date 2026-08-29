@@ -106,9 +106,14 @@ const VALID_SETTINGS = {
   },
 };
 
-/** Ce que le serveur rend : les mêmes valeurs, plus le défaut du décompte. */
+/**
+ * Ce que le serveur rend : les mêmes valeurs, plus les défauts des champs que
+ * le client d'avant n'envoie pas — la durée du décompte, et le générique de fin
+ * des FILMS, réglé à part de celui des épisodes depuis la 1.20.9.
+ */
 const STORED_SETTINGS = {
   ...VALID_SETTINGS,
+  outroFilm: DEFAULT_PLAYBACK_SETTINGS.outroFilm,
   next: { ...VALID_SETTINGS.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS },
 };
 
@@ -230,7 +235,11 @@ describe("le repli « avant la fin » traverse la base", () => {
     const read = await app.inject({ method: "GET", url: "/api/preferences/playback", headers });
     expect(read.json()).toEqual({
       stored: true,
-      settings: { ...settings, next: { ...settings.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS } },
+      settings: {
+        ...settings,
+        outroFilm: DEFAULT_PLAYBACK_SETTINGS.outroFilm,
+        next: { ...settings.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS },
+      },
     });
   });
 

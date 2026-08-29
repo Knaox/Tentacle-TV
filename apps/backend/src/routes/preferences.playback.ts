@@ -51,6 +51,9 @@ const beforeEndTargetSchema = z.discriminatedUnion("mode", [
 const settingsSchema = z.object({
   intro: segmentSchema,
   outro: segmentSchema,
+  // Facultatif : un client d'avant la 1.20.9 ne l'envoie pas, et sa requête ne
+  // doit pas être rejetée — la normalisation pose le défaut.
+  outroFilm: segmentSchema.optional(),
   recap: segmentSchema,
   preview: segmentSchema,
   next: z.object({
