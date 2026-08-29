@@ -8,7 +8,7 @@
  *    proposition ; avec lui mais sans `nextAutoPlay`, le minuteur va au bout
  *    et il ne se passe rien ;
  *  - `nextAutoPlay` gouverne l'ACTE : à l'expiration du minuteur, l'effet
- *    `"epsSuivant"` est émis — une seule fois.
+ *    `"nextEpisode"` est émis — une seule fois.
  * Corollaire assumé (l'indépendance stricte est une demande explicite) :
  * fiche éteinte + minuteur + enchaînement = un enchaînement sans surface.
  *
@@ -25,7 +25,7 @@
 export const NEXT_COUNTDOWN_MS = 10_000;
 
 export interface AutoNextState {
-  phase: "repos" | "carte" | "final";
+  phase: "idle" | "card" | "final";
   /** ms restantes du minuteur, null = aucun minuteur en cours. */
   remainingMs: number | null;
   /** La croix a été donnée pour CET épisode. */
@@ -36,7 +36,7 @@ export interface AutoNextState {
 }
 
 export const AUTO_NEXT_IDLE: AutoNextState = {
-  phase: "repos",
+  phase: "idle",
   remainingMs: null,
   dismissed: false,
   chained: false,
@@ -45,7 +45,7 @@ export const AUTO_NEXT_IDLE: AutoNextState = {
 
 export type AutoNextInput =
   | {
-      type: "cadre";
+      type: "frame";
       /** Le déclencheur de la carte est franchi (sélecteur partagé). */
       eligible: boolean;
       /** La lecture est arrivée au bout (EOF) — l'écran de fin. */
@@ -53,10 +53,10 @@ export type AutoNextInput =
       elapsedMs: number;
     }
   | { type: "item"; itemId: string }
-  | { type: "refus" }
-  | { type: "lireMaintenant" };
+  | { type: "dismiss" }
+  | { type: "playNow" };
 
-export type AutoNextEffect = "rien" | "epsSuivant";
+export type AutoNextEffect = "none" | "nextEpisode";
 
 export interface AutoNextConfig {
   hasNextEpisode: boolean;
@@ -77,50 +77,50 @@ export function decideAutoNext(
 ): [AutoNextState, AutoNextEffect] {
   if (input.type === "item") {
     // Nouvel épisode : tout se réarme, le refus ne suit pas.
-    if (state.forItemId === input.itemId) return [state, "rien"];
-    return [{ ...AUTO_NEXT_IDLE, forItemId: input.itemId }, "rien"];
+    if (state.forItemId === input.itemId) return [state, "none"];
+    return [{ ...AUTO_NEXT_IDLE, forItemId: input.itemId }, "none"];
   }
 
-  if (input.type === "refus") {
-    return [{ ...state, dismissed: true, remainingMs: null, phase: "repos" }, "rien"];
+  if (input.type === "dismiss") {
+    return [{ ...state, dismissed: true, remainingMs: null, phase: "idle" }, "none"];
   }
 
-  if (input.type === "lireMaintenant") {
-    if (state.chained || !config.hasNextEpisode) return [state, "rien"];
-    return [{ ...state, chained: true, remainingMs: null }, "epsSuivant"];
+  if (input.type === "playNow") {
+    if (state.chained || !config.hasNextEpisode) return [state, "none"];
+    return [{ ...state, chained: true, remainingMs: null }, "nextEpisode"];
   }
 
   // ── Battement de cadre ──
   const active = config.hasNextEpisode && config.serverEnabled && !state.dismissed && !state.chained;
   if (!active || (!input.eligible && !input.ended)) {
     // Hors fenêtre (ou refusé) : le minuteur retombe, prêt à se réarmer.
-    if (state.phase === "repos" && state.remainingMs === null) return [state, "rien"];
-    return [{ ...state, phase: "repos", remainingMs: null }, "rien"];
+    if (state.phase === "idle" && state.remainingMs === null) return [state, "none"];
+    return [{ ...state, phase: "idle", remainingMs: null }, "none"];
   }
 
-  const phase = input.ended ? "final" : "carte";
+  const phase = input.ended ? "final" : "card";
 
   // Armement au front d'entrée dans la fenêtre. L'escalade carte → écran de
   // fin CONSERVE le minuteur en cours (comportement TV historique) : la fin du
   // média n'offre pas un sursis.
   let remainingMs = state.remainingMs;
-  if (state.phase === "repos") {
+  if (state.phase === "idle") {
     remainingMs = config.nextCountdown ? NEXT_COUNTDOWN_MS : null;
   }
 
   if (remainingMs === null) {
     // Référence STABLE quand rien ne change : l'appelant React s'appuie sur
     // l'identité de l'état pour ne pas re-rendre à chaque battement.
-    if (state.phase === phase && state.remainingMs === null) return [state, "rien"];
-    return [{ ...state, phase, remainingMs: null }, "rien"];
+    if (state.phase === phase && state.remainingMs === null) return [state, "none"];
+    return [{ ...state, phase, remainingMs: null }, "none"];
   }
 
   remainingMs -= Math.max(0, input.elapsedMs);
-  if (remainingMs > 0) return [{ ...state, phase, remainingMs }, "rien"];
+  if (remainingMs > 0) return [{ ...state, phase, remainingMs }, "none"];
 
   // Expiration : l'acte n'appartient qu'à `nextAutoPlay`, et une seule fois.
   if (config.nextAutoPlay) {
-    return [{ ...state, phase, remainingMs: null, chained: true }, "epsSuivant"];
+    return [{ ...state, phase, remainingMs: null, chained: true }, "nextEpisode"];
   }
-  return [{ ...state, phase, remainingMs: null }, "rien"];
+  return [{ ...state, phase, remainingMs: null }, "none"];
 }

@@ -83,9 +83,9 @@ export function readIntent(event: KeyboardEvent): Intent | null {
   const code = event.keyCode;
 
   const direction = DIRECTIONS[code];
-  if (direction) return { type: "deplacer", direction };
+  if (direction) return { type: "move", direction };
 
-  if (VALIDATION.has(code)) return { type: "valider" };
+  if (VALIDATION.has(code)) return { type: "select" };
   if (BACK.has(code)) return { type: "retour" };
 
   const command = TRANSPORTS[code];
@@ -98,9 +98,9 @@ function parLeNom(nom: string | undefined): Intent | null {
   if (!nom) return null;
 
   const direction = DIRECTIONS_BY_NAME[nom];
-  if (direction) return { type: "deplacer", direction };
+  if (direction) return { type: "move", direction };
 
-  if (VALIDATION_PAR_NOM.has(nom)) return { type: "valider" };
+  if (VALIDATION_PAR_NOM.has(nom)) return { type: "select" };
   if (BACK_BY_NAME.has(nom)) return { type: "retour" };
 
   const command = TRANSPORTS_BY_NAME[nom];

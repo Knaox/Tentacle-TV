@@ -165,7 +165,7 @@ function useFreezeWatch(source: unknown): void {
         instant: Date.now(),
       });
       watch.current = next;
-      if (verdict === "rien") return;
+      if (verdict === "none") return;
 
       if (verdict === "reprise") {
         // Ça repart tout seul, et c'est le fait le plus instructif du dossier :

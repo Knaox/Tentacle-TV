@@ -29,18 +29,18 @@ interface Step {
   sign: 1 | -1;
   /** Le palier du tic, ou `0` pour un saut — un geste n'accélère jamais. */
   tier: number;
-  kind: "saut" | "tic";
+  kind: "skip" | "tick";
 }
 
 function harness() {
   const from = Date.now();
   const step: Step[] = [];
   const motor = createHoldMotor({
-    jump: (sign) => step.push({ at: Date.now() - from, sign, tier: 0, kind: "saut" }),
-    advance: (sign, tier) => step.push({ at: Date.now() - from, sign, tier, kind: "tic" }),
+    jump: (sign) => step.push({ at: Date.now() - from, sign, tier: 0, kind: "skip" }),
+    advance: (sign, tier) => step.push({ at: Date.now() - from, sign, tier, kind: "tick" }),
   });
-  return { step, motor, jumps: () => step.filter((p) => p.kind === "saut"),
-    ticks: () => step.filter((p) => p.kind === "tic") };
+  return { step, motor, jumps: () => step.filter((p) => p.kind === "skip"),
+    ticks: () => step.filter((p) => p.kind === "tick") };
 }
 
 /** Un maintien : un appui, puis des répétitions à `intervalle` pendant `duree`. */
@@ -61,7 +61,7 @@ describe("holdMotor", () => {
 
     motor.press(RIGHT, 1);
 
-    expect(step).toEqual([{ at: 0, sign: 1, tier: 0, kind: "saut" }]);
+    expect(step).toEqual([{ at: 0, sign: 1, tier: 0, kind: "skip" }]);
     motor.destroy();
   });
 
@@ -74,7 +74,7 @@ describe("holdMotor", () => {
     }
 
     expect(step).toHaveLength(8);
-    expect(step.every((p) => p.kind === "saut")).toBe(true);
+    expect(step.every((p) => p.kind === "skip")).toBe(true);
     expect(ticks()).toHaveLength(0);
     motor.destroy();
   });
@@ -173,7 +173,7 @@ describe("holdMotor", () => {
     motor.press(RIGHT, 1);
 
     expect(step).toHaveLength(before + 1);
-    expect(step[step.length - 1].kind).toBe("saut");
+    expect(step[step.length - 1].kind).toBe("skip");
     motor.destroy();
   });
 
@@ -220,7 +220,7 @@ describe("holdMotor", () => {
 
     expect(step).toHaveLength(before + 1);
     expect(step[step.length - 1].sign).toBe(-1);
-    expect(step[step.length - 1].kind).toBe("saut");
+    expect(step[step.length - 1].kind).toBe("skip");
     motor.destroy();
   });
 

@@ -42,7 +42,7 @@ export type Decision =
   /** Un pas de révélation, révocable — `docked` s'il a consommé tout le mou. */
   | { type: "pas"; step: number; docked: boolean }
   /** Rien à faire : plus rien ne peut défiler dans cette direction. */
-  | { type: "rien" };
+  | { type: "none" };
 
 export interface ScrollState {
   /** Ce qui reste à défiler dans la direction demandée. */
@@ -73,7 +73,7 @@ export function decide(state: ScrollState): Decision {
   // seuil d'un pixel plutôt que zéro parce que les positions de défilement sont
   // fractionnaires sur un écran mis à l'échelle, et qu'un pas d'un demi-pixel
   // n'est pas un pas — c'est une oscillation.
-  if (slack < 1) return { type: "rien" };
+  if (slack < 1) return { type: "none" };
 
   // Le bout de la page : plus rien à viser au-delà, et le reste tient dans un
   // écran. On le rejoint d'un trait, et l'on y reste — c'est une destination,

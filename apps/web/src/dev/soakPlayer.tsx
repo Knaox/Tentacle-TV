@@ -47,7 +47,7 @@ async function mark(msg: string): Promise<void> {
 
 /** Actions aléatoires pendant la lecture : ce sont elles qui font varier le timing. */
 async function jitterActions(): Promise<void> {
-  const actions = ["pause", "fullscreen", "seek", "rien"] as const;
+  const actions = ["pause", "fullscreen", "seek", "none"] as const;
   const pick = actions[Math.floor(Math.random() * actions.length)];
   const key = (k: string) =>
     window.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));

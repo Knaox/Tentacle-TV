@@ -120,7 +120,7 @@ function applyLinuxExit(
     alreadyFullscreen: session === null ? null : session.alreadyFullscreen,
     fullscreen: isFullscreen(),
   });
-  if (action !== "quitterPleinEcranPuisMaximiser") return;
+  if (action !== "exitFullscreenThenMaximize") return;
   // `setFullScreen(false)` est ASYNCHRONE sur Wayland : un `maximize()` dans
   // la foulée serait avalé — il part sur l'évènement de sortie, une fois.
   win.once("leave-full-screen", () => {

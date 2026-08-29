@@ -29,7 +29,7 @@ import { deviceToken2 } from "../bootstrap/fragmentToken";
  * une session parfaitement valide avant le premier écran.
  */
 
-export type VerdictSession = "ok" | "expiree" | "revoquee" | "injoignable";
+export type VerdictSession = "ok" | "expired" | "revoked" | "unreachable";
 
 const REVOCATION_CONFIRMATIONS = 2;
 const RETRY_DELAY_MS = 5000;
@@ -72,17 +72,17 @@ export async function revalidateSession(): Promise<VerdictSession> {
     if (response.status === 401) {
       // Seul `revoked: true` transforme un refus en verdict de révocation.
       const corps = (await response.json().catch(() => null)) as { revoked?: boolean } | null;
-      return corps?.revoked === true ? "revoquee" : "expiree";
+      return corps?.revoked === true ? "revoked" : "expired";
     }
-    if (!response.ok) return "injoignable";
+    if (!response.ok) return "unreachable";
 
     // Double ceinture, reprise du garde web : un repli monopage renvoie
     // `index.html` avec un statut 200. Une réponse qui ne parle pas de jeton
     // n'est pas une réponse d'authentification.
     const corps = await response.text();
-    return corps.includes("AccessToken") || corps.includes("token") ? "ok" : "injoignable";
+    return corps.includes("AccessToken") || corps.includes("token") ? "ok" : "unreachable";
   } catch {
-    return "injoignable";
+    return "unreachable";
   }
 }
 
@@ -116,11 +116,11 @@ export function installTvSessionGuard(deps: {
       for (let tour = 0; tour < REVOCATION_CONFIRMATIONS; tour++) {
         const verdict = await revalidateSession();
         if (verdict === "ok") return;
-        if (verdict === "expiree") {
+        if (verdict === "expired") {
           console.warn("[Tentacle:TV] refresh refusé sans révocation — session conservée");
           return;
         }
-        if (verdict === "revoquee") {
+        if (verdict === "revoked") {
           confirmations++;
           if (confirmations >= REVOCATION_CONFIRMATIONS) {
             endSession();

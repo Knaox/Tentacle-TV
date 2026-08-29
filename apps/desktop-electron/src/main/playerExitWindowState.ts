@@ -22,7 +22,7 @@
  * - macOS et Windows : leurs chemins actuels, éprouvés, restent intacts.
  */
 
-export type PlayerExitAction = "rien" | "quitterPleinEcranPuisMaximiser";
+export type PlayerExitAction = "none" | "exitFullscreenThenMaximize";
 
 export interface PlayerExitInput {
   platform: NodeJS.Platform;
@@ -35,14 +35,14 @@ export interface PlayerExitInput {
 }
 
 export function decidePlayerExitAction(input: PlayerExitInput): PlayerExitAction {
-  if (input.platform !== "linux") return "rien";
+  if (input.platform !== "linux") return "none";
   // Sans montage décidé, on ne sait rien du terrain : ne rien toucher.
-  if (input.montage === null) return "rien";
-  if (input.montage === "wayland" && input.windowing !== "libre") return "rien";
+  if (input.montage === null) return "none";
+  if (input.montage === "wayland" && input.windowing !== "libre") return "none";
   // Pas de session lecteur : rien n'a été ouvert, rien à défaire.
-  if (input.alreadyFullscreen === null) return "rien";
+  if (input.alreadyFullscreen === null) return "none";
   // Le plein écran précédait le film : il est à l'utilisateur.
-  if (input.alreadyFullscreen) return "rien";
-  if (!input.fullscreen) return "rien";
-  return "quitterPleinEcranPuisMaximiser";
+  if (input.alreadyFullscreen) return "none";
+  if (!input.fullscreen) return "none";
+  return "exitFullscreenThenMaximize";
 }

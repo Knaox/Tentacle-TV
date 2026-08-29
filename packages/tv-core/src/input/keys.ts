@@ -20,8 +20,8 @@ export type Direction = "haut" | "bas" | "gauche" | "droite";
 export type TransportCommand = "lecture" | "pause" | "arret" | "avance" | "retour";
 
 export type Intent =
-  | { type: "deplacer"; direction: Direction }
-  | { type: "valider" }
+  | { type: "move"; direction: Direction }
+  | { type: "select" }
   | { type: "retour" }
   | { type: "transport"; command: TransportCommand };
 

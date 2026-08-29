@@ -131,7 +131,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         nextAutoPlay: settingsRef.current.next.nextAutoPlay,
       });
       commitNextState(state);
-      if (effect === "epsSuivant") p.onNextEpisode();
+      if (effect === "nextEpisode") p.onNextEpisode();
     },
     [commitNextState],
   );
@@ -147,7 +147,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const [state, action] = decideIntroSkip(
         skipStateRef.current,
         {
-          type: "cadre",
+          type: "frame",
           visible,
           active,
           elapsedMs,
@@ -157,12 +157,12 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       );
       previousVisibleRef.current = visible;
       commitSkipState(state);
-      if (action === "sauter") runAction(candidate);
+      if (action === "skip") runAction(candidate);
 
       const pRuntimeMs =
         p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
       dispatchNext({
-        type: "cadre",
+        type: "frame",
         eligible:
           !p.scrubbing &&
           p.hasStarted &&
@@ -204,7 +204,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   ]);
 
   // L'horloge : fine (250 ms) pendant un décompte, lente (1 s) sinon.
-  const countingDown = skipState.name === "decompte" || nextState.remainingMs !== null;
+  const countingDown = skipState.name === "countdown" || nextState.remainingMs !== null;
   useEffect(() => {
     const periodMs = countingDown ? 250 : 1000;
     let last = Date.now();
@@ -240,7 +240,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         // « refusé » ET « saut demandé » masquent le bouton (la pilule ne se
         // remontre pas pendant que la position rattrape la cible).
         segments: candidate
-          ? { [candidate.segment.type]: skipState.name === "refuse" || skipState.name === "saute" }
+          ? { [candidate.segment.type]: skipState.name === "dismissed" || skipState.name === "skipped" }
           : {},
         nextCard: nextState.dismissed || nextState.chained,
       },
@@ -254,10 +254,10 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const dismissOverlay = useCallback(() => {
     const current = overlayRef.current;
     if (current.kind === "skip") {
-      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "croix" }, true)[0]);
+      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
       inputRef.current.onSegmentDismissNotify?.(current.segmentType);
     } else if (current.kind === "nextCard") {
-      dispatchNext({ type: "refus" });
+      dispatchNext({ type: "dismiss" });
       inputRef.current.onNextDismissNotify?.();
     }
   }, [dispatchNext, commitSkipState]);
@@ -265,25 +265,25 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const skipNow = useCallback(() => {
     const candidate = currentCandidate();
     if (!candidate) return;
-    commitSkipState(decideIntroSkip(skipStateRef.current, { type: "sauteMaintenant" }, true)[0]);
+    commitSkipState(decideIntroSkip(skipStateRef.current, { type: "skipNow" }, true)[0]);
     runAction(candidate);
   }, [currentCandidate, runAction, commitSkipState]);
 
   const playNow = useCallback(() => {
-    dispatchNext({ type: "lireMaintenant" });
+    dispatchNext({ type: "playNow" });
   }, [dispatchNext]);
 
   const signalRemoteSegmentDismiss = useCallback(
     (type: SegmentType) => {
       const candidate = currentCandidate();
       if (candidate?.segment.type !== type) return;
-      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "croix" }, true)[0]);
+      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "dismiss" }, true)[0]);
     },
     [currentCandidate, commitSkipState],
   );
 
   const signalRemoteNextDismiss = useCallback(() => {
-    dispatchNext({ type: "refus" });
+    dispatchNext({ type: "dismiss" });
   }, [dispatchNext]);
 
   const skipMs = currentCandidate()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;

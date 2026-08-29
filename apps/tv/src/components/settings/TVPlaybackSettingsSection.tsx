@@ -118,9 +118,9 @@ export function TVPlaybackSettingsSection() {
   ];
 
   const toggles: { key: string; title: string; hint: string; active: boolean; set: (v: boolean) => void }[] = [
-    { key: "carte", title: t("upNextCardTitle"), hint: t("upNextCardHint"), active: next.nextCard,
+    { key: "card", title: t("upNextCardTitle"), hint: t("upNextCardHint"), active: next.nextCard,
       set: (nextCard) => { setPlaybackSettings({ next: { nextCard } }); } },
-    { key: "decompte", title: t("upNextCountdownTitle"), hint: t("upNextCountdownHint"), active: next.nextCountdown,
+    { key: "countdown", title: t("upNextCountdownTitle"), hint: t("upNextCountdownHint"), active: next.nextCountdown,
       set: (nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); } },
     { key: "auto", title: t("upNextAutoPlayTitle"), hint: t("upNextAutoPlayHint"), active: next.nextAutoPlay,
       set: (nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); } },

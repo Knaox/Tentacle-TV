@@ -87,11 +87,11 @@ export function useSmartSeek({
         elapsed: Date.now() - armed,
       });
       state = next;
-      if (verdict === "attendre") return;
+      if (verdict === "wait") return;
 
       // Le seul verdict qui n'arrête pas la veille : il DIT, il n'agit pas, et
       // le saut peut encore aboutir de lui-même au relevé suivant.
-      if (verdict === "charge") {
+      if (verdict === "loading") {
         lit = true;
         reportLoading?.(true);
         return;
@@ -99,7 +99,7 @@ export function useSmartSeek({
 
       clearInterval(seekStallTimer.current);
       if (lit) reportLoading?.(false);
-      if (verdict === "renegocier") {
+      if (verdict === "renegotiate") {
         console.warn("[Tentacle:Seek] saut sans effet — session neuve", { target: Math.round(clamped) });
         seekTargetRef.current = clamped;
         onSeekRequest?.(clamped);

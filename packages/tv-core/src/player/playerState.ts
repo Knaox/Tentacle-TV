@@ -22,8 +22,8 @@ import { useSyncExternalStore } from "react";
  * fabrication d'objet.
  */
 
-export type PlayerMode = "repos" | "osd" | "scrub";
-export type OpenPanel = "aucun" | "pistes" | "episodes";
+export type PlayerMode = "idle" | "osd" | "scrub";
+export type OpenPanel = "none" | "tracks" | "episodes";
 
 export interface SharedScrubState {
   position: number;
@@ -40,7 +40,7 @@ export interface TvPlayerState {
 /** Cinq secondes : le temps de lire un titre sans que l'habillage s'installe. */
 const AUTOHIDE_MS = 5000;
 
-const INITIAL: TvPlayerState = { mounted: false, mode: "osd", panel: "aucun", scrub: null };
+const INITIAL: TvPlayerState = { mounted: false, mode: "osd", panel: "none", scrub: null };
 
 let state: TvPlayerState = INITIAL;
 let playing = false;
@@ -74,10 +74,10 @@ function stopTimer(): void {
  */
 function armAutoHide(): void {
   stopTimer();
-  if (!playing || state.panel !== "aucun" || state.mode !== "osd") return;
+  if (!playing || state.panel !== "none" || state.mode !== "osd") return;
   timer = setTimeout(() => {
     timer = null;
-    set({ mode: "repos" });
+    set({ mode: "idle" });
   }, AUTOHIDE_MS);
 }
 
@@ -100,10 +100,10 @@ export function setMounted(mounted: boolean): void {
   if (!mounted) {
     stopTimer();
     playing = false;
-    set({ mounted: false, mode: "osd", panel: "aucun", scrub: null });
+    set({ mounted: false, mode: "osd", panel: "none", scrub: null });
     return;
   }
-  set({ mounted: true, mode: "osd", panel: "aucun", scrub: null });
+  set({ mounted: true, mode: "osd", panel: "none", scrub: null });
   armAutoHide();
 }
 
@@ -136,7 +136,7 @@ export function deferAutoHide(): void {
 
 export function enterScrub(position: number, tier: number): void {
   stopTimer();
-  set({ mode: "scrub", panel: "aucun", scrub: { position, tier } });
+  set({ mode: "scrub", panel: "none", scrub: { position, tier } });
 }
 
 export function updateScrub(position: number, tier: number): void {
@@ -150,7 +150,7 @@ export function exitScrub(): void {
 }
 
 export function setPanel(panel: OpenPanel): void {
-  set({ panel, mode: panel === "aucun" ? state.mode : "osd" });
+  set({ panel, mode: panel === "none" ? state.mode : "osd" });
   armAutoHide();
 }
 

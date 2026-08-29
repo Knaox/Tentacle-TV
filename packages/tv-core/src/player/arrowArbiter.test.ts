@@ -22,26 +22,26 @@ describe("arrowArbiter", () => {
   it("habillage éteint, la première flèche ne déplace rien et laisse sa chance au second appui", () => {
     const { arbiter } = harness();
 
-    expect(arbiter.decide(RIGHT, "repos")).toBe("attendre");
+    expect(arbiter.decide(RIGHT, "idle")).toBe("wait");
   });
 
   it("le second appui saute AUSSI quand les commandes n'ont pas encore paru", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(150);
 
     // Le délai de rallumage n'a pas expiré : le mode est encore `repos`. C'est
     // le cas nominal d'un double appui rapide — et celui qui faisait paraître
     // l'habillage au passage, puisqu'on ne peut pas ne pas cliquer une
     // première fois.
-    expect(arbiter.decide(RIGHT, "repos")).toBe("transport");
+    expect(arbiter.decide(RIGHT, "idle")).toBe("transport");
   });
 
   it("le second appui rapproché saute — c'est le double clic", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(250);
 
     expect(arbiter.decide(RIGHT, "osd")).toBe("transport");
@@ -50,7 +50,7 @@ describe("arrowArbiter", () => {
   it("un second appui TROP TARD parcourt les boutons, il ne saute pas", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(DOUBLE_PRESS_WINDOW_MS + 50);
 
     expect(arbiter.decide(RIGHT, "osd")).toBe("focus");
@@ -59,7 +59,7 @@ describe("arrowArbiter", () => {
   it("une AUTRE flèche que celle qui a rallumé ne saute pas", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(200);
 
     // On a rallumé avec droite : gauche sert à parcourir, pas à sauter en
@@ -70,7 +70,7 @@ describe("arrowArbiter", () => {
   it("trois appuis d'affilée font deux sauts, pas un saut puis un déplacement", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(250);
     expect(arbiter.decide(RIGHT, "osd")).toBe("transport");
     arbiter.release(RIGHT);
@@ -82,7 +82,7 @@ describe("arrowArbiter", () => {
   it("un maintien reste au transport bien au-delà de la fenêtre", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(250);
     expect(arbiter.decide(RIGHT, "osd")).toBe("transport");
 
@@ -95,7 +95,7 @@ describe("arrowArbiter", () => {
   it("relâcher rend la flèche aux boutons", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(250);
     arbiter.decide(RIGHT, "osd");
     arbiter.release(RIGHT);
@@ -107,7 +107,7 @@ describe("arrowArbiter", () => {
   it("une touche TENUE va au transport, quel que soit le délai de la dalle", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     // Le délai d'auto-répétition d'un téléviseur n'est ni documenté ni constant.
     // Celui-ci dépasse largement la fenêtre du double appui : sans le signal
     // `repeat`, on obtenait l'habillage au lieu de l'avance rapide.
@@ -119,11 +119,11 @@ describe("arrowArbiter", () => {
   it("une touche tenue prend la main même quand les commandes ne sont pas là", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(DOUBLE_PRESS_WINDOW_MS * 2);
 
     // Le délai de rallumage n'a pas encore couru : le mode est toujours `repos`.
-    expect(arbiter.decide(RIGHT, "repos", true)).toBe("transport");
+    expect(arbiter.decide(RIGHT, "idle", true)).toBe("transport");
   });
 
   it("en déplacement, la flèche appartient toujours au curseur", () => {
@@ -137,11 +137,11 @@ describe("arrowArbiter", () => {
   it("oublier ramène à la case départ : la flèche suivante attend", () => {
     const { arbiter, advance } = harness();
 
-    arbiter.decide(RIGHT, "repos");
+    arbiter.decide(RIGHT, "idle");
     advance(200);
     arbiter.forget();
 
     // L'habillage s'est éteint tout seul entre-temps.
-    expect(arbiter.decide(RIGHT, "repos")).toBe("attendre");
+    expect(arbiter.decide(RIGHT, "idle")).toBe("wait");
   });
 });

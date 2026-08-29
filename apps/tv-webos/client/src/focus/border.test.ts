@@ -40,13 +40,13 @@ describe("tailleDuPas", () => {
 
 describe("decider", () => {
   it("ne fait rien quand il n'y a plus rien à défiler", () => {
-    expect(decide(state({ slack: 0 }))).toEqual({ type: "rien" });
+    expect(decide(state({ slack: 0 }))).toEqual({ type: "none" });
   });
 
   it("ne fait rien pour une fraction de pixel", () => {
     // Les positions de défilement sont fractionnaires sur un écran mis à
     // l'échelle ; un demi-pixel n'est pas un pas, c'est une oscillation.
-    expect(decide(state({ slack: 0.4 }))).toEqual({ type: "rien" });
+    expect(decide(state({ slack: 0.4 }))).toEqual({ type: "none" });
   });
 
   it("accoste en un pas quand le mou tient dedans", () => {

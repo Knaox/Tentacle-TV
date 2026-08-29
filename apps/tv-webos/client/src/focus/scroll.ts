@@ -198,7 +198,7 @@ export function scrollByStep(
     threshold: view,
     candidateBeyond: !possibleEdge,
   });
-  if (decision.type === "rien") return null;
+  if (decision.type === "none") return null;
 
   const written = decision.type === "bord" ? decision.delta : decision.step;
   const docked = decision.type === "bord" || decision.docked;
