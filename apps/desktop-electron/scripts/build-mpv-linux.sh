@@ -128,7 +128,31 @@ if command -v apt-get >/dev/null; then
     libxpresent-dev libxss-dev libxinerama-dev libdrm-dev libgbm-dev libegl-dev libgl-dev \
     libasound2-dev libpulse-dev libpipewire-0.3-dev \
     libva-dev libvdpau-dev libzimg-dev libgnutls28-dev \
-    libopus-dev libvorbis-dev libogg-dev libmp3lame-dev libsoxr-dev
+    libopus-dev libvorbis-dev libogg-dev libmp3lame-dev libsoxr-dev \
+    python3-pip
+fi
+
+# ⚠️ meson d'apt est TROP VIEUX là où l'on bâtit.
+#
+# libplacebo exige meson >= 0.63 ; ubuntu-22.04 n'en empaquette que 0.61.2, et
+# c'est délibérément là que la CI bâtit — la glibc est compatible vers l'avant
+# et jamais vers l'arrière, une chaîne bâtie sur plus récent ne tournerait pas
+# sur Ubuntu 22.04 (voir l'en-tête du job Linux de desktop.yml). On complète
+# donc par pip, et SEULEMENT quand la version en place ne suffit pas : sur une
+# machine de développement récente, le meson du système fait très bien l'affaire.
+MESON_MIN="0.63"
+meson_suffisant() {
+  command -v meson >/dev/null 2>&1 || return 1
+  [ "$(printf '%s\n%s\n' "$MESON_MIN" "$(meson --version)" | sort -V | head -1)" = "$MESON_MIN" ]
+}
+if ! meson_suffisant; then
+  echo "==> meson $(command -v meson >/dev/null 2>&1 && meson --version || echo absent) < $MESON_MIN — installation par pip"
+  python3 -m pip install --quiet --upgrade meson
+  # pip pose l'exécutable dans ~/.local/bin, qui n'est pas toujours dans le PATH
+  # d'un runner ni d'un shell non interactif.
+  export PATH="$HOME/.local/bin:$PATH"
+  meson_suffisant || { echo "meson >= $MESON_MIN introuvable après installation" >&2; exit 1; }
+  echo "==> meson $(meson --version)"
 fi
 
 cloner() { # dépôt, tag, dossier
