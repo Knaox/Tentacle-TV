@@ -21,6 +21,7 @@ import {
   type BeforeEndTarget,
 } from "@tentacle-tv/shared";
 import { SegmentedChoice } from "./SegmentedChoice";
+import { rangeFill } from "../../lib/rangeFill";
 
 /** La valeur usuelle de chaque unité, posée au changement d'unité. */
 const USUAL: Record<BeforeEndMode, number> = { percent: 98, seconds: 30 };
@@ -77,7 +78,8 @@ export function BeforeEndTargetFields({
           step={step}
           value={target.value}
           onChange={(e) => { onChange({ mode: target.mode, value: Number(e.target.value) }); }}
-          className="mt-2 h-6 w-full max-w-xs cursor-pointer accent-brand"
+          style={rangeFill(target.value, min, max)}
+          className="ctl-range mt-2 w-full max-w-xs"
         />
       </div>
     </div>

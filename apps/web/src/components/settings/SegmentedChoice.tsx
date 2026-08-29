@@ -48,21 +48,18 @@ export function SegmentedChoice<T extends string>({
       className={`grid ${columns} gap-1 overflow-hidden rounded-lg border border-line-subtle bg-tentacle-surface p-1 ${className}`}
     >
       {options.map((option) => {
-        const active = option.value === value;
         return (
           <button
             key={option.value}
             type="button"
             role="radio"
-            aria-checked={active}
+            aria-checked={option.value === value}
             onClick={() => onChange(option.value)}
-            className={`flex min-h-11 min-w-0 items-center justify-center rounded-md px-2 text-center text-sm leading-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
-              active
-                // La sélection porte la teinte de marque : `bg-fill-medium` ne
-                // se distinguait pas du cadre, qui est déjà un remplissage.
-                ? "bg-tentacle-accent font-semibold text-cta-brand-fg hover:bg-tentacle-accent-dark"
-                : "font-medium text-content-tertiary hover:bg-fill-subtle hover:text-content-primary"
-            }`}
+            /* La peau — dégradé de marque, survol, état pressé, lueur — vit
+               dans `theme/controls.css` : les trois contrôles de réglage la
+               partagent, et l'état se lit sur `aria-checked`, qui est déjà là
+               pour les lecteurs d'écran. */
+            className="ctl-segment flex min-h-11 min-w-0 items-center justify-center px-2 text-center text-sm leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus"
           >
             {option.label}
           </button>

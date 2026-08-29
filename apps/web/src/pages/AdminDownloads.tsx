@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BACKEND, hdrs, creds } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
+import { ToggleSwitch } from "../components/settings/ToggleSwitch";
 
 interface AdminUserRights {
   id: string;
@@ -153,23 +154,10 @@ function RightSwitch({
   return (
     <label className="flex flex-shrink-0 cursor-pointer items-center gap-2">
       <span className="text-xs font-medium text-content-tertiary">{label}</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        disabled={busy}
-        onClick={() => onChange(!checked)}
-        className={`relative h-5 w-9 rounded-full transition-colors duration-150 disabled:opacity-50 ${
-          checked ? "bg-brand" : "bg-fill-strong"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-cta-primary-bg transition-[left] duration-150 ${
-            checked ? "left-[18px]" : "left-0.5"
-          }`}
-        />
-      </button>
+      {/* Même interrupteur que les réglages : la copie qui vivait ici animait
+          `left`, ce qui repeint, et peignait un violet plat que plus rien
+          d'autre ne porte. */}
+      <ToggleSwitch checked={checked} onChange={onChange} label={label} disabled={busy} />
     </label>
   );
 }
