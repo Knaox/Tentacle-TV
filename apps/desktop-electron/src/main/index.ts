@@ -42,7 +42,9 @@ import { registerSessionCommands } from "./ipc/session";
 import { registerShellCapabilities, registerShellCommands, releaseDisplayWakeLock } from "./ipc/shell";
 import { registerUpdateCommands } from "./ipc/updates";
 import { registerLinuxSessionCommands } from "./ipc/linuxSession";
-import { registerVideoCommands, restoreDisplay } from "./ipc/video";
+import { registerVideoCommands, restoreDisplay, stopPlayer } from "./ipc/video";
+import { isRunning } from "./video/mpv";
+import { installCloseSequence } from "./closeSequence";
 import { claimSingleInstance, denyAllPermissions, installContentSecurityPolicy } from "./security";
 import { installMenu } from "./menu";
 import { applySystemIdentity } from "./appIdentity";
@@ -240,6 +242,13 @@ function main(): void {
       const open = (): void => {
         const window = createMainWindow(capabilities);
         installQuitGuard(window, transfersInFlight, askNative(window));
+        // APRÈS la garde, et Linux seulement : sa fenêtre de mpv est une fenêtre
+        // de premier niveau, qui survivrait à la nôtre. Windows et macOS ont un
+        // enfant, détruit avec son parent — on ne touche pas à ce qui est en
+        // production (voir `closeSequence.ts`).
+        if (process.platform === "linux") {
+          installCloseSequence(window, isRunning, stopPlayer);
+        }
         void window.loadURL(`${APP_ORIGIN}/${startRoute()}`);
       };
 
