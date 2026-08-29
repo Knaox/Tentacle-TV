@@ -173,8 +173,10 @@ export default {
 
   segmentIntroTitle: "Générique de début",
   segmentIntroHint: "L'ouverture d'une série, celle qui revient à chaque épisode.",
-  segmentOutroTitle: "Générique de fin",
+  segmentOutroTitle: "Générique de fin — séries",
   segmentOutroHint: "Le bouton n'apparaît que s'il mène quelque part — une scène après le générique, ou la fin d'un film.",
+  segmentOutroFilmTitle: "Générique de fin — films",
+  segmentOutroFilmHint: "Sur un film, le bouton mène à la scène post-générique, ou termine la lecture.",
   segmentRecapTitle: "Résumé de l'épisode précédent",
   segmentRecapHint: "Le « précédemment », au début d'un épisode.",
   segmentPreviewTitle: "Aperçu du prochain épisode",

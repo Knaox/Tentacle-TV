@@ -334,6 +334,11 @@ model PlaybackSettings {
   outroAction          String   @default("button") @db.VarChar(10)
   outroCountdown       Boolean  @default(true)
   outroDelayMs         Int      @default(5000)
+  /// Générique de fin d'un FILM — réglé à part de celui des épisodes, où la
+  /// fiche « à suivre » occupe déjà le générique (`playbackSettings.ts`).
+  outroFilmAction      String   @default("auto") @db.VarChar(10)
+  outroFilmCountdown   Boolean  @default(true)
+  outroFilmDelayMs     Int      @default(5000)
   recapAction          String   @default("button") @db.VarChar(10)
   recapCountdown       Boolean  @default(true)
   recapDelayMs         Int      @default(5000)

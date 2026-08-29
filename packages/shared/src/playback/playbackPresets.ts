@@ -70,6 +70,7 @@ const beforeEnd: Pick<
 const DEFAULT: PlaybackSettings = {
   intro: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   outro: { action: "button", countdownVisible: true, autoDelayMs: delay },
+  outroFilm: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   recap: { action: "button", countdownVisible: true, autoDelayMs: delay },
   preview: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   next: {
@@ -85,6 +86,7 @@ const DEFAULT: PlaybackSettings = {
 const MANUAL: PlaybackSettings = {
   intro: { action: "button", countdownVisible: true, autoDelayMs: delay },
   outro: { action: "button", countdownVisible: true, autoDelayMs: delay },
+  outroFilm: { action: "button", countdownVisible: true, autoDelayMs: delay },
   recap: { action: "button", countdownVisible: true, autoDelayMs: delay },
   preview: { action: "button", countdownVisible: true, autoDelayMs: delay },
   next: {
@@ -109,6 +111,7 @@ const MANUAL: PlaybackSettings = {
 const AUTOMATIC: PlaybackSettings = {
   intro: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   outro: { action: "auto", countdownVisible: true, autoDelayMs: delay },
+  outroFilm: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   recap: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   preview: { action: "auto", countdownVisible: true, autoDelayMs: delay },
   next: {
@@ -139,6 +142,7 @@ function structuredCloneSettings(settings: PlaybackSettings): PlaybackSettings {
   return {
     intro: { ...settings.intro },
     outro: { ...settings.outro },
+    outroFilm: { ...settings.outroFilm },
     recap: { ...settings.recap },
     preview: { ...settings.preview },
     next: {

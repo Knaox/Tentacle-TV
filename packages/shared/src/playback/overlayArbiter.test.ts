@@ -27,14 +27,23 @@ const seg = (
   ...extra,
 });
 
+/**
+ * ⚠️ `outro` s'applique aux DEUX réglages de générique de fin — celui des
+ * épisodes et celui des films. Les cas de ce fichier ont été écrits quand il
+ * n'y en avait qu'un, et ils décrivent des règles qui ne dépendent pas du type
+ * de média : les scinder ici les rendrait faux sans rien vérifier de plus.
+ * `outroFilm` permet de ne viser QUE le film, pour les cas qui l'exigent.
+ */
 const makeSettings = (patch?: {
   intro?: Partial<PlaybackSettings["intro"]>;
   outro?: Partial<PlaybackSettings["outro"]>;
+  outroFilm?: Partial<PlaybackSettings["outro"]>;
   recap?: Partial<PlaybackSettings["recap"]>;
   next?: Partial<PlaybackSettings["next"]>;
 }): PlaybackSettings => ({
   intro: { ...DEFAULT_PLAYBACK_SETTINGS.intro, ...patch?.intro },
   outro: { ...DEFAULT_PLAYBACK_SETTINGS.outro, ...patch?.outro },
+  outroFilm: { ...DEFAULT_PLAYBACK_SETTINGS.outro, ...patch?.outro, ...patch?.outroFilm },
   recap: { ...DEFAULT_PLAYBACK_SETTINGS.recap, ...patch?.recap },
   preview: { ...DEFAULT_PLAYBACK_SETTINGS.preview },
   next: { ...DEFAULT_PLAYBACK_SETTINGS.next, ...patch?.next },
@@ -522,5 +531,79 @@ describe("la pilule « épisode suivant » suit la règle commune", () => {
         ...afterSkip, controlsVisible: true, dismissed: { segments: {}, nextCard: true },
       })),
     ).toEqual({ kind: "nextButton", dismissible: false });
+  });
+});
+
+describe("le générique de fin d'un FILM a son propre réglage", () => {
+  /** Générique principal, la scène derrière, puis le générique FINAL. */
+  const MAIN = seg("Outro", 1_200_000, 1_320_000, { endsAtMediaEnd: false, hasContentAfter: true });
+  const FINAL = seg("Outro", 1_360_000, RUNTIME_MS, { endsAtMediaEnd: true, hasContentAfter: false });
+  const film = { isEpisode: false, hasNextEpisode: false };
+
+  it("un film lit `outroFilm`, pas `outro`", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        ...film,
+        segments: [MAIN],
+        positionMs: 1_250_000,
+        settings: makeSettings({ outro: { action: "off" }, outroFilm: { action: "button" } }),
+      }),
+    );
+    expect(overlay).toMatchObject({ kind: "skip", labelKey: "skipToPostCredits" });
+  });
+
+  it("un épisode lit `outro`, pas `outroFilm`", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        segments: [MAIN],
+        positionMs: 1_250_000,
+        settings: makeSettings({ outro: { action: "off" }, outroFilm: { action: "button" } }),
+      }),
+    );
+    // Aucun bouton : le réglage de l'épisode dit « ne rien faire ». C'est la
+    // fiche « à suivre » qui occupe le générique, comme il se doit.
+    expect(overlay.kind).not.toBe("skip");
+  });
+
+  it("le générique PRINCIPAL d'un film ne se termine jamais tout seul", () => {
+    // Même en automatique : fermer un film au bout de cinq secondes de
+    // générique — sa musique, un plan qu'aucun détecteur n'a vu — ne se
+    // rattrape pas.
+    const overlay = arbitrateOverlay(
+      makeInput({
+        ...film,
+        segments: [OUTRO_AT_END],
+        positionMs: 1_310_000,
+        settings: makeSettings({ outroFilm: { action: "auto" } }),
+        countdowns: { skip: 4, next: null },
+      }),
+    );
+    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: null });
+  });
+
+  it("le générique FINAL, lui, peut décompter — la scène a déjà été vue", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        ...film,
+        segments: [MAIN, FINAL],
+        positionMs: 1_370_000,
+        settings: makeSettings({ outroFilm: { action: "auto" } }),
+        countdowns: { skip: 4, next: null },
+      }),
+    );
+    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: 4 });
+  });
+
+  it("et il obéit quand même au réglage : en bouton, pas de décompte", () => {
+    const overlay = arbitrateOverlay(
+      makeInput({
+        ...film,
+        segments: [MAIN, FINAL],
+        positionMs: 1_370_000,
+        settings: makeSettings({ outroFilm: { action: "button" } }),
+        countdowns: { skip: 4, next: null },
+      }),
+    );
+    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: null });
   });
 });

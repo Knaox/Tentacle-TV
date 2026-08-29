@@ -87,6 +87,7 @@ describe("normalizePlaybackSettings", () => {
     const sane = {
       intro: { action: "off", countdownVisible: false, autoDelayMs: 1_500 },
       outro: { action: "auto", countdownVisible: true, autoDelayMs: 5_000 },
+      outroFilm: { action: "off", countdownVisible: false, autoDelayMs: 0 },
       recap: { action: "button", countdownVisible: true, autoDelayMs: 3_000 },
       preview: { action: "off", countdownVisible: true, autoDelayMs: 3_000 },
       next: {

@@ -24,6 +24,9 @@ interface PlaybackSettingsRow {
   outroAction: string;
   outroCountdown: boolean;
   outroDelayMs: number;
+  outroFilmAction: string;
+  outroFilmCountdown: boolean;
+  outroFilmDelayMs: number;
   recapAction: string;
   recapCountdown: boolean;
   recapDelayMs: number;
@@ -59,6 +62,11 @@ export function rowToSettings(row: PlaybackSettingsRow): PlaybackSettings {
   return normalizePlaybackSettings({
     intro: { action: row.introAction, countdownVisible: row.introCountdown, autoDelayMs: row.introDelayMs },
     outro: { action: row.outroAction, countdownVisible: row.outroCountdown, autoDelayMs: row.outroDelayMs },
+    outroFilm: {
+      action: row.outroFilmAction,
+      countdownVisible: row.outroFilmCountdown,
+      autoDelayMs: row.outroFilmDelayMs,
+    },
     recap: { action: row.recapAction, countdownVisible: row.recapCountdown, autoDelayMs: row.recapDelayMs },
     preview: {
       action: row.previewAction,
@@ -89,6 +97,9 @@ export function settingsToColumns(settings: PlaybackSettings): PlaybackSettingsR
     outroAction: settings.outro.action,
     outroCountdown: settings.outro.countdownVisible,
     outroDelayMs: settings.outro.autoDelayMs,
+    outroFilmAction: settings.outroFilm.action,
+    outroFilmCountdown: settings.outroFilm.countdownVisible,
+    outroFilmDelayMs: settings.outroFilm.autoDelayMs,
     recapAction: settings.recap.action,
     recapCountdown: settings.recap.countdownVisible,
     recapDelayMs: settings.recap.autoDelayMs,

@@ -29,14 +29,24 @@ import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingsDisclosure } from "./SettingsDisclosure";
 import { SettingToggleRow } from "./SettingToggleRow";
 
-/** Dans l'ordre où les passages surviennent à l'écran, l'intro d'abord. */
+/**
+ * Dans l'ordre où les passages surviennent à l'écran, l'intro d'abord.
+ *
+ * Le générique de fin y figure DEUX FOIS — une pour les épisodes, une pour les
+ * films. Ce ne sont pas deux façons de dire la même chose : sur un épisode, la
+ * fiche « à suivre » occupe le générique et le bouton n'y paraît que s'il mène
+ * ailleurs ; sur un film, « passer » veut dire rejoindre une scène
+ * post-générique, ou terminer. Le film passe donc son générique tout seul
+ * d'origine, l'épisode non.
+ */
 const PASSAGES: readonly {
-  key: "intro" | "recap" | "outro" | "preview";
+  key: "intro" | "recap" | "outro" | "outroFilm" | "preview";
   apply: (patch: Partial<SegmentSettings>) => void;
 }[] = [
   { key: "intro", apply: (intro) => { setPlaybackSettings({ intro }); } },
   { key: "recap", apply: (recap) => { setPlaybackSettings({ recap }); } },
   { key: "outro", apply: (outro) => { setPlaybackSettings({ outro }); } },
+  { key: "outroFilm", apply: (outroFilm) => { setPlaybackSettings({ outroFilm }); } },
   { key: "preview", apply: (preview) => { setPlaybackSettings({ preview }); } },
 ];
 
@@ -44,6 +54,7 @@ const TITLE_KEYS = {
   intro: ["segmentIntroTitle", "segmentIntroHint"],
   recap: ["segmentRecapTitle", "segmentRecapHint"],
   outro: ["segmentOutroTitle", "segmentOutroHint"],
+  outroFilm: ["segmentOutroFilmTitle", "segmentOutroFilmHint"],
   preview: ["segmentPreviewTitle", "segmentPreviewHint"],
 } as const;
 
@@ -55,6 +66,10 @@ const PREVIEW_LABELS: Record<PassageKey, SkipLabelKey> = {
   intro: "skipIntro",
   recap: "skipRecap",
   outro: "skipCredits",
+  // Le film montre le libellé qu'il porte VRAIMENT le plus souvent : « aller à
+  // la scène ». C'est là que le réglage se joue — sur un générique sans rien
+  // derrière, le bouton s'impose de lui-même et ne décompte jamais.
+  outroFilm: "skipToPostCredits",
   preview: "skipPreview",
 };
 

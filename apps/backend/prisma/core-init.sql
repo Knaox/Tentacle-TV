@@ -203,6 +203,12 @@ ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndRules` text D
 -- (elle était figée à dix secondes dans le moteur). Additif, idempotent.
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `nextCountdownMs` int(11) NOT NULL DEFAULT 10000;
 
+-- Le générique de fin d'un FILM, réglé à part de celui des épisodes (1.20.9).
+-- Additif, idempotent — comme les colonnes ci-dessus.
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmAction` varchar(10) NOT NULL DEFAULT 'auto';
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmCountdown` tinyint(1) NOT NULL DEFAULT 1;
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmDelayMs` int(11) NOT NULL DEFAULT 5000;
+
 -- Le verdict des vignettes sur le générique de fin (services/frameAnalysis.ts).
 -- Un cache, jamais une source : la table peut être vidée sans rien perdre
 -- d'autre qu'une demi-seconde de calcul au prochain lancement du média.

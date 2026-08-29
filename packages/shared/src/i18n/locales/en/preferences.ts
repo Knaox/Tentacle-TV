@@ -173,8 +173,10 @@ export default {
 
   segmentIntroTitle: "Opening titles",
   segmentIntroHint: "A series' opening, the one that comes back every episode.",
-  segmentOutroTitle: "Closing credits",
+  segmentOutroTitle: "Closing credits — series",
   segmentOutroHint: "The button only appears when it leads somewhere — a scene after the credits, or the end of a film.",
+  segmentOutroFilmTitle: "Closing credits — films",
+  segmentOutroFilmHint: "On a film, the button leads to the post-credit scene, or ends playback.",
   segmentRecapTitle: "Recap of the previous episode",
   segmentRecapHint: "The “previously on”, at the start of an episode.",
   segmentPreviewTitle: "Preview of the next episode",
