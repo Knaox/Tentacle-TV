@@ -33,6 +33,14 @@
  * et coûterait une couche composée par image. L'ombre passe par
  * `videoShadow()` : macOS et Linux ont un canal alpha, où un flou large sort
  * en aplat noir.
+ *
+ * ⚠️ La croix et son séparateur sont en NOIR LITTÉRAL, et il le faut.
+ * `text-cta-primary-fg/70` ne compilait pas : le jeton vaut `var(--cta-primary-fg)`
+ * sans le marqueur `<alpha-value>`, et Tailwind 3 supprime alors la déclaration
+ * SANS RIEN DIRE. La croix héritait donc du blanc ambiant sur un fond blanc —
+ * invisible au repos, révélée au survol par le seul `hover:` sans modificateur,
+ * qui, lui, compile. Le fond de la pilule est blanc dans les DEUX thèmes
+ * (`--cta-primary-bg: #FFFFFF` de part et d'autre) : du noir y est juste.
  */
 
 import { useEffect, useState } from "react";
@@ -101,13 +109,13 @@ export function SkipSegmentButton({
           {/* Présente tant que le passage n'est pas en sourdine — voir l'en-tête. */}
           {onDismiss && (
             <>
-              <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
+              <span aria-hidden="true" className="my-2 w-px bg-black/15" />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onDismiss(); }}
                 aria-label={t("player:dismiss")}
                 title={t("player:dismiss")}
-                className="flex min-h-11 w-11 items-center justify-center text-cta-primary-fg/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-cta-primary-fg"
+                className="flex min-h-11 w-11 items-center justify-center text-black/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-black"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
