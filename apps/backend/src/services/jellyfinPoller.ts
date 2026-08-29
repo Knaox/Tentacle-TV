@@ -1,6 +1,6 @@
 import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
-import { sessionsSuiviesEnDirect } from "./jellyfinWs";
+import { sessionsLive } from "./jellyfinWs";
 
 const POLL_INTERVAL = 300_000; // 5 min (fallback — le WebSocket Jellyfin gère le temps réel)
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -36,7 +36,7 @@ async function poll(): Promise<void> {
   // un canal muet, et l'accueil ne bougeait plus jamais tout seul. Depuis
   // l'abonnement `SessionsStart`, la socket couvre les lectures, et rien
   // d'autre : les ajouts de bibliothèque restent à notre charge.
-  const lecturesEnDirect = sessionsSuiviesEnDirect();
+  const liveSessions = sessionsLive();
   try {
     // 1. Check item count changes (recently added)
     const counts = await jfFetch<{ MovieCount?: number; SeriesCount?: number; EpisodeCount?: number }>(
@@ -69,7 +69,7 @@ async function poll(): Promise<void> {
     //    suit déjà, auquel cas ce relevé arriverait après la bataille. On
     //    repart alors froid : le compte d'avant la veille ne vaut plus rien et
     //    ferait diffuser un faux changement au réveil.
-    if (lecturesEnDirect) { lastSessionCount = null; return; }
+    if (liveSessions) { lastSessionCount = null; return; }
     const sessions = await jfFetch<Array<{ NowPlayingItem?: unknown }>>(
       "/Sessions",
     );

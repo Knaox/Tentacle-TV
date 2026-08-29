@@ -138,8 +138,8 @@ export async function getSegmentSourceBundle(itemId: string): Promise<SegmentSou
 
   cache.set(itemId, { bundle, expiresAt: Date.now() + TTL_MS });
   if (cache.size > MAX_ENTRIES) {
-    const doyen = cache.keys().next().value;
-    if (doyen !== undefined) cache.delete(doyen);
+    const oldest = cache.keys().next().value;
+    if (oldest !== undefined) cache.delete(oldest);
   }
   return bundle;
 }

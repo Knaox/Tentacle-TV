@@ -20,7 +20,7 @@
  */
 
 /** Ce qu'on accepte dans l'agent, en minuscules. */
-const MARQUEURS_TELEVISEUR = ["web0s", "webos"];
+const TV_MARKERS = ["web0s", "webos"];
 
 /**
  * Le verrou s'ouvre hors production, et sur demande explicite.
@@ -31,19 +31,19 @@ const MARQUEURS_TELEVISEUR = ["web0s", "webos"];
  * sur un serveur de production, le temps d'un essai — la variable est lue à
  * chaque requête, pas au démarrage, pour qu'on n'ait pas à redémarrer.
  */
-export function clientTvOuvertATous(): boolean {
+export function tvClientOpenToAll(): boolean {
   if (process.env.TENTACLE_TV_OUVERT === "1") return true;
   return process.env.NODE_ENV !== "production";
 }
 
 /** Vrai si l'agent dit venir d'un téléviseur webOS. */
-export function agentEstUnTeleviseur(agent: string | undefined): boolean {
+export function isTvUserAgent(agent: string | undefined): boolean {
   if (!agent) return false;
-  const minuscules = agent.toLowerCase();
-  return MARQUEURS_TELEVISEUR.some((marqueur) => minuscules.includes(marqueur));
+  const lower = agent.toLowerCase();
+  return TV_MARKERS.some((marker) => lower.includes(marker));
 }
 
 /** Le chemin demandé relève-t-il du client téléviseur ? */
-export function chemineVersLeClientTv(chemin: string): boolean {
-  return chemin === "/tv" || chemin.startsWith("/tv/");
+export function isTvClientPath(path: string): boolean {
+  return path === "/tv" || path.startsWith("/tv/");
 }

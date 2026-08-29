@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getPrisma, hasPrisma } from "../services/db";
-import { etatCollecteur } from "../services/watchTime/collector";
+import { collectorState } from "../services/watchTime/collector";
 
 /**
  * Diagnostic du collecteur de temps — enregistré depuis adminRoutes, donc
@@ -14,17 +14,17 @@ import { etatCollecteur } from "../services/watchTime/collector";
 export const adminWatchTimeRoutes: FastifyPluginAsync = async (app) => {
   /** GET /api/admin/watch-time — état du collecteur + totaux du jour. */
   app.get("/watch-time", async () => {
-    const collecteur = etatCollecteur();
-    if (!hasPrisma()) return { collecteur, aujourdhui: [], derniers: [] };
+    const collector = collectorState();
+    if (!hasPrisma()) return { collecteur: collector, aujourdhui: [], derniers: [] };
 
     const prisma = getPrisma();
-    const debutJour = new Date();
-    debutJour.setHours(0, 0, 0, 0);
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
 
-    const [parUtilisateur, derniers] = await Promise.all([
+    const [perUser, latest] = await Promise.all([
       prisma.watchSegment.groupBy({
         by: ["jellyfinUserId"],
-        where: { startedAt: { gte: debutJour } },
+        where: { startedAt: { gte: dayStart } },
         _sum: { seconds: true },
         _count: { _all: true },
       }),
@@ -45,14 +45,16 @@ export const adminWatchTimeRoutes: FastifyPluginAsync = async (app) => {
       }),
     ]);
 
+    // Les clés de cette réponse sont le contrat de la route : elles restent en
+    // français, comme celles de `CollectorState`.
     return {
-      collecteur,
-      aujourdhui: parUtilisateur.map((u) => ({
+      collecteur: collector,
+      aujourdhui: perUser.map((u) => ({
         userId: u.jellyfinUserId,
         segments: u._count._all,
         secondes: u._sum.seconds ?? 0,
       })),
-      derniers,
+      derniers: latest,
     };
   });
 };

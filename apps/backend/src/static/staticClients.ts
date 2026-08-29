@@ -3,10 +3,10 @@ import { existsSync } from "fs";
 import fastifyStatic from "@fastify/static";
 import type { FastifyInstance } from "fastify";
 import {
-  agentEstUnTeleviseur,
-  chemineVersLeClientTv,
-  clientTvOuvertATous,
-} from "./agentTeleviseur";
+  isTvUserAgent,
+  isTvClientPath,
+  tvClientOpenToAll,
+} from "./tvUserAgent";
 
 /**
  * Service des clients construits : le client web à la racine, le client
@@ -19,42 +19,42 @@ import {
  * en-têtes de cache, un repli SPA cantonné à `/tv`, et une inscription qui ne
  * décore `sendFile` qu'une seule fois.
  *
- * S'y ajoute, en production, le filtre d'agent d'`agentTeleviseur.ts` : `/tv`
+ * S'y ajoute, en production, le filtre d'agent d'`tvUserAgent.ts` : `/tv`
  * n'est servi qu'à un téléviseur. Ce n'en est pas la protection — le module le
  * dit franchement — mais l'assurance qu'un ordinateur ne se retrouve pas dans
  * une interface de salon.
  */
-export async function enregistrerClientsStatiques(app: FastifyInstance): Promise<void> {
+export async function registerStaticClients(app: FastifyInstance): Promise<void> {
   // Posé AVANT toute inscription : un hook de l'instance parente vaut pour les
   // routes des plugins enregistrés ensuite, l'inverse n'étant pas vrai. C'est
   // ce qui le fait porter à la fois sur les fichiers statiques et sur le repli
   // monopage plus bas.
   app.addHook("onRequest", async (request, reply) => {
-    const chemin = request.url.split("?")[0];
-    if (!chemineVersLeClientTv(chemin)) return;
-    if (clientTvOuvertATous()) return;
-    if (agentEstUnTeleviseur(request.headers["user-agent"])) return;
+    const path = request.url.split("?")[0];
+    if (!isTvClientPath(path)) return;
+    if (tvClientOpenToAll()) return;
+    if (isTvUserAgent(request.headers["user-agent"])) return;
     // 404 et non 403 : l'adresse ne doit pas se confirmer elle-même à qui la
     // cherche. Un navigateur de bureau y voit une page qui n'existe pas.
     return reply.status(404).send({ message: "Not found" });
   });
 
-  const cheminWeb = resolve(__dirname, "../../../web/dist");
-  const webPresent = existsSync(cheminWeb);
+  const webPath = resolve(__dirname, "../../../web/dist");
+  const webPresent = existsSync(webPath);
   if (webPresent) {
-    await app.register(fastifyStatic, { root: cheminWeb, prefix: "/" });
+    await app.register(fastifyStatic, { root: webPath, prefix: "/" });
   }
 
   // Avant le premier build de la cible téléviseur, on sert `client/public` :
   // la page de diagnostic `/tv/sonde.html` y vit et doit être atteignable dès
   // l'installation de la coquille, sans rien avoir construit.
-  const cheminTvBuild = resolve(__dirname, "../../../tv-webos/client/dist");
-  const cheminTvSource = resolve(__dirname, "../../../tv-webos/client/public");
-  const cheminTv = existsSync(cheminTvBuild) ? cheminTvBuild : cheminTvSource;
-  const tvPresent = existsSync(cheminTv);
+  const tvBuildPath = resolve(__dirname, "../../../tv-webos/client/dist");
+  const tvSourcePath = resolve(__dirname, "../../../tv-webos/client/public");
+  const tvPath = existsSync(tvBuildPath) ? tvBuildPath : tvSourcePath;
+  const tvPresent = existsSync(tvPath);
   if (tvPresent) {
     await app.register(fastifyStatic, {
-      root: cheminTv,
+      root: tvPath,
       prefix: "/tv/",
       // `sendFile` a déjà été posé par l'inscription du client web ; le
       // décorer deux fois ferait échouer l'enregistrement.
@@ -63,15 +63,15 @@ export async function enregistrerClientsStatiques(app: FastifyInstance): Promise
       // écrase ce que `setHeaders` a écrit : tout le bundle serait
       // retéléchargé à chaque lancement de l'application.
       cacheControl: false,
-      setHeaders(reponse, chemin) {
+      setHeaders(response, path) {
         // Vite nomme les ressources par empreinte : elles sont immuables et
         // peuvent être gardées indéfiniment. `index.html`, lui, désigne ces
         // noms — le garder en cache figerait le téléviseur sur une version
         // ancienne et annulerait tout l'intérêt de servir le client.
-        if (chemin.includes(`${sep}assets${sep}`)) {
-          reponse.setHeader("cache-control", "public, max-age=31536000, immutable");
+        if (path.includes(`${sep}assets${sep}`)) {
+          response.setHeader("cache-control", "public, max-age=31536000, immutable");
         } else {
-          reponse.setHeader("cache-control", "no-cache");
+          response.setHeader("cache-control", "no-cache");
         }
       },
     });
@@ -80,14 +80,14 @@ export async function enregistrerClientsStatiques(app: FastifyInstance): Promise
   if (!webPresent && !tvPresent) return;
 
   app.setNotFoundHandler(async (request, reply) => {
-    const chemin = request.url.split("?")[0];
-    if (chemin.startsWith("/api/")) {
+    const path = request.url.split("?")[0];
+    if (path.startsWith("/api/")) {
       return reply.status(404).send({ message: "Not found" });
     }
     // Le repli du client téléviseur est cantonné à `/tv` : sans cela, une URL
     // profonde comme `/tv/settings` servirait le client web.
-    if (tvPresent && (chemin === "/tv" || chemin.startsWith("/tv/"))) {
-      return reply.sendFile("index.html", cheminTv);
+    if (tvPresent && (path === "/tv" || path.startsWith("/tv/"))) {
+      return reply.sendFile("index.html", tvPath);
     }
     if (!webPresent) {
       return reply.status(404).send({ message: "Not found" });

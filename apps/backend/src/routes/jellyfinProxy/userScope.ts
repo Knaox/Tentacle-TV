@@ -37,8 +37,8 @@
  * Insensible à la casse : `isAllowedProxyPath` l'est aussi, et un contrôle plus
  * strict que la liste blanche qu'il double laisserait un trou par où passer.
  */
-export function userIdDuChemin(chemin: string): string | null {
-  const m = /^Users\/([^/]+)\//i.exec(chemin);
+export function userIdFromPath(path: string): string | null {
+  const m = /^Users\/([^/]+)\//i.exec(path);
   const id = m?.[1];
   if (id === undefined) return null;
   // `Me` est résolu par Jellyfin d'après le jeton : ce n'est pas un identifiant,
@@ -54,13 +54,13 @@ export function userIdDuChemin(chemin: string): string | null {
  * stricte refuserait des requêtes légitimes — un garde qui bloque le cas normal
  * finit toujours par être retiré.
  */
-export function horsDuPerimetre(chemin: string, userId: string): boolean {
-  const cible = userIdDuChemin(chemin);
-  if (cible === null) return false;
-  return normaliser(cible) !== normaliser(userId);
+export function isOutOfScope(path: string, userId: string): boolean {
+  const target = userIdFromPath(path);
+  if (target === null) return false;
+  return normalize(target) !== normalize(userId);
 }
 
 /** Sans tirets, en minuscules : les deux formes que Jellyfin emploie. */
-function normaliser(id: string): string {
+function normalize(id: string): string {
   return id.replace(/-/g, "").toLowerCase();
 }

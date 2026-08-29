@@ -16,7 +16,7 @@ vi.mock("../services/configStore", () => ({
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
   verifyDeviceToken: async () => null,
-  hashToken: (valeur: string) => valeur,
+  hashToken: (value: string) => value,
 }));
 vi.mock("../services/db", () => ({
   hasPrisma: () => false,
@@ -31,22 +31,22 @@ import { clearSegmentSourceCache } from "../services/jellyfinSegments";
 type Scenario = Array<[RegExp, { status?: number; json?: unknown } | "reject"]>;
 let scenario: Scenario = [];
 
-const UTILISATEUR = { Id: "u1", Name: "banc", Policy: { IsAdministrator: false } };
+const USER = { Id: "u1", Name: "banc", Policy: { IsAdministrator: false } };
 
 beforeEach(() => {
   clearSegmentSourceCache();
   scenario = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (entree: RequestInfo | URL) => {
-      const url = String(entree);
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
       if (url.includes("/Users/Me")) {
-        return new Response(JSON.stringify(UTILISATEUR), { status: 200 });
+        return new Response(JSON.stringify(USER), { status: 200 });
       }
-      for (const [motif, reponse] of scenario) {
-        if (!motif.test(url)) continue;
-        if (reponse === "reject") throw new Error("réseau coupé");
-        return new Response(JSON.stringify(reponse.json ?? null), { status: reponse.status ?? 200 });
+      for (const [pattern, response] of scenario) {
+        if (!pattern.test(url)) continue;
+        if (response === "reject") throw new Error("réseau coupé");
+        return new Response(JSON.stringify(response.json ?? null), { status: response.status ?? 200 });
       }
       return new Response("{}", { status: 404 });
     }),
@@ -57,65 +57,65 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function creerApp() {
+async function makeApp() {
   const app = Fastify();
   // Réplique du traitement central des ZodError (index.ts) — l'instance de
   // banc n'enregistre que la route testée.
-  app.setErrorHandler((erreur: unknown, _req, reply) => {
-    if (erreur instanceof ZodError) {
+  app.setErrorHandler((err: unknown, _req, reply) => {
+    if (err instanceof ZodError) {
       return reply.status(400).send({ message: "Validation error" });
     }
-    const message = erreur instanceof Error ? erreur.message : "Erreur";
+    const message = err instanceof Error ? err.message : "Erreur";
     return reply.status(500).send({ message });
   });
   await app.register(playbackSegmentRoutes, { prefix: "/api/playback" });
   return app;
 }
 
-const demander = async (itemId: string, avecJeton = true) => {
-  const app = await creerApp();
-  const reponse = await app.inject({
+const request = async (itemId: string, withToken = true) => {
+  const app = await makeApp();
+  const response = await app.inject({
     method: "GET",
     url: `/api/playback/segments/${itemId}`,
-    headers: avecJeton ? { "x-emby-token": "jeton-banc" } : {},
+    headers: withToken ? { "x-emby-token": "jeton-banc" } : {},
   });
   await app.close();
-  return reponse;
+  return response;
 };
 
 /** 24 min en ticks, et un item avec chapitres optionnels. */
 const RUNTIME_TICKS = 14_400_000_000;
-const item = (chapitres: Array<{ Name: string; StartPositionTicks: number }> = []) => ({
+const item = (chapters: Array<{ Name: string; StartPositionTicks: number }> = []) => ({
   Type: "Episode",
   RunTimeTicks: RUNTIME_TICKS,
-  Chapters: chapitres,
+  Chapters: chapters,
 });
-const outroNatif = (endTicks: number) => ({
+const nativeOutro = (endTicks: number) => ({
   Items: [{ Type: "Outro", StartTicks: 13_000_000_000, EndTicks: endTicks }],
 });
 
 describe("GET /api/playback/segments/:itemId", () => {
   it("refuse sans jeton", async () => {
-    const reponse = await demander("ep-anonyme", false);
-    expect(reponse.statusCode).toBe(401);
+    const response = await request("ep-anonyme", false);
+    expect(response.statusCode).toBe(401);
   });
 
   it("rejette un identifiant hors format", async () => {
-    const reponse = await demander("ep_%00");
-    expect(reponse.statusCode).toBe(400);
+    const response = await request("ep_%00");
+    expect(response.statusCode).toBe(400);
   });
 
   it("générique jusqu'au bout : endsAtMediaEnd, pas de scène après", async () => {
     scenario = [
       [/\/Items\//, { json: item() }],
-      [/\/MediaSegments\//, { json: outroNatif(RUNTIME_TICKS) }],
+      [/\/MediaSegments\//, { json: nativeOutro(RUNTIME_TICKS) }],
     ];
-    const reponse = await demander("ep-fin");
-    expect(reponse.statusCode).toBe(200);
-    expect(reponse.headers["cache-control"]).toBe("private, max-age=60");
-    const corps = reponse.json();
-    expect(corps).toMatchObject({ version: 1, itemId: "ep-fin", runtimeMs: 1_440_000 });
-    expect(corps.segments[0]).toMatchObject({
+    const response = await request("ep-fin");
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("private, max-age=60");
+    const body = response.json();
+    expect(body).toMatchObject({ version: 1, itemId: "ep-fin", runtimeMs: 1_440_000 });
+    expect(body.segments[0]).toMatchObject({
       type: "Outro",
       endsAtMediaEnd: true,
       hasContentAfter: false,
@@ -125,10 +125,10 @@ describe("GET /api/playback/segments/:itemId", () => {
   it("générique coupé avant la fin : une scène suit", async () => {
     scenario = [
       [/\/Items\//, { json: item() }],
-      [/\/MediaSegments\//, { json: outroNatif(RUNTIME_TICKS - 600_000_000) }],
+      [/\/MediaSegments\//, { json: nativeOutro(RUNTIME_TICKS - 600_000_000) }],
     ];
-    const corps = (await demander("ep-scene")).json();
-    expect(corps.segments[0]).toMatchObject({
+    const body = (await request("ep-scene")).json();
+    expect(body.segments[0]).toMatchObject({
       type: "Outro",
       endsAtMediaEnd: false,
       hasContentAfter: true,
@@ -150,8 +150,8 @@ describe("GET /api/playback/segments/:itemId", () => {
       [/IntroSkipperSegments/, { status: 404 }],
       [/\/Timestamps$/, { status: 404 }],
     ];
-    const corps = (await demander("ep-chapitre")).json();
-    expect(corps.segments[0]).toMatchObject({
+    const body = (await request("ep-chapitre")).json();
+    expect(body.segments[0]).toMatchObject({
       type: "Outro",
       source: "chapters",
       startMs: 1_300_000,
@@ -166,14 +166,14 @@ describe("GET /api/playback/segments/:itemId", () => {
       [/IntroSkipperSegments/, { status: 404 }],
       [/\/Timestamps$/, { status: 404 }],
     ];
-    const corps = (await demander("ep-nu")).json();
-    expect(corps.segments).toEqual([]);
+    const body = (await request("ep-nu")).json();
+    expect(body.segments).toEqual([]);
   });
 
   it("Jellyfin muet : 200 et une réponse vide — le lecteur doit lire quand même", async () => {
     scenario = [[/jf\.test\/(Items|MediaSegments|Episode)/, "reject"]];
-    const reponse = await demander("ep-panne");
-    expect(reponse.statusCode).toBe(200);
-    expect(reponse.json()).toMatchObject({ version: 1, runtimeMs: 0, segments: [] });
+    const response = await request("ep-panne");
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ version: 1, runtimeMs: 0, segments: [] });
   });
 });

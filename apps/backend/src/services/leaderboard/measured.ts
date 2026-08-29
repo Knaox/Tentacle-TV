@@ -16,24 +16,24 @@ import { getPrisma, hasPrisma } from "../db";
 /** Le classement ne compte que ce qui se regarde, pas la musique de fond. */
 const TYPES = ["Movie", "Episode"];
 
-export interface MesureUtilisateur {
-  secondes: number;
-  derniere: Date | null;
+export interface UserMeasure {
+  seconds: number;
+  latest: Date | null;
 }
 
-export interface Mesures {
+export interface Measures {
   /** Instant du premier segment mesuré. `null` si rien n'a encore été mesuré. */
-  epoque: Date | null;
-  parUtilisateur: Map<string, MesureUtilisateur>;
+  epoch: Date | null;
+  perUser: Map<string, UserMeasure>;
 }
 
-export async function mesuresVisionnage(): Promise<Mesures | null> {
+export async function watchMeasures(): Promise<Measures | null> {
   if (!hasPrisma()) return null;
   const prisma = getPrisma();
 
   try {
     const where = { itemType: { in: TYPES } };
-    const [parUtilisateur, borne] = await Promise.all([
+    const [perUser, bounds] = await Promise.all([
       prisma.watchSegment.groupBy({
         by: ["jellyfinUserId"],
         where,
@@ -43,17 +43,17 @@ export async function mesuresVisionnage(): Promise<Mesures | null> {
       prisma.watchSegment.aggregate({ where, _min: { startedAt: true } }),
     ]);
 
-    const epoque = borne._min.startedAt ?? null;
-    if (!epoque) return { epoque: null, parUtilisateur: new Map() };
+    const epoch = bounds._min.startedAt ?? null;
+    if (!epoch) return { epoch: null, perUser: new Map() };
 
-    const carte = new Map<string, MesureUtilisateur>();
-    for (const u of parUtilisateur) {
-      carte.set(u.jellyfinUserId, {
-        secondes: u._sum.seconds ?? 0,
-        derniere: u._max.lastSeenAt ?? null,
+    const map = new Map<string, UserMeasure>();
+    for (const u of perUser) {
+      map.set(u.jellyfinUserId, {
+        seconds: u._sum.seconds ?? 0,
+        latest: u._max.lastSeenAt ?? null,
       });
     }
-    return { epoque, parUtilisateur: carte };
+    return { epoch, perUser: map };
   } catch {
     // Base indisponible : pas de mesure, donc pas de découpage — l'estimation
     // couvrira tout l'historique, exactement comme avant. Pas de mesure, pas de

@@ -92,25 +92,25 @@ function rowToSettings(row: PlaybackSettingsRow): PlaybackSettings {
   });
 }
 
-function settingsToColumns(reglages: PlaybackSettings): PlaybackSettingsRow {
+function settingsToColumns(settings: PlaybackSettings): PlaybackSettingsRow {
   return {
-    introAction: reglages.intro.action,
-    introCountdown: reglages.intro.countdownVisible,
-    introDelayMs: reglages.intro.autoDelayMs,
-    outroAction: reglages.outro.action,
-    outroCountdown: reglages.outro.countdownVisible,
-    outroDelayMs: reglages.outro.autoDelayMs,
-    recapAction: reglages.recap.action,
-    recapCountdown: reglages.recap.countdownVisible,
-    recapDelayMs: reglages.recap.autoDelayMs,
-    previewAction: reglages.preview.action,
-    previewCountdown: reglages.preview.countdownVisible,
-    previewDelayMs: reglages.preview.autoDelayMs,
-    nextCard: reglages.next.nextCard,
-    nextCountdown: reglages.next.nextCountdown,
-    nextAutoPlay: reglages.next.nextAutoPlay,
-    nextTrigger: reglages.next.nextTrigger,
-    nextBeforeEndSeconds: reglages.next.nextBeforeEndSeconds,
+    introAction: settings.intro.action,
+    introCountdown: settings.intro.countdownVisible,
+    introDelayMs: settings.intro.autoDelayMs,
+    outroAction: settings.outro.action,
+    outroCountdown: settings.outro.countdownVisible,
+    outroDelayMs: settings.outro.autoDelayMs,
+    recapAction: settings.recap.action,
+    recapCountdown: settings.recap.countdownVisible,
+    recapDelayMs: settings.recap.autoDelayMs,
+    previewAction: settings.preview.action,
+    previewCountdown: settings.preview.countdownVisible,
+    previewDelayMs: settings.preview.autoDelayMs,
+    nextCard: settings.next.nextCard,
+    nextCountdown: settings.next.nextCountdown,
+    nextAutoPlay: settings.next.nextAutoPlay,
+    nextTrigger: settings.next.nextTrigger,
+    nextBeforeEndSeconds: settings.next.nextBeforeEndSeconds,
   };
 }
 
@@ -129,13 +129,13 @@ export function registerPlaybackSettingsRoutes(app: FastifyInstance): void {
   app.put("/playback", async (request) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
-    const reglages = settingsSchema.parse(request.body);
+    const settings = settingsSchema.parse(request.body);
 
-    const colonnes = settingsToColumns(reglages);
+    const columns = settingsToColumns(settings);
     const row = await prisma.playbackSettings.upsert({
       where: { jellyfinUserId: user.userId },
-      create: { jellyfinUserId: user.userId, ...colonnes },
-      update: colonnes,
+      create: { jellyfinUserId: user.userId, ...columns },
+      update: columns,
     });
     return { stored: true, settings: rowToSettings(row) };
   });

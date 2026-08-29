@@ -15,35 +15,35 @@
  *    pas une diffusion.
  */
 
-export interface SessionJellyfin {
+export interface JellyfinSession {
   UserId?: string | null;
   NowPlayingItem?: { Id?: string | null } | null;
   PlayState?: { IsPaused?: boolean | null } | null;
 }
 
-export interface SignaturesSessions {
+export interface SessionSignatures {
   /** Jeu des lectures en cours — change ⇒ les listes des clients ont bougé. */
-  lectures: string;
+  playing: string;
   /** Idem, pause comprise — change ⇒ le collecteur de temps a un bord à poser. */
-  etats: string;
+  states: string;
 }
 
 /** Deux signatures stables (triées) tirées d'une seule passe sur les sessions. */
-export function signaturesSessions(
-  sessions: readonly SessionJellyfin[] | null | undefined,
-): SignaturesSessions {
-  if (!Array.isArray(sessions)) return { lectures: "", etats: "" };
+export function sessionSignatures(
+  sessions: readonly JellyfinSession[] | null | undefined,
+): SessionSignatures {
+  if (!Array.isArray(sessions)) return { playing: "", states: "" };
 
-  const lectures: string[] = [];
-  const etats: string[] = [];
+  const playing: string[] = [];
+  const states: string[] = [];
   for (const s of sessions) {
     const itemId = s?.NowPlayingItem?.Id;
     if (!itemId) continue; // Session ouverte sans lecture : invisible pour nous.
-    const cle = `${s.UserId ?? "?"}:${itemId}`;
-    lectures.push(cle);
-    etats.push(`${cle}:${s.PlayState?.IsPaused ? "pause" : "lecture"}`);
+    const key = `${s.UserId ?? "?"}:${itemId}`;
+    playing.push(key);
+    states.push(`${key}:${s.PlayState?.IsPaused ? "pause" : "lecture"}`);
   }
   // Jellyfin ne garantit pas l'ordre des sessions d'une trame à l'autre : sans
   // tri, deux trames identiques passeraient pour un changement.
-  return { lectures: lectures.sort().join("|"), etats: etats.sort().join("|") };
+  return { playing: playing.sort().join("|"), states: states.sort().join("|") };
 }

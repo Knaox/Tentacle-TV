@@ -14,14 +14,14 @@ import {
   imageCacheControl,
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
-import { porteUneUrlDeLecture, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
+import { carriesPlaybackUrl, scrubAdminKey } from "./jellyfinProxy/scrubAdminKey";
 import { rewriteHlsManifest } from "./jellyfinProxy/rewriteHlsManifest";
-import { horsDuPerimetre, userIdDuChemin } from "./jellyfinProxy/userScope";
-import { resolveSessionRouting } from "./jellyfinProxy/routageSession";
-import { nommerAppareilDepuisEntete } from "../services/deviceNaming";
-import { urlCible } from "./jellyfinProxy/urlCible";
-import { tracerCorps, tracerEchec, tracerEntetes } from "./jellyfinProxy/tracesFlux";
-import { signalDeRequete } from "./jellyfinProxy/annulationClient";
+import { isOutOfScope, userIdFromPath } from "./jellyfinProxy/userScope";
+import { resolveSessionRouting } from "./jellyfinProxy/sessionRouting";
+import { nameDeviceFromHeader } from "../services/deviceNaming";
+import { buildTargetUrl } from "./jellyfinProxy/targetUrl";
+import { traceBody, traceFailure, traceHeaders } from "./jellyfinProxy/streamTraces";
+import { requestSignal } from "./jellyfinProxy/clientAbort";
 
 export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
   app.all("/*", async (request, reply) => {
@@ -38,7 +38,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     }
 
     const qs = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
-    let targetUrl = urlCible(jellyfinUrl, wildcardPath, qs);
+    let targetUrl = buildTargetUrl(jellyfinUrl, wildcardPath, qs);
 
     // Web clients send auth via httpOnly cookie — inject as X-Emby-Token header.
     // tvOS : react-native-video (VTT sideload), Image (trickplay) et sendBeacon
@@ -54,7 +54,7 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // transporte pas son identité. Il l'annonce en revanche ici, à chaque
     // requête, dans l'en-tête qu'il destine à Jellyfin. En oubli volontaire, et
     // une seule fois par appareil.
-    nommerAppareilDepuisEntete(incomingToken, request.headers["x-emby-authorization"]);
+    nameDeviceFromHeader(incomingToken, request.headers["x-emby-authorization"]);
 
     // Un appareil jumelé ne parle que pour SON compte.
     //
@@ -68,9 +68,9 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
     // sur TOUTES les méthodes et toutes les routes qui nomment un utilisateur.
     // Un jeton Jellyfin natif n'est pas concerné (Jellyfin décide lui-même), ni
     // un jeton d'usurpation, dont c'est justement la raison d'être.
-    if (incomingToken && userIdDuChemin(wildcardPath) !== null) {
+    if (incomingToken && userIdFromPath(wildcardPath) !== null) {
       const devicePayload = await verifyDeviceToken(incomingToken);
-      if (devicePayload && horsDuPerimetre(wildcardPath, devicePayload.userId)) {
+      if (devicePayload && isOutOfScope(wildcardPath, devicePayload.userId)) {
         request.log.warn(
           { path: wildcardPath, method: request.method },
           "acces refuse : appareil hors de son perimetre utilisateur",
@@ -127,8 +127,8 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       headers,
       // Délai, MAIS AUSSI départ du client : un segment que le téléviseur a
       // cessé d'attendre après un saut n'a plus à occuper une connexion ni à
-      // faire travailler ffmpeg (cf. annulationClient).
-      signal: signalDeRequete(request, reply, timeout),
+      // faire travailler ffmpeg (cf. clientAbort).
+      signal: requestSignal(request, reply, timeout),
       // Reuse the keep-alive pool to avoid a TCP+TLS handshake on every
       // HLS segment / API call (~30-50 ms saved per request).
       dispatcher: getJellyfinDispatcher(),
@@ -146,16 +146,16 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       }
     }
 
-    const depart = performance.now();
+    const start = performance.now();
     try {
       const response = await undiciFetch(targetUrl, fetchInit);
       reply.status(response.status);
 
-      const traces = {
-        chemin: wildcardPath, depart, statut: response.status,
-        attendus: Number(response.headers.get("content-length")) || null,
+      const traceCtx = {
+        path: wildcardPath, start, status: response.status,
+        expected: Number(response.headers.get("content-length")) || null,
       };
-      tracerEntetes(request, traces);
+      traceHeaders(request, traceCtx);
 
       // Auto-réparation : un report de session avec le token Jellyfin du device
       // qui prend un 401/403 ⇒ token probablement périmé. On le valide (/Users/Me)
@@ -210,15 +210,15 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         // de fuir en silence jusqu'au prochain audit. Le cache est clé PAR
         // JETON, donc y ranger un corps portant le jeton du demandeur est
         // cohérent : personne d'autre ne le relira.
-        const brut = Buffer.from(arrayBuf).toString("utf8");
-        const { corps, remplacements } = scrubAdminKey(brut, getJellyfinApiKey(), incomingToken);
-        if (remplacements > 0) {
+        const raw = Buffer.from(arrayBuf).toString("utf8");
+        const { body, replacements } = scrubAdminKey(raw, getJellyfinApiKey(), incomingToken);
+        if (replacements > 0) {
           request.log.warn(
-            { path: wildcardPath, remplacements },
+            { path: wildcardPath, replacements },
             "cle admin retiree d'une reponse mise en cache",
           );
         }
-        const buf = remplacements > 0 ? Buffer.from(corps, "utf8") : Buffer.from(arrayBuf);
+        const buf = replacements > 0 ? Buffer.from(body, "utf8") : Buffer.from(arrayBuf);
         const contentType = response.headers.get("content-type") ?? "application/json";
         setCached(wildcardPath, queryString, incomingToken, buf, contentType, response.status, cacheTtl);
         reply.header("x-tentacle-cache", "MISS");
@@ -241,14 +241,14 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
         // AVANT la décoration, et l'ordre compte : les URL ainsi corrigées
         // portent alors le jeton du client, et `rewriteHlsManifest` les laisse
         // tranquilles au lieu d'en ajouter un second.
-        const { corps, remplacements } = scrubAdminKey(text, getJellyfinApiKey(), incomingToken);
-        if (remplacements > 0) {
+        const { body, replacements } = scrubAdminKey(text, getJellyfinApiKey(), incomingToken);
+        if (replacements > 0) {
           request.log.warn(
-            { path: wildcardPath, remplacements },
+            { path: wildcardPath, replacements },
             "cle admin retiree d'un manifeste HLS",
           );
         }
-        const rewritten = rewriteHlsManifest(corps, incomingToken);
+        const rewritten = rewriteHlsManifest(body, incomingToken);
         reply.removeHeader("content-encoding");
         reply.removeHeader("content-length");
         reply.header("content-length", Buffer.byteLength(rewritten));
@@ -260,33 +260,33 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
       // présenter. Bufferisée (quelques kilo-octets) et nettoyée avant d'être
       // rendue — sans quoi la clé admin arrive dans le navigateur de chaque
       // utilisateur, en clair dans l'URL de la vidéo. cf. scrubAdminKey.ts.
-      if (porteUneUrlDeLecture(wildcardPath) && response.status < 400) {
+      if (carriesPlaybackUrl(wildcardPath) && response.status < 400) {
         const text = await response.text();
-        const { corps, remplacements } = scrubAdminKey(
+        const { body, replacements } = scrubAdminKey(
           text,
           getJellyfinApiKey(),
           incomingToken,
         );
-        if (remplacements > 0) {
+        if (replacements > 0) {
           // Le NOMBRE, jamais la valeur. Cette trace dit si un autre chemin se
           // met un jour à recopier la clé — c'est le seul moyen de l'apprendre
           // autrement que par un utilisateur.
           request.log.warn(
-            { path: wildcardPath, remplacements },
+            { path: wildcardPath, replacements },
             "cle admin retiree d'une reponse",
           );
         }
         reply.removeHeader("content-encoding");
         reply.removeHeader("content-length");
-        reply.header("content-length", Buffer.byteLength(corps));
-        return reply.send(corps);
+        reply.header("content-length", Buffer.byteLength(body));
+        return reply.send(body);
       }
 
       const nodeStream = Readable.fromWeb(response.body as Parameters<typeof Readable.fromWeb>[0]);
-      tracerCorps(request, reply, nodeStream, traces);
+      traceBody(request, reply, nodeStream, traceCtx);
       return reply.send(nodeStream);
     } catch (err) {
-      const cause = tracerEchec(request, wildcardPath, depart, err);
+      const cause = traceFailure(request, wildcardPath, start, err);
       // Le client est parti : il n'y a personne pour lire un code d'erreur, et
       // ce n'en est pas une. On rend la main sans rien écrire sur une socket
       // déjà fermée.

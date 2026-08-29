@@ -47,7 +47,7 @@ async function tick(): Promise<void> {
   running = true;
   try {
     const prisma = getPrisma();
-    const notifs = await prisma.notification.findMany({
+    const notifications = await prisma.notification.findMany({
       where: {
         pushedAt: null,
         type: { in: Object.keys(PUSHABLE) },
@@ -56,9 +56,9 @@ async function tick(): Promise<void> {
       orderBy: { createdAt: "asc" },
       take: 100,
     });
-    if (notifs.length === 0) return;
+    if (notifications.length === 0) return;
 
-    const userIds = [...new Set(notifs.map((n) => n.jellyfinUserId))];
+    const userIds = [...new Set(notifications.map((n) => n.jellyfinUserId))];
     const prefs = await prisma.notificationPreference.findMany({
       where: { jellyfinUserId: { in: userIds } },
     });
@@ -78,7 +78,7 @@ async function tick(): Promise<void> {
     }
 
     const deferredIds = new Set<string>();
-    for (const n of notifs) {
+    for (const n of notifications) {
       const prefKey = PUSHABLE[n.type];
       const enabled = !!prefKey && prefByUser.get(n.jellyfinUserId)?.[prefKey] === true;
       if (!enabled) continue;
@@ -115,7 +115,7 @@ async function tick(): Promise<void> {
     // Marque les notifs balayées comme poussées (opted-out incluses) pour ne
     // pas les re-scanner indéfiniment — SAUF les différées (guard de vérité),
     // qui doivent rester éligibles jusqu'à l'arrivée réelle du contenu.
-    const toMark = notifs.filter((n) => !deferredIds.has(n.id)).map((n) => n.id);
+    const toMark = notifications.filter((n) => !deferredIds.has(n.id)).map((n) => n.id);
     if (toMark.length > 0) {
       await prisma.notification.updateMany({
         where: { id: { in: toMark } },

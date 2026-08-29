@@ -17,7 +17,7 @@ import { adminProvisioningRoutes } from "./adminProvisioning";
 import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
 import { adminWatchTimeRoutes } from "./adminWatchTime";
 import { restartJellyfinWs } from "../services/jellyfinWs";
-import { invaliderSanteCleAdmin } from "../services/jellyfinKeyHealth";
+import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
 
 const jellyfinConfigSchema = z.object({
@@ -122,7 +122,7 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     restartJellyfinWs();
     // Le verdict précédent portait sur l'ancienne clé : le garder ferait
     // survivre l'alerte à sa propre correction pendant cinq minutes.
-    invaliderSanteCleAdmin();
+    invalidateAdminKeyHealth();
     return { success: true };
   });
 

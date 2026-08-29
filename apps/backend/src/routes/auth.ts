@@ -139,14 +139,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       // contente d'effacer le cookie — la session Jellyfin survit pour les TVs.
       // Erreur DB → même prudence : le pire ici est une session Jellyfin qui
       // survit, pas des téléviseurs morts.
-      let partage = 1;
+      let sharedBy = 1;
       try {
-        partage = hasPrisma()
+        sharedBy = hasPrisma()
           ? await getPrisma().pairedDevice.count({ where: { jellyfinAccessToken: token } })
           : 1;
       } catch { /* prudence : on saute la révocation */ }
-      if (partage > 0) {
-        request.log.info(`logout: token Jellyfin partagé par ${partage} appareil(s) jumelé(s) — révocation Jellyfin sautée`);
+      if (sharedBy > 0) {
+        request.log.info(`logout: token Jellyfin partagé par ${sharedBy} appareil(s) jumelé(s) — révocation Jellyfin sautée`);
       } else {
         try {
           await fetch(`${jellyfinUrl}/Sessions/Logout`, {

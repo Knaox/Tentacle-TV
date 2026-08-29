@@ -5,8 +5,8 @@
  * silencieuses si elles ne s'appliquent pas. Extraites du handler du proxy, qui
  * était au-delà de ce qu'un fichier peut porter — et purs, donc enfin testables.
  */
-export function urlCible(base: string, chemin: string, requete: string): string {
-  let url = `${base}/${chemin}${requete}`;
+export function buildTargetUrl(base: string, path: string, query: string): string {
+  let url = `${base}/${path}${query}`;
 
   // La clé d'API ne doit pas franchir le proxy : l'authentification part en
   // en-tête `X-Emby-Token`. La laisser dans l'URL la sèmerait dans les journaux
@@ -25,7 +25,7 @@ export function urlCible(base: string, chemin: string, requete: string): string 
   // `StartTimeTicks` — du `main.m3u8` dans l'URL de chaque segment, alors que
   // son propre gestionnaire de segments (GetDynamicSegment) refuse par un 400
   // tout `StartTimeTicks` supérieur à zéro.
-  if (/\/hls1\//.test(chemin) && !chemin.endsWith(".m3u8")) {
+  if (/\/hls1\//.test(path) && !path.endsWith(".m3u8")) {
     try {
       const u = new URL(url);
       u.searchParams.delete("StartTimeTicks");

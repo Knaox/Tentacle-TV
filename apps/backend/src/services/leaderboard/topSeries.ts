@@ -1,5 +1,5 @@
 import { getJellyfinApiKey, getJellyfinUrl } from "../configStore";
-import type { SerieFavorite } from "./types";
+import type { FavoriteSeries } from "./types";
 
 /**
  * Les séries les plus regardées d'un compte.
@@ -18,34 +18,34 @@ const PAGES_MAX = 40;
 const TTL_MS = 10 * 60_000;
 const CACHE_MAX = 20;
 
-interface EpisodeVu {
+interface PlayedEpisode {
   SeriesId?: string;
   SeriesName?: string;
   UserData?: { PlayCount?: number };
 }
 
-const cache = new Map<string, { series: SerieFavorite[]; a: number }>();
+const cache = new Map<string, { series: FavoriteSeries[]; a: number }>();
 
-function retenir(userId: string, series: SerieFavorite[]): void {
+function remember(userId: string, series: FavoriteSeries[]): void {
   // Table bornée : au-delà de vingt comptes consultés, on oublie le plus ancien
   // plutôt que de laisser le cache grossir indéfiniment.
   if (cache.size >= CACHE_MAX) {
-    const premier = cache.keys().next().value;
-    if (premier) cache.delete(premier);
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
   }
   cache.set(userId, { series, a: Date.now() });
 }
 
-export async function seriesFavorites(userId: string): Promise<SerieFavorite[] | null> {
-  const enCache = cache.get(userId);
-  if (enCache && Date.now() - enCache.a < TTL_MS) return enCache.series;
+export async function favoriteSeries(userId: string): Promise<FavoriteSeries[] | null> {
+  const cached = cache.get(userId);
+  if (cached && Date.now() - cached.a < TTL_MS) return cached.series;
 
   const base = getJellyfinUrl();
-  const cle = getJellyfinApiKey();
-  if (!base || !cle) return null;
+  const key = getJellyfinApiKey();
+  if (!base || !key) return null;
 
-  const parSerie = new Map<string, SerieFavorite>();
-  let depart = 0;
+  const perSeries = new Map<string, FavoriteSeries>();
+  let startIndex = 0;
 
   for (let page = 0; page < PAGES_MAX; page++) {
     const p = new URLSearchParams({
@@ -58,42 +58,42 @@ export async function seriesFavorites(userId: string): Promise<SerieFavorite[] |
       EnableUserData: "true",
       EnableTotalRecordCount: "false",
       Limit: String(PAGE),
-      StartIndex: String(depart),
+      StartIndex: String(startIndex),
     });
 
-    let items: EpisodeVu[];
+    let items: PlayedEpisode[];
     try {
       const res = await fetch(`${base}/Items?${p}`, {
-        headers: { "X-Emby-Token": cle },
+        headers: { "X-Emby-Token": key },
         signal: AbortSignal.timeout(15_000),
       });
       if (!res.ok) return null;
-      items = ((await res.json()) as { Items?: EpisodeVu[] }).Items ?? [];
+      items = ((await res.json()) as { Items?: PlayedEpisode[] }).Items ?? [];
     } catch {
       return null;
     }
 
     for (const ep of items) {
       if (!ep.SeriesId) continue;
-      const courant = parSerie.get(ep.SeriesId) ?? {
+      const current = perSeries.get(ep.SeriesId) ?? {
         seriesId: ep.SeriesId,
         name: ep.SeriesName ?? "",
         episodesPlayed: 0,
         playCount: 0,
       };
-      courant.episodesPlayed += 1;
-      courant.playCount += Math.max(1, ep.UserData?.PlayCount ?? 1);
-      parSerie.set(ep.SeriesId, courant);
+      current.episodesPlayed += 1;
+      current.playCount += Math.max(1, ep.UserData?.PlayCount ?? 1);
+      perSeries.set(ep.SeriesId, current);
     }
 
     if (items.length < PAGE) break;
-    depart += PAGE;
+    startIndex += PAGE;
   }
 
-  const top = [...parSerie.values()]
+  const top = [...perSeries.values()]
     .sort((a, b) => b.playCount - a.playCount || b.episodesPlayed - a.episodesPlayed)
     .slice(0, 3);
 
-  retenir(userId, top);
+  remember(userId, top);
   return top;
 }

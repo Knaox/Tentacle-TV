@@ -1,8 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { requireAuth } from "../middleware/auth";
 import { getJellyfinUrl } from "../services/configStore";
-import { classementVisionnage } from "../services/leaderboard";
-import { seriesFavorites } from "../services/leaderboard/topSeries";
+import { watchLeaderboard } from "../services/leaderboard";
+import { favoriteSeries } from "../services/leaderboard/topSeries";
 
 /**
  * Classement de visionnage — ouvert à TOUT utilisateur authentifié, et donc
@@ -25,11 +25,11 @@ export const leaderboardRoutes: FastifyPluginAsync = async (app) => {
     if (!getJellyfinUrl()) {
       return reply.status(503).send({ message: "Jellyfin non configuré" });
     }
-    const classement = await classementVisionnage();
-    if (!classement) {
+    const leaderboard = await watchLeaderboard();
+    if (!leaderboard) {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }
-    return classement;
+    return leaderboard;
   });
 
   /**
@@ -38,7 +38,7 @@ export const leaderboardRoutes: FastifyPluginAsync = async (app) => {
    * garder la charge principale légère.
    */
   app.get<{ Params: { userId: string } }>("/:userId/top-series", async (request, reply) => {
-    const series = await seriesFavorites(request.params.userId);
+    const series = await favoriteSeries(request.params.userId);
     if (!series) {
       return reply.status(502).send({ message: "Impossible de contacter Jellyfin" });
     }

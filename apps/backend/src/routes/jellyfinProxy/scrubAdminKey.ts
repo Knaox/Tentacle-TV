@@ -36,10 +36,10 @@
  */
 
 /** Le remplacement a-t-il eu lieu, et combien de fois ? */
-export interface Nettoyage {
-  corps: string;
+export interface ScrubResult {
+  body: string;
   /** Nombre d'occurrences remplacées. Sert à la trace, jamais la valeur. */
-  remplacements: number;
+  replacements: number;
 }
 
 /**
@@ -54,7 +54,7 @@ export interface Nettoyage {
  * Les deux formes sont autorisées par `patterns.ts` :
  * `Videos/{id}/PlaybackInfo` et `Items/{id}/PlaybackInfo`.
  */
-export function porteUneUrlDeLecture(path: string): boolean {
+export function carriesPlaybackUrl(path: string): boolean {
   return /(^|\/)PlaybackInfo$/i.test(path);
 }
 
@@ -72,19 +72,19 @@ export function porteUneUrlDeLecture(path: string): boolean {
  *   produire — sans jeton entrant, la substitution admin n'a pas lieu non plus.
  */
 export function scrubAdminKey(
-  corps: string,
-  cleAdmin: string | undefined,
-  jetonClient: string | undefined,
-): Nettoyage {
-  if (!cleAdmin || cleAdmin.length < 8 || !corps.includes(cleAdmin)) {
+  body: string,
+  adminKey: string | undefined,
+  clientToken: string | undefined,
+): ScrubResult {
+  if (!adminKey || adminKey.length < 8 || !body.includes(adminKey)) {
     // Le seuil écarte une configuration vide ou absurde : remplacer une chaîne
     // de deux caractères dans un corps JSON le mutilerait.
-    return { corps, remplacements: 0 };
+    return { body, replacements: 0 };
   }
 
-  const morceaux = corps.split(cleAdmin);
+  const parts = body.split(adminKey);
   return {
-    corps: morceaux.join(jetonClient ?? ""),
-    remplacements: morceaux.length - 1,
+    body: parts.join(clientToken ?? ""),
+    replacements: parts.length - 1,
   };
 }

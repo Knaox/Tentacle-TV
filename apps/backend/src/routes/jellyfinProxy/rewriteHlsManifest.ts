@@ -32,7 +32,7 @@
  */
 
 /** L'URL porte-t-elle déjà un jeton ? */
-function porteDejaUnJeton(url: string): boolean {
+function alreadyHasToken(url: string): boolean {
   return /[?&](api_key|ApiKey)=/i.test(url);
 }
 
@@ -47,7 +47,7 @@ function porteDejaUnJeton(url: string): boolean {
  * Un chemin absolu de la forme `/hls1/…` n'en est PAS une : il reste sur
  * l'origine du manifeste, donc sur notre proxy.
  */
-function estAbsolue(url: string): boolean {
+function isAbsolute(url: string): boolean {
   const u = url.trim();
   if (u.startsWith("//")) return true;
   // Schéma en tête : lettre suivie de lettres, chiffres, `+`, `-`, `.` puis `:`.
@@ -55,10 +55,10 @@ function estAbsolue(url: string): boolean {
 }
 
 /** Ajoute le jeton à une URL relative, et à elle seule. */
-function ajouterJeton(url: string, jeton: string): string {
-  if (estAbsolue(url) || porteDejaUnJeton(url)) return url;
-  const separateur = url.includes("?") ? "&" : "?";
-  return `${url}${separateur}api_key=${encodeURIComponent(jeton)}`;
+function addToken(url: string, token: string): string {
+  if (isAbsolute(url) || alreadyHasToken(url)) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}api_key=${encodeURIComponent(token)}`;
 }
 
 /**
@@ -69,15 +69,15 @@ function ajouterJeton(url: string, jeton: string): string {
 export function rewriteHlsManifest(body: string, token: string): string {
   return body
     .split("\n")
-    .map((ligne) => {
-      const nettoyee = ligne.trim();
-      if (nettoyee === "") return ligne;
-      if (nettoyee.startsWith("#")) {
+    .map((line) => {
+      const trimmed = line.trim();
+      if (trimmed === "") return line;
+      if (trimmed.startsWith("#")) {
         // `URI="…"` dans les tags : #EXT-X-MEDIA, #EXT-X-IMAGE-STREAM-INF,
         // I-frames. Le reste de la ligne est de la métadonnée, on n'y touche pas.
-        return ligne.replace(/URI="([^"]+)"/gi, (_m, u: string) => `URI="${ajouterJeton(u, token)}"`);
+        return line.replace(/URI="([^"]+)"/gi, (_m, u: string) => `URI="${addToken(u, token)}"`);
       }
-      return ajouterJeton(ligne, token);
+      return addToken(line, token);
     })
     .join("\n");
 }

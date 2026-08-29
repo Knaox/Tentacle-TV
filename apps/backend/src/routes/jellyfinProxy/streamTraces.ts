@@ -1,29 +1,29 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Readable } from "stream";
-import { ligneFlux, raisonCoupure, suiviFluxActif } from "./journalFlux";
+import { streamLine, cutoffReason, streamTrackingEnabled } from "./streamLog";
 
 /**
  * Le câblage des traces de flux sur le proxy.
  *
- * Séparé de `journalFlux.ts`, qui reste pur et testable sans Fastify : ici on
+ * Séparé de `streamLog.ts`, qui reste pur et testable sans Fastify : ici on
  * ne fait qu'accrocher ces fonctions aux bons événements, et le handler du
  * proxy — déjà à la limite de ce qu'un fichier peut porter — n'en garde que
  * trois appels.
  */
 
 /** L'en-tête `Range` tel que le client l'a posé, s'il l'a posé. */
-function plageDemandee(request: FastifyRequest): string | null {
-  const brut = request.headers.range;
-  return typeof brut === "string" ? brut : null;
+function requestedRange(request: FastifyRequest): string | null {
+  const raw = request.headers.range;
+  return typeof raw === "string" ? raw : null;
 }
 
-interface Contexte {
-  chemin: string;
+interface TraceContext {
+  path: string;
   /** `performance.now()` au départ de la requête vers Jellyfin. */
-  depart: number;
-  statut: number;
+  start: number;
+  status: number;
   /** `content-length` annoncé par Jellyfin, `null` s'il n'en donne pas. */
-  attendus: number | null;
+  expected: number | null;
 }
 
 /**
@@ -35,12 +35,12 @@ interface Contexte {
  * Un film fait plus de mille segments : cette ligne-là ne s'écrit que pour une
  * campagne de mesure (`TENTACLE_JOURNAL_FLUX=1`), jamais en production.
  */
-export function tracerEntetes(request: FastifyRequest, ctx: Contexte): void {
-  if (!suiviFluxActif()) return;
+export function traceHeaders(request: FastifyRequest, ctx: TraceContext): void {
+  if (!streamTrackingEnabled()) return;
   request.log.info(
-    ligneFlux({
-      chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-      statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
+    streamLine({
+      chemin: ctx.path, methode: request.method, ms: performance.now() - ctx.start,
+      statut: ctx.status, attendus: ctx.expected, plage: requestedRange(request),
     }),
     "flux servi",
   );
@@ -54,8 +54,8 @@ export function tracerEntetes(request: FastifyRequest, ctx: Contexte): void {
  * lecture courte devient un `MEDIA_ERR_NETWORK`, et la lecture se fige sans que
  * rien, nulle part, n'en ait gardé trace.
  */
-export function tracerCorps(
-  request: FastifyRequest, reply: FastifyReply, flux: Readable, ctx: Contexte,
+export function traceBody(
+  request: FastifyRequest, reply: FastifyReply, stream: Readable, ctx: TraceContext,
 ): void {
   // Le compteur est pris sur la SOCKET, pas sur le flux amont. Poser un
   // écouteur `data` sur `flux` le basculerait en mode « flowing » avant que
@@ -66,39 +66,39 @@ export function tracerCorps(
   // de départ et on soustrait. Les quelques centaines d'octets d'en-têtes HTTP
   // de cette réponse-ci sont comptés dedans, ce qui est sans portée devant des
   // segments de plusieurs mégaoctets.
-  const sortie = reply.raw.socket;
-  const octetsAvant = sortie?.bytesWritten ?? 0;
-  const debutCorps = performance.now();
-  const ecrits = () => (sortie ? sortie.bytesWritten - octetsAvant : null);
+  const out = reply.raw.socket;
+  const bytesBefore = out?.bytesWritten ?? 0;
+  const bodyStart = performance.now();
+  const written = () => (out ? out.bytesWritten - bytesBefore : null);
 
-  flux.on("error", (e) => {
+  stream.on("error", (e) => {
     request.log.warn(
-      ligneFlux({
-        chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-        statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
-        octets: ecrits(), msCorps: performance.now() - debutCorps,
-        cause: raisonCoupure(e),
+      streamLine({
+        chemin: ctx.path, methode: request.method, ms: performance.now() - ctx.start,
+        statut: ctx.status, attendus: ctx.expected, plage: requestedRange(request),
+        octets: written(), msCorps: performance.now() - bodyStart,
+        cause: cutoffReason(e),
       }),
       "flux coupe",
     );
   });
   reply.raw.on("close", () => {
-    const octets = ecrits();
-    const msCorps = performance.now() - debutCorps;
+    const bytes = written();
+    const bodyMs = performance.now() - bodyStart;
     // Une fin normale ferme aussi la socket : seul un corps INACHEVÉ est une
     // anomalie. Mais les deux valent d'être mesurés — c'est en comparant le
     // débit d'un segment servi entier à celui d'un segment lâché qu'on saura si
     // le téléviseur manque de bande passante ou refuse le contenu.
-    const entree = {
-      chemin: ctx.chemin, methode: request.method, ms: performance.now() - ctx.depart,
-      statut: ctx.statut, attendus: ctx.attendus, plage: plageDemandee(request),
-      octets, msCorps,
+    const entry = {
+      chemin: ctx.path, methode: request.method, ms: performance.now() - ctx.start,
+      statut: ctx.status, attendus: ctx.expected, plage: requestedRange(request),
+      octets: bytes, msCorps: bodyMs,
     };
     if (reply.raw.writableEnded) {
-      if (suiviFluxActif()) request.log.info(ligneFlux(entree), "flux termine");
+      if (streamTrackingEnabled()) request.log.info(streamLine(entry), "flux termine");
       return;
     }
-    request.log.warn(ligneFlux({ ...entree, annule: true }), "flux abandonne");
+    request.log.warn(streamLine({ ...entry, annule: true }), "flux abandonne");
   });
 }
 
@@ -113,17 +113,17 @@ export function tracerCorps(
  * produit une poignée. Les crier en `error` ferait passer le remède pour la
  * panne.
  */
-export function tracerEchec(
-  request: FastifyRequest, chemin: string, depart: number, err: unknown,
+export function traceFailure(
+  request: FastifyRequest, path: string, start: number, err: unknown,
 ): string {
-  const cause = raisonCoupure(err);
-  const ligne = ligneFlux({
-    chemin, methode: request.method, ms: performance.now() - depart, cause,
+  const cause = cutoffReason(err);
+  const line = streamLine({
+    chemin: path, methode: request.method, ms: performance.now() - start, cause,
     annule: cause === "annule" || undefined,
   });
-  if (cause === "annule") request.log.info(ligne, "requete abandonnee par le client");
+  if (cause === "annule") request.log.info(line, "requete abandonnee par le client");
   // Muette jusqu'ici : la branche du délai rendait son 504 sans écrire un mot.
-  else if (cause === "delai-absolu") request.log.warn(ligne, "Jellyfin timeout");
-  else request.log.error(ligne, "Proxy error");
+  else if (cause === "delai-absolu") request.log.warn(line, "Jellyfin timeout");
+  else request.log.error(line, "Proxy error");
   return cause;
 }

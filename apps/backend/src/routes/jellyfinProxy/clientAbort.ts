@@ -24,38 +24,38 @@ import type { FastifyReply, FastifyRequest } from "fastify";
  * des centaines de requêtes. Il disparaît avec elle : aucun désabonnement à
  * orchestrer, aucune accumulation possible.
  */
-export function signalDeRequete(
+export function requestSignal(
   request: FastifyRequest,
   reply: FastifyReply,
-  delaiMs: number,
+  timeoutMs: number,
 ): AbortSignal {
-  const controleur = new AbortController();
+  const controller = new AbortController();
 
   request.raw.on("close", () => {
     // Une réponse menée à son terme ferme elle aussi le message entrant. Ne
     // couper QUE ce qui est inachevé : annuler à la fin normale ferait échouer
     // des requêtes parfaitement servies.
     if (reply.raw.writableEnded) return;
-    controleur.abort(new DOMException("client parti", "AbortError"));
+    controller.abort(new DOMException("client parti", "AbortError"));
   });
 
-  return combiner(AbortSignal.timeout(delaiMs), controleur.signal);
+  return combine(AbortSignal.timeout(timeoutMs), controller.signal);
 }
 
 /**
  * `AbortSignal.any` n'existe que depuis Node 20.3 et le dépôt n'exige que
  * Node 20. Le repli tient en quelques lignes et propage la RAISON, seule chose
- * qui permette ensuite de distinguer un délai d'un départ (cf. `raisonCoupure`).
+ * qui permette ensuite de distinguer un délai d'un départ (cf. `cutoffReason`).
  */
-function combiner(a: AbortSignal, b: AbortSignal): AbortSignal {
+function combine(a: AbortSignal, b: AbortSignal): AbortSignal {
   if (typeof AbortSignal.any === "function") return AbortSignal.any([a, b]);
 
-  const relais = new AbortController();
-  if (a.aborted) relais.abort(a.reason);
-  else if (b.aborted) relais.abort(b.reason);
+  const relay = new AbortController();
+  if (a.aborted) relay.abort(a.reason);
+  else if (b.aborted) relay.abort(b.reason);
   else {
-    a.addEventListener("abort", () => relais.abort(a.reason), { once: true });
-    b.addEventListener("abort", () => relais.abort(b.reason), { once: true });
+    a.addEventListener("abort", () => relay.abort(a.reason), { once: true });
+    b.addEventListener("abort", () => relay.abort(b.reason), { once: true });
   }
-  return relais.signal;
+  return relay.signal;
 }
