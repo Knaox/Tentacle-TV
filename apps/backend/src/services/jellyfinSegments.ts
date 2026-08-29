@@ -25,6 +25,7 @@
  */
 
 import type { SegmentSources } from "../playback/resolveSegments";
+import type { TrickplayManifest } from "./trickplayFrames";
 import { TICKS_PER_MS } from "../playback/segmentTypes";
 import { getConfigValue, getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 
@@ -37,10 +38,18 @@ export interface SegmentSourceBundle {
   runtimeMs: number;
   /** Bibliothèque racine du média, `null` si elle n'a pas pu être établie. */
   libraryId: string | null;
+  /**
+   * Les vignettes disponibles pour ce média, telles que Jellyfin les publie.
+   *
+   * Elles ne sont PAS une source de segments : c'est de la matière brute, que
+   * seule l'analyse de secours va lire (`frameAnalysis.ts`), et seulement quand
+   * les fournisseurs n'ont rien de crédible à dire.
+   */
+  trickplay: TrickplayManifest | null;
   sources: SegmentSources;
 }
 
-const EMPTY_BUNDLE: SegmentSourceBundle = { runtimeMs: 0, libraryId: null, sources: {} };
+const EMPTY_BUNDLE: SegmentSourceBundle = { runtimeMs: 0, libraryId: null, trickplay: null, sources: {} };
 
 interface CacheEntry {
   bundle: SegmentSourceBundle;
@@ -72,6 +81,7 @@ interface ItemSnapshot {
   Type?: string;
   RunTimeTicks?: number;
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>;
+  Trickplay?: TrickplayManifest;
 }
 
 /** Une valeur du dictionnaire du greffon porte-t-elle une fin exploitable ? */
@@ -120,7 +130,7 @@ function ancestorsUrl(url: string, itemId: string): string {
 function itemUrl(url: string, itemId: string): string {
   const adminId = getConfigValue("admin_jellyfin_id");
   const user = adminId ? `userId=${encodeURIComponent(adminId)}&` : "";
-  return `${url}/Items/${itemId}?${user}fields=Chapters`;
+  return `${url}/Items/${itemId}?${user}fields=Chapters,Trickplay`;
 }
 
 async function fetchBundle(itemId: string, url: string, apiKey: string): Promise<{
@@ -167,6 +177,7 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
     bundle: {
       runtimeMs: runTimeTicks > 0 ? Math.round(runTimeTicks / TICKS_PER_MS) : 0,
       libraryId: collectionFolderId(ancestorsRaw),
+      trickplay: item.Trickplay ?? null,
       sources: {
         mediaSegments,
         pluginDict,

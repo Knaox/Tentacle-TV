@@ -134,6 +134,17 @@ export interface PlaybackSegmentsResponse {
   libraryId: string | null;
   /** Horodatage ISO de la résolution — injecté par l'appelant, jamais lu ici. */
   resolvedAt: string;
+  /**
+   * Une analyse des vignettes tourne en arrière-plan pour ce média.
+   *
+   * Le serveur ne fait JAMAIS attendre le lecteur : il répond avec ce qu'il
+   * sait, et pose ce drapeau. Le client redemande alors le contrat de temps en
+   * temps — le générique n'arrive qu'à la fin du média, il y a tout le temps.
+   *
+   * Champ ADDITIF et FACULTATIF : absent, il vaut « rien en cours », ce qui est
+   * le bon repli pour un snapshot hors ligne ou un serveur plus ancien.
+   */
+  analysisPending?: boolean;
 }
 
 /** La réponse « rien » : média sans segments, serveur trop ancien, hors ligne sec. */
@@ -201,7 +212,7 @@ export function parsePlaybackSegmentsResponse(raw: unknown): PlaybackSegmentsRes
       type: s.type,
       startMs,
       endMs,
-      source: s.source === "chapters" ? "chapters" : "jellyfin",
+      source: s.source === "chapters" || s.source === "frames" ? s.source : "jellyfin",
       endsAtMediaEnd: s.endsAtMediaEnd === true,
       hasContentAfter: s.hasContentAfter === true,
     });
@@ -215,5 +226,8 @@ export function parsePlaybackSegmentsResponse(raw: unknown): PlaybackSegmentsRes
     segments,
     libraryId: typeof o.libraryId === "string" && o.libraryId !== "" ? o.libraryId : null,
     resolvedAt: typeof o.resolvedAt === "string" ? o.resolvedAt : "",
+    // Posé seulement s'il est vrai : sous `exactOptionalPropertyTypes`, un champ
+    // facultatif ne se remplit pas d'`undefined`.
+    ...(o.analysisPending === true ? { analysisPending: true } : {}),
   };
 }
