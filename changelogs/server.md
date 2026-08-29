@@ -7,6 +7,9 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [1.14.0]
 ### FR
+- **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La fiche, le carrousel « Prochains épisodes » et le lecteur suivent désormais la même règle — votre dernière lecture — et la fin d'une saison enchaîne sur le premier épisode de la suivante
+- **Une invitation à regarder ensemble s'ouvre d'elle-même quand vous êtes à l'accueil** : il ne reste qu'à accepter. Ailleurs elle ne vous interrompt pas — le logo Watch Together porte désormais le NOMBRE d'invitations en attente
+- **L'habillage du lecteur ne se pose plus sur l'écran de chargement** : la barre de commandes s'affichait pendant l'attente, invisible mais cliquable, avec une progression à zéro qui ne mesurait rien
 - **Les passages d'un épisode sont désormais résolus par le SERVEUR**, une fois pour toutes les applications : générique de début, résumé, générique de fin, aperçu. Il lit `MediaSegments`, les greffons de détection et, à défaut, vos chapitres nommés — le client ne devine plus rien
 - **Les réglages de lecture suivent le COMPTE** et non l'appareil : ce que vous posez sur l'ordinateur vaut sur le téléphone et devant la télévision. Vos anciens réglages d'appareil sont repris automatiquement la première fois
 - **Chaque passage se règle** dans Réglages > Lecture : proposer un bouton, passer tout seul, ou ne rien faire, avec le délai du saut automatique et l'affichage du décompte
@@ -15,6 +18,9 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Une nouvelle section d'administration** liste les greffons de détection des passages : sans l'un d'eux, aucun bouton de saut ne peut apparaître, et rien ne le disait
 - **En séance partagée**, refuser un saut se propage avec le passage concerné : refuser le résumé n'éteint plus le décompte d'intro de vos invités
 ### EN
+- **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The details page, the "Up next" carousel and the player now follow the same rule — your last viewing — and the end of a season carries on to the first episode of the next
+- **A Watch Together invitation opens on its own when you are on the home screen**: all that is left is to accept. Elsewhere it does not interrupt you — the Watch Together icon now carries the NUMBER of pending invitations
+- **The player controls no longer sit on top of the loading screen**: the control bar showed during the wait, invisible but clickable, with a progress bar at zero that measured nothing
 - **Passages within an episode are now resolved by the SERVER**, once for every app: opening titles, recap, closing credits, preview. It reads `MediaSegments`, the detection plugins and, failing that, your named chapters — the client no longer guesses anything
 - **Playback settings follow the ACCOUNT** rather than the device: what you set on the computer applies on the phone and in front of the television. Your previous per-device settings are carried over the first time
 - **Every passage can be set** under Settings > Playback: offer a button, skip on its own, or do nothing, with the automatic skip delay and the countdown display

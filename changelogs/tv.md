@@ -7,6 +7,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.2.2]
 ### FR
+- L'épisode suivant est celui d'APRÈS celui que vous venez de regarder : commencer une saison par son épisode 6 proposait le 1, et remettre un épisode en « non lu » le faisait revenir en tête
 - Navigation nettement plus fluide : parcourir les rangées, ouvrir le menu et changer de page ne saccadent plus, même sur les boîtiers puissants
 - Le halo des bannières est enfin là sur Android TV, comme sur l'Apple TV
 - Boutons, cartes et pastilles reprennent les coins arrondis du téléviseur LG
@@ -17,6 +18,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Trois réglages de fin d'épisode, indépendants : la fiche, son décompte, l'enchaînement
 - Revenir d'une fiche ne provoque plus d'erreur
 ### EN
+- The next episode is the one AFTER what you just watched: starting a season at episode 6 used to offer episode 1, and marking an episode unwatched brought it back to the front
 - Navigation is markedly smoother: moving through rows, opening the menu and switching pages no longer stutter, even on powerful boxes
 - The banner halo has finally arrived on Android TV, just like on Apple TV
 - Buttons, cards and pills take on the LG television's rounded corners
@@ -25,7 +27,6 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 - Every passage can be set: offer a button, skip on its own, or do nothing
 - Playback settings follow your account: set them on the phone, they apply in front of the television
 - Three end-of-episode settings, independent: the card, its countdown, the automatic advance
-- Two new end-of-episode settings
 - Coming back from a media page no longer raises an error
 
 ## [1.2.0]
