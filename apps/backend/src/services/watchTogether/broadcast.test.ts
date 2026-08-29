@@ -41,7 +41,8 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     lastChatAt: new Map(),
     lastReactionAt: new Map(),
     lastGifAt: new Map(),
-  } as Room;
+    createdAt: 0,
+  };
 }
 
 describe("roomToDto — les réglages de l'hôte", () => {
