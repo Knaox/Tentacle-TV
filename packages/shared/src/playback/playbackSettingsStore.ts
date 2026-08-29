@@ -14,6 +14,17 @@
  * lues UNE fois. Si elles portent un refus, il est converti et poussé ; si
  * elles sont vierges, rien n'est poussé — un autre appareil, peut-être mieux
  * réglé, garde ainsi le droit de semer.
+ *
+ * La MISE EN SOURDINE : une écriture en attente était re-poussée à CHAQUE
+ * resynchronisation. Sur un serveur qui répond 500 — table absente, migration
+ * oubliée — cela produisait une rafale sans fin, une requête par bascule et
+ * par montage, jusqu'à noyer la console (constaté le 29.08 sur
+ * `/api/preferences/playback`). Un 5xx est une RÉPONSE : le serveur a compris
+ * et refuse, le marteler n'y changera rien. On se tait donc aussitôt, pour un
+ * temps borné. Une coupure réseau, elle, se répare toute seule : on ne se tait
+ * qu'après plusieurs échecs. Dans les deux cas la valeur locale reste la
+ * vérité de l'appareil, et une nouvelle action de l'utilisateur relance
+ * immédiatement la poussée.
  */
 
 import { DEVICE_SETTING_KEYS } from "../player/deviceSettings";
@@ -77,12 +88,31 @@ export function seedFromLegacyDeviceKeys(
   return seed;
 }
 
+/** Le temps qu'on se tait avant de retenter — le serveur a pu être réparé. */
+export const PUSH_MUTE_MS = 5 * 60_000;
+
+/** Échecs SANS réponse (réseau) tolérés avant de se taire aussi. */
+export const PUSH_MAX_FAILURES = 3;
+
+/**
+ * Le serveur a-t-il RÉPONDU un refus définitif ? Duck typing volontaire :
+ * `shared` ne dépend de rien, et l'erreur vient d'`api-client`
+ * (`TentacleApiError`) comme elle pourrait venir d'un autre transport.
+ */
+function isServerRefusal(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const status = (error as { status?: unknown }).status;
+  return typeof status === "number" && status >= 500 && status < 600;
+}
+
 const areIdentical = (a: PlaybackSettings, b: PlaybackSettings): boolean =>
   JSON.stringify(a) === JSON.stringify(b);
 
 export function createPlaybackSettingsStore(deps: SettingsStoreDeps): PlaybackSettingsStore {
   const listeners = new Set<() => void>();
   let pendingWrite = false;
+  let failedPushes = 0;
+  let mutedUntilMs = 0;
 
   const readCache = (): PlaybackSettings => {
     try {
@@ -110,8 +140,14 @@ export function createPlaybackSettingsStore(deps: SettingsStoreDeps): PlaybackSe
     try {
       await deps.writeRemote(settings);
       pendingWrite = false;
-    } catch {
+      failedPushes = 0;
+      mutedUntilMs = 0;
+    } catch (error) {
       pendingWrite = true;
+      failedPushes += 1;
+      if (isServerRefusal(error) || failedPushes >= PUSH_MAX_FAILURES) {
+        mutedUntilMs = Date.now() + PUSH_MUTE_MS;
+      }
     }
   };
 
@@ -135,12 +171,18 @@ export function createPlaybackSettingsStore(deps: SettingsStoreDeps): PlaybackSe
       });
       apply(merged);
       pendingWrite = true;
+      // L'utilisateur vient d'agir : il a droit à une tentative, sourdine ou pas.
+      mutedUntilMs = 0;
+      failedPushes = 0;
       void push(merged);
     },
 
     async resync() {
-      // Une écriture attend encore : on re-pousse au lieu de se faire écraser.
+      // Une écriture attend encore : on re-pousse au lieu de se faire écraser
+      // — sauf en sourdine, où la valeur locale reste seule la vérité (relire
+      // le serveur écraserait le réglage que l'utilisateur vient de poser).
       if (pendingWrite) {
+        if (Date.now() < mutedUntilMs) return;
         await push(snapshot);
         return;
       }
