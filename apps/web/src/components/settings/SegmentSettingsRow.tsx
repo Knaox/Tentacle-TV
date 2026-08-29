@@ -11,6 +11,10 @@ interface SegmentSettingsRowProps {
   fieldId: string;
   settings: SegmentSettings;
   onChange: (patch: Partial<SegmentSettings>) => void;
+  /** Cette ligne est-elle celle que l'aperçu montre ? */
+  active?: boolean;
+  /** L'utilisateur vient de venir ici : l'aperçu doit la suivre. */
+  onFocus?: () => void;
 }
 
 /**
@@ -24,13 +28,22 @@ interface SegmentSettingsRowProps {
  * trois possibilités se lisent d'un coup d'œil, ce qui est tout l'enjeu ici.
  */
 export function SegmentSettingsRow({
-  title, hint, fieldId, settings, onChange,
+  title, hint, fieldId, settings, onChange, active = false, onFocus,
 }: SegmentSettingsRowProps) {
   const { t } = useTranslation("preferences");
   const auto = settings.action === "auto";
 
   return (
-    <div>
+    // `onFocusCapture` autant que le clic : au clavier aussi, l'aperçu doit
+    // suivre la ligne où l'on se trouve. Le liseré dit LAQUELLE est montrée —
+    // sans lui, l'aperçu semblerait parler d'autre chose.
+    <div
+      onFocusCapture={onFocus}
+      onPointerDown={onFocus}
+      className={`border-l-2 pl-3 transition-colors motion-reduce:transition-none ${
+        active ? "border-tentacle-accent" : "border-transparent"
+      }`}
+    >
       <p className="text-sm font-medium text-content-primary">{title}</p>
       <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>
       <SegmentedChoice

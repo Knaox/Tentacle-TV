@@ -127,15 +127,12 @@ export default {
   playbackModeTitle: "Skipping and autoplay",
   playbackModeLabel: "What the player does",
   playbackModeDefault: "Default",
-  playbackModeDefaultHint:
-    "What ships out of the box: opening titles and the next-episode preview skip themselves after five seconds, the recap and closing credits are offered to you, and the next episode plays on.",
+  playbackModeDefaultHint: "What ships out of the box: opening titles and the next-episode preview skip themselves, the recap and closing credits are offered to you.",
   playbackModeManual: "Offer it to me",
   playbackModeAutomatic: "Do it for me",
   playbackModeCustom: "Custom",
-  playbackModeManualHint:
-    "The player shows a button and waits for you. It skips nothing and never chains episodes.",
-  playbackModeAutomaticHint:
-    "The player skips credits and recaps after a short delay, and plays the next episode. A film never closes on its own.",
+  playbackModeManualHint: "The player offers, you decide. Nothing happens on its own.",
+  playbackModeAutomaticHint: "The player skips credits and plays the next episode. A film never closes on its own.",
   playbackModeCustomHint:
     "Your settings match neither mode. The detail is below; picking a mode will replace it.",
   playbackAdvancedToggle: "Advanced settings",
@@ -144,19 +141,31 @@ export default {
   playbackSegmentsTitle: "Passages within an episode",
   playbackSegmentsSummary: "Opening titles, recap, closing credits, preview.",
   upNextSummary: "The \"up next\" card, the countdown, and when to offer them.",
-  playbackSegmentsHint:
-    "When the server marks a passage — opening titles, recap, preview — the player can offer to skip it, skip it on its own, or do nothing. Nothing is shown when nothing is marked: these settings never guess.",
+  playbackSegmentsHint: "The player never guesses: it only acts on passages the server marks for it.",
   playbackSettingsAccount: "These settings follow your account, on every device.",
   // Two buttons rather than a switch on television: with a remote, a sliding
   // thumb means nothing.
   reglageActive: "On",
   reglageDesactive: "Off",
 
+  // L'aperçu vivant du panneau avancé : la vraie pilule du lecteur, montée dans
+  // un cadre qui imite l'image. Voir `settings/PlaybackPreview.tsx`.
+  previewTitle: "Preview",
+  previewCaptionOff: "Nothing is shown: the passage plays like the rest of the film.",
+  previewCaptionButton: "The button waits for your click. Without a click, nothing is skipped.",
+  previewCaptionAuto: "The button fills up, then the passage is skipped. The cross stops the countdown.",
+  previewCaptionAutoSilent: "The passage is skipped after {{seconds}}s, with nothing announcing it.",
+
+  // Le détail qui encombrait chaque réglage, réuni derrière un repli.
+  segmentsMoreTitle: "More about this",
+  segmentsMoreNothing: "With no passage marked by the server, nothing is shown — whatever the setting above.",
+  segmentsMoreDismiss: "The cross stops the countdown and takes the button off the picture for the rest of playback. It comes back as soon as the controls are shown.",
+  segmentsMoreOutro: "During an episode's closing credits, the \"up next\" card takes the corner of the picture — the button steps aside for it.",
+
   segmentIntroTitle: "Opening titles",
   segmentIntroHint: "A series' opening, the one that comes back every episode.",
   segmentOutroTitle: "Closing credits",
-  segmentOutroHint:
-    "When a next episode exists, the “up next” card takes over the credits. The button only appears when it leads somewhere else: a scene after the credits, or the end of a film.",
+  segmentOutroHint: "The button only appears when it leads somewhere — a scene after the credits, or the end of a film.",
   segmentRecapTitle: "Recap of the previous episode",
   segmentRecapHint: "The “previously on”, at the start of an episode.",
   segmentPreviewTitle: "Preview of the next episode",
@@ -166,8 +175,7 @@ export default {
   segmentActionAuto: "Skip on its own",
   segmentActionOff: "Do nothing",
   segmentCountdownTitle: "Show the countdown",
-  segmentCountdownHint:
-    "The button fills up during the delay. The cross is always there: it stops the countdown and takes the button off the picture for the rest of playback — it comes back whenever the controls are shown.",
+  segmentCountdownHint: "The button fills up during the delay. Without it the skip still happens, with no warning.",
   segmentDelayLabel: "Delay before skipping",
   segmentDelayHint: "How long you get to refuse before the player skips.",
   segmentDelayValue: "{{seconds}}s",
@@ -178,26 +186,20 @@ export default {
   // hides the card.
   upNextTitle: "At the end of an episode",
   upNextCardTitle: "Offer the next episode",
-  upNextCardHint:
-    "During the closing credits, a small card offers the next episode in a corner of the picture. Turned off, the end of the episode stays bare. The end screen still appears at the very last moment.",
+  upNextCardHint: "A small card offers the next episode, in a corner of the picture.",
   upNextCountdownTitle: "Show a countdown",
-  upNextCountdownHint:
-    "The card and the end screen announce the time left. Without it, the card is simply an offer, waiting for you.",
+  upNextCountdownHint: "The card announces the time left.",
   upNextAutoPlayTitle: "Play the next episode on its own",
-  upNextAutoPlayHint:
-    "When the countdown runs out, the next episode starts. This setting therefore needs the countdown above: without it, nothing fires.",
+  upNextAutoPlayHint: "When the countdown runs out, the next episode starts.",
   upNextTriggerLabel: "When to offer what follows",
   upNextTriggerOutroStart: "At the start of the closing credits",
   upNextTriggerBeforeEnd: "Shortly before the end",
-  upNextTriggerHint:
-    "\"At the start of the closing credits\" follows what the server detected, and only falls back to the threshold below when it detected nothing — so the two can never contradict each other. \"Shortly before the end\" forces your threshold, even when credits are known.",
+  upNextTriggerHint: "\"At the start of the closing credits\" follows what the server detected. \"Shortly before the end\" forces your threshold.",
   // Le repli « avant la fin » : facultatif, global, et par bibliothèque.
   beforeEndEnabledTitle: "Offer the next episode even with no credits detected",
-  beforeEndEnabledHint:
-    "When the server marks no closing credits, the player has no idea when the episode ends. This setting gives it a landmark. Turned off, the end of those episodes stays bare — better nothing than a card dropped at random.",
+  beforeEndEnabledHint: "With no credits detected, the player has no idea when the episode ends. This setting gives it a landmark.",
   beforeEndDefaultTitle: "Default threshold",
-  beforeEndDefaultHint:
-    "What applies to libraries no rule targets. As a proportion it fits every format with no tuning: 98% is twenty-eight seconds on a 23-minute anime and forty on an hour-long series.",
+  beforeEndDefaultHint: "What applies to libraries no rule targets.",
   beforeEndModeLabel: "Count in",
   beforeEndModePercent: "Percentage",
   beforeEndModeSeconds: "Seconds",
