@@ -32,6 +32,7 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
       bundle.runtimeMs,
       bundle.sources,
       new Date().toISOString(),
+      bundle.libraryId,
     );
 
     // Court : aligné sur le TTL du cache serveur — un segment fraîchement

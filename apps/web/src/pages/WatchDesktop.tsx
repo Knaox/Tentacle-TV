@@ -268,7 +268,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         nextEpisodeDescription={nextArtwork.description} serverAutoplayEnabled={autoplayNextEnabled}
         onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
-        segments={segments.segments} runtimeMs={segments.runtimeMs}
+        segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
         itemId={itemId!} item={item} mediaSourceId={mediaSourceId}
         onFallbackToWeb={onFallbackToWeb} onMediaMissing={handleMediaMissing}
         transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}

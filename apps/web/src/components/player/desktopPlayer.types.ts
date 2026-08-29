@@ -37,6 +37,8 @@ export interface DesktopPlayerProps {
   segments?: readonly ResolvedSegment[];
   /** Durée du contrat, en ms — 0 = inconnue (la durée mpv fait alors foi). */
   runtimeMs?: number;
+  /** Bibliothèque du média (contrat de segments) — règles « avant la fin ». */
+  libraryId?: string | null;
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
   nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;

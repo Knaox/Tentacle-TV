@@ -134,7 +134,7 @@ describe("getSegmentSourceBundle", () => {
   it("échec total sans photo : du vide, jamais mis en cache", async () => {
     scenario = [[/./, "reject"]];
     const empty = await getSegmentSourceBundle("ep-7");
-    expect(empty).toEqual({ runtimeMs: 0, sources: {} });
+    expect(empty).toEqual({ runtimeMs: 0, libraryId: null, sources: {} });
 
     scenario = [
       [/\/Items\//, { json: ITEM }],

@@ -140,6 +140,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
             pRuntimeMs,
             p.segments,
             settingsRef.current.next,
+            p.libraryId ?? null,
           ),
         ended: p.playbackEnded,
         elapsedMs,
@@ -206,6 +207,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       hasNextEpisode: input.hasNextEpisode,
       settings,
       serverAutoplayEnabled: input.serverAutoplayEnabled,
+      libraryId: input.libraryId ?? null,
+      controlsVisible: input.controlsVisible,
       dismissed: {
         // Trois raisons de ne pas montrer la pilule, et une seule d'insister :
         // le saut demandé (la position rattrape la cible), le refus du passage

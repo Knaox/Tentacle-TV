@@ -38,7 +38,7 @@ export function VideoPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   serverAutoplayEnabled = true,
   onNextEpisode, onPreviousEpisode,
-  segments = [], runtimeMs = 0, posterUrl,
+  segments = [], runtimeMs = 0, libraryId = null, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
   onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
@@ -140,6 +140,7 @@ export function VideoPlayer({
     playbackEnded: ended,
     segments,
     runtimeMs,
+    libraryId,
     serverAutoplayEnabled,
     controlsVisible: showControls,
     onSeekSeconds: handleSeek,

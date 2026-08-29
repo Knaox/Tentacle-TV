@@ -35,10 +35,12 @@ const FETCH_TIMEOUT_MS = 8_000;
 export interface SegmentSourceBundle {
   /** Durée du média en ms ; 0 quand l'item n'a pas pu être lu. */
   runtimeMs: number;
+  /** Bibliothèque racine du média, `null` si elle n'a pas pu être établie. */
+  libraryId: string | null;
   sources: SegmentSources;
 }
 
-const EMPTY_BUNDLE: SegmentSourceBundle = { runtimeMs: 0, sources: {} };
+const EMPTY_BUNDLE: SegmentSourceBundle = { runtimeMs: 0, libraryId: null, sources: {} };
 
 interface CacheEntry {
   bundle: SegmentSourceBundle;
@@ -86,6 +88,30 @@ function chapterMarkers(item: ItemSnapshot): SegmentSources["chapters"] {
 }
 
 /**
+ * La bibliothèque RACINE d'un média — l'ancêtre `CollectionFolder`.
+ *
+ * Jellyfin empile saison, série, dossier ; un seul ancêtre porte ce type, et
+ * c'est celui que l'utilisateur voit dans son menu. Aucune heuristique de
+ * chemin : c'est le serveur qui le dit.
+ */
+function collectionFolderId(raw: unknown): string | null {
+  if (!Array.isArray(raw)) return null;
+  for (const entry of raw) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const o = entry as { Type?: unknown; Id?: unknown };
+    if (o.Type === "CollectionFolder" && typeof o.Id === "string") return o.Id;
+  }
+  return null;
+}
+
+/** Même besoin de `userId` que l'item : sans lui, la route rend 400. */
+function ancestorsUrl(url: string, itemId: string): string {
+  const adminId = getConfigValue("admin_jellyfin_id");
+  const user = adminId ? `?userId=${encodeURIComponent(adminId)}` : "";
+  return `${url}/Items/${itemId}/Ancestors${user}`;
+}
+
+/**
  * L'URL de l'item, avec le `userId` sans lequel Jellyfin 10.11 rend 400.
  * L'identifiant de l'administrateur est déjà en base (`admin_jellyfin_id`,
  * posé par l'assistant de configuration) ; à défaut on tente quand même la
@@ -101,9 +127,10 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
   bundle: SegmentSourceBundle;
   anySuccess: boolean;
 }> {
-  const [itemRaw, nativeRaw] = await Promise.all([
+  const [itemRaw, nativeRaw, ancestorsRaw] = await Promise.all([
     fetchJson(itemUrl(url, itemId), apiKey),
     fetchJson(`${url}/MediaSegments/${itemId}`, apiKey),
+    fetchJson(ancestorsUrl(url, itemId), apiKey),
   ]);
 
   if (itemRaw === null) {
@@ -139,6 +166,7 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
   return {
     bundle: {
       runtimeMs: runTimeTicks > 0 ? Math.round(runTimeTicks / TICKS_PER_MS) : 0,
+      libraryId: collectionFolderId(ancestorsRaw),
       sources: {
         mediaSegments,
         pluginDict,

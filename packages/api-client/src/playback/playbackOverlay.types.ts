@@ -23,6 +23,11 @@ export interface PlaybackOverlayInput {
   segments: readonly ResolvedSegment[];
   /** Durée du contrat (ms) ; à défaut, `durationSeconds` fait foi. */
   runtimeMs?: number;
+  /**
+   * Bibliothèque du média, telle que le contrat la porte. Elle ne sert qu'aux
+   * règles « avant la fin » ciblées ; absente, le seuil global s'applique.
+   */
+  libraryId?: string | null;
   serverAutoplayEnabled: boolean;
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;

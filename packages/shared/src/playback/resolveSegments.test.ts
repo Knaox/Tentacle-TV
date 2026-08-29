@@ -380,3 +380,62 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
     expect(findSegment(segments, "Intro")).toMatchObject({ endMs: minutes(3, 11) });
   });
 });
+
+describe("le second générique — le modèle Plex", () => {
+  const minutes = (m: number, s = 0) => (m * 60 + s) * 1_000;
+  const seg = (type: string, startMs: number, endMs: number) => ({
+    Type: type, StartTicks: ticks(startMs), EndTicks: ticks(endMs),
+  });
+
+  it("deux marqueurs DISJOINTS survivent — générique, scène, générique final", () => {
+    const runtime = minutes(128);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            seg("Outro", minutes(119, 49), minutes(126, 0)),
+            seg("Outro", minutes(127, 0), runtime),
+          ],
+        },
+      },
+      runtime,
+    );
+    const outros = segments.filter((s) => s.type === "Outro");
+    expect(outros).toHaveLength(2);
+    expect(outros[0]).toMatchObject({ endMs: minutes(126, 0), hasContentAfter: true });
+    expect(outros[1]).toMatchObject({ startMs: minutes(127, 0), hasContentAfter: false });
+  });
+
+  it("deux doublons qui SE CHEVAUCHENT n'en font qu'un", () => {
+    const runtime = minutes(181, 12);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            seg("Outro", minutes(169, 6), runtime),
+            seg("Outro", minutes(169, 7), runtime),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(segments.filter((s) => s.type === "Outro")).toHaveLength(1);
+  });
+
+  it("un générique final COURT est légitime — le filtre ne vise que le solitaire", () => {
+    const runtime = minutes(128);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            seg("Outro", minutes(119), minutes(126)),
+            // 30 s collées à la fin : rejetées seules, gardées en second marqueur.
+            seg("Outro", minutes(127, 30), runtime),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(segments.filter((s) => s.type === "Outro")).toHaveLength(2);
+  });
+});

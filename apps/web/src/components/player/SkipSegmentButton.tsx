@@ -40,8 +40,12 @@ interface SkipSegmentButtonProps {
   countdownTotalMs: number;
   /** Le saut — clic sur la pilule (le décompte, lui, agit tout seul). */
   onSkip: () => void;
-  /** Ne plus proposer ce passage de la lecture (la croix). */
-  onDismiss: () => void;
+  /**
+   * Ne plus proposer ce passage de la lecture (la croix). ABSENT pour la
+   * pilule « épisode suivant » : elle n'apparaît qu'avec les contrôles, elle
+   * ne s'impose donc jamais — il n'y a rien à refuser.
+   */
+  onDismiss?: () => void;
   /** Couche d'empilement : `z-50` sur le web, `z-20` sur le bureau. */
   layer: string;
   /** La barre de contrôles est-elle à l'écran ? La pilule lui cède la place. */
@@ -83,19 +87,22 @@ export function SkipSegmentButton({
             {armed && <Slider key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
           </button>
 
-          <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
-
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-            aria-label={t("player:dismiss")}
-            title={t("player:dismiss")}
-            className="flex min-h-11 w-11 items-center justify-center text-cta-primary-fg/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-cta-primary-fg"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {onDismiss && (
+            <>
+              <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+                aria-label={t("player:dismiss")}
+                title={t("player:dismiss")}
+                className="flex min-h-11 w-11 items-center justify-center text-cta-primary-fg/70 transition-colors duration-150 hover:bg-cta-primary-bg-hover hover:text-cta-primary-fg"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </>
+          )}
         </div>
       </Rising>
     </div>

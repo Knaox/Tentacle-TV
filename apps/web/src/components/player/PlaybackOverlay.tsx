@@ -5,7 +5,8 @@
  * décompte est tranché par l'arbitre partagé (`usePlaybackOverlay`).
  *
  * Trois surfaces possibles, jamais deux à la fois :
- *  - le bouton de saut blanc (`SkipSegmentButton`) ;
+ *  - le bouton de saut blanc (`SkipSegmentButton`), qui sert AUSSI de pilule
+ *    « aller à l'épisode suivant » — un seul dessin pour un seul geste ;
  *  - la carte « à suivre » du générique (`UpNextCard`) ;
  *  - l'affiche pleine de fin (`NextEpisodeFullscreen` — désormais sur le web
  *    aussi, qui n'avait AUCUN écran de fin).
@@ -55,6 +56,19 @@ export function PlaybackOverlay({
           countdownTotalMs={countdownTotals.skipMs}
           onSkip={onSkip}
           onDismiss={onDismiss}
+          layer={layer}
+          controlsVisible={controlsVisible}
+        />
+      )}
+      {/* La pilule « aller à l'épisode suivant » — MÊME bouton que les sauts,
+          sans croix : elle ne se propose pas d'elle-même, elle attend qu'on
+          montre les contrôles, et il n'y a donc rien à refuser. */}
+      {overlay.kind === "nextButton" && (
+        <SkipSegmentButton
+          labelKey="goToNextEpisode"
+          countdownSeconds={null}
+          countdownTotalMs={countdownTotals.nextMs}
+          onSkip={onPlayNow}
           layer={layer}
           controlsVisible={controlsVisible}
         />

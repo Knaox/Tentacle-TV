@@ -50,7 +50,12 @@ export interface RawBounds {
   source: "jellyfin" | "chapters";
 }
 
-export type BoundsByType = Map<SegmentType, RawBounds>;
+/**
+ * Les bornes retenues, par type. Une LISTE, parce qu'un média peut porter deux
+ * génériques : le principal, puis le générique FINAL d'après une scène
+ * post-générique (le modèle Plex). Les autres types n'en ont jamais qu'une.
+ */
+export type BoundsByType = Map<SegmentType, RawBounds[]>;
 
 // Un chapitre d'ouverture d'abord : « Opening Credits » ou « Générique de
 // début » contiennent aussi un mot du motif de fin — l'intro se teste en
@@ -95,7 +100,7 @@ export function fillFromChapters(
 
     if (CHAPTER_INTRO_PATTERN.test(name)) {
       if (!bounds.has("Intro") && nextStartMs !== null) {
-        bounds.set("Intro", { startMs, endMs: nextStartMs, source: "chapters" });
+        bounds.set("Intro", [{ startMs, endMs: nextStartMs, source: "chapters" }]);
       }
       continue;
     }
@@ -105,7 +110,7 @@ export function fillFromChapters(
       outro = { startMs, endMs: nextStartMs ?? runtimeMs, source: "chapters" };
     }
   }
-  if (outro && !bounds.has("Outro")) bounds.set("Outro", outro);
+  if (outro && !bounds.has("Outro")) bounds.set("Outro", [outro]);
 }
 
 /**
@@ -143,8 +148,11 @@ export function refineOutroWithChapters(
   chapters: readonly ChapterMarker[] | null | undefined,
   runtimeMs: number,
 ): void {
-  const outro = bounds.get("Outro");
-  if (!outro || runtimeMs <= 0) return;
+  // On n'affine que le générique PRINCIPAL : si un second marqueur existe, la
+  // scène est déjà bornée par lui, et bien mieux qu'un chapitre ne le ferait.
+  const outros = bounds.get("Outro");
+  if (!outros || outros.length !== 1 || runtimeMs <= 0) return;
+  const outro = outros[0];
   if (runtimeMs - outro.endMs >= POST_CREDITS_MIN_MS) return;
 
   const starts = meaningfulChapterStarts(chapters);

@@ -21,8 +21,12 @@ import { integer, integerOrNull, text, textOrNull } from "./rows";
  * 3 = `segments.json` au CONTRAT RÉSOLU v1 (réponse du résolveur backend,
  *     cinq types de segments) — les anciens fichiers bruts restent lisibles,
  *     mais la réparation re-photographie tout au prochain démarrage en ligne.
+ * 4 = le contrat porte `libraryId`. Sans lui, une règle « avant la fin » par
+ *     bibliothèque ne peut pas s'appliquer hors ligne — le média téléchargé
+ *     ne sait plus d'où il vient. Un fichier v3 reste lisible et vaut `null`
+ *     (le seuil global s'applique alors) ; la réparation le rephotographie.
  */
-export const CURRENT_META_VERSION = 3;
+export const CURRENT_META_VERSION = 4;
 
 export interface MetaSpec {
   itemId: string;

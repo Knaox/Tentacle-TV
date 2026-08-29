@@ -93,6 +93,8 @@ export interface VideoPlayerProps {
   segments?: readonly ResolvedSegment[];
   /** Durée du contrat, en ms — 0 = inconnue (la durée vidéo fait alors foi). */
   runtimeMs?: number;
+  /** Bibliothèque du média (contrat de segments) — règles « avant la fin ». */
+  libraryId?: string | null;
   /** Backdrop affiché pendant le chargement initial du média. */
   posterUrl?: string;
   /** Watch Together — surface de commande impérative (play/pause/seek/rate). */

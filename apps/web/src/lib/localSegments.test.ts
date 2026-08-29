@@ -17,6 +17,7 @@ describe("resolveLocalSegmentsPayload — la migration de l'ancien segments.json
       version: 1,
       itemId: "ep-1",
       runtimeMs: 1_440_000,
+      libraryId: null,
       resolvedAt: "",
       segments: [
         {

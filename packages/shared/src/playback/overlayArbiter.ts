@@ -24,14 +24,12 @@
  * overlay pour lui tant qu'un réglage n'existe pas.
  */
 
-import { findSegments, type ResolvedSegment, type SegmentType } from "./segmentTypes";
+import { type ResolvedSegment, type SegmentType } from "./segmentTypes";
 import { findActiveSegment } from "./segmentWindow";
-import {
-  beforeEndPositionMs,
-  resolveBeforeEnd,
-  type PlaybackSettings,
-  type SegmentSettings,
-} from "./playbackSettings";
+import type { PlaybackSettings, SegmentSettings } from "./playbackSettings";
+import { nextCardTriggerReached, nextEpisodeReachable } from "./nextTriggers";
+
+export { nextCardTriggerReached, nextEpisodeReachable } from "./nextTriggers";
 
 export type SkipLabelKey =
   | "skipIntro"
@@ -39,7 +37,8 @@ export type SkipLabelKey =
   | "skipPreview"
   | "skipCredits"
   | "skipToPostCredits"
-  | "endPlayback";
+  | "endPlayback"
+  | "goToNextEpisode";
 
 export type SkipAction =
   | { kind: "seek"; toMs: number }
@@ -61,7 +60,21 @@ export type PlayerOverlay =
       countdownSeconds: number | null;
       /** true = écran de fin (le média est terminé), false = carte du générique. */
       final: boolean;
-    };
+    }
+  /**
+   * La PILULE « aller à l'épisode suivant » — même bouton que les sauts.
+   *
+   * Elle existe parce que la fiche ne peut pas tout couvrir : pendant une
+   * scène post-générique, on ne veut rien poser sur l'image, et pourtant
+   * l'accès à la suite doit rester atteignable. Sans elle, sauter le générique
+   * d'un média à scène finale faisait DISPARAÎTRE la suite jusqu'à la fin du
+   * fichier — le défaut qui a motivé tout ceci.
+   *
+   * Elle ne paraît qu'avec les contrôles du lecteur : jamais sur l'image nue.
+   * C'est le geste de Netflix — l'accès à la suite ne disparaît jamais, il ne
+   * s'impose jamais non plus.
+   */
+  | { kind: "nextButton" };
 
 export interface OverlayDismissals {
   readonly segments: Partial<Record<SegmentType, boolean>>;
@@ -78,6 +91,10 @@ export interface ArbiterInput {
   isEpisode: boolean;
   hasNextEpisode: boolean;
   settings: PlaybackSettings;
+  /** Bibliothèque du média — seules les règles « avant la fin » la lisent. */
+  libraryId?: string | null;
+  /** Les contrôles du lecteur sont-ils à l'écran ? (la pilule n'existe que là). */
+  controlsVisible?: boolean;
   /** Garde serveur `autoplay_next_enabled` (admin). */
   serverAutoplayEnabled: boolean;
   dismissed: OverlayDismissals;
@@ -170,48 +187,6 @@ function skipOverlay(
   return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds };
 }
 
-/**
- * Le déclencheur de la carte est-il franchi ? Sert aussi d'« éligibilité » au
- * moteur d'enchaînement — même sélecteur, aucune divergence possible.
- *
- * # L'ordre de confiance
- *
- * 1. Un SECOND générique après la scène post-générique (le modèle Plex :
- *    générique → scène → générique final). C'est la donnée la plus sûre qui
- *    existe, elle bat toute heuristique.
- * 2. Le générique principal. S'il porte une scène derrière lui, la fenêtre
- *    s'arrête à sa fin : la carte ne se pose JAMAIS par-dessus une scène que
- *    l'utilisateur a choisi de garder. (Le trou qui s'ouvre alors est comblé
- *    par la pilule « épisode suivant », pas par la carte.)
- * 3. À défaut de tout générique, le repli temporel de la bibliothèque.
- *
- * Le repli ne s'applique donc JAMAIS quand un générique est connu — c'est ce
- * qui empêche par construction les deux de se marcher dessus. Un utilisateur
- * peut passer outre avec `nextTrigger: "beforeEnd"`, et l'interface le dit.
- */
-export function nextCardTriggerReached(
-  positionMs: number,
-  runtimeMs: number,
-  segments: readonly ResolvedSegment[],
-  next: PlaybackSettings["next"],
-  libraryId: string | null = null,
-): boolean {
-  const outros = findSegments(segments, "Outro");
-
-  if (outros.length > 0 && next.nextTrigger === "outroStart") {
-    const main = outros[0];
-    const final = outros.length > 1 ? outros[outros.length - 1] : null;
-    if (final && positionMs >= final.startMs) return true;
-    if (main.hasContentAfter) return positionMs >= main.startMs && positionMs < main.endMs;
-    return positionMs >= main.startMs;
-  }
-
-  const target = resolveBeforeEnd(next, libraryId);
-  if (!target) return false;
-  const threshold = beforeEndPositionMs(target, runtimeMs);
-  return threshold !== null && positionMs >= threshold;
-}
-
 export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   const { settings, dismissed, countdowns } = input;
 
@@ -233,20 +208,45 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
     return skipOverlay(candidate.segment, candidate.settings, candidate.labelKey, candidate.action, countdowns);
   }
 
+  const libraryId = input.libraryId ?? null;
+  const chainable =
+    input.hasNextEpisode && input.serverAutoplayEnabled && input.hasStarted;
+
   // 3. La carte « à suivre ».
   if (
+    chainable &&
     settings.next.nextCard &&
-    input.hasNextEpisode &&
-    input.serverAutoplayEnabled &&
     !dismissed.nextCard &&
-    input.hasStarted &&
-    nextCardTriggerReached(input.positionMs, input.runtimeMs, input.segments, settings.next)
+    nextCardTriggerReached(
+      input.positionMs,
+      input.runtimeMs,
+      input.segments,
+      settings.next,
+      libraryId,
+    )
   ) {
     return {
       kind: "nextCard",
       countdownSeconds: settings.next.nextCountdown ? countdowns.next : null,
       final: false,
     };
+  }
+
+  // 4. La pilule, quand la carte ne parle pas — fiche éteinte, refusée, ou
+  //    simplement hors de sa fenêtre parce qu'une scène post-générique passe.
+  //    Elle n'existe qu'avec les contrôles : jamais posée sur l'image nue.
+  if (
+    chainable &&
+    input.controlsVisible === true &&
+    nextEpisodeReachable(
+      input.positionMs,
+      input.runtimeMs,
+      input.segments,
+      settings.next,
+      libraryId,
+    )
+  ) {
+    return { kind: "nextButton" };
   }
 
   return { kind: "none" };
