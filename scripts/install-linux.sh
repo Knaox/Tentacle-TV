@@ -156,11 +156,67 @@ fi
 # Les paquets natifs posent leur entrée de menu et leurs icônes eux-mêmes. Une
 # AppImage, non : sans ce qui suit elle n'apparaît nulle part, ne s'épingle pas,
 # et son icône reste celle d'un exécutable anonyme.
+# L'icône la plus grande que l'AppImage embarque RÉELLEMENT.
+#
+# ⚠️ Deux pièges, tous deux mesurés sur l'AppImage publiée :
+#
+#  1. la taille n'est pas garantie. Le paquet Tauri s'arrête à `256x256@2` —
+#     chercher `512x512` ne trouvait rien du tout, et l'application se
+#     retrouvait sans icône ;
+#  2. les PNG de la RACINE sont des LIENS SYMBOLIQUES vers
+#     `usr/share/icons/…`. Extraits seuls, ils pendent dans le vide : `find`
+#     les voit, `cp` échoue. D'où `-type f`, qui ne retient que du réel.
+#
+# On prend donc le plus GROS fichier régulier de l'arbre d'icônes, et on le
+# dépose en 512x512 : la recherche d'icône freedesktop traverse les tailles et
+# met à l'échelle, elle ne rejette jamais.
+#
+# `-exec … {} +` plutôt que `find -printf` : ce dernier est une extension GNU.
+# La forme retenue est POSIX, et elle survit aux noms à espaces — l'AppImage en
+# porte un (« Tentacle TV.png »), et la taille est en tête de ligne.
+plus_grosse_icone() {
+  # shellcheck disable=SC2086 — `$2` porte « -maxdepth 1 », deux arguments.
+  find "$1" $2 -type f -name '*.png' -exec sh -c \
+    'for f; do printf "%s %s\n" "$(wc -c < "$f")" "$f"; done' sh {} + 2>/dev/null \
+    | sort -rn | head -1 | cut -d' ' -f2-
+}
+
+extraire_icone() {
+  ( cd "$TMP" && "$DEST" --appimage-extract 'usr/share/icons/*' >/dev/null 2>&1 || true )
+  ICONE="$(plus_grosse_icone "$TMP/squashfs-root" "" || true)"
+  [ -n "$ICONE" ] && return 0
+  ( cd "$TMP" && "$DEST" --appimage-extract '*.png' >/dev/null 2>&1 || true )
+  ICONE="$(plus_grosse_icone "$TMP/squashfs-root" "-maxdepth 1" || true)"
+}
+
+# La classe de fenêtre, LUE DANS L'APPIMAGE plutôt que devinée.
+#
+# C'est elle qui rattache la fenêtre ouverte au lanceur : fausse, le bureau
+# affiche deux entrées dans la barre des tâches et « épingler » épingle celle
+# qui ne relance rien. Elle a changé avec le moteur — `tentacle-desktop` du
+# temps de Tauri, `tentacle-tv` sous Electron — et un script qui la devine se
+# trompera forcément d'un côté ou de l'autre.
+lire_wmclass() {
+  # ⚠️ `usr/share/applications/`, PAS la racine : le `.desktop` posé à la racine
+  # de l'AppImage est un LIEN SYMBOLIQUE, exactement comme les icônes. Extrait
+  # seul il pend dans le vide, `grep` ne lit rien, et on retombait sur le nom
+  # deviné — celui-là même qu'on cherche à ne plus deviner.
+  ( cd "$TMP" && "$DEST" --appimage-extract 'usr/share/applications/*' >/dev/null 2>&1 || true )
+  WMCLASS="$(find "$TMP/squashfs-root" -type f -name '*.desktop' \
+             -exec grep -hm1 '^StartupWMClass=' {} + 2>/dev/null \
+             | head -1 | cut -d= -f2- || true)"
+  [ -n "$WMCLASS" ] || WMCLASS="$PAQUET"
+}
+
 integrer_appimage() {
   mkdir -p "$APPS" "$ICONES"
-  ( cd "$TMP" && "$DEST" --appimage-extract 'usr/share/icons/hicolor/512x512/apps/*.png' >/dev/null 2>&1 || true )
-  ICONE="$(find "$TMP/squashfs-root" -name '*.png' 2>/dev/null | head -1 || true)"
-  [ -n "$ICONE" ] && cp "$ICONE" "$ICONES/$PAQUET.png"
+  ICONE=""; extraire_icone
+  if [ -n "$ICONE" ]; then
+    cp "$ICONE" "$ICONES/$PAQUET.png"
+  else
+    log "Icône introuvable dans l'AppImage — l'entrée de menu en sera dépourvue."
+  fi
+  WMCLASS=""; lire_wmclass
   cat > "$ENTREE" <<EOF
 [Desktop Entry]
 Name=Tentacle TV
@@ -171,10 +227,14 @@ Terminal=false
 Type=Application
 Categories=AudioVideo;Video;Player;
 Keywords=jellyfin;media;video;film;serie;streaming;
-StartupWMClass=$PAQUET
+StartupWMClass=$WMCLASS
 EOF
   chmod 0644 "$ENTREE"
   need update-desktop-database && update-desktop-database "$APPS" >/dev/null 2>&1 || true
+  # Sans rafraîchir le cache, l'icône n'apparaît qu'à la session suivante sur
+  # les bureaux GTK.
+  need gtk-update-icon-cache && \
+    gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" >/dev/null 2>&1 || true
 }
 
 # ── Installation ──
