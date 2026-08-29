@@ -60,7 +60,10 @@ export function SkipButton({
           />
         )}
       </Pressable>
-      {armed && onDismiss && (
+      {/* La croix ne dépend PAS du décompte : sans elle, un passage réglé sur
+          « proposer un bouton » n'offrait aucun moyen de dire « ne me le
+          propose plus ». Parité avec le web et le bureau. */}
+      {onDismiss && (
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"
