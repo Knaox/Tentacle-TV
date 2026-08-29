@@ -1,21 +1,21 @@
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-client";
-import type { SegmentAction, SegmentSettings } from "@tentacle-tv/shared";
+import { detectPreset, presetSettings } from "@tentacle-tv/shared";
 
 /**
- * Ce que le lecteur a le droit de faire tout seul, à la télécommande.
+ * Ce que le lecteur a le droit de faire tout seul, à la télécommande : UN choix.
+ *
+ * Sept sections de boutons se traversaient au pavé directionnel — quatre
+ * passages, trois bascules. Le réglage fin n'a pas sa place ici : il se fait
+ * sur ordinateur, il suit le COMPTE (`playback_settings`), et il s'applique
+ * donc sur cette dalle sans qu'on ait à le répéter. Un réglage changé ici est
+ * su du lecteur dans la seconde, et vaut sur les autres appareils du foyer.
  *
  * Des boutons plutôt qu'un interrupteur : un pouce qui coulisse ne veut rien
  * dire sur une dalle. Même grammaire que la langue d'interface, juste au-dessus.
  *
- * Les réglages viennent du magasin de COMPTE (`playback_settings`), le même que
- * lisent les surcouches du lecteur sur cette cible : un réglage changé ici est
- * su du lecteur dans la seconde, et vaut sur les autres appareils du foyer.
- *
- * Le DÉLAI du saut automatique n'est pas offert ici, à dessein : saisir un
- * nombre à la télécommande est une punition, et le réglage suit le compte —
- * il se pose une fois depuis un ordinateur ou un téléphone, et il vaut pour la
- * télévision. Extrait de `PlaybackScreenTv` pour tenir les 300 lignes.
+ * « Personnalisé » n'est pas proposé : c'est ce qu'on lit quand les réglages
+ * viennent de l'ordinateur, et le toucher les remplacerait.
  */
 
 interface Choice {
@@ -55,102 +55,39 @@ function SettingSection({ title, hint, value, choice, onChoose }: SectionProps) 
   );
 }
 
-function isAction(value: string): value is SegmentAction {
-  return value === "button" || value === "auto" || value === "off";
-}
-
-/**
- * Les passages d'un épisode, puis sa fin — dans l'ordre où ils surviennent.
- * Les trois réglages de fin restent STRICTEMENT indépendants : montrer la
- * fiche, décompter, enchaîner.
- */
 export function PlaybackSettingsTv() {
   const { t } = useTranslation("preferences");
-  const settings = usePlaybackSettings();
+  const preset = detectPreset(usePlaybackSettings());
 
-  const actions: Choice[] = [
-    { value: "button", label: t("segmentActionButton") },
-    { value: "auto", label: t("segmentActionAuto") },
-    { value: "off", label: t("segmentActionOff") },
-  ];
-  const yesNo: Choice[] = [
-    { value: "oui", label: t("reglageActive") },
-    { value: "non", label: t("reglageDesactive") },
+  const choices: Choice[] = [
+    { value: "manual", label: t("playbackModeManual") },
+    { value: "automatic", label: t("playbackModeAutomatic") },
+    ...(preset === "custom" ? [{ value: "custom", label: t("playbackModeCustom") }] : []),
   ];
 
-  const segments: { key: string; title: string; hint: string; state: SegmentSettings;
-    apply: (patch: Partial<SegmentSettings>) => void }[] = [
-    {
-      key: "intro",
-      title: t("segmentIntroTitle"),
-      hint: t("segmentIntroHint"),
-      state: settings.intro,
-      apply: (intro) => { setPlaybackSettings({ intro }); },
-    },
-    {
-      key: "recap",
-      title: t("segmentRecapTitle"),
-      hint: t("segmentRecapHint"),
-      state: settings.recap,
-      apply: (recap) => { setPlaybackSettings({ recap }); },
-    },
-    {
-      key: "outro",
-      title: t("segmentOutroTitle"),
-      hint: t("segmentOutroHint"),
-      state: settings.outro,
-      apply: (outro) => { setPlaybackSettings({ outro }); },
-    },
-    {
-      key: "preview",
-      title: t("segmentPreviewTitle"),
-      hint: t("segmentPreviewHint"),
-      state: settings.preview,
-      apply: (preview) => { setPlaybackSettings({ preview }); },
-    },
-  ];
-
-  const next = settings.next;
+  const hint =
+    preset === "manual"
+      ? "playbackModeManualHint"
+      : preset === "automatic"
+        ? "playbackModeAutomaticHint"
+        : "playbackModeCustomHint";
 
   return (
     <>
-      {segments.map((segment) => (
-        <SettingSection
-          key={segment.key}
-          title={segment.title}
-          hint={segment.hint}
-          value={segment.state.action}
-          choice={actions}
-          onChoose={(value) => {
-            if (isAction(value)) segment.apply({ action: value });
-          }}
-        />
-      ))}
       <SettingSection
-        title={t("upNextCardTitle")}
-        hint={t("upNextCardHint")}
-        value={next.nextCard ? "oui" : "non"}
-        choice={yesNo}
-        onChoose={(value) => { setPlaybackSettings({ next: { nextCard: value === "oui" } }); }}
-      />
-      <SettingSection
-        title={t("upNextCountdownTitle")}
-        hint={t("upNextCountdownHint")}
-        value={next.nextCountdown ? "oui" : "non"}
-        choice={yesNo}
+        title={t("playbackModeLabel")}
+        hint={t(hint)}
+        value={preset}
+        choice={choices}
         onChoose={(value) => {
-          setPlaybackSettings({ next: { nextCountdown: value === "oui" } });
+          if (value === "manual" || value === "automatic") {
+            setPlaybackSettings(presetSettings(value));
+          }
         }}
       />
-      <SettingSection
-        title={t("upNextAutoPlayTitle")}
-        hint={t("upNextAutoPlayHint")}
-        value={next.nextAutoPlay ? "oui" : "non"}
-        choice={yesNo}
-        onChoose={(value) => {
-          setPlaybackSettings({ next: { nextAutoPlay: value === "oui" } });
-        }}
-      />
+      <p className="mb-12 max-w-3xl text-[15px] leading-relaxed text-content-tertiary">
+        {t("playbackAdvancedOnDesktop")}
+      </p>
     </>
   );
 }

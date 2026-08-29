@@ -136,6 +136,8 @@ export default {
   playbackModeCustomHint:
     "Vos réglages ne correspondent à aucun des deux modes. Le détail est ci-dessous ; choisir un mode le remplacera.",
   playbackAdvancedToggle: "Réglages avancés",
+  playbackAdvancedOnDesktop:
+    "Le réglage fin — quel passage, quel délai, quel déclencheur — se fait depuis Tentacle sur ordinateur. Il suit votre compte et s'applique ici.",
   playbackSegmentsTitle: "Passages d'un épisode",
   playbackSegmentsHint:
     "Quand le serveur signale un passage — générique, résumé, aperçu — le lecteur peut proposer de le passer, le passer tout seul, ou ne rien faire. Sans signalement, rien ne s'affiche : ces réglages ne devinent jamais.",
