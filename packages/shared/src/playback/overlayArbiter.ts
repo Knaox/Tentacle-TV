@@ -9,6 +9,8 @@
  *    chose qu'« épisode suivant » — scène post-générique (seek à la fin du
  *    segment, jamais au-delà), film, ou pas d'épisode suivant. Sinon la CARTE
  *    occupe seule le générique, dès son début ;
+ *  - quitter la lecture n'est PAS un saut : sur un film, le bouton porte son
+ *    vrai libellé (« Terminer ») et reste manuel, réglage ou pas ;
  *  - sans segment Outro connu : repli temporel « X s avant la fin » pour la
  *    carte SEULEMENT — jamais un bouton de saut sans donnée ;
  *  - l'écran de fin (final) est une autre surface à un autre moment : il
@@ -31,7 +33,8 @@ export type SkipLabelKey =
   | "skipRecap"
   | "skipPreview"
   | "skipCredits"
-  | "skipToPostCredits";
+  | "skipToPostCredits"
+  | "endPlayback";
 
 export type SkipAction =
   | { kind: "seek"; toMs: number }
@@ -129,8 +132,22 @@ export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | nu
     };
   }
   if (!input.isEpisode || !input.hasNextEpisode) {
-    // Film ou dernier épisode : « passer » = terminer la lecture.
-    return { segment: active, labelKey: "skipCredits", action: { kind: "endOfPlayback" }, settings };
+    // Film ou dernier épisode : il n'y a RIEN à passer — le générique va
+    // jusqu'au bout, et « passer » voudrait dire quitter la lecture. Le
+    // libellé le dit donc, au lieu de promettre un saut (c'est ainsi qu'une
+    // scène post-générique Marvel se perdait : le bouton disait « passer le
+    // générique » et fermait le film).
+    //
+    // Et jamais en automatique, quel que soit le réglage : un décompte qui
+    // quitte le film tout seul au bout de trois secondes de générique est
+    // exactement le geste qu'on ne peut pas rattraper. `action: "button"` est
+    // imposé ici, pas lu.
+    return {
+      segment: active,
+      labelKey: "endPlayback",
+      action: { kind: "endOfPlayback" },
+      settings: { ...settings, action: "button" },
+    };
   }
   // Épisode + suivant + générique jusqu'au bout : la carte parle.
   return null;

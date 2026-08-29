@@ -56,6 +56,9 @@ export default {
   skipCreditsIn: "Skip credits in {{seconds}}s",
   skipToPostCredits: "Skip to post-credits scene",
   skipToPostCreditsIn: "Post-credits scene in {{seconds}}s",
+  // Film ou dernier épisode : il n'y a rien à passer, le générique va au bout.
+  // Le bouton dit donc ce qu'il fait — et reste manuel, jamais décompté.
+  endPlayback: "Finish",
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",
   qualityReduced: "Quality lowered to match your network speed",
