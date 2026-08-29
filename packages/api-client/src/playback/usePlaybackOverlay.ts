@@ -217,6 +217,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       hasNextEpisode: input.hasNextEpisode,
       settings,
       serverAutoplayEnabled: input.serverAutoplayEnabled,
+      mutedSegments: muted,
       libraryId: input.libraryId ?? null,
       controlsVisible: input.controlsVisible,
       postCreditsClaimed: postCredits.claimed,

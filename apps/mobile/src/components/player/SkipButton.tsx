@@ -12,8 +12,6 @@ interface Props {
   countdownTotalMs?: number | null;
   /** Refuser le saut automatique — la croix n'existe que pendant un décompte. */
   onDismiss?: () => void;
-  /** L'habillage du lecteur est-il à l'écran ? La croix n'existe que sans lui. */
-  controlsVisible?: boolean;
 }
 
 /**
@@ -27,7 +25,7 @@ interface Props {
  * décodeur vidéo. `transformOrigin` la fait courir depuis la gauche (RN ≥ 0.74).
  */
 export function SkipButton({
-  label, onPress, bottom, right, countdownTotalMs, onDismiss, controlsVisible = false,
+  label, onPress, bottom, right, countdownTotalMs, onDismiss,
 }: Props) {
   const { isTablet } = useResponsive();
   const armed = typeof countdownTotalMs === "number" && countdownTotalMs > 0;
@@ -65,7 +63,7 @@ export function SkipButton({
       {/* La croix ne dépend PAS du décompte : sans elle, un passage réglé sur
           « proposer un bouton » n'offrait aucun moyen de dire « ne me le
           propose plus ». Parité avec le web et le bureau. */}
-      {onDismiss && !controlsVisible && (
+      {onDismiss && (
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"

@@ -54,6 +54,15 @@ export type PlayerOverlay =
       action: SkipAction;
       /** Secondes affichées, null = bouton sans décompte. */
       countdownSeconds: number | null;
+      /**
+       * La croix a-t-elle encore un office ?
+       *
+       * Non, une fois le passage mis en sourdine : le bouton ne reparaît alors
+       * QUE dans l'habillage, où il n'y a plus rien à refuser — il n'est déjà
+       * plus sur l'image. Lui laisser sa croix proposerait de se priver d'un
+       * geste sans rien gagner.
+       */
+      dismissible: boolean;
     }
   | {
       kind: "nextCard";
@@ -108,6 +117,8 @@ export interface ArbiterInput {
   postCreditsClaimed?: boolean;
   /** Garde serveur `autoplay_next_enabled` (admin). */
   serverAutoplayEnabled: boolean;
+  /** Les passages mis en sourdine — ils gouvernent la croix, pas l'affichage. */
+  mutedSegments?: ReadonlySet<SegmentType>;
   dismissed: OverlayDismissals;
   /** Décomptes tenus par les réducteurs, déjà en secondes affichables. */
   countdowns: { skip: number | null; next: number | null };
@@ -192,10 +203,11 @@ function skipOverlay(
   labelKey: SkipLabelKey,
   action: SkipAction,
   countdowns: ArbiterInput["countdowns"],
+  dismissible: boolean,
 ): PlayerOverlay {
   const countdownSeconds =
     settings.action === "auto" && settings.countdownVisible ? countdowns.skip : null;
-  return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds };
+  return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds, dismissible };
 }
 
 export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
@@ -216,7 +228,10 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   // 2. Un bouton de saut candidat ? Il bat la carte — sauf refus du passage.
   const candidate = findSkipCandidate(input);
   if (candidate && !dismissed.segments[candidate.segment.type]) {
-    return skipOverlay(candidate.segment, candidate.settings, candidate.labelKey, candidate.action, countdowns);
+    return skipOverlay(
+      candidate.segment, candidate.settings, candidate.labelKey, candidate.action, countdowns,
+      input.mutedSegments?.has(candidate.segment.type) !== true,
+    );
   }
 
   const libraryId = input.libraryId ?? null;
