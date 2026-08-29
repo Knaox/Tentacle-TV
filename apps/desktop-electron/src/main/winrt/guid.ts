@@ -20,9 +20,9 @@ import { createHash } from "node:crypto";
 const PINTERFACE_NAMESPACE = "11f47ad5-7b73-42c0-abae-878b1e16adee";
 
 /** Convertit `{xxxxxxxx-xxxx-...}` en ses 16 octets, prêts pour un appel COM. */
-export function guidBuffer(texte: string): Buffer {
-  const hex = texte.replace(/[{}-]/g, "");
-  if (hex.length !== 32) throw new Error(`GUID invalide : ${texte}`);
+export function guidBuffer(text: string): Buffer {
+  const hex = text.replace(/[{}-]/g, "");
+  if (hex.length !== 32) throw new Error(`GUID invalide : ${text}`);
   const bytes = Buffer.alloc(16);
   // Les trois premiers champs sont des ENTIERS, donc en petit-boutiste ; les
   // huit derniers octets sont bruts. C'est le piège classique du GUID.
@@ -40,17 +40,17 @@ export function guidBuffer(texte: string): Buffer {
  * `pinterface({faa585ea-…};rc(Windows.Services.Store.StorePackageUpdate;{140fa150-…}))`.
  */
 export function parameterizedIid(signature: string): Buffer {
-  const graine = Buffer.concat([
+  const seed = Buffer.concat([
     guidBufferBigEndian(PINTERFACE_NAMESPACE),
     Buffer.from(signature, "utf8"),
   ]);
-  const digest = createHash("sha1").update(graine).digest();
+  const digest = createHash("sha1").update(seed).digest();
   const bytes = Buffer.from(digest.subarray(0, 16));
   // Version 5 et variante RFC 4122, comme pour tout UUID nommé.
-  const octet6 = bytes[6] ?? 0;
-  const octet8 = bytes[8] ?? 0;
-  bytes[6] = (octet6 & 0x0f) | 0x50;
-  bytes[8] = (octet8 & 0x3f) | 0x80;
+  const byte6 = bytes[6] ?? 0;
+  const byte8 = bytes[8] ?? 0;
+  bytes[6] = (byte6 & 0x0f) | 0x50;
+  bytes[8] = (byte8 & 0x3f) | 0x80;
   // Le condensé est en GROS-boutiste ; l'ABI attend les trois premiers champs
   // en petit-boutiste.
   return Buffer.concat([
@@ -62,8 +62,8 @@ export function parameterizedIid(signature: string): Buffer {
 }
 
 /** Les 16 octets d'un GUID en gros-boutiste — la forme qu'attend le condensé. */
-function guidBufferBigEndian(texte: string): Buffer {
-  const hex = texte.replace(/[{}-]/g, "");
+function guidBufferBigEndian(text: string): Buffer {
+  const hex = text.replace(/[{}-]/g, "");
   return Buffer.from(hex, "hex");
 }
 

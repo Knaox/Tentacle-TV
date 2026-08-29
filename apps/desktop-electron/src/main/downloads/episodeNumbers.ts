@@ -21,7 +21,7 @@ import { safeJoin } from "./paths";
 import { text } from "./rows";
 
 /** `IndexNumber` et `ParentIndexNumber` d'un DTO Jellyfin brut. */
-function lire(itemJson: Uint8Array): { index: number | null; parent: number | null } {
+function read(itemJson: Uint8Array): { index: number | null; parent: number | null } {
   const dto = parseJson(itemJson);
   return {
     index: asInteger(field(dto, "IndexNumber")),
@@ -36,7 +36,7 @@ function lire(itemJson: Uint8Array): { index: number | null; parent: number | nu
  * si le JSON est illisible.
  */
 export function apply(db: DatabaseSync, itemId: string, itemJson: Uint8Array): boolean {
-  const { index, parent } = lire(itemJson);
+  const { index, parent } = read(itemJson);
   if (index === null && parent === null) return false;
   db.prepare(
     `UPDATE item_meta
@@ -61,7 +61,7 @@ export function backfill(db: DatabaseSync, root: string): number {
     .all()
     .map((row) => text(row, "item_id"));
 
-  let remplis = 0;
+  let filled = 0;
   for (const itemId of ids) {
     let bytes: Uint8Array;
     try {
@@ -69,7 +69,7 @@ export function backfill(db: DatabaseSync, root: string): number {
     } catch {
       continue;
     }
-    if (apply(db, itemId, bytes)) remplis += 1;
+    if (apply(db, itemId, bytes)) filled += 1;
   }
-  return remplis;
+  return filled;
 }

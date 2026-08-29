@@ -19,7 +19,7 @@
 
 import type { BrowserWindow } from "electron";
 
-import { fenetrageLinux, montageLinux } from "../linux/session";
+import { linuxWindowing, linuxMontage } from "../linux/session";
 
 /**
  * Ce qu'une surface vidéo doit savoir faire, quel que soit le système.
@@ -45,7 +45,7 @@ export interface VideoSurface {
    * de la sortie vidéo en a besoin — macOS, où demander `quit` trop tôt fige le
    * thread principal. Windows détruit d'un bloc et n'a rien à guetter.
    */
-  videoDisparue?(): boolean;
+  videoGone?(): boolean;
   /**
    * La fenêtre native qui porte la vidéo, quand il y en a une.
    *
@@ -53,7 +53,7 @@ export interface VideoSurface {
    * plage étendue accordée n'est pas la même sur un XDR et sur un écran SDR, et
    * c'est celui qui affiche la vidéo qui compte.
    */
-  fenetreVideo?(): unknown;
+  videoWindow?(): unknown;
   /**
    * Numéro de la fenêtre vidéo, ou `0` tant qu'elle n'existe pas.
    *
@@ -71,7 +71,7 @@ export interface VideoSurface {
    * fois cette fenêtre née (mesuré, docs/LINUX-FENETRE-VIDEO.md). Les
    * surfaces qui calent au pixel n'ont rien à en faire.
    */
-  fichierCharge?(): void;
+  fileLoaded?(): void;
   /**
    * Ce qu'il faut défaire AVANT que mpv ne s'arrête.
    *
@@ -80,7 +80,7 @@ export interface VideoSurface {
    * s'attendent — `mpv_render_context_free` attend la fin du rendu en cours, et
    * mpv démonte sa sortie vidéo à l'arrêt.
    */
-  prearret?(): void;
+  preStop?(): void;
 }
 
 /**
@@ -91,7 +91,7 @@ export interface VideoSurface {
  * diagnostic reste donc lisible sur un système en cours de portage — c'est
  * précisément là qu'on en a le plus besoin.
  */
-class SurfaceInerte implements VideoSurface {
+class InertSurface implements VideoSurface {
   attach(): void {}
   align(): void {}
   harden(): boolean {
@@ -134,12 +134,12 @@ class SurfaceInerte implements VideoSurface {
  * arrivera dans la Render API (mpv#16818, en draft), c'est par là qu'il faudra
  * repasser.
  */
-function montageMacos(): "gl" | "fenetre" {
+function macosMontage(): "gl" | "fenetre" {
   return process.env["TENTACLE_VIDEO_MONTAGE"] === "gl" ? "gl" : "fenetre";
 }
 
 /** La surface adaptée au système, pour la fenêtre donnée. */
-export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
+export function createVideoSurface(host: BrowserWindow): VideoSurface {
   if (process.platform === "win32") {
     const { VideoWindow } = require("./videoWindow") as typeof import("./videoWindow");
     return new VideoWindow(host);
@@ -150,11 +150,11 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
     //   la lecture SUIT la fenêtre, fenêtrée ou plein écran, comme Windows.
     // Wayland sans colle    : deux fenêtres plein écran, rien à caler.
     // X11                   : calage et empilement à la main, sans HDR.
-    if (montageLinux() === "wayland") {
-      if (fenetrageLinux() === "libre") {
-        const { SurfaceWaylandColle } =
+    if (linuxMontage() === "wayland") {
+      if (linuxWindowing() === "libre") {
+        const { SurfaceWaylandGlue } =
           require("../linux/waylandGlueSurface") as typeof import("../linux/waylandGlueSurface");
-        return new SurfaceWaylandColle(host);
+        return new SurfaceWaylandGlue(host);
       }
       const { SurfaceWayland } = require("../linux/surfaceWayland") as typeof import("../linux/surfaceWayland");
       return new SurfaceWayland(host);
@@ -165,22 +165,22 @@ export function creerSurfaceVideo(host: BrowserWindow): VideoSurface {
     return new SurfaceX11(host);
   }
   if (process.platform === "darwin") {
-    if (montageMacos() === "fenetre") {
+    if (macosMontage() === "fenetre") {
       const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
       return new MacosSurface(host);
     }
     const { MacosSurfaceGl } = require("./macosSurfaceGl") as typeof import("./macosSurfaceGl");
     return new MacosSurfaceGl(host);
   }
-  return new SurfaceInerte();
+  return new InertSurface();
 }
 
 /** Le montage en vigueur, pour le journal et le diagnostic. */
-export function montageVideo(): string {
+export function videoMontage(): string {
   if (process.platform === "linux") {
-    const colle = fenetrageLinux() === "libre" ? "+colle" : "";
-    return `linux/${montageLinux() ?? "inconnu"}${colle}`;
+    const glue = linuxWindowing() === "libre" ? "+colle" : "";
+    return `linux/${linuxMontage() ?? "inconnu"}${glue}`;
   }
   if (process.platform !== "darwin") return process.platform;
-  return montageMacos();
+  return macosMontage();
 }

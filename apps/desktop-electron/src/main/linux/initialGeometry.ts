@@ -31,20 +31,20 @@
 
 export function initialGeometryOption(
   montage: "wayland" | "x11" | null,
-  fenetrage: "libre" | "plein-ecran" | null,
+  windowing: "libre" | "plein-ecran" | null,
   bounds: { width: number; height: number },
   scaleFactor: number,
 ): Readonly<Record<string, string>> {
-  if (montage !== "wayland" || fenetrage !== "libre") return {};
+  if (montage !== "wayland" || windowing !== "libre") return {};
   // Une échelle folle ne doit pas fabriquer une fenêtre géante : repli à 1.
-  const echelle = Number.isFinite(scaleFactor) && scaleFactor >= 1 && scaleFactor <= 4
+  const scale = Number.isFinite(scaleFactor) && scaleFactor >= 1 && scaleFactor <= 4
     ? scaleFactor
     : 1;
-  const largeur = Math.round(bounds.width * echelle);
-  const hauteur = Math.round(bounds.height * echelle);
+  const width = Math.round(bounds.width * scale);
+  const height = Math.round(bounds.height * scale);
   // Des bornes dégénérées (fenêtre pas encore mappée, valeurs folles) ne
   // doivent pas produire une geometry absurde : mieux vaut aucune option.
-  if (!Number.isFinite(largeur) || !Number.isFinite(hauteur)) return {};
-  if (largeur < 100 || hauteur < 100) return {};
-  return { geometry: `${largeur}x${hauteur}` };
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return {};
+  if (width < 100 || height < 100) return {};
+  return { geometry: `${width}x${height}` };
 }

@@ -100,44 +100,44 @@ const ERROR_SUCCESS = 0;
 const HEADER_SIZE = 20;
 
 /** Une cible d'affichage active, désignée par son adaptateur et son identifiant. */
-interface Cible {
+interface Target {
   adapterId: { LowPart: number; HighPart: number };
   id: number;
 }
 
 /** Cibles d'affichage actives. Tableau vide si l'énumération échoue. */
-function ciblesActives(): Cible[] {
-  const nbPaths = [0];
-  const nbModes = [0];
-  if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, nbPaths, nbModes) !== ERROR_SUCCESS) {
+function activeTargets(): Target[] {
+  const pathCount = [0];
+  const modeCount = [0];
+  if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, pathCount, modeCount) !== ERROR_SUCCESS) {
     return [];
   }
-  const paths = Array.from({ length: nbPaths[0] ?? 0 }, () => ({}));
-  const modes = Array.from({ length: nbModes[0] ?? 0 }, () => ({}));
+  const paths = Array.from({ length: pathCount[0] ?? 0 }, () => ({}));
+  const modes = Array.from({ length: modeCount[0] ?? 0 }, () => ({}));
   if (
-    QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, nbPaths, paths, nbModes, modes, null) !==
+    QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, pathCount, paths, modeCount, modes, null) !==
     ERROR_SUCCESS
   ) {
     return [];
   }
-  return (paths as { targetInfo?: Cible }[])
+  return (paths as { targetInfo?: Target }[])
     .map((p) => p.targetInfo)
-    .filter((t): t is Cible => t !== undefined);
+    .filter((t): t is Target => t !== undefined);
 }
 
-export interface EtatHdr {
-  supporte: boolean;
-  actif: boolean;
+export interface HdrState {
+  supported: boolean;
+  active: boolean;
 }
 
 /** État HDR d'une cible. */
-function lireEtat(cible: Cible): EtatHdr | null {
+function readState(target: Target): HdrState | null {
   const info = {
     header: {
       type: GET_ADVANCED_COLOR_INFO,
       size: 32,
-      adapterId: cible.adapterId,
-      id: cible.id,
+      adapterId: target.adapterId,
+      id: target.id,
     },
     value: 0,
     colorEncoding: 0,
@@ -145,18 +145,18 @@ function lireEtat(cible: Cible): EtatHdr | null {
   };
   if (DisplayConfigGetDeviceInfo(info) !== ERROR_SUCCESS) return null;
   // Champs de bits : 0 = supporté, 1 = activé.
-  return { supporte: (info.value & 1) !== 0, actif: (info.value & 2) !== 0 };
+  return { supported: (info.value & 1) !== 0, active: (info.value & 2) !== 0 };
 }
 
-function ecrireEtat(cible: Cible, actif: boolean): boolean {
+function writeState(target: Target, active: boolean): boolean {
   const set = {
     header: {
       type: SET_ADVANCED_COLOR_STATE,
       size: HEADER_SIZE + 4,
-      adapterId: cible.adapterId,
-      id: cible.id,
+      adapterId: target.adapterId,
+      id: target.id,
     },
-    value: actif ? 1 : 0,
+    value: active ? 1 : 0,
   };
   return DisplayConfigSetDeviceInfo(set) === ERROR_SUCCESS;
 }
@@ -168,19 +168,19 @@ function ecrireEtat(cible: Cible, actif: boolean): boolean {
  * bien en avoir un en HDR et un autre non, et les rendre tous les deux dans le
  * même état serait pire que de n'avoir rien fait.
  */
-let avant: Array<{ cible: Cible; actif: boolean }> | null = null;
+let before: Array<{ target: Target; active: boolean }> | null = null;
 
 /** Avons-nous basculé l'écran nous-mêmes, et devons-nous le rendre ? */
-export function basculeEnCours(): boolean {
-  return avant !== null;
+export function toggleInProgress(): boolean {
+  return before !== null;
 }
 
 /** L'écran principal est-il en HDR ? `false` si l'information est indisponible. */
-export function hdrActif(): boolean {
-  const cibles = ciblesActives();
-  for (const c of cibles) {
-    const e = lireEtat(c);
-    if (e?.actif) return true;
+export function hdrActive(): boolean {
+  const targets = activeTargets();
+  for (const c of targets) {
+    const e = readState(c);
+    if (e?.active) return true;
   }
   return false;
 }
@@ -192,8 +192,8 @@ export function hdrActif(): boolean {
  * une bascule à qui n'a pas d'écran compatible, c'est promettre un effet qui
  * n'arrivera jamais.
  */
-export function hdrSupporte(): boolean {
-  return ciblesActives().some((c) => lireEtat(c)?.supporte === true);
+export function hdrSupported(): boolean {
+  return activeTargets().some((c) => readState(c)?.supported === true);
 }
 
 /**
@@ -206,33 +206,33 @@ export function hdrSupporte(): boolean {
  * tuée — la fonction répondait « ok » sans jamais rien basculer, et le HDR ne
  * revenait plus jamais de la session.
  */
-export function activerHdr(): boolean {
-  const cibles = ciblesActives();
-  if (cibles.length === 0) return false;
+export function enableHdr(): boolean {
+  const targets = activeTargets();
+  if (targets.length === 0) return false;
 
-  const premiere = avant === null;
-  const memoire = avant ?? [];
-  let uneAuMoins = false;
+  const first = before === null;
+  const memory = before ?? [];
+  let atLeastOne = false;
 
-  for (const cible of cibles) {
-    const etat = lireEtat(cible);
-    if (!etat?.supporte) continue;
-    if (premiere) memoire.push({ cible, actif: etat.actif });
-    if (etat.actif) uneAuMoins = true;
-    else if (ecrireEtat(cible, true)) uneAuMoins = true;
+  for (const target of targets) {
+    const state = readState(target);
+    if (!state?.supported) continue;
+    if (first) memory.push({ target, active: state.active });
+    if (state.active) atLeastOne = true;
+    else if (writeState(target, true)) atLeastOne = true;
   }
 
-  if (memoire.length === 0) return false;
-  avant = memoire;
-  return uneAuMoins;
+  if (memory.length === 0) return false;
+  before = memory;
+  return atLeastOne;
 }
 
 /** Rend les écrans à l'état où on les a trouvés. Idempotent. */
-export function restaurerHdr(): void {
-  if (avant === null) return;
-  for (const { cible, actif } of avant) {
-    const etat = lireEtat(cible);
-    if (etat && etat.actif !== actif) ecrireEtat(cible, actif);
+export function restoreHdr(): void {
+  if (before === null) return;
+  for (const { target, active } of before) {
+    const state = readState(target);
+    if (state && state.active !== active) writeState(target, active);
   }
-  avant = null;
+  before = null;
 }

@@ -15,14 +15,14 @@
 
 import { app, type BrowserWindow } from "electron";
 import {
-  basculer as basculerPleinEcran,
-  estEnPleinEcran,
-  quitter as quitterPleinEcran,
+  toggle as toggleWindowFullscreen,
+  isFullscreen,
+  leave as leaveWindowFullscreen,
 } from "./fullscreen";
 
 /** Envoie l'état à la page. Sans effet sur une fenêtre détruite. */
-export function diffuserPleinEcran(win: BrowserWindow, valeur: boolean): void {
-  if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", valeur);
+export function broadcastFullscreen(win: BrowserWindow, value: boolean): void {
+  if (!win.isDestroyed()) win.webContents.send("tentacle:window://fullscreen", value);
 }
 
 /**
@@ -39,16 +39,16 @@ export function diffuserPleinEcran(win: BrowserWindow, valeur: boolean): void {
  * fenêtre demeure à l'état normal (voir `fullscreen.ts`). Ce sont les deux
  * autres sources qui l'y couvrent.
  */
-export function installerSyncPleinEcran(win: BrowserWindow): void {
-  const diffuser = (valeur: boolean): void => diffuserPleinEcran(win, valeur);
+export function installFullscreenSync(win: BrowserWindow): void {
+  const broadcast = (value: boolean): void => broadcastFullscreen(win, value);
 
-  win.on("enter-full-screen", () => diffuser(true));
+  win.on("enter-full-screen", () => broadcast(true));
   win.on("leave-full-screen", () => {
-    diffuser(false);
-    tracerFenetres();
+    broadcast(false);
+    traceWindows();
   });
 
-  installerF11(win, diffuser);
+  installF11(win, broadcast);
 }
 
 /**
@@ -56,20 +56,20 @@ export function installerSyncPleinEcran(win: BrowserWindow): void {
  *
  * Une SECONDE barre de fenêtre, feux compris, apparaît à ce moment-là — la
  * nôtre, ou celle de mpv ressuscitée, et rien dans une capture ne les distingue.
- * Voir `macosDiagFenetres.ts`, qui porte les deux hypothèses.
+ * Voir `macosWindowsDiag.ts`, qui porte les deux hypothèses.
  *
  * ⚠️ `require` et non `import` : le module remonte à `objc.ts`, qui charge le
  * runtime Objective-C dès l'import et ferait tomber le processus principal sous
  * Windows. Même parade que `fullscreen.ts` pour `win32.ts`.
  */
-function tracerFenetres(): void {
+function traceWindows(): void {
   if (process.platform !== "darwin") return;
   if (app.isPackaged && process.env["TENTACLE_DEBUG_PANEL"] !== "1") return;
   try {
-    const diag = require("./macosDiagFenetres") as typeof import("./macosDiagFenetres");
-    console.log(`[fenetre] sortie de plein ecran —\n${diag.decrireFenetres()}`);
-  } catch (erreur) {
-    console.warn(`[fenetre] diagnostic indisponible : ${String(erreur)}`);
+    const diag = require("./macosWindowsDiag") as typeof import("./macosWindowsDiag");
+    console.log(`[fenetre] sortie de plein ecran —\n${diag.describeWindows()}`);
+  } catch (error) {
+    console.warn(`[fenetre] diagnostic indisponible : ${String(error)}`);
   }
 }
 
@@ -82,7 +82,7 @@ function tracerFenetres(): void {
  * devient une souricière. Traité AVANT la page, pour rester valable même si
  * l'interface est occupée.
  */
-function installerF11(win: BrowserWindow, diffuser: (valeur: boolean) => void): void {
+function installF11(win: BrowserWindow, broadcast: (value: boolean) => void): void {
   win.webContents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown" || input.key !== "F11") return;
     event.preventDefault();
@@ -93,7 +93,7 @@ function installerF11(win: BrowserWindow, diffuser: (valeur: boolean) => void): 
     // exactement le symptôme observé : une fenêtre dont on ne sort plus. F11
     // sort donc des DEUX, et n'entre que si aucun des deux n'est actif — sans
     // quoi la touche cesserait de basculer.
-    const fenetre = estEnPleinEcran();
+    const window = isFullscreen();
     void win.webContents
       .executeJavaScript(
         "(() => { const e = !!document.fullscreenElement; if (e) document.exitFullscreen(); return e; })()",
@@ -101,14 +101,14 @@ function installerF11(win: BrowserWindow, diffuser: (valeur: boolean) => void): 
       )
       .catch(() => false)
       .then((document: unknown) => {
-        const etait = fenetre || document === true;
-        if (etait) quitterPleinEcran(win);
-        else basculerPleinEcran(win);
-        diffuser(estEnPleinEcran());
+        const was = window || document === true;
+        if (was) leaveWindowFullscreen(win);
+        else toggleWindowFullscreen(win);
+        broadcast(isFullscreen());
         if (app.isPackaged) return;
         console.log(
-          `[fenetre] F11 — avant : fenetre=${fenetre} document=${String(document)}` +
-            ` → fenetre=${estEnPleinEcran()}`,
+          `[fenetre] F11 — avant : fenetre=${window} document=${String(document)}` +
+            ` → fenetre=${isFullscreen()}`,
         );
       });
   });

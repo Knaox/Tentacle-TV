@@ -12,10 +12,10 @@ import { heal } from "./heal";
 import { markSnapshotDone, saveBytes, upsertItemMeta, type MetaSpec } from "./meta";
 import { claimOrCreateFile } from "./store";
 import { setStatus } from "./queue";
-import { markNone, noneRecently, RECONTROLE_APRES_MS } from "./trickplay";
-import { racinePreparee, spec } from "./testkit";
+import { markNone, noneRecently, RECHECK_AFTER_MS } from "./trickplay";
+import { preparedRoot, spec } from "./testkit";
 
-const SERVEUR = "https://tv.exemple";
+const SERVER = "https://tv.exemple";
 
 function film(itemId: string): MetaSpec {
   return {
@@ -33,26 +33,26 @@ function film(itemId: string): MetaSpec {
 }
 
 /** Réseau simulé : journal des URL, réponses par motif. */
-function reseau(reponses: Record<string, string> = {}): {
+function net(responses: Record<string, string> = {}): {
   fetchBytes: FetchBytes;
-  vues: string[];
+  views: string[];
 } {
-  const vues: string[] = [];
+  const views: string[] = [];
   const fetchBytes: FetchBytes = async (url) => {
-    vues.push(url);
-    for (const [motif, corps] of Object.entries(reponses)) {
-      if (url.includes(motif)) return new Uint8Array(Buffer.from(corps, "utf8"));
+    views.push(url);
+    for (const [pattern, body] of Object.entries(responses)) {
+      if (url.includes(pattern)) return new Uint8Array(Buffer.from(body, "utf8"));
     }
     return null;
   };
-  return { fetchBytes, vues };
+  return { fetchBytes, views };
 }
 
 /**
  * Un item complet dont le snapshot est À JOUR : sans ça la réparation le
  * refait, et son trafic couvrirait celui qu'on vient observer.
  */
-function itemComplet(db: DatabaseSync, root: string, itemId: string): void {
+function completeItem(db: DatabaseSync, root: string, itemId: string): void {
   upsertItemMeta(db, film(itemId), 1_000);
   const claim = claimOrCreateFile(db, spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv` }));
   setStatus(db, claim.fileId, "complete", null, 1_000);
@@ -63,72 +63,72 @@ function itemComplet(db: DatabaseSync, root: string, itemId: string): void {
 describe("reparation", () => {
   it("un item sans trickplay n'est demande qu'UNE fois, pas a chaque demarrage", async () => {
     const db = openInMemory();
-    const root = racinePreparee("tentacle-heal-");
-    itemComplet(db, root, "f1");
+    const root = preparedRoot("tentacle-heal-");
+    completeItem(db, root, "f1");
 
     // Le serveur répond, mais son DTO ne porte aucun Trickplay.
-    const premier = reseau({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(premier.fetchBytes, db, SERVEUR, root, 10_000);
-    expect(premier.vues.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
+    const first = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
+    await heal(first.fetchBytes, db, SERVER, root, 10_000);
+    expect(first.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
     expect(noneRecently(root, "f1", 10_000)).toBe(true);
 
     // Second démarrage, le lendemain : plus rien ne part.
-    const second = reseau({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(second.fetchBytes, db, SERVEUR, root, 10_000 + 24 * 3_600_000);
-    expect(second.vues).toHaveLength(0);
+    const second = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
+    await heal(second.fetchBytes, db, SERVER, root, 10_000 + 24 * 3_600_000);
+    expect(second.views).toHaveLength(0);
   });
 
   it("le marqueur perime : la bibliotheque a pu se mettre a generer des planches", async () => {
     const db = openInMemory();
-    const root = racinePreparee("tentacle-heal-");
-    itemComplet(db, root, "f1");
+    const root = preparedRoot("tentacle-heal-");
+    completeItem(db, root, "f1");
     markNone(root, "f1", 0);
 
-    const tard = reseau({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(tard.fetchBytes, db, SERVEUR, root, RECONTROLE_APRES_MS + 1);
+    const later = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
+    await heal(later.fetchBytes, db, SERVER, root, RECHECK_AFTER_MS + 1);
 
-    expect(tard.vues.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
+    expect(later.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
   });
 
   it("un serveur injoignable ne pose PAS le marqueur", async () => {
     const db = openInMemory();
-    const root = racinePreparee("tentacle-heal-");
-    itemComplet(db, root, "f1");
+    const root = preparedRoot("tentacle-heal-");
+    completeItem(db, root, "f1");
 
     // Rien ne répond : c'est du réseau, pas un verdict sur l'item.
-    const muet = reseau();
-    await heal(muet.fetchBytes, db, SERVEUR, root, 10_000);
+    const silent = net();
+    await heal(silent.fetchBytes, db, SERVER, root, 10_000);
 
     expect(noneRecently(root, "f1", 10_000)).toBe(false);
     // Donc le démarrage suivant redemande, comme il se doit.
-    const retour = reseau({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(retour.fetchBytes, db, SERVEUR, root, 20_000);
-    expect(retour.vues.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
+    const returns = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
+    await heal(returns.fetchBytes, db, SERVER, root, 20_000);
+    expect(returns.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
   });
 
   it("ne lit que les fichiers COMPLETS", async () => {
     const db = openInMemory();
-    const root = racinePreparee("tentacle-heal-");
-    itemComplet(db, root, "f1");
+    const root = preparedRoot("tentacle-heal-");
+    completeItem(db, root, "f1");
     // Un second item, en cours de transfert : la réparation l'ignore.
     upsertItemMeta(db, film("f2"), 1_000);
     claimOrCreateFile(db, spec({ itemId: "f2", relPath: "media/f2/original-ms1.mkv" }));
 
-    const { fetchBytes, vues } = reseau();
-    await heal(fetchBytes, db, SERVEUR, root, 10_000);
+    const { fetchBytes, views } = net();
+    await heal(fetchBytes, db, SERVER, root, 10_000);
 
-    expect(vues.some((u) => u.includes("/Items/f2"))).toBe(false);
+    expect(views.some((u) => u.includes("/Items/f2"))).toBe(false);
   });
 
   it("ne leve jamais, meme si la racine est inaccessible", async () => {
     const db = openInMemory();
-    const root = racinePreparee("tentacle-heal-");
-    itemComplet(db, root, "f1");
-    const { fetchBytes } = reseau({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
+    const root = preparedRoot("tentacle-heal-");
+    completeItem(db, root, "f1");
+    const { fetchBytes } = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
 
     // Racine inexistante : chaque écriture échoue, la réparation continue.
     await expect(
-      heal(fetchBytes, db, SERVEUR, "Z:\\racine-absente", 10_000),
+      heal(fetchBytes, db, SERVER, "Z:\\racine-absente", 10_000),
     ).resolves.toBeTypeOf("number");
   });
 });

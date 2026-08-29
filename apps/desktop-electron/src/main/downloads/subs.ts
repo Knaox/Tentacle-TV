@@ -35,22 +35,22 @@ const FORMATS = new Set(["srt", "ass", "vtt"]);
  * plutôt qu'une chaîne vide, qui collisionnerait entre pistes.
  */
 export function sanitizeTag(tag: string): string {
-  const propre = [...tag]
+  const clean = [...tag]
     .filter((c) => /[A-Za-z0-9-]/.test(c))
     .slice(0, 40)
     .join("");
-  return propre === "" ? "und" : propre.toLowerCase();
+  return clean === "" ? "und" : clean.toLowerCase();
 }
 
 /** Analyse la liste stockée en base. Tolère un JSON abîmé. */
 export function parseSpecs(json: string): SubtitleSpec[] {
-  const brut = parseJson(Buffer.from(json, "utf8"));
-  if (!Array.isArray(brut)) return [];
+  const raw = parseJson(Buffer.from(json, "utf8"));
+  if (!Array.isArray(raw)) return [];
   const specs: SubtitleSpec[] = [];
-  for (const entree of brut) {
-    const index = asInteger(field(entree, "index"));
-    const format = asString(field(entree, "format"));
-    const langTag = asString(field(entree, "langTag"));
+  for (const entry of raw) {
+    const index = asInteger(field(entry, "index"));
+    const format = asString(field(entry, "format"));
+    const langTag = asString(field(entry, "langTag"));
     if (index === null || format === null) continue;
     specs.push({ index, format, langTag: langTag ?? "und" });
   }
@@ -75,7 +75,7 @@ export async function fetchAll(
   mediaSourceId: string,
   specs: readonly SubtitleSpec[],
 ): Promise<number> {
-  let obtenus = 0;
+  let fetched = 0;
   for (const spec of specs) {
     if (!FORMATS.has(spec.format) || spec.index < 0) continue;
 
@@ -86,7 +86,7 @@ export async function fetchAll(
       continue;
     }
     if (existsSync(target)) {
-      obtenus += 1;
+      fetched += 1;
       continue;
     }
 
@@ -99,10 +99,10 @@ export async function fetchAll(
     try {
       mkdirSync(path.dirname(target), { recursive: true });
       writeFileSync(target, bytes);
-      obtenus += 1;
+      fetched += 1;
     } catch {
       // Disque plein ou droits : le média reste lisible sans ses sous-titres.
     }
   }
-  return obtenus;
+  return fetched;
 }

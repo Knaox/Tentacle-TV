@@ -36,8 +36,8 @@ function pick(row: Row, column: string): SQLOutputValue {
   return value;
 }
 
-function refuse(column: string, attendu: string, recu: SQLOutputValue): never {
-  throw new Error(`colonne ${column} : ${attendu} attendu, recu ${typeof recu}`);
+function refuse(column: string, expected: string, got: SQLOutputValue): never {
+  throw new Error(`colonne ${column} : ${expected} attendu, recu ${typeof got}`);
 }
 
 /** Texte non nul. */

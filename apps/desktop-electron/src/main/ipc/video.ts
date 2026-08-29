@@ -9,24 +9,24 @@
 import { screen } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
-import { terminer } from "../video/hdrSession";
-import { arreter } from "../video/mpvArret";
+import { finish } from "../video/hdrSession";
+import { stop } from "../video/mpvShutdown";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
-import { libmpvDisponible } from "../video/mpvFfi";
+import { libmpvAvailable } from "../video/mpvFfi";
 import {
-  filtrerOptionsInit,
-  refuserCommande,
-  refuserEcriture,
-  type ValeurMpv,
+  filterInitOptions,
+  refuseCommand,
+  refuseWrite,
+  type MpvValue,
 } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
-import { adapterAuPleinEcran } from "../video/macosOptionsFenetre";
+import { adaptToFullscreen } from "../video/macosWindowOptions";
 import { initialGeometryOption } from "../linux/initialGeometry";
-import { fenetrageLinux, montageLinux } from "../linux/session";
-import { creerSurfaceVideo, montageVideo, type VideoSurface } from "../video/surface";
-import { relaisEvenements } from "./videoEvenements";
+import { linuxWindowing, linuxMontage } from "../linux/session";
+import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
+import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
-import { registerVideoProbe, reinitialiserRapport } from "./videoSonde";
+import { registerVideoProbe, resetReport } from "./videoProbe";
 import { CommandRegistry } from "./registry";
 
 /** Valeur scalaire acceptée par mpv. */
@@ -63,22 +63,22 @@ let video: VideoSurface | null = null;
  * ⚠️ macOS ne peut PAS détruire d'un bloc : `mpv_terminate_destroy` y attend le
  * démontage de la sortie vidéo, lequel réclame le thread principal — celui qui
  * appelle. On démonte donc la vidéo d'abord et on guette sa disparition (voir
- * `mpvArret.ts`). Windows détruit comme il l'a toujours fait.
+ * `mpvShutdown.ts`). Windows détruit comme il l'a toujours fait.
  *
  * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
  * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à l'écran.
  */
-async function arreterLecteur(): Promise<void> {
+async function stopPlayer(): Promise<void> {
   const surface = video;
   video = null;
   // ⚠️ AVANT l'arrêt, et seule la Render API s'en sert : son contexte de rendu
   // doit être libéré pendant que mpv est encore debout. L'inverse fait
   // s'attendre les deux — `mpv_render_context_free` attend la fin du rendu en
   // cours, et mpv démonte sa sortie vidéo à l'arrêt.
-  surface?.prearret?.();
+  surface?.preStop?.();
   if (process.platform === "darwin") {
-    const temoin = surface?.videoDisparue?.bind(surface);
-    await arreter(temoin);
+    const witness = surface?.videoGone?.bind(surface);
+    await stop(witness);
   } else {
     destroy();
   }
@@ -88,17 +88,17 @@ async function arreterLecteur(): Promise<void> {
 /**
  * La réécriture Render API des options, chargée À LA DEMANDE.
  *
- * ⚠️ L'`import` ne peut PAS être en tête de fichier : `macosOptionsRender.ts`
+ * ⚠️ L'`import` ne peut PAS être en tête de fichier : `macosRenderOptions.ts`
  * remonte à `objc.ts`, qui appelle `koffi.load("/usr/lib/libobjc.A.dylib")` dès
  * l'import — introuvable sur Windows, où le processus principal tombe alors
  * avant la première fenêtre. Même précaution que `surface.ts`, en miroir.
  */
-function optionsRenderApi(
-  retenues: Readonly<Record<string, ValeurMpv>>,
-): Record<string, ValeurMpv> {
-  const { adapterPourRenderApi } =
-    require("../video/macosOptionsRender") as typeof import("../video/macosOptionsRender");
-  return adapterPourRenderApi(retenues);
+function renderApiOptions(
+  kept: Readonly<Record<string, MpvValue>>,
+): Record<string, MpvValue> {
+  const { adaptForRenderApi } =
+    require("../video/macosRenderOptions") as typeof import("../video/macosRenderOptions");
+  return adaptForRenderApi(kept);
 }
 
 export function registerVideoCommands(registry: CommandRegistry): void {
@@ -109,13 +109,13 @@ export function registerVideoCommands(registry: CommandRegistry): void {
   // bibliothèque peut légitimement manquer (repli sur la distribution) ;
   // macOS et Windows gardent leur échec bruyant, qui a valeur d'alerte.
   // Les commandes HDR, elles, restent déclarées sans condition (`videoHdr.ts`).
-  const lecteurNatif = process.platform !== "linux" || libmpvDisponible();
-  if (!lecteurNatif) {
+  const nativePlayer = process.platform !== "linux" || libmpvAvailable();
+  if (!nativePlayer) {
     console.warn(
       "[mpv] aucune libmpv chargeable : lecteur natif tu, la page utilisera le lecteur web",
     );
   }
-  if (lecteurNatif) enregistrerCommandesMpv(registry);
+  if (nativePlayer) registerMpvCommands(registry);
   registerDisplayHdrCommands(registry, () => video);
 
   // Sans effet hors macOS et hors développement — la commande n'est alors même
@@ -123,7 +123,7 @@ export function registerVideoCommands(registry: CommandRegistry): void {
   registerVideoProbe(registry, () => video);
 }
 
-function enregistrerCommandesMpv(registry: CommandRegistry): void {
+function registerMpvCommands(registry: CommandRegistry): void {
   registry
     .add("mpv_init", {
       schema: INIT,
@@ -137,7 +137,7 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // qu'en l'absence de sortie vidéo. La page appelle normalement
         // `mpv_destroy` avant de remonter le lecteur ; ceci couvre le cas où
         // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
-        if (isRunning()) await arreterLecteur();
+        if (isRunning()) await stopPlayer();
 
         const observed = (options?.observedProperties ?? []).map(
           ([name, format]) => [name, format] as const,
@@ -149,31 +149,31 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // que `buildMpvInitOptions` produit. Une option écartée est IGNORÉE et
         // non rejetée : mpv lui-même tolère les options inconnues, et faire
         // échouer `mpv_init` empêcherait toute lecture.
-        const { retenues } = filtrerOptionsInit(options?.initialOptions ?? {});
+        const { kept } = filterInitOptions(options?.initialOptions ?? {});
         // Le montage Render API réécrit ce que la page a demandé : elle décrit
         // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
-        // Voir `macosOptionsRender.ts`.
+        // Voir `macosRenderOptions.ts`.
         // Et le montage à deux fenêtres a sa propre réécriture : une lecture qui
         // démarre alors que l'app est DÉJÀ en plein écran doit dire à mpv de ne
-        // pas laisser macOS ouvrir un second bureau. Voir `macosOptionsFenetre.ts`.
-        const optionsMpv =
-          montageVideo() === "gl"
-            ? optionsRenderApi(retenues)
-            : adapterAuPleinEcran(retenues, win);
+        // pas laisser macOS ouvrir un second bureau. Voir `macosWindowOptions.ts`.
+        const mpvOptions =
+          videoMontage() === "gl"
+            ? renderApiOptions(kept)
+            : adaptToFullscreen(kept, win);
         // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
         // sans quoi il naît à la taille du média, plein écran apparent pendant
         // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
-        const bornes = win.getBounds();
-        const geometrie = initialGeometryOption(
-          montageLinux(),
-          fenetrageLinux(),
-          bornes,
-          screen.getDisplayMatching(bornes).scaleFactor,
+        const bounds = win.getBounds();
+        const geometry = initialGeometryOption(
+          linuxMontage(),
+          linuxWindowing(),
+          bounds,
+          screen.getDisplayMatching(bounds).scaleFactor,
         );
         const parent = nativeHandle(win);
         const err = init(
-          { options: { ...optionsMpv, ...geometrie }, observed, wid: parent },
-          relaisEvenements(() => video),
+          { options: { ...mpvOptions, ...geometry }, observed, wid: parent },
+          eventRelay(() => video),
         );
         if (err) throw new Error(err);
 
@@ -181,11 +181,11 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
         // voit alors qu'a l'image — un ecran noir sans un mot.
         trace(
-          `mpv demarre — montage ${montageVideo()}, ` +
-            `${Object.keys(optionsMpv).length} options retenues (vo=${String(optionsMpv["vo"] ?? "?")}` +
-            `, target-trc=${String(optionsMpv["target-trc"] ?? "-")}` +
-            `, target-peak=${String(optionsMpv["target-peak"] ?? "-")}` +
-            `, gpu-context=${String(optionsMpv["gpu-context"] ?? "-")})`,
+          `mpv demarre — montage ${videoMontage()}, ` +
+            `${Object.keys(mpvOptions).length} options retenues (vo=${String(mpvOptions["vo"] ?? "?")}` +
+            `, target-trc=${String(mpvOptions["target-trc"] ?? "-")}` +
+            `, target-peak=${String(mpvOptions["target-peak"] ?? "-")}` +
+            `, gpu-context=${String(mpvOptions["gpu-context"] ?? "-")})`,
         );
 
         // La fenêtre de mpv naît de façon asynchrone : `attach` la cherche,
@@ -194,9 +194,9 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
         // et le lecteur est remonté à chaque épisode.
         video?.detach();
-        video = creerSurfaceVideo(win);
+        video = createVideoSurface(win);
         await video.attach();
-        reinitialiserRapport();
+        resetReport();
 
         return "ok";
       },
@@ -207,23 +207,23 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
         // AVANT l'arrêt : après, mpv n'est plus là pour entendre qu'on coupe la
         // transmission. L'écran est rendu dans la foulée — un écran qu'on a
         // basculé et laissé en HDR délave tout le reste de Windows.
-        terminer();
-        await arreterLecteur();
+        finish();
+        await stopPlayer();
       },
     })
     .add("mpv_command", {
       schema: COMMAND,
       run: async ({ name, args }) => {
-        const liste = (args ?? []).map(String);
+        const list = (args ?? []).map(String);
         // Liste blanche AVANT tout : la libmpv du dépôt expose `run`,
         // `subprocess` et `load-script` — vérifié par sonde. Sans ce garde, la
         // page pouvait lancer un programme hors du bac à sable.
-        const refus = refuserCommande(name, liste);
-        if (refus !== null) throw new Error(refus);
+        const refusal = refuseCommand(name, list);
+        if (refusal !== null) throw new Error(refusal);
         // `await` : la commande ne bloque plus le processus principal, elle
         // attend sa réponse dans la file d'évènements. Un `sub-add` vers une
         // source injoignable prend donc son temps sans geler l'application.
-        const err = await command([name, ...liste]);
+        const err = await command([name, ...list]);
         // Les ARGUMENTS ne sont PAS dans le message. Ils y étaient, pour que
         // « set : erreur » désigne quelque chose — mais l'URL d'un `sub-add` ou
         // d'un `loadfile` porte le jeton Jellyfin, et ce message part dans le
@@ -236,8 +236,8 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
     .add("mpv_set_property", {
       schema: SET_PROPERTY,
       run: async ({ name, value }) => {
-        const refus = refuserEcriture(name);
-        if (refus !== null) throw new Error(refus);
+        const refusal = refuseWrite(name);
+        if (refusal !== null) throw new Error(refusal);
         // `await` : sur macOS l'écriture passe par la file de commandes et
         // attend sa réponse dans la file d'évènements, faute de quoi elle
         // figerait le thread principal (voir `mpv.ts`). Sous Windows la
@@ -253,7 +253,7 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
       schema: GET_PROPERTY,
       run: async ({ name, format }) => {
         // `await` : sur macOS la valeur arrive par la file d'évènements, seule
-        // façon de lire sans figer le thread principal (voir `mpvLecture.ts`).
+        // façon de lire sans figer le thread principal (voir `mpvRead.ts`).
         const raw = await getProperty(name);
         if (raw === null) return null;
         // mpv ne rend que des chaînes par cette porte ; on retype selon ce que
@@ -299,6 +299,6 @@ function enregistrerCommandesMpv(registry: CommandRegistry): void {
  * HDR délave tout Windows, et l'utilisateur n'aurait aucune raison de faire le
  * lien avec une application fermée.
  */
-export function restaurerEcran(): void {
-  terminer();
+export function restoreDisplay(): void {
+  finish();
 }

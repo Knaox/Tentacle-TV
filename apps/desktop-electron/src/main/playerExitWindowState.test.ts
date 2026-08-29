@@ -9,49 +9,49 @@
 import { describe, expect, it } from "vitest";
 import { decidePlayerExitAction, type PlayerExitInput } from "./playerExitWindowState";
 
-function entree(sur: Partial<PlayerExitInput>): PlayerExitInput {
+function entry(given: Partial<PlayerExitInput>): PlayerExitInput {
   return {
     platform: "linux",
     montage: "wayland",
-    fenetrage: "libre",
-    dejaEnPleinEcran: false,
-    enPleinEcran: true,
-    ...sur,
+    windowing: "libre",
+    alreadyFullscreen: false,
+    fullscreen: true,
+    ...given,
   };
 }
 
 describe("decidePlayerExitAction", () => {
   it("colle KDE, plein écran du film : quitter puis maximiser", () => {
-    expect(decidePlayerExitAction(entree({}))).toBe("quitterPleinEcranPuisMaximiser");
+    expect(decidePlayerExitAction(entry({}))).toBe("quitterPleinEcranPuisMaximiser");
   });
 
   it("X11 aussi : le plein écran du film se rend", () => {
-    expect(decidePlayerExitAction(entree({ montage: "x11", fenetrage: null })))
+    expect(decidePlayerExitAction(entry({ montage: "x11", windowing: null })))
       .toBe("quitterPleinEcranPuisMaximiser");
   });
 
   it("montage imposé (GNOME/wlroots) : la surface possède la restauration", () => {
-    expect(decidePlayerExitAction(entree({ fenetrage: "plein-ecran" }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran" }))).toBe("rien");
   });
 
   it("montage inconnu : ne rien toucher", () => {
-    expect(decidePlayerExitAction(entree({ montage: null }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ montage: null }))).toBe("rien");
   });
 
   it("un F11 antérieur à la lecture appartient à l'utilisateur", () => {
-    expect(decidePlayerExitAction(entree({ dejaEnPleinEcran: true }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ alreadyFullscreen: true }))).toBe("rien");
   });
 
   it("aucune session lecteur ouverte : rien à défaire", () => {
-    expect(decidePlayerExitAction(entree({ dejaEnPleinEcran: null }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ alreadyFullscreen: null }))).toBe("rien");
   });
 
   it("fenêtrée à la sortie : rien à faire", () => {
-    expect(decidePlayerExitAction(entree({ enPleinEcran: false }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ fullscreen: false }))).toBe("rien");
   });
 
   it("macOS et Windows gardent leurs chemins", () => {
-    expect(decidePlayerExitAction(entree({ platform: "darwin" }))).toBe("rien");
-    expect(decidePlayerExitAction(entree({ platform: "win32" }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ platform: "darwin" }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ platform: "win32" }))).toBe("rien");
   });
 });

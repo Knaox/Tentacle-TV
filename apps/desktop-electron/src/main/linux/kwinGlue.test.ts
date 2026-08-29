@@ -12,67 +12,67 @@ import { vi } from "vitest";
  * laisse rien derrière lui.
  */
 
-const { pont } = vi.hoisted(() => ({
-  pont: {
-    chemins: [] as string[],
-    noms: [] as (string | undefined)[],
-    lances: [] as number[],
-    decroches: [] as string[],
+const { bridge } = vi.hoisted(() => ({
+  bridge: {
+    filePaths: [] as string[],
+    names: [] as (string | undefined)[],
+    launched: [] as number[],
+    detached: [] as string[],
     /** Les numéros rendus tour à tour ; le dernier vaut pour tous les suivants. */
-    chargerRend: [0] as (number | null)[],
-    lancerRend: true,
+    loadReturns: [0] as (number | null)[],
+    runReturns: true,
   },
 }));
 
 vi.mock("./kwinScripting", () => ({
-  chargerScriptDeclaratif: (chemin: string, nom?: string) => {
-    pont.chemins.push(chemin);
-    pont.noms.push(nom);
-    const rendu = pont.chargerRend.length > 1 ? pont.chargerRend.shift() : pont.chargerRend[0];
-    return Promise.resolve(rendu ?? null);
+  loadDeclarativeScript: (filePath: string, name?: string) => {
+    bridge.filePaths.push(filePath);
+    bridge.names.push(name);
+    const render = bridge.loadReturns.length > 1 ? bridge.loadReturns.shift() : bridge.loadReturns[0];
+    return Promise.resolve(render ?? null);
   },
-  lancerScript: (id: number) => {
-    pont.lances.push(id);
-    return Promise.resolve(pont.lancerRend);
+  runScript: (id: number) => {
+    bridge.launched.push(id);
+    return Promise.resolve(bridge.runReturns);
   },
-  dechargerScript: (nom: string) => {
-    pont.decroches.push(nom);
+  unloadScript: (name: string) => {
+    bridge.detached.push(name);
     return Promise.resolve(true);
   },
-  dechargerScriptSync: (nom: string) => {
-    pont.decroches.push(nom);
+  unloadScriptSync: (name: string) => {
+    bridge.detached.push(name);
   },
 }));
 
-import { ColleKwin, gabaritColle } from "./kwinGlue";
+import { KwinGlue, glueTemplate } from "./kwinGlue";
 
 beforeEach(() => {
-  pont.chemins.length = 0;
-  pont.noms.length = 0;
-  pont.lances.length = 0;
-  pont.decroches.length = 0;
-  pont.chargerRend = [0];
-  pont.lancerRend = true;
+  bridge.filePaths.length = 0;
+  bridge.names.length = 0;
+  bridge.launched.length = 0;
+  bridge.detached.length = 0;
+  bridge.loadReturns = [0];
+  bridge.runReturns = true;
 });
 
-const GREFFON = `tentacle-colle-${String(process.pid)}`;
+const PLUGIN_ID = `tentacle-colle-${String(process.pid)}`;
 
 describe("gabaritColle", () => {
   it("inline le pid — l'appariement des fenêtres en dépend", () => {
-    const qml = gabaritColle(4242);
+    const qml = glueTemplate(4242);
     expect(qml).not.toContain("__PID__");
     expect(qml).toContain("w.pid !== 4242");
   });
 
   it("copie la géométrie et tient la paire par raiseWindow", () => {
-    const qml = gabaritColle(1);
+    const qml = glueTemplate(1);
     expect(qml).toContain("Qt.rect(g.x, g.y, g.width, g.height)");
     expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.video)");
     expect(qml).toContain("Kwin.Workspace.raiseWindow(racine.hote)");
   });
 
   it("qualifie TOUS ses types, l'objet attaché Component compris", () => {
-    const qml = gabaritColle(1);
+    const qml = glueTemplate(1);
     expect(qml).toContain("import QtQml as Qml");
     expect(qml).toContain("import org.kde.kwin as Kwin");
     expect(qml).toContain("Qml.QtObject");
@@ -84,7 +84,7 @@ describe("gabaritColle", () => {
   });
 
   it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
-    const qml = gabaritColle(1);
+    const qml = glueTemplate(1);
     // La minuterie one-shot, redémarrée à l'adoption de la fenêtre vidéo.
     expect(qml).toContain("Qml.Timer");
     expect(qml).toContain("repeat: false");
@@ -97,79 +97,79 @@ describe("gabaritColle", () => {
 
 describe("ColleKwin", () => {
   it("pose : un dossier neuf, le QML dedans, chargé et lancé", async () => {
-    const colle = new ColleKwin();
-    expect(await colle.poser()).toBe(true);
-    expect(pont.chemins).toHaveLength(1);
-    const chemin = pont.chemins[0] ?? "";
+    const glue = new KwinGlue();
+    expect(await glue.apply()).toBe(true);
+    expect(bridge.filePaths).toHaveLength(1);
+    const filePath = bridge.filePaths[0] ?? "";
     // Un dossier PAR POSE : le moteur QML de KWin ne voit pas un fichier
     // apparu dans un dossier qu'il a déjà servi (« File name case mismatch »,
     // mesuré le 28.08 — la colle mourait dès le 2e lancement).
-    expect(path.basename(chemin)).toBe("glue.qml");
-    expect(path.basename(path.dirname(chemin))).toMatch(
+    expect(path.basename(filePath)).toBe("glue.qml");
+    expect(path.basename(path.dirname(filePath))).toMatch(
       new RegExp(`^tentacle-colle-${String(process.pid)}-\\d+$`),
     );
-    expect(existsSync(chemin)).toBe(true);
-    expect(readFileSync(chemin, "utf8")).toBe(gabaritColle(process.pid));
-    expect(pont.lances).toEqual([0]);
-    await colle.retirer();
+    expect(existsSync(filePath)).toBe(true);
+    expect(readFileSync(filePath, "utf8")).toBe(glueTemplate(process.pid));
+    expect(bridge.launched).toEqual([0]);
+    await glue.remove();
   });
 
   it("charge SOUS le greffon du processus, décroché d'abord", async () => {
-    const colle = new ColleKwin();
-    await colle.poser();
+    const glue = new KwinGlue();
+    await glue.apply();
     // Une seule colle vivante par processus : KWin refuserait un nom déjà pris.
-    expect(pont.decroches).toEqual([GREFFON]);
-    expect(pont.noms).toEqual([GREFFON]);
-    await colle.retirer();
-    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
+    expect(bridge.detached).toEqual([PLUGIN_ID]);
+    expect(bridge.names).toEqual([PLUGIN_ID]);
+    await glue.remove();
+    expect(bridge.detached).toEqual([PLUGIN_ID, PLUGIN_ID]);
   });
 
   it("refus au chargement : une seconde tentative, une seule", async () => {
     // Le déchargement de KWin est différé : le nom peut n'être rendu qu'après.
-    pont.chargerRend = [null, 3];
-    const colle = new ColleKwin();
-    expect(await colle.poser()).toBe(true);
-    expect(pont.chemins).toHaveLength(2);
-    expect(pont.lances).toEqual([3]);
-    await colle.retirer();
+    bridge.loadReturns = [null, 3];
+    const glue = new KwinGlue();
+    expect(await glue.apply()).toBe(true);
+    expect(bridge.filePaths).toHaveLength(2);
+    expect(bridge.launched).toEqual([3]);
+    await glue.remove();
 
-    pont.chemins.length = 0;
-    pont.chargerRend = [null, null];
-    const obstinee = new ColleKwin();
-    expect(await obstinee.poser()).toBe(false);
-    expect(pont.chemins).toHaveLength(2);
-    expect(existsSync(path.dirname(pont.chemins[0] ?? ""))).toBe(false);
+    bridge.filePaths.length = 0;
+    bridge.loadReturns = [null, null];
+    const stubborn = new KwinGlue();
+    expect(await stubborn.apply()).toBe(false);
+    expect(bridge.filePaths).toHaveLength(2);
+    expect(existsSync(path.dirname(bridge.filePaths[0] ?? ""))).toBe(false);
   });
 
   it("deux poses ne partagent jamais un dossier", async () => {
-    const a = new ColleKwin();
-    const b = new ColleKwin();
-    await a.poser();
-    await b.poser();
-    const [premier, second] = pont.chemins;
-    expect(path.dirname(premier ?? "")).not.toBe(path.dirname(second ?? ""));
-    await a.retirer();
-    await b.retirer();
+    const a = new KwinGlue();
+    const b = new KwinGlue();
+    await a.apply();
+    await b.apply();
+    const [first, second] = bridge.filePaths;
+    expect(path.dirname(first ?? "")).not.toBe(path.dirname(second ?? ""));
+    await a.remove();
+    await b.remove();
   });
 
   it("retire : décroche le greffon et efface le DOSSIER, pas seulement le fichier", async () => {
-    const colle = new ColleKwin();
-    await colle.poser();
-    const chemin = pont.chemins[0] ?? "";
-    await colle.retirer();
-    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
-    expect(existsSync(chemin)).toBe(false);
-    expect(existsSync(path.dirname(chemin))).toBe(false);
+    const glue = new KwinGlue();
+    await glue.apply();
+    const filePath = bridge.filePaths[0] ?? "";
+    await glue.remove();
+    expect(bridge.detached).toEqual([PLUGIN_ID, PLUGIN_ID]);
+    expect(existsSync(filePath)).toBe(false);
+    expect(existsSync(path.dirname(filePath))).toBe(false);
     // Un second retrait ne refait rien : la colle est déjà levée.
-    await colle.retirer();
-    expect(pont.decroches).toEqual([GREFFON, GREFFON]);
+    await glue.remove();
+    expect(bridge.detached).toEqual([PLUGIN_ID, PLUGIN_ID]);
   });
 
   it("pose refusée par KWin : faux, et aucun dossier orphelin", async () => {
-    pont.chargerRend = [null];
-    const colle = new ColleKwin();
-    expect(await colle.poser()).toBe(false);
-    const chemin = pont.chemins[0] ?? "";
-    expect(existsSync(path.dirname(chemin))).toBe(false);
+    bridge.loadReturns = [null];
+    const glue = new KwinGlue();
+    expect(await glue.apply()).toBe(false);
+    const filePath = bridge.filePaths[0] ?? "";
+    expect(existsSync(path.dirname(filePath))).toBe(false);
   });
 });

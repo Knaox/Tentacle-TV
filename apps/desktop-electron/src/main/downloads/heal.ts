@@ -26,13 +26,13 @@ import { fetchAll, parseSpecs } from "./subs";
 import { text, textOrNull } from "./rows";
 import * as trickplay from "./trickplay";
 
-interface Complet {
+interface CompleteItem {
   itemId: string;
   mediaSourceId: string;
   subtitlesJson: string | null;
 }
 
-function complets(db: DatabaseSync): Complet[] {
+function complete(db: DatabaseSync): CompleteItem[] {
   return db
     .prepare(
       `SELECT DISTINCT item_id, media_source_id, subtitles_json
@@ -59,23 +59,23 @@ export async function heal(
   root: string,
   nowMs: number,
 ): Promise<number> {
-  let repares = 0;
+  let healed = 0;
 
-  for (const item of complets(db)) {
-    let touche = false;
+  for (const item of complete(db)) {
+    let touched = false;
 
     // Snapshot absent, affiche de série manquante, ou snapshot d'une version
     // antérieure (sans segments ni DTO enrichi) : un re-snapshot complet répare
     // tout, et il saute ce qui est déjà en place.
     const spec = getSpec(db, item.itemId);
     if (spec !== null) {
-      const afficheSerieManquante =
+      const seriesPosterMissing =
         spec.seriesId !== null && !seriesPrimaryExists(root, item.itemId);
-      const versionDepassee = metaVersion(db, item.itemId) < CURRENT_META_VERSION;
-      if (!snapshotExists(root, item.itemId) || afficheSerieManquante || versionDepassee) {
+      const versionStale = metaVersion(db, item.itemId) < CURRENT_META_VERSION;
+      if (!snapshotExists(root, item.itemId) || seriesPosterMissing || versionStale) {
         try {
           await snapshot(fetchBytes, db, serverUrl, root, spec, nowMs);
-          touche = true;
+          touched = true;
         } catch {
           // Item non réparé ce tour-ci ; on continue avec les suivants.
         }
@@ -98,7 +98,7 @@ export async function heal(
       );
       if (itemJson !== null) {
         const msrc = firstMediaSourceId(db, item.itemId) ?? item.itemId;
-        const planches = await trickplay.download(
+        const sheets = await trickplay.download(
           fetchBytes,
           serverUrl,
           root,
@@ -107,7 +107,7 @@ export async function heal(
           parseJson(itemJson),
           nowMs,
         );
-        touche = touche || planches > 0;
+        touched = touched || sheets > 0;
       }
     }
 
@@ -115,7 +115,7 @@ export async function heal(
       const specs = parseSpecs(item.subtitlesJson);
       if (specs.length > 0) {
         // `fetchAll` saute les fichiers déjà présents : rappeler est gratuit.
-        const obtenus = await fetchAll(
+        const fetched = await fetchAll(
           fetchBytes,
           serverUrl,
           root,
@@ -123,12 +123,12 @@ export async function heal(
           item.mediaSourceId,
           specs,
         );
-        touche = touche || obtenus > 0;
+        touched = touched || fetched > 0;
       }
     }
 
-    if (touche) repares += 1;
+    if (touched) healed += 1;
   }
 
-  return repares;
+  return healed;
 }

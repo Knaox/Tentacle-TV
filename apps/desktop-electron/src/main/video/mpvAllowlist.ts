@@ -50,7 +50,7 @@
  */
 
 /** Valeur scalaire acceptée par mpv, telle que la page l'envoie. */
-export type ValeurMpv = string | number | boolean;
+export type MpvValue = string | number | boolean;
 
 /**
  * Commandes autorisées, et NOMBRE MAXIMAL d'arguments de chacune.
@@ -59,7 +59,7 @@ export type ValeurMpv = string | number | boolean;
  *   seek(pos, mode) · set(propriété, valeur) · cycle(propriété)
  *   loadfile(url) · sub-add(url, mode)
  */
-const COMMANDES: ReadonlyMap<string, number> = new Map([
+const ALLOWED_COMMANDS: ReadonlyMap<string, number> = new Map([
   ["seek", 2],
   ["set", 2],
   ["cycle", 1],
@@ -68,7 +68,7 @@ const COMMANDES: ReadonlyMap<string, number> = new Map([
 ]);
 
 /** Commandes dont le PREMIER argument est un nom de propriété. */
-const ECRIVAINS_DE_PROPRIETE: ReadonlySet<string> = new Set(["set", "cycle"]);
+const PROPERTY_WRITERS: ReadonlySet<string> = new Set(["set", "cycle"]);
 
 /**
  * Propriétés que la page a le droit d'ÉCRIRE.
@@ -80,7 +80,7 @@ const ECRIVAINS_DE_PROPRIETE: ReadonlySet<string> = new Set(["set", "cycle"]);
  *    n'existe pas dans un build de production mais sert en développement. Ses
  *    quatre bascules sont des réglages de RENDU : elles ne donnent accès à rien.
  */
-const PROPRIETES_ECRITURE: ReadonlySet<string> = new Set([
+const WRITABLE_PROPERTIES: ReadonlySet<string> = new Set([
   // Transport
   "pause",
   "speed",
@@ -169,52 +169,52 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
 ]);
 
 /** Motif du refus, ou `null` si la commande passe. */
-export function refuserCommande(nom: string, args: readonly string[]): string | null {
-  const arite = COMMANDES.get(nom);
-  if (arite === undefined) return `commande refusee : ${nom}`;
-  if (args.length > arite) {
+export function refuseCommand(name: string, args: readonly string[]): string | null {
+  const arity = ALLOWED_COMMANDS.get(name);
+  if (arity === undefined) return `commande refusee : ${name}`;
+  if (args.length > arity) {
     // Le NOMBRE seulement, jamais les arguments : ce message part dans un
     // journal, et l'URL d'un `loadfile` porte un jeton.
-    return `commande ${nom} : ${String(args.length)} arguments, ${String(arite)} au plus`;
+    return `commande ${name} : ${String(args.length)} arguments, ${String(arity)} au plus`;
   }
 
-  if (!ECRIVAINS_DE_PROPRIETE.has(nom)) return null;
+  if (!PROPERTY_WRITERS.has(name)) return null;
 
-  const propriete = args[0];
-  if (propriete === undefined) return `commande ${nom} : propriete manquante`;
+  const property = args[0];
+  if (property === undefined) return `commande ${name} : propriete manquante`;
   // Le nom d'une propriété n'est pas un secret, et sans lui le message ne
   // désigne rien — `set` sert à écrire n'importe laquelle.
-  if (!PROPRIETES_ECRITURE.has(propriete)) return `propriete refusee : ${propriete}`;
+  if (!WRITABLE_PROPERTIES.has(property)) return `propriete refusee : ${property}`;
   return null;
 }
 
 /** Motif du refus d'une écriture directe de propriété, ou `null`. */
-export function refuserEcriture(nom: string): string | null {
-  return PROPRIETES_ECRITURE.has(nom) ? null : `propriete refusee : ${nom}`;
+export function refuseWrite(name: string): string | null {
+  return WRITABLE_PROPERTIES.has(name) ? null : `propriete refusee : ${name}`;
 }
 
 /** Options retenues, et noms de celles qui ont été écartées. */
-export interface OptionsFiltrees {
-  retenues: Record<string, ValeurMpv>;
-  refusees: string[];
+export interface FilteredOptions {
+  kept: Record<string, MpvValue>;
+  refused: string[];
 }
 
 /** Ne garde que les options connues. Les autres sont écartées sans bruit. */
-export function filtrerOptionsInit(
-  options: Readonly<Record<string, ValeurMpv>>,
-): OptionsFiltrees {
-  const retenues: Record<string, ValeurMpv> = {};
-  const refusees: string[] = [];
-  for (const [nom, valeur] of Object.entries(options)) {
-    if (OPTIONS_INIT.has(nom)) retenues[nom] = valeur;
-    else refusees.push(nom);
+export function filterInitOptions(
+  options: Readonly<Record<string, MpvValue>>,
+): FilteredOptions {
+  const kept: Record<string, MpvValue> = {};
+  const refused: string[] = [];
+  for (const [name, value] of Object.entries(options)) {
+    if (OPTIONS_INIT.has(name)) kept[name] = value;
+    else refused.push(name);
   }
-  return { retenues, refusees };
+  return { kept, refused };
 }
 
 /** Vues en lecture seule, pour les tests et pour l'inventaire du rapport. */
-export const INVENTAIRE = {
-  commandes: (): string[] => [...COMMANDES.keys()],
-  proprietes: (): string[] => [...PROPRIETES_ECRITURE],
+export const INVENTORY = {
+  commands: (): string[] => [...ALLOWED_COMMANDS.keys()],
+  properties: (): string[] => [...WRITABLE_PROPERTIES],
   options: (): string[] => [...OPTIONS_INIT],
 } as const;

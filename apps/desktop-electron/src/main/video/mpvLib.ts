@@ -40,7 +40,7 @@
  * Vulkan du système trouve son pilote tout seul — mais la libmpv des
  * distributions est bâtie contre un FFmpeg amputé des codecs brevetés : **pas de
  * décodeur HEVC**. Le paquet emporte donc la sienne, et le repli sur celle du
- * système est un aveu, pas un choix (`libmpvSysteme`).
+ * système est un aveu, pas un choix (`systemLibmpv`).
  */
 
 import { app } from "electron";
@@ -48,7 +48,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 
 /** Nom du fichier de bibliothèque, selon le système. */
-export const NOM_LIB =
+export const LIB_NAME =
   process.platform === "win32" ? "libmpv-2.dll"
   : process.platform === "linux" ? "libmpv.so.2"
   : "libmpv.2.dylib";
@@ -59,7 +59,7 @@ export const NOM_LIB =
  * Fedora et openSUSE utilisent `lib64`, Debian et Ubuntu un dossier par triplet,
  * Arch un `lib` nu. L'ordre n'a pas d'importance — un seul répond.
  */
-const DOSSIERS_SYSTEME_LINUX = [
+const LINUX_SYSTEM_DIRS = [
   "/usr/lib64",
   "/usr/lib/x86_64-linux-gnu",
   "/usr/lib",
@@ -67,7 +67,7 @@ const DOSSIERS_SYSTEME_LINUX = [
 ];
 
 /** Vise la chaîne LGPL vendorée — celle que le paquet embarque. */
-const LIVREE = "livree";
+const SHIPPED = "livree";
 /** Rend le développement à la mpv du système : l'échappatoire. */
 const HOMEBREW = "homebrew";
 /** La mpv de Homebrew, GPL, développement seulement. */
@@ -84,9 +84,9 @@ const MPV_HOMEBREW = "/opt/homebrew/lib/libmpv.2.dylib";
  * Chargées depuis leur dossier d'origine : elles se retrouvent entre elles par
  * `@loader_path` (macOS) ou `$ORIGIN` (Linux), où qu'elles soient.
  */
-function dossierLivre(): string {
-  const nom = process.platform === "linux" ? "mpv-linux" : "mpv";
-  return path.resolve(__dirname, `../../../lib/${nom}`);
+function shippedFolder(): string {
+  const name = process.platform === "linux" ? "mpv-linux" : "mpv";
+  return path.resolve(__dirname, `../../../lib/${name}`);
 }
 
 /**
@@ -114,10 +114,10 @@ function dossierLivre(): string {
  * qu'il désigne : `Contents/Frameworks` est réservé au code signable, et un
  * fichier de données y fait échouer la signature du paquet entier.
  */
-function declarerPiloteVulkan(icd: string): void {
+function declareVulkanDriver(icd: string): void {
   if (!existsSync(icd)) return;
-  for (const cle of ["VK_DRIVER_FILES", "VK_ICD_FILENAMES"]) {
-    if (process.env[cle] === undefined || process.env[cle] === "") process.env[cle] = icd;
+  for (const key of ["VK_DRIVER_FILES", "VK_ICD_FILENAMES"]) {
+    if (process.env[key] === undefined || process.env[key] === "") process.env[key] = icd;
   }
 }
 
@@ -128,13 +128,13 @@ function declarerPiloteVulkan(icd: string): void {
  * là, et dans ce cas le chargeur système fait l'affaire — la mpv est la bonne,
  * le compositeur non. Le dire, plutôt que de poser un ICD mort.
  */
-function chaineLivree(): string | null {
-  const lib = path.join(dossierLivre(), NOM_LIB);
+function shippedChain(): string | null {
+  const lib = path.join(shippedFolder(), LIB_NAME);
   if (!existsSync(lib)) return null;
-  if (existsSync(path.join(dossierLivre(), "libMoltenVK.dylib"))) {
+  if (existsSync(path.join(shippedFolder(), "libMoltenVK.dylib"))) {
     // Le même fichier qu'en paquet, à un dossier près : `library_path` y est
     // RELATIF au JSON, donc il désigne la MoltenVK vendorée d'où qu'on le lise.
-    declarerPiloteVulkan(path.resolve(__dirname, "../../../dev/MoltenVK_icd.json"));
+    declareVulkanDriver(path.resolve(__dirname, "../../../dev/MoltenVK_icd.json"));
   } else {
     console.warn(
       "[mpv] libMoltenVK.dylib absente des dylibs vendorées : le pilote Vulkan reste\n" +
@@ -145,9 +145,9 @@ function chaineLivree(): string | null {
 }
 
 /** Le repli Homebrew, jamais silencieux : ce n'est pas ce qui sera livré. */
-function avertirRepli(): string {
+function warnFallback(): string {
   console.warn(
-    `[mpv] chaîne LGPL vendorée absente (${path.join(dossierLivre(), NOM_LIB)}).\n` +
+    `[mpv] chaîne LGPL vendorée absente (${path.join(shippedFolder(), LIB_NAME)}).\n` +
       "      Repli sur Homebrew : mpv 0.41 GPL et le MoltenVK du système. Ce n'est PAS\n" +
       "      ce que l'utilisateur recevra — n'y juger ni le HDR ni le rendu.\n" +
       "      → bash apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh",
@@ -172,12 +172,12 @@ function avertirRepli(): string {
  * dynamique sait chercher dans `LD_LIBRARY_PATH` et le cache de `ldconfig`, que
  * cette liste ne couvre pas.
  */
-function libmpvSysteme(): string {
-  for (const dossier of DOSSIERS_SYSTEME_LINUX) {
-    const candidat = path.join(dossier, NOM_LIB);
-    if (existsSync(candidat)) return candidat;
+function systemLibmpv(): string {
+  for (const folder of LINUX_SYSTEM_DIRS) {
+    const candidate = path.join(folder, LIB_NAME);
+    if (existsSync(candidate)) return candidate;
   }
-  return NOM_LIB;
+  return LIB_NAME;
 }
 
 /**
@@ -187,54 +187,54 @@ function libmpvSysteme(): string {
  * le HDR et le HEVC identiques d'une distribution à l'autre. En développement on
  * emprunte celle que la CI a construite, et à défaut celle du système.
  */
-function libmpvLinux(): string {
+function linuxLibmpv(): string {
   if (app.isPackaged) {
-    const livree = path.join(process.resourcesPath, "lib", NOM_LIB);
-    if (existsSync(livree)) return livree;
+    const shipped = path.join(process.resourcesPath, "lib", LIB_NAME);
+    if (existsSync(shipped)) return shipped;
     console.warn(
       "[mpv] paquet sans libmpv livrée : repli sur celle de la distribution.\n" +
         "      Le HEVC et le HDR ne sont alors plus garantis.",
     );
-    return libmpvSysteme();
+    return systemLibmpv();
   }
-  const vendoree = path.join(dossierLivre(), NOM_LIB);
-  if (existsSync(vendoree)) return vendoree;
-  return libmpvSysteme();
+  const vendored = path.join(shippedFolder(), LIB_NAME);
+  if (existsSync(vendored)) return vendored;
+  return systemLibmpv();
 }
 
 /** Emplacement de la bibliothèque mpv, empaquetée ou en développement. */
 export function libmpvPath(): string {
-  const choisi = process.env["TENTACLE_MPV_LIB"];
-  if (choisi === LIVREE) return chaineLivree() ?? avertirRepli();
-  if (choisi === HOMEBREW) return MPV_HOMEBREW;
-  if (choisi !== undefined && choisi !== "") return choisi;
+  const chosen = process.env["TENTACLE_MPV_LIB"];
+  if (chosen === SHIPPED) return shippedChain() ?? warnFallback();
+  if (chosen === HOMEBREW) return MPV_HOMEBREW;
+  if (chosen !== undefined && chosen !== "") return chosen;
 
   if (process.platform === "darwin") {
     if (app.isPackaged) {
       // ⚠️ `resourcesPath` n'est lu QUE là : hors Electron il vaut `undefined`, et
       // `path.join` lève. Le sortir de cette branche rendrait la fonction
       // intestable — c'est ce qui l'a longtemps été.
-      declarerPiloteVulkan(path.join(process.resourcesPath, "MoltenVK_icd.json"));
+      declareVulkanDriver(path.join(process.resourcesPath, "MoltenVK_icd.json"));
       // `resourcesPath` = `Contents/Resources` ; les dylibs sont un cran plus haut.
-      return path.join(process.resourcesPath, "..", "Frameworks", NOM_LIB);
+      return path.join(process.resourcesPath, "..", "Frameworks", LIB_NAME);
     }
-    return chaineLivree() ?? avertirRepli();
+    return shippedChain() ?? warnFallback();
   }
 
-  if (process.platform === "linux") return libmpvLinux();
+  if (process.platform === "linux") return linuxLibmpv();
 
   if (process.platform !== "win32") {
     throw new Error(`Aucune libmpv connue pour ${process.platform} — définir TENTACLE_MPV_LIB.`);
   }
 
   if (app.isPackaged) {
-    const packaged = path.join(process.resourcesPath, "lib", NOM_LIB);
+    const packaged = path.join(process.resourcesPath, "lib", LIB_NAME);
     if (existsSync(packaged)) return packaged;
   }
 
   // En développement on emprunte la DLL déjà vendorée par l'app Tauri plutôt
   // que d'en dupliquer 95 Mo dans le dépôt.
-  return path.join(dossierLivre(), NOM_LIB);
+  return path.join(shippedFolder(), LIB_NAME);
 }
 
 /**
@@ -245,31 +245,31 @@ export function libmpvPath(): string {
  * SONAME Debian-only) pendant qu'`existsSync` répondait oui. Sur Linux on rend
  * donc la liste complète — vendorée, puis distribution, puis nom nu laissé au
  * chargeur — et c'est `mpvFfi.ts` qui essaie dans l'ordre et DIT ce qu'il
- * écarte (`mpvChargement.ts`).
+ * écarte (`mpvLoad.ts`).
  *
  * `TENTACLE_MPV_LIB` court-circuite tout : un choix explicite ne se voit pas
  * offrir de repli silencieux. Les autres plateformes gardent leur chemin
  * unique — leurs replis ont d'autres règles (licence, signature).
  */
-export function candidatsLibmpv(): string[] {
-  const choisi = process.env["TENTACLE_MPV_LIB"];
-  if (process.platform !== "linux" || (choisi !== undefined && choisi !== "")) {
+export function libmpvCandidates(): string[] {
+  const chosen = process.env["TENTACLE_MPV_LIB"];
+  if (process.platform !== "linux" || (chosen !== undefined && chosen !== "")) {
     return [libmpvPath()];
   }
-  const candidats: string[] = [];
-  const vendoree = app.isPackaged
-    ? path.join(process.resourcesPath, "lib", NOM_LIB)
-    : path.join(dossierLivre(), NOM_LIB);
-  if (existsSync(vendoree)) {
-    candidats.push(vendoree);
+  const candidates: string[] = [];
+  const vendored = app.isPackaged
+    ? path.join(process.resourcesPath, "lib", LIB_NAME)
+    : path.join(shippedFolder(), LIB_NAME);
+  if (existsSync(vendored)) {
+    candidates.push(vendored);
   } else if (app.isPackaged) {
     console.warn(
       "[mpv] paquet sans libmpv livrée : repli sur celle de la distribution.\n" +
         "      Le HEVC et le HDR ne sont alors plus garantis.",
     );
   }
-  const systeme = libmpvSysteme();
-  candidats.push(systeme);
-  if (systeme !== NOM_LIB) candidats.push(NOM_LIB);
-  return candidats;
+  const system = systemLibmpv();
+  candidates.push(system);
+  if (system !== LIB_NAME) candidates.push(LIB_NAME);
+  return candidates;
 }

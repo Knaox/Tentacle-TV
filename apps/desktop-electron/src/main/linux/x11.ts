@@ -50,23 +50,23 @@ const XLowerWindow = lib.func(`int XLowerWindow(void* dpy, ${Window} w)`);
 const XRaiseWindow = lib.func(`int XRaiseWindow(void* dpy, ${Window} w)`);
 
 /** Une connexion au serveur X, ouverte une fois pour toutes. */
-let affichage: unknown = null;
+let display: unknown = null;
 
 /** La connexion, ou `null` si le serveur X n'est pas joignable. */
-export function affichageX11(): unknown {
-  if (affichage === null) {
+export function x11Display(): unknown {
+  if (display === null) {
     const d: unknown = XOpenDisplay(null);
-    affichage = d === null || d === undefined ? null : d;
-    if (affichage === null) console.warn("[x11] XOpenDisplay a échoué — aucun serveur X joignable");
+    display = d === null || d === undefined ? null : d;
+    if (display === null) console.warn("[x11] XOpenDisplay a échoué — aucun serveur X joignable");
   }
-  return affichage;
+  return display;
 }
 
 /** Referme la connexion. Appelée à l'extinction. */
-export function fermerAffichageX11(): void {
-  if (affichage === null) return;
-  XCloseDisplay(affichage);
-  affichage = null;
+export function closeX11Display(): void {
+  if (display === null) return;
+  XCloseDisplay(display);
+  display = null;
 }
 
 /**
@@ -76,43 +76,43 @@ export function fermerAffichageX11(): void {
  * à 4 octets de pas donnerait un nombre sur deux, et des valeurs aberrantes
  * entre. C'est le piège classique de `XGetWindowProperty`.
  */
-function lireEntiers(dpy: unknown, fenetre: number | bigint, nom: string): bigint[] {
-  const atome = XInternAtom(dpy, nom, 1) as number;
-  if (atome === 0) return [];
-  const out = { type: [0], format: [0], nitems: [0n], reste: [0n], prop: [null as unknown] };
+function readIntegers(dpy: unknown, window: number | bigint, name: string): bigint[] {
+  const atom = XInternAtom(dpy, name, 1) as number;
+  if (atom === 0) return [];
+  const out = { type: [0], format: [0], nitems: [0n], rest: [0n], prop: [null as unknown] };
   const r = XGetWindowProperty(
-    dpy, fenetre, atome, 0, 4096, 0, 0,
-    out.type, out.format, out.nitems, out.reste, out.prop,
+    dpy, window, atom, 0, 4096, 0, 0,
+    out.type, out.format, out.nitems, out.rest, out.prop,
   ) as number;
   if (r !== 0 || out.prop[0] === null) return [];
-  const nb = Number(out.nitems[0]);
-  const octets = koffi.decode(out.prop[0], koffi.array("uint8", nb * 8)) as number[];
-  const valeurs: bigint[] = [];
-  for (let i = 0; i < nb; i++) {
+  const count = Number(out.nitems[0]);
+  const bytes = koffi.decode(out.prop[0], koffi.array("uint8", count * 8)) as number[];
+  const values: bigint[] = [];
+  for (let i = 0; i < count; i++) {
     let v = 0n;
-    for (let o = 7; o >= 0; o--) v = (v << 8n) | BigInt(octets[i * 8 + o] ?? 0);
-    valeurs.push(v);
+    for (let o = 7; o >= 0; o--) v = (v << 8n) | BigInt(bytes[i * 8 + o] ?? 0);
+    values.push(v);
   }
   XFree(out.prop[0]);
-  return valeurs;
+  return values;
 }
 
 /** Les fenêtres que le gestionnaire déclare gérer, dans l'ordre de mappage. */
-export function fenetresGerees(dpy: unknown): bigint[] {
-  return lireEntiers(dpy, XDefaultRootWindow(dpy) as number, "_NET_CLIENT_LIST");
+export function managedWindows(dpy: unknown): bigint[] {
+  return readIntegers(dpy, XDefaultRootWindow(dpy) as number, "_NET_CLIENT_LIST");
 }
 
 /** Le processus propriétaire d'une fenêtre, ou `0` s'il ne le déclare pas. */
-export function pidFenetre(dpy: unknown, fenetre: bigint): number {
-  return Number(lireEntiers(dpy, fenetre, "_NET_WM_PID")[0] ?? 0n);
+export function windowPid(dpy: unknown, window: bigint): number {
+  return Number(readIntegers(dpy, window, "_NET_WM_PID")[0] ?? 0n);
 }
 
 /** La classe d'une fenêtre (`res_class` de `WM_CLASS`), ou `""`. */
-export function classeFenetre(dpy: unknown, fenetre: bigint): string {
+export function windowClass(dpy: unknown, window: bigint): string {
   const hint = {} as { res_name: string | null; res_class: string | null };
-  if ((XGetClassHint(dpy, fenetre, hint) as number) === 0) return "";
-  const classe = hint.res_class ?? "";
-  return classe;
+  if ((XGetClassHint(dpy, window, hint) as number) === 0) return "";
+  const className = hint.res_class ?? "";
+  return className;
 }
 
 /**
@@ -125,21 +125,21 @@ export function classeFenetre(dpy: unknown, fenetre: bigint): string {
  * second critère, une instance de mpv que l'utilisateur aurait ouverte par
  * ailleurs serait déplacée à sa place.
  */
-export function trouverFenetreMpv(dpy: unknown): bigint | null {
-  const moi = process.pid;
-  for (const w of fenetresGerees(dpy)) {
-    if (classeFenetre(dpy, w) === "mpv" && pidFenetre(dpy, w) === moi) return w;
+export function findMpvWindow(dpy: unknown): bigint | null {
+  const self = process.pid;
+  for (const w of managedWindows(dpy)) {
+    if (windowClass(dpy, w) === "mpv" && windowPid(dpy, w) === self) return w;
   }
   return null;
 }
 
 /** Pose la fenêtre sur un rectangle, en pixels du serveur X. */
-export function poserRectangle(
+export function setRectangle(
   dpy: unknown,
-  fenetre: bigint,
-  x: number, y: number, largeur: number, hauteur: number,
+  window: bigint,
+  x: number, y: number, width: number, height: number,
 ): void {
-  XMoveResizeWindow(dpy, fenetre, x, y, Math.max(1, largeur), Math.max(1, hauteur));
+  XMoveResizeWindow(dpy, window, x, y, Math.max(1, width), Math.max(1, height));
 }
 
 /**
@@ -150,9 +150,9 @@ export function poserRectangle(
  * cadres le sont, et la demande échoue en `BadMatch`. Abaisser l'une puis
  * remonter l'autre passe par le gestionnaire et marche partout.
  */
-export function passerSous(dpy: unknown, video: bigint, hote: bigint): void {
+export function moveBelow(dpy: unknown, video: bigint, host: bigint): void {
   XLowerWindow(dpy, video);
-  if (hote !== 0n) XRaiseWindow(dpy, hote);
+  if (host !== 0n) XRaiseWindow(dpy, host);
 }
 
 /**
@@ -166,12 +166,12 @@ export function passerSous(dpy: unknown, video: bigint, hote: bigint): void {
  * toutes les fenêtres. C'est aussi ce qui permet de recouper le montage
  * réellement en vigueur — un identifiant plausible ne peut venir que de X11.
  */
-export function numeroFenetreX11(tampon: Buffer): bigint {
-  if (tampon.length < 4) return 0n;
-  return BigInt(tampon.readUInt32LE(0));
+export function x11WindowNumber(buffer: Buffer): bigint {
+  if (buffer.length < 4) return 0n;
+  return BigInt(buffer.readUInt32LE(0));
 }
 
 /** Vide la file de requêtes et attend le serveur. */
-export function synchroniser(dpy: unknown): void {
+export function sync(dpy: unknown): void {
   XSync(dpy, 0);
 }

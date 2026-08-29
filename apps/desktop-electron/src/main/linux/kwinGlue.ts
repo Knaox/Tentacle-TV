@@ -66,10 +66,10 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { dossierPose, effacerDossier, nomGreffon } from "./glueCleanup";
-import { chargerScriptDeclaratif, dechargerScript, lancerScript } from "./kwinScripting";
+import { glueFolder, removeFolder, pluginName } from "./glueCleanup";
+import { loadDeclarativeScript, unloadScript, runScript } from "./kwinScripting";
 
-const GABARIT = `import QtQml as Qml
+const TEMPLATE = `import QtQml as Qml
 import org.kde.kwin as Kwin
 
 Qml.QtObject {
@@ -143,63 +143,63 @@ Qml.QtObject {
 `;
 
 /** Le QML de la colle pour un processus donné. Exporté pour les tests. */
-export function gabaritColle(pid: number): string {
-  return GABARIT.replaceAll("__PID__", String(pid));
+export function glueTemplate(pid: number): string {
+  return TEMPLATE.replaceAll("__PID__", String(pid));
 }
 
 /** Numéro de pose du processus : deux poses ne partagent JAMAIS un dossier. */
-let poses = 0;
+let applied = 0;
 
 /** Le temps que KWin rende un nom : son déchargement est différé. */
-const RESPIRATION_MS = 100;
+const BREATH_MS = 100;
 
-function attendre(ms: number): Promise<void> {
-  return new Promise((resoudre) => setTimeout(resoudre, ms));
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
  * Une pose de colle : un dossier neuf, un QML écrit dedans, chargé et lancé
  * dans KWin. Voir l'en-tête pour la raison du dossier neuf.
  */
-export class ColleKwin {
-  private dossier: string | null = null;
+export class KwinGlue {
+  private folder: string | null = null;
 
-  async poser(): Promise<boolean> {
-    poses += 1;
-    const dossier = dossierPose(process.pid, poses);
-    const chemin = path.join(dossier, "glue.qml");
+  async apply(): Promise<boolean> {
+    applied += 1;
+    const folder = glueFolder(process.pid, applied);
+    const filePath = path.join(folder, "glue.qml");
     try {
-      mkdirSync(dossier, { recursive: true });
-      writeFileSync(chemin, gabaritColle(process.pid), "utf8");
+      mkdirSync(folder, { recursive: true });
+      writeFileSync(filePath, glueTemplate(process.pid), "utf8");
     } catch {
       return false;
     }
     // UNE seule colle vivante par processus : la pose précédente — ou le
     // reliquat d'un lancement mort dont le pid a été réattribué — est
     // décrochée d'abord, sinon KWin refuse un greffon déjà chargé.
-    const nom = nomGreffon(process.pid);
-    await dechargerScript(nom);
-    let id = await chargerScriptDeclaratif(chemin, nom);
+    const name = pluginName(process.pid);
+    await unloadScript(name);
+    let id = await loadDeclarativeScript(filePath, name);
     if (id === null) {
       // Le déchargement de KWin est différé (`deleteLater`) : une seconde
       // chance, une seule, le temps qu'il ait rendu le nom.
-      await attendre(RESPIRATION_MS);
-      id = await chargerScriptDeclaratif(chemin, nom);
+      await wait(BREATH_MS);
+      id = await loadDeclarativeScript(filePath, name);
     }
-    if (id === null || !(await lancerScript(id))) {
-      effacerDossier(dossier);
+    if (id === null || !(await runScript(id))) {
+      removeFolder(folder);
       return false;
     }
-    this.dossier = dossier;
+    this.folder = folder;
     return true;
   }
 
   /** Décrocher le greffon détruit l'instance QML : la colle cesse de suivre. */
-  async retirer(): Promise<void> {
-    const dossier = this.dossier;
-    this.dossier = null;
-    if (dossier === null) return;
-    await dechargerScript(nomGreffon(process.pid));
-    effacerDossier(dossier);
+  async remove(): Promise<void> {
+    const folder = this.folder;
+    this.folder = null;
+    if (folder === null) return;
+    await unloadScript(pluginName(process.pid));
+    removeFolder(folder);
   }
 }

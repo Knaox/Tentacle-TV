@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { openInMemory } from "./db";
 import { listForUser, setAutoDelete, stateForItem } from "./listing";
 import { claimOrCreateFile } from "./store";
-import { marquerVu, spec } from "./testkit";
+import { markWatched, spec } from "./testkit";
 
 function unClaim(db: DatabaseSync): number {
   return claimOrCreateFile(db, spec()).fileId;
@@ -43,10 +43,10 @@ describe("listes", () => {
     const fileId = unClaim(db);
     db.prepare("UPDATE files SET subtitles_json = ? WHERE id = ?").run('[{"index":3}]', fileId);
 
-    const entree = listForUser(db, "u")[0];
+    const entry = listForUser(db, "u")[0];
 
-    expect(entree).toBeDefined();
-    expect(Object.keys(entree ?? {})).not.toContain("subtitlesJson");
+    expect(entry).toBeDefined();
+    expect(Object.keys(entry ?? {})).not.toContain("subtitlesJson");
   });
 
   // Hors ligne il n'y a AUCUN DTO serveur : cette liste est la seule voie par
@@ -54,11 +54,11 @@ describe("listes", () => {
   it("portent la progression du compte", () => {
     const db = openInMemory();
     unClaim(db);
-    marquerVu(db, "u", "item1");
+    markWatched(db, "u", "item1");
 
-    const entree = listForUser(db, "u")[0];
+    const entry = listForUser(db, "u")[0];
 
-    expect(entree?.played).toBe(true);
+    expect(entry?.played).toBe(true);
     expect(stateForItem(db, "u", "item1")?.played).toBe(true);
   });
 
@@ -68,10 +68,10 @@ describe("listes", () => {
     const db = openInMemory();
     unClaim(db);
 
-    const entree = listForUser(db, "u")[0];
+    const entry = listForUser(db, "u")[0];
 
-    expect(entree?.played).toBe(false);
-    expect(entree?.positionTicks).toBe(0);
+    expect(entry?.played).toBe(false);
+    expect(entry?.positionTicks).toBe(0);
   });
 
   it("ne montrent pas la progression d'un AUTRE compte", () => {
@@ -80,7 +80,7 @@ describe("listes", () => {
     const db = openInMemory();
     claimOrCreateFile(db, spec({ userId: "userA" }));
     claimOrCreateFile(db, spec({ userId: "userB" }));
-    marquerVu(db, "userA", "item1");
+    markWatched(db, "userA", "item1");
 
     expect(listForUser(db, "userA")[0]?.played).toBe(true);
     expect(listForUser(db, "userB")[0]?.played).toBe(false);
@@ -106,10 +106,10 @@ describe("listes", () => {
     unClaim(db);
     db.exec("DELETE FROM item_meta");
 
-    const entree = listForUser(db, "u")[0];
+    const entry = listForUser(db, "u")[0];
 
-    expect(entree?.itemId).toBe("item1");
-    expect(entree?.title).toBeNull();
+    expect(entry?.itemId).toBe("item1");
+    expect(entry?.title).toBeNull();
   });
 });
 
@@ -117,15 +117,15 @@ describe("auto-suppression differee", () => {
   it("desactiver remet tout a zero", () => {
     const db = openInMemory();
     const fileId = unClaim(db);
-    marquerVu(db, "u", "item1");
+    markWatched(db, "u", "item1");
     setAutoDelete(db, "u", fileId, true, 60, 1_000_000);
 
     setAutoDelete(db, "u", fileId, false, 0, 2_000_000);
 
-    const entree = listForUser(db, "u")[0];
-    expect(entree?.autoDeleteAfterWatch).toBe(false);
-    expect(entree?.autoDeleteDelayMinutes).toBe(0);
-    expect(entree?.deleteScheduledAt).toBeNull();
+    const entry = listForUser(db, "u")[0];
+    expect(entry?.autoDeleteAfterWatch).toBe(false);
+    expect(entry?.autoDeleteDelayMinutes).toBe(0);
+    expect(entry?.deleteScheduledAt).toBeNull();
   });
 
   it("activer sur un item NON VU ne planifie rien", () => {
@@ -140,7 +140,7 @@ describe("auto-suppression differee", () => {
   it("activer sur un item DEJA VU planifie depuis maintenant", () => {
     const db = openInMemory();
     const fileId = unClaim(db);
-    marquerVu(db, "u", "item1");
+    markWatched(db, "u", "item1");
 
     setAutoDelete(db, "u", fileId, true, 30, 1_000_000);
 
@@ -151,7 +151,7 @@ describe("auto-suppression differee", () => {
   it("changer le delai REBASE sur le moment du visionnage", () => {
     const db = openInMemory();
     const fileId = unClaim(db);
-    marquerVu(db, "u", "item1");
+    markWatched(db, "u", "item1");
     setAutoDelete(db, "u", fileId, true, 30, 1_000_000); // vu a t = 1000 s
 
     // Bien plus tard, le delai passe a 60 min : l'echeance reste ancree au
@@ -164,7 +164,7 @@ describe("auto-suppression differee", () => {
   it("un delai negatif est ramene a zero", () => {
     const db = openInMemory();
     const fileId = unClaim(db);
-    marquerVu(db, "u", "item1");
+    markWatched(db, "u", "item1");
 
     setAutoDelete(db, "u", fileId, true, -5, 1_000_000);
 

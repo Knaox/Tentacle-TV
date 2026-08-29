@@ -16,7 +16,7 @@
  * d'exécution, avant que le moindre JavaScript ne tourne. En développement, ce
  * paquet est `Electron.app` : la barre affichait donc « Electron », et aucune API
  * n'y pouvait rien. C'est le paquet local qu'il faut renommer, ce que fait
- * `scripts/nom-dev-macos.mjs` — rejoué à chaque `pnpm dev`, donc insensible à une
+ * `scripts/dev-name-macos.mjs` — rejoué à chaque `pnpm dev`, donc insensible à une
  * réinstallation. Vérifié à l'écran.
  *
  * # L'icône du Dock — EN DÉVELOPPEMENT SEULEMENT
@@ -53,8 +53,8 @@ import { appImagePath } from "./appIcon";
  * Sans effet hors macOS : Windows tient son nom et son icône de l'exécutable,
  * et `app.dock` n'y existe pas.
  */
-export function appliquerIdentiteSysteme(): void {
-  const icone = appImagePath();
+export function applySystemIdentity(): void {
+  const icon = appImagePath();
 
   // Panneau « À propos » du menu applicatif. Sans ces options, macOS le
   // remplit depuis l'`Info.plist` du paquet — donc « Electron » et sa version en
@@ -65,10 +65,10 @@ export function appliquerIdentiteSysteme(): void {
     // Vidé volontairement : macOS affiche sinon DEUX numéros, la version et le
     // numéro de build, et le second n'a de sens que pour les stores.
     version: "",
-    ...(icone === null ? {} : { iconPath: icone }),
+    ...(icon === null ? {} : { iconPath: icon }),
   });
 
-  if (process.platform !== "darwin" || icone === null) return;
+  if (process.platform !== "darwin" || icon === null) return;
 
   // ⚠️ Le paquet garde l'icône de son bundle, et c'est TOUT L'INTÉRÊT : macOS 26
   // la masque en squircle et lui pose son liseré, comme aux autres. La poser ici
@@ -76,11 +76,11 @@ export function appliquerIdentiteSysteme(): void {
   // lui, garde son `iconPath` : il affiche une image, pas une tuile de Dock.
   if (app.isPackaged) return;
 
-  const image = nativeImage.createFromPath(icone);
+  const image = nativeImage.createFromPath(icon);
   // Une image vide voudrait dire que le fichier a bougé ou changé de format :
   // la poser effacerait l'icône du Dock au lieu de la corriger.
   if (image.isEmpty()) {
-    console.warn(`[identite] icone du Dock illisible : ${icone}`);
+    console.warn(`[identite] icone du Dock illisible : ${icon}`);
     return;
   }
   app.dock?.setIcon(image);

@@ -67,8 +67,8 @@ export function mapFileRow(row: Row): FileRow {
 
 /** Retire le champ interne avant de traverser l'IPC. */
 export function publicFile(file: FileRow): PublicFile {
-  const { subtitlesJson: _interne, ...reste } = file;
-  return reste;
+  const { subtitlesJson: _interne, ...rest } = file;
+  return rest;
 }
 
 /** Paramètres du mode Allégé et des side-cars, posés à la mise en file. */
@@ -193,7 +193,7 @@ export function deleteClaim(
   userId: string,
   fileId: number,
 ): DeleteOutcome {
-  const aSupprimer = transaction(db, (): { itemId: string; relPath: string; metaOrphan: boolean } | null => {
+  const toDelete = transaction(db, (): { itemId: string; relPath: string; metaOrphan: boolean } | null => {
     const removed = db
       .prepare("DELETE FROM claims WHERE jellyfin_user_id = ? AND file_id = ?")
       .run(userId, fileId);
@@ -215,16 +215,16 @@ export function deleteClaim(
     return { itemId, relPath, metaOrphan };
   });
 
-  if (aSupprimer === null) return { fileDeleted: false, metaDeleted: false };
+  if (toDelete === null) return { fileDeleted: false, metaDeleted: false };
 
-  removeMediaFile(root, aSupprimer.relPath);
-  if (aSupprimer.metaOrphan) {
-    removeItemMetaDir(root, aSupprimer.itemId);
+  removeMediaFile(root, toDelete.relPath);
+  if (toDelete.metaOrphan) {
+    removeItemMetaDir(root, toDelete.itemId);
     // Plus aucun fichier pour cet item : le dossier média entier part avec lui,
     // side-cars de sous-titres compris — ils restaient sinon orphelins.
-    removeItemMediaDir(root, aSupprimer.itemId);
+    removeItemMediaDir(root, toDelete.itemId);
   }
-  return { fileDeleted: true, metaDeleted: aSupprimer.metaOrphan };
+  return { fileDeleted: true, metaDeleted: toDelete.metaOrphan };
 }
 
 /**

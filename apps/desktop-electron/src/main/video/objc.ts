@@ -98,20 +98,20 @@ const send1rv = objc.func("objc_msgSend", "void", ["void*", "void*", "NSRect"]);
 const sendFrame = objc.func("objc_msgSend", "void", ["void*", "void*", "NSRect", "bool"]);
 
 /** Cache : `sel_registerName` est peu coûteux, mais appelé à chaque image. */
-const selecteurs = new Map<string, unknown>();
+const selectors = new Map<string, unknown>();
 
 /** Classe Objective-C par son nom, ou `null` si elle n'existe pas. */
-export function cls(nom: string): unknown {
-  const c = objc_getClass(nom) as unknown;
+export function cls(name: string): unknown {
+  const c = objc_getClass(name) as unknown;
   return c === null || c === undefined ? null : c;
 }
 
 /** Sélecteur par son nom, mémoïsé. */
-export function sel(nom: string): unknown {
-  const connu = selecteurs.get(nom);
-  if (connu !== undefined) return connu;
-  const s = sel_registerName(nom) as unknown;
-  selecteurs.set(nom, s);
+export function sel(name: string): unknown {
+  const known = selectors.get(name);
+  if (known !== undefined) return known;
+  const s = sel_registerName(name) as unknown;
+  selectors.set(name, s);
   return s;
 }
 
@@ -130,142 +130,142 @@ export const NSWindowBelow = -1;
  * produit pas une exception mais un plantage du processus.
  */
 export function signature(
-  retour: string,
+  returns: string,
   args: readonly string[],
-): (...appel: readonly unknown[]) => unknown {
-  return objc.func("objc_msgSend", retour, [...args]) as (
-    ...appel: readonly unknown[]
+): (...call: readonly unknown[]) => unknown {
+  return objc.func("objc_msgSend", returns, [...args]) as (
+    ...call: readonly unknown[]
   ) => unknown;
 }
 
 export const msg = {
   /** `[cible nom]` — objet. */
-  get(cible: unknown, nom: string): unknown {
-    if (!cible) return null;
-    return send0(cible, sel(nom));
+  get(target: unknown, name: string): unknown {
+    if (!target) return null;
+    return send0(target, sel(name));
   },
   /** `[cible nom]` — CGFloat. */
-  double(cible: unknown, nom: string): number {
-    if (!cible) return 0;
-    return send0d(cible, sel(nom)) as number;
+  double(target: unknown, name: string): number {
+    if (!target) return 0;
+    return send0d(target, sel(name)) as number;
   },
   /** `[cible nom]` — NSUInteger. */
-  count(cible: unknown, nom: string): number {
-    if (!cible) return 0;
-    return Number(send0u(cible, sel(nom)));
+  count(target: unknown, name: string): number {
+    if (!target) return 0;
+    return Number(send0u(target, sel(name)));
   },
   /** `[cible nom]` — NSInteger signé, pour un niveau de fenêtre. */
-  entier(cible: unknown, nom: string): number {
-    if (!cible) return 0;
-    return Number(send0l(cible, sel(nom)));
+  int(target: unknown, name: string): number {
+    if (!target) return 0;
+    return Number(send0l(target, sel(name)));
   },
   /** `[cible nom: index]` — élément d'un tableau. */
-  index(cible: unknown, nom: string, i: number): unknown {
-    if (!cible) return null;
-    return send1u(cible, sel(nom), i);
+  index(target: unknown, name: string, i: number): unknown {
+    if (!target) return null;
+    return send1u(target, sel(name), i);
   },
   /** `[cible nom]` — booléen. */
-  bool(cible: unknown, nom: string): boolean {
-    if (!cible) return false;
-    return send0b(cible, sel(nom)) as boolean;
+  bool(target: unknown, name: string): boolean {
+    if (!target) return false;
+    return send0b(target, sel(name)) as boolean;
   },
   /** `[cible nom: drapeau]`. */
-  setFlag(cible: unknown, nom: string, valeur: boolean): void {
-    if (!cible) return;
-    send1flag(cible, sel(nom), valeur);
+  setFlag(target: unknown, name: string, value: boolean): void {
+    if (!target) return;
+    send1flag(target, sel(name), value);
   },
   /** `[cible nom: objet]`, sans retour utile — poser une couleur, une vue. */
-  setObjet(cible: unknown, nom: string, objet: unknown): void {
-    if (!cible || !objet) return;
-    send1(cible, sel(nom), objet);
+  setObject(target: unknown, name: string, object: unknown): void {
+    if (!target || !object) return;
+    send1(target, sel(name), object);
   },
   /** `[parent addChildWindow: enfant ordered: ordre]`. */
-  addChildWindow(parent: unknown, enfant: unknown, ordre: number): void {
-    if (!parent || !enfant) return;
-    send2io(parent, sel("addChildWindow:ordered:"), enfant, ordre);
+  addChildWindow(parent: unknown, child: unknown, order: number): void {
+    if (!parent || !child) return;
+    send2io(parent, sel("addChildWindow:ordered:"), child, order);
   },
   /** `[parent removeChildWindow: enfant]`. */
-  removeChildWindow(parent: unknown, enfant: unknown): void {
-    if (!parent || !enfant) return;
-    send1(parent, sel("removeChildWindow:"), enfant);
+  removeChildWindow(parent: unknown, child: unknown): void {
+    if (!parent || !child) return;
+    send1(parent, sel("removeChildWindow:"), child);
   },
   /**
    * `[hôte addSubview: vue positioned: ordre relativeTo: nil]`.
    *
    * C'est ce qui fait vivre la vue vidéo DANS la fenêtre d'Electron plutôt
-   * qu'en travers d'une seconde fenêtre — voir `macosVueGl.ts`.
+   * qu'en travers d'une seconde fenêtre — voir `macosGlView.ts`.
    */
-  addSubview(hote: unknown, vue: unknown, ordre: number, relatif: unknown = null): void {
-    if (!hote || !vue) return;
+  addSubview(host: unknown, view: unknown, order: number, relative: unknown = null): void {
+    if (!host || !view) return;
     // `relativeTo: nil` avec `NSWindowBelow` signifie « sous TOUTES les
     // sous-vues » — le repli sûr quand on ne reconnaît pas celle qu'on vise.
-    send3(hote, sel("addSubview:positioned:relativeTo:"), vue, ordre, relatif ?? null);
+    send3(host, sel("addSubview:positioned:relativeTo:"), view, order, relative ?? null);
   },
   /** `[vue removeFromSuperview]`. */
-  removeFromSuperview(vue: unknown): void {
-    if (!vue) return;
-    send0(vue, sel("removeFromSuperview"));
+  removeFromSuperview(view: unknown): void {
+    if (!view) return;
+    send0(view, sel("removeFromSuperview"));
   },
   /** `[vue setFrame: rect]` — sans le `display:` d'une fenêtre. */
-  setFrameVue(vue: unknown, cadre: Rect): void {
-    if (!vue) return;
-    send1rv(vue, sel("setFrame:"), cadre);
+  setViewFrame(view: unknown, frame: Rect): void {
+    if (!view) return;
+    send1rv(view, sel("setFrame:"), frame);
   },
   /** `[vue setAutoresizingMask: masque]`. */
-  setAutoresizingMask(vue: unknown, masque: number): void {
-    if (!vue) return;
-    send1ul(vue, sel("setAutoresizingMask:"), masque);
+  setAutoresizingMask(view: unknown, mask: number): void {
+    if (!view) return;
+    send1ul(view, sel("setAutoresizingMask:"), mask);
   },
   /** `[cible nom: nil]` — un sélecteur d'action, qui attend un émetteur. */
-  avecNil(cible: unknown, nom: string): void {
-    if (!cible) return;
-    send1(cible, sel(nom), null);
+  withNil(target: unknown, name: string): void {
+    if (!target) return;
+    send1(target, sel(name), null);
   },
   /** `[fenêtre setCollectionBehavior: masque]`. */
-  setComportement(fenetre: unknown, masque: number): void {
-    if (!fenetre) return;
-    send1ul(fenetre, sel("setCollectionBehavior:"), masque);
+  setBehaviour(window: unknown, mask: number): void {
+    if (!window) return;
+    send1ul(window, sel("setCollectionBehavior:"), mask);
   },
-  /** `[fenêtre setStyleMask: masque]` — voir `cadreSansLisere`, qui dit ce qu'on
+  /** `[fenêtre setStyleMask: masque]` — voir `frameWithoutSeam`, qui dit ce qu'on
    *  a le droit d'y retirer, et ce qu'il faut rendre en échange. */
-  setMasqueStyle(fenetre: unknown, masque: number): void {
-    if (!fenetre) return;
-    send1ul(fenetre, sel("setStyleMask:"), masque);
+  setStyleMask(window: unknown, mask: number): void {
+    if (!window) return;
+    send1ul(window, sel("setStyleMask:"), mask);
   },
   /** `[couche setCornerRadius: rayon]` — arrondir une `CALayer`. */
-  setDouble(cible: unknown, nom: string, valeur: number): void {
-    if (!cible) return;
-    send1d(cible, sel(nom), valeur);
+  setDouble(target: unknown, name: string, value: number): void {
+    if (!target) return;
+    send1d(target, sel(name), value);
   },
   /** `[fenêtre setLevel: niveau]` — NSInteger, qui peut être très négatif. */
-  setNiveau(fenetre: unknown, niveau: number): void {
-    if (!fenetre) return;
-    send1l(fenetre, sel("setLevel:"), niveau);
+  setLevel(window: unknown, level: number): void {
+    if (!window) return;
+    send1l(window, sel("setLevel:"), level);
   },
   /**
    * `[cible nom: entier]` — un NSInteger quelconque.
    *
-   * `setNiveau` code son sélecteur en dur ; celui-ci sert aux énumérations, dont
+   * `setLevel` code son sélecteur en dur ; celui-ci sert aux énumérations, dont
    * `setTitleVisibility:`. Signé, comme tout `NSInteger` : plusieurs valent -1.
    */
-  setEntier(cible: unknown, nom: string, valeur: number): void {
-    if (!cible) return;
-    send1l(cible, sel(nom), valeur);
+  setInt(target: unknown, name: string, value: number): void {
+    if (!target) return;
+    send1l(target, sel(name), value);
   },
   /** `[fenêtre orderOut: nil]` — la retire de l'écran sans la détruire. */
-  orderOut(fenetre: unknown): void {
-    if (!fenetre) return;
-    send1(fenetre, sel("orderOut:"), null);
+  orderOut(window: unknown): void {
+    if (!window) return;
+    send1(window, sel("orderOut:"), null);
   },
   /** `[cible nom]` — NSRect. */
-  rect(cible: unknown, nom: string): Rect {
-    if (!cible) return { x: 0, y: 0, width: 0, height: 0 };
-    return send0r(cible, sel(nom)) as Rect;
+  rect(target: unknown, name: string): Rect {
+    if (!target) return { x: 0, y: 0, width: 0, height: 0 };
+    return send0r(target, sel(name)) as Rect;
   },
   /** `[fenêtre contentRectForFrameRect: cadre]`. */
-  contentRect(fenetre: unknown, cadre: Rect): Rect {
-    if (!fenetre) return cadre;
-    return send1r(fenetre, sel("contentRectForFrameRect:"), cadre) as Rect;
+  contentRect(window: unknown, frame: Rect): Rect {
+    if (!window) return frame;
+    return send1r(window, sel("contentRectForFrameRect:"), frame) as Rect;
   },
   /**
    * `[fenêtre convertRectToScreen: rect]` — d'un rectangle de la fenêtre vers
@@ -276,14 +276,14 @@ export const msg = {
    * `contentRectForFrameRect:` ne fait que le calculer d'après la décoration
    * déclarée — et les deux DIVERGENT sur une fenêtre transparente.
    */
-  rectVersEcran(fenetre: unknown, local: Rect): Rect {
-    if (!fenetre) return local;
-    return send1r(fenetre, sel("convertRectToScreen:"), local) as Rect;
+  rectToScreen(window: unknown, local: Rect): Rect {
+    if (!window) return local;
+    return send1r(window, sel("convertRectToScreen:"), local) as Rect;
   },
   /** `[fenêtre setFrame: cadre display: YES]`. */
-  setFrame(fenetre: unknown, cadre: Rect): void {
-    if (!fenetre) return;
-    sendFrame(fenetre, sel("setFrame:display:"), cadre, true);
+  setFrame(window: unknown, frame: Rect): void {
+    if (!window) return;
+    sendFrame(window, sel("setFrame:display:"), frame, true);
   },
 };
 
@@ -295,6 +295,6 @@ export const msg = {
  * passer le tampon tel quel donnerait l'adresse du tampon, ce qui ne désigne
  * rien d'utile et fait tomber le processus au premier message envoyé.
  */
-export function depuisHandle(tampon: Buffer): unknown {
-  return koffi.decode(tampon, "void*");
+export function fromHandle(buffer: Buffer): unknown {
+  return koffi.decode(buffer, "void*");
 }

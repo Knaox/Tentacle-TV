@@ -20,21 +20,21 @@ import { integer } from "./rows";
 import { claimOrCreateFile, type ClaimSpec } from "./store";
 import type { TransferNet, TransferStream } from "./transferNet";
 
-const dossiers: string[] = [];
+const folders: string[] = [];
 
 /** Racine de téléchargement jetable, `media/` et `meta/` déjà créés. */
-export function racinePreparee(prefixe = "tentacle-test-"): string {
-  const root = mkdtempSync(path.join(tmpdir(), prefixe));
-  dossiers.push(root);
+export function preparedRoot(prefix = "tentacle-test-"): string {
+  const root = mkdtempSync(path.join(tmpdir(), prefix));
+  folders.push(root);
   ensureLayout(root);
   return root;
 }
 
 /** Écrit un faux média sous la racine, dossiers créés au besoin. */
-export function ecrireMedia(root: string, rel: string, contenu = "data"): void {
-  const cible = path.join(root, rel);
-  mkdirSync(path.dirname(cible), { recursive: true });
-  writeFileSync(cible, contenu);
+export function writeMedia(root: string, rel: string, content = "data"): void {
+  const target = path.join(root, rel);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, content);
 }
 
 /**
@@ -57,13 +57,13 @@ export function spec(partial: Partial<ClaimSpec> = {}): ClaimSpec {
 }
 
 /** Nombre de lignes d'une table. */
-export function compter(db: DatabaseSync, table: string): number {
+export function countRows(db: DatabaseSync, table: string): number {
   const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get();
   return row === undefined ? 0 : integer(row, "n");
 }
 
 /** Marque l'item comme vu — plusieurs invariants en dépendent. */
-export function marquerVu(db: DatabaseSync, userId: string, itemId: string): void {
+export function markWatched(db: DatabaseSync, userId: string, itemId: string): void {
   db.prepare(
     `INSERT INTO playback_state (jellyfin_user_id, item_id, position_ticks, played, updated_at)
      VALUES (?, ?, 0, 1, 1)`,
@@ -78,24 +78,24 @@ export function marquerVu(db: DatabaseSync, userId: string, itemId: string): voi
 export const CREDS = { serverUrl: "https://tv.exemple", token: "jeton" };
 
 /** Le moteur ne demande jamais rien au vrai réseau dans ces tests. */
-const SANS_RESEAU: FetchBytes = async () => null;
+const NO_NETWORK: FetchBytes = async () => null;
 
 /** Réseau qui ne rend la main que quand on le lui dit. */
-export function reseauRetenu(): { net: TransferNet; ouverts: number; liberer: () => void } {
-  let debloquer: (() => void) | null = null;
-  const attente = new Promise<void>((resolve) => {
-    debloquer = resolve;
+export function heldNet(): { net: TransferNet; opened: number; release: () => void } {
+  let unblock: (() => void) | null = null;
+  const pending = new Promise<void>((resolve) => {
+    unblock = resolve;
   });
-  const etat = {
-    ouverts: 0,
+  const state = {
+    opened: 0,
     net: {
       async open(): Promise<TransferStream> {
-        etat.ouverts += 1;
+        state.opened += 1;
         return {
           status: 200,
           header: () => null,
           chunks: (async function* () {
-            await attente;
+            await pending;
             yield new Uint8Array([1, 2, 3]);
           })(),
         };
@@ -104,13 +104,13 @@ export function reseauRetenu(): { net: TransferNet; ouverts: number; liberer: ()
         /* rien */
       },
     },
-    liberer: () => debloquer?.(),
+    release: () => unblock?.(),
   };
-  return etat;
+  return state;
 }
 
 /** Réseau qui termine tout de suite avec le statut demandé. */
-export function reseauImmediat(status: number): TransferNet {
+export function immediateNet(status: number): TransferNet {
   return {
     async open(): Promise<TransferStream> {
       return {
@@ -128,28 +128,28 @@ export function reseauImmediat(status: number): TransferNet {
 }
 
 /** Un moteur instrumenté : ses évènements et ses bascules d'activité. */
-export function moteur(
+export function makeEngine(
   db: DatabaseSync,
   root: string,
   net: TransferNet,
-): { engine: DownloadEngine; evenements: EventName[]; bascules: boolean[] } {
-  const evenements: EventName[] = [];
-  const bascules: boolean[] = [];
+): { engine: DownloadEngine; events: EventName[]; toggles: boolean[] } {
+  const events: EventName[] = [];
+  const toggles: boolean[] = [];
   const engine = new DownloadEngine({
     db,
     root: () => root,
     net,
-    makeFetcher: () => SANS_RESEAU,
-    emit: (event) => evenements.push(event),
+    makeFetcher: () => NO_NETWORK,
+    emit: (event) => events.push(event),
     now: () => 1_000,
-    onBusy: (busy) => bascules.push(busy),
+    onBusy: (busy) => toggles.push(busy),
   });
-  return { engine, evenements, bascules };
+  return { engine, events, toggles };
 }
 
 /** Racine jetable, avec les dossiers de `item1`, `item2` et `item3`. */
-export function racineTroisItems(): string {
-  const root = racinePreparee("tentacle-engine-");
+export function rootWithThreeItems(): string {
+  const root = preparedRoot("tentacle-engine-");
   for (const item of ["item1", "item2", "item3"]) {
     mkdirSync(path.join(root, "media", item), { recursive: true });
   }
@@ -157,7 +157,7 @@ export function racineTroisItems(): string {
 }
 
 /** Met un fichier en file, daté — l'ordre FIFO se joue sur `created_at`. */
-export function semer(db: DatabaseSync, itemId: string, at: number): number {
+export function seed(db: DatabaseSync, itemId: string, at: number): number {
   return claimOrCreateFile(
     db,
     spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv`, expectedSize: null, nowMs: at }),
@@ -165,9 +165,9 @@ export function semer(db: DatabaseSync, itemId: string, at: number): number {
 }
 
 /** Pose un statut de pause directement, sans jouer de transfert. */
-export function poserPause(db: DatabaseSync, fileId: number, parUtilisateur: boolean): void {
+export function applyPause(db: DatabaseSync, fileId: number, byUser: boolean): void {
   db.prepare("UPDATE files SET status = 'paused', paused_by_user = ? WHERE id = ?").run(
-    parUtilisateur ? 1 : 0,
+    byUser ? 1 : 0,
     fileId,
   );
 }
@@ -181,8 +181,8 @@ export function poserPause(db: DatabaseSync, fileId: number, parUtilisateur: boo
 // écrivain retardataire sans masquer un vrai défaut.
 afterEach(() => {
   forgetRoot();
-  while (dossiers.length > 0) {
-    const dir = dossiers.pop();
+  while (folders.length > 0) {
+    const dir = folders.pop();
     if (dir !== undefined) {
       rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
     }

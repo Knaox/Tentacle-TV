@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { guidBuffer, IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE, parameterizedIid } from "./guid";
 
 /** Rend un tampon de 16 octets sous la forme `{XXXXXXXX-XXXX-...}`. */
-function texte(bytes: Buffer): string {
+function text(bytes: Buffer): string {
   const h = (n: number): string => n.toString(16).padStart(2, "0").toUpperCase();
   const o = (i: number): number => bytes[i] ?? 0;
   const queue = [...bytes.subarray(10)].map(h).join("");
@@ -39,7 +39,7 @@ describe("IID d'interface generique", () => {
     // Valeur de reference, independante de ce depot : c'est elle qui prouve la
     // graine, l'ordre des octets et les bits de version.
     const iid = parameterizedIid("pinterface({faa585ea-6214-4217-afda-7f46de5869b3};string)");
-    expect(texte(iid)).toBe("{E2FCC7C1-3BFC-5A0B-B2B0-72E769D1CB7E}");
+    expect(text(iid)).toBe("{E2FCC7C1-3BFC-5A0B-B2B0-72E769D1CB7E}");
   });
 
   it("pose la version 5 et la variante RFC 4122", () => {
@@ -53,7 +53,7 @@ describe("IID d'interface generique", () => {
     // Derivee par le meme algorithme que le SDK (`generate_guid`, base.h), et
     // verifiee a l'execution par le `QueryInterface` de `msixUpdate.ts` : s'il
     // refusait, l'application ouvrirait la page du Store a la place.
-    expect(texte(parameterizedIid(IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE))).toBe(
+    expect(text(parameterizedIid(IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE))).toBe(
       "{6B076C51-849E-5EC5-AED5-9B0585591902}",
     );
   });
@@ -61,6 +61,6 @@ describe("IID d'interface generique", () => {
   it("une signature differente donne un identifiant different", () => {
     const a = parameterizedIid("pinterface({faa585ea-6214-4217-afda-7f46de5869b3};string)");
     const b = parameterizedIid(IITERABLE_STORE_PACKAGE_UPDATE_SIGNATURE);
-    expect(texte(a)).not.toBe(texte(b));
+    expect(text(a)).not.toBe(text(b));
   });
 });

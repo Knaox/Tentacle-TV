@@ -7,7 +7,7 @@
  * qui manquait quand ils vivaient chacun de leur côté.
  */
 
-import { activerHdr, hdrActif, restaurerHdr } from "./displayHdr";
+import { enableHdr, hdrActive, restoreHdr } from "./displayHdr";
 import { getProperty, setProperty } from "./mpv";
 
 /**
@@ -21,13 +21,13 @@ import { getProperty, setProperty } from "./mpv";
  * noir, et tous les lecteurs qui le proposent le laissent au choix. La page
  * l'allume à l'initialisation du lecteur si l'utilisateur l'a demandé.
  */
-let autorisee = false;
+let allowed = false;
 
 /** Dernier gamma constaté, pour ne journaliser qu'au changement. */
-let dernierGamma: string | null = null;
+let lastGamma: string | null = null;
 
-export function basculeAutorisee(): boolean {
-  return autorisee;
+export function toggleAllowed(): boolean {
+  return allowed;
 }
 
 /**
@@ -66,19 +66,19 @@ export function basculeAutorisee(): boolean {
  * options d'initialisation, où il conditionne la création de la couche Metal.
  *
  * Le rabaisser en vol n'aurait donc aucun bénéfice et un coût certain : il
- * suffit que la page décoche la préférence — ce qui appelle `terminer()` — pour
+ * suffit que la page décoche la préférence — ce qui appelle `finish()` — pour
  * que la transmission tombe à `no` en pleine lecture et que l'image reparte en
  * sRGB. La politique Windows est ici sans objet, pas seulement inutile.
  */
-const NEGOCIE_AVEC_L_ECRAN = process.platform === "win32";
+const NEGOTIATED_WITH_DISPLAY = process.platform === "win32";
 
-function transmettre(actif: boolean): void {
-  if (!NEGOCIE_AVEC_L_ECRAN) return;
+function transmit(active: boolean): void {
+  if (!NEGOTIATED_WITH_DISPLAY) return;
   // L'écriture reste SYNCHRONE sous Windows — la promesse y est déjà réglée
   // quand `setProperty` rend la main, seule la ligne de journal passe par un
   // microtask. Rien de ce qui suit ne dépend de son issue.
-  void setProperty("target-colorspace-hint", actif ? "yes" : "no").then((err) => {
-    if (err) console.info(`[tentacle] HDR : transmission ${actif ? "on" : "off"} — ${err}`);
+  void setProperty("target-colorspace-hint", active ? "yes" : "no").then((err) => {
+    if (err) console.info(`[tentacle] HDR : transmission ${active ? "on" : "off"} — ${err}`);
   });
 }
 
@@ -106,23 +106,23 @@ function transmettre(actif: boolean): void {
  *
  * À appeler sur `file-loaded` ET `video-reconfig`.
  */
-export function accorder(): void {
+export function grant(): void {
   // Sous Linux il n'y a rien à négocier non plus, mais il y a quelque chose à
   // CONSTATER : ce que mpv envoie réellement à l'écran. C'est le seul témoin
   // qui distingue une transmission d'un tone-mapping. Voir `linux/hdr.ts`.
   if (process.platform === "linux") {
-    (require("../linux/hdr") as typeof import("../linux/hdr")).releverSortie();
+    (require("../linux/hdr") as typeof import("../linux/hdr")).recordOutput();
   }
   // ⚠️ SORTIE IMMÉDIATE SUR macOS : il n'y a rien à accorder, l'EDR y étant
   // alloué par le compositeur fenêtre par fenêtre (voir `displayHdr.ts`).
-  if (!NEGOCIE_AVEC_L_ECRAN) return;
+  if (!NEGOTIATED_WITH_DISPLAY) return;
 
   // Une seule évaluation à la fois. `accorder` est appelée sur `file-loaded`
   // ET sur `video-reconfig`, qui se suivent parfois de très près ; la lecture
   // étant devenue asynchrone, deux évaluations pourraient sinon s'entrelacer et
   // basculer l'écran deux fois.
-  if (enCours) return;
-  enCours = true;
+  if (inProgress) return;
+  inProgress = true;
   void getProperty("video-params/gamma")
     // ⚠️ `video-params/*` n'est PAS renseigné à `file-loaded` : mpv a ouvert le
     // fichier mais n'a pas encore configuré sa sortie vidéo. On sortait alors
@@ -130,22 +130,22 @@ export function accorder(): void {
     // de calendrier. D'où l'appel aussi sur `video-reconfig`, où les paramètres
     // sont valides : ici on attend, sans rien journaliser.
     .then((gamma) => {
-      if (gamma !== null) evaluer(gamma);
+      if (gamma !== null) evaluate(gamma);
     })
     .finally(() => {
-      enCours = false;
+      inProgress = false;
     });
 }
 
-/** Évaluation en cours ? Voir `accorder`. */
-let enCours = false;
+/** Évaluation en cours ? Voir `grant`. */
+let inProgress = false;
 
 /** Ce que le gamma du contenu implique pour l'écran et pour la transmission. */
-function evaluer(gamma: string): void {
+function evaluate(gamma: string): void {
   if (gamma !== "pq" && gamma !== "hlg") {
-    if (dernierGamma !== gamma) {
+    if (lastGamma !== gamma) {
       console.info(`[tentacle] HDR : contenu ${gamma}, rien a transmettre`);
-      dernierGamma = gamma;
+      lastGamma = gamma;
     }
     return;
   }
@@ -157,24 +157,24 @@ function evaluer(gamma: string): void {
   // Pas de garde équivalente côté bascule en revanche : sur un poste à
   // plusieurs écrans, un seul déjà allumé suffisait à tout annuler.
   // `activerHdr` traite chaque cible séparément et est idempotente.
-  const dejaEnHdr = hdrActif();
-  const bascule = !dejaEnHdr && autorisee && activerHdr();
+  const alreadyHdr = hdrActive();
+  const toggle = !alreadyHdr && allowed && enableHdr();
 
   // STRICTEMENT conditionnée à un écran réellement en HDR. Réaffirmée à chaque
   // passage et pas seulement au premier : mpv reconstruit sa sortie sur
   // `video-reconfig`, et un drapeau posé avant qu'elle n'existe n'y survit pas
   // toujours.
-  if (dejaEnHdr || bascule) transmettre(true);
+  if (alreadyHdr || toggle) transmit(true);
 
-  if (dernierGamma === gamma) return;
-  dernierGamma = gamma;
-  console.info(`[tentacle] HDR : contenu ${gamma} — ${raison(dejaEnHdr, bascule)}`);
+  if (lastGamma === gamma) return;
+  lastGamma = gamma;
+  console.info(`[tentacle] HDR : contenu ${gamma} — ${reason(alreadyHdr, toggle)}`);
 }
 
-function raison(dejaEnHdr: boolean, bascule: boolean): string {
-  if (dejaEnHdr) return "ecran deja en HDR, transmission seule";
-  if (bascule) return "bascule ok";
-  return autorisee
+function reason(alreadyHdr: boolean, toggle: boolean): string {
+  if (alreadyHdr) return "ecran deja en HDR, transmission seule";
+  if (toggle) return "bascule ok";
+  return allowed
     ? "bascule REFUSEE, tone-mapping"
     : "ecran SDR et bascule non autorisee, tone-mapping";
 }
@@ -187,15 +187,15 @@ function raison(dejaEnHdr: boolean, bascule: boolean): string {
  * les écrans qu'on a soi-même basculés ; un écran que l'utilisateur avait mis
  * en HDR y reste, comme il se doit.
  */
-export function terminer(): void {
-  transmettre(false);
-  restaurerHdr();
-  dernierGamma = null;
+export function finish(): void {
+  transmit(false);
+  restoreHdr();
+  lastGamma = null;
 }
 
 /** Applique la préférence de la page. Éteinte en vol, elle rend l'écran. */
-export function autoriserBascule(on: boolean): void {
-  autorisee = on;
+export function allowToggle(on: boolean): void {
+  allowed = on;
   // Journalisé là seulement où la bascule existe : `displayHdr` ne parle qu'à
   // Windows. Sur macOS la ligne se répétait à chaque montage du lecteur et se
   // lisait comme « pas de HDR », alors qu'elle ne dit rien de la lecture — le
@@ -205,5 +205,5 @@ export function autoriserBascule(on: boolean): void {
   }
   // L'utilisateur qui décoche s'attend à voir l'effet tout de suite, pas à
   // devoir arrêter le film.
-  if (!on) terminer();
+  if (!on) finish();
 }

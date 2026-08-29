@@ -12,17 +12,17 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { avatarPath, get, put, safeStem } from "./avatar";
 
-const dossiers: string[] = [];
+const folders: string[] = [];
 
-function dossierTemporaire(): string {
+function tempFolder(): string {
   const dir = mkdtempSync(path.join(tmpdir(), "tentacle-avatar-"));
-  dossiers.push(dir);
+  folders.push(dir);
   return dir;
 }
 
 afterEach(() => {
-  while (dossiers.length > 0) {
-    const dir = dossiers.pop();
+  while (folders.length > 0) {
+    const dir = folders.pop();
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -49,45 +49,45 @@ describe("nom de fichier", () => {
   });
 
   it("le chemin reste sous le dossier des avatars", () => {
-    const dir = dossierTemporaire();
+    const dir = tempFolder();
     expect(path.dirname(avatarPath(dir, "../../evil"))).toBe(dir);
   });
 });
 
 describe("cache de la photo", () => {
   it("aller-retour", () => {
-    const dir = dossierTemporaire();
+    const dir = tempFolder();
     put(dir, "u-1", JPEG);
     expect(get(dir, "u-1")).toBe(JPEG);
   });
 
   it("aucune photo n'est pas une erreur", () => {
-    expect(get(dossierTemporaire(), "u-1")).toBeNull();
+    expect(get(tempFolder(), "u-1")).toBeNull();
   });
 
   it("refuse un base64 abime plutot que d'ecrire un JPEG tronque", () => {
-    const dir = dossierTemporaire();
-    for (const mauvais of ["!!!!", "abc", "AAAA AAAA"]) {
-      expect(() => put(dir, "u-1", mauvais), mauvais).toThrow();
+    const dir = tempFolder();
+    for (const bad of ["!!!!", "abc", "AAAA AAAA"]) {
+      expect(() => put(dir, "u-1", bad), bad).toThrow();
     }
     expect(existsSync(path.join(dir, "u1.jpg"))).toBe(false);
   });
 
   it("refuse le vide et le demesure", () => {
-    const dir = dossierTemporaire();
+    const dir = tempFolder();
     expect(() => put(dir, "u-1", "")).toThrow(/hors bornes/);
     // 600 Kio decodes, au-dela du plafond de 512.
     expect(() => put(dir, "u-1", Buffer.alloc(600 * 1024).toString("base64"))).toThrow(/hors bornes/);
   });
 
   it("ne laisse pas de fichier temporaire derriere lui", () => {
-    const dir = dossierTemporaire();
+    const dir = tempFolder();
     put(dir, "u-1", JPEG);
     expect(readdirSync(dir)).toEqual(["u1.jpg"]);
   });
 
   it("les utilisateurs ont chacun leur fichier", () => {
-    const dir = dossierTemporaire();
+    const dir = tempFolder();
     put(dir, "u-1", JPEG);
     expect(get(dir, "u-2")).toBeNull();
   });

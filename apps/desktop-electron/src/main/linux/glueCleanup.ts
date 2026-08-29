@@ -13,7 +13,7 @@
  *   `/Scripting` sans aucune instance de l'application.
  *
  * D'où le nom de greffon PAR PID : il porte à la fois la prise pour décrocher
- * (`dechargerScript`) et la preuve de mort (le pid ne répond plus). On ne
+ * (`unloadScript`) et la preuve de mort (le pid ne répond plus). On ne
  * touche jamais à la colle d'un pid vivant — une instance de développement et
  * une instance installée peuvent tourner côte à côte.
  */
@@ -21,16 +21,16 @@
 import { readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { dechargerScript, dechargerScriptSync } from "./kwinScripting";
+import { unloadScript, unloadScriptSync } from "./kwinScripting";
 
 /** Le dossier de la n-ième pose de ce processus. Exporté pour les tests. */
-export function dossierPose(pid: number, numero: number): string {
-  return path.join(tmpdir(), `tentacle-colle-${String(pid)}-${String(numero)}`);
+export function glueFolder(pid: number, number: number): string {
+  return path.join(tmpdir(), `tentacle-colle-${String(pid)}-${String(number)}`);
 }
 
-export function effacerDossier(dossier: string): void {
+export function removeFolder(folder: string): void {
   try {
-    rmSync(dossier, { recursive: true, force: true });
+    rmSync(folder, { recursive: true, force: true });
   } catch {
     /* déjà absent, ou /tmp balayé sous nos pieds */
   }
@@ -42,11 +42,11 @@ export function effacerDossier(dossier: string): void {
  * Par pid, jamais fixe : une instance de développement ne doit pas décrocher
  * la colle d'une instance installée qui tourne en même temps.
  */
-export function nomGreffon(pid: number): string {
+export function pluginName(pid: number): string {
   return `tentacle-colle-${String(pid)}`;
 }
 
-const MOTIF_DOSSIER = /^tentacle-colle-(\d+)-\d+$/;
+const FOLDER_PATTERN = /^tentacle-colle-(\d+)-\d+$/;
 
 /**
  * Les dossiers de pose d'une racine, avec leur pid.
@@ -54,11 +54,11 @@ const MOTIF_DOSSIER = /^tentacle-colle-(\d+)-\d+$/;
  * La racine est un paramètre pour que les tests ne balaient pas le répertoire
  * temporaire de la machine qui les fait tourner.
  */
-function dossiersDePose(racine: string): { nom: string; pid: number }[] {
+function glueFolders(root: string): { name: string; pid: number }[] {
   try {
-    return readdirSync(racine).flatMap((nom) => {
-      const pid = Number(MOTIF_DOSSIER.exec(nom)?.[1] ?? Number.NaN);
-      return Number.isInteger(pid) && pid > 0 ? [{ nom, pid }] : [];
+    return readdirSync(root).flatMap((name) => {
+      const pid = Number(FOLDER_PATTERN.exec(name)?.[1] ?? Number.NaN);
+      return Number.isInteger(pid) && pid > 0 ? [{ name, pid }] : [];
     });
   } catch {
     return [];
@@ -66,12 +66,12 @@ function dossiersDePose(racine: string): { nom: string; pid: number }[] {
 }
 
 /** Le processus tourne-t-il encore ? `EPERM` = vivant, mais à quelqu'un d'autre. */
-function vivant(pid: number): boolean {
+function alive(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
-  } catch (erreur) {
-    return (erreur as NodeJS.ErrnoException).code === "EPERM";
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
   }
 }
 
@@ -84,25 +84,25 @@ function vivant(pid: number): boolean {
  * l'application). Chaque lancement reprend donc ce que les morts ont laissé,
  * en n'y touchant QUE si leur pid ne répond plus.
  */
-export async function balayerCollesOrphelines(racine: string = tmpdir()): Promise<number> {
-  const morts = new Set<number>();
-  for (const { nom, pid } of dossiersDePose(racine)) {
-    if (pid === process.pid || vivant(pid)) continue;
-    morts.add(pid);
-    effacerDossier(path.join(racine, nom));
+export async function sweepOrphanGlue(root: string = tmpdir()): Promise<number> {
+  const dead = new Set<number>();
+  for (const { name, pid } of glueFolders(root)) {
+    if (pid === process.pid || alive(pid)) continue;
+    dead.add(pid);
+    removeFolder(path.join(root, name));
   }
   // L'ancien montage — un dossier unique partagé, un fichier par pose — n'est
   // plus écrit par personne : ce qui y traîne est mort par construction. Ses
   // greffons, eux, étaient anonymes : rien ne peut plus les décrocher, ils
   // partiront avec le compositeur.
-  effacerDossier(path.join(racine, "tentacle-colle"));
-  for (const pid of morts) await dechargerScript(nomGreffon(pid));
-  if (morts.size > 0) {
+  removeFolder(path.join(root, "tentacle-colle"));
+  for (const pid of dead) await unloadScript(pluginName(pid));
+  if (dead.size > 0) {
     console.info(
-      `[video] colle : ${String(morts.size)} greffon(s) d'un lancement mort décroché(s)`,
+      `[video] colle : ${String(dead.size)} greffon(s) d'un lancement mort décroché(s)`,
     );
   }
-  return morts.size;
+  return dead.size;
 }
 
 /**
@@ -112,9 +112,9 @@ export async function balayerCollesOrphelines(racine: string = tmpdir()): Promis
  * serait jamais tenue. Sans ce geste, quitter en pleine lecture laisse un
  * fantôme de plus dans le compositeur jusqu'au balayage suivant.
  */
-export function retirerColleAuDepart(racine: string = tmpdir()): void {
-  dechargerScriptSync(nomGreffon(process.pid));
-  for (const { nom, pid } of dossiersDePose(racine)) {
-    if (pid === process.pid) effacerDossier(path.join(racine, nom));
+export function removeGlueAtStartup(root: string = tmpdir()): void {
+  unloadScriptSync(pluginName(process.pid));
+  for (const { name, pid } of glueFolders(root)) {
+    if (pid === process.pid) removeFolder(path.join(root, name));
   }
 }

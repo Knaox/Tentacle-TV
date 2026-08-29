@@ -47,45 +47,45 @@ import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 import { sign, flat } from "@electron/osx-sign";
 
-const ICI = path.dirname(fileURLToPath(import.meta.url));
-const APP = path.resolve(ICI, "..");
-const RACINE = path.resolve(APP, "../..");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const APP_DIR = path.resolve(HERE, "..");
+const ROOT = path.resolve(APP_DIR, "../..");
 
 /** Nom du produit : porte le paquet, le binaire et le menu applicatif. */
-const NOM = "Tentacle TV";
+const PRODUCT_NAME = "Tentacle TV";
 /** Fiche App Store Connect partagée avec iOS et tvOS — ne jamais dériver. */
-const IDENTIFIANT = "com.tentacle.mobile";
-const EQUIPE = "96K3M57W49";
+const IDENTIFIER = "com.tentacle.mobile";
+const TEAM = "96K3M57W49";
 
 /**
  * Modules à embarquer. Le dépôt est en `node-linker=hoisted` : `koffi` vit à la
  * RACINE, et son binaire natif dans un paquet SÉPARÉ par architecture. Oublier
  * l'un des deux donne une application qui s'ouvre et ne lit rien.
  */
-const MODULES = ["koffi", "zod"];
-const NATIFS = { arm64: "@koromix/koffi-darwin-arm64", x64: "@koromix/koffi-darwin-x64" };
+const MODULES_DIR = ["koffi", "zod"];
+const NATIVE_MODULES = { arm64: "@koromix/koffi-darwin-arm64", x64: "@koromix/koffi-darwin-x64" };
 
-function argument(nom, defaut) {
-  const index = process.argv.indexOf(nom);
-  return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : defaut;
+function argFlag(name, fallback) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : fallback;
 }
 
-function copier(source, cible, quoi) {
-  if (!existsSync(source)) throw new Error(`${quoi} introuvable : ${source}`);
-  mkdirSync(path.dirname(cible), { recursive: true });
-  cpSync(source, cible, { recursive: true });
+function copyInto(source, target, what) {
+  if (!existsSync(source)) throw new Error(`${what} introuvable : ${source}`);
+  mkdirSync(path.dirname(target), { recursive: true });
+  cpSync(source, target, { recursive: true });
 }
 
-const arch = argument("--arch", "universal");
+const arch = argFlag("--arch", "universal");
 const archs = arch === "universal" ? ["arm64", "x64"] : [arch];
-const libDir = path.resolve(argument("--lib", ""));
-const sortie = path.resolve(APP, argument("--out", "release-macos"));
-const identiteApp = argument("--sign", "");
-const identitePkg = argument("--pkg-sign", "");
-const profil = argument("--profile", "");
-const versionPaquet = JSON.parse(readFileSync(path.join(APP, "package.json"), "utf8"));
-const version = argument("--version", versionPaquet.version);
-const build = argument("--build", version);
+const libDir = path.resolve(argFlag("--lib", ""));
+const output = path.resolve(APP_DIR, argFlag("--out", "release-macos"));
+const appIdentity = argFlag("--sign", "");
+const pkgIdentity = argFlag("--pkg-sign", "");
+const profile = argFlag("--profile", "");
+const bundleVersion = JSON.parse(readFileSync(path.join(APP_DIR, "package.json"), "utf8"));
+const version = argFlag("--version", bundleVersion.version);
+const build = argFlag("--build", version);
 
 if (libDir === "" || !existsSync(libDir)) {
   throw new Error("--lib <dossier> est requis : les dylibs LGPL (libmpv + FFmpeg) à livrer.");
@@ -95,11 +95,11 @@ if (!existsSync(path.join(libDir, "libmpv.2.dylib"))) {
 }
 
 /** Assemble ce que packager doit voir comme « l'application ». */
-function preparer(stage) {
+function prepare(stage) {
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
 
-  copier(path.join(APP, "dist"), path.join(stage, "dist"), "build de la coquille");
+  copyInto(path.join(APP_DIR, "dist"), path.join(stage, "dist"), "build de la coquille");
 
   // `package.json` réduit : packager y lit `main`, `productName` et `version`, et
   // c'est cette version que `app.getVersion()` rendra — donc celle que la
@@ -110,36 +110,36 @@ function preparer(stage) {
     `${JSON.stringify(
       {
         name: "tentacle-tv",
-        productName: NOM,
+        productName: PRODUCT_NAME,
         version,
-        main: versionPaquet.main,
+        main: bundleVersion.main,
         author: "Damien ROUGE",
-        license: versionPaquet.license ?? "UNLICENSED",
+        license: bundleVersion.license ?? "UNLICENSED",
       },
       null,
       2,
     )}\n`,
   );
 
-  for (const module of [...MODULES, ...archs.map((a) => NATIFS[a])]) {
-    copier(path.join(RACINE, "node_modules", module), path.join(stage, "node_modules", module), module);
+  for (const module of [...MODULES_DIR, ...archs.map((a) => NATIVE_MODULES[a])]) {
+    copyInto(path.join(ROOT, "node_modules", module), path.join(stage, "node_modules", module), module);
   }
 }
 
 /** Ressources hors application : le build web et l'icône matricielle du Dock. */
-function preparerRessources(stage) {
-  const ressources = path.join(stage, "..", "resources");
-  rmSync(ressources, { recursive: true, force: true });
+function prepareResources(stage) {
+  const resources = path.join(stage, "..", "resources");
+  rmSync(resources, { recursive: true, force: true });
 
   // Les basenames comptent : `extraResource` copie le BASENAME, et `webRoot()`
   // cherche `resources/web`, `appImagePath()` cherche `resources/icon.png`.
-  copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
-  copier(
-    path.resolve(RACINE, "apps/desktop-electron/icons/icon.png"),
-    path.join(ressources, "icon.png"),
+  copyInto(path.resolve(ROOT, "apps/web/dist"), path.join(resources, "web"), "build web");
+  copyInto(
+    path.resolve(ROOT, "apps/desktop-electron/icons/icon.png"),
+    path.join(resources, "icon.png"),
     "icone du Dock",
   );
-  return [path.join(ressources, "web"), path.join(ressources, "icon.png")];
+  return [path.join(resources, "web"), path.join(resources, "icon.png")];
 }
 
 /**
@@ -150,11 +150,11 @@ function preparerRessources(stage) {
  * signature vient après : `@electron/osx-sign` parcourt le paquet et scelle tout
  * ce qui est exécutable, ces dylibs comprises.
  */
-function poserDylibs(appPath) {
+function placeDylibs(appPath) {
   const frameworks = path.join(appPath, "Contents", "Frameworks");
   mkdirSync(frameworks, { recursive: true });
   const dylibs = readdirSync(libDir).filter((f) => f.endsWith(".dylib"));
-  for (const dylib of dylibs) copier(path.join(libDir, dylib), path.join(frameworks, dylib), dylib);
+  for (const dylib of dylibs) copyInto(path.join(libDir, dylib), path.join(frameworks, dylib), dylib);
   console.log(`[macos] ${dylibs.length} dylibs posées dans Contents/Frameworks`);
 
   // ⚠️ Le chargeur Vulkan ne se lie pas à son pilote : il le cherche à
@@ -201,12 +201,12 @@ function poserDylibs(appPath) {
  * bloquer, parce qu'un empaquetage refusé pour une raison de diagnostic serait
  * pire que le risque qu'il couvre.
  */
-function verifierProfil() {
-  const RESTREINTS = ["com.apple.security.application-groups", "com.apple.application-identifier"];
-  let duProfil;
+function checkProfile() {
+  const RESTRICTED = ["com.apple.security.application-groups", "com.apple.application-identifier"];
+  let fromProfile;
   try {
-    const plist = execFileSync("/usr/bin/security", ["cms", "-D", "-i", profil], { encoding: "utf8" });
-    duProfil = JSON.parse(
+    const plist = execFileSync("/usr/bin/security", ["cms", "-D", "-i", profile], { encoding: "utf8" });
+    fromProfile = JSON.parse(
       execFileSync("/usr/bin/plutil", ["-extract", "Entitlements", "json", "-o", "-", "-"], {
         encoding: "utf8",
         input: plist,
@@ -217,38 +217,38 @@ function verifierProfil() {
     return;
   }
 
-  const demandes = JSON.parse(
+  const requested = JSON.parse(
     execFileSync("/usr/bin/plutil", ["-convert", "json", "-o", "-", parent], { encoding: "utf8" }),
   );
-  const manquants = RESTREINTS.filter((cle) => cle in demandes && !(cle in duProfil));
-  if (manquants.length === 0) {
-    console.log(`[macos] profil : ${Object.keys(duProfil).length} droits, tous ceux demandés sont couverts`);
+  const missing_ = RESTRICTED.filter((key) => key in requested && !(key in fromProfile));
+  if (missing_.length === 0) {
+    console.log(`[macos] profil : ${Object.keys(fromProfile).length} droits, tous ceux demandés sont couverts`);
     return;
   }
   throw new Error(
-    `Le profil de provisionnement ne porte pas ${manquants.join(", ")}.\n` +
+    `Le profil de provisionnement ne porte pas ${missing_.join(", ")}.\n` +
       "  → developer.apple.com → Identifiers : créer le groupe d'applications " +
-      `« ${(demandes["com.apple.security.application-groups"] ?? []).join(", ")} », ` +
+      `« ${(requested["com.apple.security.application-groups"] ?? []).join(", ")} », ` +
       "l'activer sur l'App ID com.tentacle.mobile (capability App Groups), régénérer " +
       "le profil Mac App Store, puis remplacer le secret MAS_PROVISIONING_PROFILE_BASE64.\n" +
-      `  Droits du profil actuel : ${Object.keys(duProfil).join(", ")}`,
+      `  Droits du profil actuel : ${Object.keys(fromProfile).join(", ")}`,
   );
 }
 
 // Avant tout empaquetage : un profil incomplet ne se voit qu'après l'envoi.
-const parent = path.join(APP, "mas", "entitlements.mas.plist");
-const enfant = path.join(APP, "mas", "entitlements.mas.inherit.plist");
-if (profil !== "") verifierProfil();
+const parent = path.join(APP_DIR, "mas", "entitlements.mas.plist");
+const child = path.join(APP_DIR, "mas", "entitlements.mas.inherit.plist");
+if (profile !== "") checkProfile();
 
-const stage = path.join(sortie, "stage", "app");
-preparer(stage);
-const extraResource = preparerRessources(stage);
+const stage = path.join(output, "stage", "app");
+prepare(stage);
+const extraResource = prepareResources(stage);
 
-const chemins = await packager({
+const paths = await packager({
   dir: stage,
-  out: sortie,
-  name: NOM,
-  executableName: NOM,
+  out: output,
+  name: PRODUCT_NAME,
+  executableName: PRODUCT_NAME,
   platform: "mas",
   arch,
   overwrite: true,
@@ -269,9 +269,9 @@ const chemins = await packager({
   // l'option dit « x64 » ; sa sémantique est « ces fichiers-là sont mono-arch
   // volontairement ».
   osxUniversal: { x64ArchFiles: "**/*.node" },
-  icon: path.resolve(RACINE, "apps/desktop-electron/icons/icon.icns"),
+  icon: path.resolve(ROOT, "apps/desktop-electron/icons/icon.icns"),
   extraResource,
-  appBundleId: IDENTIFIANT,
+  appBundleId: IDENTIFIER,
   appVersion: version,
   buildVersion: String(build),
   appCategoryType: "public.app-category.entertainment",
@@ -283,17 +283,17 @@ const chemins = await packager({
     ITSAppUsesNonExemptEncryption: false,
     // Renseigné à la main parce que la signature tourne avec
     // `preAutoEntitlements: false` — voir plus bas.
-    ElectronTeamID: EQUIPE,
+    ElectronTeamID: TEAM,
     // Même plancher que la chaîne mpv/FFmpeg (MACOSX_DEPLOYMENT_TARGET=14.0) et
     // que le paquet Tauri : promettre moins livrerait des plantages au lancement.
     LSMinimumSystemVersion: "14.0",
   },
 });
 
-const appPath = path.join(chemins[0], `${NOM}.app`);
-poserDylibs(appPath);
+const appPath = path.join(paths[0], `${PRODUCT_NAME}.app`);
+placeDylibs(appPath);
 
-if (identiteApp === "") {
+if (appIdentity === "") {
   // Essai local : une signature ad hoc suffit à lancer le paquet sur place. Rien
   // d'envoyable — ni bac à sable relié à un profil, ni .pkg.
   execFileSync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", appPath], { stdio: "inherit" });
@@ -304,14 +304,14 @@ if (identiteApp === "") {
 await sign({
   app: appPath,
   platform: "mas",
-  identity: identiteApp,
+  identity: appIdentity,
   type: "distribution",
-  ...(profil === "" ? {} : { provisioningProfile: profil }),
+  ...(profile === "" ? {} : { provisioningProfile: profile }),
   // Le principal prend les droits reliés au profil ; tout le reste — processus
   // d'aide, cadres, dylibs — hérite. C'est la règle du bac à sable, et l'ordre
   // « de l'intérieur vers l'extérieur » est celui d'osx-sign.
-  optionsForFile: (fichier) => ({
-    entitlements: path.resolve(fichier) === path.resolve(appPath) ? parent : enfant,
+  optionsForFile: (file) => ({
+    entitlements: path.resolve(file) === path.resolve(appPath) ? parent : child,
   }),
   // ⚠️ Coupé volontairement : l'automatisation ajouterait
   // `com.apple.security.application-groups` aux droits. Le profil de
@@ -322,13 +322,13 @@ await sign({
   preAutoEntitlements: false,
   strictVerify: true,
 });
-console.log(`[macos] signé « ${identiteApp} »`);
+console.log(`[macos] signé « ${appIdentity} »`);
 
-if (identitePkg === "") {
+if (pkgIdentity === "") {
   console.log(`[macos] app signée sans .pkg (pas de --pkg-sign) : ${appPath}`);
   process.exit(0);
 }
 
-const pkg = path.resolve(argument("--pkg-out", path.join(sortie, "Tentacle-TV.pkg")));
-await flat({ app: appPath, platform: "mas", identity: identitePkg, pkg, install: "/Applications" });
+const pkg = path.resolve(argFlag("--pkg-out", path.join(output, "Tentacle-TV.pkg")));
+await flat({ app: appPath, platform: "mas", identity: pkgIdentity, pkg, install: "/Applications" });
 console.log(`[macos] paquet App Store : ${pkg}`);

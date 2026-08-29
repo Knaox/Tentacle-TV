@@ -3,7 +3,7 @@
  *
  * C'est le seul canal par lequel mpv nous parle. Rien ici n'INTERROGE mpv : on
  * écoute, ce qui évite tout appel synchrone depuis le thread principal — voir
- * `mpvEtat.ts` pour ce que celui-ci coûte sur macOS.
+ * `mpvState.ts` pour ce que celui-ci coûte sur macOS.
  *
  * Séparé de `mpv.ts` pour tenir la limite de 300 lignes par fichier, et parce
  * que vider une file et gérer un cycle de vie sont deux métiers distincts.
@@ -20,17 +20,17 @@ import {
   MpvEventProperty,
   mpvApi,
 } from "./mpvFfi";
-import { retenir } from "./mpvEtat";
-import { retenirJournal } from "./coucheMetal";
-import { repondreLecture } from "./mpvLecture";
+import { remember } from "./mpvState";
+import { rememberLog } from "./metalLayer";
+import { settleRead } from "./mpvRead";
 import type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 
 /** Ce que la vidange doit pouvoir faire remonter à `mpv.ts`. */
-export interface Attaches {
+export interface Hooks {
   /** Règle une commande asynchrone qui vient d'aboutir. */
-  repondre: (id: number, code: number) => void;
+  settle: (id: number, code: number) => void;
   /** mpv annonce son arrêt — le seul instant où libérer ne bloque pas. */
-  auShutdown: () => void;
+  onShutdown: () => void;
 }
 
 export interface Sink {
@@ -48,7 +48,7 @@ const TIME_POS_INTERVAL_MS = 125;
 let lastTimePos = 0;
 
 /** Repart de zéro entre deux instances. */
-export function oublierCadence(): void {
+export function forgetCadence(): void {
   lastTimePos = 0;
 }
 
@@ -85,7 +85,7 @@ function decodeProperty(format: number, data: unknown): unknown {
  * tolère le retard : quand sa file déborde il émet `QUEUE_OVERFLOW` et jette
  * des messages de journal — jamais des évènements.
  */
-const MAX_PAR_PASSAGE = 128;
+const MAX_PER_PASS = 128;
 
 /**
  * Ce qu'on retient des messages de journal de mpv.
@@ -100,7 +100,7 @@ const MAX_PAR_PASSAGE = 128;
  * Filtré, parce que le niveau verbeux de mpv produit des centaines de lignes par
  * seconde et noierait tout le reste du journal.
  */
-const JOURNAL_RETENU = /colorspace|hdr|edr|metal layer|dolby|dovi|reconfig to/i;
+const LOG_KEPT = /colorspace|hdr|edr|metal layer|dolby|dovi|reconfig to/i;
 
 /**
  * Le bruit qui passe le filtre sans rien apprendre.
@@ -109,22 +109,22 @@ const JOURNAL_RETENU = /colorspace|hdr|edr|metal layer|dolby|dovi|reconfig to/i;
  * d'accès sur un flux profil 8.1 — des dizaines de lignes par seconde, qui
  * noyaient les deux seules qui comptent (`ITUR_2100_PQ`, `HDR active`).
  */
-const JOURNAL_BRUIT = /Multiple Dolby Vision RPUs/i;
+const LOG_NOISE = /Multiple Dolby Vision RPUs/i;
 
 /** Relaie ce que mpv dit de sa couche Metal. Développement seulement. */
-function journaliser(data: unknown): void {
+function logLine(data: unknown): void {
   const m = koffi.decode(data, MpvEventLogMessage) as { prefix: string; text: string };
-  if (!JOURNAL_RETENU.test(m.text) || JOURNAL_BRUIT.test(m.text)) return;
+  if (!LOG_KEPT.test(m.text) || LOG_NOISE.test(m.text)) return;
   // Retenu AVANT d'être tracé : c'est de là que vient la seule réponse fiable à
-  // « la couche est-elle en plage étendue ? » — voir `coucheMetal.ts`.
-  retenirJournal(m.text);
+  // « la couche est-elle en plage étendue ? » — voir `metalLayer.ts`.
+  rememberLog(m.text);
   console.info(`[mpv:${m.prefix}] ${m.text.trimEnd()}`);
 }
 
 /** Vide la file d'évènements et diffuse. */
-export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
+export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
   if (!ctx) return;
-  for (let n = 0; n < MAX_PAR_PASSAGE; n += 1) {
+  for (let n = 0; n < MAX_PER_PASS; n += 1) {
     const ptr = mpvApi().waitEvent(ctx, 0) as unknown;
     if (!ptr) return;
     const ev = koffi.decode(ptr, MpvEvent) as {
@@ -137,14 +137,14 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
     if (id === EVENT.NONE) return;
 
     if (id === EVENT.LOG_MESSAGE) {
-      if (ev.data) journaliser(ev.data);
+      if (ev.data) logLine(ev.data);
       continue;
     }
 
     // Une commande asynchrone vient d'aboutir : on règle sa promesse et on
     // n'en dit rien à la page — c'est l'appelant qui saura quoi en faire.
     if (id === EVENT.COMMAND_REPLY) {
-      attaches.repondre(Number(ev.reply_userdata), ev.error);
+      hooks.settle(Number(ev.reply_userdata), ev.error);
       continue;
     }
 
@@ -155,7 +155,7 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
       const p = ev.data
         ? (koffi.decode(ev.data, MpvEventProperty) as { format: number; data: unknown })
         : null;
-      repondreLecture(
+      settleRead(
         Number(ev.reply_userdata),
         ev.error,
         p === null ? null : decodeProperty(p.format, p.data),
@@ -176,13 +176,13 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
         if (now - lastTimePos < TIME_POS_INTERVAL_MS) continue;
         lastTimePos = now;
       }
-      const valeur = decodeProperty(p.format, p.data);
+      const value = decodeProperty(p.format, p.data);
       // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
       // macOS, où interroger mpv depuis ce thread fige l'application.
-      retenir(p.name, valeur);
+      remember(p.name, value);
       sink.property({
         name: p.name,
-        data: valeur,
+        data: value,
         id: Number(ev.reply_userdata),
       });
       continue;
@@ -194,13 +194,13 @@ export function drain(ctx: unknown, sink: Sink, attaches: Attaches): void {
       continue;
     }
 
-    const nom = EVENT_NAMES[id];
-    if (nom) sink.event({ event: nom });
+    const name = EVENT_NAMES[id];
+    if (name) sink.event({ event: name });
 
     // mpv annonce son arrêt : c'est le seul instant où libérer la poignée ne
     // bloque pas. On rend la main immédiatement, la file n'a plus rien à dire.
     if (id === EVENT.SHUTDOWN) {
-      attaches.auShutdown();
+      hooks.onShutdown();
       return;
     }
   }

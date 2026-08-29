@@ -9,12 +9,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * lecteur inutilisable là où la colle ne peut pas marcher.
  */
 
-const { etatColle } = vi.hoisted(() => ({
-  etatColle: { poserRend: true, poses: 0, retraits: 0 },
+const { glueState } = vi.hoisted(() => ({
+  glueState: { applyReturns: true, applied: 0, unloads: 0 },
 }));
 
-const { etatMpv } = vi.hoisted(() => ({
-  etatMpv: { largeur: null as string | null, hauteur: null as string | null },
+const { mpvState } = vi.hoisted(() => ({
+  mpvState: { width: null as string | null, height: null as string | null },
 }));
 
 vi.mock("electron", () => ({
@@ -22,44 +22,44 @@ vi.mock("electron", () => ({
 }));
 
 vi.mock("../video/mpv", () => ({
-  getProperty: (nom: string) =>
-    Promise.resolve(nom.endsWith("w") || nom === "osd-width" ? etatMpv.largeur : etatMpv.hauteur),
+  getProperty: (name: string) =>
+    Promise.resolve(name.endsWith("w") || name === "osd-width" ? mpvState.width : mpvState.height),
 }));
 
 vi.mock("./kwinGlue", () => ({
-  ColleKwin: class {
-    poser(): Promise<boolean> {
-      etatColle.poses += 1;
-      return Promise.resolve(etatColle.poserRend);
+  KwinGlue: class {
+    apply(): Promise<boolean> {
+      glueState.applied += 1;
+      return Promise.resolve(glueState.applyReturns);
     }
-    retirer(): Promise<void> {
-      etatColle.retraits += 1;
+    remove(): Promise<void> {
+      glueState.unloads += 1;
       return Promise.resolve();
     }
   },
 }));
 
-import { SurfaceWaylandColle } from "./waylandGlueSurface";
+import { SurfaceWaylandGlue } from "./waylandGlueSurface";
 
-function fauxHote(): { hote: BrowserWindow; setFullScreen: ReturnType<typeof vi.fn> } {
+function fakeHost(): { host: BrowserWindow; setFullScreen: ReturnType<typeof vi.fn> } {
   const setFullScreen = vi.fn();
-  const hote = {
+  const host = {
     isDestroyed: () => false,
     isFullScreen: () => false,
     isMinimized: () => false,
     setFullScreen,
     getBounds: () => ({ x: 10, y: 20, width: 1280, height: 720 }),
   } as unknown as BrowserWindow;
-  return { hote, setFullScreen };
+  return { host, setFullScreen };
 }
 
 beforeEach(() => {
-  etatColle.poserRend = true;
-  etatColle.poses = 0;
-  etatColle.retraits = 0;
+  glueState.applyReturns = true;
+  glueState.applied = 0;
+  glueState.unloads = 0;
   // L'écran du banc est à l'échelle 2 : l'hôte 1280x720 attend 2560x1440.
-  etatMpv.largeur = "2560";
-  etatMpv.hauteur = "1440";
+  mpvState.width = "2560";
+  mpvState.height = "1440";
   vi.useFakeTimers();
 });
 
@@ -69,36 +69,36 @@ afterEach(() => {
 
 describe("SurfaceWaylandColle", () => {
   it("attach pose la colle et NE TOUCHE PAS au plein écran", async () => {
-    const { hote, setFullScreen } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    const { host, setFullScreen } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
-    expect(etatColle.poses).toBe(1);
+    expect(glueState.applied).toBe(1);
     expect(setFullScreen).not.toHaveBeenCalled();
   });
 
   it("detach retire la colle, une seule fois", async () => {
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
     surface.detach();
     surface.detach();
-    expect(etatColle.retraits).toBe(1);
+    expect(glueState.unloads).toBe(1);
   });
 
   it("pose refusée : pas d'exception, et la géométrie le dit", async () => {
-    etatColle.poserRend = false;
-    const { hote, setFullScreen } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    glueState.applyReturns = false;
+    const { host, setFullScreen } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
     expect(setFullScreen).not.toHaveBeenCalled();
     expect(surface.geometrie()).toContain("colle=absente");
     surface.detach();
-    expect(etatColle.retraits).toBe(0);
+    expect(glueState.unloads).toBe(0);
   });
 
   it("la géométrie décrit l'hôte, la colle suivant côté compositeur", async () => {
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
     expect(surface.geometrie()).toBe(
       "wayland-colle hôte=1280x720+10+20 pleinÉcran=false colle=posée témoin=indécidable",
@@ -108,69 +108,69 @@ describe("SurfaceWaylandColle", () => {
 
 describe("la contre-lecture de la colle", () => {
   it("fenêtre mpv à la taille de l'hôte : vérifiée, et plus rien à mesurer", async () => {
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
 
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(400);
     expect(surface.geometrie()).toContain("témoin=collée");
-    expect(etatColle.poses).toBe(1);
+    expect(glueState.applied).toBe(1);
 
     // Un second fichier ne rejoue pas une mesure déjà concluante.
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(400);
-    expect(etatColle.poses).toBe(1);
+    expect(glueState.applied).toBe(1);
   });
 
   it("fenêtre libre : une seconde pose, une seule, puis l'aveu", async () => {
-    etatMpv.largeur = "1920";
-    etatMpv.hauteur = "1080";
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    mpvState.width = "1920";
+    mpvState.height = "1080";
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
 
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(400);
-    expect(etatColle.retraits).toBe(1);
-    expect(etatColle.poses).toBe(2);
+    expect(glueState.unloads).toBe(1);
+    expect(glueState.applied).toBe(2);
 
     // La seconde mesure part toute seule : elle ne dépend pas d'un nouveau
     // fichier. Toujours libre → on le dit, et on s'arrête là.
     await vi.advanceTimersByTimeAsync(400);
-    expect(etatColle.poses).toBe(2);
+    expect(glueState.applied).toBe(2);
     expect(surface.geometrie()).toContain("témoin=libre");
 
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(400);
-    expect(etatColle.poses).toBe(2);
+    expect(glueState.applied).toBe(2);
   });
 
   it("mesure absente : aucun verdict, aucune seconde pose", async () => {
-    etatMpv.largeur = null;
-    etatMpv.hauteur = null;
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    mpvState.width = null;
+    mpvState.height = null;
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
 
-    surface.fichierCharge();
+    surface.fileLoaded();
     await vi.advanceTimersByTimeAsync(400);
-    expect(etatColle.poses).toBe(1);
+    expect(glueState.applied).toBe(1);
     expect(surface.geometrie()).toContain("témoin=indécidable");
   });
 
   it("detach coupe la vérification en vol", async () => {
-    etatMpv.largeur = "1920";
-    etatMpv.hauteur = "1080";
-    const { hote } = fauxHote();
-    const surface = new SurfaceWaylandColle(hote);
+    mpvState.width = "1920";
+    mpvState.height = "1080";
+    const { host } = fakeHost();
+    const surface = new SurfaceWaylandGlue(host);
     await surface.attach();
 
-    surface.fichierCharge();
+    surface.fileLoaded();
     surface.detach();
     await vi.advanceTimersByTimeAsync(400);
     // Le retrait du détachement, et rien d'autre : pas de seconde pose.
-    expect(etatColle.retraits).toBe(1);
-    expect(etatColle.poses).toBe(1);
+    expect(glueState.unloads).toBe(1);
+    expect(glueState.applied).toBe(1);
   });
 });

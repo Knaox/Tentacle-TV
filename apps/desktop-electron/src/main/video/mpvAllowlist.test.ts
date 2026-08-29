@@ -19,33 +19,33 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  filtrerOptionsInit,
-  INVENTAIRE,
-  refuserCommande,
-  refuserEcriture,
+  filterInitOptions,
+  INVENTORY,
+  refuseCommand,
+  refuseWrite,
 } from "./mpvAllowlist";
 
 /** Racine de `apps/web`, depuis `apps/desktop-electron/src/main/video`. */
 const WEB = path.resolve(__dirname, "../../../../web/src");
 
-function sourceWeb(relatif: string): string {
-  const complet = path.join(WEB, relatif);
-  const contenu = readFileSync(complet, "utf8");
+function webSource(relative: string): string {
+  const complete = path.join(WEB, relative);
+  const content = readFileSync(complete, "utf8");
   // Un fichier vide ou introuvable ferait passer le test de dérive pour vert.
-  expect(contenu.length, `source web illisible : ${complet}`).toBeGreaterThan(0);
-  return contenu;
+  expect(content.length, `source web illisible : ${complete}`).toBeGreaterThan(0);
+  return content;
 }
 
 describe("commandes refusees", () => {
   it("refuse les commandes qui executent du code", () => {
     // Les trois sont PRÉSENTES dans la libmpv du dépôt (sonde, mpv v0.41.0).
-    for (const nom of ["run", "subprocess", "load-script"]) {
-      expect(refuserCommande(nom, ["cmd.exe"]), nom).not.toBeNull();
+    for (const name of ["run", "subprocess", "load-script"]) {
+      expect(refuseCommand(name, ["cmd.exe"]), name).not.toBeNull();
     }
   });
 
   it("refuse les commandes d'ecriture de fichier et de configuration", () => {
-    for (const nom of [
+    for (const name of [
       "load-config-file",
       "load-input-conf",
       "screenshot-to-file",
@@ -54,16 +54,16 @@ describe("commandes refusees", () => {
       "keybind",
       "script-message",
     ]) {
-      expect(refuserCommande(nom, ["x"]), nom).not.toBeNull();
+      expect(refuseCommand(name, ["x"]), name).not.toBeNull();
     }
   });
 
   it("borne l'arite de loadfile", () => {
     // `loadfile <url> <flags> <index> <options>` : le 4e argument porte des
     // options par fichier et rouvrirait tout ce que la liste d'options ferme.
-    expect(refuserCommande("loadfile", ["http://x/f.mkv"])).toBeNull();
+    expect(refuseCommand("loadfile", ["http://x/f.mkv"])).toBeNull();
     expect(
-      refuserCommande("loadfile", ["http://x/f.mkv", "replace", "0", "scripts=evil.lua"]),
+      refuseCommand("loadfile", ["http://x/f.mkv", "replace", "0", "scripts=evil.lua"]),
     ).not.toBeNull();
   });
 
@@ -71,40 +71,40 @@ describe("commandes refusees", () => {
     // L'URL d'un `loadfile` porte le jeton Jellyfin, et ce message part dans le
     // journal du processus principal.
     const secret = "http://serveur/f.mkv?api_key=SECRET123";
-    const motif = refuserCommande("loadfile", [secret, "replace", "0", "x"]);
-    expect(motif).not.toBeNull();
-    expect(motif).not.toContain("SECRET123");
-    expect(motif).not.toContain("api_key");
+    const pattern = refuseCommand("loadfile", [secret, "replace", "0", "x"]);
+    expect(pattern).not.toBeNull();
+    expect(pattern).not.toContain("SECRET123");
+    expect(pattern).not.toContain("api_key");
   });
 
   it("filtre le premier argument de set et de cycle", () => {
     // `set` et `cycle` ecrivent n'importe quelle propriete : les autoriser sur
     // le seul nom de commande ne protegerait de rien.
-    expect(refuserCommande("set", ["pause", "yes"])).toBeNull();
-    expect(refuserCommande("set", ["scripts", "C:/evil.lua"])).not.toBeNull();
-    expect(refuserCommande("set", ["input-ipc-server", "\\\\.\\pipe\\x"])).not.toBeNull();
-    expect(refuserCommande("cycle", ["pause"])).toBeNull();
-    expect(refuserCommande("cycle", ["scripts"])).not.toBeNull();
+    expect(refuseCommand("set", ["pause", "yes"])).toBeNull();
+    expect(refuseCommand("set", ["scripts", "C:/evil.lua"])).not.toBeNull();
+    expect(refuseCommand("set", ["input-ipc-server", "\\\\.\\pipe\\x"])).not.toBeNull();
+    expect(refuseCommand("cycle", ["pause"])).toBeNull();
+    expect(refuseCommand("cycle", ["scripts"])).not.toBeNull();
   });
 });
 
 describe("ecriture directe de propriete", () => {
   it("refuse les options de chargement de code", () => {
-    for (const nom of ["scripts", "load-scripts", "input-conf", "input-ipc-server", "include"]) {
-      expect(refuserEcriture(nom), nom).not.toBeNull();
+    for (const name of ["scripts", "load-scripts", "input-conf", "input-ipc-server", "include"]) {
+      expect(refuseWrite(name), name).not.toBeNull();
     }
   });
 
   it("accepte celles du lecteur", () => {
-    for (const nom of ["pause", "volume", "mute", "ao-volume", "speed", "sub-visibility"]) {
-      expect(refuserEcriture(nom), nom).toBeNull();
+    for (const name of ["pause", "volume", "mute", "ao-volume", "speed", "sub-visibility"]) {
+      expect(refuseWrite(name), name).toBeNull();
     }
   });
 });
 
 describe("options d'init", () => {
   it("ecarte les options dangereuses sans faire echouer l'init", () => {
-    const { retenues, refusees } = filtrerOptionsInit({
+    const { kept, refused } = filterInitOptions({
       vo: "gpu-next",
       scripts: "C:/evil.lua",
       "input-ipc-server": "\\\\.\\pipe\\x",
@@ -112,8 +112,8 @@ describe("options d'init", () => {
       config: "yes",
       include: "C:/evil.conf",
     });
-    expect(retenues).toEqual({ vo: "gpu-next" });
-    expect(refusees.sort()).toEqual(
+    expect(kept).toEqual({ vo: "gpu-next" });
+    expect(refused.sort()).toEqual(
       ["config", "include", "input-conf", "input-ipc-server", "scripts"].sort(),
     );
   });
@@ -121,7 +121,7 @@ describe("options d'init", () => {
 
 describe("ce que apps/web emet reellement passe", () => {
   it("les appels du lecteur de production", () => {
-    const appels: ReadonlyArray<readonly [string, string[]]> = [
+    const calls: ReadonlyArray<readonly [string, string[]]> = [
       ["seek", ["0.05", "relative"]],
       ["seek", ["120", "absolute"]],
       ["set", ["start", "+12.5"]],
@@ -135,17 +135,17 @@ describe("ce que apps/web emet reellement passe", () => {
       ["sub-add", ["http://serveur/sub.srt", "select"]],
       ["sub-add", ["http://serveur/sub.srt", "auto"]],
     ];
-    for (const [nom, args] of appels) {
-      expect(refuserCommande(nom, args), `${nom} ${args[0] ?? ""}`).toBeNull();
+    for (const [name, args] of calls) {
+      expect(refuseCommand(name, args), `${name} ${args[0] ?? ""}`).toBeNull();
     }
   });
 
   it("les proprietes ecrites par le lecteur et par le panneau de diagnostic", () => {
-    for (const nom of [
+    for (const name of [
       "pause", "volume", "mute", "ao-volume", "speed", "sub-visibility",
       "target-colorspace-hint", "tone-mapping", "target-prim", "hwdec",
     ]) {
-      expect(refuserEcriture(nom), nom).toBeNull();
+      expect(refuseWrite(name), name).toBeNull();
     }
   });
 });
@@ -158,40 +158,40 @@ describe("detection de derive avec apps/web", () => {
       "hooks/useMpvCommands.ts",
       "hooks/useMpvLifecycle.ts",
       "hooks/useDesktopPlayer.ts",
-    ].map(sourceWeb).join("\n");
+    ].map(webSource).join("\n");
 
-    const trouvees = new Set<string>();
+    const found = new Set<string>();
     for (const m of sources.matchAll(/\.command\(\s*["']([a-z0-9-]+)["']/gi)) {
-      const nom = m[1];
-      if (nom !== undefined) trouvees.add(nom);
+      const name = m[1];
+      if (name !== undefined) found.add(name);
     }
     // Si le motif ne trouve plus rien, c'est le test qui est cassé, pas le code.
-    expect(trouvees.size, "aucun appel .command() trouve dans apps/web").toBeGreaterThan(0);
+    expect(found.size, "aucun appel .command() trouve dans apps/web").toBeGreaterThan(0);
 
     // Sur le NOM seul : `set` et `cycle` exigent un premier argument, les
     // interroger à vide les ferait passer pour inconnues.
-    const connues = new Set(INVENTAIRE.commandes());
-    const inconnues = [...trouvees].filter((c) => !connues.has(c));
-    expect(inconnues, "commandes appelees par apps/web mais absentes de la liste blanche").toEqual([]);
+    const known = new Set(INVENTORY.commands());
+    const unknown = [...found].filter((c) => !known.has(c));
+    expect(unknown, "commandes appelees par apps/web mais absentes de la liste blanche").toEqual([]);
   });
 
   it("toute option d'init produite cote web est dans la liste", () => {
-    const source = sourceWeb("hooks/mpvRuntime.ts");
-    const debut = source.indexOf("export function buildMpvInitOptions");
-    expect(debut, "buildMpvInitOptions introuvable dans mpvRuntime.ts").toBeGreaterThan(-1);
-    const corps = source.slice(debut);
+    const source = webSource("hooks/mpvRuntime.ts");
+    const start = source.indexOf("export function buildMpvInitOptions");
+    expect(start, "buildMpvInitOptions introuvable dans mpvRuntime.ts").toBeGreaterThan(-1);
+    const body = source.slice(start);
 
     // Clés d'objet : `nom:` ou `"nom":`, en tête de ligne (les valeurs sont sur
     // la même ligne, jamais suivies de `:` en début de ligne).
-    const trouvees = new Set<string>();
-    for (const m of corps.matchAll(/^\s*"?([a-z][a-z0-9-]*)"?\s*:/gim)) {
-      const nom = m[1];
-      if (nom !== undefined) trouvees.add(nom);
+    const found = new Set<string>();
+    for (const m of body.matchAll(/^\s*"?([a-z][a-z0-9-]*)"?\s*:/gim)) {
+      const name = m[1];
+      if (name !== undefined) found.add(name);
     }
-    expect(trouvees.size, "aucune option trouvee dans buildMpvInitOptions").toBeGreaterThan(10);
+    expect(found.size, "aucune option trouvee dans buildMpvInitOptions").toBeGreaterThan(10);
 
-    const connues = new Set(INVENTAIRE.options());
-    const inconnues = [...trouvees].filter((o) => !connues.has(o));
-    expect(inconnues, "options produites par apps/web mais absentes de la liste blanche").toEqual([]);
+    const known = new Set(INVENTORY.options());
+    const unknown = [...found].filter((o) => !known.has(o));
+    expect(unknown, "options produites par apps/web mais absentes de la liste blanche").toEqual([]);
   });
 });

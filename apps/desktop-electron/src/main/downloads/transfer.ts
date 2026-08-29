@@ -62,7 +62,7 @@ interface TranscodeSession {
  * pause. Sans cet appel, un transcodage abandonné continue de tourner.
  */
 async function killTranscode(
-  reseau: TransferNet,
+  net: TransferNet,
   job: TransferJob,
   session: TranscodeSession | null,
 ): Promise<void> {
@@ -71,12 +71,12 @@ async function killTranscode(
     `${job.serverUrl}/api/jellyfin/Videos/ActiveEncodings` +
     `?deviceId=${session.deviceId}&playSessionId=${session.playSessionId}`;
   // X-Emby-Token : la route passe par le proxy `/api/jellyfin`.
-  await reseau.killTranscode(url, { "X-Emby-Token": job.token });
+  await net.killTranscode(url, { "X-Emby-Token": job.token });
 }
 
-async function retirer(chemin: string): Promise<void> {
+async function remove(path: string): Promise<void> {
   try {
-    await unlink(chemin);
+    await unlink(path);
   } catch {
     // Déjà absent : c'est le cas courant après un échec.
   }
@@ -89,7 +89,7 @@ async function retirer(chemin: string): Promise<void> {
  * pouvoir écrire un statut en base dans tous les cas.
  */
 export async function run(
-  reseau: TransferNet,
+  net: TransferNet,
   job: TransferJob,
   flags: TransferFlags,
   onProgress: (bytes: number) => void,
@@ -121,21 +121,21 @@ export async function run(
       await fh.close();
     }
   } else {
-    await retirer(part);
+    await remove(part);
   }
 
   const abort = new AbortController();
   const headers: Record<string, string> = { Authorization: `Bearer ${job.token}` };
   if (start > 0) headers["Range"] = `bytes=${start}-`;
 
-  let flux;
+  let stream;
   try {
-    flux = await reseau.open(job.url, headers, abort.signal);
+    stream = await net.open(job.url, headers, abort.signal);
   } catch {
     return { kind: "failed", code: "network", bytesDone: start };
   }
-  if (flux.status >= 400) {
-    const code = flux.status === 404 || flux.status === 403 || flux.status === 401
+  if (stream.status >= 400) {
+    const code = stream.status === 404 || stream.status === 403 || stream.status === 401
       ? "unavailable"
       : "network";
     return { kind: "failed", code, bytesDone: start };
@@ -143,71 +143,71 @@ export async function run(
 
   // Session de transcodage capturée AVANT la consommation du corps : il faut
   // pouvoir l'arrêter à toute sortie de boucle.
-  const play = flux.header("x-tentacle-play-session");
-  const device = flux.header("x-tentacle-device-id");
+  const play = stream.header("x-tentacle-play-session");
+  const device = stream.header("x-tentacle-device-id");
   const session: TranscodeSession | null =
     play !== null && device !== null ? { playSessionId: play, deviceId: device } : null;
 
   // 200 alors qu'on demandait une reprise : le serveur a ignoré le `Range`.
   // On repart de zéro proprement plutôt que d'écrire à côté.
-  if (flux.status === 200 && start > 0) {
-    await retirer(part);
+  if (stream.status === 200 && start > 0) {
+    await remove(part);
     start = 0;
   }
 
   let total = start;
-  let dernierePersistanceOctets = start;
-  let dernierePersistanceAt = Date.now();
+  let lastPersistBytes = start;
+  let lastPersistAt = Date.now();
   const fh = await open(part, existsSync(part) ? "r+" : "w").catch(() => null);
   if (fh === null) return { kind: "failed", code: "io", bytesDone: start };
 
   try {
-    for await (const bloc of flux.chunks) {
+    for await (const chunk of stream.chunks) {
       if (flags.cancel) {
         abort.abort();
         await fh.close();
-        await retirer(part);
-        await killTranscode(reseau, job, session);
+        await remove(part);
+        await killTranscode(net, job, session);
         return { kind: "canceled" };
       }
       if (flags.pause) {
         abort.abort();
         await fh.sync().catch(() => undefined);
         await fh.close();
-        await killTranscode(reseau, job, session);
+        await killTranscode(net, job, session);
         return { kind: "paused", bytesDone: total };
       }
 
       try {
-        await fh.write(bloc, 0, bloc.byteLength, total);
+        await fh.write(chunk, 0, chunk.byteLength, total);
       } catch (error) {
         const code = (error as NodeJS.ErrnoException).code === "ENOSPC" ? "disk-full" : "io";
         await fh.sync().catch(() => undefined);
         await fh.close();
-        await killTranscode(reseau, job, session);
+        await killTranscode(net, job, session);
         return { kind: "failed", code, bytesDone: total };
       }
-      total += bloc.byteLength;
+      total += chunk.byteLength;
 
-      const maintenant = Date.now();
+      const now = Date.now();
       if (
-        total - dernierePersistanceOctets >= PERSIST_EVERY_BYTES ||
-        maintenant - dernierePersistanceAt >= PERSIST_EVERY_MS
+        total - lastPersistBytes >= PERSIST_EVERY_BYTES ||
+        now - lastPersistAt >= PERSIST_EVERY_MS
       ) {
-        dernierePersistanceOctets = total;
-        dernierePersistanceAt = maintenant;
+        lastPersistBytes = total;
+        lastPersistAt = now;
         onProgress(total);
       }
     }
   } catch {
     await fh.sync().catch(() => undefined);
     await fh.close();
-    await killTranscode(reseau, job, session);
+    await killTranscode(net, job, session);
     // Flux coupé en cours de route : pause SYSTÈME, donc reprise automatique.
     return { kind: "failed", code: "network", bytesDone: total };
   }
 
-  await killTranscode(reseau, job, session);
+  await killTranscode(net, job, session);
   try {
     await fh.sync();
   } catch {
@@ -221,12 +221,12 @@ export async function run(
   // de présenter comme lisible un média tronqué.
   if (job.variant === "original" && job.expectedSize !== null && job.expectedSize > 0) {
     if (total !== job.expectedSize) {
-      await retirer(part);
+      await remove(part);
       return { kind: "failed", code: "integrity", bytesDone: 0 };
     }
   }
   if (total === 0) {
-    await retirer(part);
+    await remove(part);
     return { kind: "failed", code: "integrity", bytesDone: 0 };
   }
 

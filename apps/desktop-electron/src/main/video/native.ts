@@ -30,11 +30,11 @@ export function trace(message: string): void {
  * calage sont des CONFORTS — leur échec dégrade, il ne doit jamais empêcher de
  * regarder un film. Même contrat que l'app Tauri (`mpv_window.rs:137`).
  */
-export function sansFaillir(quoi: string, action: () => void): void {
+export function neverThrow(what: string, action: () => void): void {
   try {
     action();
   } catch (e) {
-    console.warn(`[video] ${quoi} en echec, lecture poursuivie : ${String(e)}`);
+    console.warn(`[video] ${what} en echec, lecture poursuivie : ${String(e)}`);
   }
 }
 
@@ -57,8 +57,8 @@ export function sansFaillir(quoi: string, action: () => void): void {
  * qui n'est pas gênant, mpv n'y reçoit jamais de `wid`.
  */
 export function nativeHandle(win: BrowserWindow): bigint {
-  const tampon = win.getNativeWindowHandle();
-  if (tampon.length >= 8) return tampon.readBigUInt64LE(0);
-  if (tampon.length >= 4) return BigInt(tampon.readUInt32LE(0));
+  const buffer = win.getNativeWindowHandle();
+  if (buffer.length >= 8) return buffer.readBigUInt64LE(0);
+  if (buffer.length >= 4) return BigInt(buffer.readUInt32LE(0));
   return 0n;
 }

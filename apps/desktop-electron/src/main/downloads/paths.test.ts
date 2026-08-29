@@ -24,18 +24,18 @@ import {
   setRoot,
 } from "./paths";
 
-const dossiers: string[] = [];
+const folders: string[] = [];
 
-function dossierTemporaire(): string {
+function tempFolder(): string {
   const dir = mkdtempSync(path.join(tmpdir(), "tentacle-root-"));
-  dossiers.push(dir);
+  folders.push(dir);
   return dir;
 }
 
 afterEach(() => {
   forgetRoot();
-  while (dossiers.length > 0) {
-    const dir = dossiers.pop();
+  while (folders.length > 0) {
+    const dir = folders.pop();
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -49,7 +49,7 @@ describe("safeJoin", () => {
   });
 
   it("refuse toute traversee", () => {
-    for (const mauvais of [
+    for (const bad of [
       "../evil",
       "media/../../evil",
       "media/../evil",
@@ -64,7 +64,7 @@ describe("safeJoin", () => {
       "C:/Windows/System32",
       "media/x:stream",
     ]) {
-      expect(() => safeJoin(root, mauvais), mauvais).toThrow("invalid-path");
+      expect(() => safeJoin(root, bad), bad).toThrow("invalid-path");
     }
   });
 
@@ -75,13 +75,13 @@ describe("safeJoin", () => {
 });
 
 describe("marge disque", () => {
-  const GIO = 1024 * 1024 * 1024;
+  const GIB = 1024 * 1024 * 1024;
 
   it("respecte la marge", () => {
-    expect(hasCapacity(GIO, 4 * GIO)).toBe(true);
+    expect(hasCapacity(GIB, 4 * GIB)).toBe(true);
     // 1 Gio demande + 2 de marge = 3 : il en faut STRICTEMENT plus.
-    expect(hasCapacity(GIO, 3 * GIO)).toBe(false);
-    expect(hasCapacity(10 * GIO, 5 * GIO)).toBe(false);
+    expect(hasCapacity(GIB, 3 * GIB)).toBe(false);
+    expect(hasCapacity(10 * GIB, 5 * GIB)).toBe(false);
   });
 
   it("ne deborde pas sur des valeurs demesurees", () => {
@@ -95,16 +95,16 @@ describe("marge disque", () => {
   it("l'espace libre est lisible sur un vrai volume", () => {
     // `statfsSync` remplace `fs4::available_space` : verifie qu'il repond, et
     // qu'il repond quelque chose de credible.
-    const libre = freeSpace(dossierTemporaire());
-    expect(libre).toBeGreaterThan(0);
-    expect(Number.isFinite(libre)).toBe(true);
+    const free = freeSpace(tempFolder());
+    expect(free).toBeGreaterThan(0);
+    expect(Number.isFinite(free)).toBe(true);
   });
 });
 
 describe("racine de stockage", () => {
   it("par defaut, sous le dossier de donnees", () => {
     const db = openInMemory();
-    const userData = dossierTemporaire();
+    const userData = tempFolder();
 
     const root = resolveRoot(db, userData);
 
@@ -120,7 +120,7 @@ describe("racine de stockage", () => {
        VALUES ('i1', 'ms1', 'original', 'media/i1/original-ms1.mkv', 1, 1)`,
     ).run();
 
-    expect(() => setRoot(db, dossierTemporaire())).toThrow("root-not-empty");
+    expect(() => setRoot(db, tempFolder())).toThrow("root-not-empty");
   });
 
   it("un refus d'ecriture porte le code EN PREFIXE, suivi de la cause systeme", () => {
@@ -129,12 +129,12 @@ describe("racine de stockage", () => {
     // le systeme. C'est le seul moyen portable de provoquer l'echec sans
     // dependre d'ACL, et le message qui en sort est celui que l'utilisateur
     // lira dans un paquet livre.
-    const fichier = path.join(dossierTemporaire(), "pas-un-dossier");
-    writeFileSync(fichier, "x");
+    const file = path.join(tempFolder(), "pas-un-dossier");
+    writeFileSync(file, "x");
 
     let capture: Error | null = null;
     try {
-      setRoot(db, path.join(fichier, "films"));
+      setRoot(db, path.join(file, "films"));
     } catch (error) {
       capture = error as Error;
     }
@@ -150,25 +150,25 @@ describe("racine de stockage", () => {
 
   it("un changement accepte est memorise et relu", () => {
     const db = openInMemory();
-    const ailleurs = path.join(dossierTemporaire(), "films");
+    const elsewhere = path.join(tempFolder(), "films");
 
-    expect(setRoot(db, ailleurs)).toBe(ailleurs);
-    expect(existsSync(path.join(ailleurs, "media"))).toBe(true);
+    expect(setRoot(db, elsewhere)).toBe(elsewhere);
+    expect(existsSync(path.join(elsewhere, "media"))).toBe(true);
 
     forgetRoot();
-    expect(resolveRoot(db, dossierTemporaire())).toBe(ailleurs);
+    expect(resolveRoot(db, tempFolder())).toBe(elsewhere);
   });
 });
 
 describe("suppressions", () => {
-  function racinePreparee(): string {
-    const root = dossierTemporaire();
+  function preparedRoot(): string {
+    const root = tempFolder();
     ensureLayout(root);
     return root;
   }
 
   it("efface le fichier ET son .part", () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     const rel = "media/i1/original-ms1.mkv";
     mkdirSync(path.join(root, "media", "i1"), { recursive: true });
     writeFileSync(path.join(root, rel), "video");
@@ -180,12 +180,12 @@ describe("suppressions", () => {
   });
 
   it("un fichier deja absent n'est pas une erreur", () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     expect(() => removeMediaFile(root, "media/i1/absent.mkv")).not.toThrow();
   });
 
   it("le dossier media emporte les side-cars de sous-titres", () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     mkdirSync(path.join(root, "media", "i1", "subs"), { recursive: true });
     writeFileSync(path.join(root, "media", "i1", "subs", "3-fre.srt"), "1");
 

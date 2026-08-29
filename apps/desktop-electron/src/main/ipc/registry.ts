@@ -16,7 +16,7 @@ import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import type { ZodType } from "zod";
 import { isAllowedCommand, type Command } from "../channels";
 import { isAppOrigin } from "../appProtocol";
-import { masquerSecrets } from "./redaction";
+import { redactSecrets } from "./redaction";
 
 /** Poignée d'une commande : son schéma d'entrée et son exécution. */
 export interface Handler<T> {
@@ -97,7 +97,7 @@ export class CommandRegistry {
           // qui portent un jeton (`?api_key=`), et un journal se copie dans un
           // ticket. Le masquage est ici, au point de passage, plutôt que dans
           // chaque message — voir `redaction.ts`.
-          console.error(`[ipc] ${command} a echoue : ${masquerSecrets(String(error))}`);
+          console.error(`[ipc] ${command} a echoue : ${redactSecrets(String(error))}`);
           throw error;
         }
       });

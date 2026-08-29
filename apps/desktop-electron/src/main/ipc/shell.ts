@@ -9,8 +9,8 @@
 
 import { app, dialog, ipcMain, powerSaveBlocker, type IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
-import { creerVeilleEcran } from "../powerSave";
-import { combiner, creerRenfortLogind, lanceurSysteme } from "../linux/veilleLogind";
+import { createDisplayWakeLock } from "../powerSave";
+import { combine, createLogindBackup, systemLauncher } from "../linux/logindInhibitor";
 import { openExternalSafely } from "../security";
 import {
   enterPlayerFullscreenScope,
@@ -27,12 +27,12 @@ const NO_ARGS = z.object({}).passthrough();
  *
  * Sous Linux, `powerSaveBlocker` tient l'écran par le compositeur mais ne
  * retient PAS logind — mesuré, `systemd-inhibit --list` ne montre alors rien de
- * nous. Le renfort le complète. Voir `linux/veilleLogind.ts`.
+ * nous. Le renfort le complète. Voir `linux/logindInhibitor.ts`.
  */
-const veilleEcran =
+const displayWakeLock =
   process.platform === "linux"
-    ? combiner(creerVeilleEcran(powerSaveBlocker), creerRenfortLogind(lanceurSysteme))
-    : creerVeilleEcran(powerSaveBlocker);
+    ? combine(createDisplayWakeLock(powerSaveBlocker), createLogindBackup(systemLauncher))
+    : createDisplayWakeLock(powerSaveBlocker);
 
 /**
  * Rend l'écran à sa veille normale, quoi qu'il arrive.
@@ -41,8 +41,8 @@ const veilleEcran =
  * qui court-circuite `prevent_display_sleep_stop` laisserait l'écran de
  * l'utilisateur allumé jusqu'à la fin de sa session.
  */
-export function rendreVeilleEcran(): void {
-  veilleEcran.rendre();
+export function releaseDisplayWakeLock(): void {
+  displayWakeLock.release();
 }
 
 export function registerShellCommands(registry: CommandRegistry): void {
@@ -58,13 +58,13 @@ export function registerShellCommands(registry: CommandRegistry): void {
     .add("prevent_display_sleep_start", {
       schema: NO_ARGS,
       run: () => {
-        veilleEcran.empecher();
+        displayWakeLock.prevent();
       },
     })
     .add("prevent_display_sleep_stop", {
       schema: NO_ARGS,
       run: () => {
-        veilleEcran.rendre();
+        displayWakeLock.release();
       },
     });
 }

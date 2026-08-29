@@ -67,7 +67,7 @@ const CallPtrProto = koffi.proto(
 // couche Win32 de ce projet manipule déjà (`video/win32.ts`).
 const WithHandleProto = koffi.proto("long __stdcall WithHandle(void *self, uint64 handle)");
 
-let initialise = false;
+let initialized = false;
 
 /**
  * Prépare le thread pour WinRT. Idempotent, et TOLÉRANT à l'échec.
@@ -76,8 +76,8 @@ let initialise = false;
  * Chromium. C'est le cas nominal ici, et ce n'est pas une erreur : on continue.
  */
 export function ensureWinRt(): void {
-  if (initialise) return;
-  initialise = true;
+  if (initialized) return;
+  initialized = true;
   // 0 = mono-thread (STA), ce que le thread principal d'Electron est déjà.
   RoInitialize(0);
 }
@@ -103,10 +103,10 @@ export function release(iface: ComPtr | null): void {
 }
 
 /** Fabrique d'activation d'une classe WinRT. `null` si elle est absente. */
-export function activationFactory(classe: string, iid: string): ComPtr | null {
+export function activationFactory(className: string, iid: string): ComPtr | null {
   ensureWinRt();
   const hstring: ComPtr[] = [null];
-  if ((WindowsCreateString(classe, classe.length, hstring) as number) !== S_OK) return null;
+  if ((WindowsCreateString(className, className.length, hstring) as number) !== S_OK) return null;
   try {
     const out: ComPtr[] = [null];
     const code = RoGetActivationFactory(hstring[0], guidBuffer(iid), out) as number;
@@ -179,14 +179,14 @@ export async function awaitOperation(
   const info = queryInterface(operation, IID.asyncInfo);
   if (info === null) return null;
   try {
-    const limite = Date.now() + timeoutMs;
+    const limit = Date.now() + timeoutMs;
     for (;;) {
-      const statut = callForInt32(info, SLOT_ASYNC_STATUS);
-      if (statut === null) return null;
-      if (statut !== STARTED) {
-        return statut === COMPLETED ? callForPointer(operation, resultSlot) : null;
+      const status = callForInt32(info, SLOT_ASYNC_STATUS);
+      if (status === null) return null;
+      if (status !== STARTED) {
+        return status === COMPLETED ? callForPointer(operation, resultSlot) : null;
       }
-      if (Date.now() > limite) return null;
+      if (Date.now() > limit) return null;
       // 100 ms : assez fin pour ne pas se faire attendre, assez large pour ne
       // rien coûter. La boucle d'évènements continue de tourner entre deux.
       await new Promise((resolve) => setTimeout(resolve, 100));

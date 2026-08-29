@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { descriptionMesure, nombreMpv, verdictColle } from "./glueCheck";
+import { measureDescription, mpvNumber, glueVerdict } from "./glueCheck";
 
 /**
  * Le témoin doit trancher deux mondes — une fenêtre mpv à la taille de l'hôte,
@@ -9,46 +9,46 @@ import { descriptionMesure, nombreMpv, verdictColle } from "./glueCheck";
 
 describe("nombreMpv", () => {
   it("lit ce que mpv rend en texte, refuse le reste", () => {
-    expect(nombreMpv("1920")).toBe(1920);
-    expect(nombreMpv(" 828.0 ")).toBe(828);
-    expect(nombreMpv(null)).toBeNull();
-    expect(nombreMpv("")).toBeNull();
+    expect(mpvNumber("1920")).toBe(1920);
+    expect(mpvNumber(" 828.0 ")).toBe(828);
+    expect(mpvNumber(null)).toBeNull();
+    expect(mpvNumber("")).toBeNull();
     // Une sortie vidéo pas encore montée rend zéro : ce n'est pas une taille.
-    expect(nombreMpv("0")).toBeNull();
-    expect(nombreMpv("non")).toBeNull();
+    expect(mpvNumber("0")).toBeNull();
+    expect(mpvNumber("non")).toBeNull();
   });
 });
 
 describe("verdictColle", () => {
-  const hote = { largeur: 1152, hauteur: 828 };
+  const host = { width: 1152, height: 828 };
 
   it("collée : la fenêtre mpv a la taille de l'hôte, à l'échelle près", () => {
-    expect(verdictColle({ largeur: 2304, hauteur: 1656 }, hote, 2)).toBe("collée");
-    expect(verdictColle({ largeur: 1152, hauteur: 828 }, hote, 1)).toBe("collée");
+    expect(glueVerdict({ width: 2304, height: 1656 }, host, 2)).toBe("collée");
+    expect(glueVerdict({ width: 1152, height: 828 }, host, 1)).toBe("collée");
     // Décorations et échelle fractionnaire : quelques points d'écart passent.
-    expect(verdictColle({ largeur: 1152, hauteur: 866 }, hote, 1)).toBe("collée");
+    expect(glueVerdict({ width: 1152, height: 866 }, host, 1)).toBe("collée");
   });
 
   it("libre : la fenêtre est née à la taille du clip, la colle n'a rien fait", () => {
-    expect(verdictColle({ largeur: 1920, hauteur: 1080 }, hote, 1)).toBe("libre");
+    expect(glueVerdict({ width: 1920, height: 1080 }, host, 1)).toBe("libre");
     // Le piège du poste 4K : l'échelle doit être appliquée, sinon tout est faux.
-    expect(verdictColle({ largeur: 1152, hauteur: 828 }, hote, 2)).toBe("libre");
+    expect(glueVerdict({ width: 1152, height: 828 }, host, 2)).toBe("libre");
   });
 
   it("indécidable : mesure absente, fenêtre réduite, échelle absurde", () => {
-    expect(verdictColle(null, hote, 2)).toBe("indécidable");
-    expect(verdictColle({ largeur: 100, hauteur: 0 }, hote, 2)).toBe("indécidable");
-    expect(verdictColle({ largeur: 100, hauteur: 100 }, { largeur: 0, hauteur: 0 }, 2)).toBe(
+    expect(glueVerdict(null, host, 2)).toBe("indécidable");
+    expect(glueVerdict({ width: 100, height: 0 }, host, 2)).toBe("indécidable");
+    expect(glueVerdict({ width: 100, height: 100 }, { width: 0, height: 0 }, 2)).toBe(
       "indécidable",
     );
-    expect(verdictColle({ largeur: 100, hauteur: 100 }, hote, 0)).toBe("indécidable");
+    expect(glueVerdict({ width: 100, height: 100 }, host, 0)).toBe("indécidable");
   });
 });
 
 describe("descriptionMesure", () => {
   it("dit les DEUX tailles — un verdict seul ne se relit pas", () => {
-    expect(descriptionMesure({ largeur: 1920, hauteur: 1080 }, { largeur: 1152, hauteur: 828 }, 2))
+    expect(measureDescription({ width: 1920, height: 1080 }, { width: 1152, height: 828 }, 2))
       .toBe("mpv 1920x1080 · attendu 2304x1656 (hôte 1152x828 ×2)");
-    expect(descriptionMesure(null, { largeur: 800, hauteur: 600 }, 1)).toContain("mpv ?");
+    expect(measureDescription(null, { width: 800, height: 600 }, 1)).toContain("mpv ?");
   });
 });

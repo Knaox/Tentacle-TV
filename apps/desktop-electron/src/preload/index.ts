@@ -20,8 +20,8 @@
 
 import { contextBridge, ipcRenderer } from "electron";
 import {
-  CANAL_MIGRATION_PRISE,
-  CANAL_MIGRATION_RAPPORT,
+  MIGRATION_TAKE_CHANNEL,
+  MIGRATION_REPORT_CHANNEL,
   isAllowedCommand,
   isAllowedEvent,
 } from "../main/channels";
@@ -45,8 +45,8 @@ const platform = argValue("--tentacle-platform=");
  * que de propager un `NaN` jusqu'à une hauteur CSS.
  */
 const titleBarHeight = ((): number => {
-  const brut = Number(argValue("--tentacle-titlebar="));
-  return Number.isFinite(brut) && brut > 0 ? brut : 0;
+  const raw = Number(argValue("--tentacle-titlebar="));
+  return Number.isFinite(raw) && raw > 0 ? raw : 0;
 })();
 
 /**
@@ -74,8 +74,8 @@ function assertPlatform(value: string): "win32" | "darwin" | "linux" {
  * le déduire — elle ne voit qu'un `linux`.
  */
 const montage = ((): "wayland" | "x11" | undefined => {
-  const brut = argValue("--tentacle-montage=");
-  return brut === "wayland" || brut === "x11" ? brut : undefined;
+  const raw = argValue("--tentacle-montage=");
+  return raw === "wayland" || raw === "x11" ? raw : undefined;
 })();
 
 /**
@@ -83,10 +83,13 @@ const montage = ((): "wayland" | "x11" | undefined => {
  * ou `plein-ecran` (compositeur sans placement — la lecture force le plein
  * écran). La page s'en sert pour ne montrer l'avis pédagogique que là où le
  * plein écran est réellement imposé.
+ *
+ * ⚠️ La CLÉ du pont reste `fenetrage` : la page la lit par chaîne
+ * (`window.tentacle.fenetrage`). Seule la variable locale porte le nom anglais.
  */
-const fenetrage = ((): "libre" | "plein-ecran" | undefined => {
-  const brut = argValue("--tentacle-fenetrage=");
-  return brut === "libre" || brut === "plein-ecran" ? brut : undefined;
+const windowing = ((): "libre" | "plein-ecran" | undefined => {
+  const raw = argValue("--tentacle-fenetrage=");
+  return raw === "libre" || raw === "plein-ecran" ? raw : undefined;
 })();
 
 /**
@@ -103,32 +106,32 @@ const fenetrage = ((): "libre" | "plein-ecran" | undefined => {
  * dater. Sur une installation neuve — le cas de tous les utilisateurs qui
  * migrent — le stockage est vide et les deux comportements coïncident.
  */
-function restaurerStockageLocal(): void {
+function restoreLocalStorage(): void {
   let dump: unknown;
   try {
-    dump = ipcRenderer.sendSync(CANAL_MIGRATION_PRISE);
+    dump = ipcRenderer.sendSync(MIGRATION_TAKE_CHANNEL);
   } catch {
     return;
   }
   if (dump === null || typeof dump !== "object") return;
 
-  let ecrites = 0;
+  let written = 0;
   for (const [key, value] of Object.entries(dump as Record<string, unknown>)) {
     if (typeof value !== "string") continue;
     try {
       if (localStorage.getItem(key) !== null) continue;
       localStorage.setItem(key, value);
-      ecrites += 1;
+      written += 1;
     } catch {
       // Quota atteint ou stockage inaccessible : ce qui est passé reste, et le
       // rapport dira que le compte ne tombe pas juste.
       break;
     }
   }
-  ipcRenderer.send(CANAL_MIGRATION_RAPPORT, ecrites);
+  ipcRenderer.send(MIGRATION_REPORT_CHANNEL, written);
 }
 
-restaurerStockageLocal();
+restoreLocalStorage();
 
 contextBridge.exposeInMainWorld("tentacle", {
   invoke(command: string, args?: Record<string, unknown>): Promise<unknown> {
@@ -151,7 +154,7 @@ contextBridge.exposeInMainWorld("tentacle", {
   platform: assertPlatform(platform),
   capabilities,
   ...(montage === undefined ? {} : { montage }),
-  ...(fenetrage === undefined ? {} : { fenetrage }),
+  ...(windowing === undefined ? {} : { fenetrage: windowing }),
   titleBarHeight,
 
   openExternal(url: string): Promise<void> {

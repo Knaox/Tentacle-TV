@@ -13,9 +13,9 @@ import { openInMemory } from "./db";
 import { enqueueBatch, mediaRelPath, neededBytesFor, type EnqueueItem } from "./enqueue";
 import { listForUser } from "./listing";
 import { CAPACITY_MARGIN_BYTES } from "./paths";
-import { compter, marquerVu } from "./testkit";
+import { countRows, markWatched } from "./testkit";
 
-const GIO = 1024 * 1024 * 1024;
+const GIB = 1024 * 1024 * 1024;
 
 function item(partial: Partial<EnqueueItem> = {}): EnqueueItem {
   return {
@@ -24,7 +24,7 @@ function item(partial: Partial<EnqueueItem> = {}): EnqueueItem {
     variant: "original",
     preset: null,
     containerExt: "mkv",
-    expectedSize: GIO,
+    expectedSize: GIB,
     estimatedSize: null,
     kind: "movie",
     seriesId: null,
@@ -44,21 +44,21 @@ function item(partial: Partial<EnqueueItem> = {}): EnqueueItem {
   };
 }
 
-function mettreEnFile(
+function enqueue(
   db: DatabaseSync,
   items: EnqueueItem[],
-  libre = 100 * GIO,
+  free = 100 * GIB,
 ): ReturnType<typeof enqueueBatch> {
-  return enqueueBatch(db, "u", items, libre, 1_000);
+  return enqueueBatch(db, "u", items, free, 1_000);
 }
 
 describe("validation", () => {
   it("un lot vide est refuse", () => {
-    expect(() => mettreEnFile(openInMemory(), [])).toThrow("empty-batch");
+    expect(() => enqueue(openInMemory(), [])).toThrow("empty-batch");
   });
 
   it("refuse ce qui ne peut pas entrer dans un nom de fichier", () => {
-    const mauvais: Array<Partial<EnqueueItem>> = [
+    const bad: Array<Partial<EnqueueItem>> = [
       { itemId: "" },
       { itemId: "../evil" },
       { itemId: "a".repeat(65) },
@@ -70,8 +70,8 @@ describe("validation", () => {
       { variant: "bogus" },
       { kind: "serie" },
     ];
-    for (const partial of mauvais) {
-      expect(() => mettreEnFile(openInMemory(), [item(partial)]), JSON.stringify(partial)).toThrow(
+    for (const partial of bad) {
+      expect(() => enqueue(openInMemory(), [item(partial)]), JSON.stringify(partial)).toThrow(
         "invalid-item",
       );
     }
@@ -79,8 +79,8 @@ describe("validation", () => {
 
   it("un lot invalide n'enqueue RIEN, meme partiellement", () => {
     const db = openInMemory();
-    expect(() => mettreEnFile(db, [item(), item({ itemId: "../evil" })])).toThrow("invalid-item");
-    expect(compter(db, "files")).toBe(0);
+    expect(() => enqueue(db, [item(), item({ itemId: "../evil" })])).toThrow("invalid-item");
+    expect(countRows(db, "files")).toBe(0);
   });
 });
 
@@ -100,20 +100,20 @@ describe("chemins figes", () => {
 describe("controle d'espace", () => {
   it("refuse le lot ENTIER quand la place manque", () => {
     const db = openInMemory();
-    const saison = [1, 2, 3].map((n) => item({ itemId: `ep${n}`, expectedSize: 2 * GIO }));
+    const season = [1, 2, 3].map((n) => item({ itemId: `ep${n}`, expectedSize: 2 * GIB }));
 
     // 6 Gio demandes + 2 de marge : 7 ne suffisent pas.
-    const outcome = mettreEnFile(db, saison, 7 * GIO);
+    const outcome = enqueue(db, season, 7 * GIB);
 
     expect(outcome.accepted).toBe(false);
-    expect(outcome.neededBytes).toBe(6 * GIO);
+    expect(outcome.neededBytes).toBe(6 * GIB);
     expect(outcome.fileIds).toEqual([]);
-    expect(compter(db, "files")).toBe(0);
+    expect(countRows(db, "files")).toBe(0);
   });
 
   it("accepte quand la marge est respectee", () => {
     const db = openInMemory();
-    const outcome = mettreEnFile(db, [item({ expectedSize: GIO })], 3 * GIO + 1);
+    const outcome = enqueue(db, [item({ expectedSize: GIB })], 3 * GIB + 1);
 
     expect(outcome.accepted).toBe(true);
     expect(outcome.fileIds).toHaveLength(1);
@@ -121,15 +121,15 @@ describe("controle d'espace", () => {
 
   it("les transferts deja promis entrent dans le calcul", () => {
     const db = openInMemory();
-    mettreEnFile(db, [item({ expectedSize: 5 * GIO })]);
+    enqueue(db, [item({ expectedSize: 5 * GIB })]);
 
     // Le second lot doit compter le premier, encore en file.
-    expect(neededBytesFor(db, [item({ itemId: "item2", expectedSize: 3 * GIO })])).toBe(8 * GIO);
+    expect(neededBytesFor(db, [item({ itemId: "item2", expectedSize: 3 * GIB })])).toBe(8 * GIB);
   });
 
   it("un fichier deja present ne compte pas deux fois", () => {
     const db = openInMemory();
-    mettreEnFile(db, [item()]);
+    enqueue(db, [item()]);
     db.exec("UPDATE files SET status = 'complete', bytes_done = 1073741824");
 
     // On va s'accrocher a l'existant, pas le retelecharger.
@@ -138,19 +138,19 @@ describe("controle d'espace", () => {
 
   it("l'estimation prime sur la taille annoncee pour l'Allege", () => {
     const db = openInMemory();
-    const allege = item({ variant: "light", preset: "p720", expectedSize: null, estimatedSize: 2 * GIO });
-    expect(neededBytesFor(db, [allege])).toBe(2 * GIO);
+    const light = item({ variant: "light", preset: "p720", expectedSize: null, estimatedSize: 2 * GIB });
+    expect(neededBytesFor(db, [light])).toBe(2 * GIB);
   });
 
   it("la marge est bien celle du Rust", () => {
-    expect(CAPACITY_MARGIN_BYTES).toBe(2 * GIO);
+    expect(CAPACITY_MARGIN_BYTES).toBe(2 * GIB);
   });
 });
 
 describe("effets de la mise en file", () => {
   it("pose la meta, le claim et les parametres de l'Allege", () => {
     const db = openInMemory();
-    const outcome = mettreEnFile(db, [
+    const outcome = enqueue(db, [
       item({
         variant: "light",
         preset: "p720",
@@ -166,34 +166,34 @@ describe("effets de la mise en file", () => {
       }),
     ]);
 
-    const entree = listForUser(db, "u")[0];
+    const entry = listForUser(db, "u")[0];
     expect(outcome.accepted).toBe(true);
-    expect(entree?.seriesName).toBe("Une serie");
-    expect(entree?.indexNumber).toBe(4);
-    expect(entree?.audioStreamIndex).toBe(3);
-    const brut = db.prepare("SELECT subtitles_json AS s FROM files").get();
-    expect(String(brut?.["s"])).toContain('"index":7');
+    expect(entry?.seriesName).toBe("Une serie");
+    expect(entry?.indexNumber).toBe(4);
+    expect(entry?.audioStreamIndex).toBe(3);
+    const raw = db.prepare("SELECT subtitles_json AS s FROM files").get();
+    expect(String(raw?.["s"])).toContain('"index":7');
   });
 
   it("re-mettre en file applique l'intention du dialogue", () => {
     const db = openInMemory();
-    mettreEnFile(db, [item()]);
-    marquerVu(db, "u", "item1");
+    enqueue(db, [item()]);
+    markWatched(db, "u", "item1");
 
     // Meme item, mais on coche cette fois « supprimer apres visionnage ».
-    mettreEnFile(db, [item({ autoDeleteAfterWatch: true, autoDeleteDelayMinutes: 45 })]);
+    enqueue(db, [item({ autoDeleteAfterWatch: true, autoDeleteDelayMinutes: 45 })]);
 
-    const entree = listForUser(db, "u")[0];
-    expect(entree?.autoDeleteAfterWatch).toBe(true);
-    expect(entree?.autoDeleteDelayMinutes).toBe(45);
+    const entry = listForUser(db, "u")[0];
+    expect(entry?.autoDeleteAfterWatch).toBe(true);
+    expect(entry?.autoDeleteDelayMinutes).toBe(45);
   });
 
   it("deux comptes sur le meme media ne creent qu'un fichier", () => {
     const db = openInMemory();
-    enqueueBatch(db, "userA", [item()], 100 * GIO, 1_000);
-    enqueueBatch(db, "userB", [item()], 100 * GIO, 2_000);
+    enqueueBatch(db, "userA", [item()], 100 * GIB, 1_000);
+    enqueueBatch(db, "userB", [item()], 100 * GIB, 2_000);
 
-    expect(compter(db, "files")).toBe(1);
-    expect(compter(db, "claims")).toBe(2);
+    expect(countRows(db, "files")).toBe(1);
+    expect(countRows(db, "claims")).toBe(2);
   });
 });

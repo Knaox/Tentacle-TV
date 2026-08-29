@@ -36,12 +36,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
 
-const ICI = path.dirname(fileURLToPath(import.meta.url));
-const APP = path.resolve(ICI, "..");
-const RACINE = path.resolve(APP, "../..");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const APP_DIR = path.resolve(HERE, "..");
+const ROOT = path.resolve(APP_DIR, "../..");
 
 /** Nom du produit, et donc de l'exécutable. Voir l'avertissement en tête. */
-const NOM = "Tentacle TV";
+const PRODUCT_NAME = "Tentacle TV";
 
 /**
  * Modules à embarquer.
@@ -50,35 +50,35 @@ const NOM = "Tentacle TV";
  * `@koromix/koffi-win32-x64` : oublier le second donne une erreur au premier
  * `mpv_create`, c'est-à-dire au premier film.
  */
-const MODULES = ["koffi", "@koromix/koffi-win32-x64", "zod"];
+const MODULES_DIR = ["koffi", "@koromix/koffi-win32-x64", "zod"];
 
-function argument(nom, defaut) {
-  const index = process.argv.indexOf(nom);
-  return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : defaut;
+function argFlag(name, fallback) {
+  const index = process.argv.indexOf(name);
+  return index >= 0 && process.argv[index + 1] !== undefined ? process.argv[index + 1] : fallback;
 }
 
-function copier(source, cible, quoi) {
-  if (!existsSync(source)) throw new Error(`${quoi} introuvable : ${source}`);
-  mkdirSync(path.dirname(cible), { recursive: true });
-  cpSync(source, cible, { recursive: true });
+function copyInto(source, target, what) {
+  if (!existsSync(source)) throw new Error(`${what} introuvable : ${source}`);
+  mkdirSync(path.dirname(target), { recursive: true });
+  cpSync(source, target, { recursive: true });
 }
 
 /** Assemble ce que packager doit voir comme « l'application ». */
-function preparer(stage) {
+function prepare(stage) {
   rmSync(stage, { recursive: true, force: true });
   mkdirSync(stage, { recursive: true });
 
-  copier(path.join(APP, "dist"), path.join(stage, "dist"), "build de la coquille");
+  copyInto(path.join(APP_DIR, "dist"), path.join(stage, "dist"), "build de la coquille");
 
   // Un `package.json` réduit : packager y lit `main`, `name` et `version`, et
   // rien d'autre n'a de sens dans un paquet livré (scripts, devDependencies).
-  const source = JSON.parse(readFileSync(path.join(APP, "package.json"), "utf8"));
+  const source = JSON.parse(readFileSync(path.join(APP_DIR, "package.json"), "utf8"));
   writeFileSync(
     path.join(stage, "package.json"),
     `${JSON.stringify(
       {
         name: "tentacle-tv",
-        productName: NOM,
+        productName: PRODUCT_NAME,
         version: source.version,
         main: source.main,
         author: "Damien ROUGE",
@@ -89,49 +89,49 @@ function preparer(stage) {
     )}\n`,
   );
 
-  for (const module of MODULES) {
-    copier(path.join(RACINE, "node_modules", module), path.join(stage, "node_modules", module), module);
+  for (const module of MODULES_DIR) {
+    copyInto(path.join(ROOT, "node_modules", module), path.join(stage, "node_modules", module), module);
   }
 }
 
 /** Ressources hors application : le build web et libmpv. */
-function preparerRessources(stage) {
-  const ressources = path.join(stage, "..", "resources");
-  rmSync(ressources, { recursive: true, force: true });
+function prepareResources(stage) {
+  const resources = path.join(stage, "..", "resources");
+  rmSync(resources, { recursive: true, force: true });
 
   // Les noms de dossier comptent : `extraResource` copie le BASENAME, et
   // `webRoot()` et `libmpvPath()` cherchent `resources/web` et `resources/lib`.
-  copier(path.resolve(RACINE, "apps/web/dist"), path.join(ressources, "web"), "build web");
-  copier(
-    path.resolve(RACINE, "apps/desktop-electron/lib/mpv/libmpv-2.dll"),
-    path.join(ressources, "lib", "libmpv-2.dll"),
+  copyInto(path.resolve(ROOT, "apps/web/dist"), path.join(resources, "web"), "build web");
+  copyInto(
+    path.resolve(ROOT, "apps/desktop-electron/lib/mpv/libmpv-2.dll"),
+    path.join(resources, "lib", "libmpv-2.dll"),
     "libmpv-2.dll",
   );
   // L'icône est gravée dans l'exe par packager, mais `windowIconPath()` la
   // cherche aussi à l'exécution — même visuel des deux côtés.
-  copier(
-    path.resolve(RACINE, "apps/desktop-electron/icons/icon.ico"),
-    path.join(ressources, "icon.ico"),
+  copyInto(
+    path.resolve(ROOT, "apps/desktop-electron/icons/icon.ico"),
+    path.join(resources, "icon.ico"),
     "icone",
   );
   return [
-    path.join(ressources, "web"),
-    path.join(ressources, "lib"),
-    path.join(ressources, "icon.ico"),
+    path.join(resources, "web"),
+    path.join(resources, "lib"),
+    path.join(resources, "icon.ico"),
   ];
 }
 
-const sortie = path.resolve(APP, argument("--out", "release"));
-const stage = path.join(sortie, "stage", "app");
+const output = path.resolve(APP_DIR, argFlag("--out", "release"));
+const stage = path.join(output, "stage", "app");
 
-preparer(stage);
-const extraResource = preparerRessources(stage);
+prepare(stage);
+const extraResource = prepareResources(stage);
 
-const chemins = await packager({
+const paths = await packager({
   dir: stage,
-  out: sortie,
-  name: NOM,
-  executableName: NOM,
+  out: output,
+  name: PRODUCT_NAME,
+  executableName: PRODUCT_NAME,
   platform: "win32",
   arch: "x64",
   overwrite: true,
@@ -145,9 +145,9 @@ const chemins = await packager({
   // chargé au DÉMARRAGE : un échec ne dégraderait pas la lecture, il
   // empêcherait l'application de s'ouvrir.
   asar: { unpack: "**/*.node" },
-  icon: path.resolve(RACINE, "apps/desktop-electron/icons/icon.ico"),
+  icon: path.resolve(ROOT, "apps/desktop-electron/icons/icon.ico"),
   extraResource,
   appCopyright: "Damien ROUGE",
 });
 
-console.log(`Paquet assemble : ${chemins.join(", ")}`);
+console.log(`Paquet assemble : ${paths.join(", ")}`);

@@ -19,49 +19,49 @@
  * l'écran 1080p d'à côté : identification d'apparence valide, écran faux. Le
  * trio ne dit quelque chose que d'une fenêtre plein écran effectivement mappée
  * — et le compositeur met ~200 ms à la mapper (202-203 ms sur trois runs).
- * D'où `libelleUneFoisMappee` : la mesure se rejoue jusqu'à désigner un écran.
+ * D'où `labelOnceMapped` : la mesure se rejoue jusqu'à désigner un écran.
  *
  * Un zoom de page (Ctrl+molette) fausse le trio : plus aucune correspondance,
- * et l'on rend `null` — dans le doute, on ne force rien (cf. `ecrans.ts`).
+ * et l'on rend `null` — dans le doute, on ne force rien (cf. `displays.ts`).
  */
 
 import { screen } from "electron";
-import { ecranPourMesure, type EcranCandidat, type MesurePage } from "./ecrans";
+import { displayForMeasure, type DisplayCandidate, type PageMeasure } from "./displays";
 
 /** Le strict nécessaire d'une fenêtre — et ce qu'un test sait imiter. */
-export interface FenetreMesurable {
+export interface MeasurableWindow {
   isDestroyed(): boolean;
   isFullScreen(): boolean;
   webContents: {
-    executeJavaScript(code: string, gestureUtilisateur?: boolean): Promise<unknown>;
+    executeJavaScript(code: string, userGesture?: boolean): Promise<unknown>;
   };
 }
 
 /** Les écrans d'Electron, réduits à ce que la mesure sait comparer. */
-export function candidatsAffiches(): EcranCandidat[] {
+export function shownCandidates(): DisplayCandidate[] {
   return screen.getAllDisplays().map((d) => ({
     label: d.label,
-    largeur: d.size.width,
-    hauteur: d.size.height,
-    densite: d.scaleFactor,
+    width: d.size.width,
+    height: d.size.height,
+    density: d.scaleFactor,
   }));
 }
 
 /** Le trio mesuré par la page — ou `null` si elle ne répond pas en nombres. */
-export async function mesureDeLaPage(
-  page: FenetreMesurable["webContents"],
-): Promise<MesurePage | null> {
+export async function pageMeasure(
+  page: MeasurableWindow["webContents"],
+): Promise<PageMeasure | null> {
   try {
-    const brut: unknown = await page.executeJavaScript(
+    const raw: unknown = await page.executeJavaScript(
       "[innerWidth, innerHeight, devicePixelRatio]",
       true,
     );
-    if (!Array.isArray(brut) || brut.length !== 3) return null;
-    const nombre = (n: unknown): n is number =>
+    if (!Array.isArray(raw) || raw.length !== 3) return null;
+    const count = (n: unknown): n is number =>
       typeof n === "number" && Number.isFinite(n) && n > 0;
-    const [largeur, hauteur, densite] = brut as unknown[];
-    if (!nombre(largeur) || !nombre(hauteur) || !nombre(densite)) return null;
-    return { largeur, hauteur, densite };
+    const [width, height, density] = raw as unknown[];
+    if (!count(width) || !count(height) || !count(density)) return null;
+    return { width, height, density };
   } catch {
     return null;
   }
@@ -72,25 +72,25 @@ export async function mesureDeLaPage(
  * `null` tant que la fenêtre n'est pas en plein écran, si la mesure échoue,
  * ou si elle reste ambiguë (deux écrans jumeaux).
  */
-export async function libelleParMesure(
-  hote: FenetreMesurable,
-  candidats: readonly EcranCandidat[],
+export async function labelByMeasure(
+  host: MeasurableWindow,
+  candidates: readonly DisplayCandidate[],
 ): Promise<string | null> {
-  if (hote.isDestroyed() || !hote.isFullScreen()) return null;
-  const mesure = await mesureDeLaPage(hote.webContents);
-  return mesure ? ecranPourMesure(mesure, candidats) : null;
+  if (host.isDestroyed() || !host.isFullScreen()) return null;
+  const measure = await pageMeasure(host.webContents);
+  return measure ? displayForMeasure(measure, candidates) : null;
 }
 
-/** Ce que `libelleUneFoisMappee` accepte de régler. */
-export interface AttenteMappage {
+/** Ce que `labelOnceMapped` accepte de régler. */
+export interface MappingWait {
   /** Nombre de mesures avant d'abandonner (défaut 20, soit ~2 s). */
-  essais?: number;
+  tries?: number;
   /** Pas entre deux mesures, en millisecondes (défaut 100). */
-  pasMs?: number;
+  stepMs?: number;
   /** Rend `false` pour couper une attente devenue sans objet (détachement). */
-  encore?: () => boolean;
+  still?: () => boolean;
   /** Écrans candidats — recalculés à chaque pas si absent (un écran peut arriver). */
-  candidats?: readonly EcranCandidat[];
+  candidates?: readonly DisplayCandidate[];
 }
 
 /**
@@ -98,16 +98,16 @@ export interface AttenteMappage {
  * plein écran et le compositeur ne l'a pas encore mappée. `null` après
  * épuisement : fenêtre jamais mappée, trio jamais reconnu, ou attente coupée.
  */
-export async function libelleUneFoisMappee(
-  hote: FenetreMesurable,
-  reglages: AttenteMappage = {},
+export async function labelOnceMapped(
+  host: MeasurableWindow,
+  settings: MappingWait = {},
 ): Promise<string | null> {
-  const { essais = 20, pasMs = 100, encore = () => true } = reglages;
-  for (let i = 0; i < essais; i++) {
-    if (!encore() || hote.isDestroyed()) return null;
-    const libelle = await libelleParMesure(hote, reglages.candidats ?? candidatsAffiches());
-    if (libelle !== null) return libelle;
-    await new Promise((r) => setTimeout(r, pasMs));
+  const { tries = 20, stepMs = 100, still = () => true } = settings;
+  for (let i = 0; i < tries; i++) {
+    if (!still() || host.isDestroyed()) return null;
+    const label = await labelByMeasure(host, settings.candidates ?? shownCandidates());
+    if (label !== null) return label;
+    await new Promise((r) => setTimeout(r, stepMs));
   }
   return null;
 }

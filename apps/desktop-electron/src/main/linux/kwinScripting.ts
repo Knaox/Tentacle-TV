@@ -38,20 +38,20 @@ import { execFile, execFileSync } from "node:child_process";
 
 /** Large : gdbus répond en millisecondes, mais un compositeur gelé ne doit pas
  * suspendre l'attache du lecteur plus longtemps que ça. */
-const DELAI_MS = 3000;
+const DELAY_MS = 3000;
 
 /** Court : au départ de l'application, on ne fait pas attendre la fermeture. */
-const DELAI_DEPART_MS = 500;
+const STARTUP_DELAY_MS = 500;
 
 function gdbus(args: readonly string[]): Promise<string | null> {
   return new Promise((resolve) => {
-    execFile("gdbus", [...args], { timeout: DELAI_MS }, (erreur, sortie) => {
-      resolve(erreur === null ? sortie : null);
+    execFile("gdbus", [...args], { timeout: DELAY_MS }, (error, output) => {
+      resolve(error === null ? output : null);
     });
   });
 }
 
-const CIBLE_SCRIPTING = [
+const SCRIPTING_TARGET = [
   "--session",
   "--dest",
   "org.kde.KWin",
@@ -60,7 +60,7 @@ const CIBLE_SCRIPTING = [
   "--method",
 ] as const;
 
-let disponibilite: Promise<boolean> | null = null;
+let availability: Promise<boolean> | null = null;
 
 /**
  * KWin expose-t-il son API de script sur le bus de session ?
@@ -68,54 +68,54 @@ let disponibilite: Promise<boolean> | null = null;
  * Mémorisé pour la vie du processus : le compositeur ne change pas en cours de
  * route (changer de session graphique passe par une relance).
  */
-export function apiScriptKwinDisponible(): Promise<boolean> {
-  disponibilite ??= gdbus([
+export function kwinScriptApiAvailable(): Promise<boolean> {
+  availability ??= gdbus([
     "introspect",
     "--session",
     "--dest",
     "org.kde.KWin",
     "--object-path",
     "/Scripting",
-  ]).then((sortie) => sortie !== null && sortie.includes("loadDeclarativeScript"));
-  return disponibilite;
+  ]).then((output) => output !== null && output.includes("loadDeclarativeScript"));
+  return availability;
 }
 
 /** Pour les tests : oublie le verdict mémorisé. */
-export function oublierDisponibiliteKwin(): void {
-  disponibilite = null;
+export function forgetKwinAvailability(): void {
+  availability = null;
 }
 
 /**
  * Charge un script déclaratif (QML) et rend son numéro, `null` si KWin refuse.
  *
  * Le NOM DE GREFFON est la clé de reprise : KWin refuse (`-1`) un nom déjà
- * chargé, et `dechargerScript` ne sait décrocher que par lui. Le numéro
+ * chargé, et `unloadScript` ne sait décrocher que par lui. Le numéro
  * négatif est le refus de KWin lui-même (chemin illisible, nom pris…).
  */
-export async function chargerScriptDeclaratif(
-  chemin: string,
-  nomGreffon?: string,
+export async function loadDeclarativeScript(
+  path: string,
+  pluginName?: string,
 ): Promise<number | null> {
-  const sortie = await gdbus([
+  const output = await gdbus([
     "call",
-    ...CIBLE_SCRIPTING,
+    ...SCRIPTING_TARGET,
     "org.kde.kwin.Scripting.loadDeclarativeScript",
-    chemin,
-    ...(nomGreffon === undefined ? [] : [nomGreffon]),
+    path,
+    ...(pluginName === undefined ? [] : [pluginName]),
   ]);
-  if (sortie === null) return null;
+  if (output === null) return null;
   // Le DERNIER nombre : gdbus peut typer sa réponse — « (int32 7,) » — et le
   // premier motif rencontré serait alors le 32 du type, pas le numéro.
-  const nombres = sortie.match(/-?\d+/g);
-  const dernier = nombres?.at(-1);
-  if (dernier === undefined) return null;
-  const id = Number(dernier);
+  const numbers = output.match(/-?\d+/g);
+  const last = numbers?.at(-1);
+  if (last === undefined) return null;
+  const id = Number(last);
   return id < 0 ? null : id;
 }
 
 /** Instancie le script chargé — c'est `run` qui exécute le QML. */
-export async function lancerScript(id: number): Promise<boolean> {
-  const sortie = await gdbus([
+export async function runScript(id: number): Promise<boolean> {
+  const output = await gdbus([
     "call",
     "--session",
     "--dest",
@@ -125,7 +125,7 @@ export async function lancerScript(id: number): Promise<boolean> {
     "--method",
     "org.kde.kwin.Script.run",
   ]);
-  return sortie !== null;
+  return output !== null;
 }
 
 /**
@@ -133,14 +133,14 @@ export async function lancerScript(id: number): Promise<boolean> {
  * signaux meurent avec elle. Rend faux si aucun greffon ne portait ce nom —
  * ce n'est pas une erreur, c'est la réponse à « reste-t-il quelque chose ? ».
  */
-export async function dechargerScript(nomGreffon: string): Promise<boolean> {
-  const sortie = await gdbus([
+export async function unloadScript(pluginName: string): Promise<boolean> {
+  const output = await gdbus([
     "call",
-    ...CIBLE_SCRIPTING,
+    ...SCRIPTING_TARGET,
     "org.kde.kwin.Scripting.unloadScript",
-    nomGreffon,
+    pluginName,
   ]);
-  return sortie?.includes("true") ?? false;
+  return output?.includes("true") ?? false;
 }
 
 /**
@@ -148,12 +148,12 @@ export async function dechargerScript(nomGreffon: string): Promise<boolean> {
  * boucle d'événements, une promesse n'y serait jamais tenue. Silencieux et
  * borné — au pire, le balayage du prochain lancement reprendra le fantôme.
  */
-export function dechargerScriptSync(nomGreffon: string): void {
+export function unloadScriptSync(pluginName: string): void {
   try {
     execFileSync(
       "gdbus",
-      ["call", ...CIBLE_SCRIPTING, "org.kde.kwin.Scripting.unloadScript", nomGreffon],
-      { timeout: DELAI_DEPART_MS, stdio: "ignore" },
+      ["call", ...SCRIPTING_TARGET, "org.kde.kwin.Scripting.unloadScript", pluginName],
+      { timeout: STARTUP_DELAY_MS, stdio: "ignore" },
     );
   } catch {
     /* bus absent, compositeur parti, délai dépassé : rien à sauver ici */

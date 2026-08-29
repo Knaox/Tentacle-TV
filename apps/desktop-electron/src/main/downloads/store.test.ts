@@ -16,7 +16,7 @@ import {
   findFile,
   publicFile,
 } from "./store";
-import { compter, ecrireMedia, racinePreparee, spec } from "./testkit";
+import { countRows, writeMedia, preparedRoot, spec } from "./testkit";
 
 describe("deduplication par claims", () => {
   it("deux comptes, un seul fichier", () => {
@@ -28,14 +28,14 @@ describe("deduplication par claims", () => {
     expect(a.created).toBe(true);
     expect(b.created).toBe(false);
     expect(a.fileId).toBe(b.fileId);
-    expect(compter(db, "files")).toBe(1);
-    expect(compter(db, "claims")).toBe(2);
+    expect(countRows(db, "files")).toBe(1);
+    expect(countRows(db, "claims")).toBe(2);
   });
 
   it("le fichier physique ne part qu'au DERNIER claim", () => {
-    const root = racinePreparee("tentacle-store-");
+    const root = preparedRoot("tentacle-store-");
     const rel = "media/item1/original-ms1.mkv";
-    ecrireMedia(root, rel);
+    writeMedia(root, rel);
     const db = openInMemory();
     const o = claimOrCreateFile(db, spec({ userId: "userA" }));
     claimOrCreateFile(db, spec({ userId: "userB" }));
@@ -53,9 +53,9 @@ describe("deduplication par claims", () => {
   });
 
   it("le dossier media entier part, side-cars compris", () => {
-    const root = racinePreparee("tentacle-store-");
-    ecrireMedia(root, "media/item1/original-ms1.mkv");
-    ecrireMedia(root, "media/item1/subs/3-fre.srt");
+    const root = preparedRoot("tentacle-store-");
+    writeMedia(root, "media/item1/original-ms1.mkv");
+    writeMedia(root, "media/item1/subs/3-fre.srt");
     const db = openInMemory();
     const o = claimOrCreateFile(db, spec());
 
@@ -66,7 +66,7 @@ describe("deduplication par claims", () => {
   });
 
   it("supprimer un claim inexistant ne casse rien", () => {
-    const root = racinePreparee("tentacle-store-");
+    const root = preparedRoot("tentacle-store-");
     const db = openInMemory();
 
     expect(deleteClaim(db, root, "inconnu", 999)).toEqual({
@@ -80,9 +80,9 @@ describe("deduplication par claims", () => {
     const o = claimOrCreateFile(db, spec());
     db.exec("UPDATE files SET status = 'canceled', bytes_done = 42");
 
-    const encore = claimOrCreateFile(db, spec({ nowMs: 2_000 }));
+    const still = claimOrCreateFile(db, spec({ nowMs: 2_000 }));
 
-    expect(encore.fileId).toBe(o.fileId);
+    expect(still.fileId).toBe(o.fileId);
     const file = getFile(db, o.fileId);
     expect(file?.status).toBe("queued");
     expect(file?.bytesDone).toBe(0);
@@ -96,7 +96,7 @@ describe("deduplication par claims", () => {
       spec({ variant: "light", preset: "p720", relPath: "media/item1/light-ms1-p720.mp4" }),
     );
 
-    expect(compter(db, "files")).toBe(2);
+    expect(countRows(db, "files")).toBe(2);
     expect(findFile(db, { itemId: "item1", mediaSourceId: "ms1", variant: "original", preset: null })).not
       .toBeNull();
     expect(
@@ -139,12 +139,12 @@ describe("forme publique", () => {
     expect(file).not.toBeNull();
     if (file === null) return;
 
-    const publique = publicFile(file);
+    const publicRow = publicFile(file);
 
     // `subtitlesJson` etait `#[serde(skip_serializing)]` cote Rust : il ne doit
     // jamais traverser l'IPC.
-    expect(publique).not.toHaveProperty("subtitlesJson");
-    expect(publique.relPath).toBe("media/item1/original-ms1.mkv");
-    expect(publique.status).toBe("queued");
+    expect(publicRow).not.toHaveProperty("subtitlesJson");
+    expect(publicRow.relPath).toBe("media/item1/original-ms1.mkv");
+    expect(publicRow.status).toBe("queued");
   });
 });

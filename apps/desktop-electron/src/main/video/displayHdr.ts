@@ -33,34 +33,34 @@
  * distingue demander d'obtenir, et c'est ce que le panneau de diagnostic doit
  * montrer. Voir `macosEdr.ts`.
  *
- * `fenetreVideo` est la NSWindow de mpv, quand elle existe : sur un poste à
+ * `videoWindow` est la NSWindow de mpv, quand elle existe : sur un poste à
  * plusieurs moniteurs, c'est l'écran qui l'affiche qui compte, pas le principal.
  */
-export function hdrActif(fenetreVideo?: unknown): boolean {
+export function hdrActive(videoWindow?: unknown): boolean {
   if (process.platform === "win32") {
-    return (require("./hdr") as typeof import("./hdr")).hdrActif();
+    return (require("./hdr") as typeof import("./hdr")).hdrActive();
   }
   // Sous Linux la question ne se pose pas à l'écran mais au RENDU : c'est
   // `video-target-params` qui dit ce qui sort, et lui seul. Voir `linux/hdr.ts`.
   if (process.platform === "linux") {
-    return (require("../linux/hdr") as typeof import("../linux/hdr")).sortieHdr() === true;
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).outputHdr() === true;
   }
   if (process.platform !== "darwin") return false;
-  const { lireEdr } = require("./macosEdr") as typeof import("./macosEdr");
-  return lireEdr(fenetreVideo ?? null).obtenue;
+  const { readEdr } = require("./macosEdr") as typeof import("./macosEdr");
+  return readEdr(videoWindow ?? null).granted;
 }
 
 /**
  * L'écran sait-il faire de la plage étendue ? macOS seulement.
  *
- * ⚠️ À ne PAS confondre avec `hdrSupporte`, qui commande l'affichage de la
+ * ⚠️ À ne PAS confondre avec `hdrSupported`, qui commande l'affichage de la
  * préférence de bascule et doit rester faux ici : il n'y a rien à basculer sur
  * macOS. Celle-ci ne sert qu'au diagnostic.
  */
-export function edrCapable(fenetreVideo?: unknown): boolean {
+export function edrCapable(videoWindow?: unknown): boolean {
   if (process.platform !== "darwin") return false;
-  const { lireEdr } = require("./macosEdr") as typeof import("./macosEdr");
-  return lireEdr(fenetreVideo ?? null).capable;
+  const { readEdr } = require("./macosEdr") as typeof import("./macosEdr");
+  return readEdr(videoWindow ?? null).capable;
 }
 
 /**
@@ -71,27 +71,27 @@ export function edrCapable(fenetreVideo?: unknown): boolean {
  * d'où le `false` franc : l'option disparaît de l'interface au lieu de promettre
  * un effet qui n'arrivera pas.
  */
-export function hdrSupporte(): boolean {
+export function hdrSupported(): boolean {
   if (process.platform !== "win32") return false;
-  return (require("./hdr") as typeof import("./hdr")).hdrSupporte();
+  return (require("./hdr") as typeof import("./hdr")).hdrSupported();
 }
 
 /** Avons-nous basculé l'écran nous-mêmes ? Jamais, hors Windows. */
-export function basculeEnCours(): boolean {
+export function toggleInProgress(): boolean {
   if (process.platform !== "win32") return false;
-  return (require("./hdr") as typeof import("./hdr")).basculeEnCours();
+  return (require("./hdr") as typeof import("./hdr")).toggleInProgress();
 }
 
 /** Bascule l'écran en HDR. Sans objet hors Windows : rien à basculer. */
-export function activerHdr(): boolean {
+export function enableHdr(): boolean {
   if (process.platform !== "win32") return false;
-  return (require("./hdr") as typeof import("./hdr")).activerHdr();
+  return (require("./hdr") as typeof import("./hdr")).enableHdr();
 }
 
 /** Rend les écrans à leur état d'origine. Sans objet hors Windows. */
-export function restaurerHdr(): void {
+export function restoreHdr(): void {
   if (process.platform !== "win32") return;
-  (require("./hdr") as typeof import("./hdr")).restaurerHdr();
+  (require("./hdr") as typeof import("./hdr")).restoreHdr();
 }
 
 /**
@@ -102,27 +102,27 @@ export function restaurerHdr(): void {
  * elle vraiment en plage étendue ? `null` = on ne sait pas, et surtout pas
  * « non ».
  *
- * ⚠️ À NE PAS confondre avec `hdrActif` sur macOS, qui est instantané et dépend
+ * ⚠️ À NE PAS confondre avec `hdrActive` sur macOS, qui est instantané et dépend
  * de la SCÈNE — une scène de nuit retombe à 1,00 sur une lecture parfaitement
  * HDR. Celui-ci ne dépend pas de l'image.
  */
-export function renduEnHdr(): boolean | null {
+export function renderedInHdr(): boolean | null {
   if (process.platform === "darwin") {
-    return (require("./coucheMetal") as typeof import("./coucheMetal")).coucheEnHdr();
+    return (require("./metalLayer") as typeof import("./metalLayer")).layerInHdr();
   }
   if (process.platform === "linux") {
-    return (require("../linux/hdr") as typeof import("../linux/hdr")).sortieHdr();
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).outputHdr();
   }
   return null;
 }
 
 /** L'espace de sortie en une ligne lisible, pour le panneau de diagnostic. */
-export function espaceRendu(): string | null {
+export function renderSpace(): string | null {
   if (process.platform === "darwin") {
-    return (require("./coucheMetal") as typeof import("./coucheMetal")).espaceCouche();
+    return (require("./metalLayer") as typeof import("./metalLayer")).layerSpace();
   }
   if (process.platform === "linux") {
-    return (require("../linux/hdr") as typeof import("../linux/hdr")).espaceSortie();
+    return (require("../linux/hdr") as typeof import("../linux/hdr")).outputSpace();
   }
   return null;
 }
@@ -134,18 +134,18 @@ export function espaceRendu(): string | null {
  * lisible, ce qui casse au premier changement de formulation.
  *
  * `null` = la question ne se pose pas (rien relevé, contenu SDR, autre
- * plateforme — macOS a `renduEnHdr`, qui répond autrement à autre chose).
+ * plateforme — macOS a `renderedInHdr`, qui répond autrement à autre chose).
  */
-export function transmissionRendu(): boolean | null {
+export function renderTransmission(): boolean | null {
   if (process.platform !== "linux") return null;
-  return (require("../linux/hdr") as typeof import("../linux/hdr")).transmissionHdr();
+  return (require("../linux/hdr") as typeof import("../linux/hdr")).hdrTransmission();
 }
 
 /**
  * La plage accordée par le compositeur, en multiples du blanc SDR — l'équivalent
  * Linux du headroom EDR de macOS. `null` hors Linux ou hors lecture.
  */
-export function picRendu(): number | null {
+export function renderPeak(): number | null {
   if (process.platform !== "linux") return null;
-  return (require("../linux/hdr") as typeof import("../linux/hdr")).picSortie();
+  return (require("../linux/hdr") as typeof import("../linux/hdr")).outputPeak();
 }

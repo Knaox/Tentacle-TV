@@ -13,11 +13,11 @@ import { ensureLayout } from "./downloads/paths";
 import { LOCAL_ASSET_TOKEN, mimeFor, serveLocalAsset } from "./localAssets";
 
 const APP_ORIGIN = "tentacle://app";
-const dossiers: string[] = [];
+const folders: string[] = [];
 
-function racinePreparee(): string {
+function preparedRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), "tentacle-assets-"));
-  dossiers.push(root);
+  folders.push(root);
   ensureLayout(root);
   mkdirSync(path.join(root, "meta", "i1"), { recursive: true });
   writeFileSync(path.join(root, "meta", "i1", "primary.jpg"), "affiche");
@@ -28,8 +28,8 @@ function racinePreparee(): string {
 }
 
 afterEach(() => {
-  while (dossiers.length > 0) {
-    const dir = dossiers.pop();
+  while (folders.length > 0) {
+    const dir = folders.pop();
     if (dir !== undefined) rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -55,44 +55,44 @@ describe("types servis", () => {
 
 describe("service", () => {
   it("rend l'affiche avec son type et l'en-tete CORS", async () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
 
-    const reponse = await serveLocalAsset(get("/meta/i1/primary.jpg"), "/meta/i1/primary.jpg", root, APP_ORIGIN);
+    const response = await serveLocalAsset(get("/meta/i1/primary.jpg"), "/meta/i1/primary.jpg", root, APP_ORIGIN);
 
-    expect(reponse.status).toBe(200);
-    expect(reponse.headers.get("Content-Type")).toBe("image/jpeg");
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toBe("image/jpeg");
     // Sans cet en-tete, les <img> passeraient mais tout fetch() serait bloque.
-    expect(reponse.headers.get("Access-Control-Allow-Origin")).toBe(APP_ORIGIN);
-    expect(await reponse.text()).toBe("affiche");
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(APP_ORIGIN);
+    expect(await response.text()).toBe("affiche");
   });
 
   it("refuse un media, meme present sur le disque", async () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     const p = "/media/i1/original-ms1.mkv";
 
     expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status).toBe(404);
   });
 
   it("refuse toute traversee", async () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     for (const p of ["/../../secret.jpg", "/media/../../secret.jpg", "/autre/x.jpg", "/meta/%2e%2e/x.jpg"]) {
       expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status, p).toBe(404);
     }
   });
 
   it("un fichier absent est un 404, pas une erreur", async () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     const p = "/meta/inconnu/primary.jpg";
 
     expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status).toBe(404);
   });
 
   it("seul GET est servi", async () => {
-    const root = racinePreparee();
+    const root = preparedRoot();
     const p = "/meta/i1/primary.jpg";
-    const requete = new Request(`tentacle://local${p}`, { method: "POST" });
+    const request = new Request(`tentacle://local${p}`, { method: "POST" });
 
-    expect((await serveLocalAsset(requete, p, root, APP_ORIGIN)).status).toBe(405);
+    expect((await serveLocalAsset(request, p, root, APP_ORIGIN)).status).toBe(405);
   });
 });
 

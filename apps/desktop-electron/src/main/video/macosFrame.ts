@@ -74,15 +74,15 @@ export function fmt(r: Rect): string {
  * fenêtre qui retrouverait sa barre de titre serait servie correctement sans
  * qu'une ligne change.
  */
-export function cibleVideo(host: BrowserWindow, parent: unknown, retraitHaut = 0): Rect {
-  const cadre: Rect = msg.rect(parent, "frame");
-  const pageCouvreLeCadre = host.getBounds().height === host.getContentBounds().height;
-  const base = pageCouvreLeCadre ? cadre : msg.contentRect(parent, cadre);
-  if (retraitHaut <= 0) return base;
+export function videoTarget(host: BrowserWindow, parent: unknown, topInset = 0): Rect {
+  const frame: Rect = msg.rect(parent, "frame");
+  const pageCoversFrame = host.getBounds().height === host.getContentBounds().height;
+  const base = pageCoversFrame ? frame : msg.contentRect(parent, frame);
+  if (topInset <= 0) return base;
   // ⚠️ Coordonnées AppKit : l'origine est en BAS à gauche, donc `y + height` est
   // le bord HAUT. Retrancher à la hauteur en laissant `y` fait descendre ce bord
   // — c'est bien le haut qu'on libère. Déplacer `y` libérerait le bas.
-  return { ...base, height: base.height - retraitHaut };
+  return { ...base, height: base.height - topInset };
 }
 
 /**
@@ -92,10 +92,10 @@ export function cibleVideo(host: BrowserWindow, parent: unknown, retraitHaut = 0
  * que mpv compare ; la lire à l'exécution demanderait de charger CoreGraphics
  * pour un entier qui ne bouge pas depuis Mac OS X 10.0.
  */
-export const NIVEAU_BUREAU = -2147483623;
+export const DESKTOP_LEVEL = -2147483623;
 
 /** Deux rectangles au point près — les cadres sont des flottants. */
-export function memeRect(a: Rect, b: Rect): boolean {
+export function sameRect(a: Rect, b: Rect): boolean {
   return (
     Math.abs(a.x - b.x) < 1 &&
     Math.abs(a.y - b.y) < 1 &&
@@ -112,29 +112,29 @@ export function memeRect(a: Rect, b: Rect): boolean {
  * `addChildWindow:` aligne le niveau d'une fille sur celui de son parent, et
  * mémoriser une valeur ici la rendrait fausse au premier changement.
  */
-export function poserCadre(fenetre: unknown, cible: Rect, niveauNormal: number): void {
-  if (!fenetre) return;
+export function applyFrame(window: unknown, target: Rect, normalLevel: number): void {
+  if (!window) return;
   // Le niveau est réaffirmé à CHAQUE passe, même quand le cadre est déjà bon :
   // `addChildWindow:` recale le niveau d'une fille sur celui de son parent, et
   // l'empilement du plein écran repartirait avec lui.
-  if (msg.entier(fenetre, "level") !== niveauNormal) msg.setNiveau(fenetre, niveauNormal);
-  if (memeRect(msg.rect(fenetre, "frame"), cible)) return;
-  msg.setNiveau(fenetre, NIVEAU_BUREAU);
+  if (msg.int(window, "level") !== normalLevel) msg.setLevel(window, normalLevel);
+  if (sameRect(msg.rect(window, "frame"), target)) return;
+  msg.setLevel(window, DESKTOP_LEVEL);
   try {
-    msg.setFrame(fenetre, cible);
+    msg.setFrame(window, target);
   } finally {
     // `finally` et non la ligne suivante : une fenêtre laissée au niveau du
     // bureau passe DERRIÈRE le fond d'écran — mesuré, la vidéo disparaissait
     // sous les icônes du bureau alors que la sonde la voyait toujours (elle
     // capture la fenêtre, pas l'écran). Le calage est un confort, sa panne ne
     // doit pas emporter l'image.
-    msg.setNiveau(fenetre, niveauNormal);
+    msg.setLevel(window, normalLevel);
   }
   // Tracé seulement quand l'échappatoire elle-même a échoué : ce serait le
   // signe que mpv a changé de code, et rien d'autre ne le dirait — le symptôme
   // à l'écran est une bande de bureau qu'on prendrait pour un défaut de la page.
-  const obtenu = msg.rect(fenetre, "frame");
-  if (!memeRect(obtenu, cible)) {
-    trace(`cadre REFUSE — demande ${fmt(cible)}, obtenu ${fmt(obtenu)}`);
+  const granted = msg.rect(window, "frame");
+  if (!sameRect(granted, target)) {
+    trace(`cadre REFUSE — demande ${fmt(target)}, obtenu ${fmt(granted)}`);
   }
 }

@@ -10,31 +10,31 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 // `vi.hoisted` : la fabrique de `vi.mock` est remontée AU-DESSUS des imports,
 // elle ne peut donc pas fermer sur une variable ordinaire de ce module.
-const { posees, refusees } = vi.hoisted(() => ({
-  posees: [] as Array<[string, string]>,
-  refusees: new Set<string>(),
+const { applied, refused } = vi.hoisted(() => ({
+  applied: [] as Array<[string, string]>,
+  refused: new Set<string>(),
 }));
 
 vi.mock("./mpvFfi", () => ({
   mpvApi: () => ({
-    setOptionString: (_ctx: unknown, nom: string, valeur: string) => {
-      posees.push([nom, valeur]);
-      return refusees.has(nom) ? -5 : 0;
+    setOptionString: (_ctx: unknown, name: string, value: string) => {
+      applied.push([name, value]);
+      return refused.has(name) ? -5 : 0;
     },
   }),
 }));
 
-import { poserOptions } from "./mpvOptions";
+import { applyOptions } from "./mpvOptions";
 
 beforeEach(() => {
-  posees.length = 0;
-  refusees.clear();
+  applied.length = 0;
+  refused.clear();
 });
 
 describe("poserOptions", () => {
   it("coupe tous les scripts que mpv 0.40 charge de lui-même", () => {
-    poserOptions(null, {});
-    const posé = new Map(posees);
+    applyOptions(null, {});
+    const appliedMap = new Map(applied);
     for (const option of [
       "load-scripts",
       "load-auto-profiles",
@@ -46,34 +46,34 @@ describe("poserOptions", () => {
       "ytdl",
       "osc",
     ]) {
-      expect(posé.get(option), option).toBe("no");
+      expect(appliedMap.get(option), option).toBe("no");
     }
-    expect(posé.get("scripts")).toBe("");
+    expect(appliedMap.get("scripts")).toBe("");
   });
 
   it("passe les options de la page, et garde le dernier mot", () => {
-    poserOptions(null, { hwdec: "auto-safe", ytdl: "yes", osc: "yes" });
+    applyOptions(null, { hwdec: "auto-safe", ytdl: "yes", osc: "yes" });
 
-    expect(posees).toContainEqual(["hwdec", "auto-safe"]);
+    expect(applied).toContainEqual(["hwdec", "auto-safe"]);
     // La page a demandé les scripts ; c'est le socle qui parle en dernier, donc
     // c'est lui que mpv retient.
-    const dernier = (nom: string) => [...posees].reverse().find(([k]) => k === nom)?.[1];
-    expect(dernier("ytdl")).toBe("no");
-    expect(dernier("osc")).toBe("no");
+    const last = (name: string) => [...applied].reverse().find(([k]) => k === name)?.[1];
+    expect(last("ytdl")).toBe("no");
+    expect(last("osc")).toBe("no");
   });
 
   it("traduit les booléens de la page comme mpv les attend", () => {
-    poserOptions(null, { "keep-open": true, "input-default-bindings": false });
+    applyOptions(null, { "keep-open": true, "input-default-bindings": false });
 
-    expect(posees).toContainEqual(["keep-open", "yes"]);
-    expect(posees).toContainEqual(["input-default-bindings", "no"]);
+    expect(applied).toContainEqual(["keep-open", "yes"]);
+    expect(applied).toContainEqual(["input-default-bindings", "no"]);
   });
 
   it("dit au journal quelle option un libmpv refuse, sans jamais lever", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    refusees.add("hwdec");
+    refused.add("hwdec");
 
-    expect(() => poserOptions(null, { hwdec: "auto-safe" })).not.toThrow();
+    expect(() => applyOptions(null, { hwdec: "auto-safe" })).not.toThrow();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("hwdec=auto-safe"));
     // Une option acceptée, elle, ne fait pas de bruit.
     expect(warn.mock.calls.filter(([m]) => String(m).includes("keep-open"))).toHaveLength(0);

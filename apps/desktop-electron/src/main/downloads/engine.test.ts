@@ -15,51 +15,51 @@ import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "./db";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
-import { CREDS, moteur, racineTroisItems, reseauImmediat, reseauRetenu, semer } from "./testkit";
+import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed } from "./testkit";
 
 describe("parallelisme", () => {
   it("n'ouvre jamais plus de deux transferts a la fois", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    semer(db, "item1", 1_000);
-    semer(db, "item2", 2_000);
-    const troisieme = semer(db, "item3", 3_000);
-    const retenu = reseauRetenu();
-    const { engine } = moteur(db, root, retenu.net);
+    const root = rootWithThreeItems();
+    seed(db, "item1", 1_000);
+    seed(db, "item2", 2_000);
+    const third = seed(db, "item3", 3_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
 
     engine.start(CREDS);
     // Un tour de boucle complet : le worker passe par plusieurs `await` avant
     // d'ouvrir son flux (snapshot, nettoyage du `.part`).
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    expect(retenu.ouverts).toBe(MAX_PARALLEL);
+    expect(held.opened).toBe(MAX_PARALLEL);
     // Le troisieme reste en file tant qu'une place ne se libere pas.
-    expect(getFile(db, troisieme)?.status).toBe("queued");
-    retenu.liberer();
+    expect(getFile(db, third)?.status).toBe("queued");
+    held.release();
   });
 });
 
 describe("traduction des fins de transfert", () => {
   it("un transfert reussi passe en complete et libere la place", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const premier = semer(db, "item1", 1_000);
-    const second = semer(db, "item2", 2_000);
-    const { engine, evenements } = moteur(db, root, reseauImmediat(200));
+    const root = rootWithThreeItems();
+    const first = seed(db, "item1", 1_000);
+    const second = seed(db, "item2", 2_000);
+    const { engine, events } = makeEngine(db, root, immediateNet(200));
 
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
 
-    expect(getFile(db, premier)?.status).toBe("complete");
+    expect(getFile(db, first)?.status).toBe("complete");
     expect(getFile(db, second)?.status).toBe("complete");
-    expect(evenements).toContain("downloads://changed");
+    expect(events).toContain("downloads://changed");
   });
 
   it("une coupure reseau devient une pause SYSTEME, pas une erreur", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const fileId = semer(db, "item1", 1_000);
-    const { engine } = moteur(db, root, reseauImmediat(502));
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const { engine } = makeEngine(db, root, immediateNet(502));
 
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -69,15 +69,15 @@ describe("traduction des fins de transfert", () => {
     expect(file?.errorCode).toBeNull();
     // paused_by_user reste a 0 : la normalisation au prochain demarrage, ou le
     // reveil de veille, remettront le transfert en file tout seuls.
-    const brut = db.prepare("SELECT paused_by_user AS p FROM files WHERE id = ?").get(fileId);
-    expect(Number(brut?.["p"])).toBe(0);
+    const raw = db.prepare("SELECT paused_by_user AS p FROM files WHERE id = ?").get(fileId);
+    expect(Number(raw?.["p"])).toBe(0);
   });
 
   it("un media absent du serveur devient une erreur, pas une pause", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const fileId = semer(db, "item1", 1_000);
-    const { engine } = moteur(db, root, reseauImmediat(404));
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const { engine } = makeEngine(db, root, immediateNet(404));
 
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -91,23 +91,23 @@ describe("traduction des fins de transfert", () => {
 describe("gestes de l'utilisateur", () => {
   it("mettre en pause un transfert encore en file le sort de la file", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    semer(db, "item1", 1_000);
-    semer(db, "item2", 2_000);
-    const troisieme = semer(db, "item3", 3_000);
-    const retenu = reseauRetenu();
-    const { engine } = moteur(db, root, retenu.net);
+    const root = rootWithThreeItems();
+    seed(db, "item1", 1_000);
+    seed(db, "item2", 2_000);
+    const third = seed(db, "item3", 3_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
     engine.start(CREDS);
     await Promise.resolve();
 
-    engine.pause(troisieme);
+    engine.pause(third);
 
-    expect(getFile(db, troisieme)?.status).toBe("paused");
-    const brut = db.prepare("SELECT paused_by_user AS p FROM files WHERE id = ?").get(troisieme);
+    expect(getFile(db, third)?.status).toBe("paused");
+    const raw = db.prepare("SELECT paused_by_user AS p FROM files WHERE id = ?").get(third);
     // Pause EXPLICITE : elle survivra au redemarrage.
-    expect(Number(brut?.["p"])).toBe(1);
-    retenu.liberer();
-    // `liberer` relance la CASCADE (item1 finit, item2 s'enchaîne) : rendre la
+    expect(Number(raw?.["p"])).toBe(1);
+    held.release();
+    // `release` relance la CASCADE (item1 finit, item2 s'enchaîne) : rendre la
     // main en pleine écriture faisait courir le moteur contre le `rmSync` du
     // kit — ENOTEMPTY intermittent quand un fichier naissait sous `media/`
     // pendant la marche récursive (vu le 28.08, suite complète chargée).
@@ -118,9 +118,9 @@ describe("gestes de l'utilisateur", () => {
 
   it("reprendre remet en file et relance", async () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const fileId = semer(db, "item1", 1_000);
-    const { engine } = moteur(db, root, reseauImmediat(502));
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const { engine } = makeEngine(db, root, immediateNet(502));
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(getFile(db, fileId)?.status).toBe("paused");
@@ -135,9 +135,9 @@ describe("gestes de l'utilisateur", () => {
 
   it("annuler un transfert qui n'a pas demarre le marque annule", () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const fileId = semer(db, "item1", 1_000);
-    const { engine } = moteur(db, root, reseauImmediat(200));
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const { engine } = makeEngine(db, root, immediateNet(200));
 
     engine.cancel(fileId);
 
@@ -147,9 +147,9 @@ describe("gestes de l'utilisateur", () => {
 
   it("sans identifiants, le moteur ne lance rien", () => {
     const db = openInMemory();
-    const root = racineTroisItems();
-    const fileId = semer(db, "item1", 1_000);
-    const { engine } = moteur(db, root, reseauImmediat(200));
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const { engine } = makeEngine(db, root, immediateNet(200));
 
     engine.pump();
 

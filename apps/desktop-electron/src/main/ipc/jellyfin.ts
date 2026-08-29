@@ -48,7 +48,7 @@ import { CommandRegistry } from "./registry";
  * ⚠️ Ne pas remplacer par un motif : c'est cette liste, et elle seule, qui
  * empêche la commande de devenir un relais HTTP généraliste.
  */
-const CHEMINS = new Set([
+const PATHS = new Set([
   "/Sessions/Playing",
   "/Sessions/Playing/Progress",
   "/Sessions/Playing/Stopped",
@@ -94,10 +94,10 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
   registry.add("jellyfin_session_post", {
     schema: POST,
     run: async ({ baseUrl, path, token, authHeader, body }) => {
-      if (!CHEMINS.has(path)) throw new Error(`chemin de session refuse: ${path}`);
+      if (!PATHS.has(path)) throw new Error(`chemin de session refuse: ${path}`);
 
       const abort = new AbortController();
-      const minuteur = setTimeout(() => abort.abort(), TIMEOUT_MS);
+      const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
       try {
         const response = await net.fetch(`${baseUrl}${path}`, {
           method: "POST",
@@ -111,7 +111,7 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
         });
         return { status: response.status };
       } finally {
-        clearTimeout(minuteur);
+        clearTimeout(timer);
       }
     },
   });
@@ -123,11 +123,11 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
   registry.add("jellyfin_playback_info", {
     schema: PLAYBACK_INFO,
     run: async ({ baseUrl, itemId, query, token, authHeader, body }) => {
-      const chemin = `/Items/${itemId}/PlaybackInfo${query === "" ? "" : `?${query}`}`;
+      const path = `/Items/${itemId}/PlaybackInfo${query === "" ? "" : `?${query}`}`;
       const abort = new AbortController();
-      const minuteur = setTimeout(() => abort.abort(), TIMEOUT_MS);
+      const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
       try {
-        const response = await net.fetch(`${baseUrl}${chemin}`, {
+        const response = await net.fetch(`${baseUrl}${path}`, {
           method: "POST",
           body,
           headers: {
@@ -139,7 +139,7 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
         });
         return { status: response.status, body: await response.text() };
       } finally {
-        clearTimeout(minuteur);
+        clearTimeout(timer);
       }
     },
   });
@@ -150,13 +150,13 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
   registry.add("jellyfin_kill_encodings", {
     schema: KILL_ENCODINGS,
     run: async ({ baseUrl, deviceId, playSessionId, token, authHeader }) => {
-      const chemin =
+      const path =
         `/Videos/ActiveEncodings?deviceId=${encodeURIComponent(deviceId)}` +
         `&playSessionId=${encodeURIComponent(playSessionId)}`;
       const abort = new AbortController();
-      const minuteur = setTimeout(() => abort.abort(), TIMEOUT_MS);
+      const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
       try {
-        const response = await net.fetch(`${baseUrl}${chemin}`, {
+        const response = await net.fetch(`${baseUrl}${path}`, {
           method: "DELETE",
           headers: {
             "X-Emby-Token": token,
@@ -166,7 +166,7 @@ export function registerJellyfinCommands(registry: CommandRegistry): void {
         });
         return { status: response.status };
       } finally {
-        clearTimeout(minuteur);
+        clearTimeout(timer);
       }
     },
   });

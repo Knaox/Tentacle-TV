@@ -24,7 +24,7 @@
  */
 
 /** Remplace ce qui est masqué. Court, et reconnaissable dans un journal. */
-const MASQUE = "***";
+const REDACTED = "***";
 
 /**
  * Motifs de secret, dans l'ordre d'application.
@@ -32,13 +32,13 @@ const MASQUE = "***";
  * Les noms de paramètre sont ceux que Jellyfin accepte réellement (`api_key` et
  * `ApiKey`, la casse variant selon qui fabrique l'URL), plus les nôtres.
  */
-const MOTIFS: ReadonlyArray<readonly [RegExp, string]> = [
+const PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
   // Jeton en paramètre d'URL : on garde le NOM du paramètre, il situe l'erreur.
-  [/([?&](?:api_key|apikey|token|access_token|x-emby-token)=)[^&\s"']+/gi, `$1${MASQUE}`],
+  [/([?&](?:api_key|apikey|token|access_token|x-emby-token)=)[^&\s"']+/gi, `$1${REDACTED}`],
   // En-tête recopié dans un message.
-  [/((?:authorization|x-emby-token)\s*:\s*)(?:bearer\s+)?[^\s"',;]+/gi, `$1${MASQUE}`],
+  [/((?:authorization|x-emby-token)\s*:\s*)(?:bearer\s+)?[^\s"',;]+/gi, `$1${REDACTED}`],
   // Forme « Bearer <jeton> » isolée.
-  [/\b(bearer\s+)[^\s"',;]+/gi, `$1${MASQUE}`],
+  [/\b(bearer\s+)[^\s"',;]+/gi, `$1${REDACTED}`],
 ];
 
 /**
@@ -48,10 +48,10 @@ const MOTIFS: ReadonlyArray<readonly [RegExp, string]> = [
  * entropie effacerait des identifiants Jellyfin parfaitement anodins et rendrait
  * les journaux illisibles. On ne masque que ce qui est nommément un secret.
  */
-export function masquerSecrets(message: string): string {
-  let sortie = message;
-  for (const [motif, remplacement] of MOTIFS) {
-    sortie = sortie.replace(motif, remplacement);
+export function redactSecrets(message: string): string {
+  let output = message;
+  for (const [pattern, replacement] of PATTERNS) {
+    output = output.replace(pattern, replacement);
   }
-  return sortie;
+  return output;
 }

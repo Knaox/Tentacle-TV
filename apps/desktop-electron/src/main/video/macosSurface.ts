@@ -18,18 +18,18 @@
 
 import type { BrowserWindow } from "electron";
 import { setPlayerSurfaceTransparent } from "../window";
-import { sansFaillir, trace } from "./native";
-import { depuisHandle, msg, type Rect } from "./objc";
-import { fenetreDisparue, guetterFenetreMpv, vestigesMpv } from "./macosGuetFenetre";
-import { attacherSousLaPage, cadreSansLisere, reordonnerSousLaPage } from "./macosChildWindow";
-import { guetterEdr, oublierEdr } from "./macosEdr";
-import { cibleVideo, poserCadre } from "./macosFrame";
-import { retraitBandeau } from "../macosTitleBar";
-import { decrireMontage, etatALaDecouverte } from "./macosSurfaceDiag";
+import { neverThrow, trace } from "./native";
+import { fromHandle, msg, type Rect } from "./objc";
+import { windowGone, watchMpvWindow, mpvLeftovers } from "./macosWindowWatch";
+import { attachBelowPage, frameWithoutSeam, reorderBelowPage } from "./macosChildWindow";
+import { watchEdr, forgetEdr } from "./macosEdr";
+import { videoTarget, applyFrame } from "./macosFrame";
+import { bannerInset } from "../macosTitleBar";
+import { describeMontage, stateAtDiscovery } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
 
-/** Un recalage par image suffit — voir `planifierCalage`. */
-const CALAGE_MS = 16;
+/** Un recalage par image suffit — voir `scheduleAlign`. */
+const ALIGN_MS = 16;
 /**
  * Et une VEILLE : les évènements d'Electron ne suffisent pas.
  *
@@ -38,22 +38,22 @@ const CALAGE_MS = 16;
  * l'extérieur, 110 ms après un calage parfait. Une réaction aux évènements ne
  * peut PAS l'attraper. Coût : deux lectures de rectangle par tick, en lecture.
  */
-const VEILLE_MS = 100;
+const WATCHDOG_MS = 100;
 
 export class MacosSurface implements VideoSurface {
   /** La `NSWindow` d'Electron, obtenue depuis sa `NSView` racine. */
   private readonly parent: unknown;
   private mpvWindow: unknown = null;
-  private recherche: (() => void) | null = null;
-  private calage: ReturnType<typeof setTimeout> | null = null;
-  private veille: ReturnType<typeof setInterval> | null = null;
-  private attache = false;
+  private search: (() => void) | null = null;
+  private alignTimer: ReturnType<typeof setTimeout> | null = null;
+  private wakeLock: ReturnType<typeof setInterval> | null = null;
+  private attached = false;
 
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
-  private numero = 0;
+  private number = 0;
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
-  private readonly suivre = (): void => this.planifierCalage();
+  private readonly follow = (): void => this.scheduleAlign();
 
   /**
    * ⚠️ Le plein écran ne se contente PAS d'un recalage : macOS emmène la fenêtre
@@ -61,20 +61,20 @@ export class MacosSurface implements VideoSurface {
    * emporte tout l'overlay. On réaffirme donc l'empilement à chaque transition,
    * avant ET après l'animation. La veille couvre le reste.
    */
-  private readonly transitionPleinEcran = (): void => {
-    this.reattacher();
-    this.planifierCalage();
+  private readonly fullscreenTransition = (): void => {
+    this.reattach();
+    this.scheduleAlign();
     // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
     // Electron croit la transition finie, mais macOS bouge encore la fenêtre.
     setTimeout(() => {
       if (this.host.isDestroyed()) return;
-      this.reattacher();
+      this.reattach();
       trace(`plein ecran — ${this.geometrie()}`);
     }, 500);
   };
 
   constructor(private readonly host: BrowserWindow) {
-    this.parent = msg.get(depuisHandle(host.getNativeWindowHandle()), "window");
+    this.parent = msg.get(fromHandle(host.getNativeWindowHandle()), "window");
   }
 
   /**
@@ -84,39 +84,39 @@ export class MacosSurface implements VideoSurface {
    * garde la vidéo en place quand on change d'écran.
    */
   attach(): void {
-    if (this.attache) return;
-    this.attache = true;
+    if (this.attached) return;
+    this.attached = true;
     // Relevé AVANT toute recherche : à cet instant, la fenêtre de la lecture qui
     // commence n'existe pas encore, tout ce qu'on voit est donc un vestige.
-    const vestiges = vestigesMpv();
-    this.host.on("resize", this.suivre);
-    this.host.on("move", this.suivre);
+    const leftovers = mpvLeftovers();
+    this.host.on("resize", this.follow);
+    this.host.on("move", this.follow);
     // Le plein écran est celui du système : ces deux évènements arrivent, qu'il
     // vienne de nous, du bouton vert ou de Ctrl+Cmd+F.
-    this.host.on("enter-full-screen", this.transitionPleinEcran);
-    this.host.on("leave-full-screen", this.transitionPleinEcran);
+    this.host.on("enter-full-screen", this.fullscreenTransition);
+    this.host.on("leave-full-screen", this.fullscreenTransition);
 
-    this.recherche = guetterFenetreMpv(vestiges, (fenetre, numero) => {
-      this.mpvWindow = fenetre;
-      this.numero = numero;
-      this.brancher();
+    this.search = watchMpvWindow(leftovers, (window, number) => {
+      this.mpvWindow = window;
+      this.number = number;
+      this.connect();
     });
   }
 
   /** Pose la fenêtre trouvée sous la page — voir `macosChildWindow.ts`. */
-  private brancher(): void {
+  private connect(): void {
     // Trace conservée : seule façon de distinguer « mpv n'a pas créé de fenêtre »
     // de « elle existe et nous l'avons attachée ». Sans elle, un écran noir ne se
     // diagnostique plus qu'en instrumentant à la main.
-    trace(`fenetre mpv attachee (${this.numero})`);
+    trace(`fenetre mpv attachee (${this.number})`);
     // AVANT toute intervention — voir `etatALaDecouverte`, qui dit pourquoi cette
     // ligne a tranché ce que rien d'autre ne distinguait.
-    trace(`etat a la decouverte — ${etatALaDecouverte(this.mpvWindow)}`);
+    trace(`etat a la decouverte — ${stateAtDiscovery(this.mpvWindow)}`);
     // La veille ne démarre qu'ICI : tant que la fenêtre n'existe pas, il n'y a
     // rien à surveiller, et elle s'arrête avec la lecture (`detach`).
-    if (this.veille === null) this.veille = setInterval(() => this.align(), VEILLE_MS);
-    attacherSousLaPage(this.parent, this.mpvWindow);
-    guetterEdr(this.mpvWindow, "fenetre video attachee");
+    if (this.wakeLock === null) this.wakeLock = setInterval(() => this.align(), WATCHDOG_MS);
+    attachBelowPage(this.parent, this.mpvWindow);
+    watchEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
     // ⚠️ La transparence se pose ICI, et pas une milliseconde plus tôt.
     //
@@ -137,13 +137,13 @@ export class MacosSurface implements VideoSurface {
   }
 
   /** Remet la vidéo sous la page — voir `macosChildWindow.ts`. */
-  private reattacher(): void {
+  private reattach(): void {
     if (this.mpvWindow === null) return;
-    sansFaillir("reattachement de la fenetre video", () => {
-      reordonnerSousLaPage(this.parent, this.mpvWindow);
+    neverThrow("reattachement de la fenetre video", () => {
+      reorderBelowPage(this.parent, this.mpvWindow);
       // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
       // cette fonction — la boucle serait sans fin si l'ordre résistait.
-      poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
+      applyFrame(this.mpvWindow, this.target(), this.videoLevel());
     });
   }
 
@@ -157,8 +157,8 @@ export class MacosSurface implements VideoSurface {
    * là : plus bas, ou en fenêtré, la vidéo passerait aussi sous les fenêtres des
    * AUTRES applications. Toute l'histoire est dans `fullscreen.ts`.
    */
-  private niveauVideo(): number {
-    const page = msg.entier(this.parent, "level");
+  private videoLevel(): number {
+    const page = msg.int(this.parent, "level");
     return this.host.isFullScreen() || this.host.isSimpleFullScreen() ? page - 1 : page;
   }
 
@@ -179,21 +179,21 @@ export class MacosSurface implements VideoSurface {
     // `BrowserWindow` alors que le minuteur est armé, et tout accès à `this.host`
     // lève « Object has been destroyed ». Dans un rappel de minuteur, l'exception
     // est FATALE — Electron ouvre sa boîte « A JavaScript error occurred ».
-    if (this.host.isDestroyed()) return this.stopVeille();
+    if (this.host.isDestroyed()) return this.stopWatchdog();
     // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
     // la décision du compositeur — voir `guetterEdr`.
-    guetterEdr(this.mpvWindow, "veille");
-    cadreSansLisere(this.mpvWindow, this.host.isFullScreen());
-    sansFaillir("calage de la fenetre video", () => {
-      poserCadre(this.mpvWindow, this.cible(), this.niveauVideo());
+    watchEdr(this.mpvWindow, "veille");
+    frameWithoutSeam(this.mpvWindow, this.host.isFullScreen());
+    neverThrow("calage de la fenetre video", () => {
+      applyFrame(this.mpvWindow, this.target(), this.videoLevel());
     });
   }
 
-  private cible(): Rect {
+  private target(): Rect {
     // Le bandeau d'hôte est peint par la page, et la vidéo doit lui laisser sa
     // place — sinon elle passe DESSOUS, et une bande opaque mange le haut de
     // l'image au lieu de la border. Nul en plein écran, où la page le démonte.
-    return cibleVideo(this.host, this.parent, retraitBandeau(this.host));
+    return videoTarget(this.host, this.parent, bannerInset(this.host));
   }
 
   /**
@@ -209,17 +209,17 @@ export class MacosSurface implements VideoSurface {
   /** L'état du montage, pour le rapport — voir `macosSurfaceDiag.ts`. */
   geometrie(): string {
     if (this.mpvWindow === null) return "surface non attachee";
-    return decrireMontage(this.host, this.parent, this.mpvWindow, this.cible());
+    return describeMontage(this.host, this.parent, this.mpvWindow, this.target());
   }
 
   /** La fenêtre de mpv, pour la sonde EDR — l'écran qui la porte est celui qui compte. */
-  fenetreVideo(): unknown {
+  videoWindow(): unknown {
     return this.mpvWindow;
   }
 
   /** Numéro de la fenêtre vidéo, `0` tant qu'elle n'existe pas. */
   numeroFenetre(): number {
-    return this.numero;
+    return this.number;
   }
 
   /**
@@ -227,17 +227,17 @@ export class MacosSurface implements VideoSurface {
    * qu'elle est là, la sortie vidéo vit et demander `quit` figerait le thread
    * principal. On interroge AppKit, jamais mpv.
    */
-  videoDisparue(): boolean {
-    return fenetreDisparue(this.numero);
+  videoGone(): boolean {
+    return windowGone(this.number);
   }
 
   detach(): void {
     this.stopSearch();
-    if (this.calage !== null) clearTimeout(this.calage);
-    this.calage = null;
-    this.stopVeille();
+    if (this.alignTimer !== null) clearTimeout(this.alignTimer);
+    this.alignTimer = null;
+    this.stopWatchdog();
     if (this.mpvWindow !== null) {
-      sansFaillir("detachement de la fenetre video", () => {
+      neverThrow("detachement de la fenetre video", () => {
         // ⚠️ HORS DE L'ÉCRAN D'ABORD, et ce n'est pas une précaution de style.
         //
         // Cette fenêtre est OPAQUE et NOIRE par construction — c'est elle qui
@@ -256,12 +256,12 @@ export class MacosSurface implements VideoSurface {
       });
       this.mpvWindow = null;
     }
-    if (this.attache) {
-      this.host.off("resize", this.suivre);
-      this.host.off("move", this.suivre);
-      this.host.off("enter-full-screen", this.transitionPleinEcran);
-      this.host.off("leave-full-screen", this.transitionPleinEcran);
-      this.attache = false;
+    if (this.attached) {
+      this.host.off("resize", this.follow);
+      this.host.off("move", this.follow);
+      this.host.off("enter-full-screen", this.fullscreenTransition);
+      this.host.off("leave-full-screen", this.fullscreenTransition);
+      this.attached = false;
     }
   }
 
@@ -271,23 +271,23 @@ export class MacosSurface implements VideoSurface {
    * premier évènement arme le minuteur, les suivants sont absorbés, et le calage
    * a lieu juste après le dernier.
    */
-  private planifierCalage(): void {
-    if (this.calage !== null) return;
-    this.calage = setTimeout(() => {
-      this.calage = null;
+  private scheduleAlign(): void {
+    if (this.alignTimer !== null) return;
+    this.alignTimer = setTimeout(() => {
+      this.alignTimer = null;
       this.align();
-    }, CALAGE_MS);
+    }, ALIGN_MS);
   }
 
   /** Désarme la veille et oublie le dernier headroom vu. Idempotent. */
-  private stopVeille(): void {
-    if (this.veille !== null) clearInterval(this.veille);
-    this.veille = null;
-    oublierEdr();
+  private stopWatchdog(): void {
+    if (this.wakeLock !== null) clearInterval(this.wakeLock);
+    this.wakeLock = null;
+    forgetEdr();
   }
 
   private stopSearch(): void {
-    this.recherche?.();
-    this.recherche = null;
+    this.search?.();
+    this.search = null;
   }
 }

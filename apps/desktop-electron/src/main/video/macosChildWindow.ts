@@ -11,7 +11,7 @@ import { trace } from "./native";
 import { NSWindowBelow, cls, msg } from "./objc";
 
 /**
- * Les trois bits de plein écran d'un `collectionBehavior` — voir `pleinEcranAuxiliaire`.
+ * Les trois bits de plein écran d'un `collectionBehavior` — voir `auxiliaryFullscreen`.
  *
  * ⚠️ Ils s'EXCLUENT. « You may specify only one of
  * NSWindowCollectionBehaviorFullScreenPrimary, …Auxiliary, or …None », dit la
@@ -19,7 +19,7 @@ import { NSWindowBelow, cls, msg } from "./objc";
  */
 const PRIMARY = 1 << 7;
 const AUXILIARY = 1 << 8;
-const AUCUN = 1 << 9;
+const NO_DESKTOP = 1 << 9;
 
 /**
  * `NSWindowCollectionBehaviorCanJoinAllSpaces` — la fenêtre est dans TOUS les
@@ -27,11 +27,11 @@ const AUCUN = 1 << 9;
  *
  * ⚠️ C'est nous qui le faisons poser, par l'option `on-all-workspaces`, et
  * uniquement le temps que mpv affiche sa fenêtre sans que macOS lui ouvre un
- * bureau (voir `macosOptionsFenetre.ts`). Passé cet instant il n'a plus lieu
+ * bureau (voir `macosWindowOptions.ts`). Passé cet instant il n'a plus lieu
  * d'être, et le GARDER serait un défaut à lui seul : la vidéo suivrait
  * l'utilisateur d'un bureau à l'autre, seule, sans sa page.
  */
-const TOUS_LES_BUREAUX = 1 << 0;
+const ALL_DESKTOPS = 1 << 0;
 
 /**
  * Rend le comportement demandé : auxiliaire de plein écran, et lui seul.
@@ -41,15 +41,15 @@ const TOUS_LES_BUREAUX = 1 << 0;
  * ouvrait alors un SECOND espace de plein écran, noir, à côté du nôtre. Il faut
  * donc retirer les autres, pas seulement poser le sien.
  */
-function pleinEcranAuxiliaire(courant: number): number {
-  return (courant & ~PRIMARY & ~AUCUN & ~TOUS_LES_BUREAUX) | AUXILIARY;
+function auxiliaryFullscreen(current: number): number {
+  return (current & ~PRIMARY & ~NO_DESKTOP & ~ALL_DESKTOPS) | AUXILIARY;
 }
 
 /** `NSWindowStyleMaskBorderless` — aucun style, donc aucune décoration. */
-const SANS_DECORATION = 0;
+const NO_DECORATION = 0;
 
 /** Le style que mpv a donné à sa fenêtre, pour le lui rendre en sortant. */
-let styleDorigine = 0;
+let originalStyle = 0;
 
 /**
  * Retire son cadre à la fenêtre de mpv — toujours — et lui rend ses coins.
@@ -83,25 +83,25 @@ let styleDorigine = 0;
  * sans le supprimer — gardé tout de même, le gain est réel ; retirer l'ombre de
  * la fenêtre principale l'AGGRAVE (14,6 → 50).
  */
-export function cadreSansLisere(fenetre: unknown, pleinEcran: boolean): void {
-  if (!fenetre) return;
-  const courant = msg.count(fenetre, "styleMask");
-  if (pleinEcran) {
-    if (courant === SANS_DECORATION) return;
-    styleDorigine = courant;
-    msg.setMasqueStyle(fenetre, SANS_DECORATION);
+export function frameWithoutSeam(window: unknown, fullscreen: boolean): void {
+  if (!window) return;
+  const current = msg.count(window, "styleMask");
+  if (fullscreen) {
+    if (current === NO_DECORATION) return;
+    originalStyle = current;
+    msg.setStyleMask(window, NO_DECORATION);
     return;
   }
-  if (courant !== SANS_DECORATION || styleDorigine === 0) return;
-  msg.setMasqueStyle(fenetre, styleDorigine);
-  remasquerBarreDeTitre(fenetre);
+  if (current !== NO_DECORATION || originalStyle === 0) return;
+  msg.setStyleMask(window, originalStyle);
+  rehideTitleBar(window);
 }
 
 /** `NSWindowTitleHidden` — le titre existe, AppKit ne le dessine pas. */
-const TITRE_CACHE = 1;
+const HIDDEN_TITLE = 1;
 
 /** Les trois boutons de fenêtre : fermer, réduire, zoomer. */
-const BOUTONS_STANDARD = [0, 1, 2];
+const STANDARD_BUTTONS = [0, 1, 2];
 
 /**
  * Refait ce que mpv avait fait à sa barre de titre, et que nous lui avons défait.
@@ -123,11 +123,11 @@ const BOUTONS_STANDARD = [0, 1, 2];
  * désormais ceux du haut, ceux du BAS dépasseraient des coins arrondis de la
  * nôtre.
  */
-function remasquerBarreDeTitre(fenetre: unknown): void {
-  msg.setFlag(fenetre, "setTitlebarAppearsTransparent:", true);
-  msg.setEntier(fenetre, "setTitleVisibility:", TITRE_CACHE);
-  for (const bouton of BOUTONS_STANDARD) {
-    msg.setFlag(msg.index(fenetre, "standardWindowButton:", bouton), "setHidden:", true);
+function rehideTitleBar(window: unknown): void {
+  msg.setFlag(window, "setTitlebarAppearsTransparent:", true);
+  msg.setInt(window, "setTitleVisibility:", HIDDEN_TITLE);
+  for (const button of STANDARD_BUTTONS) {
+    msg.setFlag(msg.index(window, "standardWindowButton:", button), "setHidden:", true);
   }
 }
 
@@ -143,14 +143,14 @@ function remasquerBarreDeTitre(fenetre: unknown): void {
  * fenêtre qui n'est pas elle-même en plein écran n'a pas sa place dans l'espace
  * dédié où macOS emmène la nôtre. Mais mpv déclare la sienne `FullScreenPrimary`
  * — mesuré, `collectionBehavior` vaut 128 à la naissance — et les trois bits de
- * plein écran s'EXCLUENT : d'où `pleinEcranAuxiliaire`, qui remplace au lieu
+ * plein écran s'EXCLUENT : d'où `auxiliaryFullscreen`, qui remplace au lieu
  * d'ajouter, 128 → 256.
  *
  * ⚠️ Et le poser ICI ne suffit à rien tant que mpv a déjà affiché sa fenêtre :
  * AppKit ne consulte ce comportement qu'à l'AFFICHAGE INITIAL, et il vaut
  * encore 128 à cet instant-là. C'est pourquoi une lecture qui démarre en plein
- * écran demande à mpv de ne pas afficher du tout — voir `deminiaturiser` et
- * `macosOptionsFenetre.ts`. L'ordre des gestes de cette fonction n'est donc pas
+ * écran demande à mpv de ne pas afficher du tout — voir `deminiaturize` et
+ * `macosWindowOptions.ts`. L'ordre des gestes de cette fonction n'est donc pas
  * indifférent : le comportement AVANT `addChildWindow:`, jamais après.
  *
  * ⚠️ OPAQUE, ET AVEC UN FOND NOIR. C'est elle qui doit garantir le noir sous la
@@ -160,19 +160,19 @@ function remasquerBarreDeTitre(fenetre: unknown): void {
  * l'overlay et des dégradés qui semblent se composer avec autre chose que du
  * noir. C'est le cas : ils se composent avec ce qui se trouve derrière.
  */
-export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
-  msg.setFlag(fenetre, "setIgnoresMouseEvents:", true);
-  msg.setFlag(fenetre, "setHasShadow:", false);
-  const avant = msg.count(fenetre, "collectionBehavior");
-  msg.setComportement(fenetre, pleinEcranAuxiliaire(avant));
+export function attachBelowPage(parent: unknown, window: unknown): void {
+  msg.setFlag(window, "setIgnoresMouseEvents:", true);
+  msg.setFlag(window, "setHasShadow:", false);
+  const before = msg.count(window, "collectionBehavior");
+  msg.setBehaviour(window, auxiliaryFullscreen(before));
   // Tracé : c'est le seul témoin si mpv change un jour ce qu'il déclare, et le
   // symptôme — un second bureau noir apparu à côté du nôtre — ne désigne rien.
-  trace(`comportement fenetre video ${avant} → ${msg.count(fenetre, "collectionBehavior")}`);
-  msg.setFlag(fenetre, "setOpaque:", true);
-  const noir = msg.get(cls("NSColor"), "blackColor");
-  if (noir) msg.setObjet(fenetre, "setBackgroundColor:", noir);
-  msg.addChildWindow(parent, fenetre, NSWindowBelow);
-  deminiaturiser(fenetre);
+  trace(`comportement fenetre video ${before} → ${msg.count(window, "collectionBehavior")}`);
+  msg.setFlag(window, "setOpaque:", true);
+  const black = msg.get(cls("NSColor"), "blackColor");
+  if (black) msg.setObject(window, "setBackgroundColor:", black);
+  msg.addChildWindow(parent, window, NSWindowBelow);
+  deminiaturize(window);
 }
 
 /**
@@ -180,7 +180,7 @@ export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
  * que l'affichage initial a lieu.
  *
  * ⚠️ Une lecture qui démarre en plein écran passe `window-minimized=yes` à mpv
- * (`macosOptionsFenetre.ts`) : il crée sa fenêtre sans jamais appeler
+ * (`macosWindowOptions.ts`) : il crée sa fenêtre sans jamais appeler
  * `orderFront`. C'est alors `addChildWindow:`, juste au-dessus, qui l'affiche —
  * après `FullScreenAuxiliary`, donc avec le bon comportement sous les yeux
  * d'AppKit.
@@ -194,10 +194,10 @@ export function attacherSousLaPage(parent: unknown, fenetre: unknown): void {
  * Elle reste comme FILET : le jour où une version de macOS miniaturiserait
  * vraiment, l'image manquerait entièrement, et rien d'autre ne le dirait.
  */
-function deminiaturiser(fenetre: unknown): void {
-  if (!msg.bool(fenetre, "isMiniaturized")) return;
-  msg.avecNil(fenetre, "deminiaturize:");
-  trace(`fenetre video sortie du Dock, miniaturisee=${msg.bool(fenetre, "isMiniaturized")}`);
+function deminiaturize(window: unknown): void {
+  if (!msg.bool(window, "isMiniaturized")) return;
+  msg.withNil(window, "deminiaturize:");
+  trace(`fenetre video sortie du Dock, miniaturisee=${msg.bool(window, "isMiniaturized")}`);
 }
 
 /**
@@ -210,7 +210,7 @@ function deminiaturiser(fenetre: unknown): void {
  * La relation était intacte, seul l'ordre ne l'était plus, et le réaffirmer sans
  * rompre le lien ne le rétablissait pas.
  */
-export function reordonnerSousLaPage(parent: unknown, fenetre: unknown): void {
-  msg.removeChildWindow(parent, fenetre);
-  msg.addChildWindow(parent, fenetre, NSWindowBelow);
+export function reorderBelowPage(parent: unknown, window: unknown): void {
+  msg.removeChildWindow(parent, window);
+  msg.addChildWindow(parent, window, NSWindowBelow);
 }

@@ -16,8 +16,8 @@
  * `preventDefault()` sur une fermeture est un pouvoir désagréable : mal tenu, il
  * donne une fenêtre qui refuse de se fermer, et il ne reste au malheureux que le
  * gestionnaire des tâches. Trois garde-fous, et le test porte sur eux :
- * le loquet `confirme` (une fois l'accord donné, on ne redemande plus), le
- * verrou `enAttente` (deux Alt+F4 n'empilent pas deux boîtes), et le repli sur
+ * le loquet `confirmed` (une fois l'accord donné, on ne redemande plus), le
+ * verrou `pending` (deux Alt+F4 n'empilent pas deux boîtes), et le repli sur
  * la fermeture si la boîte échoue.
  *
  * La boîte est NATIVE et construite ici, dans le processus principal : elle
@@ -30,53 +30,53 @@
 import { app, dialog, type BrowserWindow } from "electron";
 
 /** Ce qu'on demande à la fenêtre, et rien de plus — pour que ça se teste. */
-export interface FenetreFermable {
+export interface ClosableWindow {
   on(event: "close", listener: (event: { preventDefault: () => void }) => void): unknown;
   close(): void;
   isDestroyed(): boolean;
 }
 
 /** Renvoie vrai si l'utilisateur veut quitter malgré tout. */
-export type DemandeSortie = (enCours: number) => Promise<boolean>;
+export type ExitRequest = (inProgress: number) => Promise<boolean>;
 
-export function installerGardeSortie(
-  fenetre: FenetreFermable,
-  enCours: () => number,
-  demander: DemandeSortie,
+export function installQuitGuard(
+  window: ClosableWindow,
+  inProgress: () => number,
+  ask: ExitRequest,
 ): void {
-  let confirme = false;
-  let enAttente = false;
+  let confirmed = false;
+  let pending = false;
 
-  fenetre.on("close", (event) => {
+  window.on("close", (event) => {
     // Le `close()` qui suit l'accord repasse ici : sans ce loquet, la fenêtre
     // ne se fermerait jamais.
-    if (confirme) return;
+    if (confirmed) return;
 
-    let restants = 0;
+    let left = 0;
     try {
-      restants = enCours();
+      left = inProgress();
     } catch {
       // Un comptage qui échoue ne doit pas retenir la fermeture.
       return;
     }
-    if (restants <= 0) return;
+    if (left <= 0) return;
 
     event.preventDefault();
     // Deuxième Alt+F4 pendant que la boîte est ouverte : la fermeture est
     // retenue, mais on n'ouvre pas une seconde boîte par-dessus la première.
-    if (enAttente) return;
-    enAttente = true;
+    if (pending) return;
+    pending = true;
 
-    void demander(restants)
+    void ask(left)
       // La boîte n'a pas pu s'afficher : on quitte. Rester ouvert serait
       // enfermer l'utilisateur dans une fenêtre, pour protéger un transfert
       // qui reprendra de toute façon.
       .catch(() => true)
-      .then((quitter) => {
-        enAttente = false;
-        if (!quitter) return;
-        confirme = true;
-        if (!fenetre.isDestroyed()) fenetre.close();
+      .then((quitApp) => {
+        pending = false;
+        if (!quitApp) return;
+        confirmed = true;
+        if (!window.isDestroyed()) window.close();
       });
   });
 }
@@ -91,15 +91,15 @@ export function installerGardeSortie(
  * dans l'écrasante majorité des cas, l'application détectant sa langue de
  * départ depuis celle du système.
  */
-export function demanderNatif(fenetre: BrowserWindow): DemandeSortie {
-  return async (enCours) => {
-    const t = textes(enCours);
-    const { response } = await dialog.showMessageBox(fenetre, {
+export function askNative(window: BrowserWindow): ExitRequest {
+  return async (inProgress) => {
+    const t = texts(inProgress);
+    const { response } = await dialog.showMessageBox(window, {
       type: "warning",
-      title: t.titre,
+      title: t.title,
       message: t.message,
       detail: t.detail,
-      buttons: [t.quitter, t.annuler],
+      buttons: [t.quitApp, t.cancelLabel],
       // Annuler par défaut : Entrée ou Échap sur un réflexe ne doit pas
       // interrompre un transfert.
       defaultId: 1,
@@ -110,37 +110,37 @@ export function demanderNatif(fenetre: BrowserWindow): DemandeSortie {
   };
 }
 
-interface Textes {
-  titre: string;
+interface Texts {
+  title: string;
   message: string;
   detail: string;
-  quitter: string;
-  annuler: string;
+  quitApp: string;
+  cancelLabel: string;
 }
 
-function textes(enCours: number): Textes {
+function texts(inProgress: number): Texts {
   if (app.getLocale().toLowerCase().startsWith("fr")) {
     return {
-      titre: "Téléchargement en cours",
+      title: "Téléchargement en cours",
       message:
-        enCours === 1
+        inProgress === 1
           ? "Un téléchargement est en cours."
-          : `${String(enCours)} téléchargements sont en cours.`,
+          : `${String(inProgress)} téléchargements sont en cours.`,
       detail:
         "Quitter maintenant les interrompt. Ils reprendront là où ils en sont" +
         " au prochain lancement de Tentacle.",
-      quitter: "Quitter quand même",
-      annuler: "Annuler",
+      quitApp: "Quitter quand même",
+      cancelLabel: "Annuler",
     };
   }
   return {
-    titre: "Download in progress",
+    title: "Download in progress",
     message:
-      enCours === 1 ? "A download is in progress." : `${String(enCours)} downloads are in progress.`,
+      inProgress === 1 ? "A download is in progress." : `${String(inProgress)} downloads are in progress.`,
     detail:
       "Quitting now interrupts them. They will pick up where they left off" +
       " the next time Tentacle starts.",
-    quitter: "Quit anyway",
-    annuler: "Cancel",
+    quitApp: "Quit anyway",
+    cancelLabel: "Cancel",
   };
 }
