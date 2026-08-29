@@ -15,7 +15,7 @@ import { supportsDownloads } from "../desktop/bridge";
 import { deleteDownload, setAutoDeleteAfterWatch, type DownloadEntry } from "./api";
 import { DownloadRow } from "./DownloadRow";
 import { DownloadsBulkBar } from "./DownloadsBulkBar";
-import { basculer, elaguer, etat as etatSelection, toutBasculer } from "./selection";
+import { toggle as toggleOne, prune, state as selectionState, toggleAll } from "./selection";
 import { DownloadsSpaceBar } from "./DownloadsSpaceBar";
 import { DeleteDownloadModal } from "./DeleteDownloadModal";
 import { useDownloadsList, useDownloadsVisibility, DOWNLOADS_LIST_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DISK_INFO_QUERY_KEY } from "./useDownloadState";
@@ -42,9 +42,9 @@ export function DownloadsPage() {
   // transfert qui finit ou une purge différée peut emporter une ligne cochée.
   // Sans cet élagage, le compteur promettrait des suppressions fantômes.
   useEffect(() => {
-    setSelection((avant) => {
-      const apres = elaguer(avant, ids);
-      return apres.size === avant.size ? avant : apres;
+    setSelection((prev) => {
+      const next = prune(prev, ids);
+      return next.size === prev.size ? prev : next;
     });
   }, [ids]);
 
@@ -78,7 +78,7 @@ export function DownloadsPage() {
 
   const handlePlay = (entry: DownloadEntry) => navigate(`/watch/${entry.itemId}`);
 
-  const rafraichir = () => {
+  const refresh = () => {
     for (const key of [DOWNLOADS_LIST_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DISK_INFO_QUERY_KEY]) {
       queryClient.invalidateQueries({ queryKey: [key] });
     }
@@ -91,17 +91,17 @@ export function DownloadsPage() {
    * par IPC, et le moteur diffuse un `downloads://changed` à chacun. Vingt-quatre
    * écritures concurrentes feraient vingt-quatre invalidations de liste.
    */
-  const appliquerAutoDelete = async (delayMinutes: number | null) => {
+  const applyAutoDelete = async (delayMinutes: number | null) => {
     if (!userId) return;
     setDeleting(true);
     for (const fileId of selection) {
       await setAutoDeleteAfterWatch(userId, fileId, delayMinutes != null, delayMinutes ?? 0);
     }
     setDeleting(false);
-    rafraichir();
+    refresh();
   };
 
-  const supprimerSelection = async () => {
+  const deleteSelection = async () => {
     if (!userId) return;
     setDeleting(true);
     for (const fileId of selection) {
@@ -112,15 +112,15 @@ export function DownloadsPage() {
     setBulkConfirm(false);
     setSelection(new Set());
     setSelectionActive(false);
-    rafraichir();
+    refresh();
   };
 
-  const quitterSelection = () => {
+  const exitSelection = () => {
     setSelectionActive(false);
     setSelection(new Set());
   };
 
-  const toggle = (id: number) => setSelection((avant) => basculer(avant, id));
+  const toggle = (id: number) => setSelection((prev) => toggleOne(prev, id));
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-24 md:px-8">
@@ -140,15 +140,15 @@ export function DownloadsPage() {
       ) : (
         <div className="mt-6 space-y-4">
           <DownloadsBulkBar
-            actif={selectionActive}
-            compte={selection.size}
-            etat={etatSelection(selection, ids)}
-            onEntrer={() => setSelectionActive(true)}
-            onSortir={quitterSelection}
-            onToutBasculer={() => setSelection((avant) => toutBasculer(avant, ids))}
-            onAutoDelete={(value) => void appliquerAutoDelete(value)}
-            onSupprimer={() => setBulkConfirm(true)}
-            occupe={deleting}
+            active={selectionActive}
+            count={selection.size}
+            state={selectionState(selection, ids)}
+            onEnter={() => setSelectionActive(true)}
+            onExit={exitSelection}
+            onToggleAll={() => setSelection((prev) => toggleAll(prev, ids))}
+            onAutoDelete={(value) => void applyAutoDelete(value)}
+            onDelete={() => setBulkConfirm(true)}
+            busy={deleting}
           />
 
           <div className="space-y-8">
@@ -210,7 +210,7 @@ export function DownloadsPage() {
           heading={t("downloads:bulkDeleteConfirmTitle", { count: selection.size })}
           message={t("downloads:bulkDeleteConfirmMessage")}
           busy={deleting}
-          onConfirm={() => void supprimerSelection()}
+          onConfirm={() => void deleteSelection()}
           onClose={() => setBulkConfirm(false)}
         />
       )}

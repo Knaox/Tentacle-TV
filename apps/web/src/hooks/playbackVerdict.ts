@@ -11,22 +11,22 @@
  */
 
 /** Raisons Jellyfin qui imposent de RECOMPRESSER l'image. */
-const RAISONS_REENCODAGE_VIDEO =
+const VIDEO_REENCODE_REASONS =
   /^(video|refframes|anamorphic|interlaced|unknownvideostream|containerbitrateexceeds)/i;
 
-export type ModeLecture = "DirectPlay" | "DirectStream" | "Remux" | "Transcode";
+export type PlaybackMode = "DirectPlay" | "DirectStream" | "Remux" | "Transcode";
 
-export interface EntreeVerdict {
+export interface VerdictInput {
   supportsDirectPlay: boolean;
   supportsDirectStream: boolean;
   transcodingUrl?: string;
   transcodeReasons?: string[] | string;
   /** Codec de la piste vidéo source, pour comparer avec le codec de sortie. */
-  codecVideoSource?: string;
-  /** La source est HDR / Dolby Vision (cf. `sourceEstHdr`). */
+  sourceVideoCodec?: string;
+  /** La source est HDR / Dolby Vision (cf. `isHdrSource`). */
   sourceHdr?: boolean;
   /** Le profil a déclaré savoir afficher le HDR. */
-  clientAccepteHdr?: boolean;
+  clientAcceptsHdr?: boolean;
 }
 
 /**
@@ -36,21 +36,21 @@ export interface EntreeVerdict {
  * selon le point d'entrée Jellyfin — d'où la double lecture. `0` et `1` valent
  * `Unknown` et `SDR` dans toutes les versions ; au-delà, c'est du HDR.
  */
-export function sourceEstHdr(
+export function isHdrSource(
   stream: { VideoRangeType?: string | number; DvProfile?: number; Hdr10PlusPresentFlag?: boolean } | undefined,
 ): boolean {
   if (!stream) return false;
   if (stream.DvProfile != null || stream.Hdr10PlusPresentFlag) return true;
-  const plage = stream.VideoRangeType;
-  if (typeof plage === "number") return plage > 1;
-  if (typeof plage === "string") return !/^(sdr|unknown)$/i.test(plage.trim());
+  const range = stream.VideoRangeType;
+  if (typeof range === "number") return range > 1;
+  if (typeof range === "string") return !/^(sdr|unknown)$/i.test(range.trim());
   return false;
 }
 
 /**
  * La source est-elle en Dolby Vision ?
  *
- * Même double lecture que `sourceEstHdr`, et pour la même raison. `DvProfile`
+ * Même double lecture que `isHdrSource`, et pour la même raison. `DvProfile`
  * est le signal le plus sûr : il reste renseigné là où la plage arrive en
  * entier, donc là où l'on ne peut rien conclure de son nom.
  *
@@ -58,33 +58,33 @@ export function sourceEstHdr(
  * pas le RPU de la même façon selon qu'il est en ISOBMFF ou en flux de
  * transport, et cet arbitrage-là ne se pose que pour une source Dolby Vision.
  */
-export function sourceEstDolbyVision(
+export function isDolbyVisionSource(
   stream: { VideoRangeType?: string | number; DvProfile?: number } | undefined,
 ): boolean {
   if (!stream) return false;
   if (stream.DvProfile != null) return true;
-  const plage = stream.VideoRangeType;
-  if (typeof plage !== "string") return false;
-  const nom = plage.toUpperCase();
-  return nom.includes("DOVI") || nom.includes("DOLBY");
+  const range = stream.VideoRangeType;
+  if (typeof range !== "string") return false;
+  const name = range.toUpperCase();
+  return name.includes("DOVI") || name.includes("DOLBY");
 }
 
 export interface Verdict {
-  mode: ModeLecture;
-  raisons: string[];
+  mode: PlaybackMode;
+  reasons: string[];
   /** L'image est-elle recompressée ? Le seul critère qui compte ici. */
-  reencodageVideo: boolean;
+  videoReencoded: boolean;
 }
 
 /** Jellyfin 10.9+ rend un tableau ; les versions antérieures, une chaîne. */
-export function normaliserRaisons(brut?: string[] | string | false): string[] {
-  if (!brut) return [];
-  const liste = Array.isArray(brut) ? brut : brut.split(",");
-  return liste.map((r) => r.trim()).filter(Boolean);
+export function normalizeReasons(raw?: string[] | string | false): string[] {
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : raw.split(",");
+  return list.map((r) => r.trim()).filter(Boolean);
 }
 
-function lireParam(url: string, nom: string): string | undefined {
-  const m = new RegExp(`[?&]${nom}=([^&]*)`, "i").exec(url);
+function readParam(url: string, name: string): string | undefined {
+  const m = new RegExp(`[?&]${name}=([^&]*)`, "i").exec(url);
   return m ? decodeURIComponent(m[1]) : undefined;
 }
 
@@ -94,18 +94,18 @@ function lireParam(url: string, nom: string): string | undefined {
  * de la `TranscodingUrl`. Sans ce repli, le verdict perdait sa meilleure
  * source d'information au moment même où elle comptait.
  */
-function raisonsDe(e: EntreeVerdict): string[] {
-  const declarees = normaliserRaisons(e.transcodeReasons);
-  if (declarees.length > 0) return declarees;
-  return normaliserRaisons(e.transcodingUrl && lireParam(e.transcodingUrl, "TranscodeReasons"));
+function reasonsOf(e: VerdictInput): string[] {
+  const declared = normalizeReasons(e.transcodeReasons);
+  if (declared.length > 0) return declared;
+  return normalizeReasons(e.transcodingUrl && readParam(e.transcodingUrl, "TranscodeReasons"));
 }
 
-function imageRecompressee(
-  codecSortie: string | undefined, codecSource: string | undefined, raisons: string[],
+function imageRecompressed(
+  outputCodec: string | undefined, sourceCodec: string | undefined, reasons: string[],
   url?: string,
 ): boolean {
   // Jellyfin l'annonce parfois lui-même.
-  if (codecSortie?.toLowerCase() === "copy") return false;
+  if (outputCodec?.toLowerCase() === "copy") return false;
   // `AllowVideoStreamCopy=false` est le serveur qui le dit lui-même.
   //
   // Le manifeste maître d'un remux Dolby Vision propose la variante copiée puis
@@ -120,34 +120,34 @@ function imageRecompressee(
   // dans un sens, et que le cas Dolby Vision — où l'on SAIT, pour l'avoir
   // mesuré, que l'image est copiée — est tranché par `lecture/playbackInfoTv.ts`,
   // seul endroit qui sache quelle variante il a désignée.
-  if (url && lireParam(url, "AllowVideoStreamCopy")?.toLowerCase() === "false") return true;
+  if (url && readParam(url, "AllowVideoStreamCopy")?.toLowerCase() === "false") return true;
   // Sinon les raisons font foi : elles disent ce qui a écarté la lecture
   // directe. Aucune raison vidéo (« AudioCodecNotSupported » seul, par
   // exemple) → ffmpeg copie le flux vidéo et ne touche qu'à l'audio.
   // ⚠️ `ContainerNotSupported` n'est PAS une raison vidéo : c'est un remux.
-  if (raisons.length > 0) return raisons.some((r) => RAISONS_REENCODAGE_VIDEO.test(r));
+  if (reasons.length > 0) return reasons.some((r) => VIDEO_REENCODE_REASONS.test(r));
   // Serveur muet sur les raisons : on compare le codec demandé à la source.
-  if (codecSortie && codecSource) {
-    const sorties = codecSortie.toLowerCase().split(",").map((c) => c.trim());
-    return !sorties.includes(codecSource.toLowerCase());
+  if (outputCodec && sourceCodec) {
+    const outputs = outputCodec.toLowerCase().split(",").map((c) => c.trim());
+    return !outputs.includes(sourceCodec.toLowerCase());
   }
   // Faute d'information, on suppose le pire — un instrument de mesure ne doit
   // jamais flatter le résultat.
   return true;
 }
 
-export function evaluerLecture(e: EntreeVerdict): Verdict {
-  const raisons = raisonsDe(e);
+export function evaluatePlayback(e: VerdictInput): Verdict {
+  const reasons = reasonsOf(e);
 
   if (e.supportsDirectPlay && !e.transcodingUrl) {
-    return { mode: "DirectPlay", raisons, reencodageVideo: false };
+    return { mode: "DirectPlay", reasons, videoReencoded: false };
   }
   if (!e.transcodingUrl) {
     // Pas d'URL de transcodage : le serveur sert le fichier tel quel, remuxé.
     return {
       mode: e.supportsDirectStream ? "DirectStream" : "Transcode",
-      raisons,
-      reencodageVideo: !e.supportsDirectStream,
+      reasons,
+      videoReencoded: !e.supportsDirectStream,
     };
   }
 
@@ -156,13 +156,13 @@ export function evaluerLecture(e: EntreeVerdict): Verdict {
   // la source n'est pas déclarée par le client. C'est pourtant un ré-encodage
   // complet — vécu sur un Dolby Vision 8.1 dont seul l'audio était en cause, et
   // que le verdict a d'abord annoncé « Remux » à tort.
-  const toneMapping = !!e.sourceHdr && e.clientAccepteHdr === false;
-  const reencodageVideo = toneMapping || imageRecompressee(
-    lireParam(e.transcodingUrl, "VideoCodec"), e.codecVideoSource, raisons, e.transcodingUrl,
+  const toneMapping = !!e.sourceHdr && e.clientAcceptsHdr === false;
+  const videoReencoded = toneMapping || imageRecompressed(
+    readParam(e.transcodingUrl, "VideoCodec"), e.sourceVideoCodec, reasons, e.transcodingUrl,
   );
   return {
-    mode: reencodageVideo ? "Transcode" : "Remux",
-    raisons: toneMapping ? [...raisons, "ToneMappingHdrVersSdr"] : raisons,
-    reencodageVideo,
+    mode: videoReencoded ? "Transcode" : "Remux",
+    reasons: toneMapping ? [...reasons, "ToneMappingHdrVersSdr"] : reasons,
+    videoReencoded,
   };
 }

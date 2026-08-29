@@ -7,10 +7,10 @@ import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { PlayerLoadingScreen } from "../components/player/PlayerLoadingScreen";
 import { useWatchSession } from "../hooks/useWatchSession";
-import { necessiteIncrustation } from "../hooks/useWebPlaybackFallbacks";
+import { needsBurnIn } from "../hooks/useWebPlaybackFallbacks";
 import { preferNativeHls } from "../hooks/useNativeHlsPreference";
 import { useGroupSyncEngine } from "../watchTogether/useGroupSyncEngine";
-import { useSautIntroGroupe } from "../watchTogether/refusSautIntro";
+import { useGroupIntroSkip } from "../watchTogether/introSkipRefusal";
 import { useGroupPlaybackHandlers } from "../watchTogether/useGroupPlaybackHandlers";
 import { GroupPlaybackOverlay } from "../watchTogether/GroupPlaybackOverlay";
 import type { PlayerTransport } from "../watchTogether/playerTransport";
@@ -30,7 +30,7 @@ export function WatchWeb() {
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture, libererEncodage,
+    pgsSubtitleUrl, pgsClientOk, reportPgsFailure, restartPlayback, releaseEncoding,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
@@ -41,7 +41,7 @@ export function WatchWeb() {
   // par le matériel répondent oui, sans que ce fichier ait à les connaître.
   const useNativeHls = preferNativeHls();
 
-  // `killTranscode` et `libererEncodage` ne font pas double emploi, et la fusion
+  // `killTranscode` et `releaseEncoding` ne font pas double emploi, et la fusion
   // des deux branches a failli le laisser croire : le premier tue une session
   // SUPPLANTÉE, qu'on désigne par son identifiant une fois qu'une autre a pris
   // sa place ; le second libère la session COURANTE avant un changement voulu.
@@ -61,7 +61,7 @@ export function WatchWeb() {
   });
   // Le refus du saut d'intro voyage avec le groupe : la position de lecture
   // est commune, laisser partir le décompte de l'autre annulerait la croix.
-  useSautIntroGroupe(groupSync.notifySkipIntroDismiss);
+  useGroupIntroSkip(groupSync.notifySkipIntroDismiss);
 
   // Rebuild de source local (changement qualité/audio/burn-in → nouvelle URL de
   // stream) : signaler le buffering pour que le groupe ATTENDE ce membre
@@ -96,17 +96,17 @@ export function WatchWeb() {
   // Les effets des enfants s'exécutent AVANT ceux du parent : quand celui-ci
   // tourne, `useVideoSource` a déjà basculé sur la nouvelle source. On ne tue
   // jamais un encodage encore en cours de lecture.
-  const sessionPrecedenteRef = useRef<string | null>(null);
+  const previousSessionRef = useRef<string | null>(null);
   useEffect(() => {
     // Seul un identifiant RÉEL est mémorisé : `pbInfo.reset()` (changement
     // d'épisode) repasse par la chaîne vide, et l'oublier ici perdrait la trace
     // de l'encodage à tuer juste avant qu'il ne le soit.
     if (!playSessionId) return;
-    const precedente = sessionPrecedenteRef.current;
-    sessionPrecedenteRef.current = playSessionId;
-    if (!precedente || precedente === playSessionId) return;
-    wtLog("session", "session supplantée → ancien transcodage tué", { precedente, playSessionId });
-    void killTranscode(precedente);
+    const previous = previousSessionRef.current;
+    previousSessionRef.current = playSessionId;
+    if (!previous || previous === playSessionId) return;
+    wtLog("session", "session supplantée → ancien transcodage tué", { previous, playSessionId });
+    void killTranscode(previous);
   }, [playSessionId, killTranscode]);
 
   // Épisode : case « Appliquer à cette série » (préférence de langues par série).
@@ -147,7 +147,7 @@ export function WatchWeb() {
     };
   }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
 
-  // `libererEncodage` vient de `useWatchSession` : les gestes ci-dessous et les
+  // `releaseEncoding` vient de `useWatchSession` : les gestes ci-dessous et les
   // filets de lecture renégocient la même session, et doivent la libérer de la
   // même façon. Deux implémentations auraient fini par diverger — c'est
   // exactement ce qui laissait fuir le chemin des filets (cf. le hook).
@@ -162,12 +162,12 @@ export function WatchWeb() {
   const handleAudioChange = useCallback((idx: number) => {
     audioOverrideRef.current = true;
     if (!isDirectPlay) {
-      libererEncodage();
+      releaseEncoding();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
     }
     setAudioIndex(idx);
-  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef, libererEncodage, isDirectPlay]);
+  }, [getPositionTicks, setStartTicks, setAudioIndex, audioOverrideRef, releaseEncoding, isDirectPlay]);
 
   /**
    * La bascule native a échoué : la piste est dans le conteneur mais la puce ne
@@ -175,12 +175,12 @@ export function WatchWeb() {
    * redemander une session — le compteur de relance garantit que la requête
    * repart même si la position n'a pas bougé d'un tick.
    */
-  const handlePisteAudioIntrouvable = useCallback(() => {
+  const handleAudioTrackNotFound = useCallback(() => {
     console.warn("[Tentacle:Playback] piste audio absente du lecteur — session neuve");
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
-    relancerLecture();
-  }, [getPositionTicks, setStartTicks, relancerLecture]);
+    restartPlayback();
+  }, [getPositionTicks, setStartTicks, restartPlayback]);
 
   const handleSubtitleChange = useCallback((idx: number | null) => {
     subtitleOverrideRef.current = true;
@@ -188,8 +188,8 @@ export function WatchWeb() {
       const sub = streams.find((s: JfStream) => s.Type === "Subtitle" && s.Index === idx);
       // Un PGS rendu côté client reste une piste ordinaire : pas d'incrustation,
       // donc pas de ré-encodage de l'image pour un sous-titre.
-      if (necessiteIncrustation(sub?.Codec, pgsClientOk)) {
-        libererEncodage();
+      if (needsBurnIn(sub?.Codec, pgsClientOk)) {
+        releaseEncoding();
         const ticks = getPositionTicks();
         if (ticks > 0) setStartTicks(ticks);
         setBurnInSubtitleIndex(idx);
@@ -198,34 +198,34 @@ export function WatchWeb() {
       }
     }
     if (burnInSubtitleIndex != null) {
-      libererEncodage();
+      releaseEncoding();
       const ticks = getPositionTicks();
       if (ticks > 0) setStartTicks(ticks);
       setBurnInSubtitleIndex(undefined);
     }
     setSubtitleIndex(idx);
-  }, [streams, getPositionTicks, burnInSubtitleIndex, pgsClientOk, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex, libererEncodage]);
+  }, [streams, getPositionTicks, burnInSubtitleIndex, pgsClientOk, setStartTicks, setBurnInSubtitleIndex, setSubtitleIndex, releaseEncoding]);
 
   const handleQualityChange = useCallback((key: QualityKey) => {
-    libererEncodage();
+    releaseEncoding();
     const ticks = getPositionTicks();
     if (ticks > 0) setStartTicks(ticks);
     setQualityKey(key);
-  }, [getPositionTicks, setStartTicks, setQualityKey, libererEncodage]);
+  }, [getPositionTicks, setStartTicks, setQualityKey, releaseEncoding]);
 
   // HLS seek fallback: PlaybackInfo re-fetches with new position. L'ancien
-  // encodage est tué par `relancerLecture` lui-même — le kill vivait ici, il
+  // encodage est tué par `restartPlayback` lui-même — le kill vivait ici, il
   // vit désormais au point unique où la session est renégociée.
   //
-  // `relancerLecture` n'est pas une précaution : ce callback sert AUSSI de
+  // `restartPlayback` n'est pas une précaution : ce callback sert AUSSI de
   // rattrapage au repli CORS de `useVideoSource`, qui le déclenche à la
   // position 0 alors que `startTicks` vaut déjà 0. Sans compteur, React ne
   // rejouait rien, hls.js venait d'être détruit, et la lecture ne démarrait
   // jamais — le « parfois ça ne se lance pas » du premier démarrage.
   const handleSeekRequest = useCallback((targetSeconds: number) => {
     setStartTicks(Math.floor(targetSeconds * TICKS_PER_SECOND));
-    relancerLecture();
-  }, [setStartTicks, relancerLecture]);
+    restartPlayback();
+  }, [setStartTicks, restartPlayback]);
 
   const handleProgress = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
@@ -309,8 +309,8 @@ export function WatchWeb() {
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}
           onSeekRequest={handleSeekRequest} onSeekComplete={handleSeekComplete}
           onDirectPlayNonFiable={onDirectPlayNonFiable}
-          surPisteIntrouvable={handlePisteAudioIntrouvable}
-          pgsSubtitleUrl={pgsSubtitleUrl} onPgsEchec={signalerEchecPgs}
+          onTrackNotFound={handleAudioTrackNotFound}
+          pgsSubtitleUrl={pgsSubtitleUrl} onPgsFailure={reportPgsFailure}
           segments={segments.segments} runtimeMs={segments.runtimeMs}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}

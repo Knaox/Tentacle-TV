@@ -15,11 +15,11 @@ import { desktopKind } from "./detect";
 
 /** La coquille porte-t-elle le relais du lecteur ? (Electron seulement.) */
 export function supportsNativePlayerRelay(): boolean {
-  const capacites = window.tentacle?.capabilities;
+  const capabilities = window.tentacle?.capabilities;
   return (
     desktopKind() === "electron" &&
-    (capacites?.includes("jellyfin_playback_info") ?? false) &&
-    (capacites?.includes("jellyfin_kill_encodings") ?? false)
+    (capabilities?.includes("jellyfin_playback_info") ?? false) &&
+    (capabilities?.includes("jellyfin_kill_encodings") ?? false)
   );
 }
 

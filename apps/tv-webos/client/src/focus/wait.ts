@@ -26,61 +26,61 @@
 const BUDGET_MS = 250;
 
 /** Nombre d'images laissées au moteur de rendu avant la première tentative. */
-const IMAGES_MINIMALES = 2;
+const MIN_FRAMES = 2;
 
-export type Tentative = () => boolean;
+export type Attempt = () => boolean;
 
-export interface OptionsRevision {
+export interface ReviewOptions {
   /** Durée maximale d'attente. Par défaut, celle d'un déplacement. */
   budgetMs?: number;
   /** Appelé quand le budget s'épuise sans que la tentative ait réussi. C'est
    *  le seul endroit où l'on sait qu'on a renoncé, et donc le seul où poser un
    *  repli — un écran sans anneau est le pire des états. */
-  auDelai?: () => void;
+  onTimeout?: () => void;
 }
 
 /**
- * Rejoue `tentative` jusqu'à ce qu'elle réussisse ou que le budget s'épuise.
+ * Rejoue `attempt` jusqu'à ce qu'elle réussisse ou que le budget s'épuise.
  *
  * Deux déclencheurs : les mutations du document — le montage des cartes — et
  * le rythme d'affichage, car un changement de disposition sans mutation (une
  * image qui arrive et modifie une hauteur) ne produit aucune mutation
  * observable sur les nœuds surveillés.
  */
-export function reviserApresMontage(tentative: Tentative, options: OptionsRevision = {}): void {
+export function reviewAfterMount(attempt: Attempt, options: ReviewOptions = {}): void {
   const budgetMs = options.budgetMs ?? BUDGET_MS;
-  let termine = false;
-  let images = 0;
+  let done = false;
+  let frames = 0;
 
-  const arreter = (reussi: boolean) => {
-    if (termine) return;
-    termine = true;
-    observateur.disconnect();
-    clearTimeout(minuteur);
-    if (!reussi) options.auDelai?.();
+  const stop = (succeeded: boolean) => {
+    if (done) return;
+    done = true;
+    observer.disconnect();
+    clearTimeout(timer);
+    if (!succeeded) options.onTimeout?.();
   };
 
   const essayer = () => {
-    if (termine) return;
-    if (images < IMAGES_MINIMALES) {
-      images++;
+    if (done) return;
+    if (frames < MIN_FRAMES) {
+      frames++;
       requestAnimationFrame(essayer);
       return;
     }
-    if (tentative()) arreter(true);
+    if (attempt()) stop(true);
   };
 
-  const observateur = new MutationObserver(() => {
-    if (!termine) requestAnimationFrame(essayer);
+  const observer = new MutationObserver(() => {
+    if (!done) requestAnimationFrame(essayer);
   });
 
-  observateur.observe(document.body, {
+  observer.observe(document.body, {
     childList: true,
     subtree: true,
     // Deux attributs, et deux seulement.
     //
     // Une cible d'entrée ne paraît pas toujours en même temps que son nœud :
-    // les réglages posent `data-tv-focus-defaut` sur la section affichée un
+    // les réglages posent `data-tv-focus-fallback` sur la section affichée un
     // instant après l'avoir montée, et `SettingsShell` écrit `aria-current` de
     // la même façon. Sans les observer, la révision dormait — plus aucune
     // mutation de structure ne venait la réveiller — et l'écran gardait le
@@ -92,7 +92,7 @@ export function reviserApresMontage(tentative: Tentative, options: OptionsRevisi
     // exactement ce que ce module cherche à économiser.
     attributeFilter: ["data-tv-focus-defaut", "aria-current"],
   });
-  const minuteur = setTimeout(() => arreter(false), budgetMs);
+  const timer = setTimeout(() => stop(false), budgetMs);
 
   requestAnimationFrame(essayer);
 }

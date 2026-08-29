@@ -10,7 +10,7 @@ const testVideo = typeof document !== "undefined" ? document.createElement("vide
 // le drapeau retirait alors le seul profil de transcodage HEVC à des moteurs
 // qui en avaient besoin : une piste audio non décodable, un simple AC3, faisait
 // ré-encoder toute l'image. Le profil fMP4 conclut les deux chemins de lecture
-// à la fois (cf. `profilHlsFmp4`), la distinction n'a donc plus lieu d'être.
+// à la fois (cf. `hlsFmp4Profile`), la distinction n'a donc plus lieu d'être.
 
 export function supportsVideoCodec(codec: string, container = "mp4"): boolean {
   if (typeof MediaSource !== "undefined" && MediaSource.isTypeSupported) {
@@ -41,21 +41,21 @@ export function canPlayContainer(mime: string): boolean {
 // ouvert tel quel — Jellyfin n'a plus d'autre choix que le remux HLS, avec
 // tout ce qui s'ensuit. jellyfin-web tient les deux listes séparées pour cette
 // raison exacte (`videoAudioCodecs` face à `hlsInFmp4VideoAudioCodecs`).
-const natifVideo = (codec: string, container = "mp4") =>
+const nativeVideo = (codec: string, container = "mp4") =>
   testVideo != null && testVideo.canPlayType(`video/${container}; codecs="${codec}"`) !== "";
-const natifAudio = (codec: string) =>
+const nativeAudio = (codec: string) =>
   testVideo != null && testVideo.canPlayType(`audio/mp4; codecs="${codec}"`) !== "";
 
-export const natifH264 = () => natifVideo("avc1.640029");
-export const natifHevc = () => natifVideo("hvc1.1.6.L120.B0") || natifVideo("hev1.1.6.L120.B0");
-export const natifVp9  = () => natifVideo("vp9", "webm") || natifVideo("vp09.00.51.08", "webm");
-export const natifAv1  = () => natifVideo("av01.0.15M.10");
-export const natifAac  = () => natifAudio("mp4a.40.2");
-export const natifMp3  = () => natifAudio("mp4a.69") || natifAudio("mp4a.6B");
-export const natifAc3  = () => natifAudio("ac-3");
-export const natifEac3 = () => natifAudio("ec-3");
-export const natifFlac = () => natifAudio("flac");
-export const natifOpus = () => natifAudio("opus");
+export const nativeH264 = () => nativeVideo("avc1.640029");
+export const nativeHevc = () => nativeVideo("hvc1.1.6.L120.B0") || nativeVideo("hev1.1.6.L120.B0");
+export const nativeVp9  = () => nativeVideo("vp9", "webm") || nativeVideo("vp09.00.51.08", "webm");
+export const nativeAv1  = () => nativeVideo("av01.0.15M.10");
+export const nativeAac  = () => nativeAudio("mp4a.40.2");
+export const nativeMp3  = () => nativeAudio("mp4a.69") || nativeAudio("mp4a.6B");
+export const nativeAc3  = () => nativeAudio("ac-3");
+export const nativeEac3 = () => nativeAudio("ec-3");
+export const nativeFlac = () => nativeAudio("flac");
+export const nativeOpus = () => nativeAudio("opus");
 
 // ── Décodage par MSE (hls.js) — la question des TranscodingProfiles ──
 
@@ -88,7 +88,7 @@ export const canPlayOpus = () => supportsAudioCodec("opus");
  */
 export const canPlayHevcMain10 = () =>
   supportsVideoCodec("hvc1.2.4.L120.B0") || supportsVideoCodec("hev1.2.4.L120.B0")
-  || natifVideo("hvc1.2.4.L120.B0") || natifVideo("hev1.2.4.L120.B0");
+  || nativeVideo("hvc1.2.4.L120.B0") || nativeVideo("hev1.2.4.L120.B0");
 
 /**
  * Plages dynamiques déclarées à Jellyfin (`VideoRangeType`), d'après la SEULE
@@ -122,15 +122,15 @@ export const canPlayHevcMain10 = () =>
  * Fonction pure — c'est elle qui est testée (`codecs.test.ts`), le sondage du
  * moteur restant hors de portée d'un test sans DOM.
  */
-export function plagesDynamiques(hevcMain10: boolean): string[] {
-  const plages = ["Unknown", "SDR"];
-  if (!hevcMain10) return plages;
-  return [...plages, "HDR10", "HDR10Plus", "HLG", "DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithHLG", "DOVIWithSDR"];
+export function dynamicRanges(hevcMain10: boolean): string[] {
+  const ranges = ["Unknown", "SDR"];
+  if (!hevcMain10) return ranges;
+  return [...ranges, "HDR10", "HDR10Plus", "HLG", "DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithHLG", "DOVIWithSDR"];
 }
 
 /** Plages dynamiques de CE moteur, telles qu'envoyées dans le DeviceProfile. */
-export function plagesDynamiquesSupportees(): string[] {
-  return plagesDynamiques(canPlayHevcMain10());
+export function supportedDynamicRanges(): string[] {
+  return dynamicRanges(canPlayHevcMain10());
 }
 
 /**
@@ -151,7 +151,7 @@ export function plagesDynamiquesSupportees(): string[] {
  * compositing, celui-ci de démuxage, et les deux n'ont aucune raison d'évoluer
  * ensemble.
  */
-export function estChromium(): boolean {
+export function isChromium(): boolean {
   if (typeof navigator === "undefined") return false;
   if (!/Chrom(e|ium)\//.test(navigator.userAgent)) return false;
   return canPlayVp9();

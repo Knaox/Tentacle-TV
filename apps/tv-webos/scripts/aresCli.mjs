@@ -13,25 +13,25 @@ import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ICI = dirname(fileURLToPath(import.meta.url));
-const RACINE_CIBLE = resolve(ICI, "..");
-const RACINE_DEPOT = resolve(RACINE_CIBLE, "../..");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const TARGET_ROOT = resolve(HERE, "..");
+const REPO_ROOT = resolve(TARGET_ROOT, "../..");
 
 /** Le paquet est déclaré par cette cible, mais pnpm peut l'avoir lié à la racine. */
 function pointEntree(nom) {
-  const candidats = [RACINE_CIBLE, RACINE_DEPOT].map((racine) =>
+  const candidates = [TARGET_ROOT, REPO_ROOT].map((racine) =>
     resolve(racine, `node_modules/@webos-tools/cli/bin/${nom}.js`)
   );
-  return candidats.find(existsSync);
+  return candidates.find(existsSync);
 }
 
-export function lancerAres(nom, parametres) {
+export function runAres(nom, params) {
   const entree = pointEntree(nom);
   // Sans le paquet, on tente l'outil du PATH : un SDK LG installé à part le
   // fournit, et le message d'erreur reste alors celui de l'outil.
   if (!entree) {
-    execFileSync(nom, parametres, { stdio: "inherit" });
+    execFileSync(nom, params, { stdio: "inherit" });
     return;
   }
-  execFileSync(process.execPath, [entree, ...parametres], { stdio: "inherit" });
+  execFileSync(process.execPath, [entree, ...params], { stdio: "inherit" });
 }

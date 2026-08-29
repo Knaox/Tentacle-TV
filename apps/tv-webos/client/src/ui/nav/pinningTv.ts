@@ -16,7 +16,7 @@ import {
  * `setItem` synchrones. C'est aussi ce qu'offre `RNStorageAdapter` côté natif,
  * une fois hydraté — d'où un magasin unique pour les trois cibles.
  */
-const magasin = createRailPinningStore(localStorage);
+const store = createRailPinningStore(localStorage);
 
-export const useEpinglageRail = createUseRailPinning(magasin);
+export const useRailPinning = createUseRailPinning(store);
 export type { RailPinning };

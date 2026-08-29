@@ -25,16 +25,16 @@ import {
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { App } from "@/App";
 import { ThemeProvider } from "@/theme";
-import { installerGardeSessionTv } from "./auth/sessionGuardTv";
-import { installerPolyfills } from "./bootstrap/polyfills";
-import { lireCapacitesTeleviseur } from "./bootstrap/webosGlobals";
-import { consommerJumelage, jetonAppareil } from "./bootstrap/fragmentToken";
-import { demarrerReleveConfigs } from "./playback/configsTv";
-import { installerAntiVeille } from "./playback/wakeLockTv";
-import { installerMoteurFocus } from "./focus/engine";
-import { amorcerFocus } from "./focus/entry";
-import { installerRetour } from "./focus/back";
-import { installerTouchesLecteur } from "./playback/playerKeys";
+import { installTvSessionGuard } from "./auth/sessionGuardTv";
+import { installPolyfills } from "./bootstrap/polyfills";
+import { readTvCapabilities } from "./bootstrap/webosGlobals";
+import { consumePairing, deviceToken } from "./bootstrap/fragmentToken";
+import { startConfigCapture } from "./playback/configsTv";
+import { installWakeLock } from "./playback/wakeLockTv";
+import { installFocusEngine } from "./focus/engine";
+import { primeFocus } from "./focus/entry";
+import { installBack } from "./focus/back";
+import { installPlayerKeys } from "./playback/playerKeys";
 // La feuille du client web d'abord — mêmes jetons, mêmes composants, mêmes
 // classes — puis ce que le téléviseur change par-dessus. Importées ici plutôt
 // que chaînées par `@import` : la racine de Vite est `client/`, et un `@import`
@@ -57,29 +57,29 @@ import "./styles/tv.css";
 
 // Avant tout le reste : React observe des tailles dès son premier rendu, et le
 // client d'API construit un contrôleur d'annulation dès sa première requête.
-installerPolyfills();
+installPolyfills();
 
 // Lu tôt, pour que le profil d'appareil soit prêt à la première négociation de
 // lecture — et pour retirer `?tvinfo=` de l'URL avant que le routeur la voie.
-lireCapacitesTeleviseur();
+readTvCapabilities();
 
 // Ce que `deviceInfo` ne dit pas, le matériel le déclare — Dolby Vision, Atmos,
 // type de dalle. Lancé ici et jamais attendu : la première négociation de
 // lecture est à plusieurs écrans d'ici, et la déduction par gamme tient lieu de
 // repli si la réponse tardait.
-demarrerReleveConfigs();
+startConfigCapture();
 
 // L'écran ne veille jamais pendant une lecture ACTIVE (pause exclue — la dalle
 // OLED garde sa protection) : sentinelle Luna tvpower, cf. antiVeilleTv.
-installerAntiVeille();
+installWakeLock();
 
 // Le jumelage arrive de la coquille dans le fragment d'URL, jamais dans la
 // requête : un jeton d'appareil est un JWT sans expiration, donc un secret de
 // longue durée, et un fragment n'atteint ni les journaux ni le `Referer`.
-consommerJumelage();
+consumePairing();
 
-const langueSauvee = localStorage.getItem("tentacle_language") ?? detectLanguage();
-initI18n({ lng: langueSauvee });
+const savedLanguage = localStorage.getItem("tentacle_language") ?? detectLanguage();
+initI18n({ lng: savedLanguage });
 
 // Le client est servi par le serveur Tentacle lui-même : même origine, donc
 // adresse vide et appels relatifs. Le proxy Jellyfin est same-origin ;
@@ -98,11 +98,11 @@ setWatchTogetherBackendUrl(backendUrl);
 
 // Langue faisant foi côté serveur. Une langue changée hors ligne et pas encore
 // poussée ne doit pas être écrasée par une valeur périmée.
-const aUnUtilisateur = !!localStorage.getItem("tentacle_user");
-const changementEnAttente = localStorage.getItem("tentacle_language_pending");
-if (aUnUtilisateur && !changementEnAttente) {
-  const jeton = localStorage.getItem("tentacle_token");
-  fetchInterfaceLanguage(jeton || "__cookie__")
+const hasUser = !!localStorage.getItem("tentacle_user");
+const pendingChange = localStorage.getItem("tentacle_language_pending");
+if (hasUser && !pendingChange) {
+  const token = localStorage.getItem("tentacle_token");
+  fetchInterfaceLanguage(token || "__cookie__")
     .then((langue) => {
       if (langue && langue !== i18n.language) {
         i18n.changeLanguage(langue);
@@ -137,9 +137,9 @@ const jellyfinClient = new JellyfinClient(
 // Sans jeton — au navigateur de développement, ou pour un compte déjà connecté
 // par cookie — le client redevient utilisable, sans rien retirer au chemin du
 // jumelage.
-const jetonJumelage = jetonAppareil();
-jellyfinClient.useCredentials = !jetonJumelage;
-if (jetonJumelage) jellyfinClient.setAccessToken(jetonJumelage);
+const pairingToken = deviceToken();
+jellyfinClient.useCredentials = !pairingToken;
+if (pairingToken) jellyfinClient.setAccessToken(pairingToken);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -153,20 +153,20 @@ const queryClient = new QueryClient({
   },
 });
 
-installerGardeSessionTv({ client: jellyfinClient, storage, queryClient });
+installTvSessionGuard({ client: jellyfinClient, storage, queryClient });
 
 const stockagePersistant = {
-  getItem: (cle: string) => localStorage.getItem(cle),
-  setItem: (cle: string, valeur: string) => localStorage.setItem(cle, valeur),
-  removeItem: (cle: string) => localStorage.removeItem(cle),
+  getItem: (key: string) => localStorage.getItem(key),
+  setItem: (key: string, value: string) => localStorage.setItem(key, value),
+  removeItem: (key: string) => localStorage.removeItem(key),
 };
 
-const proprietaireCache = ((): string | null => {
+const cacheOwner = ((): string | null => {
   try {
-    const brut = localStorage.getItem("tentacle_user");
-    if (!brut) return null;
-    const identifiant = (JSON.parse(brut) as { Id?: unknown }).Id;
-    return typeof identifiant === "string" ? identifiant : null;
+    const raw = localStorage.getItem("tentacle_user");
+    if (!raw) return null;
+    const identifier = (JSON.parse(raw) as { Id?: unknown }).Id;
+    return typeof identifier === "string" ? identifier : null;
   } catch {
     return null;
   }
@@ -174,31 +174,31 @@ const proprietaireCache = ((): string | null => {
 
 void hydrateQueryClient(queryClient, stockagePersistant, {
   whitelist: HOME_PERSIST_WHITELIST,
-  owner: proprietaireCache,
+  owner: cacheOwner,
 });
 attachQueryPersister(queryClient, stockagePersistant, {
   whitelist: HOME_PERSIST_WHITELIST,
-  owner: proprietaireCache,
+  owner: cacheOwner,
 });
 
 // Navigation à la télécommande. Installée avant le rendu : le moteur écoute
 // le document en capture, il n'a besoin d'aucun composant pour exister. Le
 // focus initial, lui, attend que le premier écran soit monté.
-installerMoteurFocus();
-amorcerFocus();
+installFocusEngine();
+primeFocus();
 
 // La touche Retour, que le moteur décodait sans que personne l'écoute.
-installerRetour();
+installBack();
 
 // Touches de transport de la télécommande. Le client web ne les connaît pas :
 // il n'a jamais eu affaire qu'à un clavier, où elles n'existent pas.
-installerTouchesLecteur();
+installPlayerKeys();
 
 // Surcouche de vérification du focus — Ctrl+Maj+D. `__TV_DEBUG__` est figé à
 // faux par la configuration de build : l'import dynamique et tout ce qu'il tire
 // disparaissent du fragment servi à un téléviseur.
 if (__TV_DEBUG__) {
-  void import("./debug/debugOverlay").then((module) => module.installerSurcoucheDebug());
+  void import("./debug/debugOverlay").then((module) => module.installDebugOverlay());
 }
 
 // Ce que le serveur fait de l'image — remux ou ré-encodage. Affichée d'office
@@ -209,7 +209,7 @@ if (__TV_DEBUG__) {
 // build de diagnostic. Les deux sont faux dans l'image Docker, et Vite les
 // remplace littéralement — la branche et son import disparaissent alors.
 if (import.meta.env.DEV || __TV_DEBUG__) {
-  void import("./debug/playbackOverlay").then((module) => module.installerSurcoucheLecture());
+  void import("./debug/playbackOverlay").then((module) => module.installPlaybackOverlay());
 }
 
 createRoot(document.getElementById("root")!).render(

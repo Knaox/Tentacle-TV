@@ -26,29 +26,29 @@ const MAX = 40;
  * de piste d'une séance normale chassaient de l'anneau la chronologie qu'on
  * vient consulter — c'est le DÉMARRAGE qu'on regarde, pas la session.
  */
-const FENETRE_MS = 30_000;
+const WINDOW_MS = 30_000;
 
 /** Ce que mpv rapporte, ou ce que nous lui envoyons. */
-export type OrigineDemarrage = "mpv" | "app";
+export type StartupOrigin = "mpv" | "app";
 
 /** Label du passage en attente de cache — compté à part (voir `rebuffers`). */
 export const LABEL_BUFFERING = "buffering";
 
-export interface EntreeDemarrage {
+export interface StartupEntry {
   /** Millisecondes depuis le `loadfile` courant. */
   ms: number;
-  origine: OrigineDemarrage;
+  origin: StartupOrigin;
   label: string;
   detail?: string;
 }
 
-let entrees: EntreeDemarrage[] = [];
-let debut = 0;
+let entries: StartupEntry[] = [];
+let startedAt = 0;
 let rebuffers = 0;
-let chargements = 0;
-let contexte = "";
+let loads = 0;
+let context = "";
 
-function actif(): boolean {
+function enabled(): boolean {
   return import.meta.env.DEV || __PLAYER_DEBUG__;
 }
 
@@ -62,49 +62,49 @@ function actif(): boolean {
  * première image — et repartir de zéro l'aurait rendue invisible : on n'aurait
  * vu que la chronologie du second, impeccable.
  */
-export function ouvrirDemarrage(resume: string): void {
-  if (!actif()) return;
-  if (debut === 0 || Date.now() - debut > FENETRE_MS) {
-    entrees = [];
+export function openStartup(resume: string): void {
+  if (!enabled()) return;
+  if (startedAt === 0 || Date.now() - startedAt > WINDOW_MS) {
+    entries = [];
     rebuffers = 0;
-    chargements = 0;
-    debut = Date.now();
+    loads = 0;
+    startedAt = Date.now();
   }
-  chargements += 1;
-  contexte = resume;
-  pousser("app", chargements === 1 ? "loadfile" : `loadfile nº${chargements}`, resume);
+  loads += 1;
+  context = resume;
+  push("app", loads === 1 ? "loadfile" : `loadfile nº${loads}`, resume);
 }
 
 /** Un évènement rapporté par mpv. */
-export function tracerDemarrage(label: string, detail?: string): void {
-  if (pousser("mpv", label, detail) && label === LABEL_BUFFERING) rebuffers += 1;
+export function traceStartup(label: string, detail?: string): void {
+  if (push("mpv", label, detail) && label === LABEL_BUFFERING) rebuffers += 1;
 }
 
 /** Une commande que NOUS envoyons à mpv — seek, changement de piste. */
-export function tracerCommande(label: string, detail?: string): void {
-  pousser("app", label, detail);
+export function traceCommand(label: string, detail?: string): void {
+  push("app", label, detail);
 }
 
 /** Vrai si l'entrée a été retenue — le compteur de rebuffers s'y adosse. */
-function pousser(origine: OrigineDemarrage, label: string, detail?: string): boolean {
-  if (!actif() || debut === 0) return false;
-  const ms = Date.now() - debut;
-  if (ms > FENETRE_MS) return false;
-  if (entrees.length >= MAX) entrees.shift();
-  entrees.push({ ms, origine, label, detail });
+function push(origin: StartupOrigin, label: string, detail?: string): boolean {
+  if (!enabled() || startedAt === 0) return false;
+  const ms = Date.now() - startedAt;
+  if (ms > WINDOW_MS) return false;
+  if (entries.length >= MAX) entries.shift();
+  entries.push({ ms, origin, label, detail });
   return true;
 }
 
-export interface ChronologieDemarrage {
-  entrees: readonly EntreeDemarrage[];
+export interface StartupTimeline {
+  entries: readonly StartupEntry[];
   /** Passages en attente de cache depuis le `loadfile`. Zéro est l'objectif. */
   rebuffers: number;
   /** `loadfile` enchaînés dans la même fenêtre. Plus d'un est déjà un défaut. */
-  chargements: number;
-  /** Résumé de la source, tel que passé à `ouvrirDemarrage`. */
-  contexte: string;
+  loads: number;
+  /** Résumé de la source, tel que passé à `openStartup`. */
+  context: string;
 }
 
-export function chronologieDemarrage(): ChronologieDemarrage {
-  return { entrees, rebuffers, chargements, contexte };
+export function startupTimeline(): StartupTimeline {
+  return { entries, rebuffers, loads, context };
 }

@@ -14,17 +14,17 @@ import { cls } from "../../pages/adminUtils";
  * précis. En installer deux ne crée pas de conflit.
  */
 
-interface Greffon {
-  cle: string;
+interface Plugin {
+  key: string;
   nom: string;
   url: string;
 }
 
-const GREFFONS: readonly Greffon[] = [
-  { cle: "introSkipper", nom: "Intro Skipper", url: "https://github.com/intro-skipper/intro-skipper" },
-  { cle: "chapterSegments", nom: "Chapter Segments", url: "https://github.com/jellyfin/jellyfin-plugin-chapter-segments" },
-  { cle: "introDb", nom: "TheIntroDB", url: "https://github.com/TheIntroDB/jellyfin-plugin" },
-  { cle: "skipmeDb", nom: "skipme.db", url: "https://github.com/intro-skipper/skipme.db-plugin" },
+const PLUGINS: readonly Plugin[] = [
+  { key: "introSkipper", nom: "Intro Skipper", url: "https://github.com/intro-skipper/intro-skipper" },
+  { key: "chapterSegments", nom: "Chapter Segments", url: "https://github.com/jellyfin/jellyfin-plugin-chapter-segments" },
+  { key: "introDb", nom: "TheIntroDB", url: "https://github.com/TheIntroDB/jellyfin-plugin" },
+  { key: "skipmeDb", nom: "skipme.db", url: "https://github.com/intro-skipper/skipme.db-plugin" },
 ];
 
 export function SegmentPluginsSection() {
@@ -36,18 +36,18 @@ export function SegmentPluginsSection() {
       <p className="mb-4 text-sm text-content-quaternary">{t("segmentPluginsDescription")}</p>
       <div className={cls.sub}>
         <ul className="space-y-2">
-          {GREFFONS.map((greffon) => (
-            <li key={greffon.cle} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {PLUGINS.map((plugin) => (
+            <li key={plugin.key} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <a
-                href={greffon.url}
+                href={plugin.url}
                 target="_blank"
                 rel="noreferrer"
                 className="text-sm font-medium text-content-primary underline decoration-line-subtle underline-offset-4 hover:decoration-current"
               >
-                {greffon.nom}
+                {plugin.nom}
               </a>
               <span className="text-xs text-content-quaternary">
-                {t(`segmentPlugin_${greffon.cle}`)}
+                {t(`segmentPlugin_${plugin.key}`)}
               </span>
             </li>
           ))}

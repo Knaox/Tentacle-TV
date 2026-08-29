@@ -26,11 +26,11 @@
  */
 
 interface AnimationReport {
-  nom: string;
-  infinie: boolean;
+  name: string;
+  infinite: boolean;
   visible: boolean;
-  taille: string;
-  dureeMs: number | string;
+  size: string;
+  durationMs: number | string;
   element: string;
 }
 
@@ -62,24 +62,24 @@ function audit(withHandles = false) {
     rows.push({
       // `animationName` n'existe que sur les animations CSS ; les transitions et
       // les animations de Framer n'en ont pas.
-      nom: (animation as CSSAnimation).animationName || animation.constructor.name,
-      infinie: timing.iterations === Infinity,
+      name: (animation as CSSAnimation).animationName || animation.constructor.name,
+      infinite: timing.iterations === Infinity,
       visible: onScreen,
-      taille: `${Math.round(rect.width)}×${Math.round(rect.height)}`,
-      dureeMs: typeof timing.duration === "number" ? timing.duration : String(timing.duration),
+      size: `${Math.round(rect.width)}×${Math.round(rect.height)}`,
+      durationMs: typeof timing.duration === "number" ? timing.duration : String(timing.duration),
       element: describe(target),
     });
     if (withHandles) handles.push(animation);
   }
 
   // Le pire d'abord : infinie ET invisible, c'est-à-dire payée pour rien.
-  rows.sort((a, b) => Number(b.infinie) - Number(a.infinie) || Number(a.visible) - Number(b.visible));
+  rows.sort((a, b) => Number(b.infinite) - Number(a.infinite) || Number(a.visible) - Number(b.visible));
 
-  const infinies = rows.filter((r) => r.infinie);
+  const infinites = rows.filter((r) => r.infinite);
   console.info(
-    `%c${rows.length} animation(s) en cours — ${infinies.length} infinie(s), ` +
-      `dont ${infinies.filter((r) => !r.visible).length} sur un élément invisible`,
-    infinies.length ? "color:#ff9d5c;font-weight:bold" : "color:#7CFFB2;font-weight:bold",
+    `%c${rows.length} animation(s) en cours — ${infinites.length} infinie(s), ` +
+      `dont ${infinites.filter((r) => !r.visible).length} sur un élément invisible`,
+    infinites.length ? "color:#ff9d5c;font-weight:bold" : "color:#7CFFB2;font-weight:bold",
   );
   console.table(rows);
 

@@ -16,11 +16,11 @@
  * styles, donc un seul endroit sait les retirer.
  */
 
-const SELECTEUR = "[data-host-chrome]";
+const SELECTOR = "[data-host-chrome]";
 
-export function setHostChromeVeil(actif: boolean): void {
-  document.querySelectorAll<HTMLElement>(SELECTEUR).forEach((el) => {
-    if (actif) {
+export function setHostChromeVeil(active: boolean): void {
+  document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
+    if (active) {
       el.style.filter = "blur(4px) brightness(0.5)";
       el.style.pointerEvents = "none";
       // Posée à l'ouverture seulement, et JAMAIS retirée : c'est elle qui rend

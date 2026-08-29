@@ -22,26 +22,26 @@ import type { GenerationWebos } from "./generationWebos";
  */
 
 /** Un conteneur et ce qu'il peut porter, du point de vue du démultiplexeur LG. */
-export interface ConteneurTv {
+export interface ContainerTv {
   /** Nom Jellyfin ; plusieurs extensions se déclarent d'un coup. */
   nom: string;
   video: string[];
   audio: string[];
 }
 
-export interface MaterielTv {
+export interface HardwareTv {
   /** Année du modèle, `null` si `modelName` n'a pas pu être décodé. */
-  annee: number | null;
+  year: number | null;
   /** `deviceInfo.oled` — départage les gammes 2023-2024 pour le DTS. */
   oled: boolean;
   /** `deviceInfo.uhd8K` — débloque l'AV1 avant 2023 (modèles 8K seuls). */
   uhd8K: boolean;
 }
 
-export interface CapacitesTv {
-  conteneurs: ConteneurTv[];
+export interface CapabilityFlagsTv {
+  containers: ContainerTv[];
   /** Conteneurs audio purs, où le FLAC est autorisé — et seulement là. */
-  conteneursAudio: string[];
+  audioContainers: string[];
   /**
    * WebAssembly est-il là ? Absent avant Chromium 57, donc avant webOS 5.
    *
@@ -52,7 +52,7 @@ export interface CapacitesTv {
    * ligne décide donc, à elle seule, si un sous-titre image peut coûter un
    * transcodage vidéo sur cette génération.
    */
-  wasmDisponible: boolean;
+  wasmAvailable: boolean;
   /** Dolby Vision dans un MKV : débloqué par LG à partir de webOS 25. */
   doviEnMkv: boolean;
 }
@@ -66,11 +66,11 @@ export interface CapacitesTv {
  * pas**, et la question, reposée depuis, est restée sans réponse — jusqu'à
  * webOS 25, qui l'ajoute (`doviEnMkv`).
  *
- * Cette liste sert en NÉGATIF (`profilWebos.ts → contraintes()`) : partout
+ * Cette liste sert en NÉGATIF (`profilWebos.ts → constraints()`) : partout
  * ailleurs, les plages Dolby Vision sont retirées pour que Jellyfin remuxe vers
  * un conteneur qui, lui, porte les métadonnées.
  */
-export const CONTENEURS_DOVI = "mp4,m4v,mov,ts,m2ts,mts,mpegts";
+export const DOVI_CONTAINERS = "mp4,m4v,mov,ts,m2ts,mts,mpegts";
 
 /**
  * Ce que webOS ne démultiplexe JAMAIS, quels que soient le conteneur, la
@@ -87,10 +87,10 @@ export const CONTENEURS_DOVI = "mp4,m4v,mov,ts,m2ts,mts,mpegts";
  * extraite du fichier, donc elle n'atteint jamais l'eARC.
  *
  * **Le DTS n'y est pas, délibérément.** Il dépend de l'année du modèle
- * (`dtsSupporte`), c'est-à-dire d'un « peut-être », et un peut-être se tranche
+ * (`dtsSupported`), c'est-à-dire d'un « peut-être », et un peut-être se tranche
  * à l'exécution en regardant ce que le lecteur a publié.
  */
-export const CODECS_JAMAIS_DEMULTIPLEXES = new Set(["truehd", "mlp", "alac"]);
+export const NEVER_DEMUXED_CODECS = new Set(["truehd", "mlp", "alac"]);
 
 /** Codecs vidéo par conteneur, socle commun à toutes les générations. */
 const VIDEO_MP4 = ["h264", "hevc", "mpeg4"];
@@ -122,21 +122,21 @@ const DTS = ["dts", "dca"];
  * **audio**, que ce chantier accepte ; le prix d'une erreur inverse est une
  * piste silencieuse, que personne ne rattrape en cours de lecture.
  */
-export function dtsSupporte(materiel: MaterielTv): boolean {
-  const { annee } = materiel;
-  if (annee === null) return false;
+export function dtsSupported(materiel: HardwareTv): boolean {
+  const { year } = materiel;
+  if (year === null) return false;
   // Jusqu'en 2017, le décodeur est là sans condition.
-  if (annee <= 2017) return true;
+  if (year <= 2017) return true;
   // 2018-2019 : LG restreint le DTS « à la lecture par USB et HDMI ». Une
   // application n'est ni l'un ni l'autre.
-  if (annee <= 2019) return false;
+  if (year <= 2019) return false;
   // 2020-2022 : licence retirée. « For LG TVs released in 2020, the DTS codec
   // is not supported. »
-  if (annee <= 2022) return false;
+  if (year <= 2022) return false;
   // 2023-2024 : réintroduit, mais « available in specific models only » — les
   // OLED et les QNED haut de gamme. `oled` est le seul de ces deux critères que
   // `deviceInfo` sache nous dire ; un QNED 85 paiera un transcodage audio.
-  if (annee <= 2024) return materiel.oled;
+  if (year <= 2024) return materiel.oled;
   // 2025 : retiré à nouveau. 2026 : non confirmé, donc non.
   return false;
 }
@@ -150,9 +150,9 @@ export function dtsSupporte(materiel: MaterielTv): boolean {
  * l'active dès webOS 5 — c'est de là que viennent les écrans noirs rapportés
  * sur des dalles de 2020.
  */
-export function av1Supporte(materiel: MaterielTv): boolean {
+export function av1Supported(materiel: HardwareTv): boolean {
   if (materiel.uhd8K) return true;
-  return materiel.annee !== null && materiel.annee >= 2023;
+  return materiel.year !== null && materiel.year >= 2023;
 }
 
 /**
@@ -164,12 +164,12 @@ export function av1Supporte(materiel: MaterielTv): boolean {
  */
 function audioVideo(
   generation: GenerationWebos,
-  materiel: MaterielTv,
-  conteneur: "mp4" | "mkv" | "ts",
+  materiel: HardwareTv,
+  container: "mp4" | "mkv" | "ts",
 ): string[] {
   const codecs = ["aac", "mp3", "ac3"];
-  if (conteneur !== "mkv" || generation >= 4) codecs.push("eac3");
-  if (conteneur === "mkv") {
+  if (container !== "mkv" || generation >= 4) codecs.push("eac3");
+  if (container === "mkv") {
     codecs.push(...PCM);
     // L'Opus en MKV n'apparaît dans la documentation qu'avec webOS 24.
     // `jellyfin-web` l'active dès 3.5, six générations trop tôt.
@@ -177,20 +177,20 @@ function audioVideo(
   }
   // Le DTS n'entre en MP4 et en TS qu'avec les gammes 2023, quand LG l'a
   // réintroduit ; en MKV il y a toujours été quand le décodeur existait.
-  if (dtsSupporte(materiel) && (conteneur === "mkv" || generation >= 23)) {
+  if (dtsSupported(materiel) && (container === "mkv" || generation >= 23)) {
     codecs.push(...DTS);
   }
   return codecs;
 }
 
 /** Ce que la génération et le matériel autorisent, conteneur par conteneur. */
-export function capacitesDe(
+export function capabilitiesOf(
   generation: GenerationWebos,
-  materiel: MaterielTv,
-): CapacitesTv {
-  const av1 = av1Supporte(materiel);
+  materiel: HardwareTv,
+): CapabilityFlagsTv {
+  const av1 = av1Supported(materiel);
 
-  const conteneurs: ConteneurTv[] = [
+  const containers: ContainerTv[] = [
     {
       nom: "mp4,m4v,mov",
       video: av1 ? [...VIDEO_MP4, "av1"] : VIDEO_MP4,
@@ -238,12 +238,12 @@ export function capacitesDe(
   ];
 
   return {
-    conteneurs,
+    containers,
     // Le FLAC n'est décodé que comme fichier autonome, sur deux canaux : il
     // n'est listé dans AUCUN conteneur vidéo, aucune génération. Le déclarer
     // dans un MKV rendrait la piste muette.
-    conteneursAudio: ["mp3", "aac,m4a", "flac", "wav", "ogg,oga"],
-    wasmDisponible: generation >= 5,
+    audioContainers: ["mp3", "aac,m4a", "flac", "wav", "ogg,oga"],
+    wasmAvailable: generation >= 5,
     doviEnMkv: generation >= 25,
   };
 }

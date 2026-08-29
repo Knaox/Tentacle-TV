@@ -43,10 +43,10 @@
  * L'intervalle ne tourne que tant qu'au moins un élément est observé.
  */
 
-const PERIODE_MS = 200;
+const PERIOD_MS = 200;
 
 interface Dimensions {
-  largeur: number;
+  width: number;
   hauteur: number;
 }
 
@@ -58,7 +58,7 @@ interface Dimensions {
  * bibliothèque, qui porte `px-4 md:px-8` — soit soixante-quatre pixels de
  * padding surestimés, et un basculement de colonne sur deux frontières.
  */
-interface RectangleContenu {
+interface ContentRect {
   x: number;
   y: number;
   width: number;
@@ -70,81 +70,81 @@ interface RectangleContenu {
 }
 
 type RappelObservation = (
-  entrees: Array<{ target: Element; contentRect: RectangleContenu }>,
-  observateur: ObservateurTaille,
+  entries: Array<{ target: Element; contentRect: ContentRect }>,
+  observer: SizeObserver,
 ) => void;
 
-class ObservateurTaille {
-  private readonly observes = new Map<Element, Dimensions>();
-  private minuteur: ReturnType<typeof setInterval> | null = null;
+class SizeObserver {
+  private readonly observed = new Map<Element, Dimensions>();
+  private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private readonly rappel: RappelObservation) {}
 
-  observe(cible: Element): void {
-    if (this.observes.has(cible)) return;
-    this.observes.set(cible, mesurer(cible));
-    this.demarrer();
+  observe(target: Element): void {
+    if (this.observed.has(target)) return;
+    this.observed.set(target, measure(target));
+    this.start();
     // Première notification immédiate : le vrai ResizeObserver livre toujours
     // une entrée initiale, et les appelants s'y fient pour leur premier calcul.
-    this.notifier([cible]);
+    this.notifier([target]);
   }
 
-  unobserve(cible: Element): void {
-    this.observes.delete(cible);
-    if (this.observes.size === 0) this.arreter();
+  unobserve(target: Element): void {
+    this.observed.delete(target);
+    if (this.observed.size === 0) this.stop();
   }
 
   disconnect(): void {
-    this.observes.clear();
-    this.arreter();
+    this.observed.clear();
+    this.stop();
   }
 
-  private demarrer(): void {
-    if (this.minuteur !== null) return;
-    this.minuteur = setInterval(() => this.verifier(), PERIODE_MS);
+  private start(): void {
+    if (this.timer !== null) return;
+    this.timer = setInterval(() => this.check(), PERIOD_MS);
   }
 
-  private arreter(): void {
-    if (this.minuteur === null) return;
-    clearInterval(this.minuteur);
-    this.minuteur = null;
+  private stop(): void {
+    if (this.timer === null) return;
+    clearInterval(this.timer);
+    this.timer = null;
   }
 
-  private verifier(): void {
+  private check(): void {
     const changes: Element[] = [];
-    for (const [cible, precedentes] of this.observes) {
-      const actuelles = mesurer(cible);
-      if (actuelles.largeur === precedentes.largeur && actuelles.hauteur === precedentes.hauteur) {
+    for (const [target, previous] of this.observed) {
+      const currents2 = measure(target);
+      if (currents2.width === previous.width && currents2.hauteur === previous.hauteur) {
         continue;
       }
-      this.observes.set(cible, actuelles);
-      changes.push(cible);
+      this.observed.set(target, currents2);
+      changes.push(target);
     }
     if (changes.length > 0) this.notifier(changes);
   }
 
-  private notifier(cibles: Element[]): void {
+  private notifier(targets: Element[]): void {
     this.rappel(
-      cibles.map((target) => ({ target, contentRect: boiteDeContenu(target) })),
+      targets.map((target) => ({ target, contentRect: contentBox(target) })),
       this,
     );
   }
 }
 
-function mesurer(cible: Element): Dimensions {
-  const rectangle = cible.getBoundingClientRect();
-  return { largeur: Math.round(rectangle.width), hauteur: Math.round(rectangle.height) };
+function measure(target: Element): Dimensions {
+  const rectangle = target.getBoundingClientRect();
+  return { width: Math.round(rectangle.width), hauteur: Math.round(rectangle.height) };
 }
 
-function boiteDeContenu(cible: Element): RectangleContenu {
-  const rectangle = cible.getBoundingClientRect();
-  const style = window.getComputedStyle(cible);
+function contentBox(target: Element): ContentRect {
+  const rectangle = target.getBoundingClientRect();
+  const style = window.getComputedStyle(target);
 
   const gauche = pixels(style.paddingLeft);
-  const haut = pixels(style.paddingTop);
+  const top = pixels(style.paddingTop);
   const horizontal = gauche + pixels(style.paddingRight)
     + pixels(style.borderLeftWidth) + pixels(style.borderRightWidth);
-  const vertical = haut + pixels(style.paddingBottom)
+  const vertical = top + pixels(style.paddingBottom)
     + pixels(style.borderTopWidth) + pixels(style.borderBottomWidth);
 
   const width = Math.max(0, rectangle.width - horizontal);
@@ -155,19 +155,19 @@ function boiteDeContenu(cible: Element): RectangleContenu {
   // rectangle à moitié juste est plus coûteux qu'un rectangle entièrement faux.
   return {
     x: gauche,
-    y: haut,
+    y: top,
     width,
     height,
     left: gauche,
-    top: haut,
+    top: top,
     right: gauche + width,
-    bottom: haut + height,
+    bottom: top + height,
   };
 }
 
-function pixels(valeur: string): number {
-  const nombre = parseFloat(valeur);
-  return Number.isFinite(nombre) ? nombre : 0;
+function pixels(value: string): number {
+  const count = parseFloat(value);
+  return Number.isFinite(count) ? count : 0;
 }
 
 /**
@@ -177,7 +177,7 @@ function pixels(valeur: string): number {
  * une définition non configurable interdirait à un vrai polyfill chargé plus
  * tard de reprendre la main.
  */
-function completerEntreeIntersection(): void {
+function completeIntersectionEntry(): void {
   const global = window as unknown as {
     IntersectionObserverEntry?: { prototype: object };
   };
@@ -192,10 +192,10 @@ function completerEntreeIntersection(): void {
   });
 }
 
-export function installerPolyfillObservateurs(): void {
+export function installObserverPolyfills(): void {
   const global = window as unknown as Record<string, unknown>;
   if (typeof global.ResizeObserver !== "function") {
-    global.ResizeObserver = ObservateurTaille;
+    global.ResizeObserver = SizeObserver;
   }
-  completerEntreeIntersection();
+  completeIntersectionEntry();
 }

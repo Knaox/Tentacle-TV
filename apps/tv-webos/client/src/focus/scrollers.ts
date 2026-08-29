@@ -17,42 +17,42 @@
  */
 
 /** Un conteneur défile-t-il réellement sur cet axe, ou est-ce une déclaration sans effet ? */
-function defileVerticalement(element: HTMLElement, style: CSSStyleDeclaration): boolean {
-  const debordement = style.overflowY;
-  if (debordement !== "auto" && debordement !== "scroll") return false;
+function scrollsVertically(element: HTMLElement, style: CSSStyleDeclaration): boolean {
+  const overflow = style.overflowY;
+  if (overflow !== "auto" && overflow !== "scroll") return false;
   return element.scrollHeight > element.clientHeight + 1;
 }
 
-function defileHorizontalement(element: HTMLElement, style: CSSStyleDeclaration): boolean {
-  const debordement = style.overflowX;
-  if (debordement !== "auto" && debordement !== "scroll") return false;
+function scrollsHorizontally(element: HTMLElement, style: CSSStyleDeclaration): boolean {
+  const overflow = style.overflowX;
+  if (overflow !== "auto" && overflow !== "scroll") return false;
   return element.scrollWidth > element.clientWidth + 1;
 }
 
-function remonter(
+function climb(
   element: HTMLElement,
-  retenir: (candidat: HTMLElement, style: CSSStyleDeclaration) => boolean,
+  remember: (candidate: HTMLElement, style: CSSStyleDeclaration) => boolean,
 ): HTMLElement[] {
-  const chaine: HTMLElement[] = [];
-  let courant: HTMLElement | null = element.parentElement;
+  const chain: HTMLElement[] = [];
+  let current: HTMLElement | null = element.parentElement;
 
-  while (courant && courant !== document.body) {
-    const style = window.getComputedStyle(courant);
-    if (retenir(courant, style)) chaine.push(courant);
-    courant = courant.parentElement;
+  while (current && current !== document.body) {
+    const style = window.getComputedStyle(current);
+    if (remember(current, style)) chain.push(current);
+    current = current.parentElement;
   }
 
-  return chaine;
+  return chain;
 }
 
 /** Les conteneurs à défilement vertical qui portent l'élément, du plus interne au plus externe. */
-export function scrollersVerticaux(element: HTMLElement): HTMLElement[] {
-  return remonter(element, defileVerticalement);
+export function verticalScrollers(element: HTMLElement): HTMLElement[] {
+  return climb(element, scrollsVertically);
 }
 
 /** Les conteneurs à défilement horizontal qui portent l'élément, du plus interne au plus externe. */
-export function scrollersHorizontaux(element: HTMLElement): HTMLElement[] {
-  return remonter(element, defileHorizontalement);
+export function horizontalScrollers(element: HTMLElement): HTMLElement[] {
+  return climb(element, scrollsHorizontally);
 }
 
 /**
@@ -61,11 +61,11 @@ export function scrollersHorizontaux(element: HTMLElement): HTMLElement[] {
  * Le pas de défilement, lui, n'en veut qu'un : faire avancer d'une rangée
  * concerne la liste où l'on se trouve, pas ce qui la porte.
  */
-export function scrollerVertical(element: HTMLElement): HTMLElement | null {
-  return scrollersVerticaux(element)[0] ?? null;
+export function verticalScroller(element: HTMLElement): HTMLElement | null {
+  return verticalScrollers(element)[0] ?? null;
 }
 
 /** Le premier conteneur à défilement horizontal — la piste d'une rangée. */
-export function scrollerHorizontal(element: HTMLElement): HTMLElement | null {
-  return scrollersHorizontaux(element)[0] ?? null;
+export function horizontalScroller(element: HTMLElement): HTMLElement | null {
+  return horizontalScrollers(element)[0] ?? null;
 }

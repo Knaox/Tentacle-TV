@@ -1,5 +1,5 @@
-import { createLongPress as creerAppuiLongCoeur, type PressActions } from "@tentacle-tv/tv-core";
-import { armerVerrouOk } from "./keyLock";
+import { createLongPress as createLongPressCore, type PressActions } from "@tentacle-tv/tv-core";
+import { armOkLock } from "./keyLock";
 
 /**
  * La machine d'appui long, câblée pour la LG.
@@ -13,8 +13,8 @@ import { armerVerrouOk } from "./keyLock";
  * entrées du rail — importent d'ici comme avant et n'ont rien à savoir de la
  * séparation.
  */
-export function creerAppuiLong(actions: PressActions) {
-  return creerAppuiLongCoeur({ ...actions, lock: armerVerrouOk });
+export function createLongPress(actions: PressActions) {
+  return createLongPressCore({ ...actions, lock: armOkLock });
 }
 
 export type { PressActions };

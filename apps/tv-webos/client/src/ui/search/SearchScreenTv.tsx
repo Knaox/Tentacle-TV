@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { pushRecentSearch, readRecentSearches } from "@/components/search/recentSearches";
-import { inscrireRetour } from "../../focus/back";
-import { fermerRecherche, useRechercheOuverte } from "./searchState";
-import { CarteResultatTv } from "./ResultCardTv";
+import { registerBack } from "../../focus/back";
+import { closeSearch, useSearchOpen } from "./searchState";
+import { ResultCardTv } from "./ResultCardTv";
 
 /**
  * L'écran de recherche du téléviseur.
@@ -30,9 +30,9 @@ import { CarteResultatTv } from "./ResultCardTv";
  * d'arrière-plan au lieu de refermer ce qui est devant.
  */
 
-const DELAI_FRAPPE_MS = 350;
-const LONGUEUR_MINIMALE = 2;
-const RESULTATS_MAX = 24;
+const TYPING_DELAY_MS = 350;
+const MIN_LENGTH = 2;
+const MAX_RESULTS = 24;
 
 /**
  * Délai de grâce avant de rendre la main à la barre quand le clavier se retire.
@@ -41,14 +41,14 @@ const RESULTATS_MAX = 24;
  * clavier s'efface pendant que l'interface vocale s'affiche. Rendre le focus
  * sur-le-champ casserait la saisie vocale, la seule que cette plateforme offre.
  */
-const DELAI_RETOUR_BARRE_MS = 450;
+const BAR_RETURN_DELAY_MS = 450;
 
-function surTeleviseur(): boolean {
+function onTv(): boolean {
   return typeof (window as unknown as { PalmSystem?: unknown }).PalmSystem !== "undefined";
 }
 
-export function EcranRechercheTv() {
-  const ouverte = useRechercheOuverte();
+export function SearchScreenTv() {
+  const opened = useSearchOpen();
   const { t } = useTranslation("common");
   const navigate = useNavigate();
   // Deux éléments là où il n'y en avait qu'un, et c'est tout le correctif.
@@ -66,14 +66,14 @@ export function EcranRechercheTv() {
   const barre = useRef<HTMLButtonElement>(null);
   const champ = useRef<HTMLInputElement>(null);
 
-  const [saisie, setSaisie] = useState("");
-  const [requete, setRequete] = useState("");
-  const [recentes, setRecentes] = useState<string[]>([]);
+  const [input, setInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [recents, setRecents] = useState<string[]>([]);
 
   useEffect(() => {
-    const identifiant = setTimeout(() => setRequete(saisie.trim()), DELAI_FRAPPE_MS);
-    return () => clearTimeout(identifiant);
-  }, [saisie]);
+    const identifier = setTimeout(() => setQuery(input.trim()), TYPING_DELAY_MS);
+    return () => clearTimeout(identifier);
+  }, [input]);
 
   // L'entrée se pose sur la BARRE, jamais sur le champ.
   //
@@ -84,15 +84,15 @@ export function EcranRechercheTv() {
   // portail d'être peint — un `focus()` sur un élément pas encore composé est
   // ignoré par WebKit comme par Blink.
   useEffect(() => {
-    if (!ouverte) {
-      setSaisie("");
-      setRequete("");
+    if (!opened) {
+      setInput("");
+      setQuery("");
       return;
     }
-    setRecentes(readRecentSearches());
-    const identifiant = setTimeout(() => barre.current?.focus(), 60);
-    return () => clearTimeout(identifiant);
-  }, [ouverte]);
+    setRecents(readRecentSearches());
+    const identifier = setTimeout(() => barre.current?.focus(), 60);
+    return () => clearTimeout(identifier);
+  }, [opened]);
 
   /**
    * Fermer, et faire redescendre le clavier avec.
@@ -106,13 +106,13 @@ export function EcranRechercheTv() {
    * Le `blur()` est donc explicite, et il vient AVANT la fermeture : après, la
    * référence est déjà vide.
    */
-  const fermer = useCallback(() => {
+  const close = useCallback(() => {
     champ.current?.blur();
-    return fermerRecherche();
+    return closeSearch();
   }, []);
 
   // La touche Retour ferme la recherche avant de reculer d'un écran.
-  useEffect(() => inscrireRetour(() => fermer()), [fermer]);
+  useEffect(() => registerBack(() => close()), [close]);
 
   /**
    * OK sur la barre : c'est LE geste qui ouvre le clavier, et le seul.
@@ -127,7 +127,7 @@ export function EcranRechercheTv() {
    * savait pas traiter — un `focus()` sur l'élément déjà actif ne produit aucune
    * transition, donc ne rouvre rien.
    */
-  const ouvrirClavier = useCallback(() => {
+  const openKeyboard = useCallback(() => {
     champ.current?.focus();
   }, []);
 
@@ -144,43 +144,43 @@ export function EcranRechercheTv() {
    * saisie vocale. Un retour à vrai dans l'intervalle annule le retour.
    */
   useEffect(() => {
-    if (!ouverte) return;
-    let retour: ReturnType<typeof setTimeout> | undefined;
-    const surClavier = (evenement: Event) => {
-      const detail = (evenement as CustomEvent<{ visibility?: boolean }>).detail;
+    if (!opened) return;
+    let back: ReturnType<typeof setTimeout> | undefined;
+    const surClavier = (event: Event) => {
+      const detail = (event as CustomEvent<{ visibility?: boolean }>).detail;
       if (detail?.visibility === true) {
-        clearTimeout(retour);
+        clearTimeout(back);
         return;
       }
-      retour = setTimeout(() => {
+      back = setTimeout(() => {
         if (document.activeElement === champ.current) barre.current?.focus();
-      }, DELAI_RETOUR_BARRE_MS);
+      }, BAR_RETURN_DELAY_MS);
     };
     document.addEventListener("keyboardStateChange", surClavier);
     return () => {
       document.removeEventListener("keyboardStateChange", surClavier);
-      clearTimeout(retour);
+      clearTimeout(back);
     };
-  }, [ouverte]);
+  }, [opened]);
 
-  const { data: resultats, isLoading } = useSearchItems(requete);
-  const visibles = resultats?.slice(0, RESULTATS_MAX) ?? [];
+  const { data: results, isLoading } = useSearchItems(query);
+  const visible2 = results?.slice(0, MAX_RESULTS) ?? [];
 
-  const ouvrir = useCallback(
+  const open2 = useCallback(
     (item: MediaItem) => {
       // Mémorisée à la SÉLECTION, pas à la frappe : une requête abandonnée en
       // route n'a rien donné, la ressortir en suggestion serait un mauvais
       // conseil.
-      pushRecentSearch(requete);
-      fermer();
+      pushRecentSearch(query);
+      close();
       navigate(`/media/${item.Id}`);
     },
-    [navigate, requete, fermer],
+    [navigate, query, close],
   );
 
-  if (!ouverte) return null;
+  if (!opened) return null;
 
-  const attente = requete.length < LONGUEUR_MINIMALE;
+  const wait = query.length < MIN_LENGTH;
 
   return (
     <div className="recherche-tv" role="dialog" aria-label={t("common:searchPlaceholder")}>
@@ -194,10 +194,10 @@ export function EcranRechercheTv() {
             ref={barre}
             type="button"
             className="recherche-tv-champ"
-            onClick={ouvrirClavier}
+            onClick={openKeyboard}
             aria-label={t("common:searchMediaLong")}
           >
-            {saisie || (
+            {input || (
               <span className="recherche-tv-invite">{t("common:searchMediaLong")}</span>
             )}
           </button>
@@ -207,49 +207,49 @@ export function EcranRechercheTv() {
           <input
             ref={champ}
             tabIndex={-1}
-            value={saisie}
-            onChange={(evenement) => setSaisie(evenement.target.value)}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
             className="recherche-tv-saisie"
             aria-hidden="true"
           />
         </div>
-        {surTeleviseur() && <p className="recherche-tv-indice">{t("common:rechercheTvDictee")}</p>}
+        {onTv() && <p className="recherche-tv-indice">{t("common:rechercheTvDictee")}</p>}
       </div>
 
       <div className="recherche-tv-corps">
-        {attente && recentes.length > 0 && (
+        {wait && recents.length > 0 && (
           <ul className="recherche-tv-recentes">
-            {recentes.map((recente) => (
-              <li key={recente}>
+            {recents.map((recent) => (
+              <li key={recent}>
                 <button
                   type="button"
                   className="recherche-tv-recente"
                   onClick={() => {
-                    setSaisie(recente);
-                    setRequete(recente);
+                    setInput(recent);
+                    setQuery(recent);
                   }}
                 >
-                  {recente}
+                  {recent}
                 </button>
               </li>
             ))}
           </ul>
         )}
 
-        {attente && recentes.length === 0 && (
+        {wait && recents.length === 0 && (
           <p className="recherche-tv-message">{t("common:rechercheTvVide")}</p>
         )}
 
-        {!attente && isLoading && <p className="recherche-tv-message">{t("common:loading")}</p>}
+        {!wait && isLoading && <p className="recherche-tv-message">{t("common:loading")}</p>}
 
-        {!attente && !isLoading && visibles.length === 0 && (
+        {!wait && !isLoading && visible2.length === 0 && (
           <p className="recherche-tv-message">{t("common:noResults")}</p>
         )}
 
-        {!attente && visibles.length > 0 && (
+        {!wait && visible2.length > 0 && (
           <ul className="recherche-tv-grille">
-            {visibles.map((item) => (
-              <CarteResultatTv key={item.Id} item={item} onOuvrir={ouvrir} />
+            {visible2.map((item) => (
+              <ResultCardTv key={item.Id} item={item} onOpen={open2} />
             ))}
           </ul>
         )}

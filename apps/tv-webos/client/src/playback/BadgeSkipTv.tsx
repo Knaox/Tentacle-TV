@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SkipBadge as BadgeWeb, type SkipFlash } from "@/components/SkipBadge?original";
-import { FENETRE_CUMUL_MS } from "./cumulativeSkips";
+import { TOTAL_WINDOW_MS } from "./cumulativeSkips";
 
 /**
  * Le badge de saut, tenu le temps qu'on puisse encore y ajouter.
@@ -26,18 +26,18 @@ import { FENETRE_CUMUL_MS } from "./cumulativeSkips";
  */
 
 export function SkipBadge({ flash }: { flash: SkipFlash | null }) {
-  const [tenu, setTenu] = useState<SkipFlash | null>(null);
+  const [held, setHeld] = useState<SkipFlash | null>(null);
 
   useEffect(() => {
     // Le `null` du web est son effacement à lui : il ne nous concerne pas.
-    if (flash) setTenu(flash);
+    if (flash) setHeld(flash);
   }, [flash]);
 
   useEffect(() => {
-    if (!tenu) return;
-    const minuteur = setTimeout(() => setTenu(null), FENETRE_CUMUL_MS);
-    return () => clearTimeout(minuteur);
-  }, [tenu]);
+    if (!held) return;
+    const timer = setTimeout(() => setHeld(null), TOTAL_WINDOW_MS);
+    return () => clearTimeout(timer);
+  }, [held]);
 
-  return <BadgeWeb flash={tenu} />;
+  return <BadgeWeb flash={held} />;
 }

@@ -58,20 +58,20 @@ export function useRememberItemTracks({
    * réglage se transformer en « toujours ». Ici la piste retenue dit d'elle-même
    * ce qu'elle est.
    */
-  const choix = useMemo(() => {
+  const choice = useMemo(() => {
     const audioLang =
       streams.find((s) => s.Type === "Audio" && s.Index === audioIndex)?.Language ?? null;
     if (subtitleIndex === null) {
       return { audioLang, subtitleLang: null, subtitleMode: "none" as const };
     }
     const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex);
-    const titre = [sub?.Title, sub?.DisplayTitle].filter(Boolean).join(" ");
-    const forcee = !!sub?.IsForced || /\bforc(ed|é)e?s?\b/i.test(titre);
-    const signes = /\b(sign|songs)\b/i.test(titre);
+    const title = [sub?.Title, sub?.DisplayTitle].filter(Boolean).join(" ");
+    const forced = !!sub?.IsForced || /\bforc(ed|é)e?s?\b/i.test(title);
+    const signes = /\b(sign|songs)\b/i.test(title);
     return {
       audioLang,
       subtitleLang: sub?.Language ?? null,
-      subtitleMode: (signes ? "signs" : forcee ? "forced" : "always") as "signs" | "forced" | "always",
+      subtitleMode: (signes ? "signs" : forced ? "forced" : "always") as "signs" | "forced" | "always",
     };
   }, [streams, audioIndex, subtitleIndex]);
 
@@ -80,11 +80,11 @@ export function useRememberItemTracks({
     if (!audioOverrideRef.current && !subtitleOverrideRef.current) return;
     // Miroir local d'abord : la lecture hors ligne n'a pas de backend à
     // interroger, et le cache est borné (cf. `localItemTracks`).
-    rememberItemTracks(itemId, choix);
-    setPref.mutate({ itemId, ...choix });
+    rememberItemTracks(itemId, choice);
+    setPref.mutate({ itemId, ...choice });
     // Les refs d'override sont volontairement absentes des dépendances : ce sont
     // des refs, elles ne déclenchent pas de rendu. Ce sont les index qui portent
     // le signal, et ils changent au moment même où l'utilisateur agit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, choix]);
+  }, [itemId, choice]);
 }

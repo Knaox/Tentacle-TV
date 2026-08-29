@@ -1,9 +1,9 @@
-import { lireIntention } from "./keys";
-import { conteneurPiegeant } from "./candidates";
-import { clavierSystemeVisible } from "./systemKeyboard";
-import { fermerMenuDeploye } from "./expandedMenu";
+import { readIntent } from "./keys";
+import { trappingContainer } from "./candidates";
+import { systemKeyboardVisible } from "./systemKeyboard";
+import { closeExpandedMenu } from "./expandedMenu";
 import { markPlayerExit } from "@/components/detail/detailTransition";
-import { rendreLaMainAuTeleviseur } from "../auth/returnToShell";
+import { yieldToTv } from "../auth/returnToShell";
 
 /**
  * La touche Retour de la télécommande.
@@ -26,14 +26,14 @@ import { rendreLaMainAuTeleviseur } from "../auth/returnToShell";
  */
 
 /** Rend vrai si le retour a été traité et ne doit pas aller plus loin. */
-export type ConsommateurRetour = () => boolean;
+export type BackConsumer = () => boolean;
 
-const CHEMINS_RACINE = ["/tv", "/tv/"];
+const ROOT_PATHS = ["/tv", "/tv/"];
 
-const pile: ConsommateurRetour[] = [];
+const pile: BackConsumer[] = [];
 
 /** Garde de réentrance pour le renvoi d'Échap aux dialogues. */
-let renvoiEnCours = false;
+let bouncing = false;
 
 /**
  * Inscrit un preneur de la touche Retour. Rend sa fonction de retrait.
@@ -42,10 +42,10 @@ let renvoiEnCours = false;
  * survit à son écran capterait le retour pour refermer quelque chose qui n'est
  * plus là.
  */
-export function inscrireRetour(consommateur: ConsommateurRetour): () => void {
-  pile.push(consommateur);
+export function registerBack(consumer: BackConsumer): () => void {
+  pile.push(consumer);
   return () => {
-    const position = pile.indexOf(consommateur);
+    const position = pile.indexOf(consumer);
     if (position >= 0) pile.splice(position, 1);
   };
 }
@@ -66,19 +66,19 @@ export function inscrireRetour(consommateur: ConsommateurRetour): () => void {
  * l'on reprend la main. Il se lève à chaque Retour traité, et retombe dès que
  * le clavier n'est plus là — de sorte qu'un appui isolé, plus tard, cède encore.
  */
-let retourCedeAuClavier = false;
+let backYieldsToKeyboard = false;
 
-export function installerRetour(): () => void {
-  const surTouche = (evenement: KeyboardEvent) => {
+export function installBack(): () => void {
+  const surTouche = (event: KeyboardEvent) => {
     // Notre propre renvoi d'Échap doit ATTEINDRE le dialogue.
     //
     // Depuis que `keys.ts` lit aussi `key`, l'Échap synthétique émis par
-    // `fermerConteneurPiegeant` est reconnu comme un retour — et cet écouteur,
+    // `closeTrappingContainer` est reconnu comme un retour — et cet écouteur,
     // qui capture sur le document, le consommerait avant que `Modal` ou `Sheet`
     // ne le voient. On reculerait alors d'un écran en laissant la modale
     // ouverte par-dessus le précédent : exactement le défaut que ce renvoi
     // existe pour éviter.
-    if (renvoiEnCours) return;
+    if (bouncing) return;
 
     // Le clavier système passe avant nous, exactement comme pour le moteur de
     // déplacement (`engine.ts`). Tant qu'il occupe l'écran, Retour lui
@@ -86,47 +86,47 @@ export function installerRetour(): () => void {
     // reculer d'un écran ENTIER au premier appui — la surcouche de recherche
     // était démontée, ses résultats avec elle, et l'utilisateur se retrouvait
     // sur l'accueil en croyant n'avoir refermé qu'un clavier.
-    const intention = lireIntention(evenement);
+    const intention = readIntent(event);
     if (!intention || intention.type !== "retour") return;
 
-    if (clavierSystemeVisible()) {
-      if (!retourCedeAuClavier) {
-        retourCedeAuClavier = true;
+    if (systemKeyboardVisible()) {
+      if (!backYieldsToKeyboard) {
+        backYieldsToKeyboard = true;
         return;
       }
     } else {
       // Le clavier est parti : le prochain appui isolé aura de nouveau droit à
       // sa politesse.
-      retourCedeAuClavier = false;
+      backYieldsToKeyboard = false;
     }
 
-    evenement.preventDefault();
-    evenement.stopPropagation();
-    reculer();
+    event.preventDefault();
+    event.stopPropagation();
+    goBack();
   };
 
   document.addEventListener("keydown", surTouche, true);
   return () => document.removeEventListener("keydown", surTouche, true);
 }
 
-function reculer(): void {
+function goBack(): void {
   for (let position = pile.length - 1; position >= 0; position--) {
     if (pile[position]()) return;
   }
 
   // Le piège d'abord : c'est lui qui désigne le menu qu'on regarde, quand il y
   // en a plusieurs d'ouverts.
-  if (fermerMenuDeploye(conteneurPiegeant())) return;
-  if (fermerConteneurPiegeant()) return;
+  if (closeExpandedMenu(trappingContainer())) return;
+  if (closeTrappingContainer()) return;
 
-  if (surEcranRacine()) {
-    rendreLaMainAuTeleviseur();
+  if (onRootScreen()) {
+    yieldToTv();
     return;
   }
 
   // Quitter le lecteur par l'historique sans le signaler laisserait la fiche
   // rejouer sa transition d'ouverture au retour, alors qu'on en revient.
-  if (surLecteur()) markPlayerExit();
+  if (onPlayer()) markPlayerExit();
   window.history.back();
 }
 
@@ -145,35 +145,35 @@ function reculer(): void {
  * remontée — que `stopPropagation` coupe. **Échap avait donc cessé de fermer
  * les modales**, y compris au clavier. On répare les deux d'un geste.
  *
- * On n'essaie pas de deviner le bouton de fermeture : `conteneurPiegeant` rend
+ * On n'essaie pas de deviner le bouton de fermeture : `trappingContainer` rend
  * l'élément, pas son affordance. Rejouer la touche que ces composants écoutent
  * déjà est le seul moyen qui ne suppose rien de leur structure interne.
  *
- * L'événement synthétique ne porte pas de `keyCode` — mais `lireIntention` lit
+ * L'événement synthétique ne porte pas de `keyCode` — mais `readIntent` lit
  * désormais aussi `key`, et « Escape » y est un retour. Sans le drapeau, notre
  * propre écouteur reprendrait donc l'événement au vol. C'est lui, et non la
  * table des touches, qui garantit que le dialogue reçoit ce qu'on lui envoie.
  */
-function fermerConteneurPiegeant(): boolean {
-  if (renvoiEnCours) return false;
-  const piege = conteneurPiegeant();
-  if (!piege) return false;
+function closeTrappingContainer(): boolean {
+  if (bouncing) return false;
+  const trap = trappingContainer();
+  if (!trap) return false;
 
-  renvoiEnCours = true;
+  bouncing = true;
   try {
-    piege.dispatchEvent(
+    trap.dispatchEvent(
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
     );
   } finally {
-    renvoiEnCours = false;
+    bouncing = false;
   }
   return true;
 }
 
-function surEcranRacine(): boolean {
-  return CHEMINS_RACINE.indexOf(window.location.pathname) >= 0;
+function onRootScreen(): boolean {
+  return ROOT_PATHS.indexOf(window.location.pathname) >= 0;
 }
 
-function surLecteur(): boolean {
+function onPlayer(): boolean {
   return window.location.pathname.indexOf("/tv/watch") === 0;
 }

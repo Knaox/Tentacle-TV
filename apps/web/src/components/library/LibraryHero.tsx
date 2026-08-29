@@ -5,7 +5,7 @@ import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { firstBackdropItem, heroBackdropUrl, resolveBackdropId } from "../hero/resolveBackdrop";
 import { fadeUp, textCascade } from "../../theme/motion";
 import { useInViewport } from "../../hooks/useInViewport";
-import { useImageCassee } from "../../hooks/useImageCassee";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { HeroScrims } from "../hero/HeroScrims";
 
 interface LibraryHeroProps {
@@ -37,7 +37,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
 
   const featured = randomItem ?? firstBackdropItem(latest);
   const backdropId = featured ? resolveBackdropId(featured) : null;
-  const { cassee, signalerEchec } = useImageCassee(backdropId ?? undefined);
+  const { broken, reportFailure } = useBrokenImage(backdropId ?? undefined);
   // La MÊME URL que l'accueil, à la lettre — `heroBackdropUrl` est la
   // définition unique. Elle était recopiée ici à la main, et la copie avait
   // dérivé d'un cran de qualité (82 contre 85). Trois pixels de moins par bloc
@@ -75,8 +75,8 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
                n'empruntaient pas le même chemin de composition — et deux
                moteurs de générations différentes n'y répondent pas pareil. */
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
-            style={{ display: cassee ? "none" : undefined }}
-            onError={signalerEchec}
+            style={{ display: broken ? "none" : undefined }}
+            onError={reportFailure}
           />
         )}
 
@@ -97,7 +97,7 @@ export function LibraryHero({ libraryId, libraryName, collectionType }: LibraryH
             vu dériver. La feuille du téléviseur, elle, le redéfinit en vrai
             dégradé — d'où une SIXIÈME couche quantifiée sur huit bits empilée
             sur les cinq autres, dans la zone la plus sombre de l'image. */}
-        <HeroScrims bas="h-[62%]" />
+        <HeroScrims bottom="h-[62%]" />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée en fusion `screen` par-dessus le

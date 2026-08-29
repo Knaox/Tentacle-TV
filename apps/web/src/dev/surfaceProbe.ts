@@ -8,29 +8,29 @@
  * pixels de cette fenêtre (voir `video/macosCapture.ts` côté Electron).
  *
  * Cette porte n'existe que là où la commande est branchée : coquille Electron,
- * macOS, hors paquet livré. Ailleurs, `sonder` rend `null` et le panneau
+ * macOS, hors paquet livré. Ailleurs, `probeSurface` rend `null` et le panneau
  * n'affiche pas la section.
  */
 
 import { invoke } from "../desktop/bridge";
 import { supportsSurfaceProbe } from "../desktop/capabilities";
 
-export interface StatistiquesImage {
+export interface ImageStats {
   largeur: number;
   hauteur: number;
   /** Part de pixels non noirs, de 0 à 1. */
   nonNoirs: number;
   moyenne: number;
-  ecartType: number;
+  stdDev: number;
   teintes: number;
 }
 
-export interface SondeSurface {
+export interface SurfaceProbe {
   geometrie: string;
   numeroFenetre: number;
-  edr: { courant: number; potentiel: number };
-  image: StatistiquesImage | null;
-  erreur: string | null;
+  edr: { current: number; potentiel: number };
+  image: ImageStats | null;
+  error: string | null;
   /** Verdict en clair, calculé côté natif — c'est lui qu'on lit en premier. */
   verdict: string;
 }
@@ -44,19 +44,19 @@ export interface SondeSurface {
  * lecture ce qu'on cherche justement à mesurer. Elle est donc DEMANDÉE (touche
  * C), et le panneau affiche le dernier relevé entre-temps.
  */
-let derniere: SondeSurface | null = null;
+let last: SurfaceProbe | null = null;
 
 /** Le dernier relevé, sans rien capturer. */
-export function derniereSonde(): SondeSurface | null {
-  return derniere;
+export function lastProbe(): SurfaceProbe | null {
+  return last;
 }
 
 /** Interroge la surface. `null` si la coquille ne sait pas le faire. */
-export async function sonder(): Promise<SondeSurface | null> {
+export async function probeSurface(): Promise<SurfaceProbe | null> {
   if (!supportsSurfaceProbe()) return null;
   try {
-    derniere = await invoke<SondeSurface>("video_surface_probe");
-    return derniere;
+    last = await invoke<SurfaceProbe>("video_surface_probe");
+    return last;
   } catch {
     return null;
   }
@@ -76,19 +76,19 @@ export async function sonder(): Promise<SondeSurface | null> {
  * passe du panneau. Rend le relevé complet, EDR à jour, ou `null` s'il n'y a
  * encore rien à mettre à jour.
  */
-export async function rafraichirEdr(): Promise<SondeSurface | null> {
-  if (derniere === null || !supportsSurfaceProbe()) return derniere;
+export async function refreshEdr(): Promise<SurfaceProbe | null> {
+  if (last === null || !supportsSurfaceProbe()) return last;
   try {
-    derniere = { ...derniere, edr: await invoke<SondeSurface["edr"]>("video_edr_probe") };
+    last = { ...last, edr: await invoke<SurfaceProbe["edr"]>("video_edr_probe") };
   } catch {
     // Une sonde qui tombe n'apprend rien : on garde le dernier relevé connu.
   }
-  return derniere;
+  return last;
 }
 
 /** Le verdict en une ligne, pour le retour d'une action du panneau. */
-export function verdictSonde(s: SondeSurface | null): string {
+export function probeVerdict(s: SurfaceProbe | null): string {
   if (s === null) return "sonde de surface indisponible sur cette coquille";
-  const edr = `EDR ${s.edr.courant.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
+  const edr = `EDR ${s.edr.current.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
   return `${s.verdict} · ${edr}`;
 }

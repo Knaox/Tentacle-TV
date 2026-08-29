@@ -47,7 +47,7 @@ export function PlaybackBadge({ flash }: { flash: PlaybackFlash | null }) {
 
 /** Les quatre tracés, au trait, dans le `viewBox` 24x24 de `PlayerIcons`. */
 function Trace({ kind }: { kind: FlashKind }) {
-  const commun = {
+  const common = {
     className: "h-11 w-11 text-white",
     viewBox: "0 0 24 24",
     fill: "none",
@@ -59,7 +59,7 @@ function Trace({ kind }: { kind: FlashKind }) {
 
   if (kind === "pause") {
     return (
-      <svg {...commun}>
+      <svg {...common}>
         <path d="M9 5v14M15 5v14" strokeWidth={2.4} />
       </svg>
     );
@@ -67,7 +67,7 @@ function Trace({ kind }: { kind: FlashKind }) {
   if (kind === "play") {
     // Décalé d'un point : un triangle centré géométriquement paraît trop à gauche.
     return (
-      <svg {...commun} className="ml-1 h-11 w-11 text-white">
+      <svg {...common} className="ml-1 h-11 w-11 text-white">
         <path d="M8 5.5l11 6.5-11 6.5z" strokeWidth={2} />
       </svg>
     );
@@ -75,7 +75,7 @@ function Trace({ kind }: { kind: FlashKind }) {
   // Haut-parleur des contrôles, aux ondes près : trois arcs quand le son est là,
   // la croix à leur place quand il est coupé.
   return (
-    <svg {...commun}>
+    <svg {...common}>
       <path d="M12 6l-4 4H4v4h4l4 4V6z" strokeWidth={2} />
       {kind === "mute" ? (
         <path d="M16.5 9.5l5 5M21.5 9.5l-5 5" strokeWidth={2} />

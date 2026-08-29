@@ -18,15 +18,15 @@
  * ramenée en SDR. Ces lignes-ci, si.
  */
 
-/** Une ligne de verdict. `bon` colore : vrai = vert, faux = rouge, null = neutre. */
+/** Une ligne de verdict. `good` colore : vrai = vert, faux = rouge, null = neutre. */
 export interface Verdict {
-  cle: string;
-  valeur: string;
-  bon: boolean | null;
+  key: string;
+  value: string;
+  good: boolean | null;
 }
 
 /** Propriétés nécessaires aux verdicts, lues en une passe. */
-export const PROPS_VERDICT = [
+export const VERDICT_PROPS = [
   "path",
   "video-params/gamma",
   "video-params/primaries",
@@ -60,12 +60,12 @@ export const PROPS_VERDICT = [
   "osd-height",
 ] as const;
 
-type Lues = Readonly<Record<string, string | null>>;
+type ReadProps = Readonly<Record<string, string | null>>;
 
 const HDR = new Set(["pq", "hlg"]);
 
 /** Nombre lisible, ou `null` si la propriété est absente. */
-function nombre(v: string | null | undefined): number | null {
+function toNumber(v: string | null | undefined): number | null {
   if (v === null || v === undefined) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
@@ -87,38 +87,38 @@ function nombre(v: string | null | undefined): number | null {
  * détruite avant que mpv ne la voie et le contenu arrive en `bt.1886`. Le
  * lecteur se comporte bien, il n'y a simplement plus de HDR à transmettre.
  */
-function verdictHdr(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): Verdict {
+function hdrVerdict(p: ReadProps, screenInHdr: boolean, coucheHdr?: boolean | null): Verdict {
   const gamma = p["video-params/gamma"];
-  const sortie = p["video-target-params/gamma"];
-  const contenuHdr = gamma !== null && gamma !== undefined && HDR.has(gamma);
+  const output = p["video-target-params/gamma"];
+  const hdrContent = gamma !== null && gamma !== undefined && HDR.has(gamma);
 
-  if (!contenuHdr) {
+  if (!hdrContent) {
     return {
-      cle: "HDR",
-      valeur: `contenu SDR (${gamma ?? "?"}) — rien a transmettre`,
-      bon: null,
+      key: "HDR",
+      value: `contenu SDR (${gamma ?? "?"}) — rien a transmettre`,
+      good: null,
     };
   }
   // Sortie inconnue. Deux cas, et ils ne se concluent pas pareil.
-  if (sortie === null || sortie === undefined) {
+  if (output === null || output === undefined) {
     // ⚠️ Avec `vo=libmpv` — le rendu dans une vue à nous — mpv n'expose PAS
     // `video-target-params` : il n'a pas de cible à décrire, c'est l'hôte qui
     // présente. La plage étendue accordée par le compositeur est alors la seule
     // preuve disponible, et elle en est une : rien ne l'obtient sans contenu
     // au-delà du blanc SDR.
-    if (ecranEnHdr) {
-      return { cle: "HDR", valeur: `REEL — contenu ${gamma}, plage etendue accordee`, bon: true };
+    if (screenInHdr) {
+      return { key: "HDR", value: `REEL — contenu ${gamma}, plage etendue accordee`, good: true };
     }
-    return { cle: "HDR", valeur: `contenu ${gamma}, sortie pas encore etablie`, bon: null };
+    return { key: "HDR", value: `contenu ${gamma}, sortie pas encore etablie`, good: null };
   }
-  if (!HDR.has(sortie)) {
-    return { cle: "HDR", valeur: `contenu ${gamma} → sortie ${sortie} — TONE-MAPPE`, bon: false };
+  if (!HDR.has(output)) {
+    return { key: "HDR", value: `contenu ${gamma} → sortie ${output} — TONE-MAPPE`, good: false };
   }
-  const primaires = p["video-target-params/primaries"] ?? "?";
-  const pic = nombre(p["video-target-params/sig-peak"]) ?? nombre(p["target-peak"]);
-  const detail = `${sortie} / ${primaires}${pic ? `, pic ${pic}` : ""}`;
+  const primaries = p["video-target-params/primaries"] ?? "?";
+  const pic = toNumber(p["video-target-params/sig-peak"]) ?? toNumber(p["target-peak"]);
+  const detail = `${output} / ${primaries}${pic ? `, pic ${pic}` : ""}`;
 
-  // ⚠️ Sur macOS, `ecranEnHdr` est un EDR INSTANTANÉ qui dépend de l'image :
+  // ⚠️ Sur macOS, `screenInHdr` est un EDR INSTANTANÉ qui dépend de l'image :
   // une scène de nuit ne réclame aucune haute lumière et le fait retomber à
   // 1,00 sur une lecture parfaitement HDR. Mesuré sur le même film, à quelques
   // minutes d'intervalle : 1,00 puis 12,82. S'y fier seul faisait annoncer
@@ -128,39 +128,39 @@ function verdictHdr(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): V
   // `coucheHdr` vient de mpv lui-même, qui trace l'état de sa couche Metal.
   // C'est le RENDU qui parle, et il ne dépend pas de la scène.
   if (coucheHdr === true) {
-    return { cle: "HDR", valeur: `REEL — ${detail}, couche en plage etendue`, bon: true };
+    return { key: "HDR", value: `REEL — ${detail}, couche en plage etendue`, good: true };
   }
-  if (!ecranEnHdr) {
+  if (!screenInHdr) {
     // `coucheHdr` à `null` veut dire « on ne sait pas », jamais « non » : la
     // coquille qui répond ne suit pas forcément l'état de la couche.
     const cause = coucheHdr === false
       ? "couche en SDR"
       : "aucune plage etendue accordee EN CE MOMENT — scene sombre ?";
-    return { cle: "HDR", valeur: `signal ${sortie} — ${cause}`, bon: false };
+    return { key: "HDR", value: `signal ${output} — ${cause}`, good: false };
   }
-  return { cle: "HDR", valeur: `REEL — ${detail} vers un ecran en HDR`, bon: true };
+  return { key: "HDR", value: `REEL — ${detail} vers un ecran en HDR`, good: true };
 }
 
 /** Direct play ou transcodage : le `.m3u8` trahit le second. */
-function verdictSource(p: Lues): Verdict {
-  const chemin = p["path"] ?? "";
-  const transcode = chemin.includes(".m3u8");
+function sourceVerdict(p: ReadProps): Verdict {
+  const path = p["path"] ?? "";
+  const transcoded = path.includes(".m3u8");
   return {
-    cle: "Source",
-    valeur: transcode ? "TRANSCODE (HLS) — la chaine HDR est perdue" : "lecture directe",
-    bon: !transcode,
+    key: "Source",
+    value: transcoded ? "TRANSCODE (HLS) — la chaine HDR est perdue" : "lecture directe",
+    good: !transcoded,
   };
 }
 
 /** Dernier segment d'un chemin, séparateur Windows compris. */
-function nomDeFichier(chemin: string): string {
-  const morceaux = chemin.split(/[\\/]/);
-  return morceaux[morceaux.length - 1] ?? "";
+function fileName(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts[parts.length - 1] ?? "";
 }
 
-function hote(chemin: string): string {
+function host(path: string): string {
   try {
-    return new URL(chemin).host;
+    return new URL(path).host;
   } catch {
     return "";
   }
@@ -175,14 +175,14 @@ function hote(chemin: string): string {
  * définit une. On formate donc nous-mêmes si c'est un nombre, et on relaie tel
  * quel sinon. Les deux builds de libmpv sont ainsi couverts.
  */
-function debitLisible(brut: string | null | undefined): string {
-  if (brut === null || brut === undefined || brut === "") return "debit inconnu";
-  const octets = Number(brut);
-  if (!Number.isFinite(octets)) return brut;
-  if (octets <= 0) return "0 o/s";
-  return octets >= 1_000_000
-    ? `${(octets / 1_000_000).toFixed(1)} Mo/s`
-    : `${Math.round(octets / 1000)} ko/s`;
+function readableBitrate(raw: string | null | undefined): string {
+  if (raw === null || raw === undefined || raw === "") return "debit inconnu";
+  const bytes = Number(raw);
+  if (!Number.isFinite(bytes)) return raw;
+  if (bytes <= 0) return "0 o/s";
+  return bytes >= 1_000_000
+    ? `${(bytes / 1_000_000).toFixed(1)} Mo/s`
+    : `${Math.round(bytes / 1000)} ko/s`;
 }
 
 /**
@@ -198,32 +198,32 @@ function debitLisible(brut: string | null | undefined): string {
  * du chemin ne sert que de repli, pour un libmpv qui ne rendrait pas la
  * propriété.
  */
-function verdictFlux(p: Lues): Verdict {
-  const chemin = p["path"] ?? "";
+function streamVerdict(p: ReadProps): Verdict {
+  const path = p["path"] ?? "";
   const via = p["demuxer-via-network"];
-  const reseau =
+  const network =
     via === null || via === undefined || via === ""
-      ? /^[a-z][a-z0-9+.-]*:\/\//i.test(chemin)
+      ? /^[a-z][a-z0-9+.-]*:\/\//i.test(path)
       : via === "yes";
 
-  const ou = reseau ? hote(chemin) : nomDeFichier(chemin);
-  const debit = debitLisible(p["cache-speed"]);
+  const ou = network ? host(path) : fileName(path);
+  const bitrate = readableBitrate(p["cache-speed"]);
   return {
-    cle: "Flux",
-    valeur: `${reseau ? "RESEAU" : "LOCAL"}${ou === "" ? "" : ` — ${ou}`} · ${debit}`,
+    key: "Flux",
+    value: `${network ? "RESEAU" : "LOCAL"}${ou === "" ? "" : ` — ${ou}`} · ${bitrate}`,
     // Ni l'un ni l'autre n'est un défaut : en ligne on lit le serveur, hors
     // ligne le disque. C'est à la lecture de dire si c'est celui qu'on attend.
-    bon: null,
+    good: null,
   };
 }
 
-function verdictDecodage(p: Lues): Verdict {
+function decodeVerdict(p: ReadProps): Verdict {
   const hw = p["hwdec-current"];
-  const materiel = hw !== null && hw !== undefined && hw !== "no" && hw !== "";
+  const hardware = hw !== null && hw !== undefined && hw !== "no" && hw !== "";
   return {
-    cle: "Decodage",
-    valeur: materiel ? `materiel (${hw})` : "LOGICIEL — le processeur decode",
-    bon: materiel,
+    key: "Decodage",
+    value: hardware ? `materiel (${hw})` : "LOGICIEL — le processeur decode",
+    good: hardware,
   };
 }
 
@@ -234,19 +234,19 @@ function verdictDecodage(p: Lues): Verdict {
  * à « qu'est-ce qu'on m'envoie », pas à « quelle taille fait la fenêtre ». Un
  * film en scope fait 3840x1604 dans le fichier — 2.39:1 — et les bandes noires
  * n'y sont pas : elles sont ajoutées à l'affichage sur un écran 16:9. Voir
- * `verdictSurface` pour ce qui bouge, lui.
+ * `surfaceVerdict` pour ce qui bouge, lui.
  */
-function verdictImage(p: Lues): Verdict {
-  const l = nombre(p["dwidth"]) ?? nombre(p["video-params/w"]);
-  const h = nombre(p["dheight"]) ?? nombre(p["video-params/h"]);
+function imageVerdict(p: ReadProps): Verdict {
+  const l = toNumber(p["dwidth"]) ?? toNumber(p["video-params/w"]);
+  const h = toNumber(p["dheight"]) ?? toNumber(p["video-params/h"]);
   const codec = p["video-codec"] ?? "?";
-  const debit = nombre(p["video-bitrate"]);
-  const mbps = debit === null ? "" : ` — ${(debit / 1_000_000).toFixed(1)} Mb/s`;
-  const rapport = l && h ? ` (${(l / h).toFixed(2)}:1)` : "";
+  const bitrate = toNumber(p["video-bitrate"]);
+  const mbps = bitrate === null ? "" : ` — ${(bitrate / 1_000_000).toFixed(1)} Mb/s`;
+  const ratio = l && h ? ` (${(l / h).toFixed(2)}:1)` : "";
   return {
-    cle: "Image",
-    valeur: l && h ? `${l}x${h}${rapport} ${codec}${mbps}` : `${codec}${mbps}`,
-    bon: null,
+    key: "Image",
+    value: l && h ? `${l}x${h}${ratio} ${codec}${mbps}` : `${codec}${mbps}`,
+    good: null,
   };
 }
 
@@ -258,21 +258,21 @@ function verdictImage(p: Lues): Verdict {
  * déduisent du rapport — une image en 2.39:1 sur une surface 16:9 en laisse
  * forcément.
  */
-function verdictSurface(p: Lues): Verdict {
-  const sl = nombre(p["osd-width"]);
-  const sh = nombre(p["osd-height"]);
-  if (!sl || !sh) return { cle: "Surface", valeur: "pas encore etablie", bon: null };
-  const vl = nombre(p["dwidth"]) ?? nombre(p["video-params/w"]);
-  const vh = nombre(p["dheight"]) ?? nombre(p["video-params/h"]);
-  if (!vl || !vh) return { cle: "Surface", valeur: `${sl}x${sh}`, bon: null };
-  const rapport = vl / vh;
-  const affichee = { l: Math.min(sl, Math.round(sh * rapport)), h: Math.min(sh, Math.round(sl / rapport)) };
-  const bandes = Math.round((sh - affichee.h) / 2);
-  const detail = bandes > 0 ? `, bandes ${bandes} px` : ", plein cadre";
+function surfaceVerdict(p: ReadProps): Verdict {
+  const sl = toNumber(p["osd-width"]);
+  const sh = toNumber(p["osd-height"]);
+  if (!sl || !sh) return { key: "Surface", value: "pas encore etablie", good: null };
+  const vl = toNumber(p["dwidth"]) ?? toNumber(p["video-params/w"]);
+  const vh = toNumber(p["dheight"]) ?? toNumber(p["video-params/h"]);
+  if (!vl || !vh) return { key: "Surface", value: `${sl}x${sh}`, good: null };
+  const ratio = vl / vh;
+  const displayed = { l: Math.min(sl, Math.round(sh * ratio)), h: Math.min(sh, Math.round(sl / ratio)) };
+  const bars = Math.round((sh - displayed.h) / 2);
+  const detail = bars > 0 ? `, bandes ${bars} px` : ", plein cadre";
   return {
-    cle: "Surface",
-    valeur: `${sl}x${sh} — image ${affichee.l}x${affichee.h}${detail}`,
-    bon: null,
+    key: "Surface",
+    value: `${sl}x${sh} — image ${displayed.l}x${displayed.h}${detail}`,
+    good: null,
   };
 }
 
@@ -283,22 +283,22 @@ function verdictSurface(p: Lues): Verdict {
  * `decoder-frame-drop-count` est ce que le décodeur abandonne. Les deux doivent
  * rester à zéro — une seule image perdue par minute se voit sur un travelling.
  */
-function verdictCadence(p: Lues): Verdict {
-  const source = nombre(p["container-fps"]);
-  const rendu = nombre(p["estimated-vf-fps"]);
-  const ecran = nombre(p["display-fps"]);
-  const perduesVo = nombre(p["frame-drop-count"]) ?? 0;
-  const perduesDec = nombre(p["decoder-frame-drop-count"]) ?? 0;
-  const perdues = perduesVo + perduesDec;
+function framerateVerdict(p: ReadProps): Verdict {
+  const source = toNumber(p["container-fps"]);
+  const rendered = toNumber(p["estimated-vf-fps"]);
+  const screen = toNumber(p["display-fps"]);
+  const droppedVo = toNumber(p["frame-drop-count"]) ?? 0;
+  const droppedDec = toNumber(p["decoder-frame-drop-count"]) ?? 0;
+  const dropped = droppedVo + droppedDec;
   const cadence = [
     source === null ? null : `source ${source.toFixed(3)}`,
-    rendu === null ? null : `rendu ${rendu.toFixed(1)}`,
-    ecran === null ? null : `ecran ${ecran.toFixed(0)}`,
+    rendered === null ? null : `rendu ${rendered.toFixed(1)}`,
+    screen === null ? null : `ecran ${screen.toFixed(0)}`,
   ].filter((x): x is string => x !== null).join(" · ");
   return {
-    cle: "Cadence",
-    valeur: `${cadence}${perdues > 0 ? ` — ${perdues} IMAGES PERDUES` : " — 0 perdue"}`,
-    bon: perdues === 0,
+    key: "Cadence",
+    value: `${cadence}${dropped > 0 ? ` — ${dropped} IMAGES PERDUES` : " — 0 perdue"}`,
+    good: dropped === 0,
   };
 }
 
@@ -306,17 +306,17 @@ function verdictCadence(p: Lues): Verdict {
  * Les verdicts, dans l'ordre où ils comptent.
  *
  * `coucheHdr` n'existe que sur la coquille Electron macOS, où l'EDR seul ne
- * suffit pas à juger — voir `verdictHdr`. Absent ailleurs, et absent ne veut
+ * suffit pas à juger — voir `hdrVerdict`. Absent ailleurs, et absent ne veut
  * pas dire « non ».
  */
-export function verdicts(p: Lues, ecranEnHdr: boolean, coucheHdr?: boolean | null): Verdict[] {
+export function verdicts(p: ReadProps, screenInHdr: boolean, coucheHdr?: boolean | null): Verdict[] {
   return [
-    verdictSource(p),
-    verdictFlux(p),
-    verdictHdr(p, ecranEnHdr, coucheHdr),
-    verdictImage(p),
-    verdictSurface(p),
-    verdictDecodage(p),
-    verdictCadence(p),
+    sourceVerdict(p),
+    streamVerdict(p),
+    hdrVerdict(p, screenInHdr, coucheHdr),
+    imageVerdict(p),
+    surfaceVerdict(p),
+    decodeVerdict(p),
+    framerateVerdict(p),
   ];
 }

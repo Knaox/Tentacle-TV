@@ -30,28 +30,28 @@ interface SkipSegmentButtonProps {
   /** Refuser le saut automatique pour ce passage. */
   onDismiss: () => void;
   /** Couche d'empilement : `z-50` sur le web, `z-20` sur le bureau. */
-  couche: string;
+  layer: string;
 }
 
 export function SkipSegmentButton({
-  labelKey, countdownSeconds, countdownTotalMs, onSkip, onDismiss, couche,
+  labelKey, countdownSeconds, countdownTotalMs, onSkip, onDismiss, layer,
 }: SkipSegmentButtonProps) {
   const { t } = useTranslation("player");
-  const arme = countdownSeconds !== null;
+  const armed = countdownSeconds !== null;
 
   return (
-    <div className={`absolute bottom-28 right-6 flex items-center gap-2 ${couche}`}>
+    <div className={`absolute bottom-28 right-6 flex items-center gap-2 ${layer}`}>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onSkip(); }}
         className="relative overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg px-6 py-2.5 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
       >
-        {arme
+        {armed
           ? t(`player:${labelKey}In`, { seconds: countdownSeconds })
           : t(`player:${labelKey}`)}
-        {arme && <Glissiere dureeMs={countdownTotalMs} />}
+        {armed && <Slider durationMs={countdownTotalMs} />}
       </button>
-      {arme && (
+      {armed && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
@@ -73,11 +73,11 @@ export function SkipSegmentButton({
  * est sombre (`bg-black/25`) — le `bg-white/70` d'avant y serait invisible.
  * Sous « animations réduites », elle disparaît, le libellé fait seul le travail.
  */
-function Glissiere({ dureeMs }: { dureeMs: number }) {
-  const [parti, setParti] = useState(false);
+function Slider({ durationMs }: { durationMs: number }) {
+  const [gone, setGone] = useState(false);
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => setParti(true));
+    const id = requestAnimationFrame(() => setGone(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
@@ -86,8 +86,8 @@ function Glissiere({ dureeMs }: { dureeMs: number }) {
       aria-hidden="true"
       className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-black/25 transition-transform ease-linear motion-reduce:hidden"
       style={{
-        transitionDuration: `${dureeMs}ms`,
-        transform: `scaleX(${parti ? 1 : 0})`,
+        transitionDuration: `${durationMs}ms`,
+        transform: `scaleX(${gone ? 1 : 0})`,
       }}
     />
   );

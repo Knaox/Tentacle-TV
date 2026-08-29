@@ -1,6 +1,6 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidates";
-import { focusParDefaut } from "./default";
-import { retrouver } from "./memory";
+import { FOCUSABLE_SELECTOR, reachableTarget, isInputField, collect } from "./candidates";
+import { defaultFocus } from "./default";
+import { recover } from "./memory";
 
 /**
  * Les zones : là où la géométrie ne suffit pas, une destination déclarée.
@@ -24,10 +24,10 @@ import { retrouver } from "./memory";
  */
 
 /** La navigation latérale, qui obéit à des règles d'accès particulières. */
-export const SELECTEUR_RAIL = ".rail-tv";
+export const RAIL_SELECTOR = ".rail-tv";
 
-export function dansLeRail(element: HTMLElement | null): boolean {
-  return !!element && !!element.closest(SELECTEUR_RAIL);
+export function inRail(element: HTMLElement | null): boolean {
+  return !!element && !!element.closest(RAIL_SELECTOR);
 }
 
 /**
@@ -39,16 +39,16 @@ export function dansLeRail(element: HTMLElement | null): boolean {
  * l'affaire : on vient y CHOISIR une destination, autant partir du haut.
  */
 export function entreeDuRail(): HTMLElement | null {
-  const rail = document.querySelector<HTMLElement>(SELECTEUR_RAIL);
+  const rail = document.querySelector<HTMLElement>(RAIL_SELECTOR);
   if (!rail) return null;
 
   const courante = rail.querySelector<HTMLElement>('[aria-current="page"]');
-  if (courante && courante.matches(SELECTEUR_FOCUSABLE) && cibleAtteignable(courante)) {
+  if (courante && courante.matches(FOCUSABLE_SELECTOR) && reachableTarget(courante)) {
     return courante;
   }
 
-  for (const entree of rail.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE)) {
-    if (cibleAtteignable(entree)) return entree;
+  for (const entree of rail.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+    if (reachableTarget(entree)) return entree;
   }
   return null;
 }
@@ -62,15 +62,15 @@ export function entreeDuRail(): HTMLElement | null {
  * document a été reconstruit. L'invalidation au changement de route est ce qui
  * évite le focus mort : restituer un nœud d'un AUTRE écran, démonté avec lui.
  */
-let dernierContenu: HTMLElement | null = null;
+let lastContent: HTMLElement | null = null;
 
-export function retenirContenu(element: HTMLElement): void {
-  if (dansLeRail(element)) return;
-  dernierContenu = element;
+export function rememberContent(element: HTMLElement): void {
+  if (inRail(element)) return;
+  lastContent = element;
 }
 
-export function invaliderContenu(): void {
-  dernierContenu = null;
+export function invalidateContent(): void {
+  lastContent = null;
 }
 
 /**
@@ -82,19 +82,19 @@ export function invaliderContenu(): void {
  * sinon le focus par défaut de l'écran, hors rail.
  */
 export function sortieDuRail(): HTMLElement | null {
-  if (dernierContenu && document.contains(dernierContenu) && cibleAtteignable(dernierContenu)) {
-    return dernierContenu;
+  if (lastContent && document.contains(lastContent) && reachableTarget(lastContent)) {
+    return lastContent;
   }
 
-  const retrouve = retrouver();
-  if (retrouve && !dansLeRail(retrouve)) return retrouve;
+  const found = recover();
+  if (found && !inRail(found)) return found;
 
-  const horsRail = recenser(document).filter((candidat) => !dansLeRail(candidat.element));
-  return focusParDefaut(document, horsRail);
+  const outsideRail = collect(document).filter((candidate) => !inRail(candidate.element));
+  return defaultFocus(document, outsideRail);
 }
 
 /** Ce qu'une enveloppe du portage pose sur la cible d'entrée qu'elle a choisie. */
-export const ATTRIBUT_ENTREE = "data-tv-zone-entree";
+export const ENTRY_ATTRIBUTE = "data-tv-zone-entree";
 
 /**
  * La destination d'entrée d'une zone, du plus explicite au plus général.
@@ -113,17 +113,17 @@ export const ATTRIBUT_ENTREE = "data-tv-zone-entree";
  * zone garantit désormais un atterrissage à l'intérieur, toujours.
  */
 const CASCADE_ENTREE = [
-  `[${ATTRIBUT_ENTREE}]`,
+  `[${ENTRY_ATTRIBUTE}]`,
   '[class*="cta-primary"]',
   '[aria-selected="true"]',
   '[aria-current]:not([aria-current="false"])',
-  SELECTEUR_FOCUSABLE,
+  FOCUSABLE_SELECTOR,
 ];
 
 /**
  * Où atterrir dans une zone, sans rien savoir d'où l'on vient.
  *
- * La cascade était enfermée dans `redirigerEntreeDeZone`, qui exige une
+ * La cascade était enfermée dans `redirectZoneEntry`, qui exige une
  * arrivée géométrique et rend `null` dans trois cas qui n'ont aucun sens
  * quand on OUVRE un panneau. Or c'est exactement la question qu'une enveloppe
  * se pose alors : « où poser le focus dans ce menu qui vient de paraître ? »
@@ -137,15 +137,15 @@ const CASCADE_ENTREE = [
  * monter aucun clavier — mieux vaut y entrer que nulle part.
  */
 export function destinationEntreeDeZone(zone: HTMLElement): HTMLElement | null {
-  for (const selecteur of CASCADE_ENTREE) {
-    const trouvees: HTMLElement[] = [];
-    for (const cible of zone.querySelectorAll<HTMLElement>(selecteur)) {
-      if (!cible.matches(SELECTEUR_FOCUSABLE)) continue;
-      if (!cibleAtteignable(cible)) continue;
-      if (!estUnChampDeSaisie(cible)) return cible;
-      trouvees.push(cible);
+  for (const selector of CASCADE_ENTREE) {
+    const found: HTMLElement[] = [];
+    for (const target of zone.querySelectorAll<HTMLElement>(selector)) {
+      if (!target.matches(FOCUSABLE_SELECTOR)) continue;
+      if (!reachableTarget(target)) continue;
+      if (!isInputField(target)) return target;
+      found.push(target);
     }
-    if (trouvees.length > 0) return trouvees[0];
+    if (found.length > 0) return found[0];
   }
   return null;
 }
@@ -158,15 +158,15 @@ export function destinationEntreeDeZone(zone: HTMLElement): HTMLElement | null {
  * zone n'a pas de destination lisible — l'arrivée géométrique reste alors la
  * bonne réponse.
  */
-export function redirigerEntreeDeZone(
-  depart: HTMLElement | null,
-  arrivee: HTMLElement,
+export function redirectZoneEntry(
+  start: HTMLElement | null,
+  arrival: HTMLElement,
 ): HTMLElement | null {
-  const zone = arrivee.closest<HTMLElement>("[data-tv-zone]");
+  const zone = arrival.closest<HTMLElement>("[data-tv-zone]");
   if (!zone) return null;
-  if (depart && zone.contains(depart)) return null;
+  if (start && zone.contains(start)) return null;
 
-  const cible = destinationEntreeDeZone(zone);
-  if (!cible || cible === arrivee) return null;
-  return cible;
+  const target = destinationEntreeDeZone(zone);
+  if (!target || target === arrival) return null;
+  return target;
 }

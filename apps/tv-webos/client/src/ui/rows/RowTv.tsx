@@ -11,7 +11,7 @@ import { PisteTv } from "./TrackTv";
 
 export type CardVariant = "poster" | "episode";
 
-interface ProprietesRangee {
+interface RowProps {
   title: string;
   items: MediaItem[];
   variant?: CardVariant;
@@ -53,20 +53,20 @@ export function MediaRow({
   animDelay = 0,
   href,
   posterImageMode,
-}: ProprietesRangee) {
+}: RowProps) {
   const { t } = useTranslation("common");
   const rowRef = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(false);
-  // Le défilement horizontal suit le focus : c'est `amenerEnVue` du moteur de
+  // Le défilement horizontal suit le focus : c'est `bringIntoView` du moteur de
   // navigation qui écrit `scrollLeft`, pas des commandes au survol.
   const { scrollRef, onScroll } = useRowScroll();
-  const largeurCarte = useRowCardWidth(scrollRef, variant);
-  const proche = useInViewport<HTMLDivElement>("400px");
+  const cardWidth = useRowCardWidth(scrollRef, variant);
+  const near = useInViewport<HTMLDivElement>("400px");
   const track = useRowWindow({
     scrollRef,
     count: items.length,
-    cardWidth: largeurCarte,
-    onScreen: proche.visible,
+    cardWidth: cardWidth,
+    onScreen: near.visible,
   });
 
   const surDefilement = useCallback(() => {
@@ -86,12 +86,12 @@ export function MediaRow({
       setVisible(true);
       return;
     }
-    const observateur = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       ([entree]) => entree.isIntersecting && setVisible(true),
       { threshold: 0.1 },
     );
-    observateur.observe(element);
-    return () => observateur.disconnect();
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   /**
@@ -106,7 +106,7 @@ export function MediaRow({
    *
    * `setHoveredIndex` écrit dans une référence : aucun rendu déclenché.
    */
-  const surIndexActif = useCallback(
+  const onActiveIndexChange = useCallback(
     (index: number | null) => track.setHoveredIndex(index),
     [track],
   );
@@ -132,22 +132,22 @@ export function MediaRow({
     >
       <RowHeader title={title} href={href} />
 
-      {/* La piste est montée d'emblée et c'est `garnie` qui retient son
+      {/* La piste est montée d'emblée et c'est `filled` qui retient son
           contenu. Le scroller porte `scrollRef`, et `useRowCardWidth`,
           `useRowWindow` et `useRowScroll` posent tous leur observateur au
           montage puis abandonnent si la référence est vide, sans jamais
           rejouer. Derrière la porte, ils ne mesuraient donc RIEN — voir le
           commentaire de `TrackTv`. */}
-      <div ref={proche.ref} className="relative">
+      <div ref={near.ref} className="relative">
         <PisteTv
           scrollRef={scrollRef}
           items={items}
-          variante={variant}
+          variant={variant}
           posterImageMode={posterImageMode}
-          largeurCarte={largeurCarte}
-          plage={track.range}
-          garnie={visible}
-          onIndexActif={surIndexActif}
+          cardWidth={cardWidth}
+          range={track.range}
+          filled={visible}
+          onActiveIndex={onActiveIndexChange}
           onScroll={surDefilement}
         />
       </div>

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { CardFrame as CadreWeb } from "@/components/cards/CardFrame";
 
-interface ProprietesCadreCarte {
+interface CardFrameProps {
   hovered: boolean;
   aspect: string;
   lift?: { scale: number; y: number };
@@ -13,7 +13,7 @@ interface ProprietesCadreCarte {
 /**
  * Cadre de carte, privé de son survol.
  *
- * `passeSurvol` retire les règles `:hover` de la feuille, mais les deux calques
+ * `hoverPass` retire les règles `:hover` de la feuille, mais les deux calques
  * d'élévation de `.media-tile` sont pilotés par un **attribut**,
  * `data-hovered` (cf. `theme/cards.css`), qu'aucune passe CSS n'atteint. Le
  * lift, lui, est un `transform` en style en ligne. Les deux viennent d'un
@@ -32,7 +32,7 @@ interface ProprietesCadreCarte {
  * de la fiche fait voyager, et la boîte de ratio. On retire un comportement, pas
  * une structure.
  */
-export function CardFrame({ aspect, lift, children }: ProprietesCadreCarte) {
+export function CardFrame({ aspect, lift, children }: CardFrameProps) {
   return (
     <CadreWeb hovered={false} aspect={aspect} lift={lift} concealed={false}>
       {children}

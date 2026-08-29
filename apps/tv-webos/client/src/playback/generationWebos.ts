@@ -1,4 +1,4 @@
-import type { CapacitesTeleviseur } from "../bootstrap/webosGlobals";
+import type { CapabilitiesTv } from "../bootstrap/webosGlobals";
 
 /**
  * Quelle génération de téléviseur avons-nous sous les pieds ?
@@ -26,11 +26,11 @@ import type { CapacitesTeleviseur } from "../bootstrap/webosGlobals";
 /** Version marketing de webOS TV — celle qui figure dans la documentation LG. */
 export type GenerationWebos = 3 | 4 | 5 | 6 | 22 | 23 | 24 | 25 | 26;
 
-export interface PlateformeTv {
+export interface PlatformTv {
   generation: GenerationWebos;
   /** Année du modèle, si `modelName` a pu être décodé. */
-  annee: number | null;
-  /** D'où vient la génération. Journalisé : un `repli` explique tout le reste. */
+  year: number | null;
+  /** D'où vient la génération. Journalisé : un `fallback` explique tout le reste. */
   source: "ua" | "sdk" | "repli";
 }
 
@@ -41,7 +41,7 @@ export interface PlateformeTv {
  * acquis. C'est aussi la plus ancienne génération que le client vise (Chromium
  * 53), donc celle dont les capacités sont un sous-ensemble de toutes les autres.
  */
-const GENERATION_REPLI: GenerationWebos = 4;
+const FALLBACK_GENERATION: GenerationWebos = 4;
 
 /**
  * Moteur Chromium → version de webOS.
@@ -51,7 +51,7 @@ const GENERATION_REPLI: GenerationWebos = 4;
  * par LG (« Web API and Web Engine »), et corroborée par la table équivalente de
  * Moonfin.
  */
-const CHROME_VERS_GENERATION: ReadonlyArray<readonly [number, GenerationWebos]> = [
+const CHROME_TO_GENERATION: ReadonlyArray<readonly [number, GenerationWebos]> = [
   [132, 26],
   [120, 25],
   [108, 24],
@@ -70,7 +70,7 @@ const CHROME_VERS_GENERATION: ReadonlyArray<readonly [number, GenerationWebos]> 
  * `X` pour 2020 est une irrégularité de LG, qui a sauté le `0` — un `CX` ne
  * s'ordonne pas entre `C9` et `C1`, il faut la table.
  */
-const ANNEE_OLED: Readonly<Record<string, number>> = {
+const OLED_YEAR: Readonly<Record<string, number>> = {
   "6": 2016,
   "7": 2017,
   "8": 2018,
@@ -87,7 +87,7 @@ const ANNEE_OLED: Readonly<Record<string, number>> = {
  * Année d'une dalle LCD, par la lettre de millésime : `65UM7400` → `M` → 2019,
  * `65QNED85TA` → `T` → 2024.
  */
-const ANNEE_LCD: Readonly<Record<string, number>> = {
+const LCD_YEAR: Readonly<Record<string, number>> = {
   J: 2017,
   K: 2018,
   M: 2019,
@@ -115,16 +115,16 @@ const ANNEE_LCD: Readonly<Record<string, number>> = {
  */
 export function versionChromium(agent: string): number | null {
   if (/netcast/i.test(agent)) return null;
-  const trouve = /chr[o0]me\/(\d+)/i.exec(agent);
-  if (!trouve) return null;
-  const version = parseInt(trouve[1], 10);
+  const found = /chr[o0]me\/(\d+)/i.exec(agent);
+  if (!found) return null;
+  const version = parseInt(found[1], 10);
   return Number.isFinite(version) ? version : null;
 }
 
 /** Génération correspondant à un numéro de moteur Chromium. */
-export function generationDepuisChromium(chromium: number): GenerationWebos | null {
-  for (const [seuil, generation] of CHROME_VERS_GENERATION) {
-    if (chromium >= seuil) return generation;
+export function generationFromChromium(chromium: number): GenerationWebos | null {
+  for (const [threshold, generation] of CHROME_TO_GENERATION) {
+    if (chromium >= threshold) return generation;
   }
   return null;
 }
@@ -138,12 +138,12 @@ export function generationDepuisChromium(chromium: number): GenerationWebos | nu
  * donnerait une génération qui n'existe pas. Au-delà de 6, on préfère donc ne
  * rien conclure et laisser l'agent utilisateur trancher.
  */
-export function generationDepuisSdk(sdkVersion: string | undefined): GenerationWebos | null {
+export function generationFromSdk(sdkVersion: string | undefined): GenerationWebos | null {
   if (!sdkVersion) return null;
-  const trouve = /^0*(\d+)\./.exec(sdkVersion.trim());
-  if (!trouve) return null;
-  const majeure = parseInt(trouve[1], 10);
-  if (majeure >= 3 && majeure <= 6) return majeure as GenerationWebos;
+  const found = /^0*(\d+)\./.exec(sdkVersion.trim());
+  if (!found) return null;
+  const major = parseInt(found[1], 10);
+  if (major >= 3 && major <= 6) return major as GenerationWebos;
   return null;
 }
 
@@ -155,7 +155,7 @@ export function generationDepuisSdk(sdkVersion: string | undefined): GenerationW
  * retombent alors sur leur valeur prudente, ce qui coûte au pire un transcodage
  * audio et jamais une image recompressée.
  */
-export function anneeDepuisModele(
+export function yearFromModel(
   modelName: string | undefined,
   generation: GenerationWebos,
 ): number | null {
@@ -164,12 +164,12 @@ export function anneeDepuisModele(
 
   const oled = /OLED\d{2}[A-Z]([0-9X])/.exec(nom);
   if (oled) {
-    const annee = ANNEE_OLED[oled[1]];
+    const year = OLED_YEAR[oled[1]];
     // `C6` désigne 2016 et redésignera 2026 : la lettre de gamme a fait le tour.
     // La génération départage, elle ne recule jamais — un téléviseur de 2016 ne
     // porte pas webOS 22.
-    if (annee === 2016 && generation >= 22) return 2026;
-    return annee ?? null;
+    if (year === 2016 && generation >= 22) return 2026;
+    return year ?? null;
   }
 
   // Trois écritures pour la même lettre de millésime, et il faut les trois.
@@ -178,10 +178,10 @@ export function anneeDepuisModele(
   // plage `{2,3}`, gourmande, qui s'arrête d'elle-même sur la lettre.
   const lcd = /(?:NANO|QNED)(\d{2,3})([A-Z])|\d{2}U([A-Z])\d/.exec(nom);
   if (lcd) {
-    const lettre = lcd[2] ?? lcd[3];
+    const letter = lcd[2] ?? lcd[3];
     // Une lettre hors table n'est pas un millésime — `65NANO85UNA` porte un `U`
     // de gamme là où d'autres portent l'année. On ne devine pas.
-    return ANNEE_LCD[lettre] ?? null;
+    return LCD_YEAR[letter] ?? null;
   }
 
   return null;
@@ -196,21 +196,21 @@ export function anneeDepuisModele(
  * `modelName`, `screenWidth` et `screenHeight`, sans que LG ait reproduit le
  * défaut. Aucune lecture ne doit donc supposer qu'un champ est là.
  */
-export function lirePlateforme(dalle: CapacitesTeleviseur, agent: string): PlateformeTv {
+export function readPlatform(panel: CapabilitiesTv, agent: string): PlatformTv {
   const chromium = versionChromium(agent);
-  const parUa = chromium === null ? null : generationDepuisChromium(chromium);
+  const parUa = chromium === null ? null : generationFromChromium(chromium);
   if (parUa !== null) {
-    return { generation: parUa, annee: anneeDepuisModele(dalle.modelName, parUa), source: "ua" };
+    return { generation: parUa, year: yearFromModel(panel.modelName, parUa), source: "ua" };
   }
 
-  const parSdk = generationDepuisSdk(dalle.sdkVersion);
-  if (parSdk !== null) {
-    return { generation: parSdk, annee: anneeDepuisModele(dalle.modelName, parSdk), source: "sdk" };
+  const bySdk = generationFromSdk(panel.sdkVersion);
+  if (bySdk !== null) {
+    return { generation: bySdk, year: yearFromModel(panel.modelName, bySdk), source: "sdk" };
   }
 
   return {
-    generation: GENERATION_REPLI,
-    annee: anneeDepuisModele(dalle.modelName, GENERATION_REPLI),
+    generation: FALLBACK_GENERATION,
+    year: yearFromModel(panel.modelName, FALLBACK_GENERATION),
     source: "repli",
   };
 }

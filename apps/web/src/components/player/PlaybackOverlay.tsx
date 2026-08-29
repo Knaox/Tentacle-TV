@@ -29,7 +29,7 @@ interface PlaybackOverlayProps {
   /** « Lire maintenant » de la carte et de l'affiche. */
   onPlayNow: () => void;
   /** Couche du bouton de saut : `z-50` web, `z-20` bureau (mpv). */
-  couche?: string;
+  layer?: string;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -38,7 +38,7 @@ interface PlaybackOverlayProps {
 }
 
 export function PlaybackOverlay({
-  overlay, countdownTotals, onSkip, onDismiss, onPlayNow, couche = "z-20",
+  overlay, countdownTotals, onSkip, onDismiss, onPlayNow, layer = "z-20",
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: PlaybackOverlayProps) {
@@ -52,7 +52,7 @@ export function PlaybackOverlay({
           countdownTotalMs={countdownTotals.skipMs}
           onSkip={onSkip}
           onDismiss={onDismiss}
-          couche={couche}
+          layer={layer}
         />
       )}
       <AnimatePresence>

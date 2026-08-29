@@ -16,7 +16,7 @@ import { formatDuration } from "@/components/playerControls/utils";
  * pixel, et qu'on lit d'un coup d'œil la distance entre les deux.
  */
 
-interface ProprietesBarre {
+interface BarProps {
   currentTime: number;
   duration: number;
   /**
@@ -34,18 +34,18 @@ interface ProprietesBarre {
    * et la substitution de modules étant un greffon de build que `tsc` ne
    * connaît pas, rien ne pouvait le signaler.
    */
-  fractionChargee: number;
+  bufferedFraction: number;
   /** Position du curseur fantôme, ou `null` hors déplacement. */
-  fantome?: number | null;
+  ghost?: number | null;
 }
 
-function pourcent(valeur: number, total: number): number {
+function percent(value: number, total: number): number {
   if (!(total > 0)) return 0;
-  return Math.min(100, Math.max(0, (valeur / total) * 100));
+  return Math.min(100, Math.max(0, (value / total) * 100));
 }
 
 /** Une fraction de 0 à 1, bornée, en pourcentage. */
-function pourcentDeFraction(fraction: number): number {
+function percentOfFraction(fraction: number): number {
   if (!Number.isFinite(fraction)) return 0;
   return Math.min(100, Math.max(0, fraction * 100));
 }
@@ -53,25 +53,25 @@ function pourcentDeFraction(fraction: number): number {
 export function BarreProgressionTv({
   currentTime,
   duration,
-  fractionChargee,
-  fantome = null,
-}: ProprietesBarre) {
-  const lu = pourcent(currentTime, duration);
-  const charge = pourcentDeFraction(fractionChargee);
-  const vise = fantome === null ? null : pourcent(fantome, duration);
+  bufferedFraction,
+  ghost = null,
+}: BarProps) {
+  const lu = percent(currentTime, duration);
+  const loaded = percentOfFraction(bufferedFraction);
+  const vise = ghost === null ? null : percent(ghost, duration);
 
   return (
     <div className="barre-tv">
-      <span className="barre-tv-temps">{formatDuration(fantome ?? currentTime)}</span>
+      <span className="barre-tv-temps">{formatDuration(ghost ?? currentTime)}</span>
 
       <div
         className="barre-tv-piste"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={Math.round(duration)}
-        aria-valuenow={Math.round(fantome ?? currentTime)}
+        aria-valuenow={Math.round(ghost ?? currentTime)}
       >
-        <span className="barre-tv-tampon" style={{ width: `${charge}%` }} />
+        <span className="barre-tv-tampon" style={{ width: `${loaded}%` }} />
         <span className="barre-tv-lu" style={{ width: `${lu}%` }} />
         <span className="barre-tv-pastille" style={{ left: `${lu}%` }} />
         {vise !== null && <span className="barre-tv-fantome" style={{ left: `${vise}%` }} />}

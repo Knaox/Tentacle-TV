@@ -2,9 +2,9 @@ import { memo, useCallback } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CollectionGridCard as CarteWeb } from "@/components/collection/CollectionGridCard";
 import type { SelectionMode } from "@/components/collection/selectionMode";
-import { CarteFocusable } from "./FocusableCard";
+import { FocusableCard } from "./FocusableCard";
 
-interface ProprietesCarteCollection {
+interface CollectionCardProps {
   item: MediaItem;
   onNavigate: (id: string) => void;
   selectionMode?: SelectionMode;
@@ -38,21 +38,21 @@ export const CollectionGridCard = memo(function CarteCollectionTv({
   item,
   onNavigate,
   selectionMode,
-}: ProprietesCarteCollection) {
+}: CollectionCardProps) {
   // Comme pour la bibliothèque : le virtualiseur travaille par lignes entières,
   // celle qui porte le focus est visible par construction, il n'y a pas de
   // fenêtrage horizontal à épingler.
-  const sansEpinglage = useCallback(() => undefined, []);
+  const withoutPinning = useCallback(() => undefined, []);
 
   return (
-    <CarteFocusable
+    <FocusableCard
       index={0}
-      largeur={null}
+      width={null}
       itemId={item.Id}
       item={item}
-      onIndexActif={sansEpinglage}
+      onActiveIndex={withoutPinning}
     >
       <CarteWeb item={item} onNavigate={onNavigate} selectionMode={selectionMode} />
-    </CarteFocusable>
+    </FocusableCard>
   );
 });

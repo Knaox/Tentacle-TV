@@ -1,6 +1,6 @@
-import { installerPolyfillDefilement } from "./polyfillScroll";
-import { installerPolyfillAbort } from "./polyfillAbort";
-import { installerPolyfillObservateurs } from "./polyfillObservers";
+import { installScrollPolyfill } from "./polyfillScroll";
+import { installAbortPolyfill } from "./polyfillAbort";
+import { installObserverPolyfills } from "./polyfillObservers";
 
 /**
  * Ce que core-js ne couvre pas.
@@ -21,8 +21,8 @@ import { installerPolyfillObservateurs } from "./polyfillObservers";
  * « Français » sur les modèles les plus anciens — une dégradation lisible,
  * contre un dictionnaire bilingue à maintenir en double.
  */
-export function installerPolyfills(): void {
-  installerPolyfillAbort();
-  installerPolyfillObservateurs();
-  installerPolyfillDefilement();
+export function installPolyfills(): void {
+  installAbortPolyfill();
+  installObserverPolyfills();
+  installScrollPolyfill();
 }

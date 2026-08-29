@@ -1,7 +1,7 @@
 import {
   createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode,
 } from "react";
-import { creerRevealObserver, type RevealObserver } from "./revealObserver";
+import { createRevealObserver, type RevealObserver } from "./revealObserver";
 
 /**
  * Cellules qui ne montent leur contenu que près du champ de vision.
@@ -51,7 +51,7 @@ export function RevealScope({
   rootMargin?: string;
   children: ReactNode;
 }) {
-  const [observer] = useState(() => creerRevealObserver(rootMargin));
+  const [observer] = useState(() => createRevealObserver(rootMargin));
   // ⚠️ PAS de `disconnect()` au démontage du scope, et ce n'est pas un oubli.
   //
   // Chaque cellule se désabonne déjà elle-même dans son propre nettoyage, donc
@@ -81,7 +81,7 @@ interface RevealCellProps {
    * vignette), et hauteur du bloc de texte qui le suit (`textHeight`).
    *
    * Une cellule vide connaît déjà sa LARGEUR — c'est la grille qui la lui donne.
-   * `largeur × aspect⁻¹ + texte` est donc sa hauteur exacte, sans rien deviner.
+   * `width × aspect⁻¹ + texte` est donc sa hauteur exacte, sans rien deviner.
    * Sans cela, la page grandissait de plusieurs centaines de pixels au premier
    * parcours, à mesure que chaque cellule découvrait sa vraie taille.
    */
@@ -106,7 +106,7 @@ export function RevealCell({
 }: RevealCellProps) {
   const observer = useContext(RevealCtx);
   const ref = useRef<HTMLDivElement>(null);
-  const [proche, setProche] = useState(eager);
+  const [near, setNear] = useState(eager);
   /** Hauteur à réserver : déduite de la largeur, puis mesurée. */
   const reserve = useRef(minHeight);
 
@@ -116,7 +116,7 @@ export function RevealCell({
     const el = ref.current;
     // Hors de tout `RevealScope` : on monte, plutôt que de laisser un vide
     // définitif. Le composant reste ainsi utilisable seul.
-    if (!observer) { setProche(true); return; }
+    if (!observer) { setNear(true); return; }
     if (!el) return;
     // La largeur d'une cellule VIDE est déjà la bonne — c'est la grille qui la
     // donne : la hauteur s'en déduit sans rien deviner.
@@ -127,10 +127,10 @@ export function RevealCell({
     // s'allongeait de mille pixels en défilant une fois. Le ref sert aux rendus
     // suivants, où React reprend la main.
     if (aspect) {
-      const largeur = el.clientWidth;
-      if (largeur > 0) {
-        reserve.current = largeur / aspect + textHeight;
-        if (!proche) el.style.minHeight = `${reserve.current}px`;
+      const width = el.clientWidth;
+      if (width > 0) {
+        reserve.current = width / aspect + textHeight;
+        if (!near) el.style.minHeight = `${reserve.current}px`;
       }
     }
     return observer.observe(el, (visible) => {
@@ -139,17 +139,17 @@ export function RevealCell({
         const h = el.getBoundingClientRect().height;
         if (h > 0) reserve.current = h;
       }
-      setProche(visible);
+      setNear(visible);
     });
-  // `proche` volontairement hors des dépendances : il ne doit pas relancer
+  // `near` volontairement hors des dépendances : il ne doit pas relancer
   // l'abonnement. L'écriture impérative ci-dessus ne concerne que le premier
   // passage, où la cellule est vide par construction.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [observer, aspect, textHeight]);
 
   return (
-    <div ref={ref} className={className} style={proche ? undefined : { minHeight: reserve.current }}>
-      {proche ? children : null}
+    <div ref={ref} className={className} style={near ? undefined : { minHeight: reserve.current }}>
+      {near ? children : null}
     </div>
   );
 }

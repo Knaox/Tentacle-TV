@@ -15,25 +15,25 @@
  * jeton.
  */
 
-interface JumelageRecu {
-  jeton: string;
-  utilisateur: { Id: string; Name: string };
+interface ReceivedPairing {
+  token: string;
+  user: { Id: string; Name: string };
 }
 
-function lireFragment(): JumelageRecu | null {
+function lireFragment(): ReceivedPairing | null {
   const fragment = window.location.hash.replace(/^#/, "");
   if (!fragment) return null;
 
-  const parametres = new URLSearchParams(fragment);
-  const jeton = parametres.get("jeton");
-  const identifiant = parametres.get("u");
-  const nom = parametres.get("n");
-  if (!jeton || !identifiant) return null;
+  const params = new URLSearchParams(fragment);
+  const token = params.get("jeton");
+  const identifier = params.get("u");
+  const nom = params.get("n");
+  if (!token || !identifier) return null;
 
-  return { jeton, utilisateur: { Id: identifiant, Name: nom ?? "" } };
+  return { token, user: { Id: identifier, Name: nom ?? "" } };
 }
 
-function effacerFragment(): void {
+function clearFragment(): void {
   window.history.replaceState(null, "", window.location.pathname + window.location.search);
 }
 
@@ -53,7 +53,7 @@ function effacerFragment(): void {
  * On efface donc ce que la déconnexion du client web efface
  * (`useAuth.logout`), moins les deux clés qu'on vient précisément d'écrire.
  */
-const RESIDUS_DE_SESSION = [
+const SESSION_RESIDUE = [
   "tentacle_jellyfin_token",
   "tentacle_jellyfin_url",
   "tentacle_credentials",
@@ -68,11 +68,11 @@ const RESIDUS_DE_SESSION = [
  * session existe. S'en écarter donnerait un client authentifié auprès du
  * serveur mais redirigé vers l'écran de jumelage par son propre routeur.
  */
-export function consommerJumelage(): boolean {
-  const recu = lireFragment();
-  if (!recu) return false;
-  rangerJumelage(recu.jeton, recu.utilisateur);
-  effacerFragment();
+export function consumePairing(): boolean {
+  const received = lireFragment();
+  if (!received) return false;
+  storePairing(received.token, received.user);
+  clearFragment();
   return true;
 }
 
@@ -85,14 +85,14 @@ export function consommerJumelage(): boolean {
  * EXACTEMENT les mêmes clés sous la même forme, sinon l'un des deux produit une
  * session que la garde de routes refuse. D'où ce point de passage unique.
  */
-export function rangerJumelage(
-  jeton: string,
-  utilisateur: { Id: string; Name: string },
+export function storePairing(
+  token: string,
+  user: { Id: string; Name: string },
 ): void {
   try {
-    RESIDUS_DE_SESSION.forEach((cle) => localStorage.removeItem(cle));
-    localStorage.setItem("tentacle_token", jeton);
-    localStorage.setItem("tentacle_user", JSON.stringify(utilisateur));
+    SESSION_RESIDUE.forEach((key) => localStorage.removeItem(key));
+    localStorage.setItem("tentacle_token", token);
+    localStorage.setItem("tentacle_user", JSON.stringify(user));
   } catch {
     // Stockage indisponible : la session ne survivra pas au rechargement, mais
     // le jeton est en mémoire pour cette session-ci.
@@ -100,7 +100,7 @@ export function rangerJumelage(
 }
 
 /** Le jeton mémorisé, s'il y en a un. */
-export function jetonAppareil(): string | null {
+export function deviceToken(): string | null {
   try {
     return localStorage.getItem("tentacle_token");
   } catch {
@@ -119,7 +119,7 @@ export function jetonAppareil(): string | null {
  * distingue.
  *
  * La confusion se paie à un seul endroit, mais elle s'y paie cher :
- * `revaliderSession()` renvoie le jeton à `/api/auth/refresh`, qui ne sait
+ * `revalidateSession()` renvoie le jeton à `/api/auth/refresh`, qui ne sait
  * vérifier qu'un JWT. Avec un jeton Jellyfin il répond 401, le garde conclut à
  * une session expirée et purge — une session web parfaitement valide se
  * déconnecte toute seule, au premier 401 transitoire de Jellyfin.
@@ -128,13 +128,13 @@ export function jetonAppareil(): string | null {
  * `authRefresh.ts` côté serveur : un JWT a trois segments non vides séparés par
  * des points. Un jeton Jellyfin n'en a pas.
  */
-export function jetonDAppareil(): string | null {
-  const jeton = jetonAppareil();
-  return jeton && estUnJwt(jeton) ? jeton : null;
+export function deviceToken2(): string | null {
+  const token = deviceToken();
+  return token && isJwt(token) ? token : null;
 }
 
 /** Trois segments non vides séparés par des points. Exporté pour être testé. */
-export function estUnJwt(jeton: string): boolean {
-  const segments = jeton.split(".");
+export function isJwt(token: string): boolean {
+  const segments = token.split(".");
   return segments.length === 3 && segments.every((segment) => segment.length > 0);
 }

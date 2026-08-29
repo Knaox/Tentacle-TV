@@ -1,7 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { RailTv } from "./nav/RailTv";
 import { FondFocusTv } from "./hero/FocusBackdropTv";
-import { EcranRechercheTv } from "./search/SearchScreenTv";
+import { SearchScreenTv } from "./search/SearchScreenTv";
 
 /**
  * Disposition du client téléviseur.
@@ -41,7 +41,7 @@ export function AppLayout() {
           portail ouvert par un raccourci. Montée ici plutôt que dans le rail,
           elle survit à un changement d'écran et ne dépend pas de qui l'a
           ouverte. Elle ne rend rien tant qu'elle est fermée. */}
-      <EcranRechercheTv />
+      <SearchScreenTv />
     </div>
   );
 }

@@ -33,12 +33,12 @@ export function AutoWatchHarness() {
   // Au boot sur l'accueil avec ?autowatch → lance la lecture visée, ou la
   // dernière. `1` est la valeur historique et ne désigne aucun média.
   useEffect(() => {
-    const demande = new URLSearchParams(window.location.search).get("autowatch");
-    if (demande === null) return;
+    const requested = new URLSearchParams(window.location.search).get("autowatch");
+    if (requested === null) return;
     if (location.pathname !== "/") return;
-    const id = demande === "" || demande === "1"
+    const id = requested === "" || requested === "1"
       ? localStorage.getItem("tentacle_dev_last_watch")
-      : demande;
+      : requested;
     if (!id) return;
     const t = setTimeout(() => {
       console.info(`[autowatch] reprise automatique de /watch/${id}`);

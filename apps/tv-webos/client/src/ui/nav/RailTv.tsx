@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
-import { useEntreesRail, entreeActive } from "./railEntries";
+import { useRailEntries, entreeActive } from "./railEntries";
 import { RailEntree } from "./RailEntry";
 
 /**
@@ -26,14 +26,14 @@ import { RailEntree } from "./RailEntry";
 export function RailTv() {
   const { pathname } = useLocation();
   const { t } = useTranslation("nav");
-  const entrees = useEntreesRail();
-  const active = entreeActive(entrees, pathname);
-  const [deploye, setDeploye] = useState(false);
+  const entries = useRailEntries();
+  const active = entreeActive(entries, pathname);
+  const [expanded, setExpanded] = useState(false);
   const sortie = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const surFocus = useCallback(() => {
     if (sortie.current !== null) clearTimeout(sortie.current);
-    setDeploye(true);
+    setExpanded(true);
   }, []);
 
   /**
@@ -45,13 +45,13 @@ export function RailTv() {
    */
   const surBlur = useCallback(() => {
     if (sortie.current !== null) clearTimeout(sortie.current);
-    sortie.current = setTimeout(() => setDeploye(false), 0);
+    sortie.current = setTimeout(() => setExpanded(false), 0);
   }, []);
 
   return (
     <nav
       className="rail-tv"
-      data-deploye={deploye}
+      data-expanded={expanded}
       aria-label={t("railLabel")}
       onFocus={surFocus}
       onBlur={surBlur}
@@ -59,7 +59,7 @@ export function RailTv() {
       {/* Le panneau qui porte les libellés, posé derrière les entrées.
           `aria-hidden` et sans événements : il ne doit ni recevoir le focus ni
           intercepter un clic du pointeur de la télécommande. */}
-      <span className="rail-panneau" data-deploye={deploye} aria-hidden />
+      <span className="rail-panneau" data-expanded={expanded} aria-hidden />
 
       {/* La marque, en haut du rail — c'est la place qu'elle occupe sur Android
           TV, et la seule qui soit visible en permanence sans rien prendre au
@@ -77,15 +77,15 @@ export function RailTv() {
           encore une taille de bureau. */}
       <div className="rail-marque">
         <TentacleLogo size="lg" variant="bare" />
-        <span className="rail-marque-nom" data-deploye={deploye}>
+        <span className="rail-marque-nom" data-expanded={expanded}>
           Tentacle TV
         </span>
       </div>
 
       <ul className="rail-liste">
-        {entrees.map((entree) => (
-          <li key={entree.cle}>
-            <RailEntree entree={entree} active={entree.cle === active} deploye={deploye} />
+        {entries.map((entree) => (
+          <li key={entree.key}>
+            <RailEntree entree={entree} active={entree.key === active} expanded={expanded} />
           </li>
         ))}
       </ul>
@@ -94,7 +94,7 @@ export function RailTv() {
           tel qu'on l'a reçu. L'indice n'apparaît qu'au déploiement, et sa place
           est réservée dans les deux états : la géométrie sur laquelle le moteur
           de navigation vient de calculer ne doit pas bouger sous lui. */}
-      <p className="rail-indice" data-deploye={deploye}>
+      <p className="rail-indice" data-expanded={expanded}>
         {t("railHint")}
       </p>
     </nav>

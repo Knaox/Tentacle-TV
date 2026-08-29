@@ -25,18 +25,18 @@
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 
 /** Repli quand le serveur n'a jamais répondu — la valeur par défaut de Jellyfin. */
-export const SEUIL_VU_PAR_DEFAUT = 90;
+export const DEFAULT_WATCHED_THRESHOLD = 90;
 
-export interface EtatLectureLocale {
+export interface LocalPlaybackState {
   /** Position en ticks Jellyfin, jamais négative. */
   ticks: number;
   played: boolean;
 }
 
 /** Seuil retenu : celui du serveur s'il est exploitable, le repli sinon. */
-export function seuilVu(pct: number | undefined): number {
-  if (typeof pct !== "number" || !Number.isFinite(pct)) return SEUIL_VU_PAR_DEFAUT;
-  if (pct <= 0 || pct > 100) return SEUIL_VU_PAR_DEFAUT;
+export function watchedThreshold(pct: number | undefined): number {
+  if (typeof pct !== "number" || !Number.isFinite(pct)) return DEFAULT_WATCHED_THRESHOLD;
+  if (pct <= 0 || pct > 100) return DEFAULT_WATCHED_THRESHOLD;
   return pct;
 }
 
@@ -47,13 +47,13 @@ export function seuilVu(pct: number | undefined): number {
  * ne conclut rien. Marquer vu sur une durée de zéro effacerait un
  * téléchargement que personne n'a regardé.
  */
-export function etatLectureLocale(
+export function localPlaybackState(
   seconds: number,
   durationSeconds: number,
-  seuilPct: number,
-): EtatLectureLocale {
+  thresholdPct: number,
+): LocalPlaybackState {
   const ticks = Math.max(0, Math.floor(seconds * TICKS_PER_SECOND));
   if (!(durationSeconds > 0)) return { ticks, played: false };
   const pct = (seconds / durationSeconds) * 100;
-  return { ticks, played: pct >= seuilVu(seuilPct) };
+  return { ticks, played: pct >= watchedThreshold(thresholdPct) };
 }

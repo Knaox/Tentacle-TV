@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  armer, deciderFlash, etatFlashInitial, type EtatFlash, type FlashKind,
+  arm, decideFlash, initialFlashState, type FlashState, type FlashKind,
 } from "./playbackFlashState";
 
 export type { FlashKind } from "./playbackFlashState";
@@ -22,11 +22,11 @@ export interface PlaybackFlashControl {
    * n'arriverait jamais ne peut pas faire taire la suivante, celle que
    * l'utilisateur aura demandée.
    */
-  ignorerProchaineBascule: () => void;
+  ignoreNextToggle: () => void;
 }
 
 /** Le temps que le badge reste à l'écran, animation de sortie comprise. */
-const DUREE_MS = 700;
+const DURATION_MS = 700;
 
 /**
  * Le retour visuel des bascules du lecteur — pendant du badge « +30s ».
@@ -53,9 +53,9 @@ const DUREE_MS = 700;
  * par la pause.
  *
  * Deux portes, et elles ne se recouvrent pas :
- *  • `ignorerProchaineBascule` — un armement COMPTÉ, pour une cause ponctuelle et
+ *  • `ignoreNextToggle` — un armement COMPTÉ, pour une cause ponctuelle et
  *    connue à l'avance (le glissement) ; exact, sans réglage de délai ;
- *  • `inerte` — un état, pour une cause qui DURE (le rechargement d'une source) ;
+ *  • `inert` — un état, pour une cause qui DURE (le rechargement d'une source) ;
  *    tant qu'il est vrai, l'état de référence est resynchronisé sans rien
  *    annoncer, si bien que la sortie de cet état ne produit pas de badge non plus.
  *
@@ -70,29 +70,29 @@ const DUREE_MS = 700;
 export function usePlaybackFlash(
   paused: boolean,
   muted: boolean,
-  inerte = false,
+  inert = false,
 ): PlaybackFlashControl {
   const [flash, setFlash] = useState<PlaybackFlash | null>(null);
-  const etat = useRef<EtatFlash>(etatFlashInitial);
-  const compteur = useRef(0);
-  const minuteur = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const state = useRef<FlashState>(initialFlashState);
+  const counter = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const ignorerProchaineBascule = useCallback(() => {
-    etat.current = armer(etat.current, Date.now());
+  const ignoreNextToggle = useCallback(() => {
+    state.current = arm(state.current, Date.now());
   }, []);
 
   useEffect(() => {
-    const suite = deciderFlash(etat.current, { paused, muted, inerte, maintenant: Date.now() });
-    etat.current = suite.etat;
+    const suite = decideFlash(state.current, { paused, muted, inert, now: Date.now() });
+    state.current = suite.state;
     if (suite.kind === null) return;
 
-    compteur.current += 1;
-    setFlash({ kind: suite.kind, id: compteur.current });
-    clearTimeout(minuteur.current);
-    minuteur.current = setTimeout(() => setFlash(null), DUREE_MS);
-  }, [paused, muted, inerte]);
+    counter.current += 1;
+    setFlash({ kind: suite.kind, id: counter.current });
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setFlash(null), DURATION_MS);
+  }, [paused, muted, inert]);
 
-  useEffect(() => () => clearTimeout(minuteur.current), []);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
-  return { flash, ignorerProchaineBascule };
+  return { flash, ignoreNextToggle };
 }

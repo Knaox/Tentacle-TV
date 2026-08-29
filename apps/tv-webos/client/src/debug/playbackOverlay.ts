@@ -33,24 +33,24 @@
  */
 
 const ID = "tv-lecture";
-const PERIODE_MS = 500;
+const PERIOD_MS = 500;
 
-/** Ce que `playbackInfoTv` dépose à chaque négociation. Voir `publierLecture`. */
-export interface ReleveLecture {
+/** Ce que `playbackInfoTv` dépose à chaque négociation. Voir `publishPlayback`. */
+export interface PlaybackReport {
   mode: string;
-  reencodageVideo: boolean;
-  raisons: string[];
+  videoReencoded: boolean;
+  reasons: string[];
   /** Codec de la piste vidéo source, tel que Jellyfin le nomme. */
-  codecVideo?: string;
+  videoCodec?: string;
   /** Plage dynamique de la source — la valeur brute du serveur. */
-  plage?: string | number;
+  range?: string | number;
   /** L'URL réellement servie au lecteur : c'est elle qui trahit le sort de l'audio. */
   url?: string | null;
 }
 
 declare global {
   interface Window {
-    __TENTACLE_LECTURE__?: ReleveLecture | null;
+    __TENTACLE_LECTURE__?: PlaybackReport | null;
   }
 }
 
@@ -62,9 +62,9 @@ declare global {
  * ce module dans le bundle. Sa propre garde `import.meta.env.DEV` élimine
  * l'appel, et cette fonction avec.
  */
-export function publierLecture(releve: ReleveLecture | null): void {
+export function publishPlayback(report: PlaybackReport | null): void {
   if (typeof window === "undefined") return;
-  window.__TENTACLE_LECTURE__ = releve;
+  window.__TENTACLE_LECTURE__ = report;
 }
 
 /**
@@ -83,29 +83,29 @@ function sortDeLAudio(url?: string | null): [string, boolean | null] {
 }
 
 /** La variante Dolby Vision est-elle celle qui joue ? */
-function sortDeLImage(releve: ReleveLecture): [string, boolean] {
-  if (releve.reencodageVideo) return ["RECOMPRESSÉE", false];
-  return [releve.mode === "DirectPlay" ? "fichier d'origine" : "copiée", true];
+function sortDeLImage(report: PlaybackReport): [string, boolean] {
+  if (report.videoReencoded) return ["RECOMPRESSÉE", false];
+  return [report.mode === "DirectPlay" ? "fichier d'origine" : "copiée", true];
 }
 
-function ligne(cle: string, valeur: string, bon: boolean | null): string {
-  const couleur = bon === null ? "#d4d4d8" : bon ? "#34d399" : "#fb7185";
+function line(key: string, value: string, bon: boolean | null): string {
+  const color = bon === null ? "#d4d4d8" : bon ? "#34d399" : "#fb7185";
   return (
     `<div style="display:flex;gap:12px;justify-content:space-between">` +
-    `<span style="color:#a1a1aa">${cle}</span>` +
-    `<span style="color:${couleur};font-weight:600">${valeur}</span></div>`
+    `<span style="color:#a1a1aa">${key}</span>` +
+    `<span style="color:${color};font-weight:600">${value}</span></div>`
   );
 }
 
-function dessiner(releve: ReleveLecture | null): void {
-  const existant = document.getElementById(ID);
-  if (!releve) {
-    existant?.remove();
+function draw(report: PlaybackReport | null): void {
+  const existing = document.getElementById(ID);
+  if (!report) {
+    existing?.remove();
     return;
   }
 
-  const racine = existant ?? document.createElement("div");
-  if (!existant) {
+  const racine = existing ?? document.createElement("div");
+  if (!existing) {
     racine.id = ID;
     racine.setAttribute("aria-hidden", "true");
     // Fond OPAQUE : posé sur une image claire, un panneau translucide devient
@@ -127,18 +127,18 @@ function dessiner(releve: ReleveLecture | null): void {
     document.body.appendChild(racine);
   }
 
-  const [image, imageOk] = sortDeLImage(releve);
-  const [audio, audioOk] = sortDeLAudio(releve.url);
-  const raisons = releve.raisons.length ? releve.raisons.join(", ") : "aucune";
+  const [image, imageOk] = sortDeLImage(report);
+  const [audio, audioOk] = sortDeLAudio(report.url);
+  const reasons = report.reasons.length ? report.reasons.join(", ") : "aucune";
 
   racine.innerHTML =
     `<div style="color:#71717a;font-size:12px;letter-spacing:.08em;margin-bottom:6px">LECTURE — DEV</div>` +
-    ligne("mode", releve.mode, !releve.reencodageVideo) +
-    ligne("image", image, imageOk) +
-    ligne("audio", audio, audioOk) +
-    ligne("codec", String(releve.codecVideo ?? "?"), null) +
-    ligne("plage", String(releve.plage ?? "?"), null) +
-    ligne("raisons", raisons, releve.raisons.length === 0);
+    line("mode", report.mode, !report.videoReencoded) +
+    line("image", image, imageOk) +
+    line("audio", audio, audioOk) +
+    line("codec", String(report.videoCodec ?? "?"), null) +
+    line("plage", String(report.range ?? "?"), null) +
+    line("raisons", reasons, report.reasons.length === 0);
 }
 
 /**
@@ -165,27 +165,27 @@ function osdVisible(): boolean {
  * `MutationObserver` pour la VISIBILITÉ : une demi-seconde de retard à chaque
  * apparition des commandes se verrait, là où l'attribut change à l'instant près.
  */
-export function installerSurcoucheLecture(): () => void {
-  let dernier: string | null = null;
+export function installPlaybackOverlay(): () => void {
+  let last: string | null = null;
 
-  const peindre = () => {
+  const paint = () => {
     // La visibilité est pliée dans la valeur, et ce n'est pas un détail : un
-    // retour anticipé qui laisserait `dernier` intact empêcherait le panneau de
+    // retour anticipé qui laisserait `last` intact empêcherait le panneau de
     // se redessiner au retour des commandes — l'empreinte n'aurait pas bougé.
-    const effectif = osdVisible() ? (window.__TENTACLE_LECTURE__ ?? null) : null;
-    const empreinte = effectif ? JSON.stringify(effectif) : null;
-    if (empreinte === dernier) return;
-    dernier = empreinte;
-    dessiner(effectif);
+    const effective = osdVisible() ? (window.__TENTACLE_LECTURE__ ?? null) : null;
+    const fingerprint = effective ? JSON.stringify(effective) : null;
+    if (fingerprint === last) return;
+    last = fingerprint;
+    draw(effective);
   };
 
-  const minuteur = window.setInterval(peindre, PERIODE_MS);
-  const guetteur = new MutationObserver(peindre);
-  guetteur.observe(document.documentElement, { attributeFilter: ["data-tv-lecteur"] });
+  const timer = window.setInterval(paint, PERIOD_MS);
+  const watcher = new MutationObserver(paint);
+  watcher.observe(document.documentElement, { attributeFilter: ["data-tv-lecteur"] });
 
   return () => {
-    guetteur.disconnect();
-    window.clearInterval(minuteur);
+    watcher.disconnect();
+    window.clearInterval(timer);
     document.getElementById(ID)?.remove();
   };
 }

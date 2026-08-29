@@ -1,12 +1,12 @@
 import { isHorizontal, directionSign, type Direction } from "./keys";
-import { correction, type Mou } from "./framing";
-import { candidatAuDela, dansUnCalqueFixe } from "./beyond";
-import { decider } from "./border";
+import { correction, type Slack } from "./framing";
+import { candidateBeyond, inFixedLayer } from "./beyond";
+import { decide } from "./border";
 import {
-  scrollerHorizontal,
-  scrollerVertical,
-  scrollersHorizontaux,
-  scrollersVerticaux,
+  horizontalScroller,
+  verticalScroller,
+  horizontalScrollers,
+  verticalScrollers,
 } from "./scrollers";
 
 /**
@@ -24,15 +24,15 @@ import {
  */
 
 /** Marge conservée entre l'élément visé et le bord, en pixels. */
-const MARGE = 96;
+const MARGIN = 96;
 
 /** Pas horizontal quand aucun voisin n'a été trouvé, en fraction de piste. */
-const PAS_HORIZONTAL = 0.6;
+const HORIZONTAL_STEP = 0.6;
 
 /** Plafond du pas vertical, en fraction de la hauteur visible. */
-const PLAFOND_PAS_VERTICAL = 0.4;
+const MAX_VERTICAL_STEP = 0.4;
 
-export { scrollerHorizontal, scrollerVertical };
+export { horizontalScroller, verticalScroller };
 
 /**
  * Fait entrer l'élément dans la zone visible, horizontalement puis verticalement.
@@ -43,23 +43,23 @@ export { scrollerHorizontal, scrollerVertical };
  * nulle. Ne traiter que le premier laissait un résultat hors écran dès qu'il y
  * avait deux niveaux — la liste de résultats dans le corps de la recherche.
  */
-export function amenerEnVue(element: HTMLElement): void {
-  for (const scroller of scrollersHorizontaux(element)) {
+export function bringIntoView(element: HTMLElement): void {
+  for (const scroller of horizontalScrollers(element)) {
     const delta = correction(
       segmentHorizontal(element.getBoundingClientRect()),
       segmentHorizontal(scroller.getBoundingClientRect()),
-      MARGE,
-      { avant: scroller.scrollLeft, apres: resteHorizontal(scroller) },
+      MARGIN,
+      { before: scroller.scrollLeft, after: horizontalRest(scroller) },
     );
     if (delta !== 0) scroller.scrollLeft += delta;
   }
 
-  for (const scroller of scrollersVerticaux(element)) {
+  for (const scroller of verticalScrollers(element)) {
     const delta = correction(
       segmentVertical(element.getBoundingClientRect()),
       segmentVertical(scroller.getBoundingClientRect()),
-      MARGE,
-      { avant: scroller.scrollTop, apres: resteVertical(scroller) },
+      MARGIN,
+      { before: scroller.scrollTop, after: verticalRest(scroller) },
     );
     if (delta !== 0) scroller.scrollTop += delta;
   }
@@ -70,45 +70,45 @@ export function amenerEnVue(element: HTMLElement): void {
   // rien ne converge jamais, en violation de la règle « la page ne défile pas
   // sans que le focus bouge ». Ses conteneurs INTERNES, eux, viennent d'être
   // servis : un panneau fixe qui défile intérieurement défile toujours.
-  if (dansUnCalqueFixe(element)) return;
+  if (inFixedLayer(element)) return;
 
   const delta = correction(
     segmentVertical(element.getBoundingClientRect()),
     { debut: 0, fin: window.innerHeight },
-    MARGE,
-    mouDeLaFenetre(),
+    MARGIN,
+    windowSlack(),
   );
   if (delta !== 0) window.scrollBy(0, delta);
 }
 
-function segmentVertical(rectangle: DOMRect) {
-  return { debut: rectangle.top, fin: rectangle.bottom };
+function segmentVertical(rect: DOMRect) {
+  return { debut: rect.top, fin: rect.bottom };
 }
 
-function segmentHorizontal(rectangle: DOMRect) {
-  return { debut: rectangle.left, fin: rectangle.right };
+function segmentHorizontal(rect: DOMRect) {
+  return { debut: rect.left, fin: rect.right };
 }
 
 /** Ce que la fenêtre peut encore défiler, de part et d'autre. */
-function mouDeLaFenetre(): Mou {
-  const avant = Math.max(0, window.pageYOffset);
+function windowSlack(): Slack {
+  const before = Math.max(0, window.pageYOffset);
   const total = document.documentElement.scrollHeight - window.innerHeight;
-  return { avant, apres: Math.max(0, total - avant) };
+  return { before, after: Math.max(0, total - before) };
 }
 
-function resteVertical(scroller: HTMLElement): number {
+function verticalRest(scroller: HTMLElement): number {
   return Math.max(0, scroller.scrollHeight - scroller.clientHeight - scroller.scrollTop);
 }
 
-function resteHorizontal(scroller: HTMLElement): number {
+function horizontalRest(scroller: HTMLElement): number {
   return Math.max(0, scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft);
 }
 
 /** Un pas de défilement : son annulation, et le fait qu'il ait ACCOSTÉ —
  *  écrit jusqu'au bord, sans plus de mou au-delà. */
-export interface Pas {
-  annuler: () => void;
-  accoste: boolean;
+export interface Step {
+  cancel: () => void;
+  docked: boolean;
 }
 
 /**
@@ -142,12 +142,12 @@ export interface Pas {
  * « bord » est rendu ACCOSTÉ, ce qui suffit à le mettre hors de portée de la
  * révocation — l'appelant n'a rien de plus à savoir.
  */
-export function defilerParPas(
-  depuis: HTMLElement | null,
+export function scrollByStep(
+  since: HTMLElement | null,
   direction: Direction,
   confineA: ParentNode | null = null,
-): Pas | null {
-  const recevable = (scroller: HTMLElement | null): HTMLElement | null => {
+): Step | null {
+  const acceptable = (scroller: HTMLElement | null): HTMLElement | null => {
     if (!scroller) return null;
     // Sous un conteneur piégeant, seul ce qui lui est INTÉRIEUR peut bouger.
     // Sans cette règle, « bas » depuis la dernière ligne d'un menu de filtres
@@ -158,11 +158,11 @@ export function defilerParPas(
     return scroller;
   };
 
-  const versLaFin = directionSign(direction) === 1;
+  const towardsEnd = directionSign(direction) === 1;
   const horizontal = isHorizontal(direction);
 
-  const scroller = recevable(
-    depuis ? (horizontal ? scrollerHorizontal(depuis) : scrollerVertical(depuis)) : null,
+  const scroller = acceptable(
+    since ? (horizontal ? horizontalScroller(since) : verticalScroller(since)) : null,
   );
   // La fenêtre n'est jamais intérieure à un piège : sous lui, il n'y a rien à
   // faire défiler si le panneau lui-même ne défile pas. Et il n'y a pas de
@@ -176,47 +176,47 @@ export function defilerParPas(
   // mou est celui d'une piste : une rangée voisine répondrait pour elle. Les
   // pistes gardent donc leur pas éprouvé, et leur bout reste affaire de
   // révocation. Sous un piège, le bord d'un panneau n'est pas un bout de page.
-  const bordPossible =
-    !horizontal && !confineA && !!depuis && !dansUnCalqueFixe(depuis)
-      ? !candidatAuDela(depuis, versLaFin, true)
+  const possibleEdge =
+    !horizontal && !confineA && !!since && !inFixedLayer(since)
+      ? !candidateBeyond(since, towardsEnd, true)
       : false;
 
-  const vue = scroller
+  const view = scroller
     ? horizontal
       ? scroller.clientWidth
       : scroller.clientHeight
     : window.innerHeight;
 
-  const decision = decider({
-    mou: mouDisponible(scroller, versLaFin, horizontal),
+  const decision = decide({
+    slack: availableSlack(scroller, towardsEnd, horizontal),
     // Un pas horizontal ne se mesure pas à l'élément de départ mais à la
     // piste : `Infinity` laisse le plafond décider seul, ce qu'il faisait déjà.
-    hauteurDepart: horizontal ? Number.POSITIVE_INFINITY : tailleDe(depuis, false),
-    vue,
-    marge: MARGE,
-    plafond: horizontal ? PAS_HORIZONTAL : PLAFOND_PAS_VERTICAL,
-    seuil: vue,
-    candidatAuDela: !bordPossible,
+    startHeight: horizontal ? Number.POSITIVE_INFINITY : tailleDe(since, false),
+    view,
+    margin: MARGIN,
+    ceiling: horizontal ? HORIZONTAL_STEP : MAX_VERTICAL_STEP,
+    threshold: view,
+    candidateBeyond: !possibleEdge,
   });
   if (decision.type === "rien") return null;
 
-  const ecrit = decision.type === "bord" ? decision.delta : decision.pas;
-  const accoste = decision.type === "bord" || decision.accoste;
-  return ecrire(scroller, versLaFin ? ecrit : -ecrit, horizontal, accoste);
+  const written = decision.type === "bord" ? decision.delta : decision.step;
+  const docked = decision.type === "bord" || decision.docked;
+  return write(scroller, towardsEnd ? written : -written, horizontal, docked);
 }
 
 /** Ce qui reste à défiler dans la direction, sur le scroller ou la fenêtre. */
-function mouDisponible(
+function availableSlack(
   scroller: HTMLElement | null,
-  versLaFin: boolean,
+  towardsEnd: boolean,
   horizontal: boolean,
 ): number {
   if (!scroller) {
-    const fenetre = mouDeLaFenetre();
-    return versLaFin ? fenetre.apres : fenetre.avant;
+    const window = windowSlack();
+    return towardsEnd ? window.after : window.before;
   }
-  if (horizontal) return versLaFin ? resteHorizontal(scroller) : scroller.scrollLeft;
-  return versLaFin ? resteVertical(scroller) : scroller.scrollTop;
+  if (horizontal) return towardsEnd ? horizontalRest(scroller) : scroller.scrollLeft;
+  return towardsEnd ? verticalRest(scroller) : scroller.scrollTop;
 }
 
 function tailleDe(element: HTMLElement | null, horizontal: boolean): number {
@@ -226,38 +226,38 @@ function tailleDe(element: HTMLElement | null, horizontal: boolean): number {
 }
 
 /** Écrit le défilement et rend de quoi le rendre — ou `null` s'il n'a pas pris. */
-function ecrire(
+function write(
   scroller: HTMLElement | null,
   delta: number,
   horizontal: boolean,
-  accoste: boolean,
-): Pas | null {
+  docked: boolean,
+): Step | null {
   if (!scroller) {
-    const avant = window.pageYOffset;
+    const before = window.pageYOffset;
     window.scrollBy(0, delta);
-    if (window.pageYOffset === avant) return null;
-    return { annuler: () => window.scrollTo(window.pageXOffset, avant), accoste };
+    if (window.pageYOffset === before) return null;
+    return { cancel: () => window.scrollTo(window.pageXOffset, before), docked };
   }
 
   if (horizontal) {
-    const avant = scroller.scrollLeft;
+    const before = scroller.scrollLeft;
     scroller.scrollLeft += delta;
-    if (scroller.scrollLeft === avant) return null;
+    if (scroller.scrollLeft === before) return null;
     return {
-      annuler: () => {
-        scroller.scrollLeft = avant;
+      cancel: () => {
+        scroller.scrollLeft = before;
       },
-      accoste,
+      docked,
     };
   }
 
-  const avant = scroller.scrollTop;
+  const before = scroller.scrollTop;
   scroller.scrollTop += delta;
-  if (scroller.scrollTop === avant) return null;
+  if (scroller.scrollTop === before) return null;
   return {
-    annuler: () => {
-      scroller.scrollTop = avant;
+    cancel: () => {
+      scroller.scrollTop = before;
     },
-    accoste,
+    docked,
   };
 }

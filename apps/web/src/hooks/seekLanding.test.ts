@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  observerSaut, SAUT_VIDE, DELAI_CALAGE_SAUT_MS, DELAI_CHARGEMENT_MS, PERIODE_VEILLE_SAUT_MS,
-  PROGRESSION_MINIMALE_S, TOLERANCE_ATTERRISSAGE_S,
-  type EchantillonSaut, type VerdictSaut,
+  observeSeek, EMPTY_SEEK, SEEK_STALL_MS, LOADING_MS, SEEK_WATCH_PERIOD_MS,
+  MIN_PROGRESS_S, LANDING_TOLERANCE_S,
+  type SeekSample, type SeekVerdict,
 } from "./seekLanding";
 
 /**
@@ -13,18 +13,18 @@ import {
  * dans des sens opposés.
  */
 
-const CIBLE = 2700;
+const TARGET = 2700;
 
-const releve = (ecoule: number, extra: Partial<EchantillonSaut> = {}): EchantillonSaut =>
-  ({ cible: CIBLE, position: CIBLE, bufferFin: null, enPause: false, pret: 4, ecoule, ...extra });
+const sample = (elapsed: number, extra: Partial<SeekSample> = {}): SeekSample =>
+  ({ target: TARGET, position: TARGET, bufferEnd: null, paused: false, ready: 4, elapsed, ...extra });
 
 /** Déroule une suite de relevés et rend le verdict de chacun. */
-function derouler(echantillons: EchantillonSaut[]): VerdictSaut[] {
-  let etat = SAUT_VIDE;
-  const verdicts: VerdictSaut[] = [];
+function unroll(echantillons: SeekSample[]): SeekVerdict[] {
+  let state = EMPTY_SEEK;
+  const verdicts: SeekVerdict[] = [];
   for (const e of echantillons) {
-    const [suivant, verdict] = observerSaut(etat, e);
-    etat = suivant;
+    const [next, verdict] = observeSeek(state, e);
+    state = next;
     verdicts.push(verdict);
   }
   return verdicts;
@@ -32,15 +32,15 @@ function derouler(echantillons: EchantillonSaut[]): VerdictSaut[] {
 
 describe("saut qui aboutit", () => {
   it("conclut dès que la vidéo avance au voisinage de la cible", () => {
-    const verdicts = derouler([releve(0), releve(PERIODE_VEILLE_SAUT_MS, { position: CIBLE + 1 })]);
+    const verdicts = unroll([sample(0), sample(SEEK_WATCH_PERIOD_MS, { position: TARGET + 1 })]);
     expect(verdicts).toEqual(["attendre", "abouti"]);
   });
 
   it("conclut sur un saut fait à l'arrêt quand le serveur a servi au-delà", () => {
     // À l'arrêt rien n'avancera jamais : sans cette règle, une pause sur une
     // cible parfaitement chargée attendrait indéfiniment.
-    const arret = { enPause: true, bufferFin: CIBLE + 30 };
-    expect(derouler([releve(0, arret), releve(1000, arret)])).toContain("abouti");
+    const stopped = { paused: true, bufferEnd: TARGET + 30 };
+    expect(unroll([sample(0, stopped), sample(1000, stopped)])).toContain("abouti");
   });
 });
 
@@ -52,7 +52,7 @@ describe("saut qui n'aboutit pas", () => {
    * c'est exactement pour cela que le niveau 3 n'était jamais atteint.
    */
   it("ne prend pas une position posée à la cible pour un saut réussi", () => {
-    expect(derouler([releve(0), releve(DELAI_CALAGE_SAUT_MS)])).toEqual(["attendre", "renegocier"]);
+    expect(unroll([sample(0), sample(SEEK_STALL_MS)])).toEqual(["attendre", "renegocier"]);
   });
 
   /**
@@ -62,26 +62,26 @@ describe("saut qui n'aboutit pas", () => {
    * fréquent — et le filet ne servirait à rien.
    */
   it("ne se fie pas à un tampon qui part de zéro", () => {
-    const enArriere = { cible: 600, position: 600, bufferFin: 3000 };
-    expect(derouler([releve(0, enArriere), releve(DELAI_CALAGE_SAUT_MS, enArriere)]))
+    const backwards = { target: 600, position: 600, bufferEnd: 3000 };
+    expect(unroll([sample(0, backwards), sample(SEEK_STALL_MS, backwards)]))
       .toEqual(["attendre", "renegocier"]);
   });
 
   it("ne prend pas une reprise LOIN de la cible pour un atterrissage", () => {
     // Mesuré : la pile rejoue une seconde d'une position ancienne avant de se
     // figer. Ça avance, mais pas là où on l'avait envoyée.
-    const ailleurs = CIBLE - TOLERANCE_ATTERRISSAGE_S - 100;
-    const verdicts = derouler([
-      releve(0, { position: ailleurs }),
-      releve(DELAI_CALAGE_SAUT_MS, { position: ailleurs + 1 }),
+    const ailleurs = TARGET - LANDING_TOLERANCE_S - 100;
+    const verdicts = unroll([
+      sample(0, { position: ailleurs }),
+      sample(SEEK_STALL_MS, { position: ailleurs + 1 }),
     ]);
     expect(verdicts).not.toContain("abouti");
   });
 
   it("laisse au serveur le temps d'écrire avant de tout redemander", () => {
     // Un saut qui ABOUTIT a été mesuré à 4,5 s : l'échéance ne doit pas bouger.
-    const attente = derouler([0, 1000, 4500, DELAI_CALAGE_SAUT_MS - 1].map((ms) => releve(ms)));
-    expect(attente).not.toContain("renegocier");
+    const wait = unroll([0, 1000, 4500, SEEK_STALL_MS - 1].map((ms) => sample(ms)));
+    expect(wait).not.toContain("renegocier");
   });
 });
 
@@ -93,17 +93,17 @@ describe("saut qui n'aboutit pas", () => {
  */
 describe("témoin de chargement", () => {
   it("se tait tant que le saut peut encore aboutir tout seul", () => {
-    expect(derouler([releve(0), releve(DELAI_CHARGEMENT_MS - 1)])).not.toContain("charge");
+    expect(unroll([sample(0), sample(LOADING_MS - 1)])).not.toContain("charge");
   });
 
   it("le dit une fois le seuil franchi", () => {
-    expect(derouler([releve(0), releve(DELAI_CHARGEMENT_MS)]).at(-1)).toBe("charge");
+    expect(unroll([sample(0), sample(LOADING_MS)]).at(-1)).toBe("charge");
   });
 
   it("ne se montre jamais sur un saut qui aboutit dans l'instant", () => {
     // Le cas de tous les sauts de ±30 s : la réserve fait quarante secondes.
-    const verdicts = derouler([
-      releve(0), releve(DELAI_CHARGEMENT_MS, { position: CIBLE + 1 }),
+    const verdicts = unroll([
+      sample(0), sample(LOADING_MS, { position: TARGET + 1 }),
     ]);
     expect(verdicts).not.toContain("charge");
     expect(verdicts.at(-1)).toBe("abouti");
@@ -116,27 +116,27 @@ describe("témoin de chargement", () => {
    * jusqu'à ce qu'il reprenne, par-dessus une image parfaitement figée.
    */
   it("ne s'allume pas sur une pause", () => {
-    const verdicts = derouler([
-      releve(0), releve(DELAI_CHARGEMENT_MS * 4, { enPause: true }),
+    const verdicts = unroll([
+      sample(0), sample(LOADING_MS * 4, { paused: true }),
     ]);
     expect(verdicts).not.toContain("charge");
   });
 
   it("laisse la place à la renégociation une fois le vrai délai atteint", () => {
-    expect(derouler([releve(0), releve(DELAI_CALAGE_SAUT_MS)]).at(-1)).toBe("renegocier");
+    expect(unroll([sample(0), sample(SEEK_STALL_MS)]).at(-1)).toBe("renegocier");
   });
 });
 
 describe("pause pendant le déplacement", () => {
   it("n'escalade pas sous les doigts de l'utilisateur", () => {
-    const verdicts = derouler([releve(0), releve(DELAI_CALAGE_SAUT_MS * 2, { enPause: true })]);
+    const verdicts = unroll([sample(0), sample(SEEK_STALL_MS * 2, { paused: true })]);
     expect(verdicts).not.toContain("renegocier");
   });
 
   it("ne confond pas une progression minuscule avec une reprise", () => {
-    const verdicts = derouler([
-      releve(0),
-      releve(DELAI_CALAGE_SAUT_MS, { position: CIBLE + PROGRESSION_MINIMALE_S / 2 }),
+    const verdicts = unroll([
+      sample(0),
+      sample(SEEK_STALL_MS, { position: TARGET + MIN_PROGRESS_S / 2 }),
     ]);
     expect(verdicts.at(-1)).toBe("renegocier");
   });

@@ -24,7 +24,7 @@ import { boxFromRect, type Box } from "@tentacle-tv/tv-core";
  */
 
 /** Échelle 2D affine sans rotation : `matrix(a, 0, 0, d, tx, ty)`. */
-export interface EchellePure {
+export interface PureScale {
   a: number;
   d: number;
   tx: number;
@@ -32,7 +32,7 @@ export interface EchellePure {
 }
 
 /** Point du `transform-origin`, en pixels depuis le coin haut-gauche non transformé. */
-export interface Origine {
+export interface Origin {
   x: number;
   y: number;
 }
@@ -45,16 +45,16 @@ export interface Origine {
  * `matrix3d`, échelle nulle ou négative. Le style calculé rend toujours une
  * matrice résolue, jamais la fonction d'origine.
  */
-export function lireEchellePure(transform: string): EchellePure | null {
+export function readPureScale(transform: string): PureScale | null {
   if (!transform || transform === "none") return null;
 
-  const matrice = /^matrix\(([^)]+)\)$/.exec(transform);
-  if (!matrice) return null;
+  const matrix = /^matrix\(([^)]+)\)$/.exec(transform);
+  if (!matrix) return null;
 
-  const valeurs = matrice[1].split(",").map((brut) => Number.parseFloat(brut));
-  if (valeurs.length !== 6 || valeurs.some((valeur) => !Number.isFinite(valeur))) return null;
+  const values = matrix[1].split(",").map((raw) => Number.parseFloat(raw));
+  if (values.length !== 6 || values.some((value) => !Number.isFinite(value))) return null;
 
-  const [a, b, c, d, tx, ty] = valeurs;
+  const [a, b, c, d, tx, ty] = values;
   if (b !== 0 || c !== 0) return null;
   if (a <= 0 || d <= 0) return null;
   if (a === 1 && d === 1) return null;
@@ -73,20 +73,20 @@ export function lireEchellePure(transform: string): EchellePure | null {
  * Fonction pure, et testée : c'est de l'arithmétique de rectangles, exactement
  * ce qu'un test sait juger.
  */
-export function inverserEchelle(box: Box, echelle: EchellePure, origine: Origine): Box {
-  const left = box.left - origine.x * (1 - echelle.a) - echelle.tx;
-  const top = box.top - origine.y * (1 - echelle.d) - echelle.ty;
+export function unscale(box: Box, scale: PureScale, origin: Origin): Box {
+  const left = box.left - origin.x * (1 - scale.a) - scale.tx;
+  const top = box.top - origin.y * (1 - scale.d) - scale.ty;
 
   return {
     left,
     top,
-    right: left + (box.right - box.left) / echelle.a,
-    bottom: top + (box.bottom - box.top) / echelle.d,
+    right: left + (box.right - box.left) / scale.a,
+    bottom: top + (box.bottom - box.top) / scale.d,
   };
 }
 
 /** L'origine calculée est toujours « Xpx Ypx » ; au moindre doute, on renonce. */
-function lireOrigine(transformOrigin: string): Origine | null {
+function readOrigin(transformOrigin: string): Origin | null {
   const [brutX, brutY] = transformOrigin.split(" ");
   const x = Number.parseFloat(brutX);
   const y = Number.parseFloat(brutY);
@@ -97,20 +97,20 @@ function lireOrigine(transformOrigin: string): Origine | null {
 /**
  * La boîte de navigation d'un élément.
  *
- * `rectangle` évite une seconde mesure quand l'appelant vient d'en faire une —
+ * `rect` évite une seconde mesure quand l'appelant vient d'en faire une —
  * le recensement mesure déjà chaque candidat pour la fenêtre de viewport.
  */
-export function boiteDeNavigation(element: HTMLElement, rectangle?: DOMRect): Box {
-  const box = boxFromRect(rectangle ?? element.getBoundingClientRect());
+export function navBox(element: HTMLElement, rect?: DOMRect): Box {
+  const box = boxFromRect(rect ?? element.getBoundingClientRect());
 
   const style = window.getComputedStyle(element);
-  const echelle = lireEchellePure(style.transform);
-  if (!echelle) return box;
+  const scale = readPureScale(style.transform);
+  if (!scale) return box;
 
-  const origine = lireOrigine(style.transformOrigin);
-  if (!origine) return box;
+  const origin = readOrigin(style.transformOrigin);
+  if (!origin) return box;
 
-  return inverserEchelle(box, echelle, origine);
+  return unscale(box, scale, origin);
 }
 
 /**
@@ -118,21 +118,21 @@ export function boiteDeNavigation(element: HTMLElement, rectangle?: DOMRect): Bo
  *
  * Sert au réancrage du focus après un défilement au pointeur : la vue a pu
  * descendre de trois écrans sans que l'anneau bouge, et le laisser là ferait
- * remonter toute la page au premier appui de flèche, par `amenerEnVue`.
+ * remonter toute la page au premier appui de flèche, par `bringIntoView`.
  *
  * La marge est la même qu'au recensement — un demi-écran de part et d'autre —
  * et il faut que ce soit la même : un élément que le recensement accepte encore
  * comme voisin n'a aucune raison d'être considéré comme perdu ici.
  */
-export function dansLaFenetre(element: HTMLElement, marge = 0.5): boolean {
-  const rectangle = element.getBoundingClientRect();
-  if (rectangle.width === 0 && rectangle.height === 0) return false;
+export function inWindow(element: HTMLElement, margin = 0.5): boolean {
+  const rect = element.getBoundingClientRect();
+  if (rect.width === 0 && rect.height === 0) return false;
   const hauteur = window.innerHeight;
-  const largeur = window.innerWidth;
+  const width = window.innerWidth;
   return (
-    rectangle.bottom >= -hauteur * marge
-    && rectangle.top <= hauteur * (1 + marge)
-    && rectangle.right >= -largeur * marge
-    && rectangle.left <= largeur * (1 + marge)
+    rect.bottom >= -hauteur * margin
+    && rect.top <= hauteur * (1 + margin)
+    && rect.right >= -width * margin
+    && rect.left <= width * (1 + margin)
   );
 }

@@ -155,9 +155,9 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
   // messages ; macOS n'a ni `window-dragging` ni `native-touch`, et sa fenêtre
   // est désarmée côté natif (`setIgnoresMouseEvents:`) ; Linux n'a rien à
   // désarmer, sa fenêtre étant sous la nôtre et sans entrées.
-  const fenetreWin32 = isWindows();
-  const fenetreMacos = isMacOS();
-  const fenetreLinux = isLinux();
+  const onWindows = isWindows();
+  const onMacos = isMacOS();
+  const onLinux = isLinux();
 
   return {
     vo: "gpu-next",
@@ -168,7 +168,7 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     // du thread UI. Toute boucle modale côté mpv gèle l'app entière (son et
     // image continuent, plus rien n'est cliquable). On lui retire donc tout
     // traitement d'entrée — l'UI est intégralement en HTML (DesktopPlayer).
-    ...(fenetreWin32 && {
+    ...(onWindows && {
       "force-window": "yes",
       "window-dragging": "no",   // supprime SendMessage(WM_NCLBUTTONDOWN, HTCAPTION)
       "input-cursor": "no",      // supprime SetCapture() sur WM_LBUTTONDOWN
@@ -180,7 +180,7 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     // ── macOS : les cinq lignes dont dépend tout le HDR ──────────────────────
     //
     // Établies en phase 1, chacune mesurée. Aucune n'est un réglage de confort.
-    ...(fenetreMacos && {
+    ...(onMacos && {
       // ⚠️ `no`, et c'est TOUT le HDR qui en dépend — pas un réglage de confort.
       //
       // En `yes`, mpv ouvre sa fenêtre dès l'initialisation et y affiche son
@@ -262,7 +262,7 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     // processus principal les pose après, voir `linux/optionsMpv.ts`.
     //
     // Ce qui reste ici est ce qui ne dépend que du montage « fenêtre » :
-    ...(fenetreLinux && {
+    ...(onLinux && {
       // Même raison que sur macOS : la fenêtre naît AVEC la vidéo, donc avec son
       // espace colorimétrique. En `yes`, mpv ouvrirait d'abord une fenêtre vide,
       // et sur Wayland elle serait plein écran — un rectangle noir installé sur

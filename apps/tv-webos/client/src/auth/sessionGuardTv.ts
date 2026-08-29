@@ -1,6 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { acquireSocket, notifyUserChange, subscribeSocket } from "@tentacle-tv/api-client";
-import { jetonDAppareil } from "../bootstrap/fragmentToken";
+import { deviceToken2 } from "../bootstrap/fragmentToken";
 
 /**
  * Vitalité de session, version appareil jumelé.
@@ -31,28 +31,28 @@ import { jetonDAppareil } from "../bootstrap/fragmentToken";
 
 export type VerdictSession = "ok" | "expiree" | "revoquee" | "injoignable";
 
-const CONFIRMATIONS_REVOCATION = 2;
-const DELAI_ENTRE_TENTATIVES_MS = 5000;
-const INTERVALLE_PROACTIF_MS = 12 * 60 * 60 * 1000;
+const REVOCATION_CONFIRMATIONS = 2;
+const RETRY_DELAY_MS = 5000;
+const PROACTIVE_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
 interface ClientSession {
-  setAccessToken(jeton: string | null): void;
+  setAccessToken(token: string | null): void;
   setOnAuthExpired(rappel: () => void): void;
 }
 
-interface StockageSession {
-  removeItem(cle: string): void;
+interface SessionStorage {
+  removeItem(key: string): void;
 }
 
-export async function revaliderSession(): Promise<VerdictSession> {
-  // `jetonDAppareil` et non `jetonAppareil` : la même clé de stockage porte un
+export async function revalidateSession(): Promise<VerdictSession> {
+  // `deviceToken2` et non `deviceToken` : la même clé de stockage porte un
   // JWT d'appareil après un jumelage, et un jeton Jellyfin après une connexion
   // web. Le second, envoyé ici, se fait refuser — et ce refus était pris pour
   // une expiration.
-  const jeton = jetonDAppareil();
+  const token = deviceToken2();
 
   try {
-    const reponse = await fetch("/api/auth/refresh", {
+    const response = await fetch("/api/auth/refresh", {
       method: "POST",
       // Deux chemins pour une seule question : y a-t-il un jeton d'appareil ?
       //
@@ -61,37 +61,37 @@ export async function revaliderSession(): Promise<VerdictSession> {
       // téléviseur, pour un compte déjà connecté. Poster `{ token: null }`
       // revenait à lui demander de refuser, puis à prendre ce refus pour une
       // expiration : la session était purgée avant même le premier écran.
-      ...(jeton
+      ...(token
         ? {
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: jeton }),
+            body: JSON.stringify({ token: token }),
           }
         : { credentials: "include" as const }),
     });
 
-    if (reponse.status === 401) {
+    if (response.status === 401) {
       // Seul `revoked: true` transforme un refus en verdict de révocation.
-      const corps = (await reponse.json().catch(() => null)) as { revoked?: boolean } | null;
+      const corps = (await response.json().catch(() => null)) as { revoked?: boolean } | null;
       return corps?.revoked === true ? "revoquee" : "expiree";
     }
-    if (!reponse.ok) return "injoignable";
+    if (!response.ok) return "injoignable";
 
     // Double ceinture, reprise du garde web : un repli monopage renvoie
     // `index.html` avec un statut 200. Une réponse qui ne parle pas de jeton
     // n'est pas une réponse d'authentification.
-    const corps = await reponse.text();
+    const corps = await response.text();
     return corps.includes("AccessToken") || corps.includes("token") ? "ok" : "injoignable";
   } catch {
     return "injoignable";
   }
 }
 
-export function installerGardeSessionTv(deps: {
+export function installTvSessionGuard(deps: {
   client: ClientSession;
-  storage: StockageSession;
+  storage: SessionStorage;
   queryClient: QueryClient;
 }): void {
-  const terminerSession = () => {
+  const endSession = () => {
     deps.client.setAccessToken(null);
     deps.storage.removeItem("tentacle_token");
     deps.storage.removeItem("tentacle_user");
@@ -107,14 +107,14 @@ export function installerGardeSessionTv(deps: {
   // ne purge qu'après CONFIRMATIONS_REVOCATION verdicts « revoquee » espacés.
   // Tout autre verdict — 401 nu compris — laisse la session en place ; au
   // moindre doute (injoignable au second tour), on s'abstient aussi.
-  let verificationEnCours = false;
-  const purgerSiRevocationConfirmee = async () => {
-    if (verificationEnCours) return;
-    verificationEnCours = true;
+  let checkInProgress = false;
+  const purgeIfRevocationConfirmed = async () => {
+    if (checkInProgress) return;
+    checkInProgress = true;
     try {
       let confirmations = 0;
-      for (let tour = 0; tour < CONFIRMATIONS_REVOCATION; tour++) {
-        const verdict = await revaliderSession();
+      for (let tour = 0; tour < REVOCATION_CONFIRMATIONS; tour++) {
+        const verdict = await revalidateSession();
         if (verdict === "ok") return;
         if (verdict === "expiree") {
           console.warn("[Tentacle:TV] refresh refusé sans révocation — session conservée");
@@ -122,41 +122,41 @@ export function installerGardeSessionTv(deps: {
         }
         if (verdict === "revoquee") {
           confirmations++;
-          if (confirmations >= CONFIRMATIONS_REVOCATION) {
-            terminerSession();
+          if (confirmations >= REVOCATION_CONFIRMATIONS) {
+            endSession();
             return;
           }
         }
         // « injoignable » ou première révocation : temporiser puis re-vérifier.
-        await attendre(DELAI_ENTRE_TENTATIVES_MS);
+        await waitFor(RETRY_DELAY_MS);
       }
     } finally {
-      verificationEnCours = false;
+      checkInProgress = false;
     }
   };
 
   deps.client.setOnAuthExpired(() => {
-    void purgerSiRevocationConfirmee();
+    void purgeIfRevocationConfirmed();
   });
 
   setInterval(() => {
-    void purgerSiRevocationConfirmee();
-  }, INTERVALLE_PROACTIF_MS);
+    void purgeIfRevocationConfirmed();
+  }, PROACTIVE_INTERVAL_MS);
 
   // Révocation IMMÉDIATE, même en pleine lecture : le serveur pousse
   // `session:revoked` par WebSocket à l'appareil supprimé. Le socket de
   // l'accueil ne suffit pas — il est refcompté et meurt dès qu'on quitte la
   // page (le lecteur n'en tient aucun). La garde prend donc SA référence,
   // jamais relâchée : elle vit aussi longtemps que l'app du téléviseur.
-  const jeton = jetonDAppareil();
-  if (jeton) {
-    acquireSocket(jeton);
+  const token = deviceToken2();
+  if (token) {
+    acquireSocket(token);
     subscribeSocket((message) => {
-      if (message.type === "session:revoked") terminerSession();
+      if (message.type === "session:revoked") endSession();
     });
   }
 }
 
-function attendre(millisecondes: number): Promise<void> {
-  return new Promise((resoudre) => setTimeout(resoudre, millisecondes));
+function waitFor(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }

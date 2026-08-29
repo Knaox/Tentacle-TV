@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { creerAppuiLong } from "../../focus/longPress";
+import { createLongPress } from "../../focus/longPress";
 
 /**
  * Rend une ligne d'épisode atteignable à la télécommande.
@@ -22,19 +22,19 @@ import { creerAppuiLong } from "../../focus/longPress";
  * C'est la convention d'Apple TV, celle que le geste rend naturelle, et c'est
  * déjà celle des cartes d'épisode de l'accueil.
  *
- * `data-tv-cle` porte l'identifiant Jellyfin : c'est ce qui permet à la mémoire
+ * `data-tv-key` porte l'identifiant Jellyfin : c'est ce qui permet à la mémoire
  * de focus de retrouver CET épisode au retour du lecteur, là où un libellé
  * traduit ou une position dans la liste ne le garantiraient pas.
  */
 
-interface ProprietesLigneEpisodeTv {
+interface EpisodeRowTvProps {
   /** Identifiant Jellyfin de l'épisode. Clé stable pour la mémoire de focus. */
   episodeId: string;
   /** La ligne d'`apps/web`, rendue telle quelle. */
   children: ReactNode;
 }
 
-export function LigneEpisodeTv({ episodeId, children }: ProprietesLigneEpisodeTv) {
+export function EpisodeRowTv({ episodeId, children }: EpisodeRowTvProps) {
   const racine = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -46,18 +46,18 @@ export function LigneEpisodeTv({ episodeId, children }: ProprietesLigneEpisodeTv
    * qu'elle fait déjà — résolution de l'épisode, navigation vers le lecteur —
    * sans en dupliquer une ligne.
    */
-  const actionCourte = useCallback(() => {
-    const ligne = racine.current?.firstElementChild;
-    if (ligne instanceof HTMLElement) ligne.click();
+  const shortAction = useCallback(() => {
+    const line = racine.current?.firstElementChild;
+    if (line instanceof HTMLElement) line.click();
   }, []);
 
-  const actionLongue = useCallback(() => {
+  const longAction = useCallback(() => {
     navigate(`/media/${episodeId}`);
   }, [episodeId, navigate]);
 
-  const appui = useMemo(
-    () => creerAppuiLong({ short: actionCourte, long: actionLongue }),
-    [actionCourte, actionLongue],
+  const press = useMemo(
+    () => createLongPress({ short: shortAction, long: longAction }),
+    [shortAction, longAction],
   );
 
   return (
@@ -68,11 +68,11 @@ export function LigneEpisodeTv({ episodeId, children }: ProprietesLigneEpisodeTv
       role="button"
       tabIndex={0}
       data-tv-carte
-      data-tv-cle={episodeId}
+      data-tv-key={episodeId}
       className="ligne-episode-tv"
-      onKeyDown={appui.onKeyDown}
-      onKeyUp={appui.onKeyUp}
-      onBlur={appui.onBlur}
+      onKeyDown={press.onKeyDown}
+      onKeyUp={press.onKeyUp}
+      onBlur={press.onBlur}
     >
       {children}
     </div>

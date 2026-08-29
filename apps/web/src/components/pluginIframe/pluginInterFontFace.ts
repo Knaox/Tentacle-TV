@@ -20,7 +20,7 @@
  * de la page principale (`index.css`), un aller-retour de moins.
  */
 
-const SOUS_ENSEMBLES: ReadonlyArray<readonly [string, string, string]> = [
+const SUBSETS: ReadonlyArray<readonly [string, string, string]> = [
   // [alphabet, fichier gstatic (s/inter/v20/…), unicode-range]
   ["cyrillic-ext", "UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7SUc.woff2",
     "U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F"],
@@ -39,16 +39,16 @@ const SOUS_ENSEMBLES: ReadonlyArray<readonly [string, string, string]> = [
 
 /** Les `@font-face` d'Inter (graisse variable 300-800), prêts pour un <style> inline. */
 export function pluginInterFontFaceCss(): string {
-  return SOUS_ENSEMBLES.map(
-    ([alphabet, fichier, plage]) => `
+  return SUBSETS.map(
+    ([alphabet, file, range]) => `
     /* ${alphabet} */
     @font-face {
       font-family: 'Inter';
       font-style: normal;
       font-weight: 300 800;
       font-display: swap;
-      src: url(https://fonts.gstatic.com/s/inter/v20/${fichier}) format('woff2');
-      unicode-range: ${plage};
+      src: url(https://fonts.gstatic.com/s/inter/v20/${file}) format('woff2');
+      unicode-range: ${range};
     }`,
   ).join("\n");
 }

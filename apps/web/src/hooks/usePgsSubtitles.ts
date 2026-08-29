@@ -16,7 +16,7 @@ interface Options {
    */
   timeOffsetRef: MutableRefObject<number>;
   /** Chargement ou décodage impossible : le serveur doit reprendre la main. */
-  onEchec: () => void;
+  onFailure: () => void;
 }
 
 /**
@@ -28,7 +28,7 @@ interface Options {
  * l'`ArrayBuffer` nous-mêmes, et le moindre défaut déclenche le repli.
  */
 export function usePgsSubtitles({
-  videoRef, canvasRef, supUrl, timeOffsetRef, onEchec,
+  videoRef, canvasRef, supUrl, timeOffsetRef, onFailure,
 }: Options): void {
   useEffect(() => {
     const video = videoRef.current;
@@ -36,7 +36,7 @@ export function usePgsSubtitles({
     if (!video || !canvas) return;
 
     let renderer: PgsRenderer | null = null;
-    let annule = false;
+    let cancelled = false;
 
     const syncOffset = () => {
       if (renderer && renderer.timeOffset !== timeOffsetRef.current) {
@@ -54,7 +54,7 @@ export function usePgsSubtitles({
         ]);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const buffer = await res.arrayBuffer();
-        if (annule) return;
+        if (cancelled) return;
         if (buffer.byteLength === 0) throw new Error("fichier .sup vide");
 
         renderer = new PgsRenderer({
@@ -65,18 +65,18 @@ export function usePgsSubtitles({
         renderer.loadFromBuffer(buffer);
         video.addEventListener("timeupdate", syncOffset);
       } catch (err) {
-        if (annule) return;
+        if (cancelled) return;
         console.warn(DBG, "rendu client impossible — repli sur l'incrustation serveur", err);
-        onEchec();
+        onFailure();
       }
     })();
 
     return () => {
-      annule = true;
+      cancelled = true;
       video.removeEventListener("timeupdate", syncOffset);
       renderer?.dispose();
       renderer = null;
     };
-    // `onEchec` et les refs sont stables ; seule la piste doit relancer le rendu.
+    // `onFailure` et les refs sont stables ; seule la piste doit relancer le rendu.
   }, [supUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 }

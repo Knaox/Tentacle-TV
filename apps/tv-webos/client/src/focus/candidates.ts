@@ -1,5 +1,5 @@
 import type { Box } from "@tentacle-tv/tv-core";
-import { boiteDeNavigation } from "./measure";
+import { navBox } from "./measure";
 
 /**
  * Ce que le D-pad peut atteindre.
@@ -13,7 +13,7 @@ import { boiteDeNavigation } from "./measure";
  * l'utilisateur ne sait plus où il est.
  */
 
-export const SELECTEUR_FOCUSABLE = [
+export const FOCUSABLE_SELECTOR = [
   "a[href]",
   "button",
   "input",
@@ -23,7 +23,7 @@ export const SELECTEUR_FOCUSABLE = [
   "[tabindex]",
 ].join(",");
 
-export interface Candidat {
+export interface Candidate {
   element: HTMLElement;
   box: Box;
 }
@@ -36,37 +36,37 @@ export interface Candidat {
  * bondir le focus hors de vue. Ce qui se trouve au-delà est atteint par le
  * défilement, un pas à la fois.
  */
-export function recenser(racine: ParentNode = document): Candidat[] {
-  const candidats: Candidat[] = [];
-  const hauteurVue = window.innerHeight;
-  const largeurVue = window.innerWidth;
+export function collect(racine: ParentNode = document): Candidate[] {
+  const candidates: Candidate[] = [];
+  const viewHeight = window.innerHeight;
+  const viewWidth = window.innerWidth;
   // Les styles des ancêtres sont relus pour chaque candidat d'une même rangée.
   // Le cache vit le temps d'un recensement — donc d'un appui sur la
   // télécommande — et rend une trentaine d'appels là où il en faudrait quelques
   // centaines, sur un processeur qui n'en a pas les moyens.
   const styles = new Map<Element, CSSStyleDeclaration>();
 
-  for (const noeud of racine.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE)) {
-    if (!estAtteignable(noeud)) continue;
-    if (!ancetresVisibles(noeud, styles)) continue;
+  for (const node of racine.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+    if (!isReachable(node)) continue;
+    if (!visibleAncestors(node, styles)) continue;
 
-    const rectangle = noeud.getBoundingClientRect();
-    if (rectangle.width === 0 || rectangle.height === 0) continue;
+    const rect = node.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) continue;
 
     // Une marge d'un demi-écran : ce qui affleure le bord reste un voisin
     // légitime, on le fera défiler en vue après l'avoir choisi.
-    const marge = 0.5;
-    if (rectangle.bottom < -hauteurVue * marge) continue;
-    if (rectangle.top > hauteurVue * (1 + marge)) continue;
-    if (rectangle.right < -largeurVue * marge) continue;
-    if (rectangle.left > largeurVue * (1 + marge)) continue;
+    const margin = 0.5;
+    if (rect.bottom < -viewHeight * margin) continue;
+    if (rect.top > viewHeight * (1 + margin)) continue;
+    if (rect.right < -viewWidth * margin) continue;
+    if (rect.left > viewWidth * (1 + margin)) continue;
 
     // La boîte de NAVIGATION, débarrassée de l'agrandissement au focus : la
     // fenêtre ci-dessus juge la position à l'écran, le rect brut lui suffit.
-    candidats.push({ element: noeud, box: boiteDeNavigation(noeud, rectangle) });
+    candidates.push({ element: node, box: navBox(node, rect) });
   }
 
-  return sansEnveloppes(candidats);
+  return withoutWrappers(candidates);
 }
 
 /**
@@ -74,7 +74,7 @@ export function recenser(racine: ParentNode = document): Candidat[] {
  *
  * `opacity` ne s'hérite pas au sens de la cascade : un bouton marqué
  * `pointer-events-auto` dans une enveloppe à `opacity: 0` a bien, lui, une
- * opacité calculée de 1. `estAtteignable` le déclarait donc atteignable, et le
+ * opacité calculée de 1. `isReachable` le déclarait donc atteignable, et le
  * D-pad s'y posait — anneau invisible, utilisateur perdu. Le cas n'est pas
  * théorique : c'est `CardMoreInfoButton`, monté sur chaque vignette d'épisode.
  *
@@ -87,9 +87,9 @@ export function recenser(racine: ParentNode = document): Candidat[] {
  * une page cachée — mais une COMMANDE cachée dans sa carte. La question s'arrête
  * donc au bord de la carte.
  */
-const BORNES_STRUCTURE = "[data-tv-carte],[data-tv-piste],[data-tv-grille]";
+const STRUCTURE_BOUNDS = "[data-tv-carte],[data-tv-piste],[data-tv-grille]";
 
-function ancetresVisibles(
+function visibleAncestors(
   element: HTMLElement,
   cache: Map<Element, CSSStyleDeclaration>,
 ): boolean {
@@ -97,7 +97,7 @@ function ancetresVisibles(
   // le chrome de page ne dissimule pas ses commandes derrière une enveloppe
   // transparente, et remonter plus haut ne rencontrerait que les calques de
   // transition de la page.
-  const borne = element.closest(BORNES_STRUCTURE);
+  const borne = element.closest(STRUCTURE_BOUNDS);
   if (!borne) return true;
 
   let parent = element.parentElement;
@@ -145,34 +145,34 @@ function ancetresVisibles(
  * un `<div>` de défilement, une `<section>` de rangée — l'enveloppe cède comme
  * avant.
  */
-const CONTROLES_NATIFS = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA"]);
+const NATIVE_CONTROLS = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA"]);
 
-function estControleNatif(element: HTMLElement): boolean {
-  return CONTROLES_NATIFS.has(element.tagName);
+function isNativeControl(element: HTMLElement): boolean {
+  return NATIVE_CONTROLS.has(element.tagName);
 }
 
-function sansEnveloppes(candidats: Candidat[]): Candidat[] {
-  if (candidats.length < 2) return candidats;
+function withoutWrappers(candidates: Candidate[]): Candidate[] {
+  if (candidates.length < 2) return candidates;
 
-  const ecartes = new Set<HTMLElement>();
-  for (const candidat of candidats) {
-    for (const autre of candidats) {
-      if (autre === candidat) continue;
-      if (!candidat.element.contains(autre.element)) continue;
+  const spread = new Set<HTMLElement>();
+  for (const candidate of candidates) {
+    for (const other of candidates) {
+      if (other === candidate) continue;
+      if (!candidate.element.contains(other.element)) continue;
 
-      if (estControleNatif(candidat.element) && !estControleNatif(autre.element)) {
-        ecartes.add(autre.element);
+      if (isNativeControl(candidate.element) && !isNativeControl(other.element)) {
+        spread.add(other.element);
       } else {
-        ecartes.add(candidat.element);
+        spread.add(candidate.element);
       }
     }
   }
 
-  return candidats.filter((candidat) => !ecartes.has(candidat.element));
+  return candidates.filter((candidate) => !spread.has(candidate.element));
 }
 
 /** Visible, actif, et pas explicitement retiré du parcours. */
-function estAtteignable(element: HTMLElement): boolean {
+function isReachable(element: HTMLElement): boolean {
   if (element.hasAttribute("disabled")) return false;
   if (element.getAttribute("aria-hidden") === "true") return false;
   if (element.getAttribute("tabindex") === "-1") return false;
@@ -208,11 +208,11 @@ function estAtteignable(element: HTMLElement): boolean {
  * accueillerait donc l'utilisateur avec un clavier plein écran que personne n'a
  * demandé.
  */
-export function estUnChampDeSaisie(element: HTMLElement | null): boolean {
+export function isInputField(element: HTMLElement | null): boolean {
   if (!element) return false;
-  const balise = element.tagName;
-  if (balise === "TEXTAREA" || balise === "SELECT") return true;
-  if (balise !== "INPUT") return false;
+  const tag = element.tagName;
+  if (tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag !== "INPUT") return false;
   const type = (element as HTMLInputElement).type;
   return type !== "checkbox" && type !== "radio" && type !== "button" && type !== "submit";
 }
@@ -227,8 +227,8 @@ export function estUnChampDeSaisie(element: HTMLElement | null): boolean {
  * Le cache est jetable, pour un seul élément — l'intérêt d'en tenir un ne
  * commence qu'à la trentaine de candidats d'une rangée.
  */
-export function cibleAtteignable(element: HTMLElement): boolean {
-  return estAtteignable(element) && ancetresVisibles(element, new Map());
+export function reachableTarget(element: HTMLElement): boolean {
+  return isReachable(element) && visibleAncestors(element, new Map());
 }
 
 /**
@@ -245,13 +245,13 @@ export function cibleAtteignable(element: HTMLElement): boolean {
  * dans la grille, en laissant le panneau déployé par-dessus. Même rôle, même
  * conséquence, même traitement.
  */
-export function conteneurPiegeant(): ParentNode | null {
-  const dialogues = document.querySelectorAll<HTMLElement>(
+export function trappingContainer(): ParentNode | null {
+  const dialogs = document.querySelectorAll<HTMLElement>(
     '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],dialog[open]',
   );
-  for (let index = dialogues.length - 1; index >= 0; index--) {
-    const dialogue = dialogues[index];
-    if (estAtteignable(dialogue) || dialogue.getBoundingClientRect().height > 0) return dialogue;
+  for (let index = dialogs.length - 1; index >= 0; index--) {
+    const dialogue = dialogs[index];
+    if (isReachable(dialogue) || dialogue.getBoundingClientRect().height > 0) return dialogue;
   }
   return null;
 }

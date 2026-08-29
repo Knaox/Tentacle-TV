@@ -12,59 +12,59 @@
  * elle-même : ils vérifient `signal.aborted` pour jeter le résultat.
  */
 
-type Auditeur = () => void;
+type Listener = () => void;
 
-class SignalAnnulation {
+class AbortSignal2 {
   aborted = false;
   reason: unknown = undefined;
-  onabort: Auditeur | null = null;
+  onabort: Listener | null = null;
 
-  private readonly auditeurs = new Set<Auditeur>();
+  private readonly listeners = new Set<Listener>();
 
-  addEventListener(type: string, auditeur: Auditeur): void {
-    if (type === "abort") this.auditeurs.add(auditeur);
+  addEventListener(type: string, listener: Listener): void {
+    if (type === "abort") this.listeners.add(listener);
   }
 
-  removeEventListener(type: string, auditeur: Auditeur): void {
-    if (type === "abort") this.auditeurs.delete(auditeur);
+  removeEventListener(type: string, listener: Listener): void {
+    if (type === "abort") this.listeners.delete(listener);
   }
 
   throwIfAborted(): void {
     if (this.aborted) throw this.reason;
   }
 
-  declencher(raison: unknown): void {
+  trigger2(reason: unknown): void {
     if (this.aborted) return;
     this.aborted = true;
-    this.reason = raison;
+    this.reason = reason;
     if (this.onabort) this.onabort();
-    for (const auditeur of this.auditeurs) auditeur();
-    this.auditeurs.clear();
+    for (const listener of this.listeners) listener();
+    this.listeners.clear();
   }
 }
 
-class ControleurAnnulation {
-  readonly signal = new SignalAnnulation();
+class AbortController2 {
+  readonly signal = new AbortSignal2();
 
-  abort(raison?: unknown): void {
-    this.signal.declencher(raison ?? new Error("AbortError"));
+  abort(reason?: unknown): void {
+    this.signal.trigger2(reason ?? new Error("AbortError"));
   }
 }
 
-export function installerPolyfillAbort(): void {
+export function installAbortPolyfill(): void {
   const global = window as unknown as Record<string, unknown>;
 
   if (typeof global.AbortController !== "function") {
-    global.AbortController = ControleurAnnulation;
-    global.AbortSignal = SignalAnnulation;
+    global.AbortController = AbortController2;
+    global.AbortSignal = AbortSignal2;
   }
 
   const signal = global.AbortSignal as { timeout?: unknown } | undefined;
   if (signal && typeof signal.timeout !== "function") {
-    signal.timeout = (millisecondes: number) => {
-      const controleur = new (global.AbortController as new () => ControleurAnnulation)();
-      setTimeout(() => controleur.abort(new Error("TimeoutError")), millisecondes);
-      return controleur.signal;
+    signal.timeout = (milliseconds: number) => {
+      const controller = new (global.AbortController as new () => AbortController2)();
+      setTimeout(() => controller.abort(new Error("TimeoutError")), milliseconds);
+      return controller.signal;
     };
   }
 }

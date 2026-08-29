@@ -148,10 +148,10 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
   // REMONTAGE ne doit rien bousculer : revenir d'une fiche doit rendre la page
   // telle qu'on l'a laissée, ce dont `useScrollMemory` se charge. D'où la
   // comparaison des états successifs plutôt qu'un effet au montage.
-  const dernierEtat = useRef(queryKey);
+  const lastState = useRef(queryKey);
   useEffect(() => {
-    if (dernierEtat.current === queryKey) return;
-    dernierEtat.current = queryKey;
+    if (lastState.current === queryKey) return;
+    lastState.current = queryKey;
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [queryKey]);
 

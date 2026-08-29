@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { configsTv, demarrerReleveConfigs, lireConfigs, reinitialiserConfigsTv } from "./configsTv";
-import { deduireDalle } from "./panelWebos";
+import { configsTv, startConfigCapture, lireConfigs, resetTvConfigs } from "./configsTv";
+import { inferPanel } from "./panelWebos";
 
 /**
  * Les valeurs de ce fichier sont RELEVÉES, pas inventées : elles viennent d'un
@@ -67,115 +67,115 @@ describe("lireConfigs", () => {
  * chacun doit rendre la main à la déduction par gamme plutôt que de conclure.
  */
 describe("robustesse du relevé", () => {
-  const fenetre = globalThis as { window?: unknown };
-  const original = fenetre.window;
+  const window = globalThis as { window?: unknown };
+  const original = window.window;
 
   afterEach(() => {
-    if (original === undefined) delete fenetre.window;
-    else fenetre.window = original;
-    reinitialiserConfigsTv();
+    if (original === undefined) delete window.window;
+    else window.window = original;
+    resetTvConfigs();
   });
 
-  /** Un pont qui rend `reponse` au rappel, ou lève si `reponse` est une erreur. */
-  function pontQuiRend(reponse: string | Error) {
-    fenetre.window = {
+  /** Un pont qui rend `response` au rappel, ou lève si `response` est une erreur. */
+  function bridgeThatAnswers(response: string | Error) {
+    window.window = {
       PalmServiceBridge: function (this: Record<string, unknown>) {
         this.onservicecallback = null;
         this.call = () => {
-          if (reponse instanceof Error) throw reponse;
-          (this.onservicecallback as (r: string) => void)(reponse);
+          if (response instanceof Error) throw response;
+          (this.onservicecallback as (r: string) => void)(response);
         };
       },
     };
   }
 
   it("ne lève pas hors d'un navigateur", () => {
-    delete fenetre.window;
-    expect(() => demarrerReleveConfigs()).not.toThrow();
+    delete window.window;
+    expect(() => startConfigCapture()).not.toThrow();
     expect(configsTv()).toEqual({});
   });
 
   it("ne lève pas sans pont — un navigateur de développement", () => {
-    fenetre.window = {};
-    expect(() => demarrerReleveConfigs()).not.toThrow();
+    window.window = {};
+    expect(() => startConfigCapture()).not.toThrow();
     expect(configsTv()).toEqual({});
   });
 
   it("encaisse un service inconnu de cette génération", () => {
     // La forme exacte du refus de webOS : `returnValue` faux, pas de `configs`.
-    pontQuiRend(JSON.stringify({ returnValue: false, errorText: "Service does not exist" }));
-    demarrerReleveConfigs();
+    bridgeThatAnswers(JSON.stringify({ returnValue: false, errorText: "Service does not exist" }));
+    startConfigCapture();
     expect(configsTv()).toEqual({});
   });
 
   it("encaisse un service qui ne connaît aucune de ces clés", () => {
-    pontQuiRend(JSON.stringify({ returnValue: true, missingConfigs: ["tv.model.supportHDR"] }));
-    demarrerReleveConfigs();
+    bridgeThatAnswers(JSON.stringify({ returnValue: true, missingConfigs: ["tv.model.supportHDR"] }));
+    startConfigCapture();
     expect(configsTv()).toEqual({});
   });
 
   it("encaisse une réponse illisible", () => {
-    pontQuiRend("<html>pas du JSON</html>");
-    demarrerReleveConfigs();
+    bridgeThatAnswers("<html>pas du JSON</html>");
+    startConfigCapture();
     expect(configsTv()).toEqual({});
   });
 
   it("encaisse un pont qui refuse l'appel", () => {
-    pontQuiRend(new Error("permission denied"));
-    expect(() => demarrerReleveConfigs()).not.toThrow();
+    bridgeThatAnswers(new Error("permission denied"));
+    expect(() => startConfigCapture()).not.toThrow();
     expect(configsTv()).toEqual({});
   });
 
   it("ne retient que les clés connues d'une réponse partielle", () => {
     // Le cas d'une génération qui n'expose qu'une partie de la table : ce
     // qu'elle sait est pris, le reste retombe sur la déduction.
-    pontQuiRend(JSON.stringify({
+    bridgeThatAnswers(JSON.stringify({
       returnValue: true,
       configs: { "tv.model.supportHDR": true },
       missingConfigs: ["tv.config.supportDolbyTVATMOS"],
     }));
-    demarrerReleveConfigs();
+    startConfigCapture();
     expect(configsTv()).toEqual({ hdr: true });
   });
 
   it("ne relève qu'une fois", () => {
-    pontQuiRend(JSON.stringify({ returnValue: true, configs: { "tv.model.supportHDR": true } }));
-    demarrerReleveConfigs();
-    fenetre.window = {};
-    demarrerReleveConfigs();
+    bridgeThatAnswers(JSON.stringify({ returnValue: true, configs: { "tv.model.supportHDR": true } }));
+    startConfigCapture();
+    window.window = {};
+    startConfigCapture();
     expect(configsTv()).toEqual({ hdr: true });
   });
 });
 
 describe("priorité des trois sources", () => {
-  const brut = { modelName: "50UR78006LK", screenWidth: 3840, screenHeight: 2160 };
+  const raw = { modelName: "50UR78006LK", screenWidth: 3840, screenHeight: 2160 };
 
   it("laisse le relevé matériel corriger la déduction par gamme", () => {
     // La gamme UHD n'a jamais de décodeur Atmos — c'est ce que la déduction
     // conclut, et elle a raison en général. Un modèle qui déclare l'inverse a
     // le dernier mot sur la règle.
-    expect(deduireDalle(brut, 2023).dolbyAtmos).toBe(false);
-    expect(deduireDalle(brut, 2023, { dolbyAtmos: true }).dolbyAtmos).toBe(true);
+    expect(inferPanel(raw, 2023).dolbyAtmos).toBe(false);
+    expect(inferPanel(raw, 2023, { dolbyAtmos: true }).dolbyAtmos).toBe(true);
   });
 
   it("laisse le relevé matériel REFUSER ce que la gamme accordait", () => {
     // Le sens qui compte le plus : ne pas promettre un décodeur absent.
-    expect(deduireDalle(brut, 2023).dolbyVision).toBe(true);
-    expect(deduireDalle(brut, 2023, { dolbyVision: false }).dolbyVision).toBe(false);
+    expect(inferPanel(raw, 2023).dolbyVision).toBe(true);
+    expect(inferPanel(raw, 2023, { dolbyVision: false }).dolbyVision).toBe(false);
   });
 
   it("garde `deviceInfo` au-dessus du relevé", () => {
-    const dalle = deduireDalle(
-      { ...brut, dolbyVision: false },
+    const panel = inferPanel(
+      { ...raw, dolbyVision: false },
       2023,
       { dolbyVision: true },
     );
-    expect(dalle.dolbyVision).toBe(false);
+    expect(panel.dolbyVision).toBe(false);
   });
 
   it("retombe sur la déduction quand le relevé est vide", () => {
     // Le cas d'un téléviseur trop ancien pour connaître ces clés, ou d'une
     // réponse qui n'est pas arrivée à temps.
-    expect(deduireDalle(brut, 2023, {})).toEqual(deduireDalle(brut, 2023));
+    expect(inferPanel(raw, 2023, {})).toEqual(inferPanel(raw, 2023));
   });
 });

@@ -32,17 +32,17 @@
  */
 
 /** `null` = inconnu, et jamais égal à un id candidat. `0` est une vraie valeur (« no »). */
-let aidDemande: number | null = null;
-let sidDemande: number | null = null;
+let requestedAid: number | null = null;
+let requestedSid: number | null = null;
 
-export function noterAid(id: number): void { aidDemande = id; }
-export function noterSid(id: number): void { sidDemande = id; }
+export function noteAid(id: number): void { requestedAid = id; }
+export function noteSid(id: number): void { requestedSid = id; }
 
-export function aidDemandeCourant(): number | null { return aidDemande; }
-export function sidDemandeCourant(): number | null { return sidDemande; }
+export function currentRequestedAid(): number | null { return requestedAid; }
+export function currentRequestedSid(): number | null { return requestedSid; }
 
 /** Nouveau média : les intentions du précédent n'ont plus cours. */
-export function oublierPistesDemandees(): void {
-  aidDemande = null;
-  sidDemande = null;
+export function forgetRequestedTracks(): void {
+  requestedAid = null;
+  requestedSid = null;
 }

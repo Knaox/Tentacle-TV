@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { revaliderSession } from "./sessionGuardTv";
+import { revalidateSession } from "./sessionGuardTv";
 
 /**
  * Le verdict qui décide si un téléviseur garde ou rend sa session.
@@ -13,9 +13,9 @@ describe("revaliderSession", () => {
   const entrepot = new Map<string, string>();
   beforeEach(() => {
     vi.stubGlobal("localStorage", {
-      getItem: (cle: string) => entrepot.get(cle) ?? null,
-      setItem: (cle: string, valeur: string) => void entrepot.set(cle, valeur),
-      removeItem: (cle: string) => void entrepot.delete(cle),
+      getItem: (key: string) => entrepot.get(key) ?? null,
+      setItem: (key: string, value: string) => void entrepot.set(key, value),
+      removeItem: (key: string) => void entrepot.delete(key),
     });
     entrepot.set(
       "tentacle_token",
@@ -28,7 +28,7 @@ describe("revaliderSession", () => {
     vi.unstubAllGlobals();
   });
 
-  const reponse = (status: number, corps: unknown) =>
+  const response = (status: number, corps: unknown) =>
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -37,27 +37,27 @@ describe("revaliderSession", () => {
     );
 
   it("lit revoked:true comme une révocation", async () => {
-    reponse(401, { message: "Appareil révoqué", revoked: true });
-    expect(await revaliderSession()).toBe("revoquee");
+    response(401, { message: "Appareil révoqué", revoked: true });
+    expect(await revalidateSession()).toBe("revoquee");
   });
 
   it("lit un 401 nu comme une simple expiration — session conservée par l'appelant", async () => {
-    reponse(401, { message: "Token invalide" });
-    expect(await revaliderSession()).toBe("expiree");
+    response(401, { message: "Token invalide" });
+    expect(await revalidateSession()).toBe("expiree");
   });
 
   it("lit un 503 comme une panne, pas comme un refus", async () => {
-    reponse(503, { message: "Base de données indisponible" });
-    expect(await revaliderSession()).toBe("injoignable");
+    response(503, { message: "Base de données indisponible" });
+    expect(await revalidateSession()).toBe("injoignable");
   });
 
   it("lit un refresh réussi comme ok", async () => {
-    reponse(200, { AccessToken: "jeton-frais" });
-    expect(await revaliderSession()).toBe("ok");
+    response(200, { AccessToken: "jeton-frais" });
+    expect(await revalidateSession()).toBe("ok");
   });
 
   it("lit une panne réseau comme injoignable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("réseau coupé")));
-    expect(await revaliderSession()).toBe("injoignable");
+    expect(await revalidateSession()).toBe("injoignable");
   });
 });

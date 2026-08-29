@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
-import { useEpinglageRail } from "./pinningTv";
+import { useRailPinning } from "./pinningTv";
 
 /**
  * Ce que le rail propose, dans l'ordre où on le parcourt.
@@ -24,7 +24,7 @@ import { useEpinglageRail } from "./pinningTv";
  * permanente à ceux qui n'y touchent jamais.
  */
 
-export type IconeRail =
+export type RailIcon =
   | "recherche"
   | "accueil"
   | "liste"
@@ -34,105 +34,105 @@ export type IconeRail =
   | "restaurer";
 
 export interface EntreeRail {
-  cle: string;
-  libelle: string;
-  chemin: string;
-  icone: IconeRail;
+  key: string;
+  label: string;
+  path: string;
+  icon: RailIcon;
   /** Un maintien de OK la retire du rail. Faux pour la navigation de service. */
-  masquable: boolean;
+  hideable: boolean;
   /** Rend le rail à son état complet au lieu de naviguer. */
-  restaure?: boolean;
+  restored?: boolean;
   /** Ouvre la surcouche de recherche au lieu de naviguer. */
-  cherche?: boolean;
+  searching?: boolean;
 }
 
-export function useEntreesRail(): EntreeRail[] {
+export function useRailEntries(): EntreeRail[] {
   const { t } = useTranslation("nav");
-  const { data: bibliotheques } = useLibraries();
-  const epinglage = useEpinglageRail();
+  const { data: libraries } = useLibraries();
+  const pinning = useRailPinning();
 
   return useMemo(() => {
-    const entrees: EntreeRail[] = [
+    const entries: EntreeRail[] = [
       {
-        cle: "recherche",
-        libelle: t("search"),
+        key: "recherche",
+        label: t("search"),
         // Le chemin n'est pas une destination : il n'existe aucune route de
         // recherche, ni ici ni sur le web. L'entrée reste un `<a href>` pour
         // que le moteur de navigation la recense comme les autres, et son
         // activation ouvre la surcouche.
-        chemin: "/",
-        icone: "recherche",
-        masquable: false,
-        cherche: true,
+        path: "/",
+        icon: "recherche",
+        hideable: false,
+        searching: true,
       },
-      { cle: "accueil", libelle: t("home"), chemin: "/", icone: "accueil", masquable: false },
+      { key: "accueil", label: t("home"), path: "/", icon: "accueil", hideable: false },
     ];
 
-    const proposees: EntreeRail[] = [
+    const offered: EntreeRail[] = [
       {
-        cle: "watchlist",
-        libelle: t("myList"),
-        chemin: "/watchlist",
-        icone: "liste",
-        masquable: true,
+        key: "watchlist",
+        label: t("myList"),
+        path: "/watchlist",
+        icon: "liste",
+        hideable: true,
       },
       {
-        cle: "favorites",
-        libelle: t("myFavorites"),
-        chemin: "/favorites",
-        icone: "favoris",
-        masquable: true,
+        key: "favorites",
+        label: t("myFavorites"),
+        path: "/favorites",
+        icon: "favoris",
+        hideable: true,
       },
     ];
 
-    for (const bibliotheque of bibliotheques ?? []) {
-      proposees.push({
-        cle: `lib-${bibliotheque.Id}`,
-        libelle: bibliotheque.Name,
-        chemin: `/library/${bibliotheque.Id}`,
-        icone: "bibliotheque",
-        masquable: true,
+    for (const library of libraries ?? []) {
+      offered.push({
+        key: `lib-${library.Id}`,
+        label: library.Name,
+        path: `/library/${library.Id}`,
+        icon: "bibliotheque",
+        hideable: true,
       });
     }
 
-    for (const entree of proposees) {
-      if (!epinglage.isHidden(entree.cle)) entrees.push(entree);
+    for (const entree of offered) {
+      if (!pinning.isHidden(entree.key)) entries.push(entree);
     }
 
-    if (epinglage.masquees.length > 0) {
-      entrees.push({
-        cle: "restaurer",
-        libelle: t("railShowAll"),
-        chemin: "/",
-        icone: "restaurer",
-        masquable: false,
-        restaure: true,
+    if (pinning.masquees.length > 0) {
+      entries.push({
+        key: "restaurer",
+        label: t("railShowAll"),
+        path: "/",
+        icon: "restaurer",
+        hideable: false,
+        restored: true,
       });
     }
 
-    entrees.push({
+    entries.push({
       // `preferences` et non `settings` : c'est la clé que porte le namespace
       // `nav`, et une clé absente s'affiche telle quelle à l'écran.
-      cle: "reglages",
-      libelle: t("preferences"),
-      chemin: "/settings",
-      icone: "reglages",
-      masquable: false,
+      key: "reglages",
+      label: t("preferences"),
+      path: "/settings",
+      icon: "reglages",
+      hideable: false,
     });
 
-    return entrees;
-  }, [t, bibliotheques, epinglage]);
+    return entries;
+  }, [t, libraries, pinning]);
 }
 
 /** L'entrée active, au chemin courant. */
-export function entreeActive(entrees: EntreeRail[], chemin: string): string | null {
-  for (const entree of entrees) {
-    if (entree.restaure || entree.cherche) continue;
-    if (entree.chemin === "/") {
-      if (chemin === "/") return entree.cle;
+export function entreeActive(entries: EntreeRail[], path: string): string | null {
+  for (const entree of entries) {
+    if (entree.restored || entree.searching) continue;
+    if (entree.path === "/") {
+      if (path === "/") return entree.key;
       continue;
     }
-    if (chemin === entree.chemin || chemin.startsWith(`${entree.chemin}/`)) return entree.cle;
+    if (path === entree.path || path.startsWith(`${entree.path}/`)) return entree.key;
   }
   return null;
 }

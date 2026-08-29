@@ -1,9 +1,9 @@
 import { memo, useCallback } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { LibraryGridCard as CarteWeb } from "@/components/LibraryGridCard";
-import { CarteFocusable } from "./FocusableCard";
+import { FocusableCard } from "./FocusableCard";
 
-interface ProprietesCarteGrille {
+interface GridCardProps {
   item: MediaItem;
   onNavigate: (id: string) => void;
 }
@@ -27,21 +27,21 @@ interface ProprietesCarteGrille {
 export const LibraryGridCard = memo(function CarteGrilleTv({
   item,
   onNavigate,
-}: ProprietesCarteGrille) {
+}: GridCardProps) {
   // La grille n'a pas de fenêtrage horizontal à épingler : le virtualiseur de
   // `LibraryGrid` travaille par lignes entières, et la ligne qui porte le
   // focus est visible par construction.
-  const sansEpinglage = useCallback(() => undefined, []);
+  const withoutPinning = useCallback(() => undefined, []);
 
   return (
-    <CarteFocusable
+    <FocusableCard
       index={0}
-      largeur={null}
+      width={null}
       itemId={item.Id}
       item={item}
-      onIndexActif={sansEpinglage}
+      onActiveIndex={withoutPinning}
     >
       <CarteWeb item={item} onNavigate={onNavigate} />
-    </CarteFocusable>
+    </FocusableCard>
   );
 });

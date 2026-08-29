@@ -4,8 +4,8 @@ import { LibraryFilterBar as BarreWeb } from "@/components/LibraryFilters";
 // Le hook et son état ont quitté le composant pour `hooks/` côté web : la
 // substitution est un greffon de build, `tsc` ne la connaît pas, et c'est ce
 // import-ci qui casse quand `apps/web` se réorganise.
-import { useLibraryFilters as useLibraryFiltersWeb } from "@/hooks/useLibraryFilters";
-import { filtresRetenus, rejouerFiltres, retenirFiltres } from "./filtersMemory";
+import { useLibraryFilters as useWebLibraryFilters } from "@/hooks/useLibraryFilters";
+import { keptFilters, replayFilters, keepFilters } from "./filtersMemory";
 
 /**
  * La barre de filtres d'une bibliothèque, déclarée comme ZONE.
@@ -47,37 +47,37 @@ export type { LibraryFilterState } from "@/hooks/useLibraryFilters";
  * chaque choix.
  */
 export function useLibraryFilters() {
-  const commandes = useLibraryFiltersWeb();
+  const controls = useWebLibraryFilters();
   const { pathname } = useLocation();
 
   // Les commandes changent d'identité à chaque rendu : les lire dans une ref
   // évite de relancer la restauration à chacun d'eux.
-  const vives = useRef(commandes);
-  vives.current = commandes;
+  const vivid = useRef(controls);
+  vivid.current = controls;
 
-  const restaure = useRef("");
+  const restored = useRef("");
 
   useEffect(() => {
-    if (restaure.current === pathname) return;
-    restaure.current = pathname;
-    const garde = filtresRetenus(pathname);
-    if (garde) rejouerFiltres(vives.current, garde);
+    if (restored.current === pathname) return;
+    restored.current = pathname;
+    const guard = keptFilters(pathname);
+    if (guard) replayFilters(vivid.current, guard);
   }, [pathname]);
 
   useEffect(() => {
     // Pas avant d'avoir restauré : on écraserait la mémoire avec l'état par
     // défaut du premier rendu, c'est-à-dire avec rien.
-    if (restaure.current !== pathname) return;
-    retenirFiltres(pathname, commandes.filters);
-  }, [pathname, commandes.filters]);
+    if (restored.current !== pathname) return;
+    keepFilters(pathname, controls.filters);
+  }, [pathname, controls.filters]);
 
-  return commandes;
+  return controls;
 }
 
-export function LibraryFilterBar(proprietes: ComponentProps<typeof BarreWeb>) {
+export function LibraryFilterBar(props: ComponentProps<typeof BarreWeb>) {
   return (
     <div data-tv-zone="filtres-bibliotheque">
-      <BarreWeb {...proprietes} />
+      <BarreWeb {...props} />
     </div>
   );
 }

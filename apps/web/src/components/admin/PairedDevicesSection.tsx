@@ -19,7 +19,7 @@ export function PairedDevicesSection() {
   const { t } = useTranslation(["admin", "common"]);
   const { data: devices } = usePairedDevices();
   const revokeMut = useRevokePairedDevice();
-  const [aRevoquer, setARevoquer] = useState<string | null>(null);
+  const [toRevoke, setToRevoke] = useState<string | null>(null);
 
   return (
     <div className={cls.card}>
@@ -42,7 +42,7 @@ export function PairedDevicesSection() {
                 </div>
               </div>
               <button
-                onClick={() => setARevoquer(device.id)}
+                onClick={() => setToRevoke(device.id)}
                 disabled={revokeMut.isPending}
                 className={cls.bd}
               >
@@ -55,13 +55,13 @@ export function PairedDevicesSection() {
       </CollapsibleSection>
 
       <ConfirmDialog
-        open={aRevoquer !== null}
+        open={toRevoke !== null}
         title={t("admin:revoke")}
         message={t("admin:revokeConfirm")}
         confirmLabel={t("admin:revoke")}
         cancelLabel={t("common:cancel")}
-        onConfirm={() => { if (aRevoquer) revokeMut.mutate(aRevoquer); setARevoquer(null); }}
-        onCancel={() => setARevoquer(null)}
+        onConfirm={() => { if (toRevoke) revokeMut.mutate(toRevoke); setToRevoke(null); }}
+        onCancel={() => setToRevoke(null)}
         pending={revokeMut.isPending}
         danger
       />

@@ -24,7 +24,7 @@ export const BUFFER_GATE_TIMEOUT = 8_000;
  * échec, très en amont du `failsafe` de 15 s qui, lui, se contente d'afficher
  * un bouton de lecture à un utilisateur déjà perdu.
  */
-export const GARDE_DIRECT_PLAY_MS = 3_000;
+export const DIRECT_PLAY_GUARD_MS = 3_000;
 
 /**
  * Configuration de hls.js. Extraction mécanique de `useVideoSource` (limite

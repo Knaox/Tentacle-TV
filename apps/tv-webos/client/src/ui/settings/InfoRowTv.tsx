@@ -9,11 +9,11 @@
  * c'est le contraste de taille qui dit lequel des deux on cherche, pas la
  * position.
  */
-export function LigneInfoTv({ intitule, valeur }: { intitule: string; valeur: string }) {
+export function InfoRowTv({ intitule, value }: { intitule: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
       <dt className="text-sm uppercase tracking-[0.08em] text-content-tertiary">{intitule}</dt>
-      <dd className="text-xl font-semibold text-content-primary">{valeur}</dd>
+      <dd className="text-xl font-semibold text-content-primary">{value}</dd>
     </div>
   );
 }

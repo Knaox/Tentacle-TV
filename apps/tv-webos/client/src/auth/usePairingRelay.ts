@@ -22,80 +22,80 @@ import type { RelayStatusResponse } from "@tentacle-tv/api-client";
  * parce que le serveur confirmé peut ne pas être celui qui sert la page.
  */
 
-export type EtatJumelage = "chargement" | "code" | "expire" | "erreur";
+export type PairingState = "chargement" | "code" | "expire" | "erreur";
 
-export interface JumelageRelais {
-  etat: EtatJumelage;
+export interface RelayPairing {
+  state: PairingState;
   code: string | null;
   /** Secondes restantes, et la durée initiale pour la jauge. */
-  restant: number;
-  duree: number;
+  remaining: number;
+  duration: number;
   /** Redemande un code. Sert au bouton de reprise comme à l'expiration. */
-  regenerer: () => void;
+  regenerate: () => void;
 }
 
 /** Le relais annonce la durée de vie ; ce repli ne sert que s'il l'omet. */
-const DUREE_PAR_DEFAUT = 300;
+const DEFAULT_DURATION = 300;
 
-export function useJumelageRelais(
-  surConfirmation: (donnees: RelayStatusResponse) => void,
-): JumelageRelais {
+export function usePairingRelay(
+  surConfirmation: (data: RelayStatusResponse) => void,
+): RelayPairing {
   const generation = useRelayGenerate();
   const [code, setCode] = useState<string | null>(null);
-  const [duree, setDuree] = useState(DUREE_PAR_DEFAUT);
-  const [restant, setRestant] = useState(DUREE_PAR_DEFAUT);
-  const [emisA, setEmisA] = useState<number | null>(null);
+  const [duration, setDuration] = useState(DEFAULT_DURATION);
+  const [remaining, setRemaining] = useState(DEFAULT_DURATION);
+  const [issuedAt, setIssuedAt] = useState<number | null>(null);
 
-  const expire = restant <= 0;
-  const { data: statut } = useRelayStatus(code && !expire ? code : null);
+  const expire = remaining <= 0;
+  const { data: status } = useRelayStatus(code && !expire ? code : null);
 
   // `mutate` change d'identité à chaque rendu de la mutation : le mémoriser
-  // évite que `regenerer` — et donc l'effet de montage — ne se recrée en
+  // évite que `regenerate` — et donc l'effet de montage — ne se recrée en
   // boucle, ce qui redemanderait un code à chaque sondage.
-  const demander = useRef(generation.mutate);
-  demander.current = generation.mutate;
+  const request = useRef(generation.mutate);
+  request.current = generation.mutate;
 
-  const regenerer = useCallback(() => {
+  const regenerate = useCallback(() => {
     setCode(null);
-    setEmisA(null);
-    setRestant(DUREE_PAR_DEFAUT);
-    demander.current(undefined, {
-      onSuccess: (donnees) => {
-        const vie = donnees.expiresIn > 0 ? donnees.expiresIn : DUREE_PAR_DEFAUT;
-        setCode(donnees.code);
-        setDuree(vie);
-        setRestant(vie);
-        setEmisA(Date.now());
+    setIssuedAt(null);
+    setRemaining(DEFAULT_DURATION);
+    request.current(undefined, {
+      onSuccess: (data) => {
+        const vie = data.expiresIn > 0 ? data.expiresIn : DEFAULT_DURATION;
+        setCode(data.code);
+        setDuration(vie);
+        setRemaining(vie);
+        setIssuedAt(Date.now());
       },
     });
   }, []);
 
   useEffect(() => {
-    regenerer();
-  }, [regenerer]);
+    regenerate();
+  }, [regenerate]);
 
   /* Le décompte se calcule sur l'HORLOGE, pas en soustrayant une seconde par
      battement : un téléviseur suspend volontiers ses minuteurs quand l'appli
      passe en arrière-plan, et un compteur décrémenté aurait alors du retard sur
      le relais — il annoncerait un code encore valide là où il ne l'est plus. */
   useEffect(() => {
-    if (emisA === null) return;
+    if (issuedAt === null) return;
     const battement = setInterval(() => {
-      const ecoule = Math.floor((Date.now() - emisA) / 1000);
-      setRestant(Math.max(0, duree - ecoule));
+      const elapsed = Math.floor((Date.now() - issuedAt) / 1000);
+      setRemaining(Math.max(0, duration - elapsed));
     }, 1000);
     return () => clearInterval(battement);
-  }, [emisA, duree]);
+  }, [issuedAt, duration]);
 
   useEffect(() => {
-    if (statut?.status === "confirmed") surConfirmation(statut);
-    if (statut?.status === "expired") setRestant(0);
-  }, [statut, surConfirmation]);
+    if (status?.status === "confirmed") surConfirmation(status);
+    if (status?.status === "expired") setRemaining(0);
+  }, [status, surConfirmation]);
 
-  let etat: EtatJumelage = "chargement";
-  if (code && !expire) etat = "code";
-  else if (code && expire) etat = "expire";
-  else if (generation.isError) etat = "erreur";
+  let state: PairingState = "chargement";
+  if (code && !expire) state = "code";
+  else if (code && expire) state = "expire";
+  else if (generation.isError) state = "erreur";
 
-  return { etat, code, restant, duree, regenerer };
+  return { state, code, remaining, duration, regenerate };
 }

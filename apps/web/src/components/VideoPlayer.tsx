@@ -11,7 +11,7 @@ import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useVideoEvents } from "../hooks/useVideoEvents";
 import { usePlaybackOverlay } from "@tentacle-tv/api-client";
-import { annoncerRefusLocal, useRefusSautIntro } from "../watchTogether/refusSautIntro";
+import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
@@ -31,8 +31,8 @@ export function VideoPlayer({
   currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
-  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable, surPisteIntrouvable,
-  pgsSubtitleUrl, onPgsEchec,
+  onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable, onTrackNotFound,
+  pgsSubtitleUrl, onPgsFailure,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
@@ -78,7 +78,7 @@ export function VideoPlayer({
   // Le pendant RÉACTIF de `hasStartedRef` : l'écran de chargement se décide au
   // rendu, et une ref mutée ne re-rend rien. Sans lui, le lecteur restait noir
   // entre son montage et la première image (cf. VideoPlayerOverlays).
-  const [aDemarre, setADemarre] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const sourceChangingRef = useRef(false);
   const currentTimeRef = useRef(0);
   const userInteractedRef = useRef(false);
@@ -94,7 +94,7 @@ export function VideoPlayer({
   });
 
   const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({
-    videoRef, onSonRetabli: () => setPolicyMuted(false),
+    videoRef, onSoundRestored: () => setPolicyMuted(false),
   });
   // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
   // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
@@ -114,17 +114,17 @@ export function VideoPlayer({
   // chargement de chaque nouvelle ressource, donc sans lui le taux choisi
   // serait perdu à la moindre reconstruction de source (changement de qualité,
   // repli CORS, seek qui relance le transcodage).
-  const appliquerVitesse = useCallback((taux: number) => {
+  const applyRate = useCallback((rate: number) => {
     const v = videoRef.current;
     if (!v) return;
-    v.playbackRate = taux;
-    v.defaultPlaybackRate = taux;
+    v.playbackRate = rate;
+    v.defaultPlaybackRate = rate;
   }, []);
 
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
-    signalerChargement: setLoading,
+    reportLoading: setLoading,
   });
 
   // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
@@ -136,7 +136,7 @@ export function VideoPlayer({
     hasNextEpisode: !!hasNextEpisode,
     positionSeconds: currentTime,
     durationSeconds: duration,
-    hasStarted: aDemarre,
+    hasStarted: hasStarted,
     playbackEnded: ended,
     segments,
     runtimeMs,
@@ -146,20 +146,20 @@ export function VideoPlayer({
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
     onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
     // Watch Together : le refus local part au groupe par le bus existant.
-    onSegmentDismissNotify: (type) => { annoncerRefusLocal(type); },
+    onSegmentDismissNotify: (type) => { announceLocalRefusal(type); },
     onNextDismissNotify: onAutoNextDismiss,
   });
 
   // Watch Together entrant : un membre a refusé un saut — on s'aligne, sur le
   // passage qu'IL a gardé (un client d'avant la refonte dit « Intro »).
-  const refusDistants = useRefusSautIntro();
-  const refusVusRef = useRef(refusDistants.compteur);
+  const remoteRefusals = useIntroSkipRefusal();
+  const seenRefusalsRef = useRef(remoteRefusals.counter);
   const { signalRemoteSegmentDismiss } = playback;
   useEffect(() => {
-    if (refusDistants.compteur === refusVusRef.current) return;
-    refusVusRef.current = refusDistants.compteur;
-    signalRemoteSegmentDismiss(refusDistants.type);
-  }, [refusDistants, signalRemoteSegmentDismiss]);
+    if (remoteRefusals.counter === seenRefusalsRef.current) return;
+    seenRefusalsRef.current = remoteRefusals.counter;
+    signalRemoteSegmentDismiss(remoteRefusals.type);
+  }, [remoteRefusals, signalRemoteSegmentDismiss]);
 
   // Fin de média sans écran de fin possible : retour fiche — l'équivalent de
   // l'ancienne navigation d'onEnded, décidée ici et plus dans les événements.
@@ -194,14 +194,14 @@ export function VideoPlayer({
   // Seules les pistes TEXTE deviennent des <track> : un sous-titre image n'a
   // pas de VTT à charger, et la correspondance index → textTracks doit rester
   // exacte des deux côtés (cf. useNativeMediaTracks).
-  const pistesTexte = useMemo(
+  const textTracks = useMemo(
     () => subtitleTracks.filter((t) => !BURN_IN_SUBTITLE_CODECS.test(t.codec ?? "")),
     [subtitleTracks],
   );
-  useNativeMediaTracks({ videoRef, src, subtitleTracks: pistesTexte, currentSubtitle, audioTracks, currentAudio, isDirectPlay, surPisteIntrouvable });
+  useNativeMediaTracks({ videoRef, src, subtitleTracks: textTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay, onTrackNotFound });
   // VTT de la piste active, débarrassé du balisage ASS que Jellyfin laisse
   // fuiter dans le texte des cues (« {\an8} » affiché tel quel).
-  const urlSousTitreAssaini = useSanitizedSubtitles({ pistes: pistesTexte, selection: currentSubtitle, src });
+  const sanitizedSubtitleUrl = useSanitizedSubtitles({ tracks: textTracks, selection: currentSubtitle, src });
 
   useEffect(() => {
     const onFs = () => setFullscreen(!!document.fullscreenElement);
@@ -231,7 +231,7 @@ export function VideoPlayer({
     videoRef, rawTimeRef, lastKnownPositionRef, effectiveOffsetRef, containerPtsOffsetRef,
     offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer,
     src, itemId, startPositionSeconds, jellyfinDuration,
-    setPlaying, setADemarre, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
+    setPlaying, setHasStarted, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
     onPlaybackEnded: () => setEnded(true),
     onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
   });
@@ -263,23 +263,23 @@ export function VideoPlayer({
             Seule la piste active porte une `src` — le navigateur ne charge de
             toute façon que celle dont le `mode` n'est pas `disabled`, et
             l'attendre évite d'afficher une seconde le fichier brut. */}
-        {pistesTexte.map((t) => (
+        {textTracks.map((t) => (
           <track key={`${src}-${t.index}`} kind="subtitles" label={t.label}
-            src={t.index === currentSubtitle ? (urlSousTitreAssaini ?? undefined) : undefined} />
+            src={t.index === currentSubtitle ? (sanitizedSubtitleUrl ?? undefined) : undefined} />
         ))}
       </video>
 
       {/* Sous-titres image décodés ici plutôt qu'incrustés par le serveur —
           monté uniquement quand une piste PGS est active (règle GPU). */}
-      {pgsSubtitleUrl && onPgsEchec && (
+      {pgsSubtitleUrl && onPgsFailure && (
         <PgsSubtitleOverlay
           videoRef={videoRef} supUrl={pgsSubtitleUrl}
-          timeOffsetRef={effectiveOffsetRef} onEchec={onPgsEchec}
+          timeOffsetRef={effectiveOffsetRef} onFailure={onPgsFailure}
         />
       )}
 
       <VideoPlayerOverlays
-        loading={loading} playing={playing} aDemarre={aDemarre}
+        loading={loading} playing={playing} hasStarted={hasStarted}
         showPlayButton={showPlayButton} policyMuted={policyMuted}
         posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
@@ -313,7 +313,7 @@ export function VideoPlayer({
           onToggleFullscreen={toggleFullscreen} onBack={() => { markPlayerExit(); navigate(-1); }}
           onAudioChange={onAudioChange} onSubtitleChange={onSubtitleChange} onQualityChange={useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange}
           onNextEpisode={onNextEpisode} onPreviousEpisode={onPreviousEpisode}
-          applyToSeries={applyToSeries} onPlaybackRateChange={appliquerVitesse}
+          applyToSeries={applyToSeries} onPlaybackRateChange={applyRate}
         />
       </div>
 

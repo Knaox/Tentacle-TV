@@ -13,95 +13,95 @@
 import { invoke } from "../desktop/bridge";
 import { supportsSurfaceProbe } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
-import { requetesSortantes, viderSondeReseau } from "./networkProbe";
-import { sonder, verdictSonde } from "./surfaceProbe";
+import { outgoingRequests, clearNetworkProbe } from "./networkProbe";
+import { probeSurface, probeVerdict } from "./surfaceProbe";
 
 /** Une bascule offerte par le panneau. */
 export interface DebugAction {
   /** Touche qui la déclenche, en minuscule. */
-  touche: string;
-  libelle: string;
+  key: string;
+  label: string;
   /** Renvoie ce qu'il faut afficher en retour, ou `null` si rien à dire. */
-  executer: () => Promise<string | null>;
+  run: () => Promise<string | null>;
 }
 
-async function lire(nom: string): Promise<string | null> {
+async function readProp(name: string): Promise<string | null> {
   const api = getMpvApi();
   if (!api) return null;
   try {
-    const v = await api.getProperty(nom, "string");
+    const v = await api.getProperty(name, "string");
     return v === null || v === undefined ? null : String(v);
   } catch {
     return null;
   }
 }
 
-async function ecrire(nom: string, valeur: string): Promise<void> {
+async function writeProp(name: string, value: string): Promise<void> {
   const api = getMpvApi();
   if (!api) return;
   try {
-    await api.setProperty(nom, valeur);
+    await api.setProperty(name, value);
   } catch {
     /* propriété refusée par ce build de mpv : sans conséquence ici */
   }
 }
 
 /** Bascule une propriété entre deux valeurs et renvoie la nouvelle. */
-async function alterner(nom: string, a: string, b: string): Promise<string | null> {
-  const courant = await lire(nom);
-  const suivant = courant === a ? b : a;
-  await ecrire(nom, suivant);
-  return `${nom} = ${suivant}`;
+async function toggleBetween(name: string, a: string, b: string): Promise<string | null> {
+  const current = await readProp(name);
+  const next = current === a ? b : a;
+  await writeProp(name, next);
+  return `${name} = ${next}`;
 }
 
-export const ACTIONS: readonly DebugAction[] = [
+export const DEBUG_ACTIONS: readonly DebugAction[] = [
   {
-    touche: "r",
-    libelle: "R · vider le journal réseau",
+    key: "r",
+    label: "R · vider le journal réseau",
     // Le geste qui rend la section utile : on vide, on lance la lecture, et ce
     // qui apparaît est EXACTEMENT ce que cette lecture a provoqué. Sans remise
     // à zéro, le trafic du catalogue noie celui du lecteur.
-    executer: async () => {
-      const avant = requetesSortantes().length;
-      viderSondeReseau();
-      return `journal vidé — ${avant} requête${avant > 1 ? "s" : ""} effacée${avant > 1 ? "s" : ""}`;
+    run: async () => {
+      const before = outgoingRequests().length;
+      clearNetworkProbe();
+      return `journal vidé — ${before} requête${before > 1 ? "s" : ""} effacée${before > 1 ? "s" : ""}`;
     },
   },
   {
-    touche: "p",
-    libelle: "P · passthrough HDR",
+    key: "p",
+    label: "P · passthrough HDR",
     // Le réglage qui décide de tout : `yes` transmet le signal PQ tel quel —
     // parfait sur un écran en HDR, quasi noir sur un écran SDR. `no` demande à
     // mpv de convertir. Basculer en direct montre la différence sans ambiguïté.
-    executer: () => alterner("target-colorspace-hint", "yes", "no"),
+    run: () => toggleBetween("target-colorspace-hint", "yes", "no"),
   },
   {
-    touche: "t",
-    libelle: "T · tone-mapping",
-    executer: () => alterner("tone-mapping", "st2094-40", "bt.2446a"),
+    key: "t",
+    label: "T · tone-mapping",
+    run: () => toggleBetween("tone-mapping", "st2094-40", "bt.2446a"),
   },
   {
-    touche: "g",
-    libelle: "G · gamut cible",
-    executer: () => alterner("target-prim", "auto", "bt.2020"),
+    key: "g",
+    label: "G · gamut cible",
+    run: () => toggleBetween("target-prim", "auto", "bt.2020"),
   },
   {
-    touche: "d",
-    libelle: "D · décodage matériel",
-    executer: () => alterner("hwdec", "auto-safe", "no"),
+    key: "d",
+    label: "D · décodage matériel",
+    run: () => toggleBetween("hwdec", "auto-safe", "no"),
   },
   {
-    touche: "i",
-    libelle: "I · image affichée",
+    key: "i",
+    label: "I · image affichée",
     // Ce que l'écran reçoit VRAIMENT, par opposition à ce que contient le
     // fichier : primaires et courbe de transfert effectivement demandées à la
     // sortie, une fois tone-mapping et passthrough appliqués.
-    executer: async () => {
+    run: async () => {
       const [prim, trc, peak, hint] = await Promise.all([
-        lire("target-prim"),
-        lire("target-trc"),
-        lire("target-peak"),
-        lire("target-colorspace-hint"),
+        readProp("target-prim"),
+        readProp("target-trc"),
+        readProp("target-peak"),
+        readProp("target-colorspace-hint"),
       ]);
       return `affiché : ${prim ?? "?"} / ${trc ?? "?"} / pic ${peak ?? "?"} · passthrough ${hint ?? "?"}`;
     },
@@ -109,19 +109,19 @@ export const ACTIONS: readonly DebugAction[] = [
   ...(supportsSurfaceProbe()
     ? [
         {
-          touche: "c",
-          libelle: "C · capturer la surface",
+          key: "c",
+          label: "C · capturer la surface",
           // LA question à laquelle aucune propriété ne répond : voit-on quelque
           // chose ? Sur macOS l'image vit dans une fenêtre native placée sous
           // la page ; le natif la capture et compte ses pixels. Une vidéo et un
           // aplat noir ne se ressemblent sur aucun des trois chiffres rendus.
-          executer: async (): Promise<string | null> => verdictSonde(await sonder()),
+          run: async (): Promise<string | null> => probeVerdict(await probeSurface()),
         },
       ]
     : []),
   {
-    touche: "u",
-    libelle: "U · pop-up de mise à jour",
+    key: "u",
+    label: "U · pop-up de mise à jour",
     /**
      * Affiche la VRAIE pop-up de mise à jour, avec son vrai bouton.
      *
@@ -137,7 +137,7 @@ export const ACTIONS: readonly DebugAction[] = [
      * Sur Windows il joue le déroulé complet, barre indéterminée comprise, sans
      * rien installer ni redémarrer (cf. `lib/updateSimulation.ts`).
      */
-    executer: async () => {
+    run: async () => {
       const w = window as unknown as { __tentacleSimulateUpdate?: () => void };
       if (!w.__tentacleSimulateUpdate) return "pop-up de mise à jour indisponible";
       w.__tentacleSimulateUpdate();
@@ -145,8 +145,8 @@ export const ACTIONS: readonly DebugAction[] = [
     },
   },
   {
-    touche: "h",
-    libelle: "H · autoriser / interdire la transmission HDR",
+    key: "h",
+    label: "H · autoriser / interdire la transmission HDR",
     /**
      * Ce que cette bascule fait vraiment, et ce qu'elle ne fait pas.
      *
@@ -156,40 +156,40 @@ export const ACTIONS: readonly DebugAction[] = [
      * n'y a aucun interrupteur : le compositeur accorde la plage étendue fenêtre
      * par fenêtre, à celle qui déclare en avoir l'usage.
      *
-     * Le message annonçait « écran en HDR / en SDR » d'après `actif`, ce qui sur
+     * Le message annonçait « écran en HDR / en SDR » d'après `enabled`, ce qui sur
      * macOS est un EDR INSTANTANÉ dépendant de l'image affichée : une scène de nuit
      * le fait retomber sur une lecture parfaitement HDR. On rapporte donc ce qu'on
      * a changé, et l'état de l'écran seulement là où il en a un.
      */
-    executer: async () => {
+    run: async () => {
       try {
-        const etat = await invoke<{ actif: boolean; autoAutorise: boolean; supporte?: boolean }>(
+        const state = await invoke<{ enabled: boolean; autoAutorise: boolean; supporte?: boolean }>(
           "display_hdr_state",
         );
-        await invoke("display_hdr_auto", { on: !etat.autoAutorise });
-        const desormais = etat.autoAutorise ? "interdite" : "autorisée";
-        const ecran = etat.supporte === false
+        await invoke("display_hdr_auto", { on: !state.autoAutorise });
+        const now = state.autoAutorise ? "interdite" : "autorisée";
+        const screen = state.supporte === false
           ? "aucun interrupteur d'écran sur ce système"
-          : `écran ${etat.actif ? "en HDR" : "en SDR"}`;
-        return `transmission HDR ${desormais} — ${ecran}`;
+          : `écran ${state.enabled ? "en HDR" : "en SDR"}`;
+        return `transmission HDR ${now} — ${screen}`;
       } catch {
         return "commande HDR indisponible";
       }
     },
   },
   {
-    touche: "m",
-    libelle: "M · couper/rallumer le lecteur mpv (repli web)",
+    key: "m",
+    label: "M · couper/rallumer le lecteur mpv (repli web)",
     /**
      * L'interrupteur qui permet d'ÉPROUVER le lecteur de secours : coupé, la
      * page route sur le lecteur web comme si mpv n'existait pas — y compris en
      * pleine lecture (WatchDesktop se démonte, mpv_destroy, le web reprend).
      * Persisté : il survit au relancement, pour tester aussi le démarrage.
      */
-    executer: async () => {
-      const { basculerMpvDebug } = await import("../lib/lecteurNatif");
-      const coupe = basculerMpvDebug();
-      return coupe
+    run: async () => {
+      const { toggleMpvDebug } = await import("../lib/nativePlayer");
+      const off = toggleMpvDebug();
+      return off
         ? "lecteur mpv COUPÉ — la lecture passe au lecteur web (persiste au relancement)"
         : "lecteur mpv rallumé — effectif à la prochaine lecture";
     },

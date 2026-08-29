@@ -14,7 +14,7 @@
  * l'utilisateur pourrait partager.
  */
 
-export interface CapacitesTeleviseur {
+export interface CapabilitiesTv {
   modelName?: string;
   /**
    * `"OLED"` sur une dalle OLED — le seul champ de capacité que LG renseigne
@@ -36,31 +36,31 @@ export interface CapacitesTeleviseur {
   screenHeight?: number;
 }
 
-let capacites: CapacitesTeleviseur | null = null;
+let capabilities: CapabilitiesTv | null = null;
 
-function lirePalmSystem(): CapacitesTeleviseur | null {
+function lirePalmSystem(): CapabilitiesTv | null {
   const global = window as unknown as { PalmSystem?: { deviceInfo?: string } };
-  const brut = global.PalmSystem?.deviceInfo;
-  if (!brut) return null;
+  const raw = global.PalmSystem?.deviceInfo;
+  if (!raw) return null;
   try {
-    return JSON.parse(brut) as CapacitesTeleviseur;
+    return JSON.parse(raw) as CapabilitiesTv;
   } catch {
     return null;
   }
 }
 
-function lireParametre(): CapacitesTeleviseur | null {
-  const parametres = new URLSearchParams(window.location.search);
-  const brut = parametres.get("tvinfo");
-  if (!brut) return null;
+function readParameter(): CapabilitiesTv | null {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("tvinfo");
+  if (!raw) return null;
   try {
-    const lues = JSON.parse(brut) as CapacitesTeleviseur;
-    parametres.delete("tvinfo");
-    const requete = parametres.toString();
+    const lues = JSON.parse(raw) as CapabilitiesTv;
+    params.delete("tvinfo");
+    const query = params.toString();
     window.history.replaceState(
       null,
       "",
-      window.location.pathname + (requete ? `?${requete}` : "") + window.location.hash,
+      window.location.pathname + (query ? `?${query}` : "") + window.location.hash,
     );
     return lues;
   } catch {
@@ -69,18 +69,18 @@ function lireParametre(): CapacitesTeleviseur | null {
 }
 
 /** À appeler une fois, avant le premier rendu. */
-export function lireCapacitesTeleviseur(): CapacitesTeleviseur {
-  if (capacites) return capacites;
-  capacites = lirePalmSystem() ?? lireParametre() ?? {};
-  return capacites;
+export function readTvCapabilities(): CapabilitiesTv {
+  if (capabilities) return capabilities;
+  capabilities = lirePalmSystem() ?? readParameter() ?? {};
+  return capabilities;
 }
 
 /** Ce que le reste du client interroge, sans se soucier de l'origine. */
-export function capacitesTeleviseur(): CapacitesTeleviseur {
-  return capacites ?? lireCapacitesTeleviseur();
+export function readTvCaps(): CapabilitiesTv {
+  return capabilities ?? readTvCapabilities();
 }
 
 /** Vrai dans une application webOS, faux dans un navigateur de bureau. */
-export function surTeleviseur(): boolean {
+export function onTv(): boolean {
   return "PalmSystem" in window;
 }

@@ -40,45 +40,45 @@ import { normalizePath, type Plugin } from "vite";
  */
 
 /** Ce qu'un remplacement écrit pour désigner le module qu'il remplace. */
-const MARQUE_ORIGINAL = "?original";
+const ORIGINAL_MARK = "?original";
 
 export function substitutionModules(table: Record<string, string>): Plugin {
   // Indexée à slashs une fois pour toutes : c'est la seule forme dans laquelle
   // les deux côtés de la comparaison peuvent se rencontrer.
-  const parChemin = new Map(
-    Object.entries(table).map(([origine, remplacement]) => [
-      normalizePath(origine),
-      { origine, remplacement },
+  const byPath = new Map(
+    Object.entries(table).map(([origin, replacement]) => [
+      normalizePath(origin),
+      { origin, replacement },
     ]),
   );
-  const declenchees = new Set<string>();
+  const triggered = new Set<string>();
 
   return {
     name: "tentacle-substitution-modules",
     enforce: "pre",
 
-    async resolveId(source, importateur, options) {
+    async resolveId(source, importer, options) {
       // Sans importateur, c'est un point d'entrée : il n'y a rien à détourner.
-      if (!importateur) return null;
+      if (!importer) return null;
 
-      if (source.endsWith(MARQUE_ORIGINAL)) {
-        const nu = source.slice(0, -MARQUE_ORIGINAL.length);
-        const original = await this.resolve(nu, importateur, { ...options, skipSelf: true });
+      if (source.endsWith(ORIGINAL_MARK)) {
+        const bare = source.slice(0, -ORIGINAL_MARK.length);
+        const original = await this.resolve(bare, importer, { ...options, skipSelf: true });
         if (!original) return null;
         // `watchMode` distingue le serveur de développement de la construction.
-        return this.meta.watchMode ? `${original.id}${MARQUE_ORIGINAL}` : original.id;
+        return this.meta.watchMode ? `${original.id}${ORIGINAL_MARK}` : original.id;
       }
 
-      const resolu = await this.resolve(source, importateur, { ...options, skipSelf: true });
-      if (!resolu) return null;
+      const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
+      if (!resolved) return null;
 
       // Vite suffixe les identifiants (`?url`, `?worker`, `?v=…`) ; la table
       // ne connaît que des chemins de fichier.
-      const chemin = normalizePath(resolu.id.split("?")[0]);
-      const entree = parChemin.get(chemin);
-      if (!entree) return null;
+      const path = normalizePath(resolved.id.split("?")[0]);
+      const entry = byPath.get(path);
+      if (!entry) return null;
 
-      const cible = await this.resolve(entree.remplacement, importateur, {
+      const target = await this.resolve(entry.replacement, importer, {
         ...options,
         skipSelf: true,
       });
@@ -88,19 +88,19 @@ export function substitutionModules(table: Record<string, string>): Plugin {
       // le recopier. Sans cette garde, cet import se substituerait à lui-même
       // et la résolution bouclerait, sur un `vite build` qui part sans jamais
       // rendre la main ni dire pourquoi.
-      if (cible && normalizePath(cible.id.split("?")[0]) === normalizePath(importateur.split("?")[0])) {
+      if (target && normalizePath(target.id.split("?")[0]) === normalizePath(importer.split("?")[0])) {
         return null;
       }
 
-      declenchees.add(chemin);
-      return cible;
+      triggered.add(path);
+      return target;
     },
 
     buildEnd() {
       // Aucune substitution du tout : ce n'est pas une faute de frappe, c'est le
       // mécanisme qui ne fonctionne plus. Un client web habillé en téléviseur
       // est pire qu'un build qui échoue — il se déploie.
-      if (declenchees.size === 0 && parChemin.size > 0) {
+      if (triggered.size === 0 && byPath.size > 0) {
         this.error(
           "aucune des substitutions de modules n'a été déclenchée : le client " +
             "produit serait celui d'apps/web, avec les seules feuilles du " +
@@ -108,13 +108,13 @@ export function substitutionModules(table: Record<string, string>): Plugin {
         );
       }
 
-      const inutilisees = [...parChemin]
-        .filter(([chemin]) => !declenchees.has(chemin))
-        .map(([, entree]) => entree.origine);
-      if (inutilisees.length === 0) return;
+      const unused = [...byPath]
+        .filter(([path]) => !triggered.has(path))
+        .map(([, entry]) => entry.origin);
+      if (unused.length === 0) return;
       this.warn(
         `substitutions jamais déclenchées (chemin erroné ou module devenu inatteignable) :\n  ${
-          inutilisees.join("\n  ")
+          unused.join("\n  ")
         }`,
       );
     },

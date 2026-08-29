@@ -17,31 +17,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *     la fenêtre restait figée sur les premières cellules.
  */
 
-interface FauxObserver {
-  cibles: Set<Element>;
-  livrer(entrees: { target: Element; isIntersecting: boolean }[]): void;
+interface FakeObserver {
+  targets: Set<Element>;
+  deliver(entries: { target: Element; isIntersecting: boolean }[]): void;
   options: IntersectionObserverInit | undefined;
 }
 
-const crees: FauxObserver[] = [];
+const created: FakeObserver[] = [];
 
 beforeEach(() => {
-  crees.length = 0;
+  created.length = 0;
   class FakeIO {
-    cibles = new Set<Element>();
+    targets = new Set<Element>();
     constructor(
       private readonly cb: IntersectionObserverCallback,
       public options?: IntersectionObserverInit,
     ) {
-      crees.push({
-        cibles: this.cibles,
+      created.push({
+        targets: this.targets,
         options,
-        livrer: (entrees) => this.cb(entrees as unknown as IntersectionObserverEntry[], this as never),
+        deliver: (entries) => this.cb(entries as unknown as IntersectionObserverEntry[], this as never),
       });
     }
-    observe(el: Element) { this.cibles.add(el); }
-    unobserve(el: Element) { this.cibles.delete(el); }
-    disconnect() { this.cibles.clear(); }
+    observe(el: Element) { this.targets.add(el); }
+    unobserve(el: Element) { this.targets.delete(el); }
+    disconnect() { this.targets.clear(); }
   }
   vi.stubGlobal("IntersectionObserver", FakeIO);
 });
@@ -49,33 +49,33 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 /** Import différé : le module lit `IntersectionObserver` à l'appel, pas à l'import. */
-async function creer(rootMargin?: string) {
-  const { creerRevealObserver } = await import("./revealObserver");
-  return creerRevealObserver(rootMargin);
+async function create(rootMargin?: string) {
+  const { createRevealObserver } = await import("./revealObserver");
+  return createRevealObserver(rootMargin);
 }
 
 const elem = () => ({}) as unknown as Element;
 
 describe("observateur partagé", () => {
   it("n'en crée qu'un pour toutes les cellules", async () => {
-    const obs = await creer("300px");
-    const cellules = [elem(), elem(), elem()];
-    for (const el of cellules) obs.observe(el, () => {});
+    const obs = await create("300px");
+    const cells = [elem(), elem(), elem()];
+    for (const el of cells) obs.observe(el, () => {});
 
-    expect(crees).toHaveLength(1);
-    expect(crees[0].cibles.size).toBe(3);
-    expect(crees[0].options?.rootMargin).toBe("300px");
+    expect(created).toHaveLength(1);
+    expect(created[0].targets.size).toBe(3);
+    expect(created[0].options?.rootMargin).toBe("300px");
   });
 
   it("aiguille chaque livraison vers la bonne cellule", async () => {
-    const obs = await creer();
+    const obs = await create();
     const a = elem();
     const b = elem();
     const vu: string[] = [];
-    obs.observe(a, (proche) => vu.push(`a:${proche}`));
-    obs.observe(b, (proche) => vu.push(`b:${proche}`));
+    obs.observe(a, (near) => vu.push(`a:${near}`));
+    obs.observe(b, (near) => vu.push(`b:${near}`));
 
-    crees[0].livrer([
+    created[0].deliver([
       { target: a, isIntersecting: true },
       { target: b, isIntersecting: false },
     ]);
@@ -84,35 +84,35 @@ describe("observateur partagé", () => {
   });
 
   it("ne touche qu'à la cellule désabonnée", async () => {
-    const obs = await creer();
+    const obs = await create();
     const a = elem();
     const b = elem();
     const vu: string[] = [];
-    const desabonnerA = obs.observe(a, () => vu.push("a"));
+    const unsubscribeA = obs.observe(a, () => vu.push("a"));
     obs.observe(b, () => vu.push("b"));
 
-    desabonnerA();
+    unsubscribeA();
 
-    expect(crees[0].cibles.has(a)).toBe(false);
+    expect(created[0].targets.has(a)).toBe(false);
     // b reste surveillée ET continue de recevoir ses livraisons : c'est le point.
-    expect(crees[0].cibles.has(b)).toBe(true);
-    crees[0].livrer([{ target: a, isIntersecting: true }, { target: b, isIntersecting: true }]);
+    expect(created[0].targets.has(b)).toBe(true);
+    created[0].deliver([{ target: a, isIntersecting: true }, { target: b, isIntersecting: true }]);
     expect(vu).toEqual(["b"]);
   });
 
   it("ignore une livraison pour une cible inconnue, sans lever", async () => {
-    const obs = await creer();
+    const obs = await create();
     obs.observe(elem(), () => {});
-    expect(() => crees[0].livrer([{ target: elem(), isIntersecting: true }])).not.toThrow();
+    expect(() => created[0].deliver([{ target: elem(), isIntersecting: true }])).not.toThrow();
   });
 
   it("déclare tout proche quand l'API n'existe pas", async () => {
     vi.stubGlobal("IntersectionObserver", undefined);
-    const obs = await creer();
+    const obs = await create();
     const vu: boolean[] = [];
-    const desabonner = obs.observe(elem(), (proche) => vu.push(proche));
+    const unsubscribe = obs.observe(elem(), (near) => vu.push(near));
     // Mieux vaut tout monter que laisser une grille de cases vides.
     expect(vu).toEqual([true]);
-    expect(() => desabonner()).not.toThrow();
+    expect(() => unsubscribe()).not.toThrow();
   });
 });

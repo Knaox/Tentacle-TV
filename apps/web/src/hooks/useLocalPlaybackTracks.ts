@@ -100,8 +100,8 @@ export function useLocalPlaybackTracks({
     // Le contenu d'abord, la bibliothèque ensuite — même ordre de priorité que
     // la résolution serveur. Sans cela, un titre disponible hors connexion
     // oubliait le choix de langue fait la dernière fois qu'on l'a regardé.
-    const propre = itemTracksFor(itemId);
-    const cached = propre ?? prefForLibrary(userId, localLibraryId);
+    const clean = itemTracksFor(itemId);
+    const cached = clean ?? prefForLibrary(userId, localLibraryId);
     if (!cached) return;
     appliedForSource.current = sourceKey;
 

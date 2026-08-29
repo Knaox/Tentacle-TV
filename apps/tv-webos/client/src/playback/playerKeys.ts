@@ -1,4 +1,4 @@
-import { lireIntention, type TransportCommand } from "../focus/keys";
+import { readIntent, type TransportCommand } from "../focus/keys";
 import { tvPlayerActive } from "@tentacle-tv/tv-core";
 
 /**
@@ -25,28 +25,28 @@ import { tvPlayerActive } from "@tentacle-tv/tv-core";
  */
 
 /** Pas de déplacement des touches d'avance et de retour, en secondes. */
-const PAS_SECONDES = 30;
+const STEP_SECONDS = 30;
 
-export function installerTouchesLecteur(): () => void {
-  const surTouche = (evenement: KeyboardEvent) => {
-    const intention = lireIntention(evenement);
+export function installPlayerKeys(): () => void {
+  const surTouche = (event: KeyboardEvent) => {
+    const intention = readIntent(event);
     if (!intention || intention.type !== "transport") return;
     if (tvPlayerActive()) return;
 
     const video = document.querySelector("video");
     if (!video) return;
 
-    evenement.preventDefault();
-    evenement.stopPropagation();
-    appliquer(video, intention.command);
+    event.preventDefault();
+    event.stopPropagation();
+    apply(video, intention.command);
   };
 
   document.addEventListener("keydown", surTouche, true);
   return () => document.removeEventListener("keydown", surTouche, true);
 }
 
-function appliquer(video: HTMLVideoElement, commande: TransportCommand): void {
-  switch (commande) {
+function apply(video: HTMLVideoElement, command: TransportCommand): void {
+  switch (command) {
     case "lecture":
       // Volontairement une bascule et non un simple `play()` : sur certaines
       // télécommandes, lecture et pause partagent la même touche.
@@ -66,11 +66,11 @@ function appliquer(video: HTMLVideoElement, commande: TransportCommand): void {
       return;
 
     case "avance":
-      deplacer(video, PAS_SECONDES);
+      move(video, STEP_SECONDS);
       return;
 
     case "retour":
-      deplacer(video, -PAS_SECONDES);
+      move(video, -STEP_SECONDS);
       return;
   }
 }
@@ -83,8 +83,8 @@ function appliquer(video: HTMLVideoElement, commande: TransportCommand): void {
  * à interrompre la session. Le dernier instant est écarté d'une seconde pour
  * ne pas provoquer la fin de lecture par mégarde.
  */
-function deplacer(video: HTMLVideoElement, secondes: number): void {
-  const duree = Number.isFinite(video.duration) ? video.duration : null;
-  const cible = video.currentTime + secondes;
-  video.currentTime = Math.max(0, duree === null ? cible : Math.min(cible, duree - 1));
+function move(video: HTMLVideoElement, seconds: number): void {
+  const duration = Number.isFinite(video.duration) ? video.duration : null;
+  const target = video.currentTime + seconds;
+  video.currentTime = Math.max(0, duration === null ? target : Math.min(target, duration - 1));
 }

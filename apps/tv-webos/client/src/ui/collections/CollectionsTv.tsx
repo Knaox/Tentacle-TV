@@ -32,19 +32,19 @@ import { useMultiSelect } from "@/hooks/useMultiSelect";
  */
 
 function CollectionTv({
-  titre,
+  title,
   items,
   isLoading,
   messageVide,
-  indiceVide,
-  icone,
+  emptyHint,
+  icon,
 }: {
-  titre: string;
+  title: string;
   items: ReturnType<typeof useWatchlistAll>["data"];
   isLoading: boolean;
   messageVide: string;
-  indiceVide: string;
-  icone?: React.ReactNode;
+  emptyHint: string;
+  icon?: React.ReactNode;
 }) {
   const selection = useMultiSelect();
 
@@ -68,12 +68,12 @@ function CollectionTv({
           leur titre commence tout en haut, là où le décor est le plus dense. */}
       <div className="collections-tv relative z-10 min-h-screen pb-20">
         <CollectionGrid
-          title={titre}
+          title={title}
           items={items}
           isLoading={isLoading}
           emptyMessage={messageVide}
-          emptyHint={indiceVide}
-          emptyIcon={icone}
+          emptyHint={emptyHint}
+          emptyIcon={icon}
           selectionMode={selection}
         />
       </div>
@@ -87,12 +87,12 @@ export function Watchlist() {
 
   return (
     <CollectionTv
-      titre={t("common:myList")}
+      title={t("common:myList")}
       items={items}
       isLoading={isLoading}
       messageVide={t("common:emptyWatchlist")}
-      indiceVide={t("common:emptyWatchlistHint")}
-      icone={
+      emptyHint={t("common:emptyWatchlistHint")}
+      icon={
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
         </svg>
@@ -107,11 +107,11 @@ export function Favorites() {
 
   return (
     <CollectionTv
-      titre={t("common:myFavorites")}
+      title={t("common:myFavorites")}
       items={items}
       isLoading={isLoading}
       messageVide={t("common:emptyFavorites")}
-      indiceVide={t("common:emptyFavoritesHint")}
+      emptyHint={t("common:emptyFavoritesHint")}
     />
   );
 }

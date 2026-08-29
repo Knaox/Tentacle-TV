@@ -16,25 +16,25 @@
 
 import { invoke, isDesktopApp } from "../desktop/bridge";
 
-const CLE = "tentacle_hdr_auto";
+const KEY = "tentacle_hdr_auto";
 
 /** L'utilisateur a-t-il demandé la bascule ? Éteinte par défaut. */
 export function hdrAutoActive(): boolean {
   try {
-    return localStorage.getItem(CLE) === "1";
+    return localStorage.getItem(KEY) === "1";
   } catch {
     return false;
   }
 }
 
 /** Enregistre la préférence et la transmet immédiatement au natif. */
-export function setHdrAuto(actif: boolean): void {
+export function setHdrAuto(active: boolean): void {
   try {
-    localStorage.setItem(CLE, actif ? "1" : "0");
+    localStorage.setItem(KEY, active ? "1" : "0");
   } catch {
     /* stockage indisponible : la préférence ne survivra pas, tant pis */
   }
-  void pousserHdrAuto();
+  void pushHdrAuto();
 }
 
 /**
@@ -45,7 +45,7 @@ export function setHdrAuto(actif: boolean): void {
  * préférence. Silencieux hors application de bureau, et silencieux si la
  * commande n'existe pas encore — le lecteur ne doit pas échouer pour ça.
  */
-export async function pousserHdrAuto(): Promise<void> {
+export async function pushHdrAuto(): Promise<void> {
   if (!isDesktopApp()) return;
   try {
     await invoke("display_hdr_auto", { on: hdrAutoActive() });

@@ -6,7 +6,7 @@ import { MobileTabBar } from "./MobileTabBar";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { VersionBanner } from "./VersionBanner";
 import { AdminKeyBanner } from "./AdminKeyBanner";
-import { useClassementOuvert, fermerClassement } from "./easterEggs/logoEggStore";
+import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 
 const HIDE_SEARCH_ROUTES = ["/support", "/settings", "/about", "/admin", "/pair-device"];
 
@@ -22,7 +22,7 @@ export function AppLayout() {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
   const showSearch = !HIDE_SEARCH_ROUTES.some((r) => pathname.startsWith(r));
-  const classementOuvert = useClassementOuvert();
+  const leaderboardOpen = useLeaderboardOpen();
 
   return (
     <div className="min-h-screen bg-surface-0">
@@ -52,9 +52,9 @@ export function AppLayout() {
 
       {/* Un seul point de montage, quelle que soit la barre de navigation
           affichée — les deux logos alimentent le même compteur. */}
-      {classementOuvert && (
+      {leaderboardOpen && (
         <Suspense fallback={null}>
-          <WatchLeaderboardPanel onClose={fermerClassement} />
+          <WatchLeaderboardPanel onClose={closeLeaderboard} />
         </Suspense>
       )}
     </div>

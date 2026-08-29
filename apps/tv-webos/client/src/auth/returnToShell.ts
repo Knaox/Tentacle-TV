@@ -31,7 +31,7 @@
  */
 
 /** Le jumelage mémorisé est effacé. Sans effet sur la navigation. */
-export function oublierJumelage(): void {
+export function forgetPairing(): void {
   try {
     localStorage.removeItem("tentacle_token");
     localStorage.removeItem("tentacle_user");
@@ -40,13 +40,13 @@ export function oublierJumelage(): void {
   }
 }
 
-interface PontPlateforme {
+interface PlatformBridge {
   webOS?: { platformBack?: () => void };
   PalmSystem?: { platformBack?: () => void };
 }
 
-function pont(): PontPlateforme {
-  return window as unknown as PontPlateforme;
+function bridge(): PlatformBridge {
+  return window as unknown as PlatformBridge;
 }
 
 /**
@@ -57,8 +57,8 @@ function pont(): PontPlateforme {
  * une cible qui ne mène nulle part coûte un appui à chaque passage et laisse
  * croire que la télécommande ne répond pas.
  */
-export function plateformePeutQuitter(): boolean {
-  const global = pont();
+export function platformCanExit(): boolean {
+  const global = bridge();
   return (
     typeof global.webOS?.platformBack === "function" ||
     typeof global.PalmSystem?.platformBack === "function"
@@ -74,8 +74,8 @@ export function plateformePeutQuitter(): boolean {
  * n'existe que si la bibliothèque du SDK a été déposée dans la coquille ; les
  * deux font le même travail.
  */
-export function rendreLaMainAuTeleviseur(): void {
-  const global = pont();
+export function yieldToTv(): void {
+  const global = bridge();
   if (typeof global.webOS?.platformBack === "function") {
     global.webOS.platformBack();
     return;

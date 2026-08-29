@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { inscrireRetour } from "../../focus/back";
+import { registerBack } from "../../focus/back";
 
 /**
  * Le choix d'une valeur, en surcouche, pilotable à la télécommande.
@@ -20,58 +20,58 @@ import { inscrireRetour } from "../../focus/back";
  * consommateurs de `focus/back.ts` est faite pour ça.
  */
 
-export interface ChoixTv {
-  valeur: string;
-  libelle: string;
+export interface ChoiceTv {
+  value: string;
+  label: string;
 }
 
-interface ProprietesPanneauChoixTv {
-  titre: string;
-  choix: ChoixTv[];
+interface ChoicePanelTvProps {
+  title: string;
+  choice: ChoiceTv[];
   /** La valeur en cours — c'est elle qui reçoit le focus à l'ouverture. */
   selection: string | null;
-  onChoisir: (valeur: string) => void;
-  onFermer: () => void;
+  onChoose: (value: string) => void;
+  onClose: () => void;
 }
 
-export function PanneauChoixTv({
-  titre,
-  choix,
+export function ChoicePanelTv({
+  title,
+  choice,
   selection,
-  onChoisir,
-  onFermer,
-}: ProprietesPanneauChoixTv) {
-  const selectionne = useRef<HTMLButtonElement | null>(null);
+  onChoose,
+  onClose,
+}: ChoicePanelTvProps) {
+  const selected = useRef<HTMLButtonElement | null>(null);
 
   // Le focus part sur la valeur en cours, comme le fait `SelectionModal`
   // d'`apps/tv` : on arrive là où l'on est, pas en haut d'une liste de
   // trente-huit entrées qu'il faudrait redescendre.
   useEffect(() => {
-    selectionne.current?.focus();
+    selected.current?.focus();
   }, []);
 
-  useEffect(() => inscrireRetour(() => {
-    onFermer();
+  useEffect(() => registerBack(() => {
+    onClose();
     return true;
-  }), [onFermer]);
+  }), [onClose]);
 
   return (
-    <div className="panneau-choix-tv" role="dialog" aria-label={titre}>
+    <div className="panneau-choix-tv" role="dialog" aria-label={title}>
       <div className="panneau-choix-tv-boite">
-        <p className="panneau-choix-tv-titre">{titre}</p>
+        <p className="panneau-choix-tv-titre">{title}</p>
         <ul className="panneau-choix-tv-liste">
-          {choix.map((entree) => {
-            const actif = entree.valeur === selection;
+          {choice.map((entree) => {
+            const active = entree.value === selection;
             return (
-              <li key={entree.valeur}>
+              <li key={entree.value}>
                 <button
                   type="button"
-                  ref={actif ? selectionne : undefined}
-                  data-actif={actif}
+                  ref={active ? selected : undefined}
+                  data-active={active}
                   className="panneau-choix-tv-entree"
-                  onClick={() => onChoisir(entree.valeur)}
+                  onClick={() => onChoose(entree.value)}
                 >
-                  {entree.libelle}
+                  {entree.label}
                 </button>
               </li>
             );

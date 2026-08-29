@@ -10,7 +10,7 @@
  * # Borné, et c'est le point important
  *
  * Une entrée par contenu regardé grandit sans fin. Le cache est donc plafonné à
- * `MAX_ENTREES` et évince la plus ANCIENNEMENT touchée : une carte de plus de
+ * `MAX_ENTRIES` et évince la plus ANCIENNEMENT touchée : une carte de plus de
  * deux cents titres n'apporte rien — on ne revient pas sur un épisode vu il y a
  * deux cents titres en s'attendant à retrouver sa piste — alors qu'un
  * `localStorage` qui gonfle se paie à chaque lecture, sur tous les appareils.
@@ -26,14 +26,14 @@ export interface ItemTrackChoice {
   subtitleMode: SubtitleMode;
 }
 
-interface Entree extends ItemTrackChoice {
+interface Entry extends ItemTrackChoice {
   itemId: string;
   /** Rang de dernier usage, pour l'éviction. Un compteur, pas une horloge. */
   seq: number;
 }
 
 const STORAGE_KEY_PREFIX = "tentacle_item_tracks_";
-const MAX_ENTREES = 200;
+const MAX_ENTRIES = 200;
 
 /**
  * L'utilisateur courant, lu comme le fait le reste du dossier `offline/`.
@@ -43,15 +43,15 @@ const MAX_ENTREES = 200;
  * strictement séparé par compte — deux comptes sur le même salon n'ont aucune
  * raison de partager leurs choix de langue.
  */
-function cle(userId: string): string {
+function key(userId: string): string {
   return `${STORAGE_KEY_PREFIX}${userId}`;
 }
 
-function lire(userId: string): Entree[] {
+function read(userId: string): Entry[] {
   try {
-    const brut = localStorage.getItem(cle(userId));
-    if (!brut) return [];
-    const parsed = JSON.parse(brut) as unknown;
+    const raw = localStorage.getItem(key(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed.flatMap((row) => {
       if (!row || typeof row !== "object") return [];
@@ -72,20 +72,20 @@ function lire(userId: string): Entree[] {
   }
 }
 
-function ecrire(userId: string, entrees: Entree[]): void {
+function write(userId: string, entries: Entry[]): void {
   try {
-    localStorage.setItem(cle(userId), JSON.stringify(entrees));
+    localStorage.setItem(key(userId), JSON.stringify(entries));
   } catch {
     /* cache best-effort : une écriture refusée ne doit rien casser */
   }
 }
 
 /** L'utilisateur connecté, tel que le stocke l'application. */
-function utilisateurCourant(): string | null {
+function currentUser(): string | null {
   try {
-    const brut = localStorage.getItem("tentacle_user");
-    if (!brut) return null;
-    const user = JSON.parse(brut) as { Id?: string };
+    const raw = localStorage.getItem("tentacle_user");
+    if (!raw) return null;
+    const user = JSON.parse(raw) as { Id?: string };
     return typeof user.Id === "string" ? user.Id : null;
   } catch {
     return null;
@@ -93,23 +93,23 @@ function utilisateurCourant(): string | null {
 }
 
 /** Enregistre (ou met à jour) le choix de langues d'un contenu. */
-export function rememberItemTracks(itemId: string, choix: ItemTrackChoice): void {
-  const userId = utilisateurCourant();
+export function rememberItemTracks(itemId: string, choice: ItemTrackChoice): void {
+  const userId = currentUser();
   if (!userId) return;
-  const entrees = lire(userId).filter((e) => e.itemId !== itemId);
-  const seq = entrees.reduce((max, e) => Math.max(max, e.seq), 0) + 1;
-  entrees.push({ itemId, ...choix, seq });
+  const entries = read(userId).filter((e) => e.itemId !== itemId);
+  const seq = entries.reduce((max, e) => Math.max(max, e.seq), 0) + 1;
+  entries.push({ itemId, ...choice, seq });
   // Éviction des plus anciennement touchées, une fois le plafond atteint.
-  entrees.sort((a, b) => a.seq - b.seq);
-  ecrire(userId, entrees.slice(Math.max(0, entrees.length - MAX_ENTREES)));
+  entries.sort((a, b) => a.seq - b.seq);
+  write(userId, entries.slice(Math.max(0, entries.length - MAX_ENTRIES)));
 }
 
 /** Le choix retenu pour ce contenu, ou `null`. */
 export function itemTracksFor(itemId: string | null | undefined): ItemTrackChoice | null {
   if (!itemId) return null;
-  const userId = utilisateurCourant();
+  const userId = currentUser();
   if (!userId) return null;
-  const found = lire(userId).find((e) => e.itemId === itemId);
+  const found = read(userId).find((e) => e.itemId === itemId);
   if (!found) return null;
   return {
     audioLang: found.audioLang,
@@ -147,7 +147,7 @@ export async function refreshItemTracksCache(userId: string, backendBase: string
 function cacheItemTracks(userId: string, rows: unknown): void {
   if (!Array.isArray(rows)) return;
   let seq = 0;
-  const entrees: Entree[] = rows.flatMap((row) => {
+  const entries: Entry[] = rows.flatMap((row) => {
     if (!row || typeof row !== "object") return [];
     const v = row as Record<string, unknown>;
     if (typeof v.itemId !== "string") return [];
@@ -161,5 +161,5 @@ function cacheItemTracks(userId: string, rows: unknown): void {
       seq,
     }];
   });
-  ecrire(userId, entrees.slice(Math.max(0, entrees.length - MAX_ENTREES)));
+  write(userId, entries.slice(Math.max(0, entries.length - MAX_ENTRIES)));
 }

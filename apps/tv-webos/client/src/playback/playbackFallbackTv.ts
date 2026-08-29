@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useWebPlaybackFallbacks as repliWeb } from "@/hooks/useWebPlaybackFallbacks?original";
+import { useWebPlaybackFallbacks as webFallback } from "@/hooks/useWebPlaybackFallbacks?original";
 import { useToast } from "@/contexts/ToastContext";
 import type { MediaSource } from "@tentacle-tv/shared";
-import { signalerEchecLecture } from "./playbackFallback";
-import { observer, VEILLE_VIDE } from "./freezeRestart";
+import { reportPlaybackFailure } from "./playbackFallback";
+import { observer, EMPTY_WATCH } from "./freezeRestart";
 import { poserGel } from "./freezeStateTv";
 
 /**
@@ -15,7 +15,7 @@ import { poserGel } from "./freezeStateTv";
  * qu'une lecture d'une heure ne coûte que dix-huit cents relevés d'une propriété
  * déjà en mémoire.
  */
-const PERIODE_VEILLE_MS = 2000;
+const WATCH_PERIOD_MS = 2000;
 
 /**
  * Le filet du téléviseur, par-dessus ceux du client web.
@@ -46,12 +46,12 @@ const PERIODE_VEILLE_MS = 2000;
 // `useServerTrackPrefs` importe cette fonction-ci depuis le même fichier, et
 // c'est le build — non `tsc`, que la déclaration `export *` de `globals.d.ts`
 // satisfait — qui le rappelle.
-export { necessiteIncrustation } from "@/hooks/useWebPlaybackFallbacks?original";
+export { needsBurnIn } from "@/hooks/useWebPlaybackFallbacks?original";
 
-type OptionsRepli = Parameters<typeof repliWeb>[0];
+type FallbackOptions = Parameters<typeof webFallback>[0];
 
 /** Ce que Jellyfin dit de la source qu'on vient d'essayer de lire. */
-function decrire(source: MediaSource | null | undefined) {
+function describeSource(source: MediaSource | null | undefined) {
   if (!source) return {};
   const flux = source.MediaStreams ?? [];
   const video = flux.find((piste) => piste.Type === "Video");
@@ -63,62 +63,62 @@ function decrire(source: MediaSource | null | undefined) {
     flux.find((piste) => piste.Type === "Audio" && piste.Index === indexAudio) ??
     flux.find((piste) => piste.Type === "Audio");
   return {
-    conteneur: source.Container,
-    codecVideo: video?.Codec,
-    codecAudio: audio?.Codec,
+    container: source.Container,
+    videoCodec: video?.Codec,
+    audioCodec: audio?.Codec,
   };
 }
 
-export function useWebPlaybackFallbacks(options: OptionsRepli) {
-  const base = repliWeb(options);
-  const { show: montrerToast } = useToast();
+export function useWebPlaybackFallbacks(options: FallbackOptions) {
+  const base = webFallback(options);
+  const { show: showToast } = useToast();
   const { t } = useTranslation("player");
 
   // La source décrite au moment de l'échec, tenue dans une référence : l'écouteur
   // est posé une fois et ne doit pas se reposer à chaque changement de piste.
   const source = options.pbInfo.mediaSource ?? options.mediaSource;
-  const description = useRef(decrire(source));
-  description.current = decrire(source);
+  const description = useRef(describeSource(source));
+  description.current = describeSource(source);
 
-  const relancer = base.relancerLecture;
+  const restart = base.restartPlayback;
   // Un seul repli par source. Sans ce garde-fou, une balise qui émet `error` en
   // rafale — ce que fait webOS quand le décodeur renonce — descendrait toute
   // l'échelle d'un coup, jusqu'au ré-encodage, pour un seul refus.
-  const enCours = useRef(false);
+  const inProgress = useRef(false);
   useEffect(() => {
-    enCours.current = false;
+    inProgress.current = false;
   }, [source]);
 
   useEffect(() => {
-    const surErreur = (evenement: Event) => {
-      const cible = evenement.target;
-      if (!(cible instanceof HTMLVideoElement)) return;
-      const code = cible.error?.code;
+    const onError = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLVideoElement)) return;
+      const code = target.error?.code;
       // 3 = MEDIA_ERR_DECODE, 4 = MEDIA_ERR_SRC_NOT_SUPPORTED. Les codes 1
       // (abandon) et 2 (réseau) ne disent rien des capacités de la dalle.
       if (code !== 3 && code !== 4) return;
-      if (enCours.current) return;
-      enCours.current = true;
+      if (inProgress.current) return;
+      inProgress.current = true;
 
-      const repli = signalerEchecLecture(description.current);
-      if (repli.etage === "epuise") {
+      const fallback = reportPlaybackFailure(description.current);
+      if (fallback.stage === "epuise") {
         // Plus rien à retirer : relancer produirait la même source et la même
         // erreur. On rend la main au lecteur, dont le filet de quinze secondes
         // affichera le bouton de lecture plutôt qu'un écran noir — et on le DIT
         // à l'utilisateur : jusqu'ici l'échec définitif restait muet à l'écran.
         // Le toast s'efface seul (4 s, ToastContext).
         console.error("[Tentacle:TV] echelle de repli epuisee", description.current);
-        montrerToast("error", t("playbackGiveUp"));
+        showToast("error", t("playbackGiveUp"));
         return;
       }
-      relancer();
+      restart();
     };
 
-    document.addEventListener("error", surErreur, true);
-    return () => document.removeEventListener("error", surErreur, true);
-  }, [relancer, montrerToast, t]);
+    document.addEventListener("error", onError, true);
+    return () => document.removeEventListener("error", onError, true);
+  }, [restart, showToast, t]);
 
-  useVeilleGel(source);
+  useFreezeWatch(source);
 
   return base;
 }
@@ -140,10 +140,10 @@ export function useWebPlaybackFallbacks(options: OptionsRepli) {
  * l'avance du tampon au moment du gel — c'est elle qui fond, de quarante-cinq
  * secondes à dix — et la durée du gel avant que la lecture reparte seule.
  */
-function useVeilleGel(source: unknown): void {
-  const veille = useRef(VEILLE_VIDE);
+function useFreezeWatch(source: unknown): void {
+  const watch = useRef(EMPTY_WATCH);
   useEffect(() => {
-    veille.current = VEILLE_VIDE;
+    watch.current = EMPTY_WATCH;
     // Une source neuve n'hérite pas du gel de la précédente : le témoin
     // resterait allumé par-dessus une lecture qui démarre normalement.
     poserGel(false);
@@ -152,19 +152,19 @@ function useVeilleGel(source: unknown): void {
   useEffect(() => () => poserGel(false), []);
 
   useEffect(() => {
-    const minuteur = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       const v = document.querySelector("video");
       if (!v) return;
 
-      const debut = veille.current.fige;
-      const [suivant, verdict] = observer(veille.current, {
+      const debut = watch.current.frozen;
+      const [next, verdict] = observer(watch.current, {
         position: v.currentTime,
         enPause: v.paused,
         pret: v.readyState,
-        erreur: v.error?.code ?? null,
+        error: v.error?.code ?? null,
         instant: Date.now(),
       });
-      veille.current = suivant;
+      watch.current = next;
       if (verdict === "rien") return;
 
       if (verdict === "reprise") {
@@ -173,7 +173,7 @@ function useVeilleGel(source: unknown): void {
         poserGel(false);
         console.warn("[Tentacle:TV] lecture repartie", {
           position: Math.round(v.currentTime),
-          apresSecondes: debut === null ? null : Math.round((Date.now() - debut) / 1000),
+          afterSeconds: debut === null ? null : Math.round((Date.now() - debut) / 1000),
         });
         return;
       }
@@ -190,12 +190,12 @@ function useVeilleGel(source: unknown): void {
       const fin = v.buffered.length > 0 ? v.buffered.end(v.buffered.length - 1) : null;
       console.warn("[Tentacle:TV] lecture figee", {
         position: Math.round(v.currentTime),
-        avanceTampon: fin === null ? null : Math.round((fin - v.currentTime) * 10) / 10,
+        bufferProgress: fin === null ? null : Math.round((fin - v.currentTime) * 10) / 10,
         pret: v.readyState,
-        erreur: v.error?.code ?? null,
+        error: v.error?.code ?? null,
       });
-    }, PERIODE_VEILLE_MS);
+    }, WATCH_PERIOD_MS);
 
-    return () => window.clearInterval(minuteur);
+    return () => window.clearInterval(timer);
   }, []);
 }

@@ -90,7 +90,7 @@ export function installSessionGuard({ client, storage, queryClient }: SessionGua
    *  `client.getToken()` d'abord — c'est la valeur vive ; le stockage n'est
    *  qu'un repli pour le tout premier appel, avant que le client n'ait été
    *  réhydraté au démarrage. */
-  const jetonDeSession = () =>
+  const sessionToken = () =>
     client.useCredentials ? null : (client.getToken() ?? storage.getItem("tentacle_token"));
 
   /** Vrai UNIQUEMENT si l'expiration est confirmée : deux refus explicites
@@ -100,10 +100,10 @@ export function installSessionGuard({ client, storage, queryClient }: SessionGua
    *  Factorisé pour que TOUS les chemins de déconnexion passent par la même
    *  règle. Le retour de focus s'en dispensait et purgeait sur un seul 401,
    *  alors que le commentaire de ce fichier promettait l'inverse. */
-  const expirationConfirmee = async (): Promise<boolean> => {
+  const expiryConfirmed = async (): Promise<boolean> => {
     for (let attempt = 0; attempt < CONFIRM_ATTEMPTS; attempt++) {
       if (attempt > 0) await new Promise((r) => setTimeout(r, CONFIRM_DELAY_MS));
-      const verdict = await revalidateSession(jetonDeSession());
+      const verdict = await revalidateSession(sessionToken());
       if (verdict === "ok") {
         client.resetAuthState();
         return false;
@@ -114,7 +114,7 @@ export function installSessionGuard({ client, storage, queryClient }: SessionGua
   };
 
   client.setOnAuthExpired(async () => {
-    if (await expirationConfirmee()) endSession();
+    if (await expiryConfirmed()) endSession();
   });
 
   // Revalidation au retour sur l'onglet. C'est le vrai filet : indépendante du
@@ -129,12 +129,12 @@ export function installSessionGuard({ client, storage, queryClient }: SessionGua
     const now = Date.now();
     if (now - lastFocusCheck < FOCUS_THROTTLE_MS) return;
     lastFocusCheck = now;
-    void expirationConfirmee().then((expiree) => {
-      if (expiree) endSession();
+    void expiryConfirmed().then((expired) => {
+      if (expired) endSession();
     });
   };
   document.addEventListener("visibilitychange", onFocus);
   window.addEventListener("focus", onFocus);
 
-  setInterval(() => { void revalidateSession(jetonDeSession()); }, PROACTIVE_INTERVAL_MS);
+  setInterval(() => { void revalidateSession(sessionToken()); }, PROACTIVE_INTERVAL_MS);
 }

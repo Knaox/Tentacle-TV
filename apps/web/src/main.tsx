@@ -38,10 +38,10 @@ import { isDesktopApp } from "./desktop/bridge";
 import { nativeSessionPost, supportsNativeSessionPost } from "./desktop/sessionPost";
 import { nativeKillEncodings, nativePlaybackInfo, supportsNativePlayerRelay } from "./desktop/playerRelay";
 import { getBackendBase } from "./lib/backendBase";
-import { retenterSaufDebit } from "./lib/retryPolicy";
+import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
-import { installerSondeReseau } from "./dev/networkProbe";
+import { installNetworkProbe } from "./dev/networkProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import "./index.css";
@@ -56,7 +56,7 @@ import "./index.css";
 // requêtes du démarrage — celles qui décident de ce qu'on voit — lui échappent.
 // `__PLAYER_DEBUG__` est faux dans tout build livré : le module disparaît alors
 // du bundle, et `window.fetch` n'est jamais touché.
-if (import.meta.env.DEV || __PLAYER_DEBUG__) installerSondeReseau();
+if (import.meta.env.DEV || __PLAYER_DEBUG__) installNetworkProbe();
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
@@ -187,7 +187,7 @@ const queryClient = new QueryClient({
     queries: {
       // Une tentative de rattrapage — sauf sur un 429, qu'on ne retente jamais
       // (cf. lib/retryPolicy.ts : retenter double la facture au pire moment).
-      retry: retenterSaufDebit,
+      retry: retryUnlessRateLimited,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000,
       gcTime: 30 * 60 * 1000,
@@ -245,7 +245,7 @@ installAnimationAudit();
 // le singleton de l'adaptateur, il n'a besoin d'aucun contexte.
 // `__PLAYER_DEBUG__` est faux dans tout build livré — la branche et son import
 // disparaissent alors du bundle.
-const debugLecteur = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
+const playerDebug = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -254,7 +254,7 @@ createRoot(document.getElementById("root")!).render(
         exister sur TOUTES les pages — le lecteur et la fiche média sont servis
         hors de `AppLayout`. Rend `null` partout où la fenêtre a un vrai cadre. */}
     <HostTitleBar />
-    {debugLecteur}
+    {playerDebug}
     <QueryClientProvider client={queryClient}>
       <ThemeProvider backendUrl={backendUrl}>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>

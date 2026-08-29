@@ -57,7 +57,7 @@
    * la ligne différents, donc des chevauchements différents.
    *
    * Écrites ici, elles sont résolues à la compilation contre le canevas de
-   * 1920 (`config/postcss/passeUnitesFixes.ts`) et valent 52 et 56 px partout.
+   * 1920 (`config/postcss/fixedUnitsPass.ts`) et valent 52 et 56 px partout.
    * Sur le web, rien ne change : le `clamp()` y reste un `clamp()`.
    *
    * `letter-spacing` est porté par la classe, et les deux `<h1>` ont perdu

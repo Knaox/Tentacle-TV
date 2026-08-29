@@ -1,10 +1,10 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
-import { EcranIndisponible } from "./unavailableScreen";
-import { EcranNonJumele } from "../ui/screens/UnpairedScreen";
-import { EcranCompteTv } from "../ui/settings/AccountScreenTv";
-import { EcranAProposTv } from "../ui/settings/AboutScreenTv";
-import { EcranLectureTv } from "../ui/settings/PlaybackScreenTv";
+import { UnavailableScreen } from "./unavailableScreen";
+import { UnpairedScreen } from "../ui/screens/UnpairedScreen";
+import { AccountScreenTv } from "../ui/settings/AccountScreenTv";
+import { AboutScreenTv } from "../ui/settings/AboutScreenTv";
+import { PlaybackScreenTv } from "../ui/settings/PlaybackScreenTv";
 
 /**
  * Sécurité n'existe plus, mais son adresse reste déclarée dans `App.tsx` — et
@@ -12,7 +12,7 @@ import { EcranLectureTv } from "../ui/settings/PlaybackScreenTv";
  * renvoie donc sur le Compte plutôt que d'y laisser un écran vide : une URL
  * déclarée doit mener quelque part.
  */
-function RedirectionCompte() {
+function AccountRedirect() {
   return <Navigate to="/settings/data" replace />;
 }
 
@@ -31,15 +31,15 @@ function RedirectionCompte() {
  * de sens à trois mètres, avec une télécommande pour seule saisie.
  */
 
-const Indisponible = EcranIndisponible;
+const Unavailable = UnavailableScreen;
 
 /* -- Périmètre du téléviseur -- */
 
 export const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
 // Pas de connexion sur un téléviseur : l'authentification vient du jumelage,
 // qui se fait dans la coquille. On n'y arrive que si le jeton a été révoqué.
-export const Login = EcranNonJumele;
-export const Register = EcranNonJumele;
+export const Login = UnpairedScreen;
+export const Register = UnpairedScreen;
 export const Watch = lazy(() => import("@/pages/Watch").then((m) => ({ default: m.Watch })));
 export const MediaDetail = lazy(() => import("@/pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 export const Library = lazy(() => import("@/pages/Library").then((m) => ({ default: m.Library })));
@@ -70,9 +70,9 @@ export const SettingsIndex = lazy(() =>
  *   `/settings/appearance` → À propos    (l'apparence ne se règle plus)
  *   `/settings/security`   → renvoie sur Compte
  */
-export const SettingsData = EcranCompteTv;
-export const SettingsAppearance = EcranAProposTv;
-export const SettingsSecurity = RedirectionCompte;
+export const SettingsData = AccountScreenTv;
+export const SettingsAppearance = AboutScreenTv;
+export const SettingsSecurity = AccountRedirect;
 
 /**
  * Lecture. Le contenu est celui de `pages/Preferences.tsx` — mêmes hooks,
@@ -81,32 +81,32 @@ export const SettingsSecurity = RedirectionCompte;
  * la masque pas : le graphe hors ligne qu'elle tirait avec elle n'entre pas
  * dans le bundle, et un téléviseur ne passe pas hors ligne, il s'éteint.
  */
-export const Preferences = EcranLectureTv;
+export const Preferences = PlaybackScreenTv;
 
 /* -- Hors périmètre : le code n'est pas compilé -- */
 
 // Administration : gestion de serveur, à faire depuis un ordinateur.
-export const AdminLayout = Indisponible;
-export const AdminInvites = Indisponible;
-export const AdminPlugins = Indisponible;
-export const AdminUsers = Indisponible;
-export const AdminDownloads = Indisponible;
-export const AdminTicketsPage = Indisponible;
-export const AdminServicesPage = Indisponible;
-export const AdminTheme = Indisponible;
-export const AdminThemeTokens = Indisponible;
-export const AdminThemeReference = Indisponible;
+export const AdminLayout = Unavailable;
+export const AdminInvites = Unavailable;
+export const AdminPlugins = Unavailable;
+export const AdminUsers = Unavailable;
+export const AdminDownloads = Unavailable;
+export const AdminTicketsPage = Unavailable;
+export const AdminServicesPage = Unavailable;
+export const AdminTheme = Unavailable;
+export const AdminThemeTokens = Unavailable;
+export const AdminThemeReference = Unavailable;
 
 // Téléchargements et mode hors ligne : le stockage d'une dalle ne s'y prête pas.
-export const DownloadsPage = Indisponible;
-export const OfflineCatalog = Indisponible;
-export const OfflineSeriesView = Indisponible;
-export const SettingsDownloads = Indisponible;
+export const DownloadsPage = Unavailable;
+export const OfflineCatalog = Unavailable;
+export const OfflineSeriesView = Unavailable;
+export const SettingsDownloads = Unavailable;
 
 // Partage et assistance : demandent une saisie de texte suivie.
-export const SharedListView = Indisponible;
-export const SharedItemDetail = Indisponible;
-export const Support = Indisponible;
+export const SharedListView = Unavailable;
+export const SharedItemDetail = Unavailable;
+export const Support = Unavailable;
 
 // Écrans pensés pour un téléphone.
-export const MobileProfile = Indisponible;
+export const MobileProfile = Unavailable;

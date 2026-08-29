@@ -1,17 +1,17 @@
 import type { Plugin } from "postcss";
-import { creerContexte } from "./contexte";
-import { passeImportsDistants } from "./passeImportsDistants";
-import { passePseudoModernes } from "./passePseudoModernes";
-import { passeUnitesFixes } from "./passeUnitesFixes";
-import { passeGrille } from "./passeGrille";
-import { passeEcarts } from "./passeEcarts";
-import { passeRatios } from "./passeRatios";
-import { passeVerre } from "./passeVerre";
-import { passeSurvol, survolsSurvivants } from "./passeSurvol";
-import { passeFonctionsMath } from "./passeFonctionsMath";
-import { passeRepliJeton } from "./passeRepliJeton";
-import { passeNettoyage } from "./passeNettoyage";
-import { gardeCompat, formaterSurvivances } from "./gardeCompat";
+import { createContext } from "./context";
+import { remoteImportsPass } from "./remoteImportsPass";
+import { modernPseudoPass } from "./modernPseudoPass";
+import { fixedUnitsPass } from "./fixedUnitsPass";
+import { gridPass } from "./gridPass";
+import { gapPass } from "./gapPass";
+import { ratiosPass } from "./ratiosPass";
+import { glassPass } from "./glassPass";
+import { hoverPass, survivingHovers } from "./hoverPass";
+import { mathFunctionsPass } from "./mathFunctionsPass";
+import { tokenFallbackPass } from "./tokenFallbackPass";
+import { cleanupPass } from "./cleanupPass";
+import { compatGuard, formatSurvivals } from "./compatGuard";
 
 /**
  * Compatibilité CSS avec le socle Chrome 53.
@@ -31,18 +31,18 @@ import { gardeCompat, formaterSurvivances } from "./gardeCompat";
  *      demi-écarts qu'elles écrivent en `calc(… / 2)`.
  *   3. `pseudoModernes` ensuite : elle réécrit des sélecteurs, et les passes
  *      suivantes clonent des règles.
- *   4. `grille` avant `ecarts` : le calcul de largeur d'une colonne doit être
+ *   4. `grille` avant `gaps` : le calcul de largeur d'une colonne doit être
  *      écrit tant que la relation à l'écart est encore lisible.
- *   5. `ecarts` ensuite, pour traiter d'un même geste les flexbox d'origine et
+ *   5. `gaps` ensuite, pour traiter d'un même geste les flexbox d'origine et
  *      les grilles converties.
  *   6. `ratios`, `verre`, `survol`, `fonctionsMath` et `nettoyage` sont
  *      indépendantes.
- *   7. `repliJeton` avant `gardeCompat` — c'est elle qui retire la déclaration
+ *   7. `repliJeton` avant `compatGuard` — c'est elle qui retire la déclaration
  *      trop récente d'un jeton qui porte DÉJÀ son repli, et sans elle la garde
  *      refuserait une convention qu'on veut au contraire encourager. Elle ne
  *      touche à rien qui n'ait pas de repli, donc elle n'affaiblit pas la
  *      garde : une primitive déclarée seule la fait toujours échouer.
- *   8. `gardeCompat` en dernier, lectrice : elle refuse ce qui a survécu.
+ *   8. `compatGuard` en dernier, lectrice : elle refuse ce qui a survécu.
  *
  * `survol` est la seule passe qui ne traite pas une primitive trop récente :
  * `:hover` est parfaitement compris par Chrome 53, et c'est le problème. Elle
@@ -53,54 +53,54 @@ import { gardeCompat, formaterSurvivances } from "./gardeCompat";
  * rapporte zéro est le signal le plus important : soit la primitive a disparu
  * du code, soit la passe ne s'exécute plus au bon endroit de la chaîne.
  */
-export function compatibiliteChrome53(): Plugin {
+export function chrome53Compat(): Plugin {
   return {
     postcssPlugin: "tentacle-compat-chrome53",
 
-    OnceExit(racine) {
-      const contexte = creerContexte();
+    OnceExit(root) {
+      const context = createContext();
 
-      passeImportsDistants(racine, contexte);
-      passeUnitesFixes(racine, contexte);
-      passePseudoModernes(racine, contexte);
-      passeGrille(racine, contexte);
-      passeEcarts(racine, contexte);
-      passeRatios(racine, contexte);
-      passeVerre(racine, contexte);
-      passeSurvol(racine, contexte);
-      passeFonctionsMath(racine, contexte);
-      passeRepliJeton(racine, contexte);
-      passeNettoyage(racine, contexte);
+      remoteImportsPass(root, context);
+      fixedUnitsPass(root, context);
+      modernPseudoPass(root, context);
+      gridPass(root, context);
+      gapPass(root, context);
+      ratiosPass(root, context);
+      glassPass(root, context);
+      hoverPass(root, context);
+      mathFunctionsPass(root, context);
+      tokenFallbackPass(root, context);
+      cleanupPass(root, context);
 
       // Auto-contrôle de la passe de survol : un reste ne signale pas une
       // régression du client web — la passe les retire tous par construction —
       // mais un défaut de son découpage de listes de sélecteurs.
-      const survols = survolsSurvivants(racine);
-      if (survols.length > 0) {
-        throw racine.error(
+      const hovers = survivingHovers(root);
+      if (hovers.length > 0) {
+        throw root.error(
           [
-            `${survols.length} règle(s) de survol ont échappé à la passe :`,
-            ...survols.slice(0, 10).map((selecteur) => `  ${selecteur}`),
+            `${hovers.length} règle(s) de survol ont échappé à la passe :`,
+            ...hovers.slice(0, 10).map((selector) => `  ${selector}`),
             "",
             "Sur un téléviseur, le focus est la seule sélection. Voir",
-            "config/postcss/passeSurvol.ts.",
+            "config/postcss/hoverPass.ts.",
           ].join("\n"),
           { plugin: "tentacle-compat-chrome53" },
         );
       }
 
-      const survivances = gardeCompat(racine);
-      if (survivances.length > 0) {
-        throw racine.error(formaterSurvivances(survivances), {
+      const survivals = compatGuard(root);
+      if (survivals.length > 0) {
+        throw root.error(formatSurvivals(survivals), {
           plugin: "tentacle-compat-chrome53",
         });
       }
 
       if (!process.env.TV_COMPAT_SILENCIEUX) {
-        console.log(`[compat-chrome53] ${contexte.rapport()}`);
+        console.log(`[compat-chrome53] ${context.report()}`);
       }
     },
   };
 }
 
-compatibiliteChrome53.postcss = true;
+chrome53Compat.postcss = true;

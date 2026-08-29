@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { EpisodeRow } from "@/components/EpisodeRow";
-import { LigneEpisodeTv } from "./EpisodeRowTv";
-import { donnerFocus } from "../../focus/active";
+import { EpisodeRowTv } from "./EpisodeRowTv";
+import { giveFocus } from "../../focus/active";
 
 /**
  * Saisons et épisodes, pour une télécommande.
@@ -25,7 +25,7 @@ import { donnerFocus } from "../../focus/active";
  *
  * La bande des saisons n'est plus un `HorizontalScrollRow` : celui-ci pose un
  * `tabIndex` sur son conteneur de défilement, que `sansEnveloppes` neutralise
- * déjà — mais un conteneur simple laisse `amenerEnVue` faire défiler la bande
+ * déjà — mais un conteneur simple laisse `bringIntoView` faire défiler la bande
  * jusqu'à la saison visée, ce dont une série de six saisons a besoin.
  *
  * **La révélation paresseuse est retirée, et c'est un correctif.** Le web
@@ -45,7 +45,7 @@ import { donnerFocus } from "../../focus/active";
  * restait sur la bande, à devoir redescendre à la main après chaque changement.
  */
 
-interface ProprietesListeEpisodesTv {
+interface EpisodeListTvProps {
   seriesId: string;
   /** Épisode en cours de consultation — surligné (fiche épisode). */
   currentEpisodeId?: string;
@@ -57,7 +57,7 @@ export function EpisodeList({
   seriesId,
   currentEpisodeId,
   initialSeasonId,
-}: ProprietesListeEpisodesTv) {
+}: EpisodeListTvProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
@@ -65,38 +65,38 @@ export function EpisodeList({
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>();
   const { data: episodes, isLoading: episodesLoading } = useEpisodes(seriesId, selectedSeasonId);
 
-  const liste = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
   /** Une saison vient d'être validée : le premier épisode monté prend le focus. */
-  const viserLePremier = useRef(false);
-  const bande = useRef<HTMLDivElement>(null);
+  const aimTheFirst = useRef(false);
+  const band = useRef<HTMLDivElement>(null);
   /** La bande ne se cale sur la saison active qu'UNE fois, à l'arrivée. */
-  const bandeCalee = useRef(false);
+  const wedgedBand = useRef(false);
 
   useEffect(() => {
     if (!seasons?.length || selectedSeasonId) return;
-    const preferee =
-      initialSeasonId && seasons.some((saison) => saison.Id === initialSeasonId)
+    const preferred =
+      initialSeasonId && seasons.some((season) => season.Id === initialSeasonId)
         ? initialSeasonId
         : seasons[0].Id;
-    setSelectedSeasonId(preferee);
+    setSelectedSeasonId(preferred);
   }, [seasons, selectedSeasonId, initialSeasonId]);
 
   // Le premier épisode de la nouvelle saison, dès qu'il existe. L'effet dépend
   // des épisodes et non de la saison : c'est leur arrivée qui rend le focus
   // possible, et la requête est asynchrone.
   useEffect(() => {
-    if (!viserLePremier.current) return;
+    if (!aimTheFirst.current) return;
     if (episodesLoading || !episodes?.length) return;
-    viserLePremier.current = false;
-    const premiere = liste.current?.querySelector<HTMLElement>(".ligne-episode-tv");
+    aimTheFirst.current = false;
+    const premiere = list.current?.querySelector<HTMLElement>(".ligne-episode-tv");
     // Par le moteur, jamais `focus()` nu : sur la dalle, le focus natif
     // recentre la ligne au lieu de la poser sous la bande des saisons.
-    if (premiere) donnerFocus(premiere);
+    if (premiere) giveFocus(premiere);
   }, [episodes, episodesLoading]);
 
-  const choisirSaison = useCallback((saisonId: string) => {
-    viserLePremier.current = true;
-    setSelectedSeasonId(saisonId);
+  const chooseSeason = useCallback((seasonId: string) => {
+    aimTheFirst.current = true;
+    setSelectedSeasonId(seasonId);
   }, []);
 
   // Le calage initial de la bande : la saison active en vue, une seule fois.
@@ -108,14 +108,14 @@ export function EpisodeList({
   // booléen et saute brutalement. La position se mesure par les rectangles —
   // `offsetLeft` se rapporte au premier ancêtre positionné, pas au scroller.
   useEffect(() => {
-    if (bandeCalee.current || !selectedSeasonId) return;
-    const conteneur = bande.current;
-    const actif = conteneur?.querySelector<HTMLElement>('[aria-selected="true"]');
-    if (!conteneur || !actif) return;
-    bandeCalee.current = true;
+    if (wedgedBand.current || !selectedSeasonId) return;
+    const container = band.current;
+    const active = container?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!container || !active) return;
+    wedgedBand.current = true;
     const delta =
-      actif.getBoundingClientRect().left - conteneur.getBoundingClientRect().left - 24;
-    if (delta > 0) conteneur.scrollLeft += delta;
+      active.getBoundingClientRect().left - container.getBoundingClientRect().left - 24;
+    if (delta > 0) container.scrollLeft += delta;
   }, [selectedSeasonId, seasons]);
 
   return (
@@ -137,28 +137,28 @@ export function EpisodeList({
           aria-label={t("common:seasons", "Saisons")}
           data-tv-piste=""
           data-tv-zone="saisons"
-          ref={bande}
+          ref={band}
         >
-          {seasons?.map((saison) => (
+          {seasons?.map((season) => (
             <button
-              key={saison.Id}
+              key={season.Id}
               type="button"
               role="tab"
-              aria-selected={selectedSeasonId === saison.Id}
-              onClick={() => choisirSaison(saison.Id)}
-              className={`saison-tv ${selectedSeasonId === saison.Id ? "saison-tv-active" : ""}`}
+              aria-selected={selectedSeasonId === season.Id}
+              onClick={() => chooseSeason(season.Id)}
+              className={`saison-tv ${selectedSeasonId === season.Id ? "saison-tv-active" : ""}`}
             >
-              {saison.Name}
+              {season.Name}
             </button>
           ))}
         </div>
       )}
 
-      <div className="space-y-3" ref={liste}>
+      <div className="space-y-3" ref={list}>
         {episodesLoading
           ? Array.from({ length: 6 }).map((_, index) => <Shimmer key={index} height="100px" />)
           : episodes?.map((episode) => (
-              <LigneEpisodeTv key={episode.Id} episodeId={episode.Id}>
+              <EpisodeRowTv key={episode.Id} episodeId={episode.Id}>
                 <EpisodeRow
                   episode={episode}
                   client={client}
@@ -170,7 +170,7 @@ export function EpisodeList({
                   onToggleSelect={() => {}}
                   onPlay={() => navigate(`/watch/${episode.Id}`)}
                 />
-              </LigneEpisodeTv>
+              </EpisodeRowTv>
             ))}
       </div>
     </div>

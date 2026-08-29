@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyUserChange, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
-import { oublierJumelage } from "../../auth/returnToShell";
+import { forgetPairing } from "../../auth/returnToShell";
 
 /**
  * Le compte : qui regarde, et comment cesser de l'être.
@@ -33,28 +33,28 @@ import { oublierJumelage } from "../../auth/returnToShell";
 /** Le portrait, à la taille d'une dalle regardée de loin. */
 const TAILLE_PORTRAIT = 132;
 
-function nomDuCompte(): string | null {
+function accountName(): string | null {
   try {
-    const brut = localStorage.getItem("tentacle_user");
-    if (!brut) return null;
-    const nom = (JSON.parse(brut) as { Name?: unknown }).Name;
+    const raw = localStorage.getItem("tentacle_user");
+    if (!raw) return null;
+    const nom = (JSON.parse(raw) as { Name?: unknown }).Name;
     return typeof nom === "string" && nom.length > 0 ? nom : null;
   } catch {
     return null;
   }
 }
 
-export function EcranCompteTv() {
+export function AccountScreenTv() {
   const { t } = useTranslation("pairing");
   const queryClient = useQueryClient();
-  const [confirme, setConfirme] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
-  const oublier = useCallback(() => {
-    if (!confirme) {
-      setConfirme(true);
+  const forget = useCallback(() => {
+    if (!confirmed) {
+      setConfirmed(true);
       return;
     }
-    oublierJumelage();
+    forgetPairing();
     queryClient.clear();
     notifyUserChange();
     // La purge suffit : sans session, la garde de routes monte l'écran de
@@ -62,9 +62,9 @@ export function EcranCompteTv() {
     // plus l'application — c'est ce que faisait la version précédente, faute de
     // pouvoir revenir à la coquille, et on voyait la page se fermer après avoir
     // demandé à se rejumeler.
-  }, [confirme, queryClient]);
+  }, [confirmed, queryClient]);
 
-  const compte = nomDuCompte();
+  const account = accountName();
 
   return (
     // Blocs espacés par des marges sur des éléments NEUTRES : la passe des
@@ -73,17 +73,17 @@ export function EcranCompteTv() {
     // détaillée dans `AboutScreenTv.tsx`.
     <div>
       <section className="mb-14">
-        <Profil nom={compte} />
+        <Profile nom={account} />
       </section>
 
       <section>
         <button
           type="button"
-          onClick={oublier}
-          onBlur={() => setConfirme(false)}
+          onClick={forget}
+          onBlur={() => setConfirmed(false)}
           className="rounded-full border border-line-strong bg-fill-subtle px-8 py-4 text-lg font-semibold text-content-primary"
         >
-          {confirme ? t("tvOublierConfirmer") : t("tvOublierTitre")}
+          {confirmed ? t("tvOublierConfirmer") : t("tvOublierTitre")}
         </button>
         <p className="mt-3 max-w-xl text-base leading-relaxed text-content-tertiary">
           {t("tvOublierTexte")}
@@ -106,18 +106,18 @@ export function EcranCompteTv() {
  * d'avoir essayé, donc on essaie, et `onError` retombe sur l'initiale sans que
  * rien ne clignote : l'image n'est montée qu'une fois chargée.
  */
-function Profil({ nom }: { nom: string | null }) {
+function Profile({ nom }: { nom: string | null }) {
   const { t } = useTranslation("pairing");
   const client = useJellyfinClient();
   const userId = useUserId();
-  const [echoue, setEchoue] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const url =
-    userId && !echoue
+    userId && !failed
       ? `${client.getBaseUrl()}/Users/${userId}/Images/Primary?maxWidth=${TAILLE_PORTRAIT * 2}&quality=90`
       : null;
 
-  const initiale = (nom ?? "?").charAt(0).toUpperCase();
+  const initial = (nom ?? "?").charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-8">
@@ -138,10 +138,10 @@ function Profil({ nom }: { nom: string | null }) {
             src={url}
             alt=""
             className="h-full w-full object-cover"
-            onError={() => setEchoue(true)}
+            onError={() => setFailed(true)}
           />
         ) : (
-          <span className="text-5xl font-bold text-white">{initiale}</span>
+          <span className="text-5xl font-bold text-white">{initial}</span>
         )}
       </div>
 
@@ -155,4 +155,4 @@ function Profil({ nom }: { nom: string | null }) {
   );
 }
 
-export default EcranCompteTv;
+export default AccountScreenTv;

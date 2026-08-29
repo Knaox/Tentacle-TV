@@ -11,7 +11,7 @@
  * `apps/tv/src/components/pairing/RelayCodeDisplay.tsx` et de
  * `apps/tv/src/theme/colors.ts` : carte de 600 de large, retrait de 48, cases
  * de code de 100 × 120, caractère de 64 en graisse 800, jauge de 4 px. La
- * coquille porte les mêmes dans `shell/css/coquille.css`. Les trois écrans de
+ * coquille porte les mêmes dans `shell/css/shell.css`. Les trois écrans de
  * jumelage du produit — Android TV, Apple TV, LG — se suivent dans le temps
  * pour un même utilisateur : ils ne doivent pas donner l'impression de changer
  * d'application au passage.

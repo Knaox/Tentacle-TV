@@ -1,7 +1,7 @@
 import { useSyncExternalStore, type ComponentProps } from "react";
-import { VideoPlayerOverlays as SurcouchesWeb } from "@/components/player/VideoPlayerOverlays?original";
+import { VideoPlayerOverlays as WebOverlays } from "@/components/player/VideoPlayerOverlays?original";
 import { PlaybackOverlayTv } from "./PlaybackOverlayTv";
-import { abonnerGel, lireGel } from "./freezeStateTv";
+import { subscribeFreeze, lireGel } from "./freezeStateTv";
 
 /**
  * Les surcouches du lecteur, moins la projection de l'arbitre.
@@ -17,12 +17,12 @@ import { abonnerGel, lireGel } from "./freezeStateTv";
  * pile média, le lecteur n'émet aucun événement — la veille de gel, elle, le
  * voit, et allume LE cercle qui existe déjà.
  */
-export function VideoPlayerOverlays(props: ComponentProps<typeof SurcouchesWeb>) {
-  const gele = useSyncExternalStore(abonnerGel, lireGel, lireGel);
+export function VideoPlayerOverlays(props: ComponentProps<typeof WebOverlays>) {
+  const frozen2 = useSyncExternalStore(subscribeFreeze, lireGel, lireGel);
 
   return (
     <>
-      <SurcouchesWeb {...props} loading={props.loading || gele} overlay={{ kind: "none" }} />
+      <WebOverlays {...props} loading={props.loading || frozen2} overlay={{ kind: "none" }} />
       <PlaybackOverlayTv
         overlay={props.overlay}
         countdownTotals={props.countdownTotals}

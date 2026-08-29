@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { captureDetailOrigin } from "@/components/detail/detailTransition";
 import { CardMetaOverlay } from "@/components/media/CardMetaOverlay";
-import { creerAppuiLong } from "../../focus/longPress";
-import { relacherItem, viserItem } from "./focusedItem";
+import { createLongPress } from "../../focus/longPress";
+import { releaseItem, aimItem } from "./focusedItem";
 
 /**
  * Rend une carte du client web atteignable à la télécommande.
@@ -39,31 +39,31 @@ import { relacherItem, viserItem } from "./focusedItem";
  * d'accueil et de catalogue, précisément pour ces pastilles.
  */
 
-interface ProprietesCarteFocusable {
+interface FocusableCardProps {
   /** Index dans la LISTE, pas dans la fenêtre — c'est ce qu'attend l'épinglage. */
   index: number;
   /** Largeur calculée par la rangée ; l'enveloppe et la carte la partagent. */
-  largeur: number | null;
+  width: number | null;
   /** Identifiant de l'item, pour la navigation du maintien. */
   itemId: string;
   /** L'item complet, pour les pastilles montées au focus. */
   item?: MediaItem;
   /** Épinglage du fenêtrage : `null` au blur. */
-  onIndexActif: (index: number | null) => void;
+  onActiveIndex: (index: number | null) => void;
   children: ReactNode;
 }
 
-export function CarteFocusable({
+export function FocusableCard({
   index,
-  largeur,
+  width,
   itemId,
   item,
-  onIndexActif,
+  onActiveIndex,
   children,
-}: ProprietesCarteFocusable) {
+}: FocusableCardProps) {
   const racine = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [focalisee, setFocalisee] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   /**
    * L'appui court rejoue un vrai clic sur la carte enveloppée.
@@ -74,7 +74,7 @@ export function CarteFocusable({
    * d'origine pour la transition, garde du menu contextuel, résolution de
    * l'épisode à reprendre — sans en dupliquer une ligne.
    */
-  const actionCourte = useCallback(() => {
+  const shortAction = useCallback(() => {
     const carte = racine.current?.firstElementChild;
     if (carte instanceof HTMLElement) carte.click();
   }, []);
@@ -86,12 +86,12 @@ export function CarteFocusable({
    * ses propres mesures : on s'y raccroche plutôt que d'ajouter un marqueur au
    * composant partagé.
    */
-  const actionLongue = useCallback(() => {
-    const visuel = racine.current?.querySelector<HTMLElement>("[data-card-visual]");
-    if (visuel) {
-      const rayon = Number.parseFloat(window.getComputedStyle(visuel).borderTopLeftRadius) || 0;
-      const image = visuel.querySelector("img");
-      captureDetailOrigin(visuel, itemId, image?.currentSrc || image?.src || "", rayon);
+  const longAction = useCallback(() => {
+    const visual = racine.current?.querySelector<HTMLElement>("[data-card-visual]");
+    if (visual) {
+      const rayon = Number.parseFloat(window.getComputedStyle(visual).borderTopLeftRadius) || 0;
+      const image = visual.querySelector("img");
+      captureDetailOrigin(visual, itemId, image?.currentSrc || image?.src || "", rayon);
     }
     navigate(`/media/${itemId}`);
   }, [itemId, navigate]);
@@ -105,22 +105,22 @@ export function CarteFocusable({
    * peut-être peu, il RÉPOND — et le verrou armé par l'action longue avale la
    * touche tenue, l'écran d'arrivée ne reçoit rien.
    */
-  const appui = useMemo(
-    () => creerAppuiLong({ short: actionCourte, long: actionLongue }),
-    [actionCourte, actionLongue],
+  const press = useMemo(
+    () => createLongPress({ short: shortAction, long: longAction }),
+    [shortAction, longAction],
   );
 
   const surFocus = useCallback(() => {
-    setFocalisee(true);
-    if (item) viserItem(item);
-    onIndexActif(index);
-  }, [index, item, onIndexActif]);
+    setFocused(true);
+    if (item) aimItem(item);
+    onActiveIndex(index);
+  }, [index, item, onActiveIndex]);
   const surBlur = useCallback(() => {
-    setFocalisee(false);
-    relacherItem();
-    appui.onBlur();
-    onIndexActif(null);
-  }, [appui, onIndexActif]);
+    setFocused(false);
+    releaseItem();
+    press.onBlur();
+    onActiveIndex(null);
+  }, [press, onActiveIndex]);
 
   return (
     <div
@@ -131,16 +131,16 @@ export function CarteFocusable({
       tabIndex={0}
       data-tv-carte
       className="carte-tv relative flex-shrink-0 snap-start"
-      style={largeur ? { width: largeur } : undefined}
-      onKeyDown={appui.onKeyDown}
-      onKeyUp={appui.onKeyUp}
+      style={width ? { width: width } : undefined}
+      onKeyDown={press.onKeyDown}
+      onKeyUp={press.onKeyUp}
       onFocus={surFocus}
       onBlur={surBlur}
     >
       {children}
       {/* Monté au focus seulement, et démonté au blur : une passe de
           composition par carte visitée, jamais quarante en permanence. */}
-      {focalisee && item && (
+      {focused && item && (
         <span className="carte-tv-meta">
           <CardMetaOverlay item={item} density="compact" />
         </span>

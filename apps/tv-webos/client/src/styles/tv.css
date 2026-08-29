@@ -200,7 +200,7 @@ body {
 
 /* ── Aucun flou d'arrière-plan, nulle part ───────────────────────────────
  *
- * `passeVerre` retire tous les `backdrop-filter` de la FEUILLE, et c'est le bon
+ * `glassPass` retire tous les `backdrop-filter` de la FEUILLE, et c'est le bon
  * endroit pour vingt-six déclarations sur vingt-neuf. Les trois autres — non,
  * les vingt-six autres — sont écrites en STYLE EN LIGNE dans `apps/web`, hors
  * de portée de toute passe, et aucune règle ordinaire ne bat un attribut

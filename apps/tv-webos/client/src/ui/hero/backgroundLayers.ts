@@ -24,38 +24,38 @@ export interface CalqueFond {
   /** L'URL de l'image — c'est aussi son identité de rendu. */
   url: string;
   /** Vrai quand le calque s'efface : plus rien à afficher derrière lui. */
-  sortant: boolean;
+  leaving: boolean;
 }
 
-interface CalquesFond {
-  calques: CalqueFond[];
+interface BackdropLayers {
+  layers: CalqueFond[];
   /** Le fondu d'entrée est terminé : ce calque tient l'écran, seul. */
-  signalerEntre: (url: string) => void;
+  reportEntered: (url: string) => void;
   /** Le fondu de sortie est terminé : le calque peut être démonté. */
-  signalerSorti: (url: string) => void;
+  reportExited: (url: string) => void;
 }
 
-export function useCalquesFond(url: string | null): CalquesFond {
-  const [calques, setCalques] = useState<CalqueFond[]>([]);
+export function useBackdropLayers(url: string | null): BackdropLayers {
+  const [layers, setLayers] = useState<CalqueFond[]>([]);
 
   useEffect(() => {
-    setCalques((actuels) => suivant(actuels, url));
+    setLayers((currents) => next(currents, url));
   }, [url]);
 
-  const signalerEntre = useCallback((entre: string) => {
-    setCalques((actuels) => {
-      const index = actuels.findIndex((calque) => calque.url === entre);
+  const reportEntered = useCallback((entered: string) => {
+    setLayers((currents) => {
+      const index = currents.findIndex((calque) => calque.url === entered);
       // Tout ce qui était dessous n'a plus de raison d'être : le calque entrant
       // est désormais opaque et le recouvre entièrement.
-      return index <= 0 ? actuels : actuels.slice(index);
+      return index <= 0 ? currents : currents.slice(index);
     });
   }, []);
 
-  const signalerSorti = useCallback((sorti: string) => {
-    setCalques((actuels) => actuels.filter((calque) => calque.url !== sorti));
+  const reportExited = useCallback((exited: string) => {
+    setLayers((currents) => currents.filter((calque) => calque.url !== exited));
   }, []);
 
-  return { calques, signalerEntre, signalerSorti };
+  return { layers, reportEntered, reportExited };
 }
 
 /**
@@ -65,26 +65,26 @@ export function useCalquesFond(url: string | null): CalquesFond {
  * lit d'un bloc, et `calquesFond.test.ts` la vérifie — ce qu'on ne pourrait pas
  * faire d'un enchaînement de rendus.
  */
-export function suivant(actuels: CalqueFond[], url: string | null): CalqueFond[] {
+export function next(currents: CalqueFond[], url: string | null): CalqueFond[] {
   if (url === null) {
-    if (actuels.length === 0) return actuels;
-    if (actuels.every((calque) => calque.sortant)) return actuels;
-    return actuels.map((calque) => ({ url: calque.url, sortant: true }));
+    if (currents.length === 0) return currents;
+    if (currents.every((calque) => calque.leaving)) return currents;
+    return currents.map((calque) => ({ url: calque.url, leaving: true }));
   }
 
-  const dernier = actuels[actuels.length - 1];
+  const last = currents[currents.length - 1];
 
   // Déjà à l'écran : ne rien faire. C'est ce qui garde le fond IMMOBILE quand
   // on passe d'un épisode au suivant — les deux empruntent le Backdrop de la
   // même série, donc la même URL, et il n'y a rien à remplacer.
-  if (dernier && dernier.url === url && !dernier.sortant) return actuels;
+  if (last && last.url === url && !last.leaving) return currents;
 
   // Le même calque revient alors qu'il s'effaçait : on annule son départ
   // plutôt que d'en monter un second sur la même image.
-  if (dernier && dernier.url === url) {
-    return actuels.slice(0, -1).concat([{ url, sortant: false }]);
+  if (last && last.url === url) {
+    return currents.slice(0, -1).concat([{ url, leaving: false }]);
   }
 
-  const socle = actuels.filter((calque) => !calque.sortant).slice(-1);
-  return socle.concat([{ url, sortant: false }]);
+  const socle = currents.filter((calque) => !calque.leaving).slice(-1);
+  return socle.concat([{ url, leaving: false }]);
 }

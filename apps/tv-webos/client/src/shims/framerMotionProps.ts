@@ -12,7 +12,7 @@
  * dans cette liste : ce sont des propriétés React ordinaires, que les
  * composants attendent de voir arriver.
  */
-export const PROPRIETES_ANIMATION: ReadonlySet<string> = new Set([
+export const ANIMATION_PROPS: ReadonlySet<string> = new Set([
   // Cycle de vie de l'animation
   "initial",
   "animate",
@@ -63,14 +63,14 @@ export const PROPRIETES_ANIMATION: ReadonlySet<string> = new Set([
 ]);
 
 /** Sépare les propriétés destinées au DOM de celles qui n'y ont rien à faire. */
-export function trierProprietes(
-  proprietes: Record<string, unknown>,
+export function sortProps(
+  props: Record<string, unknown>,
 ): { dom: Record<string, unknown>; animation: Record<string, unknown> } {
   const dom: Record<string, unknown> = {};
   const animation: Record<string, unknown> = {};
-  for (const cle of Object.keys(proprietes)) {
-    if (PROPRIETES_ANIMATION.has(cle)) animation[cle] = proprietes[cle];
-    else dom[cle] = proprietes[cle];
+  for (const key of Object.keys(props)) {
+    if (ANIMATION_PROPS.has(key)) animation[key] = props[key];
+    else dom[key] = props[key];
   }
   return { dom, animation };
 }

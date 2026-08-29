@@ -21,7 +21,7 @@ interface UseDesktopSeekbarArgs {
    * sans cet avertissement, chercher un passage dans un film affichait un badge
    * « pause » puis un badge « lecture » en pleine image (cf. `usePlaybackFlash`).
    */
-  ignorerProchaineBascule?: () => void;
+  ignoreNextToggle?: () => void;
 }
 
 /**
@@ -31,7 +31,7 @@ interface UseDesktopSeekbarArgs {
  */
 export function useDesktopSeekbar({
   dur, paused, isDirectPlay, item, mediaSourceId, localItemId, effectiveMpvOffset, seek, setPause,
-  ignorerProchaineBascule,
+  ignoreNextToggle,
 }: UseDesktopSeekbarArgs) {
   const seekBarRef = useRef<HTMLDivElement>(null);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
@@ -60,7 +60,7 @@ export function useDesktopSeekbar({
     // doit pas laisser d'armement en attente, sinon c'est la pause SUIVANTE —
     // celle de l'utilisateur — qui serait avalée.
     if (!paused) {
-      ignorerProchaineBascule?.();
+      ignoreNextToggle?.();
       setPause(true);
     }
     const pct = pctFromEvent(e as unknown as MouseEvent);
@@ -88,7 +88,7 @@ export function useDesktopSeekbar({
       // La reprise non plus n'est pas une intention : c'est le retour à l'état
       // d'avant le glissement.
       if (wasPlayingBeforeDrag.current) {
-        ignorerProchaineBascule?.();
+        ignoreNextToggle?.();
         setPause(false);
       }
     };

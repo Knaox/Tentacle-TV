@@ -1,8 +1,8 @@
-import { conteneurPiegeant, cibleAtteignable, estUnChampDeSaisie, recenser } from "./candidates";
-import { ciblePreferee, estCiblePreferee, focusParDefaut } from "./default";
-import { aUneMemoire, oublier, retrouver } from "./memory";
-import { reviserApresMontage } from "./wait";
-import { donnerFocus, elementActif } from "./active";
+import { trappingContainer, reachableTarget, isInputField, collect } from "./candidates";
+import { preferredTarget, isPreferredTarget, defaultFocus } from "./default";
+import { hasMemory, forget, recover } from "./memory";
+import { reviewAfterMount } from "./wait";
+import { giveFocus, activeElement } from "./active";
 
 /**
  * Où le focus se pose en ARRIVANT sur un écran.
@@ -50,13 +50,13 @@ const BUDGET_ENTREE_MS = 3000;
  * Le temps d'un rendu de React, pas davantage : au-delà, ce qui est encore là
  * est là pour rester.
  */
-const DUREE_SORTANT_MS = 500;
+const OUTGOING_MS = 500;
 
-/** Nombre d'appuis vus depuis le démarrage. Voir `noterAppui`. */
-let appuisVus = 0;
+/** Nombre d'appuis vus depuis le démarrage. Voir `notePress`. */
+let seenPresses = 0;
 
-/** Vrai pendant que le moteur pose lui-même le focus. Voir `placementEnCours`. */
-let placementAutomatique = false;
+/** Vrai pendant que le moteur pose lui-même le focus. Voir `placementInProgress`. */
+let autoPlacement = false;
 
 /**
  * Relances restantes quand un écran n'a toujours rien à viser.
@@ -70,8 +70,8 @@ let placementAutomatique = false;
  * lent sans jamais boucler : dès qu'un élément est focalisable, le compteur est
  * remis à zéro et la chaîne s'arrête.
  */
-const RELANCES_MAX = 3;
-let relances = 0;
+const MAX_RETRIES = 3;
+let retries = 0;
 
 /**
  * Les éléments de l'écran qu'on vient de quitter.
@@ -89,7 +89,7 @@ let relances = 0;
  *
  * Une `WeakSet` : on ne veut retenir aucun de ces nœuds en vie.
  */
-let ecranSortant: WeakSet<HTMLElement> | null = null;
+let outgoingScreen: WeakSet<HTMLElement> | null = null;
 
 /**
  * À appeler pour chaque touche reçue.
@@ -98,8 +98,8 @@ let ecranSortant: WeakSet<HTMLElement> | null = null;
  * la main pendant qu'on attendait le montage d'un écran ? Si oui, remonter le
  * focus vers la cible d'entrée le lui arracherait des doigts.
  */
-export function noterAppui(): void {
-  appuisVus++;
+export function notePress(): void {
+  seenPresses++;
 }
 
 /**
@@ -110,22 +110,22 @@ export function noterAppui(): void {
  * s'écrivait dans la mémoire de cet écran, et l'affinage y retrouvait sa propre
  * supposition — le focus ne remontait donc jamais vers la vraie cible.
  */
-export function placementEnCours(): boolean {
-  return placementAutomatique;
+export function placementInProgress(): boolean {
+  return autoPlacement;
 }
 
 /**
  * @param quitteUnEcran vrai quand on vient de changer de route, faux au
  * démarrage. La distinction décide du sort du focus courant.
  */
-export function amorcerFocus(quitteUnEcran = false): void {
-  const depart = appuisVus;
+export function primeFocus(leavingScreen = false): void {
+  const start = seenPresses;
 
-  if (quitteUnEcran) {
+  if (leavingScreen) {
     // Le focus courant appartient à l'écran qu'on quitte : on le lui retire, et
     // on retient tout ce qu'il expose pour ne pas le lui rendre.
-    ecranSortant = new WeakSet(recenser(document).map((candidat) => candidat.element));
-    elementActif()?.blur();
+    outgoingScreen = new WeakSet(collect(document).map((candidate) => candidate.element));
+    activeElement()?.blur();
 
     // **Et on l'oublie vite.** Cette liste ne sert qu'à franchir l'instant qui
     // sépare le changement d'adresse du rendu de React ; au-delà, elle ment.
@@ -137,21 +137,21 @@ export function amorcerFocus(quitteUnEcran = false): void {
     // l'épuisement du délai. Le focus gardait ce que l'ordre de lecture lui
     // avait donné : « Oublier ce jumelage », une action destructive.
     setTimeout(() => {
-      ecranSortant = null;
-    }, DUREE_SORTANT_MS);
+      outgoingScreen = null;
+    }, OUTGOING_MS);
   } else {
-    ecranSortant = null;
+    outgoingScreen = null;
   }
 
   // Tout de suite, avec ce qui est déjà là : un écran sans anneau est le pire
   // des cas, et il durerait aussi longtemps que le réseau.
-  reviserApresMontage(poserFocusInitial);
+  reviewAfterMount(poserFocusInitial);
 
   // Puis, le temps que les données arrivent.
-  reviserApresMontage(
+  reviewAfterMount(
     () => {
-      if (appuisVus !== depart) return true;
-      return affinerFocus();
+      if (seenPresses !== start) return true;
+      return refineFocus();
     },
     {
       budgetMs: BUDGET_ENTREE_MS,
@@ -159,27 +159,27 @@ export function amorcerFocus(quitteUnEcran = false): void {
       // élément focalisé. Un écran dont les données n'arrivent pas — réseau
       // coupé, bibliothèque vide — perdrait sinon son anneau au démontage de
       // l'écran précédent, et la télécommande n'aurait plus rien à déplacer.
-      auDelai: () => {
+      onTimeout: () => {
         // Le sortant a eu tout le temps de disparaître : ce qui reste est
         // l'écran courant, quel qu'il soit.
-        ecranSortant = null;
-        if (elementActif()) {
-          relances = 0;
+        outgoingScreen = null;
+        if (activeElement()) {
+          retries = 0;
           return;
         }
         // La cible mémorisée n'est jamais reparue — liste vidée, élément
         // retiré, réseau muet. On renonce à elle plutôt que de laisser l'écran
         // sans anneau : c'est la règle qui prime sur toutes les autres.
-        oublier();
+        forget();
         if (poserFocusInitial()) {
-          relances = 0;
+          retries = 0;
           return;
         }
         // Rien à viser : l'écran n'a pas encore rendu quoi que ce soit
         // d'atteignable. On rouvre un délai de grâce plutôt que d'abandonner.
-        if (relances >= RELANCES_MAX) return;
-        relances++;
-        amorcerFocus();
+        if (retries >= MAX_RETRIES) return;
+        retries++;
+        primeFocus();
       },
     },
   );
@@ -197,7 +197,7 @@ export function amorcerFocus(quitteUnEcran = false): void {
  * 3. **Le focus par défaut de l'écran**, résolu par `default.ts`.
  */
 function poserFocusInitial(): boolean {
-  const racine = conteneurPiegeant() ?? document;
+  const racine = trappingContainer() ?? document;
 
   // Un écran qui a DÉJÀ désigné sa cible d'entrée a raison contre nous, et
   // avant tout le reste — y compris avant le filtre de l'écran sortant.
@@ -208,8 +208,8 @@ function poserFocusInitial(): boolean {
   // un écran déjà monté, et la section s'en trouvait classée « sortante ». Notre
   // pose la remplaçait alors par ce que l'ordre de lecture proposait — « Oublier
   // ce jumelage », une action destructive.
-  const deja = elementActif();
-  if (deja && estCiblePreferee(deja) && cibleAtteignable(deja)) return true;
+  const already = activeElement();
+  if (already && isPreferredTarget(already) && reachableTarget(already)) return true;
 
   // La mémoire ne ramène JAMAIS le focus dans un champ de saisie.
   //
@@ -221,18 +221,18 @@ function poserFocusInitial(): boolean {
   // `keyboardStateChange visibility=false`, puis IMMÉDIATEMENT
   // `visibility=true`, sans que `document.activeElement` ait cessé d'être
   // l'`<input>`. C'est cette pose-ci qui l'y ramenait. webOS rouvrait donc son
-  // clavier, `moteurSuspendu()` redevenait vrai, et plus une flèche n'était
+  // clavier, `engineSuspended()` redevenait vrai, et plus une flèche n'était
   // traitée : ni pour descendre vers les résultats, ni pour remonter au champ.
   // Les deux symptômes n'en faisaient qu'un.
-  const memorise = entrant(retrouver(racine));
-  const memoireDansUnChamp = memorise !== null && estUnChampDeSaisie(memorise);
-  if (memorise && !memoireDansUnChamp) {
-    poser(memorise);
+  const remembered = entrant(recover(racine));
+  const memoryInField = remembered !== null && isInputField(remembered);
+  if (remembered && !memoryInField) {
+    poser(remembered);
     return true;
   }
 
-  const actif = elementActif();
-  if (actif && entrant(actif) && cibleAtteignable(actif) && !estUnChampDeSaisie(actif)) return true;
+  const active = activeElement();
+  if (active && entrant(active) && reachableTarget(active) && !isInputField(active)) return true;
 
   // Une trace existe, mais sa cible n'est pas encore montée. On ne pose RIEN :
   // amener une carte par défaut en vue remettrait la grille en haut et
@@ -242,27 +242,27 @@ function poserFocusInitial(): boolean {
   // Une trace dont la cible est un champ de saisie ne vaut pas d'attendre : la
   // laisser gouverner ici rendrait l'écran sans anneau, la pose ci-dessus
   // l'ayant justement refusée.
-  if (aUneMemoire() && !memoireDansUnChamp) return true;
+  if (hasMemory() && !memoryInField) return true;
 
-  const defaut = focusParDefaut(racine, candidatsEntrants(racine));
-  if (!defaut) return false;
-  poser(defaut);
+  const fallback = defaultFocus(racine, incomingCandidates(racine));
+  if (!fallback) return false;
+  poser(fallback);
   return true;
 }
 
 /** L'élément appartient-il à l'écran qui ARRIVE ? `null` passe au travers. */
 function entrant(element: HTMLElement | null): HTMLElement | null {
   if (!element) return null;
-  if (ecranSortant !== null && ecranSortant.has(element)) return null;
+  if (outgoingScreen !== null && outgoingScreen.has(element)) return null;
   return element;
 }
 
-function candidatsEntrants(racine: ParentNode) {
-  const tous = recenser(racine);
-  if (ecranSortant === null) return tous;
-  const restants = tous.filter((candidat) => !ecranSortant?.has(candidat.element));
+function incomingCandidates(racine: ParentNode) {
+  const all = collect(racine);
+  if (outgoingScreen === null) return all;
+  const remaining = all.filter((candidate) => !outgoingScreen?.has(candidate.element));
   // Tout appartient encore à l'écran sortant : rien n'est monté, on attend.
-  return restants;
+  return remaining;
 }
 
 /**
@@ -272,19 +272,19 @@ function candidatsEntrants(racine: ParentNode) {
  * focus, soit qu'il soit déjà au bon endroit. Rend faux tant que la cible n'est
  * pas montée, ce qui relance l'attente jusqu'à l'épuisement du budget.
  */
-function affinerFocus(): boolean {
-  const racine = conteneurPiegeant() ?? document;
-  const actif = entrant(elementActif());
+function refineFocus(): boolean {
+  const racine = trappingContainer() ?? document;
+  const active = entrant(activeElement());
 
-  const memorise = entrant(retrouver(racine));
-  if (memorise) {
-    if (memorise !== actif) poser(memorise);
-    ecranSortant = null;
+  const remembered = entrant(recover(racine));
+  if (remembered) {
+    if (remembered !== active) poser(remembered);
+    outgoingScreen = null;
     return true;
   }
 
-  if (actif && estCiblePreferee(actif)) {
-    ecranSortant = null;
+  if (active && isPreferredTarget(active)) {
+    outgoingScreen = null;
     return true;
   }
 
@@ -296,22 +296,22 @@ function affinerFocus(): boolean {
   // jamais montée ni retrouvée. Mesuré exactement ainsi : retour sur la
   // bibliothèque, défilement ramené de 958 à 266, focus sur la première affiche
   // au lieu de celle qu'on avait quittée.
-  if (aUneMemoire()) return false;
+  if (hasMemory()) return false;
 
-  const preferee = ciblePreferee(racine, candidatsEntrants(racine));
-  if (!preferee) return false;
+  const preferred = preferredTarget(racine, incomingCandidates(racine));
+  if (!preferred) return false;
 
-  poser(preferee);
-  ecranSortant = null;
+  poser(preferred);
+  outgoingScreen = null;
   return true;
 }
 
 /** Pose le focus sans que la mémoire y voie un geste de l'utilisateur. */
 function poser(element: HTMLElement): void {
-  placementAutomatique = true;
+  autoPlacement = true;
   try {
-    donnerFocus(element);
+    giveFocus(element);
   } finally {
-    placementAutomatique = false;
+    autoPlacement = false;
   }
 }

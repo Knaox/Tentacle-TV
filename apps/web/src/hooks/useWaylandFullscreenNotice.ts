@@ -9,10 +9,10 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../contexts/ToastContext";
 import { fenetrageLinux, montageLinux } from "../desktop/detect";
-import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "../lib/waylandFullscreenNotice";
+import { fullscreenNoticeSeen, markFullscreenNoticeSeen } from "../lib/waylandFullscreenNotice";
 
 export function useWaylandFullscreenNotice(ready: boolean): void {
-  const { show: montrerToast } = useToast();
+  const { show: showToast } = useToast();
   const { t: tPreferences } = useTranslation("preferences");
   useEffect(() => {
     // `hasFocus` : une lecture SANS geste (reprise automatique) laisse la page
@@ -24,11 +24,11 @@ export function useWaylandFullscreenNotice(ready: boolean): void {
       montageLinux() !== "wayland" ||
       fenetrageLinux() !== "plein-ecran" ||
       !document.hasFocus() ||
-      avisPleinEcranDejaVu()
+      fullscreenNoticeSeen()
     ) {
       return;
     }
-    marquerAvisPleinEcranVu();
-    montrerToast("info", tPreferences("linuxSessionFullscreenToast"));
-  }, [ready, montrerToast, tPreferences]);
+    markFullscreenNoticeSeen();
+    showToast("info", tPreferences("linuxSessionFullscreenToast"));
+  }, [ready, showToast, tPreferences]);
 }

@@ -1,6 +1,6 @@
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { invoke, isElectronShell } from "../desktop/bridge";
-import { surfaceOpaque, surfaceTransparente } from "../lib/surfaceLecteur";
+import { setSurfaceOpaque, setSurfaceTransparent } from "../lib/playerSurface";
 import { MPV_END_FILE_REASON, type MpvEndFileEvent } from "../lib/mpvTypes";
 import type { PlaybackFailure } from "./playbackFailure";
 import { queryTrackList } from "./mpvTrackList";
@@ -9,7 +9,7 @@ import {
   loadMpvApi, setPendingDestroy, withTimeout,
   OBSERVED_PROPERTIES, type MpvState,
 } from "./mpvRuntime";
-import { LABEL_BUFFERING, tracerDemarrage } from "./startupTrace";
+import { LABEL_BUFFERING, traceStartup } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 export interface MpvLifecycleCtx {
@@ -71,7 +71,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         }), 8000, "mpv-init");
         if (cancelled) return;
         if (isElectronShell()) {
-          // La page cesse de peindre son fond — voir `surfaceLecteur.ts`, qui
+          // La page cesse de peindre son fond — voir `playerSurface.ts`, qui
           // dit aussi ce que ce geste ne fait PAS.
           //
           // ⚠️ SAUF sur macOS, où c'est la coquille qui le fait, au moment où
@@ -80,7 +80,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           // demander ici ouvrait un intervalle — celui de l'ouverture du flux —
           // où la page ne peignait plus et où mpv n'avait rien à montrer. On
           // voyait le bureau au travers, d'où le clignotement à chaque film.
-          if (!isMacOS()) await surfaceTransparente();
+          if (!isMacOS()) await setSurfaceTransparent();
           // mpv vient de créer sa fenêtre vidéo sur son propre thread. Windows :
           // on la désarme (WS_DISABLED + hit-testing traversant) pour qu'elle ne
           // puisse jamais geler la file d'entrée partagée avec le thread UI.
@@ -185,7 +185,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 bufferingRef.current = buffering;
                 if (prev.buffering !== buffering) {
                   wtLog("mpv", `paused-for-cache → ${buffering}`, { pos: positionRef.current.toFixed(1), cacheS: bufferedRef.current.toFixed(1) });
-                  tracerDemarrage(buffering ? LABEL_BUFFERING : "cache reconstitué",
+                  traceStartup(buffering ? LABEL_BUFFERING : "cache reconstitué",
                     `cache ${bufferedRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, buffering };
@@ -194,7 +194,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
                 const seeking = (event.data as boolean | null) ?? false;
                 if (prev.seeking !== seeking) {
                   wtLog("mpv", `seeking → ${seeking}`, { pos: positionRef.current.toFixed(1) });
-                  tracerDemarrage(seeking ? "seeking" : "seek terminé",
+                  traceStartup(seeking ? "seeking" : "seek terminé",
                     `pos ${positionRef.current.toFixed(1)} s`);
                 }
                 return { ...prev, seeking };
@@ -225,7 +225,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         switch (event.event) {
           case "file-loaded": {
             wtLog("mpv", "file-loaded", { sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1 });
-            tracerDemarrage("file-loaded");
+            traceStartup("file-loaded");
             // Réapplique le volume/mute persistés à CHAQUE média — filet de
             // sécurité si le restore post-init a été perdu (course à l'init,
             // vue sur Linux). Avant la 1re frame audio → transparent.
@@ -268,7 +268,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1,
               pos: positionRef.current.toFixed(1),
             });
-            tracerDemarrage("playback-restart (première image)",
+            traceStartup("playback-restart (première image)",
               `cache ${bufferedRef.current.toFixed(1)} s`);
             // playback-restart reçu : on annule les watchdogs
             if (playbackWatchdogRef.current) {
@@ -315,19 +315,19 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           }
           case "end-file": {
             // Only set eof for real EOF — not for loadfile replacements (Bug 7)
-            const fin = event as unknown as MpvEndFileEvent;
-            wtLog("mpv", `end-file (reason=${fin.reason} error=${fin.error ?? "-"})`, { pos: positionRef.current.toFixed(1) });
-            setState((prev) => ({ ...prev, playing: false, eof: fin.reason === MPV_END_FILE_REASON.EOF }));
+            const endFile = event as unknown as MpvEndFileEvent;
+            wtLog("mpv", `end-file (reason=${endFile.reason} error=${endFile.error ?? "-"})`, { pos: positionRef.current.toFixed(1) });
+            setState((prev) => ({ ...prev, playing: false, eof: endFile.reason === MPV_END_FILE_REASON.EOF }));
             // Chargement mort — SEULEMENT reason=ERROR et watchdog armé. Jamais
             // sur STOP (un rebuild de source émet le end-file(stop) de l'ANCIEN
             // fichier juste après l'armement du watchdog du nouveau) ; jamais en
             // pleine lecture (watchdog désarmé — une coupure à mi-film garde le
             // comportement d'aujourd'hui, hors périmètre).
-            if (fin.reason === MPV_END_FILE_REASON.ERROR && playbackWatchdogRef.current !== null) {
+            if (endFile.reason === MPV_END_FILE_REASON.ERROR && playbackWatchdogRef.current !== null) {
               clearTimeout(playbackWatchdogRef.current);
               playbackWatchdogRef.current = null;
               if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-              onEndFileFailure(fin);
+              onEndFileFailure(endFile);
             }
             break;
           }
@@ -363,7 +363,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
       // que la page soit redevenue opaque. C'est le bon sens. L'inverse ne
       // coûterait de toute façon qu'un fond noir ; ce sont les deux
       // TRANSPARENTS en même temps qui laisseraient voir le bureau.
-      surfaceOpaque();
+      setSurfaceOpaque();
       const api = getMpvApi();
       setPendingDestroy(api ? api.destroy().catch(() => {}) : Promise.resolve());
     };

@@ -28,26 +28,26 @@
  */
 
 /** Rend l'URL RELATIVE de la variante Dolby Vision, `null` s'il n'y en a pas. */
-export function ligneVarianteDovi(manifeste: string): string | null {
-  const lignes = manifeste.split("\n");
-  for (let i = 0; i < lignes.length; i += 1) {
-    const ligne = lignes[i].trim();
-    if (!ligne.startsWith("#EXT-X-STREAM-INF")) continue;
+export function doviVariantLine(manifest: string): string | null {
+  const lines = manifest.split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line.startsWith("#EXT-X-STREAM-INF")) continue;
     // `SUPPLEMENTAL-CODECS` est le seul marqueur fiable : `VIDEO-RANGE=PQ`
     // désigne aussi un HDR10 ordinaire, et l'ordre des variantes n'est garanti
     // par aucune spécification.
-    if (!ligne.includes("SUPPLEMENTAL-CODECS")) continue;
-    const suivante = (lignes[i + 1] ?? "").trim();
+    if (!line.includes("SUPPLEMENTAL-CODECS")) continue;
+    const nextOne = (lines[i + 1] ?? "").trim();
     // Un manifeste tronqué ou une variante sans URL : mieux vaut rendre la main
     // au téléviseur que de fabriquer une adresse fausse.
-    if (!suivante || suivante.startsWith("#")) return null;
-    return suivante;
+    if (!nextOne || nextOne.startsWith("#")) return null;
+    return nextOne;
   }
   return null;
 }
 
 /** L'URL est-elle un manifeste maître, seul cas où il y a un choix à faire ? */
-export function estManifesteMaitre(url: string): boolean {
+export function isMasterManifest(url: string): boolean {
   return url.includes("master.m3u8");
 }
 
@@ -60,7 +60,7 @@ export function estManifesteMaitre(url: string): boolean {
  * seule contre l'origine du document ; `new URL` ne le fait pas et lève
  * « Invalid base URL ». Il faut donc rendre la base absolue d'abord.
  */
-export function urlAbsolueVariante(relative: string, master: string, page: string): string | null {
+export function absoluteVariantUrl(relative: string, master: string, page: string): string | null {
   try {
     return new URL(relative, new URL(master, page)).toString();
   } catch {
@@ -75,18 +75,18 @@ export function urlAbsolueVariante(relative: string, master: string, page: strin
  * illisible, réseau en défaut. L'appelant repart alors sur le manifeste maître,
  * c'est-à-dire sur le comportement d'avant : dégradé, jamais cassé.
  */
-export async function resoudreVarianteDovi(
+export async function resolveDoviVariant(
   master: string,
   page: string = window.location.href,
 ): Promise<string | null> {
   try {
-    const reponse = await fetch(master);
-    if (!reponse.ok) return null;
-    const relative = ligneVarianteDovi(await reponse.text());
+    const response = await fetch(master);
+    if (!response.ok) return null;
+    const relative = doviVariantLine(await response.text());
     if (!relative) return null;
     // Les URL du manifeste sont relatives à celle du manifeste lui-même, dont
     // la chaîne de requête ne doit pas être héritée.
-    return urlAbsolueVariante(relative, master, page);
+    return absoluteVariantUrl(relative, master, page);
   } catch {
     return null;
   }

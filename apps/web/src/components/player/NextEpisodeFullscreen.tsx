@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { ombreSurVideo } from "../../lib/ombreSurVideo";
+import { videoShadow } from "../../lib/videoShadow";
 
 interface NextEpisodeFullscreenProps {
   /**
@@ -64,8 +64,8 @@ export function NextEpisodeFullscreen({
     }
   }
 
-  const decompte = countdown !== null;
-  const progress = decompte
+  const counting = countdown !== null;
+  const progress = counting
     ? Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds))
     : 0;
 
@@ -123,7 +123,7 @@ export function NextEpisodeFullscreen({
       >
         {/* Compte à rebours — bien visible. Absent quand il est éteint : le
             panneau porte déjà son libellé « À suivre » plus bas. */}
-        {decompte && (
+        {counting && (
           <div className="mb-5 flex items-center gap-2.5">
             <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand-light)", boxShadow: "0 0 10px var(--brand)" }} />
             <span
@@ -141,8 +141,8 @@ export function NextEpisodeFullscreen({
             className="relative w-full shrink-0 overflow-hidden rounded-xl sm:w-72"
             style={{
               // Flou retiré là où la surface a un canal alpha : il y sort en
-              // aplat et masque la vidéo. Voir `lib/ombreSurVideo.ts`.
-              boxShadow: ombreSurVideo(
+              // aplat et masque la vidéo. Voir `lib/videoShadow.ts`.
+              boxShadow: videoShadow(
                 "0 16px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb),0.25)",
                 "0 0 0 1px rgba(var(--brand-rgb),0.25)",
               ),
@@ -190,7 +190,7 @@ export function NextEpisodeFullscreen({
                 style={{ boxShadow: "0 8px 28px var(--brand-glow)" }}
               >
                 <span className="relative flex h-10 w-10 items-center justify-center">
-                  {decompte && (
+                  {counting && (
                     <svg className="absolute inset-0 h-10 w-10 -rotate-90" viewBox="0 0 72 72" aria-hidden="true">
                       <circle cx="36" cy="36" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth="5" />
                       <circle

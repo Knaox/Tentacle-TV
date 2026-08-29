@@ -54,8 +54,8 @@ describe("detournements refuses", () => {
   });
 
   it("refuse un chemin qui n'est pas une chaine", () => {
-    for (const valeur of [undefined, null, 42, {}, ["/api/x"]]) {
-      expect(resolveBridgeUrl(BACKEND, valeur, APP)).toBeNull();
+    for (const value of [undefined, null, 42, {}, ["/api/x"]]) {
+      expect(resolveBridgeUrl(BACKEND, value, APP)).toBeNull();
     }
   });
 
@@ -66,7 +66,7 @@ describe("detournements refuses", () => {
 
 describe("le jeton ne peut pas sortir", () => {
   it("aucune forme connue n'atteint un hote tiers", () => {
-    const tentatives = [
+    const attempts = [
       "https://pirate.exemple/c",
       "http://pirate.exemple/c",
       "@pirate.exemple/c",
@@ -78,7 +78,7 @@ describe("le jeton ne peut pas sortir", () => {
       "/api/../..//pirate.exemple/c",
     ];
     for (const base of ["", BACKEND]) {
-      for (const path of tentatives) {
+      for (const path of attempts) {
         const url = resolveBridgeUrl(base, path, APP);
         if (url === null) continue;
         // Si quelque chose passe, ce doit être sur l'origine attendue.

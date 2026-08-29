@@ -4,23 +4,23 @@ import type {
   CodecProfile,
 } from "@tentacle-tv/shared";
 import {
-  conditionPlageDynamique,
+  dynamicRangeCondition,
   CONDITIONS_HEVC,
-  conditionsH264,
-  DEBIT_MUSIQUE,
-  sousTitresBitmap,
-  SOUS_TITRES_TEXTE,
-  type OptionsProfilWeb,
-} from "@/lib/deviceProfile/blocs";
-import { CONTENEURS_DOVI, plafondDebit } from "./capabilitiesWebos";
-import { plagesDynamiquesTv, resoudreProfil, type ProfilResolu } from "./codecsWebos";
+  h264Conditions,
+  MUSIC_BITRATE,
+  bitmapSubtitles,
+  TEXT_SUBTITLES,
+  type WebProfileOptions,
+} from "@/lib/deviceProfile/blocks";
+import { DOVI_CONTAINERS, plafondDebit } from "./capabilitiesWebos";
+import { tvDynamicRanges, resolveProfile, type ResolvedProfile } from "./codecsWebos";
 import {
-  codecsRetenus,
-  conteneurRetenu,
-  memoireReplis,
-  type MemoireReplis,
+  keptCodecs,
+  keptContainer,
+  fallbackMemory,
+  type FallbackMemory,
 } from "./playbackFallback";
-import { transcodage } from "./remuxWebos";
+import { transcode } from "./remuxWebos";
 
 /**
  * Profil d'appareil d'un téléviseur LG.
@@ -51,9 +51,9 @@ import { transcodage } from "./remuxWebos";
  */
 export function buildBrowserDeviceProfile(
   maxBitrate?: number,
-  options?: OptionsProfilWeb,
+  options?: WebProfileOptions,
 ): DeviceProfile {
-  return construireProfilTv(resoudreProfil(), memoireReplis(), maxBitrate, options);
+  return buildTvProfile(resolveProfile(), fallbackMemory(), maxBitrate, options);
 }
 
 /**
@@ -64,49 +64,49 @@ export function buildBrowserDeviceProfile(
  * de le tenir est de pouvoir l'interroger depuis un test, donc de lui passer les
  * capacités au lieu de les lire dans `window`.
  */
-export function construireProfilTv(
-  resolu: ProfilResolu,
-  memoireBrute: MemoireReplis,
+export function buildTvProfile(
+  resolved: ResolvedProfile,
+  rawMemory: FallbackMemory,
   maxBitrate?: number,
-  options?: OptionsProfilWeb,
+  options?: WebProfileOptions,
 ): DeviceProfile {
-  const memoire = memoireAvecOptions(memoireBrute, options);
-  const plafond = plafondDebit(resolu.dalle.uhd, resolu.dalle.uhd8K);
+  const memory = memoryWithOptions(rawMemory, options);
+  const plafond = plafondDebit(resolved.panel.uhd, resolved.panel.uhd8K);
 
   return {
     MaxStreamingBitrate: maxBitrate ?? plafond,
     MaxStaticBitrate: plafond,
-    MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
+    MusicStreamingTranscodingBitrate: MUSIC_BITRATE,
     // Un palier de qualité choisi (maxBitrate défini — usePlaybackInfo ne rebâtit
     // le profil que dans ce cas) doit être EFFECTIF : avec des entrées de lecture
     // directe, Jellyfin garde le fichier tel quel dès qu'il ne sait pas comparer
     // son débit au plafond — « choisir 720p ne change rien ». On force donc le
     // chemin transcode, comme le profil tvOS le fait déjà (buildTvosDeviceProfile).
-    DirectPlayProfiles: maxBitrate != null ? [] : lectureDirecte(resolu, memoire),
-    TranscodingProfiles: transcodage(resolu, memoire, options?.sourceDolbyVision),
-    CodecProfiles: contraintes(resolu),
+    DirectPlayProfiles: maxBitrate != null ? [] : directPlay(resolved, memory),
+    TranscodingProfiles: transcode(resolved, memory, options?.sourceDolbyVision),
+    CodecProfiles: constraints(resolved),
     SubtitleProfiles: [
-      ...SOUS_TITRES_TEXTE,
+      ...TEXT_SUBTITLES,
       // Sans WebAssembly, le décodeur PGS du client n'existe pas : la seule
       // façon d'afficher un sous-titre image est de le faire incruster par le
       // serveur, au prix d'un ré-encodage. C'est un dernier recours assumé, et
       // l'interface le signale (`player.sousTitresIncrustes`).
-      ...sousTitresBitmap(options?.pgsClientIndisponible || !resolu.capacites.wasmDisponible),
+      ...bitmapSubtitles(options?.pgsClientUnavailable || !resolved.capabilities.wasmAvailable),
     ],
   };
 }
 
 /**
- * Le drapeau `mkvNonFiable` d'`usePlaybackInfo` rejoint la mémoire des replis.
+ * Le drapeau `mkvUnreliable` d'`usePlaybackInfo` rejoint la mémoire des replis.
  *
  * Les deux mécanismes disent la même chose — « ce conteneur n'a rien donné,
  * n'insiste pas » — et le client web tient le sien depuis plus longtemps. Les
  * fusionner ici évite d'avoir deux vérités sur le même sujet.
  */
-function memoireAvecOptions(memoire: MemoireReplis, options?: OptionsProfilWeb): MemoireReplis {
-  if (!options?.mkvNonFiable) return memoire;
-  if (memoire.conteneurs.indexOf("mkv") !== -1) return memoire;
-  return { ...memoire, conteneurs: [...memoire.conteneurs, "mkv"] };
+function memoryWithOptions(memory: FallbackMemory, options?: WebProfileOptions): FallbackMemory {
+  if (!options?.mkvUnreliable) return memory;
+  if (memory.containers.indexOf("mkv") !== -1) return memory;
+  return { ...memory, containers: [...memory.containers, "mkv"] };
 }
 
 /**
@@ -117,16 +117,16 @@ function memoireAvecOptions(memoire: MemoireReplis, options?: OptionsProfilWeb):
  * jamais en flux de transport. Une liste unique promettrait des combinaisons qui
  * n'existent pas, et chacune se paie d'un échec à l'ouverture.
  */
-function lectureDirecte(resolu: ProfilResolu, memoire: MemoireReplis): DirectPlayProfile[] {
-  const profils: DirectPlayProfile[] = [];
+function directPlay(resolved: ResolvedProfile, memory: FallbackMemory): DirectPlayProfile[] {
+  const profiles: DirectPlayProfile[] = [];
 
-  for (const conteneur of resolu.capacites.conteneurs) {
-    if (!conteneurRetenu(memoire, conteneur.nom)) continue;
-    const video = codecsRetenus(memoire.video, conteneur.video);
-    const audio = codecsRetenus(memoire.audio, conteneur.audio);
+  for (const container of resolved.capabilities.containers) {
+    if (!keptContainer(memory, container.nom)) continue;
+    const video = keptCodecs(memory.video, container.video);
+    const audio = keptCodecs(memory.audio, container.audio);
     if (video.length === 0 || audio.length === 0) continue;
-    profils.push({
-      Container: conteneur.nom,
+    profiles.push({
+      Container: container.nom,
       Type: "Video",
       VideoCodec: video.join(","),
       AudioCodec: audio.join(","),
@@ -137,15 +137,15 @@ function lectureDirecte(resolu: ProfilResolu, memoire: MemoireReplis): DirectPla
   // une médiathèque — c'est ce que produisait l'ancienne sonde quand le moteur
   // répondait "". Le H.264 en MP4 avec de l'AAC est le seul couple qu'aucun
   // téléviseur LG n'ait jamais refusé.
-  if (!profils.some((profil) => profil.Type === "Video")) {
-    profils.push({ Container: "mp4,m4v", Type: "Video", VideoCodec: "h264", AudioCodec: "aac" });
+  if (!profiles.some((profile) => profile.Type === "Video")) {
+    profiles.push({ Container: "mp4,m4v", Type: "Video", VideoCodec: "h264", AudioCodec: "aac" });
   }
 
-  for (const conteneur of resolu.capacites.conteneursAudio) {
-    profils.push({ Container: conteneur, Type: "Audio" });
+  for (const container of resolved.capabilities.audioContainers) {
+    profiles.push({ Container: container, Type: "Audio" });
   }
 
-  return profils;
+  return profiles;
 }
 
 /**
@@ -160,18 +160,18 @@ function lectureDirecte(resolu: ProfilResolu, memoire: MemoireReplis): DirectPla
  * qui plafonne le nombre de canaux de la piste audio d'une vidéo. Son absence
  * est ce qui laisse passer un TrueHD 7.1 ou un E-AC3 Atmos sans downmix serveur.
  */
-function contraintes(resolu: ProfilResolu): CodecProfile[] {
-  const profils: CodecProfile[] = [
+function constraints(resolved: ResolvedProfile): CodecProfile[] {
+  const profiles: CodecProfile[] = [
     // 5.1 pour une dalle 4K, 4.2 sinon. Déclarer un niveau que le décodeur ne
     // tient pas ne provoque pas un repli propre : la lecture démarre puis
     // saccade, ce qu'aucun mécanisme ne rattrape en cours de route.
-    { Type: "Video", Codec: "h264", Conditions: conditionsH264(resolu.dalle.uhd ? "51" : "42") },
+    { Type: "Video", Codec: "h264", Conditions: h264Conditions(resolved.panel.uhd ? "51" : "42") },
     {
       Type: "Video",
       Codec: "hevc",
       Conditions: [
         ...CONDITIONS_HEVC,
-        conditionPlageDynamique(plagesDynamiquesTv(resolu.dalle)),
+        dynamicRangeCondition(tvDynamicRanges(resolved.panel)),
       ],
     },
   ];
@@ -181,7 +181,7 @@ function contraintes(resolu: ProfilResolu): CodecProfile[] {
    *
    * C'est une limite du démultiplexeur et non du décodeur : la puce lit le
    * Dolby Vision, mais webOS ne lui transmet le RPU qu'en ISOBMFF et en flux de
-   * transport (`CONTENEURS_DOVI`) — jamais en MKV avant webOS 25. Or **une
+   * transport (`DOVI_CONTAINERS`) — jamais en MKV avant webOS 25. Or **une
    * médiathèque est faite de MKV** : sur celle qui a servi de banc d'essai, 353
    * des 983 fichiers 4K sont en Dolby Vision, tous en MKV.
    *
@@ -220,14 +220,14 @@ function contraintes(resolu: ProfilResolu): CodecProfile[] {
    * directe, sans aucune session serveur. Sans Dolby Vision sur la dalle, il
    * n'aurait pas d'objet : le profil général n'y déclare déjà pas `DOVI`.
    */
-  if (resolu.dalle.dolbyVision && !resolu.capacites.doviEnMkv) {
-    profils.push({
+  if (resolved.panel.dolbyVision && !resolved.capabilities.doviEnMkv) {
+    profiles.push({
       Type: "Video",
       Codec: "hevc",
-      Container: `-${CONTENEURS_DOVI}`,
-      Conditions: [conditionPlageDynamique(plagesDynamiquesTv(resolu.dalle, true))],
+      Container: `-${DOVI_CONTAINERS}`,
+      Conditions: [dynamicRangeCondition(tvDynamicRanges(resolved.panel, true))],
     });
   }
 
-  return profils;
+  return profiles;
 }

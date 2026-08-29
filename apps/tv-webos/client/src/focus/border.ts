@@ -11,7 +11,7 @@
  * qu'on veut lire.
  *
  * Le protocole des pas répondait aux deux, et il répondait mal à la seconde.
- * Un pas vaut `min(hauteur du départ + marge, 0,4 × écran)` — sur un BOUTON de
+ * Un pas vaut `min(hauteur du départ + margin, 0,4 × écran)` — sur un BOUTON de
  * 48 px, cela fait 144 px, et deux pas 288. Au-delà, aucun n'accoste, tout est
  * révoqué, et l'on voit la barre de défilement monter puis redescendre. Or le
  * mou au-dessus du premier élément d'une page vaut 240 à 320 px : toutes les
@@ -39,47 +39,47 @@
 export type Decision =
   /** Rejoindre le bord en UN mouvement, qui ne sera jamais révoqué. */
   | { type: "bord"; delta: number }
-  /** Un pas de révélation, révocable — `accoste` s'il a consommé tout le mou. */
-  | { type: "pas"; pas: number; accoste: boolean }
+  /** Un pas de révélation, révocable — `docked` s'il a consommé tout le mou. */
+  | { type: "pas"; step: number; docked: boolean }
   /** Rien à faire : plus rien ne peut défiler dans cette direction. */
   | { type: "rien" };
 
-export interface EtatDefilement {
+export interface ScrollState {
   /** Ce qui reste à défiler dans la direction demandée. */
-  mou: number;
+  slack: number;
   /** Hauteur (ou largeur) de l'élément d'où l'on part. */
-  hauteurDepart: number;
+  startHeight: number;
   /** Hauteur (ou largeur) visible du scroller, ou de la fenêtre. */
-  vue: number;
+  view: number;
   /** La marge du cadrage, qui entre dans la taille d'un pas. */
-  marge: number;
+  margin: number;
   /** Fraction de la vue au-delà de laquelle un pas ne va jamais. */
-  plafond: number;
+  ceiling: number;
   /** Mou maximal qu'on accepte de consommer d'un seul coup. */
-  seuil: number;
+  threshold: number;
   /** Reste-t-il un focusable dans cette direction, dans tout le document ? */
-  candidatAuDela: boolean;
+  candidateBeyond: boolean;
 }
 
 /** La taille d'un pas : une rangée, plafonnée à une fraction de l'écran. */
-export function tailleDuPas(hauteurDepart: number, vue: number, marge: number, plafond: number) {
-  return Math.min(hauteurDepart + marge, vue * plafond);
+export function stepSize(startHeight: number, view: number, margin: number, ceiling: number) {
+  return Math.min(startHeight + margin, view * ceiling);
 }
 
-export function decider(etat: EtatDefilement): Decision {
-  const { mou, hauteurDepart, vue, marge, plafond, seuil, candidatAuDela } = etat;
+export function decide(state: ScrollState): Decision {
+  const { slack, startHeight, view, margin, ceiling, threshold, candidateBeyond } = state;
 
   // Moins d'un pixel à défiler : on est au bord, il n'y a rien à décider. Le
   // seuil d'un pixel plutôt que zéro parce que les positions de défilement sont
   // fractionnaires sur un écran mis à l'échelle, et qu'un pas d'un demi-pixel
   // n'est pas un pas — c'est une oscillation.
-  if (mou < 1) return { type: "rien" };
+  if (slack < 1) return { type: "rien" };
 
   // Le bout de la page : plus rien à viser au-delà, et le reste tient dans un
   // écran. On le rejoint d'un trait, et l'on y reste — c'est une destination,
   // pas un pas de révélation qu'on rendrait faute de focus déplacé.
-  if (!candidatAuDela && mou <= seuil) return { type: "bord", delta: mou };
+  if (!candidateBeyond && slack <= threshold) return { type: "bord", delta: slack };
 
-  const pas = Math.min(tailleDuPas(hauteurDepart, vue, marge, plafond), mou);
-  return { type: "pas", pas, accoste: pas >= mou };
+  const step = Math.min(stepSize(startHeight, view, margin, ceiling), slack);
+  return { type: "pas", step, docked: step >= slack };
 }

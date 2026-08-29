@@ -1,7 +1,7 @@
 import { useMemo, type MutableRefObject, type SyntheticEvent } from "react";
 import { wtLog } from "../watchTogether/wtLog";
-import { DELAI_CHARGEMENT_MS } from "./seekLanding";
-import { fractionChargee } from "./bufferedProgress";
+import { LOADING_MS } from "./seekLanding";
+import { bufferedFraction } from "./bufferedProgress";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -21,7 +21,7 @@ interface UseVideoEventsArgs {
   jellyfinDuration?: number;
   setPlaying: (v: boolean) => void;
   /** Pendant réactif de `hasStartedRef` — cf. VideoPlayer. */
-  setADemarre: (v: boolean) => void;
+  setHasStarted: (v: boolean) => void;
   setLoading: (v: boolean) => void;
   setShowPlayButton: (v: boolean) => void;
   setBuffered: (v: number) => void;
@@ -69,15 +69,15 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       if (!v) return;
       // Use jellyfinDuration for HLS event playlists where v.duration is Infinity
       const dur = a.jellyfinDuration && a.jellyfinDuration > 0 ? a.jellyfinDuration : v.duration;
-      const plages = [];
+      const ranges = [];
       for (let i = 0; i < v.buffered.length; i++) {
-        plages.push({ debut: v.buffered.start(i), fin: v.buffered.end(i) });
+        ranges.push({ start: v.buffered.start(i), end: v.buffered.end(i) });
       }
       // La décision est dans `bufferedProgress.ts` : elle retranche le décalage
       // d'horodatage du conteneur, que cette boucle-ci oubliait, et documente ce
       // que `buffered` vaut réellement selon le lecteur — sur la pile média du
       // téléviseur, une plage unique partant toujours de zéro.
-      const fraction = fractionChargee(plages, v.currentTime, dur, a.containerPtsOffsetRef.current);
+      const fraction = bufferedFraction(ranges, v.currentTime, dur, a.containerPtsOffsetRef.current);
       if (fraction !== null) a.setBuffered(fraction);
     },
     onLoadedMetadata: (e: SyntheticEvent<HTMLVideoElement>) => {
@@ -88,7 +88,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       a.sourceChangingRef.current = false;
       a.setPlaying(true); a.setLoading(false); a.setShowPlayButton(false);
       if (!a.hasStartedRef.current) {
-        a.hasStartedRef.current = true; a.setADemarre(true); a.onStarted?.();
+        a.hasStartedRef.current = true; a.setHasStarted(true); a.onStarted?.();
       }
       a.onPlayStateChange?.(false);
     },
@@ -99,18 +99,18 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
     onWaiting: () => {
       clearTimeout(a.waitingTimer.current);
       a.waitingTimer.current = setTimeout(() => {
-        wtLog("web-video", `waiting > ${DELAI_CHARGEMENT_MS}ms → signal buffering=true`, {
+        wtLog("web-video", `waiting > ${LOADING_MS}ms → signal buffering=true`, {
           pos: a.lastKnownPositionRef.current.toFixed(1),
           readyState: a.videoRef.current?.readyState,
         });
         a.setLoading(true); a.onBufferingChange?.(true);
-      }, DELAI_CHARGEMENT_MS);
+      }, LOADING_MS);
     },
     // `seeked` et `playing` n'ont plus le droit de désarmer la veille de calage :
     // tous deux sont émis dès que le lecteur a FINI de se déplacer, ce qui ne dit
     // rien de l'arrivée des données à la cible. Sur la pile média native ils
     // partent bien avant le premier segment, si bien que le niveau 3 de
-    // `useSmartSeek` ne pouvait jamais jouer. C'est `observerSaut` qui conclut
+    // `useSmartSeek` ne pouvait jamais jouer. C'est `observeSeek` qui conclut
     // désormais, et lui seul arrête sa veille (cf. `seekLanding.ts`).
     onSeeked: () => {
       wtLog("web-video", "event seeked", { pos: a.videoRef.current?.currentTime.toFixed(1) });

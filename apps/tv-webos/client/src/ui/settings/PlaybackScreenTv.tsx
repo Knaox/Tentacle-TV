@@ -7,10 +7,10 @@ import {
   useDeleteLibraryPreference,
   useSetInterfaceLanguage,
 } from "@tentacle-tv/api-client";
-import { CarteBibliothequeTv, type ReglageTv } from "./LibraryCardTv";
-import { PanneauChoixTv, type ChoixTv } from "./ChoicePanelTv";
-import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "./languagesTv";
-import { ReglagesLectureTv } from "./ReglagesLectureTv";
+import { LibraryCardTv, type SettingTv } from "./LibraryCardTv";
+import { ChoicePanelTv, type ChoiceTv } from "./ChoicePanelTv";
+import { LANGUAGE_KEYS, LANGUAGE_CODES, INTERFACE_LANGUAGES, SUBTITLE_MODES } from "./languagesTv";
+import { PlaybackSettingsTv } from "./PlaybackSettingsTv";
 
 /**
  * Les réglages de lecture, pilotables à la télécommande.
@@ -33,29 +33,29 @@ import { ReglagesLectureTv } from "./ReglagesLectureTv";
  * endroit où elles ont un sens.
  */
 
-export function EcranLectureTv() {
+export function PlaybackScreenTv() {
   const { t, i18n } = useTranslation("preferences");
-  const { data: bibliotheques } = useLibraries();
+  const { data: libraries } = useLibraries();
   const { data: preferences } = useLibraryPreferences();
-  const enregistrer = useSetLibraryPreference();
-  const supprimer = useDeleteLibraryPreference();
+  const save = useSetLibraryPreference();
+  const remove2 = useDeleteLibraryPreference();
   const poserLangue = useSetInterfaceLanguage();
 
   /** Le réglage dont on est en train de choisir la valeur, s'il y en a un. */
-  const [ouvert, setOuvert] = useState<{ bibliotheque: string; reglage: ReglageTv } | null>(null);
+  const [open, setOpen] = useState<{ library: string; setting: SettingTv } | null>(null);
 
-  const langues = useMemo<ChoixTv[]>(
-    () => CODES_LANGUE.map((code) => ({ valeur: code, libelle: t(CLES_LANGUE[code]) })),
+  const languages = useMemo<ChoiceTv[]>(
+    () => LANGUAGE_CODES.map((code) => ({ value: code, label: t(LANGUAGE_KEYS[code]) })),
     [t],
   );
-  const modes = useMemo<ChoixTv[]>(
-    () => MODES_SOUS_TITRES.map((mode) => ({ valeur: mode.valeur, libelle: t(mode.cle) })),
+  const modes = useMemo<ChoiceTv[]>(
+    () => SUBTITLE_MODES.map((mode) => ({ value: mode.value, label: t(mode.key) })),
     [t],
   );
 
-  const nommerLangue = useCallback(
+  const languageName = useCallback(
     (code: string | null | undefined, vide: string) =>
-      code ? (CLES_LANGUE[code] ? t(CLES_LANGUE[code]) : code) : vide,
+      code ? (LANGUAGE_KEYS[code] ? t(LANGUAGE_KEYS[code]) : code) : vide,
     [t],
   );
 
@@ -68,104 +68,104 @@ export function EcranLectureTv() {
     [i18n, poserLangue],
   );
 
-  const appliquer = useCallback(
-    (valeur: string) => {
-      if (!ouvert) return;
-      const actuelle = preferences?.find((pref) => pref.libraryId === ouvert.bibliotheque);
+  const apply = useCallback(
+    (value: string) => {
+      if (!open) return;
+      const current2 = preferences?.find((pref) => pref.libraryId === open.library);
       // Une valeur vide efface le réglage sans effacer les deux autres : le
       // backend fait un upsert du trio, pas une fusion champ par champ.
-      enregistrer.mutate({
-        libraryId: ouvert.bibliotheque,
-        audioLang: ouvert.reglage.cle === "audio" ? valeur || null : (actuelle?.audioLang ?? null),
+      save.mutate({
+        libraryId: open.library,
+        audioLang: open.setting.key === "audio" ? value || null : (current2?.audioLang ?? null),
         subtitleLang:
-          ouvert.reglage.cle === "sousTitres" ? valeur || null : (actuelle?.subtitleLang ?? null),
+          open.setting.key === "sousTitres" ? value || null : (current2?.subtitleLang ?? null),
         subtitleMode:
-          ouvert.reglage.cle === "mode"
-            ? (valeur as "none" | "always" | "forced" | "signs")
-            : (actuelle?.subtitleMode ?? "none"),
+          open.setting.key === "mode"
+            ? (value as "none" | "always" | "forced" | "signs")
+            : (current2?.subtitleMode ?? "none"),
       });
-      setOuvert(null);
+      setOpen(null);
     },
-    [enregistrer, ouvert, preferences],
+    [save, open, preferences],
   );
 
   return (
     <div>
       {/* Ce que le lecteur a le droit de faire tout seul — saut d'intro et fin
           d'épisode. Extrait pour le budget de 300 lignes. */}
-      <ReglagesLectureTv />
+      <PlaybackSettingsTv />
 
       <section className="mb-12">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-[0.08em] text-content-tertiary">
           {t("interfaceLanguage")}
         </h2>
         <div className="flex gap-4">
-          {LANGUES_INTERFACE.map((langue) => (
+          {INTERFACE_LANGUAGES.map((langue) => (
             <button
               key={langue.code}
               type="button"
               className="bouton-reglage-tv"
-              data-actif={i18n.language.startsWith(langue.code)}
+              data-active={i18n.language.startsWith(langue.code)}
               onClick={() => changerLangueInterface(langue.code)}
             >
-              <span className="bouton-reglage-tv-valeur">{langue.libelle}</span>
+              <span className="bouton-reglage-tv-valeur">{langue.label}</span>
             </button>
           ))}
         </div>
       </section>
 
-      {(bibliotheques ?? []).map((bibliotheque) => {
-        const pref = preferences?.find((entree) => entree.libraryId === bibliotheque.Id);
-        const reglages: ReglageTv[] = [
+      {(libraries ?? []).map((library) => {
+        const pref = preferences?.find((entree) => entree.libraryId === library.Id);
+        const settings: SettingTv[] = [
           {
-            cle: "audio",
+            key: "audio",
             intitule: t("audio"),
-            valeur: nommerLangue(pref?.audioLang, t("default")),
-            choix: [{ valeur: "", libelle: t("default") }, ...langues],
+            value: languageName(pref?.audioLang, t("default")),
+            choice: [{ value: "", label: t("default") }, ...languages],
             selection: pref?.audioLang ?? "",
           },
           {
-            cle: "mode",
+            key: "mode",
             intitule: t("subtitleMode"),
-            valeur: t(
-              MODES_SOUS_TITRES.find((mode) => mode.valeur === (pref?.subtitleMode ?? "none"))!.cle,
+            value: t(
+              SUBTITLE_MODES.find((mode) => mode.value === (pref?.subtitleMode ?? "none"))!.key,
             ),
-            choix: modes,
+            choice: modes,
             selection: pref?.subtitleMode ?? "none",
           },
           {
-            cle: "sousTitres",
+            key: "sousTitres",
             intitule: t("subtitles"),
-            valeur: nommerLangue(pref?.subtitleLang, t("none")),
-            choix: [{ valeur: "", libelle: t("none") }, ...langues],
+            value: languageName(pref?.subtitleLang, t("none")),
+            choice: [{ value: "", label: t("none") }, ...languages],
             selection: pref?.subtitleLang ?? "",
           },
         ];
 
         return (
-          <section key={bibliotheque.Id} className="mb-6">
-            <CarteBibliothequeTv
-              nom={bibliotheque.Name}
-              reglages={reglages}
-              personnalisee={!!pref}
-              onOuvrir={(reglage) => setOuvert({ bibliotheque: bibliotheque.Id, reglage })}
-              onReinitialiser={() => supprimer.mutate(bibliotheque.Id)}
+          <section key={library.Id} className="mb-6">
+            <LibraryCardTv
+              nom={library.Name}
+              settings={settings}
+              custom={!!pref}
+              onOpen={(setting) => setOpen({ library: library.Id, setting })}
+              onReset={() => remove2.mutate(library.Id)}
             />
           </section>
         );
       })}
 
-      {ouvert && (
-        <PanneauChoixTv
-          titre={ouvert.reglage.intitule}
-          choix={ouvert.reglage.choix}
-          selection={ouvert.reglage.selection}
-          onChoisir={appliquer}
-          onFermer={() => setOuvert(null)}
+      {open && (
+        <ChoicePanelTv
+          title={open.setting.intitule}
+          choice={open.setting.choice}
+          selection={open.setting.selection}
+          onChoose={apply}
+          onClose={() => setOpen(null)}
         />
       )}
     </div>
   );
 }
 
-export default EcranLectureTv;
+export default PlaybackScreenTv;

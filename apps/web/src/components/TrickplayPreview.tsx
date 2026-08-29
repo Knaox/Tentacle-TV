@@ -1,7 +1,7 @@
 import { memo, useMemo } from "react";
 import type { TrickplayInfo } from "@tentacle-tv/shared";
 import { formatDuration } from "./playerControls/utils";
-import { ombreSurVideo } from "../lib/ombreSurVideo";
+import { videoShadow } from "../lib/videoShadow";
 import type { TrickplayFrame } from "../hooks/useTrickplay";
 
 interface TrickplayPreviewProps {
@@ -110,8 +110,8 @@ function TrickplayPreviewImpl({
             width: cardWidth,
             height: cardHeight,
             // Le flou disparaît là où la surface a un canal alpha : il y sort
-            // en aplat quasi opaque et masque la vidéo. Voir `ombreSurVideo`.
-            boxShadow: ombreSurVideo(
+            // en aplat quasi opaque et masque la vidéo. Voir `videoShadow`.
+            boxShadow: videoShadow(
               "0 0 0 1px var(--text-disabled), 0 14px 40px -10px rgba(0,0,0,0.85), 0 4px 12px -2px rgba(0,0,0,0.6)",
               "0 0 0 1px var(--text-disabled)",
             ),
@@ -154,7 +154,7 @@ function TrickplayPreviewImpl({
           className="flex items-center justify-center rounded-md bg-black/85 px-2.5"
           style={{
             height: TIMESTAMP_PILL_HEIGHT,
-            boxShadow: ombreSurVideo(
+            boxShadow: videoShadow(
               "0 0 0 1px rgba(255,255,255,0.18), 0 6px 16px -4px var(--surface-overlay)",
               "0 0 0 1px rgba(255,255,255,0.18)",
             ),

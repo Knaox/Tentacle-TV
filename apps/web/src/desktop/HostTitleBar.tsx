@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { bandeauHote, hauteurBandeauHote } from "./hostChrome";
+import { hostTitleBar, hostTitleBarHeight } from "./hostChrome";
 import { useHostFullscreen } from "../hooks/useHostFullscreen";
 
 /**
@@ -34,21 +34,21 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  * haut d'un film.
  */
 export function HostTitleBar() {
-  const pleinEcran = useHostFullscreen();
-  const actif = bandeauHote() && !pleinEcran;
+  const fullscreen = useHostFullscreen();
+  const active = hostTitleBar() && !fullscreen;
 
   useEffect(() => {
-    const racine = document.documentElement;
-    if (!actif) return;
-    racine.style.setProperty("--hote-bandeau", `${hauteurBandeauHote()}px`);
-    racine.dataset["hoteBandeau"] = "oui";
+    const root = document.documentElement;
+    if (!active) return;
+    root.style.setProperty("--hote-bandeau", `${hostTitleBarHeight()}px`);
+    root.dataset["hoteBandeau"] = "oui";
     return () => {
-      delete racine.dataset["hoteBandeau"];
-      racine.style.removeProperty("--hote-bandeau");
+      delete root.dataset["hoteBandeau"];
+      root.style.removeProperty("--hote-bandeau");
     };
-  }, [actif]);
+  }, [active]);
 
-  if (!actif) return null;
+  if (!active) return null;
 
   return (
     <div

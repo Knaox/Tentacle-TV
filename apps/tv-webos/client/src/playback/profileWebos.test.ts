@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { DeviceProfile } from "@tentacle-tv/shared";
-import { capacitesDe } from "./capabilitiesWebos";
-import type { DalleTv, ProfilResolu } from "./codecsWebos";
+import { capabilitiesOf } from "./capabilitiesWebos";
+import type { PanelTv, ResolvedProfile } from "./codecsWebos";
 import type { GenerationWebos } from "./generationWebos";
-import { construireProfilTv } from "./profileWebos";
-import { MEMOIRE_VIDE, type MemoireReplis } from "./playbackFallback";
+import { buildTvProfile } from "./profileWebos";
+import { EMPTY_MEMORY, type FallbackMemory } from "./playbackFallback";
 
 /**
  * Le profil décide, à lui seul, si une médiathèque se lit sans effort ou si
@@ -13,7 +13,7 @@ import { MEMOIRE_VIDE, type MemoireReplis } from "./playbackFallback";
  * beau. D'où ces tests, qui interrogent le profil plutôt que l'image.
  */
 
-function dalle(extra: Partial<DalleTv> = {}): DalleTv {
+function panel(extra: Partial<PanelTv> = {}): PanelTv {
   return {
     uhd: true,
     uhd8K: false,
@@ -25,36 +25,36 @@ function dalle(extra: Partial<DalleTv> = {}): DalleTv {
   };
 }
 
-function resolu(
+function resolved(
   generation: GenerationWebos = 24,
-  annee: number | null = 2024,
-  ecran: Partial<DalleTv> = {},
-): ProfilResolu {
-  const d = dalle(ecran);
+  year: number | null = 2024,
+  screen: Partial<PanelTv> = {},
+): ResolvedProfile {
+  const d = panel(screen);
   return {
-    plateforme: { generation, annee, source: "ua" },
-    capacites: capacitesDe(generation, { annee, oled: d.oled, uhd8K: d.uhd8K }),
-    dalle: d,
+    platform: { generation, year, source: "ua" },
+    capabilities: capabilitiesOf(generation, { year, oled: d.oled, uhd8K: d.uhd8K }),
+    panel: d,
   };
 }
 
-function profil(
+function profile(
   generation: GenerationWebos = 24,
-  annee: number | null = 2024,
-  memoire: MemoireReplis = MEMOIRE_VIDE,
-  ecran: Partial<DalleTv> = {},
+  year: number | null = 2024,
+  memory: FallbackMemory = EMPTY_MEMORY,
+  screen: Partial<PanelTv> = {},
 ): DeviceProfile {
-  return construireProfilTv(resolu(generation, annee, ecran), memoire);
+  return buildTvProfile(resolved(generation, year, screen), memory);
 }
 
 /** Entrée de lecture directe d'un conteneur donné. */
-function directPlay(p: DeviceProfile, conteneur: string) {
-  return p.DirectPlayProfiles.find((entree) => entree.Container === conteneur);
+function directPlay(p: DeviceProfile, container: string) {
+  return p.DirectPlayProfiles.find((entree) => entree.Container === container);
 }
 
 describe("lecture directe", () => {
   it("déclare le MKV avec HEVC et E-AC3 — le cas qui compte", () => {
-    const mkv = directPlay(profil(), "mkv");
+    const mkv = directPlay(profile(), "mkv");
     expect(mkv?.VideoCodec).toContain("hevc");
     expect(mkv?.AudioCodec).toContain("eac3");
   });
@@ -63,7 +63,7 @@ describe("lecture directe", () => {
     // Les codecs ne sont pas les mêmes partout : l'AV1 passe en MP4, jamais en
     // flux de transport. Une entrée unique promettrait une combinaison qui
     // n'existe pas.
-    const p = profil(24, 2024);
+    const p = profile(24, 2024);
     expect(directPlay(p, "mp4,m4v,mov")?.VideoCodec).toContain("av1");
     expect(directPlay(p, "ts,m2ts,mts,mpegts")?.VideoCodec).not.toContain("av1");
   });
@@ -71,30 +71,30 @@ describe("lecture directe", () => {
   it("garde un plancher même si la session a tout disqualifié", () => {
     // C'est le défaut corrigé : l'ancien profil pouvait ne produire AUCUNE
     // entrée vidéo, et toute la médiathèque partait alors en transcodage.
-    const tout: MemoireReplis = {
-      conteneurs: ["mkv", "mp4", "ts", "avi", "asf", "mpg", "vob", "3gp"],
+    const tout: FallbackMemory = {
+      containers: ["mkv", "mp4", "ts", "avi", "asf", "mpg", "vob", "3gp"],
       audio: [],
       video: [],
     };
-    const p = construireProfilTv(resolu(), tout);
+    const p = buildTvProfile(resolved(), tout);
     const video = p.DirectPlayProfiles.filter((entree) => entree.Type === "Video");
     expect(video.length).toBeGreaterThan(0);
     expect(video[0].VideoCodec).toBe("h264");
   });
 
   it("retire un conteneur disqualifié par la session", () => {
-    const p = profil(24, 2024, { conteneurs: ["mkv"], audio: [], video: [] });
+    const p = profile(24, 2024, { containers: ["mkv"], audio: [], video: [] });
     expect(directPlay(p, "mkv")).toBeUndefined();
     expect(directPlay(p, "mp4,m4v,mov")).toBeDefined();
   });
 
-  it("honore mkvNonFiable, le drapeau que le client web tient déjà", () => {
-    const p = construireProfilTv(resolu(), MEMOIRE_VIDE, undefined, { mkvNonFiable: true });
+  it("honore mkvUnreliable, le drapeau que le client web tient déjà", () => {
+    const p = buildTvProfile(resolved(), EMPTY_MEMORY, undefined, { mkvUnreliable: true });
     expect(directPlay(p, "mkv")).toBeUndefined();
   });
 
   it("ne déclare le FLAC que comme fichier autonome", () => {
-    const p = profil();
+    const p = profile();
     const video = p.DirectPlayProfiles.filter((entree) => entree.Type === "Video");
     expect(video.some((entree) => entree.AudioCodec?.includes("flac"))).toBe(false);
     expect(p.DirectPlayProfiles.some((entree) => entree.Container === "flac")).toBe(true);
@@ -106,19 +106,19 @@ describe("canaux audio — le passthrough", () => {
     // Le `CodecProfile` `VideoAudio` du profil navigateur plafonnait à six
     // canaux : une piste 7.1 partait en transcodage. Son absence est ce qui
     // donne son passthrough à ce profil.
-    const contraintes = profil().CodecProfiles ?? [];
-    expect(contraintes.some((entree) => entree.Type === "VideoAudio")).toBe(false);
+    const constraints = profile().CodecProfiles ?? [];
+    expect(constraints.some((entree) => entree.Type === "VideoAudio")).toBe(false);
   });
 
   it("laisse passer huit canaux en remux quand le téléviseur annonce l'Atmos", () => {
-    const p = profil(24, 2024, MEMOIRE_VIDE, { dolbyAtmos: true });
+    const p = profile(24, 2024, EMPTY_MEMORY, { dolbyAtmos: true });
     for (const entree of p.TranscodingProfiles.filter((t) => t.Type === "Video")) {
       expect(entree.MaxAudioChannels).toBe("8");
     }
   });
 
   it("s'en tient à six sans chaîne Atmos", () => {
-    const video = profil().TranscodingProfiles.filter((t) => t.Type === "Video");
+    const video = profile().TranscodingProfiles.filter((t) => t.Type === "Video");
     expect(video.every((entree) => entree.MaxAudioChannels === "6")).toBe(true);
   });
 });
@@ -127,7 +127,7 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
   it("liste TOUS les codecs décodés, pour que le repli reste une copie", () => {
     // Le défaut corrigé : l'ancien profil n'y listait que `hevc,h264`. Un
     // MPEG-2 dont seul le conteneur posait problème repartait recompressé.
-    const fmp4 = profil().TranscodingProfiles.find((t) => t.Container === "mp4");
+    const fmp4 = profile().TranscodingProfiles.find((t) => t.Container === "mp4");
     expect(fmp4?.VideoCodec).toContain("hevc");
     expect(fmp4?.VideoCodec).toContain("h264");
     expect(fmp4?.VideoCodec).toContain("mpeg2video");
@@ -135,7 +135,7 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
   });
 
   it("place le fMP4 avant le TS — seul conteneur qui copie une image HEVC", () => {
-    const video = profil().TranscodingProfiles.filter((t) => t.Type === "Video");
+    const video = profile().TranscodingProfiles.filter((t) => t.Type === "Video");
     expect(video[0].Container).toBe("mp4");
     expect(video[1].Container).toBe("ts");
   });
@@ -145,7 +145,7 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
     // portait un sous-titre PGS par défaut, qui fait à lui seul recompresser
     // l'image, et la variante Dolby Vision n'était pas encore désignée.
     // Refaite proprement : `hdrType` reste « DolbyVision » avec le DTS copié.
-    const p = profil(23, 2023, MEMOIRE_VIDE, { oled: true, dolbyVision: true });
+    const p = profile(23, 2023, EMPTY_MEMORY, { oled: true, dolbyVision: true });
     const fmp4 = p.TranscodingProfiles.find((t) => t.Container === "mp4" && t.Type === "Video");
     expect(fmp4?.AudioCodec).toContain("dts");
     expect(fmp4?.AudioCodec).toContain("dca");
@@ -160,7 +160,7 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
   });
 
   it("n'annonce jamais en TS ce que le flux de transport ne porte pas", () => {
-    const ts = profil(24, 2024).TranscodingProfiles.find((t) => t.Container === "ts");
+    const ts = profile(24, 2024).TranscodingProfiles.find((t) => t.Container === "ts");
     expect(ts?.VideoCodec).not.toContain("av1");
     expect(ts?.VideoCodec).not.toContain("vp9");
     expect(ts?.VideoCodec).toContain("hevc");
@@ -170,17 +170,17 @@ describe("transcodage — c'est d'abord le mécanisme du remux", () => {
     // À vrai, `BreakOnNonKeyFrames` oblige le serveur à fabriquer des images
     // clés, donc à recompresser — mesuré à 4,7x le temps réel contre 60x en
     // copie.
-    const video = profil().TranscodingProfiles.filter((t) => t.Type === "Video");
+    const video = profile().TranscodingProfiles.filter((t) => t.Type === "Video");
     expect(video.every((entree) => entree.BreakOnNonKeyFrames === false)).toBe(true);
   });
 });
 
 describe("plages dynamiques", () => {
   it("déclare le HDR10 et le HLG sur une dalle qui les affiche", () => {
-    const hevc = (profil().CodecProfiles ?? []).find((c) => c.Codec === "hevc");
-    const plages = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
-    expect(plages).toContain("HDR10");
-    expect(plages).toContain("HLG");
+    const hevc = (profile().CodecProfiles ?? []).find((c) => c.Codec === "hevc");
+    const ranges = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
+    expect(ranges).toContain("HDR10");
+    expect(ranges).toContain("HLG");
   });
 
   it("n'annonce le profil 5 que sur une dalle qui décode le Dolby Vision", () => {
@@ -188,31 +188,31 @@ describe("plages dynamiques", () => {
     // flux `-tag:v dvh1 -strict -2`, donc n'écrit la boîte `dvcC`, que si ce
     // jeton précis est là. Mesuré sur une C3, même fichier, même remux fMP4 :
     // avec, `hdrType: "DolbyVision"` ; sans, `hdrType: "none"`.
-    const plages = (p: DeviceProfile) =>
+    const ranges = (p: DeviceProfile) =>
       String(
         (p.CodecProfiles ?? [])
           .find((c) => c.Codec === "hevc" && !c.Container)
           ?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
       ).split("|");
 
-    expect(plages(profil())).not.toContain("DOVI");
-    expect(plages(profil(25, 2023, MEMOIRE_VIDE, { dolbyVision: true }))).toContain("DOVI");
+    expect(ranges(profile())).not.toContain("DOVI");
+    expect(ranges(profile(25, 2023, EMPTY_MEMORY, { dolbyVision: true }))).toContain("DOVI");
   });
 
   it("laisse une dalle sans Dolby Vision lire la couche de base des profils 8.x", () => {
     // Leur couche de base est du HDR10, du HLG ou du SDR ordinaire, qu'un
     // décodeur ignorant le RPU affiche juste et complète. Les taire ferait
     // tone-mapper une image 4K pour un résultat visuellement identique.
-    const plages = String(
-      (profil().CodecProfiles ?? [])
+    const ranges = String(
+      (profile().CodecProfiles ?? [])
         .find((c) => c.Codec === "hevc")
         ?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
     ).split("|");
-    expect(plages).toContain("DOVIWithHDR10");
-    expect(plages).toContain("DOVIWithSDR");
+    expect(ranges).toContain("DOVIWithHDR10");
+    expect(ranges).toContain("DOVIWithSDR");
     // Le profil 5, lui, reste exclu : sa couche de base est en IPT-PQ-C2, donc
     // verdâtre sans décodage Dolby Vision.
-    expect(plages).not.toContain("DOVI");
+    expect(ranges).not.toContain("DOVI");
   });
 
   it("ne remuxe, hors des conteneurs à RPU, que le Dolby Vision qui l'exige", () => {
@@ -226,12 +226,12 @@ describe("plages dynamiques", () => {
     // Les profils 8.x ont une couche de base HDR10 que la puce affiche juste :
     // ils repartent en lecture directe. Le profil 5 — `DOVI` nu — n'en a pas,
     // sa base est verdâtre sans le RPU, et lui seul continue d'être remuxé.
-    const avant = (profil(23, 2023, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+    const before = (profile(23, 2023, EMPTY_MEMORY, { dolbyVision: true }).CodecProfiles ?? [])
       .filter((c) => c.Codec === "hevc");
-    const general = avant.find((c) => !c.Container);
-    const horsDovi = avant.find((c) => c.Container?.startsWith("-"));
-    const plagesHorsDovi = String(
-      horsDovi?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
+    const general = before.find((c) => !c.Container);
+    const withoutDovi = before.find((c) => c.Container?.startsWith("-"));
+    const rangesWithoutDovi = String(
+      withoutDovi?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "",
     ).split("|");
 
     // Le général garde `DOVI`, sans quoi le remux ne serait pas marqué.
@@ -239,30 +239,30 @@ describe("plages dynamiques", () => {
       .toContain("DOVI");
     // La liste est négative : un conteneur inconnu est traité comme n'en
     // portant pas le RPU, donc son profil 5 est remuxé — le comportement sûr.
-    expect(horsDovi?.Container).toBe("-mp4,m4v,mov,ts,m2ts,mts,mpegts");
+    expect(withoutDovi?.Container).toBe("-mp4,m4v,mov,ts,m2ts,mts,mpegts");
 
     // La régression à ne pas commettre, dans les deux sens : le profil 5 doit
     // rester tu — sinon image verdâtre — et les profils 8.x doivent être
     // déclarés, sinon on remuxe cent quarante et un films pour rien.
-    expect(plagesHorsDovi).not.toContain("DOVI");
-    expect(plagesHorsDovi).toContain("DOVIWithHDR10");
-    expect(plagesHorsDovi).toContain("DOVIWithHDR10Plus");
-    expect(plagesHorsDovi).toContain("DOVIWithSDR");
-    expect(plagesHorsDovi).toContain("DOVIWithHLG");
+    expect(rangesWithoutDovi).not.toContain("DOVI");
+    expect(rangesWithoutDovi).toContain("DOVIWithHDR10");
+    expect(rangesWithoutDovi).toContain("DOVIWithHDR10Plus");
+    expect(rangesWithoutDovi).toContain("DOVIWithSDR");
+    expect(rangesWithoutDovi).toContain("DOVIWithHLG");
     // Le profil 7 n'est jamais déclaré : aucune dalle LG ne lit sa seconde
     // couche, et Jellyfin retombe de lui-même sur la base HDR10.
-    expect(plagesHorsDovi).not.toContain("DOVIWithEL");
+    expect(rangesWithoutDovi).not.toContain("DOVIWithEL");
     // Le HDR10 ordinaire, lui, y reste : il n'a aucune raison de remuxer.
-    expect(plagesHorsDovi).toContain("HDR10");
-    expect(plagesHorsDovi).toContain("HLG");
+    expect(rangesWithoutDovi).toContain("HDR10");
+    expect(rangesWithoutDovi).toContain("HLG");
   });
 
   it("rend le Dolby Vision au MKV dès webOS 25, sans profil restrictif", () => {
     // La bascule ne demande aucun code : `doviEnMkv` passe à vrai et le profil
     // disparaît, donc `DOVI` nu vaut pour tous les conteneurs.
-    const apres = (profil(25, 2025, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+    const after = (profile(25, 2025, EMPTY_MEMORY, { dolbyVision: true }).CodecProfiles ?? [])
       .filter((c) => c.Codec === "hevc");
-    expect(apres.some((c) => c.Container?.startsWith("-"))).toBe(false);
+    expect(after.some((c) => c.Container?.startsWith("-"))).toBe(false);
   });
 
   it("garde le HEVC dans le remux, sans quoi l'image serait ré-encodée", () => {
@@ -270,42 +270,42 @@ describe("plages dynamiques", () => {
     // porter `hevc`, c'est ce qui autorise Jellyfin à copier l'image au lieu
     // de la recompresser. Le fMP4 doit aussi venir EN PREMIER — le flux de
     // transport produit des décrochages audio sur ce contenu.
-    const transcodage = (profil(23, 2023, MEMOIRE_VIDE, { dolbyVision: true })
+    const transcode = (profile(23, 2023, EMPTY_MEMORY, { dolbyVision: true })
       .TranscodingProfiles ?? []).filter((p) => p.Type === "Video");
-    expect(transcodage[0]?.Container).toBe("mp4");
-    expect(transcodage[0]?.VideoCodec).toContain("hevc");
+    expect(transcode[0]?.Container).toBe("mp4");
+    expect(transcode[0]?.VideoCodec).toContain("hevc");
   });
 
   it("ne pose aucune restriction de conteneur quand webOS lit le DV en MKV", () => {
     // Un C2 de 2022 passé à webOS 25 par le programme « Re:New » : la puce n'a
     // pas changé, le démultiplexeur si. Le MKV repart alors en lecture directe,
     // sans la session serveur qu'un remux imposerait.
-    const apres = (profil(25, 2022, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+    const after = (profile(25, 2022, EMPTY_MEMORY, { dolbyVision: true }).CodecProfiles ?? [])
       .filter((c) => c.Codec === "hevc");
-    expect(apres.some((c) => c.Container)).toBe(false);
+    expect(after.some((c) => c.Container)).toBe(false);
   });
 
   it("ne pose pas de restriction sans objet quand le Dolby Vision est absent", () => {
-    const contraintes = (profil(23, 2023).CodecProfiles ?? []).filter((c) => c.Container);
-    expect(contraintes).toHaveLength(0);
+    const constraints = (profile(23, 2023).CodecProfiles ?? []).filter((c) => c.Container);
+    expect(constraints).toHaveLength(0);
   });
 
   it("n'annonce JAMAIS le Dolby Vision à deux couches", () => {
     // Le profil 7 n'est lu par aucun téléviseur LG : Jellyfin retombe alors sur
     // la couche de base HDR10, ce qui est le bon comportement.
-    const hevc = (profil(26, 2026, MEMOIRE_VIDE, { dolbyVision: true }).CodecProfiles ?? [])
+    const hevc = (profile(26, 2026, EMPTY_MEMORY, { dolbyVision: true }).CodecProfiles ?? [])
       .find((c) => c.Codec === "hevc");
-    const plages = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
-    expect(plages).not.toContain("DOVIWithEL");
+    const ranges = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
+    expect(ranges).not.toContain("DOVIWithEL");
   });
 
   it("garde toujours Unknown et SDR", () => {
     // Ce sont les valeurs que Jellyfin attribue aux fichiers dont il ne sait
     // rien : les taire ferait transcoder la moitié d'une médiathèque.
-    const hevc = (profil().CodecProfiles ?? []).find((c) => c.Codec === "hevc");
-    const plages = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
-    expect(plages).toContain("Unknown");
-    expect(plages).toContain("SDR");
+    const hevc = (profile().CodecProfiles ?? []).find((c) => c.Codec === "hevc");
+    const ranges = hevc?.Conditions.find((c) => c.Property === "VideoRangeType")?.Value ?? "";
+    expect(ranges).toContain("Unknown");
+    expect(ranges).toContain("SDR");
   });
 });
 
@@ -313,26 +313,26 @@ describe("débit", () => {
   it("ne descend jamais sous ce que le client web s'autorise", () => {
     // Le défaut corrigé : 20 Mb/s dès que `deviceInfo` omettait `uhd`, ce que
     // LG fait sur des téléviseurs parfaitement capables.
-    const p = profil(24, 2024, MEMOIRE_VIDE, { uhd: false });
+    const p = profile(24, 2024, EMPTY_MEMORY, { uhd: false });
     expect(p.MaxStreamingBitrate).toBeGreaterThanOrEqual(80_000_000);
   });
 
   it("laisse le sélecteur de qualité imposer le sien", () => {
-    const p = construireProfilTv(resolu(), MEMOIRE_VIDE, 8_000_000);
+    const p = buildTvProfile(resolved(), EMPTY_MEMORY, 8_000_000);
     expect(p.MaxStreamingBitrate).toBe(8_000_000);
   });
 });
 
 describe("sous-titres image", () => {
   it("évite l'incrustation là où le client sait décoder le PGS", () => {
-    const pgs = profil(24, 2024).SubtitleProfiles.find((s) => s.Format === "pgssub");
+    const pgs = profile(24, 2024).SubtitleProfiles.find((s) => s.Format === "pgssub");
     expect(pgs?.Method).toBe("External");
   });
 
   it("retombe sur l'incrustation sans WebAssembly — dernier recours assumé", () => {
     // webOS 4, Chromium 53 : pas de WebAssembly, donc pas de décodeur PGS
     // client. L'interface doit le signaler.
-    const pgs = profil(4, 2018).SubtitleProfiles.find((s) => s.Format === "pgssub");
+    const pgs = profile(4, 2018).SubtitleProfiles.find((s) => s.Format === "pgssub");
     expect(pgs?.Method).toBe("Encode");
   });
 });

@@ -31,15 +31,15 @@ export function MyDevicesSection() {
   const { t } = useTranslation(["pairing", "common"]);
   const { data: devices, isLoading, isError } = useMyPairedDevices();
   const revokeMut = useRevokeMyDevice();
-  const [aRevoquer, setARevoquer] = useState<string | null>(null);
+  const [toRevoke, setToRevoke] = useState<string | null>(null);
 
   // Premier chargement : rien plutôt qu'une carte vide qui se remplirait sous
   // les yeux. Les rafraîchissements suivants gardent la liste affichée.
   if (isLoading) return null;
 
-  const confirmer = () => {
-    if (aRevoquer) revokeMut.mutate(aRevoquer);
-    setARevoquer(null);
+  const confirm = () => {
+    if (toRevoke) revokeMut.mutate(toRevoke);
+    setToRevoke(null);
   };
 
   return (
@@ -62,7 +62,7 @@ export function MyDevicesSection() {
               trailing={
                 <button
                   type="button"
-                  onClick={() => setARevoquer(device.id)}
+                  onClick={() => setToRevoke(device.id)}
                   disabled={revokeMut.isPending}
                   className="rounded-lg bg-danger-surface px-3 py-1.5 text-xs font-medium text-status-error-fg transition-colors hover:bg-danger-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus disabled:opacity-40"
                 >
@@ -75,13 +75,13 @@ export function MyDevicesSection() {
       </SettingsSection>
 
       <ConfirmDialog
-        open={aRevoquer !== null}
+        open={toRevoke !== null}
         title={t("pairing:revoke")}
         message={t("pairing:revokeConfirm")}
         confirmLabel={t("pairing:revoke")}
         cancelLabel={t("common:cancel")}
-        onConfirm={confirmer}
-        onCancel={() => setARevoquer(null)}
+        onConfirm={confirm}
+        onCancel={() => setToRevoke(null)}
         pending={revokeMut.isPending}
         danger
       />

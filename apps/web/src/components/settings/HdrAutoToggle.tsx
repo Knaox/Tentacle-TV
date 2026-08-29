@@ -23,35 +23,35 @@ import { ToggleSwitch } from "./ToggleSwitch";
  */
 export function HdrAutoToggle() {
   const { t } = useTranslation("preferences");
-  const [actif, setActif] = useState(hdrAutoActive);
+  const [active, setActive] = useState(hdrAutoActive);
   /** `null` tant que le natif n'a pas répondu — on n'affiche rien entre-temps. */
-  const [supporte, setSupporte] = useState<boolean | null>(null);
+  const [supporte, setSupported] = useState<boolean | null>(null);
 
-  const disponible = desktopPlatform() === "windows" && supportsMpv();
+  const available = desktopPlatform() === "windows" && supportsMpv();
 
   // Le natif interroge la configuration d'affichage de Windows, seule source
   // qui dise si un écran SAIT faire du HDR — indépendamment du fait qu'il soit
   // allumé en HDR à cet instant.
   useEffect(() => {
-    if (!disponible) return;
-    let annule = false;
+    if (!available) return;
+    let cancelled = false;
     void invoke<{ supporte: boolean }>("display_hdr_state")
       .then((e) => {
-        if (!annule) setSupporte(e.supporte);
+        if (!cancelled) setSupported(e.supporte);
       })
       .catch(() => {
-        if (!annule) setSupporte(false);
+        if (!cancelled) setSupported(false);
       });
     return () => {
-      annule = true;
+      cancelled = true;
     };
-  }, [disponible]);
+  }, [available]);
 
-  if (!disponible || supporte === null) return null;
+  if (!available || supporte === null) return null;
 
-  const changer = (suivant: boolean): void => {
-    setHdrAuto(suivant);
-    setActif(suivant);
+  const changer = (next: boolean): void => {
+    setHdrAuto(next);
+    setActive(next);
   };
 
   return (
@@ -66,7 +66,7 @@ export function HdrAutoToggle() {
           l'utilisateur voit que la fonction existe, et pourquoi elle ne lui est
           pas offerte — un réglage qui disparaît sans explication inquiète. */}
       <ToggleSwitch
-        checked={supporte && actif}
+        checked={supporte && active}
         onChange={changer}
         disabled={!supporte}
         label={t("preferences:hdrAutoTitle")}

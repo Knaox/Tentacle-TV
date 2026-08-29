@@ -20,17 +20,17 @@
  */
 
 /** Corps d'erreur standard de Fastify : `{"statusCode":429,"error":…}`. */
-const CORPS_429 = /"statusCode"\s*:\s*429\b/;
+const BODY_429 = /"statusCode"\s*:\s*429\b/;
 
-export function estUnRefusDeDebit(erreur: unknown): boolean {
-  if (typeof erreur !== "object" || erreur === null) return false;
-  if ((erreur as { status?: unknown }).status === 429) return true;
-  const message = (erreur as { message?: unknown }).message;
-  return typeof message === "string" && CORPS_429.test(message);
+export function isRateLimitRefusal(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ((error as { status?: unknown }).status === 429) return true;
+  const message = (error as { message?: unknown }).message;
+  return typeof message === "string" && BODY_429.test(message);
 }
 
 /** Prédicat `retry` de TanStack Query : une tentative de rattrapage, sauf 429. */
-export function retenterSaufDebit(nombreDechecs: number, erreur: unknown): boolean {
-  if (estUnRefusDeDebit(erreur)) return false;
-  return nombreDechecs < 1;
+export function retryUnlessRateLimited(failureCount: number, error: unknown): boolean {
+  if (isRateLimitRefusal(error)) return false;
+  return failureCount < 1;
 }

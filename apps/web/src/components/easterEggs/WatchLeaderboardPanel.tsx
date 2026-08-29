@@ -4,12 +4,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useUserId } from "@tentacle-tv/api-client";
 import { Modal } from "../ui/Modal";
 import { LeaderboardRow } from "./LeaderboardRow";
-import { valeurDeRang } from "./leaderboardFormat";
-import { useClassement } from "./leaderboardApi";
+import { rankValue } from "./leaderboardFormat";
+import { useLeaderboard } from "./leaderboardApi";
 
 /** Cascade de 40 ms — la même que `textCascade`, dans la fourchette qui laisse
  *  percevoir l'ordre sans donner l'impression d'attendre la dernière ligne. */
-const LISTE = { show: { transition: { delayChildren: 0.06, staggerChildren: 0.04 } } };
+const LIST = { show: { transition: { delayChildren: 0.06, staggerChildren: 0.04 } } };
 
 /**
  * Le classement de visionnage, ouvert par quatre clics sur le logo.
@@ -20,14 +20,14 @@ const LISTE = { show: { transition: { delayChildren: 0.06, staggerChildren: 0.04
 export function WatchLeaderboardPanel({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation("easterEggs");
   const monId = useUserId();
-  const sansMouvement = !!useReducedMotion();
+  const reducedMotion = !!useReducedMotion();
 
-  const { data, isLoading, isError } = useClassement();
+  const { data, isLoading, isError } = useLeaderboard();
 
   // Le premier donne l'échelle des barres. Recalculé ici plutôt que côté
   // serveur : c'est une affaire d'affichage, pas de données.
   const maximum = useMemo(
-    () => (data?.entries ?? []).reduce((m, e) => Math.max(m, valeurDeRang(e)), 0),
+    () => (data?.entries ?? []).reduce((m, e) => Math.max(m, rankValue(e)), 0),
     [data],
   );
 
@@ -57,8 +57,8 @@ export function WatchLeaderboardPanel({ onClose }: { onClose: () => void }) {
 
         {data && data.entries.length > 0 && (
           <motion.ul
-            variants={sansMouvement ? undefined : LISTE}
-            initial={sansMouvement ? false : "hidden"}
+            variants={reducedMotion ? undefined : LIST}
+            initial={reducedMotion ? false : "hidden"}
             animate="show"
             className="space-y-1"
           >
@@ -69,7 +69,7 @@ export function WatchLeaderboardPanel({ onClose }: { onClose: () => void }) {
                 rang={i + 1}
                 maximum={maximum}
                 moi={e.userId === monId}
-                sansMouvement={sansMouvement}
+                reducedMotion={reducedMotion}
               />
             ))}
           </motion.ul>

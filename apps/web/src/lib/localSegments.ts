@@ -30,17 +30,17 @@ interface LegacySegmentsFile {
 }
 
 export function resolveLocalSegmentsPayload(
-  brut: unknown,
+  raw: unknown,
   itemId: string,
   item: Pick<MediaItem, "RunTimeTicks" | "Chapters"> | undefined,
 ): PlaybackSegmentsResponse {
   // 1. Le contrat v1, tel quel.
-  const contrat = parsePlaybackSegmentsResponse(brut);
-  if (contrat !== null) return contrat;
+  const contract = parsePlaybackSegmentsResponse(raw);
+  if (contract !== null) return contract;
 
   // 2/3. Ancien format ou fichier absent : la même résolution que le serveur,
   // nourrie de ce que le disque sait (payloads bruts + chapitres du DTO).
-  const legacy = (typeof brut === "object" && brut !== null ? brut : {}) as LegacySegmentsFile;
+  const legacy = (typeof raw === "object" && raw !== null ? raw : {}) as LegacySegmentsFile;
   const runtimeMs =
     typeof item?.RunTimeTicks === "number" && item.RunTimeTicks > 0
       ? Math.round(item.RunTimeTicks / (TICKS_PER_SECOND / 1000))

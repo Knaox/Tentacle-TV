@@ -49,10 +49,10 @@ export function resolveBridgeUrl(
   if (typeof path !== "string" || !path.startsWith("/")) return null;
 
   try {
-    const cible = new URL(`${base}${path}`, origineCourante);
-    const attendue = new URL(base === "" ? origineCourante : base, origineCourante);
-    if (cible.origin !== attendue.origin) return null;
-    return cible.toString();
+    const target = new URL(`${base}${path}`, origineCourante);
+    const expected = new URL(base === "" ? origineCourante : base, origineCourante);
+    if (target.origin !== expected.origin) return null;
+    return target.toString();
   } catch {
     // Base ou chemin inexploitable : on ne devine pas.
     return null;

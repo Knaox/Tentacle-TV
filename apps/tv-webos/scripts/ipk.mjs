@@ -15,17 +15,17 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { lancerAres } from "./aresCli.mjs";
+import { runAres } from "./aresCli.mjs";
 
-const ICI = dirname(fileURLToPath(import.meta.url));
-const RACINE_CIBLE = resolve(ICI, "..");
-const RACINE_DEPOT = resolve(RACINE_CIBLE, "../..");
-const COQUILLE = resolve(RACINE_CIBLE, "shell");
-const SORTIE = resolve(RACINE_CIBLE, "dist-ipk");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const TARGET_ROOT = resolve(HERE, "..");
+const REPO_ROOT = resolve(TARGET_ROOT, "../..");
+const COQUILLE = resolve(TARGET_ROOT, "shell");
+const SORTIE = resolve(TARGET_ROOT, "dist-ipk");
 const APPINFO = resolve(COQUILLE, "appinfo.json");
 
 function lireVersion() {
-  const versions = JSON.parse(readFileSync(resolve(RACINE_DEPOT, "versions.json"), "utf8"));
+  const versions = JSON.parse(readFileSync(resolve(REPO_ROOT, "versions.json"), "utf8"));
   const version = versions.webos;
   if (typeof version !== "string" || !/^\d+\.\d+\.\d+$/.test(version)) {
     throw new Error(
@@ -36,7 +36,7 @@ function lireVersion() {
   return version;
 }
 
-function synchroniserAppinfo(version) {
+function syncAppinfo(version) {
   const appinfo = JSON.parse(readFileSync(APPINFO, "utf8"));
   if (appinfo.version === version) return false;
   appinfo.version = version;
@@ -49,27 +49,27 @@ function synchroniserAppinfo(version) {
  * manque : l'IPK se construit, l'installation échoue sur le téléviseur. On
  * vérifie donc les chemins d'`appinfo.json` avant d'appeler l'outil.
  */
-function verifierRessources() {
+function checkResources() {
   const appinfo = JSON.parse(readFileSync(APPINFO, "utf8"));
-  const declarees = ["main", "icon", "largeIcon", "bgImage", "splashBackground"];
-  const manquantes = declarees
+  const declared = ["main", "icon", "largeIcon", "bgImage", "splashBackground"];
+  const missing = declared
     .map((champ) => appinfo[champ])
-    .filter((chemin) => typeof chemin === "string" && chemin.length > 0)
-    .filter((chemin) => !existsSync(resolve(COQUILLE, chemin)));
-  if (manquantes.length > 0) {
-    throw new Error(`ressources déclarées mais absentes de shell/ : ${manquantes.join(", ")}`);
+    .filter((path) => typeof path === "string" && path.length > 0)
+    .filter((path) => !existsSync(resolve(COQUILLE, path)));
+  if (missing.length > 0) {
+    throw new Error(`ressources déclarées mais absentes de shell/ : ${missing.join(", ")}`);
   }
 }
 
-function empaqueter() {
+function pack() {
   mkdirSync(SORTIE, { recursive: true });
-  lancerAres("ares-package", ["--outdir", SORTIE, COQUILLE]);
+  runAres("ares-package", ["--outdir", SORTIE, COQUILLE]);
 }
 
 const version = lireVersion();
-if (synchroniserAppinfo(version)) {
+if (syncAppinfo(version)) {
   console.log(`[ipk] appinfo.json aligné sur versions.json → ${version}`);
 }
-verifierRessources();
-empaqueter();
+checkResources();
+pack();
 console.log(`[ipk] paquet écrit dans ${SORTIE}`);

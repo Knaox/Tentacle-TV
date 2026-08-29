@@ -7,7 +7,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { SearchSuggestions } from "./SearchSuggestions";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { pushRecentSearch, readRecentSearches } from "./recentSearches";
-import { useImageCassee } from "../../hooks/useImageCassee";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 
 interface SearchOverlayProps {
   open: boolean;
@@ -182,7 +182,7 @@ function ResultCard({
   const isEpisode = item.Type === "Episode";
   const imageId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const imageUrl = client.getImageUrl(imageId, "Primary", { height: 360, quality: 85 });
-  const { cassee, signalerEchec } = useImageCassee(imageUrl);
+  const { broken, reportFailure } = useBrokenImage(imageUrl);
   const type =
     item.Type === "Movie" ? t("common:movie") :
     item.Type === "Series" ? t("common:series") :
@@ -220,8 +220,8 @@ function ResultCard({
             loading="lazy" decoding="async"
             draggable={false}
             className="h-full w-full object-cover transition-transform duration-300 group-hover/r:scale-105"
-            style={{ display: cassee ? "none" : undefined }}
-            onError={signalerEchec}
+            style={{ display: broken ? "none" : undefined }}
+            onError={reportFailure}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
         </div>

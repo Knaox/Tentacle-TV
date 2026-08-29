@@ -1,8 +1,8 @@
 import { useCallback, useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import { getMpvApi, setPendingDestroy, type MpvState } from "./mpvRuntime";
 import { queryTrackList } from "./mpvTrackList";
-import { noterAid, noterSid } from "./mpvTrackIntent";
-import { tracerCommande } from "./startupTrace";
+import { noteAid, noteSid } from "./mpvTrackIntent";
+import { traceCommand } from "./startupTrace";
 import { invoke, isElectronShell, listen } from "../desktop/bridge";
 
 /**
@@ -58,18 +58,18 @@ export function useMpvCommands({
   const togglePause = useCallback(async () => { getMpvApi()?.command("cycle", ["pause"]).catch(() => {}); }, []);
   const setPause = useCallback(async (paused: boolean) => { getMpvApi()?.setProperty("pause", paused).catch(() => {}); }, []);
   const seek = useCallback(async (pos: number) => {
-    tracerCommande("seek absolu", `${pos.toFixed(1)} s`);
+    traceCommand("seek absolu", `${pos.toFixed(1)} s`);
     getMpvApi()?.command("seek", [pos, "absolute"]).catch(() => {});
   }, []);
   const seekRelative = useCallback(async (off: number) => {
-    tracerCommande("seek relatif", `${off > 0 ? "+" : ""}${off} s`);
+    traceCommand("seek relatif", `${off > 0 ? "+" : ""}${off} s`);
     getMpvApi()?.command("seek", [off, "relative"]).catch(() => {});
   }, []);
   const setAudioTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setAudioTrack", id);
-    tracerCommande("set aid", String(id));
+    traceCommand("set aid", String(id));
     // Use command("set") with string value — setProperty("aid", number)
     // fails because the plugin sends MPV_FORMAT_DOUBLE but mpv expects MPV_FORMAT_INT64.
     //
@@ -77,20 +77,20 @@ export function useMpvCommands({
     // (handleAudioChange). Filtrer à cet endroit avalerait une sélection
     // légitime — l'erreur exacte qui avait valu son revert à 7dd496ce. La
     // déduplication vit dans les effets de PRÉFÉRENCE, pas ici.
-    try { await api.command("set", ["aid", String(id)]); noterAid(id); }
+    try { await api.command("set", ["aid", String(id)]); noteAid(id); }
     catch (e) { console.error("[mpv] setAudioTrack failed:", e); }
   }, []);
   const setSubtitleTrack = useCallback(async (id: number) => {
     const api = getMpvApi();
     if (!api) return;
     console.debug("[mpv] setSubtitleTrack", id);
-    tracerCommande("set sid", id === 0 ? "no" : String(id));
+    traceCommand("set sid", id === 0 ? "no" : String(id));
     try {
       // `sub-visibility` n'est plus reposé au passage : rien dans l'app ne le
       // met jamais à `no`, son défaut mpv est `yes`, et c'était une commande de
       // plus dans la fenêtre où chacune coûte le cache entier.
       await api.command("set", ["sid", id === 0 ? "no" : String(id)]);
-      noterSid(id);
+      noteSid(id);
     } catch (e) { console.error("[mpv] setSubtitleTrack failed:", e); }
   }, []);
   const setVolume = useCallback(async (v: number) => {
@@ -186,7 +186,7 @@ export function useMpvCommands({
         // Le sid attribué par mpv devient l'intention courante : sans ça,
         // l'effet de préférence — que la relecture de track-list ci-dessus
         // redéclenche — reposait `sid` à chaque tour.
-        if (typeof sid === "number") { noterSid(sid); return sid; }
+        if (typeof sid === "number") { noteSid(sid); return sid; }
         return null;
       }
     } catch (e) {

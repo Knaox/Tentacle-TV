@@ -28,6 +28,6 @@ import type { cardWidthStyle as OriginalCardWidthStyle } from "@/components/card
  */
 export const cardWidthStyle: typeof OriginalCardWidthStyle = (width, widths, vw) => {
   if (width != null) return `${width}px`;
-  const largeur = idealCardWidth(widths, vw, window.innerWidth);
-  return `${Math.floor(largeur)}px`;
+  const computed = idealCardWidth(widths, vw, window.innerWidth);
+  return `${Math.floor(computed)}px`;
 };

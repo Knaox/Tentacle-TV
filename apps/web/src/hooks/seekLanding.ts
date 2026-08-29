@@ -48,33 +48,33 @@
  */
 
 /** Ce qu'on observe d'un saut en cours, sans dépendre du DOM pour les tests. */
-export interface EchantillonSaut {
+export interface SeekSample {
   /** La cible du saut, en temps PTS de l'élément vidéo. */
-  cible: number;
+  target: number;
   /** `v.currentTime` au relevé. */
   position: number;
   /**
    * Fin de la plage `buffered` la plus avancée, `null` s'il n'y en a aucune.
    * On ne retient QUE cette borne : cf. le docblock, le début ment.
    */
-  bufferFin: number | null;
+  bufferEnd: number | null;
   /** `v.paused` — une pause voulue n'est pas un calage. */
-  enPause: boolean;
+  paused: boolean;
   /** `HTMLMediaElement.readyState` — 3 = HAVE_FUTURE_DATA. */
-  pret: number;
+  ready: number;
   /**
    * Millisecondes depuis l'armement de la veille. Le module reste pur : c'est
    * l'appelant qui lit l'horloge, et les tests la fabriquent.
    */
-  ecoule: number;
+  elapsed: number;
 }
 
-export interface EtatSaut {
+export interface SeekState {
   /** Position du relevé précédent, `null` avant le premier. */
-  derniere: number | null;
+  last: number | null;
 }
 
-export const SAUT_VIDE: EtatSaut = { derniere: null };
+export const EMPTY_SEEK: SeekState = { last: null };
 
 /**
  * - `"abouti"` — des images sont sorties là où on les voulait.
@@ -82,7 +82,7 @@ export const SAUT_VIDE: EtatSaut = { derniere: null };
  *   moment de le DIRE à l'utilisateur, pas d'agir.
  * - `"renegocier"` — le déplacement n'a rien produit, il faut une session neuve.
  */
-export type VerdictSaut = "attendre" | "abouti" | "charge" | "renegocier";
+export type SeekVerdict = "attendre" | "abouti" | "charge" | "renegocier";
 
 /**
  * Au bout de combien de temps un saut HLS est considéré comme calé.
@@ -94,7 +94,7 @@ export type VerdictSaut = "attendre" | "abouti" | "charge" | "renegocier";
  * l'échéance : la garder telle quelle est ce qui rend la correction neutre pour
  * hls.js, mpv, Tauri et Electron.
  */
-export const DELAI_CALAGE_SAUT_MS = 8000;
+export const SEEK_STALL_MS = 8000;
 
 /**
  * Au bout de combien de temps on DIT que ça charge.
@@ -106,7 +106,7 @@ export const DELAI_CALAGE_SAUT_MS = 8000;
  * Le même seuil sert à l'attente en cours de lecture (`useVideoEvents`), pour
  * que le lecteur ne se contredise pas d'un chemin à l'autre.
  */
-export const DELAI_CHARGEMENT_MS = 500;
+export const LOADING_MS = 500;
 
 /**
  * À quelle cadence relever.
@@ -115,16 +115,16 @@ export const DELAI_CHARGEMENT_MS = 500;
  * s'arrête d'elle-même dès que la lecture est repartie, ce qui est le cas courant
  * et ne coûte alors qu'un ou deux relevés.
  *
- * Alignée sur `DELAI_CHARGEMENT_MS` : le premier relevé tombe donc AU seuil, et
+ * Alignée sur `LOADING_MS` : le premier relevé tombe donc AU seuil, et
  * le témoin de chargement ne s'allume pas une demi-seconde en retard.
  */
-export const PERIODE_VEILLE_SAUT_MS = DELAI_CHARGEMENT_MS;
+export const SEEK_WATCH_PERIOD_MS = LOADING_MS;
 
 /** De combien la position doit avancer entre deux relevés pour compter. */
-export const PROGRESSION_MINIMALE_S = 0.25;
+export const MIN_PROGRESS_S = 0.25;
 
 /** À quelle distance de la cible on considère qu'on a atterri. */
-export const TOLERANCE_ATTERRISSAGE_S = 2;
+export const LANDING_TOLERANCE_S = 2;
 
 /**
  * Un relevé de plus, et ce qu'il faut en faire.
@@ -133,26 +133,26 @@ export const TOLERANCE_ATTERRISSAGE_S = 2;
  * tout compte à rebours, sinon un saut réussi en une seconde resterait « en
  * attente » pendant les sept suivantes.
  */
-export function observerSaut(etat: EtatSaut, e: EchantillonSaut): [EtatSaut, VerdictSaut] {
-  const suivant: EtatSaut = { derniere: e.position };
-  const auVoisinage = e.position >= e.cible - TOLERANCE_ATTERRISSAGE_S;
+export function observeSeek(state: SeekState, e: SeekSample): [SeekState, SeekVerdict] {
+  const next: SeekState = { last: e.position };
+  const nearTarget = e.position >= e.target - LANDING_TOLERANCE_S;
 
   // De la vidéo est sortie, et là où on la voulait.
-  const avance = etat.derniere !== null && e.position - etat.derniere > PROGRESSION_MINIMALE_S;
-  if (avance && auVoisinage) return [suivant, "abouti"];
+  const advanced = state.last !== null && e.position - state.last > MIN_PROGRESS_S;
+  if (advanced && nearTarget) return [next, "abouti"];
 
   // Un saut demandé à l'arrêt ne fera avancer personne : ce qui le prouve est que
   // le serveur a servi au-delà de la cible.
-  const servi = e.bufferFin !== null && e.bufferFin > e.cible;
-  if (e.enPause && e.pret >= 3 && auVoisinage && servi) return [suivant, "abouti"];
+  const served = e.bufferEnd !== null && e.bufferEnd > e.target;
+  if (e.paused && e.ready >= 3 && nearTarget && served) return [next, "abouti"];
 
   // En pause voulue, renégocier ferait repartir la lecture sous les doigts de
   // l'utilisateur. On ne conclut pas, on attend qu'il reprenne — et surtout on
   // ne dit pas « ça charge » : rien n'est censé avancer, un témoin allumé sur
   // une pause resterait allumé pour toujours.
-  if (e.enPause) return [suivant, "attendre"];
+  if (e.paused) return [next, "attendre"];
 
-  if (e.ecoule >= DELAI_CALAGE_SAUT_MS) return [suivant, "renegocier"];
-  if (e.ecoule >= DELAI_CHARGEMENT_MS) return [suivant, "charge"];
-  return [suivant, "attendre"];
+  if (e.elapsed >= SEEK_STALL_MS) return [next, "renegocier"];
+  if (e.elapsed >= LOADING_MS) return [next, "charge"];
+  return [next, "attendre"];
 }

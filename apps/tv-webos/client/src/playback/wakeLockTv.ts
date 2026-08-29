@@ -19,9 +19,9 @@
  * (émulateur, navigateur de dev, webOS antique) → no-op silencieux.
  */
 
-const PERIODE_MS = 4 * 60_000;
+const PERIOD_MS = 4 * 60_000;
 
-let demarre = false;
+let started = false;
 
 /** Vrai si une lecture est ACTIVE à l'écran (vidéo montée, ni pause ni fin). */
 function lectureActive(): boolean {
@@ -29,11 +29,11 @@ function lectureActive(): boolean {
   return video != null && !video.paused && !video.ended;
 }
 
-function effacerEconomiseur(): void {
-  const pont = window.PalmServiceBridge;
-  if (typeof pont !== "function") return;
+function clearScreensaver(): void {
+  const bridge = window.PalmServiceBridge;
+  if (typeof bridge !== "function") return;
   try {
-    const appel = new pont();
+    const appel = new bridge();
     // Réponse ignorée : l'appel est idempotent et sans retour utile — un refus
     // (service absent) ne change rien à la lecture en cours.
     appel.onservicecallback = null;
@@ -44,11 +44,11 @@ function effacerEconomiseur(): void {
 }
 
 /** Installe la sentinelle (idempotent, no-op hors téléviseur). */
-export function installerAntiVeille(): void {
-  if (demarre) return;
-  demarre = true;
+export function installWakeLock(): void {
+  if (started) return;
+  started = true;
   if (typeof window === "undefined" || typeof window.PalmServiceBridge !== "function") return;
   setInterval(() => {
-    if (lectureActive()) effacerEconomiseur();
-  }, PERIODE_MS);
+    if (lectureActive()) clearScreensaver();
+  }, PERIOD_MS);
 }

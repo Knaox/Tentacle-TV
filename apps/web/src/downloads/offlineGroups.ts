@@ -168,14 +168,14 @@ export function groupSeasonsBySeries(seasons: OfflineSeasonGroup[]): OfflineSeri
   }
 
   const series: OfflineSeriesGroup[] = [...byKey.entries()].map(([key, list]) => {
-    const ordonnees = [...list].sort((a, b) => (a.seasonNumber ?? LAST) - (b.seasonNumber ?? LAST));
-    const first = ordonnees[0];
+    const ordered = [...list].sort((a, b) => (a.seasonNumber ?? LAST) - (b.seasonNumber ?? LAST));
+    const first = ordered[0];
     return {
       key,
       seriesId: first.seriesId,
       seriesName: first.seriesName,
-      seasons: ordonnees,
-      episodeCount: ordonnees.reduce((total, s) => total + s.episodes.length, 0),
+      seasons: ordered,
+      episodeCount: ordered.reduce((total, s) => total + s.episodes.length, 0),
       posterItemId: first.posterItemId,
     };
   });

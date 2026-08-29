@@ -6,11 +6,11 @@ import autoprefixer from "autoprefixer";
 import { resolve } from "node:path";
 import { readFileSync } from "node:fs";
 import { substitutionModules } from "./substitutionModules";
-import { servirHarnais } from "./servirHarnais";
-import { gardeStylesEnLigne } from "./gardeStylesEnLigne";
-import { PAQUETS_SUBSTITUES, FICHIERS_SUBSTITUES } from "./tableSubstitutions";
-import { OPTIONS_LEGACY, SOCLE_NAVIGATEUR } from "./legacy";
-import { compatibiliteChrome53 } from "./postcss";
+import { serveHarness } from "./serveHarness";
+import { inlineStyleGuard } from "./inlineStyleGuard";
+import { SUBSTITUTED_PACKAGES, SUBSTITUTED_FILES } from "./substitutionTable";
+import { OPTIONS_LEGACY, BROWSER_BASELINE } from "./legacy";
+import { chrome53Compat } from "./postcss";
 
 /**
  * Variante de build du client, pour un téléviseur LG.
@@ -20,18 +20,18 @@ import { compatibiliteChrome53 } from "./postcss";
  * moteur, les modules substitués, et le chemin sous lequel le serveur la sert.
  */
 
-const CIBLE = resolve(__dirname, "..");
-const DEPOT = resolve(CIBLE, "../..");
-const WEB = resolve(CIBLE, "../web");
+const TARGET = resolve(__dirname, "..");
+const REPO = resolve(TARGET, "../..");
+const WEB = resolve(TARGET, "../web");
 
-const versions = JSON.parse(readFileSync(resolve(DEPOT, "versions.json"), "utf-8"));
+const versions = JSON.parse(readFileSync(resolve(REPO, "versions.json"), "utf-8"));
 
 export default defineConfig({
-  root: resolve(CIBLE, "client"),
+  root: resolve(TARGET, "client"),
   // Le serveur Tentacle sert cette variante sous `/tv`. Le routeur porte le
   // même préfixe en `basename` — les deux doivent rester alignés.
   base: "/tv/",
-  envDir: DEPOT,
+  envDir: REPO,
 
   // Serveur de développement, et rien d'autre : la production ne le voit jamais.
   //
@@ -61,14 +61,14 @@ export default defineConfig({
   },
 
   plugins: [
-    substitutionModules(FICHIERS_SUBSTITUES),
+    substitutionModules(SUBSTITUTED_FILES),
     // Avant `react()` : le `transform` doit voir la source TSX, pas sa
     // traduction. Et après la substitution, pour ne juger que les modules
     // réellement embarqués.
-    gardeStylesEnLigne(),
+    inlineStyleGuard(),
     // Le banc d'essai du moteur de focus, hors du dossier public pour ne
     // jamais atteindre un téléviseur d'utilisateur.
-    servirHarnais(resolve(CIBLE, "harnais")),
+    serveHarness(resolve(TARGET, "harness")),
     react(),
     legacy(OPTIONS_LEGACY),
   ],
@@ -95,7 +95,7 @@ export default defineConfig({
       // `apps/web` s'importe lui-même par `@/…` ; la racine de Vite étant
       // `client/`, l'alias doit continuer de désigner les sources du web.
       "@": resolve(WEB, "src"),
-      ...PAQUETS_SUBSTITUES,
+      ...SUBSTITUTED_PACKAGES,
     },
   },
 
@@ -109,12 +109,12 @@ export default defineConfig({
         // preset partagé, qui est du TypeScript à imports sans extension. Le
         // chargeur ESM de Node, qui évalue ce fichier-ci, ne sait pas les
         // résoudre — celui de Tailwind, si.
-        tailwindcss(resolve(CIBLE, "config/tailwind.config.ts")),
+        tailwindcss(resolve(TARGET, "config/tailwind.config.ts")),
         // Sans cette liste, autoprefixer travaille sur ses valeurs par défaut
         // — des navigateurs récents — et n'émet aucun des préfixes dont un
         // moteur de 2016 a encore besoin.
-        autoprefixer({ overrideBrowserslist: SOCLE_NAVIGATEUR }),
-        compatibiliteChrome53(),
+        autoprefixer({ overrideBrowserslist: BROWSER_BASELINE }),
+        chrome53Compat(),
       ],
     },
   },

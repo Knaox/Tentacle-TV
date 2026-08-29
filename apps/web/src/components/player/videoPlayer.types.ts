@@ -27,7 +27,7 @@ export interface AudioTrack {
    *
    * Sert à savoir d'avance si le lecteur publiera la piste : sur un téléviseur,
    * certains codecs ne sont démultiplexés par aucune génération, et la piste
-   * n'apparaît alors jamais dans `video.audioTracks` (cf. `pistesLecteur.ts`).
+   * n'apparaît alors jamais dans `video.audioTracks` (cf. `playerTracks.ts`).
    */
   codec?: string;
 }
@@ -64,7 +64,7 @@ export interface VideoPlayerProps {
    * La piste audio demandée est absente du lecteur, alors qu'on lit le fichier
    * en direct : la puce ne sait pas la décoder. Il faut la demander au serveur.
    */
-  surPisteIntrouvable?: () => void;
+  onTrackNotFound?: () => void;
   /**
    * La lecture directe n'a rien produit — conteneur accepté puis muet. Fourni
    * seulement quand un repli est possible ; son absence désarme la garde.
@@ -77,7 +77,7 @@ export interface VideoPlayerProps {
    */
   pgsSubtitleUrl?: string | null;
   /** Le décodage PGS a échoué : rendre la main à l'incrustation serveur. */
-  onPgsEchec?: () => void;
+  onPgsFailure?: () => void;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
   nextEpisodeTitle?: string;
