@@ -121,6 +121,21 @@ export default {
 
   // Passages d'un épisode et fin d'épisode. Ces réglages suivent le COMPTE et
   // non l'appareil : celui posé sur le portable vaut devant le téléviseur.
+  //
+  // Le MODE est en tête parce que c'est la seule question que la plupart des
+  // gens se posent ; le détail vit sous un repli.
+  playbackModeTitle: "Sauts et enchaînement",
+  playbackModeLabel: "Ce que fait le lecteur",
+  playbackModeManual: "Me proposer",
+  playbackModeAutomatic: "Faire tout seul",
+  playbackModeCustom: "Personnalisé",
+  playbackModeManualHint:
+    "Le lecteur affiche un bouton et attend votre geste. Il ne saute rien et n'enchaîne pas les épisodes.",
+  playbackModeAutomaticHint:
+    "Le lecteur passe les génériques et les résumés après un court délai, et enchaîne l'épisode suivant. Un film ne se ferme jamais tout seul.",
+  playbackModeCustomHint:
+    "Vos réglages ne correspondent à aucun des deux modes. Le détail est ci-dessous ; choisir un mode le remplacera.",
+  playbackAdvancedToggle: "Réglages avancés",
   playbackSegmentsTitle: "Passages d'un épisode",
   playbackSegmentsHint:
     "Quand le serveur signale un passage — générique, résumé, aperçu — le lecteur peut proposer de le passer, le passer tout seul, ou ne rien faire. Sans signalement, rien ne s'affiche : ces réglages ne devinent jamais.",
@@ -145,9 +160,11 @@ export default {
   segmentActionOff: "Ne rien faire",
   segmentCountdownTitle: "Montrer le décompte",
   segmentCountdownHint:
-    "Le bouton se remplit pendant le délai, et une croix reste offerte pour garder le passage sur cet épisode.",
-  segmentDelayLabel: "Délai avant le saut (millisecondes)",
-  segmentDelayHint: "Le temps laissé pour refuser. 3000 vaut trois secondes ; 0 passe sans rien demander.",
+    "Le bouton se remplit pendant le délai. La croix, elle, est toujours là : elle arrête le décompte et retire le bouton de l'image jusqu'à la fin de la lecture — il revient dès que les contrôles s'affichent.",
+  segmentDelayLabel: "Délai avant le saut",
+  segmentDelayHint: "Le temps laissé pour refuser avant que le lecteur ne passe.",
+  segmentDelayValue: "{{seconds}} s",
+  segmentDelayImmediate: "Immédiat",
 
   // Fin d'épisode — TROIS réglages strictement indépendants : montrer la
   // fiche, décompter, lancer. Couper le décompte ne masque plus la fiche.
@@ -164,7 +181,10 @@ export default {
   upNextTriggerLabel: "Quand proposer la suite",
   upNextTriggerOutroStart: "Au début du générique de fin",
   upNextTriggerBeforeEnd: "Peu avant la fin",
-  upNextBeforeEndLabel: "Combien de temps avant la fin (secondes)",
+  upNextNeedsCard: "Sans la fiche ci-dessus, ce réglage n'a rien à décompter.",
+  upNextNeedsCountdown: "Sans le compte à rebours ci-dessus, rien ne se déclenche.",
+  upNextBeforeEndLabel: "Combien de temps avant la fin",
+  upNextBeforeEndValue: "{{seconds}} s",
   upNextBeforeEndHint:
     "Sert aussi quand le générique de fin n'est pas signalé : la fiche paraît alors ce temps-là avant la fin.",
 

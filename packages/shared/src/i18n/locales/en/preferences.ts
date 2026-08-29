@@ -121,6 +121,21 @@ export default {
 
   // Episode passages and end of episode. These settings follow the ACCOUNT,
   // not the device: what you set on the laptop applies in front of the TV.
+  //
+  // Le MODE est en tête parce que c'est la seule question que la plupart des
+  // gens se posent ; le détail vit sous un repli.
+  playbackModeTitle: "Skipping and autoplay",
+  playbackModeLabel: "What the player does",
+  playbackModeManual: "Offer it to me",
+  playbackModeAutomatic: "Do it for me",
+  playbackModeCustom: "Custom",
+  playbackModeManualHint:
+    "The player shows a button and waits for you. It skips nothing and never chains episodes.",
+  playbackModeAutomaticHint:
+    "The player skips credits and recaps after a short delay, and plays the next episode. A film never closes on its own.",
+  playbackModeCustomHint:
+    "Your settings match neither mode. The detail is below; picking a mode will replace it.",
+  playbackAdvancedToggle: "Advanced settings",
   playbackSegmentsTitle: "Passages within an episode",
   playbackSegmentsHint:
     "When the server marks a passage — opening titles, recap, preview — the player can offer to skip it, skip it on its own, or do nothing. Nothing is shown when nothing is marked: these settings never guess.",
@@ -145,9 +160,11 @@ export default {
   segmentActionOff: "Do nothing",
   segmentCountdownTitle: "Show the countdown",
   segmentCountdownHint:
-    "The button fills up during the delay, and a cross stays available to keep the passage on this episode.",
-  segmentDelayLabel: "Delay before skipping (milliseconds)",
-  segmentDelayHint: "How long you get to refuse. 3000 is three seconds; 0 skips without asking.",
+    "The button fills up during the delay. The cross is always there: it stops the countdown and takes the button off the picture for the rest of playback — it comes back whenever the controls are shown.",
+  segmentDelayLabel: "Delay before skipping",
+  segmentDelayHint: "How long you get to refuse before the player skips.",
+  segmentDelayValue: "{{seconds}}s",
+  segmentDelayImmediate: "Immediate",
 
   // End of episode — THREE strictly independent settings: show the card, run
   // the countdown, play the next episode. Turning the countdown off no longer
@@ -165,7 +182,10 @@ export default {
   upNextTriggerLabel: "When to offer what follows",
   upNextTriggerOutroStart: "At the start of the closing credits",
   upNextTriggerBeforeEnd: "Shortly before the end",
-  upNextBeforeEndLabel: "How long before the end (seconds)",
+  upNextNeedsCard: "Without the card above, this setting has nothing to count down.",
+  upNextNeedsCountdown: "Without the countdown above, nothing is triggered.",
+  upNextBeforeEndLabel: "How long before the end",
+  upNextBeforeEndValue: "{{seconds}}s",
   upNextBeforeEndHint:
     "Also used when the closing credits are not marked: the card then appears that long before the end.",
 
