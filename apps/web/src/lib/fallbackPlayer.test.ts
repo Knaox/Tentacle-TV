@@ -8,7 +8,7 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-async function chargerStore() {
+async function loadStore() {
   return import("./fallbackPlayer");
 }
 
@@ -18,18 +18,18 @@ describe("fallbackPlayer", () => {
   });
 
   it("démarre sans bascule", async () => {
-    const store = await chargerStore();
+    const store = await loadStore();
     expect(store.isFallbackActive()).toBe(false);
   });
 
   it("signaler mémorise pour la session", async () => {
-    const store = await chargerStore();
+    const store = await loadStore();
     store.reportFallbackSwitch();
     expect(store.isFallbackActive()).toBe(true);
   });
 
   it("annuler rend le lecteur natif", async () => {
-    const store = await chargerStore();
+    const store = await loadStore();
     store.reportFallbackSwitch();
     store.cancelFallbackSwitch();
     expect(store.isFallbackActive()).toBe(false);
