@@ -16,8 +16,8 @@ const COMMON_SELECTORS_BLOCK = `/* === Tentacle TV — Common selectors for Cust
 /* Page chrome */
 html, body                                    /* Page background, font */
 .brand-ambient                                /* Corner ambient halos */
-header[data-host-chrome="topbar"]             /* Desktop top nav */
-header[data-host-chrome="topbar-mobile"]      /* Mobile top nav */
+header[data-hote-bandeau="topbar"]             /* Desktop top nav */
+header[data-hote-bandeau="topbar-mobile"]      /* Mobile top nav */
 nav.fixed.bottom-0                            /* Mobile bottom tab bar */
 nav[aria-label="Primary"] a[aria-current="page"]  /* Active nav link */
 

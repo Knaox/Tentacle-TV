@@ -36,7 +36,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
   return (
     <>
       <header
-        data-host-chrome="topbar-mobile"
+        data-hote-bandeau="topbar-mobile"
         className="fixed inset-x-0 top-0 z-40 h-[56px]"
         style={{
           backdropFilter: scrim.crossed ? "blur(10px)" : "none",

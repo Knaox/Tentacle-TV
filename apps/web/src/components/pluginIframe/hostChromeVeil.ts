@@ -16,7 +16,7 @@
  * styles, donc un seul endroit sait les retirer.
  */
 
-const SELECTOR = "[data-host-chrome]";
+const SELECTOR = "[data-hote-bandeau]";
 
 export function setHostChromeVeil(active: boolean): void {
   document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
