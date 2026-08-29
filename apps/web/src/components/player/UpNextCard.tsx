@@ -22,10 +22,11 @@ interface UpNextCardProps {
   /**
    * La barre de contrôles est-elle à l'écran ?
    *
-   * Elle commande les DEUX refus de la carte — la croix et « Masquer ». Ils ne
-   * paraissent que sur l'image nue : leur office est d'arrêter le décompte et
-   * de retirer la carte de l'image. L'habillage affiché, il n'y a plus rien à
-   * retirer, et la suite reste offerte par la pilule.
+   * Elle commande la POSITION, pas les refus : la carte monte au-dessus de la
+   * barre de progression quand celle-ci paraît, et redescend en bas à droite
+   * quand elle s'efface. Sans cela elle se posait en travers de la barre, qu'on
+   * ne pouvait plus ni lire ni saisir. Même geste et même arrivée que la pilule
+   * de saut — 104 px du bas dans les deux cas.
    */
   controlsVisible?: boolean;
   /** Initial countdown value used for progress (defaults to 10s). */
@@ -59,14 +60,15 @@ export function UpNextCard({
   totalSeconds = DEFAULT_TOTAL,
 }: UpNextCardProps) {
   const { t } = useTranslation("player");
-  const refusable = !controlsVisible;
   const counting = countdown !== null;
   const progress = counting ? ((totalSeconds - countdown) / totalSeconds) * 100 : 0;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 32, scale: 0.94 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      // La montée passe par `y` de framer et non par une classe : les deux
+      // écriraient la même transformée, et la dernière poserait gagnerait.
+      animate={{ opacity: 1, y: controlsVisible ? -80 : 0, scale: 1 }}
       exit={{ opacity: 0, y: 24, scale: 0.96, transition: { duration: 0.16 } }}
       transition={{ type: "spring", damping: 22, stiffness: 280 }}
       className="absolute bottom-4 right-4 z-30 w-[min(420px,calc(100vw-2rem))] overflow-hidden sm:bottom-6 sm:right-6"
@@ -168,8 +170,9 @@ export function UpNextCard({
             </span>
           )}
         </div>
-        {/* Top-right close — hors habillage seulement (cf. `controlsVisible`). */}
-        {refusable && (
+        {/* La croix — LE refus de la carte, désormais le seul. Le bouton texte
+            « Masquer » disait la même chose une seconde fois, en occupant la
+            moitié de la rangée d'actions. */}
         <button
           type="button"
           onClick={onDismiss}
@@ -181,7 +184,6 @@ export function UpNextCard({
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        )}
       </div>
 
       {/* Episode meta + actions — sous la bannière, sur le fond `surface-modal`
@@ -203,28 +205,19 @@ export function UpNextCard({
           </p>
         )}
 
-        <div className="mt-3.5 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onPlay}
-            className="group/play flex flex-1 items-center justify-center gap-2 rounded-md bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-all duration-150 hover:scale-[1.02] hover:bg-cta-primary-bg-hover"
-            style={{ boxShadow: "0 6px 22px var(--brand-glow)" }}
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-            {t("player:playNow")}
-          </button>
-          {refusable && (
-            <button
-              type="button"
-              onClick={onDismiss}
-              className="rounded-md px-4 py-2.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
-            >
-              {t("player:dismiss")}
-            </button>
-          )}
-        </div>
+        {/* Une seule action, donc pleine largeur : le refus vit dans la croix,
+            en haut à droite, là où on le cherche sur une carte. */}
+        <button
+          type="button"
+          onClick={onPlay}
+          className="group/play mt-3.5 flex w-full items-center justify-center gap-2 rounded-md bg-cta-primary-bg py-2.5 text-sm font-bold text-cta-primary-fg transition-all duration-150 hover:scale-[1.02] hover:bg-cta-primary-bg-hover"
+          style={{ boxShadow: "0 6px 22px var(--brand-glow)" }}
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          {t("player:playNow")}
+        </button>
       </div>
     </motion.div>
   );
