@@ -3,18 +3,16 @@ import { View, Text, Pressable, Animated, Platform, useWindowDimensions } from "
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { ArrowLeft, Captions, Settings, List } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTranslation } from "react-i18next";
-import type { SegmentTimestamps, MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { extractSourceQuality } from "@tentacle-tv/shared";
 import { type QualityKey, type QualityPreset } from "../hooks/usePlayerPlayback";
+import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import { PlayerSeekBar } from "./player/PlayerSeekBar";
 import { CenterControls } from "./player/CenterControls";
 import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
-import { AutoPlayOverlay } from "./player/AutoPlayOverlay";
-import { SkipButton } from "./player/SkipButton";
+import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
 import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
-import { useAutoPlayNext, AUTOPLAY_TOTAL_SEC } from "../hooks/useAutoPlayNext";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -36,8 +34,8 @@ interface Props {
   qualityKey: QualityKey;
   /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
   qualityPresets: readonly QualityPreset[];
-  introSegment?: SegmentTimestamps | null;
-  creditsSegment?: SegmentTimestamps | null;
+  /** L'arbitre partagé : ce qu'il faut afficher, et de quoi y répondre. */
+  playback: PlaybackOverlayResult;
   nextEpisode?: MediaItem | null;
   previousEpisode?: MediaItem | null;
   /** Current item — passed to the seekbar so it can fetch trickplay tiles. */
@@ -58,14 +56,13 @@ interface Props {
 export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets,
-  introSegment, creditsSegment, nextEpisode, previousEpisode,
+  playback, nextEpisode, previousEpisode,
   item, mediaSourceId,
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode,
   visible, onToggle,
 }: Props) {
-  const { t } = useTranslation("player");
   const { width: screenW, height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // Contrôles agrandis sur grand écran (player iPad) — téléphone inchangé (ui = 1).
@@ -73,7 +70,6 @@ export function MobilePlayerOverlay({
   const ui = isTablet ? 1.4 : 1;
   const playSize = Math.min(isTablet ? 92 : 60, Math.round(screenH * 0.08));
   const centerGap = Math.min(isTablet ? 76 : 36, Math.round(screenW * 0.05));
-  const hasNextEpisode = !!(nextEpisode && onNextEpisode);
   const [showSettings, setShowSettings] = useState(false);
   const [showSubtitles, setShowSubtitles] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
@@ -93,10 +89,6 @@ export function MobilePlayerOverlay({
 
   const sourceQuality = useMemo(() => extractSourceQuality(item), [item]);
 
-  const { showAutoPlay, countdown: autoPlayCountdown, dismiss: dismissAutoPlay } = useAutoPlayNext({
-    currentTime, duration, nextEpisode, onNextEpisode,
-  });
-
   const resetHideTimer = useCallback(() => {
     if (hideTimer.current) clearTimeout(hideTimer.current);
     if (!paused) {
@@ -114,10 +106,12 @@ export function MobilePlayerOverlay({
     return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
   }, [visible, resetHideTimer, opacity]);
 
-  const showSkipIntro = introSegment && currentTime >= introSegment.start && currentTime < introSegment.end - 1;
-  const showSkipCredits = creditsSegment && currentTime >= creditsSegment.start && currentTime < creditsSegment.end - 1 && !showAutoPlay;
+  // L'habillage peut disparaître (auto-masquage à 4 s) sans emporter la
+  // surcouche de lecture : le bouton de saut et la carte « à suivre » ne
+  // dépendent plus de l'OSD, comme sur le bureau et le web.
+  const surcouche = playback.overlay.kind !== "none";
 
-  if (!visible && !showAutoPlay) return null;
+  if (!visible && !surcouche) return null;
 
   return (
     <>
@@ -157,28 +151,6 @@ export function MobilePlayerOverlay({
 
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
-
-          {/* Skip intro / credits — design aligné desktop (pill blur 24, border subtle, bottom-right safe-area) */}
-          {showSkipIntro && introSegment && (
-            <SkipButton
-              label={t("skipIntro")}
-              onPress={() => onSeek(introSegment.end)}
-              bottom={Math.max(110, insets.bottom + 86)}
-              right={Math.max(20, insets.right + 16)}
-            />
-          )}
-          {showSkipCredits && creditsSegment && (
-            <SkipButton
-              label={hasNextEpisode ? t("nextEpisodeLabel") : t("skipCredits")}
-              showChevron={hasNextEpisode}
-              onPress={() => {
-                if (hasNextEpisode && onNextEpisode) onNextEpisode();
-                else onSeek(creditsSegment.end);
-              }}
-              bottom={Math.max(110, insets.bottom + 86)}
-              right={Math.max(20, insets.right + 16)}
-            />
-          )}
 
           {/* Bottom bar: seek + track buttons */}
           <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "flex-end", paddingRight: 8 }}>
@@ -231,16 +203,18 @@ export function MobilePlayerOverlay({
         </Animated.View>
       )}
 
-      {/* AutoPlay overlay */}
-      {showAutoPlay && nextEpisode && onNextEpisode && (
-        <AutoPlayOverlay
-          nextEpisode={nextEpisode}
-          countdown={autoPlayCountdown}
-          totalSeconds={AUTOPLAY_TOTAL_SEC}
-          onPlay={onNextEpisode}
-          onDismiss={dismissAutoPlay}
-        />
-      )}
+      {/* La surcouche de lecture — pilule de saut ou carte « à suivre ». Hors
+          du bloc `visible` : elle ne suit pas l'auto-masquage de l'habillage. */}
+      <PlaybackOverlayMobile
+        overlay={playback.overlay}
+        countdownTotals={playback.countdownTotals}
+        nextEpisode={nextEpisode}
+        onSkip={playback.skipNow}
+        onDismiss={playback.dismissOverlay}
+        onPlayNow={playback.playNow}
+        bottom={Math.max(110, insets.bottom + 86)}
+        right={Math.max(20, insets.right + 16)}
+      />
 
       {/* Pop-ups Réglages + Sous-titres (extraits pour rester sous 300 lignes). */}
       <PlayerSettingsMenus

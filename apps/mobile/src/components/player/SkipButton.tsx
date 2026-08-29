@@ -1,6 +1,6 @@
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
-import { ChevronRight } from "lucide-react-native";
+import { useEffect, useRef } from "react";
+import { View, Pressable, Text, StyleSheet, Animated } from "react-native";
+import { X } from "lucide-react-native";
 import { PLAYER, useResponsive } from "../../theme";
 
 interface Props {
@@ -8,19 +8,43 @@ interface Props {
   onPress: () => void;
   bottom: number;
   right: number;
-  showChevron?: boolean;
+  /** Durée totale du décompte (ms) ; `null` = bouton manuel, sans glissière. */
+  countdownTotalMs?: number | null;
+  /** Refuser le saut automatique — la croix n'existe que pendant un décompte. */
+  onDismiss?: () => void;
 }
 
 /**
- * Skip Intro / Next Episode / Skip Credits — design aligné desktop
- * (apps/web VideoPlayer L717-727) : bg black/60 + border white/20 +
- * backdrop-blur 24 + rounded 8 + px-5 py-2.5 + text-sm font-semibold.
- * Adapté mobile : safe-area aware, touch ≥44pt via minHeight.
+ * LE bouton de saut — intro, résumé, aperçu, générique : une seule pilule,
+ * BLANCHE, comme sur le web et le bureau. Le langage est le même partout : même
+ * place, même poids, et le décompte n'ajoute que trois choses — le libellé qui
+ * compte, une glissière qui court, une croix pour s'y opposer.
+ *
+ * La glissière anime `scaleX` et RIEN d'autre, pilote natif à l'appui : animer
+ * une largeur repasserait par le fil JavaScript à chaque image, au-dessus d'un
+ * décodeur vidéo. `transformOrigin` la fait courir depuis la gauche (RN ≥ 0.74).
  */
-export function SkipButton({ label, onPress, bottom, right, showChevron }: Props) {
+export function SkipButton({
+  label, onPress, bottom, right, countdownTotalMs, onDismiss,
+}: Props) {
   const { isTablet } = useResponsive();
+  const arme = typeof countdownTotalMs === "number" && countdownTotalMs > 0;
+  const course = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!arme) return;
+    course.setValue(0);
+    const animation = Animated.timing(course, {
+      toValue: 1,
+      duration: countdownTotalMs ?? 0,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => { animation.stop(); };
+  }, [arme, countdownTotalMs, course]);
+
   return (
-    <View style={{ position: "absolute", bottom, right, zIndex: 50 }}>
+    <View style={[st.rangee, { bottom, right }]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -28,16 +52,36 @@ export function SkipButton({ label, onPress, bottom, right, showChevron }: Props
         style={({ pressed }) => [st.btn, isTablet && st.btnTablet, pressed && { opacity: 0.82 }]}
         hitSlop={8}
       >
-        <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} />
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: PLAYER.controlBg }]} />
         <Text style={[st.label, isTablet && { fontSize: 17 }]} numberOfLines={1}>{label}</Text>
-        {showChevron && <ChevronRight size={isTablet ? 20 : 16} color={PLAYER.text} />}
+        {arme && (
+          <Animated.View
+            pointerEvents="none"
+            style={[st.glissiere, { transform: [{ scaleX: course }] }]}
+          />
+        )}
       </Pressable>
+      {arme && onDismiss && (
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          hitSlop={10}
+          style={({ pressed }) => [st.croix, pressed && { opacity: 0.7 }]}
+        >
+          <X size={isTablet ? 20 : 16} color={PLAYER.text} />
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const st = StyleSheet.create({
+  rangee: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    zIndex: 50,
+  },
   btn: {
     flexDirection: "row",
     alignItems: "center",
@@ -45,7 +89,8 @@ const st = StyleSheet.create({
     minHeight: 44,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: PLAYER.border,
+    borderColor: PLAYER.text,
+    backgroundColor: PLAYER.text,
     paddingHorizontal: 20,
     paddingVertical: 10,
     overflow: "hidden",
@@ -57,5 +102,24 @@ const st = StyleSheet.create({
     paddingHorizontal: 28,
     paddingVertical: 14,
   },
-  label: { color: PLAYER.text, fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
+  // Sur fond blanc, la glissière est sombre — un blanc translucide y serait
+  // invisible (même arbitrage que sur le web).
+  glissiere: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 2,
+    backgroundColor: PLAYER.fillInverse,
+    transformOrigin: "left",
+  },
+  croix: {
+    height: 36,
+    width: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: PLAYER.controlBg,
+  },
+  label: { color: PLAYER.textInverse, fontSize: 14, fontWeight: "600", letterSpacing: 0.1 },
 });

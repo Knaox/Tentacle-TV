@@ -30,12 +30,15 @@ export interface PlayerHandlersOptions {
   setIsBuffering: (v: boolean) => void;
   setVideoReady: (v: boolean) => void;
   setPlayerError: (v: string | null) => void;
+  /** Le flux est arrivé au bout — l'écran le donne à l'arbitre, qui décide. */
+  onEnded: () => void;
 }
 
 export function usePlayerHandlers({
   itemId, pb, videoRef, paused,
   resumeApplied, retryCount, retryingRef, hasEverPlayed,
   setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
+  onEnded,
 }: PlayerHandlersOptions) {
   const { t } = useTranslation("player");
   const router = useRouter();
@@ -93,11 +96,13 @@ export function usePlayerHandlers({
     pb.reporting.updatePosition(pos, paused);
   }, [paused, pb.reporting, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // `invalidateAndGoBack` rapporte déjà l'arrêt : le second `reportStop()` qui
-  // traînait ici n'ajoutait rien qu'un `DELETE ActiveEncodings` en double.
+  // La fin du flux ne quitte plus l'écran : elle est ANNONCÉE à l'arbitre, qui
+  // affiche l'écran de fin quand il y a une suite, et demande la sortie
+  // (`onEndOfPlayback` → `invalidateAndGoBack`) quand il n'y en a pas. Sortir
+  // ici privait le mobile de l'écran de fin que les autres surfaces ont.
   const handleEnd = useCallback(() => {
-    invalidateAndGoBack();
-  }, [invalidateAndGoBack]);
+    onEnded();
+  }, [onEnded]);
 
   const handleError = useCallback((e: unknown) => {
     // Guard against duplicate onError from ExoPlayer or race with retryingRef
