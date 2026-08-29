@@ -27,6 +27,7 @@ les notes Apple doivent rester génériques.
 - **Les réglages de saut se voient au lieu de se lire.** Dans Réglages > Lecture > Réglages avancés, un aperçu montre le vrai bouton du lecteur : changez une option, il change sous vos yeux. Les explications passent de trois lignes à une, et le détail attend derrière « En savoir plus »
 - **Les réglages de lecture suivent votre COMPTE**, plus l'appareil : ce que vous posez sur l'ordinateur vaut devant la télévision et sur le téléphone
 - **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son compte à rebours, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
+- **Le compte à rebours « épisode suivant » se règle**, dans Réglages > Lecture > Réglages avancés — et il s'adapte : si la fiche paraît quatre secondes avant la fin, l'épisode suivant part au bout de trois secondes et demie, au lieu d'attendre dix secondes sur l'écran de fin
 
 ### EN
 - **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
@@ -46,6 +47,7 @@ les notes Apple doivent rester génériques.
 - **Skip settings are shown instead of described.** Under Settings > Playback > Advanced settings, a preview shows the player's real button: change an option and it changes before your eyes. The explanations go from three lines to one, and the detail waits behind “More about this”
 - **Playback settings follow your ACCOUNT**, not the device: what you set on the computer applies in front of the television and on the phone
 - **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
+- **The “next episode” countdown is now yours to set**, under Settings > Playback > Advanced settings — and it adapts: if the card appears four seconds before the end, the next episode starts after three and a half, instead of waiting ten seconds on the end screen
 
 ## [1.20.9]
 ### FR
@@ -66,6 +68,7 @@ les notes Apple doivent rester génériques.
 - **Les réglages de saut se voient au lieu de se lire.** Dans Réglages > Lecture > Réglages avancés, un aperçu montre le vrai bouton du lecteur : changez une option, il change sous vos yeux. Les explications passent de trois lignes à une, et le détail attend derrière « En savoir plus »
 - **Les réglages de lecture suivent votre COMPTE**, plus l'appareil : ce que vous posez sur l'ordinateur vaut devant la télévision et sur le téléphone
 - **Trois réglages de fin d'épisode, vraiment indépendants** : afficher la fiche « à suivre », afficher son compte à rebours, enchaîner tout seul. Couper le décompte ne fait plus disparaître la fiche
+- **Le compte à rebours « épisode suivant » se règle**, dans Réglages > Lecture > Réglages avancés — et il s'adapte : si la fiche paraît quatre secondes avant la fin, l'épisode suivant part au bout de trois secondes et demie, au lieu d'attendre dix secondes sur l'écran de fin
 - **Linux : la fenêtre vidéo ne se détache plus.** Au deuxième lancement de l'application — et à tous les suivants — la vidéo s'ouvrait dans une fenêtre libre, flottant par-dessus l'interface, jusqu'au redémarrage du poste. Elle suit de nouveau la fenêtre, et l'application vérifie désormais qu'elle la suit vraiment
 - **Linux tourne enfin sur la même application que Windows et macOS.** Vos films téléchargés, votre session et vos réglages sont repris tels quels à la mise à jour — rien à refaire
 - **Le HDR arrive sur Linux.** Sur une session Wayland avec un bureau récent (KDE Plasma 6.2+, GNOME 48+, Hyprland), un film HDR est transmis tel quel à votre écran, sans être aplati. Sous X11 il reste converti : X.Org ne gère pas les couleurs étendues et ne les gérera jamais
@@ -93,6 +96,7 @@ les notes Apple doivent rester génériques.
 - **Skip settings are shown instead of described.** Under Settings > Playback > Advanced settings, a preview shows the player's real button: change an option and it changes before your eyes. The explanations go from three lines to one, and the detail waits behind “More about this”
 - **Playback settings follow your ACCOUNT**, not the device: what you set on the computer applies in front of the television and on the phone
 - **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
+- **The “next episode” countdown is now yours to set**, under Settings > Playback > Advanced settings — and it adapts: if the card appears four seconds before the end, the next episode starts after three and a half, instead of waiting ten seconds on the end screen
 - **Linux: the video window no longer detaches.** From the second launch of the app onwards, video opened in a free-floating window over the interface until the machine was restarted. It follows the app window again — and the app now checks that it really does
 - **Linux now runs the same application as Windows and macOS.** Your downloaded films, your session and your settings carry over as they are — nothing to redo
 - **HDR comes to Linux.** On a Wayland session with a recent desktop (KDE Plasma 6.2+, GNOME 48+, Hyprland), an HDR film is passed to your screen untouched instead of being flattened. Under X11 it is still converted: X.Org does not handle extended colour and never will
