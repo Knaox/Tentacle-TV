@@ -53,7 +53,7 @@ export interface QualityPreset {
 /**
  * Liste de REPLI, servie quand le débit de la source est inconnu — un barème
  * approximatif vaut mieux qu'un sélecteur vide. Dans tous les autres cas, c'est
- * `construireEchelleQualite` (utils/qualityLadder) qui fait foi : ces débits-là
+ * `buildQualityLadder` (utils/qualityLadder) qui fait foi : ces débits-là
  * sont fixes et peuvent dépasser celui du fichier lu.
  */
 export const QUALITY_PRESETS: readonly QualityPreset[] = [
@@ -95,9 +95,9 @@ function sourceResolutionFromWidth(width?: number): SourceResolution | null {
  * certains points d'entrée : on ne devine pas l'index d'énumération, on rend
  * une chaîne vide et on laisse les autres indices (DvProfile, HDR10+) parler.
  */
-function texteDePlage(stream?: MediaStream): string {
-  const plage = stream?.VideoRangeType;
-  return typeof plage === "string" ? plage.toUpperCase() : "";
+function rangeText(stream?: MediaStream): string {
+  const range = stream?.VideoRangeType;
+  return typeof range === "string" ? range.toUpperCase() : "";
 }
 
 function detectDolbyVision(stream?: MediaStream): boolean {
@@ -105,7 +105,7 @@ function detectDolbyVision(stream?: MediaStream): boolean {
   // `DvProfile` est renseigné même quand la plage arrive en entier — c'est le
   // signal le plus fiable, et le seul disponible sur certains points d'entrée.
   if (stream.DvProfile != null) return true;
-  const range = texteDePlage(stream);
+  const range = rangeText(stream);
   // Jellyfin uses DOVI / DOLBYVISION / "DOVI HDR10" depending on the source.
   return range.includes("DOVI") || range.includes("DOLBY");
 }
@@ -249,7 +249,7 @@ export function extractMediaQuality(item: MediaItem | undefined | null): MediaQu
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
+  const range = rangeText(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
   const vcodec = video?.Codec?.toLowerCase() ?? "";
   const acodec = audio?.Codec?.toLowerCase() ?? "";
@@ -285,7 +285,7 @@ export function extractSourceQuality(item: MediaItem | undefined | null): Source
   const video = streams.find((s) => s.Type === "Video");
   const audio = streams.find((s) => s.Type === "Audio" && s.IsDefault) ?? streams.find((s) => s.Type === "Audio");
 
-  const range = texteDePlage(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
+  const range = rangeText(video) || (video?.Hdr10PlusPresentFlag ? "HDR10PLUS" : "SDR");
   const isDolbyVision = detectDolbyVision(video);
 
   return {

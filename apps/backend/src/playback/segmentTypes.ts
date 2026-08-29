@@ -35,8 +35,8 @@ export const SEGMENT_TYPES: readonly SegmentType[] = [
   "Commercial",
 ];
 
-export function isSegmentType(valeur: unknown): valeur is SegmentType {
-  return typeof valeur === "string" && (SEGMENT_TYPES as readonly string[]).includes(valeur);
+export function isSegmentType(value: unknown): value is SegmentType {
+  return typeof value === "string" && (SEGMENT_TYPES as readonly string[]).includes(value);
 }
 
 export const PLAYBACK_SEGMENTS_VERSION = 1;
@@ -97,21 +97,21 @@ export function findSegment(
  * étrangère) : à l'appelant de retomber sur du vide ou sur l'ancien format.
  * Les segments illisibles sont écartés un à un, jamais toute la réponse.
  */
-export function parsePlaybackSegmentsResponse(brut: unknown): PlaybackSegmentsResponse | null {
-  if (typeof brut !== "object" || brut === null) return null;
-  const o = brut as Record<string, unknown>;
+export function parsePlaybackSegmentsResponse(raw: unknown): PlaybackSegmentsResponse | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const o = raw as Record<string, unknown>;
   if (o.version !== PLAYBACK_SEGMENTS_VERSION) return null;
   if (typeof o.itemId !== "string" || !Array.isArray(o.segments)) return null;
 
-  const nombre = (v: unknown): number | null =>
+  const toNumber = (v: unknown): number | null =>
     typeof v === "number" && Number.isFinite(v) ? v : null;
 
   const segments: ResolvedSegment[] = [];
-  for (const brutSegment of o.segments as unknown[]) {
-    if (typeof brutSegment !== "object" || brutSegment === null) continue;
-    const s = brutSegment as Record<string, unknown>;
-    const startMs = nombre(s.startMs);
-    const endMs = nombre(s.endMs);
+  for (const rawSegment of o.segments as unknown[]) {
+    if (typeof rawSegment !== "object" || rawSegment === null) continue;
+    const s = rawSegment as Record<string, unknown>;
+    const startMs = toNumber(s.startMs);
+    const endMs = toNumber(s.endMs);
     if (!isSegmentType(s.type) || startMs === null || endMs === null || endMs <= startMs) continue;
     segments.push({
       type: s.type,
@@ -123,7 +123,7 @@ export function parsePlaybackSegmentsResponse(brut: unknown): PlaybackSegmentsRe
     });
   }
 
-  const runtimeMs = nombre(o.runtimeMs);
+  const runtimeMs = toNumber(o.runtimeMs);
   return {
     version: PLAYBACK_SEGMENTS_VERSION,
     itemId: o.itemId,

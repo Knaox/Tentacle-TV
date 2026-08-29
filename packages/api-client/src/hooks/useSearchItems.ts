@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { termeDeRepli, scoreRecherche } from "@tentacle-tv/shared";
+import { fallbackTerm, searchScore } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 
@@ -42,7 +42,7 @@ export function useSearchItems(query: string) {
       const direct = await chercher(query);
       if (direct.length > 0) return direct;
 
-      const repli = termeDeRepli(query);
+      const repli = fallbackTerm(query);
       if (!repli) return direct;
 
       return classerResultats(await chercher(repli), query);
@@ -64,7 +64,7 @@ export function classerResultats(items: MediaItem[], query: string): MediaItem[]
   const notes = items.map((item, rang) => ({
     item,
     rang,
-    score: scoreRecherche(item.Name ?? "", query),
+    score: searchScore(item.Name ?? "", query),
   }));
 
   const retenus = notes.filter((n) => n.score > 0);

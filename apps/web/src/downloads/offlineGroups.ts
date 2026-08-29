@@ -12,7 +12,7 @@
  * de liste plutôt qu'exclus, et leur code SxxEyy est simplement masqué.
  */
 
-import { correspondALaRecherche } from "@tentacle-tv/shared";
+import { matchesSearch } from "@tentacle-tv/shared";
 import type { DownloadEntry } from "./api";
 
 export interface OfflineSeasonGroup {
@@ -129,8 +129,8 @@ export function seasonGroupMatches(group: OfflineSeasonGroup, needle: string): b
   // Terme BRUT attendu ici : le comparateur normalise lui-même, et le
   // minusculer avant lui laisserait deux conventions cohabiter.
   return (
-    correspondALaRecherche(group.seriesName, needle) ||
-    group.episodes.some((e) => correspondALaRecherche(e.title ?? "", needle))
+    matchesSearch(group.seriesName, needle) ||
+    group.episodes.some((e) => matchesSearch(e.title ?? "", needle))
   );
 }
 

@@ -131,7 +131,7 @@ describe("machineScrub", () => {
   });
 
   it("un palier plus haut avance plus vite, sans changer le nombre de sauts", () => {
-    // 10 000 s (~2 h 46) → pas de base plafonné à 90 s (pasDeScrub) : le
+    // 10 000 s (~2 h 46) → pas de base plafonné à 90 s (scrubStep) : le
     // rapport ×8 entre paliers, lui, est l'invariant que ce test protège.
     const lent = harnais(0, 10000);
     const rapide = harnais(0, 10000);

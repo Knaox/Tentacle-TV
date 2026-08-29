@@ -32,7 +32,7 @@ interface Props {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey: QualityKey;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets: readonly QualityPreset[];
   /** L'arbitre partagé : ce qu'il faut afficher, et de quoi y répondre. */
   playback: PlaybackOverlayResult;

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGenres } from "@tentacle-tv/api-client";
-import { correspondALaRecherche } from "@tentacle-tv/shared";
+import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
@@ -107,7 +107,7 @@ export function GenreMenu({
   const shown = useMemo(() => {
     const list = genres ?? [];
     const q = query.trim();
-    return q ? list.filter((g) => correspondALaRecherche(g.Name, q)) : list;
+    return q ? list.filter((g) => matchesSearch(g.Name, q)) : list;
   }, [genres, query]);
 
   const count = filters.genreIds.length;

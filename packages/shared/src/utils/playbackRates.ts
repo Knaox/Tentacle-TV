@@ -11,10 +11,10 @@
  * (`audio-pitch-correction=yes` par défaut).
  */
 
-export const TAUX_LECTURE = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4] as const;
+export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4] as const;
 
 /** Vitesse normale — celle qu'on repose au changement de média. */
-export const TAUX_NORMAL = 1;
+export const NORMAL_RATE = 1;
 
 /**
  * Libellé d'un palier : « 0.5x », « 1x », « 1.25x », « 4x ».
@@ -22,11 +22,11 @@ export const TAUX_NORMAL = 1;
  * `toFixed(2)` puis `Number` retire les zéros de queue : on veut « 1x » et non
  * « 1.00x », mais « 0.75x » doit garder ses deux décimales.
  */
-export function formaterTaux(taux: number): string {
-  return `${Number(taux.toFixed(2))}x`;
+export function formatRate(rate: number): string {
+  return `${Number(rate.toFixed(2))}x`;
 }
 
 /** Le palier est-il la vitesse normale ? (aucune comparaison flottante ailleurs) */
-export function estTauxNormal(taux: number): boolean {
-  return Math.abs(taux - TAUX_NORMAL) < 0.001;
+export function isNormalRate(rate: number): boolean {
+  return Math.abs(rate - NORMAL_RATE) < 0.001;
 }

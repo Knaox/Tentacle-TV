@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { construireEchelleQualite, presetEstPropose, trouverPreset } from "@tentacle-tv/shared";
+import { buildQualityLadder, isPresetOffered, findPreset } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { amorcerMesure, capAutomatique } from "../lib/politiqueDebit";
 import { useToast } from "../contexts/ToastContext";
@@ -49,16 +49,16 @@ export function useQualiteEffective(args: {
   useEffect(() => { amorcerMesure(client); }, [client]);
 
   // Les paliers dépendent de la source : proposer un transcodage plus lourd
-  // que l'original serait absurde (cf. construireEchelleQualite).
-  const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
-  const qualityPreset = trouverPreset(qualityKey, qualityPresets);
+  // que l'original serait absurde (cf. buildQualityLadder).
+  const qualityPresets = useMemo(() => buildQualityLadder(mediaSource), [mediaSource]);
+  const qualityPreset = findPreset(qualityKey, qualityPresets);
 
   // Garde-fou : l'échelle étant calculée d'après la source, un palier proposé
   // sur un fichier peut disparaître sur le suivant. Sans ce repli, la clé
   // survivrait sans correspondance — sélecteur sans sélection visible, et un
-  // débit rendu par `trouverPreset` qui ne serait plus celui affiché.
+  // débit rendu par `findPreset` qui ne serait plus celui affiché.
   useEffect(() => {
-    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+    if (!isPresetOffered(qualityKey, qualityPresets)) setQualityKey("original");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qualityPresets, qualityKey]);
 

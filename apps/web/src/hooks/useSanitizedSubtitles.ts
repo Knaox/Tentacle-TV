@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { assainirVtt } from "@tentacle-tv/shared";
+import { sanitizeVtt } from "@tentacle-tv/shared";
 import type { SubtitleTrack } from "../components/player/videoPlayer.types";
 
 /**
  * Sous-titres texte du lecteur web : récupère le VTT de la piste SÉLECTIONNÉE,
- * le nettoie (cf. assainirVtt) et rend une URL `blob:` à donner au `<track>`.
+ * le nettoie (cf. sanitizeVtt) et rend une URL `blob:` à donner au `<track>`.
  *
  * Pourquoi seulement la piste sélectionnée : le navigateur ne charge les cues
  * d'un `<track>` que lorsque son `mode` quitte `disabled` (useNativeMediaTracks
@@ -39,7 +39,7 @@ export function useSanitizedSubtitles({
       try {
         const reponse = await fetch(piste.url);
         if (reponse.ok) {
-          const propre = assainirVtt(await reponse.text());
+          const propre = sanitizeVtt(await reponse.text());
           if (propre !== null) {
             creee = URL.createObjectURL(new Blob([propre], { type: "text/vtt" }));
             resultat = creee;

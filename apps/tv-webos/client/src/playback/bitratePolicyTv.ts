@@ -1,5 +1,5 @@
 import { amorcerMesureDebit, debitEnCache, type JellyfinClient } from "@tentacle-tv/api-client";
-import { capPourDebit, type MediaSource, type QualityPreset } from "@tentacle-tv/shared";
+import { capForBitrate, type MediaSource, type QualityPreset } from "@tentacle-tv/shared";
 
 /**
  * Politique de débit — version téléviseur : ACTIVE.
@@ -20,5 +20,5 @@ export function amorcerMesure(client: JellyfinClient): void {
 }
 
 export function capAutomatique(source: MediaSource | null | undefined): QualityPreset | null {
-  return capPourDebit(source, debitEnCache());
+  return capForBitrate(source, debitEnCache());
 }

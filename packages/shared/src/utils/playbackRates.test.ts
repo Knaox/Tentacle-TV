@@ -1,62 +1,62 @@
 import { describe, it, expect } from "vitest";
-import { TAUX_LECTURE, TAUX_NORMAL, formaterTaux, estTauxNormal } from "./playbackRates";
+import { PLAYBACK_RATES, NORMAL_RATE, formatRate, isNormalRate } from "./playbackRates";
 
 describe("paliers de vitesse de lecture", () => {
   it("va de 0,5x a 4x, dans l'ordre croissant", () => {
-    expect(TAUX_LECTURE[0]).toBe(0.5);
-    expect(TAUX_LECTURE[TAUX_LECTURE.length - 1]).toBe(4);
-    const croissant = [...TAUX_LECTURE].every((t, i, a) => i === 0 || a[i - 1] < t);
-    expect(croissant).toBe(true);
+    expect(PLAYBACK_RATES[0]).toBe(0.5);
+    expect(PLAYBACK_RATES[PLAYBACK_RATES.length - 1]).toBe(4);
+    const ascending = [...PLAYBACK_RATES].every((t, i, a) => i === 0 || a[i - 1] < t);
+    expect(ascending).toBe(true);
   });
 
   it("ne depasse jamais 4x — au-dela Chromium coupe le son", () => {
-    expect(TAUX_LECTURE.every((t) => t <= 4)).toBe(true);
+    expect(PLAYBACK_RATES.every((t) => t <= 4)).toBe(true);
   });
 
   it("contient la vitesse normale", () => {
-    expect(TAUX_LECTURE).toContain(TAUX_NORMAL);
+    expect(PLAYBACK_RATES).toContain(NORMAL_RATE);
   });
 
   it("ne propose aucun doublon", () => {
-    expect(new Set(TAUX_LECTURE).size).toBe(TAUX_LECTURE.length);
+    expect(new Set(PLAYBACK_RATES).size).toBe(PLAYBACK_RATES.length);
   });
 });
 
-describe("formaterTaux", () => {
+describe("formatRate", () => {
   it("retire les zeros de queue", () => {
-    expect(formaterTaux(1)).toBe("1x");
-    expect(formaterTaux(2)).toBe("2x");
-    expect(formaterTaux(4)).toBe("4x");
+    expect(formatRate(1)).toBe("1x");
+    expect(formatRate(2)).toBe("2x");
+    expect(formatRate(4)).toBe("4x");
   });
 
   it("garde les decimales utiles", () => {
-    expect(formaterTaux(0.5)).toBe("0.5x");
-    expect(formaterTaux(0.75)).toBe("0.75x");
-    expect(formaterTaux(1.25)).toBe("1.25x");
-    expect(formaterTaux(1.75)).toBe("1.75x");
-    expect(formaterTaux(3.5)).toBe("3.5x");
+    expect(formatRate(0.5)).toBe("0.5x");
+    expect(formatRate(0.75)).toBe("0.75x");
+    expect(formatRate(1.25)).toBe("1.25x");
+    expect(formatRate(1.75)).toBe("1.75x");
+    expect(formatRate(3.5)).toBe("3.5x");
   });
 
   it("produit un libelle pour chaque palier propose", () => {
-    expect(TAUX_LECTURE.map(formaterTaux)).toEqual([
+    expect(PLAYBACK_RATES.map(formatRate)).toEqual([
       "0.5x", "0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x", "2.5x", "3x", "3.5x", "4x",
     ]);
   });
 });
 
-describe("estTauxNormal", () => {
+describe("isNormalRate", () => {
   it("reconnait 1x", () => {
-    expect(estTauxNormal(1)).toBe(true);
+    expect(isNormalRate(1)).toBe(true);
   });
 
   it("rejette les autres paliers", () => {
-    expect(estTauxNormal(0.75)).toBe(false);
-    expect(estTauxNormal(1.25)).toBe(false);
-    expect(estTauxNormal(4)).toBe(false);
+    expect(isNormalRate(0.75)).toBe(false);
+    expect(isNormalRate(1.25)).toBe(false);
+    expect(isNormalRate(4)).toBe(false);
   });
 
   it("tolere l'imprecision flottante", () => {
     // 0.5 + 0.25 + 0.25 ne vaut pas exactement 1 en binaire.
-    expect(estTauxNormal(0.5 + 0.25 + 0.25)).toBe(true);
+    expect(isNormalRate(0.5 + 0.25 + 0.25)).toBe(true);
   });
 });

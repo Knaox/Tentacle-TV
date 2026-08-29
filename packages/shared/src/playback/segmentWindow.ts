@@ -57,10 +57,10 @@ export function playbackPhase(
   hasStarted: boolean,
 ): PlaybackPhase {
   if (!hasStarted) return "IDLE";
-  const actif = findActiveSegment(segments, positionMs, hasStarted);
-  if (actif?.type === "Recap") return "RECAP";
-  if (actif?.type === "Intro") return "INTRO";
-  if (actif?.type === "Outro") return "OUTRO";
+  const active = findActiveSegment(segments, positionMs, hasStarted);
+  if (active?.type === "Recap") return "RECAP";
+  if (active?.type === "Intro") return "INTRO";
+  if (active?.type === "Outro") return "OUTRO";
   const outro = findSegment(segments, "Outro");
   if (outro && outro.hasContentAfter && positionMs >= outro.endMs) return "POST_CREDITS";
   return "CONTENT";

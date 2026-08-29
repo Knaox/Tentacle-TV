@@ -23,10 +23,10 @@ import { parseVttCues } from "./vtt";
 import type { SubtitleAnchor, SubtitleSegment } from "./tags";
 
 /** `HH:MM:SS.mmm` — le seul format que la spec WebVTT accepte pour > 1 h. */
-function formaterHorodatage(secondes: number): string {
+function formatTimestamp(seconds: number): string {
   // Tout arrondi en millisecondes d'abord : composer h/m/s puis arrondir les ms
   // séparément peut produire « .1000 », qui invalide la cue.
-  const totalMs = Math.max(0, Math.round(secondes * 1000));
+  const totalMs = Math.max(0, Math.round(seconds * 1000));
   const ms = totalMs % 1000;
   const totalS = (totalMs - ms) / 1000;
   const s = totalS % 60;
@@ -39,19 +39,19 @@ function formaterHorodatage(secondes: number): string {
 
 /** Le texte redevient du texte : sans ça, un « < » du dialogue serait relu
  *  comme une balise par l'analyseur du navigateur. `&` en PREMIER. */
-function echapper(texte: string): string {
-  return texte
+function escapeText(text: string): string {
+  return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
 
-function rendreSegment(seg: SubtitleSegment): string {
-  let rendu = echapper(seg.text);
-  if (seg.underline) rendu = `<u>${rendu}</u>`;
-  if (seg.italic) rendu = `<i>${rendu}</i>`;
-  if (seg.bold) rendu = `<b>${rendu}</b>`;
-  return rendu;
+function renderSegment(seg: SubtitleSegment): string {
+  let rendered = escapeText(seg.text);
+  if (seg.underline) rendered = `<u>${rendered}</u>`;
+  if (seg.italic) rendered = `<i>${rendered}</i>`;
+  if (seg.bold) rendered = `<b>${rendered}</b>`;
+  return rendered;
 }
 
 /**
@@ -62,9 +62,9 @@ function rendreSegment(seg: SubtitleSegment): string {
  * navigateur : ne rien écrire vaut mieux que le figer, la position par défaut
  * tenant déjà compte des barres de contrôle et de l'incrustation système.
  */
-function reglageAncrage(ancrage: SubtitleAnchor): string {
-  if (ancrage === "top") return " line:10%";
-  if (ancrage === "middle") return " line:50%";
+function anchorSetting(anchor: SubtitleAnchor): string {
+  if (anchor === "top") return " line:10%";
+  if (anchor === "middle") return " line:50%";
   return "";
 }
 
@@ -75,16 +75,16 @@ function reglageAncrage(ancrage: SubtitleAnchor): string {
  * à la place, format inattendu. L'appelant doit alors garder l'URL d'origine :
  * un sous-titre au balisage visible reste très préférable à pas de sous-titre.
  */
-export function assainirVtt(vtt: string): string | null {
+export function sanitizeVtt(vtt: string): string | null {
   const cues = parseVttCues(vtt);
   if (cues.length === 0) return null;
 
-  const blocs = cues.map((cue) => {
-    const debut = formaterHorodatage(cue.start);
-    const fin = formaterHorodatage(cue.end);
-    const texte = cue.lines.map((ligne) => ligne.map(rendreSegment).join("")).join("\n");
-    return `${debut} --> ${fin}${reglageAncrage(cue.anchor)}\n${texte}`;
+  const blocks = cues.map((cue) => {
+    const start = formatTimestamp(cue.start);
+    const end = formatTimestamp(cue.end);
+    const text = cue.lines.map((line) => line.map(renderSegment).join("")).join("\n");
+    return `${start} --> ${end}${anchorSetting(cue.anchor)}\n${text}`;
   });
 
-  return `WEBVTT\n\n${blocs.join("\n\n")}\n`;
+  return `WEBVTT\n\n${blocks.join("\n\n")}\n`;
 }

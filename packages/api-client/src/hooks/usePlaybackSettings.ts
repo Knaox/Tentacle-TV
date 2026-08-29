@@ -1,7 +1,7 @@
 /**
  * L'accès React au magasin des réglages de lecture (partagé entre les
  * appareils d'un compte, cache local pour le hors ligne — voir
- * `creerMagasinReglagesLecture` dans @tentacle-tv/shared).
+ * `createPlaybackSettingsStore` dans @tentacle-tv/shared).
  *
  * Le magasin est un singleton de module, créé au premier usage avec le
  * `StorageAdapter` de la plateforme (localStorage sur web/desktop/webOS,
@@ -12,7 +12,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import {
-  creerMagasinReglagesLecture,
+  createPlaybackSettingsStore,
   type PlaybackSettings,
   type PlaybackSettingsPatch,
   type PlaybackSettingsStore,
@@ -29,10 +29,10 @@ const RESYNC_MIN_INTERVAL_MS = 30_000;
 
 export function initPlaybackSettingsStore(storage: StorageAdapter): PlaybackSettingsStore {
   if (!magasin) {
-    magasin = creerMagasinReglagesLecture({
-      stockage: storage,
-      lireDistant: () => tentacleApiFetch<unknown>("/api/preferences/playback"),
-      ecrireDistant: async (reglages) => {
+    magasin = createPlaybackSettingsStore({
+      storage,
+      readRemote: () => tentacleApiFetch<unknown>("/api/preferences/playback"),
+      writeRemote: async (reglages) => {
         await tentacleApiFetch("/api/preferences/playback", {
           method: "PUT",
           body: JSON.stringify(reglages),
@@ -56,18 +56,18 @@ export function usePlaybackSettings(): PlaybackSettings {
     const maintenant = Date.now();
     if (maintenant - derniereResync < RESYNC_MIN_INTERVAL_MS) return;
     derniereResync = maintenant;
-    void store.resynchroniser();
+    void store.resync();
   }, [store]);
 
-  return useSyncExternalStore(store.sAbonner, store.lireInstantane, store.lireInstantane);
+  return useSyncExternalStore(store.subscribe, store.readSnapshot, store.readSnapshot);
 }
 
 /** Écrit un correctif partiel (fusion profonde, optimiste, poussé au serveur). */
 export function setPlaybackSettings(patch: PlaybackSettingsPatch): void {
-  magasin?.definir(patch);
+  magasin?.set(patch);
 }
 
 /** Android TV : à appeler après l'hydrate() du stockage natif. */
 export function rehydratePlaybackSettings(): void {
-  magasin?.rehydrater();
+  magasin?.rehydrate();
 }

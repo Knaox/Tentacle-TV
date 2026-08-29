@@ -16,7 +16,7 @@
  *  - l'interrupteur admin (autoplay_next_enabled) est une garde serveur sur
  *    l'ENCHAÎNEMENT (carte et écran de fin), pas sur les boutons de saut.
  *
- * Les décomptes eux-mêmes vivent dans les réducteurs (saut : sautIntro
+ * Les décomptes eux-mêmes vivent dans les réducteurs (saut : introSkip
  * généralisé ; enchaînement : autoNextEngine) — l'arbitre ne fait que les
  * afficher. `Commercial` est résolu et exposé mais n'a pas de réglage : aucun
  * overlay pour lui tant qu'un réglage n'existe pas.
@@ -100,7 +100,7 @@ export interface SkipCandidate {
   segment: ResolvedSegment;
   labelKey: SkipLabelKey;
   action: SkipAction;
-  reglage: SegmentSettings;
+  settings: SegmentSettings;
 }
 
 export type SkipCandidateInput = Pick<
@@ -109,28 +109,28 @@ export type SkipCandidateInput = Pick<
 >;
 
 export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | null {
-  const actif = findActiveSegment(input.segments, input.positionMs, input.hasStarted);
-  if (!actif) return null;
-  const reglage = segmentSettingsFor(input.settings, actif.type);
-  if (!reglage || reglage.action === "off") return null;
+  const active = findActiveSegment(input.segments, input.positionMs, input.hasStarted);
+  if (!active) return null;
+  const settings = segmentSettingsFor(input.settings, active.type);
+  if (!settings || settings.action === "off") return null;
 
-  if (actif.type !== "Outro") {
-    const labelKey = SKIP_LABELS[actif.type];
+  if (active.type !== "Outro") {
+    const labelKey = SKIP_LABELS[active.type];
     if (!labelKey) return null;
-    return { segment: actif, labelKey, action: { kind: "seek", toMs: actif.endMs }, reglage };
+    return { segment: active, labelKey, action: { kind: "seek", toMs: active.endMs }, settings };
   }
-  if (actif.hasContentAfter) {
+  if (active.hasContentAfter) {
     // « Passer » = rejoindre la scène post-générique, on reste sur le média.
     return {
-      segment: actif,
+      segment: active,
       labelKey: "skipToPostCredits",
-      action: { kind: "seek", toMs: actif.endMs },
-      reglage,
+      action: { kind: "seek", toMs: active.endMs },
+      settings,
     };
   }
   if (!input.isEpisode || !input.hasNextEpisode) {
     // Film ou dernier épisode : « passer » = terminer la lecture.
-    return { segment: actif, labelKey: "skipCredits", action: { kind: "endOfPlayback" }, reglage };
+    return { segment: active, labelKey: "skipCredits", action: { kind: "endOfPlayback" }, settings };
   }
   // Épisode + suivant + générique jusqu'au bout : la carte parle.
   return null;
@@ -138,13 +138,13 @@ export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | nu
 
 function skipOverlay(
   segment: ResolvedSegment,
-  reglage: SegmentSettings,
+  settings: SegmentSettings,
   labelKey: SkipLabelKey,
   action: SkipAction,
   countdowns: ArbiterInput["countdowns"],
 ): PlayerOverlay {
   const countdownSeconds =
-    reglage.action === "auto" && reglage.countdownVisible ? countdowns.skip : null;
+    settings.action === "auto" && settings.countdownVisible ? countdowns.skip : null;
   return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds };
 }
 
@@ -186,9 +186,9 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   }
 
   // 2. Un bouton de saut candidat ? Il bat la carte — sauf refus du passage.
-  const candidat = findSkipCandidate(input);
-  if (candidat && !dismissed.segments[candidat.segment.type]) {
-    return skipOverlay(candidat.segment, candidat.reglage, candidat.labelKey, candidat.action, countdowns);
+  const candidate = findSkipCandidate(input);
+  if (candidate && !dismissed.segments[candidate.segment.type]) {
+    return skipOverlay(candidate.segment, candidate.settings, candidate.labelKey, candidate.action, countdowns);
   }
 
   // 3. La carte « à suivre ».

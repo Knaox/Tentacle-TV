@@ -17,7 +17,7 @@
  * L'accélération est réservée au MAINTIEN. Un appui simple avance d'un pas de
  * base : c'est la seule façon de viser une position précise, et la répétition
  * automatique ne doit pas transformer une pression appuyée en bond de deux
- * minutes. Ce pas de base est PROPORTIONNEL à la durée du média (`pasDeScrub`,
+ * minutes. Ce pas de base est PROPORTIONNEL à la durée du média (`scrubStep`,
  * partagé avec apps/tv) : dix secondes fixes faisaient 5 % de la barre sur un
  * épisode court et 0,3 % sur un film — traverser un long métrage n'en
  * finissait pas.
@@ -27,10 +27,10 @@
  * qu'`annuler()` n'appelle jamais `surSeek`.
  */
 
-import { pasDeScrub, SCRUB_STEP_MIN_S } from "@tentacle-tv/shared";
+import { scrubStep, SCRUB_STEP_MIN_S } from "@tentacle-tv/shared";
 
 /** Plancher historique du pas (contenus courts / durée inconnue) — réexporté
- *  pour les tests ; la valeur effective vient de `pasDeScrub(duree)`. */
+ *  pour les tests ; la valeur effective vient de `scrubStep(duree)`. */
 export const PAS_SCRUB_S = SCRUB_STEP_MIN_S;
 
 /** Les paliers du maintien. Au-delà de huit, on ne vise plus rien. */
@@ -113,7 +113,7 @@ export function creerMachineScrub(options: OptionsMachineScrub): MachineScrub {
 
     if (!actif) amorcer(multiplicateur);
 
-    position = borner(position + sens * pasDeScrub(options.lireDuree()) * multiplicateur);
+    position = borner(position + sens * scrubStep(options.lireDuree()) * multiplicateur);
     options.surChangement(position, multiplicateur);
     armerInactivite();
   }

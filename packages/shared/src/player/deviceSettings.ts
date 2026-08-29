@@ -24,17 +24,17 @@
  */
 
 /** Les clés de stockage. Mêmes chaînes sur les cinq cibles. */
-export const CLES_REGLAGE_APPAREIL = {
+export const DEVICE_SETTING_KEYS = {
   /** « Passer l'intro automatiquement ». */
-  sautIntroAuto: "tentacle_auto_skip_intro",
+  autoSkipIntro: "tentacle_auto_skip_intro",
   /** La petite carte « à suivre », proposée pendant le générique. */
-  carteASuivre: "tentacle_up_next_card",
+  upNextCard: "tentacle_up_next_card",
   /** Le compte à rebours qui enchaîne tout seul sur l'épisode suivant. */
-  decompteEnchainement: "tentacle_up_next_countdown",
+  upNextCountdown: "tentacle_up_next_countdown",
 } as const;
 
-export type CleReglageAppareil =
-  (typeof CLES_REGLAGE_APPAREIL)[keyof typeof CLES_REGLAGE_APPAREIL];
+export type DeviceSettingKey =
+  (typeof DEVICE_SETTING_KEYS)[keyof typeof DEVICE_SETTING_KEYS];
 
 /**
  * Les trois sont ALLUMÉS par défaut, et c'est un choix de produit : on veut
@@ -42,24 +42,24 @@ export type CleReglageAppareil =
  * reste réfutable sur le moment — une croix sur la pilule, une croix sur la
  * carte. Ce qui s'éteint, l'utilisateur l'éteint.
  */
-export const DEFAUT_REGLAGE_APPAREIL = true;
+export const DEVICE_SETTING_DEFAULT = true;
 
 /** Le minimum qu'un stockage doit offrir. `localStorage` et l'adaptateur natif
  *  le satisfont tous les deux. */
-export interface StockageAppareil {
-  getItem(cle: string): string | null;
-  setItem(cle: string, valeur: string): void;
+export interface DeviceStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
 }
 
-export interface MagasinBooleen {
-  sAbonner(rappel: () => void): () => void;
-  lireInstantane(): boolean;
-  definir(actif: boolean): void;
+export interface BooleanStore {
+  subscribe(callback: () => void): () => void;
+  readSnapshot(): boolean;
+  set(enabled: boolean): void;
   /**
    * Android TV lit un cache rempli par un `hydrate()` asynchrone au démarrage :
    * le premier instantané peut précéder la vraie valeur.
    */
-  rehydrater(): void;
+  rehydrate(): void;
 }
 
 /**
@@ -71,50 +71,50 @@ export interface MagasinBooleen {
  * `"false"` éteint — écrire `=== "true"` éteindrait le réglage pour tout le
  * monde, en silence.
  */
-export function creerMagasinBooleen(
-  stockage: StockageAppareil,
-  cle: string,
-  defaut: boolean = DEFAUT_REGLAGE_APPAREIL,
-): MagasinBooleen {
-  const auditeurs = new Set<() => void>();
+export function createBooleanStore(
+  storage: DeviceStorage,
+  key: string,
+  defaultValue: boolean = DEVICE_SETTING_DEFAULT,
+): BooleanStore {
+  const listeners = new Set<() => void>();
 
-  const lireStockage = (): boolean => {
+  const readStorage = (): boolean => {
     try {
-      const brut = stockage.getItem(cle);
-      if (brut === "true") return true;
-      if (brut === "false") return false;
-      return defaut;
+      const raw = storage.getItem(key);
+      if (raw === "true") return true;
+      if (raw === "false") return false;
+      return defaultValue;
     } catch {
       // Stockage illisible : on rend le défaut, comme si rien n'avait été posé.
-      return defaut;
+      return defaultValue;
     }
   };
 
-  let instantane = lireStockage();
+  let snapshot = readStorage();
 
   return {
-    sAbonner(rappel) {
-      auditeurs.add(rappel);
+    subscribe(callback) {
+      listeners.add(callback);
       return () => {
-        auditeurs.delete(rappel);
+        listeners.delete(callback);
       };
     },
-    lireInstantane: () => instantane,
-    definir(actif) {
-      if (actif === instantane) return;
-      instantane = actif;
+    readSnapshot: () => snapshot,
+    set(enabled) {
+      if (enabled === snapshot) return;
+      snapshot = enabled;
       try {
-        stockage.setItem(cle, String(actif));
+        storage.setItem(key, String(enabled));
       } catch {
         // Stockage indisponible : le réglage vaut pour cette session.
       }
-      auditeurs.forEach((auditeur) => auditeur());
+      listeners.forEach((listener) => listener());
     },
-    rehydrater() {
-      const lu = lireStockage();
-      if (lu === instantane) return;
-      instantane = lu;
-      auditeurs.forEach((auditeur) => auditeur());
+    rehydrate() {
+      const value = readStorage();
+      if (value === snapshot) return;
+      snapshot = value;
+      listeners.forEach((listener) => listener());
     },
   };
 }

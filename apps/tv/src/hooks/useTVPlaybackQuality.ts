@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  construireEchelleQualite, presetEstPropose, trouverPreset,
+  buildQualityLadder, isPresetOffered, findPreset,
   type MediaSource, type QualityKey,
 } from "@tentacle-tv/shared";
 
@@ -14,14 +14,14 @@ import {
 export function useTVPlaybackQuality(mediaSource: MediaSource | null | undefined) {
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   // Les paliers dépendent de la source : proposer un transcodage plus lourd
-  // que l'original serait absurde (cf. construireEchelleQualite).
-  const qualityPresets = useMemo(() => construireEchelleQualite(mediaSource), [mediaSource]);
-  const preset = trouverPreset(qualityKey, qualityPresets);
+  // que l'original serait absurde (cf. buildQualityLadder).
+  const qualityPresets = useMemo(() => buildQualityLadder(mediaSource), [mediaSource]);
+  const preset = findPreset(qualityKey, qualityPresets);
 
   // Garde-fou : un palier proposé sur un média peut disparaître sur le suivant.
   // Retomber sur « Originale » plutôt que de conserver une clé fantôme.
   useEffect(() => {
-    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+    if (!isPresetOffered(qualityKey, qualityPresets)) setQualityKey("original");
   }, [qualityPresets, qualityKey]);
 
   /** True si l'utilisateur a explicitement choisi un preset transcodé. */

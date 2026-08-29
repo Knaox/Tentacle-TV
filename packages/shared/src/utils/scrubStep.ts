@@ -23,12 +23,12 @@ export const SCRUB_STEP_MIN_S = 10;
 /** Plafond : au-delà, l'appui simple ne viserait plus rien. */
 export const SCRUB_STEP_MAX_S = 90;
 /** Part de la durée couverte par un pas de base (2 %). */
-const PART_DE_DUREE = 1 / 50;
+const DURATION_SHARE = 1 / 50;
 
 /** Pas de base (s) pour un média d'une durée donnée — arrondi au multiple de
  *  cinq (valeur lisible), borné [10..60]. Durée inconnue → plancher. */
-export function pasDeScrub(dureeSec: number | null | undefined): number {
-  if (!dureeSec || dureeSec <= 0) return SCRUB_STEP_MIN_S;
-  const arrondi = Math.round((dureeSec * PART_DE_DUREE) / 5) * 5;
-  return Math.min(SCRUB_STEP_MAX_S, Math.max(SCRUB_STEP_MIN_S, arrondi));
+export function scrubStep(durationSec: number | null | undefined): number {
+  if (!durationSec || durationSec <= 0) return SCRUB_STEP_MIN_S;
+  const rounded = Math.round((durationSec * DURATION_SHARE) / 5) * 5;
+  return Math.min(SCRUB_STEP_MAX_S, Math.max(SCRUB_STEP_MIN_S, rounded));
 }

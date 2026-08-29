@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parsePlaybackSegmentsResponse } from "./segmentTypes";
 
-const CONTRAT = {
+const CONTRACT = {
   version: 1,
   itemId: "ep-1",
   runtimeMs: 1_440_000,
@@ -20,13 +20,13 @@ const CONTRAT = {
 
 describe("parsePlaybackSegmentsResponse", () => {
   it("relit un contrat valide tel quel", () => {
-    expect(parsePlaybackSegmentsResponse(CONTRAT)).toEqual(CONTRAT);
+    expect(parsePlaybackSegmentsResponse(CONTRACT)).toEqual(CONTRACT);
   });
 
   it("refuse ce qui n'est pas le contrat : autre version, forme étrangère", () => {
     expect(parsePlaybackSegmentsResponse(null)).toBeNull();
     expect(parsePlaybackSegmentsResponse("<html>proxy</html>")).toBeNull();
-    expect(parsePlaybackSegmentsResponse({ ...CONTRAT, version: 2 })).toBeNull();
+    expect(parsePlaybackSegmentsResponse({ ...CONTRACT, version: 2 })).toBeNull();
     // L'ANCIEN format du snapshot (trois clés brutes) n'est pas le contrat.
     expect(
       parsePlaybackSegmentsResponse({ mediaSegments: null, pluginDict: null, pluginTs: null }),
@@ -34,18 +34,18 @@ describe("parsePlaybackSegmentsResponse", () => {
   });
 
   it("écarte les segments illisibles un à un, sans jeter la réponse", () => {
-    const relu = parsePlaybackSegmentsResponse({
-      ...CONTRAT,
+    const reread = parsePlaybackSegmentsResponse({
+      ...CONTRACT,
       runtimeMs: "vingt-quatre minutes",
       segments: [
-        ...CONTRAT.segments,
+        ...CONTRACT.segments,
         { type: "Banana", startMs: 0, endMs: 10 },
         { type: "Outro", startMs: 100, endMs: 50 },
         null,
       ],
     });
-    expect(relu).not.toBeNull();
-    expect(relu?.segments).toEqual(CONTRAT.segments);
-    expect(relu?.runtimeMs).toBe(0);
+    expect(reread).not.toBeNull();
+    expect(reread?.segments).toEqual(CONTRACT.segments);
+    expect(reread?.runtimeMs).toBe(0);
   });
 });

@@ -30,7 +30,7 @@
  */
 
 /** Marques de combinaison laissées par la décomposition NFD. */
-const DIACRITIQUES = /[̀-ͯ]/g;
+const DIACRITICS = /[̀-ͯ]/g;
 
 /**
  * Séparateurs remplacés par une espace. Liste explicite plutôt que `\P{L}` :
@@ -41,24 +41,24 @@ const DIACRITIQUES = /[̀-ͯ]/g;
  * La ponctuation asiatique y figure aussi, mais pas le prolongateur katakana
  * « ー », qui est une lettre : le retirer changerait le mot.
  */
-const SEPARATEURS = /[-_.,;:!?'"`´’‘“”«»()[\]{}<>/\\|@#$%^&*+=~·–—。、・「」『』（）【】！？：；]+/g;
+const SEPARATORS = /[-_.,;:!?'"`´’‘“”«»()[\]{}<>/\\|@#$%^&*+=~·–—。、・「」『』（）【】！？：；]+/g;
 
 /**
  * Forme comparable : sans accents, sans casse, ponctuation ramenée à des
  * espaces. « Spider-Man : No Way Home » → « spider man no way home ».
  */
-export function normaliserRecherche(valeur: string): string {
-  return valeur
+export function normalizeSearch(value: string): string {
+  return value
     .normalize("NFD")
-    .replace(DIACRITIQUES, "")
+    .replace(DIACRITICS, "")
     .toLowerCase()
-    .replace(SEPARATEURS, " ")
+    .replace(SEPARATORS, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /** Longueur en deçà de laquelle un mot ne discrimine plus rien. */
-const MOT_MINIMAL = 3;
+const MIN_WORD_LENGTH = 3;
 
 /**
  * Terme de secours quand la recherche telle quelle n'a rien donné : le mot le
@@ -68,28 +68,28 @@ const MOT_MINIMAL = 3;
  * « spider » et non sur « man ». `null` quand il n'y a qu'un mot — réessayer le
  * même terme serait un aller-retour pour rien.
  */
-export function termeDeRepli(requete: string): string | null {
-  const mots = normaliserRecherche(requete).split(" ").filter(Boolean);
-  if (mots.length < 2) return null;
+export function fallbackTerm(query: string): string | null {
+  const words = normalizeSearch(query).split(" ").filter(Boolean);
+  if (words.length < 2) return null;
 
-  let meilleur = "";
-  for (const mot of mots) if (mot.length > meilleur.length) meilleur = mot;
-  return meilleur.length >= MOT_MINIMAL ? meilleur : null;
+  let best = "";
+  for (const word of words) if (word.length > best.length) best = word;
+  return best.length >= MIN_WORD_LENGTH ? best : null;
 }
 
 /* Paliers. Les écarts sont larges à dessein : le départage interne affine le
  * classement à l'intérieur d'un palier, il ne doit jamais en faire changer. */
 const EXACT = 1000;
-const PREFIXE = 800;
-const SOUS_CHAINE = 600;
+const PREFIX = 800;
+const SUBSTRING = 600;
 /**
  * Même chaîne une fois les espaces retirés de part et d'autre. Rattrape ce que
  * la saisie a soudé ou disjoint : « destin dun heros » retrouve « Destin d'un
  * héros », dont l'apostrophe fait deux mots là où l'utilisateur en a tapé un.
  */
-const SOUS_CHAINE_SOUDEE = 500;
+const JOINED_SUBSTRING = 500;
 /** Tous les mots présents, mais dispersés : « Destin héros » sur « Le Destin d'un héros ». */
-const MOTS_EPARS = 400;
+const SCATTERED_WORDS = 400;
 
 /**
  * Pertinence d'un candidat pour une requête, de 0 (aucun rapport) à 1000.
@@ -98,27 +98,27 @@ const MOTS_EPARS = 400;
  * n'a été remonté que par le terme de repli et ne répond pas à la saisie
  * complète — il vaut mieux ne pas l'afficher que de le montrer en queue.
  */
-export function scoreRecherche(candidat: string, requete: string): number {
-  const c = normaliserRecherche(candidat);
-  const q = normaliserRecherche(requete);
+export function searchScore(candidate: string, query: string): number {
+  const c = normalizeSearch(candidate);
+  const q = normalizeSearch(query);
   if (!c || !q) return 0;
 
   if (c === q) return EXACT;
-  if (c.startsWith(q)) return PREFIXE - penalite(c, q);
+  if (c.startsWith(q)) return PREFIX - penalty(c, q);
 
   const pos = c.indexOf(q);
-  if (pos >= 0) return SOUS_CHAINE - Math.min(pos, 60) - penalite(c, q);
+  if (pos >= 0) return SUBSTRING - Math.min(pos, 60) - penalty(c, q);
 
-  const posSoudee = c.replace(/ /g, "").indexOf(q.replace(/ /g, ""));
-  if (posSoudee >= 0) return SOUS_CHAINE_SOUDEE - Math.min(posSoudee, 60) - penalite(c, q);
+  const joinedPos = c.replace(/ /g, "").indexOf(q.replace(/ /g, ""));
+  if (joinedPos >= 0) return JOINED_SUBSTRING - Math.min(joinedPos, 60) - penalty(c, q);
 
   /* Dernier recours : les mots y sont tous, ailleurs et dans le désordre. Le
    * préfixe suffit, pour que « destin » attrape « destinée ». */
-  const motsCandidat = c.split(" ");
-  const tousPresents = q.split(" ").every(
-    (mot) => motsCandidat.some((m) => m.startsWith(mot)),
+  const candidateWords = c.split(" ");
+  const allPresent = q.split(" ").every(
+    (word) => candidateWords.some((m) => m.startsWith(word)),
   );
-  return tousPresents ? MOTS_EPARS - penalite(c, q) : 0;
+  return allPresent ? SCATTERED_WORDS - penalty(c, q) : 0;
 }
 
 /**
@@ -126,12 +126,12 @@ export function scoreRecherche(candidat: string, requete: string): number {
  * le plus proche de ce qui a été demandé. Plafonnée bien en dessous de l'écart
  * entre deux paliers.
  */
-function penalite(candidat: string, requete: string): number {
-  return Math.min(Math.max(candidat.length - requete.length, 0), 100);
+function penalty(candidate: string, query: string): number {
+  return Math.min(Math.max(candidate.length - query.length, 0), 100);
 }
 
 /** Version booléenne, pour les listes filtrées en mémoire. */
-export function correspondALaRecherche(candidat: string, requete: string): boolean {
-  if (!requete.trim()) return true;
-  return scoreRecherche(candidat, requete) > 0;
+export function matchesSearch(candidate: string, query: string): boolean {
+  if (!query.trim()) return true;
+  return searchScore(candidate, query) > 0;
 }

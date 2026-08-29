@@ -13,7 +13,7 @@ interface Props {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey: QualityKey;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets: readonly QualityPreset[];
   sourceQuality: SourceQuality;
   onSelectAudio: (index: number) => void;

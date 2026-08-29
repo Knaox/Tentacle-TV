@@ -31,38 +31,38 @@ describe("normalizePlaybackSettings", () => {
   });
 
   it("réponse partielle : chaque champ absent retombe sur son défaut", () => {
-    const reglages = normalizePlaybackSettings({
+    const settings = normalizePlaybackSettings({
       outro: { action: "auto" },
       next: { nextAutoPlay: false },
     });
-    expect(reglages.outro).toMatchObject({ action: "auto", countdownVisible: true });
-    expect(reglages.intro.action).toBe("auto");
-    expect(reglages.next).toMatchObject({ nextAutoPlay: false, nextCard: true, nextCountdown: true });
+    expect(settings.outro).toMatchObject({ action: "auto", countdownVisible: true });
+    expect(settings.intro.action).toBe("auto");
+    expect(settings.next).toMatchObject({ nextAutoPlay: false, nextCard: true, nextCountdown: true });
   });
 
   it("valeurs farfelues : action inconnue, booléen chaîne, nombre infini", () => {
-    const reglages = normalizePlaybackSettings({
+    const settings = normalizePlaybackSettings({
       intro: { action: "banana", countdownVisible: "oui", autoDelayMs: Infinity },
       next: { nextTrigger: "jamais", nextBeforeEndSeconds: "45" },
     });
-    expect(reglages.intro).toEqual(DEFAULT_PLAYBACK_SETTINGS.intro);
-    expect(reglages.next.nextTrigger).toBe("outroStart");
-    expect(reglages.next.nextBeforeEndSeconds).toBe(45);
+    expect(settings.intro).toEqual(DEFAULT_PLAYBACK_SETTINGS.intro);
+    expect(settings.next.nextTrigger).toBe("outroStart");
+    expect(settings.next.nextBeforeEndSeconds).toBe(45);
   });
 
   it("borne les nombres et arrondit", () => {
-    const reglages = normalizePlaybackSettings({
+    const settings = normalizePlaybackSettings({
       recap: { autoDelayMs: 999_999.9 },
       preview: { autoDelayMs: -50 },
       next: { nextBeforeEndSeconds: 10_000 },
     });
-    expect(reglages.recap.autoDelayMs).toBe(SEGMENT_AUTO_DELAY_MAX_MS);
-    expect(reglages.preview.autoDelayMs).toBe(0);
-    expect(reglages.next.nextBeforeEndSeconds).toBe(NEXT_BEFORE_END_SECONDS_MAX);
+    expect(settings.recap.autoDelayMs).toBe(SEGMENT_AUTO_DELAY_MAX_MS);
+    expect(settings.preview.autoDelayMs).toBe(0);
+    expect(settings.next.nextBeforeEndSeconds).toBe(NEXT_BEFORE_END_SECONDS_MAX);
   });
 
   it("des réglages déjà sains ressortent inchangés", () => {
-    const sains = {
+    const sane = {
       intro: { action: "off", countdownVisible: false, autoDelayMs: 1_500 },
       outro: { action: "auto", countdownVisible: true, autoDelayMs: 5_000 },
       recap: { action: "button", countdownVisible: true, autoDelayMs: 3_000 },
@@ -75,6 +75,6 @@ describe("normalizePlaybackSettings", () => {
         nextBeforeEndSeconds: 90,
       },
     } as const;
-    expect(normalizePlaybackSettings(sains)).toEqual(sains);
+    expect(normalizePlaybackSettings(sane)).toEqual(sane);
   });
 });

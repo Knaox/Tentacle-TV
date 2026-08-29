@@ -74,45 +74,45 @@ export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
   },
 };
 
-export function isSegmentAction(valeur: unknown): valeur is SegmentAction {
-  return valeur === "button" || valeur === "auto" || valeur === "off";
+export function isSegmentAction(value: unknown): value is SegmentAction {
+  return value === "button" || value === "auto" || value === "off";
 }
 
-function clampInt(valeur: unknown, min: number, max: number, defaut: number): number {
-  if (typeof valeur !== "number" || !Number.isFinite(valeur)) return defaut;
-  return Math.min(max, Math.max(min, Math.round(valeur)));
+function clampInt(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
-function champBooleen(valeur: unknown, defaut: boolean): boolean {
-  return typeof valeur === "boolean" ? valeur : defaut;
+function booleanField(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
 }
 
-function normalizeSegment(brut: unknown, defauts: SegmentSettings): SegmentSettings {
-  if (typeof brut !== "object" || brut === null) return { ...defauts };
-  const o = brut as Record<string, unknown>;
+function normalizeSegment(raw: unknown, defaults: SegmentSettings): SegmentSettings {
+  if (typeof raw !== "object" || raw === null) return { ...defaults };
+  const o = raw as Record<string, unknown>;
   return {
-    action: isSegmentAction(o.action) ? o.action : defauts.action,
-    countdownVisible: champBooleen(o.countdownVisible, defauts.countdownVisible),
-    autoDelayMs: clampInt(o.autoDelayMs, 0, SEGMENT_AUTO_DELAY_MAX_MS, defauts.autoDelayMs),
+    action: isSegmentAction(o.action) ? o.action : defaults.action,
+    countdownVisible: booleanField(o.countdownVisible, defaults.countdownVisible),
+    autoDelayMs: clampInt(o.autoDelayMs, 0, SEGMENT_AUTO_DELAY_MAX_MS, defaults.autoDelayMs),
   };
 }
 
-function normalizeNext(brut: unknown, defauts: NextEpisodeSettings): NextEpisodeSettings {
-  if (typeof brut !== "object" || brut === null) return { ...defauts };
-  const o = brut as Record<string, unknown>;
+function normalizeNext(raw: unknown, defaults: NextEpisodeSettings): NextEpisodeSettings {
+  if (typeof raw !== "object" || raw === null) return { ...defaults };
+  const o = raw as Record<string, unknown>;
   return {
-    nextCard: champBooleen(o.nextCard, defauts.nextCard),
-    nextCountdown: champBooleen(o.nextCountdown, defauts.nextCountdown),
-    nextAutoPlay: champBooleen(o.nextAutoPlay, defauts.nextAutoPlay),
+    nextCard: booleanField(o.nextCard, defaults.nextCard),
+    nextCountdown: booleanField(o.nextCountdown, defaults.nextCountdown),
+    nextAutoPlay: booleanField(o.nextAutoPlay, defaults.nextAutoPlay),
     nextTrigger:
       o.nextTrigger === "outroStart" || o.nextTrigger === "beforeEnd"
         ? o.nextTrigger
-        : defauts.nextTrigger,
+        : defaults.nextTrigger,
     nextBeforeEndSeconds: clampInt(
       o.nextBeforeEndSeconds,
       NEXT_BEFORE_END_SECONDS_MIN,
       NEXT_BEFORE_END_SECONDS_MAX,
-      defauts.nextBeforeEndSeconds,
+      defaults.nextBeforeEndSeconds,
     ),
   };
 }
@@ -122,8 +122,8 @@ function normalizeNext(brut: unknown, defauts: NextEpisodeSettings): NextEpisode
  * colonne farfelue, un cache d'une vieille version — chaque champ illisible
  * retombe sur son défaut, jamais d'exception.
  */
-export function normalizePlaybackSettings(brut: unknown): PlaybackSettings {
-  const o = (typeof brut === "object" && brut !== null ? brut : {}) as Record<string, unknown>;
+export function normalizePlaybackSettings(raw: unknown): PlaybackSettings {
+  const o = (typeof raw === "object" && raw !== null ? raw : {}) as Record<string, unknown>;
   const d = DEFAULT_PLAYBACK_SETTINGS;
   return {
     intro: normalizeSegment(o.intro, d.intro),
