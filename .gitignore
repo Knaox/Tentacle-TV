@@ -139,3 +139,8 @@ apps/mobile/android/.gradle/
 
 # Consignes de dev locales, hors depot
 CLAUDE.md
+
+# Le document de reprise de la migration Linux : un carnet de bord interne, pas
+# une documentation du dépôt. Consigne du 27.08 — il ne se commite jamais. Il
+# l'avait été par deux commits du début de la branche, d'où ce retrait.
+REPRISE-LINUX-ELECTRON.md
