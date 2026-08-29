@@ -21,6 +21,7 @@ export default {
 
   // Invitations
   invitations: "Invitations",
+  later: "Later",
   invitedBy: "{{name}} invites you to watch together",
   invitedByWithItem: "{{name}} invites you to watch {{title}}",
   accept: "Accept",

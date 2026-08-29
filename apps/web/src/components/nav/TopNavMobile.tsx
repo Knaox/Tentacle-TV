@@ -9,6 +9,7 @@ import { countLogoClick } from "../easterEggs/logoEggStore";
 import { MobileUserSheet } from "../MobileUserSheet";
 import { AVATAR_RING_STYLE, getUserInfo } from "../userMenu/menuItems";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
+import { useOfflineMode } from "../../offline/useOfflineMode";
 
 interface TopNavMobileProps {
   showSearch?: boolean;
@@ -31,6 +32,8 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
     crossAt: 0.3,
   });
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Même garde que `TopNav` : sans serveur, une séance partagée n'existe pas.
+  const offline = useOfflineMode();
   const { initial } = getUserInfo();
 
   return (
@@ -60,7 +63,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
 
           <div className="flex flex-shrink-0 items-center gap-2">
             {showSearch && <GlobalSearch />}
-            <WatchTogetherButton />
+            {!offline && <WatchTogetherButton />}
             <NotificationBell />
             <button
               type="button"

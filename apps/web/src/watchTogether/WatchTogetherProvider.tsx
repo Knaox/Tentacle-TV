@@ -1,6 +1,6 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef,
-  type ReactNode,
+  useState, type ReactNode,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ import type { WsClientMessage, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/
 import { useToast } from "../contexts/ToastContext";
 import { handleWtServerMessage, wtReducer, type WtEventHelpers } from "./wtEvents";
 import { GroupPlaybackPill } from "./GroupPlaybackPill";
+import { InviteInboxModal } from "./InviteInboxModal";
 import { ChatRoot } from "./chat/ChatRoot";
 
 /** Watch Together — état global du groupe (app-level, sous le Router). */
@@ -53,6 +54,14 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   const [state, dispatch] = useReducer(wtReducer, { room: null, invites: [] });
+  /**
+   * La boîte aux invitations, ouverte d'office à l'ACCUEIL.
+   *
+   * Là, on ne fait rien de précis : être interrompu ne coûte rien, et il ne
+   * reste qu'à accepter. Ailleurs — une fiche qu'on lit, une lecture en cours —
+   * l'invitation ne s'impose pas : le compteur du logo la garde sous la main.
+   */
+  const [inboxOpen, setInboxOpen] = useState(false);
 
   // Refs stables pour les callbacks socket (pas de re-souscription par render).
   const roomRef = useRef(state.room);
@@ -75,6 +84,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     }),
     isOnWatchPage: (itemId) => locationRef.current === `/watch/${itemId}`,
     isWatching: () => locationRef.current.startsWith("/watch/"),
+    onInviteArrived: () => { if (locationRef.current === "/") setInboxOpen(true); },
   };
 
   // Connexion + abonnements + resynchronisation d'état.
@@ -179,6 +189,7 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
+      {inboxOpen && <InviteInboxModal onClose={() => setInboxOpen(false)} />}
       <GroupPlaybackPill />
       {state.room && <ChatRoot />}
     </Ctx.Provider>
