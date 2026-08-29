@@ -76,8 +76,8 @@ export function usePlayerCycleTv({ mode, actions, scrub }: PlayerBindingsTv): vo
     () =>
       registerBack(() => {
         const current = readState();
-        if (current.panel !== "aucun") {
-          setPanel("aucun");
+        if (current.panel !== "none") {
+          setPanel("none");
           return true;
         }
         if (current.mode === "scrub") {

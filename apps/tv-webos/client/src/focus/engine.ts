@@ -141,7 +141,7 @@ export function installFocusEngine(): () => void {
     if (engineSuspended()) return;
 
     const intention = readIntent(event);
-    if (!intention || intention.type !== "deplacer") return;
+    if (!intention || intention.type !== "move") return;
 
     // Dans un champ de texte, gauche et droite déplacent le curseur de saisie —
     // les lui prendre rendrait la correction d'une frappe impossible. Haut et

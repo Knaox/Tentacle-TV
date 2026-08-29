@@ -33,14 +33,14 @@ function unroll(echantillons: SeekSample[]): SeekVerdict[] {
 describe("saut qui aboutit", () => {
   it("conclut dès que la vidéo avance au voisinage de la cible", () => {
     const verdicts = unroll([sample(0), sample(SEEK_WATCH_PERIOD_MS, { position: TARGET + 1 })]);
-    expect(verdicts).toEqual(["attendre", "abouti"]);
+    expect(verdicts).toEqual(["wait", "landed"]);
   });
 
   it("conclut sur un saut fait à l'arrêt quand le serveur a servi au-delà", () => {
     // À l'arrêt rien n'avancera jamais : sans cette règle, une pause sur une
     // cible parfaitement chargée attendrait indéfiniment.
     const stopped = { paused: true, bufferEnd: TARGET + 30 };
-    expect(unroll([sample(0, stopped), sample(1000, stopped)])).toContain("abouti");
+    expect(unroll([sample(0, stopped), sample(1000, stopped)])).toContain("landed");
   });
 });
 
@@ -52,7 +52,7 @@ describe("saut qui n'aboutit pas", () => {
    * c'est exactement pour cela que le niveau 3 n'était jamais atteint.
    */
   it("ne prend pas une position posée à la cible pour un saut réussi", () => {
-    expect(unroll([sample(0), sample(SEEK_STALL_MS)])).toEqual(["attendre", "renegocier"]);
+    expect(unroll([sample(0), sample(SEEK_STALL_MS)])).toEqual(["wait", "renegotiate"]);
   });
 
   /**
@@ -64,7 +64,7 @@ describe("saut qui n'aboutit pas", () => {
   it("ne se fie pas à un tampon qui part de zéro", () => {
     const backwards = { target: 600, position: 600, bufferEnd: 3000 };
     expect(unroll([sample(0, backwards), sample(SEEK_STALL_MS, backwards)]))
-      .toEqual(["attendre", "renegocier"]);
+      .toEqual(["wait", "renegotiate"]);
   });
 
   it("ne prend pas une reprise LOIN de la cible pour un atterrissage", () => {
@@ -75,13 +75,13 @@ describe("saut qui n'aboutit pas", () => {
       sample(0, { position: ailleurs }),
       sample(SEEK_STALL_MS, { position: ailleurs + 1 }),
     ]);
-    expect(verdicts).not.toContain("abouti");
+    expect(verdicts).not.toContain("landed");
   });
 
   it("laisse au serveur le temps d'écrire avant de tout redemander", () => {
     // Un saut qui ABOUTIT a été mesuré à 4,5 s : l'échéance ne doit pas bouger.
     const wait = unroll([0, 1000, 4500, SEEK_STALL_MS - 1].map((ms) => sample(ms)));
-    expect(wait).not.toContain("renegocier");
+    expect(wait).not.toContain("renegotiate");
   });
 });
 
@@ -93,11 +93,11 @@ describe("saut qui n'aboutit pas", () => {
  */
 describe("témoin de chargement", () => {
   it("se tait tant que le saut peut encore aboutir tout seul", () => {
-    expect(unroll([sample(0), sample(LOADING_MS - 1)])).not.toContain("charge");
+    expect(unroll([sample(0), sample(LOADING_MS - 1)])).not.toContain("loading");
   });
 
   it("le dit une fois le seuil franchi", () => {
-    expect(unroll([sample(0), sample(LOADING_MS)]).at(-1)).toBe("charge");
+    expect(unroll([sample(0), sample(LOADING_MS)]).at(-1)).toBe("loading");
   });
 
   it("ne se montre jamais sur un saut qui aboutit dans l'instant", () => {
@@ -105,8 +105,8 @@ describe("témoin de chargement", () => {
     const verdicts = unroll([
       sample(0), sample(LOADING_MS, { position: TARGET + 1 }),
     ]);
-    expect(verdicts).not.toContain("charge");
-    expect(verdicts.at(-1)).toBe("abouti");
+    expect(verdicts).not.toContain("loading");
+    expect(verdicts.at(-1)).toBe("landed");
   });
 
   /**
@@ -119,18 +119,18 @@ describe("témoin de chargement", () => {
     const verdicts = unroll([
       sample(0), sample(LOADING_MS * 4, { paused: true }),
     ]);
-    expect(verdicts).not.toContain("charge");
+    expect(verdicts).not.toContain("loading");
   });
 
   it("laisse la place à la renégociation une fois le vrai délai atteint", () => {
-    expect(unroll([sample(0), sample(SEEK_STALL_MS)]).at(-1)).toBe("renegocier");
+    expect(unroll([sample(0), sample(SEEK_STALL_MS)]).at(-1)).toBe("renegotiate");
   });
 });
 
 describe("pause pendant le déplacement", () => {
   it("n'escalade pas sous les doigts de l'utilisateur", () => {
     const verdicts = unroll([sample(0), sample(SEEK_STALL_MS * 2, { paused: true })]);
-    expect(verdicts).not.toContain("renegocier");
+    expect(verdicts).not.toContain("renegotiate");
   });
 
   it("ne confond pas une progression minuscule avec une reprise", () => {
@@ -138,6 +138,6 @@ describe("pause pendant le déplacement", () => {
       sample(0),
       sample(SEEK_STALL_MS, { position: TARGET + MIN_PROGRESS_S / 2 }),
     ]);
-    expect(verdicts.at(-1)).toBe("renegocier");
+    expect(verdicts.at(-1)).toBe("renegotiate");
   });
 });

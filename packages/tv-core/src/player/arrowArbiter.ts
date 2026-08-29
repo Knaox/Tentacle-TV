@@ -24,7 +24,7 @@ import type { PlayerMode } from "./playerState";
  * l'arbitre des touches le rend testable sans DOM ni horloge réelle.
  */
 
-export type ArrowOwner = "attendre" | "transport" | "focus";
+export type ArrowOwner = "wait" | "transport" | "focus";
 
 /**
  * Le temps qu'on laisse au second appui avant de ramener les commandes.
@@ -109,7 +109,7 @@ export function createArrowArbiter(options: ArbiterOptions = {}): ArrowArbiter {
       return "transport";
     }
 
-    if (mode === "repos") {
+    if (mode === "idle") {
       // Habillage éteint. Un second appui sur la MÊME flèche, arrivé pendant
       // qu'on attendait, est un saut — et il ne doit pas faire paraître les
       // commandes au passage.
@@ -118,7 +118,7 @@ export function createArrowArbiter(options: ArbiterOptions = {}): ArrowArbiter {
       primedAt = clock();
       if (!chained) {
         transport = 0;
-        return "attendre";
+        return "wait";
       }
       transport = code;
       return "transport";

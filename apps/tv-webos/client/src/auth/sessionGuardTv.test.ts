@@ -38,17 +38,17 @@ describe("revaliderSession", () => {
 
   it("lit revoked:true comme une révocation", async () => {
     response(401, { message: "Appareil révoqué", revoked: true });
-    expect(await revalidateSession()).toBe("revoquee");
+    expect(await revalidateSession()).toBe("revoked");
   });
 
   it("lit un 401 nu comme une simple expiration — session conservée par l'appelant", async () => {
     response(401, { message: "Token invalide" });
-    expect(await revalidateSession()).toBe("expiree");
+    expect(await revalidateSession()).toBe("expired");
   });
 
   it("lit un 503 comme une panne, pas comme un refus", async () => {
     response(503, { message: "Base de données indisponible" });
-    expect(await revalidateSession()).toBe("injoignable");
+    expect(await revalidateSession()).toBe("unreachable");
   });
 
   it("lit un refresh réussi comme ok", async () => {
@@ -58,6 +58,6 @@ describe("revaliderSession", () => {
 
   it("lit une panne réseau comme injoignable", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("réseau coupé")));
-    expect(await revalidateSession()).toBe("injoignable");
+    expect(await revalidateSession()).toBe("unreachable");
   });
 });

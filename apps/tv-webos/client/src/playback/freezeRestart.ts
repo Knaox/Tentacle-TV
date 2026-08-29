@@ -85,9 +85,9 @@ export const EMPTY_WATCH: WatchState = { last: null, still: 0, frozen: null };
 
 /**
  * - `"frozen"` — la position ne bouge plus. Dit UNE fois par gel.
- * - `"reprise"` — elle est repartie, et l'appelant peut dire combien ça a duré.
+ * - `"resumed"` — elle est repartie, et l'appelant peut dire combien ça a duré.
  */
-export type Verdict = "rien" | "fige" | "reprise";
+export type Verdict = "none" | "frozen" | "resumed";
 
 /**
  * Un relevé de plus, et ce qu'il faut en dire.
@@ -108,18 +108,18 @@ export function observer(state: WatchState, e: PlaybackSample): [WatchState, Ver
   // surtout rien à reprocher au lecteur. Un gel déjà constaté le reste — un
   // buffering au milieu n'est pas une reprise.
   if (e.enPause || e.pret < 3) {
-    return [{ ...state, last: e.position, still: 0 }, "rien"];
+    return [{ ...state, last: e.position, still: 0 }, "none"];
   }
 
   const progress = state.last !== null && e.position - state.last > TOLERANCE_PROGRESSION_S;
   if (progress || state.last === null) {
     const next: WatchState = { last: e.position, still: 0, frozen: null };
-    return [next, state.frozen !== null ? "reprise" : "rien"];
+    return [next, state.frozen !== null ? "resumed" : "none"];
   }
 
   const still = state.still + 1;
   if (state.frozen === null && still >= SAMPLES_BEFORE_FREEZE) {
-    return [{ last: e.position, still, frozen: instant }, "fige"];
+    return [{ last: e.position, still, frozen: instant }, "frozen"];
   }
-  return [{ ...state, last: e.position, still }, "rien"];
+  return [{ ...state, last: e.position, still }, "none"];
 }

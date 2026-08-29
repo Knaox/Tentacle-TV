@@ -77,12 +77,12 @@ export interface SeekState {
 export const EMPTY_SEEK: SeekState = { last: null };
 
 /**
- * - `"abouti"` — des images sont sorties là où on les voulait.
- * - `"charge"` — rien encore, mais il est trop tôt pour renoncer : c'est le
+ * - `"landed"` — des images sont sorties là où on les voulait.
+ * - `"loading"` — rien encore, mais il est trop tôt pour renoncer : c'est le
  *   moment de le DIRE à l'utilisateur, pas d'agir.
- * - `"renegocier"` — le déplacement n'a rien produit, il faut une session neuve.
+ * - `"renegotiate"` — le déplacement n'a rien produit, il faut une session neuve.
  */
-export type SeekVerdict = "attendre" | "abouti" | "charge" | "renegocier";
+export type SeekVerdict = "wait" | "landed" | "loading" | "renegotiate";
 
 /**
  * Au bout de combien de temps un saut HLS est considéré comme calé.
@@ -139,20 +139,20 @@ export function observeSeek(state: SeekState, e: SeekSample): [SeekState, SeekVe
 
   // De la vidéo est sortie, et là où on la voulait.
   const advanced = state.last !== null && e.position - state.last > MIN_PROGRESS_S;
-  if (advanced && nearTarget) return [next, "abouti"];
+  if (advanced && nearTarget) return [next, "landed"];
 
   // Un saut demandé à l'arrêt ne fera avancer personne : ce qui le prouve est que
   // le serveur a servi au-delà de la cible.
   const served = e.bufferEnd !== null && e.bufferEnd > e.target;
-  if (e.paused && e.ready >= 3 && nearTarget && served) return [next, "abouti"];
+  if (e.paused && e.ready >= 3 && nearTarget && served) return [next, "landed"];
 
   // En pause voulue, renégocier ferait repartir la lecture sous les doigts de
   // l'utilisateur. On ne conclut pas, on attend qu'il reprenne — et surtout on
   // ne dit pas « ça charge » : rien n'est censé avancer, un témoin allumé sur
   // une pause resterait allumé pour toujours.
-  if (e.paused) return [next, "attendre"];
+  if (e.paused) return [next, "wait"];
 
-  if (e.elapsed >= SEEK_STALL_MS) return [next, "renegocier"];
-  if (e.elapsed >= LOADING_MS) return [next, "charge"];
-  return [next, "attendre"];
+  if (e.elapsed >= SEEK_STALL_MS) return [next, "renegotiate"];
+  if (e.elapsed >= LOADING_MS) return [next, "loading"];
+  return [next, "wait"];
 }

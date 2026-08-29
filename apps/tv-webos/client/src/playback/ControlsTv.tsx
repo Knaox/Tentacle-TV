@@ -130,7 +130,7 @@ export function PlayerControls(props: PlayerControlsProps) {
   useEffect(() => {
     if (state.mode !== "osd") return;
 
-    if (state.panel !== "aucun") {
+    if (state.panel !== "none") {
       // Un panneau s'ouvre. On note d'où l'on vient, puis on entre dedans : le
       // focus restait sinon sur le bouton qui l'a ouvert, hors du panneau, et
       // le confinement calculait ses déplacements depuis un point extérieur.
@@ -159,7 +159,7 @@ export function PlayerControls(props: PlayerControlsProps) {
     [skipRaw],
   );
 
-  if (state.mode === "repos") return null;
+  if (state.mode === "idle") return null;
 
   if (state.mode === "scrub" && state.scrub) {
     return (
@@ -206,7 +206,7 @@ export function PlayerControls(props: PlayerControlsProps) {
       <HeaderTv title={title} subtitle={subtitle} onQuitter={quitter} />
 
       <div className="osd-tv-bas">
-        {state.panel === "pistes" && (
+        {state.panel === "tracks" && (
           <TracksPanelTv
             audioTracks={audioTracks}
             subtitleTracks={subtitleTracks}
@@ -219,11 +219,11 @@ export function PlayerControls(props: PlayerControlsProps) {
             onSubtitleChange={onSubtitleChange}
             onQualityChange={onQualityChange}
             applyToSeries={applyToSeries}
-            onClose={() => setPanel("aucun")}
+            onClose={() => setPanel("none")}
           />
         )}
         {state.panel === "episodes" && item && (
-          <EpisodesPanelTv item={item} onClose={() => setPanel("aucun")} />
+          <EpisodesPanelTv item={item} onClose={() => setPanel("none")} />
         )}
 
         <BarreProgressionTv
@@ -248,8 +248,8 @@ export function PlayerControls(props: PlayerControlsProps) {
           onMove={() => scrub.enter()}
           onPrecedent={() => onPreviousEpisode?.()}
           onNext={() => onNextEpisode?.()}
-          onEpisodes={() => setPanel(state.panel === "episodes" ? "aucun" : "episodes")}
-          onTracks={() => setPanel(state.panel === "pistes" ? "aucun" : "pistes")}
+          onEpisodes={() => setPanel(state.panel === "episodes" ? "none" : "episodes")}
+          onTracks={() => setPanel(state.panel === "tracks" ? "none" : "tracks")}
         />
       </div>
       {/* `itemId` reste dans le contrat sans emploi ici : le client web s'en

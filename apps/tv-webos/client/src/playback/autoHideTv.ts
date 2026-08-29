@@ -42,5 +42,5 @@ export function useControlsAutoHide(playing: boolean): {
     showOsd();
   }, []);
 
-  return { showControls: state.mode !== "repos", scheduleHide };
+  return { showControls: state.mode !== "idle", scheduleHide };
 }

@@ -58,7 +58,7 @@ function useOverlayFocus(
   useEffect(() => {
     const racine = ref.current;
     if (!active || !racine) return;
-    if (!imposer && readState().mode !== "repos") return;
+    if (!imposer && readState().mode !== "idle") return;
     const element = target(racine);
     if (element) giveFocus(element);
     return () => {

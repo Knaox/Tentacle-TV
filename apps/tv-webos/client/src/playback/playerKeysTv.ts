@@ -123,7 +123,7 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
     // n'a plus de sens, on repart d'une flèche qui rallume. Surtout pas sur
     // l'allumage — c'est la flèche elle-même qui vient de le provoquer, et
     // effacer son amorce ici lui retirerait le second appui qu'elle attend.
-    if (mode === "repos") arbiter.forget();
+    if (mode === "idle") arbiter.forget();
   });
 
   /** Qui possède une flèche horizontale, appui par appui. */
@@ -184,14 +184,14 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
     event.preventDefault();
     event.stopPropagation();
 
-    if (intention.type === "deplacer") {
+    if (intention.type === "move") {
       const code = event.keyCode;
       arrowHeld = code;
 
       // Les verticales n'ont jamais servi au transport : sous l'habillage elles
       // parcourent les boutons, au repos elles le ramènent.
       if (!isHorizontal(intention.direction)) {
-        if (state.mode === "repos") showOsd();
+        if (state.mode === "idle") showOsd();
         else deferAutoHide();
         return;
       }
@@ -210,7 +210,7 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
       }
 
       switch (arbiter.decide(code, state.mode, event.repeat)) {
-        case "attendre":
+        case "wait":
           // On laisse sa chance au second appui : les commandes ne paraissent
           // qu'au terme du délai, et un saut demandé entre-temps les annule.
           grace = 0;
@@ -232,13 +232,13 @@ export function installTvPlayerKeys(lire: () => PlayerActionsTv): () => void {
       }
     }
 
-    if (intention.type === "valider") {
+    if (intention.type === "select") {
       if (state.mode === "scrub") {
         actions.scrub.confirm();
         moveEnd = Date.now();
         return;
       }
-      if (state.mode === "repos") {
+      if (state.mode === "idle") {
         // Une surcouche — bouton « passer », carte « épisode suivant » — paraît
         // alors que l'habillage est éteint et prend le focus. Tant qu'elle le
         // tient, OK lui appartient : c'est le seul geste qui change de

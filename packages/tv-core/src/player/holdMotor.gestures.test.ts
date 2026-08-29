@@ -18,21 +18,21 @@ interface Step {
   at: number;
   sign: 1 | -1;
   tier: number;
-  kind: "saut" | "tic";
+  kind: "skip" | "tick";
 }
 
 function harness() {
   const from = Date.now();
   const step: Step[] = [];
   const motor = createHoldMotor({
-    jump: (sign) => step.push({ at: Date.now() - from, sign, tier: 0, kind: "saut" }),
-    advance: (sign, tier) => step.push({ at: Date.now() - from, sign, tier, kind: "tic" }),
+    jump: (sign) => step.push({ at: Date.now() - from, sign, tier: 0, kind: "skip" }),
+    advance: (sign, tier) => step.push({ at: Date.now() - from, sign, tier, kind: "tick" }),
   });
   return {
     step,
     motor,
-    jumps: () => step.filter((p) => p.kind === "saut"),
-    ticks: () => step.filter((p) => p.kind === "tic"),
+    jumps: () => step.filter((p) => p.kind === "skip"),
+    ticks: () => step.filter((p) => p.kind === "tick"),
   };
 }
 
@@ -68,7 +68,7 @@ describe("holdMotor — taper ou tenir", () => {
     motor.press(RIGHT, 1);
 
     expect(step).toHaveLength(2);
-    expect(step.every((p) => p.kind === "saut")).toBe(true);
+    expect(step.every((p) => p.kind === "skip")).toBe(true);
 
     // Et surtout : aucun déplacement ne part derrière.
     vi.advanceTimersByTime(2000);

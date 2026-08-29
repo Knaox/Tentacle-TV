@@ -22,36 +22,36 @@ function entry(given: Partial<PlayerExitInput>): PlayerExitInput {
 
 describe("decidePlayerExitAction", () => {
   it("colle KDE, plein écran du film : quitter puis maximiser", () => {
-    expect(decidePlayerExitAction(entry({}))).toBe("quitterPleinEcranPuisMaximiser");
+    expect(decidePlayerExitAction(entry({}))).toBe("exitFullscreenThenMaximize");
   });
 
   it("X11 aussi : le plein écran du film se rend", () => {
     expect(decidePlayerExitAction(entry({ montage: "x11", windowing: null })))
-      .toBe("quitterPleinEcranPuisMaximiser");
+      .toBe("exitFullscreenThenMaximize");
   });
 
   it("montage imposé (GNOME/wlroots) : la surface possède la restauration", () => {
-    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran" }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ windowing: "plein-ecran" }))).toBe("none");
   });
 
   it("montage inconnu : ne rien toucher", () => {
-    expect(decidePlayerExitAction(entry({ montage: null }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ montage: null }))).toBe("none");
   });
 
   it("un F11 antérieur à la lecture appartient à l'utilisateur", () => {
-    expect(decidePlayerExitAction(entry({ alreadyFullscreen: true }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ alreadyFullscreen: true }))).toBe("none");
   });
 
   it("aucune session lecteur ouverte : rien à défaire", () => {
-    expect(decidePlayerExitAction(entry({ alreadyFullscreen: null }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ alreadyFullscreen: null }))).toBe("none");
   });
 
   it("fenêtrée à la sortie : rien à faire", () => {
-    expect(decidePlayerExitAction(entry({ fullscreen: false }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ fullscreen: false }))).toBe("none");
   });
 
   it("macOS et Windows gardent leurs chemins", () => {
-    expect(decidePlayerExitAction(entry({ platform: "darwin" }))).toBe("rien");
-    expect(decidePlayerExitAction(entry({ platform: "win32" }))).toBe("rien");
+    expect(decidePlayerExitAction(entry({ platform: "darwin" }))).toBe("none");
+    expect(decidePlayerExitAction(entry({ platform: "win32" }))).toBe("none");
   });
 });

@@ -17,7 +17,7 @@ const CONFIG: AutoNextConfig = {
 };
 
 const tick = (eligible = true, ended = false, elapsedMs = 1_000): AutoNextInput => ({
-  type: "cadre",
+  type: "frame",
   eligible,
   ended,
   elapsedMs,
@@ -33,7 +33,7 @@ function run(
   inputs.forEach((input, i) => {
     const [next, effect] = decideAutoNext(state, input, config);
     state = next;
-    if (effect === "epsSuivant") effects.push(i);
+    if (effect === "nextEpisode") effects.push(i);
   });
   return { state, effects };
 }
@@ -51,7 +51,7 @@ describe("les combinaisons des réglages — chacun ne fait que sa part", () => 
     const config = { ...CONFIG, nextAutoPlay: false };
     const { state, effects } = run([...FULL_COUNTDOWN_TICKS, tick()], config);
     expect(effects).toEqual([]);
-    expect(state.phase).toBe("carte");
+    expect(state.phase).toBe("card");
     expect(displayedNextCountdown(state)).toBeNull();
   });
 
@@ -59,7 +59,7 @@ describe("les combinaisons des réglages — chacun ne fait que sa part", () => 
     const config = { ...CONFIG, nextCountdown: false };
     const { state, effects } = run(Array.from({ length: 30 }, () => tick()), config);
     expect(effects).toEqual([]);
-    expect(state).toMatchObject({ phase: "carte", remainingMs: null });
+    expect(state).toMatchObject({ phase: "card", remainingMs: null });
   });
 
   it("ni minuteur ni enchaînement : une proposition, rien d'autre", () => {
@@ -82,22 +82,22 @@ describe("cycle de vie", () => {
   });
 
   it("le refus vaut pour l'épisode : minuteur coupé, réarmé au changement d'item", () => {
-    const dismissed = run([tick(), { type: "refus" }, tick(), tick()]);
+    const dismissed = run([tick(), { type: "dismiss" }, tick(), tick()]);
     expect(dismissed.effects).toEqual([]);
-    expect(dismissed.state).toMatchObject({ phase: "repos", dismissed: true, remainingMs: null });
+    expect(dismissed.state).toMatchObject({ phase: "idle", dismissed: true, remainingMs: null });
 
     const next = run([{ type: "item", itemId: "ep-2" }, tick()], CONFIG, dismissed.state);
-    expect(next.state).toMatchObject({ dismissed: false, forItemId: "ep-2", phase: "carte" });
+    expect(next.state).toMatchObject({ dismissed: false, forItemId: "ep-2", phase: "card" });
   });
 
   it("revoir le même item ne réarme pas un refus", () => {
     const { state } = run([
-      { type: "refus" },
+      { type: "dismiss" },
       { type: "item", itemId: "ep-1" },
       tick(),
     ]);
     expect(state.dismissed).toBe(true);
-    expect(state.phase).toBe("repos");
+    expect(state.phase).toBe("idle");
   });
 
   it("l'escalade carte → écran de fin conserve le minuteur en cours", () => {
@@ -114,8 +114,8 @@ describe("cycle de vie", () => {
   it("« lire maintenant » part tout de suite, et une seule fois", () => {
     const { effects } = run([
       tick(),
-      { type: "lireMaintenant" },
-      { type: "lireMaintenant" },
+      { type: "playNow" },
+      { type: "playNow" },
       ...FULL_COUNTDOWN_TICKS,
     ]);
     expect(effects).toEqual([1]);
@@ -124,10 +124,10 @@ describe("cycle de vie", () => {
   it("la garde serveur ou l'absence d'épisode suivant éteint tout", () => {
     const withoutServer = run([...FULL_COUNTDOWN_TICKS], { ...CONFIG, serverEnabled: false });
     expect(withoutServer.effects).toEqual([]);
-    expect(withoutServer.state.phase).toBe("repos");
+    expect(withoutServer.state.phase).toBe("idle");
 
     const withoutNext = run(
-      [tick(), { type: "lireMaintenant" }],
+      [tick(), { type: "playNow" }],
       { ...CONFIG, hasNextEpisode: false },
     );
     expect(withoutNext.effects).toEqual([]);

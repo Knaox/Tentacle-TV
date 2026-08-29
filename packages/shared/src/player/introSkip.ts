@@ -43,14 +43,14 @@ export const INTRO_SKIP_START_SECONDS = SKIP_DELAY_DEFAULT_MS / 1000;
 export const SKIP_GUARD_MS = 10_000;
 
 export type IntroSkipState =
-  | { name: "repos" }
-  | { name: "decompte"; remainingMs: number }
-  | { name: "refuse" }
-  | { name: "saute"; sinceMs: number };
+  | { name: "idle" }
+  | { name: "countdown"; remainingMs: number }
+  | { name: "dismissed" }
+  | { name: "skipped"; sinceMs: number };
 
 export type IntroSkipInput =
   | {
-      type: "cadre";
+      type: "frame";
       visible: boolean;
       active: boolean;
       /** Temps écoulé depuis le cadre précédent — 1000 ms sur web/TV, 250 ms
@@ -60,13 +60,13 @@ export type IntroSkipInput =
       /** Délai avant le saut automatique. Défaut : SKIP_DELAY_DEFAULT_MS. */
       delayMs?: number;
     }
-  | { type: "croix" }
-  | { type: "sauteMaintenant" };
+  | { type: "dismiss" }
+  | { type: "skipNow" };
 
 /** Ce que l'appelant doit faire, en plus de retenir le nouvel état. */
-export type IntroSkipAction = "rien" | "sauter";
+export type IntroSkipAction = "none" | "skip";
 
-export const INTRO_SKIP_IDLE: IntroSkipState = { name: "repos" };
+export const INTRO_SKIP_IDLE: IntroSkipState = { name: "idle" };
 
 /**
  * `visible` est la fenêtre d'intro telle que le lecteur la calcule déjà. Son
@@ -77,52 +77,52 @@ export function decideIntroSkip(
   input: IntroSkipInput,
   previousVisible: boolean,
 ): [IntroSkipState, IntroSkipAction] {
-  if (input.type === "croix") return [{ name: "refuse" }, "rien"];
-  if (input.type === "sauteMaintenant") return [{ name: "saute", sinceMs: 0 }, "sauter"];
+  if (input.type === "dismiss") return [{ name: "dismissed" }, "none"];
+  if (input.type === "skipNow") return [{ name: "skipped", sinceMs: 0 }, "skip"];
 
   const { visible, active, elapsedMs } = input;
 
   // Sortie de l'intro : tout retombe, y compris un saut en vol — la position a
   // rattrapé, c'est précisément ce que le saut attendait.
-  if (!visible) return [INTRO_SKIP_IDLE, "rien"];
+  if (!visible) return [INTRO_SKIP_IDLE, "none"];
 
   const delayMs = input.delayMs ?? SKIP_DELAY_DEFAULT_MS;
 
   // Entrée dans l'intro. Le refus d'un passage précédent ne la suit pas.
   if (!previousVisible) {
-    return active ? [{ name: "decompte", remainingMs: delayMs }, "rien"] : [INTRO_SKIP_IDLE, "rien"];
+    return active ? [{ name: "countdown", remainingMs: delayMs }, "none"] : [INTRO_SKIP_IDLE, "none"];
   }
 
-  if (state.name === "saute") {
+  if (state.name === "skipped") {
     const sinceMs = state.sinceMs + elapsedMs;
     // Le saut n'a jamais abouti : on rend le bouton manuel plutôt que de laisser
     // l'utilisateur devant une intro qu'il ne peut plus passer.
-    return sinceMs >= SKIP_GUARD_MS ? [INTRO_SKIP_IDLE, "rien"] : [{ name: "saute", sinceMs }, "rien"];
+    return sinceMs >= SKIP_GUARD_MS ? [INTRO_SKIP_IDLE, "none"] : [{ name: "skipped", sinceMs }, "none"];
   }
 
-  if (state.name === "refuse") return [state, "rien"];
+  if (state.name === "dismissed") return [state, "none"];
 
   // La préférence peut s'éteindre pendant le décompte : il s'arrête, la pilule
   // reste, et elle redevient ce qu'elle était — un bouton.
-  if (!active) return [INTRO_SKIP_IDLE, "rien"];
+  if (!active) return [INTRO_SKIP_IDLE, "none"];
 
-  if (state.name === "repos") return [{ name: "decompte", remainingMs: delayMs }, "rien"];
+  if (state.name === "idle") return [{ name: "countdown", remainingMs: delayMs }, "none"];
 
   // `elapsedMs` nul = simple réévaluation (la préférence vient de changer, par
   // exemple), pas un battement d'horloge : le décompte ne doit pas y perdre
   // de temps.
-  if (elapsedMs <= 0) return [state, "rien"];
+  if (elapsedMs <= 0) return [state, "none"];
 
   const remainingMs = state.remainingMs - elapsedMs;
   return remainingMs <= 0
-    ? [{ name: "saute", sinceMs: 0 }, "sauter"]
-    : [{ name: "decompte", remainingMs }, "rien"];
+    ? [{ name: "skipped", sinceMs: 0 }, "skip"]
+    : [{ name: "countdown", remainingMs }, "none"];
 }
 
 /** La pilule se rend-elle ? Pendant un saut, non : il a déjà été demandé. */
 export const showSkipPill = (state: IntroSkipState, visible: boolean): boolean =>
-  visible && state.name !== "saute";
+  visible && state.name !== "skipped";
 
 /** Secondes affichées, `null` quand la pilule est un simple bouton. */
 export const displayedCountdown = (state: IntroSkipState): number | null =>
-  state.name === "decompte" ? Math.max(1, Math.ceil(state.remainingMs / 1000)) : null;
+  state.name === "countdown" ? Math.max(1, Math.ceil(state.remainingMs / 1000)) : null;
