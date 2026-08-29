@@ -146,18 +146,19 @@ export function VideoPlayer({
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
     onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
     // Watch Together : le refus local part au groupe par le bus existant.
-    onSegmentDismissNotify: () => annoncerRefusLocal(),
+    onSegmentDismissNotify: (type) => { annoncerRefusLocal(type); },
     onNextDismissNotify: onAutoNextDismiss,
   });
 
-  // Watch Together entrant : un membre a refusé le saut d'intro — on s'aligne.
+  // Watch Together entrant : un membre a refusé un saut — on s'aligne, sur le
+  // passage qu'IL a gardé (un client d'avant la refonte dit « Intro »).
   const refusDistants = useRefusSautIntro();
-  const refusVusRef = useRef(refusDistants);
+  const refusVusRef = useRef(refusDistants.compteur);
   const { signalRemoteSegmentDismiss } = playback;
   useEffect(() => {
-    if (refusDistants === refusVusRef.current) return;
-    refusVusRef.current = refusDistants;
-    signalRemoteSegmentDismiss("Intro");
+    if (refusDistants.compteur === refusVusRef.current) return;
+    refusVusRef.current = refusDistants.compteur;
+    signalRemoteSegmentDismiss(refusDistants.type);
   }, [refusDistants, signalRemoteSegmentDismiss]);
 
   // Fin de média sans écran de fin possible : retour fiche — l'équivalent de

@@ -1,4 +1,5 @@
 import { TICKS_PER_SECOND } from "../constants";
+import type { SegmentType } from "../playback/segmentTypes";
 
 /**
  * Watch Together — contrat partagé client ↔ backend.
@@ -139,10 +140,14 @@ export type WtClientMessage =
   | { type: "wt:playbackError"; itemId: string }
   /** L'utilisateur a masqué la bannière « épisode suivant » — masquée partout. */
   | { type: "wt:autonextDismiss" }
-  /** L'utilisateur refuse le saut d'intro automatique. Refusé partout : la
-   *  position de lecture est commune, laisser le décompte de l'autre partir
-   *  reviendrait à traîner hors de l'intro celui qui vient de la garder. */
-  | { type: "wt:skipIntroDismiss" }
+  /** L'utilisateur refuse le saut d'un passage. Refusé partout : la position
+   *  de lecture est commune, laisser le décompte de l'autre partir reviendrait
+   *  à traîner hors du passage celui qui vient de le garder.
+   *  `segmentType` est FACULTATIF : un client d'avant la refonte ne l'envoie
+   *  pas, et son silence vaut « Intro » — le seul passage qu'il savait sauter.
+   *  Le nom du message, lui, ne bouge pas : le renommer couperait la séance
+   *  entre deux versions pour un gain nul. */
+  | { type: "wt:skipIntroDismiss"; segmentType?: SegmentType }
   /** L'app se ferme (pagehide) : quitter le groupe rapidement (grâce courte —
    *  un simple refresh se reconnecte avant son expiration). */
   | { type: "wt:goodbye" }
@@ -169,8 +174,8 @@ export type WtServerMessage =
   | { type: "wt:state"; state: WtRoomStateDto; originUserId: string | null; cause: WtStateCause }
   /** Relai transient (hors state/epoch) : un membre a masqué l'auto-next. */
   | { type: "wt:autonextDismiss"; originUserId: string }
-  /** Idem pour le refus du saut d'intro. */
-  | { type: "wt:skipIntroDismiss"; originUserId: string }
+  /** Idem pour le refus d'un passage — `segmentType` absent = « Intro ». */
+  | { type: "wt:skipIntroDismiss"; originUserId: string; segmentType?: SegmentType }
   | { type: "wt:invite"; invite: WtInviteDto }
   /** Notifie l'hôte du sort de son invitation. */
   | { type: "wt:inviteResult"; inviteId: string; toUserId: string; toUsername: string; accepted: boolean }
