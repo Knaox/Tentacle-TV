@@ -352,9 +352,24 @@ fi
 # ⚠️ Chaque motif est ancré sur `\.so` : la version non ancrée laissait `libm`
 # avaler `libmp3lame`/`libmpg123`/`libmd` et `libz` avaler `libzimg` — quatre
 # bibliothèques restées au système par accident, absentes de bien des machines.
+# ⚠️ `libfontconfig` est LAISSÉE AU SYSTÈME, à la différence des autres
+# bibliothèques de rendu de texte (freetype, harfbuzz, fribidi), qui restent
+# livrées. Ce n'est pas une inconséquence : fontconfig est la seule des quatre
+# qui LIT LA CONFIGURATION DE L'HÔTE — `/etc/fonts/fonts.conf`, ses `conf.d`, et
+# des caches dont le format est numéroté par version. Une fontconfig livrée est
+# donc couplée aux fichiers d'une machine qu'on ne connaît pas.
+#
+# Elle ne sert à rien, de surcroît : Chromium charge la fontconfig du système
+# bien avant que mpv ne s'ouvre, le SONAME est déjà satisfait, et la nôtre n'est
+# jamais chargée. Mesuré sur la 1.20.9 : `libfontconfig.so.1` livrée (format de
+# cache 7, contre 11 pour le système), et `/proc/<pid>/maps` ne montrant que
+# celle de `/usr/lib64`. Du poids mort qui ne peut que tromper le diagnostic.
+#
+# `libexpat` la suit : elle n'entrait dans la chaîne que comme dépendance de
+# fontconfig.
 echo "==> Collecte vers $SORTIE"
 rm -rf "$SORTIE"; mkdir -p "$SORTIE"
-SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libgnutls|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma)\.so'
+SYSTEME='^(libc|libm|libmvec|libdl|libpthread|librt|libresolv|libgcc_s|libstdc\+\+|ld-linux[A-Za-z0-9_-]*|libvulkan|libX[A-Za-z0-9_-]*|libxcb[a-z0-9_-]*|libwayland-[a-z]+|libxkbcommon[a-z0-9_-]*|libdrm|libgbm|libEGL|libGL|libGLX|libGLdispatch|libGLESv2|libasound|libpulse[a-z-]*|libpipewire-0\.3|libspa-[a-z0-9.-]*|libdbus-1|libsystemd|libudev|libcap|libselinux|libffi|libglib-2\.0|libgnutls|libz|liblzma|libzstd|libpcre2?[0-9a-z-]*|libgomp|libatomic|libnuma|libfontconfig|libexpat)\.so'
 
 copier_recursif() {
   local fichier="$1"
