@@ -300,7 +300,15 @@ export function VideoPlayer({
           tap sur mobile. */}
       <PlaybackBadge flash={playbackFlash} />
 
-      <div className={`absolute inset-0 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
+      {/* L'habillage ne se pose pas sur l'écran de CHARGEMENT : tant que la
+          première image n'est pas rendue, il n'y a rien à commander, et une
+          barre de progression à zéro par-dessus une jaquette ne dit que du
+          faux. Il était jusqu'ici peint SOUS la bannière (`z-auto` contre son
+          `z-10`) : invisible, mais toujours cliquable — et l'inverse du bureau,
+          où il passait par-dessus. Une seule règle désormais, et `z-20` pour
+          que l'empilement soit dit plutôt que subi. */}
+      {hasStarted && (
+      <div className={`absolute inset-0 z-20 transition-opacity duration-300 ${showControls ? "opacity-100" : "pointer-events-none opacity-0"}`}>
         <PlayerControls
           playing={playing} currentTime={currentTime} duration={duration}
           buffered={buffered} volume={volume} fullscreen={fullscreen}
@@ -318,6 +326,7 @@ export function VideoPlayer({
           applyToSeries={applyToSeries} onPlaybackRateChange={applyRate}
         />
       </div>
+      )}
 
     </div>
   );

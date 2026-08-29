@@ -259,8 +259,11 @@ export function DesktopPlayer({
           barre d'espace, bouton, télécommande média. */}
       <PlaybackBadge flash={playbackFlash} />
 
+      {/* Pendant le CHARGEMENT, rien à commander : l'habillage cède la place à
+          l'écran de chargement, comme sur le web. Échap et la télécommande
+          continuent de sortir — les raccourcis ne passent pas par la barre. */}
       <DesktopPlayerControls
-        visible={showControls} state={state} title={title} subtitle={subtitle}
+        visible={showControls && !showLoadingOverlay} state={state} title={title} subtitle={subtitle}
         isDirectPlay={isDirectPlay} isEpisode={isEpisode} item={item} itemId={itemId}
         useLocalEpisodes={offline}
         displayAudio={displayAudio} displaySubs={displaySubs}
