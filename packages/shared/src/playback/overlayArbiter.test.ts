@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import type { ResolvedSegment, SegmentType } from "./segmentTypes";
 import { DEFAULT_PLAYBACK_SETTINGS, type PlaybackSettings } from "./playbackSettings";
-import { arbitrateOverlay, type ArbiterInput } from "./overlayArbiter";
+import { arbitrateOverlay, findSkipCandidate, type ArbiterInput } from "./overlayArbiter";
 
 const RUNTIME_MS = 1_440_000;
 
@@ -106,13 +106,13 @@ describe("les six cas obligatoires", () => {
     expect(overlay).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
   });
 
-  it("6. Film sans épisode suivant → « passer le générique » termine la lecture", () => {
+  it("6. Film sans épisode suivant → le bouton dit « Terminer », il ne promet aucun saut", () => {
     const during = arbitrateOverlay(
       makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, isEpisode: false, hasNextEpisode: false }),
     );
     expect(during).toMatchObject({
       kind: "skip",
-      labelKey: "skipCredits",
+      labelKey: "endPlayback",
       action: { kind: "endOfPlayback" },
     });
 
@@ -265,5 +265,37 @@ describe("priorités et gardes", () => {
       makeInput({ segments: [seg("Intro", 0, 90_000)], positionMs: 0, hasStarted: false }),
     );
     expect(overlay).toEqual({ kind: "none" });
+  });
+});
+
+describe("quitter la lecture n'est jamais automatique", () => {
+  it("réglage « auto » sur le générique : un film ne se ferme pas tout seul", () => {
+    const candidate = findSkipCandidate({
+      segments: [OUTRO_AT_END],
+      positionMs: 1_310_000,
+      hasStarted: true,
+      isEpisode: false,
+      hasNextEpisode: false,
+      settings: makeSettings({ outro: { action: "auto", countdownVisible: true, autoDelayMs: 3_000 } }),
+    });
+    expect(candidate?.action).toEqual({ kind: "endOfPlayback" });
+    // Le réglage dit « auto » ; l'arbitre impose le bouton. Un décompte qui
+    // quitte le film au bout de trois secondes de générique ne se rattrape pas.
+    expect(candidate?.settings.action).toBe("button");
+  });
+
+  it("une scène post-générique, elle, reste un vrai saut — et peut être automatique", () => {
+    const withScene = { ...OUTRO_AT_END, endMs: 1_350_000, endsAtMediaEnd: false, hasContentAfter: true };
+    const candidate = findSkipCandidate({
+      segments: [withScene],
+      positionMs: 1_310_000,
+      hasStarted: true,
+      isEpisode: false,
+      hasNextEpisode: false,
+      settings: makeSettings({ outro: { action: "auto", countdownVisible: true, autoDelayMs: 3_000 } }),
+    });
+    expect(candidate?.labelKey).toBe("skipToPostCredits");
+    expect(candidate?.action).toEqual({ kind: "seek", toMs: 1_350_000 });
+    expect(candidate?.settings.action).toBe("auto");
   });
 });

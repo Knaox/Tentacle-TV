@@ -58,6 +58,9 @@ export default {
   // il ne la saute jamais.
   skipToPostCredits: "Aller à la scène post-générique",
   skipToPostCreditsIn: "Scène post-générique dans {{seconds}} s",
+  // Film ou dernier épisode : il n'y a rien à passer, le générique va au bout.
+  // Le bouton dit donc ce qu'il fait — et reste manuel, jamais décompté.
+  endPlayback: "Terminer",
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
