@@ -29,6 +29,10 @@ export function roomToDto(room: Room): WtRoomStateDto {
     pauseReason: room.pauseReason,
     waitingForUserIds: [...room.waitingFor],
     members,
+    // Recopie, jamais de lecture en base : `roomToDto` doit rester SYNCHRONE,
+    // il est appelé depuis chaque diffusion. La clé n'apparaît QUE si la salle
+    // les connaît — un client d'avant ne doit rien voir de nouveau.
+    ...(room.hostSettings ? { hostPlaybackSettings: room.hostSettings } : {}),
   };
 }
 

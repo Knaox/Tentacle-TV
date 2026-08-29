@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-client";
+import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings } from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
@@ -89,7 +89,9 @@ function SettingBlock({ title, hint, value, choices, onChoose }: {
 
 export function TVPlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
-  const settings = usePlaybackSettings();
+  // Les réglages PROPRES : dans un groupe Watch Together, ceux de l'hôte
+  // gouvernent la lecture, mais ce sont bien les siens qu'on règle ici.
+  const settings = useOwnPlaybackSettings();
   const preset = detectPreset(settings);
 
   const choices: Choice[] = [

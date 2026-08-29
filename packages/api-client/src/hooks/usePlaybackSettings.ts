@@ -10,7 +10,7 @@
  * asynchrone d'Android, avant tout rendu.
  */
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import {
   createPlaybackSettingsStore,
   type PlaybackSettings,
@@ -23,6 +23,35 @@ import { tentacleApiFetch } from "./usePreferences";
 
 let settingsStore: PlaybackSettingsStore | null = null;
 let lastResync = 0;
+
+/**
+ * L'OVERRIDE de séance : les réglages de l'hôte d'un groupe Watch Together.
+ *
+ * Une séance commune ne peut pas avoir deux comportements — si l'hôte passe
+ * les génériques tout seul et qu'un membre les garde, l'un des deux subit la
+ * position de l'autre sans comprendre d'où elle vient. Le serveur envoie donc
+ * les réglages de l'hôte dans l'état du groupe, et ils passent DEVANT le
+ * magasin local, sans jamais l'écrire : les réglages du membre reviennent
+ * intacts à la sortie.
+ *
+ * Un canal de module plutôt qu'une prop : les six surfaces lisent déjà
+ * `usePlaybackSettings()`, elles suivent toutes sans être touchées. Même motif
+ * que le bus de refus de saut, pour la même raison.
+ */
+let groupOverride: PlaybackSettings | null = null;
+const overrideListeners = new Set<() => void>();
+
+/** Posé par le fournisseur Watch Together ; `null` hors groupe ou si l'on EST
+ *  l'hôte (ses propres réglages font déjà foi). */
+export function setGroupPlaybackSettings(settings: PlaybackSettings | null): void {
+  if (settings === groupOverride) return;
+  groupOverride = settings;
+  overrideListeners.forEach((listener) => listener());
+}
+
+export function groupPlaybackSettings(): PlaybackSettings | null {
+  return groupOverride;
+}
 
 /** Une resynchronisation par demi-minute suffit — chaque montage n'en refait pas une. */
 const RESYNC_MIN_INTERVAL_MS = 30_000;
@@ -48,7 +77,13 @@ export function usePlaybackSettingsStore(): PlaybackSettingsStore {
   return initPlaybackSettingsStore(storage);
 }
 
-/** Les réglages, réactifs — et resynchronisés (bornés) au montage. */
+/**
+ * Les réglages EFFECTIFS, réactifs — et resynchronisés (bornés) au montage.
+ *
+ * L'override de groupe passe devant le magasin : dans une séance Watch
+ * Together, c'est l'hôte qui décide pour tout le monde. Hors groupe, il est
+ * nul et rien ne change.
+ */
 export function usePlaybackSettings(): PlaybackSettings {
   const store = usePlaybackSettingsStore();
 
@@ -59,6 +94,29 @@ export function usePlaybackSettings(): PlaybackSettings {
     void store.resync();
   }, [store]);
 
+  const subscribe = useCallback(
+    (callback: () => void) => {
+      const stop = store.subscribe(callback);
+      overrideListeners.add(callback);
+      return () => {
+        stop();
+        overrideListeners.delete(callback);
+      };
+    },
+    [store],
+  );
+  const read = useCallback(() => groupOverride ?? store.readSnapshot(), [store]);
+
+  return useSyncExternalStore(subscribe, read, read);
+}
+
+/**
+ * Les réglages PROPRES du compte, override ignoré — c'est ce que l'écran de
+ * réglages doit montrer et modifier. Sans quoi un membre de groupe verrait les
+ * choix de son hôte dans SES préférences, et les écraserait en y touchant.
+ */
+export function useOwnPlaybackSettings(): PlaybackSettings {
+  const store = usePlaybackSettingsStore();
   return useSyncExternalStore(store.subscribe, store.readSnapshot, store.readSnapshot);
 }
 

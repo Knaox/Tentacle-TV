@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { usePlaybackSettings } from "@tentacle-tv/api-client";
+import { useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset } from "@tentacle-tv/shared";
 import { PlaybackAdvancedPanel } from "./PlaybackAdvancedPanel";
 import { PlaybackPresetPicker } from "./PlaybackPresetPicker";
@@ -19,7 +19,9 @@ import { PlaybackPresetPicker } from "./PlaybackPresetPicker";
  */
 export function PlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
-  const settings = usePlaybackSettings();
+  // Les réglages PROPRES : dans un groupe Watch Together, ceux de l'hôte
+  // gouvernent la lecture, mais ce sont bien les siens qu'on règle ici.
+  const settings = useOwnPlaybackSettings();
   // Ouvert d'emblée si les réglages ne correspondent à aucun mode : quelqu'un
   // a déjà réglé finement, lui cacher son propre travail serait absurde.
   const [advancedOpen, setAdvancedOpen] = useState(() => detectPreset(settings) === "custom");

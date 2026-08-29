@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { setPlaybackSettings, usePlaybackSettings } from "@tentacle-tv/api-client";
+import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset, presetSettings } from "@tentacle-tv/shared";
 
 /**
@@ -57,7 +57,9 @@ function SettingSection({ title, hint, value, choice, onChoose }: SectionProps) 
 
 export function PlaybackSettingsTv() {
   const { t } = useTranslation("preferences");
-  const preset = detectPreset(usePlaybackSettings());
+  // Les réglages PROPRES : dans un groupe Watch Together, ceux de l'hôte
+  // gouvernent la lecture, mais ce sont bien les siens qu'on règle ici.
+  const preset = detectPreset(useOwnPlaybackSettings());
 
   const choices: Choice[] = [
     { value: "manual", label: t("playbackModeManual") },
