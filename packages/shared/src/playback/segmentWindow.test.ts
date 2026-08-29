@@ -68,3 +68,31 @@ describe("playbackPhase", () => {
     expect(playbackPhase(abruptEnd, 1_439_500, true)).toBe("CONTENT");
   });
 });
+
+describe("deux génériques sur le même média", () => {
+  // Le modèle de Plex : générique, scène post-générique, générique FINAL.
+  const main: ResolvedSegment = {
+    type: "Outro", startMs: 8_320_000, endMs: 8_760_000,
+    source: "frames", endsAtMediaEnd: false, hasContentAfter: true,
+  };
+  const final: ResolvedSegment = {
+    type: "Outro", startMs: 8_870_000, endMs: 8_990_000,
+    source: "frames", endsAtMediaEnd: true, hasContentAfter: false,
+  };
+  const segments = [main, final];
+
+  it("le principal est actif pendant le premier générique", () => {
+    expect(findActiveSegment(segments, 8_400_000, true)).toBe(main);
+  });
+
+  it("aucun ne l'est pendant la scène", () => {
+    expect(findActiveSegment(segments, 8_800_000, true)).toBeNull();
+  });
+
+  it("le FINAL est actif quand le générique reprend", () => {
+    // Le défaut que ceci verrouille : seul le premier segment d'un type était
+    // consulté, et le générique final restait muet — la scène finie, plus rien
+    // ne permettait de terminer la lecture.
+    expect(findActiveSegment(segments, 8_900_000, true)).toBe(final);
+  });
+});

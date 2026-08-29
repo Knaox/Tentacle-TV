@@ -144,6 +144,7 @@ describe("ce que le verdict a le droit de changer", () => {
   const verdict = {
     outro: { startMs: 8_320_000, endMs: 8_760_000, source: "frames" as const },
     sceneAfter: true,
+    finalCredits: null,
   };
   const runtime = 8_892_000;
 
@@ -189,7 +190,7 @@ describe("ce que le verdict a le droit de changer", () => {
     // Un verdict de 30 s posé avant lui : plus court, donc pas plus digne de foi.
     applyFrameVerdict(
       bounds,
-      { outro: { startMs: 8_400_000, endMs: 8_430_000, source: "frames" }, sceneAfter: true },
+      { outro: { startMs: 8_400_000, endMs: 8_430_000, source: "frames" }, sceneAfter: true, finalCredits: null },
       runtime,
     );
     expect(bounds.get("Outro")).toEqual([long]);
@@ -206,5 +207,68 @@ describe("ce que le verdict a le droit de changer", () => {
     const bounds: BoundsByType = new Map();
     applyFrameVerdict(bounds, null, runtime);
     expect(bounds.size).toBe(0);
+  });
+});
+
+describe("le générique FINAL, après la scène", () => {
+  const RUNTIME = 148.2 * 60_000;
+
+  /** Générique, scène, puis le générique reprend jusqu'au bout. */
+  function withFinalCredits(): FrameSample[] {
+    return series([
+      { fromMin: 89, toMin: 138.67, dark: 0.4, saturation: 30 },
+      { fromMin: 138.67, toMin: 144, dark: 0.9, saturation: 0.1 },
+      { fromMin: 144, toMin: 146, dark: 0.2, saturation: 40 },
+      { fromMin: 146, toMin: 148.2, dark: 0.9, saturation: 0.1 },
+    ]);
+  }
+
+  it("le trouve, et le fait courir jusqu'à la fin du média", () => {
+    const verdict = creditsFromFrames(withFinalCredits(), RUNTIME);
+    expect(verdict?.outro.endMs).toBe(144 * 60_000);
+    expect(verdict?.sceneAfter).toBe(true);
+    expect(verdict?.finalCredits).toEqual({
+      startMs: 146 * 60_000,
+      endMs: RUNTIME,
+      source: "frames",
+    });
+  });
+
+  it("ne dit rien quand la scène est la dernière chose du média", () => {
+    const verdict = creditsFromFrames(noWayHome(), NO_WAY_HOME_MS);
+    expect(verdict?.sceneAfter).toBe(true);
+    expect(verdict?.finalCredits).toBeNull();
+  });
+
+  it("le pose en SECOND générique, à côté du principal", () => {
+    const bounds: BoundsByType = new Map();
+    const final = { startMs: 8_760_000, endMs: 8_892_000, source: "frames" as const };
+    applyFrameVerdict(
+      bounds,
+      {
+        outro: { startMs: 8_320_000, endMs: 8_700_000, source: "frames" },
+        sceneAfter: true,
+        finalCredits: final,
+      },
+      8_892_000,
+    );
+    const outros = bounds.get("Outro");
+    expect(outros).toHaveLength(2);
+    expect(outros?.[1]).toEqual(final);
+  });
+
+  it("ne le pose pas quand il chevauche le générique principal", () => {
+    const bounds: BoundsByType = new Map();
+    applyFrameVerdict(
+      bounds,
+      {
+        outro: { startMs: 8_320_000, endMs: 8_760_000, source: "frames" },
+        // Incohérent : il commencerait AVANT la fin du principal.
+        finalCredits: { startMs: 8_700_000, endMs: 8_892_000, source: "frames" },
+        sceneAfter: true,
+      },
+      8_892_000,
+    );
+    expect(bounds.get("Outro")).toHaveLength(1);
   });
 });

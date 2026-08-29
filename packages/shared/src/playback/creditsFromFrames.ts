@@ -58,46 +58,19 @@
  */
 
 import { POST_CREDITS_MIN_MS, POST_CREDITS_THRESHOLD_MS, minCredibleOutroMs } from "./segmentTypes";
+import {
+  MIN_BLOCK_MS,
+  MIN_CORE_MS,
+  isCore,
+  looksLikeCredits,
+  smooth,
+  toBlocks,
+  type Block,
+  type FrameSample,
+} from "./frameBlocks";
+
+export type { FrameSample } from "./frameBlocks";
 import type { BoundsByType, RawBounds } from "./segmentChapters";
-
-/** Ce qu'on mesure sur une vignette. Rien de plus : deux nombres suffisent. */
-export interface FrameSample {
-  /** Position de la vignette dans le média, en millisecondes. */
-  ms: number;
-  /** Part de pixels quasi noirs, de 0 à 1. */
-  dark: number;
-  /** Saturation moyenne (écart max-min des canaux), de 0 à 255. */
-  saturation: number;
-}
-
-/**
- * Les deux seuils qui séparent un générique d'une scène.
- *
- * Ils viennent des relevés de l'en-tête, et ils sont VOLONTAIREMENT larges : le
- * lissage fait le reste du travail, et un seuil serré rejetterait les génériques
- * illustrés — ceux de Marvel commencent souvent par un montage en couleur.
- */
-const DARK_MIN = 0.72;
-const SATURATION_MAX = 18;
-
-/**
- * Le NOYAU : la saturation d'un défilement de texte sur fond noir.
- *
- * Relevé 0,0 à 0,5 sur les quatre films ; la scène sombre la plus terne du
- * corpus est à 4,8. Trois est au milieu, et du bon côté des deux.
- */
-const CORE_SATURATION_MAX = 3;
-/** Durée minimale de ce noyau — jamais plus que le plancher d'un générique. */
-const MIN_CORE_MS = 30_000;
-
-/**
- * En deçà, un passage n'existe pas : c'est une image isolée.
- *
- * Trente secondes, soit trois vignettes à la cadence habituelle. C'est aussi le
- * plancher de ce qui mérite d'être appelé une scène — en dessous, proposer un
- * saut vers « la suite » enverrait le spectateur sur un fondu.
- */
-const MIN_BLOCK_MS = 30_000;
 
 /** Ce que les vignettes savent dire du générique de fin. */
 export interface FrameVerdict {
@@ -105,77 +78,16 @@ export interface FrameVerdict {
   outro: RawBounds;
   /** Une scène vit après ce générique — c'est ce qui sauve les post-génériques. */
   sceneAfter: boolean;
-}
-
-interface Block {
-  credits: boolean;
-  startMs: number;
-  /** Fin EXCLUSIVE — la position de la vignette suivante, ou la fin du média. */
-  endMs: number;
-}
-
-/** Le classement LARGE : ce qui pourrait être un générique. */
-function looksLikeCredits(sample: FrameSample): boolean {
-  return sample.dark >= DARK_MIN && sample.saturation <= SATURATION_MAX;
-}
-
-/** Le classement du NOYAU : du texte qui défile sur du noir, et rien d'autre. */
-function isCore(sample: FrameSample): boolean {
-  return sample.dark >= DARK_MIN && sample.saturation <= CORE_SATURATION_MAX;
-}
-
-/** Découpe la suite en passages homogènes, sans encore rien lisser. */
-function toBlocks(
-  samples: readonly FrameSample[],
-  runtimeMs: number,
-  classify: (sample: FrameSample) => boolean,
-): Block[] {
-  const blocks: Block[] = [];
-  for (let i = 0; i < samples.length; i++) {
-    const sample = samples[i];
-    const credits = classify(sample);
-    // La vignette vaut jusqu'à la suivante ; la dernière, jusqu'à la fin du média.
-    const endMs = i + 1 < samples.length ? samples[i + 1].ms : runtimeMs;
-    const last = blocks[blocks.length - 1];
-    if (last && last.credits === credits) last.endMs = endMs;
-    else blocks.push({ credits, startMs: sample.ms, endMs });
-  }
-  return blocks;
-}
-
-/**
- * Absorbe les passages trop courts dans leur voisin, jusqu'à stabilité.
- *
- * Un passage court est rendu à son PRÉDÉCESSEUR — sauf le premier, qui n'en a
- * pas et rejoint son successeur. La boucle recommence tant qu'elle a fusionné :
- * absorber un passage peut en laisser un autre trop court à côté.
- */
-function smooth(blocks: Block[]): Block[] {
-  let current = blocks;
-  for (;;) {
-    if (current.length <= 1) return current;
-    const index = current.findIndex((b) => b.endMs - b.startMs < MIN_BLOCK_MS);
-    if (index < 0) return current;
-
-    const next: Block[] = [];
-    for (let i = 0; i < current.length; i++) {
-      if (i === index) continue;
-      next.push({ ...current[i] });
-    }
-    // La classe de l'absorbé disparaît : ses bornes rejoignent le voisin retenu.
-    const host = index === 0 ? next[0] : next[index - 1];
-    if (index === 0) host.startMs = current[0].startMs;
-    else host.endMs = current[index].endMs;
-
-    // Deux voisins de même classe redeviennent un seul passage.
-    const merged: Block[] = [];
-    for (const block of next) {
-      const last = merged[merged.length - 1];
-      if (last && last.credits === block.credits) last.endMs = block.endMs;
-      else merged.push(block);
-    }
-    current = merged;
-  }
+  /**
+   * Le générique FINAL, celui qui reprend APRÈS la scène et court jusqu'au bout
+   * du fichier. `null` quand la scène est la dernière chose du média.
+   *
+   * C'est le modèle de Plex, que le résolveur connaît déjà : générique, scène
+   * post-générique, générique final. Sans lui, la scène finie, le spectateur
+   * restait devant des minutes de défilement sans rien pour en sortir — le
+   * bouton avait fait son office et s'était tu.
+   */
+  finalCredits: RawBounds | null;
 }
 
 /**
@@ -233,7 +145,24 @@ export function creditsFromFrames(
       source: "frames",
     },
     sceneAfter: scene,
+    finalCredits: scene ? finalCreditsAfter(blocks, index, runtimeMs) : null,
   };
+}
+
+/**
+ * Le générique qui REPREND après la scène, s'il y en a un.
+ *
+ * On prend le DERNIER passage de la suite : c'est celui qui touche la fin du
+ * fichier, et c'est le seul qui mérite un bouton « Terminer la lecture ». Il
+ * doit être un générique, commencer après la scène, et durer assez pour qu'un
+ * bouton ne fasse pas que clignoter.
+ */
+function finalCreditsAfter(blocks: Block[], index: number, runtimeMs: number): RawBounds | null {
+  const last = blocks[blocks.length - 1];
+  if (last === undefined || blocks.length < index + 3) return null;
+  if (!last.credits) return null;
+  if (last.endMs - last.startMs < MIN_BLOCK_MS) return null;
+  return { startMs: last.startMs, endMs: runtimeMs, source: "frames" };
 }
 
 /**
@@ -256,6 +185,9 @@ export function creditsFromFrames(
  *     terminer le film — juste avant la scène post-générique ;
  *  4. **aucun générique** — le verdict en fournit un.
  *
+ * Dans tous les cas où l'on écrit, le générique FINAL suit s'il existe : c'est
+ * lui qui donne le bouton « Terminer la lecture » une fois la scène passée.
+ *
  * Les autres types ne sont jamais touchés : intro, résumé et aperçu marchent.
  */
 export function applyFrameVerdict(
@@ -264,9 +196,16 @@ export function applyFrameVerdict(
   runtimeMs: number,
 ): void {
   if (verdict === null) return;
+  // Le générique FINAL voyage avec le principal : c'est lui qui donnera le
+  // bouton « Terminer la lecture » une fois la scène passée.
+  const withFinal = (main: RawBounds): RawBounds[] =>
+    verdict.finalCredits !== null && verdict.finalCredits.startMs >= main.endMs
+      ? [main, verdict.finalCredits]
+      : [main];
+
   const existing = bounds.get("Outro");
   if (!existing || existing.length === 0) {
-    bounds.set("Outro", [verdict.outro]);
+    bounds.set("Outro", withFinal(verdict.outro));
     return;
   }
 
@@ -279,7 +218,7 @@ export function applyFrameVerdict(
   // court qu'un marqueur qu'on ne comprend pas ne vaut pas mieux que lui.
   if (verdict.outro.endMs <= last.startMs) {
     const seen = verdict.outro.endMs - verdict.outro.startMs;
-    if (seen > last.endMs - last.startMs) bounds.set("Outro", [verdict.outro]);
+    if (seen > last.endMs - last.startMs) bounds.set("Outro", withFinal(verdict.outro));
     return;
   }
 
@@ -287,4 +226,7 @@ export function applyFrameVerdict(
   if (!verdict.sceneAfter) return;
   if (runtimeMs - verdict.outro.endMs < POST_CREDITS_MIN_MS) return;
   last.endMs = verdict.outro.endMs;
+  // Le fournisseur n'a signalé qu'un marqueur ; le générique final, lui, vient
+  // des vignettes. On ne l'ajoute que si le fournisseur n'en avait pas déjà un.
+  if (existing.length === 1) bounds.set("Outro", withFinal(last));
 }
