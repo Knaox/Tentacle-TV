@@ -333,8 +333,8 @@ jobs:
           Copy-Item (Join-Path $paquet "*") $stage -Recurse -Force
 
           # Tuiles du Store : inchangées, elles appartiennent au manifeste.
-          Copy-Item "apps\desktop\msix\Assets" (Join-Path $stage "Assets") -Recurse
-          $m = Get-Content "apps\desktop\msix\Package.appxmanifest" -Raw
+          Copy-Item "apps\desktop-electron\msix\Assets" (Join-Path $stage "Assets") -Recurse
+          $m = Get-Content "apps\desktop-electron\msix\Package.appxmanifest" -Raw
           $m = $m -creplace '\bVersion="[\d\.]+"', ('Version="' + $ver + '.0"')
           Set-Content (Join-Path $stage "AppxManifest.xml") $m -Encoding UTF8
 
