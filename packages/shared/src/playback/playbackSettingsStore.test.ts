@@ -156,3 +156,86 @@ describe("createPlaybackSettingsStore", () => {
     expect(store.readSnapshot()).toEqual(SERVER_SETTINGS);
   });
 });
+
+describe("mise en sourdine des poussées", () => {
+  /** L'erreur d'un backend qui a RÉPONDU — la forme de `TentacleApiError`. */
+  const serverError = (status: number): Error & { status: number } =>
+    Object.assign(new Error(`HTTP ${status}`), { status });
+
+  it("un 500 arrête la rafale : une seule poussée, puis plus rien pendant la sourdine", async () => {
+    const writeRemote = vi.fn(async () => {
+      throw serverError(500);
+    });
+    const store = createPlaybackSettingsStore({
+      storage: fakeStorage(),
+      readRemote: async () => ({ stored: true, settings: DEFAULT_PLAYBACK_SETTINGS }),
+      writeRemote,
+    });
+
+    store.set({ intro: { action: "off" } });
+    await vi.waitFor(() => expect(writeRemote).toHaveBeenCalledTimes(1));
+
+    // Trois resynchronisations : le serveur a déjà dit non, on ne le rappelle pas.
+    await store.resync();
+    await store.resync();
+    await store.resync();
+    expect(writeRemote).toHaveBeenCalledTimes(1);
+    // Et le réglage local, lui, tient : c'est la vérité de l'appareil.
+    expect(store.readSnapshot().intro.action).toBe("off");
+  });
+
+  it("une nouvelle action de l'utilisateur lève la sourdine", async () => {
+    const writeRemote = vi.fn(async () => {
+      throw serverError(503);
+    });
+    const store = createPlaybackSettingsStore({
+      storage: fakeStorage(),
+      readRemote: async () => ({ stored: true, settings: DEFAULT_PLAYBACK_SETTINGS }),
+      writeRemote,
+    });
+
+    store.set({ intro: { action: "off" } });
+    await vi.waitFor(() => expect(writeRemote).toHaveBeenCalledTimes(1));
+    await store.resync();
+    expect(writeRemote).toHaveBeenCalledTimes(1);
+
+    store.set({ outro: { action: "auto" } });
+    await vi.waitFor(() => expect(writeRemote).toHaveBeenCalledTimes(2));
+  });
+
+  it("une coupure réseau, elle, se retente — jusqu'au plafond", async () => {
+    const writeRemote = vi.fn(async () => {
+      throw new Error("network"); // aucune réponse : pas de `status`
+    });
+    const store = createPlaybackSettingsStore({
+      storage: fakeStorage(),
+      readRemote: async () => ({ stored: true, settings: DEFAULT_PLAYBACK_SETTINGS }),
+      writeRemote,
+    });
+
+    store.set({ intro: { action: "off" } }); // 1er échec
+    await vi.waitFor(() => expect(writeRemote).toHaveBeenCalledTimes(1));
+    await store.resync(); // 2e
+    await store.resync(); // 3e → plafond atteint, sourdine
+    expect(writeRemote).toHaveBeenCalledTimes(3);
+    await store.resync();
+    expect(writeRemote).toHaveBeenCalledTimes(3);
+  });
+
+  it("en sourdine, resync ne relit PAS le serveur — le réglage local n'est pas écrasé", async () => {
+    const readRemote = vi.fn(async () => ({ stored: true, settings: DEFAULT_PLAYBACK_SETTINGS }));
+    const store = createPlaybackSettingsStore({
+      storage: fakeStorage(),
+      readRemote,
+      writeRemote: async () => {
+        throw serverError(500);
+      },
+    });
+
+    store.set({ intro: { action: "off" } });
+    await vi.waitFor(() => expect(store.readSnapshot().intro.action).toBe("off"));
+    await store.resync();
+    expect(readRemote).not.toHaveBeenCalled();
+    expect(store.readSnapshot().intro.action).toBe("off");
+  });
+});

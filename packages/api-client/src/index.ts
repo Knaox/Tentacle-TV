@@ -33,7 +33,7 @@ export { usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, reh
 export { usePlaybackOverlay } from "./playback/usePlaybackOverlay";
 export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/usePlaybackOverlay";
 // Library language/subtitle preferences
-export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken, tentacleApiFetch } from "./hooks/usePreferences";
+export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken, tentacleApiFetch, TentacleApiError } from "./hooks/usePreferences";
 export type { LibraryPreference, TrackResolution } from "./hooks/usePreferences";
 // Langues retenues par contenu (film, épisode) — prioritaires sur la série et la bibliothèque
 export { useItemTrackPreference, useSetItemTrackPreference, useDeleteItemTrackPreference } from "./hooks/usePreferences";

@@ -19,6 +19,22 @@ function getAuthHeader(): Record<string, string> {
 }
 
 /**
+ * L'erreur d'un appel backend, avec son CODE. Sans lui, un appelant ne peut
+ * pas distinguer un réseau coupé (qui se répare tout seul, on retente) d'une
+ * réponse 5xx (le serveur a compris et refuse, le marteler n'y changera rien).
+ * `status` vaut 0 quand `fetch` lui-même a échoué — aucune réponse n'est venue.
+ */
+export class TentacleApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "TentacleApiError";
+    this.status = status;
+  }
+}
+
+/**
  * Un appel authentifié vers le backend Tentacle (chemin absolu `/api/...`),
  * avec la même base et le même jeton que les préférences — réutilisé par les
  * segments de lecture et les réglages, qui vivent sous d'autres préfixes.
@@ -33,7 +49,7 @@ export async function tentacleApiFetch<T>(apiPath: string, init?: RequestInit): 
   const res = await fetch(`${_backendRoot}${apiPath}`, { ...init, headers, credentials: hasToken ? undefined : "include" });
   if (!res.ok) {
     const msg = await res.text().catch(() => `${res.status}`);
-    throw new Error(msg);
+    throw new TentacleApiError(msg, res.status);
   }
   return res.json();
 }
