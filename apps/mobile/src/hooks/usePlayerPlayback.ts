@@ -13,7 +13,7 @@ import {
   buildPlatformDeviceProfile, extractActualStartTicks,
   type TextTrackEntry,
 } from "./usePlaybackInfoFetch";
-import { noterSessionEncodage } from "../lib/transcodeSession";
+import { recordEncodingSession } from "../lib/transcodeSession";
 
 const DBG = "[Tentacle:Playback]";
 
@@ -186,18 +186,18 @@ export function usePlayerPlayback(itemId: string) {
    * naître.
    */
   const { killTranscode } = reporting;
-  const sessionPrecedenteRef = useRef<string | null>(null);
+  const previousSessionRef = useRef<string | null>(null);
   useEffect(() => {
-    const courante = state.playSessionId;
-    if (!courante) return;
-    const precedente = sessionPrecedenteRef.current;
-    sessionPrecedenteRef.current = courante;
+    const currentSession = state.playSessionId;
+    if (!currentSession) return;
+    const previousSession = previousSessionRef.current;
+    previousSessionRef.current = currentSession;
     // Trace sur disque, relue au lancement suivant : c'est le seul recours
     // contre une application tuée en pleine lecture (cf. transcodeSession).
-    noterSessionEncodage(courante, client.getBaseUrl());
-    if (!precedente || precedente === courante) return;
-    console.log(DBG, "session supplantée — ancien transcodage libéré", { precedente, courante });
-    void killTranscode(precedente);
+    recordEncodingSession(currentSession, client.getBaseUrl());
+    if (!previousSession || previousSession === currentSession) return;
+    console.log(DBG, "session supplantée — ancien transcodage libéré", { previousSession, currentSession });
+    void killTranscode(previousSession);
   }, [state.playSessionId, killTranscode, client]);
 
   /** Direct play : update selectedAudioTrack only. Transcode : refetch with new audio. */

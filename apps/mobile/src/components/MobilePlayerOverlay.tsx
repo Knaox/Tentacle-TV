@@ -109,9 +109,9 @@ export function MobilePlayerOverlay({
   // L'habillage peut disparaître (auto-masquage à 4 s) sans emporter la
   // surcouche de lecture : le bouton de saut et la carte « à suivre » ne
   // dépendent plus de l'OSD, comme sur le bureau et le web.
-  const surcouche = playback.overlay.kind !== "none";
+  const hasOverlay = playback.overlay.kind !== "none";
 
-  if (!visible && !surcouche) return null;
+  if (!visible && !hasOverlay) return null;
 
   return (
     <>

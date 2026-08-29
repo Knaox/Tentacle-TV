@@ -1,8 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const CLE = "tentacle_encodage_en_cours";
+// La VALEUR de cette clé est gravée sur les appareils déjà installés : elle ne se
+// renomme pas, sous peine d'oublier l'encodage laissé par la version d'avant.
+const STORAGE_KEY = "tentacle_encodage_en_cours";
 
-export interface SessionEncodage {
+export interface EncodingSession {
   playSessionId: string;
   /** URL de base du client au moment de l'ouverture — un changement de serveur
    *  rend l'identifiant caduc, autant ne pas parler dans le vide. */
@@ -23,22 +25,22 @@ export interface SessionEncodage {
  * (204), au mieux on rattrape un arrêt brutal. Une garantie plutôt qu'une
  * course entre deux nettoyages.
  */
-export function noterSessionEncodage(playSessionId: string, baseUrl: string): void {
-  AsyncStorage.setItem(CLE, JSON.stringify({ playSessionId, baseUrl })).catch(() => {});
+export function recordEncodingSession(playSessionId: string, baseUrl: string): void {
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ playSessionId, baseUrl })).catch(() => {});
 }
 
-export async function reprendreSessionEncodage(): Promise<SessionEncodage | null> {
+export async function readEncodingSession(): Promise<EncodingSession | null> {
   try {
-    const brut = await AsyncStorage.getItem(CLE);
-    if (!brut) return null;
-    const valeur = JSON.parse(brut) as Partial<SessionEncodage>;
-    if (!valeur?.playSessionId || !valeur.baseUrl) return null;
-    return { playSessionId: valeur.playSessionId, baseUrl: valeur.baseUrl };
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<EncodingSession>;
+    if (!value?.playSessionId || !value.baseUrl) return null;
+    return { playSessionId: value.playSessionId, baseUrl: value.baseUrl };
   } catch {
     return null;
   }
 }
 
-export function oublierSessionEncodage(): void {
-  AsyncStorage.removeItem(CLE).catch(() => {});
+export function forgetEncodingSession(): void {
+  AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
 }

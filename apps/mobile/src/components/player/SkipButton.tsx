@@ -28,23 +28,23 @@ export function SkipButton({
   label, onPress, bottom, right, countdownTotalMs, onDismiss,
 }: Props) {
   const { isTablet } = useResponsive();
-  const arme = typeof countdownTotalMs === "number" && countdownTotalMs > 0;
-  const course = useRef(new Animated.Value(0)).current;
+  const armed = typeof countdownTotalMs === "number" && countdownTotalMs > 0;
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!arme) return;
-    course.setValue(0);
-    const animation = Animated.timing(course, {
+    if (!armed) return;
+    progress.setValue(0);
+    const animation = Animated.timing(progress, {
       toValue: 1,
       duration: countdownTotalMs ?? 0,
       useNativeDriver: true,
     });
     animation.start();
     return () => { animation.stop(); };
-  }, [arme, countdownTotalMs, course]);
+  }, [armed, countdownTotalMs, progress]);
 
   return (
-    <View style={[st.rangee, { bottom, right }]}>
+    <View style={[st.row, { bottom, right }]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -53,19 +53,19 @@ export function SkipButton({
         hitSlop={8}
       >
         <Text style={[st.label, isTablet && { fontSize: 17 }]} numberOfLines={1}>{label}</Text>
-        {arme && (
+        {armed && (
           <Animated.View
             pointerEvents="none"
-            style={[st.glissiere, { transform: [{ scaleX: course }] }]}
+            style={[st.progressBar, { transform: [{ scaleX: progress }] }]}
           />
         )}
       </Pressable>
-      {arme && onDismiss && (
+      {armed && onDismiss && (
         <Pressable
           onPress={onDismiss}
           accessibilityRole="button"
           hitSlop={10}
-          style={({ pressed }) => [st.croix, pressed && { opacity: 0.7 }]}
+          style={({ pressed }) => [st.dismissBtn, pressed && { opacity: 0.7 }]}
         >
           <X size={isTablet ? 20 : 16} color={PLAYER.text} />
         </Pressable>
@@ -75,7 +75,7 @@ export function SkipButton({
 }
 
 const st = StyleSheet.create({
-  rangee: {
+  row: {
     position: "absolute",
     flexDirection: "row",
     alignItems: "center",
@@ -104,7 +104,7 @@ const st = StyleSheet.create({
   },
   // Sur fond blanc, la glissière est sombre — un blanc translucide y serait
   // invisible (même arbitrage que sur le web).
-  glissiere: {
+  progressBar: {
     position: "absolute",
     left: 0,
     right: 0,
@@ -113,7 +113,7 @@ const st = StyleSheet.create({
     backgroundColor: PLAYER.fillInverse,
     transformOrigin: "left",
   },
-  croix: {
+  dismissBtn: {
     height: 36,
     width: 36,
     borderRadius: 18,
