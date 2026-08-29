@@ -26,10 +26,10 @@ export function useTVPlaybackExit(args: {
   const nextEpisode = autoPlay.nextEpisode;
 
   const dismissAutoPlay = useCallback((): boolean => {
-    const courant = overlayRef.current;
-    const etaitFin = courant.kind === "nextCard" && courant.final;
+    const currentOverlay = overlayRef.current;
+    const wasFinal = currentOverlay.kind === "nextCard" && currentOverlay.final;
     dismissOverlay();
-    if (etaitFin && endedRef.current) {
+    if (wasFinal && endedRef.current) {
       setTimeout(() => { handleFinished(); }, 0);
       return true;
     }

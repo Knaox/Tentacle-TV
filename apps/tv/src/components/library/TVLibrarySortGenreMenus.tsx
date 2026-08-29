@@ -6,7 +6,7 @@ import { Focusable } from "../focus/Focusable";
 import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { Colors } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 /**
  * Chaque critère porte son sens NATUREL (parité `LibraryFilterMenus` web) :
@@ -35,7 +35,7 @@ export function TVSortMenu({
   const desc = filters.sortOrder === "Descending";
   // Cible d'entrée FIGÉE à l'ouverture : suivre la sélection re-grabberait le
   // focus à chaque cochage (le flip de hasTVPreferredFocus re-saisit côté natif).
-  const entreeRef = useRef(filters.sortBy);
+  const entryRef = useRef(filters.sortBy);
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>
@@ -44,14 +44,14 @@ export function TVSortMenu({
           key={opt.value}
           label={t(opt.key)}
           checked={filters.sortBy === opt.value}
-          preferred={entreeRef.current === opt.value}
+          preferred={entryRef.current === opt.value}
           onPress={() => { onSortByChange(opt.value); onSortOrderChange(opt.order); }}
         />
       ))}
       <View style={{ height: 1, backgroundColor: Colors.glassBorder, marginVertical: 8 }} />
       <Focusable
         variant="button"
-        focusRadius={Bouton.moyen.borderRadius}
+        focusRadius={Button.medium.borderRadius}
         onPress={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
         accessibilityLabel={desc ? t("sortOrderDesc") : t("sortOrderAsc")}
       >
@@ -81,8 +81,8 @@ export function TVGenreMenu({
 }) {
   // Entrée sur la PREMIÈRE cochée à l'OUVERTURE, sinon la première ligne —
   // figée : cocher/décocher ne doit pas re-saisir le focus.
-  const entreeRef = useRef(genres.find((g) => selectedIds.includes(g.Id))?.Id ?? genres[0]?.Id);
-  const firstChecked = entreeRef.current;
+  const entryRef = useRef(genres.find((g) => selectedIds.includes(g.Id))?.Id ?? genres[0]?.Id);
+  const firstChecked = entryRef.current;
 
   return (
     <TVLibraryFilterMenu anchor={anchor}>

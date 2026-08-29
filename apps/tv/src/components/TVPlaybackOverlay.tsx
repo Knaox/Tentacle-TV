@@ -55,14 +55,14 @@ export function TVPlaybackOverlay({
 
   const skip = overlay.kind === "skip" ? overlay : null;
   const visible = skip !== null && !showEpisodes;
-  const compte = skip?.countdownSeconds ?? null;
+  const countdown = skip?.countdownSeconds ?? null;
 
   useTVFocusGrab(skipRef, visible && !showSettings && !overlayVisible);
 
   // Sur Android, le Retour est empilé et peut donc « garder ce passage » sans
   // quitter la vidéo. On ne le prend QUE pendant un décompte : sans échéance,
   // le bouton n'est qu'une proposition, et Retour doit rester le Retour.
-  useTVRemote({ onBack: visible && compte !== null ? onDismiss : undefined });
+  useTVRemote({ onBack: visible && countdown !== null ? onDismiss : undefined });
 
   const opacity = useSharedValue(0);
   const raise = useSharedValue(0);
@@ -94,8 +94,8 @@ export function TVPlaybackOverlay({
     >
       <TVFocusGuideView
         autoFocus
-        trapFocusLeft={compte !== null && !overlayVisible}
-        trapFocusRight={compte !== null && !overlayVisible}
+        trapFocusLeft={countdown !== null && !overlayVisible}
+        trapFocusRight={countdown !== null && !overlayVisible}
         style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
       >
         <Focusable ref={skipRef} variant="button" onPress={onSkip} focusRadius={8} hasTVPreferredFocus={!overlayVisible && !showSettings && !showEpisodes}>
@@ -112,15 +112,15 @@ export function TVPlaybackOverlay({
               fontSize: TV_PLAYER_SKIP.text,
               fontWeight: "600",
             }}>
-              {compte !== null
-                ? t(`player:${skip.labelKey}In`, { seconds: compte })
+              {countdown !== null
+                ? t(`player:${skip.labelKey}In`, { seconds: countdown })
                 : t(`player:${skip.labelKey}`)}
             </Text>
           </View>
         </Focusable>
         {/* Pas de croix : à trois mètres, une cible de 32 points ne se vise pas.
             Un second bouton, lisible, que la navigation atteint d'un appui. */}
-        {compte !== null && (
+        {countdown !== null && (
           <Focusable variant="button" onPress={onDismiss} focusRadius={8}>
             <View style={{
               paddingHorizontal: TV_PLAYER_SKIP.paddingH,

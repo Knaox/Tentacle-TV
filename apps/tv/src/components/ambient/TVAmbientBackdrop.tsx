@@ -9,7 +9,7 @@ import Animated, {
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useItemAmbiant } from "../../contexts/AmbientFocusContext";
+import { useAmbientItem } from "../../contexts/AmbientFocusContext";
 import { Colors, AmbientConfig } from "../../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -24,7 +24,7 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
  * accessibility settings.
  */
 export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
-  const focusedItem = useItemAmbiant();
+  const focusedItem = useAmbientItem();
   const client = useJellyfinClient();
   const [reduceMotion, setReduceMotion] = useState(false);
   const [layers, setLayers] = useState<{ a: MediaItem | null; b: MediaItem | null }>({
@@ -79,21 +79,21 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
    * rien consommer. Une image plein écran gardée à l'opacité nulle reste une
    * texture à téléverser et une couche à composer.
    */
-  const demonter = useCallback((couche: "a" | "b") => {
-    if (activeLayerRef.current === couche || pendingLayerRef.current === couche) return;
-    setLayers((prev) => (prev[couche] ? { ...prev, [couche]: null } : prev));
+  const unmountLayer = useCallback((layer: "a" | "b") => {
+    if (activeLayerRef.current === layer || pendingLayerRef.current === layer) return;
+    setLayers((prev) => (prev[layer] ? { ...prev, [layer]: null } : prev));
   }, []);
 
   const handleLayerLoaded = (layer: "a" | "b", itemId: string) => {
     // Ignore les onLoad obsolètes (la sélection a déjà changé)
     if (pendingLayerRef.current !== layer || pendingItemIdRef.current !== itemId) return;
     const dur = reduceMotion ? 0 : AmbientConfig.crossfadeDuration;
-    const sortante = layer === "a" ? "b" : "a";
-    const entrante = layer === "a" ? aOpacity : bOpacity;
-    const partante = layer === "a" ? bOpacity : aOpacity;
-    entrante.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
-    partante.value = withTiming(0, { duration: dur }, (fini) => {
-      if (fini) runOnJS(demonter)(sortante);
+    const outgoing = layer === "a" ? "b" : "a";
+    const incoming = layer === "a" ? aOpacity : bOpacity;
+    const leaving = layer === "a" ? bOpacity : aOpacity;
+    incoming.value = withTiming(AmbientConfig.imageOpacity, { duration: dur });
+    leaving.value = withTiming(0, { duration: dur }, (finished) => {
+      if (finished) runOnJS(unmountLayer)(outgoing);
     });
     activeLayerRef.current = layer;
     pendingLayerRef.current = null;

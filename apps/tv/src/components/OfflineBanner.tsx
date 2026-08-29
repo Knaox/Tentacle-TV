@@ -9,7 +9,7 @@ import { Colors } from "../theme/colors";
 import { CryingTentacle } from "./CryingTentacle";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
-import { Bouton } from "../theme/boutons";
+import { Button } from "../theme/buttons";
 
 interface OfflineBannerProps {
   visible: boolean;
@@ -75,12 +75,12 @@ export function OfflineBanner({ visible, onRetry }: OfflineBannerProps) {
         <CryingTentacle size={140} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
+        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onRetry} hasTVPreferredFocus style={styles.retryFocus}>
           <View style={styles.retryButton}>
             <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
           </View>
         </Focusable>
-        <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={handleLogout} style={styles.logoutFocus}>
+        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={handleLogout} style={styles.logoutFocus}>
           <View style={styles.logoutButton}>
             <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
           </View>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   // CTA primaire : blanc à texte foncé, comme le bouton Lecture/Reprendre du hero.
   retryButton: {
     backgroundColor: Colors.textPrimary,
-    ...Bouton.grand,
+    ...Button.large,
     paddingHorizontal: 40,
     paddingVertical: 16,
   },
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     backgroundColor: "rgba(239, 68, 68, 0.15)",
-    ...Bouton.grand,
+    ...Button.large,
     borderWidth: 1,
     borderColor: "rgba(239, 68, 68, 0.3)",
     paddingHorizontal: 40,

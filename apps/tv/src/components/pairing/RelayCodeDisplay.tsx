@@ -6,7 +6,7 @@ import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Colors, Radius, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 interface RelayCodeDisplayProps {
   onConfirmed: (data: RelayStatusResponse) => void;
@@ -88,12 +88,12 @@ export function RelayCodeDisplay({
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.errorText}>{t("pairing:relayError")}</Text>
-          <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={generate} hasTVPreferredFocus>
+          <Focusable variant="button" focusRadius={Button.medium.borderRadius} onPress={generate} hasTVPreferredFocus>
             <View style={styles.retryButton}>
               <Text style={styles.retryButtonText}>{t("common:retry")}</Text>
             </View>
           </Focusable>
-          <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={onManualSetup}>
+          <Focusable variant="button" focusRadius={Button.medium.borderRadius} onPress={onManualSetup}>
             <View style={styles.linkButton}>
               <Text style={styles.linkText}>
                 {t("pairing:configureManually")}
@@ -113,7 +113,7 @@ export function RelayCodeDisplay({
         {expired ? (
           <>
             <Text style={styles.expiredText}>{t("pairing:codeExpired")}</Text>
-            <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={generate} hasTVPreferredFocus>
+            <Focusable variant="button" focusRadius={Button.medium.borderRadius} onPress={generate} hasTVPreferredFocus>
               <View style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>
                   {t("pairing:generateNewCode")}
@@ -154,7 +154,7 @@ export function RelayCodeDisplay({
         )}
 
         {/* Cancel button */}
-        <Focusable variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={onCancel}>
+        <Focusable variant="button" focusRadius={Button.medium.borderRadius} onPress={onCancel}>
           <View style={styles.linkButton}>
             <Text style={styles.linkText}>{t("pairing:cancel")}</Text>
           </View>
@@ -248,7 +248,7 @@ const styles = {
     paddingHorizontal: 36,
     paddingVertical: 14,
     backgroundColor: Colors.accentPurple,
-    ...Bouton.moyen,
+    ...Button.medium,
     marginBottom: 16,
   },
   retryButtonText: {
@@ -259,7 +259,7 @@ const styles = {
   linkButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    ...Bouton.moyen,
+    ...Button.medium,
   },
   linkText: {
     color: Colors.textTertiary,

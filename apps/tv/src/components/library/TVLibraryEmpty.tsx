@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 import { Colors, Typography } from "../../theme/colors";
 
 /**
@@ -24,15 +24,15 @@ import { Colors, Typography } from "../../theme/colors";
  * dans le rail.
  */
 export function TVLibraryEmpty({
-  filtree,
-  onReinitialiser,
-  onParcourir,
+  filtered,
+  onReset,
+  onBrowse,
   entryRef,
 }: {
   /** Vrai quand des filtres sont actifs — donc que le vide est réversible. */
-  filtree: boolean;
-  onReinitialiser: () => void;
-  onParcourir: () => void;
+  filtered: boolean;
+  onReset: () => void;
+  onBrowse: () => void;
   entryRef?: (node: View | null) => void;
 }) {
   const { t } = useTranslation("common");
@@ -40,18 +40,18 @@ export function TVLibraryEmpty({
   return (
     <View style={{ alignItems: "center", paddingTop: 64, gap: 20 }}>
       <Text style={{ color: Colors.textTertiary, ...Typography.sectionTitle }}>
-        {filtree ? t("noResults") : t("emptyLibrary")}
+        {filtered ? t("noResults") : t("emptyLibrary")}
       </Text>
       <Focusable
         ref={entryRef}
         variant="button"
-        focusRadius={Bouton.grand.borderRadius}
-        onPress={filtree ? onReinitialiser : onParcourir}
-        accessibilityLabel={filtree ? t("resetFilters") : t("browseLibraries")}
+        focusRadius={Button.large.borderRadius}
+        onPress={filtered ? onReset : onBrowse}
+        accessibilityLabel={filtered ? t("resetFilters") : t("browseLibraries")}
       >
         <View
           style={{
-            ...Bouton.grand,
+            ...Button.large,
             paddingHorizontal: 32,
             paddingVertical: 14,
             backgroundColor: Colors.ctaGhostBg,
@@ -60,7 +60,7 @@ export function TVLibraryEmpty({
           }}
         >
           <Text style={{ color: Colors.textPrimary, ...Typography.buttonMedium }}>
-            {filtree ? t("resetFilters") : t("browseLibraries")}
+            {filtered ? t("resetFilters") : t("browseLibraries")}
           </Text>
         </View>
       </Focusable>

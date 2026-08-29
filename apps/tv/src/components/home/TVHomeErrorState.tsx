@@ -2,7 +2,7 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { Colors, Spacing, Typography } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 interface TVHomeErrorStateProps {
   errorMessage?: string;
@@ -26,14 +26,14 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
         {errorMessage ?? "Network request failed"}
       </Text>
       <View style={{ flexDirection: "row", gap: Spacing.buttonGap }}>
-        <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onRetry} hasTVPreferredFocus>
+        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onRetry} hasTVPreferredFocus>
           {/* CTA primaire : blanc à texte foncé, comme le bouton Lecture/Reprendre. */}
           <View
             style={{
               backgroundColor: Colors.textPrimary,
               paddingHorizontal: 32,
               paddingVertical: 14,
-              ...Bouton.grand,
+              ...Button.large,
             }}
           >
             <Text style={{ color: Colors.bgDeep, ...Typography.buttonMedium }}>
@@ -41,13 +41,13 @@ export function TVHomeErrorState({ errorMessage, onRetry, onLogout }: TVHomeErro
             </Text>
           </View>
         </Focusable>
-        <Focusable variant="button" focusRadius={Bouton.grand.borderRadius} onPress={onLogout}>
+        <Focusable variant="button" focusRadius={Button.large.borderRadius} onPress={onLogout}>
           <View
             style={{
               backgroundColor: Colors.glassBg,
               paddingHorizontal: 32,
               paddingVertical: 14,
-              ...Bouton.grand,
+              ...Button.large,
               borderWidth: 1,
               borderColor: Colors.glassBorder,
             }}

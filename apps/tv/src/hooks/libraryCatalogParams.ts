@@ -45,32 +45,32 @@ export const DEFAULT_FILTERS: LibraryFilterState = {
 /** La mémoire de session, PAR bibliothèque — parité `filtersMemory` webOS :
  *  une Map en mémoire JS, jamais persistée. Revenir sur une bibliothèque
  *  retrouve ses filtres, redémarrer l'app les oublie (voulu). */
-const memoire = new Map<string, LibraryFilterState>();
+const memory = new Map<string, LibraryFilterState>();
 
 /** Les filtres retenus pour cette bibliothèque, ou les défauts. */
-export function filtresMemorises(libraryId: string): LibraryFilterState {
-  return memoire.get(libraryId) ?? DEFAULT_FILTERS;
+export function rememberedFilters(libraryId: string): LibraryFilterState {
+  return memory.get(libraryId) ?? DEFAULT_FILTERS;
 }
 
-export function memoriserFiltres(libraryId: string, filtres: LibraryFilterState): void {
-  memoire.set(libraryId, filtres);
+export function rememberFilters(libraryId: string, filters: LibraryFilterState): void {
+  memory.set(libraryId, filters);
 }
 
 /** L'API Jellyfin n'accepte pas une plage : chaque année est ÉNUMÉRÉE
  *  (repli 1900 / année courante sur la borne ouverte), comme le web. */
-export function anneesEnumerees(filtres: LibraryFilterState): string[] | undefined {
-  if (filtres.yearFrom == null && filtres.yearTo == null) return undefined;
-  const de = filtres.yearFrom ?? 1900;
-  const a = filtres.yearTo ?? new Date().getFullYear();
-  const annees: string[] = [];
-  for (let y = de; y <= a; y++) annees.push(String(y));
-  return annees;
+export function enumeratedYears(filters: LibraryFilterState): string[] | undefined {
+  if (filters.yearFrom == null && filters.yearTo == null) return undefined;
+  const from = filters.yearFrom ?? 1900;
+  const to = filters.yearTo ?? new Date().getFullYear();
+  const years: string[] = [];
+  for (let y = from; y <= to; y++) years.push(String(y));
+  return years;
 }
 
 /** Le filtre plateforme n'existe pas côté serveur : il se pose après coup, sur
  *  une base plus large. C'est la seule chose qui change la LIMITE demandée. */
-export function filtrePlateformeActif(filtres: LibraryFilterState): boolean {
-  return filtres.platformIds.length > 0;
+export function hasPlatformFilter(filters: LibraryFilterState): boolean {
+  return filters.platformIds.length > 0;
 }
 
 /**
@@ -80,16 +80,16 @@ export function filtrePlateformeActif(filtres: LibraryFilterState): boolean {
  * `fields: "light"` : payload minimum pour la grille. Plateformes actives →
  * limite montée à 500, la base du post-filtre client (parité web).
  */
-export function catalogueParams(filtres: LibraryFilterState): CatalogFilters {
+export function catalogParams(filters: LibraryFilterState): CatalogFilters {
   return {
-    sortBy: filtres.sortBy,
-    sortOrder: filtres.sortOrder,
-    genreIds: filtres.genreIds.length > 0 ? filtres.genreIds : undefined,
-    years: anneesEnumerees(filtres),
-    statusFilter: filtres.statusFilter ?? undefined,
-    minCommunityRating: filtres.ratingMin ?? undefined,
-    isFavorite: filtres.isFavorite || undefined,
-    limit: filtrePlateformeActif(filtres) ? 500 : 30,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    genreIds: filters.genreIds.length > 0 ? filters.genreIds : undefined,
+    years: enumeratedYears(filters),
+    statusFilter: filters.statusFilter ?? undefined,
+    minCommunityRating: filters.ratingMin ?? undefined,
+    isFavorite: filters.isFavorite || undefined,
+    limit: hasPlatformFilter(filters) ? 500 : 30,
     fields: "light",
   };
 }

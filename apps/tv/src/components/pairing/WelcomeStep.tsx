@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { Focusable } from "../focus/Focusable";
 import { Colors, Typography } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 interface WelcomeStepProps {
   onShowCode: () => void;
@@ -41,7 +41,7 @@ export function WelcomeStep({
     <View style={styles.container}>
       {/* Language toggle */}
       <View style={styles.langRow}>
-        <Focusable ref={langRef} variant="button" focusRadius={Bouton.moyen.borderRadius} onPress={toggleLang} nextFocusDown={primaryTag}>
+        <Focusable ref={langRef} variant="button" focusRadius={Button.medium.borderRadius} onPress={toggleLang} nextFocusDown={primaryTag}>
           <View style={styles.langButton}>
             <Text style={styles.langText}>
               {currentLang === "fr" ? "EN" : "FR"}
@@ -56,7 +56,7 @@ export function WelcomeStep({
         <Text style={styles.subtitle}>{t("pairing:tvWelcomeSubtitle")}</Text>
 
         {/* Primary CTA */}
-        <Focusable ref={primaryRef} variant="button" onPress={onShowCode} hasTVPreferredFocus nextFocusUp={langTag} focusRadius={Bouton.grand.borderRadius} style={{ marginBottom: 16 }}>
+        <Focusable ref={primaryRef} variant="button" onPress={onShowCode} hasTVPreferredFocus nextFocusUp={langTag} focusRadius={Button.large.borderRadius} style={{ marginBottom: 16 }}>
           <View style={styles.primaryButton}>
             <Text style={styles.primaryButtonText}>
               {t("pairing:showPairingCode")}
@@ -65,7 +65,7 @@ export function WelcomeStep({
         </Focusable>
 
         {/* Manual fallback link */}
-        <Focusable variant="button" onPress={onManualSetup} focusRadius={Bouton.grand.borderRadius}>
+        <Focusable variant="button" onPress={onManualSetup} focusRadius={Button.large.borderRadius}>
           <View style={styles.secondaryButton}>
             <Text style={styles.secondaryButtonText}>
               {t("pairing:configureManually")}
@@ -89,7 +89,7 @@ const styles = {
     zIndex: 10,
   },
   langButton: {
-    ...Bouton.moyen,
+    ...Button.medium,
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: Colors.bgElevated,
@@ -123,7 +123,7 @@ const styles = {
   },
   // CTA core (fiche média) : primaire blanc + ghost translucide
   primaryButton: {
-    ...Bouton.grand,
+    ...Button.large,
     paddingHorizontal: 40,
     paddingVertical: 16,
     backgroundColor: Colors.ctaPrimaryBg,
@@ -134,7 +134,7 @@ const styles = {
     textAlign: "center" as const,
   },
   secondaryButton: {
-    ...Bouton.grand,
+    ...Button.large,
     paddingHorizontal: 28,
     paddingVertical: 16,
     backgroundColor: Colors.ctaGhostBg,

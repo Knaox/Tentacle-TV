@@ -44,8 +44,8 @@ export function TVNextEpisodeFullscreen({
 }: TVNextEpisodeFullscreenProps) {
   const { t } = useTranslation("player");
   const { width: sw } = useWindowDimensions();
-  const decompte = countdown !== null;
-  const progress = decompte
+  const hasCountdown = countdown !== null;
+  const progress = hasCountdown
     ? Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds))
     : 0;
 
@@ -99,7 +99,7 @@ export function TVNextEpisodeFullscreen({
       <View style={{ paddingHorizontal: 88, maxWidth: 1280, alignSelf: "center", width: "100%" }}>
         {/* Compte à rebours. Absent quand il est éteint : l'affiche porte déjà
             son libellé « À suivre » plus bas. */}
-        {decompte && (
+        {hasCountdown && (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 24 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accentPurpleLight }} />
             <Text style={{
@@ -165,7 +165,7 @@ export function TVNextEpisodeFullscreen({
                 }}>
                   {/* Anneau de progression du compte à rebours */}
                   <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-                    {decompte && (
+                    {hasCountdown && (
                       <Svg width={44} height={44} viewBox="0 0 72 72" style={{ position: "absolute", transform: [{ rotate: "-90deg" }] }}>
                         <Circle cx={36} cy={36} r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth={6} />
                         <Circle

@@ -23,7 +23,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { initI18n, i18n } from "@tentacle-tv/shared";
 import { RNUuidGenerator, IS_TVOS, tvStorage } from "./storage/RNStorageAdapter";
-import { rehydraterMagasins } from "./lib/magasins";
+import { rehydrateStores } from "./lib/stores";
 import { TV_PERSIST_MAX, tvPersistStorage } from "./storage/queryPersistStorage";
 import { AppNavigator } from "./navigation/AppNavigator";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -251,8 +251,8 @@ export function App() {
     (async () => {
       await storage.hydrate();
       // Les magasins de réglages naissent avant cette hydratation : les relire
-      // maintenant que le cache est rempli (voir `lib/magasins.ts`).
-      rehydraterMagasins();
+      // maintenant que le cache est rempli (voir `lib/stores.ts`).
+      rehydrateStores();
       const tentacleUrl = storage.getItem("tentacle_server_url");
       const savedLang = storage.getItem("tentacle_language") ?? "en";
       initI18n({ lng: savedLang });

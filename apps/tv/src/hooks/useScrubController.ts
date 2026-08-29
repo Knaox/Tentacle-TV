@@ -6,7 +6,7 @@ import { useScrubHoldMotor } from "./useScrubHoldMotor";
 type Dir = "forward" | "backward";
 type Ref<T> = MutableRefObject<T>;
 
-const sensOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
+const signOf = (dir: Dir): 1 | -1 => (dir === "forward" ? 1 : -1);
 
 interface ScrubControllerArgs {
   showOverlay: () => void;
@@ -66,15 +66,15 @@ export function useScrubController({
   // deltas sur l'affichage (trappe pan).
   const machineLastRef = useRef(0);
 
-  const clampDisplay = useCallback((valeur: number) => {
-    const duree = durationRef.current || 0;
-    if (!(duree > 0)) return Math.max(0, valeur);
-    return Math.min(Math.max(0, valeur), duree);
+  const clampDisplay = useCallback((value: number) => {
+    const duration = durationRef.current || 0;
+    if (!(duration > 0)) return Math.max(0, value);
+    return Math.min(Math.max(0, value), duration);
   }, [durationRef]);
 
-  const setDisplay = useCallback((valeur: number) => {
-    scrubPositionRef.current = valeur;
-    setScrubPosition(valeur);
+  const setDisplay = useCallback((value: number) => {
+    scrubPositionRef.current = value;
+    setScrubPosition(value);
   }, []);
 
   // La veille d'inactivité du PAN : la machine arme la sienne à chaque pas,
@@ -139,20 +139,20 @@ export function useScrubController({
     // réinitialiser la position fantôme ; on repousse juste l'annulation.
     if (machine.isActive()) { armPanIdle(); return; }
     machine.enter();
-    if (dir) machine.step(sensOf(dir), 1);
+    if (dir) machine.step(signOf(dir), 1);
   }, [machine, armPanIdle]);
 
   /** Un pas SEC (appui simple ←/→ ou touche média isolée) : palier 1, jamais
    *  d'accélération — elle est réservée au MAINTIEN (tic du moteur). */
   const stepScrub = useCallback((dir: Dir) => {
     setSpeedLabel(null);
-    machine.step(sensOf(dir), 1);
+    machine.step(signOf(dir), 1);
   }, [machine]);
 
   /** Un tic de MAINTIEN : le moteur fournit le palier (1 par seconde). */
-  const tickScrub = useCallback((dir: Dir, palier: number) => {
-    machine.step(sensOf(dir), palier);
-    setSpeedLabel(palier > 1 ? `${dir === "forward" ? ">>" : "<<"}${palier}x` : null);
+  const tickScrub = useCallback((dir: Dir, tier: number) => {
+    machine.step(signOf(dir), tier);
+    setSpeedLabel(tier > 1 ? `${dir === "forward" ? ">>" : "<<"}${tier}x` : null);
   }, [machine]);
 
   const confirmScrub = useCallback(() => {

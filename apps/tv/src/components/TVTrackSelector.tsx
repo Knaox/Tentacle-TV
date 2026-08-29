@@ -16,7 +16,7 @@ import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Colors, Radius, brandAlpha } from "../theme/colors";
 import { TVQualitySection } from "./player/TVQualitySection";
-import { Bouton } from "../theme/boutons";
+import { Button } from "../theme/buttons";
 
 interface Track {
   index: number;
@@ -124,10 +124,10 @@ export function TVTrackSelector({
           <Text style={{ color: Colors.textPrimary, fontSize: 22, fontWeight: "700" }}>
             {t("tracks")}
           </Text>
-          <Focusable variant="button" focusRadius={Bouton.petit.borderRadius} onPress={onClose}>
+          <Focusable variant="button" focusRadius={Button.small.borderRadius} onPress={onClose}>
             <View style={{
               paddingHorizontal: 16, paddingVertical: 8,
-              ...Bouton.petit,
+              ...Button.small,
               backgroundColor: "rgba(255,255,255,0.06)",
             }}>
               <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>

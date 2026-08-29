@@ -11,7 +11,7 @@ import { Focusable } from "../focus/Focusable";
 import { PlayIcon } from "../icons/TVIcons";
 import { TVMetaChips } from "../TVMetaChips";
 import { useTVContentEntry } from "../../hooks/useTVContentEntry";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
@@ -215,7 +215,7 @@ export const TVHeroContent = memo(function TVHeroContent({
         <Focusable
           ref={setPlayRef}
           variant="button"
-          focusRadius={Bouton.grand.borderRadius}
+          focusRadius={Button.large.borderRadius}
           onPress={handlePlay}
           hasTVPreferredFocus
           onFocus={onButtonFocus}
@@ -227,7 +227,7 @@ export const TVHeroContent = memo(function TVHeroContent({
               backgroundColor: Colors.textPrimary,
               paddingHorizontal: 26,
               paddingVertical: 12,
-              ...Bouton.grand,
+              ...Button.large,
               flexDirection: "row",
               alignItems: "center",
               gap: 8,
@@ -247,7 +247,7 @@ export const TVHeroContent = memo(function TVHeroContent({
 
         <Focusable
           variant="button"
-          focusRadius={Bouton.grand.borderRadius}
+          focusRadius={Button.large.borderRadius}
           onPress={() => onDetail(item)}
           onFocus={onButtonFocus}
           onBlur={onButtonBlur}
@@ -258,7 +258,7 @@ export const TVHeroContent = memo(function TVHeroContent({
               backgroundColor: BRAND.ghost,
               paddingHorizontal: 22,
               paddingVertical: 12,
-              ...Bouton.grand,
+              ...Button.large,
               borderWidth: 1,
               borderColor: brandAlpha(0.45),
             }}

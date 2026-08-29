@@ -55,7 +55,7 @@ export const TV_OVERSCAN_PT = {
  *
  *  `saturation` n'a pas d'équivalent dans `<Image>` : elle passe par le filtre
  *  SVG, que les DEUX téléviseurs empruntent désormais — voir
- *  `TVHeroAmbilightFiltre`. */
+ *  `TVHeroAmbilightFilter`. */
 export const TV_AMBILIGHT = {
   blurRatio: parsePx(TV_HERO_AMBILIGHT.blur) / parsePx(TV_HERO_AMBILIGHT.referenceCardWidth),
   sourceWidth: TV_HERO_AMBILIGHT.sourceWidth,

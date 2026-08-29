@@ -9,8 +9,8 @@ import { RAIL, railHintWidth } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
-import { useEpinglageRail } from "./railPinning";
-import { catalogueParams, filtresMemorises } from "../../hooks/libraryCatalogParams";
+import { useRailPinning } from "./railPinning";
+import { catalogParams, rememberedFilters } from "../../hooks/libraryCatalogParams";
 import { TentacleLogo } from "../icons/TentacleLogo";
 import { useRailFocused, useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Fonts } from "../../theme/colors";
@@ -21,7 +21,7 @@ export const RAIL_COLLAPSED = RAIL.collapsedWidth + TV_OVERSCAN_PT.x;
 /** Largeur du panneau qui apparaît derrière. Le rail, lui, ne bouge pas. */
 export const RAIL_EXPANDED = RAIL.panelWidth;
 
-const LARGEUR_INDICE = railHintWidth(TV_OVERSCAN_PT.x);
+const HINT_WIDTH = railHintWidth(TV_OVERSCAN_PT.x);
 
 interface TVSideRailProps {
   currentRoute: string;
@@ -46,8 +46,8 @@ interface TVSideRailProps {
 export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal }: TVSideRailProps) {
   const { t } = useTranslation("nav");
   const { storage } = useTentacleConfig();
-  const { haut, bas } = useRailEntries();
-  const epinglage = useEpinglageRail();
+  const { top, bottom } = useRailEntries();
+  const pinning = useRailPinning();
   const progress = useSharedValue(0);
   const focusCount = useRef(0);
   const collapseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -74,7 +74,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     prefetchTimer.current = setTimeout(() => {
       void prefetchLibraryCatalog(
         queryClient, jfClient, userId, libraryId,
-        catalogueParams(filtresMemorises(libraryId)),
+        catalogParams(rememberedFilters(libraryId)),
       );
       void prefetchLibraryBackdrop(queryClient, jfClient, userId, libraryId);
     }, 300);
@@ -86,7 +86,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   const [activeNode, setActiveNode] = useState<View | null>(null);
   const { setRailActiveNode, setRailFocused, lastContentNodeRef } = useTVNavActions();
   const railFocused = useRailFocused();
-  const [deploye, setDeploye] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   // Sélectionner, c'est QUITTER le rail : replier immédiatement, sans passer par
   // le délai de `scheduleCollapse` qui courrait avec la navigation instantanée.
@@ -103,19 +103,19 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   // la page arriver.
   const navFrame = useRef<number | null>(null);
   const handleSelect = useCallback((key: string) => {
-    if (key === "RailShowAll") { epinglage.showAll(); return; }
+    if (key === "RailShowAll") { pinning.showAll(); return; }
     lastContentNodeRef.current = null;
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current = 0;
     setRailFocused(false);
-    setDeploye(false);
+    setExpanded(false);
     progress.value = withTiming(0, { duration: RAIL.duration, easing: Easings.out });
     if (navFrame.current != null) cancelAnimationFrame(navFrame.current);
     navFrame.current = requestAnimationFrame(() => {
       navFrame.current = null;
       onNavigate(key);
     });
-  }, [onNavigate, progress, setRailFocused, lastContentNodeRef, epinglage]);
+  }, [onNavigate, progress, setRailFocused, lastContentNodeRef, pinning]);
 
   useEffect(() => () => {
     if (navFrame.current != null) cancelAnimationFrame(navFrame.current);
@@ -149,7 +149,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     if (collapseTimer.current) { clearTimeout(collapseTimer.current); collapseTimer.current = null; }
     focusCount.current += 1;
     setRailFocused(true);
-    setDeploye(true);
+    setExpanded(true);
     progress.value = withTiming(1, { duration: RAIL.duration, easing: Easings.out });
   }, [progress, setRailFocused]);
 
@@ -160,7 +160,7 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
     collapseTimer.current = setTimeout(() => {
       if (focusCount.current <= 0) {
         setRailFocused(false);
-        setDeploye(false);
+        setExpanded(false);
         progress.value = withTiming(0, { duration: RAIL.duration, easing: Easings.out });
       }
     }, 30);
@@ -174,26 +174,26 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
   }));
   const hintStyle = useAnimatedStyle(() => ({ opacity: progress.value * 0.62 }));
 
-  const rendre = (
-    item: (typeof haut)[number],
-    pont?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
+  const render = (
+    item: (typeof top)[number],
+    bridge?: { captureNode?: (n: View | null) => void; nextFocusUp?: number; nextFocusDown?: number },
   ) => (
     <RailRow
       key={item.key}
       item={item}
       active={currentRoute === item.key}
-      deploye={deploye}
+      expanded={expanded}
       labelStyle={labelStyle}
       onNavigate={handleSelect}
-      onMasquer={epinglage.toggle}
+      onHide={pinning.toggle}
       onExpand={expand}
       onCollapse={scheduleCollapse}
       schedulePrefetch={schedulePrefetch}
       cancelPrefetch={cancelPrefetch}
       setActiveRef={setActiveItemRef}
-      captureNode={pont?.captureNode}
-      nextFocusUp={pont?.nextFocusUp}
-      nextFocusDown={pont?.nextFocusDown}
+      captureNode={bridge?.captureNode}
+      nextFocusUp={bridge?.nextFocusUp}
+      nextFocusDown={bridge?.nextFocusDown}
     />
   );
 
@@ -241,20 +241,20 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
             libellés posés en absolu, qui débordent volontairement du rail
             replié. Les entrées se compriment (flexShrink) jusqu'au plancher. */}
         <View style={{ flex: 1, overflow: "visible" }}>
-          {haut.map((item, i) => rendre(item,
-            Platform.OS === "android" && i === haut.length - 1
+          {top.map((item, i) => render(item,
+            Platform.OS === "android" && i === top.length - 1
               ? { captureNode: captureLastTop, nextFocusDown: firstBottomHandle ?? undefined }
               : undefined))}
         </View>
 
-        {bas.map((item, bi) => rendre(item,
+        {bottom.map((item, bi) => render(item,
           Platform.OS === "android" && bi === 0
             ? { captureNode: captureFirstBottom, nextFocusUp: lastTopHandle ?? undefined }
             : undefined))}
 
         {/* L'indice n'apparaît qu'avec le panneau : hors focus, il n'a personne
             à instruire, et il occuperait la place pour rien. */}
-        <Animated.View pointerEvents="none" style={[{ width: LARGEUR_INDICE }, hintStyle]}>
+        <Animated.View pointerEvents="none" style={[{ width: HINT_WIDTH }, hintStyle]}>
           <Text style={{ color: Colors.textSecondary, fontSize: 15, lineHeight: 20 }}>
             {t("railHint")}
           </Text>

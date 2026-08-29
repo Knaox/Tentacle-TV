@@ -8,16 +8,16 @@ import { Colors, Fonts } from "../../theme/colors";
 import { FocusRowStyle } from "../../theme/focus";
 import type { RailItem } from "./railEntries";
 
-const LARGEUR_DEPLOYEE = expandedItemWidth(TV_OVERSCAN_PT.x);
+const EXPANDED_WIDTH = expandedItemWidth(TV_OVERSCAN_PT.x);
 
 interface RailRowProps {
   item: RailItem;
   active: boolean;
-  deploye: boolean;
+  expanded: boolean;
   /** Opacité + translation du libellé, partagées par tout le rail. */
   labelStyle: ReturnType<typeof useAnimatedStyle>;
   onNavigate: (key: string) => void;
-  onMasquer: (key: string) => void;
+  onHide: (key: string) => void;
   onExpand: () => void;
   onCollapse: () => void;
   schedulePrefetch: (libraryId: string) => void;
@@ -42,11 +42,11 @@ interface RailRowProps {
  * mais recalculé à chaque image de la transition.
  */
 export const RailRow = memo(function RailRow({
-  item, active, deploye, labelStyle, onNavigate, onMasquer, onExpand,
+  item, active, expanded, labelStyle, onNavigate, onHide, onExpand,
   onCollapse, schedulePrefetch, cancelPrefetch, setActiveRef,
   captureNode, nextFocusUp, nextFocusDown,
 }: RailRowProps) {
-  const couleurIcone = item.danger
+  const iconColor = item.danger
     ? Colors.error
     : active ? Colors.textPrimary : Colors.textSecondary;
   const libraryId = item.key.startsWith("Library_")
@@ -61,9 +61,9 @@ export const RailRow = memo(function RailRow({
   // Un maintien retire l'entrée du rail. Seules les destinations le permettent :
   // la recherche, l'accueil et la navigation de service doivent rester
   // atteignables, sinon le rail devient une impasse.
-  const surMaintien = useCallback(() => {
-    if (item.masquable) onMasquer(item.key);
-  }, [item.masquable, item.key, onMasquer]);
+  const handleLongPress = useCallback(() => {
+    if (item.hideable) onHide(item.key);
+  }, [item.hideable, item.key, onHide]);
 
   return (
     <Focusable
@@ -76,9 +76,9 @@ export const RailRow = memo(function RailRow({
       // focus (overlay de la variante « ligne ») épouse le Pressable — posée à
       // l'intérieur, elle débordait et le fond focus s'arrêtait à l'icône,
       // alors que la LG surligne l'entrée déployée entière.
-      style={{ width: deploye ? LARGEUR_DEPLOYEE : RAIL.collapsedWidth }}
+      style={{ width: expanded ? EXPANDED_WIDTH : RAIL.collapsedWidth }}
       onPress={() => onNavigate(item.key)}
-      onLongPress={item.masquable ? surMaintien : undefined}
+      onLongPress={item.hideable ? handleLongPress : undefined}
       onFocus={() => {
         onExpand();
         if (libraryId) schedulePrefetch(libraryId);
@@ -108,7 +108,7 @@ export const RailRow = memo(function RailRow({
             flexShrink: 0,
           }}
         >
-          {item.icon(couleurIcone)}
+          {item.icon(iconColor)}
         </View>
         <Animated.View
           pointerEvents="none"

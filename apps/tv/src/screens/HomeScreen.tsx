@@ -23,7 +23,7 @@ import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
 import { TVHomeRows } from "../components/home/TVHomeRows";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
-import { AmbientFocusProvider, usePoseurAmbiant } from "../contexts/AmbientFocusContext";
+import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
@@ -52,7 +52,7 @@ function HomeScreenInner({ navigation }: Props) {
     token: storage.getItem("tentacle_token"),
     onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
   });
-  const setFocusedItem = usePoseurAmbiant();
+  const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
   const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
@@ -92,20 +92,20 @@ function HomeScreenInner({ navigation }: Props) {
        * relire ici suffit à ne rien envoyer à une vue détruite — ce qui levait
        * « Trying to update non-existent view with tag N ».
        */
-      const viser = (): ({ setNativeProps?: (p: object) => void } | null) =>
+      const target = (): ({ setNativeProps?: (p: object) => void } | null) =>
         lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
-      if (!viser()?.setNativeProps) return;
+      if (!target()?.setNativeProps) return;
       if (Platform.OS === "ios") {
         // tvOS : hasTVPreferredFocus n'est honoré que sur un cycle false→true.
         let id2: ReturnType<typeof setTimeout>;
         const id1 = setTimeout(() => {
-          viser()?.setNativeProps?.({ hasTVPreferredFocus: false });
-          id2 = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
+          target()?.setNativeProps?.({ hasTVPreferredFocus: false });
+          id2 = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
         }, 60);
         return () => { clearTimeout(id1); clearTimeout(id2); };
       }
       // Android : le set vaut requestFocus() immédiat (one-shot).
-      const id = setTimeout(() => viser()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
+      const id = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
       return () => clearTimeout(id);
     }, [lastContentNodeRef])
   );

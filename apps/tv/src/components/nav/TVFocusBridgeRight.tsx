@@ -10,7 +10,7 @@ import {
 /** Le pont n'est monté que le rail focus, donc déployé : sa bande commence
  *  après les ENTRÉES déployées (396), pas après le rail replié (186) — sinon
  *  elle chevauche les entrées et capte des HAUT/BAS de navigation interne. */
-const BORD_GAUCHE_PONT = expandedItemsRightEdge(TV_OVERSCAN_PT.x);
+const BRIDGE_LEFT_EDGE = expandedItemsRightEdge(TV_OVERSCAN_PT.x);
 
 /**
  * Pont de SORTIE du rail (tvOS uniquement).
@@ -40,7 +40,7 @@ export function TVFocusBridgeRight() {
       // les entrées s'étendent jusqu'à 396 pt. Posé plus à gauche (largeur
       // repliée), il chevauchait les entrées et le moteur de focus pouvait le
       // préférer à l'entrée suivante sur un simple HAUT/BAS dans le rail.
-      style={{ position: "absolute", left: BORD_GAUCHE_PONT, right: 0, top: 0, bottom: 0 }}
+      style={{ position: "absolute", left: BRIDGE_LEFT_EDGE, right: 0, top: 0, bottom: 0 }}
     />
   );
 }

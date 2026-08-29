@@ -65,7 +65,7 @@ export function useTVPlaybackOverlay(args: {
   const { data: autoplayConfig } = useAutoplayConfig(true);
 
   const nextEpisodeId = media.nextEpisode?.Id;
-  const allerAuSuivant = useCallback(() => {
+  const goToNext = useCallback(() => {
     if (nextEpisodeId) navigateToEpisode(nextEpisodeId);
   }, [nextEpisodeId, navigateToEpisode]);
 
@@ -82,7 +82,7 @@ export function useTVPlaybackOverlay(args: {
     serverAutoplayEnabled: autoplayConfig?.enabled ?? true,
     scrubbing,
     onSeekSeconds: onSeek,
-    onNextEpisode: allerAuSuivant,
+    onNextEpisode: goToNext,
     onEndOfPlayback: onFinished,
   });
 

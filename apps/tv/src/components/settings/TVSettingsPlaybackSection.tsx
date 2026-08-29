@@ -11,11 +11,11 @@ import {
 } from "@tentacle-tv/api-client";
 import { Focusable } from "../focus/Focusable";
 import { SelectionModal } from "../SelectionModal";
-import { TVLibraryPrefCard, type ReglageTv } from "./TVLibraryPrefCard";
-import { CLES_LANGUE, CODES_LANGUE, LANGUES_INTERFACE, MODES_SOUS_TITRES } from "../../utils/languageKeys";
+import { TVLibraryPrefCard, type TvSetting } from "./TVLibraryPrefCard";
+import { LANGUAGE_KEYS, LANGUAGE_CODES, INTERFACE_LANGUAGES, SUBTITLE_MODES } from "../../utils/languageKeys";
 import { TVPlaybackSettingsSection } from "./TVPlaybackSettingsSection";
 import { Colors, brandAlpha } from "../../theme/colors";
-import { Bouton } from "../../theme/boutons";
+import { Button } from "../../theme/buttons";
 
 /**
  * Les réglages de lecture — parité `PlaybackScreenTv` (LG) : la langue de
@@ -28,58 +28,58 @@ import { Bouton } from "../../theme/boutons";
 export function TVSettingsPlaybackSection() {
   const { t, i18n } = useTranslation("preferences");
   const { storage } = useTentacleConfig();
-  const { data: bibliotheques } = useLibraries();
+  const { data: libraries } = useLibraries();
   const { data: preferences } = useLibraryPreferences();
-  const enregistrer = useSetLibraryPreference();
-  const supprimer = useDeleteLibraryPreference();
-  const poserLangue = useSetInterfaceLanguage();
+  const savePreference = useSetLibraryPreference();
+  const deletePreference = useDeleteLibraryPreference();
+  const setLanguage = useSetInterfaceLanguage();
 
   /** Le réglage dont on choisit la valeur, s'il y en a un. */
-  const [ouvert, setOuvert] = useState<{ bibliotheque: string; reglage: ReglageTv } | null>(null);
+  const [open, setOpen] = useState<{ library: string; setting: TvSetting } | null>(null);
 
-  const langues = useMemo(
-    () => CODES_LANGUE.map((code) => ({ value: code, label: t(CLES_LANGUE[code]) })),
+  const languages = useMemo(
+    () => LANGUAGE_CODES.map((code) => ({ value: code, label: t(LANGUAGE_KEYS[code]) })),
     [t],
   );
   const modes = useMemo(
-    () => MODES_SOUS_TITRES.map((mode) => ({ value: mode.valeur, label: t(mode.cle) })),
+    () => SUBTITLE_MODES.map((mode) => ({ value: mode.value, label: t(mode.key) })),
     [t],
   );
 
-  const nommerLangue = useCallback(
-    (code: string | null | undefined, vide: string) =>
-      code ? (CLES_LANGUE[code] ? t(CLES_LANGUE[code]) : code) : vide,
+  const languageName = useCallback(
+    (code: string | null | undefined, fallbackLabel: string) =>
+      code ? (LANGUAGE_KEYS[code] ? t(LANGUAGE_KEYS[code]) : code) : fallbackLabel,
     [t],
   );
 
-  const changerLangueInterface = useCallback(
+  const changeInterfaceLanguage = useCallback(
     (code: string) => {
       i18n.changeLanguage(code);
       storage.setItem("tentacle_language", code);
-      poserLangue.mutate(code);
+      setLanguage.mutate(code);
     },
-    [i18n, storage, poserLangue],
+    [i18n, storage, setLanguage],
   );
 
-  const appliquer = useCallback(
-    (valeur: string) => {
-      if (!ouvert) return;
-      const actuelle = preferences?.find((pref) => pref.libraryId === ouvert.bibliotheque);
+  const apply = useCallback(
+    (value: string) => {
+      if (!open) return;
+      const current = preferences?.find((pref) => pref.libraryId === open.library);
       // Une valeur vide efface le réglage sans effacer les deux autres : le
       // backend fait un upsert du trio, pas une fusion champ par champ.
-      enregistrer.mutate({
-        libraryId: ouvert.bibliotheque,
-        audioLang: ouvert.reglage.cle === "audio" ? valeur || null : (actuelle?.audioLang ?? null),
+      savePreference.mutate({
+        libraryId: open.library,
+        audioLang: open.setting.key === "audio" ? value || null : (current?.audioLang ?? null),
         subtitleLang:
-          ouvert.reglage.cle === "sousTitres" ? valeur || null : (actuelle?.subtitleLang ?? null),
+          open.setting.key === "sousTitres" ? value || null : (current?.subtitleLang ?? null),
         subtitleMode:
-          ouvert.reglage.cle === "mode"
-            ? (valeur as "none" | "always" | "forced" | "signs")
-            : (actuelle?.subtitleMode ?? "none"),
+          open.setting.key === "mode"
+            ? (value as "none" | "always" | "forced" | "signs")
+            : (current?.subtitleMode ?? "none"),
       });
-      setOuvert(null);
+      setOpen(null);
     },
-    [enregistrer, ouvert, preferences],
+    [savePreference, open, preferences],
   );
 
   return (
@@ -100,37 +100,37 @@ export function TVSettingsPlaybackSection() {
         {t("interfaceLanguage")}
       </Text>
       <View style={{ flexDirection: "row", gap: 14, marginBottom: 36 }}>
-        {LANGUES_INTERFACE.map((langue) => {
-          const actif = i18n.language.startsWith(langue.code);
+        {INTERFACE_LANGUAGES.map((language) => {
+          const active = i18n.language.startsWith(language.code);
           return (
             <Focusable
-              key={langue.code}
+              key={language.code}
               variant="button"
-              focusRadius={Bouton.moyen.borderRadius}
+              focusRadius={Button.medium.borderRadius}
               scaleOverride={1.04}
-              onPress={() => changerLangueInterface(langue.code)}
-              accessibilityLabel={langue.libelle}
+              onPress={() => changeInterfaceLanguage(language.code)}
+              accessibilityLabel={language.label}
             >
               <View
                 style={{
                   minWidth: 160,
                   alignItems: "center",
-                  ...Bouton.moyen,
+                  ...Button.medium,
                   borderWidth: 1,
-                  borderColor: actif ? brandAlpha(0.6) : Colors.glassBorder,
-                  backgroundColor: actif ? brandAlpha(0.18) : "transparent",
+                  borderColor: active ? brandAlpha(0.6) : Colors.glassBorder,
+                  backgroundColor: active ? brandAlpha(0.18) : "transparent",
                   paddingHorizontal: 18,
                   paddingVertical: 12,
                 }}
               >
                 <Text
                   style={{
-                    color: actif ? Colors.accentPurpleLight : Colors.textPrimary,
+                    color: active ? Colors.accentPurpleLight : Colors.textPrimary,
                     fontSize: 17,
                     fontWeight: "600",
                   }}
                 >
-                  {langue.libelle}
+                  {language.label}
                 </Text>
               </View>
             </Focusable>
@@ -139,57 +139,57 @@ export function TVSettingsPlaybackSection() {
       </View>
 
       <View style={{ gap: 20 }}>
-        {(bibliotheques ?? []).map((bibliotheque) => {
-          const pref = preferences?.find((entree) => entree.libraryId === bibliotheque.Id);
-          const reglages: ReglageTv[] = [
+        {(libraries ?? []).map((library) => {
+          const pref = preferences?.find((entry) => entry.libraryId === library.Id);
+          const settings: TvSetting[] = [
             {
-              cle: "audio",
-              intitule: t("audio"),
-              valeur: nommerLangue(pref?.audioLang, t("default")),
-              choix: [{ value: "", label: t("default") }, ...langues],
+              key: "audio",
+              label: t("audio"),
+              value: languageName(pref?.audioLang, t("default")),
+              choices: [{ value: "", label: t("default") }, ...languages],
               selection: pref?.audioLang ?? "",
             },
             {
-              cle: "mode",
-              intitule: t("subtitleMode"),
-              valeur: t(
+              key: "mode",
+              label: t("subtitleMode"),
+              value: t(
                 // Une valeur persistée hors liste (legacy) ne doit pas faire
                 // tomber l'écran : repli sur « désactivés ».
-                (MODES_SOUS_TITRES.find((mode) => mode.valeur === (pref?.subtitleMode ?? "none")) ??
-                  MODES_SOUS_TITRES[0]).cle,
+                (SUBTITLE_MODES.find((mode) => mode.value === (pref?.subtitleMode ?? "none")) ??
+                  SUBTITLE_MODES[0]).key,
               ),
-              choix: modes,
+              choices: modes,
               selection: pref?.subtitleMode ?? "none",
             },
             {
-              cle: "sousTitres",
-              intitule: t("subtitles"),
-              valeur: nommerLangue(pref?.subtitleLang, t("none")),
-              choix: [{ value: "", label: t("none") }, ...langues],
+              key: "sousTitres",
+              label: t("subtitles"),
+              value: languageName(pref?.subtitleLang, t("none")),
+              choices: [{ value: "", label: t("none") }, ...languages],
               selection: pref?.subtitleLang ?? "",
             },
           ];
 
           return (
             <TVLibraryPrefCard
-              key={bibliotheque.Id}
-              nom={bibliotheque.Name}
-              reglages={reglages}
-              personnalisee={!!pref}
-              onOuvrir={(reglage) => setOuvert({ bibliotheque: bibliotheque.Id, reglage })}
-              onReinitialiser={() => supprimer.mutate(bibliotheque.Id)}
+              key={library.Id}
+              name={library.Name}
+              settings={settings}
+              customized={!!pref}
+              onOpen={(setting) => setOpen({ library: library.Id, setting })}
+              onReset={() => deletePreference.mutate(library.Id)}
             />
           );
         })}
       </View>
 
-      {ouvert && (
+      {open && (
         <SelectionModal
-          title={ouvert.reglage.intitule}
-          options={ouvert.reglage.choix}
-          selectedValue={ouvert.reglage.selection}
-          onSelect={appliquer}
-          onClose={() => setOuvert(null)}
+          title={open.setting.label}
+          options={open.setting.choices}
+          selectedValue={open.setting.selection}
+          onSelect={apply}
+          onClose={() => setOpen(null)}
         />
       )}
     </View>

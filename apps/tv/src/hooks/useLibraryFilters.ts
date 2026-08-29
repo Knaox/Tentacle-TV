@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   DEFAULT_FILTERS,
-  catalogueParams,
-  filtresMemorises,
-  memoriserFiltres,
+  catalogParams,
+  rememberedFilters,
+  rememberFilters,
   type LibraryFilterState,
 } from "./libraryCatalogParams";
 
@@ -28,7 +28,7 @@ const toggleIn = <T,>(list: T[], id: T): T[] =>
 
 export function useLibraryFilters(libraryId: string) {
   const [filters, setFilters] = useState<LibraryFilterState>(
-    () => filtresMemorises(libraryId),
+    () => rememberedFilters(libraryId),
   );
 
   // Changement de bibliothèque (écran réutilisé par navigate) : rejouer la
@@ -36,13 +36,13 @@ export function useLibraryFilters(libraryId: string) {
   const [lastLibraryId, setLastLibraryId] = useState(libraryId);
   if (libraryId !== lastLibraryId) {
     setLastLibraryId(libraryId);
-    setFilters(filtresMemorises(libraryId));
+    setFilters(rememberedFilters(libraryId));
   }
 
   const patch = useCallback((p: (f: LibraryFilterState) => LibraryFilterState) => {
     setFilters((f) => {
       const next = p(f);
-      memoriserFiltres(libraryId, next);
+      rememberFilters(libraryId, next);
       return next;
     });
   }, [libraryId]);
@@ -60,7 +60,7 @@ export function useLibraryFilters(libraryId: string) {
   const clearYears = useCallback(() => patch((f) => ({ ...f, yearFrom: null, yearTo: null })), [patch]);
   const clearRating = useCallback(() => patch((f) => ({ ...f, ratingMin: null })), [patch]);
   const resetFilters = useCallback(() => {
-    memoriserFiltres(libraryId, DEFAULT_FILTERS);
+    rememberFilters(libraryId, DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
   }, [libraryId]);
 
@@ -77,7 +77,7 @@ export function useLibraryFilters(libraryId: string) {
 
   /** Ce qu'on demandera au serveur — la MÊME fabrication que le préchargement
    *  du rail, sans quoi les deux clés de cache divergent (cf. le module). */
-  const params = useMemo(() => catalogueParams(filters), [filters]);
+  const params = useMemo(() => catalogParams(filters), [filters]);
 
   /** Signature stable de l'état — de quoi remonter le défilement quand un
    *  filtre change réellement. */
