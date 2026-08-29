@@ -164,6 +164,10 @@ export function PlayerControls({
               <PlaybackRateControl
                 apply={onPlaybackRateChange} resetKey={itemId}
                 buttonClass="p-2.5 sm:p-2"
+                // Un seul panneau à la fois : pistes et épisodes se fermaient
+                // déjà l'un l'autre, la vitesse s'ouvrait par-dessus les deux.
+                otherPanelOpen={showSettings || showEpisodes}
+                onOpen={() => { setShowSettings(false); setShowEpisodes(false); }}
               />
             )}
             {isEpisode && (
