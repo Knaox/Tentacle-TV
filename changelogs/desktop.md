@@ -8,7 +8,7 @@ Variante par canal : un bloc `## [mac-X.Y.Z]` remplace le bloc nu pour App
 Store Connect uniquement (`asc-release-notes.mjs`, CHANNEL=mac) — utile quand
 les notes Apple doivent rester génériques.
 
-## [mac-1.21.0]
+## [mac-1.20.9]
 ### FR
 - **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
 - **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
@@ -41,7 +41,7 @@ les notes Apple doivent rester génériques.
 - **Playback settings follow your ACCOUNT**, not the device: what you set on the computer applies in front of the television and on the phone
 - **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
 
-## [1.21.0]
+## [1.20.9]
 ### FR
 - **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
 - **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
