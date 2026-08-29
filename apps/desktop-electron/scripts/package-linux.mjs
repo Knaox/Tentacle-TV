@@ -28,7 +28,10 @@
  *                                  [--arch x64|arm64] [--targets deb,rpm,...]
  */
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync, cpSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync,
+  readlinkSync, renameSync, rmSync, writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { packager } from "@electron/packager";
@@ -74,6 +77,49 @@ function copyInto(source, target, what) {
   if (!existsSync(source)) throw new Error(`${what} introuvable : ${source}`);
   mkdirSync(path.dirname(target), { recursive: true });
   cpSync(source, target, { recursive: true, verbatimSymlinks: true });
+}
+
+/**
+ * Remplace les liens symboliques du dossier par de VRAIS fichiers.
+ *
+ * `verbatimSymlinks` protège la copie que fait ce script — mais pas la
+ * suivante. electron-builder recopie ensuite le dossier d'assemblage dans le
+ * paquet, et il RÉÉCRIT les liens en chemin absolu vers la cible telle qu'il
+ * l'a résolue. Relevé dans l'AppImage 1.20.9 réellement publiée :
+ *
+ *   libmpv.so.2 -> /home/runner/work/.../release-linux/resources-linux/lib/libmpv.so.2.5.0
+ *
+ * Un chemin qui n'existe que sur le runner. Pire, il s'y RÉSOLVAIT : la
+ * vérification posée juste après la copie répondait donc oui, et le paquet
+ * partait avec un lien mort. mpv se rabattait en silence sur celle de la
+ * distribution — le défaut que l'utilisateur a vu deux fois de suite.
+ *
+ * Un lien qui ne survit pas au déplacement du paquet n'a aucune raison d'y
+ * être : la cible est renommée du nom du lien. C'est le SONAME que le chargeur
+ * cherche, et la chaîne n'en compte qu'un — `libmpv.so.2`. Si deux liens
+ * visaient la même cible, le second reçoit une copie plutôt qu'un renommage.
+ */
+function aplatirLiens(dossier) {
+  // Ce qu'une cible est DEVENUE, quand un lien précédent l'a renommée.
+  const renommees = new Map();
+  for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+    if (!entree.isSymbolicLink()) continue;
+    const lien = path.join(dossier, entree.name);
+    const cible = path.resolve(dossier, readlinkSync(lien));
+    if (path.dirname(cible) !== path.resolve(dossier)) {
+      throw new Error(`lien hors du dossier de la chaîne : ${entree.name} -> ${cible}`);
+    }
+    rmSync(lien);
+    if (existsSync(cible)) {
+      renameSync(cible, lien);
+      renommees.set(cible, lien);
+    } else if (renommees.has(cible)) {
+      copyFileSync(renommees.get(cible), lien);
+    } else {
+      throw new Error(`lien ${entree.name} sans cible : ${cible}`);
+    }
+    console.log(`  lien aplati : ${entree.name} (était -> ${path.basename(cible)})`);
+  }
 }
 
 const arch = argFlag("--arch", "x64");
@@ -145,14 +191,19 @@ function prepareResources() {
   const lib = path.join(libSource, "libmpv.so.2");
   if (existsSync(lib)) {
     copyInto(libSource, path.join(resources, "lib"), "chaîne mpv");
+    aplatirLiens(path.join(resources, "lib"));
     // La VÉRIFICATION, et pas seulement la copie : `existsSync` suit les liens,
     // donc elle échoue exactement là où l'application échouerait. C'est ce qui
     // manquait quand la 1.20.9 est partie avec un lien mort vers le dossier du
     // runner — le paquet pesait ses 28 Mo de libmpv et ne s'en servait pas.
+    // `lstatSync` et non `existsSync` : ce dernier SUIT le lien, et un lien
+    // absolu vers le dossier de travail se résout parfaitement… sur le runner.
+    // C'est ainsi que la 1.20.9 est partie deux fois avec une libmpv morte.
+    // Ce qu'on exige désormais est plus fort et plus simple : un vrai fichier.
     const livree = path.join(resources, "lib", "libmpv.so.2");
-    if (!existsSync(livree)) {
+    if (!existsSync(livree) || !lstatSync(livree).isFile()) {
       throw new Error(
-        `chaîne mpv copiée mais ${livree} ne se résout pas — lien symbolique cassé.\n` +
+        `chaîne mpv copiée mais ${livree} n'est pas un fichier réel.\n` +
           "    L'application se rabattrait en silence sur la libmpv de la distribution.",
       );
     }
