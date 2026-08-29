@@ -88,12 +88,14 @@ export function SkipSegmentButton({
             onClick={(e) => { e.stopPropagation(); onSkip(); }}
             className="relative min-h-11 px-6 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
           >
-            {armed
-              ? t(`player:${labelKey}In`, { seconds: countdownSeconds })
-              : t(`player:${labelKey}`)}
-            {/* La glissière repart à chaque réarmement : la clé porte le
-                décompte total ET le libellé, donc tout changement de passage. */}
-            {armed && <Slider key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
+            {/* AVANT le libellé, donc dessous : un élément positionné peint
+                par-dessus le contenu de flux, et le texte doit rester net. */}
+            {armed && <Sweep key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
+            <span className="relative">
+              {armed
+                ? t(`player:${labelKey}In`, { seconds: countdownSeconds })
+                : t(`player:${labelKey}`)}
+            </span>
           </button>
 
           {/* Présente tant que le passage n'est pas en sourdine — voir l'en-tête. */}
@@ -138,12 +140,24 @@ function Rising({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Le temps qui reste, montré plutôt que lu. `scaleX` et rien d'autre : animer
- * `width` repeindrait la pilule à chaque image. Sur fond blanc, la glissière
- * est sombre (`bg-black/25`) — le `bg-white/70` d'avant y serait invisible.
- * Sous « animations réduites », elle disparaît, le libellé fait seul le travail.
+ * Le temps qui reste, montré plutôt que lu — un voile qui BALAYE la pilule.
+ *
+ * C'était une glissière de deux pixels posée à `bottom-0`. Invisible, et pour
+ * une raison de géométrie : dans un conteneur `rounded-full` de 44 px, le bas
+ * de la forme est un point — une bande horizontale y est rognée sur presque
+ * toute sa longueur, et il n'en restait qu'un éclat au centre. Aucun réglage
+ * d'opacité n'y pouvait rien.
+ *
+ * Le voile, lui, occupe toute la hauteur : le rayon ne le rogne plus, et il se
+ * lit d'un coup d'œil sans rien ajouter à l'objet. Il reste SOBRE — dix pour
+ * cent de noir sur blanc, assez pour marquer une frontière franche, trop peu
+ * pour entamer le contraste du libellé (noir sur blanc, 16:1 par-dessus).
+ *
+ * `scaleX` et rien d'autre : animer `width` repeindrait la pilule à chaque
+ * image. Sous « animations réduites », il disparaît — le libellé, qui décompte
+ * en toutes lettres, fait seul le travail.
  */
-function Slider({ durationMs }: { durationMs: number }) {
+function Sweep({ durationMs }: { durationMs: number }) {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
@@ -154,7 +168,7 @@ function Slider({ durationMs }: { durationMs: number }) {
   return (
     <span
       aria-hidden="true"
-      className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-black/25 transition-transform ease-linear motion-reduce:hidden"
+      className="absolute inset-0 origin-left bg-black/10 transition-transform ease-linear motion-reduce:hidden"
       style={{
         transitionDuration: `${durationMs}ms`,
         transform: `scaleX(${gone ? 1 : 0})`,
