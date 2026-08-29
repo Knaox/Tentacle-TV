@@ -6,11 +6,15 @@
  * # La croix, et quand elle existe
  *
  * Elle n'apparaissait d'abord que pendant le décompte : sans décompte, aucun
- * moyen de dire « ne me le propose plus ». Elle ne dépend plus du réglage —
- * mais elle ne paraît QUE SUR L'IMAGE NUE. Son office est double et tient
- * entier là : arrêter le décompte, et retirer le bouton de l'image. Quand
- * l'habillage est à l'écran, il n'y a plus rien à retirer — le bouton y a sa
- * place, et une croix n'y proposerait que de se priver d'un geste.
+ * moyen de dire « ne me le propose plus ». Elle ne dépend plus du réglage, et
+ * elle est là DANS LES DEUX ÉTATS — image nue comme habillage affiché. La
+ * retirer dès que les contrôles paraissent la rendait inatteignable : bouger
+ * la souris pour aller la cliquer la faisait disparaître sous le curseur.
+ *
+ * Elle cesse en revanche d'exister UNE FOIS LE PASSAGE EN SOURDINE
+ * (`dismissible: false`, tranché par l'arbitre). Le bouton ne reparaît alors
+ * que dans l'habillage, où il n'est déjà plus sur l'image : il n'y a plus rien
+ * à refuser, et proposer de se priver du geste ne gagnerait rien.
  *
  * Elle appartient à la pilule au lieu de flotter à côté d'elle en noir : un
  * seul objet, un séparateur, deux surfaces également cliquables. Cible ≥ 44 px
@@ -92,8 +96,8 @@ export function SkipSegmentButton({
             {armed && <Slider key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
           </button>
 
-          {/* Hors habillage seulement : voir l'en-tête. */}
-          {onDismiss && !controlsVisible && (
+          {/* Présente tant que le passage n'est pas en sourdine — voir l'en-tête. */}
+          {onDismiss && (
             <>
               <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
               <button

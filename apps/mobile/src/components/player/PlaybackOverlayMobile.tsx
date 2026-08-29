@@ -12,16 +12,6 @@ interface Props {
   onSkip: () => void;
   onDismiss: () => void;
   onPlayNow: () => void;
-  /**
-   * L'habillage du lecteur est-il à l'écran ?
-   *
-   * Il commande la croix de la pilule : elle n'a d'office que sur l'image
-   * nue — arrêter le décompte, retirer le bouton. La carte, elle, la garde
-   * en toutes circonstances : sur téléphone elle occupe TOUT l'écran et
-   * absorbe les taps de fond, aucun habillage ne coexiste avec elle, et
-   * lui retirer ses refus enfermerait l'utilisateur.
-   */
-  controlsVisible?: boolean;
   bottom: number;
   right: number;
 }
@@ -43,7 +33,6 @@ interface Props {
  */
 export function PlaybackOverlayMobile({
   overlay, countdownTotals, nextEpisode, onSkip, onDismiss, onPlayNow, bottom, right,
-  controlsVisible = false,
 }: Props) {
   const { t } = useTranslation("player");
 
@@ -59,8 +48,9 @@ export function PlaybackOverlayMobile({
         }
         countdownTotalMs={count === null ? null : countdownTotals.skipMs}
         onPress={onSkip}
-        onDismiss={onDismiss}
-        controlsVisible={controlsVisible}
+        // En sourdine, la croix n'a plus d'office : le bouton n'est déjà plus
+        // sur l'image, il n'existe que le temps de l'habillage.
+        onDismiss={overlay.dismissible ? onDismiss : undefined}
         bottom={bottom}
         right={right}
       />

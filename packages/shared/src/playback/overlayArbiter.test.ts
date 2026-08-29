@@ -436,3 +436,27 @@ describe("la scène post-générique n'est jamais couverte", () => {
     expect(overlay).toMatchObject({ kind: "nextCard", final: false });
   });
 });
+
+describe("la croix — quand elle existe, et quand elle n'a plus d'office", () => {
+  it("passage neuf : la croix est là, habillage affiché OU non", () => {
+    const base = { segments: [seg("Intro", 30_000, 90_000)], positionMs: 40_000 };
+    expect(arbitrateOverlay(makeInput(base))).toMatchObject({ kind: "skip", dismissible: true });
+    expect(arbitrateOverlay(makeInput({ ...base, controlsVisible: true })))
+      .toMatchObject({ kind: "skip", dismissible: true });
+  });
+
+  it("passage EN SOURDINE : le bouton n'existe plus que dans l'habillage, sans croix", () => {
+    const muted = new Set<SegmentType>(["Intro"]);
+    const base = {
+      segments: [seg("Intro", 30_000, 90_000)],
+      positionMs: 40_000,
+      mutedSegments: muted,
+    };
+    // Image nue : rien. C'est tout l'objet de la sourdine.
+    expect(arbitrateOverlay(makeInput({ ...base, dismissed: { segments: { Intro: true }, nextCard: false } })))
+      .toEqual({ kind: "none" });
+    // Habillage affiché : le bouton revient, mais sa croix n'a plus rien à faire.
+    expect(arbitrateOverlay(makeInput({ ...base, controlsVisible: true })))
+      .toMatchObject({ kind: "skip", segmentType: "Intro", dismissible: false });
+  });
+});

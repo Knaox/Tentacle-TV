@@ -55,7 +55,9 @@ export function PlaybackOverlay({
           countdownSeconds={overlay.countdownSeconds}
           countdownTotalMs={countdownTotals.skipMs}
           onSkip={onSkip}
-          onDismiss={onDismiss}
+          // En sourdine, la croix n'a plus d'office : le bouton n'est déjà
+          // plus sur l'image, il n'existe que le temps de l'habillage.
+          onDismiss={overlay.dismissible ? onDismiss : undefined}
           layer={layer}
           controlsVisible={controlsVisible}
         />
