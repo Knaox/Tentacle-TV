@@ -9,7 +9,7 @@
    lisible. La feuille `wght` porte les poids 100 à 900 en un seul fichier
    variable par sous-ensemble ; le navigateur ne télécharge que ceux dont
    l'`unicode-range` correspond. */
-@import "@fontsource-variable/inter/wght.css";
+@import "./theme/fonts.css";
 @import "./theme/tokens.css";
 @import "./theme/scrims.css";
 @import "./theme/surfaces.css";
