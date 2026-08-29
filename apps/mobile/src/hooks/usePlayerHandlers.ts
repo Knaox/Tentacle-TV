@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { OnLoadData, OnProgressData, VideoRef } from "react-native-video";
-import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { invalidateSeriesWatchViews, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerPlayback } from "./usePlayerPlayback";
@@ -54,9 +54,14 @@ export function usePlayerHandlers({
     queryClient.invalidateQueries({ queryKey: ["item", itemId] });
     queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+    queryClient.invalidateQueries({ queryKey: ["next-up"] });
     queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    // La fiche de la série : le téléphone n'en invalidait AUCUNE clé, donc
+    // l'épisode qu'on venait de terminer y restait décoché. Règle partagée
+    // avec le web et le téléviseur.
+    invalidateSeriesWatchViews(queryClient, pb.item?.SeriesId);
     backOrHome(router);
-  }, [router, pb.reporting, queryClient, itemId, jfClient, userId]);
+  }, [router, pb.reporting, pb.item?.SeriesId, queryClient, itemId, jfClient, userId]);
 
   const handleLoad = useCallback((_data: OnLoadData) => {
     setIsBuffering(false);

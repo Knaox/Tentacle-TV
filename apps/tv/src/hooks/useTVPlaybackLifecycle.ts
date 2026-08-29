@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { invalidateSeriesWatchViews, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { setPlayingMedia } from "../auth/playbackGuard";
@@ -56,13 +56,11 @@ export function useTVPlaybackLifecycle(args: {
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
     queryClient.invalidateQueries({ queryKey: ["next-up"] });
     queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    // État de visionnage de la fiche série : bouton Reprendre (watch state),
-    // progress/badges de la liste d'épisodes — sinon la position vue pendant
-    // la lecture n'apparaît pas au retour (cache 60s).
-    if (seriesId) {
-      queryClient.invalidateQueries({ queryKey: ["series-watch-state", seriesId] });
-      queryClient.invalidateQueries({ queryKey: ["episodes", seriesId] });
-    }
+    // État de visionnage de la fiche série : bouton Reprendre, saisies et
+    // badges de la liste d'épisodes — sinon ce qu'on vient de regarder
+    // n'apparaît pas au retour. La règle est partagée avec le web et le mobile
+    // (`invalidateSeriesWatchViews`) : elle en couvrait deux clés sur cinq.
+    invalidateSeriesWatchViews(queryClient, seriesId);
   }, [queryClient, itemId, seriesId]);
 
   // Garde anti-double sortie : BACK pressé pendant l'await de reportStop (ou

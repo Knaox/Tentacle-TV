@@ -25,6 +25,46 @@ const LIST_QUERY_PREFIXES = [
 /** Clé de la rangée « Reprendre la lecture » (cf. `useResumeItems`). */
 const RESUME_KEY = ["resume-items"] as const;
 
+/**
+ * Ce qui porte l'état « vu » d'un épisode SUR LA FICHE DE SA SÉRIE : sa propre
+ * fiche (compteur de non-vus), la liste des saisons, celle des épisodes, et la
+ * chaîne complète que la navigation du lecteur utilise pour l'épisode suivant.
+ */
+const SERIES_WATCH_VIEWS = ["item", "seasons", "episodes", "all-episodes", "series-watch-state"] as const;
+
+/**
+ * Rafraîchit tout ce qui montre l'état « vu » des épisodes d'une série.
+ *
+ * Elle existe parce que les trois plateformes s'en acquittaient chacune à sa
+ * façon, et aucune complètement : le web et le bureau n'invalidaient RIEN de la
+ * série à l'arrêt de lecture — on terminait un épisode, on ouvrait la fiche, et
+ * il y restait décoché jusqu'à l'expiration du `staleTime` (deux minutes pour
+ * la liste d'épisodes, cinq pour le reste). Le téléviseur en couvrait deux clés
+ * sur cinq, le mobile aucune. Le marquage MANUEL, lui, les invalidait depuis
+ * toujours — c'est bien l'arrêt de lecture qui les oubliait.
+ *
+ * Marquer périmé suffit et c'est voulu : la fiche n'est pas montée à cet
+ * instant, et `refetchOnMount` — vrai par défaut — la rafraîchit dès qu'elle
+ * arrive. Aucune cascade réseau pendant la navigation.
+ */
+/**
+ * Le strict nécessaire d'un `QueryClient`, décrit par sa FORME.
+ *
+ * `apps/tv` embarque sa propre copie de `@tanstack/query-core` : le type
+ * nominal ne traverse pas la frontière du paquet, et une signature en
+ * `QueryClient` y échouait. La forme, elle, est la même partout.
+ */
+interface QueryInvalidator {
+  invalidateQueries(filters: { queryKey: readonly unknown[] }): unknown;
+}
+
+export function invalidateSeriesWatchViews(qc: QueryInvalidator, seriesId: string | undefined): void {
+  if (!seriesId) return;
+  for (const prefix of SERIES_WATCH_VIEWS) {
+    qc.invalidateQueries({ queryKey: [prefix, seriesId] });
+  }
+}
+
 interface InvalidateOptions {
   itemId?: string;
   seriesContext?: { seriesId: string; seasonId?: string };

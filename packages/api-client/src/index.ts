@@ -92,7 +92,7 @@ export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "./hooks/useBat
 export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";
 
 // Cache utilities for cross-platform state sync
-export { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet } from "./hooks/cacheUtils";
+export { invalidateSeriesWatchViews, invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet } from "./hooks/cacheUtils";
 export type { CacheTarget } from "./hooks/cacheUtils";
 export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./hooks/watchlistEffects";
 
