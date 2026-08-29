@@ -43,7 +43,10 @@ vi.mock("../services/db", () => ({
 
 import { registerPlaybackSettingsRoutes } from "./preferences.playback";
 import { requireAuth } from "../middleware/auth";
-import { DEFAULT_PLAYBACK_SETTINGS } from "../playback/playbackSettings";
+import {
+  DEFAULT_PLAYBACK_SETTINGS,
+  NEXT_COUNTDOWN_DEFAULT_MS,
+} from "../playback/playbackSettings";
 
 beforeEach(() => {
   rows.clear();
@@ -83,6 +86,10 @@ async function makeApp() {
 
 const headers = { "x-emby-token": "jeton-banc" };
 
+/**
+ * Ce qu'envoie un client d'AVANT la 1.20.9 : sans `nextCountdownMs`. Le laisser
+ * ainsi est le test : sa requête doit passer, et le serveur poser le défaut.
+ */
 const VALID_SETTINGS = {
   intro: { action: "button", countdownVisible: false, autoDelayMs: 5_000 },
   outro: { action: "auto", countdownVisible: true, autoDelayMs: 2_000 },
@@ -97,6 +104,12 @@ const VALID_SETTINGS = {
     beforeEndDefault: { mode: "seconds", value: 60 },
     beforeEndRules: [{ libraryIds: ["lib-series"], mode: "percent", value: 96 }],
   },
+};
+
+/** Ce que le serveur rend : les mêmes valeurs, plus le défaut du décompte. */
+const STORED_SETTINGS = {
+  ...VALID_SETTINGS,
+  next: { ...VALID_SETTINGS.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS },
 };
 
 describe("GET/PUT /api/preferences/playback", () => {
@@ -128,14 +141,14 @@ describe("GET/PUT /api/preferences/playback", () => {
       payload: VALID_SETTINGS,
     });
     expect(written.statusCode).toBe(200);
-    expect(written.json()).toEqual({ stored: true, settings: VALID_SETTINGS });
+    expect(written.json()).toEqual({ stored: true, settings: STORED_SETTINGS });
 
     const readBack = await app.inject({
       method: "GET",
       url: "/api/preferences/playback",
       headers: headers,
     });
-    expect(readBack.json()).toEqual({ stored: true, settings: VALID_SETTINGS });
+    expect(readBack.json()).toEqual({ stored: true, settings: STORED_SETTINGS });
     await app.close();
   });
 
@@ -215,7 +228,10 @@ describe("le repli « avant la fin » traverse la base", () => {
     };
     await app.inject({ method: "PUT", url: "/api/preferences/playback", headers, payload: settings });
     const read = await app.inject({ method: "GET", url: "/api/preferences/playback", headers });
-    expect(read.json()).toEqual({ stored: true, settings });
+    expect(read.json()).toEqual({
+      stored: true,
+      settings: { ...settings, next: { ...settings.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS } },
+    });
   });
 
   it("un seuil hors bornes est refusé, pas rogné en silence", async () => {

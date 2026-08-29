@@ -24,6 +24,7 @@ import { setPlaybackSettings } from "@tentacle-tv/api-client";
 import type { PlaybackSettings, SegmentSettings, SkipLabelKey } from "@tentacle-tv/shared";
 import { PlaybackPreview } from "./PlaybackPreview";
 import { BeforeEndRules } from "./BeforeEndRules";
+import { NextCountdownSlider } from "./NextCountdownSlider";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingsDisclosure } from "./SettingsDisclosure";
@@ -136,6 +137,11 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
               hint={next.nextCountdown ? t("upNextAutoPlayHint") : t("upNextNeedsCountdown")}
               active={next.nextAutoPlay}
               onChange={(nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); }}
+            />
+            <NextCountdownSlider
+              valueMs={next.nextCountdownMs}
+              disabled={!next.nextCountdown}
+              onChange={(nextCountdownMs) => { setPlaybackSettings({ next: { nextCountdownMs } }); }}
             />
           </div>
 

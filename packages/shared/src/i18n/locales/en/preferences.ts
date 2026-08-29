@@ -191,6 +191,8 @@ export default {
   upNextCountdownHint: "The card announces the time left.",
   upNextAutoPlayTitle: "Play the next episode on its own",
   upNextAutoPlayHint: "When the countdown runs out, the next episode starts.",
+  nextCountdownLabel: "Countdown length",
+  nextCountdownHint: "A ceiling: if the episode ends sooner, the countdown fits itself to what is left.",
   upNextTriggerLabel: "When to offer what follows",
   upNextTriggerOutroStart: "At the start of the closing credits",
   upNextTriggerBeforeEnd: "Shortly before the end",

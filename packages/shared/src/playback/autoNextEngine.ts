@@ -21,13 +21,46 @@
  * position ni segments, il ne peut donc pas diverger de l'affichage.
  */
 
-/** LA constante — remplace les cinq « 10 » dispersés du dépôt. */
+/**
+ * Le décompte livré. Il n'est plus une constante mais un DÉFAUT : la durée est
+ * réglable (`nextCountdownMs`), et le moteur la raccourcit quand il le faut.
+ */
 export const NEXT_COUNTDOWN_MS = 10_000;
+
+/**
+ * Ce qu'on garde devant soi : le décompte doit expirer AVANT la fin du média,
+ * jamais après.
+ *
+ * Sans cette marge, une fiche qui paraît quatre secondes avant la fin
+ * décomptait dix secondes : l'épisode se terminait, l'écran de fin prenait la
+ * main, et l'enchaînement partait six secondes plus tard — sur un écran de fin
+ * qu'on regardait sans comprendre pourquoi il durait. Le décompte se cale
+ * désormais sur ce qui reste : quatre secondes de média, trois et demie de
+ * décompte.
+ */
+export const NEXT_COUNTDOWN_END_MARGIN_MS = 500;
+
+/**
+ * La durée réellement décomptée : le réglage, ou ce que le média peut encore
+ * offrir. `remainingMediaMs` inconnu (0 ou moins) → on s'en tient au réglage,
+ * faute de mieux.
+ */
+export function armedCountdownMs(configuredMs: number, remainingMediaMs: number): number {
+  if (!Number.isFinite(remainingMediaMs) || remainingMediaMs <= 0) return configuredMs;
+  return Math.max(0, Math.min(configuredMs, remainingMediaMs - NEXT_COUNTDOWN_END_MARGIN_MS));
+}
 
 export interface AutoNextState {
   phase: "idle" | "card" | "final";
   /** ms restantes du minuteur, null = aucun minuteur en cours. */
   remainingMs: number | null;
+  /**
+   * La durée dont ce minuteur est PARTI — celle que la barre de progression
+   * mesure. Distincte du réglage : le moteur la raccourcit quand la fin du
+   * média approche, et une barre qui se remplirait sur dix secondes alors que
+   * le minuteur en compte trois et demie mentirait à l'œil.
+   */
+  armedMs: number | null;
   /** La croix a été donnée pour CET épisode. */
   dismissed: boolean;
   /** L'effet a déjà été émis (le temps que la navigation aboutisse). */
@@ -38,6 +71,7 @@ export interface AutoNextState {
 export const AUTO_NEXT_IDLE: AutoNextState = {
   phase: "idle",
   remainingMs: null,
+  armedMs: null,
   dismissed: false,
   chained: false,
   forItemId: null,
@@ -51,6 +85,12 @@ export type AutoNextInput =
       /** La lecture est arrivée au bout (EOF) — l'écran de fin. */
       ended: boolean;
       elapsedMs: number;
+      /**
+       * Ce qu'il reste de média, en ms. Lu UNIQUEMENT à l'armement, et
+       * facultatif : un appelant qui ne le sait pas garde le comportement
+       * d'avant (le réglage, tel quel).
+       */
+      remainingMediaMs?: number;
     }
   | { type: "item"; itemId: string }
   | { type: "dismiss" }
@@ -64,6 +104,8 @@ export interface AutoNextConfig {
   serverEnabled: boolean;
   nextCountdown: boolean;
   nextAutoPlay: boolean;
+  /** Durée voulue du décompte. Absente : la valeur livrée. */
+  nextCountdownMs?: number;
 }
 
 /** Secondes affichées sur la fiche, null = pas d'échéance annoncée. */
@@ -82,12 +124,12 @@ export function decideAutoNext(
   }
 
   if (input.type === "dismiss") {
-    return [{ ...state, dismissed: true, remainingMs: null, phase: "idle" }, "none"];
+    return [{ ...state, dismissed: true, remainingMs: null, armedMs: null, phase: "idle" }, "none"];
   }
 
   if (input.type === "playNow") {
     if (state.chained || !config.hasNextEpisode) return [state, "none"];
-    return [{ ...state, chained: true, remainingMs: null }, "nextEpisode"];
+    return [{ ...state, chained: true, remainingMs: null, armedMs: null }, "nextEpisode"];
   }
 
   // ── Battement de cadre ──
@@ -95,7 +137,7 @@ export function decideAutoNext(
   if (!active || (!input.eligible && !input.ended)) {
     // Hors fenêtre (ou refusé) : le minuteur retombe, prêt à se réarmer.
     if (state.phase === "idle" && state.remainingMs === null) return [state, "none"];
-    return [{ ...state, phase: "idle", remainingMs: null }, "none"];
+    return [{ ...state, phase: "idle", remainingMs: null, armedMs: null }, "none"];
   }
 
   const phase = input.ended ? "final" : "card";
@@ -104,23 +146,27 @@ export function decideAutoNext(
   // fin CONSERVE le minuteur en cours (comportement TV historique) : la fin du
   // média n'offre pas un sursis.
   let remainingMs = state.remainingMs;
+  let armedMs = state.armedMs;
   if (state.phase === "idle") {
-    remainingMs = config.nextCountdown ? NEXT_COUNTDOWN_MS : null;
+    remainingMs = config.nextCountdown
+      ? armedCountdownMs(config.nextCountdownMs ?? NEXT_COUNTDOWN_MS, input.remainingMediaMs ?? 0)
+      : null;
+    armedMs = remainingMs;
   }
 
   if (remainingMs === null) {
     // Référence STABLE quand rien ne change : l'appelant React s'appuie sur
     // l'identité de l'état pour ne pas re-rendre à chaque battement.
     if (state.phase === phase && state.remainingMs === null) return [state, "none"];
-    return [{ ...state, phase, remainingMs: null }, "none"];
+    return [{ ...state, phase, remainingMs: null, armedMs: null }, "none"];
   }
 
   remainingMs -= Math.max(0, input.elapsedMs);
-  if (remainingMs > 0) return [{ ...state, phase, remainingMs }, "none"];
+  if (remainingMs > 0) return [{ ...state, phase, remainingMs, armedMs }, "none"];
 
   // Expiration : l'acte n'appartient qu'à `nextAutoPlay`, et une seule fois.
   if (config.nextAutoPlay) {
-    return [{ ...state, phase, remainingMs: null, chained: true }, "nextEpisode"];
+    return [{ ...state, phase, remainingMs: null, armedMs: null, chained: true }, "nextEpisode"];
   }
-  return [{ ...state, phase, remainingMs: null }, "none"];
+  return [{ ...state, phase, remainingMs: null, armedMs: null }, "none"];
 }

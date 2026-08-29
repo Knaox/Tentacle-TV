@@ -190,6 +190,8 @@ export default {
   upNextCountdownHint: "La fiche annonce le temps qu'il reste.",
   upNextAutoPlayTitle: "Enchaîner tout seul",
   upNextAutoPlayHint: "À la fin du décompte, l'épisode suivant démarre.",
+  nextCountdownLabel: "Durée du compte à rebours",
+  nextCountdownHint: "Un plafond : si l'épisode se termine plus tôt, le décompte se cale sur ce qui reste.",
   upNextTriggerLabel: "Quand proposer la suite",
   upNextTriggerOutroStart: "Au début du générique de fin",
   upNextTriggerBeforeEnd: "Peu avant la fin",

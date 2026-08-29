@@ -32,6 +32,7 @@ interface PlaybackSettingsRow {
   previewDelayMs: number;
   nextCard: boolean;
   nextCountdown: boolean;
+  nextCountdownMs: number;
   nextAutoPlay: boolean;
   nextTrigger: string;
   nextBeforeEndSeconds: number;
@@ -67,6 +68,7 @@ export function rowToSettings(row: PlaybackSettingsRow): PlaybackSettings {
     next: {
       nextCard: row.nextCard,
       nextCountdown: row.nextCountdown,
+      nextCountdownMs: row.nextCountdownMs,
       nextAutoPlay: row.nextAutoPlay,
       nextTrigger: row.nextTrigger,
       // `nextBeforeEndSeconds` reste lu pour les lignes d'avant : la
@@ -95,6 +97,7 @@ export function settingsToColumns(settings: PlaybackSettings): PlaybackSettingsR
     previewDelayMs: settings.preview.autoDelayMs,
     nextCard: settings.next.nextCard,
     nextCountdown: settings.next.nextCountdown,
+    nextCountdownMs: settings.next.nextCountdownMs,
     nextAutoPlay: settings.next.nextAutoPlay,
     nextTrigger: settings.next.nextTrigger,
     // Colonne héritée, plus lue par le contrat : on y recopie le seuil quand
