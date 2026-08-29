@@ -11,14 +11,25 @@
  *   2. sinon le greffon intro-skipper, format dictionnaire ;
  *   3. sinon le greffon intro-skipper, format propriétés nommées ;
  *   4. les chapitres nommés COMBLENT les types manquants (Intro/Outro
- *      seulement) — et rien d'autre : aucun repli statistique.
+ *      seulement) — et rien d'autre : aucun repli statistique ;
+ *   5. les chapitres AFFINENT la fin d'un Outro, pour ne pas manger la scène
+ *      post-générique (`segmentChapters.ts`).
+ *
+ * L'API native rend une UNION : plusieurs greffons écrivent leurs segments
+ * côte à côte, et le même passage y figure deux fois à une seconde près
+ * (mesuré sur Endgame et sur la plupart des animés). Garder le premier venu
+ * était arbitraire ; `pickBounds` tranche désormais, et il tranche surtout
+ * pour l'Outro — un « générique » de dix-sept secondes collé à la fin du
+ * fichier n'en est pas un, et le proposer revient à terminer le film.
  *
  * MIROIR : reflété octet pour octet dans `apps/backend/src/playback/` (voir
  * l'en-tête de `segmentTypes.ts`) — ne rien importer hors de la paire.
  */
 
 import {
+  MIN_CREDIBLE_OUTRO_MS,
   PLAYBACK_SEGMENTS_VERSION,
+  POST_CREDITS_MIN_MS,
   POST_CREDITS_THRESHOLD_MS,
   TICKS_PER_MS,
   isSegmentType,
@@ -26,6 +37,15 @@ import {
   type ResolvedSegment,
   type SegmentType,
 } from "./segmentTypes";
+import {
+  fillFromChapters,
+  refineOutroWithChapters,
+  type BoundsByType,
+  type ChapterMarker,
+  type RawBounds,
+} from "./segmentChapters";
+
+export type { ChapterMarker } from "./segmentChapters";
 
 // ---------- Payloads BRUTS des sources (typés ici : shared reste sans dépendance) ----------
 
@@ -61,12 +81,6 @@ export interface IntroSkipperTimestampsPayload {
   commercial?: IntroSkipperBounds;
 }
 
-/** Chapitre Jellyfin — le champ `Chapters` du DTO de l'item. */
-export interface ChapterMarker {
-  StartPositionTicks: number;
-  Name: string;
-}
-
 export interface SegmentSources {
   mediaSegments?: MediaSegmentsPayload | null;
   pluginDict?: IntroSkipperDictPayload | null;
@@ -74,25 +88,7 @@ export interface SegmentSources {
   chapters?: readonly ChapterMarker[] | null;
 }
 
-// ---------- Motifs de chapitres (EN + FR) ----------
-
-// Un chapitre d'ouverture d'abord : « Opening Credits » ou « Générique de
-// début » contiennent aussi un mot du motif de fin — l'intro se teste en
-// premier et un chapitre reconnu comme intro ne peut pas être un générique.
-const CHAPTER_INTRO_PATTERN =
-  /(\bintro\b|\bintroduction\b|\bopening\b|g[ée]n[ée]rique\s+de\s+d[ée]but)/i;
-const CHAPTER_OUTRO_PATTERN =
-  /(end\s*credits|\bcredits?\b|\boutro\b|\bending\b|g[ée]n[ée]rique(?!\s+de\s+d[ée]but))/i;
-
 // ---------- Collecte par source ----------
-
-interface RawBounds {
-  startMs: number;
-  endMs: number;
-  source: "jellyfin" | "chapters";
-}
-
-type BoundsByType = Map<SegmentType, RawBounds>;
 
 function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | null {
   if (!bounds) return null;
@@ -102,17 +98,75 @@ function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | n
   return { startMs: start * 1000, endMs: end * 1000, source: "jellyfin" };
 }
 
-function collectNative(payload: MediaSegmentsPayload | null | undefined): BoundsByType | null {
+/**
+ * Le meilleur candidat d'un type, parmi ceux qu'ont écrits les fournisseurs.
+ *
+ * Pour un OUTRO, deux règles, dans cet ordre :
+ *
+ *  1. **Écarter l'incrédible** : plus court que `MIN_CREDIBLE_OUTRO_MS` ET
+ *     collé à la fin du fichier. C'est la signature d'un détecteur d'images
+ *     noires qui a trouvé la queue du média — dix-sept secondes sur Iron Man
+ *     et sur Far From Home. Le garder, c'est proposer de « passer le
+ *     générique » dix-sept secondes avant la fin, donc terminer le film.
+ *     Si tous les candidats sont incrédibles, il n'y a pas d'Outro : le film
+ *     se termine tout seul, et sa scène post-générique est vue.
+ *  2. **Préférer celui qui laisse une scène après lui** — il en dit plus que
+ *     les autres. Encore faut-il qu'il soit plausible : un générique de fin ne
+ *     commence pas dans la première moitié du média. À défaut, le plus long,
+ *     qui couvre le passage entier plutôt qu'un bout.
+ *
+ * Pour les autres types, les candidats ne diffèrent que d'une seconde ou deux
+ * (deux greffons qui disent la même chose) : le plus long les englobe.
+ */
+function pickBounds(
+  type: SegmentType,
+  candidates: readonly RawBounds[],
+  runtimeMs: number,
+): RawBounds | null {
+  const duration = (bound: RawBounds): number => bound.endMs - bound.startMs;
+  const longest = (list: readonly RawBounds[]): RawBounds =>
+    list.reduce((best, bound) => (duration(bound) > duration(best) ? bound : best));
+
+  if (candidates.length === 0) return null;
+  if (type !== "Outro" || runtimeMs <= 0) return longest(candidates);
+
+  const credible = candidates.filter(
+    (bound) =>
+      duration(bound) >= MIN_CREDIBLE_OUTRO_MS ||
+      bound.endMs < runtimeMs - POST_CREDITS_THRESHOLD_MS,
+  );
+  if (credible.length === 0) return null;
+
+  const revealing = credible.filter(
+    (bound) =>
+      runtimeMs - bound.endMs >= POST_CREDITS_MIN_MS && bound.startMs >= runtimeMs / 2,
+  );
+  return longest(revealing.length > 0 ? revealing : credible);
+}
+
+function collectNative(
+  payload: MediaSegmentsPayload | null | undefined,
+  runtimeMs: number,
+): BoundsByType | null {
   const items = payload?.Items;
   if (!items || items.length === 0) return null;
-  const bounds: BoundsByType = new Map();
+
+  const candidates = new Map<SegmentType, RawBounds[]>();
   for (const item of items) {
-    if (!isSegmentType(item.Type) || bounds.has(item.Type)) continue;
-    bounds.set(item.Type, {
+    if (!isSegmentType(item.Type)) continue;
+    const list = candidates.get(item.Type) ?? [];
+    list.push({
       startMs: (item.StartTicks ?? 0) / TICKS_PER_MS,
       endMs: (item.EndTicks ?? 0) / TICKS_PER_MS,
       source: "jellyfin",
     });
+    candidates.set(item.Type, list);
+  }
+
+  const bounds: BoundsByType = new Map();
+  for (const [type, list] of candidates) {
+    const picked = pickBounds(type, list, runtimeMs);
+    if (picked) bounds.set(type, picked);
   }
   // Des Items présents = la source native fait foi, même vidée par le filtrage
   // (comportement historique : les greffons ne sont pas re-consultés).
@@ -156,42 +210,6 @@ function collectTimestamps(
   return bounds.size > 0 ? bounds : null;
 }
 
-/**
- * Comble Intro et Outro manquants depuis les chapitres nommés. Fin d'un
- * chapitre = début du suivant ; pour un générique en dernier chapitre, la fin
- * est la durée du média — le « +120 s » deviné de l'ancienne normalisation
- * disparaît. Sans durée connue, aucun Outro de chapitre n'est posé (trop
- * d'heuristique empilée pour oser un bouton).
- */
-function fillFromChapters(
-  bounds: BoundsByType,
-  chapters: readonly ChapterMarker[] | null | undefined,
-  runtimeMs: number,
-): void {
-  if (!chapters || chapters.length < 2) return;
-
-  let outro: RawBounds | null = null;
-  for (let i = 0; i < chapters.length; i++) {
-    const name = chapters[i].Name;
-    const startMs = chapters[i].StartPositionTicks / TICKS_PER_MS;
-    const nextStartMs =
-      i + 1 < chapters.length ? chapters[i + 1].StartPositionTicks / TICKS_PER_MS : null;
-
-    if (CHAPTER_INTRO_PATTERN.test(name)) {
-      if (!bounds.has("Intro") && nextStartMs !== null) {
-        bounds.set("Intro", { startMs, endMs: nextStartMs, source: "chapters" });
-      }
-      continue;
-    }
-    if (runtimeMs > 0 && CHAPTER_OUTRO_PATTERN.test(name)) {
-      // Le DERNIER chapitre correspondant l'emporte — c'est lui, le générique
-      // de fin (comportement historique conservé).
-      outro = { startMs, endMs: nextStartMs ?? runtimeMs, source: "chapters" };
-    }
-  }
-  if (outro && !bounds.has("Outro")) bounds.set("Outro", outro);
-}
-
 // ---------- Assainissement et verdict de fin ----------
 
 function finalize(type: SegmentType, bound: RawBounds, runtimeMs: number): ResolvedSegment | null {
@@ -201,9 +219,13 @@ function finalize(type: SegmentType, bound: RawBounds, runtimeMs: number): Resol
   if (endMs <= startMs) return null;
 
   const endsAtMediaEnd = runtimeMs > 0 && endMs >= runtimeMs - POST_CREDITS_THRESHOLD_MS;
-  // Durée inconnue : impossible de jurer qu'une scène suit le générique — on
-  // rend le verdict CONSERVATEUR (carte, jamais un bouton de seek trompeur).
-  const hasContentAfter = runtimeMs > 0 ? !endsAtMediaEnd : type !== "Outro";
+  // Deux seuils, pas un : « le segment touche la fin » et « il reste une SCÈNE
+  // à voir » ne se répondent pas. Entre les deux vit la zone grise — un fondu,
+  // un logo — qu'on ne veut pas vendre comme une scène post-générique.
+  // Durée inconnue : impossible de jurer quoi que ce soit — verdict
+  // CONSERVATEUR (carte, jamais un bouton de seek trompeur).
+  const hasContentAfter =
+    runtimeMs > 0 ? runtimeMs - endMs >= POST_CREDITS_MIN_MS : type !== "Outro";
 
   return {
     type,
@@ -224,11 +246,12 @@ export function resolvePlaybackSegments(
   const runtime = Number.isFinite(runtimeMs) && runtimeMs > 0 ? Math.round(runtimeMs) : 0;
 
   const bounds =
-    collectNative(sources.mediaSegments) ??
+    collectNative(sources.mediaSegments, runtime) ??
     collectDict(sources.pluginDict) ??
     collectTimestamps(sources.pluginTimestamps) ??
     (new Map() as BoundsByType);
   fillFromChapters(bounds, sources.chapters, runtime);
+  refineOutroWithChapters(bounds, sources.chapters, runtime);
 
   const segments = [...bounds.entries()]
     .map(([type, bound]) => finalize(type, bound, runtime))

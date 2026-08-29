@@ -22,6 +22,8 @@ export * from "./player/introSkip";
 // reste interne (le nom est déjà exporté par types/watchTogether).
 export {
   PLAYBACK_SEGMENTS_VERSION,
+  MIN_CREDIBLE_OUTRO_MS,
+  POST_CREDITS_MIN_MS,
   POST_CREDITS_THRESHOLD_MS,
   SEGMENT_TYPES,
   emptyPlaybackSegments,
@@ -32,6 +34,7 @@ export {
   type ResolvedSegment,
   type SegmentType,
 } from "./playback/segmentTypes";
+export * from "./playback/segmentChapters";
 export * from "./playback/resolveSegments";
 export * from "./playback/playbackSettings";
 export * from "./playback/segmentWindow";

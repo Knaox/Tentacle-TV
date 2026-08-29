@@ -4,8 +4,8 @@
  * pas de `@tentacle-tv/shared` — tsc CommonJS, image Docker sans packages/).
  * La source canonique est SHARED ; on modifie là-bas, on recopie ici :
  *
- *   cp packages/shared/src/playback/{segmentTypes,resolveSegments}.ts \
- *      apps/backend/src/playback/
+ *   cp packages/shared/src/playback/{segmentTypes,resolveSegments,\
+ *      playbackSettings,segmentChapters}.ts apps/backend/src/playback/
  *
  * Même esprit que le test croisé RN ↔ CSS de packages/theme : deux mondes qui
  * ne peuvent pas s'importer, une vérité mécaniquement tenue.
@@ -27,7 +27,12 @@ function repoRoot(): string {
 }
 
 describe("miroir du résolveur partagé", () => {
-  it.each(["segmentTypes.ts", "resolveSegments.ts", "playbackSettings.ts"])(
+  it.each([
+    "segmentTypes.ts",
+    "resolveSegments.ts",
+    "playbackSettings.ts",
+    "segmentChapters.ts",
+  ])(
     "%s est identique octet pour octet à packages/shared",
     (name) => {
       const root = repoRoot();

@@ -12,7 +12,8 @@
  * des ticks Jellyfin, jamais des secondes. La conversion se fait aux frontières
  * (résolveur côté serveur, coquille de lecture côté client), pas au milieu.
  *
- * MIROIR : ce fichier et `resolveSegments.ts` sont reflétés OCTET POUR OCTET
+ * MIROIR : ce fichier, `resolveSegments.ts`, `segmentChapters.ts` et
+ * `playbackSettings.ts` sont reflétés OCTET POUR OCTET
  * dans `apps/backend/src/playback/` — le backend ne dépend pas de
  * `@tentacle-tv/shared` (tsc CommonJS, image Docker sans packages/ ; précédent
  * `watchTogether/protocol.ts`). Toute modification se fait ICI puis se recopie
@@ -46,6 +47,30 @@ export const PLAYBACK_SEGMENTS_VERSION = 1;
  * ce qui reste n'est pas une scène post-générique, c'est la queue du fichier.
  */
 export const POST_CREDITS_THRESHOLD_MS = 15_000;
+
+/**
+ * La durée minimale de ce qui MÉRITE d'être appelé une scène post-générique.
+ *
+ * Distinct du seuil ci-dessus, et pas par coquetterie : celui-là dit « le
+ * segment touche la fin », celui-ci dit « il y a quelque chose à voir ». Entre
+ * les deux vit la zone grise — un fondu, un logo de studio, quelques secondes
+ * de noir — qu'on ne veut pas vendre comme une scène. Vingt secondes : le
+ * stinger le plus court du corpus Marvel en fait plus du double.
+ */
+export const POST_CREDITS_MIN_MS = 20_000;
+
+/**
+ * Sous cette durée, un « générique de fin » n'en est pas un.
+ *
+ * Mesuré sur l'instance de test : Iron Man porte un Outro de 17 s
+ * (125:43 → 126:00) et Far From Home un de 17 s aussi — la queue noire du
+ * fichier, pas le générique, produite par un détecteur d'images noires dont
+ * le plancher est à 15 s. Les accepter, c'est proposer « passer le générique »
+ * dix-sept secondes avant la fin, donc terminer le film. Un vrai générique de
+ * film dure des minutes ; le plus court générique d'épisode tourne autour de
+ * la minute.
+ */
+export const MIN_CREDIBLE_OUTRO_MS = 45_000;
 
 export interface ResolvedSegment {
   type: SegmentType;
