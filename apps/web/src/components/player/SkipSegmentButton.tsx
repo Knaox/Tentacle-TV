@@ -3,13 +3,18 @@
  * pilule, BLANCHE, alignée sur les boutons principaux de l'application
  * (tokens `--cta-primary-*`, mêmes que « Lire » sur une fiche).
  *
- * # La croix, et pourquoi elle est toujours là
+ * # La croix, et quand elle existe
  *
- * Elle n'apparaissait que pendant le décompte : sans décompte, aucun moyen de
- * dire « ne me le propose plus ». Elle est désormais permanente, quel que soit
- * le réglage — et elle appartient à la pilule au lieu de flotter à côté d'elle
- * en noir : un seul objet, un séparateur, deux surfaces également cliquables.
- * Cible ≥ 44 px de haut des deux côtés (l'ancienne croix faisait 32).
+ * Elle n'apparaissait d'abord que pendant le décompte : sans décompte, aucun
+ * moyen de dire « ne me le propose plus ». Elle ne dépend plus du réglage —
+ * mais elle ne paraît QUE SUR L'IMAGE NUE. Son office est double et tient
+ * entier là : arrêter le décompte, et retirer le bouton de l'image. Quand
+ * l'habillage est à l'écran, il n'y a plus rien à retirer — le bouton y a sa
+ * place, et une croix n'y proposerait que de se priver d'un geste.
+ *
+ * Elle appartient à la pilule au lieu de flotter à côté d'elle en noir : un
+ * seul objet, un séparateur, deux surfaces également cliquables. Cible ≥ 44 px
+ * de haut des deux côtés (l'ancienne croix faisait 32).
  *
  * # Ce qui bouge, et ce qui ne bouge pas
  *
@@ -87,7 +92,8 @@ export function SkipSegmentButton({
             {armed && <Slider key={`${labelKey}-${countdownTotalMs}`} durationMs={countdownTotalMs} />}
           </button>
 
-          {onDismiss && (
+          {/* Hors habillage seulement : voir l'en-tête. */}
+          {onDismiss && !controlsVisible && (
             <>
               <span aria-hidden="true" className="my-2 w-px bg-cta-primary-fg/20" />
               <button
