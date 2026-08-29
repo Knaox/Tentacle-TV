@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("./configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "admin-key",
+  getConfigValue: (key: string) => (key === "admin_jellyfin_id" ? "admin-user-id" : undefined),
 }));
 
 import { clearSegmentSourceCache, getSegmentSourceBundle } from "./jellyfinSegments";
@@ -141,5 +142,30 @@ describe("getSegmentSourceBundle", () => {
     ];
     const resumed = await getSegmentSourceBundle("ep-7");
     expect(resumed.runtimeMs).toBe(1_440_000);
+  });
+});
+
+describe("l'URL de l'item", () => {
+  it("porte le userId — sans lui, Jellyfin 10.11 rend 400 et le paquet part sans durée", async () => {
+    scenario = [
+      [/\/Items\/x\?userId=admin-user-id&fields=Chapters$/, { json: ITEM }],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    const bundle = await getSegmentSourceBundle("x");
+    // La durée n'est pas nulle : c'est elle qui décide de `hasContentAfter`.
+    expect(bundle.runtimeMs).toBe(1_440_000);
+    expect(calls.some((url) => url.includes("userId=admin-user-id"))).toBe(true);
+  });
+
+  it("un item illisible ne passe plus en silence", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    scenario = [
+      [/\/Items\//, { status: 400 }],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    const bundle = await getSegmentSourceBundle("y");
+    expect(bundle.runtimeMs).toBe(0);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("illisible"));
+    warn.mockRestore();
   });
 });
