@@ -8,6 +8,7 @@ import { clearPendingInterfaceLanguage, markInterfaceLanguagePending, queuePendi
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
+import { HardwareDecodingSelect } from "../components/settings/HardwareDecodingSelect";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
 import { PlaybackSettingsSection } from "../components/settings/PlaybackSettingsSection";
@@ -200,6 +201,10 @@ export function Preferences() {
         {/* Ce que le lecteur fait tout seul : les passages d'un épisode, et sa
             fin. Réglages de COMPTE — la section porte ses propres cartes. */}
         <PlaybackSettingsSection />
+
+        {/* Qui décode la vidéo — bureau uniquement, réglage d'APPAREIL : c'est
+            son pilote graphique qui décide, pas le compte. */}
+        <HardwareDecodingSelect />
 
         {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté
             du lecteur natif, le composant s'efface ailleurs. */}
