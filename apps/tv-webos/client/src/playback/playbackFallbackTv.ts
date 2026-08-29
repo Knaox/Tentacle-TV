@@ -167,7 +167,7 @@ function useFreezeWatch(source: unknown): void {
       watch.current = next;
       if (verdict === "none") return;
 
-      if (verdict === "reprise") {
+      if (verdict === "resumed") {
         // Ça repart tout seul, et c'est le fait le plus instructif du dossier :
         // rien n'a été relancé entre-temps.
         poserGel(false);
