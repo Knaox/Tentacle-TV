@@ -1,7 +1,13 @@
 import { Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings, useOwnPlaybackSettings } from "@tentacle-tv/api-client";
-import { detectPreset, presetSettings } from "@tentacle-tv/shared";
+import {
+  PRESET_HINT_KEYS,
+  PRESET_LABEL_KEYS,
+  SELECTABLE_PRESETS,
+  detectPreset,
+  presetSettings,
+} from "@tentacle-tv/shared";
 import { Focusable } from "../focus/Focusable";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
@@ -94,30 +100,23 @@ export function TVPlaybackSettingsSection() {
   const settings = useOwnPlaybackSettings();
   const preset = detectPreset(settings);
 
+  // La liste vient de SELECTABLE_PRESETS, jamais d'un tableau écrit ici :
+  // écrite à la main, elle avait déjà manqué l'ajout de « Par défaut ».
   const choices: Choice[] = [
-    { value: "manual", label: t("playbackModeManual") },
-    { value: "automatic", label: t("playbackModeAutomatic") },
-    ...(preset === "custom" ? [{ value: "custom", label: t("playbackModeCustom") }] : []),
+    ...SELECTABLE_PRESETS.map((value) => ({ value, label: t(PRESET_LABEL_KEYS[value]) })),
+    ...(preset === "custom" ? [{ value: "custom", label: t(PRESET_LABEL_KEYS.custom) }] : []),
   ];
-
-  const hint =
-    preset === "manual"
-      ? "playbackModeManualHint"
-      : preset === "automatic"
-        ? "playbackModeAutomaticHint"
-        : "playbackModeCustomHint";
 
   return (
     <>
       <SettingBlock
         title={t("playbackModeLabel")}
-        hint={t(hint)}
+        hint={t(PRESET_HINT_KEYS[preset])}
         value={preset}
         choices={choices}
         onChoose={(value) => {
-          if (value === "manual" || value === "automatic") {
-            setPlaybackSettings(presetSettings(value));
-          }
+          const chosen = SELECTABLE_PRESETS.find((entry) => entry === value);
+          if (chosen) setPlaybackSettings(presetSettings(chosen));
         }}
       />
       <Text style={{

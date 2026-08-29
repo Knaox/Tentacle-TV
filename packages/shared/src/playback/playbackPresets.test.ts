@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PLAYBACK_SETTINGS, normalizePlaybackSettings } from "./playbackSettings";
-import { detectPreset, presetSettings, SELECTABLE_PRESETS } from "./playbackPresets";
+import {
+  PRESET_HINT_KEYS,
+  PRESET_LABEL_KEYS,
+  SELECTABLE_PRESETS,
+  detectPreset,
+  presetSettings,
+} from "./playbackPresets";
 
 describe("les préréglages de lecture", () => {
   it("chaque mode se relit tel qu'il s'est écrit", () => {
@@ -61,5 +67,21 @@ describe("les préréglages de lecture", () => {
     expect(preset.recap.action).toBe("button");
     expect(preset.outro.action).toBe("button");
     expect(preset.next).toMatchObject({ nextCard: true, nextCountdown: true, nextAutoPlay: true });
+  });
+});
+
+describe("les clés i18n des modes", () => {
+  it("chaque mode a son libellé ET son aide — un mode sans clé s'afficherait vide", () => {
+    for (const preset of [...SELECTABLE_PRESETS, "custom"] as const) {
+      expect(PRESET_LABEL_KEYS[preset]).toBeTruthy();
+      expect(PRESET_HINT_KEYS[preset]).toBeTruthy();
+    }
+  });
+
+  it("« Par défaut » est PROPOSABLE — c'est le mode d'un compte neuf", () => {
+    // Sans lui dans cette liste, les interfaces n'affichaient aucune option
+    // cochée pour quelqu'un qui n'avait jamais rien réglé.
+    expect(SELECTABLE_PRESETS).toContain("default");
+    expect(detectPreset(DEFAULT_PLAYBACK_SETTINGS)).toBe("default");
   });
 });

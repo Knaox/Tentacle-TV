@@ -126,6 +126,9 @@ export default {
   // gens se posent ; le détail vit sous un repli.
   playbackModeTitle: "Sauts et enchaînement",
   playbackModeLabel: "Ce que fait le lecteur",
+  playbackModeDefault: "Par défaut",
+  playbackModeDefaultHint:
+    "Le réglage livré : le générique de début et l'aperçu du suivant se passent seuls après cinq secondes, le résumé et le générique de fin vous sont proposés, et l'épisode suivant s'enchaîne.",
   playbackModeManual: "Me proposer",
   playbackModeAutomatic: "Faire tout seul",
   playbackModeCustom: "Personnalisé",
