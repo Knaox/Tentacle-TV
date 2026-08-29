@@ -11,11 +11,22 @@
  *
  * Cache mémoire par item, TTL court, conservation de la dernière valeur connue
  * quand Jellyfin ne répond plus (stale-on-error, comme jellyfinSystemConfig).
+ *
+ * ⚠️ `GET /Items/{id}` EXIGE un `userId` — sans lui, Jellyfin 10.11 répond 400.
+ * Ce détail a coûté cher : la requête échouait pour TOUS les médias, `fetchJson`
+ * rendait `null`, et le paquet partait avec `runtimeMs = 0` et zéro chapitre.
+ * Or le résolveur lit `runtimeMs` pour décider s'il reste quelque chose après
+ * le générique (`hasContentAfter`) : à zéro, un Outro vaut toujours « rien
+ * après », donc « passer le générique » d'un film valait « terminer le film »
+ * — la scène post-générique était perdue, sur chaque film. Le repli par
+ * chapitres et les replis greffon (qui testent `Type === "Episode"`) n'ont,
+ * eux, jamais tourné. D'où le journal ci-dessous : un item illisible ne doit
+ * plus jamais passer en silence.
  */
 
 import type { SegmentSources } from "../playback/resolveSegments";
 import { TICKS_PER_MS } from "../playback/segmentTypes";
-import { getJellyfinApiKey, getJellyfinUrl } from "./configStore";
+import { getConfigValue, getJellyfinApiKey, getJellyfinUrl } from "./configStore";
 
 const TTL_MS = 60_000;
 const MAX_ENTRIES = 200;
@@ -74,15 +85,32 @@ function chapterMarkers(item: ItemSnapshot): SegmentSources["chapters"] {
     .map((c) => ({ Name: c.Name as string, StartPositionTicks: c.StartPositionTicks as number }));
 }
 
+/**
+ * L'URL de l'item, avec le `userId` sans lequel Jellyfin 10.11 rend 400.
+ * L'identifiant de l'administrateur est déjà en base (`admin_jellyfin_id`,
+ * posé par l'assistant de configuration) ; à défaut on tente quand même la
+ * forme nue, qui répondait sur les serveurs plus anciens.
+ */
+function itemUrl(url: string, itemId: string): string {
+  const adminId = getConfigValue("admin_jellyfin_id");
+  const user = adminId ? `userId=${encodeURIComponent(adminId)}&` : "";
+  return `${url}/Items/${itemId}?${user}fields=Chapters`;
+}
+
 async function fetchBundle(itemId: string, url: string, apiKey: string): Promise<{
   bundle: SegmentSourceBundle;
   anySuccess: boolean;
 }> {
   const [itemRaw, nativeRaw] = await Promise.all([
-    fetchJson(`${url}/Items/${itemId}?fields=Chapters`, apiKey),
+    fetchJson(itemUrl(url, itemId), apiKey),
     fetchJson(`${url}/MediaSegments/${itemId}`, apiKey),
   ]);
 
+  if (itemRaw === null) {
+    // Sans l'item, pas de durée ni de chapitres : le contrat sera bancal et le
+    // dire vaut mieux que de rendre un Outro qui termine un film par surprise.
+    console.warn(`[segments] item ${itemId} illisible chez Jellyfin — durée et chapitres perdus`);
+  }
   const item = (itemRaw ?? {}) as ItemSnapshot;
   const mediaSegments = nativeRaw as SegmentSources["mediaSegments"];
   const hasNative = Boolean(
