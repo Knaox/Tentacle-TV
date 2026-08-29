@@ -12,8 +12,9 @@
  * ré-exporte, aucun appelant n'a bougé.
  */
 
-import { findSegments, type ResolvedSegment } from "./segmentTypes";
+import { findSegments, type ResolvedSegment, type SegmentType } from "./segmentTypes";
 import { WINDOW_TAIL_MS } from "./segmentWindow";
+import { findSkipCandidate, type SkipCandidateInput } from "./skipCandidate";
 import {
   beforeEndPositionMs,
   resolveBeforeEnd,
@@ -94,4 +95,49 @@ export function nextEpisodeReachable(
   if (!target) return false;
   const threshold = beforeEndPositionMs(target, runtimeMs);
   return threshold !== null && positionMs >= threshold;
+}
+
+/**
+ * L'enchaînement d'épisode est-il ÉLIGIBLE ici et maintenant ?
+ *
+ * UN SEUL sélecteur, pour la carte ET pour le minuteur. C'est une exigence, pas
+ * un confort : `autoNextEngine` ne connaît ni position ni segments, il ne sait
+ * que ce que l'appelant lui dit — et si les deux ne disent pas la même chose,
+ * l'épisode part sans qu'aucune surface l'ait annoncé. C'est exactement ce qui
+ * est arrivé, deux fois.
+ *
+ * Trois conditions, et les deux dernières sont des REFUS de l'utilisateur :
+ *
+ * 1. la fenêtre est franchie (`nextCardTriggerReached`) ;
+ * 2. la scène post-générique n'a pas été revendiquée — on a demandé à la voir ;
+ * 3. le passage en cours n'a pas été mis en sourdine. Refuser un saut, c'est
+ *    vouloir REGARDER ce qui passe : ni la carte ni le minuteur ne doivent
+ *    s'engouffrer dans la fenêtre que le bouton vient de libérer. Sans cette
+ *    ligne, croiser « aller à la scène post-générique » faisait paraître la
+ *    carte, puis emportait vers l'épisode suivant dix secondes plus tard —
+ *    l'exact contraire de ce que la croix veut dire.
+ *
+ * L'écran de FIN n'en dépend pas : le média est terminé, il n'y a plus rien à
+ * regarder, et le refus d'un passage ne vaut pas refus de la suite.
+ */
+export interface AutoNextEligibilityInput extends SkipCandidateInput {
+  runtimeMs: number;
+  libraryId?: string | null;
+  /** Les passages mis en sourdine par la croix. */
+  mutedSegments?: ReadonlySet<SegmentType>;
+  /** La scène post-générique a été revendiquée (cf. `overlayArbiter`). */
+  postCreditsClaimed?: boolean;
+}
+
+export function autoNextEligible(input: AutoNextEligibilityInput): boolean {
+  if (input.postCreditsClaimed) return false;
+  const candidate = findSkipCandidate(input);
+  if (candidate && input.mutedSegments?.has(candidate.segment.type) === true) return false;
+  return nextCardTriggerReached(
+    input.positionMs,
+    input.runtimeMs,
+    input.segments,
+    input.settings.next,
+    input.libraryId ?? null,
+  );
 }

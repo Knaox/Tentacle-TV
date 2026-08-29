@@ -8,24 +8,24 @@
  * et `overlayRef` est un miroir SYNCHRONE : le bouton Retour TV le lit dans
  * le même dispatch d'événement, où un état React serait périmé.
  *
- * La CROIX d'un bouton met le passage en sourdine — voir `useMutedSegments.ts`.
- * Le SAUT VERS UNE SCÈNE post-générique la revendique — voir
- * `usePostCreditsClaim.ts` : tant qu'elle tient, la carte « à suivre » se tait,
- * car sa fenêtre de position se referme sur la cible même du saut.
+ * Les DEUX REFUS — la croix, qui met le passage en sourdine
+ * (`useMutedSegments.ts`), et le saut vers une scène post-générique, qui la
+ * revendique (`usePostCreditsClaim.ts`) — font taire la carte « à suivre » ET
+ * son minuteur, par le sélecteur PARTAGÉ `autoNextEligible`. Les séparer, c'est
+ * laisser l'épisode partir sans qu'aucune surface l'ait annoncé.
  * Le RETOUR EN ARRIÈRE dans un passage qu'on vient de sauter réarme la pilule :
  * l'état `skipped` la masque le temps que la position rattrape la cible, mais
- * qui revient derrière la cible n'attend plus rien — il redemande son bouton,
- * et l'attendre pendant les dix secondes du garde-fou n'avait aucun sens.
+ * qui revient derrière la cible n'attend plus rien — il redemande son bouton.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AUTO_NEXT_IDLE, SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
-  arbitrateOverlay, displayedCountdown, displayedNextCountdown, decideAutoNext,
-  decideIntroSkip, findSkipCandidate, hasRewoundPastSkip, isSegmentSilenced,
-  nextCardTriggerReached,
+  arbitrateOverlay, autoNextEligible, displayedCountdown, displayedNextCountdown,
+  decideAutoNext, decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
+  isSegmentSilenced,
   type AutoNextInput, type AutoNextState, type IntroSkipState,
-  type PlayerOverlay, type SegmentType, type SkipCandidate,
+  type PlayerOverlay, type SegmentType, type SkipCandidate, type SkipCandidateInput,
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
 import { useMutedSegments } from "./useMutedSegments";
@@ -41,7 +41,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
   const { muted, mutedRef, mute } = useMutedSegments(input.itemId);
   const postCredits = usePostCreditsClaim(input.itemId);
-  const { claim: claimPostCredits, releaseIfBehind: releasePostCredits } = postCredits;
+  const { claim: claimPostCredits, releaseIfBehind: releasePostCredits, claimedRef: postCreditsClaimedRef } = postCredits;
 
   // Miroirs synchrones : les rappels lisent le présent, pas le rendu d'avant.
   const inputRef = useRef(input);
@@ -80,17 +80,23 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     else p.onEndOfPlayback();
   }, [claimPostCredits]);
 
-  const currentCandidate = useCallback((): SkipCandidate | null => {
+  /** La même forme d'entrée pour le candidat ET l'éligibilité — décrite une fois. */
+  const frameInput = useCallback((): SkipCandidateInput => {
     const p = inputRef.current;
-    return findSkipCandidate({
+    return {
       segments: p.segments,
       positionMs: Math.round(p.positionSeconds * 1000),
       hasStarted: p.hasStarted,
       isEpisode: p.isEpisode,
       hasNextEpisode: p.hasNextEpisode,
       settings: settingsRef.current,
-    });
+    };
   }, []);
+
+  const currentCandidate = useCallback(
+    (): SkipCandidate | null => findSkipCandidate(frameInput()),
+    [frameInput],
+  );
 
   const dispatchNext = useCallback(
     (nextInput: AutoNextInput) => {
@@ -142,21 +148,24 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
       dispatchNext({
         type: "frame",
+        // LE MÊME sélecteur que l'arbitre, refus compris : le minuteur ne
+        // connaît ni position ni segments, et s'il ne dit pas la même chose que
+        // la carte, l'épisode part sans qu'aucune surface l'ait annoncé.
         eligible:
           !p.scrubbing &&
           p.hasStarted &&
-          nextCardTriggerReached(
-            Math.round(p.positionSeconds * 1000),
-            pRuntimeMs,
-            p.segments,
-            settingsRef.current.next,
-            p.libraryId ?? null,
-          ),
+          autoNextEligible({
+            ...frameInput(),
+            runtimeMs: pRuntimeMs,
+            libraryId: p.libraryId ?? null,
+            mutedSegments: mutedRef.current,
+            postCreditsClaimed: postCreditsClaimedRef.current,
+          }),
         ended: p.playbackEnded,
         elapsedMs,
       });
     },
-    [currentCandidate, dispatchNext, runAction, commitSkipState, releasePostCredits],
+    [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, mutedRef, postCreditsClaimedRef],
   );
 
   // Changement d'épisode : tout se réarme.
@@ -199,14 +208,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
 
   const overlay = useMemo<PlayerOverlay>(() => {
     if (input.scrubbing) return { kind: "none" };
-    const candidate = findSkipCandidate({
-      segments: input.segments,
-      positionMs,
-      hasStarted: input.hasStarted,
-      isEpisode: input.isEpisode,
-      hasNextEpisode: input.hasNextEpisode,
-      settings,
-    });
+    const candidate = findSkipCandidate(frameInput());
     return arbitrateOverlay({
       positionMs,
       runtimeMs,
@@ -238,7 +240,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       },
       countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
     });
-  }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted, postCredits.claimed]);
+  }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted, postCredits.claimed, frameInput]);
 
   const overlayRef = useRef<PlayerOverlay>(overlay);
   overlayRef.current = overlay;
