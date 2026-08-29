@@ -13,7 +13,10 @@
  *   4. les chapitres nommés COMBLENT les types manquants (Intro/Outro
  *      seulement) — et rien d'autre : aucun repli statistique ;
  *   5. les chapitres AFFINENT la fin d'un Outro, pour ne pas manger la scène
- *      post-générique (`segmentChapters.ts`).
+ *      post-générique (`segmentChapters.ts`) ;
+ *   6. à défaut de chapitres, les VIGNETTES de la barre de progression rendent
+ *      le même service — et fournissent le générique quand personne ne l'a vu
+ *      (`creditsFromFrames.ts`).
  *
  * L'API native rend une UNION : plusieurs greffons écrivent leurs segments
  * côte à côte, et le même passage y figure deux fois à une seconde près
@@ -44,8 +47,20 @@ import {
   type ChapterMarker,
   type RawBounds,
 } from "./segmentChapters";
+import { applyFrameVerdict, type FrameVerdict } from "./creditsFromFrames";
+import {
+  collectDict,
+  collectTimestamps,
+  type IntroSkipperDictPayload,
+  type IntroSkipperTimestampsPayload,
+} from "./segmentPlugins";
 
 export type { ChapterMarker } from "./segmentChapters";
+export type {
+  IntroSkipperBounds,
+  IntroSkipperDictPayload,
+  IntroSkipperTimestampsPayload,
+} from "./segmentPlugins";
 
 // ---------- Payloads BRUTS des sources (typés ici : shared reste sans dépendance) ----------
 
@@ -59,44 +74,21 @@ export interface MediaSegmentsPayload {
   Items?: JellyfinMediaSegmentDto[] | null;
 }
 
-/** Bornes du greffon intro-skipper, en SECONDES, casse variable. */
-export interface IntroSkipperBounds {
-  start?: number;
-  end?: number;
-  Start?: number;
-  End?: number;
-}
-
-/** Greffon : GET /Episode/{id}/IntroSkipperSegments (dictionnaire). */
-export interface IntroSkipperDictPayload {
-  [key: string]: IntroSkipperBounds | undefined;
-}
-
-/** Greffon : GET /Episode/{id}/Timestamps (propriétés nommées). */
-export interface IntroSkipperTimestampsPayload {
-  introduction?: IntroSkipperBounds;
-  credits?: IntroSkipperBounds;
-  recap?: IntroSkipperBounds;
-  preview?: IntroSkipperBounds;
-  commercial?: IntroSkipperBounds;
-}
-
 export interface SegmentSources {
   mediaSegments?: MediaSegmentsPayload | null;
   pluginDict?: IntroSkipperDictPayload | null;
   pluginTimestamps?: IntroSkipperTimestampsPayload | null;
   chapters?: readonly ChapterMarker[] | null;
+  /**
+   * Ce que les vignettes ont vu du générique de fin, quand on a eu à regarder.
+   *
+   * Elle arrive DÉJÀ analysée : la lecture des planches et le calcul des mesures
+   * vivent côté serveur (`services/trickplayFrames.ts`), la décision vit ici.
+   */
+  frames?: FrameVerdict | null;
 }
 
 // ---------- Collecte par source ----------
-
-function pluginBoundsToMs(bounds: IntroSkipperBounds | undefined): RawBounds | null {
-  if (!bounds) return null;
-  const start = bounds.start ?? bounds.Start ?? 0;
-  const end = bounds.end ?? bounds.End ?? 0;
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= 0) return null;
-  return { startMs: start * 1000, endMs: end * 1000, source: "jellyfin" };
-}
 
 /**
  * Le meilleur candidat d'un type, parmi ceux qu'ont écrits les fournisseurs.
@@ -203,43 +195,6 @@ function collectNative(
   return bounds;
 }
 
-const DICT_KEYS: ReadonlyArray<readonly [SegmentType, string, string]> = [
-  ["Intro", "Introduction", "introduction"],
-  ["Outro", "Credits", "credits"],
-  ["Recap", "Recap", "recap"],
-  ["Preview", "Preview", "preview"],
-  ["Commercial", "Commercial", "commercial"],
-];
-
-function collectDict(payload: IntroSkipperDictPayload | null | undefined): BoundsByType | null {
-  if (!payload) return null;
-  const bounds: BoundsByType = new Map();
-  for (const [type, pascal, camel] of DICT_KEYS) {
-    const ms = pluginBoundsToMs(payload[pascal] ?? payload[camel]);
-    if (ms) bounds.set(type, [ms]);
-  }
-  return bounds.size > 0 ? bounds : null;
-}
-
-function collectTimestamps(
-  payload: IntroSkipperTimestampsPayload | null | undefined,
-): BoundsByType | null {
-  if (!payload) return null;
-  const fields: ReadonlyArray<readonly [SegmentType, IntroSkipperBounds | undefined]> = [
-    ["Intro", payload.introduction],
-    ["Outro", payload.credits],
-    ["Recap", payload.recap],
-    ["Preview", payload.preview],
-    ["Commercial", payload.commercial],
-  ];
-  const bounds: BoundsByType = new Map();
-  for (const [type, raw] of fields) {
-    const ms = pluginBoundsToMs(raw);
-    if (ms) bounds.set(type, [ms]);
-  }
-  return bounds.size > 0 ? bounds : null;
-}
-
 // ---------- Assainissement et verdict de fin ----------
 
 function finalize(type: SegmentType, bound: RawBounds, runtimeMs: number): ResolvedSegment | null {
@@ -283,6 +238,10 @@ export function resolvePlaybackSegments(
     (new Map() as BoundsByType);
   fillFromChapters(bounds, sources.chapters, runtime);
   refineOutroWithChapters(bounds, sources.chapters, runtime);
+  // EN DERNIER, et c'est ce qui fait que l'analyse ne gêne personne : tout ce
+  // qui précède a eu sa chance, et elle ne parle que sur ce qui reste — un
+  // générique absent, ou un générique qui court jusqu'au bout du fichier.
+  applyFrameVerdict(bounds, sources.frames ?? null, runtime);
 
   const segments = [...bounds.entries()]
     .flatMap(([type, list]) => list.map((bound) => finalize(type, bound, runtime)))
