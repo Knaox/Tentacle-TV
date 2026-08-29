@@ -117,6 +117,22 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 - **Performance**: use `memo`, `useCallback`, `useMemo` to prevent re-renders; lazy load images with shimmer skeletons
 - **Video**: direct play first, 30s pre-buffer, automatic transcode fallback on codec errors
 - **Un commit par étape** — chaque correctif, extraction ou bump se commite seul, dès qu'il tient debout (`lint` + `typecheck` passés). Jamais un gros commit fourre-tout en fin de chantier : une étape qui se révèle mauvaise doit pouvoir être annulée sans emporter les autres. Commiter ne vaut PAS publier — pas de tag, pas de `push`, pas de dispatch CI sans demande explicite.
+- **Le CODE est en anglais, les COMMENTAIRES en français.** Noms de fichiers,
+  variables, fonctions, types, interfaces, paramètres, constantes, champs
+  d'objets internes : tout en anglais. Commentaires, documentation, titres de
+  tests en prose et messages de commit : en français. Un fichier nouveau ne
+  déroge jamais ; un fichier ancien encore français se corrige quand on le
+  touche vraiment, pas « en passant ».
+
+  ⚠️ **Un nom qui est traversé par une chaîne n'est pas un identifiant.** Ne
+  jamais renommer, sous prétexte d'anglais : les clés de stockage
+  (`tentacle_*`) et les clés des JSON qu'elles contiennent, les clés i18n, les
+  champs d'API HTTP/JSON (Jellyfin comme les nôtres), les types de messages
+  Watch Together (`wt:*`), les noms de variables CSS et de jetons de thème, les
+  noms de propriétés mpv. Les renommer ne casse pas la compilation — ça casse
+  l'exécution, en silence, chez l'utilisateur qui perd ses réglages. Vérifier
+  l'usage AVANT de renommer, et laisser un commentaire là où le français doit
+  rester (cf. `masquees` dans `railPinning.ts`).
 
 ### Linux — le compromis Wayland / X11, et la troisième voie du compositeur
 
