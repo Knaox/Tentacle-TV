@@ -1,5 +1,5 @@
-import { lireIntention, estHorizontale, sens } from "../focus/keys";
-import { DELAI_RALLUMAGE_MS, MachineScrub, creerArbitreFleches, creerMoteurMaintien, lireEtat, montrerOsd, reporterMasquage, sAbonner } from "@tentacle-tv/tv-core";
+import { lireIntention, isHorizontal, directionSign } from "../focus/keys";
+import { RELIGHT_DELAY_MS, ScrubMachine, createArrowArbiter, createHoldMotor, readState, showOsd, deferAutoHide, subscribe } from "@tentacle-tv/tv-core";
 import { activerSurcoucheFocalisee, surcoucheAffichee } from "./okOverlay";
 /**
  * L'arbitre unique des touches sur le lecteur.
@@ -49,7 +49,7 @@ export interface ActionsLecteurTv {
   /** Saut sec, sans allumer l'habillage : le badge suffit à dire ce qui se passe. */
   sauter: (delta: number) => void;
   quitter: () => void;
-  scrub: MachineScrub;
+  scrub: ScrubMachine;
 }
 
 /**
@@ -73,9 +73,9 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
   // par lui, et lui seul décide du palier. Les actions sont relues à chaque
   // pas, tic compris — un tic qui part une seconde après l'appui doit joindre
   // le lecteur d'alors, pas celui d'avant.
-  const moteur = creerMoteurMaintien({
-    sauter: (direction) => lire().sauter(direction === 1 ? SAUT_AVANT_S : SAUT_ARRIERE_S),
-    avancer: (direction, palier) => lire().scrub.pas(direction, palier),
+  const moteur = createHoldMotor({
+    jump: (direction) => lire().sauter(direction === 1 ? SAUT_AVANT_S : SAUT_ARRIERE_S),
+    advance: (direction, tier) => lire().scrub.step(direction, tier),
   });
 
   /**
@@ -113,21 +113,21 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
    * de masquage l'éteint tout seul. C'est justement ce cas-là qu'aucune garde
    * posée sur le chemin des touches ne pourrait rattraper — d'où l'abonnement.
    */
-  let modeConnu = lireEtat().mode;
-  const desabonner = sAbonner(() => {
-    const mode = lireEtat().mode;
+  let modeConnu = readState().mode;
+  const desabonner = subscribe(() => {
+    const mode = readState().mode;
     if (mode === modeConnu) return;
     modeConnu = mode;
-    moteur.annuler();
+    moteur.cancel();
     // Seulement quand l'habillage S'ÉTEINT : ce qui restait d'un double appui
     // n'a plus de sens, on repart d'une flèche qui rallume. Surtout pas sur
     // l'allumage — c'est la flèche elle-même qui vient de le provoquer, et
     // effacer son amorce ici lui retirerait le second appui qu'elle attend.
-    if (mode === "repos") arbitre.oublier();
+    if (mode === "repos") arbitre.forget();
   });
 
   /** Qui possède une flèche horizontale, appui par appui. */
-  const arbitre = creerArbitreFleches();
+  const arbitre = createArrowArbiter();
 
   /** Le rallumage en sursis, tant qu'un second appui peut encore l'annuler. */
   let attenteRallumage: ReturnType<typeof setTimeout> | null = null;
@@ -169,16 +169,16 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         armerRallumage();
         return;
       }
-      montrerOsd();
-    }, DELAI_RALLUMAGE_MS);
+      showOsd();
+    }, RELIGHT_DELAY_MS);
   };
 
   const surTouche = (evenement: KeyboardEvent): void => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type === "retour") return;
 
-    const etat = lireEtat();
-    if (!etat.monte) return;
+    const etat = readState();
+    if (!etat.mounted) return;
 
     const actions = lire();
     evenement.preventDefault();
@@ -190,9 +190,9 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
 
       // Les verticales n'ont jamais servi au transport : sous l'habillage elles
       // parcourent les boutons, au repos elles le ramènent.
-      if (!estHorizontale(intention.direction)) {
-        if (etat.mode === "repos") montrerOsd();
-        else reporterMasquage();
+      if (!isHorizontal(intention.direction)) {
+        if (etat.mode === "repos") showOsd();
+        else deferAutoHide();
         return;
       }
 
@@ -205,11 +205,11 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
       // arriver : c'est le seul chemin vers ce bouton-là, qui ne prend pas le
       // focus quand quelqu'un d'autre s'en sert.
       if (surcoucheAffichee()) {
-        if (etat.mode === "osd") reporterMasquage();
+        if (etat.mode === "osd") deferAutoHide();
         return;
       }
 
-      switch (arbitre.decider(code, etat.mode, evenement.repeat)) {
+      switch (arbitre.decide(code, etat.mode, evenement.repeat)) {
         case "attendre":
           // On laisse sa chance au second appui : les commandes ne paraissent
           // qu'au terme du délai, et un saut demandé entre-temps les annule.
@@ -221,20 +221,20 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
           // nœud avant nous — on ne fait qu'absorber la touche, et garder
           // l'habillage à l'écran tant qu'on le parcourt.
           codeAbsorbeParOsd = code;
-          reporterMasquage();
+          deferAutoHide();
           return;
         default:
           // Un saut est demandé : les commandes n'ont plus à paraître.
           annulerRallumage();
           if (code === codeAbsorbeParOsd) return;
-          moteur.appuyer(code, sens(intention.direction), evenement.repeat);
+          moteur.press(code, directionSign(intention.direction), evenement.repeat);
           return;
       }
     }
 
     if (intention.type === "valider") {
       if (etat.mode === "scrub") {
-        actions.scrub.confirmer();
+        actions.scrub.confirm();
         finDeplacement = Date.now();
         return;
       }
@@ -244,7 +244,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
         // tient, OK lui appartient : c'est le seul geste qui change de
         // propriétaire, les flèches gardent le leur.
         if (activerSurcoucheFocalisee()) return;
-        montrerOsd();
+        showOsd();
         return;
       }
       if (echoDeSortie()) return;
@@ -253,16 +253,16 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     }
 
     // Transport.
-    if (intention.commande === "arret") {
-      if (etat.mode === "scrub") actions.scrub.annuler();
+    if (intention.command === "arret") {
+      if (etat.mode === "scrub") actions.scrub.cancel();
       actions.quitter();
       return;
     }
 
-    if (intention.commande === "avance" || intention.commande === "retour") {
-      moteur.appuyer(
+    if (intention.command === "avance" || intention.command === "retour") {
+      moteur.press(
         evenement.keyCode,
-        intention.commande === "avance" ? 1 : -1,
+        intention.command === "avance" ? 1 : -1,
         evenement.repeat,
       );
       return;
@@ -272,21 +272,21 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     // que de reprendre à l'ancienne position — c'est le geste qu'on fait quand
     // on a trouvé où l'on voulait aller.
     if (etat.mode === "scrub") {
-      actions.scrub.confirmer();
+      actions.scrub.confirm();
       finDeplacement = Date.now();
       return;
     }
     if (echoDeSortie()) return;
     actions.basculerLecture();
-    montrerOsd();
+    showOsd();
   };
 
   const surRelachement = (evenement: KeyboardEvent): void => {
     // Le doigt s'est levé : la flèche redevient disponible pour le flux.
     if (evenement.keyCode === flecheEnfoncee) flecheEnfoncee = 0;
     if (evenement.keyCode === codeAbsorbeParOsd) codeAbsorbeParOsd = 0;
-    arbitre.relacher(evenement.keyCode);
-    moteur.relacher(evenement.keyCode);
+    arbitre.release(evenement.keyCode);
+    moteur.release(evenement.keyCode);
   };
 
   document.addEventListener("keydown", surTouche, true);
@@ -299,7 +299,7 @@ export function installerTouchesLecteurTv(lire: () => ActionsLecteurTv): () => v
     document.removeEventListener("keyup", surRelachement, true);
     // Sans quoi un tic de maintien survivrait au démontage du lecteur et
     // continuerait de pousser le curseur d'un écran qui n'est plus là.
-    moteur.detruire();
+    moteur.destroy();
   };
 }
 

@@ -124,18 +124,18 @@ function readPayload(raw: string): PersistedPayload | null {
  * La description n'entre volontairement pas dans le test : plusieurs hubs ne la
  * demandent pas dans leurs champs, tous seraient donc éternellement périmés.
  */
-function decritUneAbsence(data: unknown): boolean {
+function hasMissingArtwork(data: unknown): boolean {
   const items = Array.isArray(data)
     ? data
     : (data as { Items?: unknown[] } | null)?.Items;
   if (!Array.isArray(items) || items.length === 0) return false;
 
-  return items.some((brut) => {
-    if (!brut || typeof brut !== "object") return false;
-    const item = brut as { ImageTags?: Record<string, unknown>; BackdropImageTags?: unknown[] };
-    const sansAffiche = !item.ImageTags || Object.keys(item.ImageTags).length === 0;
-    const sansFond = !Array.isArray(item.BackdropImageTags) || item.BackdropImageTags.length === 0;
-    return sansAffiche && sansFond;
+  return items.some((raw) => {
+    if (!raw || typeof raw !== "object") return false;
+    const item = raw as { ImageTags?: Record<string, unknown>; BackdropImageTags?: unknown[] };
+    const noPoster = !item.ImageTags || Object.keys(item.ImageTags).length === 0;
+    const noBackdrop = !Array.isArray(item.BackdropImageTags) || item.BackdropImageTags.length === 0;
+    return noPoster && noBackdrop;
   });
 }
 
@@ -174,7 +174,7 @@ export async function hydrateQueryClient(
         if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
         // Périmée d'office si elle décrit des absences : affichée tout de suite,
         // mais redemandée dans la foulée plutôt que tenue pour acquise.
-        const updatedAt = decritUneAbsence(entry.data) ? 0 : entry.dataUpdatedAt;
+        const updatedAt = hasMissingArtwork(entry.data) ? 0 : entry.dataUpdatedAt;
         qc.setQueryData(queryKey, entry.data, { updatedAt });
       } catch {
         // Une entrée corrompue ne doit pas bloquer le reste

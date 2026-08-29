@@ -62,7 +62,7 @@ export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
 
     // Ma liste et Favoris — entre l'accueil et les bibliothèques, masquables,
     // exactement l'ordre du rail de la LG.
-    if (!epinglage.estMasquee("Watchlist")) {
+    if (!epinglage.isHidden("Watchlist")) {
       haut.push({
         key: "Watchlist",
         label: t("myList"),
@@ -70,7 +70,7 @@ export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
         masquable: true,
       });
     }
-    if (!epinglage.estMasquee("Favorites")) {
+    if (!epinglage.isHidden("Favorites")) {
       haut.push({
         key: "Favorites",
         label: t("common:myFavorites"),
@@ -81,7 +81,7 @@ export function useRailEntries(): { haut: RailItem[]; bas: RailItem[] } {
 
     for (const bibliotheque of bibliotheques ?? []) {
       const cle = `Library_${bibliotheque.Id}`;
-      if (epinglage.estMasquee(cle)) continue;
+      if (epinglage.isHidden(cle)) continue;
       haut.push({
         key: cle,
         label: possessiveLibraryName(bibliotheque.Name, i18n.language),

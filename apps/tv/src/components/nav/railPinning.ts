@@ -1,4 +1,4 @@
-import { creerMagasinEpinglageRail, creerUseEpinglageRail } from "@tentacle-tv/tv-core";
+import { createRailPinningStore, createUseRailPinning } from "@tentacle-tv/tv-core";
 import { tvStorage } from "../../storage/RNStorageAdapter";
 
 /**
@@ -12,6 +12,6 @@ import { tvStorage } from "../../storage/RNStorageAdapter";
  * `hydrate()` passé, comme `localStorage`. C'est ce qui permet au magasin
  * d'être exactement le même code sur les trois cibles.
  */
-export const magasinEpinglageRail = creerMagasinEpinglageRail(tvStorage);
+export const magasinEpinglageRail = createRailPinningStore(tvStorage);
 
-export const useEpinglageRail = creerUseEpinglageRail(magasinEpinglageRail);
+export const useEpinglageRail = createUseRailPinning(magasinEpinglageRail);

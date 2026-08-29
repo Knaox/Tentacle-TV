@@ -192,7 +192,7 @@ export function useVideoSource({
             data.details === Hls.ErrorDetails.MANIFEST_LOAD_ERROR &&
             jfClient.getDirectStreaming()
           ) {
-            jfClient.signalerDirectStreamingBloque("manifeste HLS direct refuse");
+            jfClient.signalDirectStreamingBlocked("manifeste HLS direct refuse");
             // `failsafe` conservé : hls.js est détruit juste après, plus aucun
             // événement ne viendra de l'élément vidéo. Si la relance échoue,
             // c'est lui — et lui seul — qui sortira du spinner.

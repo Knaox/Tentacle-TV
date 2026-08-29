@@ -10,8 +10,8 @@ describe("les jetons natifs se chargent", () => {
     expect(TV_OVERSCAN_PT).toEqual({ x: 96, y: 54 });
     // Le halo se transpose par un RAPPORT, jamais par les 48 px du CSS : ceux-là
     // sont des pixels d'écran, `blurRadius` compte en pixels de bitmap.
-    expect(TV_AMBILIGHT.rapportFlou).toBeCloseTo(48 / 1524, 6);
-    expect(TV_AMBILIGHT.largeurSource).toBe(256);
-    expect(TV_AMBILIGHT.couches).toBe(16);
+    expect(TV_AMBILIGHT.blurRatio).toBeCloseTo(48 / 1524, 6);
+    expect(TV_AMBILIGHT.sourceWidth).toBe(256);
+    expect(TV_AMBILIGHT.layers).toBe(16);
   });
 });

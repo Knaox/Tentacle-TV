@@ -37,10 +37,10 @@ export function buildImageUrl(
   // Les appelants demandent une taille CSS ; la densité la ramène à la
   // résolution où l'image sera réellement rastérisée. Neutre partout sauf sur
   // le téléviseur, qui compose à 1280 pour une dalle de 1920.
-  const densite = scale * pixelDensity();
+  const density = scale * pixelDensity();
   const p: Record<string, string> = {};
-  if (options?.width) p.maxWidth = String(Math.round(options.width * densite));
-  if (options?.height) p.maxHeight = String(Math.round(options.height * densite));
+  if (options?.width) p.maxWidth = String(Math.round(options.width * density));
+  if (options?.height) p.maxHeight = String(Math.round(options.height * density));
   if (options?.quality) p.quality = String(Math.min(options.quality, maxQuality));
   if (options?.tag) p.tag = options.tag;
   const idx = options?.index ?? 0;

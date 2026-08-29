@@ -122,7 +122,7 @@ export const Spacing = {
   /** Padding from screen edges (TV overscan-safe). */
   screenPadding: 32,
   /** Gouttière des rangées et des cartes bannière (`--row-gutter-desktop`). */
-  rowGutter: TV_BANNER_CARD.gouttiere,
+  rowGutter: TV_BANNER_CARD.gutter,
   /** Espace SOUS chaque rangée (web `mb-10`) et sous la carte bannière
    *  (hero web `pb-10`) — les rangées ne portent pas de marge haute. */
   rowGap: 40,

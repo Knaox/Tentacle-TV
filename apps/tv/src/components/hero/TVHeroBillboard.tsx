@@ -77,8 +77,8 @@ export const TVHeroBillboard = memo(function TVHeroBillboard({
 
   return (
     <TVBannerCardFrame
-      heightVh={TV_BANNER_CARD.hauteurAccueilVh}
-      ambilightUri={backdropUriOf(client, content, TV_AMBILIGHT.largeurSource, 70)}
+      heightVh={TV_BANNER_CARD.homeHeightVh}
+      ambilightUri={backdropUriOf(client, content, TV_AMBILIGHT.sourceWidth, 70)}
       // L'écart carte → première rangée de la référence (hero web `pb-10`).
       style={{ marginBottom: Spacing.rowGap }}
     >

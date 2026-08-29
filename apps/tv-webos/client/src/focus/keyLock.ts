@@ -1,4 +1,4 @@
-import { creerVerrouOk } from "@tentacle-tv/tv-core";
+import { createSelectKeyLock } from "@tentacle-tv/tv-core";
 
 /**
  * L'installeur LG du verrou d'OK.
@@ -17,7 +17,7 @@ import { creerVerrouOk } from "@tentacle-tv/tv-core";
  * lui qui désarme.
  */
 
-const machine = creerVerrouOk();
+const machine = createSelectKeyLock();
 let retirerEcouteurs: (() => void) | null = null;
 
 /**
@@ -28,26 +28,26 @@ let retirerEcouteurs: (() => void) | null = null;
 export function armerVerrouOk(): void {
   if (typeof window === "undefined") return;
 
-  machine.armer(() => {
+  machine.arm(() => {
     retirerEcouteurs?.();
     retirerEcouteurs = null;
   });
   if (retirerEcouteurs) return;
 
-  const surKeydown = (evenement: KeyboardEvent) => {
-    if (machine.surKeydown(evenement)) {
+  const onKeyDown = (evenement: KeyboardEvent) => {
+    if (machine.onKeyDown(evenement)) {
       evenement.preventDefault();
       evenement.stopPropagation();
     }
   };
-  const surKeyup = (evenement: KeyboardEvent) => {
-    machine.surKeyup(evenement);
+  const onKeyUp = (evenement: KeyboardEvent) => {
+    machine.onKeyUp(evenement);
   };
 
-  window.addEventListener("keydown", surKeydown, true);
-  window.addEventListener("keyup", surKeyup, true);
+  window.addEventListener("keydown", onKeyDown, true);
+  window.addEventListener("keyup", onKeyUp, true);
   retirerEcouteurs = () => {
-    window.removeEventListener("keydown", surKeydown, true);
-    window.removeEventListener("keyup", surKeyup, true);
+    window.removeEventListener("keydown", onKeyDown, true);
+    window.removeEventListener("keyup", onKeyUp, true);
   };
 }

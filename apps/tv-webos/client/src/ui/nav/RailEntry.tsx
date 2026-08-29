@@ -72,7 +72,7 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
       return;
     }
     if (entree.restaure) {
-      epinglage.toutAfficher();
+      epinglage.showAll();
       return;
     }
     navigate(entree.chemin);
@@ -91,14 +91,14 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
     const voisin = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
     const cible = voisin ? voisin.querySelector<HTMLElement>(".rail-entree") : null;
 
-    epinglage.basculer(entree.cle);
+    epinglage.toggle(entree.cle);
     if (cible) window.setTimeout(() => cible.focus(), 0);
   }, [entree.cle, epinglage]);
 
   const appui = useMemo(
     () =>
       creerAppuiLong({
-        court: actionCourte,
+        short: actionCourte,
         long: entree.masquable ? actionLongue : undefined,
       }),
     [actionCourte, actionLongue, entree.masquable],

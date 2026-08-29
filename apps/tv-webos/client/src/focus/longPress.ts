@@ -1,4 +1,4 @@
-import { creerAppuiLong as creerAppuiLongCoeur, type ActionsAppui } from "@tentacle-tv/tv-core";
+import { createLongPress as creerAppuiLongCoeur, type PressActions } from "@tentacle-tv/tv-core";
 import { armerVerrouOk } from "./keyLock";
 
 /**
@@ -13,8 +13,8 @@ import { armerVerrouOk } from "./keyLock";
  * entrées du rail — importent d'ici comme avant et n'ont rien à savoir de la
  * séparation.
  */
-export function creerAppuiLong(actions: ActionsAppui) {
-  return creerAppuiLongCoeur({ ...actions, verrouiller: armerVerrouOk });
+export function creerAppuiLong(actions: PressActions) {
+  return creerAppuiLongCoeur({ ...actions, lock: armerVerrouOk });
 }
 
-export type { ActionsAppui };
+export type { PressActions };

@@ -23,18 +23,18 @@
 
 /** Une couche du halo. `d` : dilatation au-delà de la carte, en points.
  *  `opacity` : l'alpha de CETTE couche — pas le composite qu'elle produit. */
-export interface CoucheHalo {
+export interface HaloLayer {
   d: number;
   opacity: number;
 }
 
-export interface RampeHalo {
+export interface HaloRamp {
   /** Écart-type de l'extinction, en points d'écran. */
   sigma: number;
   /** Débordement total : la dilatation de la couche la plus externe. */
   bleed: number;
   /** De la plus interne à la plus externe. */
-  couches: readonly CoucheHalo[];
+  layers: readonly HaloLayer[];
 }
 
 /** Φ, la répartition normale centrée réduite. `erf` par Abramowitz & Stegun
@@ -58,25 +58,25 @@ export function phi(x: number): number {
 export function probit(p: number): number {
   if (p <= 0) return -10;
   if (p >= 1) return 10;
-  let bas = -10;
-  let haut = 10;
+  let low = -10;
+  let high = 10;
   for (let i = 0; i < 50; i += 1) {
-    const mid = (bas + haut) / 2;
-    if (phi(mid) < p) bas = mid;
-    else haut = mid;
+    const mid = (low + high) / 2;
+    if (phi(mid) < p) low = mid;
+    else high = mid;
   }
-  return (bas + haut) / 2;
+  return (low + high) / 2;
 }
 
 /** L'extinction visée : le flou gaussien floute aussi l'ALPHA, donc à la
  *  distance `d` hors d'une arête il reste `Φ(−d/σ)` — la moitié sur l'arête
  *  elle-même, et non un. C'est la courbe que la rampe discrétise. */
-export const profilHalo = (d: number, sigma: number): number => phi(-d / sigma);
+export const haloProfile = (d: number, sigma: number): number => phi(-d / sigma);
 
 /** σ en points d'écran : le rapport de la référence appliqué à la carte réelle
  *  (48 / 1524 sur le web ; ici la largeur mesurée). */
-export const sigmaHalo = (largeurCarte: number, rapportFlou: number): number =>
-  rapportFlou * largeurCarte;
+export const haloSigma = (cardWidth: number, blurRatio: number): number =>
+  blurRatio * cardWidth;
 
 /**
  * La rampe.
@@ -91,31 +91,31 @@ export const sigmaHalo = (largeurCarte: number, rapportFlou: number): number =>
  * Les alphas obtenus sont tous du même ordre (aucune couche « principale »),
  * et le saut d'un anneau au suivant vaut exactement (0,5 − plancher)/n.
  */
-export function rampeHalo(
-  largeurCarte: number,
-  { rapportFlou, couches: n, plancher }: { rapportFlou: number; couches: number; plancher: number },
-): RampeHalo {
-  const sigma = sigmaHalo(largeurCarte, rapportFlou);
-  const pas = (0.5 - plancher) / n;
+export function haloRamp(
+  cardWidth: number,
+  { blurRatio, layers: n, alphaFloor }: { blurRatio: number; layers: number; alphaFloor: number },
+): HaloRamp {
+  const sigma = haloSigma(cardWidth, blurRatio);
+  const step = (0.5 - alphaFloor) / n;
 
   // Frontières : d_j tel que Φ(−d_j/σ) = 0,5 − j·pas. d_0 vaut 0.
   const d: number[] = [];
-  for (let j = 0; j <= n; j += 1) d.push(sigma * probit(1 - (0.5 - j * pas)));
+  for (let j = 0; j <= n; j += 1) d.push(sigma * probit(1 - (0.5 - j * step)));
 
   // Composites visés, puis les alphas qui les produisent, de l'extérieur vers
   // l'intérieur (chaque couche ne « voit » que ce que les suivantes ont posé).
-  const couches: CoucheHalo[] = [];
-  let compositeSuivant = 0;
+  const layers: HaloLayer[] = [];
+  let nextComposite = 0;
   for (let k = n; k >= 1; k -= 1) {
-    const composite = 0.5 - (k - 0.5) * pas;
-    couches.unshift({
+    const composite = 0.5 - (k - 0.5) * step;
+    layers.unshift({
       d: d[k],
-      opacity: 1 - (1 - composite) / (1 - compositeSuivant),
+      opacity: 1 - (1 - composite) / (1 - nextComposite),
     });
-    compositeSuivant = composite;
+    nextComposite = composite;
   }
 
-  return { sigma, bleed: d[n], couches };
+  return { sigma, bleed: d[n], layers };
 }
 
 /** σ atteint, en pixels du bitmap, pour un `blurRadius` donné — la formule
@@ -128,46 +128,46 @@ export function rampeHalo(
  *  σ_iOS ≈ 0,47·R·densité contre σ_Android ≈ 0,41·R·densité : ni l'une ni
  *  l'autre ne vaut le rayon annoncé, et elles ne coïncident pas (15 % d'écart)
  *  — d'où une inversion par plateforme, pas une constante partagée. */
-export function sigmaEffectif(
-  rayon: number,
-  plateforme: "ios" | "android",
+export function effectiveSigma(
+  radius: number,
+  platform: "ios" | "android",
   pixelRatio: number,
 ): number {
-  if (plateforme === "ios") {
-    let w = Math.floor((rayon * pixelRatio * 3 * Math.sqrt(2 * Math.PI)) / 4 / 2 + 0.25);
+  if (platform === "ios") {
+    let w = Math.floor((radius * pixelRatio * 3 * Math.sqrt(2 * Math.PI)) / 4 / 2 + 0.25);
     w |= 1;
     return Math.sqrt(Math.max(0, w * w - 1)) / 2;
   }
-  const r = Math.trunc(Math.trunc(rayon * pixelRatio) / 2);
+  const r = Math.trunc(Math.trunc(radius * pixelRatio) / 2);
   if (r === 0) return 0;
-  const largeur = 2 * r + 1;
-  return Math.sqrt((largeur * largeur - 1) / 6);
+  const width = 2 * r + 1;
+  return Math.sqrt((width * width - 1) / 6);
 }
 
-/** Le `blurRadius` à poser pour obtenir `sigmaCible` pixels de bitmap.
+/** Le `blurRadius` à poser pour obtenir `targetSigma` pixels de bitmap.
  *  L'inversion analytique existe mais bute sur le `floor` et le `| 1` ; un
  *  balayage au quart de point retombe sur l'optimum exact, une fois au montage. */
-export function rayonFlou(
-  sigmaCible: number,
-  plateforme: "ios" | "android",
+export function blurRadius(
+  targetSigma: number,
+  platform: "ios" | "android",
   pixelRatio: number,
 ): number {
-  let meilleur = 0;
-  let ecart = Number.POSITIVE_INFINITY;
+  let best = 0;
+  let delta = Number.POSITIVE_INFINITY;
   for (let r = 0.25; r <= 120; r += 0.25) {
-    const e = Math.abs(sigmaEffectif(r, plateforme, pixelRatio) - sigmaCible);
-    if (e < ecart) {
-      ecart = e;
-      meilleur = r;
+    const e = Math.abs(effectiveSigma(r, platform, pixelRatio) - targetSigma);
+    if (e < delta) {
+      delta = e;
+      best = r;
     }
   }
-  return meilleur;
+  return best;
 }
 
 /** σ visé dans le bitmap : le σ d'écran ramené à l'échelle de la source, telle
  *  qu'elle est grossie pour remplir la boîte de débordement. */
-export const sigmaSource = (sigma: number, largeurBoite: number, largeurSource: number): number =>
-  (sigma * largeurSource) / largeurBoite;
+export const sigmaSource = (sigma: number, boxWidth: number, sourceWidth: number): number =>
+  (sigma * sourceWidth) / boxWidth;
 
 /** Sous-échelle de rendu. L'assemblage est rendu à 1/K puis remis à l'échelle :
  *  le cache rastérisé coûte K² fois moins, et sa magnification bilinéaire
@@ -175,14 +175,14 @@ export const sigmaSource = (sigma: number, largeurBoite: number, largeurSource: 
  *  le nombre de couches, qui efface l'escalier. Plafonné par le plus petit
  *  écart entre deux couches : en dessous, les couches internes fusionnent en
  *  sous-pixel et rouvrent une grosse marche contre la carte. */
-export function sousEchelle(couches: readonly CoucheHalo[]): number {
-  let mini = Number.POSITIVE_INFINITY;
-  let precedent = 0;
-  for (const { d } of couches) {
-    mini = Math.min(mini, d - precedent);
-    precedent = d;
+export function subScale(layers: readonly HaloLayer[]): number {
+  let smallest = Number.POSITIVE_INFINITY;
+  let previous = 0;
+  for (const { d } of layers) {
+    smallest = Math.min(smallest, d - previous);
+    previous = d;
   }
-  return Math.max(1, Math.floor(mini));
+  return Math.max(1, Math.floor(smallest));
 }
 
 // ── Le flou d'Android : inverser ce que react-native-svg lui fait subir ────
@@ -191,12 +191,12 @@ export function sousEchelle(couches: readonly CoucheHalo[]): number {
  * Le plafond dur de `FeGaussianBlurView` (`Math.min(stdDeviation, 25f)`), au-delà
  * duquel le flou cesse d'obéir sans rien dire.
  */
-export const RAYON_MAX_ANDROID = 25;
+export const ANDROID_MAX_RADIUS = 25;
 
 /** σ de `ScriptIntrinsicBlur` pour un rayon donné (AOSP, `rsCpuIntrinsicBlur`). */
-export const sigmaRenderScript = (rayon: number): number => 0.4 * rayon + 0.6;
+export const sigmaRenderScript = (radius: number): number => 0.4 * radius + 0.6;
 
-export interface ReglageFlouAndroid {
+export interface AndroidBlurSetting {
   /** Sous-échelle de rendu : le canevas fait 1/K, la vue le remet à l'échelle. */
   k: number;
   /** La valeur à transmettre à `FeGaussianBlur`. */
@@ -231,8 +231,8 @@ export interface ReglageFlouAndroid {
  *
  * Elle remonte la chaîne. Le bitmap du canevas est à la densité de l'écran, et
  * la vue le remet à l'échelle ×K : le σ obtenu À L'ÉCRAN, en pixels, vaut donc
- * `(0,4·min(2s ; 25) + 0,6) × K`. On veut `sigmaCible × densité`, d'où
- * `s = (sigmaCible · densité / K − 0,6) / 0,8`.
+ * `(0,4·min(2s ; 25) + 0,6) × K`. On veut `targetSigma × densité`, d'où
+ * `s = (targetSigma · densité / K − 0,6) / 0,8`.
  *
  * Reste le plafond. Si `s` dépasse 12,5, le rayon sature à 25 et le flou
  * s'arrête là, en silence. Plutôt que de le subir, on RÉDUIT le canevas : rendre
@@ -240,24 +240,24 @@ export interface ReglageFlouAndroid {
  * à l'écran. C'est exactement le levier que la référence web utilise déjà —
  * douze et demi pour cent, puis `scale(8)`.
  */
-export function reglageFlouAndroid(
-  sigmaCible: number,
-  largeurCarte: number,
-  largeurSource: number,
-  densite: number,
-): ReglageFlouAndroid {
-  const kNaturel = Math.max(1, Math.round(largeurCarte / largeurSource));
-  const sigmaBitmapMax = sigmaRenderScript(RAYON_MAX_ANDROID);
+export function androidBlurSetting(
+  targetSigma: number,
+  cardWidth: number,
+  sourceWidth: number,
+  density: number,
+): AndroidBlurSetting {
+  const kNatural = Math.max(1, Math.round(cardWidth / sourceWidth));
+  const sigmaBitmapMax = sigmaRenderScript(ANDROID_MAX_RADIUS);
 
   // La sous-échelle minimale qui garde le rayon sous le plafond.
-  const kMinimal = Math.ceil((sigmaCible * densite) / sigmaBitmapMax);
-  const k = Math.max(kNaturel, kMinimal, 1);
+  const kMin = Math.ceil((targetSigma * density) / sigmaBitmapMax);
+  const k = Math.max(kNatural, kMin, 1);
 
-  const sigmaBitmap = (sigmaCible * densite) / k;
+  const sigmaBitmap = (targetSigma * density) / k;
   const stdDeviation = Math.max(0, (sigmaBitmap - 0.6) / 0.8);
   return { k, stdDeviation };
 }
 
 /** Le σ qu'Android rendra VRAIMENT à l'écran, en pixels — pour les bancs. */
-export const sigmaEcranAndroid = (stdDeviation: number, k: number): number =>
-  sigmaRenderScript(Math.min(2 * stdDeviation, RAYON_MAX_ANDROID)) * k;
+export const androidScreenSigma = (stdDeviation: number, k: number): number =>
+  sigmaRenderScript(Math.min(2 * stdDeviation, ANDROID_MAX_RADIUS)) * k;

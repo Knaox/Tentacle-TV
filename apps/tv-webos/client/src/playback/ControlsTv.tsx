@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
 import { entrerDansPanneau, quitterPanneau } from "./focusOsd";
 import { cumuler, type CumulSauts } from "./cumulativeSkips";
-import { creerMachineScrub, entrerScrub, majScrub, montrerOsd, poserPanneau, sortirScrub, type MachineScrub, useEtatLecteurTv } from "@tentacle-tv/tv-core";
+import { createScrubMachine, enterScrub, updateScrub, showOsd, setPanel, exitScrub, type ScrubMachine, useTvPlayerState } from "@tentacle-tv/tv-core";
 import { useCycleLecteurTv } from "./playerCycleTv";
 import { BarreProgressionTv } from "./ProgressBarTv";
 import { EnteteTv } from "./HeaderTv";
@@ -49,7 +49,7 @@ export function PlayerControls(props: PlayerControlsProps) {
     onNextEpisode, onPreviousEpisode, applyToSeries,
   } = props;
 
-  const etat = useEtatLecteurTv();
+  const etat = useTvPlayerState();
 
   // Les valeurs vivantes passent par des refs : la machine à scrub est créée
   // une fois pour toutes et lit l'état au moment où elle en a besoin, plutôt
@@ -61,26 +61,26 @@ export function PlayerControls(props: PlayerControlsProps) {
   total.current = duration;
   lecture.current = playing;
 
-  const scrub = useMemo<MachineScrub>(
+  const scrub = useMemo<ScrubMachine>(
     () =>
-      creerMachineScrub({
-        lirePosition: () => position.current,
-        lireDuree: () => total.current,
-        surEntree: (pos, palier) => entrerScrub(pos, palier),
-        surChangement: (pos, palier) => majScrub(pos, palier),
-        surPause: (pause) => {
+      createScrubMachine({
+        readPosition: () => position.current,
+        readDuration: () => total.current,
+        onEnter: (pos, palier) => enterScrub(pos, palier),
+        onChange: (pos, palier) => updateScrub(pos, palier),
+        onPause: (pause) => {
           // La bascule du lecteur est la seule qu'on connaisse : on ne s'en
           // sert que si l'état courant ne correspond pas à ce qu'on veut.
           if (pause === !lecture.current) return;
           onTogglePlay();
         },
-        surSeek: (secondes) => onSeek(secondes),
-        surSortie: () => sortirScrub(),
+        onSeek: (secondes) => onSeek(secondes),
+        onExit: () => exitScrub(),
       }),
     [onSeek, onTogglePlay],
   );
 
-  useEffect(() => () => scrub.detruire(), [scrub]);
+  useEffect(() => () => scrub.destroy(), [scrub]);
 
   const quitter = useCallback(() => onBack(), [onBack]);
 
@@ -130,7 +130,7 @@ export function PlayerControls(props: PlayerControlsProps) {
   useEffect(() => {
     if (etat.mode !== "osd") return;
 
-    if (etat.panneau !== "aucun") {
+    if (etat.panel !== "aucun") {
       // Un panneau s'ouvre. On note d'où l'on vient, puis on entre dedans : le
       // focus restait sinon sur le bouton qui l'a ouvert, hors du panneau, et
       // le confinement calculait ses déplacements depuis un point extérieur.
@@ -148,12 +148,12 @@ export function PlayerControls(props: PlayerControlsProps) {
     const declencheur = declencheurPanneau.current;
     declencheurPanneau.current = null;
     quitterPanneau(declencheur, osd.current);
-  }, [etat.mode, etat.panneau]);
+  }, [etat.mode, etat.panel]);
 
   /** La forme des BOUTONS : le même saut, mais l'habillage reste à l'écran. */
   const sauter = useCallback(
     (delta: number) => {
-      montrerOsd();
+      showOsd();
       sauterNu(delta);
     },
     [sauterNu],
@@ -166,7 +166,7 @@ export function PlayerControls(props: PlayerControlsProps) {
       <SurcoucheScrubTv
         titre={title}
         position={etat.scrub.position}
-        palier={etat.scrub.palier}
+        palier={etat.scrub.tier}
         currentTime={currentTime}
         duration={duration}
         fractionChargee={buffered}
@@ -200,13 +200,13 @@ export function PlayerControls(props: PlayerControlsProps) {
     <div
       className="osd-tv"
       ref={osd}
-      data-panneau={etat.panneau}
+      data-panneau={etat.panel}
       onClick={(evenement) => evenement.stopPropagation()}
     >
       <EnteteTv titre={title} sousTitre={subtitle} onQuitter={quitter} />
 
       <div className="osd-tv-bas">
-        {etat.panneau === "pistes" && (
+        {etat.panel === "pistes" && (
           <PanneauPistesTv
             audioTracks={audioTracks}
             subtitleTracks={subtitleTracks}
@@ -219,11 +219,11 @@ export function PlayerControls(props: PlayerControlsProps) {
             onSubtitleChange={onSubtitleChange}
             onQualityChange={onQualityChange}
             applyToSeries={applyToSeries}
-            onClose={() => poserPanneau("aucun")}
+            onClose={() => setPanel("aucun")}
           />
         )}
-        {etat.panneau === "episodes" && item && (
-          <PanneauEpisodesTv item={item} onClose={() => poserPanneau("aucun")} />
+        {etat.panel === "episodes" && item && (
+          <PanneauEpisodesTv item={item} onClose={() => setPanel("aucun")} />
         )}
 
         <BarreProgressionTv
@@ -239,17 +239,17 @@ export function PlayerControls(props: PlayerControlsProps) {
           aEpisodes={aEpisodes}
           aPistes={aPistes}
           onBasculer={() => {
-            montrerOsd();
+            showOsd();
             onTogglePlay();
           }}
           onSauter={sauter}
           // Le curseur fantôme se pose où l'on en est, sans avancer : on a
           // demandé à se déplacer, pas encore où.
-          onDeplacement={() => scrub.entrer()}
+          onDeplacement={() => scrub.enter()}
           onPrecedent={() => onPreviousEpisode?.()}
           onSuivant={() => onNextEpisode?.()}
-          onEpisodes={() => poserPanneau(etat.panneau === "episodes" ? "aucun" : "episodes")}
-          onPistes={() => poserPanneau(etat.panneau === "pistes" ? "aucun" : "pistes")}
+          onEpisodes={() => setPanel(etat.panel === "episodes" ? "aucun" : "episodes")}
+          onPistes={() => setPanel(etat.panel === "pistes" ? "aucun" : "pistes")}
         />
       </div>
       {/* `itemId` reste dans le contrat sans emploi ici : le client web s'en

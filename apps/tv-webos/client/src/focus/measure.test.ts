@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inverserEchelle, lireEchellePure, type EchellePure, type Origine } from "./measure";
-import type { Boite } from "@tentacle-tv/tv-core";
+import type { Box } from "@tentacle-tv/tv-core";
 
 /**
  * L'inversion doit rendre EXACTEMENT la boîte de mise en page : la navigation
@@ -8,12 +8,12 @@ import type { Boite } from "@tentacle-tv/tv-core";
  * recréer les diagonales qu'on cherche à éteindre.
  */
 
-function boite(gauche: number, haut: number, largeur: number, hauteur: number): Boite {
-  return { gauche, haut, droite: gauche + largeur, bas: haut + hauteur };
+function box(left: number, top: number, largeur: number, hauteur: number): Box {
+  return { left, top, right: left + largeur, bottom: top + hauteur };
 }
 
 /** Applique la transformation comme le moteur de rendu : autour de l'origine. */
-function transformer(source: Boite, echelle: EchellePure, origine: Origine): Boite {
+function transformer(source: Box, echelle: EchellePure, origine: Origine): Box {
   const versRendu = (point: number, debut: number, axe: "x" | "y") => {
     const o = debut + origine[axe];
     const facteur = axe === "x" ? echelle.a : echelle.d;
@@ -22,10 +22,10 @@ function transformer(source: Boite, echelle: EchellePure, origine: Origine): Boi
   };
 
   return {
-    gauche: versRendu(source.gauche, source.gauche, "x"),
-    droite: versRendu(source.droite, source.gauche, "x"),
-    haut: versRendu(source.haut, source.haut, "y"),
-    bas: versRendu(source.bas, source.haut, "y"),
+    left: versRendu(source.left, source.left, "x"),
+    right: versRendu(source.right, source.left, "x"),
+    top: versRendu(source.top, source.top, "y"),
+    bottom: versRendu(source.bottom, source.top, "y"),
   };
 }
 
@@ -66,7 +66,7 @@ describe("lireEchellePure", () => {
 });
 
 describe("inverserEchelle", () => {
-  const CARTE = boite(194, 120, 185, 328);
+  const CARTE = box(194, 120, 185, 328);
 
   it("retrouve la carte sous son agrandissement au focus", () => {
     // Le cas réel : scale(1.08), origine « center bottom ». Le bas ne bouge
@@ -75,14 +75,14 @@ describe("inverserEchelle", () => {
     const origine: Origine = { x: 92.5, y: 328 };
     const rendue = transformer(CARTE, echelle, origine);
 
-    expect(rendue.bas).toBeCloseTo(CARTE.bas, 6);
-    expect(rendue.haut).toBeCloseTo(CARTE.haut - 0.08 * 328, 6);
+    expect(rendue.bottom).toBeCloseTo(CARTE.bottom, 6);
+    expect(rendue.top).toBeCloseTo(CARTE.top - 0.08 * 328, 6);
 
     const retrouvee = inverserEchelle(rendue, echelle, origine);
-    expect(retrouvee.gauche).toBeCloseTo(CARTE.gauche, 6);
-    expect(retrouvee.droite).toBeCloseTo(CARTE.droite, 6);
-    expect(retrouvee.haut).toBeCloseTo(CARTE.haut, 6);
-    expect(retrouvee.bas).toBeCloseTo(CARTE.bas, 6);
+    expect(retrouvee.left).toBeCloseTo(CARTE.left, 6);
+    expect(retrouvee.right).toBeCloseTo(CARTE.right, 6);
+    expect(retrouvee.top).toBeCloseTo(CARTE.top, 6);
+    expect(retrouvee.bottom).toBeCloseTo(CARTE.bottom, 6);
   });
 
   it("retrouve la carte quelle que soit l'origine", () => {
@@ -90,10 +90,10 @@ describe("inverserEchelle", () => {
     const origine: Origine = { x: 20, y: 47 };
     const retrouvee = inverserEchelle(transformer(CARTE, echelle, origine), echelle, origine);
 
-    expect(retrouvee.gauche).toBeCloseTo(CARTE.gauche, 6);
-    expect(retrouvee.droite).toBeCloseTo(CARTE.droite, 6);
-    expect(retrouvee.haut).toBeCloseTo(CARTE.haut, 6);
-    expect(retrouvee.bas).toBeCloseTo(CARTE.bas, 6);
+    expect(retrouvee.left).toBeCloseTo(CARTE.left, 6);
+    expect(retrouvee.right).toBeCloseTo(CARTE.right, 6);
+    expect(retrouvee.top).toBeCloseTo(CARTE.top, 6);
+    expect(retrouvee.bottom).toBeCloseTo(CARTE.bottom, 6);
   });
 
   it("défait aussi la translation qui accompagne une échelle", () => {
@@ -103,8 +103,8 @@ describe("inverserEchelle", () => {
     const origine: Origine = { x: 92.5, y: 164 };
     const retrouvee = inverserEchelle(transformer(CARTE, echelle, origine), echelle, origine);
 
-    expect(retrouvee.gauche).toBeCloseTo(CARTE.gauche, 6);
-    expect(retrouvee.bas).toBeCloseTo(CARTE.bas, 6);
+    expect(retrouvee.left).toBeCloseTo(CARTE.left, 6);
+    expect(retrouvee.bottom).toBeCloseTo(CARTE.bottom, 6);
   });
 
   it("l'identité pendant la transition rend la boîte inchangée", () => {
@@ -114,7 +114,7 @@ describe("inverserEchelle", () => {
     const origine: Origine = { x: 92.5, y: 328 };
     const retrouvee = inverserEchelle(transformer(CARTE, echelle, origine), echelle, origine);
 
-    expect(retrouvee.gauche).toBeCloseTo(CARTE.gauche, 3);
-    expect(retrouvee.haut).toBeCloseTo(CARTE.haut, 3);
+    expect(retrouvee.left).toBeCloseTo(CARTE.left, 3);
+    expect(retrouvee.top).toBeCloseTo(CARTE.top, 3);
   });
 });

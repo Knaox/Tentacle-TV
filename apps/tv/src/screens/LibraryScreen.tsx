@@ -98,7 +98,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
     <View>
       <TVLibraryHero libraryId={libraryId} libraryName={displayName} collectionType={collectionType} />
       {/* L'écart carte → filtres de la LG (28). */}
-      <View style={{ marginTop: TV_BANNER_CARD.ecartFiltres }}>
+      <View style={{ marginTop: TV_BANNER_CARD.filtersGap }}>
         <TVLibraryFilterBar
           filters={lf.filters}
           hasActiveFilters={lf.hasActiveFilters}

@@ -57,11 +57,11 @@ export const TV_OVERSCAN_PT = {
  *  SVG, que les DEUX téléviseurs empruntent désormais — voir
  *  `TVHeroAmbilightFiltre`. */
 export const TV_AMBILIGHT = {
-  rapportFlou: parsePx(TV_HERO_AMBILIGHT.blur) / parsePx(TV_HERO_AMBILIGHT.largeurCarteReference),
-  largeurSource: TV_HERO_AMBILIGHT.largeurSource,
-  couches: TV_HERO_AMBILIGHT.couches,
+  blurRatio: parsePx(TV_HERO_AMBILIGHT.blur) / parsePx(TV_HERO_AMBILIGHT.referenceCardWidth),
+  sourceWidth: TV_HERO_AMBILIGHT.sourceWidth,
+  layers: TV_HERO_AMBILIGHT.layers,
   saturation: Number.parseFloat(TV_HERO_AMBILIGHT.saturation),
-  plancher: TV_HERO_AMBILIGHT.alphaPlancher,
+  alphaFloor: TV_HERO_AMBILIGHT.alphaFloor,
 } as const;
 
 /** Les rangs de peinture du lecteur — mêmes valeurs que la feuille webOS. */

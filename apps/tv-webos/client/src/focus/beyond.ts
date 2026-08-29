@@ -42,10 +42,10 @@ export function candidatAuDela(depart: HTMLElement, versLaFin: boolean, vertical
     if (noeud === depart || depart.contains(noeud) || noeud.contains(depart)) continue;
     if (dansUnCalqueFixe(noeud)) continue;
 
-    const boite = noeud.getBoundingClientRect();
-    if (boite.width === 0 || boite.height === 0) continue;
+    const box = noeud.getBoundingClientRect();
+    if (box.width === 0 || box.height === 0) continue;
 
-    const bord = bordDe(boite, versLaFin, vertical, false);
+    const bord = bordDe(box, versLaFin, vertical, false);
     const auDela = versLaFin ? bord > bordDepart + TOLERANCE : bord < bordDepart - TOLERANCE;
     if (!auDela) continue;
 
@@ -62,11 +62,11 @@ export function candidatAuDela(depart: HTMLElement, versLaFin: boolean, vertical
  * candidat, celui par lequel il entre. Comparer deux fois le même bord ferait
  * passer pour « au-delà » un élément qui ne fait que dépasser.
  */
-function bordDe(boite: DOMRect, versLaFin: boolean, vertical: boolean, depart: boolean): number {
+function bordDe(box: DOMRect, versLaFin: boolean, vertical: boolean, depart: boolean): number {
   if (vertical) {
-    return versLaFin === depart ? boite.bottom : boite.top;
+    return versLaFin === depart ? box.bottom : box.top;
   }
-  return versLaFin === depart ? boite.right : boite.left;
+  return versLaFin === depart ? box.right : box.left;
 }
 
 /**

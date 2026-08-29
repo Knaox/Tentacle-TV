@@ -55,29 +55,29 @@ export const TV_HERO_AMBILIGHT = {
   // — Ce qui suit ne part PAS dans le CSS (tvOnlyCssVarEntries liste ses paires
   //   une à une) : c'est la traduction du flou pour React Native.
 
-  /** La carte sur laquelle `blur` a été réglé. `blur / largeurCarteReference`
+  /** La carte sur laquelle `blur` a été réglé. `blur / referenceCardWidth`
    *  est le seul nombre transposable : `filter` travaille en pixels d'écran,
    *  `blurRadius` en pixels du bitmap décodé. Poser 48 sur une source de
    *  128 px, c'est un noyau de 18 % de la largeur — l'affiche est écrasée en
    *  une couleur moyenne, et le halo devient une plaque grise. */
-  largeurCarteReference: "1524px",
+  referenceCardWidth: "1524px",
 
   /** Largeur de la source demandée à Jellyfin, en pixels. Le web se contente
    *  de 128 parce qu'il floute APRÈS avoir agrandi ; en natif le flou est cuit
    *  dans le bitmap, donc son noyau se quantifie sur la source — à 128 px on
    *  vise σ ≈ 3,5 et le cran vaut 14 %, à 256 px on vise ≈ 7 et il tombe
    *  sous 8 %. */
-  largeurSource: 256,
+  sourceWidth: 256,
 
   /** Nombre de couches de l'extinction. `blurRadius` ne déborde pas de son
    *  rectangle : le débordement est reconstruit par des rectangles concentriques
    *  dont l'alpha suit la gaussienne. Seize suffisent pour que le saut d'un
    *  anneau au suivant reste sous 0,031. */
-  couches: 16,
+  layers: 16,
 
   /** Où l'on coupe la queue de la gaussienne. Fixe le débordement à
    *  Φ⁻¹(1 − plancher) ≈ 2,33 σ. */
-  alphaPlancher: 0.01,
+  alphaFloor: 0.01,
 } as const;
 
 /** Le voile diagonal de bannière, allégé pour la dalle.
@@ -186,20 +186,20 @@ export const tvOnlyCssVarEntries = (): Array<[string, string]> => [
  */
 export const TV_FOCUS_RING = {
   /** Épaisseur de l'anneau blanc. */
-  epaisseur: 3,
-  teinte: "#ffffff",
+  thickness: 3,
+  tint: "#ffffff",
   /** Opacité du halo violet, appliquée à la couleur de marque. */
-  haloOpacite: 0.5,
+  haloOpacity: 0.5,
   /** Rayon de flou du halo. */
-  haloFlou: 18,
+  haloBlur: 18,
   /** Débordement du halo au-delà de l'anneau. Sans équivalent natif : React
    *  Native n'a pas de notion d'étalement d'ombre, le flou l'absorbe. */
-  haloEtalement: 4,
+  haloSpread: 4,
 
   /** L'ombre qui décolle une carte focalisée du fond. */
-  releveDecalageY: 14,
-  releveFlou: 30,
-  releveOpacite: 0.85,
+  liftOffsetY: 14,
+  liftBlur: 30,
+  liftOpacity: 0.85,
 } as const;
 
 /** L'agrandissement d'une carte au focus, et sa courbe.
@@ -209,9 +209,9 @@ export const TV_FOCUS_RING = {
  * par le bas, elle pousse vers le haut, dans l'espace que la rangée réserve
  * déjà pour l'anneau. */
 export const TV_CARD_FOCUS = {
-  echelle: 1.08,
-  duree: 180,
-  origine: "center bottom",
+  scale: 1.08,
+  duration: 180,
+  origin: "center bottom",
 } as const;
 
 /** La bannière-CARTE — accueil et bibliothèque.
@@ -227,31 +227,31 @@ export const TV_CARD_FOCUS = {
  * teinté de marque (un box-shadow interne n'existe pas en React Native), fondu
  * = remount keyé sur l'item + opacité seule. */
 export const TV_BANNER_CARD = {
-  hauteurAccueilVh: 62,
-  hauteurBibliothequeVh: 44,
+  homeHeightVh: 62,
+  libraryHeightVh: 44,
   /** Gouttière latérale de la carte dans la colonne de contenu
    *  (`--row-gutter-desktop`). */
-  gouttiere: 56,
-  fonduMs: 700,
+  gutter: 56,
+  fadeMs: 700,
   /** Liseré : 1 px de couleur de marque à cette opacité. */
-  lisereOpacite: 0.22,
+  borderOpacity: 0.22,
   /** Opacité du halo ambilight derrière la carte
    *  (`--hero-ambilight-opacity`). */
-  haloOpacite: 0.55,
+  haloOpacity: 0.55,
   /** Largeur maximale du bloc texte du héros : 46 rem. */
-  texteLargeurMax: 736,
+  textMaxWidth: 736,
   /** Bibliothèque : écart entre la carte et la rangée recherche + filtres. */
-  ecartFiltres: 28,
+  filtersGap: 28,
   /** La jauge d'indicateurs (pastilles en lecture seule, bas-droit de la
    *  carte). Valeurs portées par `BannerGaugeTv.tsx` (classes utilitaires au
    *  point d'arrêt `md`, actif sur un canevas de 1920) — pas de feuille à
    *  recroiser, la source est ici. */
-  jauge: {
-    largeurActive: 44,
-    largeurInactive: 14,
-    hauteur: 4,
-    ecart: 8,
-    retrait: 40,
+  gauge: {
+    activeWidth: 44,
+    inactiveWidth: 14,
+    height: 4,
+    gap: 8,
+    inset: 40,
     transitionMs: 500,
   },
 } as const;
@@ -260,16 +260,16 @@ export const TV_BANNER_CARD = {
  *  pas un élément de liste. `detail-tv.css` force cette hauteur pour passer
  *  sous les actions sans engloutir la page. */
 export const TV_DETAIL_BANNER = {
-  hauteurVh: 58,
-  supplementPx: 260,
+  heightVh: 58,
+  extraPx: 260,
 } as const;
 
 /** L'affiche de la fiche. Le composant web `DetailPoster` n'est pas substitué
  *  sur webOS : ses classes (`md:w-56`, `md:w-[22rem]`) donnent ces largeurs
  *  sur le canevas 1920. Film 2:3, épisode 16:9 ; rayon `radius.lg`. */
 export const TV_DETAIL_POSTER = {
-  largeurFilm: 224,
-  largeurEpisode: 352,
+  movieWidth: 224,
+  episodeWidth: 352,
 } as const;
 
 /** L'OSD du lecteur — géométrie (`player-tv.css`) et dessin
@@ -280,22 +280,22 @@ export const TV_DETAIL_POSTER = {
  *  dalle (positions en pourcents entiers, prêtes pour `locations` de
  *  LinearGradient). */
 export const TV_OSD = {
-  boutonPrincipal: 84,
-  boutonSecondaire: 64,
-  boutonFocusFond: "rgba(255, 255, 255, 0.24)",
-  boutonFocusEchelle: 1.12,
-  boutonTransitionMs: 160,
-  titreTaille: 36,
-  sousTitreTaille: 21,
-  sousTitreTeinte: "rgba(255, 255, 255, 0.84)",
-  voileHaut: { opacites: [0.72, 0.42, 0], positionsPct: [0, 48, 100], debordPx: 72 },
-  voileBas: { opacites: [0.82, 0.5, 0], positionsPct: [0, 46, 100], debordPx: 96 },
-  barre: {
-    hauteur: 9,
-    fond: "rgba(255, 255, 255, 0.18)",
-    tampon: "rgba(255, 255, 255, 0.42)",
-    pastille: 18,
-    fantome: 24,
+  primaryButton: 84,
+  secondaryButton: 64,
+  buttonFocusBg: "rgba(255, 255, 255, 0.24)",
+  buttonFocusScale: 1.12,
+  buttonTransitionMs: 160,
+  titleSize: 36,
+  subtitleSize: 21,
+  subtitleTint: "rgba(255, 255, 255, 0.84)",
+  topScrim: { opacities: [0.72, 0.42, 0], positionsPct: [0, 48, 100], bleedPx: 72 },
+  bottomScrim: { opacities: [0.82, 0.5, 0], positionsPct: [0, 46, 100], bleedPx: 96 },
+  bar: {
+    height: 9,
+    bg: "rgba(255, 255, 255, 0.18)",
+    buffer: "rgba(255, 255, 255, 0.42)",
+    knob: 18,
+    ghost: 24,
   },
 } as const;
 
@@ -304,30 +304,30 @@ export const TV_OSD = {
  *  panneau ouvert — pas de calque permanent à opacité nulle au-dessus d'une
  *  vidéo. */
 export const TV_PLAYER_PANEL = {
-  largeur: 460,
-  bas: 154,
-  voile: "rgba(0, 0, 0, 0.62)",
-  voileFonduMs: 180,
+  width: 460,
+  bottom: 154,
+  scrim: "rgba(0, 0, 0, 0.62)",
+  scrimFadeMs: 180,
   /** Hauteur maximale du contenu : tout l'écran moins ce retrait. */
-  hauteurMaxRetrait: 260,
-  boutonHauteurMin: 52,
-  boutonTexte: 19,
-  vignetteEpisode: { largeur: 160, hauteur: 90 },
+  maxHeightInset: 260,
+  buttonMinHeight: 52,
+  buttonText: 19,
+  episodeThumb: { width: 160, height: 90 },
 } as const;
 
 /** Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
  *  il s'écarte de la barre quand l'habillage est visible (transform, jamais
  *  `bottom` — une position animée relance la mise en page). */
 export const TV_PLAYER_SKIP = {
-  bas: 148,
-  montee: 56,
+  bottom: 148,
+  lift: 56,
   paddingV: 14,
   paddingH: 28,
-  rayon: 10,
-  texte: 20,
+  radius: 10,
+  text: 20,
 } as const;
 
 /** La carte « épisode suivant », au coin bas-droit du retrait d'overscan. */
 export const TV_PLAYER_NEXT_CARD = {
-  largeur: 460,
+  width: 460,
 } as const;

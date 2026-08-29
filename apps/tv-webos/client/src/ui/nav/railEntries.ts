@@ -96,7 +96,7 @@ export function useEntreesRail(): EntreeRail[] {
     }
 
     for (const entree of proposees) {
-      if (!epinglage.estMasquee(entree.cle)) entrees.push(entree);
+      if (!epinglage.isHidden(entree.cle)) entrees.push(entree);
     }
 
     if (epinglage.masquees.length > 0) {

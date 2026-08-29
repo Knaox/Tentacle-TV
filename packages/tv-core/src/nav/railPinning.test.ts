@@ -1,130 +1,130 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CLE_STOCKAGE_RAIL, creerMagasinEpinglageRail, type StockageRail } from "./railPinning";
+import { RAIL_STORAGE_KEY, createRailPinningStore, type RailStorage } from "./railPinning";
 
-function stockageFactice(initial?: string): StockageRail & { contenu: Map<string, string> } {
-  const contenu = new Map<string, string>();
-  if (initial !== undefined) contenu.set(CLE_STOCKAGE_RAIL, initial);
+function fakeStorage(initial?: string): RailStorage & { content: Map<string, string> } {
+  const content = new Map<string, string>();
+  if (initial !== undefined) content.set(RAIL_STORAGE_KEY, initial);
   return {
-    contenu,
-    getItem: (c) => contenu.get(c) ?? null,
-    setItem: (c, v) => void contenu.set(c, v),
+    content,
+    getItem: (c) => content.get(c) ?? null,
+    setItem: (c, v) => void content.set(c, v),
   };
 }
 
 describe("le rail montre tout par défaut", () => {
   it("part sans rien de masqué quand le stockage est vide", () => {
-    const m = creerMagasinEpinglageRail(stockageFactice());
-    expect(m.lireInstantane().masquees).toEqual([]);
+    const m = createRailPinningStore(fakeStorage());
+    expect(m.readSnapshot().masquees).toEqual([]);
   });
 
   it("montre tout plutôt que rien si le stockage est corrompu", () => {
     // Un rail vide serait le pire cas : plus aucune destination atteignable.
-    const m = creerMagasinEpinglageRail(stockageFactice("{ceci n'est pas du JSON"));
-    expect(m.lireInstantane().masquees).toEqual([]);
+    const m = createRailPinningStore(fakeStorage("{ceci n'est pas du JSON"));
+    expect(m.readSnapshot().masquees).toEqual([]);
   });
 
   it("ignore une forme inattendue sans se casser", () => {
-    const m = creerMagasinEpinglageRail(stockageFactice('{"masquees":"lib-3"}'));
-    expect(m.lireInstantane().masquees).toEqual([]);
+    const m = createRailPinningStore(fakeStorage('{"masquees":"lib-3"}'));
+    expect(m.readSnapshot().masquees).toEqual([]);
   });
 
   it("relit ce qui avait été masqué", () => {
-    const m = creerMagasinEpinglageRail(stockageFactice('{"masquees":["lib-3","favorites"]}'));
-    expect(m.estMasquee("lib-3")).toBe(true);
-    expect(m.estMasquee("watchlist")).toBe(false);
+    const m = createRailPinningStore(fakeStorage('{"masquees":["lib-3","favorites"]}'));
+    expect(m.isHidden("lib-3")).toBe(true);
+    expect(m.isHidden("watchlist")).toBe(false);
   });
 });
 
 describe("masquer et rétablir", () => {
-  let stockage: ReturnType<typeof stockageFactice>;
-  let magasin: ReturnType<typeof creerMagasinEpinglageRail>;
+  let storage: ReturnType<typeof fakeStorage>;
+  let store: ReturnType<typeof createRailPinningStore>;
 
   beforeEach(() => {
-    stockage = stockageFactice();
-    magasin = creerMagasinEpinglageRail(stockage);
+    storage = fakeStorage();
+    store = createRailPinningStore(storage);
   });
 
   it("bascule une entrée et la persiste", () => {
-    magasin.basculer("lib-7");
-    expect(magasin.estMasquee("lib-7")).toBe(true);
-    expect(JSON.parse(stockage.contenu.get(CLE_STOCKAGE_RAIL)!)).toEqual({ masquees: ["lib-7"] });
+    store.toggle("lib-7");
+    expect(store.isHidden("lib-7")).toBe(true);
+    expect(JSON.parse(storage.content.get(RAIL_STORAGE_KEY)!)).toEqual({ masquees: ["lib-7"] });
   });
 
   it("rebasculer la fait revenir", () => {
-    magasin.basculer("lib-7");
-    magasin.basculer("lib-7");
-    expect(magasin.estMasquee("lib-7")).toBe(false);
+    store.toggle("lib-7");
+    store.toggle("lib-7");
+    expect(store.isHidden("lib-7")).toBe(false);
   });
 
   it("« Tout afficher » vide la liste d'un coup", () => {
-    magasin.basculer("lib-1");
-    magasin.basculer("lib-2");
-    magasin.toutAfficher();
-    expect(magasin.lireInstantane().masquees).toEqual([]);
+    store.toggle("lib-1");
+    store.toggle("lib-2");
+    store.showAll();
+    expect(store.readSnapshot().masquees).toEqual([]);
   });
 
   it("prévient les abonnés à chaque changement", () => {
-    const auditeur = vi.fn();
-    magasin.sAbonner(auditeur);
-    magasin.basculer("lib-1");
-    expect(auditeur).toHaveBeenCalledTimes(1);
-    magasin.toutAfficher();
-    expect(auditeur).toHaveBeenCalledTimes(2);
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.toggle("lib-1");
+    expect(listener).toHaveBeenCalledTimes(1);
+    store.showAll();
+    expect(listener).toHaveBeenCalledTimes(2);
   });
 
   it("ne prévient personne quand « Tout afficher » n'a rien à faire", () => {
     // Sans cette garde, chaque rendu du rail rejouerait une écriture et une
     // notification pour rien — sur une dalle, ça se paie.
-    const auditeur = vi.fn();
-    magasin.sAbonner(auditeur);
-    magasin.toutAfficher();
-    expect(auditeur).not.toHaveBeenCalled();
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.showAll();
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it("se désabonne proprement", () => {
-    const auditeur = vi.fn();
-    magasin.sAbonner(auditeur)();
-    magasin.basculer("lib-1");
-    expect(auditeur).not.toHaveBeenCalled();
+    const listener = vi.fn();
+    store.subscribe(listener)();
+    store.toggle("lib-1");
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it("survit à un stockage en écriture seule cassée", () => {
     // Une dalle en navigation privée, ou un quota atteint : le rail doit
     // continuer de fonctionner pour la session en cours.
-    const cassé: StockageRail = {
+    const broken: RailStorage = {
       getItem: () => null,
       setItem: () => { throw new Error("quota"); },
     };
-    const m = creerMagasinEpinglageRail(cassé);
-    expect(() => m.basculer("lib-1")).not.toThrow();
-    expect(m.estMasquee("lib-1")).toBe(true);
+    const m = createRailPinningStore(broken);
+    expect(() => m.toggle("lib-1")).not.toThrow();
+    expect(m.isHidden("lib-1")).toBe(true);
   });
 });
 
-describe("rehydrater — le stockage s'hydrate après la création du magasin", () => {
+describe("rehydrate — le stockage s'hydrate après la création du magasin", () => {
   it("relit l'état une fois le cache rempli et notifie", () => {
-    const stockage = stockageFactice();
-    const magasin = creerMagasinEpinglageRail(stockage);
-    expect(magasin.estMasquee("lib-3")).toBe(false);
+    const storage = fakeStorage();
+    const store = createRailPinningStore(storage);
+    expect(store.isHidden("lib-3")).toBe(false);
 
     // L'hydratation asynchrone (RNStorageAdapter, Android TV) remplit le
     // cache APRÈS la création du magasin au chargement du module.
-    stockage.contenu.set(CLE_STOCKAGE_RAIL, '{"masquees":["lib-3"]}');
-    const auditeur = vi.fn();
-    magasin.sAbonner(auditeur);
-    magasin.rehydrater();
+    storage.content.set(RAIL_STORAGE_KEY, '{"masquees":["lib-3"]}');
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.rehydrate();
 
-    expect(magasin.estMasquee("lib-3")).toBe(true);
-    expect(magasin.lireInstantane().masquees).toEqual(["lib-3"]);
-    expect(auditeur).toHaveBeenCalledTimes(1);
+    expect(store.isHidden("lib-3")).toBe(true);
+    expect(store.readSnapshot().masquees).toEqual(["lib-3"]);
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 
   it("ne notifie pas quand rien n'a changé", () => {
-    const magasin = creerMagasinEpinglageRail(stockageFactice('{"masquees":["lib-3"]}'));
-    const auditeur = vi.fn();
-    magasin.sAbonner(auditeur);
-    magasin.rehydrater();
-    expect(auditeur).not.toHaveBeenCalled();
+    const store = createRailPinningStore(fakeStorage('{"masquees":["lib-3"]}'));
+    const listener = vi.fn();
+    store.subscribe(listener);
+    store.rehydrate();
+    expect(listener).not.toHaveBeenCalled();
   });
 });

@@ -66,7 +66,7 @@ export function TVDetailHeader({
     if (handle) setBackHandle(handle);
   }, []);
 
-  const backdropH = Math.round((screenH * TV_DETAIL_BANNER.hauteurVh) / 100) + TV_DETAIL_BANNER.supplementPx;
+  const backdropH = Math.round((screenH * TV_DETAIL_BANNER.heightVh) / 100) + TV_DETAIL_BANNER.extraPx;
   // Le bloc d'informations commence à ~32 % de l'écran : posé SUR l'image,
   // assez haut pour que les actions restent visibles sans défiler.
   const contentTop = Math.round(screenH * 0.32);

@@ -1,4 +1,4 @@
-import type { ModeLecteur } from "./playerState";
+import type { PlayerMode } from "./playerState";
 
 /**
  * À qui appartient une flèche horizontale, appui par appui.
@@ -7,7 +7,7 @@ import type { ModeLecteur } from "./playerState";
  *
  * - **attendre** — habillage éteint, premier appui. Rien ne bouge : on ne veut
  *   pas qu'une touche effleurée dans le noir déplace la lecture. L'appelant
- *   arme alors le délai de `DELAI_RALLUMAGE_MS`, au terme duquel les commandes
+ *   arme alors le délai de `RELIGHT_DELAY_MS`, au terme duquel les commandes
  *   reviennent — à moins qu'un second appui n'arrive d'ici là, auquel cas c'est
  *   un saut qu'on demandait, et l'habillage n'a pas à paraître.
  * - **transport** — deuxième appui rapproché sur la même flèche, ou toute
@@ -24,7 +24,7 @@ import type { ModeLecteur } from "./playerState";
  * l'arbitre des touches le rend testable sans DOM ni horloge réelle.
  */
 
-export type ProprietaireFleche = "attendre" | "transport" | "focus";
+export type ArrowOwner = "attendre" | "transport" | "focus";
 
 /**
  * Le temps qu'on laisse au second appui avant de ramener les commandes.
@@ -40,7 +40,7 @@ export type ProprietaireFleche = "attendre" | "transport" | "focus";
  * démarrait par-dessus. Quatre cent cinquante passent devant ce battement
  * initial sans qu'un appui isolé ait l'air de rester sans réponse.
  */
-export const DELAI_RALLUMAGE_MS = 450;
+export const RELIGHT_DELAY_MS = 450;
 
 /**
  * Fenêtre du double appui.
@@ -49,33 +49,33 @@ export const DELAI_RALLUMAGE_MS = 450;
  * et où l'on vise à trois mètres ; assez courte pour qu'un appui isolé suivi
  * d'une navigation ne soit pas pris pour un double.
  */
-export const FENETRE_DOUBLE_MS = 700;
+export const DOUBLE_PRESS_WINDOW_MS = 700;
 
-export interface OptionsArbitre {
+export interface ArbiterOptions {
   /** Horloge, injectable pour les tests. */
-  maintenant?: () => number;
+  now?: () => number;
 }
 
-export interface ArbitreFleches {
+export interface ArrowArbiter {
   /**
-   * @param repetition `KeyboardEvent.repeat` — la touche est TENUE, le
+   * @param repeat `KeyboardEvent.repeat` — la touche est TENUE, le
    * navigateur le dit lui-même. C'est le seul signal qui ne dépende ni d'une
    * cadence ni d'une fenêtre de temps, et donc le seul qui tienne quel que soit
    * le délai d'auto-répétition de la dalle.
    */
-  decider: (code: number, mode: ModeLecteur, repetition?: boolean) => ProprietaireFleche;
+  decide: (code: number, mode: PlayerMode, repeat?: boolean) => ArrowOwner;
   /** Un `keyup` : la flèche cesse de piloter le transport. */
-  relacher: (code: number) => void;
+  release: (code: number) => void;
   /** Rupture franche — démontage, changement de mode subi. */
-  oublier: () => void;
+  forget: () => void;
 }
 
-export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleches {
-  const horloge = options.maintenant ?? (() => Date.now());
+export function createArrowArbiter(options: ArbiterOptions = {}): ArrowArbiter {
+  const clock = options.now ?? (() => Date.now());
 
   /** La flèche qui vient de rallumer l'habillage, et quand. */
-  let amorce = 0;
-  let instantAmorce = 0;
+  let primed = 0;
+  let primedAt = 0;
 
   /**
    * La flèche qu'on a laissée passer au transport, jusqu'à son relâchement.
@@ -86,7 +86,7 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
    */
   let transport = 0;
 
-  function decider(code: number, mode: ModeLecteur, repetition = false): ProprietaireFleche {
+  function decide(code: number, mode: PlayerMode, repeat = false): ArrowOwner {
     // En déplacement, tout appartient au curseur : c'est le mode qui l'a
     // demandé, et il n'y a rien d'autre à viser.
     if (mode === "scrub") {
@@ -104,7 +104,7 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
      * rapide. `repeat` tranche la question à la source, et rend le geste
      * indépendant de l'appareil.
      */
-    if (repetition) {
+    if (repeat) {
       transport = code;
       return "transport";
     }
@@ -113,10 +113,10 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
       // Habillage éteint. Un second appui sur la MÊME flèche, arrivé pendant
       // qu'on attendait, est un saut — et il ne doit pas faire paraître les
       // commandes au passage.
-      const suite = code === amorce && horloge() - instantAmorce <= FENETRE_DOUBLE_MS;
-      amorce = code;
-      instantAmorce = horloge();
-      if (!suite) {
+      const chained = code === primed && clock() - primedAt <= DOUBLE_PRESS_WINDOW_MS;
+      primed = code;
+      primedAt = clock();
+      if (!chained) {
         transport = 0;
         return "attendre";
       }
@@ -127,25 +127,25 @@ export function creerArbitreFleches(options: OptionsArbitre = {}): ArbitreFleche
     // Habillage à l'écran.
     if (code === transport) return "transport";
 
-    const doubleAppui = code === amorce && horloge() - instantAmorce <= FENETRE_DOUBLE_MS;
-    if (!doubleAppui) return "focus";
+    const doublePress = code === primed && clock() - primedAt <= DOUBLE_PRESS_WINDOW_MS;
+    if (!doublePress) return "focus";
 
     transport = code;
     // Ré-armé plutôt que consommé : trois appuis d'affilée doivent faire deux
     // sauts, pas un saut puis un déplacement de focus.
-    instantAmorce = horloge();
+    primedAt = clock();
     return "transport";
   }
 
-  function relacher(code: number): void {
+  function release(code: number): void {
     if (code === transport) transport = 0;
   }
 
-  function oublier(): void {
-    amorce = 0;
-    instantAmorce = 0;
+  function forget(): void {
+    primed = 0;
+    primedAt = 0;
     transport = 0;
   }
 
-  return { decider, relacher, oublier };
+  return { decide, release, forget };
 }

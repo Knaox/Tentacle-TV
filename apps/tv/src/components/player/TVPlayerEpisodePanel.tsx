@@ -44,23 +44,23 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
   // Fondu d'entrée (180 ms, parité panneau-tv-fondu) — plus de glissement.
   const fade = useSharedValue(0);
   useEffect(() => {
-    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.voileFonduMs, easing: Easing.out(Easing.ease) });
+    fade.value = withTiming(1, { duration: TV_PLAYER_PANEL.scrimFadeMs, easing: Easing.out(Easing.ease) });
   }, [fade]);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
   return (
     <Animated.View style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 80, elevation: 80 }, fadeStyle]}>
       {/* Voile d'assombrissement (parité .panneau-tv) : la vidéo s'éteint. */}
-      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.voile }} />
+      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: TV_PLAYER_PANEL.scrim }} />
 
       <View
         importantForAccessibility="yes"
         style={{
           position: "absolute",
           right: TV_OVERSCAN_PT.x,
-          bottom: TV_PLAYER_PANEL.bas,
-          width: TV_PLAYER_PANEL.largeur,
-          height: screenH - TV_PLAYER_PANEL.hauteurMaxRetrait,
+          bottom: TV_PLAYER_PANEL.bottom,
+          width: TV_PLAYER_PANEL.width,
+          height: screenH - TV_PLAYER_PANEL.maxHeightInset,
           borderRadius: TV_RADIUS.lg,
           backgroundColor: "#14141a",
           borderWidth: 1, borderColor: Colors.glassBorder,
@@ -110,7 +110,7 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
             currentBadgeLabel={t("player:nowPlaying")}
             autoFocusCurrent
             fillHeight
-            thumbWidth={TV_PLAYER_PANEL.vignetteEpisode.largeur}
+            thumbWidth={TV_PLAYER_PANEL.episodeThumb.width}
           />
         </TVFocusGuideView>
       </View>

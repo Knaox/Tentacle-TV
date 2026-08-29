@@ -21,26 +21,26 @@ import { useTentacleConfig } from "../context";
 import type { StorageAdapter } from "../storage";
 import { tentacleApiFetch } from "./usePreferences";
 
-let magasin: PlaybackSettingsStore | null = null;
-let derniereResync = 0;
+let settingsStore: PlaybackSettingsStore | null = null;
+let lastResync = 0;
 
 /** Une resynchronisation par demi-minute suffit — chaque montage n'en refait pas une. */
 const RESYNC_MIN_INTERVAL_MS = 30_000;
 
 export function initPlaybackSettingsStore(storage: StorageAdapter): PlaybackSettingsStore {
-  if (!magasin) {
-    magasin = createPlaybackSettingsStore({
+  if (!settingsStore) {
+    settingsStore = createPlaybackSettingsStore({
       storage,
       readRemote: () => tentacleApiFetch<unknown>("/api/preferences/playback"),
-      writeRemote: async (reglages) => {
+      writeRemote: async (settings) => {
         await tentacleApiFetch("/api/preferences/playback", {
           method: "PUT",
-          body: JSON.stringify(reglages),
+          body: JSON.stringify(settings),
         });
       },
     });
   }
-  return magasin;
+  return settingsStore;
 }
 
 export function usePlaybackSettingsStore(): PlaybackSettingsStore {
@@ -53,9 +53,9 @@ export function usePlaybackSettings(): PlaybackSettings {
   const store = usePlaybackSettingsStore();
 
   useEffect(() => {
-    const maintenant = Date.now();
-    if (maintenant - derniereResync < RESYNC_MIN_INTERVAL_MS) return;
-    derniereResync = maintenant;
+    const now = Date.now();
+    if (now - lastResync < RESYNC_MIN_INTERVAL_MS) return;
+    lastResync = now;
     void store.resync();
   }, [store]);
 
@@ -64,10 +64,10 @@ export function usePlaybackSettings(): PlaybackSettings {
 
 /** Écrit un correctif partiel (fusion profonde, optimiste, poussé au serveur). */
 export function setPlaybackSettings(patch: PlaybackSettingsPatch): void {
-  magasin?.set(patch);
+  settingsStore?.set(patch);
 }
 
 /** Android TV : à appeler après l'hydrate() du stockage natif. */
 export function rehydratePlaybackSettings(): void {
-  magasin?.rehydrate();
+  settingsStore?.rehydrate();
 }

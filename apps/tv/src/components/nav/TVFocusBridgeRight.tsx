@@ -1,5 +1,5 @@
 import { Platform, TVFocusGuideView } from "react-native";
-import { borneDroiteEntreesDeployees } from "@tentacle-tv/tv-core";
+import { expandedItemsRightEdge } from "@tentacle-tv/tv-core";
 import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import {
   useContentFocusNode,
@@ -10,7 +10,7 @@ import {
 /** Le pont n'est monté que le rail focus, donc déployé : sa bande commence
  *  après les ENTRÉES déployées (396), pas après le rail replié (186) — sinon
  *  elle chevauche les entrées et capte des HAUT/BAS de navigation interne. */
-const BORD_GAUCHE_PONT = borneDroiteEntreesDeployees(TV_OVERSCAN_PT.x);
+const BORD_GAUCHE_PONT = expandedItemsRightEdge(TV_OVERSCAN_PT.x);
 
 /**
  * Pont de SORTIE du rail (tvOS uniquement).

@@ -41,49 +41,49 @@ const webTokens = readSheet(resolve(WEB_THEME, "tokens.css"));
 describe("la carte bannière suit TV_BANNER_CARD", () => {
   it("accueil : hauteur de la carte", () => {
     expect(propIn(blockFor(banner, "[data-hero-frame]"), "height")).toBe(
-      `${TV_BANNER_CARD.hauteurAccueilVh}vh`,
+      `${TV_BANNER_CARD.homeHeightVh}vh`,
     );
   });
 
   it("accueil : fondu d'apparition de l'image", () => {
-    const bloc = blockWithProp(banner, "[data-hero-frame] img", "animation");
-    expect(propIn(bloc, "animation")).toContain(`${TV_BANNER_CARD.fonduMs}ms`);
+    const block = blockWithProp(banner, "[data-hero-frame] img", "animation");
+    expect(propIn(block, "animation")).toContain(`${TV_BANNER_CARD.fadeMs}ms`);
   });
 
   it("accueil : largeur du bloc texte", () => {
     expect(
       propIn(blockFor(banner, "[data-hero-frame] .max-w-xl"), "max-width"),
-    ).toBe(`${TV_BANNER_CARD.texteLargeurMax / 16}rem`);
+    ).toBe(`${TV_BANNER_CARD.textMaxWidth / 16}rem`);
   });
 
   it("bibliothèque : hauteur de la carte (via le sélecteur du halo)", () => {
     const halo = blockFor(
       library,
-      `.hero-glow[class*="${TV_BANNER_CARD.hauteurBibliothequeVh}vh"]`,
+      `.hero-glow[class*="${TV_BANNER_CARD.libraryHeightVh}vh"]`,
     );
     expect(propIn(halo, "z-index")).toBe("0");
   });
 
   it("bibliothèque : la carte prend la gouttière de rangée", () => {
-    const carte = blockWithProp(library, ".-bottom-\\[200px\\]", "left");
-    expect(propIn(carte, "left")).toBe("var(--row-gutter-desktop)");
-    expect(propIn(carte, "right")).toBe("var(--row-gutter-desktop)");
+    const card = blockWithProp(library, ".-bottom-\\[200px\\]", "left");
+    expect(propIn(card, "left")).toBe("var(--row-gutter-desktop)");
+    expect(propIn(card, "right")).toBe("var(--row-gutter-desktop)");
   });
 
   it("bibliothèque : fondu identique à l'accueil", () => {
     const image = blockWithProp(library, ".-bottom-\\[200px\\] > img", "animation");
-    expect(propIn(image, "animation")).toContain(`${TV_BANNER_CARD.fonduMs}ms`);
+    expect(propIn(image, "animation")).toContain(`${TV_BANNER_CARD.fadeMs}ms`);
   });
 
   it("bibliothèque : écart entre la carte et les filtres", () => {
     expect(
       propIn(blockFor(library, ".relative.z-10.-mt-10"), "margin-top"),
-    ).toBe(`${TV_BANNER_CARD.ecartFiltres}px`);
+    ).toBe(`${TV_BANNER_CARD.filtersGap}px`);
   });
 
   it("gouttière : la valeur du thème web", () => {
     expect(cssVarValue(webTokens, "--row-gutter-desktop")).toBe(
-      `${TV_BANNER_CARD.gouttiere}px`,
+      `${TV_BANNER_CARD.gutter}px`,
     );
   });
 
@@ -95,28 +95,28 @@ describe("la carte bannière suit TV_BANNER_CARD", () => {
 
   it("liseré : 1 px de marque à l'opacité du jeton", () => {
     expect(cssVarValue(surfaces, "--hero-frame-ring")).toBe(
-      `inset 0 0 0 1px rgba(var(--brand-rgb), ${TV_BANNER_CARD.lisereOpacite})`,
+      `inset 0 0 0 1px rgba(var(--brand-rgb), ${TV_BANNER_CARD.borderOpacity})`,
     );
   });
 
   it("halo : l'opacité du thème sombre", () => {
     expect(cssVarValue(surfaces, "--hero-ambilight-opacity")).toBe(
-      `${TV_BANNER_CARD.haloOpacite}`,
+      `${TV_BANNER_CARD.haloOpacity}`,
     );
   });
 });
 
 describe("la bannière de fiche suit TV_DETAIL_BANNER", () => {
   it("hauteur forcée par la feuille de fiche", () => {
-    const bloc = blockFor(detail, '.min-h-screen [class*="calc(58vh"]');
-    expect(propIn(bloc, "height")).toBe(
-      `calc(${TV_DETAIL_BANNER.hauteurVh}vh + ${TV_DETAIL_BANNER.supplementPx}px)`,
+    const block = blockFor(detail, '.min-h-screen [class*="calc(58vh"]');
+    expect(propIn(block, "height")).toBe(
+      `calc(${TV_DETAIL_BANNER.heightVh}vh + ${TV_DETAIL_BANNER.extraPx}px)`,
     );
   });
 
   it("plein cadre : elle annule le retrait d'overscan", () => {
-    const bloc = blockFor(detail, '.min-h-screen [class*="calc(58vh"]');
-    expect(propIn(bloc, "top")).toBe("calc(-1 * var(--tv-overscan-y))");
-    expect(propIn(bloc, "left")).toBe("calc(-1 * var(--tv-overscan-x))");
+    const block = blockFor(detail, '.min-h-screen [class*="calc(58vh"]');
+    expect(propIn(block, "top")).toBe("calc(-1 * var(--tv-overscan-y))");
+    expect(propIn(block, "left")).toBe("calc(-1 * var(--tv-overscan-x))");
   });
 });

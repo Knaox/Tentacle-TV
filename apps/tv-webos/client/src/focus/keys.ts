@@ -9,7 +9,7 @@
  * à webOS.
  */
 
-import type { Direction, Intention, TransportCommande } from "@tentacle-tv/tv-core";
+import type { Direction, Intent, TransportCommand } from "@tentacle-tv/tv-core";
 
 /* Le vocabulaire — directions, intentions, axes, reconnaissance d'OK — vit
  * désormais dans `@tentacle-tv/tv-core`, partagé avec Apple TV et Android TV.
@@ -17,8 +17,8 @@ import type { Direction, Intention, TransportCommande } from "@tentacle-tv/tv-co
  *
  * Le ré-export garde intacts les onze modules qui importaient d'ici : rien
  * n'avait à changer chez eux pour que le vocabulaire déménage. */
-export { estHorizontale, estValidation, sens } from "@tentacle-tv/tv-core";
-export type { Direction, Intention, TransportCommande } from "@tentacle-tv/tv-core";
+export { isHorizontal, isSelectKey, directionSign } from "@tentacle-tv/tv-core";
+export type { Direction, Intent, TransportCommand } from "@tentacle-tv/tv-core";
 
 const DIRECTIONS: Record<number, Direction> = {
   38: "haut",
@@ -27,7 +27,7 @@ const DIRECTIONS: Record<number, Direction> = {
   39: "droite",
 };
 
-const TRANSPORTS: Record<number, TransportCommande> = {
+const TRANSPORTS: Record<number, TransportCommand> = {
   415: "lecture",
   19: "pause",
   413: "arret",
@@ -68,7 +68,7 @@ const DIRECTIONS_PAR_NOM: Record<string, Direction> = {
   ArrowRight: "droite",
 };
 
-const TRANSPORTS_PAR_NOM: Record<string, TransportCommande> = {
+const TRANSPORTS_PAR_NOM: Record<string, TransportCommand> = {
   MediaPlay: "lecture",
   MediaPause: "pause",
   MediaStop: "arret",
@@ -79,7 +79,7 @@ const TRANSPORTS_PAR_NOM: Record<string, TransportCommande> = {
 const VALIDATION_PAR_NOM = new Set(["Enter"]);
 const RETOUR_PAR_NOM = new Set(["Escape", "BrowserBack", "GoBack"]);
 
-export function lireIntention(evenement: KeyboardEvent): Intention | null {
+export function lireIntention(evenement: KeyboardEvent): Intent | null {
   const code = evenement.keyCode;
 
   const direction = DIRECTIONS[code];
@@ -88,13 +88,13 @@ export function lireIntention(evenement: KeyboardEvent): Intention | null {
   if (VALIDATION.has(code)) return { type: "valider" };
   if (RETOUR.has(code)) return { type: "retour" };
 
-  const commande = TRANSPORTS[code];
-  if (commande) return { type: "transport", commande };
+  const command = TRANSPORTS[code];
+  if (command) return { type: "transport", command };
 
   return parLeNom(evenement.key);
 }
 
-function parLeNom(nom: string | undefined): Intention | null {
+function parLeNom(nom: string | undefined): Intent | null {
   if (!nom) return null;
 
   const direction = DIRECTIONS_PAR_NOM[nom];
@@ -103,8 +103,8 @@ function parLeNom(nom: string | undefined): Intention | null {
   if (VALIDATION_PAR_NOM.has(nom)) return { type: "valider" };
   if (RETOUR_PAR_NOM.has(nom)) return { type: "retour" };
 
-  const commande = TRANSPORTS_PAR_NOM[nom];
-  if (commande) return { type: "transport", commande };
+  const command = TRANSPORTS_PAR_NOM[nom];
+  if (command) return { type: "transport", command };
 
   return null;
 }

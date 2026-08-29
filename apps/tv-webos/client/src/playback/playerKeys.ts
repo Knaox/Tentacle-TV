@@ -1,5 +1,5 @@
-import { lireIntention, type TransportCommande } from "../focus/keys";
-import { lecteurTvActif } from "@tentacle-tv/tv-core";
+import { lireIntention, type TransportCommand } from "../focus/keys";
+import { tvPlayerActive } from "@tentacle-tv/tv-core";
 
 /**
  * Les touches de transport de la télécommande.
@@ -31,21 +31,21 @@ export function installerTouchesLecteur(): () => void {
   const surTouche = (evenement: KeyboardEvent) => {
     const intention = lireIntention(evenement);
     if (!intention || intention.type !== "transport") return;
-    if (lecteurTvActif()) return;
+    if (tvPlayerActive()) return;
 
     const video = document.querySelector("video");
     if (!video) return;
 
     evenement.preventDefault();
     evenement.stopPropagation();
-    appliquer(video, intention.commande);
+    appliquer(video, intention.command);
   };
 
   document.addEventListener("keydown", surTouche, true);
   return () => document.removeEventListener("keydown", surTouche, true);
 }
 
-function appliquer(video: HTMLVideoElement, commande: TransportCommande): void {
+function appliquer(video: HTMLVideoElement, commande: TransportCommand): void {
   switch (commande) {
     case "lecture":
       // Volontairement une bascule et non un simple `play()` : sur certaines

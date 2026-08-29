@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  creerMoteurMaintien,
-  REPETITIONS_AVANT_TIC,
-  SILENCE_DEFAUT_MS,
-  SILENCE_MINIMAL_MS,
-  TIC_MAINTIEN_MS,
-  type MoteurMaintien,
+  createHoldMotor,
+  REPEATS_BEFORE_TICK,
+  SILENCE_DEFAULT_MS,
+  SILENCE_MIN_MS,
+  HOLD_TICK_MS,
+  type HoldMotor,
 } from "./holdMotor";
 
 /**
@@ -20,219 +20,219 @@ import {
  * évite qu'une pression un peu appuyée parte à huit fois la vitesse.
  */
 
-const DROITE = 39;
-const GAUCHE = 37;
+const RIGHT = 39;
+const LEFT = 37;
 const OK = 13;
 
-interface Pas {
-  instant: number;
-  sens: 1 | -1;
+interface Step {
+  at: number;
+  sign: 1 | -1;
   /** Le palier du tic, ou `0` pour un saut — un geste n'accélère jamais. */
-  palier: number;
-  geste: "saut" | "tic";
+  tier: number;
+  kind: "saut" | "tic";
 }
 
-function harnais() {
-  const depart = Date.now();
-  const pas: Pas[] = [];
-  const moteur = creerMoteurMaintien({
-    sauter: (sens) => pas.push({ instant: Date.now() - depart, sens, palier: 0, geste: "saut" }),
-    avancer: (sens, palier) => pas.push({ instant: Date.now() - depart, sens, palier, geste: "tic" }),
+function harness() {
+  const from = Date.now();
+  const step: Step[] = [];
+  const motor = createHoldMotor({
+    jump: (sign) => step.push({ at: Date.now() - from, sign, tier: 0, kind: "saut" }),
+    advance: (sign, tier) => step.push({ at: Date.now() - from, sign, tier, kind: "tic" }),
   });
-  return { pas, moteur, sauts: () => pas.filter((p) => p.geste === "saut"),
-    tics: () => pas.filter((p) => p.geste === "tic") };
+  return { step, motor, jumps: () => step.filter((p) => p.kind === "saut"),
+    ticks: () => step.filter((p) => p.kind === "tic") };
 }
 
 /** Un maintien : un appui, puis des répétitions à `intervalle` pendant `duree`. */
-function tenir(moteur: MoteurMaintien, code: number, sens: 1 | -1, intervalle: number, duree: number): void {
-  moteur.appuyer(code, sens);
-  for (let ecoule = intervalle; ecoule <= duree; ecoule += intervalle) {
-    vi.advanceTimersByTime(intervalle);
-    moteur.appuyer(code, sens);
+function hold(motor: HoldMotor, code: number, sign: 1 | -1, interval: number, duration: number): void {
+  motor.press(code, sign);
+  for (let elapsed = interval; elapsed <= duration; elapsed += interval) {
+    vi.advanceTimersByTime(interval);
+    motor.press(code, sign);
   }
 }
 
-describe("moteurMaintien", () => {
+describe("holdMotor", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
   it("un appui simple est un saut sec, jamais une entrée en déplacement", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    moteur.appuyer(DROITE, 1);
+    motor.press(RIGHT, 1);
 
-    expect(pas).toEqual([{ instant: 0, sens: 1, palier: 0, geste: "saut" }]);
-    moteur.detruire();
+    expect(step).toEqual([{ at: 0, sign: 1, tier: 0, kind: "saut" }]);
+    motor.destroy();
   });
 
   it("des appuis espacés restent des sauts, sans jamais accélérer", () => {
-    const { pas, moteur, tics } = harnais();
+    const { step, motor, ticks } = harness();
 
     for (let i = 0; i < 8; i++) {
-      moteur.appuyer(DROITE, 1);
-      vi.advanceTimersByTime(SILENCE_DEFAUT_MS + 50);
+      motor.press(RIGHT, 1);
+      vi.advanceTimersByTime(SILENCE_DEFAULT_MS + 50);
     }
 
-    expect(pas).toHaveLength(8);
-    expect(pas.every((p) => p.geste === "saut")).toBe(true);
-    expect(tics()).toHaveLength(0);
-    moteur.detruire();
+    expect(step).toHaveLength(8);
+    expect(step.every((p) => p.kind === "saut")).toBe(true);
+    expect(ticks()).toHaveLength(0);
+    motor.destroy();
   });
 
   it("le tic possède l'avance : une dalle lente n'avance pas moins vite", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
     // 400 ms entre deux répétitions, soit moins d'un appui par tic. Le débit
     // doit rester celui du tic, pas celui de la dalle.
-    tenir(moteur, DROITE, 1, 400, 1200);
+    hold(motor, RIGHT, 1, 400, 1200);
 
     // À cette cadence, le tic ne prend la main qu'à la DEUXIÈME répétition — le
     // temps de distinguer une touche tenue d'un doigt qui tape. L'appui et le
     // battement d'attente sautent ; celui qui engage passe la main sans sauter,
     // pour ne pas déplacer le point d'où le curseur part.
-    const engagement = 400 * REPETITIONS_AVANT_TIC;
-    const sauts = REPETITIONS_AVANT_TIC;
-    const tics = Math.floor((1200 - engagement) / TIC_MAINTIEN_MS);
-    expect(pas).toHaveLength(sauts + tics);
-    moteur.detruire();
+    const engagement = 400 * REPEATS_BEFORE_TICK;
+    const jumps = REPEATS_BEFORE_TICK;
+    const ticks = Math.floor((1200 - engagement) / HOLD_TICK_MS);
+    expect(step).toHaveLength(jumps + ticks);
+    motor.destroy();
   });
 
   it("le palier monte d'un cran par seconde de maintien", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
     // Un vrai maintien : les répétitions ne s'arrêtent pas pendant qu'on tient.
-    tenir(moteur, DROITE, 1, 100, 4200);
+    hold(motor, RIGHT, 1, 100, 4200);
 
     // Le maintien s'engage à la deuxième répétition, donc à 100 ms. On lit le
     // palier au milieu de chaque seconde qui suit.
-    const palierA = (instant: number) => {
-      const proche = pas.filter((p) => p.instant > 100 && p.instant <= instant).pop();
-      return proche ? proche.palier : null;
+    const tierAt = (at: number) => {
+      const near = step.filter((p) => p.at > 100 && p.at <= at).pop();
+      return near ? near.tier : null;
     };
 
-    expect(palierA(600)).toBe(1);
-    expect(palierA(1600)).toBe(2);
-    expect(palierA(2600)).toBe(4);
-    expect(palierA(3600)).toBe(8);
-    expect(palierA(4200)).toBe(8);
-    moteur.detruire();
+    expect(tierAt(600)).toBe(1);
+    expect(tierAt(1600)).toBe(2);
+    expect(tierAt(2600)).toBe(4);
+    expect(tierAt(3600)).toBe(8);
+    expect(tierAt(4200)).toBe(8);
+    motor.destroy();
   });
 
   it("le relâchement arrête le tic sur-le-champ", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 600);
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 100, 600);
+    const before = step.length;
 
-    moteur.relacher(DROITE);
+    motor.release(RIGHT);
     vi.advanceTimersByTime(2000);
 
-    expect(pas).toHaveLength(avant);
-    moteur.detruire();
+    expect(step).toHaveLength(before);
+    motor.destroy();
   });
 
   it("le relâchement d'une AUTRE touche ne coupe pas la flèche encore tenue", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 600);
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 100, 600);
+    const before = step.length;
 
     // On tient la flèche et l'on clique : la Magic Remote a un bouton central,
     // et son `keyup` arrivait jusqu'ici couper un maintien qui ne le regardait
     // pas.
-    moteur.relacher(OK);
-    vi.advanceTimersByTime(TIC_MAINTIEN_MS * 3);
+    motor.release(OK);
+    vi.advanceTimersByTime(HOLD_TICK_MS * 3);
 
-    expect(pas.length).toBeGreaterThan(avant);
-    moteur.detruire();
+    expect(step.length).toBeGreaterThan(before);
+    motor.destroy();
   });
 
   it("annuler coupe le maintien sans qu'on ait à nommer la touche", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 600);
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 100, 600);
+    const before = step.length;
 
     // Le mode du lecteur a changé sous la touche — personne n'a levé le doigt.
-    moteur.annuler();
+    motor.cancel();
     vi.advanceTimersByTime(2000);
 
-    expect(pas).toHaveLength(avant);
-    moteur.detruire();
+    expect(step).toHaveLength(before);
+    motor.destroy();
   });
 
   it("après annulation, la même touche encore tenue repart d'un appui simple", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 2500);
-    moteur.annuler();
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 100, 2500);
+    motor.cancel();
+    const before = step.length;
 
     // La répétition suivante de la MÊME pression physique : elle ne doit pas
     // reprendre à huit fois la vitesse là où le maintien s'était arrêté.
-    moteur.appuyer(DROITE, 1);
+    motor.press(RIGHT, 1);
 
-    expect(pas).toHaveLength(avant + 1);
-    expect(pas[pas.length - 1].geste).toBe("saut");
-    moteur.detruire();
+    expect(step).toHaveLength(before + 1);
+    expect(step[step.length - 1].kind).toBe("saut");
+    motor.destroy();
   });
 
   it("sans relâchement, le silence arrête le tic — la dalle n'émet pas toujours keyup", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
     // Répétition lente : le seuil de silence reste celui du portage.
-    tenir(moteur, DROITE, 1, 400, 1200);
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 400, 1200);
+    const before = step.length;
 
     // Personne ne prévient : la touche est lâchée, les répétitions cessent.
-    vi.advanceTimersByTime(SILENCE_DEFAUT_MS + 100);
-    const apres = pas.length;
+    vi.advanceTimersByTime(SILENCE_DEFAULT_MS + 100);
+    const after = step.length;
     vi.advanceTimersByTime(3000);
 
-    expect(apres).toBeGreaterThan(avant);
-    expect(pas).toHaveLength(apres);
-    moteur.detruire();
+    expect(after).toBeGreaterThan(before);
+    expect(step).toHaveLength(after);
+    motor.destroy();
   });
 
   it("une répétition rapide resserre le seuil sous les 700 ms du portage", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
     // 100 ms d'intervalle : le seuil descend au plancher d'`apps/tv`, 350 ms.
-    tenir(moteur, DROITE, 1, 100, 600);
+    hold(motor, RIGHT, 1, 100, 600);
 
     // Passé le plancher, le tic doit déjà être coupé — avec le seuil par
     // défaut il tournerait encore pendant 350 ms de plus.
-    vi.advanceTimersByTime(SILENCE_MINIMAL_MS + 60);
-    const auPlancher = pas.length;
-    vi.advanceTimersByTime(SILENCE_DEFAUT_MS);
+    vi.advanceTimersByTime(SILENCE_MIN_MS + 60);
+    const atFloor = step.length;
+    vi.advanceTimersByTime(SILENCE_DEFAULT_MS);
 
-    expect(pas).toHaveLength(auPlancher);
-    moteur.detruire();
+    expect(step).toHaveLength(atFloor);
+    motor.destroy();
   });
 
   it("changer de sens repart d'un saut", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 2500);
-    const avant = pas.length;
+    hold(motor, RIGHT, 1, 100, 2500);
+    const before = step.length;
 
-    moteur.appuyer(GAUCHE, -1);
+    motor.press(LEFT, -1);
 
-    expect(pas).toHaveLength(avant + 1);
-    expect(pas[pas.length - 1].sens).toBe(-1);
-    expect(pas[pas.length - 1].geste).toBe("saut");
-    moteur.detruire();
+    expect(step).toHaveLength(before + 1);
+    expect(step[step.length - 1].sign).toBe(-1);
+    expect(step[step.length - 1].kind).toBe("saut");
+    motor.destroy();
   });
 
   it("détruire coupe le tic — un lecteur démonté ne pousse plus le curseur", () => {
-    const { pas, moteur } = harnais();
+    const { step, motor } = harness();
 
-    tenir(moteur, DROITE, 1, 100, 600);
-    moteur.detruire();
-    const fige = pas.length;
+    hold(motor, RIGHT, 1, 100, 600);
+    motor.destroy();
+    const freeze = step.length;
 
     vi.advanceTimersByTime(3000);
 
-    expect(pas).toHaveLength(fige);
+    expect(step).toHaveLength(freeze);
   });
 });

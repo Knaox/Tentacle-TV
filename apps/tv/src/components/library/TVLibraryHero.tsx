@@ -45,8 +45,8 @@ export const TVLibraryHero = memo(function TVLibraryHero({
 
   return (
     <TVBannerCardFrame
-      heightVh={TV_BANNER_CARD.hauteurBibliothequeVh}
-      ambilightUri={featured ? backdropUriOf(client, featured, TV_AMBILIGHT.largeurSource, 70) : undefined}
+      heightVh={TV_BANNER_CARD.libraryHeightVh}
+      ambilightUri={featured ? backdropUriOf(client, featured, TV_AMBILIGHT.sourceWidth, 70) : undefined}
     >
       {featured && <TVHeroBackdrop current={featured} />}
 

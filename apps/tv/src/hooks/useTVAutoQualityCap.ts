@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { amorcerMesureDebit, debitEnCache, useJellyfinClient } from "@tentacle-tv/api-client";
+import { primeBitrateMeasure, cachedBitrate, useJellyfinClient } from "@tentacle-tv/api-client";
 import { capForBitrate } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
@@ -44,7 +44,7 @@ export function useTVAutoQualityCap(args: {
   // Filet : si l'accueil n'a pas déjà préchauffé la mesure, l'amorcer ici —
   // trop tard pour CETTE lecture (la décision de flux part immédiatement),
   // à temps pour les suivantes (et pour le premier seek re-remuxé).
-  useEffect(() => { amorcerMesureDebit(client); }, [client]);
+  useEffect(() => { primeBitrateMeasure(client); }, [client]);
 
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
   // seek re-remuxé ou un reload reconstruit le flux de toute façon, c'est le
@@ -54,9 +54,9 @@ export function useTVAutoQualityCap(args: {
   const capRef = useRef<QualityPreset | null>(null);
   if (sessionCle !== evalueRef.current && mediaSource) {
     evalueRef.current = sessionCle;
-    capRef.current = capForBitrate(mediaSource, debitEnCache());
+    capRef.current = capForBitrate(mediaSource, cachedBitrate());
     if (capRef.current) {
-      plog("cap", `debit mesure ${(debitEnCache() ?? 0) / 1e6 | 0} Mb/s < source → palier ${capRef.current.key} (${(capRef.current.bitrate ?? 0) / 1e6} Mb/s)`);
+      plog("cap", `debit mesure ${(cachedBitrate() ?? 0) / 1e6 | 0} Mb/s < source → palier ${capRef.current.key} (${(capRef.current.bitrate ?? 0) / 1e6} Mb/s)`);
     }
   }
   const cap = sessionCle === evalueRef.current ? capRef.current : null;

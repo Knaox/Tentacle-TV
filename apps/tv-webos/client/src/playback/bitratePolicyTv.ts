@@ -1,4 +1,4 @@
-import { amorcerMesureDebit, debitEnCache, type JellyfinClient } from "@tentacle-tv/api-client";
+import { primeBitrateMeasure, cachedBitrate, type JellyfinClient } from "@tentacle-tv/api-client";
 import { capForBitrate, type MediaSource, type QualityPreset } from "@tentacle-tv/shared";
 
 /**
@@ -16,9 +16,9 @@ import { capForBitrate, type MediaSource, type QualityPreset } from "@tentacle-t
  * de lecture, jamais de blocage du démarrage.
  */
 export function amorcerMesure(client: JellyfinClient): void {
-  amorcerMesureDebit(client);
+  primeBitrateMeasure(client);
 }
 
 export function capAutomatique(source: MediaSource | null | undefined): QualityPreset | null {
-  return capForBitrate(source, debitEnCache());
+  return capForBitrate(source, cachedBitrate());
 }

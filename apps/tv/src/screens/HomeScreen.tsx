@@ -29,7 +29,7 @@ import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 const SCREEN_H = require("react-native").Dimensions.get("window").height;
-const HERO_H = Math.round((SCREEN_H * TV_BANNER_CARD.hauteurAccueilVh) / 100);
+const HERO_H = Math.round((SCREEN_H * TV_BANNER_CARD.homeHeightVh) / 100);
 
 export function HomeScreen(props: Props) {
   return (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { meilleur, restreindreALaPremiereLigne, type Boite } from "./geometry";
+import { best, restrictToFirstRow, type Box } from "./geometry";
 import type { Direction } from "../input/keys";
 
 /**
@@ -18,32 +18,32 @@ import type { Direction } from "../input/keys";
  * désalignée (score ~467 contre ~2000 pour l'onglet).
  */
 
-function boite(gauche: number, haut: number, largeur: number, hauteur: number): Boite {
-  return { gauche, haut, droite: gauche + largeur, bas: haut + hauteur };
+function box(left: number, top: number, width: number, height: number): Box {
+  return { left, top, right: left + width, bottom: top + height };
 }
 
-const RETOUR = boite(72, 40, 95, 46);
-const VOIR_PLUS = boite(304, 464, 70, 24);
-const LECTURE = boite(304, 501, 181, 56);
-const MA_LISTE = boite(715, 501, 56, 56);
-const EXTRA_1 = boite(56, 677, 208, 117);
-const EXTRA_4 = boite(728, 677, 208, 117);
-const SAISON_1 = boite(32, 947, 106, 42);
-const SAISON_2 = boite(150, 947, 110, 42);
-const SAISON_3 = boite(272, 947, 110, 42);
-const EPISODE_1 = boite(32, 1017, 1216, 125);
+const RETOUR = box(72, 40, 95, 46);
+const VOIR_PLUS = box(304, 464, 70, 24);
+const LECTURE = box(304, 501, 181, 56);
+const MA_LISTE = box(715, 501, 56, 56);
+const EXTRA_1 = box(56, 677, 208, 117);
+const EXTRA_4 = box(728, 677, 208, 117);
+const SAISON_1 = box(32, 947, 106, 42);
+const SAISON_2 = box(150, 947, 110, 42);
+const SAISON_3 = box(272, 947, 110, 42);
+const EPISODE_1 = box(32, 1017, 1216, 125);
 
-function nomme(entrees: Record<string, Boite>) {
-  return Object.entries(entrees).map(([element, boiteDeLElement]) => ({
+function named(entries: Record<string, Box>) {
+  return Object.entries(entries).map(([element, elementBox]) => ({
     element,
-    boite: boiteDeLElement,
+    box: elementBox,
   }));
 }
 
-function gagnant(depart: Boite, candidats: Array<{ element: string; boite: Boite }>, direction: Direction) {
-  const bande = restreindreALaPremiereLigne(depart, candidats, direction);
-  const retenus = bande.length > 0 ? bande : candidats;
-  return meilleur(depart, retenus, direction)?.element;
+function winner(from: Box, candidates: Array<{ element: string; box: Box }>, direction: Direction) {
+  const band = restrictToFirstRow(from, candidates, direction);
+  const kept = band.length > 0 ? band : candidates;
+  return best(from, kept, direction)?.element;
 }
 
 describe("la fiche, bloc par bloc", () => {
@@ -52,7 +52,7 @@ describe("la fiche, bloc par bloc", () => {
     // désalignement est nul, et la géométrie brute la préférait à toute la
     // rangée d'actions. La première bande sous Retour est « Voir plus » —
     // la zone élargie de la fiche redirigera ensuite vers « Lecture ».
-    const candidats = nomme({
+    const candidates = named({
       voirPlus: VOIR_PLUS,
       lecture: LECTURE,
       maListe: MA_LISTE,
@@ -60,56 +60,56 @@ describe("la fiche, bloc par bloc", () => {
       saison1: SAISON_1,
       episode1: EPISODE_1,
     });
-    expect(gagnant(RETOUR, candidats, "bas")).toBe("voirPlus");
+    expect(winner(RETOUR, candidates, "bas")).toBe("voirPlus");
   });
 
   it("« bas » depuis une pastille ronde s'arrête aux extras quand il y en a", () => {
-    const candidats = nomme({
+    const candidates = named({
       extra1: EXTRA_1,
       extra4: EXTRA_4,
       saison1: SAISON_1,
       episode1: EPISODE_1,
     });
-    expect(gagnant(MA_LISTE, candidats, "bas")).toBe("extra4");
+    expect(winner(MA_LISTE, candidates, "bas")).toBe("extra4");
   });
 
   it("sans extras, « bas » depuis une pastille ronde vise un onglet, jamais la ligne d'épisode", () => {
     // Une vraie rangée d'onglets s'arrête loin avant l'abscisse des
     // pastilles : son désalignement est payé ×3, et la ligne pleine largeur
     // l'enjambait. La bande des onglets est pourtant la première rencontrée.
-    const candidats = nomme({
+    const candidates = named({
       saison1: SAISON_1,
       saison2: SAISON_2,
       saison3: SAISON_3,
       episode1: EPISODE_1,
     });
-    expect(gagnant(MA_LISTE, candidats, "bas")).toBe("saison3");
+    expect(winner(MA_LISTE, candidates, "bas")).toBe("saison3");
   });
 
   it("« bas » depuis une tuile d'extras vise un onglet, jamais la ligne d'épisode", () => {
-    const candidats = nomme({
+    const candidates = named({
       saison1: SAISON_1,
       saison2: SAISON_2,
       saison3: SAISON_3,
       episode1: EPISODE_1,
     });
-    expect(gagnant(EXTRA_1, candidats, "bas")).toBe("saison1");
+    expect(winner(EXTRA_1, candidates, "bas")).toBe("saison1");
   });
 
   it("la remontée est symétrique : « haut » depuis un onglet vise les extras", () => {
-    const candidats = nomme({
+    const candidates = named({
       voirPlus: VOIR_PLUS,
       lecture: LECTURE,
       extra1: EXTRA_1,
       extra4: EXTRA_4,
     });
-    expect(gagnant(SAISON_1, candidats, "haut")).toBe("extra1");
+    expect(winner(SAISON_1, candidates, "haut")).toBe("extra1");
   });
 
   it("sans bande dans la direction, le mouvement ne rend rien", () => {
     // Tout est au-dessus : la restriction rend vide, le repli géométrique
     // aussi — c'est le cas « bord de page », traité par le défilement.
-    const candidats = nomme({ retour: RETOUR, lecture: LECTURE });
-    expect(gagnant(EPISODE_1, candidats, "bas")).toBeUndefined();
+    const candidates = named({ retour: RETOUR, lecture: LECTURE });
+    expect(winner(EPISODE_1, candidates, "bas")).toBeUndefined();
   });
 });

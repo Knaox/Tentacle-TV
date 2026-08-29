@@ -1,5 +1,5 @@
 import { recenser, type Candidat } from "../focus/candidates";
-import { boiteDepuisRectangle, meilleur } from "@tentacle-tv/tv-core";
+import { boxFromRect, best } from "@tentacle-tv/tv-core";
 import { scrollerHorizontal, scrollerVertical } from "../focus/scroll";
 import type { Direction } from "../focus/keys";
 
@@ -110,7 +110,7 @@ function verifierNature(candidat: Candidat): Manquement[] {
 }
 
 function verifierZoneSure(candidat: Candidat): Manquement[] {
-  const { boite } = candidat;
+  const { box } = candidat;
   const margeX = window.innerWidth * MARGE_SURE_X;
   const margeY = window.innerHeight * MARGE_SURE_Y;
 
@@ -120,22 +120,22 @@ function verifierZoneSure(candidat: Candidat): Manquement[] {
   // dalle rogne : elle est hors champ, et le défilement l'amènera. Sans cette
   // distinction, chaque grille rendait une ligne de manquements par carte sous
   // la ligne de flottaison — du bruit qui noie les vrais.
-  const dansLEcranVerticalement = boite.haut >= 0 && boite.bas <= window.innerHeight;
-  const dansLEcranHorizontalement = boite.gauche >= 0 && boite.droite <= window.innerWidth;
+  const dansLEcranVerticalement = box.top >= 0 && box.bottom <= window.innerHeight;
+  const dansLEcranHorizontalement = box.left >= 0 && box.right <= window.innerWidth;
 
   const debords: string[] = [];
   if (dansLEcranHorizontalement) {
-    if (boite.gauche < margeX) {
-      debords.push(`gauche ${Math.round(boite.gauche)} < ${Math.round(margeX)}`);
+    if (box.left < margeX) {
+      debords.push(`gauche ${Math.round(box.left)} < ${Math.round(margeX)}`);
     }
-    if (boite.droite > window.innerWidth - margeX) {
-      debords.push(`droite ${Math.round(boite.droite)} > ${Math.round(window.innerWidth - margeX)}`);
+    if (box.right > window.innerWidth - margeX) {
+      debords.push(`droite ${Math.round(box.right)} > ${Math.round(window.innerWidth - margeX)}`);
     }
   }
   if (dansLEcranVerticalement) {
-    if (boite.haut < margeY) debords.push(`haut ${Math.round(boite.haut)} < ${Math.round(margeY)}`);
-    if (boite.bas > window.innerHeight - margeY) {
-      debords.push(`bas ${Math.round(boite.bas)} > ${Math.round(window.innerHeight - margeY)}`);
+    if (box.top < margeY) debords.push(`haut ${Math.round(box.top)} < ${Math.round(margeY)}`);
+    if (box.bottom > window.innerHeight - margeY) {
+      debords.push(`bas ${Math.round(box.bottom)} > ${Math.round(window.innerHeight - margeY)}`);
     }
   }
 
@@ -158,16 +158,16 @@ function verifierRognage(candidat: Candidat): Manquement[] {
   const style = window.getComputedStyle(scroller);
   if (style.overflowX !== "hidden" && style.overflowY !== "hidden") return [];
 
-  const boite = element.getBoundingClientRect();
+  const box = element.getBoundingClientRect();
   const cadre = scroller.getBoundingClientRect();
   // Sept pixels : l'épaisseur de l'anneau plus son écart.
   const anneau = 7;
 
   const rogne =
-    boite.left - anneau < cadre.left - 1 ||
-    boite.right + anneau > cadre.right + 1 ||
-    boite.top - anneau < cadre.top - 1 ||
-    boite.bottom + anneau > cadre.bottom + 1;
+    box.left - anneau < cadre.left - 1 ||
+    box.right + anneau > cadre.right + 1 ||
+    box.top - anneau < cadre.top - 1 ||
+    box.bottom + anneau > cadre.bottom + 1;
 
   if (!rogne) return [];
   return [
@@ -218,7 +218,7 @@ function verifierImpasses(candidat: Candidat, tous: Candidat[]): Manquement[] {
   const autres = tous.filter((autre) => autre.element !== candidat.element);
   const sansIssue = DIRECTIONS.filter(
     (direction) =>
-      !auBordDeLEcran(candidat, direction) && meilleur(candidat.boite, autres, direction) === null,
+      !auBordDeLEcran(candidat, direction) && best(candidat.box, autres, direction) === null,
   );
 
   // Les quatre directions vides : l'élément est seul à l'écran, ce qui est un
@@ -248,17 +248,17 @@ function verifierImpasses(candidat: Candidat, tous: Candidat[]): Manquement[] {
 function auBordDeLEcran(candidat: Candidat, direction: Direction): boolean {
   const margeX = window.innerWidth * MARGE_SURE_X;
   const margeY = window.innerHeight * MARGE_SURE_Y;
-  const { boite } = candidat;
+  const { box } = candidat;
 
   switch (direction) {
     case "gauche":
-      return boite.gauche <= margeX + 1;
+      return box.left <= margeX + 1;
     case "droite":
-      return boite.droite >= window.innerWidth - margeX - 1;
+      return box.right >= window.innerWidth - margeX - 1;
     case "haut":
-      return boite.haut <= margeY + 1;
+      return box.top <= margeY + 1;
     case "bas":
-      return boite.bas >= window.innerHeight - margeY - 1;
+      return box.bottom >= window.innerHeight - margeY - 1;
   }
 }
 
@@ -270,4 +270,4 @@ export function rectanglesFocusables(): Array<{ element: HTMLElement; rect: DOMR
   }));
 }
 
-export { boiteDepuisRectangle };
+export { boxFromRect };

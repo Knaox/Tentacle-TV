@@ -1,12 +1,12 @@
-import { estHorizontale, type Direction } from "./keys";
+import { isHorizontal, type Direction } from "./keys";
 import { recenser, conteneurPiegeant } from "./candidates";
 import { focusParDefaut } from "./default";
 import { donnerFocus, elementActif } from "./active";
 import {
-  meilleur,
-  restreindreALaPremiereLigne,
-  surLaMemeColonne,
-  surLaMemeLigne,
+  best,
+  restrictToFirstRow,
+  onSameColumn,
+  onSameRow,
 } from "@tentacle-tv/tv-core";
 import { boiteDeNavigation } from "./measure";
 import { defilerParPas } from "./scroll";
@@ -169,12 +169,12 @@ export function viser(direction: Direction): boolean {
   //
   // Une GRILLE se confine de la même façon, mais par les ordonnées : elle n'a
   // aucun conteneur par ligne.
-  if (estHorizontale(direction)) {
+  if (isHorizontal(direction)) {
     const piste = depart.closest("[data-tv-piste]");
     if (piste) {
       candidats = candidats.filter((candidat) => piste.contains(candidat.element));
     } else if (depart.closest("[data-tv-grille]")) {
-      candidats = candidats.filter((candidat) => surLaMemeLigne(depuis, candidat.boite));
+      candidats = candidats.filter((candidat) => onSameRow(depuis, candidat.box));
     }
   } else {
     // Un déplacement VERTICAL en grille descend dans sa colonne. La géométrie
@@ -188,13 +188,13 @@ export function viser(direction: Direction): boolean {
     if (grille) {
       const dansLaGrille = candidats.filter((candidat) => grille.contains(candidat.element));
       const memeColonne = dansLaGrille.filter((candidat) =>
-        surLaMemeColonne(depuis, candidat.boite),
+        onSameColumn(depuis, candidat.box),
       );
-      if (meilleur(depuis, memeColonne, direction)) {
+      if (best(depuis, memeColonne, direction)) {
         candidats = memeColonne;
         confine = true;
       } else {
-        const premiereLigne = restreindreALaPremiereLigne(depuis, dansLaGrille, direction);
+        const premiereLigne = restrictToFirstRow(depuis, dansLaGrille, direction);
         if (premiereLigne.length > 0) {
           candidats = premiereLigne;
           confine = true;
@@ -214,12 +214,12 @@ export function viser(direction: Direction): boolean {
     // jamais désalignée. S'arrêter à la première bande rend au « bas » de
     // salon son sens : le bloc SUIVANT, jamais deux plus loin.
     if (!confine) {
-      const bande = restreindreALaPremiereLigne(depuis, candidats, direction);
+      const bande = restrictToFirstRow(depuis, candidats, direction);
       if (bande.length > 0) candidats = bande;
     }
   }
 
-  const choisi = meilleur(depuis, candidats, direction);
+  const choisi = best(depuis, candidats, direction);
   if (!choisi) {
     // « Gauche » sans voisin, c'est la demande du rail — depuis la première
     // colonne d'une grille, le début d'une piste rembobinée, le chrome. La
@@ -275,7 +275,7 @@ function viserDansLeRail(depart: HTMLElement, direction: Direction): boolean {
   const candidats = recenser(document).filter(
     (candidat) => candidat.element !== depart && dansLeRail(candidat.element),
   );
-  const choisi = meilleur(depuis, candidats, direction);
+  const choisi = best(depuis, candidats, direction);
   if (choisi) donnerFocus(choisi.element);
   return true;
 }

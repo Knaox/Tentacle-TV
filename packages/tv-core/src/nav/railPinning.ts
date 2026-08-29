@@ -23,34 +23,41 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
  * deux côtés sans traitement particulier.
  */
 
-export const CLE_STOCKAGE_RAIL = "tentacle_webos_rail";
+export const RAIL_STORAGE_KEY = "tentacle_webos_rail";
 
 /** Le minimum qu'un stockage doit offrir. `localStorage` et `RNStorageAdapter`
  *  le satisfont l'un comme l'autre. */
-export interface StockageRail {
-  getItem(cle: string): string | null;
-  setItem(cle: string, valeur: string): void;
+export interface RailStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
 }
 
-interface EtatRail {
+/**
+ * L'état PERSISTÉ, tel qu'il est sérialisé sous `RAIL_STORAGE_KEY`.
+ *
+ * `masquees` garde son nom français : c'est une clé du JSON stocké, pas un
+ * simple identifiant. La renommer ferait écrire `hidden` et relire `hidden`,
+ * donc perdre en silence les entrées que l'utilisateur avait masquées.
+ */
+interface RailState {
   masquees: string[];
 }
 
-const VIDE: EtatRail = { masquees: [] };
+const EMPTY: RailState = { masquees: [] };
 
-export interface EpinglageRail {
+export interface RailPinning {
   masquees: string[];
-  estMasquee: (cle: string) => boolean;
-  basculer: (cle: string) => void;
-  toutAfficher: () => void;
+  isHidden: (key: string) => boolean;
+  toggle: (key: string) => void;
+  showAll: () => void;
 }
 
-export interface MagasinEpinglageRail {
-  sAbonner: (rappel: () => void) => () => void;
-  lireInstantane: () => EtatRail;
-  basculer: (cle: string) => void;
-  toutAfficher: () => void;
-  estMasquee: (cle: string) => boolean;
+export interface RailPinningStore {
+  subscribe: (callback: () => void) => () => void;
+  readSnapshot: () => RailState;
+  toggle: (key: string) => void;
+  showAll: () => void;
+  isHidden: (key: string) => boolean;
   /**
    * Relit le stockage et notifie si l'état a changé. Nécessaire quand le
    * stockage s'hydrate APRÈS la création du magasin (RNStorageAdapter sur
@@ -58,90 +65,90 @@ export interface MagasinEpinglageRail {
    * `hydrate()` asynchrone — sans cette relecture, les entrées masquées
    * réapparaissent à chaque redémarrage).
    */
-  rehydrater: () => void;
+  rehydrate: () => void;
 }
 
 /**
  * Crée le magasin. Un seul par application : l'instantané est partagé pour que
  * toutes les instances du hook restent d'accord sans passer par un contexte.
  */
-export function creerMagasinEpinglageRail(
-  stockage: StockageRail,
-  cle: string = CLE_STOCKAGE_RAIL,
-): MagasinEpinglageRail {
-  const auditeurs = new Set<() => void>();
+export function createRailPinningStore(
+  storage: RailStorage,
+  key: string = RAIL_STORAGE_KEY,
+): RailPinningStore {
+  const listeners = new Set<() => void>();
 
-  const lireStockage = (): EtatRail => {
+  const readStorage = (): RailState => {
     try {
-      const brut = stockage.getItem(cle);
-      if (!brut) return VIDE;
-      const lu = JSON.parse(brut) as Partial<EtatRail>;
-      return { masquees: Array.isArray(lu.masquees) ? lu.masquees : [] };
+      const raw = storage.getItem(key);
+      if (!raw) return EMPTY;
+      const loaded = JSON.parse(raw) as Partial<RailState>;
+      return { masquees: Array.isArray(loaded.masquees) ? loaded.masquees : [] };
     } catch {
       // Stockage illisible ou JSON corrompu : le rail montre tout, ce qui est
       // le pire cas acceptable. Un rail vide, lui, ne le serait pas.
-      return VIDE;
+      return EMPTY;
     }
   };
 
-  let instantane: EtatRail = lireStockage();
+  let snapshot: RailState = readStorage();
 
-  const ecrire = (suivant: EtatRail): void => {
-    instantane = suivant;
+  const write = (next: RailState): void => {
+    snapshot = next;
     try {
-      stockage.setItem(cle, JSON.stringify(suivant));
+      storage.setItem(key, JSON.stringify(next));
     } catch {
       // Stockage indisponible : le rail vaut pour cette session, et c'est tout.
     }
-    auditeurs.forEach((auditeur) => auditeur());
+    listeners.forEach((listener) => listener());
   };
 
   return {
-    sAbonner(rappel) {
-      auditeurs.add(rappel);
+    subscribe(callback) {
+      listeners.add(callback);
       return () => {
-        auditeurs.delete(rappel);
+        listeners.delete(callback);
       };
     },
-    lireInstantane: () => instantane,
-    basculer(cleEntree) {
-      const masquees = instantane.masquees.includes(cleEntree)
-        ? instantane.masquees.filter((autre) => autre !== cleEntree)
-        : instantane.masquees.concat(cleEntree);
-      ecrire({ masquees });
+    readSnapshot: () => snapshot,
+    toggle(entryKey) {
+      const masquees = snapshot.masquees.includes(entryKey)
+        ? snapshot.masquees.filter((other) => other !== entryKey)
+        : snapshot.masquees.concat(entryKey);
+      write({ masquees });
     },
-    toutAfficher() {
-      if (instantane.masquees.length === 0) return;
-      ecrire({ masquees: [] });
+    showAll() {
+      if (snapshot.masquees.length === 0) return;
+      write({ masquees: [] });
     },
-    estMasquee: (cleEntree) => instantane.masquees.includes(cleEntree),
-    rehydrater() {
-      const lu = lireStockage();
-      const identique =
-        lu.masquees.length === instantane.masquees.length &&
-        lu.masquees.every((cle, i) => cle === instantane.masquees[i]);
-      if (identique) return;
-      instantane = lu;
-      auditeurs.forEach((auditeur) => auditeur());
+    isHidden: (entryKey) => snapshot.masquees.includes(entryKey),
+    rehydrate() {
+      const loaded = readStorage();
+      const same =
+        loaded.masquees.length === snapshot.masquees.length &&
+        loaded.masquees.every((key, i) => key === snapshot.masquees[i]);
+      if (same) return;
+      snapshot = loaded;
+      listeners.forEach((listener) => listener());
     },
   };
 }
 
 /** Le hook, lié à un magasin. Chaque cible en fabrique un au démarrage. */
-export function creerUseEpinglageRail(magasin: MagasinEpinglageRail) {
-  return function useEpinglageRail(): EpinglageRail {
-    const etat = useSyncExternalStore(magasin.sAbonner, magasin.lireInstantane);
+export function createUseRailPinning(store: RailPinningStore) {
+  return function useRailPinning(): RailPinning {
+    const state = useSyncExternalStore(store.subscribe, store.readSnapshot);
 
-    const basculer = useCallback((cle: string) => magasin.basculer(cle), []);
-    const toutAfficher = useCallback(() => magasin.toutAfficher(), []);
-    const estMasquee = useCallback(
-      (cle: string) => etat.masquees.includes(cle),
-      [etat.masquees],
+    const toggle = useCallback((key: string) => store.toggle(key), []);
+    const showAll = useCallback(() => store.showAll(), []);
+    const isHidden = useCallback(
+      (key: string) => state.masquees.includes(key),
+      [state.masquees],
     );
 
     return useMemo(
-      () => ({ masquees: etat.masquees, estMasquee, basculer, toutAfficher }),
-      [etat.masquees, estMasquee, basculer, toutAfficher],
+      () => ({ masquees: state.masquees, isHidden, toggle, showAll }),
+      [state.masquees, isHidden, toggle, showAll],
     );
   };
 }

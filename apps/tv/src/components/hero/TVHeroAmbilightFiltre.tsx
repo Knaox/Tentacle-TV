@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { PixelRatio, Platform, View } from "react-native";
-import { reglageFlouAndroid } from "@tentacle-tv/tv-core";
+import { androidBlurSetting } from "@tentacle-tv/tv-core";
 import Svg, {
   Defs,
   FeColorMatrix,
@@ -91,7 +91,7 @@ export const TVHeroAmbilightFiltre = memo(function TVHeroAmbilightFiltre({
   const naturel = { k: Math.max(1, Math.round(cardW / sourceW)), stdDeviation: 0 };
   const reglage =
     Platform.OS === "android"
-      ? reglageFlouAndroid(sigma, cardW, sourceW, PixelRatio.get())
+      ? androidBlurSetting(sigma, cardW, sourceW, PixelRatio.get())
       : { ...naturel, stdDeviation: sigma / naturel.k };
   const { k, stdDeviation } = reglage;
   const bleed = PORTEE * sigma;

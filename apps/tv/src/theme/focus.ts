@@ -14,7 +14,7 @@ export const FocusSpring = { damping: 18, stiffness: 200 } as const;
  * l'utilisateur a déjà appuyé sur la flèche suivante. Une durée courte et une
  * sortie franche collent au rythme d'une télécommande.
  */
-export const FocusTiming = { duration: TV_CARD_FOCUS.duree } as const;
+export const FocusTiming = { duration: TV_CARD_FOCUS.duration } as const;
 
 /**
  * L'agrandissement au focus, par variante.
@@ -23,12 +23,12 @@ export const FocusTiming = { duration: TV_CARD_FOCUS.duree } as const;
  * elle est partagée avec la LG.
  */
 export const FocusScale = {
-  card: TV_CARD_FOCUS.echelle,
+  card: TV_CARD_FOCUS.scale,
   button: 1.07,
   /** Boutons de l'OSD du lecteur — l'échelle de la LG (`player-osd-tv.css`). */
-  playerButton: TV_OSD.boutonFocusEchelle,
+  playerButton: TV_OSD.buttonFocusScale,
   row: 1.0,
-  default: TV_CARD_FOCUS.echelle,
+  default: TV_CARD_FOCUS.scale,
   normal: 1.0,
   /** Hero CTA gets a subtle 1.02 scale — applied manually inside hero. */
   hero: 1.02,
@@ -45,8 +45,8 @@ export const FocusScale = {
  * affiche, exactement là où il doit trancher.
  */
 export const FocusBorder = {
-  width: TV_FOCUS_RING.epaisseur,
-  color: TV_FOCUS_RING.teinte,
+  width: TV_FOCUS_RING.thickness,
+  color: TV_FOCUS_RING.tint,
   opacity: 1,
 } as const;
 
@@ -61,10 +61,10 @@ export const FocusBorder = {
  */
 export const FocusGlow = {
   color: BRAND.glow,
-  opacity: TV_FOCUS_RING.haloOpacite,
+  opacity: TV_FOCUS_RING.haloOpacity,
   shadowColor: BRAND.violet,
-  shadowOpacity: TV_FOCUS_RING.haloOpacite,
-  shadowRadius: TV_FOCUS_RING.haloFlou,
+  shadowOpacity: TV_FOCUS_RING.haloOpacity,
+  shadowRadius: TV_FOCUS_RING.haloBlur,
   elevation: 12,
 } as const;
 
@@ -97,8 +97,8 @@ export const FocusRowStyle = {
  */
 export const FocusButtonStyle = {
   bgColor: "transparent",
-  borderColor: TV_FOCUS_RING.teinte,
-  borderWidth: TV_FOCUS_RING.epaisseur,
+  borderColor: TV_FOCUS_RING.tint,
+  borderWidth: TV_FOCUS_RING.thickness,
 } as const;
 
 /**
@@ -111,5 +111,5 @@ export const FocusButtonStyle = {
  * boutons de page (filtres, réglages, fiche) et changerait tout l'app.
  */
 export const FocusPlayerButtonStyle = {
-  bgColor: TV_OSD.boutonFocusFond,
+  bgColor: TV_OSD.buttonFocusBg,
 } as const;

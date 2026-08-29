@@ -27,7 +27,7 @@ export interface PlaybackInfoDeps {
   directStreaming: DirectStreamingState | null;
   getAuthHeader: (token?: string) => string;
   /** Le serveur média est injoignable en direct depuis cette origine. */
-  signalerDirectBloque: (raison: string) => void;
+  signalDirectBlocked: (reason: string) => void;
   /** Repli : la même requête, par le proxy Tentacle (même origine). */
   viaProxy: (path: string, init: RequestInit) => Promise<PlaybackInfoResponse>;
   /**
@@ -82,7 +82,7 @@ export async function fetchPlaybackInfo(
     // La voie NATIVE d'abord, quand l'hôte en a une : sur la coquille, le
     // `fetch` de la page est voué au mur CORS — le tenter coûterait un
     // préflight perdu ET couperait le direct pour toute la session (URLs
-    // médias du lecteur natif comprises, via `signalerDirectBloque`).
+    // médias du lecteur natif comprises, via `signalDirectBlocked`).
     if (deps.nativePlaybackInfo) {
       const { mediaBaseUrl, jellyfinToken } = deps.directStreaming;
       try {
@@ -104,7 +104,7 @@ export async function fetchPlaybackInfo(
         if (e instanceof JellyfinError) throw e;
         // Le serveur média est injoignable DEPUIS LA MACHINE (le natif n'a pas
         // de CORS) : manifeste et segments partiraient au même mur.
-        deps.signalerDirectBloque(`PlaybackInfo natif refuse (${(e as Error)?.message ?? e})`);
+        deps.signalDirectBlocked(`PlaybackInfo natif refuse (${(e as Error)?.message ?? e})`);
         return deps.viaProxy(path, { method: "POST", body });
       }
     }
@@ -131,7 +131,7 @@ export async function fetchPlaybackInfo(
       // le manifeste HLS et les segments partiront au même mur. On coupe donc
       // le direct tout de suite, pour que l'URL de stream construite juste
       // après parte déjà sur le proxy : un seul chargement au lieu de deux.
-      deps.signalerDirectBloque(`PlaybackInfo direct refuse (${(e as Error)?.message ?? e})`);
+      deps.signalDirectBlocked(`PlaybackInfo direct refuse (${(e as Error)?.message ?? e})`);
     }
   }
 

@@ -53,7 +53,7 @@ export function useAuth() {
           // de la présenter à Jellyfin — on ne peut donc pas la deviner : il la
           // renvoie, le client l'adopte. Absente d'un backend antérieur : on
           // garde la graine brute, soit le comportement d'avant.
-          if (data.DeviceId) client.adopterDeviceIdJellyfin(data.DeviceId);
+          if (data.DeviceId) client.adoptJellyfinDeviceId(data.DeviceId);
           // Token is in httpOnly cookie — also set accessToken for Jellyfin auth header
           client.setAccessToken(data.AccessToken);
           storage.setItem("tentacle_token", data.AccessToken);
@@ -131,7 +131,7 @@ export function useAuth() {
       // L'identité adoptée est dérivée d'un secret PROPRE au serveur qu'on
       // quitte : la garder n'aurait aucun sens sur le suivant. La graine locale
       // reste — c'est l'appareil, il ne change pas de serveur.
-      client.adopterDeviceIdJellyfin(null);
+      client.adoptJellyfinDeviceId(null);
       storage.removeItem("tentacle_token");
       storage.removeItem("tentacle_user");
       storage.removeItem("tentacle_server_url");

@@ -1,4 +1,4 @@
-import { estHorizontale, sens, type Direction } from "../input/keys";
+import { isHorizontal, directionSign, type Direction } from "../input/keys";
 
 /**
  * Choix du voisin, par la géométrie seule.
@@ -10,11 +10,11 @@ import { estHorizontale, sens, type Direction } from "../input/keys";
  * rangée décalée, un bouton plus large que sa colonne.
  */
 
-export interface Boite {
-  gauche: number;
-  droite: number;
-  haut: number;
-  bas: number;
+export interface Box {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
 }
 
 /**
@@ -26,7 +26,7 @@ export interface Boite {
  * le coin se trouve être le plus proche. Trois est le rapport à partir duquel
  * le déplacement cesse d'être ressenti comme aléatoire.
  */
-const POIDS_DESALIGNEMENT = 3;
+const MISALIGNMENT_WEIGHT = 3;
 
 /**
  * Tolérance de départ, en pixels.
@@ -46,33 +46,33 @@ const TOLERANCE = 4;
  * pas. Un vrai `DOMRect` satisfait cette forme, donc la LG l'y passe
  * directement ; côté natif, `measureInWindow` fournit les mêmes quatre bords.
  */
-export interface RectangleMesure {
+export interface MeasuredRect {
   left: number;
   right: number;
   top: number;
   bottom: number;
 }
 
-export function boiteDepuisRectangle(rectangle: RectangleMesure): Boite {
+export function boxFromRect(rect: MeasuredRect): Box {
   return {
-    gauche: rectangle.left,
-    droite: rectangle.right,
-    haut: rectangle.top,
-    bas: rectangle.bottom,
+    left: rect.left,
+    right: rect.right,
+    top: rect.top,
+    bottom: rect.bottom,
   };
 }
 
 /** Distance franchie dans la direction, du bord de départ au bord d'arrivée. */
-function avance(depart: Boite, cible: Boite, direction: Direction): number {
+function advance(from: Box, target: Box, direction: Direction): number {
   switch (direction) {
     case "droite":
-      return cible.gauche - depart.droite;
+      return target.left - from.right;
     case "gauche":
-      return depart.gauche - cible.droite;
+      return from.left - target.right;
     case "bas":
-      return cible.haut - depart.bas;
+      return target.top - from.bottom;
     case "haut":
-      return depart.haut - cible.bas;
+      return from.top - target.bottom;
   }
 }
 
@@ -83,13 +83,13 @@ function avance(depart: Boite, cible: Boite, direction: Direction): number {
  * qui n'ont pas exactement la même hauteur ne doivent pas être départagées
  * par cette différence.
  */
-function desalignement(depart: Boite, cible: Boite, direction: Direction): number {
-  const [debutA, finA, debutB, finB] = estHorizontale(direction)
-    ? [depart.haut, depart.bas, cible.haut, cible.bas]
-    : [depart.gauche, depart.droite, cible.gauche, cible.droite];
+function misalignment(from: Box, target: Box, direction: Direction): number {
+  const [startA, endA, startB, endB] = isHorizontal(direction)
+    ? [from.top, from.bottom, target.top, target.bottom]
+    : [from.left, from.right, target.left, target.right];
 
-  if (finA >= debutB && finB >= debutA) return 0;
-  return debutB > finA ? debutB - finA : debutA - finB;
+  if (endA >= startB && endB >= startA) return 0;
+  return startB > endA ? startB - endA : startA - endB;
 }
 
 /**
@@ -109,39 +109,39 @@ function desalignement(depart: Boite, cible: Boite, direction: Direction): numbe
  * candidat a franchi celui du départ dans la direction. Un voisin qui
  * chevauche reste ainsi un voisin ; un élément superposé reste écarté.
  */
-function progresseMalgreChevauchement(depart: Boite, cible: Boite, direction: Direction): boolean {
-  const [surLeMemeCran, centreDepart, centreCible] = estHorizontale(direction)
-    ? [surLaMemeColonne(depart, cible), depart.gauche + depart.droite, cible.gauche + cible.droite]
-    : [surLaMemeLigne(depart, cible), depart.haut + depart.bas, cible.haut + cible.bas];
+function progressesDespiteOverlap(from: Box, target: Box, direction: Direction): boolean {
+  const [onSameLane, fromCenter, targetCenter] = isHorizontal(direction)
+    ? [onSameColumn(from, target), from.left + from.right, target.left + target.right]
+    : [onSameRow(from, target), from.top + from.bottom, target.top + target.bottom];
 
-  if (surLeMemeCran) return false;
-  return sens(direction) === 1 ? centreCible > centreDepart : centreCible < centreDepart;
+  if (onSameLane) return false;
+  return directionSign(direction) === 1 ? targetCenter > fromCenter : targetCenter < fromCenter;
 }
 
 /**
  * Score d'un candidat : plus il est bas, meilleur il est.
  * `null` quand le candidat n'est pas dans la direction demandée.
  */
-export function noter(depart: Boite, cible: Boite, direction: Direction): number | null {
-  const distance = avance(depart, cible, direction);
-  if (distance < -TOLERANCE && !progresseMalgreChevauchement(depart, cible, direction)) return null;
+export function scoreCandidate(from: Box, target: Box, direction: Direction): number | null {
+  const distance = advance(from, target, direction);
+  if (distance < -TOLERANCE && !progressesDespiteOverlap(from, target, direction)) return null;
 
   // Un candidat qui recouvre le point de départ sur l'axe de déplacement est
   // écarté : il est « au même endroit », le focus n'aurait pas l'air de bouger.
-  if (recouvre(depart, cible, direction)) return null;
+  if (covers(from, target, direction)) return null;
 
-  return Math.max(distance, 0) + desalignement(depart, cible, direction) * POIDS_DESALIGNEMENT;
+  return Math.max(distance, 0) + misalignment(from, target, direction) * MISALIGNMENT_WEIGHT;
 }
 
 /** Le candidat occupe-t-il la même place que le départ sur l'axe visé ? */
-function recouvre(depart: Boite, cible: Boite, direction: Direction): boolean {
-  const [departDebut, departFin, cibleDebut, cibleFin] = estHorizontale(direction)
-    ? [depart.gauche, depart.droite, cible.gauche, cible.droite]
-    : [depart.haut, depart.bas, cible.haut, cible.bas];
+function covers(from: Box, target: Box, direction: Direction): boolean {
+  const [fromStart, fromEnd, targetStart, targetEnd] = isHorizontal(direction)
+    ? [from.left, from.right, target.left, target.right]
+    : [from.top, from.bottom, target.top, target.bottom];
 
-  return sens(direction) === 1
-    ? cibleDebut < departDebut + TOLERANCE && cibleFin < departFin + TOLERANCE
-    : cibleFin > departFin - TOLERANCE && cibleDebut > departDebut - TOLERANCE;
+  return directionSign(direction) === 1
+    ? targetStart < fromStart + TOLERANCE && targetEnd < fromEnd + TOLERANCE
+    : targetEnd > fromEnd - TOLERANCE && targetStart > fromStart - TOLERANCE;
 }
 
 /**
@@ -170,28 +170,28 @@ function recouvre(depart: Boite, cible: Boite, direction: Direction): boolean {
  * la moitié d'une hauteur est une quantité que la mise en page fournit
  * elle-même, là où quatre pixels étaient un pari sur le rendu.
  */
-export function surLaMemeLigne(a: Boite, b: Boite): boolean {
-  const chevauchement = Math.min(a.bas, b.bas) - Math.max(a.haut, b.haut);
-  if (chevauchement <= 0) return false;
-  const plusPetiteHauteur = Math.min(a.bas - a.haut, b.bas - b.haut);
-  return chevauchement * 2 > plusPetiteHauteur;
+export function onSameRow(a: Box, b: Box): boolean {
+  const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  if (overlap <= 0) return false;
+  const smallestHeight = Math.min(a.bottom - a.top, b.bottom - b.top);
+  return overlap * 2 > smallestHeight;
 }
 
 /**
  * Deux boîtes sont-elles dans la même colonne visuelle ?
  *
- * Le miroir de `surLaMemeLigne`, pour le confinement VERTICAL d'une grille :
+ * Le miroir de `onSameRow`, pour le confinement VERTICAL d'une grille :
  * « bas » descend dans sa colonne, jamais en diagonale. Même formulation par
  * chevauchement — plus de la moitié de la plus petite des deux largeurs — et
  * pour la même raison : elle survit à l'agrandissement de la carte focalisée,
  * dont les flancs mordent la gouttière sans jamais recouvrir la moitié de la
  * colonne voisine.
  */
-export function surLaMemeColonne(a: Boite, b: Boite): boolean {
-  const chevauchement = Math.min(a.droite, b.droite) - Math.max(a.gauche, b.gauche);
-  if (chevauchement <= 0) return false;
-  const plusPetiteLargeur = Math.min(a.droite - a.gauche, b.droite - b.gauche);
-  return chevauchement * 2 > plusPetiteLargeur;
+export function onSameColumn(a: Box, b: Box): boolean {
+  const overlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  if (overlap <= 0) return false;
+  const smallestWidth = Math.min(a.right - a.left, b.right - b.left);
+  return overlap * 2 > smallestWidth;
 }
 
 /**
@@ -206,54 +206,54 @@ export function surLaMemeColonne(a: Boite, b: Boite): boolean {
  * La ligne de référence est celle du candidat le plus proche dans la
  * direction ; tout ce qui n'est pas sur sa ligne est écarté.
  */
-export function restreindreALaPremiereLigne<T>(
-  depart: Boite,
-  candidats: Array<{ element: T; boite: Boite }>,
+export function restrictToFirstRow<T>(
+  from: Box,
+  candidates: Array<{ element: T; box: Box }>,
   direction: Direction,
-): Array<{ element: T; boite: Boite }> {
-  let reference: Boite | null = null;
-  let plusPetiteAvance = Infinity;
+): Array<{ element: T; box: Box }> {
+  let reference: Box | null = null;
+  let smallestAdvance = Infinity;
 
-  for (const candidat of candidats) {
+  for (const candidate of candidates) {
     // La même acceptation que `noter` : une voisine chevauchante est la
     // première ligne, pas un candidat à sauter — sinon la bande de référence
     // serait la ligne d'APRÈS, et la restriction reproduirait le saut.
-    const distance = avance(depart, candidat.boite, direction);
-    if (distance < -TOLERANCE && !progresseMalgreChevauchement(depart, candidat.boite, direction)) {
+    const distance = advance(from, candidate.box, direction);
+    if (distance < -TOLERANCE && !progressesDespiteOverlap(from, candidate.box, direction)) {
       continue;
     }
-    if (recouvre(depart, candidat.boite, direction)) continue;
-    if (distance < plusPetiteAvance) {
-      plusPetiteAvance = distance;
-      reference = candidat.boite;
+    if (covers(from, candidate.box, direction)) continue;
+    if (distance < smallestAdvance) {
+      smallestAdvance = distance;
+      reference = candidate.box;
     }
   }
 
   if (!reference) return [];
-  const ligne = reference;
-  return candidats.filter((candidat) => surLaMemeLigne(ligne, candidat.boite));
+  const row = reference;
+  return candidates.filter((candidate) => onSameRow(row, candidate.box));
 }
 
-export interface CandidatNote<T> {
+export interface ScoredCandidate<T> {
   element: T;
   score: number;
 }
 
 /** Le meilleur candidat, ou `null` si aucun n'est dans la direction. */
-export function meilleur<T>(
-  depart: Boite,
-  candidats: Array<{ element: T; boite: Boite }>,
+export function best<T>(
+  from: Box,
+  candidates: Array<{ element: T; box: Box }>,
   direction: Direction,
-): CandidatNote<T> | null {
-  let retenu: CandidatNote<T> | null = null;
+): ScoredCandidate<T> | null {
+  let kept: ScoredCandidate<T> | null = null;
 
-  for (const candidat of candidats) {
-    const score = noter(depart, candidat.boite, direction);
+  for (const candidate of candidates) {
+    const score = scoreCandidate(from, candidate.box, direction);
     if (score === null) continue;
-    if (retenu === null || score < retenu.score) {
-      retenu = { element: candidat.element, score };
+    if (kept === null || score < kept.score) {
+      kept = { element: candidate.element, score };
     }
   }
 
-  return retenu;
+  return kept;
 }

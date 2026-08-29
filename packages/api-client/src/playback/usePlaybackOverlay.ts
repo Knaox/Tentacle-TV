@@ -72,27 +72,27 @@ export interface PlaybackOverlayResult {
 }
 
 export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlayResult {
-  const reglages = usePlaybackSettings();
+  const settings = usePlaybackSettings();
 
-  const [etatSaut, setEtatSaut] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
-  const [etatSuite, setEtatSuite] = useState<AutoNextState>(AUTO_NEXT_IDLE);
+  const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
+  const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
 
   // Miroirs synchrones : les rappels lisent le présent, pas le rendu d'avant.
-  const entreeRef = useRef(input);
-  entreeRef.current = input;
-  const reglagesRef = useRef(reglages);
-  reglagesRef.current = reglages;
-  const etatSautRef = useRef(etatSaut);
-  const etatSuiteRef = useRef(etatSuite);
-  const visiblePrecedentRef = useRef(false);
+  const inputRef = useRef(input);
+  inputRef.current = input;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const skipStateRef = useRef(skipState);
+  const nextStateRef = useRef(nextState);
+  const previousVisibleRef = useRef(false);
 
-  const poserEtatSaut = useCallback((etat: IntroSkipState) => {
-    etatSautRef.current = etat;
-    setEtatSaut(etat);
+  const commitSkipState = useCallback((state: IntroSkipState) => {
+    skipStateRef.current = state;
+    setSkipState(state);
   }, []);
-  const poserEtatSuite = useCallback((etat: AutoNextState) => {
-    etatSuiteRef.current = etat;
-    setEtatSuite(etat);
+  const commitNextState = useCallback((state: AutoNextState) => {
+    nextStateRef.current = state;
+    setNextState(state);
   }, []); // (l'identité stable des états inchangés évite tout re-rendu par battement)
 
   const positionMs = Math.round(input.positionSeconds * 1000);
@@ -101,67 +101,67 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       ? input.runtimeMs
       : Math.round(input.durationSeconds * 1000);
 
-  const executerAction = useCallback((candidat: SkipCandidate | null) => {
-    if (!candidat) return;
-    const p = entreeRef.current;
-    if (candidat.action.kind === "seek") p.onSeekSeconds(candidat.action.toMs / 1000);
-    else if (candidat.action.kind === "nextEpisode") p.onNextEpisode();
+  const runAction = useCallback((candidate: SkipCandidate | null) => {
+    if (!candidate) return;
+    const p = inputRef.current;
+    if (candidate.action.kind === "seek") p.onSeekSeconds(candidate.action.toMs / 1000);
+    else if (candidate.action.kind === "nextEpisode") p.onNextEpisode();
     else p.onEndOfPlayback();
   }, []);
 
-  const candidatCourant = useCallback((): SkipCandidate | null => {
-    const p = entreeRef.current;
+  const currentCandidate = useCallback((): SkipCandidate | null => {
+    const p = inputRef.current;
     return findSkipCandidate({
       segments: p.segments,
       positionMs: Math.round(p.positionSeconds * 1000),
       hasStarted: p.hasStarted,
       isEpisode: p.isEpisode,
       hasNextEpisode: p.hasNextEpisode,
-      settings: reglagesRef.current,
+      settings: settingsRef.current,
     });
   }, []);
 
-  const dispatchSuite = useCallback(
-    (entree: AutoNextInput) => {
-      const p = entreeRef.current;
-      const [etat, effet] = decideAutoNext(etatSuiteRef.current, entree, {
+  const dispatchNext = useCallback(
+    (nextInput: AutoNextInput) => {
+      const p = inputRef.current;
+      const [state, effect] = decideAutoNext(nextStateRef.current, nextInput, {
         hasNextEpisode: p.hasNextEpisode,
         serverEnabled: p.serverAutoplayEnabled,
-        nextCountdown: reglagesRef.current.next.nextCountdown,
-        nextAutoPlay: reglagesRef.current.next.nextAutoPlay,
+        nextCountdown: settingsRef.current.next.nextCountdown,
+        nextAutoPlay: settingsRef.current.next.nextAutoPlay,
       });
-      poserEtatSuite(etat);
-      if (effet === "epsSuivant") p.onNextEpisode();
+      commitNextState(state);
+      if (effect === "epsSuivant") p.onNextEpisode();
     },
-    [poserEtatSuite],
+    [commitNextState],
   );
 
   /** Un battement : fait avancer les deux réducteurs, joue le saut à échéance. */
-  const battre = useCallback(
+  const tick = useCallback(
     (elapsedMs: number) => {
-      const p = entreeRef.current;
-      const candidat = candidatCourant();
-      const visible = candidat !== null && !p.scrubbing;
-      const active = visible && candidat !== null && candidat.settings.action === "auto";
+      const p = inputRef.current;
+      const candidate = currentCandidate();
+      const visible = candidate !== null && !p.scrubbing;
+      const active = visible && candidate !== null && candidate.settings.action === "auto";
 
-      const [etat, action] = decideIntroSkip(
-        etatSautRef.current,
+      const [state, action] = decideIntroSkip(
+        skipStateRef.current,
         {
           type: "cadre",
           visible,
           active,
           elapsedMs,
-          delayMs: candidat?.settings.autoDelayMs,
+          delayMs: candidate?.settings.autoDelayMs,
         },
-        visiblePrecedentRef.current,
+        previousVisibleRef.current,
       );
-      visiblePrecedentRef.current = visible;
-      poserEtatSaut(etat);
-      if (action === "sauter") executerAction(candidat);
+      previousVisibleRef.current = visible;
+      commitSkipState(state);
+      if (action === "sauter") runAction(candidate);
 
       const pRuntimeMs =
         p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
-      dispatchSuite({
+      dispatchNext({
         type: "cadre",
         eligible:
           !p.scrubbing &&
@@ -170,28 +170,28 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
             Math.round(p.positionSeconds * 1000),
             pRuntimeMs,
             p.segments,
-            reglagesRef.current.next,
+            settingsRef.current.next,
           ),
         ended: p.playbackEnded,
         elapsedMs,
       });
     },
-    [candidatCourant, dispatchSuite, executerAction, poserEtatSaut],
+    [currentCandidate, dispatchNext, runAction, commitSkipState],
   );
 
   // Changement d'épisode : tout se réarme.
   useEffect(() => {
     if (!input.itemId) return;
-    dispatchSuite({ type: "item", itemId: input.itemId });
-    poserEtatSaut(INTRO_SKIP_IDLE);
-    visiblePrecedentRef.current = false;
-  }, [input.itemId, dispatchSuite, poserEtatSaut]);
+    dispatchNext({ type: "item", itemId: input.itemId });
+    commitSkipState(INTRO_SKIP_IDLE);
+    previousVisibleRef.current = false;
+  }, [input.itemId, dispatchNext, commitSkipState]);
 
   // Réévaluation immédiate à chaque changement d'entrée (sans consommer de temps).
   useEffect(() => {
-    battre(0);
+    tick(0);
   }, [
-    battre,
+    tick,
     positionMs,
     runtimeMs,
     input.hasStarted,
@@ -200,31 +200,31 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     input.hasNextEpisode,
     input.serverAutoplayEnabled,
     input.scrubbing,
-    reglages,
+    settings,
   ]);
 
   // L'horloge : fine (250 ms) pendant un décompte, lente (1 s) sinon.
-  const decompteEnCours = etatSaut.name === "decompte" || etatSuite.remainingMs !== null;
+  const countingDown = skipState.name === "decompte" || nextState.remainingMs !== null;
   useEffect(() => {
-    const periode = decompteEnCours ? 250 : 1000;
-    let dernier = Date.now();
-    const horloge = setInterval(() => {
-      const maintenant = Date.now();
-      battre(maintenant - dernier);
-      dernier = maintenant;
-    }, periode);
-    return () => clearInterval(horloge);
-  }, [decompteEnCours, battre]);
+    const periodMs = countingDown ? 250 : 1000;
+    let last = Date.now();
+    const clock = setInterval(() => {
+      const now = Date.now();
+      tick(now - last);
+      last = now;
+    }, periodMs);
+    return () => clearInterval(clock);
+  }, [countingDown, tick]);
 
   const overlay = useMemo<PlayerOverlay>(() => {
     if (input.scrubbing) return { kind: "none" };
-    const candidat = findSkipCandidate({
+    const candidate = findSkipCandidate({
       segments: input.segments,
       positionMs,
       hasStarted: input.hasStarted,
       isEpisode: input.isEpisode,
       hasNextEpisode: input.hasNextEpisode,
-      settings: reglages,
+      settings,
     });
     return arbitrateOverlay({
       positionMs,
@@ -234,59 +234,59 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       segments: input.segments,
       isEpisode: input.isEpisode,
       hasNextEpisode: input.hasNextEpisode,
-      settings: reglages,
+      settings,
       serverAutoplayEnabled: input.serverAutoplayEnabled,
       dismissed: {
         // « refusé » ET « saut demandé » masquent le bouton (la pilule ne se
         // remontre pas pendant que la position rattrape la cible).
-        segments: candidat
-          ? { [candidat.segment.type]: etatSaut.name === "refuse" || etatSaut.name === "saute" }
+        segments: candidate
+          ? { [candidate.segment.type]: skipState.name === "refuse" || skipState.name === "saute" }
           : {},
-        nextCard: etatSuite.dismissed || etatSuite.chained,
+        nextCard: nextState.dismissed || nextState.chained,
       },
-      countdowns: { skip: displayedCountdown(etatSaut), next: displayedNextCountdown(etatSuite) },
+      countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
     });
-  }, [input, positionMs, runtimeMs, reglages, etatSaut, etatSuite]);
+  }, [input, positionMs, runtimeMs, settings, skipState, nextState]);
 
   const overlayRef = useRef<PlayerOverlay>(overlay);
   overlayRef.current = overlay;
 
   const dismissOverlay = useCallback(() => {
-    const courant = overlayRef.current;
-    if (courant.kind === "skip") {
-      poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "croix" }, true)[0]);
-      entreeRef.current.onSegmentDismissNotify?.(courant.segmentType);
-    } else if (courant.kind === "nextCard") {
-      dispatchSuite({ type: "refus" });
-      entreeRef.current.onNextDismissNotify?.();
+    const current = overlayRef.current;
+    if (current.kind === "skip") {
+      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "croix" }, true)[0]);
+      inputRef.current.onSegmentDismissNotify?.(current.segmentType);
+    } else if (current.kind === "nextCard") {
+      dispatchNext({ type: "refus" });
+      inputRef.current.onNextDismissNotify?.();
     }
-  }, [dispatchSuite, poserEtatSaut]);
+  }, [dispatchNext, commitSkipState]);
 
   const skipNow = useCallback(() => {
-    const candidat = candidatCourant();
-    if (!candidat) return;
-    poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "sauteMaintenant" }, true)[0]);
-    executerAction(candidat);
-  }, [candidatCourant, executerAction, poserEtatSaut]);
+    const candidate = currentCandidate();
+    if (!candidate) return;
+    commitSkipState(decideIntroSkip(skipStateRef.current, { type: "sauteMaintenant" }, true)[0]);
+    runAction(candidate);
+  }, [currentCandidate, runAction, commitSkipState]);
 
   const playNow = useCallback(() => {
-    dispatchSuite({ type: "lireMaintenant" });
-  }, [dispatchSuite]);
+    dispatchNext({ type: "lireMaintenant" });
+  }, [dispatchNext]);
 
   const signalRemoteSegmentDismiss = useCallback(
     (type: SegmentType) => {
-      const candidat = candidatCourant();
-      if (candidat?.segment.type !== type) return;
-      poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "croix" }, true)[0]);
+      const candidate = currentCandidate();
+      if (candidate?.segment.type !== type) return;
+      commitSkipState(decideIntroSkip(skipStateRef.current, { type: "croix" }, true)[0]);
     },
-    [candidatCourant, poserEtatSaut],
+    [currentCandidate, commitSkipState],
   );
 
   const signalRemoteNextDismiss = useCallback(() => {
-    dispatchSuite({ type: "refus" });
-  }, [dispatchSuite]);
+    dispatchNext({ type: "refus" });
+  }, [dispatchNext]);
 
-  const skipMs = candidatCourant()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
+  const skipMs = currentCandidate()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
   return {
     overlay,
     overlayRef,

@@ -21,7 +21,7 @@ export const TVDetailPoster = memo(function TVDetailPoster({ item }: TVDetailPos
   if (item.ImageTags?.Primary == null) return null;
 
   const isEpisode = item.Type === "Episode";
-  const width = isEpisode ? TV_DETAIL_POSTER.largeurEpisode : TV_DETAIL_POSTER.largeurFilm;
+  const width = isEpisode ? TV_DETAIL_POSTER.episodeWidth : TV_DETAIL_POSTER.movieWidth;
   const height = Math.round(isEpisode ? (width * 9) / 16 : (width * 3) / 2);
   const uri = client.getImageUrl(item.Id, "Primary", {
     ...(isEpisode ? { width: 640 } : { height: 500 }),

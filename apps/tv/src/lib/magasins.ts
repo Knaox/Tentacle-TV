@@ -17,7 +17,7 @@ import { tvStorage } from "../storage/RNStorageAdapter";
  * À appeler une fois, juste après `hydrate()`.
  */
 export function rehydraterMagasins(): void {
-  magasinEpinglageRail.rehydrater();
+  magasinEpinglageRail.rehydrate();
   initPlaybackSettingsStore(tvStorage);
   rehydratePlaybackSettings();
 }
