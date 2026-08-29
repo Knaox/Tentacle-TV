@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from "react";
-import { trierProprietes } from "./framerMotionProps";
+import { sortProps } from "./framerMotionProps";
 
 /**
  * framer-motion, en inerte.
@@ -27,36 +27,36 @@ import { trierProprietes } from "./framerMotionProps";
  * chaque fiche média ouverte.
  */
 
-type Proprietes = Record<string, unknown>;
+type Props = Record<string, unknown>;
 type Rappel = () => void;
 
 /** Exécute au tick suivant, jamais pendant le rendu. */
-function auTickSuivant(rappel: Rappel): void {
+function onNextTick(rappel: Rappel): void {
   Promise.resolve().then(rappel);
 }
 
-function creerComposant(balise: string) {
-  const Composant = forwardRef<unknown, Proprietes>((proprietes, ref) => {
-    const { dom, animation } = trierProprietes(proprietes);
+function createComponent(tag: string) {
+  const Component = forwardRef<unknown, Props>((props, ref) => {
+    const { dom, animation } = sortProps(props);
 
     // Le rappel est presque toujours une lambda, donc une référence neuve à
     // chaque rendu : le lire depuis une référence mutable évite d'en faire une
     // dépendance d'effet, et donc de le rejouer indéfiniment.
-    const fini = useRef(animation.onAnimationComplete);
-    fini.current = animation.onAnimationComplete;
+    const done = useRef(animation.onAnimationComplete);
+    done.current = animation.onAnimationComplete;
     useEffect(() => {
       // Joué au montage, et là seulement : sans animation réelle, il n'existe
       // aucun autre instant où une animation pourrait « se terminer ».
-      if (typeof fini.current === "function") auTickSuivant(fini.current as Rappel);
+      if (typeof done.current === "function") onNextTick(done.current as Rappel);
     }, []);
 
-    return createElement(balise, { ...dom, ref });
+    return createElement(tag, { ...dom, ref });
   });
-  Composant.displayName = `motion.${balise}`;
-  return Composant;
+  Component.displayName = `motion.${tag}`;
+  return Component;
 }
 
-const cacheComposants = new Map<string, ReturnType<typeof creerComposant>>();
+const componentCache = new Map<string, ReturnType<typeof createComponent>>();
 
 /**
  * `motion.div`, `motion.button`, `motion.h1`… Le proxy fabrique le composant
@@ -64,13 +64,13 @@ const cacheComposants = new Map<string, ReturnType<typeof creerComposant>>();
  * accès ferait remonter tout le sous-arbre à chaque rendu du parent.
  */
 export const motion = new Proxy({} as Record<string, unknown>, {
-  get(_cible, propriete: string) {
-    let composant = cacheComposants.get(propriete);
-    if (!composant) {
-      composant = creerComposant(propriete);
-      cacheComposants.set(propriete, composant);
+  get(_target, property: string) {
+    let component = componentCache.get(property);
+    if (!component) {
+      component = createComponent(property);
+      componentCache.set(property, component);
     }
-    return composant;
+    return component;
   },
 });
 
@@ -82,19 +82,19 @@ export const motion = new Proxy({} as Record<string, unknown>, {
  * signaler au tick suivant lui laisse le temps d'avoir été démonté.
  */
 export function AnimatePresence(
-  proprietes: { children?: ReactNode; onExitComplete?: Rappel },
+  props: { children?: ReactNode; onExitComplete?: Rappel },
 ): ReactElement | null {
-  const nombre = Children.count(proprietes.children);
-  const precedent = useRef(nombre);
+  const count = Children.count(props.children);
+  const precedent = useRef(count);
 
   useEffect(() => {
-    if (precedent.current > 0 && nombre === 0 && proprietes.onExitComplete) {
-      auTickSuivant(proprietes.onExitComplete);
+    if (precedent.current > 0 && count === 0 && props.onExitComplete) {
+      onNextTick(props.onExitComplete);
     }
-    precedent.current = nombre;
-  }, [nombre, proprietes.onExitComplete]);
+    precedent.current = count;
+  }, [count, props.onExitComplete]);
 
-  return createElement(Fragment, null, proprietes.children);
+  return createElement(Fragment, null, props.children);
 }
 
 /**
@@ -118,9 +118,9 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
   const a = (u: number, v: number) => 1 - 3 * v + 3 * u;
   const b = (u: number, v: number) => 3 * v - 6 * u;
   const c = (u: number) => 3 * u;
-  const courbe = (t: number, u: number, v: number) =>
+  const curve = (t: number, u: number, v: number) =>
     ((a(u, v) * t + b(u, v)) * t + c(u)) * t;
-  const pente = (t: number, u: number, v: number) =>
+  const slope = (t: number, u: number, v: number) =>
     3 * a(u, v) * t * t + 2 * b(u, v) * t + c(u);
 
   return (x: number): number => {
@@ -128,21 +128,21 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
     if (x >= 1) return 1;
     let t = x;
     for (let i = 0; i < 8; i++) {
-      const ecart = courbe(t, x1, x2) - x;
-      if (Math.abs(ecart) < 1e-6) return courbe(t, y1, y2);
-      const derivee = pente(t, x1, x2);
-      if (Math.abs(derivee) < 1e-6) break;
-      t -= ecart / derivee;
+      const gap = curve(t, x1, x2) - x;
+      if (Math.abs(gap) < 1e-6) return curve(t, y1, y2);
+      const derived = slope(t, x1, x2);
+      if (Math.abs(derived) < 1e-6) break;
+      t -= gap / derived;
     }
-    let bas = 0;
-    let haut = 1;
+    let bottom = 0;
+    let top = 1;
     t = x;
-    while (haut - bas > 1e-6) {
-      if (courbe(t, x1, x2) > x) haut = t;
-      else bas = t;
-      t = (haut + bas) / 2;
+    while (top - bottom > 1e-6) {
+      if (curve(t, x1, x2) > x) top = t;
+      else bottom = t;
+      t = (top + bottom) / 2;
     }
-    return courbe(t, y1, y2);
+    return curve(t, y1, y2);
   };
 }
 
@@ -151,15 +151,15 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
 
 export interface MotionValue<T = number> {
   get(): T;
-  set(valeur: T): void;
+  set(value: T): void;
 }
 
-export function useMotionValue<T>(initiale: T): MotionValue<T> {
-  const reference = useRef(initiale);
+export function useMotionValue<T>(initial: T): MotionValue<T> {
+  const reference = useRef(initial);
   return {
     get: () => reference.current,
-    set: (valeur: T) => {
-      reference.current = valeur;
+    set: (value: T) => {
+      reference.current = value;
     },
   };
 }

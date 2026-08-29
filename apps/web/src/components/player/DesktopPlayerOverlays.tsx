@@ -79,7 +79,7 @@ export function DesktopPlayerOverlays({
         onSkip={onSkip}
         onDismiss={onDismissOverlay}
         onPlayNow={onPlayNow}
-        couche="z-20"
+        layer="z-20"
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}

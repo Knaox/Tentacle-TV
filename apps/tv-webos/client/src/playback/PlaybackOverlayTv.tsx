@@ -1,7 +1,7 @@
 /**
  * La projection de l'ARBITRE, version téléviseur LG — le pendant du
  * `PlaybackOverlay` web, avec ce qui change à trois mètres : l'ancrage
- * d'overscan (classes `.saut-tv`, `.carte-suivant-tv`, `.affiche-fin-tv`),
+ * d'overscan (classes `.saut-tv`, `.carte-next-tv`, `.affiche-fin-tv`),
  * la prise de focus quand l'habillage s'est éteint, et le refus en SECOND
  * BOUTON plutôt qu'en croix (une cible de trente-deux pixels ne se vise pas
  * à la télécommande). Aucune décision ici non plus : qui s'affiche, quand et
@@ -17,14 +17,14 @@ import { useTranslation } from "react-i18next";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import { UpNextCard } from "@/components/player/UpNextCard";
 import { NextEpisodeFullscreen } from "@/components/player/NextEpisodeFullscreen";
-import { donnerFocus } from "../focus/active";
+import { giveFocus } from "../focus/active";
 import { destinationEntreeDeZone } from "../focus/zones";
 import { readState, useTvPlayerState } from "@tentacle-tv/tv-core";
 import { poserFocusOsd } from "./focusOsd";
-import { quitterLecteur } from "./playerExitTv";
-import { ATTRIBUT_SURCOUCHE } from "./okOverlay";
+import { exitPlayer } from "./playerExitTv";
+import { OVERLAY_ATTRIBUTE } from "./okOverlay";
 
-interface ProprietesTv {
+interface TvProps {
   overlay: PlayerOverlay;
   countdownTotals: { skipMs: number; nextMs: number };
   onSkip: () => void;
@@ -41,26 +41,26 @@ interface ProprietesTv {
  * L'appel à l'action de l'affiche, et non sa croix de fermeture : la croix est
  * posée en absolu sur la racine, les boutons du panneau sont plus profonds.
  */
-function actionPrincipale(racine: HTMLElement): HTMLElement | null {
-  for (const bouton of racine.querySelectorAll<HTMLElement>("button")) {
-    if (bouton.parentElement !== racine) return bouton;
+function mainAction(racine: HTMLElement): HTMLElement | null {
+  for (const button of racine.querySelectorAll<HTMLElement>("button")) {
+    if (button.parentElement !== racine) return button;
   }
   return null;
 }
 
 /** Prend le focus si personne d'autre ne s'en sert, le rend à l'habillage après. */
-function useFocusSurcouche(
+function useOverlayFocus(
   ref: { current: HTMLElement | null },
-  actif: boolean,
-  cible: (racine: HTMLElement) => HTMLElement | null,
+  active: boolean,
+  target: (racine: HTMLElement) => HTMLElement | null,
   imposer = false,
 ) {
   useEffect(() => {
     const racine = ref.current;
-    if (!actif || !racine) return;
+    if (!active || !racine) return;
     if (!imposer && readState().mode !== "repos") return;
-    const element = cible(racine);
-    if (element) donnerFocus(element);
+    const element = target(racine);
+    if (element) giveFocus(element);
     return () => {
       if (!racine.contains(document.activeElement)) return;
       const focal = document.activeElement;
@@ -68,67 +68,67 @@ function useFocusSurcouche(
       poserFocusOsd(document.querySelector<HTMLElement>(".osd-tv"));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [actif, imposer]);
+  }, [active, imposer]);
 }
 
 export function PlaybackOverlayTv({
   overlay, countdownTotals, onSkip, onDismiss, onPlayNow,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-}: ProprietesTv) {
+}: TvProps) {
   const { t } = useTranslation("player");
-  const etat = useTvPlayerState();
-  const refSaut = useRef<HTMLDivElement>(null);
+  const state = useTvPlayerState();
+  const skipRef = useRef<HTMLDivElement>(null);
   const refCarte = useRef<HTMLDivElement>(null);
   const refAffiche = useRef<HTMLDivElement>(null);
 
-  const estSaut = overlay.kind === "skip";
+  const isSkip = overlay.kind === "skip";
   const estCarte = overlay.kind === "nextCard" && !overlay.final;
   const estAffiche = overlay.kind === "nextCard" && overlay.final;
 
   // Rien pendant le déplacement — l'écran du curseur fantôme est un mode, on y
   // cherche une position. L'affiche de fin, elle, a raison même là : il n'y a
   // plus de position à chercher.
-  const efface = etat.mode === "scrub" && !estAffiche;
+  const efface = state.mode === "scrub" && !estAffiche;
 
-  useFocusSurcouche(refSaut, estSaut && !efface, (r) => r.querySelector("button"));
-  useFocusSurcouche(refCarte, estCarte && !efface, destinationEntreeDeZone);
+  useOverlayFocus(skipRef, isSkip && !efface, (r) => r.querySelector("button"));
+  useOverlayFocus(refCarte, estCarte && !efface, destinationEntreeDeZone);
   // L'affiche recouvre tout, l'habillage compris : le focus s'impose, sur
   // « Lire maintenant » plutôt que sur la croix qui la précède dans le document.
-  useFocusSurcouche(
+  useOverlayFocus(
     refAffiche,
     estAffiche,
-    (r) => actionPrincipale(r) ?? destinationEntreeDeZone(r),
+    (r) => mainAction(r) ?? destinationEntreeDeZone(r),
     true,
   );
 
   if (efface || overlay.kind === "none") return null;
 
   if (overlay.kind === "skip") {
-    const arme = overlay.countdownSeconds !== null;
-    const libelle = arme
+    const armed = overlay.countdownSeconds !== null;
+    const label = armed
       ? t(`player:${overlay.labelKey}In`, { seconds: overlay.countdownSeconds })
       : t(`player:${overlay.labelKey}`);
-    const sauter = (
+    const skip = (
       <button
         type="button"
         className="saut-tv"
-        {...{ [ATTRIBUT_SURCOUCHE]: "" }}
+        {...{ [OVERLAY_ATTRIBUTE]: "" }}
         onClick={(e) => { e.stopPropagation(); onSkip(); }}
       >
-        {libelle}
+        {label}
       </button>
     );
     // Hors décompte, le bouton reste seul, à sa place. L'îlot n'apparaît que
     // le temps du décompte, avec le refus en second bouton.
-    if (!arme) return <div ref={refSaut}>{sauter}</div>;
+    if (!armed) return <div ref={skipRef}>{skip}</div>;
     return (
-      <div ref={refSaut} className="saut-tv-ilot">
-        {sauter}
+      <div ref={skipRef} className="saut-tv-ilot">
+        {skip}
         <button
           type="button"
           className="saut-tv saut-tv--refus"
-          {...{ [ATTRIBUT_SURCOUCHE]: "" }}
+          {...{ [OVERLAY_ATTRIBUTE]: "" }}
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
         >
           {t("player:dismiss")}
@@ -139,7 +139,7 @@ export function PlaybackOverlayTv({
 
   if (estCarte) {
     return (
-      <div className="carte-suivant-tv" ref={refCarte} {...{ [ATTRIBUT_SURCOUCHE]: "" }}>
+      <div className="carte-suivant-tv" ref={refCarte} {...{ [OVERLAY_ATTRIBUTE]: "" }}>
         <UpNextCard
           countdown={overlay.countdownSeconds}
           totalSeconds={countdownTotals.nextMs / 1000}
@@ -154,7 +154,7 @@ export function PlaybackOverlayTv({
   }
 
   return (
-    <div className="affiche-fin-tv" ref={refAffiche} {...{ [ATTRIBUT_SURCOUCHE]: "" }}>
+    <div className="affiche-fin-tv" ref={refAffiche} {...{ [OVERLAY_ATTRIBUTE]: "" }}>
       <NextEpisodeFullscreen
         countdown={overlay.countdownSeconds}
         totalSeconds={countdownTotals.nextMs / 1000}
@@ -165,7 +165,7 @@ export function PlaybackOverlayTv({
         onPlayNow={onPlayNow}
         onDismiss={() => {
           onDismiss();
-          quitterLecteur();
+          exitPlayer();
         }}
       />
     </div>

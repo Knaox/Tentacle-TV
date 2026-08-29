@@ -11,11 +11,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "ipk": "node scripts/ipk.mjs",
-    "icones": "node scripts/icones.mjs",
-    "emu:install": "node scripts/emulateur.mjs install",
-    "emu:launch": "node scripts/emulateur.mjs launch",
-    "releve": "node scripts/releveLecture.mjs",
-    "releve:page": "node scripts/releveMiseEnPage.mjs"
+    "icons": "node scripts/icons.mjs",
+    "emu:install": "node scripts/emulator.mjs install",
+    "emu:launch": "node scripts/emulator.mjs launch",
+    "capture": "node scripts/playbackCapture.mjs",
+    "capture:page": "node scripts/layoutCapture.mjs"
   },
   "dependencies": {
     "@tentacle-tv/api-client": "workspace:*",

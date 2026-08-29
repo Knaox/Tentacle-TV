@@ -2,10 +2,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { LeaderboardAvatar } from "./LeaderboardAvatar";
-import { formaterDuree, ratioBarre, valeurDeRang } from "./leaderboardFormat";
+import { formatDuration, barRatio, rankValue } from "./leaderboardFormat";
 import { useSeriesFavorites } from "./leaderboardApi";
 
-export interface EntreeClassement {
+export interface LeaderboardEntry {
   userId: string;
   name: string;
   hasAvatar: boolean;
@@ -17,58 +17,58 @@ export interface EntreeClassement {
 }
 
 interface Props {
-  entree: EntreeClassement;
+  entree: LeaderboardEntry;
   rang: number;
   maximum: number;
   moi: boolean;
-  sansMouvement: boolean;
+  reducedMotion: boolean;
 }
 
 /**
  * Trois places, trois médailles. Au-delà, le rang en chiffres suffit : une
  * quatrième couleur ne voudrait plus rien dire.
  */
-const MEDAILLES: Record<number, string> = {
+const MEDALS: Record<number, string> = {
   1: "linear-gradient(135deg, #FFD84D, #E0A200)",
   2: "linear-gradient(135deg, #E2E8F0, #94A3B8)",
   3: "linear-gradient(135deg, #E8A87C, #B4703C)",
 };
 
 /** Constante de MODULE : un littéral en JSX rejouerait l'animation à chaque rendu. */
-const LIGNE = {
+const ROW = {
   hidden: { opacity: 0, x: -12 },
   show: { opacity: 1, x: 0, transition: { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
-export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Props) {
+export function LeaderboardRow({ entree, rang, maximum, moi, reducedMotion }: Props) {
   const { t } = useTranslation("easterEggs");
-  const [deplie, setDeplie] = useState(false);
-  const duree = formaterDuree(entree.watchSeconds);
-  const ratio = ratioBarre(valeurDeRang(entree), maximum);
-  const medaille = MEDAILLES[rang];
+  const [expanded, setExpanded] = useState(false);
+  const duration = formatDuration(entree.watchSeconds);
+  const ratio = barRatio(rankValue(entree), maximum);
+  const medal = MEDALS[rang];
 
   // Rien n'est demandé au serveur tant que la ligne n'est pas ouverte.
-  const { data: detail, isLoading: chargeDetail } = useSeriesFavorites(entree.userId, deplie);
+  const { data: detail, isLoading: detailLoad } = useSeriesFavorites(entree.userId, expanded);
 
   return (
     <motion.li
-      variants={sansMouvement ? undefined : LIGNE}
+      variants={reducedMotion ? undefined : ROW}
       className={`rounded-xl px-2.5 py-2 ${
         moi ? "bg-[rgba(var(--brand-rgb),0.12)] ring-1 ring-[rgba(var(--brand-rgb),0.35)]" : ""
       }`}
     >
       <button
         type="button"
-        onClick={() => setDeplie((p) => !p)}
-        aria-expanded={deplie}
+        onClick={() => setExpanded((p) => !p)}
+        aria-expanded={expanded}
         className="flex w-full items-center gap-3 text-left"
       >
       <span
         aria-hidden
         className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
         style={
-          medaille
-            ? { background: medaille, color: "#231604" }
+          medal
+            ? { background: medal, color: "#231604" }
             : { color: "var(--text-quaternary)" }
         }
       >
@@ -90,7 +90,7 @@ export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Pr
             className="flex-shrink-0 text-sm font-bold text-content-primary"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
-            {duree ?? t("rienVu")}
+            {duration ?? t("rienVu")}
           </span>
         </div>
 
@@ -100,9 +100,9 @@ export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Pr
         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-fill-soft">
           <motion.div
             className="h-full origin-left rounded-none bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)]"
-            initial={sansMouvement ? false : { scaleX: 0 }}
+            initial={reducedMotion ? false : { scaleX: 0 }}
             animate={{ scaleX: ratio }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: sansMouvement ? 0 : 0.1 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: reducedMotion ? 0 : 0.1 }}
             style={{ width: "100%" }}
           />
         </div>
@@ -114,7 +114,7 @@ export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Pr
 
         <svg
           aria-hidden
-          className={`h-4 w-4 flex-shrink-0 text-content-quaternary transition-transform ${deplie ? "rotate-180" : ""}`}
+          className={`h-4 w-4 flex-shrink-0 text-content-quaternary transition-transform ${expanded ? "rotate-180" : ""}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -125,9 +125,9 @@ export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Pr
       </button>
 
       <AnimatePresence initial={false}>
-        {deplie && (
+        {expanded && (
           <motion.div
-            initial={sansMouvement ? false : { height: 0, opacity: 0 }}
+            initial={reducedMotion ? false : { height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
@@ -137,7 +137,7 @@ export function LeaderboardRow({ entree, rang, maximum, moi, sansMouvement }: Pr
               <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-content-quaternary">
                 {t("seriesFavorites")}
               </p>
-              {chargeDetail && <p className="text-xs text-content-tertiary">{t("chargement")}</p>}
+              {detailLoad && <p className="text-xs text-content-tertiary">{t("chargement")}</p>}
               {detail && detail.series.length === 0 && (
                 <p className="text-xs text-content-tertiary">{t("aucuneSerie")}</p>
               )}

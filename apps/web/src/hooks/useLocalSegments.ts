@@ -9,7 +9,7 @@ import { emptyPlaybackSegments, type MediaItem, type PlaybackSegmentsResponse } 
 import { localResourceUrl, useDownloadsRootReady } from "../downloads/localFiles";
 import { resolveLocalSegmentsPayload } from "../lib/localSegments";
 
-const VIDE: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
+const EMPTY: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
 
 export function useLocalSegments(
   itemId: string | undefined,
@@ -17,7 +17,7 @@ export function useLocalSegments(
   isLocalPlayback: boolean,
 ): PlaybackSegmentsResponse {
   const rootReady = useDownloadsRootReady();
-  const [brut, setBrut] = useState<unknown>(null);
+  const [raw, setBrut] = useState<unknown>(null);
 
   useEffect(() => {
     setBrut(null);
@@ -39,7 +39,7 @@ export function useLocalSegments(
   }, [itemId, isLocalPlayback, rootReady]);
 
   return useMemo(
-    () => (isLocalPlayback && itemId ? resolveLocalSegmentsPayload(brut, itemId, item) : VIDE),
-    [isLocalPlayback, brut, item, itemId],
+    () => (isLocalPlayback && itemId ? resolveLocalSegmentsPayload(raw, itemId, item) : EMPTY),
+    [isLocalPlayback, raw, item, itemId],
   );
 }

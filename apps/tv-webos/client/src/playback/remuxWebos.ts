@@ -1,7 +1,7 @@
 import type { TranscodingProfile } from "@tentacle-tv/shared";
-import { PROFIL_AUDIO_SEUL, profilHlsFmp4, profilHlsTs } from "@/lib/deviceProfile/blocs";
-import { codecsRetenus, type MemoireReplis } from "./playbackFallback";
-import type { ProfilResolu } from "./codecsWebos";
+import { AUDIO_ONLY_PROFILE, hlsFmp4Profile, hlsTsProfile } from "@/lib/deviceProfile/blocks";
+import { keptCodecs, type FallbackMemory } from "./playbackFallback";
+import type { ResolvedProfile } from "./codecsWebos";
 
 /**
  * Transcodage — mais surtout : Direct Stream.
@@ -20,35 +20,35 @@ import type { ProfilResolu } from "./codecsWebos";
  * Un MPEG-2 ou un VC-1 dont seul le conteneur posait problème repartait
  * recompressé.
  *
- * `BreakOnNonKeyFrames: false` est posé par `blocs.ts` et ne doit pas bouger :
+ * `BreakOnNonKeyFrames: false` est posé par `blocks.ts` et ne doit pas bouger :
  * à vrai, il oblige le serveur à savoir couper hors image clé, donc à en
  * fabriquer, donc à recompresser.
  */
-export function transcodage(
-  resolu: ProfilResolu,
-  memoire: MemoireReplis,
+export function transcode(
+  resolved: ResolvedProfile,
+  memory: FallbackMemory,
   sourceDolbyVision = false,
 ): TranscodingProfile[] {
   const video = new Set<string>();
   const audio = new Set<string>();
-  for (const conteneur of resolu.capacites.conteneurs) {
-    for (const codec of codecsRetenus(memoire.video, conteneur.video)) video.add(codec);
-    for (const codec of codecsRetenus(memoire.audio, conteneur.audio)) audio.add(codec);
+  for (const container of resolved.capabilities.containers) {
+    for (const codec of keptCodecs(memory.video, container.video)) video.add(codec);
+    for (const codec of keptCodecs(memory.audio, container.audio)) audio.add(codec);
   }
 
-  const canaux = maxCanaux(resolu);
+  const channels = maxChannels(resolved);
   const audioFmp4 = [...audio].filter((codec) => AUDIO_FMP4.has(codec));
   // Le flux de transport ne porte légalement ni l'AV1, ni le VP9, ni les codecs
   // audio exotiques : y annoncer autre chose obligerait le serveur à convertir.
   const videoTs = [...video].filter((codec) => CODECS_TS.has(codec));
   const audioTs = audioDuFluxDeTransport(audio);
 
-  const fmp4 = profilHlsFmp4([...video].join(",") || "h264", audioFmp4.join(",") || "aac", canaux);
-  const ts = profilHlsTs(videoTs.join(",") || "h264", audioTs, canaux);
+  const fmp4 = hlsFmp4Profile([...video].join(",") || "h264", audioFmp4.join(",") || "aac", channels);
+  const ts = hlsTsProfile(videoTs.join(",") || "h264", audioTs, channels);
 
-  return sourceDolbyVision && conserveLeRpu(resolu)
-    ? [ts, fmp4, PROFIL_AUDIO_SEUL]
-    : [fmp4, ts, PROFIL_AUDIO_SEUL];
+  return sourceDolbyVision && keepsRpu(resolved)
+    ? [ts, fmp4, AUDIO_ONLY_PROFILE]
+    : [fmp4, ts, AUDIO_ONLY_PROFILE];
 }
 
 /**
@@ -70,7 +70,7 @@ export function transcodage(
  * depuis le client.
  *
  * Le flux de transport, lui, porte le RPU dans un descripteur du PMT — le
- * chemin que l'ingénieur LG cite en premier (cf. `CONTENEURS_DOVI`), et le seul
+ * chemin que l'ingénieur LG cite en premier (cf. `DOVI_CONTAINERS`), et le seul
  * des deux qui fonctionne ici.
  *
  * **Le surcoût est de 3 %**, mesuré segment par segment au milieu du film :
@@ -87,8 +87,8 @@ export function transcodage(
  * Sans Dolby Vision sur la dalle, la question n'a pas d'objet : le fMP4 reprend
  * sa place, avec son DTS copié.
  */
-function conserveLeRpu(resolu: ProfilResolu): boolean {
-  return resolu.dalle.dolbyVision;
+function keepsRpu(resolved: ResolvedProfile): boolean {
+  return resolved.panel.dolbyVision;
 }
 
 /**
@@ -107,9 +107,9 @@ function conserveLeRpu(resolu: ProfilResolu): boolean {
  * L'AAC reste en dernier, sans condition : il est décodé par toutes les
  * générations, et une liste vide ferait recompresser l'image faute de profil.
  */
-function audioDuFluxDeTransport(decodes: Set<string>): string {
-  const prefere = ["eac3", "ac3"].filter((codec) => decodes.has(codec));
-  return [...prefere, "aac"].join(",");
+function audioDuFluxDeTransport(decoded: Set<string>): string {
+  const preferred = ["eac3", "ac3"].filter((codec) => decoded.has(codec));
+  return [...preferred, "aac"].join(",");
 }
 
 /** Ce que le démultiplexeur TS de webOS sait porter. */
@@ -157,6 +157,6 @@ const AUDIO_FMP4 = new Set(["aac", "mp3", "ac3", "eac3", "dts", "dca"]);
  * C'est ce qui permet à un TrueHD 7.1 Atmos converti en E-AC3 de rester en huit
  * canaux — l'Atmos de Netflix et de Disney+ voyage exactement comme cela.
  */
-function maxCanaux(resolu: ProfilResolu): string {
-  return resolu.dalle.dolbyAtmos ? "8" : "6";
+function maxChannels(resolved: ResolvedProfile): string {
+  return resolved.panel.dolbyAtmos ? "8" : "6";
 }

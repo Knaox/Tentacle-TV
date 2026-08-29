@@ -16,46 +16,46 @@ import { supportsLinuxSession } from "../../desktop/capabilities";
  * S'efface hors coquille Linux, comme `HdrAutoToggle` hors Windows.
  */
 
-type ChoixSession = "auto" | "wayland" | "x11";
+type SessionChoice = "auto" | "wayland" | "x11";
 
-interface EtatSession {
-  choix: ChoixSession;
+interface SessionState {
+  choice: SessionChoice;
   montage: string | null;
   bureau: string | null;
 }
 
 export function LinuxSessionSelect() {
   const { t } = useTranslation("preferences");
-  const [etat, setEtat] = useState<EtatSession | null>(null);
-  const [choisi, setChoisi] = useState<ChoixSession | null>(null);
+  const [state, setState] = useState<SessionState | null>(null);
+  const [chosen, setChosen] = useState<SessionChoice | null>(null);
 
-  const disponible = desktopPlatform() === "linux" && supportsLinuxSession();
+  const available = desktopPlatform() === "linux" && supportsLinuxSession();
 
   useEffect(() => {
-    if (!disponible) return;
-    let annule = false;
-    void invoke<EtatSession>("linux_session_get")
+    if (!available) return;
+    let cancelled = false;
+    void invoke<SessionState>("linux_session_get")
       .then((e) => {
-        if (!annule) setEtat(e);
+        if (!cancelled) setState(e);
       })
       .catch(() => {
-        if (!annule) setEtat(null);
+        if (!cancelled) setState(null);
       });
     return () => {
-      annule = true;
+      cancelled = true;
     };
-  }, [disponible]);
+  }, [available]);
 
-  if (!disponible || etat === null) return null;
+  if (!available || state === null) return null;
 
-  const valeur = choisi ?? etat.choix;
-  const modifie = choisi !== null && choisi !== etat.choix;
+  const value = chosen ?? state.choice;
+  const changed = chosen !== null && chosen !== state.choice;
 
-  const changer = (suivant: ChoixSession): void => {
-    setChoisi(suivant);
+  const changer = (next: SessionChoice): void => {
+    setChosen(next);
     // Écrit tout de suite : même sans relance immédiate, le prochain
     // lancement — quel qu'il soit — lira le nouveau choix.
-    void invoke("linux_session_set", { choix: suivant }).catch(() => undefined);
+    void invoke("linux_session_set", { choice: next }).catch(() => undefined);
   };
 
   return (
@@ -66,15 +66,15 @@ export function LinuxSessionSelect() {
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <select
-          value={valeur}
-          onChange={(e) => changer(e.target.value as ChoixSession)}
+          value={value}
+          onChange={(e) => changer(e.target.value as SessionChoice)}
           className="w-full max-w-xs appearance-none rounded-lg border border-line-subtle bg-tentacle-surface px-3 py-2 text-sm text-content-primary [&>option]:bg-tentacle-surface [&>option]:text-content-primary"
         >
           <option value="auto">{t("preferences:linuxSessionAuto")}</option>
           <option value="wayland">{t("preferences:linuxSessionWayland")}</option>
           <option value="x11">{t("preferences:linuxSessionX11")}</option>
         </select>
-        {modifie && (
+        {changed && (
           <button
             onClick={() => void relaunch()}
             className="rounded-lg bg-tentacle-accent px-3 py-2 text-sm font-medium text-white transition hover:opacity-90"
@@ -83,9 +83,9 @@ export function LinuxSessionSelect() {
           </button>
         )}
       </div>
-      {etat.montage !== null && (
+      {state.montage !== null && (
         <p className="mt-2 text-xs text-content-tertiary">
-          {t("preferences:linuxSessionCurrent", { montage: etat.montage })}
+          {t("preferences:linuxSessionCurrent", { montage: state.montage })}
         </p>
       )}
     </div>

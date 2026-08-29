@@ -11,7 +11,7 @@
 
   /* Les codes propres aux telecommandes LG. Les autres touches sont affichees
    * telles quelles : le releve sert justement a completer cette table. */
-  var NOMS_TOUCHES = {
+  var KEY_NAMES = {
     13: "OK",
     37: "gauche", 38: "haut", 39: "droite", 40: "bas",
     403: "rouge", 404: "vert", 405: "jaune", 406: "bleu",
@@ -20,34 +20,34 @@
     457: "info"
   };
 
-  function cellule(texte, classe) {
+  function cellule(text, cssClass) {
     var td = document.createElement("td");
-    td.className = classe;
-    td.appendChild(document.createTextNode(texte));
+    td.className = cssClass;
+    td.appendChild(document.createTextNode(text));
     return td;
   }
 
-  function classePourEtat(etat) {
-    if (etat === "ok") return "val ok";
-    if (etat === "ko") return "val ko";
+  function classForState(state) {
+    if (state === "ok") return "val ok";
+    if (state === "ko") return "val ko";
     return "val neutre";
   }
 
-  function rendreSection(section) {
-    var titre = document.createElement("h2");
-    titre.appendChild(document.createTextNode(section.titre));
+  function renderSection(section) {
+    var title = document.createElement("h2");
+    title.appendChild(document.createTextNode(section.title));
 
     var table = document.createElement("table");
-    for (var i = 0; i < section.lignes.length; i++) {
-      var ligne = section.lignes[i];
+    for (var i = 0; i < section.lines.length; i++) {
+      var line = section.lines[i];
       var tr = document.createElement("tr");
-      tr.appendChild(cellule(ligne.cle, "cle"));
-      tr.appendChild(cellule(ligne.sonde.valeur, classePourEtat(ligne.sonde.etat)));
+      tr.appendChild(cellule(line.key, "cle"));
+      tr.appendChild(cellule(line.sonde.value, classForState(line.sonde.state)));
       table.appendChild(tr);
     }
 
     var bloc = document.createDocumentFragment();
-    bloc.appendChild(titre);
+    bloc.appendChild(title);
     bloc.appendChild(table);
     return bloc;
   }
@@ -56,68 +56,68 @@
    * webOSTV.js est charge, sinon le parametre `tvinfo` pose par la coquille.
    * La sonde affiche ce qu'elle a obtenu, et par quel chemin — c'est ce qui
    * permet de savoir si le client pourra construire un DeviceProfile juste. */
-  function lireInfoAppareil(auResultat) {
-    var parametre = /[?&]tvinfo=([^&]+)/.exec(global.location.search);
-    if (parametre) {
+  function readDeviceInfo(onResult) {
+    var param = /[?&]tvinfo=([^&]+)/.exec(global.location.search);
+    if (param) {
       try {
-        auResultat("parametre d'URL", JSON.parse(decodeURIComponent(parametre[1])));
+        onResult("parametre d'URL", JSON.parse(decodeURIComponent(param[1])));
         return;
       } catch (e) {
         /* Parametre illisible : on tente l'API. */
       }
     }
     if (global.webOS && typeof global.webOS.deviceInfo === "function") {
-      global.webOS.deviceInfo(function (donnees) {
-        auResultat("webOS.deviceInfo()", donnees);
+      global.webOS.deviceInfo(function (data) {
+        onResult("webOS.deviceInfo()", data);
       });
       return;
     }
     if (global.PalmSystem && global.PalmSystem.deviceInfo) {
       try {
-        auResultat("PalmSystem.deviceInfo", JSON.parse(global.PalmSystem.deviceInfo));
+        onResult("PalmSystem.deviceInfo", JSON.parse(global.PalmSystem.deviceInfo));
         return;
       } catch (e) {
         /* Illisible. */
       }
     }
-    auResultat(null, null);
+    onResult(null, null);
   }
 
-  function rendreInfoAppareil(rapport) {
-    lireInfoAppareil(function (origine, donnees) {
-      var lignes = [];
-      if (!donnees) {
-        lignes.push({
-          cle: "deviceInfo",
-          sonde: { etat: "ko", valeur: "indisponible — ni API, ni parametre d'URL" }
+  function renderDeviceInfo(rapport) {
+    readDeviceInfo(function (origin, data) {
+      var lines = [];
+      if (!data) {
+        lines.push({
+          key: "deviceInfo",
+          sonde: { state: "ko", value: "indisponible — ni API, ni parametre d'URL" }
         });
       } else {
-        lignes.push({ cle: "origine", sonde: { etat: "ok", valeur: origine } });
-        for (var cle in donnees) {
-          if (!Object.prototype.hasOwnProperty.call(donnees, cle)) continue;
-          lignes.push({
-            cle: cle,
-            sonde: { etat: "info", valeur: String(donnees[cle]) }
+        lines.push({ key: "origine", sonde: { state: "ok", value: origin } });
+        for (var key in data) {
+          if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+          lines.push({
+            key: key,
+            sonde: { state: "info", value: String(data[key]) }
           });
         }
       }
-      rapport.appendChild(rendreSection({ titre: "Televiseur", lignes: lignes }));
+      rapport.appendChild(renderSection({ title: "Televiseur", lines: lines }));
     });
   }
 
-  function installerReleveTouches() {
+  function installKeyCapture() {
     var zone = document.getElementById("touche");
-    document.addEventListener("keydown", function (evenement) {
-      var code = evenement.keyCode;
-      var nom = NOMS_TOUCHES[code] || "inconnue";
+    document.addEventListener("keydown", function (event) {
+      var code = event.keyCode;
+      var nom = KEY_NAMES[code] || "inconnue";
       /* `code` et `repeat` autant que `keyCode` : le lecteur du client web lit
        * `e.code`, et si la telecommande le renseigne, chaque fleche declenche
        * AUSSI son saut dans le flux. La cadence de repetition, elle, cale la
        * detection du maintien. */
       zone.textContent =
         "keyCode " + code + "  —  " + nom +
-        "\ncode " + (evenement.code || "(vide)") +
-        "   repeat " + (evenement.repeat ? "oui" : "non");
+        "\ncode " + (event.code || "(vide)") +
+        "   repeat " + (event.repeat ? "oui" : "non");
       /* Retour : on laisse le comportement par defaut, la sonde n'est pas une
        * application a part entiere et doit rester quittable. */
     });
@@ -126,18 +126,18 @@
   /* Le clavier systeme : ce que la saisie recoit, d'ou qu'elle vienne — frappe
    * a la telecommande ou dictee au micro. Un texte qui apparait sans qu'aucun
    * `keydown` ne passe est la signature de la dictee. */
-  function installerReleveSaisie() {
+  function installInputCapture() {
     var champ = document.getElementById("saisie");
     var zone = document.getElementById("dictee");
     if (!champ || !zone) return;
-    var frappes = 0;
-    champ.addEventListener("keydown", function () { frappes++; });
+    var keystrokes = 0;
+    champ.addEventListener("keydown", function () { keystrokes++; });
     champ.addEventListener("input", function () {
       zone.textContent =
-        "recu : « " + champ.value + " »   —   " + frappes + " frappe(s) observee(s)";
+        "recu : « " + champ.value + " »   —   " + keystrokes + " frappe(s) observee(s)";
     });
     champ.addEventListener("focus", function () {
-      frappes = 0;
+      keystrokes = 0;
       zone.textContent = "champ focalise — le clavier systeme doit s'ouvrir";
     });
   }
@@ -149,48 +149,48 @@
    * du relais arrivent après le premier tracé, et le lecteur doit les voir
    * apparaître sans recharger.
    */
-  function rendreMesuresDalle(rapport) {
+  function renderPanelMeasures(rapport) {
     var section = document.createElement("div");
     rapport.appendChild(section);
 
-    var lignes = global.SondeDalle.canevas();
-    var redessiner = function () {
+    var lines = global.PanelProbe.canvas();
+    var redraw = function () {
       section.innerHTML = "";
-      section.appendChild(rendreSection({ titre: "Mesures sur la dalle", lignes: lignes }));
+      section.appendChild(renderSection({ title: "Mesures sur la dalle", lines: lines }));
     };
-    redessiner();
+    redraw();
 
-    var ajouter = function (nouvelles) {
-      for (var i = 0; i < nouvelles.length; i++) {
-        var remplace = false;
-        for (var j = 0; j < lignes.length; j++) {
-          if (lignes[j].cle === nouvelles[i].cle) {
-            lignes[j] = nouvelles[i];
-            remplace = true;
+    var add = function (fresh) {
+      for (var i = 0; i < fresh.length; i++) {
+        var replaced = false;
+        for (var j = 0; j < lines.length; j++) {
+          if (lines[j].key === fresh[i].key) {
+            lines[j] = fresh[i];
+            replaced = true;
           }
         }
-        if (!remplace) lignes.push(nouvelles[i]);
+        if (!replaced) lines.push(fresh[i]);
       }
-      redessiner();
+      redraw();
     };
 
-    ajouter([{ cle: "maintien de OK", sonde: { etat: "info", valeur: "maintenez OK trois secondes" } }]);
-    global.SondeDalle.installerReleveMaintien(ajouter);
-    global.SondeDalle.sonderRelais(ajouter);
-    global.SondeDalle.mesurerBoiteObservateur(ajouter);
-    global.SondeDalle.sonderServicesVocaux(ajouter);
+    add([{ key: "maintien de OK", sonde: { state: "info", value: "maintenez OK trois secondes" } }]);
+    global.PanelProbe.installHoldCapture(add);
+    global.PanelProbe.probeRelay(add);
+    global.PanelProbe.measureObserverBox(add);
+    global.PanelProbe.probeVoiceServices(add);
   }
 
-  function demarrer() {
+  function start() {
     var rapport = document.getElementById("rapport");
-    var sections = global.SondesWebos.sections();
+    var sections = global.WebosProbes.sections();
     for (var i = 0; i < sections.length; i++) {
-      rapport.appendChild(rendreSection(sections[i]));
+      rapport.appendChild(renderSection(sections[i]));
     }
-    rendreMesuresDalle(rapport);
-    rendreInfoAppareil(rapport);
-    installerReleveTouches();
-    installerReleveSaisie();
+    renderPanelMeasures(rapport);
+    renderDeviceInfo(rapport);
+    installKeyCapture();
+    installInputCapture();
 
     var date = new Date();
     document.getElementById("horodatage").textContent =
@@ -198,8 +198,8 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", demarrer);
+    document.addEventListener("DOMContentLoaded", start);
   } else {
-    demarrer();
+    start();
   }
 })(window);

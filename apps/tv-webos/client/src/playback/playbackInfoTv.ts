@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePlaybackInfo as socleWeb } from "@/hooks/usePlaybackInfo?original";
-import { estManifesteMaitre, resoudreVarianteDovi } from "./doviVariant";
-import { avecSegmentsCourts } from "./segmentLength";
+import { isMasterManifest, resolveDoviVariant } from "./doviVariant";
+import { withShortSegments } from "./segmentLength";
 
 /**
  * Le lecteur reçoit la variante Dolby Vision, pas le manifeste maître.
@@ -32,11 +32,11 @@ import { avecSegmentsCourts } from "./segmentLength";
  * de piste audio — qui produit un nouveau manifeste — se verrait servir la
  * variante du précédent, définitivement.
  */
-export function usePlaybackInfo(lecteurNatif = false) {
-  const socle = socleWeb(lecteurNatif);
-  const brute = useMemo(() => avecSegmentsCourts(socle.streamUrl), [socle.streamUrl]);
-  const [resolue, setResolue] = useState<{ pour: string; url: string | null } | null>(null);
-  const servie = resolue?.url ?? brute;
+export function usePlaybackInfo(nativePlayer = false) {
+  const socle = socleWeb(nativePlayer);
+  const brute = useMemo(() => withShortSegments(socle.streamUrl), [socle.streamUrl]);
+  const [resolvedVariant, setResolvedVariant] = useState<{ pour: string; url: string | null } | null>(null);
+  const served = resolvedVariant?.url ?? brute;
 
   /**
    * Le verdict, rendu juste par l'URL qu'on sert réellement.
@@ -54,10 +54,10 @@ export function usePlaybackInfo(lecteurNatif = false) {
    */
   const verdict = useMemo(() => {
     const base = socle.verdict;
-    if (!base || !base.reencodageVideo || !resolue?.url) return base;
-    if (/[?&]AllowVideoStreamCopy=false/i.test(resolue.url)) return base;
-    return { ...base, mode: "Remux" as const, reencodageVideo: false };
-  }, [socle.verdict, resolue]);
+    if (!base || !base.videoReencoded || !resolvedVariant?.url) return base;
+    if (/[?&]AllowVideoStreamCopy=false/i.test(resolvedVariant.url)) return base;
+    return { ...base, mode: "Remux" as const, videoReencoded: false };
+  }, [socle.verdict, resolvedVariant]);
 
   // Relevé pour la surcouche de diagnostic — DÉVELOPPEMENT UNIQUEMENT.
   // `import.meta.env.DEV` est remplacé littéralement par Vite : en build livré,
@@ -65,46 +65,46 @@ export function usePlaybackInfo(lecteurNatif = false) {
   // n'entraîne rien dans le fragment servi au téléviseur.
   useEffect(() => {
     if (!import.meta.env.DEV && !__TV_DEBUG__) return;
-    const releve = verdict;
-    void import("../debug/playbackOverlay").then(({ publierLecture }) => {
+    const sample = verdict;
+    void import("../debug/playbackOverlay").then(({ publishPlayback }) => {
       const flux = socle.mediaSource?.MediaStreams?.find((s) => s.Type === "Video");
-      publierLecture(
-        releve
+      publishPlayback(
+        sample
           ? {
-              mode: releve.mode,
-              reencodageVideo: releve.reencodageVideo,
-              raisons: releve.raisons,
-              codecVideo: flux?.Codec,
-              plage: flux?.VideoRangeType,
-              url: servie,
+              mode: sample.mode,
+              videoReencoded: sample.videoReencoded,
+              reasons: sample.reasons,
+              videoCodec: flux?.Codec,
+              range: flux?.VideoRangeType,
+              url: served,
             }
           : null,
       );
     });
-  }, [verdict, socle.mediaSource, servie]);
+  }, [verdict, socle.mediaSource, served]);
 
   useEffect(() => {
-    if (!brute || !estManifesteMaitre(brute)) return;
-    let vivant = true;
-    void resoudreVarianteDovi(brute).then((url) => {
-      // `vivant` : la source a pu changer pendant l'aller-retour. Écrire ici
+    if (!brute || !isMasterManifest(brute)) return;
+    let alive = true;
+    void resolveDoviVariant(brute).then((url) => {
+      // `alive` : la source a pu changer pendant l'aller-retour. Écrire ici
       // remplacerait la variante courante par celle d'une source abandonnée.
-      if (vivant) setResolue({ pour: brute, url });
+      if (alive) setResolvedVariant({ pour: brute, url });
     });
     return () => {
-      vivant = false;
+      alive = false;
     };
   }, [brute]);
 
   // `brute`, et non `socle.streamUrl` : la longueur de segment imposée doit
   // survivre à ce chemin-là aussi.
-  if (!brute || !estManifesteMaitre(brute)) return { ...socle, streamUrl: brute };
+  if (!brute || !isMasterManifest(brute)) return { ...socle, streamUrl: brute };
 
   // Résolue pour CETTE source : `url` à `null` signifie « pas de variante Dolby
   // Vision ici », le cas de tous les remux ordinaires, et le manifeste maître
   // convient. Résolue pour une AUTRE : on tient la précédente le temps de
   // l'aller-retour plutôt que de faire démonter le lecteur.
-  if (resolue) return { ...socle, streamUrl: servie, verdict };
+  if (resolvedVariant) return { ...socle, streamUrl: served, verdict };
 
   // Tout premier manifeste de la session : il n'y a pas de source antérieure à
   // tenir. `null` est ce que le lecteur voit avant toute lecture — il n'est pas

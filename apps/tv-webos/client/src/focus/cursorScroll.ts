@@ -1,8 +1,8 @@
-import { conteneurPiegeant } from "./candidates";
-import { dansUnCalqueFixe } from "./beyond";
-import { pointeurActif, positionPointeur, scellerPointeur } from "./cursor";
-import { scrollersVerticaux } from "./scrollers";
-import { poussee, type Poussee } from "./edgeZones";
+import { trappingContainer } from "./candidates";
+import { inFixedLayer } from "./beyond";
+import { pointerActive, pointerPosition, sealPointer } from "./cursor";
+import { verticalScrollers } from "./scrollers";
+import { push, type Push } from "./edgeZones";
 
 /**
  * Défiler en visant un bord de l'écran, au pointeur de la Magic Remote.
@@ -18,7 +18,7 @@ import { poussee, type Poussee } from "./edgeZones";
  * n'a pas réellement bougé — sans quoi le focus partirait dans le sens du
  * défilement, à chaque image. De l'autre le RÉANCRAGE : à l'arrêt, si l'anneau
  * a quitté la fenêtre, on le repose sur l'écran courant. Sans lui, la première
- * flèche appuyée ramènerait la vue trois écrans en arrière, par `amenerEnVue` —
+ * flèche appuyée ramènerait la vue trois écrans en arrière, par `bringIntoView` —
  * le pire résultat possible pour qui vient de descendre à la main.
  *
  * **Aucune boucle au repos.** La boucle d'animation n'existe que pendant le
@@ -29,14 +29,14 @@ import { poussee, type Poussee } from "./edgeZones";
  */
 
 /** Au-delà, on tient l'image pour perdue : elle ne doit pas téléporter la vue. */
-const PAS_MAXIMAL_MS = 50;
+const MAX_STEP_MS = 50;
 
 /** Ce qu'on demande à `entry.ts` quand le focus a quitté la fenêtre. */
-type Reancrage = () => void;
+type Reanchor = () => void;
 
-export function surveillerDefilementCurseur(
-  suspendu: () => boolean,
-  reancrer: Reancrage,
+export function watchCursorScroll(
+  suspended: () => boolean,
+  reanchor: Reanchor,
 ): () => void {
   let image: number | null = null;
   let precedent = 0;
@@ -50,95 +50,95 @@ export function surveillerDefilementCurseur(
    * reprendre. Mesuré sur la dalle : 753 px puis plus rien, alors qu'il restait
    * du mou. On vise un ENDROIT, on ne suit pas ce qui passe dessous.
    */
-  let cibleY: HTMLElement | "fenetre" | null = null;
-  let cibleX: HTMLElement | null = null;
+  let targetY: HTMLElement | "fenetre" | null = null;
+  let targetX: HTMLElement | null = null;
   // `scrollTop` tronque : jeter la fraction à chaque image coûterait jusqu'à
   // soixante pixels par seconde, soit un cinquième de la vitesse la plus lente.
-  let resteY = 0;
-  let resteX = 0;
+  let restY = 0;
+  let restX = 0;
 
-  const arreter = () => {
+  const stop = () => {
     if (image === null) return;
     cancelAnimationFrame(image);
     image = null;
-    resteY = 0;
-    resteX = 0;
-    cibleY = null;
-    cibleX = null;
-    reancrer();
+    restY = 0;
+    restX = 0;
+    targetY = null;
+    targetX = null;
+    reanchor();
   };
 
-  const demarrer = () => {
+  const start = () => {
     if (image !== null) return;
-    const point = positionPointeur();
+    const point = pointerPosition();
     if (!point) return;
-    const sous = document.elementFromPoint(point.x, point.y);
-    const element = sous instanceof HTMLElement ? sous : null;
-    cibleY = cibleVerticale(element);
-    cibleX = element?.closest<HTMLElement>("[data-tv-piste]") ?? null;
-    if (cibleY === null && cibleX === null) return;
+    const under = document.elementFromPoint(point.x, point.y);
+    const element = under instanceof HTMLElement ? under : null;
+    targetY = verticalTarget(element);
+    targetX = element?.closest<HTMLElement>("[data-tv-piste]") ?? null;
+    if (targetY === null && targetX === null) return;
     precedent = 0;
     image = requestAnimationFrame(tour);
   };
 
-  const tour = (maintenant: number) => {
+  const tour = (now: number) => {
     image = null;
-    if (suspendu() || !pointeurActif()) {
-      arreter();
+    if (suspended() || !pointerActive()) {
+      stop();
       return;
     }
-    const demande = demandeCourante();
-    if (demande === null || (demande.x === 0 && demande.y === 0)) {
-      arreter();
+    const request = currentRequest();
+    if (request === null || (request.x === 0 && request.y === 0)) {
+      stop();
       return;
     }
 
     // La première image n'a pas de précédente : on ne défile pas encore, on
-    // pose l'horloge. Écrire `maintenant - 0` ferait un bond de plusieurs
+    // pose l'horloge. Écrire `now - 0` ferait un bond de plusieurs
     // secondes de vue.
-    const ecart = precedent === 0 ? 0 : Math.min(maintenant - precedent, PAS_MAXIMAL_MS);
-    precedent = maintenant;
+    const gap = precedent === 0 ? 0 : Math.min(now - precedent, MAX_STEP_MS);
+    precedent = now;
 
-    if (ecart > 0 && !ecrire(demande, ecart / 1000)) {
-      arreter();
+    if (gap > 0 && !write(request, gap / 1000)) {
+      stop();
       return;
     }
     image = requestAnimationFrame(tour);
   };
 
   /** Rend `false` quand plus rien n'a bougé — il n'y a plus de mou. */
-  const ecrire = (demande: Poussee, secondes: number): boolean => {
-    resteY += demande.y * secondes;
-    resteX += demande.x * secondes;
-    const deltaY = Math.trunc(resteY);
-    const deltaX = Math.trunc(resteX);
-    resteY -= deltaY;
-    resteX -= deltaX;
+  const write = (request: Push, seconds: number): boolean => {
+    restY += request.y * seconds;
+    restX += request.x * seconds;
+    const deltaY = Math.trunc(restY);
+    const deltaX = Math.trunc(restX);
+    restY -= deltaY;
+    restX -= deltaX;
     if (deltaY === 0 && deltaX === 0) return true;
 
     // Scellé AVANT l'écriture : entre les deux, le navigateur a déjà pu émettre
     // son `mouseover` sur ce qui est passé sous le pointeur.
-    scellerPointeur();
-    const bougeY = deltaY !== 0 && cibleY !== null && defilerVertical(cibleY, deltaY);
-    const bougeX = deltaX !== 0 && cibleX !== null && defilerHorizontal(cibleX, deltaX);
-    return bougeY || bougeX;
+    sealPointer();
+    const moveY = deltaY !== 0 && targetY !== null && scrollVertical(targetY, deltaY);
+    const moveX = deltaX !== 0 && targetX !== null && scrollHorizontal(targetX, deltaX);
+    return moveY || moveX;
   };
 
-  const surMouvement = () => {
-    if (suspendu()) return;
-    const demande = demandeCourante();
-    if (!demande || (demande.x === 0 && demande.y === 0)) {
-      arreter();
+  const onMove = () => {
+    if (suspended()) return;
+    const request = currentRequest();
+    if (!request || (request.x === 0 && request.y === 0)) {
+      stop();
       return;
     }
     // Le pointeur a bougé : les cibles sont réévaluées, mais seulement là — un
     // geste continu garde les siennes.
-    if (image === null) demarrer();
+    if (image === null) start();
   };
 
-  const surSortie = () => arreter();
+  const surSortie = () => stop();
 
-  document.addEventListener("mousemove", surMouvement, { passive: true });
+  document.addEventListener("mousemove", onMove, { passive: true });
   document.addEventListener("mouseleave", surSortie);
   document.addEventListener("cursorStateChange", surSortie);
   document.addEventListener("visibilitychange", surSortie);
@@ -151,7 +151,7 @@ export function surveillerDefilementCurseur(
   return () => {
     if (image !== null) cancelAnimationFrame(image);
     image = null;
-    document.removeEventListener("mousemove", surMouvement);
+    document.removeEventListener("mousemove", onMove);
     document.removeEventListener("mouseleave", surSortie);
     document.removeEventListener("cursorStateChange", surSortie);
     document.removeEventListener("visibilitychange", surSortie);
@@ -161,14 +161,14 @@ export function surveillerDefilementCurseur(
 }
 
 /** Ce que la position courante du pointeur demande, ou `null` s'il n'y en a pas. */
-function demandeCourante(): Poussee | null {
-  const point = positionPointeur();
+function currentRequest(): Push | null {
+  const point = pointerPosition();
   if (!point) return null;
-  return poussee(
+  return push(
     point.x,
     point.y,
-    { largeur: window.innerWidth, hauteur: window.innerHeight },
-    retraitOverscan(),
+    { width: window.innerWidth, hauteur: window.innerHeight },
+    overscanInset(),
   );
 }
 
@@ -178,7 +178,7 @@ function demandeCourante(): Poussee | null {
  * Les deux valeurs vivent dans `tokens-tv.css` et y sont commentées ; les
  * dupliquer ici les ferait diverger le jour où une gamme demandera autre chose.
  */
-function retraitOverscan(): { x: number; y: number } {
+function overscanInset(): { x: number; y: number } {
   const racine = getComputedStyle(document.documentElement);
   return {
     x: pixels(racine.getPropertyValue("--tv-overscan-x"), 96),
@@ -186,52 +186,52 @@ function retraitOverscan(): { x: number; y: number } {
   };
 }
 
-function pixels(valeur: string, repli: number): number {
-  const nombre = parseFloat(valeur);
-  return Number.isFinite(nombre) ? nombre : repli;
+function pixels(value: string, fallback: number): number {
+  const count = parseFloat(value);
+  return Number.isFinite(count) ? count : fallback;
 }
 
 /**
  * Défilement vertical : la chaîne des conteneurs sous le pointeur, puis la
  * fenêtre.
  *
- * Le rail est `position: fixed` — il ne suit pas la page, et `dansUnCalqueFixe`
+ * Le rail est `position: fixed` — il ne suit pas la page, et `inFixedLayer`
  * est déjà le juge de cette question pour le D-pad. Viser une icône du rail ne
  * défile donc rien, ce qui est le comportement voulu : on y va pour la lire.
  *
  * Sous une surface piégeante — recherche, panneau de choix —, seuls les
- * conteneurs qu'elle contient sont recevables. Même règle que `defilerParPas`,
+ * conteneurs qu'elle contient sont recevables. Même règle que `scrollByStep`,
  * et pour la même raison : la page ne doit pas glisser derrière un panneau.
  */
-function cibleVerticale(element: HTMLElement | null): HTMLElement | "fenetre" | null {
+function verticalTarget(element: HTMLElement | null): HTMLElement | "fenetre" | null {
   // Le rail est `position: fixed` — il ne suit pas la page, et
-  // `dansUnCalqueFixe` est déjà le juge de cette question pour le D-pad. Viser
+  // `inFixedLayer` est déjà le juge de cette question pour le D-pad. Viser
   // une icône du rail ne défile donc rien, ce qui est voulu : on y va pour lire.
-  if (element && dansUnCalqueFixe(element)) return null;
-  const piege = conteneurPiegeant();
+  if (element && inFixedLayer(element)) return null;
+  const trap = trappingContainer();
 
   if (element) {
-    for (const scroller of scrollersVerticaux(element)) {
+    for (const scroller of verticalScrollers(element)) {
       // Sous une surface piégeante — recherche, panneau de choix —, seuls les
       // conteneurs qu'elle contient sont recevables. Même règle que
-      // `defilerParPas` : la page ne doit pas glisser derrière un panneau.
-      if (piege && !piege.contains(scroller)) continue;
+      // `scrollByStep` : la page ne doit pas glisser derrière un panneau.
+      if (trap && !trap.contains(scroller)) continue;
       return scroller;
     }
   }
   // La fenêtre n'est jamais intérieure à un piège.
-  return piege ? null : "fenetre";
+  return trap ? null : "fenetre";
 }
 
-function defilerVertical(cible: HTMLElement | "fenetre", delta: number): boolean {
-  if (cible === "fenetre") {
-    const avant = window.pageYOffset;
+function scrollVertical(target: HTMLElement | "fenetre", delta: number): boolean {
+  if (target === "fenetre") {
+    const before = window.pageYOffset;
     window.scrollBy(0, delta);
-    return window.pageYOffset !== avant;
+    return window.pageYOffset !== before;
   }
-  const avant = cible.scrollTop;
-  cible.scrollTop += delta;
-  return cible.scrollTop !== avant;
+  const before = target.scrollTop;
+  target.scrollTop += delta;
+  return target.scrollTop !== before;
 }
 
 /**
@@ -241,8 +241,8 @@ function defilerVertical(cible: HTMLElement | "fenetre", delta: number): boolean
  * c'est ce qui empêche la bande gauche de traîner quoi que ce soit pendant
  * qu'on vise le rail.
  */
-function defilerHorizontal(piste: HTMLElement, delta: number): boolean {
-  const avant = piste.scrollLeft;
+function scrollHorizontal(piste: HTMLElement, delta: number): boolean {
+  const before = piste.scrollLeft;
   piste.scrollLeft += delta;
-  return piste.scrollLeft !== avant;
+  return piste.scrollLeft !== before;
 }

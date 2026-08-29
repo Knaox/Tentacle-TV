@@ -38,7 +38,7 @@ import { rowWindow, type RowWindowRange } from "./rowWindow";
 /**
  * Cartes rendues de part et d'autre de la zone visible.
  *
- * Trois : un clic de flèche défile de `min(600, 0,85 × largeur)` px, soit moins
+ * Trois : un clic de flèche défile de `min(600, 0,85 × width)` px, soit moins
  * de trois cartes ; une carte hors du champ HORIZONTAL n'est jamais demandée par
  * `loading="lazy"`, donc trois cartes d'avance valent environ un écran de
  * préchargement ; et pendant une inertie, l'accroche au défilement se résout sur
@@ -65,7 +65,7 @@ interface RowWindowOptions {
 }
 
 /** Plage « tout rendre », quand le fenêtrage ne s'applique pas. */
-const toutRendre = (count: number): RowWindowRange => ({
+const renderAll = (count: number): RowWindowRange => ({
   start: 0,
   end: count - 1,
   padStart: 0,
@@ -73,7 +73,7 @@ const toutRendre = (count: number): RowWindowRange => ({
 });
 
 export function useRowWindow({ scrollRef, count, cardWidth, onScreen }: RowWindowOptions) {
-  const [range, setRange] = useState<RowWindowRange>(() => toutRendre(count));
+  const [range, setRange] = useState<RowWindowRange>(() => renderAll(count));
   /**
    * Index de la carte survolée. Un REF, jamais un état : il n'est lu que dans le
    * rappel qui recalcule la plage, donc le poser ne doit pas provoquer de rendu.
@@ -90,7 +90,7 @@ export function useRowWindow({ scrollRef, count, cardWidth, onScreen }: RowWindo
   const compute = useCallback(() => {
     const el = scrollRef.current;
     if (!el || cardWidth == null) {
-      setRange(toutRendre(count));
+      setRange(renderAll(count));
       return;
     }
     const next = rowWindow({

@@ -1,9 +1,9 @@
 import { useRef, type ComponentProps } from "react";
 import { FilterMenu as MenuWeb } from "@/components/library/FilterMenu";
-import { useMarqueur } from "../marker";
-import { ATTRIBUT_ENTREE, destinationEntreeDeZone } from "../../focus/zones";
-import { donnerFocus } from "../../focus/active";
-import { reviserApresMontage } from "../../focus/wait";
+import { useMarker } from "../marker";
+import { ENTRY_ATTRIBUTE, destinationEntreeDeZone } from "../../focus/zones";
+import { giveFocus } from "../../focus/active";
+import { reviewAfterMount } from "../../focus/wait";
 
 /**
  * Les menus de filtres d'une bibliothèque, pilotables à la télécommande.
@@ -14,12 +14,12 @@ import { reviserApresMontage } from "../../focus/wait";
  *
  * **Le rôle passe du contenu au PANNEAU.** Trois menus sur cinq posaient
  * `role="menu"` sur un conteneur intérieur ; années et note n'en posaient
- * aucun. Or c'est ce rôle que `conteneurPiegeant` reconnaît : ces deux-là ne
+ * aucun. Or c'est ce rôle que `trappingContainer` reconnaît : ces deux-là ne
  * confinaient donc rien, le D-pad s'en échappait vers la grille et le panneau
  * restait déployé derrière. En le posant sur le panneau lui-même, les cinq
  * piègent, et le champ de recherche des genres — frère du conteneur intérieur,
  * donc jusqu'ici hors du piège et inatteignable — y entre enfin. Le rôle
- * intérieur est retiré : `conteneurPiegeant` retient le DERNIER en ordre de
+ * intérieur est retiré : `trappingContainer` retient le DERNIER en ordre de
  * document, et le laisser ferait du sous-ensemble le piège, ce qu'on vient de
  * défaire.
  *
@@ -54,46 +54,46 @@ import { reviserApresMontage } from "../../focus/wait";
  */
 
 /** Largeur minimale d'un panneau, à trois mètres. */
-const LARGEUR_MINIMALE = 380;
+const MIN_WIDTH = 380;
 
-export function FilterMenu(proprietes: ComponentProps<typeof MenuWeb>) {
-  // Le panneau déjà servi. `useMarqueur` ne dit pas « il vient d'apparaître »,
+export function FilterMenu(props: ComponentProps<typeof MenuWeb>) {
+  // Le panneau déjà servi. `useMarker` ne dit pas « il vient d'apparaître »,
   // il dit « quelque chose a bougé » — et il tire à chaque frappe dans le champ
   // des genres. Sans cette mémoire, on reprendrait le focus à l'utilisateur en
   // train de saisir.
-  const servi = useRef<HTMLElement | null>(null);
-  const cadre = useMarqueur<HTMLDivElement>((element) => equiperPanneau(element, servi));
+  const served = useRef<HTMLElement | null>(null);
+  const cadre = useMarker<HTMLDivElement>((element) => equipPanel(element, served));
 
   return (
     <div ref={cadre}>
-      <MenuWeb {...proprietes} width={Math.max(proprietes.width ?? 0, LARGEUR_MINIMALE)} />
+      <MenuWeb {...props} width={Math.max(props.width ?? 0, MIN_WIDTH)} />
     </div>
   );
 }
 
 /** Idempotent : chaque écriture est gardée par la valeur qu'elle poserait. */
-function equiperPanneau(cadre: HTMLElement, servi: { current: HTMLElement | null }): void {
-  const declencheur = cadre.querySelector<HTMLElement>('[aria-haspopup="true"]');
-  const panneau = declencheur?.nextElementSibling;
-  if (!(panneau instanceof HTMLElement)) {
-    servi.current = null;
+function equipPanel(cadre: HTMLElement, served: { current: HTMLElement | null }): void {
+  const trigger = cadre.querySelector<HTMLElement>('[aria-haspopup="true"]');
+  const panel = trigger?.nextElementSibling;
+  if (!(panel instanceof HTMLElement)) {
+    served.current = null;
     return;
   }
 
-  if (panneau.getAttribute("role") !== "menu") {
-    panneau.setAttribute("role", "menu");
-    panneau.setAttribute("data-tv-zone", "menu-filtre");
+  if (panel.getAttribute("role") !== "menu") {
+    panel.setAttribute("role", "menu");
+    panel.setAttribute("data-tv-zone", "menu-filtre");
   }
 
-  for (const interne of panneau.querySelectorAll<HTMLElement>('[role="menu"]')) {
-    if (interne !== panneau) interne.removeAttribute("role");
+  for (const internal of panel.querySelectorAll<HTMLElement>('[role="menu"]')) {
+    if (internal !== panel) internal.removeAttribute("role");
   }
 
-  marquerEntree(panneau);
+  markEntry(panel);
 
-  if (servi.current === panneau) return;
-  servi.current = panneau;
-  entrerDansLePanneau(panneau);
+  if (served.current === panel) return;
+  served.current = panel;
+  enterThePanel(panel);
 }
 
 /**
@@ -103,30 +103,30 @@ function equiperPanneau(cadre: HTMLElement, servi: { current: HTMLElement | null
  * coché au départ : la cascade tombait alors à son dernier rang, l'ordre du
  * document, et désignait le champ de recherche.
  */
-function marquerEntree(panneau: HTMLElement): void {
-  const cible =
-    panneau.querySelector<HTMLElement>('[aria-checked="true"]') ??
-    panneau.querySelector<HTMLElement>('[role="menuitemcheckbox"]');
-  const actuelle = panneau.querySelector<HTMLElement>(`[${ATTRIBUT_ENTREE}]`);
-  if (actuelle === cible) return;
+function markEntry(panel: HTMLElement): void {
+  const target =
+    panel.querySelector<HTMLElement>('[aria-checked="true"]') ??
+    panel.querySelector<HTMLElement>('[role="menuitemcheckbox"]');
+  const current2 = panel.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
+  if (current2 === target) return;
 
-  actuelle?.removeAttribute(ATTRIBUT_ENTREE);
-  cible?.setAttribute(ATTRIBUT_ENTREE, "");
+  current2?.removeAttribute(ENTRY_ATTRIBUTE);
+  target?.setAttribute(ENTRY_ATTRIBUTE, "");
 }
 
-function entrerDansLePanneau(panneau: HTMLElement): void {
-  if (panneau.contains(document.activeElement)) return;
+function enterThePanel(panel: HTMLElement): void {
+  if (panel.contains(document.activeElement)) return;
 
   // Les lignes arrivent avec leurs données — les genres après un aller-retour
   // réseau — et un rectangle de taille nulle n'est pas recensé. On attend le
   // montage plutôt que de viser dans le vide.
-  reviserApresMontage(() => {
-    const cible = destinationEntreeDeZone(panneau);
-    if (!cible) return false;
+  reviewAfterMount(() => {
+    const target = destinationEntreeDeZone(panel);
+    if (!target) return false;
     // Un panneau qui n'offre que de la SAISIE — les deux années — garde son
     // entrée explicite : pas de clavier système sans geste de l'utilisateur.
-    if (faitMonterLeClavier(cible)) return true;
-    donnerFocus(cible);
+    if (raisesKeyboard(target)) return true;
+    giveFocus(target);
     return true;
   });
 }
@@ -140,7 +140,7 @@ function entrerDansLePanneau(panneau: HTMLElement): void {
  * n'ouvre aucun clavier — on peut y entrer sans rien faire surgir, et c'est
  * même la seule chose qu'on vienne faire dans ce menu-là.
  */
-function faitMonterLeClavier(element: HTMLElement): boolean {
+function raisesKeyboard(element: HTMLElement): boolean {
   if (element.tagName === "TEXTAREA") return true;
   if (element.tagName !== "INPUT") return false;
   const type = (element as HTMLInputElement).type;

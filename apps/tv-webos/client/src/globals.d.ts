@@ -53,8 +53,8 @@ declare module "@/hooks/usePlaybackInfo?original" {
  * d'interroger le matériel depuis une page servie en HTTP.
  */
 interface PalmServiceBridgeInstance {
-  onservicecallback: ((reponse: string) => void) | null;
-  call(uri: string, charge: string): void;
+  onservicecallback: ((response: string) => void) | null;
+  call(uri: string, loaded: string): void;
 }
 
 interface Window {

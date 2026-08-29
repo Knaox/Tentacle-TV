@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  codecsRetenus,
-  conteneurRetenu,
-  descendre,
-  MEMOIRE_VIDE,
-  type MemoireReplis,
+  keptCodecs,
+  keptContainer,
+  stepDown,
+  EMPTY_MEMORY,
+  type FallbackMemory,
 } from "./playbackFallback";
 
 /**
@@ -13,18 +13,18 @@ import {
  * première erreur venue — c'est ce comportement-là que ces tests interdisent.
  */
 
-const MKV_HEVC_TRUEHD = { conteneur: "mkv", codecVideo: "hevc", codecAudio: "truehd" };
+const MKV_HEVC_TRUEHD = { container: "mkv", videoCodec: "hevc", audioCodec: "truehd" };
 
 /** Enchaîne les échecs d'une même source et rend les étages atteints. */
-function chute(source: typeof MKV_HEVC_TRUEHD, fois: number): string[] {
-  let memoire: MemoireReplis = MEMOIRE_VIDE;
-  const etages: string[] = [];
-  for (let i = 0; i < fois; i++) {
-    const repli = descendre(memoire, source);
-    memoire = repli.memoire;
-    etages.push(repli.etage);
+function chute(source: typeof MKV_HEVC_TRUEHD, times: number): string[] {
+  let memory: FallbackMemory = EMPTY_MEMORY;
+  const stages: string[] = [];
+  for (let i = 0; i < times; i++) {
+    const fallback = stepDown(memory, source);
+    memory = fallback.memory;
+    stages.push(fallback.stage);
   }
-  return etages;
+  return stages;
 }
 
 describe("descendre", () => {
@@ -35,46 +35,46 @@ describe("descendre", () => {
   it("ne recompresse l'image qu'au troisième étage", () => {
     // Les deux premiers replis sont un remux, puis un remux avec conversion
     // audio : l'image y est copiée dans les deux cas.
-    let memoire: MemoireReplis = MEMOIRE_VIDE;
-    const premier = descendre(memoire, MKV_HEVC_TRUEHD);
-    expect(premier.reencodageVideo).toBe(false);
-    memoire = premier.memoire;
+    let memory: FallbackMemory = EMPTY_MEMORY;
+    const premier = stepDown(memory, MKV_HEVC_TRUEHD);
+    expect(premier.videoReencoded).toBe(false);
+    memory = premier.memory;
 
-    const deuxieme = descendre(memoire, MKV_HEVC_TRUEHD);
-    expect(deuxieme.reencodageVideo).toBe(false);
-    memoire = deuxieme.memoire;
+    const second = stepDown(memory, MKV_HEVC_TRUEHD);
+    expect(second.videoReencoded).toBe(false);
+    memory = second.memory;
 
-    expect(descendre(memoire, MKV_HEVC_TRUEHD).reencodageVideo).toBe(true);
+    expect(stepDown(memory, MKV_HEVC_TRUEHD).videoReencoded).toBe(true);
   });
 
   it("commence par l'audio quand le conteneur a déjà été retiré", () => {
-    const memoire: MemoireReplis = { conteneurs: ["mkv"], audio: [], video: [] };
-    expect(descendre(memoire, MKV_HEVC_TRUEHD).etage).toBe("audio");
+    const memory: FallbackMemory = { containers: ["mkv"], audio: [], video: [] };
+    expect(stepDown(memory, MKV_HEVC_TRUEHD).stage).toBe("audio");
   });
 
   it("saute ce que la source ne renseigne pas", () => {
     // Jellyfin ne décrit pas toujours toutes les pistes : un champ absent ne
     // doit pas bloquer la descente.
-    const repli = descendre(MEMOIRE_VIDE, { codecVideo: "hevc" });
-    expect(repli.etage).toBe("video");
-    expect(repli.retire).toBe("hevc");
+    const fallback = stepDown(EMPTY_MEMORY, { videoCodec: "hevc" });
+    expect(fallback.stage).toBe("video");
+    expect(fallback.removed).toBe("hevc");
   });
 
   it("s'épuise proprement sur une source vide", () => {
-    const repli = descendre(MEMOIRE_VIDE, {});
-    expect(repli.etage).toBe("epuise");
-    expect(repli.memoire).toEqual(MEMOIRE_VIDE);
+    const fallback = stepDown(EMPTY_MEMORY, {});
+    expect(fallback.stage).toBe("epuise");
+    expect(fallback.memory).toEqual(EMPTY_MEMORY);
   });
 
   it("normalise la casse et les espaces des noms Jellyfin", () => {
-    const repli = descendre(MEMOIRE_VIDE, { conteneur: " MKV " });
-    expect(repli.memoire.conteneurs).toEqual(["mkv"]);
+    const fallback = stepDown(EMPTY_MEMORY, { container: " MKV " });
+    expect(fallback.memory.containers).toEqual(["mkv"]);
   });
 
   it("ne modifie pas la mémoire qu'on lui passe", () => {
-    const memoire = MEMOIRE_VIDE;
-    descendre(memoire, MKV_HEVC_TRUEHD);
-    expect(memoire.conteneurs).toEqual([]);
+    const memory = EMPTY_MEMORY;
+    stepDown(memory, MKV_HEVC_TRUEHD);
+    expect(memory.containers).toEqual([]);
   });
 });
 
@@ -82,23 +82,23 @@ describe("conteneurRetenu", () => {
   it("écarte tout un groupe dès qu'une de ses extensions a échoué", () => {
     // « ts,m2ts,mts » passe par le même démultiplexeur : si le m2ts a échoué,
     // insister sur le ts n'a pas de sens.
-    const memoire: MemoireReplis = { conteneurs: ["m2ts"], audio: [], video: [] };
-    expect(conteneurRetenu(memoire, "ts,m2ts,mts,mpegts")).toBe(false);
-    expect(conteneurRetenu(memoire, "mp4,m4v,mov")).toBe(true);
+    const memory: FallbackMemory = { containers: ["m2ts"], audio: [], video: [] };
+    expect(keptContainer(memory, "ts,m2ts,mts,mpegts")).toBe(false);
+    expect(keptContainer(memory, "mp4,m4v,mov")).toBe(true);
   });
 
   it("garde tout quand rien n'a échoué", () => {
-    expect(conteneurRetenu(MEMOIRE_VIDE, "mkv")).toBe(true);
+    expect(keptContainer(EMPTY_MEMORY, "mkv")).toBe(true);
   });
 });
 
 describe("codecsRetenus", () => {
   it("retire les codecs disqualifiés sans toucher aux autres", () => {
-    expect(codecsRetenus(["truehd"], ["aac", "eac3", "truehd"])).toEqual(["aac", "eac3"]);
+    expect(keptCodecs(["truehd"], ["aac", "eac3", "truehd"])).toEqual(["aac", "eac3"]);
   });
 
   it("rend la liste telle quelle quand rien n'est disqualifié", () => {
     const codecs = ["aac", "eac3"];
-    expect(codecsRetenus([], codecs)).toBe(codecs);
+    expect(keptCodecs([], codecs)).toBe(codecs);
   });
 });

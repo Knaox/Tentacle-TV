@@ -1,6 +1,6 @@
-import { recenser, type Candidat } from "../focus/candidates";
+import { collect, type Candidate } from "../focus/candidates";
 import { boxFromRect, best } from "@tentacle-tv/tv-core";
-import { scrollerHorizontal, scrollerVertical } from "../focus/scroll";
+import { horizontalScroller, verticalScroller } from "../focus/scroll";
 import type { Direction } from "../focus/keys";
 
 /**
@@ -21,18 +21,18 @@ import type { Direction } from "../focus/keys";
  * restitué à la fin.
  */
 
-export type Gravite = "erreur" | "avertissement";
+export type Severity = "erreur" | "avertissement";
 
-export interface Manquement {
-  regle: string;
-  gravite: Gravite;
+export interface Violation {
+  rule: string;
+  severity: Severity;
   element: string;
   detail: string;
 }
 
 /** Zone sûre : 5 % de chaque bord, comme `--tv-overscan-*`. */
-const MARGE_SURE_X = 0.05;
-const MARGE_SURE_Y = 0.05;
+const SAFE_MARGIN_X = 0.05;
+const SAFE_MARGIN_Y = 0.05;
 
 const DIRECTIONS: Direction[] = ["haut", "bas", "gauche", "droite"];
 
@@ -42,7 +42,7 @@ const DIRECTIONS: Direction[] = ["haut", "bas", "gauche", "droite"];
  * Tout le reste est du texte, une image ou un conteneur : le focus n'a rien à y
  * faire, et l'anneau qui s'y pose n'annonce aucune action.
  */
-const ROLES_ACTIONNABLES = new Set([
+const ACTIONABLE_ROLES = new Set([
   "button",
   "link",
   "tab",
@@ -59,49 +59,49 @@ const ROLES_ACTIONNABLES = new Set([
   "combobox",
 ]);
 
-const BALISES_ACTIONNABLES = new Set(["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA", "VIDEO"]);
+const ACTIONABLE_TAGS = new Set(["A", "BUTTON", "INPUT", "SELECT", "TEXTAREA", "VIDEO"]);
 
-export function verifierEcran(): Manquement[] {
-  const candidats = recenser(document);
-  const manquements: Manquement[] = [];
-  const origine = document.activeElement as HTMLElement | null;
+export function checkScreen(): Violation[] {
+  const candidates = collect(document);
+  const violations: Violation[] = [];
+  const origin = document.activeElement as HTMLElement | null;
 
-  for (const candidat of candidats) {
-    manquements.push(...verifierNature(candidat));
-    manquements.push(...verifierZoneSure(candidat));
-    manquements.push(...verifierRognage(candidat));
-    manquements.push(...verifierAnneau(candidat));
-    manquements.push(...verifierImpasses(candidat, candidats));
+  for (const candidate of candidates) {
+    violations.push(...checkNature(candidate));
+    violations.push(...checkSafeZone(candidate));
+    violations.push(...checkClipping(candidate));
+    violations.push(...checkRing(candidate));
+    violations.push(...checkDeadEnds(candidate, candidates));
   }
 
-  if (origine && origine.isConnected) origine.focus();
-  else if (candidats.length > 0) candidats[0].element.focus();
+  if (origin && origin.isConnected) origin.focus();
+  else if (candidates.length > 0) candidates[0].element.focus();
 
-  return manquements;
+  return violations;
 }
 
 /** De quoi désigner l'élément dans un rapport, sans ambiguïté. */
-export function decrire(element: HTMLElement): string {
-  const texte = (element.getAttribute("aria-label") || element.textContent || "")
+export function describeIt(element: HTMLElement): string {
+  const text = (element.getAttribute("aria-label") || element.textContent || "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 32);
-  return `${element.tagName}${texte ? ` « ${texte} »` : ""}`;
+  return `${element.tagName}${text ? ` « ${text} »` : ""}`;
 }
 
-function verifierNature(candidat: Candidat): Manquement[] {
-  const element = candidat.element;
-  if (BALISES_ACTIONNABLES.has(element.tagName)) return [];
+function checkNature(candidate: Candidate): Violation[] {
+  const element = candidate.element;
+  if (ACTIONABLE_TAGS.has(element.tagName)) return [];
   if (element.hasAttribute("data-tv-carte")) return [];
 
   const role = element.getAttribute("role");
-  if (role && ROLES_ACTIONNABLES.has(role)) return [];
+  if (role && ACTIONABLE_ROLES.has(role)) return [];
 
   return [
     {
-      regle: "seuls-les-actionnables",
-      gravite: "erreur",
-      element: decrire(element),
+      rule: "seuls-les-actionnables",
+      severity: "erreur",
+      element: describeIt(element),
       detail:
         "Atteignable sans être un contrôle : ni balise interactive, ni rôle actionnable, ni carte. " +
         "Un anneau s'y posera sans annoncer d'action.",
@@ -109,10 +109,10 @@ function verifierNature(candidat: Candidat): Manquement[] {
   ];
 }
 
-function verifierZoneSure(candidat: Candidat): Manquement[] {
-  const { box } = candidat;
-  const margeX = window.innerWidth * MARGE_SURE_X;
-  const margeY = window.innerHeight * MARGE_SURE_Y;
+function checkSafeZone(candidate: Candidate): Violation[] {
+  const { box } = candidate;
+  const margeX = window.innerWidth * SAFE_MARGIN_X;
+  const margeY = window.innerHeight * SAFE_MARGIN_Y;
 
   // La zone sûre ne se juge que sur ce qui est ENTIÈREMENT à l'écran.
   //
@@ -120,39 +120,39 @@ function verifierZoneSure(candidat: Candidat): Manquement[] {
   // dalle rogne : elle est hors champ, et le défilement l'amènera. Sans cette
   // distinction, chaque grille rendait une ligne de manquements par carte sous
   // la ligne de flottaison — du bruit qui noie les vrais.
-  const dansLEcranVerticalement = box.top >= 0 && box.bottom <= window.innerHeight;
-  const dansLEcranHorizontalement = box.left >= 0 && box.right <= window.innerWidth;
+  const inScreenVertically = box.top >= 0 && box.bottom <= window.innerHeight;
+  const inScreenHorizontally = box.left >= 0 && box.right <= window.innerWidth;
 
-  const debords: string[] = [];
-  if (dansLEcranHorizontalement) {
+  const overflows: string[] = [];
+  if (inScreenHorizontally) {
     if (box.left < margeX) {
-      debords.push(`gauche ${Math.round(box.left)} < ${Math.round(margeX)}`);
+      overflows.push(`gauche ${Math.round(box.left)} < ${Math.round(margeX)}`);
     }
     if (box.right > window.innerWidth - margeX) {
-      debords.push(`droite ${Math.round(box.right)} > ${Math.round(window.innerWidth - margeX)}`);
+      overflows.push(`droite ${Math.round(box.right)} > ${Math.round(window.innerWidth - margeX)}`);
     }
   }
-  if (dansLEcranVerticalement) {
-    if (box.top < margeY) debords.push(`haut ${Math.round(box.top)} < ${Math.round(margeY)}`);
+  if (inScreenVertically) {
+    if (box.top < margeY) overflows.push(`haut ${Math.round(box.top)} < ${Math.round(margeY)}`);
     if (box.bottom > window.innerHeight - margeY) {
-      debords.push(`bas ${Math.round(box.bottom)} > ${Math.round(window.innerHeight - margeY)}`);
+      overflows.push(`bas ${Math.round(box.bottom)} > ${Math.round(window.innerHeight - margeY)}`);
     }
   }
 
-  if (debords.length === 0) return [];
+  if (overflows.length === 0) return [];
   return [
     {
-      regle: "zone-sure",
-      gravite: "avertissement",
-      element: decrire(candidat.element),
-      detail: `Dans les 5 % que la dalle peut rogner : ${debords.join(", ")}.`,
+      rule: "zone-sure",
+      severity: "avertissement",
+      element: describeIt(candidate.element),
+      detail: `Dans les 5 % que la dalle peut rogner : ${overflows.join(", ")}.`,
     },
   ];
 }
 
-function verifierRognage(candidat: Candidat): Manquement[] {
-  const element = candidat.element;
-  const scroller = scrollerHorizontal(element) ?? scrollerVertical(element);
+function checkClipping(candidate: Candidate): Violation[] {
+  const element = candidate.element;
+  const scroller = horizontalScroller(element) ?? verticalScroller(element);
   if (!scroller) return [];
 
   const style = window.getComputedStyle(scroller);
@@ -161,33 +161,33 @@ function verifierRognage(candidat: Candidat): Manquement[] {
   const box = element.getBoundingClientRect();
   const cadre = scroller.getBoundingClientRect();
   // Sept pixels : l'épaisseur de l'anneau plus son écart.
-  const anneau = 7;
+  const ring = 7;
 
-  const rogne =
-    box.left - anneau < cadre.left - 1 ||
-    box.right + anneau > cadre.right + 1 ||
-    box.top - anneau < cadre.top - 1 ||
-    box.bottom + anneau > cadre.bottom + 1;
+  const clipped =
+    box.left - ring < cadre.left - 1 ||
+    box.right + ring > cadre.right + 1 ||
+    box.top - ring < cadre.top - 1 ||
+    box.bottom + ring > cadre.bottom + 1;
 
-  if (!rogne) return [];
+  if (!clipped) return [];
   return [
     {
-      regle: "anneau-rogne",
-      gravite: "avertissement",
-      element: decrire(element),
+      rule: "anneau-rogne",
+      severity: "avertissement",
+      element: describeIt(element),
       detail: "L'anneau dépasse d'un conteneur qui coupe : il sera partiellement invisible.",
     },
   ];
 }
 
-function verifierAnneau(candidat: Candidat): Manquement[] {
+function checkRing(candidate: Candidate): Violation[] {
   // Sans le focus SYSTÈME, `:focus` ne matche jamais : `activeElement` change
   // bien, mais aucune règle de focus ne s'applique et aucun événement ne part.
   // Vérifier l'anneau dans cet état ne mesurerait que l'état de la fenêtre —
   // et rendrait un manquement pour chaque cible de l'écran. On se tait.
   if (!document.hasFocus()) return [];
 
-  const element = candidat.element;
+  const element = candidate.element;
   element.focus();
   const style = window.getComputedStyle(element);
 
@@ -198,27 +198,27 @@ function verifierAnneau(candidat: Candidat): Manquement[] {
   // l'élément focalisé. Mesurer l'ombre du descendant supposerait de connaître
   // la structure des cartes ; on se contente ici de constater qu'un signal
   // existe, et le rognage a sa propre règle juste au-dessus.
-  const epaisseurOutline = Number.parseFloat(style.outlineWidth) || 0;
-  const outlineVisible = style.outlineStyle !== "none" && epaisseurOutline >= 2;
-  const ombreVisible = style.boxShadow !== "none" && style.boxShadow !== "";
+  const outlineThickness = Number.parseFloat(style.outlineWidth) || 0;
+  const outlineVisible = style.outlineStyle !== "none" && outlineThickness >= 2;
+  const shadowVisible = style.boxShadow !== "none" && style.boxShadow !== "";
   const porteParUnDescendant = !!element.querySelector(".media-tile");
 
-  if (outlineVisible || ombreVisible || porteParUnDescendant) return [];
+  if (outlineVisible || shadowVisible || porteParUnDescendant) return [];
   return [
     {
-      regle: "anneau-visible",
-      gravite: "erreur",
-      element: decrire(element),
+      rule: "anneau-visible",
+      severity: "erreur",
+      element: describeIt(element),
       detail: `Aucun anneau au focus (outline ${style.outlineStyle} ${style.outlineWidth}, ombre ${style.boxShadow}).`,
     },
   ];
 }
 
-function verifierImpasses(candidat: Candidat, tous: Candidat[]): Manquement[] {
-  const autres = tous.filter((autre) => autre.element !== candidat.element);
+function checkDeadEnds(candidate: Candidate, all: Candidate[]): Violation[] {
+  const others = all.filter((other) => other.element !== candidate.element);
   const sansIssue = DIRECTIONS.filter(
     (direction) =>
-      !auBordDeLEcran(candidat, direction) && best(candidat.box, autres, direction) === null,
+      !atScreenEdge(candidate, direction) && best(candidate.box, others, direction) === null,
   );
 
   // Les quatre directions vides : l'élément est seul à l'écran, ce qui est un
@@ -228,9 +228,9 @@ function verifierImpasses(candidat: Candidat, tous: Candidat[]): Manquement[] {
 
   return [
     {
-      regle: "impasse",
-      gravite: "avertissement",
-      element: decrire(candidat.element),
+      rule: "impasse",
+      severity: "avertissement",
+      element: describeIt(candidate.element),
       detail: `Aucune destination vers : ${sansIssue.join(", ")}.`,
     },
   ];
@@ -245,10 +245,10 @@ function verifierImpasses(candidat: Candidat, tous: Candidat[]): Manquement[] {
  * les signaler noierait les vraies impasses sous le bruit. On les reconnaît à
  * ce qu'elles sont — l'élément touche déjà la zone sûre de ce côté-là.
  */
-function auBordDeLEcran(candidat: Candidat, direction: Direction): boolean {
-  const margeX = window.innerWidth * MARGE_SURE_X;
-  const margeY = window.innerHeight * MARGE_SURE_Y;
-  const { box } = candidat;
+function atScreenEdge(candidate: Candidate, direction: Direction): boolean {
+  const margeX = window.innerWidth * SAFE_MARGIN_X;
+  const margeY = window.innerHeight * SAFE_MARGIN_Y;
+  const { box } = candidate;
 
   switch (direction) {
     case "gauche":
@@ -263,10 +263,10 @@ function auBordDeLEcran(candidat: Candidat, direction: Direction): boolean {
 }
 
 /** Rappel de la géométrie, pour dessiner la surcouche. */
-export function rectanglesFocusables(): Array<{ element: HTMLElement; rect: DOMRect }> {
-  return recenser(document).map((candidat) => ({
-    element: candidat.element,
-    rect: candidat.element.getBoundingClientRect(),
+export function focusableRects(): Array<{ element: HTMLElement; rect: DOMRect }> {
+  return collect(document).map((candidate) => ({
+    element: candidate.element,
+    rect: candidate.element.getBoundingClientRect(),
   }));
 }
 

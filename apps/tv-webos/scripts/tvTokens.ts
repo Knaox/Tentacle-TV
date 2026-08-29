@@ -29,12 +29,12 @@ import {
 } from "@tentacle-tv/theme";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CIBLE = resolve(HERE, "../client/src/styles/tokens-tv.css");
+const TARGET = resolve(HERE, "../client/src/styles/tokens-tv.css");
 
-const bloc = (selecteur, entrees) =>
-  `${selecteur} {\n${entrees.map(([n, v]) => `  ${n}: ${v};`).join("\n")}\n}`;
+const bloc = (selector, entries) =>
+  `${selector} {\n${entries.map(([n, v]) => `  ${n}: ${v};`).join("\n")}\n}`;
 
-const feuille = [
+const sheet = [
   "/* Jetons du téléviseur — ce que la distance de lecture change.",
   " *",
   " * FICHIER ENGENDRÉ — ne pas éditer à la main.",
@@ -66,5 +66,5 @@ const feuille = [
   "",
 ].join("\n");
 
-writeFileSync(CIBLE, feuille, "utf8");
-console.log(`tokens-tv.css engendré (${feuille.split("\n").length} lignes)`);
+writeFileSync(TARGET, sheet, "utf8");
+console.log(`tokens-tv.css engendré (${sheet.split("\n").length} lignes)`);

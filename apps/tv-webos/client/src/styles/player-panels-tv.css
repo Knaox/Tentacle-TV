@@ -139,7 +139,7 @@
 
 /* ── La vignette d'épisode ────────────────────────────────────────────────
  *
- * `passeRatios` traduit `aspect-video` en `height: 0; padding-top: 56.25%` —
+ * `ratiosPass` traduit `aspect-video` en `height: 0; padding-top: 56.25%` —
  * et un pourcentage de padding se rapporte à la largeur du PARENT, jamais à
  * celle de l'élément. La passe le documente et s'en tient à l'hypothèse qui
  * vaut partout ailleurs dans le dépôt : une boîte à ratio occupe toute la

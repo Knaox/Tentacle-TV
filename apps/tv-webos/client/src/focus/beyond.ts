@@ -1,4 +1,4 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidates";
+import { FOCUSABLE_SELECTOR, reachableTarget } from "./candidates";
 
 /**
  * « Reste-t-il quelque chose à viser au-delà ? » — la question du bord.
@@ -34,24 +34,24 @@ const TOLERANCE = 4;
  * N'a lieu que sur le chemin rare où aucun voisin n'a été trouvé — jamais à
  * chaque appui.
  */
-export function candidatAuDela(depart: HTMLElement, versLaFin: boolean, vertical: boolean): boolean {
-  const boiteDepart = depart.getBoundingClientRect();
-  const bordDepart = bordDe(boiteDepart, versLaFin, vertical, true);
+export function candidateBeyond(start: HTMLElement, towardsEnd: boolean, vertical: boolean): boolean {
+  const startBox = start.getBoundingClientRect();
+  const startEdge = edgeOf(startBox, towardsEnd, vertical, true);
 
-  for (const noeud of document.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE)) {
-    if (noeud === depart || depart.contains(noeud) || noeud.contains(depart)) continue;
-    if (dansUnCalqueFixe(noeud)) continue;
+  for (const node of document.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+    if (node === start || start.contains(node) || node.contains(start)) continue;
+    if (inFixedLayer(node)) continue;
 
-    const box = noeud.getBoundingClientRect();
+    const box = node.getBoundingClientRect();
     if (box.width === 0 || box.height === 0) continue;
 
-    const bord = bordDe(box, versLaFin, vertical, false);
-    const auDela = versLaFin ? bord > bordDepart + TOLERANCE : bord < bordDepart - TOLERANCE;
-    if (!auDela) continue;
+    const edge = edgeOf(box, towardsEnd, vertical, false);
+    const beyond = towardsEnd ? edge > startEdge + TOLERANCE : edge < startEdge - TOLERANCE;
+    if (!beyond) continue;
 
     // L'atteignabilité en dernier : c'est le test le plus coûteux — il lit des
     // styles calculés — et la géométrie vient de trancher pour presque tous.
-    if (cibleAtteignable(noeud)) return true;
+    if (reachableTarget(node)) return true;
   }
 
   return false;
@@ -62,11 +62,11 @@ export function candidatAuDela(depart: HTMLElement, versLaFin: boolean, vertical
  * candidat, celui par lequel il entre. Comparer deux fois le même bord ferait
  * passer pour « au-delà » un élément qui ne fait que dépasser.
  */
-function bordDe(box: DOMRect, versLaFin: boolean, vertical: boolean, depart: boolean): number {
+function edgeOf(box: DOMRect, towardsEnd: boolean, vertical: boolean, start: boolean): number {
   if (vertical) {
-    return versLaFin === depart ? box.bottom : box.top;
+    return towardsEnd === start ? box.bottom : box.top;
   }
-  return versLaFin === depart ? box.right : box.left;
+  return towardsEnd === start ? box.right : box.left;
 }
 
 /**
@@ -78,9 +78,9 @@ function bordDe(box: DOMRect, versLaFin: boolean, vertical: boolean, depart: boo
  * dans le rail, sans jamais converger. Et la question du bord les écarte, pour
  * ne pas prendre le rail pour un bout de page.
  */
-export function dansUnCalqueFixe(element: HTMLElement): boolean {
-  for (let courant: HTMLElement | null = element; courant; courant = courant.parentElement) {
-    if (window.getComputedStyle(courant).position === "fixed") return true;
+export function inFixedLayer(element: HTMLElement): boolean {
+  for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+    if (window.getComputedStyle(current).position === "fixed") return true;
   }
   return false;
 }

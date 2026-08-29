@@ -23,37 +23,37 @@
 
 type Poseur = History["pushState"];
 
-export function surveillerRoute(surChangement: (chemin: string) => void): () => void {
+export function watchRoute(onChange: (path: string) => void): () => void {
   let precedent = window.location.pathname;
 
-  const verifier = () => {
-    const chemin = window.location.pathname;
+  const check = () => {
+    const path = window.location.pathname;
     // Le routeur écrit aussi l'historique pour un simple changement de
     // paramètres — un filtre de bibliothèque, une saison. Ce n'est pas un
     // changement d'écran, et reposer le focus à ce moment-là le ferait sauter
     // sous les doigts de l'utilisateur.
-    if (chemin === precedent) return;
-    precedent = chemin;
-    surChangement(chemin);
+    if (path === precedent) return;
+    precedent = path;
+    onChange(path);
   };
 
-  const pushOrigine = window.history.pushState;
-  const replaceOrigine = window.history.replaceState;
+  const pushOrigin = window.history.pushState;
+  const replaceOrigin = window.history.replaceState;
 
-  const enveloppe =
-    (origine: Poseur): Poseur =>
+  const wrapper =
+    (origin: Poseur): Poseur =>
     function (this: History, ...arguments_: Parameters<Poseur>) {
-      origine.apply(this, arguments_);
-      verifier();
+      origin.apply(this, arguments_);
+      check();
     };
 
-  window.history.pushState = enveloppe(pushOrigine);
-  window.history.replaceState = enveloppe(replaceOrigine);
-  window.addEventListener("popstate", verifier);
+  window.history.pushState = wrapper(pushOrigin);
+  window.history.replaceState = wrapper(replaceOrigin);
+  window.addEventListener("popstate", check);
 
   return () => {
-    window.history.pushState = pushOrigine;
-    window.history.replaceState = replaceOrigine;
-    window.removeEventListener("popstate", verifier);
+    window.history.pushState = pushOrigin;
+    window.history.replaceState = replaceOrigin;
+    window.removeEventListener("popstate", check);
   };
 }

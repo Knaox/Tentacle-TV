@@ -13,9 +13,9 @@
  */
 
 /** Fenêtre de cumul, et durée d'affichage. Valeur d'`apps/tv`. */
-export const FENETRE_CUMUL_MS = 1500;
+export const TOTAL_WINDOW_MS = 1500;
 
-export interface CumulSauts {
+export interface SkipTotal {
   total: number;
   instant: number;
 }
@@ -28,15 +28,15 @@ export interface CumulSauts {
  * fenêtre, on repart de zéro aussi — deux sauts séparés de deux secondes sont
  * deux intentions, pas une.
  */
-export function cumuler(
-  memoire: CumulSauts | null,
+export function accumulate(
+  memory: SkipTotal | null,
   delta: number,
   instant: number,
-): CumulSauts {
-  const enchaine =
-    memoire !== null &&
-    instant - memoire.instant < FENETRE_CUMUL_MS &&
-    memoire.total > 0 === delta > 0;
+): SkipTotal {
+  const chained =
+    memory !== null &&
+    instant - memory.instant < TOTAL_WINDOW_MS &&
+    memory.total > 0 === delta > 0;
 
-  return { total: enchaine ? memoire.total + delta : delta, instant };
+  return { total: chained ? memory.total + delta : delta, instant };
 }

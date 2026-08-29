@@ -15,18 +15,18 @@
  * suivant » en a deux, et laisser OK à l'un et pas à l'autre serait un piège.
  */
 
-export const ATTRIBUT_SURCOUCHE = "data-osd-surcouche";
+export const OVERLAY_ATTRIBUTE = "data-osd-surcouche";
 
 /**
  * Active l'élément focalisé s'il appartient à une surcouche qui possède OK.
  *
  * Rend `false` sinon — l'appelant reprend alors son cours.
  */
-export function activerSurcoucheFocalisee(): boolean {
-  const actif = document.activeElement;
-  if (!(actif instanceof HTMLElement)) return false;
-  if (!actif.closest(`[${ATTRIBUT_SURCOUCHE}]`)) return false;
-  actif.click();
+export function enableFocusedOverlay(): boolean {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement)) return false;
+  if (!active.closest(`[${OVERLAY_ATTRIBUTE}]`)) return false;
+  active.click();
   return true;
 }
 
@@ -40,6 +40,6 @@ export function activerSurcoucheFocalisee(): boolean {
  * Ces surcouches sont montées à la demande, jamais laissées en place à opacité
  * nulle — leur seule présence dans le document vaut donc affichage.
  */
-export function surcoucheAffichee(): boolean {
-  return !!document.querySelector(`[${ATTRIBUT_SURCOUCHE}]`);
+export function overlayShown(): boolean {
+  return !!document.querySelector(`[${OVERLAY_ATTRIBUTE}]`);
 }

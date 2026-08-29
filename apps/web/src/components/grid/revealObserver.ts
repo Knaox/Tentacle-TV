@@ -14,7 +14,7 @@
  * état partagé. Le coût d'une cellule de plus est une entrée dans une `WeakMap`.
  */
 
-type Rappel = (proche: boolean) => void;
+type Rappel = (near: boolean) => void;
 
 export interface RevealObserver {
   /**
@@ -25,7 +25,7 @@ export interface RevealObserver {
    * s'exécuter après que les cellules se soient réabonnées — l'observateur ne
    * livrait alors plus rien (cf. `RevealScope`).
    */
-  observe(el: Element, rappel: Rappel): () => void;
+  observe(el: Element, callback: Rappel): () => void;
 }
 
 /**
@@ -34,15 +34,15 @@ export interface RevealObserver {
  * environ un écran et demi de marge sur une grille d'affiches — largement le
  * temps qu'une image sorte du cache HTTP et se décode.
  */
-export function creerRevealObserver(rootMargin = "600px"): RevealObserver {
-  const rappels = new WeakMap<Element, Rappel>();
+export function createRevealObserver(rootMargin = "600px"): RevealObserver {
+  const callbacks = new WeakMap<Element, Rappel>();
 
   // Sans `IntersectionObserver` (environnement de test, très vieux moteur), tout
   // est déclaré proche : mieux vaut tout monter que tout laisser vide.
   if (typeof IntersectionObserver !== "function") {
     return {
-      observe(_el, rappel) {
-        rappel(true);
+      observe(_el, callback) {
+        callback(true);
         return () => {};
       },
     };
@@ -51,19 +51,19 @@ export function creerRevealObserver(rootMargin = "600px"): RevealObserver {
   const observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {
-        rappels.get(entry.target)?.(entry.isIntersecting);
+        callbacks.get(entry.target)?.(entry.isIntersecting);
       }
     },
     { rootMargin },
   );
 
   return {
-    observe(el, rappel) {
-      rappels.set(el, rappel);
+    observe(el, callback) {
+      callbacks.set(el, callback);
       observer.observe(el);
       return () => {
         observer.unobserve(el);
-        rappels.delete(el);
+        callbacks.delete(el);
       };
     },
   };

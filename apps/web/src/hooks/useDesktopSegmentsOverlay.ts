@@ -9,7 +9,7 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { usePlaybackOverlay, type PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import type { ResolvedSegment } from "@tentacle-tv/shared";
-import { annoncerRefusLocal, useRefusSautIntro } from "../watchTogether/refusSautIntro";
+import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
 
 interface UseDesktopSegmentsOverlayArgs {
   itemId?: string;
@@ -53,20 +53,20 @@ export function useDesktopSegmentsOverlay({
     onNextEpisode: () => onNextEpisode?.(),
     onEndOfPlayback,
     // Watch Together : le refus local part au groupe par le bus existant.
-    onSegmentDismissNotify: (type) => { annoncerRefusLocal(type); },
+    onSegmentDismissNotify: (type) => { announceLocalRefusal(type); },
     onNextDismissNotify: onAutoNextDismiss,
   });
 
   // Watch Together entrant : un membre a refusé un saut — on s'aligne, sur le
   // passage qu'IL a gardé (un client d'avant la refonte dit « Intro »).
-  const refusDistants = useRefusSautIntro();
-  const refusVusRef = useRef(refusDistants.compteur);
+  const remoteRefusals = useIntroSkipRefusal();
+  const seenRefusalsRef = useRef(remoteRefusals.counter);
   const { signalRemoteSegmentDismiss } = playback;
   useEffect(() => {
-    if (refusDistants.compteur === refusVusRef.current) return;
-    refusVusRef.current = refusDistants.compteur;
-    signalRemoteSegmentDismiss(refusDistants.type);
-  }, [refusDistants, signalRemoteSegmentDismiss]);
+    if (remoteRefusals.counter === seenRefusalsRef.current) return;
+    seenRefusalsRef.current = remoteRefusals.counter;
+    signalRemoteSegmentDismiss(remoteRefusals.type);
+  }, [remoteRefusals, signalRemoteSegmentDismiss]);
 
   return playback;
 }

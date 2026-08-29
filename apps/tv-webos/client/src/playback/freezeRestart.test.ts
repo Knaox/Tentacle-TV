@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  observer, VEILLE_VIDE, RELEVES_AVANT_GEL, TOLERANCE_PROGRESSION_S, MEDIA_ERR_NETWORK,
-  type EchantillonLecture, type EtatVeille, type Verdict,
+  observer, EMPTY_WATCH, SAMPLES_BEFORE_FREEZE, TOLERANCE_PROGRESSION_S, MEDIA_ERR_NETWORK,
+  type PlaybackSample, type WatchState, type Verdict,
 } from "./freezeRestart";
 
 /**
@@ -12,50 +12,50 @@ import {
  * jamais rien.
  */
 
-const lecture = (position: number, extra: Partial<EchantillonLecture> = {}): EchantillonLecture =>
-  ({ position, enPause: false, pret: 4, erreur: null, ...extra });
+const lecture = (position: number, extra: Partial<PlaybackSample> = {}): PlaybackSample =>
+  ({ position, enPause: false, pret: 4, error: null, ...extra });
 
 /** Déroule une suite de relevés et rend le verdict de chacun. */
-function derouler(echantillons: EchantillonLecture[]): { verdicts: Verdict[]; etat: EtatVeille } {
-  let etat = VEILLE_VIDE;
+function unroll(samples: PlaybackSample[]): { verdicts: Verdict[]; state: WatchState } {
+  let state = EMPTY_WATCH;
   const verdicts: Verdict[] = [];
-  for (const e of echantillons) {
-    const [suivant, verdict] = observer(etat, e);
-    etat = suivant;
+  for (const e of samples) {
+    const [next, verdict] = observer(state, e);
+    state = next;
     verdicts.push(verdict);
   }
-  return { verdicts, etat };
+  return { verdicts, state };
 }
 
 describe("lecture qui avance", () => {
   it("ne dit rien tant que la position progresse", () => {
-    const { verdicts } = derouler([lecture(10), lecture(12), lecture(14), lecture(16), lecture(18)]);
+    const { verdicts } = unroll([lecture(10), lecture(12), lecture(14), lecture(16), lecture(18)]);
     expect(verdicts.every((v) => v === "rien")).toBe(true);
   });
 
   it("ne compte pas une pause voulue comme un gel", () => {
-    const arret = Array.from({ length: 8 }, () => lecture(42, { enPause: true }));
-    expect(derouler(arret).verdicts.every((v) => v === "rien")).toBe(true);
+    const stop = Array.from({ length: 8 }, () => lecture(42, { enPause: true }));
+    expect(unroll(stop).verdicts.every((v) => v === "rien")).toBe(true);
   });
 
   it("ne confond pas un chargement avec un gel", () => {
     // Pendant un buffering la position stagne aussi, mais `readyState` retombe.
     // Sans cette garde, le journal crierait au gel au moindre ralentissement.
-    const attente = Array.from({ length: 8 }, () => lecture(42, { pret: 2 }));
-    expect(derouler(attente).verdicts.every((v) => v === "rien")).toBe(true);
+    const wait = Array.from({ length: 8 }, () => lecture(42, { pret: 2 }));
+    expect(unroll(wait).verdicts.every((v) => v === "rien")).toBe(true);
   });
 
   it("ne prend pas une progression minuscule pour de la lecture", () => {
-    const rampe = Array.from({ length: RELEVES_AVANT_GEL + 1 },
+    const ramp = Array.from({ length: SAMPLES_BEFORE_FREEZE + 1 },
       (_, i) => lecture(42 + i * (TOLERANCE_PROGRESSION_S / 2)));
-    expect(derouler([lecture(42), ...rampe]).verdicts).toContain("fige");
+    expect(unroll([lecture(42), ...ramp]).verdicts).toContain("fige");
   });
 });
 
 describe("lecture figée", () => {
   it("le dit une fois passé le délai de confirmation", () => {
-    const fige = Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2719.5));
-    const { verdicts } = derouler([lecture(2719.5), ...fige]);
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2719.5));
+    const { verdicts } = unroll([lecture(2719.5), ...frozen]);
     expect(verdicts.filter((v) => v === "fige")).toHaveLength(1);
     expect(verdicts.at(-1)).toBe("fige");
   });
@@ -66,29 +66,29 @@ describe("lecture figée", () => {
    * les deux secondes et le rendait illisible. Un gel est UN événement.
    */
   it("ne répète pas le constat à chaque relevé", () => {
-    const fige = Array.from({ length: RELEVES_AVANT_GEL + 6 }, () => lecture(2719.5));
-    const { verdicts } = derouler([lecture(2719.5), ...fige]);
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE + 6 }, () => lecture(2719.5));
+    const { verdicts } = unroll([lecture(2719.5), ...frozen]);
     expect(verdicts.filter((v) => v === "fige")).toHaveLength(1);
   });
 
   it("ne conclut rien avant d'en avoir assez vu", () => {
-    const court = Array.from({ length: RELEVES_AVANT_GEL - 1 }, () => lecture(2719.5));
-    expect(derouler([lecture(2719.5), ...court]).verdicts).not.toContain("fige");
+    const court = Array.from({ length: SAMPLES_BEFORE_FREEZE - 1 }, () => lecture(2719.5));
+    expect(unroll([lecture(2719.5), ...court]).verdicts).not.toContain("fige");
   });
 
   it("signale un gel même quand le lecteur n'a pas d'erreur à montrer", () => {
     // Le cas mesuré sur la dalle : readyState 4, du tampon d'avance, aucune
     // erreur — et plus une image. Rien d'autre que la position ne le trahit.
-    const fige = Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2719.5, { pret: 4 }));
-    expect(derouler([lecture(2719.5), ...fige]).verdicts).toContain("fige");
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2719.5, { pret: 4 }));
+    expect(unroll([lecture(2719.5), ...frozen]).verdicts).toContain("fige");
   });
 
   it("traite une coupure réseau comme n'importe quel gel", () => {
     // Elle n'appelait un chemin propre que pour décider s'il fallait recharger.
     // On ne recharge plus : ce n'est qu'un renseignement de plus au journal.
-    const coupe = Array.from({ length: RELEVES_AVANT_GEL },
-      () => lecture(2719.5, { erreur: MEDIA_ERR_NETWORK }));
-    expect(derouler([lecture(2719.5), ...coupe]).verdicts.filter((v) => v === "fige")).toHaveLength(1);
+    const coupe = Array.from({ length: SAMPLES_BEFORE_FREEZE },
+      () => lecture(2719.5, { error: MEDIA_ERR_NETWORK }));
+    expect(unroll([lecture(2719.5), ...coupe]).verdicts.filter((v) => v === "fige")).toHaveLength(1);
   });
 });
 
@@ -99,20 +99,20 @@ describe("lecture figée", () => {
  */
 describe("reprise spontanée", () => {
   it("signale le retour de la lecture après un gel", () => {
-    const fige = Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2719.5));
-    const { verdicts } = derouler([lecture(2719.5), ...fige, lecture(2721)]);
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2719.5));
+    const { verdicts } = unroll([lecture(2719.5), ...frozen, lecture(2721)]);
     expect(verdicts.at(-1)).toBe("reprise");
   });
 
   it("ne signale pas de reprise sans gel préalable", () => {
-    expect(derouler([lecture(10), lecture(12), lecture(14)]).verdicts).not.toContain("reprise");
+    expect(unroll([lecture(10), lecture(12), lecture(14)]).verdicts).not.toContain("reprise");
   });
 
   it("rearme la veille pour le gel suivant", () => {
-    const fige = () => Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2719.5));
-    const { verdicts } = derouler([
-      lecture(2719.5), ...fige(), lecture(2721),
-      ...Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2721)),
+    const frozen = () => Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2719.5));
+    const { verdicts } = unroll([
+      lecture(2719.5), ...frozen(), lecture(2721),
+      ...Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2721)),
     ]);
     expect(verdicts.filter((v) => v === "fige")).toHaveLength(2);
   });
@@ -120,17 +120,17 @@ describe("reprise spontanée", () => {
   it("ne prend pas un buffering au milieu du gel pour une reprise", () => {
     // `readyState` retombe pendant un rechargement de tampon : la position n'a
     // pas bougé pour autant, et le gel n'est pas fini.
-    const fige = Array.from({ length: RELEVES_AVANT_GEL }, () => lecture(2719.5));
-    const { verdicts } = derouler([
-      lecture(2719.5), ...fige, lecture(2719.5, { pret: 2 }), lecture(2719.5, { pret: 2 }),
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE }, () => lecture(2719.5));
+    const { verdicts } = unroll([
+      lecture(2719.5), ...frozen, lecture(2719.5, { pret: 2 }), lecture(2719.5, { pret: 2 }),
     ]);
     expect(verdicts).not.toContain("reprise");
   });
 
   it("mémorise l'instant du gel pour qu'on puisse en mesurer la durée", () => {
-    const fige = Array.from({ length: RELEVES_AVANT_GEL },
+    const frozen = Array.from({ length: SAMPLES_BEFORE_FREEZE },
       (_, i) => lecture(2719.5, { instant: 1000 + i * 2000 }));
-    const { etat } = derouler([lecture(2719.5, { instant: 0 }), ...fige]);
-    expect(etat.fige).toBe(1000 + (RELEVES_AVANT_GEL - 1) * 2000);
+    const { state } = unroll([lecture(2719.5, { instant: 0 }), ...frozen]);
+    expect(state.frozen).toBe(1000 + (SAMPLES_BEFORE_FREEZE - 1) * 2000);
   });
 });

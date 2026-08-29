@@ -30,9 +30,9 @@
  */
 
 /** Une plage de `TimeRanges`, réduite à ce qu'on en lit. */
-export interface PlageTampon {
-  debut: number;
-  fin: number;
+export interface BufferRange {
+  start: number;
+  end: number;
 }
 
 /**
@@ -42,32 +42,32 @@ export interface PlageTampon {
  * même instant, et un écart de quelques images ferait sauter la plage courante
  * au profit d'un reste de saut précédent.
  */
-export const TOLERANCE_PLAGE_S = 0.5;
+export const RANGE_TOLERANCE_S = 0.5;
 
 /**
  * Fraction du film déjà chargée, de 0 à 1 — ou `null` quand la question n'a pas
  * de réponse, auquel cas l'appelant ne doit rien changer à l'affichage.
  *
- * `duree` est la durée du FILM, `decalage` la base d'horodatage du conteneur :
+ * `duration` est la durée du FILM, `offset` la base d'horodatage du conteneur :
  * les deux ramènent le tampon dans le même temps que la position affichée.
  */
-export function fractionChargee(
-  plages: PlageTampon[],
+export function bufferedFraction(
+  ranges: BufferRange[],
   position: number,
-  duree: number,
-  decalage: number,
+  duration: number,
+  offset: number,
 ): number | null {
-  if (!Number.isFinite(duree) || duree <= 0 || plages.length === 0) return null;
+  if (!Number.isFinite(duration) || duration <= 0 || ranges.length === 0) return null;
 
-  const courante = plages.find(
-    (p) => position >= p.debut - TOLERANCE_PLAGE_S && position <= p.fin + TOLERANCE_PLAGE_S,
+  const current = ranges.find(
+    (p) => position >= p.start - RANGE_TOLERANCE_S && position <= p.end + RANGE_TOLERANCE_S,
   );
-  const fin = (courante ?? plages[plages.length - 1]).fin;
+  const end = (current ?? ranges[ranges.length - 1]).end;
 
   // Le décalage se retranche ICI, comme il l'est de la position affichée. Sans
   // cela, les deux couches de la barre ne racontent pas le même film.
-  const chargeeJusqua = fin - decalage;
-  if (!Number.isFinite(chargeeJusqua)) return null;
+  const bufferedUntil = end - offset;
+  if (!Number.isFinite(bufferedUntil)) return null;
 
-  return Math.min(1, Math.max(0, chargeeJusqua / duree));
+  return Math.min(1, Math.max(0, bufferedUntil / duration));
 }

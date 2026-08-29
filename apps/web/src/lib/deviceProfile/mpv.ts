@@ -1,7 +1,7 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
-  DEBIT_MUSIQUE, PROFIL_AUDIO_SEUL, profilHlsTs, SOUS_TITRES_BITMAP, SOUS_TITRES_TEXTE,
-} from "./blocs";
+  MUSIC_BITRATE, AUDIO_ONLY_PROFILE, hlsTsProfile, BITMAP_SUBTITLES, TEXT_SUBTITLES,
+} from "./blocks";
 
 /**
  * Profil de périphérique du lecteur NATIF — celui de mpv, pas d'un navigateur.
@@ -35,14 +35,14 @@ import {
  */
 
 /** Conteneurs. `mkv` en tête : c'est lui qui manquait. */
-const CONTENEURS =
+const CONTAINERS =
   "mkv,mp4,m4v,mov,avi,ts,m2ts,mts,mpegts,webm,ogv,flv,wmv,asf,mpg,mpeg,3gp,vob,divx";
 
-const CODECS_VIDEO =
+const VIDEO_CODECS =
   "h264,hevc,av1,vp8,vp9,mpeg2video,mpeg4,msmpeg4v3,vc1,theora,dvvideo,prores";
 
 /** TrueHD, DTS-HD et PCM Blu-ray compris — mpv les décode, le navigateur non. */
-const CODECS_AUDIO =
+const AUDIO_CODECS =
   "aac,ac3,eac3,dts,dca,truehd,mlp,flac,alac,mp3,mp2,opus,vorbis," +
   "pcm,pcm_s16le,pcm_s24le,pcm_bluray,pcm_dvd,wmav2,wmapro";
 
@@ -54,9 +54,9 @@ export function buildMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     // fournit alors `maxBitrate`.
     MaxStreamingBitrate: maxBitrate ?? 400_000_000,
     MaxStaticBitrate: 400_000_000,
-    MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
+    MusicStreamingTranscodingBitrate: MUSIC_BITRATE,
     DirectPlayProfiles: [
-      { Container: CONTENEURS, Type: "Video", VideoCodec: CODECS_VIDEO, AudioCodec: CODECS_AUDIO },
+      { Container: CONTAINERS, Type: "Video", VideoCodec: VIDEO_CODECS, AudioCodec: AUDIO_CODECS },
       { Container: "mp3", Type: "Audio" },
       { Container: "aac,m4a,m4b", Type: "Audio" },
       { Container: "flac", Type: "Audio" },
@@ -68,13 +68,13 @@ export function buildMpvDeviceProfile(maxBitrate?: number): DeviceProfile {
     // débit bridé par le sélecteur de qualité, ou un sous-titre bitmap à
     // incruster. `hevc` autorisé, mpv le lit aussi bien que h264.
     TranscodingProfiles: [
-      profilHlsTs("hevc,h264", "aac,ac3,eac3"),
-      PROFIL_AUDIO_SEUL,
+      hlsTsProfile("hevc,h264", "aac,ac3,eac3"),
+      AUDIO_ONLY_PROFILE,
     ],
     CodecProfiles: [],
     // Inchangés par rapport au profil navigateur : le rendu des sous-titres a
     // sa propre logique côté application (incrustation serveur pour les
     // bitmaps, pistes natives pour le reste), et ce n'est pas le sujet ici.
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE, ...SOUS_TITRES_BITMAP],
+    SubtitleProfiles: [...TEXT_SUBTITLES, ...BITMAP_SUBTITLES],
   };
 }

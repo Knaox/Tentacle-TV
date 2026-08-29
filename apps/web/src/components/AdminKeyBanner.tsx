@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getUserInfo } from "./userMenu/menuItems";
 
-type EtatCleAdmin = "ok" | "revoquee" | "sansDroits" | "absente" | "injoignable";
+type AdminKeyState = "ok" | "revoquee" | "sansDroits" | "absente" | "injoignable";
 
-interface SanteCleAdmin {
-  etat: EtatCleAdmin;
-  verifieA: string;
+interface AdminKeyHealth {
+  state: AdminKeyState;
+  checkedAt: string;
 }
 
 /**
@@ -35,17 +35,17 @@ export function AdminKeyBanner() {
   const { t } = useTranslation("admin");
   const { isAdmin } = getUserInfo();
   const [masque, setMasque] = useState(false);
-  const [force, setForce] = useState<EtatCleAdmin | null>(null);
+  const [force, setForce] = useState<AdminKeyState | null>(null);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
     const w = window as unknown as Record<string, unknown>;
-    w.tentacleTestAdminKeyBanner = (etat: EtatCleAdmin | false = "revoquee") =>
-      setForce(etat === false ? null : etat);
+    w.tentacleTestAdminKeyBanner = (state: AdminKeyState | false = "revoquee") =>
+      setForce(state === false ? null : state);
     return () => { delete w.tentacleTestAdminKeyBanner; };
   }, []);
 
-  const { data } = useQuery<SanteCleAdmin>({
+  const { data } = useQuery<AdminKeyHealth>({
     queryKey: ["admin", "jellyfin-key"],
     queryFn: async () => {
       // Import PARESSEUX, et ce n'est pas une coquetterie : `adminUtils` lit
@@ -70,13 +70,13 @@ export function AdminKeyBanner() {
     retry: false,
   });
 
-  const etat = force ?? data?.etat;
-  const enPanne = etat === "revoquee" || etat === "sansDroits" || etat === "absente";
+  const state = force ?? data?.state;
+  const enPanne = state === "revoquee" || state === "sansDroits" || state === "absente";
   if (!isAdmin || masque || !enPanne) return null;
 
   const cause =
-    etat === "revoquee" ? t("adminKeyRevoked")
-    : etat === "sansDroits" ? t("adminKeyNoRights")
+    state === "revoquee" ? t("adminKeyRevoked")
+    : state === "sansDroits" ? t("adminKeyNoRights")
     : t("adminKeyMissing");
 
   return (

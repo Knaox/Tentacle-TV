@@ -15,14 +15,14 @@
  * substituait pas.
  */
 
-export interface LargeursCarte {
+export interface CardWidths {
   base: number;
   lg: number;
 }
 
 export function cardWidthStyle(
   width: number | null | undefined,
-  widths: LargeursCarte,
+  widths: CardWidths,
   vw: number,
 ): string {
   if (width != null) return `${width}px`;

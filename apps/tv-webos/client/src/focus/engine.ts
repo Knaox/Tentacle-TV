@@ -1,16 +1,16 @@
-import { lireIntention, isHorizontal } from "./keys";
-import { estUnChampDeSaisie } from "./candidates";
-import { retenir } from "./memory";
-import { surveillerRoute } from "./route";
-import { amorcerFocus, noterAppui, placementEnCours } from "./entry";
-import { elementActif } from "./active";
-import { deplacer } from "./movement";
-import { invaliderContenu, retenirContenu } from "./zones";
-import { surveillerCurseur } from "./cursor";
-import { surveillerSurvol } from "./hoverFocus";
-import { surveillerDefilementCurseur } from "./cursorScroll";
-import { dansLaFenetre } from "./measure";
-import { clavierSystemeVisible, surveillerClavierSysteme } from "./systemKeyboard";
+import { readIntent, isHorizontal } from "./keys";
+import { isInputField } from "./candidates";
+import { remember } from "./memory";
+import { watchRoute } from "./route";
+import { primeFocus, notePress, placementInProgress } from "./entry";
+import { activeElement } from "./active";
+import { move } from "./movement";
+import { invalidateContent, rememberContent } from "./zones";
+import { watchCursor } from "./cursor";
+import { watchHover } from "./hoverFocus";
+import { watchCursorScroll } from "./cursorScroll";
+import { inWindow } from "./measure";
+import { systemKeyboardVisible, watchSystemKeyboard } from "./systemKeyboard";
 import { osdNavigationActive } from "@tentacle-tv/tv-core";
 
 /**
@@ -41,21 +41,21 @@ import { osdNavigationActive } from "@tentacle-tv/tv-core";
  */
 
 /** Route sur laquelle le moteur laisse la main aux raccourcis du lecteur. */
-const CHEMIN_LECTEUR = "/watch";
+const PLAYER_PATH = "/watch";
 
-export function installerMoteurFocus(): () => void {
-  const arreterCurseur = surveillerCurseur();
+export function installFocusEngine(): () => void {
+  const stopCursor = watchCursor();
   // Le clavier système du téléviseur : tant qu'il est monté, les flèches lui
   // appartiennent. Branché en premier, comme le curseur — la suspension doit
   // être connue avant le premier appui.
-  const arreterClavier = surveillerClavierSysteme();
+  const stopKeyboard = watchSystemKeyboard();
   // Le pointeur déplace le focus, sous la même condition de suspension que les
   // flèches : ce qui vaut pour un mode d'entrée vaut pour l'autre.
-  const arreterSurvol = surveillerSurvol(moteurSuspendu);
+  const stopHover = watchHover(engineSuspended);
   // Et il fait DÉFILER quand il vise un bord — le geste de webOS, sous la même
   // condition de suspension. Le focus, lui, ne suit pas : il est réancré à
   // l'arrêt, et seulement s'il a quitté la fenêtre (cf. `cursorScroll.ts`).
-  const arreterDefilementCurseur = surveillerDefilementCurseur(moteurSuspendu, reancrerFocus);
+  const stopCursorScroll = watchCursorScroll(engineSuspended, reanchorFocus);
 
   // Toute arrivée du focus est notée, quelle qu'en soit l'origine — flèche,
   // pointeur, clic, ou restitution. Un seul écouteur délégué : les cartes vont
@@ -63,15 +63,15 @@ export function installerMoteurFocus(): () => void {
   // et retiré sans arrêt. Deux mémoires s'alimentent ici : la clé de route,
   // pour les retours d'écran, et la référence vivante du contenu, pour la
   // sortie du rail — chacune filtre elle-même ce qui ne la regarde pas.
-  const surArrivee = (evenement: FocusEvent) => {
-    if (placementEnCours()) return;
-    const cible = evenement.target;
-    if (cible instanceof HTMLElement) {
-      retenir(cible);
-      retenirContenu(cible);
+  const onArrival = (event: FocusEvent) => {
+    if (placementInProgress()) return;
+    const target = event.target;
+    if (target instanceof HTMLElement) {
+      remember(target);
+      rememberContent(target);
     }
   };
-  document.addEventListener("focusin", surArrivee, true);
+  document.addEventListener("focusin", onArrival, true);
 
   /**
    * Le focus PERDU, et rendu.
@@ -86,16 +86,16 @@ export function installerMoteurFocus(): () => void {
    *
    * Le report d'un tour de boucle est nécessaire : `focusout` part AVANT que le
    * focus suivant ne soit posé, donc un déplacement ordinaire passerait ici pour
-   * une perte. Au tour suivant, `elementActif()` répond et l'on ne fait rien.
+   * une perte. Au tour suivant, `activeElement()` répond et l'on ne fait rien.
    */
-  const rendreLeFocus = () => {
-    if (placementEnCours()) return;
-    if (elementActif()) return;
-    amorcerFocus();
+  const restoreFocus = () => {
+    if (placementInProgress()) return;
+    if (activeElement()) return;
+    primeFocus();
   };
 
-  const surPerte = () => setTimeout(rendreLeFocus, 0);
-  document.addEventListener("focusout", surPerte, true);
+  const onLoss = () => setTimeout(restoreFocus, 0);
+  document.addEventListener("focusout", onLoss, true);
 
   /**
    * Le chien de garde de la première règle.
@@ -113,34 +113,34 @@ export function installerMoteurFocus(): () => void {
    * anneau. On préfère cette dépense-là à un écran de salon où la télécommande
    * ne répond plus.
    */
-  const INTERVALLE_GARDE_MS = 500;
-  const garde = setInterval(rendreLeFocus, INTERVALLE_GARDE_MS);
+  const GUARD_INTERVAL_MS = 500;
+  const guard = setInterval(restoreFocus, GUARD_INTERVAL_MS);
 
   // Changer d'écran repose le focus — et invalide la référence vivante du
   // contenu : la restituer sur le nouvel écran viserait un nœud démonté avec
   // l'ancien. Sans la repose, le premier appui sur une flèche ne sert qu'à
   // faire apparaître l'anneau.
-  const arreterRoute = surveillerRoute(() => {
-    invaliderContenu();
-    amorcerFocus(true);
+  const stopRoute = watchRoute(() => {
+    invalidateContent();
+    primeFocus(true);
   });
 
   // Le mode d'entrée n'est PAS consulté ici, et c'est délibéré.
   //
-  // On lisait `pointeurActif()` pour se mettre en veille tant que le curseur de
+  // On lisait `pointerActive()` pour se mettre en veille tant que le curseur de
   // la Magic Remote était visible. La condition ne pouvait pas être vraie :
-  // `surveillerCurseur` écoute `keydown` en capture et a été branché juste
+  // `watchCursor` écoute `keydown` en capture et a été branché juste
   // au-dessus, donc il a déjà basculé en `dpad` quand on arrive ici. Le test
   // était mort — et le rétablir serait un défaut, pas un correctif. **Un appui
   // directionnel est précisément le signal que le pointeur a disparu** : c'est
   // ainsi que webOS traite la bascule, et refuser la flèche laisserait
   // l'utilisateur devant une télécommande muette jusqu'à ce qu'il bouge la
   // souris. Le survol, lui, se tait de son côté dès que le focus a changé.
-  const surTouche = (evenement: KeyboardEvent) => {
-    noterAppui();
-    if (moteurSuspendu()) return;
+  const surTouche = (event: KeyboardEvent) => {
+    notePress();
+    if (engineSuspended()) return;
 
-    const intention = lireIntention(evenement);
+    const intention = readIntent(event);
     if (!intention || intention.type !== "deplacer") return;
 
     // Dans un champ de texte, gauche et droite déplacent le curseur de saisie —
@@ -148,26 +148,26 @@ export function installerMoteurFocus(): () => void {
     // bas, qu'un champ d'une seule ligne n'utilise pas, restent au moteur :
     // c'est par eux qu'on sort du champ. Sans cette distinction, entrer dans un
     // formulaire à la télécommande serait un aller sans retour.
-    const cible = evenement.target instanceof HTMLElement ? evenement.target : null;
-    if (isHorizontal(intention.direction) && estUnChampDeSaisie(cible)) return;
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    if (isHorizontal(intention.direction) && isInputField(target)) return;
 
-    evenement.preventDefault();
-    evenement.stopPropagation();
-    deplacer(intention.direction);
+    event.preventDefault();
+    event.stopPropagation();
+    move(intention.direction);
   };
 
   document.addEventListener("keydown", surTouche, true);
 
   return () => {
     document.removeEventListener("keydown", surTouche, true);
-    document.removeEventListener("focusin", surArrivee, true);
-    document.removeEventListener("focusout", surPerte, true);
-    clearInterval(garde);
-    arreterRoute();
-    arreterDefilementCurseur();
-    arreterSurvol();
-    arreterClavier();
-    arreterCurseur();
+    document.removeEventListener("focusin", onArrival, true);
+    document.removeEventListener("focusout", onLoss, true);
+    clearInterval(guard);
+    stopRoute();
+    stopCursorScroll();
+    stopHover();
+    stopKeyboard();
+    stopCursor();
   };
 }
 
@@ -181,10 +181,10 @@ export function installerMoteurFocus(): () => void {
  * par le rail, dont les entrées gardent le focus, et tout semble normal jusqu'à
  * ce qu'on tente d'en descendre.
  */
-function surLecteur(): boolean {
-  const chemin = window.location.pathname;
-  const base = `/tv${CHEMIN_LECTEUR}`;
-  return chemin === base || chemin.startsWith(`${base}/`);
+function onPlayer(): boolean {
+  const path = window.location.pathname;
+  const base = `/tv${PLAYER_PATH}`;
+  return path === base || path.startsWith(`${base}/`);
 }
 
 /**
@@ -196,9 +196,9 @@ function surLecteur(): boolean {
  * produit le défaut que LG documente sans contournement — le focus qui
  * « cascade » à travers la page après une validation.
  */
-function moteurSuspendu(): boolean {
-  if (clavierSystemeVisible()) return true;
-  return surLecteur() && !osdNavigationActive();
+function engineSuspended(): boolean {
+  if (systemKeyboardVisible()) return true;
+  return onPlayer() && !osdNavigationActive();
 }
 
 /**
@@ -208,14 +208,14 @@ function moteurSuspendu(): boolean {
  * recensement complet par image, et le pointeur est de toute façon la
  * désignation tant qu'il est là. Mais l'abandonner hors champ casserait la
  * première règle du moteur — un appui de flèche ramènerait la vue là où
- * l'anneau est resté, par `amenerEnVue`, annulant le geste qu'on vient de
+ * l'anneau est resté, par `bringIntoView`, annulant le geste qu'on vient de
  * faire.
  *
  * Un seul passage, à l'arrêt, et seulement si l'anneau a réellement quitté la
- * fenêtre. `amorcerFocus` sait choisir une cible sensée sur l'écran courant.
+ * fenêtre. `primeFocus` sait choisir une cible sensée sur l'écran courant.
  */
-function reancrerFocus(): void {
-  const actif = document.activeElement;
-  if (actif instanceof HTMLElement && actif !== document.body && dansLaFenetre(actif)) return;
-  amorcerFocus();
+function reanchorFocus(): void {
+  const active = document.activeElement;
+  if (active instanceof HTMLElement && active !== document.body && inWindow(active)) return;
+  primeFocus();
 }

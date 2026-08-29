@@ -36,12 +36,12 @@
  */
 
 /** Les seules clés qu'on lise, et ce qu'elles gouvernent. */
-const CLES = {
+const KEYS = {
   dolbyVision: "tv.model.supportDolbyVisionHDR",
   dolbyAtmos: "tv.config.supportDolbyTVATMOS",
   hdr: "tv.model.supportHDR",
-  dalle: "tv.hw.displayType",
-  huitK: "tv.hw.bSupport_8K_resolution",
+  panel: "tv.hw.displayType",
+  eightK: "tv.hw.bSupport_8K_resolution",
   definition: "tv.hw.panelResolution",
 } as const;
 
@@ -59,18 +59,18 @@ export interface ConfigsTv {
   uhd8K?: boolean;
 }
 
-let releve: ConfigsTv = {};
-let demarre = false;
+let sample: ConfigsTv = {};
+let started = false;
 
 /** Le relevé, tel qu'il est à cet instant. Vide tant que la réponse n'est pas là. */
 export function configsTv(): ConfigsTv {
-  return releve;
+  return sample;
 }
 
 /** Remet le module à zéro. Réservé aux tests. */
-export function reinitialiserConfigsTv(): void {
-  releve = {};
-  demarre = false;
+export function resetTvConfigs(): void {
+  sample = {};
+  started = false;
 }
 
 /**
@@ -83,31 +83,31 @@ export function reinitialiserConfigsTv(): void {
 export function lireConfigs(configs: Record<string, unknown>): ConfigsTv {
   const lu: ConfigsTv = {};
 
-  const booleen = (cle: string): boolean | undefined =>
-    typeof configs[cle] === "boolean" ? (configs[cle] as boolean) : undefined;
+  const boolean = (key: string): boolean | undefined =>
+    typeof configs[key] === "boolean" ? (configs[key] as boolean) : undefined;
 
-  const dolbyVision = booleen(CLES.dolbyVision);
+  const dolbyVision = boolean(KEYS.dolbyVision);
   if (dolbyVision !== undefined) lu.dolbyVision = dolbyVision;
 
-  const atmos = booleen(CLES.dolbyAtmos);
+  const atmos = boolean(KEYS.dolbyAtmos);
   if (atmos !== undefined) lu.dolbyAtmos = atmos;
 
-  const hdr = booleen(CLES.hdr);
+  const hdr = boolean(KEYS.hdr);
   if (hdr !== undefined) lu.hdr = hdr;
 
-  const dalle = configs[CLES.dalle];
-  if (typeof dalle === "string") lu.oled = dalle.toUpperCase().indexOf("OLED") !== -1;
+  const panel = configs[KEYS.panel];
+  if (typeof panel === "string") lu.oled = panel.toUpperCase().indexOf("OLED") !== -1;
 
-  const huitK = booleen(CLES.huitK);
-  if (huitK !== undefined) lu.uhd8K = huitK;
+  const eightK = boolean(KEYS.eightK);
+  if (eightK !== undefined) lu.uhd8K = eightK;
 
   // `UD` est le nom que LG donne à l'ultra-définition dans ses configurations —
   // pas `UHD`, ni `4K`. `FHD` et `HD` désignent les dalles qui n'y arrivent pas.
-  const definition = configs[CLES.definition];
+  const definition = configs[KEYS.definition];
   if (typeof definition === "string") {
-    const valeur = definition.toUpperCase();
-    if (valeur === "UD" || valeur === "UHD" || valeur === "8K") lu.uhd = true;
-    else if (valeur === "FHD" || valeur === "HD") lu.uhd = false;
+    const value = definition.toUpperCase();
+    if (value === "UD" || value === "UHD" || value === "8K") lu.uhd = true;
+    else if (value === "FHD" || value === "HD") lu.uhd = false;
   }
   // Une dalle 8K est 4K par construction ; la déclarer évite de dépendre de
   // l'ordre dans lequel les deux clés sont renseignées.
@@ -125,31 +125,31 @@ export function lireConfigs(configs: Record<string, unknown>): ConfigsTv {
  * déduction par gamme rendrait la même réponse sur les modèles qu'elle sait
  * lire ; c'est un repli, pas un échec.
  */
-export function demarrerReleveConfigs(): void {
-  if (demarre) return;
-  demarre = true;
+export function startConfigCapture(): void {
+  if (started) return;
+  started = true;
 
   // `typeof` et non un accès direct : hors navigateur — un test, un rendu
   // serveur — `window` n'est pas une variable indéfinie mais une référence
   // inexistante, et l'atteindre lève avant d'entrer dans le `try`.
   if (typeof window === "undefined") return;
 
-  const pont = window.PalmServiceBridge;
-  if (typeof pont !== "function") return;
+  const bridge = window.PalmServiceBridge;
+  if (typeof bridge !== "function") return;
 
   try {
-    const appel = new pont();
-    appel.onservicecallback = (reponse: string) => {
+    const appel = new bridge();
+    appel.onservicecallback = (response: string) => {
       try {
-        const charge = JSON.parse(reponse) as { configs?: Record<string, unknown> };
-        if (charge && charge.configs) releve = lireConfigs(charge.configs);
+        const loaded = JSON.parse(response) as { configs?: Record<string, unknown> };
+        if (loaded && loaded.configs) sample = lireConfigs(loaded.configs);
       } catch {
         // Une réponse illisible laisse le relevé vide, donc la déduction en place.
       }
     };
     appel.call(
       "luna://com.webos.service.config/getConfigs",
-      JSON.stringify({ configNames: Object.values(CLES) }),
+      JSON.stringify({ configNames: Object.values(KEYS) }),
     );
   } catch {
     // Le pont existe mais refuse l'appel : rien à faire, la déduction suffit.

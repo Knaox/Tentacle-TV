@@ -1,4 +1,4 @@
-import { ATTRIBUT_ENTREE } from "../focus/zones";
+import { ENTRY_ATTRIBUTE } from "../focus/zones";
 
 /**
  * Désigner, dans un panneau du client web, l'option à viser en l'ouvrant.
@@ -46,13 +46,13 @@ import { ATTRIBUT_ENTREE } from "../focus/zones";
  */
 
 /** L'alpha d'une couleur calculée. Chrome 53 rend toujours la forme `rgb`/`rgba`. */
-function opacite(couleur: string): number {
-  if (!couleur || couleur === "transparent") return 0;
-  const ouvrante = couleur.indexOf("(");
-  if (ouvrante < 0) return 1;
-  const composantes = couleur.slice(ouvrante + 1, couleur.lastIndexOf(")")).split(",");
-  if (composantes.length < 4) return 1;
-  const alpha = parseFloat(composantes[3]);
+function opacity(color: string): number {
+  if (!color || color === "transparent") return 0;
+  const opening = color.indexOf("(");
+  if (opening < 0) return 1;
+  const components = color.slice(opening + 1, color.lastIndexOf(")")).split(",");
+  if (components.length < 4) return 1;
+  const alpha = parseFloat(components[3]);
   return isNaN(alpha) ? 1 : alpha;
 }
 
@@ -63,11 +63,11 @@ function opacite(couleur: string): number {
  * la saison affichée est en graisse 500 lui aussi, et il vient avant la ligne
  * courante dans le document. Le fond, lui, n'appartient qu'à la ligne.
  */
-const SIGNAUX: ((style: CSSStyleDeclaration) => boolean)[] = [
-  (style) => opacite(style.backgroundColor) > 0.01,
+const SIGNALS: ((style: CSSStyleDeclaration) => boolean)[] = [
+  (style) => opacity(style.backgroundColor) > 0.01,
   (style) => {
-    const graisse = parseInt(style.fontWeight, 10);
-    return !isNaN(graisse) && graisse >= 500;
+    const weight = parseInt(style.fontWeight, 10);
+    return !isNaN(weight) && weight >= 500;
   },
 ];
 
@@ -78,10 +78,10 @@ const SIGNAUX: ((style: CSSStyleDeclaration) => boolean)[] = [
  * dans la zone qui défile, la croix de fermeture n'en fait pas partie. C'est ce
  * qui permet au repli ci-dessous de ne jamais la désigner.
  */
-function dansUneListe(bouton: HTMLElement, panneau: HTMLElement): boolean {
-  for (let noeud = bouton.parentElement; noeud && panneau.contains(noeud); noeud = noeud.parentElement) {
-    const debordement = window.getComputedStyle(noeud).overflowY;
-    if (debordement === "auto" || debordement === "scroll") return true;
+function inList(button: HTMLElement, panel: HTMLElement): boolean {
+  for (let node = button.parentElement; node && panel.contains(node); node = node.parentElement) {
+    const overflow = window.getComputedStyle(node).overflowY;
+    if (overflow === "auto" || overflow === "scroll") return true;
   }
   return false;
 }
@@ -89,7 +89,7 @@ function dansUneListe(bouton: HTMLElement, panneau: HTMLElement): boolean {
 /**
  * L'option à viser en ouvrant : l'active, et à défaut la première de la liste.
  *
- * `retenir` restreint la recherche quand le panneau mêle plusieurs listes.
+ * `remember` restreint la recherche quand le panneau mêle plusieurs listes.
  *
  * Le repli n'est pas décoratif. Rien n'est actif dans une série jamais
  * commencée, ni dans une liste de sous-titres coupés ; la cascade de
@@ -98,22 +98,22 @@ function dansUneListe(bouton: HTMLElement, panneau: HTMLElement): boolean {
  * le bouton qui le referme est la seule entrée qu'on ne veuille jamais.
  */
 function optionDEntree(
-  panneau: HTMLElement,
-  retenir?: (bouton: HTMLElement) => boolean,
+  panel: HTMLElement,
+  remember?: (button: HTMLElement) => boolean,
 ): HTMLElement | null {
   const options: HTMLElement[] = [];
-  for (const bouton of panneau.querySelectorAll<HTMLElement>("button")) {
-    if (!retenir || retenir(bouton)) options.push(bouton);
+  for (const button of panel.querySelectorAll<HTMLElement>("button")) {
+    if (!remember || remember(button)) options.push(button);
   }
 
-  for (const signal of SIGNAUX) {
+  for (const signal of SIGNALS) {
     for (const option of options) {
       if (signal(window.getComputedStyle(option))) return option;
     }
   }
 
   for (const option of options) {
-    if (dansUneListe(option, panneau)) return option;
+    if (inList(option, panel)) return option;
   }
   return null;
 }
@@ -121,18 +121,18 @@ function optionDEntree(
 /**
  * Pose la marque d'entrée sur l'option active, et la retire de l'ancienne.
  *
- * Idempotent, comme l'exige `useMarqueur` : appelé à chaque mutation du
+ * Idempotent, comme l'exige `useMarker` : appelé à chaque mutation du
  * panneau, il n'écrit que lorsque la cible change.
  */
-export function marquerEntreePanneau(
-  panneau: HTMLElement,
-  retenir?: (bouton: HTMLElement) => boolean,
+export function markPanelEntry(
+  panel: HTMLElement,
+  remember?: (button: HTMLElement) => boolean,
 ): void {
-  const ancienne = panneau.querySelector<HTMLElement>(`[${ATTRIBUT_ENTREE}]`);
-  const voulue = optionDEntree(panneau, retenir);
-  if (ancienne === voulue) return;
-  if (ancienne) ancienne.removeAttribute(ATTRIBUT_ENTREE);
-  if (voulue) voulue.setAttribute(ATTRIBUT_ENTREE, "");
+  const old = panel.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
+  const wanted = optionDEntree(panel, remember);
+  if (old === wanted) return;
+  if (old) old.removeAttribute(ENTRY_ATTRIBUTE);
+  if (wanted) wanted.setAttribute(ENTRY_ATTRIBUTE, "");
 }
 
 /**
@@ -141,6 +141,6 @@ export function marquerEntreePanneau(
  * Structurel et sans vocabulaire de design : une ligne d'épisode porte une
  * image, un onglet de saison n'en porte pas.
  */
-export function estLigneEpisode(bouton: HTMLElement): boolean {
-  return !!bouton.querySelector("img");
+export function isEpisodeRow(button: HTMLElement): boolean {
+  return !!button.querySelector("img");
 }

@@ -1,7 +1,7 @@
 import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { BackIcon } from "@/components/PlayerIcons";
-import { retenirBoutonOsd } from "./focusOsd";
+import { rememberOsdButton } from "./focusOsd";
 
 /**
  * La tête de l'habillage : de quoi savoir ce qu'on regarde, et comment sortir.
@@ -16,34 +16,34 @@ import { retenirBoutonOsd } from "./focusOsd";
  * pour ça, et la zone haute était jusqu'ici la seule du lecteur qu'on ne
  * pouvait pas atteindre.
  *
- * Il porte `data-osd-bouton` comme les autres : le focus y revient si c'est de
+ * Il porte `data-osd-button` comme les autres : le focus y revient si c'est de
  * là qu'on est parti.
  *
  * Sorti de `ControlsTv`, qui touchait les trois cents lignes.
  */
 
-interface ProprietesEntete {
-  titre: string;
-  sousTitre?: string;
+interface HeaderProps {
+  title: string;
+  subtitle?: string;
   onQuitter: () => void;
 }
 
-export function EnteteTv({ titre, sousTitre, onQuitter }: ProprietesEntete) {
+export function HeaderTv({ title, subtitle, onQuitter }: HeaderProps) {
   const { t } = useTranslation("player");
 
   // Même mémorisation que dans la rangée : `onFocus` remonte en React, et rien
   // ne subsiste quand l'habillage se démonte.
-  const retenir = (evenement: FocusEvent<HTMLDivElement>): void => {
-    const cible = evenement.target as HTMLElement;
-    retenirBoutonOsd(cible.getAttribute("data-osd-bouton"));
+  const remember = (event: FocusEvent<HTMLDivElement>): void => {
+    const target = event.target as HTMLElement;
+    rememberOsdButton(target.getAttribute("data-osd-bouton"));
   };
 
   return (
-    <div className="osd-tv-haut" onFocus={retenir}>
+    <div className="osd-tv-haut" onFocus={remember}>
       <button
         type="button"
         className="osd-tv-bouton osd-tv-quitter"
-        data-osd-bouton="quitter"
+        data-osd-button="quitter"
         onClick={onQuitter}
         aria-label={t("player:back")}
       >
@@ -51,8 +51,8 @@ export function EnteteTv({ titre, sousTitre, onQuitter }: ProprietesEntete) {
       </button>
 
       <div className="osd-tv-textes">
-        <h2 className="osd-tv-titre">{titre}</h2>
-        {sousTitre && <p className="osd-tv-sous-titre">{sousTitre}</p>}
+        <h2 className="osd-tv-titre">{title}</h2>
+        {subtitle && <p className="osd-tv-sous-titre">{subtitle}</p>}
       </div>
     </div>
   );

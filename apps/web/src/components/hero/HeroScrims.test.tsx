@@ -14,31 +14,31 @@ import { HeroScrims } from "./HeroScrims";
 
 const DIAGONAL = (j: string) =>
   `<div class="absolute inset-0" style="background:var(--${j}-scrim-diagonal)"></div>`;
-const MARQUE = (j: string) =>
+const MARKER = (j: string) =>
   `<div class="pointer-events-none absolute inset-0" style="background:var(--${j}-brand-wash)" aria-hidden="true"></div>`;
-const BAS = (j: string, h: string) =>
+const BOTTOM = (j: string, h: string) =>
   `<div class="absolute inset-x-0 bottom-0 ${h}" style="background:var(--${j}-scrim-bottom)"></div>`;
-const RACCORD = (j: string, h: string) =>
+const SEAM = (j: string, h: string) =>
   `<div class="pointer-events-none absolute inset-x-0 bottom-0 ${h}" style="background:var(--${j}-page-fade)" aria-hidden="true"></div>`;
-const HAUT = (j: string, h: string) =>
+const TOP = (j: string, h: string) =>
   `<div class="absolute inset-x-0 top-0 ${h}" style="background:var(--${j}-scrim-top)"></div>`;
 const GRAIN = `<div class="noise-texture absolute inset-0 opacity-[0.06]" aria-hidden="true"></div>`;
 
 describe("HeroScrims", () => {
   it("rend pour l'accueil exactement ce que rendait HeroBackdrop", () => {
-    expect(renderToStaticMarkup(<HeroScrims bas="h-[62%]" />)).toBe(
-      DIAGONAL("hero") + MARQUE("hero") + BAS("hero", "h-[62%]") + HAUT("hero", "h-40") + GRAIN,
+    expect(renderToStaticMarkup(<HeroScrims bottom="h-[62%]" />)).toBe(
+      DIAGONAL("hero") + MARKER("hero") + BOTTOM("hero", "h-[62%]") + TOP("hero", "h-40") + GRAIN,
     );
   });
 
   it("rend pour la fiche exactement ce que rendait DetailHero", () => {
     expect(
       renderToStaticMarkup(
-        <HeroScrims jeu="detail" bas="h-[74%]" haut="h-32" raccord="h-[46%]" grain={false} />,
+        <HeroScrims tokenSet="detail" bottom="h-[74%]" top="h-32" seam="h-[46%]" grain={false} />,
       ),
     ).toBe(
-      DIAGONAL("detail") + MARQUE("detail") + BAS("detail", "h-[74%]")
-      + RACCORD("detail", "h-[46%]") + HAUT("detail", "h-32"),
+      DIAGONAL("detail") + MARKER("detail") + BOTTOM("detail", "h-[74%]")
+      + SEAM("detail", "h-[46%]") + TOP("detail", "h-32"),
     );
   });
 
@@ -47,20 +47,20 @@ describe("HeroScrims", () => {
     // page. Le premier est une rampe vingt pour cent plus raide, dimensionnée
     // pour un débord de 200 px que le téléviseur annule ; le second est une
     // sixième couche quantifiée dans la zone la plus sombre de l'image.
-    const ancien = DIAGONAL("hero") + MARQUE("hero") + BAS("hero", "h-[76%]")
-      + RACCORD("hero", "h-[44%]") + HAUT("hero", "h-40") + GRAIN;
-    const nouveau = renderToStaticMarkup(<HeroScrims bas="h-[62%]" />);
-    expect(nouveau).not.toBe(ancien);
-    expect(nouveau).toBe(renderToStaticMarkup(<HeroScrims bas="h-[62%]" />));
-    expect(nouveau).not.toContain("page-fade");
+    const old = DIAGONAL("hero") + MARKER("hero") + BOTTOM("hero", "h-[76%]")
+      + SEAM("hero", "h-[44%]") + TOP("hero", "h-40") + GRAIN;
+    const fresh = renderToStaticMarkup(<HeroScrims bottom="h-[62%]" />);
+    expect(fresh).not.toBe(old);
+    expect(fresh).toBe(renderToStaticMarkup(<HeroScrims bottom="h-[62%]" />));
+    expect(fresh).not.toContain("page-fade");
   });
 
   it("n'émet aucun calque de raccord quand il n'y en a pas", () => {
-    expect(renderToStaticMarkup(<HeroScrims bas="h-[62%]" />)).not.toContain("page-fade");
+    expect(renderToStaticMarkup(<HeroScrims bottom="h-[62%]" />)).not.toContain("page-fade");
   });
 
   it("n'émet aucun grain quand il est refusé", () => {
-    expect(renderToStaticMarkup(<HeroScrims bas="h-[50%]" grain={false} />))
+    expect(renderToStaticMarkup(<HeroScrims bottom="h-[50%]" grain={false} />))
       .not.toContain("noise-texture");
   });
 });

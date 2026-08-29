@@ -162,9 +162,9 @@ export function useAutoUpdate() {
       let unlistenProgress: (() => void) | null = null;
       try {
         unlistenProgress = await listen<MsixProgress>("msix-update-progress", (event) => {
-          const brut = event.payload.progress ?? 0;
-          const inconnu = event.payload.indeterminate === true;
-          patch({ progress: Math.round(brut * 100), indeterminate: inconnu });
+          const raw = event.payload.progress ?? 0;
+          const unknown = event.payload.indeterminate === true;
+          patch({ progress: Math.round(raw * 100), indeterminate: unknown });
         });
 
         await invoke("download_and_install_msix_update");
@@ -213,9 +213,9 @@ export function useAutoUpdate() {
  * lisait « Error: store-page-opened » dans sa langue de personne.
  */
 function updateErrorLabel(err: unknown): string {
-  const brut = err instanceof Error ? err.message : String(err);
-  const code = brut.replace(/^Error:\s*/, "");
-  return UPDATE_ERROR_KEYS[code] ?? (UPDATE_ERROR_KEYS[code.replace(/-\d+$/, "-*")] ?? brut);
+  const raw = err instanceof Error ? err.message : String(err);
+  const code = raw.replace(/^Error:\s*/, "");
+  return UPDATE_ERROR_KEYS[code] ?? (UPDATE_ERROR_KEYS[code.replace(/-\d+$/, "-*")] ?? raw);
 }
 
 /** Codes connus. La modale traduit ce qui commence par `notifications:`. */

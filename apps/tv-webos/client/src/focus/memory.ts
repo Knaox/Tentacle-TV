@@ -1,4 +1,4 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidates";
+import { FOCUSABLE_SELECTOR, reachableTarget } from "./candidates";
 
 /**
  * Ce que le focus a quitté, pour le lui rendre en revenant.
@@ -32,7 +32,7 @@ import { SELECTEUR_FOCUSABLE, cibleAtteignable } from "./candidates";
  */
 
 /** Longueur au-delà de laquelle un libellé ne discrimine plus rien d'utile. */
-const LIBELLE_MAX = 48;
+const MAX_LABEL = 48;
 
 /**
  * Nombre d'écrans dont on garde la trace.
@@ -41,7 +41,7 @@ const LIBELLE_MAX = 48;
  * ordre d'insertion, donc on retire toujours le plus ancien — et le plus ancien
  * est celui vers lequel un retour est le moins probable.
  */
-const ROUTES_GARDEES = 32;
+const GUARDED_ROUTES = 32;
 
 const parRoute = new Map<string, string>();
 
@@ -52,24 +52,24 @@ const parRoute = new Map<string, string>();
  * une barre qui en compte plusieurs identiques. On préfère ne rien mémoriser
  * que de restituer le focus au mauvais bouton.
  */
-export function cleElement(element: HTMLElement): string | null {
+export function elementKey(element: HTMLElement): string | null {
   const marque = element.getAttribute("data-tv-cle");
   if (marque) return `m|${marque}`;
 
-  const adresse = element.getAttribute("href");
-  if (adresse) return `h|${adresse}`;
+  const address = element.getAttribute("href");
+  if (address) return `h|${address}`;
 
-  const libelle = normaliser(element.getAttribute("aria-label") ?? "");
-  if (libelle) return `${element.tagName}|a|${libelle}`;
+  const label = normalize(element.getAttribute("aria-label") ?? "");
+  if (label) return `${element.tagName}|a|${label}`;
 
-  const texte = normaliser(element.textContent ?? "");
-  if (texte) return `${element.tagName}|t|${texte}`;
+  const text = normalize(element.textContent ?? "");
+  if (text) return `${element.tagName}|t|${text}`;
 
   return null;
 }
 
-function normaliser(brut: string): string {
-  return brut.replace(/\s+/g, " ").trim().slice(0, LIBELLE_MAX);
+function normalize(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim().slice(0, MAX_LABEL);
 }
 
 function routeCourante(): string {
@@ -89,38 +89,38 @@ function routeCourante(): string {
  * restituait le focus… dans le rail. Ce qu'on avait quitté, c'est le contenu ;
  * le rail n'est qu'un couloir qu'on traverse. (Le littéral est volontairement
  * local : l'importer de `zones.ts` refermerait un cycle, `zones` lisant déjà
- * `retrouver` d'ici.)
+ * `recover` d'ici.)
  */
-export function retenir(element: HTMLElement): void {
+export function remember(element: HTMLElement): void {
   if (element.closest(".rail-tv")) return;
 
-  const cle = cleElement(element);
-  if (!cle) return;
+  const key = elementKey(element);
+  if (!key) return;
 
   const route = routeCourante();
   // Réinsérer remet la route en fin de file : les écrans qu'on fréquente
   // survivent à l'élagage, ceux qu'on a traversés une fois s'effacent.
   parRoute.delete(route);
-  parRoute.set(route, cle);
+  parRoute.set(route, key);
 
-  if (parRoute.size > ROUTES_GARDEES) {
-    const plusAncienne = parRoute.keys().next();
-    if (!plusAncienne.done) parRoute.delete(plusAncienne.value);
+  if (parRoute.size > GUARDED_ROUTES) {
+    const oldest = parRoute.keys().next();
+    if (!oldest.done) parRoute.delete(oldest.value);
   }
 }
 
 /** L'élément à qui rendre le focus sur l'écran courant, s'il est retrouvé. */
-export function retrouver(racine: ParentNode = document): HTMLElement | null {
-  const cle = parRoute.get(routeCourante());
-  if (!cle) return null;
+export function recover(racine: ParentNode = document): HTMLElement | null {
+  const key = parRoute.get(routeCourante());
+  if (!key) return null;
 
-  for (const noeud of racine.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE)) {
-    if (cleElement(noeud) !== cle) continue;
+  for (const node of racine.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)) {
+    if (elementKey(node) !== key) continue;
     // Retrouvé mais inatteignable — masqué, désactivé, dans une enveloppe
     // transparente : ce serait un trou noir. On laisse la main au focus par
     // défaut.
-    if (!cibleAtteignable(noeud)) continue;
-    return noeud;
+    if (!reachableTarget(node)) continue;
+    return node;
   }
 
   return null;
@@ -140,12 +140,12 @@ export function retrouver(racine: ParentNode = document): HTMLElement | null {
  * fin de budget garantit que l'écran ne reste pas sans anneau si elle ne
  * reparaît pas.
  */
-export function aUneMemoire(): boolean {
+export function hasMemory(): boolean {
   return parRoute.has(routeCourante());
 }
 
 /** Efface la trace de l'écran courant. Pour les tests, et pour un écran dont
  *  le contenu a changé de sens — une liste vidée, un compte déconnecté. */
-export function oublier(route: string = routeCourante()): void {
+export function forget(route: string = routeCourante()): void {
   parRoute.delete(route);
 }

@@ -6,7 +6,7 @@ interface Props {
   /** URL du `.sup`. Le composant n'est monté que lorsqu'une piste PGS est active. */
   supUrl: string;
   timeOffsetRef: MutableRefObject<number>;
-  onEchec: () => void;
+  onFailure: () => void;
 }
 
 /**
@@ -22,9 +22,9 @@ interface Props {
  * sous les contrôles. Même ordre d'empilement que les overlays mobile et TV,
  * qui restent eux aussi sous l'OSD.
  */
-export function PgsSubtitleOverlay({ videoRef, supUrl, timeOffsetRef, onEchec }: Props) {
+export function PgsSubtitleOverlay({ videoRef, supUrl, timeOffsetRef, onFailure }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  usePgsSubtitles({ videoRef, canvasRef, supUrl, timeOffsetRef, onEchec });
+  usePgsSubtitles({ videoRef, canvasRef, supUrl, timeOffsetRef, onFailure });
 
   return (
     <canvas

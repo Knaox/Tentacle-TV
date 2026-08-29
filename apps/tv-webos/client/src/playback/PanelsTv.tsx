@@ -3,8 +3,8 @@ import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tenta
 import type { ApplyToSeriesControl } from "@/hooks/useApplyToSeries";
 import { TrackSelector } from "@/components/TrackSelector";
 import { EpisodeSelectorPanel } from "@/components/player/EpisodeSelectorPanel";
-import { useMarqueur } from "../ui/marker";
-import { estLigneEpisode, marquerEntreePanneau } from "./panelEntry";
+import { useMarker } from "../ui/marker";
+import { isEpisodeRow, markPanelEntry } from "./panelEntry";
 
 /**
  * Les deux panneaux du lecteur, habillés pour la télécommande.
@@ -31,7 +31,7 @@ import { estLigneEpisode, marquerEntreePanneau } from "./panelEntry";
  * **La taille.** Traitée par la feuille, en descendance simple.
  */
 
-interface ProprietesPanneauPistes {
+interface TracksPanelProps {
   audioTracks: { index: number; label: string }[];
   subtitleTracks: { index: number; label: string }[];
   currentAudio: number;
@@ -46,16 +46,16 @@ interface ProprietesPanneauPistes {
   onClose: () => void;
 }
 
-export function PanneauPistesTv({ applyToSeries, ...reste }: ProprietesPanneauPistes) {
+export function TracksPanelTv({ applyToSeries, ...rest }: TracksPanelProps) {
   const { t } = useTranslation("player");
   // La piste audio en cours est la première option teintée du panneau : la
   // section audio ouvre la liste, et la croix de fermeture qui la précède n'a
   // pas de fond.
-  const racine = useMarqueur<HTMLDivElement>(marquerEntreePanneau);
+  const racine = useMarker<HTMLDivElement>(markPanelEntry);
 
   return (
     <div className="panneau-tv" role="dialog" aria-label={t("player:tracks")} ref={racine}>
-      <TrackSelector {...reste} />
+      <TrackSelector {...rest} />
       {applyToSeries && (
         <button
           type="button"
@@ -64,7 +64,7 @@ export function PanneauPistesTv({ applyToSeries, ...reste }: ProprietesPanneauPi
           disabled={applyToSeries.pending}
           onClick={() => applyToSeries.toggle(!applyToSeries.checked)}
           className="panneau-tv-bascule"
-          data-actif={applyToSeries.checked}
+          data-active={applyToSeries.checked}
         >
           {t("player:applyToSeries")}
         </button>
@@ -73,17 +73,17 @@ export function PanneauPistesTv({ applyToSeries, ...reste }: ProprietesPanneauPi
   );
 }
 
-interface ProprietesPanneauEpisodes {
+interface EpisodesPanelProps {
   item: MediaItem;
   onClose: () => void;
 }
 
-export function PanneauEpisodesTv({ item, onClose }: ProprietesPanneauEpisodes) {
+export function EpisodesPanelTv({ item, onClose }: EpisodesPanelProps) {
   const { t } = useTranslation("player");
   // Ici deux choses sont teintées : l'onglet de la saison affichée, et
   // l'épisode en cours. L'onglet vient avant dans le document, d'où le filtre.
-  const racine = useMarqueur<HTMLDivElement>((panneau) =>
-    marquerEntreePanneau(panneau, estLigneEpisode),
+  const racine = useMarker<HTMLDivElement>((panel) =>
+    markPanelEntry(panel, isEpisodeRow),
   );
   if (!item.SeriesId) return null;
 

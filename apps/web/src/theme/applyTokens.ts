@@ -19,38 +19,38 @@ import {
  * mode clair n'aurait aucun sens, et un `status` réglé pour du texte clair sur
  * fond noir casserait le contraste AA une fois posé sur du blanc.
  */
-const AGNOSTIQUES_DU_SCHEMA = new Set(["brand", "onMedia"]);
+const SCHEME_AGNOSTIC = new Set(["brand", "onMedia"]);
 
 /**
  * Découpe l'override : ce qui s'applique toujours d'un côté, ce qui ne vaut
  * que pour le sombre de l'autre. Les groupes non colorimétriques (blur, radius,
  * motion, layout…) sont par nature indépendants du schéma.
  */
-function partitionner(override: PartialThemeTokens): {
-  toujours: PartialThemeTokens;
-  sombreUniquement: PartialThemeTokens;
+function partition(override: PartialThemeTokens): {
+  always: PartialThemeTokens;
+  darkOnly: PartialThemeTokens;
 } {
-  const { color, ...horsCouleur } = override;
-  const toujours: PartialThemeTokens = { ...horsCouleur };
-  const sombreUniquement: PartialThemeTokens = {};
+  const { color, ...nonColor } = override;
+  const always: PartialThemeTokens = { ...nonColor };
+  const darkOnly: PartialThemeTokens = {};
 
   if (color) {
-    const agnostiques: Record<string, unknown> = {};
-    const dependants: Record<string, unknown> = {};
-    for (const [groupe, valeur] of Object.entries(color)) {
-      if (valeur === undefined) continue;
-      if (AGNOSTIQUES_DU_SCHEMA.has(groupe)) agnostiques[groupe] = valeur;
-      else dependants[groupe] = valeur;
+    const agnostic: Record<string, unknown> = {};
+    const dependent: Record<string, unknown> = {};
+    for (const [group, value] of Object.entries(color)) {
+      if (value === undefined) continue;
+      if (SCHEME_AGNOSTIC.has(group)) agnostic[group] = value;
+      else dependent[group] = value;
     }
-    if (Object.keys(agnostiques).length > 0) {
-      toujours.color = agnostiques as PartialThemeTokens["color"];
+    if (Object.keys(agnostic).length > 0) {
+      always.color = agnostic as PartialThemeTokens["color"];
     }
-    if (Object.keys(dependants).length > 0) {
-      sombreUniquement.color = dependants as PartialThemeTokens["color"];
+    if (Object.keys(dependent).length > 0) {
+      darkOnly.color = dependent as PartialThemeTokens["color"];
     }
   }
 
-  return { toujours, sombreUniquement };
+  return { always, darkOnly };
 }
 
 /**
@@ -64,11 +64,11 @@ export function applyTokenOverride(
   override: PartialThemeTokens,
   scheme: ResolvedScheme,
 ): string[] {
-  const { toujours, sombreUniquement } = partitionner(override);
+  const { always, darkOnly } = partition(override);
 
   const entries = [
-    ...partialThemeToCssVarEntries(toujours),
-    ...(scheme === "dark" ? partialThemeToCssVarEntries(sombreUniquement) : []),
+    ...partialThemeToCssVarEntries(always),
+    ...(scheme === "dark" ? partialThemeToCssVarEntries(darkOnly) : []),
   ];
 
   const root = document.documentElement;

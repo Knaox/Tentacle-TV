@@ -189,8 +189,8 @@ export function PluginIframe({
           // + cookies) et son chemin vient du greffon. Une CONCATÉNATION n'est
           // pas une résolution : `@pirate/x` accolé à la base donne une URL
           // valide dont l'hôte est `pirate`. Voir `resolveBridgeUrl.ts`.
-          const cible = resolveBridgeUrl(backendUrl || "", path, window.location.origin);
-          if (cible === null) {
+          const target = resolveBridgeUrl(backendUrl || "", path, window.location.origin);
+          if (target === null) {
             iframe.contentWindow?.postMessage(
               { type: "API_RESPONSE", id, error: "chemin refuse" },
               "*",
@@ -200,7 +200,7 @@ export function PluginIframe({
           try {
             const headers: Record<string, string> = { ...getAuthHeaders() };
             if (body) headers["Content-Type"] = "application/json";
-            const res = await fetch(cible, {
+            const res = await fetch(target, {
               method: method || "GET",
               headers,
               credentials: "include",

@@ -1,6 +1,6 @@
-import { ExtrasRow as RangeeWeb } from "@/components/detail/ExtrasRow";
+import { ExtrasRow as WebRow } from "@/components/detail/ExtrasRow";
 import type { ComponentProps } from "react";
-import { useMarqueur } from "../marker";
+import { useMarker } from "../marker";
 
 /**
  * La rangée des extras, confinée comme une piste.
@@ -17,8 +17,8 @@ import { useMarqueur } from "../marker";
  * données — l'original rend `null` tant qu'il n'a rien — sans que cette
  * enveloppe ne re-rende.
  */
-export function ExtrasRow(proprietes: ComponentProps<typeof RangeeWeb>) {
-  const cadre = useMarqueur<HTMLDivElement>((racine) => {
+export function ExtrasRow(props: ComponentProps<typeof WebRow>) {
+  const cadre = useMarker<HTMLDivElement>((racine) => {
     const scroller = racine.querySelector<HTMLElement>('[role="group"][tabindex]');
     if (!scroller || scroller.hasAttribute("data-tv-piste")) return;
     scroller.setAttribute("data-tv-piste", "");
@@ -27,7 +27,7 @@ export function ExtrasRow(proprietes: ComponentProps<typeof RangeeWeb>) {
 
   return (
     <div ref={cadre}>
-      <RangeeWeb {...proprietes} />
+      <WebRow {...props} />
     </div>
   );
 }

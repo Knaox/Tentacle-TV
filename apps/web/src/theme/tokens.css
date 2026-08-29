@@ -42,7 +42,7 @@
    * récent garde la seconde, et le mélange continue de suivre une couleur de
    * marque redéfinie par l'administrateur.
    *
-   * C'est aussi ce qui rend la primitive VISIBLE de `gardeCompat` : dans une
+   * C'est aussi ce qui rend la primitive VISIBLE de `compatGuard` : dans une
    * feuille, elle se surveille ; dans un attribut, non. */
   --brand-mid: #A855F7;
   --brand-mid: color-mix(in srgb, var(--brand) 50%, var(--brand-accent) 50%);

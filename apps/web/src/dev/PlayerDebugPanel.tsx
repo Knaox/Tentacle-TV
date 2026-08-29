@@ -20,19 +20,19 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ombreSurVideo } from "../lib/ombreSurVideo";
-import { BoutonDebug } from "./BoutonDebug";
-import { collecterDebug } from "./playerDebugData";
+import { videoShadow } from "../lib/videoShadow";
+import { DebugButton } from "./DebugButton";
+import { collectDebug } from "./playerDebugData";
 import type { DebugSection } from "./playerDebugTypes";
-import { ACTIONS } from "./playerDebugActions";
+import { DEBUG_ACTIONS } from "./playerDebugActions";
 import { usePanelDrag } from "./usePanelDrag";
 import { usePanelResize } from "./usePanelResize";
 
-const INTERVALLE_MS = 500;
+const REFRESH_MS = 500;
 
-function couleur(etat: boolean | null): string {
-  if (etat === null) return "text-white";
-  return etat ? "text-emerald-400" : "text-rose-400";
+function colorClass(state: boolean | null): string {
+  if (state === null) return "text-white";
+  return state ? "text-emerald-400" : "text-rose-400";
 }
 
 /**
@@ -43,59 +43,59 @@ function couleur(etat: boolean | null): string {
  * relancer l'application des dizaines de fois, et rouvrir le panneau à la main
  * à chaque fois finit par décider de ce qu'on observe.
  */
-function ouvertAuDemarrage(): boolean {
+function openOnStartup(): boolean {
   if (typeof window === "undefined") return false;
   return new URLSearchParams(window.location.search).has("debugpanel");
 }
 
 export function PlayerDebugPanel() {
-  const [ouvert, setOuvert] = useState(ouvertAuDemarrage);
+  const [open, setOpen] = useState(openOnStartup);
   const [sections, setSections] = useState<DebugSection[]>([]);
-  const [retour, setRetour] = useState<string | null>(null);
-  const { position, element, onPointerDown, recontenir } = usePanelDrag(
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const { position, element, onPointerDown, reclamp } = usePanelDrag(
     { x: 16, y: 16 },
-    { cle: "tentacle_debug_panel_pos" },
+    { key: "tentacle_debug_panel_pos" },
   );
-  const { taille, demarrerResize } = usePanelResize(
+  const { size, startResize } = usePanelResize(
     "tentacle_debug_panel_size",
     { w: 480, h: Math.round(window.innerHeight * 0.88) },
     // Un panneau agrandi vers le bas/la droite peut déborder : le ramener.
-    recontenir,
+    reclamp,
   );
 
-  const rafraichir = useCallback(() => {
-    void collecterDebug().then(setSections);
+  const refresh = useCallback(() => {
+    void collectDebug().then(setSections);
   }, []);
 
   useEffect(() => {
-    if (!ouvert) return;
-    rafraichir();
-    const t = setInterval(rafraichir, INTERVALLE_MS);
+    if (!open) return;
+    refresh();
+    const t = setInterval(refresh, REFRESH_MS);
     return () => clearInterval(t);
-  }, [ouvert, rafraichir]);
+  }, [open, refresh]);
 
   // F9 ouvre et ferme ; les autres raccourcis n'agissent que panneau ouvert,
   // pour ne jamais entrer en conflit avec ceux du lecteur.
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === "F9") {
-        setOuvert((v) => !v);
+        setOpen((v) => !v);
         return;
       }
-      if (!ouvert || e.ctrlKey || e.altKey || e.metaKey) return;
-      const cible = e.target as HTMLElement | null;
-      if (cible && (cible.tagName === "INPUT" || cible.tagName === "TEXTAREA")) return;
-      const action = ACTIONS.find((a) => a.touche === e.key.toLowerCase());
+      if (!open || e.ctrlKey || e.altKey || e.metaKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      const action = DEBUG_ACTIONS.find((a) => a.key === e.key.toLowerCase());
       if (!action) return;
       e.preventDefault();
-      void action.executer().then(setRetour);
+      void action.run().then(setFeedback);
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
-  }, [ouvert]);
+  }, [open]);
 
-  if (!ouvert) {
-    return <BoutonDebug onOuvrir={() => setOuvert(true)} />;
+  if (!open) {
+    return <DebugButton onOpen={() => setOpen(true)} />;
   }
 
   return (
@@ -108,13 +108,13 @@ export function PlayerDebugPanel() {
         left: position.x,
         top: position.y,
         // Taille pilotée par la poignée du coin — plus de largeur figée.
-        width: taille.w,
-        height: taille.h,
+        width: size.w,
+        height: size.h,
         // Opaque, franchement : voir l'en-tête du fichier.
         background: "#0a0a10",
         // Et pas d'ombre floue là où la surface a un canal alpha : elle y sort
-        // en aplat noir bien plus grand que le panneau. Voir `ombreSurVideo`.
-        boxShadow: ombreSurVideo("0 24px 64px -12px rgba(0,0,0,0.9)", "none"),
+        // en aplat noir bien plus grand que le panneau. Voir `videoShadow`.
+        boxShadow: videoShadow("0 24px 64px -12px rgba(0,0,0,0.9)", "none"),
       }}
       className="fixed z-[9999] cursor-move select-none rounded-lg font-mono text-[11px] leading-relaxed text-white ring-1 ring-white/20"
     >
@@ -126,7 +126,7 @@ export function PlayerDebugPanel() {
           DIAGNOSTIC LECTEUR
         </span>
         <button
-          onClick={() => setOuvert(false)}
+          onClick={() => setOpen(false)}
           className="cursor-pointer rounded px-1.5 text-white/50 transition hover:text-white"
           title="Fermer (F9)"
         >
@@ -136,25 +136,25 @@ export function PlayerDebugPanel() {
 
       {sections.map((section) => (
         <div
-          key={section.titre}
-          className={section.emphase ? "mb-3 rounded-md bg-white/[0.06] p-2.5" : "mb-2.5"}
+          key={section.title}
+          className={section.emphasis ? "mb-3 rounded-md bg-white/[0.06] p-2.5" : "mb-2.5"}
         >
           <div className="mb-1 border-b border-white/10 pb-0.5 text-[10px] uppercase tracking-wider text-fuchsia-400">
-            {section.titre}
+            {section.title}
           </div>
-          {section.lignes.map(([cle, valeur, etat]) =>
+          {section.lines.map(([key, value, state]) =>
             // Les verdicts se lisent en ligne, valeur à GAUCHE et sur toute la
             // largeur : ce sont des phrases, pas des valeurs à aligner.
-            section.emphase ? (
-              <div key={cle} className="mt-1 flex gap-2 text-[12px] leading-snug">
-                <span className="w-[68px] shrink-0 text-white/45">{cle}</span>
-                <span className={`flex-1 font-semibold ${couleur(etat)}`}>{valeur}</span>
+            section.emphasis ? (
+              <div key={key} className="mt-1 flex gap-2 text-[12px] leading-snug">
+                <span className="w-[68px] shrink-0 text-white/45">{key}</span>
+                <span className={`flex-1 font-semibold ${colorClass(state)}`}>{value}</span>
               </div>
             ) : (
-              <div key={cle} className="flex justify-between gap-3">
-                <span className="shrink-0 text-white/45">{cle}</span>
-                <span className={`truncate text-right ${couleur(etat)}`} title={valeur}>
-                  {valeur}
+              <div key={key} className="flex justify-between gap-3">
+                <span className="shrink-0 text-white/45">{key}</span>
+                <span className={`truncate text-right ${colorClass(state)}`} title={value}>
+                  {value}
                 </span>
               </div>
             ),
@@ -166,20 +166,20 @@ export function PlayerDebugPanel() {
         Bascules en direct
       </div>
       <div className="flex flex-wrap gap-1.5 pt-1">
-        {ACTIONS.map((action) => (
+        {DEBUG_ACTIONS.map((action) => (
           <button
-            key={action.touche}
-            onClick={() => void action.executer().then(setRetour)}
+            key={action.key}
+            onClick={() => void action.run().then(setFeedback)}
             className="cursor-pointer rounded bg-white/10 px-2 py-1 text-[10px] transition hover:bg-white/20"
           >
-            {action.libelle}
+            {action.label}
           </button>
         ))}
       </div>
-      {retour && <div className="mt-2 text-[10px] text-amber-300">{retour}</div>}
+      {feedback && <div className="mt-2 text-[10px] text-amber-300">{feedback}</div>}
       </div>
       <div
-        onPointerDown={demarrerResize}
+        onPointerDown={startResize}
         className="absolute bottom-0 right-0 flex h-4 w-4 cursor-nwse-resize items-end justify-end p-0.5 text-white/30 hover:text-white/80"
         title="Redimensionner"
       >

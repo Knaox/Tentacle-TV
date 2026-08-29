@@ -1,4 +1,4 @@
-import type { CapacitesTeleviseur } from "../bootstrap/webosGlobals";
+import type { CapabilitiesTv } from "../bootstrap/webosGlobals";
 import type { ConfigsTv } from "./configsTv";
 
 /**
@@ -31,7 +31,7 @@ import type { ConfigsTv } from "./configsTv";
  * ne sait pas lire retombe sur l'ancien comportement, prudent.
  */
 
-export interface DalleTv {
+export interface PanelTv {
   uhd: boolean;
   uhd8K: boolean;
   hdr10: boolean;
@@ -48,7 +48,7 @@ export interface DalleTv {
  * pourtant le Dolby Vision) tombent ici, et c'est assumé — les reconnaître
  * demanderait une table de préfixes que LG ne publie pas.
  */
-export type GammeTv = "oled" | "qned" | "nano" | "uhd" | null;
+export type RangeTv = "oled" | "qned" | "nano" | "uhd" | null;
 
 /**
  * La gamme, lue dans `panelType` d'abord et dans `modelName` ensuite.
@@ -58,11 +58,11 @@ export type GammeTv = "oled" | "qned" | "nano" | "uhd" | null;
  * par le client, qui interrogeait un `oled` booléen absent — d'où un DTS refusé
  * sur des téléviseurs qui le décodent.
  */
-export function gammeDepuisModele(brut: CapacitesTeleviseur): GammeTv {
-  if (typeof brut.panelType === "string" && brut.panelType.toUpperCase() === "OLED") {
+export function rangeFromModel(raw: CapabilitiesTv): RangeTv {
+  if (typeof raw.panelType === "string" && raw.panelType.toUpperCase() === "OLED") {
     return "oled";
   }
-  const nom = (brut.modelName ?? "").toUpperCase();
+  const nom = (raw.modelName ?? "").toUpperCase();
   if (nom.startsWith("OLED")) return "oled";
   if (nom.includes("QNED")) return "qned";
   if (nom.includes("NANO")) return "nano";
@@ -87,10 +87,10 @@ export function gammeDepuisModele(brut: CapacitesTeleviseur): GammeTv {
  * gammes dont la TOTALITÉ des modèles le porte, et jamais sur une année
  * inconnue.
  */
-export function dolbyVisionDeGamme(gamme: GammeTv, annee: number | null): boolean {
-  if (gamme === "oled") return true;
-  if (gamme === "qned") return true;
-  if (gamme === "nano" || gamme === "uhd") return annee !== null && annee >= 2019;
+export function dolbyVisionForRange(range: RangeTv, year: number | null): boolean {
+  if (range === "oled") return true;
+  if (range === "qned") return true;
+  if (range === "nano" || range === "uhd") return year !== null && year >= 2019;
   return false;
 }
 
@@ -98,7 +98,7 @@ export function dolbyVisionDeGamme(gamme: GammeTv, annee: number | null): boolea
  * Le Dolby Atmos, déduit de la gamme.
  *
  * Il ne décide ici que d'une chose : le nombre de canaux qu'un remux a le droit
- * de porter (`profilWebos.ts → maxCanaux`). Se tromper coûte donc un mixage
+ * de porter (`profilWebos.ts → maxChannels`). Se tromper coûte donc un mixage
  * descendant en trop ou en moins, jamais un écran noir — la prudence peut être
  * moindre que pour le Dolby Vision, elle n'a pas à être nulle.
  *
@@ -107,13 +107,13 @@ export function dolbyVisionDeGamme(gamme: GammeTv, annee: number | null): boolea
  * jamais eu** — elle reçoit du Dolby Digital Plus sans la sous-couche objet, ce
  * qui est précisément ce qu'un profil ne doit pas confondre.
  */
-export function dolbyAtmosDeGamme(gamme: GammeTv, annee: number | null): boolean {
+export function dolbyAtmosForRange(range: RangeTv, year: number | null): boolean {
   // La gamme QNED naît en 2021, cinq ans après le décodeur : son seul nom
   // suffit, et une année illisible ne lui retire rien.
-  if (gamme === "qned") return true;
-  if (annee === null) return false;
-  if (gamme === "oled") return annee >= 2017;
-  if (gamme === "nano") return annee >= 2020;
+  if (range === "qned") return true;
+  if (year === null) return false;
+  if (range === "oled") return year >= 2017;
+  if (range === "nano") return year >= 2020;
   return false;
 }
 
@@ -141,20 +141,20 @@ export function dolbyAtmosDeGamme(gamme: GammeTv, annee: number | null): boolean
  * HDR10 depuis 2016, et une dalle FHD n'en a jamais eu. La déduction ne va que
  * dans un sens.
  */
-export function deduireDalle(
-  brut: CapacitesTeleviseur,
-  annee: number | null,
+export function inferPanel(
+  raw: CapabilitiesTv,
+  year: number | null,
   configs: ConfigsTv = {},
-): DalleTv {
-  const largeur = brut.screenWidth ?? 0;
-  const gamme = gammeDepuisModele(brut);
-  const uhd = brut.uhd ?? configs.uhd ?? largeur >= 3840;
+): PanelTv {
+  const width = raw.screenWidth ?? 0;
+  const range = rangeFromModel(raw);
+  const uhd = raw.uhd ?? configs.uhd ?? width >= 3840;
   return {
     uhd,
-    uhd8K: brut.uhd8K ?? configs.uhd8K ?? largeur >= 7680,
-    hdr10: brut.hdr10 ?? configs.hdr ?? uhd,
-    dolbyVision: brut.dolbyVision ?? configs.dolbyVision ?? dolbyVisionDeGamme(gamme, annee),
-    dolbyAtmos: brut.dolbyAtmos ?? configs.dolbyAtmos ?? dolbyAtmosDeGamme(gamme, annee),
-    oled: brut.oled ?? configs.oled ?? gamme === "oled",
+    uhd8K: raw.uhd8K ?? configs.uhd8K ?? width >= 7680,
+    hdr10: raw.hdr10 ?? configs.hdr ?? uhd,
+    dolbyVision: raw.dolbyVision ?? configs.dolbyVision ?? dolbyVisionForRange(range, year),
+    dolbyAtmos: raw.dolbyAtmos ?? configs.dolbyAtmos ?? dolbyAtmosForRange(range, year),
+    oled: raw.oled ?? configs.oled ?? range === "oled",
   };
 }

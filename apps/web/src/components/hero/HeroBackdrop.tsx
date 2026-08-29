@@ -3,7 +3,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "./resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../theme/motion";
-import { useImageCassee } from "../../hooks/useImageCassee";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 import { HeroScrims } from "./HeroScrims";
 
 interface HeroBackdropProps {
@@ -75,7 +75,7 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // Calculée AVANT le retour anticipé : le suivi de l'échec est un hook, il ne
   // peut pas vivre après une sortie conditionnelle.
   const url = item ? heroBackdropUrl(client, item) : null;
-  const { cassee, signalerEchec } = useImageCassee(url ?? undefined);
+  const { broken, reportFailure } = useBrokenImage(url ?? undefined);
 
   // Solid base + gradients restent rendus en permanence (jamais animés).
   //
@@ -94,7 +94,7 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
   // une bannière à FOND PERDU dans la page : la première rangée la chevauchait,
   // il fallait effacer la couture. La bannière est désormais encadrée — son
   // bord bas est un vrai bord, net, et plus rien ne la chevauche.
-  const overlays = <HeroScrims bas="h-[62%]" />;
+  const overlays = <HeroScrims bottom="h-[62%]" />;
 
   if (!item) {
     return (
@@ -127,8 +127,8 @@ export function HeroBackdrop({ items, activeIndex }: HeroBackdropProps) {
               scale: { duration: HERO_ZOOM_DURATION_S, ease: ZOOM_EASE },
             }}
             className="absolute inset-0 h-full w-full object-cover will-change-transform motion-reduce:!transform-none"
-            style={{ display: cassee ? "none" : undefined }}
-            onError={signalerEchec}
+            style={{ display: broken ? "none" : undefined }}
+            onError={reportFailure}
           />
         )}
       </AnimatePresence>

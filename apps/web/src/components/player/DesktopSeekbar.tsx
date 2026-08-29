@@ -1,22 +1,22 @@
 import type { RefObject } from "react";
 import { TrickplayPreview } from "../TrickplayPreview";
-import { ombreSurVideo } from "../../lib/ombreSurVideo";
+import { videoShadow } from "../../lib/videoShadow";
 import type { useDesktopSeekbar } from "../../hooks/useDesktopSeekbar";
 
 /**
  * L'ombre de la pastille — la DERNIÈRE du lecteur à ne pas passer par
- * `ombreSurVideo`, et celle qu'on regarde le plus.
+ * `videoShadow`, et celle qu'on regarde le plus.
  *
  * La classe `shadow` de Tailwind est une ombre FLOUE. Sur la surface à canal
  * alpha de macOS, son dégradé sort quasi opaque au lieu de s'estomper (voir
- * `ombreSurVideo.ts`) : une auréole sombre suivait donc le curseur pendant tout
+ * `videoShadow.ts`) : une auréole sombre suivait donc le curseur pendant tout
  * le scrub, à l'endroit exact où l'on regarde.
  *
  * La valeur complète est `boxShadow.DEFAULT` de Tailwind mot pour mot : Windows
  * et le web restent identiques au pixel. Là où la surface a un alpha, rien —
  * une pastille blanche sur la barre rose n'a besoin d'aucun détachement.
  */
-const OMBRE_PASTILLE = ombreSurVideo(
+const PILL_SHADOW = videoShadow(
   "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
   "none",
 );
@@ -57,7 +57,7 @@ export function DesktopSeekbar({ seekbar, displayProgress, bufProg }: DesktopSee
       <div className="relative h-full rounded-full" style={{ width: `${displayProgress * 100}%`, background: "var(--progress-fill)" }}>
         <div
           className={`absolute -right-1.5 -top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-opacity ${dragProgress != null ? "opacity-100" : "opacity-0 group-hover/bar:opacity-100"}`}
-          style={{ boxShadow: OMBRE_PASTILLE }}
+          style={{ boxShadow: PILL_SHADOW }}
         />
       </div>
       <TrickplayPreview

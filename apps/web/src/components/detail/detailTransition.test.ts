@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { arrivesFromPlugin, markPluginNavigation } from "./detailTransition";
 
 /** Doit rester égal à `MAX_AGE_MS` du module. */
-const FENETRE_MS = 1200;
+const WINDOW_MS = 1200;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -36,13 +36,13 @@ describe("navigation demandée par un greffon", () => {
 
   it("tient encore au bord de la fenêtre", () => {
     markPluginNavigation();
-    vi.advanceTimersByTime(FENETRE_MS);
+    vi.advanceTimersByTime(WINDOW_MS);
     expect(arrivesFromPlugin()).toBe(true);
   });
 
   it("se périme au-delà — la fiche suivante s'ouvre normalement", () => {
     markPluginNavigation();
-    vi.advanceTimersByTime(FENETRE_MS + 1);
+    vi.advanceTimersByTime(WINDOW_MS + 1);
     expect(arrivesFromPlugin()).toBe(false);
   });
 });

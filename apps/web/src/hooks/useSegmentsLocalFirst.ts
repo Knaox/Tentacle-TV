@@ -13,7 +13,7 @@ export function useSegmentsLocalFirst(
   item: MediaItem | undefined,
   isLocalPlayback: boolean,
 ): PlaybackSegmentsResponse {
-  const serveur = usePlaybackSegments(itemId, { enabled: !isLocalPlayback });
+  const server = usePlaybackSegments(itemId, { enabled: !isLocalPlayback });
   const local = useLocalSegments(itemId, item, isLocalPlayback);
-  return isLocalPlayback ? local : serveur;
+  return isLocalPlayback ? local : server;
 }

@@ -10,21 +10,21 @@
  * au-delà d'une heure, « 45 min » en dessous. Jamais de secondes — sur des
  * durées de visionnage elles n'apprennent rien et allongent la ligne.
  */
-export function formaterDuree(secondes: number | null): string | null {
-  if (secondes == null) return null;
-  if (secondes < 60) return "< 1 min";
+export function formatDuration(seconds: number | null): string | null {
+  if (seconds == null) return null;
+  if (seconds < 60) return "< 1 min";
 
-  const minutes = Math.floor(secondes / 60);
-  const heures = Math.floor(minutes / 60);
-  const jours = Math.floor(heures / 24);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-  if (jours >= 1) {
-    const resteH = heures - jours * 24;
-    return resteH > 0 ? `${jours} j ${resteH} h` : `${jours} j`;
+  if (days >= 1) {
+    const remainingH = hours - days * 24;
+    return remainingH > 0 ? `${days} j ${remainingH} h` : `${days} j`;
   }
-  if (heures >= 1) {
-    const resteM = minutes - heures * 60;
-    return resteM > 0 ? `${heures} h ${String(resteM).padStart(2, "0")}` : `${heures} h`;
+  if (hours >= 1) {
+    const remainingM = minutes - hours * 60;
+    return remainingM > 0 ? `${hours} h ${String(remainingM).padStart(2, "0")}` : `${hours} h`;
   }
   return `${minutes} min`;
 }
@@ -35,12 +35,12 @@ export function formaterDuree(secondes: number | null): string | null {
  * Un plancher à 4 % : une barre de zéro pixel se lit comme une barre absente,
  * alors que la valeur, elle, est bien affichée à côté.
  */
-export function ratioBarre(valeur: number | null, maximum: number): number {
-  if (!valeur || valeur <= 0 || maximum <= 0) return 0;
-  return Math.max(0.04, Math.min(1, valeur / maximum));
+export function barRatio(value: number | null, maximum: number): number {
+  if (!value || value <= 0 || maximum <= 0) return 0;
+  return Math.max(0.04, Math.min(1, value / maximum));
 }
 
 /** La valeur sur laquelle le classement se joue : durée si connue, sinon titres vus. */
-export function valeurDeRang(entree: { watchSeconds: number | null; totalPlayed: number }): number {
+export function rankValue(entree: { watchSeconds: number | null; totalPlayed: number }): number {
   return entree.watchSeconds ?? entree.totalPlayed;
 }

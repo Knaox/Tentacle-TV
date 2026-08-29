@@ -55,8 +55,8 @@
 export const LONGUEUR_SEGMENT_S = 1;
 
 /** Un manifeste HLS, et lui seul : la lecture directe n'a pas de segments. */
-function estManifeste(chemin: string): boolean {
-  return /\.m3u8$/i.test(chemin);
+function isManifest(path: string): boolean {
+  return /\.m3u8$/i.test(path);
 }
 
 /**
@@ -67,18 +67,18 @@ function estManifeste(chemin: string): boolean {
  * répondre 400, ce qui a été mesuré à nos dépens. Un paramètre déjà posé par
  * l'appelant est respecté.
  */
-export function avecSegmentsCourts(url: string | null, secondes = LONGUEUR_SEGMENT_S): string | null {
+export function withShortSegments(url: string | null, seconds = LONGUEUR_SEGMENT_S): string | null {
   if (!url) return url;
-  let analysee: URL;
+  let parsed: URL;
   try {
     // Base factice : les URL du lecteur sont relatives au proxy (`/api/jellyfin/…`),
     // et `URL` refuse de les analyser seules. On rend la forme qu'on a reçue.
-    analysee = new URL(url, "http://tentacle.invalid");
+    parsed = new URL(url, "http://tentacle.invalid");
   } catch {
     return url;
   }
-  if (!estManifeste(analysee.pathname)) return url;
-  if (analysee.searchParams.has("segmentLength")) return url;
-  analysee.searchParams.set("segmentLength", String(secondes));
-  return `${analysee.pathname}${analysee.search}`;
+  if (!isManifest(parsed.pathname)) return url;
+  if (parsed.searchParams.has("segmentLength")) return url;
+  parsed.searchParams.set("segmentLength", String(seconds));
+  return `${parsed.pathname}${parsed.search}`;
 }

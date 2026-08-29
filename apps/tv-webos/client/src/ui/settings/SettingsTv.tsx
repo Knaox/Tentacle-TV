@@ -35,17 +35,17 @@ import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
  * est le seul endroit à connaître cette correspondance.
  */
 
-const TAILLE_ICONE = 17;
+const ICON_SIZE = 17;
 
 /** L'adresse de la première section : c'est par elle qu'on entre. */
-const SECTION_INITIALE = "/settings/data";
+const INITIAL_SECTION = "/settings/data";
 
 /**
  * `/settings` n'a rien à montrer de lui-même : le rail de sections est déjà
  * rendu par la coquille, et un panneau de détail vide n'apprend rien.
  */
 export function SettingsIndex() {
-  return <Navigate to={SECTION_INITIALE} replace />;
+  return <Navigate to={INITIAL_SECTION} replace />;
 }
 
 export function SettingsLayout() {
@@ -56,19 +56,19 @@ export function SettingsLayout() {
 
   const sections = useMemo<SettingsShellSection[]>(
     () => [
-      { id: "data", label: t("sectionAccount"), icon: <UserRound size={TAILLE_ICONE} /> },
-      { id: "playback", label: t("sectionPlayback"), icon: <Play size={TAILLE_ICONE} /> },
-      { id: "appearance", label: tNav("about"), icon: <Info size={TAILLE_ICONE} /> },
+      { id: "data", label: t("sectionAccount"), icon: <UserRound size={ICON_SIZE} /> },
+      { id: "playback", label: t("sectionPlayback"), icon: <Play size={ICON_SIZE} /> },
+      { id: "appearance", label: tNav("about"), icon: <Info size={ICON_SIZE} /> },
     ],
     [t, tNav],
   );
 
-  const identifiantActif = useMemo(() => {
-    const reste = pathname.replace(/^\/settings\/?/, "");
-    return reste.split("/")[0] || null;
+  const activeIdentifier = useMemo(() => {
+    const rest = pathname.replace(/^\/settings\/?/, "");
+    return rest.split("/")[0] || null;
   }, [pathname]);
 
-  const active = sections.find((section) => section.id === identifiantActif);
+  const active = sections.find((section) => section.id === activeIdentifier);
 
   /**
    * On entre les réglages par la SECTION AFFICHÉE, pas par la première action
@@ -87,11 +87,11 @@ export function SettingsLayout() {
    */
   const cadre = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const bouton = cadre.current?.querySelector<HTMLElement>(
+    const button = cadre.current?.querySelector<HTMLElement>(
       'button[aria-current]:not([aria-current="false"])',
     );
-    if (!bouton) return;
-    bouton.setAttribute("data-tv-focus-defaut", "");
+    if (!button) return;
+    button.setAttribute("data-tv-focus-defaut", "");
 
     // Et on le vise, ici même.
     //
@@ -106,17 +106,17 @@ export function SettingsLayout() {
     // liste, il y a été mis par lui, et on n'y touche pas. C'est aussi ce qui
     // rend l'effet inoffensif quand il rejoue à chaque changement de section,
     // puisqu'on arrive alors depuis le bouton d'à côté.
-    const liste = bouton.parentElement;
-    if (!liste?.contains(document.activeElement)) bouton.focus();
+    const list = button.parentElement;
+    if (!list?.contains(document.activeElement)) button.focus();
 
-    return () => bouton.removeAttribute("data-tv-focus-defaut");
-  }, [identifiantActif]);
+    return () => button.removeAttribute("data-tv-focus-defaut");
+  }, [activeIdentifier]);
 
   return (
     <div className="pt-6" ref={cadre}>
       <SettingsShell
         sections={sections}
-        activeId={identifiantActif}
+        activeId={activeIdentifier}
         // `replace` et non un empilement : sur une dalle, Retour doit QUITTER
         // les réglages, pas remonter une à une les sections qu'on vient de
         // parcourir. Trois sections visitées, c'était trois appuis pour revenir

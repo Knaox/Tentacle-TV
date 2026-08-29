@@ -1,11 +1,11 @@
 import { useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Home, Bookmark, Heart, Library, Settings, Eye } from "lucide-react";
-import { creerAppuiLong } from "../../focus/longPress";
-import { amorcerFocus } from "../../focus/entry";
-import { ouvrirRecherche } from "../search/searchState";
-import { useEpinglageRail } from "./pinningTv";
-import type { EntreeRail, IconeRail } from "./railEntries";
+import { createLongPress } from "../../focus/longPress";
+import { primeFocus } from "../../focus/entry";
+import { openSearch } from "../search/searchState";
+import { useRailPinning } from "./pinningTv";
+import type { EntreeRail, RailIcon } from "./railEntries";
 
 /**
  * Une entrée du rail : une icône, et un libellé qui n'apparaît qu'au déploiement.
@@ -23,11 +23,11 @@ import type { EntreeRail, IconeRail } from "./railEntries";
  * une carte, et il reste un `<a href>` : le moteur de navigation le recense
  * comme n'importe quel lien, et `aria-current` continue de dire où l'on est.
  * L'activation native d'Entrée sur un lien est neutralisée par le
- * `preventDefault` de `creerAppuiLong` — sans quoi le maintien navi­guerait ET
+ * `preventDefault` de `createLongPress` — sans quoi le maintien navi­guerait ET
  * masquerait.
  */
 
-const ICONES: Record<IconeRail, typeof Home> = {
+const ICONS: Record<RailIcon, typeof Home> = {
   recherche: Search,
   accueil: Home,
   liste: Bookmark,
@@ -37,17 +37,17 @@ const ICONES: Record<IconeRail, typeof Home> = {
   restaurer: Eye,
 };
 
-interface ProprietesRailEntree {
+interface RailEntryProps {
   entree: EntreeRail;
   active: boolean;
-  deploye: boolean;
+  expanded: boolean;
 }
 
-export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
-  const Icone = ICONES[entree.icone];
+export function RailEntree({ entree, active, expanded }: RailEntryProps) {
+  const Icon = ICONS[entree.icon];
   const navigate = useNavigate();
   const lien = useRef<HTMLAnchorElement>(null);
-  const epinglage = useEpinglageRail();
+  const pinning = useRailPinning();
 
   /**
    * Activer une entrée referme le rail.
@@ -60,25 +60,25 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
    *
    * On rend donc la main explicitement, en deux temps. Le `blur` referme le
    * rail immédiatement — c'est la partie qui doit être certaine. Puis
-   * `amorcerFocus` pose le focus sur le premier élément de l'écran d'arrivée,
+   * `primeFocus` pose le focus sur le premier élément de l'écran d'arrivée,
    * au tour de boucle suivant pour lui laisser le temps de se monter ; s'il
    * n'est pas encore là, le focus reste sur le document et le premier appui sur
    * une flèche l'y amènera de toute façon. Aucune des deux étapes ne dépend de
    * l'autre pour que le rail se referme.
    */
-  const actionCourte = useCallback(() => {
-    if (entree.cherche) {
-      ouvrirRecherche();
+  const shortAction = useCallback(() => {
+    if (entree.searching) {
+      openSearch();
       return;
     }
-    if (entree.restaure) {
-      epinglage.showAll();
+    if (entree.restored) {
+      pinning.showAll();
       return;
     }
-    navigate(entree.chemin);
+    navigate(entree.path);
     lien.current?.blur();
-    window.setTimeout(() => amorcerFocus(), 0);
-  }, [entree.chemin, entree.cherche, entree.restaure, epinglage, navigate]);
+    window.setTimeout(() => primeFocus(), 0);
+  }, [entree.path, entree.searching, entree.restored, pinning, navigate]);
 
   /**
    * Masquer l'entrée la retire du document, donc emporte le focus avec elle.
@@ -86,49 +86,49 @@ export function RailEntree({ entree, active, deploye }: ProprietesRailEntree) {
    * garde par sa clé — puis on lui donne le focus au tour de boucle suivant,
    * quand la liste a été redessinée.
    */
-  const actionLongue = useCallback(() => {
+  const longAction = useCallback(() => {
     const item = lien.current?.closest("li");
-    const voisin = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
-    const cible = voisin ? voisin.querySelector<HTMLElement>(".rail-entree") : null;
+    const neighbor = item?.nextElementSibling ?? item?.previousElementSibling ?? null;
+    const target = neighbor ? neighbor.querySelector<HTMLElement>(".rail-entree") : null;
 
-    epinglage.toggle(entree.cle);
-    if (cible) window.setTimeout(() => cible.focus(), 0);
-  }, [entree.cle, epinglage]);
+    pinning.toggle(entree.key);
+    if (target) window.setTimeout(() => target.focus(), 0);
+  }, [entree.key, pinning]);
 
-  const appui = useMemo(
+  const press = useMemo(
     () =>
-      creerAppuiLong({
-        short: actionCourte,
-        long: entree.masquable ? actionLongue : undefined,
+      createLongPress({
+        short: shortAction,
+        long: entree.hideable ? longAction : undefined,
       }),
-    [actionCourte, actionLongue, entree.masquable],
+    [shortAction, longAction, entree.hideable],
   );
 
   return (
     <Link
       ref={lien}
-      to={entree.chemin}
+      to={entree.path}
       className="rail-entree"
       data-active={active}
-      data-masquable={entree.masquable || undefined}
+      data-hideable={entree.hideable || undefined}
       aria-current={active ? "page" : undefined}
       /* Le pointeur de la Magic Remote passe par le clic, pas par les touches :
          sans cette interception, viser « Rechercher » suivrait le `href` au lieu
          d'ouvrir la surcouche. Tout passe par la même action, quelle que soit
          l'entrée employée. */
-      onClick={(evenement) => {
-        evenement.preventDefault();
-        actionCourte();
+      onClick={(event) => {
+        event.preventDefault();
+        shortAction();
       }}
-      onKeyDown={appui.onKeyDown}
-      onKeyUp={appui.onKeyUp}
-      onBlur={appui.onBlur}
+      onKeyDown={press.onKeyDown}
+      onKeyUp={press.onKeyUp}
+      onBlur={press.onBlur}
     >
       <span className="rail-entree-icone" aria-hidden>
-        <Icone size={26} strokeWidth={2} />
+        <Icon size={26} strokeWidth={2} />
       </span>
-      <span className="rail-entree-libelle" data-deploye={deploye}>
-        {entree.libelle}
+      <span className="rail-entree-libelle" data-expanded={expanded}>
+        {entree.label}
       </span>
     </Link>
   );

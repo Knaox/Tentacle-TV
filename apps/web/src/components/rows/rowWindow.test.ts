@@ -30,12 +30,12 @@ const at = (over: Partial<RowWindowInput> = {}): RowWindowInput => ({ ...BASE, .
  * cartes rendues, et une gouttière entre chaque paire d'enfants adjacents —
  * exactement ce que fait un conteneur `flex` avec `gap`.
  */
-function largeurRendue(input: RowWindowInput): number {
+function renderedWidth(input: RowWindowInput): number {
   const r = rowWindow(input);
-  const cartes = Math.max(0, r.end - r.start + 1);
-  const enfants = cartes + (r.padStart > 0 ? 1 : 0) + (r.padEnd > 0 ? 1 : 0);
+  const cards = Math.max(0, r.end - r.start + 1);
+  const children = cards + (r.padStart > 0 ? 1 : 0) + (r.padEnd > 0 ? 1 : 0);
   return (
-    r.padStart + r.padEnd + cartes * input.cardWidth + Math.max(0, enfants - 1) * input.gap
+    r.padStart + r.padEnd + cards * input.cardWidth + Math.max(0, children - 1) * input.gap
   );
 }
 
@@ -55,7 +55,7 @@ describe("la piste garde sa largeur, quelle que soit la fenêtre", () => {
       at({ overscan: 0 }),
       at({ count: 7 }), // toutes les cartes tiennent : aucune cale
     ]) {
-      expect(largeurRendue(input)).toBeCloseTo(
+      expect(renderedWidth(input)).toBeCloseTo(
         rowTrackWidth(input.count, input.cardWidth, input.gap),
         6,
       );
@@ -67,8 +67,8 @@ describe("la piste garde sa largeur, quelle que soit la fenêtre", () => {
     for (const scrollLeft of [0, 500, 1200, 3000]) {
       const r = rowWindow(at({ scrollLeft }));
       // Décalage de la carte `start` = cale + la gouttière qui la suit.
-      const decalage = r.padStart > 0 ? r.padStart + BASE.gap : 0;
-      expect(decalage).toBeCloseTo(r.start * step, 6);
+      const offset = r.padStart > 0 ? r.padStart + BASE.gap : 0;
+      expect(offset).toBeCloseTo(r.start * step, 6);
     }
   });
 });
@@ -114,11 +114,11 @@ describe("la fenêtre couvre ce qui est visible", () => {
 describe("épingle de survol", () => {
   it("étend la plage jusqu'à la carte survolée, sans la trouer", () => {
     const nu = rowWindow(at({ scrollLeft: 2000 }));
-    const epingle = rowWindow(at({ scrollLeft: 2000, pinned: nu.start - 2 }));
-    expect(epingle.start).toBe(nu.start - 2);
-    expect(epingle.end).toBe(nu.end);
+    const pinned = rowWindow(at({ scrollLeft: 2000, pinned: nu.start - 2 }));
+    expect(pinned.start).toBe(nu.start - 2);
+    expect(pinned.end).toBe(nu.end);
     // La cale se resserre d'autant : la géométrie reste juste.
-    expect(largeurRendue(at({ scrollLeft: 2000, pinned: nu.start - 2 }))).toBeCloseTo(
+    expect(renderedWidth(at({ scrollLeft: 2000, pinned: nu.start - 2 }))).toBeCloseTo(
       rowTrackWidth(BASE.count, BASE.cardWidth, BASE.gap),
       6,
     );
@@ -131,9 +131,9 @@ describe("épingle de survol", () => {
 
   it("borne son allonge — une épingle lointaine ne remonte pas toute la rangée", () => {
     const nu = rowWindow(at({ scrollLeft: 3000 }));
-    const epingle = rowWindow(at({ scrollLeft: 3000, pinned: 0 }));
-    expect(nu.start - epingle.start).toBeLessThanOrEqual(4);
-    expect(epingle.start).toBeGreaterThan(0);
+    const pinned = rowWindow(at({ scrollLeft: 3000, pinned: 0 }));
+    expect(nu.start - pinned.start).toBeLessThanOrEqual(4);
+    expect(pinned.start).toBeGreaterThan(0);
   });
 
   it("ignore un index hors de la liste", () => {

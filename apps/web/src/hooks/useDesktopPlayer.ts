@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  defaultMpvState, getMpvApi, isWindows as estWindows,
+  defaultMpvState, getMpvApi, isWindows,
   type MpvState, type PlayOptions,
 } from "./mpvRuntime";
 import { useMpvLifecycle } from "./useMpvLifecycle";
@@ -8,8 +8,8 @@ import { useMpvCommands } from "./useMpvCommands";
 import { classifyEndFileFailure, type PlaybackFailure } from "./playbackFailure";
 import type { LocalMediaProbe } from "./useLocalMediaProbe";
 import type { MpvEndFileEvent } from "../lib/mpvTypes";
-import { noterAid, noterSid, oublierPistesDemandees } from "./mpvTrackIntent";
-import { ouvrirDemarrage, tracerCommande } from "./startupTrace";
+import { noteAid, noteSid, forgetRequestedTracks } from "./mpvTrackIntent";
+import { openStartup, traceCommand } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 // Ré-exports de compatibilité — de nombreux modules importent la détection de
@@ -69,14 +69,14 @@ export function useDesktopPlayer(opts?: {
   const lastPlayRef = useRef<{ options: PlayOptions; attempt: number } | null>(null);
   // Trampoline : le ctx du cycle de vie est construit AVANT que `play` (donc le
   // vrai gestionnaire) n'existe — la ref se remplit plus bas, par effet.
-  const endFileFailureRef = useRef<(fin: MpvEndFileEvent) => void>(() => {});
+  const endFileFailureRef = useRef<(endFile: MpvEndFileEvent) => void>(() => {});
 
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setFailure, setFileLoaded, setMediaReady,
     positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
-    onEndFileFailure: (fin) => endFileFailureRef.current(fin),
+    onEndFileFailure: (endFile) => endFileFailureRef.current(endFile),
   });
 
   // Throttle position/buffer sync to React state at ~4Hz
@@ -126,7 +126,7 @@ export function useDesktopPlayer(opts?: {
       playbackWatchdogRef.current = null;
       if (attempt === 1) {
         wtLog("mpv", `WATCHDOG: playback-restart absent après ${watchdogMs / 1000}s — retry loadfile`, { url: options.url.substring(0, 110) });
-        tracerCommande("WATCHDOG — retry loadfile", `${watchdogMs / 1000} s sans playback-restart`);
+        traceCommand("WATCHDOG — retry loadfile", `${watchdogMs / 1000} s sans playback-restart`);
         void play(options, 2);
       } else {
         wtLog("mpv", "WATCHDOG: playback-restart absent après retry — flux en échec (setFailure → fallback web)");
@@ -158,18 +158,18 @@ export function useDesktopPlayer(opts?: {
     // Ailleurs, le watchdog ci-dessus reste le filet : il fait un vrai retry de
     // loadfile, seul moyen de récupérer un demuxer resté muet.
     if (wakeupRef.current) { clearTimeout(wakeupRef.current); wakeupRef.current = null; }
-    if (!isHls && estWindows()) {
-      const armerReveil = () => {
-        const cacheAuDepart = bufferedRef.current;
+    if (!isHls && isWindows()) {
+      const armWakeup = () => {
+        const cacheAtStart = bufferedRef.current;
         wakeupRef.current = setTimeout(() => {
           wakeupRef.current = null;
-          if (bufferingRef.current || bufferedRef.current !== cacheAuDepart) { armerReveil(); return; }
+          if (bufferingRef.current || bufferedRef.current !== cacheAtStart) { armWakeup(); return; }
           wtLog("mpv", "wake-up: nudge pipeline (+50ms seek, cold start direct play)");
-          tracerCommande("seek de réveil", "+50 ms");
+          traceCommand("seek de réveil", "+50 ms");
           getMpvApi()?.command("seek", [0.05, "relative"]).catch(() => {});
         }, 600);
       };
-      armerReveil();
+      armWakeup();
     }
     try {
       // La propriété `pause` de mpv PERSISTE entre les loadfile : un rebuild
@@ -203,28 +203,28 @@ export function useDesktopPlayer(opts?: {
       // resynchronisait par un seek interne : mpv jetait son cache et la barre
       // de chargement retombait à zéro juste après le démarrage.
       // Nouveau média : ce qu'on avait demandé pour le précédent n'a plus cours.
-      oublierPistesDemandees();
+      forgetRequestedTracks();
       if (options.audioTrack != null && options.audioTrack > 0) {
-        tracerCommande("set aid (avant ouverture)", String(options.audioTrack));
+        traceCommand("set aid (avant ouverture)", String(options.audioTrack));
         // Noté seulement si la commande a ABOUTI : un `set` refusé ne doit pas
         // laisser croire à une intention posée, sans quoi la correction
         // ultérieure serait avalée.
         await api.command("set", ["aid", String(options.audioTrack)])
-          .then(() => noterAid(options.audioTrack as number))
+          .then(() => noteAid(options.audioTrack as number))
           .catch((e) => console.warn("[mpv] set aid:", e));
       }
       if (options.subtitleTrack != null) {
         const sid = options.subtitleTrack === 0 ? "no" : String(options.subtitleTrack);
-        tracerCommande("set sid (avant ouverture)", sid);
+        traceCommand("set sid (avant ouverture)", sid);
         await api.command("set", ["sid", sid])
-          .then(() => noterSid(options.subtitleTrack as number))
+          .then(() => noteSid(options.subtitleTrack as number))
           .catch((e) => console.warn("[mpv] set sid:", e));
       }
       // Nouveau média : la réserve du précédent n'a plus cours. À remettre à
       // zéro EXPLICITEMENT, maintenant qu'un `null` ne l'écrase plus.
       bufferedRef.current = 0;
       loadfileAtRef.current = Date.now();
-      ouvrirDemarrage(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
+      openStartup(`${isHls ? "HLS/transcode" : "lecture directe"} · départ ${
         options.startPosition != null && options.startPosition > 0
           ? `${options.startPosition.toFixed(0)} s` : "début"}`);
       await api.command("loadfile", [options.url]);
@@ -241,22 +241,22 @@ export function useDesktopPlayer(opts?: {
   // attentes mortes — l'échec est explicite, 2×8 s n'apporteraient rien.
   // Mesuré (rejeu du 28.08) : fichier local illisible = end-file(4) immédiat,
   // deux fois, puis 16 s de watchdog avant la bascule. Désormais < 1 s.
-  const handleEndFileFailure = useCallback((fin: MpvEndFileEvent) => {
-    const dernier = lastPlayRef.current;
-    if (dernier !== null && dernier.attempt === 1) {
-      wtLog("mpv", `end-file en erreur pendant le chargement (error=${fin.error ?? "-"}) — retry immédiat`);
-      tracerCommande("retry loadfile (end-file en erreur)", `error=${fin.error ?? "-"}`);
-      void play(dernier.options, 2);
+  const handleEndFileFailure = useCallback((endFile: MpvEndFileEvent) => {
+    const last = lastPlayRef.current;
+    if (last !== null && last.attempt === 1) {
+      wtLog("mpv", `end-file en erreur pendant le chargement (error=${endFile.error ?? "-"}) — retry immédiat`);
+      traceCommand("retry loadfile (end-file en erreur)", `error=${endFile.error ?? "-"}`);
+      void play(last.options, 2);
       return;
     }
-    wtLog("mpv", `end-file en erreur après retry (error=${fin.error ?? "-"}) — échec définitif, classement`);
+    wtLog("mpv", `end-file en erreur après retry (error=${endFile.error ?? "-"}) — échec définitif, classement`);
     setFileLoaded(true); // débloque l'UI, comme le watchdog
-    const sonde = opts?.probeLocalMedia;
+    const probe = opts?.probeLocalMedia;
     void (async () => {
-      const present = sonde !== undefined ? await sonde() : null;
+      const present = probe !== undefined ? await probe() : null;
       setFailure(classifyEndFileFailure({
-        errorCode: fin.error,
-        isLocalPlayback: sonde !== undefined,
+        errorCode: endFile.error,
+        isLocalPlayback: probe !== undefined,
         localFilePresent: present,
       }));
     })();

@@ -75,14 +75,14 @@ export function findMpvTrack(
   jfTracks: { index: number; lang?: string; external?: boolean }[],
   mpvTracks: MpvTrack[],
 ): number | null {
-  const internes = jfTracks.filter((t) => t.external !== true);
-  const jfPos = internes.findIndex((t) => t.index === jfIndex);
+  const internal = jfTracks.filter((t) => t.external !== true);
+  const jfPos = internal.findIndex((t) => t.index === jfIndex);
   if (jfPos < 0) return null;
-  const jfLang = internes[jfPos].lang;
+  const jfLang = internal[jfPos].lang;
 
   // 1. Try language match (handles all ISO 639 variants)
   if (jfLang) {
-    const sameJfBefore = internes.slice(0, jfPos).filter((t) => langMatch(t.lang, jfLang)).length;
+    const sameJfBefore = internal.slice(0, jfPos).filter((t) => langMatch(t.lang, jfLang)).length;
     const langMatches = mpvTracks.filter((t) => langMatch(t.lang, jfLang));
     if (sameJfBefore < langMatches.length) return langMatches[sameJfBefore].id;
     if (langMatches.length > 0) return langMatches[0].id;

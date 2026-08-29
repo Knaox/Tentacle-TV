@@ -29,7 +29,7 @@ export function useControlsAutoHide(playing: boolean): {
   showControls: boolean;
   scheduleHide: () => void;
 } {
-  const etat = useTvPlayerState();
+  const state = useTvPlayerState();
 
   useEffect(() => {
     setPlaying(playing);
@@ -42,5 +42,5 @@ export function useControlsAutoHide(playing: boolean): {
     showOsd();
   }, []);
 
-  return { showControls: etat.mode !== "repos", scheduleHide };
+  return { showControls: state.mode !== "repos", scheduleHide };
 }

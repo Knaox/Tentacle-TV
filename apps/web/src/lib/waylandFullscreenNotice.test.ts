@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { avisPleinEcranDejaVu, marquerAvisPleinEcranVu } from "./waylandFullscreenNotice";
+import { fullscreenNoticeSeen, markFullscreenNoticeSeen } from "./waylandFullscreenNotice";
 
 describe("waylandFullscreenNotice", () => {
   afterEach(() => {
@@ -7,16 +7,16 @@ describe("waylandFullscreenNotice", () => {
   });
 
   it("ne dit « déjà vu » qu'après marquage, et le retient", () => {
-    const memoire = new Map<string, string>();
+    const memory = new Map<string, string>();
     vi.stubGlobal("localStorage", {
-      getItem: (cle: string) => memoire.get(cle) ?? null,
-      setItem: (cle: string, valeur: string) => {
-        memoire.set(cle, valeur);
+      getItem: (key: string) => memory.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        memory.set(key, value);
       },
     });
-    expect(avisPleinEcranDejaVu()).toBe(false);
-    marquerAvisPleinEcranVu();
-    expect(avisPleinEcranDejaVu()).toBe(true);
+    expect(fullscreenNoticeSeen()).toBe(false);
+    markFullscreenNoticeSeen();
+    expect(fullscreenNoticeSeen()).toBe(true);
   });
 
   it("se tait quand le stockage est indisponible — l'avis ne doit pas boucler", () => {
@@ -29,9 +29,9 @@ describe("waylandFullscreenNotice", () => {
       },
     });
     // Sans mémoire possible, « déjà vu » : se taire vaut mieux que répéter.
-    expect(avisPleinEcranDejaVu()).toBe(true);
+    expect(fullscreenNoticeSeen()).toBe(true);
     expect(() => {
-      marquerAvisPleinEcranVu();
+      markFullscreenNoticeSeen();
     }).not.toThrow();
   });
 });

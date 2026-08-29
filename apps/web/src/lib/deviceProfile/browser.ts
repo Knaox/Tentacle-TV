@@ -1,20 +1,20 @@
 import type { DeviceProfile, DirectPlayProfile, TranscodingProfile, CodecProfile } from "@tentacle-tv/shared";
 import {
-  conditionPlageDynamique, CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE,
-  PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  profilHlsFmp4, profilHlsTs, sousTitresBitmap, SOUS_TITRES_TEXTE, type OptionsProfilWeb,
-} from "./blocs";
+  dynamicRangeCondition, CONDITIONS_HEVC, h264Conditions, MUSIC_BITRATE,
+  AUDIO_PROFILE_6_CHANNELS, AUDIO_ONLY_PROFILE,
+  hlsFmp4Profile, hlsTsProfile, bitmapSubtitles, TEXT_SUBTITLES, type WebProfileOptions,
+} from "./blocks";
 import {
   canPlayAac, canPlayAc3, canPlayAv1, canPlayContainer, canPlayEac3, canPlayFlac,
-  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, estChromium,
-  natifAac, natifAc3, natifAv1, natifEac3, natifFlac, natifH264, natifHevc,
-  natifMp3, natifOpus, natifVp9,
-  plagesDynamiquesSupportees,
+  canPlayH264, canPlayHevc, canPlayMp3, canPlayOpus, canPlayVp9, isChromium,
+  nativeAac, nativeAc3, nativeAv1, nativeEac3, nativeFlac, nativeH264, nativeHevc,
+  nativeMp3, nativeOpus, nativeVp9,
+  supportedDynamicRanges,
 } from "./codecs";
 
 export function buildBrowserDeviceProfile(
   maxBitrate?: number,
-  options?: OptionsProfilWeb,
+  options?: WebProfileOptions,
 ): DeviceProfile {
   // ── Deux jeux de capacités, et la distinction n'est pas cosmétique ──
   //
@@ -29,19 +29,19 @@ export function buildBrowserDeviceProfile(
   // le reste : conversion audio, puis tone mapping, puis ré-encodage 4K, sur un
   // fichier qui ne demandait rien. jellyfin-web sépare les deux listes
   // (`videoAudioCodecs` face à `hlsInFmp4VideoAudioCodecs`) pour cette raison.
-  const videoNatifs: string[] = [];
-  if (natifH264()) videoNatifs.push("h264");
-  if (natifHevc()) videoNatifs.push("hevc");
-  if (natifVp9())  videoNatifs.push("vp9");
-  if (natifAv1())  videoNatifs.push("av1");
+  const nativeVideoCodecs: string[] = [];
+  if (nativeH264()) nativeVideoCodecs.push("h264");
+  if (nativeHevc()) nativeVideoCodecs.push("hevc");
+  if (nativeVp9())  nativeVideoCodecs.push("vp9");
+  if (nativeAv1())  nativeVideoCodecs.push("av1");
 
-  const audioNatifs: string[] = [];
-  if (natifAac())  audioNatifs.push("aac");
-  if (natifMp3())  audioNatifs.push("mp3");
-  if (natifAc3())  audioNatifs.push("ac3");
-  if (natifEac3()) audioNatifs.push("eac3");
-  if (natifFlac()) audioNatifs.push("flac");
-  if (natifOpus()) audioNatifs.push("opus");
+  const nativeAudioCodecs: string[] = [];
+  if (nativeAac())  nativeAudioCodecs.push("aac");
+  if (nativeMp3())  nativeAudioCodecs.push("mp3");
+  if (nativeAc3())  nativeAudioCodecs.push("ac3");
+  if (nativeEac3()) nativeAudioCodecs.push("eac3");
+  if (nativeFlac()) nativeAudioCodecs.push("flac");
+  if (nativeOpus()) nativeAudioCodecs.push("opus");
 
   const videoCodecs: string[] = [];
   if (canPlayH264()) videoCodecs.push("h264");
@@ -57,16 +57,16 @@ export function buildBrowserDeviceProfile(
   if (canPlayFlac()) audioCodecs.push("flac");
   if (canPlayOpus()) audioCodecs.push("opus");
 
-  const videoNatifStr = videoNatifs.join(",");
-  const audioNatifStr = audioNatifs.join(",");
+  const nativeVideoStr = nativeVideoCodecs.join(",");
+  const nativeAudioStr = nativeAudioCodecs.join(",");
   const audioCodecStr = audioCodecs.join(",");
 
   // ── Direct play profiles ──
   // ONLY list containers the browser can play natively via <video src>.
   const directPlayProfiles: DirectPlayProfile[] = [];
-  if (videoNatifs.length > 0) {
+  if (nativeVideoCodecs.length > 0) {
     directPlayProfiles.push(
-      { Container: "mp4,m4v", Type: "Video", VideoCodec: videoNatifStr, AudioCodec: audioNatifStr },
+      { Container: "mp4,m4v", Type: "Video", VideoCodec: nativeVideoStr, AudioCodec: nativeAudioStr },
     );
     // Le MKV, lui, n'est lisible que par Chromium — mais il l'est vraiment :
     // WebM étant du Matroska, le démuxeur est déjà embarqué, et jellyfin-web
@@ -77,17 +77,17 @@ export function buildBrowserDeviceProfile(
     // Le repli est assuré par `useVideoSource` : Chromium ouvre parfois un MKV
     // qu'il ne sait pas démuxer sans émettre la moindre erreur — écran noir
     // figé (jellyfin-web #7651). Trois secondes de silence lèvent alors
-    // `mkvNonFiable` et cette entrée disparaît pour le reste de la session.
-    if (estChromium() && !options?.mkvNonFiable) {
+    // `mkvUnreliable` et cette entrée disparaît pour le reste de la session.
+    if (isChromium() && !options?.mkvUnreliable) {
       directPlayProfiles.push(
-        { Container: "mkv", Type: "Video", VideoCodec: videoNatifStr, AudioCodec: audioNatifStr },
+        { Container: "mkv", Type: "Video", VideoCodec: nativeVideoStr, AudioCodec: nativeAudioStr },
       );
     }
     if (canPlayContainer("video/webm") && canPlayVp9()) {
       directPlayProfiles.push({ Container: "webm", Type: "Video", VideoCodec: "vp9", AudioCodec: "opus,vorbis" });
     }
   }
-  if (audioNatifs.length > 0) {
+  if (nativeAudioCodecs.length > 0) {
     directPlayProfiles.push(
       { Container: "mp3", Type: "Audio" },
       { Container: "aac", Type: "Audio" },
@@ -110,34 +110,34 @@ export function buildBrowserDeviceProfile(
   // directement par MSE, et AVFoundation l'exige.
   const transcodingProfiles: TranscodingProfile[] = [];
   if (canPlayHevc()) {
-    transcodingProfiles.push(profilHlsFmp4("hevc,h264", audioFmp4));
+    transcodingProfiles.push(hlsFmp4Profile("hevc,h264", audioFmp4));
   }
   // Repli universel : segments TS en H.264, que tout navigateur sait lire.
-  transcodingProfiles.push(profilHlsTs("h264", audioTs));
-  transcodingProfiles.push(PROFIL_AUDIO_SEUL);
+  transcodingProfiles.push(hlsTsProfile("h264", audioTs));
+  transcodingProfiles.push(AUDIO_ONLY_PROFILE);
 
   // ── Codec profiles (constraints) ──
   const codecProfiles: CodecProfile[] = [
-    { Type: "Video", Codec: "h264", Conditions: conditionsH264("51") },
+    { Type: "Video", Codec: "h264", Conditions: h264Conditions("51") },
   ];
   // Dès que le HEVC est lisible par L'UN des deux chemins : ces conditions
   // gouvernent aussi bien la copie en transcodage que la lecture directe du
   // MKV (Jellyfin les évalue dans les deux cas, cf. `GetCompatibilityVideoCodec`).
-  if (canPlayHevc() || natifHevc()) {
+  if (canPlayHevc() || nativeHevc()) {
     codecProfiles.push({
       Type: "Video", Codec: "hevc",
-      Conditions: [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())],
+      Conditions: [...CONDITIONS_HEVC, dynamicRangeCondition(supportedDynamicRanges())],
     });
   }
-  codecProfiles.push(PROFIL_AUDIO_6_CANAUX);
+  codecProfiles.push(AUDIO_PROFILE_6_CHANNELS);
 
   return {
     MaxStreamingBitrate: maxBitrate ?? 150_000_000,
     MaxStaticBitrate: 150_000_000,
-    MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
+    MusicStreamingTranscodingBitrate: MUSIC_BITRATE,
     DirectPlayProfiles: directPlayProfiles,
     TranscodingProfiles: transcodingProfiles,
     CodecProfiles: codecProfiles,
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE, ...sousTitresBitmap(options?.pgsClientIndisponible)],
+    SubtitleProfiles: [...TEXT_SUBTITLES, ...bitmapSubtitles(options?.pgsClientUnavailable)],
   };
 }

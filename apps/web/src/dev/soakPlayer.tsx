@@ -7,7 +7,7 @@ import { invoke } from "../desktop/bridge";
  *
  * Le gel Windows (film qui continue, UI morte) est trop rare pour être attrapé à la main.
  * S'il a une probabilité `p` par démarrage de lecture, il faut enchaîner des centaines de
- * démarrages plutôt que d'en tenter dix. Ce harnais fait exactement ça, avec des délais
+ * démarrages plutôt que d'en tenter dix. Ce harness fait exactement ça, avec des délais
  * **aléatoires** : une course entre le thread principal de Tauri et le thread fenêtre de
  * mpv ne se déclenche que si la fenêtre temporelle varie d'un cycle à l'autre.
  *
@@ -33,7 +33,7 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
 let stop = false;
 
 /** Estampille le journal de la sonde. Timeout court : si le thread principal est gelé,
- *  l'invoke ne reviendra jamais et le harnais doit continuer à compter malgré tout. */
+ *  l'invoke ne reviendra jamais et le harness doit continuer à compter malgré tout. */
 async function mark(msg: string): Promise<void> {
   try {
     await Promise.race([

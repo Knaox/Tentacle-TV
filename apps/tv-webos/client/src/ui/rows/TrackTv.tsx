@@ -3,7 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "@/components/cards/PosterCard";
 import { EpisodeCard } from "@/components/cards/EpisodeCard";
 import type { PosterImageMode } from "@/components/cards/resolveCardImage";
-import { CarteFocusable } from "../cards/FocusableCard";
+import { FocusableCard } from "../cards/FocusableCard";
 
 /**
  * La piste défilante d'une rangée : les cales de fenêtrage et les cartes.
@@ -34,70 +34,70 @@ import { CarteFocusable } from "../cards/FocusableCard";
  * `useRowCardWidth`, `useRowWindow` et `useRowScroll` posent tous leur
  * observateur au montage puis abandonnent si la référence est vide — leurs
  * dépendances étant stables, l'effet ne rejoue jamais. Mettre le scroller
- * derrière la porte laissait donc `largeurCarte` à `null` À VIE, ce qui faisait
+ * derrière la porte laissait donc `cardWidth` à `null` À VIE, ce qui faisait
  * retomber `PosterCard` sur son repli `clamp()` — invalide sur Chrome 53, donc
  * une largeur `max-content` DIFFÉRENTE PAR CARTE, dictée par la longueur du
  * titre. C'est la structure de `MediaRow`, à laquelle celle-ci se conforme.
  */
 
-export interface ProprietesPiste {
+export interface TrackProps {
   scrollRef: RefObject<HTMLDivElement | null>;
   items: MediaItem[];
-  variante: "poster" | "episode";
+  variant: "poster" | "episode";
   posterImageMode?: PosterImageMode;
-  largeurCarte: number | null;
-  plage: { start: number; end: number; padStart: number; padEnd: number };
+  cardWidth: number | null;
+  range: { start: number; end: number; padStart: number; padEnd: number };
   /** Faux tant que la rangée n'est pas approchée : seul le CONTENU est retenu. */
-  garnie: boolean;
+  filled: boolean;
   /** Épinglage du fenêtrage — voir `useRowWindow`. */
-  onIndexActif: (index: number | null) => void;
+  onActiveIndex: (index: number | null) => void;
   onScroll: () => void;
 }
 
 export function PisteTv({
   scrollRef,
   items,
-  variante,
+  variant,
   posterImageMode,
-  largeurCarte,
-  plage,
-  garnie,
-  onIndexActif,
+  cardWidth,
+  range,
+  filled,
+  onActiveIndex,
   onScroll,
-}: ProprietesPiste) {
+}: TrackProps) {
   // Le focus est-il dans cette piste ? C'est ce qui permet d'atténuer les
   // cartes voisines de celle qu'on désigne — et seulement dans la rangée
   // concernée, les autres gardant leur pleine opacité.
-  const [focusInterne, setFocusInterne] = useState(false);
+  const [internalFocus, setInternalFocus] = useState(false);
 
   // La hauteur pleine, relevée tant qu'il y a des cartes et rendue à la cale
   // quand il n'y en a plus. Mesurée sur la piste ENTIÈRE, gouttières comprises
   // : c'est la hauteur que la page perd, donc exactement celle qu'il faut lui
   // rendre. Une réf plutôt qu'un état — la valeur n'est lue qu'au rendu qui
   // vide la rangée, et un état déclencherait un rendu de plus par mesure.
-  const hauteurPleine = useRef(0);
-  const videe = plage.end < plage.start;
+  const fullHeight = useRef(0);
+  const emptied = range.end < range.start;
 
   useLayoutEffect(() => {
-    if (videe) return;
+    if (emptied) return;
     const piste = scrollRef.current;
-    if (piste && piste.offsetHeight > 0) hauteurPleine.current = piste.offsetHeight;
-  }, [scrollRef, videe, largeurCarte, variante]);
+    if (piste && piste.offsetHeight > 0) fullHeight.current = piste.offsetHeight;
+  }, [scrollRef, emptied, cardWidth, variant]);
 
   const surIndex = useCallback(
     (index: number | null) => {
-      setFocusInterne(index !== null);
-      onIndexActif(index);
+      setInternalFocus(index !== null);
+      onActiveIndex(index);
     },
-    [onIndexActif],
+    [onActiveIndex],
   );
 
   return (
     <div
-      data-focus-interne={focusInterne}
+      data-focus-internal={internalFocus}
       ref={scrollRef}
       onScroll={onScroll}
-      style={videe && hauteurPleine.current > 0 ? { minHeight: hauteurPleine.current } : undefined}
+      style={emptied && fullHeight.current > 0 ? { minHeight: fullHeight.current } : undefined}
       // Le moteur de navigation s'en sert pour confiner les déplacements
       // horizontaux : arrivé au bout d'une rangée, « droite » ne doit pas
       // sauter dans une autre. C'est la convention de toutes les interfaces de
@@ -112,42 +112,42 @@ export function PisteTv({
       // lueur d'élévation au bord de la boîte.
       className="row-dim row-gutter flex gap-3 overflow-x-auto overflow-y-visible pb-6 pt-8 scrollbar-hide"
     >
-      {garnie && (
+      {filled && (
         <>
-          {plage.padStart > 0 && (
-            <div aria-hidden style={{ width: plage.padStart, flexShrink: 0 }} />
+          {range.padStart > 0 && (
+            <div aria-hidden style={{ width: range.padStart, flexShrink: 0 }} />
           )}
 
-          {items.slice(plage.start, plage.end + 1).map((item, decalage) => {
-            const index = plage.start + decalage;
+          {items.slice(range.start, range.end + 1).map((item, offset) => {
+            const index = range.start + offset;
             return (
-              <CarteFocusable
+              <FocusableCard
                 // Clé composite : Jellyfin peut renvoyer deux fois le même item
                 // dans un carrousel, et l'index de la LISTE garde les clés
                 // stables quand la fenêtre glisse.
                 key={`${item.Id}-${index}`}
                 index={index}
-                largeur={largeurCarte}
+                width={cardWidth}
                 itemId={item.Id}
                 item={item}
-                onIndexActif={surIndex}
+                onActiveIndex={surIndex}
               >
-                {variante === "episode" ? (
-                  <EpisodeCard item={item} index={index} width={largeurCarte} />
+                {variant === "episode" ? (
+                  <EpisodeCard item={item} index={index} width={cardWidth} />
                 ) : (
                   <PosterCard
                     item={item}
                     index={index}
-                    width={largeurCarte}
+                    width={cardWidth}
                     posterImageMode={posterImageMode}
                   />
                 )}
-              </CarteFocusable>
+              </FocusableCard>
             );
           })}
 
-          {plage.padEnd > 0 && (
-            <div aria-hidden style={{ width: plage.padEnd, flexShrink: 0 }} />
+          {range.padEnd > 0 && (
+            <div aria-hidden style={{ width: range.padEnd, flexShrink: 0 }} />
           )}
         </>
       )}

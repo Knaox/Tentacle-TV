@@ -7,7 +7,7 @@ interface Options {
    * « appuyer pour le son », posé quand la politique d'autoplay a imposé le
    * silence.
    */
-  onSonRetabli: () => void;
+  onSoundRestored: () => void;
 }
 
 /**
@@ -18,7 +18,7 @@ interface Options {
  * `volume` vaut 0 dès que le son est coupé — la bascule le pose elle-même, il
  * n'y a donc pas d'état muet séparé à tenir.
  */
-export function usePlayerVolume({ videoRef, onSonRetabli }: Options) {
+export function usePlayerVolume({ videoRef, onSoundRestored }: Options) {
   const [volume, setVolume] = useState(() => {
     const s = localStorage.getItem("tentacle_player_volume");
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
@@ -28,8 +28,8 @@ export function usePlayerVolume({ videoRef, onSonRetabli }: Options) {
   // Le rappel change d'identité à chaque rendu du lecteur ; le garder dans une
   // ref laisse les deux handlers stables — ils partent dans les raccourcis
   // clavier, qui réattacheraient sinon leurs écouteurs à chaque image.
-  const sonRetabli = useRef(onSonRetabli);
-  sonRetabli.current = onSonRetabli;
+  const soundRestored = useRef(onSoundRestored);
+  soundRestored.current = onSoundRestored;
 
   useEffect(() => {
     const v = videoRef.current;
@@ -57,7 +57,7 @@ export function usePlayerVolume({ videoRef, onSonRetabli }: Options) {
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
-    if (!v.muted) sonRetabli.current();
+    if (!v.muted) soundRestored.current();
     try { localStorage.setItem("tentacle_player_muted", v.muted ? "1" : "0"); } catch {}
     setVolume(v.muted ? 0 : 1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

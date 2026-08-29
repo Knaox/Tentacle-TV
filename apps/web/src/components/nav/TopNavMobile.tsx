@@ -5,7 +5,7 @@ import { useScrollScrim } from "./useScrollScrim";
 import { GlobalSearch } from "../GlobalSearch";
 import { NotificationBell } from "../NotificationBell";
 import { TentacleLogo } from "../ui/TentacleLogo";
-import { compterClicLogo } from "../easterEggs/logoEggStore";
+import { countLogoClick } from "../easterEggs/logoEggStore";
 import { MobileUserSheet } from "../MobileUserSheet";
 import { AVATAR_RING_STYLE, getUserInfo } from "../userMenu/menuItems";
 import { WatchTogetherButton } from "../../watchTogether/WatchTogetherButton";
@@ -51,7 +51,7 @@ export function TopNavMobile({ showSearch = true }: TopNavMobileProps) {
         <div className="nav-content flex h-full items-center justify-between px-3">
           <Link
             to="/"
-            onClick={compterClicLogo}
+            onClick={countLogoClick}
             className="flex flex-shrink-0 items-center"
             aria-label="Tentacle TV — Accueil"
           >

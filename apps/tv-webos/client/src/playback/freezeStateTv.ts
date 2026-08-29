@@ -23,18 +23,18 @@
  * web et lui repasse ses propriétés.
  */
 
-let gele = false;
-const abonnes = new Set<() => void>();
+let frozen2 = false;
+const subscribers = new Set<() => void>();
 
 /** `useSyncExternalStore` : s'abonner aux changements. */
-export function abonnerGel(surChangement: () => void): () => void {
-  abonnes.add(surChangement);
-  return () => abonnes.delete(surChangement);
+export function subscribeFreeze(onChange: () => void): () => void {
+  subscribers.add(onChange);
+  return () => subscribers.delete(onChange);
 }
 
 /** `useSyncExternalStore` : lire l'état courant. */
 export function lireGel(): boolean {
-  return gele;
+  return frozen2;
 }
 
 /**
@@ -42,8 +42,8 @@ export function lireGel(): boolean {
  * veille, toutes les deux secondes, pour une valeur identique, serait payé par
  * la dalle sans rien apporter.
  */
-export function poserGel(valeur: boolean): void {
-  if (gele === valeur) return;
-  gele = valeur;
-  for (const abonne of abonnes) abonne();
+export function poserGel(value: boolean): void {
+  if (frozen2 === value) return;
+  frozen2 = value;
+  for (const subscriber of subscribers) subscriber();
 }

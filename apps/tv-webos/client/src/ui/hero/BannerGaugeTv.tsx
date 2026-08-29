@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import type { HeroIndicators as JaugeWeb } from "@/components/hero/HeroIndicators";
+import type { HeroIndicators as WebGauge } from "@/components/hero/HeroIndicators";
 
 /**
  * Le contrat vient de l'original, il n'est pas récrit.
@@ -15,7 +15,7 @@ import type { HeroIndicators as JaugeWeb } from "@/components/hero/HeroIndicator
  * par l'alias `@/*` et vérifie l'accord. Une propriété renommée dans `apps/web`
  * casse désormais le typecheck, pas la dalle.
  */
-type ProprietesJauge = ComponentProps<typeof JaugeWeb>;
+type GaugeProps = ComponentProps<typeof WebGauge>;
 
 /**
  * Les indicateurs de la bannière, en lecture seule.
@@ -37,7 +37,7 @@ type ProprietesJauge = ComponentProps<typeof JaugeWeb>;
  * une animation continue : rien ne tourne en boucle tant que la bannière ne
  * change pas.
  */
-export function HeroIndicators({ count, activeIndex, durationMs }: ProprietesJauge) {
+export function HeroIndicators({ count, activeIndex, durationMs }: GaugeProps) {
   if (count <= 1) return null;
 
   return (

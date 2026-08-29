@@ -21,15 +21,15 @@ export function SeasonPicker({ seasons, activeKey, onSelect }: SeasonPickerProps
   return (
     <div className="mb-5 flex flex-wrap gap-2">
       {seasons.map((season) => {
-        const actif = season.key === activeKey;
+        const active = season.key === activeKey;
         return (
           <button
             key={season.key}
             type="button"
-            aria-current={actif ? "true" : undefined}
+            aria-current={active ? "true" : undefined}
             onClick={() => onSelect(season.key)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              actif
+              active
                 ? "bg-fill-medium text-content-primary"
                 : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
             }`}

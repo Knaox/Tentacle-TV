@@ -8,7 +8,7 @@ interface VideoPlayerOverlaysProps {
   loading: boolean;
   playing: boolean;
   /** La première image a été rendue au moins une fois pour ce média. */
-  aDemarre: boolean;
+  hasStarted: boolean;
   showPlayButton: boolean;
   policyMuted: boolean;
   posterUrl?: string;
@@ -38,7 +38,7 @@ interface VideoPlayerOverlaysProps {
  * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
-  loading, playing, aDemarre, showPlayButton, policyMuted, posterUrl,
+  loading, playing, hasStarted, showPlayButton, policyMuted, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
@@ -54,7 +54,7 @@ export function VideoPlayerOverlays({
           lecteur elles valaient encore `false`, la condition était fausse, et
           l'utilisateur voyait un ÉCRAN NOIR entre la bannière de la page et la
           première image. Tout se lit désormais dans l'état. */}
-      {!showPlayButton && (aDemarre ? (
+      {!showPlayButton && (hasStarted ? (
         // Buffering EN COURS de lecture (réseau qui cale) : spinner discret.
         loading && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
@@ -106,7 +106,7 @@ export function VideoPlayerOverlays({
         onSkip={onSkip}
         onDismiss={onDismissOverlay}
         onPlayNow={onPlayNow}
-        couche="z-50"
+        layer="z-50"
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}

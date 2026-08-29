@@ -23,7 +23,7 @@ import {
 } from "../downloads/playbackApi";
 import { drainReportQueue } from "../offline/resync";
 import { useConnectivity } from "../offline/useConnectivity";
-import { etatLectureLocale } from "./localPlaybackProgress";
+import { localPlaybackState } from "./localPlaybackProgress";
 
 const SAVE_INTERVAL_MS = 10_000;
 
@@ -60,8 +60,8 @@ export function useLocalPlaybackReporting({
   onlineRef.current = state === "online" || state === "checking";
   const durationRef = useRef(durationSeconds);
   durationRef.current = durationSeconds;
-  const seuilRef = useRef(maxResumePct);
-  seuilRef.current = maxResumePct;
+  const thresholdRef = useRef(maxResumePct);
+  thresholdRef.current = maxResumePct;
 
   // On relance un item DÉJÀ VU : il repasse « non vu » localement, et son
   // échéance de suppression est levée.
@@ -81,7 +81,7 @@ export function useLocalPlaybackReporting({
     const autoDelete = localSource.autoDeleteAfterWatch;
 
     const snapshot = () =>
-      etatLectureLocale(positionRef.current, durationRef.current ?? 0, seuilRef.current);
+      localPlaybackState(positionRef.current, durationRef.current ?? 0, thresholdRef.current);
 
     // File TOUJOURS alimentée : plus de reporting live en lecture locale, la
     // file est l'unique chemin vers Jellyfin (drainée en fin de lecture en

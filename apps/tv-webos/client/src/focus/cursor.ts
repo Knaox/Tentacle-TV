@@ -28,7 +28,7 @@
  * sens du défilement.
  */
 
-const ATTRIBUT = "data-tv-entree";
+const ATTRIBUTE = "data-tv-entree";
 
 type Mode = "dpad" | "pointeur";
 
@@ -52,16 +52,16 @@ let position: { x: number; y: number } | null = null;
  * `mouseover` aux MÊMES coordonnées. Une comparaison stricte refuserait ce
  * survol parfaitement légitime.
  */
-let scelle = false;
+let sealed = false;
 
-interface EvenementCurseur extends Event {
+interface CursorEvent extends Event {
   detail?: { visibility?: boolean };
 }
 
-function poser(nouveau: Mode): void {
-  if (mode === nouveau) return;
-  mode = nouveau;
-  document.documentElement.setAttribute(ATTRIBUT, nouveau);
+function poser(fresh: Mode): void {
+  if (mode === fresh) return;
+  mode = fresh;
+  document.documentElement.setAttribute(ATTRIBUTE, fresh);
 }
 
 /**
@@ -71,12 +71,12 @@ function poser(nouveau: Mode): void {
  * `dpad` sur le premier appui de touche, en capture — donc avant tout
  * `mouseover` que le défilement provoqué par cet appui pourrait engendrer.
  */
-export function pointeurActif(): boolean {
+export function pointerActive(): boolean {
   return mode === "pointeur";
 }
 
 /** Où est le pointeur, ou `null` s'il n'a jamais bougé sur cette page. */
-export function positionPointeur(): { x: number; y: number } | null {
+export function pointerPosition(): { x: number; y: number } | null {
   return position;
 }
 
@@ -87,13 +87,13 @@ export function positionPointeur(): { x: number; y: number } | null {
  * `hoverFocus`. À appeler juste avant l'écriture, jamais après : entre les
  * deux, le navigateur a déjà pu émettre son `mouseover`.
  */
-export function scellerPointeur(): void {
-  scelle = true;
+export function sealPointer(): void {
+  sealed = true;
 }
 
 /** Le pointeur a-t-il réellement bougé depuis le dernier scellement ? */
-export function pointeurABougeDepuisScellement(): boolean {
-  return !scelle;
+export function pointerMovedSinceSeal(): boolean {
+  return !sealed;
 }
 
 /**
@@ -104,39 +104,39 @@ export function pointeurABougeDepuisScellement(): boolean {
  * sans lui, le mode pointeur ne serait jamais testable ailleurs que sur une
  * dalle.
  */
-export function surveillerCurseur(): () => void {
-  const surChangement = (evenement: Event) => {
-    const visible = (evenement as EvenementCurseur).detail?.visibility;
+export function watchCursor(): () => void {
+  const onChange = (event: Event) => {
+    const visible = (event as CursorEvent).detail?.visibility;
     // Chaque apparition du curseur a droit à son premier survol franc : le
     // sceau tombe, sans quoi le pointeur qui revient à l'écran ne pourrait
     // rien désigner avant d'avoir bougé.
-    if (visible) scelle = false;
+    if (visible) sealed = false;
     else position = null;
     poser(visible ? "pointeur" : "dpad");
   };
 
-  const surMouvement = (evenement: Event) => {
-    const souris = evenement as MouseEvent;
-    position = { x: souris.clientX, y: souris.clientY };
-    scelle = false;
+  const onMove = (event: Event) => {
+    const mouse = event as MouseEvent;
+    position = { x: mouse.clientX, y: mouse.clientY };
+    sealed = false;
     poser("pointeur");
   };
   const surTouche = () => {
     // Le D-pad reprend la main : le pointeur n'a plus rien à désigner, et sa
     // dernière position ne doit pas servir de prétexte à un survol.
-    scelle = true;
+    sealed = true;
     poser("dpad");
   };
 
-  document.addEventListener("cursorStateChange", surChangement);
-  document.addEventListener("mousemove", surMouvement, { passive: true });
+  document.addEventListener("cursorStateChange", onChange);
+  document.addEventListener("mousemove", onMove, { passive: true });
   document.addEventListener("keydown", surTouche, true);
 
-  document.documentElement.setAttribute(ATTRIBUT, mode);
+  document.documentElement.setAttribute(ATTRIBUTE, mode);
 
   return () => {
-    document.removeEventListener("cursorStateChange", surChangement);
-    document.removeEventListener("mousemove", surMouvement);
+    document.removeEventListener("cursorStateChange", onChange);
+    document.removeEventListener("mousemove", onMove);
     document.removeEventListener("keydown", surTouche, true);
   };
 }

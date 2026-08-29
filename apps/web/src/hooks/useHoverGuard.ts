@@ -130,7 +130,7 @@ export function useHoverEscape(
   useEffect(() => {
     if (!active) return;
     let frame = 0;
-    const revalider = (): void => {
+    const revalidate = (): void => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (!pointerStillOn(ref.current)) onLeave();
@@ -139,16 +139,16 @@ export function useHoverEscape(
     // Sortir de la fenêtre ou en perdre le focus ne laisse RIEN à interroger :
     // `pointerStillOn` rendrait `true` sur la dernière position connue, qui est
     // justement celle qu'on quitte. Ces deux-là éteignent donc sans demander.
-    const partir = (): void => onLeave();
+    const leave = (): void => onLeave();
 
-    window.addEventListener("pointermove", revalider, { passive: true, capture: true });
-    document.addEventListener("mouseleave", partir);
-    window.addEventListener("blur", partir);
+    window.addEventListener("pointermove", revalidate, { passive: true, capture: true });
+    document.addEventListener("mouseleave", leave);
+    window.addEventListener("blur", leave);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("pointermove", revalider, true);
-      document.removeEventListener("mouseleave", partir);
-      window.removeEventListener("blur", partir);
+      window.removeEventListener("pointermove", revalidate, true);
+      document.removeEventListener("mouseleave", leave);
+      window.removeEventListener("blur", leave);
     };
   }, [active, ref, onLeave]);
 }

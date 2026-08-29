@@ -1,11 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { SEGMENT_AUTO_DELAY_MAX_MS, type SegmentSettings } from "@tentacle-tv/shared";
-import { CHAMP_REGLAGE, SettingToggleRow } from "./SettingToggleRow";
+import { SETTING_FIELD, SettingToggleRow } from "./SettingToggleRow";
 
 interface SegmentSettingsRowProps {
-  titre: string;
-  aide: string;
-  reglages: SegmentSettings;
+  title: string;
+  hint: string;
+  settings: SegmentSettings;
   onChange: (patch: Partial<SegmentSettings>) => void;
 }
 
@@ -21,22 +21,22 @@ interface SegmentSettingsRowProps {
  * seconde et demie » ; l'arrondir à la seconde dans l'interface aurait rendu
  * inatteignable la moitié des valeurs que le lecteur sait tenir.
  */
-export function SegmentSettingsRow({ titre, aide, reglages, onChange }: SegmentSettingsRowProps) {
+export function SegmentSettingsRow({ title, hint, settings, onChange }: SegmentSettingsRowProps) {
   const { t } = useTranslation("preferences");
-  const auto = reglages.action === "auto";
+  const auto = settings.action === "auto";
 
   return (
     <div>
-      <p className="text-sm font-medium text-content-primary">{titre}</p>
-      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{aide}</p>
+      <p className="text-sm font-medium text-content-primary">{title}</p>
+      <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>
       <select
-        value={reglages.action}
-        aria-label={`${titre} — ${t("segmentActionLabel")}`}
+        value={settings.action}
+        aria-label={`${title} — ${t("segmentActionLabel")}`}
         onChange={(e) => {
           const action = e.target.value;
           if (action === "button" || action === "auto" || action === "off") onChange({ action });
         }}
-        className={`mt-3 w-full max-w-xs ${CHAMP_REGLAGE}`}
+        className={`mt-3 w-full max-w-xs ${SETTING_FIELD}`}
       >
         <option value="button">{t("segmentActionButton")}</option>
         <option value="auto">{t("segmentActionAuto")}</option>
@@ -46,14 +46,14 @@ export function SegmentSettingsRow({ titre, aide, reglages, onChange }: SegmentS
       {auto && (
         <div className="mt-4 space-y-4 border-l border-line-subtle pl-4">
           <SettingToggleRow
-            titre={t("segmentCountdownTitle")}
-            aide={t("segmentCountdownHint")}
-            actif={reglages.countdownVisible}
+            title={t("segmentCountdownTitle")}
+            hint={t("segmentCountdownHint")}
+            active={settings.countdownVisible}
             onChange={(countdownVisible) => onChange({ countdownVisible })}
           />
           <div>
             <label
-              htmlFor={`delai-${titre}`}
+              htmlFor={`delai-${title}`}
               className="text-sm font-medium text-content-primary"
             >
               {t("segmentDelayLabel")}
@@ -62,20 +62,20 @@ export function SegmentSettingsRow({ titre, aide, reglages, onChange }: SegmentS
               {t("segmentDelayHint")}
             </p>
             <input
-              id={`delai-${titre}`}
+              id={`delai-${title}`}
               type="number"
               min={0}
               max={SEGMENT_AUTO_DELAY_MAX_MS}
               step={500}
-              value={reglages.autoDelayMs}
+              value={settings.autoDelayMs}
               onChange={(e) => {
-                const saisi = Number.parseInt(e.target.value, 10);
+                const typed = Number.parseInt(e.target.value, 10);
                 // Un champ vidé ne vaut pas zéro : on n'écrit rien tant qu'il
                 // n'y a pas de nombre, sinon le délai tomberait à 0 entre deux
                 // frappes et le passage serait sauté sans rien demander.
-                if (Number.isFinite(saisi)) onChange({ autoDelayMs: saisi });
+                if (Number.isFinite(typed)) onChange({ autoDelayMs: typed });
               }}
-              className={`mt-2 w-32 ${CHAMP_REGLAGE}`}
+              className={`mt-2 w-32 ${SETTING_FIELD}`}
             />
           </div>
         </div>

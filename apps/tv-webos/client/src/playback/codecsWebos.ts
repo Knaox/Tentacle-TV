@@ -1,8 +1,8 @@
-import { capacitesTeleviseur } from "../bootstrap/webosGlobals";
-import { capacitesDe, type CapacitesTv, type MaterielTv } from "./capabilitiesWebos";
+import { readTvCaps } from "../bootstrap/webosGlobals";
+import { capabilitiesOf, type CapabilityFlagsTv, type HardwareTv } from "./capabilitiesWebos";
 import { configsTv } from "./configsTv";
-import { deduireDalle, type DalleTv } from "./panelWebos";
-import { lirePlateforme, type PlateformeTv } from "./generationWebos";
+import { inferPanel, type PanelTv } from "./panelWebos";
+import { readPlatform, type PlatformTv } from "./generationWebos";
 
 /**
  * Ce que le téléviseur sait décoder — et d'où on le tient.
@@ -32,12 +32,12 @@ import { lirePlateforme, type PlateformeTv } from "./generationWebos";
  * `playbackFallback.ts`.
  */
 
-export type { DalleTv } from "./panelWebos";
+export type { PanelTv } from "./panelWebos";
 
-export interface ProfilResolu {
-  plateforme: PlateformeTv;
-  capacites: CapacitesTv;
-  dalle: DalleTv;
+export interface ResolvedProfile {
+  platform: PlatformTv;
+  capabilities: CapabilityFlagsTv;
+  panel: PanelTv;
 }
 
 /**
@@ -47,16 +47,16 @@ export interface ProfilResolu {
  * la dalle se déduit de la GAMME et de l'ANNÉE quand `deviceInfo` se tait, et
  * l'année ne se connaît qu'une fois la plateforme lue.
  */
-export function resoudreProfil(agent: string = navigator.userAgent): ProfilResolu {
-  const brut = capacitesTeleviseur();
-  const plateforme = lirePlateforme(brut, agent);
-  const dalle = deduireDalle(brut, plateforme.annee, configsTv());
-  const materiel: MaterielTv = {
-    annee: plateforme.annee,
-    oled: dalle.oled,
-    uhd8K: dalle.uhd8K,
+export function resolveProfile(agent: string = navigator.userAgent): ResolvedProfile {
+  const raw = readTvCaps();
+  const platform = readPlatform(raw, agent);
+  const panel = inferPanel(raw, platform.year, configsTv());
+  const materiel: HardwareTv = {
+    year: platform.year,
+    oled: panel.oled,
+    uhd8K: panel.uhd8K,
   };
-  return { plateforme, capacites: capacitesDe(plateforme.generation, materiel), dalle };
+  return { platform, capabilities: capabilitiesOf(platform.generation, materiel), panel };
 }
 
 /**
@@ -89,8 +89,8 @@ export function resoudreProfil(agent: string = navigator.userAgent): ProfilResol
  * produit indépendamment du flux, et s'y fier seul induit en erreur. Seul
  * `videooutput/getStatus` départage.
  *
- * `conteneurSansRpu` sert les conteneurs où webOS ne démultiplexe PAS le RPU
- * (cf. `contraintes()`). Il ne retire que **`DOVI` nu**, et c'est un arbitrage
+ * `containerWithoutRpu` sert les conteneurs où webOS ne démultiplexe PAS le RPU
+ * (cf. `constraints()`). Il ne retire que **`DOVI` nu**, et c'est un arbitrage
  * qui a changé.
  *
  * Il retirait autrefois TOUTES les plages Dolby Vision, ce qui privait Jellyfin
@@ -113,19 +113,19 @@ export function resoudreProfil(agent: string = navigator.userAgent): ProfilResol
  * Sur une dalle **sans** Dolby Vision, les `DOVIWith…` restent déclarés pour la
  * même raison : les taire ferait tone-mapper une image 4K pour rien.
  */
-export function plagesDynamiquesTv(dalle: DalleTv, conteneurSansRpu = false): string[] {
+export function tvDynamicRanges(panel: PanelTv, containerWithoutRpu = false): string[] {
   // `Unknown` et `SDR` sont ce que Jellyfin attribue aux fichiers dont il ne
   // sait rien : les taire ferait transcoder la moitié d'une médiathèque.
-  const plages = ["Unknown", "SDR"];
-  if (dalle.hdr10) plages.push("HDR10", "HDR10Plus", "HLG");
+  const ranges = ["Unknown", "SDR"];
+  if (panel.hdr10) ranges.push("HDR10", "HDR10Plus", "HLG");
 
   // `DOVI` nu commande le marquage `dvh1` côté serveur — cf. plus haut. Le
   // déclarer sur un conteneur qui ne transporte pas le RPU donnerait une lecture
   // directe du profil 5 sans ses métadonnées : une image verdâtre.
-  if (dalle.dolbyVision && !conteneurSansRpu) plages.push("DOVI");
-  plages.push("DOVIWithSDR", "DOVIWithHLG");
-  if (dalle.hdr10) plages.push("DOVIWithHDR10", "DOVIWithHDR10Plus");
-  return plages;
+  if (panel.dolbyVision && !containerWithoutRpu) ranges.push("DOVI");
+  ranges.push("DOVIWithSDR", "DOVIWithHLG");
+  if (panel.hdr10) ranges.push("DOVIWithHDR10", "DOVIWithHDR10Plus");
+  return ranges;
 }
 
 /**
@@ -136,7 +136,7 @@ export function plagesDynamiquesTv(dalle: DalleTv, conteneurSansRpu = false): st
  * moteur qui déclare le HEVC alors que la table le refuse, ou l'inverse, est
  * une information. Aucune décision n'en dépend.
  */
-export function diagnosticCodecs(): Record<string, string> {
+export function codecDiagnostics(): Record<string, string> {
   if (typeof document === "undefined") return {};
   const sonde = document.createElement("video");
   const types: Record<string, string> = {
@@ -149,12 +149,12 @@ export function diagnosticCodecs(): Record<string, string> {
     eac3: 'audio/mp4; codecs="ec-3"',
     dts: 'audio/mp4; codecs="dtsc"',
   };
-  const releve: Record<string, string> = {};
+  const sample: Record<string, string> = {};
   for (const nom of Object.keys(types)) {
     // `canPlayType` rend "", "maybe" ou "probably". La chaîne nue est plus
     // parlante qu'un booléen : « maybe » est la réponse habituelle d'un
     // décodeur matériel qui ne peut garantir un profil précis.
-    releve[nom] = sonde.canPlayType(types[nom]) || "non";
+    sample[nom] = sonde.canPlayType(types[nom]) || "non";
   }
-  return releve;
+  return sample;
 }

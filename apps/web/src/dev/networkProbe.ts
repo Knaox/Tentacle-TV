@@ -23,26 +23,26 @@
  */
 
 /** Une requête observée, en vol ou terminée. */
-export interface RequeteSortante {
+export interface OutgoingRequest {
   /** Horodatage du DÉPART. */
   at: number;
-  methode: string;
+  method: string;
   url: string;
   /** `null` tant que la réponse n'est pas revenue. */
   status: number | null;
-  dureeMs: number | null;
+  durationMs: number | null;
   /** Rejet réseau — distinct d'un statut d'erreur, qui est une réponse. */
-  echec: boolean;
+  failed: boolean;
 }
 
 /** Au-delà, les plus anciennes tombent : c'est le récent qui informe. */
-const MAX_PAR_DEFAUT = 60;
+const DEFAULT_MAX = 60;
 
-export interface Sonde {
+export interface Probe {
   /** `fetch` instrumenté, à poser à la place de l'original. */
   fetch: typeof fetch;
-  journal: () => readonly RequeteSortante[];
-  vider: () => void;
+  log: () => readonly OutgoingRequest[];
+  clear: () => void;
 }
 
 /**
@@ -51,79 +51,79 @@ export interface Sonde {
  * Le `fetch` et l'horloge entrent par la porte : c'est ce qui rend le journal
  * vérifiable sans navigateur ni réseau.
  */
-export function creerSonde(deps: {
+export function createProbe(deps: {
   fetch: typeof fetch;
   now: () => number;
   max?: number;
-}): Sonde {
-  const max = deps.max ?? MAX_PAR_DEFAUT;
-  let journal: RequeteSortante[] = [];
+}): Probe {
+  const max = deps.max ?? DEFAULT_MAX;
+  let log: OutgoingRequest[] = [];
 
-  const instrumente: typeof fetch = async (entree, init) => {
-    const entry: RequeteSortante = {
+  const instrumented: typeof fetch = async (input, init) => {
+    const entry: OutgoingRequest = {
       at: deps.now(),
-      methode: methodeDe(entree, init),
-      url: urlDe(entree),
+      method: methodOf(input, init),
+      url: urlOf(input),
       status: null,
-      dureeMs: null,
-      echec: false,
+      durationMs: null,
+      failed: false,
     };
-    journal.push(entry);
-    if (journal.length > max) journal = journal.slice(-max);
+    log.push(entry);
+    if (log.length > max) log = log.slice(-max);
 
     try {
-      const reponse = await deps.fetch(entree, init);
-      entry.status = reponse.status;
-      entry.dureeMs = deps.now() - entry.at;
-      return reponse;
-    } catch (erreur) {
+      const response = await deps.fetch(input, init);
+      entry.status = response.status;
+      entry.durationMs = deps.now() - entry.at;
+      return response;
+    } catch (error) {
       // Un rejet n'est PAS un statut : hors ligne, la distinction est toute la
       // différence entre « le serveur a répondu non » et « il n'y a personne ».
-      entry.echec = true;
-      entry.dureeMs = deps.now() - entry.at;
-      throw erreur;
+      entry.failed = true;
+      entry.durationMs = deps.now() - entry.at;
+      throw error;
     }
   };
 
   return {
-    fetch: instrumente,
-    journal: () => journal,
-    vider: () => {
-      journal = [];
+    fetch: instrumented,
+    log: () => log,
+    clear: () => {
+      log = [];
     },
   };
 }
 
-function urlDe(entree: RequestInfo | URL): string {
-  if (typeof entree === "string") return entree;
-  if (entree instanceof URL) return entree.toString();
-  return entree.url;
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
 }
 
-function methodeDe(entree: RequestInfo | URL, init?: RequestInit): string {
+function methodOf(input: RequestInfo | URL, init?: RequestInit): string {
   if (init?.method) return init.method.toUpperCase();
-  if (typeof entree !== "string" && !(entree instanceof URL)) return entree.method.toUpperCase();
+  if (typeof input !== "string" && !(input instanceof URL)) return input.method.toUpperCase();
   return "GET";
 }
 
-let active: Sonde | null = null;
+let active: Probe | null = null;
 
 /**
  * Remplace `window.fetch`. Idempotent — un second appel ne réenveloppe pas,
  * ce qui compterait chaque requête deux fois.
  */
-export function installerSondeReseau(): void {
+export function installNetworkProbe(): void {
   if (active !== null || typeof window === "undefined") return;
-  active = creerSonde({ fetch: window.fetch.bind(window), now: () => Date.now() });
+  active = createProbe({ fetch: window.fetch.bind(window), now: () => Date.now() });
   window.fetch = active.fetch;
 }
 
 /** Ce qui est sorti, du plus ancien au plus récent. */
-export function requetesSortantes(): readonly RequeteSortante[] {
-  return active?.journal() ?? [];
+export function outgoingRequests(): readonly OutgoingRequest[] {
+  return active?.log() ?? [];
 }
 
 /** Vide le journal — à faire juste avant de lancer une lecture. */
-export function viderSondeReseau(): void {
-  active?.vider();
+export function clearNetworkProbe(): void {
+  active?.clear();
 }

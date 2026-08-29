@@ -12,7 +12,7 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { useResolveMediaTracks } from "@tentacle-tv/api-client";
 import type { MediaItem, MediaStream as JfStream } from "@tentacle-tv/shared";
-import { necessiteIncrustation } from "./useWebPlaybackFallbacks";
+import { needsBurnIn } from "./useWebPlaybackFallbacks";
 
 interface Options {
   item: MediaItem | undefined;
@@ -51,10 +51,10 @@ export function useServerTrackPrefs({
   // avaient été honorées : la garde du démarrage tombait, et un écart
   // transitoire de piste audio suffisait à forcer un transcodage. Porte
   // l'identifiant du média, donc se réarme tout seul au changement d'épisode.
-  const demandeEnvoyee = useRef<string | null>(null);
+  const requestSent = useRef<string | null>(null);
   useEffect(() => {
     if (streams.length === 0 || !item) return;
-    if (demandeEnvoyee.current === item.Id || prefsApplied.current) return;
+    if (requestSent.current === item.Id || prefsApplied.current) return;
     if (isLocalPlayback) {
       // Lecture locale : useLocalPlaybackTracks applique les préférences
       // depuis le cache — ce chemin serveur est neutralisé (zéro réseau).
@@ -68,7 +68,7 @@ export function useServerTrackPrefs({
     const ancestorIds = (ancestors ?? []).map((a) => a.Id);
     const allCandidates = [...new Set([parentId, seriesId, ...ancestorIds].filter(Boolean))] as string[];
     if (allCandidates.length === 0) { setPrefsReady(true); return; }
-    demandeEnvoyee.current = item.Id;
+    requestSent.current = item.Id;
     const aTracks = streams.filter((s) => s.Type === "Audio")
       .map((s) => ({ index: s.Index, language: s.Language, isDefault: s.IsDefault, title: [s.Title, s.DisplayTitle].filter(Boolean).join(" ") }));
     const sTracks = streams.filter((s) => s.Type === "Subtitle")
@@ -104,7 +104,7 @@ export function useServerTrackPrefs({
             const sub = streams.find((s) => s.Type === "Subtitle" && s.Index === idx);
             // Un PGS rendu côté client n'a pas à être incrusté : l'incrustation
             // coûterait un ré-encodage complet de l'image, dès le démarrage.
-            if (sub && necessiteIncrustation(sub.Codec, pgsClientOk)) setBurnInSubtitleIndex(idx);
+            if (sub && needsBurnIn(sub.Codec, pgsClientOk)) setBurnInSubtitleIndex(idx);
           }
         }
         setPrefsReady(true);

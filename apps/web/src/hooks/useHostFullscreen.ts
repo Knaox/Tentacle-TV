@@ -21,19 +21,19 @@ import { listen } from "../desktop/bridge";
  * l'évènement à chaque bascule.
  */
 export function useHostFullscreen(): boolean {
-  const [pleinEcran, setPleinEcran] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
-    let annule = false;
-    let desabonner: (() => void) | undefined;
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
     void (async () => {
       try {
         const un = await listen<boolean>("window://fullscreen", (e) => {
-          if (!annule) setPleinEcran(e.payload);
+          if (!cancelled) setFullscreen(e.payload);
         });
-        if (annule) un();
-        else desabonner = un;
+        if (cancelled) un();
+        else unsubscribe = un;
       } catch {
         // Hors coquille de bureau, ou évènement indisponible : la fenêtre n'a
         // alors pas de plein écran que nous pilotions, et `false` est juste.
@@ -41,10 +41,10 @@ export function useHostFullscreen(): boolean {
     })();
 
     return () => {
-      annule = true;
-      desabonner?.();
+      cancelled = true;
+      unsubscribe?.();
     };
   }, []);
 
-  return pleinEcran;
+  return fullscreen;
 }

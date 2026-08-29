@@ -2,8 +2,8 @@ import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { RelayStatusResponse } from "@tentacle-tv/api-client";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
-import { rangerJumelage } from "../../bootstrap/fragmentToken";
-import { useJumelageRelais } from "../../auth/usePairingRelay";
+import { storePairing } from "../../bootstrap/fragmentToken";
+import { usePairingRelay } from "../../auth/usePairingRelay";
 import { BasculeLangueTv } from "./LanguageToggleTv";
 
 /**
@@ -23,14 +23,14 @@ import { BasculeLangueTv } from "./LanguageToggleTv";
  * n'avait de raison d'être que tant qu'on ignorait où il était.
  *
  * Le dessin est celui de `RelayCodeDisplay` d'Android TV, valeur pour valeur,
- * via `.carte-jumelage` — même carte, mêmes cases de code, même jauge. Un
+ * via `.carte-pairing` — même carte, mêmes cases de code, même jauge. Un
  * utilisateur qui jumelle une LG après une Android TV doit reconnaître l'écran.
  *
  * Cet écran vit hors de la disposition — la garde de routes le monte à la place
  * de la connexion — donc il n'hérite d'aucun des fonds de l'application. Le
  * dégradé ambiant est remonté ici.
  */
-export function EcranNonJumele() {
+export function UnpairedScreen() {
   const { t } = useTranslation("pairing");
 
   /**
@@ -47,28 +47,28 @@ export function EcranNonJumele() {
    * cache lisent le jeton au démarrage, et un simple changement de route les
    * laisserait sur l'ancien.
    */
-  const surConfirmation = useCallback((donnees: RelayStatusResponse) => {
-    if (!donnees.token || !donnees.user) return;
-    const utilisateur = { Id: donnees.user.id, Name: donnees.user.name };
-    const cible = (donnees.serverUrl ?? "").replace(/\/+$/, "");
+  const surConfirmation = useCallback((data: RelayStatusResponse) => {
+    if (!data.token || !data.user) return;
+    const user = { Id: data.user.id, Name: data.user.name };
+    const target = (data.serverUrl ?? "").replace(/\/+$/, "");
 
-    if (cible && cible !== window.location.origin) {
+    if (target && target !== window.location.origin) {
       window.location.href =
-        `${cible}/tv/#jeton=${encodeURIComponent(donnees.token)}` +
-        `&u=${encodeURIComponent(utilisateur.Id)}` +
-        `&n=${encodeURIComponent(utilisateur.Name)}`;
+        `${target}/tv/#jeton=${encodeURIComponent(data.token)}` +
+        `&u=${encodeURIComponent(user.Id)}` +
+        `&n=${encodeURIComponent(user.Name)}`;
       return;
     }
 
-    rangerJumelage(donnees.token, utilisateur);
+    storePairing(data.token, user);
     window.location.href = `${window.location.origin}/tv/`;
   }, []);
 
-  const jumelage = useJumelageRelais(surConfirmation);
+  const pairing = usePairingRelay(surConfirmation);
 
-  const minutes = Math.floor(jumelage.restant / 60);
-  const secondes = jumelage.restant % 60;
-  const part = jumelage.duree > 0 ? jumelage.restant / jumelage.duree : 0;
+  const minutes = Math.floor(pairing.remaining / 60);
+  const seconds = pairing.remaining % 60;
+  const part = pairing.duration > 0 ? pairing.remaining / pairing.duration : 0;
 
   return (
     <div className="ecran-jumelage">
@@ -78,19 +78,19 @@ export function EcranNonJumele() {
       <div className="carte-jumelage">
         <TentacleLogo size="xl" variant="bare" />
 
-        {jumelage.etat === "code" && jumelage.code && (
+        {pairing.state === "code" && pairing.code && (
           <>
             <div className="code-cases">
-              {jumelage.code.split("").map((caractere, rang) => (
-                <span className="code-case" key={`${caractere}-${rang}`}>
-                  {caractere}
+              {pairing.code.split("").map((character, rang) => (
+                <span className="code-case" key={`${character}-${rang}`}>
+                  {character}
                 </span>
               ))}
             </div>
             <p className="legende">{t("tvPairInstructions")}</p>
             <p className="rebours">
               {t("expiresIn", {
-                time: `${minutes}:${secondes < 10 ? "0" : ""}${secondes}`,
+                time: `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`,
               })}
             </p>
             <div className="jauge">
@@ -99,21 +99,21 @@ export function EcranNonJumele() {
           </>
         )}
 
-        {jumelage.etat === "chargement" && <p className="legende">{t("tvPreparingCode")}</p>}
+        {pairing.state === "chargement" && <p className="legende">{t("tvPreparingCode")}</p>}
 
-        {jumelage.etat === "expire" && (
+        {pairing.state === "expire" && (
           <>
             <p className="titre-etape">{t("codeExpired")}</p>
-            <button type="button" className="bouton" onClick={jumelage.regenerer}>
+            <button type="button" className="bouton" onClick={pairing.regenerate}>
               {t("generateNewCode")}
             </button>
           </>
         )}
 
-        {jumelage.etat === "erreur" && (
+        {pairing.state === "erreur" && (
           <>
             <p className="titre-etape">{t("relayError")}</p>
-            <button type="button" className="bouton" onClick={jumelage.regenerer}>
+            <button type="button" className="bouton" onClick={pairing.regenerate}>
               {t("tvRetry")}
             </button>
           </>
@@ -123,4 +123,4 @@ export function EcranNonJumele() {
   );
 }
 
-export default EcranNonJumele;
+export default UnpairedScreen;

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "@/components/ui/TentacleLogo";
-import { LigneInfoTv } from "./InfoRowTv";
+import { InfoRowTv } from "./InfoRowTv";
 
 /**
  * À propos — ce qu'on vient lire quand quelque chose ne va pas.
@@ -41,20 +41,20 @@ import { LigneInfoTv } from "./InfoRowTv";
  */
 
 /** Le pendant de `TV_PLATFORM_LABEL` d'`apps/tv`, pour cette cible-ci. */
-const PLATEFORME = "LG webOS";
+const PLATFORM = "LG webOS";
 
-function nomDuCompte(): string {
+function accountName(): string {
   try {
-    const brut = localStorage.getItem("tentacle_user");
-    if (!brut) return "—";
-    const nom = (JSON.parse(brut) as { Name?: unknown }).Name;
+    const raw = localStorage.getItem("tentacle_user");
+    if (!raw) return "—";
+    const nom = (JSON.parse(raw) as { Name?: unknown }).Name;
     return typeof nom === "string" && nom.length > 0 ? nom : "—";
   } catch {
     return "—";
   }
 }
 
-export function EcranAProposTv() {
+export function AboutScreenTv() {
   const { t } = useTranslation("about");
   const { t: tPairing } = useTranslation("pairing");
 
@@ -62,9 +62,9 @@ export function EcranAProposTv() {
   // Le client est servi par son propre serveur : son adresse est celle de la
   // page. Pas de `tentacle_server_url` à lire ici, contrairement à `apps/tv`
   // dont l'application est installée et doit se souvenir d'où elle se connecte.
-  const serveur = window.location.host;
+  const server = window.location.host;
 
-  const fonctionnalites = [
+  const features = [
     t("featurePlayer"),
     t("featureResume"),
     t("featureRequests"),
@@ -86,9 +86,9 @@ export function EcranAProposTv() {
 
       <section className="mb-12">
         <dl className="flex flex-col gap-5">
-          <LigneInfoTv intitule={tPairing("tvServeur")} valeur={serveur} />
-          <LigneInfoTv intitule={tPairing("tvCompteJumele")} valeur={nomDuCompte()} />
-          <LigneInfoTv intitule={tPairing("tvPlateforme")} valeur={PLATEFORME} />
+          <InfoRowTv intitule={tPairing("tvServeur")} value={server} />
+          <InfoRowTv intitule={tPairing("tvCompteJumele")} value={accountName()} />
+          <InfoRowTv intitule={tPairing("tvPlateforme")} value={PLATFORM} />
         </dl>
       </section>
 
@@ -101,8 +101,8 @@ export function EcranAProposTv() {
           {t("features")}
         </h2>
         <ul className="flex flex-col gap-3">
-          {fonctionnalites.map((fonctionnalite) => (
-            <li key={fonctionnalite} className="flex items-start gap-3">
+          {features.map((feature) => (
+            <li key={feature} className="flex items-start gap-3">
               {/* La puce d'`apps/tv` : cinq pixels, la couleur de marque. Elle
                   aligne l'œil sans occuper de place. */}
               <span
@@ -111,7 +111,7 @@ export function EcranAProposTv() {
                 style={{ background: "var(--brand-accent)" }}
               />
               <span className="text-base leading-relaxed text-content-secondary">
-                {fonctionnalite}
+                {feature}
               </span>
             </li>
           ))}
@@ -125,4 +125,4 @@ export function EcranAProposTv() {
   );
 }
 
-export default EcranAProposTv;
+export default AboutScreenTv;

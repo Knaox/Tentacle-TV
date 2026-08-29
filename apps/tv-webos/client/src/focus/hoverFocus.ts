@@ -1,5 +1,5 @@
-import { SELECTEUR_FOCUSABLE, cibleAtteignable, estUnChampDeSaisie } from "./candidates";
-import { pointeurABougeDepuisScellement, pointeurActif } from "./cursor";
+import { FOCUSABLE_SELECTOR, reachableTarget, isInputField } from "./candidates";
+import { pointerMovedSinceSeal, pointerActive } from "./cursor";
 
 /**
  * Le survol : capté avant React, et rendu au focus.
@@ -45,18 +45,18 @@ import { pointeurABougeDepuisScellement, pointeurActif } from "./cursor";
  * pas coûter quarante abonnements, et les cartes vont et viennent au gré du
  * fenêtrage — un gestionnaire par composant serait posé et retiré sans arrêt.
  *
- * `suspendu` est fourni par l'appelant plutôt que déduit ici : c'est le moteur
+ * `suspended` est fourni par l'appelant plutôt que déduit ici : c'est le moteur
  * qui sait quand les flèches ne lui appartiennent pas — commandes du lecteur
  * masquées, curseur fantôme en cours — et le survol doit se taire aux mêmes
  * moments. Dupliquer la condition, c'est la laisser diverger.
  */
-export function surveillerSurvol(suspendu: () => boolean): () => void {
-  const surSurvol = (evenement: Event) => {
+export function watchHover(suspended: () => boolean): () => void {
+  const onHover = (event: Event) => {
     // Barré dans tous les cas, y compris quand le moteur est suspendu : le
     // lecteur n'a pas plus besoin du survol du web que le reste, et son
     // habillage est piloté par `playback/autoHideTv.ts`.
-    evenement.stopPropagation();
-    if (suspendu()) return;
+    event.stopPropagation();
+    if (suspended()) return;
 
     // Un `mouseover` n'est pas la preuve qu'on a bougé le pointeur.
     //
@@ -72,31 +72,31 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
     // commencé, a fortiori avant le `mouseover` qu'il provoquera. Et un vrai
     // pointeur qui vient se poser sur un élément a nécessairement traversé
     // l'écran — donc émis `mousemove`, donc rétabli le mode.
-    if (!pointeurActif()) return;
+    if (!pointerActive()) return;
 
     // Et le mode ne suffit pas quand c'est le POINTEUR qui fait défiler. On est
     // alors en mode pointeur par construction, et pourtant chaque image de
     // défilement produit un `mouseover` sans qu'on ait bougé la télécommande.
     // Le sceau distingue ces deux survols : il est posé avant chaque écriture
     // de défilement et levé par tout `mousemove` réel.
-    if (!pointeurABougeDepuisScellement()) return;
+    if (!pointerMovedSinceSeal()) return;
 
-    const cible = evenement.target;
-    if (!(cible instanceof HTMLElement)) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
 
-    const focusable = cible.closest<HTMLElement>(SELECTEUR_FOCUSABLE);
+    const focusable = target.closest<HTMLElement>(FOCUSABLE_SELECTOR);
     if (!focusable) return;
     if (focusable === document.activeElement) return;
     // Un pointeur qui traverse un champ de recherche ferait surgir le clavier
     // système plein écran de webOS. On laisse les champs au clic et au D-pad,
     // qui sont des gestes intentionnels — traverser n'en est pas un.
-    if (estUnChampDeSaisie(focusable)) return;
+    if (isInputField(focusable)) return;
 
     // Même juge que le recensement du D-pad. Il ne s'agit pas de prudence de
     // principe : une commande à `opacity: 0` reçoit les événements de souris
     // sans rien montrer, et le focus s'y poserait sans anneau visible —
     // exactement le trou noir que le moteur évite déjà de son côté.
-    if (!cibleAtteignable(focusable)) return;
+    if (!reachableTarget(focusable)) return;
 
     focusable.focus();
   };
@@ -106,14 +106,14 @@ export function surveillerSurvol(suspendu: () => boolean): () => void {
   // React ne synthétise ni `onMouseEnter` ni `onMouseLeave` — il les déduit de
   // `mouseover` et `mouseout`, et `mouseenter`/`mouseleave` se propagent en
   // capture même s'ils ne remontent pas.
-  const barrer = (evenement: Event) => evenement.stopPropagation();
-  const BARRES = ["mouseout", "mouseenter", "mouseleave"];
+  const block = (event: Event) => event.stopPropagation();
+  const BLOCKED = ["mouseout", "mouseenter", "mouseleave"];
 
-  document.addEventListener("mouseover", surSurvol, true);
-  BARRES.forEach((type) => document.addEventListener(type, barrer, true));
+  document.addEventListener("mouseover", onHover, true);
+  BLOCKED.forEach((type) => document.addEventListener(type, block, true));
 
   return () => {
-    document.removeEventListener("mouseover", surSurvol, true);
-    BARRES.forEach((type) => document.removeEventListener(type, barrer, true));
+    document.removeEventListener("mouseover", onHover, true);
+    BLOCKED.forEach((type) => document.removeEventListener(type, block, true));
   };
 }

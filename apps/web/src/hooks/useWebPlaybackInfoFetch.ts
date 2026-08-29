@@ -1,10 +1,10 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import type { usePlaybackInfo } from "./usePlaybackInfo";
-import { sourceEstDolbyVision } from "./playbackVerdict";
+import { isDolbyVisionSource } from "./playbackVerdict";
 
 /** Le flux vidéo de la première source, seul endroit où la plage est décrite. */
-function fluxVideoDe(item: MediaItem | undefined): MediaStream | undefined {
+function videoStreamOf(item: MediaItem | undefined): MediaStream | undefined {
   return item?.MediaSources?.[0]?.MediaStreams?.find((s) => s.Type === "Video");
 }
 
@@ -17,7 +17,7 @@ interface Options {
    * Compteur de relance des filets. Il ne sert qu'à une chose : garantir qu'une
    * requête repart, même quand rien d'autre n'a bougé (échec à 0 s).
    */
-  relanceLecture: number;
+  playbackRestart: number;
   isDesktop: boolean;
   prefsReady: boolean;
   itemId: string | undefined;
@@ -41,10 +41,10 @@ interface Options {
 export function useWebPlaybackInfoFetch({
   isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
   burnInSubtitleIndex, startTicks, quality, qualityMaxHeight, item,
-  supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, relanceLecture,
+  supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, playbackRestart,
 }: Options): void {
   /** Tout ce qui, HORS piste audio, oblige à redemander une session. */
-  const contexteRef = useRef<string | null>(null);
+  const contextRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (isDesktop || !prefsReady || !itemId) return;
@@ -58,11 +58,11 @@ export function useWebPlaybackInfoFetch({
     // changé — et si la bascule échoue, `surPisteIntrouvable` fait repartir
     // cette requête par le compteur de relance. Le repli reste le comportement
     // d'avant, jamais l'inverse.
-    const contexte = [itemId, mediaSourceId, burnInSubtitleIndex, ticks, quality,
-      relanceLecture, pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible].join("|");
-    const seulePisteAChange = contexteRef.current === contexte;
-    contexteRef.current = contexte;
-    if (seulePisteAChange && pbInfo.isDirectPlay && supportsNativeAudioTracks) return;
+    const context = [itemId, mediaSourceId, burnInSubtitleIndex, ticks, quality,
+      playbackRestart, pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable].join("|");
+    const onlyTrackChanged = contextRef.current === context;
+    contextRef.current = context;
+    if (onlyTrackChanged && pbInfo.isDirectPlay && supportsNativeAudioTracks) return;
     // Edge/Chrome: no native audioTracks API — if user wants non-default audio,
     // force server-side audio selection (remux/transcode) instead of direct play.
     //
@@ -72,8 +72,8 @@ export function useWebPlaybackInfoFetch({
     // d'initialisation avec un `defaultAudio` fraîchement résolu par l'arrivée
     // des `MediaStreams`, et sacrifie le DirectPlay du démarrage pour un écart
     // qui n'existe pas — l'effet de réconciliation le comble au rendu suivant.
-    const pisteDemandee = prefsApplied.current || audioOverrideRef.current;
-    const forceTranscode = pisteDemandee && !supportsNativeAudioTracks && audioIndex !== defaultAudio;
+    const requestedTrack = prefsApplied.current || audioOverrideRef.current;
+    const forceTranscode = requestedTrack && !supportsNativeAudioTracks && audioIndex !== defaultAudio;
     pbInfo.fetchPlaybackInfo({
       itemId,
       mediaSourceId,
@@ -92,12 +92,12 @@ export function useWebPlaybackInfoFetch({
       // Le profil ne voit jamais l'item : il faut lui dire ce qu'on s'apprête à
       // lui faire lire. Seul le téléviseur s'en sert, pour choisir le conteneur
       // d'un remux qui préserve le RPU.
-      sourceDolbyVision: sourceEstDolbyVision(fluxVideoDe(item)),
+      sourceDolbyVision: isDolbyVisionSource(videoStreamOf(item)),
     });
     // Les deux drapeaux de repli SONT des dépendances de rendu : ce sont eux,
     // et eux seuls, qui relancent la requête après un échec. Passer par
     // `startTicks` ne suffirait pas — l'échec MKV survient à 0 s, où la
     // position ne change pas.
   }, [isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, burnInSubtitleIndex, startTicks, quality,
-    pbInfo.mkvNonFiable, pbInfo.pgsClientIndisponible, relanceLecture]); // eslint-disable-line react-hooks/exhaustive-deps
+    pbInfo.mkvUnreliable, pbInfo.pgsClientUnavailable, playbackRestart]); // eslint-disable-line react-hooks/exhaustive-deps
 }

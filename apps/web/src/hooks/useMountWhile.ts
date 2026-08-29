@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * « Monté tant que `actif`, plus le temps de son fondu de sortie. »
+ * « Monté tant que `active`, plus le temps de son fondu de sortie. »
  *
  * Jumeau de [useHoverMount] pour les composants qui ne POSSÈDENT pas le survol :
  * celui-ci prend la condition en entrée au lieu de rendre des gestionnaires
@@ -19,17 +19,17 @@ import { useEffect, useState } from "react";
  *
  * `exitMs` doit couvrir le plus lent des fondus de sortie, sinon il est coupé.
  */
-export function useMountWhile(actif: boolean, exitMs: number): boolean {
-  const [monte, setMonte] = useState(actif);
+export function useMountWhile(active: boolean, exitMs: number): boolean {
+  const [monte, setMonte] = useState(active);
 
   useEffect(() => {
-    if (actif) {
+    if (active) {
       setMonte(true);
       return;
     }
     const id = setTimeout(() => setMonte(false), exitMs);
     return () => clearTimeout(id);
-  }, [actif, exitMs]);
+  }, [active, exitMs]);
 
   return monte;
 }

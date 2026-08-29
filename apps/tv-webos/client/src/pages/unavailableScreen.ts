@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
  * Écrit en `createElement` : le JSX de cette application vit dans `apps/web`,
  * la cible téléviseur n'en contient pas.
  */
-export function EcranIndisponible(): ReactElement {
+export function UnavailableScreen(): ReactElement {
   const { t } = useTranslation("common");
 
   return createElement(
@@ -31,4 +31,4 @@ export function EcranIndisponible(): ReactElement {
   );
 }
 
-export default EcranIndisponible;
+export default UnavailableScreen;

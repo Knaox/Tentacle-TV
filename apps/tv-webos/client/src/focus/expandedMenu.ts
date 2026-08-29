@@ -1,5 +1,5 @@
-import { cibleAtteignable } from "./candidates";
-import { donnerFocus } from "./active";
+import { reachableTarget } from "./candidates";
+import { giveFocus } from "./active";
 
 /**
  * Refermer un menu déployé, et rendre le focus à ce qui l'a ouvert.
@@ -17,7 +17,7 @@ import { donnerFocus } from "./active";
  * bascule, elle sait se fermer elle-même.
  */
 
-const DECLENCHEUR = '[aria-expanded="true"]';
+const TRIGGER = '[aria-expanded="true"]';
 
 /**
  * Le déclencheur d'un piège donné : le plus PROCHE, pas le premier du document.
@@ -34,26 +34,26 @@ const DECLENCHEUR = '[aria-expanded="true"]';
  * piège, on retombe sur le document entier : c'est le cas des menus qui ne
  * déclarent aucun rôle et ne confinent donc rien.
  */
-export function declencheurDuMenu(piege: ParentNode | null): HTMLElement | null {
-  if (!piege || !(piege instanceof HTMLElement)) {
-    return premierAtteignable(document.querySelectorAll<HTMLElement>(DECLENCHEUR));
+export function menuTrigger(trap: ParentNode | null): HTMLElement | null {
+  if (!trap || !(trap instanceof HTMLElement)) {
+    return firstReachable(document.querySelectorAll<HTMLElement>(TRIGGER));
   }
 
-  let courant: HTMLElement | null = piege.parentElement;
-  while (courant) {
-    for (const candidat of courant.querySelectorAll<HTMLElement>(DECLENCHEUR)) {
-      if (candidat.contains(piege)) continue;
-      if (cibleAtteignable(candidat)) return candidat;
+  let current: HTMLElement | null = trap.parentElement;
+  while (current) {
+    for (const candidate of current.querySelectorAll<HTMLElement>(TRIGGER)) {
+      if (candidate.contains(trap)) continue;
+      if (reachableTarget(candidate)) return candidate;
     }
-    courant = courant.parentElement;
+    current = current.parentElement;
   }
 
   return null;
 }
 
-function premierAtteignable(noeuds: NodeListOf<HTMLElement>): HTMLElement | null {
-  for (const noeud of noeuds) {
-    if (cibleAtteignable(noeud)) return noeud;
+function firstReachable(nodes: NodeListOf<HTMLElement>): HTMLElement | null {
+  for (const node of nodes) {
+    if (reachableTarget(node)) return node;
   }
   return null;
 }
@@ -61,15 +61,15 @@ function premierAtteignable(noeuds: NodeListOf<HTMLElement>): HTMLElement | null
 /**
  * Referme le menu et rend le focus à son déclencheur. Faux s'il n'y en a pas.
  *
- * Le focus est rendu par `donnerFocus` et non par un `focus()` nu : la page a
+ * Le focus est rendu par `giveFocus` et non par un `focus()` nu : la page a
  * pu défiler pendant qu'on parcourait le panneau, et une pastille hors écran
  * est un anneau qu'on ne voit pas.
  */
-export function fermerMenuDeploye(piege: ParentNode | null = null): boolean {
-  const declencheur = declencheurDuMenu(piege);
-  if (!declencheur) return false;
+export function closeExpandedMenu(trap: ParentNode | null = null): boolean {
+  const trigger = menuTrigger(trap);
+  if (!trigger) return false;
 
-  declencheur.click();
-  donnerFocus(declencheur);
+  trigger.click();
+  giveFocus(trigger);
   return true;
 }

@@ -13,12 +13,12 @@
 // « seen » et pas « notice » : la première clé s'était consommée INVISIBLE sur
 // le poste de dev (lecture automatique sans geste, page derrière la vidéo) —
 // jamais livrée, renommée sans coût pour repartir vierge.
-const CLE = "tentacle_wayland_fullscreen_seen";
+const KEY = "tentacle_wayland_fullscreen_seen";
 
 /** L'avis a-t-il déjà été montré sur cet appareil ? */
-export function avisPleinEcranDejaVu(): boolean {
+export function fullscreenNoticeSeen(): boolean {
   try {
-    return localStorage.getItem(CLE) === "1";
+    return localStorage.getItem(KEY) === "1";
   } catch {
     // Stockage indisponible : impossible de retenir « déjà vu » — mieux vaut
     // se taire que répéter l'avis à chaque lecture.
@@ -27,9 +27,9 @@ export function avisPleinEcranDejaVu(): boolean {
 }
 
 /** Retient que l'avis a été montré. */
-export function marquerAvisPleinEcranVu(): void {
+export function markFullscreenNoticeSeen(): void {
   try {
-    localStorage.setItem(CLE, "1");
+    localStorage.setItem(KEY, "1");
   } catch {
     /* stockage indisponible : l'avis ne sera de toute façon pas remontré */
   }

@@ -20,22 +20,22 @@ import { useTranslation } from "react-i18next";
  */
 export function BasculeLangueTv() {
   const { i18n } = useTranslation();
-  const actuelle = i18n.language?.slice(0, 2) === "fr" ? "fr" : "en";
-  const cible = actuelle === "fr" ? "en" : "fr";
+  const current2 = i18n.language?.slice(0, 2) === "fr" ? "fr" : "en";
+  const target = current2 === "fr" ? "en" : "fr";
 
-  const basculer = useCallback(() => {
-    void i18n.changeLanguage(cible);
+  const toggle = useCallback(() => {
+    void i18n.changeLanguage(target);
     try {
-      localStorage.setItem("tentacle_language", cible);
+      localStorage.setItem("tentacle_language", target);
     } catch {
       // Stockage indisponible : la langue tiendra pour cette session-ci.
     }
-  }, [i18n, cible]);
+  }, [i18n, target]);
 
   return (
     <div className="bascule-langue">
-      <button type="button" className="bouton-lien" onClick={basculer}>
-        {cible.toUpperCase()}
+      <button type="button" className="bouton-lien" onClick={toggle}>
+        {target.toUpperCase()}
       </button>
     </div>
   );

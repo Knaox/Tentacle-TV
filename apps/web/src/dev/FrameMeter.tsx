@@ -115,7 +115,7 @@ export function FrameMeter() {
         whiteSpace: "nowrap",
       }}
     >
-      mesure…
+      measure…
     </div>
   );
 }
@@ -124,7 +124,7 @@ export function FrameMeter() {
  * Vrai si le compteur doit être monté — **en développement uniquement**.
  *
  * Le montage se fait derrière `import.meta.env.DEV` côté appelant (`App.tsx`),
- * comme les autres harnais de `dev/` : le composant est alors éliminé du build
+ * comme les autres harness de `dev/` : le composant est alors éliminé du build
  * de production, il ne part donc jamais dans une release.
  *
  * Il a existé une porte d'entrée par URL et par `localStorage`, pour pouvoir

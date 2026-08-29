@@ -55,8 +55,8 @@ export function DesktopPlayer({
   // `hasStartedRef` est écrit par useMpvSource (contrat existant) ; ce MIROIR
   // réactif garantit que l'arbitre et l'écran de chargement voient le
   // démarrage à l'instant même — une ref seule dépendait d'un re-rendu
-  // fortuit (bug latent, corrigé en parité avec `aDemarre` de VideoPlayer).
-  const [aDemarre, setADemarre] = useState(false);
+  // fortuit (bug latent, corrigé en parité avec `hasStarted` de VideoPlayer).
+  const [hasStarted, setHasStarted] = useState(false);
   const prevSrcRef = useRef("");
   // Pistes externes déjà sub-add sur la source courante : jfIndex → sid mpv.
   const loadedExternalSubs = useRef<Map<number, number>>(new Map());
@@ -130,14 +130,14 @@ export function DesktopPlayer({
 
   // Le miroir réactif du démarrage — armé dès que useMpvSource a posé la ref,
   // au premier battement de position ; réarmé à chaque nouvelle source.
-  useEffect(() => { setADemarre(false); }, [src]);
+  useEffect(() => { setHasStarted(false); }, [src]);
   useEffect(() => {
-    if (!aDemarre && hasStartedRef.current) setADemarre(true);
-  }, [aDemarre, state.position, state.playing]);
+    if (!hasStarted && hasStartedRef.current) setHasStarted(true);
+  }, [hasStarted, state.position, state.playing]);
 
   // Badge central, déclaré APRÈS `useMpvSource` : un rechargement de source fait
   // repasser mpv par la pause, et `inerte` empêche d'en faire un badge.
-  const { flash: playbackFlash, ignorerProchaineBascule } = usePlaybackFlash(
+  const { flash: playbackFlash, ignoreNextToggle } = usePlaybackFlash(
     state.paused,
     state.muted || state.volume === 0,
     sourceChanging,
@@ -171,7 +171,7 @@ export function DesktopPlayer({
     localItemId: isLocalPlayback ? itemId : undefined,
     effectiveMpvOffset, seek, setPause,
     // La pause du glissement n'est pas celle de l'utilisateur : aucun badge.
-    ignorerProchaineBascule,
+    ignoreNextToggle,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
@@ -185,7 +185,7 @@ export function DesktopPlayer({
   const playback = useDesktopSegmentsOverlay({
     itemId, isEpisode, hasNextEpisode,
     positionSeconds: actualPos, durationSeconds: dur,
-    hasStarted: aDemarre, playbackEnded: fileLoaded && state.eof && aDemarre,
+    hasStarted: hasStarted, playbackEnded: fileLoaded && state.eof && hasStarted,
     segments, runtimeMs, serverAutoplayEnabled,
     scrubbing: seekbar.dragProgress != null,
     isDirectPlay, effectiveMpvOffset, seek,
@@ -209,15 +209,15 @@ export function DesktopPlayer({
   // perdu — configs Windows + EAC3 5.1). Le signe, c'est une position qui
   // AVANCE : `position > 0` ne le prouve pas, time-pos valant déjà la position
   // de départ dès l'ouverture du fichier sur une REPRISE.
-  const posDepartRef = useRef<number | null>(null);
-  if (posDepartRef.current === null && state.position > 0) posDepartRef.current = state.position;
-  const lectureAvance = posDepartRef.current !== null && state.position > posDepartRef.current + 0.25;
+  const startPosRef = useRef<number | null>(null);
+  if (startPosRef.current === null && state.position > 0) startPosRef.current = state.position;
+  const playbackStarted = startPosRef.current !== null && state.position > startPosRef.current + 0.25;
   // Réserve constituée avant de lancer l'image, l'écran de chargement couvrant
   // l'attente : un seul chargement, et il ne recommence pas derrière.
   const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
-  const showLoadingOverlay = prebuffering || (lectureAvance
+  const showLoadingOverlay = prebuffering || (playbackStarted
     ? false
-    : sourceChanging || (!state.playing && !aDemarre));
+    : sourceChanging || (!state.playing && !hasStarted));
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode

@@ -12,19 +12,19 @@
  */
 
 /** Le canevas de l'application, en pixels CSS. */
-export interface Canevas {
-  largeur: number;
+export interface Canvas {
+  width: number;
   hauteur: number;
 }
 
 /** Le retrait d'overscan, par axe. */
-export interface Retrait {
+export interface Inset {
   x: number;
   y: number;
 }
 
 /** Ce que le curseur demande, en pixels par seconde. Négatif = vers le début. */
-export interface Poussee {
+export interface Push {
   x: number;
   y: number;
 }
@@ -46,8 +46,8 @@ export const MARGE_UTILE_X = 64;
 export const MARGE_UTILE_Y = 66;
 
 /** Vitesses extrêmes, en pixels par seconde. */
-export const VITESSE_MIN = 240;
-export const VITESSE_MAX = 1600;
+export const MIN_SPEED = 240;
+export const MAX_SPEED = 1600;
 
 /**
  * Part de la bande où l'on ne défile pas encore.
@@ -55,11 +55,11 @@ export const VITESSE_MAX = 1600;
  * Un curseur posé un pixel dans la bande ne doit pas faire dériver la page :
  * on l'y a mis pour viser ce qui s'y trouve, pas pour défiler.
  */
-export const ZONE_MORTE = 0.06;
+export const DEAD_ZONE = 0.06;
 
 /** Profondeur d'une bande sur un axe, retrait d'overscan compris. */
-export function bande(retrait: number, margeUtile: number): number {
-  return retrait + margeUtile;
+export function band(inset: number, margeUtile: number): number {
+  return inset + margeUtile;
 }
 
 /**
@@ -67,9 +67,9 @@ export function bande(retrait: number, margeUtile: number): number {
  * la dalle. Rend 0 hors de la bande, et ne dépasse jamais 1 — un pointeur dans
  * l'overscan ne va pas plus vite que le maximum.
  */
-export function profondeur(distanceAuBord: number, profondeurBande: number): number {
-  if (profondeurBande <= 0) return 0;
-  const dedans = (profondeurBande - distanceAuBord) / profondeurBande;
+export function depth(distanceToEdge: number, bandDepth: number): number {
+  if (bandDepth <= 0) return 0;
+  const dedans = (bandDepth - distanceToEdge) / bandDepth;
   if (dedans <= 0) return 0;
   return dedans > 1 ? 1 : dedans;
 }
@@ -86,10 +86,10 @@ export function profondeur(distanceAuBord: number, profondeurBande: number): num
  * soit deux tiers de seconde. La zone morte est retranchée AVANT la mise à
  * l'échelle, sans quoi le premier pixel utile partirait déjà à 240.
  */
-export function vitesse(fraction: number): number {
-  if (fraction <= ZONE_MORTE) return 0;
-  const utile = (fraction - ZONE_MORTE) / (1 - ZONE_MORTE);
-  return VITESSE_MIN + (VITESSE_MAX - VITESSE_MIN) * utile * utile;
+export function speed(fraction: number): number {
+  if (fraction <= DEAD_ZONE) return 0;
+  const utile = (fraction - DEAD_ZONE) / (1 - DEAD_ZONE);
+  return MIN_SPEED + (MAX_SPEED - MIN_SPEED) * utile * utile;
 }
 
 /**
@@ -99,12 +99,12 @@ export function vitesse(fraction: number): number {
  * fait aussi le système. L'appelant décide ensuite ce qu'il peut réellement
  * faire bouger — la page pour la verticale, une rangée pour l'horizontale.
  */
-export function poussee(x: number, y: number, canevas: Canevas, retrait: Retrait): Poussee {
-  const bandeX = bande(retrait.x, MARGE_UTILE_X);
-  const bandeY = bande(retrait.y, MARGE_UTILE_Y);
+export function push(x: number, y: number, canvas: Canvas, inset: Inset): Push {
+  const bandX = band(inset.x, MARGE_UTILE_X);
+  const bandY = band(inset.y, MARGE_UTILE_Y);
   return {
-    x: composante(x, canevas.largeur, bandeX),
-    y: composante(y, canevas.hauteur, bandeY),
+    x: component(x, canvas.width, bandX),
+    y: component(y, canvas.hauteur, bandY),
   };
 }
 
@@ -115,10 +115,10 @@ export function poussee(x: number, y: number, canevas: Canevas, retrait: Retrait
  * bandes — cas d'école sur un canevas de téléviseur, mais un panneau modal
  * peut, lui, être étroit.
  */
-function composante(position: number, taille: number, profondeurBande: number): number {
-  const versLeDebut = profondeur(position, profondeurBande);
-  const versLaFin = profondeur(taille - position, profondeurBande);
-  if (versLeDebut > versLaFin) return -vitesse(versLeDebut);
-  if (versLaFin > 0) return vitesse(versLaFin);
+function component(position: number, taille: number, bandDepth: number): number {
+  const towardsStart = depth(position, bandDepth);
+  const towardsEnd = depth(taille - position, bandDepth);
+  if (towardsStart > towardsEnd) return -speed(towardsStart);
+  if (towardsEnd > 0) return speed(towardsEnd);
   return 0;
 }

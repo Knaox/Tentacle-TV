@@ -6,7 +6,7 @@ import { HeroAmbilight } from "../hero/HeroAmbilight";
 import { HeroScrims } from "../hero/HeroScrims";
 import { ArrowLeftIcon } from "../media/MediaDetailIcons";
 import { useInViewport } from "../../hooks/useInViewport";
-import { useImageCassee } from "../../hooks/useImageCassee";
+import { useBrokenImage } from "../../hooks/useBrokenImage";
 
 interface DetailHeroProps {
   backdropUrl: string | null;
@@ -89,7 +89,7 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
   // trace) mais au halo ci-dessous, qui est démonté et doit être remonté avant
   // d'entrer réellement dans le champ.
   const { ref: boxRef, visible } = useInViewport<HTMLDivElement>("200px");
-  const { cassee, signalerEchec } = useImageCassee(backdropUrl);
+  const { broken, reportFailure } = useBrokenImage(backdropUrl);
 
   // Bouton retour + dégradés posés directement SUR le backdrop : restent en
   // blanc/noir dans les deux thèmes (cf. règle « posé sur média »), mais via
@@ -130,9 +130,9 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
             // bannière est à l'écran, rien ne change.
             style={{
               animationPlayState: visible ? "running" : "paused",
-              display: cassee ? "none" : undefined,
+              display: broken ? "none" : undefined,
             }}
-            onError={signalerEchec}
+            onError={reportFailure}
           />
         )}
 
@@ -147,7 +147,7 @@ export function DetailHero({ backdropUrl, item, instant = false }: DetailHeroPro
             Pas de grain : la fiche porte déjà le sien par la vignette, et le
             bloc titre y remonte de 192 px, si bien que la moitié basse de la
             pile est recouverte de contenu. */}
-        <HeroScrims jeu="detail" bas={DETAIL_SCRIM_BOTTOM} haut="h-32" raccord="h-[46%]" grain={false} />
+        <HeroScrims tokenSet="detail" bottom={DETAIL_SCRIM_BOTTOM} top="h-32" seam="h-[46%]" grain={false} />
       </div>
 
       {/* Lueur de raccord — l'affiche floutée, posée PAR-DESSUS le bas de la

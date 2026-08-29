@@ -1,9 +1,9 @@
 import type { MediaItem } from "@tentacle-tv/shared";
-import { DetailActions as ActionsWeb } from "@/components/detail/DetailActions";
-import { useMarqueur } from "../marker";
-import { ATTRIBUT_ENTREE } from "../../focus/zones";
+import { DetailActions as WebActions } from "@/components/detail/DetailActions";
+import { useMarker } from "../marker";
+import { ENTRY_ATTRIBUTE } from "../../focus/zones";
 
-interface ProprietesActionsFiche {
+interface DetailActionsProps {
   item: MediaItem;
 }
 
@@ -33,28 +33,28 @@ interface ProprietesActionsFiche {
  * l'état de visionnage, la bande-annonce avec le sien, plusieurs rendus après
  * celui-ci et sans que l'enveloppe soit re-rendue.
  */
-export function DetailActions({ item }: ProprietesActionsFiche) {
-  const bloc = useMarqueur<HTMLDivElement>(marquerLaFiche);
+export function DetailActions({ item }: DetailActionsProps) {
+  const bloc = useMarker<HTMLDivElement>(markDetail);
 
   return (
     <div ref={bloc}>
-      <ActionsWeb item={item} />
+      <WebActions item={item} />
     </div>
   );
 }
 
 /** Idempotent : n'écrit que si la cible a changé, et ne laisse jamais deux marques. */
-function marquerLaFiche(bloc: HTMLElement): void {
-  const colonne = bloc.parentElement;
-  if (colonne && colonne.getAttribute("data-tv-zone") !== "actions-fiche") {
-    colonne.setAttribute("data-tv-zone", "actions-fiche");
+function markDetail(bloc: HTMLElement): void {
+  const column = bloc.parentElement;
+  if (column && column.getAttribute("data-tv-zone") !== "actions-fiche") {
+    column.setAttribute("data-tv-zone", "actions-fiche");
   }
 
   const premier = bloc.querySelector<HTMLElement>("button, a[href]");
-  const porteur = colonne ?? bloc;
-  const actuel = porteur.querySelector<HTMLElement>(`[${ATTRIBUT_ENTREE}]`);
-  if (actuel === premier) return;
+  const holder = column ?? bloc;
+  const current = holder.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
+  if (current === premier) return;
 
-  actuel?.removeAttribute(ATTRIBUT_ENTREE);
-  premier?.setAttribute(ATTRIBUT_ENTREE, "");
+  current?.removeAttribute(ENTRY_ATTRIBUTE);
+  premier?.setAttribute(ENTRY_ATTRIBUTE, "");
 }

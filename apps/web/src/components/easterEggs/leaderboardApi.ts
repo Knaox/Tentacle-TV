@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import type { EntreeClassement } from "./LeaderboardRow";
+import type { LeaderboardEntry } from "./LeaderboardRow";
 
-export interface Classement {
+export interface Leaderboard {
   source: "playback-reporting" | "estimation";
   estimated: boolean;
   generatedAt: string;
-  entries: EntreeClassement[];
+  entries: LeaderboardEntry[];
 }
 
-export interface SerieFavorite {
+export interface FavoriteSeries {
   seriesId: string;
   name: string;
   episodesPlayed: number;
@@ -22,17 +22,17 @@ export interface SerieFavorite {
  * la page reste alors vide, sans la moindre erreur en console. Le résoudre au
  * moment de l'appel, bien après l'amorçage, coupe le cycle une fois pour toutes.
  */
-async function appeler<T>(chemin: string): Promise<T> {
+async function call<T>(path: string): Promise<T> {
   const { BACKEND, hdrs, creds } = await import("../../pages/adminUtils");
-  const res = await fetch(`${BACKEND}${chemin}`, { headers: hdrs(), credentials: creds() });
+  const res = await fetch(`${BACKEND}${path}`, { headers: hdrs(), credentials: creds() });
   if (!res.ok) throw new Error(String(res.status));
   return res.json() as Promise<T>;
 }
 
-export function useClassement() {
-  return useQuery<Classement>({
+export function useLeaderboard() {
+  return useQuery<Leaderboard>({
     queryKey: ["leaderboard"],
-    queryFn: () => appeler<Classement>("/api/leaderboard"),
+    queryFn: () => call<Leaderboard>("/api/leaderboard"),
     staleTime: 5 * 60_000,
     refetchOnWindowFocus: false,
     retry: false,
@@ -45,11 +45,11 @@ export function useClassement() {
  * parcourir les épisodes vus de chaque compte, pour des lignes que personne
  * n'ouvrira.
  */
-export function useSeriesFavorites(userId: string, actif: boolean) {
-  return useQuery<{ userId: string; series: SerieFavorite[] }>({
+export function useSeriesFavorites(userId: string, active: boolean) {
+  return useQuery<{ userId: string; series: FavoriteSeries[] }>({
     queryKey: ["leaderboard", "top-series", userId],
-    queryFn: () => appeler(`/api/leaderboard/${userId}/top-series`),
-    enabled: actif,
+    queryFn: () => call(`/api/leaderboard/${userId}/top-series`),
+    enabled: active,
     staleTime: 10 * 60_000,
     refetchOnWindowFocus: false,
     retry: false,

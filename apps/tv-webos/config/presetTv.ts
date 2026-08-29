@@ -23,7 +23,7 @@ import type { Config } from "tailwindcss";
  * composants d'`apps/web` se disposent comme sur un portable — ce pour quoi
  * ils ont été dessinés.
  */
-const PALIERS_TV = {};
+const TV_STEPS = {};
 
 /**
  * Le flou d'arrière-plan est retiré du bundle téléviseur — il n'arrive qu'à
@@ -34,7 +34,7 @@ const PALIERS_TV = {};
  * rien. La passe PostCSS `verre` retire ensuite les déclarations devenues
  * vides, et la feuille TV rend les surfaces opaques.
  */
-const FLOU_NEUTRALISE = {
+const BLUR_NEUTRALIZED = {
   0: "0",
   none: "0",
   sm: "0",
@@ -52,14 +52,14 @@ const FLOU_NEUTRALISE = {
  * Google Fonts — un serveur sur réseau local sans accès extérieur ne l'aurait
  * jamais servie, et la passe `importsDistants` a retiré cet import.
  */
-const POLICE_TV = ['"LG Smart UI"', '"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"];
+const TV_FONT = ['"LG Smart UI"', '"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"];
 
 export const presetTv: Partial<Config> = {
   theme: {
     extend: {
-      screens: PALIERS_TV,
-      backdropBlur: FLOU_NEUTRALISE,
-      fontFamily: { sans: POLICE_TV },
+      screens: TV_STEPS,
+      backdropBlur: BLUR_NEUTRALIZED,
+      fontFamily: { sans: TV_FONT },
     },
   },
 };

@@ -1,7 +1,7 @@
 import type { FocusEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ATTRIBUT_DEFAUT } from "../focus/default";
-import { retenirBoutonOsd } from "./focusOsd";
+import { DEFAULT_ATTRIBUTE } from "../focus/default";
+import { rememberOsdButton } from "./focusOsd";
 import {
   PlayIcon,
   PauseIcon,
@@ -10,7 +10,7 @@ import {
   GearIcon,
   EpisodesIcon,
 } from "@/components/PlayerIcons";
-import { DeplacementIcon } from "./IconsTv";
+import { MoveIcon } from "./IconsTv";
 
 /**
  * La rangée de transport — la seule zone focusable du lecteur.
@@ -36,58 +36,58 @@ import { DeplacementIcon } from "./IconsTv";
  * part. Une touche physique se devine d'autant moins que rien à l'écran ne la
  * nomme.
  *
- * Le bouton lecture/pause porte `data-osd-defaut` : c'est le centre de gravité,
+ * Le bouton lecture/pause porte `data-osd-fallback` : c'est le centre de gravité,
  * avec un saut de part et d'autre à une pression. Poser le focus initial sur le
  * premier bouton à gauche imposerait deux pressions pour l'action la plus
  * fréquente.
  */
 
-interface ProprietesTransport {
+interface TransportProps {
   playing: boolean;
   aPrecedent: boolean;
-  aSuivant: boolean;
-  aEpisodes: boolean;
-  aPistes: boolean;
-  onBasculer: () => void;
-  onSauter: (delta: number) => void;
-  onDeplacement: () => void;
+  hasNext: boolean;
+  hasEpisodes: boolean;
+  hasTracks: boolean;
+  onToggle: () => void;
+  onSkip: (delta: number) => void;
+  onMove: () => void;
   onPrecedent: () => void;
-  onSuivant: () => void;
+  onNext: () => void;
   onEpisodes: () => void;
-  onPistes: () => void;
+  onTracks: () => void;
 }
 
-export function RangeeTransportTv({
+export function TransportRowTv({
   playing,
   aPrecedent,
-  aSuivant,
-  aEpisodes,
-  aPistes,
-  onBasculer,
-  onSauter,
-  onDeplacement,
+  hasNext,
+  hasEpisodes,
+  hasTracks,
+  onToggle,
+  onSkip,
+  onMove,
   onPrecedent,
-  onSuivant,
+  onNext,
   onEpisodes,
-  onPistes,
-}: ProprietesTransport) {
+  onTracks,
+}: TransportProps) {
   const { t } = useTranslation("player");
 
   // Le focus est retenu ici plutôt que par un écouteur global : `onFocus`
   // remonte en React, la rangée voit donc passer chacun de ses boutons, et rien
   // ne subsiste quand elle se démonte.
-  const retenir = (evenement: FocusEvent<HTMLDivElement>): void => {
-    const cible = evenement.target as HTMLElement;
-    retenirBoutonOsd(cible.getAttribute("data-osd-bouton"));
+  const remember = (event: FocusEvent<HTMLDivElement>): void => {
+    const target = event.target as HTMLElement;
+    rememberOsdButton(target.getAttribute("data-osd-bouton"));
   };
 
   return (
-    <div className="osd-tv-transport" onFocus={retenir}>
+    <div className="osd-tv-transport" onFocus={remember}>
       {aPrecedent && (
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-bouton="precedent"
+          data-osd-button="precedent"
           onClick={onPrecedent}
           aria-label={t("player:previousEpisode")}
         >
@@ -98,14 +98,14 @@ export function RangeeTransportTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-bouton="recul"
-        onClick={() => onSauter(-10)}
+        data-osd-button="recul"
+        onClick={() => onSkip(-10)}
         aria-label={t("player:skipBack")}
       >
         <span className="osd-tv-saut">-10</span>
       </button>
 
-      {/* `ATTRIBUT_DEFAUT` en plus de `data-osd-defaut`, et ce n'est pas un
+      {/* `DEFAULT_ATTRIBUTE` en plus de `data-osd-fallback`, et ce n'est pas un
           doublon : le second dit à `poserFocusOsd` où entrer, le premier le dit
           au MOTEUR, qui amorce le focus de son côté à chaque changement de
           route. Les deux couraient, et le moteur arrivait le premier — il
@@ -115,10 +115,10 @@ export function RangeeTransportTv({
       <button
         type="button"
         className="osd-tv-bouton osd-tv-bouton-principal"
-        data-osd-bouton="lecture"
-        data-osd-defaut
-        {...{ [ATTRIBUT_DEFAUT]: "" }}
-        onClick={onBasculer}
+        data-osd-button="lecture"
+        data-osd-fallback
+        {...{ [DEFAULT_ATTRIBUTE]: "" }}
+        onClick={onToggle}
         aria-label={playing ? t("player:pause") : t("player:play")}
       >
         {playing ? <PauseIcon /> : <PlayIcon />}
@@ -127,8 +127,8 @@ export function RangeeTransportTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-bouton="avance"
-        onClick={() => onSauter(30)}
+        data-osd-button="avance"
+        onClick={() => onSkip(30)}
         aria-label={t("player:skipForward")}
       >
         <span className="osd-tv-saut">+30</span>
@@ -140,30 +140,30 @@ export function RangeeTransportTv({
       <button
         type="button"
         className="osd-tv-bouton"
-        data-osd-bouton="deplacement"
-        onClick={onDeplacement}
+        data-osd-button="deplacement"
+        onClick={onMove}
         aria-label={t("player:seekMode")}
       >
-        <DeplacementIcon />
+        <MoveIcon />
       </button>
 
-      {aSuivant && (
+      {hasNext && (
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-bouton="suivant"
-          onClick={onSuivant}
+          data-osd-button="suivant"
+          onClick={onNext}
           aria-label={t("player:nextEpisode")}
         >
           <NextEpIcon />
         </button>
       )}
 
-      {aEpisodes && (
+      {hasEpisodes && (
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-bouton="episodes"
+          data-osd-button="episodes"
           onClick={onEpisodes}
           aria-label={t("player:episodes")}
         >
@@ -171,12 +171,12 @@ export function RangeeTransportTv({
         </button>
       )}
 
-      {aPistes && (
+      {hasTracks && (
         <button
           type="button"
           className="osd-tv-bouton"
-          data-osd-bouton="pistes"
-          onClick={onPistes}
+          data-osd-button="pistes"
+          onClick={onTracks}
           aria-label={t("player:tracks")}
         >
           <GearIcon />

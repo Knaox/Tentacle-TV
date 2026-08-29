@@ -14,10 +14,10 @@
  * sont PAS de son ressort : `AbortController`, `ResizeObserver` et
  * `Element.scrollBy` sont chargés par `client/src/bootstrap/polyfills.ts`.
  */
-export const SOCLE_NAVIGATEUR = ["chrome >= 53"];
+export const BROWSER_BASELINE = ["chrome >= 53"];
 
 export const OPTIONS_LEGACY = {
-  targets: SOCLE_NAVIGATEUR,
+  targets: BROWSER_BASELINE,
   // Le couple moderne/ancien est conservé, à contrecœur mais nécessairement :
   // avec `renderModernChunks: false`, plugin-legacy supprime les fragments
   // modernes — et la feuille de style avec eux, puisqu'elle y est rattachée.

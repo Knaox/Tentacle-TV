@@ -6,7 +6,7 @@ import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
 import { PlaybackRateControl } from "../playerControls/PlaybackRateControl";
-import { surfaceAvecAlpha } from "../../lib/ombreSurVideo";
+import { surfaceHasAlpha } from "../../lib/videoShadow";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
@@ -75,7 +75,7 @@ interface DesktopPlayerControlsProps {
  * dégradés là où ils ne coûtent rien (Windows, web), et RIEN du tout là où toute
  * couche composée sur la fenêtre de mpv se paie — voir le commentaire du rendu.
  */
-const SANS_ALPHA = !surfaceAvecAlpha();
+const WITHOUT_ALPHA = !surfaceHasAlpha();
 
 /**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
@@ -125,7 +125,7 @@ export function DesktopPlayerControls({
           surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais apparu. */}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`${SANS_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
+        <div className={`${WITHOUT_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
@@ -144,7 +144,7 @@ export function DesktopPlayerControls({
 
       {/* Bottom controls */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative ${SANS_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
+        <div className={`relative ${WITHOUT_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
           <AnimatePresence>
             {showSettings && hasSettings && (
               <TrackSelector
@@ -213,7 +213,7 @@ export function DesktopPlayerControls({
               <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <PlaybackRateControl appliquer={setSpeed} cleReset={itemId} classeBouton="p-2" />
+              <PlaybackRateControl apply={setSpeed} resetKey={itemId} buttonClass="p-2" />
               {isEpisode && (
                 <button
                   onClick={() => { setShowEpisodes((p) => !p); setShowSettings(() => false); }}

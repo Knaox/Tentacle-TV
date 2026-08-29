@@ -50,7 +50,7 @@ export interface PlayerControlsProps {
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */
   applyToSeries?: ApplyToSeriesControl;
   /** Applique la vitesse de lecture sur l'élément vidéo. */
-  onPlaybackRateChange?: (taux: number) => void;
+  onPlaybackRateChange?: (rate: number) => void;
 }
 
 // Contrôles superposés à la vidéo (top/bottom bar en dégradé vers transparent)
@@ -160,8 +160,8 @@ export function PlayerControls({
           <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             {onPlaybackRateChange && (
               <PlaybackRateControl
-                appliquer={onPlaybackRateChange} cleReset={itemId}
-                classeBouton="p-2.5 sm:p-2"
+                apply={onPlaybackRateChange} resetKey={itemId}
+                buttonClass="p-2.5 sm:p-2"
               />
             )}
             {isEpisode && (

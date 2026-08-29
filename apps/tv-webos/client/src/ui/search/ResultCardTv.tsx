@@ -18,32 +18,32 @@ import { captureDetailOrigin } from "@/components/detail/detailTransition";
  * depuis l'affiche qu'on vient de viser.
  */
 
-interface ProprietesCarteResultat {
+interface ResultCardProps {
   item: MediaItem;
-  onOuvrir: (item: MediaItem) => void;
+  onOpen: (item: MediaItem) => void;
 }
 
-export function CarteResultatTv({ item, onOuvrir }: ProprietesCarteResultat) {
+export function ResultCardTv({ item, onOpen }: ResultCardProps) {
   const { t } = useTranslation("common");
   const client = useJellyfinClient();
-  const visuel = useRef<HTMLDivElement>(null);
+  const visual = useRef<HTMLDivElement>(null);
 
   const estEpisode = item.Type === "Episode";
-  const identifiantImage = estEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const urlImage = client.getImageUrl(identifiantImage, "Primary", { height: 360, quality: 85 });
+  const imageIdentifier = estEpisode && item.SeriesId ? item.SeriesId : item.Id;
+  const urlImage = client.getImageUrl(imageIdentifier, "Primary", { height: 360, quality: 85 });
 
-  const ouvrir = useCallback(() => {
-    captureDetailOrigin(visuel.current, item.Id, urlImage, 6, true);
-    onOuvrir(item);
-  }, [item, onOuvrir, urlImage]);
+  const open2 = useCallback(() => {
+    captureDetailOrigin(visual.current, item.Id, urlImage, 6, true);
+    onOpen(item);
+  }, [item, onOpen, urlImage]);
 
   const type =
     item.Type === "Movie" ? t("common:movie") : item.Type === "Series" ? t("common:series") : item.Type;
 
   return (
     <li className="recherche-tv-cellule">
-      <button type="button" onClick={ouvrir} className="recherche-tv-carte">
-        <div ref={visuel} className="recherche-tv-visuel">
+      <button type="button" onClick={open2} className="recherche-tv-carte">
+        <div ref={visual} className="recherche-tv-visuel">
           <img
             src={urlImage}
             alt={item.Name}
@@ -51,8 +51,8 @@ export function CarteResultatTv({ item, onOuvrir }: ProprietesCarteResultat) {
             decoding="async"
             draggable={false}
             className="h-full w-full object-cover"
-            onError={(evenement) => {
-              (evenement.target as HTMLImageElement).style.display = "none";
+            onError={(event) => {
+              (event.target as HTMLImageElement).style.display = "none";
             }}
           />
         </div>

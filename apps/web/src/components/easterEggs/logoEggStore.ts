@@ -16,52 +16,52 @@ import { useSyncExternalStore } from "react";
  * l'accueil n'est rien.
  */
 
-const CLICS_REQUIS = 4;
+const REQUIRED_CLICKS = 4;
 
 /** Assez large pour un quadruple clic tranquille, trop court pour se déclencher par hasard. */
-const FENETRE_MS = 900;
+const WINDOW_MS = 900;
 
-let compte = 0;
-let dernierClic = 0;
-let ouvert = false;
+let count = 0;
+let lastClick = 0;
+let open = false;
 
-const abonnes = new Set<() => void>();
+const subscribers = new Set<() => void>();
 
-function prevenir(): void {
-  for (const a of abonnes) a();
+function notifySubscribers(): void {
+  for (const a of subscribers) a();
 }
 
-function sabonner(callback: () => void): () => void {
-  abonnes.add(callback);
-  return () => abonnes.delete(callback);
+function subscribe(callback: () => void): () => void {
+  subscribers.add(callback);
+  return () => subscribers.delete(callback);
 }
 
 /** À poser sur le logo. Ne bloque jamais la navigation. */
-export function compterClicLogo(): void {
-  const maintenant = Date.now();
-  compte = maintenant - dernierClic > FENETRE_MS ? 1 : compte + 1;
-  dernierClic = maintenant;
-  if (compte < CLICS_REQUIS) return;
-  compte = 0;
-  ouvert = true;
-  prevenir();
+export function countLogoClick(): void {
+  const now = Date.now();
+  count = now - lastClick > WINDOW_MS ? 1 : count + 1;
+  lastClick = now;
+  if (count < REQUIRED_CLICKS) return;
+  count = 0;
+  open = true;
+  notifySubscribers();
 }
 
-export function fermerClassement(): void {
+export function closeLeaderboard(): void {
   // Le compteur repart de zéro à la fermeture : sans cela, des clics laissés en
   // route se cumuleraient avec ceux de la prochaine fois et le panneau se
   // rouvrirait au bout de deux clics, sans qu'on comprenne pourquoi.
-  compte = 0;
-  if (!ouvert) return;
-  ouvert = false;
-  prevenir();
+  count = 0;
+  if (!open) return;
+  open = false;
+  notifySubscribers();
 }
 
 /** Lecture directe de l'état — sert de `getSnapshot` au hook, et aux tests. */
-export function classementEstOuvert(): boolean {
-  return ouvert;
+export function isLeaderboardOpen(): boolean {
+  return open;
 }
 
-export function useClassementOuvert(): boolean {
-  return useSyncExternalStore(sabonner, classementEstOuvert, () => false);
+export function useLeaderboardOpen(): boolean {
+  return useSyncExternalStore(subscribe, isLeaderboardOpen, () => false);
 }

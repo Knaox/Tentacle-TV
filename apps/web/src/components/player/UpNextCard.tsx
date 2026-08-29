@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { ombreSurVideo } from "../../lib/ombreSurVideo";
+import { videoShadow } from "../../lib/videoShadow";
 
 interface UpNextCardProps {
   /**
@@ -72,8 +72,8 @@ export function UpNextCard({
         border: "1px solid var(--border-subtle)",
         borderRadius: "var(--radius-xl)",
         // Les deux flous partent là où la surface a un canal alpha : ils y
-        // sortent en aplat et masquent la vidéo. Voir `lib/ombreSurVideo.ts`.
-        boxShadow: ombreSurVideo(
+        // sortent en aplat et masquent la vidéo. Voir `lib/videoShadow.ts`.
+        boxShadow: videoShadow(
           "0 20px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb), 0.18), 0 0 32px rgba(var(--brand-rgb), 0.18)",
           "0 0 0 1px rgba(var(--brand-rgb), 0.18)",
         ),

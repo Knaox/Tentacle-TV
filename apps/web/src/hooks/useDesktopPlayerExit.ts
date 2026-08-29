@@ -55,12 +55,12 @@ export function useDesktopPlayerExit({
   // EOF sans suite possible (pas d'épisode suivant, ou garde serveur coupée) :
   // retour fiche. Quand une suite existe, c'est l'ARBITRE qui parle — l'écran
   // de fin s'affiche et le lecteur reste monté.
-  const sortieFaite = useRef(false);
+  const exitDone = useRef(false);
   useEffect(() => {
     if (!fileLoaded) return; // EOF du fichier précédent (remontage) — ignorer
-    if (!state.eof || !hasStartedRef.current || sortieFaite.current) return;
+    if (!state.eof || !hasStartedRef.current || exitDone.current) return;
     if (hasNextEpisode && serverAutoplayEnabled) return;
-    sortieFaite.current = true;
+    exitDone.current = true;
     if (itemId) void goToDetail();
     else void goBack();
     // eslint-disable-next-line react-hooks/exhaustive-deps

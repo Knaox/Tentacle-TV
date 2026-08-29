@@ -10,7 +10,7 @@
  */
 
 import { invoke, listen, type Unlisten as UnlistenFn } from "../desktop/bridge";
-import { pousserHdrAuto } from "./hdrPreference";
+import { pushHdrAuto } from "./hdrPreference";
 
 export type MpvObservableProperty = readonly [string, string, ...unknown[]];
 
@@ -36,20 +36,20 @@ export interface MpvConfig {
  * finit à l'écran (bandeau d'erreur du lecteur) et dans la décision de repli —
  * seule la cause courte compte.
  */
-function nettoyerErreur(e: unknown): Error {
-  const brut = e instanceof Error ? e.message : String(e);
-  return new Error(brut.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, ""));
+function cleanError(e: unknown): Error {
+  const raw = e instanceof Error ? e.message : String(e);
+  return new Error(raw.replace(/^Error invoking remote method '[^']+':\s*(?:Error:\s*)?/, ""));
 }
 
 export async function init(config?: MpvConfig): Promise<string> {
-  let resultat: string;
+  let result: string;
   try {
-    resultat = await invoke<string>("mpv_init", { options: config ?? {} });
+    result = await invoke<string>("mpv_init", { options: config ?? {} });
   } catch (e) {
-    throw nettoyerErreur(e);
+    throw cleanError(e);
   }
-  await pousserHdrAuto();
-  return resultat;
+  await pushHdrAuto();
+  return result;
 }
 
 export async function destroy(): Promise<void> {
@@ -77,7 +77,7 @@ export async function setProperty(
  * chaque appelant aurait dû transtyper à la main — c'est-à-dire affirmer sans
  * vérifier. Le format est une constante à l'appel, donc le type se déduit.
  */
-type ValeurSelonFormat<F extends string> =
+type ValueForFormat<F extends string> =
   F extends "flag" ? boolean
   : F extends "int64" | "double" ? number
   : F extends "string" ? string
@@ -90,8 +90,8 @@ type ValeurSelonFormat<F extends string> =
 export async function getProperty<F extends string>(
   name: string,
   format: F,
-): Promise<ValeurSelonFormat<F> | null> {
-  return invoke<ValeurSelonFormat<F> | null>("mpv_get_property", { name, format });
+): Promise<ValueForFormat<F> | null> {
+  return invoke<ValueForFormat<F> | null>("mpv_get_property", { name, format });
 }
 
 export async function observeProperties<

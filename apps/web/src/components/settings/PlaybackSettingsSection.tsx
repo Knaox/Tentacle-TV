@@ -6,7 +6,7 @@ import {
   type SegmentSettings,
 } from "@tentacle-tv/shared";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
-import { CHAMP_REGLAGE, SettingToggleRow } from "./SettingToggleRow";
+import { SETTING_FIELD, SettingToggleRow } from "./SettingToggleRow";
 
 /**
  * Tout ce que le lecteur a le droit de faire tout seul, en un seul endroit.
@@ -24,45 +24,45 @@ import { CHAMP_REGLAGE, SettingToggleRow } from "./SettingToggleRow";
  */
 export function PlaybackSettingsSection() {
   const { t } = useTranslation("preferences");
-  const reglages = usePlaybackSettings();
-  const suivant = reglages.next;
+  const settings = usePlaybackSettings();
+  const next = settings.next;
 
   // Dans l'ordre où les passages surviennent à l'écran, l'intro d'abord :
   // c'est le seul que le lecteur passe tout seul par défaut.
-  const passages: {
-    cle: string;
-    titre: string;
-    aide: string;
-    reglages: SegmentSettings;
-    appliquer: (patch: Partial<SegmentSettings>) => void;
+  const segments: {
+    key: string;
+    title: string;
+    hint: string;
+    settings: SegmentSettings;
+    apply: (patch: Partial<SegmentSettings>) => void;
   }[] = [
     {
-      cle: "intro",
-      titre: t("segmentIntroTitle"),
-      aide: t("segmentIntroHint"),
-      reglages: reglages.intro,
-      appliquer: (intro) => { setPlaybackSettings({ intro }); },
+      key: "intro",
+      title: t("segmentIntroTitle"),
+      hint: t("segmentIntroHint"),
+      settings: settings.intro,
+      apply: (intro) => { setPlaybackSettings({ intro }); },
     },
     {
-      cle: "recap",
-      titre: t("segmentRecapTitle"),
-      aide: t("segmentRecapHint"),
-      reglages: reglages.recap,
-      appliquer: (recap) => { setPlaybackSettings({ recap }); },
+      key: "recap",
+      title: t("segmentRecapTitle"),
+      hint: t("segmentRecapHint"),
+      settings: settings.recap,
+      apply: (recap) => { setPlaybackSettings({ recap }); },
     },
     {
-      cle: "outro",
-      titre: t("segmentOutroTitle"),
-      aide: t("segmentOutroHint"),
-      reglages: reglages.outro,
-      appliquer: (outro) => { setPlaybackSettings({ outro }); },
+      key: "outro",
+      title: t("segmentOutroTitle"),
+      hint: t("segmentOutroHint"),
+      settings: settings.outro,
+      apply: (outro) => { setPlaybackSettings({ outro }); },
     },
     {
-      cle: "preview",
-      titre: t("segmentPreviewTitle"),
-      aide: t("segmentPreviewHint"),
-      reglages: reglages.preview,
-      appliquer: (preview) => { setPlaybackSettings({ preview }); },
+      key: "preview",
+      title: t("segmentPreviewTitle"),
+      hint: t("segmentPreviewHint"),
+      settings: settings.preview,
+      apply: (preview) => { setPlaybackSettings({ preview }); },
     },
   ];
 
@@ -79,13 +79,13 @@ export function PlaybackSettingsSection() {
           {t("playbackSettingsAccount")}
         </p>
         <div className="mt-5 space-y-6">
-          {passages.map((passage) => (
+          {segments.map((passage) => (
             <SegmentSettingsRow
-              key={passage.cle}
-              titre={passage.titre}
-              aide={passage.aide}
-              reglages={passage.reglages}
-              onChange={passage.appliquer}
+              key={passage.key}
+              title={passage.title}
+              hint={passage.hint}
+              settings={passage.settings}
+              onChange={passage.apply}
             />
           ))}
         </div>
@@ -95,21 +95,21 @@ export function PlaybackSettingsSection() {
         <h3 className="mb-5 text-sm font-semibold text-content-primary">{t("upNextTitle")}</h3>
         <div className="space-y-5">
           <SettingToggleRow
-            titre={t("upNextCardTitle")}
-            aide={t("upNextCardHint")}
-            actif={suivant.nextCard}
+            title={t("upNextCardTitle")}
+            hint={t("upNextCardHint")}
+            active={next.nextCard}
             onChange={(nextCard) => { setPlaybackSettings({ next: { nextCard } }); }}
           />
           <SettingToggleRow
-            titre={t("upNextCountdownTitle")}
-            aide={t("upNextCountdownHint")}
-            actif={suivant.nextCountdown}
+            title={t("upNextCountdownTitle")}
+            hint={t("upNextCountdownHint")}
+            active={next.nextCountdown}
             onChange={(nextCountdown) => { setPlaybackSettings({ next: { nextCountdown } }); }}
           />
           <SettingToggleRow
-            titre={t("upNextAutoPlayTitle")}
-            aide={t("upNextAutoPlayHint")}
-            actif={suivant.nextAutoPlay}
+            title={t("upNextAutoPlayTitle")}
+            hint={t("upNextAutoPlayHint")}
+            active={next.nextAutoPlay}
             onChange={(nextAutoPlay) => { setPlaybackSettings({ next: { nextAutoPlay } }); }}
           />
           <div>
@@ -118,14 +118,14 @@ export function PlaybackSettingsSection() {
             </label>
             <select
               id="declencheur-suite"
-              value={suivant.nextTrigger}
+              value={next.nextTrigger}
               onChange={(e) => {
                 const nextTrigger = e.target.value;
                 if (nextTrigger === "outroStart" || nextTrigger === "beforeEnd") {
                   setPlaybackSettings({ next: { nextTrigger } });
                 }
               }}
-              className={`mt-2 w-full max-w-xs ${CHAMP_REGLAGE}`}
+              className={`mt-2 w-full max-w-xs ${SETTING_FIELD}`}
             >
               <option value="outroStart">{t("upNextTriggerOutroStart")}</option>
               <option value="beforeEnd">{t("upNextTriggerBeforeEnd")}</option>
@@ -144,14 +144,14 @@ export function PlaybackSettingsSection() {
               min={NEXT_BEFORE_END_SECONDS_MIN}
               max={NEXT_BEFORE_END_SECONDS_MAX}
               step={5}
-              value={suivant.nextBeforeEndSeconds}
+              value={next.nextBeforeEndSeconds}
               onChange={(e) => {
-                const saisi = Number.parseInt(e.target.value, 10);
-                if (Number.isFinite(saisi)) {
-                  setPlaybackSettings({ next: { nextBeforeEndSeconds: saisi } });
+                const typed = Number.parseInt(e.target.value, 10);
+                if (Number.isFinite(typed)) {
+                  setPlaybackSettings({ next: { nextBeforeEndSeconds: typed } });
                 }
               }}
-              className={`mt-2 w-32 ${CHAMP_REGLAGE}`}
+              className={`mt-2 w-32 ${SETTING_FIELD}`}
             />
           </div>
         </div>

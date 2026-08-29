@@ -34,9 +34,9 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
    * média quand la rangée avance. Un `errored` qui ne redescend jamais faisait
    * donc traîner l'icône de repli sur des affiches parfaitement valides, et
    * gardait pour cassée une image que le serveur avait fini par récupérer. */
-  const [etat, setEtat] = useState({ src, loaded: false, errored: false });
-  if (etat.src !== src) setEtat({ src, loaded: false, errored: false });
-  const { loaded, errored } = etat;
+  const [state, setState] = useState({ src, loaded: false, errored: false });
+  if (state.src !== src) setState({ src, loaded: false, errored: false });
+  const { loaded, errored } = state;
   // Le squelette n'est monté que si la carte est REGARDÉE.
   //
   // Sans cette garde, les cartes situées hors du champ horizontal d'une rangée
@@ -69,13 +69,13 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
   // Deux observateurs sur le MÊME élément — l'un dit « faut-il animer ? »,
   // l'autre « faut-il charger ? ». Ils ne se confondent pas (cf. les deux
   // hooks) et un seul nœud les porte.
-  const poserLaBoite = useCallback((el: HTMLDivElement | null) => {
+  const setBox = useCallback((el: HTMLDivElement | null) => {
     boxRef.current = el;
     nearRef.current = el;
   }, [boxRef, nearRef]);
 
   return (
-    <div ref={poserLaBoite} className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
+    <div ref={setBox} className={`relative h-full w-full overflow-hidden ${className ?? ""}`}>
       {!loaded && !errored && visible && (
         <div className="absolute inset-0 skeleton-shimmer" aria-hidden />
       )}
@@ -92,8 +92,8 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           // quand elle est prête, comme avant.
           decoding="async"
           draggable={false}
-          onLoad={() => setEtat((e) => (e.src === src ? { ...e, loaded: true } : e))}
-          onError={() => setEtat((e) => (e.src === src ? { ...e, errored: true } : e))}
+          onLoad={() => setState((e) => (e.src === src ? { ...e, loaded: true } : e))}
+          onError={() => setState((e) => (e.src === src ? { ...e, errored: true } : e))}
           // Zoom interne discret au survol de la carte parente (`group/card`) —
           // le conteneur masque le débord (overflow-hidden côté carte).
           className={`h-full w-full object-cover motion-reduce:!transform-none ${

@@ -13,7 +13,7 @@ import { useLocalSource } from "./useLocalSource";
 import { useLocalFirstMedia } from "./useLocalFirstMedia";
 import { useAutoplayConfigLocalFirst } from "./useAutoplayConfigLocalFirst";
 import { useWebPlaybackInfoFetch } from "./useWebPlaybackInfoFetch";
-import { useQualiteEffective } from "./useQualiteEffective";
+import { useEffectiveQuality } from "./useEffectiveQuality";
 import { useSegmentsLocalFirst } from "./useSegmentsLocalFirst";
 import { buildAudioTracks, buildPosterUrl, buildSubtitleTracks, generatePlaySessionId, resumeStartSeconds } from "./watchSessionMedia";
 import { useLocalPosterUrl } from "./useLocalPosterUrl";
@@ -87,12 +87,12 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   const [startTicks, setStartTicks] = useState<number>(0);
   // Échelle + preset + cap automatique selon le débit mesuré (téléviseur
-  // uniquement — politique inerte au navigateur) : cf. useQualiteEffective.
+  // uniquement — politique inerte au navigateur) : cf. useEffectiveQuality.
   // Le sélecteur reçoit la clé EFFECTIVE (palier servi, cap compris) et un
   // setter qui désarme le cap — jamais le state brut, qui mentirait au menu.
   // `startTicks` : le cap se re-photographie à chaque relance de session.
-  const { qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManuel } =
-    useQualiteEffective({ mediaSource, itemId, qualityKey, setQualityKey, startTicks });
+  const { qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManual } =
+    useEffectiveQuality({ mediaSource, itemId, qualityKey, setQualityKey, startTicks });
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
   const positionRef = useRef(0);
@@ -108,7 +108,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const pbInfo = usePlaybackInfo(isDesktop);
   // mpv lit les sous-titres image nativement ; le rendu canvas (libpgs) ne
   // concerne que le lecteur web, et s'efface dès qu'il a échoué une fois.
-  const pgsClientOk = !isDesktop && !pbInfo.pgsClientIndisponible;
+  const pgsClientOk = !isDesktop && !pbInfo.pgsClientUnavailable;
 
   useEffect(() => {
     setStartTicks(0); setQualityKey("original"); setSubtitleIndex(null); setPrefsReady(false);
@@ -122,7 +122,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     streams, audioOverrideRef, subtitleOverrideRef, prefsApplied,
     setAudioIndex, setSubtitleIndex,
     // mpv rend les sous-titres image lui-même : rien à éviter de ce côté.
-    incrustationCouteuse: !isDesktop && pbInfo.pgsClientIndisponible,
+    costlyBurnIn: !isDesktop && pbInfo.pgsClientUnavailable,
   });
 
   // Desktop: client-side playback mode computation
@@ -190,8 +190,8 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   // Filets du lecteur web : lecture directe MKV et rendu PGS client. Déclaré
   // AVANT la requête, qui dépend de son compteur de relance.
   const {
-    onDirectPlayNonFiable, pgsSubtitleUrl, signalerEchecPgs, relanceLecture, relancerLecture,
-    libererEncodage,
+    onDirectPlayNonFiable, pgsSubtitleUrl, reportPgsFailure, playbackRestart, restartPlayback,
+    releaseEncoding,
   } = useWebPlaybackFallbacks({
     isDesktop, client, itemId, mediaSourceId, streams, mediaSource, subtitleIndex, pgsClientOk,
     positionRef, setStartTicks, setBurnInSubtitleIndex, pbInfo,
@@ -201,7 +201,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   useWebPlaybackInfoFetch({
     isDesktop, prefsReady, itemId, mediaSourceId, audioIndex, defaultAudio,
     burnInSubtitleIndex, startTicks, quality, qualityMaxHeight, item,
-    supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, relanceLecture,
+    supportsNativeAudioTracks, pbInfo, prefsApplied, audioOverrideRef, playbackRestart,
   });
 
   // ── Desktop: LOCAL D'ABORD (téléchargement complet vérifié), sinon URL de
@@ -272,13 +272,13 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   return {
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey: qualityKeyEffective, setQualityKey: setQualityKeyManuel, sourceQuality, qualityPresets,
+    qualityKey: qualityKeyEffective, setQualityKey: setQualityKeyManual, sourceQuality, qualityPresets,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     needsAudioTranscode, isDirectPlay, isDirectStream, playSessionId,
     streamUrl, streamOffset, onDirectPlayNonFiable,
-    pgsSubtitleUrl, pgsClientOk, signalerEchecPgs, relancerLecture, libererEncodage,
+    pgsSubtitleUrl, pgsClientOk, reportPgsFailure, restartPlayback, releaseEncoding,
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,

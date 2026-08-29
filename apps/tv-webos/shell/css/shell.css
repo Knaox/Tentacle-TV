@@ -1,0 +1,278 @@
+/* Coquille IPK — feuille autonome, sans dépendance au thème du client.
+ *
+ * **C'est l'écran de jumelage d'Android TV et d'Apple TV, transposé.** Les
+ * valeurs viennent une à une de `apps/tv/src/components/pairing/RelayCodeDisplay.tsx`
+ * et de `apps/tv/src/theme/colors.ts` : carte de 600 de large, retrait de 48,
+ * cases de code de 100 × 120, caractère de 64 en graisse 800, jauge de 4 px.
+ * Un utilisateur qui jumelle une LG après une Android TV doit reconnaître
+ * l'écran, pas en découvrir un second.
+ *
+ * Canevas de 1920, celui de la dalle — `appinfo.json → resolution`. Les mêmes
+ * nombres qu'Android TV donnent donc la même taille apparente : les deux
+ * composent sur 1920 × 1080.
+ *
+ * **Mêmes valeurs que le client, écrites à la main.** Les variables CSS
+ * arrivent en Chrome 49 et cette feuille doit s'afficher bien avant : le violet
+ * de marque, les surfaces et les rayons sont donc recopiés en littéral. C'est
+ * le seul endroit du portage où une valeur de thème est dupliquée, et c'est
+ * assumé — une coquille qui ne s'affiche pas ne peut même pas expliquer
+ * pourquoi l'appareil ne fonctionne pas.
+ *
+ * Aucune primitive postérieure à Chrome 38.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  /* `bgDeep` d'Android TV : le noir pur des dalles OLED. */
+  background: #000000;
+  color: #FFFFFF;
+  font-family: "LG Smart UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* Le halo de marque du client, ramené à ce qu'une coquille peut se permettre :
+   un dégradé radial figé, aucune animation, aucune image. */
+body:after {
+  content: "";
+  position: fixed;
+  top: -30%;
+  left: -10%;
+  width: 70%;
+  height: 90%;
+  background: radial-gradient(closest-side, rgba(139, 92, 246, 0.20), rgba(139, 92, 246, 0));
+  pointer-events: none;
+}
+
+/* La carte est CENTRÉE dans l'écran, comme sur Android TV — et non ancrée en
+   bas à gauche comme l'était cette coquille. C'est la première chose qui
+   distinguait les deux écrans à l'œil. */
+.cadre {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+
+/* `styles.card` : 600 de large, 48 de retrait, `bgSurface` (#0a0a0a), rayon
+   `Radius.modal` (12), liseré de 1 px sur `glassBorder`. */
+.carte-jumelage {
+  width: 600px;
+  padding: 48px;
+  background: #0a0a0a;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  text-align: center;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+/* `<TentacleLogo size={48} />`. Le rapport 560/512 est celui de la boîte de
+   vue du logo — le respecter évite de l'écraser. */
+.logo-jumelage {
+  display: block;
+  width: 48px;
+  height: 52px;
+  margin: 0 auto;
+}
+
+/* `styles.codeRow` : rangée, écart de 16, 32 au-dessus et 28 au-dessous.
+   `gap` est Chrome 84 en flexbox : on écarte par les marges des cases. */
+.code-cases {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  margin: 32px 0 28px;
+}
+
+/* `styles.codeBox` : 100 × 120, fond violet à 10 %, rayon `Radius.buttonLarge`
+   (10), liseré de 2 px sur `accentPurple`. */
+.code-case {
+  width: 100px;
+  height: 120px;
+  margin: 0 8px;
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid #8B5CF6;
+  border-radius: 10px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  /* `styles.codeChar` : 64, graisse 800, chasse fixe. La hauteur de ligne cale
+     le caractère au centre de la case sans recourir à un flexbox de plus. */
+  font-family: "LG Smart UI Mono", "Courier New", monospace;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 116px;
+  color: #FFFFFF;
+}
+
+/* `styles.instruction` : 16, `textSecondary`, interligne 26, largeur 480. */
+.legende {
+  max-width: 480px;
+  margin: 0 auto 20px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 26px;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* `styles.timer` : 14, `textTertiary`. */
+.rebours {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* `styles.progressBg` / `progressFill` : 4 px de haut, rayon 2, fond blanc à
+   8 %, remplissage `accentPurple`. La largeur du remplissage est écrite en
+   ligne par `pairingView.js`, comme Android TV l'écrit dans son style. */
+.jauge {
+  width: 100%;
+  height: 4px;
+  margin-bottom: 24px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.jauge-remplissage {
+  height: 4px;
+  background: #8B5CF6;
+  border-radius: 2px;
+}
+
+/* `styles.expiredText` / `errorText` : `Colors.error`. */
+.titre-etape {
+  margin: 24px 0 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+/* `styles.retryButton` : 36 × 14 de retrait, fond `accentPurple`, rayon
+   `Radius.button` (8), libellé 16 en graisse 700. */
+.bouton {
+  display: inline-block;
+  margin-bottom: 16px;
+  padding: 14px 36px;
+  background: #8B5CF6;
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+/* L'anneau de focus du client : trait blanc net, halo violet derrière.
+   `outline` ne suit pas le `border-radius` avant Chrome 94 — c'est une ombre,
+   pour la même raison que dans `focus.css`. */
+.bouton:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 3px #FFFFFF,
+    0 0 18px 4px rgba(139, 92, 246, 0.5);
+}
+
+/* `styles.linkButton` / `linkText` : le second bouton n'est pas un bouton
+   plein, c'est un lien discret. */
+.bouton-lien {
+  display: inline-block;
+  margin: 0;
+  padding: 10px 20px;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.bouton-lien:focus {
+  outline: none;
+  color: #FFFFFF;
+  box-shadow:
+    0 0 0 3px #FFFFFF,
+    0 0 18px 4px rgba(139, 92, 246, 0.5);
+}
+
+/* ===== L'écran d'attente : le logo, sans la carte. =====
+ *
+ * Il remplace les messages « Connexion à votre serveur... » et « Préparation
+ * du code... » : au lancement d'une application déjà jumelée, on enchaîne
+ * splash → logo animé → client, sans texte technique. Le splash webOS montre
+ * déjà ce logo : le reprendre au même endroit fait une continuité, pas une
+ * coupure.
+ *
+ * Deux éléments animés, `transform` et `opacity` seulement — la règle GPU du
+ * dépôt vaut aussi pour la dalle. L'anneau est un simple bord dont un quart
+ * est teinté : sa rotation est une transformation, aucun dessin par image. */
+
+body.attente .carte-jumelage {
+  background: transparent;
+  border-color: transparent;
+}
+
+body.attente .logo-jumelage {
+  width: 96px;
+  height: 104px;
+  -webkit-animation: respiration-logo 2.4s ease-in-out infinite;
+  animation: respiration-logo 2.4s ease-in-out infinite;
+}
+
+.anneau-attente {
+  width: 40px;
+  height: 40px;
+  margin: 28px auto 0;
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  border-top-color: #8B5CF6;
+  border-radius: 50%;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -webkit-animation: rotation-anneau 1.1s linear infinite;
+  animation: rotation-anneau 1.1s linear infinite;
+}
+
+/* En arrière-plan, la carte de l'application est gelée par webOS ; suspendre
+   aussi les animations garantit qu'aucune image n'est composée si la
+   plateforme continue, elle, de composer. */
+body.cachee .logo-jumelage,
+body.cachee .anneau-attente {
+  -webkit-animation-play-state: paused;
+  animation-play-state: paused;
+}
+
+@-webkit-keyframes rotation-anneau {
+  from { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  to   { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+@keyframes rotation-anneau {
+  from { -webkit-transform: rotate(0deg); transform: rotate(0deg); }
+  to   { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@-webkit-keyframes respiration-logo {
+  0%, 100% { opacity: 0.85; -webkit-transform: scale(1); transform: scale(1); }
+  50%      { opacity: 1;    -webkit-transform: scale(1.03); transform: scale(1.03); }
+}
+@keyframes respiration-logo {
+  0%, 100% { opacity: 0.85; -webkit-transform: scale(1); transform: scale(1); }
+  50%      { opacity: 1;    -webkit-transform: scale(1.03); transform: scale(1.03); }
+}

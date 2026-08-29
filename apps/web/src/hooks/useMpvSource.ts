@@ -1,7 +1,7 @@
 import { useEffect, useState, type MutableRefObject } from "react";
 import type { MpvState, PlayOptions } from "./useDesktopPlayer";
 import { isSideCarIndex } from "./localPlaybackTrackSources";
-import { tracerCommande } from "./startupTrace";
+import { traceCommand } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
 interface UseMpvSourceOptions {
@@ -45,7 +45,7 @@ interface UseMpvSourceOptions {
  * Un sous-titre bitmap interne (PGS) est traité comme les autres : mpv le rend
  * nativement, c'est une piste du conteneur comme une autre.
  */
-export function sidAvantOuverture(
+export function sidBeforeOpen(
   subtitleTracks: { index: number; external?: boolean }[],
   currentSubtitle: number | null,
   isDirectPlay: boolean,
@@ -57,8 +57,8 @@ export function sidAvantOuverture(
   if (!isDirectPlay) return 0;
   // Side-car local et externe serveur : absents du conteneur → `sub-add`.
   if (isSideCarIndex(currentSubtitle)) return 0;
-  const internes = subtitleTracks.filter((t) => t.external !== true);
-  const pos = internes.findIndex((t) => t.index === currentSubtitle);
+  const internal = subtitleTracks.filter((t) => t.external !== true);
+  const pos = internal.findIndex((t) => t.index === currentSubtitle);
   return pos < 0 ? 0 : pos + 1;
 }
 
@@ -88,7 +88,7 @@ export function useMpvSource({
       // Tracé : un rebuild d'URL juste après la première image se voit à
       // l'écran comme un second chargement, sans qu'aucune coupure de cache
       // n'ait eu lieu. Les deux sont indiscernables à l'œil.
-      tracerCommande("rebuild de source", src.substring(0, 60));
+      traceCommand("rebuild de source", src.substring(0, 60));
       setSourceChanging(true);
     }
 
@@ -144,7 +144,7 @@ export function useMpvSource({
       audioTrack: isDirectPlay ? (aPos >= 0 ? aPos + 1 : undefined) : 1,
       subtitleTrack: isLocalPlayback
         ? undefined
-        : sidAvantOuverture(subtitleTracks, currentSubtitle, isDirectPlay),
+        : sidBeforeOpen(subtitleTracks, currentSubtitle, isDirectPlay),
     });
     loadedExternalSubs.current.clear();
     // State transition triggers preference effects in the NEXT render

@@ -18,9 +18,9 @@ import type { SubtitleTrack } from "../components/player/videoPlayer.types";
  * préférable à pas de sous-titre.
  */
 export function useSanitizedSubtitles({
-  pistes, selection, src,
+  tracks, selection, src,
 }: {
-  pistes: SubtitleTrack[];
+  tracks: SubtitleTrack[];
   selection: number | null;
   src: string;
 }): string | null {
@@ -29,40 +29,40 @@ export function useSanitizedSubtitles({
   useEffect(() => {
     setUrl(null);
     if (selection === null) return;
-    const piste = pistes.find((p) => p.index === selection);
-    if (!piste) return;
+    const track = tracks.find((p) => p.index === selection);
+    if (!track) return;
 
-    let annule = false;
-    let creee: string | null = null;
+    let cancelled = false;
+    let created: string | null = null;
     void (async () => {
-      let resultat = piste.url;
+      let result = track.url;
       try {
-        const reponse = await fetch(piste.url);
-        if (reponse.ok) {
-          const propre = sanitizeVtt(await reponse.text());
-          if (propre !== null) {
-            creee = URL.createObjectURL(new Blob([propre], { type: "text/vtt" }));
-            resultat = creee;
+        const response = await fetch(track.url);
+        if (response.ok) {
+          const clean = sanitizeVtt(await response.text());
+          if (clean !== null) {
+            created = URL.createObjectURL(new Blob([clean], { type: "text/vtt" }));
+            result = created;
           }
         }
       } catch {
         /* repli sur l'URL d'origine — la piste reste lisible */
       }
-      if (annule) {
+      if (cancelled) {
         // Le blob créé pendant que l'effet se démontait n'atteindra jamais le
         // DOM : le révoquer ici, sinon il fuit jusqu'au rechargement de la page.
-        if (creee) URL.revokeObjectURL(creee);
-        creee = null;
+        if (created) URL.revokeObjectURL(created);
+        created = null;
         return;
       }
-      setUrl(resultat);
+      setUrl(result);
     })();
 
     return () => {
-      annule = true;
-      if (creee) URL.revokeObjectURL(creee);
+      cancelled = true;
+      if (created) URL.revokeObjectURL(created);
     };
-  }, [pistes, selection, src]);
+  }, [tracks, selection, src]);
 
   return url;
 }

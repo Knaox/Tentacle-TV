@@ -11,9 +11,9 @@ import { createElement, type ReactNode, type ReactElement } from "react";
  * `animate`.
  */
 export function WatchTogetherProvider(
-  proprietes: { children?: ReactNode },
+  props: { children?: ReactNode },
 ): ReactElement {
-  return createElement("div", { style: { display: "contents" } }, proprietes.children);
+  return createElement("div", { style: { display: "contents" } }, props.children);
 }
 
 export interface WatchTogetherContextValue {
@@ -42,7 +42,7 @@ export interface WatchTogetherContextValue {
  * sont les deux seuls lecteurs hors du module `watchTogether/`, absent du
  * bundle : une ligne retire deux cibles mortes.
  */
-const HORS_GROUPE: WatchTogetherContextValue = {
+const OUT_OF_GROUP: WatchTogetherContextValue = {
   room: null,
   invites: [],
   selfId: null,
@@ -51,11 +51,11 @@ const HORS_GROUPE: WatchTogetherContextValue = {
   send: () => false,
   serverNow: () => Date.now(),
   actions: {
-    create: refuser,
-    invite: refuser,
-    respond: refuser,
-    leave: refuser,
-    kick: refuser,
+    create: reject,
+    invite: reject,
+    respond: reject,
+    leave: reject,
+    kick: reject,
   },
 };
 
@@ -65,9 +65,9 @@ const HORS_GROUPE: WatchTogetherContextValue = {
  * d'afficher quoi que ce soit, et leurs boutons ne mènent nulle part.
  */
 export function useWatchTogether(): WatchTogetherContextValue {
-  return HORS_GROUPE;
+  return OUT_OF_GROUP;
 }
 
-function refuser(): Promise<never> {
+function reject(): Promise<never> {
   return Promise.reject(new Error("Visionnage synchronisé indisponible sur le téléviseur"));
 }

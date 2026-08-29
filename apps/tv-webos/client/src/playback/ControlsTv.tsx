@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { PlayerControlsProps } from "@/components/PlayerControls";
-import { entrerDansPanneau, quitterPanneau } from "./focusOsd";
-import { cumuler, type CumulSauts } from "./cumulativeSkips";
+import { enterPanel, exitPanel } from "./focusOsd";
+import { accumulate, type SkipTotal } from "./cumulativeSkips";
 import { createScrubMachine, enterScrub, updateScrub, showOsd, setPanel, exitScrub, type ScrubMachine, useTvPlayerState } from "@tentacle-tv/tv-core";
-import { useCycleLecteurTv } from "./playerCycleTv";
+import { usePlayerCycleTv } from "./playerCycleTv";
 import { BarreProgressionTv } from "./ProgressBarTv";
-import { EnteteTv } from "./HeaderTv";
-import { RangeeTransportTv } from "./TransportRowTv";
-import { SurcoucheScrubTv } from "./ScrubOverlayTv";
-import { PanneauPistesTv, PanneauEpisodesTv } from "./PanelsTv";
+import { HeaderTv } from "./HeaderTv";
+import { TransportRowTv } from "./TransportRowTv";
+import { ScrubOverlayTv } from "./ScrubOverlayTv";
+import { TracksPanelTv, EpisodesPanelTv } from "./PanelsTv";
 
 /**
  * Les commandes du lecteur, dessinées pour trois mètres.
@@ -49,7 +49,7 @@ export function PlayerControls(props: PlayerControlsProps) {
     onNextEpisode, onPreviousEpisode, applyToSeries,
   } = props;
 
-  const etat = useTvPlayerState();
+  const state = useTvPlayerState();
 
   // Les valeurs vivantes passent par des refs : la machine à scrub est créée
   // une fois pour toutes et lit l'état au moment où elle en a besoin, plutôt
@@ -66,15 +66,15 @@ export function PlayerControls(props: PlayerControlsProps) {
       createScrubMachine({
         readPosition: () => position.current,
         readDuration: () => total.current,
-        onEnter: (pos, palier) => enterScrub(pos, palier),
-        onChange: (pos, palier) => updateScrub(pos, palier),
+        onEnter: (pos, step) => enterScrub(pos, step),
+        onChange: (pos, step) => updateScrub(pos, step),
         onPause: (pause) => {
           // La bascule du lecteur est la seule qu'on connaisse : on ne s'en
           // sert que si l'état courant ne correspond pas à ce qu'on veut.
           if (pause === !lecture.current) return;
           onTogglePlay();
         },
-        onSeek: (secondes) => onSeek(secondes),
+        onSeek: (seconds) => onSeek(seconds),
         onExit: () => exitScrub(),
       }),
     [onSeek, onTogglePlay],
@@ -85,7 +85,7 @@ export function PlayerControls(props: PlayerControlsProps) {
   const quitter = useCallback(() => onBack(), [onBack]);
 
   /** Ce que les sauts enchaînés ont demandé jusqu'ici, et quand. */
-  const cumul = useRef<CumulSauts | null>(null);
+  const skipTotal = useRef<SkipTotal | null>(null);
 
   /**
    * Le saut nu, sans rien allumer.
@@ -106,78 +106,78 @@ export function PlayerControls(props: PlayerControlsProps) {
    * C'est aussi ce qui rend le badge juste sans qu'il ait à compter : il reçoit
    * le total, il l'affiche.
    */
-  const sauterNu = useCallback(
+  const skipRaw = useCallback(
     (delta: number) => {
-      const suivant = cumuler(cumul.current, delta, Date.now());
-      cumul.current = suivant;
-      if (onSkip) onSkip(suivant.total);
-      else onSeek(Math.max(0, position.current + suivant.total));
+      const next = accumulate(skipTotal.current, delta, Date.now());
+      skipTotal.current = next;
+      if (onSkip) onSkip(next.total);
+      else onSeek(Math.max(0, position.current + next.total));
     },
     [onSeek, onSkip],
   );
 
-  useCycleLecteurTv({
-    mode: etat.mode,
-    actions: { basculerLecture: onTogglePlay, sauter: sauterNu, quitter, scrub },
+  usePlayerCycleTv({
+    mode: state.mode,
+    actions: { togglePlayback: onTogglePlay, skip: skipRaw, quitter, scrub },
     scrub,
   });
 
   const osd = useRef<HTMLDivElement>(null);
 
   /** Ce qui a ouvert le panneau, pour lui rendre le focus en le refermant. */
-  const declencheurPanneau = useRef<HTMLElement | null>(null);
+  const panelTrigger = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (etat.mode !== "osd") return;
+    if (state.mode !== "osd") return;
 
-    if (etat.panel !== "aucun") {
+    if (state.panel !== "aucun") {
       // Un panneau s'ouvre. On note d'où l'on vient, puis on entre dedans : le
       // focus restait sinon sur le bouton qui l'a ouvert, hors du panneau, et
       // le confinement calculait ses déplacements depuis un point extérieur.
-      const actif = document.activeElement;
-      if (actif instanceof HTMLElement && !actif.closest(".panneau-tv")) {
-        declencheurPanneau.current = actif;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && !active.closest(".panneau-tv")) {
+        panelTrigger.current = active;
       }
-      entrerDansPanneau();
+      enterPanel();
       return;
     }
 
     // Aucun panneau : soit on vient d'en refermer un — le focus revient alors à
     // ce qui l'a ouvert, et non au centre de l'habillage —, soit l'habillage
     // vient de paraître.
-    const declencheur = declencheurPanneau.current;
-    declencheurPanneau.current = null;
-    quitterPanneau(declencheur, osd.current);
-  }, [etat.mode, etat.panel]);
+    const trigger = panelTrigger.current;
+    panelTrigger.current = null;
+    exitPanel(trigger, osd.current);
+  }, [state.mode, state.panel]);
 
   /** La forme des BOUTONS : le même saut, mais l'habillage reste à l'écran. */
-  const sauter = useCallback(
+  const skip = useCallback(
     (delta: number) => {
       showOsd();
-      sauterNu(delta);
+      skipRaw(delta);
     },
-    [sauterNu],
+    [skipRaw],
   );
 
-  if (etat.mode === "repos") return null;
+  if (state.mode === "repos") return null;
 
-  if (etat.mode === "scrub" && etat.scrub) {
+  if (state.mode === "scrub" && state.scrub) {
     return (
-      <SurcoucheScrubTv
-        titre={title}
-        position={etat.scrub.position}
-        palier={etat.scrub.tier}
+      <ScrubOverlayTv
+        title={title}
+        position={state.scrub.position}
+        step={state.scrub.tier}
         currentTime={currentTime}
         duration={duration}
-        fractionChargee={buffered}
+        bufferedFraction={buffered}
         item={item}
         mediaSourceId={mediaSourceId}
       />
     );
   }
 
-  const aPistes = audioTracks.length > 0 || subtitleTracks.length > 0;
-  const aEpisodes = item?.Type === "Episode" && !!item.SeriesId;
+  const hasTracks = audioTracks.length > 0 || subtitleTracks.length > 0;
+  const hasEpisodes = item?.Type === "Episode" && !!item.SeriesId;
 
   return (
     /**
@@ -186,7 +186,7 @@ export function PlayerControls(props: PlayerControlsProps) {
      * Le conteneur du `VideoPlayer` bascule la lecture à tout clic qui lui
      * parvient (`VideoPlayer.tsx`, `onClick={togglePlay}`) — un geste de souris
      * qui a du sens sur un écran d'ordinateur, aucun ici. Or `preventDefault`
-     * ayant tué l'activation native d'Entrée, `activerElementFocalise()` rejoue
+     * ayant tué l'activation native d'Entrée, `enableFocusedElement()` rejoue
      * un VRAI `.click()`, qui remonte comme tel.
      *
      * Sans cette barrière, chaque appui sur OK agissait deux fois : le bouton
@@ -200,14 +200,14 @@ export function PlayerControls(props: PlayerControlsProps) {
     <div
       className="osd-tv"
       ref={osd}
-      data-panneau={etat.panel}
-      onClick={(evenement) => evenement.stopPropagation()}
+      data-panel={state.panel}
+      onClick={(event) => event.stopPropagation()}
     >
-      <EnteteTv titre={title} sousTitre={subtitle} onQuitter={quitter} />
+      <HeaderTv title={title} subtitle={subtitle} onQuitter={quitter} />
 
       <div className="osd-tv-bas">
-        {etat.panel === "pistes" && (
-          <PanneauPistesTv
+        {state.panel === "pistes" && (
+          <TracksPanelTv
             audioTracks={audioTracks}
             subtitleTracks={subtitleTracks}
             currentAudio={currentAudio}
@@ -222,34 +222,34 @@ export function PlayerControls(props: PlayerControlsProps) {
             onClose={() => setPanel("aucun")}
           />
         )}
-        {etat.panel === "episodes" && item && (
-          <PanneauEpisodesTv item={item} onClose={() => setPanel("aucun")} />
+        {state.panel === "episodes" && item && (
+          <EpisodesPanelTv item={item} onClose={() => setPanel("aucun")} />
         )}
 
         <BarreProgressionTv
           currentTime={currentTime}
           duration={duration}
-          fractionChargee={buffered}
+          bufferedFraction={buffered}
         />
 
-        <RangeeTransportTv
+        <TransportRowTv
           playing={playing}
           aPrecedent={!!hasPreviousEpisode}
-          aSuivant={!!hasNextEpisode}
-          aEpisodes={aEpisodes}
-          aPistes={aPistes}
-          onBasculer={() => {
+          hasNext={!!hasNextEpisode}
+          hasEpisodes={hasEpisodes}
+          hasTracks={hasTracks}
+          onToggle={() => {
             showOsd();
             onTogglePlay();
           }}
-          onSauter={sauter}
+          onSkip={skip}
           // Le curseur fantôme se pose où l'on en est, sans avancer : on a
           // demandé à se déplacer, pas encore où.
-          onDeplacement={() => scrub.enter()}
+          onMove={() => scrub.enter()}
           onPrecedent={() => onPreviousEpisode?.()}
-          onSuivant={() => onNextEpisode?.()}
-          onEpisodes={() => setPanel(etat.panel === "episodes" ? "aucun" : "episodes")}
-          onPistes={() => setPanel(etat.panel === "pistes" ? "aucun" : "pistes")}
+          onNext={() => onNextEpisode?.()}
+          onEpisodes={() => setPanel(state.panel === "episodes" ? "aucun" : "episodes")}
+          onTracks={() => setPanel(state.panel === "pistes" ? "aucun" : "pistes")}
         />
       </div>
       {/* `itemId` reste dans le contrat sans emploi ici : le client web s'en

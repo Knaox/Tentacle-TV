@@ -1,4 +1,4 @@
-import { recenser, estUnChampDeSaisie, type Candidat } from "./candidates";
+import { collect, isInputField, type Candidate } from "./candidates";
 
 /**
  * Où le focus se pose en arrivant sur un écran.
@@ -10,7 +10,7 @@ import { recenser, estUnChampDeSaisie, type Candidat } from "./candidates";
  *
  * On procède donc par ordre de priorité, du plus explicite au plus général :
  *
- * 1. **Ce qu'un composant du téléviseur a désigné** — `data-tv-focus-defaut`.
+ * 1. **Ce qu'un composant du téléviseur a désigné** — `data-tv-focus-fallback`.
  *    Les enveloppes que nous écrivons savent, elles, quelle est leur cible
  *    d'entrée : la première carte d'une grille, « Reprendre » sur une fiche,
  *    l'épisode en cours d'une saison. C'est le seul endroit où cette
@@ -32,10 +32,10 @@ import { recenser, estUnChampDeSaisie, type Candidat } from "./candidates";
  */
 
 /** Marqueur qu'un composant du téléviseur pose sur sa cible d'entrée. */
-export const ATTRIBUT_DEFAUT = "data-tv-focus-defaut";
+export const DEFAULT_ATTRIBUTE = "data-tv-focus-defaut";
 
-const SELECTEUR_RAIL = ".rail-tv";
-const SELECTEUR_CONTENU = "[data-tv-piste], [data-tv-grille]";
+const RAIL_SELECTOR = ".rail-tv";
+const CONTENT_SELECTOR = "[data-tv-piste], [data-tv-grille]";
 
 /**
  * L'appel à l'action principal d'un écran.
@@ -51,15 +51,15 @@ const SELECTEUR_CONTENU = "[data-tv-piste], [data-tv-grille]";
  * plus haut, le plus à gauche, et la seule chose qu'on ne veuille pas viser en
  * arrivant.
  */
-const SELECTEUR_ACTION_PRINCIPALE = '[class*="cta-primary"]';
+const MAIN_ACTION_SELECTOR = '[class*="cta-primary"]';
 
-export function focusParDefaut(
+export function defaultFocus(
   racine: ParentNode = document,
-  candidats: Candidat[] = recenser(racine),
+  candidates: Candidate[] = collect(racine),
 ): HTMLElement | null {
-  if (candidats.length === 0) return null;
+  if (candidates.length === 0) return null;
 
-  return ciblePreferee(racine, candidats) ?? premierEnOrdreDeLecture(candidats);
+  return preferredTarget(racine, candidates) ?? firstInReadingOrder(candidates);
 }
 
 /**
@@ -75,17 +75,17 @@ export function focusParDefaut(
  * que tout — puis remonte vers cette cible-ci dès qu'elle paraît, tant que
  * l'utilisateur n'a pas pris la main.
  */
-export function ciblePreferee(
+export function preferredTarget(
   racine: ParentNode = document,
-  candidats: Candidat[] = recenser(racine),
+  candidates: Candidate[] = collect(racine),
 ): HTMLElement | null {
-  const designe = candidats.find((candidat) => candidat.element.hasAttribute(ATTRIBUT_DEFAUT));
-  if (designe) return designe.element;
+  const designates = candidates.find((candidate) => candidate.element.hasAttribute(DEFAULT_ATTRIBUTE));
+  if (designates) return designates.element;
 
-  const principale = candidats.find((candidat) =>
-    candidat.element.matches(SELECTEUR_ACTION_PRINCIPALE),
+  const main = candidates.find((candidate) =>
+    candidate.element.matches(MAIN_ACTION_SELECTOR),
   );
-  if (principale) return principale.element;
+  if (main) return main.element;
 
   // Puis l'élément COURANT, quand l'écran en désigne un.
   //
@@ -97,34 +97,34 @@ export function ciblePreferee(
   //
   // Le rail en est exclu comme partout : on n'entre jamais dans un écran par sa
   // navigation.
-  const courante = candidats.find(
-    (candidat) =>
-      !candidat.element.closest(SELECTEUR_RAIL) &&
-      candidat.element.matches('[aria-current]:not([aria-current="false"])'),
+  const courante = candidates.find(
+    (candidate) =>
+      !candidate.element.closest(RAIL_SELECTOR) &&
+      candidate.element.matches('[aria-current]:not([aria-current="false"])'),
   );
   if (courante) return courante.element;
 
-  const contenu = racine.querySelector(SELECTEUR_CONTENU);
-  if (!contenu) return null;
+  const content = racine.querySelector(CONTENT_SELECTOR);
+  if (!content) return null;
 
-  const carte = candidats.find(
-    (candidat) =>
-      contenu.contains(candidat.element) && candidat.element.hasAttribute("data-tv-carte"),
+  const carte = candidates.find(
+    (candidate) =>
+      content.contains(candidate.element) && candidate.element.hasAttribute("data-tv-carte"),
   );
   return carte ? carte.element : null;
 }
 
 /** L'élément est-il déjà une cible d'entrée légitime ? */
-export function estCiblePreferee(element: HTMLElement): boolean {
-  if (element.hasAttribute(ATTRIBUT_DEFAUT)) return true;
-  if (element.matches(SELECTEUR_ACTION_PRINCIPALE)) return true;
+export function isPreferredTarget(element: HTMLElement): boolean {
+  if (element.hasAttribute(DEFAULT_ATTRIBUTE)) return true;
+  if (element.matches(MAIN_ACTION_SELECTOR)) return true;
   if (
-    !element.closest(SELECTEUR_RAIL) &&
+    !element.closest(RAIL_SELECTOR) &&
     element.matches('[aria-current]:not([aria-current="false"])')
   ) {
     return true;
   }
-  return element.hasAttribute("data-tv-carte") && !!element.closest(SELECTEUR_CONTENU);
+  return element.hasAttribute("data-tv-carte") && !!element.closest(CONTENT_SELECTOR);
 }
 
 /**
@@ -133,9 +133,9 @@ export function estCiblePreferee(element: HTMLElement): boolean {
  * La tolérance verticale évite qu'une différence d'un pixel entre deux boutons
  * d'une même barre décide de l'ordre à la place de l'abscisse.
  */
-const TOLERANCE_LIGNE = 4;
+const LINE_TOLERANCE = 4;
 
-function premierEnOrdreDeLecture(candidats: Candidat[]): HTMLElement | null {
+function firstInReadingOrder(candidates: Candidate[]): HTMLElement | null {
   // Les champs de saisie sont écartés d'abord, et pour de bon.
   //
   // Le relâchement ci-dessous les reprenait, et c'était la porte par laquelle
@@ -143,35 +143,35 @@ function premierEnOrdreDeLecture(candidats: Candidat[]): HTMLElement | null {
   // le recensement s'y confine ; sitôt que le champ perdait le focus, le filet
   // « il y a toujours exactement un élément focalisé » repassait ici, ne
   // trouvait plus rien d'admissible et se rabattait sur le champ. webOS y
-  // rouvrait son clavier, `moteurSuspendu()` redevenait vrai, et plus une
+  // rouvrait son clavier, `engineSuspended()` redevenait vrai, et plus une
   // flèche n'était traitée : ni pour descendre vers les résultats, ni pour
   // remonter au champ. Les deux symptômes n'en faisaient qu'un.
   //
   // Mesuré sur l'émulateur webOS 4, puis reproduit sur le Simulator 26 : un
   // `blur()` sur le champ est suivi d'un unique appel à `focus()` qui l'y
   // ramène, et le clavier remonte dans la foulée.
-  const sansChamp = candidats.filter((candidat) => !estUnChampDeSaisie(candidat.element));
-  const recevables = sansChamp.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
+  const sansChamp = candidates.filter((candidate) => !isInputField(candidate.element));
+  const acceptables = sansChamp.filter((candidate) => !candidate.element.closest(RAIL_SELECTOR));
 
   // Un écran qui n'offre que le rail vaut mieux qu'un écran sans anneau du
   // tout : ce relâchement-là reste. Un écran qui n'offre qu'un champ, non —
   // mieux vaut pas d'anneau qu'un anneau dont on ne peut plus sortir. Le champ
   // reste atteignable à la flèche et par la pose explicite de l'écran de
   // recherche ; c'est l'automatisme, et lui seul, qui s'en écarte.
-  const retenus = recevables.length > 0 ? recevables : sansChamp;
-  if (retenus.length === 0) return null;
+  const kept = acceptables.length > 0 ? acceptables : sansChamp;
+  if (kept.length === 0) return null;
 
-  let meilleur = retenus[0];
-  for (const candidat of retenus) {
-    if (candidat.box.top < meilleur.box.top - TOLERANCE_LIGNE) {
-      meilleur = candidat;
+  let best = kept[0];
+  for (const candidate of kept) {
+    if (candidate.box.top < best.box.top - LINE_TOLERANCE) {
+      best = candidate;
     } else if (
-      Math.abs(candidat.box.top - meilleur.box.top) <= TOLERANCE_LIGNE &&
-      candidat.box.left < meilleur.box.left
+      Math.abs(candidate.box.top - best.box.top) <= LINE_TOLERANCE &&
+      candidate.box.left < best.box.left
     ) {
-      meilleur = candidat;
+      best = candidate;
     }
   }
 
-  return meilleur.element;
+  return best.element;
 }

@@ -1,22 +1,22 @@
 import { isHorizontal, type Direction } from "./keys";
-import { recenser, conteneurPiegeant } from "./candidates";
-import { focusParDefaut } from "./default";
-import { donnerFocus, elementActif } from "./active";
+import { collect, trappingContainer } from "./candidates";
+import { defaultFocus } from "./default";
+import { giveFocus, activeElement } from "./active";
 import {
   best,
   restrictToFirstRow,
   onSameColumn,
   onSameRow,
 } from "@tentacle-tv/tv-core";
-import { boiteDeNavigation } from "./measure";
-import { defilerParPas } from "./scroll";
-import { reviserApresMontage } from "./wait";
-import { fermerMenuDeploye } from "./expandedMenu";
+import { navBox } from "./measure";
+import { scrollByStep } from "./scroll";
+import { reviewAfterMount } from "./wait";
+import { closeExpandedMenu } from "./expandedMenu";
 import {
-  SELECTEUR_RAIL,
-  dansLeRail,
+  RAIL_SELECTOR,
+  inRail,
   entreeDuRail,
-  redirigerEntreeDeZone,
+  redirectZoneEntry,
   sortieDuRail,
 } from "./zones";
 
@@ -38,12 +38,12 @@ import {
  * paresseuse — `RevealCell` monte le contenu d'une ligne à 600 px de la zone
  * visible — peut prendre quelques images de plus qu'une rangée virtualisée.
  */
-const BUDGET_PAS_MS = 400;
+const STEP_BUDGET_MS = 400;
 
 /**
  * Le cycle en vol : ses révocations, et le numéro qui les périme.
  *
- * `deplacer` est appelé une fois par appui, et la répétition automatique d'une
+ * `move` est appelé une fois par appui, et la répétition automatique d'une
  * télécommande en produit une dizaine par seconde. Rien n'empêchait deux
  * cycles de se chevaucher : chacun capturait sa position de départ, chacun
  * armait ses minuteurs de 400 ms, et le dernier à s'exécuter restaurait une
@@ -54,7 +54,7 @@ const BUDGET_PAS_MS = 400;
  * Un nouvel appui périme donc les révocations pendantes : il adopte la
  * position courante, quelle qu'elle soit, comme nouvelle référence.
  */
-let cycleCourant = 0;
+let currentCycle = 0;
 
 /**
  * Un déplacement : viser, sinon défiler d'un pas et viser à nouveau une fois
@@ -73,45 +73,45 @@ let cycleCourant = 0;
  * revenait, huit dixièmes de seconde plus tard, comme si la barre refusait
  * d'atteindre le bout. Le bord est une destination ; on y reste.
  */
-export function deplacer(direction: Direction): void {
+export function move(direction: Direction): void {
   // Le numéro est pris AVANT toute chose : viser peut déplacer le focus, donc
   // rendre caduque la révocation d'un pas antérieur qui n'avait rien donné.
-  const cycle = ++cycleCourant;
-  const perime = () => cycleCourant !== cycle;
+  const cycle = ++currentCycle;
+  const stale = () => currentCycle !== cycle;
 
-  if (viser(direction)) return;
+  if (aim(direction)) return;
 
   // Un piège borne tout ce qui suit : rien de ce qui lui est extérieur ne doit
   // bouger sous lui, et un menu déployé est le cas courant. Relu une fois et
   // passé aux deux pas, plutôt que redemandé à chaque tentative.
-  const piege = conteneurPiegeant();
+  const trap = trappingContainer();
 
   // Aucun voisin : soit on est au bord, soit la cible n'est pas montée. Le
   // fenêtrage des rangées vide une rangée entière dès qu'elle sort de l'écran,
   // et une carte non montée ne peut pas recevoir le focus.
-  const premier = defilerParPas(elementActif(), direction, piege);
+  const premier = scrollByStep(activeElement(), direction, trap);
   if (!premier) return;
 
-  reviserApresMontage(() => viser(direction), {
-    budgetMs: BUDGET_PAS_MS,
-    auDelai: () => {
-      if (perime()) return;
+  reviewAfterMount(() => aim(direction), {
+    budgetMs: STEP_BUDGET_MS,
+    onTimeout: () => {
+      if (stale()) return;
       // Un second pas absorbe une rangée plus haute que la moyenne ; au-delà,
       // il n'y a réellement rien, et l'on rend le terrain parcouru — dans
       // l'ordre inverse, chaque pas pouvant avoir touché un scroller
       // différent — sauf ce qui a accosté un bord.
-      const second = defilerParPas(elementActif(), direction, piege);
+      const second = scrollByStep(activeElement(), direction, trap);
       if (!second) {
-        if (!premier.accoste) premier.annuler();
+        if (!premier.docked) premier.cancel();
         return;
       }
-      reviserApresMontage(() => viser(direction), {
-        budgetMs: BUDGET_PAS_MS,
-        auDelai: () => {
-          if (perime()) return;
-          if (second.accoste || premier.accoste) return;
-          second.annuler();
-          premier.annuler();
+      reviewAfterMount(() => aim(direction), {
+        budgetMs: STEP_BUDGET_MS,
+        onTimeout: () => {
+          if (stale()) return;
+          if (second.docked || premier.docked) return;
+          second.cancel();
+          premier.cancel();
         },
       });
     },
@@ -119,19 +119,19 @@ export function deplacer(direction: Direction): void {
 }
 
 /** Cherche un voisin et lui donne le focus. Rend vrai s'il en a trouvé un. */
-export function viser(direction: Direction): boolean {
-  const depart = elementActif();
-  if (!depart) return viserPremier();
+export function aim(direction: Direction): boolean {
+  const start = activeElement();
+  if (!start) return aimFirst();
 
-  const piege = conteneurPiegeant();
+  const trap = trappingContainer();
 
   // Le rail se navigue à part — sauf sous un dialogue, qui piège comme
   // partout : ses entrées se parcourent de haut en bas, la droite rend au
   // contenu ce qu'on lui avait pris, la gauche est le bord du monde.
-  if (!piege && dansLeRail(depart)) return viserDansLeRail(depart, direction);
+  if (!trap && inRail(start)) return aimInRail(start, direction);
 
-  const racine = piege ?? document;
-  let candidats = recenser(racine).filter((candidat) => candidat.element !== depart);
+  const racine = trap ?? document;
+  let candidates = collect(racine).filter((candidate) => candidate.element !== start);
 
   // Le rail n'est JAMAIS un candidat géométrique. Il couvre toute la hauteur
   // de l'écran : sans cette règle, « bas » depuis une carte y remonterait au
@@ -140,11 +140,11 @@ export function viser(direction: Direction): boolean {
   // issue —, jamais par un score. Écarté AVANT les confinements : une entrée
   // du rail ne doit pas non plus servir de bande de référence à la
   // restriction verticale.
-  candidats = candidats.filter((candidat) => !candidat.element.closest(SELECTEUR_RAIL));
+  candidates = candidates.filter((candidate) => !candidate.element.closest(RAIL_SELECTOR));
 
   // La boîte de mise en page, pas celle du rendu : le départ est justement la
   // carte agrandie par le focus, la pire à mesurer transformée.
-  const depuis = boiteDeNavigation(depart);
+  const since = navBox(start);
 
   // Un déplacement horizontal reste dans sa rangée, et il y reste JUSQU'AU
   // BOUT. Sans cela, la dernière carte d'une piste voit à sa droite les
@@ -153,15 +153,15 @@ export function viser(direction: Direction): boolean {
   // salon ne fait.
   //
   // Le confinement se levait au bout, au motif que la piste défile et que ce
-  // qui suit est atteint par `defilerParPas`. Le raisonnement se mordait la
+  // qui suit est atteint par `scrollByStep`. Le raisonnement se mordait la
   // queue : une fois le confinement levé, la géométrie trouve toujours
   // QUELQUE CHOSE — une carte de la rangée d'en dessous, en diagonale — donc
-  // `viser` réussit et l'on n'atteint jamais le pas de défilement. Vécu sur un
+  // `aim` réussit et l'on n'atteint jamais le pas de défilement. Vécu sur un
   // carrousel : arrivé au bout de « Reprendre la lecture », le focus tombait
   // dans la rangée suivante au lieu de s'arrêter.
   //
   // Confiné jusqu'au bout, le protocole reprend son sens : plus de voisin dans
-  // la piste, donc `viser` échoue, donc `defilerParPas` fait glisser la
+  // la piste, donc `aim` échoue, donc `scrollByStep` fait glisser la
   // rangée, et l'on vise à nouveau DANS la piste — c'est ainsi qu'on parcourt
   // une rangée dont la fin n'est pas montée. Au vrai bout, il n'y a plus de
   // mou : le pas est refusé et le focus ne bouge pas. « Gauche » garde sa
@@ -170,11 +170,11 @@ export function viser(direction: Direction): boolean {
   // Une GRILLE se confine de la même façon, mais par les ordonnées : elle n'a
   // aucun conteneur par ligne.
   if (isHorizontal(direction)) {
-    const piste = depart.closest("[data-tv-piste]");
+    const piste = start.closest("[data-tv-piste]");
     if (piste) {
-      candidats = candidats.filter((candidat) => piste.contains(candidat.element));
-    } else if (depart.closest("[data-tv-grille]")) {
-      candidats = candidats.filter((candidat) => onSameRow(depuis, candidat.box));
+      candidates = candidates.filter((candidate) => piste.contains(candidate.element));
+    } else if (start.closest("[data-tv-grille]")) {
+      candidates = candidates.filter((candidate) => onSameRow(since, candidate.box));
     }
   } else {
     // Un déplacement VERTICAL en grille descend dans sa colonne. La géométrie
@@ -183,20 +183,20 @@ export function viser(direction: Direction): boolean {
     // deux rangées plus bas. La colonne d'abord ; si elle n'a pas de suite —
     // dernière rangée incomplète —, la première ligne rencontrée, et la carte
     // la moins désalignée y gagne.
-    const grille = depart.closest("[data-tv-grille]");
+    const grille = start.closest("[data-tv-grille]");
     let confine = false;
     if (grille) {
-      const dansLaGrille = candidats.filter((candidat) => grille.contains(candidat.element));
-      const memeColonne = dansLaGrille.filter((candidat) =>
-        onSameColumn(depuis, candidat.box),
+      const inGrid = candidates.filter((candidate) => grille.contains(candidate.element));
+      const sameColumn = inGrid.filter((candidate) =>
+        onSameColumn(since, candidate.box),
       );
-      if (best(depuis, memeColonne, direction)) {
-        candidats = memeColonne;
+      if (best(since, sameColumn, direction)) {
+        candidates = sameColumn;
         confine = true;
       } else {
-        const premiereLigne = restrictToFirstRow(depuis, dansLaGrille, direction);
-        if (premiereLigne.length > 0) {
-          candidats = premiereLigne;
+        const firstLine = restrictToFirstRow(since, inGrid, direction);
+        if (firstLine.length > 0) {
+          candidates = firstLine;
           confine = true;
         }
       }
@@ -214,21 +214,21 @@ export function viser(direction: Direction): boolean {
     // jamais désalignée. S'arrêter à la première bande rend au « bas » de
     // salon son sens : le bloc SUIVANT, jamais deux plus loin.
     if (!confine) {
-      const bande = restrictToFirstRow(depuis, candidats, direction);
-      if (bande.length > 0) candidats = bande;
+      const band = restrictToFirstRow(since, candidates, direction);
+      if (band.length > 0) candidates = band;
     }
   }
 
-  const choisi = best(depuis, candidats, direction);
-  if (!choisi) {
+  const chosen = best(since, candidates, direction);
+  if (!chosen) {
     // « Gauche » sans voisin, c'est la demande du rail — depuis la première
     // colonne d'une grille, le début d'une piste rembobinée, le chrome. La
     // destination est l'écran COURANT, pas l'entrée la plus proche. Un
     // dialogue ouvert garde son piège : on ne s'en évade pas vers le rail.
-    if (direction === "gauche" && !piege) {
+    if (direction === "gauche" && !trap) {
       const entree = entreeDuRail();
       if (entree) {
-        donnerFocus(entree);
+        giveFocus(entree);
         return true;
       }
     }
@@ -238,10 +238,10 @@ export function viser(direction: Direction): boolean {
     // ligne ne faisait rien — la seule issue était Retour, qu'il fallait avoir
     // deviné. Le geste est celui qu'on a déjà fait pour entrer, à l'envers.
     //
-    // Un dialogue n'a pas de déclencheur `aria-expanded` : `fermerMenuDeploye`
+    // Un dialogue n'a pas de déclencheur `aria-expanded` : `closeExpandedMenu`
     // rend faux, et une modale reste ce qu'elle est — une surface dont on sort
     // par Retour.
-    if (direction === "haut" && piege) return fermerMenuDeploye(piege);
+    if (direction === "haut" && trap) return closeExpandedMenu(trap);
 
     return false;
   }
@@ -249,8 +249,8 @@ export function viser(direction: Direction): boolean {
   // À l'arrivée dans une zone déclarée, la destination l'emporte sur la
   // géométrie — entrer par « Lecture », par la saison active. Les déplacements
   // INTERNES à la zone ne sont pas redirigés, sans quoi elle serait un piège.
-  const redirige = redirigerEntreeDeZone(depart, choisi.element);
-  donnerFocus(redirige ?? choisi.element);
+  const redirected = redirectZoneEntry(start, chosen.element);
+  giveFocus(redirected ?? chosen.element);
   return true;
 }
 
@@ -262,21 +262,21 @@ export function viser(direction: Direction): boolean {
  * mémoire de route retrouve, sinon l'entrée par défaut de l'écran. La gauche
  * ne mène nulle part, et un pas de défilement n'y a pas sa place non plus.
  */
-function viserDansLeRail(depart: HTMLElement, direction: Direction): boolean {
+function aimInRail(start: HTMLElement, direction: Direction): boolean {
   if (direction === "gauche") return true;
 
   if (direction === "droite") {
     const sortie = sortieDuRail();
-    if (sortie) donnerFocus(sortie);
+    if (sortie) giveFocus(sortie);
     return true;
   }
 
-  const depuis = boiteDeNavigation(depart);
-  const candidats = recenser(document).filter(
-    (candidat) => candidat.element !== depart && dansLeRail(candidat.element),
+  const since = navBox(start);
+  const candidates = collect(document).filter(
+    (candidate) => candidate.element !== start && inRail(candidate.element),
   );
-  const choisi = best(depuis, candidats, direction);
-  if (choisi) donnerFocus(choisi.element);
+  const chosen = best(since, candidates, direction);
+  if (chosen) giveFocus(chosen.element);
   return true;
 }
 
@@ -285,9 +285,9 @@ function viserDansLeRail(depart: HTMLElement, direction: Direction): boolean {
  * quand l'élément qui portait le focus a été démonté sous nos pieds — ce qui
  * arrive précisément quand une rangée se vide.
  */
-function viserPremier(): boolean {
-  const cible = focusParDefaut(conteneurPiegeant() ?? document);
-  if (!cible) return false;
-  donnerFocus(cible);
+function aimFirst(): boolean {
+  const target = defaultFocus(trappingContainer() ?? document);
+  if (!target) return false;
+  giveFocus(target);
   return true;
 }

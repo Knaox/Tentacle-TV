@@ -25,7 +25,7 @@
  * ouverte et rien ne change.
  */
 
-import { estUnChampDeSaisie } from "./candidates";
+import { isInputField } from "./candidates";
 
 let clavierMonte = false;
 
@@ -48,21 +48,21 @@ let clavierMonte = false;
  * vrai → faux → vrai que LG documente se déroule sans que le champ perde le
  * focus. On reste donc suspendu du début à la fin, comme il le faut.
  */
-export function clavierSystemeVisible(): boolean {
+export function systemKeyboardVisible(): boolean {
   if (!clavierMonte) return false;
   if (typeof document === "undefined") return false;
-  return estUnChampDeSaisie(document.activeElement as HTMLElement | null);
+  return isInputField(document.activeElement as HTMLElement | null);
 }
 
-export function surveillerClavierSysteme(): () => void {
-  const surChangement = (evenement: Event) => {
-    const detail = (evenement as CustomEvent<{ visibility?: boolean }>).detail;
+export function watchSystemKeyboard(): () => void {
+  const onChange = (event: Event) => {
+    const detail = (event as CustomEvent<{ visibility?: boolean }>).detail;
     clavierMonte = detail?.visibility === true;
   };
 
-  document.addEventListener("keyboardStateChange", surChangement);
+  document.addEventListener("keyboardStateChange", onChange);
   return () => {
-    document.removeEventListener("keyboardStateChange", surChangement);
+    document.removeEventListener("keyboardStateChange", onChange);
     clavierMonte = false;
   };
 }

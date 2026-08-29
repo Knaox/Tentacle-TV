@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, type RefObject } from "react";
  * **Pourquoi ce hook est substitué.** `LibraryGrid` pose ses colonnes en style
  * EN LIGNE : `gridTemplateColumns: repeat(n, 1fr)` et `gap: 16`. Les passes
  * PostCSS ne lisent que la feuille produite — un attribut `style` leur est
- * invisible, et `gardeCompat` laisse donc passer le build sans un mot. Sur la
+ * invisible, et `compatGuard` laisse donc passer le build sans un mot. Sur la
  * dalle, `.grid` est bien devenu `flex` mais aucune de ces deux déclarations
  * n'existe avant Chrome 57 et Chrome 84 : les cartes n'ont plus ni largeur ni
  * écart, et la grille s'effondre sur la largeur de leur titre.
@@ -24,13 +24,13 @@ import { useState, useEffect, useCallback, type RefObject } from "react";
  * calculés : l'observateur ne sert plus qu'à dire QUAND remesurer.
  */
 
-const LARGEUR_MINIMALE = 180;
-const ECART = 16;
+const MIN_WIDTH = 180;
+const GAP = 16;
 
 /** Deux colonnes au minimum : une grille d'une colonne n'est plus une grille. */
-function colonnesPour(largeur: number): number {
-  if (largeur <= 0) return 2;
-  return Math.max(2, Math.floor((largeur + ECART) / (LARGEUR_MINIMALE + ECART)));
+function columnsFor(width: number): number {
+  if (width <= 0) return 2;
+  return Math.max(2, Math.floor((width + GAP) / (MIN_WIDTH + GAP)));
 }
 
 export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
@@ -38,11 +38,11 @@ export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
   const [containerWidth, setContainerWidth] = useState(0);
 
   const update = useCallback((element: HTMLElement) => {
-    const largeur = largeurDeContenu(element);
-    const colonnes = colonnesPour(largeur);
-    setContainerWidth(largeur);
-    setItemsPerRow(colonnes);
-    publier(element, largeur, colonnes);
+    const width = contentWidth(element);
+    const columns = columnsFor(width);
+    setContainerWidth(width);
+    setItemsPerRow(columns);
+    publish(element, width, columns);
   }, []);
 
   useEffect(() => {
@@ -56,9 +56,9 @@ export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
     update(element);
 
     if (typeof ResizeObserver !== "function") return;
-    const observateur = new ResizeObserver(() => update(element));
-    observateur.observe(element);
-    return () => observateur.disconnect();
+    const observer = new ResizeObserver(() => update(element));
+    observer.observe(element);
+    return () => observer.disconnect();
   }, [containerRef, update]);
 
   return { itemsPerRow, containerWidth };
@@ -75,11 +75,11 @@ export function useItemsPerRow(containerRef: RefObject<HTMLDivElement | null>) {
  * ligne. Les deux doivent rester d'accord, sinon le virtualiseur réserve une
  * hauteur qui ne correspond à rien de ce qui est dessiné.
  */
-function publier(element: HTMLElement, largeur: number, colonnes: number): void {
-  const carte = colonnes > 0 ? (largeur - ECART * (colonnes - 1)) / colonnes : 0;
+function publish(element: HTMLElement, width: number, columns: number): void {
+  const carte = columns > 0 ? (width - GAP * (columns - 1)) / columns : 0;
   element.style.setProperty("--tv-grille-carte", `${Math.max(0, Math.floor(carte))}px`);
   // Zéro quand le moteur pose déjà l'écart lui-même : la marge s'y AJOUTERAIT.
-  element.style.setProperty("--tv-grille-ecart", `${gapFlexApplique() ? 0 : ECART}px`);
+  element.style.setProperty("--tv-grille-ecart", `${gapFlexApplique() ? 0 : GAP}px`);
 }
 
 /**
@@ -125,14 +125,14 @@ function gapFlexApplique(): boolean {
   return gapFlex;
 }
 
-function largeurDeContenu(element: HTMLElement): number {
+function contentWidth(element: HTMLElement): number {
   const style = window.getComputedStyle(element);
-  const interieur =
+  const inside =
     element.clientWidth - pixels(style.paddingLeft) - pixels(style.paddingRight);
-  return Math.max(0, interieur);
+  return Math.max(0, inside);
 }
 
-function pixels(valeur: string): number {
-  const nombre = parseFloat(valeur);
-  return Number.isFinite(nombre) ? nombre : 0;
+function pixels(value: string): number {
+  const count = parseFloat(value);
+  return Number.isFinite(count) ? count : 0;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 import type { AudioTrack, SubtitleTrack } from "../components/player/videoPlayer.types";
-import { apparier, rangDe, type PisteNative } from "./appariementPistes";
-import { pistePubliable } from "../lib/deviceProfile/pistesLecteur";
+import { matchTracks, rankOf, type NativeTrack } from "./trackMatching";
+import { isPublishableTrack } from "../lib/deviceProfile/playerTracks";
 
 interface UseNativeMediaTracksOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -17,11 +17,11 @@ interface UseNativeMediaTracksOptions {
    * Facultatif — sans lui, le comportement est celui d'avant : on n'insiste pas,
    * et la lecture reste sur la piste courante.
    */
-  surPisteIntrouvable?: () => void;
+  onTrackNotFound?: () => void;
 }
 
 /** `HAVE_METADATA` : la liste des pistes est arrêtée, on peut conclure. */
-const METADONNEES_PRETES = 1;
+const METADATA_READY = 1;
 
 /**
  * Délai avant de conclure qu'une piste manque, en millisecondes.
@@ -32,11 +32,11 @@ const METADONNEES_PRETES = 1;
  * pendant une seconde, pour une piste arrivée cinquante millisecondes plus
  * tard. Un seul minuteur, annulé dès qu'une bascule aboutit.
  */
-const DELAI_VERDICT_MS = 700;
+const VERDICT_DELAY_MS = 700;
 
 export function useNativeMediaTracks({
   videoRef, src, subtitleTracks, currentSubtitle, audioTracks, currentAudio, isDirectPlay,
-  surPisteIntrouvable,
+  onTrackNotFound,
 }: UseNativeMediaTracksOptions): void {
   // Subtitle track visibility — re-apply after source change and when tracks load.
   // Uses "disabled" (fully off) for non-selected tracks to prevent hls.js interference
@@ -61,7 +61,7 @@ export function useNativeMediaTracks({
   // serveur qui rendrait la même lecture directe pour la piste voulue ferait
   // repartir une session toutes les 700 ms, indéfiniment. La clé porte la
   // source, donc une session neuve rouvre le droit de conclure.
-  const dejaSignale = useRef<string | null>(null);
+  const alreadyReported = useRef<string | null>(null);
 
   // jellyfin-web pattern (plugin.js:setAudioStreamIndex): In Direct Play, switch
   // audio tracks natively via HTML5 audioTracks API. This avoids URL rebuild and
@@ -86,19 +86,19 @@ export function useNativeMediaTracks({
     const v = videoRef.current;
     if (!v || !isDirectPlay) return;
     // HTMLMediaElement.audioTracks is not in standard TS lib — access via type cast.
-    const elemTracks = (v as HTMLVideoElement & { audioTracks?: ListePistesNatives }).audioTracks;
+    const elemTracks = (v as HTMLVideoElement & { audioTracks?: NativeTrackList }).audioTracks;
     if (!elemTracks) return;
 
     let verdict: ReturnType<typeof setTimeout> | null = null;
-    const annulerVerdict = () => {
+    const cancelVerdict = () => {
       if (verdict === null) return;
       clearTimeout(verdict);
       verdict = null;
     };
 
-    const appliquer = () => {
-      const rang = rangDe(
-        apparier(listerNatives(elemTracks), audioTracks, pistePubliable),
+    const apply = () => {
+      const rank = rankOf(
+        matchTracks(listNativeTracks(elemTracks), audioTracks, isPublishableTrack),
         audioTracks,
         currentAudio,
       );
@@ -106,47 +106,47 @@ export function useNativeMediaTracks({
       // strict que l'ancien seuil de longueur, et pour la même raison :
       // réaffirmer `enabled` pendant que la chaîne audio s'initialise fait
       // taire le téléviseur.
-      const pret = v.readyState >= METADONNEES_PRETES;
-      if (!pret) return;
-      if (rang !== null) {
-        annulerVerdict();
-        activerPisteAudio(elemTracks, rang);
+      const ready = v.readyState >= METADATA_READY;
+      if (!ready) return;
+      if (rank !== null) {
+        cancelVerdict();
+        enableAudioTrack(elemTracks, rank);
         return;
       }
-      if (!pisteIntrouvable(pret, rang)) return;
+      if (!trackNotFound(ready, rank)) return;
       // La liste est arrêtée et la piste n'y est pas : c'est au serveur de la
       // fournir. On laisse encore un instant au démultiplexeur, cf. le délai.
-      const cle = `${src}|${currentAudio}`;
-      if (dejaSignale.current === cle || verdict !== null) return;
+      const key = `${src}|${currentAudio}`;
+      if (alreadyReported.current === key || verdict !== null) return;
       verdict = setTimeout(() => {
         verdict = null;
-        dejaSignale.current = cle;
-        surPisteIntrouvable?.();
-      }, DELAI_VERDICT_MS);
+        alreadyReported.current = key;
+        onTrackNotFound?.();
+      }, VERDICT_DELAY_MS);
     };
 
-    appliquer();
+    apply();
     // Ceinture et bretelles : certaines implémentations peuplent la liste sans
     // émettre `addtrack`, et `loadedmetadata` est alors le seul signal.
-    elemTracks.addEventListener?.("addtrack", appliquer);
-    v.addEventListener("loadedmetadata", appliquer);
+    elemTracks.addEventListener?.("addtrack", apply);
+    v.addEventListener("loadedmetadata", apply);
     return () => {
-      annulerVerdict();
-      elemTracks.removeEventListener?.("addtrack", appliquer);
-      v.removeEventListener("loadedmetadata", appliquer);
+      cancelVerdict();
+      elemTracks.removeEventListener?.("addtrack", apply);
+      v.removeEventListener("loadedmetadata", apply);
     };
-    // `surPisteIntrouvable` volontairement hors dépendances : l'appelant le
+    // `onTrackNotFound` volontairement hors dépendances : l'appelant le
     // reconstruit à chaque rendu, et le remettre ici rejouerait la bascule sans
     // raison — écrire `enabled` pour rien fait taire le téléviseur.
   }, [currentAudio, isDirectPlay, audioTracks, src]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** `HTMLMediaElement.audioTracks` n'est pas déclaré par la lib TS standard. */
-export interface ListePistesNatives {
+export interface NativeTrackList {
   readonly length: number;
   [i: number]: { enabled: boolean; id?: string; label?: string; language?: string };
-  addEventListener?: (type: string, ecouteur: () => void) => void;
-  removeEventListener?: (type: string, ecouteur: () => void) => void;
+  addEventListener?: (type: string, listener: () => void) => void;
+  removeEventListener?: (type: string, listener: () => void) => void;
 }
 
 /**
@@ -156,38 +156,38 @@ export interface ListePistesNatives {
  * ni `filter`, et la parcourir depuis un module pur reviendrait à lui donner
  * accès au DOM.
  */
-export function listerNatives(natives: ListePistesNatives): PisteNative[] {
-  const liste: PisteNative[] = [];
+export function listNativeTracks(natives: NativeTrackList): NativeTrack[] {
+  const list: NativeTrack[] = [];
   for (let i = 0; i < natives.length; i++) {
     const { id, label, language } = natives[i];
-    liste.push({ id, label, language });
+    list.push({ id, label, language });
   }
-  return liste;
+  return list;
 }
 
 /**
- * N'active que la piste de rang `rang`, et rend si l'écriture était nécessaire.
+ * N'active que la piste de rang `rank`, et rend si l'écriture était nécessaire.
  *
  * Le rang vient de l'appariement, jamais d'un calcul sur les index : c'est
  * précisément ce que ce module ne sait pas faire, puisqu'il ne voit pas quelles
  * pistes le démultiplexeur a omises.
  */
-export function activerPisteAudio(natives: ListePistesNatives, rang: number): boolean {
-  if (rang < 0 || rang >= natives.length) return false;
+export function enableAudioTrack(natives: NativeTrackList, rank: number): boolean {
+  if (rank < 0 || rank >= natives.length) return false;
   // RIEN À FAIRE si la piste voulue est déjà la seule active — et surtout, rien
   // à écrire. Sur le téléviseur, réaffirmer `enabled` sur la piste courante
   // pendant que la chaîne audio s'initialise la fait taire : le film démarrait
   // muet, et il fallait changer de piste pour retrouver le son. Le cas est le
   // plus fréquent de tous (la piste préférée est souvent celle du conteneur),
   // et il ne demandait aucune écriture.
-  if (dejaSeuleActive(natives, rang)) return false;
-  for (let i = 0; i < natives.length; i++) natives[i].enabled = (i === rang);
+  if (alreadyOnlyEnabled(natives, rank)) return false;
+  for (let i = 0; i < natives.length; i++) natives[i].enabled = (i === rank);
   return true;
 }
 
-function dejaSeuleActive(natives: ListePistesNatives, rang: number): boolean {
+function alreadyOnlyEnabled(natives: NativeTrackList, rank: number): boolean {
   for (let i = 0; i < natives.length; i++) {
-    if (natives[i].enabled !== (i === rang)) return false;
+    if (natives[i].enabled !== (i === rank)) return false;
   }
   return true;
 }
@@ -204,6 +204,6 @@ function dejaSeuleActive(natives: ListePistesNatives, rang: number): boolean {
  * l'anglais ne faisait rien du tout — ni bascule, ni session serveur, ni
  * message. Le film restait en français.
  */
-export function pisteIntrouvable(pret: boolean, rang: number | null): boolean {
-  return pret && rang === null;
+export function trackNotFound(ready: boolean, rank: number | null): boolean {
+  return ready && rank === null;
 }

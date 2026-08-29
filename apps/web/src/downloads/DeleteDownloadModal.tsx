@@ -23,7 +23,7 @@ export function DeleteDownloadModal({
   title, heading, message, busy, onConfirm, onClose,
 }: DeleteDownloadModalProps) {
   const { t } = useTranslation(["downloads", "common"]);
-  const entete = heading ?? t("downloads:deleteConfirmTitle");
+  const header = heading ?? t("downloads:deleteConfirmTitle");
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -38,7 +38,7 @@ export function DeleteDownloadModal({
       className="fixed inset-0 z-[210] flex items-center justify-center p-4"
       role="alertdialog"
       aria-modal="true"
-      aria-label={entete}
+      aria-label={header}
     >
       <div className="absolute inset-0" style={{ background: "var(--glass-backdrop)" }} onClick={onClose} />
       <div
@@ -51,7 +51,7 @@ export function DeleteDownloadModal({
         }}
       >
         <div className="px-5 py-4">
-          <h2 className="text-base font-bold text-content-primary">{entete}</h2>
+          <h2 className="text-base font-bold text-content-primary">{header}</h2>
           {title && (
             <p className="mt-1 truncate text-sm font-semibold text-content-secondary">{title}</p>
           )}

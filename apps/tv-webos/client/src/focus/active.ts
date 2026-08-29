@@ -1,5 +1,5 @@
-import { amenerEnVue } from "./scroll";
-import { scrollersHorizontaux, scrollersVerticaux } from "./scrollers";
+import { bringIntoView } from "./scroll";
+import { horizontalScrollers, verticalScrollers } from "./scrollers";
 
 /**
  * L'élément qui porte le focus, et comment le lui donner.
@@ -11,47 +11,47 @@ import { scrollersHorizontaux, scrollersVerticaux } from "./scrollers";
  */
 
 /** L'élément qui porte le focus, ou `null` si c'est le document lui-même. */
-export function elementActif(): HTMLElement | null {
-  const actif = document.activeElement;
-  if (!actif || actif === document.body || actif === document.documentElement) return null;
-  return actif as HTMLElement;
+export function activeElement(): HTMLElement | null {
+  const active = document.activeElement;
+  if (!active || active === document.body || active === document.documentElement) return null;
+  return active as HTMLElement;
 }
 
 /** Une position de défilement relevée avant `focus()`, pour la rendre après. */
-interface Ancre {
+interface Anchor {
   /** Le conteneur, ou `null` pour la fenêtre. */
-  cible: HTMLElement | null;
+  target: HTMLElement | null;
   x: number;
   y: number;
 }
 
-function relever(element: HTMLElement): Ancre[] {
-  const ancres: Ancre[] = [{ cible: null, x: window.pageXOffset, y: window.pageYOffset }];
+function read(element: HTMLElement): Anchor[] {
+  const anchors: Anchor[] = [{ target: null, x: window.pageXOffset, y: window.pageYOffset }];
 
   // Un `Set` : un conteneur qui défile dans les deux sens serait relevé — donc
   // restauré — deux fois, la seconde écrasant la première avec les mêmes
   // valeurs. Inoffensif, mais inutile.
-  const conteneurs = new Set<HTMLElement>([
-    ...scrollersVerticaux(element),
-    ...scrollersHorizontaux(element),
+  const containers = new Set<HTMLElement>([
+    ...verticalScrollers(element),
+    ...horizontalScrollers(element),
   ]);
-  conteneurs.forEach((cible) => {
-    ancres.push({ cible, x: cible.scrollLeft, y: cible.scrollTop });
+  containers.forEach((target) => {
+    anchors.push({ target, x: target.scrollLeft, y: target.scrollTop });
   });
 
-  return ancres;
+  return anchors;
 }
 
-function restaurer(ancres: Ancre[]): void {
-  for (const ancre of ancres) {
-    if (!ancre.cible) {
-      if (window.pageXOffset !== ancre.x || window.pageYOffset !== ancre.y) {
-        window.scrollTo(ancre.x, ancre.y);
+function restore(anchors: Anchor[]): void {
+  for (const anchor of anchors) {
+    if (!anchor.target) {
+      if (window.pageXOffset !== anchor.x || window.pageYOffset !== anchor.y) {
+        window.scrollTo(anchor.x, anchor.y);
       }
       continue;
     }
-    if (ancre.cible.scrollLeft !== ancre.x) ancre.cible.scrollLeft = ancre.x;
-    if (ancre.cible.scrollTop !== ancre.y) ancre.cible.scrollTop = ancre.y;
+    if (anchor.target.scrollLeft !== anchor.x) anchor.target.scrollLeft = anchor.x;
+    if (anchor.target.scrollTop !== anchor.y) anchor.target.scrollTop = anchor.y;
   }
 }
 
@@ -66,19 +66,19 @@ function restaurer(ancres: Ancre[]): void {
  * dalle en a 53, et Blink y fait son propre amené-en-vue — pour un élément
  * partiellement visible, il le RECENTRE. Mesuré dans une liste d'épisodes : en
  * remontant, une ligne affleurant le haut de l'écran repartait au milieu, et
- * `amenerEnVue` ne rattrapait rien puisqu'un élément recentré est dans la
+ * `bringIntoView` ne rattrapait rien puisqu'un élément recentré est dans la
  * marge. La page défilait d'un demi-écran et l'anneau redescendait alors qu'on
  * montait.
  *
  * On relève donc les positions de défilement avant, et on les rend juste
- * après : ce que le navigateur a décidé est effacé, et `amenerEnVue` reste le
+ * après : ce que le navigateur a décidé est effacé, et `bringIntoView` reste le
  * seul à décider. Sur un moteur récent l'option est honorée, rien n'a bougé,
  * la restauration ne fait rien — **le comportement devient le même au bureau
  * et sur la dalle**, ce qu'il n'était pas.
  */
-export function donnerFocus(element: HTMLElement): void {
-  const ancres = relever(element);
+export function giveFocus(element: HTMLElement): void {
+  const anchors = read(element);
   element.focus({ preventScroll: true });
-  restaurer(ancres);
-  amenerEnVue(element);
+  restore(anchors);
+  bringIntoView(element);
 }

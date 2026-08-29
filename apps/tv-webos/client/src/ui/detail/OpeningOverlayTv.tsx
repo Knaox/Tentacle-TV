@@ -8,7 +8,7 @@ export interface TargetRect {
   height: number;
 }
 
-interface ProprietesCalque {
+interface LayerProps {
   origin: DetailOrigin | null;
   backdropUrl: string | null;
   target: TargetRect | null;
@@ -46,7 +46,7 @@ interface ProprietesCalque {
  * relâcher l'origine capturée ; ne pas l'appeler laisserait cette origine en
  * place et la ferait rejouer à l'ouverture suivante.
  */
-export function DetailOpenOverlay({ origin, onDone }: ProprietesCalque) {
+export function DetailOpenOverlay({ origin, onDone }: LayerProps) {
   const rendu = useRef(false);
 
   useEffect(() => {

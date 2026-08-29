@@ -10,32 +10,32 @@ import { useEffect, useRef, type RefObject } from "react";
  * les tuiles d'extras avec leur requête, le bouton de lecture avec l'état de
  * visionnage — sans que l'enveloppe soit re-rendue. D'où l'observation.
  *
- * `marquer` doit être IDEMPOTENT : il est appelé à chaque mutation de sa
+ * `mark` doit être IDEMPOTENT : il est appelé à chaque mutation de sa
  * racine, et il peut lui-même en produire une. Les attributs ne sont pas
  * observés, ce qui coupe la boucle la plus évidente, mais une écriture
  * inconditionnelle resterait du travail inutile à chaque image d'une
  * animation. Écrire seulement quand la valeur change est la règle.
  */
-export function useMarqueur<T extends HTMLElement>(
-  marquer: (racine: T) => void,
+export function useMarker<T extends HTMLElement>(
+  mark: (racine: T) => void,
 ): RefObject<T | null> {
   const racine = useRef<T>(null);
   // La fonction est relue à chaque appel plutôt que capturée : l'appelant peut
   // la redéfinir à chaque rendu — c'est le cas courant d'une fermeture sur des
   // propriétés — sans que l'observateur soit débranché puis rebranché.
-  const dernier = useRef(marquer);
-  dernier.current = marquer;
+  const last = useRef(mark);
+  last.current = mark;
 
   useEffect(() => {
-    const cible = racine.current;
-    if (!cible) return;
+    const target = racine.current;
+    if (!target) return;
 
-    const appliquer = () => dernier.current(cible);
-    appliquer();
+    const apply = () => last.current(target);
+    apply();
 
-    const observateur = new MutationObserver(appliquer);
-    observateur.observe(cible, { childList: true, subtree: true });
-    return () => observateur.disconnect();
+    const observer = new MutationObserver(apply);
+    observer.observe(target, { childList: true, subtree: true });
+    return () => observer.disconnect();
   }, []);
 
   return racine;

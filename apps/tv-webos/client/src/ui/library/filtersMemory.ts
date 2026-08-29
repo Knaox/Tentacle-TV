@@ -27,18 +27,18 @@ import type { LibraryFilterState } from "@/hooks/useLibraryFilters";
  * posé, se lit comme une bibliothèque à moitié vide.
  */
 
-const memoire = new Map<string, LibraryFilterState>();
+const memory = new Map<string, LibraryFilterState>();
 
-export function retenirFiltres(cle: string, filtres: LibraryFilterState): void {
-  memoire.set(cle, filtres);
+export function keepFilters(key: string, filters: LibraryFilterState): void {
+  memory.set(key, filters);
 }
 
-export function filtresRetenus(cle: string): LibraryFilterState | null {
-  return memoire.get(cle) ?? null;
+export function keptFilters(key: string): LibraryFilterState | null {
+  return memory.get(key) ?? null;
 }
 
 /** Les commandes de `useLibraryFilters` dont la restauration a besoin. */
-export interface CommandesFiltres {
+export interface FilterControls {
   filters: LibraryFilterState;
   toggleGenre: (id: string) => void;
   toggleStudio: (id: string) => void;
@@ -63,15 +63,15 @@ export interface CommandesFiltres {
  * Tout se passe dans un même effet, donc dans un seul lot React : la grille ne
  * voit qu'un état, et n'émet qu'une requête.
  */
-export function rejouerFiltres(commandes: CommandesFiltres, garde: LibraryFilterState): void {
-  garde.genreIds.forEach(commandes.toggleGenre);
-  garde.studioIds.forEach(commandes.toggleStudio);
-  garde.platformIds.forEach(commandes.togglePlatform);
-  if (garde.yearFrom !== null) commandes.setYearFrom(garde.yearFrom);
-  if (garde.yearTo !== null) commandes.setYearTo(garde.yearTo);
-  if (garde.ratingMin !== null) commandes.setRatingMin(garde.ratingMin);
-  if (garde.statusFilter !== null) commandes.setStatusFilter(garde.statusFilter);
-  if (garde.isFavorite) commandes.setIsFavorite(true);
-  commandes.setSortBy(garde.sortBy);
-  commandes.setSortOrder(garde.sortOrder);
+export function replayFilters(controls: FilterControls, guard: LibraryFilterState): void {
+  guard.genreIds.forEach(controls.toggleGenre);
+  guard.studioIds.forEach(controls.toggleStudio);
+  guard.platformIds.forEach(controls.togglePlatform);
+  if (guard.yearFrom !== null) controls.setYearFrom(guard.yearFrom);
+  if (guard.yearTo !== null) controls.setYearTo(guard.yearTo);
+  if (guard.ratingMin !== null) controls.setRatingMin(guard.ratingMin);
+  if (guard.statusFilter !== null) controls.setStatusFilter(guard.statusFilter);
+  if (guard.isFavorite) controls.setIsFavorite(true);
+  controls.setSortBy(guard.sortBy);
+  controls.setSortOrder(guard.sortOrder);
 }

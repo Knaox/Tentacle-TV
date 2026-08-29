@@ -12,7 +12,7 @@ import type { usePlaybackInfo } from "./usePlaybackInfo";
  * Oui pour tout sous-titre image, SAUF le PGS quand le rendu client est
  * disponible : c'est là tout le gain, la première cause de transcodage vidéo.
  */
-export function necessiteIncrustation(codec: string | undefined, pgsClientOk: boolean): boolean {
+export function needsBurnIn(codec: string | undefined, pgsClientOk: boolean): boolean {
   if (!BURN_IN_SUBTITLE_CODECS.test(codec ?? "")) return false;
   return !(pgsClientOk && PGS_SUBTITLE_CODECS.test(codec ?? ""));
 }
@@ -51,11 +51,11 @@ export function useWebPlaybackFallbacks({
   // survient à 0 s, où `setStartTicks(0)` ne change rien et où React ne rejoue
   // donc rien. Le lecteur restait alors sur un spinner que plus rien ne
   // relevait. Un compteur, lui, change toujours.
-  const [relanceLecture, setRelanceLecture] = useState(0);
+  const [playbackRestart, setPlaybackRestart] = useState(0);
 
   // La session du moment, tenue dans une référence plutôt qu'en dépendances.
   //
-  // `relancerLecture` doit garder une identité STABLE : le repli du téléviseur
+  // `restartPlayback` doit garder une identité STABLE : le repli du téléviseur
   // en fait la dépendance de l'effet qui pose son écouteur d'erreur, et cet
   // écouteur se reposerait alors à chaque PlaybackInfo — c'est-à-dire à chaque
   // fois qu'on vient de renégocier. Il doit pourtant tuer la session réellement
@@ -86,16 +86,16 @@ export function useWebPlaybackFallbacks({
    * ffmpeg à tuer — quand celui du PGS et l'échelle du téléviseur peuvent
    * partir d'un transcodage.
    */
-  const libererEncodage = useCallback(() => {
+  const releaseEncoding = useCallback(() => {
     const { client: jf, playSessionId, isDirectPlay } = sessionEnCours.current;
     if (isDirectPlay || !playSessionId) return;
     void killActiveEncoding(jf, playSessionId);
   }, []);
 
-  const relancerLecture = useCallback(() => {
-    libererEncodage();
-    setRelanceLecture((n) => n + 1);
-  }, [libererEncodage]);
+  const restartPlayback = useCallback(() => {
+    releaseEncoding();
+    setPlaybackRestart((n) => n + 1);
+  }, [releaseEncoding]);
 
   // ── Filet de la lecture directe MKV (cf. lib/deviceProfile/browser.ts) ──
   // Le rattrapage n'est proposé que s'il y a matière à rattraper : un MKV, sur
@@ -106,10 +106,10 @@ export function useWebPlaybackFallbacks({
   const handleDirectPlayNonFiable = useCallback((seconds: number) => {
     if (seconds > 0) setStartTicks(Math.floor(seconds * TICKS_PER_SECOND));
     signalerMkvNonFiable();
-    relancerLecture();
-  }, [signalerMkvNonFiable, setStartTicks, relancerLecture]);
-  const conteneurLu = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();
-  const onDirectPlayNonFiable = !isDesktop && conteneurLu === "mkv" && !pbInfo.mkvNonFiable
+    restartPlayback();
+  }, [signalerMkvNonFiable, setStartTicks, restartPlayback]);
+  const readContainer = (pbInfo.mediaSource?.Container ?? mediaSource?.Container)?.toLowerCase();
+  const onDirectPlayNonFiable = !isDesktop && readContainer === "mkv" && !pbInfo.mkvUnreliable
     ? handleDirectPlayNonFiable
     : undefined;
 
@@ -132,13 +132,13 @@ export function useWebPlaybackFallbacks({
   // sous-titre image sous mpv aurait déclenché une incrustation serveur —
   // exactement le transcodage que ce chantier supprime.
   //
-  // Ce filet-ci ne passe PAS par `relancerLecture` : il renégocie en changeant
+  // Ce filet-ci ne passe PAS par `restartPlayback` : il renégocie en changeant
   // l'incrustation, et c'est un chemin distinct — d'où le kill posé à la main.
   useEffect(() => {
     if (isDesktop || pgsClientOk || subtitleIndex == null) return;
     const s = streams.find((st) => st.Type === "Subtitle" && st.Index === subtitleIndex);
     if (!s || !PGS_SUBTITLE_CODECS.test(s.Codec ?? "")) return;
-    libererEncodage();
+    releaseEncoding();
     if (positionRef.current > 0) setStartTicks(Math.floor(positionRef.current * TICKS_PER_SECOND));
     setBurnInSubtitleIndex(subtitleIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -147,9 +147,9 @@ export function useWebPlaybackFallbacks({
   return {
     onDirectPlayNonFiable,
     pgsSubtitleUrl,
-    signalerEchecPgs: pbInfo.signalerPgsClientIndisponible,
-    relanceLecture,
-    relancerLecture,
-    libererEncodage,
+    reportPgsFailure: pbInfo.reportPgsClientUnavailable,
+    playbackRestart,
+    restartPlayback,
+    releaseEncoding,
   };
 }

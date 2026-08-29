@@ -18,38 +18,38 @@ export interface ActivePluginMeta {
   navItems?: unknown[];
 }
 
-const AUCUN: readonly ActivePluginMeta[] = Object.freeze([]);
+const NONE: readonly ActivePluginMeta[] = Object.freeze([]);
 
-export function PluginProvider(proprietes: { children?: ReactNode }): ReactElement {
-  return createElement("div", { style: { display: "contents" } }, proprietes.children);
+export function PluginProvider(props: { children?: ReactNode }): ReactElement {
+  return createElement("div", { style: { display: "contents" } }, props.children);
 }
 
 export function useActivePluginsMeta(): readonly ActivePluginMeta[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function useRefreshPlugins(): () => void {
-  return rafraichir;
+  return refresh;
 }
 
 export function usePlugins(): readonly ActivePluginMeta[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function usePluginNavItems(): readonly unknown[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function usePluginAdminNavItems(): readonly unknown[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function usePluginRoutes(): readonly unknown[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function usePluginAdminRoutes(): readonly unknown[] {
-  return AUCUN;
+  return NONE;
 }
 
 export function usePlugin(): null {
@@ -69,6 +69,6 @@ export function unregisterPlugin(): void {
 }
 
 /** Référence stable : la passer en dépendance d'effet ne doit rien relancer. */
-function rafraichir(): void {
+function refresh(): void {
   /* Aucun plugin à recharger. */
 }

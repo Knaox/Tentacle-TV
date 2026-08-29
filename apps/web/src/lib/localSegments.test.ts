@@ -13,7 +13,7 @@ const ITEM = {
 
 describe("resolveLocalSegmentsPayload — la migration de l'ancien segments.json", () => {
   it("un contrat v1 est relu tel quel, sans re-résolution", () => {
-    const contrat = {
+    const contract = {
       version: 1,
       itemId: "ep-1",
       runtimeMs: 1_440_000,
@@ -29,33 +29,33 @@ describe("resolveLocalSegmentsPayload — la migration de l'ancien segments.json
         },
       ],
     };
-    expect(resolveLocalSegmentsPayload(contrat, "ep-1", ITEM)).toEqual(contrat);
+    expect(resolveLocalSegmentsPayload(contract, "ep-1", ITEM)).toEqual(contract);
   });
 
   it("l'ancien format à trois clés brutes est résolu localement — même fonction que le serveur", () => {
-    const ancien = {
+    const old = {
       mediaSegments: {
         Items: [{ Type: "Intro", StartTicks: 0, EndTicks: ticks(90_000) }],
       },
       pluginDict: null,
       pluginTs: null,
     };
-    const contrat = resolveLocalSegmentsPayload(ancien, "ep-1", ITEM);
+    const contract = resolveLocalSegmentsPayload(old, "ep-1", ITEM);
     // L'Intro vient du payload brut ; l'Outro manquant est COMBLÉ par le
     // chapitre nommé du DTO local — le comblement par type joue aussi ici.
-    expect(contrat.segments).toHaveLength(2);
-    expect(contrat.segments[0]).toMatchObject({ type: "Intro", endMs: 90_000, source: "jellyfin" });
-    expect(contrat.segments[1]).toMatchObject({ type: "Outro", source: "chapters" });
-    expect(contrat.runtimeMs).toBe(1_440_000);
+    expect(contract.segments).toHaveLength(2);
+    expect(contract.segments[0]).toMatchObject({ type: "Intro", endMs: 90_000, source: "jellyfin" });
+    expect(contract.segments[1]).toMatchObject({ type: "Outro", source: "chapters" });
+    expect(contract.runtimeMs).toBe(1_440_000);
   });
 
   it("ancien format muet : le repli chapitres du DTO local joue", () => {
-    const contrat = resolveLocalSegmentsPayload(
+    const contract = resolveLocalSegmentsPayload(
       { mediaSegments: null, pluginDict: null, pluginTs: null },
       "ep-1",
       ITEM,
     );
-    expect(contrat.segments[0]).toMatchObject({
+    expect(contract.segments[0]).toMatchObject({
       type: "Outro",
       source: "chapters",
       startMs: 1_300_000,
@@ -64,8 +64,8 @@ describe("resolveLocalSegmentsPayload — la migration de l'ancien segments.json
   });
 
   it("fichier absent : chapitres seuls, et jamais d'exception", () => {
-    const contrat = resolveLocalSegmentsPayload(null, "ep-1", ITEM);
-    expect(contrat.segments[0]?.type).toBe("Outro");
+    const contract = resolveLocalSegmentsPayload(null, "ep-1", ITEM);
+    expect(contract.segments[0]?.type).toBe("Outro");
     expect(resolveLocalSegmentsPayload(undefined, "ep-1", undefined).segments).toEqual([]);
   });
 });

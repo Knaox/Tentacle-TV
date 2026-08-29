@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import type { ChoixTv } from "./ChoicePanelTv";
+import type { ChoiceTv } from "./ChoicePanelTv";
 
 /**
  * Les trois réglages de piste d'une bibliothèque.
@@ -14,30 +14,30 @@ import type { ChoixTv } from "./ChoicePanelTv";
  * `ChoicePanelTv` qui porte la liste, et le confinement du focus qui va avec.
  */
 
-export interface ReglageTv {
-  cle: "audio" | "mode" | "sousTitres";
+export interface SettingTv {
+  key: "audio" | "mode" | "sousTitres";
   intitule: string;
-  valeur: string;
-  choix: ChoixTv[];
+  value: string;
+  choice: ChoiceTv[];
   selection: string | null;
 }
 
-interface ProprietesCarteBibliothequeTv {
+interface LibraryCardTvProps {
   nom: string;
-  reglages: ReglageTv[];
+  settings: SettingTv[];
   /** Vrai dès qu'une préférence existe : rien à réinitialiser sinon. */
-  personnalisee: boolean;
-  onOuvrir: (reglage: ReglageTv) => void;
-  onReinitialiser: () => void;
+  custom: boolean;
+  onOpen: (setting: SettingTv) => void;
+  onReset: () => void;
 }
 
-export function CarteBibliothequeTv({
+export function LibraryCardTv({
   nom,
-  reglages,
-  personnalisee,
-  onOuvrir,
-  onReinitialiser,
-}: ProprietesCarteBibliothequeTv) {
+  settings,
+  custom,
+  onOpen,
+  onReset,
+}: LibraryCardTvProps) {
   const { t } = useTranslation("preferences");
 
   return (
@@ -45,24 +45,24 @@ export function CarteBibliothequeTv({
       <p className="text-xl font-semibold text-content-primary">{nom}</p>
 
       <div className="mt-5 flex flex-wrap gap-4">
-        {reglages.map((reglage) => (
+        {settings.map((setting) => (
           <button
-            key={reglage.cle}
+            key={setting.key}
             type="button"
             className="bouton-reglage-tv"
-            onClick={() => onOuvrir(reglage)}
+            onClick={() => onOpen(setting)}
           >
-            <span className="bouton-reglage-tv-intitule">{reglage.intitule}</span>
-            <span className="bouton-reglage-tv-valeur">{reglage.valeur}</span>
+            <span className="bouton-reglage-tv-intitule">{setting.intitule}</span>
+            <span className="bouton-reglage-tv-valeur">{setting.value}</span>
           </button>
         ))}
       </div>
 
-      {personnalisee && (
+      {custom && (
         <button
           type="button"
           className="mt-5 rounded-full border border-line-strong bg-fill-subtle px-6 py-3 text-base font-semibold text-content-primary"
-          onClick={onReinitialiser}
+          onClick={onReset}
         >
           {t("reset")}
         </button>

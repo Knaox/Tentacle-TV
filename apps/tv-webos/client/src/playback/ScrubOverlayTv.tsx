@@ -29,28 +29,28 @@ import { BarreProgressionTv } from "./ProgressBarTv";
  * déplacer » est précisément ce qui rend le curseur fantôme sûr.
  */
 
-interface ProprietesScrub {
-  titre: string;
+interface ScrubProps {
+  title: string;
   position: number;
-  palier: number;
+  step: number;
   currentTime: number;
   duration: number;
   /** Fraction déjà chargée, de 0 à 1 — cf. `ProgressBarTv`. */
-  fractionChargee: number;
+  bufferedFraction: number;
   item?: MediaItem;
   mediaSourceId?: string;
 }
 
-export function SurcoucheScrubTv({
-  titre,
+export function ScrubOverlayTv({
+  title,
   position,
-  palier,
+  step,
   currentTime,
   duration,
-  fractionChargee,
+  bufferedFraction,
   item,
   mediaSourceId,
-}: ProprietesScrub) {
+}: ScrubProps) {
   const { t } = useTranslation("player");
   const { available, info, getFrameAt, preloadNeighbors } = useTrickplay(item, mediaSourceId);
 
@@ -76,42 +76,42 @@ export function SurcoucheScrubTv({
      * autant de fois la boîte qu'elle contient de tuiles, et la position se lit
      * en rangs plutôt qu'en pixels. Rien ne dépend plus de la définition.
      */
-    const colonnes = Math.max(1, info.TileWidth);
-    const rangees = Math.max(1, info.TileHeight);
-    const colonne = Math.round(image.xInTile / info.Width);
-    const rangee = Math.round(image.yInTile / info.Height);
+    const columns = Math.max(1, info.TileWidth);
+    const rows = Math.max(1, info.TileHeight);
+    const column = Math.round(image.xInTile / info.Width);
+    const row = Math.round(image.yInTile / info.Height);
 
     return {
-      tuile: image.tileIndex,
+      tile: image.tileIndex,
       style: {
         backgroundImage: `url(${image.url})`,
-        backgroundSize: `${colonnes * 100}% ${rangees * 100}%`,
+        backgroundSize: `${columns * 100}% ${rows * 100}%`,
         // Un fond en pourcentage aligne le point X% de l'IMAGE sur le point X%
         // de la boîte : le dernier rang tombe donc à 100 %, et non au-delà.
-        backgroundPosition: `${(colonne / Math.max(1, colonnes - 1)) * 100}% ${
-          (rangee / Math.max(1, rangees - 1)) * 100
+        backgroundPosition: `${(column / Math.max(1, columns - 1)) * 100}% ${
+          (row / Math.max(1, rows - 1)) * 100
         }%`,
       },
     };
   }, [available, info, getFrameAt, position]);
 
-  const tuile = vignette ? vignette.tuile : null;
+  const tile = vignette ? vignette.tile : null;
   useEffect(() => {
-    if (tuile !== null) preloadNeighbors(tuile);
-  }, [tuile, preloadNeighbors]);
+    if (tile !== null) preloadNeighbors(tile);
+  }, [tile, preloadNeighbors]);
 
   return (
     // Même barrière que sur l'habillage : le conteneur du `VideoPlayer` bascule
     // la lecture à tout clic qui lui parvient. Ici c'est le clic de la Magic
     // Remote qui est en cause — reprendre la lecture en plein déplacement
     // laisserait le curseur fantôme courir sur une vidéo qui avance.
-    <div className="scrub-tv" onClick={(evenement) => evenement.stopPropagation()}>
+    <div className="scrub-tv" onClick={(event) => event.stopPropagation()}>
       {vignette && <div className="scrub-tv-vignette" style={vignette.style} />}
       <div className="scrub-tv-voile" />
 
       <div className="scrub-tv-haut">
-        <p className="scrub-tv-titre">{titre}</p>
-        {palier > 1 && <span className="scrub-tv-palier">{`${palier}×`}</span>}
+        <p className="scrub-tv-titre">{title}</p>
+        {step > 1 && <span className="scrub-tv-palier">{`${step}×`}</span>}
       </div>
 
       <div className="scrub-tv-bas">
@@ -119,8 +119,8 @@ export function SurcoucheScrubTv({
         <BarreProgressionTv
           currentTime={currentTime}
           duration={duration}
-          fractionChargee={fractionChargee}
-          fantome={position}
+          bufferedFraction={bufferedFraction}
+          ghost={position}
         />
         <p className="scrub-tv-indices">
           <span>{t("player:scrubConfirmHint")}</span>

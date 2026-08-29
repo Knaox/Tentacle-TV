@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
-import { observerSaut, SAUT_VIDE, PERIODE_VEILLE_SAUT_MS } from "./seekLanding";
+import { observeSeek, EMPTY_SEEK, SEEK_WATCH_PERIOD_MS } from "./seekLanding";
 
 interface UseSmartSeekOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -22,7 +22,7 @@ interface UseSmartSeekOptions {
    * Câblé sur le `loading` du lecteur, il allume LE spinner qui existe déjà —
    * on n'en ajoute pas un second, c'est précisément ce qui avait dû être retiré.
    */
-  signalerChargement?: (charge: boolean) => void;
+  reportLoading?: (charge: boolean) => void;
 }
 
 /** Check if a time (in PTS space) falls within any buffered range of the video element. */
@@ -41,14 +41,14 @@ function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
  * La seule borne de `buffered` qui veuille dire quelque chose sur la pile média
  * du téléviseur — cf. `seekLanding.ts`, le début vaut toujours zéro.
  */
-function finTampon(video: HTMLVideoElement): number | null {
+function bufferEnd(video: HTMLVideoElement): number | null {
   const n = video.buffered.length;
   return n > 0 ? video.buffered.end(n - 1) : null;
 }
 
 export function useSmartSeek({
   videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
-  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, signalerChargement,
+  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, reportLoading,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
   //
@@ -64,48 +64,48 @@ export function useSmartSeek({
    * `seekLanding.ts` — pure, testée, et documentée sur ce que `buffered` vaut
    * réellement ici.
    */
-  const armerVeille = useCallback((ptsTarget: number, clamped: number) => {
+  const armWatch = useCallback((ptsTarget: number, clamped: number) => {
     clearInterval(seekStallTimer.current);
-    const arme = Date.now();
-    let etat = SAUT_VIDE;
+    const armed = Date.now();
+    let state = EMPTY_SEEK;
     // On n'éteint que ce qu'on a allumé : `loading` sert AUSSI au chargement
     // initial de la source, qui le tient jusqu'à la première image. L'éteindre
     // parce qu'un saut a abouti laisserait un écran noir sans rien dire.
-    let allume = false;
+    let lit = false;
     seekStallTimer.current = setInterval(() => {
       const el = videoRef.current;
       if (!el) {
         clearInterval(seekStallTimer.current);
         return;
       }
-      const [suivant, verdict] = observerSaut(etat, {
-        cible: ptsTarget,
+      const [next, verdict] = observeSeek(state, {
+        target: ptsTarget,
         position: el.currentTime,
-        bufferFin: finTampon(el),
-        enPause: el.paused,
-        pret: el.readyState,
-        ecoule: Date.now() - arme,
+        bufferEnd: bufferEnd(el),
+        paused: el.paused,
+        ready: el.readyState,
+        elapsed: Date.now() - armed,
       });
-      etat = suivant;
+      state = next;
       if (verdict === "attendre") return;
 
       // Le seul verdict qui n'arrête pas la veille : il DIT, il n'agit pas, et
       // le saut peut encore aboutir de lui-même au relevé suivant.
       if (verdict === "charge") {
-        allume = true;
-        signalerChargement?.(true);
+        lit = true;
+        reportLoading?.(true);
         return;
       }
 
       clearInterval(seekStallTimer.current);
-      if (allume) signalerChargement?.(false);
+      if (lit) reportLoading?.(false);
       if (verdict === "renegocier") {
-        console.warn("[Tentacle:Seek] saut sans effet — session neuve", { cible: Math.round(clamped) });
+        console.warn("[Tentacle:Seek] saut sans effet — session neuve", { target: Math.round(clamped) });
         seekTargetRef.current = clamped;
         onSeekRequest?.(clamped);
       }
-    }, PERIODE_VEILLE_SAUT_MS);
-  }, [onSeekRequest, signalerChargement]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, SEEK_WATCH_PERIOD_MS);
+  }, [onSeekRequest, reportLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Level 1: target in HTML5 buffer → v.currentTime (instant)
   // Level 2: HLS/Direct Play → v.currentTime, hls.js fetches segment (fast, ~1-2s)
@@ -147,7 +147,7 @@ export function useSmartSeek({
       // partant de zéro, si bien que TOUT saut en arrière du film tombe dans ce
       // niveau — données réellement en mémoire ou non. C'était le chemin le plus
       // emprunté, et le seul à n'avoir jamais eu de filet.
-      if (isHlsStream) armerVeille(ptsTarget, clamped);
+      if (isHlsStream) armWatch(ptsTarget, clamped);
       return;
     }
 
@@ -167,7 +167,7 @@ export function useSmartSeek({
     if (isHlsStream) {
       v.currentTime = ptsTarget;
       onSeekComplete?.(clamped, v.paused);
-      armerVeille(ptsTarget, clamped);
+      armWatch(ptsTarget, clamped);
       return;
     }
 
@@ -175,7 +175,7 @@ export function useSmartSeek({
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
-  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, armerVeille]);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, armWatch]);
 
   // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);

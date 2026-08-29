@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { tracerCommande } from "./startupTrace";
+import { traceCommand } from "./startupTrace";
 
 /**
  * Pré-remplissage piloté par l'application : retenir la lecture, juste après la
@@ -61,8 +61,8 @@ export function useMpvPrebuffer({
   // Une seule fois par média — le hook vit dans un lecteur remonté à chaque
   // épisode (`key={itemId}`), donc les refs repartent naturellement à zéro.
   const decideRef = useRef(false);
-  const attenteRef = useRef(false);
-  const [, rerendre] = useState(0);
+  const waitRef = useRef(false);
+  const [, rerender] = useState(0);
 
   // ⚠️ DÉCISION PRISE PENDANT LE RENDU, pas dans un effet.
   //
@@ -77,35 +77,35 @@ export function useMpvPrebuffer({
   // rejoue le rendu.
   if (mediaReady && !decideRef.current) {
     decideRef.current = true;
-    attenteRef.current = buffered < PREBUFFER_SECS;
+    waitRef.current = buffered < PREBUFFER_SECS;
   }
 
-  const relacher = (motif: string) => {
-    if (!attenteRef.current) return;
-    attenteRef.current = false;
-    tracerCommande("pré-remplissage terminé", motif);
+  const release = (reason: string) => {
+    if (!waitRef.current) return;
+    waitRef.current = false;
+    traceCommand("pré-remplissage terminé", reason);
     void setPause(false);
-    rerendre((n) => n + 1);
+    rerender((n) => n + 1);
   };
 
   // L'effet de bord suit la décision : c'est la pause qui attend le rendu, pas
   // l'affichage.
   useEffect(() => {
-    if (!attenteRef.current) return;
-    tracerCommande("pré-remplissage", `${buffered.toFixed(1)} s en réserve, ${PREBUFFER_SECS} s visées`);
+    if (!waitRef.current) return;
+    traceCommand("pré-remplissage", `${buffered.toFixed(1)} s en réserve, ${PREBUFFER_SECS} s visées`);
     void setPause(true);
-    const plafond = setTimeout(() => relacher(`plafond ${PLAFOND_MS / 1000} s`), PLAFOND_MS);
-    return () => clearTimeout(plafond);
+    const ceiling = setTimeout(() => release(`plafond ${PLAFOND_MS / 1000} s`), PLAFOND_MS);
+    return () => clearTimeout(ceiling);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaReady]);
 
   useEffect(() => {
     // `eof` : un média plus court que la réserve visée ne l'atteindra jamais.
-    if (attenteRef.current && (buffered >= PREBUFFER_SECS || eof)) {
-      relacher(`${buffered.toFixed(1)} s en réserve`);
+    if (waitRef.current && (buffered >= PREBUFFER_SECS || eof)) {
+      release(`${buffered.toFixed(1)} s en réserve`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [buffered, eof]);
 
-  return attenteRef.current;
+  return waitRef.current;
 }

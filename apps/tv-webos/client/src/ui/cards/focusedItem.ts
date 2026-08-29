@@ -26,38 +26,38 @@ import type { MediaItem } from "@tentacle-tv/shared";
  * est trop élevé.
  */
 
-const DELAI_MS = 250;
-const DELAI_EFFACEMENT_MS = 120;
+const DELAY_MS = 250;
+const CLEAR_DELAY_MS = 120;
 
-let courant: MediaItem | null = null;
-let actif = true;
-let differe: ReturnType<typeof setTimeout> | null = null;
-const auditeurs = new Set<() => void>();
+let current: MediaItem | null = null;
+let active = true;
+let deferred: ReturnType<typeof setTimeout> | null = null;
+const listeners = new Set<() => void>();
 
 function notifier(): void {
-  auditeurs.forEach((auditeur) => auditeur());
+  listeners.forEach((listener) => listener());
 }
 
 function poser(item: MediaItem | null): void {
-  if (courant === item) return;
-  courant = item;
+  if (current === item) return;
+  current = item;
   notifier();
 }
 
-function annulerDiffere(): void {
-  if (differe === null) return;
-  clearTimeout(differe);
-  differe = null;
+function cancelDeferred(): void {
+  if (deferred === null) return;
+  clearTimeout(deferred);
+  deferred = null;
 }
 
 /** Une carte a pris le focus. Publié après temporisation. */
-export function viserItem(item: MediaItem): void {
-  annulerDiffere();
-  if (!actif) return;
-  differe = setTimeout(() => {
-    differe = null;
+export function aimItem(item: MediaItem): void {
+  cancelDeferred();
+  if (!active) return;
+  deferred = setTimeout(() => {
+    deferred = null;
     poser(item);
-  }, DELAI_MS);
+  }, DELAY_MS);
 }
 
 /**
@@ -65,12 +65,12 @@ export function viserItem(item: MediaItem): void {
  * carte prend le focus dans la foulée — ce qui est le cas de tout déplacement —
  * sa visée annule cet effacement et le fond n'est jamais rendu à vide.
  */
-export function relacherItem(): void {
-  annulerDiffere();
-  differe = setTimeout(() => {
-    differe = null;
+export function releaseItem(): void {
+  cancelDeferred();
+  deferred = setTimeout(() => {
+    deferred = null;
     poser(null);
-  }, DELAI_EFFACEMENT_MS);
+  }, CLEAR_DELAY_MS);
 }
 
 /**
@@ -79,25 +79,25 @@ export function relacherItem(): void {
  * Ici l'effacement est bien immédiat : on ne coupe pas un effet « dans un
  * dixième de seconde ».
  */
-export function activerFondFocus(valeur: boolean): void {
-  actif = valeur;
-  if (!valeur) {
-    annulerDiffere();
+export function enableFocusBackdrop(value: boolean): void {
+  active = value;
+  if (!value) {
+    cancelDeferred();
     poser(null);
   }
 }
 
 function sAbonner(rappel: () => void): () => void {
-  auditeurs.add(rappel);
+  listeners.add(rappel);
   return () => {
-    auditeurs.delete(rappel);
+    listeners.delete(rappel);
   };
 }
 
-function lireInstantane(): MediaItem | null {
-  return courant;
+function readSnapshot(): MediaItem | null {
+  return current;
 }
 
-export function useItemFocalise(): MediaItem | null {
-  return useSyncExternalStore(sAbonner, lireInstantane);
+export function useFocusedItem(): MediaItem | null {
+  return useSyncExternalStore(sAbonner, readSnapshot);
 }

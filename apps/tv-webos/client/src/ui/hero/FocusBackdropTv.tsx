@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { useItemFocalise } from "../cards/focusedItem";
-import { useCalquesFond } from "./backgroundLayers";
+import { useFocusedItem } from "../cards/focusedItem";
+import { useBackdropLayers } from "./backgroundLayers";
 
 /**
  * Le fond d'écran de la carte focalisée.
@@ -35,40 +35,40 @@ import { useCalquesFond } from "./backgroundLayers";
  * pendant la lecture, rien ne doit être composé derrière l'image.
  */
 
-const CHEMINS = ["/", "/library", "/watchlist", "/favorites"];
+const PATHS = ["/", "/library", "/watchlist", "/favorites"];
 
-function surUnEcranDeParcours(chemin: string): boolean {
-  if (chemin === "/") return true;
-  for (const prefixe of CHEMINS) {
-    if (prefixe !== "/" && chemin.startsWith(prefixe)) return true;
+function onBrowseScreen(path: string): boolean {
+  if (path === "/") return true;
+  for (const prefix of PATHS) {
+    if (prefix !== "/" && path.startsWith(prefix)) return true;
   }
   return false;
 }
 
 export function FondFocusTv() {
   const { pathname } = useLocation();
-  const item = useItemFocalise();
+  const item = useFocusedItem();
   const client = useJellyfinClient();
 
-  const visible = item !== null && surUnEcranDeParcours(pathname);
+  const visible = item !== null && onBrowseScreen(pathname);
   const idImage = item && item.Type === "Episode" && item.SeriesId ? item.SeriesId : item?.Id;
   const url =
     visible && idImage ? client.getImageUrl(idImage, "Backdrop", { width: 1920, quality: 70 }) : null;
 
-  const { calques, signalerEntre, signalerSorti } = useCalquesFond(url);
+  const { layers, reportEntered, reportExited } = useBackdropLayers(url);
 
-  if (calques.length === 0) return null;
+  if (layers.length === 0) return null;
 
   return (
     <div className="fond-focus" aria-hidden>
       <span className="fond-focus-couche">
-        {calques.map((calque) => (
+        {layers.map((calque) => (
           <ImageDeFond
             key={calque.url}
             url={calque.url}
-            sortant={calque.sortant}
-            onEntre={signalerEntre}
-            onSorti={signalerSorti}
+            leaving={calque.leaving}
+            onEnter={reportEntered}
+            onExited={reportExited}
           />
         ))}
       </span>
@@ -85,11 +85,11 @@ export function FondFocusTv() {
  * Le fondu posé sur le conteneur courait pendant que l'image était encore en
  * vol : quand elle arrivait, l'animation était finie et elle surgissait d'un
  * coup. `apps/tv` traite ce point en ne déclenchant le fondu croisé que sur
- * `onLoad` — on fait pareil, d'où `data-charge`.
+ * `onLoad` — on fait pareil, d'où `data-loaded`.
  *
  * Mais avec une TRANSITION, le cas de l'image déjà en cache retombait dans le
  * même défaut par l'autre bout : `complete` étant vrai dès la première ref,
- * `data-charge` passait à vrai au premier rendu, l'état initial et l'état final
+ * `data-loaded` passait à vrai au premier rendu, l'état initial et l'état final
  * se confondaient, et la transition n'avait rien à interpoler. Revenir sur une
  * carte déjà visitée faisait donc apparaître son décor d'un bloc.
  *
@@ -104,34 +104,34 @@ export function FondFocusTv() {
  */
 function ImageDeFond({
   url,
-  sortant,
-  onEntre,
-  onSorti,
+  leaving,
+  onEnter,
+  onExited,
 }: {
   url: string;
-  sortant: boolean;
-  onEntre: (url: string) => void;
-  onSorti: (url: string) => void;
+  leaving: boolean;
+  onEnter: (url: string) => void;
+  onExited: (url: string) => void;
 }) {
-  const [charge, setCharge] = useState(false);
+  const [loaded, setCharge] = useState(false);
 
-  const rattacher = useCallback((element: HTMLImageElement | null) => {
+  const attach = useCallback((element: HTMLImageElement | null) => {
     if (element?.complete && element.naturalWidth > 0) setCharge(true);
   }, []);
 
   // Une seule fin d'animation à traiter par calque : celle de son entrée le
   // rend seul à l'écran, celle de sa sortie le démonte.
   const surFinAnimation = useCallback(() => {
-    if (sortant) onSorti(url);
-    else onEntre(url);
-  }, [sortant, url, onEntre, onSorti]);
+    if (leaving) onExited(url);
+    else onEnter(url);
+  }, [leaving, url, onEnter, onExited]);
 
   return (
     <img
-      ref={rattacher}
+      ref={attach}
       className="fond-focus-image"
-      data-charge={charge}
-      data-sortant={sortant}
+      data-loaded={loaded}
+      data-leaving={leaving}
       src={url}
       alt=""
       onLoad={() => setCharge(true)}

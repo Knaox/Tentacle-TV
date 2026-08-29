@@ -49,7 +49,7 @@ ordinateur tombé sur l'adresse reçoive une interface dessinée pour une dalle.
 
 Hors production le filtre est ouvert sans condition, et `TENTACLE_TV_OUVERT=1`
 rend le même service sur un serveur — la variable est lue à chaque requête, pas
-au démarrage. Tout tient dans `apps/backend/src/static/agentTeleviseur.ts`.
+au démarrage. Tout tient dans `apps/backend/src/static/tvUserAgent.ts`.
 
 ## Socle
 
@@ -57,7 +57,7 @@ Chrome 53 — webOS 4.0, téléviseurs 2018 et plus. Ce n'est pas la cible par
 défaut de Vite, et rien dans `apps/web` n'a été écrit pour elle : l'écart est
 comblé mécaniquement, par `@vitejs/plugin-legacy` côté JavaScript et par le
 plugin PostCSS de `config/postcss/` côté CSS. Aucun composant partagé n'est
-forké, et `config/postcss/gardeCompat.ts` fait échouer le build si une primitive
+forké, et `config/postcss/compatGuard.ts` fait échouer le build si une primitive
 trop récente réapparaît dans la feuille finale.
 
 ## Commandes
@@ -74,7 +74,7 @@ la reporte dans `appinfo.json` pour que les deux ne puissent pas diverger.
 
 ## Les images de la coquille
 
-`pnpm --filter @tentacle-tv/tv-webos icones` les régénère **toutes** depuis le
+`pnpm --filter @tentacle-tv/tv-webos icons` les régénère **toutes** depuis le
 seul `shell/images/tentacle-logo-pirate.svg`. Les PNG sont versionnés ; le
 script ne sert qu'à les refaire, et demande librsvg et ImageMagick.
 
@@ -168,18 +168,18 @@ télécommande.
 C'est le premier endroit où regarder quand un modèle se comporte autrement que
 les autres.
 
-Deux pages voisines, `/tv/harnais-nav.html` et `/tv/harnais-fiche.html`,
+Deux pages voisines, `/tv/harness-nav.html` et `/tv/harness-detail.html`,
 chargent le **vrai moteur de focus** sur des géométries factices mais
 discriminantes — grille virtualisée au scale de la dalle, rail, fiche dont
 chaque alignement donnerait tort à la géométrie brute. Elles se pilotent au
-clavier ou par `__appui()`/`__ou()` depuis une console, et
-`harnais-shims.js` compense les infirmités d'un navigateur qui pilote sans
+clavier ou par `__press()`/`__where()` depuis une console, et
+`harness-shims.js` compense les infirmités d'un navigateur qui pilote sans
 afficher — `requestAnimationFrame` suspendus, événements de focus jamais émis.
 C'est là que se rejouent les scénarios de navigation avant de toucher une
 dalle.
 
-Elles vivent dans `harnais/`, **hors du dossier public**, et sont servies par
-`config/servirHarnais.ts` — un greffon `apply: "serve"`, donc absent de la
+Elles vivent dans `harness/`, **hors du dossier public**, et sont servies par
+`config/serveHarness.ts` — un greffon `apply: "serve"`, donc absent de la
 construction. Un banc d'essai n'a rien à faire sur le téléviseur de quelqu'un,
 et la garantie tient dans le cycle de vie du greffon, pas dans une règle de
 nettoyage qu'il faudrait penser à maintenir.
@@ -360,7 +360,7 @@ une lecture qui échoue.
 
 Mesuré sur la C3 le 11 août 2026 (MKV, HEVC DOVIWithHDR10, remuxé en fMP4 HLS
 parce que webOS ne démultiplexe le RPU qu'en ISOBMFF). L'outil est
-`scripts/releveLecture.mjs`, côté dalle, et `TENTACLE_JOURNAL_FLUX=1` côté proxy.
+`scripts/playbackCapture.mjs`, côté dalle, et `TENTACLE_JOURNAL_FLUX=1` côté proxy.
 
 **La playlist ment sur les durées.** Relevé **serveur sain**, disque libéré, sur
 « Baby Driver » — les segments alignés et le premier décalé se suivent :
@@ -403,7 +403,7 @@ Vision lui-même.
 
 > **Le débit : bonne conclusion, mauvais raisonnement — corrigé le 11 août.**
 > Il avait été écarté sur « les segments sortent en 16 ms médians ». Ce chiffre
-> est le temps d'arrivée des **en-têtes** (`journalFlux.ts`, champ `ms`) : il dit
+> est le temps d'arrivée des **en-têtes** (`streamLog.ts`, champ `ms`) : il dit
 > que Jellyfin avait déjà écrit le fichier, et rien du transfert. Personne ne
 > mesurait le corps. Le proxy compte désormais les octets réellement écrits,
 > `msCorps` et `debitMbps` — mesuré sur la dalle : **120 à 190 Mbit/s de

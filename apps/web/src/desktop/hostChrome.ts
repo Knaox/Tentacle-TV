@@ -23,14 +23,14 @@ import { desktopKind } from "./detect";
  * Figée au chargement : ni la coquille ni la fabrication de la fenêtre ne
  * changent en cours de session, et cette valeur est lue à chaque rendu.
  */
-const HAUTEUR = desktopKind() === "electron" ? (window.tentacle?.titleBarHeight ?? 0) : 0;
+const HEIGHT = desktopKind() === "electron" ? (window.tentacle?.titleBarHeight ?? 0) : 0;
 
 /** La page doit-elle dessiner un bandeau de fenêtre ? */
-export function bandeauHote(): boolean {
-  return HAUTEUR > 0;
+export function hostTitleBar(): boolean {
+  return HEIGHT > 0;
 }
 
 /** Sa hauteur en points, `0` s'il n'y en a pas. */
-export function hauteurBandeauHote(): number {
-  return HAUTEUR;
+export function hostTitleBarHeight(): number {
+  return HEIGHT;
 }

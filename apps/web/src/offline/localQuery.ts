@@ -28,6 +28,6 @@
  * y est le bon comportement, et la retirer ferait tourner des tentatives dans
  * le vide.
  */
-export const REQUETE_LOCALE = {
+export const LOCAL_QUERY = {
   networkMode: "always",
 } as const;

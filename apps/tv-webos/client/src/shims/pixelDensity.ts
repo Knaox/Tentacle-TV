@@ -20,20 +20,20 @@
  * conséquence serait de demander des images inutilement lourdes au serveur.
  */
 
-let mesuree: number | null = null;
+let measured: number | null = null;
 
 export function pixelDensity(): number {
-  if (mesuree !== null) return mesuree;
-  mesuree = 1;
+  if (measured !== null) return measured;
+  measured = 1;
   try {
-    const canevas = window.innerWidth;
+    const canvas = window.innerWidth;
     const dalle = window.screen && window.screen.width;
-    if (canevas > 0 && dalle > 0) {
-      const rapport = dalle / canevas;
-      if (rapport > 1 && rapport <= 2) mesuree = rapport;
+    if (canvas > 0 && dalle > 0) {
+      const rapport = dalle / canvas;
+      if (rapport > 1 && rapport <= 2) measured = rapport;
     }
   } catch {
     // Pas de `screen` : on reste à 1, c'est-à-dire au comportement du web.
   }
-  return mesuree;
+  return measured;
 }

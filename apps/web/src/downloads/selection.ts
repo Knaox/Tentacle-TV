@@ -12,7 +12,7 @@
  */
 
 /** Ce qu'une sélection peut valoir vis-à-vis de la liste affichée. */
-export type EtatSelection = "aucune" | "partielle" | "totale";
+export type SelectionState = "aucune" | "partielle" | "totale";
 
 /**
  * Retire de la sélection ce qui n'est plus dans la liste.
@@ -21,18 +21,18 @@ export type EtatSelection = "aucune" | "partielle" | "totale";
  * fantômes — sans dommage côté moteur, qui les ignore, mais le compteur
  * annoncerait « 5 éléments » là où trois seulement partiraient.
  */
-export function elaguer(selection: ReadonlySet<number>, presents: readonly number[]): Set<number> {
-  const vivants = new Set(presents);
-  const sortie = new Set<number>();
-  for (const id of selection) if (vivants.has(id)) sortie.add(id);
-  return sortie;
+export function prune(selection: ReadonlySet<number>, present: readonly number[]): Set<number> {
+  const alive = new Set(present);
+  const out = new Set<number>();
+  for (const id of selection) if (alive.has(id)) out.add(id);
+  return out;
 }
 
-export function basculer(selection: ReadonlySet<number>, id: number): Set<number> {
-  const sortie = new Set(selection);
-  if (sortie.has(id)) sortie.delete(id);
-  else sortie.add(id);
-  return sortie;
+export function toggle(selection: ReadonlySet<number>, id: number): Set<number> {
+  const out = new Set(selection);
+  if (out.has(id)) out.delete(id);
+  else out.add(id);
+  return out;
 }
 
 /**
@@ -42,11 +42,11 @@ export function basculer(selection: ReadonlySet<number>, id: number): Set<number
  * désélectionner » sur rien du tout n'a pas de sens, et la case d'en-tête
  * apparaîtrait cochée sans qu'aucun élément ne le soit.
  */
-export function etat(selection: ReadonlySet<number>, presents: readonly number[]): EtatSelection {
-  if (presents.length === 0 || selection.size === 0) return "aucune";
-  const retenus = presents.filter((id) => selection.has(id)).length;
-  if (retenus === 0) return "aucune";
-  return retenus === presents.length ? "totale" : "partielle";
+export function state(selection: ReadonlySet<number>, present: readonly number[]): SelectionState {
+  if (present.length === 0 || selection.size === 0) return "aucune";
+  const kept = present.filter((id) => selection.has(id)).length;
+  if (kept === 0) return "aucune";
+  return kept === present.length ? "totale" : "partielle";
 }
 
 /**
@@ -57,9 +57,9 @@ export function etat(selection: ReadonlySet<number>, presents: readonly number[]
  * fichiers, et c'est le geste attendu quand on a coché trois lignes puis changé
  * d'avis sur l'ampleur.
  */
-export function toutBasculer(
+export function toggleAll(
   selection: ReadonlySet<number>,
-  presents: readonly number[],
+  present: readonly number[],
 ): Set<number> {
-  return etat(selection, presents) === "totale" ? new Set() : new Set(presents);
+  return state(selection, present) === "totale" ? new Set() : new Set(present);
 }

@@ -1,4 +1,4 @@
-import { verifierEcran, rectanglesFocusables, decrire, type Manquement } from "./focusRules";
+import { checkScreen, focusableRects, describeIt, type Violation } from "./focusRules";
 
 /**
  * La surcouche de débogage du focus.
@@ -18,40 +18,40 @@ import { verifierEcran, rectanglesFocusables, decrire, type Manquement } from ".
  * Elle ne pose aucun élément focusable — ce serait fausser sa propre mesure.
  */
 
-const RACCOURCI = "d";
+const SHORTCUT = "d";
 const ID = "tv-debug";
 
 let visible = false;
 
-export function installerSurcoucheDebug(): () => void {
-  const surTouche = (evenement: KeyboardEvent) => {
+export function installDebugOverlay(): () => void {
+  const surTouche = (event: KeyboardEvent) => {
     // Un raccourci à deux doigts : la télécommande n'a pas de modificateur, donc
     // aucun risque de l'activer par mégarde depuis un canapé.
-    if (!evenement.ctrlKey || !evenement.shiftKey) return;
-    if (evenement.key.toLowerCase() !== RACCOURCI) return;
-    evenement.preventDefault();
-    basculer();
+    if (!event.ctrlKey || !event.shiftKey) return;
+    if (event.key.toLowerCase() !== SHORTCUT) return;
+    event.preventDefault();
+    toggle();
   };
 
   document.addEventListener("keydown", surTouche, true);
   return () => {
     document.removeEventListener("keydown", surTouche, true);
-    retirer();
+    remove3();
   };
 }
 
-function basculer(): void {
+function toggle(): void {
   visible = !visible;
-  if (visible) dessiner();
-  else retirer();
+  if (visible) draw();
+  else remove3();
 }
 
-function retirer(): void {
+function remove3(): void {
   document.getElementById(ID)?.remove();
 }
 
-function dessiner(): void {
-  retirer();
+function draw(): void {
+  remove3();
 
   const racine = document.createElement("div");
   racine.id = ID;
@@ -66,10 +66,10 @@ function dessiner(): void {
   ].join(";");
 
   racine.appendChild(cadreZoneSure());
-  for (const { element, rect } of rectanglesFocusables()) {
-    racine.appendChild(cadreCible(rect, element === document.activeElement));
+  for (const { element, rect } of focusableRects()) {
+    racine.appendChild(targetFrame(rect, element === document.activeElement));
   }
-  racine.appendChild(panneau(verifierEcran()));
+  racine.appendChild(panel(checkScreen()));
 
   document.body.appendChild(racine);
 }
@@ -88,18 +88,18 @@ function cadreZoneSure(): HTMLElement {
   return cadre;
 }
 
-function cadreCible(rect: DOMRect, actif: boolean): HTMLElement {
+function targetFrame(rect: DOMRect, active: boolean): HTMLElement {
   const cadre = document.createElement("div");
   cadre.style.cssText = [
     "position:absolute",
     `left:${rect.left}px;top:${rect.top}px`,
     `width:${rect.width}px;height:${rect.height}px`,
-    `border:1px solid ${actif ? "rgba(0,255,120,0.95)" : "rgba(0,160,255,0.55)"}`,
+    `border:1px solid ${active ? "rgba(0,255,120,0.95)" : "rgba(0,160,255,0.55)"}`,
   ].join(";");
   return cadre;
 }
 
-function panneau(manquements: Manquement[]): HTMLElement {
+function panel(violations: Violation[]): HTMLElement {
   const box = document.createElement("div");
   box.style.cssText = [
     "position:absolute",
@@ -113,24 +113,24 @@ function panneau(manquements: Manquement[]): HTMLElement {
     "white-space:pre-wrap",
   ].join(";");
 
-  const actif = document.activeElement;
-  const nomActif =
-    actif instanceof HTMLElement && actif !== document.body ? decrire(actif) : "AUCUN — règle n°1 violée";
+  const active = document.activeElement;
+  const activeName =
+    active instanceof HTMLElement && active !== document.body ? describeIt(active) : "AUCUN — règle n°1 violée";
 
-  const erreurs = manquements.filter((manquement) => manquement.gravite === "erreur");
-  const avertissements = manquements.filter((manquement) => manquement.gravite !== "erreur");
+  const errors = violations.filter((violation) => violation.severity === "erreur");
+  const warnings = violations.filter((violation) => violation.severity !== "erreur");
 
-  const lignes = [
-    `focus : ${nomActif}`,
-    `cibles : ${rectanglesFocusables().length}`,
-    `erreurs : ${erreurs.length}   avertissements : ${avertissements.length}`,
+  const lines = [
+    `focus : ${activeName}`,
+    `cibles : ${focusableRects().length}`,
+    `erreurs : ${errors.length}   avertissements : ${warnings.length}`,
     "",
-    ...manquements
+    ...violations
       .slice(0, 14)
-      .map((manquement) => `[${manquement.regle}] ${manquement.element}\n   ${manquement.detail}`),
+      .map((violation) => `[${violation.rule}] ${violation.element}\n   ${violation.detail}`),
   ];
-  if (manquements.length > 14) lignes.push(`… et ${manquements.length - 14} de plus`);
+  if (violations.length > 14) lines.push(`… et ${violations.length - 14} de plus`);
 
-  box.textContent = lignes.join("\n");
+  box.textContent = lines.join("\n");
   return box;
 }

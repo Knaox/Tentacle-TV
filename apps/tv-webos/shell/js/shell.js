@@ -24,8 +24,8 @@
 (function (global) {
   "use strict";
 
-  var CODE_RETOUR = 461;
-  var CODE_ECHAP = 27;
+  var BACK_CODE = 461;
+  var ESCAPE_CODE = 27;
 
   /**
    * Retour à l'écran d'accueil du téléviseur.
@@ -52,37 +52,37 @@
    * a aucune navigation spatiale à écrire. OK valide le bouton qui a le focus,
    * Retour quitte l'application.
    */
-  function installerTouches() {
-    document.addEventListener("keydown", function (evenement) {
-      var code = evenement.keyCode;
+  function installKeys() {
+    document.addEventListener("keydown", function (event) {
+      var code = event.keyCode;
 
-      if (code === CODE_RETOUR || code === CODE_ECHAP) {
+      if (code === BACK_CODE || code === ESCAPE_CODE) {
         quitter();
         return;
       }
 
       if (code !== 38 && code !== 40) return;
 
-      var boutons = document.getElementsByTagName("button");
-      if (boutons.length < 2) return;
+      var buttons = document.getElementsByTagName("button");
+      if (buttons.length < 2) return;
 
       var index = -1;
-      for (var i = 0; i < boutons.length; i++) {
-        if (boutons[i] === document.activeElement) index = i;
+      for (var i = 0; i < buttons.length; i++) {
+        if (buttons[i] === document.activeElement) index = i;
       }
-      var suivant = index + (code === 40 ? 1 : -1);
-      if (suivant < 0 || suivant >= boutons.length) return;
-      boutons[suivant].focus();
-      evenement.preventDefault();
+      var next = index + (code === 40 ? 1 : -1);
+      if (next < 0 || next >= buttons.length) return;
+      buttons[next].focus();
+      event.preventDefault();
     });
   }
 
-  function demarrer() {
-    global.VueJumelage.preparer();
-    global.InfoAppareil.collecter();
-    installerTouches();
+  function start() {
+    global.PairingView.prepare();
+    global.DeviceInfo.collect();
+    installKeys();
 
-    var machine = global.MachineJumelage.creer(global.VueJumelage);
+    var machine = global.PairingMachine.create(global.PairingView);
 
     // Le sondage est suspendu quand l'application passe en arrière-plan : un
     // téléviseur laisse volontiers une application ouverte des heures, et rien
@@ -93,15 +93,15 @@
       // se composer pendant que l'application est en arrière-plan.
       if (document.hidden) {
         document.body.classList.add("cachee");
-        machine.arreter();
+        machine.stop2();
       } else {
         document.body.classList.remove("cachee");
-        machine.demarrer();
+        machine.start();
       }
     });
 
-    machine.demarrer();
+    machine.start();
   }
 
-  global.demarrerCoquille = demarrer;
+  global.startShell = start;
 })(window);

@@ -25,114 +25,114 @@
 (function (global) {
   "use strict";
 
-  var RELAIS = "https://pair.tentacletv.app";
+  var RELAY = "https://pair.tentacletv.app";
   var CODE_OK = 13;
 
-  function ligne(cle, etat, valeur) {
-    return { cle: cle, sonde: { etat: etat, valeur: String(valeur) } };
+  function line(key, state, value) {
+    return { key: key, sonde: { state: state, value: String(value) } };
   }
 
   /* ── 1. Canevas ──────────────────────────────────────────────────────── */
 
-  function mesurerCanevas() {
+  function measureCanvas() {
     var declare = null;
-    var balises = document.getElementsByTagName("meta");
-    for (var i = 0; i < balises.length; i++) {
-      if (balises[i].getAttribute("name") === "viewport") {
-        declare = balises[i].getAttribute("content");
+    var tags = document.getElementsByTagName("meta");
+    for (var i = 0; i < tags.length; i++) {
+      if (tags[i].getAttribute("name") === "viewport") {
+        declare = tags[i].getAttribute("content");
       }
     }
 
-    var largeurCss = document.documentElement.clientWidth;
-    var largeurDalle = global.screen ? global.screen.width : 0;
-    var honore = declare && declare.indexOf("width=") !== -1 && largeurCss !== largeurDalle;
+    var cssWidth = document.documentElement.clientWidth;
+    var panelWidth = global.screen ? global.screen.width : 0;
+    var honors = declare && declare.indexOf("width=") !== -1 && cssWidth !== panelWidth;
 
     return [
-      ligne("meta viewport déclaré", "info", declare || "aucun"),
-      ligne("largeur CSS (clientWidth)", "info", largeurCss),
-      ligne("largeur de la dalle (screen)", "info", largeurDalle),
-      ligne("agrandissement matériel", "info",
-        largeurCss > 0 ? (largeurDalle / largeurCss).toFixed(2) + " ×" : "?"),
-      ligne("meta viewport honoré", honore ? "ok" : "ko",
-        honore ? "oui — le canevas suffit"
+      line("meta viewport déclaré", "info", declare || "aucun"),
+      line("largeur CSS (clientWidth)", "info", cssWidth),
+      line("largeur de la dalle (screen)", "info", panelWidth),
+      line("agrandissement matériel", "info",
+        cssWidth > 0 ? (panelWidth / cssWidth).toFixed(2) + " ×" : "?"),
+      line("meta viewport honoré", honors ? "ok" : "ko",
+        honors ? "oui — le canevas suffit"
                : "NON — il faudra mettre le CSS à l'échelle à la compilation"),
     ];
   }
 
   /* ── 2. Répétition et relâchement de OK ──────────────────────────────── */
 
-  function installerReleveMaintien(auRapport) {
+  function installHoldCapture(auRapport) {
     var debut = 0;
-    var repetitions = 0;
-    var dernier = 0;
-    var intervalles = [];
-    var vuKeyup = false;
+    var repeats = 0;
+    var last = 0;
+    var intervals = [];
+    var sawKeyup = false;
 
-    document.addEventListener("keydown", function (evenement) {
-      if (evenement.keyCode !== CODE_OK) return;
-      var maintenant = new Date().getTime();
+    document.addEventListener("keydown", function (event) {
+      if (event.keyCode !== CODE_OK) return;
+      var now = new Date().getTime();
       if (debut === 0) {
-        debut = maintenant;
-        dernier = maintenant;
+        debut = now;
+        last = now;
         return;
       }
-      repetitions++;
-      intervalles.push(maintenant - dernier);
-      dernier = maintenant;
+      repeats++;
+      intervals.push(now - last);
+      last = now;
     });
 
-    document.addEventListener("keyup", function (evenement) {
-      if (evenement.keyCode !== CODE_OK || debut === 0) return;
-      vuKeyup = true;
-      var duree = new Date().getTime() - debut;
-      var moyen = intervalles.length > 0 ? moyenne(intervalles) : 0;
+    document.addEventListener("keyup", function (event) {
+      if (event.keyCode !== CODE_OK || debut === 0) return;
+      sawKeyup = true;
+      var duration = new Date().getTime() - debut;
+      var mean = intervals.length > 0 ? average(intervals) : 0;
 
       auRapport([
-        ligne("keyup reçu", "ok", "oui — le maintien peut se mesurer directement"),
-        ligne("durée du maintien", "info", duree + " ms"),
-        ligne("répétitions observées", repetitions > 0 ? "ok" : "ko", repetitions),
-        ligne("intervalle de répétition", "info",
-          moyen > 0 ? Math.round(moyen) + " ms" : "aucune répétition"),
+        line("keyup reçu", "ok", "oui — le maintien peut se mesurer directement"),
+        line("durée du maintien", "info", duration + " ms"),
+        line("répétitions observées", repeats > 0 ? "ok" : "ko", repeats),
+        line("intervalle de répétition", "info",
+          mean > 0 ? Math.round(mean) + " ms" : "aucune répétition"),
       ]);
 
       debut = 0;
-      repetitions = 0;
-      intervalles = [];
+      repeats = 0;
+      intervals = [];
     });
 
     // Chien de garde : si aucun `keyup` n'arrive dans les deux secondes qui
     // suivent la dernière répétition, c'est que le modèle ne le notifie pas.
     setInterval(function () {
-      if (debut === 0 || vuKeyup) return;
-      var silence = new Date().getTime() - dernier;
+      if (debut === 0 || sawKeyup) return;
+      var silence = new Date().getTime() - last;
       if (silence < 2000) return;
       auRapport([
-        ligne("keyup reçu", "ko", "NON — il faudra déduire le relâchement du silence"),
-        ligne("intervalle de répétition", "info",
-          intervalles.length > 0 ? Math.round(moyenne(intervalles)) + " ms" : "aucune"),
+        line("keyup reçu", "ko", "NON — il faudra déduire le relâchement du silence"),
+        line("intervalle de répétition", "info",
+          intervals.length > 0 ? Math.round(average(intervals)) + " ms" : "aucune"),
       ]);
       debut = 0;
-      repetitions = 0;
-      intervalles = [];
+      repeats = 0;
+      intervals = [];
     }, 500);
   }
 
-  function moyenne(valeurs) {
+  function average(values) {
     var somme = 0;
-    for (var i = 0; i < valeurs.length; i++) somme += valeurs[i];
-    return somme / valeurs.length;
+    for (var i = 0; i < values.length; i++) somme += values[i];
+    return somme / values.length;
   }
 
   /* ── 3. Le relais depuis file:// ─────────────────────────────────────── */
 
-  function sonderRelais(auRapport) {
+  function probeRelay(auRapport) {
     var xhr = new global.XMLHttpRequest();
-    var origine = global.location.protocol === "file:" ? "null (file://)" : global.location.origin;
+    var origin = global.location.protocol === "file:" ? "null (file://)" : global.location.origin;
 
     try {
-      xhr.open("POST", RELAIS + "/generate", true);
+      xhr.open("POST", RELAY + "/generate", true);
     } catch (e) {
-      auRapport([ligne("relais joignable", "ko", "open() a échoué : " + e.message)]);
+      auRapport([line("relais joignable", "ko", "open() a échoué : " + e.message)]);
       return;
     }
 
@@ -144,63 +144,63 @@
       if (xhr.readyState !== 4) return;
       var ok = xhr.status >= 200 && xhr.status < 300;
       auRapport([
-        ligne("origine de la coquille", "info", origine),
-        ligne("relais joignable", ok ? "ok" : "ko",
+        line("origine de la coquille", "info", origin),
+        line("relais joignable", ok ? "ok" : "ko",
           ok ? "oui — code obtenu" : "statut " + xhr.status + " (0 = bloqué par CORS)"),
-        ligne("réponse du relais", ok ? "ok" : "info", (xhr.responseText || "").slice(0, 80)),
+        line("réponse du relais", ok ? "ok" : "info", (xhr.responseText || "").slice(0, 80)),
       ]);
     };
     xhr.ontimeout = function () {
-      auRapport([ligne("relais joignable", "ko", "délai dépassé (8 s)")]);
+      auRapport([line("relais joignable", "ko", "délai dépassé (8 s)")]);
     };
     xhr.send(null);
   }
 
   /* ── 4. La boîte rendue par le ResizeObserver natif ──────────────────── */
 
-  function mesurerBoiteObservateur(auRapport) {
+  function measureObserverBox(auRapport) {
     if (typeof global.ResizeObserver !== "function") {
       auRapport([
-        ligne("ResizeObserver.contentRect", "info",
+        line("ResizeObserver.contentRect", "info",
           "pas d'observateur natif — c'est le polyfill du client qui répond"),
       ]);
       return;
     }
 
-    var boite = document.createElement("div");
-    boite.style.cssText =
+    var box = document.createElement("div");
+    box.style.cssText =
       "position:absolute;left:-9999px;top:0;box-sizing:content-box;" +
       "width:200px;height:20px;padding:20px;border:5px solid #000";
-    document.body.appendChild(boite);
+    document.body.appendChild(box);
 
-    var repondu = false;
+    var answered = false;
     var ranger = function () {
-      if (boite.parentNode) boite.parentNode.removeChild(boite);
+      if (box.parentNode) box.parentNode.removeChild(box);
     };
 
-    var observateur = new global.ResizeObserver(function (entrees) {
-      repondu = true;
-      var largeur = Math.round(entrees[0].contentRect.width);
-      observateur.disconnect();
+    var observer = new global.ResizeObserver(function (entries) {
+      answered = true;
+      var width = Math.round(entries[0].contentRect.width);
+      observer.disconnect();
       ranger();
       auRapport([
-        ligne("ResizeObserver.contentRect", largeur === 200 ? "ok" : "ko",
-          largeur === 200
+        line("ResizeObserver.contentRect", width === 200 ? "ok" : "ko",
+          width === 200
             ? "boîte de contenu (200 px) — conforme"
-            : "boîte de BORDURE (" + largeur + " px au lieu de 200)"),
+            : "boîte de BORDURE (" + width + " px au lieu de 200)"),
       ]);
     });
-    observateur.observe(boite);
+    observer.observe(box);
 
     // L'observateur livre ses mesures dans la boucle de rendu. Un silence n'est
     // donc pas un détail d'implémentation : c'est un observateur présent mais
     // inerte, et le client doit alors s'en passer comme s'il était absent.
     setTimeout(function () {
-      if (repondu) return;
-      observateur.disconnect();
+      if (answered) return;
+      observer.disconnect();
       ranger();
       auRapport([
-        ligne("ResizeObserver.contentRect", "ko",
+        line("ResizeObserver.contentRect", "ko",
           "aucune notification en 2 s — présent mais inerte"),
       ]);
     }, 2000);
@@ -213,59 +213,59 @@
    * disent pas la même chose, et c'est précisément la distinction cherchée :
    * savoir si une application tierce peut approcher la dictée, ou si le clavier
    * système reste le seul chemin. */
-  function sonderServicesVocaux(auRapport) {
+  function probeVoiceServices(auRapport) {
     var service = global.webOS && global.webOS.service;
     if (!service || typeof service.request !== "function") {
       auRapport([
-        ligne("services Luna", "info",
+        line("services Luna", "info",
           "webOS.service absent — déposez webOSTV.js dans la coquille pour trancher"),
       ]);
       return;
     }
 
-    var candidats = [
+    var candidates = [
       ["com.webos.service.ime", "getStatus"],
       ["com.webos.service.tts", "getStatus"],
       ["com.webos.service.voiceinput", "getStatus"],
     ];
 
-    for (var i = 0; i < candidats.length; i++) {
-      interrogerService(service, candidats[i][0], candidats[i][1], auRapport);
+    for (var i = 0; i < candidates.length; i++) {
+      callService(service, candidates[i][0], candidates[i][1], auRapport);
     }
   }
 
-  function interrogerService(service, nom, methode, auRapport) {
-    var cle = "luna://" + nom;
-    auRapport([ligne(cle, "info", "interrogation…")]);
+  function callService(service, nom, method, auRapport) {
+    var key = "luna://" + nom;
+    auRapport([line(key, "info", "interrogation…")]);
     try {
-      service.request(cle, {
-        method: methode,
+      service.request(key, {
+        method: method,
         parameters: {},
-        onSuccess: function (reponse) {
-          auRapport([ligne(cle, "ok", "répond : " + resumer(reponse))]);
+        onSuccess: function (response) {
+          auRapport([line(key, "ok", "répond : " + summarize(response))]);
         },
-        onFailure: function (erreur) {
-          auRapport([ligne(cle, "ko", "refuse : " + resumer(erreur))]);
+        onFailure: function (error) {
+          auRapport([line(key, "ko", "refuse : " + summarize(error))]);
         },
       });
     } catch (e) {
-      auRapport([ligne(cle, "ko", "appel impossible : " + e.message)]);
+      auRapport([line(key, "ko", "appel impossible : " + e.message)]);
     }
   }
 
-  function resumer(valeur) {
+  function summarize(value) {
     try {
-      return JSON.stringify(valeur).slice(0, 120);
+      return JSON.stringify(value).slice(0, 120);
     } catch (e) {
-      return String(valeur).slice(0, 120);
+      return String(value).slice(0, 120);
     }
   }
 
-  global.SondeDalle = {
-    canevas: mesurerCanevas,
-    installerReleveMaintien: installerReleveMaintien,
-    sonderRelais: sonderRelais,
-    mesurerBoiteObservateur: mesurerBoiteObservateur,
-    sonderServicesVocaux: sonderServicesVocaux,
+  global.PanelProbe = {
+    canvas: measureCanvas,
+    installHoldCapture: installHoldCapture,
+    probeRelay: probeRelay,
+    measureObserverBox: measureObserverBox,
+    probeVoiceServices: probeVoiceServices,
   };
 })(window);

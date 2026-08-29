@@ -17,7 +17,7 @@
 let sortie: (() => void) | null = null;
 
 /** Déposé par le lecteur, retiré en partant. */
-export function poserSortieLecteur(quitter: (() => void) | null): void {
+export function setPlayerExit(quitter: (() => void) | null): void {
   sortie = quitter;
 }
 
@@ -28,7 +28,7 @@ export function poserSortieLecteur(quitter: (() => void) | null): void {
  * Rend `false` si le lecteur n'est plus là : l'appelant n'a alors rien à faire,
  * quelqu'un d'autre s'en est déjà chargé.
  */
-export function quitterLecteur(): boolean {
+export function exitPlayer(): boolean {
   if (!sortie) return false;
   sortie();
   return true;

@@ -18,15 +18,15 @@ import {
   supportsSmtc,
 } from "../desktop/capabilities";
 import { getMpvApi } from "../hooks/mpvRuntime";
-import { mpvDesactiveParDebug } from "../lib/lecteurNatif";
-import { sectionDemarrage } from "./playerDebugDemarrage";
-import { sectionReseau } from "./playerDebugReseau";
+import { mpvDisabledByDebug } from "../lib/nativePlayer";
+import { startupSection } from "./playerDebugStartup";
+import { networkSection } from "./playerDebugNetwork";
 import type { DebugSection } from "./playerDebugTypes";
-import { PROPS_VERDICT, verdicts } from "./playerDebugVerdict";
+import { VERDICT_PROPS, verdicts } from "./playerDebugVerdict";
 import {
-  etatHdrNatif, sectionFenetreChromium, sectionHdrNatif, sectionSurface,
-} from "./playerDebugAffichage";
-import { derniereSonde, rafraichirEdr, sonder } from "./surfaceProbe";
+  nativeHdrState, chromiumWindowSection, nativeHdrSection, surfaceSection,
+} from "./playerDebugDisplay";
+import { lastProbe, refreshEdr, probeSurface } from "./surfaceProbe";
 
 /**
  * Propriétés mpv relevées, groupées par thème. Deux familles à ne PAS confondre.
@@ -52,7 +52,7 @@ const PROPS_HDR = [
   "tone-mapping",
 ] as const;
 
-const PROPS_LECTURE = [
+const PLAYBACK_PROPS = [
   "current-vo",
   // Laissés à `auto` : mpv choisit d3d11 sous Windows, et c'est CE backend qui
   // implémente `target-colorspace-hint`. On les lit plutôt que de les figer —
@@ -88,16 +88,16 @@ const PROPS_LECTURE = [
   "path",
 ] as const;
 
-function attendu(cle: string, valeur: string): boolean | null {
-  if (cle === "current-vo") return valeur === "gpu-next";
-  if (cle === "cache-pause-initial") return valeur === "yes";
-  if (cle === "hwdec-current") return valeur !== "no" && valeur !== "";
-  if (cle === "frame-drop-count") return valeur === "0";
-  if (cle === "video-params/gamma") return valeur === "pq" || valeur === "hlg";
-  if (cle === "video-params/primaries") return valeur === "bt.2020";
+function expected(key: string, value: string): boolean | null {
+  if (key === "current-vo") return value === "gpu-next";
+  if (key === "cache-pause-initial") return value === "yes";
+  if (key === "hwdec-current") return value !== "no" && value !== "";
+  if (key === "frame-drop-count") return value === "0";
+  if (key === "video-params/gamma") return value === "pq" || value === "hlg";
+  if (key === "video-params/primaries") return value === "bt.2020";
   // La SORTIE effective : c'est elle qui dit si le HDR arrive vraiment à l'écran.
-  if (cle === "video-target-params/gamma") return valeur === "pq" || valeur === "hlg";
-  if (cle === "video-target-params/primaries") return valeur === "bt.2020";
+  if (key === "video-target-params/gamma") return value === "pq" || value === "hlg";
+  if (key === "video-target-params/primaries") return value === "bt.2020";
   return null;
 }
 
@@ -110,37 +110,37 @@ function attendu(cle: string, valeur: string): boolean | null {
  * panneau prenaient près d'une seconde — soit plus que l'intervalle de
  * rafraîchissement, et les passes s'empilaient.
  */
-async function lireBrut(noms: readonly string[]): Promise<Record<string, string | null>> {
+async function readRaw(names: readonly string[]): Promise<Record<string, string | null>> {
   const api = getMpvApi();
-  const sortie: Record<string, string | null> = {};
-  if (!api) return sortie;
-  const valeurs = await Promise.all(
-    noms.map((nom) =>
+  const output: Record<string, string | null> = {};
+  if (!api) return output;
+  const values = await Promise.all(
+    names.map((name) =>
       api
-        .getProperty(nom, "string")
-        .then((brut) => (brut === null || brut === undefined ? null : String(brut)))
+        .getProperty(name, "string")
+        .then((raw) => (raw === null || raw === undefined ? null : String(raw)))
         .catch(() => null),
     ),
   );
-  noms.forEach((nom, i) => {
-    sortie[nom] = valeurs[i] ?? null;
+  names.forEach((name, i) => {
+    output[name] = values[i] ?? null;
   });
-  return sortie;
+  return output;
 }
 
-async function lire(noms: readonly string[]): Promise<DebugSection["lignes"]> {
+async function readProp(names: readonly string[]): Promise<DebugSection["lines"]> {
   if (!getMpvApi()) return [["mpv", "adaptateur non chargé", false]];
-  const brut = await lireBrut(noms);
-  return noms.map((nom) => {
-    const valeur = brut[nom] ?? "—";
-    return [nom, valeur, valeur === "—" ? null : attendu(nom, valeur)] as const;
+  const raw = await readRaw(names);
+  return names.map((name) => {
+    const value = raw[name] ?? "—";
+    return [name, value, value === "—" ? null : expected(name, value)] as const;
   });
 }
 
-function sectionShell(): DebugSection {
+function shellSection(): DebugSection {
   return {
-    titre: "Coquille",
-    lignes: [
+    title: "Coquille",
+    lines: [
       ["shell", desktopKind() ?? "web", desktopKind() !== null],
       ["plateforme", desktopPlatform(), null],
       // Sous Linux, `plateforme` ne dit pas l'essentiel : c'est le montage qui
@@ -156,7 +156,7 @@ function sectionShell(): DebugSection {
           ]] as const)),
       // Trois états : l'interrupteur de debug (touche M) prime — dire
       // « disponible » pendant qu'il est coupé ferait chercher un défaut.
-      mpvDesactiveParDebug()
+      mpvDisabledByDebug()
         ? (["lecteur mpv", "désactivé (debug, touche M)", false] as const)
         : (["lecteur mpv", supportsMpv() ? "disponible" : "absent", supportsMpv()] as const),
       ["téléchargements", supportsDownloads() ? "disponible" : "absent", supportsDownloads()],
@@ -169,44 +169,44 @@ function sectionShell(): DebugSection {
 }
 
 /** Instantané complet. Une seule passe, appelée par le panneau. */
-export async function collecterDebug(): Promise<DebugSection[]> {
-  const [pourVerdict, hdr, lecture, natif, surface] = await Promise.all([
-    lireBrut(PROPS_VERDICT),
-    lire(PROPS_HDR),
-    lire(PROPS_LECTURE),
-    etatHdrNatif(),
+export async function collectDebug(): Promise<DebugSection[]> {
+  const [forVerdict, hdr, playback, native, surface] = await Promise.all([
+    readRaw(VERDICT_PROPS),
+    readProp(PROPS_HDR),
+    readProp(PLAYBACK_PROPS),
+    nativeHdrState(),
     // La première ouverture capture ; les suivantes ne rafraîchissent que le
     // headroom EDR. Une capture par passe volerait à la lecture ce qu'on mesure
     // (seize méga-octets), mais l'EDR ne coûte que deux lectures de `NSScreen` —
     // et le laisser figé faisait annoncer « EDR accordé 1,00 » pendant toute une
     // lecture HDR, le compositeur ne l'accordant qu'au bout d'une rampe de
-    // plusieurs secondes. Voir `rafraichirEdr`.
-    derniereSonde() === null ? sonder() : rafraichirEdr(),
+    // plusieurs secondes. Voir `refreshEdr`.
+    lastProbe() === null ? probeSurface() : refreshEdr(),
   ]);
-  const lignesVerdict = verdicts(pourVerdict, natif?.actif ?? false, natif?.coucheHdr).map(
-    (v) => [v.cle, v.valeur, v.bon] as const,
+  const verdictLines = verdicts(forVerdict, native?.enabled ?? false, native?.coucheHdr).map(
+    (v) => [v.key, v.value, v.good] as const,
   );
   const sections: Array<DebugSection | null> = [
-    { titre: "Ce que tu regardes vraiment", lignes: lignesVerdict, emphase: true },
+    { title: "Ce que tu regardes vraiment", lines: verdictLines, emphasis: true },
     // Juste après les verdicts : une coupure au démarrage se juge sur sa
     // chronologie, et elle est déjà passée quand on ouvre le panneau — la
     // reléguer en bas obligeait à faire défiler pendant que le film tourne.
-    sectionDemarrage(),
+    startupSection(),
     // Puis le réseau : pendant une lecture locale, c'est la chose suivante
     // qu'on veut lire, avant l'inventaire de la coquille.
-    sectionReseau(),
-    sectionSurface(surface),
-    sectionShell(),
+    networkSection(),
+    surfaceSection(surface),
+    shellSection(),
     // L'état natif AVANT les requêtes média : sur macOS c'est lui qui fait
     // autorité, et le lire en second faisait conclure sur les mauvaises valeurs.
-    sectionHdrNatif(natif),
-    sectionFenetreChromium(),
-    { titre: "mpv — couleur", lignes: hdr },
-    { titre: "mpv — lecture", lignes: lecture },
+    nativeHdrSection(native),
+    chromiumWindowSection(),
+    { title: "mpv — couleur", lines: hdr },
+    { title: "mpv — lecture", lines: playback },
   ];
   // Le filtre plateforme est ICI, pas dans chaque section : une section qui se
-  // déclare (`plateformes`) n'a pas à savoir où elle tourne.
+  // déclare (`platforms`) n'a pas à savoir où elle tourne.
   return sections.filter(
-    (s): s is DebugSection => s !== null && (s.plateformes?.includes(desktopPlatform()) ?? true),
+    (s): s is DebugSection => s !== null && (s.platforms?.includes(desktopPlatform()) ?? true),
   );
 }

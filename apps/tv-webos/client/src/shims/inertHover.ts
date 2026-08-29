@@ -4,14 +4,14 @@ import type { AnchorRect, PreviewBounds } from "@/components/cards/hoverPreviewG
 /**
  * Le survol, éteint côté JavaScript.
  *
- * `passeSurvol` retire les règles `:hover` de la feuille ; il reste les
+ * `hoverPass` retire les règles `:hover` de la feuille ; il reste les
  * gestionnaires `onMouseEnter` du client web, que le CSS ne peut pas atteindre.
  * Ce sont eux qui font basculer `data-hovered`, qui montent le panneau d'aperçu
  * et qui posent des écouteurs globaux. Ce module remplace les trois hooks qui
  * les portent.
  *
  * Il en remplace trois pour un seul motif, d'où le fichier unique — trois
- * entrées de `tableSubstitutions.ts` pointent ici :
+ * entrées de `substitutionTable.ts` pointent ici :
  *
  *   • `useHoverPreview` — le panneau d'aperçu. Son garde est
  *     `(hover:hover) and (pointer:fine)` ET une largeur d'au moins 1024 px :
@@ -44,13 +44,13 @@ export interface HoverPreview {
   panelHandlers: { onMouseEnter: () => void; onMouseLeave: () => void };
 }
 
-function riennaire(): void {
+function nothingAry(): void {
   /* Le survol n'existe pas sur un téléviseur. */
 }
 
 // Identités stables : ces objets partent en props vers des composants mémoïsés,
 // une nouvelle identité à chaque rendu les re-rendrait pour rien.
-const GESTIONNAIRES = { onMouseEnter: riennaire, onMouseLeave: riennaire } as const;
+const HANDLERS = { onMouseEnter: nothingAry, onMouseLeave: nothingAry } as const;
 
 /**
  * `eligible` est faux, et ce n'est pas anodin : la carte s'en sert pour décider
@@ -58,7 +58,7 @@ const GESTIONNAIRES = { onMouseEnter: riennaire, onMouseLeave: riennaire } as co
  * portant d'ordinaire. Faux est bien la valeur voulue — il n'y aura pas de
  * panneau, donc la carte reste seule maîtresse de ce qu'elle affiche.
  */
-export function useHoverPreview(_desactive = false): HoverPreview {
+export function useHoverPreview(_disabled = false): HoverPreview {
   const anchorRef = useRef<HTMLDivElement>(null);
 
   return {
@@ -69,16 +69,16 @@ export function useHoverPreview(_desactive = false): HoverPreview {
     cut: false,
     anchor: null,
     bounds: undefined,
-    close: riennaire,
-    handlers: GESTIONNAIRES,
-    panelHandlers: GESTIONNAIRES,
+    close: nothingAry,
+    handlers: HANDLERS,
+    panelHandlers: HANDLERS,
   };
 }
 
 /** Sans pointeur à surveiller, il n'y a rien à revalider. */
 export function useHoverGuard(
   _ref: React.RefObject<HTMLElement | null>,
-  _actif: boolean,
+  _active: boolean,
   _sortie: () => void,
 ): void {
   /* Aucun écouteur global. */
@@ -87,7 +87,7 @@ export function useHoverGuard(
 /** Même raison que ci-dessus, pour la barre de progression du lecteur. */
 export function useHoverEscape(
   _ref: React.RefObject<HTMLElement | null>,
-  _actif: boolean,
+  _active: boolean,
   _sortie: () => void,
 ): void {
   /* Aucun écouteur global. */
@@ -112,5 +112,5 @@ export function useHoverMount(_sortieMs: number): {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 } {
-  return { hovered: false, mounted: false, ...GESTIONNAIRES };
+  return { hovered: false, mounted: false, ...HANDLERS };
 }

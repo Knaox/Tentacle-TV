@@ -21,7 +21,7 @@
  * thèmes, puisque l'icône est toujours posée sur une vidéo.
  */
 
-export function DeplacementIcon() {
+export function MoveIcon() {
   return (
     <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
       <rect x="11" y="5" width="2" height="14" rx="1" />

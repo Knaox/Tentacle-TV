@@ -126,13 +126,13 @@ function MediaSelector({ onSelect, selection }: { onSelect: (s: MediaSelection |
   /* Ce champ était le seul à interroger le serveur à CHAQUE frappe, sans
    * temporisation — un aller-retour par caractère. Aligné sur les autres barres
    * de recherche de l'application. */
-  const [searchDiffere, setSearchDiffere] = useState("");
+  const [deferredSearch, setDeferredSearch] = useState("");
   useEffect(() => {
-    const id = setTimeout(() => setSearchDiffere(search.trim()), 300);
+    const id = setTimeout(() => setDeferredSearch(search.trim()), 300);
     return () => clearTimeout(id);
   }, [search]);
 
-  const { data: results } = useSearchItems(searchDiffere);
+  const { data: results } = useSearchItems(deferredSearch);
   const { data: seasons } = useSeasons(pickedSeries?.Id);
   const { data: episodes } = useEpisodes(pickedSeries?.Id, pickedSeasonId ?? undefined);
 

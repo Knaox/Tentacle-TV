@@ -2,7 +2,7 @@
  * Classement d'un échec de lecture mpv : erreur de MÉDIA ou erreur de LECTEUR.
  *
  * L'enjeu est la bascule de secours, mémorisée pour toute la session
- * (`lib/lecteurSecours.ts`) : condamner mpv parce qu'UN fichier a disparu du
+ * (`lib/fallbackPlayer.ts`) : condamner mpv parce qu'UN fichier a disparu du
  * disque prive tous les médias suivants du lecteur natif — c'est le bug du
  * 27.08. À l'inverse, ne PAS basculer sur un vrai défaut de lecteur (décodeur
  * absent, chaîne incomplète) laisserait l'utilisateur sans image.

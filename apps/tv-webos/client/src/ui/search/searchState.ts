@@ -16,8 +16,8 @@ import { useSyncExternalStore } from "react";
  * la première entrée du rail était morte.
  */
 
-let ouverte = false;
-const auditeurs = new Set<() => void>();
+let opened = false;
+const listeners = new Set<() => void>();
 
 /**
  * Ce qui avait le focus avant l'ouverture, pour le lui rendre en refermant.
@@ -32,50 +32,50 @@ const auditeurs = new Set<() => void>();
  * l'ouverture d'une surcouche n'en change pas. Deux mécanismes pour deux
  * questions différentes.
  */
-let declencheur: HTMLElement | null = null;
+let trigger: HTMLElement | null = null;
 
 function notifier(): void {
-  auditeurs.forEach((auditeur) => auditeur());
+  listeners.forEach((listener) => listener());
 }
 
 function sAbonner(rappel: () => void): () => void {
-  auditeurs.add(rappel);
+  listeners.add(rappel);
   return () => {
-    auditeurs.delete(rappel);
+    listeners.delete(rappel);
   };
 }
 
-function lireInstantane(): boolean {
-  return ouverte;
+function readSnapshot(): boolean {
+  return opened;
 }
 
-export function ouvrirRecherche(): void {
-  if (ouverte) return;
-  const actif = document.activeElement;
-  declencheur = actif instanceof HTMLElement ? actif : null;
-  ouverte = true;
+export function openSearch(): void {
+  if (opened) return;
+  const active = document.activeElement;
+  trigger = active instanceof HTMLElement ? active : null;
+  opened = true;
   notifier();
 }
 
 /** Rend vrai si la recherche était ouverte — c'est ce qu'attend la pile Retour. */
-export function fermerRecherche(): boolean {
-  if (!ouverte) return false;
-  ouverte = false;
+export function closeSearch(): boolean {
+  if (!opened) return false;
+  opened = false;
   notifier();
 
   // Après le rendu qui démonte la surcouche : lui rendre le focus avant
   // reviendrait à le poser sur un élément que React s'apprête à recouvrir.
-  const cible = declencheur;
-  declencheur = null;
-  if (cible && cible.isConnected) {
+  const target = trigger;
+  trigger = null;
+  if (target && target.isConnected) {
     setTimeout(() => {
-      if (cible.isConnected) cible.focus();
+      if (target.isConnected) target.focus();
     }, 0);
   }
 
   return true;
 }
 
-export function useRechercheOuverte(): boolean {
-  return useSyncExternalStore(sAbonner, lireInstantane);
+export function useSearchOpen(): boolean {
+  return useSyncExternalStore(sAbonner, readSnapshot);
 }

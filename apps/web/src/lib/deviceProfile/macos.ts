@@ -1,10 +1,10 @@
 import type { DeviceProfile } from "@tentacle-tv/shared";
 import {
-  CONDITIONS_HEVC, conditionsH264, DEBIT_MUSIQUE, PROFIL_AUDIO_6_CANAUX, PROFIL_AUDIO_SEUL,
-  conditionPlageDynamique, profilHlsFmp4, profilHlsTs, sousTitresBitmap,
-  SOUS_TITRES_TEXTE_HLS, type OptionsProfilWeb,
-} from "./blocs";
-import { plagesDynamiquesSupportees } from "./codecs";
+  CONDITIONS_HEVC, h264Conditions, MUSIC_BITRATE, AUDIO_PROFILE_6_CHANNELS, AUDIO_ONLY_PROFILE,
+  dynamicRangeCondition, hlsFmp4Profile, hlsTsProfile, bitmapSubtitles,
+  TEXT_SUBTITLES_HLS, type WebProfileOptions,
+} from "./blocks";
+import { supportedDynamicRanges } from "./codecs";
 
 /**
  * Device profile for macOS Tauri (WKWebView / AVFoundation).
@@ -23,7 +23,7 @@ import { plagesDynamiquesSupportees } from "./codecs";
  */
 export function buildMacOSDeviceProfile(
   maxBitrate?: number,
-  options?: OptionsProfilWeb,
+  options?: WebProfileOptions,
 ): DeviceProfile {
   return {
     // Plus bas que le profil navigateur (150 Mb/s) : AVFoundation décode en
@@ -32,7 +32,7 @@ export function buildMacOSDeviceProfile(
     // plafond ne déclenche jamais un transcodage à lui seul.
     MaxStreamingBitrate: maxBitrate ?? 120_000_000,
     MaxStaticBitrate: 150_000_000,
-    MusicStreamingTranscodingBitrate: DEBIT_MUSIQUE,
+    MusicStreamingTranscodingBitrate: MUSIC_BITRATE,
     DirectPlayProfiles: [
       { Container: "mp4,m4v,mov", Type: "Video",
         VideoCodec: "h264,hevc", AudioCodec: "aac,flac,alac,ac3,eac3,mp3" },
@@ -41,16 +41,16 @@ export function buildMacOSDeviceProfile(
       { Container: "flac", Type: "Audio" },
     ],
     TranscodingProfiles: [
-      profilHlsFmp4("hevc,h264", "aac,ac3,eac3"),
-      profilHlsTs("h264", "aac,ac3,eac3"),
-      PROFIL_AUDIO_SEUL,
+      hlsFmp4Profile("hevc,h264", "aac,ac3,eac3"),
+      hlsTsProfile("h264", "aac,ac3,eac3"),
+      AUDIO_ONLY_PROFILE,
     ],
     CodecProfiles: [
-      { Type: "Video", Codec: "h264", Conditions: conditionsH264("52") },
+      { Type: "Video", Codec: "h264", Conditions: h264Conditions("52") },
       { Type: "Video", Codec: "hevc",
-        Conditions: [...CONDITIONS_HEVC, conditionPlageDynamique(plagesDynamiquesSupportees())] },
-      PROFIL_AUDIO_6_CANAUX,
+        Conditions: [...CONDITIONS_HEVC, dynamicRangeCondition(supportedDynamicRanges())] },
+      AUDIO_PROFILE_6_CHANNELS,
     ],
-    SubtitleProfiles: [...SOUS_TITRES_TEXTE_HLS, ...sousTitresBitmap(options?.pgsClientIndisponible)],
+    SubtitleProfiles: [...TEXT_SUBTITLES_HLS, ...bitmapSubtitles(options?.pgsClientUnavailable)],
   };
 }

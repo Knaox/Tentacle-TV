@@ -3,7 +3,7 @@ import Hls from "hls.js";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 
 import {
-  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, GARDE_DIRECT_PLAY_MS, HAS_NATIVE_HLS,
+  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, DIRECT_PLAY_GUARD_MS, HAS_NATIVE_HLS,
 } from "./videoSourceHelpers";
 
 const DBG = "[Tentacle:VideoPlayer]";
@@ -110,7 +110,7 @@ export function useVideoSource({
     // pour la session, puis on demande au parent de relancer la lecture. Ici le
     // parent refait un PlaybackInfo sans le MKV, Jellyfin répond en remux, et
     // l'utilisateur ne voit qu'un démarrage un peu plus lent.
-    const gardeDirectPlay = isDirectPlay && !isHlsUrl && onDirectPlayNonFiable
+    const directPlayGuard = isDirectPlay && !isHlsUrl && onDirectPlayNonFiable
       ? setTimeout(() => {
           if (!sourceChangingRef.current) return;
           console.warn(DBG, "lecture directe muette a 0 ms — repli en remux");
@@ -119,12 +119,12 @@ export function useVideoSource({
           // que plus rien ne relève. L'annuler ici supprimait le dernier filet.
           sourceChangingRef.current = false;
           onDirectPlayNonFiable(currentTimeRef.current);
-        }, GARDE_DIRECT_PLAY_MS)
+        }, DIRECT_PLAY_GUARD_MS)
       : undefined;
 
     const onReady = () => {
       clearTimeout(failsafe);
-      clearTimeout(gardeDirectPlay);
+      clearTimeout(directPlayGuard);
       const ptsOffset = containerPtsOffsetRef.current;
       // jellyfin-web pattern: explicit seek for frame-accurate positioning.
       // For HLS initial load: startPosition is segment-boundary accurate — good enough,
@@ -251,7 +251,7 @@ export function useVideoSource({
 
     return () => {
       clearTimeout(failsafe);
-      clearTimeout(gardeDirectPlay);
+      clearTimeout(directPlayGuard);
       clearTimeout(bufferGateTimer);
       clearInterval(seekStallTimer.current);
       v.removeEventListener("loadedmetadata", onReady);

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
-import { inscrireRetour } from "../focus/back";
-import { oublierBoutonOsd } from "./focusOsd";
+import { registerBack } from "../focus/back";
+import { forgetOsdButton } from "./focusOsd";
 import { ScrubMachine, readState, setMounted, setPanel, type PlayerMode } from "@tentacle-tv/tv-core";
-import { installerTouchesLecteurTv, type ActionsLecteurTv } from "./playerKeysTv";
-import { poserSortieLecteur } from "./playerExitTv";
+import { installTvPlayerKeys, type PlayerActionsTv } from "./playerKeysTv";
+import { setPlayerExit } from "./playerExitTv";
 
 /**
  * Ce que le lecteur déclare au reste de l'application, et qu'il retire en
@@ -17,24 +17,24 @@ import { poserSortieLecteur } from "./playerExitTv";
  * démontage, et pourquoi elles gagnent à être lues ensemble.
  */
 
-export interface AttachesLecteurTv {
+export interface PlayerBindingsTv {
   /** Le mode courant, publié sur la racine du document. */
   mode: PlayerMode;
   /** Relues à chaque touche : les rappels changent d'identité à chaque rendu. */
-  actions: ActionsLecteurTv;
+  actions: PlayerActionsTv;
   /** Pour annuler un déplacement en cours sur la touche Retour. */
   scrub: ScrubMachine;
 }
 
-export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): void {
-  const vives = useRef(actions);
-  vives.current = actions;
+export function usePlayerCycleTv({ mode, actions, scrub }: PlayerBindingsTv): void {
+  const vivid = useRef(actions);
+  vivid.current = actions;
 
   // La sortie, déposée pour les surcouches : elles vivent dans l'autre arbre
   // React et ne reçoivent pas `onBack`.
   useEffect(() => {
-    poserSortieLecteur(() => vives.current.quitter());
-    return () => poserSortieLecteur(null);
+    setPlayerExit(() => vivid.current.quitter());
+    return () => setPlayerExit(null);
   }, []);
 
   // Monté et démonté avec le lecteur : c'est cet indicateur que lisent le
@@ -46,11 +46,11 @@ export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): 
       document.documentElement.removeAttribute("data-tv-lecteur");
       // La mémoire du focus ne survit pas au lecteur : rouvrir un film repart
       // de Lecture, comme une première fois.
-      oublierBoutonOsd();
+      forgetOsdButton();
     };
   }, []);
 
-  useEffect(() => installerTouchesLecteurTv(() => vives.current), []);
+  useEffect(() => installTvPlayerKeys(() => vivid.current), []);
 
   /**
    * Le mode, publié sur la racine du document.
@@ -74,13 +74,13 @@ export function useCycleLecteurTv({ mode, actions, scrub }: AttachesLecteurTv): 
    */
   useEffect(
     () =>
-      inscrireRetour(() => {
-        const courant = readState();
-        if (courant.panel !== "aucun") {
+      registerBack(() => {
+        const current = readState();
+        if (current.panel !== "aucun") {
           setPanel("aucun");
           return true;
         }
-        if (courant.mode === "scrub") {
+        if (current.mode === "scrub") {
           scrub.cancel();
           return true;
         }
