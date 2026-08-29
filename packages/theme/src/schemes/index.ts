@@ -29,14 +29,27 @@ export function buildPalette(scheme: ResolvedScheme): ThemePalette {
 }
 
 /**
- * Défaut "auto" : sans choix explicite, l'app suit le réglage d'apparence du
- * système. Clair/Sombre restent forçables ; un choix explicite est persisté
- * et prime. Partagé avec le boot pré-mount de `apps/mobile`.
+ * Défaut "dark" : sans choix explicite, l'app est SOMBRE.
+ *
+ * Elle l'était de fait — toute son identité visuelle est construite pour le
+ * noir : verre, dégradés, affiches sur fond sombre, contrôles du lecteur posés
+ * sur la vidéo. Le défaut était pourtant "auto", donc un système en apparence
+ * claire ouvrait Tentacle dans un thème qui n'est pas celui pour lequel elle a
+ * été dessinée, sans que personne ne l'ait demandé.
+ *
+ * "auto" reste CHOISISSABLE : qui veut suivre son système le dit, et son choix
+ * est persisté. C'est le défaut qui change, pas les possibilités.
+ *
+ * ⚠️ Cette valeur est répliquée à deux endroits qui s'exécutent AVANT ce
+ * module : le script d'amorçage de `apps/web/index.html` (avant le premier
+ * paint) et le repli de `apps/web/src/theme/colorScheme.ts` quand le stockage
+ * est illisible. Les trois doivent dire la même chose, sinon l'app change de
+ * thème sous les yeux de l'utilisateur pendant son chargement.
  */
 export function sanitizeThemeMode(value: string | null | undefined): ThemeMode {
   return (VALID_MODES as readonly string[]).includes(value ?? "")
     ? (value as ThemeMode)
-    : "auto";
+    : "dark";
 }
 
 /** Résout le mode utilisateur en schéma effectif, `auto` suivant le système. */

@@ -110,12 +110,16 @@ describe("parité des clés entre schémas", () => {
 });
 
 describe("résolution du mode", () => {
-  it("sanitize retombe sur auto pour toute valeur inconnue", () => {
+  it("sanitize retombe sur SOMBRE pour toute valeur inconnue", () => {
     expect(sanitizeThemeMode("light")).toBe("light");
     expect(sanitizeThemeMode("dark")).toBe("dark");
+    // « auto » reste un choix valide — c'est le DÉFAUT qui a changé, pas les
+    // possibilités : sans choix explicite, l'app est celle pour laquelle elle
+    // a été dessinée, la sombre.
     expect(sanitizeThemeMode("auto")).toBe("auto");
-    expect(sanitizeThemeMode(null)).toBe("auto");
-    expect(sanitizeThemeMode("nimportequoi")).toBe("auto");
+    expect(sanitizeThemeMode(null)).toBe("dark");
+    expect(sanitizeThemeMode(undefined)).toBe("dark");
+    expect(sanitizeThemeMode("nimportequoi")).toBe("dark");
   });
 
   it("auto suit le système, light/dark forcent", () => {

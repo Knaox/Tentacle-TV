@@ -22,14 +22,18 @@ export const THEME_MODE_STORAGE_KEY = "tentacle_theme_mode";
 const VALID_MODES: readonly ThemeMode[] = ["light", "dark", "auto"];
 
 /**
- * Défaut "auto" : sans choix explicite, l'app suit le réglage d'apparence du
- * système (comme la plupart des apps iOS). Clair/Sombre restent forçables via le
- * sélecteur ; un choix explicite est persisté et prime.
+ * Défaut "dark" : sans choix explicite, l'app est SOMBRE — comme sur le web et
+ * le bureau, dont ce fichier est le miroir React Native (`packages/theme`
+ * n'est pas importable ici, l'amorçage court avant le mount).
+ *
+ * Un même compte ne peut pas ouvrir en sombre sur l'ordinateur et en clair sur
+ * le téléphone : c'est le même produit, et toute son identité visuelle est
+ * construite pour le noir. "auto" reste choisissable, il n'est plus le défaut.
  */
 export function sanitizeThemeMode(value: string | null | undefined): ThemeMode {
   return (VALID_MODES as readonly string[]).includes(value ?? "")
     ? (value as ThemeMode)
-    : "auto";
+    : "dark";
 }
 
 /**
@@ -41,7 +45,7 @@ export function applyAppearance(mode: ThemeMode): void {
   Appearance.setColorScheme(mode === "auto" ? null : mode);
 }
 
-let bootMode: ThemeMode = "auto";
+let bootMode: ThemeMode = "dark";
 
 /** Appelé par index.js PRÉ-MOUNT — fixe le mode initial et l'applique à l'OS. */
 export function setBootThemeMode(mode: ThemeMode): void {

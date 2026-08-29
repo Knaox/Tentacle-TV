@@ -26,7 +26,9 @@
         var dark = true; // rendu historique de l'app, et repli si tout echoue
         try {
           var mode = localStorage.getItem("tentacle_theme_mode");
-          if (mode !== "light" && mode !== "dark") mode = "auto"; // défaut + valeurs corrompues
+          // Défaut SOMBRE, comme `sanitizeThemeMode` — l'app est dessinée pour
+          // le noir. « auto » reste choisissable, il n'est plus le défaut.
+          if (mode !== "light" && mode !== "dark" && mode !== "auto") mode = "dark";
           dark =
             mode === "dark" ||
             (mode === "auto" &&

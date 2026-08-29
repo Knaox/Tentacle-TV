@@ -42,7 +42,9 @@ const readStoredMode = (): ThemeMode => {
   try {
     return sanitizeThemeMode(localStorage.getItem(THEME_MODE_STORAGE_KEY));
   } catch {
-    return "auto";
+    // Même défaut que `sanitizeThemeMode` : sombre. Les deux doivent dire la
+    // même chose, sinon un stockage illisible ferait basculer le thème.
+    return "dark";
   }
 };
 
