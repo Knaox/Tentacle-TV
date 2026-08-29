@@ -108,7 +108,7 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
                 { value: "beforeEnd", label: t("upNextTriggerBeforeEnd") },
               ]}
               onChange={(nextTrigger) => { setPlaybackSettings({ next: { nextTrigger } }); }}
-              className="mt-3 w-full max-w-sm"
+              className="mt-3 max-w-full"
             />
           </div>
 

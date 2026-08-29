@@ -55,7 +55,7 @@ export function PlaybackPresetPicker({ settings }: PlaybackPresetPickerProps) {
           if (value === "custom") return; // un constat, pas un choix
           setPlaybackSettings(presetSettings(value));
         }}
-        className="w-full"
+        className="max-w-full"
       />
       <p className="mt-3 text-xs leading-relaxed text-content-tertiary">
         {t(PRESET_HINT_KEYS[preset])}

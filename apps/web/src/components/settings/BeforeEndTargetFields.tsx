@@ -57,7 +57,7 @@ export function BeforeEndTargetFields({
         onChange={(mode: BeforeEndMode) => {
           if (mode !== target.mode) onChange({ mode, value: USUAL[mode] });
         }}
-        className="w-full max-w-xs"
+        className="max-w-full"
       />
       <div>
         <div className="flex items-baseline justify-between gap-4">

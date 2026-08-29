@@ -31,6 +31,11 @@
 :root {
   --ctl-gradient: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 55%, var(--brand-accent) 100%);
   --ctl-glow: 0 2px 10px rgba(var(--brand-rgb), 0.35), 0 0 0 1px rgba(var(--brand-rgb), 0.45);
+  /* Le choix segmenté a sa propre lueur, plus discrète et SANS liseré de
+   * marque : c'est le liseré qui faisait lire l'option retenue comme un bouton
+   * d'action posé là, au lieu d'un état parmi trois. L'interrupteur et le
+   * curseur, eux, sont des objets isolés — ils gardent la lueur pleine. */
+  --ctl-glow-segment: 0 1px 6px rgba(var(--brand-rgb), 0.28);
 }
 
 /* ══ 1. Le choix segmenté ══════════════════════════════════════════════════
@@ -45,12 +50,30 @@
 .ctl-segment {
   position: relative;
   isolation: isolate;
-  border-radius: var(--radius-md);
+  /* Un cran sous le rayon du groupe (10 px) : l'option s'inscrit dedans au
+   * lieu d'en épouser le bord. */
+  border-radius: var(--radius-sm);
   color: var(--text-tertiary);
   font-weight: 500;
+  /* À LA SOURIS. WCAG 2.2 AA demande 24 px CSS sur le web ; les 44 px d'avant
+   * venaient des règles natives iOS/Android, qui ne régissent pas un écran de
+   * réglages piloté au pointeur — et qui coûtaient, à la dizaine de contrôles,
+   * un écran deux fois plus long. */
+  min-height: 34px;
+  padding-inline: 0.75rem;
+  font-size: 13px;
   transition:
     color var(--duration-fast) var(--ease-out),
     transform var(--duration-instant) var(--ease-out);
+}
+
+/* AU DOIGT, la cible native reprend ses droits — c'est là qu'elle se mesure. */
+@media (pointer: coarse) {
+  .ctl-segment {
+    min-height: 44px;
+    padding-inline: 1rem;
+    font-size: 14px;
+  }
 }
 
 .ctl-segment::before {
@@ -60,7 +83,7 @@
   z-index: -1;
   border-radius: inherit;
   background: var(--ctl-gradient);
-  box-shadow: var(--ctl-glow);
+  box-shadow: var(--ctl-glow-segment);
   opacity: 0;
   transition: opacity var(--duration-fast) var(--ease-out);
 }
