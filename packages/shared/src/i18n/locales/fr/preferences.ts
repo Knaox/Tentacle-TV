@@ -139,6 +139,8 @@ export default {
   playbackAdvancedOnDesktop:
     "Le réglage fin — quel passage, quel délai, quel déclencheur — se fait depuis Tentacle sur ordinateur. Il suit votre compte et s'applique ici.",
   playbackSegmentsTitle: "Passages d'un épisode",
+  playbackSegmentsSummary: "Générique de début, résumé, générique de fin, aperçu.",
+  upNextSummary: "La fiche « à suivre », le compte à rebours, et quand les proposer.",
   playbackSegmentsHint:
     "Quand le serveur signale un passage — générique, résumé, aperçu — le lecteur peut proposer de le passer, le passer tout seul, ou ne rien faire. Sans signalement, rien ne s'affiche : ces réglages ne devinent jamais.",
   playbackSettingsAccount: "Ces réglages suivent votre compte, sur tous vos appareils.",

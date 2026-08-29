@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useOwnPlaybackSettings } from "@tentacle-tv/api-client";
 import { detectPreset } from "@tentacle-tv/shared";
 import { PlaybackAdvancedPanel } from "./PlaybackAdvancedPanel";
 import { PlaybackPresetPicker } from "./PlaybackPresetPicker";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 
 /**
  * Tout ce que le lecteur a le droit de faire tout seul, en un seul endroit.
@@ -24,7 +24,7 @@ export function PlaybackSettingsSection() {
   const settings = useOwnPlaybackSettings();
   // Ouvert d'emblée si les réglages ne correspondent à aucun mode : quelqu'un
   // a déjà réglé finement, lui cacher son propre travail serait absurde.
-  const [advancedOpen, setAdvancedOpen] = useState(() => detectPreset(settings) === "custom");
+  const advancedOpen = detectPreset(settings) === "custom";
 
   return (
     <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5">
@@ -37,27 +37,11 @@ export function PlaybackSettingsSection() {
         <PlaybackPresetPicker settings={settings} />
       </div>
 
-      <button
-        type="button"
-        onClick={() => setAdvancedOpen((open) => !open)}
-        aria-expanded={advancedOpen}
-        className="mt-6 flex min-h-11 items-center gap-2 text-sm font-medium text-content-secondary transition-colors hover:text-content-primary"
-      >
-        <svg
-          className={`h-4 w-4 transition-transform duration-200 motion-reduce:transition-none ${advancedOpen ? "rotate-90" : ""}`}
-          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-        {t("playbackAdvancedToggle")}
-      </button>
-
-      {advancedOpen && (
-        <div className="mt-5 border-t border-line-subtle pt-6">
+      <div className="mt-6 border-t border-line-subtle pt-5">
+        <SettingsDisclosure title={t("playbackAdvancedToggle")} defaultOpen={advancedOpen}>
           <PlaybackAdvancedPanel settings={settings} />
-        </div>
-      )}
+        </SettingsDisclosure>
+      </div>
     </div>
   );
 }

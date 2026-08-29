@@ -198,8 +198,36 @@ export function Preferences() {
           </select>
         </div>
 
+        {!offline && !libraries && (
+          <div className="flex justify-center py-20">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
+          </div>
+        )}
+        {offline && displayLibraries.length === 0 && (
+          <p className="py-10 text-center text-sm text-content-quaternary">{t("preferences:offlineNoCacheHint")}</p>
+        )}
+
+        <div className="mb-8 space-y-4">
+          {displayLibraries.map((lib) => (
+            <LibraryPrefCard
+              key={lib.Id}
+              libraryId={lib.Id}
+              libraryName={lib.Name}
+              pref={prefsMap.get(lib.Id) ?? null}
+              languages={LANGUAGES}
+              subtitleModes={SUBTITLE_MODES}
+              t={t}
+              onSave={savePref}
+              onDelete={() => deletePref(lib.Id)}
+            />
+          ))}
+        </div>
+
         {/* Ce que le lecteur fait tout seul : les passages d'un épisode, et sa
-            fin. Réglages de COMPTE — la section porte ses propres cartes. */}
+            fin. Réglages de COMPTE — la section porte ses propres cartes.
+            APRÈS les langues : on règle une bibliothèque bien plus souvent
+            qu'on ne revient sur les sauts, et ce qui se consulte souvent doit
+            être le premier sous la main. */}
         <PlaybackSettingsSection />
 
         {/* Qui décode la vidéo — bureau uniquement, réglage d'APPAREIL : c'est
@@ -216,31 +244,6 @@ export function Preferences() {
             d'effacement que la bascule HDR. Relance proposée, jamais imposée. */}
         <div className="mb-8 rounded-xl border border-line-subtle bg-fill-subtle p-5 empty:hidden">
           <LinuxSessionSelect />
-        </div>
-
-        {!offline && !libraries && (
-          <div className="flex justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-tentacle-accent border-t-transparent" />
-          </div>
-        )}
-        {offline && displayLibraries.length === 0 && (
-          <p className="py-10 text-center text-sm text-content-quaternary">{t("preferences:offlineNoCacheHint")}</p>
-        )}
-
-        <div className="space-y-4">
-          {displayLibraries.map((lib) => (
-            <LibraryPrefCard
-              key={lib.Id}
-              libraryId={lib.Id}
-              libraryName={lib.Name}
-              pref={prefsMap.get(lib.Id) ?? null}
-              languages={LANGUAGES}
-              subtitleModes={SUBTITLE_MODES}
-              t={t}
-              onSave={savePref}
-              onDelete={() => deletePref(lib.Id)}
-            />
-          ))}
         </div>
 
         {/* Mot de passe, appareils jumeles et changement de serveur ont ete
