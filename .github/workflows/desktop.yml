@@ -38,6 +38,10 @@ on:
         type: choice
         options: [all, macos, windows, linux]
         default: all
+      publish:
+        description: "Publier aussi (Release GitHub + manifeste) — un tag le fait toujours"
+        type: boolean
+        default: false
 
 concurrency:
   group: release-desktop-${{ github.ref }}
@@ -58,7 +62,16 @@ jobs:
       version: ${{ steps.v.outputs.version }}
       build: ${{ steps.v.outputs.build }}
       submit: ${{ steps.v.outputs.submit }}
-      is_tag: ${{ steps.v.outputs.is_tag }}
+      # Publier = créer la Release et patcher le manifeste. Un tag le fait
+      # toujours ; un déclenchement manuel le fait sur demande (`publish`).
+      # C'est ce qui permet de livrer UN SEUL système sans réveiller les
+      # autres — un tag, lui, lance les trois, macOS compris, avec soumission.
+      release: ${{ steps.v.outputs.release }}
+      # Le tag à viser. Sur un tag c'est lui ; sur un dispatch il est déduit de
+      # versions.json, et `action-gh-release` le créera avec GITHUB_TOKEN — un
+      # tag posé par ce jeton NE redéclenche AUCUN workflow, ce qui est
+      # exactement ce qu'on veut ici.
+      tag: ${{ steps.v.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
       - id: v
@@ -66,7 +79,7 @@ jobs:
           VERSION=$(jq -r .desktop versions.json)
           BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
           if [ "${{ github.event_name }}" = "push" ]; then
-            IS_TAG=true; SUBMIT=true
+            RELEASE=true; SUBMIT=true; TAG="${GITHUB_REF_NAME}"
             # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
             # unique, version marketing inchangée, build auto-incrémenté).
             if [[ ! "${GITHUB_REF_NAME}" =~ ^desktop-v${VERSION}(-r[0-9]+)?$ ]]; then
@@ -74,10 +87,12 @@ jobs:
               exit 1
             fi
           else
-            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+            RELEASE="${{ inputs.publish }}"; SUBMIT="${{ inputs.submit }}"
+            TAG="desktop-v${VERSION}"
           fi
-          echo "Desktop ${VERSION} (build ${BUILD}, submit=${SUBMIT})"
-          { echo "version=$VERSION"; echo "build=$BUILD"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+          echo "Desktop ${VERSION} (build ${BUILD}, submit=${SUBMIT}, release=${RELEASE}, tag=${TAG})"
+          { echo "version=$VERSION"; echo "build=$BUILD"; echo "submit=$SUBMIT"
+            echo "release=$RELEASE"; echo "tag=$TAG"; } >> "$GITHUB_OUTPUT"
 
   # ── macOS App Store (Electron) ───────────────────────────────────────────
   # 1) Chaîne LGPL par architecture : dylibs mpv/FFmpeg + paquet natif de koffi.
@@ -494,7 +509,7 @@ jobs:
           if-no-files-found: error
 
       - name: Corps de release (notes changelog + guide d'installation)
-        if: needs.version.outputs.is_tag == 'true'
+        if: needs.version.outputs.release == 'true'
         run: |
           V="${{ needs.version.outputs.version }}"
           node .github/scripts/release-notes.mjs \
@@ -530,10 +545,10 @@ jobs:
           cat release-body.md
 
       - name: Create versioned GitHub Release
-        if: needs.version.outputs.is_tag == 'true'
+        if: needs.version.outputs.release == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.version.outputs.tag }}
           name: "Tentacle TV Desktop ${{ needs.version.outputs.version }}"
           prerelease: false
           body_path: release-body.md
@@ -549,7 +564,7 @@ jobs:
   manifest:
     name: Publier le manifeste d'auto-update
     needs: [version, linux]
-    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'linux') && needs.version.outputs.is_tag == 'true'
+    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'linux') && needs.version.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -574,13 +589,13 @@ jobs:
       - name: Ajouter SHA256SUMS à la Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.version.outputs.tag }}
           files: SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Patch du bloc linux (version/tag/assets/sha256)
         run: |
-          node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${GITHUB_REF_NAME}" SHA256SUMS
+          node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${{ needs.version.outputs.tag }}" SHA256SUMS
       - name: Commit + push sur main
         run: |
           git config user.name "tentacle-bot"
@@ -602,7 +617,9 @@ jobs:
   manifest-stores:
     name: Publier le manifeste stores
     needs: version
-    if: needs.version.outputs.is_tag == 'true'
+    # La cible compte désormais : sur une livraison Linux seule, patcher le
+    # bloc `microsoftStore` annoncerait une version absente du Store.
+    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows') && needs.version.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
