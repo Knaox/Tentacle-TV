@@ -24,9 +24,14 @@
  * overlay pour lui tant qu'un réglage n'existe pas.
  */
 
-import { findSegment, type ResolvedSegment, type SegmentType } from "./segmentTypes";
+import { findSegments, type ResolvedSegment, type SegmentType } from "./segmentTypes";
 import { findActiveSegment } from "./segmentWindow";
-import type { PlaybackSettings, SegmentSettings } from "./playbackSettings";
+import {
+  beforeEndPositionMs,
+  resolveBeforeEnd,
+  type PlaybackSettings,
+  type SegmentSettings,
+} from "./playbackSettings";
 
 export type SkipLabelKey =
   | "skipIntro"
@@ -165,26 +170,46 @@ function skipOverlay(
   return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds };
 }
 
-/** Le déclencheur de la carte est-il franchi ? Sert aussi d'« éligibilité »
- *  au moteur d'enchaînement — même sélecteur, aucune divergence possible. */
+/**
+ * Le déclencheur de la carte est-il franchi ? Sert aussi d'« éligibilité » au
+ * moteur d'enchaînement — même sélecteur, aucune divergence possible.
+ *
+ * # L'ordre de confiance
+ *
+ * 1. Un SECOND générique après la scène post-générique (le modèle Plex :
+ *    générique → scène → générique final). C'est la donnée la plus sûre qui
+ *    existe, elle bat toute heuristique.
+ * 2. Le générique principal. S'il porte une scène derrière lui, la fenêtre
+ *    s'arrête à sa fin : la carte ne se pose JAMAIS par-dessus une scène que
+ *    l'utilisateur a choisi de garder. (Le trou qui s'ouvre alors est comblé
+ *    par la pilule « épisode suivant », pas par la carte.)
+ * 3. À défaut de tout générique, le repli temporel de la bibliothèque.
+ *
+ * Le repli ne s'applique donc JAMAIS quand un générique est connu — c'est ce
+ * qui empêche par construction les deux de se marcher dessus. Un utilisateur
+ * peut passer outre avec `nextTrigger: "beforeEnd"`, et l'interface le dit.
+ */
 export function nextCardTriggerReached(
   positionMs: number,
   runtimeMs: number,
   segments: readonly ResolvedSegment[],
   next: PlaybackSettings["next"],
+  libraryId: string | null = null,
 ): boolean {
-  const outro = findSegment(segments, "Outro");
+  const outros = findSegments(segments, "Outro");
 
-  if (next.nextTrigger === "outroStart" && outro) {
-    if (outro.hasContentAfter) {
-      // Pendant le générique seulement : la carte ne se pose jamais par-dessus
-      // la scène post-générique que l'utilisateur a choisi de garder.
-      return positionMs >= outro.startMs && positionMs < outro.endMs;
-    }
-    return positionMs >= outro.startMs;
+  if (outros.length > 0 && next.nextTrigger === "outroStart") {
+    const main = outros[0];
+    const final = outros.length > 1 ? outros[outros.length - 1] : null;
+    if (final && positionMs >= final.startMs) return true;
+    if (main.hasContentAfter) return positionMs >= main.startMs && positionMs < main.endMs;
+    return positionMs >= main.startMs;
   }
-  // Repli temporel (aucun Outro connu, ou choix explicite « avant la fin »).
-  return runtimeMs > 0 && positionMs >= runtimeMs - next.nextBeforeEndSeconds * 1_000;
+
+  const target = resolveBeforeEnd(next, libraryId);
+  if (!target) return false;
+  const threshold = beforeEndPositionMs(target, runtimeMs);
+  return threshold !== null && positionMs >= threshold;
 }
 
 export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {

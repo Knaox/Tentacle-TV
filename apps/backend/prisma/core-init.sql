@@ -182,8 +182,19 @@ CREATE TABLE IF NOT EXISTS `playback_settings` (
   `nextAutoPlay` tinyint(1) NOT NULL DEFAULT 1,
   `nextTrigger` varchar(16) NOT NULL DEFAULT 'outroStart',
   `nextBeforeEndSeconds` int(11) NOT NULL DEFAULT 45,
+  `beforeEndEnabled` tinyint(1) NOT NULL DEFAULT 1,
+  `beforeEndMode` varchar(8) NOT NULL DEFAULT 'percent',
+  `beforeEndValue` int(11) NOT NULL DEFAULT 98,
+  `beforeEndRules` text DEFAULT NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updatedAt` datetime(3) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `playback_settings_jellyfinUserId_key` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Le repli « avant la fin » par bibliothèque, ajouté après coup : une table
+-- déjà créée ne repasse pas par le CREATE ci-dessus (additif, idempotent).
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndEnabled` tinyint(1) NOT NULL DEFAULT 1;
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndMode` varchar(8) NOT NULL DEFAULT 'percent';
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndValue` int(11) NOT NULL DEFAULT 98;
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `beforeEndRules` text DEFAULT NULL;

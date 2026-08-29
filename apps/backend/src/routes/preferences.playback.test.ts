@@ -93,7 +93,9 @@ const VALID_SETTINGS = {
     nextCountdown: false,
     nextAutoPlay: false,
     nextTrigger: "beforeEnd",
-    nextBeforeEndSeconds: 60,
+    beforeEndEnabled: true,
+    beforeEndDefault: { mode: "seconds", value: 60 },
+    beforeEndRules: [{ libraryIds: ["lib-series"], mode: "percent", value: 96 }],
   },
 };
 
@@ -194,5 +196,56 @@ describe("GET/PUT /api/preferences/playback", () => {
     });
     expect(response.json().settings.intro.action).toBe("auto");
     await app.close();
+  });
+});
+
+describe("le repli « avant la fin » traverse la base", () => {
+  it("un seuil en pourcentage et ses règles ciblées reviennent intacts", async () => {
+    const app = await makeApp();
+    const settings = {
+      ...VALID_SETTINGS,
+      next: {
+        ...VALID_SETTINGS.next,
+        beforeEndDefault: { mode: "percent", value: 98 },
+        beforeEndRules: [
+          { libraryIds: ["series", "series-2"], mode: "percent", value: 96 },
+          { libraryIds: ["anime"], mode: "seconds", value: 15 },
+        ],
+      },
+    };
+    await app.inject({ method: "PUT", url: "/api/preferences/playback", headers, payload: settings });
+    const read = await app.inject({ method: "GET", url: "/api/preferences/playback", headers });
+    expect(read.json()).toEqual({ stored: true, settings });
+  });
+
+  it("un seuil hors bornes est refusé, pas rogné en silence", async () => {
+    const app = await makeApp();
+    const response = await app.inject({
+      method: "PUT",
+      url: "/api/preferences/playback",
+      headers,
+      payload: {
+        ...VALID_SETTINGS,
+        next: { ...VALID_SETTINGS.next, beforeEndDefault: { mode: "percent", value: 10 } },
+      },
+    });
+    expect(response.statusCode).toBe(400);
+  });
+
+  it("une règle sans bibliothèque est refusée — elle ne s'appliquerait à rien", async () => {
+    const app = await makeApp();
+    const response = await app.inject({
+      method: "PUT",
+      url: "/api/preferences/playback",
+      headers,
+      payload: {
+        ...VALID_SETTINGS,
+        next: {
+          ...VALID_SETTINGS.next,
+          beforeEndRules: [{ libraryIds: [], mode: "percent", value: 90 }],
+        },
+      },
+    });
+    expect(response.statusCode).toBe(400);
   });
 });

@@ -90,7 +90,8 @@ describe("les six cas obligatoires", () => {
     const before = arbitrateOverlay(makeInput({ segments: [], positionMs: 1_300_000 }));
     expect(before).toEqual({ kind: "none" });
 
-    const near = arbitrateOverlay(makeInput({ segments: [], positionMs: RUNTIME_MS - 40_000 }));
+    // Le seuil global livré est 98 % de la durée — 28,8 s avant la fin ici.
+    const near = arbitrateOverlay(makeInput({ segments: [], positionMs: RUNTIME_MS - 20_000 }));
     expect(near).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
   });
 
@@ -131,7 +132,9 @@ describe("priorités et gardes", () => {
       makeInput({
         segments: [INTRO],
         positionMs: 60_000,
-        settings: makeSettings({ next: { nextTrigger: "beforeEnd", nextBeforeEndSeconds: 300 } }),
+        settings: makeSettings({
+          next: { nextTrigger: "beforeEnd", beforeEndDefault: { mode: "seconds", value: 300 } },
+        }),
         runtimeMs: 100_000 + 200_000,
       }),
     );
@@ -181,15 +184,19 @@ describe("priorités et gardes", () => {
     expect(dismissedOutro.kind).toBe("nextCard");
   });
 
-  it("le récap ne fait rien par défaut, et devient un bouton une fois activé", () => {
+  it("le récap est PROPOSÉ par défaut, et se tait une fois éteint", () => {
     const RECAP = seg("Recap", 0, 30_000);
     const byDefault = arbitrateOverlay(makeInput({ segments: [RECAP], positionMs: 10_000 }));
-    expect(byDefault).toEqual({ kind: "none" });
+    expect(byDefault).toMatchObject({
+      kind: "skip",
+      labelKey: "skipRecap",
+      action: { kind: "seek", toMs: 30_000 },
+    });
 
-    const active = arbitrateOverlay(
-      makeInput({ segments: [RECAP], positionMs: 10_000, settings: makeSettings({ recap: { action: "button" } }) }),
+    const off = arbitrateOverlay(
+      makeInput({ segments: [RECAP], positionMs: 10_000, settings: makeSettings({ recap: { action: "off" } }) }),
     );
-    expect(active).toMatchObject({ kind: "skip", labelKey: "skipRecap", action: { kind: "seek", toMs: 30_000 } });
+    expect(off).toEqual({ kind: "none" });
   });
 
   it("Commercial est résolu mais sans réglage : aucun overlay", () => {

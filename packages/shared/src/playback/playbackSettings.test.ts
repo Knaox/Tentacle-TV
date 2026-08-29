@@ -1,23 +1,31 @@
 import { describe, expect, it } from "vitest";
 import {
+  BEFORE_END_DEFAULT,
   DEFAULT_PLAYBACK_SETTINGS,
   NEXT_BEFORE_END_SECONDS_MAX,
   SEGMENT_AUTO_DELAY_MAX_MS,
+  beforeEndPositionMs,
   normalizePlaybackSettings,
+  resolveBeforeEnd,
 } from "./playbackSettings";
 
 describe("DEFAULT_PLAYBACK_SETTINGS", () => {
-  it("porte les défauts validés : intro auto, générique bouton, récap/aperçu éteints", () => {
+  it("porte les défauts validés : début et aperçu automatiques, résumé et générique proposés", () => {
     expect(DEFAULT_PLAYBACK_SETTINGS.intro.action).toBe("auto");
+    expect(DEFAULT_PLAYBACK_SETTINGS.preview.action).toBe("auto");
+    expect(DEFAULT_PLAYBACK_SETTINGS.recap.action).toBe("button");
     expect(DEFAULT_PLAYBACK_SETTINGS.outro.action).toBe("button");
-    expect(DEFAULT_PLAYBACK_SETTINGS.recap.action).toBe("off");
-    expect(DEFAULT_PLAYBACK_SETTINGS.preview.action).toBe("off");
+    // Cinq secondes : le décompte doit se voir sans qu'on guette l'écran.
+    expect(DEFAULT_PLAYBACK_SETTINGS.intro.autoDelayMs).toBe(5_000);
     expect(DEFAULT_PLAYBACK_SETTINGS.next).toMatchObject({
       nextCard: true,
       nextCountdown: true,
       nextAutoPlay: true,
       nextTrigger: "outroStart",
+      beforeEndEnabled: true,
+      beforeEndRules: [],
     });
+    expect(DEFAULT_PLAYBACK_SETTINGS.next.beforeEndDefault).toEqual(BEFORE_END_DEFAULT);
   });
 });
 
@@ -43,22 +51,22 @@ describe("normalizePlaybackSettings", () => {
   it("valeurs farfelues : action inconnue, booléen chaîne, nombre infini", () => {
     const settings = normalizePlaybackSettings({
       intro: { action: "banana", countdownVisible: "oui", autoDelayMs: Infinity },
-      next: { nextTrigger: "jamais", nextBeforeEndSeconds: "45" },
+      next: { nextTrigger: "jamais", beforeEndDefault: { mode: "ailleurs", value: "45" } },
     });
     expect(settings.intro).toEqual(DEFAULT_PLAYBACK_SETTINGS.intro);
     expect(settings.next.nextTrigger).toBe("outroStart");
-    expect(settings.next.nextBeforeEndSeconds).toBe(45);
+    expect(settings.next.beforeEndDefault).toEqual(BEFORE_END_DEFAULT);
   });
 
   it("borne les nombres et arrondit", () => {
     const settings = normalizePlaybackSettings({
       recap: { autoDelayMs: 999_999.9 },
       preview: { autoDelayMs: -50 },
-      next: { nextBeforeEndSeconds: 10_000 },
+      next: { beforeEndDefault: { mode: "seconds", value: 10_000 } },
     });
     expect(settings.recap.autoDelayMs).toBe(SEGMENT_AUTO_DELAY_MAX_MS);
     expect(settings.preview.autoDelayMs).toBe(0);
-    expect(settings.next.nextBeforeEndSeconds).toBe(NEXT_BEFORE_END_SECONDS_MAX);
+    expect(settings.next.beforeEndDefault.value).toBe(NEXT_BEFORE_END_SECONDS_MAX);
   });
 
   it("des réglages déjà sains ressortent inchangés", () => {
@@ -72,9 +80,60 @@ describe("normalizePlaybackSettings", () => {
         nextCountdown: true,
         nextAutoPlay: false,
         nextTrigger: "beforeEnd",
-        nextBeforeEndSeconds: 90,
+        beforeEndEnabled: true,
+        beforeEndDefault: { mode: "seconds", value: 90 },
+        beforeEndRules: [{ libraryIds: ["lib-1"], mode: "percent", value: 95 }],
       },
     } as const;
     expect(normalizePlaybackSettings(sane)).toEqual(sane);
+  });
+});
+
+describe("le repli « avant la fin »", () => {
+  const next = (patch: Partial<typeof DEFAULT_PLAYBACK_SETTINGS.next> = {}) => ({
+    ...DEFAULT_PLAYBACK_SETTINGS.next,
+    ...patch,
+  });
+
+  it("éteint, il ne rend rien — la fin d'un épisode reste nue", () => {
+    expect(resolveBeforeEnd(next({ beforeEndEnabled: false }), "lib-1")).toBeNull();
+  });
+
+  it("sans règle qui vise, c'est le seuil global — 98 % du média", () => {
+    expect(resolveBeforeEnd(next(), "lib-1")).toEqual({ mode: "percent", value: 98 });
+    expect(resolveBeforeEnd(next(), null)).toEqual({ mode: "percent", value: 98 });
+  });
+
+  it("une règle ciblée bat le seuil global, et la PREMIÈRE qui vise gagne", () => {
+    const settings = next({
+      beforeEndRules: [
+        { libraryIds: ["series", "series-2"], mode: "percent", value: 96 },
+        { libraryIds: ["anime"], mode: "seconds", value: 15 },
+        { libraryIds: ["anime"], mode: "seconds", value: 99 },
+      ],
+    });
+    expect(resolveBeforeEnd(settings, "series-2")).toEqual({ mode: "percent", value: 96 });
+    expect(resolveBeforeEnd(settings, "anime")).toEqual({ mode: "seconds", value: 15 });
+    expect(resolveBeforeEnd(settings, "films")).toEqual({ mode: "percent", value: 98 });
+  });
+
+  it("le seuil se convertit en position, chacun dans son unité", () => {
+    const runtime = 1_400_000; // 23 min 20
+    expect(beforeEndPositionMs({ mode: "percent", value: 98 }, runtime)).toBe(1_372_000);
+    expect(beforeEndPositionMs({ mode: "seconds", value: 15 }, runtime)).toBe(1_385_000);
+    // Durée inconnue : on ne devine pas une fin qu'on ne connaît pas.
+    expect(beforeEndPositionMs({ mode: "percent", value: 98 }, 0)).toBeNull();
+  });
+
+  it("une règle sans bibliothèque ne survit pas à la normalisation", () => {
+    const settings = normalizePlaybackSettings({
+      next: { beforeEndRules: [{ libraryIds: [], mode: "percent", value: 90 }] },
+    });
+    expect(settings.next.beforeEndRules).toEqual([]);
+  });
+
+  it("un cache d'avant la refonte garde SON seuil, converti en secondes", () => {
+    const settings = normalizePlaybackSettings({ next: { nextBeforeEndSeconds: 90 } });
+    expect(settings.next.beforeEndDefault).toEqual({ mode: "seconds", value: 90 });
   });
 });

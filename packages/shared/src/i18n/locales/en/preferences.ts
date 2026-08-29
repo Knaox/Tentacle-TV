@@ -184,6 +184,26 @@ export default {
   upNextTriggerLabel: "When to offer what follows",
   upNextTriggerOutroStart: "At the start of the closing credits",
   upNextTriggerBeforeEnd: "Shortly before the end",
+  upNextTriggerHint:
+    "\"At the start of the closing credits\" follows what the server detected, and only falls back to the threshold below when it detected nothing — so the two can never contradict each other. \"Shortly before the end\" forces your threshold, even when credits are known.",
+  // Le repli « avant la fin » : facultatif, global, et par bibliothèque.
+  beforeEndEnabledTitle: "Offer the next episode even with no credits detected",
+  beforeEndEnabledHint:
+    "When the server marks no closing credits, the player has no idea when the episode ends. This setting gives it a landmark. Turned off, the end of those episodes stays bare — better nothing than a card dropped at random.",
+  beforeEndDefaultTitle: "Default threshold",
+  beforeEndDefaultHint:
+    "What applies to libraries no rule targets. As a proportion it fits every format with no tuning: 98% is twenty-eight seconds on a 23-minute anime and forty on an hour-long series.",
+  beforeEndModeLabel: "Count in",
+  beforeEndModePercent: "Percentage",
+  beforeEndModeSeconds: "Seconds",
+  beforeEndPercentLabel: "Share of the media already watched",
+  beforeEndPercentValue: "{{value}}%",
+  beforeEndSecondsLabel: "Time left",
+  beforeEndSecondsValue: "{{value}}s",
+  beforeEndAddRule: "Add a rule",
+  beforeEndRuleTitle: "Rule {{index}}",
+  beforeEndRemoveRule: "Remove",
+
   upNextNeedsCard: "Without the card above, this setting has nothing to count down.",
   upNextNeedsCountdown: "Without the countdown above, nothing is triggered.",
   upNextBeforeEndLabel: "How long before the end",

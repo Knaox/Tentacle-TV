@@ -183,6 +183,26 @@ export default {
   upNextTriggerLabel: "Quand proposer la suite",
   upNextTriggerOutroStart: "Au début du générique de fin",
   upNextTriggerBeforeEnd: "Peu avant la fin",
+  upNextTriggerHint:
+    "« Au début du générique » suit ce que le serveur a détecté, et ne se sert du seuil ci-dessous que lorsqu'il n'a rien détecté — les deux ne peuvent donc jamais se contredire. « Peu avant la fin » impose votre seuil, même quand un générique est connu.",
+  // Le repli « avant la fin » : facultatif, global, et par bibliothèque.
+  beforeEndEnabledTitle: "Proposer la suite même sans générique détecté",
+  beforeEndEnabledHint:
+    "Quand le serveur ne signale aucun générique de fin, le lecteur ne sait pas quand l'épisode se termine. Ce réglage lui donne un repère. Éteint, la fin de ces épisodes reste nue — mieux vaut rien qu'une fiche posée au hasard.",
+  beforeEndDefaultTitle: "Seuil par défaut",
+  beforeEndDefaultHint:
+    "Ce qui s'applique aux bibliothèques qu'aucune règle ne vise. En proportion, il vaut pour tous les formats sans réglage : 98 % font vingt-huit secondes sur un animé et quarante sur une série d'une heure.",
+  beforeEndModeLabel: "Compter en",
+  beforeEndModePercent: "Pourcentage",
+  beforeEndModeSeconds: "Secondes",
+  beforeEndPercentLabel: "Part du média déjà vue",
+  beforeEndPercentValue: "{{value}} %",
+  beforeEndSecondsLabel: "Temps restant",
+  beforeEndSecondsValue: "{{value}} s",
+  beforeEndAddRule: "Ajouter une règle",
+  beforeEndRuleTitle: "Règle {{index}}",
+  beforeEndRemoveRule: "Retirer",
+
   upNextNeedsCard: "Sans la fiche ci-dessus, ce réglage n'a rien à décompter.",
   upNextNeedsCountdown: "Sans le compte à rebours ci-dessus, rien ne se déclenche.",
   upNextBeforeEndLabel: "Combien de temps avant la fin",

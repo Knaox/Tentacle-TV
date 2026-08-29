@@ -330,22 +330,33 @@ model PlaybackSettings {
 
   introAction          String   @default("auto") @db.VarChar(10)
   introCountdown       Boolean  @default(true)
-  introDelayMs         Int      @default(3000)
+  introDelayMs         Int      @default(5000)
   outroAction          String   @default("button") @db.VarChar(10)
   outroCountdown       Boolean  @default(true)
-  outroDelayMs         Int      @default(3000)
-  recapAction          String   @default("off") @db.VarChar(10)
+  outroDelayMs         Int      @default(5000)
+  recapAction          String   @default("button") @db.VarChar(10)
   recapCountdown       Boolean  @default(true)
-  recapDelayMs         Int      @default(3000)
-  previewAction        String   @default("off") @db.VarChar(10)
+  recapDelayMs         Int      @default(5000)
+  previewAction        String   @default("auto") @db.VarChar(10)
   previewCountdown     Boolean  @default(true)
-  previewDelayMs       Int      @default(3000)
+  previewDelayMs       Int      @default(5000)
 
   nextCard             Boolean  @default(true)
   nextCountdown        Boolean  @default(true)
   nextAutoPlay         Boolean  @default(true)
   nextTrigger          String   @default("outroStart") @db.VarChar(16)
+  /// CONSERVÉE : un serveur d'avant la démarre en NOT NULL. Plus lue.
   nextBeforeEndSeconds Int      @default(45)
+
+  /// Le repli « avant la fin » : actif, seuil global, et les règles ciblées.
+  /// Les règles sont un JSON — un tableau de longueur variable n'a pas sa
+  /// place en colonnes, et rien ne les interroge en SQL.
+  beforeEndEnabled     Boolean  @default(true)
+  beforeEndMode        String   @default("percent") @db.VarChar(8)
+  beforeEndValue       Int      @default(98)
+  /// NULLABLE : une colonne TEXT ne porte pas de défaut partout, et
+  /// `core-init.sql` l'ajoute en `DEFAULT NULL`. Null = aucune règle.
+  beforeEndRules       String?  @db.Text
 
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt

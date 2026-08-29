@@ -17,7 +17,10 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
 import {
+  BEFORE_END_MAX_RULES,
   DEFAULT_PLAYBACK_SETTINGS,
+  NEXT_BEFORE_END_PERCENT_MAX,
+  NEXT_BEFORE_END_PERCENT_MIN,
   NEXT_BEFORE_END_SECONDS_MAX,
   NEXT_BEFORE_END_SECONDS_MIN,
   SEGMENT_AUTO_DELAY_MAX_MS,
@@ -31,6 +34,18 @@ const segmentSchema = z.object({
   autoDelayMs: z.number().int().min(0).max(SEGMENT_AUTO_DELAY_MAX_MS),
 });
 
+/** Un seuil : une proportion, ou des secondes — chacun dans ses bornes. */
+const beforeEndTargetSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("percent"),
+    value: z.number().int().min(NEXT_BEFORE_END_PERCENT_MIN).max(NEXT_BEFORE_END_PERCENT_MAX),
+  }),
+  z.object({
+    mode: z.literal("seconds"),
+    value: z.number().int().min(NEXT_BEFORE_END_SECONDS_MIN).max(NEXT_BEFORE_END_SECONDS_MAX),
+  }),
+]);
+
 const settingsSchema = z.object({
   intro: segmentSchema,
   outro: segmentSchema,
@@ -41,11 +56,18 @@ const settingsSchema = z.object({
     nextCountdown: z.boolean(),
     nextAutoPlay: z.boolean(),
     nextTrigger: z.enum(["outroStart", "beforeEnd"]),
-    nextBeforeEndSeconds: z
-      .number()
-      .int()
-      .min(NEXT_BEFORE_END_SECONDS_MIN)
-      .max(NEXT_BEFORE_END_SECONDS_MAX),
+    beforeEndEnabled: z.boolean(),
+    beforeEndDefault: beforeEndTargetSchema,
+    // Bornée : la liste vient d'un formulaire, pas d'un import. Sans plafond,
+    // une colonne TEXT accepterait n'importe quel volume.
+    beforeEndRules: z
+      .array(
+        z.intersection(
+          beforeEndTargetSchema,
+          z.object({ libraryIds: z.array(z.string().min(1).max(64)).min(1).max(64) }),
+        ),
+      )
+      .max(BEFORE_END_MAX_RULES),
   }),
 });
 
@@ -68,6 +90,21 @@ interface PlaybackSettingsRow {
   nextAutoPlay: boolean;
   nextTrigger: string;
   nextBeforeEndSeconds: number;
+  beforeEndEnabled: boolean;
+  beforeEndMode: string;
+  beforeEndValue: number;
+  /** JSON des règles ciblées. Null = aucune (colonne ajoutée après coup). */
+  beforeEndRules: string | null;
+}
+
+/** Les règles, relues sans faire confiance : un JSON illisible vaut « aucune ». */
+function parseRules(raw: string | null): unknown {
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
 }
 
 /** Colonnes → objet imbriqué, passé par la normalisation (une colonne modifiée
@@ -87,7 +124,12 @@ function rowToSettings(row: PlaybackSettingsRow): PlaybackSettings {
       nextCountdown: row.nextCountdown,
       nextAutoPlay: row.nextAutoPlay,
       nextTrigger: row.nextTrigger,
+      // `nextBeforeEndSeconds` reste lu pour les lignes d'avant : la
+      // normalisation le convertit en seuil quand aucun n'est enregistré.
       nextBeforeEndSeconds: row.nextBeforeEndSeconds,
+      beforeEndEnabled: row.beforeEndEnabled,
+      beforeEndDefault: { mode: row.beforeEndMode, value: row.beforeEndValue },
+      beforeEndRules: parseRules(row.beforeEndRules),
     },
   });
 }
@@ -110,7 +152,16 @@ function settingsToColumns(settings: PlaybackSettings): PlaybackSettingsRow {
     nextCountdown: settings.next.nextCountdown,
     nextAutoPlay: settings.next.nextAutoPlay,
     nextTrigger: settings.next.nextTrigger,
-    nextBeforeEndSeconds: settings.next.nextBeforeEndSeconds,
+    // Colonne héritée, plus lue par le contrat : on y recopie le seuil quand
+    // il est en secondes, pour qu'un serveur d'avant reste cohérent.
+    nextBeforeEndSeconds:
+      settings.next.beforeEndDefault.mode === "seconds"
+        ? settings.next.beforeEndDefault.value
+        : 45,
+    beforeEndEnabled: settings.next.beforeEndEnabled,
+    beforeEndMode: settings.next.beforeEndDefault.mode,
+    beforeEndValue: settings.next.beforeEndDefault.value,
+    beforeEndRules: JSON.stringify(settings.next.beforeEndRules),
   };
 }
 

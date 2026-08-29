@@ -16,12 +16,8 @@
 
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings } from "@tentacle-tv/api-client";
-import {
-  NEXT_BEFORE_END_SECONDS_MAX,
-  NEXT_BEFORE_END_SECONDS_MIN,
-  type PlaybackSettings,
-  type SegmentSettings,
-} from "@tentacle-tv/shared";
+import type { PlaybackSettings, SegmentSettings } from "@tentacle-tv/shared";
+import { BeforeEndRules } from "./BeforeEndRules";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingToggleRow } from "./SettingToggleRow";
@@ -95,6 +91,9 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
 
           <div>
             <p className="text-sm font-medium text-content-primary">{t("upNextTriggerLabel")}</p>
+            <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+              {t("upNextTriggerHint")}
+            </p>
             <SegmentedChoice
               label={t("upNextTriggerLabel")}
               value={next.nextTrigger}
@@ -107,31 +106,7 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
             />
           </div>
 
-          <div>
-            <div className="flex items-baseline justify-between gap-4">
-              <label htmlFor="up-next-before-end" className="text-sm font-medium text-content-primary">
-                {t("upNextBeforeEndLabel")}
-              </label>
-              <span className="text-sm font-semibold tabular-nums text-content-secondary">
-                {t("upNextBeforeEndValue", { seconds: next.nextBeforeEndSeconds })}
-              </span>
-            </div>
-            <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
-              {t("upNextBeforeEndHint")}
-            </p>
-            <input
-              id="up-next-before-end"
-              type="range"
-              min={NEXT_BEFORE_END_SECONDS_MIN}
-              max={NEXT_BEFORE_END_SECONDS_MAX}
-              step={5}
-              value={next.nextBeforeEndSeconds}
-              onChange={(e) => {
-                setPlaybackSettings({ next: { nextBeforeEndSeconds: Number(e.target.value) } });
-              }}
-              className="mt-3 h-6 w-full max-w-xs cursor-pointer accent-brand"
-            />
-          </div>
+          <BeforeEndRules next={next} />
         </div>
       </section>
     </div>
