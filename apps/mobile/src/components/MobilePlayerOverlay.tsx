@@ -212,6 +212,7 @@ export function MobilePlayerOverlay({
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
+        controlsVisible={visible}
         bottom={Math.max(110, insets.bottom + 86)}
         right={Math.max(20, insets.right + 16)}
       />

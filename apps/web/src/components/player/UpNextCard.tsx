@@ -19,6 +19,15 @@ interface UpNextCardProps {
   episodeImageUrl?: string;
   onPlay: () => void;
   onDismiss: () => void;
+  /**
+   * La barre de contrôles est-elle à l'écran ?
+   *
+   * Elle commande les DEUX refus de la carte — la croix et « Masquer ». Ils ne
+   * paraissent que sur l'image nue : leur office est d'arrêter le décompte et
+   * de retirer la carte de l'image. L'habillage affiché, il n'y a plus rien à
+   * retirer, et la suite reste offerte par la pilule.
+   */
+  controlsVisible?: boolean;
   /** Initial countdown value used for progress (defaults to 10s). */
   totalSeconds?: number;
 }
@@ -46,9 +55,11 @@ export function UpNextCard({
   episodeImageUrl,
   onPlay,
   onDismiss,
+  controlsVisible = false,
   totalSeconds = DEFAULT_TOTAL,
 }: UpNextCardProps) {
   const { t } = useTranslation("player");
+  const refusable = !controlsVisible;
   const counting = countdown !== null;
   const progress = counting ? ((totalSeconds - countdown) / totalSeconds) * 100 : 0;
 
@@ -157,7 +168,8 @@ export function UpNextCard({
             </span>
           )}
         </div>
-        {/* Top-right close */}
+        {/* Top-right close — hors habillage seulement (cf. `controlsVisible`). */}
+        {refusable && (
         <button
           type="button"
           onClick={onDismiss}
@@ -169,6 +181,7 @@ export function UpNextCard({
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+        )}
       </div>
 
       {/* Episode meta + actions — sous la bannière, sur le fond `surface-modal`
@@ -202,13 +215,15 @@ export function UpNextCard({
             </svg>
             {t("player:playNow")}
           </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="rounded-md px-4 py-2.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
-          >
-            {t("player:dismiss")}
-          </button>
+          {refusable && (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="rounded-md px-4 py-2.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
+            >
+              {t("player:dismiss")}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>

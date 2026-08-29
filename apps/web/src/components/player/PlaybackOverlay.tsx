@@ -83,6 +83,7 @@ export function PlaybackOverlay({
             episodeImageUrl={nextEpisodeImageUrl}
             onPlay={onPlayNow}
             onDismiss={onDismiss}
+            controlsVisible={controlsVisible}
           />
         )}
         {overlay.kind === "nextCard" && overlay.final && (
