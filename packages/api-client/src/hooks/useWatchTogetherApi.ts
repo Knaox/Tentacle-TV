@@ -65,6 +65,8 @@ export async function fetchMyGroup(): Promise<WtRoomStateDto | null> {
   try {
     return await wtFetch<WtRoomStateDto>("/group");
   } catch (err) {
+    // Serveur d'avant : « pas de groupe » y répondait 404. Le nouveau rend
+    // 200 + `null` — les deux se lisent pareil ici.
     if (err instanceof WtApiError && err.status === 404) return null;
     throw err;
   }

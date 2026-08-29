@@ -108,9 +108,10 @@ export function useLibraryPreferences(options?: { enabled?: boolean }) {
 export function useLibraryPreference(libraryId: string | undefined) {
   return useQuery({
     queryKey: ["library-preferences", libraryId],
-    queryFn: () => prefFetch<LibraryPreference>(`/${libraryId}`),
+    queryFn: () => prefFetch<LibraryPreference | null>(`/${libraryId}`),
     enabled: !!libraryId,
     staleTime: 5 * 60_000,
+    // Voir `useItemTrackPreference` : l'absence répond 200 + `null` désormais.
     retry: false,
   });
 }
@@ -170,11 +171,13 @@ export function useResolveMediaTracks() {
 export function useItemTrackPreference(itemId: string | undefined) {
   return useQuery({
     queryKey: ["item-track-preference", itemId],
-    queryFn: () => prefFetch<ItemTrackPreference>(`/item/${itemId}`),
+    queryFn: () => prefFetch<ItemTrackPreference | null>(`/item/${itemId}`),
     enabled: !!itemId,
     staleTime: 5 * 60_000,
-    // 404 = aucune préférence pour ce contenu. C'est un état normal, pas une
-    // panne : inutile de le réessayer.
+    // Aucune préférence pour ce contenu est un état NORMAL : le serveur rend
+    // désormais 200 + `null` (un 404 noircissait la console du navigateur, et
+    // ce journal-là vient du moteur — aucun code ne peut le faire taire). Le
+    // `retry: false` reste pour les serveurs d'avant, qui répondent 404.
     retry: false,
   });
 }

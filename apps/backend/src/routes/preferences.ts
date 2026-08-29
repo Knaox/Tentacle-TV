@@ -101,7 +101,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // GET /api/preferences/item/:itemId
-  app.get("/item/:itemId", async (request, reply) => {
+  app.get("/item/:itemId", async (request) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { itemId } = request.params as { itemId: string };
@@ -110,8 +110,9 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
       where: { jellyfinUserId_itemId: { jellyfinUserId: user.userId, itemId } },
     });
 
-    if (!pref) return reply.status(404).send({ message: "No preference found" });
-    return pref;
+    // Aucune préférence = état NORMAL, pas une panne (cf. `/group`). Un 404
+    // ici noircissait la console à chaque ouverture d'une fiche.
+    return pref ?? null;
   });
 
   // PUT /api/preferences/item
@@ -150,7 +151,7 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // GET /api/preferences/:libraryId — Get preference for a specific library
-  app.get("/:libraryId", async (request, reply) => {
+  app.get("/:libraryId", async (request) => {
     const prisma = getPrisma();
     const user = (request as any).user as JellyfinUser;
     const { libraryId } = request.params as { libraryId: string };
@@ -164,11 +165,8 @@ export const preferenceRoutes: FastifyPluginAsync = async (app) => {
       },
     });
 
-    if (!pref) {
-      return reply.status(404).send({ message: "No preference found" });
-    }
-
-    return pref;
+    // Idem : pas de préférence pour cette bibliothèque, ce n'est pas une panne.
+    return pref ?? null;
   });
 
   // PUT /api/preferences — Upsert a library preference
