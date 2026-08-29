@@ -1,49 +1,68 @@
 import type { MediaItem } from "@tentacle-tv/shared";
 
 /**
- * Build a "smart next-up" list from raw episode data.
+ * Le supplément « à suivre » de l'accueil — le successeur de ce qu'on vient de
+ * regarder, série par série.
  *
- * For each series the user has engaged with (= has at least one watched
- * episode), pick the FIRST unwatched episode in chronological order
- * (season → episode). This solves Jellyfin's NextUp blind spot: when the
- * user has watched later seasons but skipped earlier episodes, Jellyfin's
- * built-in NextUp won't surface those gaps because it tracks "next after
- * last watched", not "first unwatched".
+ * Il faisait l'inverse : pour chaque série engagée, il prenait le PREMIER
+ * épisode non vu dans l'ordre. C'était délibéré — combler les trous que
+ * `/Shows/NextUp` ignore — mais c'est exactement le geste dont l'utilisateur
+ * ne veut pas : commencer une saison par son épisode 6 y ramenait l'épisode 1,
+ * et remettre un épisode en « non lu » le faisait remonter en tête. La règle
+ * est désormais la même que sur la fiche : on ne recule jamais derrière la
+ * dernière lecture.
  *
- * @param unwatched All unwatched episodes, sorted by SeriesSortName +
- *                  ParentIndexNumber + IndexNumber.
- * @param engagedEpisodes Watched episodes — used to derive the set of
- *                  series the user has actually started, ordered by recency.
- * @param limit Max items to return (default 12).
+ * Concrètement, pour chaque série engagée : l'ancre est l'épisode joué le plus
+ * récemment (`engagedEpisodes` est trié par `DatePlayed` décroissant, donc sa
+ * première occurrence par série), et l'on propose le premier épisode non vu
+ * qui vient APRÈS elle dans l'ordre saison → épisode. Rien après : la série ne
+ * paraît pas — elle est finie, ou la suite est déjà vue.
+ *
+ * @param unwatched Tous les épisodes non vus, triés par `ParentIndexNumber`
+ *                  puis `IndexNumber`.
+ * @param engagedEpisodes Les épisodes vus, du plus récent au plus ancien.
+ * @param limit Nombre maximum d'entrées rendues (12 par défaut).
  */
 export function buildSmartNextUp(
   unwatched: MediaItem[],
   engagedEpisodes: MediaItem[],
   limit = 12,
 ): MediaItem[] {
-  // First unwatched episode per series (relies on caller's pre-sorted input)
-  const firstUnwatchedBySeries = new Map<string, MediaItem>();
+  // Les non-vus par série, dans l'ordre reçu (saison → épisode).
+  const unwatchedBySeries = new Map<string, MediaItem[]>();
   for (const ep of unwatched) {
     if (!ep.SeriesId) continue;
-    if (firstUnwatchedBySeries.has(ep.SeriesId)) continue;
-    firstUnwatchedBySeries.set(ep.SeriesId, ep);
+    const list = unwatchedBySeries.get(ep.SeriesId);
+    if (list) list.push(ep);
+    else unwatchedBySeries.set(ep.SeriesId, [ep]);
   }
 
-  // Engaged series in order of most-recent engagement.
-  // engagedEpisodes is sorted by DatePlayed desc, so the first occurrence
-  // of a SeriesId is the most recent watch event for that series.
   const seenSeries = new Set<string>();
   const out: MediaItem[] = [];
-  for (const ep of engagedEpisodes) {
-    if (!ep.SeriesId || seenSeries.has(ep.SeriesId)) continue;
-    seenSeries.add(ep.SeriesId);
-    const next = firstUnwatchedBySeries.get(ep.SeriesId);
-    if (next) {
-      out.push(next);
-      if (out.length >= limit) break;
-    }
+  for (const anchor of engagedEpisodes) {
+    if (!anchor.SeriesId || seenSeries.has(anchor.SeriesId)) continue;
+    seenSeries.add(anchor.SeriesId);
+    const candidates = unwatchedBySeries.get(anchor.SeriesId);
+    if (!candidates) continue;
+    // Le premier non-vu QUI SUIT l'ancre — jamais un trou laissé derrière.
+    const next = candidates.find((ep) => episodeOrder(ep) > episodeOrder(anchor));
+    if (!next) continue;
+    out.push(next);
+    if (out.length >= limit) break;
   }
   return out;
+}
+
+/**
+ * Le rang d'un épisode dans sa série, comparable d'un seul nombre.
+ *
+ * Mille épisodes par saison : au-delà, aucune série ne va, et le calcul reste
+ * exact en entier. Une saison ou un numéro manquant vaut zéro — un tel épisode
+ * se retrouve donc AVANT tout le reste, ce qui le rend inéligible plutôt que
+ * de le faire remonter à tort.
+ */
+function episodeOrder(episode: MediaItem): number {
+  return (episode.ParentIndexNumber ?? 0) * 1000 + (episode.IndexNumber ?? 0);
 }
 
 /**

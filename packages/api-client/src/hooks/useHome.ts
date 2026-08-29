@@ -95,20 +95,24 @@ export function useLatestItems(parentId: string | undefined, options?: LatestIte
 }
 
 /**
- * "Prochains épisodes" — hybrid strategy.
+ * « Prochains épisodes » — stratégie hybride.
  *
- * Jellyfin's /Shows/NextUp has known bugs with gaps (issue #13732, #15432):
- * if you watched S05 entirely + S01E01-06, NextUp won't surface S01E07
- * because it tracks "next after last watched", not "first unwatched".
+ * La règle du produit est la même ici que sur la fiche : le prochain épisode
+ * est le SUIVANT de celui qu'on vient de regarder. Le supplément comblait
+ * autrefois les trous — « premier non vu par série engagée » — et ramenait
+ * donc en tête un épisode qu'on avait sauté, ou celui qu'on venait de remettre
+ * en « non lu ». Il propose désormais le premier non-vu qui SUIT la dernière
+ * lecture, et rien qui soit derrière elle.
  *
- * Approach (defensive — carousel never disappears):
- *  1. PRIMARY : /Shows/NextUp (always returns valid data, fast).
- *  2. SUPPLEMENT : smart "first unwatched per engaged series" fills the gaps
- *     for series NOT covered by NextUp.
- *  3. FILTER : drop series with an in-progress episode (those live in Resume).
+ * Le montage, défensif — le carrousel ne disparaît jamais :
+ *  1. PRIMAIRE : /Shows/NextUp (répond toujours, et vite).
+ *  2. SUPPLÉMENT : la même règle, pour les séries que NextUp ne couvre pas
+ *     (ses angles morts sur les trous sont connus : #13732, #15432).
+ *  3. FILTRE : on retire les séries dont un épisode est entamé — celles-là
+ *     vivent dans « Reprendre ».
  *
- * If the smart queries fail (e.g., unsupported SortBy on some Jellyfin
- * versions), we still get the primary NextUp result — graceful degradation.
+ * Si les requêtes du supplément échouent (`SortBy` non géré par certaines
+ * versions de Jellyfin), le primaire suffit — dégradation en douceur.
  */
 export function useNextUp() {
   const client = useJellyfinClient();
@@ -129,8 +133,10 @@ export function useNextUp() {
     staleTime: 30_000 * staleFactor(),
   });
 
-  // Supplement: all unwatched episodes (sorted by season+episode number,
-  // which is universally supported — no SeriesSortName risk).
+  // Le vivier du supplément : tous les épisodes non vus, triés par saison puis
+  // numéro (un tri universellement géré — pas de risque `SeriesSortName`).
+  // Ce n'est PAS une liste de propositions : c'est parmi eux qu'on cherche
+  // celui qui suit la dernière lecture.
   // Fields allégés (pas d'Overview/Genres : items du carrousel = image + chips)
   // et Limit borné — c'était 500 items × ~5KB refetchés à chaque retour Home.
   const unwatched = useQuery({
