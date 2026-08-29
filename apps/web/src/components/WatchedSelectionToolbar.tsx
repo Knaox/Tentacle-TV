@@ -64,7 +64,7 @@ export function WatchedSelectionToolbar({
           <button
             onClick={onMarkWatched}
             disabled={count === 0 || isBusy}
-            className="rounded-lg bg-tentacle-accent/20 px-4 py-1.5 text-sm font-medium text-tentacle-accent ring-1 ring-tentacle-accent/30 transition-all hover:bg-tentacle-accent/30 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-lg bg-[rgba(var(--brand-rgb),0.2)] px-4 py-1.5 text-sm font-medium text-tentacle-accent ring-1 ring-[rgba(var(--brand-rgb),0.3)] transition-all hover:bg-[rgba(var(--brand-rgb),0.3)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {t("common:markWatched")}
           </button>

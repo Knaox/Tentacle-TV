@@ -66,7 +66,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
     <div onClick={handleClick}
       className={`group flex cursor-pointer gap-4 rounded-xl p-3 transition-colors ${
         isSelecting && isSelected
-          ? "bg-tentacle-accent/10 ring-1 ring-tentacle-accent/40"
+          ? "bg-[rgba(var(--brand-rgb),0.1)] ring-1 ring-[rgba(var(--brand-rgb),0.4)]"
           : "bg-fill-faint hover:bg-fill-soft"
       }`}>
       {/* Selection checkbox or thumbnail */}
