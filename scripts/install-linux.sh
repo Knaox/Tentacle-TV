@@ -19,6 +19,8 @@
 #
 # Variables d'override (optionnelles) :
 #   TENTACLE_FORMAT=pacman|deb|rpm|appimage      force le format
+#                                                (utile sur Fedora Atomic, où
+#                                                 l'AppImage est choisie d'office)
 #   TENTACLE_APPIMAGE_DEST=/chemin/App.AppImage  destination de l'AppImage
 # ==========================================================================
 set -eu
@@ -46,8 +48,34 @@ if [ "$(id -u)" -ne 0 ]; then
   if need sudo; then SUDO="sudo"; elif need doas; then SUDO="doas"; fi
 fi
 
+# ── Systèmes à racine IMMUABLE ──
+#
+# Fedora Atomic (Silverblue, Kinoite, Bazzite, Bluefin), openSUSE MicroOS/Aeon,
+# SteamOS : `/usr` y est en lecture seule, et le gestionnaire de paquets
+# classique n'installe rien. Le piège est qu'ils EXPOSENT quand même la
+# commande — Bazzite embarque un `dnf` qui répond :
+#
+#   ERROR: Fedora Atomic images utilize rpm-ostree instead (and is discouraged
+#   to use).
+#
+# La détection tombait donc sur `rpm`, téléchargeait 47 Mo, vérifiait leur
+# empreinte, et échouait à la dernière ligne. Ces systèmes se testent AVANT le
+# gestionnaire, et ils prennent l'AppImage : elle ne touche pas au système,
+# n'exige aucun redémarrage, et se met à jour toute seule depuis l'application.
+#
+# `/run/ostree-booted` est le témoin canonique d'un démarrage ostree — il
+# couvre toutes les variantes Fedora Atomic d'un coup, présentes et à venir.
+immutable_root() {
+  [ -e /run/ostree-booted ] && return 0        # Fedora Atomic, Bluefin, Bazzite
+  need rpm-ostree && return 0                  # même famille, filet de sécurité
+  need transactional-update && return 0        # openSUSE MicroOS / Aeon
+  need steamos-readonly && return 0            # SteamOS
+  return 1
+}
+
 # ── Détection du format natif ──
 detect_format() {
+  if immutable_root; then echo appimage; return; fi
   if need pacman; then echo pacman; return; fi
   if need apt-get || need apt; then echo deb; return; fi
   if need dnf || need yum; then echo rpm; return; fi
@@ -85,6 +113,12 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 log "Format détecté : $FORMAT"
+if [ -z "${TENTACLE_FORMAT:-}" ] && [ "$FORMAT" = appimage ] && immutable_root; then
+  log "Système à racine immuable : l'AppImage est le bon choix ici — elle ne"
+  log "touche pas au système et n'exige aucun redémarrage."
+  log "Pour superposer le paquet malgré tout : TENTACLE_FORMAT=rpm … puis"
+  log "rpm-ostree install ./<paquet>.rpm (redémarrage requis)."
+fi
 
 # ── Dernière release desktop-v* portant ce format ──
 #
