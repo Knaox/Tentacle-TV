@@ -7,6 +7,10 @@
  * quelqu'un qui voulait juste « passe-moi les intros » lui demande de trier
  * vingt contrôles pour en trouver un.
  *
+ * Chaque groupe est un REPLI, fermé par défaut : déverser vingt contrôles
+ * d'un coup forme un mur, et un mur ne se lit pas. Fermé, chaque groupe
+ * redevient une phrase qu'on ouvre quand on la cherche.
+ *
  * Les trois réglages de fin d'épisode restent STRICTEMENT indépendants en
  * écriture : couper le décompte ne doit pas masquer la fiche, c'est le bug
  * historique que cette structure interdit. Ils sont en revanche INDENTÉS l'un
@@ -20,6 +24,7 @@ import type { PlaybackSettings, SegmentSettings } from "@tentacle-tv/shared";
 import { BeforeEndRules } from "./BeforeEndRules";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
+import { SettingsDisclosure } from "./SettingsDisclosure";
 import { SettingToggleRow } from "./SettingToggleRow";
 
 /** Dans l'ordre où les passages surviennent à l'écran, l'intro d'abord. */
@@ -45,10 +50,12 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
   const next = settings.next;
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h4 className="text-sm font-semibold text-content-primary">{t("playbackSegmentsTitle")}</h4>
-        <p className="mt-1 text-xs leading-relaxed text-content-tertiary">
+    <div className="space-y-6">
+      <SettingsDisclosure
+        title={t("playbackSegmentsTitle")}
+        summary={t("playbackSegmentsSummary")}
+      >
+        <p className="text-xs leading-relaxed text-content-tertiary">
           {t("playbackSegmentsHint")}
         </p>
         <div className="mt-5 space-y-6">
@@ -63,10 +70,9 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
             />
           ))}
         </div>
-      </section>
+      </SettingsDisclosure>
 
-      <section>
-        <h4 className="mb-5 text-sm font-semibold text-content-primary">{t("upNextTitle")}</h4>
+      <SettingsDisclosure title={t("upNextTitle")} summary={t("upNextSummary")}>
         <div className="space-y-5">
           <SettingToggleRow
             title={t("upNextCardTitle")}
@@ -108,7 +114,7 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
 
           <BeforeEndRules next={next} />
         </div>
-      </section>
+      </SettingsDisclosure>
     </div>
   );
 }
