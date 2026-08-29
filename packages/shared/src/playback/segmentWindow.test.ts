@@ -64,7 +64,7 @@ describe("playbackPhase", () => {
   });
 
   it("générique jusqu'au bout : pas de phase post-générique", () => {
-    const finSeche = [seg("Outro", 1_300_000, 1_440_000, { endsAtMediaEnd: true, hasContentAfter: false })];
-    expect(playbackPhase(finSeche, 1_439_500, true)).toBe("CONTENT");
+    const abruptEnd = [seg("Outro", 1_300_000, 1_440_000, { endsAtMediaEnd: true, hasContentAfter: false })];
+    expect(playbackPhase(abruptEnd, 1_439_500, true)).toBe("CONTENT");
   });
 });

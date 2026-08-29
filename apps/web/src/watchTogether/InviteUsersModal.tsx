@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useInvitableUsers } from "@tentacle-tv/api-client";
-import { correspondALaRecherche } from "@tentacle-tv/shared";
+import { matchesSearch } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
 import { useWatchTogether } from "./WatchTogetherProvider";
 import { WtAvatar } from "./WatchTogetherRows";
@@ -31,7 +31,7 @@ export function InviteUsersModal({ onClose }: InviteUsersModalProps) {
     const q = query.trim();
     return (users ?? [])
       .filter((u) => !memberIds.has(u.id))
-      .filter((u) => correspondALaRecherche(u.name, q));
+      .filter((u) => matchesSearch(u.name, q));
   }, [users, memberIds, query]);
 
   const toggle = (id: string) => {

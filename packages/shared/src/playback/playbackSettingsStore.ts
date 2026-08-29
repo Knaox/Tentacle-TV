@@ -16,8 +16,8 @@
  * réglé, garde ainsi le droit de semer.
  */
 
-import { CLES_REGLAGE_APPAREIL } from "../player/reglagesAppareil";
-import type { StockageAppareil } from "../player/reglagesAppareil";
+import { DEVICE_SETTING_KEYS } from "../player/deviceSettings";
+import type { DeviceStorage } from "../player/deviceSettings";
 import {
   DEFAULT_PLAYBACK_SETTINGS,
   normalizePlaybackSettings,
@@ -26,7 +26,7 @@ import {
   type SegmentSettings,
 } from "./playbackSettings";
 
-export const CLE_CACHE_REGLAGES = "tentacle_playback_settings";
+export const SETTINGS_CACHE_KEY = "tentacle_playback_settings";
 
 /** Un correctif partiel, par famille — ce que produit une bascule de réglage. */
 export interface PlaybackSettingsPatch {
@@ -38,142 +38,142 @@ export interface PlaybackSettingsPatch {
 }
 
 export interface PlaybackSettingsStore {
-  sAbonner(rappel: () => void): () => void;
-  lireInstantane(): PlaybackSettings;
-  definir(patch: PlaybackSettingsPatch): void;
-  resynchroniser(): Promise<void>;
+  subscribe(callback: () => void): () => void;
+  readSnapshot(): PlaybackSettings;
+  set(patch: PlaybackSettingsPatch): void;
+  resync(): Promise<void>;
   /** Android TV : le cache est rempli par un hydrate() asynchrone au démarrage. */
-  rehydrater(): void;
+  rehydrate(): void;
 }
 
-export interface DepsMagasinReglages {
-  stockage: StockageAppareil;
+export interface SettingsStoreDeps {
+  storage: DeviceStorage;
   /** GET /api/preferences/playback — rend `{ stored, settings }`. */
-  lireDistant: () => Promise<unknown>;
+  readRemote: () => Promise<unknown>;
   /** PUT /api/preferences/playback. */
-  ecrireDistant: (reglages: PlaybackSettings) => Promise<void>;
+  writeRemote: (settings: PlaybackSettings) => Promise<void>;
 }
 
 /** Les anciennes clés, converties une seule fois par le semis. */
 export function seedFromLegacyDeviceKeys(
-  lire: (cle: string) => string | null,
+  read: (key: string) => string | null,
 ): PlaybackSettings {
-  const semis = normalizePlaybackSettings(DEFAULT_PLAYBACK_SETTINGS);
-  const eteint = (cle: string): boolean => {
+  const seed = normalizePlaybackSettings(DEFAULT_PLAYBACK_SETTINGS);
+  const isOff = (key: string): boolean => {
     try {
-      return lire(cle) === "false";
+      return read(key) === "false";
     } catch {
       return false;
     }
   };
-  if (eteint(CLES_REGLAGE_APPAREIL.sautIntroAuto)) semis.intro.action = "button";
-  if (eteint(CLES_REGLAGE_APPAREIL.carteASuivre)) semis.next.nextCard = false;
-  if (eteint(CLES_REGLAGE_APPAREIL.decompteEnchainement)) {
+  if (isOff(DEVICE_SETTING_KEYS.autoSkipIntro)) seed.intro.action = "button";
+  if (isOff(DEVICE_SETTING_KEYS.upNextCard)) seed.next.nextCard = false;
+  if (isOff(DEVICE_SETTING_KEYS.upNextCountdown)) {
     // L'ancienne clé gouvernait le minuteur ET l'acte : on ne fait pas
     // apparaître un enchaînement chez quelqu'un qui l'avait éteint.
-    semis.next.nextCountdown = false;
-    semis.next.nextAutoPlay = false;
+    seed.next.nextCountdown = false;
+    seed.next.nextAutoPlay = false;
   }
-  return semis;
+  return seed;
 }
 
-const identiques = (a: PlaybackSettings, b: PlaybackSettings): boolean =>
+const areIdentical = (a: PlaybackSettings, b: PlaybackSettings): boolean =>
   JSON.stringify(a) === JSON.stringify(b);
 
-export function creerMagasinReglagesLecture(deps: DepsMagasinReglages): PlaybackSettingsStore {
-  const auditeurs = new Set<() => void>();
-  let ecritureEnAttente = false;
+export function createPlaybackSettingsStore(deps: SettingsStoreDeps): PlaybackSettingsStore {
+  const listeners = new Set<() => void>();
+  let pendingWrite = false;
 
-  const lireCache = (): PlaybackSettings => {
+  const readCache = (): PlaybackSettings => {
     try {
-      const brut = deps.stockage.getItem(CLE_CACHE_REGLAGES);
-      return normalizePlaybackSettings(brut === null ? undefined : JSON.parse(brut));
+      const raw = deps.storage.getItem(SETTINGS_CACHE_KEY);
+      return normalizePlaybackSettings(raw === null ? undefined : JSON.parse(raw));
     } catch {
       return normalizePlaybackSettings(undefined);
     }
   };
 
-  let instantane = lireCache();
+  let snapshot = readCache();
 
-  const poser = (reglages: PlaybackSettings): void => {
-    if (identiques(reglages, instantane)) return;
-    instantane = reglages;
+  const apply = (settings: PlaybackSettings): void => {
+    if (areIdentical(settings, snapshot)) return;
+    snapshot = settings;
     try {
-      deps.stockage.setItem(CLE_CACHE_REGLAGES, JSON.stringify(reglages));
+      deps.storage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
     } catch {
       // Stockage indisponible : le réglage vaut pour cette session.
     }
-    auditeurs.forEach((auditeur) => auditeur());
+    listeners.forEach((listener) => listener());
   };
 
-  const pousser = async (reglages: PlaybackSettings): Promise<void> => {
+  const push = async (settings: PlaybackSettings): Promise<void> => {
     try {
-      await deps.ecrireDistant(reglages);
-      ecritureEnAttente = false;
+      await deps.writeRemote(settings);
+      pendingWrite = false;
     } catch {
-      ecritureEnAttente = true;
+      pendingWrite = true;
     }
   };
 
   return {
-    sAbonner(rappel) {
-      auditeurs.add(rappel);
+    subscribe(callback) {
+      listeners.add(callback);
       return () => {
-        auditeurs.delete(rappel);
+        listeners.delete(callback);
       };
     },
 
-    lireInstantane: () => instantane,
+    readSnapshot: () => snapshot,
 
-    definir(patch) {
-      const fusion = normalizePlaybackSettings({
-        intro: { ...instantane.intro, ...patch.intro },
-        outro: { ...instantane.outro, ...patch.outro },
-        recap: { ...instantane.recap, ...patch.recap },
-        preview: { ...instantane.preview, ...patch.preview },
-        next: { ...instantane.next, ...patch.next },
+    set(patch) {
+      const merged = normalizePlaybackSettings({
+        intro: { ...snapshot.intro, ...patch.intro },
+        outro: { ...snapshot.outro, ...patch.outro },
+        recap: { ...snapshot.recap, ...patch.recap },
+        preview: { ...snapshot.preview, ...patch.preview },
+        next: { ...snapshot.next, ...patch.next },
       });
-      poser(fusion);
-      ecritureEnAttente = true;
-      void pousser(fusion);
+      apply(merged);
+      pendingWrite = true;
+      void push(merged);
     },
 
-    async resynchroniser() {
+    async resync() {
       // Une écriture attend encore : on re-pousse au lieu de se faire écraser.
-      if (ecritureEnAttente) {
-        await pousser(instantane);
+      if (pendingWrite) {
+        await push(snapshot);
         return;
       }
 
-      let brut: unknown;
+      let raw: unknown;
       try {
-        brut = await deps.lireDistant();
+        raw = await deps.readRemote();
       } catch {
         return; // Hors ligne : le cache local reste la vérité du moment.
       }
 
-      const reponse = (typeof brut === "object" && brut !== null ? brut : null) as {
+      const response = (typeof raw === "object" && raw !== null ? raw : null) as {
         stored?: unknown;
         settings?: unknown;
       } | null;
 
-      if (reponse?.stored === true) {
-        poser(normalizePlaybackSettings(reponse.settings));
+      if (response?.stored === true) {
+        apply(normalizePlaybackSettings(response.settings));
         return;
       }
-      if (reponse?.stored === false) {
-        const semis = seedFromLegacyDeviceKeys((cle) => deps.stockage.getItem(cle));
-        poser(semis);
-        if (!identiques(semis, DEFAULT_PLAYBACK_SETTINGS)) {
-          await pousser(semis);
+      if (response?.stored === false) {
+        const seed = seedFromLegacyDeviceKeys((key) => deps.storage.getItem(key));
+        apply(seed);
+        if (!areIdentical(seed, DEFAULT_PLAYBACK_SETTINGS)) {
+          await push(seed);
         }
         return;
       }
       // Réponse méconnaissable (proxy, vieille version) : ne rien toucher.
     },
 
-    rehydrater() {
-      poser(lireCache());
+    rehydrate() {
+      apply(readCache());
     },
   };
 }

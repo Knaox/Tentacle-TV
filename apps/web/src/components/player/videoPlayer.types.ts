@@ -47,7 +47,7 @@ export interface VideoPlayerProps {
   currentSubtitle: number | null;
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
-  /** Paliers de qualité calculés d'après la source (cf. construireEchelleQualite). */
+  /** Paliers de qualité calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
   isDirectPlay?: boolean;
   streamOffset?: number;

@@ -6,7 +6,7 @@ export * from "./utils/qualityLadder";
 export * from "./utils/scrubStep";
 export * from "./utils/playbackRates";
 export * from "./utils/episodeCode";
-export * from "./utils/rechercheTexte";
+export * from "./utils/textSearch";
 export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";
@@ -15,7 +15,7 @@ export * from "./subtitles/sanitize";
 export * from "./watchState";
 // La décision « faut-il sauter l'intro, et quand » — une machine à états pure,
 // partagée par le web, le bureau, l'Apple TV, l'Android TV et la LG.
-export * from "./player/sautIntro";
+export * from "./player/introSkip";
 // Le contrat des segments de lecture (v1) et son résolveur — UNE implémentation,
 // appelée par le backend (via miroir, cf. l'en-tête de segmentTypes.ts) et par
 // la lecture locale hors ligne du bureau. Ré-exports NOMMÉS : TICKS_PER_MS y
@@ -38,7 +38,7 @@ export * from "./playback/segmentWindow";
 export * from "./playback/overlayArbiter";
 export * from "./playback/autoNextEngine";
 export * from "./playback/playbackSettingsStore";
-export * from "./player/reglagesAppareil";
+export * from "./player/deviceSettings";
 // Résolution des pistes selon les préférences : même algorithme côté backend
 // (en ligne) et côté client (lecteur local hors ligne).
 export * from "./preferences";

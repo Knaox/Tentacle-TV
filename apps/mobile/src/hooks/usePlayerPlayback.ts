@@ -5,7 +5,7 @@ import {
 } from "@tentacle-tv/api-client";
 import {
   TICKS_PER_SECOND, ticksToSeconds,
-  construireEchelleQualite, trouverPreset, presetEstPropose,
+  buildQualityLadder, findPreset, isPresetOffered,
 } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import {
@@ -70,8 +70,8 @@ export function usePlayerPlayback(itemId: string) {
   );
   const mediaSourceId = item?.MediaSources?.[0]?.Id ?? itemId;
   // Paliers calculés d'après la source : jamais au-dessus de son débit ni de
-  // sa définition (cf. construireEchelleQualite).
-  const qualityPresets = useMemo(() => construireEchelleQualite(item?.MediaSources?.[0]), [item]);
+  // sa définition (cf. buildQualityLadder).
+  const qualityPresets = useMemo(() => buildQualityLadder(item?.MediaSources?.[0]), [item]);
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const episodeNav = useEpisodeNavigation(item);
@@ -94,7 +94,7 @@ export function usePlayerPlayback(itemId: string) {
     const currentFetch = ++fetchIdRef.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    const preset = trouverPreset(qualityKey, qualityPresets);
+    const preset = findPreset(qualityKey, qualityPresets);
     const bitrate = opts?.maxBitrate ?? preset.bitrate ?? 0;
     const maxWidth = opts?.maxWidth ?? preset.width ?? 0;
     const maxHeight = opts?.maxHeight ?? preset.height ?? 0;
@@ -161,7 +161,7 @@ export function usePlayerPlayback(itemId: string) {
   // Garde-fou : l'échelle dépend de la source, un palier peut disparaître d'un
   // média à l'autre. Retomber sur « Originale » plutôt que sur une clé fantôme.
   useEffect(() => {
-    if (!presetEstPropose(qualityKey, qualityPresets)) setQualityKey("original");
+    if (!isPresetOffered(qualityKey, qualityPresets)) setQualityKey("original");
   }, [qualityPresets, qualityKey]);
 
   const reporting = usePlaybackReporting({
@@ -226,7 +226,7 @@ export function usePlayerPlayback(itemId: string) {
 
   const changeQuality = useCallback((key: QualityKey) => {
     setQualityKey(key);
-    const preset = trouverPreset(key, qualityPresets);
+    const preset = findPreset(key, qualityPresets);
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
     fetchPlaybackInfo({
       maxBitrate: preset.bitrate ?? 0,

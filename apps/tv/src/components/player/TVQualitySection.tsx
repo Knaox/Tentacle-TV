@@ -12,7 +12,7 @@ const QUALITY_ITEM_HEIGHT = 52;
 
 export interface TVQualitySectionProps {
   qualityKey: QualityKey;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
   sourceQuality?: SourceQuality;
   onSelectQuality: (key: QualityKey) => void;

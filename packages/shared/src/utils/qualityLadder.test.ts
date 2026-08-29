@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MediaSource, MediaStream } from "../types/media";
-import { capPourDebit, construireEchelleQualite, presetEstPropose, trouverPreset } from "./qualityLadder";
+import { capForBitrate, buildQualityLadder, isPresetOffered, findPreset } from "./qualityLadder";
 import { QUALITY_PRESETS } from "./mediaQuality";
 
 /**
@@ -22,109 +22,109 @@ function source(opts: { bitrate?: number; height?: number; bitrateVideo?: number
   };
 }
 
-const debits = (presets: { bitrate: number | null }[]) => presets.map((p) => p.bitrate);
+const bitrates = (presets: { bitrate: number | null }[]) => presets.map((p) => p.bitrate);
 
-describe("construireEchelleQualite", () => {
+describe("buildQualityLadder", () => {
   it("masque tout palier au-dessus du débit source (1080p à 12 Mb/s)", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 12_000_000, height: 1080 }));
-    expect(echelle.map((p) => p.key)).toEqual([
+    const ladder = buildQualityLadder(source({ bitrate: 12_000_000, height: 1080 }));
+    expect(ladder.map((p) => p.key)).toEqual([
       "original", "quality1080p", "quality720p", "quality480p",
     ]);
-    expect(debits(echelle)).toEqual([null, 8_000_000, 4_500_000, 1_400_000]);
+    expect(bitrates(ladder)).toEqual([null, 8_000_000, 4_500_000, 1_400_000]);
   });
 
   it("n'atteint jamais le débit de la source", () => {
     for (const bitrate of [1_000_000, 3_000_000, 7_500_000, 12_000_000, 21_000_000, 90_000_000]) {
-      const echelle = construireEchelleQualite(source({ bitrate, height: 1080 }));
-      for (const p of echelle.slice(1)) expect(p.bitrate).toBeLessThan(bitrate);
+      const ladder = buildQualityLadder(source({ bitrate, height: 1080 }));
+      for (const p of ladder.slice(1)) expect(p.bitrate).toBeLessThan(bitrate);
     }
   });
 
   it("ne propose aucun 1080p sur une source 720p", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 3_000_000, height: 720 }));
-    expect(echelle.every((p) => (p.height ?? 0) <= 720)).toBe(true);
-    expect(debits(echelle)).toEqual([null, 2_000_000, 1_400_000]);
+    const ladder = buildQualityLadder(source({ bitrate: 3_000_000, height: 720 }));
+    expect(ladder.every((p) => (p.height ?? 0) <= 720)).toBe(true);
+    expect(bitrates(ladder)).toEqual([null, 2_000_000, 1_400_000]);
   });
 
   it("fabrique un palier adaptatif quand le niveau de la source est vidé", () => {
     // 1080p à 7 Mb/s : les paliers 20 et 8 tombent, il resterait un trou.
-    const echelle = construireEchelleQualite(source({ bitrate: 7_000_000, height: 1080 }));
-    expect(echelle[1].key).toBe("quality1080p"); // le palier de base, pas « Haut »
-    expect(echelle[1].bitrate).toBe(5_000_000); // 70 % de 7, arrondi au demi-Mb/s
-    expect(echelle[1].height).toBe(1080);
+    const ladder = buildQualityLadder(source({ bitrate: 7_000_000, height: 1080 }));
+    expect(ladder[1].key).toBe("quality1080p"); // le tier de base, pas « Haut »
+    expect(ladder[1].bitrate).toBe(5_000_000); // 70 % de 7, arrondi au demi-Mb/s
+    expect(ladder[1].height).toBe(1080);
   });
 
   it("écarte les paliers dominés (définition plus basse, débit plus élevé)", () => {
     // 1080p à 5 Mb/s : l'adaptatif tombe à 3,5 — le 720p fixe à 4,5 n'a plus de sens.
-    const echelle = construireEchelleQualite(source({ bitrate: 5_000_000, height: 1080 }));
-    expect(debits(echelle)).toEqual([null, 3_500_000, 1_400_000]);
+    const ladder = buildQualityLadder(source({ bitrate: 5_000_000, height: 1080 }));
+    expect(bitrates(ladder)).toEqual([null, 3_500_000, 1_400_000]);
   });
 
   it("retombe sur le débit de la piste vidéo quand le conteneur ne le donne pas", () => {
-    const echelle = construireEchelleQualite(source({ bitrateVideo: 12_000_000, height: 1080 }));
-    expect(debits(echelle)).toEqual([null, 8_000_000, 4_500_000, 1_400_000]);
+    const ladder = buildQualityLadder(source({ bitrateVideo: 12_000_000, height: 1080 }));
+    expect(bitrates(ladder)).toEqual([null, 8_000_000, 4_500_000, 1_400_000]);
   });
 
   it("retombe sur la liste fixe quand le débit est inconnu", () => {
-    expect(construireEchelleQualite(source({ height: 1080 }))).toEqual([...QUALITY_PRESETS]);
-    expect(construireEchelleQualite(undefined)).toEqual([...QUALITY_PRESETS]);
-    expect(construireEchelleQualite(null)).toEqual([...QUALITY_PRESETS]);
+    expect(buildQualityLadder(source({ height: 1080 }))).toEqual([...QUALITY_PRESETS]);
+    expect(buildQualityLadder(undefined)).toEqual([...QUALITY_PRESETS]);
+    expect(buildQualityLadder(null)).toEqual([...QUALITY_PRESETS]);
   });
 
   it("ne rend jamais une liste vide, même sur une source minuscule", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 800_000, height: 480 }));
-    expect(echelle.length).toBeGreaterThan(1);
-    expect(echelle[0].key).toBe("original");
-    expect(echelle[1].bitrate).toBeLessThan(800_000);
+    const ladder = buildQualityLadder(source({ bitrate: 800_000, height: 480 }));
+    expect(ladder.length).toBeGreaterThan(1);
+    expect(ladder[0].key).toBe("original");
+    expect(ladder[1].bitrate).toBeLessThan(800_000);
   });
 
   it("garde les deux paliers 1080p sur un remux 4K", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 90_000_000, height: 2160 }));
-    expect(echelle.map((p) => p.key)).toEqual([
+    const ladder = buildQualityLadder(source({ bitrate: 90_000_000, height: 2160 }));
+    expect(ladder.map((p) => p.key)).toEqual([
       "original", "quality1080pHigh", "quality1080p", "quality720p", "quality480p",
     ]);
   });
 });
 
-describe("trouverPreset", () => {
+describe("findPreset", () => {
   it("retombe sur Originale quand la clé n'est plus proposée", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 3_000_000, height: 720 }));
-    expect(trouverPreset("quality1080p", echelle).key).toBe("original");
-    expect(presetEstPropose("quality1080p", echelle)).toBe(false);
+    const ladder = buildQualityLadder(source({ bitrate: 3_000_000, height: 720 }));
+    expect(findPreset("quality1080p", ladder).key).toBe("original");
+    expect(isPresetOffered("quality1080p", ladder)).toBe(false);
   });
 
   it("rend le palier demandé quand il existe", () => {
-    const echelle = construireEchelleQualite(source({ bitrate: 12_000_000, height: 1080 }));
-    expect(trouverPreset("quality720p", echelle).bitrate).toBe(4_500_000);
-    expect(presetEstPropose("quality720p", echelle)).toBe(true);
+    const ladder = buildQualityLadder(source({ bitrate: 12_000_000, height: 1080 }));
+    expect(findPreset("quality720p", ladder).bitrate).toBe(4_500_000);
+    expect(isPresetOffered("quality720p", ladder)).toBe(true);
   });
 });
 
-describe("capPourDebit", () => {
+describe("capForBitrate", () => {
   it("ne cape jamais sans mesure — serveur sans BitrateTest, échec réseau", () => {
-    expect(capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), null)).toBeNull();
+    expect(capForBitrate(source({ bitrate: 25_000_000, height: 2160 }), null)).toBeNull();
   });
 
   it("ne cape pas quand la connexion couvre la source avec marge", () => {
     // 25 Mb/s × 1,2 = 30 Mb/s ≤ 40 mesurés → lecture directe tranquille.
-    expect(capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 40_000_000)).toBeNull();
+    expect(capForBitrate(source({ bitrate: 25_000_000, height: 2160 }), 40_000_000)).toBeNull();
   });
 
   it("ne cape pas quand le débit source est inconnu", () => {
-    expect(capPourDebit(source({}), 6_000_000)).toBeNull();
+    expect(capForBitrate(source({}), 6_000_000)).toBeNull();
   });
 
   it("choisit le meilleur palier qui tient dans 80 % de la mesure", () => {
     // 6 Mb/s mesurés × 0,8 = 4,8 : le 1080p (8) déborde, le 720p (4,5) tient.
-    const palier = capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 6_000_000);
-    expect(palier?.key).toBe("quality720p");
-    expect(palier?.bitrate).toBe(4_500_000);
+    const tier = capForBitrate(source({ bitrate: 25_000_000, height: 2160 }), 6_000_000);
+    expect(tier?.key).toBe("quality720p");
+    expect(tier?.bitrate).toBe(4_500_000);
   });
 
   it("retombe sur le palier le plus bas quand rien ne tient", () => {
     // 1 Mb/s mesuré : même le 480p (1,4) déborde — on le prend quand même,
     // une image modeste vaut mieux qu'un lecteur qui bufferise.
-    const palier = capPourDebit(source({ bitrate: 25_000_000, height: 2160 }), 1_000_000);
-    expect(palier?.key).toBe("quality480p");
+    const tier = capForBitrate(source({ bitrate: 25_000_000, height: 2160 }), 1_000_000);
+    expect(tier?.key).toBe("quality480p");
   });
 });

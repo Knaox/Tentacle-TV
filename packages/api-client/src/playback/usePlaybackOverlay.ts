@@ -11,20 +11,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AUTO_NEXT_REPOS,
-  DELAI_SAUT_DEFAUT_MS,
+  AUTO_NEXT_IDLE,
+  SKIP_DELAY_DEFAULT_MS,
   NEXT_COUNTDOWN_MS,
-  REPOS,
+  INTRO_SKIP_IDLE,
   arbitrateOverlay,
-  compteAffiche,
-  compteAfficheEnchainement,
+  displayedCountdown,
+  displayedNextCountdown,
   decideAutoNext,
-  deciderSautIntro,
+  decideIntroSkip,
   findSkipCandidate,
   nextCardTriggerReached,
-  type AutoNextEntree,
+  type AutoNextInput,
   type AutoNextState,
-  type EtatSautIntro,
+  type IntroSkipState,
   type PlayerOverlay,
   type ResolvedSegment,
   type SegmentType,
@@ -74,8 +74,8 @@ export interface PlaybackOverlayResult {
 export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlayResult {
   const reglages = usePlaybackSettings();
 
-  const [etatSaut, setEtatSaut] = useState<EtatSautIntro>(REPOS);
-  const [etatSuite, setEtatSuite] = useState<AutoNextState>(AUTO_NEXT_REPOS);
+  const [etatSaut, setEtatSaut] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
+  const [etatSuite, setEtatSuite] = useState<AutoNextState>(AUTO_NEXT_IDLE);
 
   // Miroirs synchrones : les rappels lisent le présent, pas le rendu d'avant.
   const entreeRef = useRef(input);
@@ -86,7 +86,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const etatSuiteRef = useRef(etatSuite);
   const visiblePrecedentRef = useRef(false);
 
-  const poserEtatSaut = useCallback((etat: EtatSautIntro) => {
+  const poserEtatSaut = useCallback((etat: IntroSkipState) => {
     etatSautRef.current = etat;
     setEtatSaut(etat);
   }, []);
@@ -122,7 +122,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   }, []);
 
   const dispatchSuite = useCallback(
-    (entree: AutoNextEntree) => {
+    (entree: AutoNextInput) => {
       const p = entreeRef.current;
       const [etat, effet] = decideAutoNext(etatSuiteRef.current, entree, {
         hasNextEpisode: p.hasNextEpisode,
@@ -138,20 +138,20 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
 
   /** Un battement : fait avancer les deux réducteurs, joue le saut à échéance. */
   const battre = useCallback(
-    (ecouleMs: number) => {
+    (elapsedMs: number) => {
       const p = entreeRef.current;
       const candidat = candidatCourant();
       const visible = candidat !== null && !p.scrubbing;
-      const actif = visible && candidat !== null && candidat.reglage.action === "auto";
+      const active = visible && candidat !== null && candidat.settings.action === "auto";
 
-      const [etat, action] = deciderSautIntro(
+      const [etat, action] = decideIntroSkip(
         etatSautRef.current,
         {
           type: "cadre",
           visible,
-          actif,
-          ecouleMs,
-          delaiMs: candidat?.reglage.autoDelayMs,
+          active,
+          elapsedMs,
+          delayMs: candidat?.settings.autoDelayMs,
         },
         visiblePrecedentRef.current,
       );
@@ -172,8 +172,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
             p.segments,
             reglagesRef.current.next,
           ),
-        termine: p.playbackEnded,
-        ecouleMs,
+        ended: p.playbackEnded,
+        elapsedMs,
       });
     },
     [candidatCourant, dispatchSuite, executerAction, poserEtatSaut],
@@ -183,7 +183,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   useEffect(() => {
     if (!input.itemId) return;
     dispatchSuite({ type: "item", itemId: input.itemId });
-    poserEtatSaut(REPOS);
+    poserEtatSaut(INTRO_SKIP_IDLE);
     visiblePrecedentRef.current = false;
   }, [input.itemId, dispatchSuite, poserEtatSaut]);
 
@@ -204,7 +204,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   ]);
 
   // L'horloge : fine (250 ms) pendant un décompte, lente (1 s) sinon.
-  const decompteEnCours = etatSaut.nom === "decompte" || etatSuite.resteMs !== null;
+  const decompteEnCours = etatSaut.name === "decompte" || etatSuite.remainingMs !== null;
   useEffect(() => {
     const periode = decompteEnCours ? 250 : 1000;
     let dernier = Date.now();
@@ -240,11 +240,11 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         // « refusé » ET « saut demandé » masquent le bouton (la pilule ne se
         // remontre pas pendant que la position rattrape la cible).
         segments: candidat
-          ? { [candidat.segment.type]: etatSaut.nom === "refuse" || etatSaut.nom === "saute" }
+          ? { [candidat.segment.type]: etatSaut.name === "refuse" || etatSaut.name === "saute" }
           : {},
-        nextCard: etatSuite.refuse || etatSuite.enchaine,
+        nextCard: etatSuite.dismissed || etatSuite.chained,
       },
-      countdowns: { skip: compteAffiche(etatSaut), next: compteAfficheEnchainement(etatSuite) },
+      countdowns: { skip: displayedCountdown(etatSaut), next: displayedNextCountdown(etatSuite) },
     });
   }, [input, positionMs, runtimeMs, reglages, etatSaut, etatSuite]);
 
@@ -254,7 +254,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const dismissOverlay = useCallback(() => {
     const courant = overlayRef.current;
     if (courant.kind === "skip") {
-      poserEtatSaut(deciderSautIntro(etatSautRef.current, { type: "croix" }, true)[0]);
+      poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "croix" }, true)[0]);
       entreeRef.current.onSegmentDismissNotify?.(courant.segmentType);
     } else if (courant.kind === "nextCard") {
       dispatchSuite({ type: "refus" });
@@ -265,7 +265,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const skipNow = useCallback(() => {
     const candidat = candidatCourant();
     if (!candidat) return;
-    poserEtatSaut(deciderSautIntro(etatSautRef.current, { type: "sauteMaintenant" }, true)[0]);
+    poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "sauteMaintenant" }, true)[0]);
     executerAction(candidat);
   }, [candidatCourant, executerAction, poserEtatSaut]);
 
@@ -277,7 +277,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     (type: SegmentType) => {
       const candidat = candidatCourant();
       if (candidat?.segment.type !== type) return;
-      poserEtatSaut(deciderSautIntro(etatSautRef.current, { type: "croix" }, true)[0]);
+      poserEtatSaut(decideIntroSkip(etatSautRef.current, { type: "croix" }, true)[0]);
     },
     [candidatCourant, poserEtatSaut],
   );
@@ -286,7 +286,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     dispatchSuite({ type: "refus" });
   }, [dispatchSuite]);
 
-  const skipMs = candidatCourant()?.reglage.autoDelayMs ?? DELAI_SAUT_DEFAUT_MS;
+  const skipMs = candidatCourant()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
   return {
     overlay,
     overlayRef,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { amorcerMesureDebit, debitEnCache, useJellyfinClient } from "@tentacle-tv/api-client";
-import { capPourDebit } from "@tentacle-tv/shared";
+import { capForBitrate } from "@tentacle-tv/shared";
 import type { MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import { plog } from "../utils/playerDiag";
 
@@ -54,7 +54,7 @@ export function useTVAutoQualityCap(args: {
   const capRef = useRef<QualityPreset | null>(null);
   if (sessionCle !== evalueRef.current && mediaSource) {
     evalueRef.current = sessionCle;
-    capRef.current = capPourDebit(mediaSource, debitEnCache());
+    capRef.current = capForBitrate(mediaSource, debitEnCache());
     if (capRef.current) {
       plog("cap", `debit mesure ${(debitEnCache() ?? 0) / 1e6 | 0} Mb/s < source → palier ${capRef.current.key} (${(capRef.current.bitrate ?? 0) / 1e6} Mb/s)`);
     }

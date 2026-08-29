@@ -30,99 +30,99 @@
  * DÉFAUT — le délai réel vient du réglage utilisateur (`autoDelayMs`), passé
  * à chaque entrée de cadre.
  */
-export const DELAI_SAUT_DEFAUT_MS = 3_000;
+export const SKIP_DELAY_DEFAULT_MS = 3_000;
 
 /** Façade en secondes — la glissière CSS des boutons lit encore ce nom. */
-export const DEPART_SAUT_INTRO = DELAI_SAUT_DEFAUT_MS / 1000;
+export const INTRO_SKIP_START_SECONDS = SKIP_DELAY_DEFAULT_MS / 1000;
 
 /**
  * Au-delà, on rend le bouton manuel. Un saut peut échouer — réseau coupé,
  * session de transcodage à refaire — et l'utilisateur ne doit pas rester devant
  * une intro sans aucun moyen de la passer.
  */
-export const GARDE_SAUT_MS = 10_000;
+export const SKIP_GUARD_MS = 10_000;
 
-export type EtatSautIntro =
-  | { nom: "repos" }
-  | { nom: "decompte"; resteMs: number }
-  | { nom: "refuse" }
-  | { nom: "saute"; depuisMs: number };
+export type IntroSkipState =
+  | { name: "repos" }
+  | { name: "decompte"; remainingMs: number }
+  | { name: "refuse" }
+  | { name: "saute"; sinceMs: number };
 
-export type EntreeSautIntro =
+export type IntroSkipInput =
   | {
       type: "cadre";
       visible: boolean;
-      actif: boolean;
+      active: boolean;
       /** Temps écoulé depuis le cadre précédent — 1000 ms sur web/TV, 250 ms
        *  sur mobile : le décompte est en ms précisément pour absorber les
        *  deux cadences sans en privilégier une. */
-      ecouleMs: number;
-      /** Délai avant le saut automatique. Défaut : DELAI_SAUT_DEFAUT_MS. */
-      delaiMs?: number;
+      elapsedMs: number;
+      /** Délai avant le saut automatique. Défaut : SKIP_DELAY_DEFAULT_MS. */
+      delayMs?: number;
     }
   | { type: "croix" }
   | { type: "sauteMaintenant" };
 
 /** Ce que l'appelant doit faire, en plus de retenir le nouvel état. */
-export type ActionSautIntro = "rien" | "sauter";
+export type IntroSkipAction = "rien" | "sauter";
 
-export const REPOS: EtatSautIntro = { nom: "repos" };
+export const INTRO_SKIP_IDLE: IntroSkipState = { name: "repos" };
 
 /**
  * `visible` est la fenêtre d'intro telle que le lecteur la calcule déjà. Son
  * front MONTANT réarme : c'est là, et nulle part ailleurs, que le refus tombe.
  */
-export function deciderSautIntro(
-  etat: EtatSautIntro,
-  entree: EntreeSautIntro,
-  visiblePrecedent: boolean,
-): [EtatSautIntro, ActionSautIntro] {
-  if (entree.type === "croix") return [{ nom: "refuse" }, "rien"];
-  if (entree.type === "sauteMaintenant") return [{ nom: "saute", depuisMs: 0 }, "sauter"];
+export function decideIntroSkip(
+  state: IntroSkipState,
+  input: IntroSkipInput,
+  previousVisible: boolean,
+): [IntroSkipState, IntroSkipAction] {
+  if (input.type === "croix") return [{ name: "refuse" }, "rien"];
+  if (input.type === "sauteMaintenant") return [{ name: "saute", sinceMs: 0 }, "sauter"];
 
-  const { visible, actif, ecouleMs } = entree;
+  const { visible, active, elapsedMs } = input;
 
   // Sortie de l'intro : tout retombe, y compris un saut en vol — la position a
   // rattrapé, c'est précisément ce que le saut attendait.
-  if (!visible) return [REPOS, "rien"];
+  if (!visible) return [INTRO_SKIP_IDLE, "rien"];
 
-  const delaiMs = entree.delaiMs ?? DELAI_SAUT_DEFAUT_MS;
+  const delayMs = input.delayMs ?? SKIP_DELAY_DEFAULT_MS;
 
   // Entrée dans l'intro. Le refus d'un passage précédent ne la suit pas.
-  if (!visiblePrecedent) {
-    return actif ? [{ nom: "decompte", resteMs: delaiMs }, "rien"] : [REPOS, "rien"];
+  if (!previousVisible) {
+    return active ? [{ name: "decompte", remainingMs: delayMs }, "rien"] : [INTRO_SKIP_IDLE, "rien"];
   }
 
-  if (etat.nom === "saute") {
-    const depuisMs = etat.depuisMs + ecouleMs;
+  if (state.name === "saute") {
+    const sinceMs = state.sinceMs + elapsedMs;
     // Le saut n'a jamais abouti : on rend le bouton manuel plutôt que de laisser
     // l'utilisateur devant une intro qu'il ne peut plus passer.
-    return depuisMs >= GARDE_SAUT_MS ? [REPOS, "rien"] : [{ nom: "saute", depuisMs }, "rien"];
+    return sinceMs >= SKIP_GUARD_MS ? [INTRO_SKIP_IDLE, "rien"] : [{ name: "saute", sinceMs }, "rien"];
   }
 
-  if (etat.nom === "refuse") return [etat, "rien"];
+  if (state.name === "refuse") return [state, "rien"];
 
   // La préférence peut s'éteindre pendant le décompte : il s'arrête, la pilule
   // reste, et elle redevient ce qu'elle était — un bouton.
-  if (!actif) return [REPOS, "rien"];
+  if (!active) return [INTRO_SKIP_IDLE, "rien"];
 
-  if (etat.nom === "repos") return [{ nom: "decompte", resteMs: delaiMs }, "rien"];
+  if (state.name === "repos") return [{ name: "decompte", remainingMs: delayMs }, "rien"];
 
-  // `ecouleMs` nul = simple réévaluation (la préférence vient de changer, par
+  // `elapsedMs` nul = simple réévaluation (la préférence vient de changer, par
   // exemple), pas un battement d'horloge : le décompte ne doit pas y perdre
   // de temps.
-  if (ecouleMs <= 0) return [etat, "rien"];
+  if (elapsedMs <= 0) return [state, "rien"];
 
-  const resteMs = etat.resteMs - ecouleMs;
-  return resteMs <= 0
-    ? [{ nom: "saute", depuisMs: 0 }, "sauter"]
-    : [{ nom: "decompte", resteMs }, "rien"];
+  const remainingMs = state.remainingMs - elapsedMs;
+  return remainingMs <= 0
+    ? [{ name: "saute", sinceMs: 0 }, "sauter"]
+    : [{ name: "decompte", remainingMs }, "rien"];
 }
 
 /** La pilule se rend-elle ? Pendant un saut, non : il a déjà été demandé. */
-export const montrerPilule = (etat: EtatSautIntro, visible: boolean): boolean =>
-  visible && etat.nom !== "saute";
+export const showSkipPill = (state: IntroSkipState, visible: boolean): boolean =>
+  visible && state.name !== "saute";
 
 /** Secondes affichées, `null` quand la pilule est un simple bouton. */
-export const compteAffiche = (etat: EtatSautIntro): number | null =>
-  etat.nom === "decompte" ? Math.max(1, Math.ceil(etat.resteMs / 1000)) : null;
+export const displayedCountdown = (state: IntroSkipState): number | null =>
+  state.name === "decompte" ? Math.max(1, Math.ceil(state.remainingMs / 1000)) : null;

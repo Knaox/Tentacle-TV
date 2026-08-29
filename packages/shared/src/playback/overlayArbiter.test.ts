@@ -27,7 +27,7 @@ const seg = (
   ...extra,
 });
 
-const reglages = (patch?: {
+const makeSettings = (patch?: {
   intro?: Partial<PlaybackSettings["intro"]>;
   outro?: Partial<PlaybackSettings["outro"]>;
   recap?: Partial<PlaybackSettings["recap"]>;
@@ -40,7 +40,7 @@ const reglages = (patch?: {
   next: { ...DEFAULT_PLAYBACK_SETTINGS.next, ...patch?.next },
 });
 
-const entree = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
+const makeInput = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
   positionMs: 0,
   runtimeMs: RUNTIME_MS,
   hasStarted: true,
@@ -48,7 +48,7 @@ const entree = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
   segments: [],
   isEpisode: true,
   hasNextEpisode: true,
-  settings: reglages(),
+  settings: makeSettings(),
   serverAutoplayEnabled: true,
   dismissed: { segments: {}, nextCard: false },
   countdowns: { skip: null, next: null },
@@ -56,18 +56,18 @@ const entree = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
 });
 
 /** Générique collé à la fin du média. */
-const OUTRO_FIN = seg("Outro", 1_300_000, RUNTIME_MS, { endsAtMediaEnd: true, hasContentAfter: false });
+const OUTRO_AT_END = seg("Outro", 1_300_000, RUNTIME_MS, { endsAtMediaEnd: true, hasContentAfter: false });
 /** Générique suivi d'une scène post-générique. */
 const OUTRO_SCENE = seg("Outro", 1_200_000, 1_320_000, { endsAtMediaEnd: false, hasContentAfter: true });
 
 describe("les six cas obligatoires", () => {
   it("1. Outro finissant à la fin du média → la carte, action épisode suivant — aucun bouton", () => {
-    const overlay = arbitrateOverlay(entree({ segments: [OUTRO_FIN], positionMs: 1_310_000 }));
+    const overlay = arbitrateOverlay(makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000 }));
     expect(overlay).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
   });
 
   it("2. Outro finissant avant la fin → seek à la fin du générique, la scène n'est jamais sautée", () => {
-    const overlay = arbitrateOverlay(entree({ segments: [OUTRO_SCENE], positionMs: 1_250_000 }));
+    const overlay = arbitrateOverlay(makeInput({ segments: [OUTRO_SCENE], positionMs: 1_250_000 }));
     expect(overlay).toMatchObject({
       kind: "skip",
       segmentType: "Outro",
@@ -77,29 +77,29 @@ describe("les six cas obligatoires", () => {
   });
 
   it("3. Outro venu des chapitres → traité comme un segment ordinaire", () => {
-    const chapitre = seg("Outro", 1_300_000, RUNTIME_MS, {
+    const chapter = seg("Outro", 1_300_000, RUNTIME_MS, {
       source: "chapters",
       endsAtMediaEnd: true,
       hasContentAfter: false,
     });
-    const overlay = arbitrateOverlay(entree({ segments: [chapitre], positionMs: 1_310_000 }));
+    const overlay = arbitrateOverlay(makeInput({ segments: [chapter], positionMs: 1_310_000 }));
     expect(overlay.kind).toBe("nextCard");
   });
 
   it("4. Ni segment ni chapitre → aucun bouton, carte au repli temporel seulement", () => {
-    const avant = arbitrateOverlay(entree({ segments: [], positionMs: 1_300_000 }));
-    expect(avant).toEqual({ kind: "none" });
+    const before = arbitrateOverlay(makeInput({ segments: [], positionMs: 1_300_000 }));
+    expect(before).toEqual({ kind: "none" });
 
-    const proche = arbitrateOverlay(entree({ segments: [], positionMs: RUNTIME_MS - 40_000 }));
-    expect(proche).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
+    const near = arbitrateOverlay(makeInput({ segments: [], positionMs: RUNTIME_MS - 40_000 }));
+    expect(near).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
   });
 
   it("5. Décompte désactivé mais fiche activée → la fiche s'affiche quand même, sans échéance", () => {
     const overlay = arbitrateOverlay(
-      entree({
-        segments: [OUTRO_FIN],
+      makeInput({
+        segments: [OUTRO_AT_END],
         positionMs: 1_310_000,
-        settings: reglages({ next: { nextCountdown: false } }),
+        settings: makeSettings({ next: { nextCountdown: false } }),
         countdowns: { skip: null, next: 10 },
       }),
     );
@@ -107,19 +107,19 @@ describe("les six cas obligatoires", () => {
   });
 
   it("6. Film sans épisode suivant → « passer le générique » termine la lecture", () => {
-    const pendant = arbitrateOverlay(
-      entree({ segments: [OUTRO_FIN], positionMs: 1_310_000, isEpisode: false, hasNextEpisode: false }),
+    const during = arbitrateOverlay(
+      makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, isEpisode: false, hasNextEpisode: false }),
     );
-    expect(pendant).toMatchObject({
+    expect(during).toMatchObject({
       kind: "skip",
       labelKey: "skipCredits",
       action: { kind: "endOfPlayback" },
     });
 
-    const fini = arbitrateOverlay(
-      entree({ playbackEnded: true, isEpisode: false, hasNextEpisode: false }),
+    const ended = arbitrateOverlay(
+      makeInput({ playbackEnded: true, isEpisode: false, hasNextEpisode: false }),
     );
-    expect(fini).toEqual({ kind: "none" });
+    expect(ended).toEqual({ kind: "none" });
   });
 });
 
@@ -128,10 +128,10 @@ describe("priorités et gardes", () => {
 
   it("le bouton de saut bat la carte quand les deux sont éligibles", () => {
     const overlay = arbitrateOverlay(
-      entree({
+      makeInput({
         segments: [INTRO],
         positionMs: 60_000,
-        settings: reglages({ next: { nextTrigger: "beforeEnd", nextBeforeEndSeconds: 300 } }),
+        settings: makeSettings({ next: { nextTrigger: "beforeEnd", nextBeforeEndSeconds: 300 } }),
         runtimeMs: 100_000 + 200_000,
       }),
     );
@@ -140,71 +140,71 @@ describe("priorités et gardes", () => {
 
   it("l'intro en auto affiche le décompte du réducteur, pas en mode bouton", () => {
     const auto = arbitrateOverlay(
-      entree({ segments: [INTRO], positionMs: 60_000, countdowns: { skip: 3, next: null } }),
+      makeInput({ segments: [INTRO], positionMs: 60_000, countdowns: { skip: 3, next: null } }),
     );
     expect(auto).toMatchObject({ kind: "skip", labelKey: "skipIntro", countdownSeconds: 3 });
 
-    const bouton = arbitrateOverlay(
-      entree({
+    const button = arbitrateOverlay(
+      makeInput({
         segments: [INTRO],
         positionMs: 60_000,
-        settings: reglages({ intro: { action: "button" } }),
+        settings: makeSettings({ intro: { action: "button" } }),
         countdowns: { skip: 3, next: null },
       }),
     );
-    expect(bouton).toMatchObject({ countdownSeconds: null });
+    expect(button).toMatchObject({ countdownSeconds: null });
 
-    const sansDecompte = arbitrateOverlay(
-      entree({
+    const withoutCountdown = arbitrateOverlay(
+      makeInput({
         segments: [INTRO],
         positionMs: 60_000,
-        settings: reglages({ intro: { countdownVisible: false } }),
+        settings: makeSettings({ intro: { countdownVisible: false } }),
         countdowns: { skip: 3, next: null },
       }),
     );
-    expect(sansDecompte).toMatchObject({ countdownSeconds: null });
+    expect(withoutCountdown).toMatchObject({ countdownSeconds: null });
   });
 
   it("un segment désactivé ou refusé ne montre rien — et le refus du générique rend la main à la carte", () => {
-    const eteint = arbitrateOverlay(
-      entree({ segments: [INTRO], positionMs: 60_000, settings: reglages({ intro: { action: "off" } }) }),
+    const off = arbitrateOverlay(
+      makeInput({ segments: [INTRO], positionMs: 60_000, settings: makeSettings({ intro: { action: "off" } }) }),
     );
-    expect(eteint).toEqual({ kind: "none" });
+    expect(off).toEqual({ kind: "none" });
 
-    const refuse = arbitrateOverlay(
-      entree({
+    const dismissedOutro = arbitrateOverlay(
+      makeInput({
         segments: [OUTRO_SCENE],
         positionMs: 1_250_000,
         dismissed: { segments: { Outro: true }, nextCard: false },
       }),
     );
-    expect(refuse.kind).toBe("nextCard");
+    expect(dismissedOutro.kind).toBe("nextCard");
   });
 
   it("le récap ne fait rien par défaut, et devient un bouton une fois activé", () => {
     const RECAP = seg("Recap", 0, 30_000);
-    const defaut = arbitrateOverlay(entree({ segments: [RECAP], positionMs: 10_000 }));
-    expect(defaut).toEqual({ kind: "none" });
+    const byDefault = arbitrateOverlay(makeInput({ segments: [RECAP], positionMs: 10_000 }));
+    expect(byDefault).toEqual({ kind: "none" });
 
     const active = arbitrateOverlay(
-      entree({ segments: [RECAP], positionMs: 10_000, settings: reglages({ recap: { action: "button" } }) }),
+      makeInput({ segments: [RECAP], positionMs: 10_000, settings: makeSettings({ recap: { action: "button" } }) }),
     );
     expect(active).toMatchObject({ kind: "skip", labelKey: "skipRecap", action: { kind: "seek", toMs: 30_000 } });
   });
 
   it("Commercial est résolu mais sans réglage : aucun overlay", () => {
     const overlay = arbitrateOverlay(
-      entree({ segments: [seg("Commercial", 600_000, 630_000)], positionMs: 610_000 }),
+      makeInput({ segments: [seg("Commercial", 600_000, 630_000)], positionMs: 610_000 }),
     );
     expect(overlay).toEqual({ kind: "none" });
   });
 
   it("générique désactivé : la carte occupe le générique dès son début", () => {
     const overlay = arbitrateOverlay(
-      entree({
+      makeInput({
         segments: [OUTRO_SCENE],
         positionMs: 1_250_000,
-        settings: reglages({ outro: { action: "off" } }),
+        settings: makeSettings({ outro: { action: "off" } }),
       }),
     );
     expect(overlay.kind).toBe("nextCard");
@@ -212,48 +212,48 @@ describe("priorités et gardes", () => {
 
   it("la carte ne se pose jamais par-dessus la scène post-générique", () => {
     const overlay = arbitrateOverlay(
-      entree({
+      makeInput({
         segments: [OUTRO_SCENE],
         positionMs: 1_400_000,
-        settings: reglages({ outro: { action: "off" } }),
+        settings: makeSettings({ outro: { action: "off" } }),
       }),
     );
     expect(overlay).toEqual({ kind: "none" });
   });
 
   it("la garde serveur coupe la carte, jamais les boutons de saut", () => {
-    const carte = arbitrateOverlay(
-      entree({ segments: [OUTRO_FIN], positionMs: 1_310_000, serverAutoplayEnabled: false }),
+    const card = arbitrateOverlay(
+      makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, serverAutoplayEnabled: false }),
     );
-    expect(carte).toEqual({ kind: "none" });
+    expect(card).toEqual({ kind: "none" });
 
-    const bouton = arbitrateOverlay(
-      entree({ segments: [INTRO], positionMs: 60_000, serverAutoplayEnabled: false }),
+    const button = arbitrateOverlay(
+      makeInput({ segments: [INTRO], positionMs: 60_000, serverAutoplayEnabled: false }),
     );
-    expect(bouton.kind).toBe("skip");
+    expect(button.kind).toBe("skip");
   });
 
   it("fiche refusée : ni carte pendant le générique, ni écran de fin", () => {
-    const pendant = arbitrateOverlay(
-      entree({
-        segments: [OUTRO_FIN],
+    const during = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_AT_END],
         positionMs: 1_310_000,
         dismissed: { segments: {}, nextCard: true },
       }),
     );
-    expect(pendant).toEqual({ kind: "none" });
+    expect(during).toEqual({ kind: "none" });
 
-    const fin = arbitrateOverlay(
-      entree({ playbackEnded: true, dismissed: { segments: {}, nextCard: true } }),
+    const endScreen = arbitrateOverlay(
+      makeInput({ playbackEnded: true, dismissed: { segments: {}, nextCard: true } }),
     );
-    expect(fin).toEqual({ kind: "none" });
+    expect(endScreen).toEqual({ kind: "none" });
   });
 
   it("l'écran de fin ignore le réglage de la fiche — autre surface, autre moment", () => {
     const overlay = arbitrateOverlay(
-      entree({
+      makeInput({
         playbackEnded: true,
-        settings: reglages({ next: { nextCard: false } }),
+        settings: makeSettings({ next: { nextCard: false } }),
         countdowns: { skip: null, next: 10 },
       }),
     );
@@ -262,7 +262,7 @@ describe("priorités et gardes", () => {
 
   it("rien ne s'affiche avant la première image", () => {
     const overlay = arbitrateOverlay(
-      entree({ segments: [seg("Intro", 0, 90_000)], positionMs: 0, hasStarted: false }),
+      makeInput({ segments: [seg("Intro", 0, 90_000)], positionMs: 0, hasStarted: false }),
     );
     expect(overlay).toEqual({ kind: "none" });
   });

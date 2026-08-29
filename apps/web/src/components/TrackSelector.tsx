@@ -19,7 +19,7 @@ interface TrackSelectorProps {
   currentQuality: QualityKey;
   /** Qualité de la source détectée depuis les MediaStreams. */
   sourceQuality?: SourceQuality;
-  /** Paliers calculés d'après la source (cf. construireEchelleQualite). */
+  /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
   onAudioChange: (index: number) => void;
   onSubtitleChange: (index: number | null) => void;
