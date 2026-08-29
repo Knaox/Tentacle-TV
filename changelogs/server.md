@@ -7,6 +7,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 
 ## [1.14.0]
 ### FR
+- **Le carrousel « Prochains épisodes » ne propose plus un épisode situé EN ARRIÈRE de votre dernière lecture.** Quand le serveur en désigne un, la suite réelle est recalculée
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La fiche, le carrousel « Prochains épisodes » et le lecteur suivent désormais la même règle — votre dernière lecture — et la fin d'une saison enchaîne sur le premier épisode de la suivante
 - **Une invitation à regarder ensemble s'ouvre d'elle-même quand vous êtes à l'accueil** : il ne reste qu'à accepter. Ailleurs elle ne vous interrompt pas — le logo Watch Together porte désormais le NOMBRE d'invitations en attente
 - **L'habillage du lecteur ne se pose plus sur l'écran de chargement** : la barre de commandes s'affichait pendant l'attente, invisible mais cliquable, avec une progression à zéro qui ne mesurait rien
@@ -18,6 +19,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Une nouvelle section d'administration** liste les greffons de détection des passages : sans l'un d'eux, aucun bouton de saut ne peut apparaître, et rien ne le disait
 - **En séance partagée**, refuser un saut se propage avec le passage concerné : refuser le résumé n'éteint plus le décompte d'intro de vos invités
 ### EN
+- **The "Up next" carousel no longer offers an episode that sits BEHIND your last viewing.** When the server points at one, the real successor is worked out instead
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The details page, the "Up next" carousel and the player now follow the same rule — your last viewing — and the end of a season carries on to the first episode of the next
 - **A Watch Together invitation opens on its own when you are on the home screen**: all that is left is to accept. Elsewhere it does not interrupt you — the Watch Together icon now carries the NUMBER of pending invitations
 - **The player controls no longer sit on top of the loading screen**: the control bar showed during the wait, invisible but clickable, with a progress bar at zero that measured nothing
