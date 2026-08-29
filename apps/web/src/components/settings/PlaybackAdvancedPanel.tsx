@@ -18,9 +18,11 @@
  * de lisibilité — pas de couplage.
  */
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { setPlaybackSettings } from "@tentacle-tv/api-client";
-import type { PlaybackSettings, SegmentSettings } from "@tentacle-tv/shared";
+import type { PlaybackSettings, SegmentSettings, SkipLabelKey } from "@tentacle-tv/shared";
+import { PlaybackPreview } from "./PlaybackPreview";
 import { BeforeEndRules } from "./BeforeEndRules";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
@@ -45,9 +47,25 @@ const TITLE_KEYS = {
   preview: ["segmentPreviewTitle", "segmentPreviewHint"],
 } as const;
 
+/**
+ * Le libellé que porte le bouton pour chaque passage — celui du LECTEUR, pas
+ * un texte de réglage. C'est ce qui fait de l'aperçu une promesse tenue.
+ */
+const PREVIEW_LABELS: Record<PassageKey, SkipLabelKey> = {
+  intro: "skipIntro",
+  recap: "skipRecap",
+  outro: "skipCredits",
+  preview: "skipPreview",
+};
+
+type PassageKey = (typeof PASSAGES)[number]["key"];
+
 export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings }) {
   const { t } = useTranslation("preferences");
   const next = settings.next;
+  // Le passage que l'aperçu montre. Il suit la ligne qu'on touche — clic ou
+  // clavier — et démarre sur l'intro, celle que tout le monde cherche.
+  const [focus, setFocus] = useState<PassageKey>("intro");
 
   return (
     <div className="space-y-6">
@@ -58,7 +76,18 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
         <p className="text-xs leading-relaxed text-content-tertiary">
           {t("playbackSegmentsHint")}
         </p>
-        <div className="mt-5 space-y-6">
+
+        {/* EN TÊTE du groupe : on voit l'effet avant de toucher au réglage,
+            et l'aperçu reste sous les yeux pendant qu'on l'ajuste. */}
+        <div className="mt-4">
+          <PlaybackPreview
+            settings={settings[focus]}
+            labelKey={PREVIEW_LABELS[focus]}
+            passage={t(TITLE_KEYS[focus][0])}
+          />
+        </div>
+
+        <div className="mt-6 space-y-6">
           {PASSAGES.map((passage) => (
             <SegmentSettingsRow
               key={passage.key}
@@ -66,9 +95,24 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
               title={t(TITLE_KEYS[passage.key][0])}
               hint={t(TITLE_KEYS[passage.key][1])}
               settings={settings[passage.key]}
-              onChange={passage.apply}
+              onChange={(patch) => { setFocus(passage.key); passage.apply(patch); }}
+              active={focus === passage.key}
+              onFocus={() => { setFocus(passage.key); }}
             />
           ))}
+        </div>
+
+        {/* Le détail encombrait chaque réglage — trois lignes sous chacun, pour
+            des cas qu'on ne rencontre qu'une fois. Il est ici, entier, pour qui
+            le cherche : c'est la divulgation progressive, pas une amputation. */}
+        <div className="mt-6 border-t border-line-subtle pt-4">
+          <SettingsDisclosure title={t("segmentsMoreTitle")}>
+            <ul className="space-y-2 text-xs leading-relaxed text-content-tertiary">
+              <li>{t("segmentsMoreNothing")}</li>
+              <li>{t("segmentsMoreDismiss")}</li>
+              <li>{t("segmentsMoreOutro")}</li>
+            </ul>
+          </SettingsDisclosure>
         </div>
       </SettingsDisclosure>
 

@@ -127,15 +127,12 @@ export default {
   playbackModeTitle: "Sauts et enchaînement",
   playbackModeLabel: "Ce que fait le lecteur",
   playbackModeDefault: "Par défaut",
-  playbackModeDefaultHint:
-    "Le réglage livré : le générique de début et l'aperçu du suivant se passent seuls après cinq secondes, le résumé et le générique de fin vous sont proposés, et l'épisode suivant s'enchaîne.",
+  playbackModeDefaultHint: "Le réglage livré : le générique de début et l'aperçu du suivant se passent seuls, le résumé et le générique de fin vous sont proposés.",
   playbackModeManual: "Me proposer",
   playbackModeAutomatic: "Faire tout seul",
   playbackModeCustom: "Personnalisé",
-  playbackModeManualHint:
-    "Le lecteur affiche un bouton et attend votre geste. Il ne saute rien et n'enchaîne pas les épisodes.",
-  playbackModeAutomaticHint:
-    "Le lecteur passe les génériques et les résumés après un court délai, et enchaîne l'épisode suivant. Un film ne se ferme jamais tout seul.",
+  playbackModeManualHint: "Le lecteur propose, vous décidez. Rien ne se passe tout seul.",
+  playbackModeAutomaticHint: "Le lecteur passe les génériques et enchaîne l'épisode suivant. Un film ne se ferme jamais tout seul.",
   playbackModeCustomHint:
     "Vos réglages ne correspondent à aucun des deux modes. Le détail est ci-dessous ; choisir un mode le remplacera.",
   playbackAdvancedToggle: "Réglages avancés",
@@ -144,19 +141,31 @@ export default {
   playbackSegmentsTitle: "Passages d'un épisode",
   playbackSegmentsSummary: "Générique de début, résumé, générique de fin, aperçu.",
   upNextSummary: "La fiche « à suivre », le compte à rebours, et quand les proposer.",
-  playbackSegmentsHint:
-    "Quand le serveur signale un passage — générique, résumé, aperçu — le lecteur peut proposer de le passer, le passer tout seul, ou ne rien faire. Sans signalement, rien ne s'affiche : ces réglages ne devinent jamais.",
+  playbackSegmentsHint: "Le lecteur ne devine rien : il n'agit que sur les passages que le serveur lui signale.",
   playbackSettingsAccount: "Ces réglages suivent votre compte, sur tous vos appareils.",
   // Deux boutons plutôt qu'un interrupteur sur le téléviseur : à la
   // télécommande, un pouce qui coulisse ne veut rien dire.
   reglageActive: "Activé",
   reglageDesactive: "Désactivé",
 
+  // L'aperçu vivant du panneau avancé : la vraie pilule du lecteur, montée dans
+  // un cadre qui imite l'image. Voir `settings/PlaybackPreview.tsx`.
+  previewTitle: "Aperçu",
+  previewCaptionOff: "Rien ne s'affiche : le passage se déroule comme le reste du film.",
+  previewCaptionButton: "Le bouton attend votre clic. Sans clic, rien n'est passé.",
+  previewCaptionAuto: "Le bouton se remplit, puis le passage est sauté. La croix arrête le décompte.",
+  previewCaptionAutoSilent: "Le passage est sauté au bout de {{seconds}} s, sans que rien ne l'annonce.",
+
+  // Le détail qui encombrait chaque réglage, réuni derrière un repli.
+  segmentsMoreTitle: "En savoir plus",
+  segmentsMoreNothing: "Sans passage signalé par le serveur, rien ne s'affiche — quel que soit le réglage ci-dessus.",
+  segmentsMoreDismiss: "La croix arrête le décompte et retire le bouton de l'image jusqu'à la fin de la lecture. Il revient dès que les commandes s'affichent.",
+  segmentsMoreOutro: "Pendant le générique de fin d'un épisode, c'est la fiche « à suivre » qui occupe le coin de l'image — le bouton lui laisse la place.",
+
   segmentIntroTitle: "Générique de début",
   segmentIntroHint: "L'ouverture d'une série, celle qui revient à chaque épisode.",
   segmentOutroTitle: "Générique de fin",
-  segmentOutroHint:
-    "Quand un épisode suivant existe, c'est la fiche « à suivre » qui occupe le générique. Le bouton n'apparaît que s'il mène ailleurs : une scène après le générique, ou la fin d'un film.",
+  segmentOutroHint: "Le bouton n'apparaît que s'il mène quelque part — une scène après le générique, ou la fin d'un film.",
   segmentRecapTitle: "Résumé de l'épisode précédent",
   segmentRecapHint: "Le « précédemment », au début d'un épisode.",
   segmentPreviewTitle: "Aperçu du prochain épisode",
@@ -166,8 +175,7 @@ export default {
   segmentActionAuto: "Passer tout seul",
   segmentActionOff: "Ne rien faire",
   segmentCountdownTitle: "Montrer le décompte",
-  segmentCountdownHint:
-    "Le bouton se remplit pendant le délai. La croix, elle, est toujours là : elle arrête le décompte et retire le bouton de l'image jusqu'à la fin de la lecture — il revient dès que les contrôles s'affichent.",
+  segmentCountdownHint: "Le bouton se remplit pendant le délai. Sans lui, le saut se fait quand même, sans prévenir.",
   segmentDelayLabel: "Délai avant le saut",
   segmentDelayHint: "Le temps laissé pour refuser avant que le lecteur ne passe.",
   segmentDelayValue: "{{seconds}} s",
@@ -177,26 +185,20 @@ export default {
   // fiche, décompter, lancer. Couper le décompte ne masque plus la fiche.
   upNextTitle: "À la fin d'un épisode",
   upNextCardTitle: "Proposer l'épisode suivant",
-  upNextCardHint:
-    "Pendant le générique de fin, une petite fiche propose l'épisode suivant dans un coin de l'image. Désactivée, la fin de l'épisode reste nue. L'écran de fin, lui, continue de s'afficher au tout dernier instant.",
+  upNextCardHint: "Une petite fiche propose l'épisode suivant, dans un coin de l'image.",
   upNextCountdownTitle: "Montrer un compte à rebours",
-  upNextCountdownHint:
-    "La fiche et l'écran de fin annoncent le temps qu'il reste. Sans lui, la fiche est une simple proposition, qui attend votre geste.",
+  upNextCountdownHint: "La fiche annonce le temps qu'il reste.",
   upNextAutoPlayTitle: "Enchaîner tout seul",
-  upNextAutoPlayHint:
-    "À la fin du compte à rebours, l'épisode suivant démarre. Ce réglage demande donc le compte à rebours ci-dessus : sans lui, rien ne se déclenche.",
+  upNextAutoPlayHint: "À la fin du décompte, l'épisode suivant démarre.",
   upNextTriggerLabel: "Quand proposer la suite",
   upNextTriggerOutroStart: "Au début du générique de fin",
   upNextTriggerBeforeEnd: "Peu avant la fin",
-  upNextTriggerHint:
-    "« Au début du générique » suit ce que le serveur a détecté, et ne se sert du seuil ci-dessous que lorsqu'il n'a rien détecté — les deux ne peuvent donc jamais se contredire. « Peu avant la fin » impose votre seuil, même quand un générique est connu.",
+  upNextTriggerHint: "« Au début du générique » suit ce que le serveur a détecté. « Peu avant la fin » impose votre seuil.",
   // Le repli « avant la fin » : facultatif, global, et par bibliothèque.
   beforeEndEnabledTitle: "Proposer la suite même sans générique détecté",
-  beforeEndEnabledHint:
-    "Quand le serveur ne signale aucun générique de fin, le lecteur ne sait pas quand l'épisode se termine. Ce réglage lui donne un repère. Éteint, la fin de ces épisodes reste nue — mieux vaut rien qu'une fiche posée au hasard.",
+  beforeEndEnabledHint: "Sans générique détecté, le lecteur ne sait pas quand l'épisode se termine. Ce réglage lui donne un repère.",
   beforeEndDefaultTitle: "Seuil par défaut",
-  beforeEndDefaultHint:
-    "Ce qui s'applique aux bibliothèques qu'aucune règle ne vise. En proportion, il vaut pour tous les formats sans réglage : 98 % font vingt-huit secondes sur un animé et quarante sur une série d'une heure.",
+  beforeEndDefaultHint: "Ce qui s'applique aux bibliothèques qu'aucune règle ne vise.",
   beforeEndModeLabel: "Compter en",
   beforeEndModePercent: "Pourcentage",
   beforeEndModeSeconds: "Secondes",
