@@ -55,10 +55,25 @@ function argFlag(name, fallback) {
   return i >= 0 && process.argv[i + 1] !== undefined ? process.argv[i + 1] : fallback;
 }
 
+/**
+ * ⚠️ `verbatimSymlinks: true`, et ce n'est pas un détail de style.
+ *
+ * Par défaut, `cpSync` RÉSOUT les liens symboliques : un `libmpv.so.2` ->
+ * libmpv.so.2.5.0` relatif, parfaitement valable, est recopié en chemin
+ * ABSOLU vers le dossier de compilation. Sur la machine de l'utilisateur ce
+ * lien pointe dans le vide.
+ *
+ * Ce que ça a coûté, mesuré sur la 1.20.9 publiée : l'AppImage contenait bien
+ * les 28 Mo de `libmpv.so.2.5.0`, mais `libmpv.so.2` — le nom que cherche
+ * `mpvLib.ts` — pointait vers `/home/runner/.cache/...`. `existsSync` répondait
+ * NON, l'application se rabattait en silence sur la libmpv de la distribution,
+ * et le HEVC comme le HDR n'étaient plus garantis. Toute la raison d'embarquer
+ * mpv était perdue, sans qu'aucune erreur ne le dise.
+ */
 function copyInto(source, target, what) {
   if (!existsSync(source)) throw new Error(`${what} introuvable : ${source}`);
   mkdirSync(path.dirname(target), { recursive: true });
-  cpSync(source, target, { recursive: true });
+  cpSync(source, target, { recursive: true, verbatimSymlinks: true });
 }
 
 const arch = argFlag("--arch", "x64");
@@ -130,6 +145,17 @@ function prepareResources() {
   const lib = path.join(libSource, "libmpv.so.2");
   if (existsSync(lib)) {
     copyInto(libSource, path.join(resources, "lib"), "chaîne mpv");
+    // La VÉRIFICATION, et pas seulement la copie : `existsSync` suit les liens,
+    // donc elle échoue exactement là où l'application échouerait. C'est ce qui
+    // manquait quand la 1.20.9 est partie avec un lien mort vers le dossier du
+    // runner — le paquet pesait ses 28 Mo de libmpv et ne s'en servait pas.
+    const livree = path.join(resources, "lib", "libmpv.so.2");
+    if (!existsSync(livree)) {
+      throw new Error(
+        `chaîne mpv copiée mais ${livree} ne se résout pas — lien symbolique cassé.\n` +
+          "    L'application se rabattrait en silence sur la libmpv de la distribution.",
+      );
+    }
   } else {
     console.warn(
       `⚠️  libmpv.so.2 absente de ${libSource} : le paquet se rabattra sur celle de\n` +
