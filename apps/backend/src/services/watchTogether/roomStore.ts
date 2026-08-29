@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { PlaybackSettings } from "../../playback/playbackSettings";
 import { WT_GRACE_PERIOD_MS, type WtChatMessageDto, type WtPauseReason } from "./protocol";
 
 /**
@@ -26,6 +27,12 @@ export interface Room {
   groupId: string;
   epoch: number;
   hostUserId: string;
+  /**
+   * Les réglages de lecture de l'hôte, tels que la base les portait au dernier
+   * rafraîchissement (`hostSettings.ts`). `null` = pas encore lus, ou hôte
+   * sans ligne enregistrée : chacun garde alors les siens.
+   */
+  hostSettings: PlaybackSettings | null;
   /** Média « contexte » (fiche média au moment du create) — affichage/invites. */
   contextItemId: string | null;
   /** Média en cours de lecture synchronisée (null = rien lancé). */
@@ -113,6 +120,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     groupId: randomUUID(),
     epoch: 0,
     hostUserId: user.userId,
+    hostSettings: null,
     contextItemId,
     itemId: null,
     paused: true,

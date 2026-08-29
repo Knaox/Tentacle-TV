@@ -1,4 +1,5 @@
 import { TICKS_PER_SECOND } from "../constants";
+import type { PlaybackSettings } from "../playback/playbackSettings";
 import type { SegmentType } from "../playback/segmentTypes";
 
 /**
@@ -91,6 +92,19 @@ export interface WtRoomStateDto {
   /** Membres dont on attend la fin de mise en mémoire tampon (group-wait). */
   waitingForUserIds: string[];
   members: WtMemberDto[];
+  /**
+   * Les réglages de lecture de l'HÔTE — ils gouvernent le groupe.
+   *
+   * Une séance commune ne peut pas avoir deux comportements : si l'hôte passe
+   * les génériques tout seul et qu'un membre les garde, l'un des deux subit la
+   * position de l'autre sans comprendre pourquoi. C'est donc l'hôte qui décide,
+   * pour tout le monde, le temps de la séance — les réglages du membre ne sont
+   * jamais écrits, ils reviennent intacts à la sortie.
+   *
+   * FACULTATIF : un serveur d'avant ne l'envoie pas, un client d'avant
+   * l'ignore. Absent, chacun garde ses réglages, comme aujourd'hui.
+   */
+  hostPlaybackSettings?: PlaybackSettings;
 }
 
 export interface WtInviteDto {

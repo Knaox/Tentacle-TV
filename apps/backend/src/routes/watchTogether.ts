@@ -4,6 +4,7 @@ import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { createRoom, getRoomOf } from "../services/watchTogether/roomStore";
 import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { broadcastRoom, notifyDissolved, roomToDto } from "../services/watchTogether/broadcast";
+import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { getUserBasic } from "../services/watchTogether/usersCache";
 
 /**
@@ -79,6 +80,8 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const result = removeMemberAndSync(targetId)!;
     notifyDissolved(targetId, room.groupId, "kicked");
     if (!result.dissolved) {
+      // Nouvel hôte = nouveaux réglages pour le groupe.
+      if (result.newHostId) await refreshHostSettings(result.room);
       broadcastRoom(result.room, "kick", user.userId);
     }
     request.log.info({ groupId: room.groupId, by: user.username, target: targetId }, "[wt] membre expulsé");

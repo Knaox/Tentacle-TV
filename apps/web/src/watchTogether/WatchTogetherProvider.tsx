@@ -8,6 +8,7 @@ import {
   acquireSocket, fetchMyGroup, fetchMyInvites, getClockOffsetMs, onSocketStatus,
   respondToInvite, sendGroupInvites, sendSocketMessage, subscribeSocket, useUserId,
   createGroup as apiCreateGroup, kickGroupMember, leaveGroup as apiLeaveGroup,
+  setGroupPlaybackSettings,
 } from "@tentacle-tv/api-client";
 import type { WsClientMessage, WtInviteDto, WtRoomStateDto } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
@@ -154,16 +155,26 @@ export function WatchTogetherProvider({ children }: { children: ReactNode }) {
     },
   }), [navigate]);
 
+  // Les réglages de lecture de l'HÔTE gouvernent la séance : posés tant qu'on
+  // est dans un groupe sans en être l'hôte, retirés à la sortie. Le magasin
+  // local n'est jamais écrit — les réglages du membre reviennent intacts.
+  const hostSettings = state.room?.hostPlaybackSettings ?? null;
+  const selfIsHost = !!state.room && !!selfId && state.room.hostUserId === selfId;
+  useEffect(() => {
+    setGroupPlaybackSettings(state.room && !selfIsHost ? hostSettings : null);
+    return () => { setGroupPlaybackSettings(null); };
+  }, [state.room, selfIsHost, hostSettings]);
+
   const value = useMemo<WatchTogetherContextValue>(() => ({
     room: state.room,
     invites: state.invites,
     selfId,
     isInGroup: !!state.room,
-    isHost: !!state.room && !!selfId && state.room.hostUserId === selfId,
+    isHost: selfIsHost,
     send,
     serverNow,
     actions,
-  }), [state.room, state.invites, selfId, send, serverNow, actions]);
+  }), [state.room, state.invites, selfId, selfIsHost, send, serverNow, actions]);
 
   return (
     <Ctx.Provider value={value}>
