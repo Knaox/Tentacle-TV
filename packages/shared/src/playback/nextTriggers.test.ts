@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PLAYBACK_SETTINGS, type NextEpisodeSettings } from "./playbackSettings";
 import type { ResolvedSegment } from "./segmentTypes";
-import { nextCardTriggerReached, nextEpisodeReachable } from "./nextTriggers";
+import { autoNextEligible, nextCardTriggerReached, nextEpisodeReachable } from "./nextTriggers";
+import { DEFAULT_PLAYBACK_SETTINGS as DEFAULTS } from "./playbackSettings";
+import type { SegmentType } from "./segmentTypes";
 
 const RUNTIME = 1_440_000; // 24 min
 
@@ -85,5 +87,51 @@ describe("nextEpisodeReachable — l'accès, qui ne disparaît plus", () => {
   it("sans générique, il suit le seuil de la bibliothèque", () => {
     expect(nextEpisodeReachable(RUNTIME - 40_000, RUNTIME, [], next())).toBe(false);
     expect(nextEpisodeReachable(RUNTIME - 10_000, RUNTIME, [], next())).toBe(true);
+  });
+});
+
+/**
+ * LE DÉFAUT VÉCU : au générique, ne pas sauter mais CROISER la pilule faisait
+ * paraître la carte « à suivre », puis emportait vers l'épisode suivant dix
+ * secondes plus tard, sans un geste. La croix veut dire l'exact contraire.
+ */
+describe("autoNextEligible — les deux refus ferment la fenêtre", () => {
+  const SCENE = [outro(1_200_000, 1_380_000, true)];
+  const base = {
+    segments: SCENE,
+    positionMs: 1_250_000,
+    runtimeMs: RUNTIME,
+    hasStarted: true,
+    isEpisode: true,
+    hasNextEpisode: true,
+    settings: DEFAULTS,
+  };
+
+  it("sans refus, le générique rend l'enchaînement éligible", () => {
+    expect(autoNextEligible(base)).toBe(true);
+  });
+
+  it("LE DÉFAUT — le générique REFUSÉ ne peut plus armer l'enchaînement", () => {
+    const muted = new Set<SegmentType>(["Outro"]);
+    expect(autoNextEligible({ ...base, mutedSegments: muted })).toBe(false);
+  });
+
+  it("la scène post-générique revendiquée le ferme aussi", () => {
+    expect(autoNextEligible({ ...base, postCreditsClaimed: true })).toBe(false);
+  });
+
+  it("un refus qui ne porte PAS sur le passage en cours ne change rien", () => {
+    const muted = new Set<SegmentType>(["Intro"]);
+    expect(autoNextEligible({ ...base, mutedSegments: muted })).toBe(true);
+  });
+
+  it("le refus ne survit pas à son passage : la fenêtre rouvre au générique final", () => {
+    const muted = new Set<SegmentType>(["Outro"]);
+    const withFinal = [outro(1_200_000, 1_380_000, true), outro(1_410_000, RUNTIME)];
+    // Position dans le générique FINAL : plus aucun candidat de saut, donc plus
+    // rien à refuser — la suite peut de nouveau se proposer.
+    expect(
+      autoNextEligible({ ...base, segments: withFinal, positionMs: 1_415_000, mutedSegments: muted }),
+    ).toBe(true);
   });
 });

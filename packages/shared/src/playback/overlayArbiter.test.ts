@@ -460,3 +460,26 @@ describe("la croix — quand elle existe, et quand elle n'a plus d'office", () =
       .toMatchObject({ kind: "skip", segmentType: "Intro", dismissible: false });
   });
 });
+
+describe("refuser un saut ne doit JAMAIS emporter vers l'épisode suivant", () => {
+  const muted = new Set<SegmentType>(["Outro"]);
+  const inOutro = { segments: [OUTRO_SCENE], positionMs: 1_250_000, mutedSegments: muted };
+
+  it("LE DÉFAUT VÉCU — croiser la pilule du générique ne fait plus paraître la carte", () => {
+    // Image nue : la sourdine masque le bouton, et RIEN ne prend sa place.
+    expect(
+      arbitrateOverlay(makeInput({ ...inOutro, dismissed: { segments: { Outro: true }, nextCard: false } })),
+    ).toEqual({ kind: "none" });
+  });
+
+  it("le bouton revient dans l'habillage, sans croix — et toujours pas de carte", () => {
+    expect(arbitrateOverlay(makeInput({ ...inOutro, controlsVisible: true })))
+      .toMatchObject({ kind: "skip", segmentType: "Outro", dismissible: false });
+  });
+
+  it("mais l'écran de FIN reste dû : le média est terminé, il n'y a plus rien à regarder", () => {
+    expect(
+      arbitrateOverlay(makeInput({ ...inOutro, positionMs: RUNTIME_MS, playbackEnded: true })),
+    ).toMatchObject({ kind: "nextCard", final: true });
+  });
+});
