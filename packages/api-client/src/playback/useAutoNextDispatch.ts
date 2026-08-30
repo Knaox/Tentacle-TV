@@ -71,13 +71,23 @@ export function useAutoNextDispatch(
       // Chaque surface porte SON refus : écarter la carte du générique laisse
       // l'affiche de fin paraître à l'EOF, avec un décompte neuf.
       dispatchNext(final ? { type: "dismissFinal" } : { type: "dismiss" });
+      // En séance, refuser la carte annule aussi le décompte de l'épisode —
+      // sinon le refuseur ré-armerait seul à l'EOF et son enchaînement
+      // (`wt:setItem`) embarquerait la salle qu'il venait de refuser.
+      if (!final && inputRef.current.groupSession === true) {
+        dispatchNext({ type: "cancelCountdown" });
+      }
       inputRef.current.onNextDismissNotify?.();
     },
     [dispatchNext, inputRef],
   );
 
   const signalRemoteNextDismiss = useCallback(() => {
+    // Un membre a dit non : sa croix masque NOTRE carte et annule le décompte
+    // pour l'épisode — mais l'affiche de fin restera une PROPOSITION chez
+    // nous. Refuser une vignette n'a jamais fermé l'écran des autres.
     dispatchNext({ type: "dismiss" });
+    dispatchNext({ type: "cancelCountdown" });
   }, [dispatchNext]);
 
   return { nextState, nextStateRef, dispatchNext, playNow, dismissNext, signalRemoteNextDismiss };

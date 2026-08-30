@@ -107,6 +107,8 @@ export interface VideoPlayerProps {
   onFatalError?: () => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
+  /** Watch Together — une séance est active sur ce média (refus ⇒ décompte annulé). */
+  inGroupSession?: boolean;
   /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
   onControlsVisibilityChange?: (visible: boolean) => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */

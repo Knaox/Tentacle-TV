@@ -195,6 +195,29 @@ describe("le refus découplé — la carte n'est pas l'affiche", () => {
     });
   });
 
+  it("en séance : dismiss + cancelCountdown — l'affiche de fin reste une proposition, jamais un départ", () => {
+    // Le refus d'un membre arrive en deux temps (refus + annulation de
+    // séance) : la carte se tait, et à l'EOF l'affiche paraît SANS minuteur —
+    // personne ne part, chacun peut encore dire « Lire maintenant ».
+    const { state, effects } = run([
+      tick(),
+      { type: "dismiss" },
+      { type: "cancelCountdown" },
+      tick(),
+      tick(true, true, 0),
+      tick(true, true),
+      tick(true, true),
+    ]);
+    expect(effects).toEqual([]);
+    expect(state).toMatchObject({
+      phase: "final",
+      countdownCanceled: true,
+      finalDismissed: false,
+      remainingMs: null,
+      chained: false,
+    });
+  });
+
   it("changer d'épisode réarme les trois refus", () => {
     const { state } = run([
       { type: "dismiss" },

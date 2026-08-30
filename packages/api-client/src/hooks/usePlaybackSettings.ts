@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import {
   createPlaybackSettingsStore,
+  normalizePlaybackSettings,
   type PlaybackSettings,
   type PlaybackSettingsPatch,
   type PlaybackSettingsStore,
@@ -44,8 +45,14 @@ const overrideListeners = new Set<() => void>();
 /** Posé par le fournisseur Watch Together ; `null` hors groupe ou si l'on EST
  *  l'hôte (ses propres réglages font déjà foi). */
 export function setGroupPlaybackSettings(settings: PlaybackSettings | null): void {
-  if (settings === groupOverride) return;
-  groupOverride = settings;
+  // Normalisés À LA FRONTIÈRE : un vieux serveur envoie l'objet de SON époque,
+  // sans les champs nés depuis (`nextFinalCard`…) — le type ment, pas le
+  // runtime, et un champ absent éteindrait l'affiche de toute la salle.
+  const next = settings === null ? null : normalizePlaybackSettings(settings);
+  // Égalité par CONTENU : la normalisation rend un objet neuf à chaque état de
+  // salle, et une identité neuve re-rendrait les six surfaces pour rien.
+  if (JSON.stringify(next) === JSON.stringify(groupOverride)) return;
+  groupOverride = next;
   overrideListeners.forEach((listener) => listener());
 }
 
