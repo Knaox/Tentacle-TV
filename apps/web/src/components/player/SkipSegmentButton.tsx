@@ -33,6 +33,11 @@
  * maintenant son propre voile noir, en FONDU D'OPACITÉ : la croix reçoit un
  * disque inscrit, le libellé un voile à ses dimensions.
  *
+ * Ce voile et le balayage du décompte vivent dans `overlayPill.tsx` : la fiche
+ * « à suivre » est la MÊME matière à une autre taille, et son bouton d'action
+ * est cette pilule-ci. Les deux avaient divergé une fois, elles ne le peuvent
+ * plus.
+ *
  * # Ce qui bouge, et ce qui ne bouge pas
  *
  * Le bouton monte au-dessus de la barre de contrôles quand elle est là, et
@@ -60,6 +65,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { SkipLabelKey } from "@tentacle-tv/shared";
 import { videoShadow } from "../../lib/videoShadow";
+import { Sweep, Veil } from "./overlayPill";
 
 interface SkipSegmentButtonProps {
   /** Clé i18n du libellé (`player:<clé>` et sa forme décomptée `<clé>In`). */
@@ -147,22 +153,6 @@ export function SkipSegmentButton({
   );
 }
 
-/**
- * Le voile de survol d'une moitié — posé en permanence, révélé en OPACITÉ.
- *
- * Jamais une `background-color` qui s'anime : elle repeint à chaque image, et
- * ces pilules flottent au-dessus d'une vidéo en lecture. Le calque, lui, se
- * compose (règle de `cards.css`, mesurée là-bas).
- */
-function Veil({ className }: { className: string }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`pointer-events-none absolute inset-0 bg-black/[0.07] opacity-0 transition-opacity duration-150 motion-reduce:transition-none ${className}`}
-    />
-  );
-}
-
 /** L'entrée : la pilule monte et se révèle, en une seule image composée. */
 function Rising({ children }: { children: React.ReactNode }) {
   const [shown, setShown] = useState(false);
@@ -181,40 +171,3 @@ function Rising({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Le temps qui reste, montré plutôt que lu — un voile qui BALAYE la pilule.
- *
- * C'était une glissière de deux pixels posée à `bottom-0`. Invisible, et pour
- * une raison de géométrie : dans un conteneur `rounded-full` de 44 px, le bas
- * de la forme est un point — une bande horizontale y est rognée sur presque
- * toute sa longueur, et il n'en restait qu'un éclat au centre. Aucun réglage
- * d'opacité n'y pouvait rien.
- *
- * Le voile, lui, occupe toute la hauteur : le rayon ne le rogne plus, et il se
- * lit d'un coup d'œil sans rien ajouter à l'objet. Il reste SOBRE — dix pour
- * cent de noir sur blanc, assez pour marquer une frontière franche, trop peu
- * pour entamer le contraste du libellé (noir sur blanc, 16:1 par-dessus).
- *
- * `scaleX` et rien d'autre : animer `width` repeindrait la pilule à chaque
- * image. Sous « animations réduites », il disparaît — le libellé, qui décompte
- * en toutes lettres, fait seul le travail.
- */
-function Sweep({ durationMs }: { durationMs: number }) {
-  const [gone, setGone] = useState(false);
-
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setGone(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  return (
-    <span
-      aria-hidden="true"
-      className="absolute inset-0 origin-left bg-black/10 transition-transform ease-linear motion-reduce:hidden"
-      style={{
-        transitionDuration: `${durationMs}ms`,
-        transform: `scaleX(${gone ? 1 : 0})`,
-      }}
-    />
-  );
-}

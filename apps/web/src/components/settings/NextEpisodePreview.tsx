@@ -7,9 +7,10 @@
  * ne se ressemblent pas à l'écran : sans fiche il n'y a rien, sans décompte la
  * fiche attend, sans enchaînement le décompte va au bout et il ne se passe rien.
  *
- * `UpNextCard` est montée telle quelle — même image, même badge, même barre de
- * progression. Elle est large de 420 px et le cadre en fait 460 : elle y tient
- * à sa taille réelle, sans transformée d'échelle.
+ * `UpNextCard` est montée telle quelle — même image, même badge, et le même
+ * décompte porté par le bouton d'action (le balayage de `overlayPill.tsx`).
+ * Elle est large de 420 px et le cadre en fait 460 : elle y tient à sa taille
+ * réelle, sans transformée d'échelle.
  *
  * ⚠️ PAS d'`AnimatePresence` autour d'elle : sa sortie animée n'a pas de sens
  * dans un aperçu qu'on règle, et la faire disparaître en fondu à chaque clic

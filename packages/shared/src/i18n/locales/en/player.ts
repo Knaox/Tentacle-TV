@@ -25,6 +25,7 @@ export default {
   skipForward: "+30s",
   nextEpisodeIn: "Next episode in",
   playNow: "Play now",
+  playNowIn: "Play now in {{seconds}}s",
   tracks: "Tracks",
   tracksAudioSubtitle: "Audio and subtitle tracks",
   audioLabel: "AUDIO",
