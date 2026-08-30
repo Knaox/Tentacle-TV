@@ -37,7 +37,7 @@ export function DesktopPlayer({
   serverAutoplayEnabled = true,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
-  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss,
+  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
   onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
@@ -190,7 +190,7 @@ export function DesktopPlayer({
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
-    onAutoNextDismiss,
+    onAutoNextDismiss, inGroupSession,
   });
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.

@@ -42,7 +42,7 @@ export function VideoPlayer({
   onNextEpisode, onPreviousEpisode,
   segments = [], runtimeMs = 0, libraryId = null, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
-  onControlsVisibilityChange, applyToSeries,
+  inGroupSession, onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -118,6 +118,7 @@ export function VideoPlayer({
     runtimeMs,
     libraryId,
     serverAutoplayEnabled,
+    groupSession: inGroupSession,
     controlsVisible: showControls,
     onSeekSeconds: handleSeek,
     onNextEpisode: () => onNextEpisode?.(),
