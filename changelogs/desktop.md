@@ -13,6 +13,64 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [mac-1.20.11]
+<!-- Bloc macOS CUMULATIF : 1.20.9 → 1.20.11. L'App Store est resté en 1.20.8
+     (la 1.20.9 renumérotée 1.20.10 n'y est jamais partie) ; sans ce cumul,
+     ces nouveautés ne seraient jamais annoncées aux utilisateurs Mac. Le
+     contenu 1.20.10 est CONDENSÉ pour tenir sous les 4000 caractères ASC —
+     la CI tronque à la puce, en silence. Commentaire posé AVANT ### FR :
+     placé après les puces, il serait happé par la dernière section. -->
+### FR
+- **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série
+- **Écarter la fiche « à suivre » pendant le générique ne supprime plus l'affiche de fin.** À la toute fin de l'épisode, elle paraît avec un décompte neuf — refuser une vignette sur l'image n'a jamais voulu dire renoncer à la suite
+- **La fin d'une lecture ne laisse plus d'image figée.** Fermer l'affiche ramène à la fiche du média — et un film ou un dernier épisode y retournent tout seuls
+- **L'affiche de fin se règle**, dans Réglages > Lecture > À la fin d'un épisode : sa bascule, et son aperçu vivant — la vraie affiche, comme pour les autres boutons
+- **Un seul bouton, blanc, partout.** Il compte, se refuse d'une croix, et dit où il mène : la scène post-générique, l'épisode suivant — ou terminer, sur le dernier épisode d'une série
+- **Le générique de fin se règle séparément sur les films et sur les séries**, et les films le passent tout seuls d'origine — vers la scène post-générique ; sans scène à rejoindre, aucun bouton : le générique se joue, l'écran de fin arrive
+- **Les génériques et les scènes post-génériques sont enfin trouvés sur les films.** Quand le serveur ne signale rien de crédible, Tentacle lit les vignettes de la barre de progression et les établit lui-même — « Spider-Man : No Way Home » mène désormais à sa scène post-générique
+- **Les passages d'un épisode se règlent un par un** : générique de début, résumé, générique de fin, aperçu du suivant — bouton, automatique ou rien, avec décompte et délai réglables. Et les réglages se VOIENT : un aperçu montre le vrai bouton du lecteur, qui change sous vos yeux
+- **Les réglages de lecture suivent votre COMPTE** sur tous vos appareils, et la fin d'épisode a ses réglages vraiment indépendants : la fiche « à suivre », son compte à rebours — réglable —, l'enchaînement
+- **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder** — sur la fiche, l'accueil et le lecteur — et la fin d'une saison enchaîne sur la suivante
+- **« Reprendre la lecture » montre l'image exacte où vous vous êtes arrêté**, la même sur tous vos appareils, hors ligne compris
+- **Fini les cartes noires et les rangées vides** : une image manquée se retente d'elle-même, et un rayon qui n'a pas pu se charger le dit et propose de réessayer
+- **L'épisode terminé est aussitôt coché sur la fiche**, et un épisode repris depuis le début redevient « en cours », à l'endroit exact où vous en êtes
+- **Quitter un film ne déplace plus la fenêtre** (macOS) — plus de transition imposée, plus de rectangle noir résiduel
+- **Le lecteur se lit mieux** : un voile sombre derrière les barres, un seul panneau à la fois avec sa croix, plus d'habillage sur l'écran de chargement, plus de saut d'intro pendant le lancement, et les surbrillances retrouvées
+- **Watch Together : l'invitation s'ouvre d'elle-même à l'accueil**, et le logo porte le nombre d'invitations en attente
+
+### EN
+- **The end-of-episode poster has been redesigned**: the same white pill as the player buttons, the time left shown inside the "Play now" gesture, a background of gradients that lets the series banner breathe
+- **Dismissing the "up next" card during the credits no longer removes the end poster.** At the very end of the episode it appears with a fresh countdown — refusing a thumbnail on the picture never meant giving up on what's next
+- **The end of playback no longer leaves a frozen frame.** Closing the poster returns to the details page — and a film or a final episode goes back there on its own
+- **The end poster is now yours to set**, under Settings > Playback > At the end of an episode: its own switch, and a live preview — the real poster, as for the other buttons
+- **One button, white, everywhere.** It counts down, can be refused with a cross, and says where it leads: the post-credit scene, the next episode — or ending playback, on the last episode of a series
+- **Closing credits are set separately for films and for series**, and films skip them on their own out of the box — to the post-credit scene; with no scene to reach, no button at all: the credits play out, the end screen arrives
+- **Closing credits and post-credit scenes are at last found on films.** When the server marks nothing credible, Tentacle reads the progress-bar thumbnails and works them out itself — "Spider-Man: No Way Home" now leads to its post-credit scene
+- **Passages within an episode are set one by one**: opening titles, recap, closing credits, preview of the next — button, automatic or nothing, with an adjustable countdown and delay. And the settings are SHOWN: a preview displays the player's real button, changing before your eyes
+- **Playback settings follow your ACCOUNT** on all your devices, and the end of an episode has genuinely independent settings: the "up next" card, its countdown — adjustable — and autoplay
+- **The next episode is the one AFTER what you just watched** — on the details page, the home screen and the player — and the end of a season carries on to the next
+- **"Continue watching" shows the exact frame where you stopped**, the same on all your devices, offline included
+- **No more black cards or empty rows**: a missed image retries on its own, and a shelf that failed to load says so and offers to retry
+- **A finished episode is ticked on the series page right away**, and an episode restarted from the beginning goes back to "in progress", at the very spot you reached
+- **Leaving a film no longer moves the window** (macOS) — no forced transition, no leftover black rectangle
+- **The player reads better**: a dark veil behind the bars, one panel at a time with its own cross, no controls over the loading screen, no intro skip firing during launch, and the lost highlights are back
+- **Watch Together: the invitation opens on its own on the home screen**, and the icon carries the number of pending invitations
+
+## [1.20.11]
+### FR
+- **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série
+- **Écarter la fiche « à suivre » pendant le générique ne supprime plus l'affiche de fin.** À la toute fin de l'épisode, elle paraît avec un décompte neuf — refuser une vignette sur l'image n'a jamais voulu dire renoncer à la suite
+- **La fin d'une lecture ne laisse plus d'image figée.** Fermer l'affiche ramène à la fiche du média — et un film ou un dernier épisode y retournent tout seuls
+- **L'affiche de fin se règle**, dans Réglages > Lecture > À la fin d'un épisode : sa bascule, et son aperçu vivant — la vraie affiche, comme pour les autres boutons
+- **En séance Watch Together, un refus n'éteint plus l'écran des autres** : le décompte de la salle s'annule, l'affiche reste une proposition, et chacun peut encore lancer la suite
+
+### EN
+- **The end-of-episode poster has been redesigned**: the same white pill as the player buttons, the time left shown inside the "Play now" gesture, a background of gradients that lets the series banner breathe
+- **Dismissing the "up next" card during the credits no longer removes the end poster.** At the very end of the episode it appears with a fresh countdown — refusing a thumbnail on the picture never meant giving up on what's next
+- **The end of playback no longer leaves a frozen frame.** Closing the poster returns to the details page — and a film or a final episode goes back there on its own
+- **The end poster is now yours to set**, under Settings > Playback > At the end of an episode: its own switch, and a live preview — the real poster, as for the other buttons
+- **In a Watch Together session, one refusal no longer clears everyone's screen**: the room's countdown is cancelled, the poster stays as an offer, and anyone can still start what's next
+
 ## [win-1.20.10]
 ### FR
 - **Le saut vers la scène post-générique tombe juste.** Il arrivait jusqu'à dix secondes APRÈS le début de la scène — les premières secondes étaient perdues. Il atterrit désormais sur la dernière image du générique : on ne rate plus rien
