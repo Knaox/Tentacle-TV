@@ -145,11 +145,9 @@ export function PlayerScreen({ route, navigation }: Props) {
   });
   useEffect(() => { setScrubbing(controls.scrubbing); }, [controls.scrubbing]);
 
-  // Sortie du lecteur : croix de l'affiche de fin, et fin atteinte sans suite.
-  const { dismissAutoPlay } = useTVPlaybackExit({
-    ended, playback, endedRef,
-    handleFinished: () => { void lifecycle.handleFinished(); },
-  });
+  // La croix de l'affiche de fin — la sortie elle-même (fin sans suite, refus,
+  // réglage éteint) part de la coquille partagée, par `onFinished` ci-dessus.
+  const { dismissAutoPlay } = useTVPlaybackExit({ playback, endedRef });
 
   // Interception du bouton Retour PHYSIQUE tvOS (usePreventRemove — le pop natif est la
   // seule voie de ce bouton, cf. hook) + source de vérité des chemins Retour JS.

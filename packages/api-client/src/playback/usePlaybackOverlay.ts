@@ -30,6 +30,7 @@ import {
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
 import { useAutoNextDispatch } from "./useAutoNextDispatch";
+import { useEndOfPlaybackExit } from "./useEndOfPlaybackExit";
 import { useMutedSegments } from "./useMutedSegments";
 import { usePostCreditsClaim } from "./usePostCreditsClaim";
 import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
@@ -57,6 +58,10 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   // L'enchaînement d'épisode vit dans son propre bloc — état, gestes, refus.
   const { nextState, dispatchNext, playNow, dismissNext, signalRemoteNextDismiss } =
     useAutoNextDispatch(inputRef, settingsRef);
+
+  // Quand l'affiche de fin n'est pas due à l'EOF, la sortie du lecteur part
+  // d'ici — plus d'image figée, quelle que soit la raison du silence.
+  useEndOfPlaybackExit(input, settings.next.nextFinalCard, nextState);
 
   const commitSkipState = useCallback((state: IntroSkipState) => {
     skipStateRef.current = state;

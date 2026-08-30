@@ -144,10 +144,9 @@ export function DesktopPlayer({
   );
 
   // Sorties du lecteur (retour, fiche, fermeture de session plein écran) —
-  // le moteur d'enchaînement, lui, vit dans l'arbitre partagé (plus bas).
-  const { goBack, goToDetail } = useDesktopPlayerExit({
-    state, fileLoaded, itemId, hasNextEpisode, serverAutoplayEnabled, hasStartedRef,
-  });
+  // QUAND sortir en fin de lecture est décidé par la coquille partagée, qui
+  // appelle `onEndOfPlayback` (plus bas) → `goToDetail`.
+  const { goBack, goToDetail } = useDesktopPlayerExit({ itemId });
 
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
   useDesktopMediaControls({

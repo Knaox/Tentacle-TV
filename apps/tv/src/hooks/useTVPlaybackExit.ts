@@ -1,48 +1,32 @@
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import type { TVPlaybackOverlay } from "./useTVPlaybackOverlay";
 
 /**
- * Sortir du lecteur quand il n'y a plus rien à regarder.
+ * La croix de l'affiche de fin, côté TV — et le routage du Retour qui va avec.
  *
- * Deux chemins, et ils ne se confondent pas :
- *
- * - la CROIX de l'affiche de fin. Écarter la carte du générique laisse le
- *   contenu jouer ; écarter l'affiche de FIN ne laisse rien — sans ce retour
- *   à la fiche, le lecteur restait gelé sur sa dernière image. Le départ est
- *   différé d'un tick : `usePreventRemove` bloque un dispatch du même tick,
- *   la valeur de prévention venant du dernier rendu ;
- * - la fin ATTEINTE sans rien à proposer (film, dernier épisode, auto-play
- *   coupé côté serveur). La règle ne demande rien à l'arbitre — il n'a par
- *   définition monté aucune surface — et c'est la même que sur le web.
+ * QUAND sortir n'est plus décidé ici : la coquille partagée
+ * (`useEndOfPlaybackExit`) appelle `onFinished` dès que l'affiche n'est plus
+ * due à l'EOF — croix donnée, réglage éteint, fin sans suite. Le départ passe
+ * par un effet React, donc APRÈS le commit du rendu : `usePreventRemove` ne
+ * bloque plus le dispatch du même tick, l'ancien `setTimeout` n'a plus
+ * d'objet. Ne reste que la traduction du geste : la croix sur l'affiche de
+ * fin doit dire au routeur Retour qu'elle a consommé l'appui.
  */
 export function useTVPlaybackExit(args: {
-  ended: boolean;
   playback: TVPlaybackOverlay;
   endedRef: React.MutableRefObject<boolean>;
-  handleFinished: () => void;
 }): { dismissAutoPlay: () => boolean } {
-  const { ended, playback, endedRef, handleFinished } = args;
-  const { overlayRef, dismissOverlay, autoPlay, autoplayEnabled } = playback;
-  const nextEpisode = autoPlay.nextEpisode;
+  const { playback, endedRef } = args;
+  const { overlayRef, dismissOverlay } = playback;
 
   const dismissAutoPlay = useCallback((): boolean => {
     const currentOverlay = overlayRef.current;
     const wasFinal = currentOverlay.kind === "nextCard" && currentOverlay.final;
     dismissOverlay();
-    if (wasFinal && endedRef.current) {
-      setTimeout(() => { handleFinished(); }, 0);
-      return true;
-    }
-    return false;
+    // La sortie elle-même part de la coquille (refus → plus d'affiche due).
+    return wasFinal && endedRef.current;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dismissOverlay, overlayRef]);
-
-  useEffect(() => {
-    if (!ended) return;
-    if (nextEpisode && autoplayEnabled) return;
-    handleFinished();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ended, nextEpisode, autoplayEnabled]);
 
   return { dismissAutoPlay };
 }
