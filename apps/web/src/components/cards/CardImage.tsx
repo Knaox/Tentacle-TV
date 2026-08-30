@@ -33,9 +33,13 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
    * Les cartes sont recyclées au défilement : la même instance sert un autre
    * média quand la rangée avance. Un `errored` qui ne redescend jamais faisait
    * donc traîner l'icône de repli sur des affiches parfaitement valides, et
-   * gardait pour cassée une image que le serveur avait fini par récupérer. */
-  const [state, setState] = useState({ src, loaded: false, errored: false });
-  if (state.src !== src) setState({ src, loaded: false, errored: false });
+   * gardait pour cassée une image que le serveur avait fini par récupérer.
+   *
+   * `src` VIDE : la donnée a prouvé qu'il n'y a pas d'image (cf.
+   * `resolveCardImage.ts`) — le repli se rend d'emblée, sans `<img>` (un src
+   * vide se résout vers l'URL de la page) ni squelette (rien ne viendra). */
+  const [state, setState] = useState({ src, loaded: false, errored: src === "" });
+  if (state.src !== src) setState({ src, loaded: false, errored: src === "" });
   const { loaded, errored } = state;
   // Le squelette n'est monté que si la carte est REGARDÉE.
   //

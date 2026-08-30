@@ -80,8 +80,16 @@ export const PosterCard = memo(function PosterCard({
 
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
-  const { id: imageId, type: imageType } = resolvePosterImage(item, posterImageMode);
-  const imageUrl = client.getImageUrl(imageId, imageType, { height: 450, quality: 90 });
+  const resolvedImage = resolvePosterImage(item, posterImageMode);
+  // « » : la donnée prouve qu'il n'y a pas d'affiche — `CardImage` rend son
+  // repli sans lancer une requête vouée au 404 (cf. `resolveCardImage.ts`).
+  const imageUrl = resolvedImage
+    ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
+        height: 450,
+        quality: 90,
+        ...(resolvedImage.tag ? { tag: resolvedImage.tag } : {}),
+      })
+    : "";
 
   const widths = POSTER_WIDTH[size];
   const epLabel = isEpisode

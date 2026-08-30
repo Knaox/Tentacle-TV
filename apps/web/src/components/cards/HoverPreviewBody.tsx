@@ -199,12 +199,16 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
           cache — d'où un clignotement noir d'une frame à chaque survol.
           Ici la source est strictement celle de la carte, donc déjà décodée :
           elle peint immédiatement, il n'y a rien à masquer. */}
-      <img
-        src={imageUrl}
-        alt={item.Name}
-        draggable={false}
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      {/* Carte sans image connue (`src` vide, cf. `resolveCardImage.ts`) : pas
+          d'<img> — certains moteurs peignent un glyphe d'image cassée. */}
+      {imageUrl !== "" && (
+        <img
+          src={imageUrl}
+          alt={item.Name}
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       {/* Bouton « Plus d'infos », en haut à gauche : il ouvre la FICHE, avec la
           même transition que partout (`go` capture l'origine sur la vignette).
           Il a remplacé le bouton Lecture — la vignette entière lance déjà la
