@@ -8,11 +8,13 @@
  * et `overlayRef` est un miroir SYNCHRONE : le bouton Retour TV le lit dans
  * le même dispatch d'événement, où un état React serait périmé.
  *
- * Les DEUX REFUS — la croix (`useMutedSegments.ts`) et la scène post-générique
+ * Les REFUS — la croix (`useMutedSegments.ts`) et la scène post-générique
  * revendiquée (`usePostCreditsClaim.ts`) — font taire la carte « à suivre » ET
- * son minuteur, par le sélecteur PARTAGÉ `autoNextEligible` : les séparer, c'est
- * laisser l'épisode partir sans qu'aucune surface l'ait annoncé. Le RETOUR EN
- * ARRIÈRE les lève tous les trois, saut compris — qui revient derrière l'endroit
+ * son minuteur, par le sélecteur PARTAGÉ `autoNextEligible` : TOUT candidat de
+ * saut y ferme l'enchaînement (affiché, il occupe la surface ; en sourdine, il
+ * vaut refus — la croix ne supprime pas le candidat), et la revendication tient
+ * jusque dans le générique final, où il n'y a plus de bouton. Le RETOUR EN
+ * ARRIÈRE lève tous ces gestes, saut compris — qui revient derrière l'endroit
  * d'un geste le redemande.
  */
 
@@ -150,9 +152,11 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const pRuntimeMs = p.runtimeMs && p.runtimeMs > 0 ? p.runtimeMs : Math.round(p.durationSeconds * 1000);
       dispatchNext({
         type: "frame",
-        // LE MÊME sélecteur que l'arbitre, refus compris : le minuteur ne
-        // connaît ni position ni segments, et s'il ne dit pas la même chose que
-        // la carte, l'épisode part sans qu'aucune surface l'ait annoncé.
+        // LE MÊME sélecteur que l'arbitre, candidat de saut compris : le
+        // minuteur ne connaît ni position ni segments, et s'il ne dit pas la
+        // même chose que la carte, l'épisode part sans qu'aucune surface l'ait
+        // annoncé. La sourdine n'a plus à être transmise — le candidat ferme
+        // l'éligibilité qu'il soit affiché ou mis en sourdine.
         eligible:
           !p.scrubbing &&
           p.hasStarted &&
@@ -160,7 +164,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
             ...frameInput(),
             runtimeMs: pRuntimeMs,
             libraryId: p.libraryId ?? null,
-            mutedSegments: mutedRef.current,
             postCreditsClaimed: postCreditsClaimedRef.current,
           }),
         ended: p.playbackEnded,

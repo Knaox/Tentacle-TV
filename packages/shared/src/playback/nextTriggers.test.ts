@@ -3,7 +3,6 @@ import { DEFAULT_PLAYBACK_SETTINGS, type NextEpisodeSettings } from "./playbackS
 import type { ResolvedSegment } from "./segmentTypes";
 import { autoNextEligible, nextCardTriggerReached, nextEpisodeReachable } from "./nextTriggers";
 import { DEFAULT_PLAYBACK_SETTINGS as DEFAULTS } from "./playbackSettings";
-import type { SegmentType } from "./segmentTypes";
 
 const RUNTIME = 1_440_000; // 24 min
 
@@ -91,11 +90,15 @@ describe("nextEpisodeReachable — l'accès, qui ne disparaît plus", () => {
 });
 
 /**
- * LE DÉFAUT VÉCU : au générique, ne pas sauter mais CROISER la pilule faisait
- * paraître la carte « à suivre », puis emportait vers l'épisode suivant dix
- * secondes plus tard, sans un geste. La croix veut dire l'exact contraire.
+ * LES DÉFAUTS VÉCUS, dans l'ordre : croiser la pilule faisait paraître la carte
+ * « à suivre » puis emportait vers l'épisode suivant dix secondes plus tard ;
+ * puis le bouton « aller à la scène post-générique » AFFICHÉ (mode bouton, sans
+ * décompte) laissait le minuteur s'armer DESSOUS — l'épisode partait à dix
+ * secondes, sans un geste ni une surface. La porte est désormais structurelle :
+ * tout candidat de saut ferme la fenêtre, qu'il soit affiché ou en sourdine
+ * (la croix ne supprime pas le candidat).
  */
-describe("autoNextEligible — les deux refus ferment la fenêtre", () => {
+describe("autoNextEligible — un candidat de saut ou un refus ferme la fenêtre", () => {
   const SCENE = [outro(1_200_000, 1_380_000, true)];
   const base = {
     segments: SCENE,
@@ -107,31 +110,45 @@ describe("autoNextEligible — les deux refus ferment la fenêtre", () => {
     settings: DEFAULTS,
   };
 
-  it("sans refus, le générique rend l'enchaînement éligible", () => {
-    expect(autoNextEligible(base)).toBe(true);
+  it("LE FANTÔME — un candidat de saut affiché ferme la fenêtre, rien ne s'arme sous un bouton", () => {
+    // « Aller à la scène post-générique » est à l'écran (mode bouton par
+    // défaut) : la carte n'a aucune surface, le minuteur ne doit pas en avoir.
+    expect(autoNextEligible(base)).toBe(false);
   });
 
-  it("LE DÉFAUT — le générique REFUSÉ ne peut plus armer l'enchaînement", () => {
-    const muted = new Set<SegmentType>(["Outro"]);
-    expect(autoNextEligible({ ...base, mutedSegments: muted })).toBe(false);
+  it("le réglage « off » ne fabrique aucun candidat : la fenêtre reste ouverte", () => {
+    const settings = { ...DEFAULTS, outro: { ...DEFAULTS.outro, action: "off" as const } };
+    expect(autoNextEligible({ ...base, settings })).toBe(true);
   });
 
-  it("la scène post-générique revendiquée le ferme aussi", () => {
-    expect(autoNextEligible({ ...base, postCreditsClaimed: true })).toBe(false);
+  it("un générique normal n'a pas de candidat — la carte parle, la fenêtre est ouverte", () => {
+    expect(autoNextEligible({ ...base, segments: [outro(1_200_000, RUNTIME)] })).toBe(true);
   });
 
-  it("un refus qui ne porte PAS sur le passage en cours ne change rien", () => {
-    const muted = new Set<SegmentType>(["Intro"]);
-    expect(autoNextEligible({ ...base, mutedSegments: muted })).toBe(true);
-  });
-
-  it("le refus ne survit pas à son passage : la fenêtre rouvre au générique final", () => {
-    const muted = new Set<SegmentType>(["Outro"]);
+  it("au générique final, plus de candidat : la fenêtre rouvre", () => {
     const withFinal = [outro(1_200_000, 1_380_000, true), outro(1_410_000, RUNTIME)];
-    // Position dans le générique FINAL : plus aucun candidat de saut, donc plus
-    // rien à refuser — la suite peut de nouveau se proposer.
+    expect(autoNextEligible({ ...base, segments: withFinal, positionMs: 1_415_000 })).toBe(true);
+  });
+
+  it("la scène revendiquée ferme la fenêtre AU-DELÀ du candidat — générique final compris", () => {
+    const withFinal = [outro(1_200_000, 1_380_000, true), outro(1_410_000, RUNTIME)];
     expect(
-      autoNextEligible({ ...base, segments: withFinal, positionMs: 1_415_000, mutedSegments: muted }),
-    ).toBe(true);
+      autoNextEligible({ ...base, segments: withFinal, positionMs: 1_415_000, postCreditsClaimed: true }),
+    ).toBe(false);
+  });
+
+  it("un candidat Aperçu près de la fin ferme aussi la fenêtre", () => {
+    // Aperçu de l'épisode suivant collé à la fin (cas anime) : le seuil global
+    // « avant la fin » est franchi, mais le bouton occupe la surface.
+    const preview: ResolvedSegment = {
+      type: "Preview",
+      startMs: RUNTIME - 30_000,
+      endMs: RUNTIME,
+      source: "jellyfin",
+      endsAtMediaEnd: true,
+      hasContentAfter: false,
+    };
+    expect(autoNextEligible({ ...base, segments: [preview], positionMs: RUNTIME - 20_000 })).toBe(false);
+    expect(autoNextEligible({ ...base, segments: [], positionMs: RUNTIME - 20_000 })).toBe(true);
   });
 });

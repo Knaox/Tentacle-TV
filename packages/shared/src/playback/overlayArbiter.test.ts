@@ -177,12 +177,18 @@ describe("priorités et gardes", () => {
     expect(withoutCountdown).toMatchObject({ countdownSeconds: null });
   });
 
-  it("un segment désactivé ou refusé ne montre rien — et le refus du générique rend la main à la carte", () => {
+  it("un segment désactivé ou refusé ne montre rien — et le refus du générique rend la main à la PILULE", () => {
     const off = arbitrateOverlay(
       makeInput({ segments: [INTRO], positionMs: 60_000, settings: makeSettings({ intro: { action: "off" } }) }),
     );
     expect(off).toEqual({ kind: "none" });
 
+    // Le candidat existe toujours (le refus d'affichage ne le supprime pas),
+    // donc ni carte ni minuteur ne s'engouffrent dans la fenêtre — seule la
+    // pilule, qui n'arme rien, reste atteignable. L'état « refusé sans
+    // sourdine » est d'ailleurs inatteignable depuis la coquille
+    // (`dismissOverlay` met toujours en sourdine) : ce cas ne documente que
+    // l'arbitre pris isolément.
     const dismissedOutro = arbitrateOverlay(
       makeInput({
         segments: [OUTRO_SCENE],
@@ -190,7 +196,7 @@ describe("priorités et gardes", () => {
         dismissed: { segments: { Outro: true }, nextCard: false },
       }),
     );
-    expect(dismissedOutro.kind).toBe("nextCard");
+    expect(dismissedOutro).toEqual({ kind: "nextButton", dismissible: true });
   });
 
   it("le récap est PROPOSÉ par défaut, et se tait une fois éteint", () => {
