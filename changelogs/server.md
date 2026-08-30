@@ -5,6 +5,23 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.15.1]
+### FR
+- **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série
+- **Écarter la fiche « à suivre » pendant le générique ne supprime plus l'affiche de fin.** À la toute fin de l'épisode, elle paraît avec un décompte neuf — refuser une vignette sur l'image n'a jamais voulu dire renoncer à la suite
+- **La fin d'une lecture ne laisse plus d'image figée.** Fermer l'affiche ramène à la fiche du média — et un film ou un dernier épisode y retournent tout seuls
+- **Sauter jusqu'à la fin vaut la fin.** Un +30 s qui dépasse le générique — ou la poignée relâchée sur le bord — termine la lecture et fait paraître l'affiche de fin
+- **L'affiche de fin se règle**, dans Réglages > Lecture > À la fin d'un épisode : sa bascule, son aperçu vivant — et le serveur conserve ce choix avec les autres réglages du compte
+- **En séance Watch Together, un refus n'éteint plus l'écran des autres** : le décompte de la salle s'annule, l'affiche reste une proposition, et chacun peut encore lancer la suite
+
+### EN
+- **The end-of-episode poster has been redesigned**: the same white pill as the player buttons, the time left shown inside the "Play now" gesture, a background of gradients that lets the series banner breathe
+- **Dismissing the "up next" card during the credits no longer removes the end poster.** At the very end of the episode it appears with a fresh countdown — refusing a thumbnail on the picture never meant giving up on what's next
+- **The end of playback no longer leaves a frozen frame.** Closing the poster returns to the details page — and a film or a final episode goes back there on its own
+- **Skipping to the end IS the end.** A +30s that overshoots the credits — or the handle released on the edge — ends playback and brings up the end poster
+- **The end poster is now yours to set**, under Settings > Playback > At the end of an episode: its own switch, a live preview — and the server keeps that choice with the account's other playback settings
+- **In a Watch Together session, one refusal no longer clears everyone's screen**: the room's countdown is cancelled, the poster stays as an offer, and anyone can still start what's next
+
 ## [1.15.0]
 ### FR
 - **Le saut vers la scène post-générique tombe juste.** Il arrivait jusqu'à dix secondes APRÈS le début de la scène — les premières secondes étaient perdues. Il atterrit désormais sur la dernière image du générique : on ne rate plus rien
