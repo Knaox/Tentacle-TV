@@ -63,8 +63,24 @@ export function PlayerDebugPanel() {
     reclamp,
   );
 
+  // ⚠️ Le `catch` n'est pas une politesse. Sans lui, une seule collecte qui
+  // lève laissait `sections` vide et le panneau n'affichait plus que ses
+  // bascules — l'outil censé dire ce qui ne va pas ne disait rien, et il
+  // fallait la console pour l'apprendre (mesuré : un champ renommé d'un côté
+  // du pont de la sonde, `edr.courant` devenu `edr.current`, et tout le
+  // diagnostic muet). L'échec s'affiche donc DANS le panneau.
   const refresh = useCallback(() => {
-    void collectDebug().then(setSections);
+    void collectDebug()
+      .then(setSections)
+      .catch((e: unknown) => {
+        setSections([
+          {
+            title: "Diagnostic en échec",
+            lines: [["erreur", e instanceof Error ? e.message : String(e), false]],
+            emphasis: true,
+          },
+        ]);
+      });
   }, []);
 
   useEffect(() => {
