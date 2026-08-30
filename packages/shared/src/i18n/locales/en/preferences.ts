@@ -165,6 +165,13 @@ export default {
   previewNextEpisodeLabel: "S01E02",
   previewNextEpisodeTitle: "The next episode",
 
+  // L'aperçu de l'affiche de fin — la vraie, mise à l'échelle dans le cadre.
+  previewNextFinalCaptionOff: "At the very end, nothing shows: the player returns to the details page.",
+  previewNextFinalCaptionCard: "At the very end, the poster offers what's next and waits for you.",
+  previewNextFinalCaptionCountdown: "The poster counts down {{seconds}}s — then stops there, starting nothing.",
+  previewNextFinalCaptionAuto: "After {{seconds}}s, the next episode starts — even if the credits card was dismissed.",
+  previewNextFinalSynopsis: "A sample synopsis, to see the poster in place.",
+
   // Le détail qui encombrait chaque réglage, réuni derrière un repli.
   segmentsMoreTitle: "More about this",
   segmentsMoreNothing: "With no passage marked by the server, nothing is shown — whatever the setting above.",

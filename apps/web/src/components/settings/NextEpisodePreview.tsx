@@ -25,11 +25,11 @@
  * et on l'y ramène par une transformée. C'est aussi la propriété la moins chère.
  */
 
-import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { NextEpisodeSettings } from "@tentacle-tv/shared";
 import { UpNextCard } from "../player/UpNextCard";
 import { PreviewStage } from "./PreviewStage";
+import { useFitScale } from "./useFitScale";
 import { usePreviewCountdown } from "./usePreviewCountdown";
 
 /** Ce que la phrase doit dire, selon la combinaison des trois réglages. */
@@ -74,31 +74,3 @@ export function NextEpisodePreview({ next }: { next: NextEpisodeSettings }) {
   );
 }
 
-/**
- * Le facteur qui fait tenir un objet de `naturalWidth` dans le cadre mesuré.
- *
- * Jamais au-dessus de 1 : on rétrécit ce qui déborde, on n'agrandit rien — un
- * aperçu grossi ne montrerait plus la taille réelle du texte.
- */
-function useFitScale(
-  // L'ÉLÉMENT, pas un ref : l'effet se rejoue quand le cadre est remplacé —
-  // un `.current` lu à dépendances figées ratait tout remontage.
-  stage: HTMLDivElement | null,
-  naturalWidth: number,
-): number {
-  const [scale, setScale] = useState(1);
-  const naturalRef = useRef(naturalWidth);
-  naturalRef.current = naturalWidth;
-
-  useEffect(() => {
-    if (!stage || typeof ResizeObserver !== "function") return;
-    const observer = new ResizeObserver(([entry]) => {
-      const width = entry.contentRect.width;
-      setScale(width > 0 ? Math.min(1, width / naturalRef.current) : 1);
-    });
-    observer.observe(stage);
-    return () => observer.disconnect();
-  }, [stage]);
-
-  return scale;
-}
