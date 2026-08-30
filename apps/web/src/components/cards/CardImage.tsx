@@ -1,6 +1,20 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useNearViewport } from "../../hooks/useNearViewport";
+
+/**
+ * Délais avant nouvelle tentative, indexés par le nombre d'échecs déjà vus.
+ *
+ * Les ~10 images d'une rangée partent dans la même fenêtre de ~200 ms : une
+ * défaillance passagère (rafale 429 pendant un défilement, proxy bousculé,
+ * pool saturé) frappait le lot entier, et `errored` la rendait DÉFINITIVE —
+ * l'URL ne changeant jamais, rien ne redemandait. Le proxy ne met aucune
+ * erreur en cache : une simple redemande suffit.
+ */
+const RETRY_DELAYS_MS = [2_000, 8_000];
+const MAX_RETRIES = RETRY_DELAYS_MS.length;
+/** Répit minimal avant la tentative accordée par un retour à l'écran. */
+const REENTRY_RETRY_MIN_MS = 5_000;
 
 interface CardImageProps {
   src: string;
@@ -38,9 +52,11 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
    * `src` VIDE : la donnée a prouvé qu'il n'y a pas d'image (cf.
    * `resolveCardImage.ts`) — le repli se rend d'emblée, sans `<img>` (un src
    * vide se résout vers l'URL de la page) ni squelette (rien ne viendra). */
-  const [state, setState] = useState({ src, loaded: false, errored: src === "" });
-  if (state.src !== src) setState({ src, loaded: false, errored: src === "" });
-  const { loaded, errored } = state;
+  const [state, setState] = useState({ src, loaded: false, errored: src === "", attempt: 0 });
+  if (state.src !== src) setState({ src, loaded: false, errored: src === "", attempt: 0 });
+  const { loaded, errored, attempt } = state;
+  /** Instant du dernier échec — la chance du retour attend un peu après lui. */
+  const errorAtRef = useRef(0);
   // Le squelette n'est monté que si la carte est REGARDÉE.
   //
   // Sans cette garde, les cartes situées hors du champ horizontal d'une rangée
@@ -70,6 +86,37 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
   // soit prête quand elle arrive à l'écran en défilement normal, sans plus.
   const { ref: nearRef, near } = useNearViewport<HTMLDivElement>("400px");
 
+  // Réessai borné : l'échec redescend tout seul, aux délais de
+  // `RETRY_DELAYS_MS` — l'<img> se remonte et redemande la même URL. Après
+  // ces tentatives, le repli reste, jusqu'à la chance du retour ci-dessous.
+  useEffect(() => {
+    if (!errored || src === "" || attempt >= MAX_RETRIES) return;
+    const timer = setTimeout(() => {
+      setState((e) =>
+        e.src === src && e.errored ? { ...e, errored: false, attempt: e.attempt + 1 } : e,
+      );
+    }, RETRY_DELAYS_MS[attempt]);
+    return () => clearTimeout(timer);
+  }, [errored, attempt, src]);
+
+  // La chance du RETOUR : au front montant de `visible` (la carte revient à
+  // l'écran, ou la fenêtre reprend le focus), un repli latché depuis un moment
+  // regagne UNE tentative. C'est le geste que le défaut réparait par accident
+  // — changer de fenêtre remontait les cartes — devenu délibéré et borné.
+  const prevVisibleRef = useRef(visible);
+  useEffect(() => {
+    const was = prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+    if (!visible || was || src === "") return;
+    setState((e) => {
+      if (e.src !== src || !e.errored) return e;
+      // Un réessai minuté est encore en route : ne pas le doubler.
+      if (e.attempt < MAX_RETRIES) return e;
+      if (Date.now() - errorAtRef.current < REENTRY_RETRY_MIN_MS) return e;
+      return { ...e, errored: false };
+    });
+  }, [visible, src]);
+
   // Deux observateurs sur le MÊME élément — l'un dit « faut-il animer ? »,
   // l'autre « faut-il charger ? ». Ils ne se confondent pas (cf. les deux
   // hooks) et un seul nœud les porte.
@@ -97,7 +144,10 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
           decoding="async"
           draggable={false}
           onLoad={() => setState((e) => (e.src === src ? { ...e, loaded: true } : e))}
-          onError={() => setState((e) => (e.src === src ? { ...e, errored: true } : e))}
+          onError={() => {
+            errorAtRef.current = Date.now();
+            setState((e) => (e.src === src ? { ...e, errored: true } : e));
+          }}
           // Zoom interne discret au survol de la carte parente (`group/card`) —
           // le conteneur masque le débord (overflow-hidden côté carte).
           className={`h-full w-full object-cover motion-reduce:!transform-none ${
