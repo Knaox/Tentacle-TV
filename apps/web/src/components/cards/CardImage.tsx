@@ -121,8 +121,8 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
   // l'autre « faut-il charger ? ». Ils ne se confondent pas (cf. les deux
   // hooks) et un seul nœud les porte.
   const setBox = useCallback((el: HTMLDivElement | null) => {
-    boxRef.current = el;
-    nearRef.current = el;
+    boxRef(el);
+    nearRef(el);
   }, [boxRef, nearRef]);
 
   return (

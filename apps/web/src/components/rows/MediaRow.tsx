@@ -40,21 +40,28 @@ interface MediaRowProps {
  */
 export function MediaRow({ title, items, variant = "poster", animDelay = 0, href, posterImageMode }: MediaRowProps) {
   const { t } = useTranslation("common");
-  const rowRef = useRef<HTMLElement>(null);
+  const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
   // Largeur calée sur la rangée : un nombre entier de cartes la remplit
   // exactement, plus aucune n'est tronquée au bord droit.
   const cardWidth = useRowCardWidth(scrollRef, variant);
-  // Porte de rangée. `useInViewport` porte SON propre ref — d'où le `div.relative`
-  // plus bas plutôt que `rowRef`, déjà pris par l'observateur d'entrée. 400 px de
-  // marge : la rangée se remplit avant d'être à l'écran.
-  const nearby = useInViewport<HTMLDivElement>("400px");
+  // Porte de rangée — observée sur la RACINE `<section>`, pas sur un enfant :
+  // la section porte `content-visibility: auto`, et hors écran son CONTENU n'a
+  // aucune boîte — un observateur posé dedans rendait un signal fragile, quand
+  // la section, elle, garde toujours sa boîte (`contain-intrinsic-size`).
+  // 400 px de marge : la rangée se remplit avant d'être à l'écran.
+  const { ref: observeRow, visible: rowOnScreen } = useInViewport<HTMLElement>("400px");
+  // Les deux observateurs (entrée + porte) partagent la racine d'un seul geste.
+  const setRowRoot = useCallback((el: HTMLElement | null) => {
+    setRowEl(el);
+    observeRow(el);
+  }, [observeRow]);
   const track = useRowWindow({
     scrollRef,
     count: items.length,
     cardWidth,
-    onScreen: nearby.visible,
+    onScreen: rowOnScreen,
   });
   const { range } = track;
   /**
@@ -86,16 +93,19 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   // classe Tailwind remplacée.
   const controls = useHoverMount(200);
 
+  // L'élément vit dans un ÉTAT : une rangée née vide (branche « aucun
+  // résultat ») puis remplie remonte sa section, et l'observateur doit suivre
+  // — figé sur le premier passage, `visible` restait faux et la rangée
+  // demeurait invisible pour toujours.
   useEffect(() => {
-    const el = rowRef.current;
-    if (!el) return;
+    if (!rowEl) return;
     const observer = new IntersectionObserver(
       ([entry]) => entry.isIntersecting && setVisible(true),
       { threshold: 0.1 },
     );
-    observer.observe(el);
+    observer.observe(rowEl);
     return () => observer.disconnect();
-  }, []);
+  }, [rowEl]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight") { e.preventDefault(); scrollByAmount("right"); }
@@ -114,7 +124,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
 
   return (
     <section
-      ref={rowRef}
+      ref={setRowRoot}
       // `render-row` : le moteur saute entièrement le rendu de la rangée tant
       // qu'elle est hors écran (cf. theme/rendering.css). Complémentaire du
       // montage différé ci-dessous, qui ne joue qu'UNE fois — une rangée déjà
@@ -135,7 +145,7 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
     >
       <RowHeader title={title} href={href} />
 
-      <div ref={nearby.ref} className="relative">
+      <div className="relative">
         <RowScrollControls
           canLeft={canScrollLeft}
           canRight={canScrollRight}

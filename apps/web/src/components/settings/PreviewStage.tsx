@@ -34,7 +34,7 @@ interface PreviewStageProps {
   /** Largeur du cadre. La fiche « à suivre » en demande plus que la pilule. */
   width?: "pill" | "card";
   /** Posé par l'appelant qui veut suspendre son minuteur hors écran. */
-  stageRef?: React.RefObject<HTMLDivElement | null>;
+  stageRef?: React.Ref<HTMLDivElement>;
 }
 
 const WIDTH = {
