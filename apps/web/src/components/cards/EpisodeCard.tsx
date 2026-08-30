@@ -67,8 +67,16 @@ export const EpisodeCard = memo(function EpisodeCard({
   useHoverGuard(preview.anchorRef, hovered, unhover);
 
   const isEpisode = item.Type === "Episode";
-  const { id: imageId, type: imageType } = resolveBannerImage(item);
-  const imageUrl = client.getImageUrl(imageId, imageType, { width: 720, quality: 80 });
+  const resolvedImage = resolveBannerImage(item);
+  // « » : la donnée prouve qu'il n'y a pas d'image — `CardImage` rend son
+  // repli sans lancer une requête vouée au 404 (cf. `resolveCardImage.ts`).
+  const imageUrl = resolvedImage
+    ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
+        width: 720,
+        quality: 80,
+        ...(resolvedImage.tag ? { tag: resolvedImage.tag } : {}),
+      })
+    : "";
 
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
