@@ -49,7 +49,7 @@ export function registerVideoProbe(registry: CommandRegistry, surface: SurfaceGe
     schema: NO_ARGS,
     run: () => {
       const state = readEdr(surface()?.videoWindow?.() ?? null);
-      return { courant: state.courant, potentiel: state.potentiel };
+      return { current: state.current, potential: state.potential };
     },
   });
 }

@@ -52,7 +52,7 @@ export interface ImageStats {
   /** Luminance moyenne, de 0 à 255. */
   moyenne: number;
   /** Écart-type des luminances — un aplat vaut zéro. */
-  ecartType: number;
+  stdDev: number;
   /** Teintes distinctes, à cinq bits par canal. */
   teintes: number;
 }
@@ -131,7 +131,7 @@ async function walk(filePath: string): Promise<ImageStats> {
       hauteur: t.hauteur,
       nonNoirs: total === 0 ? 0 : nonBlack / total,
       moyenne: mean,
-      ecartType: Math.sqrt(Math.max(0, sumSquares / total - mean * mean)),
+      stdDev: Math.sqrt(Math.max(0, sumSquares / total - mean * mean)),
       teintes: hues.size,
     };
   } finally {

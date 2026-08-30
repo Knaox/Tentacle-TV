@@ -33,16 +33,16 @@ import { cls, msg } from "./objc";
 
 export interface EdrState {
   /** Facteur accordé en ce moment. 1.0 = aucune plage étendue. */
-  courant: number;
+  current: number;
   /** Ce que l'écran saurait donner, contenu mis à part. */
-  potentiel: number;
+  potential: number;
   /** La plage étendue est-elle effectivement accordée ? */
   granted: boolean;
   /** L'écran en est-il seulement capable ? */
   capable: boolean;
 }
 
-const UNAVAILABLE: EdrState = { courant: 0, potentiel: 0, granted: false, capable: false };
+const UNAVAILABLE: EdrState = { current: 0, potential: 0, granted: false, capable: false };
 
 /**
  * L'écran à interroger.
@@ -72,7 +72,7 @@ export function readEdr(videoWindow: unknown): EdrState {
   // Marge volontaire plutôt qu'une comparaison stricte à 1.0 : la valeur est un
   // flottant calculé par le compositeur, et un `> 1` nu ferait passer pour un
   // succès une valeur de 1.0000001 sans aucune signification visuelle.
-  return { courant: current, potentiel: potential, granted: current > 1.01, capable: potential > 1.01 };
+  return { current, potential, granted: current > 1.01, capable: potential > 1.01 };
 }
 
 /** Dernier headroom tracé, pour n'écrire que les CHANGEMENTS. */
@@ -93,7 +93,7 @@ let lastSeen = -1;
  */
 export function watchEdr(videoWindow: unknown, when: string): void {
   if (app.isPackaged) return;
-  const { courant: current } = readEdr(videoWindow);
+  const { current } = readEdr(videoWindow);
   // Au centième : le compositeur fait varier la valeur de quelques millièmes
   // sans que cela signifie quoi que ce soit, et le journal serait illisible.
   const rounded = Math.round(current * 100) / 100;

@@ -28,7 +28,7 @@ export interface ImageStats {
 export interface SurfaceProbe {
   geometrie: string;
   numeroFenetre: number;
-  edr: { current: number; potentiel: number };
+  edr: { current: number; potential: number };
   image: ImageStats | null;
   error: string | null;
   /** Verdict en clair, calculé côté natif — c'est lui qu'on lit en premier. */
@@ -89,6 +89,6 @@ export async function refreshEdr(): Promise<SurfaceProbe | null> {
 /** Le verdict en une ligne, pour le retour d'une action du panneau. */
 export function probeVerdict(s: SurfaceProbe | null): string {
   if (s === null) return "sonde de surface indisponible sur cette coquille";
-  const edr = `EDR ${s.edr.current.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
+  const edr = `EDR ${s.edr.current.toFixed(2)} / ${s.edr.potential.toFixed(2)}`;
   return `${s.verdict} · ${edr}`;
 }

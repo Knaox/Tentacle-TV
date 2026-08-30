@@ -209,7 +209,7 @@ export function surfaceSection(s: SurfaceProbe | null): DebugSection | null {
   const lines: DebugSection["lines"] = [
     ["verdict", s.verdict, s.image !== null && s.error === null ? s.verdict.startsWith("IMAGE") : null],
     ["EDR accordé", s.edr.current.toFixed(2), s.edr.current > 1.01],
-    ["EDR potentiel", s.edr.potentiel.toFixed(2), null],
+    ["EDR potentiel", s.edr.potential.toFixed(2), null],
     ["fenêtre vidéo", s.numeroFenetre === 0 ? "aucune" : String(s.numeroFenetre), s.numeroFenetre !== 0],
     ["géométrie", s.geometrie, null],
   ];
