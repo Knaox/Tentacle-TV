@@ -50,7 +50,7 @@ export function CardImage({ src, alt, className, fallback, zoom = true }: CardIm
    * gardait pour cassée une image que le serveur avait fini par récupérer.
    *
    * `src` VIDE : la donnée a prouvé qu'il n'y a pas d'image (cf.
-   * `resolveCardImage.ts`) — le repli se rend d'emblée, sans `<img>` (un src
+   * `cardImage.ts`, shared) — le repli se rend d'emblée, sans `<img>` (un src
    * vide se résout vers l'URL de la page) ni squelette (rien ne viendra). */
   const [state, setState] = useState({ src, loaded: false, errored: src === "", attempt: 0 });
   if (state.src !== src) setState({ src, loaded: false, errored: src === "", attempt: 0 });

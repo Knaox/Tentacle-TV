@@ -2,7 +2,7 @@ import { memo, useMemo } from "react";
 import { View, Text } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { buildTrickplayTileUrl, useJellyfinClient } from "@tentacle-tv/api-client";
-import { resolveResumeSprite, ticksToSeconds } from "@tentacle-tv/shared";
+import { resolveBannerImage, resolveResumeSprite, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, Typography } from "../../theme/colors";
 import { TVCardImage } from "./TVCardImage";
@@ -35,9 +35,18 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
   const isEpisode = item.Type === "Episode";
   const width = TV_EPISODE_WIDTH[size];
 
-  // For episodes prefer the episode's own thumbnail; fallback to backdrop.
-  const imageType = isEpisode ? "Primary" : "Backdrop";
-  const imageUrl = client.getImageUrl(item.Id, imageType, { width: 540, quality: 80 });
+  // Même chaîne de repli que le web (`cardImage.ts`, shared) : Primary
+  // épisode → Backdrop épisode → Backdrop série → Primary série ; le tag
+  // adresse l'URL par CONTENU (affiche remplacée → nouvelle URL) et `null`
+  // prouve l'absence — TVCardImage rend alors son repli sans requête.
+  const resolvedImage = resolveBannerImage(item);
+  const imageUrl = resolvedImage
+    ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
+        width: 540,
+        quality: 80,
+        ...(resolvedImage.tag ? { tag: resolvedImage.tag } : {}),
+      })
+    : null;
 
   // La vignette EXACTE de la reprise (même math que web et bureau) — `null`
   // hors reprise, et la carte garde sa bannière. La bannière reste le repli

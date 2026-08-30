@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import type { PosterImageMode } from "@/components/cards/resolveCardImage";
+import type { PosterImageMode } from "@tentacle-tv/shared";
 import { RowHeader } from "@/components/rows/RowHeader";
 import { useRowScroll } from "@/components/rows/useRowScroll";
 import { useRowCardWidth } from "@/components/rows/useRowCardWidth";
