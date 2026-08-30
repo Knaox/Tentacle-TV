@@ -26,9 +26,17 @@ export interface FrameSample {
  * Ils viennent des relevés de l'en-tête, et ils sont VOLONTAIREMENT larges : le
  * lissage fait le reste du travail, et un seuil serré rejetterait les génériques
  * illustrés — ceux de Marvel commencent souvent par un montage en couleur.
+ *
+ * 28 et non 18 : relevé le 30.08 sur « Brave New World », dont les cartes de
+ * crédits illustrées (barres de couleur sur fond noir) montent à 27,2 de
+ * saturation — à 18, le générique n'était vu qu'à 109:50 au lieu de 108:30.
+ * Rejoué sur les dix-neuf médias du corpus : SEULE cette borne bouge, les
+ * scènes de nuit restent bien en deçà (bataille de « No Way Home » : 9), et
+ * les quatorze épisodes restent muets. Le garde-fou reste le NOYAU : un bloc
+ * large sans défilement de texte sur noir n'est jamais retenu.
  */
 export const DARK_MIN = 0.72;
-export const SATURATION_MAX = 18;
+export const SATURATION_MAX = 28;
 
 /**
  * Le NOYAU : la saturation d'un défilement de texte sur fond noir.
