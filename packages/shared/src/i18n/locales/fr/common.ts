@@ -50,6 +50,10 @@ export default {
   timeDaysAgo: "Il y a {{days}}j",
   ctrlK: "Ctrl+K",
   retry: "Réessayer",
+  retrying: "Nouvelle tentative…",
+  // L'échec d'UNE rangée, à distinguer d'une bibliothèque sans nouveauté : la
+  // seconde ne s'affiche pas, la première se dit et se réessaie.
+  rowErrorMessage: "Cette rangée n'a pas pu se charger.",
   send: "Envoyer",
   sending: "Envoi...",
   or: "OU",
