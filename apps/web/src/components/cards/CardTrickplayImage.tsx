@@ -52,7 +52,16 @@ export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTr
 
   // La vignette est-elle plus LARGE que la carte 16:9 ? Décide de l'axe qui
   // colle à la carte : l'autre déborde et se rogne au centre.
-  const coverByHeight = frame.info.Width / frame.info.Height >= 16 / 9;
+  // La boîte au ratio d'UNE vignette, en POURCENTAGES de la carte — pas
+  // d'`aspect-ratio` en ligne : trop récent pour le socle du téléviseur
+  // (garde du build), et inutile puisque la carte est 16:9 connue. La carte
+  // fait largeur = hauteur × 16/9 : une boîte haute de 100 % et large de
+  // (ratio vignette)/(16/9) de la carte a exactement le ratio de la vignette.
+  const thumbRatio = frame.info.Width / frame.info.Height;
+  const coverByHeight = thumbRatio >= 16 / 9;
+  const boxSize = coverByHeight
+    ? { height: "100%", width: `${(thumbRatio / (16 / 9)) * 100}%` }
+    : { width: "100%", height: `${(16 / 9 / thumbRatio) * 100}%` };
 
   return (
     <div ref={setBox} className="relative h-full w-full overflow-hidden">
@@ -71,13 +80,7 @@ export function CardTrickplayImage({ frame, alt, fallback, zoom = true }: CardTr
             transition: "opacity 240ms ease-out, transform 300ms var(--ease-out)",
           }}
         >
-          <div
-            className="relative flex-none overflow-hidden"
-            style={{
-              ...(coverByHeight ? { height: "100%" } : { width: "100%" }),
-              aspectRatio: `${frame.info.Width} / ${frame.info.Height}`,
-            }}
-          >
+          <div className="relative flex-none overflow-hidden" style={boxSize}>
             {/* `max-w-none` : le preflight plafonne les <img> à 100 % — ici la
                 planche fait TileWidth × la boîte, elle DOIT déborder. */}
             <img
