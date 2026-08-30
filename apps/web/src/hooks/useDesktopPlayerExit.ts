@@ -3,29 +3,21 @@
  * `useDesktopAutoNext` portait aussi le moteur d'enchaînement ; ce moteur vit
  * désormais dans le réducteur partagé (`autoNextEngine`), et il ne reste ici
  * que ce qui est propre à la coquille Electron : fermer la session plein
- * écran native avant de naviguer, revenir à la fiche ou en arrière, et
- * quitter proprement quand la lecture se termine sans suite possible.
+ * écran native avant de naviguer, puis revenir à la fiche ou en arrière.
+ * QUAND sortir en fin de lecture n'est plus décidé ici : la coquille partagée
+ * (`useEndOfPlaybackExit`) appelle `onEndOfPlayback` → `goToDetail`.
  */
 
-import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { markPlayerExit } from "../components/detail/detailTransition";
 import { invoke } from "../desktop/bridge";
-import type { MpvState } from "./useDesktopPlayer";
 
 interface UseDesktopPlayerExitArgs {
-  state: MpvState;
-  fileLoaded: boolean;
   itemId?: string;
-  hasNextEpisode?: boolean;
-  /** Garde serveur admin — sans elle, la fin d'épisode SORT du lecteur. */
-  serverAutoplayEnabled: boolean;
-  hasStartedRef: MutableRefObject<boolean>;
 }
 
-export function useDesktopPlayerExit({
-  state, fileLoaded, itemId, hasNextEpisode, serverAutoplayEnabled, hasStartedRef,
-}: UseDesktopPlayerExitArgs) {
+export function useDesktopPlayerExit({ itemId }: UseDesktopPlayerExitArgs) {
   const navigate = useNavigate();
 
   /**
@@ -46,25 +38,16 @@ export function useDesktopPlayerExit({
   }, [navigate, leaveFullscreenScope]);
 
   // Retour à la fiche (films, fin de série) — même fermeture de session.
+  // Sans identifiant de média, le retour arrière fait office de fiche.
   const goToDetail = useCallback(async () => {
+    if (!itemId) {
+      await goBack();
+      return;
+    }
     await leaveFullscreenScope();
     markPlayerExit();
     navigate(`/media/${itemId}`, { replace: true });
-  }, [navigate, itemId, leaveFullscreenScope]);
-
-  // EOF sans suite possible (pas d'épisode suivant, ou garde serveur coupée) :
-  // retour fiche. Quand une suite existe, c'est l'ARBITRE qui parle — l'écran
-  // de fin s'affiche et le lecteur reste monté.
-  const exitDone = useRef(false);
-  useEffect(() => {
-    if (!fileLoaded) return; // EOF du fichier précédent (remontage) — ignorer
-    if (!state.eof || !hasStartedRef.current || exitDone.current) return;
-    if (hasNextEpisode && serverAutoplayEnabled) return;
-    exitDone.current = true;
-    if (itemId) void goToDetail();
-    else void goBack();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.eof, fileLoaded, hasNextEpisode, serverAutoplayEnabled, goToDetail, goBack, itemId]);
+  }, [navigate, itemId, leaveFullscreenScope, goBack]);
 
   useEffect(() => {
     return () => {

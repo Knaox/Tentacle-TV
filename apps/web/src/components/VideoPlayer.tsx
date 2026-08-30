@@ -139,14 +139,9 @@ export function VideoPlayer({
     signalRemoteSegmentDismiss(remoteRefusals.type);
   }, [remoteRefusals, signalRemoteSegmentDismiss]);
 
-  // Fin de média sans écran de fin possible : retour fiche — l'équivalent de
-  // l'ancienne navigation d'onEnded, décidée ici et plus dans les événements.
-  useEffect(() => {
-    if (!ended) return;
-    if (hasNextEpisode && serverAutoplayEnabled) return;
-    markPlayerExit();
-    navigate(`/media/${itemId}`, { replace: true });
-  }, [ended, hasNextEpisode, serverAutoplayEnabled, itemId, navigate]);
+  // La sortie de fin (film, dernier épisode, affiche refusée ou éteinte) est
+  // décidée par la coquille (`useEndOfPlaybackExit`) : elle appelle
+  // `onEndOfPlayback` ci-dessus — plus aucune garde locale à tenir ici.
   useEffect(() => { setEnded(false); }, [src, itemId]);
 
   // Watch Together : surface de commande impérative pour le moteur de sync.
