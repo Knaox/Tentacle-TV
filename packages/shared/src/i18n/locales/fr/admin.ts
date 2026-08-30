@@ -65,17 +65,19 @@ export default {
   autoplayNextEnabled: "Déclenchement auto-play",
   autoplayNextHelp: "Interrupteur maître : éteint, aucune fiche « à suivre » ni enchaînement, sur aucun appareil. Le MOMENT où la fiche paraît, lui, est un réglage de compte (début du générique de fin, ou peu avant la fin) et se change dans les Préférences de chaque utilisateur.",
   autoplayCurrentThreshold: "Seuil « vu » : {{pct}} % de l'épisode (MaxResumePct Jellyfin). Il marque un épisode comme vu — il ne déclenche plus aucune fiche.",
-  // Greffons de segments — une carte au trésor, pas un réglage : Tentacle ne
-  // détecte rien, il lit ce que le serveur publie.
+  // Greffons de segments — une carte au trésor, pas un réglage : les greffons
+  // restent la source première ; l'analyse embarquée ne fait que compléter.
   segmentPlugins: "Détection des passages",
   segmentPluginsDescription:
-    "Tentacle ne détecte aucun générique lui-même : il lit ce que Jellyfin publie. Sans greffon de détection installé côté serveur, aucun bouton de saut ne paraîtra, quels que soient les réglages des appareils.",
+    "Les greffons Jellyfin restent la source première des passages : ils voient la vidéo et l'audio, là où l'analyse embarquée de Tentacle ne lit que les vignettes. En installer un enrichit tous les appareils d'un coup.",
   segmentPlugin_introSkipper: "Détection par empreinte audio — générique de début et de fin.",
   segmentPlugin_chapterSegments: "Convertit les chapitres nommés en passages, sans analyse.",
   segmentPlugin_introDb: "Base communautaire de repères, sans analyse locale.",
   segmentPlugin_skipmeDb: "Base partagée de repères, en complément d'Intro Skipper.",
   segmentPluginsScanHelp:
     "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte, et en installer deux ne crée pas de conflit. Après installation, lancez la tâche planifiée « Media segment scan » de Jellyfin — les passages n'apparaissent qu'une fois la bibliothèque analysée.",
+  segmentPluginsFrameAnalysisNote:
+    "Quand aucune source ne dit rien de crédible sur le générique de fin, Tentacle analyse lui-même les vignettes de la barre de progression (générique, scène post-générique) — à condition que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média.",
   publicUrl: "URL publique du serveur Tentacle TV",
   publicUrlDescription: "URL publique par laquelle les appareils joignent le serveur après jumelage (domaine Cloudflare). Indispensable pour que le jumelage TV fonctionne depuis l'extérieur.",
   publicUrlLabel: "URL publique",
