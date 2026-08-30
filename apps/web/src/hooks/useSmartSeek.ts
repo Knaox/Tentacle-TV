@@ -23,7 +23,20 @@ interface UseSmartSeekOptions {
    * on n'en ajoute pas un second, c'est précisément ce qui avait dû être retiré.
    */
   reportLoading?: (charge: boolean) => void;
+  /**
+   * Un saut qui vise LA FIN — ou au-delà. Facultatif : sans lui, l'ancien
+   * clamp s'applique. Voir la garde en tête de `handleSeek`.
+   */
+  onSeekToEnd?: () => void;
 }
+
+/**
+ * En deçà d'une demi-seconde du bord, un saut « vers la fin » EST la fin :
+ * ces derniers dixièmes n'ont rien à montrer, et les durées déclarées
+ * (conteneur, contrat Jellyfin) divergent entre elles de cet ordre-là.
+ * Partagée avec le lecteur de bureau — une seule définition du « bord ».
+ */
+export const SEEK_END_EPS_S = 0.5;
 
 /** Check if a time (in PTS space) falls within any buffered range of the video element. */
 function isTimeInBuffered(video: HTMLVideoElement, time: number): boolean {
@@ -48,7 +61,7 @@ function bufferEnd(video: HTMLVideoElement): number | null {
 
 export function useSmartSeek({
   videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
-  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, reportLoading,
+  src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, reportLoading, onSeekToEnd,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
   //
@@ -133,6 +146,21 @@ export function useSmartSeek({
     const movieMax = isProgressiveTranscode
       ? (v.duration || Infinity) + streamOffset
       : (v.duration || Infinity);
+
+    // Un saut qui vise la fin — ou au-delà — TERMINE la lecture, il ne se
+    // clampe pas à quelques dixièmes du bord : l'affiche de fin doit au geste
+    // manuel ce qu'elle doit à l'EOF naturel. L'élément est tout de même posé
+    // sur sa fin (les rapports de progression diront ~100 %, l'épisode sera
+    // « vu »), mais la fin de lecture n'attend PAS son événement `ended` : un
+    // flux HLS peut ne jamais le tirer sur son dernier fragment.
+    if (onSeekToEnd && Number.isFinite(movieMax) && targetSeconds >= movieMax - SEEK_END_EPS_S) {
+      if (Number.isFinite(v.duration)) v.currentTime = v.duration;
+      // Watch Together : la salle saute à la fin elle aussi — chaque membre
+      // refera cette même détection en recevant la position.
+      onSeekComplete?.(movieMax, v.paused);
+      onSeekToEnd();
+      return;
+    }
     const clamped = Math.max(0, Math.min(targetSeconds, movieMax));
 
     // Convert movie position to video-element PTS time
@@ -175,7 +203,7 @@ export function useSmartSeek({
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
-  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, armWatch]);
+  }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, onSeekToEnd, armWatch]);
 
   // Badge « +30s / −10s » à chaque saut (boutons, flèches clavier, swipe)
   const [skipFlash, setSkipFlash] = useState<SkipFlash | null>(null);

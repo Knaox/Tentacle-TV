@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
 import { useMpvPrebuffer } from "../hooks/useMpvPrebuffer";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
+import { SEEK_END_EPS_S } from "../hooks/useSmartSeek";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
@@ -156,13 +157,32 @@ export function DesktopPlayer({
     hasNext: hasNextEpisode, hasPrevious: hasPreviousEpisode,
   });
 
+  const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
+
+  // La FIN, en espace mpv : la durée de SON flux — l'offset de transcode ne
+  // s'y applique pas. Avec `keep-open`, ce saut lève l'EOF réel de mpv
+  // (`eof-reached`), et l'affiche de fin paraît : le geste manuel vaut l'EOF
+  // naturel. Les cibles se comparent, elles, en POSITION FILM.
+  const seekToMpvEnd = useCallback(() => {
+    if (state.duration > 0) void seek(state.duration);
+  }, [state.duration, seek]);
+
+  // Un +30 s dont la cible atteint la fin — ou la dépasse — TERMINE la
+  // lecture au lieu de se caler sur le bord. Un recul ne termine jamais.
+  const skipRelativeOrEnd = useCallback((delta: number) => {
+    const filmPos = state.position + effectiveMpvOffset.current;
+    if (delta > 0 && dur > 0 && filmPos + delta >= dur - SEEK_END_EPS_S) {
+      seekToMpvEnd();
+      return;
+    }
+    void seekRelative(delta);
+  }, [dur, state.position, effectiveMpvOffset, seekRelative, seekToMpvEnd]);
+
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
-    seekRelative, togglePause, goBack, toggleFullscreen, fullscreenRef,
+    seekRelative: skipRelativeOrEnd, togglePause, goBack, toggleFullscreen, fullscreenRef,
     hasNextEpisode, hasPreviousEpisode, onNextEpisode, onPreviousEpisode,
   });
-
-  const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
   // Scrub + hover + trickplay de la seekbar (local d'abord en lecture locale)
   const seekbar = useDesktopSeekbar({
@@ -171,6 +191,8 @@ export function DesktopPlayer({
     effectiveMpvOffset, seek, setPause,
     // La pause du glissement n'est pas celle de l'utilisateur : aucun badge.
     ignoreNextToggle,
+    // Relâcher la poignée sur le bord termine la lecture (affiche de fin).
+    onSeekToEnd: seekToMpvEnd,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
