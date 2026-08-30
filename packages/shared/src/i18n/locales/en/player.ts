@@ -49,6 +49,8 @@ export default {
   autoplayCountdown: "Next episode in {{seconds}}s",
   skipIntroIn: "Skip intro in {{seconds}}s",
   dismiss: "Dismiss",
+  // L'affiche de fin : la refuser SORT du lecteur — le bouton dit où l'on va.
+  backToDetails: "Back to details",
   // Les segments au-delà de l'intro — chaque libellé a sa forme décomptée.
   skipRecap: "Skip recap",
   skipRecapIn: "Skip recap in {{seconds}}s",

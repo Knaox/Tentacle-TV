@@ -1,13 +1,44 @@
+/**
+ * L'affiche PLEIN ÉCRAN « épisode suivant » — présentée à la toute FIN d'un
+ * épisode (EOF), quand il n'y a plus d'image à couvrir.
+ *
+ * Même matière que la pilule de saut et la fiche « à suivre »
+ * (`overlayPill.tsx`) : l'action est une pilule blanche opaque, et le temps
+ * qui reste se MONTRE dans le geste — le voile `Sweep` balaye « Lire
+ * maintenant » pendant que le libellé décompte. L'anneau SVG d'avant relançait
+ * sa transition `stroke-dashoffset` à chaque seconde : une propriété qui n'est
+ * ni `transform` ni `opacity`, battue quatre fois par seconde, pour dire ce
+ * que le balayage dit déjà.
+ *
+ * PAS de `backdrop-filter` — nulle part. La croix et le bouton « Masquer » en
+ * portaient un ; l'assombrissement vient désormais de DÉGRADÉS noirs empilés
+ * sur la bannière, et les pastilles sont des aplats. Sur les fenêtres à canal
+ * alpha (Electron mac/linux), du blanc semi-transparent rendrait GRIS et un
+ * flou large sortirait en aplat (cf. `lib/videoShadow.ts`) : les voiles sont
+ * noirs, les ombres passent par `videoShadow`.
+ *
+ * Refuser l'affiche SORT du lecteur (retour à la fiche du média) : la croix et
+ * le bouton secondaire disent ce qu'ils font — `backToDetails`, plus un
+ * « Masquer » qui laissait une image figée.
+ *
+ * Le balayage s'arme au PREMIER rendu décompté, pas au montage : l'affiche
+ * peut paraître un battement avant que le moteur n'arme le minuteur (EOF après
+ * refus de la carte), et à l'ESCALADE carte → affiche le minuteur continue —
+ * `initialProgress` reprend le trajet où il en était, sur la durée restante.
+ */
+
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import { videoShadow } from "../../lib/videoShadow";
+import { Sweep, Veil } from "./overlayPill";
 
 interface NextEpisodeFullscreenProps {
   /**
    * Secondes restantes avant lecture auto, ou `null` quand l'affiche est une
    * simple PROPOSITION — le compte à rebours a été éteint dans les réglages.
-   * Ni chiffre ni anneau alors : il n'y aurait aucune échéance à annoncer, et
-   * en afficher une qui n'arrive jamais serait un mensonge à l'écran.
+   * Ni chiffre ni balayage alors : il n'y aurait aucune échéance à annoncer,
+   * et en afficher une qui n'arrive jamais serait un mensonge à l'écran.
    */
   countdown: number | null;
   /** Titre pré-formaté "S03E08 — Nom" (label et nom séparés au rendu si besoin). */
@@ -26,19 +57,22 @@ interface NextEpisodeFullscreenProps {
 }
 
 const DEFAULT_TOTAL = 10;
-const RING_R = 30;
-const RING_C = 2 * Math.PI * RING_R;
 
-/**
- * Affiche PLEIN ÉCRAN « épisode suivant » (post-play, façon Netflix), présentée
- * à la FIN d'un épisode (EOF). Fond = bannière de la SÉRIE assombrie ; au centre,
- * la vignette de l'épisode suivant + saison/épisode + résumé + compte à rebours
- * bien visible. Auto-play annulable. Cohérente avec le thème glassmorphism
- * violet→rose de l'app (tokens --brand). Lecteur desktop (Tauri / MPV).
- *
- * Tout le composant est posé sur la bannière de la série → texte/scrims
- * volontairement en dur (text-white, bg-black/rgba noir) dans les deux thèmes.
- */
+/** L'entrée du panneau, au tempo des surfaces du lecteur. */
+const EASE_OUT = [0, 0, 0.2, 1] as const;
+
+/** L'ombre de la vignette — le liseré seul là où la surface a un canal alpha. */
+const THUMB_SHADOW = videoShadow(
+  "0 16px 44px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.12)",
+  "0 0 0 1px rgba(255, 255, 255, 0.18)",
+);
+
+/** L'ombre de la pilule — la même que celle du bouton de saut. */
+const PILL_SHADOW = videoShadow(
+  "0 8px 28px rgba(0, 0, 0, 0.45)",
+  "0 0 0 1px rgba(0, 0, 0, 0.15)",
+);
+
 export function NextEpisodeFullscreen({
   countdown,
   episodeTitle,
@@ -65,9 +99,14 @@ export function NextEpisodeFullscreen({
   }
 
   const counting = countdown !== null;
-  const progress = counting
-    ? Math.max(0, Math.min(1, (totalSeconds - countdown) / totalSeconds))
-    : 0;
+
+  // Figé au PREMIER rendu décompté (initialisation paresseuse d'une ref,
+  // idempotente) : la `key` du Sweep suit la durée armée, jamais les secondes.
+  const armedRef = useRef<{ remaining: number; total: number } | null>(null);
+  if (counting && armedRef.current === null) {
+    armedRef.current = { remaining: countdown, total: Math.max(countdown, totalSeconds) };
+  }
+  const armed = armedRef.current;
 
   return (
     <motion.div
@@ -75,146 +114,147 @@ export function NextEpisodeFullscreen({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.18 } }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="absolute inset-0 z-40 flex items-center justify-center overflow-hidden"
+      className="absolute inset-0 z-40 overflow-hidden"
       onClick={(e) => e.stopPropagation()}
       role="dialog"
       aria-modal="true"
       aria-label={t("player:upNext")}
     >
-      {/* Fond = bannière de la SÉRIE, assombrie (léger ken-burns hors reduced-motion) */}
+      {/* Fond = bannière de la SÉRIE, très léger ken-burns (transform only,
+          rien hors reduced-motion) ; sans bannière, l'aplat de surface. */}
       {seriesBackdropUrl ? (
         <motion.img
           src={seriesBackdropUrl}
           alt=""
           draggable={false}
           className="absolute inset-0 h-full w-full object-cover"
-          initial={reduce ? false : { scale: 1.05 }}
+          initial={reduce ? false : { scale: 1.06 }}
           animate={{ scale: 1 }}
           transition={{ duration: 8, ease: "easeOut" }}
         />
       ) : (
         <div className="absolute inset-0" style={{ background: "var(--surface-1)" }} />
       )}
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.72)" }} />
+      {/* Assombrissement par dégradés NOIRS empilés — un latéral qui ancre le
+          panneau à gauche et laisse la bannière respirer à droite, un vertical
+          qui assoit le bas. Du blanc semi-transparent rendrait gris (alpha). */}
       <div
         className="absolute inset-0"
-        style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.7) 100%)" }}
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.52) 45%, rgba(0,0,0,0.26) 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.20) 45%, rgba(0,0,0,0.45) 100%)",
+        }}
       />
 
-      {/* Fermer */}
+      {/* La croix — même dessin que celle de la fiche, sur pastille OPAQUE.
+          Elle SORT du lecteur : son libellé le dit. */}
       <button
         type="button"
         onClick={onDismiss}
-        aria-label={t("player:dismiss")}
-        className="absolute right-5 top-5 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-white/85 outline-none transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70"
-        style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        aria-label={t("player:backToDetails")}
+        title={t("player:backToDetails")}
+        className="absolute right-5 top-5 z-10 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-white/85 outline-none transition-colors duration-150 motion-reduce:transition-none hover:text-white focus-visible:ring-2 focus-visible:ring-white/70"
+        style={{ background: "rgba(0,0,0,0.65)" }}
       >
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
 
-      {/* Panneau central */}
+      {/* Panneau bas-gauche, composition d'affiche : vignette, sur-titre,
+          titre, synopsis, gestes. Entrée en translation/opacité seulement. */}
       <motion.div
-        className="relative z-[1] w-full max-w-4xl px-8"
-        initial={reduce ? false : { opacity: 0, y: 20, scale: 0.985 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut", delay: reduce ? 0 : 0.1 }}
+        className="absolute inset-x-0 bottom-0 z-[1] flex flex-col gap-6 p-8 sm:flex-row sm:items-end sm:p-12 lg:p-16"
+        initial={reduce ? false : { opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: EASE_OUT, delay: reduce ? 0 : 0.08 }}
       >
-        {/* Compte à rebours — bien visible. Absent quand il est éteint : le
-            panneau porte déjà son libellé « À suivre » plus bas. */}
-        {counting && (
-          <div className="mb-5 flex items-center gap-2.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: "var(--brand-light)", boxShadow: "0 0 10px var(--brand)" }} />
-            <span
-              className="text-sm font-bold uppercase tracking-[0.16em] text-white/90"
-              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}
-            >
-              {t("player:autoplayCountdown", { seconds: countdown })}
-            </span>
+        {/* Vignette de l'épisode suivant — nue : la pilule porte déjà le geste,
+            une pastille « play » par-dessus le disait une seconde fois. */}
+        <div
+          className="relative w-full max-w-[280px] shrink-0 overflow-hidden rounded-xl sm:w-72 sm:max-w-none"
+          style={{ boxShadow: THUMB_SHADOW }}
+        >
+          <div className="aspect-[16/9] w-full" style={{ background: "var(--surface-1)" }}>
+            {episodeThumbUrl && (
+              <img src={episodeThumbUrl} alt="" draggable={false} className="h-full w-full object-cover" />
+            )}
           </div>
-        )}
+        </div>
 
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
-          {/* Vignette de l'épisode suivant */}
-          <div
-            className="relative w-full shrink-0 overflow-hidden rounded-xl sm:w-72"
-            style={{
-              // Flou retiré là où la surface a un canal alpha : il y sort en
-              // aplat et masque la vidéo. Voir `lib/videoShadow.ts`.
-              boxShadow: videoShadow(
-                "0 16px 44px rgba(0,0,0,0.6), 0 0 0 1px rgba(var(--brand-rgb),0.25)",
-                "0 0 0 1px rgba(var(--brand-rgb),0.25)",
-              ),
-            }}
+        {/* Infos épisode */}
+        <div className="min-w-0 max-w-2xl flex-1">
+          <p
+            className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/60"
+            style={{ textShadow: "0 1px 4px rgba(0,0,0,0.85)" }}
           >
-            <div className="aspect-[16/9] w-full" style={{ background: "var(--surface-1)" }}>
-              {episodeThumbUrl && (
-                <img src={episodeThumbUrl} alt="" draggable={false} className="h-full w-full object-cover" />
-              )}
-            </div>
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/45 backdrop-blur-sm">
-                <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-              </span>
-            </span>
-          </div>
-
-          {/* Infos épisode */}
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/55" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.85)" }}>
-              {t("player:upNext")}
+            {t("player:upNext")}
+          </p>
+          {label && (
+            <p
+              className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-white/60"
+              style={{ textShadow: "0 1px 4px rgba(0,0,0,0.85)" }}
+            >
+              {label}
             </p>
-            {label && (
-              <p className="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-white/60" style={{ textShadow: "0 1px 4px rgba(0,0,0,0.85)" }}>
-                {label}
-              </p>
-            )}
-            {title && (
-              <h2 className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl" style={{ textShadow: "0 2px 14px rgba(0,0,0,0.7)" }}>
-                {title}
-              </h2>
-            )}
-            {episodeDescription && (
-              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/70 sm:text-[15px]" style={{ textShadow: "0 1px 6px rgba(0,0,0,0.85)" }}>
-                {episodeDescription}
-              </p>
-            )}
+          )}
+          {title && (
+            <h2
+              className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-3xl lg:text-4xl"
+              style={{ textShadow: "0 2px 14px rgba(0,0,0,0.7)" }}
+            >
+              {title}
+            </h2>
+          )}
+          {episodeDescription && (
+            <p
+              className="mt-3 line-clamp-3 text-sm leading-relaxed text-white/70 sm:text-[15px]"
+              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.85)" }}
+            >
+              {episodeDescription}
+            </p>
+          )}
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              {/* Lire maintenant — anneau de progression du compte à rebours */}
-              <button
-                type="button"
-                onClick={onPlayNow}
-                className="group flex cursor-pointer items-center gap-3 rounded-xl bg-white py-3 pl-3 pr-6 text-base font-bold text-black outline-none transition-transform duration-150 hover:scale-[1.03] focus-visible:ring-2 focus-visible:ring-white/80"
-                style={{ boxShadow: "0 8px 28px var(--brand-glow)" }}
-              >
-                <span className="relative flex h-10 w-10 items-center justify-center">
-                  {counting && (
-                    <svg className="absolute inset-0 h-10 w-10 -rotate-90" viewBox="0 0 72 72" aria-hidden="true">
-                      <circle cx="36" cy="36" r={RING_R} fill="none" stroke="rgba(0,0,0,0.14)" strokeWidth="5" />
-                      <circle
-                        cx="36" cy="36" r={RING_R} fill="none"
-                        stroke="var(--brand)" strokeWidth="5" strokeLinecap="round"
-                        strokeDasharray={RING_C}
-                        strokeDashoffset={RING_C * (1 - progress)}
-                        style={{ transition: "stroke-dashoffset 1s linear" }}
-                      />
-                    </svg>
-                  )}
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                </span>
-                {t("player:playNow")}
-              </button>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {/* LA pilule, à la lettre (cf. UpNextCard) : aplat blanc, voile de
+                survol, balayage du décompte AVANT le libellé — donc dessous. */}
+            <button
+              type="button"
+              onClick={onPlayNow}
+              className="group/play relative flex min-h-11 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-cta-primary-border bg-cta-primary-bg px-7 text-sm font-bold text-cta-primary-fg outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+              style={{ boxShadow: PILL_SHADOW }}
+            >
+              <Veil className="group-hover/play:opacity-100" />
+              {counting && armed && (
+                <Sweep
+                  key={String(armed.total)}
+                  durationMs={armed.remaining * 1000}
+                  initialProgress={1 - armed.remaining / armed.total}
+                />
+              )}
+              <span className="relative flex items-center gap-2 tabular-nums">
+                <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                {counting ? t("player:playNowIn", { seconds: countdown }) : t("player:playNow")}
+              </span>
+            </button>
 
-              <button
-                type="button"
-                onClick={onDismiss}
-                className="cursor-pointer rounded-xl border border-white/20 bg-white/5 px-6 py-3.5 text-base font-semibold text-white/80 outline-none backdrop-blur-sm transition-colors duration-150 hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
-              >
-                {t("player:dismiss")}
-              </button>
-            </div>
+            {/* Secondaire fantôme — couleurs seules au survol, aucun flou. */}
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="min-h-11 cursor-pointer rounded-full border border-white/25 px-6 text-sm font-semibold text-white/85 outline-none transition-colors duration-150 motion-reduce:transition-none hover:border-white/50 hover:text-white focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              {t("player:backToDetails")}
+            </button>
           </div>
         </div>
       </motion.div>
