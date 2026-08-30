@@ -407,6 +407,44 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
     });
   });
 
+  it("Re:Zero S4E4 : l'intro posée sur l'épilogue tombe, et l'outro confus avec elle", () => {
+    // Mesuré le 30.08 : l'opening joué pendant l'épilogue fait matcher
+    // l'empreinte audio — Intro 19:12→20:00 à 82 % du fichier, doublée d'un
+    // Outro 19:12→20:36 sur la même zone. Seul le récap (correct) survit.
+    const runtime = minutes(23, 30);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            segment("Recap", 0, minutes(0, 36)),
+            segment("Intro", minutes(19, 12), minutes(20, 0)),
+            segment("Intro", minutes(19, 12), minutes(20, 0)),
+            segment("Outro", minutes(19, 12), minutes(20, 36)),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(segments.map((s) => s.type)).toEqual(["Recap"]);
+  });
+
+  it("une vraie intro en tête d'épisode ne craint rien des gardes", () => {
+    const runtime = minutes(23, 30);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            segment("Intro", minutes(2, 18), minutes(3, 48)),
+            segment("Outro", minutes(22, 12), minutes(23, 30)),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(findSegment(segments, "Intro")).toMatchObject({ startMs: minutes(2, 18) });
+    expect(findSegment(segments, "Outro")).not.toBeNull();
+  });
+
   it("des fins qui S'ACCORDENT gardent la préférence révélatrice", () => {
     // Deux fournisseurs à cinq secondes près : le désaccord est du bruit de
     // mesure, la scène révélée est sûre — comportement historique conservé.

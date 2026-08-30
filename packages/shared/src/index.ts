@@ -38,6 +38,7 @@ export * from "./playback/segmentChapters";
 export * from "./playback/resolveSegments";
 export * from "./playback/segmentPlugins";
 export * from "./playback/frameBlocks";
+export * from "./playback/claimGuards";
 export * from "./playback/creditsFromFrames";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
