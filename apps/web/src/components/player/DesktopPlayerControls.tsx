@@ -6,7 +6,7 @@ import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
 import { PlaybackRateControl } from "../playerControls/PlaybackRateControl";
-import { surfaceHasAlpha } from "../../lib/videoShadow";
+import { surfaceHasAlpha, videoTextGuard } from "../../lib/videoShadow";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
@@ -79,6 +79,19 @@ interface DesktopPlayerControlsProps {
 const WITHOUT_ALPHA = !surfaceHasAlpha();
 
 /**
+ * Le texte des barres, sur la surface à alpha : contour net (sans flou — la
+ * seule aide qui ne se paie pas, cf. `videoTextGuard`) et opacités remontées.
+ * Les classes `text-white/50-60` supposaient le dégradé sous elles ; sans lui,
+ * du blanc à moitié transparent sur une image claire ne se lit pas (contraste
+ * bien sous 4,5:1). Windows et le web gardent dégradés ET opacités d'origine.
+ */
+const TEXT_GUARD = videoTextGuard();
+const GUARD_STYLE = TEXT_GUARD ? { textShadow: TEXT_GUARD } : undefined;
+const SUBTLE_TEXT = WITHOUT_ALPHA ? "text-white/50" : "text-white/85";
+const TIME_TEXT = WITHOUT_ALPHA ? "text-white/60" : "text-white/90";
+const SKIP_TEXT = WITHOUT_ALPHA ? "text-white/70" : "text-white/95";
+
+/**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
  * et bottom bar (seekbar, transport, volume mpv 0-100, sélecteurs de pistes et
  * d'épisodes, fullscreen). Extraction mécanique de DesktopPlayer.
@@ -120,7 +133,13 @@ export function DesktopPlayerControls({
              l'apparition comme à l'extinction.
 
           Toute couche à alpha composée sur la fenêtre de mpv se paie donc, quelle
-          que soit sa forme. Le texte reste blanc, sans aide.
+          que soit sa forme — toute couche, mais pas tout DESSIN : le texte
+          porte désormais un contour NET, sans flou (`videoTextGuard`). Quatre
+          copies nettes du glyphe se rastérisent comme le texte lui-même et
+          fondent avec lui — c'est le flou de l'ombre essayée ci-dessus qui
+          franchissait le seuil de couche, pas l'idée d'aider le texte. Et les
+          opacités 50-70 % supposaient un dégradé dessous : sans lui, elles
+          remontent (constantes en tête de fichier).
 
           Windows et le web gardent leurs deux dégradés, au pixel près : leur
           surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais apparu. */}
@@ -130,8 +149,8 @@ export function DesktopPlayerControls({
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
-              <h2 className="text-lg font-semibold text-white">{title}</h2>
-              {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
+              <h2 className="text-lg font-semibold text-white" style={GUARD_STYLE}>{title}</h2>
+              {subtitle && <p className={`text-sm ${SUBTLE_TEXT}`} style={GUARD_STYLE}>{subtitle}</p>}
             </div>
             {import.meta.env.DEV && (
               <div className="ml-auto flex items-center gap-2 rounded-full bg-[rgba(var(--brand-rgb),0.3)] px-3 py-1">
@@ -184,13 +203,13 @@ export function DesktopPlayerControls({
                 <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="(P)"><PrevEpIcon /></button>
               )}
               <button onClick={() => skipBy(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
-                <span className="text-xs font-bold text-white/70">-10</span>
+                <span className={`text-xs font-bold ${SKIP_TEXT}`} style={GUARD_STYLE}>-10</span>
               </button>
               <button onClick={() => togglePause()} className="rounded-full p-2 hover:bg-white/10">
                 {state.paused ? <PlayIcon /> : <PauseIcon />}
               </button>
               <button onClick={() => skipBy(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
-                <span className="text-xs font-bold text-white/70">+30</span>
+                <span className={`text-xs font-bold ${SKIP_TEXT}`} style={GUARD_STYLE}>+30</span>
               </button>
               {hasNextEpisode && (
                 <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="(N)"><NextEpIcon /></button>
@@ -212,7 +231,7 @@ export function DesktopPlayerControls({
                   style={rangeFill(state.volume, 0, 100)}
                   className="ctl-range hidden w-20 group-hover/vol:block" />
               </div>
-              <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
+              <span className={`text-sm ${TIME_TEXT}`} style={GUARD_STYLE}>{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
             <div className="flex items-center gap-2">
               <PlaybackRateControl

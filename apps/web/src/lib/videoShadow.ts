@@ -62,6 +62,32 @@ export function videoShadow(full: string, hairline: string): string {
 }
 
 /**
+ * Le contour du texte posé NU sur la vidéo — la seule aide qui ne se paie pas.
+ *
+ * Sur la surface à alpha, les barres du lecteur n'ont ni dégradé ni voile
+ * (chaque tentative a été mesurée et payée — voir DesktopPlayerControls) : le
+ * texte blanc restait sans aide, illisible sur une image claire. L'ombre de
+ * texte FLOUE avait été essayée et rejetée : son halo sortait en contour
+ * visible, avec un artefact à chaque apparition — le même défaut de
+ * composition que les ombres portées, flou × fondu du conteneur.
+ *
+ * Un contour SANS flou est d'une autre famille : quatre copies nettes du
+ * glyphe, rastérisées comme le texte lui-même, qui fondent donc avec lui sans
+ * seuil de couche à franchir. C'est la technique des sous-titres, depuis
+ * toujours.
+ *
+ * `undefined` hors surface alpha : Windows et le web gardent leurs dégradés,
+ * au pixel près — leur texte n'a jamais manqué d'appui.
+ */
+export function videoTextGuard(): string | undefined {
+  if (!SURFACE_ALPHA) return undefined;
+  return (
+    "0 1px 0 rgba(0,0,0,0.8), 0 -1px 0 rgba(0,0,0,0.55), " +
+    "1px 0 0 rgba(0,0,0,0.55), -1px 0 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.35)"
+  );
+}
+
+/**
  * ⚠️ `videoBorder()` a existé ici, et n'a plus lieu d'être — ne pas la remettre.
  *
  * Elle couvrait, par un trait net d'un pixel en haut du lecteur, la bordure
