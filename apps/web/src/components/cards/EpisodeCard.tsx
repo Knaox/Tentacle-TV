@@ -14,7 +14,7 @@ import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
-import { resolveBannerImage } from "./resolveCardImage";
+import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
@@ -76,7 +76,7 @@ export const EpisodeCard = memo(function EpisodeCard({
   const resumeFrame = useResumeFrame(item);
   const resolvedImage = resolveBannerImage(item);
   // « » : la donnée prouve qu'il n'y a pas d'image — `CardImage` rend son
-  // repli sans lancer une requête vouée au 404 (cf. `resolveCardImage.ts`).
+  // repli sans lancer une requête vouée au 404 (cf. `cardImage.ts` (shared)).
   const imageUrl = resolvedImage
     ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
         width: 720,

@@ -9,7 +9,7 @@ import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { prefetchDetailRoute } from "./prefetchDetail";
-import { resolvePosterImage, type PosterImageMode } from "./resolveCardImage";
+import { resolvePosterImage, type PosterImageMode } from "@tentacle-tv/shared";
 import { POSTER_VW, POSTER_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
@@ -82,7 +82,7 @@ export const PosterCard = memo(function PosterCard({
   const addedCount = item.RecentlyAddedCount ?? 0;
   const resolvedImage = resolvePosterImage(item, posterImageMode);
   // « » : la donnée prouve qu'il n'y a pas d'affiche — `CardImage` rend son
-  // repli sans lancer une requête vouée au 404 (cf. `resolveCardImage.ts`).
+  // repli sans lancer une requête vouée au 404 (cf. `cardImage.ts` (shared)).
   const imageUrl = resolvedImage
     ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
         height: 450,

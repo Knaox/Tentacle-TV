@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "@/components/cards/PosterCard";
 import { EpisodeCard } from "@/components/cards/EpisodeCard";
-import type { PosterImageMode } from "@/components/cards/resolveCardImage";
+import type { PosterImageMode } from "@tentacle-tv/shared";
 import { FocusableCard } from "../cards/FocusableCard";
 
 /**

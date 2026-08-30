@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PosterCard } from "../cards/PosterCard";
 import { EpisodeCard } from "../cards/EpisodeCard";
-import type { PosterImageMode } from "../cards/resolveCardImage";
+import type { PosterImageMode } from "@tentacle-tv/shared";
 import { RowHeader } from "./RowHeader";
 import { RowScrollControls } from "./RowScrollControls";
 import { useRowScroll } from "./useRowScroll";

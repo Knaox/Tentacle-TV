@@ -199,7 +199,7 @@ export const HoverPreviewBody = memo(function HoverPreviewBody({
           cache — d'où un clignotement noir d'une frame à chaque survol.
           Ici la source est strictement celle de la carte, donc déjà décodée :
           elle peint immédiatement, il n'y a rien à masquer. */}
-      {/* Carte sans image connue (`src` vide, cf. `resolveCardImage.ts`) : pas
+      {/* Carte sans image connue (`src` vide, cf. `cardImage.ts` (shared)) : pas
           d'<img> — certains moteurs peignent un glyphe d'image cassée. */}
       {imageUrl !== "" && (
         <img

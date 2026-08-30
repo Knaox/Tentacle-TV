@@ -1,4 +1,4 @@
-import type { MediaItem } from "@tentacle-tv/shared";
+import type { MediaItem } from "../types/media";
 
 /** Image résolue : identifiant Jellyfin + type d'image à demander. */
 export interface ResolvedCardImage {

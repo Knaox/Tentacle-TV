@@ -1,6 +1,10 @@
 export * from "./types/media";
 export * from "./types/auth";
 export * from "./utils/trickplay";
+// Résolution des images de carte (bannière 16:9, affiche 2:3) — une seule
+// vérité pour le web ET le téléviseur : tag porté (URL adressée par contenu),
+// chaîne de repli, et « la donnée prouve l'absence » → zéro requête.
+export * from "./utils/cardImage";
 export * from "./utils/mediaQuality";
 export * from "./utils/qualityLadder";
 export * from "./utils/scrubStep";

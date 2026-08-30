@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { BRAND } from "@tentacle-tv/shared";
+import { BRAND, resolvePosterImage } from "@tentacle-tv/shared";
 import { Colors, Typography, Fonts } from "../../theme/colors";
 import { CheckIcon } from "../icons/TVIcons";
 import { TVCardImage } from "./TVCardImage";
@@ -28,10 +28,19 @@ interface TVPosterCardProps {
  */
 export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused = false }: { item: MediaItem; width: number; focused?: boolean }) {
   const client = useJellyfinClient();
-  const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
-  const imageId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const imageUrl = client.getImageUrl(imageId, "Primary", { height: 360, quality: 85 });
+  // Même résolveur que le web (`cardImage.ts`, shared), en mode « series » :
+  // pour un épisode, l'affiche de la SÉRIE (un still 16:9 rogné en 2:3 rend
+  // mal) — comportement historique conservé, avec le tag (URL adressée par
+  // contenu) et le court-circuit « la donnée prouve l'absence ».
+  const resolvedImage = resolvePosterImage(item, "series");
+  const imageUrl = resolvedImage
+    ? client.getImageUrl(resolvedImage.id, resolvedImage.type, {
+        height: 360,
+        quality: 85,
+        ...(resolvedImage.tag ? { tag: resolvedImage.tag } : {}),
+      })
+    : null;
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage;
 
