@@ -1,4 +1,5 @@
 import type { TrickplayInfo, TrickplayManifest } from "../types/media";
+import { TICKS_PER_MS } from "../types/watchTogether";
 
 export interface TrickplayTileCoords {
   /** Index of the tile mosaic JPEG to fetch (0-based). */
@@ -70,4 +71,47 @@ export function pickBestTrickplayWidth(
   if (!info) return null;
 
   return { mediaSourceId: sourceId, width: best, info };
+}
+
+export interface ResumeSprite {
+  selection: TrickplaySelection;
+  tileIndex: number;
+  /** Colonne et rangée de la vignette dans sa planche (indices entiers). */
+  col: number;
+  row: number;
+}
+
+/**
+ * La vignette EXACTE d'une position de reprise : quelle planche, quelle case.
+ *
+ * Géométrie seule, sans URL — la carte en ligne la complète avec l'URL du
+ * proxy, la carte hors ligne avec le fichier local, la TV avec la sienne.
+ * C'est la MÊME math que l'aperçu de la barre de progression
+ * (`getTrickplayTile`) : la position venant de `UserData` synchronisé par
+ * Jellyfin, tous les appareils calculent la même case, donc montrent la même
+ * image.
+ */
+export function resolveResumeSprite(
+  manifest: TrickplayManifest | null | undefined,
+  positionTicks: number,
+  mediaSourceId?: string,
+): ResumeSprite | null {
+  if (positionTicks <= 0 || !manifest) return null;
+  const selection = pickBestTrickplayWidth(manifest, mediaSourceId);
+  if (!selection) return null;
+  const { info } = selection;
+  if (info.Interval <= 0 || info.Width <= 0 || info.Height <= 0) return null;
+  // La position peut dépasser la dernière vignette (fin de fichier, durée
+  // arrondie) : bornée, sinon l'index viserait une planche qui n'existe pas.
+  const positionMs = Math.min(
+    positionTicks / TICKS_PER_MS,
+    Math.max(0, (info.ThumbnailCount - 1) * info.Interval),
+  );
+  const coords = getTrickplayTile(positionMs, info);
+  return {
+    selection,
+    tileIndex: coords.tileIndex,
+    col: coords.xInTile / info.Width,
+    row: coords.yInTile / info.Height,
+  };
 }

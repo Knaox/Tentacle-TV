@@ -9,12 +9,11 @@
 
 import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { formatDuration, formatEpisodeCode, resolveResumeSprite } from "@tentacle-tv/shared";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
 import { CardTrickplayImage } from "../components/cards/CardTrickplayImage";
 import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
 import { useLocalTrickplay } from "../hooks/useLocalTrickplay";
-import { resolveResumeSprite } from "../hooks/useResumeFrame";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { watchStateOf } from "./offlineGroups";
