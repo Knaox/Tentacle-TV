@@ -40,13 +40,13 @@ export function registerDisplayHdrCommands(
         const window = surface()?.videoWindow?.();
         return {
           supporte: hdrSupported(),
-          actif: hdrActive(window),
+          enabled: hdrActive(window),
           bascule: toggleInProgress(),
           autoAutorise: toggleAllowed(),
           // Diagnostic seul : dit que l'écran SAIT faire de la plage étendue,
           // sans rien promettre d'une bascule qui n'existe pas sur macOS.
           edrCapable: edrCapable(window),
-          // ⚠️ À NE PAS confondre avec `actif`. Celui-ci est instantané et
+          // ⚠️ À NE PAS confondre avec `enabled`. Celui-ci est instantané et
           // dépend de l'IMAGE affichée : une scène de nuit ne réclame aucune
           // haute lumière et retombe à 1,00 sur une lecture parfaitement HDR
           // (mesuré, même film : 1,00 puis 12,82). `coucheHdr` dit ce que mpv

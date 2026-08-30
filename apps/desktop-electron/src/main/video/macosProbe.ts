@@ -33,10 +33,10 @@ export interface SurfaceProbe {
   geometrie: string;
   numeroFenetre: number;
   /** Plage étendue accordée en ce moment, et ce que l'écran saurait donner. */
-  edr: { courant: number; potentiel: number };
+  edr: { current: number; potential: number };
   image: ImageStats | null;
   /** Motif de l'absence d'image : autorisation, fenêtre absente, échec. */
-  erreur: string | null;
+  error: string | null;
   /** Verdict en clair, celui qu'on lit en premier. */
   verdict: string;
 }
@@ -58,8 +58,8 @@ function imageVerdict(image: ImageStats | null, error: string | null): string {
   if (error !== null) return `INDETERMINE — ${error}`;
   if (image === null) return "INDETERMINE — aucune fenetre video";
   const pct = (image.nonNoirs * 100).toFixed(1);
-  const detail = `${pct} % non noirs, ecart-type ${image.ecartType.toFixed(1)}, ${String(image.teintes)} teintes`;
-  const seen = image.nonNoirs >= IMAGE_THRESHOLD && image.ecartType >= STDDEV_THRESHOLD;
+  const detail = `${pct} % non noirs, ecart-type ${image.stdDev.toFixed(1)}, ${String(image.teintes)} teintes`;
+  const seen = image.nonNoirs >= IMAGE_THRESHOLD && image.stdDev >= STDDEV_THRESHOLD;
   return `${seen ? "IMAGE VISIBLE" : "RIEN A VOIR"} — ${detail}`;
 }
 
@@ -86,9 +86,9 @@ export async function probe(surface: VideoSurface | null): Promise<SurfaceProbe>
   return {
     geometrie: surface?.geometrie?.() ?? "surface non attachee",
     numeroFenetre: number,
-    edr: { courant: state.courant, potentiel: state.potentiel },
+    edr: { current: state.current, potential: state.potential },
     image,
-    erreur: error,
+    error,
     verdict: imageVerdict(image, error),
   };
 }
@@ -128,13 +128,13 @@ async function colourChain(): Promise<string> {
  */
 export async function traceReport(surface: VideoSurface | null): Promise<void> {
   const [s, colour] = await Promise.all([probe(surface), colourChain()]);
-  const edr = `${s.edr.courant.toFixed(2)} / ${s.edr.potentiel.toFixed(2)}`;
+  const edr = `${s.edr.current.toFixed(2)} / ${s.edr.potential.toFixed(2)}`;
   trace(`RAPPORT — ${s.verdict}`);
   // ⚠️ « accordé » n'est PAS « utilisé ». Le système accorde le headroom à qui
   // le DEMANDE — une vue qui a posé `wantsExtendedDynamicRangeOpenGLSurface`
   // obtient le maximum même si elle ne dessine que du SDR. Seule la couche
   // Metal, qui négocie son espace colorimétrique, en fait une preuve.
-  trace(`RAPPORT — EDR ${edr}${s.edr.courant > 1.01 ? " (headroom accorde — pas une preuve)" : ""}`);
+  trace(`RAPPORT — EDR ${edr}${s.edr.current > 1.01 ? " (headroom accorde — pas une preuve)" : ""}`);
   trace(`RAPPORT — ${colour}`);
   trace(`RAPPORT — fenetre ${String(s.numeroFenetre)} · ${s.geometrie}`);
 }

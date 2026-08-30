@@ -53,7 +53,7 @@ const NOT_APPLICABLE: ReadonlySet<string> = new Set([
 const SDR_WHITE_NITS = 100;
 
 export function edrPeak(): number {
-  const potential = readEdr(null).potentiel;
+  const potential = readEdr(null).potential;
   const nits = Math.round((potential > 1 ? potential : 1) * SDR_WHITE_NITS);
   return Math.min(10000, Math.max(10, nits));
 }
