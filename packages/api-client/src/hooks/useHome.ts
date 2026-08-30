@@ -25,13 +25,16 @@ export function useResumeItems() {
   const client = useJellyfinClient();
   const userId = useUserId();
 
+  // `Trickplay` sur CETTE requête seulement : la carte de reprise croppe la
+  // vignette exacte de la position, et il lui faut le manifeste. Quelques
+  // centaines d'octets par item × 12 — les autres rangées n'en font rien.
   return useQuery({
     queryKey: ["resume-items"],
     queryFn: () =>
       client
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items/Resume?Limit=12&Recursive=true` +
-            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS}&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
+            `&IncludeItemTypes=Movie,Episode&Fields=${FIELDS},Trickplay&MediaTypes=Video&${IMAGE_OPTS}&${USER_DATA}`
         )
         .then((r) => r.Items),
     select: dedupResumeBySeries,

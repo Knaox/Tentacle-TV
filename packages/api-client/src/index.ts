@@ -34,6 +34,7 @@ export { usePlaybackOverlay } from "./playback/usePlaybackOverlay";
 export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/playbackOverlay.types";
 export { useMutedSegments, NO_MUTED_SEGMENTS } from "./playback/useMutedSegments";
 export { usePostCreditsClaim } from "./playback/usePostCreditsClaim";
+export { buildTrickplayTileUrl } from "./jellyfin/trickplayUrl";
 export { setGroupPlaybackSettings, groupPlaybackSettings, useOwnPlaybackSettings } from "./hooks/usePlaybackSettings";
 // Library language/subtitle preferences
 export { useLibraryPreferences, useLibraryPreference, useSetLibraryPreference, useDeleteLibraryPreference, useResolveMediaTracks, useInterfaceLanguage, useSetInterfaceLanguage, fetchInterfaceLanguage, setPreferencesBackendUrl, setPreferencesToken, tentacleApiFetch, TentacleApiError } from "./hooks/usePreferences";

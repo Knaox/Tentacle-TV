@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { buildTrickplayTileUrl, useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   getTrickplayTile,
   getTrickplayTileCount,
@@ -66,14 +66,16 @@ export function useTrickplay(
       // Lecture locale : tuiles servies par le serveur loopback.
       if (local) return local.buildTileUrl(tileIndex);
       if (!item?.Id) return null;
-      // Absolute URL: hits the same backend as the rest of the Jellyfin client.
-      // Token via query param (api_key) because background-image / new Image()
-      // cannot send custom headers nor cross-origin cookies.
-      const base = client.getBaseUrl();
-      const token = client.getAccessToken();
-      const params = new URLSearchParams({ mediaSourceId: selection.mediaSourceId });
-      if (token) params.set("api_key", token);
-      return `${base}/items/${item.Id}/trickplay/${selection.width}/${tileIndex}.jpg?${params.toString()}`;
+      // URL commune à toutes les plateformes (proxy Tentacle, cache immuable) —
+      // le pourquoi du `api_key` vit dans `buildTrickplayTileUrl`.
+      return buildTrickplayTileUrl(
+        client.getBaseUrl(),
+        client.getAccessToken(),
+        item.Id,
+        selection.mediaSourceId,
+        selection.width,
+        tileIndex,
+      );
     },
     [selection, item?.Id, client, local],
   );
