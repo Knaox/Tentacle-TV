@@ -90,19 +90,26 @@ export function findSkipCandidate(input: SkipCandidateInput): SkipCandidate | nu
       settings,
     };
   }
-  if (!input.isEpisode || !input.hasNextEpisode) {
-    // Film ou dernier épisode : il n'y a RIEN à passer — le générique va
-    // jusqu'au bout, et « passer » voudrait dire quitter la lecture. Le
-    // libellé le dit donc, au lieu de promettre un saut (c'est ainsi qu'une
-    // scène post-générique Marvel se perdait : le bouton disait « passer le
-    // générique » et fermait le film).
+  if (!input.isEpisode) {
+    // Film au générique SANS scène derrière : plus rien du tout. « Terminer
+    // la lecture » n'apportait rien qu'attendre ne donne pas — l'écran de fin
+    // arrive tout seul — et en Watch Together il fermait la lecture d'un
+    // membre au milieu de la séance. Demandé explicitement (30.08) : un film
+    // n'affiche un bouton QUE s'il y a une scène post-générique à rejoindre ;
+    // le générique final d'après la scène se tait pareil.
+    return null;
+  }
+  if (!input.hasNextEpisode) {
+    // Dernier épisode : il n'y a RIEN à passer — le générique va jusqu'au
+    // bout, et « passer » voudrait dire quitter la lecture. Le libellé le dit
+    // donc, au lieu de promettre un saut.
     //
     // Le décompte n'est autorisé que sur le générique FINAL — celui qui
     // reprend après une scène post-générique. Là, tout a été vu, et rester
     // devant des minutes de défilement est le geste qu'on ne veut pas imposer.
-    // Sur le générique PRINCIPAL d'un film, le bouton reste imposé quel que
-    // soit le réglage : un décompte qui ferme un film au bout de cinq secondes
-    // de générique — sa musique, un plan qu'aucun détecteur n'a vu — ne se
+    // Sur le générique PRINCIPAL, le bouton reste imposé quel que soit le
+    // réglage : un décompte qui ferme la lecture au bout de cinq secondes de
+    // générique — sa musique, un plan qu'aucun détecteur n'a vu — ne se
     // rattrape pas.
     return {
       segment: active,
