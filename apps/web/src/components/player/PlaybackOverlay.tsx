@@ -33,6 +33,13 @@ interface PlaybackOverlayProps {
   layer?: string;
   /** La barre de contrôles est-elle à l'écran ? (le bouton lui cède la place). */
   controlsVisible?: boolean;
+  /**
+   * Un panneau du lecteur (pistes, épisodes) est ouvert : pilules et carte
+   * s'EFFACENT — ils partagent le coin bas-droit et la même couche, et le
+   * panneau a la priorité. Ils reviennent à la fermeture ; l'affiche pleine de
+   * fin, elle, n'est pas concernée (plus de panneau possible à ce moment-là).
+   */
+  panelOpen?: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -42,13 +49,13 @@ interface PlaybackOverlayProps {
 
 export function PlaybackOverlay({
   overlay, countdownTotals, onSkip, onDismiss, onPlayNow, layer = "z-20",
-  controlsVisible,
+  controlsVisible, panelOpen = false,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: PlaybackOverlayProps) {
   return (
     <>
-      {overlay.kind === "skip" && (
+      {overlay.kind === "skip" && !panelOpen && (
         <SkipSegmentButton
           key={overlay.segmentType}
           labelKey={overlay.labelKey}
@@ -66,7 +73,7 @@ export function PlaybackOverlay({
           désormais MÊME règle : elle se montre tant qu'on ne l'a pas refusée,
           puis se retire de l'image nue. Sa croix vaut refus de LA SUITE, le
           même que celui de la carte. */}
-      {overlay.kind === "nextButton" && (
+      {overlay.kind === "nextButton" && !panelOpen && (
         <SkipSegmentButton
           labelKey="goToNextEpisode"
           countdownSeconds={null}
@@ -78,7 +85,7 @@ export function PlaybackOverlay({
         />
       )}
       <AnimatePresence>
-        {overlay.kind === "nextCard" && !overlay.final && (
+        {overlay.kind === "nextCard" && !overlay.final && !panelOpen && (
           <UpNextCard
             countdown={overlay.countdownSeconds}
             totalSeconds={countdownTotals.nextMs / 1000}

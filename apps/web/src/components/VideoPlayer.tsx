@@ -102,6 +102,7 @@ export function VideoPlayer({
     reportLoading: setLoading,
   });
 
+  const [controlPanelOpen, setControlPanelOpen] = useState(false); // panneau ouvert → pilules effacées
   // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
   // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
   // coquille commune aux six surfaces. ──
@@ -261,7 +262,7 @@ export function VideoPlayer({
         posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
         onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
-        onPlayNow={playback.playNow} controlsVisible={showControls}
+        onPlayNow={playback.playNow} controlsVisible={showControls} panelOpen={controlPanelOpen}
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
@@ -291,7 +292,7 @@ export function VideoPlayer({
           onAudioChange, onSubtitleChange,
           onQualityChange: useNativeHls && !nativeHlsSupportsQualitySwitch() ? undefined : onQualityChange,
           onNextEpisode, onPreviousEpisode,
-          applyToSeries, onPlaybackRateChange: applyRate,
+          applyToSeries, onPlaybackRateChange: applyRate, onPanelsOpenChange: setControlPanelOpen,
         }}
       />
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatePresence } from "framer-motion";
 import type { MediaItem, QualityKey, QualityPreset, SourceQuality } from "@tentacle-tv/shared";
@@ -52,6 +52,8 @@ export interface PlayerControlsProps {
   applyToSeries?: ApplyToSeriesControl;
   /** Applique la vitesse de lecture sur l'élément vidéo. */
   onPlaybackRateChange?: (rate: number) => void;
+  /** Un panneau (pistes, épisodes) vient de s'ouvrir ou de se fermer. */
+  onPanelsOpenChange?: (open: boolean) => void;
 }
 
 // Contrôles superposés à la vidéo (top/bottom bar en dégradé vers transparent)
@@ -67,10 +69,18 @@ export function PlayerControls({
   onTogglePlay, onSeek, onSkip, onVolumeChange, onToggleMute, onToggleFullscreen, onBack,
   onAudioChange, onSubtitleChange, onQualityChange,
   onNextEpisode, onPreviousEpisode, applyToSeries, onPlaybackRateChange,
+  onPanelsOpenChange,
 }: PlayerControlsProps) {
   const { t } = useTranslation("player");
   const [showSettings, setShowSettings] = useState(false);
   const [showEpisodes, setShowEpisodes] = useState(false);
+  // Les pilules de saut partagent le coin bas-droit avec ces panneaux : le
+  // lecteur veut savoir quand l'un d'eux est ouvert pour les effacer.
+  const panelsOpen = showSettings || showEpisodes;
+  useEffect(() => {
+    onPanelsOpenChange?.(panelsOpen);
+    return () => onPanelsOpenChange?.(false);
+  }, [panelsOpen, onPanelsOpenChange]);
   const isEpisode = item?.Type === "Episode" && !!item.SeriesId;
   const hasSettings = audioTracks.length > 0 || subtitleTracks.length > 0;
 
