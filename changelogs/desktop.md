@@ -47,7 +47,7 @@ et Linux reçoivent l'ensemble.
 - **Les génériques de fin et les scènes post-génériques sont enfin trouvés sur les films.** Quand le serveur ne signale rien de crédible — le cas de la plupart des films — Tentacle regarde les vignettes de la barre de progression et établit lui-même où commence le générique, et où vit la scène qui le suit. « Spider-Man : No Way Home » ne proposait rien du tout ; le bouton mène désormais à la scène post-générique, pas à la fin du film
 - **Les passages d'un épisode se règlent un par un**, dans Réglages > Lecture : générique de début, résumé de l'épisode précédent, générique de fin, aperçu du suivant. Pour chacun, trois choix — proposer un bouton, passer tout seul, ne rien faire — et, pour le saut automatique, le décompte et son **délai au millième de seconde près**
 - **« Reprendre la lecture » montre l'image exacte où vous vous êtes arrêté** — la même sur tous vos appareils, hors ligne compris — au lieu de l'affiche de l'épisode
-- **Le texte des commandes se lit sur toute image.** Titre, sous-titre et minutage se perdaient sur une scène claire — ils portent désormais un contour net, à la manière des sous-titres
+- **Les commandes se lisent sur toute image.** Un léger voile sombre se pose derrière les barres du lecteur — texte et boutons ne se perdent plus sur une scène claire
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La proposition suit désormais votre dernière lecture — sur la fiche, sur l'accueil et dans le lecteur —, et la fin d'une saison enchaîne sur le premier épisode de la suivante
 - **Quitter un film ne déplace plus la fenêtre** (macOS). Elle reste exactement comme vous l'avez laissée — en plein écran si vous y étiez, en plein écran fenêtré ou fenêtrée sinon — sans transition et sans changement de bureau. Le rectangle noir qui restait parfois par-dessus l'application en sortant d'un film en plein écran disparaît avec : il venait de cette transition, ouverte à l'instant où la vidéo s'arrête
 - **Un épisode repris depuis le début ne reste plus « vu ».** Terminer un épisode, revenir en arrière puis quitter le laissait coché sur la fiche et absent de l'accueil — alors que la reprise, elle, était bien là où vous l'aviez laissée. Il redevient un épisode en cours, à l'endroit exact où vous en êtes
@@ -73,7 +73,7 @@ et Linux reçoivent l'ensemble.
 - **Closing credits and post-credit scenes are at last found on films.** When the server marks nothing credible — the case for most films — Tentacle looks at the thumbnails behind the progress bar and works out for itself where the credits start, and where the scene after them lives. “Spider-Man: No Way Home” offered nothing at all; the button now leads to the post-credit scene, not to the end of the film
 - **Passages within an episode are set one by one**, under Settings > Playback: opening titles, recap of the previous episode, closing credits, preview of the next. For each, three choices — offer a button, skip on its own, do nothing — and, for automatic skipping, the countdown and its **delay to the millisecond**
 - **“Continue watching” shows the exact frame where you stopped** — the same on all your devices, offline included — instead of the episode artwork
-- **The player text reads on any picture.** Title, subtitle and timing used to get lost over a bright scene — they now carry a crisp outline, the way subtitles do
+- **The player controls read on any picture.** A light dark veil now sits behind the player bars — text and buttons no longer get lost over a bright scene
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The suggestion now follows your last viewing — on the details page, on the home screen and in the player — and the end of a season carries on to the first episode of the next
 - **Leaving a film no longer moves the window** (macOS). It stays exactly as you left it — full screen if you were in full screen, zoomed or windowed otherwise — with no transition and no desktop switch. The black rectangle that sometimes stayed on top of the app after leaving a full-screen film goes with it: it came from that very transition, opening at the moment playback stops
 - **An episode you restart from the beginning no longer stays “watched”.** Finishing an episode, rewinding, then leaving used to leave it ticked on the series page and gone from the home screen — while the resume point sat exactly where you left it. It goes back to being in progress, at the very spot you reached
@@ -127,7 +127,7 @@ et Linux reçoivent l'ensemble.
 - Les **touches média** du clavier et l'intégration au bureau (icône, épinglage) fonctionnent comme sur les autres systèmes
 - **L'application n'emprunte plus sa police à un service extérieur.** Elle voyage désormais dans le paquet : le texte s'affiche même sans accès à Internet — un serveur sur votre réseau suffit — et plus rien n'est demandé à Google au lancement
 - **« Reprendre la lecture » montre l'image exacte où vous vous êtes arrêté** — la même sur tous vos appareils, hors ligne compris — au lieu de l'affiche de l'épisode
-- **Le texte des commandes se lit sur toute image.** Titre, sous-titre et minutage se perdaient sur une scène claire — ils portent désormais un contour net, à la manière des sous-titres
+- **Les commandes se lisent sur toute image.** Un léger voile sombre se pose derrière les barres du lecteur — texte et boutons ne se perdent plus sur une scène claire
 
 ### EN
 - **No more black cards in the rows.** A thumbnail that failed once stayed black until the page was reloaded, and posters were being requested from the server when nothing announced them — a whole row could go dark. A missed image now retries on its own, and comes back as soon as the server has fetched it
@@ -162,7 +162,7 @@ et Linux reçoivent l'ensemble.
 - Keyboard **media keys** and desktop integration (icon, pinning) work as they do on the other systems
 - **The app no longer borrows its font from an outside service.** It now travels inside the package: text shows even with no Internet access — a server on your own network is enough — and nothing is requested from Google at start-up
 - **“Continue watching” shows the exact frame where you stopped** — the same on all your devices, offline included — instead of the episode artwork
-- **The player text reads on any picture.** Title, subtitle and timing used to get lost over a bright scene — they now carry a crisp outline, the way subtitles do
+- **The player controls read on any picture.** A light dark veil now sits behind the player bars — text and buttons no longer get lost over a bright scene
 
 ## [1.20.8]
 ### FR

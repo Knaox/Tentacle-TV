@@ -6,7 +6,7 @@ import { LocalEpisodeSelectorPanel } from "./LocalEpisodeSelectorPanel";
 import { DesktopSeekbar } from "./DesktopSeekbar";
 import { formatDuration } from "../playerControls/utils";
 import { PlaybackRateControl } from "../playerControls/PlaybackRateControl";
-import { surfaceHasAlpha, videoTextGuard } from "../../lib/videoShadow";
+import { surfaceHasAlpha } from "../../lib/videoShadow";
 import {
   BackIcon, PlayIcon, PauseIcon, VolumeIcon, MuteIcon, GearIcon,
   FullscreenIcon, ExitFullscreenIcon, PrevEpIcon, NextEpIcon, EpisodesIcon,
@@ -79,20 +79,6 @@ interface DesktopPlayerControlsProps {
 const WITHOUT_ALPHA = !surfaceHasAlpha();
 
 /**
- * Le texte des barres, sur la surface à alpha : contour noir PLEIN (cf.
- * `videoTextGuard` — l'alpha partiel n'y rend pas la couleur demandée) et
- * blanc PUR. Les classes `text-white/50-70` supposaient le dégradé sous
- * elles ; ici elles se DÉLAVAIENT en gris (lecture prémultipliée, capture du
- * 30.08). La hiérarchie passe par la taille, déjà en place. Windows et le web
- * gardent dégradés ET opacités d'origine.
- */
-const TEXT_GUARD = videoTextGuard();
-const GUARD_STYLE = TEXT_GUARD ? { textShadow: TEXT_GUARD } : undefined;
-const SUBTLE_TEXT = WITHOUT_ALPHA ? "text-white/50" : "text-white";
-const TIME_TEXT = WITHOUT_ALPHA ? "text-white/60" : "text-white";
-const SKIP_TEXT = WITHOUT_ALPHA ? "text-white/70" : "text-white";
-
-/**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
  * et bottom bar (seekbar, transport, volume mpv 0-100, sélecteurs de pistes et
  * d'épisodes, fullscreen). Extraction mécanique de DesktopPlayer.
@@ -132,23 +118,19 @@ export function DesktopPlayerControls({
              minutage et de la barre de progression, et le même artefact à
              l'apparition comme à l'extinction.
 
-          La capture du 30.08 (Linux) a livré la règle qui ordonne tout cela :
-          l'alpha partiel n'y rend pas la couleur demandée SELON la couleur. Le
-          BLANC partiel se délave vers le gris (lecture prémultipliée : blanc ×
-          alpha devient gris) ; le NOIR, lui, est invariant par prémultiplication
-          — noir × alpha reste noir — et se compose juste. D'où le dessin
-          actuel, chaque pièce de sa famille sûre :
+          Ce qui a survécu à l'essai du 30.08, et pourquoi : le dégradé NOIR
+          revient sur la surface à alpha, ALLÉGÉ (45 % contre 70 % ailleurs) et
+          cantonné aux zones des barres — c'est lui qui détache texte et
+          icônes. Il n'est ni le voile plein cadre ni une ombre floutée : le
+          noir est invariant par prémultiplication (noir × alpha reste noir),
+          c'est LA couleur que cette surface compose juste. Le blanc partiel,
+          lui, s'y délave vers le gris — les `text-white/50-70` rendent un peu
+          plus gris qu'ailleurs, et posés sur le voile sombre, c'est assumé.
 
-           - le texte : remplissage blanc PUR et contour noir PLEIN
-             (`videoTextGuard`) — le dessin des sous-titres de mpv, impeccables
-             sur la même image ; les `text-white/50-70` rendaient GRIS
-             (constantes en tête de fichier) ;
-           - les barres : le dégradé NOIR revient, ALLÉGÉ et cantonné à leurs
-             zones — c'est lui qui détache les icônes. Il n'est ni le voile
-             plein cadre ni une ombre floutée : un dégradé linéaire noir est
-             de la famille qui se compose bien. Son fondu avec les contrôles
-             reste le point à guetter — si un artefact d'extinction
-             réapparaissait, c'est ICI qu'il faudrait revenir.
+          Un contour de texte à copies pleines (façon sous-titres) a aussi été
+          essayé ce jour-là : composition irréprochable, mais JUGÉ LAID —
+          l'utilisateur a tranché, le voile seul suffit. Sa pierre tombale est
+          dans `videoShadow.ts` ; ne pas le remettre.
 
           Windows et le web gardent leurs deux dégradés pleins, au pixel près :
           leur surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais
@@ -159,8 +141,8 @@ export function DesktopPlayerControls({
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
-              <h2 className="text-lg font-semibold text-white" style={GUARD_STYLE}>{title}</h2>
-              {subtitle && <p className={`text-sm ${SUBTLE_TEXT}`} style={GUARD_STYLE}>{subtitle}</p>}
+              <h2 className="text-lg font-semibold text-white">{title}</h2>
+              {subtitle && <p className="text-sm text-white/50">{subtitle}</p>}
             </div>
             {import.meta.env.DEV && (
               <div className="ml-auto flex items-center gap-2 rounded-full bg-[rgba(var(--brand-rgb),0.3)] px-3 py-1">
@@ -213,13 +195,13 @@ export function DesktopPlayerControls({
                 <button onClick={onPreviousEpisode} className="rounded-full p-2 hover:bg-white/10" title="(P)"><PrevEpIcon /></button>
               )}
               <button onClick={() => skipBy(-10)} className="rounded-full p-1.5 hover:bg-white/10" title="-10s">
-                <span className={`text-xs font-bold ${SKIP_TEXT}`} style={GUARD_STYLE}>-10</span>
+                <span className="text-xs font-bold text-white/70">-10</span>
               </button>
               <button onClick={() => togglePause()} className="rounded-full p-2 hover:bg-white/10">
                 {state.paused ? <PlayIcon /> : <PauseIcon />}
               </button>
               <button onClick={() => skipBy(30)} className="rounded-full p-1.5 hover:bg-white/10" title="+30s">
-                <span className={`text-xs font-bold ${SKIP_TEXT}`} style={GUARD_STYLE}>+30</span>
+                <span className="text-xs font-bold text-white/70">+30</span>
               </button>
               {hasNextEpisode && (
                 <button onClick={onNextEpisode} className="rounded-full p-2 hover:bg-white/10" title="(N)"><NextEpIcon /></button>
@@ -241,7 +223,7 @@ export function DesktopPlayerControls({
                   style={rangeFill(state.volume, 0, 100)}
                   className="ctl-range hidden w-20 group-hover/vol:block" />
               </div>
-              <span className={`text-sm ${TIME_TEXT}`} style={GUARD_STYLE}>{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
+              <span className="text-sm text-white/60">{formatDuration(dragProgress != null ? dragProgress * dur : actualPos)} / {formatDuration(dur)}</span>
             </div>
             <div className="flex items-center gap-2">
               <PlaybackRateControl

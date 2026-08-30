@@ -62,33 +62,27 @@ export function videoShadow(full: string, hairline: string): string {
 }
 
 /**
- * Le contour du texte posé NU sur la vidéo — la seule aide qui ne se paie pas.
+ * ⚠️ `videoTextGuard()` a existé ici, et n'a plus lieu d'être — ne pas la
+ * remettre.
  *
- * Sur la surface à alpha, les barres du lecteur n'ont ni dégradé ni voile
- * (chaque tentative a été mesurée et payée — voir DesktopPlayerControls) : le
- * texte blanc restait sans aide, illisible sur une image claire. L'ombre de
- * texte FLOUE avait été essayée et rejetée : son halo sortait en contour
- * visible, avec un artefact à chaque apparition.
+ * Elle posait un contour au texte des barres du lecteur, nu sur la vidéo de
+ * la surface à alpha. Deux versions, deux leçons, le même jour (30.08) :
  *
- * ⚠️ La première version de ce contour (copies noires SEMI-transparentes,
- * 0,35 → 0,8) a livré la leçon complète, capture du 30.08 sur Linux à
- * l'appui : sur cette surface, l'alpha PARTIEL ne rend pas la couleur
- * demandée. Le blanc partiel se DÉLAVE vers le gris — la surface le lit comme
- * prémultiplié — et les copies noires partielles s'empilent en pâte quasi
- * opaque. Seul un pixel PLEINEMENT opaque est déterministe.
+ *  1. copies noires SEMI-transparentes → pâte quasi opaque, et le blanc à
+ *     opacité partielle rendait GRIS : sur cette surface, l'alpha partiel ne
+ *     rend pas la couleur demandée — le blanc se lit comme prémultiplié et se
+ *     délave, le NOIR est invariant (noir × alpha reste noir) et se compose
+ *     juste ;
+ *  2. copies noires PLEINES sur blanc pur (le dessin des sous-titres de mpv,
+ *     impeccables sur la même image) → composition irréprochable, mais JUGÉ
+ *     LAID — l'utilisateur a tranché.
  *
- * D'où ce dessin, et pas un autre : remplissage blanc PUR (alpha 1 — jamais
- * `text-white/xx` ici) et contour noir PLEIN, quatre copies nettes d'un
- * pixel. C'est très exactement le dessin des sous-titres de mpv, impeccables
- * sur la même image.
- *
- * `undefined` hors surface alpha : Windows et le web gardent leurs dégradés,
- * au pixel près — leur texte n'a jamais manqué d'appui.
+ * Ce qui a pris sa place : le dégradé noir ALLÉGÉ des barres (voir
+ * `DesktopPlayerControls`) — la couleur qui se compose juste, au bon endroit,
+ * sans toucher au dessin du texte. La leçon prémultipliée reste valable pour
+ * toute nouvelle surcouche : du blanc semi-transparent posé sur mpv rendra
+ * toujours plus gris qu'ailleurs.
  */
-export function videoTextGuard(): string | undefined {
-  if (!SURFACE_ALPHA) return undefined;
-  return "0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000";
-}
 
 /**
  * ⚠️ `videoBorder()` a existé ici, et n'a plus lieu d'être — ne pas la remettre.
