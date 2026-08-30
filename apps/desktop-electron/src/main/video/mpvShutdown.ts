@@ -1,7 +1,8 @@
 /**
- * L'arrêt de mpv sur macOS — le seul endroit qui a demandé trois tentatives.
+ * L'arrêt de mpv sur macOS et Linux — le seul endroit qui a demandé trois
+ * tentatives.
  *
- * # Le problème, en une image
+ * # Le problème macOS, en une image
  *
  * ⚠️ Les DEUX fonctions de destruction de libmpv bloquent le thread appelant,
  * et sur macOS ce thread est justement celui dont mpv a besoin pour finir :
@@ -16,6 +17,19 @@
  * répond plus, et ne meurt même plus à la fermeture — il faut la tuer de force.
  * Constaté en phase 1 sur proto, puis reproduit ici au banc avant d'écrire ce
  * fichier : `destroy()` ne rendait jamais la main.
+ *
+ * # Le problème Linux — pas un interblocage, une seconde d'image orpheline
+ *
+ * `mpv_terminate_destroy` y REND la main, mais après ~1 s de FFI synchrone sur
+ * le thread principal (join du démuxeur réseau et du décodage, destruction du
+ * contexte Vulkan), et la fenêtre de mpv — de premier niveau chez nous, jamais
+ * enfant — n'est démontée qu'en dernier : gel complet de l'application ET
+ * rectangle vidéo orphelin à l'écran pendant tout ce temps. Le même
+ * démontage-la-vidéo-d'abord règle les deux maux : `stop` part en asynchrone,
+ * la sortie vidéo (et sa fenêtre, née avec elle — `force-window=no`) meurt en
+ * dizaines de millisecondes sur les threads de mpv, et le cœur finit de mourir
+ * sans que personne l'attende. Sans témoin `videoGone`, le guet se replie sur
+ * dix tours (500 ms) avant `quit`.
  *
  * # Ce qui ne marche PAS
  *

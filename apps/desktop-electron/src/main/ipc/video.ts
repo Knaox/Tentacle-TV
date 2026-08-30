@@ -62,11 +62,20 @@ let video: VideoSurface | null = null;
  *
  * ⚠️ macOS ne peut PAS détruire d'un bloc : `mpv_terminate_destroy` y attend le
  * démontage de la sortie vidéo, lequel réclame le thread principal — celui qui
- * appelle. On démonte donc la vidéo d'abord et on guette sa disparition (voir
- * `mpvShutdown.ts`). Windows détruit comme il l'a toujours fait.
+ * appelle. Linux le PEUT, mais au prix d'une seconde de gel : l'appel est un
+ * FFI synchrone qui joint démuxeur, décodage et contexte Vulkan, et la fenêtre
+ * de mpv — de premier niveau chez nous, jamais enfant — n'est démontée qu'en
+ * dernier : elle restait seule à l'écran tout ce temps. Les deux prennent donc
+ * l'arrêt gracieux (voir `mpvShutdown.ts`) : la vidéo d'abord, sans bloquer.
+ * Sous Linux le témoin `videoGone` n'existe pas — le guet se replie sur ses
+ * dix tours de 50 ms avant `quit`, sans effet visible : la fenêtre part avec
+ * la sortie vidéo dès le `stop`. Windows détruit comme il l'a toujours fait
+ * (fenêtre enfant Win32, aucun couplage, en production).
  *
  * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
- * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à l'écran.
+ * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à
+ * l'écran — et `SurfaceWayland.detach` sort du plein écran, ce qui ne doit
+ * arriver qu'une fois la vidéo partie.
  *
  * EXPORTÉE pour un second appelant : la séquence de fermeture (`closeSequence.ts`)
  * s'en sert sous Linux, où la fenêtre de mpv survivrait sinon à la nôtre.
@@ -79,7 +88,7 @@ export async function stopPlayer(): Promise<void> {
   // s'attendre les deux — `mpv_render_context_free` attend la fin du rendu en
   // cours, et mpv démonte sa sortie vidéo à l'arrêt.
   surface?.preStop?.();
-  if (process.platform === "darwin") {
+  if (process.platform !== "win32") {
     const witness = surface?.videoGone?.bind(surface);
     await stop(witness);
   } else {

@@ -52,9 +52,14 @@ export interface CloseEvent {
 /**
  * Au-delà, on cesse d'attendre mpv.
  *
- * Une seconde et demie : le double de ce que prend un démontage normal, et la
- * moitié du délai de garde de `mpvShutdown.ts` — celui-ci doit rendre la main
- * AVANT que l'autre n'abandonne, sans quoi les deux se superposeraient.
+ * Une seconde et demie : le double d'un démontage normal — l'arrêt gracieux de
+ * `mpvShutdown.ts`, guet de 500 ms compris, tient en ~0,6-0,8 s, et c'est lui
+ * qui rend enfin vraie la promesse de l'en-tête (« mpv suit dans la foulée ») :
+ * la fenêtre vidéo meurt dès le `stop` asynchrone, bien avant cette échéance.
+ * Et la moitié du délai de garde de `mpvShutdown.ts` (3 s) : si mpv ne répond
+ * plus, c'est CETTE échéance qui tire la première — la fenêtre part, et la
+ * garde de l'autre nettoie ce qui reste dans un processus déjà en train de
+ * mourir.
  */
 export const CLOSE_DEADLINE_MS = 1_500;
 
