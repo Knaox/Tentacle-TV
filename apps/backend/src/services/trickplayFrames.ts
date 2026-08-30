@@ -171,18 +171,27 @@ export interface FrameCollectRequest {
   apiKey: string;
 }
 
+export interface FrameCollectResult {
+  samples: FrameSample[];
+  /** Le pas de la grille des vignettes (ms) ; 0 quand rien n'a pu être lu. */
+  intervalMs: number;
+}
+
 /**
  * Les mesures du dernier tiers, ou une liste VIDE quand on n'a rien pu lire.
  *
  * Vide et non `null` : l'appelant n'a pas à distinguer « pas de trickplay » de
  * « planche illisible » — dans les deux cas il n'y a rien à conclure, et le
  * résolveur s'en tient à ce que disent les greffons.
+ *
+ * L'intervalle du manifeste voyage avec les mesures : c'est lui qui permet au
+ * verdict de reculer la borne de saut d'exactement une vignette.
  */
-export async function collectFrameSamples(request: FrameCollectRequest): Promise<FrameSample[]> {
+export async function collectFrameSamples(request: FrameCollectRequest): Promise<FrameCollectResult> {
   const picked = pickTrickplay(request.manifest, request.mediaSourceId);
-  if (!picked) return [];
+  if (!picked) return { samples: [], intervalMs: 0 };
   const range = tileRange(picked.info, request.runtimeMs);
-  if (!range) return [];
+  if (!range) return { samples: [], intervalMs: 0 };
   if (range.truncated) {
     console.info(
       `[segments] ${request.itemId} : analyse bornée à ${String(MAX_TILES)} planches` +
@@ -216,5 +225,5 @@ export async function collectFrameSamples(request: FrameCollectRequest): Promise
     // Une planche de 3200 × 1800 pixels décodée pèse ~23 Mo. Elle est relâchée
     // à chaque tour : `samples` ne retient que deux nombres par vignette.
   }
-  return samples;
+  return { samples, intervalMs: picked.info.Interval };
 }
