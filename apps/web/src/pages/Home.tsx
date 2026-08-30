@@ -15,6 +15,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { MediaRow } from "../components/rows/MediaRow";
+import { RowErrorState } from "../components/rows/RowErrorState";
 import { ContinueWatchingRow } from "../components/rows/ContinueWatchingRow";
 import { PageTransition } from "../components/PageTransition";
 import { ContentErrorState } from "../components/ContentErrorState";
@@ -145,7 +146,14 @@ function LibraryRow({
   // d'emblée, l'arrivée est invisible), resserrée quand chaque octet compte.
   const { ref, near } = useNearViewport<HTMLElement>(dataSaver ? "600px" : "1400px");
   const enabled = near;
-  const { data: items, isLoading } = useLatestItems(libraryId, { collectionType, enabled });
+  const {
+    data: items,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useLatestItems(libraryId, { collectionType, enabled });
+  const title = t("common:latestAdditions", { name: libraryName });
 
   // Squelette tant que la requête n'a pas abouti. Il porte AUSSI la cible de
   // l'observer : sans un élément monté, une rangée en attente ne serait jamais
@@ -154,7 +162,7 @@ function LibraryRow({
     return (
       <section ref={ref} className="row-gutter mb-10">
         <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
-          {t("common:latestAdditions", { name: libraryName })}
+          {title}
         </h2>
         <div className="flex gap-3 overflow-hidden">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -168,11 +176,25 @@ function LibraryRow({
     );
   }
 
+  // ÉCHEC et VIDE ne se ressemblent pas, et se rendaient pareil — `null`, la
+  // rangée effacée sans un mot. Une bibliothèque sans nouveauté n'a rien à
+  // dire ; une requête tombée, si : elle garde sa place, son titre, et propose
+  // de réessayer (voir `RowErrorState`, qui se tait de lui-même hors ligne).
+  if (isError) {
+    return (
+      <RowErrorState
+        title={title}
+        retrying={isFetching}
+        onRetry={() => { void refetch(); }}
+      />
+    );
+  }
+
   if (!items || items.length === 0) return null;
 
   return (
     <MediaRow
-      title={t("common:latestAdditions", { name: libraryName })}
+      title={title}
       items={items}
       animDelay={550 + delayIndex * 80}
       href={`/library/${libraryId}`}

@@ -50,6 +50,8 @@ export default {
   timeDaysAgo: "{{days}}d ago",
   ctrlK: "Ctrl+K",
   retry: "Retry",
+  retrying: "Retrying…",
+  rowErrorMessage: "This row couldn't load.",
   send: "Send",
   sending: "Sending...",
   or: "OR",
