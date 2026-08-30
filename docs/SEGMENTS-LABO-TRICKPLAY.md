@@ -54,6 +54,31 @@ d'apparition du bouton.
    voisin décrivait le VRAI générique et la scène qu'il révèle existe
    (retour utilisateur). Une étiquette absurde n'invalide pas sa voisine.
 
+## Ajouts du soir (retours utilisateur, même méthode)
+
+5. **Preuve de scène** (`sceneChecks.ts`) : le cast d'« Avatar : la voie de
+   l'eau » défile en colonnes si denses que la part de noir tombe à
+   0,62-0,68 — trois minutes classées « scène » (saturation maximale : 0).
+   Un passage n'est une scène que s'il porte une vignette qu'aucun
+   générique ne produit : sat ≥ 30 OU noir ≤ 0,55 (la plus juste des sept
+   vraies scènes du corpus : Brave New World, 0,46).
+6. **Repêchage du stinger de fin de fichier** : la scène de Nick Fury
+   (« Iron Man », 125:10 → 126:00) est si sombre que le lissage
+   l'absorbait. Quand le générique court jusqu'au bout sans scène, la
+   dernière preuve des deux dernières minutes l'ancre, et la remontée
+   s'arrête au dernier vrai défilement (deux vignettes noyau d'affilée).
+   Vingt secondes retrouvées minimum — un logo animé ne suffit pas.
+7. **« Terminer la lecture » retiré des films** (`skipCandidate.ts`) : un
+   film n'affiche un bouton QUE s'il a une scène post-générique ; le
+   générique final d'après la scène se tait aussi. Le dernier épisode d'une
+   série garde le sien. En Watch Together, cela supprime le seul geste
+   gênant (fermer la lecture d'un membre en pleine séance) — les sauts,
+   eux, se propagent par la position commune.
+8. **Étiquette absurde ≠ voisine coupable** : la règle « l'Outro chevauchant
+   une intro écartée tombe avec elle » a été essayée puis RETIRÉE le jour
+   même — sur Re:Zero S4E4, l'Outro voisin décrivait le vrai générique et
+   la scène d'après existe. Seule la garde de position reste.
+
 ## Les pistes FERMÉES, avec les chiffres
 
 1. **Crédits illustrés CLAIRS (Far From Home, Homecoming) : indissociables
