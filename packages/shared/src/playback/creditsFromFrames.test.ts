@@ -50,7 +50,10 @@ describe("le générique lu dans les vignettes", () => {
     const verdict = creditsFromFrames(noWayHome(), NO_WAY_HOME_MS);
     expect(verdict).not.toBeNull();
     expect(verdict?.outro.startMs).toBe(138 * 60_000 + 40_000);
-    expect(verdict?.outro.endMs).toBe(146 * 60_000);
+    // La première vignette de SCÈNE est à 146:00 ; la borne s'arrête une
+    // vignette avant — la transition vit dans cet intervalle, et y sauter
+    // arrivait jusqu'à dix secondes après le début de la scène.
+    expect(verdict?.outro.endMs).toBe(146 * 60_000 - 10_000);
     expect(verdict?.sceneAfter).toBe(true);
     expect(verdict?.outro.source).toBe("frames");
   });
@@ -61,15 +64,27 @@ describe("le générique lu dans les vignettes", () => {
     samples = poke(samples, 142 * 60_000 + 20_000, { dark: 0.61 });
     samples = poke(samples, 142 * 60_000 + 30_000, { dark: 0.71 });
     const verdict = creditsFromFrames(samples, NO_WAY_HOME_MS);
-    expect(verdict?.outro.endMs).toBe(146 * 60_000);
+    expect(verdict?.outro.endMs).toBe(146 * 60_000 - 10_000);
   });
 
   it("ne se laisse pas couper par une image noire DANS la scène", () => {
     // Mesuré : 146:40, une coupe au milieu de la scène post-générique.
     const samples = poke(noWayHome(), 146 * 60_000 + 40_000, { dark: 1, saturation: 0 });
     const verdict = creditsFromFrames(samples, NO_WAY_HOME_MS);
-    expect(verdict?.outro.endMs).toBe(146 * 60_000);
+    expect(verdict?.outro.endMs).toBe(146 * 60_000 - 10_000);
     expect(verdict?.sceneAfter).toBe(true);
+  });
+
+  it("recule d'un pas EXPLICITE quand l'appelant connaît l'intervalle", () => {
+    // Une grille à 20 s (vieux réglage serveur) : le pas transmis fait foi,
+    // la médiane des écarts n'est qu'un repli.
+    const verdict = creditsFromFrames(noWayHome(), NO_WAY_HOME_MS, 20_000);
+    expect(verdict?.outro.endMs).toBe(146 * 60_000 - 20_000);
+  });
+
+  it("ne recule jamais sous le début du générique (pas de grille absurde)", () => {
+    const verdict = creditsFromFrames(noWayHome(), NO_WAY_HOME_MS, 10 * 60_000);
+    expect(verdict?.outro.endMs).toBe(138 * 60_000 + 40_000 + 1_000);
   });
 
   it("ne prend pas la queue noire du fichier pour un générique", () => {
@@ -225,8 +240,10 @@ describe("le générique FINAL, après la scène", () => {
 
   it("le trouve, et le fait courir jusqu'à la fin du média", () => {
     const verdict = creditsFromFrames(withFinalCredits(), RUNTIME);
-    expect(verdict?.outro.endMs).toBe(144 * 60_000);
+    expect(verdict?.outro.endMs).toBe(144 * 60_000 - 10_000);
     expect(verdict?.sceneAfter).toBe(true);
+    // Son début ne recule PAS : en avance, « Terminer la lecture » mordrait
+    // sur la fin de la scène.
     expect(verdict?.finalCredits).toEqual({
       startMs: 146 * 60_000,
       endMs: RUNTIME,

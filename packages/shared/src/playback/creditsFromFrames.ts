@@ -74,7 +74,14 @@ import type { BoundsByType, RawBounds } from "./segmentChapters";
 
 /** Ce que les vignettes savent dire du générique de fin. */
 export interface FrameVerdict {
-  /** Le générique. Sa fin est le début de la scène quand il y en a une. */
+  /**
+   * Le générique. Quand une scène suit, sa fin est la DERNIÈRE vignette de
+   * générique — un pas de grille AVANT la première vignette de scène : la
+   * vraie transition vit quelque part dans cet intervalle, et sauter sur la
+   * vignette de scène, c'était arriver jusqu'à dix secondes APRÈS le début
+   * (rapporté 3 à 5 s en pratique). Arriver un peu tôt coûte quelques
+   * secondes de générique ; arriver tard ampute la scène.
+   */
   outro: RawBounds;
   /** Une scène vit après ce générique — c'est ce qui sauve les post-génériques. */
   sceneAfter: boolean;
@@ -90,6 +97,27 @@ export interface FrameVerdict {
   finalCredits: RawBounds | null;
 }
 
+/** Le pas de grille présumé quand rien ne permet de le mesurer (défaut Jellyfin). */
+const FALLBACK_INTERVAL_MS = 10_000;
+
+/**
+ * L'écart médian entre deux vignettes gardées — le pas de la grille.
+ *
+ * Repli quand l'appelant ne connaît pas l'intervalle du manifeste : les
+ * échantillons vivent sur la grille `frame × Interval`, la médiane des écarts
+ * la retrouve donc exactement, même avec des planches manquantes au milieu.
+ */
+function medianGapMs(kept: readonly FrameSample[]): number {
+  const gaps: number[] = [];
+  for (let i = 1; i < kept.length; i++) {
+    const gap = kept[i].ms - kept[i - 1].ms;
+    if (gap > 0) gaps.push(gap);
+  }
+  if (gaps.length === 0) return FALLBACK_INTERVAL_MS;
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
 /**
  * Le verdict, ou `null` quand les vignettes ne disent rien de sûr.
  *
@@ -100,12 +128,14 @@ export interface FrameVerdict {
 export function creditsFromFrames(
   samples: readonly FrameSample[],
   runtimeMs: number,
+  intervalMs?: number,
 ): FrameVerdict | null {
   if (runtimeMs <= 0 || samples.length === 0) return null;
   // Les vignettes au-delà de la durée sont du remplissage noir (mesuré) : les
   // garder ferait passer la queue du fichier pour un générique.
   const kept = [...samples].filter((s) => s.ms >= 0 && s.ms < runtimeMs).sort((a, b) => a.ms - b.ms);
   if (kept.length === 0) return null;
+  const step = intervalMs !== undefined && intervalMs > 0 ? intervalMs : medianGapMs(kept);
 
   const blocks = smooth(toBlocks(kept, runtimeMs, looksLikeCredits));
   const floor = minCredibleOutroMs(runtimeMs);
@@ -141,7 +171,11 @@ export function creditsFromFrames(
   return {
     outro: {
       startMs: outro.startMs,
-      endMs: scene ? outro.endMs : runtimeMs,
+      // Un pas de grille en arrière : on atterrit sur la DERNIÈRE vignette du
+      // générique, jamais après le début de la scène (voir `FrameVerdict`).
+      // Le garde-fou borne un pas absurde — la borne ne remonte pas sous le
+      // début du générique.
+      endMs: scene ? Math.max(after.startMs - step, outro.startMs + 1_000) : runtimeMs,
       source: "frames",
     },
     sceneAfter: scene,
@@ -156,6 +190,10 @@ export function creditsFromFrames(
  * fichier, et c'est le seul qui mérite un bouton « Terminer la lecture ». Il
  * doit être un générique, commencer après la scène, et durer assez pour qu'un
  * bouton ne fasse pas que clignoter.
+ *
+ * Son début ne recule PAS d'un pas de grille, à dessein : le sens de sécurité
+ * est inverse — en avance, « Terminer la lecture » paraîtrait sur les
+ * dernières secondes de la scène ; en retard d'une vignette, il ne coûte rien.
  */
 function finalCreditsAfter(blocks: Block[], index: number, runtimeMs: number): RawBounds | null {
   const last = blocks[blocks.length - 1];

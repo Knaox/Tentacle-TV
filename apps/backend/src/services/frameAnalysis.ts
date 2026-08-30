@@ -25,8 +25,11 @@ import { collectFrameSamples, type TrickplayManifest } from "./trickplayFrames";
 /**
  * Monter ce numéro périme toutes les lignes en base sans avoir à les effacer.
  * À faire dès que les seuils ou la règle de `creditsFromFrames.ts` changent.
+ *
+ * v2 : la borne de saut recule d'une vignette — les verdicts v1 envoyaient le
+ * spectateur jusqu'à dix secondes APRÈS le début de la scène.
  */
-export const FRAME_ANALYSIS_VERSION = 1;
+export const FRAME_ANALYSIS_VERSION = 2;
 
 /** Ce qu'on a en base : le verdict, ou l'absence de verdict ASSUMÉE. */
 type Stored = { verdict: FrameVerdict | null };
@@ -117,8 +120,11 @@ export function startFrameAnalysis(request: AnalysisRequest): void {
   inFlight.add(request.itemId);
   void (async () => {
     try {
-      const samples = await collectFrameSamples(request);
-      const verdict = samples.length === 0 ? null : creditsFromFrames(samples, request.runtimeMs);
+      const { samples, intervalMs } = await collectFrameSamples(request);
+      const verdict =
+        samples.length === 0
+          ? null
+          : creditsFromFrames(samples, request.runtimeMs, intervalMs > 0 ? intervalMs : undefined);
       await store(request.itemId, request.runtimeMs, verdict);
       console.info(
         `[segments] ${request.itemId} : ${String(samples.length)} vignettes analysées — ` +
