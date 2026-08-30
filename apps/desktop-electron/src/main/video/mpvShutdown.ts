@@ -73,10 +73,25 @@ const WATCH_MS = 50;
 const WATCH_MAX = 20;
 
 /**
+ * L'arrêt en cours, pour rendre `stop` IDEMPOTENT.
+ *
+ * Deux arrêts chevauchés sur la même poignée (la page redemande `mpv_destroy`,
+ * ou `mpv_init` arrive pendant la mort du précédent) partageaient un état
+ * global : le second `setOnShutdown` écrasait le premier, qui ne se résolvait
+ * plus que par sa garde — laquelle pouvait alors `setHandle(null)` et
+ * `clearState()` APRÈS un nouvel `init`, tuant la pompe neuve : lecture
+ * suivante muette. Un seul arrêt court désormais par poignée, et un arrêt
+ * dépassé ne nettoie plus rien (voir les gardes `inFlightCtx`).
+ */
+let inFlight: Promise<void> | null = null;
+let inFlightCtx: unknown = null;
+
+/**
  * Arrête mpv sans figer l'application.
  *
  * `videoIsGone` témoigne de la disparition de la fenêtre vidéo ; sans lui, on se
- * contente d'un nombre de tours fixe, ce qui est moins sûr.
+ * contente d'un nombre de tours fixe, ce qui est moins sûr. Rappeler `stop`
+ * pendant un arrêt de la MÊME poignée rend la promesse déjà en vol.
  */
 export function stop(videoIsGone?: () => boolean): Promise<void> {
   const ctx = handle();
@@ -84,6 +99,7 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
     clearState();
     return Promise.resolve();
   }
+  if (inFlight !== null && inFlightCtx === ctx) return inFlight;
 
   // Étape 1 : démonter la sortie vidéo. `quit` n'est PAS envoyé ici — il
   // doublerait `stop` et ne laisserait pas au démontage le temps d'aboutir.
@@ -97,27 +113,36 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
   mpvApi().commandAsync(ctx, 0, ["set", "force-window", "no", null]);
   mpvApi().commandAsync(ctx, 0, ["stop", null]);
 
-  return new Promise<void>((resolve) => {
+  inFlightCtx = ctx;
+  inFlight = new Promise<void>((resolve) => {
     let done = false;
     const finish = (): void => {
       if (done) return;
       done = true;
-      setOnShutdown(null);
       clearTimeout(limit);
       clearInterval(watch);
-      clearState();
+      // Un arrêt DÉPASSÉ (une autre poignée a pris la place pendant la garde)
+      // ne touche à rien : l'état global appartient au vivant.
+      if (inFlightCtx === ctx) {
+        inFlight = null;
+        inFlightCtx = null;
+        setOnShutdown(null);
+        clearState();
+      }
       resolve();
     };
 
     const limit = setTimeout(() => {
-      setHandle(null);
+      if (handle() === ctx) setHandle(null);
       finish();
     }, SHUTDOWN_DELAY_MS);
 
     setOnShutdown(() => {
       const still = handle();
-      if (still) mpvApi().destroyClient(still);
-      setHandle(null);
+      if (still === ctx) {
+        mpvApi().destroyClient(still);
+        setHandle(null);
+      }
       finish();
     });
 
@@ -129,7 +154,8 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
       if (!gone && ticks < WATCH_MAX) return;
       clearInterval(watch);
       const still = handle();
-      if (still) mpvApi().commandAsync(still, 0, ["quit", null]);
+      if (still === ctx) mpvApi().commandAsync(still, 0, ["quit", null]);
     }, WATCH_MS);
   });
+  return inFlight;
 }
