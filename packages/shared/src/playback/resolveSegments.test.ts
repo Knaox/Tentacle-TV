@@ -407,10 +407,13 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
     });
   });
 
-  it("Re:Zero S4E4 : l'intro posée sur l'épilogue tombe, et l'outro confus avec elle", () => {
-    // Mesuré le 30.08 : l'opening joué pendant l'épilogue fait matcher
-    // l'empreinte audio — Intro 19:12→20:00 à 82 % du fichier, doublée d'un
-    // Outro 19:12→20:36 sur la même zone. Seul le récap (correct) survit.
+  it("Re:Zero S4E4 : l'intro posée sur la fin tombe, l'outro voisin SURVIT et révèle la scène", () => {
+    // Mesuré le 30.08 : l'opening joué pendant le générique fait matcher
+    // l'empreinte audio — Intro 19:12→20:00 à 82 % du fichier. L'Outro posé
+    // sur la même zone décrit, lui, le VRAI générique, et l'épisode continue
+    // après lui (rapporté, vérifié aux vignettes) : une étiquette absurde
+    // n'invalide pas sa voisine — l'écarter aussi coûtait le bouton
+    // post-générique légitime.
     const runtime = minutes(23, 30);
     const { segments } = resolve(
       {
@@ -425,7 +428,11 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
       },
       runtime,
     );
-    expect(segments.map((s) => s.type)).toEqual(["Recap"]);
+    expect(segments.map((s) => s.type)).toEqual(["Recap", "Outro"]);
+    expect(findSegment(segments, "Outro")).toMatchObject({
+      endMs: minutes(20, 36),
+      hasContentAfter: true,
+    });
   });
 
   it("une vraie intro en tête d'épisode ne craint rien des gardes", () => {

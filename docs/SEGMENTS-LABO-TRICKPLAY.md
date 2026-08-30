@@ -46,10 +46,13 @@ d'apparition du bouton.
    même Outro avec des fins à plus de 15 s d'écart ne décrivent pas la même
    chose — le candidat « révélateur » n'est plus préféré (Re:Zero S4E2 :
    fins à 42 s d'écart, contenu SOUS les crédits, faux post-générique).
-4. **Gardes de vraisemblance** (`claimGuards.ts`) : aucune intro ne commence
-   passé la moitié du média (S4E4 : l'opening joué pendant l'épilogue
-   matchait l'empreinte audio → « Intro » à 82 % du fichier) ; un Outro
-   chevauchant une intro ainsi écartée tombe avec elle.
+4. **Garde de position d'intro** (`claimGuards.ts`) : aucune intro ne
+   commence passé la moitié du média (S4E4 : l'opening joué pendant le
+   générique matchait l'empreinte audio → « Intro » à 82 % du fichier).
+   ⚠️ Il n'y a volontairement PAS de règle « l'Outro chevauchant tombe avec
+   elle » : essayée puis retirée le jour même — sur ce même épisode, l'Outro
+   voisin décrivait le VRAI générique et la scène qu'il révèle existe
+   (retour utilisateur). Une étiquette absurde n'invalide pas sa voisine.
 
 ## Les pistes FERMÉES, avec les chiffres
 
