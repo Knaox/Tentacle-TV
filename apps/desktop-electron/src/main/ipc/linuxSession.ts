@@ -17,7 +17,7 @@ import { saveSessionChoice, currentSession } from "../linux/session";
 import { CommandRegistry } from "./registry";
 
 const NO_ARGS = z.object({}).passthrough();
-const SET = z.object({ choix: z.enum(["auto", "wayland", "x11"]) });
+const SET = z.object({ choice: z.enum(["auto", "wayland", "x11"]) });
 
 export function registerLinuxSessionCommands(registry: CommandRegistry): void {
   if (process.platform !== "linux") return;
@@ -27,7 +27,7 @@ export function registerLinuxSessionCommands(registry: CommandRegistry): void {
       run: () => {
         const decided = currentSession();
         return {
-          choix: decided?.choice ?? "auto",
+          choice: decided?.choice ?? "auto",
           montage: decided?.montage ?? null,
           bureau: decided?.session ?? null,
         };
@@ -35,7 +35,7 @@ export function registerLinuxSessionCommands(registry: CommandRegistry): void {
     })
     .add("linux_session_set", {
       schema: SET,
-      run: ({ choix: choice }) => {
+      run: ({ choice }) => {
         saveSessionChoice(choice);
       },
     });
