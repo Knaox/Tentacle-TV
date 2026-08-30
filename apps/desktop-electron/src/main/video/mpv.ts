@@ -278,14 +278,16 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 }
 
 /**
- * Arrêt de secours, immédiat.
+ * Arrêt d'un bloc : chemin NORMAL de Windows, secours partout ailleurs.
  *
  * ⚠️ Sur macOS, `terminateDestroy` FIGE le processus : elle attend le démontage
  * de la sortie vidéo, qui réclame le thread principal — celui-là même qui
- * appelle. Le chemin normal y passe donc par `mpvShutdown.ts`, qui démonte la
- * vidéo d'abord. Cette fonction reste la sortie de secours : elle sert quand
- * `mpv_initialize` a échoué, cas où aucune sortie vidéo n'existe encore et où
- * `mpv_destroy` rend donc la main sans attendre personne.
+ * appelle. Sous Linux elle rend la main, mais après ~1 s de gel, fenêtre mpv
+ * orpheline à l'écran comprise. Le chemin normal de ces deux plateformes passe
+ * donc par `mpvShutdown.ts`, qui démonte la vidéo d'abord. Cette fonction
+ * reste leur sortie de secours : elle sert quand `mpv_initialize` a échoué,
+ * cas où aucune sortie vidéo n'existe encore et où la destruction rend la
+ * main sans attendre personne.
  */
 export function destroy(): void {
   if (pump !== null) clearInterval(pump);
