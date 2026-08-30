@@ -6,10 +6,33 @@ Release GitHub Linux (illimité). Une seule version pour les trois OS
 (`versions.json` → `desktop`), un seul tag `desktop-vX.Y.Z`.
 Variante par canal : un bloc `## [mac-X.Y.Z]` remplace le bloc nu pour App
 Store Connect uniquement (`asc-release-notes.mjs`, CHANNEL=mac) — utile quand
-les notes Apple doivent rester génériques.
+les notes Apple doivent rester génériques. Même mécanique pour
+`## [win-X.Y.Z]`, lu par le Microsoft Store (`msstore-submit.mjs`, CHANNEL=win
+par défaut) : il sert quand les trois OS ne partent PAS du même point. C'est le
+cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
+ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
+et Linux reçoivent l'ensemble.
 
-## [mac-1.20.9]
+## [win-1.20.10]
 ### FR
+- **Une scène post-générique n'est plus emportée par l'épisode suivant.** Le bouton « Aller à la scène post-générique » s'affichait, puis dix secondes plus tard l'épisode suivant démarrait tout seul, sans qu'on ait rien demandé : le décompte de l'enchaînement courait sous le bouton, sans jamais se montrer
+- **Fini les cartes noires dans les rangées.** Une vignette qui échouait une fois le restait jusqu'au rechargement de la page, et des affiches étaient réclamées au serveur alors que rien ne les annonçait — une rangée entière pouvait ainsi passer au noir. Une image manquée se retente désormais d'elle-même, et réapparaît dès que le serveur l'a récupérée
+- **Une rangée ne reste plus vide sous son titre.** Il arrivait qu'un rayon s'affiche sans une seule affiche, et qu'il faille changer de fenêtre puis revenir pour qu'il se remplisse
+- **Un rayon qui n'a pas pu se charger le dit, et propose de réessayer**, au lieu de disparaître sans un mot — rien ne distinguait une bibliothèque sans nouveauté d'une requête tombée
+- **La fiche « à suivre » adopte le dessin du bouton de saut** : même pastille blanche, même façon de montrer le temps qui reste. La barre violette et le compte à rebours affiché en double ont disparu, et le titre de l'épisode tient enfin en entier
+
+### EN
+- **A post-credits scene is no longer swept away by the next episode.** The “Go to the post-credits scene” button appeared, then ten seconds later the next episode started on its own, without being asked: the autoplay countdown was running underneath the button, never showing itself
+- **No more black cards in the rows.** A thumbnail that failed once stayed black until the page was reloaded, and posters were being requested from the server when nothing announced them — a whole row could go dark. A missed image now retries on its own, and comes back as soon as the server has fetched it
+- **A row no longer stays empty under its title.** A shelf could appear without a single poster, and it took switching windows and coming back for it to fill in
+- **A shelf that failed to load now says so and offers to retry**, instead of vanishing without a word — nothing told a library with nothing new apart from a request that had fallen over
+- **The “up next” card now matches the skip button**: same white pill, same way of showing the time left. The purple bar and the countdown shown twice are gone, and the episode title finally fits
+
+## [mac-1.20.10]
+### FR
+- **Fini les cartes noires dans les rangées.** Une vignette qui échouait une fois le restait jusqu'au rechargement de la page, et des affiches étaient réclamées au serveur alors que rien ne les annonçait — une rangée entière pouvait ainsi passer au noir. Une image manquée se retente désormais d'elle-même, et réapparaît dès que le serveur l'a récupérée
+- **Une rangée ne reste plus vide sous son titre.** Il arrivait qu'un rayon s'affiche sans une seule affiche, et qu'il faille changer de fenêtre puis revenir pour qu'il se remplisse
+- **Un rayon qui n'a pas pu se charger le dit, et propose de réessayer**, au lieu de disparaître sans un mot — rien ne distinguait une bibliothèque sans nouveauté d'une requête tombée
 - **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
 - **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La proposition suit désormais votre dernière lecture — sur la fiche, sur l'accueil et dans le lecteur —, et la fin d'une saison enchaîne sur le premier épisode de la suivante
@@ -31,6 +54,9 @@ les notes Apple doivent rester génériques.
 - **Le compte à rebours « épisode suivant » se règle**, dans Réglages > Lecture > Réglages avancés — et il s'adapte : si la fiche paraît quatre secondes avant la fin, l'épisode suivant part au bout de trois secondes et demie, au lieu d'attendre dix secondes sur l'écran de fin
 
 ### EN
+- **No more black cards in the rows.** A thumbnail that failed once stayed black until the page was reloaded, and posters were being requested from the server when nothing announced them — a whole row could go dark. A missed image now retries on its own, and comes back as soon as the server has fetched it
+- **A row no longer stays empty under its title.** A shelf could appear without a single poster, and it took switching windows and coming back for it to fill in
+- **A shelf that failed to load now says so and offers to retry**, instead of vanishing without a word — nothing told a library with nothing new apart from a request that had fallen over
 - **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
 - **The playback speed menu has a cross to close it**, and no longer opens on top of the episode list or the track picker: one panel at a time
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The suggestion now follows your last viewing — on the details page, on the home screen and in the player — and the end of a season carries on to the first episode of the next
@@ -51,8 +77,11 @@ les notes Apple doivent rester génériques.
 - **Three end-of-episode settings, genuinely independent**: show the “up next” card, show its countdown, play the next episode on its own. Turning the countdown off no longer hides the card
 - **The “next episode” countdown is now yours to set**, under Settings > Playback > Advanced settings — and it adapts: if the card appears four seconds before the end, the next episode starts after three and a half, instead of waiting ten seconds on the end screen
 
-## [1.20.9]
+## [1.20.10]
 ### FR
+- **Fini les cartes noires dans les rangées.** Une vignette qui échouait une fois le restait jusqu'au rechargement de la page, et des affiches étaient réclamées au serveur alors que rien ne les annonçait — une rangée entière pouvait ainsi passer au noir. Une image manquée se retente désormais d'elle-même, et réapparaît dès que le serveur l'a récupérée
+- **Une rangée ne reste plus vide sous son titre.** Il arrivait qu'un rayon s'affiche sans une seule affiche, et qu'il faille changer de fenêtre puis revenir pour qu'il se remplisse
+- **Un rayon qui n'a pas pu se charger le dit, et propose de réessayer**, au lieu de disparaître sans un mot — rien ne distinguait une bibliothèque sans nouveauté d'une requête tombée
 - **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
 - **Le menu de vitesse de lecture a une croix pour se fermer**, et ne s'ouvre plus par-dessus la liste des épisodes ou le choix des pistes : un seul panneau à la fois
 - **L'épisode suivant est celui d'APRÈS celui que vous venez de regarder.** Commencer une saison par son épisode 6 proposait « suivant : épisode 1 », parce que tout épisode non vu comptait comme un trou à combler ; et remettre un épisode en « non lu » le faisait revenir en tête. La proposition suit désormais votre dernière lecture — sur la fiche, sur l'accueil et dans le lecteur —, et la fin d'une saison enchaîne sur le premier épisode de la suivante
@@ -83,6 +112,9 @@ les notes Apple doivent rester génériques.
 - **L'application n'emprunte plus sa police à un service extérieur.** Elle voyage désormais dans le paquet : le texte s'affiche même sans accès à Internet — un serveur sur votre réseau suffit — et plus rien n'est demandé à Google au lancement
 
 ### EN
+- **No more black cards in the rows.** A thumbnail that failed once stayed black until the page was reloaded, and posters were being requested from the server when nothing announced them — a whole row could go dark. A missed image now retries on its own, and comes back as soon as the server has fetched it
+- **A row no longer stays empty under its title.** A shelf could appear without a single poster, and it took switching windows and coming back for it to fill in
+- **A shelf that failed to load now says so and offers to retry**, instead of vanishing without a word — nothing told a library with nothing new apart from a request that had fallen over
 - **The episode you have just finished is at last ticked on the series page.** You finished an episode, opened the page, and it still showed as unwatched — the list only refreshed after several minutes
 - **The playback speed menu has a cross to close it**, and no longer opens on top of the episode list or the track picker: one panel at a time
 - **The next episode is the one AFTER what you just watched.** Starting a season at episode 6 used to offer "next: episode 1", because every unwatched episode counted as a gap to fill; and marking an episode unwatched brought it back to the front. The suggestion now follows your last viewing — on the details page, on the home screen and in the player — and the end of a season carries on to the first episode of the next
