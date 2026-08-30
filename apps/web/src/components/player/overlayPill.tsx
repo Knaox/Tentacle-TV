@@ -60,8 +60,19 @@ export function Veil({ className }: { className: string }) {
  * `scaleX` et rien d'autre : animer `width` repeindrait la surface à chaque
  * image. Sous « animations réduites », il disparaît — le libellé, qui décompte
  * en toutes lettres, fait seul le travail.
+ *
+ * `initialProgress` sert l'ESCALADE carte → affiche de fin : le minuteur y
+ * CONTINUE (six secondes restantes sur dix), et un balayage reparti de zéro
+ * mentirait. L'affiche l'arme alors à `1 − restant/total`, sur la durée
+ * RESTANTE — même trajet linéaire, repris où il en était.
  */
-export function Sweep({ durationMs }: { durationMs: number }) {
+export function Sweep({
+  durationMs,
+  initialProgress = 0,
+}: {
+  durationMs: number;
+  initialProgress?: number;
+}) {
   const [gone, setGone] = useState(false);
 
   useEffect(() => {
@@ -75,7 +86,7 @@ export function Sweep({ durationMs }: { durationMs: number }) {
       className="absolute inset-0 origin-left bg-black/10 transition-transform ease-linear motion-reduce:hidden"
       style={{
         transitionDuration: `${String(durationMs)}ms`,
-        transform: `scaleX(${gone ? 1 : 0})`,
+        transform: `scaleX(${gone ? 1 : initialProgress})`,
       }}
     />
   );

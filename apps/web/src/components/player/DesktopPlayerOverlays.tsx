@@ -8,11 +8,12 @@
  * Tout est posé sur la vidéo → text-white/bg-black volontairement en dur,
  * identiques dans les deux thèmes clair/sombre.
  *
- * Et donc PAS de `backdrop-filter` sur les boutons de saut. mpv dessine hors
- * du moteur web — fenêtre native sous la surface de Chromium sur Windows,
- * couche GL sous la webview sur macOS et Linux : le moteur ne voit jamais
- * l'image du film et ne peut pas la flouter. `NextEpisodeFullscreen`, en
- * revanche, garde le sien : il est posé sur la bannière de la série, du HTML.
+ * Et donc PAS de `backdrop-filter` — nulle part. mpv dessine hors du moteur
+ * web — fenêtre native sous la surface de Chromium sur Windows, couche GL
+ * sous la webview sur macOS et Linux : le moteur ne voit jamais l'image du
+ * film et ne peut pas la flouter. `NextEpisodeFullscreen` en portait un sur
+ * ses pastilles (posées sur la bannière, du HTML) ; son redesign l'a remplacé
+ * par des dégradés noirs et des aplats — même matière que la pilule.
  */
 
 import type { PlayerOverlay } from "@tentacle-tv/shared";
