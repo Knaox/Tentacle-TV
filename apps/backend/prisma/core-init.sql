@@ -209,6 +209,10 @@ ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmAction` varch
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmCountdown` tinyint(1) NOT NULL DEFAULT 1;
 ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `outroFilmDelayMs` int(11) NOT NULL DEFAULT 5000;
 
+-- L'affiche plein écran de fin d'épisode, réglable depuis la 1.20.11 —
+-- indépendante de la fiche « à suivre ». Additif, idempotent.
+ALTER TABLE `playback_settings` ADD COLUMN IF NOT EXISTS `nextFinalCard` tinyint(1) NOT NULL DEFAULT 1;
+
 -- Le verdict des vignettes sur le générique de fin (services/frameAnalysis.ts).
 -- Un cache, jamais une source : la table peut être vidée sans rien perdre
 -- d'autre qu'une demi-seconde de calcul au prochain lancement du média.

@@ -352,6 +352,9 @@ model PlaybackSettings {
   /// raccourcit quand la fin du média approche (`autoNextEngine.ts`).
   nextCountdownMs      Int      @default(10000)
   nextAutoPlay         Boolean  @default(true)
+  /// L'affiche PLEIN ÉCRAN de fin d'épisode — indépendante de `nextCard` :
+  /// refuser la fiche du générique n'éteint pas l'affiche de fin.
+  nextFinalCard        Boolean  @default(true)
   nextTrigger          String   @default("outroStart") @db.VarChar(16)
   /// CONSERVÉE : un serveur d'avant la démarre en NOT NULL. Plus lue.
   nextBeforeEndSeconds Int      @default(45)

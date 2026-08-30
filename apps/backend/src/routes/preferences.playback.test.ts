@@ -87,8 +87,9 @@ async function makeApp() {
 const headers = { "x-emby-token": "jeton-banc" };
 
 /**
- * Ce qu'envoie un client d'AVANT la 1.20.9 : sans `nextCountdownMs`. Le laisser
- * ainsi est le test : sa requête doit passer, et le serveur poser le défaut.
+ * Ce qu'envoie un client d'AVANT la 1.20.9 : sans `nextCountdownMs` — ni
+ * `nextFinalCard`, arrivé en 1.20.11. Le laisser ainsi est le test : sa
+ * requête doit passer, et le serveur poser les défauts.
  */
 const VALID_SETTINGS = {
   intro: { action: "button", countdownVisible: false, autoDelayMs: 5_000 },
@@ -108,13 +109,17 @@ const VALID_SETTINGS = {
 
 /**
  * Ce que le serveur rend : les mêmes valeurs, plus les défauts des champs que
- * le client d'avant n'envoie pas — la durée du décompte, et le générique de fin
- * des FILMS, réglé à part de celui des épisodes depuis la 1.20.9.
+ * le client d'avant n'envoie pas — la durée du décompte, le générique de fin
+ * des FILMS (réglé à part depuis la 1.20.9), et l'affiche de fin (1.20.11).
  */
 const STORED_SETTINGS = {
   ...VALID_SETTINGS,
   outroFilm: DEFAULT_PLAYBACK_SETTINGS.outroFilm,
-  next: { ...VALID_SETTINGS.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS },
+  next: {
+    ...VALID_SETTINGS.next,
+    nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
+    nextFinalCard: true,
+  },
 };
 
 describe("GET/PUT /api/preferences/playback", () => {
@@ -154,6 +159,30 @@ describe("GET/PUT /api/preferences/playback", () => {
       headers: headers,
     });
     expect(readBack.json()).toEqual({ stored: true, settings: STORED_SETTINGS });
+    await app.close();
+  });
+
+  it("l'affiche de fin s'éteint et le reste : un client à jour garde son choix", async () => {
+    const app = await makeApp();
+    const payload = {
+      ...VALID_SETTINGS,
+      next: { ...VALID_SETTINGS.next, nextFinalCard: false },
+    };
+    const written = await app.inject({
+      method: "PUT",
+      url: "/api/preferences/playback",
+      headers: headers,
+      payload,
+    });
+    expect(written.statusCode).toBe(200);
+    expect(written.json().settings.next.nextFinalCard).toBe(false);
+
+    const readBack = await app.inject({
+      method: "GET",
+      url: "/api/preferences/playback",
+      headers: headers,
+    });
+    expect(readBack.json().settings.next.nextFinalCard).toBe(false);
     await app.close();
   });
 
@@ -238,7 +267,11 @@ describe("le repli « avant la fin » traverse la base", () => {
       settings: {
         ...settings,
         outroFilm: DEFAULT_PLAYBACK_SETTINGS.outroFilm,
-        next: { ...settings.next, nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS },
+        next: {
+          ...settings.next,
+          nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
+          nextFinalCard: true,
+        },
       },
     });
   });

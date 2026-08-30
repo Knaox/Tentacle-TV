@@ -24,6 +24,7 @@ describe("DEFAULT_PLAYBACK_SETTINGS", () => {
       nextCard: true,
       nextCountdown: true,
       nextAutoPlay: true,
+      nextFinalCard: true,
       nextTrigger: "outroStart",
       beforeEndEnabled: true,
       beforeEndRules: [],
@@ -83,6 +84,15 @@ describe("normalizePlaybackSettings", () => {
     expect(of(undefined)).toBe(NEXT_COUNTDOWN_DEFAULT_MS);
   });
 
+  it("l'affiche de fin : défaut vrai, un cache d'avant ou un booléen farfelu retombent sur vrai", () => {
+    const of = (raw: unknown) =>
+      normalizePlaybackSettings({ next: { nextFinalCard: raw } }).next.nextFinalCard;
+    expect(of(false)).toBe(false);
+    // Un cache d'avant la 1.20.11 ne porte pas le champ : l'affiche reste due.
+    expect(of(undefined)).toBe(true);
+    expect(of("non")).toBe(true);
+  });
+
   it("des réglages déjà sains ressortent inchangés", () => {
     const sane = {
       intro: { action: "off", countdownVisible: false, autoDelayMs: 1_500 },
@@ -95,6 +105,7 @@ describe("normalizePlaybackSettings", () => {
         nextCountdown: true,
         nextCountdownMs: 7_500,
         nextAutoPlay: false,
+        nextFinalCard: false,
         nextTrigger: "beforeEnd",
         beforeEndEnabled: true,
         beforeEndDefault: { mode: "seconds", value: 90 },
