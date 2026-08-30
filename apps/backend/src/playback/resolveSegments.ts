@@ -128,6 +128,13 @@ function groupOverlapping(candidates: readonly RawBounds[]): RawBounds[][] {
   return groups;
 }
 
+/**
+ * Au-delà de cet écart entre les FINS d'un même groupe, les fournisseurs ne
+ * décrivent plus le même générique — le désaccord porte précisément sur « où
+ * finit-il », c'est-à-dire sur la scène qu'un candidat prétend révéler.
+ */
+const END_AGREEMENT_MS = 15_000;
+
 function pickBounds(
   type: SegmentType,
   candidates: readonly RawBounds[],
@@ -146,6 +153,16 @@ function pickBounds(
       duration(bound) >= floor || bound.endMs < runtimeMs - POST_CREDITS_THRESHOLD_MS,
   );
   if (credible.length === 0) return null;
+
+  // Préférer le candidat « révélateur » suppose que les fournisseurs sont
+  // d'ACCORD sur la fin. Quand leurs fins divergent, la « scène » révélée est
+  // exactement ce qui est contesté — mesuré sur Re:Zero S4E2 : fins à 42 s
+  // d'écart, et le révélateur promettait une scène post-générique alors que
+  // l'épisode continue SOUS les crédits. Le plus long l'emporte alors ; s'il
+  // court jusqu'au bout du fichier, l'analyse des vignettes garde sa chance de
+  // re-révéler une VRAIE scène (elle, ne fabrique rien sur les faux cas).
+  const ends = credible.map((bound) => bound.endMs);
+  if (Math.max(...ends) - Math.min(...ends) > END_AGREEMENT_MS) return longest(credible);
 
   const revealing = credible.filter(
     (bound) =>

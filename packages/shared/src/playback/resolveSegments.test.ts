@@ -379,6 +379,54 @@ describe("resolvePlaybackSegments — le corpus mesuré", () => {
     expect(segments.filter((s) => s.type === "Intro")).toHaveLength(1);
     expect(findSegment(segments, "Intro")).toMatchObject({ endMs: minutes(3, 11) });
   });
+
+  it("Re:Zero S4E2 : des fins qui DIVERGENT n'autorisent plus le faux révélateur", () => {
+    // Mesuré le 30.08 : deux fournisseurs posent 22:18→23:42 et 22:18→23:00
+    // sur un épisode de 23:42 dont le contenu CONTINUE sous les crédits.
+    // Préférer le candidat « révélateur » (23:00) promettait une scène
+    // post-générique qui n'existe pas — quand les fins s'écartent de plus de
+    // 15 s, le plus long l'emporte, et il touche ici la fin du fichier.
+    const runtime = minutes(23, 42);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            segment("Outro", minutes(22, 18), minutes(23, 42)),
+            segment("Outro", minutes(22, 18), minutes(23, 0)),
+          ],
+        },
+      },
+      runtime,
+    );
+    const outros = segments.filter((s) => s.type === "Outro");
+    expect(outros).toHaveLength(1);
+    expect(outros[0]).toMatchObject({
+      endMs: runtime,
+      endsAtMediaEnd: true,
+      hasContentAfter: false,
+    });
+  });
+
+  it("des fins qui S'ACCORDENT gardent la préférence révélatrice", () => {
+    // Deux fournisseurs à cinq secondes près : le désaccord est du bruit de
+    // mesure, la scène révélée est sûre — comportement historique conservé.
+    const runtime = minutes(23, 42);
+    const { segments } = resolve(
+      {
+        mediaSegments: {
+          Items: [
+            segment("Outro", minutes(22, 18), minutes(23, 15)),
+            segment("Outro", minutes(22, 18), minutes(23, 20)),
+          ],
+        },
+      },
+      runtime,
+    );
+    expect(findSegment(segments, "Outro")).toMatchObject({
+      endMs: minutes(23, 20),
+      hasContentAfter: true,
+    });
+  });
 });
 
 describe("le second générique — le modèle Plex", () => {
