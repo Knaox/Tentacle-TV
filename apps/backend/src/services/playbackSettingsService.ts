@@ -37,6 +37,7 @@ interface PlaybackSettingsRow {
   nextCountdown: boolean;
   nextCountdownMs: number;
   nextAutoPlay: boolean;
+  nextFinalCard: boolean;
   nextTrigger: string;
   nextBeforeEndSeconds: number;
   beforeEndEnabled: boolean;
@@ -78,6 +79,7 @@ export function rowToSettings(row: PlaybackSettingsRow): PlaybackSettings {
       nextCountdown: row.nextCountdown,
       nextCountdownMs: row.nextCountdownMs,
       nextAutoPlay: row.nextAutoPlay,
+      nextFinalCard: row.nextFinalCard,
       nextTrigger: row.nextTrigger,
       // `nextBeforeEndSeconds` reste lu pour les lignes d'avant : la
       // normalisation le convertit en seuil quand aucun n'est enregistré.
@@ -110,6 +112,7 @@ export function settingsToColumns(settings: PlaybackSettings): PlaybackSettingsR
     nextCountdown: settings.next.nextCountdown,
     nextCountdownMs: settings.next.nextCountdownMs,
     nextAutoPlay: settings.next.nextAutoPlay,
+    nextFinalCard: settings.next.nextFinalCard,
     nextTrigger: settings.next.nextTrigger,
     // Colonne héritée, plus lue par le contrat : on y recopie le seuil quand
     // il est en secondes, pour qu'un serveur d'avant reste cohérent.

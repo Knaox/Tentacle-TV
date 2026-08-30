@@ -5,10 +5,10 @@
  * désormais l'utilisateur d'un écran à l'autre (table `playback_settings`
  * côté backend, cache local côté client pour répondre hors ligne).
  *
- * Trois familles, et une règle : les trois réglages d'« épisode suivant »
- * sont STRICTEMENT indépendants — afficher la fiche, décompter, enchaîner.
- * L'intrication historique (couper le décompte masquait la fiche) est le bug
- * que cette structure interdit.
+ * Trois familles, et une règle : les réglages d'« épisode suivant » sont
+ * STRICTEMENT indépendants — afficher la fiche, décompter, enchaîner,
+ * afficher l'affiche de fin. L'intrication historique (couper le décompte
+ * masquait la fiche) est le bug que cette structure interdit.
  *
  * MIROIR : ce fichier est reflété octet pour octet dans
  * `apps/backend/src/playback/` (voir l'en-tête de `segmentTypes.ts`) — ne
@@ -65,6 +65,14 @@ export interface NextEpisodeSettings {
   nextCountdownMs: number;
   /** Lancer l'épisode suivant à l'expiration du décompte. */
   nextAutoPlay: boolean;
+  /**
+   * Afficher l'affiche PLEIN ÉCRAN à la toute fin de l'épisode.
+   *
+   * Indépendante de `nextCard` : refuser la fiche du générique n'a jamais
+   * voulu dire renoncer à la suite. Sans affiche, la fin de lecture sort du
+   * lecteur vers la fiche du média.
+   */
+  nextFinalCard: boolean;
   /** Quand proposer la suite : au début du générique, ou peu avant la fin. */
   nextTrigger: "outroStart" | "beforeEnd";
   /**
@@ -165,6 +173,7 @@ export const DEFAULT_PLAYBACK_SETTINGS: PlaybackSettings = {
     nextCountdown: true,
     nextCountdownMs: NEXT_COUNTDOWN_DEFAULT_MS,
     nextAutoPlay: true,
+    nextFinalCard: true,
     nextTrigger: "outroStart",
     beforeEndEnabled: true,
     beforeEndDefault: { ...BEFORE_END_DEFAULT },
@@ -241,6 +250,7 @@ function normalizeNext(raw: unknown, defaults: NextEpisodeSettings): NextEpisode
       defaults.nextCountdownMs,
     ),
     nextAutoPlay: booleanField(o.nextAutoPlay, defaults.nextAutoPlay),
+    nextFinalCard: booleanField(o.nextFinalCard, defaults.nextFinalCard),
     nextTrigger:
       o.nextTrigger === "outroStart" || o.nextTrigger === "beforeEnd"
         ? o.nextTrigger

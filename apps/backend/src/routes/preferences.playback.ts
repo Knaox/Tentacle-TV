@@ -68,6 +68,9 @@ const settingsSchema = z.object({
       .max(NEXT_COUNTDOWN_MAX_MS)
       .optional(),
     nextAutoPlay: z.boolean(),
+    // Facultatif : un client d'avant la 1.20.11 n'envoie pas l'affiche de fin,
+    // et sa requête ne doit pas être rejetée — la normalisation pose le défaut.
+    nextFinalCard: z.boolean().optional(),
     nextTrigger: z.enum(["outroStart", "beforeEnd"]),
     beforeEndEnabled: z.boolean(),
     beforeEndDefault: beforeEndTargetSchema,
