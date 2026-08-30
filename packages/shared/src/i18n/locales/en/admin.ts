@@ -82,17 +82,19 @@ export default {
   autoplayNextEnabled: "Auto-play trigger",
   autoplayNextHelp: "Master switch: turned off, there is no “up next” card and no automatic advance, on any device. WHEN the card appears is an account setting (start of the closing credits, or shortly before the end), changed in each user's preferences.",
   autoplayCurrentThreshold: "“Watched” threshold: {{pct}}% of the episode (Jellyfin MaxResumePct). It marks an episode as watched — it no longer triggers any card.",
-  // Segment plugins — a treasure map, not a setting: Tentacle detects nothing,
-  // it reads what the server publishes.
+  // Segment plugins — a treasure map, not a setting: plugins remain the primary
+  // source; the built-in analysis only fills the gaps.
   segmentPlugins: "Passage detection",
   segmentPluginsDescription:
-    "Tentacle never detects credits itself: it reads what Jellyfin publishes. With no detection plugin installed on the server, no skip button will ever appear, whatever the devices are set to.",
+    "Jellyfin plugins remain the primary source of passages: they see the video and the audio, where Tentacle's built-in analysis only reads thumbnails. Installing one enriches every device at once.",
   segmentPlugin_introSkipper: "Audio-fingerprint detection — opening and closing credits.",
   segmentPlugin_chapterSegments: "Turns named chapters into passages, with no analysis.",
   segmentPlugin_introDb: "Community database of markers, with no local analysis.",
   segmentPlugin_skipmeDb: "Shared database of markers, alongside Intro Skipper.",
   segmentPluginsScanHelp:
     "They stack: each reports what it knows, the most precise wins, and installing two creates no conflict. Once installed, run Jellyfin's “Media segment scan” scheduled task — passages only appear after the library has been scanned.",
+  segmentPluginsFrameAnalysisNote:
+    "When no source says anything credible about the end credits, Tentacle analyses the seekbar thumbnails itself (credits, post-credits scene) — provided Jellyfin's “Generate Trickplay Images” task has run on the media.",
   publicUrl: "Public Tentacle TV server URL",
   publicUrlDescription: "Public URL devices use to reach the server after pairing (Cloudflare domain). Required for TV pairing to work from outside the local network.",
   publicUrlLabel: "Public URL",

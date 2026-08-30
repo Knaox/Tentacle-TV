@@ -4,11 +4,12 @@ import { cls } from "../../pages/adminUtils";
 /**
  * Où le serveur trouve les passages d'un épisode — et comment lui en donner.
  *
- * Tentacle ne détecte RIEN : il lit ce que Jellyfin publie (`MediaSegments`,
- * les greffons historiques, à défaut les chapitres nommés). Sans greffon de
- * détection, aucun bouton de saut ne paraîtra jamais, quel que soit le réglage
- * côté client — d'où cette section, qui est une carte au trésor plus qu'un
- * réglage : elle ne fait que MONTRER les greffons connus.
+ * Les greffons restent la SOURCE PREMIÈRE : ils voient la vidéo et l'audio.
+ * Mais Tentacle n'est plus aveugle sans eux : quand aucune source ne dit rien
+ * de crédible sur le générique de fin, l'analyse embarquée lit les vignettes
+ * trickplay (`creditsFromFrames.ts`) et fournit générique et scène
+ * post-générique. Cette section reste une carte au trésor plus qu'un réglage :
+ * elle ne fait que MONTRER les greffons connus.
  *
  * Ils s'EMPILENT : chacun signale ce qu'il sait, et le résolveur prend le plus
  * précis. En installer deux ne crée pas de conflit.
@@ -53,6 +54,9 @@ export function SegmentPluginsSection() {
           ))}
         </ul>
         <p className="mt-3 text-xs text-content-quaternary">{t("segmentPluginsScanHelp")}</p>
+        <p className="mt-2 text-xs text-content-quaternary">
+          {t("segmentPluginsFrameAnalysisNote")}
+        </p>
       </div>
     </div>
   );
