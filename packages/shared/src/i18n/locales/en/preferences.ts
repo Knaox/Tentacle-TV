@@ -192,9 +192,9 @@ export default {
   segmentDelayValue: "{{seconds}}s",
   segmentDelayImmediate: "Immediate",
 
-  // End of episode — THREE strictly independent settings: show the card, run
-  // the countdown, play the next episode. Turning the countdown off no longer
-  // hides the card.
+  // End of episode — strictly independent settings: show the card, run the
+  // countdown, play the next episode, show the end poster. Turning the
+  // countdown off no longer hides the card, dismissing the card keeps the poster.
   upNextTitle: "At the end of an episode",
   upNextCardTitle: "Offer the next episode",
   upNextCardHint: "A small card offers the next episode, in a corner of the picture.",
@@ -202,6 +202,9 @@ export default {
   upNextCountdownHint: "The card announces the time left.",
   upNextAutoPlayTitle: "Play the next episode on its own",
   upNextAutoPlayHint: "When the countdown runs out, the next episode starts.",
+  upNextFinalCardTitle: "Show the end poster",
+  upNextFinalCardHint:
+    "At the very end of the episode, a full-screen poster offers what's next — even if the small card was dismissed. Without it, the player returns to the details page.",
   nextCountdownLabel: "Countdown length",
   nextCountdownHint: "A ceiling: if the episode ends sooner, the countdown fits itself to what is left.",
   upNextTriggerLabel: "When to offer what follows",

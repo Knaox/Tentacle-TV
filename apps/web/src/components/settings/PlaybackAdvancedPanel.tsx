@@ -149,6 +149,16 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
               comprend mal en mots : ici on VOIT ce que chaque combinaison donne. */}
           <NextEpisodePreview next={next} />
 
+          {/* L'affiche PLEIN ÉCRAN de fin — un quatrième réglage, indépendant
+              des trois autres comme eux le sont entre eux : écarter la fiche du
+              générique ne l'éteint pas, et c'est voulu. */}
+          <SettingToggleRow
+            title={t("upNextFinalCardTitle")}
+            hint={t("upNextFinalCardHint")}
+            active={next.nextFinalCard}
+            onChange={(nextFinalCard) => { setPlaybackSettings({ next: { nextFinalCard } }); }}
+          />
+
           <div>
             <p className="text-sm font-medium text-content-primary">{t("upNextTriggerLabel")}</p>
             <p className="mt-1 text-xs leading-relaxed text-content-tertiary">

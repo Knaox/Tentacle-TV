@@ -192,8 +192,9 @@ export default {
   segmentDelayValue: "{{seconds}} s",
   segmentDelayImmediate: "Immédiat",
 
-  // Fin d'épisode — TROIS réglages strictement indépendants : montrer la
-  // fiche, décompter, lancer. Couper le décompte ne masque plus la fiche.
+  // Fin d'épisode — des réglages strictement indépendants : montrer la fiche,
+  // décompter, lancer, montrer l'affiche de fin. Couper le décompte ne masque
+  // plus la fiche, et écarter la fiche n'éteint pas l'affiche.
   upNextTitle: "À la fin d'un épisode",
   upNextCardTitle: "Proposer l'épisode suivant",
   upNextCardHint: "Une petite fiche propose l'épisode suivant, dans un coin de l'image.",
@@ -201,6 +202,9 @@ export default {
   upNextCountdownHint: "La fiche annonce le temps qu'il reste.",
   upNextAutoPlayTitle: "Enchaîner tout seul",
   upNextAutoPlayHint: "À la fin du décompte, l'épisode suivant démarre.",
+  upNextFinalCardTitle: "Afficher l'affiche de fin",
+  upNextFinalCardHint:
+    "À la toute fin de l'épisode, une affiche plein écran propose la suite — même si la petite fiche a été écartée. Sans elle, le lecteur revient à la fiche du média.",
   nextCountdownLabel: "Durée du compte à rebours",
   nextCountdownHint: "Un plafond : si l'épisode se termine plus tôt, le décompte se cale sur ce qui reste.",
   upNextTriggerLabel: "Quand proposer la suite",
