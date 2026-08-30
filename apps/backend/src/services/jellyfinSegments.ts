@@ -46,10 +46,25 @@ export interface SegmentSourceBundle {
    * les fournisseurs n'ont rien de crédible à dire.
    */
   trickplay: TrickplayManifest | null;
+  /**
+   * La source PAR DÉFAUT du média (`MediaSources[0]`), `null` si illisible.
+   *
+   * C'est elle dont le `RunTimeTicks` de l'item décrit la durée : l'analyse des
+   * vignettes doit mesurer SES planches — sur un média multi-versions, la
+   * première clé du manifeste trickplay peut désigner une autre édition, dont
+   * les temps ne correspondent pas à `runtimeMs`.
+   */
+  defaultMediaSourceId: string | null;
   sources: SegmentSources;
 }
 
-const EMPTY_BUNDLE: SegmentSourceBundle = { runtimeMs: 0, libraryId: null, trickplay: null, sources: {} };
+const EMPTY_BUNDLE: SegmentSourceBundle = {
+  runtimeMs: 0,
+  libraryId: null,
+  trickplay: null,
+  defaultMediaSourceId: null,
+  sources: {},
+};
 
 interface CacheEntry {
   bundle: SegmentSourceBundle;
@@ -82,6 +97,7 @@ interface ItemSnapshot {
   RunTimeTicks?: number;
   Chapters?: Array<{ StartPositionTicks?: number; Name?: string }>;
   Trickplay?: TrickplayManifest;
+  MediaSources?: Array<{ Id?: string }>;
 }
 
 /** Une valeur du dictionnaire du greffon porte-t-elle une fin exploitable ? */
@@ -130,7 +146,7 @@ function ancestorsUrl(url: string, itemId: string): string {
 function itemUrl(url: string, itemId: string): string {
   const adminId = getConfigValue("admin_jellyfin_id");
   const user = adminId ? `userId=${encodeURIComponent(adminId)}&` : "";
-  return `${url}/Items/${itemId}?${user}fields=Chapters,Trickplay`;
+  return `${url}/Items/${itemId}?${user}fields=Chapters,Trickplay,MediaSources`;
 }
 
 async function fetchBundle(itemId: string, url: string, apiKey: string): Promise<{
@@ -173,11 +189,13 @@ async function fetchBundle(itemId: string, url: string, apiKey: string): Promise
   }
 
   const runTimeTicks = typeof item.RunTimeTicks === "number" ? item.RunTimeTicks : 0;
+  const defaultSource = item.MediaSources?.[0]?.Id;
   return {
     bundle: {
       runtimeMs: runTimeTicks > 0 ? Math.round(runTimeTicks / TICKS_PER_MS) : 0,
       libraryId: collectionFolderId(ancestorsRaw),
       trickplay: item.Trickplay ?? null,
+      defaultMediaSourceId: typeof defaultSource === "string" && defaultSource !== "" ? defaultSource : null,
       sources: {
         mediaSegments,
         pluginDict,

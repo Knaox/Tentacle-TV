@@ -56,6 +56,11 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
           itemId,
           runtimeMs: bundle.runtimeMs,
           manifest: bundle.trickplay,
+          // La source dont la durée fait foi — sans elle, un média multi-versions
+          // ferait mesurer les planches d'une autre édition (voir le bundle).
+          ...(bundle.defaultMediaSourceId !== null
+            ? { mediaSourceId: bundle.defaultMediaSourceId }
+            : {}),
           jellyfinUrl: url.replace(/\/$/, ""),
           apiKey,
         });

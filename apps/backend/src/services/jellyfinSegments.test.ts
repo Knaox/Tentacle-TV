@@ -134,7 +134,13 @@ describe("getSegmentSourceBundle", () => {
   it("échec total sans photo : du vide, jamais mis en cache", async () => {
     scenario = [[/./, "reject"]];
     const empty = await getSegmentSourceBundle("ep-7");
-    expect(empty).toEqual({ runtimeMs: 0, libraryId: null, trickplay: null, sources: {} });
+    expect(empty).toEqual({
+      runtimeMs: 0,
+      libraryId: null,
+      trickplay: null,
+      defaultMediaSourceId: null,
+      sources: {},
+    });
 
     scenario = [
       [/\/Items\//, { json: ITEM }],
@@ -148,13 +154,25 @@ describe("getSegmentSourceBundle", () => {
 describe("l'URL de l'item", () => {
   it("porte le userId — sans lui, Jellyfin 10.11 rend 400 et le paquet part sans durée", async () => {
     scenario = [
-      [/\/Items\/x\?userId=admin-user-id&fields=Chapters,Trickplay$/, { json: ITEM }],
+      [/\/Items\/x\?userId=admin-user-id&fields=Chapters,Trickplay,MediaSources$/, { json: ITEM }],
       [/MediaSegments/, { json: NATIVE }],
     ];
     const bundle = await getSegmentSourceBundle("x");
     // La durée n'est pas nulle : c'est elle qui décide de `hasContentAfter`.
     expect(bundle.runtimeMs).toBe(1_440_000);
     expect(calls.some((url) => url.includes("userId=admin-user-id"))).toBe(true);
+  });
+
+  it("la source par défaut est la PREMIÈRE de l'item — celle dont la durée fait foi", async () => {
+    scenario = [
+      [
+        /\/Items\//,
+        { json: { ...ITEM, MediaSources: [{ Id: "source-vf" }, { Id: "source-vo" }] } },
+      ],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    const bundle = await getSegmentSourceBundle("multi");
+    expect(bundle.defaultMediaSourceId).toBe("source-vf");
   });
 
   it("un item illisible ne passe plus en silence", async () => {
