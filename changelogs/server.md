@@ -5,6 +5,27 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.15.0]
+### FR
+- **Le saut vers la scène post-générique tombe juste.** Il arrivait jusqu'à dix secondes APRÈS le début de la scène — les premières secondes étaient perdues. Il atterrit désormais sur la dernière image du générique : on ne rate plus rien
+- **Les fausses détections ne font plus de fausses promesses.** Un bouton « post-générique » pouvait paraître alors que l'épisode continue sous les crédits, un « Passer l'intro » se poser sur l'épilogue quand l'opening y est rejoué, un défilement de cast très dense passer pour une scène (« Avatar : la voie de l'eau ») — et la scène très sombre d'« Iron Man », elle, n'était jamais trouvée. Chaque cas est réglé, sur relevés réels : un passage n'est une scène que s'il en porte la preuve, et le stinger collé à la fin du fichier se repêche
+- **Le bouton paraît dès les cartes illustrées sombres d'un générique** (« Captain America : Brave New World »), plus seulement à l'arrivée du défilement noir
+- **« Reprendre la lecture » montre l'image exacte où vous vous êtes arrêté** — la même sur tous vos appareils — au lieu de l'affiche de l'épisode
+- **Un film n'affiche plus « Terminer la lecture ».** Un bouton ne paraît que s'il y a une scène post-générique à rejoindre ; sinon le générique se joue, et l'écran de fin arrive tout seul
+- **Les panneaux du lecteur passent au-dessus des boutons de saut** : le choix des pistes s'ouvrait SOUS la pilule « Passer l'intro » quand les deux se montraient ensemble
+- **La section d'administration dit ce que Tentacle détecte lui-même** — générique de fin et scène post-générique, lus dans les vignettes — au lieu d'affirmer qu'il ne détecte rien
+- **Le client du téléviseur LG ne devient plus muet après un build interrompu** : un répertoire de build vide masquait jusqu'à la page de diagnostic
+
+### EN
+- **The jump to the post-credit scene lands on the mark.** It used to arrive up to ten seconds AFTER the scene had started — its first seconds were lost. It now lands on the last frame of the credits: nothing is missed any more
+- **False detections no longer make false promises.** A “post-credit scene” button could appear while the episode carries on under the credits, a “Skip intro” could sit on the epilogue when the opening theme is replayed there, an unusually dense cast crawl could pass for a scene (“Avatar: The Way of Water”) — and Iron Man's very dark scene was never found at all. Each case is fixed, against real measurements: a passage only counts as a scene when it carries proof of one, and a stinger glued to the end of the file is salvaged
+- **The button now shows from the dark illustrated title cards of the credits** (“Captain America: Brave New World”), not only once the black crawl arrives
+- **“Continue watching” shows the exact frame where you stopped** — the same on all your devices — instead of the episode artwork
+- **A film no longer shows “End playback”.** A button only appears when there is a post-credit scene to reach; otherwise the credits play out, and the end screen arrives on its own
+- **The player panels now sit above the skip buttons**: the track picker used to open UNDER the “Skip intro” pill when both were on screen
+- **The admin section now says what Tentacle detects on its own** — closing credits and post-credit scenes, read from the thumbnails — instead of claiming it detects nothing
+- **The LG TV client no longer goes silent after an interrupted build**: an empty build directory used to hide even the diagnostic page
+
 ## [1.14.0]
 ### FR
 - **L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série.** On finissait un épisode, on ouvrait la fiche, et il y restait marqué non vu — la liste ne se rafraîchissait qu'au bout de plusieurs minutes
