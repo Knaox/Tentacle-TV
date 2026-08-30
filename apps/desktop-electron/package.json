@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/desktop-electron",
-  "version": "1.20.9",
+  "version": "1.20.10",
   "private": true,
   "//productName": "Nom lu par Electron pour app.getName() : barre de menus macOS, panneau A propos, nom du paquet.",
   "productName": "Tentacle TV",
