@@ -11,7 +11,7 @@
  * ne justifie qu'un minuteur tourne pour une image que personne ne regarde.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useInViewport } from "../../hooks/useInViewport";
 
 /** Le temps mort entre deux passages — assez pour voir la pilule au repos. */
@@ -27,11 +27,18 @@ export interface PreviewCountdown {
    */
   cycle: number;
   /** À poser sur le cadre de l'aperçu — c'est lui qu'on observe. */
-  ref: React.RefObject<HTMLDivElement | null>;
+  ref: (el: HTMLDivElement | null) => void;
+  /** L'élément observé, pour les mesures (`useFitScale`) — suit ses remontages. */
+  element: HTMLDivElement | null;
 }
 
 export function usePreviewCountdown(active: boolean, delayMs: number): PreviewCountdown {
-  const { ref, visible } = useInViewport<HTMLDivElement>();
+  const { ref: observe, visible } = useInViewport<HTMLDivElement>();
+  const [element, setElement] = useState<HTMLDivElement | null>(null);
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    setElement(el);
+    observe(el);
+  }, [observe]);
   const [seconds, setSeconds] = useState<number | null>(null);
   const [cycle, setCycle] = useState(0);
   // Le départ du tour en cours, en horloge monotone : recalculer le restant à
@@ -60,5 +67,5 @@ export function usePreviewCountdown(active: boolean, delayMs: number): PreviewCo
     return () => clearInterval(timer);
   }, [active, visible, delayMs]);
 
-  return { seconds, cycle, ref };
+  return { seconds, cycle, ref, element };
 }

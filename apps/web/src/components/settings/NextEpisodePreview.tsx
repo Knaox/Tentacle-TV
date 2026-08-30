@@ -44,8 +44,8 @@ const CARD_WIDTH = 420 + 16;
 export function NextEpisodePreview({ next }: { next: NextEpisodeSettings }) {
   const { t } = useTranslation("preferences");
   const counting = next.nextCard && next.nextCountdown;
-  const { seconds, cycle, ref } = usePreviewCountdown(counting, next.nextCountdownMs);
-  const scale = useFitScale(ref, CARD_WIDTH);
+  const { seconds, cycle, ref, element } = usePreviewCountdown(counting, next.nextCountdownMs);
+  const scale = useFitScale(element, CARD_WIDTH);
 
   return (
     <PreviewStage
@@ -80,7 +80,9 @@ export function NextEpisodePreview({ next }: { next: NextEpisodeSettings }) {
  * aperçu grossi ne montrerait plus la taille réelle du texte.
  */
 function useFitScale(
-  stage: React.RefObject<HTMLDivElement | null>,
+  // L'ÉLÉMENT, pas un ref : l'effet se rejoue quand le cadre est remplacé —
+  // un `.current` lu à dépendances figées ratait tout remontage.
+  stage: HTMLDivElement | null,
   naturalWidth: number,
 ): number {
   const [scale, setScale] = useState(1);
@@ -88,13 +90,12 @@ function useFitScale(
   naturalRef.current = naturalWidth;
 
   useEffect(() => {
-    const element = stage.current;
-    if (!element || typeof ResizeObserver !== "function") return;
+    if (!stage || typeof ResizeObserver !== "function") return;
     const observer = new ResizeObserver(([entry]) => {
       const width = entry.contentRect.width;
       setScale(width > 0 ? Math.min(1, width / naturalRef.current) : 1);
     });
-    observer.observe(element);
+    observer.observe(stage);
     return () => observer.disconnect();
   }, [stage]);
 
