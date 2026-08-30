@@ -30,8 +30,11 @@ import { collectFrameSamples, type TrickplayManifest } from "./trickplayFrames";
  * spectateur jusqu'à dix secondes APRÈS le début de la scène.
  * v3 : SATURATION_MAX 18 → 28 — les cartes de crédits illustrées sombres
  * (« Brave New World ») rejoignent le générique.
+ * v4 : preuve de scène et repêchage du stinger (`sceneChecks.ts`) — le
+ * défilement dense d'« Avatar » cesse de passer pour une scène, celui de
+ * Nick Fury (« Iron Man ») cesse de disparaître.
  */
-export const FRAME_ANALYSIS_VERSION = 3;
+export const FRAME_ANALYSIS_VERSION = 4;
 
 /** Ce qu'on a en base : le verdict, ou l'absence de verdict ASSUMÉE. */
 type Stored = { verdict: FrameVerdict | null };

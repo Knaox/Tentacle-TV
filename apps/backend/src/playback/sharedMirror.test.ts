@@ -36,6 +36,7 @@ describe("miroir du résolveur partagé", () => {
     "frameBlocks.ts",
     "creditsFromFrames.ts",
     "claimGuards.ts",
+    "sceneChecks.ts",
   ])(
     "%s est identique octet pour octet à packages/shared",
     (name) => {

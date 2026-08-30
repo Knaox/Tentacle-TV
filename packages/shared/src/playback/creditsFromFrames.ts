@@ -68,6 +68,7 @@ import {
   type Block,
   type FrameSample,
 } from "./frameBlocks";
+import { hasSceneEvidence, salvageTailStinger } from "./sceneChecks";
 
 export type { FrameSample } from "./frameBlocks";
 import type { BoundsByType, RawBounds } from "./segmentChapters";
@@ -159,7 +160,21 @@ export function creditsFromFrames(
   if (index < 0) return null;
 
   const outro = blocks[index];
-  const after = blocks[index + 1];
+  // Un passage clair SANS preuve de scène n'est pas une scène : le défilement
+  // dense d'« Avatar » (colonnes multiples, part de noir 0,62) passait le
+  // classement large et offrait trois minutes de « scène » en plein générique
+  // (cf. `sceneChecks.ts`). Le faux passage et le générique qui le suit
+  // rejoignent l'enveloppe, et on réexamine le passage d'après — une VRAIE
+  // scène derrière un faux clair reste trouvable.
+  let sceneIndex = index + 1;
+  while (
+    blocks[sceneIndex] !== undefined &&
+    !blocks[sceneIndex].credits &&
+    !hasSceneEvidence(kept, blocks[sceneIndex].startMs, blocks[sceneIndex].endMs)
+  ) {
+    sceneIndex += 2;
+  }
+  const after = blocks[sceneIndex];
   // Une scène ne compte que si elle dure, et si elle ne touche pas la fin du
   // fichier de si près qu'il n'y aurait rien à voir.
   const scene =
@@ -168,17 +183,26 @@ export function creditsFromFrames(
     after.endMs - after.startMs >= POST_CREDITS_MIN_MS &&
     runtimeMs - after.startMs >= POST_CREDITS_MIN_MS;
 
+  // Un pas de grille en arrière : on atterrit sur la DERNIÈRE vignette du
+  // générique, jamais après le début de la scène (voir `FrameVerdict`). Le
+  // garde-fou borne un pas absurde — la borne ne remonte pas sous le début.
+  let endMs = scene ? Math.max(after.startMs - step, outro.startMs + 1_000) : runtimeMs;
+  let sceneAfter = scene;
+  // Générique jusqu'au bout : dernière chance au stinger DE FIN DE FICHIER,
+  // trop sombre pour survivre au lissage (« Iron Man » — cf. `sceneChecks.ts`).
+  if (!sceneAfter && endMs >= runtimeMs) {
+    const salvaged = salvageTailStinger(kept, runtimeMs);
+    if (salvaged !== null && salvaged.sceneStartMs > outro.startMs) {
+      endMs = Math.max(salvaged.sceneStartMs - step, outro.startMs + 1_000);
+      sceneAfter = true;
+    }
+  }
+
   return {
-    outro: {
-      startMs: outro.startMs,
-      // Un pas de grille en arrière : on atterrit sur la DERNIÈRE vignette du
-      // générique, jamais après le début de la scène (voir `FrameVerdict`).
-      // Le garde-fou borne un pas absurde — la borne ne remonte pas sous le
-      // début du générique.
-      endMs: scene ? Math.max(after.startMs - step, outro.startMs + 1_000) : runtimeMs,
-      source: "frames",
-    },
-    sceneAfter: scene,
+    outro: { startMs: outro.startMs, endMs, source: "frames" },
+    sceneAfter,
+    // Le générique FINAL ne suit qu'une scène vue en BLOCS : un stinger
+    // repêché court jusqu'au bout du fichier, rien ne reprend derrière lui.
     finalCredits: scene ? finalCreditsAfter(blocks, index, runtimeMs) : null,
   };
 }
