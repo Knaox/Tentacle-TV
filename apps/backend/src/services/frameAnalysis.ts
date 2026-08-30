@@ -28,8 +28,10 @@ import { collectFrameSamples, type TrickplayManifest } from "./trickplayFrames";
  *
  * v2 : la borne de saut recule d'une vignette — les verdicts v1 envoyaient le
  * spectateur jusqu'à dix secondes APRÈS le début de la scène.
+ * v3 : SATURATION_MAX 18 → 28 — les cartes de crédits illustrées sombres
+ * (« Brave New World ») rejoignent le générique.
  */
-export const FRAME_ANALYSIS_VERSION = 2;
+export const FRAME_ANALYSIS_VERSION = 3;
 
 /** Ce qu'on a en base : le verdict, ou l'absence de verdict ASSUMÉE. */
 type Stored = { verdict: FrameVerdict | null };

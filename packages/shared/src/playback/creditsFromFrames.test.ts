@@ -99,6 +99,27 @@ describe("le générique lu dans les vignettes", () => {
     expect(verdict?.outro.endMs).toBe(127.9 * 60_000);
   });
 
+  it("Brave New World : les cartes illustrées SOMBRES rejoignent le générique", () => {
+    // Relevé le 30.08 : cartes rouges/bleues sur noir, saturation 8,7 → 27,2 —
+    // au seuil 18 le générique n'était vu qu'à 109:50 au lieu de ~108:00. Deux
+    // vignettes plus claires (108:20 et 109:10, mesurées) fragmentent la tête ;
+    // le lissage rend les deux premières cartes au film — départ à 108:30,
+    // c'est le prix du garde-fou.
+    const runtime = 118.5 * 60_000;
+    let samples = series([
+      { fromMin: 100, toMin: 108, dark: 0.15, saturation: 19.4 },
+      { fromMin: 108, toMin: 110.5, dark: 0.85, saturation: 15 },
+      { fromMin: 110.5, toMin: 117.5, dark: 0.88, saturation: 0.2 },
+      { fromMin: 117.5, toMin: 118.4, dark: 0.45, saturation: 23 },
+    ]);
+    samples = poke(samples, 108 * 60_000 + 20_000, { dark: 0.46, saturation: 17.7 });
+    samples = poke(samples, 109 * 60_000 + 10_000, { dark: 0.62, saturation: 36.1 });
+    const verdict = creditsFromFrames(samples, runtime);
+    expect(verdict?.outro.startMs).toBe(108 * 60_000 + 30_000);
+    expect(verdict?.outro.endMs).toBe(117.5 * 60_000 - 10_000);
+    expect(verdict?.sceneAfter).toBe(true);
+  });
+
   it("tient malgré un générique ILLUSTRÉ (deux images colorées isolées)", () => {
     // « Deadpool & Wolverine » : 121:20 et 122:10 sont en couleur.
     let samples = series([
