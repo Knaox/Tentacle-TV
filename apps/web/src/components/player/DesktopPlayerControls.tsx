@@ -79,17 +79,18 @@ interface DesktopPlayerControlsProps {
 const WITHOUT_ALPHA = !surfaceHasAlpha();
 
 /**
- * Le texte des barres, sur la surface à alpha : contour net (sans flou — la
- * seule aide qui ne se paie pas, cf. `videoTextGuard`) et opacités remontées.
- * Les classes `text-white/50-60` supposaient le dégradé sous elles ; sans lui,
- * du blanc à moitié transparent sur une image claire ne se lit pas (contraste
- * bien sous 4,5:1). Windows et le web gardent dégradés ET opacités d'origine.
+ * Le texte des barres, sur la surface à alpha : contour noir PLEIN (cf.
+ * `videoTextGuard` — l'alpha partiel n'y rend pas la couleur demandée) et
+ * blanc PUR. Les classes `text-white/50-70` supposaient le dégradé sous
+ * elles ; ici elles se DÉLAVAIENT en gris (lecture prémultipliée, capture du
+ * 30.08). La hiérarchie passe par la taille, déjà en place. Windows et le web
+ * gardent dégradés ET opacités d'origine.
  */
 const TEXT_GUARD = videoTextGuard();
 const GUARD_STYLE = TEXT_GUARD ? { textShadow: TEXT_GUARD } : undefined;
-const SUBTLE_TEXT = WITHOUT_ALPHA ? "text-white/50" : "text-white/85";
-const TIME_TEXT = WITHOUT_ALPHA ? "text-white/60" : "text-white/90";
-const SKIP_TEXT = WITHOUT_ALPHA ? "text-white/70" : "text-white/95";
+const SUBTLE_TEXT = WITHOUT_ALPHA ? "text-white/50" : "text-white";
+const TIME_TEXT = WITHOUT_ALPHA ? "text-white/60" : "text-white";
+const SKIP_TEXT = WITHOUT_ALPHA ? "text-white/70" : "text-white";
 
 /**
  * Barres de contrôle du player desktop : top bar (retour, titre, badge mpv dev)
@@ -116,9 +117,8 @@ export function DesktopPlayerControls({
 
   return (
     <div className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-between transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}>
-      {/* ⚠️ RIEN N'EST POSÉ SUR L'IMAGE sur la surface à alpha — ni voile, ni
-          dégradé, ni ombre de texte. Chaque tentative a produit le même défaut à
-          un endroit différent, et chacune a été mesurée :
+      {/* ⚠️ Ce qui peut se poser sur l'image de la surface à alpha est ÉTROIT,
+          et chaque frontière a été mesurée :
 
            - le voile plein cadre assombrissait 8 % de l'image ENTIÈRE. Sur une
              image strictement fixe, une bande de 631 lignes changeait de 10,2
@@ -132,20 +132,30 @@ export function DesktopPlayerControls({
              minutage et de la barre de progression, et le même artefact à
              l'apparition comme à l'extinction.
 
-          Toute couche à alpha composée sur la fenêtre de mpv se paie donc, quelle
-          que soit sa forme — toute couche, mais pas tout DESSIN : le texte
-          porte désormais un contour NET, sans flou (`videoTextGuard`). Quatre
-          copies nettes du glyphe se rastérisent comme le texte lui-même et
-          fondent avec lui — c'est le flou de l'ombre essayée ci-dessus qui
-          franchissait le seuil de couche, pas l'idée d'aider le texte. Et les
-          opacités 50-70 % supposaient un dégradé dessous : sans lui, elles
-          remontent (constantes en tête de fichier).
+          La capture du 30.08 (Linux) a livré la règle qui ordonne tout cela :
+          l'alpha partiel n'y rend pas la couleur demandée SELON la couleur. Le
+          BLANC partiel se délave vers le gris (lecture prémultipliée : blanc ×
+          alpha devient gris) ; le NOIR, lui, est invariant par prémultiplication
+          — noir × alpha reste noir — et se compose juste. D'où le dessin
+          actuel, chaque pièce de sa famille sûre :
 
-          Windows et le web gardent leurs deux dégradés, au pixel près : leur
-          surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais apparu. */}
+           - le texte : remplissage blanc PUR et contour noir PLEIN
+             (`videoTextGuard`) — le dessin des sous-titres de mpv, impeccables
+             sur la même image ; les `text-white/50-70` rendaient GRIS
+             (constantes en tête de fichier) ;
+           - les barres : le dégradé NOIR revient, ALLÉGÉ et cantonné à leurs
+             zones — c'est lui qui détache les icônes. Il n'est ni le voile
+             plein cadre ni une ombre floutée : un dégradé linéaire noir est
+             de la famille qui se compose bien. Son fondu avec les contrôles
+             reste le point à guetter — si un artefact d'extinction
+             réapparaissait, c'est ICI qu'il faudrait revenir.
+
+          Windows et le web gardent leurs deux dégradés pleins, au pixel près :
+          leur surface n'a pas d'alpha par pixel, rien de ceci n'y est jamais
+          apparu. */}
       {/* Top bar */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`${WITHOUT_ALPHA ? "bg-gradient-to-b from-black/70 to-transparent" : ""} px-6 pb-10 pt-5`}>
+        <div className={`bg-gradient-to-b ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-10 pt-5`}>
           <div className="flex items-center gap-4">
             <button onClick={() => goBack()} className="rounded-full p-2 hover:bg-white/10"><BackIcon /></button>
             <div>
@@ -164,7 +174,7 @@ export function DesktopPlayerControls({
 
       {/* Bottom controls */}
       <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-        <div className={`relative ${WITHOUT_ALPHA ? "bg-gradient-to-t from-black/70 to-transparent" : ""} px-6 pb-5 pt-10`}>
+        <div className={`relative bg-gradient-to-t ${WITHOUT_ALPHA ? "from-black/70" : "from-black/45"} to-transparent px-6 pb-5 pt-10`}>
           <AnimatePresence>
             {showSettings && hasSettings && (
               <TrackSelector

@@ -68,23 +68,26 @@ export function videoShadow(full: string, hairline: string): string {
  * (chaque tentative a été mesurée et payée — voir DesktopPlayerControls) : le
  * texte blanc restait sans aide, illisible sur une image claire. L'ombre de
  * texte FLOUE avait été essayée et rejetée : son halo sortait en contour
- * visible, avec un artefact à chaque apparition — le même défaut de
- * composition que les ombres portées, flou × fondu du conteneur.
+ * visible, avec un artefact à chaque apparition.
  *
- * Un contour SANS flou est d'une autre famille : quatre copies nettes du
- * glyphe, rastérisées comme le texte lui-même, qui fondent donc avec lui sans
- * seuil de couche à franchir. C'est la technique des sous-titres, depuis
- * toujours.
+ * ⚠️ La première version de ce contour (copies noires SEMI-transparentes,
+ * 0,35 → 0,8) a livré la leçon complète, capture du 30.08 sur Linux à
+ * l'appui : sur cette surface, l'alpha PARTIEL ne rend pas la couleur
+ * demandée. Le blanc partiel se DÉLAVE vers le gris — la surface le lit comme
+ * prémultiplié — et les copies noires partielles s'empilent en pâte quasi
+ * opaque. Seul un pixel PLEINEMENT opaque est déterministe.
+ *
+ * D'où ce dessin, et pas un autre : remplissage blanc PUR (alpha 1 — jamais
+ * `text-white/xx` ici) et contour noir PLEIN, quatre copies nettes d'un
+ * pixel. C'est très exactement le dessin des sous-titres de mpv, impeccables
+ * sur la même image.
  *
  * `undefined` hors surface alpha : Windows et le web gardent leurs dégradés,
  * au pixel près — leur texte n'a jamais manqué d'appui.
  */
 export function videoTextGuard(): string | undefined {
   if (!SURFACE_ALPHA) return undefined;
-  return (
-    "0 1px 0 rgba(0,0,0,0.8), 0 -1px 0 rgba(0,0,0,0.55), " +
-    "1px 0 0 rgba(0,0,0,0.55), -1px 0 0 rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.35)"
-  );
+  return "0 1px 0 #000, 0 -1px 0 #000, 1px 0 0 #000, -1px 0 0 #000";
 }
 
 /**
