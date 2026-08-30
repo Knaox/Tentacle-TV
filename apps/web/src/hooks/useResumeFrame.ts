@@ -6,6 +6,8 @@ import {
   pickBestTrickplayWidth,
   type MediaItem,
   type TrickplayInfo,
+  type TrickplayManifest,
+  type TrickplaySelection,
 } from "@tentacle-tv/shared";
 
 export interface ResumeFrame {
@@ -15,6 +17,44 @@ export interface ResumeFrame {
   /** Colonne et rangée de la vignette dans la planche (indices entiers). */
   col: number;
   row: number;
+}
+
+export interface ResumeSprite {
+  selection: TrickplaySelection;
+  tileIndex: number;
+  col: number;
+  row: number;
+}
+
+/**
+ * La géométrie seule — quelle planche, quelle case — sans URL : la carte en
+ * ligne la complète avec l'URL du proxy, la carte hors ligne avec le fichier
+ * local. C'est la MÊME math que l'aperçu de la barre de progression
+ * (`getTrickplayTile`), donc la même image ici et là.
+ */
+export function resolveResumeSprite(
+  manifest: TrickplayManifest | null | undefined,
+  positionTicks: number,
+  mediaSourceId?: string,
+): ResumeSprite | null {
+  if (positionTicks <= 0 || !manifest) return null;
+  const selection = pickBestTrickplayWidth(manifest, mediaSourceId);
+  if (!selection) return null;
+  const { info } = selection;
+  if (info.Interval <= 0 || info.Width <= 0 || info.Height <= 0) return null;
+  // La position peut dépasser la dernière vignette (fin de fichier, durée
+  // arrondie) : bornée, sinon l'index viserait une planche qui n'existe pas.
+  const positionMs = Math.min(
+    positionTicks / TICKS_PER_MS,
+    Math.max(0, (info.ThumbnailCount - 1) * info.Interval),
+  );
+  const coords = getTrickplayTile(positionMs, info);
+  return {
+    selection,
+    tileIndex: coords.tileIndex,
+    col: coords.xInTile / info.Width,
+    row: coords.yInTile / info.Height,
+  };
 }
 
 /**
@@ -40,30 +80,21 @@ export function useResumeFrame(item: MediaItem): ResumeFrame | null {
   const saver = isDataSaverActive();
 
   return useMemo(() => {
-    if (saver || positionTicks <= 0 || !manifest) return null;
-    const selection = pickBestTrickplayWidth(manifest, defaultSourceId);
-    if (!selection) return null;
-    const { info } = selection;
-    if (info.Interval <= 0 || info.Width <= 0 || info.Height <= 0) return null;
-    // La position peut dépasser la dernière vignette (fin de fichier, durée
-    // arrondie) : bornée, sinon l'index viserait une planche qui n'existe pas.
-    const positionMs = Math.min(
-      positionTicks / TICKS_PER_MS,
-      Math.max(0, (info.ThumbnailCount - 1) * info.Interval),
-    );
-    const coords = getTrickplayTile(positionMs, info);
+    if (saver) return null;
+    const sprite = resolveResumeSprite(manifest, positionTicks, defaultSourceId);
+    if (!sprite) return null;
     return {
       url: buildTrickplayTileUrl(
         client.getBaseUrl(),
         client.getAccessToken(),
         item.Id,
-        selection.mediaSourceId,
-        selection.width,
-        coords.tileIndex,
+        sprite.selection.mediaSourceId,
+        sprite.selection.width,
+        sprite.tileIndex,
       ),
-      info,
-      col: coords.xInTile / info.Width,
-      row: coords.yInTile / info.Height,
+      info: sprite.selection.info,
+      col: sprite.col,
+      row: sprite.row,
     };
   }, [saver, positionTicks, manifest, defaultSourceId, client, item.Id]);
 }
