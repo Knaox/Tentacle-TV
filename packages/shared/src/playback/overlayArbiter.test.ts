@@ -116,20 +116,29 @@ describe("les six cas obligatoires", () => {
     expect(overlay).toEqual({ kind: "nextCard", countdownSeconds: null, final: false });
   });
 
-  it("6. Film sans épisode suivant → le bouton dit « Terminer », il ne promet aucun saut", () => {
+  it("6. Film au générique sans scène derrière → RIEN — l'écran de fin arrive tout seul", () => {
+    // « Terminer la lecture » n'apportait rien qu'attendre ne donne pas, et en
+    // Watch Together il fermait la lecture d'un membre au milieu de la séance.
     const during = arbitrateOverlay(
       makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, isEpisode: false, hasNextEpisode: false }),
+    );
+    expect(during).toEqual({ kind: "none" });
+
+    const ended = arbitrateOverlay(
+      makeInput({ playbackEnded: true, isEpisode: false, hasNextEpisode: false }),
+    );
+    expect(ended).toEqual({ kind: "none" });
+  });
+
+  it("6bis. DERNIER ÉPISODE au générique sans suite → le bouton dit encore « Terminer »", () => {
+    const during = arbitrateOverlay(
+      makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, hasNextEpisode: false }),
     );
     expect(during).toMatchObject({
       kind: "skip",
       labelKey: "endPlayback",
       action: { kind: "endOfPlayback" },
     });
-
-    const ended = arbitrateOverlay(
-      makeInput({ playbackEnded: true, isEpisode: false, hasNextEpisode: false }),
-    );
-    expect(ended).toEqual({ kind: "none" });
   });
 });
 
@@ -293,7 +302,10 @@ describe("priorités et gardes", () => {
 });
 
 describe("quitter la lecture n'est jamais automatique", () => {
-  it("réglage « auto » sur le générique : un film ne se ferme pas tout seul", () => {
+  it("réglage « auto » sur le générique : un film n'affiche plus RIEN du tout", () => {
+    // Plus fort qu'avant : le candidat n'existe même plus — « Terminer la
+    // lecture » a disparu des films (demandé le 30.08), l'écran de fin arrive
+    // tout seul.
     const candidate = findSkipCandidate({
       segments: [OUTRO_AT_END],
       positionMs: 1_310_000,
@@ -302,9 +314,21 @@ describe("quitter la lecture n'est jamais automatique", () => {
       hasNextEpisode: false,
       settings: makeSettings({ outro: { action: "auto", countdownVisible: true, autoDelayMs: 3_000 } }),
     });
+    expect(candidate).toBeNull();
+  });
+
+  it("réglage « auto » sur le générique : le DERNIER ÉPISODE ne se ferme pas tout seul", () => {
+    const candidate = findSkipCandidate({
+      segments: [OUTRO_AT_END],
+      positionMs: 1_310_000,
+      hasStarted: true,
+      isEpisode: true,
+      hasNextEpisode: false,
+      settings: makeSettings({ outro: { action: "auto", countdownVisible: true, autoDelayMs: 3_000 } }),
+    });
     expect(candidate?.action).toEqual({ kind: "endOfPlayback" });
     // Le réglage dit « auto » ; l'arbitre impose le bouton. Un décompte qui
-    // quitte le film au bout de trois secondes de générique ne se rattrape pas.
+    // quitte la lecture au bout de trois secondes de générique ne se rattrape pas.
     expect(candidate?.settings.action).toBe("button");
   });
 
@@ -571,10 +595,11 @@ describe("le générique de fin d'un FILM a son propre réglage", () => {
     expect(overlay.kind).not.toBe("skip");
   });
 
-  it("le générique PRINCIPAL d'un film ne se termine jamais tout seul", () => {
-    // Même en automatique : fermer un film au bout de cinq secondes de
-    // générique — sa musique, un plan qu'aucun détecteur n'a vu — ne se
-    // rattrape pas.
+  it("le générique PRINCIPAL d'un film n'affiche plus rien — même en automatique", () => {
+    // Fermer un film pendant son générique — sa musique, un plan qu'aucun
+    // détecteur n'a vu — ne se rattrape pas ; et le bouton lui-même n'apportait
+    // rien qu'attendre ne donne pas. Plus aucune trace de « Terminer » sur un
+    // film (demandé le 30.08).
     const overlay = arbitrateOverlay(
       makeInput({
         ...film,
@@ -584,10 +609,10 @@ describe("le générique de fin d'un FILM a son propre réglage", () => {
         countdowns: { skip: 4, next: null },
       }),
     );
-    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: null });
+    expect(overlay).toEqual({ kind: "none" });
   });
 
-  it("le générique FINAL, lui, peut décompter — la scène a déjà été vue", () => {
+  it("le générique FINAL d'après la scène se tait pareil", () => {
     const overlay = arbitrateOverlay(
       makeInput({
         ...film,
@@ -597,19 +622,6 @@ describe("le générique de fin d'un FILM a son propre réglage", () => {
         countdowns: { skip: 4, next: null },
       }),
     );
-    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: 4 });
-  });
-
-  it("et il obéit quand même au réglage : en bouton, pas de décompte", () => {
-    const overlay = arbitrateOverlay(
-      makeInput({
-        ...film,
-        segments: [MAIN, FINAL],
-        positionMs: 1_370_000,
-        settings: makeSettings({ outroFilm: { action: "button" } }),
-        countdowns: { skip: 4, next: null },
-      }),
-    );
-    expect(overlay).toMatchObject({ kind: "skip", labelKey: "endPlayback", countdownSeconds: null });
+    expect(overlay).toEqual({ kind: "none" });
   });
 });
