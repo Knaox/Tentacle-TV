@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Image } from "react-native";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { buildTrickplayTileUrl, useJellyfinClient } from "@tentacle-tv/api-client";
 import {
   getTrickplayTile,
   getTrickplayTileCount,
@@ -76,11 +76,16 @@ function useTrickplayApi(selection: TrickplaySelection | null, itemId: string | 
   const buildTileUrl = useCallback(
     (tileIndex: number): string | null => {
       if (!selection || !itemId) return null;
-      const base = client.getBaseUrl();
-      const token = client.getAccessToken();
-      const params: string[] = [`mediaSourceId=${encodeURIComponent(selection.mediaSourceId)}`];
-      if (token) params.push(`api_key=${encodeURIComponent(token)}`);
-      return `${base}/items/${itemId}/trickplay/${selection.width}/${tileIndex}.jpg?${params.join("&")}`;
+      // URL commune à toutes les plateformes (proxy Tentacle, cache immuable) —
+      // le pourquoi du `api_key` vit dans `buildTrickplayTileUrl`.
+      return buildTrickplayTileUrl(
+        client.getBaseUrl(),
+        client.getAccessToken(),
+        itemId,
+        selection.mediaSourceId,
+        selection.width,
+        tileIndex,
+      );
     },
     [selection, itemId, client],
   );
