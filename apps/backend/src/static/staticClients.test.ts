@@ -1,8 +1,9 @@
 import { describe, expect, it, beforeEach, afterAll } from "vitest";
 import Fastify from "fastify";
-import { existsSync } from "fs";
-import { resolve } from "path";
-import { registerStaticClients } from "./staticClients";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { registerStaticClients, type StaticClientRoots } from "./staticClients";
 
 /**
  * Le client téléviseur n'est pas servi au web ouvert.
@@ -13,6 +14,12 @@ import { registerStaticClients } from "./staticClients";
  * servi par `@fastify/static`, une route profonde qui passe par le repli
  * monopage, et l'adresse nue. Un filtre qui n'en couvrirait que le premier
  * laisserait `/tv/lecture/42` rendre l'interface de salon à un navigateur.
+ *
+ * Les racines servies sont des répertoires ÉPHÉMÈRES fabriqués ici : depuis
+ * que les harnais ont quitté le bundle, `client/public` ne porte plus
+ * d'`index.html` (seules les sondes y vivent) et `web/dist` n'existe que
+ * construit — des tests assis sur l'état du poste rendaient 404 sur une copie
+ * fraîche. Le câblage se prouve sur n'importe quel contenu.
  *
  * Rappel de ce que ces cas ne prouvent PAS : un `User-Agent` est écrit par le
  * client. Ceci n'est pas un contrôle d'accès, et `tvUserAgent.ts` le dit
@@ -29,9 +36,20 @@ const DESKTOP_AGENT =
 const INITIAL_NODE_ENV = process.env.NODE_ENV;
 const INITIAL_OPEN = process.env.TENTACLE_TV_OUVERT;
 
-async function server() {
+// Deux clients « construits » minimaux : la présence d'`index.html` est le
+// témoin de build que lit le service.
+const FIXTURES = mkdtempSync(join(tmpdir(), "tentacle-static-"));
+const WEB_ROOT = join(FIXTURES, "web");
+const TV_ROOT = join(FIXTURES, "tv");
+mkdirSync(WEB_ROOT);
+mkdirSync(TV_ROOT);
+writeFileSync(join(WEB_ROOT, "index.html"), "<!DOCTYPE html><title>web</title>");
+writeFileSync(join(TV_ROOT, "index.html"), "<!DOCTYPE html><title>tv</title>");
+writeFileSync(join(TV_ROOT, "sonde.html"), "<!DOCTYPE html><title>sonde</title>");
+
+async function server(roots: StaticClientRoots = { webPath: WEB_ROOT, tvBuildPath: TV_ROOT }) {
   const app = Fastify();
-  await registerStaticClients(app);
+  await registerStaticClients(app, roots);
   await app.ready();
   return app;
 }
@@ -47,6 +65,7 @@ afterAll(() => {
   process.env.NODE_ENV = INITIAL_NODE_ENV;
   if (INITIAL_OPEN === undefined) delete process.env.TENTACLE_TV_OUVERT;
   else process.env.TENTACLE_TV_OUVERT = INITIAL_OPEN;
+  rmSync(FIXTURES, { recursive: true, force: true });
 });
 
 describe("en production, /tv n'est servi qu'à un téléviseur", () => {
@@ -97,12 +116,7 @@ describe("en production, /tv n'est servi qu'à un téléviseur", () => {
     await app.close();
   });
 
-  // Le client téléviseur est toujours servable — `client/public` est suivi par
-  // git et sert de repli avant tout build. Le client web, lui, n'existe qu'une
-  // fois `apps/web` construit : sur une copie fraîche, ce cas n'a rien à dire.
-  it.skipIf(!existsSync(resolve(__dirname, "../../../web/dist")))(
-    "laisse le client web intact pour un navigateur de bureau",
-    async () => {
+  it("laisse le client web intact pour un navigateur de bureau", async () => {
     const app = await server();
     const response = await app.inject({
       method: "GET",
@@ -111,8 +125,7 @@ describe("en production, /tv n'est servi qu'à un téléviseur", () => {
     });
     expect(response.statusCode).toBe(200);
     await app.close();
-    },
-  );
+  });
 
   it("TENTACLE_TV_OUVERT=1 rouvre l'adresse, le temps d'un essai", async () => {
     process.env.TENTACLE_TV_OUVERT = "1";
@@ -121,6 +134,30 @@ describe("en production, /tv n'est servi qu'à un téléviseur", () => {
       method: "GET",
       url: "/tv/",
       headers: { "user-agent": DESKTOP_AGENT },
+    });
+    expect(response.statusCode).toBe(200);
+    await app.close();
+  });
+
+  it("un dist VIDE ne masque pas public — la sonde reste atteignable", async () => {
+    // Mesuré le 30.08 : un `dist` laissé vide par un build interrompu prenait
+    // la place de `public`, et `/tv` devenait entièrement muet, sonde
+    // comprise. Le témoin d'un build est son `index.html`, pas le répertoire.
+    const emptyDist = join(FIXTURES, "dist-vide");
+    const probesOnly = join(FIXTURES, "public-sondes");
+    mkdirSync(emptyDist, { recursive: true });
+    mkdirSync(probesOnly, { recursive: true });
+    writeFileSync(join(probesOnly, "sonde.html"), "<!DOCTYPE html><title>sonde</title>");
+
+    const app = await server({
+      webPath: WEB_ROOT,
+      tvBuildPath: emptyDist,
+      tvSourcePath: probesOnly,
+    });
+    const response = await app.inject({
+      method: "GET",
+      url: "/tv/sonde.html",
+      headers: { "user-agent": TV_AGENT },
     });
     expect(response.statusCode).toBe(200);
     await app.close();

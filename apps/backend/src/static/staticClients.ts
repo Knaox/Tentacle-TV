@@ -24,7 +24,17 @@ import {
  * dit franchement — mais l'assurance qu'un ordinateur ne se retrouve pas dans
  * une interface de salon.
  */
-export async function registerStaticClients(app: FastifyInstance): Promise<void> {
+/** Racines de service, remplaçables par les tests (répertoires éphémères). */
+export interface StaticClientRoots {
+  webPath?: string;
+  tvBuildPath?: string;
+  tvSourcePath?: string;
+}
+
+export async function registerStaticClients(
+  app: FastifyInstance,
+  roots: StaticClientRoots = {},
+): Promise<void> {
   // Posé AVANT toute inscription : un hook de l'instance parente vaut pour les
   // routes des plugins enregistrés ensuite, l'inverse n'étant pas vrai. C'est
   // ce qui le fait porter à la fois sur les fichiers statiques et sur le repli
@@ -39,7 +49,7 @@ export async function registerStaticClients(app: FastifyInstance): Promise<void>
     return reply.status(404).send({ message: "Not found" });
   });
 
-  const webPath = resolve(__dirname, "../../../web/dist");
+  const webPath = roots.webPath ?? resolve(__dirname, "../../../web/dist");
   const webPresent = existsSync(webPath);
   if (webPresent) {
     await app.register(fastifyStatic, { root: webPath, prefix: "/" });
@@ -48,9 +58,13 @@ export async function registerStaticClients(app: FastifyInstance): Promise<void>
   // Avant le premier build de la cible téléviseur, on sert `client/public` :
   // la page de diagnostic `/tv/sonde.html` y vit et doit être atteignable dès
   // l'installation de la coquille, sans rien avoir construit.
-  const tvBuildPath = resolve(__dirname, "../../../tv-webos/client/dist");
-  const tvSourcePath = resolve(__dirname, "../../../tv-webos/client/public");
-  const tvPath = existsSync(tvBuildPath) ? tvBuildPath : tvSourcePath;
+  const tvBuildPath = roots.tvBuildPath ?? resolve(__dirname, "../../../tv-webos/client/dist");
+  const tvSourcePath = roots.tvSourcePath ?? resolve(__dirname, "../../../tv-webos/client/public");
+  // Le témoin d'un build est son `index.html`, pas le répertoire : un `dist`
+  // VIDE (build interrompu, nettoyage partiel) masquait `public` et rendait
+  // `/tv` entièrement muet — sonde comprise (mesuré le 30.08 en dev).
+  const tvBuilt = existsSync(resolve(tvBuildPath, "index.html"));
+  const tvPath = tvBuilt ? tvBuildPath : tvSourcePath;
   const tvPresent = existsSync(tvPath);
   if (tvPresent) {
     await app.register(fastifyStatic, {
