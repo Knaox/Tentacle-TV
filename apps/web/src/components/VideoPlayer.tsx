@@ -100,6 +100,9 @@ export function VideoPlayer({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
     reportLoading: setLoading,
+    // Sauter à la fin VAUT la fin : même canal que l'événement `ended` — la
+    // pause coupe un flux HLS qui chercherait encore son dernier fragment.
+    onSeekToEnd: () => { videoRef.current?.pause(); setEnded(true); },
   });
 
   const [controlPanelOpen, setControlPanelOpen] = useState(false); // panneau ouvert → pilules effacées

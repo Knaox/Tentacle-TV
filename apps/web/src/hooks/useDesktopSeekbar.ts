@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { useTrickplay } from "./useTrickplay";
 import { useHoverEscape } from "./useHoverGuard";
+import { SEEK_END_EPS_S } from "./useSmartSeek";
 import type { MediaItem } from "@tentacle-tv/shared";
 
 interface UseDesktopSeekbarArgs {
@@ -22,6 +23,12 @@ interface UseDesktopSeekbarArgs {
    * « pause » puis un badge « lecture » en pleine image (cf. `usePlaybackFlash`).
    */
   ignoreNextToggle?: () => void;
+  /**
+   * RELÂCHER la poignée sur la fin — ou à moins d'une demi-seconde d'elle —
+   * TERMINE la lecture au lieu de la caler sur le bord. Seul le relâchement
+   * décide : un glissement qui passe par la droite ne ferme rien.
+   */
+  onSeekToEnd?: () => void;
 }
 
 /**
@@ -31,7 +38,7 @@ interface UseDesktopSeekbarArgs {
  */
 export function useDesktopSeekbar({
   dur, paused, isDirectPlay, item, mediaSourceId, localItemId, effectiveMpvOffset, seek, setPause,
-  ignoreNextToggle,
+  ignoreNextToggle, onSeekToEnd,
 }: UseDesktopSeekbarArgs) {
   const seekBarRef = useRef<HTMLDivElement>(null);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
@@ -84,6 +91,12 @@ export function useDesktopSeekbar({
       const pct = pctFromEvent(e);
       setDragProgress(null);
       const target = pct * dur;
+      // Relâché sur le bord : la lecture se TERMINE — et on ne « reprend »
+      // pas une lecture finie, l'affiche de fin prend l'écran.
+      if (onSeekToEnd && dur > 0 && target >= dur - SEEK_END_EPS_S) {
+        onSeekToEnd();
+        return;
+      }
       seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
       // La reprise non plus n'est pas une intention : c'est le retour à l'état
       // d'avant le glissement.
@@ -96,7 +109,7 @@ export function useDesktopSeekbar({
     document.addEventListener("mouseup", onUp);
     return () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dur, pctFromEvent, seek, setPause, isDirectPlay]);
+  }, [dur, pctFromEvent, seek, setPause, isDirectPlay, onSeekToEnd]);
 
   // ── Trickplay hover preview (local d'abord en lecture locale) ──
   const trickplay = useTrickplay(item, mediaSourceId, localItemId);

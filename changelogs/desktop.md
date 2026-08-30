@@ -24,6 +24,7 @@ et Linux reçoivent l'ensemble.
 - **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série
 - **Écarter la fiche « à suivre » pendant le générique ne supprime plus l'affiche de fin.** À la toute fin de l'épisode, elle paraît avec un décompte neuf — refuser une vignette sur l'image n'a jamais voulu dire renoncer à la suite
 - **La fin d'une lecture ne laisse plus d'image figée.** Fermer l'affiche ramène à la fiche du média — et un film ou un dernier épisode y retournent tout seuls
+- **Sauter jusqu'à la fin vaut la fin.** Un +30 s qui dépasse le générique — ou la poignée relâchée sur le bord — termine la lecture et fait paraître l'affiche de fin, au lieu de laisser le lecteur calé à quelques dixièmes du bord
 - **L'affiche de fin se règle**, dans Réglages > Lecture > À la fin d'un épisode : sa bascule, et son aperçu vivant — la vraie affiche, comme pour les autres boutons
 - **Un seul bouton, blanc, partout.** Il compte, se refuse d'une croix, et dit où il mène : la scène post-générique, l'épisode suivant — ou terminer, sur le dernier épisode d'une série
 - **Le générique de fin se règle séparément sur les films et sur les séries**, et les films le passent tout seuls d'origine — vers la scène post-générique ; sans scène à rejoindre, aucun bouton : le générique se joue, l'écran de fin arrive
@@ -42,6 +43,7 @@ et Linux reçoivent l'ensemble.
 - **The end-of-episode poster has been redesigned**: the same white pill as the player buttons, the time left shown inside the "Play now" gesture, a background of gradients that lets the series banner breathe
 - **Dismissing the "up next" card during the credits no longer removes the end poster.** At the very end of the episode it appears with a fresh countdown — refusing a thumbnail on the picture never meant giving up on what's next
 - **The end of playback no longer leaves a frozen frame.** Closing the poster returns to the details page — and a film or a final episode goes back there on its own
+- **Skipping to the end IS the end.** A +30s that overshoots the credits — or the handle released on the edge — ends playback and brings up the end poster, instead of leaving the player parked a few tenths from the edge
 - **The end poster is now yours to set**, under Settings > Playback > At the end of an episode: its own switch, and a live preview — the real poster, as for the other buttons
 - **One button, white, everywhere.** It counts down, can be refused with a cross, and says where it leads: the post-credit scene, the next episode — or ending playback, on the last episode of a series
 - **Closing credits are set separately for films and for series**, and films skip them on their own out of the box — to the post-credit scene; with no scene to reach, no button at all: the credits play out, the end screen arrives
@@ -61,6 +63,7 @@ et Linux reçoivent l'ensemble.
 - **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série
 - **Écarter la fiche « à suivre » pendant le générique ne supprime plus l'affiche de fin.** À la toute fin de l'épisode, elle paraît avec un décompte neuf — refuser une vignette sur l'image n'a jamais voulu dire renoncer à la suite
 - **La fin d'une lecture ne laisse plus d'image figée.** Fermer l'affiche ramène à la fiche du média — et un film ou un dernier épisode y retournent tout seuls
+- **Sauter jusqu'à la fin vaut la fin.** Un +30 s qui dépasse le générique — ou la poignée relâchée sur le bord — termine la lecture et fait paraître l'affiche de fin, au lieu de laisser le lecteur calé à quelques dixièmes du bord
 - **L'affiche de fin se règle**, dans Réglages > Lecture > À la fin d'un épisode : sa bascule, et son aperçu vivant — la vraie affiche, comme pour les autres boutons
 - **En séance Watch Together, un refus n'éteint plus l'écran des autres** : le décompte de la salle s'annule, l'affiche reste une proposition, et chacun peut encore lancer la suite
 
@@ -68,6 +71,7 @@ et Linux reçoivent l'ensemble.
 - **The end-of-episode poster has been redesigned**: the same white pill as the player buttons, the time left shown inside the "Play now" gesture, a background of gradients that lets the series banner breathe
 - **Dismissing the "up next" card during the credits no longer removes the end poster.** At the very end of the episode it appears with a fresh countdown — refusing a thumbnail on the picture never meant giving up on what's next
 - **The end of playback no longer leaves a frozen frame.** Closing the poster returns to the details page — and a film or a final episode goes back there on its own
+- **Skipping to the end IS the end.** A +30s that overshoots the credits — or the handle released on the edge — ends playback and brings up the end poster, instead of leaving the player parked a few tenths from the edge
 - **The end poster is now yours to set**, under Settings > Playback > At the end of an episode: its own switch, and a live preview — the real poster, as for the other buttons
 - **In a Watch Together session, one refusal no longer clears everyone's screen**: the room's countdown is cancelled, the poster stays as an offer, and anyone can still start what's next
 
