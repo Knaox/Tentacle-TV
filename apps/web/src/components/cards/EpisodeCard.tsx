@@ -15,9 +15,11 @@ import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { resolveBannerImage } from "./resolveCardImage";
+import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
+import { useResumeFrame } from "../../hooks/useResumeFrame";
 
 interface EpisodeCardProps {
   item: MediaItem;
@@ -67,6 +69,11 @@ export const EpisodeCard = memo(function EpisodeCard({
   useHoverGuard(preview.anchorRef, hovered, unhover);
 
   const isEpisode = item.Type === "Episode";
+  // La vignette EXACTE de la reprise, croppée dans sa planche trickplay —
+  // `null` hors reprise (position nulle, pas de manifeste, mode économie), et
+  // la carte garde alors sa bannière. La bannière reste le repli d'erreur : en
+  // pratique elle n'est demandée que si la planche ne charge pas.
+  const resumeFrame = useResumeFrame(item);
   const resolvedImage = resolveBannerImage(item);
   // « » : la donnée prouve qu'il n'y a pas d'image — `CardImage` rend son
   // repli sans lancer une requête vouée au 404 (cf. `resolveCardImage.ts`).
@@ -159,7 +166,16 @@ export const EpisodeCard = memo(function EpisodeCard({
         {/* Pas de zoom interne quand le panneau prend le relais : il peindrait
             la même image à un autre cadrage, d'où le recul brutal ressenti à
             l'ouverture. */}
-        <CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />
+        {resumeFrame ? (
+          <CardTrickplayImage
+            frame={resumeFrame}
+            alt={item.Name}
+            zoom={!preview.panelActive}
+            fallback={<CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />}
+          />
+        ) : (
+          <CardImage src={imageUrl} alt={item.Name} zoom={!preview.panelActive} />
+        )}
 
         {/* Qualité/langues au survol UNIQUEMENT là où il n'y a pas de panneau
             (toucher, petit écran) : sinon elles s'affichaient sur la vignette
