@@ -32,6 +32,8 @@ interface DesktopPlayerOverlaysProps {
   onPlayNow: () => void;
   /** La barre de contrôles est-elle à l'écran ? */
   controlsVisible: boolean;
+  /** Un panneau du lecteur (pistes, épisodes) est ouvert : pilules effacées. */
+  panelOpen: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -41,7 +43,7 @@ interface DesktopPlayerOverlaysProps {
 
 export function DesktopPlayerOverlays({
   showLoadingOverlay, buffering, buffered, posterUrl,
-  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
+  overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible, panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
 }: DesktopPlayerOverlaysProps) {
@@ -83,6 +85,7 @@ export function DesktopPlayerOverlays({
         onPlayNow={onPlayNow}
         layer="z-20"
         controlsVisible={controlsVisible}
+        panelOpen={panelOpen}
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}

@@ -19,6 +19,8 @@ interface VideoPlayerOverlaysProps {
   onPlayNow: () => void;
   /** La barre de contrôles est-elle à l'écran ? (le bouton lui cède la place). */
   controlsVisible: boolean;
+  /** Un panneau du lecteur (pistes, épisodes) est ouvert : pilules effacées. */
+  panelOpen: boolean;
   nextEpisodeTitle?: string;
   nextEpisodeDescription?: string;
   nextEpisodeImageUrl?: string;
@@ -42,6 +44,7 @@ interface VideoPlayerOverlaysProps {
 export function VideoPlayerOverlays({
   loading, playing, hasStarted, showPlayButton, policyMuted, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
+  panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   videoRef, userInteractedRef,
@@ -110,6 +113,7 @@ export function VideoPlayerOverlays({
         onPlayNow={onPlayNow}
         layer="z-50"
         controlsVisible={controlsVisible}
+        panelOpen={panelOpen}
         nextEpisodeTitle={nextEpisodeTitle}
         nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl}
