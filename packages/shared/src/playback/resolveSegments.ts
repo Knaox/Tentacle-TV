@@ -47,6 +47,7 @@ import {
   type ChapterMarker,
   type RawBounds,
 } from "./segmentChapters";
+import { applyClaimGuards } from "./claimGuards";
 import { applyFrameVerdict, type FrameVerdict } from "./creditsFromFrames";
 import {
   collectDict,
@@ -255,6 +256,9 @@ export function resolvePlaybackSegments(
     (new Map() as BoundsByType);
   fillFromChapters(bounds, sources.chapters, runtime);
   refineOutroWithChapters(bounds, sources.chapters, runtime);
+  // Les gardes de vraisemblance écartent les réclamations absurdes (intro en
+  // fin de fichier, et l'outro qui la chevauche) quelle que soit leur source.
+  applyClaimGuards(bounds, runtime);
   // EN DERNIER, et c'est ce qui fait que l'analyse ne gêne personne : tout ce
   // qui précède a eu sa chance, et elle ne parle que sur ce qui reste — un
   // générique absent, ou un générique qui court jusqu'au bout du fichier.
