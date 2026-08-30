@@ -7,11 +7,14 @@
  * fiche, le bouton superposé lance la lecture.
  */
 
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
+import { CardTrickplayImage } from "../components/cards/CardTrickplayImage";
 import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
+import { useLocalTrickplay } from "../hooks/useLocalTrickplay";
+import { resolveResumeSprite } from "../hooks/useResumeFrame";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { watchStateOf } from "./offlineGroups";
@@ -33,6 +36,20 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
   const { watched, percent } = watchStateOf(entry);
   const url = rootReady ? localResourceUrl(`meta/${entry.itemId}/primary.jpg`) : null;
 
+  // La vignette EXACTE de la reprise, croppée dans les planches DÉJÀ
+  // téléchargées — zéro réseau. Le manifeste local n'est lu que pour un
+  // épisode entamé : les autres cartes gardent leur affiche sans requête.
+  const local = useLocalTrickplay(entry.positionTicks > 0 ? entry.itemId : undefined);
+  const sprite = useMemo(
+    () => (local && !watched ? resolveResumeSprite(local.manifest, entry.positionTicks) : null),
+    [local, watched, entry.positionTicks],
+  );
+  const frameUrl = sprite && local ? local.buildTileUrl(sprite.tileIndex) : null;
+  const frame =
+    sprite && frameUrl
+      ? { url: frameUrl, info: sprite.selection.info, col: sprite.col, row: sprite.row }
+      : null;
+
   const title = entry.title ?? entry.itemId;
   // Numéros absents (rattrapage en attente) : pas de « S00E00 » inventé.
   const code = entry.parentIndexNumber != null && entry.indexNumber != null
@@ -40,24 +57,32 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
     : null;
   const runtime = formatDuration(entry.runtimeTicks ?? undefined);
 
+  const banner = url && !failed ? (
+    <img
+      src={url}
+      alt=""
+      loading="lazy" decoding="async"
+      className="h-full w-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <div className="flex h-full w-full items-center justify-center px-3 text-center text-xs text-content-quaternary">
+      {title}
+    </div>
+  );
+
   return (
     <div
       className="group/card relative cursor-pointer"
       onClick={() => onSelect(entry)}
     >
       <div className="relative aspect-video overflow-hidden rounded-lg bg-surface-2 ring-1 ring-line-subtle transition-transform duration-200 group-hover/card:scale-[1.02]">
-        {url && !failed ? (
-          <img
-            src={url}
-            alt=""
-            loading="lazy" decoding="async"
-            className="h-full w-full object-cover"
-            onError={() => setFailed(true)}
-          />
+        {frame ? (
+          // Le conteneur porte déjà son propre scale au survol : pas de second
+          // zoom interne. L'affiche reste le repli si la planche ne charge pas.
+          <CardTrickplayImage frame={frame} alt={title} zoom={false} fallback={banner} />
         ) : (
-          <div className="flex h-full w-full items-center justify-center px-3 text-center text-xs text-content-quaternary">
-            {title}
-          </div>
+          banner
         )}
 
         {/* Scrim + textes posés SUR la vignette : blanc/noir constants dans les
