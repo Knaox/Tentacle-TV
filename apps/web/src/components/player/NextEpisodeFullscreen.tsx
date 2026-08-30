@@ -133,7 +133,14 @@ export function NextEpisodeFullscreen({
           transition={{ duration: 8, ease: "easeOut" }}
         />
       ) : (
-        <div className="absolute inset-0" style={{ background: "var(--surface-1)" }} />
+        // Repli SOMBRE en dur, pas une surface de l'application : le texte de
+        // l'affiche est blanc en dur (posé sur image), et `--surface-1` en
+        // thème clair l'aurait rendu illisible. Même dégradé « image de film »
+        // que le cadre d'aperçu des réglages.
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(135deg, #2b2436 0%, #16131c 55%, #0a0a0d 100%)" }}
+        />
       )}
       {/* Assombrissement par dégradés NOIRS empilés — un latéral qui ancre le
           panneau à gauche et laisse la bannière respirer à droite, un vertical
@@ -182,7 +189,7 @@ export function NextEpisodeFullscreen({
           className="relative w-full max-w-[280px] shrink-0 overflow-hidden rounded-xl sm:w-72 sm:max-w-none"
           style={{ boxShadow: THUMB_SHADOW }}
         >
-          <div className="aspect-[16/9] w-full" style={{ background: "var(--surface-1)" }}>
+          <div className="aspect-[16/9] w-full" style={{ background: "#16131c" }}>
             {episodeThumbUrl && (
               <img src={episodeThumbUrl} alt="" draggable={false} className="h-full w-full object-cover" />
             )}
@@ -236,7 +243,9 @@ export function NextEpisodeFullscreen({
                 <Sweep
                   key={String(armed.total)}
                   durationMs={armed.remaining * 1000}
-                  initialProgress={1 - armed.remaining / armed.total}
+                  // Arrondi au millième : 1 − 8/10 donne 0,19999…96 en IEEE 754,
+                  // et dix-sept décimales n'apportent rien à un scaleX.
+                  initialProgress={Math.round((1 - armed.remaining / armed.total) * 1000) / 1000}
                 />
               )}
               <span className="relative flex items-center gap-2 tabular-nums">

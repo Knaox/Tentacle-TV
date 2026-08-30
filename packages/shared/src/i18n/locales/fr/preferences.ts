@@ -165,6 +165,13 @@ export default {
   previewNextEpisodeLabel: "S01E02",
   previewNextEpisodeTitle: "Le prochain épisode",
 
+  // L'aperçu de l'affiche de fin — la vraie, mise à l'échelle dans le cadre.
+  previewNextFinalCaptionOff: "À la toute fin, rien ne s'affiche : le lecteur revient à la fiche du média.",
+  previewNextFinalCaptionCard: "À la toute fin, l'affiche propose la suite et attend votre geste.",
+  previewNextFinalCaptionCountdown: "L'affiche décompte {{seconds}} s — puis s'arrête là, sans rien lancer.",
+  previewNextFinalCaptionAuto: "Au bout de {{seconds}} s, l'épisode suivant démarre — même si la fiche du générique a été écartée.",
+  previewNextFinalSynopsis: "Un synopsis d'exemple, le temps de voir l'affiche en situation.",
+
   // Le détail qui encombrait chaque réglage, réuni derrière un repli.
   segmentsMoreTitle: "En savoir plus",
   segmentsMoreNothing: "Sans passage signalé par le serveur, rien ne s'affiche — quel que soit le réglage ci-dessus.",

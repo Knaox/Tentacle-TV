@@ -24,6 +24,7 @@ import type { PlaybackSettings, SegmentSettings, SkipLabelKey } from "@tentacle-
 import { BeforeEndRules } from "./BeforeEndRules";
 import { NextCountdownSlider } from "./NextCountdownSlider";
 import { NextEpisodePreview } from "./NextEpisodePreview";
+import { NextFinalCardPreview } from "./NextFinalCardPreview";
 import { SegmentSettingsRow } from "./SegmentSettingsRow";
 import { SegmentedChoice } from "./SegmentedChoice";
 import { SettingsDisclosure } from "./SettingsDisclosure";
@@ -158,6 +159,7 @@ export function PlaybackAdvancedPanel({ settings }: { settings: PlaybackSettings
             active={next.nextFinalCard}
             onChange={(nextFinalCard) => { setPlaybackSettings({ next: { nextFinalCard } }); }}
           />
+          <NextFinalCardPreview next={next} />
 
           <div>
             <p className="text-sm font-medium text-content-primary">{t("upNextTriggerLabel")}</p>
