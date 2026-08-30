@@ -1,7 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
 import { readFileSync, existsSync } from "fs";
+import { createRequire } from "module";
 
 // Injecter les deux versions (sélection à runtime via isTauriApp).
 // Source unique : versions.json à la racine du monorepo — le web est livré
@@ -13,6 +14,12 @@ const versions = existsSync(versionsPath)
 const webVersion = versions.server
   ?? JSON.parse(readFileSync(resolve(__dirname, "package.json"), "utf-8")).version;
 const desktopVersion = versions.desktop ?? webVersion;
+
+// Le dossier qui porte les polices embarquées, quel que soit l'endroit où le
+// gestionnaire de paquets a posé le paquet. Voir l'alias, plus bas.
+const fontsourceDir = dirname(
+  dirname(createRequire(__filename).resolve("@fontsource-variable/inter/package.json")),
+);
 
 // Canal de distribution. "appstore" est injecté par le build Mac App Store
 // (VITE_DIST_CHANNEL=appstore) → bascule la détection de MAJ vers l'App Store.
@@ -65,6 +72,19 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
+      // ⚠️ Les `url()` d'une feuille CSS ne passent PAS par la résolution des
+      // paquets : un nom nu y reste une adresse, écrite telle quelle dans le
+      // CSS bâti. Nos sept `@font-face` (`theme/fonts.css`) demandaient donc
+      // `/assets/@fontsource-variable/…woff2`, que rien ne sert — la coquille
+      // y répondait par `index.html`, d'où « OTS parsing error: invalid
+      // sfntVersion » (les quatre octets de `<!DO`) et Inter jamais chargée,
+      // sans que rien d'autre ne le signale. L'alias rend le nom résolvable :
+      // Vite copie alors les fichiers dans `assets/` et réécrit les adresses.
+      //
+      // Le chemin est RÉSOLU, pas écrit : `node-linker=hoisted` (`.npmrc`)
+      // hisse les paquets à la racine du dépôt, un `./node_modules/…` d'ici
+      // ne désignerait rien.
+      "@fontsource-variable": fontsourceDir,
     },
   },
   esbuild: {
