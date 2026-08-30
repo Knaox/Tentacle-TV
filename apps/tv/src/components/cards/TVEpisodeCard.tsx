@@ -1,11 +1,12 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { View, Text } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { ticksToSeconds } from "@tentacle-tv/shared";
+import { buildTrickplayTileUrl, useJellyfinClient } from "@tentacle-tv/api-client";
+import { resolveResumeSprite, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, Typography } from "../../theme/colors";
 import { TVCardImage } from "./TVCardImage";
+import { TVCardTrickplayImage } from "./TVCardTrickplayImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
 import { TVMetaChips } from "../TVMetaChips";
 import { TV_EPISODE_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
@@ -38,6 +39,25 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
   const imageType = isEpisode ? "Primary" : "Backdrop";
   const imageUrl = client.getImageUrl(item.Id, imageType, { width: 540, quality: 80 });
 
+  // La vignette EXACTE de la reprise (même math que web et bureau) — `null`
+  // hors reprise, et la carte garde sa bannière. La bannière reste le repli
+  // d'erreur si la planche ne charge pas.
+  const positionTicks = item.UserData?.PlaybackPositionTicks ?? 0;
+  const sprite = useMemo(
+    () => resolveResumeSprite(item.Trickplay, positionTicks, item.MediaSources?.[0]?.Id),
+    [item.Trickplay, positionTicks, item.MediaSources],
+  );
+  const frameUrl = sprite
+    ? buildTrickplayTileUrl(
+        client.getBaseUrl(),
+        client.getAccessToken(),
+        item.Id,
+        sprite.selection.mediaSourceId,
+        sprite.selection.width,
+        sprite.tileIndex,
+      )
+    : null;
+
   const watched = item.UserData?.Played === true;
   const progress = item.UserData?.PlayedPercentage ?? 0;
 
@@ -61,7 +81,18 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
           backgroundColor: Colors.bgCard,
         }}
       >
-        <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+        {sprite && frameUrl ? (
+          <TVCardTrickplayImage
+            url={frameUrl}
+            info={sprite.selection.info}
+            col={sprite.col}
+            row={sprite.row}
+            cardWidth={width}
+            fallback={<TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />}
+          />
+        ) : (
+          <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+        )}
 
         {/* Chips qualité/langues AU FOCUS (haut-gauche — le temps restant
             occupe le haut-droit), comme le hover desktop. */}
