@@ -134,6 +134,64 @@ describe("le générique lu dans les vignettes", () => {
     expect(verdict?.sceneAfter).toBe(true);
   });
 
+  it("Avatar : un défilement DENSE sans preuve de scène n'est pas une scène", () => {
+    // Mesuré le 30.08 : le cast d'« Avatar : la voie de l'eau » défile en
+    // colonnes si serrées que la part de noir tombe à 0,62-0,68 — trois
+    // minutes classées « scène » en plein générique, saturation maximale 0.
+    // Aucune vignette n'y ressemble à une scène : le passage rejoint
+    // l'enveloppe, et rien n'est promis.
+    const runtime = 192.63 * 60_000;
+    const samples = series([
+      { fromMin: 170, toMin: 185.5, dark: 0.2, saturation: 30 },
+      { fromMin: 185.5, toMin: 188, dark: 0.9, saturation: 0.3 },
+      { fromMin: 188, toMin: 191.7, dark: 0.65, saturation: 0 },
+      { fromMin: 191.7, toMin: 192.6, dark: 0.9, saturation: 0.1 },
+    ]);
+    const verdict = creditsFromFrames(samples, runtime);
+    expect(verdict?.sceneAfter).toBe(false);
+    expect(verdict?.outro.endMs).toBe(runtime);
+    expect(verdict?.finalCredits).toBeNull();
+  });
+
+  it("Iron Man : le stinger SOMBRE de fin de fichier est repêché", () => {
+    // Mesuré le 30.08 : la scène de Nick Fury (125:10 → 126:00) est si sombre
+    // que trois vignettes sur cinq passent les seuils du générique — le
+    // lissage l'absorbait. La preuve (saturation 38 à 125:50) l'ancre, la
+    // remontée s'arrête au dernier vrai défilement (deux noyaux d'affilée).
+    const runtime = 126.01 * 60_000;
+    const samples = [
+      ...series([
+        { fromMin: 100, toMin: 117.6, dark: 0.3, saturation: 25 },
+        { fromMin: 117.6, toMin: 125.17, dark: 0.9, saturation: 0.5 },
+      ]),
+      { ms: 125 * 60_000 + 10_000, dark: 0.57, saturation: 7.4 },
+      { ms: 125 * 60_000 + 20_000, dark: 0.77, saturation: 9.9 },
+      { ms: 125 * 60_000 + 30_000, dark: 0.99, saturation: 8.9 },
+      { ms: 125 * 60_000 + 40_000, dark: 1.0, saturation: 0 },
+      { ms: 125 * 60_000 + 50_000, dark: 0.74, saturation: 38.4 },
+    ];
+    const verdict = creditsFromFrames(samples, runtime);
+    expect(verdict?.sceneAfter).toBe(true);
+    expect(verdict?.outro.endMs).toBe(125 * 60_000);
+    expect(verdict?.finalCredits).toBeNull();
+  });
+
+  it("un logo coloré de quelques secondes en toute fin n'est pas un stinger", () => {
+    // Le repêchage exige vingt secondes retrouvées : deux vignettes saturées
+    // collées à la fin (un logo animé) ne suffisent pas.
+    const runtime = 128 * 60_000;
+    const samples = [
+      ...series([
+        { fromMin: 100, toMin: 119.67, dark: 0.3, saturation: 25 },
+        { fromMin: 119.67, toMin: 127.8, dark: 0.9, saturation: 0.5 },
+      ]),
+      { ms: 127 * 60_000 + 50_000, dark: 0.2, saturation: 60 },
+    ];
+    const verdict = creditsFromFrames(samples, runtime);
+    expect(verdict?.sceneAfter).toBe(false);
+    expect(verdict?.outro.endMs).toBe(runtime);
+  });
+
   it("ne dit RIEN quand rien n'est sûr", () => {
     expect(creditsFromFrames([], 100_000)).toBeNull();
     expect(creditsFromFrames(noWayHome(), 0)).toBeNull();
