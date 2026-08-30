@@ -25,6 +25,9 @@ export default {
   skipForward: "+30s",
   nextEpisodeIn: "Prochain épisode dans",
   playNow: "Lire maintenant",
+  // La forme décomptée de l'action, sur le modèle des sauts : le temps se lit
+  // là où se trouve le geste, et la fiche n'a plus de pastille séparée.
+  playNowIn: "Lire maintenant dans {{seconds}} s",
   tracks: "Pistes",
   tracksAudioSubtitle: "Pistes audio et sous-titres",
   audioLabel: "AUDIO",
