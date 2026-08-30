@@ -13,8 +13,9 @@
  *    vrai libellé (« Terminer ») et reste manuel, réglage ou pas ;
  *  - sans segment Outro connu : repli temporel « X s avant la fin » pour la
  *    carte SEULEMENT — jamais un bouton de saut sans donnée ;
- *  - l'écran de fin (final) est une autre surface à un autre moment : il
- *    ignore le réglage de la fiche, comportement historique conservé ;
+ *  - l'écran de fin (final) est une autre surface à un autre moment : son
+ *    PROPRE réglage (`nextFinalCard`), son PROPRE refus (`finalCard`) —
+ *    toujours indépendant du réglage et du refus de la fiche du générique ;
  *  - l'interrupteur admin (autoplay_next_enabled) est une garde serveur sur
  *    l'ENCHAÎNEMENT (carte et écran de fin), pas sur les boutons de saut.
  *
@@ -84,6 +85,8 @@ export type PlayerOverlay =
 export interface OverlayDismissals {
   readonly segments: Partial<Record<SegmentType, boolean>>;
   readonly nextCard: boolean;
+  /** Le refus de l'AFFICHE de fin — distinct de celui de la carte/pilule. */
+  readonly finalCard: boolean;
 }
 
 export interface ArbiterInput {
@@ -136,9 +139,16 @@ function skipOverlay(
 export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   const { settings, dismissed, countdowns } = input;
 
-  // 1. Fin de lecture : l'écran de fin, indépendant du réglage de la fiche.
+  // 1. Fin de lecture : l'écran de fin — son réglage, son refus, jamais ceux
+  //    de la fiche du générique. Quand il ne paraît pas, la SORTIE appartient
+  //    au lecteur (`useEndOfPlaybackExit`), pas à l'arbitre.
   if (input.playbackEnded) {
-    if (input.hasNextEpisode && input.serverAutoplayEnabled && !dismissed.nextCard) {
+    if (
+      input.hasNextEpisode &&
+      input.serverAutoplayEnabled &&
+      settings.next.nextFinalCard &&
+      !dismissed.finalCard
+    ) {
       return {
         kind: "nextCard",
         countdownSeconds: settings.next.nextCountdown ? countdowns.next : null,

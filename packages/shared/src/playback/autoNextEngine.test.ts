@@ -134,6 +134,83 @@ describe("cycle de vie", () => {
   });
 });
 
+describe("le refus découplé — la carte n'est pas l'affiche", () => {
+  it("refuser la carte laisse l'affiche de fin armer un décompte NEUF à l'EOF", () => {
+    const { state, effects } = run([
+      tick(),
+      { type: "dismiss" },
+      tick(), // générique encore : la carte refusée reste muette
+      tick(true, true, 0), // EOF : l'affiche prend son tour
+    ]);
+    expect(effects).toEqual([]);
+    expect(state).toMatchObject({
+      phase: "final",
+      dismissed: true,
+      finalDismissed: false,
+      remainingMs: NEXT_COUNTDOWN_MS,
+      armedMs: NEXT_COUNTDOWN_MS,
+    });
+  });
+
+  it("refuser l'affiche de fin éteint tout à l'EOF — et rien ne part", () => {
+    const { state, effects } = run([
+      tick(true, true, 0),
+      { type: "dismissFinal" },
+      tick(true, true),
+      tick(true, true),
+    ]);
+    expect(effects).toEqual([]);
+    expect(state).toMatchObject({ phase: "idle", finalDismissed: true, remainingMs: null });
+  });
+
+  it("à l'EOF le décompte repart sur la durée réglée ENTIÈRE, marge ou pas", () => {
+    // Avant : un runtime de contrat plus court que le fichier laissait
+    // `remainingMediaMs` à quelques centaines de ms, et l'armement direct en
+    // phase finale donnait un décompte de zéro — un enchaînement instantané.
+    const [state, effect] = decideAutoNext(
+      { ...AUTO_NEXT_IDLE, forItemId: "ep-1" },
+      { type: "frame", eligible: true, ended: true, elapsedMs: 0, remainingMediaMs: 300 },
+      { ...CONFIG, nextCountdownMs: 10_000 },
+    );
+    expect(effect).toBe("none");
+    expect(state.remainingMs).toBe(10_000);
+    expect(state.armedMs).toBe(10_000);
+  });
+
+  it("l'annulation de séance coupe le minuteur sans toucher aux refus — et il ne se réarme plus", () => {
+    const { state, effects } = run([
+      tick(),
+      { type: "cancelCountdown" },
+      tick(), // la surface reste une proposition, sans minuteur
+      tick(false), // sortie de fenêtre…
+      tick(), // …et retour : toujours aucun minuteur
+    ]);
+    expect(effects).toEqual([]);
+    expect(state).toMatchObject({
+      phase: "card",
+      countdownCanceled: true,
+      dismissed: false,
+      finalDismissed: false,
+      remainingMs: null,
+    });
+  });
+
+  it("changer d'épisode réarme les trois refus", () => {
+    const { state } = run([
+      { type: "dismiss" },
+      { type: "dismissFinal" },
+      { type: "cancelCountdown" },
+      { type: "item", itemId: "ep-2" },
+    ]);
+    expect(state).toMatchObject({
+      dismissed: false,
+      finalDismissed: false,
+      countdownCanceled: false,
+      forItemId: "ep-2",
+    });
+  });
+});
+
 describe("le décompte tient dans le temps qui reste", () => {
   const config = {
     hasNextEpisode: true,

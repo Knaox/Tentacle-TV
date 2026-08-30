@@ -16,6 +16,13 @@
  * même règle que le refus de saut d'intro. Sortir de la fenêtre d'éligibilité
  * (retour en arrière) remet le minuteur à zéro ; y revenir le réarme.
  *
+ * Il y a DEUX refus, un par surface : écarter la carte du générique dit
+ * « dégage de mon image », pas « renonce à la suite » — l'affiche de fin garde
+ * son tour, avec un décompte neuf. La croix de l'AFFICHE est l'autre refus, et
+ * lui seul l'éteint. Un troisième geste, l'annulation de séance (Watch
+ * Together), tue le MINUTEUR sans toucher aux surfaces : la salle a dit non à
+ * l'enchaînement, pas aux propositions.
+ *
  * L'éligibilité (« le déclencheur est-il franchi ») est calculée PAR
  * L'APPELANT avec le même sélecteur que l'arbitre — le moteur ne connaît ni
  * position ni segments, il ne peut donc pas diverger de l'affichage.
@@ -61,8 +68,15 @@ export interface AutoNextState {
    * le minuteur en compte trois et demie mentirait à l'œil.
    */
   armedMs: number | null;
-  /** La croix a été donnée pour CET épisode. */
+  /** La croix a été donnée pour CET épisode — sur la carte ou la pilule. */
   dismissed: boolean;
+  /** La croix de l'AFFICHE DE FIN — un autre refus, une autre surface. */
+  finalDismissed: boolean;
+  /**
+   * Le décompte est annulé pour l'épisode (refus en séance Watch Together) :
+   * plus aucun minuteur ne s'arme, mais les surfaces restent des propositions.
+   */
+  countdownCanceled: boolean;
   /** L'effet a déjà été émis (le temps que la navigation aboutisse). */
   chained: boolean;
   forItemId: string | null;
@@ -73,6 +87,8 @@ export const AUTO_NEXT_IDLE: AutoNextState = {
   remainingMs: null,
   armedMs: null,
   dismissed: false,
+  finalDismissed: false,
+  countdownCanceled: false,
   chained: false,
   forItemId: null,
 };
@@ -94,6 +110,8 @@ export type AutoNextInput =
     }
   | { type: "item"; itemId: string }
   | { type: "dismiss" }
+  | { type: "dismissFinal" }
+  | { type: "cancelCountdown" }
   | { type: "playNow" };
 
 export type AutoNextEffect = "none" | "nextEpisode";
@@ -127,13 +145,28 @@ export function decideAutoNext(
     return [{ ...state, dismissed: true, remainingMs: null, armedMs: null, phase: "idle" }, "none"];
   }
 
+  if (input.type === "dismissFinal") {
+    return [
+      { ...state, finalDismissed: true, remainingMs: null, armedMs: null, phase: "idle" },
+      "none",
+    ];
+  }
+
+  if (input.type === "cancelCountdown") {
+    // La phase reste : la surface demeure une proposition, seul l'acte meurt.
+    return [{ ...state, countdownCanceled: true, remainingMs: null, armedMs: null }, "none"];
+  }
+
   if (input.type === "playNow") {
     if (state.chained || !config.hasNextEpisode) return [state, "none"];
     return [{ ...state, chained: true, remainingMs: null, armedMs: null }, "nextEpisode"];
   }
 
   // ── Battement de cadre ──
-  const active = config.hasNextEpisode && config.serverEnabled && !state.dismissed && !state.chained;
+  // Chaque surface n'obéit qu'à SON refus : la carte au sien, l'affiche de
+  // fin au sien — écarter l'une n'a jamais éteint l'autre.
+  const refused = input.ended ? state.finalDismissed : state.dismissed;
+  const active = config.hasNextEpisode && config.serverEnabled && !refused && !state.chained;
   if (!active || (!input.eligible && !input.ended)) {
     // Hors fenêtre (ou refusé) : le minuteur retombe, prêt à se réarmer.
     if (state.phase === "idle" && state.remainingMs === null) return [state, "none"];
@@ -144,13 +177,20 @@ export function decideAutoNext(
 
   // Armement au front d'entrée dans la fenêtre. L'escalade carte → écran de
   // fin CONSERVE le minuteur en cours (comportement TV historique) : la fin du
-  // média n'offre pas un sursis.
+  // média n'offre pas un sursis. À l'EOF en revanche, un armement NEUF (carte
+  // refusée puis affiche) prend la durée réglée ENTIÈRE : le média est fini,
+  // la marge « expirer avant la fin » n'a plus d'objet — sans quoi un runtime
+  // de contrat plus court que le fichier armait un décompte de zéro seconde.
   let remainingMs = state.remainingMs;
   let armedMs = state.armedMs;
   if (state.phase === "idle") {
-    remainingMs = config.nextCountdown
-      ? armedCountdownMs(config.nextCountdownMs ?? NEXT_COUNTDOWN_MS, input.remainingMediaMs ?? 0)
-      : null;
+    const configured = config.nextCountdownMs ?? NEXT_COUNTDOWN_MS;
+    remainingMs =
+      config.nextCountdown && !state.countdownCanceled
+        ? input.ended
+          ? configured
+          : armedCountdownMs(configured, input.remainingMediaMs ?? 0)
+        : null;
     armedMs = remainingMs;
   }
 

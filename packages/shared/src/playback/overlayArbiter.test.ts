@@ -59,7 +59,7 @@ const makeInput = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
   hasNextEpisode: true,
   settings: makeSettings(),
   serverAutoplayEnabled: true,
-  dismissed: { segments: {}, nextCard: false },
+  dismissed: { segments: {}, nextCard: false, finalCard: false },
   countdowns: { skip: null, next: null },
   ...patch,
 });
@@ -202,7 +202,7 @@ describe("priorités et gardes", () => {
       makeInput({
         segments: [OUTRO_SCENE],
         positionMs: 1_250_000,
-        dismissed: { segments: { Outro: true }, nextCard: false },
+        dismissed: { segments: { Outro: true }, nextCard: false, finalCard: false },
       }),
     );
     expect(dismissedOutro).toEqual({ kind: "nextButton", dismissible: true });
@@ -266,20 +266,58 @@ describe("priorités et gardes", () => {
     expect(button.kind).toBe("skip");
   });
 
-  it("fiche refusée : ni carte pendant le générique, ni écran de fin", () => {
+  it("fiche refusée : plus de carte pendant le générique — mais l'écran de fin reste dû", () => {
     const during = arbitrateOverlay(
       makeInput({
         segments: [OUTRO_AT_END],
         positionMs: 1_310_000,
-        dismissed: { segments: {}, nextCard: true },
+        dismissed: { segments: {}, nextCard: true, finalCard: false },
       }),
     );
     expect(during).toEqual({ kind: "none" });
 
+    // Écarter la carte disait « dégage de mon image », pas « renonce à la
+    // suite » : à l'EOF, l'affiche garde son tour.
     const endScreen = arbitrateOverlay(
-      makeInput({ playbackEnded: true, dismissed: { segments: {}, nextCard: true } }),
+      makeInput({ playbackEnded: true, dismissed: { segments: {}, nextCard: true, finalCard: false } }),
+    );
+    expect(endScreen).toMatchObject({ kind: "nextCard", final: true });
+  });
+
+  it("l'affiche de fin refusée : plus rien à l'EOF — la sortie appartient au lecteur", () => {
+    const endScreen = arbitrateOverlay(
+      makeInput({ playbackEnded: true, dismissed: { segments: {}, nextCard: false, finalCard: true } }),
     );
     expect(endScreen).toEqual({ kind: "none" });
+
+    // Et le refus de l'affiche ne touche pas la carte du générique.
+    const during = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_AT_END],
+        positionMs: 1_310_000,
+        dismissed: { segments: {}, nextCard: false, finalCard: true },
+      }),
+    );
+    expect(during).toMatchObject({ kind: "nextCard", final: false });
+  });
+
+  it("le réglage « affiche de fin » éteint la supprime — celui de la fiche reste intact", () => {
+    const endScreen = arbitrateOverlay(
+      makeInput({
+        playbackEnded: true,
+        settings: makeSettings({ next: { nextFinalCard: false } }),
+      }),
+    );
+    expect(endScreen).toEqual({ kind: "none" });
+
+    const during = arbitrateOverlay(
+      makeInput({
+        segments: [OUTRO_AT_END],
+        positionMs: 1_310_000,
+        settings: makeSettings({ next: { nextFinalCard: false } }),
+      }),
+    );
+    expect(during).toMatchObject({ kind: "nextCard", final: false });
   });
 
   it("l'écran de fin ignore le réglage de la fiche — autre surface, autre moment", () => {
@@ -403,7 +441,7 @@ describe("la pilule « épisode suivant » — le trou de la scène post-génér
         positionMs: 1_250_000,
         controlsVisible: true,
         settings: makeSettings({ outro: { action: "off" } }),
-        dismissed: { segments: {}, nextCard: true },
+        dismissed: { segments: {}, nextCard: true, finalCard: false },
       }),
     );
     // Refusée, elle n'existe plus que dans l'habillage — et sans croix.
@@ -443,7 +481,7 @@ describe("la scène post-générique n'est jamais couverte", () => {
       makeInput({
         segments: [OUTRO_SCENE],
         positionMs: 1_319_500,
-        dismissed: { segments: { Outro: true }, nextCard: false },
+        dismissed: { segments: { Outro: true }, nextCard: false, finalCard: false },
       }),
     );
     expect(overlay).toEqual({ kind: "nextButton", dismissible: true });
@@ -499,7 +537,7 @@ describe("la croix — quand elle existe, et quand elle n'a plus d'office", () =
       mutedSegments: muted,
     };
     // Image nue : rien. C'est tout l'objet de la sourdine.
-    expect(arbitrateOverlay(makeInput({ ...base, dismissed: { segments: { Intro: true }, nextCard: false } })))
+    expect(arbitrateOverlay(makeInput({ ...base, dismissed: { segments: { Intro: true }, nextCard: false, finalCard: false } })))
       .toEqual({ kind: "none" });
     // Habillage affiché : le bouton revient, mais sa croix n'a plus rien à faire.
     expect(arbitrateOverlay(makeInput({ ...base, controlsVisible: true })))
@@ -514,7 +552,7 @@ describe("refuser un saut ne doit JAMAIS emporter vers l'épisode suivant", () =
   it("LE DÉFAUT VÉCU — croiser la pilule du générique ne fait plus paraître la carte", () => {
     // Image nue : la sourdine masque le bouton, et RIEN ne prend sa place.
     expect(
-      arbitrateOverlay(makeInput({ ...inOutro, dismissed: { segments: { Outro: true }, nextCard: false } })),
+      arbitrateOverlay(makeInput({ ...inOutro, dismissed: { segments: { Outro: true }, nextCard: false, finalCard: false } })),
     ).toEqual({ kind: "none" });
   });
 
@@ -551,14 +589,14 @@ describe("la pilule « épisode suivant » suit la règle commune", () => {
 
   it("REFUSÉE, elle quitte l'image nue", () => {
     expect(
-      arbitrateOverlay(makeInput({ ...afterSkip, dismissed: { segments: {}, nextCard: true } })),
+      arbitrateOverlay(makeInput({ ...afterSkip, dismissed: { segments: {}, nextCard: true, finalCard: false } })),
     ).toEqual({ kind: "none" });
   });
 
   it("refusée, elle reste atteignable dans l'habillage — et sans croix", () => {
     expect(
       arbitrateOverlay(makeInput({
-        ...afterSkip, controlsVisible: true, dismissed: { segments: {}, nextCard: true },
+        ...afterSkip, controlsVisible: true, dismissed: { segments: {}, nextCard: true, finalCard: false },
       })),
     ).toEqual({ kind: "nextButton", dismissible: false });
   });

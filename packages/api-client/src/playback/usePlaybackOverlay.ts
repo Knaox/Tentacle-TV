@@ -14,20 +14,22 @@
  * saut y ferme l'enchaînement (affiché, il occupe la surface ; en sourdine, il
  * vaut refus — la croix ne supprime pas le candidat), et la revendication tient
  * jusque dans le générique final, où il n'y a plus de bouton. Le RETOUR EN
- * ARRIÈRE lève tous ces gestes, saut compris — qui revient derrière l'endroit
- * d'un geste le redemande.
+ * ARRIÈRE lève ces gestes-là, saut compris — qui revient derrière l'endroit
+ * d'un geste le redemande. Les refus de la SUITE (carte, affiche de fin), eux,
+ * tiennent jusqu'au changement d'épisode : ils vivent dans `useAutoNextDispatch`.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  AUTO_NEXT_IDLE, SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
+  SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
   arbitrateOverlay, autoNextEligible, displayedCountdown, displayedNextCountdown,
-  decideAutoNext, decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
+  decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
   isSegmentSilenced,
-  type AutoNextInput, type AutoNextState, type IntroSkipState,
+  type IntroSkipState,
   type PlayerOverlay, type SegmentType, type SkipCandidate, type SkipCandidateInput,
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
+import { useAutoNextDispatch } from "./useAutoNextDispatch";
 import { useMutedSegments } from "./useMutedSegments";
 import { usePostCreditsClaim } from "./usePostCreditsClaim";
 import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
@@ -38,7 +40,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const settings = usePlaybackSettings();
 
   const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
-  const [nextState, setNextState] = useState<AutoNextState>(AUTO_NEXT_IDLE);
   const { muted, mutedRef, mute, releaseRewound } = useMutedSegments(input.itemId);
   const postCredits = usePostCreditsClaim(input.itemId);
   const { claim: claimPostCredits, releaseIfBehind: releasePostCredits, claimedRef: postCreditsClaimedRef } = postCredits;
@@ -49,19 +50,18 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const skipStateRef = useRef(skipState);
-  const nextStateRef = useRef(nextState);
   const previousVisibleRef = useRef(false);
   /** Position visée par le dernier saut — repasser derrière elle réarme. */
   const skipTargetMsRef = useRef<number | null>(null);
+
+  // L'enchaînement d'épisode vit dans son propre bloc — état, gestes, refus.
+  const { nextState, dispatchNext, playNow, dismissNext, signalRemoteNextDismiss } =
+    useAutoNextDispatch(inputRef, settingsRef);
 
   const commitSkipState = useCallback((state: IntroSkipState) => {
     skipStateRef.current = state;
     setSkipState(state);
   }, []);
-  const commitNextState = useCallback((state: AutoNextState) => {
-    nextStateRef.current = state;
-    setNextState(state);
-  }, []); // (l'identité stable des états inchangés évite tout re-rendu par battement)
 
   const positionMs = Math.round(input.positionSeconds * 1000);
   const runtimeMs =
@@ -96,22 +96,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const currentCandidate = useCallback(
     (): SkipCandidate | null => findSkipCandidate(frameInput()),
     [frameInput],
-  );
-
-  const dispatchNext = useCallback(
-    (nextInput: AutoNextInput) => {
-      const p = inputRef.current;
-      const [state, effect] = decideAutoNext(nextStateRef.current, nextInput, {
-        hasNextEpisode: p.hasNextEpisode,
-        serverEnabled: p.serverAutoplayEnabled,
-        nextCountdown: settingsRef.current.next.nextCountdown,
-        nextAutoPlay: settingsRef.current.next.nextAutoPlay,
-        nextCountdownMs: settingsRef.current.next.nextCountdownMs,
-      });
-      commitNextState(state);
-      if (effect === "nextEpisode") p.onNextEpisode();
-    },
-    [commitNextState],
   );
 
   /** Un battement : fait avancer les deux réducteurs, joue le saut à échéance. */
@@ -246,6 +230,9 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
             }
           : {},
         nextCard: nextState.dismissed || nextState.chained,
+        // `chained` musèle aussi l'affiche : la navigation est en vol, rien
+        // ne doit plus paraître le temps qu'elle aboutisse.
+        finalCard: nextState.finalDismissed || nextState.chained,
       },
       countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
     });
@@ -261,11 +248,11 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       mute(current.segmentType, Math.round(inputRef.current.positionSeconds * 1000));
       inputRef.current.onSegmentDismissNotify?.(current.segmentType);
     } else if (current.kind === "nextCard" || current.kind === "nextButton") {
-      // Un seul refus de la suite, quelle que soit la surface qui l'a porté.
-      dispatchNext({ type: "dismiss" });
-      inputRef.current.onNextDismissNotify?.();
+      // Chaque surface porte SON refus : la croix de l'affiche de fin n'éteint
+      // pas la carte, et écarter la carte laisse l'affiche paraître à l'EOF.
+      dismissNext(current.kind === "nextCard" && current.final);
     }
-  }, [dispatchNext, commitSkipState, mute]);
+  }, [dismissNext, commitSkipState, mute]);
 
   const skipNow = useCallback(() => {
     const candidate = currentCandidate();
@@ -274,8 +261,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     skipTargetMsRef.current = candidate.action.kind === "seek" ? candidate.action.toMs : null;
     runAction(candidate);
   }, [currentCandidate, runAction, commitSkipState]);
-
-  const playNow = useCallback(() => { dispatchNext({ type: "playNow" }); }, [dispatchNext]);
 
   const signalRemoteSegmentDismiss = useCallback(
     (type: SegmentType) => {
@@ -288,8 +273,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     },
     [currentCandidate, commitSkipState, mute],
   );
-
-  const signalRemoteNextDismiss = useCallback(() => { dispatchNext({ type: "dismiss" }); }, [dispatchNext]);
 
   const skipMs = currentCandidate()?.settings.autoDelayMs ?? SKIP_DELAY_DEFAULT_MS;
   // La durée dont le minuteur est PARTI, pas celle qu'on a réglée : le moteur
