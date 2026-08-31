@@ -34,7 +34,7 @@ initI18n({ lng: "fr" });
 
 /** Composant interne — nécessite AppProviders comme parent */
 function OfflineOverlay() {
-  const { isReachable, retry } = useServerReachable();
+  const { isReachable, isChecking, retry } = useServerReachable();
   const { logout, changeServer } = useAuth();
   const { storage: appStorage } = useTentacleConfig();
   const { setServerUrl } = useServerUrl();
@@ -67,6 +67,7 @@ function OfflineOverlay() {
   return (
     <OfflineBanner
       visible={!isReachable}
+      isChecking={isChecking}
       onRetry={retry}
       onLogout={handleLogout}
       onChangeServer={handleChangeServer}

@@ -78,16 +78,20 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               {this.state.error.message}
             </Text>
           )}
+          {/* La pilule blanche du socle — l'aplat violet a vécu. (Palette
+              construite hors React : on garde le même mécanisme.) */}
           <TouchableOpacity
             style={{
-              backgroundColor: palette.brand.violet,
-              paddingHorizontal: 32,
+              backgroundColor: palette.cta.primaryBg,
+              minHeight: 44,
+              justifyContent: "center",
+              paddingHorizontal: 28,
               paddingVertical: 12,
-              borderRadius: 8,
+              borderRadius: 9999,
             }}
             onPress={this.handleRetry}
           >
-            <Text style={{ color: palette.cta.brandFg, fontSize: 16, fontWeight: "600" }}>
+            <Text style={{ color: palette.cta.primaryFg, fontSize: 16, fontWeight: "700" }}>
               {i18next.t("common:retry")}
             </Text>
           </TouchableOpacity>
