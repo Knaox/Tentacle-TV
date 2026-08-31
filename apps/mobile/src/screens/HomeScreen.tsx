@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { ScrollView, RefreshControl, View, Text, StyleSheet } from "react-native";
+import { RefreshControl, View, Text, StyleSheet } from "react-native";
+import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import {
@@ -16,6 +17,7 @@ import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { MediaRow } from "@/components/MediaRow";
 import { MyListRow } from "@/components/MyListRow";
+import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -27,6 +29,8 @@ export function HomeScreen() {
   const st = useThemedStyles(makeErrStyles);
   const router = useRouter();
   const headerH = useHeaderHeight();
+  // La nav se replie au défilement — le signal part d'ici (fil UI seul).
+  const onScrollChrome = useScrollChromeHandler();
   const userId = useUserId();
   const { storage } = useTentacleConfig();
   useHomeWebSocket({ token: storage.getItem("tentacle_token") });
@@ -92,10 +96,12 @@ export function HomeScreen() {
 
   return (
     <SubtleBackground ambient>
-      <ScrollView
+      <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        onScroll={onScrollChrome}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={featured.isFetching && !featured.isLoading}
@@ -145,7 +151,7 @@ export function HomeScreen() {
             index={index}
           />
         ))}
-      </ScrollView>
+      </Animated.ScrollView>
 
       {longPressItemId && (
         <MediaActionSheet

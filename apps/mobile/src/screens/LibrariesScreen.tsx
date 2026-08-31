@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
-import { View, Text, ScrollView, RefreshControl, StyleSheet } from "react-native";
+import { View, Text, RefreshControl, StyleSheet } from "react-native";
+import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useLibraries } from "@tentacle-tv/api-client";
@@ -8,6 +9,7 @@ import { Feather } from "@expo/vector-icons";
 import { SkeletonCard, FadeIn, SubtleBackground } from "@/components/ui";
 import { LibraryCard } from "@/components/LibraryCard";
 import { useHeaderHeight } from "@/components/PersistentHeader";
+import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const CARD_GAP = 18;
@@ -26,6 +28,7 @@ export function LibrariesScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const headerH = useHeaderHeight();
+  const onScrollChrome = useScrollChromeHandler();
   const { data, isLoading, refetch, isRefetching } = useLibraries();
 
   // 1 colonne pleine largeur sur iPhone (inchangé), grille 2–3 colonnes 16:9 sur iPad.
@@ -86,8 +89,10 @@ export function LibrariesScreen() {
 
   return (
     <SubtleBackground ambient>
-      <ScrollView
+      <Animated.ScrollView
         style={styles.container}
+        onScroll={onScrollChrome}
+        scrollEventThrottle={16}
         contentContainerStyle={[styles.scrollContent, { paddingTop: headerH }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -109,7 +114,7 @@ export function LibrariesScreen() {
             </FadeIn>
           ))}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </SubtleBackground>
   );
 }
