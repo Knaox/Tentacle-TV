@@ -41,6 +41,10 @@ export interface ThemePalette {
     glow: string;
     soft: string;
     ghost: string;
+    /** Le rose — second arrêt des dégradés de marque (violet → rose). */
+    accent: string;
+    accentLight: string;
+    accentDark: string;
   };
   surface: {
     /** Fond racine de l'app. */

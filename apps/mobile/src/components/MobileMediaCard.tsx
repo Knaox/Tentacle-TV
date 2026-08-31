@@ -93,12 +93,10 @@ export const MobileMediaCard = memo(function MobileMediaCard({
         )}
         {isGroupedSeries && (
           // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
-          // (from-[var(--brand)] to-[var(--brand-accent)], rose #EC4899 idem TentacleLogo).
+          // (from-[var(--brand)] to-[var(--brand-accent)]) : le rose est
+          // désormais un vrai token de palette, il suit thème et admin.
           <LinearGradient
-            // Dégradé signature marque violet→rose (identique TentacleLogo,
-            // hors périmètre) — le rose #EC4899 n'a pas de token de palette et
-            // reste constant dans les deux thèmes.
-            colors={[theme.colors.brand.violet, "#EC4899"]}
+            colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={st.countBadge}

@@ -88,7 +88,7 @@ export function buildPluginTokenCss(t: AppTheme): string {
 --text-quaternary:${c.text.quaternary};--text-disabled:${c.text.disabled};
 --brand:${c.brand.violet};--brand-rgb:${brandRgb};--brand-light:${c.brand.light};--brand-dark:${c.brand.dark};
 --brand-soft:${c.brand.soft};--brand-glow:${c.brand.glow};
---brand-accent:#EC4899;--brand-accent-rgb:236, 72, 153;--brand-accent-light:#F472B6;
+--brand-accent:${c.brand.accent};--brand-accent-rgb:${rgbTriplet(c.brand.accent, "236, 72, 153")};--brand-accent-light:${c.brand.accentLight};
 --cta-primary-bg:${c.cta.primaryBg};--cta-primary-bg-hover:${c.cta.primaryBgHover};--cta-primary-fg:${c.cta.primaryFg};
 --cta-secondary-bg:${c.cta.secondaryBg};--cta-secondary-bg-hover:${c.cta.secondaryBgHover};--cta-secondary-fg:${c.cta.secondaryFg};
 --cta-ghost-bg:${c.cta.ghostBg};--cta-ghost-bg-hover:${c.cta.ghostBgHover};

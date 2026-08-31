@@ -33,6 +33,14 @@ describe("palettes — valeurs par défaut", () => {
     expect(buildLightPalette().surface.s0).toBe("#F4F4F7");
   });
 
+  it("le rose d'accent suit la parité web dans les deux schémas", () => {
+    expect(buildDarkPalette().brand.accent).toBe("#EC4899");
+    expect(buildDarkPalette().brand.accentLight).toBe("#F472B6");
+    // Clair : la nuance foncée devient l'accent, la vive sert de clair.
+    expect(buildLightPalette().brand.accent).toBe("#DB2777");
+    expect(buildLightPalette().brand.accentLight).toBe("#EC4899");
+  });
+
   it("onMedia est constant entre les deux schémas", () => {
     expect(buildLightPalette().onMedia).toEqual(buildDarkPalette().onMedia);
   });
@@ -58,6 +66,15 @@ describe("INVARIANT — l'override de marque admin se propage", () => {
     expect(light.brand.soft).toBe("rgba(204, 0, 0, 0.1)");
     expect(light.cta.brandBg).toBe("#CC0000");
     expect(light.border.focus).toBe("#CC0000");
+  });
+
+  it("l'accent rose est surchargeable — et suit dans les deux schémas", () => {
+    applyThemeOverride({
+      color: { brand: { accent: "#00FF88", accentDark: "#00CC66" } },
+    });
+    expect(buildDarkPalette().brand.accent).toBe("#00FF88");
+    expect(buildLightPalette().brand.accent).toBe("#00CC66");
+    expect(buildLightPalette().brand.accentLight).toBe("#00FF88");
   });
 
   it("une surcharge de surface s'applique au sombre sans casser le clair", () => {

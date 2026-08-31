@@ -36,6 +36,12 @@ export function buildLightPalette(): ThemePalette {
       glow: withAlpha(accent, 0.25, "rgba(124, 58, 237, 0.25)"),
       soft: withAlpha(accent, 0.1, "rgba(124, 58, 237, 0.10)"),
       ghost: withAlpha(accent, 0.14, "rgba(124, 58, 237, 0.14)"),
+      // Même logique que `violet: BRAND.dark` : le rose lisible sur fond
+      // clair est la nuance foncée, la vive sert de clair (parité web),
+      // et la « foncée » claire est dérivée — symétrie avec accentStrong.
+      accent: BRAND.accentDark,
+      accentLight: BRAND.accent,
+      accentDark: darken(BRAND.accentDark, 0.18, "#B42062"),
     },
     surface: {
       // Fond racine légèrement teinté : le verre et les cartes blanches s'y détachent.
