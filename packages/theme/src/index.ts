@@ -92,7 +92,7 @@ export {
   sanitizeThemeMode,
 } from "./schemes";
 
-export { darken, hexToRgb, withAlpha, type Rgb } from "./utils/color";
+export { darken, hexToRgb, mixHex, withAlpha, type Rgb } from "./utils/color";
 
 // ─── Couche téléviseur ──────────────────────────────────────────────────────
 //

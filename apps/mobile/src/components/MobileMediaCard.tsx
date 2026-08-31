@@ -83,7 +83,7 @@ export const MobileMediaCard = memo(function MobileMediaCard({
         </View>
         {hasProgress && (
           <View style={st.progWrap}>
-            <ProgressBar progress={progress / 100} height={3} tint={theme.colors.brand.violet} />
+            <ProgressBar progress={progress / 100} height={3} />
           </View>
         )}
         {isWatched && !hasProgress && (
