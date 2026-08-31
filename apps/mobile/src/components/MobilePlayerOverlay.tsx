@@ -49,6 +49,8 @@ interface Props {
   onSelectQuality: (key: QualityKey) => void;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
+  /** Remonte l'état de scrub à l'écran (l'arbitre s'y suspend). */
+  onScrubStateChange?: (active: boolean) => void;
   visible: boolean;
   onToggle: () => void;
 }
@@ -60,7 +62,7 @@ export function MobilePlayerOverlay({
   item, mediaSourceId,
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
-  onNextEpisode, onPreviousEpisode,
+  onNextEpisode, onPreviousEpisode, onScrubStateChange,
   visible, onToggle,
 }: Props) {
   const { width: screenW, height: screenH } = useWindowDimensions();
@@ -161,6 +163,7 @@ export function MobilePlayerOverlay({
                 bufferedTime={bufferedTime}
                 onSeek={(s) => { onSeek(s); resetHideTimer(); }}
                 onScrubStateChange={(active) => {
+                  onScrubStateChange?.(active);
                   if (active) {
                     if (hideTimer.current) clearTimeout(hideTimer.current);
                   } else {

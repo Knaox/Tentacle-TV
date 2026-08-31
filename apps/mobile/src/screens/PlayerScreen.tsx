@@ -1,10 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, Text, StatusBar, Platform, StyleSheet } from "react-native";
+import { View, StatusBar, Platform } from "react-native";
 import Video, { type VideoRef, SelectedTrackType } from "react-native-video";
 import { PLAYER } from "@/theme";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
@@ -12,6 +11,7 @@ import { usePlayerBackground } from "../hooks/usePlayerBackground";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
+import { AirPlayIndicator } from "../components/player/AirPlayIndicator";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerGestures } from "../components/player/PlayerGestures";
@@ -38,6 +38,8 @@ export function PlayerScreen({ itemId }: Props) {
   const [isAirPlaying, setIsAirPlaying] = useState(false);
   /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
   const [ended, setEnded] = useState(false);
+  /** Un scrub est en cours — l'arbitre suspend décomptes et surcouches. */
+  const [scrubbing, setScrubbing] = useState(false);
 
   // Orientation: handled declaratively at the Stack.Screen level in
   // `app/_layout.tsx` (`watch/[itemId]` has `orientation: "all"` while the
@@ -131,6 +133,7 @@ export function PlayerScreen({ itemId }: Props) {
   const playback = usePlaybackOverlayMobile({
     itemId, pb, currentTime, ended, hasStarted: videoReady,
     controlsVisible: overlayVisible,
+    scrubbing,
     onSeek: handleSeek,
     onNextEpisode: handleNextEpisode,
     onEndOfPlayback: invalidateAndGoBack,
@@ -235,12 +238,7 @@ export function PlayerScreen({ itemId }: Props) {
       <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} headers={pb.headers} />
 
       {/* AirPlay active indicator */}
-      {isAirPlaying && (
-        <View style={airplayStyles.overlay}>
-          <Feather name="airplay" size={48} color={PLAYER.textTertiary} />
-          <Text style={airplayStyles.text}>{t("airplayActive")}</Text>
-        </View>
-      )}
+      {isAirPlaying && <AirPlayIndicator />}
 
       {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
 
@@ -277,24 +275,10 @@ export function PlayerScreen({ itemId }: Props) {
         onSelectQuality={pb.changeQuality}
         onNextEpisode={handleNextEpisode}
         onPreviousEpisode={handlePrevEpisode}
+        onScrubStateChange={setScrubbing}
         visible={overlayVisible}
         onToggle={toggleOverlay}
       />
     </View>
   );
 }
-
-const airplayStyles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: PLAYER.scrimStrong,
-    gap: 16,
-  },
-  text: {
-    color: PLAYER.textTertiary,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
