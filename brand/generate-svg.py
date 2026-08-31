@@ -215,6 +215,67 @@ ts += ("/** Ventouses : le relief du dessin. Chacune reçoit une ombre décalée
        + ",\n];\n")
 (ROOT / "apps/web/src/components/ui/tentacleArmPaths.generated.ts").write_text(ts)
 
+
+# ── Compositions dérivées ────────────────────────────────────────────────────
+#
+# Les icônes carrées ne suffisent pas : les stores réclament des bannières, des
+# écrans de lancement, et pour tvOS des COUCHES séparées (effet de parallaxe).
+# Tout se compose ici, depuis le même dessin.
+
+BG_CINEMA = ('<linearGradient id="bg" x1="0" y1="0" x2="{w}" y2="{h}" gradientUnits="userSpaceOnUse">'
+             '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/>'
+             '<stop offset="1" stop-color="#000000"/></linearGradient>'
+             '<radialGradient id="halo" cx="50%" cy="44%" r="62%">'
+             '<stop offset="0" stop-color="#8B5CF6" stop-opacity=".46"/>'
+             '<stop offset=".62" stop-color="#8B5CF6" stop-opacity=".10"/>'
+             '<stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/></radialGradient>')
+
+def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
+    """
+    Place la mascotte dans un cadre w×h, occupant `ratio` de la plus petite
+    dimension. `with_bg` peint le fond cinéma — une icône d'application doit
+    remplir son cadre, Play ayant déjà rejeté une livraison au motif inverse.
+    """
+    span = min(w, h) * ratio
+    scale = span / 240
+    ox, oy = (w - span) / 2, (h - span) / 2
+    bg = (f'<rect width="{w}" height="{h}" fill="url(#bg)"/>'
+          f'<rect width="{w}" height="{h}" fill="url(#halo)"/>') if with_bg else ""
+    defs = GRADS + ARM_DEFS + (BG_CINEMA.format(w=w, h=h) if with_bg else "")
+    art = BODY + (HAT_G if with_hat else "")
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
+            f'<title>Tentacle TV{title}</title>{NOTE}<defs>{defs}</defs>{bg}'
+            f'<g transform="translate({ox:.1f} {oy:.1f}) scale({scale:.4f})">{art}</g></svg>\n')
+
+COMPOSITIONS = {
+    # Avant-plan de l'icône adaptative Android : le système en rogne les bords,
+    # d'où un cadrage plus large et un fond transparent.
+    "app-icon-foreground.svg": (1024, 1024, 0.62, False, True, " — avant-plan adaptatif"),
+    # Bannières et écrans de lancement.
+    "banner-16x9.svg": (1280, 720, 0.72, True, True, " — bannière"),
+    "banner-wide.svg": (620, 300, 0.78, True, True, " — bannière large"),
+    "banner-topshelf.svg": (1920, 720, 0.68, True, True, " — Top Shelf"),
+    "banner-topshelf-wide.svg": (2320, 720, 0.66, True, True, " — Top Shelf large"),
+    "poster-2x3.svg": (720, 1080, 0.62, True, True, " — affiche"),
+    # Le logo seul, sur transparent : posé par le système sur sa propre couleur.
+    "logo-plain.svg": (1024, 1024, 0.92, False, True, " — logo seul"),
+    # `LaunchLogo` tvOS n'est pas carré : une source carrée y serait étirée.
+    "launch-logo.svg": (330, 360, 0.94, False, True, " — logo de lancement tvOS"),
+    # tvOS attend deux COUCHES : le fond bouge moins que l'avant-plan.
+    "tvos-back.svg": (400, 240, 0.001, True, True, " — couche arrière tvOS"),
+    "tvos-front.svg": (400, 240, 0.86, False, True, " — couche avant tvOS"),
+}
+for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
+    if name == "tvos-back.svg":
+        # Fond seul : la couche arrière ne porte pas la mascotte.
+        (OUT / name).write_text(
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
+            f'<title>Tentacle TV{title}</title>{NOTE}<defs>{BG_CINEMA.format(w=w, h=h)}</defs>'
+            f'<rect width="{w}" height="{h}" fill="url(#bg)"/>'
+            f'<rect width="{w}" height="{h}" fill="url(#halo)"/></svg>\n')
+    else:
+        (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
+
 # ── Clients natifs : react-native-svg ne connaît pas `pathLength`, donc les
 #    bornes de dasharray sont converties en unités réelles de tracé. Chaque bras
 #    porte ses paliers, prêts à rendre. ─────────────────────────────────────────
@@ -275,5 +336,5 @@ for target in ("apps/tv/src/components/icons/tentacleArt.generated.ts",
     else:
         print(f"  (ignoré, dossier absent : {target})")
 
-print(f"5 SVG + 3 modules TS — {len(CUPS)} ventouses, "
+print(f"{5 + len(COMPOSITIONS)} SVG + 3 modules TS — {len(CUPS)} ventouses, "
       f"{sum(len(v) for v in ARMS.values())} bras")
