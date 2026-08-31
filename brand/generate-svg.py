@@ -22,7 +22,7 @@ ombrée, et de l'assombrissement de la naissance des bras.
 """
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from geometry import points, to_path, suckers, spire_gap
+from geometry import points, to_path, suckers, spire_gap, polyline_length, dash_absolute
 
 OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent)
 ROOT = pathlib.Path(__file__).parent.parent
@@ -68,6 +68,7 @@ CENTRE = (120, 150)
 def build():
     """Tracés de bras et positions de ventouses, avec contrôle des spires."""
     arms = {"ant": [], "back": [], "front": []}
+    lengths = {"ant": [], "back": [], "front": []}
     cups = []
     for key, group, segs, towards, n in (("ant", ANTENNAS, SEG_ANT, (120, 70), 4),
                                          ("back", BACK, SEG_BACK, CENTRE, 6),
@@ -82,10 +83,11 @@ def build():
                     raise SystemExit(f"spires trop serrées ({key}) : jour {gap:.1f} pour une pointe de {tip}")
             pts = points(base, c1, c2, centre, r0, r1, th, turns, cw)
             arms[key].append(to_path(pts))
+            lengths[key].append(polyline_length(pts))
             cups += suckers(pts, segs[-1][0], towards, count=n, start=0.16, end=0.86)
-    return arms, cups
+    return arms, lengths, cups
 
-ARMS, CUPS = build()
+ARMS, LENGTHS, CUPS = build()
 SHADOWS = "".join(f'<circle cx="{x+0.7:.1f}" cy="{y+0.9:.1f}" r="{r*1.18:.1f}"/>' for x, y, r in CUPS)
 DOTS = "".join(f'<circle cx="{x-0.2:.1f}" cy="{y-0.3:.1f}" r="{r:.1f}"/>' for x, y, r in CUPS)
 
@@ -213,5 +215,65 @@ ts += ("/** Ventouses : le relief du dessin. Chacune reçoit une ombre décalée
        + ",\n];\n")
 (ROOT / "apps/web/src/components/ui/tentacleArmPaths.generated.ts").write_text(ts)
 
-print(f"5 SVG + tentacleArmPaths.generated.ts — {len(CUPS)} ventouses, "
+# ── Clients natifs : react-native-svg ne connaît pas `pathLength`, donc les
+#    bornes de dasharray sont converties en unités réelles de tracé. Chaque bras
+#    porte ses paliers, prêts à rendre. ─────────────────────────────────────────
+def native_module():
+    out = ['// GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main.',
+           '//',
+           '// Les dasharray sont en unités RÉELLES de tracé, et non en centièmes :',
+           "// `pathLength` n'existe que dans le rendu web de react-native-svg, pas en",
+           '// natif, et sans lui des bornes en pourcentage ne veulent rien dire.',
+           '',
+           '/** Un palier de trait : largeur, et portion du tracé qu\'il couvre. */',
+           'export interface ArmSegment {', '  width: number;', '  dash: string;', '}', '',
+           '/** Un bras prêt à rendre : son tracé et ses paliers. */',
+           'export interface Arm {', '  d: string;', '  segments: readonly ArmSegment[];', '}', '',
+           '/** Une ventouse : centre et rayon, dans le repère 240×240. */',
+           'export interface Sucker {', '  cx: number;', '  cy: number;', '  r: number;', '}', '']
+    names = {"ant": ("ANTENNA_ARMS", "Les deux bras dressés en antennes."),
+             "back": ("BACK_ARMS", "Bras extérieurs, derrière le corps."),
+             "front": ("FRONT_ARMS", "Bras avant. Huit bras en tout, dont deux en antennes.")}
+    for key in ("ant", "back", "front"):
+        var, doc = names[key]
+        out.append(f"/** {doc} */")
+        out.append(f"export const {var}: readonly Arm[] = [")
+        for d, length in zip(ARMS[key], LENGTHS[key]):
+            out.append("  {")
+            out.append(f'    d: "{d}",')
+            out.append("    segments: [")
+            for w, da in SEGS[key]:
+                out.append(f'      {{ width: {w}, dash: "{dash_absolute(da, length)}" }},')
+            out.append("    ],")
+            out.append("  },")
+        out.append("] as const;")
+        out.append("")
+    out.append("/** Ventouses : le relief du dessin. Chacune reçoit une ombre décalée. */")
+    out.append("export const SUCKERS: readonly Sucker[] = [")
+    out += [f"  {{ cx: {x:.1f}, cy: {y:.1f}, r: {r:.1f} }}," for x, y, r in CUPS]
+    out.append("] as const;")
+    out.append("")
+    out.append("/** Décalage de l'ombre sous une ventouse, et son grossissement. */")
+    out.append("export const SUCKER_SHADOW = { x: 0.7, y: 0.9, scale: 1.18 } as const;")
+    out.append("")
+    out.append("/** Le chapeau vit dans son propre repère ; voici comment l'y ramener. */")
+    out.append(f'export const HAT_TRANSFORM = "{HAT_T}";')
+    out.append("")
+    out.append("/** Corps, visage et chapeau — dessinés à la main, pas générés. */")
+    for name, value in (("MANTLE_PATH", MANTLE), ("TUBE_PATH", TUBE), ("GLASS_PATH", GLASS),
+                        ("SHINE_PATH", SHINE), ("SMILE_PATH", SMILE), ("HAT_PATH", HAT),
+                        ("HAT_BAND_PATH", BAND), ("SKULL_PATH", SKULL)):
+        out.append(f'export const {name} =\n  "{value}";')
+    return "\n".join(out) + "\n"
+
+NATIVE = native_module()
+for target in ("apps/tv/src/components/icons/tentacleArt.generated.ts",
+               "apps/mobile/src/components/tentacleArt.generated.ts"):
+    path = ROOT / target
+    if path.parent.exists():
+        path.write_text(NATIVE)
+    else:
+        print(f"  (ignoré, dossier absent : {target})")
+
+print(f"5 SVG + 3 modules TS — {len(CUPS)} ventouses, "
       f"{sum(len(v) for v in ARMS.values())} bras")

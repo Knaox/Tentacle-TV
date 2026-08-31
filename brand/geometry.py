@@ -99,3 +99,19 @@ def suckers(pts, w_max, towards, count=5, start=0.18, end=0.82, exponent=1.05,
         r = min(size_cap, max(0.9, half * size_ratio))
         out.append((p[0] + nx * half * offset_ratio, p[1] + ny * half * offset_ratio, r))
     return out
+
+def polyline_length(pts):
+    """Longueur développée d'une polyligne."""
+    return sum(math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1])
+               for i in range(len(pts) - 1))
+
+def dash_absolute(dash, length):
+    """
+    Convertit un `stroke-dasharray` exprimé en centièmes (celui qui accompagne
+    `pathLength="100"`) en unités réelles.
+
+    `pathLength` n'existe que dans le rendu web de react-native-svg : en natif,
+    les bornes doivent être données dans l'unité du tracé.
+    """
+    factor = length / 100
+    return " ".join(f"{float(v) * factor:.1f}" for v in dash.split())
