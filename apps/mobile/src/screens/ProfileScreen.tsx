@@ -1,5 +1,6 @@
 import { useState, useCallback, type ReactNode } from "react";
-import { View, Text, ScrollView, Pressable, Alert, Linking, StyleSheet } from "react-native";
+import { View, Text, Pressable, Alert, Linking, StyleSheet } from "react-native";
+import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
@@ -12,6 +13,7 @@ import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
 import { useHeaderHeight } from "../components/PersistentHeader";
+import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
 import { clearCredentials } from "../auth/credentialManager";
 import { useServerUrl } from "../providers/ServerUrlContext";
 
@@ -36,6 +38,7 @@ export function ProfileScreen() {
   const { t: tp } = useTranslation("preferences");
   const router = useRouter();
   const headerH = useHeaderHeight();
+  const onScrollChrome = useScrollChromeHandler();
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { mode } = useThemeMode();
@@ -192,7 +195,7 @@ export function ProfileScreen() {
 
   return (
     <SubtleBackground ambient>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: headerH, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: headerH, paddingBottom: 120 }} showsVerticalScrollIndicator={false} onScroll={onScrollChrome} scrollEventThrottle={16}>
         {twoCol ? (
           <View style={st.twoCol}>
             <View style={{ flex: 1 }}>{leftCol}</View>
@@ -204,7 +207,7 @@ export function ProfileScreen() {
             {rightCol}
           </View>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </SubtleBackground>
   );
 }

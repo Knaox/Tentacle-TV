@@ -9,6 +9,7 @@ import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
+import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
 // Mapping des icônes unicode du plugin.json → noms Feather
@@ -52,6 +53,7 @@ export default function TabsLayout() {
 
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
+    <ScrollChromeProvider>
     <View style={{ flex: 1, backgroundColor: theme.colors.surface.s0 }}>
     <Tabs
       tabBar={sideNav
@@ -138,6 +140,7 @@ export default function TabsLayout() {
     <PersistentHeader />
     {sideNav && <RailMenu open={menuOpen} onClose={() => setMenuOpen(false)} items={menuItems} />}
     </View>
+    </ScrollChromeProvider>
     </RailWidthContext.Provider>
   );
 }

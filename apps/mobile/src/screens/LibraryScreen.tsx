@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
-  View, Text, TextInput, FlatList,
+  View, Text, TextInput,
   ActivityIndicator, Pressable, StyleSheet,
 } from "react-native";
 import { Image } from "expo-image";
@@ -13,6 +13,8 @@ import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
+import Animated from "react-native-reanimated";
+import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
 
 interface Props {
   libraryId: string;
@@ -37,6 +39,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const client = useJellyfinClient();
+  const onScrollChrome = useScrollChromeHandler();
 
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -154,8 +157,10 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
         </View>
       ) : (
         <FadeIn delay={100} style={{ flex: 1 }}>
-          <FlatList
+          <Animated.FlatList
             key={`grid-${numColumns}`}
+            onScroll={onScrollChrome}
+            scrollEventThrottle={16}
             data={items}
             numColumns={numColumns}
             keyExtractor={keyExtractor}
