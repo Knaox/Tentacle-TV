@@ -1,9 +1,17 @@
 /**
- * Seasonal ornaments overlaid on the Tentacle octopus mascot.
- * Each ornament group renders only when its corresponding CSS variable is set
- * to `block` by the active preset's Custom CSS — at most one is visible at a
- * time. The default pirate hat (in `TentacleSvg`) is hidden in parallel via
- * `--default-hat-display: none`.
+ * Couvre-chefs saisonniers posés sur la mascotte. Chaque groupe ne s'affiche que
+ * si le preset actif met sa variable CSS à `block` — au plus un à la fois. Le
+ * tricorne par défaut (dans `TentacleHat`) est masqué en parallèle par
+ * `--default-hat-display: none`, sinon les deux se superposeraient.
+ *
+ * Repère 240×240, comme le reste du dessin. Les positions ne sont PAS une simple
+ * mise à l'échelle des anciennes : l'anatomie a changé (le manteau est devenu un
+ * tube, deux tentacules sont montés en antennes), et chaque ornement a été
+ * recalé à la main.
+ *
+ * Contrainte commune : rester entre les antennes, dont les bases sont posées aux
+ * coins hauts du manteau (x = 64 et 176). Un couvre-chef qui les dépasse mord
+ * dessus et les rend illisibles.
  */
 export function TentacleOrnaments() {
   return (
@@ -18,29 +26,26 @@ export function TentacleOrnaments() {
 function ChristmasOrnament() {
   return (
     <g style={{ display: "var(--xmas-display, none)" }}>
-      {/* Red cone — Santa hat body */}
+      {/* Cône rouge, penché vers la droite comme le tricorne qu'il remplace */}
+      <path d="M 68 60 Q 82 20 132 8 Q 156 28 172 60 Z" fill="#c0392b" />
+      {/* Reflet sur l'avant du cône */}
       <path
-        d="M175 110 Q205 35 256 12 Q310 35 337 110 Z"
-        fill="#c0392b"
-      />
-      {/* Subtle highlight on the front of the cone */}
-      <path
-        d="M256 12 Q258 45 240 90 Q220 105 215 110"
+        d="M 128 12 Q 122 30 108 46"
         fill="none"
         stroke="rgba(255,255,255,0.20)"
-        strokeWidth="10"
+        strokeWidth="6"
         strokeLinecap="round"
       />
-      {/* Fluffy white brim */}
-      <ellipse cx="256" cy="108" rx="92" ry="18" fill="#ffffff" />
-      <ellipse cx="256" cy="103" rx="90" ry="6" fill="#f3f4f6" opacity="0.6" />
+      {/* Bourrelet de fourrure */}
+      <ellipse cx="120" cy="59" rx="54" ry="9.5" fill="#ffffff" />
+      <ellipse cx="120" cy="56" rx="52" ry="4" fill="#f3f4f6" opacity="0.6" />
       {/* Pompon */}
-      <circle cx="256" cy="14" r="17" fill="#ffffff" />
-      <circle cx="250" cy="9" r="6" fill="#f9fafb" opacity="0.8" />
-      {/* Tiny pine sprig on left tentacle */}
-      <g transform="translate(95, 480)">
-        <path d="M0 0 L-8 -14 L-4 -10 L0 -22 L4 -10 L8 -14 Z" fill="#16a34a" />
-        <circle cx="0" cy="0" r="4" fill="#dc2626" />
+      <circle cx="133" cy="9" r="9" fill="#ffffff" />
+      <circle cx="130" cy="6" r="3.4" fill="#f9fafb" opacity="0.8" />
+      {/* Brindille de sapin accrochée à un bras avant */}
+      <g transform="translate(70, 206)">
+        <path d="M0 0 L-5 -9 L-2.5 -6.5 L0 -14 L2.5 -6.5 L5 -9 Z" fill="#16a34a" />
+        <circle cx="0" cy="0" r="2.6" fill="#dc2626" />
       </g>
     </g>
   );
@@ -49,38 +54,31 @@ function ChristmasOrnament() {
 function EasterOrnament() {
   return (
     <g style={{ display: "var(--easter-display, none)" }}>
-      {/* Left bunny ear */}
-      <ellipse cx="215" cy="60" rx="22" ry="70" fill="#c4b5fd" stroke="#a78bfa" strokeWidth="2" />
-      <ellipse cx="215" cy="68" rx="11" ry="52" fill="#f9a8d4" />
-      {/* Right bunny ear */}
-      <ellipse cx="297" cy="60" rx="22" ry="70" fill="#c4b5fd" stroke="#a78bfa" strokeWidth="2" />
-      <ellipse cx="297" cy="68" rx="11" ry="52" fill="#f9a8d4" />
-      {/* Decorative egg in a tentacle */}
-      <g transform="translate(108, 488)">
-        <ellipse cx="0" cy="0" rx="14" ry="19" fill="#fde047" />
+      {/* Oreille gauche */}
+      <ellipse cx="104" cy="28" rx="13" ry="26" fill="#c4b5fd" stroke="#a78bfa" strokeWidth="1.4" />
+      <ellipse cx="104" cy="31" rx="6.5" ry="19" fill="#f9a8d4" />
+      {/* Oreille droite */}
+      <ellipse cx="138" cy="28" rx="13" ry="26" fill="#c4b5fd" stroke="#a78bfa" strokeWidth="1.4" />
+      <ellipse cx="138" cy="31" rx="6.5" ry="19" fill="#f9a8d4" />
+      {/* Œuf décoré, tenu par un bras avant */}
+      <g transform="translate(74, 208)">
+        <ellipse cx="0" cy="0" rx="8.5" ry="11.5" fill="#fde047" />
         <path
-          d="M-10 -10 Q0 -13 10 -10 M-10 0 Q0 -3 10 0 M-10 10 Q0 7 10 10"
+          d="M-6 -6 Q0 -7.8 6 -6 M-6 0 Q0 -1.8 6 0 M-6 6 Q0 4.2 6 6"
           stroke="#a78bfa"
-          strokeWidth="2.2"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d="M-9 -5 Q0 -2 9 -5"
-          stroke="#f9a8d4"
-          strokeWidth="2"
+          strokeWidth="1.4"
           fill="none"
           strokeLinecap="round"
         />
       </g>
-      {/* Tiny flower */}
-      <g transform="translate(410, 470)">
-        <circle cx="0" cy="0" r="6" fill="#fde047" />
-        <circle cx="-9" cy="-3" r="5" fill="#f9a8d4" />
-        <circle cx="9" cy="-3" r="5" fill="#f9a8d4" />
-        <circle cx="-7" cy="7" r="5" fill="#f9a8d4" />
-        <circle cx="7" cy="7" r="5" fill="#f9a8d4" />
-        <circle cx="0" cy="0" r="3" fill="#fef3c7" />
+      {/* Petite fleur de l'autre côté */}
+      <g transform="translate(170, 204)">
+        <circle cx="0" cy="0" r="3.6" fill="#fde047" />
+        <circle cx="-5.4" cy="-1.8" r="3" fill="#f9a8d4" />
+        <circle cx="5.4" cy="-1.8" r="3" fill="#f9a8d4" />
+        <circle cx="-4.2" cy="4.2" r="3" fill="#f9a8d4" />
+        <circle cx="4.2" cy="4.2" r="3" fill="#f9a8d4" />
+        <circle cx="0" cy="0" r="1.8" fill="#fef3c7" />
       </g>
     </g>
   );
@@ -89,43 +87,41 @@ function EasterOrnament() {
 function HalloweenOrnament() {
   return (
     <g style={{ display: "var(--halloween-display, none)" }}>
-      {/* Brim of the witch hat */}
-      <ellipse cx="256" cy="112" rx="135" ry="20" fill="#0a0a0f" />
-      <ellipse cx="256" cy="108" rx="128" ry="14" fill="#1a1a1a" />
-      {/* Pointy crown — slight curve to one side for character */}
+      {/* Bord du chapeau — borné à x = 68..172 pour épargner les antennes.
+          Le feutre ne descend PAS au noir : le fond de l'application est
+          `#000000`, et un chapeau en #0a0a0f y devenait invisible — seul son
+          ruban orange surnageait. Le tricorne par défaut se détache pour la
+          même raison, en montant jusqu'à #3C3450. */}
+      <ellipse cx="120" cy="61" rx="52" ry="10" fill="#211F2B" />
+      <ellipse cx="120" cy="58" rx="49" ry="7" fill="#2B2836" />
+      {/* Cône, incliné du même côté que le tricorne */}
+      <path d="M 78 61 Q 92 26 116 9 Q 127 3 134 10 Q 152 32 162 61 Z" fill="#2B2836" />
+      {/* Pointe cassée */}
+      <path d="M 130 8 Q 110 -6 98 2 Q 108 9 126 15 Z" fill="#211F2B" />
+      {/* Lumière rasante sur le cône */}
       <path
-        d="M168 112 Q198 50 235 14 Q252 0 268 8 Q298 45 344 112 Z"
-        fill="#0a0a0f"
-      />
-      {/* Bent tip */}
-      <path
-        d="M252 4 Q220 -18 198 -6 Q210 4 240 14 Z"
-        fill="#0a0a0f"
-      />
-      {/* Subtle vertical lighting on cone */}
-      <path
-        d="M256 12 Q250 50 235 90"
+        d="M 126 13 Q 118 32 106 48"
         fill="none"
-        stroke="rgba(249,115,22,0.25)"
-        strokeWidth="6"
+        stroke="rgba(249,115,22,0.13)"
+        strokeWidth="3"
         strokeLinecap="round"
       />
-      {/* Orange band */}
+      {/* Ruban orange */}
       <path
-        d="M156 107 Q156 95 170 92 L342 92 Q356 95 356 107 Q345 110 256 110 Q167 110 156 107 Z"
+        d="M 76 57 Q 76 50 86 48 L 156 48 Q 165 50 165 57 Q 156 60 120 60 Q 84 60 76 57 Z"
         fill="#f97316"
       />
-      {/* Tiny jack-o-lantern emblem on the band */}
-      <g transform="translate(256, 100)">
-        <circle cx="0" cy="0" r="7" fill="#0a0a0f" />
-        <path d="M-3 -1 L-1 1 L1 -1 M1 -1 L3 1" stroke="#f97316" strokeWidth="1.2" fill="none" />
-        <path d="M-2 2 L0 4 L2 2" stroke="#f97316" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      {/* Citrouille miniature sur le ruban */}
+      <g transform="translate(120, 53)">
+        <circle cx="0" cy="0" r="4.6" fill="#1B1926" />
+        <path d="M-2 -0.6 L-0.6 0.6 L0.6 -0.6 M0.6 -0.6 L2 0.6" stroke="#f97316" strokeWidth="0.9" fill="none" />
+        <path d="M-1.4 1.4 L0 2.6 L1.4 1.4" stroke="#f97316" strokeWidth="0.9" fill="none" strokeLinecap="round" />
       </g>
-      {/* Tiny bat flying near the tentacles */}
-      <g transform="translate(415, 460)">
-        <ellipse cx="0" cy="0" rx="4" ry="3" fill="#0a0a0f" />
-        <path d="M-4 -1 Q-12 -6 -16 0 Q-10 2 -4 1 Z" fill="#0a0a0f" />
-        <path d="M4 -1 Q12 -6 16 0 Q10 2 4 1 Z" fill="#0a0a0f" />
+      {/* Chauve-souris près d'un bras */}
+      <g transform="translate(178, 198)">
+        <ellipse cx="0" cy="0" rx="3" ry="2.2" fill="#17151F" />
+        <path d="M-3 -0.8 Q-9 -4.4 -12 0 Q-7.4 1.4 -3 0.8 Z" fill="#17151F" />
+        <path d="M3 -0.8 Q9 -4.4 12 0 Q7.4 1.4 3 0.8 Z" fill="#17151F" />
       </g>
     </g>
   );

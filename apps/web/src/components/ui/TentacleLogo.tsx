@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { TentacleMonoSvg } from "./TentacleMonoSvg";
 import { TentacleSvg } from "./TentacleSvg";
 
 export type LogoSize = "sm" | "md" | "lg" | "xl";
@@ -92,7 +93,10 @@ function LogoMark({ size, variant }: LogoMarkProps) {
     );
   }
 
-  // pill: gradient brand container with white-stamped SVG inside.
+  // pill: gradient brand container with the monochrome mark stamped inside.
+  // Le blanc vient du dessin monochrome, PAS d'un `filter: brightness(0)
+  // invert(1)` : ce filtre aplatirait tube, yeux et corps dans la même valeur,
+  // et la mascotte se réduirait à une tache dans sa pastille.
   const radius = Math.max(8, size * 0.22);
   const innerSize = Math.round(size * 0.62);
   const pillStyle: CSSProperties = {
@@ -108,10 +112,7 @@ function LogoMark({ size, variant }: LogoMarkProps) {
   };
   return (
     <span style={pillStyle}>
-      <TentacleSvg
-        size={innerSize}
-        style={{ filter: "brightness(0) invert(1)" }}
-      />
+      <TentacleMonoSvg size={innerSize} style={{ color: "#fff" }} />
     </span>
   );
 }
