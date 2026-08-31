@@ -1,8 +1,10 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { GlassSurface } from "@/components/ui";
 import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useScrollChromeValue } from "./scrollChrome";
 
 /**
  * Tab bar basse **Liquid Glass flottante** (iPhone / portrait).
@@ -38,15 +40,29 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
 
+  // Minimisation au défilement, façon iOS 26 : la pilule se compacte (scale +
+  // légère descente) et les libellés s'effacent. Transform/opacity UNIQUEMENT,
+  // sur le wrapper — jamais sur le GlassView natif — et les hauteurs publiées
+  // (`useGlassTabBarHeight`, contrat des WebViews plugins) ne bougent PAS.
+  const fallback = useSharedValue(0);
+  const collapsed = useScrollChromeValue() ?? fallback;
+  const shrinkStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: collapsed.value * 10 },
+      { scale: 1 - collapsed.value * 0.12 },
+    ],
+  }));
+  const labelFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
+
   const routes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
     return StyleSheet.flatten(options.tabBarItemStyle)?.display !== "none";
   });
 
   return (
-    <View
+    <Animated.View
       pointerEvents="box-none"
-      style={[st.wrap, { paddingBottom: Math.max(insets.bottom, MIN_BOTTOM_INSET) }]}
+      style={[st.wrap, { paddingBottom: Math.max(insets.bottom, MIN_BOTTOM_INSET) }, shrinkStyle]}
     >
       {/* En CLAIR, tintColor biaise la MATIÈRE du verre vers le clair (reste
           vitreux/réfractant) → icônes/texte sombres lisibles même sur image
@@ -85,15 +101,15 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                 <View style={[st.pill, focused && st.pillActive]}>
                   {options.tabBarIcon?.({ focused, color: tint, size: 22 })}
                 </View>
-                <Text numberOfLines={1} style={[st.label, { color: tint }]}>
+                <Animated.Text numberOfLines={1} style={[st.label, { color: tint }, labelFade]}>
                   {options.title ?? route.name}
-                </Text>
+                </Animated.Text>
               </Pressable>
             );
           })}
         </View>
       </GlassSurface>
-    </View>
+    </Animated.View>
   );
 }
 

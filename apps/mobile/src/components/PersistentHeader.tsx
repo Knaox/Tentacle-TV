@@ -2,9 +2,11 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { NotificationBell } from "./NotificationBell";
 import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
+import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
 /** Hauteur de la barre de contenu du header (hors safe-area). */
@@ -33,20 +35,30 @@ export function PersistentHeader() {
   const theme = useTheme();
   const { colors } = theme;
 
+  // Compaction au défilement : la barre remonte de huit points et l'identité
+  // (logo + titre) s'estompe — les actions restent. Transform/opacity sur le
+  // wrapper seulement ; `useHeaderHeight()` ne bouge pas (contrat des écrans).
+  const fallback = useSharedValue(0);
+  const collapsed = useScrollChromeValue() ?? fallback;
+  const compactStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: collapsed.value * -8 }],
+  }));
+  const identityFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
+
   return (
+    <Animated.View style={[styles.wrap, compactStyle]}>
     <GlassSurface
       tier="modal"
       tint="regular"
       radius={0}
       bordered={false}
       tintColor={theme.isDark ? undefined : "rgba(255, 255, 255, 0.25)"}
-      style={styles.wrap}
     >
       <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 2 }]}>
-        <View style={styles.logoRow}>
+        <Animated.View style={[styles.logoRow, identityFade]}>
           <TentacleLogo size={28} />
           <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.actions}>
           <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
@@ -63,6 +75,7 @@ export function PersistentHeader() {
       </View>
       <View style={[styles.hairline, { backgroundColor: withAlpha(colors.brand.violet, 0.12, colors.brand.soft) }]} />
     </GlassSurface>
+    </Animated.View>
   );
 }
 
