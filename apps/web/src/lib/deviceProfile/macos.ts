@@ -41,7 +41,11 @@ export function buildMacOSDeviceProfile(
       { Container: "flac", Type: "Audio" },
     ],
     TranscodingProfiles: [
-      hlsFmp4Profile("hevc,h264", "aac,ac3,eac3"),
+      // Pas de Dolby en fMP4 : la copie ac3/eac3 y produit, selon
+      // l'entrelacement du fichier, un init au moov vide (Jellyfin ne pose pas
+      // delay_moov — « Cannot write moov atom before AC3 packets ») et
+      // AVFoundation refuse le flux (-16172). Le TS, sans moov, les garde.
+      hlsFmp4Profile("hevc,h264", "aac"),
       hlsTsProfile("h264", "aac,ac3,eac3"),
       AUDIO_ONLY_PROFILE,
     ],

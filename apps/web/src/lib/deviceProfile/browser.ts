@@ -59,7 +59,6 @@ export function buildBrowserDeviceProfile(
 
   const nativeVideoStr = nativeVideoCodecs.join(",");
   const nativeAudioStr = nativeAudioCodecs.join(",");
-  const audioCodecStr = audioCodecs.join(",");
 
   // ── Direct play profiles ──
   // ONLY list containers the browser can play natively via <video src>.
@@ -98,9 +97,14 @@ export function buildBrowserDeviceProfile(
 
   // ── Transcoding profiles ──
   // Le conteneur TS ne transporte légalement que l'AAC et les Dolby ; le fMP4
-  // accepte tout ce que le moteur décode.
+  // accepte tout ce que le moteur décode — SAUF les Dolby : leur COPIE vers
+  // fMP4 produit, selon l'entrelacement du fichier, un init au moov vide
+  // (Jellyfin ne pose pas delay_moov — « Cannot write moov atom before AC3
+  // packets ») que ni MSE ni AVFoundation n'acceptent (-16172). Ils restent
+  // servis par le TS ; en fMP4, l'audio Dolby est réencodé.
   const audioTs = ["aac", ...audioCodecs.filter((c) => c === "ac3" || c === "eac3")].join(",");
-  const audioFmp4 = audioCodecStr || "aac";
+  const audioFmp4 =
+    audioCodecs.filter((c) => c !== "ac3" && c !== "eac3").join(",") || "aac";
 
   // fMP4 EN PREMIER quand le HEVC est décodable : c'est le seul conteneur qui
   // permette au serveur de COPIER une vidéo HEVC. Sans lui, le seul profil
