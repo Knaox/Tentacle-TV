@@ -45,12 +45,18 @@ RULES = [
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/Top Shelf Image Wide.imageset/*.png", "banner-topshelf-wide.svg"),
     ("apps/tv/ios/*/Images.xcassets/*.brandassets/Top Shelf Image.imageset/*.png", "banner-topshelf.svg"),
     ("apps/tv/ios/*/Images.xcassets/LaunchLogo.imageset/*.png", "launch-logo.svg"),
-    # ── webOS ────────────────────────────────────────────────────────────────
-    ("apps/tv-webos/shell/images/splash.png", "banner-16x9.svg"),
-    ("apps/tv-webos/shell/images/icon-*.png", "app-icon-color.svg"),
+    # ── webOS : VOLONTAIREMENT ABSENT ────────────────────────────────────────
+    # `apps/tv-webos/scripts/icons.mjs` produit ces images, et lui seul le peut :
+    # il rend un maître de 5200 px avant de réduire en Lanczos (un rendu direct à
+    # 80 px ne préserve pas le crâne), pose un fond opaque dont le dégradé vaut
+    # exactement `iconColor` sur les quatre bords (sinon un liseré apparaît à la
+    # jointure de la tuile), et refuse un splash qui serait un écran noir. Le
+    # 400×400 du Seller Lounge sort dans `store-assets/` et non dans l'IPK.
+    #     pnpm --filter @tentacle-tv/tv-webos icons
     # ── Fiches store ─────────────────────────────────────────────────────────
     ("store-assets/store-poster-*.png", "poster-2x3.svg"),
-    ("store-assets/*.png", "app-icon-color.svg"),
+    # `webos-icon-400.png` appartient au script webOS — cf. plus haut.
+    ("store-assets/store-logo-*.png", "app-icon-color.svg"),
 ]
 
 def need(tool):

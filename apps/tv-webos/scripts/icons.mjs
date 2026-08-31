@@ -36,8 +36,17 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const IMAGES = resolve(HERE, "../shell/images");
 const LOGO = resolve(IMAGES, "tentacle-logo-pirate.svg");
 
-/** Le dessin utile dans le viewBox 512×560 du logo — mesuré sur les tracés. */
-const SUBJECT = { x: 40, y: 8, width: 432, height: 542 };
+/**
+ * Le dessin utile dans le viewBox 240×240 du logo — mesuré sur un rendu, pas
+ * estimé : `rsvg-convert` en grand puis `magick -trim`. Le logo ne remplit pas
+ * sa propre boîte, et sans ce recadrage le poulpe flotte dans une marge fantôme
+ * et paraît deux fois trop petit une fois réduit à 80 pixels.
+ *
+ * ⚠️ À REMESURER si le dessin change de repère ou d'encombrement. Ces valeurs
+ * étaient calibrées sur l'ancien viewBox 512×560 ; telles quelles dans le
+ * nouveau, elles recadraient entièrement hors du dessin.
+ */
+const SUBJECT = { x: 7, y: 17, width: 226, height: 221 };
 
 /** La teinte des bords. `appinfo.json → iconColor` doit valoir la même. */
 const EDGE = "#1A0932";

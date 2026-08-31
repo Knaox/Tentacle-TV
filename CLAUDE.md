@@ -111,6 +111,34 @@ Two API targets from the frontend:
 
 Extensible plugin architecture with admin marketplace. Plugins can add frontend routes and backend endpoints. Plugin registry loaded from GitHub or custom sources with SHA256 verification.
 
+## Marque — le logo ne se dessine qu'à un seul endroit
+
+`brand/` est la source unique. Rien de ce qui en dérive ne se retouche à la main :
+
+```bash
+python3 brand/generate-svg.py brand      # les 15 SVG + 3 modules TS
+python3 brand/generate-icons.py --write  # les 83 binaires (aperçu sans --write)
+pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
+```
+
+`generate-svg.py` écrit aussi les constantes consommées par les clients :
+`apps/web/src/components/ui/tentacleArmPaths.generated.ts` et
+`tentacleArt.generated.ts` pour la TV et le mobile. Les bras sont des spirales
+échantillonnées — elles ne se recopient pas à la main, et trois copies auraient
+divergé. Côté natif les `dasharray` sont en unités RÉELLES de tracé :
+`pathLength` n'existe que dans le rendu web de react-native-svg.
+
+Trois pièges déjà payés :
+
+- **webOS a son propre script** (`apps/tv-webos/scripts/icons.mjs`) et
+  `generate-icons.py` l'ignore volontairement : il faut un maître de 5200 px
+  réduit en Lanczos, un fond opaque calibré sur `iconColor`, et un splash qui ne
+  soit pas noir. Son `SUBJECT` se REMESURE si le dessin change d'encombrement.
+- **Les noms publics ne changent pas.** `tentacle-logo-pirate.svg` est chargé par
+  URL depuis les iframes de plugins, y compris des plugins publiés hors du dépôt.
+- **`stroke-linejoin="round"` est obligatoire** sur les bras : ce sont des
+  polylignes, et le `miter` par défaut projette des piques sur leurs angles aigus.
+
 ## Coding Standards
 
 - **300 lines MAX per file** — refactor into sub-components, hooks, or utilities if exceeded
