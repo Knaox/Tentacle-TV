@@ -5,6 +5,26 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.6.0]
+### FR
+- L'interface rejoint celle du bureau : boutons en pilule blanche, dégradés violet → rose partout — barres de progression, lecture, sélections
+- La bannière d'accueil devient une carte au halo de lumière, son texte entre en cascade
+- La navigation s'efface en défilant, revient d'un geste
+- Pendant le générique, une carte discrète propose la suite — la vidéo reste visible ; l'affiche de fin n'occupe l'écran qu'à la vraie fin
+- La liste des épisodes s'ouvre SUR l'épisode en cours
+- En paysage, les commandes s'écartent de la caméra
+- « Réessayer » hors ligne montre enfin qu'il essaie
+- Un épisode qui refusait de se lire (son Dolby copié) se lit
+### EN
+- The interface joins the desktop: white pill buttons, violet → pink gradients everywhere — progress bars, playback, selections
+- The home banner becomes a card with a glow of light, its text cascades in
+- The navigation slips away as you scroll, returns with a gesture
+- During credits, a discreet card offers what's next — the video stays visible; the end poster only takes the screen at the very end
+- The episode list opens ON the current episode
+- In landscape, controls move clear of the camera
+- The offline "Retry" finally shows it is trying
+- An episode that refused to play (its Dolby audio copied) now plays
+
 ## [1.5.2]
 ### FR
 - L'épisode qu'on vient de terminer est enfin coché sur la fiche de la série : rien ne rafraîchissait la liste en sortant du lecteur
