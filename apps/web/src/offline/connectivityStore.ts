@@ -198,10 +198,12 @@ async function probe(latencyOnly = false): Promise<void> {
   }
 }
 
-/** Sonde immédiate et COMPLÈTE. `force` court-circuite l'anti-rafale. */
-export function probeNow(force = false): void {
-  if (!force && Date.now() - lastProbeStartAt < MIN_PROBE_SPACING_MS) return;
-  void probe();
+/** Sonde immédiate et COMPLÈTE. `force` court-circuite l'anti-rafale.
+ *  Retourne la promesse de la sonde — le bouton « Réessayer » l'attend pour
+ *  MONTRER qu'un test a lieu (l'anti-rafale résout immédiatement). */
+export function probeNow(force = false): Promise<void> {
+  if (!force && Date.now() - lastProbeStartAt < MIN_PROBE_SPACING_MS) return Promise.resolve();
+  return probe();
 }
 
 /** À appeler quand une requête applicative échoue façon réseau/5xx. */
