@@ -1,6 +1,7 @@
-import { useState, useCallback, useMemo } from "react";
-import { View, Text, Pressable, FlatList } from "react-native";
+import { useState, useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
+import { View, Text, Pressable, FlatList, type ScrollView } from "react-native";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
@@ -19,14 +20,22 @@ interface Props {
   currentEpisodeId?: string;
   /** Saison à présélectionner (saison de l'épisode courant). */
   initialSeasonId?: string;
+  /**
+   * ScrollView porteur : la ligne de l'épisode courant s'y amène d'elle-même à
+   * l'ouverture — une saison longue ne se parcourt plus à la main.
+   */
+  scrollTargetRef?: RefObject<ScrollView | null>;
 }
 
-export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId }: Props) {
-  const { colors } = useTheme();
+export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialSeasonId, scrollTargetRef }: Props) {
+  const { colors, isDark } = useTheme();
   const { data: seasons } = useSeasons(seriesId);
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
 
   const activeSeason = selectedSeason ?? initialSeasonId ?? seasons?.[0]?.Id;
+  // La sélection parle ROSE désormais — même langage que l'épisode courant du
+  // desktop (accent-soft / accent-light).
+  const accentText = isDark ? colors.brand.accentLight : colors.brand.accent;
 
   return (
     <View style={{ marginTop: 24 }}>
@@ -46,9 +55,9 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
                 accessibilityRole="tab"
                 accessibilityState={{ selected: isActive }}
                 style={{
-                  backgroundColor: isActive ? colors.brand.soft : colors.fill.subtle,
+                  backgroundColor: isActive ? withAlpha(colors.brand.accent, 0.15, colors.brand.soft) : colors.fill.subtle,
                   borderWidth: 1,
-                  borderColor: isActive ? withAlpha(colors.brand.violet, 0.45, colors.brand.glow) : colors.border.subtle,
+                  borderColor: isActive ? withAlpha(colors.brand.accent, 0.45, colors.brand.glow) : colors.border.subtle,
                   paddingHorizontal: 14,
                   paddingVertical: 8,
                   borderRadius: RADIUS.pill,
@@ -57,7 +66,7 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
                 }}
               >
                 <Text style={{
-                  color: isActive ? colors.brand.light : colors.text.tertiary,
+                  color: isActive ? accentText : colors.text.tertiary,
                   fontSize: 13,
                   fontFamily: isActive ? FONT_FAMILY.semibold : FONT_FAMILY.medium,
                   letterSpacing: 0.1,
@@ -71,7 +80,15 @@ export function MobileEpisodeList({ seriesId, onPlay, currentEpisodeId, initialS
       )}
 
       {activeSeason && (
-        <EpisodeItems seriesId={seriesId} seasonId={activeSeason} onPlay={onPlay} currentEpisodeId={currentEpisodeId} />
+        <EpisodeItems
+          seriesId={seriesId}
+          seasonId={activeSeason}
+          onPlay={onPlay}
+          currentEpisodeId={currentEpisodeId}
+          // Le ciblage ne vaut que pour la saison de l'épisode courant — changer
+          // d'onglet à la main ne doit pas re-scroller.
+          scrollTargetRef={selectedSeason === undefined ? scrollTargetRef : undefined}
+        />
       )}
     </View>
   );
@@ -164,7 +181,10 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
   client: ReturnType<typeof useJellyfinClient>; onPlay: (ep: MediaItem) => void; isCurrent?: boolean;
 }) {
   const { t } = useTranslation("common");
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  // Texte d'accent lisible : la nuance vive en sombre, la foncée en clair —
+  // même arbitrage que le web (accent-light / accent).
+  const accentText = isDark ? colors.brand.accentLight : colors.brand.accent;
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const played = ep.UserData?.Played === true;
   const progress = ep.UserData?.PlayedPercentage;
@@ -199,20 +219,25 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
           <EpisodeThumb ep={ep} seriesId={seriesId} client={client} />
           {progress != null && progress > 0 && (
             <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: colors.fill.strong }}>
-              <View style={{ height: "100%", width: `${progress}%`, backgroundColor: colors.brand.violet }} />
+              <LinearGradient
+                colors={[colors.brand.violet, colors.brand.accent]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ height: "100%", width: `${progress}%` }}
+              />
             </View>
           )}
         </View>
         <View style={{ flex: 1, padding: 10, justifyContent: "center" }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {isCurrent && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand.violet }} />}
+            {isCurrent && <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand.accent }} />}
             <Text numberOfLines={1} style={{ flex: 1, color: colors.text.primary, fontSize: 13, fontWeight: isCurrent ? "800" : "600" }}>
               {epLabel}{ep.Name}
             </Text>
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 }}>
             {isCurrent && (
-              <Text style={{ color: colors.brand.light, fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" }}>
+              <Text style={{ color: accentText, fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" }}>
                 {t("currentEpisode")}
               </Text>
             )}
@@ -243,13 +268,13 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
               borderRadius: 15,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: played ? colors.brand.soft : colors.fill.subtle,
+              backgroundColor: played ? withAlpha(colors.brand.accent, 0.15, colors.brand.soft) : colors.fill.subtle,
               borderWidth: 1,
-              borderColor: played ? withAlpha(colors.brand.violet, 0.45, colors.brand.glow) : colors.border.subtle,
+              borderColor: played ? withAlpha(colors.brand.accent, 0.45, colors.brand.glow) : colors.border.subtle,
             },
           ]}
         >
-          <Feather name="check" size={16} color={played ? colors.brand.light : colors.text.disabled} />
+          <Feather name="check" size={16} color={played ? accentText : colors.text.disabled} />
         </Animated.View>
       </Pressable>
     </View>
@@ -258,11 +283,40 @@ function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent }: {
 
 /* ── Episode list for a season ──────────────────── */
 
-function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId }: {
+function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId, scrollTargetRef }: {
   seriesId: string; seasonId: string; onPlay: (ep: MediaItem) => void; currentEpisodeId?: string;
+  scrollTargetRef?: RefObject<ScrollView | null>;
 }) {
   const client = useJellyfinClient();
   const { data: episodes } = useEpisodes(seriesId, seasonId);
+
+  // L'épisode courant s'amène à l'écran DE LUI-MÊME, une seule fois par
+  // ouverture : une saison de quarante épisodes ne se parcourt plus au doigt.
+  const currentRowRef = useRef<View | null>(null);
+  const didAutoScrollRef = useRef(false);
+  const hasCurrent = !!currentEpisodeId && !!episodes?.some((ep) => ep.Id === currentEpisodeId);
+  useEffect(() => {
+    if (!hasCurrent || didAutoScrollRef.current) return;
+    const scroll = scrollTargetRef?.current;
+    const row = currentRowRef.current;
+    if (!scroll || !row) return;
+    // Un tick pour laisser le layout se poser avant de mesurer. La position se
+    // calcule en coordonnées FENÊTRE (delta ligne − scroll) : `measureLayout`
+    // exigerait une ref native que le wrapper ScrollView n'expose pas.
+    const timer = setTimeout(() => {
+      const host = (scroll as unknown as {
+        getNativeScrollRef?: () => { measureInWindow?: (cb: (x: number, y: number) => void) => void } | null;
+      }).getNativeScrollRef?.();
+      if (!host?.measureInWindow) return;
+      row.measureInWindow((_rowX, rowY) => {
+        host.measureInWindow!((_scrollX, scrollY) => {
+          didAutoScrollRef.current = true;
+          scroll.scrollTo({ y: Math.max(0, rowY - scrollY - 96), animated: false });
+        });
+      });
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [hasCurrent, scrollTargetRef]);
 
   if (!episodes || episodes.length === 0) return null;
 
@@ -270,9 +324,14 @@ function EpisodeItems({ seriesId, seasonId, onPlay, currentEpisodeId }: {
     <View style={{ maxWidth: 640, width: "100%" }}>
       <SeasonActionBar seriesId={seriesId} seasonId={seasonId} episodes={episodes} />
       <View style={{ paddingHorizontal: 16, gap: 8 }}>
-        {episodes.map((ep) => (
-          <EpisodeItemRow key={ep.Id} ep={ep} seriesId={seriesId} seasonId={seasonId} client={client} onPlay={onPlay} isCurrent={ep.Id === currentEpisodeId} />
-        ))}
+        {episodes.map((ep) => {
+          const isCurrent = ep.Id === currentEpisodeId;
+          return (
+            <View key={ep.Id} ref={isCurrent ? currentRowRef : undefined} collapsable={false}>
+              <EpisodeItemRow ep={ep} seriesId={seriesId} seasonId={seasonId} client={client} onPlay={onPlay} isCurrent={isCurrent} />
+            </View>
+          );
+        })}
       </View>
     </View>
   );

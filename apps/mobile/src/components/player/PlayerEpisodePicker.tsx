@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Modal, View, Text, Pressable, ScrollView } from "react-native";
 import { X } from "lucide-react-native";
 import { useRouter } from "expo-router";
@@ -27,6 +28,8 @@ interface Props {
 export function PlayerEpisodePicker({ visible, seriesId, currentEpisodeId, initialSeasonId, onClose }: Props) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  // La liste s'amène d'elle-même sur l'épisode courant (cf. MobileEpisodeList).
+  const listScrollRef = useRef<ScrollView>(null);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} supportedOrientations={["portrait", "landscape"]}>
@@ -35,7 +38,7 @@ export function PlayerEpisodePicker({ visible, seriesId, currentEpisodeId, initi
           <Pressable style={{ flex: 1 }} onPress={onClose} accessibilityLabel={t("close")} />
           <SafeAreaView
             edges={["left", "right", "bottom"]}
-            style={{ maxHeight: "78%", width: "100%", maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", backgroundColor: PLAYER.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderColor: PLAYER.borderSubtle }}
+            style={{ maxHeight: "84%", width: "100%", maxWidth: SHEET_MAX_WIDTH, alignSelf: "center", backgroundColor: PLAYER.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTopWidth: 1, borderColor: PLAYER.borderSubtle }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.screenPadding, paddingTop: 16, paddingBottom: 8 }}>
               <Text style={{ fontSize: 18, fontFamily: FONT_FAMILY.bold, color: PLAYER.text }}>{t("seasonsEpisodes")}</Text>
@@ -43,11 +46,14 @@ export function PlayerEpisodePicker({ visible, seriesId, currentEpisodeId, initi
                 <X size={22} color={PLAYER.text} />
               </Pressable>
             </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
+            {/* Marge basse généreuse : la dernière rangée doit pouvoir se
+                dégager du bord de l'écran en fin de défilement (paysage). */}
+            <ScrollView ref={listScrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
               <MobileEpisodeList
                 seriesId={seriesId}
                 currentEpisodeId={currentEpisodeId}
                 initialSeasonId={initialSeasonId}
+                scrollTargetRef={listScrollRef}
                 onPlay={(ep) => { onClose(); router.replace(`/watch/${ep.Id}`); }}
               />
             </ScrollView>
