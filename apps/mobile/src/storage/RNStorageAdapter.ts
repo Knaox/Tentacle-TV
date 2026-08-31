@@ -9,6 +9,10 @@ import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
  */
 const STORAGE_KEYS = [
   "tentacle_device_id", "tentacle_token", "tentacle_user", "tentacle_server_url",
+  // L'identité d'appareil ADOPTÉE du token Jellyfin (adoptJellyfinDeviceId) :
+  // sans elle ici, l'adoption s'écrivait mais n'était jamais relue au
+  // démarrage — l'appareil changeait d'identité à chaque lancement.
+  "tentacle_device_id_jf",
   "tentacle_language", "tentacle_credentials", "tentacle_theme_mode", "tentacle_liquid_glass",
   // Réglages de lecture : le cache local du magasin de compte, qui répond
   // AVANT le serveur (et à sa place, hors ligne).
@@ -42,47 +46,68 @@ try {
  */
 export class RNStorageAdapter implements StorageAdapter {
   private cache = new Map<string, string>();
+  private hydrated = false;
+  /** Écritures reçues AVANT l'hydratation (valeur null = suppression). Elles
+   *  ne touchent pas le disque : le client Jellyfin est construit pendant le
+   *  premier rendu, sur un cache encore vide — il « ne trouve pas » la graine
+   *  d'appareil et en régénère une. L'écrire immédiatement RASAIT la graine
+   *  persistée (course avec le multiGet d'hydrate) : l'appareil changeait
+   *  d'identité à chaque lancement. Ici, le disque GAGNE toujours à
+   *  l'hydratation ; seul un provisoire sans valeur disque est conservé. */
+  private pendingWrites = new Map<string, string | null>();
 
   async hydrate(): Promise<void> {
-    // Hydrate regular keys from AsyncStorage
+    // Ce que le DISQUE contient réellement — collecté avant toute réconciliation.
+    const diskValues = new Map<string, string>();
+
+    // Regular keys from AsyncStorage
     const regularKeys = STORAGE_KEYS.filter((k) => !SECURE_KEYS.has(k) || !SecureStore);
     const pairs = await AsyncStorage.multiGet(regularKeys);
     for (const [key, value] of pairs) {
-      if (value != null) this.cache.set(key, value);
+      if (value != null) diskValues.set(key, value);
     }
 
-    // Hydrate secure keys from SecureStore (if available)
+    // Secure keys from SecureStore (if available)
     if (SecureStore) {
       for (const key of SECURE_KEYS) {
         try {
           const value = await SecureStore.getItemAsync(key);
           if (value != null) {
-            this.cache.set(key, value);
+            diskValues.set(key, value);
             // Clean up legacy AsyncStorage entry
             AsyncStorage.removeItem(key).catch(() => {});
           } else {
             // Migration: move token from AsyncStorage to SecureStore
             const legacy = await AsyncStorage.getItem(key);
             if (legacy) {
-              this.cache.set(key, legacy);
+              diskValues.set(key, legacy);
               SecureStore.setItemAsync(key, legacy).catch(console.error);
               AsyncStorage.removeItem(key).catch(() => {});
             }
           }
         } catch {
           const fallback = await AsyncStorage.getItem(key);
-          if (fallback) this.cache.set(key, fallback);
+          if (fallback) diskValues.set(key, fallback);
         }
       }
     }
+
+    // Réconciliation : le disque écrase tout provisoire du même nom…
+    for (const [key, value] of diskValues) this.cache.set(key, value);
+    this.hydrated = true;
+    // …et seuls les provisoires SANS valeur disque sont enfin persistés.
+    for (const [key, value] of this.pendingWrites) {
+      if (diskValues.has(key) || value === null) continue;
+      this.persist(key, value);
+    }
+    this.pendingWrites.clear();
   }
 
   getItem(key: string): string | null {
     return this.cache.get(key) ?? null;
   }
 
-  setItem(key: string, value: string): void {
-    this.cache.set(key, value);
+  private persist(key: string, value: string): void {
     if (SecureStore && SECURE_KEYS.has(key)) {
       SecureStore.setItemAsync(key, value).catch(console.error);
     } else {
@@ -90,8 +115,21 @@ export class RNStorageAdapter implements StorageAdapter {
     }
   }
 
+  setItem(key: string, value: string): void {
+    this.cache.set(key, value);
+    if (!this.hydrated) {
+      this.pendingWrites.set(key, value);
+      return;
+    }
+    this.persist(key, value);
+  }
+
   removeItem(key: string): void {
     this.cache.delete(key);
+    if (!this.hydrated) {
+      this.pendingWrites.set(key, null);
+      return;
+    }
     if (SecureStore && SECURE_KEYS.has(key)) {
       SecureStore.deleteItemAsync(key).catch(console.error);
     } else {
