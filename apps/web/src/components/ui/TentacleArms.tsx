@@ -13,7 +13,7 @@ import {
 /** Décalage de l'ombre sous une ventouse, et son grossissement. */
 const SHADOW_OFFSET = { x: 0.7, y: 0.9, scale: 1.18 };
 
-interface TaperedProps {
+export interface TaperedProps {
   d: string;
   segments: readonly ArmSegment[];
 }
@@ -23,7 +23,7 @@ interface TaperedProps {
  * `pathLength={100}` rend les bornes du `strokeDasharray` lisibles en pourcentage
  * — sans lui il faudrait connaître la longueur réelle de chaque spirale.
  */
-function TaperedArm({ d, segments }: TaperedProps) {
+export function TaperedArm({ d, segments }: TaperedProps) {
   return (
     <>
       {segments.map((segment) => (
