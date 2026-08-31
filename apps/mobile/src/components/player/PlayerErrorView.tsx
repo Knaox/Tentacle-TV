@@ -32,20 +32,30 @@ export function PlayerErrorView({ message, onRetry, onBack }: Props) {
         {message}
       </Text>
 
+      {/* La pilule blanche du lecteur — plus d'aplat violet. */}
       <Pressable
         onPress={onRetry}
-        style={{
-          backgroundColor: PLAYER.accent, paddingHorizontal: 32,
-          paddingVertical: 12, borderRadius: 10,
-        }}
+        accessibilityRole="button"
+        style={({ pressed }) => [{
+          backgroundColor: PLAYER.text, minHeight: 44, paddingHorizontal: 28,
+          paddingVertical: 12, borderRadius: 9999, justifyContent: "center",
+        }, pressed && { opacity: 0.85 }]}
       >
-        <Text style={{ color: PLAYER.text, fontSize: 15, fontWeight: "600" }}>
+        <Text style={{ color: PLAYER.textInverse, fontSize: 15, fontWeight: "700" }}>
           {t("retry")}
         </Text>
       </Pressable>
 
-      <Pressable onPress={onBack} style={{ marginTop: 16, padding: 8 }}>
-        <Text style={{ color: PLAYER.textTertiary, fontSize: 14 }}>
+      {/* Secondaire fantôme, parité avec l'affiche de fin. */}
+      <Pressable
+        onPress={onBack}
+        accessibilityRole="button"
+        style={({ pressed }) => [{
+          marginTop: 12, minHeight: 44, paddingHorizontal: 22, justifyContent: "center",
+          borderRadius: 9999, borderWidth: 1, borderColor: "rgba(255, 255, 255, 0.25)",
+        }, pressed && { opacity: 0.7 }]}
+      >
+        <Text style={{ color: "rgba(255, 255, 255, 0.85)", fontSize: 14, fontWeight: "600" }}>
           {t("back")}
         </Text>
       </Pressable>

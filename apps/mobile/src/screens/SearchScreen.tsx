@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, FlatList, ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import { View, Text, TextInput, FlatList, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
 import { useTranslation } from "react-i18next";
@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useSearchItems } from "@tentacle-tv/api-client";
 import { MobileMediaCard } from "../components/MobileMediaCard";
-import { FadeIn, SubtleBackground, GlassSurface } from "../components/ui";
+import { BrandSpinner, FadeIn, SubtleBackground, GlassSurface } from "../components/ui";
 import { spacing, typography, FONT_FAMILY, RADIUS, useGrid, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
 
 /**
@@ -99,7 +99,7 @@ export function SearchScreen() {
       {/* Body */}
       {isLoading && debounced.length >= 2 && (
         <View style={st.center}>
-          <ActivityIndicator size="large" color={colors.brand.violet} />
+          <BrandSpinner size="large" />
         </View>
       )}
 

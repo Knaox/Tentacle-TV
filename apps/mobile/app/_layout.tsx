@@ -1,6 +1,6 @@
 import "react-native-reanimated";
 import { useEffect, useState, useCallback } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import { useAuth, useTentacleConfig, setPreferencesBackendUrl, fetchInterfaceLan
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
+import { BrandSpinner } from "@/components/ui";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
 import { useServerReachable } from "@/hooks/useServerReachable";
@@ -241,7 +242,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
       <ServerCompatOverlay />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
-          <ActivityIndicator size="large" color={theme.colors.brand.violet} />
+          <BrandSpinner size="large" />
         </View>
       )}
     </>

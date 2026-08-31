@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
   View, Text, TextInput,
-  ActivityIndicator, Pressable, StyleSheet,
+  Pressable, StyleSheet,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLibraryCatalog, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { spacing, typography, FONT_FAMILY, useGrid, useTheme, useThemedStyles, withAlpha, type AppTheme } from "../theme";
-import { PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
+import { BrandSpinner, PressableCard, ProgressBar, SkeletonCard, FadeIn } from "../components/ui";
 import Animated from "react-native-reanimated";
 import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
 
@@ -174,7 +174,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
             showsVerticalScrollIndicator={false}
             ListFooterComponent={
               isFetchingNextPage ? (
-                <ActivityIndicator size="small" color={colors.brand.violet} style={{ paddingVertical: spacing.xl }} />
+                <View style={{ paddingVertical: spacing.xl, alignItems: "center" }}><BrandSpinner size="small" /></View>
               ) : (
                 <Text style={styles.footerCount}>
                   {t("itemCount", { count: itemCount })}
@@ -186,7 +186,7 @@ export function LibraryScreen({ libraryId, libraryName }: Props) {
       )}
 
       {isRefetching && (
-        <ActivityIndicator size="small" color={colors.brand.violet} style={styles.refreshIndicator} />
+        <View style={styles.refreshIndicator}><BrandSpinner size="small" /></View>
       )}
     </View>
   );
