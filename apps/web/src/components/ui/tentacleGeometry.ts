@@ -16,24 +16,34 @@ export interface ArmSegment {
   dash: string;
 }
 
-/** Du plus fin au plus épais : l'ordre de rendu, que le gros recouvre les jonctions. */
+/**
+ * Du plus fin au plus épais : l'ordre de rendu, que le gros recouvre les jonctions.
+ *
+ * QUATRE paliers, pas trois. Avec trois, la tige gardait une épaisseur presque
+ * constante jusqu'à une pointe encore large, qui finissait sur un enroulement
+ * serré : le trait y repassait sur lui-même et reformait une masse au bout, dont
+ * la forme prêtait à confusion. Le quatrième palier effile vraiment la pointe.
+ */
 export const ARM_SEGMENTS: readonly ArmSegment[] = [
-  { width: 8, dash: "0 56 46 300" },
-  { width: 18, dash: "0 28 32 300" },
-  { width: 29, dash: "34 300" },
+  { width: 3.6, dash: "0 68 34 300" },
+  { width: 9, dash: "0 46 26 300" },
+  { width: 17, dash: "0 26 24 300" },
+  { width: 26, dash: "30 300" },
 ];
 
 /** Les bras arrière sont à peine plus grêles — la profondeur vient surtout du dégradé. */
 export const BACK_ARM_SEGMENTS: readonly ArmSegment[] = [
-  { width: 8, dash: "0 56 46 300" },
-  { width: 18, dash: "0 28 32 300" },
-  { width: 28, dash: "34 300" },
+  { width: 3.4, dash: "0 68 34 300" },
+  { width: 8.5, dash: "0 46 26 300" },
+  { width: 16, dash: "0 26 24 300" },
+  { width: 25, dash: "30 300" },
 ];
 
 export const ANTENNA_SEGMENTS: readonly ArmSegment[] = [
-  { width: 5, dash: "0 54 48 300" },
-  { width: 12, dash: "0 26 34 300" },
-  { width: 20, dash: "32 300" },
+  { width: 2.8, dash: "0 70 32 300" },
+  { width: 6, dash: "0 48 26 300" },
+  { width: 12, dash: "0 26 26 300" },
+  { width: 19, dash: "30 300" },
 ];
 
 /**
@@ -42,21 +52,29 @@ export const ANTENNA_SEGMENTS: readonly ArmSegment[] = [
  * du tricorne, et les deux devenaient illisibles.
  */
 export const ANTENNA_PATHS = {
-  left: "M 64 64 C 58 46, 54 32, 45 25 C 37 19, 30 26, 37 32",
-  right: "M 176 64 C 182 46, 186 32, 195 25 C 203 19, 210 26, 203 32",
+  left: "M 64 64 C 58 46, 54 32, 45 25 C 38 20, 32 25, 37 31",
+  right: "M 176 64 C 182 46, 186 32, 195 25 C 202 20, 208 25, 203 31",
 } as const;
 
 /** Bras extérieurs, derrière le corps. */
 export const BACK_ARM_PATHS = [
-  "M 62 172 C 50 190, 34 200, 21 194 C 12 190, 14 178, 24 180 C 32 182, 36 178, 36 170",
-  "M 178 172 C 190 190, 206 200, 219 194 C 228 190, 226 178, 216 180 C 208 182, 204 178, 204 170",
+  "M 62 172 C 47 189, 30 199, 17 202 C 11 203, 8 200, 10 196",
+  "M 178 172 C 193 189, 210 199, 223 202 C 229 203, 232 200, 230 196",
 ] as const;
 
-/** Bras avant. Le central est rendu en dernier. */
+/**
+ * Bras avant. Quatre, et non trois : un poulpe a HUIT bras, dont deux sont ici
+ * dressés en antennes — il en fallait donc six en dessous, pas cinq.
+ *
+ * Longueurs et courbures volontairement inégales : quatre fuseaux parallèles de
+ * même longueur lisaient « peigne », et cette régularité alourdissait la masse.
+ * Aucune pointe ne se referme en boucle.
+ */
 export const FRONT_ARM_PATHS = [
-  "M 90 182 C 84 202, 72 216, 57 219 C 47 221, 42 213, 49 208 C 56 203, 61 206, 65 197",
-  "M 150 182 C 156 202, 168 216, 183 219 C 193 221, 198 213, 191 208 C 184 203, 179 206, 175 197",
-  "M 120 186 C 121 206, 116 224, 104 232 C 96 237, 88 231, 93 224 C 98 217, 105 219, 108 210",
+  "M 88 180 C 82 199, 71 212, 57 218 C 50 221, 45 218, 47 213",
+  "M 108 184 C 106 207, 100 226, 90 237 C 86 241, 81 240, 83 235",
+  "M 132 184 C 135 205, 141 221, 151 231 C 155 235, 160 234, 158 229",
+  "M 152 180 C 158 200, 169 215, 184 222 C 191 225, 196 222, 194 217",
 ] as const;
 
 /** Manteau : carré très arrondi, de type tube cathodique. */
@@ -77,14 +95,25 @@ export const SHINE_PATH =
 
 export const SMILE_PATH = "M 110 145 C 115 154, 125 154, 130 145";
 
-/** Ventouses : uniquement sur la face interne des bras avant. */
+/**
+ * Ventouses. Elles ne sont pas décoratives : elles disent « tentacule » mieux
+ * que la silhouette seule, en rompant la régularité du fuseau.
+ */
 export const SUCKERS = [
-  { cx: 76, cy: 200, r: 3.4 },
-  { cx: 64, cy: 211, r: 2.8 },
-  { cx: 115, cy: 206, r: 3.4 },
-  { cx: 106, cy: 219, r: 2.8 },
-  { cx: 164, cy: 200, r: 3.4 },
-  { cx: 176, cy: 211, r: 2.8 },
+  { cx: 79, cy: 197, r: 3.2 },
+  { cx: 69, cy: 208, r: 2.6 },
+  { cx: 59, cy: 214, r: 2 },
+  { cx: 104, cy: 204, r: 3.2 },
+  { cx: 99, cy: 220, r: 2.6 },
+  { cx: 91, cy: 231, r: 2 },
+  { cx: 137, cy: 203, r: 3.2 },
+  { cx: 143, cy: 217, r: 2.6 },
+  { cx: 150, cy: 226, r: 2 },
+  { cx: 162, cy: 199, r: 3.2 },
+  { cx: 172, cy: 211, r: 2.6 },
+  { cx: 182, cy: 218, r: 2 },
+  { cx: 34, cy: 195, r: 2.5 },
+  { cx: 206, cy: 195, r: 2.5 },
 ] as const;
 
 /**
