@@ -187,7 +187,7 @@ export default function RootLayout() {
     <ErrorBoundary>
       <SafeAreaProvider>
         <ServerUrlContext.Provider value={{ serverUrl, setServerUrl: handleSetServerUrl }}>
-          <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl}>
+          <AppProviders storage={storage} uuid={uuid} serverUrl={serverUrl} storageReady={ready}>
             <ThemedShell showLoading={!ready || (!fontsLoaded && !fontError)} />
           </AppProviders>
         </ServerUrlContext.Provider>

@@ -14,7 +14,7 @@ import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { TentacleLogo } from "../components/TentacleLogo";
 import { isSessionExpired, setSessionExpired } from "../auth/sessionState";
-import { storeCredentials, attemptReAuth } from "../auth/credentialManager";
+import { storeCredentials, attemptReAuth, loginIdentity } from "../auth/credentialManager";
 import {
   SubtleBackground,
   GlassCard,
@@ -60,9 +60,10 @@ export function LoginScreen() {
           setSessionExpired(false);
           router.replace("/(tabs)");
         } else {
-          const reAuth = await attemptReAuth(storage, serverUrl);
+          const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
           if (!cancelled && reAuth) {
             client.setAccessToken(reAuth.AccessToken);
+            if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setSessionExpired(false);
@@ -95,10 +96,13 @@ export function LoginScreen() {
         return;
       }
 
+      // L'identité d'appareil PART AVEC le login (même contrat que le web,
+      // useAuth) : le token Jellyfin est frappé sous ce triplet, qui doit être
+      // celui de nos en-têtes MediaBrowser — cf. loginIdentity.
       const response = await fetch(`${serverUrl}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, ...loginIdentity(client) }),
       });
 
       if (!response.ok) {
@@ -108,6 +112,9 @@ export function LoginScreen() {
 
       const data = await response.json();
       client.setAccessToken(data.AccessToken);
+      // L'identifiant d'appareil réellement présenté à Jellyfin : on l'adopte
+      // pour nos propres en-têtes (le backend le dérive de la graine).
+      if (data.DeviceId) client.adoptJellyfinDeviceId(data.DeviceId);
       storage.setItem("tentacle_token", data.AccessToken);
       storage.setItem("tentacle_user", JSON.stringify(data.User));
       storeCredentials(storage, username, password);

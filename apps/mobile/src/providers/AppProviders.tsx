@@ -36,7 +36,7 @@ import {
 } from "@tentacle-tv/api-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setSessionExpired } from "@/auth/sessionState";
-import { attemptReAuth } from "@/auth/credentialManager";
+import { attemptReAuth, loginIdentity } from "@/auth/credentialManager";
 import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
@@ -56,6 +56,9 @@ interface AppProvidersProps {
   storage: StorageAdapter;
   uuid: UuidGenerator;
   serverUrl: string | null;
+  /** Vrai une fois `storage.hydrate()` terminé : le client relit alors son
+   *  identité d'appareil, capturée à la construction sur un cache encore vide. */
+  storageReady: boolean;
   children: React.ReactNode;
 }
 
@@ -83,7 +86,7 @@ attachQueryPersister(queryClient, mobilePersistStorage, {
   whitelist: HOME_PERSIST_WHITELIST,
 });
 
-export function AppProviders({ storage, uuid, serverUrl, children }: AppProvidersProps) {
+export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {
   const router = useRouter();
 
   const client = useMemo(() => {
@@ -96,6 +99,13 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
     return c;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl]);
+
+  // L'hydratation du stockage finit APRÈS la construction du client (premier
+  // rendu) : il relit ici la graine et l'identité adoptée persistées — sans
+  // quoi l'appareil changerait d'identité Jellyfin à chaque lancement.
+  useEffect(() => {
+    if (storageReady) client.rehydrateIdentity();
+  }, [storageReady, client]);
 
   // Handle auth expiration: try to refresh before logging out
   useEffect(() => {
@@ -133,9 +143,10 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           }
 
           if (res.status === 401) {
-            const reAuth = await attemptReAuth(storage, serverUrl);
+            const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
             if (reAuth) {
               client.setAccessToken(reAuth.AccessToken);
+              if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
               storage.setItem("tentacle_token", reAuth.AccessToken);
               storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
               setPreferencesToken(reAuth.AccessToken);
@@ -190,9 +201,10 @@ export function AppProviders({ storage, uuid, serverUrl, children }: AppProvider
           client.resetAuthState();
           queryClient.invalidateQueries();
         } else if (res.status === 401) {
-          const reAuth = await attemptReAuth(storage, serverUrl);
+          const reAuth = await attemptReAuth(storage, serverUrl, loginIdentity(client));
           if (reAuth) {
             client.setAccessToken(reAuth.AccessToken);
+            if (reAuth.DeviceId) client.adoptJellyfinDeviceId(reAuth.DeviceId);
             storage.setItem("tentacle_token", reAuth.AccessToken);
             storage.setItem("tentacle_user", JSON.stringify(reAuth.User));
             setPreferencesToken(reAuth.AccessToken);
