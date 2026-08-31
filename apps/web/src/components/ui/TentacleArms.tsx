@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import {
   ANTENNA_PATHS,
   ANTENNA_SEGMENTS,
@@ -9,15 +10,18 @@ import {
   type ArmSegment,
 } from "./tentacleGeometry";
 
+/** Décalage de l'ombre sous une ventouse, et son grossissement. */
+const SHADOW_OFFSET = { x: 0.7, y: 0.9, scale: 1.18 };
+
 interface TaperedProps {
   d: string;
   segments: readonly ArmSegment[];
 }
 
 /**
- * Un bras : le même tracé rendu une fois par segment, en largeur croissante.
+ * Un bras : le même tracé rendu une fois par palier, en largeur croissante.
  * `pathLength={100}` rend les bornes du `strokeDasharray` lisibles en pourcentage
- * — sans lui il faudrait connaître la longueur réelle de chaque courbe.
+ * — sans lui il faudrait connaître la longueur réelle de chaque spirale.
  */
 function TaperedArm({ d, segments }: TaperedProps) {
   return (
@@ -43,28 +47,48 @@ interface TentacleArmsProps {
 }
 
 /**
- * Bras, antennes et ventouses. L'ordre de rendu porte la profondeur : les
- * antennes et les bras extérieurs d'abord, le corps viendra les couvrir, puis
- * les bras avant. Les ventouses ne se posent que sur ces derniers.
+ * Les huit bras — deux dressés en antennes, six en dessous — et leurs ventouses.
+ *
+ * Ce sont les ventouses qui portent le relief, chacune posée sur son ombre. Une
+ * arête lumineuse décalée le long du bras avait été essayée : elle délave le
+ * bras au lieu de l'arrondir. L'opacité vit sur le GROUPE et non sur chaque
+ * cercle, sinon les recouvrements la cumulent.
  */
 export function TentacleArms({ backFill, frontFill }: TentacleArmsProps) {
   return (
     <>
       <g fill="none" stroke={backFill} strokeLinecap="round">
-        <TaperedArm d={ANTENNA_PATHS.left} segments={ANTENNA_SEGMENTS} />
-        <TaperedArm d={ANTENNA_PATHS.right} segments={ANTENNA_SEGMENTS} />
+        {ANTENNA_PATHS.map((d) => (
+          <Fragment key={d}>
+            <TaperedArm d={d} segments={ANTENNA_SEGMENTS} />
+          </Fragment>
+        ))}
         {BACK_ARM_PATHS.map((d) => (
-          <TaperedArm key={d} d={d} segments={BACK_ARM_SEGMENTS} />
+          <Fragment key={d}>
+            <TaperedArm d={d} segments={BACK_ARM_SEGMENTS} />
+          </Fragment>
         ))}
       </g>
       <g fill="none" stroke={frontFill} strokeLinecap="round">
         {FRONT_ARM_PATHS.map((d) => (
-          <TaperedArm key={d} d={d} segments={ARM_SEGMENTS} />
+          <Fragment key={d}>
+            <TaperedArm d={d} segments={ARM_SEGMENTS} />
+          </Fragment>
         ))}
       </g>
-      <g fill="#fff" opacity="0.32">
+      <g fill="#1B0B33" opacity="0.22">
         {SUCKERS.map((cup) => (
-          <circle key={`${cup.cx}-${cup.cy}`} cx={cup.cx} cy={cup.cy} r={cup.r} />
+          <circle
+            key={`shadow-${cup.cx}-${cup.cy}`}
+            cx={cup.cx + SHADOW_OFFSET.x}
+            cy={cup.cy + SHADOW_OFFSET.y}
+            r={cup.r * SHADOW_OFFSET.scale}
+          />
+        ))}
+      </g>
+      <g fill="#fff" opacity="0.26">
+        {SUCKERS.map((cup) => (
+          <circle key={`cup-${cup.cx}-${cup.cy}`} cx={cup.cx - 0.2} cy={cup.cy - 0.3} r={cup.r} />
         ))}
       </g>
     </>

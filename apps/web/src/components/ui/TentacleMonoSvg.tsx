@@ -94,8 +94,9 @@ export function TentacleMonoSvg({ size, style }: TentacleMonoSvgProps) {
 
       <g mask={`url(#${maskId})`} fill="currentColor">
         <g fill="none" stroke="currentColor" strokeLinecap="round">
-          {armPaths(ANTENNA_PATHS.left, ANTENNA_SEGMENTS)}
-          {armPaths(ANTENNA_PATHS.right, ANTENNA_SEGMENTS)}
+          {ANTENNA_PATHS.map((d) => (
+            <Fragment key={d}>{armPaths(d, ANTENNA_SEGMENTS)}</Fragment>
+          ))}
           {BACK_ARM_PATHS.map((d) => (
             <Fragment key={d}>{armPaths(d, BACK_ARM_SEGMENTS)}</Fragment>
           ))}

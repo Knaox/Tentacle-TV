@@ -11,16 +11,18 @@ Source unique de vérité pour le logo. Tout PNG/ICNS/ICO/WEBP du dépôt est
 | `app-icon-color.svg` | Icône d'application, 1024², poulpe couleur sur fond cinéma. |
 | `app-icon-mono.svg` | Icône d'application, 1024², mono blanc sur dégradé de marque. |
 
-## Régénérer les SVG
+## Régénérer
 
-Les cinq fichiers ci-dessus sont **générés**, jamais édités à la main :
+Les cinq SVG **et** les constantes TypeScript du composant web sont générés :
 
 ```bash
 python3 brand/generate-svg.py brand
 ```
 
-Une seule géométrie y produit les cinq variantes : elles ne peuvent donc plus
-divergerentre elles. Après régénération, recopier les fichiers publics :
+Le script écrit `apps/web/src/components/ui/tentacleArmPaths.generated.ts` en
+même temps que les SVG. Les bras sont des spirales échantillonnées : elles ne
+s'écrivent pas à la main, et deux copies auraient fini par diverger. Après
+régénération, recopier les fichiers publics :
 
 ```bash
 cp brand/logo-color.svg apps/web/public/tentacle-logo-pirate.svg
@@ -29,19 +31,10 @@ cp brand/logo-color-nohat.svg apps/web/public/tentacle.svg
 cp brand/logo-color.svg apps/tv-webos/shell/images/tentacle-logo-pirate.svg
 ```
 
-⚠️ **Le composant web porte une COPIE de cette géométrie**, dans
-`apps/web/src/components/ui/tentacleGeometry.ts` — il lui faut des variables CSS,
-que le fichier statique ne peut pas résoudre. Toute retouche du dessin se fait
-donc aux DEUX endroits. Contrôle de non-divergence :
-
-```bash
-python3 - <<'EOF'
-import pathlib, re
-f = lambda p: set(re.findall(r'"(M \d[^"]*)"', pathlib.Path(p).read_text()))
-a = f("apps/web/src/components/ui/tentacleGeometry.ts"); b = f("brand/generate-svg.py")
-print("identiques" if a == b else f"DIVERGENCE: {a ^ b}")
-EOF
-```
+`tentacleGeometry.ts` ne garde que ce qui se dessine à la main — corps, visage,
+chapeau — et réexporte les bras depuis le fichier généré. Le composant web existe
+séparément du fichier statique parce que lui seul résout les variables CSS : une
+couleur de marque redéfinie par un administrateur doit se propager au logo.
 
 ## Trois règles apprises à leurs frais
 
@@ -58,14 +51,26 @@ EOF
   publiés, hors de ce dépôt. Renommer le fichier casserait leur affichage en
   silence. On remplace le contenu, jamais le nom.
 
-## La forme des bras n'est pas indifférente
+## La forme des bras : trois approches, une retenue
 
-Une tige d'épaisseur presque constante finissant sur un enroulement serré
-reforme une masse au bout — le trait y repasse sur lui-même — et cette masse
-prête à confusion. D'où l'effilement en QUATRE paliers jusqu'à une pointe fine,
-des pointes qui s'incurvent sans jamais se refermer en boucle, des longueurs
-inégales, et des ventouses : elles disent « tentacule » mieux que la silhouette
-seule.
+- **Trait à largeur dégressive sur trajectoire simple.** Produit toujours un tube
+  lisse à bout arrondi, dont la forme prêtait à confusion. Écartée.
+- **Contour fermé festonné**, ventouses dans la silhouette. Juste en principe,
+  mais là où un tentacule s'enroule, le rayon de courbure passe sous la
+  demi-largeur et le bord concave se retourne : le bras s'ouvre de fentes. Sans
+  enroulement, les bras deviennent des piques. Écartée.
+- **Spirale**, retenue. La forme enroulée est la signature du tentacule et lève
+  l'ambiguïté par la silhouette. Le trait reste la méthode de rendu, qui ne peut
+  produire aucun artefact.
+
+Deux réglages à ne pas défaire :
+
+- **L'enroulement reste SOUS un demi-tour.** Au-delà, la spirale se referme et
+  l'extrémité lit « crochet ».
+- **Le relief vient des ventouses, pas d'une arête lumineuse.** Une bande claire
+  décalée le long du bras le délave au lieu de l'arrondir. Chaque ventouse est
+  posée sur son ombre, et l'opacité vit sur le GROUPE — sur chaque cercle, les
+  recouvrements des paliers de `dasharray` la cumulent et doublent l'effet.
 
 ## Le mono n'est pas un filtre
 
