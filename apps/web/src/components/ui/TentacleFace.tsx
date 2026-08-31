@@ -6,11 +6,20 @@ import {
   TUBE_PATH,
 } from "./tentacleGeometry";
 
+/** Moue : le sourire retourné, aux mêmes extrémités. */
+const FROWN_PATH = "M 110 152 C 115 143, 125 143, 130 152";
+
+/** Une larme, dessinée à l'origine puis translatée sous chaque œil. */
+const TEAR_PATH =
+  "M 0 0 C 2.4 4.4, 4 7.2, 4 9.6 C 4 12.6, 2.2 14.4, 0 14.4 C -2.2 14.4, -4 12.6, -4 9.6 C -4 7.2, -2.4 4.4, 0 0 Z";
+
 interface TentacleFaceProps {
   mantleFill: string;
   shineFill: string;
   tubeFill: string;
   glassFill: string;
+  /** Bouche inversée et larmes — pour les écrans d'erreur et hors-ligne. */
+  crying?: boolean;
 }
 
 /**
@@ -23,6 +32,7 @@ export function TentacleFace({
   shineFill,
   tubeFill,
   glassFill,
+  crying = false,
 }: TentacleFaceProps) {
   return (
     <>
@@ -41,12 +51,18 @@ export function TentacleFace({
       <circle cx="150" cy="127" r="2" fill="var(--brand)" opacity="0.9" />
 
       <path
-        d={SMILE_PATH}
+        d={crying ? FROWN_PATH : SMILE_PATH}
         fill="none"
         stroke="var(--brand-accent-light)"
         strokeWidth="4.6"
         strokeLinecap="round"
       />
+      {crying && (
+        <g fill="#7DD3FC" opacity="0.9">
+          <path d={TEAR_PATH} transform="translate(98 137)" />
+          <path d={TEAR_PATH} transform="translate(142 141)" />
+        </g>
+      )}
       <ellipse cx="76" cy="146" rx="10" ry="6" fill="var(--brand-accent-light)" opacity="0.38" />
       <ellipse cx="164" cy="146" rx="10" ry="6" fill="var(--brand-accent-light)" opacity="0.38" />
     </>

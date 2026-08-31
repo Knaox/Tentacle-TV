@@ -7,6 +7,8 @@ import { TentacleOrnaments } from "./TentacleOrnaments";
 interface TentacleSvgProps {
   size: number;
   style?: CSSProperties;
+  /** Bouche inversée et larmes — pour les écrans d'erreur et hors-ligne. */
+  crying?: boolean;
 }
 
 /**
@@ -28,7 +30,7 @@ interface TentacleSvgProps {
  * Voir `theme/tokens.css`, seul endroit où une valeur peut porter sa version
  * littérale puis sa version calculée.
  */
-export function TentacleSvg({ size, style }: TentacleSvgProps) {
+export function TentacleSvg({ size, style, crying = false }: TentacleSvgProps) {
   const unique = useId().replace(/[^a-zA-Z0-9-]/g, "");
   const ids = {
     mantle: `tg-mantle-${unique}`,
@@ -116,6 +118,7 @@ export function TentacleSvg({ size, style }: TentacleSvgProps) {
         shineFill={url(ids.shine)}
         tubeFill={url(ids.tube)}
         glassFill={url(ids.glass)}
+        crying={crying}
       />
       <TentacleHat hatFill={url(ids.hat)} bandFill={url(ids.band)} />
 
