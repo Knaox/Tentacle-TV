@@ -9,8 +9,11 @@ import { useFocusEffect } from "expo-router";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
+import { TV_AMBILIGHT } from "@tentacle-tv/theme";
 import { GradientOverlay } from "@/components/ui";
-import { motion, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { useDeferredMount } from "@/hooks/useDeferredMount";
+import { HeroAmbilight } from "./HeroAmbilight";
 import { HeroContent } from "./HeroBannerContent";
 import { useHeroMetrics } from "./heroMetrics";
 
@@ -35,7 +38,11 @@ interface HeroBannerProps {
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  const client = useJellyfinClient();
   const { bannerH, slideW, margin, radius } = useHeroMetrics();
+  // Le flou SVG du halo est cher à rastériser : monté une fois l'écran
+  // interactif, son fondu de 1,4 s absorbe le décalage.
+  const haloReady = useDeferredMount();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [index, setIndex] = useState(0);
@@ -73,12 +80,20 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
 
   if (!items.length) return <View style={{ height: bannerH }} />;
 
+  // La source du halo : l'affiche ACTIVE en petit (256 px, comme la TV) — le
+  // flou mange les détails, la pleine résolution ne paierait que du transfert.
+  const heroItem = items[index];
+  const haloUri = heroItem ? heroImageUrl(client, heroItem, TV_AMBILIGHT.sourceWidth, 70) : null;
+
   return (
     <View style={{ paddingHorizontal: margin }}>
-      {/* L'AMBILIGHT du desktop : l'affiche active, floutée UNE FOIS par le
-          GPU (blurRadius natif — jamais de backdrop-filter), déborde du cadre
-          en halo de lumière. `transition` d'expo-image fond le changement. */}
-      <AmbilightGlow items={items} activeIndex={index} inset={margin} />
+      {/* L'AMBILIGHT du desktop, par le pipeline de la TV : l'affiche active
+          floutée au filtre SVG derrière la carte — le débordement gaussien EST
+          l'extinction, aucun fondu par-dessus. Frère PRÉCÉDENT de la carte :
+          peint dessous. */}
+      {haloReady && (
+        <HeroAmbilight uri={haloUri} inset={margin} cardW={slideW} cardH={bannerH} />
+      )}
       <View
         style={{
           width: slideW,
@@ -149,7 +164,7 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   );
 });
 
-/* ── Halo ambilight ─────────────────────────────────────────────────────── */
+/* ── Source d'image (backdrop plein cadre + miniature du halo) ──────────── */
 
 function heroImageUrl(
   client: ReturnType<typeof useJellyfinClient>,
@@ -167,72 +182,6 @@ function heroImageUrl(
   return (hasParentBackdrop || hasOwnBackdrop)
     ? client.getImageUrl(backdropId, "Backdrop", { width, quality })
     : client.getImageUrl(it.Id, "Primary", { width, quality });
-}
-
-/**
- * Le halo de LUMIÈRE derrière la carte (parité HeroAmbilight desktop) : une
- * miniature de l'affiche active (128 px — le flou mange les détails), floutée
- * nativement, qui déborde largement du cadre. `blurRadius` garde des bords
- * NETS en natif — un rectangle flou lirait comme une seconde bordure : quatre
- * fondus vers le fond de page évanouissent donc la lueur, sans contour. Une
- * seule image montée ; le changement de slide fond par la `transition`
- * d'expo-image. Nul en mouvement réduit, comme sur le bureau.
- */
-function AmbilightGlow({ items, activeIndex, inset }: { items: MediaItem[]; activeIndex: number; inset: number }) {
-  const client = useJellyfinClient();
-  const theme = useTheme();
-  if (motion.isReducedMotion()) return null;
-  const it = items[activeIndex];
-  if (!it) return null;
-  const small = heroImageUrl(client, it, 128, 60);
-  if (!small) return null;
-  const bg = theme.colors.surface.s0;
-  const fade = (deg: "toTop" | "toBottom" | "toLeft" | "toRight") => {
-    const axis = {
-      toTop: { start: { x: 0, y: 1 }, end: { x: 0, y: 0 } },
-      toBottom: { start: { x: 0, y: 0 }, end: { x: 0, y: 1 } },
-      toLeft: { start: { x: 1, y: 0 }, end: { x: 0, y: 0 } },
-      toRight: { start: { x: 0, y: 0 }, end: { x: 1, y: 0 } },
-    }[deg];
-    return (
-      <LinearGradient
-        colors={[withAlpha(bg, 0, "rgba(0,0,0,0)"), bg]}
-        start={axis.start}
-        end={axis.end}
-        style={[
-          { position: "absolute" },
-          deg === "toTop" && { top: 0, left: 0, right: 0, height: "34%" },
-          deg === "toBottom" && { bottom: 0, left: 0, right: 0, height: "34%" },
-          deg === "toLeft" && { left: 0, top: 0, bottom: 0, width: "26%" },
-          deg === "toRight" && { right: 0, top: 0, bottom: 0, width: "26%" },
-        ]}
-      />
-    );
-  };
-  return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        left: inset - 34,
-        right: inset - 34,
-        top: -30,
-        bottom: -30,
-      }}
-    >
-      <Image
-        source={{ uri: small }}
-        blurRadius={55}
-        transition={600}
-        contentFit="cover"
-        style={{ flex: 1, opacity: theme.isDark ? 0.8 : 0.5 }}
-      />
-      {fade("toTop")}
-      {fade("toBottom")}
-      {fade("toLeft")}
-      {fade("toRight")}
-    </View>
-  );
 }
 
 /* ── Backdrop stack (crossfade) ─────────────────────────────────────────── */
