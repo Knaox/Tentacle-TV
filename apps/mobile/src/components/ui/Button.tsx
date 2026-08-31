@@ -1,4 +1,4 @@
-import { Pressable, Text, ActivityIndicator, type ViewStyle, type TextStyle } from "react-native";
+import { Pressable, Text, ActivityIndicator, View, StyleSheet, type ViewStyle, type TextStyle } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme } from "../../theme";
@@ -90,6 +90,17 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
     onPress();
   };
 
+  // Voile pressed révélé en OPACITÉ — l'équivalent natif du Veil desktop
+  // (le hover n'existe pas au doigt, l'appui le remplace). Noir sur la pilule
+  // blanche ; sinon selon le schéma. Il épouse le rayon, pas d'overflow:hidden
+  // (qui couperait l'ombre iOS portée par le même élément).
+  const veilColor =
+    variant === "primary"
+      ? "rgba(0, 0, 0, 0.07)"
+      : theme.isDark
+        ? "rgba(255, 255, 255, 0.08)"
+        : "rgba(0, 0, 0, 0.06)";
+
   return (
     <Animated.View style={[animStyle, fullWidth ? { width: "100%" } : null]}>
       <Pressable
@@ -102,9 +113,11 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
         accessibilityState={{ disabled: isDisabled }}
         style={[{
           backgroundColor: v.bg,
-          borderRadius: RADIUS.md,
-          paddingVertical: 14,
-          paddingHorizontal: 22,
+          // La pilule de la nouvelle UI — même rayon que les CTA du desktop.
+          borderRadius: RADIUS.pill,
+          minHeight: 44,
+          paddingVertical: 12,
+          paddingHorizontal: 24,
           alignItems: "center" as const,
           justifyContent: "center" as const,
           flexDirection: "row" as const,
@@ -115,12 +128,23 @@ export function Button({ title, onPress, variant = "primary", loading, disabled,
           ...(v.shadow ?? {}),
         }, style]}
       >
-        {loading ? (
-          <ActivityIndicator color={v.text} size="small" />
-        ) : (
-          <Text style={{ ...labelStyle, color: v.text }} numberOfLines={1}>
-            {title}
-          </Text>
+        {({ pressed }) => (
+          <>
+            <View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                { borderRadius: RADIUS.pill, backgroundColor: veilColor, opacity: pressed ? 1 : 0 },
+              ]}
+            />
+            {loading ? (
+              <ActivityIndicator color={v.text} size="small" />
+            ) : (
+              <Text style={{ ...labelStyle, color: v.text }} numberOfLines={1}>
+                {title}
+              </Text>
+            )}
+          </>
         )}
       </Pressable>
     </Animated.View>

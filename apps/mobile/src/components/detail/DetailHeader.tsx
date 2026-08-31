@@ -108,7 +108,7 @@ export function DetailHeader({ item, twoCol, isEpisode, seriesWatchState, poster
           <Feather name="play" size={20} color={theme.colors.cta.primaryFg} fill={theme.colors.cta.primaryFg} />
           <Text style={st.playBtnTxt} numberOfLines={1}>{playLabel}</Text>
         </Pressable>
-        {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} tint={theme.colors.brand.violet} />}
+        {!isSeries && hasResume && <ProgressBar progress={progress} style={{ marginTop: 10 }} />}
       </View>
     </Animated.View>
   ) : null;

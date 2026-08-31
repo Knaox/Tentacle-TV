@@ -220,7 +220,7 @@ function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPress }: {
           )}
           {hasProgress && (
             <View style={mlst.progWrap}>
-              <ProgressBar progress={(item.progress ?? 0) / 100} height={3} tint={theme.colors.brand.violet} />
+              <ProgressBar progress={(item.progress ?? 0) / 100} height={3} />
             </View>
           )}
         </View>
