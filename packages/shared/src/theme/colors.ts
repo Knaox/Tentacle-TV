@@ -25,6 +25,12 @@ const DEFAULT_BRAND = {
   soft: "rgba(139, 92, 246, 0.15)",
   /** 18% violet — used for ghost button backgrounds. */
   ghost: "rgba(139, 92, 246, 0.18)",
+  // Le ROSE d'accent — second arrêt des dégradés de marque (violet → rose),
+  // mêmes valeurs que le web (`--brand-accent*` de tokens.css). Trio miroir
+  // de violet/light/dark : `accentDark` sert d'accent au thème clair.
+  accent: "#EC4899",
+  accentLight: "#F472B6",
+  accentDark: "#DB2777",
 };
 
 const DEFAULT_SURFACE = {
@@ -120,6 +126,9 @@ export interface ThemeColorOverride {
       soft?: string;
       ghost?: string;
       glow?: string;
+      accent?: string;
+      accentLight?: string;
+      accentDark?: string;
     };
     surface?: {
       s0?: string;
@@ -190,6 +199,9 @@ export function applyThemeOverride(override?: ThemeColorOverride | null): void {
     if (c.brand.soft) BRAND.soft = c.brand.soft;
     if (c.brand.ghost) BRAND.ghost = c.brand.ghost;
     if (c.brand.glow) BRAND.glow = c.brand.glow;
+    if (c.brand.accent) BRAND.accent = c.brand.accent;
+    if (c.brand.accentLight) BRAND.accentLight = c.brand.accentLight;
+    if (c.brand.accentDark) BRAND.accentDark = c.brand.accentDark;
     // BORDER.focus + CTA.brandBg/Hover derive from BRAND — sync them too.
     BORDER.focus = BRAND.violet;
     CTA.brandBg = BRAND.violet;

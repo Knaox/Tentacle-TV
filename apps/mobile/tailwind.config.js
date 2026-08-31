@@ -35,6 +35,9 @@ module.exports = {
           light: "#A78BFA",
           dark: "#7C3AED",
           soft: "rgba(139, 92, 246, 0.15)",
+          // Le rose d'accent — second arrêt des dégradés (parité web).
+          accent: "#EC4899",
+          accentLight: "#F472B6",
         },
         text: {
           primary: "#FFFFFF",

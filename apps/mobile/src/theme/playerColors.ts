@@ -40,6 +40,8 @@ interface PlayerColors {
   readonly accent: string;
   readonly accentLight: string;
   readonly accentSoft: string;
+  /** Le rose — bout des dégradés de marque (seek bar, glow). */
+  readonly accentRose: string;
   /** Violet clair chip — texte de badge sur fond accentSoft (HDR/DV/Atmos, tracks actifs). Distinct de accentLight (utilisé pour du texte plein). */
   readonly accentChip: string;
 }
@@ -73,6 +75,10 @@ export const PLAYER: PlayerColors = {
   },
   get accentSoft(): string {
     return BRAND.soft;
+  },
+  /** Le rose — bout des dégradés de marque (seek bar, glow), suit l'admin. */
+  get accentRose(): string {
+    return BRAND.accent;
   },
   accentChip: "#C4B5FD",
 };

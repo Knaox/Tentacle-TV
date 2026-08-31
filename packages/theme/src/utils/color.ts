@@ -59,3 +59,18 @@ export function darken(color: string, factor: number, fallback: string): string 
   const b = Math.round(rgb.b * k);
   return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
+
+/**
+ * Mélange linéaire de deux hex (`t` = part du second, 0-1). L'équivalent du
+ * `color-mix(in srgb, …)` du web — sert au point médian des dégradés de
+ * marque (violet → rose) sur les clients natifs.
+ */
+export function mixHex(a: string, b: string, t: number, fallback: string): string {
+  const ra = hexToRgb(a);
+  const rb = hexToRgb(b);
+  if (!ra || !rb) return fallback;
+  const mix = (x: number, y: number) => Math.round(x + (y - x) * t);
+  return `#${[mix(ra.r, rb.r), mix(ra.g, rb.g), mix(ra.b, rb.b)]
+    .map((c) => c.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
