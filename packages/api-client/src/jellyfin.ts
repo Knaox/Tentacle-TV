@@ -235,6 +235,18 @@ export class JellyfinClient {
     else this.storage.removeItem("tentacle_device_id_jf");
   }
 
+  /** Relit l'identité d'appareil depuis le stockage. Nécessaire sur React
+   *  Native : le client est construit pendant le premier rendu, AVANT
+   *  l'hydratation asynchrone du stockage — la graine et l'identité adoptée
+   *  capturées par le constructeur viennent alors d'un cache vide. À appeler
+   *  une fois l'hydratation finie ; no-op sur un stockage synchrone (web). */
+  rehydrateIdentity() {
+    const seed = this.storage.getItem("tentacle_device_id");
+    if (seed) this.deviceId = seed;
+    else this.storage.setItem("tentacle_device_id", this.deviceId);
+    this.deviceIdJellyfin = this.storage.getItem("tentacle_device_id_jf");
+  }
+
   private getOrCreateDeviceId(uuid: UuidGenerator): string {
     const stored = this.storage.getItem("tentacle_device_id");
     if (stored) return stored;
