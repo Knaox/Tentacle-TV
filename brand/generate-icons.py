@@ -54,6 +54,9 @@ RULES = [
     # 400×400 du Seller Lounge sort dans `store-assets/` et non dans l'IPK.
     #     pnpm --filter @tentacle-tv/tv-webos icons
     # ── Fiches store ─────────────────────────────────────────────────────────
+    # Microsoft Store : visuel 1:1 de la fiche produit. Fond plein, aucune
+    # transparence — la fiche le compose sur ses propres surfaces claires.
+    ("store-assets/windows/*.png", "app-icon-color.svg"),
     ("store-assets/store-poster-*.png", "poster-2x3.svg"),
     # `webos-icon-400.png` appartient au script webOS — cf. plus haut.
     ("store-assets/store-logo-*.png", "app-icon-color.svg"),
