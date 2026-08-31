@@ -26,6 +26,7 @@
     "@tentacle-tv/api-client": "workspace:*",
     "@tentacle-tv/shared": "workspace:*",
     "@tentacle-tv/theme": "workspace:*",
+    "@tentacle-tv/tv-core": "workspace:*",
     "expo": "~54.0.0",
     "expo-application": "~7.0.8",
     "expo-blur": "~15.0.8",
