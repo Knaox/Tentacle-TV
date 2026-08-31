@@ -5,6 +5,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../theme";
+import { useHeroMetrics } from "../heroMetrics";
 
 interface Props {
   width: number | string;
@@ -75,5 +76,13 @@ export function SkeletonRow({
 }
 
 export function SkeletonHero() {
-  return <Skeleton width="100%" height={420} radius={0} />;
+  // La MÊME géométrie que la carte hero (useHeroMetrics) : un squelette de
+  // 420 px pour un hero à ~620 faisait sauter toute la page à l'arrivée des
+  // données.
+  const { bannerH, slideW, margin, radius } = useHeroMetrics();
+  return (
+    <View style={{ paddingHorizontal: margin }}>
+      <Skeleton width={slideW} height={bannerH} radius={radius} />
+    </View>
+  );
 }
