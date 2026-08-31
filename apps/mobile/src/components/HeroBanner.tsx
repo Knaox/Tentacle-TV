@@ -10,7 +10,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { motion, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { HeroContent } from "./HeroBannerContent";
 import { useHeroMetrics } from "./heroMetrics";
 
@@ -75,6 +75,10 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
 
   return (
     <View style={{ paddingHorizontal: margin }}>
+      {/* L'AMBILIGHT du desktop : l'affiche active, floutée UNE FOIS par le
+          GPU (blurRadius natif — jamais de backdrop-filter), déborde du cadre
+          en halo de lumière. `transition` d'expo-image fond le changement. */}
+      <AmbilightGlow items={items} activeIndex={index} inset={margin} />
       <View
         style={{
           width: slideW,
@@ -88,15 +92,15 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         }}
       >
         <BackdropStack items={items} activeIndex={index} />
-        {/* En SOMBRE : fades vers surface.s0 (noir pur). En CLAIR : le fade BAS
-            passe en voile SOMBRE (onMedia.shadow) — sinon l'affiche est délavée.
-            Le fade HAUT reste léger (la carte a son propre bord, plus d'inset). */}
-        <GradientOverlay direction="top" height={110} intensity="soft" />
+        {/* Les voiles restent des SCRIMS (noir alpha, jamais un fondu vers un
+            aplat) : la carte a un bord — un bas opaque y peignait un « voile
+            noir » découpé sur le fond de page. En CLAIR, onMedia.shadow. */}
+        <GradientOverlay direction="top" height={110} intensity="soft" color="rgba(0, 0, 0, 0.65)" />
         <GradientOverlay
           direction="bottom"
           height={bannerH * 0.62}
           intensity="strong"
-          color={theme.isDark ? undefined : theme.colors.onMedia.shadow}
+          color={theme.isDark ? "rgba(0, 0, 0, 0.82)" : theme.colors.onMedia.shadow}
         />
         <FlatList
           ref={listRef}
@@ -143,6 +147,92 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
   );
 });
 
+/* ── Halo ambilight ─────────────────────────────────────────────────────── */
+
+function heroImageUrl(
+  client: ReturnType<typeof useJellyfinClient>,
+  it: MediaItem,
+  width = 1280,
+  quality = 85,
+): string | null {
+  const isEp = it.Type === "Episode";
+  const hasParentBackdrop = (it.ParentBackdropImageTags?.length ?? 0) > 0;
+  const hasOwnBackdrop = (it.BackdropImageTags?.length ?? 0) > 0;
+  if (!hasParentBackdrop && !hasOwnBackdrop && !it.ImageTags?.Primary) return null;
+  const backdropId = isEp
+    ? (hasParentBackdrop ? (it.ParentBackdropItemId ?? it.SeriesId ?? it.Id) : it.Id)
+    : it.Id;
+  return (hasParentBackdrop || hasOwnBackdrop)
+    ? client.getImageUrl(backdropId, "Backdrop", { width, quality })
+    : client.getImageUrl(it.Id, "Primary", { width, quality });
+}
+
+/**
+ * Le halo de LUMIÈRE derrière la carte (parité HeroAmbilight desktop) : une
+ * miniature de l'affiche active (128 px — le flou mange les détails), floutée
+ * nativement, qui déborde largement du cadre. `blurRadius` garde des bords
+ * NETS en natif — un rectangle flou lirait comme une seconde bordure : quatre
+ * fondus vers le fond de page évanouissent donc la lueur, sans contour. Une
+ * seule image montée ; le changement de slide fond par la `transition`
+ * d'expo-image. Nul en mouvement réduit, comme sur le bureau.
+ */
+function AmbilightGlow({ items, activeIndex, inset }: { items: MediaItem[]; activeIndex: number; inset: number }) {
+  const client = useJellyfinClient();
+  const theme = useTheme();
+  if (motion.isReducedMotion()) return null;
+  const it = items[activeIndex];
+  if (!it) return null;
+  const small = heroImageUrl(client, it, 128, 60);
+  if (!small) return null;
+  const bg = theme.colors.surface.s0;
+  const fade = (deg: "toTop" | "toBottom" | "toLeft" | "toRight") => {
+    const axis = {
+      toTop: { start: { x: 0, y: 1 }, end: { x: 0, y: 0 } },
+      toBottom: { start: { x: 0, y: 0 }, end: { x: 0, y: 1 } },
+      toLeft: { start: { x: 1, y: 0 }, end: { x: 0, y: 0 } },
+      toRight: { start: { x: 0, y: 0 }, end: { x: 1, y: 0 } },
+    }[deg];
+    return (
+      <LinearGradient
+        colors={[withAlpha(bg, 0, "rgba(0,0,0,0)"), bg]}
+        start={axis.start}
+        end={axis.end}
+        style={[
+          { position: "absolute" },
+          deg === "toTop" && { top: 0, left: 0, right: 0, height: "34%" },
+          deg === "toBottom" && { bottom: 0, left: 0, right: 0, height: "34%" },
+          deg === "toLeft" && { left: 0, top: 0, bottom: 0, width: "26%" },
+          deg === "toRight" && { right: 0, top: 0, bottom: 0, width: "26%" },
+        ]}
+      />
+    );
+  };
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        left: inset - 34,
+        right: inset - 34,
+        top: -30,
+        bottom: -30,
+      }}
+    >
+      <Image
+        source={{ uri: small }}
+        blurRadius={55}
+        transition={600}
+        contentFit="cover"
+        style={{ flex: 1, opacity: theme.isDark ? 0.8 : 0.5 }}
+      />
+      {fade("toTop")}
+      {fade("toBottom")}
+      {fade("toLeft")}
+      {fade("toRight")}
+    </View>
+  );
+}
+
 /* ── Backdrop stack (crossfade) ─────────────────────────────────────────── */
 
 function BackdropStack({ items, activeIndex }: { items: MediaItem[]; activeIndex: number }) {
@@ -150,16 +240,8 @@ function BackdropStack({ items, activeIndex }: { items: MediaItem[]; activeIndex
   return (
     <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
       {items.map((it, i) => {
-        const isEp = it.Type === "Episode";
-        const hasParentBackdrop = (it.ParentBackdropImageTags?.length ?? 0) > 0;
-        const hasOwnBackdrop = (it.BackdropImageTags?.length ?? 0) > 0;
-        if (!hasParentBackdrop && !hasOwnBackdrop && !it.ImageTags?.Primary) return null;
-        const backdropId = isEp
-          ? (hasParentBackdrop ? (it.ParentBackdropItemId ?? it.SeriesId ?? it.Id) : it.Id)
-          : it.Id;
-        const url = (hasParentBackdrop || hasOwnBackdrop)
-          ? client.getImageUrl(backdropId, "Backdrop", { width: 1280, quality: 85 })
-          : client.getImageUrl(it.Id, "Primary", { width: 1280, quality: 85 });
+        const url = heroImageUrl(client, it);
+        if (!url) return null;
         return <CrossfadeImage key={it.Id} url={url} active={i === activeIndex} />;
       })}
     </View>
