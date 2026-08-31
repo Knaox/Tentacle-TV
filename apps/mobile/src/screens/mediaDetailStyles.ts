@@ -1,5 +1,5 @@
 import { StyleSheet } from "react-native";
-import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, type AppTheme } from "../theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, type AppTheme } from "../theme";
 
 /**
  * Styles du MediaDetailScreen — factory thémée light/dark (extraits pour garder
@@ -7,8 +7,12 @@ import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, type AppTheme } fr
  * par DetailHeader / DetailBody.
  */
 export const makeMediaDetailStyles = (t: AppTheme) => {
-  // CTA Lecture : ombre douce neutre en clair (bouton blanc), elev2 en sombre.
-  const playShadow = t.isDark ? SHADOW_RN.elev2 : t.colors.shadow.card;
+  // CTA Lecture : même dessin que la pilule « Lire » du hero (HeroBannerContent
+  // — playBtn) : ombre neutre en clair, portée noire en sombre. Changer l'un
+  // sans l'autre recréerait l'écart accueil/fiche corrigé en 1.6.0.
+  const playShadow = t.isDark
+    ? { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 }
+    : t.colors.shadow.card;
   return StyleSheet.create({
     watchedRing: { position: "absolute" as const, top: 10, right: 10, width: 28, height: 28, borderRadius: 14, backgroundColor: t.colors.cta.primaryBg, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 },
     seriesLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light, marginBottom: 4, letterSpacing: 0.2 },
@@ -25,7 +29,7 @@ export const makeMediaDetailStyles = (t: AppTheme) => {
     sectionTitle: { fontSize: 18, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, paddingHorizontal: spacing.screenPadding, marginTop: spacing.xl, marginBottom: 4 },
     playBtn: {
       flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "center" as const,
-      gap: 10, backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.md, height: 52, paddingHorizontal: 28,
+      gap: 10, backgroundColor: t.colors.cta.primaryBg, borderRadius: RADIUS.pill, height: 52, paddingHorizontal: 28,
       borderWidth: t.colors.cta.primaryBorder ? 1 : 0, borderColor: t.colors.cta.primaryBorder, ...playShadow,
     },
     playBtnTxt: { ...typography.bodyBold, fontFamily: FONT_FAMILY.bold, color: t.colors.cta.primaryFg, letterSpacing: 0.2, fontSize: 16 },

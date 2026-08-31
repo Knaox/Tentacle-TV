@@ -27,7 +27,7 @@ export function DetailSkeleton({ top }: { top: number }) {
           </View>
         </View>
         <View style={{ paddingHorizontal: spacing.screenPadding, marginTop: spacing.xl, maxWidth: 420 }}>
-          <Skeleton width="100%" height={52} radius={RADIUS.md} />
+          <Skeleton width="100%" height={52} radius={RADIUS.pill} />
         </View>
       </View>
     </View>
