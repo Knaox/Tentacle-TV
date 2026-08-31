@@ -79,6 +79,14 @@ apps/backend/data/
 # Mobile — iOS native (projet versionné pour le build CI sans EAS ; on commit
 # la source du projet Xcode — AirPlayModule.m câblé dans le pbxproj — et on
 # ignore uniquement les artefacts régénérés par `pod install` / xcodebuild).
+# Bundles JS produits par Metro. La CI les régénère (`gradlew bundleRelease`) ;
+# un bundle laissé dans `src/main/assets/` y est fusionné par Gradle et peut
+# masquer celui du build. Celui d'Android TV y a gardé l'ancien logo pendant
+# trois mois, personne ne l'ayant vu. Le motif couvre les deux applications :
+# `apps/mobile/android/.gitignore` n'ignore que `*.jsbundle`, qui ne correspond
+# pas au nom Android.
+apps/*/android/app/src/main/assets/index.android.bundle
+
 apps/mobile/ios/Pods/
 apps/mobile/ios/build/
 apps/mobile/ios/DerivedData/
