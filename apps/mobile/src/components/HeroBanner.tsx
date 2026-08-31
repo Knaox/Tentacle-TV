@@ -1,17 +1,18 @@
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
-  FlatList, StyleSheet, View, useWindowDimensions,
+  FlatList, StyleSheet, View,
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from "react-native";
 import { Image } from "expo-image";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect } from "expo-router";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { GradientOverlay } from "@/components/ui";
-import { spacing, TABLET_MIN_WIDTH, useRailWidth, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { HeroContent } from "./HeroBannerContent";
+import { useHeroMetrics } from "./heroMetrics";
 
 // Synced with web/HeroBackdrop : the new slide arrives exactly when the
 // scale 1 → 1.06 zoom cycle ends, so the carousel feels like an uninterrupted
@@ -26,20 +27,15 @@ interface HeroBannerProps {
   onInfo: (item: MediaItem) => void;
 }
 
-/** Hero Billboard cinematic — swipe pageEnabled + Ken Burns backdrop synced with auto-rotate (see ROTATE_MS). */
+/**
+ * Hero Billboard cinématique — désormais une CARTE, comme sur le bureau :
+ * gouttières latérales, rayon 20, liseré de marque (--hero-frame-ring).
+ * Swipe pagingEnabled + Ken Burns synchronisé sur l'auto-rotation.
+ */
 export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: HeroBannerProps) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { width: SCREEN_W, height: screenH } = useWindowDimensions();
-  const isTablet = Math.min(SCREEN_W, screenH) >= TABLET_MIN_WIDTH;
-  // Largeur RÉELLE du viewport hero : fenêtre − rail latéral (iPad paysage).
-  // Sans ça, les slides paginent sur la largeur fenêtre et dérivent du viewport.
-  const SLIDE_W = SCREEN_W - useRailWidth();
-  // 0.74 instead of 0.82 — leaves room below the hero for "Reprendre la lecture"
-  // section header to be fully visible above the floating tab bar on iPhone 17.
-  // Cap relevé sur tablette pour un hero plus immersif.
-  const BANNER_H = Math.min(isTablet ? 820 : 660, Math.round(screenH * 0.74));
-  const insets = useSafeAreaInsets();
+  const { bannerH, slideW, margin, radius } = useHeroMetrics();
   const listRef = useRef<FlatList<MediaItem>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
   const [index, setIndex] = useState(0);
@@ -54,73 +50,95 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
       if (userScrollingRef.current) return;
       setIndex((p) => {
         const next = (p + 1) % items.length;
-        listRef.current?.scrollToOffset({ offset: next * SLIDE_W, animated: true });
+        listRef.current?.scrollToOffset({ offset: next * slideW, animated: true });
         return next;
       });
     }, ROTATE_MS);
-  }, [items.length, SLIDE_W]);
+  }, [items.length, slideW]);
 
   // Resync scroll on focus via indexRef — reading `index` directly would re-run
   // this effect on every auto-advance, killing the FlatList's animated scroll.
   useFocusEffect(useCallback(() => {
-    const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * SLIDE_W, animated: false }));
+    const raf = requestAnimationFrame(() => listRef.current?.scrollToOffset({ offset: indexRef.current * slideW, animated: false }));
     startTimer();
     return () => { cancelAnimationFrame(raf); if (timerRef.current) clearInterval(timerRef.current); };
-  }, [startTimer, SLIDE_W]));
+  }, [startTimer, slideW]));
 
   const onScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const newIndex = Math.round(e.nativeEvent.contentOffset.x / SLIDE_W);
+    const newIndex = Math.round(e.nativeEvent.contentOffset.x / slideW);
     setIndex(newIndex);
     userScrollingRef.current = false;
     startTimer();
   };
 
-  if (!items.length) return <View style={{ height: BANNER_H }} />;
+  if (!items.length) return <View style={{ height: bannerH }} />;
 
   return (
-    <View style={{ width: SLIDE_W, height: BANNER_H, overflow: "hidden", backgroundColor: theme.colors.surface.s0 }}>
-      <BackdropStack items={items} activeIndex={index} />
-      {/* En SOMBRE : fades vers surface.s0 (noir pur, identiques à l'ancien
-          "#000000"). En CLAIR : le fade BAS passe en voile SOMBRE (onMedia.shadow)
-          au lieu de gris clair — sinon l'affiche est délavée ("voile blanc"
-          immonde). Résultat : image vive + scrim sombre cinématique sous le
-          texte (blanc onMedia), lisible dans les deux thèmes. Le fade HAUT reste
-          léger (fond vers la page/entête). */}
-      <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-      <GradientOverlay
-        direction="bottom"
-        height={BANNER_H * 0.62}
-        intensity="strong"
-        color={theme.isDark ? undefined : theme.colors.onMedia.shadow}
-      />
-      <FlatList
-        ref={listRef}
-        data={items}
-        keyExtractor={(it) => it.Id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        onScrollBeginDrag={() => { userScrollingRef.current = true; if (timerRef.current) clearInterval(timerRef.current); }}
-        onMomentumScrollEnd={onScrollEnd}
-        getItemLayout={(_, i) => ({ length: SLIDE_W, offset: SLIDE_W * i, index: i })}
-        style={StyleSheet.absoluteFillObject}
-        renderItem={({ item }) => (
-          <View style={[st.slide, { width: SLIDE_W, height: BANNER_H, paddingTop: Math.max(insets.top, 24) + 28 }]}>
-            <View style={st.contentInner}>
-              <HeroContent item={item} onPlay={onPlay} onInfo={onInfo} />
+    <View style={{ paddingHorizontal: margin }}>
+      <View
+        style={{
+          width: slideW,
+          height: bannerH,
+          borderRadius: radius,
+          borderWidth: 1,
+          // Le liseré du cadre desktop : rgba(brand, 0.22).
+          borderColor: withAlpha(theme.colors.brand.violet, 0.22, theme.colors.border.strong),
+          overflow: "hidden",
+          backgroundColor: theme.colors.surface.s0,
+        }}
+      >
+        <BackdropStack items={items} activeIndex={index} />
+        {/* En SOMBRE : fades vers surface.s0 (noir pur). En CLAIR : le fade BAS
+            passe en voile SOMBRE (onMedia.shadow) — sinon l'affiche est délavée.
+            Le fade HAUT reste léger (la carte a son propre bord, plus d'inset). */}
+        <GradientOverlay direction="top" height={110} intensity="soft" />
+        <GradientOverlay
+          direction="bottom"
+          height={bannerH * 0.62}
+          intensity="strong"
+          color={theme.isDark ? undefined : theme.colors.onMedia.shadow}
+        />
+        <FlatList
+          ref={listRef}
+          data={items}
+          keyExtractor={(it) => it.Id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          onScrollBeginDrag={() => { userScrollingRef.current = true; if (timerRef.current) clearInterval(timerRef.current); }}
+          onMomentumScrollEnd={onScrollEnd}
+          getItemLayout={(_, i) => ({ length: slideW, offset: slideW * i, index: i })}
+          style={StyleSheet.absoluteFillObject}
+          renderItem={({ item, index: i }) => (
+            <View style={[st.slide, { width: slideW, height: bannerH }]}>
+              <View style={st.contentInner}>
+                <HeroContent item={item} active={i === index} onPlay={onPlay} onInfo={onInfo} />
+              </View>
             </View>
+          )}
+        />
+
+        {items.length > 1 && (
+          <View style={[st.dots, { bottom: bannerH * 0.04 }]} pointerEvents="none">
+            {items.map((_, i) =>
+              i === index ? (
+                // La pastille active porte le dégradé de marque et son halo
+                // rose — la même encre que la barre de progression du bureau.
+                <LinearGradient
+                  key={i}
+                  colors={[theme.colors.brand.violet, theme.colors.brand.accent]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[st.dot, st.dotOn]}
+                />
+              ) : (
+                <View key={i} style={[st.dot, st.dotOff]} />
+              ),
+            )}
           </View>
         )}
-      />
-
-      {items.length > 1 && (
-        <View style={[st.dots, { bottom: BANNER_H * 0.04 }]} pointerEvents="none">
-          {items.map((_, i) => (
-            <View key={i} style={[st.dot, i === index ? st.dotOn : st.dotOff]} />
-          ))}
-        </View>
-      )}
+      </View>
     </View>
   );
 });
@@ -168,10 +186,10 @@ function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  slide: { justifyContent: "flex-end" as const, paddingHorizontal: spacing.screenPadding, paddingBottom: 56 },
+  slide: { justifyContent: "flex-end" as const, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 52 },
   contentInner: { width: "100%" as const, maxWidth: 640 },
   dots: { position: "absolute" as const, left: 0, right: 0, flexDirection: "row" as const, justifyContent: "center" as const, alignItems: "center" as const, gap: 5 },
   dot: { height: 3, borderRadius: 2 },
-  dotOn: { width: 22, backgroundColor: t.colors.brand.violet, shadowColor: t.colors.brand.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
+  dotOn: { width: 22, shadowColor: t.colors.brand.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8 },
   dotOff: { width: 6, backgroundColor: t.colors.text.quaternary },
 });
