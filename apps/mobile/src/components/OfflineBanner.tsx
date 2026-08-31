@@ -1,17 +1,20 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Pressable, Animated, StyleSheet } from "react-native";
+import { View, Text, Animated, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { CryingTentacle } from "./CryingTentacle";
+import { Button } from "@/components/ui";
 import { useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface OfflineBannerProps {
   visible: boolean;
+  /** L'essai manuel est en cours — la pilule le montre (spinner + désactivée). */
+  isChecking?: boolean;
   onRetry: () => void;
   onLogout?: () => void;
   onChangeServer?: () => void;
 }
 
-export function OfflineBanner({ visible, onRetry, onLogout, onChangeServer }: OfflineBannerProps) {
+export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChangeServer }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const styles = useThemedStyles(makeStyles);
   const opacity = useRef(new Animated.Value(0)).current;
@@ -32,19 +35,22 @@ export function OfflineBanner({ visible, onRetry, onLogout, onChangeServer }: Of
         <CryingTentacle size={120} />
         <Text style={styles.title}>{t("offlineTitle")}</Text>
         <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Pressable style={styles.retryButton} onPress={onRetry}>
-          <Text style={styles.retryButtonText}>{t("retryConnection")}</Text>
-        </Pressable>
-        {onLogout && (
-          <Pressable style={styles.logoutButton} onPress={onLogout}>
-            <Text style={styles.logoutButtonText}>{t("offlineLogout")}</Text>
-          </Pressable>
-        )}
-        {onChangeServer && (
-          <Pressable style={styles.changeServerButton} onPress={onChangeServer}>
-            <Text style={styles.changeServerButtonText}>{t("changeServer")}</Text>
-          </Pressable>
-        )}
+        <Text style={styles.hint}>{t("offlineHint")}</Text>
+        {/* Les pilules du socle — le Réessayer MONTRE l'essai en cours. */}
+        <View style={styles.buttons}>
+          <Button
+            title={t("retryConnection")}
+            onPress={onRetry}
+            loading={isChecking}
+            fullWidth
+          />
+          {onLogout && (
+            <Button title={t("offlineLogout")} onPress={onLogout} variant="danger" fullWidth />
+          )}
+          {onChangeServer && (
+            <Button title={t("changeServer")} onPress={onChangeServer} variant="secondary" fullWidth />
+          )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -79,44 +85,16 @@ const makeStyles = (t: AppTheme) =>
       textAlign: "center",
       lineHeight: 20,
     },
-    retryButton: {
-      backgroundColor: t.colors.brand.violet,
-      borderRadius: 12,
-      paddingHorizontal: 32,
-      paddingVertical: 14,
+    hint: {
+      color: t.colors.text.quaternary,
+      fontSize: 12,
+      marginTop: 8,
+      textAlign: "center",
+      lineHeight: 17,
+    },
+    buttons: {
+      alignSelf: "stretch",
+      gap: 12,
       marginTop: 28,
-    },
-    retryButtonText: {
-      color: t.colors.cta.brandFg,
-      fontSize: 15,
-      fontWeight: "600",
-    },
-    logoutButton: {
-      backgroundColor: t.colors.statusPairs.error.bg,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: withAlpha(t.colors.status.error, 0.3, t.colors.danger.border),
-      paddingHorizontal: 32,
-      paddingVertical: 14,
-      marginTop: 12,
-    },
-    logoutButtonText: {
-      color: t.colors.status.error,
-      fontSize: 15,
-      fontWeight: "600",
-    },
-    changeServerButton: {
-      backgroundColor: t.colors.fill.subtle,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: t.colors.border.subtle,
-      paddingHorizontal: 32,
-      paddingVertical: 14,
-      marginTop: 12,
-    },
-    changeServerButtonText: {
-      color: t.colors.text.secondary,
-      fontSize: 15,
-      fontWeight: "600",
     },
   });
