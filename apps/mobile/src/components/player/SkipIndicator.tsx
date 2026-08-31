@@ -1,21 +1,25 @@
 import { View, Text, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PLAYER } from "@/theme";
 
 /**
  * Indicateur éphémère « +30 / −10 » après un saut (double-tap gestes ou
- * boutons de l'overlay) — rond latéral côté du sens du saut.
+ * boutons de l'overlay) — rond latéral côté du sens du saut. L'inset latéral
+ * l'écarte de l'îlot caméra en paysage.
  */
 export function SkipIndicator({ side }: { side: "left" | "right" | null }) {
   const { t } = useTranslation("player");
   const { width: screenW, height: screenH } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const size = Math.min(72, Math.round(screenH * 0.09));
   if (!side) return null;
 
+  const sideInset = side === "left" ? insets.left : insets.right;
   return (
     <View pointerEvents="none" style={{
       position: "absolute", top: "38%",
-      [side === "left" ? "left" : "right"]: screenW * 0.08,
+      [side === "left" ? "left" : "right"]: Math.max(screenW * 0.08, sideInset + 12),
       backgroundColor: PLAYER.scrim, borderRadius: size / 2,
       width: size, height: size, justifyContent: "center", alignItems: "center",
     }}>

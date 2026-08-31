@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { View, Text, PanResponder, useWindowDimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { useTrickplay } from "../../hooks/useTrickplay";
@@ -133,11 +134,23 @@ export function PlayerSeekBar({
                 backgroundColor: PLAYER.border, borderRadius: trackHeight / 2,
               }} />
             )}
-            {/* Played portion */}
-            <View style={{
-              height: "100%", width: `${progress * 100}%`,
-              backgroundColor: PLAYER.accent, borderRadius: trackHeight / 2,
-            }} />
+            {/* Played portion — le dégradé de marque du desktop
+                (--progress-fill, violet → rose) avec son halo rose. Le halo
+                est iOS-only par nature (elevation Android peindrait une ombre
+                noire) — dégradation gracieuse assumée. */}
+            <LinearGradient
+              colors={[PLAYER.accent, PLAYER.accentRose]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                height: "100%", width: `${progress * 100}%`,
+                borderRadius: trackHeight / 2,
+                shadowColor: PLAYER.accentRose,
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.55,
+                shadowRadius: 6,
+              }}
+            />
           </View>
 
           {/* Thumb */}
