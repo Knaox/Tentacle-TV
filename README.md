@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/web/public/tentacle-logo-pirate.svg" alt="Tentacle TV" width="120" />
+  <img src="brand/logo-color.svg" alt="Tentacle TV" width="128" />
 </p>
 
 <h1 align="center">Tentacle TV</h1>

@@ -75,8 +75,15 @@ la reporte dans `appinfo.json` pour que les deux ne puissent pas diverger.
 ## Les images de la coquille
 
 `pnpm --filter @tentacle-tv/tv-webos icons` les régénère **toutes** depuis le
-seul `shell/images/tentacle-logo-pirate.svg`. Les PNG sont versionnés ; le
-script ne sert qu'à les refaire, et demande librsvg et ImageMagick.
+seul `shell/images/tentacle-logo-pirate.svg` — lui-même une copie de
+`brand/logo-color.svg`. Les PNG sont versionnés ; le script ne sert qu'à les
+refaire, et demande librsvg et ImageMagick.
+
+⚠️ `brand/generate-icons.py`, qui produit les icônes de toutes les autres
+plateformes, laisse **volontairement** celles-ci de côté : un rendu vectoriel
+direct ne satisfait aucune des trois contraintes ci-dessous. Et `SUBJECT`, le
+recadrage sur le dessin, est exprimé dans le repère du logo : il se REMESURE si
+le dessin change d'encombrement (`rsvg-convert` en grand, puis `magick -trim`).
 
 Trois choses ne se devinent pas, et sont la raison d'être du script :
 
