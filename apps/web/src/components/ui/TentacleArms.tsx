@@ -57,7 +57,7 @@ interface TentacleArmsProps {
 export function TentacleArms({ backFill, frontFill }: TentacleArmsProps) {
   return (
     <>
-      <g fill="none" stroke={backFill} strokeLinecap="round">
+      <g fill="none" stroke={backFill} strokeLinecap="round" strokeLinejoin="round">
         {ANTENNA_PATHS.map((d) => (
           <Fragment key={d}>
             <TaperedArm d={d} segments={ANTENNA_SEGMENTS} />
@@ -69,7 +69,7 @@ export function TentacleArms({ backFill, frontFill }: TentacleArmsProps) {
           </Fragment>
         ))}
       </g>
-      <g fill="none" stroke={frontFill} strokeLinecap="round">
+      <g fill="none" stroke={frontFill} strokeLinecap="round" strokeLinejoin="round">
         {FRONT_ARM_PATHS.map((d) => (
           <Fragment key={d}>
             <TaperedArm d={d} segments={ARM_SEGMENTS} />

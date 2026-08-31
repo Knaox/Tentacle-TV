@@ -119,19 +119,19 @@ def uses(keys, segs_by_key, extra=0, stroke=None):
     return "".join(out)
 
 SEGS = {"ant": SEG_ANT, "back": SEG_BACK, "front": SEG_FRONT}
-BODY = (f'<g fill="none" stroke="url(#gB)" stroke-linecap="round">{uses(("ant","back"), SEGS)}</g>'
-        f'<g fill="none" stroke="url(#gA)" stroke-linecap="round">{uses(("front",), SEGS)}</g>'
+BODY = (f'<g fill="none" stroke="url(#gB)" stroke-linecap="round" stroke-linejoin="round">{uses(("ant","back"), SEGS)}</g>'
+        f'<g fill="none" stroke="url(#gA)" stroke-linecap="round" stroke-linejoin="round">{uses(("front",), SEGS)}</g>'
         f'<g fill="#1B0B33" opacity=".22">{SHADOWS}</g><g fill="#fff" opacity=".26">{DOTS}</g>'
         f'<path d="{MANTLE}" fill="url(#gM)"/><path d="{SHINE}" fill="url(#gS)"/>'
         f'<path d="{TUBE}" fill="url(#gT)"/><path d="{GLASS}" fill="url(#gG)"/>'
         '<ellipse cx="98" cy="117" rx="19" ry="21" fill="#fff"/><ellipse cx="142" cy="117" rx="19" ry="21" fill="#fff"/>'
         '<circle cx="102" cy="121" r="9.5" fill="#1B0B33"/><circle cx="146" cy="121" r="9.5" fill="#1B0B33"/>'
         '<circle cx="97.5" cy="113" r="3.8" fill="#fff"/><circle cx="141.5" cy="113" r="3.8" fill="#fff"/>'
-        f'<path d="{SMILE}" fill="none" stroke="#F472B6" stroke-width="4.6" stroke-linecap="round"/>'
+        f'<path d="{SMILE}" fill="none" stroke="#F472B6" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>'
         '<ellipse cx="76" cy="146" rx="10" ry="6" fill="#F472B6" opacity=".38"/>'
         '<ellipse cx="164" cy="146" rx="10" ry="6" fill="#F472B6" opacity=".38"/>')
 HAT_G = (f'<g transform="{HAT_T}"><path d="{HAT}" fill="url(#gH)"/>'
-         f'<path d="{BAND}" fill="none" stroke="url(#gBd)" stroke-width="6" stroke-linecap="round"/>'
+         f'<path d="{BAND}" fill="none" stroke="url(#gBd)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
          f'<path d="{SKULL}" fill="#fff"/>'
          '<g fill="#241145"><circle cx="115" cy="39" r="3.2"/><circle cx="125" cy="39" r="3.2"/></g></g>')
 HEAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img">'
@@ -143,14 +143,14 @@ NOTE = "<!-- GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main. 
 # ── Monochrome : détails creusés au masque, bras avant détachés d'un liseré ──
 OUTLINE = 8
 MASK = (f'<mask id="mCut"><rect width="240" height="240" fill="#fff"/>'
-        f'<g fill="none" stroke-linecap="round">{uses(("front",), SEGS, OUTLINE, "#000")}{uses(("front",), SEGS, 0, "#fff")}</g>'
+        f'<g fill="none" stroke-linecap="round" stroke-linejoin="round">{uses(("front",), SEGS, OUTLINE, "#000")}{uses(("front",), SEGS, 0, "#fff")}</g>'
         f'<path d="{TUBE}" fill="#000"/>'
         '<ellipse cx="98" cy="116" rx="20" ry="22" fill="#fff"/><ellipse cx="142" cy="116" rx="20" ry="22" fill="#fff"/>'
         '<circle cx="101" cy="120" r="11" fill="#000"/><circle cx="145" cy="120" r="11" fill="#000"/>'
-        f'<g transform="{HAT_TM}" fill="none" stroke="#000" stroke-linecap="round">'
+        f'<g transform="{HAT_TM}" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">'
         f'<path d="{BRIM}" stroke-width="9"/><path d="{BAND}" stroke-width="10"/></g>'
         f'<path transform="{HAT_TM}" fill="#000" d="{SKULL}"/></mask>')
-MONO_BODY = (f'<g fill="none" stroke="currentColor" stroke-linecap="round">'
+MONO_BODY = (f'<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'
              f'{uses(("ant","back","front"), SEGS)}</g>'
              f'<path d="{MANTLE}"/><path d="{HAT}" transform="{HAT_TM}"/>')
 (OUT / "logo-mono.svg").write_text(

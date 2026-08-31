@@ -67,6 +67,11 @@ Deux réglages à ne pas défaire :
 
 - **L'enroulement reste SOUS un demi-tour.** Au-delà, la spirale se referme et
   l'extrémité lit « crochet ».
+- **`stroke-linejoin="round"` est obligatoire.** Les bras sont des polylignes :
+  chaque sommet est une jointure, et la valeur par défaut `miter` projette sur un
+  angle aigu une pointe pouvant atteindre quatre fois l'épaisseur du trait. Sans
+  lui, de longues piques triangulaires sortent d'entre les tentacules, aux
+  jonctions entre la descente et la spirale.
 - **Le relief vient des ventouses, pas d'une arête lumineuse.** Une bande claire
   décalée le long du bras le délave au lieu de l'arrondir. Chaque ventouse est
   posée sur son ombre, et l'opacité vit sur le GROUPE — sur chaque cercle, les

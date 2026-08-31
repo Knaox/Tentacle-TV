@@ -67,7 +67,7 @@ export function TentacleMonoSvg({ size, style }: TentacleMonoSvgProps) {
           {/* Détachement des bras avant : liseré creusé, puis le bras rétabli.
               Traités du plus lointain au plus proche — l'ordre des découpes porte
               ici la profondeur que le dégradé donne à la version couleur. */}
-          <g fill="none" strokeLinecap="round">
+          <g fill="none" strokeLinecap="round" strokeLinejoin="round">
             {FRONT_ARM_PATHS.map((d) => (
               <Fragment key={d}>
                 {armPaths(d, ARM_SEGMENTS, OUTLINE, "#000")}
@@ -93,7 +93,7 @@ export function TentacleMonoSvg({ size, style }: TentacleMonoSvgProps) {
       </defs>
 
       <g mask={`url(#${maskId})`} fill="currentColor">
-        <g fill="none" stroke="currentColor" strokeLinecap="round">
+        <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
           {ANTENNA_PATHS.map((d) => (
             <Fragment key={d}>{armPaths(d, ANTENNA_SEGMENTS)}</Fragment>
           ))}
