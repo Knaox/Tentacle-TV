@@ -14,6 +14,7 @@ import { useConnectivity } from "../offline/useConnectivity";
  */
 export function useServerReachable() {
   const { state } = useConnectivity();
+  // La promesse de la sonde remonte : le bandeau l'attend pour montrer l'essai.
   const retry = useCallback(() => probeNow(true), []);
   return {
     isReachable: state === "online" || state === "checking",

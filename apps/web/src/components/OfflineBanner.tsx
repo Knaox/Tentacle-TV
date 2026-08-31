@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
@@ -18,6 +18,17 @@ interface OfflineBannerProps {
 export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const { isReachable, retry } = useServerReachable();
+  // L'essai manuel se VOIT : libellé « nouvelle tentative… » + bouton figé
+  // le temps de la sonde (pattern ContentErrorState), plancher 600 ms.
+  const [retrying, setRetrying] = useState(false);
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await Promise.all([retry(), new Promise((r) => setTimeout(r, 600))]);
+    } finally {
+      setRetrying(false);
+    }
+  };
   const { logout, changeServer } = useAuth();
   const navigate = useNavigate();
   const wasOfflineRef = useRef(false);
@@ -73,21 +84,22 @@ export function OfflineBanner({ reloadOnReconnect = false }: OfflineBannerProps)
         {/* Boutons alignés sur le design system : CTA primaire = bouton blanc
             (même style que le Play de la fiche média), secondaires en ghost. */}
         <button
-          onClick={retry}
-          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-md bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover active:scale-[0.98]"
+          onClick={handleRetry}
+          disabled={retrying}
+          className="mt-8 inline-flex min-w-[220px] items-center justify-center rounded-full bg-cta-primary-bg px-7 py-3 text-sm font-bold text-cta-primary-fg transition-all duration-200 hover:scale-[1.03] hover:bg-cta-primary-bg-hover active:scale-[0.98] disabled:scale-100 disabled:opacity-60"
         >
-          {t("retryConnection")}
+          {retrying ? t("retrying") : t("retryConnection")}
         </button>
         <button
           onClick={handleLogout}
-          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-danger-surface active:scale-[0.98]"
+          className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-danger-border bg-danger-surface px-7 py-3 text-sm font-semibold text-status-error-fg backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-danger-surface active:scale-[0.98]"
         >
           {t("offlineLogout")}
         </button>
         {isDesktopApp() && (
           <button
             onClick={handleChangeServer}
-            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-md border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"
+            className="mt-3 inline-flex min-w-[220px] items-center justify-center rounded-full border border-line-strong bg-fill-subtle px-7 py-3 text-sm font-semibold text-content-secondary backdrop-blur-md transition-all duration-200 hover:scale-[1.03] hover:bg-fill-soft active:scale-[0.98]"
           >
             {t("changeServer")}
           </button>
