@@ -32,13 +32,15 @@ interface Options {
   /** L'habillage du lecteur est-il à l'écran ? (un passage mis en sourdine par
    *  la croix n'est plus rendu qu'avec lui). */
   controlsVisible: boolean;
+  /** Un scrub est en cours : rien ne paraît, les décomptes se suspendent. */
+  scrubbing: boolean;
   onSeek: (seconds: number) => void;
   onNextEpisode: () => void;
   onEndOfPlayback: () => void;
 }
 
 export function usePlaybackOverlayMobile({
-  itemId, pb, currentTime, ended, hasStarted, controlsVisible,
+  itemId, pb, currentTime, ended, hasStarted, controlsVisible, scrubbing,
   onSeek, onNextEpisode, onEndOfPlayback,
 }: Options): PlaybackOverlayResult {
   // `active` : la config d'auto-play est repollée pendant la lecture, comme
@@ -47,15 +49,21 @@ export function usePlaybackOverlayMobile({
 
   return usePlaybackOverlay({
     itemId,
-    isEpisode: pb.item?.Type === "Episode",
+    // Parité web : un « épisode » orphelin de série n'en est pas un pour
+    // l'arbitre (mêmes règles de fin qu'un film).
+    isEpisode: pb.item?.Type === "Episode" && !!pb.item?.SeriesId,
     hasNextEpisode: !!pb.episodeNav.nextEpisode,
     positionSeconds: currentTime,
     durationSeconds: pb.jellyfinDuration || 0,
     hasStarted,
     controlsVisible,
+    scrubbing,
     playbackEnded: ended,
     segments: pb.segments.segments,
     runtimeMs: pb.segments.runtimeMs,
+    // Les règles « avant la fin » ciblées par bibliothèque ne s'appliquent
+    // qu'avec lui — le contrat résolu le porte déjà, il suffisait de le passer.
+    libraryId: pb.segments.libraryId ?? null,
     serverAutoplayEnabled: autoplay.data?.enabled ?? true,
     onSeekSeconds: onSeek,
     onNextEpisode,

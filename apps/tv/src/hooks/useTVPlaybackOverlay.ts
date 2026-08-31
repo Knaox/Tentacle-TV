@@ -71,7 +71,8 @@ export function useTVPlaybackOverlay(args: {
 
   const playback = usePlaybackOverlay({
     itemId,
-    isEpisode: item?.Type === "Episode",
+    // Parité web : un « épisode » sans série suit les règles de fin d'un film.
+    isEpisode: item?.Type === "Episode" && !!item?.SeriesId,
     hasNextEpisode: !!media.nextEpisode,
     positionSeconds: displayTime,
     durationSeconds: displayDuration,
@@ -79,6 +80,8 @@ export function useTVPlaybackOverlay(args: {
     playbackEnded: ended,
     segments: segments.segments,
     runtimeMs: segments.runtimeMs,
+    // Règles « avant la fin » par bibliothèque — le contrat résolu la porte.
+    libraryId: segments.libraryId ?? null,
     serverAutoplayEnabled: autoplayConfig?.enabled ?? true,
     scrubbing,
     onSeekSeconds: onSeek,
