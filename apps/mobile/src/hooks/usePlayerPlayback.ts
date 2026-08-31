@@ -55,6 +55,10 @@ export function usePlayerPlayback(itemId: string) {
   const fetchIdRef = useRef(0);
 
   const [state, setState] = useState<PlaybackState>(INITIAL_STATE);
+  /** Incrémenté à CHAQUE résolution aboutie — même si l'URL revient identique.
+   *  L'écran s'y accroche pour réarmer ses gardes de retry : sur `streamUrl`
+   *  seul, une relance qui rend la même URL laissait le lecteur muet. */
+  const [fetchNonce, setFetchNonce] = useState(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
@@ -151,6 +155,7 @@ export function usePlayerPlayback(itemId: string) {
         isLoading: false, error: null,
         textTracks, burnInSubIndex: burnIn, startPositionMs, headers,
       });
+      setFetchNonce((n) => n + 1);
     } catch (err) {
       if (fetchIdRef.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
@@ -238,8 +243,25 @@ export function usePlayerPlayback(itemId: string) {
 
   const retry = useCallback(() => {
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
-    fetchPlaybackInfo({ isRetry: true, startTimeTicks: startTicks > 0 ? startTicks : undefined });
-  }, [fetchPlaybackInfo]);
+    // Déjà en transcodage : retirer les DirectPlayProfiles (isRetry) ne change
+    // RIEN à la négociation — Jellyfin resservirait le même encodage. Pour que
+    // la relance soit réellement différente, on descend d'un palier de
+    // qualité : un débit plafonné force une nouvelle session d'encodage.
+    // Le palier choisi est affiché (setQualityKey) — pas de qualité mentie.
+    let degraded: QualityPreset | undefined;
+    if (!state.isDirectPlay && state.streamUrl) {
+      const idx = qualityPresets.findIndex((p) => p.key === qualityKey);
+      degraded = qualityPresets.slice(idx + 1).find((p) => p.bitrate != null);
+      if (degraded) setQualityKey(degraded.key);
+    }
+    fetchPlaybackInfo({
+      isRetry: true,
+      ...(degraded
+        ? { maxBitrate: degraded.bitrate ?? 0, maxWidth: degraded.width ?? 0, maxHeight: degraded.height ?? 0 }
+        : {}),
+      startTimeTicks: startTicks > 0 ? startTicks : undefined,
+    });
+  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, qualityKey, qualityPresets]);
 
   /** VTT URL for custom overlay — every mode, every platform (text subs only).
    *  iOS never sideloads native textTracks (sidecar tracks force-disable
@@ -261,6 +283,7 @@ export function usePlayerPlayback(itemId: string) {
   return {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
+    fetchNonce,
     audioIndex, subtitleIndex, qualityKey, qualityPresets, positionRef,
     audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, segments, reporting,

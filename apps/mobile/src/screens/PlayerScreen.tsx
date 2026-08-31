@@ -74,12 +74,14 @@ export function PlayerScreen({ itemId }: Props) {
   }, [itemId, pb.item?.Id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset videoReady when stream URL changes (avoids selectedTextTrack crash)
-  // Also clear retryingRef + playerError so the new stream can report errors
+  // Also clear retryingRef + playerError so the new stream can report errors.
+  // `fetchNonce` : une relance peut rendre une URL IDENTIQUE — sans lui, les
+  // gardes restaient armées et le lecteur tournait en spinner pour toujours.
   useEffect(() => {
     setVideoReady(false);
     retryingRef.current = false;
     setPlayerError(null);
-  }, [pb.streamUrl]);
+  }, [pb.streamUrl, pb.fetchNonce]);
 
   // Android loading timeout — if onLoad hasn't fired after 20s, show error
   useEffect(() => {
@@ -129,7 +131,7 @@ export function PlayerScreen({ itemId }: Props) {
   });
 
   // L'arbitre partagé — mêmes règles que le web, le bureau et le téléviseur.
-  useEffect(() => { setEnded(false); }, [itemId, pb.streamUrl]);
+  useEffect(() => { setEnded(false); }, [itemId, pb.streamUrl, pb.fetchNonce]);
   const playback = usePlaybackOverlayMobile({
     itemId, pb, currentTime, ended, hasStarted: videoReady,
     controlsVisible: overlayVisible,
