@@ -213,6 +213,7 @@ export function MobilePlayerOverlay({
         overlay={playback.overlay}
         countdownTotals={playback.countdownTotals}
         nextEpisode={nextEpisode}
+        controlsVisible={visible}
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
