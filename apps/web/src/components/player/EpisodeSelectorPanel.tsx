@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -32,6 +32,17 @@ export function EpisodeSelectorPanel({
   const [seasonId, setSeasonId] = useState<string | undefined>(currentSeasonId);
   const effectiveSeasonId = seasonId ?? currentSeasonId ?? seasons?.[0]?.Id;
   const { data: episodes } = useEpisodes(seriesId, effectiveSeasonId);
+
+  // L'épisode courant s'amène à l'écran de lui-même, une fois par ouverture —
+  // une saison longue ne se parcourt plus à la molette (parité mobile/TV).
+  const activeItemRef = useRef<HTMLButtonElement | null>(null);
+  const didAutoScrollRef = useRef(false);
+  useEffect(() => {
+    if (didAutoScrollRef.current) return;
+    if (!episodes?.some((ep) => ep.Id === currentEpisodeId)) return;
+    activeItemRef.current?.scrollIntoView({ block: "center" });
+    didAutoScrollRef.current = true;
+  }, [episodes, currentEpisodeId]);
 
   const select = (id: string) => {
     if (id !== currentEpisodeId) navigate(`/watch/${id}`, { replace: true });
@@ -74,7 +85,7 @@ export function EpisodeSelectorPanel({
               onClick={() => setSeasonId(s.Id)}
               className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium leading-5 transition-colors ${
                 s.Id === effectiveSeasonId
-                  ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]"
+                  ? "border-[var(--brand-accent)]/45 bg-[var(--brand-accent-soft)] text-[var(--brand-accent-light)]"
                   : "border-line-subtle bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
               }`}
             >
@@ -90,6 +101,7 @@ export function EpisodeSelectorPanel({
             key={ep.Id}
             ep={ep}
             active={ep.Id === currentEpisodeId}
+            innerRef={ep.Id === currentEpisodeId ? activeItemRef : undefined}
             onClick={() => select(ep.Id)}
           />
         ))}
@@ -101,7 +113,11 @@ export function EpisodeSelectorPanel({
   );
 }
 
-function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; onClick: () => void }) {
+function EpisodeItem({ ep, active, onClick, innerRef }: {
+  ep: MediaItem; active: boolean; onClick: () => void;
+  /** Posée sur l'épisode courant — cible du défilement automatique. */
+  innerRef?: React.Ref<HTMLButtonElement>;
+}) {
   const client = useJellyfinClient();
   const thumb = client.getImageUrl(ep.Id, "Primary", { width: 240, quality: 80 });
   const watched = ep.UserData?.Played === true;
@@ -111,6 +127,7 @@ function EpisodeItem({ ep, active, onClick }: { ep: MediaItem; active: boolean; 
 
   return (
     <button
+      ref={innerRef}
       onClick={onClick}
       className={`flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors ${
         active ? "bg-[var(--brand-accent-soft)]" : "hover:bg-fill-subtle"
