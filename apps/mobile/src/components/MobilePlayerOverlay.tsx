@@ -154,8 +154,9 @@ export function MobilePlayerOverlay({
           {/* Indicateur de saut ±10/30 (boutons) */}
           <SkipIndicator side={skipSide} />
 
-          {/* Bottom bar: seek + track buttons */}
-          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "flex-end", paddingRight: 8 }}>
+          {/* Bottom bar: seek + track buttons — insets latéraux : en paysage,
+              la barre et la seek passaient sous l'îlot caméra. */}
+          <View pointerEvents="box-none" style={{ flexDirection: "row", alignItems: "flex-end", paddingLeft: insets.left, paddingRight: Math.max(8, insets.right) }}>
             <View style={{ flex: 1 }}>
               <PlayerSeekBar
                 currentTime={currentTime}

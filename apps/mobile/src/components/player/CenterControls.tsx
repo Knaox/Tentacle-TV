@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { SkipBack, RotateCcw, Play, Pause, RotateCw, SkipForward } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PLAYER } from "@/theme";
 
 interface Props {
@@ -26,8 +27,11 @@ export function CenterControls({
   paused, ui, centerGap, playSize, hasPrevious, hasNext,
   onPrevious, onNext, onPlayPause, onRewind, onForward,
 }: Props) {
+  // Paysage : la rangée reste centrée, mais l'inset latéral garantit qu'un
+  // écran étroit ne pousse jamais un bouton sous l'îlot caméra.
+  const insets = useSafeAreaInsets();
   return (
-    <View pointerEvents="box-none" style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap }}>
+    <View pointerEvents="box-none" style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: centerGap, paddingHorizontal: Math.max(insets.left, insets.right) }}>
       {hasPrevious && onPrevious ? (
         <Pressable onPress={onPrevious} hitSlop={16} style={{ padding: 8 }}>
           <SkipBack size={Math.round(22 * ui)} color={PLAYER.textSecondary} />
