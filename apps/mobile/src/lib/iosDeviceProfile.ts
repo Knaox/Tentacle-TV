@@ -35,11 +35,20 @@ export function buildIosDeviceProfile(maxBitrate?: number): DeviceProfile {
 
   const transcodingProfiles: TranscodingProfile[] = [
     // HLS avec fMP4 — préféré par AVPlayer pour HEVC
+    //
+    // JAMAIS d'ac3/eac3 ici : en COPIE Dolby vers fMP4, le muxeur de ffmpeg ne
+    // connaît les paramètres du codec qu'à l'arrivée des premiers paquets, et
+    // Jellyfin ne pose pas `-movflags delay_moov` — selon l'entrelacement du
+    // fichier, l'init sort avec un moov de taille 0 (stsd vide) et AVPlayer
+    // rend CoreMediaErrorDomain -16172 (mesuré : « Cannot write moov atom
+    // before AC3 packets » dans le log de transcodage, One Piece S10E12).
+    // L'audio Dolby est donc RÉENCODÉ en AAC sur ce chemin ; la lecture
+    // directe MP4 (ci-dessus) garde le passthrough.
     {
       Container: "mp4",
       Type: "Video",
       VideoCodec: "hevc,h264",
-      AudioCodec: "aac,ac3,eac3",
+      AudioCodec: "aac",
       Protocol: "hls",
       Context: "Streaming",
       MaxAudioChannels: "6",

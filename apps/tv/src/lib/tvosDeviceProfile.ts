@@ -58,11 +58,17 @@ export function buildTvosDeviceProfile(maxBitrate?: number, forceTranscode = fal
 
   const transcodingProfiles: TranscodingProfile[] = [
     // HLS fMP4 — préféré par AVPlayer pour HEVC, permet le remux (copie codec)
+    //
+    // JAMAIS d'ac3/eac3 ici : la copie Dolby vers fMP4 produit, selon
+    // l'entrelacement du fichier, un init au moov vide (« Cannot write moov
+    // atom before AC3 packets », Jellyfin ne pose pas delay_moov) et AVPlayer
+    // tombe en CoreMediaErrorDomain -16172. Réencodage AAC sur ce chemin ;
+    // le direct play garde le passthrough. Même correctif que l'iOS.
     {
       Container: "mp4",
       Type: "Video",
       VideoCodec: "hevc,h264",
-      AudioCodec: "aac,ac3,eac3",
+      AudioCodec: "aac",
       Protocol: "hls",
       Context: "Streaming",
       MaxAudioChannels: "6",
