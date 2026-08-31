@@ -124,9 +124,11 @@ export function MediaDetailScreen({ itemId }: Props) {
             <Image source={{ uri: backdrop }} style={{ width: "100%", height: "100%" }} contentFit="cover" transition={400} />
           </Animated.View>
           <GradientOverlay direction="top" height={120 + insets.top} intensity="soft" />
-          {/* Fade bas : voile SOMBRE en clair (sinon l'affiche est délavée en
-              blanc et le titre onMedia devient illisible) — cf. HeroBanner. */}
-          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="strong" color={theme.isDark ? undefined : theme.colors.onMedia.shadow} />
+          {/* Fade bas : rampe « detail » du bureau (extinction plus progressive
+              que le hero). Voile SOMBRE en clair (sinon l'affiche est délavée
+              et le titre onMedia illisible) — noir PUR : le plafond 0,70 du
+              clair est déjà dans la rampe (cf. GradientOverlay). */}
+          <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
         </View>
         {!isTablet && backBtn}
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>

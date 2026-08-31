@@ -87,14 +87,14 @@ export const LibraryCard = memo(function LibraryCard({ library, onPress, width }
           </View>
         )}
         {/* Fade cinématique bas. En SOMBRE : vers surface.s0 (noir pur, défaut).
-            En CLAIR : voile SOMBRE (onMedia.shadow) au lieu de gris clair, pour
-            que le titre blanc (onMedia) reste lisible sur l'affiche — look
-            cinématique Netflix/Apple TV constant quel que soit le thème. */}
+            En CLAIR : voile SOMBRE au lieu de gris clair, pour que le titre
+            blanc (onMedia) reste lisible sur l'affiche — noir PUR, le plafond
+            0,70 du clair est déjà dans la rampe (cf. GradientOverlay). */}
         <GradientOverlay
           direction="bottom"
           height="55%"
           intensity="strong"
-          color={theme.isDark ? undefined : colors.onMedia.shadow}
+          color={theme.isDark ? undefined : `rgb(${colors.onMedia.scrimRgb})`}
         />
 
         {/* Badge icône type — glass sombre sur image (reste sombre dans les deux

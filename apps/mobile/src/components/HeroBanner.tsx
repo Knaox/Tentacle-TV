@@ -92,15 +92,17 @@ export const HeroBanner = memo(function HeroBanner({ items, onPlay, onInfo }: He
         }}
       >
         <BackdropStack items={items} activeIndex={index} />
-        {/* Les voiles restent des SCRIMS (noir alpha, jamais un fondu vers un
-            aplat) : la carte a un bord — un bas opaque y peignait un « voile
-            noir » découpé sur le fond de page. En CLAIR, onMedia.shadow. */}
+        {/* Les voiles du bureau (scrims.css) : la « bande noire » venait de la
+            FORME de la rampe (pente qui retombait à 70 %), pas de sa couleur —
+            la rampe corrigée vit dans GradientOverlay. En SOMBRE le bas rejoint
+            la page (surface.s0, défaut) ; en CLAIR il plafonne à 0,70 de noir
+            PUR (le plafond est dans la rampe, jamais dans la couleur). */}
         <GradientOverlay direction="top" height={110} intensity="soft" color="rgba(0, 0, 0, 0.65)" />
         <GradientOverlay
           direction="bottom"
           height={bannerH * 0.62}
           intensity="strong"
-          color={theme.isDark ? "rgba(0, 0, 0, 0.82)" : theme.colors.onMedia.shadow}
+          color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`}
         />
         <FlatList
           ref={listRef}
