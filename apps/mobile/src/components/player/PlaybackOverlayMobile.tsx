@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { SkipButton } from "./SkipButton";
-import { AutoPlayOverlay } from "./AutoPlayOverlay";
+import { NextEpisodeFullscreenMobile } from "./NextEpisodeFullscreenMobile";
 import { UpNextCardMobile } from "./UpNextCardMobile";
 
 interface Props {
@@ -93,10 +93,10 @@ export function PlaybackOverlayMobile({
       );
     }
     return (
-      <AutoPlayOverlay
+      <NextEpisodeFullscreenMobile
         nextEpisode={nextEpisode}
-        countdown={overlay.countdownSeconds ?? 0}
-        totalSeconds={countdownTotals.nextMs / 1000}
+        countdownSeconds={overlay.countdownSeconds}
+        countdownTotalMs={countdownTotals.nextMs}
         onPlay={onPlayNow}
         onDismiss={onDismiss}
       />
