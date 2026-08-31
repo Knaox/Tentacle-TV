@@ -22,7 +22,7 @@ interface TentacleMonoSvgProps {
 }
 
 /** Largeur du liseré qui détache un bras avant de ses voisins. */
-const OUTLINE = 7;
+const OUTLINE = 8;
 
 function armPaths(d: string, segments: readonly ArmSegment[], extra = 0, stroke?: string) {
   return segments.map((segment) => (
