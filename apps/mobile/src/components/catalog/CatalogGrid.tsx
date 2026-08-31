@@ -1,12 +1,12 @@
 import { memo, useCallback, useMemo } from "react";
-import { View, Text, FlatList, ActivityIndicator, StyleSheet } from "react-native";
+import { View, Text, FlatList, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { PressableCard, ProgressBar, FadeIn } from "@/components/ui";
+import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/ui";
 import { spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
@@ -46,7 +46,7 @@ export const CatalogGrid = memo(function CatalogGrid({ catalog, onItemPress, ove
 
   const footer = useMemo(() => {
     if (catalog.isFetchingNextPage) {
-      return <ActivityIndicator size="small" color={colors.brand.violet} style={styles.loader} />;
+      return <View style={styles.loader}><BrandSpinner size="small" /></View>;
     }
     return null;
   }, [catalog.isFetchingNextPage, colors, styles]);

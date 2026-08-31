@@ -10,6 +10,7 @@ export { PressableCard } from "./PressableCard";
 export { Badge } from "./Badge";
 export { Button } from "./Button";
 export { ProgressBar } from "./ProgressBar";
+export { BrandSpinner } from "./BrandSpinner";
 export { Divider } from "./Divider";
 export { IconButton } from "./IconButton";
 export { GradientOverlay } from "./GradientOverlay";
