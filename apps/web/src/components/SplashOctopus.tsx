@@ -1,3 +1,17 @@
+import type { CSSProperties } from "react";
+import { TaperedArm } from "./ui/TentacleArms";
+import { TentacleFace } from "./ui/TentacleFace";
+import { TentacleHat } from "./ui/TentacleHat";
+import {
+  ANTENNA_PATHS,
+  ANTENNA_SEGMENTS,
+  ARM_SEGMENTS,
+  BACK_ARM_PATHS,
+  BACK_ARM_SEGMENTS,
+  FRONT_ARM_PATHS,
+  SUCKERS,
+} from "./ui/tentacleGeometry";
+
 type Phase = "enter" | "clap" | "splash" | "exit";
 
 interface SplashOctopusProps {
@@ -6,172 +20,185 @@ interface SplashOctopusProps {
 }
 
 /**
- * Poulpe pirate SVG avec tentacules animées via CSS @keyframes.
- * Framer Motion ne gère pas transform-origin sur SVG <g> —
- * on utilise des keyframes CSS avec le pattern translate→rotate→translate.
+ * Pivots de rotation des bras, à l'aplomb de leurs attaches sous le manteau.
+ *
+ * Ils étaient exprimés dans l'ancien viewBox 512×560 ; tels quels dans le repère
+ * 240×240 ils tombaient hors du dessin, et les bras pivotaient autour d'un point
+ * situé loin de leur base — le claquement partait en moulinet.
+ */
+const PIVOT_LEFT = "98px,176px";
+const PIVOT_RIGHT = "142px,176px";
+const UNPIVOT_LEFT = "-98px,-176px";
+const UNPIVOT_RIGHT = "-142px,-176px";
+
+/** Les bras du dessin, répartis par côté : seuls eux s'animent. */
+const LEFT_BACK = BACK_ARM_PATHS.filter((_, i) => i === 0);
+const RIGHT_BACK = BACK_ARM_PATHS.filter((_, i) => i === 1);
+const LEFT_FRONT = FRONT_ARM_PATHS.filter((_, i) => i < 2);
+const RIGHT_FRONT = FRONT_ARM_PATHS.filter((_, i) => i >= 2);
+
+/** Les ventouses suivent leur côté : le tableau généré est plat, on le partage. */
+const LEFT_SUCKERS = SUCKERS.filter((cup) => cup.cx < 120);
+const RIGHT_SUCKERS = SUCKERS.filter((cup) => cup.cx >= 120);
+
+/**
+ * La mascotte dont les bras claquent, pour la transition vers le lecteur.
+ *
+ * Framer Motion ne gère pas `transform-origin` sur un `<g>` SVG : d'où des
+ * keyframes CSS et le motif translate → rotate → translate.
  */
 export function SplashOctopus({ phase, size = 180 }: SplashOctopusProps) {
-  const h = Math.round(size * (560 / 512));
-
-  // CSS keyframes pour le clap et le splash — animation des tentacules
-  // Pattern SVG : translate(pivot) rotate(deg) translate(-pivot)
-  const LP = "180px,360px";   // pivot gauche
-  const RP = "332px,360px";   // pivot droit
-  const NLP = "-180px,-360px"; // inverse
-  const NRP = "-332px,-360px"; // inverse
-
-  const cssKeyframes = `
+  const keyframes = `
     @keyframes tentacle-clap-left {
-      0%   { transform: translate(${LP}) rotate(0deg)   translate(${NLP}); }
-      14%  { transform: translate(${LP}) rotate(25deg)  translate(${NLP}); }
-      28%  { transform: translate(${LP}) rotate(-5deg)  translate(${NLP}); }
-      42%  { transform: translate(${LP}) rotate(22deg)  translate(${NLP}); }
-      57%  { transform: translate(${LP}) rotate(-3deg)  translate(${NLP}); }
-      78%  { transform: translate(${LP}) rotate(18deg)  translate(${NLP}); }
-      100% { transform: translate(${LP}) rotate(0deg)   translate(${NLP}); }
+      0%   { transform: translate(${PIVOT_LEFT}) rotate(0deg)   translate(${UNPIVOT_LEFT}); }
+      14%  { transform: translate(${PIVOT_LEFT}) rotate(25deg)  translate(${UNPIVOT_LEFT}); }
+      28%  { transform: translate(${PIVOT_LEFT}) rotate(-5deg)  translate(${UNPIVOT_LEFT}); }
+      42%  { transform: translate(${PIVOT_LEFT}) rotate(22deg)  translate(${UNPIVOT_LEFT}); }
+      57%  { transform: translate(${PIVOT_LEFT}) rotate(-3deg)  translate(${UNPIVOT_LEFT}); }
+      78%  { transform: translate(${PIVOT_LEFT}) rotate(18deg)  translate(${UNPIVOT_LEFT}); }
+      100% { transform: translate(${PIVOT_LEFT}) rotate(0deg)   translate(${UNPIVOT_LEFT}); }
     }
     @keyframes tentacle-clap-right {
-      0%   { transform: translate(${RP}) rotate(0deg)   translate(${NRP}); }
-      14%  { transform: translate(${RP}) rotate(-25deg) translate(${NRP}); }
-      28%  { transform: translate(${RP}) rotate(5deg)   translate(${NRP}); }
-      42%  { transform: translate(${RP}) rotate(-22deg) translate(${NRP}); }
-      57%  { transform: translate(${RP}) rotate(3deg)   translate(${NRP}); }
-      78%  { transform: translate(${RP}) rotate(-18deg) translate(${NRP}); }
-      100% { transform: translate(${RP}) rotate(0deg)   translate(${NRP}); }
+      0%   { transform: translate(${PIVOT_RIGHT}) rotate(0deg)   translate(${UNPIVOT_RIGHT}); }
+      14%  { transform: translate(${PIVOT_RIGHT}) rotate(-25deg) translate(${UNPIVOT_RIGHT}); }
+      28%  { transform: translate(${PIVOT_RIGHT}) rotate(5deg)   translate(${UNPIVOT_RIGHT}); }
+      42%  { transform: translate(${PIVOT_RIGHT}) rotate(-22deg) translate(${UNPIVOT_RIGHT}); }
+      57%  { transform: translate(${PIVOT_RIGHT}) rotate(3deg)   translate(${UNPIVOT_RIGHT}); }
+      78%  { transform: translate(${PIVOT_RIGHT}) rotate(-18deg) translate(${UNPIVOT_RIGHT}); }
+      100% { transform: translate(${PIVOT_RIGHT}) rotate(0deg)   translate(${UNPIVOT_RIGHT}); }
     }
     @keyframes tentacle-splash-left {
-      0%   { transform: translate(${LP}) rotate(0deg)   translate(${NLP}); }
-      100% { transform: translate(${LP}) rotate(-20deg) translate(${NLP}); }
+      0%   { transform: translate(${PIVOT_LEFT}) rotate(0deg)   translate(${UNPIVOT_LEFT}); }
+      100% { transform: translate(${PIVOT_LEFT}) rotate(-20deg) translate(${UNPIVOT_LEFT}); }
     }
     @keyframes tentacle-splash-right {
-      0%   { transform: translate(${RP}) rotate(0deg)   translate(${NRP}); }
-      100% { transform: translate(${RP}) rotate(20deg)  translate(${NRP}); }
+      0%   { transform: translate(${PIVOT_RIGHT}) rotate(0deg)  translate(${UNPIVOT_RIGHT}); }
+      100% { transform: translate(${PIVOT_RIGHT}) rotate(20deg) translate(${UNPIVOT_RIGHT}); }
     }
   `;
 
-  const leftStyle: React.CSSProperties = phase === "clap"
-    ? { animation: "tentacle-clap-left 0.9s ease-in-out" }
-    : phase === "splash" || phase === "exit"
-    ? { animation: "tentacle-splash-left 0.35s ease-out forwards" }
-    : {};
-
-  const rightStyle: React.CSSProperties = phase === "clap"
-    ? { animation: "tentacle-clap-right 0.9s ease-in-out" }
-    : phase === "splash" || phase === "exit"
-    ? { animation: "tentacle-splash-right 0.35s ease-out forwards" }
-    : {};
+  const leftStyle = armStyle(phase, "left");
+  const rightStyle = armStyle(phase, "right");
 
   return (
-    <svg width={size} height={h} viewBox="0 0 512 560" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 240 240"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <defs>
-        <style>{cssKeyframes}</style>
-        <linearGradient id="sp-body" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--brand)" />
-          <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="var(--brand-accent)" />
+        <style>{keyframes}</style>
+        <linearGradient id="sp-mantle" x1="40" y1="54" x2="200" y2="186" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--brand-light)" />
+          <stop offset="0.5" stopColor="var(--brand)" />
+          <stop offset="1" stopColor="var(--brand-accent-deep)" />
         </linearGradient>
-        <linearGradient id="sp-t1" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="var(--brand-dark)" />
-          <stop offset="100%" stopColor="#DB2777" />
+        <linearGradient id="sp-arm" x1="0" y1="170" x2="0" y2="235" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--brand-deep)" />
+          <stop offset="0.18" stopColor="var(--brand-dark)" />
+          <stop offset="1" stopColor="var(--brand-accent)" />
         </linearGradient>
-        <linearGradient id="sp-t2" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#9333EA" />
-          <stop offset="100%" stopColor="var(--brand-accent-light)" />
+        <linearGradient id="sp-arm-back" x1="0" y1="160" x2="0" y2="215" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--brand-deep)" />
+          <stop offset="1" stopColor="var(--brand-accent-shadow)" />
         </linearGradient>
-        <linearGradient id="sp-cheek" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#F9A8D4" />
-          <stop offset="100%" stopColor="var(--brand-accent-light)" />
+        <linearGradient id="sp-tube" x1="0" y1="78" x2="0" y2="156" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--octopus-tube)" />
+          <stop offset="1" stopColor="var(--octopus-tube-deep)" />
         </linearGradient>
-        <linearGradient id="sp-shine" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="white" stopOpacity={0.35} />
-          <stop offset="100%" stopColor="white" stopOpacity={0} />
+        <linearGradient id="sp-shine" x1="0" y1="54" x2="0" y2="110" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.3" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
-        <linearGradient id="sp-hat" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#2D2D2D" />
-          <stop offset="100%" stopColor="#1A1A1A" />
+        <linearGradient id="sp-glass" x1="0" y1="78" x2="0" y2="130" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.22" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
-        <linearGradient id="sp-band" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="var(--brand)" />
-          <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="var(--brand-accent)" />
+        <linearGradient id="sp-hat" x1="0" y1="14" x2="0" y2="78" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#3C3450" />
+          <stop offset="1" stopColor="#15111F" />
         </linearGradient>
-        <linearGradient id="sp-skull" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" />
-          <stop offset="100%" stopColor="#E2E8F0" />
+        <linearGradient id="sp-band" x1="76" y1="0" x2="164" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="var(--brand)" />
+          <stop offset="0.5" stopColor="var(--brand-mid)" />
+          <stop offset="1" stopColor="var(--brand-accent)" />
         </linearGradient>
       </defs>
 
-      {/* ── Tentacules gauches — rotation autour de (180, 360) ── */}
-      <g style={leftStyle}>
-        <path d="M160 358 Q120 418 100 468 Q85 508 110 528 Q130 543 145 518 Q160 493 155 448 Q152 418 170 388" fill="url(#sp-t1)" opacity={0.85} />
-        <path d="M140 348 Q90 388 60 448 Q40 498 65 523 Q88 546 100 508 Q115 468 120 428 Q125 398 150 368" fill="url(#sp-t2)" opacity={0.8} />
-        <path d="M185 363 Q165 428 150 478 Q138 518 160 536 Q180 550 188 520 Q195 490 195 448 Q195 413 200 383" fill="url(#sp-t1)" />
-        <path d="M220 373 Q210 438 205 488 Q200 523 220 538 Q240 548 242 516 Q244 484 240 448 Q237 418 235 388" fill="url(#sp-t2)" />
-        <circle cx={108} cy={498} r={5} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={150} cy={506} r={5} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={215} cy={510} r={4} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={95} cy={473} r={4} fill="#DDD6FE" opacity={0.4} />
-        <circle cx={145} cy={483} r={4} fill="#DDD6FE" opacity={0.4} />
-        <circle cx={210} cy={488} r={3.5} fill="#DDD6FE" opacity={0.4} />
+      {/* Les antennes ne claquent pas : elles restent hors des groupes animés. */}
+      <g fill="none" stroke="url(#sp-arm-back)" strokeLinecap="round" strokeLinejoin="round">
+        {ANTENNA_PATHS.map((d) => (
+          <TaperedArm key={d} d={d} segments={ANTENNA_SEGMENTS} />
+        ))}
       </g>
 
-      {/* ── Tentacules droites — rotation autour de (332, 360) ── */}
-      <g style={rightStyle}>
-        <path d="M352 358 Q392 418 412 468 Q427 508 402 528 Q382 543 367 518 Q352 493 357 448 Q360 418 342 388" fill="url(#sp-t1)" opacity={0.85} />
-        <path d="M372 348 Q422 388 452 448 Q472 498 447 523 Q424 546 412 508 Q397 468 392 428 Q387 398 362 368" fill="url(#sp-t2)" opacity={0.8} />
-        <path d="M327 363 Q347 428 362 478 Q374 518 352 536 Q332 550 324 520 Q317 490 317 448 Q317 413 312 383" fill="url(#sp-t1)" />
-        <path d="M292 373 Q302 438 307 488 Q312 523 292 538 Q272 548 270 516 Q268 484 272 448 Q275 418 277 388" fill="url(#sp-t2)" />
-        <circle cx={362} cy={506} r={5} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={404} cy={498} r={5} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={297} cy={510} r={4} fill="#DDD6FE" opacity={0.5} />
-        <circle cx={367} cy={483} r={4} fill="#DDD6FE" opacity={0.4} />
-        <circle cx={417} cy={473} r={4} fill="#DDD6FE" opacity={0.4} />
-        <circle cx={302} cy={488} r={3.5} fill="#DDD6FE" opacity={0.4} />
-      </g>
+      <ArmSide
+        style={leftStyle}
+        back={LEFT_BACK}
+        front={LEFT_FRONT}
+        suckers={LEFT_SUCKERS}
+      />
+      <ArmSide
+        style={rightStyle}
+        back={RIGHT_BACK}
+        front={RIGHT_FRONT}
+        suckers={RIGHT_SUCKERS}
+      />
 
-      {/* ── Corps ── */}
-      <ellipse cx={256} cy={268} rx={130} ry={140} fill="url(#sp-body)" />
-      <ellipse cx={240} cy={223} rx={80} ry={70} fill="url(#sp-shine)" opacity={0.5} />
-
-      {/* ── Visage ── */}
-      <ellipse cx={210} cy={263} rx={38} ry={42} fill="white" />
-      <ellipse cx={302} cy={263} rx={38} ry={42} fill="white" />
-      <ellipse cx={215} cy={268} rx={22} ry={26} fill="#1E1B4B" />
-      <ellipse cx={307} cy={268} rx={22} ry={26} fill="#1E1B4B" />
-      <ellipse cx={218} cy={266} rx={12} ry={14} fill="#0F0A2A" />
-      <ellipse cx={310} cy={266} rx={12} ry={14} fill="#0F0A2A" />
-      <circle cx={224} cy={256} r={8} fill="white" opacity={0.9} />
-      <circle cx={316} cy={256} r={8} fill="white" opacity={0.9} />
-      <circle cx={212} cy={272} r={4} fill="white" opacity={0.5} />
-      <circle cx={304} cy={272} r={4} fill="white" opacity={0.5} />
-      <path d="M180 230 Q195 220 225 226" stroke="#6D28D9" strokeWidth={3.5} fill="none" strokeLinecap="round" />
-      <path d="M287 226 Q317 220 332 230" stroke="#6D28D9" strokeWidth={3.5} fill="none" strokeLinecap="round" />
-      <path d="M228 316 Q256 343 284 316" stroke="#6D28D9" strokeWidth={4} fill="none" strokeLinecap="round" />
-      <ellipse cx={170} cy={303} rx={20} ry={14} fill="url(#sp-cheek)" opacity={0.45} />
-      <ellipse cx={342} cy={303} rx={20} ry={14} fill="url(#sp-cheek)" opacity={0.45} />
-
-      {/* ── Chapeau pirate ── */}
-      <ellipse cx={256} cy={155} rx={155} ry={22} fill="#1A1A1A" />
-      <ellipse cx={256} cy={153} rx={150} ry={18} fill="#2D2D2D" />
-      <ellipse cx={256} cy={151} rx={145} ry={14} fill="url(#sp-hat)" />
-      <path d="M145 155 Q140 100 165 60 Q195 20 256 8 Q317 20 347 60 Q372 100 367 155 Z" fill="url(#sp-hat)" />
-      <path d="M175 140 Q178 95 200 62 Q225 32 256 25 Q280 32 300 55 Q310 72 310 90" fill="white" opacity={0.06} />
-      <path d="M152 145 Q155 138 165 135 Q210 128 256 126 Q302 128 347 135 Q357 138 360 145 Q357 152 347 155 Q302 162 256 164 Q210 162 165 155 Q155 152 152 145 Z" fill="url(#sp-band)" />
-      <ellipse cx={256} cy={88} rx={18} ry={20} fill="url(#sp-skull)" />
-      <ellipse cx={256} cy={95} rx={12} ry={8} fill="url(#sp-skull)" />
-      <ellipse cx={249} cy={84} rx={5} ry={6} fill="#1A1A1A" />
-      <ellipse cx={263} cy={84} rx={5} ry={6} fill="#1A1A1A" />
-      <path d="M254 92 L256 96 L258 92" fill="#1A1A1A" stroke="#1A1A1A" strokeWidth={1} />
-      <path d="M248 100 L264 100" stroke="#1A1A1A" strokeWidth={1.5} />
-      <line x1={251} y1={100} x2={251} y2={103} stroke="#1A1A1A" strokeWidth={1} />
-      <line x1={256} y1={100} x2={256} y2={103} stroke="#1A1A1A" strokeWidth={1} />
-      <line x1={261} y1={100} x2={261} y2={103} stroke="#1A1A1A" strokeWidth={1} />
-      <path d="M228 78 Q245 95 270 108" stroke="url(#sp-skull)" strokeWidth={5} fill="none" strokeLinecap="round" />
-      <path d="M228 108 Q245 95 270 78" stroke="url(#sp-skull)" strokeWidth={5} fill="none" strokeLinecap="round" />
-      <circle cx={226} cy={76} r={4} fill="url(#sp-skull)" />
-      <circle cx={226} cy={110} r={4} fill="url(#sp-skull)" />
-      <circle cx={272} cy={76} r={4} fill="url(#sp-skull)" />
-      <circle cx={272} cy={110} r={4} fill="url(#sp-skull)" />
+      <TentacleFace
+        mantleFill="url(#sp-mantle)"
+        shineFill="url(#sp-shine)"
+        tubeFill="url(#sp-tube)"
+        glassFill="url(#sp-glass)"
+      />
+      <TentacleHat hatFill="url(#sp-hat)" bandFill="url(#sp-band)" />
     </svg>
+  );
+}
+
+function armStyle(phase: Phase, side: "left" | "right"): CSSProperties {
+  if (phase === "clap") {
+    return { animation: `tentacle-clap-${side} 0.9s ease-in-out` };
+  }
+  if (phase === "splash" || phase === "exit") {
+    return { animation: `tentacle-splash-${side} 0.35s ease-out forwards` };
+  }
+  return {};
+}
+
+interface ArmSideProps {
+  style: CSSProperties;
+  back: readonly string[];
+  front: readonly string[];
+  suckers: readonly { cx: number; cy: number; r: number }[];
+}
+
+/** Un côté de bras, animé en bloc autour de son pivot. */
+function ArmSide({ style, back, front, suckers }: ArmSideProps) {
+  return (
+    <g style={style}>
+      <g fill="none" stroke="url(#sp-arm-back)" strokeLinecap="round" strokeLinejoin="round">
+        {back.map((d) => (
+          <TaperedArm key={d} d={d} segments={BACK_ARM_SEGMENTS} />
+        ))}
+      </g>
+      <g fill="none" stroke="url(#sp-arm)" strokeLinecap="round" strokeLinejoin="round">
+        {front.map((d) => (
+          <TaperedArm key={d} d={d} segments={ARM_SEGMENTS} />
+        ))}
+      </g>
+      <g fill="#1B0B33" opacity="0.22">
+        {suckers.map((cup) => (
+          <circle key={`s-${cup.cx}-${cup.cy}`} cx={cup.cx + 0.7} cy={cup.cy + 0.9} r={cup.r * 1.18} />
+        ))}
+      </g>
+      <g fill="#fff" opacity="0.26">
+        {suckers.map((cup) => (
+          <circle key={`c-${cup.cx}-${cup.cy}`} cx={cup.cx - 0.2} cy={cup.cy - 0.3} r={cup.r} />
+        ))}
+      </g>
+    </g>
   );
 }
