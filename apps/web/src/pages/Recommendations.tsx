@@ -7,6 +7,7 @@ import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
+import { LikedActorsPanel } from "../components/reco/LikedActorsPanel";
 import { RecoProviderChips } from "../components/reco/RecoProviderChips";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
@@ -129,6 +130,11 @@ export function Recommendations() {
             />
           ))
         )}
+
+        {/* Ajuster ses acteurs se fait ICI, au contact des rangées — pas dans
+            les réglages. Visible aussi pendant l'exploration : aimer deux ou
+            trois acteurs nourrit le profil qui se construit. */}
+        <LikedActorsPanel />
       </div>
     </PageTransition>
   );

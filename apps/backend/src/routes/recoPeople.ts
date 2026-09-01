@@ -11,7 +11,20 @@ interface RawPerson {
   id: number;
   name?: string;
   profile_path?: string | null;
+  known_for_department?: string;
   known_for?: Array<{ title?: string; name?: string }>;
+}
+
+function toSuggestion(p: RawPerson) {
+  return {
+    personId: p.id,
+    name: p.name ?? "",
+    profilePath: p.profile_path ?? null,
+    knownFor: (p.known_for ?? [])
+      .map((k) => k.title ?? k.name ?? "")
+      .filter(Boolean)
+      .slice(0, 3),
+  };
 }
 
 const likeSchema = z.object({
@@ -41,16 +54,35 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
         query: query.trim(),
         page: "1",
       });
+      return { results: (page.results ?? []).slice(0, 8).map(toSuggestion) };
+    } catch {
+      return { results: [] };
+    }
+  });
+
+  // ── GET /people/suggestions — des acteurs CONNUS pour amorcer la liste
+  //    (/person/popular TMDB), personnes déjà aimées et sans portrait exclues ──
+  app.get("/people/suggestions", async (request) => {
+    const user = (request as any).user as JellyfinUser;
+    if (!tmdbConfigured()) return { results: [] };
+    const prisma = getPrisma();
+    const liked = await prisma.userLikedPerson.findMany({
+      where: { jellyfinUserId: user.userId },
+      select: { personId: true },
+    });
+    const likedIds = new Set(liked.map((l) => l.personId));
+    try {
+      const page = await tmdbFetch<{ results?: RawPerson[] }>("/person/popular", { page: "1" });
       return {
-        results: (page.results ?? []).slice(0, 8).map((p) => ({
-          personId: p.id,
-          name: p.name ?? "",
-          profilePath: p.profile_path ?? null,
-          knownFor: (p.known_for ?? [])
-            .map((k) => k.title ?? k.name ?? "")
-            .filter(Boolean)
-            .slice(0, 3),
-        })),
+        results: (page.results ?? [])
+          .filter(
+            (p) =>
+              !likedIds.has(p.id) &&
+              p.profile_path &&
+              (p.known_for_department ?? "Acting") === "Acting"
+          )
+          .slice(0, 12)
+          .map(toSuggestion),
       };
     } catch {
       return { results: [] };

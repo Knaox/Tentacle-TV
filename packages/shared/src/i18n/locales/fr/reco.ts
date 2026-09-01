@@ -23,6 +23,15 @@ export default {
   providersAll: "Toutes les plateformes",
   providerRowEmpty: "Rien ici sur les plateformes sélectionnées.",
   rowWithActor: "Avec {{name}}",
+  actorsTitle: "Vos acteurs",
+  actorsHint:
+    "Aimez des acteurs ou des réalisateurs : des rangées « Avec … » naîtront de vos choix. Cherchez un nom, piochez dans les suggestions, ou aimez-les depuis le casting d'une fiche.",
+  actorsSuggested: "Acteurs connus — pour commencer",
+  actorsResults: "Résultats",
+  actorsSearchPlaceholder: "Chercher un acteur, un réalisateur…",
+  actorsRemove: "Retirer {{name}}",
+  actorsLike: "Aimer {{name}}",
+  actorsNoResult: "Aucun résultat.",
   disabledBody:
     "Les recommandations personnalisées sont désactivées pour votre compte. Activez-les dans vos réglages de personnalisation pour recevoir des suggestions à votre goût.",
   disabledCta: "Ouvrir les réglages de personnalisation",

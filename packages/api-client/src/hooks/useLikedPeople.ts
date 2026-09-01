@@ -60,7 +60,17 @@ export function useUnlikePerson() {
   });
 }
 
-/** Recherche de personne TMDB (réglages) — l'appelant débounce la saisie. */
+/** Des acteurs CONNUS pour amorcer la liste (personnes aimées exclues). */
+export function usePersonSuggestions() {
+  return useQuery({
+    queryKey: ["reco", "people-suggestions"],
+    queryFn: () =>
+      tentacleApiFetch<{ results: PersonSearchResult[] }>("/api/reco/people/suggestions"),
+    staleTime: 30 * 60_000,
+  });
+}
+
+/** Recherche de personne TMDB — l'appelant débounce la saisie. */
 export function usePersonSearch(query: string) {
   return useQuery({
     queryKey: ["reco", "people-search", query],
