@@ -31,6 +31,9 @@ export interface AutoNextDispatch {
   playNow: () => void;
   /** La croix d'une surface « suite » — `final` = celle de l'affiche de fin. */
   dismissNext: (final: boolean) => void;
+  /** Tue le minuteur pour l'épisode, la surface reste une PROPOSITION — noter
+   *  depuis l'affiche de fin dit « je suis encore sur cet écran ». */
+  cancelNextCountdown: () => void;
   signalRemoteNextDismiss: () => void;
 }
 
@@ -82,6 +85,10 @@ export function useAutoNextDispatch(
     [dispatchNext, inputRef],
   );
 
+  const cancelNextCountdown = useCallback(() => {
+    dispatchNext({ type: "cancelCountdown" });
+  }, [dispatchNext]);
+
   const signalRemoteNextDismiss = useCallback(() => {
     // Un membre a dit non : sa croix masque NOTRE carte et annule le décompte
     // pour l'épisode — mais l'affiche de fin restera une PROPOSITION chez
@@ -90,5 +97,13 @@ export function useAutoNextDispatch(
     dispatchNext({ type: "cancelCountdown" });
   }, [dispatchNext]);
 
-  return { nextState, nextStateRef, dispatchNext, playNow, dismissNext, signalRemoteNextDismiss };
+  return {
+    nextState,
+    nextStateRef,
+    dispatchNext,
+    playNow,
+    dismissNext,
+    cancelNextCountdown,
+    signalRemoteNextDismiss,
+  };
 }
