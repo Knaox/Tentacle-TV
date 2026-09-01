@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { awaitRebuild } from "./profileBuilder";
 import { tmdbConfigured } from "../tmdb/client";
 import { getCachedMetaMany, getTitleMeta, metaKey } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
@@ -40,6 +41,9 @@ export interface PoolPayload {
   poolSize: number;
   /** Réglage au moment de la génération (debug) — additif, vieux pools sans. */
   includeVigie?: boolean;
+  /** Passe rapide (bibliothèque + cache, zéro réseau) : la relève complète
+   *  l'écrase — additif, un vieux pool sans le champ est complet. */
+  preliminary?: boolean;
   seeds: SeedRef[];
   entries: PoolEntry[];
   /** Libellés humains des facettes à IDs (« director:5655 » → nom) pour les
@@ -78,7 +82,27 @@ export async function generatePool(userId: string): Promise<{ poolSize: number }
   return p;
 }
 
-async function doGenerate(userId: string): Promise<{ poolSize: number }> {
+/**
+ * Premier pool d'un compte : la passe RAPIDE d'abord (bibliothèque + métas en
+ * cache, zéro réseau — des rangées en quelques secondes), la génération
+ * complète en relève. UNE seule chaîne sous le mutex : deux requêtes
+ * simultanées ne lancent pas deux générations. Attend la fin d'une
+ * reconstruction de profil en cours — générer sur un profil vide figerait du
+ * bruit pour six heures.
+ */
+export async function bootstrapPool(userId: string): Promise<{ poolSize: number }> {
+  const pending = inFlight.get(userId);
+  if (pending) return pending;
+  const p = (async () => {
+    await awaitRebuild(userId);
+    await doGenerate(userId, true).catch(() => undefined);
+    return doGenerate(userId);
+  })().finally(() => inFlight.delete(userId));
+  inFlight.set(userId, p);
+  return p;
+}
+
+async function doGenerate(userId: string, quick = false): Promise<{ poolSize: number }> {
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
 
@@ -107,13 +131,16 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
   // Bibliothèque seule : /discover et Vigie ne produisent QUE du hors
   // bibliothèque — on économise l'API. Les graines restent interrogées :
   // leurs candidats se rattachent à la bibliothèque et portent les seedKey
-  // des rangées « Parce que vous avez aimé ».
-  const [fromSeeds, fromDiscover, fromVigie, fromAnilist] = await Promise.all([
-    candidatesFromSeeds(seeds),
-    includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
-    includeVigie ? candidatesFromVigie() : Promise.resolve([]),
-    candidatesFromAnilist(userId),
-  ]);
+  // des rangées « Parce que vous avez aimé ». En passe rapide : aucune source
+  // externe du tout, le réseau attendra la relève.
+  const [fromSeeds, fromDiscover, fromVigie, fromAnilist] = quick
+    ? [[], [], [], []]
+    : await Promise.all([
+        candidatesFromSeeds(seeds),
+        includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
+        includeVigie ? candidatesFromVigie() : Promise.resolve([]),
+        candidatesFromAnilist(userId),
+      ]);
 
   const pool = assemblePool([
     libraryCandidates(library),
@@ -169,7 +196,8 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     }
   }
 
-  let fetchBudget = tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
+  // Passe rapide : enrichissement au CACHE seul, pas un octet de réseau.
+  let fetchBudget = !quick && tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
   const enrichTop = scored.slice(0, ENRICH_TOP);
   // Une lecture groupée du cache pour tout le haut du panier — le budget de
   // fetchs frais ne sert qu'aux absents.
@@ -203,6 +231,7 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     strategyId: strategy.id,
     poolSize: scored.length,
     includeVigie,
+    preliminary: quick,
     seeds,
     entries: scored,
     labels,
@@ -217,15 +246,24 @@ function byTotalDesc(a: PoolEntry, b: PoolEntry): number {
 }
 
 /**
- * Garantit un pool : frais → rien à faire ; absent/expiré → génération lancée
- * EN FOND (la requête HTTP ne l'attend jamais) et l'appelant sert ce qu'il a.
+ * Garantit un pool : complet → rien à faire ; préliminaire → servi tel quel
+ * pendant que la relève complète tourne (« refining ») ; absent/expiré →
+ * chaîne rapide+complète lancée EN FOND (la requête HTTP n'attend jamais) et
+ * l'appelant sert ce qu'il a.
  */
 export async function ensureFreshPool(
   userId: string
-): Promise<{ status: "fresh" | "generating"; pool: PoolPayload | null }> {
+): Promise<{ status: "fresh" | "refining" | "generating"; pool: PoolPayload | null }> {
   const pool = await readStoredPool(userId);
+  if (pool?.preliminary) {
+    // generatePool dédoublonne sous le mutex : appel sans condition, sans risque.
+    void generatePool(userId).catch((err) =>
+      console.error(`[Reco] Relève du pool ${userId.slice(0, 8)}… en échec :`, err)
+    );
+    return { status: "refining", pool };
+  }
   if (pool) return { status: "fresh", pool };
-  void generatePool(userId).catch((err) =>
+  void bootstrapPool(userId).catch((err) =>
     console.error(`[Reco] Génération du pool ${userId.slice(0, 8)}… en échec :`, err)
   );
   return { status: "generating", pool: null };

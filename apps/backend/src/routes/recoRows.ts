@@ -46,9 +46,10 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       state: ctx.state,
       signalCount: ctx.signalCount,
       generating: status === "generating",
-      // « refining » : quelque chose de mieux arrive — le client affiche son
-      // bandeau « vos recommandations s'affinent » sans vider l'écran.
-      refining: status === "generating",
+      // « refining » : quelque chose de mieux arrive (pool préliminaire servi
+      // ou génération en cours) — le client garde l'écran et affiche son
+      // bandeau « vos recommandations s'affinent ».
+      refining: status !== "fresh",
       generatedAt: pool?.generatedAt ?? null,
       rows,
     };
@@ -73,8 +74,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       return buildCommunityRow(user.userId, library, ctx.exclude, !ctx.includeVigie);
     }
     const { status, pool } = await ensureFreshPool(user.userId);
+    const refining = status !== "fresh";
     if (!pool) {
-      return { key: rowKey, items: [], generating: status === "generating" };
+      return { key: rowKey, items: [], generating: status === "generating", refining };
     }
     const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
     const row = buildRow(pool, rowKey, {
@@ -84,7 +86,8 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       lambda: ctx.lambda,
       profile: ctx.profile,
     });
-    return row ?? { key: rowKey, items: [] };
+    // Le drapeau voyage avec la rangée : le client re-sonde tant qu'il est vrai.
+    return row ? { ...row, refining } : { key: rowKey, items: [], refining };
   });
 
   // ── POST /feedback — « ne plus me proposer » : exclusion définitive ──
