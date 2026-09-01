@@ -4,6 +4,7 @@ import { generatePool, readPool } from "./generationJob";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
+import { refreshTrending } from "./trendingRow";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -14,6 +15,8 @@ const POKE_DEBOUNCE_MS = 8_000;
 const COOCCURRENCE_INTERVAL_MS = 6 * 3600_000;
 const COOCCURRENCE_BOOT_DELAY_MS = 2 * 60_000;
 const CACHE_PURGE_INTERVAL_MS = 3600_000;
+const TRENDING_INTERVAL_MS = 12 * 3600_000;
+const TRENDING_BOOT_DELAY_MS = 45_000;
 /** Garde d'âge de la régénération après rebuild : c'est LE réglage de coût
  *  API (~110 appels TMDB par génération complète) — borne à ~2 générations
  *  par heure et par compte actif. Un favori ajouté devient graine sous 30 min. */
@@ -24,6 +27,8 @@ let idfBootTimer: NodeJS.Timeout | null = null;
 let coocTimer: NodeJS.Timeout | null = null;
 let coocBootTimer: NodeJS.Timeout | null = null;
 let purgeTimer: NodeJS.Timeout | null = null;
+let trendingTimer: NodeJS.Timeout | null = null;
+let trendingBootTimer: NodeJS.Timeout | null = null;
 const profileTimers = new Map<string, NodeJS.Timeout>();
 
 async function runIdf(): Promise<void> {
@@ -64,8 +69,25 @@ export function startRecoJobs(): void {
     void purgeExpiredRecoCache().catch(() => undefined);
   }, CACHE_PURGE_INTERVAL_MS);
 
+  // Tendances globales (TMDB ou Vigie) : premier passage 45 s après le
+  // démarrage, puis toutes les 12 h — le TTL de 48 h absorbe les redémarrages.
+  trendingBootTimer = setTimeout(() => {
+    trendingBootTimer = null;
+    void runTrending();
+  }, TRENDING_BOOT_DELAY_MS);
+  trendingTimer = setInterval(() => void runTrending(), TRENDING_INTERVAL_MS);
+
   // Poussée des notes vers TMDB/AniList (tick 15 s, backoff par ligne).
   startSyncWorkers();
+}
+
+async function runTrending(): Promise<void> {
+  try {
+    const res = await refreshTrending();
+    if (res) console.log(`[Reco] Tendances : ${res.count} titres (${res.origin})`);
+  } catch (err) {
+    console.error("[Reco] Échec du rafraîchissement des tendances :", err);
+  }
 }
 
 async function runCooccurrence(): Promise<void> {
@@ -87,6 +109,8 @@ export function stopRecoJobs(): void {
   if (coocTimer) { clearInterval(coocTimer); coocTimer = null; }
   if (coocBootTimer) { clearTimeout(coocBootTimer); coocBootTimer = null; }
   if (purgeTimer) { clearInterval(purgeTimer); purgeTimer = null; }
+  if (trendingTimer) { clearInterval(trendingTimer); trendingTimer = null; }
+  if (trendingBootTimer) { clearTimeout(trendingBootTimer); trendingBootTimer = null; }
   for (const t of profileTimers.values()) clearTimeout(t);
   profileTimers.clear();
 }
