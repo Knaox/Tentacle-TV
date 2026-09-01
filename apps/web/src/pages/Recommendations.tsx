@@ -12,6 +12,7 @@ import { RecoFiltersMenu } from "../components/reco/RecoFiltersMenu";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 import { RecoStatusBanner } from "../components/reco/RecoStatusBanner";
+import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
 
 /** Les rangées servies dans TOUS les états du moteur (contrat backend). */
 const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
@@ -41,11 +42,22 @@ export function Recommendations() {
   // serveur dit encore « cold » (la bascule est instantanée, le profil se
   // reconstruit derrière) : sans lui, la grille se ré-afficherait une seconde
   // après le clic. L'état se réarme dès que le serveur a vraiment tourné.
+  // Et il ne s'IMPOSE qu'une fois (accusé par compte et par appareil) : les
+  // visites suivantes passent par le bandeau CTA, jamais par le plein écran.
   const [phase, setPhase] = useState<"auto" | "hold" | "dismissed">("auto");
   useEffect(() => {
-    if (overview?.state === "cold") setPhase((p) => (p === "auto" ? "hold" : p));
-    else setPhase("auto");
-  }, [overview?.state]);
+    if (overview?.state === "cold") {
+      setPhase((p) =>
+        p === "auto" && overview.tmdbConfigured !== false && !hasColdStartAck() ? "hold" : p
+      );
+    } else {
+      setPhase("auto");
+    }
+  }, [overview?.state, overview?.tmdbConfigured]);
+  // L'accusé se pose dès que la grille a été VUE — « Plus tard » compte aussi.
+  useEffect(() => {
+    if (phase === "hold") markColdStartAck();
+  }, [phase]);
 
   if (isPending) {
     return (
