@@ -26,6 +26,7 @@ const META: TitleMeta = {
   voteCount: 24000,
   posterPath: "/matrix.jpg",
   backdropPath: "/matrix-backdrop.jpg",
+  providers: null,
 };
 
 describe("facettes TMDB", () => {
