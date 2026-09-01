@@ -10,6 +10,10 @@ export interface LibraryEntry extends JellyfinFacetSource {
   tmdbId: number;
   played: boolean;
   isFavorite: boolean;
+  /** Série entamée (≥ un épisode vu, pas terminée) — jamais vrai pour un film. */
+  inProgress: boolean;
+  hasPrimaryImage: boolean;
+  hasBackdrop: boolean;
   communityRating: number | null;
 }
 
@@ -24,7 +28,16 @@ interface RawItem extends JellyfinFacetSource {
   Type?: string;
   ProviderIds?: Record<string, string>;
   CommunityRating?: number;
-  UserData?: { Played?: boolean; IsFavorite?: boolean };
+  ImageTags?: Record<string, string>;
+  BackdropImageTags?: string[];
+  /** Nombre d'épisodes (séries) — sert à détecter une série entamée. */
+  RecursiveItemCount?: number;
+  UserData?: {
+    Played?: boolean;
+    IsFavorite?: boolean;
+    PlayedPercentage?: number;
+    UnplayedItemCount?: number;
+  };
 }
 
 const PAGE = 1000;
@@ -46,9 +59,11 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
 
   for (let page = 0; page < PAGES_MAX; page++) {
     const res = await fetch(
+      // Images : seulement les TAGS (Primary/Backdrop), jamais les binaires —
+      // ils disent « une affiche existe », matière du filtre de qualité.
       `${url}/Items?userId=${userId}&Recursive=true&IncludeItemTypes=Movie,Series` +
-        `&EnableImages=false&EnableUserData=true` +
-        `&Fields=ProviderIds,Genres,Studios,ProductionYear,RunTimeTicks,CommunityRating` +
+        `&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop&EnableUserData=true` +
+        `&Fields=ProviderIds,Genres,Studios,ProductionYear,RunTimeTicks,CommunityRating,BackdropImageTags,RecursiveItemCount` +
         `&StartIndex=${page * PAGE}&Limit=${PAGE}`,
       { headers: { "X-Emby-Token": apiKey } }
     );
@@ -61,14 +76,27 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
       const mediaType = item.Type === "Movie" ? "movie" : item.Type === "Series" ? "tv" : null;
       if (!mediaType) continue;
       const key = `${mediaType}:${tmdbId}`;
+      const played = item.UserData?.Played === true;
+      // Série entamée : pourcentage global > 0, ou des épisodes vus (le compte
+      // des non-vus descend sous le total). Champs absents → false, sans casse.
+      const unplayed = item.UserData?.UnplayedItemCount;
+      const episodes = item.RecursiveItemCount;
+      const inProgress =
+        mediaType === "tv" &&
+        !played &&
+        ((item.UserData?.PlayedPercentage ?? 0) > 0 ||
+          (unplayed != null && episodes != null && unplayed < episodes));
       const entry: LibraryEntry = {
         itemId: item.Id,
         name: item.Name ?? "",
         key,
         mediaType,
         tmdbId,
-        played: item.UserData?.Played === true,
+        played,
         isFavorite: item.UserData?.IsFavorite === true,
+        inProgress,
+        hasPrimaryImage: !!item.ImageTags?.Primary,
+        hasBackdrop: (item.BackdropImageTags?.length ?? 0) > 0,
         communityRating: item.CommunityRating ?? null,
         Genres: item.Genres,
         Studios: item.Studios,
