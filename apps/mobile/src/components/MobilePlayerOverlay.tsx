@@ -213,10 +213,12 @@ export function MobilePlayerOverlay({
         overlay={playback.overlay}
         countdownTotals={playback.countdownTotals}
         nextEpisode={nextEpisode}
+        currentItem={item}
         controlsVisible={visible}
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
+        onRatingEngage={playback.cancelNextCountdown}
         bottom={Math.max(110, insets.bottom + 86)}
         right={Math.max(20, insets.right + 16)}
       />

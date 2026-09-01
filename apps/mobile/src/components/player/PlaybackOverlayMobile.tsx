@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { useEndCardRating } from "@tentacle-tv/api-client";
 import { SkipButton } from "./SkipButton";
 import { NextEpisodeFullscreenMobile } from "./NextEpisodeFullscreenMobile";
 import { UpNextCardMobile } from "./UpNextCardMobile";
@@ -9,12 +10,16 @@ interface Props {
   overlay: PlayerOverlay;
   countdownTotals: { skipMs: number; nextMs: number };
   nextEpisode?: MediaItem | null;
+  /** Média EN COURS — la notation de l'affiche de fin s'y adosse. */
+  currentItem?: MediaItem | null;
   /** L'habillage du lecteur est à l'écran — la carte de coin s'écarte. */
   controlsVisible: boolean;
   /** Saut manuel — l'automatique, lui, vit dans la coquille partagée. */
   onSkip: () => void;
   onDismiss: () => void;
   onPlayNow: () => void;
+  /** Tue le décompte de la suite quand une note se pose. */
+  onRatingEngage?: () => void;
   bottom: number;
   right: number;
 }
@@ -35,10 +40,13 @@ interface Props {
  * hériterait de la course de la première.
  */
 export function PlaybackOverlayMobile({
-  overlay, countdownTotals, nextEpisode, controlsVisible,
-  onSkip, onDismiss, onPlayNow, bottom, right,
+  overlay, countdownTotals, nextEpisode, currentItem, controlsVisible,
+  onSkip, onDismiss, onPlayNow, onRatingEngage, bottom, right,
 }: Props) {
   const { t } = useTranslation("player");
+  // AVANT les retours anticipés (règle des hooks) : la notation de l'épisode
+  // FINI, servie à l'affiche plein écran seulement.
+  const endCardRating = useEndCardRating(currentItem ?? null);
 
   if (overlay.kind === "skip") {
     const count = overlay.countdownSeconds;
@@ -99,6 +107,8 @@ export function PlaybackOverlayMobile({
         countdownTotalMs={countdownTotals.nextMs}
         onPlay={onPlayNow}
         onDismiss={onDismiss}
+        rating={endCardRating}
+        onRatingEngage={onRatingEngage}
       />
     );
   }
