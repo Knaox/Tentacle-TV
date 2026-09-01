@@ -84,7 +84,7 @@ export {
   useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedItem,
   setShareLinkBackendUrl, setShareLinkToken,
 } from "./hooks/useShareLink";
-export type { SharedListData, SharedListItem } from "./hooks/useShareLink";
+export type { SharedListData, SharedListItem, ShareListKind } from "./hooks/useShareLink";
 
 // Batch remove
 export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "./hooks/useBatchRemove";

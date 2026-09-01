@@ -15,6 +15,7 @@ import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
+import { LikesShare } from "../../components/settings/personalization/LikesShare";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
 import { reconcileHomeRows } from "../../lib/homeLayout";
@@ -207,6 +208,8 @@ export function SettingsPersonalization() {
       </SettingsSection>
 
       <LinkedAccounts />
+
+      <LikesShare />
 
       <ConfirmDialog
         open={confirmReset}

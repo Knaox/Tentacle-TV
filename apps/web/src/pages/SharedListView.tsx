@@ -33,16 +33,23 @@ export function SharedListView() {
     });
   }, []);
 
+  // Un partage de LIKÉS se ré-importe vers les favoris du visiteur ; la
+  // watchlist partagée garde son ajout historique vers « Ma liste ».
+  const kind = data?.kind ?? "watchlist";
   const addMut = useMutation({
     mutationFn: async (ids: string[]) => {
       await Promise.allSettled(
-        ids.map((id) => client.fetch(`/Users/${userId}/Items/${id}/Rating?likes=true`, { method: "POST" })),
+        ids.map((id) =>
+          kind === "likes"
+            ? client.fetch(`/Users/${userId}/FavoriteItems/${id}`, { method: "POST" })
+            : client.fetch(`/Users/${userId}/Items/${id}/Rating?likes=true`, { method: "POST" }),
+        ),
       );
     },
     onSuccess: () => {
       setSelected(new Set());
       setAdded(true);
-      qc.invalidateQueries({ queryKey: ["watchlist"] });
+      qc.invalidateQueries({ queryKey: [kind === "likes" ? "favorites" : "watchlist"] });
     },
   });
 
@@ -66,27 +73,26 @@ export function SharedListView() {
           </div>
         ) : data.items.length === 0 ? (
           <>
-            <SharedListHeader ownerUsername={data.ownerUsername} authed={authed} token={token} />
+            <SharedListHeader ownerUsername={data.ownerUsername} authed={authed} token={token} kind={kind} />
             <p className="mt-10 text-center text-content-tertiary">{t("common:emptyWatchlist")}</p>
           </>
         ) : (
           <>
-            <SharedListHeader ownerUsername={data.ownerUsername} authed={authed} token={token} />
+            <SharedListHeader ownerUsername={data.ownerUsername} authed={authed} token={token} kind={kind} />
             {authed && (
               <div className="mb-4 flex justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setAdded(false);
+                    const selectable = data.items.filter((i) => i.Id).map((i) => i.Id);
                     setSelected(
-                      selected.size === data.items.length
-                        ? new Set()
-                        : new Set(data.items.map((i) => i.Id)),
+                      selected.size === selectable.length ? new Set() : new Set(selectable),
                     );
                   }}
                   className="rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
                 >
-                  {selected.size === data.items.length ? t("common:deselectAll") : t("common:selectAll")}
+                  {selected.size > 0 && selected.size === data.items.filter((i) => i.Id).length ? t("common:deselectAll") : t("common:selectAll")}
                 </button>
               </div>
             )}

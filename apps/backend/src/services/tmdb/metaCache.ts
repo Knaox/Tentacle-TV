@@ -28,6 +28,7 @@ export interface TitleMeta {
   popularity: number | null;
   voteAverage: number | null;
   voteCount: number | null;
+  posterPath: string | null;
 }
 
 // Les métadonnées d'un titre ne changent quasiment jamais : 30 jours, avec un
@@ -56,6 +57,7 @@ interface RawTmdbTitle {
   popularity?: number;
   vote_average?: number;
   vote_count?: number;
+  poster_path?: string | null;
 }
 
 function named(refs: Array<{ id: number; name?: string }>): NamedRef[] {
@@ -98,6 +100,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     popularity: raw.popularity ?? null,
     voteAverage: raw.vote_average ?? null,
     voteCount: raw.vote_count ?? null,
+    posterPath: raw.poster_path ?? null,
   };
 }
 

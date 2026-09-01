@@ -39,44 +39,56 @@ async function shareFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export type ShareListKind = "watchlist" | "likes";
+
+/** Préfixe des routes propriétaire selon la liste partagée. */
+function kindBase(kind: ShareListKind): string {
+  return kind === "likes" ? "/likes" : "";
+}
+
 export interface SharedListItem {
   Id: string;
   Name: string;
   Type: string;
   ProductionYear?: number;
   ImageTags?: Record<string, string>;
+  /** Affiche TMDB absolue — titres hors bibliothèque (Id vide). */
+  PosterUrl?: string;
+  InLibrary?: boolean;
 }
 
 export interface SharedListData {
   ownerUsername: string;
+  kind?: ShareListKind;
   items: SharedListItem[];
 }
 
-/** Crée (ou récupère) mon lien de partage. */
-export function useCreateShareLink() {
+/** Crée (ou récupère) mon lien de partage — watchlist par défaut, `likes`
+ *  pour la liste des titres likés (favoris + hors bibliothèque). */
+export function useCreateShareLink(kind: ShareListKind = "watchlist") {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => shareFetch<{ token: string }>("/", { method: "POST" }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["share", "mine"] }),
+    mutationFn: () => shareFetch<{ token: string }>(`${kindBase(kind)}/`, { method: "POST" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["share", "mine", kind] }),
   });
 }
 
 /** État de mon lien (token ou null). */
-export function useMyShareLink(enabled = true) {
+export function useMyShareLink(enabled = true, kind: ShareListKind = "watchlist") {
   return useQuery({
-    queryKey: ["share", "mine"],
-    queryFn: () => shareFetch<{ token: string | null }>("/mine"),
+    queryKey: ["share", "mine", kind],
+    queryFn: () => shareFetch<{ token: string | null }>(`${kindBase(kind)}/mine`),
     enabled,
     staleTime: 30_000,
   });
 }
 
 /** Révoque mon lien. */
-export function useRevokeShareLink() {
+export function useRevokeShareLink(kind: ShareListKind = "watchlist") {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => shareFetch<{ ok: boolean }>("/", { method: "DELETE" }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["share", "mine"] }),
+    mutationFn: () => shareFetch<{ ok: boolean }>(`${kindBase(kind)}/`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["share", "mine", kind] }),
   });
 }
 
