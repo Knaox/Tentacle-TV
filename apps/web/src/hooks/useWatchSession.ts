@@ -86,13 +86,19 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
   const [subtitleIndex, setSubtitleIndex] = useState<number | null>(null);
   const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   const [startTicks, setStartTicks] = useState<number>(0);
-  // Échelle + preset + cap automatique selon le débit mesuré (téléviseur
-  // uniquement — politique inerte au navigateur) : cf. useEffectiveQuality.
-  // Le sélecteur reçoit la clé EFFECTIVE (palier servi, cap compris) et un
-  // setter qui désarme le cap — jamais le state brut, qui mentirait au menu.
-  // `startTicks` : le cap se re-photographie à chaque relance de session.
-  const { qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManual } =
-    useEffectiveQuality({ mediaSource, itemId, qualityKey, setQualityKey, startTicks });
+  // Échelle + preset + cap automatique selon le débit mesuré (toutes
+  // plateformes désormais — la politique web est active) : cf.
+  // useEffectiveQuality. Le sélecteur reçoit la clé EFFECTIVE (palier servi,
+  // cap compris) et un setter qui désarme le cap — jamais le state brut, qui
+  // mentirait au menu. `startTicks` : re-photographie à chaque relance de
+  // session. Local/hors ligne : ni mesure ni cap — rien à adapter.
+  const {
+    qualityPresets, quality, qualityMaxHeight, qualityKeyEffective, setQualityKeyManual,
+    autoCapActive, autoModeArmed,
+  } = useEffectiveQuality({
+    mediaSource, itemId, qualityKey, setQualityKey, startTicks,
+    enabled: !offlineMode && !isLocalPlayback,
+  });
   const [prefsReady, setPrefsReady] = useState(false);
   const [burnInSubtitleIndex, setBurnInSubtitleIndex] = useState<number | undefined>(undefined);
   const positionRef = useRef(0);
@@ -273,6 +279,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     itemId, item, isLoading, client, streams, mediaSourceId, defaultAudio,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
     qualityKey: qualityKeyEffective, setQualityKey: setQualityKeyManual, sourceQuality, qualityPresets,
+    autoCapActive, autoModeArmed,
     startTicks, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
