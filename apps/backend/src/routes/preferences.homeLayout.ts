@@ -20,20 +20,23 @@ const layoutSchema = z.object({
 export type HomeLayoutPayload = z.infer<typeof layoutSchema>;
 
 /**
- * Défaut = l'accueil HISTORIQUE, à l'identique : quatre rangées actives, les
- * rangées de recommandation présentes mais ÉTEINTES (migration silencieuse —
- * rien ne change sans action de l'utilisateur). Les bibliothèques sont
- * dynamiques : le client les réconcilie (ajoutées en fin, actives).
+ * Défaut = l'accueil RECOMMANDÉ : héros « Sélectionné pour vous » et rangée
+ * « Pour vous » actifs d'entrée. Ne concerne que les comptes SANS mise en page
+ * stockée — une ligne existante garde le choix de l'utilisateur, au champ
+ * près. Les bibliothèques sont dynamiques : le client les réconcilie (ancrées
+ * avant « Déjà visionné » sur ce défaut, ajoutées en fin sur un layout
+ * stocké). Le client retombe sur la bannière de reprise tant que la reco n'a
+ * rien à montrer — un serveur sans clé TMDB sert donc l'accueil historique.
  */
 export const DEFAULT_HOME_LAYOUT: HomeLayoutPayload = {
-  heroMode: "resume",
+  heroMode: "reco",
   heroFixedItemId: null,
   rows: [
     { key: "resume", enabled: true },
     { key: "nextUp", enabled: true },
-    { key: "watchlist", enabled: true },
+    { key: "reco:forYou", enabled: true },
     { key: "watched", enabled: true },
-    { key: "reco:forYou", enabled: false },
+    { key: "watchlist", enabled: true },
     { key: "reco:inLibrary", enabled: false },
     { key: "reco:discover", enabled: false },
     { key: "reco:community", enabled: false },

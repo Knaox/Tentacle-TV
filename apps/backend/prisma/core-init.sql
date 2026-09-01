@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS `recommendation_feedback` (
 CREATE TABLE IF NOT EXISTS `home_layouts` (
   `id` varchar(191) NOT NULL,
   `jellyfinUserId` varchar(255) NOT NULL,
-  `heroMode` varchar(20) NOT NULL DEFAULT 'resume',
+  `heroMode` varchar(20) NOT NULL DEFAULT 'reco',
   `heroFixedItemId` varchar(64) NULL,
   `rows` text NOT NULL,
   `cardDensity` varchar(10) NOT NULL DEFAULT 'normal',
@@ -345,6 +345,11 @@ CREATE TABLE IF NOT EXISTS `home_layouts` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `home_layouts_jellyfinUserId_key` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- L'accueil par défaut assume la personnalisation (1.16) : seul le DÉFAUT de
+-- colonne s'aligne — les lignes existantes portent des valeurs explicites et
+-- ne bougent pas. Rejouer ce SET DEFAULT est sans effet (idempotent).
+ALTER TABLE `home_layouts` ALTER `heroMode` SET DEFAULT 'reco';
 
 -- Comptes externes liés (TMDB guest / AniList). Voir schema.prisma > ExternalAccount.
 CREATE TABLE IF NOT EXISTS `external_accounts` (
