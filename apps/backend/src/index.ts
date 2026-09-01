@@ -46,6 +46,7 @@ import { leaderboardRoutes } from "./routes/leaderboard";
 import { ratingRoutes } from "./routes/ratings";
 import { likeRoutes } from "./routes/likes";
 import { recoRoutes } from "./routes/reco";
+import { recoPeopleRoutes } from "./routes/recoPeople";
 import { recoRowRoutes } from "./routes/recoRows";
 import { externalAccountRoutes } from "./routes/externalAccounts";
 import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
@@ -249,6 +250,7 @@ async function main() {
   await app.register(likeRoutes, { prefix: "/api/likes" });
   await app.register(recoRoutes, { prefix: "/api/reco" });
   await app.register(recoRowRoutes, { prefix: "/api/reco" });
+  await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
   await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });

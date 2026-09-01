@@ -606,6 +606,22 @@ model TmdbMetaCache {
 // mapping Fribb/anime-lists, repli recherche AniList (titre romaji + année).
 // `source: "none"` = résolution tentée et vaine — à garder, sinon on recherche
 // le même titre à chaque sync.
+// Personnes (acteurs, réalisateurs) aimées explicitement — matière des
+// rangées « Avec {acteur} ». name/profilePath stockés : l'affichage au
+// service ne dépend jamais de TMDB.
+model UserLikedPerson {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  /// id TMDB de la personne
+  personId       Int
+  name           String   @db.VarChar(255)
+  profilePath    String?  @db.VarChar(255)
+  createdAt      DateTime @default(now())
+
+  @@unique([jellyfinUserId, personId])
+  @@map("user_liked_people")
+}
+
 model AnimeIdMap {
   mediaType  String   @db.VarChar(10) // "movie" | "tv"
   tmdbId     Int
