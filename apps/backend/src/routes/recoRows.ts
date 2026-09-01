@@ -7,8 +7,7 @@ import { ensureFreshPool } from "../services/reco/generationJob";
 import { rebuildProfile } from "../services/reco/profileBuilder";
 import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { canonicalKey } from "../services/reco/candidates/exclusions";
-import { buildLibraryIndex } from "../services/reco/candidates/libraryIndex";
-import type { LibraryIndex } from "../services/reco/candidates/libraryIndex";
+import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { getSeerrConfig } from "../services/seerConfig";
 import { buildCommunityRow } from "../services/reco/communityRow";
 import type { TasteVector } from "../services/reco/scoring/strategy";
@@ -96,19 +95,6 @@ async function serveContext(userId: string): Promise<ServeContext> {
   };
 }
 
-// L'index de bibliothèque est un balayage complet : mémoïsé dix minutes pour
-// la grille de démarrage à froid (seule consommatrice par requête HTTP).
-const libraryMemo = new Map<string, { at: number; index: LibraryIndex }>();
-const LIBRARY_MEMO_MS = 10 * 60_000;
-
-async function memoizedLibrary(userId: string): Promise<LibraryIndex> {
-  const hit = libraryMemo.get(userId);
-  if (hit && Date.now() - hit.at < LIBRARY_MEMO_MS) return hit.index;
-  const index = await buildLibraryIndex(userId);
-  libraryMemo.set(userId, { at: Date.now(), index });
-  return index;
-}
-
 /** Rangées de recommandation, feedback, démarrage à froid. */
 export const recoRowRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -145,7 +131,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     // pool ; le réglage « recommandations communautaires » la coupe net.
     if (rowKey === "community") {
       if (!ctx.community) return { key: rowKey, items: [] };
-      const library = await memoizedLibrary(user.userId);
+      const library = await getLibraryIndexMemo(user.userId);
       return buildCommunityRow(user.userId, library, ctx.exclude);
     }
     const { status, pool } = await ensureFreshPool(user.userId);
@@ -191,7 +177,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
   const COLDSTART_MAX = 60;
   app.get("/coldstart", async (request) => {
     const user = (request as any).user as JellyfinUser;
-    const library = await memoizedLibrary(user.userId);
+    const library = await getLibraryIndexMemo(user.userId);
     const sorted = [...library.entries].sort(
       (a, b) => (b.communityRating ?? 0) - (a.communityRating ?? 0)
     );
