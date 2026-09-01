@@ -164,6 +164,8 @@ export {
   ratingKey,
 } from "./hooks/useRatings";
 export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } from "./hooks/useRatings";
+export { useEndCardRating } from "./hooks/useEndCardRating";
+export type { EndCardRating } from "./hooks/useEndCardRating";
 
 // Rangées de recommandation (cf. hooks/useRecoRows)
 export {
