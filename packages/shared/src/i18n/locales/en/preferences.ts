@@ -94,6 +94,13 @@ export default {
   persoSyncCounts: "{{synced}} synced · {{pending}} pending · {{failed}} failed",
   persoSyncFailedHint: "Some ratings could not be pushed — resync will replay them.",
   persoSyncNow: "Resync now",
+  persoActorsTitle: "Favorite actors",
+  persoActorsCaption: "“Starring {actor}” rows built from the people you like.",
+  persoActorsEmpty:
+    "No liked person yet — search a name below, or like an actor from a title's cast.",
+  persoActorsSearchPlaceholder: "Search an actor, a director…",
+  persoActorsRemove: "Remove {{name}}",
+  persoActorsNoResult: "No result.",
   sectionHelp: "Help",
   sectionDanger: "Danger zone",
   back: "Back",

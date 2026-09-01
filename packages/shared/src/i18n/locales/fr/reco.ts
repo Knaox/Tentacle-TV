@@ -20,6 +20,7 @@ export default {
   providersFilterAria: "Filtrer par plateforme",
   providersAll: "Toutes les plateformes",
   providerRowEmpty: "Rien ici sur les plateformes sélectionnées.",
+  rowWithActor: "Avec {{name}}",
   disabledBody:
     "Les recommandations personnalisées sont désactivées pour votre compte. Activez-les dans vos réglages de personnalisation pour recevoir des suggestions à votre goût.",
   disabledCta: "Ouvrir les réglages de personnalisation",

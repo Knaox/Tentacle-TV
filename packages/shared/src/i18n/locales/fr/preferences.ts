@@ -94,6 +94,13 @@ export default {
   persoSyncCounts: "{{synced}} synchronisées · {{pending}} en attente · {{failed}} en échec",
   persoSyncFailedHint: "Des notes n'ont pas pu partir — la resynchronisation les rejouera.",
   persoSyncNow: "Resynchroniser maintenant",
+  persoActorsTitle: "Acteurs favoris",
+  persoActorsCaption: "Des rangées « Avec {acteur} » construites sur les personnes que vous aimez.",
+  persoActorsEmpty:
+    "Aucune personne aimée — cherchez un nom ci-dessous, ou aimez un acteur depuis le casting d'une fiche.",
+  persoActorsSearchPlaceholder: "Chercher un acteur, un réalisateur…",
+  persoActorsRemove: "Retirer {{name}}",
+  persoActorsNoResult: "Aucun résultat.",
   sectionHelp: "Aide",
   sectionDanger: "Zone sensible",
   back: "Retour",
