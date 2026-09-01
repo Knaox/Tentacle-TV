@@ -4,6 +4,13 @@ import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { ensureFreshPool } from "../services/reco/generationJob";
+import {
+  buildGlobalRow,
+  fallbackRowList,
+  isGlobalRowKey,
+  spreadByGenre,
+  weaveGlobalRows,
+} from "../services/reco/globalRows";
 import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { getSeerrConfig } from "../services/seerConfig";
@@ -36,7 +43,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
         refining: rebuilding,
         tmdbConfigured: ctx.tmdbConfigured,
         personalized: ctx.personalized,
-        rows: [],
+        // Plus jamais une page vide : les rangées globales tiennent la scène
+        // en attendant (ou à la place) de la personnalisation.
+        rows: fallbackRowList(ctx),
       };
     }
     const { status, pool } = await ensureFreshPool(user.userId);
@@ -46,6 +55,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       ? availableRows(pool, { vigieAvailable, inLibraryOnly, userId: user.userId })
       : [];
     if (!ctx.community) rows = rows.filter((r) => r.key !== "community");
+    rows = weaveGlobalRows(rows, ctx);
     return {
       state: ctx.state,
       signalCount: ctx.signalCount,
@@ -70,6 +80,13 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const { rowKey } = request.params as { rowKey: string };
     const ctx = await serveContext(user.userId);
+    // Les rangées globales se servent dans TOUS les états — y compris
+    // « disabled » sans clé TMDB : c'est le contenu du mode générique.
+    if (isGlobalRowKey(rowKey)) {
+      const row = await buildGlobalRow(user.userId, rowKey, ctx);
+      await attachProviders(row.items);
+      return row;
+    }
     if (ctx.state === "disabled" || ctx.state === "cold") {
       // L'accueil interroge « forYou » pendant un rebuild à froid : sans ce
       // drapeau, le client ne re-sonderait jamais et resterait sur le repli.
@@ -135,25 +152,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const sorted = [...library.entries].sort(
       (a, b) => (b.communityRating ?? 0) - (a.communityRating ?? 0)
     );
-    const byGenre = new Map<string, typeof sorted>();
-    for (const e of sorted) {
-      const genre = e.Genres?.[0] ?? "";
-      const bucket = byGenre.get(genre);
-      if (bucket) bucket.push(e);
-      else byGenre.set(genre, [e]);
-    }
-    const buckets = [...byGenre.values()];
-    const pick: typeof sorted = [];
-    for (let rank = 0; pick.length < COLDSTART_MAX; rank++) {
-      let added = false;
-      for (const bucket of buckets) {
-        if (rank < bucket.length && pick.length < COLDSTART_MAX) {
-          pick.push(bucket[rank]);
-          added = true;
-        }
-      }
-      if (!added) break;
-    }
+    const pick = spreadByGenre(sorted, COLDSTART_MAX);
     return {
       items: pick.map((e) => ({
         jellyfinItemId: e.itemId,
