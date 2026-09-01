@@ -32,10 +32,10 @@ export function facetsFromTmdb(meta: TitleMeta): FacetEntry[] {
   for (const g of meta.genres) out.push({ key: `genre:${g.id}`, mult: 1 });
   // Les keywords sont la facette la plus discriminante du profil.
   for (const k of meta.keywords) out.push({ key: `kw:${k.id}`, mult: 1 });
-  for (const d of meta.directors) out.push({ key: `director:${d}`, mult: DIRECTOR_MULT });
-  for (const a of meta.topCast) out.push({ key: `actor:${a}`, mult: 1 });
-  for (const s of meta.studios) out.push({ key: `studio:${s}`, mult: 1 });
-  for (const n of meta.networks) out.push({ key: `network:${n}`, mult: 1 });
+  for (const d of meta.directors) out.push({ key: `director:${d.id}`, mult: DIRECTOR_MULT });
+  for (const a of meta.topCast) out.push({ key: `actor:${a.id}`, mult: 1 });
+  for (const s of meta.studios) out.push({ key: `studio:${s.id}`, mult: 1 });
+  for (const n of meta.networks) out.push({ key: `network:${n.id}`, mult: 1 });
   if (meta.year != null) out.push({ key: `decade:${decadeOf(meta.year)}`, mult: 1 });
   if (meta.originalLanguage) out.push({ key: `lang:${meta.originalLanguage}`, mult: 1 });
   if (meta.runtimeMinutes != null && meta.runtimeMinutes > 0) {

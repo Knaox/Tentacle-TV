@@ -16,6 +16,8 @@ export interface Candidate {
   /** Présent quand le titre est dans la bibliothèque Jellyfin. */
   jellyfinItemId?: string | null;
   posterPath?: string | null;
+  /** Clé de la graine qui a produit ce candidat (rangées « Parce que… »). */
+  seedKey?: string | null;
 }
 
 /** Le vecteur de goût d'un compte, parsé depuis TasteProfile.facets. */

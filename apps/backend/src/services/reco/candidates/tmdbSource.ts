@@ -82,7 +82,11 @@ export async function candidatesFromSeeds(seeds: SeedRef[]): Promise<Candidate[]
       try {
         const page = await tmdbFetch<TmdbListPage>(path, { page: "1" });
         for (const raw of page.results ?? []) {
-          out.push(toCandidate(raw, seed.mediaType, "tmdb_rec"));
+          const candidate = toCandidate(raw, seed.mediaType, "tmdb_rec");
+          // La graine signe son candidat : les rangées « Parce que vous avez
+          // aimé [titre] » se découpent là-dessus.
+          candidate.seedKey = `${seed.mediaType}:${seed.tmdbId}`;
+          out.push(candidate);
         }
       } catch {
         // Graine muette (titre retiré, réseau) : on continue.
