@@ -1,5 +1,7 @@
 import { getPrisma } from "../db";
+import { tmdbConfigured } from "../tmdb/client";
 import { runCooccurrenceJob } from "./cooccurrence";
+import { cancelRecoFanout, kickRecoFanout } from "./fanout";
 import { generatePool, readPool } from "./generationJob";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
@@ -18,6 +20,8 @@ const COOCCURRENCE_BOOT_DELAY_MS = 2 * 60_000;
 const CACHE_PURGE_INTERVAL_MS = 3600_000;
 const TRENDING_INTERVAL_MS = 12 * 3600_000;
 const TRENDING_BOOT_DELAY_MS = 45_000;
+/** Après IDF (30 s) et cooccurrence (2 min) : le serveur est posé. */
+const FANOUT_BOOT_DELAY_MS = 5 * 60_000;
 /** Garde d'âge de la régénération après rebuild : c'est LE réglage de coût
  *  API (~110 appels TMDB par génération complète) — borne à ~2 générations
  *  par heure et par compte actif. Un favori ajouté devient graine sous 30 min. */
@@ -30,6 +34,7 @@ let coocBootTimer: NodeJS.Timeout | null = null;
 let purgeTimer: NodeJS.Timeout | null = null;
 let trendingTimer: NodeJS.Timeout | null = null;
 let trendingBootTimer: NodeJS.Timeout | null = null;
+let fanoutBootTimer: NodeJS.Timeout | null = null;
 const profileTimers = new Map<string, NodeJS.Timeout>();
 
 async function runIdf(): Promise<void> {
@@ -79,6 +84,14 @@ export function startRecoJobs(): void {
   }, TRENDING_BOOT_DELAY_MS);
   trendingTimer = setInterval(() => void runTrending(), TRENDING_INTERVAL_MS);
 
+  // Fan-out doux au démarrage : un serveur DÉJÀ configuré (clé posée avant
+  // cette version, ou variable d'environnement) chauffe les comptes qui n'ont
+  // pas de profil frais — la pose de clé dans l'admin a son propre kick forcé.
+  fanoutBootTimer = setTimeout(() => {
+    fanoutBootTimer = null;
+    if (tmdbConfigured()) kickRecoFanout({ force: false, reason: "boot" });
+  }, FANOUT_BOOT_DELAY_MS);
+
   // Poussée des notes vers TMDB/AniList (tick 15 s, backoff par ligne).
   startSyncWorkers();
 }
@@ -123,6 +136,8 @@ export function stopRecoJobs(): void {
   if (purgeTimer) { clearInterval(purgeTimer); purgeTimer = null; }
   if (trendingTimer) { clearInterval(trendingTimer); trendingTimer = null; }
   if (trendingBootTimer) { clearTimeout(trendingBootTimer); trendingBootTimer = null; }
+  if (fanoutBootTimer) { clearTimeout(fanoutBootTimer); fanoutBootTimer = null; }
+  cancelRecoFanout();
   for (const t of profileTimers.values()) clearTimeout(t);
   profileTimers.clear();
 }

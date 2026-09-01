@@ -12,6 +12,9 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAdmin } from "../middleware/auth";
 import { deleteConfigValue, getConfigValue, setConfigValue } from "../services/configStore";
+import { fanoutStatus, kickRecoFanout } from "../services/reco/fanout";
+import { refreshTrending } from "../services/reco/trendingRow";
+import { getTmdbApiKey } from "../services/tmdb/client";
 
 const putSchema = z.object({
   tmdbApiKey: z.string().max(128).optional(),
@@ -69,6 +72,8 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
         source: envAnilistId ? "env" : anilistId ? "db" : null,
       },
       watchRegion: getConfigValue("tmdb_watch_region") || "FR",
+      // L'UI peut dire « calcul des recommandations en cours (3/12) ».
+      fanout: fanoutStatus(),
     };
   });
 
@@ -80,10 +85,20 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     if (candidate && !(await tmdbKeyValid(candidate))) {
       return reply.status(400).send({ error: "tmdb-key-invalid" });
     }
+    // La clé TMDB EST l'interrupteur des recommandations : sa pose (ou son
+    // changement) déclenche les tendances puis le calcul pour tous les
+    // comptes. Comparaison sur la clé EFFECTIVE : une variable d'environnement
+    // prioritaire rend l'écriture DB inerte — rien ne se déclenche.
+    const beforeKey = getTmdbApiKey();
     await applyField("tmdb_api_key", body.tmdbApiKey);
     await applyField("anilist_client_id", body.anilistClientId);
     await applyField("anilist_client_secret", body.anilistClientSecret);
     await applyField("tmdb_watch_region", body.watchRegion);
+    const afterKey = getTmdbApiKey();
+    if (afterKey && afterKey !== beforeKey) {
+      void refreshTrending().catch(() => undefined);
+      kickRecoFanout({ force: true, reason: "key-set" });
+    }
     return { ok: true };
   });
 };
