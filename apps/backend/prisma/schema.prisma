@@ -531,7 +531,7 @@ model RecommendationFeedback {
 model HomeLayout {
   id              String   @id @default(cuid())
   jellyfinUserId  String   @unique @db.VarChar(255)
-  heroMode        String   @default("resume") @db.VarChar(20) // "resume" | "random" | "reco" | "fixed"
+  heroMode        String   @default("reco") @db.VarChar(20) // "resume" | "random" | "reco" | "fixed"
   heroFixedItemId String?  @db.VarChar(64)
   rows            String   @db.Text
   cardDensity     String   @default("normal") @db.VarChar(10) // "compact" | "normal" | "large"
