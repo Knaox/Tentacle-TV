@@ -197,3 +197,14 @@ export type {
   HomeLayoutData,
   RecoSettingsData,
 } from "./hooks/useHomeLayout";
+
+// Comptes externes — TMDB guest session, AniList (cf. hooks/useExternalAccounts)
+export {
+  useExternalAccounts,
+  useCreateTmdbGuestSession,
+  useUnlinkTmdbGuestSession,
+  useAnilistAuthorizeUrl,
+  useUnlinkAnilist,
+  useResyncRatings,
+} from "./hooks/useExternalAccounts";
+export type { ExternalAccountsStatus } from "./hooks/useExternalAccounts";

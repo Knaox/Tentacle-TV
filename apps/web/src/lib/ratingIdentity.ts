@@ -16,3 +16,14 @@ export function ratingIdentityForItem(item: MediaItem): RatingIdentity | null {
   if (item.Type === "Series") return { mediaType: "series", tmdbId };
   return null;
 }
+
+/**
+ * Le tvdbId de l'item, s'il en porte un : transmis à la notation pour ancrer
+ * le mapping AniList des séries (la table Fribb pivote sur thetvdb_id).
+ */
+export function tvdbIdForItem(item: MediaItem): number | null {
+  const raw = item.ProviderIds?.Tvdb;
+  if (!raw) return null;
+  const tvdbId = Number(raw);
+  return Number.isFinite(tvdbId) && tvdbId > 0 ? tvdbId : null;
+}
