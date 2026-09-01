@@ -24,6 +24,7 @@ export function TopNavLinks() {
 
   const links: NavLink[] = useMemo(() => {
     const out: NavLink[] = [{ key: "home", label: t("home"), path: "/" }];
+    out.push({ key: "recommendations", label: t("recommendations"), path: "/recommendations" });
 
     if (pinned.watchlist) {
       out.push({ key: "watchlist", label: t("myList"), path: "/watchlist" });

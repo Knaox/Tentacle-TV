@@ -15,6 +15,10 @@ export interface PluginHostEnv {
   mac: boolean;
   prod: boolean;
   backendUrl: string;
+  /** Query string de la route hôte au montage (« ?media=movie:603 ») —
+   *  deep-link vers un contenu du plugin. Champ ADDITIF de l'API publique :
+   *  absent chez les hôtes d'avant, les greffons doivent le traiter optionnel. */
+  query?: string;
 }
 
 /**
