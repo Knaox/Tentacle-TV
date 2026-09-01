@@ -183,6 +183,15 @@ export type {
   ColdStartTitle,
 } from "./hooks/useRecoRows";
 
+// Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
+export {
+  useLikedPeople,
+  useLikePerson,
+  useUnlikePerson,
+  usePersonSearch,
+} from "./hooks/useLikedPeople";
+export type { LikedPerson, PersonSearchResult } from "./hooks/useLikedPeople";
+
 // Accueil configurable + réglages de recommandation (cf. hooks/useHomeLayout)
 export {
   useHomeLayout,

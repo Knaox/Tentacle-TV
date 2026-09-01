@@ -23,4 +23,6 @@ export default {
   video: "Video",
   audioTrack: "Audio",
   subtitleTracks: "Subtitles",
+  likeActor: "Like {{name}}",
+  unlikeActor: "Unlike {{name}}",
 } as const;
