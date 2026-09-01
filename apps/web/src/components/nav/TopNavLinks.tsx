@@ -7,6 +7,7 @@ import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
 import { usePinnedNav, pluginNavKey } from "../../hooks/usePinnedNav";
 import { springSoft } from "../../theme/motion";
+import { NavOverflowScroller } from "./NavOverflowScroller";
 
 interface NavLink {
   key: string;
@@ -64,7 +65,7 @@ export function TopNavLinks() {
   };
 
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide" aria-label="Primary">
+    <NavOverflowScroller ariaLabel="Primary">
       {links.map((link) => {
         const active = isActive(link);
         return (
@@ -96,6 +97,6 @@ export function TopNavLinks() {
           </Link>
         );
       })}
-    </nav>
+    </NavOverflowScroller>
   );
 }
