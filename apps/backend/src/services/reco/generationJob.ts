@@ -1,6 +1,7 @@
 import { getPrisma } from "../db";
 import { tmdbConfigured } from "../tmdb/client";
 import { getCachedMeta, getTitleMeta } from "../tmdb/metaCache";
+import type { TitleMeta } from "../tmdb/metaCache";
 import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
 import { FacetScoringStrategy } from "./scoring/facetStrategy";
@@ -40,6 +41,9 @@ export interface PoolPayload {
   poolSize: number;
   seeds: SeedRef[];
   entries: PoolEntry[];
+  /** Libellés humains des facettes à IDs (« director:5655 » → nom) pour les
+   *  raisons affichées. Décennies/langues/durées se localisent côté client. */
+  labels: Record<string, string>;
 }
 
 function libraryCandidates(library: LibraryIndex): Candidate[] {
@@ -134,6 +138,25 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
   }));
   scored.sort(byTotalDesc);
 
+  const labels: Record<string, string> = {};
+  const harvestLabels = (meta: TitleMeta) => {
+    for (const g of meta.genres) labels[`genre:${g.id}`] = g.name;
+    for (const k of meta.keywords) labels[`kw:${k.id}`] = k.name;
+    for (const d of meta.directors) if (d.name) labels[`director:${d.id}`] = d.name;
+    for (const a of meta.topCast) if (a.name) labels[`actor:${a.id}`] = a.name;
+    for (const s of meta.studios) if (s.name) labels[`studio:${s.id}`] = s.name;
+    for (const n of meta.networks) if (n.name) labels[`network:${n.id}`] = n.name;
+  };
+  // Libellés des facettes nommées Jellyfin (slug → intitulé d'origine).
+  for (const entry of library.entries) {
+    for (const g of entry.Genres ?? []) {
+      labels[`genre-name:${g.trim().toLowerCase().replace(/\s+/g, "-")}`] = g;
+    }
+    for (const s of entry.Studios ?? []) {
+      if (s.Name) labels[`studio-name:${s.Name.trim().toLowerCase().replace(/\s+/g, "-")}`] = s.Name;
+    }
+  }
+
   let fetchBudget = tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
   for (const entry of scored.slice(0, ENRICH_TOP)) {
     const { candidate } = entry;
@@ -143,6 +166,7 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
       meta = await getTitleMeta(candidate.mediaType, candidate.tmdbId);
     }
     if (!meta) continue;
+    harvestLabels(meta);
     candidate.facets = facetsFromTmdb(meta);
     candidate.voteAverage = meta.voteAverage ?? candidate.voteAverage;
     candidate.voteCount = meta.voteCount ?? candidate.voteCount;
@@ -159,6 +183,7 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     poolSize: scored.length,
     seeds,
     entries: scored,
+    labels,
   };
 
   await prisma.recommendationCache.upsert({

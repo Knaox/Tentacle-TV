@@ -1,18 +1,27 @@
 import { getPrisma } from "../db";
 import { tmdbConfigured, tmdbFetch } from "./client";
 
-/** Métadonnées normalisées d'un titre, prêtes pour l'extraction de facettes. */
+export interface NamedRef {
+  id: number;
+  name: string;
+}
+
+/**
+ * Métadonnées normalisées d'un titre, prêtes pour l'extraction de facettes.
+ * Les personnes/studios gardent leur NOM : c'est lui qui fabrique les raisons
+ * lisibles de l'UI (« Réalisé par Denis Villeneuve »).
+ */
 export interface TitleMeta {
   mediaType: "movie" | "tv";
   tmdbId: number;
   title: string;
-  genres: Array<{ id: number; name: string }>;
-  keywords: Array<{ id: number; name: string }>;
+  genres: NamedRef[];
+  keywords: NamedRef[];
   /// Films : job « Director » du crew. Séries : created_by.
-  directors: number[];
-  topCast: number[];
-  studios: number[];
-  networks: number[];
+  directors: NamedRef[];
+  topCast: NamedRef[];
+  studios: NamedRef[];
+  networks: NamedRef[];
   year: number | null;
   originalLanguage: string | null;
   runtimeMinutes: number | null;
@@ -33,12 +42,12 @@ interface RawTmdbTitle {
   genres?: Array<{ id: number; name: string }>;
   keywords?: { keywords?: Array<{ id: number; name: string }>; results?: Array<{ id: number; name: string }> };
   credits?: {
-    cast?: Array<{ id: number; order?: number }>;
-    crew?: Array<{ id: number; job?: string }>;
+    cast?: Array<{ id: number; name?: string; order?: number }>;
+    crew?: Array<{ id: number; name?: string; job?: string }>;
   };
-  created_by?: Array<{ id: number }>;
-  production_companies?: Array<{ id: number }>;
-  networks?: Array<{ id: number }>;
+  created_by?: Array<{ id: number; name?: string }>;
+  production_companies?: Array<{ id: number; name?: string }>;
+  networks?: Array<{ id: number; name?: string }>;
   release_date?: string;
   first_air_date?: string;
   original_language?: string;
@@ -49,18 +58,28 @@ interface RawTmdbTitle {
   vote_count?: number;
 }
 
+function named(refs: Array<{ id: number; name?: string }>): NamedRef[] {
+  const seen = new Set<number>();
+  const out: NamedRef[] = [];
+  for (const r of refs) {
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push({ id: r.id, name: r.name ?? "" });
+  }
+  return out;
+}
+
 function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
   const date = raw.release_date || raw.first_air_date || "";
   const year = /^\d{4}/.test(date) ? Number(date.slice(0, 4)) : null;
   const directors =
     mediaType === "movie"
-      ? (raw.credits?.crew ?? []).filter((c) => c.job === "Director").map((c) => c.id)
-      : (raw.created_by ?? []).map((c) => c.id);
+      ? (raw.credits?.crew ?? []).filter((c) => c.job === "Director")
+      : (raw.created_by ?? []);
   const topCast = (raw.credits?.cast ?? [])
     .slice()
     .sort((a, b) => (a.order ?? 99) - (b.order ?? 99))
-    .slice(0, 5)
-    .map((c) => c.id);
+    .slice(0, 5);
   // `/movie/{id}` livre keywords.keywords, `/tv/{id}` livre keywords.results.
   const keywords = raw.keywords?.keywords ?? raw.keywords?.results ?? [];
   return {
@@ -69,10 +88,10 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     title: raw.title ?? raw.name ?? "",
     genres: raw.genres ?? [],
     keywords,
-    directors: [...new Set(directors)],
-    topCast,
-    studios: (raw.production_companies ?? []).map((c) => c.id),
-    networks: (raw.networks ?? []).map((n) => n.id),
+    directors: named(directors),
+    topCast: named(topCast),
+    studios: named(raw.production_companies ?? []),
+    networks: named(raw.networks ?? []),
     year,
     originalLanguage: raw.original_language ?? null,
     runtimeMinutes: raw.runtime ?? raw.episode_run_time?.[0] ?? null,

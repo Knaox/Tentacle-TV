@@ -164,3 +164,20 @@ export {
   ratingKey,
 } from "./hooks/useRatings";
 export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } from "./hooks/useRatings";
+
+// Rangées de recommandation (cf. hooks/useRecoRows)
+export {
+  useRecoOverview,
+  useRecoRow,
+  useSendRecoFeedback,
+  useColdStartTitles,
+} from "./hooks/useRecoRows";
+export type {
+  RecoState,
+  RecoReason,
+  RecoRowItem,
+  RecoOverview,
+  RecoRow,
+  RecoFeedbackAction,
+  ColdStartTitle,
+} from "./hooks/useRecoRows";
