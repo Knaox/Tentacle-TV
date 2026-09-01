@@ -1,5 +1,5 @@
 import { getPrisma } from "../../db";
-import { getCachedMeta } from "../../tmdb/metaCache";
+import { getCachedMetaMany, metaKey } from "../../tmdb/metaCache";
 import { ratingSignalWeight, ratingStats } from "../profileMath";
 import { canonicalKey } from "./exclusions";
 import type { LibraryIndex } from "./libraryIndex";
@@ -64,11 +64,15 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
     .slice(0, SEEDS_MAX);
 
   // Titre manquant (graine hors bibliothèque) : le cache de métadonnées le
-  // fournit gratuitement quand il l'a — jamais d'appel réseau ici.
-  for (const seed of seeds) {
-    if (seed.title) continue;
-    const meta = await getCachedMeta(seed.mediaType, seed.tmdbId);
-    if (meta) seed.title = meta.title;
+  // fournit gratuitement quand il l'a — jamais d'appel réseau ici, et en une
+  // seule lecture groupée.
+  const mute = seeds.filter((s) => !s.title);
+  if (mute.length > 0) {
+    const metas = await getCachedMetaMany(mute);
+    for (const seed of mute) {
+      const meta = metas.get(metaKey(seed.mediaType, seed.tmdbId));
+      if (meta) seed.title = meta.title;
+    }
   }
   return seeds;
 }

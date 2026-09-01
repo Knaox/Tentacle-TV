@@ -1,6 +1,6 @@
 import { getPrisma } from "../db";
 import { tmdbConfigured } from "../tmdb/client";
-import { getCachedMeta, getTitleMeta } from "../tmdb/metaCache";
+import { getCachedMetaMany, getTitleMeta, metaKey } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
@@ -158,9 +158,15 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
   }
 
   let fetchBudget = tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
-  for (const entry of scored.slice(0, ENRICH_TOP)) {
+  const enrichTop = scored.slice(0, ENRICH_TOP);
+  // Une lecture groupée du cache pour tout le haut du panier — le budget de
+  // fetchs frais ne sert qu'aux absents.
+  const cachedMeta = await getCachedMetaMany(
+    enrichTop.map((e) => ({ mediaType: e.candidate.mediaType, tmdbId: e.candidate.tmdbId }))
+  );
+  for (const entry of enrichTop) {
     const { candidate } = entry;
-    let meta = await getCachedMeta(candidate.mediaType, candidate.tmdbId);
+    let meta = cachedMeta.get(metaKey(candidate.mediaType, candidate.tmdbId)) ?? null;
     if (!meta && fetchBudget > 0) {
       fetchBudget--;
       meta = await getTitleMeta(candidate.mediaType, candidate.tmdbId);
