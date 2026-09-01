@@ -4,6 +4,7 @@ import { useFavoritesAll, useBatchRemoveFavorites } from "@tentacle-tv/api-clien
 import { CollectionGrid } from "../components/CollectionGrid";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
+import { ShareMyListButton } from "../components/share/ShareMyListButton";
 import { useMultiSelect } from "../hooks/useMultiSelect";
 
 export function Favorites() {
@@ -33,13 +34,20 @@ export function Favorites() {
           selectionMode={sel}
           onFilteredIdsChange={handleFilteredIdsChange}
           actions={
-            items && items.length > 0 && !sel.isSelecting ? (
-              <button
-                onClick={sel.enterSelectionMode}
-                className="rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
-              >
-                {t("common:select")}
-              </button>
+            !sel.isSelecting ? (
+              <div className="flex items-center gap-2">
+                {/* Le lien public des titres likés se gère ICI, sur la liste
+                    elle-même — pas dans les réglages. */}
+                <ShareMyListButton kind="likes" />
+                {items && items.length > 0 && (
+                  <button
+                    onClick={sel.enterSelectionMode}
+                    className="rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-secondary"
+                  >
+                    {t("common:select")}
+                  </button>
+                )}
+              </div>
             ) : undefined
           }
         />
