@@ -338,6 +338,10 @@ video::cue {
 /* Crying tentacle animations (kept) */
 @keyframes tentacle-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 @keyframes tentacle-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+/* Respiration du halo de la page Recommandations : opacité + échelle
+   UNIQUEMENT (règle GPU), cycle lent, variations faibles. Le composant se
+   démonte hors écran et se fige sous prefers-reduced-motion. */
+@keyframes reco-breathe { 0%, 100% { opacity: 0.72; transform: scale(1.12); } 50% { opacity: 0.9; transform: scale(1.17); } }
 @keyframes tentacle-wiggle { 0%, 100% { transform: rotate(0deg) scaleX(1); } 25% { transform: rotate(1deg) scaleX(0.98); } 75% { transform: rotate(-1deg) scaleX(1.02); } }
 @keyframes tear-fall-left { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }
 @keyframes tear-fall-right { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }

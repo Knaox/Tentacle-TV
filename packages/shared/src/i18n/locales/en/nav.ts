@@ -1,5 +1,6 @@
 export default {
   home: "Home",
+  recommendations: "Recommendations",
   makeRequest: "Make a request",
   pendingRequests: "Pending requests",
   downloads: "Downloads",

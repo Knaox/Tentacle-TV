@@ -11,6 +11,9 @@ interface BuildPluginHtmlParams {
   backendUrl: string;
   lang: string;
   pluginPath: string;
+  /** Query string de l'URL hôte (« ?media=movie:603 ») — le deep-link du
+   *  plugin. L'iframe n'a pas accès à l'URL parente, on la lui transmet. */
+  pluginQuery: string;
   sharedDepsCode: string;
   tailwindCode: string;
 }
@@ -26,6 +29,7 @@ export function buildPluginHtml({
   backendUrl,
   lang,
   pluginPath,
+  pluginQuery,
   sharedDepsCode,
   tailwindCode,
 }: BuildPluginHtmlParams): string {
@@ -45,6 +49,7 @@ export function buildPluginHtml({
     mac: typeof navigator !== "undefined" && /mac/i.test(navigator.userAgent),
     prod: import.meta.env.PROD,
     backendUrl,
+    query: pluginQuery,
   };
 
   // Propage le schema de l'hote a l'iframe. Le markup des plugins (Seer) est
