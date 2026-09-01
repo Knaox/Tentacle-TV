@@ -16,6 +16,7 @@ import { PlayIcon, HeartIcon, BookmarkIcon, CheckCircleIcon } from "../media/Med
 import { PressableScale } from "../ui/PressableScale";
 import { TrailerButton } from "./TrailerButton";
 import { DetailDownloadAction } from "../../downloads/DetailDownloadAction";
+import { DetailRating } from "../rating/DetailRating";
 import { useWatchTogether } from "../../watchTogether/WatchTogetherProvider";
 import { InviteUsersModal } from "../../watchTogether/InviteUsersModal";
 import { useToast } from "../../contexts/ToastContext";
@@ -144,6 +145,9 @@ export function DetailActions({ item }: DetailActionsProps) {
           icon={<UsersIcon />}
         />
       )}
+
+      {/* Note explicite — s'efface d'elle-même sans tmdbId (titre non notable). */}
+      <DetailRating item={item} />
 
       {/* Progression en barre plutôt qu'en pourcentage nu : sur une rangée de
           boutons, un chiffre isolé se lit comme une étiquette orpheline. */}

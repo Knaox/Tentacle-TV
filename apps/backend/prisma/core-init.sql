@@ -16,12 +16,20 @@ CREATE TABLE IF NOT EXISTS `share_links` (
   `token` varchar(32) NOT NULL,
   `ownerUserId` varchar(255) NOT NULL,
   `ownerUsername` varchar(255) NOT NULL,
+  `kind` varchar(20) NOT NULL DEFAULT 'watchlist',
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `share_links_token_key` (`token`),
-  UNIQUE KEY `share_links_ownerUserId_key` (`ownerUserId`),
+  UNIQUE KEY `share_links_ownerUserId_kind_key` (`ownerUserId`, `kind`),
   KEY `share_links_token_idx` (`token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Le partage s'est généralisé (watchlist + favoris) : les bases d'avant
+-- reçoivent `kind` et l'unicité passe de (ownerUserId) à (ownerUserId, kind).
+-- Les liens existants deviennent kind='watchlist' et restent valides.
+ALTER TABLE `share_links` ADD COLUMN IF NOT EXISTS `kind` varchar(20) NOT NULL DEFAULT 'watchlist';
+ALTER TABLE `share_links` DROP INDEX IF EXISTS `share_links_ownerUserId_key`;
+CREATE UNIQUE INDEX IF NOT EXISTS `share_links_ownerUserId_kind_key` ON `share_links` (`ownerUserId`, `kind`);
 
 -- Code de jumelage de provisionnement (singleton). Voir schema.prisma > ProvisioningCode.
 CREATE TABLE IF NOT EXISTS `provisioning_codes` (
@@ -223,4 +231,176 @@ CREATE TABLE IF NOT EXISTS `media_frame_analysis` (
   `verdict` text DEFAULT NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`itemId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Moteur de recommandation. DDL sur le modèle exact des blocs relevés par
+-- `SHOW CREATE TABLE` (varchar(191) pour un id cuid, tinyint(1) pour un
+-- Boolean, double pour un Float, datetime(3), updatedAt sans défaut).
+-- Voir schema.prisma, section « Moteur de recommandation ».
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Notes explicites (1..10). Voir schema.prisma > UserRating.
+CREATE TABLE IF NOT EXISTS `user_ratings` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `tvdbId` int(11) NULL,
+  `anilistId` int(11) NULL,
+  `jellyfinItemId` varchar(64) NULL,
+  `seasonNumber` int(11) NOT NULL DEFAULT 0,
+  `episodeNumber` int(11) NOT NULL DEFAULT 0,
+  `isAnime` tinyint(1) NOT NULL DEFAULT 0,
+  `score` int(11) NOT NULL,
+  `syncStatus` varchar(16) NOT NULL DEFAULT 'pending',
+  `syncAttempts` int(11) NOT NULL DEFAULT 0,
+  `nextSyncAt` datetime(3) NULL,
+  `tmdbSyncedAt` datetime(3) NULL,
+  `anilistSyncedAt` datetime(3) NULL,
+  `deletedAt` datetime(3) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_ratings_identity_key` (`jellyfinUserId`, `mediaType`, `tmdbId`, `seasonNumber`, `episodeNumber`),
+  KEY `user_ratings_jellyfinUserId_idx` (`jellyfinUserId`),
+  KEY `user_ratings_syncStatus_nextSyncAt_idx` (`syncStatus`, `nextSyncAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- « J'aime » d'un titre HORS bibliothèque (Vigie). Voir schema.prisma > UserLike.
+CREATE TABLE IF NOT EXISTS `user_likes` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_likes_jellyfinUserId_mediaType_tmdbId_key` (`jellyfinUserId`, `mediaType`, `tmdbId`),
+  KEY `user_likes_jellyfinUserId_idx` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Profil de goût (vecteur de facettes JSON). Voir schema.prisma > TasteProfile.
+CREATE TABLE IF NOT EXISTS `taste_profiles` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `facets` mediumtext NOT NULL,
+  `signalCount` int(11) NOT NULL DEFAULT 0,
+  `ratingMean` double NOT NULL DEFAULT 0,
+  `ratingStdDev` double NOT NULL DEFAULT 0,
+  `schemaVersion` int(11) NOT NULL DEFAULT 1,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `taste_profiles_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Réglages de recommandation par compte. Voir schema.prisma > RecoSettings.
+CREATE TABLE IF NOT EXISTS `reco_settings` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `personalized` tinyint(1) NOT NULL DEFAULT 1,
+  `includeVigie` tinyint(1) NOT NULL DEFAULT 1,
+  `community` tinyint(1) NOT NULL DEFAULT 1,
+  `shareHistory` tinyint(1) NOT NULL DEFAULT 1,
+  `explorationBalance` int(11) NOT NULL DEFAULT 70,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `reco_settings_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cache des rangées de recommandation. Voir schema.prisma > RecommendationCache.
+CREATE TABLE IF NOT EXISTS `recommendation_cache` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `rowKey` varchar(64) NOT NULL,
+  `payload` mediumtext NOT NULL,
+  `generatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `recommendation_cache_jellyfinUserId_rowKey_key` (`jellyfinUserId`, `rowKey`),
+  KEY `recommendation_cache_expiresAt_idx` (`expiresAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- « Ne plus me proposer ». Voir schema.prisma > RecommendationFeedback.
+CREATE TABLE IF NOT EXISTS `recommendation_feedback` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `itemKey` varchar(32) NOT NULL,
+  `action` varchar(20) NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `recommendation_feedback_jellyfinUserId_itemKey_key` (`jellyfinUserId`, `itemKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mise en page de l'accueil par compte. Voir schema.prisma > HomeLayout.
+CREATE TABLE IF NOT EXISTS `home_layouts` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `heroMode` varchar(20) NOT NULL DEFAULT 'resume',
+  `heroFixedItemId` varchar(64) NULL,
+  `rows` text NOT NULL,
+  `cardDensity` varchar(10) NOT NULL DEFAULT 'normal',
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `home_layouts_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Comptes externes liés (TMDB guest / AniList). Voir schema.prisma > ExternalAccount.
+CREATE TABLE IF NOT EXISTS `external_accounts` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `provider` varchar(20) NOT NULL,
+  `externalId` varchar(64) NULL,
+  `accessToken` text NULL,
+  `guestSessionId` varchar(64) NULL,
+  `expiresAt` datetime(3) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `external_accounts_jellyfinUserId_provider_key` (`jellyfinUserId`, `provider`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cooccurrences item-item (communautaire, seuil vie privée userCount >= 5).
+-- Voir schema.prisma > ItemCooccurrence.
+CREATE TABLE IF NOT EXISTS `item_cooccurrences` (
+  `itemAKey` varchar(32) NOT NULL,
+  `itemBKey` varchar(32) NOT NULL,
+  `score` double NOT NULL,
+  `userCount` int(11) NOT NULL,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`itemAKey`, `itemBKey`),
+  KEY `item_cooccurrences_itemAKey_idx` (`itemAKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Poids IDF par facette, recalculés chaque jour. Voir schema.prisma > FacetIdf.
+CREATE TABLE IF NOT EXISTS `facet_idf` (
+  `facetKey` varchar(191) NOT NULL,
+  `docCount` int(11) NOT NULL,
+  `idf` double NOT NULL,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`facetKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cache de métadonnées TMDB. Un cache, jamais une source.
+-- Voir schema.prisma > TmdbMetaCache.
+CREATE TABLE IF NOT EXISTS `tmdb_meta_cache` (
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `payload` mediumtext NOT NULL,
+  `fetchedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`mediaType`, `tmdbId`),
+  KEY `tmdb_meta_cache_expiresAt_idx` (`expiresAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Correspondance d'identifiants animé tmdb -> anilist/tvdb.
+-- Voir schema.prisma > AnimeIdMap.
+CREATE TABLE IF NOT EXISTS `anime_id_map` (
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `anilistId` int(11) NULL,
+  `tvdbId` int(11) NULL,
+  `source` varchar(16) NOT NULL,
+  `resolvedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`mediaType`, `tmdbId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

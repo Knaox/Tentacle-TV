@@ -154,3 +154,13 @@ export {
   setNetworkSuspectListener,
   setOfflineHintSupplier,
 } from "./net/requestPolicy";
+
+// Notes explicites du moteur de recommandation (cf. hooks/useRatings)
+export {
+  useMyRatings,
+  useItemRating,
+  useRateItem,
+  useDeleteRating,
+  ratingKey,
+} from "./hooks/useRatings";
+export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } from "./hooks/useRatings";
