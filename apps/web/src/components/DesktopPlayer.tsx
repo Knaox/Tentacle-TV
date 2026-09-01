@@ -28,15 +28,13 @@ export function DesktopPlayer({
   currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
   onAudioChange, onSubtitleChange, onQualityChange,
   isLocalPlayback = false, offline = false, localLibraryId = null,
-  localSubtitleFiles = EMPTY_SUBTITLE_FILES,
-  onProgress, onStarted,
+  localSubtitleFiles = EMPTY_SUBTITLE_FILES, onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
   segments = [], runtimeMs = 0, libraryId = null,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  serverAutoplayEnabled = true,
-  itemId, item, mediaSourceId,
+  serverAutoplayEnabled = true, itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
   onControlsVisibilityChange, applyToSeries,
@@ -272,6 +270,8 @@ export function DesktopPlayer({
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        item={item} ratingEnabled={!isLocalPlayback && !offline}
+        onRatingEngage={playback.cancelNextCountdown}
       />
 
       {/* Badge « +30s / −10s » après un saut */}

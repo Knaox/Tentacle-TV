@@ -16,7 +16,8 @@
  * par des dégradés noirs et des aplats — même matière que la pilule.
  */
 
-import type { PlayerOverlay } from "@tentacle-tv/shared";
+import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
+import { useEndCardRating } from "@tentacle-tv/api-client";
 import { LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackOverlay } from "./PlaybackOverlay";
 
@@ -40,6 +41,12 @@ interface DesktopPlayerOverlaysProps {
   nextEpisodeImageUrl?: string;
   nextSeriesBackdropUrl?: string;
   nextEpisodeThumbUrl?: string;
+  /** Média EN COURS — la notation de l'affiche de fin s'y adosse. */
+  item?: MediaItem | null;
+  /** false : lecture locale/hors ligne — pas d'étoiles sans backend. */
+  ratingEnabled?: boolean;
+  /** Tue le décompte de la suite quand une note se pose. */
+  onRatingEngage?: () => void;
 }
 
 export function DesktopPlayerOverlays({
@@ -47,7 +54,10 @@ export function DesktopPlayerOverlays({
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible, panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
+  item, ratingEnabled, onRatingEngage,
 }: DesktopPlayerOverlaysProps) {
+  // Notation de l'épisode FINI, servie à l'affiche de fin seulement.
+  const endCardRating = useEndCardRating(item, { enabled: ratingEnabled ?? true });
   return (
     <>
       {/* Réserve mpv, paquet instrumenté seulement — le seul chiffre qui dise
@@ -92,6 +102,8 @@ export function DesktopPlayerOverlays({
         nextEpisodeImageUrl={nextEpisodeImageUrl}
         nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        endCardRating={endCardRating}
+        onEndCardRatingEngage={onRatingEngage}
       />
     </>
   );
