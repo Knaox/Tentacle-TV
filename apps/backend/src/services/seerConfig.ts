@@ -1,7 +1,11 @@
 import { resolve } from "path";
 import { existsSync, readFileSync } from "fs";
+import { DATA_DIR } from "./pluginManager";
 
-const INSTALLED_PATH = resolve(__dirname, "../data/plugins/installed.json");
+// Chemin résolu par pluginManager (source unique) : une résolution locale à
+// base de __dirname pointe à côté du data/ réel dès qu'on se trompe d'un
+// niveau, et le repli silencieux sur null masque complètement l'erreur.
+const INSTALLED_PATH = resolve(DATA_DIR, "installed.json");
 
 export interface SeerrConfig {
   url: string;
