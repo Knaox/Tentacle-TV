@@ -42,11 +42,11 @@ const LOGO = resolve(IMAGES, "tentacle-logo-pirate.svg");
  * sa propre boîte, et sans ce recadrage le poulpe flotte dans une marge fantôme
  * et paraît deux fois trop petit une fois réduit à 80 pixels.
  *
- * ⚠️ À REMESURER si le dessin change de repère ou d'encombrement. Ces valeurs
- * étaient calibrées sur l'ancien viewBox 512×560 ; telles quelles dans le
- * nouveau, elles recadraient entièrement hors du dessin.
+ * ⚠️ À REMESURER si le dessin change de repère ou d'encombrement. Valeurs du
+ * dessin « l'Étreinte » (2026-09), portrait ~0,6:1 — trim mesuré à
+ * 55,5..184,5 × 12,9..228, plus ~1,5 px de marge.
  */
-const SUBJECT = { x: 7, y: 17, width: 226, height: 221 };
+const SUBJECT = { x: 54, y: 11, width: 132, height: 218 };
 
 /** La teinte des bords. `appinfo.json → iconColor` doit valoir la même. */
 const EDGE = "#1A0932";

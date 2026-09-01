@@ -83,7 +83,7 @@ body:after {
 .logo-jumelage {
   display: block;
   width: 48px;
-  height: 52px;
+  height: 48px;
   margin: 0 auto;
 }
 
@@ -232,7 +232,7 @@ body.attente .carte-jumelage {
 
 body.attente .logo-jumelage {
   width: 96px;
-  height: 104px;
+  height: 96px;
   -webkit-animation: respiration-logo 2.4s ease-in-out infinite;
   animation: respiration-logo 2.4s ease-in-out infinite;
 }
