@@ -22,7 +22,14 @@ export function getSeerrConfig(): SeerrConfig | null {
   try {
     if (!existsSync(INSTALLED_PATH)) return null;
     const installed = JSON.parse(readFileSync(INSTALLED_PATH, "utf-8"));
-    const seer = installed.find((p: { pluginId?: string }) => p.pluginId === "seer");
+    const seer = installed.find(
+      (p: { pluginId?: string; enabled?: boolean; config?: { enabled?: boolean } }) => p.pluginId === "seer",
+    );
+    // Plugin coupé ou intégration désactivée par l'admin : même dégradation
+    // que le client (les routes /discover ne sont enregistrées que si
+    // config.enabled) — sinon le serveur sert des rangées Vigie dont la
+    // navigation n'existe plus côté SPA.
+    if (seer?.enabled !== true || seer?.config?.enabled !== true) return null;
     const url = seer?.config?.url as string;
     const apiKey = seer?.config?.apiKey as string;
     if (!url || !apiKey) return null;
