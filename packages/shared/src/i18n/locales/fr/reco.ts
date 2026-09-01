@@ -46,6 +46,10 @@ export default {
   rowBecauseYouLiked: "Parce que vous avez aimé {{title}}",
   rowCommunity: "Les utilisateurs de Tentacle regardent aussi",
   rowExploration: "Sortir de votre zone de confort",
+  // Rangées GLOBALES (servies à tous, quel que soit l'état du profil).
+  rowTrending: "Tendances",
+  rowServerPulse: "Ce que les utilisateurs de Tentacle regardent",
+  rowBestOfLibrary: "Les mieux notés de votre bibliothèque",
 
   // Cartes
   onDemandBadge: "À la demande",

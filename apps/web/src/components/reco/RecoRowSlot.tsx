@@ -11,6 +11,9 @@ const ROW_TITLE_KEYS: Record<string, string> = {
   discover: "rowDiscover",
   community: "rowCommunity",
   exploration: "rowExploration",
+  trending: "rowTrending",
+  serverPulse: "rowServerPulse",
+  bestOfLibrary: "rowBestOfLibrary",
 };
 
 interface RecoRowSlotProps {
