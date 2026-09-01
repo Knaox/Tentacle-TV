@@ -13,6 +13,35 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.21.0]
+### FR
+- **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes, et sert des rangées à votre goût : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », et plus
+- **L'accueil assume la personnalisation** : la bannière « Sélectionné pour vous » et la rangée « Pour vous » sont actives d'entrée — et tant que la reco n'a rien à montrer, la bannière de reprise garde sa place
+- **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule
+- **Dites-nous ce que vous aimez** : à la première visite, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une seule fois
+- **Noter, partout** : des étoiles au survol de n'importe quelle affiche, la note globale sur les cartes — et l'affiche de fin d'épisode se note désormais, le décompte s'interrompt le temps du geste
+- **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix
+- **Filtres par plateforme** : un menu avec les logos de vos services filtre les recommandations selon vos abonnements
+- **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
+- **La barre de navigation montre son débordement** : fondu de bord, flèches discrètes et molette quand la fenêtre est étroite — plus d'entrée inatteignable
+- **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
+- **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
+- **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
+
+### EN
+- **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", and more
+- **The home screen embraces personalization**: the "Picked for you" banner and the "For you" row are on by default — and while recommendations have nothing to show, the resume banner keeps its place
+- **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed
+- **Tell us what you like**: on your first visit, a grid of titles from your library seeds your profile in five picks — it only imposes itself once
+- **Rate anywhere**: stars on hover over any poster, the global rating on cards — and the end-of-episode poster can now be rated, the countdown pauses for the gesture
+- **Your actors**: like an actor or a director and "With …" rows grow from your picks
+- **Platform filters**: a menu with your services' logos filters recommendations by your subscriptions
+- **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
+- **The navigation bar shows its overflow**: edge fade, discreet arrows and mouse-wheel scrolling in narrow windows — no more unreachable entries
+- **"The Embrace"**: the new logo hugs the screen — mascot, splash and icon follow
+- **The player's episode list opens on the current episode**
+- **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
+
 ## [mac-1.20.11]
 <!-- Bloc macOS CUMULATIF : 1.20.9 → 1.20.11. L'App Store est resté en 1.20.8
      (la 1.20.9 renumérotée 1.20.10 n'y est jamais partie) ; sans ce cumul,
