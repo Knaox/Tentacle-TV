@@ -34,6 +34,8 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
         signalCount: ctx.signalCount,
         generating: rebuilding,
         refining: rebuilding,
+        tmdbConfigured: ctx.tmdbConfigured,
+        personalized: ctx.personalized,
         rows: [],
       };
     }
@@ -57,6 +59,8 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       // (« on explore vos goûts ») au lieu du bandeau d'affinage générique.
       exploring: ctx.bootstrapping,
       generatedAt: pool?.generatedAt ?? null,
+      tmdbConfigured: ctx.tmdbConfigured,
+      personalized: ctx.personalized,
       rows,
     };
   });
@@ -67,7 +71,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const { rowKey } = request.params as { rowKey: string };
     const ctx = await serveContext(user.userId);
     if (ctx.state === "disabled" || ctx.state === "cold") {
-      return { key: rowKey, items: [], state: ctx.state };
+      // L'accueil interroge « forYou » pendant un rebuild à froid : sans ce
+      // drapeau, le client ne re-sonderait jamais et resterait sur le repli.
+      return { key: rowKey, items: [], state: ctx.state, generating: isRebuilding(user.userId) };
     }
     // La rangée communautaire vit sur la table de cooccurrences, pas sur le
     // pool ; le réglage « recommandations communautaires » la coupe net.
