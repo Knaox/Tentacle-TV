@@ -2,8 +2,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ShareLinkModal } from "./ShareLinkModal";
 
+interface Props {
+  /** Liste partagée : « Ma liste » (défaut) ou les titres likés. */
+  kind?: "watchlist" | "likes";
+}
+
 /** Bouton « Partager ma liste » — ouvre le modal de lien de partage. */
-export function ShareMyListButton() {
+export function ShareMyListButton({ kind = "watchlist" }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
 
@@ -15,9 +20,9 @@ export function ShareMyListButton() {
         className="flex items-center gap-1.5 rounded-full bg-fill-subtle px-3 py-1.5 text-sm font-medium text-content-secondary transition-colors hover:bg-fill-soft hover:text-content-primary"
       >
         <ShareIcon className="h-4 w-4" />
-        {t("common:shareMyList")}
+        {t(kind === "likes" ? "common:shareMyFavorites" : "common:shareMyList")}
       </button>
-      {open && <ShareLinkModal onClose={() => setOpen(false)} />}
+      {open && <ShareLinkModal kind={kind} onClose={() => setOpen(false)} />}
     </>
   );
 }
