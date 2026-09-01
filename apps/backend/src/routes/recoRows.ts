@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { ensureFreshPool } from "../services/reco/generationJob";
+import { rebuildProfile } from "../services/reco/profileBuilder";
 import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { canonicalKey } from "../services/reco/candidates/exclusions";
 import { buildLibraryIndex } from "../services/reco/candidates/libraryIndex";
@@ -36,8 +37,21 @@ interface ServeContext {
 
 async function serveContext(userId: string): Promise<ServeContext> {
   const prisma = getPrisma();
-  const [profileRow, settings, ratings, feedback] = await Promise.all([
-    prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } }),
+  let profileRow = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
+  // Premier contact d'un compte : « pas de ligne de profil » ne veut pas dire
+  // « pas de goût » — un historique Jellyfin (vus, favoris, listes) porte déjà
+  // des signaux. On construit le profil ICI, une seule fois (le rebuild écrit
+  // une ligne même à zéro signal) : la grille de démarrage à froid ne reste
+  // que pour les comptes réellement vierges.
+  if (!profileRow) {
+    try {
+      await rebuildProfile(userId);
+      profileRow = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
+    } catch {
+      // Jellyfin muet : l'état froid est servi, l'appel suivant réessaiera.
+    }
+  }
+  const [settings, ratings, feedback] = await Promise.all([
     prisma.recoSettings.findUnique({ where: { jellyfinUserId: userId } }),
     prisma.userRating.findMany({
       where: { jellyfinUserId: userId, deletedAt: null },
@@ -171,15 +185,35 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     return { ok: true };
   });
 
-  // ── GET /coldstart — la grille « notez cinq titres » : populaires de la
-  //    bibliothèque, non vus d'abord, notables (tmdbId présent par index) ──
+  // ── GET /coldstart — la grille « choisissez cinq titres » : les mieux notés
+  //    de la bibliothèque, répartis par genre principal (tour de rôle) pour
+  //    représenter TOUTE la collection et pas le seul genre dominant ──
+  const COLDSTART_MAX = 60;
   app.get("/coldstart", async (request) => {
     const user = (request as any).user as JellyfinUser;
     const library = await memoizedLibrary(user.userId);
     const sorted = [...library.entries].sort(
       (a, b) => (b.communityRating ?? 0) - (a.communityRating ?? 0)
     );
-    const pick = [...sorted.filter((e) => !e.played), ...sorted.filter((e) => e.played)].slice(0, 30);
+    const byGenre = new Map<string, typeof sorted>();
+    for (const e of sorted) {
+      const genre = e.Genres?.[0] ?? "";
+      const bucket = byGenre.get(genre);
+      if (bucket) bucket.push(e);
+      else byGenre.set(genre, [e]);
+    }
+    const buckets = [...byGenre.values()];
+    const pick: typeof sorted = [];
+    for (let rank = 0; pick.length < COLDSTART_MAX; rank++) {
+      let added = false;
+      for (const bucket of buckets) {
+        if (rank < bucket.length && pick.length < COLDSTART_MAX) {
+          pick.push(bucket[rank]);
+          added = true;
+        }
+      }
+      if (!added) break;
+    }
     return {
       items: pick.map((e) => ({
         jellyfinItemId: e.itemId,
