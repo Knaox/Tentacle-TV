@@ -181,3 +181,19 @@ export type {
   RecoFeedbackAction,
   ColdStartTitle,
 } from "./hooks/useRecoRows";
+
+// Accueil configurable + réglages de recommandation (cf. hooks/useHomeLayout)
+export {
+  useHomeLayout,
+  useSaveHomeLayout,
+  useRecoSettings,
+  useSaveRecoSettings,
+  useResetTasteProfile,
+} from "./hooks/useHomeLayout";
+export type {
+  HeroMode,
+  CardDensity,
+  HomeRowDescriptor,
+  HomeLayoutData,
+  RecoSettingsData,
+} from "./hooks/useHomeLayout";

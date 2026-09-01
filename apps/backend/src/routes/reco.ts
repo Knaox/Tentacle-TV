@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
+import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { getProfileDebug, rebuildProfile } from "../services/reco/profileBuilder";
@@ -32,6 +33,19 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
   app.post("/profile/rebuild", async (request) => {
     const user = (request as any).user as JellyfinUser;
     return rebuildProfile(user.userId);
+  });
+
+  // ── POST /profile/reset — remise à zéro du goût : profil + rangées en
+  //    cache. Les notes, likes et feedback restent (données de l'utilisateur,
+  //    pas du moteur) ; le prochain signal reconstruira un profil neuf. ──
+  app.post("/profile/reset", async (request) => {
+    const user = (request as any).user as JellyfinUser;
+    const prisma = getPrisma();
+    await prisma.$transaction([
+      prisma.tasteProfile.deleteMany({ where: { jellyfinUserId: user.userId } }),
+      prisma.recommendationCache.deleteMany({ where: { jellyfinUserId: user.userId } }),
+    ]);
+    return { ok: true };
   });
 
   // ── POST /pool/generate — génération immédiate du pool (synchrone, debug) ──

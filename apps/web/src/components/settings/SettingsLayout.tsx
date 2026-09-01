@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck } from "lucide-react";
+import { Gauge, HardDriveDownload, Palette, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { SettingsShell, type SettingsShellSection } from "@tentacle-tv/ui";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -49,6 +49,11 @@ export function SettingsLayout() {
   const sections = useMemo<SettingsShellSection[]>(
     () => [
       { id: "appearance", label: t("sectionAppearance"), icon: <Palette size={ICON} /> },
+      // Personnalisation : accueil configurable + moteur de recommandation.
+      // Sans serveur, rien à personnaliser — non rendue hors ligne.
+      ...(offline
+        ? []
+        : [{ id: "personalization", label: t("sectionPersonalization"), icon: <Sparkles size={ICON} /> }]),
       ...(offline
         ? []
         : [{ id: "security", label: t("sectionSecurity"), icon: <ShieldCheck size={ICON} /> }]),

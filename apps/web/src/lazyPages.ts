@@ -25,6 +25,7 @@ export const Preferences = lazy(() => import("./pages/Preferences").then((m) => 
 export const SettingsLayout = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
 export const SettingsIndex = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsIndex })));
 export const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
+export const SettingsPersonalization = lazy(() => import("./pages/settings/SettingsPersonalization").then((m) => ({ default: m.SettingsPersonalization })));
 export const SettingsSecurity = lazy(() => import("./pages/settings/SettingsSecurity").then((m) => ({ default: m.SettingsSecurity })));
 export const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 export const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
