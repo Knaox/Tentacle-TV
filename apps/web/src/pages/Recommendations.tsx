@@ -11,12 +11,18 @@ import { LikedActorsPanel } from "../components/reco/LikedActorsPanel";
 import { RecoFiltersMenu } from "../components/reco/RecoFiltersMenu";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
+import { RecoStatusBanner } from "../components/reco/RecoStatusBanner";
+
+/** Les rangées servies dans TOUS les états du moteur (contrat backend). */
+const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
 
 /**
  * Page Recommandations. Toute la matière vient du backend (pool + rangées
- * dérivées) ; la page choisit seulement quoi montrer selon l'état du moteur :
- * désactivé → renvoi vers les réglages ; froid → grille de notation ;
- * en chauffe → rangées + indicateur discret ; prêt → rangées.
+ * dérivées) ; la page choisit seulement quoi montrer selon l'état du moteur.
+ * Elle n'est plus JAMAIS vide : les rangées globales (tendances, pouls du
+ * serveur, mieux notés de la bibliothèque) tiennent la scène dans tous les
+ * états — perso coupée, clé TMDB absente, profil froid ou en construction —
+ * et un bandeau unique (RecoStatusBanner) dit ce qui se passe.
  * Une rangée vide ne rend RIEN (dégradé silencieux, jamais d'erreur).
  */
 export function Recommendations() {
@@ -57,7 +63,10 @@ export function Recommendations() {
 
   if (!overview) return null;
 
-  if (overview.state === "disabled") {
+  // Vieux serveur qui n'annonce AUCUNE rangée en mode désactivé : l'écran
+  // historique demeure. Un serveur à jour sert les rangées globales, et la
+  // page ci-dessous les rend avec le bandeau explicatif.
+  if (overview.state === "disabled" && overview.rows.length === 0) {
     return (
       <PageTransition>
         <div className="row-gutter flex min-h-[60vh] flex-col items-start justify-center">
@@ -84,28 +93,34 @@ export function Recommendations() {
     );
   }
 
+  const hasPersonalizedRows = overview.rows.some((r) => !GLOBAL_ROW_KEYS.has(r.key));
+  const canPersonalize = overview.personalized !== false && overview.tmdbConfigured !== false;
+
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle.
-            Le pt-6 vit dans le slot (contenu reco seulement). */}
-        <RecoBillboardSlot />
+        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle. Tant
+            que la reco n'a rien à montrer (générique, froid, en construction),
+            un en-tête compact tient sa place — jamais de carrousel
+            « Sélectionné pour vous » nourri de contenu générique. */}
+        <RecoBillboardSlot
+          fallback={
+            <div className="row-gutter pb-2 pt-8">
+              <h1 className="text-2xl font-bold text-content-primary">{t("pageTitle")}</h1>
+            </div>
+          }
+        />
 
         <RecoFiltersMenu selected={selectedProviders} onChange={setSelectedProviders} />
 
-        {/* UN seul bandeau à la fois : « on explore vos goûts » prime (toute
-            première visite), sinon chauffe du profil, sinon affinage du pool. */}
-        {overview.exploring ? (
-          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("exploringHint")}</p>
-        ) : overview.state === "warming" ? (
-          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("warmingHint")}</p>
-        ) : overview.refining && overview.rows.length > 0 ? (
-          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("preliminaryHint")}</p>
-        ) : null}
+        <RecoStatusBanner
+          overview={overview}
+          hasPersonalizedRows={hasPersonalizedRows}
+          onOpenColdStart={() => setPhase("hold")}
+        />
 
         {overview.generating && overview.rows.length === 0 ? (
           <>
-            <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("generatingHint")}</p>
             <RecoRowSkeleton />
             <RecoRowSkeleton />
             <RecoRowSkeleton />
@@ -126,8 +141,10 @@ export function Recommendations() {
 
         {/* Ajuster ses acteurs se fait ICI, au contact des rangées — pas dans
             les réglages. Visible aussi pendant l'exploration : aimer deux ou
-            trois acteurs nourrit le profil qui se construit. */}
-        <LikedActorsPanel />
+            trois acteurs nourrit le profil qui se construit. Masqué quand la
+            personnalisation est indisponible (perso coupée, pas de clé TMDB :
+            la recherche de personnes serait une impasse). */}
+        {canPersonalize && <LikedActorsPanel />}
       </div>
     </PageTransition>
   );
