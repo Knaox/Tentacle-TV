@@ -66,13 +66,24 @@
   --brand-accent-shadow: #9D174D;
   --brand-accent-shadow: color-mix(in srgb, var(--brand-accent) 62%, black);
 
-  /* Le tube cathodique de la mascotte. Écran éteint : toujours très sombre,
-   * mais teinté par la marque — sous un thème rouge, un tube violet jurerait.
-   * Personnalisable par preset, comme `--octopus-iris`. */
-  --octopus-tube: #2E1065;
-  --octopus-tube: color-mix(in srgb, var(--brand-dark) 26%, black);
-  --octopus-tube-deep: #160828;
-  --octopus-tube-deep: color-mix(in srgb, var(--brand-dark) 12%, black);
+  /* L'écran que la mascotte enlace (dessin « l'Étreinte », 2026-09). Écran
+   * éteint : toujours très sombre, mais teinté par la marque — sous un thème
+   * rouge, un écran violet jurerait. Personnalisable par preset, comme
+   * `--octopus-iris`. Le nom `tube` reste : les presets écrits par des
+   * administrateurs le redéfinissent déjà, le renommer les casserait. */
+  --octopus-tube: #341054;
+  --octopus-tube: color-mix(in srgb, var(--brand-dark) 38%, black);
+  --octopus-tube-deep: #190933;
+  --octopus-tube-deep: color-mix(in srgb, var(--brand-dark) 16%, black);
+
+  /* Points singuliers du dégradé de la mascotte 2026-09, qui penche ROSE :
+   * le médian est un fuchsia plus accentué que `--brand-mid` (50/50), et le
+   * sommet du dôme est plus clair que `--brand-light`. Même motif littéral
+   * puis calculé que ci-dessus. */
+  --octopus-mid: #D946EF;
+  --octopus-mid: color-mix(in srgb, var(--brand) 35%, var(--brand-accent) 65%);
+  --octopus-head-light: #C4B5FD;
+  --octopus-head-light: color-mix(in srgb, var(--brand-light) 65%, white);
 
   /* ── Text ───────────────────────────────────────────────────── */
   --text-primary: #FFFFFF;
