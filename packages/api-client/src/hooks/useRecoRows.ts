@@ -37,6 +37,9 @@ export interface RecoOverview {
   generating: boolean;
   /** Quelque chose de mieux arrive (profil ou pool en cours d'affinage). */
   refining?: boolean;
+  /** Toute première visite : le profil s'analyse, les rangées servies sont le
+   *  meilleur de la bibliothèque (« on explore vos goûts »). */
+  exploring?: boolean;
   generatedAt?: string | null;
   rows: Array<{ key: string; seedTitle?: string }>;
 }

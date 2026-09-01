@@ -66,19 +66,20 @@ export async function generatePool(userId: string): Promise<{ poolSize: number }
 }
 
 /**
- * Premier pool d'un compte : la passe RAPIDE d'abord (bibliothèque + métas en
- * cache, zéro réseau — des rangées en quelques secondes), la génération
- * complète en relève. UNE seule chaîne sous le mutex : deux requêtes
- * simultanées ne lancent pas deux générations. Attend la fin d'une
- * reconstruction de profil en cours — générer sur un profil vide figerait du
- * bruit pour six heures.
+ * Premier pool d'un compte : la passe RAPIDE part TOUT DE SUITE — même sur un
+ * profil encore vide (le classement retombe sur qualité + fraîcheur : le
+ * meilleur de la bibliothèque, montrable pendant que « on explore vos
+ * goûts ») — puis la fin d'une reconstruction en cours est attendue et la
+ * génération complète écrase la passe rapide. UNE seule chaîne sous le
+ * mutex : deux requêtes simultanées ne lancent pas deux générations, et le
+ * pool complet ne fige jamais un profil vide (il suit toujours le rebuild).
  */
 export async function bootstrapPool(userId: string): Promise<{ poolSize: number }> {
   const pending = inFlight.get(userId);
   if (pending) return pending;
   const p = (async () => {
-    await awaitRebuild(userId);
     await doGenerate(userId, true).catch(() => undefined);
+    await awaitRebuild(userId);
     return doGenerate(userId);
   })().finally(() => inFlight.delete(userId));
   inFlight.set(userId, p);

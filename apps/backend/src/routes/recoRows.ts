@@ -37,17 +37,6 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
         rows: [],
       };
     }
-    // Profil en construction : générer un pool MAINTENANT le figerait sur un
-    // profil vide pour six heures. Le client poll déjà quand `generating`.
-    if (ctx.bootstrapping) {
-      return {
-        state: ctx.state,
-        signalCount: ctx.signalCount,
-        generating: true,
-        refining: true,
-        rows: [],
-      };
-    }
     const { status, pool } = await ensureFreshPool(user.userId);
     const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
     const inLibraryOnly = !ctx.includeVigie;
@@ -62,7 +51,11 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       // « refining » : quelque chose de mieux arrive (pool préliminaire servi
       // ou génération en cours) — le client garde l'écran et affiche son
       // bandeau « vos recommandations s'affinent ».
-      refining: status !== "fresh",
+      refining: status !== "fresh" || ctx.bootstrapping,
+      // Toute première visite : le profil s'analyse encore, les rangées
+      // servies sont le meilleur de la bibliothèque — le client l'annonce
+      // (« on explore vos goûts ») au lieu du bandeau d'affinage générique.
+      exploring: ctx.bootstrapping,
       generatedAt: pool?.generatedAt ?? null,
       rows,
     };
@@ -75,9 +68,6 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const ctx = await serveContext(user.userId);
     if (ctx.state === "disabled" || ctx.state === "cold") {
       return { key: rowKey, items: [], state: ctx.state };
-    }
-    if (ctx.bootstrapping) {
-      return { key: rowKey, items: [], generating: true, refining: true };
     }
     // La rangée communautaire vit sur la table de cooccurrences, pas sur le
     // pool ; le réglage « recommandations communautaires » la coupe net.
