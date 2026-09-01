@@ -1,92 +1,54 @@
-import { Fragment } from "react";
 import {
-  ANTENNA_PATHS,
-  ANTENNA_SEGMENTS,
-  ARM_SEGMENTS,
   BACK_ARM_PATHS,
-  BACK_ARM_SEGMENTS,
   FRONT_ARM_PATHS,
   SUCKERS,
-  type ArmSegment,
+  SUCKER_SHADOW,
 } from "./tentacleGeometry";
 
-/** Décalage de l'ombre sous une ventouse, et son grossissement. */
-const SHADOW_OFFSET = { x: 0.7, y: 0.9, scale: 1.18 };
-
-export interface TaperedProps {
-  d: string;
-  segments: readonly ArmSegment[];
-}
-
 /**
- * Un bras : le même tracé rendu une fois par palier, en largeur croissante.
- * `pathLength={100}` rend les bornes du `strokeDasharray` lisibles en pourcentage
- * — sans lui il faudrait connaître la longueur réelle de chaque spirale.
+ * Les bras du dessin « l'Étreinte » : deux pattes arrière qui dépassent sous
+ * l'écran, deux bras avant qui l'enlacent PAR-DESSUS. Ils sont scindés en deux
+ * composants parce qu'ils n'habitent pas le même plan : les pattes se dessinent
+ * avant la tête et l'écran, les bras avant après tout le reste.
+ *
+ * Chaque bras est un CONTOUR FERMÉ à remplir — plus un trait à paliers de
+ * dasharray : l'effilement est porté par la forme elle-même.
  */
-export function TaperedArm({ d, segments }: TaperedProps) {
+export function TentacleBackArms({ fill }: { fill: string }) {
   return (
-    <>
-      {segments.map((segment) => (
-        <path
-          key={segment.width}
-          d={d}
-          pathLength={100}
-          strokeWidth={segment.width}
-          strokeDasharray={segment.dash}
-        />
+    <g fill={fill}>
+      {BACK_ARM_PATHS.map((d) => (
+        <path key={d.slice(0, 24)} d={d} />
       ))}
-    </>
+    </g>
   );
 }
 
-interface TentacleArmsProps {
-  /** Dégradé des bras arrière et des antennes. */
-  backFill: string;
-  /** Dégradé des bras avant. */
-  frontFill: string;
-}
-
 /**
- * Les huit bras — deux dressés en antennes, six en dessous — et leurs ventouses.
- *
- * Ce sont les ventouses qui portent le relief, chacune posée sur son ombre. Une
- * arête lumineuse décalée le long du bras avait été essayée : elle délave le
- * bras au lieu de l'arrondir. L'opacité vit sur le GROUPE et non sur chaque
- * cercle, sinon les recouvrements la cumulent.
+ * Bras avant et ventouses. Ce sont les ventouses qui portent le relief,
+ * chacune posée sur son ombre — une arête lumineuse décalée le long du bras
+ * le délave au lieu de l'arrondir. L'opacité vit sur le GROUPE et non sur
+ * chaque cercle, sinon les recouvrements la cumulent.
  */
-export function TentacleArms({ backFill, frontFill }: TentacleArmsProps) {
+export function TentacleFrontArms({ fill }: { fill: string }) {
   return (
     <>
-      <g fill="none" stroke={backFill} strokeLinecap="round" strokeLinejoin="round">
-        {ANTENNA_PATHS.map((d) => (
-          <Fragment key={d}>
-            <TaperedArm d={d} segments={ANTENNA_SEGMENTS} />
-          </Fragment>
-        ))}
-        {BACK_ARM_PATHS.map((d) => (
-          <Fragment key={d}>
-            <TaperedArm d={d} segments={BACK_ARM_SEGMENTS} />
-          </Fragment>
-        ))}
-      </g>
-      <g fill="none" stroke={frontFill} strokeLinecap="round" strokeLinejoin="round">
+      <g fill={fill}>
         {FRONT_ARM_PATHS.map((d) => (
-          <Fragment key={d}>
-            <TaperedArm d={d} segments={ARM_SEGMENTS} />
-          </Fragment>
+          <path key={d.slice(0, 24)} d={d} />
         ))}
       </g>
       <g fill="#1B0B33" opacity="0.22">
         {SUCKERS.map((cup) => (
           <circle
             key={`shadow-${cup.cx}-${cup.cy}`}
-            cx={cup.cx + SHADOW_OFFSET.x}
-            cy={cup.cy + SHADOW_OFFSET.y}
-            r={cup.r * SHADOW_OFFSET.scale}
+            cx={cup.cx + SUCKER_SHADOW.x}
+            cy={cup.cy + SUCKER_SHADOW.y}
+            r={cup.r * SUCKER_SHADOW.scale}
           />
         ))}
       </g>
-      <g fill="#fff" opacity="0.26">
+      <g fill="#FBCFE8" opacity="0.8">
         {SUCKERS.map((cup) => (
           <circle key={`cup-${cup.cx}-${cup.cy}`} cx={cup.cx - 0.2} cy={cup.cy - 0.3} r={cup.r} />
         ))}

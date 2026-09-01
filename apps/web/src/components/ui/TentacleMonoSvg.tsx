@@ -1,19 +1,18 @@
-import { Fragment, useId, type CSSProperties } from "react";
+import { useId, type CSSProperties } from "react";
 import {
-  ANTENNA_PATHS,
-  ANTENNA_SEGMENTS,
-  ARM_SEGMENTS,
   BACK_ARM_PATHS,
-  BACK_ARM_SEGMENTS,
+  EYE_PUPILS,
+  EYE_WHITES,
   FRONT_ARM_PATHS,
   HAT_BAND_PATH,
   HAT_BRIM_PATH,
   HAT_PATH,
-  HAT_TRANSFORM_MONO,
-  MANTLE_PATH,
+  HAT_TRANSFORM,
+  HEAD_PATH,
+  PLAY_PATH,
+  SCREEN,
+  SMILE_PATH,
   SKULL_PATH,
-  TUBE_PATH,
-  type ArmSegment,
 } from "./tentacleGeometry";
 
 interface TentacleMonoSvgProps {
@@ -21,34 +20,27 @@ interface TentacleMonoSvgProps {
   style?: CSSProperties;
 }
 
-/** Largeur du liseré qui détache un bras avant de ses voisins. */
+/** Largeur du liseré qui détache les bras avant du cadre de l'écran. */
 const OUTLINE = 8;
 
-function armPaths(d: string, segments: readonly ArmSegment[], extra = 0, stroke?: string) {
-  return segments.map((segment) => (
-    <path
-      key={`${stroke ?? "body"}-${segment.width}`}
-      d={d}
-      pathLength={100}
-      strokeWidth={segment.width + extra}
-      strokeDasharray={segment.dash}
-      stroke={stroke}
-    />
-  ));
-}
+/** Demi-épaisseur du cadre : l'intérieur de l'écran se creuse, le cadre reste. */
+const FRAME_INSET = SCREEN.frameWidth / 2;
 
 /**
  * La mascotte en une seule couleur — `currentColor`, donc pilotable par la
  * couleur héritée : blanche dans un conteneur de marque, sombre sur fond clair.
  *
  * Ce n'est PAS la version couleur passée à un filtre. `brightness(0) invert(1)`
- * aplatirait tube, yeux et corps dans la même valeur : la mascotte deviendrait
- * une tache. Ici chaque détail est creusé au masque, et chaque bras avant reçoit
- * un liseré — sans lui les cinq bras fusionnent en une masse informe.
+ * aplatirait écran, yeux et corps dans la même valeur : la mascotte deviendrait
+ * une tache. Ici chaque détail est creusé au masque : l'écran devient un trou
+ * (son cadre reste plein, le play y reste plein), yeux et sourire se creusent
+ * dans le dôme, et les bras avant reçoivent un liseré — borné à l'écran par un
+ * clip : plus haut, le bras longe la tête et doit fusionner avec elle.
  */
 export function TentacleMonoSvg({ size, style }: TentacleMonoSvgProps) {
   const unique = useId().replace(/[^a-zA-Z0-9-]/g, "");
   const maskId = `tg-mono-${unique}`;
+  const clipId = `tg-mono-clip-${unique}`;
 
   return (
     <svg
@@ -61,51 +53,80 @@ export function TentacleMonoSvg({ size, style }: TentacleMonoSvgProps) {
       focusable="false"
     >
       <defs>
+        <clipPath id={clipId}>
+          <rect x="0" y={SCREEN.y - 4} width="240" height={240 - SCREEN.y + 4} />
+        </clipPath>
         <mask id={maskId}>
           <rect width="240" height="240" fill="#fff" />
 
-          {/* Détachement des bras avant : liseré creusé, puis le bras rétabli.
-              Traités du plus lointain au plus proche — l'ordre des découpes porte
-              ici la profondeur que le dégradé donne à la version couleur. */}
-          <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-            {FRONT_ARM_PATHS.map((d) => (
-              <Fragment key={d}>
-                {armPaths(d, ARM_SEGMENTS, OUTLINE, "#000")}
-                {armPaths(d, ARM_SEGMENTS, 0, "#fff")}
-              </Fragment>
-            ))}
-          </g>
+          {/* L'écran se creuse (le cadre reste plein), le play y demeure */}
+          <rect
+            x={SCREEN.x + FRAME_INSET}
+            y={SCREEN.y + FRAME_INSET}
+            width={SCREEN.width - SCREEN.frameWidth}
+            height={SCREEN.height - SCREEN.frameWidth}
+            rx={SCREEN.rx - FRAME_INSET}
+            fill="#000"
+          />
+          <path d={PLAY_PATH} fill="#fff" stroke="#fff" strokeWidth="10" strokeLinejoin="round" />
 
-          {/* Le tube est creusé ; les yeux y reviennent en îlots, leurs pupilles s'y recreusent */}
-          <path d={TUBE_PATH} fill="#000" />
-          <ellipse cx="98" cy="116" rx="20" ry="22" fill="#fff" />
-          <ellipse cx="142" cy="116" rx="20" ry="22" fill="#fff" />
-          <circle cx="101" cy="120" r="11" fill="#000" />
-          <circle cx="145" cy="120" r="11" fill="#000" />
+          {/* Yeux creusés dans le dôme, pupilles rétablies en îlots */}
+          {EYE_WHITES.map((eye) => (
+            <circle key={`white-${eye.cx}`} cx={eye.cx} cy={eye.cy} r={eye.r} fill="#000" />
+          ))}
+          {EYE_PUPILS.map((eye) => (
+            <circle key={`pupil-${eye.cx}`} cx={eye.cx} cy={eye.cy} r={eye.r} fill="#fff" />
+          ))}
+          <path
+            d={SMILE_PATH}
+            fill="none"
+            stroke="#000"
+            strokeWidth="3.2"
+            strokeLinecap="round"
+          />
 
-          <g transform={HAT_TRANSFORM_MONO} fill="none" stroke="#000" strokeLinecap="round">
+          <g transform={HAT_TRANSFORM} fill="none" stroke="#000" strokeLinecap="round">
             <path d={HAT_BRIM_PATH} strokeWidth="9" />
             <path d={HAT_BAND_PATH} strokeWidth="10" />
           </g>
           {/* Crâne creusé, sans ses propres yeux : sous 2 px ils ne survivraient pas */}
-          <path transform={HAT_TRANSFORM_MONO} d={SKULL_PATH} fill="#000" />
+          <path transform={HAT_TRANSFORM} d={SKULL_PATH} fill="#000" />
+
+          {/* Liseré des bras avant, borné à l'écran ; les bras rétablis entiers */}
+          <g clipPath={`url(#${clipId})`}>
+            {FRONT_ARM_PATHS.map((d) => (
+              <path
+                key={`outline-${d.slice(0, 24)}`}
+                d={d}
+                fill="none"
+                stroke="#000"
+                strokeWidth={OUTLINE}
+                strokeLinejoin="round"
+              />
+            ))}
+          </g>
+          {FRONT_ARM_PATHS.map((d) => (
+            <path key={`front-${d.slice(0, 24)}`} d={d} fill="#fff" />
+          ))}
         </mask>
       </defs>
 
       <g mask={`url(#${maskId})`} fill="currentColor">
-        <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-          {ANTENNA_PATHS.map((d) => (
-            <Fragment key={d}>{armPaths(d, ANTENNA_SEGMENTS)}</Fragment>
-          ))}
-          {BACK_ARM_PATHS.map((d) => (
-            <Fragment key={d}>{armPaths(d, BACK_ARM_SEGMENTS)}</Fragment>
-          ))}
-          {FRONT_ARM_PATHS.map((d) => (
-            <Fragment key={d}>{armPaths(d, ARM_SEGMENTS)}</Fragment>
-          ))}
-        </g>
-        <path d={MANTLE_PATH} />
-        <path d={HAT_PATH} transform={HAT_TRANSFORM_MONO} />
+        {BACK_ARM_PATHS.map((d) => (
+          <path key={`back-${d.slice(0, 24)}`} d={d} />
+        ))}
+        <path d={HEAD_PATH} />
+        <rect
+          x={SCREEN.x}
+          y={SCREEN.y}
+          width={SCREEN.width}
+          height={SCREEN.height}
+          rx={SCREEN.rx}
+        />
+        <path d={HAT_PATH} transform={HAT_TRANSFORM} />
+        {FRONT_ARM_PATHS.map((d) => (
+          <path key={`front-${d.slice(0, 24)}`} d={d} />
+        ))}
       </g>
     </svg>
   );

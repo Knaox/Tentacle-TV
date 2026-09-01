@@ -1,163 +1,159 @@
 """
-Génère les cinq SVG de `brand/` ET les constantes TypeScript du composant web,
+Génère les quinze SVG de `brand/` ET les constantes TypeScript des clients,
 depuis une seule géométrie. Rien ici ne s'édite à la main.
 
-    python3 brand/generate-svg.py
+    python3 brand/generate-svg.py            # écrit brand/ + les modules TS
+    python3 brand/generate-svg.py /tmp/out   # aperçu ailleurs, sans les TS
 
-Les bras sont des SPIRALES rendues en trait à largeur dégressive. Trois approches
-ont été essayées avant celle-ci :
+Dessin 2026-09 « l'Étreinte » : le poulpe est perché derrière l'écran qu'il
+enlace de deux bras, deux pattes dépassent dessous, un play au centre, le
+tricorne pirate sur la tête. Il remplace le « poulpe-téléviseur » de 2026-08,
+dont les antennes dressées sur une tête carrée violette recomposaient l'emoji
+diable — relevé par l'utilisateur, avec la consigne : une vraie tête en dôme,
+des bras qui aient la signature du tentacule (courbe en S, effilement, bout
+enroulé, ventouses), et un dégradé qui penche rose plutôt que violet.
 
-  - Trait à largeur dégressive sur une trajectoire simple : produit toujours un
-    tube lisse à bout arrondi, dont la forme prêtait à confusion.
-  - Contour fermé festonné : juste en principe, mais là où un tentacule
-    s'enroule, le rayon de courbure passe sous la demi-largeur et le bord
-    concave se retourne. Sans enroulement, les bras deviennent des piques.
-  - Spirale : la forme enroulée est la signature du tentacule et lève
-    l'ambiguïté par la silhouette. Le trait reste la méthode de rendu, qui ne
-    peut pas produire d'artefact.
-
-Le relief ne vient PAS d'une arête lumineuse décalée — une bande claire délave le
-bras au lieu de l'arrondir. Il vient de rangées de ventouses discrètes, chacune
-ombrée, et de l'assombrissement de la naissance des bras.
+Les bras sont des FORMES PLEINES effilées (voir geometry.py) : le rendu en
+trait à paliers de dasharray a disparu, et avec lui la différence web/natif
+(`pathLength` n'a plus à exister) — les trois modules TS générés sont
+identiques.
 """
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from geometry import points, to_path, suckers, spire_gap, polyline_length, dash_absolute
+from geometry import arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at
 
-OUT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else pathlib.Path(__file__).parent)
-ROOT = pathlib.Path(__file__).parent.parent
+BRAND = pathlib.Path(__file__).parent
+OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else BRAND
+OUT.mkdir(parents=True, exist_ok=True)
+PREVIEW = OUT.resolve() != BRAND.resolve()
+ROOT = BRAND.parent
 
-# ── Effilement : quatre paliers, pointe fine ────────────────────────────────
-SEG_FRONT = [(3.4, "0 72 32 300"), (8, "0 50 26 300"), (15, "0 28 26 300"), (24, "32 300")]
-SEG_BACK  = [(3.2, "0 72 32 300"), (7.5, "0 50 26 300"), (14, "0 28 26 300"), (22, "32 300")]
-SEG_ANT   = [(2.6, "0 74 30 300"), (6, "0 52 26 300"), (11, "0 28 28 300"), (17, "32 300")]
+# ── Bras : (base, c1, c2), centre de spirale, r0, r1, θ0, tours, horaire,
+#    largeur de base. Un seul côté se décrit ; l'autre est le miroir. ─────────
+FRONT_ARM = (((86, 98), (66, 114), (61, 142)), (80, 174), 16, 9.5, 2.60, 0.65, False, 14)
+BACK_LEG = (((90, 154), (72, 180), (74, 200)), (92, 214), 14, 8.5, 2.80, 0.55, False, 13)
 
-# base, ctrl1, ctrl2, centre de spirale, r0, r1, angle d'entrée, tours, horaire.
-# Rayons et tours inégaux : des spirales identiques alignées font motif.
-# L'enroulement reste SOUS un demi-tour. Au-delà, la spirale se referme et
-# l'extrémité lit « crochet » ; à cette ouverture elle s'incurve seulement, comme
-# un tentacule au repos. Les valeurs varient légèrement d'un bras à l'autre.
-FRONT = [
-  (((88,176),(82,196),(76,205)), (57,212), 15.5, 10.0, -0.5, 0.50, False),
-  (((108,181),(106,202),(103,212)), (93,227), 13.5, 8.7, -0.7, 0.54, False),
-  (((132,181),(134,201),(137,211)), (147,223), 14.5, 9.4, -2.45, 0.48, True),
-  (((152,176),(158,195),(164,204)), (183,215), 16.5, 10.6, -2.65, 0.52, True),
-]
-BACK = [
-  (((60,170),(48,184),(38,192)), (22,201), 15, 9.7, -0.9, 0.50, False),
-  (((180,170),(192,184),(202,192)), (218,201), 15, 9.7, -2.25, 0.50, True),
-]
-ANTENNAS = [
-  (((64,62),(58,46),(53,38)), (42,26), 12, 7.7, 1.1, 0.46, True),
-  (((176,62),(182,46),(187,38)), (198,26), 12, 7.7, 2.05, 0.46, False),
-]
+# ── Pièces dessinées à la main ──────────────────────────────────────────────
+HEAD = ("M 120 32 C 92 32, 70 52, 67 80 C 66 93, 70 102, 76 108 "
+        "L 164 108 C 170 102, 174 93, 173 80 C 170 52, 148 32, 120 32 Z")
+SHINE = ("M 120 36 C 98 36, 80 50, 76 70 C 96 60, 144 60, 164 70 "
+         "C 160 50, 142 36, 120 36 Z")
+SCREEN = {"x": 58, "y": 104, "w": 124, "h": 92, "rx": 16, "frame": 5}
+PLAY = "M 114 134 L 142 150 L 114 166 Z"
+SMILE = "M 114 95 C 117.5 100, 122.5 100, 126 95"
+EYE_WHITES = ((99, 82, 15.5), (141, 82, 15.5))
+EYE_PUPILS = ((102, 85, 8), (138, 85, 8))
+EYE_GLINTS = ((104.5, 82, 3), (140.5, 82, 3))
+CHEEKS = ((78, 96, 6.5, 4.5), (162, 96, 6.5, 4.5))
 
-MANTLE = "M 120 54 C 152 54, 176 58, 186 68 C 194 76, 197 92, 197 118 C 197 144, 194 160, 186 168 C 176 178, 152 182, 120 182 C 88 182, 64 178, 54 168 C 46 160, 43 144, 43 118 C 43 92, 46 76, 54 68 C 64 58, 88 54, 120 54 Z"
-TUBE = "M 120 76 C 145 76, 163 79, 171 86 C 177 92, 179 102, 179 118 C 179 134, 177 144, 171 150 C 163 157, 145 160, 120 160 C 95 160, 77 157, 69 150 C 63 144, 61 134, 61 118 C 61 102, 63 92, 69 86 C 77 79, 95 76, 120 76 Z"
-GLASS = "M 120 79 C 143 79, 160 82, 168 88 C 172 91, 174 97, 175 106 C 150 98, 90 98, 65 106 C 66 97, 68 91, 72 88 C 80 82, 97 79, 120 79 Z"
-SHINE = "M 120 58 C 150 58, 172 62, 182 70 C 188 76, 191 84, 192 96 C 160 82, 80 82, 48 96 C 49 84, 52 76, 58 70 C 68 62, 90 58, 120 58 Z"
-SMILE = "M 110 145 C 115 154, 125 154, 130 145"
-HAT_T = "translate(120 42) rotate(-8) scale(0.62) translate(-120 -48)"
-HAT_TM = "translate(120 42) rotate(-8) scale(0.64) translate(-120 -48)"
+# Le tricorne est celui du dessin précédent, reposé sur le dôme (plus petit
+# que l'ancien manteau, d'où l'échelle réduite). HAT_TM sert au monochrome.
+HAT_T = "translate(120 33) rotate(-8) scale(0.64) translate(-120 -48)"
+HAT_TM = HAT_T
 HAT = "M 120 17 C 141 17, 157 28, 164 45 C 173 37, 184 31, 194 28 C 201 26, 205 31, 202 38 C 196 52, 185 63, 171 70 C 156 77, 139 80, 120 80 C 101 80, 84 77, 69 70 C 55 63, 44 52, 38 38 C 35 31, 39 26, 46 28 C 56 31, 67 37, 76 45 C 83 28, 99 17, 120 17 Z"
 BAND = "M 76 50 C 92 60, 148 60, 164 50"
 BRIM = "M 69 70 C 84 77, 101 80, 120 80 C 139 80, 156 77, 171 70"
 SKULL = "M 120 27 C 128 27, 134 33, 134 40 C 134 44, 132 47, 129 49 L 129 52 C 129 54, 127 55, 125 55 L 115 55 C 113 55, 111 54, 111 52 L 111 49 C 108 47, 106 44, 106 40 C 106 33, 112 27, 120 27 Z"
-CENTRE = (120, 150)
 
 def build():
-    """Tracés de bras et positions de ventouses, avec contrôle des spires."""
-    arms = {"ant": [], "back": [], "front": []}
-    lengths = {"ant": [], "back": [], "front": []}
+    """Contours de bras et ventouses, avec garde-fou sur le jour des spires."""
+    arms = {}
+    for key, ((base, c1, c2), ctr, r0, r1, th, turns, cw, w) in (
+            ("front", FRONT_ARM), ("back", BACK_LEG)):
+        gap = spire_gap(r0, r1, turns)
+        if gap <= width_at(0.6, w, 1.5):
+            raise SystemExit(f"spires trop serrées ({key}) : jour {gap:.1f}")
+        sp = arm_spine(base, c1, c2, ctr, r0, r1, th, turns, cw)
+        arms[key] = [sp, mirror_pts(sp)]
     cups = []
-    for key, group, segs, towards, n in (("ant", ANTENNAS, SEG_ANT, (120, 70), 4),
-                                         ("back", BACK, SEG_BACK, CENTRE, 6),
-                                         ("front", FRONT, SEG_FRONT, CENTRE, 7)):
-        for (base, c1, c2), centre, r0, r1, th, turns, cw in group:
-            # Le contrôle ne vaut qu'au-delà d'un tour : en deçà, aucune spire
-            # ne peut rattraper la précédente.
-            if turns > 1:
-                gap = spire_gap(r0, r1, turns)
-                tip = segs[0][0]
-                if gap <= tip * 1.4:
-                    raise SystemExit(f"spires trop serrées ({key}) : jour {gap:.1f} pour une pointe de {tip}")
-            pts = points(base, c1, c2, centre, r0, r1, th, turns, cw)
-            arms[key].append(to_path(pts))
-            lengths[key].append(polyline_length(pts))
-            cups += suckers(pts, segs[-1][0], towards, count=n, start=0.16, end=0.86)
-    return arms, lengths, cups
+    for sp in arms["front"]:
+        cups += suckers(sp, FRONT_ARM[-1], (120, 150), count=4)
+    return arms, cups
 
-ARMS, LENGTHS, CUPS = build()
-SHADOWS = "".join(f'<circle cx="{x+0.7:.1f}" cy="{y+0.9:.1f}" r="{r*1.18:.1f}"/>' for x, y, r in CUPS)
-DOTS = "".join(f'<circle cx="{x-0.2:.1f}" cy="{y-0.3:.1f}" r="{r:.1f}"/>' for x, y, r in CUPS)
+ARMS, CUPS = build()
+FRONT_DS = [tapered(sp, FRONT_ARM[-1]) for sp in ARMS["front"]]
+BACK_DS = [tapered(sp, BACK_LEG[-1]) for sp in ARMS["back"]]
 
-GRADS = '''<linearGradient id="gM" x1="40" y1="54" x2="200" y2="186" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A78BFA"/><stop offset=".5" stop-color="#8B5CF6"/><stop offset="1" stop-color="#DB2777"/></linearGradient>
-<linearGradient id="gA" x1="0" y1="170" x2="0" y2="235" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4C1D95"/><stop offset=".18" stop-color="#7C3AED"/><stop offset="1" stop-color="#EC4899"/></linearGradient>
-<linearGradient id="gB" x1="0" y1="160" x2="0" y2="215" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3B0F73"/><stop offset=".2" stop-color="#4C1D95"/><stop offset="1" stop-color="#9D174D"/></linearGradient>
-<linearGradient id="gT" x1="0" y1="78" x2="0" y2="156" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2E1065"/><stop offset="1" stop-color="#160828"/></linearGradient>
-<linearGradient id="gS" x1="0" y1="54" x2="0" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="gG" x1="0" y1="78" x2="0" y2="130" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-<linearGradient id="gH" x1="0" y1="14" x2="0" y2="78" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3C3450"/><stop offset="1" stop-color="#15111F"/></linearGradient>
-<linearGradient id="gBd" x1="76" y1="0" x2="164" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#8B5CF6"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#EC4899"/></linearGradient>'''
+# ── Dégradés : la consigne « plus rose que violet » se joue ici — le point
+#    médian est passé du violet #8B5CF6 au fuchsia #D946EF. ──────────────────
+GRADS = '''<linearGradient id="gV" x1="46" y1="26" x2="196" y2="214" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#A78BFA"/><stop offset=".42" stop-color="#D946EF"/><stop offset="1" stop-color="#EC4899"/></linearGradient>
+<linearGradient id="gHd" x1="0" y1="26" x2="0" y2="140" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#C4B5FD"/><stop offset=".5" stop-color="#A855F7"/><stop offset="1" stop-color="#D946EF"/></linearGradient>
+<linearGradient id="gA" x1="0" y1="118" x2="0" y2="230" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9333EA"/><stop offset=".4" stop-color="#D946EF"/><stop offset="1" stop-color="#EC4899"/></linearGradient>
+<linearGradient id="gT" x1="0" y1="104" x2="0" y2="196" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#341054"/><stop offset="1" stop-color="#190933"/></linearGradient>
+<linearGradient id="gS" x1="0" y1="34" x2="0" y2="86" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="gP" x1="114" y1="134" x2="142" y2="166" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F0ABFC"/><stop offset="1" stop-color="#EC4899"/></linearGradient>
+<linearGradient id="gH" x1="0" y1="14" x2="0" y2="78" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3C3450"/><stop offset="1" stop-color="#15111F"/></linearGradient>'''
 
-def arm_defs():
-    out, i = [], 0
-    ids = {"ant": [], "back": [], "front": []}
-    for key in ("ant", "back", "front"):
-        for d in ARMS[key]:
-            out.append(f'<path id="t{i}" pathLength="100" d="{d}"/>')
-            ids[key].append(f"t{i}"); i += 1
-    return "".join(out), ids
+INK = "#241040"
+S = SCREEN
 
-ARM_DEFS, IDS = arm_defs()
+def screen_rect(inset=0.0, fill="none", extra=""):
+    return (f'<rect x="{S["x"]+inset}" y="{S["y"]+inset}" width="{S["w"]-2*inset}" '
+            f'height="{S["h"]-2*inset}" rx="{S["rx"]-inset}" fill="{fill}"{extra}/>')
 
-def uses(keys, segs_by_key, extra=0, stroke=None):
-    out = []
-    for key in keys:
-        for pid in IDS[key]:
-            for w, da in segs_by_key[key]:
-                s = f' stroke="{stroke}"' if stroke else ""
-                out.append(f'<use href="#{pid}" stroke-width="{round(w+extra,1)}" stroke-dasharray="{da}"{s}/>')
-    return "".join(out)
+BODY = (
+    f'<g fill="url(#gA)">{"".join(f"<path d=\"{d}\"/>" for d in BACK_DS)}</g>'
+    f'<path d="{HEAD}" fill="url(#gHd)"/><path d="{SHINE}" fill="url(#gS)"/>'
+    + screen_rect(fill="url(#gT)")
+    + screen_rect(extra=f' stroke="url(#gV)" stroke-width="{S["frame"]}"')
+    + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff"/>' for cx, cy, r in EYE_WHITES)
+    + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{INK}"/>' for cx, cy, r in EYE_PUPILS)
+    + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff"/>' for cx, cy, r in EYE_GLINTS)
+    + "".join(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="#DB2777" opacity=".5"/>'
+              for cx, cy, rx, ry in CHEEKS)
+    + f'<path d="{SMILE}" fill="none" stroke="{INK}" stroke-width="3.2" stroke-linecap="round"/>'
+    + f'<path d="{PLAY}" fill="url(#gP)" stroke="url(#gP)" stroke-width="10" stroke-linejoin="round"/>')
 
-SEGS = {"ant": SEG_ANT, "back": SEG_BACK, "front": SEG_FRONT}
-BODY = (f'<g fill="none" stroke="url(#gB)" stroke-linecap="round" stroke-linejoin="round">{uses(("ant","back"), SEGS)}</g>'
-        f'<g fill="none" stroke="url(#gA)" stroke-linecap="round" stroke-linejoin="round">{uses(("front",), SEGS)}</g>'
-        f'<g fill="#1B0B33" opacity=".22">{SHADOWS}</g><g fill="#fff" opacity=".26">{DOTS}</g>'
-        f'<path d="{MANTLE}" fill="url(#gM)"/><path d="{SHINE}" fill="url(#gS)"/>'
-        f'<path d="{TUBE}" fill="url(#gT)"/><path d="{GLASS}" fill="url(#gG)"/>'
-        '<ellipse cx="98" cy="117" rx="19" ry="21" fill="#fff"/><ellipse cx="142" cy="117" rx="19" ry="21" fill="#fff"/>'
-        '<circle cx="102" cy="121" r="9.5" fill="#1B0B33"/><circle cx="146" cy="121" r="9.5" fill="#1B0B33"/>'
-        '<circle cx="97.5" cy="113" r="3.8" fill="#fff"/><circle cx="141.5" cy="113" r="3.8" fill="#fff"/>'
-        f'<path d="{SMILE}" fill="none" stroke="#F472B6" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>'
-        '<ellipse cx="76" cy="146" rx="10" ry="6" fill="#F472B6" opacity=".38"/>'
-        '<ellipse cx="164" cy="146" rx="10" ry="6" fill="#F472B6" opacity=".38"/>')
 HAT_G = (f'<g transform="{HAT_T}"><path d="{HAT}" fill="url(#gH)"/>'
-         f'<path d="{BAND}" fill="none" stroke="url(#gBd)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
-         f'<path d="{SKULL}" fill="#fff"/>'
+         f'<path d="{BAND}" fill="none" stroke="url(#gV)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>'
+         f'<path d="{SKULL}" fill="#F5F0FF"/>'
          '<g fill="#241145"><circle cx="115" cy="39" r="3.2"/><circle cx="125" cy="39" r="3.2"/></g></g>')
-HEAD = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img">'
+
+FRONT_G = (
+    f'<g fill="url(#gA)">{"".join(f"<path d=\"{d}\"/>" for d in FRONT_DS)}</g>'
+    '<g fill="#FBCFE8" opacity=".8">'
+    + "".join(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}"/>' for x, y, r in CUPS)
+    + "</g>")
+
+HEAD_TAG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" role="img">'
 NOTE = "<!-- GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main. -->"
 
-(OUT / "logo-color.svg").write_text(f'{HEAD}<title>Tentacle TV</title>{NOTE}<defs>{GRADS}{ARM_DEFS}</defs>{BODY}{HAT_G}</svg>\n')
-(OUT / "logo-color-nohat.svg").write_text(f'{HEAD}<title>Tentacle TV — sans chapeau</title>{NOTE}<defs>{GRADS}{ARM_DEFS}</defs>{BODY}</svg>\n')
+(OUT / "logo-color.svg").write_text(
+    f'{HEAD_TAG}<title>Tentacle TV</title>{NOTE}<defs>{GRADS}</defs>{BODY}{HAT_G}{FRONT_G}</svg>\n')
+(OUT / "logo-color-nohat.svg").write_text(
+    f'{HEAD_TAG}<title>Tentacle TV — sans chapeau</title>{NOTE}<defs>{GRADS}</defs>{BODY}{FRONT_G}</svg>\n')
 
-# ── Monochrome : détails creusés au masque, bras avant détachés d'un liseré ──
-OUTLINE = 8
+# ── Monochrome : détails creusés au masque. L'écran devient un trou (son
+#    cadre reste plein), le play y reste plein ; yeux et sourire se creusent
+#    dans le dôme, pupilles re-pleines ; les bras avant se détachent du cadre
+#    par un liseré. ─────────────────────────────────────────────────────────
+fr = S["frame"] / 2
+# Le liseré qui détache les bras avant ne vaut que sur l'ÉCRAN : plus haut, le
+# bras longe la tête et doit fusionner avec elle — un clip le borne au cadre.
+CLIP_ARMS = (f'<clipPath id="cArms"><rect x="0" y="{S["y"] - 4}" width="240" '
+             f'height="{240 - S["y"] + 4}"/></clipPath>')
 MASK = (f'<mask id="mCut"><rect width="240" height="240" fill="#fff"/>'
-        f'<g fill="none" stroke-linecap="round" stroke-linejoin="round">{uses(("front",), SEGS, OUTLINE, "#000")}{uses(("front",), SEGS, 0, "#fff")}</g>'
-        f'<path d="{TUBE}" fill="#000"/>'
-        '<ellipse cx="98" cy="116" rx="20" ry="22" fill="#fff"/><ellipse cx="142" cy="116" rx="20" ry="22" fill="#fff"/>'
-        '<circle cx="101" cy="120" r="11" fill="#000"/><circle cx="145" cy="120" r="11" fill="#000"/>'
-        f'<g transform="{HAT_TM}" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">'
+        + screen_rect(inset=fr, fill="#000")
+        + f'<path d="{PLAY}" fill="#fff" stroke="#fff" stroke-width="10" stroke-linejoin="round"/>'
+        + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#000"/>' for cx, cy, r in EYE_WHITES)
+        + "".join(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="#fff"/>' for cx, cy, r in EYE_PUPILS)
+        + f'<path d="{SMILE}" fill="none" stroke="#000" stroke-width="3.2" stroke-linecap="round"/>'
+        + f'<g transform="{HAT_TM}" fill="none" stroke="#000" stroke-linecap="round" stroke-linejoin="round">'
         f'<path d="{BRIM}" stroke-width="9"/><path d="{BAND}" stroke-width="10"/></g>'
-        f'<path transform="{HAT_TM}" fill="#000" d="{SKULL}"/></mask>')
-MONO_BODY = (f'<g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'
-             f'{uses(("ant","back","front"), SEGS)}</g>'
-             f'<path d="{MANTLE}"/><path d="{HAT}" transform="{HAT_TM}"/>')
+        + f'<path transform="{HAT_TM}" fill="#000" d="{SKULL}"/>'
+        + f'<g clip-path="url(#cArms)">'
+        + "".join(f'<path d="{d}" fill="none" stroke="#000" stroke-width="8" stroke-linejoin="round"/>' for d in FRONT_DS)
+        + "</g>"
+        + "".join(f'<path d="{d}" fill="#fff"/>' for d in FRONT_DS)
+        + '</mask>')
+MONO_BODY = ("".join(f'<path d="{d}"/>' for d in BACK_DS)
+             + f'<path d="{HEAD}"/>'
+             + screen_rect(fill="currentColor")
+             + f'<path d="{HAT}" transform="{HAT_TM}"/>'
+             + "".join(f'<path d="{d}"/>' for d in FRONT_DS))
 (OUT / "logo-mono.svg").write_text(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240" color="#FFFFFF" role="img">'
-    f'<title>Tentacle TV — monochrome</title>{NOTE}<defs>{ARM_DEFS}{MASK}</defs>'
+    f'<title>Tentacle TV — monochrome</title>{NOTE}<defs>{CLIP_ARMS}{MASK}</defs>'
     f'<g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></svg>\n')
 
 # ── Icônes d'application : 86 % de large, fond plein (exigence Play) ─────────
@@ -166,69 +162,31 @@ OFF = (1024 - 240 * SCALE) / 2
 PLACE = f'transform="translate({OFF:.1f} {OFF:.1f}) scale({SCALE:.4f})"'
 (OUT / "app-icon-color.svg").write_text(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
-    f"<title>Tentacle TV — icône d'application</title>{NOTE}<defs>{GRADS}{ARM_DEFS}"
+    f"<title>Tentacle TV — icône d'application</title>{NOTE}<defs>{GRADS}"
     '<linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">'
     '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/><stop offset="1" stop-color="#000000"/></linearGradient>'
-    '<radialGradient id="halo" cx="50%" cy="44%" r="62%"><stop offset="0" stop-color="#8B5CF6" stop-opacity=".46"/>'
-    '<stop offset=".62" stop-color="#8B5CF6" stop-opacity=".10"/><stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/></radialGradient></defs>'
+    '<radialGradient id="halo" cx="50%" cy="44%" r="62%"><stop offset="0" stop-color="#C026D3" stop-opacity=".40"/>'
+    '<stop offset=".62" stop-color="#A855F7" stop-opacity=".10"/><stop offset="1" stop-color="#A855F7" stop-opacity="0"/></radialGradient></defs>'
     '<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#halo)"/>'
-    f'<g {PLACE}>{BODY}{HAT_G}</g></svg>\n')
+    f'<g {PLACE}>{BODY}{HAT_G}{FRONT_G}</g></svg>\n')
 (OUT / "app-icon-mono.svg").write_text(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
-    f"<title>Tentacle TV — icône d'application (mono)</title>{NOTE}<defs>{ARM_DEFS}{MASK}"
+    f"<title>Tentacle TV — icône d'application (mono)</title>{NOTE}<defs>{CLIP_ARMS}{MASK}"
     '<linearGradient id="bgm" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">'
-    '<stop offset="0" stop-color="#8B5CF6"/><stop offset=".52" stop-color="#A855F7"/><stop offset="1" stop-color="#DB2777"/></linearGradient>'
+    '<stop offset="0" stop-color="#A855F7"/><stop offset=".5" stop-color="#D946EF"/><stop offset="1" stop-color="#DB2777"/></linearGradient>'
     '<radialGradient id="glow" cx="30%" cy="22%" r="78%"><stop offset="0" stop-color="#fff" stop-opacity=".22"/>'
     '<stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
     '<rect width="1024" height="1024" fill="url(#bgm)"/><rect width="1024" height="1024" fill="url(#glow)"/>'
     f'<g {PLACE} color="#FFFFFF"><g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></g></svg>\n')
 
-# ── Constantes TypeScript : le composant web ne peut pas lire les SVG, il lui
-#    faut des variables CSS. Les générer supprime toute divergence possible. ──
-def ts_list(name, items, doc):
-    body = ",\n".join(f'  "{d}"' for d in items)
-    return f"/** {doc} */\nexport const {name} = [\n{body},\n] as const;\n\n"
-
-def ts_segs(name, segs, doc):
-    body = ",\n".join(f'  {{ width: {w}, dash: "{da}" }}' for w, da in segs)
-    return f"/** {doc} */\nexport const {name}: readonly ArmSegment[] = [\n{body},\n];\n\n"
-
-ts = ('// GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main.\n'
-      '//\n'
-      "// Les bras sont des SPIRALES : la forme enroulée est la signature du\n"
-      "// tentacule et lève l'ambiguïté de silhouette qu'avait le tube lisse.\n"
-      '// Le relief vient des ventouses ombrées, pas d\'une arête lumineuse — une\n'
-      '// bande claire décalée délave le bras au lieu de l\'arrondir.\n\n'
-      '/** Un palier de trait : largeur, et portion du tracé qu\'il couvre. */\n'
-      'export interface ArmSegment {\n  width: number;\n  dash: string;\n}\n\n'
-      '/** Une ventouse : centre et rayon, dans le repère 240×240. */\n'
-      'export interface Sucker {\n  cx: number;\n  cy: number;\n  r: number;\n}\n\n')
-ts += ts_segs("ARM_SEGMENTS", SEG_FRONT, "Bras avant. Du plus fin au plus épais : le gros recouvre les jonctions.")
-ts += ts_segs("BACK_ARM_SEGMENTS", SEG_BACK, "Bras arrière.")
-ts += ts_segs("ANTENNA_SEGMENTS", SEG_ANT, "Antennes.")
-ts += ts_list("ANTENNA_PATHS", ARMS["ant"], "Les deux bras dressés en antennes.")
-ts += ts_list("BACK_ARM_PATHS", ARMS["back"], "Bras extérieurs, derrière le corps.")
-ts += ts_list("FRONT_ARM_PATHS", ARMS["front"], "Bras avant. Huit bras en tout, dont deux en antennes.")
-ts += ("/** Ventouses : le relief du dessin. Chacune reçoit une ombre décalée. */\n"
-       "export const SUCKERS: readonly Sucker[] = [\n"
-       + ",\n".join(f'  {{ cx: {x:.1f}, cy: {y:.1f}, r: {r:.1f} }}' for x, y, r in CUPS)
-       + ",\n];\n")
-(ROOT / "apps/web/src/components/ui/tentacleArmPaths.generated.ts").write_text(ts)
-
-
-# ── Compositions dérivées ────────────────────────────────────────────────────
-#
-# Les icônes carrées ne suffisent pas : les stores réclament des bannières, des
-# écrans de lancement, et pour tvOS des COUCHES séparées (effet de parallaxe).
-# Tout se compose ici, depuis le même dessin.
-
+# ── Compositions dérivées : bannières, écrans de lancement, couches tvOS ────
 BG_CINEMA = ('<linearGradient id="bg" x1="0" y1="0" x2="{w}" y2="{h}" gradientUnits="userSpaceOnUse">'
              '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/>'
              '<stop offset="1" stop-color="#000000"/></linearGradient>'
              '<radialGradient id="halo" cx="50%" cy="44%" r="62%">'
-             '<stop offset="0" stop-color="#8B5CF6" stop-opacity=".46"/>'
-             '<stop offset=".62" stop-color="#8B5CF6" stop-opacity=".10"/>'
-             '<stop offset="1" stop-color="#8B5CF6" stop-opacity="0"/></radialGradient>')
+             '<stop offset="0" stop-color="#C026D3" stop-opacity=".40"/>'
+             '<stop offset=".62" stop-color="#A855F7" stop-opacity=".10"/>'
+             '<stop offset="1" stop-color="#A855F7" stop-opacity="0"/></radialGradient>')
 
 def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
     """
@@ -241,8 +199,8 @@ def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
     ox, oy = (w - span) / 2, (h - span) / 2
     bg = (f'<rect width="{w}" height="{h}" fill="url(#bg)"/>'
           f'<rect width="{w}" height="{h}" fill="url(#halo)"/>') if with_bg else ""
-    defs = GRADS + ARM_DEFS + (BG_CINEMA.format(w=w, h=h) if with_bg else "")
-    art = BODY + (HAT_G if with_hat else "")
+    defs = GRADS + (BG_CINEMA.format(w=w, h=h) if with_bg else "")
+    art = BODY + (HAT_G if with_hat else "") + FRONT_G
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}" role="img">'
             f'<title>Tentacle TV{title}</title>{NOTE}<defs>{defs}</defs>{bg}'
             f'<g transform="translate({ox:.1f} {oy:.1f}) scale({scale:.4f})">{art}</g></svg>\n')
@@ -276,65 +234,65 @@ for name, (w, h, ratio, bg, hat, title) in COMPOSITIONS.items():
     else:
         (OUT / name).write_text(compose(w, h, ratio, bg, hat, title))
 
-# ── Clients natifs : react-native-svg ne connaît pas `pathLength`, donc les
-#    bornes de dasharray sont converties en unités réelles de tracé. Chaque bras
-#    porte ses paliers, prêts à rendre. ─────────────────────────────────────────
-def native_module():
-    out = ['// GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main.',
-           '//',
-           '// Les dasharray sont en unités RÉELLES de tracé, et non en centièmes :',
-           "// `pathLength` n'existe que dans le rendu web de react-native-svg, pas en",
-           '// natif, et sans lui des bornes en pourcentage ne veulent rien dire.',
-           '',
-           '/** Un palier de trait : largeur, et portion du tracé qu\'il couvre. */',
-           'export interface ArmSegment {', '  width: number;', '  dash: string;', '}', '',
-           '/** Un bras prêt à rendre : son tracé et ses paliers. */',
-           'export interface Arm {', '  d: string;', '  segments: readonly ArmSegment[];', '}', '',
-           '/** Une ventouse : centre et rayon, dans le repère 240×240. */',
-           'export interface Sucker {', '  cx: number;', '  cy: number;', '  r: number;', '}', '']
-    names = {"ant": ("ANTENNA_ARMS", "Les deux bras dressés en antennes."),
-             "back": ("BACK_ARMS", "Bras extérieurs, derrière le corps."),
-             "front": ("FRONT_ARMS", "Bras avant. Huit bras en tout, dont deux en antennes.")}
-    for key in ("ant", "back", "front"):
-        var, doc = names[key]
-        out.append(f"/** {doc} */")
-        out.append(f"export const {var}: readonly Arm[] = [")
-        for d, length in zip(ARMS[key], LENGTHS[key]):
-            out.append("  {")
-            out.append(f'    d: "{d}",')
-            out.append("    segments: [")
-            for w, da in SEGS[key]:
-                out.append(f'      {{ width: {w}, dash: "{dash_absolute(da, length)}" }},')
-            out.append("    ],")
-            out.append("  },")
-        out.append("] as const;")
-        out.append("")
-    out.append("/** Ventouses : le relief du dessin. Chacune reçoit une ombre décalée. */")
-    out.append("export const SUCKERS: readonly Sucker[] = [")
-    out += [f"  {{ cx: {x:.1f}, cy: {y:.1f}, r: {r:.1f} }}," for x, y, r in CUPS]
-    out.append("] as const;")
-    out.append("")
-    out.append("/** Décalage de l'ombre sous une ventouse, et son grossissement. */")
-    out.append("export const SUCKER_SHADOW = { x: 0.7, y: 0.9, scale: 1.18 } as const;")
-    out.append("")
-    out.append("/** Le chapeau vit dans son propre repère ; voici comment l'y ramener. */")
-    out.append(f'export const HAT_TRANSFORM = "{HAT_T}";')
-    out.append("")
-    out.append("/** Corps, visage et chapeau — dessinés à la main, pas générés. */")
-    for name, value in (("MANTLE_PATH", MANTLE), ("TUBE_PATH", TUBE), ("GLASS_PATH", GLASS),
-                        ("SHINE_PATH", SHINE), ("SMILE_PATH", SMILE), ("HAT_PATH", HAT),
-                        ("HAT_BAND_PATH", BAND), ("SKULL_PATH", SKULL)):
-        out.append(f'export const {name} =\n  "{value}";')
-    return "\n".join(out) + "\n"
+# ── Modules TypeScript : un SEUL contenu pour web, TV et mobile — les bras
+#    étant des formes pleines, `pathLength` et les dasharray ont disparu, et
+#    avec eux la différence web/natif. ──────────────────────────────────────
+def ts_module():
+    def circles(name, items, doc):
+        rows = ",\n".join(f"  {{ cx: {cx}, cy: {cy}, r: {r} }}" for cx, cy, r in items)
+        return f"/** {doc} */\nexport const {name}: readonly Circle[] = [\n{rows},\n];\n\n"
+    out = ("// GÉNÉRÉ par brand/generate-svg.py — ne pas éditer à la main.\n"
+           "//\n"
+           "// Dessin « l'Étreinte » : le poulpe enlace l'écran. Les bras sont des\n"
+           "// CONTOURS FERMÉS à remplir (fill), plus des traits à dasharray — le\n"
+           "// même module sert le web et le natif.\n\n"
+           "export interface Circle {\n  cx: number;\n  cy: number;\n  r: number;\n}\n\n"
+           "export interface EllipseSpec {\n  cx: number;\n  cy: number;\n  rx: number;\n  ry: number;\n}\n\n"
+           "/** Bras avant, gauche puis droit : ils enlacent l'écran, PAR-DESSUS. */\n"
+           "export const FRONT_ARM_PATHS: readonly string[] = [\n"
+           + ",\n".join(f'  "{d}"' for d in FRONT_DS) + ",\n] as const;\n\n"
+           "/** Pattes arrière, gauche puis droite : elles dépassent SOUS l'écran. */\n"
+           "export const BACK_ARM_PATHS: readonly string[] = [\n"
+           + ",\n".join(f'  "{d}"' for d in BACK_DS) + ",\n] as const;\n\n")
+    out += ("/** Ventouses des bras avant : le relief du dessin, chacune sur son ombre. */\n"
+            "export const SUCKERS: readonly Circle[] = [\n"
+            + ",\n".join(f"  {{ cx: {x:.1f}, cy: {y:.1f}, r: {r:.1f} }}" for x, y, r in CUPS)
+            + ",\n];\n\n"
+            "/** Décalage de l'ombre sous une ventouse, et son grossissement. */\n"
+            "export const SUCKER_SHADOW = { x: 0.7, y: 0.9, scale: 1.18 } as const;\n\n"
+            f'/** Le dôme de la tête. */\nexport const HEAD_PATH =\n  "{HEAD}";\n\n'
+            f'/** Reflet du dôme (blanc fondu, opacité .28 → 0 de y=34 à 86). */\nexport const SHINE_PATH =\n  "{SHINE}";\n\n'
+            "/** L'écran enlacé : rect arrondi + cadre. */\n"
+            f"export const SCREEN = {{ x: {S['x']}, y: {S['y']}, width: {S['w']}, height: {S['h']}, rx: {S['rx']}, frameWidth: {S['frame']} }} as const;\n\n"
+            f'/** Le play, au centre de l\'écran (stroke 10 joint rond pour l\'arrondi). */\nexport const PLAY_PATH = "{PLAY}";\n\n')
+    out += circles("EYE_WHITES", EYE_WHITES, "Blancs des yeux.")
+    out += circles("EYE_PUPILS", EYE_PUPILS, "Pupilles (encre #241040), regard vers le play.")
+    out += circles("EYE_GLINTS", EYE_GLINTS, "Reflets des yeux.")
+    out += ("/** Joues (rose #DB2777, opacité .5). */\n"
+            "export const CHEEKS: readonly EllipseSpec[] = [\n"
+            + ",\n".join(f"  {{ cx: {cx}, cy: {cy}, rx: {rx}, ry: {ry} }}" for cx, cy, rx, ry in CHEEKS)
+            + ",\n];\n\n"
+            f'/** Sourire (encre, trait 3.2 arrondi), au ras du cadre de l\'écran. */\nexport const SMILE_PATH = "{SMILE}";\n\n'
+            "/** Le chapeau vit dans son propre repère ; voici comment l'y ramener. */\n"
+            f'export const HAT_TRANSFORM = "{HAT_T}";\n\n')
+    for name, value, doc in (("HAT_PATH", HAT, "La calotte du tricorne."),
+                             ("HAT_BAND_PATH", BAND, "La bande dégradée du chapeau."),
+                             ("HAT_BRIM_PATH", BRIM, "Le bord bas de la calotte (séparation en mono)."),
+                             ("SKULL_PATH", SKULL, "Le crâne du pavillon.")):
+        out += f'/** {doc} */\nexport const {name} =\n  "{value}";\n\n'
+    return out
 
-NATIVE = native_module()
-for target in ("apps/tv/src/components/icons/tentacleArt.generated.ts",
-               "apps/mobile/src/components/tentacleArt.generated.ts"):
-    path = ROOT / target
-    if path.parent.exists():
-        path.write_text(NATIVE)
-    else:
-        print(f"  (ignoré, dossier absent : {target})")
+if not PREVIEW:
+    TS = ts_module()
+    for target in ("apps/web/src/components/ui/tentacleArmPaths.generated.ts",
+                   "apps/tv/src/components/icons/tentacleArt.generated.ts",
+                   "apps/mobile/src/components/tentacleArt.generated.ts"):
+        path = ROOT / target
+        if path.parent.exists():
+            path.write_text(TS)
+        else:
+            print(f"  (ignoré, dossier absent : {target})")
 
-print(f"{5 + len(COMPOSITIONS)} SVG + 3 modules TS — {len(CUPS)} ventouses, "
-      f"{sum(len(v) for v in ARMS.values())} bras")
+print(f"{5 + len(COMPOSITIONS)} SVG — {len(CUPS)} ventouses, "
+      f"{len(FRONT_DS) + len(BACK_DS)} bras"
+      + (" (aperçu : modules TS non écrits)" if PREVIEW else " + 3 modules TS"))

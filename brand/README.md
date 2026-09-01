@@ -31,10 +31,11 @@ cp brand/logo-color-nohat.svg apps/web/public/tentacle.svg
 cp brand/logo-color.svg apps/tv-webos/shell/images/tentacle-logo-pirate.svg
 ```
 
-`tentacleGeometry.ts` ne garde que ce qui se dessine à la main — corps, visage,
-chapeau — et réexporte les bras depuis le fichier généré. Le composant web existe
-séparément du fichier statique parce que lui seul résout les variables CSS : une
-couleur de marque redéfinie par un administrateur doit se propager au logo.
+`tentacleGeometry.ts` n'écrit plus rien à la main : depuis « l'Étreinte »
+(2026-09), il ne fait que réexporter le module généré — bras, tête, écran,
+visage et chapeau. Le composant web existe séparément du fichier statique parce
+que lui seul résout les variables CSS : une couleur de marque redéfinie par un
+administrateur doit se propager au logo.
 
 ## Trois règles apprises à leurs frais
 

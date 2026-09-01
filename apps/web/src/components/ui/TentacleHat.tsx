@@ -17,9 +17,8 @@ interface TentacleHatProps {
  * presets saisonniers avant d'afficher leur propre couvre-chef : les deux ne
  * doivent jamais se superposer.
  *
- * Il est volontairement plus étroit que le manteau. Le coiffer entièrement
- * obligerait à pousser les antennes hors du cadre — et le poulpe-téléviseur
- * perdrait la moitié de ce qui le rend lisible.
+ * Depuis le dessin « l'Étreinte », il est posé sur le dôme — plus petit que
+ * l'ancien manteau, d'où l'échelle réduite portée par `HAT_TRANSFORM` (généré).
  */
 export function TentacleHat({ hatFill, bandFill }: TentacleHatProps) {
   return (
@@ -33,7 +32,7 @@ export function TentacleHat({ hatFill, bandFill }: TentacleHatProps) {
           strokeWidth="6"
           strokeLinecap="round"
         />
-        <path d={SKULL_PATH} fill="#fff" />
+        <path d={SKULL_PATH} fill="#F5F0FF" />
         <g fill="#241145">
           <circle cx="115" cy="39" r="3.2" />
           <circle cx="125" cy="39" r="3.2" />

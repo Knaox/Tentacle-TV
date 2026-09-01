@@ -4,14 +4,11 @@
  * tricorne par défaut (dans `TentacleHat`) est masqué en parallèle par
  * `--default-hat-display: none`, sinon les deux se superposeraient.
  *
- * Repère 240×240, comme le reste du dessin. Les positions ne sont PAS une simple
- * mise à l'échelle des anciennes : l'anatomie a changé (le manteau est devenu un
- * tube, deux tentacules sont montés en antennes), et chaque ornement a été
- * recalé à la main.
- *
- * Contrainte commune : rester entre les antennes, dont les bases sont posées aux
- * coins hauts du manteau (x = 64 et 176). Un couvre-chef qui les dépasse mord
- * dessus et les rend illisibles.
+ * Repère 240×240, comme le reste du dessin. Depuis « l'Étreinte » (2026-09),
+ * plus d'antennes à épargner : les couvre-chefs se posent sur le dôme (sommet à
+ * y=32), leur assiette vers y≈57 reste au-dessus des yeux (sommet à y≈66). Les
+ * petits accessoires du bas sont accrochés aux boucles des pattes et des bras
+ * avant — recalés à la main sur la nouvelle anatomie.
  */
 export function TentacleOrnaments() {
   return (
@@ -42,8 +39,8 @@ function ChristmasOrnament() {
       {/* Pompon */}
       <circle cx="133" cy="9" r="9" fill="#ffffff" />
       <circle cx="130" cy="6" r="3.4" fill="#f9fafb" opacity="0.8" />
-      {/* Brindille de sapin accrochée à un bras avant */}
-      <g transform="translate(70, 206)">
+      {/* Brindille de sapin accrochée à la boucle du bras avant gauche */}
+      <g transform="translate(73, 184)">
         <path d="M0 0 L-5 -9 L-2.5 -6.5 L0 -14 L2.5 -6.5 L5 -9 Z" fill="#16a34a" />
         <circle cx="0" cy="0" r="2.6" fill="#dc2626" />
       </g>
@@ -60,8 +57,8 @@ function EasterOrnament() {
       {/* Oreille droite */}
       <ellipse cx="138" cy="28" rx="13" ry="26" fill="#c4b5fd" stroke="#a78bfa" strokeWidth="1.4" />
       <ellipse cx="138" cy="31" rx="6.5" ry="19" fill="#f9a8d4" />
-      {/* Œuf décoré, tenu par un bras avant */}
-      <g transform="translate(74, 208)">
+      {/* Œuf décoré, calé dans la boucle de la patte gauche */}
+      <g transform="translate(92, 212)">
         <ellipse cx="0" cy="0" rx="8.5" ry="11.5" fill="#fde047" />
         <path
           d="M-6 -6 Q0 -7.8 6 -6 M-6 0 Q0 -1.8 6 0 M-6 6 Q0 4.2 6 6"
@@ -71,8 +68,8 @@ function EasterOrnament() {
           strokeLinecap="round"
         />
       </g>
-      {/* Petite fleur de l'autre côté */}
-      <g transform="translate(170, 204)">
+      {/* Petite fleur dans la boucle de la patte droite */}
+      <g transform="translate(148, 212)">
         <circle cx="0" cy="0" r="3.6" fill="#fde047" />
         <circle cx="-5.4" cy="-1.8" r="3" fill="#f9a8d4" />
         <circle cx="5.4" cy="-1.8" r="3" fill="#f9a8d4" />
@@ -87,11 +84,11 @@ function EasterOrnament() {
 function HalloweenOrnament() {
   return (
     <g style={{ display: "var(--halloween-display, none)" }}>
-      {/* Bord du chapeau — borné à x = 68..172 pour épargner les antennes.
-          Le feutre ne descend PAS au noir : le fond de l'application est
-          `#000000`, et un chapeau en #0a0a0f y devenait invisible — seul son
-          ruban orange surnageait. Le tricorne par défaut se détache pour la
-          même raison, en montant jusqu'à #3C3450. */}
+      {/* Bord du chapeau, à l'assiette du dôme. Le feutre ne descend PAS au
+          noir : le fond de l'application est `#000000`, et un chapeau en
+          #0a0a0f y devenait invisible — seul son ruban orange surnageait. Le
+          tricorne par défaut se détache pour la même raison, en montant
+          jusqu'à #3C3450. */}
       <ellipse cx="120" cy="61" rx="52" ry="10" fill="#211F2B" />
       <ellipse cx="120" cy="58" rx="49" ry="7" fill="#2B2836" />
       {/* Cône, incliné du même côté que le tricorne */}
@@ -117,8 +114,8 @@ function HalloweenOrnament() {
         <path d="M-2 -0.6 L-0.6 0.6 L0.6 -0.6 M0.6 -0.6 L2 0.6" stroke="#f97316" strokeWidth="0.9" fill="none" />
         <path d="M-1.4 1.4 L0 2.6 L1.4 1.4" stroke="#f97316" strokeWidth="0.9" fill="none" strokeLinecap="round" />
       </g>
-      {/* Chauve-souris près d'un bras */}
-      <g transform="translate(178, 198)">
+      {/* Chauve-souris près de la boucle du bras avant droit */}
+      <g transform="translate(176, 182)">
         <ellipse cx="0" cy="0" rx="3" ry="2.2" fill="#17151F" />
         <path d="M-3 -0.8 Q-9 -4.4 -12 0 Q-7.4 1.4 -3 0.8 Z" fill="#17151F" />
         <path d="M3 -0.8 Q9 -4.4 12 0 Q7.4 1.4 3 0.8 Z" fill="#17151F" />
