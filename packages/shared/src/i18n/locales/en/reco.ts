@@ -17,6 +17,9 @@ export default {
   preliminaryHint: "First picks — your recommendations are being refined in the background.",
   heroRegionAria: "Featured recommendations",
   communityRatingAria: "Community rating {{score}} out of 10",
+  providersFilterAria: "Filter by platform",
+  providersAll: "All platforms",
+  providerRowEmpty: "Nothing here on the selected platforms.",
   disabledBody:
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",

@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useRecoOverview } from "@tentacle-tv/api-client";
+import { useRecoOverview, useRecoRow } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
+import { RecoProviderChips } from "../components/reco/RecoProviderChips";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 
@@ -22,6 +23,15 @@ export function Recommendations() {
   const { data: overview, isPending } = useRecoOverview();
   // Même clé de cache que la rangée « Pour vous » : zéro requête en plus.
   const { excludeKeys } = useRecoHeroSlides();
+  // Chips plateformes : filtrage CLIENT (aucun refetch). Elles n'apparaissent
+  // que si le serveur sert déjà des providers (détection de capacité).
+  const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
+  const { data: forYouRow } = useRecoRow("forYou");
+  const providersKnown = useMemo(
+    () => (forYouRow?.items ?? []).some((i) => i.providers !== undefined),
+    [forYouRow]
+  );
+  const providerFilter = selectedProviders.length > 0 ? selectedProviders : undefined;
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
   // d'arrière-plan en pleine sélection. « dismissed » survit tant que le
@@ -80,9 +90,14 @@ export function Recommendations() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
+        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle. */}
         <div className="pt-6">
           <RecoBillboardSlot />
         </div>
+
+        {providersKnown && (
+          <RecoProviderChips selected={selectedProviders} onChange={setSelectedProviders} />
+        )}
 
         {overview.state === "warming" && (
           <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("warmingHint")}</p>
@@ -108,6 +123,7 @@ export function Recommendations() {
               seedTitle={row.seedTitle}
               animDelay={150 + i * 80}
               excludeKeys={row.key === "forYou" ? excludeKeys : undefined}
+              providerFilter={providerFilter}
               pendingFallback="skeleton"
             />
           ))
