@@ -44,6 +44,8 @@ import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { ratingRoutes } from "./routes/ratings";
 import { likeRoutes } from "./routes/likes";
+import { recoRoutes } from "./routes/reco";
+import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
@@ -240,6 +242,7 @@ async function main() {
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
   await app.register(ratingRoutes, { prefix: "/api/ratings" });
   await app.register(likeRoutes, { prefix: "/api/likes" });
+  await app.register(recoRoutes, { prefix: "/api/reco" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
   // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —
@@ -307,6 +310,7 @@ async function main() {
     startLibraryAddedNotifier();
     startAnnouncedPurge();
     startWatchTime();
+    startRecoJobs();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
@@ -316,6 +320,7 @@ async function main() {
   // rendre son bail permet à un redémarrage de reprendre la mesure aussitôt, au
   // lieu d'attendre l'expiration.
   app.addHook("onClose", async () => {
+    stopRecoJobs();
     await stopWatchTime();
   });
   for (const signal of ["SIGTERM", "SIGINT"] as const) {

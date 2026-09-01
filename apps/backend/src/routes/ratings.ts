@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
+import { pokeProfile } from "../services/reco/jobs";
 
 // Identité d'un titre noté : la clé canonique (mediaType, tmdbId) — celle de
 // Vigie — plus saison/épisode, à 0 hors épisode (l'index unique MySQL exige du
@@ -75,6 +76,7 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
     };
     // Re-noter ressuscite une note en attente d'effacement distant (`deletedAt`
     // remis à null) : la sync repart de zéro, en « pending ».
+    pokeProfile(user.userId);
     return prisma.userRating.upsert({
       where: { jellyfinUserId_mediaType_tmdbId_seasonNumber_episodeNumber: identity },
       create: {
@@ -116,6 +118,7 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
     };
     const row = await prisma.userRating.findUnique({ where });
     if (!row || row.deletedAt) return { ok: true };
+    pokeProfile(user.userId);
     const syncedSomewhere = row.tmdbSyncedAt !== null || row.anilistSyncedAt !== null;
     if (syncedSomewhere) {
       await prisma.userRating.update({
