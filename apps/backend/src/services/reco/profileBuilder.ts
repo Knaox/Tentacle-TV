@@ -73,6 +73,18 @@ export async function rebuildProfile(userId: string): Promise<ProfileSummary> {
   return p;
 }
 
+/** Une reconstruction est-elle en cours pour ce compte ? (endpoint de statut) */
+export function isRebuilding(userId: string): boolean {
+  return inFlight.has(userId);
+}
+
+/** La reconstruction en cours, s'il y en a une — la chaîne du pool s'y adosse
+ *  pour ne jamais générer sur un profil encore vide. Ne rejette jamais. */
+export function awaitRebuild(userId: string): Promise<unknown> {
+  const pending = inFlight.get(userId);
+  return pending ? pending.catch(() => undefined) : Promise.resolve();
+}
+
 async function doRebuild(userId: string): Promise<ProfileSummary> {
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
