@@ -4,96 +4,16 @@ import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { ensureFreshPool } from "../services/reco/generationJob";
-import { rebuildProfile } from "../services/reco/profileBuilder";
 import { availableRows, buildRow } from "../services/reco/rowBuilder";
-import { canonicalKey } from "../services/reco/candidates/exclusions";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { getSeerrConfig } from "../services/seerConfig";
 import { buildCommunityRow } from "../services/reco/communityRow";
-import type { TasteVector } from "../services/reco/scoring/strategy";
+import { serveContext } from "../services/reco/serveContext";
 
 const feedbackSchema = z.object({
   itemKey: z.string().regex(/^(movie|tv):\d+$/),
   action: z.enum(["dismissed", "not_interested", "already_seen"]),
 });
-
-// Démarrage à froid (spec) : < 5 signaux → pas de reco personnalisée du tout ;
-// 5..14 → recos servies avec l'indicateur « vos recommandations s'affinent ».
-const COLD_MIN_SIGNALS = 5;
-const WARMING_MIN_SIGNALS = 15;
-
-type RecoState = "disabled" | "cold" | "warming" | "ready";
-
-interface ServeContext {
-  state: RecoState;
-  signalCount: number;
-  lambda: number;
-  includeVigie: boolean;
-  community: boolean;
-  exclude: Set<string>;
-  profile: TasteVector;
-}
-
-async function serveContext(userId: string): Promise<ServeContext> {
-  const prisma = getPrisma();
-  let profileRow = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
-  // Premier contact d'un compte : « pas de ligne de profil » ne veut pas dire
-  // « pas de goût » — un historique Jellyfin (vus, favoris, listes) porte déjà
-  // des signaux. On construit le profil ICI, une seule fois (le rebuild écrit
-  // une ligne même à zéro signal) : la grille de démarrage à froid ne reste
-  // que pour les comptes réellement vierges.
-  if (!profileRow) {
-    try {
-      await rebuildProfile(userId);
-      profileRow = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
-    } catch {
-      // Jellyfin muet : l'état froid est servi, l'appel suivant réessaiera.
-    }
-  }
-  const [settings, ratings, feedback] = await Promise.all([
-    prisma.recoSettings.findUnique({ where: { jellyfinUserId: userId } }),
-    prisma.userRating.findMany({
-      where: { jellyfinUserId: userId, deletedAt: null },
-      select: { mediaType: true, tmdbId: true },
-    }),
-    prisma.recommendationFeedback.findMany({
-      where: { jellyfinUserId: userId },
-      select: { itemKey: true },
-    }),
-  ]);
-
-  // Exclusions du MOMENT : une note posée il y a dix secondes ou un « ne plus
-  // me proposer » sortent le titre des rangées sans attendre la régénération.
-  const exclude = new Set<string>();
-  for (const r of ratings) exclude.add(canonicalKey(r.mediaType, r.tmdbId));
-  for (const f of feedback) exclude.add(f.itemKey);
-
-  let facets: Record<string, number> = {};
-  try {
-    facets = profileRow ? (JSON.parse(profileRow.facets) as Record<string, number>) : {};
-  } catch {
-    // Profil illisible : rangées sur profil vide, le rebuild réécrira.
-  }
-  const signalCount = profileRow?.signalCount ?? 0;
-  const personalized = settings?.personalized ?? true;
-  const state: RecoState = !personalized
-    ? "disabled"
-    : signalCount < COLD_MIN_SIGNALS
-      ? "cold"
-      : signalCount < WARMING_MIN_SIGNALS
-        ? "warming"
-        : "ready";
-
-  return {
-    state,
-    signalCount,
-    lambda: (settings?.explorationBalance ?? 70) / 100,
-    includeVigie: settings?.includeVigie ?? true,
-    community: settings?.community ?? true,
-    exclude,
-    profile: { facets, signalCount },
-  };
-}
 
 /** Rangées de recommandation, feedback, démarrage à froid. */
 export const recoRowRoutes: FastifyPluginAsync = async (app) => {
@@ -106,6 +26,17 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     if (ctx.state === "disabled" || ctx.state === "cold") {
       return { state: ctx.state, signalCount: ctx.signalCount, generating: false, rows: [] };
     }
+    // Profil en construction : générer un pool MAINTENANT le figerait sur un
+    // profil vide pour six heures. Le client poll déjà quand `generating`.
+    if (ctx.bootstrapping) {
+      return {
+        state: ctx.state,
+        signalCount: ctx.signalCount,
+        generating: true,
+        refining: true,
+        rows: [],
+      };
+    }
     const { status, pool } = await ensureFreshPool(user.userId);
     const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
     const inLibraryOnly = !ctx.includeVigie;
@@ -115,6 +46,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       state: ctx.state,
       signalCount: ctx.signalCount,
       generating: status === "generating",
+      // « refining » : quelque chose de mieux arrive — le client affiche son
+      // bandeau « vos recommandations s'affinent » sans vider l'écran.
+      refining: status === "generating",
       generatedAt: pool?.generatedAt ?? null,
       rows,
     };
@@ -127,6 +61,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const ctx = await serveContext(user.userId);
     if (ctx.state === "disabled" || ctx.state === "cold") {
       return { key: rowKey, items: [], state: ctx.state };
+    }
+    if (ctx.bootstrapping) {
+      return { key: rowKey, items: [], generating: true, refining: true };
     }
     // La rangée communautaire vit sur la table de cooccurrences, pas sur le
     // pool ; le réglage « recommandations communautaires » la coupe net.
