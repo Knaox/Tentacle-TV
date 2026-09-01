@@ -105,7 +105,11 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
           ? (await getLikedListItems(link.ownerUserId)).some((i) => i.Id === itemId)
           : ((await getUserWatchlist(link.ownerUserId)).Items ?? []).some((i) => i.Id === itemId);
       if (!inList) return reply.status(404).send({ message: "Média introuvable" });
-      return await getItemDetail(link.ownerUserId, itemId);
+      // Vue anonyme : l'historique de visionnage du propriétaire (UserData —
+      // dates, compteurs, position de lecture) ne regarde pas les visiteurs.
+      const detail = await getItemDetail(link.ownerUserId, itemId);
+      delete detail.UserData;
+      return detail;
     } catch {
       return reply.status(502).send({ message: "Média indisponible" });
     }
