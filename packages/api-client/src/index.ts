@@ -171,6 +171,7 @@ export {
   useRecoRow,
   useSendRecoFeedback,
   useColdStartTitles,
+  useRecoWarmup,
 } from "./hooks/useRecoRows";
 export type {
   RecoState,

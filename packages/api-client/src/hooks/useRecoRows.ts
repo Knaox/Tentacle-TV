@@ -97,6 +97,21 @@ export function useSendRecoFeedback() {
   });
 }
 
+/**
+ * Sortie volontaire du démarrage à froid : reconstruit le profil (synchrone
+ * côté serveur, quelques centaines de ms) puis invalide tout le périmètre
+ * reco — l'aperçu bascule, la génération du pool suit d'elle-même.
+ * `mutateAsync` ne résout qu'après le refetch : la bascule d'écran est nette.
+ */
+export function useRecoWarmup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      tentacleApiFetch<{ signalCount: number }>("/api/reco/profile/rebuild", { method: "POST" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["reco"] }),
+  });
+}
+
 /** Grille de démarrage à froid : des titres de la bibliothèque à noter. */
 export function useColdStartTitles(enabled: boolean) {
   return useQuery({

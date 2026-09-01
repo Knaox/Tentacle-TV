@@ -44,7 +44,14 @@ export default {
   reasonLanguage: "In {{name}}",
 
   // Démarrage à froid
+  coldKicker: "Personalization",
   coldTitle: "Tell us what you like",
   coldBody:
-    "Rate at least {{count}} more titles and your personal recommendations will appear here. Half-stars count — be picky.",
+    "Tap the titles you enjoyed — pick at least five to build your first recommendations. The more you choose, the sharper they get.",
+  coldProgress: "{{count}} of 5",
+  coldReadyHint: "That's enough to start — keep going to sharpen them.",
+  coldCta: "See my recommendations",
+  coldPreparing: "Getting ready…",
+  coldLater: "Later",
+  coldMore: "Show more titles",
 };

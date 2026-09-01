@@ -44,7 +44,14 @@ export default {
   reasonLanguage: "En {{name}}",
 
   // Démarrage à froid
+  coldKicker: "Personnalisation",
   coldTitle: "Dites-nous ce que vous aimez",
   coldBody:
-    "Notez encore au moins {{count}} titres et vos recommandations personnelles apparaîtront ici. Les demi-étoiles comptent — soyez exigeant.",
+    "Touchez les titres que vous avez aimés — il en faut au moins cinq pour construire vos premières recommandations. Plus vous en choisissez, plus elles seront justes.",
+  coldProgress: "{{count}} sur 5",
+  coldReadyHint: "C'est assez pour démarrer — continuez si vous voulez affiner.",
+  coldCta: "Voir mes recommandations",
+  coldPreparing: "Préparation…",
+  coldLater: "Plus tard",
+  coldMore: "Afficher d'autres titres",
 };
