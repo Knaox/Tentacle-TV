@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useRecoOverview, useRecoRow } from "@tentacle-tv/api-client";
+import { useRecoOverview } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
@@ -24,14 +24,10 @@ export function Recommendations() {
   const { data: overview, isPending } = useRecoOverview();
   // Même clé de cache que la rangée « Pour vous » : zéro requête en plus.
   const { excludeKeys } = useRecoHeroSlides();
-  // Chips plateformes : filtrage CLIENT (aucun refetch). Elles n'apparaissent
-  // que si le serveur sert déjà des providers (détection de capacité).
+  // Chips plateformes : filtrage CLIENT (aucun refetch). Toujours visibles —
+  // un item à disponibilité inconnue n'est jamais filtré, le tri s'affine à
+  // mesure que le cache de métadonnées apprend les plateformes.
   const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
-  const { data: forYouRow } = useRecoRow("forYou");
-  const providersKnown = useMemo(
-    () => (forYouRow?.items ?? []).some((i) => i.providers !== undefined),
-    [forYouRow]
-  );
   const providerFilter = selectedProviders.length > 0 ? selectedProviders : undefined;
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
@@ -96,9 +92,7 @@ export function Recommendations() {
           <RecoBillboardSlot />
         </div>
 
-        {providersKnown && (
-          <RecoProviderChips selected={selectedProviders} onChange={setSelectedProviders} />
-        )}
+        <RecoProviderChips selected={selectedProviders} onChange={setSelectedProviders} />
 
         {/* UN seul bandeau à la fois : « on explore vos goûts » prime (toute
             première visite), sinon chauffe du profil, sinon affinage du pool. */}
