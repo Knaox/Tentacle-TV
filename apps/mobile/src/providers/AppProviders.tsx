@@ -22,6 +22,7 @@ import {
   setPairingToken,
   setConfigBackendUrl,
   setStreamingConfigBackendUrl,
+  primeBitrateMeasure,
   setNotificationsBackendUrl,
   setPushBackendUrl,
   setPushToken,
@@ -280,6 +281,12 @@ function DirectStreamingSync({ storage }: { storage: StorageAdapter }) {
   const qc = useQueryClient();
   const token = storage.getItem("tentacle_token");
   const { data } = useStreamingConfig(token);
+
+  // Préchauffage de la mesure de débit (miroir TV/web) : la PREMIÈRE lecture
+  // après le lancement peut déjà être capée — cache 10 min, fire-and-forget.
+  useEffect(() => {
+    if (token) primeBitrateMeasure(client);
+  }, [client, token]);
 
   useEffect(() => {
     if (data?.enabled && data.mediaBaseUrl && data.jellyfinToken) {

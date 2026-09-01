@@ -12,6 +12,7 @@ import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AirPlayIndicator } from "../components/player/AirPlayIndicator";
+import { AutoCapBadge } from "../components/player/AutoCapBadge";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerGestures } from "../components/player/PlayerGestures";
@@ -264,6 +265,7 @@ export function PlayerScreen({ itemId }: Props) {
         selectedSubtitle={pb.subtitleIndex}
         qualityKey={pb.qualityKey}
         qualityPresets={pb.qualityPresets}
+        autoQualityActive={pb.autoModeArmed}
         playback={playback}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
@@ -281,6 +283,9 @@ export function PlayerScreen({ itemId }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
       />
+
+      {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
+      <AutoCapBadge active={pb.autoCapActive} />
     </View>
   );
 }

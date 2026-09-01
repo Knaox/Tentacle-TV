@@ -15,6 +15,8 @@ interface Props {
   qualityKey: QualityKey;
   /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets: readonly QualityPreset[];
+  /** Badge « Auto » sur le palier actif (mode auto armé, aucun choix manuel). */
+  autoQualityActive?: boolean;
   sourceQuality: SourceQuality;
   onSelectAudio: (index: number) => void;
   onSelectSubtitle: (index: number) => void;
@@ -27,7 +29,7 @@ interface Props {
  *  pour garder MobilePlayerOverlay sous 300 lignes. */
 export function PlayerSettingsMenus({
   showSettings, showSubtitles, audioTracks, subtitleTracks,
-  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, sourceQuality,
+  selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive, sourceQuality,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onCloseSettings, onCloseSubtitles,
 }: Props) {
@@ -48,15 +50,22 @@ export function PlayerSettingsMenus({
             title: t("quality").toUpperCase(),
             options: qualityPresets.map((p) => {
               const isOriginal = p.key === "original";
-              const badges = isOriginal ? [
-                ...(sourceQuality.isDolbyVision ? [{ label: "DV", tone: "purple" as const }] : []),
-                ...(sourceQuality.isHDR ? [{ label: "HDR", tone: "amber" as const }] : []),
-                ...(sourceQuality.isDolbyAtmos ? [{ label: "Atmos", tone: "amber" as const }] : []),
-              ] : undefined;
+              // Badge « Auto » sur le palier ACTIF (la clé est déjà le palier
+              // servi, cap compris) — un choix manuel l'éteint.
+              const badges = [
+                ...(autoQualityActive && qualityKey === p.key
+                  ? [{ label: t("qualityAutoBadge"), tone: "purple" as const }] : []),
+                ...(isOriginal && sourceQuality.isDolbyVision ? [{ label: "DV", tone: "purple" as const }] : []),
+                ...(isOriginal && sourceQuality.isHDR ? [{ label: "HDR", tone: "amber" as const }] : []),
+                ...(isOriginal && sourceQuality.isDolbyAtmos ? [{ label: "Atmos", tone: "amber" as const }] : []),
+              ];
               const suffix = isOriginal && sourceQuality.resolution ? `— ${sourceQuality.resolution}` : undefined;
               const rightChip = !isOriginal && p.bitrate
                 ? { label: formatBitrateMbps(p.bitrate), tone: "zinc" as const } : undefined;
-              return { key: p.key, label: t(p.key), active: qualityKey === p.key, suffix, badges, rightChip };
+              return {
+                key: p.key, label: t(p.key), active: qualityKey === p.key, suffix,
+                badges: badges.length > 0 ? badges : undefined, rightChip,
+              };
             }),
             onSelect: (k: string | number) => { onSelectQuality(k as QualityKey); onCloseSettings(); },
           },
