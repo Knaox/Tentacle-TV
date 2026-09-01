@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useDeleteRating, useItemRating, useRateItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { ratingIdentityForItem } from "../../lib/ratingIdentity";
+import { ratingIdentityForItem, tvdbIdForItem } from "../../lib/ratingIdentity";
 import { StarRating } from "./StarRating";
 
 /**
@@ -24,7 +24,9 @@ export function DetailRating({ item }: { item: MediaItem }) {
       <span className="text-sm text-content-secondary">{t("yourRating")}</span>
       <StarRating
         value={score}
-        onRate={(s) => rate.mutate({ ...identity, jellyfinItemId: item.Id, score: s })}
+        onRate={(s) =>
+          rate.mutate({ ...identity, jellyfinItemId: item.Id, tvdbId: tvdbIdForItem(item), score: s })
+        }
         onClear={() => remove.mutate(identity)}
       />
       {score != null && (

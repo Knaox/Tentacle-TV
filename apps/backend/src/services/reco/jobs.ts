@@ -2,6 +2,7 @@ import { getPrisma } from "../db";
 import { runCooccurrenceJob } from "./cooccurrence";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
+import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -57,6 +58,9 @@ export function startRecoJobs(): void {
   purgeTimer = setInterval(() => {
     void purgeExpiredRecoCache().catch(() => undefined);
   }, CACHE_PURGE_INTERVAL_MS);
+
+  // Poussée des notes vers TMDB/AniList (tick 15 s, backoff par ligne).
+  startSyncWorkers();
 }
 
 async function runCooccurrence(): Promise<void> {
@@ -72,6 +76,7 @@ async function runCooccurrence(): Promise<void> {
 }
 
 export function stopRecoJobs(): void {
+  stopSyncWorkers();
   if (idfTimer) { clearInterval(idfTimer); idfTimer = null; }
   if (idfBootTimer) { clearTimeout(idfBootTimer); idfBootTimer = null; }
   if (coocTimer) { clearInterval(coocTimer); coocTimer = null; }
