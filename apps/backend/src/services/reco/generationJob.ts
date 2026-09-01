@@ -7,8 +7,8 @@ import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
 import { FacetScoringStrategy } from "./scoring/facetStrategy";
 import type { Candidate, ScoreBreakdown, TasteVector } from "./scoring/strategy";
 import { buildExclusions } from "./candidates/exclusions";
-import { buildLibraryIndex } from "./candidates/libraryIndex";
 import type { LibraryIndex } from "./candidates/libraryIndex";
+import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import { assemblePool } from "./candidates/pool";
 import { deriveSeeds } from "./candidates/seeds";
 import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSource";
@@ -84,7 +84,7 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
   const [profileRow, settingsRow, library] = await Promise.all([
     prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } }),
     prisma.recoSettings.findUnique({ where: { jellyfinUserId: userId } }),
-    buildLibraryIndex(userId),
+    getLibraryIndexMemo(userId),
   ]);
 
   let facets: Record<string, number> = {};
