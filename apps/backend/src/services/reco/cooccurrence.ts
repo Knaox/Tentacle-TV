@@ -16,8 +16,9 @@ import { getItemsByIds } from "../jellyfin";
 export const PRIVACY_MIN_USERS = 5;
 
 /** Vingt minutes mesurées = « a regardé » (les durées Jellyfin manquent trop
- *  souvent pour un seuil en pourcentage fiable). */
-const WATCH_MIN_SECONDS = 1200;
+ *  souvent pour un seuil en pourcentage fiable). Partagé avec le pouls serveur
+ *  (serverPulse) : une seule définition de « regardé » dans le moteur. */
+export const WATCH_MIN_SECONDS = 1200;
 
 /** Titres retenus par compte (les plus regardés) — borne l'explosion de paires. */
 const TITLES_PER_USER_MAX = 200;
