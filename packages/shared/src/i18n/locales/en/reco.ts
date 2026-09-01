@@ -46,6 +46,9 @@ export default {
   rowBecauseYouLiked: "Because you liked {{title}}",
   rowCommunity: "Tentacle users also watch",
   rowExploration: "Step outside your comfort zone",
+  rowTrending: "Trending",
+  rowServerPulse: "What Tentacle users are watching",
+  rowBestOfLibrary: "Top rated in your library",
 
   // Cartes
   onDemandBadge: "On demand",
