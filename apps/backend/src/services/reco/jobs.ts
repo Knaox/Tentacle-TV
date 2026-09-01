@@ -1,5 +1,6 @@
 import { getPrisma } from "../db";
 import { runCooccurrenceJob } from "./cooccurrence";
+import { generatePool, readPool } from "./generationJob";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
@@ -13,6 +14,10 @@ const POKE_DEBOUNCE_MS = 8_000;
 const COOCCURRENCE_INTERVAL_MS = 6 * 3600_000;
 const COOCCURRENCE_BOOT_DELAY_MS = 2 * 60_000;
 const CACHE_PURGE_INTERVAL_MS = 3600_000;
+/** Garde d'âge de la régénération après rebuild : c'est LE réglage de coût
+ *  API (~110 appels TMDB par génération complète) — borne à ~2 générations
+ *  par heure et par compte actif. Un favori ajouté devient graine sous 30 min. */
+const POOL_REGEN_MIN_AGE_MS = 30 * 60_000;
 
 let idfTimer: NodeJS.Timeout | null = null;
 let idfBootTimer: NodeJS.Timeout | null = null;
@@ -99,11 +104,26 @@ export function pokeProfile(userId: string | undefined | null): void {
     userId,
     setTimeout(() => {
       profileTimers.delete(userId);
-      rebuildProfile(userId).catch((err) =>
-        console.error(`[Reco] Rebuild du profil ${userId.slice(0, 8)}… en échec :`, err)
-      );
+      rebuildProfile(userId)
+        .then(() => regeneratePoolIfAged(userId))
+        .catch((err) =>
+          console.error(`[Reco] Rebuild du profil ${userId.slice(0, 8)}… en échec :`, err)
+        );
     }, POKE_DEBOUNCE_MS)
   );
+}
+
+/**
+ * Après un rebuild de profil : régénère le pool s'il a passé la garde d'âge.
+ * REMPLACEMENT, jamais d'invalidation — aucun trou de service. Pool absent :
+ * rien à faire, la prochaine visite le générera de toute façon.
+ */
+async function regeneratePoolIfAged(userId: string): Promise<void> {
+  const pool = await readPool(userId);
+  if (!pool) return;
+  const age = Date.now() - Date.parse(pool.generatedAt);
+  if (Number.isFinite(age) && age < POOL_REGEN_MIN_AGE_MS) return;
+  await generatePool(userId);
 }
 
 /** Purge périodique du cache de rangées expiré (partagée avec la Phase 5). */
