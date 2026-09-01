@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
+import { pokeProfile } from "../services/reco/jobs";
 
 // `coerce` : la même forme sert au corps JSON (PUT) et aux params d'URL (DELETE).
 const likeSchema = z.object({
@@ -36,6 +37,7 @@ export const likeRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const body = likeSchema.parse(request.body);
     const prisma = getPrisma();
+    pokeProfile(user.userId);
     return prisma.userLike.upsert({
       where: {
         jellyfinUserId_mediaType_tmdbId: {
@@ -54,6 +56,7 @@ export const likeRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const params = likeSchema.parse(request.params);
     const prisma = getPrisma();
+    pokeProfile(user.userId);
     await prisma.userLike.deleteMany({
       where: { jellyfinUserId: user.userId, mediaType: params.mediaType, tmdbId: params.tmdbId },
     });

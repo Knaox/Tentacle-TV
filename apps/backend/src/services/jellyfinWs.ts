@@ -3,6 +3,7 @@ import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeWatchTime } from "./watchTime/collector";
+import { pokeProfile } from "./reco/jobs";
 import { sessionSignatures } from "./jellyfinWsSessions";
 
 /**
@@ -129,6 +130,10 @@ function handleMessage(data: WebSocket.Data): void {
       case "UserDataChanged":
         broadcastAll("watchlist");
         broadcastAll("watched");
+        // Un favori posé, un titre terminé… : le profil de goût de CE compte
+        // se reconstruit (débouncé 8 s côté jobs — une salve ne coûte qu'un
+        // rebuild).
+        pokeProfile(msg?.Data?.UserId);
         break;
       case "PlaybackStart":
       case "PlaybackStopped":
