@@ -25,6 +25,11 @@ export { POOL_ROW_KEY, readPool } from "./poolStore";
 
 /** Le haut du pré-classement enrichi en métadonnées complètes (keywords…). */
 const ENRICH_TOP = 120;
+/** Le haut BIBLIOTHÈQUE enrichi en plus : le pré-classement global est dominé
+ *  par les candidats TMDB (facettes aux ids TMDB, comme le profil) — en mode
+ *  « bibliothèque seule », on servait donc des titres jamais enrichis, sans
+ *  visuels ni providers alors que leurs métas dormaient en cache. */
+const LIBRARY_ENRICH_TOP = 80;
 /** Appels TMDB frais au plus par génération — le cache est gratuit. */
 const ENRICH_FETCH_BUDGET = 60;
 /** Budget dédié aux TITRES de graines muettes — séparé de l'enrichissement :
@@ -207,18 +212,30 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
 
   // Passe rapide : enrichissement au CACHE seul, pas un octet de réseau.
   let fetchBudget = !quick && tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
-  const enrichTop = scored.slice(0, ENRICH_TOP);
-  // Une lecture groupée du cache pour tout le haut du panier — le budget de
-  // fetchs frais ne sert qu'aux absents.
+  // Haut GLOBAL + haut BIBLIOTHÈQUE (cf. LIBRARY_ENRICH_TOP), dédupliqués.
+  const enrichSet = new Map<string, PoolEntry>();
+  for (const entry of scored.slice(0, ENRICH_TOP)) enrichSet.set(entry.candidate.key, entry);
+  let libraryKept = 0;
+  for (const entry of scored) {
+    if (libraryKept >= LIBRARY_ENRICH_TOP) break;
+    if (!entry.candidate.jellyfinItemId) continue;
+    libraryKept++;
+    enrichSet.set(entry.candidate.key, entry);
+  }
+  const enrichTop = [...enrichSet.values()];
+  // Une lecture groupée du cache pour tout le panier — le budget de fetchs
+  // frais sert aux absents ET aux lignes d'avant les watch/providers.
   const cachedMeta = await getCachedMetaMany(
     enrichTop.map((e) => ({ mediaType: e.candidate.mediaType, tmdbId: e.candidate.tmdbId }))
   );
   for (const entry of enrichTop) {
     const { candidate } = entry;
     let meta = cachedMeta.get(metaKey(candidate.mediaType, candidate.tmdbId)) ?? null;
-    if (!meta && fetchBudget > 0) {
+    // Méta absente OU d'avant la clé watch/providers : le budget la (re)paie —
+    // c'est la mise à niveau douce du cache, jusqu'à 60 titres par génération.
+    if ((!meta || meta.providers === null) && fetchBudget > 0) {
       fetchBudget--;
-      meta = await getTitleMeta(candidate.mediaType, candidate.tmdbId);
+      meta = (await getTitleMeta(candidate.mediaType, candidate.tmdbId)) ?? meta;
     }
     if (!meta) continue;
     harvestLabels(meta);
