@@ -213,14 +213,19 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   // Passe rapide : enrichissement au CACHE seul, pas un octet de réseau.
   let fetchBudget = !quick && tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
   // Haut GLOBAL + haut BIBLIOTHÈQUE (cf. LIBRARY_ENRICH_TOP), dédupliqués.
-  const enrichSet = new Map<string, PoolEntry>();
-  for (const entry of scored.slice(0, ENRICH_TOP)) enrichSet.set(entry.candidate.key, entry);
-  let libraryKept = 0;
+  // L'ORDRE décide qui consomme le budget de fetchs : en bibliothèque seule,
+  // la bibliothèque passe DEVANT — c'est elle qui est servie, dépenser le
+  // budget sur des candidats TMDB jamais montrés laissait les rangées sans
+  // visuels ni providers.
+  const globalTop = scored.slice(0, ENRICH_TOP);
+  const libraryTop: PoolEntry[] = [];
   for (const entry of scored) {
-    if (libraryKept >= LIBRARY_ENRICH_TOP) break;
-    if (!entry.candidate.jellyfinItemId) continue;
-    libraryKept++;
-    enrichSet.set(entry.candidate.key, entry);
+    if (libraryTop.length >= LIBRARY_ENRICH_TOP) break;
+    if (entry.candidate.jellyfinItemId) libraryTop.push(entry);
+  }
+  const enrichSet = new Map<string, PoolEntry>();
+  for (const entry of includeVigie ? [...globalTop, ...libraryTop] : [...libraryTop, ...globalTop]) {
+    if (!enrichSet.has(entry.candidate.key)) enrichSet.set(entry.candidate.key, entry);
   }
   const enrichTop = [...enrichSet.values()];
   // Une lecture groupée du cache pour tout le panier — le budget de fetchs
