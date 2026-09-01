@@ -6,6 +6,7 @@ import { Shimmer } from "@tentacle-tv/ui";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
 import { RecoHero } from "../components/reco/RecoHero";
+import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 
 /**
@@ -82,19 +83,30 @@ export function Recommendations() {
           <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("warmingHint")}</p>
         )}
 
-        {overview.generating && overview.rows.length === 0 && (
-          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("generatingHint")}</p>
+        {/* Bandeau d'affinage : des rangées sont là mais mieux arrive. */}
+        {overview.refining && overview.rows.length > 0 && (
+          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("preliminaryHint")}</p>
         )}
 
-        {overview.rows.map((row, i) => (
-          <RecoRowSlot
-            key={row.key}
-            rowKey={row.key}
-            seedTitle={row.seedTitle}
-            animDelay={150 + i * 80}
-            skipFirst={row.key === "forYou"}
-          />
-        ))}
+        {overview.generating && overview.rows.length === 0 ? (
+          <>
+            <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("generatingHint")}</p>
+            <RecoRowSkeleton />
+            <RecoRowSkeleton />
+            <RecoRowSkeleton />
+          </>
+        ) : (
+          overview.rows.map((row, i) => (
+            <RecoRowSlot
+              key={row.key}
+              rowKey={row.key}
+              seedTitle={row.seedTitle}
+              animDelay={150 + i * 80}
+              skipFirst={row.key === "forYou"}
+              pendingFallback="skeleton"
+            />
+          ))
+        )}
       </div>
     </PageTransition>
   );
