@@ -90,8 +90,17 @@ export function Home() {
         : resumeItems && resumeItems.length > 0
           ? resumeItems.slice(0, 5)
           : featured ?? [];
-  const heroLoading =
-    heroMode === "reco" ? false : featuredLoading && !resumeItems && heroMode !== "fixed";
+  const heroLoading = featuredLoading && !resumeItems && heroMode !== "fixed";
+
+  // Repli du mode reco : la bannière de REPRISE tant que la reco n'a rien à
+  // montrer (chargement, profil froid, perso coupée, serveur sans clé TMDB).
+  // Mêmes gabarits partagés (CARD_HEIGHT/FRAME_GUTTER) : la bascule vers le
+  // carrousel reco se fait sans saut.
+  const heroSkeleton = (
+    <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
+      <div className="skeleton-shimmer h-[62vh] w-full rounded-[var(--hero-frame-radius)] md:h-[70vh] lg:h-[76vh]" />
+    </div>
+  );
 
   // Les deux requêtes qui portent la page : sans bibliothèques NI mise en avant,
   // il ne reste rien à afficher. On le DIT, au lieu de rendre une page vide qui
@@ -113,13 +122,11 @@ export function Home() {
         {/* Bannière encadrée. Plus de remontée sous la barre de navigation : la
             nav flotte désormais sur le CADRE, pas sur l'affiche. */}
         {heroMode === "reco" ? (
-          <div className="pt-6">
-            <RecoBillboardSlot />
-          </div>
+          <RecoBillboardSlot
+            fallback={heroLoading ? heroSkeleton : <HeroBillboard items={heroItems} />}
+          />
         ) : heroLoading ? (
-          <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
-            <div className="skeleton-shimmer h-[62vh] w-full rounded-[var(--hero-frame-radius)] md:h-[70vh] lg:h-[76vh]" />
-          </div>
+          heroSkeleton
         ) : (
           <HeroBillboard items={heroItems} />
         )}

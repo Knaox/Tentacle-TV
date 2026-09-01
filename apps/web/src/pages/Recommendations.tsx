@@ -87,10 +87,9 @@ export function Recommendations() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle. */}
-        <div className="pt-6">
-          <RecoBillboardSlot />
-        </div>
+        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle.
+            Le pt-6 vit dans le slot (contenu reco seulement). */}
+        <RecoBillboardSlot />
 
         <RecoFiltersMenu selected={selectedProviders} onChange={setSelectedProviders} />
 
