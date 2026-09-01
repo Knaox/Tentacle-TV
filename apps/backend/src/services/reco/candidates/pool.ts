@@ -9,6 +9,7 @@ export const POOL_MAX = 1000;
  *  « Parce que vous avez aimé », visuels TMDB pour l'affichage). */
 function backfill(winner: Candidate, loser: Candidate): void {
   winner.seedKey = winner.seedKey ?? loser.seedKey;
+  winner.personKey = winner.personKey ?? loser.personKey;
   winner.posterPath = winner.posterPath ?? loser.posterPath;
   winner.backdropPath = winner.backdropPath ?? loser.backdropPath;
   winner.voteAverage = winner.voteAverage ?? loser.voteAverage;

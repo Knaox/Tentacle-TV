@@ -12,7 +12,7 @@ export interface Candidate {
   voteAverage: number | null;
   voteCount: number | null;
   popularity: number | null;
-  source: "tmdb_rec" | "tmdb_discover" | "anilist" | "vigie" | "library";
+  source: "tmdb_rec" | "tmdb_discover" | "tmdb_person" | "anilist" | "vigie" | "library";
   /** Présent quand le titre est dans la bibliothèque Jellyfin. */
   jellyfinItemId?: string | null;
   posterPath?: string | null;
@@ -20,6 +20,8 @@ export interface Candidate {
   backdropPath?: string | null;
   /** Clé de la graine qui a produit ce candidat (rangées « Parce que… »). */
   seedKey?: string | null;
+  /** id TMDB de la personne aimée qui a produit ce candidat (« Avec X »). */
+  personKey?: number | null;
 }
 
 /** Le vecteur de goût d'un compte, parsé depuis TasteProfile.facets. */
