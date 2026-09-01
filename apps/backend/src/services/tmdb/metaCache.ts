@@ -121,6 +121,46 @@ export async function getCachedMeta(
   }
 }
 
+/** Clé des lectures groupées (« movie:603 ») — même forme que les clés du pool. */
+export function metaKey(mediaType: "movie" | "tv", tmdbId: number): string {
+  return `${mediaType}:${tmdbId}`;
+}
+
+/**
+ * Lecture groupée du cache, jamais d'appel TMDB : UNE requête par tranche de
+ * 400 identités au lieu d'une par titre. Une ligne périmée ou illisible est
+ * simplement absente de la carte rendue — comme pour getCachedMeta.
+ */
+export async function getCachedMetaMany(
+  refs: Array<{ mediaType: "movie" | "tv"; tmdbId: number }>
+): Promise<Map<string, TitleMeta>> {
+  const out = new Map<string, TitleMeta>();
+  if (refs.length === 0) return out;
+  const prisma = getPrisma();
+  const now = Date.now();
+  // Dédup en amont : plusieurs signaux visent souvent le même titre.
+  const wanted = new Map<string, { mediaType: "movie" | "tv"; tmdbId: number }>();
+  for (const ref of refs) wanted.set(metaKey(ref.mediaType, ref.tmdbId), ref);
+  const all = [...wanted.values()];
+  const CHUNK = 400; // borne la taille du OR généré côté MariaDB
+  for (let i = 0; i < all.length; i += CHUNK) {
+    const chunk = all.slice(i, i + CHUNK);
+    const rows = await prisma.tmdbMetaCache.findMany({
+      where: { OR: chunk.map((r) => ({ mediaType: r.mediaType, tmdbId: r.tmdbId })) },
+    });
+    for (const row of rows) {
+      if (row.expiresAt.getTime() < now) continue;
+      try {
+        const mediaType = row.mediaType as "movie" | "tv";
+        out.set(metaKey(mediaType, row.tmdbId), normalize(mediaType, JSON.parse(row.payload) as RawTmdbTitle));
+      } catch {
+        // Ligne illisible : absente de la carte, le prochain fetch la réécrira.
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Métadonnées d'un titre : cache d'abord, sinon UN appel TMDB
  * (`append_to_response=keywords,credits` — détails, mots-clés et casting en une

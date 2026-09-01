@@ -1,5 +1,5 @@
 import { getPrisma } from "../db";
-import { getCachedMeta, getTitleMeta } from "../tmdb/metaCache";
+import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import {
@@ -204,12 +204,12 @@ async function resolveMeta(pendings: PendingSignal[]): Promise<Map<string, Title
     if (!cur || abs > cur.max) strength.set(key, { ref: p.tmdb, max: abs });
   }
 
-  const out = new Map<string, TitleMeta>();
+  // Une seule lecture groupée du cache — la boucle par titre coûtait une
+  // requête Prisma par identité sur un historique fourni.
+  const out = await getCachedMetaMany([...strength.values()].map((s) => s.ref));
   const misses: Array<{ key: string; ref: TmdbRef; max: number }> = [];
   for (const [key, { ref, max }] of strength) {
-    const cached = await getCachedMeta(ref.mediaType, ref.tmdbId);
-    if (cached) out.set(key, cached);
-    else misses.push({ key, ref, max });
+    if (!out.has(key)) misses.push({ key, ref, max });
   }
 
   misses.sort((a, b) => b.max - a.max);
