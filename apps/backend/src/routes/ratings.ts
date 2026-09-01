@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { pokeProfile } from "../services/reco/jobs";
+import { markMoviePlayedOnRating } from "../services/reco/markPlayed";
 
 // Identité d'un titre noté : la clé canonique (mediaType, tmdbId) — celle de
 // Vigie — plus saison/épisode, à 0 hors épisode (l'index unique MySQL exige du
@@ -77,6 +78,11 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
     // Re-noter ressuscite une note en attente d'effacement distant (`deletedAt`
     // remis à null) : la sync repart de zéro, en « pending ».
     pokeProfile(user.userId);
+    // Noter un film vaut visionnage : « vu » dans Jellyfin, en fond — l'UI
+    // n'attend pas, et les séries ne sont jamais marquées (cf. markPlayed).
+    void markMoviePlayedOnRating(user.userId, body.mediaType, body.tmdbId, body.jellyfinItemId).catch(
+      () => undefined
+    );
     return prisma.userRating.upsert({
       where: { jellyfinUserId_mediaType_tmdbId_seasonNumber_episodeNumber: identity },
       create: {
