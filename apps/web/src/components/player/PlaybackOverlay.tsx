@@ -16,6 +16,7 @@
 
 import { AnimatePresence } from "framer-motion";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
+import type { EndCardRating } from "@tentacle-tv/api-client";
 import { SkipSegmentButton } from "./SkipSegmentButton";
 import { UpNextCard } from "./UpNextCard";
 import { NextEpisodeFullscreen } from "./NextEpisodeFullscreen";
@@ -45,6 +46,10 @@ interface PlaybackOverlayProps {
   nextEpisodeImageUrl?: string;
   nextSeriesBackdropUrl?: string;
   nextEpisodeThumbUrl?: string;
+  /** Notation de l'épisode fini — transmise à l'affiche de fin SEULEMENT (la
+   *  carte de coin couvre l'image, on ne l'alourdit pas). */
+  endCardRating?: EndCardRating | null;
+  onEndCardRatingEngage?: () => void;
 }
 
 export function PlaybackOverlay({
@@ -52,6 +57,7 @@ export function PlaybackOverlay({
   controlsVisible, panelOpen = false,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
+  endCardRating, onEndCardRatingEngage,
 }: PlaybackOverlayProps) {
   return (
     <>
@@ -109,6 +115,8 @@ export function PlaybackOverlay({
             episodeThumbUrl={nextEpisodeThumbUrl ?? nextEpisodeImageUrl}
             onPlayNow={onPlayNow}
             onDismiss={onDismiss}
+            rating={endCardRating}
+            onRatingEngage={onEndCardRatingEngage}
           />
         )}
       </AnimatePresence>
