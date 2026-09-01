@@ -5,30 +5,13 @@
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { resolve } from "path";
-import { existsSync, readFileSync } from "fs";
 import { requireAuth } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
+import { getSeerrConfig } from "../services/seerConfig";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
 const warmingPlatforms = new Set<number>();
-
-const INSTALLED_PATH = resolve(__dirname, "../../data/plugins/installed.json");
-
-function getSeerrConfig(): { url: string; apiKey: string } | null {
-  try {
-    if (!existsSync(INSTALLED_PATH)) return null;
-    const installed = JSON.parse(readFileSync(INSTALLED_PATH, "utf-8"));
-    const seer = installed.find((p: { pluginId?: string }) => p.pluginId === "seer");
-    const url = seer?.config?.url as string;
-    const apiKey = seer?.config?.apiKey as string;
-    if (!url || !apiKey) return null;
-    return { url: url.replace(/\/$/, ""), apiKey };
-  } catch {
-    return null;
-  }
-}
 
 /** Charge les TMDB IDs d'UNE plateforme (movies + tv) */
 async function warmPlatform(seerr: { url: string; apiKey: string }, platformId: number): Promise<void> {
