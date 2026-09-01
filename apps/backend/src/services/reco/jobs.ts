@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { runCooccurrenceJob } from "./cooccurrence";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
 
@@ -8,9 +9,15 @@ import { rebuildProfile } from "./profileBuilder";
 const IDF_INTERVAL_MS = 24 * 3600_000;
 const IDF_BOOT_DELAY_MS = 30_000;
 const POKE_DEBOUNCE_MS = 8_000;
+const COOCCURRENCE_INTERVAL_MS = 6 * 3600_000;
+const COOCCURRENCE_BOOT_DELAY_MS = 2 * 60_000;
+const CACHE_PURGE_INTERVAL_MS = 3600_000;
 
 let idfTimer: NodeJS.Timeout | null = null;
 let idfBootTimer: NodeJS.Timeout | null = null;
+let coocTimer: NodeJS.Timeout | null = null;
+let coocBootTimer: NodeJS.Timeout | null = null;
+let purgeTimer: NodeJS.Timeout | null = null;
 const profileTimers = new Map<string, NodeJS.Timeout>();
 
 async function runIdf(): Promise<void> {
@@ -38,11 +45,38 @@ export function startRecoJobs(): void {
   }, IDF_BOOT_DELAY_MS);
 
   idfTimer = setInterval(() => void runIdf(), IDF_INTERVAL_MS);
+
+  // Cooccurrence communautaire : premier passage 2 min après le démarrage
+  // (laisser la base et Jellyfin se poser), puis toutes les 6 h.
+  coocBootTimer = setTimeout(() => {
+    coocBootTimer = null;
+    void runCooccurrence();
+  }, COOCCURRENCE_BOOT_DELAY_MS);
+  coocTimer = setInterval(() => void runCooccurrence(), COOCCURRENCE_INTERVAL_MS);
+
+  purgeTimer = setInterval(() => {
+    void purgeExpiredRecoCache().catch(() => undefined);
+  }, CACHE_PURGE_INTERVAL_MS);
+}
+
+async function runCooccurrence(): Promise<void> {
+  try {
+    const stats = await runCooccurrenceJob();
+    console.log(
+      `[Reco] Cooccurrences : ${stats.pairsKept} paires (${stats.users} comptes, ` +
+        `${stats.optedOut} désinscrits, ${stats.titles} titres)`
+    );
+  } catch (err) {
+    console.error("[Reco] Échec du job de cooccurrence :", err);
+  }
 }
 
 export function stopRecoJobs(): void {
   if (idfTimer) { clearInterval(idfTimer); idfTimer = null; }
   if (idfBootTimer) { clearTimeout(idfBootTimer); idfBootTimer = null; }
+  if (coocTimer) { clearInterval(coocTimer); coocTimer = null; }
+  if (coocBootTimer) { clearTimeout(coocBootTimer); coocBootTimer = null; }
+  if (purgeTimer) { clearInterval(purgeTimer); purgeTimer = null; }
   for (const t of profileTimers.values()) clearTimeout(t);
   profileTimers.clear();
 }
