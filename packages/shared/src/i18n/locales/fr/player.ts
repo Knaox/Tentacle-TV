@@ -53,6 +53,7 @@ export default {
   dismiss: "Masquer",
   // L'affiche de fin : la refuser SORT du lecteur — le bouton dit où l'on va.
   backToDetails: "Retour à la fiche",
+  rateJustWatched: "Notez l'épisode que vous venez de voir",
   // Les segments au-delà de l'intro — chaque libellé a sa forme décomptée.
   skipRecap: "Passer le résumé",
   skipRecapIn: "Passer le résumé dans {{seconds}} s",
