@@ -90,6 +90,8 @@ export async function buildCommunityRow(
       posterPath = meta.posterPath;
       backdropPath = meta.backdropPath;
     }
+    // Même exigence de qualité qu'au pool : une carte sans image ne sort pas.
+    if (!posterPath && fromLibrary?.hasPrimaryImage !== true) continue;
 
     items.push({
       key,
