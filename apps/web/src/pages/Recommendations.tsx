@@ -18,12 +18,16 @@ import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 export function Recommendations() {
   const { t } = useTranslation("reco");
   const { data: overview, isPending } = useRecoOverview();
-  // Le démarrage à froid est COLLANT : une fois affiché, il ne cède l'écran
-  // qu'au bouton « Voir mes recommandations » — jamais à un refetch d'arrière-
-  // plan qui basculerait la grille en pleine sélection.
-  const [coldHold, setColdHold] = useState(false);
+  // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
+  // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
+  // d'arrière-plan en pleine sélection. « dismissed » survit tant que le
+  // serveur dit encore « cold » (la bascule est instantanée, le profil se
+  // reconstruit derrière) : sans lui, la grille se ré-afficherait une seconde
+  // après le clic. L'état se réarme dès que le serveur a vraiment tourné.
+  const [phase, setPhase] = useState<"auto" | "hold" | "dismissed">("auto");
   useEffect(() => {
-    if (overview?.state === "cold") setColdHold(true);
+    if (overview?.state === "cold") setPhase((p) => (p === "auto" ? "hold" : p));
+    else setPhase("auto");
   }, [overview?.state]);
 
   if (isPending) {
@@ -59,11 +63,11 @@ export function Recommendations() {
     );
   }
 
-  if (overview.state === "cold" || coldHold) {
+  if (phase === "hold") {
     return (
       <PageTransition>
         <div className="min-h-screen pb-20">
-          <ColdStart signalCount={overview.signalCount} onDone={() => setColdHold(false)} />
+          <ColdStart signalCount={overview.signalCount} onDone={() => setPhase("dismissed")} />
         </div>
       </PageTransition>
     );
