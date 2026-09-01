@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { tmdbConfigured } from "../tmdb/client";
 import { canonicalKey } from "./candidates/exclusions";
 import { rebuildProfile } from "./profileBuilder";
 import type { TasteVector } from "./scoring/strategy";
@@ -20,6 +21,11 @@ export interface ServeContext {
   profile: TasteVector;
   /** Premier contact : le profil se construit EN FOND, l'état est provisoire. */
   bootstrapping: boolean;
+  /** La clé TMDB est l'interrupteur GLOBAL : absente → perso coupée pour tous. */
+  tmdbConfigured: boolean;
+  /** Le réglage brut du compte — la CAUSE d'un état « disabled » (clé absente
+   *  ou choix de l'utilisateur) voyage dans ces deux booléens, pas dans l'enum. */
+  personalized: boolean;
 }
 
 /**
@@ -37,7 +43,10 @@ export async function serveContext(userId: string): Promise<ServeContext> {
   // signaux. On répond « warming » tout de suite (aucune valeur d'état
   // nouvelle : mobile/TV switchent sur l'enum existant) ; l'état réel — cold
   // pour un compte réellement vierge — arrive au prochain poll du client.
-  const bootstrapping = !profileRow;
+  // Sans clé TMDB, pas de rebuild : le moteur est générique, inutile de payer
+  // des scans pour un profil que personne ne servira tant que la clé manque.
+  const tmdb = tmdbConfigured();
+  const bootstrapping = tmdb && !profileRow;
   if (bootstrapping) {
     void rebuildProfile(userId).catch(() => {
       // Jellyfin muet : l'appel suivant retentera.
@@ -70,7 +79,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
   }
   const signalCount = profileRow?.signalCount ?? 0;
   const personalized = settings?.personalized ?? true;
-  const state: RecoState = !personalized
+  const state: RecoState = !tmdb || !personalized
     ? "disabled"
     : bootstrapping
       ? "warming"
@@ -89,5 +98,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     exclude,
     profile: { facets, signalCount },
     bootstrapping,
+    tmdbConfigured: tmdb,
+    personalized,
   };
 }
