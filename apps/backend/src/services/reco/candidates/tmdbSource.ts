@@ -23,6 +23,7 @@ interface TmdbListResult {
   first_air_date?: string;
   original_language?: string;
   poster_path?: string | null;
+  backdrop_path?: string | null;
 }
 
 interface TmdbListPage {
@@ -61,6 +62,7 @@ function toCandidate(
     popularity: raw.popularity ?? null,
     source,
     posterPath: raw.poster_path ?? null,
+    backdropPath: raw.backdrop_path ?? null,
   };
 }
 

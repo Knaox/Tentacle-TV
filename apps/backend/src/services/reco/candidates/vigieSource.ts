@@ -17,6 +17,7 @@ interface SeerrResult {
   firstAirDate?: string;
   originalLanguage?: string;
   posterPath?: string | null;
+  backdropPath?: string | null;
 }
 
 interface SeerrPage {
@@ -46,6 +47,7 @@ function toCandidate(raw: SeerrResult, mediaType: "movie" | "tv"): Candidate {
     popularity: raw.popularity ?? null,
     source: "vigie",
     posterPath: raw.posterPath ?? null,
+    backdropPath: raw.backdropPath ?? null,
   };
 }
 

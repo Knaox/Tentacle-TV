@@ -174,6 +174,9 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     if (!meta) continue;
     harvestLabels(meta);
     candidate.facets = facetsFromTmdb(meta);
+    // Les visuels : un candidat bibliothèque n'en a pas, la méta les fournit.
+    candidate.posterPath = candidate.posterPath ?? meta.posterPath;
+    candidate.backdropPath = candidate.backdropPath ?? meta.backdropPath;
     candidate.voteAverage = meta.voteAverage ?? candidate.voteAverage;
     candidate.voteCount = meta.voteCount ?? candidate.voteCount;
     candidate.popularity = meta.popularity ?? candidate.popularity;

@@ -20,6 +20,8 @@ export interface RecoRowItem {
   title: string;
   year: number | null;
   posterPath: string | null;
+  /** Visuel large TMDB pour le carrousel héros (null : backdrop Jellyfin ou rien). */
+  backdropPath: string | null;
   /** null = hors bibliothèque (badge + navigation Vigie côté client). */
   jellyfinItemId: string | null;
   source: string;
@@ -75,6 +77,7 @@ function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRowItem {
     title: candidate.title,
     year: candidate.year,
     posterPath: candidate.posterPath ?? null,
+    backdropPath: candidate.backdropPath ?? null,
     jellyfinItemId: candidate.jellyfinItemId ?? null,
     source: candidate.source,
     score: breakdown.total,
