@@ -404,3 +404,16 @@ CREATE TABLE IF NOT EXISTS `anime_id_map` (
   `resolvedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`mediaType`, `tmdbId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Personnes aimées explicitement (rangées « Avec {acteur} »).
+-- Voir schema.prisma > UserLikedPerson.
+CREATE TABLE IF NOT EXISTS `user_liked_people` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `personId` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `profilePath` varchar(255) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_liked_people_jellyfinUserId_personId_key` (`jellyfinUserId`, `personId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
