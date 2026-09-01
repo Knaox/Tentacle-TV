@@ -18,8 +18,7 @@ import { PageTransition } from "../components/PageTransition";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { HomeRow } from "../components/home/homeRowRegistry";
 import type { HomeRowData } from "../components/home/homeRowRegistry";
-import { RecoHero } from "../components/reco/RecoHero";
-import { useRecoRow } from "@tentacle-tv/api-client";
+import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { reconcileHomeRows } from "../lib/homeLayout";
 
@@ -112,7 +111,7 @@ export function Home() {
             nav flotte désormais sur le CADRE, pas sur l'affiche. */}
         {heroMode === "reco" ? (
           <div className="pt-6">
-            <RecoHeroSlot />
+            <RecoBillboardSlot />
           </div>
         ) : heroLoading ? (
           <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
@@ -130,10 +129,4 @@ export function Home() {
       </CardDensityProvider>
     </PageTransition>
   );
-}
-
-/** Mode héros « recommandations » : la tête de « Pour vous ». */
-function RecoHeroSlot() {
-  const { data } = useRecoRow("forYou");
-  return <RecoHero item={data?.items?.[0]} />;
 }

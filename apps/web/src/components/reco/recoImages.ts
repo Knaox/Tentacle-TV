@@ -26,3 +26,26 @@ export function recoHaloSourceUrl(
   if (item.posterPath) return `${TMDB_IMG}/w92${item.posterPath}`;
   return null;
 }
+
+/** Visuel large d'une diapositive héros : TMDB `w1280` (jamais `original` —
+ *  contrainte perf) sinon le backdrop Jellyfin. TMDB d'abord même en
+ *  bibliothèque : c'est lui qui est garanti par la sélection des diapositives. */
+export function recoBackdropUrl(
+  item: Pick<RecoRowItem, "jellyfinItemId" | "backdropPath">,
+  jellyfinBackdrop: (itemId: string) => string
+): string | null {
+  if (item.backdropPath) return `${TMDB_IMG}/w1280${item.backdropPath}`;
+  if (item.jellyfinItemId) return jellyfinBackdrop(item.jellyfinItemId);
+  return null;
+}
+
+/** Source dérisoire du halo du carrousel — même image que le backdrop affiché
+ *  (les couleurs suivent), en `w300` (plus petite taille backdrop de TMDB). */
+export function recoAmbilightSourceUrl(
+  item: Pick<RecoRowItem, "jellyfinItemId" | "backdropPath">,
+  jellyfinTinyBackdrop: (itemId: string) => string
+): string | null {
+  if (item.backdropPath) return `${TMDB_IMG}/w300${item.backdropPath}`;
+  if (item.jellyfinItemId) return jellyfinTinyBackdrop(item.jellyfinItemId);
+  return null;
+}
