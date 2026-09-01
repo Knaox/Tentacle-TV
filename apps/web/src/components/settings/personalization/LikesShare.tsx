@@ -17,7 +17,7 @@ export function LikesShare() {
 
   return (
     <SettingsSection title={t("persoShareTitle")} caption={t("persoShareCaption")}>
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 p-5">
         <p className="text-xs leading-relaxed text-content-tertiary">
           {data?.token ? t("persoShareActive") : t("persoShareInactive")}
         </p>

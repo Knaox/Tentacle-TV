@@ -39,7 +39,7 @@ export function LinkedAccounts() {
 
   return (
     <SettingsSection title={t("persoAccountsTitle")} caption={t("persoAccountsCaption")}>
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5 p-5">
         {/* TMDB — guest session anonyme */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

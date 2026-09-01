@@ -98,7 +98,9 @@ export function SettingsPersonalization() {
   return (
     <div className="flex flex-col gap-6">
       <SettingsSection title={t("persoHomeTitle")} caption={t("persoHomeCaption")}>
-        <div className="flex flex-col gap-5">
+        {/* SettingsSection ne pose AUCUN padding (et rogne via overflow-hidden) :
+            le p-5 est à la charge du contenu, comme partout ailleurs. */}
+        <div className="flex flex-col gap-5 p-5">
           <div>
             <p className="mb-2 text-sm font-medium text-content-primary">{t("persoHeroMode")}</p>
             <SegmentedChoice
@@ -149,7 +151,7 @@ export function SettingsPersonalization() {
       </SettingsSection>
 
       <SettingsSection title={t("persoRecoTitle")} caption={t("persoRecoCaption")}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 p-5">
           <SettingToggleRow
             title={t("persoRecoPersonalized")}
             hint={t("persoRecoPersonalizedHint")}
@@ -179,7 +181,9 @@ export function SettingsPersonalization() {
             <p className="mb-1 text-sm font-medium text-content-primary">{t("persoBalance")}</p>
             <p className="mb-2 text-xs leading-relaxed text-content-tertiary">{t("persoBalanceHint")}</p>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-content-tertiary">{t("persoBalanceAdventurous")}</span>
+              {/* shrink-0 : en flex, min-width:auto écraserait la piste au lieu
+                  de laisser le libellé entier. */}
+              <span className="shrink-0 text-xs text-content-tertiary">{t("persoBalanceAdventurous")}</span>
               <input
                 type="range"
                 min={0}
@@ -191,7 +195,7 @@ export function SettingsPersonalization() {
                 style={rangeFill(settings.explorationBalance, 0, 100)}
                 aria-label={t("persoBalance")}
               />
-              <span className="text-xs text-content-tertiary">{t("persoBalanceSafe")}</span>
+              <span className="shrink-0 text-xs text-content-tertiary">{t("persoBalanceSafe")}</span>
             </div>
           </div>
 
