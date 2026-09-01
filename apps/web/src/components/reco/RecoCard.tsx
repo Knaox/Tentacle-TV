@@ -10,6 +10,7 @@ import {
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
+import { CardRatingBadge } from "../cards/CardRatingBadge";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { StarRating } from "../rating/StarRating";
@@ -129,6 +130,9 @@ export const RecoCard = memo(function RecoCard({
               {t("explorationBadge")}
             </div>
           )}
+
+          {/* Note globale, au repos — le voile de survol couvre le bas. */}
+          <CardRatingBadge rating={item.voteAverage} shown={!hovered} />
 
           {/* Voile de survol : raison + étoiles + refus. Dégradé opaque, pas de
               backdrop-filter. Monté au survol, deux fondus via .hover-reveal. */}

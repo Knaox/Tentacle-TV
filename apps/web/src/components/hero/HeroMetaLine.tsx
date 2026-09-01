@@ -44,7 +44,11 @@ export function HeroMetaLine({ item, quality, runtime, showQuality }: HeroMetaLi
         <>
           <Dot />
           <span className="flex items-center gap-1 font-medium">
-            <StarIcon /> {item.CommunityRating.toFixed(1)}
+            {/* Étoile de marque — jamais dorée. */}
+            <span aria-hidden className="text-[var(--brand-accent)]">
+              <StarIcon />
+            </span>
+            {item.CommunityRating.toFixed(1)}
           </span>
         </>
       )}

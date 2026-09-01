@@ -70,7 +70,10 @@ export function SharedItemDetail() {
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-content-secondary">
               {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
               {item.CommunityRating != null && (
-                <span className="flex items-center gap-1 font-medium"><StarIcon /> {item.CommunityRating.toFixed(1)}</span>
+                <span className="flex items-center gap-1 font-medium">
+                  <span aria-hidden className="text-[var(--brand-accent)]"><StarIcon /></span>
+                  {item.CommunityRating.toFixed(1)}
+                </span>
               )}
               {runtime && <span className="text-content-tertiary">{runtime}</span>}
               {item.Genres?.slice(0, 3).map((g) => <span key={g} className="text-content-tertiary">· {g}</span>)}
