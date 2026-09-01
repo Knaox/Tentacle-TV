@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useRecoOverview, useRecoRow } from "@tentacle-tv/api-client";
@@ -17,6 +18,13 @@ import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 export function Recommendations() {
   const { t } = useTranslation("reco");
   const { data: overview, isPending } = useRecoOverview();
+  // Le démarrage à froid est COLLANT : une fois affiché, il ne cède l'écran
+  // qu'au bouton « Voir mes recommandations » — jamais à un refetch d'arrière-
+  // plan qui basculerait la grille en pleine sélection.
+  const [coldHold, setColdHold] = useState(false);
+  useEffect(() => {
+    if (overview?.state === "cold") setColdHold(true);
+  }, [overview?.state]);
 
   if (isPending) {
     return (
@@ -51,11 +59,11 @@ export function Recommendations() {
     );
   }
 
-  if (overview.state === "cold") {
+  if (overview.state === "cold" || coldHold) {
     return (
       <PageTransition>
         <div className="min-h-screen pb-20">
-          <ColdStart signalCount={overview.signalCount} />
+          <ColdStart signalCount={overview.signalCount} onDone={() => setColdHold(false)} />
         </div>
       </PageTransition>
     );
