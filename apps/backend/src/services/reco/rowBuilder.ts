@@ -1,6 +1,7 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
 import { explorationQuota, noveltyOf, pickExplorationKeys } from "./exploration";
 import { selectWithMmr } from "./mmr";
+import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 
 /** Une raison lisible de la présence d'un titre (explicabilité ET debug). */
@@ -127,14 +128,18 @@ function explorationPicks(
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
 export function availableRows(
   pool: PoolPayload,
-  opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly">
+  opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly"> & { userId: string }
 ): Array<{ key: string; seedTitle?: string }> {
   const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "inLibrary" }];
   if (opts.vigieAvailable) rows.push({ key: "discover" });
 
-  let because = 0;
+  // Graines éligibles (titrées, assez de candidats), puis TIRAGE QUOTIDIEN
+  // pondéré par force — les « 3 premières » figées montraient toujours les
+  // mêmes rangées pendant six heures... et souvent des semaines. `buildRow`
+  // reste permissif : il sert toute rangée à ≥ 6 items, même hors tirage du
+  // jour (le client peut tenir une liste d'hier).
+  const eligible: Array<{ key: string; strength: number; seedTitle: string }> = [];
   for (const seed of pool.seeds) {
-    if (because >= BECAUSE_ROWS_MAX) break;
     if (!seed.title) continue;
     const seedKey = `${seed.mediaType}:${seed.tmdbId}`;
     // En bibliothèque seule, seuls les candidats rattachés comptent : une
@@ -143,8 +148,10 @@ export function availableRows(
       (e) => e.candidate.seedKey === seedKey && (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
     );
     if (related.length < BECAUSE_MIN_ITEMS) continue;
-    rows.push({ key: `becauseYouLiked:${seedKey}`, seedTitle: seed.title });
-    because++;
+    eligible.push({ key: seedKey, strength: seed.strength, seedTitle: seed.title });
+  }
+  for (const pick of pickDaily(eligible, opts.userId, BECAUSE_ROWS_MAX)) {
+    rows.push({ key: `becauseYouLiked:${pick.key}`, seedTitle: pick.seedTitle });
   }
 
   rows.push({ key: "community" }, { key: "exploration" });
