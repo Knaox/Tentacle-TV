@@ -27,6 +27,8 @@ export interface RecoRowItem {
   voteAverage: number | null;
   reasons: RecoReason[];
   exploration?: boolean;
+  /** Plateformes de streaming — absent = inconnu, [] = aucune offre incluse. */
+  providers?: Array<{ id: number; name: string; logoPath: string | null }>;
 }
 
 export interface RecoOverview {
