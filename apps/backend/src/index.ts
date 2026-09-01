@@ -29,6 +29,7 @@ import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { playbackSegmentRoutes } from "./routes/playbackSegments";
 import { adminRoutes } from "./routes/admin";
 import { adminDownloadRoutes } from "./routes/adminDownloads";
+import { adminMetadataRoutes } from "./routes/adminMetadata";
 import { downloadRoutes } from "./routes/downloads";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
@@ -230,6 +231,8 @@ async function main() {
   await app.register(pushRoutes, { prefix: "/api/push" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
+  // Fichier séparé d'admin.ts : lui frôle déjà le plafond de 300 lignes.
+  await app.register(adminMetadataRoutes, { prefix: "/api/admin" });
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
