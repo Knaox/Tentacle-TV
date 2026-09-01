@@ -22,6 +22,8 @@ export default {
   communityRatingAria: "Community rating {{score}} out of 10",
   providersFilterAria: "Filter by platform",
   providersAll: "All platforms",
+  filtersButton: "Filters",
+  filtersPlatformsLabel: "Platforms",
   providerRowEmpty: "Nothing here on the selected platforms.",
   rowWithActor: "Starring {{name}}",
   actorsTitle: "Your actors",

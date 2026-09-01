@@ -8,7 +8,7 @@ import { ColdStart } from "../components/reco/ColdStart";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
 import { LikedActorsPanel } from "../components/reco/LikedActorsPanel";
-import { RecoProviderChips } from "../components/reco/RecoProviderChips";
+import { RecoFiltersMenu } from "../components/reco/RecoFiltersMenu";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 
@@ -92,7 +92,7 @@ export function Recommendations() {
           <RecoBillboardSlot />
         </div>
 
-        <RecoProviderChips selected={selectedProviders} onChange={setSelectedProviders} />
+        <RecoFiltersMenu selected={selectedProviders} onChange={setSelectedProviders} />
 
         {/* UN seul bandeau à la fois : « on explore vos goûts » prime (toute
             première visite), sinon chauffe du profil, sinon affinage du pool. */}
