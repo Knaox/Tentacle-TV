@@ -30,7 +30,9 @@
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
+import type { EndCardRating } from "@tentacle-tv/api-client";
 import { videoShadow } from "../../lib/videoShadow";
+import { EndCardRatingRow } from "./EndCardRatingRow";
 import { Sweep, Veil } from "./overlayPill";
 
 interface NextEpisodeFullscreenProps {
@@ -54,6 +56,11 @@ interface NextEpisodeFullscreenProps {
   onDismiss: () => void;
   /** Valeur initiale du compte à rebours, pour la progression (défaut 10 s). */
   totalSeconds?: number;
+  /** Notation de l'épisode qu'on VIENT de finir — absente : rendu inchangé
+   *  (le téléviseur LG importe cette affiche sans la prop). */
+  rating?: EndCardRating | null;
+  /** Appelé quand une note se pose : tue le décompte de la suite. */
+  onRatingEngage?: () => void;
 }
 
 const DEFAULT_TOTAL = 10;
@@ -83,6 +90,8 @@ export function NextEpisodeFullscreen({
   onPlayNow,
   onDismiss,
   totalSeconds = DEFAULT_TOTAL,
+  rating,
+  onRatingEngage,
 }: NextEpisodeFullscreenProps) {
   const { t } = useTranslation("player");
   const reduce = useReducedMotion();
@@ -265,6 +274,9 @@ export function NextEpisodeFullscreen({
               {t("player:backToDetails")}
             </button>
           </div>
+
+          {/* Noter l'épisode FINI — geste secondaire, sous les actions. */}
+          {rating && <EndCardRatingRow rating={rating} onEngage={onRatingEngage} />}
         </div>
       </motion.div>
     </motion.div>
