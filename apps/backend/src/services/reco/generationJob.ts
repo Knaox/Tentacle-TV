@@ -127,7 +127,14 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     }
   }
 
-  const kept = pool.filter((c) => !exclusions.everywhere.has(c.key));
+  // Qualité : jamais de carte muette. Sans titre, ou sans image affichable
+  // (affiche TMDB ou Primary Jellyfin), un candidat sort avant le classement.
+  const isDisplayable = (c: Candidate): boolean => {
+    if (!c.title.trim()) return false;
+    if (c.posterPath) return true;
+    return !!c.jellyfinItemId && library.byKey.get(c.key)?.hasPrimaryImage === true;
+  };
+  const kept = pool.filter((c) => !exclusions.everywhere.has(c.key) && isDisplayable(c));
 
   // Pré-classement sur facettes grossières, enrichissement du haut du panier
   // (cache gratuit + budget de fetchs), re-classement final.
