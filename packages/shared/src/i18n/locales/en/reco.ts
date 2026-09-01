@@ -10,7 +10,7 @@ export default {
   // Page
   pageTitle: "Recommendations",
   heroKicker: "Top pick for you",
-  heroReco: "Recommendation",
+  heroForYou: "Picked for you",
   heroOpenDetail: "View details",
   heroOpenVigie: "View in catalog",
   warmingHint: "Your recommendations are getting sharper as you rate more titles.",

@@ -20,7 +20,16 @@ export function reasonToText(
   const label = reason.label;
   if (key.startsWith("director:")) return label ? t("reasonDirector", { name: label }) : null;
   if (key.startsWith("actor:")) return label ? t("reasonActor", { name: label }) : null;
-  if (key.startsWith("genre:") || key.startsWith("genre-name:")) {
+  if (key.startsWith("genre:")) {
+    // Les libellés TMDB arrivent en ANGLAIS (« Adventure ») : les ids de genre
+    // sont un petit enum stable, traduit côté i18n (fr) — la locale anglaise
+    // retombe sur le libellé TMDB, déjà juste.
+    const id = key.slice("genre:".length);
+    const localized = t(`genreLabel_${id}`, { defaultValue: label ?? "" });
+    return localized ? t("reasonGenre", { name: localized }) : null;
+  }
+  if (key.startsWith("genre-name:")) {
+    // Genres Jellyfin : déjà dans la langue des métadonnées du serveur.
     return label ? t("reasonGenre", { name: label }) : null;
   }
   if (key.startsWith("kw:")) return label ? t("reasonTheme", { name: label }) : null;
