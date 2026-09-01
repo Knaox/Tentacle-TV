@@ -57,14 +57,17 @@ export function Home() {
   const fixedItem = useMediaItem(heroMode === "fixed" ? layout?.heroFixedItemId ?? undefined : undefined);
 
   // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
-  // s'ajoutent en fin (actives), les disparues s'effacent.
+  // s'ajoutent en fin (actives), les disparues s'effacent. Sur le DÉFAUT non
+  // stocké, elles s'ancrent avant « Déjà visionné » (ordre cible de l'accueil
+  // recommandé).
   const rows = useMemo(
     () =>
       reconcileHomeRows(
         layout?.rows ?? [],
-        (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name }))
+        (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })),
+        { anchorNewLibraries: layout?.stored === false }
       ).filter((r) => r.enabled),
-    [layout?.rows, libraries]
+    [layout?.rows, layout?.stored, libraries]
   );
 
   const librariesById = useMemo(() => {

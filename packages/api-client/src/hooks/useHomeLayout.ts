@@ -15,6 +15,10 @@ export interface HomeLayoutData {
   /** Ordonné : la position dans le tableau EST l'ordre d'affichage. */
   rows: HomeRowDescriptor[];
   cardDensity: CardDensity;
+  /** false : rien d'enregistré, ce sont les défauts serveur — le client peut
+   *  alors ancrer les bibliothèques dans l'ordre du défaut. Drapeau de
+   *  LECTURE seulement, jamais renvoyé au serveur. */
+  stored?: boolean;
 }
 
 export interface RecoSettingsData {
@@ -43,7 +47,7 @@ export function useHomeLayout() {
       const res = await tentacleApiFetch<StoredResponse<HomeLayoutData>>(
         "/api/preferences/home-layout"
       );
-      return res.layout!;
+      return { ...res.layout!, stored: res.stored };
     },
     staleTime: 60_000,
   });
@@ -52,11 +56,15 @@ export function useHomeLayout() {
 export function useSaveHomeLayout() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (layout: HomeLayoutData) =>
-      tentacleApiFetch<{ ok: boolean }>("/api/preferences/home-layout", {
+    mutationFn: (layout: HomeLayoutData) => {
+      // `stored` est un drapeau de lecture : il ne repart jamais au serveur.
+      const body = { ...layout };
+      delete body.stored;
+      return tentacleApiFetch<{ ok: boolean }>("/api/preferences/home-layout", {
         method: "PUT",
-        body: JSON.stringify(layout),
-      }),
+        body: JSON.stringify(body),
+      });
+    },
     onMutate: async (layout) => {
       await qc.cancelQueries({ queryKey: ["home-layout"] });
       const previous = qc.getQueryData<HomeLayoutData>(["home-layout"]);

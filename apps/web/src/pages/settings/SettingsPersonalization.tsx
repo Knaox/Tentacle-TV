@@ -43,7 +43,10 @@ export function SettingsPersonalization() {
   const rows = useMemo(
     () =>
       layout
-        ? reconcileHomeRows(layout.rows, (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })))
+        ? reconcileHomeRows(layout.rows, (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })), {
+            // Même ancre que l'accueil : l'éditeur doit montrer l'ordre RÉEL.
+            anchorNewLibraries: layout.stored === false,
+          })
         : [],
     [layout, libraries]
   );
