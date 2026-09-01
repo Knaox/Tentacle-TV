@@ -30,7 +30,7 @@ interface RecoHeroContentProps {
  * le coût d'une grille de cartes).
  */
 export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
-  const { t, i18n } = useTranslation("reco");
+  const { t } = useTranslation("reco");
   const reduced = useReducedMotion();
   const { open, canOpen } = useRecoNavigation();
   const feedback = useSendRecoFeedback();
@@ -43,14 +43,14 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
   const rate = useRateItem();
   const remove = useDeleteRating();
 
-  // La première raison qui fait une phrase — sinon le libellé générique.
+  // La première raison qui fait une phrase — sinon « Recommandation ».
   const kicker = useMemo(() => {
     for (const reason of item.reasons) {
-      const text = reasonToText(reason, t, i18n.language);
+      const text = reasonToText(reason, t);
       if (text) return text;
     }
-    return t("heroKicker");
-  }, [item.reasons, t, i18n.language]);
+    return t("heroReco");
+  }, [item.reasons, t]);
 
   // Constantes de module (theme/motion) : un objet neuf rejouerait la cascade.
   const groupVariants = reduced ? undefined : textCascade;

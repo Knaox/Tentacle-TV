@@ -10,6 +10,7 @@ export default {
   // Page
   pageTitle: "Recommandations",
   heroKicker: "Notre meilleure suggestion",
+  heroReco: "Recommandation",
   heroOpenDetail: "Voir la fiche",
   heroOpenVigie: "Voir dans le catalogue",
   warmingHint: "Vos recommandations s'affinent à mesure que vous notez des titres.",
@@ -59,7 +60,6 @@ export default {
   reasonTheme: "Thème : {{name}}",
   reasonStudio: "De {{name}}",
   reasonDecade: "Des années {{decade}}",
-  reasonLanguage: "En {{name}}",
 
   // Démarrage à froid
   coldKicker: "Personnalisation",
