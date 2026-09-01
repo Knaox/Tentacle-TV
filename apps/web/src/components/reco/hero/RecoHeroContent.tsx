@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   useDeleteRating,
@@ -43,13 +44,15 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
   const rate = useRateItem();
   const remove = useDeleteRating();
 
-  // La première raison qui fait une phrase — sinon « Recommandation ».
-  const kicker = useMemo(() => {
+  // Le sur-titre est CONSTANT (« Sélectionné pour vous ») : c'est lui qui dit
+  // la personnalisation. La raison, elle, descend dans une pastille dédiée —
+  // la première qui fait une phrase, sinon pas de pastille.
+  const reasonText = useMemo(() => {
     for (const reason of item.reasons) {
       const text = reasonToText(reason, t);
       if (text) return text;
     }
-    return t("heroReco");
+    return null;
   }, [item.reasons, t]);
 
   // Constantes de module (theme/motion) : un objet neuf rejouerait la cascade.
@@ -67,7 +70,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
         animate="show"
       >
         <motion.div variants={itemVariants} className="mb-3.5">
-          <HeroEyebrow label={kicker} />
+          <HeroEyebrow label={t("heroForYou")} />
         </motion.div>
 
         <motion.h1
@@ -97,6 +100,17 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
             </span>
           )}
         </motion.div>
+
+        {/* La RAISON — pastille informative (jamais cliquable), teinte de
+            marque sans backdrop-filter, libre de passer sur deux lignes. */}
+        {reasonText && (
+          <motion.div variants={itemVariants} className="mb-3.5">
+            <span className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[rgba(var(--brand-rgb),0.5)] bg-[rgba(var(--brand-rgb),0.24)] px-3 py-1 text-xs font-medium text-on-media-primary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
+              <Sparkles size={12} aria-hidden className="shrink-0 text-[var(--brand-accent-light)]" />
+              {reasonText}
+            </span>
+          </motion.div>
+        )}
 
         <motion.div variants={itemVariants} className="mb-6 flex items-center gap-2.5">
           <span className="text-sm text-on-media-secondary drop-shadow-[0_1px_4px_var(--on-media-shadow)]">
