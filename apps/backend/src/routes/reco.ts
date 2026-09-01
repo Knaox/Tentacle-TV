@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getPrisma } from "../services/db";
-import { requireAuth } from "../middleware/auth";
+import { requireAdmin, requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { getProfileDebug, rebuildProfile } from "../services/reco/profileBuilder";
 import { generatePool, readPool } from "../services/reco/generationJob";
@@ -54,8 +54,11 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
     return generatePool(user.userId);
   });
 
-  // ── POST /community/recompute — job de cooccurrence immédiat (debug) ──
-  app.post("/community/recompute", async () => {
+  // ── POST /community/recompute — job de cooccurrence immédiat (debug).
+  //    Admin seulement : le job vide et reconstruit item_cooccurrences après
+  //    un balayage complet de watch_segments et des appels Jellyfin par lots —
+  //    ouvert à tous, c'est un levier de déni de service. ──
+  app.post("/community/recompute", { preHandler: [requireAdmin] }, async () => {
     return runCooccurrenceJob();
   });
 
