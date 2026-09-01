@@ -43,6 +43,9 @@ export interface RowBuildOptions {
    *  noté ou refusé disparaît immédiatement, sans attendre la régénération. */
   exclude: ReadonlySet<string>;
   vigieAvailable: boolean;
+  /** Réglage « Inclure les titres hors bibliothèque » à false : AUCUNE rangée
+   *  ne sert de titre sans jellyfinItemId — le libellé fait enfin foi. */
+  inLibraryOnly: boolean;
   /** λ du MMR (curseur « Sûr ↔ Aventureux » / 100). */
   lambda: number;
   profile: TasteVector;
@@ -124,7 +127,7 @@ function explorationPicks(
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
 export function availableRows(
   pool: PoolPayload,
-  opts: Pick<RowBuildOptions, "vigieAvailable">
+  opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly">
 ): Array<{ key: string; seedTitle?: string }> {
   const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "inLibrary" }];
   if (opts.vigieAvailable) rows.push({ key: "discover" });
@@ -134,7 +137,11 @@ export function availableRows(
     if (because >= BECAUSE_ROWS_MAX) break;
     if (!seed.title) continue;
     const seedKey = `${seed.mediaType}:${seed.tmdbId}`;
-    const related = pool.entries.filter((e) => e.candidate.seedKey === seedKey);
+    // En bibliothèque seule, seuls les candidats rattachés comptent : une
+    // rangée annoncée doit pouvoir se remplir.
+    const related = pool.entries.filter(
+      (e) => e.candidate.seedKey === seedKey && (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+    );
     if (related.length < BECAUSE_MIN_ITEMS) continue;
     rows.push({ key: `becauseYouLiked:${seedKey}`, seedTitle: seed.title });
     because++;
@@ -151,7 +158,11 @@ export function availableRows(
  * `community` est servie ailleurs (Phase 6, table de cooccurrences).
  */
 export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOptions): BuiltRow | null {
-  const eligible = pool.entries.filter((e) => !opts.exclude.has(e.candidate.key));
+  const eligible = pool.entries.filter(
+    (e) =>
+      !opts.exclude.has(e.candidate.key) &&
+      (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+  );
   const exploReason: RecoReason = { kind: "exploration" };
   const done = (items: PoolEntry[], seedTitle?: string, exploration = false): BuiltRow => ({
     key: rowKey,

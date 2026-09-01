@@ -108,7 +108,8 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     }
     const { status, pool } = await ensureFreshPool(user.userId);
     const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
-    let rows = pool ? availableRows(pool, { vigieAvailable }) : [];
+    const inLibraryOnly = !ctx.includeVigie;
+    let rows = pool ? availableRows(pool, { vigieAvailable, inLibraryOnly }) : [];
     if (!ctx.community) rows = rows.filter((r) => r.key !== "community");
     return {
       state: ctx.state,
@@ -132,7 +133,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     if (rowKey === "community") {
       if (!ctx.community) return { key: rowKey, items: [] };
       const library = await getLibraryIndexMemo(user.userId);
-      return buildCommunityRow(user.userId, library, ctx.exclude);
+      return buildCommunityRow(user.userId, library, ctx.exclude, !ctx.includeVigie);
     }
     const { status, pool } = await ensureFreshPool(user.userId);
     if (!pool) {
@@ -142,6 +143,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const row = buildRow(pool, rowKey, {
       exclude: ctx.exclude,
       vigieAvailable,
+      inLibraryOnly: !ctx.includeVigie,
       lambda: ctx.lambda,
       profile: ctx.profile,
     });

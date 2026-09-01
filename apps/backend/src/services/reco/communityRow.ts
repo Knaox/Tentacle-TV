@@ -18,7 +18,8 @@ const ANCHORS_MAX = 60;
 export async function buildCommunityRow(
   userId: string,
   library: LibraryIndex,
-  exclude: ReadonlySet<string>
+  exclude: ReadonlySet<string>,
+  inLibraryOnly = false
 ): Promise<{ key: string; items: RecoRowItem[] }> {
   const prisma = getPrisma();
 
@@ -76,6 +77,8 @@ export async function buildCommunityRow(
 
     const fromPool = poolByKey.get(key);
     const fromLibrary = library.byKey.get(key);
+    // Bibliothèque seule : un voisin sans résolution locale ne sort pas.
+    if (inLibraryOnly && !fromLibrary && !fromPool?.candidate.jellyfinItemId) continue;
     let title = fromPool?.candidate.title ?? fromLibrary?.name ?? "";
     let year = fromPool?.candidate.year ?? fromLibrary?.ProductionYear ?? null;
     let posterPath = fromPool?.candidate.posterPath ?? null;
