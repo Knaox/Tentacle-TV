@@ -3,15 +3,16 @@ import { awaitRebuild } from "./profileBuilder";
 import { tmdbConfigured } from "../tmdb/client";
 import { getCachedMetaMany, getTitleMeta, metaKey } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
-import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
+import { facetsFromTmdb } from "./facets";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
 import { FacetScoringStrategy } from "./scoring/facetStrategy";
 import type { Candidate, ScoreBreakdown, TasteVector } from "./scoring/strategy";
 import { buildExclusions } from "./candidates/exclusions";
-import type { LibraryIndex } from "./candidates/libraryIndex";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import { libraryCandidates } from "./candidates/librarySource";
 import { assemblePool } from "./candidates/pool";
 import { deriveSeeds } from "./candidates/seeds";
+import { candidatesFromPeople } from "./candidates/peopleSource";
 import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSource";
 import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
@@ -30,9 +31,6 @@ const ENRICH_FETCH_BUDGET = 60;
  *  une rangée « Parce que vous avez aimé » sans titre n'existe pas. */
 const SEED_META_BUDGET = 8;
 
-/** Plafond de candidats bibliothèque : les mieux notés d'abord. */
-const LIBRARY_POOL_MAX = 300;
-
 export interface PoolEntry {
   candidate: Candidate;
   breakdown: ScoreBreakdown;
@@ -47,31 +45,13 @@ export interface PoolPayload {
   /** Passe rapide (bibliothèque + cache, zéro réseau) : la relève complète
    *  l'écrase — additif, un vieux pool sans le champ est complet. */
   preliminary?: boolean;
+  /** Personnes aimées au moment de la génération (rangées « Avec X »). */
+  people?: Array<{ personId: number; name: string }>;
   seeds: SeedRef[];
   entries: PoolEntry[];
   /** Libellés humains des facettes à IDs (« director:5655 » → nom) pour les
    *  raisons affichées. Décennies/langues/durées se localisent côté client. */
   labels: Record<string, string>;
-}
-
-function libraryCandidates(library: LibraryIndex): Candidate[] {
-  return library.entries
-    .filter((e) => !e.played)
-    .sort((a, b) => (b.communityRating ?? 0) - (a.communityRating ?? 0))
-    .slice(0, LIBRARY_POOL_MAX)
-    .map((e) => ({
-      key: e.key,
-      mediaType: e.mediaType,
-      tmdbId: e.tmdbId,
-      title: e.name,
-      year: e.ProductionYear ?? null,
-      facets: facetsFromJellyfin(e),
-      voteAverage: e.communityRating,
-      voteCount: null,
-      popularity: null,
-      source: "library" as const,
-      jellyfinItemId: e.itemId,
-    }));
 }
 
 // Une génération à la fois par compte — la page peut marteler, le job non.
@@ -109,10 +89,16 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   const prisma = getPrisma();
   if (idfLoadedAt() === 0) await loadIdfFromDb();
 
-  const [profileRow, settingsRow, library] = await Promise.all([
+  const [profileRow, settingsRow, library, likedPeople] = await Promise.all([
     prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } }),
     prisma.recoSettings.findUnique({ where: { jellyfinUserId: userId } }),
     getLibraryIndexMemo(userId),
+    prisma.userLikedPerson.findMany({
+      where: { jellyfinUserId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: { personId: true, name: true },
+    }),
   ]);
 
   let facets: Record<string, number> = {};
@@ -150,10 +136,14 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   // leurs candidats se rattachent à la bibliothèque et portent les seedKey
   // des rangées « Parce que vous avez aimé ». En passe rapide : aucune source
   // externe du tout, le réseau attendra la relève.
-  const [fromSeeds, fromDiscover, fromVigie, fromAnilist] = quick
-    ? [[], [], [], []]
+  // La source « personnes » tourne même en bibliothèque seule : comme les
+  // graines, ses candidats peuvent se rattacher à la bibliothèque — le filtre
+  // de service fait foi.
+  const [fromSeeds, fromPeople, fromDiscover, fromVigie, fromAnilist] = quick
+    ? [[], [], [], [], []]
     : await Promise.all([
         candidatesFromSeeds(seeds),
+        candidatesFromPeople(likedPeople),
         includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
         includeVigie ? candidatesFromVigie() : Promise.resolve([]),
         candidatesFromAnilist(userId),
@@ -162,6 +152,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   const pool = assemblePool([
     libraryCandidates(library),
     fromSeeds,
+    fromPeople,
     fromAnilist,
     fromVigie,
     fromDiscover,
@@ -249,6 +240,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     poolSize: scored.length,
     includeVigie,
     preliminary: quick,
+    people: likedPeople,
     seeds,
     entries: scored,
     labels,

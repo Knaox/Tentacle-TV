@@ -65,6 +65,7 @@ const ROW_SIZES: Record<string, number> = {
 const BECAUSE_SIZE = 18;
 const BECAUSE_MIN_ITEMS = 6;
 const BECAUSE_ROWS_MAX = 3;
+const ACTOR_ROWS_MAX = 2;
 /** Le MMR travaille sur le haut du pool — au-delà, c'est du bruit coûteux. */
 const MMR_INPUT_MAX = 150;
 
@@ -158,6 +159,22 @@ export function availableRows(
     rows.push({ key: `becauseYouLiked:${pick.key}`, seedTitle: pick.seedTitle });
   }
 
+  // Rangées « Avec {acteur} » : même mécanique que les « Parce que… »,
+  // rotation quotidienne salée à part (les deux tirages sont indépendants).
+  const actors: Array<{ key: string; strength: number; seedTitle: string }> = [];
+  for (const person of pool.people ?? []) {
+    const related = pool.entries.filter(
+      (e) =>
+        e.candidate.personKey === person.personId &&
+        (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+    );
+    if (related.length < BECAUSE_MIN_ITEMS) continue;
+    actors.push({ key: `withActor:${person.personId}`, strength: 1, seedTitle: person.name });
+  }
+  for (const pick of pickDaily(actors, `${opts.userId}:actors`, ACTOR_ROWS_MAX)) {
+    rows.push({ key: pick.key, seedTitle: pick.seedTitle });
+  }
+
   rows.push({ key: "community" }, { key: "exploration" });
   return rows;
 }
@@ -224,6 +241,20 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const row = done(mmrPick(related, BECAUSE_SIZE, opts.lambda), seed.title);
     for (const item of row.items) {
       item.reasons = [seedReason, ...item.reasons].slice(0, REASONS_MAX);
+    }
+    return row;
+  }
+
+  if (rowKey.startsWith("withActor:")) {
+    const personId = Number(rowKey.slice("withActor:".length));
+    if (!Number.isFinite(personId)) return null;
+    const person = pool.people?.find((p) => p.personId === personId);
+    const related = eligible.filter((e) => e.candidate.personKey === personId);
+    if (related.length < BECAUSE_MIN_ITEMS) return null;
+    const actorReason: RecoReason = { kind: "facet", key: `actor:${personId}`, label: person?.name };
+    const row = done(mmrPick(related, BECAUSE_SIZE, opts.lambda), person?.name);
+    for (const item of row.items) {
+      item.reasons = [actorReason, ...item.reasons].slice(0, REASONS_MAX);
     }
     return row;
   }

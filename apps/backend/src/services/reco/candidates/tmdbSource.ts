@@ -11,7 +11,7 @@ export interface SeedRef {
   strength: number;
 }
 
-interface TmdbListResult {
+export interface TmdbListResult {
   id: number;
   title?: string;
   name?: string;
@@ -44,7 +44,7 @@ function coarseFacets(raw: TmdbListResult): FacetEntry[] {
   return out;
 }
 
-function toCandidate(
+export function toCandidate(
   raw: TmdbListResult,
   mediaType: "movie" | "tv",
   source: Candidate["source"]
