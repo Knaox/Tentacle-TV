@@ -1,19 +1,13 @@
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useDeleteRating,
-  useItemRating,
-  useJellyfinClient,
-  useRateItem,
-  useSendRecoFeedback,
-} from "@tentacle-tv/api-client";
+import { useJellyfinClient, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { CardFrame } from "../cards/CardFrame";
 import { CardImage } from "../cards/CardImage";
 import { CardRatingBadge } from "../cards/CardRatingBadge";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
-import { StarRating } from "../rating/StarRating";
+import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "./recoImages";
@@ -55,9 +49,6 @@ export const RecoCard = memo(function RecoCard({
     mediaType: item.mediaType === "tv" ? ("series" as const) : ("movie" as const),
     tmdbId: item.tmdbId,
   };
-  const rating = useItemRating(hovered ? ratingIdentity : null);
-  const rate = useRateItem();
-  const removeRating = useDeleteRating();
 
   const posterUrl = recoPosterUrl(item, (id) =>
     client.getImageUrl(id, "Primary", { height: 450, quality: 90 })
@@ -152,19 +143,11 @@ export const RecoCard = memo(function RecoCard({
               />
               <div className="relative flex flex-col gap-1.5 px-2.5 pb-2.5 pt-6">
                 <RecoReasonText reasons={item.reasons} />
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
-                  }}
-                >
-                  <StarRating
-                    size="sm"
-                    value={rating?.score ?? null}
-                    onRate={(score) => rate.mutate({ ...ratingIdentity, score })}
-                    onClear={() => removeRating.mutate(ratingIdentity)}
-                  />
-                </div>
+                {/* Monté au survol seulement — l'abonnement aux notes aussi. */}
+                <HoverRatingStars
+                  identity={ratingIdentity}
+                  jellyfinItemId={item.jellyfinItemId}
+                />
                 <button
                   type="button"
                   onClick={handleDismiss}

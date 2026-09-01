@@ -7,7 +7,7 @@ import { WATCHLIST_SERIES_IDS_KEY, WATCHLIST_LIST_KEYS, resetWatchedIfFullyWatch
 
 // MediaSources requis pour afficher le badge qualité (4K/HEVC/DV/etc.) sur
 // les cards des rangées Ma Liste / Favoris (web CardMetaOverlay).
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources";
+const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources,ProviderIds";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 
 export function useWatchlist() {
