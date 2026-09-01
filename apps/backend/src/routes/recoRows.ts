@@ -50,7 +50,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const { status, pool } = await ensureFreshPool(user.userId);
     const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
     const inLibraryOnly = !ctx.includeVigie;
-    let rows = pool ? availableRows(pool, { vigieAvailable, inLibraryOnly }) : [];
+    let rows = pool
+      ? availableRows(pool, { vigieAvailable, inLibraryOnly, userId: user.userId })
+      : [];
     if (!ctx.community) rows = rows.filter((r) => r.key !== "community");
     return {
       state: ctx.state,
