@@ -24,6 +24,7 @@ const META: TitleMeta = {
   popularity: 80,
   voteAverage: 8.2,
   voteCount: 24000,
+  posterPath: "/matrix.jpg",
 };
 
 describe("facettes TMDB", () => {

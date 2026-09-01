@@ -5,17 +5,21 @@ import { getBackendBase } from "../../lib/backendBase";
 
 interface Props {
   onClose: () => void;
+  /** Liste partagée : watchlist (défaut) ou titres likés (favoris). */
+  kind?: "watchlist" | "likes";
 }
 
 /**
  * Modal « Partager ma liste » — génère / copie / partage / révoque le lien.
  * Le lien pointe vers la page publique /share/:token (même origine web).
  */
-export function ShareLinkModal({ onClose }: Props) {
+export function ShareLinkModal({ onClose, kind = "watchlist" }: Props) {
   const { t } = useTranslation("common");
-  const { data, isLoading } = useMyShareLink();
-  const createLink = useCreateShareLink();
-  const revoke = useRevokeShareLink();
+  const { data, isLoading } = useMyShareLink(true, kind);
+  const createLink = useCreateShareLink(kind);
+  const revoke = useRevokeShareLink(kind);
+  const titleKey = kind === "likes" ? "common:shareMyFavorites" : "common:shareMyList";
+  const descKey = kind === "likes" ? "common:shareFavoritesLinkDescription" : "common:shareLinkDescription";
   const [copied, setCopied] = useState(false);
 
   const token = createLink.data?.token ?? data?.token ?? null;
@@ -36,7 +40,7 @@ export function ShareLinkModal({ onClose }: Props) {
 
   const share = async () => {
     if (typeof navigator.share === "function") {
-      await navigator.share({ url, title: t("common:shareMyList") }).catch(() => {});
+      await navigator.share({ url, title: t(titleKey) }).catch(() => {});
     } else {
       copy();
     }
@@ -56,8 +60,8 @@ export function ShareLinkModal({ onClose }: Props) {
         role="dialog"
         aria-modal="true"
       >
-        <h2 className="text-lg font-bold text-content-primary">{t("common:shareMyList")}</h2>
-        <p className="mt-1 text-sm text-content-tertiary">{t("common:shareLinkDescription")}</p>
+        <h2 className="text-lg font-bold text-content-primary">{t(titleKey)}</h2>
+        <p className="mt-1 text-sm text-content-tertiary">{t(descKey)}</p>
 
         {isLoading ? (
           <div className="mt-5 h-11 animate-pulse rounded-lg bg-fill-subtle" />
