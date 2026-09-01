@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "./usePreferences";
+import type { RecoRow } from "./useRecoRows";
 
 export type RatingMediaType = "movie" | "series" | "episode";
 
@@ -35,6 +36,14 @@ export interface RateItemInput extends RatingIdentity {
 /** Clé de correspondance locale d'une note (saison/épisode normalisés à 0). */
 export function ratingKey(identity: RatingIdentity): string {
   return `${identity.mediaType}:${identity.tmdbId}:${identity.seasonNumber ?? 0}:${identity.episodeNumber ?? 0}`;
+}
+
+/** Clé canonique des rangées de reco (« movie:603 » / « tv:1399 ») — null
+ *  pour un épisode, qui n'apparaît jamais dans une rangée. */
+function recoKeyOf(mediaType: RatingMediaType, tmdbId: number): string | null {
+  if (mediaType === "movie") return `movie:${tmdbId}`;
+  if (mediaType === "series") return `tv:${tmdbId}`;
+  return null;
 }
 
 function identityQuery(identity: RatingIdentity): string {
@@ -109,6 +118,16 @@ export function useRateItem() {
         const rest = (old ?? []).filter((r) => ratingKey(r) !== key);
         return [optimistic, ...rest];
       });
+      // Un titre noté est EXCLU des recommandations : il sort des rangées
+      // chargées tout de suite (même retrait optimiste que « ne plus me
+      // proposer ») au lieu d'y traîner jusqu'au prochain refetch.
+      const rowKey = recoKeyOf(input.mediaType, input.tmdbId);
+      if (rowKey) {
+        await qc.cancelQueries({ queryKey: ["reco", "row"] });
+        qc.setQueriesData<RecoRow>({ queryKey: ["reco", "row"] }, (old) =>
+          old ? { ...old, items: old.items.filter((i) => i.key !== rowKey) } : old
+        );
+      }
       return { previous };
     },
     onError: (_err, _input, ctx) => {
@@ -116,6 +135,9 @@ export function useRateItem() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["ratings"] });
+      // Resynchronise rangées et aperçu avec les exclusions serveur (et
+      // remet l'item si la note n'a finalement pas été enregistrée).
+      void qc.invalidateQueries({ queryKey: ["reco"] });
     },
   });
 }
@@ -142,6 +164,8 @@ export function useDeleteRating() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["ratings"] });
+      // Note retirée : le titre redevient recommandable — les rangées se resservent.
+      void qc.invalidateQueries({ queryKey: ["reco"] });
     },
   });
 }

@@ -8,8 +8,7 @@ import type { RecoReason } from "@tentacle-tv/api-client";
  */
 export function reasonToText(
   reason: RecoReason,
-  t: (key: string, opts?: Record<string, unknown>) => string,
-  language: string
+  t: (key: string, opts?: Record<string, unknown>) => string
 ): string | null {
   if (reason.kind === "seed" && reason.seedTitle) {
     return t("reasonSeed", { title: reason.seedTitle });
@@ -32,24 +31,18 @@ export function reasonToText(
     const decade = key.slice("decade:".length);
     return /^\d{4}$/.test(decade) ? t("reasonDecade", { decade }) : null;
   }
-  if (key.startsWith("lang:")) {
-    const code = key.slice("lang:".length);
-    try {
-      const name = new Intl.DisplayNames([language], { type: "language" }).of(code);
-      return name ? t("reasonLanguage", { name }) : null;
-    } catch {
-      return null;
-    }
-  }
+  // lang:* n'est PLUS verbalisée : « En anglais » désignait la langue
+  // ORIGINALE TMDB — trompeur quand la copie en bibliothèque est doublée
+  // (VF). La facette continue de peser dans le score, elle ne s'affiche plus.
   // runtime:* et facettes non libellées : trop faibles pour une phrase.
   return null;
 }
 
 /** La première raison qui fait une phrase, ou rien. */
 export function RecoReasonText({ reasons }: { reasons: RecoReason[] }) {
-  const { t, i18n } = useTranslation("reco");
+  const { t } = useTranslation("reco");
   for (const reason of reasons) {
-    const text = reasonToText(reason, t, i18n.language);
+    const text = reasonToText(reason, t);
     if (text) {
       return <span className="line-clamp-2 text-xs text-content-secondary">{text}</span>;
     }
