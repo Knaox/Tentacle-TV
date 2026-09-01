@@ -7,6 +7,7 @@ import { ensureFreshPool } from "../services/reco/generationJob";
 import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { getSeerrConfig } from "../services/seerConfig";
+import { attachProviders } from "../services/reco/attachProviders";
 import { buildCommunityRow } from "../services/reco/communityRow";
 import { isRebuilding } from "../services/reco/profileBuilder";
 import { serveContext } from "../services/reco/serveContext";
@@ -83,7 +84,9 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     if (rowKey === "community") {
       if (!ctx.community) return { key: rowKey, items: [] };
       const library = await getLibraryIndexMemo(user.userId);
-      return buildCommunityRow(user.userId, library, ctx.exclude, !ctx.includeVigie);
+      const communityRow = await buildCommunityRow(user.userId, library, ctx.exclude, !ctx.includeVigie);
+      await attachProviders(communityRow.items);
+      return communityRow;
     }
     const { status, pool } = await ensureFreshPool(user.userId);
     const refining = status !== "fresh";
@@ -98,6 +101,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
       lambda: ctx.lambda,
       profile: ctx.profile,
     });
+    if (row) await attachProviders(row.items);
     // Le drapeau voyage avec la rangée : le client re-sonde tant qu'il est vrai.
     return row ? { ...row, refining } : { key: rowKey, items: [], refining };
   });

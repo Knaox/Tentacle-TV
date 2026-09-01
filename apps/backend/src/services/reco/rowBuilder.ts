@@ -1,4 +1,5 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
+import type { ProviderRef } from "../tmdb/metaCache";
 import { explorationQuota, noveltyOf, pickExplorationKeys } from "./exploration";
 import { selectWithMmr } from "./mmr";
 import { pickDaily } from "./seedRotation";
@@ -30,6 +31,9 @@ export interface RecoRowItem {
   voteAverage: number | null;
   reasons: RecoReason[];
   exploration?: boolean;
+  /** Plateformes de streaming (chips côté client) — posé au SERVICE par
+   *  attachProviders ; absent = méta inconnue, [] = aucune offre incluse. */
+  providers?: ProviderRef[];
 }
 
 export interface BuiltRow {
