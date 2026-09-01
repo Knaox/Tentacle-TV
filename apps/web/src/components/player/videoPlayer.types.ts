@@ -49,6 +49,8 @@ export interface VideoPlayerProps {
   sourceQuality?: SourceQuality;
   /** Paliers de qualité calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
+  /** Badge « Auto » sur le palier actif du sélecteur (cap de débit armé). */
+  autoQualityActive?: boolean;
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */

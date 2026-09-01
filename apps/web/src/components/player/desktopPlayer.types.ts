@@ -20,6 +20,8 @@ export interface DesktopPlayerProps {
   currentAudio: number; currentSubtitle: number | null; currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
   qualityPresets?: readonly QualityPreset[];
+  /** Badge « Auto » sur le palier actif du sélecteur (cap de débit armé). */
+  autoQualityActive?: boolean;
   onAudioChange: (index: number) => void; onSubtitleChange: (index: number | null) => void;
   /** Absent en lecture locale : le sélecteur de qualité est alors masqué. */
   onQualityChange?: (key: QualityKey) => void;

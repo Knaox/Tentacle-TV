@@ -70,6 +70,7 @@ export default {
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",
   qualityReduced: "Quality lowered to match your network speed",
+  qualityAutoBadge: "Auto",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   retry: "Retry",
   back: "Back",
