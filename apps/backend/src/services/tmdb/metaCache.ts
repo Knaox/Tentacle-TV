@@ -1,9 +1,17 @@
 import { getPrisma } from "../db";
+import { getConfigValue } from "../configStore";
 import { tmdbConfigured, tmdbFetch } from "./client";
 
 export interface NamedRef {
   id: number;
   name: string;
+}
+
+/** Une plateforme de streaming où le titre est INCLUS (abonnement/gratuit/pub). */
+export interface ProviderRef {
+  id: number;
+  name: string;
+  logoPath: string | null;
 }
 
 /**
@@ -30,6 +38,9 @@ export interface TitleMeta {
   voteCount: number | null;
   posterPath: string | null;
   backdropPath: string | null;
+  /** Plateformes de la région configurée — null = ligne d'AVANT la clé
+   *  watch/providers (« inconnu »), [] = aucune offre incluse. */
+  providers: ProviderRef[] | null;
 }
 
 // Les métadonnées d'un titre ne changent quasiment jamais : 30 jours, avec un
@@ -60,6 +71,36 @@ interface RawTmdbTitle {
   vote_count?: number;
   poster_path?: string | null;
   backdrop_path?: string | null;
+  // Clé LITTÉRALE avec slash — c'est la forme de l'API TMDB.
+  "watch/providers"?: {
+    results?: Record<
+      string,
+      {
+        flatrate?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
+        free?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
+        ads?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
+      }
+    >;
+  };
+}
+
+/** Offres « incluses » de la région configurée (résolue à la LECTURE : changer
+ *  de région ne demande aucun refetch) — jamais la location ni l'achat. */
+function normalizeProviders(raw: RawTmdbTitle): ProviderRef[] | null {
+  const block = raw["watch/providers"];
+  if (!block) return null; // ligne d'avant la clé : « inconnu », pas « aucun »
+  const region = getConfigValue("tmdb_watch_region") || "FR";
+  const entry = block.results?.[region];
+  const seen = new Set<number>();
+  const out: ProviderRef[] = [];
+  for (const list of [entry?.flatrate, entry?.free, entry?.ads]) {
+    for (const p of list ?? []) {
+      if (seen.has(p.provider_id)) continue;
+      seen.add(p.provider_id);
+      out.push({ id: p.provider_id, name: p.provider_name ?? "", logoPath: p.logo_path ?? null });
+    }
+  }
+  return out;
 }
 
 function named(refs: Array<{ id: number; name?: string }>): NamedRef[] {
@@ -105,7 +146,25 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     posterPath: raw.poster_path ?? null,
     // Rétroactif : les fiches `/movie|tv/{id}` en cache portent déjà le champ.
     backdropPath: raw.backdrop_path ?? null,
+    providers: normalizeProviders(raw),
   };
+}
+
+/** Le payload brut en cache, ou null (absent, périmé, illisible). */
+async function readCachedRaw(
+  mediaType: "movie" | "tv",
+  tmdbId: number
+): Promise<RawTmdbTitle | null> {
+  const prisma = getPrisma();
+  const row = await prisma.tmdbMetaCache.findUnique({
+    where: { mediaType_tmdbId: { mediaType, tmdbId } },
+  });
+  if (!row || row.expiresAt.getTime() < Date.now()) return null;
+  try {
+    return JSON.parse(row.payload) as RawTmdbTitle;
+  } catch {
+    return null;
+  }
 }
 
 /** Lit le cache sans jamais appeler TMDB (null si absent ou périmé). */
@@ -113,16 +172,8 @@ export async function getCachedMeta(
   mediaType: "movie" | "tv",
   tmdbId: number
 ): Promise<TitleMeta | null> {
-  const prisma = getPrisma();
-  const row = await prisma.tmdbMetaCache.findUnique({
-    where: { mediaType_tmdbId: { mediaType, tmdbId } },
-  });
-  if (!row || row.expiresAt.getTime() < Date.now()) return null;
-  try {
-    return normalize(mediaType, JSON.parse(row.payload) as RawTmdbTitle);
-  } catch {
-    return null;
-  }
+  const raw = await readCachedRaw(mediaType, tmdbId);
+  return raw ? normalize(mediaType, raw) : null;
 }
 
 /** Clé des lectures groupées (« movie:603 ») — même forme que les clés du pool. */
@@ -167,21 +218,25 @@ export async function getCachedMetaMany(
 
 /**
  * Métadonnées d'un titre : cache d'abord, sinon UN appel TMDB
- * (`append_to_response=keywords,credits` — détails, mots-clés et casting en une
- * seule requête). Rend null si TMDB n'est pas configuré ou en échec : le
- * moteur dégrade sur les facettes Jellyfin, il ne casse pas.
+ * (`append_to_response=keywords,credits,watch/providers` — détails, mots-clés,
+ * casting et plateformes en une seule requête). Rend null si TMDB n'est pas
+ * configuré ou en échec : le moteur dégrade sur les facettes Jellyfin.
+ *
+ * Invalidation DOUCE : une ligne d'avant la clé watch/providers vaut un
+ * défaut de cache — refetch sous les budgets existants, le cache de 30 jours
+ * se met à niveau progressivement, top titres d'abord.
  */
 export async function getTitleMeta(
   mediaType: "movie" | "tv",
   tmdbId: number
 ): Promise<TitleMeta | null> {
-  const cached = await getCachedMeta(mediaType, tmdbId);
-  if (cached) return cached;
-  if (!tmdbConfigured()) return null;
+  const cached = await readCachedRaw(mediaType, tmdbId);
+  if (cached && "watch/providers" in cached) return normalize(mediaType, cached);
+  if (!tmdbConfigured()) return cached ? normalize(mediaType, cached) : null;
 
   try {
     const raw = await tmdbFetch<RawTmdbTitle>(`/${mediaType}/${tmdbId}`, {
-      append_to_response: "keywords,credits",
+      append_to_response: "keywords,credits,watch/providers",
     });
     const prisma = getPrisma();
     const expiresAt = new Date(Date.now() + TTL_MS + Math.random() * TTL_JITTER_MS);
