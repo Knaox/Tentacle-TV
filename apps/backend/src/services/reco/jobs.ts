@@ -3,6 +3,7 @@ import { runCooccurrenceJob } from "./cooccurrence";
 import { generatePool, readPool } from "./generationJob";
 import { loadIdfFromDb, recomputeIdf } from "./idfStore";
 import { rebuildProfile } from "./profileBuilder";
+import { runServerPulseJob } from "./serverPulse";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
 import { refreshTrending } from "./trendingRow";
 
@@ -57,13 +58,14 @@ export function startRecoJobs(): void {
 
   idfTimer = setInterval(() => void runIdf(), IDF_INTERVAL_MS);
 
-  // Cooccurrence communautaire : premier passage 2 min après le démarrage
-  // (laisser la base et Jellyfin se poser), puis toutes les 6 h.
+  // Cooccurrence communautaire + pouls serveur : premier passage 2 min après
+  // le démarrage (laisser la base et Jellyfin se poser), puis toutes les 6 h.
+  // Le pouls vit au rythme de la cooccurrence — il lit les mêmes tables.
   coocBootTimer = setTimeout(() => {
     coocBootTimer = null;
-    void runCooccurrence();
+    void runCommunityJobs();
   }, COOCCURRENCE_BOOT_DELAY_MS);
-  coocTimer = setInterval(() => void runCooccurrence(), COOCCURRENCE_INTERVAL_MS);
+  coocTimer = setInterval(() => void runCommunityJobs(), COOCCURRENCE_INTERVAL_MS);
 
   purgeTimer = setInterval(() => {
     void purgeExpiredRecoCache().catch(() => undefined);
@@ -87,6 +89,16 @@ async function runTrending(): Promise<void> {
     if (res) console.log(`[Reco] Tendances : ${res.count} titres (${res.origin})`);
   } catch (err) {
     console.error("[Reco] Échec du rafraîchissement des tendances :", err);
+  }
+}
+
+async function runCommunityJobs(): Promise<void> {
+  await runCooccurrence();
+  try {
+    const { titles } = await runServerPulseJob();
+    console.log(`[Reco] Pouls serveur : ${titles} titres`);
+  } catch (err) {
+    console.error("[Reco] Échec du pouls serveur :", err);
   }
 }
 
