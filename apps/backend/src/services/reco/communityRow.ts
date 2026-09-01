@@ -78,7 +78,7 @@ export async function buildCommunityRow(
     const fromLibrary = library.byKey.get(key);
     let title = fromPool?.candidate.title ?? fromLibrary?.name ?? "";
     let year = fromPool?.candidate.year ?? fromLibrary?.ProductionYear ?? null;
-    let posterPath = fromPool?.candidate.posterPath ?? null;
+    const posterPath = fromPool?.candidate.posterPath ?? null;
     let voteAverage = fromPool?.candidate.voteAverage ?? fromLibrary?.communityRating ?? null;
     if (!title) {
       const meta = await getCachedMeta(mediaType, tmdbId);
