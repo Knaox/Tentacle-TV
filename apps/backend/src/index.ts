@@ -42,6 +42,8 @@ import { watchTogetherRoutes } from "./routes/watchTogether";
 import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
 import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { leaderboardRoutes } from "./routes/leaderboard";
+import { ratingRoutes } from "./routes/ratings";
+import { likeRoutes } from "./routes/likes";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
@@ -236,6 +238,8 @@ async function main() {
   await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
+  await app.register(ratingRoutes, { prefix: "/api/ratings" });
+  await app.register(likeRoutes, { prefix: "/api/likes" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
   // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —

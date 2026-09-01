@@ -18,10 +18,11 @@ import disclaimer from "./disclaimer";
 import watchTogether from "./watchTogether";
 import downloads from "./downloads";
 import easterEggs from "./easterEggs";
+import reco from "./reco";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, adminTheme, media, errors, profile, disclaimer,
-  watchTogether, downloads, easterEggs,
+  watchTogether, downloads, easterEggs, reco,
 };

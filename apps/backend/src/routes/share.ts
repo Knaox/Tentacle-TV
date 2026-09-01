@@ -22,11 +22,12 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
     const link = await prisma.shareLink.upsert({
-      where: { ownerUserId: user.userId },
+      where: { ownerUserId_kind: { ownerUserId: user.userId, kind: "watchlist" } },
       create: {
         token: generateToken(),
         ownerUserId: user.userId,
         ownerUsername: user.username,
+        kind: "watchlist",
       },
       update: { ownerUsername: user.username },
     });
@@ -37,7 +38,9 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   app.get("/mine", { preHandler: [requireAuth] }, async (request) => {
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
-    const link = await prisma.shareLink.findUnique({ where: { ownerUserId: user.userId } });
+    const link = await prisma.shareLink.findUnique({
+      where: { ownerUserId_kind: { ownerUserId: user.userId, kind: "watchlist" } },
+    });
     return { token: link?.token ?? null };
   });
 
@@ -45,7 +48,7 @@ export const shareRoutes: FastifyPluginAsync = async (app) => {
   app.delete("/", { preHandler: [requireAuth] }, async (request) => {
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
-    await prisma.shareLink.deleteMany({ where: { ownerUserId: user.userId } });
+    await prisma.shareLink.deleteMany({ where: { ownerUserId: user.userId, kind: "watchlist" } });
     return { ok: true };
   });
 
