@@ -14,6 +14,7 @@ import { SettingsSection } from "@tentacle-tv/ui";
 import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
+import { LikedActors } from "../../components/settings/personalization/LikedActors";
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
@@ -209,6 +210,8 @@ export function SettingsPersonalization() {
           </div>
         </div>
       </SettingsSection>
+
+      <LikedActors />
 
       <LinkedAccounts />
 

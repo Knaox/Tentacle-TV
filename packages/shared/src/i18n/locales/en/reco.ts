@@ -20,6 +20,7 @@ export default {
   providersFilterAria: "Filter by platform",
   providersAll: "All platforms",
   providerRowEmpty: "Nothing here on the selected platforms.",
+  rowWithActor: "Starring {{name}}",
   disabledBody:
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",

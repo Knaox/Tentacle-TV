@@ -63,7 +63,9 @@ export function RecoRowSlot({
 
   const title = rowKey.startsWith("becauseYouLiked:")
     ? t("rowBecauseYouLiked", { title: seedTitle ?? data?.seedTitle ?? "" })
-    : t(ROW_TITLE_KEYS[rowKey] ?? "rowForYou");
+    : rowKey.startsWith("withActor:")
+      ? t("rowWithActor", { name: seedTitle ?? data?.seedTitle ?? "" })
+      : t(ROW_TITLE_KEYS[rowKey] ?? "rowForYou");
 
   if (!allItems?.length) {
     // Silhouette seulement quand quelque chose ARRIVE (requête en vol ou
