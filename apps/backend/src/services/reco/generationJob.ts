@@ -15,12 +15,11 @@ import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSo
 import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
 import { candidatesFromAnilist } from "./candidates/anilistSource";
+import { readPool as readStoredPool, writePool } from "./poolStore";
 
-/** Durée de vie du pool en cache — la page relance la génération au-delà. */
-const POOL_TTL_MS = 6 * 3600_000;
-
-/** Rangée interne portant le pool classé (jamais servie telle quelle à l'UI). */
-export const POOL_ROW_KEY = "pool";
+// Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
+// ici pour ne pas casser les importeurs historiques.
+export { POOL_ROW_KEY, readPool } from "./poolStore";
 
 /** Le haut du pré-classement enrichi en métadonnées complètes (keywords…). */
 const ENRICH_TOP = 120;
@@ -39,6 +38,8 @@ export interface PoolPayload {
   generatedAt: string;
   strategyId: string;
   poolSize: number;
+  /** Réglage au moment de la génération (debug) — additif, vieux pools sans. */
+  includeVigie?: boolean;
   seeds: SeedRef[];
   entries: PoolEntry[];
   /** Libellés humains des facettes à IDs (« director:5655 » → nom) pour les
@@ -103,9 +104,13 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
 
   // Sources — bibliothèque d'abord (elle porte jellyfinItemId), puis les
   // découvertes. Chaque source dégrade en liste vide, jamais en erreur.
+  // Bibliothèque seule : /discover et Vigie ne produisent QUE du hors
+  // bibliothèque — on économise l'API. Les graines restent interrogées :
+  // leurs candidats se rattachent à la bibliothèque et portent les seedKey
+  // des rangées « Parce que vous avez aimé ».
   const [fromSeeds, fromDiscover, fromVigie, fromAnilist] = await Promise.all([
     candidatesFromSeeds(seeds),
-    candidatesFromDiscover(profile),
+    includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
     includeVigie ? candidatesFromVigie() : Promise.resolve([]),
     candidatesFromAnilist(userId),
   ]);
@@ -197,45 +202,18 @@ async function doGenerate(userId: string): Promise<{ poolSize: number }> {
     generatedAt: new Date().toISOString(),
     strategyId: strategy.id,
     poolSize: scored.length,
+    includeVigie,
     seeds,
     entries: scored,
     labels,
   };
-
-  await prisma.recommendationCache.upsert({
-    where: { jellyfinUserId_rowKey: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY } },
-    create: {
-      jellyfinUserId: userId,
-      rowKey: POOL_ROW_KEY,
-      payload: JSON.stringify(payload),
-      expiresAt: new Date(Date.now() + POOL_TTL_MS),
-    },
-    update: {
-      payload: JSON.stringify(payload),
-      generatedAt: new Date(),
-      expiresAt: new Date(Date.now() + POOL_TTL_MS),
-    },
-  });
+  await writePool(userId, payload);
 
   return { poolSize: scored.length };
 }
 
 function byTotalDesc(a: PoolEntry, b: PoolEntry): number {
   return b.breakdown.total - a.breakdown.total || (a.candidate.key < b.candidate.key ? -1 : 1);
-}
-
-/** Le pool en cache, ou null (absent/expiré/illisible). */
-export async function readPool(userId: string): Promise<PoolPayload | null> {
-  const prisma = getPrisma();
-  const row = await prisma.recommendationCache.findUnique({
-    where: { jellyfinUserId_rowKey: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY } },
-  });
-  if (!row || row.expiresAt.getTime() < Date.now()) return null;
-  try {
-    return JSON.parse(row.payload) as PoolPayload;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -245,7 +223,7 @@ export async function readPool(userId: string): Promise<PoolPayload | null> {
 export async function ensureFreshPool(
   userId: string
 ): Promise<{ status: "fresh" | "generating"; pool: PoolPayload | null }> {
-  const pool = await readPool(userId);
+  const pool = await readStoredPool(userId);
   if (pool) return { status: "fresh", pool };
   void generatePool(userId).catch((err) =>
     console.error(`[Reco] Génération du pool ${userId.slice(0, 8)}… en échec :`, err)
