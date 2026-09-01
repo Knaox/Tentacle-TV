@@ -41,6 +41,12 @@ export interface RecoOverview {
    *  meilleur de la bibliothèque (« on explore vos goûts »). */
   exploring?: boolean;
   generatedAt?: string | null;
+  /** false : aucune clé TMDB côté serveur — personnalisation indisponible pour
+   *  tous, seules les rangées globales sont servies. Absent = vieux serveur. */
+  tmdbConfigured?: boolean;
+  /** Le réglage brut du compte : false = l'utilisateur a coupé la perso.
+   *  Distingue la CAUSE d'un état « disabled » (choix vs clé absente). */
+  personalized?: boolean;
   rows: Array<{ key: string; seedTitle?: string }>;
 }
 
