@@ -265,6 +265,7 @@ export function VideoPlayer({
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        item={item} onRatingEngage={playback.cancelNextCountdown}
         videoRef={videoRef} userInteractedRef={userInteractedRef}
         setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
       />
