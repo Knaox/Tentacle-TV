@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
+import { generatePool } from "../services/reco/generationJob";
+import { invalidatePool } from "../services/reco/poolStore";
 
 const settingsSchema = z.object({
   personalized: z.boolean(),
@@ -47,11 +49,24 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
     const user = (request as any).user as JellyfinUser;
     const settings = settingsSchema.parse(request.body);
     const prisma = getPrisma();
+    const before = await prisma.recoSettings.findUnique({
+      where: { jellyfinUserId: user.userId },
+      select: { includeVigie: true },
+    });
     await prisma.recoSettings.upsert({
       where: { jellyfinUserId: user.userId },
       create: { jellyfinUserId: user.userId, ...settings },
       update: settings,
     });
+    // includeVigie change la MATIÈRE du pool (sources interrogées), pas
+    // seulement son service : attendre l'expiration (6 h) trahirait le
+    // réglage. Invalidation APRÈS l'upsert — la régénération relit le neuf.
+    // Les quatre autres réglages s'appliquent à la volée au service.
+    const beforeVigie = before?.includeVigie ?? DEFAULT_RECO_SETTINGS.includeVigie;
+    if (beforeVigie !== settings.includeVigie) {
+      await invalidatePool(user.userId);
+      void generatePool(user.userId).catch(() => undefined);
+    }
     return { ok: true };
   });
 }
