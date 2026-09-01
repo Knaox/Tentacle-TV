@@ -189,6 +189,7 @@ export {
   useLikePerson,
   useUnlikePerson,
   usePersonSearch,
+  usePersonSuggestions,
 } from "./hooks/useLikedPeople";
 export type { LikedPerson, PersonSearchResult } from "./hooks/useLikedPeople";
 

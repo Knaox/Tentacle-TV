@@ -23,6 +23,15 @@ export default {
   providersAll: "All platforms",
   providerRowEmpty: "Nothing here on the selected platforms.",
   rowWithActor: "Starring {{name}}",
+  actorsTitle: "Your actors",
+  actorsHint:
+    "Like actors or directors: “Starring …” rows will grow from your picks. Search a name, pick from the suggestions, or like them from a title's cast.",
+  actorsSuggested: "Well-known actors — to get you started",
+  actorsResults: "Results",
+  actorsSearchPlaceholder: "Search an actor, a director…",
+  actorsRemove: "Remove {{name}}",
+  actorsLike: "Like {{name}}",
+  actorsNoResult: "No result.",
   disabledBody:
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",
