@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  Database,
   HardDriveDownload,
   LifeBuoy,
   Mail,
@@ -44,6 +45,7 @@ export function AdminLayout() {
       { id: "tickets", label: t("supportTickets"), icon: <LifeBuoy size={ICON_SIZE} /> },
       { id: "plugins", label: t("pluginsTitle"), icon: <Puzzle size={ICON_SIZE} /> },
       { id: "services", label: t("services"), icon: <Server size={ICON_SIZE} /> },
+      { id: "metadata", label: t("metadataTitle"), icon: <Database size={ICON_SIZE} /> },
       { id: "theme", label: tTheme("adminCardTitle"), icon: <Palette size={ICON_SIZE} /> },
     ],
     [t, tTheme],

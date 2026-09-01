@@ -154,4 +154,22 @@ export default {
   rightLight: "Light mode",
   downloadsAllLibraries: "All libraries",
   downloadsSomeLibraries: "{{count}} allowed library(ies) — managed in Jellyfin",
+  metadataTitle: "Metadata",
+  metadataDescription:
+    "Metadata service keys. TMDB powers rich recommendations (similar titles, actors, keywords, out-of-library posters) and anonymous rating sync; without a key the engine falls back to library genres.",
+  tmdbDescription: "A free API key (v3) created on themoviedb.org — validated before being saved.",
+  tmdbKeyLabel: "TMDB API key",
+  anilistDescription:
+    "AniList OAuth client (id + secret): lets accounts link AniList and sync their anime ratings there. Not a suggestion source yet.",
+  anilistClientIdLabel: "Client ID",
+  anilistClientSecretLabel: "Client secret",
+  metadataRegionTitle: "Streaming platforms",
+  metadataRegionDescription:
+    "Availability region (Netflix, Crunchyroll chips…) — two-letter country code, resolved at read time: changing it asks nothing more from TMDB.",
+  metadataRegionLabel: "Region (ISO 3166-1)",
+  metadataConfiguredHint: "A value is already saved ({{last4}}) — leave blank to keep it.",
+  metadataNotConfigured: "Not configured.",
+  metadataEnvSource: "Set by environment variable — takes precedence over the value entered here.",
+  metadataRemove: "Remove",
+  tmdbKeyInvalid: "Invalid TMDB key — nothing was saved.",
 } as const;
