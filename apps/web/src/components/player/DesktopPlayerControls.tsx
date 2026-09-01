@@ -40,6 +40,8 @@ interface DesktopPlayerControlsProps {
   currentQuality: QualityKey;
   sourceQuality?: SourceQuality;
   qualityPresets?: readonly QualityPreset[];
+  /** Badge « Auto » sur le palier actif du sélecteur. */
+  autoQualityActive?: boolean;
   hasSettings: boolean;
   hasNextEpisode?: boolean;
   hasPreviousEpisode?: boolean;
@@ -90,7 +92,7 @@ const WITHOUT_ALPHA = !surfaceHasAlpha();
  */
 export function DesktopPlayerControls({
   visible, state, title, subtitle, isDirectPlay, isEpisode, useLocalEpisodes, item, itemId,
-  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets,
+  displayAudio, displaySubs, curAudio, curSub, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
   hasSettings, hasNextEpisode, hasPreviousEpisode,
   dur, actualPos, displayProgress, bufProg, seekbar,
   showSettings, showEpisodes, setShowSettings, setShowEpisodes, closePanels,
@@ -163,6 +165,7 @@ export function DesktopPlayerControls({
                 audioTracks={displayAudio} subtitleTracks={displaySubs}
                 currentAudio={curAudio} currentSubtitle={curSub}
                 currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
+                autoQualityActive={autoQualityActive}
                 onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange}
                 onQualityChange={onQualityChange}
                 applyToSeries={applyToSeries}
