@@ -65,6 +65,8 @@ export interface PlaybackOverlayResult {
   /** Saut manuel du bouton courant ; « lire maintenant » de la carte. */
   skipNow: () => void;
   playNow: () => void;
+  /** Tue le minuteur de la suite SANS refuser la surface (noter depuis l'affiche). */
+  cancelNextCountdown: () => void;
   /** Watch Together entrant : un membre a refusé. */
   signalRemoteSegmentDismiss: (type: SegmentType) => void;
   signalRemoteNextDismiss: () => void;
