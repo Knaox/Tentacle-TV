@@ -7,7 +7,7 @@ import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange, primeBitrateMeasure } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
@@ -62,6 +62,12 @@ function DirectStreamingSync() {
   // to satisfy the `enabled: !!token` guard. Mobile/desktop pass real token.
   const token = localStorage.getItem("tentacle_token") || (localStorage.getItem("tentacle_user") ? "__cookie__" : null);
   const { data } = useStreamingConfig(token);
+
+  // Préchauffage de la mesure de débit (miroir du téléviseur) : la PREMIÈRE
+  // lecture après le lancement peut déjà être capée — cache 10 min.
+  useEffect(() => {
+    if (token) primeBitrateMeasure(client);
+  }, [client, token]);
 
   useEffect(() => {
     // Direct Streaming is applied on every client (web/native) when the admin
