@@ -8,17 +8,18 @@ export function canonicalKey(mediaType: string, tmdbId: number): string {
 }
 
 export interface ExclusionSets {
-  /** Exclus de TOUTES les rangées : notés, vus en entier, « ne plus proposer ». */
+  /** Exclus de TOUTES les rangées : notés, vus, favoris, séries entamées,
+   *  « ne plus proposer ». */
   everywhere: Set<string>;
-  /** Exclus de la seule rangée hors bibliothèque : tout ce qui est en bibliothèque. */
-  inLibrary: Set<string>;
 }
 
 /**
  * Exclusions systématiques du moteur. Un titre noté — même mal — ne se
  * re-propose pas (sa note a déjà façonné le profil) ; un « ne plus me
  * proposer » est définitif ; un titre vu en entier n'a rien à faire dans une
- * rangée de découverte.
+ * rangée de découverte ; un FAVORI n'est jamais une découverte (il reste une
+ * GRAINE — cf. deriveSeeds) ; une série entamée est déjà engagée, elle vit
+ * dans « Reprendre », pas dans les recommandations.
  */
 export async function buildExclusions(
   userId: string,
@@ -40,9 +41,8 @@ export async function buildExclusions(
   for (const r of ratings) everywhere.add(canonicalKey(r.mediaType, r.tmdbId));
   for (const f of feedback) everywhere.add(f.itemKey);
   for (const entry of library.entries) {
-    if (entry.played) everywhere.add(entry.key);
+    if (entry.played || entry.isFavorite || entry.inProgress) everywhere.add(entry.key);
   }
 
-  const inLibrary = new Set(library.byKey.keys());
-  return { everywhere, inLibrary };
+  return { everywhere };
 }
