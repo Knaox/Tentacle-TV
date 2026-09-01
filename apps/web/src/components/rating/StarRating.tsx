@@ -8,6 +8,10 @@ interface StarRatingProps {
   onClear: () => void;
   size?: "sm" | "md";
   disabled?: boolean;
+  /** « onMedia » : posé sur une affiche — contour blanc et ombre portée
+   *  STATIQUES (les jetons de thème y sont illisibles, cf. capture du survol
+   *  où les étoiles disparaissaient sur les affiches claires). */
+  tone?: "themed" | "onMedia";
 }
 
 const SIZE_CLASS = { sm: "h-4 w-4", md: "h-6 w-6" } as const;
@@ -19,12 +23,24 @@ const SIZE_CLASS = { sm: "h-4 w-4", md: "h-6 w-6" } as const;
  * ce qui donne aussi les dix valeurs au clavier, sans arithmétique de souris.
  * Animations : opacité (remplissage) et transform (survol) uniquement.
  */
-export function StarRating({ value, onRate, onClear, size = "md", disabled }: StarRatingProps) {
+export function StarRating({
+  value,
+  onRate,
+  onClear,
+  size = "md",
+  disabled,
+  tone = "themed",
+}: StarRatingProps) {
   const { t } = useTranslation("reco");
   const [hovered, setHovered] = useState<number | null>(null);
 
   const displayed = hovered ?? value ?? 0;
   const starClass = SIZE_CLASS[size];
+  const outlineClass =
+    tone === "onMedia" ? "text-white/80" : "text-content-tertiary opacity-40";
+  // Filtre STATIQUE (jamais animé) sur le conteneur de l'étoile : un seul
+  // drop-shadow pour les trois glyphes, pas trois.
+  const starShadow = tone === "onMedia" ? "drop-shadow-[0_1px_2px_rgba(0,0,0,0.7)]" : "";
 
   return (
     <div
@@ -40,11 +56,11 @@ export function StarRating({ value, onRate, onClear, size = "md", disabled }: St
         return (
           <span
             key={star}
-            className={`relative ${starClass} transition-transform duration-150 ${
+            className={`relative ${starClass} ${starShadow} transition-transform duration-150 ${
               isHoveredStar ? "scale-110" : ""
             }`}
           >
-            <StarGlyph className={`absolute inset-0 ${starClass} text-content-tertiary opacity-40`} outline />
+            <StarGlyph className={`absolute inset-0 ${starClass} ${outlineClass}`} outline />
             <StarGlyph
               className={`absolute inset-0 ${starClass} text-[var(--brand-accent)] transition-opacity duration-150 ${
                 fraction >= 0.5 ? "opacity-100" : "opacity-0"

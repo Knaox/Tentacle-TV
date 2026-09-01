@@ -104,6 +104,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
           </span>
           <StarRating
             size="md"
+            tone="onMedia"
             value={rating?.score ?? null}
             onRate={(score) =>
               rate.mutate({ ...identity, jellyfinItemId: item.jellyfinItemId ?? undefined, score })

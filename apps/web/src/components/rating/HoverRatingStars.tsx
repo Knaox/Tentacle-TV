@@ -31,6 +31,7 @@ export function HoverRatingStars({ identity, tvdbId, jellyfinItemId }: HoverRati
     >
       <StarRating
         size="sm"
+        tone="onMedia"
         value={rating?.score ?? null}
         onRate={(score) =>
           rate.mutate({
