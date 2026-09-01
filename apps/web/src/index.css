@@ -224,6 +224,35 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  /* Fondu de bord de la barre de navigation (NavOverflowScroller) : le MASK
+     fond le CONTENU lui-même — l'assise de la barre est translucide et
+     d'opacité variable (useScrollScrim), un voile peint en --surface-0 ferait
+     une tache sur la bannière. Statique : aucune animation, aucune couche
+     composée ajoutée. Doublon -webkit- pour Safari. */
+  .nav-edge-fade[data-fade-left="true"] {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 32px);
+    mask-image: linear-gradient(to right, transparent, #000 32px);
+  }
+  .nav-edge-fade[data-fade-right="true"] {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+  .nav-edge-fade[data-fade-left="true"][data-fade-right="true"] {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
