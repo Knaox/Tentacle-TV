@@ -39,6 +39,15 @@ export default {
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",
 
+  disabledBanner:
+    "Personalized recommendations are turned off for your account — here are general suggestions.",
+  disabledBannerCta: "Turn on in settings",
+  tmdbAdminBanner: "Add your TMDB key (Admin → Metadata) to enable personalized recommendations.",
+  tmdbAdminBannerCta: "Open metadata settings",
+  genericOnlyHint: "General suggestions — personalization isn't available right now.",
+  coldBannerHint: "Your personalized picks still need a few signals — tell us what you like.",
+  coldBannerCta: "Pick titles",
+
   // Rangées
   rowForYou: "For you",
   rowInLibrary: "Available in your library",
