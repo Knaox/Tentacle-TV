@@ -17,6 +17,9 @@ export default {
   preliminaryHint: "Premières suggestions — vos recommandations s'affinent en arrière-plan.",
   heroRegionAria: "Recommandations en vedette",
   communityRatingAria: "Note globale {{score}} sur 10",
+  providersFilterAria: "Filtrer par plateforme",
+  providersAll: "Toutes les plateformes",
+  providerRowEmpty: "Rien ici sur les plateformes sélectionnées.",
   disabledBody:
     "Les recommandations personnalisées sont désactivées pour votre compte. Activez-les dans vos réglages de personnalisation pour recevoir des suggestions à votre goût.",
   disabledCta: "Ouvrir les réglages de personnalisation",
