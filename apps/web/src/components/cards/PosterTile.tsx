@@ -5,6 +5,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
+import { CardRatingBadge } from "./CardRatingBadge";
 import { CardQuickActions } from "./CardQuickActions";
 import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
@@ -121,6 +122,9 @@ export function PosterTile({
 
       {/* Coche « vu » — cède la place aux actions rapides pendant le survol. */}
       {watched && !actionsVisible && <CardWatchedBadge label={t("common:watched")} />}
+
+      {/* Note globale, au repos — la barre de lecture reprend l'angle au survol. */}
+      <CardRatingBadge rating={item.CommunityRating} shown={!actionsVisible} />
 
       {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
           au repos, l'affiche reste entièrement propre — et n'a même plus la

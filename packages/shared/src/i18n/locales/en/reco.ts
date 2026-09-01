@@ -16,6 +16,7 @@ export default {
   generatingHint: "Building your recommendations — this takes a moment on first visit.",
   preliminaryHint: "First picks — your recommendations are being refined in the background.",
   heroRegionAria: "Featured recommendations",
+  communityRatingAria: "Community rating {{score}} out of 10",
   disabledBody:
     "Personalized recommendations are turned off for your account. Enable them in your personalization settings to get suggestions tailored to your taste.",
   disabledCta: "Open personalization settings",
