@@ -15,6 +15,8 @@ export default {
   warmingHint: "Your recommendations are getting sharper as you rate more titles.",
   generatingHint: "Building your recommendations — this takes a moment on first visit.",
   preliminaryHint: "First picks — your recommendations are being refined in the background.",
+  exploringHint:
+    "Exploring your tastes — meanwhile, here is the best of your library. Personalization kicks in shortly.",
   heroRegionAria: "Featured recommendations",
   communityRatingAria: "Community rating {{score}} out of 10",
   providersFilterAria: "Filter by platform",

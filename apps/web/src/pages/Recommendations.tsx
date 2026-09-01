@@ -99,14 +99,15 @@ export function Recommendations() {
           <RecoProviderChips selected={selectedProviders} onChange={setSelectedProviders} />
         )}
 
-        {overview.state === "warming" && (
+        {/* UN seul bandeau à la fois : « on explore vos goûts » prime (toute
+            première visite), sinon chauffe du profil, sinon affinage du pool. */}
+        {overview.exploring ? (
+          <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("exploringHint")}</p>
+        ) : overview.state === "warming" ? (
           <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("warmingHint")}</p>
-        )}
-
-        {/* Bandeau d'affinage : des rangées sont là mais mieux arrive. */}
-        {overview.refining && overview.rows.length > 0 && (
+        ) : overview.refining && overview.rows.length > 0 ? (
           <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("preliminaryHint")}</p>
-        )}
+        ) : null}
 
         {overview.generating && overview.rows.length === 0 ? (
           <>

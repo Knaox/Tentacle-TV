@@ -15,6 +15,8 @@ export default {
   warmingHint: "Vos recommandations s'affinent à mesure que vous notez des titres.",
   generatingHint: "Construction de vos recommandations — la première visite prend un instant.",
   preliminaryHint: "Premières suggestions — vos recommandations s'affinent en arrière-plan.",
+  exploringHint:
+    "On explore vos goûts — en attendant, voici le meilleur de votre bibliothèque. Ça se personnalise dans un instant.",
   heroRegionAria: "Recommandations en vedette",
   communityRatingAria: "Note globale {{score}} sur 10",
   providersFilterAria: "Filtrer par plateforme",
