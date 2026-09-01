@@ -2,7 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { getPrisma } from "../services/db";
 import { requireAdmin, requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { getProfileDebug, rebuildProfile } from "../services/reco/profileBuilder";
+import { getProfileDebug, isRebuilding, rebuildProfile } from "../services/reco/profileBuilder";
 import { generatePool, readPool } from "../services/reco/generationJob";
 import { runCooccurrenceJob } from "../services/reco/cooccurrence";
 import { idfLoadedAt } from "../services/reco/idfStore";
@@ -29,10 +29,28 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
-  // ── POST /profile/rebuild — reconstruction immédiate (synchrone) ──
-  app.post("/profile/rebuild", async (request) => {
+  // ── POST /profile/rebuild — reconstruction EN FOND, 202 immédiat. Elle
+  //    vaut 10-25 s (scans Jellyfin + fetchs TMDB) : aucun client ne doit
+  //    l'attendre — la fin se suit par /profile/status ou le poll de /rows. ──
+  app.post("/profile/rebuild", async (request, reply) => {
     const user = (request as any).user as JellyfinUser;
-    return rebuildProfile(user.userId);
+    void rebuildProfile(user.userId).catch(() => undefined);
+    return reply.code(202).send({ started: true });
+  });
+
+  // ── GET /profile/status — la reconstruction en cours, sans le détail ──
+  app.get("/profile/status", async (request) => {
+    const user = (request as any).user as JellyfinUser;
+    const prisma = getPrisma();
+    const row = await prisma.tasteProfile.findUnique({
+      where: { jellyfinUserId: user.userId },
+      select: { computedAt: true, signalCount: true },
+    });
+    return {
+      rebuilding: isRebuilding(user.userId),
+      computedAt: row?.computedAt.toISOString() ?? null,
+      signalCount: row?.signalCount ?? 0,
+    };
   });
 
   // ── POST /profile/reset — remise à zéro du goût : profil + rangées en
