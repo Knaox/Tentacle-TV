@@ -1,27 +1,35 @@
-import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
+import { useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useLibraries,
   useResumeItems,
-  useLatestItems,
   useNextUp,
   useWatchedItems,
   useFeaturedItems,
   useWatchlist,
   useHomeWebSocket,
   useJellyfinClient,
+  useHomeLayout,
+  useMediaItem,
   notifyUserChange,
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
-import { MediaRow } from "../components/rows/MediaRow";
-import { RowErrorState } from "../components/rows/RowErrorState";
-import { ContinueWatchingRow } from "../components/rows/ContinueWatchingRow";
 import { PageTransition } from "../components/PageTransition";
 import { ContentErrorState } from "../components/ContentErrorState";
-import { useNearViewport } from "../hooks/useNearViewport";
-import { useDataSaverActive } from "../offline/useDataSaver";
+import { HomeRow } from "../components/home/homeRowRegistry";
+import type { HomeRowData } from "../components/home/homeRowRegistry";
+import { RecoHero } from "../components/reco/RecoHero";
+import { useRecoRow } from "@tentacle-tv/api-client";
+import { CardDensityProvider } from "../contexts/CardDensityContext";
+import { reconcileHomeRows } from "../lib/homeLayout";
 
+/**
+ * Accueil configurable : l'ordre, l'activation et la densité des rangées
+ * viennent de `HomeLayout` (backend, sync multi-appareils) — plus de liste en
+ * dur. Sans réglage stocké, le serveur rend des défauts qui reproduisent
+ * l'accueil historique à l'identique (migration silencieuse). Le rendu d'une
+ * rangée vit dans le registre (`homeRowRegistry`).
+ */
 export function Home() {
   const client = useJellyfinClient();
   const queryClient = useQueryClient();
@@ -37,19 +45,51 @@ export function Home() {
     notifyUserChange();
   }, [client, queryClient]);
   useHomeWebSocket({ token: wsToken, onSessionRevoked });
-  const { t } = useTranslation("common");
+
   const { data: featured, isLoading: featuredLoading, isError: featuredError } = useFeaturedItems();
   const { data: resumeItems } = useResumeItems();
   const { data: nextUp } = useNextUp();
   const { data: watchlist } = useWatchlist();
   const { data: watchedItems } = useWatchedItems();
   const { data: libraries, isError: librariesError } = useLibraries();
+  const { data: layout } = useHomeLayout();
 
-  // Hero: prioritize resume items (quick resume), fallback to featured
-  const heroItems = resumeItems && resumeItems.length > 0
-    ? resumeItems.slice(0, 5)
-    : featured ?? [];
-  const heroLoading = featuredLoading && !resumeItems;
+  const heroMode = layout?.heroMode ?? "resume";
+  const fixedItem = useMediaItem(heroMode === "fixed" ? layout?.heroFixedItemId ?? undefined : undefined);
+
+  // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
+  // s'ajoutent en fin (actives), les disparues s'effacent.
+  const rows = useMemo(
+    () =>
+      reconcileHomeRows(
+        layout?.rows ?? [],
+        (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name }))
+      ).filter((r) => r.enabled),
+    [layout?.rows, libraries]
+  );
+
+  const librariesById = useMemo(() => {
+    const map: HomeRowData["librariesById"] = new Map();
+    (libraries ?? []).forEach((lib, index) =>
+      map.set(lib.Id, { id: lib.Id, name: lib.Name, collectionType: lib.CollectionType, index })
+    );
+    return map;
+  }, [libraries]);
+
+  // Hero selon le mode : resume (historique — reprise, sinon aléatoire),
+  // random (aléatoire seul), fixed (sélection), reco (meilleure suggestion).
+  const heroItems =
+    heroMode === "random"
+      ? featured ?? []
+      : heroMode === "fixed"
+        ? fixedItem.data
+          ? [fixedItem.data]
+          : []
+        : resumeItems && resumeItems.length > 0
+          ? resumeItems.slice(0, 5)
+          : featured ?? [];
+  const heroLoading =
+    heroMode === "reco" ? false : featuredLoading && !resumeItems && heroMode !== "fixed";
 
   // Les deux requêtes qui portent la page : sans bibliothèques NI mise en avant,
   // il ne reste rien à afficher. On le DIT, au lieu de rendre une page vide qui
@@ -63,142 +103,37 @@ export function Home() {
     );
   }
 
+  const data: HomeRowData = { resumeItems, nextUp, watchlist, watchedItems, librariesById };
+
   return (
     <PageTransition>
-      {/* Bannière encadrée. Plus de remontée sous la barre de navigation : la
-          nav flotte désormais sur le CADRE, pas sur l'affiche. C'est ce qui
-          donne au cadre ses quatre côtés — sans quoi la bannière toucherait le
-          haut de l'écran et il n'en resterait que trois. */}
-      {heroLoading ? (
-        <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
-          <div className="skeleton-shimmer h-[62vh] w-full rounded-[var(--hero-frame-radius)] md:h-[70vh] lg:h-[76vh]" />
-        </div>
-      ) : (
-        <HeroBillboard items={heroItems} />
-      )}
+      <CardDensityProvider value={layout?.cardDensity ?? "normal"}>
+        {/* Bannière encadrée. Plus de remontée sous la barre de navigation : la
+            nav flotte désormais sur le CADRE, pas sur l'affiche. */}
+        {heroMode === "reco" ? (
+          <div className="pt-6">
+            <RecoHeroSlot />
+          </div>
+        ) : heroLoading ? (
+          <div className="px-[var(--row-gutter-mobile)] pb-6 md:px-[var(--row-gutter-desktop)] md:pb-10">
+            <div className="skeleton-shimmer h-[62vh] w-full rounded-[var(--hero-frame-radius)] md:h-[70vh] lg:h-[76vh]" />
+          </div>
+        ) : (
+          <HeroBillboard items={heroItems} />
+        )}
 
-      {/* Rangées. Plus de chevauchement négatif non plus : il masquait la
-          couture d'une bannière à fond perdu, qui n'existe plus. */}
-      <div className="relative z-10 space-y-0 pb-24">
-        {resumeItems && resumeItems.length > 0 && (
-          <ContinueWatchingRow
-            title={t("common:resumeWatching")}
-            items={resumeItems}
-            animDelay={150}
-          />
-        )}
-        {nextUp && nextUp.length > 0 && (
-          <ContinueWatchingRow
-            title={t("common:nextEpisodes")}
-            items={nextUp}
-            animDelay={250}
-          />
-        )}
-        {watchlist && watchlist.length > 0 && (
-          <MediaRow
-            title={t("common:myList")}
-            items={watchlist}
-            animDelay={350}
-            href="/watchlist"
-          />
-        )}
-        {watchedItems && watchedItems.length > 0 && (
-          <MediaRow
-            title={t("common:alreadyWatched")}
-            items={watchedItems}
-            variant="episode"
-            animDelay={450}
-          />
-        )}
-        {libraries?.map((lib, i) => (
-          <LibraryRow
-            key={lib.Id}
-            libraryId={lib.Id}
-            libraryName={lib.Name}
-            collectionType={lib.CollectionType}
-            delayIndex={i}
-          />
-        ))}
-      </div>
+        <div className="relative z-10 space-y-0 pb-24">
+          {rows.map((row, i) => (
+            <HomeRow key={row.key} rowKey={row.key} animDelay={150 + i * 100} data={data} />
+          ))}
+        </div>
+      </CardDensityProvider>
     </PageTransition>
   );
 }
 
-function LibraryRow({
-  libraryId,
-  libraryName,
-  collectionType,
-  delayIndex,
-}: {
-  libraryId: string;
-  libraryName: string;
-  collectionType?: string;
-  delayIndex: number;
-}) {
-  const { t } = useTranslation("common");
-  const dataSaver = useDataSaverActive();
-  // On ne lance la requête qu'à l'approche de la rangée — en économie COMME en
-  // connexion rapide. Le lazy loading de MediaRow ne gouverne que le RENDU :
-  // les données des rangées hors écran descendaient quand même, et télécharger
-  // ce que l'utilisateur ne verra peut-être jamais est un gaspillage sans
-  // contrepartie. Seule la marge d'anticipation dépend du mode : très large en
-  // temps normal (les rangées d'un écran classique restent toutes chargées
-  // d'emblée, l'arrivée est invisible), resserrée quand chaque octet compte.
-  const { ref, near } = useNearViewport<HTMLElement>(dataSaver ? "600px" : "1400px");
-  const enabled = near;
-  const {
-    data: items,
-    isLoading,
-    isError,
-    isFetching,
-    refetch,
-  } = useLatestItems(libraryId, { collectionType, enabled });
-  const title = t("common:latestAdditions", { name: libraryName });
-
-  // Squelette tant que la requête n'a pas abouti. Il porte AUSSI la cible de
-  // l'observer : sans un élément monté, une rangée en attente ne serait jamais
-  // déclenchée et resterait vide indéfiniment.
-  if (!enabled || isLoading) {
-    return (
-      <section ref={ref} className="row-gutter mb-10">
-        <h2 className="mb-3 text-base font-semibold text-content-primary md:text-lg">
-          {title}
-        </h2>
-        <div className="flex gap-3 overflow-hidden">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="skeleton-shimmer aspect-[2/3] w-32 flex-shrink-0 rounded-md sm:w-44 lg:w-52"
-            />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  // ÉCHEC et VIDE ne se ressemblent pas, et se rendaient pareil — `null`, la
-  // rangée effacée sans un mot. Une bibliothèque sans nouveauté n'a rien à
-  // dire ; une requête tombée, si : elle garde sa place, son titre, et propose
-  // de réessayer (voir `RowErrorState`, qui se tait de lui-même hors ligne).
-  if (isError) {
-    return (
-      <RowErrorState
-        title={title}
-        retrying={isFetching}
-        onRetry={() => { void refetch(); }}
-      />
-    );
-  }
-
-  if (!items || items.length === 0) return null;
-
-  return (
-    <MediaRow
-      title={title}
-      items={items}
-      animDelay={550 + delayIndex * 80}
-      href={`/library/${libraryId}`}
-      posterImageMode="series"
-    />
-  );
+/** Mode héros « recommandations » : la tête de « Pour vous ». */
+function RecoHeroSlot() {
+  const { data } = useRecoRow("forYou");
+  return <RecoHero item={data?.items?.[0]} />;
 }

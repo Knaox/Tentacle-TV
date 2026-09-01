@@ -5,7 +5,7 @@ import { Shimmer } from "@tentacle-tv/ui";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
 import { RecoHero } from "../components/reco/RecoHero";
-import { RecoRow } from "../components/reco/RecoRow";
+import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 
 /**
  * Page Recommandations. Toute la matière vient du backend (pool + rangées
@@ -75,7 +75,13 @@ export function Recommendations() {
         )}
 
         {overview.rows.map((row, i) => (
-          <RowSlot key={row.key} rowKey={row.key} seedTitle={row.seedTitle} animDelay={150 + i * 80} />
+          <RecoRowSlot
+            key={row.key}
+            rowKey={row.key}
+            seedTitle={row.seedTitle}
+            animDelay={150 + i * 80}
+            skipFirst={row.key === "forYou"}
+          />
         ))}
       </div>
     </PageTransition>
@@ -87,34 +93,3 @@ function HeroSlot() {
   const { data } = useRecoRow("forYou");
   return <RecoHero item={data?.items?.[0]} />;
 }
-
-function RowSlot({
-  rowKey,
-  seedTitle,
-  animDelay,
-}: {
-  rowKey: string;
-  seedTitle?: string;
-  animDelay: number;
-}) {
-  const { t } = useTranslation("reco");
-  const { data } = useRecoRow(rowKey);
-  if (!data?.items?.length) return null;
-
-  // La tête de « Pour vous » vit déjà dans le héros — pas deux fois à l'écran.
-  const items = rowKey === "forYou" ? data.items.slice(1) : data.items;
-
-  const title = rowKey.startsWith("becauseYouLiked:")
-    ? t("rowBecauseYouLiked", { title: seedTitle ?? data.seedTitle ?? "" })
-    : t(ROW_TITLE_KEYS[rowKey] ?? "rowForYou");
-
-  return <RecoRow title={title} items={items} animDelay={animDelay} />;
-}
-
-const ROW_TITLE_KEYS: Record<string, string> = {
-  forYou: "rowForYou",
-  inLibrary: "rowInLibrary",
-  discover: "rowDiscover",
-  community: "rowCommunity",
-  exploration: "rowExploration",
-};
