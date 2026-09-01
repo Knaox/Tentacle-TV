@@ -51,7 +51,6 @@ export default {
   coldProgress: "{{count}} of 5",
   coldReadyHint: "That's enough to start — keep going to sharpen them.",
   coldCta: "See my recommendations",
-  coldPreparing: "Getting ready…",
   coldLater: "Later",
   coldMore: "Show more titles",
 };

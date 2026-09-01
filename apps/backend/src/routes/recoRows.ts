@@ -8,6 +8,7 @@ import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
 import { getSeerrConfig } from "../services/seerConfig";
 import { buildCommunityRow } from "../services/reco/communityRow";
+import { isRebuilding } from "../services/reco/profileBuilder";
 import { serveContext } from "../services/reco/serveContext";
 
 const feedbackSchema = z.object({
@@ -24,7 +25,16 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const ctx = await serveContext(user.userId);
     if (ctx.state === "disabled" || ctx.state === "cold") {
-      return { state: ctx.state, signalCount: ctx.signalCount, generating: false, rows: [] };
+      // « cold » avec une reconstruction en vol (sortie de grille fraîche) :
+      // le client doit continuer à sonder — generating le lui dit.
+      const rebuilding = ctx.state === "cold" && isRebuilding(user.userId);
+      return {
+        state: ctx.state,
+        signalCount: ctx.signalCount,
+        generating: rebuilding,
+        refining: rebuilding,
+        rows: [],
+      };
     }
     // Profil en construction : générer un pool MAINTENANT le figerait sur un
     // profil vide pour six heures. Le client poll déjà quand `generating`.

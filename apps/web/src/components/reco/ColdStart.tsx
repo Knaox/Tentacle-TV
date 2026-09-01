@@ -56,12 +56,12 @@ export function ColdStart({ signalCount, onDone }: { signalCount: number; onDone
     else rate.mutate({ ...identity, jellyfinItemId: title.jellyfinItemId, score: LIKE_SCORE });
   };
 
-  const finish = async () => {
-    try {
-      await warmup.mutateAsync();
-    } finally {
-      onDone();
-    }
+  // Bascule INSTANTANÉE : le serveur répond 202 et reconstruit en fond — on
+  // n'attend rien, l'écran des rangées s'affiche tout de suite (squelettes +
+  // bandeau d'affinage prennent le relais).
+  const finish = () => {
+    warmup.mutate();
+    onDone();
   };
 
   return (
@@ -137,11 +137,10 @@ export function ColdStart({ signalCount, onDone }: { signalCount: number; onDone
             <span className="hidden text-sm text-content-secondary sm:inline">{t("coldReadyHint")}</span>
             <button
               type="button"
-              onClick={() => void finish()}
-              disabled={warmup.isPending}
-              className="rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2 text-sm font-semibold text-cta-brand-fg transition-transform hover:scale-[1.03] disabled:opacity-60 motion-reduce:!transform-none"
+              onClick={finish}
+              className="rounded-full bg-gradient-to-r from-[var(--brand)] to-[var(--brand-accent)] px-5 py-2 text-sm font-semibold text-cta-brand-fg transition-transform hover:scale-[1.03] motion-reduce:!transform-none"
             >
-              {warmup.isPending ? t("coldPreparing") : t("coldCta")}
+              {t("coldCta")}
             </button>
           </div>
         </div>

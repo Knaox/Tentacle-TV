@@ -51,7 +51,6 @@ export default {
   coldProgress: "{{count}} sur 5",
   coldReadyHint: "C'est assez pour démarrer — continuez si vous voulez affiner.",
   coldCta: "Voir mes recommandations",
-  coldPreparing: "Préparation…",
   coldLater: "Plus tard",
   coldMore: "Afficher d'autres titres",
 };
