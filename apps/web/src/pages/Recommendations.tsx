@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useRecoOverview, useRecoRow } from "@tentacle-tv/api-client";
+import { useRecoOverview } from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
-import { RecoHero } from "../components/reco/RecoHero";
+import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
+import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
 import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 
@@ -19,6 +20,8 @@ import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 export function Recommendations() {
   const { t } = useTranslation("reco");
   const { data: overview, isPending } = useRecoOverview();
+  // Même clé de cache que la rangée « Pour vous » : zéro requête en plus.
+  const { excludeKeys } = useRecoHeroSlides();
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
   // d'arrière-plan en pleine sélection. « dismissed » survit tant que le
@@ -77,7 +80,9 @@ export function Recommendations() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        <HeroSlot />
+        <div className="pt-6">
+          <RecoBillboardSlot />
+        </div>
 
         {overview.state === "warming" && (
           <p className="row-gutter mb-6 text-sm text-content-tertiary">{t("warmingHint")}</p>
@@ -102,7 +107,7 @@ export function Recommendations() {
               rowKey={row.key}
               seedTitle={row.seedTitle}
               animDelay={150 + i * 80}
-              skipFirst={row.key === "forYou"}
+              excludeKeys={row.key === "forYou" ? excludeKeys : undefined}
               pendingFallback="skeleton"
             />
           ))
@@ -110,10 +115,4 @@ export function Recommendations() {
       </div>
     </PageTransition>
   );
-}
-
-/** Le héros consomme la tête de « Pour vous » — même requête que la rangée. */
-function HeroSlot() {
-  const { data } = useRecoRow("forYou");
-  return <RecoHero item={data?.items?.[0]} />;
 }
