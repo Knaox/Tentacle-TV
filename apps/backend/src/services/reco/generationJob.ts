@@ -26,6 +26,9 @@ export { POOL_ROW_KEY, readPool } from "./poolStore";
 const ENRICH_TOP = 120;
 /** Appels TMDB frais au plus par génération — le cache est gratuit. */
 const ENRICH_FETCH_BUDGET = 60;
+/** Budget dédié aux TITRES de graines muettes — séparé de l'enrichissement :
+ *  une rangée « Parce que vous avez aimé » sans titre n'existe pas. */
+const SEED_META_BUDGET = 8;
 
 /** Plafond de candidats bibliothèque : les mieux notés d'abord. */
 const LIBRARY_POOL_MAX = 300;
@@ -125,6 +128,20 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     buildExclusions(userId, library),
     deriveSeeds(userId, library),
   ]);
+
+  // Une graine hors bibliothèque absente du cache TMDB restait sans titre —
+  // et sa rangée « Parce que vous avez aimé » sautait en silence. Les plus
+  // fortes d'abord (les graines arrivent triées) ; passe rapide : pas de
+  // réseau, la relève complète titrera.
+  if (!quick) {
+    let seedMetaBudget = SEED_META_BUDGET;
+    for (const seed of seeds) {
+      if (seed.title || seedMetaBudget <= 0) continue;
+      seedMetaBudget--;
+      const meta = await getTitleMeta(seed.mediaType, seed.tmdbId);
+      if (meta) seed.title = meta.title;
+    }
+  }
 
   // Sources — bibliothèque d'abord (elle porte jellyfinItemId), puis les
   // découvertes. Chaque source dégrade en liste vide, jamais en erreur.
