@@ -90,4 +90,27 @@ describe("NextEpisodeFullscreen — la matière de la pilule", () => {
     expect(html).toContain("linear-gradient(135deg, #2b2436");
     expect(html).not.toContain("var(--surface-1)");
   });
+
+  it("sans identité de notation, aucune étoile", () => {
+    const html = render();
+    expect(html).not.toContain("rateJustWatched");
+    expect(html).not.toContain("yourRating");
+  });
+
+  it("avec identité, la rangée d'étoiles paraît sans voler le geste", () => {
+    const html = render({
+      rating: { value: null, episodeCode: "S01E02", rate: () => undefined, clear: () => undefined },
+    });
+    expect(html).toContain("rateJustWatched");
+    expect(html).toContain("yourRating");
+    // Le décompte n'est pas éteint par la simple PRÉSENCE des étoiles.
+    expect(html).toContain("playNowIn");
+  });
+
+  it("notée, l'affiche le dit", () => {
+    const html = render({
+      rating: { value: 7, episodeCode: "S01E02", rate: () => undefined, clear: () => undefined },
+    });
+    expect(html).toContain("ratingValue");
+  });
 });

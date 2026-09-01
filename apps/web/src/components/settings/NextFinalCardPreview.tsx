@@ -63,6 +63,9 @@ export function NextFinalCardPreview({ next }: { next: NextEpisodeSettings }) {
             episodeDescription={t("previewNextFinalSynopsis")}
             onPlayNow={() => undefined}
             onDismiss={() => undefined}
+            // L'invariant de l'aperçu : la VRAIE affiche, étoiles comprises —
+            // sans elles, il mentirait depuis qu'elle se note.
+            rating={{ value: null, episodeCode: null, rate: () => undefined, clear: () => undefined }}
           />
         </div>
       )}
