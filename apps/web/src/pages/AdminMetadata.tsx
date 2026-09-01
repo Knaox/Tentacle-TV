@@ -39,7 +39,6 @@ export function AdminMetadata() {
   };
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async (payload: Record<string, string>) => {
