@@ -17,6 +17,8 @@ export interface RecoRowItem {
   title: string;
   year: number | null;
   posterPath: string | null;
+  /** Visuel large TMDB (carrousel héros) — optionnel : vieux pools sans le champ. */
+  backdropPath?: string | null;
   /** null = hors bibliothèque : badge + navigation vers la fiche Vigie. */
   jellyfinItemId: string | null;
   source: string;

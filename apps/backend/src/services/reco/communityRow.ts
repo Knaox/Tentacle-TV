@@ -78,7 +78,8 @@ export async function buildCommunityRow(
     const fromLibrary = library.byKey.get(key);
     let title = fromPool?.candidate.title ?? fromLibrary?.name ?? "";
     let year = fromPool?.candidate.year ?? fromLibrary?.ProductionYear ?? null;
-    const posterPath = fromPool?.candidate.posterPath ?? null;
+    let posterPath = fromPool?.candidate.posterPath ?? null;
+    let backdropPath = fromPool?.candidate.backdropPath ?? null;
     let voteAverage = fromPool?.candidate.voteAverage ?? fromLibrary?.communityRating ?? null;
     if (!title) {
       const meta = await getCachedMeta(mediaType, tmdbId);
@@ -86,6 +87,8 @@ export async function buildCommunityRow(
       title = meta.title;
       year = meta.year;
       voteAverage = meta.voteAverage;
+      posterPath = meta.posterPath;
+      backdropPath = meta.backdropPath;
     }
 
     items.push({
@@ -95,6 +98,7 @@ export async function buildCommunityRow(
       title,
       year,
       posterPath,
+      backdropPath,
       jellyfinItemId: fromLibrary?.itemId ?? fromPool?.candidate.jellyfinItemId ?? null,
       source: "community",
       score: agg.score,
