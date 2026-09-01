@@ -9,6 +9,7 @@ import { canonicalKey } from "../services/reco/candidates/exclusions";
 import { buildLibraryIndex } from "../services/reco/candidates/libraryIndex";
 import type { LibraryIndex } from "../services/reco/candidates/libraryIndex";
 import { getSeerrConfig } from "../services/seerConfig";
+import { buildCommunityRow } from "../services/reco/communityRow";
 import type { TasteVector } from "../services/reco/scoring/strategy";
 
 const feedbackSchema = z.object({
@@ -126,9 +127,12 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     if (ctx.state === "disabled" || ctx.state === "cold") {
       return { key: rowKey, items: [], state: ctx.state };
     }
-    // La rangée communautaire vit sur la table de cooccurrences (Phase 6).
+    // La rangée communautaire vit sur la table de cooccurrences, pas sur le
+    // pool ; le réglage « recommandations communautaires » la coupe net.
     if (rowKey === "community") {
-      return { key: rowKey, items: [], pending: true };
+      if (!ctx.community) return { key: rowKey, items: [] };
+      const library = await memoizedLibrary(user.userId);
+      return buildCommunityRow(user.userId, library, ctx.exclude);
     }
     const { status, pool } = await ensureFreshPool(user.userId);
     if (!pool) {

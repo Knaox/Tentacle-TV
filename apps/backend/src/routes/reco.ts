@@ -3,6 +3,7 @@ import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
 import { getProfileDebug, rebuildProfile } from "../services/reco/profileBuilder";
 import { generatePool, readPool } from "../services/reco/generationJob";
+import { runCooccurrenceJob } from "../services/reco/cooccurrence";
 import { idfLoadedAt } from "../services/reco/idfStore";
 import { tmdbConfigured } from "../services/tmdb/client";
 
@@ -37,6 +38,11 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
   app.post("/pool/generate", async (request) => {
     const user = (request as any).user as JellyfinUser;
     return generatePool(user.userId);
+  });
+
+  // ── POST /community/recompute — job de cooccurrence immédiat (debug) ──
+  app.post("/community/recompute", async () => {
+    return runCooccurrenceJob();
   });
 
   // ── GET /pool/debug — résumé lisible du pool en cache ──
