@@ -14,6 +14,7 @@ export default {
   heroOpenVigie: "Voir dans le catalogue",
   warmingHint: "Vos recommandations s'affinent à mesure que vous notez des titres.",
   generatingHint: "Construction de vos recommandations — la première visite prend un instant.",
+  preliminaryHint: "Premières suggestions — vos recommandations s'affinent en arrière-plan.",
   disabledBody:
     "Les recommandations personnalisées sont désactivées pour votre compte. Activez-les dans vos réglages de personnalisation pour recevoir des suggestions à votre goût.",
   disabledCta: "Ouvrir les réglages de personnalisation",
