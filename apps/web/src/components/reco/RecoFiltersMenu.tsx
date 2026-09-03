@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, SlidersHorizontal } from "lucide-react";
-import { useRecoRow } from "@tentacle-tv/api-client";
+import { useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 
 const TMDB_LOGO = "https://image.tmdb.org/t/p/w92";
@@ -14,26 +14,28 @@ interface RecoFiltersMenuProps {
 /**
  * Filtres de la page Recommandations : un bouton « Filtres » (avec compteur)
  * qui ouvre un panneau — plateformes avec LOGO, multi-sélection, remise à
- * zéro. Les logos sont récoltés sur les items déjà servis (TMDB n'en fournit
- * pas hors d'un titre) ; sans logo connu, une pastille à initiale. Panneau
- * MONTÉ à l'ouverture seulement, fond opaque — aucun backdrop-filter.
+ * zéro. Les logos viennent de l'ANNUAIRE TMDB de la région (complet :
+ * Crunchyroll ou ADN compris, même absents des rangées servies) ; sans clé
+ * TMDB ou image cassée, une pastille à initiale. Panneau MONTÉ à l'ouverture
+ * seulement, fond opaque — aucun backdrop-filter.
  */
 export function RecoFiltersMenu({ selected, onChange }: RecoFiltersMenuProps) {
   const { t } = useTranslation("reco");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: forYou } = useRecoRow("forYou");
-  const { data: inLibrary } = useRecoRow("inLibrary");
+  const { data: directory } = useWatchProviders();
   const logoById = useMemo(() => {
     const map = new Map<number, string>();
-    for (const item of [...(forYou?.items ?? []), ...(inLibrary?.items ?? [])]) {
-      for (const p of item.providers ?? []) {
-        if (p.logoPath && !map.has(p.id)) map.set(p.id, p.logoPath);
-      }
+    for (const p of directory?.providers ?? []) {
+      if (p.logoPath) map.set(p.id, p.logoPath);
     }
     return map;
-  }, [forYou, inLibrary]);
+  }, [directory]);
+  // Images qui n'ont pas chargé : repli sur l'initiale, jamais d'icône cassée.
+  const [broken, setBroken] = useState<ReadonlySet<number>>(() => new Set());
+  const markBroken = (id: number) =>
+    setBroken((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
 
   // Fermeture au clic hors du panneau et à Échap.
   useEffect(() => {
@@ -89,7 +91,7 @@ export function RecoFiltersMenu({ selected, onChange }: RecoFiltersMenuProps) {
           <div className="grid grid-cols-2 gap-1.5">
             {PLATFORMS.map((p) => {
               const active = selected.includes(p.id);
-              const logo = logoById.get(p.id);
+              const logo = broken.has(p.id) ? undefined : logoById.get(p.id);
               return (
                 <button
                   key={p.id}
@@ -108,6 +110,7 @@ export function RecoFiltersMenu({ selected, onChange }: RecoFiltersMenuProps) {
                       alt=""
                       loading="lazy"
                       draggable={false}
+                      onError={() => markBroken(p.id)}
                       className="h-7 w-7 shrink-0 rounded-md object-cover"
                     />
                   ) : (
