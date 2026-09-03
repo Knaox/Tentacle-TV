@@ -16,7 +16,7 @@ import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
 import { candidatesFromAnilist } from "./candidates/anilistSource";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
-import { isPoolStale, readPoolRow, readPoolStamp, writePool } from "./poolStore";
+import { isPoolStale, readPoolStamp, writePool } from "./poolStore";
 import type { PoolStamp } from "./poolStore";
 import { AttemptGate } from "./attemptGate";
 import { emitPoolWritten } from "./recoEvents";
@@ -293,26 +293,3 @@ export async function poolStatus(userId: string, opts: { kick: boolean }): Promi
   return { stamp, generating: inFlight.has(userId), stale };
 }
 
-/**
- * Garantit un pool : complet → servi ; préliminaire → servi tel quel pendant
- * que la relève complète tourne (« refining ») ; périmé → servi tel quel,
- * régénéré en fond (stale-while-revalidate, silencieux) ; absent → chaîne
- * rapide+complète lancée EN FOND et l'appelant sert ce qu'il a. Toute
- * relance passe par la garde de fréquence : la requête HTTP n'attend jamais
- * et ne relance jamais sans cesse.
- */
-export async function ensureFreshPool(
-  userId: string
-): Promise<{ status: "fresh" | "refining" | "generating"; pool: PoolPayload | null }> {
-  const row = await readPoolRow(userId);
-  if (!row) {
-    kickInBackground(userId, bootstrapPool, "Génération");
-    return { status: "generating", pool: null };
-  }
-  if (row.pool.preliminary) {
-    kickInBackground(userId, generatePool, "Relève");
-    return { status: "refining", pool: row.pool };
-  }
-  if (isPoolStale(row.stamp.generatedAt)) kickInBackground(userId, generatePool, "Régénération");
-  return { status: "fresh", pool: row.pool };
-}
