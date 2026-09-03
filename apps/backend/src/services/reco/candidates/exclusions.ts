@@ -19,7 +19,8 @@ export interface ExclusionSets {
  * proposer » est définitif ; un titre vu en entier n'a rien à faire dans une
  * rangée de découverte ; un FAVORI n'est jamais une découverte (il reste une
  * GRAINE — cf. deriveSeeds) ; une série entamée est déjà engagée, elle vit
- * dans « Reprendre », pas dans les recommandations.
+ * dans « Reprendre », pas dans les recommandations — suivie, elle fait
+ * graine elle aussi (cf. deriveSeeds).
  */
 export async function buildExclusions(
   userId: string,

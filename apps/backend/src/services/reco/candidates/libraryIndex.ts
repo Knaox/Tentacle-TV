@@ -12,6 +12,8 @@ export interface LibraryEntry extends JellyfinFacetSource {
   isFavorite: boolean;
   /** Série entamée (≥ un épisode vu, pas terminée) — jamais vrai pour un film. */
   inProgress: boolean;
+  /** Épisodes vus (séries) — l'engagement qui fait d'une série une graine ; 0 pour un film. */
+  playedEpisodes: number;
   hasPrimaryImage: boolean;
   hasBackdrop: boolean;
   communityRating: number | null;
@@ -86,6 +88,12 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
         !played &&
         ((item.UserData?.PlayedPercentage ?? 0) > 0 ||
           (unplayed != null && episodes != null && unplayed < episodes));
+      // Épisodes vus : le total moins les non-vus (déjà rapportés). Une série
+      // marquée vue sans compteur vaut son total.
+      const playedEpisodes =
+        mediaType === "tv" && episodes != null
+          ? Math.max(0, episodes - (unplayed ?? (played ? 0 : episodes)))
+          : 0;
       const entry: LibraryEntry = {
         itemId: item.Id,
         name: item.Name ?? "",
@@ -95,6 +103,7 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
         played,
         isFavorite: item.UserData?.IsFavorite === true,
         inProgress,
+        playedEpisodes,
         hasPrimaryImage: !!item.ImageTags?.Primary,
         hasBackdrop: (item.BackdropImageTags?.length ?? 0) > 0,
         communityRating: item.CommunityRating ?? null,
