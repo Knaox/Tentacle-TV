@@ -1,16 +1,22 @@
 import { getPrisma } from "../../db";
 import { getCachedMetaMany, metaKey } from "../../tmdb/metaCache";
-import { ratingSignalWeight, ratingStats } from "../profileMath";
+import { ratingSignalWeight, ratingStats, seriesEngagementWeight } from "../profileMath";
 import { canonicalKey } from "./exclusions";
 import type { LibraryIndex } from "./libraryIndex";
 import type { SeedRef } from "./tmdbSource";
 
 /** 20 à 30 titres-graines (spec) — on vise le milieu. */
 const SEEDS_MAX = 24;
+/** Séries SUIVIES admises comme graines : au plus dix, dès six épisodes vus.
+ *  Sans plafond, vingt-cinq séries à six épisodes (0,71) évinceraient tous
+ *  les favoris (0,7) — et /recommendations ne rendrait plus que des séries. */
+const SERIES_SEEDS_MAX = 10;
+const SERIES_SEED_MIN_EPISODES = 6;
 
 /**
  * Les titres les plus FORTS du profil : notes hautes (normalisées sur
- * l'échelle personnelle), favoris, likes hors bibliothèque. Ce sont eux qui
+ * l'échelle personnelle), favoris, likes hors bibliothèque, et les séries
+ * SUIVIES (force = engagement, cf. seriesEngagementWeight). Ce sont eux qui
  * nourrissent /recommendations, /similar et les rangées « Parce que vous avez
  * aimé [titre] ». Les signaux négatifs ne font jamais graine.
  */
@@ -52,6 +58,15 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
   }
   for (const entry of library.entries) {
     if (entry.isFavorite) push(entry.mediaType, entry.tmdbId, 0.7);
+  }
+  // Les séries les plus regardées : elles ouvrent enfin /recommendations aux
+  // séries qu'on suit vraiment — animés compris — sans note ni favori.
+  const followed = library.entries
+    .filter((e) => e.mediaType === "tv" && e.playedEpisodes >= SERIES_SEED_MIN_EPISODES)
+    .sort((a, b) => b.playedEpisodes - a.playedEpisodes || a.tmdbId - b.tmdbId)
+    .slice(0, SERIES_SEEDS_MAX);
+  for (const entry of followed) {
+    push("tv", entry.tmdbId, seriesEngagementWeight(entry.playedEpisodes));
   }
   for (const like of likes) {
     const key = canonicalKey(like.mediaType, like.tmdbId);
