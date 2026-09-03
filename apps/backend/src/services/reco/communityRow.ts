@@ -1,7 +1,7 @@
 import { getPrisma } from "../db";
-import { getCachedMeta } from "../tmdb/metaCache";
+import { getCachedMetaMany } from "../tmdb/metaCache";
 import { PRIVACY_MIN_USERS } from "./cooccurrence";
-import { readPool } from "./generationJob";
+import type { PoolPayload } from "./generationJob";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import type { RecoRowItem } from "./rowBuilder";
 
@@ -19,7 +19,8 @@ export async function buildCommunityRow(
   userId: string,
   library: LibraryIndex,
   exclude: ReadonlySet<string>,
-  inLibraryOnly = false
+  inLibraryOnly = false,
+  pool: PoolPayload | null = null
 ): Promise<{ key: string; items: RecoRowItem[] }> {
   const prisma = getPrisma();
 
@@ -64,8 +65,19 @@ export async function buildCommunityRow(
 
   // Habillage : le pool d'abord (titre, affiche, raison), sinon la
   // bibliothèque, sinon le cache de métadonnées — jamais d'appel réseau ici.
-  const pool = await readPool(userId);
+  // Le pool est fourni par l'appelant (lu UNE fois par service de page).
   const poolByKey = new Map(pool?.entries.map((e) => [e.candidate.key, e]) ?? []);
+
+  // Les voisins que ni le pool ni la bibliothèque ne savent titrer : UNE
+  // lecture groupée du cache, pas une requête par titre dans la boucle.
+  const unresolved: Array<{ mediaType: "movie" | "tv"; tmdbId: number }> = [];
+  for (const [key] of ranked) {
+    if (poolByKey.get(key)?.candidate.title || library.byKey.get(key)?.name) continue;
+    const [t, idRaw] = key.split(":");
+    const tmdbId = Number(idRaw);
+    if (Number.isFinite(tmdbId)) unresolved.push({ mediaType: t === "tv" ? "tv" : "movie", tmdbId });
+  }
+  const metaByKey = await getCachedMetaMany(unresolved);
 
   const items: RecoRowItem[] = [];
   for (const [key, agg] of ranked) {
@@ -85,7 +97,7 @@ export async function buildCommunityRow(
     let backdropPath = fromPool?.candidate.backdropPath ?? null;
     let voteAverage = fromPool?.candidate.voteAverage ?? fromLibrary?.communityRating ?? null;
     if (!title) {
-      const meta = await getCachedMeta(mediaType, tmdbId);
+      const meta = metaByKey.get(key);
       if (!meta) continue; // rien d'affichable — on saute plutôt qu'une carte muette
       title = meta.title;
       year = meta.year;
