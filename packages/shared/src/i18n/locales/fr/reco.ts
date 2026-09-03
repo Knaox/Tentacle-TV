@@ -24,7 +24,7 @@ export default {
   providersAll: "Toutes les plateformes",
   filtersButton: "Filtres",
   filtersPlatformsLabel: "Plateformes",
-  providerRowEmpty: "Rien ici sur les plateformes sélectionnées.",
+  filterEmpty: "Rien à proposer sur les plateformes sélectionnées — élargissez le filtre.",
   rowWithActor: "Avec {{name}}",
   actorsTitle: "Vos acteurs",
   actorsHint:

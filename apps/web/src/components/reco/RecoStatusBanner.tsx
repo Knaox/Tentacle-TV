@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import type { RecoOverview } from "@tentacle-tv/api-client";
+import type { RecoPage } from "@tentacle-tv/api-client";
 import { getUserInfo } from "../userMenu/menuItems";
 
 interface RecoStatusBannerProps {
-  overview: RecoOverview;
+  page: RecoPage;
   /** Au moins une rangée hors des trois globales est annoncée. */
   hasPersonalizedRows: boolean;
   /** Rouvre la grille de démarrage à froid (phase « hold » de la page). */
@@ -40,11 +40,11 @@ function Actionable({ text, cta }: { text: string; cta: ReactNode }) {
  * bruit), puis la clé TMDB absente (admin actionnable, utilisateur informé),
  * puis les états de calcul du profil et du pool.
  */
-export function RecoStatusBanner({ overview, hasPersonalizedRows, onOpenColdStart }: RecoStatusBannerProps) {
+export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart }: RecoStatusBannerProps) {
   const { t } = useTranslation("reco");
-  const cold = overview.state === "cold";
+  const cold = page.state === "cold";
 
-  if (overview.personalized === false) {
+  if (page.personalized === false) {
     return (
       <Actionable
         text={t("disabledBanner")}
@@ -56,7 +56,7 @@ export function RecoStatusBanner({ overview, hasPersonalizedRows, onOpenColdStar
       />
     );
   }
-  if (overview.tmdbConfigured === false) {
+  if (page.tmdbConfigured === false) {
     if (getUserInfo().isAdmin) {
       return (
         <Actionable
@@ -71,7 +71,7 @@ export function RecoStatusBanner({ overview, hasPersonalizedRows, onOpenColdStar
     }
     return <Hint>{t("genericOnlyHint")}</Hint>;
   }
-  if (cold && (overview.generating || overview.refining)) return <Hint>{t("generatingHint")}</Hint>;
+  if (cold && (page.generating || page.refining)) return <Hint>{t("generatingHint")}</Hint>;
   if (cold) {
     return (
       <Actionable
@@ -84,9 +84,9 @@ export function RecoStatusBanner({ overview, hasPersonalizedRows, onOpenColdStar
       />
     );
   }
-  if (overview.exploring) return <Hint>{t("exploringHint")}</Hint>;
-  if (overview.state === "warming") return <Hint>{t("warmingHint")}</Hint>;
-  if (overview.generating && !hasPersonalizedRows) return <Hint>{t("generatingHint")}</Hint>;
-  if (overview.refining && overview.rows.length > 0) return <Hint>{t("preliminaryHint")}</Hint>;
+  if (page.exploring) return <Hint>{t("exploringHint")}</Hint>;
+  if (page.state === "warming") return <Hint>{t("warmingHint")}</Hint>;
+  if (page.generating && !hasPersonalizedRows) return <Hint>{t("generatingHint")}</Hint>;
+  if (page.refining && page.rows.length > 0) return <Hint>{t("preliminaryHint")}</Hint>;
   return null;
 }
