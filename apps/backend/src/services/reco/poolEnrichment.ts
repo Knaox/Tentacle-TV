@@ -1,7 +1,7 @@
 import { tmdbConfigured } from "../tmdb/client";
 import { getCachedMetaMany, getTitleMeta, metaKey } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
-import { facetsFromTmdb } from "./facets";
+import { facetsFromTmdb, mergeUniverseFacets } from "./facets";
 import type { LibraryIndex } from "./candidates/libraryIndex";
 import type { PoolEntry } from "./generationJob";
 import type { ScoringStrategy, TasteVector } from "./scoring/strategy";
@@ -95,7 +95,8 @@ export async function enrichTopEntries(
     }
     if (!meta) continue;
     harvestLabels(meta, labels);
-    candidate.facets = facetsFromTmdb(meta);
+    // L'univers posé par la liste ou Jellyfin survit à la fiche complète.
+    candidate.facets = mergeUniverseFacets(candidate.facets, facetsFromTmdb(meta));
     // Les visuels : un candidat bibliothèque n'en a pas, la méta les fournit.
     candidate.posterPath = candidate.posterPath ?? meta.posterPath;
     candidate.backdropPath = candidate.backdropPath ?? meta.backdropPath;

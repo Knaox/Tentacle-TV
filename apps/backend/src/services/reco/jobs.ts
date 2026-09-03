@@ -23,7 +23,8 @@ const TRENDING_BOOT_DELAY_MS = 45_000;
 /** Après IDF (30 s) et cooccurrence (2 min) : le serveur est posé. */
 const FANOUT_BOOT_DELAY_MS = 5 * 60_000;
 /** Garde d'âge de la régénération après rebuild : c'est LE réglage de coût
- *  API (~110 appels TMDB par génération complète) — borne à ~2 générations
+ *  API (~110 appels TMDB par génération complète, huit de plus pour un
+ *  profil animé) — borne à ~2 générations
  *  par heure et par compte actif. Un favori ajouté devient graine sous 30 min. */
 const POOL_REGEN_MIN_AGE_MS = 30 * 60_000;
 

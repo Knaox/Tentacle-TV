@@ -1,7 +1,10 @@
 import type { Candidate } from "../scoring/strategy";
 
-/** Cible du pool avant classement (spec : 500 à 1000). */
-export const POOL_MAX = 1000;
+/** Plafond d'ASSEMBLAGE — au-delà, les sources suivantes ne sont plus lues.
+ *  Le pool classé et stocké reste tronqué à 1000 (generationJob) : ici on ne
+ *  paie qu'un classement plus large. À 1000, graines (~640) + bibliothèque
+ *  (300) + personnes (240) coupaient Vigie et /discover en silence. */
+export const POOL_MAX = 2000;
 
 /** Rétro-remplit les champs annexes du gagnant depuis le doublon perdant :
  *  un titre à la fois en bibliothèque ET recommandé par une graine garde les

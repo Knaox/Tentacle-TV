@@ -7,6 +7,7 @@ import { getProfileDebug } from "../services/reco/profileDebug";
 import { generatePool, readPool } from "../services/reco/generationJob";
 import { runCooccurrenceJob } from "../services/reco/cooccurrence";
 import { idfLoadedAt } from "../services/reco/idfStore";
+import { hasAnimeUniverse } from "../services/reco/facets";
 import { tmdbConfigured } from "../services/tmdb/client";
 
 /**
@@ -91,6 +92,10 @@ export const recoRoutes: FastifyPluginAsync = async (app) => {
       generatedAt: pool.generatedAt,
       strategyId: pool.strategyId,
       poolSize: pool.poolSize,
+      // Univers animé : la part à la génération et les entrées qui la portent.
+      animeShare: pool.animeShare ?? 0,
+      animeEntries: pool.entries.filter((e) => hasAnimeUniverse(e.candidate.facets.map((f) => f.key)))
+        .length,
       seeds: pool.seeds.map((s) => ({ key: `${s.mediaType}:${s.tmdbId}`, title: s.title, strength: s.strength })),
       bySource: pool.entries.reduce<Record<string, number>>((acc, e) => {
         acc[e.candidate.source] = (acc[e.candidate.source] ?? 0) + 1;
