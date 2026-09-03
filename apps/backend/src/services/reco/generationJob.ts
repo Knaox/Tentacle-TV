@@ -264,6 +264,12 @@ function kickInBackground(userId: string, work: (userId: string) => Promise<unkn
   );
 }
 
+/** Un pool PRÉLIMINAIRE est servi : la relève complète part en fond, sous
+ *  la garde (le constructeur de page le sait, poolStatus ne lit pas le payload). */
+export function requestPoolRelief(userId: string): void {
+  kickInBackground(userId, generatePool, "Relève");
+}
+
 export interface PoolStatus {
   stamp: PoolStamp | null;
   /** Une génération est en vol pour ce compte. */

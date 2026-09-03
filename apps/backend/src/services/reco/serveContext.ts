@@ -26,6 +26,10 @@ export interface ServeContext {
   /** Le réglage brut du compte — la CAUSE d'un état « disabled » (clé absente
    *  ou choix de l'utilisateur) voyage dans ces deux booléens, pas dans l'enum. */
   personalized: boolean;
+  /** Dates de ce qui a produit la page : un snapshot bâti sur un profil ou
+   *  des réglages plus anciens est périmé (sondes de pageRows). */
+  profileComputedAt: string | null;
+  settingsUpdatedAt: string | null;
 }
 
 /**
@@ -102,5 +106,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     bootstrapping,
     tmdbConfigured: tmdb,
     personalized,
+    profileComputedAt: profileRow?.computedAt.toISOString() ?? null,
+    settingsUpdatedAt: settings?.updatedAt.toISOString() ?? null,
   };
 }
