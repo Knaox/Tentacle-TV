@@ -3,7 +3,8 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { generatePool } from "../services/reco/generationJob";
+import { bootstrapPool } from "../services/reco/generationJob";
+import { pokePage } from "../services/reco/pageJobs";
 import { invalidatePool } from "../services/reco/poolStore";
 import { tmdbConfigured, tmdbFetch } from "../services/tmdb/client";
 
@@ -135,8 +136,12 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
       create: { jellyfinUserId: user.userId, personId, name, profilePath },
       update: { name, profilePath },
     });
+    // La matière change (rangées « Avec X ») : pool et pages jetés, passe
+    // rapide tout de suite (quelques secondes, zéro réseau) puis relève
+    // complète — la page se reconstruit à chaque écriture du pool.
     await invalidatePool(user.userId);
-    void generatePool(user.userId).catch(() => undefined);
+    void bootstrapPool(user.userId).catch(() => undefined);
+    pokePage(user.userId, "people");
     return { ok: true, personId, name };
   });
 
@@ -150,7 +155,8 @@ export const recoPeopleRoutes: FastifyPluginAsync = async (app) => {
         where: { jellyfinUserId: user.userId, personId },
       });
       await invalidatePool(user.userId);
-      void generatePool(user.userId).catch(() => undefined);
+      void bootstrapPool(user.userId).catch(() => undefined);
+      pokePage(user.userId, "people");
     }
     return { ok: true };
   });
