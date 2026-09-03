@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { ensureFreshPool } from "../services/reco/generationJob";
+import { ensureFreshPool, readPool } from "../services/reco/generationJob";
 import {
   buildGlobalRow,
   fallbackRowList,
@@ -97,7 +97,13 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     if (rowKey === "community") {
       if (!ctx.community) return { key: rowKey, items: [] };
       const library = await getLibraryIndexMemo(user.userId);
-      const communityRow = await buildCommunityRow(user.userId, library, ctx.exclude, !ctx.includeVigie);
+      const communityRow = await buildCommunityRow(
+        user.userId,
+        library,
+        ctx.exclude,
+        !ctx.includeVigie,
+        await readPool(user.userId)
+      );
       await attachProviders(communityRow.items);
       return communityRow;
     }
