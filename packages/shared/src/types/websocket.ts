@@ -25,6 +25,9 @@ export type WsServerMessage =
   /** Le jumelage de cet appareil a été révoqué : se déconfigurer et revenir
    *  à l'écran de jumelage (poussé par le serveur à la suppression). */
   | { type: "session:revoked" }
+  /** La page de recommandations du compte vient d'être reconstruite en fond :
+   *  le client la redemande en silence (les données affichées restent). */
+  | { type: "reco:update" }
   | WtServerMessage;
 
 /** Messages sent from clients to the server. */
