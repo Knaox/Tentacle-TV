@@ -12,6 +12,7 @@ import { warmProviderDirectory } from "../tmdb/providerDirectory";
 import { startMetaCrawler, stopMetaCrawler } from "./metaCrawler";
 import { CRAWL_RESEED_BOOT_DELAY_MS, requestCrawlerReseed } from "./crawlReseed";
 import { sweepLibraryMemo } from "./candidates/libraryMemo";
+import { fanoutPages, pokePage, startPageJobs, stopPageJobs } from "./pageJobs";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -116,17 +117,25 @@ export function startRecoJobs(): void {
   // Crawler de plateformes : boucle de fond dès maintenant (la file se
   // remplit au fil des générations), file reconstituée depuis les pools
   // existants une fois le serveur posé.
-  startMetaCrawler();
+  startMetaCrawler({ onPoolPatched: (userId) => pokePage(userId, "providers") });
   crawlerBootTimer = setTimeout(() => {
     crawlerBootTimer = null;
     requestCrawlerReseed("boot");
   }, CRAWL_RESEED_BOOT_DELAY_MS);
+
+  // Pages matérialisées : reconstruites en fond sur événement, minuit UTC
+  // et rangées globales ; préchauffage des comptes actifs au boot.
+  startPageJobs();
 }
 
 async function runTrending(): Promise<void> {
   try {
     const res = await refreshTrending();
-    if (res) console.log(`[Reco] Tendances : ${res.count} titres (${res.origin})`);
+    if (res) {
+      console.log(`[Reco] Tendances : ${res.count} titres (${res.origin})`);
+      // La rangée est servie à tous : les pages qui la portent se refont.
+      fanoutPages("globals");
+    }
   } catch (err) {
     console.error("[Reco] Échec du rafraîchissement des tendances :", err);
   }
@@ -137,6 +146,7 @@ async function runCommunityJobs(): Promise<void> {
   try {
     const { titles } = await runServerPulseJob();
     console.log(`[Reco] Pouls serveur : ${titles} titres`);
+    fanoutPages("globals");
   } catch (err) {
     console.error("[Reco] Échec du pouls serveur :", err);
   }
@@ -157,6 +167,7 @@ async function runCooccurrence(): Promise<void> {
 export function stopRecoJobs(): void {
   stopSyncWorkers();
   stopMetaCrawler();
+  stopPageJobs();
   if (crawlerBootTimer) { clearTimeout(crawlerBootTimer); crawlerBootTimer = null; }
   if (idfTimer) { clearInterval(idfTimer); idfTimer = null; }
   if (idfBootTimer) { clearTimeout(idfBootTimer); idfBootTimer = null; }
