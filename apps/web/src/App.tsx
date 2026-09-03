@@ -6,6 +6,7 @@ import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
+import { RecoPrefetchBoot } from "./components/reco/RecoPrefetchBoot";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
 import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange, primeBitrateMeasure } from "@tentacle-tv/api-client";
@@ -186,6 +187,9 @@ export function App() {
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
       {authed && <RecoLiveBinding />}
+      {/* Préchargement de la page Recommandations en temps mort : arriver sur
+          la page ne montre ni spinner ni squelette. */}
+      {authed && <RecoPrefetchBoot />}
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}
