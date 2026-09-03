@@ -167,23 +167,9 @@ export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } 
 export { useEndCardRating } from "./hooks/useEndCardRating";
 export type { EndCardRating } from "./hooks/useEndCardRating";
 
-// Rangées de recommandation (cf. hooks/useRecoRows)
-export {
-  useRecoOverview,
-  useRecoRow,
-  useSendRecoFeedback,
-  useColdStartTitles,
-  useRecoWarmup,
-} from "./hooks/useRecoRows";
-export type {
-  RecoState,
-  RecoReason,
-  RecoRowItem,
-  RecoOverview,
-  RecoRow,
-  RecoFeedbackAction,
-  ColdStartTitle,
-} from "./hooks/useRecoRows";
+// Feedback, démarrage à froid, relance du profil (cf. hooks/useRecoRows)
+export { useSendRecoFeedback, useColdStartTitles, useRecoWarmup } from "./hooks/useRecoRows";
+export type { RecoState, RecoReason, RecoRowItem, RecoFeedbackAction, ColdStartTitle } from "./hooks/useRecoRows";
 export type { RecoProviderRef } from "./hooks/recoTypes";
 
 // La page de recommandations en UNE requête, et son fil temps réel
