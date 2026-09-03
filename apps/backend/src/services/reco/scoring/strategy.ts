@@ -28,6 +28,8 @@ export interface Candidate {
 export interface TasteVector {
   facets: Record<string, number>;
   signalCount: number;
+  /** Part d'animé dans les signaux de consommation (0..1) — absent = 0 (vieux profil). */
+  animeShare?: number;
 }
 
 /**

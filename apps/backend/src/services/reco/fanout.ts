@@ -3,7 +3,7 @@ import { tmdbConfigured } from "../tmdb/client";
 import { getJellyfinUsers } from "../watchTogether/usersCache";
 import { generatePool } from "./generationJob";
 import { readPool } from "./poolStore";
-import { rebuildProfile } from "./profileBuilder";
+import { PROFILE_SCHEMA_VERSION, rebuildProfile } from "./profileBuilder";
 
 /**
  * Fan-out : calculer profil + pool de TOUS les comptes en arrière-plan, pour
@@ -92,9 +92,9 @@ async function runFanout(opts: FanoutOptions): Promise<void> {
   });
   const skip = new Set(optedOut.map((o) => o.jellyfinUserId));
   const profiles = await prisma.tasteProfile.findMany({
-    select: { jellyfinUserId: true, computedAt: true },
+    select: { jellyfinUserId: true, computedAt: true, schemaVersion: true },
   });
-  const profileByUser = new Map(profiles.map((p) => [p.jellyfinUserId, p.computedAt]));
+  const profileByUser = new Map(profiles.map((p) => [p.jellyfinUserId, p]));
 
   // Comptes déjà connus du moteur d'abord — ce sont les utilisateurs actifs,
   // ils retrouvent des rangées fraîches en premier ; les autres suivent dans
@@ -111,9 +111,13 @@ async function runFanout(opts: FanoutOptions): Promise<void> {
     if (cancelled) break;
     let worked = false;
     try {
-      const computedAt = profileByUser.get(user.id);
+      const known = profileByUser.get(user.id);
+      // Un profil d'une version antérieure du schéma (sans animeShare) est
+      // périmé quel que soit son âge : reconstruit une fois, au boot.
       const profileFresh =
-        computedAt != null && Date.now() - computedAt.getTime() < PROFILE_FRESH_MS;
+        known != null &&
+        known.schemaVersion >= PROFILE_SCHEMA_VERSION &&
+        Date.now() - known.computedAt.getTime() < PROFILE_FRESH_MS;
       const pool = await readPool(user.id);
       if (!opts.force && profileFresh && pool && !pool.preliminary) {
         skipped++;
@@ -125,7 +129,9 @@ async function runFanout(opts: FanoutOptions): Promise<void> {
         worked = true;
       }
       const poolAfter = await readPool(user.id);
-      if (opts.force || !poolAfter || poolAfter.preliminary) {
+      // Un profil reconstruit régénère son pool : un pool calculé sur
+      // l'ancien profil servirait des rangées d'avant.
+      if (opts.force || worked || !poolAfter || poolAfter.preliminary) {
         await generatePool(user.id);
         worked = true;
       }
