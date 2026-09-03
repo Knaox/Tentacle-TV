@@ -211,6 +211,10 @@ export type {
   RecoSettingsData,
 } from "./hooks/useHomeLayout";
 
+// Annuaire des plateformes de streaming (cf. hooks/useWatchProviders)
+export { useWatchProviders } from "./hooks/useWatchProviders";
+export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
+
 // Comptes externes — TMDB guest session, AniList (cf. hooks/useExternalAccounts)
 export {
   useExternalAccounts,
