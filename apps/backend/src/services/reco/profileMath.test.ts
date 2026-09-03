@@ -6,6 +6,8 @@ import {
   ratingSignalWeight,
   ratingStats,
   truncateVector,
+  SIGNAL_FAVORITE,
+  seriesEngagementWeight,
 } from "./profileMath";
 
 describe("décroissance temporelle", () => {
@@ -89,5 +91,26 @@ describe("accumulation du vecteur de facettes", () => {
   it("la troncature garde les facettes les plus marquées, signe compris", () => {
     const t = truncateVector({ a: 5, b: -4, c: 0.1, d: 2 }, 2);
     expect(Object.keys(t).sort()).toEqual(["a", "b"]);
+  });
+});
+
+describe("engagement d'une série suivie", () => {
+  it("rien sous trois épisodes, 0,6 à trois, plein à quarante", () => {
+    expect(seriesEngagementWeight(0)).toBe(0);
+    expect(seriesEngagementWeight(2)).toBe(0);
+    expect(seriesEngagementWeight(3)).toBeCloseTo(0.6, 5);
+    expect(seriesEngagementWeight(40)).toBeCloseTo(1, 5);
+    expect(seriesEngagementWeight(100)).toBeCloseTo(1, 5);
+  });
+
+  it("croît avec les épisodes et dépasse un favori dès six épisodes", () => {
+    const w6 = seriesEngagementWeight(6);
+    const w12 = seriesEngagementWeight(12);
+    const w24 = seriesEngagementWeight(24);
+    expect(w6).toBeLessThan(w12);
+    expect(w12).toBeLessThan(w24);
+    expect(w24).toBeLessThan(seriesEngagementWeight(40));
+    expect(w6).toBeGreaterThan(SIGNAL_FAVORITE);
+    expect(w12).toBeCloseTo(0.81, 2);
   });
 });

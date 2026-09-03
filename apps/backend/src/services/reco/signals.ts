@@ -57,6 +57,8 @@ export interface UserSignals {
   resumable: SignalItem[];
   /** seriesId -> nombre d'épisodes vus (série « suivie » à partir de 3). */
   episodesPlayedBySeries: Map<string, number>;
+  /** seriesId -> date ISO du dernier épisode vu : la décroissance du signal. */
+  lastPlayedBySeries: Map<string, string>;
   /** Fiches Series de la bibliothèque, pour porter les signaux d'épisodes. */
   seriesById: Map<string, SignalItem>;
 }
@@ -80,15 +82,30 @@ export async function fetchUserSignals(userId: string): Promise<UserSignals> {
     ]);
 
   const episodesPlayedBySeries = new Map<string, number>();
+  const lastPlayedBySeries = new Map<string, string>();
   for (const ep of playedEpisodes) {
     if (!ep.SeriesId) continue;
     episodesPlayedBySeries.set(ep.SeriesId, (episodesPlayedBySeries.get(ep.SeriesId) ?? 0) + 1);
+    // Le plus récent des épisodes vus date la série entière.
+    const last = ep.UserData?.LastPlayedDate;
+    const prev = lastPlayedBySeries.get(ep.SeriesId);
+    if (last && (!prev || Date.parse(last) > Date.parse(prev))) {
+      lastPlayedBySeries.set(ep.SeriesId, last);
+    }
   }
 
   const seriesById = new Map<string, SignalItem>();
   for (const s of allSeries) seriesById.set(s.Id, s);
 
-  return { favorites, watchlist, playedMovies, resumable, episodesPlayedBySeries, seriesById };
+  return {
+    favorites,
+    watchlist,
+    playedMovies,
+    resumable,
+    episodesPlayedBySeries,
+    lastPlayedBySeries,
+    seriesById,
+  };
 }
 
 /** tmdbId d'un item Jellyfin (ProviderIds.Tmdb), ou null. */

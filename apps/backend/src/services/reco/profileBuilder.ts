@@ -7,12 +7,12 @@ import {
   SIGNAL_COMPLETED,
   SIGNAL_FAVORITE,
   SIGNAL_REWATCH,
-  SIGNAL_SERIES_FOLLOWED,
   SIGNAL_WATCHLISTED,
   ageInDays,
   buildFacetVector,
   ratingSignalWeight,
   ratingStats,
+  seriesEngagementWeight,
   truncateVector,
 } from "./profileMath";
 import type { WeightedSignal } from "./profileMath";
@@ -28,7 +28,6 @@ const PROFILE_SCHEMA_VERSION = 1;
 
 const ABANDON_MAX_PROGRESS = 0.25;
 const ABANDON_MIN_IDLE_DAYS = 30;
-const FOLLOWED_MIN_EPISODES = 3;
 
 interface TmdbRef {
   mediaType: "movie" | "tv";
@@ -159,12 +158,21 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
     });
   }
 
-  // 5) Séries suivies : au moins 3 épisodes vus.
+  // 5) Séries suivies (≥ 3 épisodes vus) : le poids suit l'ENGAGEMENT — 86
+  //    épisodes de Fire Force pèsent 1,0, trois épisodes essayés 0,6 — et la
+  //    date du dernier épisode vu fait décroître le signal, comme un film.
   for (const [seriesId, count] of signals.episodesPlayedBySeries) {
-    if (count < FOLLOWED_MIN_EPISODES) continue;
+    const weight = seriesEngagementWeight(count);
+    if (weight <= 0) continue;
     const series = signals.seriesById.get(seriesId);
     if (!series) continue;
-    pendings.push({ weight: SIGNAL_SERIES_FOLLOWED, ageDays: 0, tmdb: refOf(series), fallback: series });
+    const last = signals.lastPlayedBySeries.get(seriesId);
+    pendings.push({
+      weight,
+      ageDays: last ? ageInDays(last) : 0,
+      tmdb: refOf(series),
+      fallback: series,
+    });
   }
 
   // Enrichissement TMDB sous budget : le cache est gratuit, les fetchs vont
