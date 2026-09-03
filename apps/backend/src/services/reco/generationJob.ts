@@ -15,6 +15,7 @@ import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSo
 import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
 import { candidatesFromAnilist } from "./candidates/anilistSource";
+import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { readPool as readStoredPool, writePool } from "./poolStore";
 
 // Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
@@ -39,6 +40,9 @@ export interface PoolPayload {
   /** Passe rapide (bibliothèque + cache, zéro réseau) : la relève complète
    *  l'écrase — additif, un vieux pool sans le champ est complet. */
   preliminary?: boolean;
+  /** Part d'animé du profil à la génération (0..1) — pilote le quota des
+   *  rangées mixtes et la rangée dédiée ; additif, un vieux pool vaut 0. */
+  animeShare?: number;
   /** Personnes aimées au moment de la génération (rangées « Avec X »). */
   people?: Array<{ personId: number; name: string }>;
   seeds: SeedRef[];
@@ -104,6 +108,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   }
   const profile: TasteVector = { facets, signalCount: profileRow?.signalCount ?? 0 };
   const includeVigie = settingsRow?.includeVigie ?? true;
+  const animeShare = profileRow?.animeShare ?? 0;
 
   const [exclusions, seeds] = await Promise.all([
     buildExclusions(userId, library),
@@ -134,19 +139,25 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   // La source « personnes » tourne même en bibliothèque seule : comme les
   // graines, ses candidats peuvent se rattacher à la bibliothèque — le filtre
   // de service fait foi.
-  const [fromSeeds, fromPeople, fromDiscover, fromVigie, fromAnilist] = quick
-    ? [[], [], [], [], []]
+  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie, fromAnilist] = quick
+    ? [[], [], [], [], [], []]
     : await Promise.all([
         candidatesFromSeeds(seeds),
+        // Univers animé : gardé par includeVigie comme /discover (il ne produit
+        // que du hors bibliothèque) et, en interne, par la part d'animé.
+        includeVigie ? candidatesFromAnimeDiscover(animeShare) : Promise.resolve([]),
         candidatesFromPeople(likedPeople),
         includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
         includeVigie ? candidatesFromVigie() : Promise.resolve([]),
         candidatesFromAnilist(userId),
       ]);
 
+  // L'animé juste après les graines : le plafond d'assemblage (POOL_MAX) coupe
+  // les sources tardives, et celle-ci n'existe que pour être servie.
   const pool = assemblePool([
     libraryCandidates(library),
     fromSeeds,
+    fromAnime,
     fromPeople,
     fromAnilist,
     fromVigie,
@@ -191,6 +202,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     strategyId: strategy.id,
     poolSize: scored.length,
     includeVigie,
+    animeShare,
     preliminary: quick,
     people: likedPeople,
     seeds,
