@@ -24,7 +24,7 @@ export default {
   providersAll: "All platforms",
   filtersButton: "Filters",
   filtersPlatformsLabel: "Platforms",
-  providerRowEmpty: "Nothing here on the selected platforms.",
+  filterEmpty: "Nothing to suggest on the selected platforms — widen the filter.",
   rowWithActor: "Starring {{name}}",
   actorsTitle: "Your actors",
   actorsHint:

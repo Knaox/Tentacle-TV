@@ -1,9 +1,7 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useRecoRow } from "@tentacle-tv/api-client";
-import { RowHeader } from "../rows/RowHeader";
+import type { RecoPageRow } from "@tentacle-tv/api-client";
 import { RecoRow } from "./RecoRow";
-import { RecoRowSkeleton } from "./RecoRowSkeleton";
 
 const ROW_TITLE_KEYS: Record<string, string> = {
   forYou: "rowForYou",
@@ -18,78 +16,35 @@ const ROW_TITLE_KEYS: Record<string, string> = {
 };
 
 interface RecoRowSlotProps {
-  rowKey: string;
-  seedTitle?: string;
+  /** La rangée SERVIE (page en une requête) — plus de requête par rangée,
+   *  plus de filtre client : le serveur a déjà filtré, strictement. */
+  row: RecoPageRow;
   animDelay: number;
   /** Page Recommandations : les items MONTRÉS dans le carrousel héros — la
    *  rangée les exclut (skip exact, pas « les N premiers »). */
-  excludeKeys?: string[];
-  /** Ids watch-provider sélectionnés (chips) — filtrage client pur. Un item
-   *  sans donnée providers (méta inconnue) n'est PAS filtré. */
-  providerFilter?: number[];
-  /** « skeleton » : silhouette tant que la rangée se génère (page Reco) ;
-   *  « none » (défaut) : l'accueil garde son dégradé silencieux. */
-  pendingFallback?: "skeleton" | "none";
+  excludeKeys?: readonly string[];
 }
 
 /**
- * Une rangée de recommandation autonome : requête, titre localisé, rendu.
- * Partagée entre la page Recommandations et l'accueil configurable — une
- * rangée vide ne rend RIEN (dégradé silencieux), sauf squelette demandé.
+ * Une rangée de recommandation : titre localisé, rendu. Partagée entre la
+ * page Recommandations et l'accueil configurable. Mémoïsée : le partage
+ * structurel de TanStack garde `row` référentiellement stable quand rien
+ * n'a changé — un drapeau qui bascule ne re-rend pas treize rangées.
  */
-export function RecoRowSlot({
-  rowKey,
-  seedTitle,
-  animDelay,
-  excludeKeys,
-  providerFilter,
-  pendingFallback = "none",
-}: RecoRowSlotProps) {
+export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKeys }: RecoRowSlotProps) {
   const { t } = useTranslation("reco");
-  const { data, isPending } = useRecoRow(rowKey);
-  const allItems = data?.items;
-  // Mémoïsé : une identité neuve à chaque rendu re-rendrait toute la rangée.
   const items = useMemo(() => {
-    if (!allItems?.length) return [];
-    let out = allItems;
-    if (excludeKeys?.length) {
-      const excluded = new Set(excludeKeys);
-      out = out.filter((i) => !excluded.has(i.key));
-    }
-    if (providerFilter?.length) {
-      const wanted = new Set(providerFilter);
-      // `providers` absent = méta inconnue : on garde l'item plutôt que de
-      // le faire disparaître à tort.
-      out = out.filter((i) => !i.providers || i.providers.some((p) => wanted.has(p.id)));
-    }
-    return out;
-  }, [allItems, excludeKeys, providerFilter]);
+    if (!excludeKeys?.length) return row.items;
+    const excluded = new Set(excludeKeys);
+    return row.items.filter((item) => !excluded.has(item.key));
+  }, [row.items, excludeKeys]);
 
-  const title = rowKey.startsWith("becauseYouLiked:")
-    ? t("rowBecauseYouLiked", { title: seedTitle ?? data?.seedTitle ?? "" })
-    : rowKey.startsWith("withActor:")
-      ? t("rowWithActor", { name: seedTitle ?? data?.seedTitle ?? "" })
-      : t(ROW_TITLE_KEYS[rowKey] ?? "rowForYou");
+  const title = row.key.startsWith("becauseYouLiked:")
+    ? t("rowBecauseYouLiked", { title: row.seedTitle ?? "" })
+    : row.key.startsWith("withActor:")
+      ? t("rowWithActor", { name: row.seedTitle ?? "" })
+      : t(ROW_TITLE_KEYS[row.key] ?? "rowForYou");
 
-  if (!allItems?.length) {
-    // Silhouette seulement quand quelque chose ARRIVE (requête en vol ou
-    // moteur au travail) — une rangée réellement vide reste invisible.
-    const busy = isPending || data?.generating || data?.pending || data?.refining;
-    return pendingFallback === "skeleton" && busy ? <RecoRowSkeleton /> : null;
-  }
-  if (!items.length) {
-    // Vidée par le FILTRE : un état vide propre (la rangée existe, la
-    // sélection ne matche pas) — le null silencieux reste pour le reste.
-    if (providerFilter?.length) {
-      return (
-        <div className="mb-10">
-          <RowHeader title={title} />
-          <p className="row-gutter mt-2 text-sm text-content-tertiary">{t("providerRowEmpty")}</p>
-        </div>
-      );
-    }
-    return null;
-  }
-
+  if (items.length === 0) return null;
   return <RecoRow title={title} items={items} animDelay={animDelay} />;
-}
+});

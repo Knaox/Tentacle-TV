@@ -3,7 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaRow } from "../rows/MediaRow";
 import { ContinueWatchingRow } from "../rows/ContinueWatchingRow";
 import { LibraryLatestRow } from "../rows/LibraryLatestRow";
-import { RecoRowSlot } from "../reco/RecoRowSlot";
+import { HomeRecoRow } from "./HomeRecoRow";
 
 export interface HomeRowData {
   resumeItems: MediaItem[] | undefined;
@@ -86,7 +86,7 @@ export function HomeRow({
     );
   }
   if (rowKey.startsWith("reco:")) {
-    return <RecoRowSlot rowKey={rowKey.slice("reco:".length)} animDelay={animDelay} />;
+    return <HomeRecoRow rowKey={rowKey.slice("reco:".length)} animDelay={animDelay} />;
   }
   return null;
 }
