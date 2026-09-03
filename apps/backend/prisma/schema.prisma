@@ -507,7 +507,7 @@ model RecoSettings {
 model RecommendationCache {
   id             String   @id @default(cuid())
   jellyfinUserId String   @db.VarChar(255)
-  rowKey         String   @db.VarChar(64) // "forYou" | "inLibrary" | "discover" | "becauseYouLiked:<n>" | "community" | "exploration"
+  rowKey         String   @db.VarChar(64) // "forYou" | "inLibrary" | "anime" | "discover" | "becauseYouLiked:<n>" | "community" | "exploration"
   payload        String   @db.MediumText
   generatedAt    DateTime @default(now())
   expiresAt      DateTime
