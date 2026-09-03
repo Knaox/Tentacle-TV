@@ -1,17 +1,16 @@
 import { getPrisma } from "../db";
-import { getConfigValue } from "../configStore";
 import { tmdbConfigured, tmdbFetch } from "./client";
+import type { TmdbPriority } from "./client";
+import { normalizeProviders, watchRegion } from "./providerNormalize";
+import type { ProviderRef, RawWatchProvidersBlock } from "./providerNormalize";
+
+// Le type des plateformes vit désormais dans providerNormalize ; ré-exporté
+// pour les importeurs historiques (rowBuilder, providerDirectory…).
+export type { ProviderRef } from "./providerNormalize";
 
 export interface NamedRef {
   id: number;
   name: string;
-}
-
-/** Une plateforme de streaming où le titre est INCLUS (abonnement/gratuit/pub). */
-export interface ProviderRef {
-  id: number;
-  name: string;
-  logoPath: string | null;
 }
 
 /**
@@ -77,35 +76,7 @@ interface RawTmdbTitle {
   poster_path?: string | null;
   backdrop_path?: string | null;
   // Clé LITTÉRALE avec slash — c'est la forme de l'API TMDB.
-  "watch/providers"?: {
-    results?: Record<
-      string,
-      {
-        flatrate?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
-        free?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
-        ads?: Array<{ provider_id: number; provider_name?: string; logo_path?: string | null }>;
-      }
-    >;
-  };
-}
-
-/** Offres « incluses » de la région configurée (résolue à la LECTURE : changer
- *  de région ne demande aucun refetch) — jamais la location ni l'achat. */
-function normalizeProviders(raw: RawTmdbTitle): ProviderRef[] | null {
-  const block = raw["watch/providers"];
-  if (!block) return null; // ligne d'avant la clé : « inconnu », pas « aucun »
-  const region = getConfigValue("tmdb_watch_region") || "FR";
-  const entry = block.results?.[region];
-  const seen = new Set<number>();
-  const out: ProviderRef[] = [];
-  for (const list of [entry?.flatrate, entry?.free, entry?.ads]) {
-    for (const p of list ?? []) {
-      if (seen.has(p.provider_id)) continue;
-      seen.add(p.provider_id);
-      out.push({ id: p.provider_id, name: p.provider_name ?? "", logoPath: p.logo_path ?? null });
-    }
-  }
-  return out;
+  "watch/providers"?: RawWatchProvidersBlock;
 }
 
 /** `origin_country` (films ET séries), sinon les pays de production. */
@@ -158,7 +129,8 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     posterPath: raw.poster_path ?? null,
     // Rétroactif : les fiches `/movie|tv/{id}` en cache portent déjà le champ.
     backdropPath: raw.backdrop_path ?? null,
-    providers: normalizeProviders(raw),
+    // Région résolue à la LECTURE : changer de région ne demande aucun refetch.
+    providers: normalizeProviders(raw["watch/providers"], watchRegion()),
   };
 }
 
@@ -240,16 +212,19 @@ export async function getCachedMetaMany(
  */
 export async function getTitleMeta(
   mediaType: "movie" | "tv",
-  tmdbId: number
+  tmdbId: number,
+  opts: { priority?: TmdbPriority } = {}
 ): Promise<TitleMeta | null> {
   const cached = await readCachedRaw(mediaType, tmdbId);
   if (cached && "watch/providers" in cached) return normalize(mediaType, cached);
   if (!tmdbConfigured()) return cached ? normalize(mediaType, cached) : null;
 
   try {
-    const raw = await tmdbFetch<RawTmdbTitle>(`/${mediaType}/${tmdbId}`, {
-      append_to_response: "keywords,credits,watch/providers",
-    });
+    const raw = await tmdbFetch<RawTmdbTitle>(
+      `/${mediaType}/${tmdbId}`,
+      { append_to_response: "keywords,credits,watch/providers" },
+      { priority: opts.priority }
+    );
     const prisma = getPrisma();
     const expiresAt = new Date(Date.now() + TTL_MS + Math.random() * TTL_JITTER_MS);
     await prisma.tmdbMetaCache.upsert({

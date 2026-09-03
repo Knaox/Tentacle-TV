@@ -86,8 +86,8 @@ function fromTmdb(raw: TmdbTrendingResult, mediaType: "movie" | "tv"): TrendingS
 
 async function trendingFromTmdb(): Promise<TrendingSlim[]> {
   const [movies, tv] = await Promise.all([
-    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/movie/week"),
-    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/tv/week"),
+    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/movie/week", {}, { priority: "background" }),
+    tmdbFetch<{ results?: TmdbTrendingResult[] }>("/trending/tv/week", {}, { priority: "background" }),
   ]);
   // Entrelacement film/série : la rangée mélange les deux mondes au lieu
   // d'empiler vingt films puis dix séries.

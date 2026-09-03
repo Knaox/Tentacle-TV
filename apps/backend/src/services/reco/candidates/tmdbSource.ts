@@ -1,4 +1,8 @@
 import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
+import type { TmdbFetchOptions } from "../../tmdb/client";
+
+/** La génération est du FOND : les fiches et recherches interactives passent devant. */
+const BACKGROUND: TmdbFetchOptions = { priority: "background" };
 import { ANIME_UNIVERSE_KEY, decadeOf, isAnimeCoarse } from "../facets";
 import type { FacetEntry } from "../facets";
 import type { Candidate, TasteVector } from "../scoring/strategy";
@@ -87,7 +91,7 @@ export async function candidatesFromSeeds(seeds: SeedRef[]): Promise<Candidate[]
     if (index < SIMILAR_SEEDS) paths.push(`/${seed.mediaType}/${seed.tmdbId}/similar`);
     for (const path of paths) {
       try {
-        const page = await tmdbFetch<TmdbListPage>(path, { page: "1" });
+        const page = await tmdbFetch<TmdbListPage>(path, { page: "1" }, BACKGROUND);
         for (const raw of page.results ?? []) {
           const candidate = toCandidate(raw, seed.mediaType, "tmdb_rec");
           // La graine signe son candidat : les rangées « Parce que vous avez
@@ -165,11 +169,11 @@ export async function candidatesFromDiscover(profile: TasteVector): Promise<Cand
     for (const query of queries) {
       for (const page of ["1", "2"]) {
         try {
-          const res = await tmdbFetch<TmdbListPage>(`/discover/${mediaType}`, {
-            ...query,
-            "vote_count.gte": DISCOVER_MIN_VOTES,
-            page,
-          });
+          const res = await tmdbFetch<TmdbListPage>(
+            `/discover/${mediaType}`,
+            { ...query, "vote_count.gte": DISCOVER_MIN_VOTES, page },
+            BACKGROUND
+          );
           for (const raw of res.results ?? []) {
             out.push(toCandidate(raw, mediaType, "tmdb_discover"));
           }

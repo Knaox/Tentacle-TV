@@ -264,7 +264,7 @@ async function resolveMeta(pendings: PendingSignal[]): Promise<Map<string, Title
 
   misses.sort((a, b) => b.max - a.max);
   for (const { key, ref } of misses.slice(0, TMDB_FETCH_BUDGET)) {
-    const meta = await getTitleMeta(ref.mediaType, ref.tmdbId);
+    const meta = await getTitleMeta(ref.mediaType, ref.tmdbId, { priority: "background" });
     if (meta) out.set(key, meta);
   }
   return out;

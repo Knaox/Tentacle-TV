@@ -124,7 +124,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     for (const seed of seeds) {
       if (seed.title || seedMetaBudget <= 0) continue;
       seedMetaBudget--;
-      const meta = await getTitleMeta(seed.mediaType, seed.tmdbId);
+      const meta = await getTitleMeta(seed.mediaType, seed.tmdbId, { priority: "background" });
       if (meta) seed.title = meta.title;
     }
   }

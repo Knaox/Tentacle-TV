@@ -1,4 +1,8 @@
 import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
+import type { TmdbFetchOptions } from "../../tmdb/client";
+
+/** La génération est du FOND : les fiches et recherches interactives passent devant. */
+const BACKGROUND: TmdbFetchOptions = { priority: "background" };
 import type { Candidate } from "../scoring/strategy";
 import { toCandidate } from "./tmdbSource";
 import type { TmdbListResult } from "./tmdbSource";
@@ -29,12 +33,16 @@ export async function candidatesFromPeople(
 
   for (const person of people.slice(0, PEOPLE_MAX)) {
     try {
-      const page = await tmdbFetch<{ results?: TmdbListResult[] }>("/discover/movie", {
-        with_people: String(person.personId),
-        sort_by: "popularity.desc",
-        "vote_count.gte": DISCOVER_MIN_VOTES,
-        page: "1",
-      });
+      const page = await tmdbFetch<{ results?: TmdbListResult[] }>(
+        "/discover/movie",
+        {
+          with_people: String(person.personId),
+          sort_by: "popularity.desc",
+          "vote_count.gte": DISCOVER_MIN_VOTES,
+          page: "1",
+        },
+        BACKGROUND
+      );
       for (const raw of page.results ?? []) {
         const candidate = toCandidate(raw, "movie", "tmdb_person");
         candidate.personKey = person.personId;
@@ -47,7 +55,8 @@ export async function candidatesFromPeople(
     try {
       const credits = await tmdbFetch<CombinedCredits>(
         `/person/${person.personId}/combined_credits`,
-        {}
+        {},
+        BACKGROUND
       );
       const cast = (credits.cast ?? [])
         .filter((r) => r.media_type === "movie" || r.media_type === "tv")

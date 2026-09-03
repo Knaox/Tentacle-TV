@@ -1,6 +1,6 @@
-import { getConfigValue } from "../configStore";
 import { tmdbConfigured, tmdbFetch } from "./client";
 import type { ProviderRef } from "./metaCache";
+import { watchRegion } from "./providerNormalize";
 import { mergeProviders } from "./providerMerge";
 import type { RawWatchProvider } from "./providerMerge";
 
@@ -12,11 +12,9 @@ export interface WatchProviderDirectory {
 /** Les logos d'une région ne bougent pas : sept jours de cache mémoire. */
 const DIRECTORY_TTL_MS = 7 * 24 * 3600_000;
 
-/** Région watch-providers configurée (Admin → Métadonnées) — même règle que
- *  metaCache.normalizeProviders. */
-export function watchRegion(): string {
-  return getConfigValue("tmdb_watch_region") || "FR";
-}
+// La région vit dans providerNormalize (même règle que metaCache) ; ré-exportée
+// pour les importeurs historiques.
+export { watchRegion } from "./providerNormalize";
 
 interface CacheEntry {
   fetchedAt: number;
