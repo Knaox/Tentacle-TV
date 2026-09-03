@@ -495,6 +495,11 @@ model RecoSettings {
   /// Curseur « Sûr ↔ Aventureux » : λ du MMR × 100 (70 = 0.7). Pilote aussi le
   /// quota d'exploration.
   explorationBalance Int      @default(70)
+  /// Filtre de plateformes de la page Recommandations : JSON d'ids TMDB
+  /// PRINCIPAUX (« [283,415] », douze au plus). Persisté ici pour suivre le
+  /// compte d'un appareil à l'autre — et pour que le serveur précalcule la
+  /// page de ce filtre en fond.
+  providerFilter     String   @default("[]") @db.VarChar(255)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

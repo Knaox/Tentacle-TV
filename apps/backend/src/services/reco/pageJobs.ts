@@ -1,3 +1,4 @@
+import { getPrisma } from "../db";
 import { sendToUser } from "../wsManager";
 import { prewarmLibraryMemo } from "./candidates/libraryMemo";
 import { buildPageSnapshot, prepareBuildBase, yieldToLoop } from "./pageBuilder";
@@ -7,7 +8,7 @@ import type { StalenessProbe } from "./pageRows";
 import { msUntilNextUtcMidnight } from "./pageSchedule";
 import { evictSnapshots, listActiveAccounts, listLiveFilterKeys, readSnapshot, writeSnapshot } from "./pageSnapshot";
 import type { PageSnapshot } from "./pageSnapshot";
-import { providerFilterFromQuery } from "./providerFilter";
+import { filterKeyOf, providerFilterFromQuery } from "./providerFilter";
 import { onPoolWritten, onProfileRebuilt } from "./recoEvents";
 import { serveContext } from "./serveContext";
 import type { ServeContext } from "./serveContext";
@@ -73,13 +74,33 @@ function probeOf(ctx: ServeContext, base: PageBuildBase): StalenessProbe {
   };
 }
 
-/** Les clés à tenir à jour pour un compte : « all » dès qu'un snapshot vit,
- *  puis les filtres servis récemment. Aucun snapshot vivant : rien — le
- *  compte n'a jamais visité, sa première visite construira. */
+/** Le filtre SAUVEGARDÉ du compte (réglages reco) : sa page se précalcule
+ *  toujours — c'est celle que l'utilisateur ouvre. */
+async function savedFilterKey(userId: string): Promise<string | null> {
+  const row = await getPrisma().recoSettings.findUnique({
+    where: { jellyfinUserId: userId },
+    select: { providerFilter: true },
+  });
+  if (!row?.providerFilter) return null;
+  try {
+    const ids = providerFilterFromQuery(JSON.parse(row.providerFilter));
+    return ids ? filterKeyOf(ids) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Les clés à tenir à jour pour un compte : « all » dès qu'un snapshot vit
+ *  ou qu'un filtre est sauvegardé, le filtre sauvegardé, puis les filtres
+ *  servis récemment. Rien de tout cela : le compte n'a jamais visité, sa
+ *  première visite construira. */
 async function filterKeysToMaintain(userId: string): Promise<string[]> {
-  const live = await listLiveFilterKeys(userId);
-  if (live.length === 0) return [];
-  return live.includes("all") ? live : ["all", ...live];
+  const [saved, live] = await Promise.all([savedFilterKey(userId), listLiveFilterKeys(userId)]);
+  if (live.length === 0 && !saved) return [];
+  const keys = ["all"];
+  if (saved && saved !== "all") keys.push(saved);
+  for (const key of live) if (!keys.includes(key)) keys.push(key);
+  return keys;
 }
 
 /**

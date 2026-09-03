@@ -306,6 +306,7 @@ CREATE TABLE IF NOT EXISTS `reco_settings` (
   `community` tinyint(1) NOT NULL DEFAULT 1,
   `shareHistory` tinyint(1) NOT NULL DEFAULT 1,
   `explorationBalance` int(11) NOT NULL DEFAULT 70,
+  `providerFilter` varchar(255) NOT NULL DEFAULT '[]',
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updatedAt` datetime(3) NOT NULL,
   PRIMARY KEY (`id`),
