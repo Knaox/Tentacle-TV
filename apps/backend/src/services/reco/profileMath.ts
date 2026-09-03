@@ -84,7 +84,15 @@ export interface WeightedSignal {
   facets: FacetEntry[];
   /** Signal de CONSOMMATION (vu, suivi, noté) — ni favori ni Ma liste. */
   consumption?: boolean;
+  /** Volume de visionnage en équivalents-film (défaut 1) : une série suivie
+   *  vaut ses épisodes / EPISODES_PER_MOVIE. La part d'univers se mesure là. */
+  volume?: number;
 }
+
+/** Quatre épisodes valent un film en temps de visionnage (approximation :
+ *  un épisode d'animé dure 24 min, un épisode de série 45 — on ne pèse pas
+ *  la durée, Jellyfin ne l'expose pas fiablement sur une fiche Series). */
+export const EPISODES_PER_MOVIE = 4;
 
 /**
  * Accumule les signaux en vecteur de facettes :
@@ -108,19 +116,20 @@ export function buildFacetVector(
 }
 
 /**
- * Part d'un univers dans une liste de signaux : Σ|poids décroissé| des
- * signaux qui portent la facette / Σ|poids décroissé| de tous (0..1, 0 sans
- * signal). La valeur absolue compte : un signal négatif dit aussi que
- * l'univers concerne ce compte.
+ * Part d'un univers dans une liste de signaux, en TEMPS DE VISIONNAGE :
+ * Σ volume décroissé des signaux qui portent la facette / Σ volume décroissé
+ * de tous (0..1, 0 sans signal). Le poids de goût n'entre pas : quatre-vingts
+ * épisodes d'une série valent vingt films, pas un demi — mesuré sur un vrai
+ * compte, la part au poids donnait 0,065 pour un tiers du visionnage.
  */
 export function universeShare(signals: readonly WeightedSignal[], universeKey: string): number {
   let total = 0;
   let inUniverse = 0;
   for (const signal of signals) {
-    const w = Math.abs(signal.weight) * decayFactor(signal.ageDays);
-    if (w === 0) continue;
-    total += w;
-    if (signal.facets.some((f) => f.key === universeKey)) inUniverse += w;
+    const v = (signal.volume ?? 1) * decayFactor(signal.ageDays);
+    if (v <= 0) continue;
+    total += v;
+    if (signal.facets.some((f) => f.key === universeKey)) inUniverse += v;
   }
   return total > 0 ? inUniverse / total : 0;
 }
