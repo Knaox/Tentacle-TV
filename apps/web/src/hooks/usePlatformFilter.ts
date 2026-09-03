@@ -1,21 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
+import { PLATFORMS } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { getBackendBase } from "../lib/backendBase";
 
-/** TMDB Watch Provider IDs — identique au plugin Seer */
-export const PLATFORMS = [
-  { id: 8, name: "Netflix", studioNames: ["Netflix"] },
-  { id: 337, name: "Disney+", studioNames: ["Disney+", "Disney Plus", "Disney Television Studios"] },
-  { id: 119, name: "Amazon Prime Video", studioNames: ["Amazon Studios", "Amazon Prime Video"] },
-  { id: 283, name: "Crunchyroll", studioNames: ["Crunchyroll"] },
-  { id: 350, name: "Apple TV+", studioNames: ["Apple TV+", "Apple Studios", "Apple"] },
-  { id: 531, name: "Paramount+", studioNames: ["Paramount+", "Paramount Plus"] },
-  { id: 1899, name: "Max", studioNames: ["Max", "HBO Max", "HBO"] },
-  { id: 415, name: "ADN", studioNames: ["ADN"] },
-  { id: 56, name: "OCS", studioNames: ["OCS"] },
-  { id: 381, name: "Canal+", studioNames: ["Canal+", "Canal Plus"] },
-  { id: 236, name: "Arte", studioNames: ["Arte", "ARTE"] },
-] as const;
+// Les plateformes viennent de la constante partagée (familles d'ids TMDB,
+// ids principaux corrigés : OCS 685, Arte 234) ; ré-exportées pour les
+// importeurs historiques (menus et pastilles de la bibliothèque).
+export { PLATFORMS } from "@tentacle-tv/shared";
 
 function getToken(): string {
   return localStorage.getItem("tentacle_token") ?? "";
