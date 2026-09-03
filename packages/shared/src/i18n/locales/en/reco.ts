@@ -55,6 +55,7 @@ export default {
   rowBecauseYouLiked: "Because you liked {{title}}",
   rowCommunity: "Tentacle users also watch",
   rowExploration: "Step outside your comfort zone",
+  rowAnime: "Anime for you",
   rowTrending: "Trending",
   rowServerPulse: "What Tentacle users are watching",
   rowBestOfLibrary: "Top rated in your library",
@@ -68,6 +69,7 @@ export default {
   // Raisons (explicabilité)
   reasonSeed: "Because you liked {{title}}",
   reasonExploration: "Exploring: outside your usual habits",
+  reasonAnime: "Because you watch anime",
   reasonDirector: "Directed by {{name}}",
   reasonActor: "Starring {{name}}",
   reasonGenre: "Because you watch {{name}}",

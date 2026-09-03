@@ -5,6 +5,10 @@ export interface LibraryRef {
   name: string;
 }
 
+/** Rangées de recommandation OPTIONNELLES apparues après les premières mises
+ *  en page stockées (« Animés pour vous ») — le défaut serveur les porte déjà. */
+const OPTIONAL_RECO_ROWS = ["reco:anime"] as const;
+
 export interface ReconcileOptions {
   /** Insère les bibliothèques NOUVELLES à l'ancre (avant « Déjà visionné »)
    *  au lieu de la fin. Réservé au défaut serveur non stocké : y matérialiser
@@ -45,6 +49,19 @@ export function reconcileHomeRows(
     const key = `library:${lib.id}`;
     if (!seen.has(key)) missing.push({ key, enabled: true });
   }
+  // Rangées reco nées APRÈS la mise en page stockée : en fin, éteintes — sans
+  // ça, un compte à layout enregistré ne les verrait jamais dans l'éditeur.
+  const optional: HomeRowDescriptor[] = OPTIONAL_RECO_ROWS.filter((key) => !seen.has(key)).map(
+    (key) => ({ key, enabled: false })
+  );
+  return [...placeLibraries(out, missing, opts), ...optional];
+}
+
+function placeLibraries(
+  out: HomeRowDescriptor[],
+  missing: HomeRowDescriptor[],
+  opts: ReconcileOptions
+): HomeRowDescriptor[] {
   if (missing.length === 0) return out;
   if (!opts.anchorNewLibraries) return [...out, ...missing];
 

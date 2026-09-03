@@ -58,6 +58,7 @@ export default {
   rowBecauseYouLiked: "Parce que vous avez aimé {{title}}",
   rowCommunity: "Les utilisateurs de Tentacle regardent aussi",
   rowExploration: "Sortir de votre zone de confort",
+  rowAnime: "Animés pour vous",
   // Rangées GLOBALES (servies à tous, quel que soit l'état du profil).
   rowTrending: "Tendances",
   rowServerPulse: "Ce que les utilisateurs de Tentacle regardent",
@@ -72,6 +73,7 @@ export default {
   // Raisons (explicabilité)
   reasonSeed: "Parce que vous avez aimé {{title}}",
   reasonExploration: "Exploration : hors de vos habitudes",
+  reasonAnime: "Parce que vous regardez des animés",
   reasonDirector: "Réalisé par {{name}}",
   reasonActor: "Avec {{name}}",
   reasonGenre: "Parce que vous aimez le genre {{name}}",
