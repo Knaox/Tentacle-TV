@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { AttemptGate } from "./attemptGate";
 import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { ANIME_UNIVERSE_KEY, facetsFromJellyfin, facetsFromTmdb } from "./facets";
@@ -64,6 +65,13 @@ function refOf(item: SignalItem): TmdbRef | null {
 
 // Une reconstruction à la fois par compte : les pokes en rafale s'écrasent.
 const inFlight = new Map<string, Promise<ProfileSummary>>();
+
+/** Garde de FRÉQUENCE des relances déclenchées par une requête (premier
+ *  contact sans ligne de profil) : Jellyfin muet, le rebuild échoue — sans
+ *  elle, chaque requête d'un client qui sonde relançait dix secondes de
+ *  scans. Deux minutes entre deux tentatives ; un succès la rend sans objet
+ *  (la ligne existe). Les jobs (poke, fan-out) ne passent pas par elle. */
+export const profileRebuildGate = new AttemptGate(2 * 60_000);
 
 export interface ProfileSummary {
   signalCount: number;

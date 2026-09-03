@@ -1,7 +1,7 @@
 import { getPrisma } from "../db";
 import { tmdbConfigured } from "../tmdb/client";
 import { canonicalKey } from "./candidates/exclusions";
-import { rebuildProfile } from "./profileBuilder";
+import { profileRebuildGate, rebuildProfile } from "./profileBuilder";
 import type { TasteVector } from "./scoring/strategy";
 
 // Démarrage à froid (spec) : < 5 signaux → pas de reco personnalisée du tout ;
@@ -47,9 +47,11 @@ export async function serveContext(userId: string): Promise<ServeContext> {
   // des scans pour un profil que personne ne servira tant que la clé manque.
   const tmdb = tmdbConfigured();
   const bootstrapping = tmdb && !profileRow;
-  if (bootstrapping) {
+  // Sous la garde : un échec ne se retente pas à chaque requête, mais au
+  // plus toutes les deux minutes (le mutex ne dédoublonne que le simultané).
+  if (bootstrapping && profileRebuildGate.tryAcquire(userId)) {
     void rebuildProfile(userId).catch(() => {
-      // Jellyfin muet : l'appel suivant retentera.
+      // Jellyfin muet : une requête retentera, passé l'intervalle de la garde.
     });
   }
 
