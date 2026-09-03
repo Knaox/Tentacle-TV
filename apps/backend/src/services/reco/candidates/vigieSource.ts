@@ -1,5 +1,5 @@
 import { getSeerrConfig } from "../../seerConfig";
-import { decadeOf } from "../facets";
+import { ANIME_UNIVERSE_KEY, decadeOf, isAnimeCoarse } from "../facets";
 import type { FacetEntry } from "../facets";
 import type { Candidate } from "../scoring/strategy";
 
@@ -16,6 +16,7 @@ interface SeerrResult {
   releaseDate?: string;
   firstAirDate?: string;
   originalLanguage?: string;
+  originCountry?: string[];
   posterPath?: string | null;
   backdropPath?: string | null;
 }
@@ -30,6 +31,9 @@ function coarseFacets(raw: SeerrResult): FacetEntry[] {
   const date = raw.releaseDate || raw.firstAirDate || "";
   if (/^\d{4}/.test(date)) out.push({ key: `decade:${decadeOf(Number(date.slice(0, 4)))}`, mult: 1 });
   if (raw.originalLanguage) out.push({ key: `lang:${raw.originalLanguage}`, mult: 1 });
+  if (isAnimeCoarse(raw.genreIds ?? [], raw.originalLanguage, raw.originCountry)) {
+    out.push({ key: ANIME_UNIVERSE_KEY, mult: 1 });
+  }
   return out;
 }
 

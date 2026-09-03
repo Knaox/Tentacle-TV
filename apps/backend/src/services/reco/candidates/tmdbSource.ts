@@ -1,5 +1,5 @@
 import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
-import { decadeOf } from "../facets";
+import { ANIME_UNIVERSE_KEY, decadeOf, isAnimeCoarse } from "../facets";
 import type { FacetEntry } from "../facets";
 import type { Candidate, TasteVector } from "../scoring/strategy";
 
@@ -22,6 +22,7 @@ export interface TmdbListResult {
   release_date?: string;
   first_air_date?: string;
   original_language?: string;
+  origin_country?: string[];
   poster_path?: string | null;
   backdrop_path?: string | null;
 }
@@ -41,6 +42,10 @@ function coarseFacets(raw: TmdbListResult): FacetEntry[] {
   const date = raw.release_date || raw.first_air_date || "";
   if (/^\d{4}/.test(date)) out.push({ key: `decade:${decadeOf(Number(date.slice(0, 4)))}`, mult: 1 });
   if (raw.original_language) out.push({ key: `lang:${raw.original_language}`, mult: 1 });
+  // L'univers dès la liste : un candidat animé se reconnaît AVANT enrichissement.
+  if (isAnimeCoarse(raw.genre_ids ?? [], raw.original_language, raw.origin_country)) {
+    out.push({ key: ANIME_UNIVERSE_KEY, mult: 1 });
+  }
   return out;
 }
 

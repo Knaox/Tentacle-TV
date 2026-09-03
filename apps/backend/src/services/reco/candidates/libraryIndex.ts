@@ -102,6 +102,8 @@ export async function buildLibraryIndex(userId: string): Promise<LibraryIndex> {
         Studios: item.Studios,
         ProductionYear: item.ProductionYear,
         RunTimeTicks: item.RunTimeTicks,
+        // Les ids AniDB/AniList signent un animé dans les facettes de repli.
+        ProviderIds: item.ProviderIds,
       };
       // Doublon (deux versions du même film) : la première ligne gagne.
       if (!byKey.has(key)) byKey.set(key, entry);
