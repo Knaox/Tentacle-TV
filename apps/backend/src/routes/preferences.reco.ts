@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
-import { generatePool } from "../services/reco/generationJob";
+import { bootstrapPool } from "../services/reco/generationJob";
 import { invalidatePool } from "../services/reco/poolStore";
 import { pokePage } from "../services/reco/pageJobs";
 import { PROVIDER_FILTER_MAX, providerFilterFromQuery } from "../services/reco/providerFilter";
@@ -86,10 +86,12 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
     // seulement son service : attendre l'expiration (6 h) trahirait le
     // réglage. Invalidation APRÈS l'upsert — la régénération relit le neuf.
     // Les quatre autres réglages s'appliquent à la volée au service.
+    // Passe rapide d'abord (quelques secondes, zéro réseau) : le trou de
+    // service se compte en secondes, plus en dizaines.
     const beforeVigie = before?.includeVigie ?? DEFAULT_RECO_SETTINGS.includeVigie;
     if (beforeVigie !== settings.includeVigie) {
       await invalidatePool(user.userId);
-      void generatePool(user.userId).catch(() => undefined);
+      void bootstrapPool(user.userId).catch(() => undefined);
     }
     return { ok: true };
   });
