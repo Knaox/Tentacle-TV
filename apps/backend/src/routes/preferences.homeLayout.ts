@@ -8,7 +8,7 @@ import type { JellyfinUser } from "../middleware/auth";
 const rowKeySchema = z
   .string()
   .max(80)
-  .regex(/^(resume|nextUp|watchlist|watched|reco:(forYou|inLibrary|discover|community|exploration)|library:[A-Za-z0-9-]+)$/);
+  .regex(/^(resume|nextUp|watchlist|watched|reco:(forYou|inLibrary|discover|anime|community|exploration)|library:[A-Za-z0-9-]+)$/);
 
 const layoutSchema = z.object({
   heroMode: z.enum(["resume", "random", "reco", "fixed"]),
@@ -39,6 +39,7 @@ export const DEFAULT_HOME_LAYOUT: HomeLayoutPayload = {
     { key: "watchlist", enabled: true },
     { key: "reco:inLibrary", enabled: false },
     { key: "reco:discover", enabled: false },
+    { key: "reco:anime", enabled: false },
     { key: "reco:community", enabled: false },
     { key: "reco:exploration", enabled: false },
   ],

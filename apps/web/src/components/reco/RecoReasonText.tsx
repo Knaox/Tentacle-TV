@@ -20,6 +20,9 @@ export function reasonToText(
   const label = reason.label;
   if (key.startsWith("director:")) return label ? t("reasonDirector", { name: label }) : null;
   if (key.startsWith("actor:")) return label ? t("reasonActor", { name: label }) : null;
+  // L'univers animé se verbalise — les autres facettes partagées (lang:,
+  // runtime:) restent muettes, cf. plus bas.
+  if (key === "universe:anime") return t("reasonAnime");
   if (key.startsWith("genre:")) {
     // Les libellés TMDB arrivent en ANGLAIS (« Adventure ») : les ids de genre
     // sont un petit enum stable, traduit côté i18n (fr) — la locale anglaise

@@ -14,6 +14,7 @@ const ROW_TITLE_KEYS: Record<string, string> = {
   trending: "rowTrending",
   serverPulse: "rowServerPulse",
   bestOfLibrary: "rowBestOfLibrary",
+  anime: "rowAnime",
 };
 
 interface RecoRowSlotProps {

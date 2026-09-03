@@ -77,6 +77,7 @@ export function SettingsPersonalization() {
         forYou: "rowForYou",
         inLibrary: "rowInLibrary",
         discover: "rowDiscover",
+        anime: "rowAnime",
         community: "rowCommunity",
         exploration: "rowExploration",
       };
