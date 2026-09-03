@@ -118,14 +118,10 @@ export function removeRecoItem(page: RecoPage | undefined, itemKey: string): Rec
   return changed ? { ...page, rows } : page;
 }
 
-/** Retrait OPTIMISTE (note posée, « ne plus me proposer ») de toutes les
- *  pages en cache — et des anciennes rangées de compat tant qu'elles vivent. */
+/** Retrait OPTIMISTE (note posée, « ne plus me proposer ») de toutes les pages en cache. */
 export async function dropRecoItemEverywhere(qc: QueryClient, itemKey: string): Promise<void> {
   await qc.cancelQueries({ queryKey: [RECO_PAGE_KEY] });
   qc.setQueriesData<RecoPage>({ queryKey: [RECO_PAGE_KEY] }, (old) => removeRecoItem(old, itemKey));
-  qc.setQueriesData<{ items: RecoRowItem[] }>({ queryKey: ["reco", "row"] }, (old) =>
-    old ? { ...old, items: old.items.filter((item) => item.key !== itemKey) } : old
-  );
 }
 
 /** L'UNIQUE porte d'invalidation reco : les deux préfixes — ["reco"]
