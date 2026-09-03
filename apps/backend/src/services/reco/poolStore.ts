@@ -1,5 +1,6 @@
 import { getPrisma } from "../db";
 import type { PoolPayload } from "./generationJob";
+import { SNAPSHOT_KEY_PREFIX } from "./pageSnapshot";
 
 /** Rangée interne portant le pool classé (jamais servie telle quelle à l'UI). */
 export const POOL_ROW_KEY = "pool";
@@ -109,13 +110,17 @@ export async function patchPool(
 }
 
 /**
- * Jette le pool : quand un réglage change la MATIÈRE (les sources interrogées)
- * et pas seulement le service, attendre l'expiration (6 h) trahirait le
- * réglage. La prochaine requête relance une génération.
+ * Jette le pool ET les pages qui en dérivent : quand un réglage change la
+ * MATIÈRE (les sources interrogées) et pas seulement le service, servir
+ * l'ancien jusqu'à la relève trahirait le réglage. La prochaine requête
+ * relance une génération (passe rapide d'abord : quelques secondes).
  */
 export async function invalidatePool(userId: string): Promise<void> {
   const prisma = getPrisma();
   await prisma.recommendationCache.deleteMany({
-    where: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY },
+    where: {
+      jellyfinUserId: userId,
+      OR: [{ rowKey: POOL_ROW_KEY }, { rowKey: { startsWith: SNAPSHOT_KEY_PREFIX } }],
+    },
   });
 }

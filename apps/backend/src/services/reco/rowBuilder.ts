@@ -45,7 +45,12 @@ const ACTOR_ROWS_MAX = 2;
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
 export function availableRows(
   pool: PoolPayload,
-  opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly"> & { userId: string }
+  opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly"> & {
+    userId: string;
+    /** Jour UTC du tirage — celui du snapshot en construction, pour que la
+     *  page et sa date de péremption disent la même chose. */
+    dayStamp?: string;
+  }
 ): Array<{ key: string; seedTitle?: string }> {
   const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "inLibrary" }];
   // « Animés pour vous » : dès que l'univers pèse (part au seuil) et qu'il y a
@@ -75,7 +80,7 @@ export function availableRows(
     if (related.length < BECAUSE_MIN_ITEMS) continue;
     eligible.push({ key: seedKey, strength: seed.strength, seedTitle: seed.title });
   }
-  for (const pick of pickDaily(eligible, opts.userId, BECAUSE_ROWS_MAX)) {
+  for (const pick of pickDaily(eligible, opts.userId, BECAUSE_ROWS_MAX, opts.dayStamp)) {
     rows.push({ key: `becauseYouLiked:${pick.key}`, seedTitle: pick.seedTitle });
   }
 
@@ -91,7 +96,7 @@ export function availableRows(
     if (related.length < BECAUSE_MIN_ITEMS) continue;
     actors.push({ key: `withActor:${person.personId}`, strength: 1, seedTitle: person.name });
   }
-  for (const pick of pickDaily(actors, `${opts.userId}:actors`, ACTOR_ROWS_MAX)) {
+  for (const pick of pickDaily(actors, `${opts.userId}:actors`, ACTOR_ROWS_MAX, opts.dayStamp)) {
     rows.push({ key: pick.key, seedTitle: pick.seedTitle });
   }
 
