@@ -19,6 +19,7 @@ import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { isPoolStale, readPoolRow, readPoolStamp, writePool } from "./poolStore";
 import type { PoolStamp } from "./poolStore";
 import { AttemptGate } from "./attemptGate";
+import { emitPoolWritten } from "./recoEvents";
 import { applyCachedProviders } from "./poolProviders";
 import { enqueueFromPool } from "./metaCrawler";
 import { watchRegion } from "../tmdb/providerNormalize";
@@ -243,6 +244,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   };
   await writePool(userId, payload);
   poolKickGate.release(userId);
+  emitPoolWritten(userId);
 
   // Les plateformes inconnues partent au crawler — pas en passe rapide, que
   // la relève complète écrase dans la minute.
