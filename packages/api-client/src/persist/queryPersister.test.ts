@@ -143,3 +143,31 @@ describe("sauvegarde", () => {
     expect(admin.hydrated).toHaveLength(0);
   });
 });
+
+describe("shouldPersist", () => {
+  const onlyAll = (queryKey: readonly unknown[]) => queryKey[0] !== "reco-page" || queryKey[1] === "all";
+
+  it("n'hydrate pas une entrée refusée", async () => {
+    const store = storage(
+      save(ADMIN, {
+        '["reco-page","all"]': entry({ rows: [] }),
+        '["reco-page","283"]': entry({ rows: [] }),
+      })
+    );
+    const { qc, hydrated } = client();
+    await hydrateQueryClient(qc, store, { whitelist: ["reco-page"], owner: ADMIN, shouldPersist: onlyAll });
+    expect(hydrated.map((h) => h.key)).toEqual([["reco-page", "all"]]);
+  });
+
+  it("n'écrit pas une entrée refusée", () => {
+    const store = storage();
+    const { qc } = client([
+      { queryKey: ["reco-page", "all"], state: { status: "success", data: 1, dataUpdatedAt: Date.now() } },
+      { queryKey: ["reco-page", "283"], state: { status: "success", data: 2, dataUpdatedAt: Date.now() } },
+    ]);
+    const detach = attachQueryPersister(qc, store, { whitelist: ["reco-page"], owner: ADMIN, shouldPersist: onlyAll });
+    detach();
+    const saved = JSON.parse(store.loaded() ?? "{}") as { entries: Record<string, unknown> };
+    expect(Object.keys(saved.entries)).toEqual(['["reco-page","all"]']);
+  });
+});

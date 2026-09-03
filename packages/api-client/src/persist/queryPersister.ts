@@ -72,6 +72,13 @@ export interface PersisterOptions {
   maxAge?: number;
   /** Limite de taille du JSON sérialisé (sécurité). Défaut 2 Mo. */
   maxBytes?: number;
+  /**
+   * Second filtre, APRÈS la whitelist, entrée par entrée — à l'hydratation
+   * comme à la sauvegarde. Sert à borner un préfixe ouvert : « reco-page »
+   * ne garde que la page « all » et celle du filtre sauvegardé, pas chaque
+   * combinaison essayée.
+   */
+  shouldPersist?: (queryKey: readonly unknown[]) => boolean;
 }
 
 interface PersistedEntry {
@@ -172,6 +179,7 @@ export async function hydrateQueryClient(
         if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
         const prefix = queryKey[0];
         if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
+        if (opts.shouldPersist && !opts.shouldPersist(queryKey)) continue;
         // Périmée d'office si elle décrit des absences : affichée tout de suite,
         // mais redemandée dans la foulée plutôt que tenue pour acquise.
         const updatedAt = hasMissingArtwork(entry.data) ? 0 : entry.dataUpdatedAt;
@@ -215,6 +223,7 @@ export function attachQueryPersister(
         if (!Array.isArray(queryKey) || queryKey.length === 0) continue;
         const prefix = queryKey[0];
         if (typeof prefix !== "string" || !opts.whitelist.includes(prefix)) continue;
+        if (opts.shouldPersist && !opts.shouldPersist(queryKey)) continue;
         const state = q.state;
         if (state.status !== "success" || state.data === undefined) continue;
         try {
@@ -274,17 +283,6 @@ export function attachQueryPersister(
   };
 }
 
-/** Whitelist par défaut : les caches de la page d'accueil.
- *  NB : pas de `"library-items"` — les vraies clés des bibliothèques sont
- *  `["library", id, "items", …]`, donc ce préfixe ne matchait rien. Le
- *  « corriger » en `"library"` persisterait tout le catalogue parcouru,
- *  ce qui n'est pas le rôle de ce cache (les hubs de la home). */
-export const HOME_PERSIST_WHITELIST = [
-  "resume-items",
-  "latest-items",
-  "next-up",
-  "watched-items",
-  "featured",
-  "watchlist",
-  "libraries",
-] as const;
+// La whitelist vit dans persistWhitelist.ts ; ré-exportée pour les importeurs
+// historiques (web, mobile, TV passent par l'index).
+export { HOME_PERSIST_WHITELIST } from "./persistWhitelist";
