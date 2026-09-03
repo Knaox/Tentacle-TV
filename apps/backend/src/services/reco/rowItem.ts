@@ -43,9 +43,18 @@ export interface BuiltRow {
 
 export const REASONS_MAX = 2;
 
-/** L'item servi d'une entrée du pool — les plateformes sont posées ensuite
- *  (attachProviders, lecture cache), null en attendant. */
-export function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRowItem {
+function bareRef(id: number): ProviderRef {
+  return { id, name: "", logoPath: null };
+}
+
+/** L'item servi d'une entrée du pool. Les ids de plateformes du pool sont
+ *  hydratés (nom, logo) par `providerRefOf` — l'annuaire mondial en mémoire ;
+ *  sans annuaire, des références nues. null reste null (inconnu). */
+export function toItem(
+  entry: PoolEntry,
+  labels: Record<string, string>,
+  providerRefOf: (id: number) => ProviderRef = bareRef
+): RecoRowItem {
   const { candidate, breakdown } = entry;
   const reasons: RecoReason[] = [];
   for (const contributor of breakdown.topContributors) {
@@ -66,6 +75,6 @@ export function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRo
     score: breakdown.total,
     voteAverage: candidate.voteAverage,
     reasons,
-    providers: null,
+    providers: entry.providers ? entry.providers.map(providerRefOf) : null,
   };
 }
