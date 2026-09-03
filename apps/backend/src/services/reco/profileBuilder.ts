@@ -3,6 +3,7 @@ import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { ANIME_UNIVERSE_KEY, facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import {
+  EPISODES_PER_MOVIE,
   SIGNAL_ABANDON,
   SIGNAL_COMPLETED,
   SIGNAL_FAVORITE,
@@ -45,6 +46,8 @@ interface PendingSignal {
   fallback: SignalItem | null;
   /** Consommation réelle (vu, suivi, noté) — la part d'univers se calcule dessus. */
   consumption: boolean;
+  /** Volume en équivalents-film (séries : épisodes vus / 4) — défaut 1. */
+  volume?: number;
 }
 
 function tmdbTypeOf(item: SignalItem): "movie" | "tv" | null {
@@ -182,6 +185,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       tmdb: refOf(series),
       fallback: series,
       consumption: true,
+      volume: Math.max(1, count / EPISODES_PER_MOVIE),
     });
   }
 
@@ -194,14 +198,21 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
     const meta = p.tmdb ? metaByRef.get(`${p.tmdb.mediaType}:${p.tmdb.tmdbId}`) : undefined;
     const facets = meta ? facetsFromTmdb(meta) : p.fallback ? facetsFromJellyfin(p.fallback) : [];
     if (facets.length === 0) continue;
-    weighted.push({ weight: p.weight, ageDays: p.ageDays, facets, consumption: p.consumption });
+    weighted.push({
+      weight: p.weight,
+      ageDays: p.ageDays,
+      facets,
+      consumption: p.consumption,
+      volume: p.volume,
+    });
   }
 
   const vector = truncateVector(buildFacetVector(weighted, idfFor), PROFILE_MAX_FACETS);
   const facetCount = Object.keys(vector).length;
-  // Part d'animé sur les signaux de CONSOMMATION (films vus, séries suivies,
-  // notes) — ni favoris ni Ma liste : c'est ce qu'on REGARDE qui décide. Un
-  // compte peut n'avoir aucun favori animé et en regarder un soir sur trois.
+  // Part d'animé en TEMPS DE VISIONNAGE sur les signaux de CONSOMMATION
+  // (films vus, séries suivies, notes) — ni favoris ni Ma liste : c'est ce
+  // qu'on REGARDE qui décide. Un compte peut n'avoir aucun favori animé et en
+  // regarder un soir sur trois.
   const animeShare = universeShare(
     weighted.filter((s) => s.consumption),
     ANIME_UNIVERSE_KEY

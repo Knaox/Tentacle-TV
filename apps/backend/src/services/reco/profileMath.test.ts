@@ -9,6 +9,7 @@ import {
   SIGNAL_FAVORITE,
   seriesEngagementWeight,
   universeShare,
+  EPISODES_PER_MOVIE,
 } from "./profileMath";
 
 describe("décroissance temporelle", () => {
@@ -129,12 +130,20 @@ describe("part d'un univers dans les signaux", () => {
     expect(universeShare(signals, "universe:anime")).toBeCloseTo(0.5, 10);
   });
 
-  it("la décroissance et la valeur absolue s'appliquent", () => {
+  it("se mesure en temps de visionnage : une série de quarante épisodes vaut dix films", () => {
+    const signals = [
+      { weight: 1, ageDays: 0, facets: anime, volume: 40 / EPISODES_PER_MOVIE },
+      ...Array.from({ length: 5 }, () => ({ weight: 0.5, ageDays: 0, facets: live })),
+    ];
+    expect(universeShare(signals, "universe:anime")).toBeCloseTo(10 / 15, 10);
+  });
+
+  it("la décroissance s'applique, pas le poids de goût", () => {
     const signals = [
       { weight: 0.5, ageDays: HALF_LIFE_DAYS, facets: anime },
-      { weight: -0.5, ageDays: 0, facets: live },
+      { weight: -0.9, ageDays: 0, facets: live },
     ];
-    // 0,25 d'animé contre 0,5 de reste : un tiers.
+    // Une demi-vie d'animé (0,5) contre un film entier (1) : un tiers.
     expect(universeShare(signals, "universe:anime")).toBeCloseTo(1 / 3, 10);
   });
 });
