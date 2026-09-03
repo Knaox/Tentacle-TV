@@ -17,6 +17,8 @@ import { candidatesFromVigie } from "./candidates/vigieSource";
 import { candidatesFromAnilist } from "./candidates/anilistSource";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { readPool as readStoredPool, writePool } from "./poolStore";
+import { applyCachedProviders } from "./poolProviders";
+import { watchRegion } from "../tmdb/providerNormalize";
 
 // Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
 // ici pour ne pas casser les importeurs historiques.
@@ -29,6 +31,10 @@ const SEED_META_BUDGET = 8;
 export interface PoolEntry {
   candidate: Candidate;
   breakdown: ScoreBreakdown;
+  /** Ids TMDB des offres INCLUSES (région de génération) — null ou absent =
+   *  disponibilité inconnue (le crawler la comblera), [] = aucune offre. Des
+   *  ids seuls : nom et logo se reconstituent à l'annuaire au service. */
+  providers?: number[] | null;
 }
 
 export interface PoolPayload {
@@ -45,6 +51,9 @@ export interface PoolPayload {
   animeShare?: number;
   /** Personnes aimées au moment de la génération (rangées « Avec X »). */
   people?: Array<{ personId: number; name: string }>;
+  /** Région des `providers` des entrées — différente de la région courante :
+   *  ils sont à réapprendre (le crawler ré-enfile tout). Absent = vieux pool. */
+  providersRegion?: string;
   seeds: SeedRef[];
   entries: PoolEntry[];
   /** Libellés humains des facettes à IDs (« director:5655 » → nom) pour les
@@ -197,6 +206,15 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   scored.sort(byTotalDesc);
   scored = scored.slice(0, 1000);
 
+  // Les plateformes que le cache connaît déjà, pour TOUT le pool (une lecture
+  // groupée) ; le reste attend le crawler. La région voyage avec le pool.
+  const providers = await applyCachedProviders(scored);
+  if (!quick) {
+    console.log(
+      `[Reco] Pool ${userId.slice(0, 8)}… : ${scored.length} entrées, plateformes connues ${providers.known}, inconnues ${providers.unknown}`
+    );
+  }
+
   const payload: PoolPayload = {
     generatedAt: new Date().toISOString(),
     strategyId: strategy.id,
@@ -205,6 +223,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     animeShare,
     preliminary: quick,
     people: likedPeople,
+    providersRegion: watchRegion(),
     seeds,
     entries: scored,
     labels,

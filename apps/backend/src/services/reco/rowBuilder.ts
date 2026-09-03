@@ -6,6 +6,7 @@ import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 import { REASONS_MAX, toItem } from "./rowItem";
 import type { BuiltRow, RecoReason } from "./rowItem";
+import type { ProviderRef } from "../tmdb/providerNormalize";
 
 // Les types des items servis vivent dans rowItem ; ré-exportés pour les
 // importeurs historiques (attachProviders, rangées globales…).
@@ -22,6 +23,9 @@ export interface RowBuildOptions {
   /** λ du MMR (curseur « Sûr ↔ Aventureux » / 100). */
   lambda: number;
   profile: TasteVector;
+  /** Nom et logo d'un id de plateforme (annuaire mondial) — les entrées du
+   *  pool ne portent que des ids. Absent : références nues. */
+  providerRefOf?: (id: number) => ProviderRef;
 }
 
 const ROW_SIZES: Record<string, number> = {
@@ -115,7 +119,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     seedTitle,
     generatedAt: pool.generatedAt,
     items: items.map((e) => {
-      const item = toItem(e, pool.labels);
+      const item = toItem(e, pool.labels, opts.providerRefOf);
       if (exploration) {
         item.exploration = true;
         item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
@@ -132,7 +136,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
     const row = done(main);
     for (const e of explo) {
-      const item = toItem(e, pool.labels);
+      const item = toItem(e, pool.labels, opts.providerRefOf);
       item.exploration = true;
       item.reasons = [exploReason, ...item.reasons].slice(0, REASONS_MAX);
       row.items.push(item);
