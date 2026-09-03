@@ -109,6 +109,7 @@ export async function buildCommunityRow(
       score: agg.score,
       voteAverage,
       reasons: [],
+      providers: null,
     });
   }
 

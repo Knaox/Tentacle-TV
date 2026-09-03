@@ -219,6 +219,7 @@ export async function buildServerPulseRow(
       score,
       voteAverage: entry?.communityRating ?? meta?.voteAverage ?? null,
       reasons: [],
+      providers: null,
     });
   }
   return { key: SERVER_PULSE_ROW_KEY, items, generatedAt };

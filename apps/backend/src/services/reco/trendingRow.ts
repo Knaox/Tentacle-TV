@@ -224,6 +224,7 @@ export async function buildTrendingRow(
       score: slim.popularity ?? payload.items.length - i,
       voteAverage: slim.voteAverage,
       reasons: [],
+      providers: null,
     });
   }
   return { key: TRENDING_ROW_KEY, items, generatedAt: payload.computedAt };

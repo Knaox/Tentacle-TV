@@ -86,6 +86,7 @@ async function buildBestOfLibraryRow(userId: string, ctx: GlobalRowContext): Pro
     score: e.communityRating ?? 0,
     voteAverage: e.communityRating,
     reasons: [],
+    providers: null,
   }));
   return { key: BEST_OF_LIBRARY_ROW_KEY, items, generatedAt: new Date().toISOString() };
 }

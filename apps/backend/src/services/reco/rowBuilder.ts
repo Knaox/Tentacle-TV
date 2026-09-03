@@ -1,48 +1,15 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
-import type { ProviderRef } from "../tmdb/metaCache";
 import { explorationQuota } from "./exploration";
 import { ANIME_COMMON_FACETS, ANIME_MIN_SHARE, ANIME_UNIVERSE_KEY } from "./facets";
 import { explorationPicks, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
+import { REASONS_MAX, toItem } from "./rowItem";
+import type { BuiltRow, RecoReason } from "./rowItem";
 
-/** Une raison lisible de la présence d'un titre (explicabilité ET debug). */
-export interface RecoReason {
-  kind: "facet" | "seed" | "exploration";
-  /** Clé de facette brute — le client la localise par préfixe. */
-  key?: string;
-  /** Libellé humain quand le serveur le connaît (personnes, genres…). */
-  label?: string;
-  seedTitle?: string;
-}
-
-export interface RecoRowItem {
-  key: string;
-  mediaType: "movie" | "tv";
-  tmdbId: number;
-  title: string;
-  year: number | null;
-  posterPath: string | null;
-  /** Visuel large TMDB pour le carrousel héros (null : backdrop Jellyfin ou rien). */
-  backdropPath: string | null;
-  /** null = hors bibliothèque (badge + navigation Vigie côté client). */
-  jellyfinItemId: string | null;
-  source: string;
-  score: number;
-  voteAverage: number | null;
-  reasons: RecoReason[];
-  exploration?: boolean;
-  /** Plateformes de streaming (chips côté client) — posé au SERVICE par
-   *  attachProviders ; absent = méta inconnue, [] = aucune offre incluse. */
-  providers?: ProviderRef[];
-}
-
-export interface BuiltRow {
-  key: string;
-  items: RecoRowItem[];
-  seedTitle?: string;
-  generatedAt: string;
-}
+// Les types des items servis vivent dans rowItem ; ré-exportés pour les
+// importeurs historiques (attachProviders, rangées globales…).
+export type { BuiltRow, RecoReason, RecoRowItem } from "./rowItem";
 
 export interface RowBuildOptions {
   /** Exclusions au moment du SERVICE (notes actives + feedback) — un titre
@@ -70,31 +37,6 @@ const BECAUSE_MIN_ITEMS = 6;
 const ANIME_ROW_MIN_ITEMS = 6;
 const BECAUSE_ROWS_MAX = 3;
 const ACTOR_ROWS_MAX = 2;
-const REASONS_MAX = 2;
-
-function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRowItem {
-  const { candidate, breakdown } = entry;
-  const reasons: RecoReason[] = [];
-  for (const contributor of breakdown.topContributors) {
-    if (contributor.contribution <= 0) continue;
-    reasons.push({ kind: "facet", key: contributor.key, label: labels[contributor.key] });
-    if (reasons.length >= REASONS_MAX) break;
-  }
-  return {
-    key: candidate.key,
-    mediaType: candidate.mediaType,
-    tmdbId: candidate.tmdbId,
-    title: candidate.title,
-    year: candidate.year,
-    posterPath: candidate.posterPath ?? null,
-    backdropPath: candidate.backdropPath ?? null,
-    jellyfinItemId: candidate.jellyfinItemId ?? null,
-    source: candidate.source,
-    score: breakdown.total,
-    voteAverage: candidate.voteAverage,
-    reasons,
-  };
-}
 
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
 export function availableRows(

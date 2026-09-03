@@ -1,17 +1,18 @@
 import { getCachedMetaMany, metaKey } from "../tmdb/metaCache";
-import type { RecoRowItem } from "./rowBuilder";
+import type { RecoRowItem } from "./rowItem";
 
 /**
- * Pose la disponibilité streaming sur les items SERVIS — une lecture groupée
- * du cache de métadonnées, jamais d'appel réseau au service. `providers`
- * absent = méta inconnue (le client ne filtre pas l'item) ; [] = aucune offre
- * incluse dans la région.
+ * Pose la disponibilité streaming sur les items SERVIS dont elle est encore
+ * inconnue — une lecture groupée du cache de métadonnées, jamais d'appel
+ * réseau. `null` reste `null` quand le cache ne sait pas : le client ne
+ * devine plus, le filtre strict exclut, le crawler comblera en fond.
  */
 export async function attachProviders(items: RecoRowItem[]): Promise<void> {
-  if (items.length === 0) return;
-  const metas = await getCachedMetaMany(items);
-  for (const item of items) {
+  const pending = items.filter((item) => item.providers == null);
+  if (pending.length === 0) return;
+  const metas = await getCachedMetaMany(pending);
+  for (const item of pending) {
     const meta = metas.get(metaKey(item.mediaType, item.tmdbId));
-    if (meta?.providers) item.providers = meta.providers;
+    item.providers = meta?.providers ?? null;
   }
 }
