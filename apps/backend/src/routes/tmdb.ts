@@ -113,9 +113,11 @@ export async function tmdbRoutes(app: FastifyInstance) {
   });
 
   /**
-   * GET /api/tmdb/watch-providers → { region, providers: [{ id, name, logoPath }] }
-   * L'annuaire COMPLET des plateformes de la région configurée — la source des
-   * logos du menu Filtres (Recommandations). Sans clé TMDB : liste vide.
+   * GET /api/tmdb/watch-providers
+   *   → { region, providers: [{ id, name, logoPath }], logos: { [id]: logoPath } }
+   * L'annuaire COMPLET des plateformes de la région configurée, dérivé de la
+   * liste mondiale persistée, et la carte des logos (région + familles connues,
+   * même hors région) — la source du menu Filtres. Sans clé TMDB : vide.
    */
   app.get("/watch-providers", async () => getWatchProviderDirectory());
 

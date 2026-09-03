@@ -8,6 +8,7 @@ import { rebuildProfile } from "./profileBuilder";
 import { runServerPulseJob } from "./serverPulse";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
 import { refreshTrending } from "./trendingRow";
+import { warmProviderDirectory } from "../tmdb/providerDirectory";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -20,6 +21,8 @@ const COOCCURRENCE_BOOT_DELAY_MS = 2 * 60_000;
 const CACHE_PURGE_INTERVAL_MS = 3600_000;
 const TRENDING_INTERVAL_MS = 12 * 3600_000;
 const TRENDING_BOOT_DELAY_MS = 45_000;
+/** L'annuaire mondial des plateformes en mémoire avant la première page. */
+const DIRECTORY_BOOT_DELAY_MS = 20_000;
 /** Après IDF (30 s) et cooccurrence (2 min) : le serveur est posé. */
 const FANOUT_BOOT_DELAY_MS = 5 * 60_000;
 /** Garde d'âge de la régénération après rebuild : c'est LE réglage de coût
@@ -36,6 +39,7 @@ let purgeTimer: NodeJS.Timeout | null = null;
 let trendingTimer: NodeJS.Timeout | null = null;
 let trendingBootTimer: NodeJS.Timeout | null = null;
 let fanoutBootTimer: NodeJS.Timeout | null = null;
+let directoryBootTimer: NodeJS.Timeout | null = null;
 const profileTimers = new Map<string, NodeJS.Timeout>();
 
 async function runIdf(): Promise<void> {
@@ -76,6 +80,13 @@ export function startRecoJobs(): void {
   purgeTimer = setInterval(() => {
     void purgeExpiredRecoCache().catch(() => undefined);
   }, CACHE_PURGE_INTERVAL_MS);
+
+  // Annuaire des plateformes : lu en base (ou TMDB) une fois le serveur posé,
+  // pour que la première page servie hydrate déjà noms et logos.
+  directoryBootTimer = setTimeout(() => {
+    directoryBootTimer = null;
+    warmProviderDirectory();
+  }, DIRECTORY_BOOT_DELAY_MS);
 
   // Tendances globales (TMDB ou Vigie) : premier passage 45 s après le
   // démarrage, puis toutes les 12 h — le TTL de 48 h absorbe les redémarrages.
@@ -138,6 +149,7 @@ export function stopRecoJobs(): void {
   if (trendingTimer) { clearInterval(trendingTimer); trendingTimer = null; }
   if (trendingBootTimer) { clearTimeout(trendingBootTimer); trendingBootTimer = null; }
   if (fanoutBootTimer) { clearTimeout(fanoutBootTimer); fanoutBootTimer = null; }
+  if (directoryBootTimer) { clearTimeout(directoryBootTimer); directoryBootTimer = null; }
   cancelRecoFanout();
   for (const t of profileTimers.values()) clearTimeout(t);
   profileTimers.clear();

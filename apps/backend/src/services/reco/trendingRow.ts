@@ -12,8 +12,10 @@ import type { BuiltRow, RecoRowItem } from "./rowBuilder";
  */
 export const TRENDING_ROW_KEY = "trending";
 
-/** Compte sentinelle des caches globaux (un GUID Jellyfin n'a pas cette forme). */
-export const GLOBAL_CACHE_USER_ID = "__global__";
+// Le compte sentinelle des caches globaux vit dans globalCacheStore ;
+// ré-exporté pour les importeurs historiques (serverPulse).
+import { GLOBAL_CACHE_USER_ID } from "../globalCacheStore";
+export { GLOBAL_CACHE_USER_ID };
 
 /** TTL 48 h pour un refresh 12 h : la purge horaire ne tue jamais la ligne
  *  entre deux passages — du « stale-while-refresh » gratuit. */
