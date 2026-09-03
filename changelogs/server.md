@@ -5,6 +5,25 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.17.0]
+### FR
+- **La page Recommandations s'affiche instantanément.** Le serveur précalcule votre page en arrière-plan (une page par compte et par filtre) et la sert en une seule requête ; l'application la garde sur l'appareil et la rend d'un coup, puis la rafraîchit en silence dès que le serveur l'a reconstruite — plus de carrousels qui arrivent un par un, plus de squelette hors de la toute première visite
+- **Plus jamais de page qui se vide** : un pool de recommandations passé sa fraîcheur est servi tel quel pendant qu'il se régénère, l'index de bibliothèque se remplace en fond au lieu de tomber dans une requête, et une relance en échec ne repart plus à chaque appel
+- **Le filtre par plateforme est fiable** : c'est le serveur qui filtre, strictement — un titre dont la disponibilité est inconnue n'apparaît plus sous « Crunchyroll » ; les rangées se construisent depuis les titres disponibles, le carrousel suit le filtre, et un crawler de fond apprend en continu les plateformes de vos recommandations
+- **Le filtre suit votre compte** d'un appareil à l'autre, et sa page est précalculée
+- **Chaque plateforme a son logo** : l'annuaire mondial TMDB (persisté) fournit les logos de toutes les familles — Crunchyroll et son canal Amazon ne font qu'un, OCS et Arte retrouvent les bons identifiants, Apple TV et HBO Max leurs nouveaux noms
+- **La recherche d'acteurs ne fait plus la queue** derrière une génération de recommandations : les appels interactifs à TMDB passent devant ceux du fond
+- Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
+
+### EN
+- **The Recommendations page shows up instantly.** The server precomputes your page in the background (one per account and per filter) and serves it in a single request; the app keeps it on the device, renders it at once, then refreshes it silently as soon as the server has rebuilt it — no more rows arriving one by one, no skeleton beyond the very first visit
+- **The page never empties anymore**: a recommendation pool past its freshness is served as is while it regenerates, the library index is replaced in the background instead of falling into a request, and a failed relaunch no longer restarts on every call
+- **The platform filter is reliable**: the server filters, strictly — a title with unknown availability no longer shows up under "Crunchyroll"; rows are built from the available titles, the billboard follows the filter, and a background crawler keeps learning the platforms of your recommendations
+- **The filter follows your account** across devices, and its page is precomputed
+- **Every platform has its logo**: the persisted worldwide TMDB directory provides logos for every family — Crunchyroll and its Amazon channel are one, OCS and Arte get their right ids back, Apple TV and HBO Max their new names
+- **Actor search no longer queues** behind a recommendation generation: interactive TMDB calls go first
+- Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
+
 ## [1.16.0]
 ### FR
 - **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes, et sert des rangées à votre goût : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Les utilisateurs de Tentacle regardent aussi », « Sortir de votre zone de confort »
