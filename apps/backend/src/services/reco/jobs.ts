@@ -9,6 +9,8 @@ import { runServerPulseJob } from "./serverPulse";
 import { startSyncWorkers, stopSyncWorkers } from "./syncWorkers";
 import { refreshTrending } from "./trendingRow";
 import { warmProviderDirectory } from "../tmdb/providerDirectory";
+import { startMetaCrawler, stopMetaCrawler } from "./metaCrawler";
+import { CRAWL_RESEED_BOOT_DELAY_MS, requestCrawlerReseed } from "./crawlReseed";
 
 // Même doctrine que les autres workers : setInterval dans le process Fastify,
 // un couple start/stop, timers mémorisés au module. Pas de cron, pas de file.
@@ -40,6 +42,7 @@ let trendingTimer: NodeJS.Timeout | null = null;
 let trendingBootTimer: NodeJS.Timeout | null = null;
 let fanoutBootTimer: NodeJS.Timeout | null = null;
 let directoryBootTimer: NodeJS.Timeout | null = null;
+let crawlerBootTimer: NodeJS.Timeout | null = null;
 const profileTimers = new Map<string, NodeJS.Timeout>();
 
 async function runIdf(): Promise<void> {
@@ -106,6 +109,15 @@ export function startRecoJobs(): void {
 
   // Poussée des notes vers TMDB/AniList (tick 15 s, backoff par ligne).
   startSyncWorkers();
+
+  // Crawler de plateformes : boucle de fond dès maintenant (la file se
+  // remplit au fil des générations), file reconstituée depuis les pools
+  // existants une fois le serveur posé.
+  startMetaCrawler();
+  crawlerBootTimer = setTimeout(() => {
+    crawlerBootTimer = null;
+    requestCrawlerReseed("boot");
+  }, CRAWL_RESEED_BOOT_DELAY_MS);
 }
 
 async function runTrending(): Promise<void> {
@@ -141,6 +153,8 @@ async function runCooccurrence(): Promise<void> {
 
 export function stopRecoJobs(): void {
   stopSyncWorkers();
+  stopMetaCrawler();
+  if (crawlerBootTimer) { clearTimeout(crawlerBootTimer); crawlerBootTimer = null; }
   if (idfTimer) { clearInterval(idfTimer); idfTimer = null; }
   if (idfBootTimer) { clearTimeout(idfBootTimer); idfBootTimer = null; }
   if (coocTimer) { clearInterval(coocTimer); coocTimer = null; }

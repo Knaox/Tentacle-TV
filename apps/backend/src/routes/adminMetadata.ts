@@ -14,6 +14,7 @@ import { requireAdmin } from "../middleware/auth";
 import { deleteConfigValue, getConfigValue, setConfigValue } from "../services/configStore";
 import { fanoutStatus, kickRecoFanout } from "../services/reco/fanout";
 import { refreshTrending } from "../services/reco/trendingRow";
+import { requestCrawlerReseed } from "../services/reco/crawlReseed";
 import { getTmdbApiKey } from "../services/tmdb/client";
 
 const putSchema = z.object({
@@ -90,6 +91,7 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     // comptes. Comparaison sur la clé EFFECTIVE : une variable d'environnement
     // prioritaire rend l'écriture DB inerte — rien ne se déclenche.
     const beforeKey = getTmdbApiKey();
+    const beforeRegion = getConfigValue("tmdb_watch_region") || "FR";
     await applyField("tmdb_api_key", body.tmdbApiKey);
     await applyField("anilist_client_id", body.anilistClientId);
     await applyField("anilist_client_secret", body.anilistClientSecret);
@@ -98,6 +100,11 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     if (afterKey && afterKey !== beforeKey) {
       void refreshTrending().catch(() => undefined);
       kickRecoFanout({ force: true, reason: "key-set" });
+    }
+    // Les plateformes des pools sont celles de l'ancienne région : le crawler
+    // les réapprend (cache d'abord, le payload brut porte toutes les régions).
+    if ((getConfigValue("tmdb_watch_region") || "FR") !== beforeRegion) {
+      requestCrawlerReseed("region");
     }
     return { ok: true };
   });
