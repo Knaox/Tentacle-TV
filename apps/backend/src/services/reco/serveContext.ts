@@ -96,7 +96,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     includeVigie: settings?.includeVigie ?? true,
     community: settings?.community ?? true,
     exclude,
-    profile: { facets, signalCount },
+    profile: { facets, signalCount, animeShare: profileRow?.animeShare ?? 0 },
     bootstrapping,
     tmdbConfigured: tmdb,
     personalized,

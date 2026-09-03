@@ -1,7 +1,7 @@
 import { getPrisma } from "../db";
 import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
-import { facetsFromJellyfin, facetsFromTmdb } from "./facets";
+import { ANIME_UNIVERSE_KEY, facetsFromJellyfin, facetsFromTmdb } from "./facets";
 import {
   SIGNAL_ABANDON,
   SIGNAL_COMPLETED,
@@ -14,6 +14,7 @@ import {
   ratingStats,
   seriesEngagementWeight,
   truncateVector,
+  universeShare,
 } from "./profileMath";
 import type { WeightedSignal } from "./profileMath";
 import { fetchUserSignals, tmdbIdOf } from "./signals";
@@ -24,7 +25,9 @@ import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
  *  repli Jellyfin — la reconstruction suivante reprendra où celle-ci s'arrête. */
 const TMDB_FETCH_BUDGET = 40;
 const PROFILE_MAX_FACETS = 400;
-const PROFILE_SCHEMA_VERSION = 1;
+/** Version du profil stocké : 2 = animeShare. Le fan-out de boot reconstruit
+ *  une fois les profils d'une version antérieure. */
+export const PROFILE_SCHEMA_VERSION = 2;
 
 const ABANDON_MAX_PROGRESS = 0.25;
 const ABANDON_MIN_IDLE_DAYS = 30;
@@ -40,6 +43,8 @@ interface PendingSignal {
   ageDays: number;
   tmdb: TmdbRef | null;
   fallback: SignalItem | null;
+  /** Consommation réelle (vu, suivi, noté) — la part d'univers se calcule dessus. */
+  consumption: boolean;
 }
 
 function tmdbTypeOf(item: SignalItem): "movie" | "tv" | null {
@@ -62,6 +67,8 @@ export interface ProfileSummary {
   facetCount: number;
   ratingMean: number;
   ratingStdDev: number;
+  /** Part d'animé dans les signaux de consommation (0..1). */
+  animeShare: number;
 }
 
 export async function rebuildProfile(userId: string): Promise<ProfileSummary> {
@@ -116,23 +123,24 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       ageDays: ageInDays(r.updatedAt),
       tmdb: { mediaType, tmdbId: r.tmdbId },
       fallback: libraryByRef.get(`${mediaType}:${r.tmdbId}`) ?? null,
+      consumption: true,
     });
   }
 
   // 2) Favoris (like fort) et Ma liste (intérêt) — pas de date chez Jellyfin.
   for (const item of signals.favorites) {
-    pendings.push({ weight: SIGNAL_FAVORITE, ageDays: 0, tmdb: refOf(item), fallback: item });
+    pendings.push({ weight: SIGNAL_FAVORITE, ageDays: 0, tmdb: refOf(item), fallback: item, consumption: false });
   }
   for (const item of signals.watchlist) {
-    pendings.push({ weight: SIGNAL_WATCHLISTED, ageDays: 0, tmdb: refOf(item), fallback: item });
+    pendings.push({ weight: SIGNAL_WATCHLISTED, ageDays: 0, tmdb: refOf(item), fallback: item, consumption: false });
   }
 
   // 3) Films vus (terminé +0.5) et revus (PlayCount >= 2, +0.9).
   for (const item of signals.playedMovies) {
     const age = item.UserData?.LastPlayedDate ? ageInDays(item.UserData.LastPlayedDate) : 0;
-    pendings.push({ weight: SIGNAL_COMPLETED, ageDays: age, tmdb: refOf(item), fallback: item });
+    pendings.push({ weight: SIGNAL_COMPLETED, ageDays: age, tmdb: refOf(item), fallback: item, consumption: true });
     if ((item.UserData?.PlayCount ?? 0) >= 2) {
-      pendings.push({ weight: SIGNAL_REWATCH, ageDays: age, tmdb: refOf(item), fallback: item });
+      pendings.push({ weight: SIGNAL_REWATCH, ageDays: age, tmdb: refOf(item), fallback: item, consumption: true });
     }
   }
 
@@ -155,6 +163,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       ageDays: idleDays,
       tmdb: refOf(target),
       fallback: target,
+      consumption: false,
     });
   }
 
@@ -172,6 +181,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       ageDays: last ? ageInDays(last) : 0,
       tmdb: refOf(series),
       fallback: series,
+      consumption: true,
     });
   }
 
@@ -184,11 +194,18 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
     const meta = p.tmdb ? metaByRef.get(`${p.tmdb.mediaType}:${p.tmdb.tmdbId}`) : undefined;
     const facets = meta ? facetsFromTmdb(meta) : p.fallback ? facetsFromJellyfin(p.fallback) : [];
     if (facets.length === 0) continue;
-    weighted.push({ weight: p.weight, ageDays: p.ageDays, facets });
+    weighted.push({ weight: p.weight, ageDays: p.ageDays, facets, consumption: p.consumption });
   }
 
   const vector = truncateVector(buildFacetVector(weighted, idfFor), PROFILE_MAX_FACETS);
   const facetCount = Object.keys(vector).length;
+  // Part d'animé sur les signaux de CONSOMMATION (films vus, séries suivies,
+  // notes) — ni favoris ni Ma liste : c'est ce qu'on REGARDE qui décide. Un
+  // compte peut n'avoir aucun favori animé et en regarder un soir sur trois.
+  const animeShare = universeShare(
+    weighted.filter((s) => s.consumption),
+    ANIME_UNIVERSE_KEY
+  );
 
   await prisma.tasteProfile.upsert({
     where: { jellyfinUserId: userId },
@@ -198,6 +215,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       signalCount: weighted.length,
       ratingMean: mean,
       ratingStdDev: stdDev,
+      animeShare,
       schemaVersion: PROFILE_SCHEMA_VERSION,
     },
     update: {
@@ -205,12 +223,13 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       signalCount: weighted.length,
       ratingMean: mean,
       ratingStdDev: stdDev,
+      animeShare,
       schemaVersion: PROFILE_SCHEMA_VERSION,
       computedAt: new Date(),
     },
   });
 
-  return { signalCount: weighted.length, facetCount, ratingMean: mean, ratingStdDev: stdDev };
+  return { signalCount: weighted.length, facetCount, ratingMean: mean, ratingStdDev: stdDev, animeShare };
 }
 
 async function resolveMeta(pendings: PendingSignal[]): Promise<Map<string, TitleMeta>> {
@@ -238,38 +257,4 @@ async function resolveMeta(pendings: PendingSignal[]): Promise<Map<string, Title
     if (meta) out.set(key, meta);
   }
   return out;
-}
-
-/** Le profil stocké, facettes parsées (pour l'endpoint de debug). */
-export async function getProfileDebug(userId: string): Promise<{
-  exists: boolean;
-  signalCount: number;
-  ratingMean: number;
-  ratingStdDev: number;
-  computedAt: string | null;
-  topFacets: Array<{ key: string; weight: number }>;
-} | null> {
-  const prisma = getPrisma();
-  const row = await prisma.tasteProfile.findUnique({ where: { jellyfinUserId: userId } });
-  if (!row) {
-    return { exists: false, signalCount: 0, ratingMean: 0, ratingStdDev: 0, computedAt: null, topFacets: [] };
-  }
-  let facets: Record<string, number> = {};
-  try {
-    facets = JSON.parse(row.facets) as Record<string, number>;
-  } catch {
-    // Vecteur illisible : le debug montre un profil vide, le prochain rebuild réécrit.
-  }
-  const topFacets = Object.entries(facets)
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .slice(0, 50)
-    .map(([key, weight]) => ({ key, weight }));
-  return {
-    exists: true,
-    signalCount: row.signalCount,
-    ratingMean: row.ratingMean,
-    ratingStdDev: row.ratingStdDev,
-    computedAt: row.computedAt.toISOString(),
-    topFacets,
-  };
 }

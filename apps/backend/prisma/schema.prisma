@@ -471,6 +471,10 @@ model TasteProfile {
   signalCount    Int      @default(0)
   ratingMean     Float    @default(0)
   ratingStdDev   Float    @default(0)
+  /// Part de l'univers animé dans les signaux de CONSOMMATION (0..1) — pilote
+  /// la source /discover animé, le quota des rangées mixtes et la rangée
+  /// « Animés pour vous ». Calculée par services/reco/profileBuilder.ts.
+  animeShare     Float    @default(0)
   schemaVersion  Int      @default(1)
   computedAt     DateTime @default(now())
 

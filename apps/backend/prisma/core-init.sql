@@ -287,11 +287,15 @@ CREATE TABLE IF NOT EXISTS `taste_profiles` (
   `signalCount` int(11) NOT NULL DEFAULT 0,
   `ratingMean` double NOT NULL DEFAULT 0,
   `ratingStdDev` double NOT NULL DEFAULT 0,
+  `animeShare` double NOT NULL DEFAULT 0,
   `schemaVersion` int(11) NOT NULL DEFAULT 1,
   `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `taste_profiles_jellyfinUserId_key` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Part d'animé, ajoutée après la première livraison du moteur : une base
+-- existante la reçoit ici (idempotent), une base neuve la tient du CREATE.
+ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `animeShare` double NOT NULL DEFAULT 0;
 
 -- Réglages de recommandation par compte. Voir schema.prisma > RecoSettings.
 CREATE TABLE IF NOT EXISTS `reco_settings` (

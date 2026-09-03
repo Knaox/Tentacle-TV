@@ -8,6 +8,7 @@ import {
   truncateVector,
   SIGNAL_FAVORITE,
   seriesEngagementWeight,
+  universeShare,
 } from "./profileMath";
 
 describe("décroissance temporelle", () => {
@@ -112,5 +113,28 @@ describe("engagement d'une série suivie", () => {
     expect(w24).toBeLessThan(seriesEngagementWeight(40));
     expect(w6).toBeGreaterThan(SIGNAL_FAVORITE);
     expect(w12).toBeCloseTo(0.81, 2);
+  });
+});
+
+describe("part d'un univers dans les signaux", () => {
+  const anime = [{ key: "universe:anime", mult: 1 }, { key: "genre:16", mult: 1 }];
+  const live = [{ key: "genre:18", mult: 1 }];
+
+  it("zéro sans signal, moitié quand un signal sur deux porte l'univers", () => {
+    expect(universeShare([], "universe:anime")).toBe(0);
+    const signals = [
+      { weight: 0.5, ageDays: 0, facets: anime },
+      { weight: 0.5, ageDays: 0, facets: live },
+    ];
+    expect(universeShare(signals, "universe:anime")).toBeCloseTo(0.5, 10);
+  });
+
+  it("la décroissance et la valeur absolue s'appliquent", () => {
+    const signals = [
+      { weight: 0.5, ageDays: HALF_LIFE_DAYS, facets: anime },
+      { weight: -0.5, ageDays: 0, facets: live },
+    ];
+    // 0,25 d'animé contre 0,5 de reste : un tiers.
+    expect(universeShare(signals, "universe:anime")).toBeCloseTo(1 / 3, 10);
   });
 });

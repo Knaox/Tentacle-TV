@@ -82,6 +82,8 @@ export interface WeightedSignal {
   weight: number;
   ageDays: number;
   facets: FacetEntry[];
+  /** Signal de CONSOMMATION (vu, suivi, noté) — ni favori ni Ma liste. */
+  consumption?: boolean;
 }
 
 /**
@@ -103,6 +105,24 @@ export function buildFacetVector(
     }
   }
   return vector;
+}
+
+/**
+ * Part d'un univers dans une liste de signaux : Σ|poids décroissé| des
+ * signaux qui portent la facette / Σ|poids décroissé| de tous (0..1, 0 sans
+ * signal). La valeur absolue compte : un signal négatif dit aussi que
+ * l'univers concerne ce compte.
+ */
+export function universeShare(signals: readonly WeightedSignal[], universeKey: string): number {
+  let total = 0;
+  let inUniverse = 0;
+  for (const signal of signals) {
+    const w = Math.abs(signal.weight) * decayFactor(signal.ageDays);
+    if (w === 0) continue;
+    total += w;
+    if (signal.facets.some((f) => f.key === universeKey)) inUniverse += w;
+  }
+  return total > 0 ? inUniverse / total : 0;
 }
 
 /** Tronque le vecteur aux `max` facettes les plus marquées (|poids| décroissant). */
