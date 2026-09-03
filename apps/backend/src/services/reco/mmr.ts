@@ -26,10 +26,25 @@ export const MMR_DEFAULT_LAMBDA = 0.7;
 /**
  * Sélection gloutonne : MMR(c) = λ·score(c) − (1−λ)·max(sim(c, retenus)).
  * Déterministe à entrée égale (départage par clé). Rend les clés dans l'ordre
- * d'insertion — c'est l'ordre d'affichage de la rangée.
+ * d'insertion — c'est l'ordre d'affichage de la rangée. `ignoreKeys` retire
+ * des facettes du jaccard : pour diversifier ENTRE animés, celles que tous
+ * partagent (genre 16, lang ja…) ne disent rien — sans ça, un seul animé par
+ * rangée, le deuxième toujours pénalisé.
  */
-export function selectWithMmr(items: MmrItem[], count: number, lambda: number): string[] {
-  const pool = [...items].sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
+export function selectWithMmr(
+  items: MmrItem[],
+  count: number,
+  lambda: number,
+  ignoreKeys?: ReadonlySet<string>
+): string[] {
+  const ignored = ignoreKeys && ignoreKeys.size > 0 ? ignoreKeys : null;
+  const pool = [...items]
+    .map((item) =>
+      ignored
+        ? { ...item, facetKeys: new Set([...item.facetKeys].filter((k) => !ignored.has(k))) }
+        : item
+    )
+    .sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));
   const selected: MmrItem[] = [];
 
   while (selected.length < count && pool.length > 0) {
