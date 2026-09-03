@@ -1,7 +1,8 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
 import type { ProviderRef } from "../tmdb/metaCache";
 import { explorationQuota } from "./exploration";
-import { explorationPicks, mmrPick } from "./rowSelection";
+import { ANIME_COMMON_FACETS, ANIME_MIN_SHARE, ANIME_UNIVERSE_KEY } from "./facets";
+import { explorationPicks, isAnimeEntry, mmrPick, pickWithUniverseQuota } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 
@@ -60,10 +61,13 @@ const ROW_SIZES: Record<string, number> = {
   forYou: 30,
   inLibrary: 24,
   discover: 24,
+  anime: 24,
   exploration: 20,
 };
 const BECAUSE_SIZE = 18;
 const BECAUSE_MIN_ITEMS = 6;
+/** « Animés pour vous » : même plancher qu'une rangée « Parce que… ». */
+const ANIME_ROW_MIN_ITEMS = 6;
 const BECAUSE_ROWS_MAX = 3;
 const ACTOR_ROWS_MAX = 2;
 const REASONS_MAX = 2;
@@ -98,6 +102,14 @@ export function availableRows(
   opts: Pick<RowBuildOptions, "vigieAvailable" | "inLibraryOnly"> & { userId: string }
 ): Array<{ key: string; seedTitle?: string }> {
   const rows: Array<{ key: string; seedTitle?: string }> = [{ key: "forYou" }, { key: "inLibrary" }];
+  // « Animés pour vous » : dès que l'univers pèse (part au seuil) et qu'il y a
+  // de quoi remplir — avant « À découvrir », l'ancre des Tendances.
+  if ((pool.animeShare ?? 0) >= ANIME_MIN_SHARE) {
+    const anime = pool.entries.filter(
+      (e) => isAnimeEntry(e) && (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
+    );
+    if (anime.length >= ANIME_ROW_MIN_ITEMS) rows.push({ key: "anime" });
+  }
   if (opts.vigieAvailable) rows.push({ key: "discover" });
 
   // Graines éligibles (titrées, assez de candidats), puis TIRAGE QUOTIDIEN
@@ -153,6 +165,8 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
       !opts.exclude.has(e.candidate.key) &&
       (!opts.inLibraryOnly || e.candidate.jellyfinItemId)
   );
+  // Part d'animé à la génération : quota des rangées mixtes, rangée dédiée.
+  const share = pool.animeShare ?? 0;
   const exploReason: RecoReason = { kind: "exploration" };
   const done = (items: PoolEntry[], seedTitle?: string, exploration = false): BuiltRow => ({
     key: rowKey,
@@ -171,7 +185,7 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   if (rowKey === "forYou") {
     const size = ROW_SIZES.forYou;
     const quota = Math.round(size * explorationQuota(opts.lambda * 100));
-    const main = mmrPick(eligible, size - quota, opts.lambda);
+    const main = pickWithUniverseQuota(eligible, size - quota, opts.lambda, share);
     const mainKeys = new Set(main.map((e) => e.candidate.key));
     const explo = explorationPicks(eligible, opts.profile, quota, mainKeys);
     const row = done(main);
@@ -185,12 +199,26 @@ export function buildRow(pool: PoolPayload, rowKey: string, opts: RowBuildOption
   }
 
   if (rowKey === "inLibrary") {
-    return done(mmrPick(eligible.filter((e) => e.candidate.jellyfinItemId), ROW_SIZES.inLibrary, opts.lambda));
+    const inLibrary = eligible.filter((e) => e.candidate.jellyfinItemId);
+    return done(pickWithUniverseQuota(inLibrary, ROW_SIZES.inLibrary, opts.lambda, share));
   }
 
   if (rowKey === "discover") {
     if (!opts.vigieAvailable) return null;
-    return done(mmrPick(eligible.filter((e) => !e.candidate.jellyfinItemId), ROW_SIZES.discover, opts.lambda));
+    const outside = eligible.filter((e) => !e.candidate.jellyfinItemId);
+    return done(pickWithUniverseQuota(outside, ROW_SIZES.discover, opts.lambda, share));
+  }
+
+  if (rowKey === "anime") {
+    const related = eligible.filter(isAnimeEntry);
+    if (share < ANIME_MIN_SHARE || related.length < ANIME_ROW_MIN_ITEMS) return null;
+    const row = done(mmrPick(related, ROW_SIZES.anime, opts.lambda, ANIME_COMMON_FACETS));
+    // « Vous regardez des animés » est le TITRE de la rangée : place aux
+    // raisons spécifiques (thème, studio, décennie).
+    for (const item of row.items) {
+      item.reasons = item.reasons.filter((r) => r.key !== ANIME_UNIVERSE_KEY);
+    }
+    return row;
   }
 
   if (rowKey.startsWith("becauseYouLiked:")) {
