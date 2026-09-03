@@ -9,6 +9,29 @@ export const SIGNAL_REWATCH = 0.9;
 export const SIGNAL_ABANDON = -0.6;
 export const SIGNAL_SERIES_FOLLOWED = 0.6;
 
+/** Une série est « suivie » à partir de trois épisodes vus. */
+export const SERIES_FOLLOWED_MIN_EPISODES = 3;
+/** Nombre d'épisodes vus à partir duquel l'engagement est plein. */
+export const SERIES_ENGAGEMENT_FULL_EPISODES = 40;
+/** Poids plafond d'une série suivie — au niveau d'un revisionnage. */
+export const SERIES_ENGAGEMENT_MAX = 1.0;
+
+/**
+ * Poids d'une série suivie selon les épisodes VUS : 0 sous trois épisodes,
+ * SIGNAL_SERIES_FOLLOWED (0,6) à trois, croissance logarithmique jusqu'à
+ * SERIES_ENGAGEMENT_MAX vers quarante (bornée). Un poids plat comptait
+ * 86 épisodes de Fire Force comme trois épisodes essayés — l'engagement
+ * réel disparaissait du profil.
+ */
+export function seriesEngagementWeight(playedEpisodes: number): number {
+  if (!(playedEpisodes >= SERIES_FOLLOWED_MIN_EPISODES)) return 0;
+  const t =
+    Math.log(playedEpisodes / SERIES_FOLLOWED_MIN_EPISODES) /
+    Math.log(SERIES_ENGAGEMENT_FULL_EPISODES / SERIES_FOLLOWED_MIN_EPISODES);
+  const clamped = Math.min(1, Math.max(0, t));
+  return SIGNAL_SERIES_FOLLOWED + (SERIES_ENGAGEMENT_MAX - SIGNAL_SERIES_FOLLOWED) * clamped;
+}
+
 /** Demi-vie de la décroissance temporelle : un signal de 6 mois pèse moitié. */
 export const HALF_LIFE_DAYS = 180;
 
