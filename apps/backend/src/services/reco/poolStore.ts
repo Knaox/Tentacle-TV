@@ -41,6 +41,37 @@ export async function writePool(userId: string, payload: PoolPayload): Promise<v
 }
 
 /**
+ * Modifie le pool EN PLACE sans toucher ni `generatedAt` ni `expiresAt` —
+ * `writePool` rechargerait le TTL à chaque patch et rendrait le pool immortel.
+ * C'est le crawler qui pose les plateformes apprises. Concurrence optimiste :
+ * l'écriture est conditionnée sur le `generatedAt` lu ; un pool régénéré
+ * entre la lecture et l'écriture n'est jamais écrasé — « raced » n'est pas
+ * une erreur, la nouvelle génération se ré-enfile seule.
+ */
+export async function patchPool(
+  userId: string,
+  mutate: (pool: PoolPayload) => boolean
+): Promise<"patched" | "unchanged" | "missing" | "raced"> {
+  const prisma = getPrisma();
+  const row = await prisma.recommendationCache.findUnique({
+    where: { jellyfinUserId_rowKey: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY } },
+  });
+  if (!row) return "missing";
+  let pool: PoolPayload;
+  try {
+    pool = JSON.parse(row.payload) as PoolPayload;
+  } catch {
+    return "missing";
+  }
+  if (!mutate(pool)) return "unchanged";
+  const res = await prisma.recommendationCache.updateMany({
+    where: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY, generatedAt: row.generatedAt },
+    data: { payload: JSON.stringify(pool) },
+  });
+  return res.count === 0 ? "raced" : "patched";
+}
+
+/**
  * Jette le pool : quand un réglage change la MATIÈRE (les sources interrogées)
  * et pas seulement le service, attendre l'expiration (6 h) trahirait le
  * réglage. La prochaine requête relance une génération.
