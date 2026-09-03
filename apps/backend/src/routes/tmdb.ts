@@ -1,13 +1,15 @@
 /* ------------------------------------------------------------------ */
-/*  Watch Providers — via Jellyseerr discover                          */
+/*  Watch Providers — filtre bibliothèque via Jellyseerr discover      */
 /*  Warm par plateforme à la demande (pas toutes au démarrage)         */
 /*  Si Seer pas installé → retourne {} (fallback Studios côté client)  */
+/*  GET /watch-providers : l'annuaire TMDB de la région (id, nom, logo)*/
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import { requireAuth } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { getSeerrConfig } from "../services/seerConfig";
+import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -109,6 +111,13 @@ export async function tmdbRoutes(app: FastifyInstance) {
 
     return { matchingIds, cacheReady: isPlatformCached(body.platformId) };
   });
+
+  /**
+   * GET /api/tmdb/watch-providers → { region, providers: [{ id, name, logoPath }] }
+   * L'annuaire COMPLET des plateformes de la région configurée — la source des
+   * logos du menu Filtres (Recommandations). Sans clé TMDB : liste vide.
+   */
+  app.get("/watch-providers", async () => getWatchProviderDirectory());
 
   /**
    * GET /api/tmdb/resolve?tmdbId=123&mediaType=movie
