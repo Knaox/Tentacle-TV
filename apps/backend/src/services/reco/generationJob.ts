@@ -1,10 +1,8 @@
 import { getPrisma } from "../db";
 import { awaitRebuild } from "./profileBuilder";
-import { tmdbConfigured } from "../tmdb/client";
-import { getCachedMetaMany, getTitleMeta, metaKey } from "../tmdb/metaCache";
-import type { TitleMeta } from "../tmdb/metaCache";
-import { facetsFromTmdb } from "./facets";
+import { getTitleMeta } from "../tmdb/metaCache";
 import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
+import { enrichTopEntries } from "./poolEnrichment";
 import { FacetScoringStrategy } from "./scoring/facetStrategy";
 import type { Candidate, ScoreBreakdown, TasteVector } from "./scoring/strategy";
 import { buildExclusions } from "./candidates/exclusions";
@@ -23,15 +21,6 @@ import { readPool as readStoredPool, writePool } from "./poolStore";
 // ici pour ne pas casser les importeurs historiques.
 export { POOL_ROW_KEY, readPool } from "./poolStore";
 
-/** Le haut du pré-classement enrichi en métadonnées complètes (keywords…). */
-const ENRICH_TOP = 120;
-/** Le haut BIBLIOTHÈQUE enrichi en plus : le pré-classement global est dominé
- *  par les candidats TMDB (facettes aux ids TMDB, comme le profil) — en mode
- *  « bibliothèque seule », on servait donc des titres jamais enrichis, sans
- *  visuels ni providers alors que leurs métas dormaient en cache. */
-const LIBRARY_ENRICH_TOP = 80;
-/** Appels TMDB frais au plus par génération — le cache est gratuit. */
-const ENRICH_FETCH_BUDGET = 60;
 /** Budget dédié aux TITRES de graines muettes — séparé de l'enrichissement :
  *  une rangée « Parce que vous avez aimé » sans titre n'existe pas. */
 const SEED_META_BUDGET = 8;
@@ -191,69 +180,9 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   }));
   scored.sort(byTotalDesc);
 
-  const labels: Record<string, string> = {};
-  const harvestLabels = (meta: TitleMeta) => {
-    for (const g of meta.genres) labels[`genre:${g.id}`] = g.name;
-    for (const k of meta.keywords) labels[`kw:${k.id}`] = k.name;
-    for (const d of meta.directors) if (d.name) labels[`director:${d.id}`] = d.name;
-    for (const a of meta.topCast) if (a.name) labels[`actor:${a.id}`] = a.name;
-    for (const s of meta.studios) if (s.name) labels[`studio:${s.id}`] = s.name;
-    for (const n of meta.networks) if (n.name) labels[`network:${n.id}`] = n.name;
-  };
-  // Libellés des facettes nommées Jellyfin (slug → intitulé d'origine).
-  for (const entry of library.entries) {
-    for (const g of entry.Genres ?? []) {
-      labels[`genre-name:${g.trim().toLowerCase().replace(/\s+/g, "-")}`] = g;
-    }
-    for (const s of entry.Studios ?? []) {
-      if (s.Name) labels[`studio-name:${s.Name.trim().toLowerCase().replace(/\s+/g, "-")}`] = s.Name;
-    }
-  }
-
-  // Passe rapide : enrichissement au CACHE seul, pas un octet de réseau.
-  let fetchBudget = !quick && tmdbConfigured() ? ENRICH_FETCH_BUDGET : 0;
-  // Haut GLOBAL + haut BIBLIOTHÈQUE (cf. LIBRARY_ENRICH_TOP), dédupliqués.
-  // L'ORDRE décide qui consomme le budget de fetchs : en bibliothèque seule,
-  // la bibliothèque passe DEVANT — c'est elle qui est servie, dépenser le
-  // budget sur des candidats TMDB jamais montrés laissait les rangées sans
-  // visuels ni providers.
-  const globalTop = scored.slice(0, ENRICH_TOP);
-  const libraryTop: PoolEntry[] = [];
-  for (const entry of scored) {
-    if (libraryTop.length >= LIBRARY_ENRICH_TOP) break;
-    if (entry.candidate.jellyfinItemId) libraryTop.push(entry);
-  }
-  const enrichSet = new Map<string, PoolEntry>();
-  for (const entry of includeVigie ? [...globalTop, ...libraryTop] : [...libraryTop, ...globalTop]) {
-    if (!enrichSet.has(entry.candidate.key)) enrichSet.set(entry.candidate.key, entry);
-  }
-  const enrichTop = [...enrichSet.values()];
-  // Une lecture groupée du cache pour tout le panier — le budget de fetchs
-  // frais sert aux absents ET aux lignes d'avant les watch/providers.
-  const cachedMeta = await getCachedMetaMany(
-    enrichTop.map((e) => ({ mediaType: e.candidate.mediaType, tmdbId: e.candidate.tmdbId }))
-  );
-  for (const entry of enrichTop) {
-    const { candidate } = entry;
-    let meta = cachedMeta.get(metaKey(candidate.mediaType, candidate.tmdbId)) ?? null;
-    // Méta absente OU d'avant la clé watch/providers : le budget la (re)paie —
-    // c'est la mise à niveau douce du cache, jusqu'à 60 titres par génération.
-    if ((!meta || meta.providers === null) && fetchBudget > 0) {
-      fetchBudget--;
-      meta = (await getTitleMeta(candidate.mediaType, candidate.tmdbId)) ?? meta;
-    }
-    if (!meta) continue;
-    harvestLabels(meta);
-    candidate.facets = facetsFromTmdb(meta);
-    // Les visuels : un candidat bibliothèque n'en a pas, la méta les fournit.
-    candidate.posterPath = candidate.posterPath ?? meta.posterPath;
-    candidate.backdropPath = candidate.backdropPath ?? meta.backdropPath;
-    candidate.voteAverage = meta.voteAverage ?? candidate.voteAverage;
-    candidate.voteCount = meta.voteCount ?? candidate.voteCount;
-    candidate.popularity = meta.popularity ?? candidate.popularity;
-    candidate.year = meta.year ?? candidate.year;
-    entry.breakdown = strategy.score(profile, candidate);
-  }
+  // Enrichissement du haut du panier (cache gratuit + budget de fetchs) et
+  // re-score des entrées touchées — cf. poolEnrichment. Puis re-classement.
+  const labels = await enrichTopEntries(scored, library, { quick, includeVigie, profile, strategy });
   scored.sort(byTotalDesc);
   scored = scored.slice(0, 1000);
 
