@@ -13,6 +13,7 @@ import { RecoRowSkeleton } from "../components/reco/RecoRowSkeleton";
 import { RecoRowSlot } from "../components/reco/RecoRowSlot";
 import { RecoStatusBanner } from "../components/reco/RecoStatusBanner";
 import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
+import { useRecoFilter, useRecoFilterServerSync } from "../hooks/useRecoFilter";
 
 /** Les rangées servies dans TOUS les états du moteur (contrat backend). */
 const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
@@ -31,10 +32,10 @@ export function Recommendations() {
   const { data: overview, isPending } = useRecoOverview();
   // Même clé de cache que la rangée « Pour vous » : zéro requête en plus.
   const { excludeKeys } = useRecoHeroSlides();
-  // Chips plateformes : filtrage CLIENT (aucun refetch). Toujours visibles —
-  // un item à disponibilité inconnue n'est jamais filtré, le tri s'affine à
-  // mesure que le cache de métadonnées apprend les plateformes.
-  const [selectedProviders, setSelectedProviders] = useState<number[]>([]);
+  // Le filtre de plateformes vit dans son store (miroir local + réglage du
+  // compte, synchronisé ici) — la page filtrée arrive par le serveur.
+  useRecoFilterServerSync();
+  const { selected: selectedProviders } = useRecoFilter();
   const providerFilter = selectedProviders.length > 0 ? selectedProviders : undefined;
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
@@ -123,7 +124,7 @@ export function Recommendations() {
           }
         />
 
-        <RecoFiltersMenu selected={selectedProviders} onChange={setSelectedProviders} />
+        <RecoFiltersMenu />
 
         <RecoStatusBanner
           overview={overview}
