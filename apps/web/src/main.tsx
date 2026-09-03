@@ -47,6 +47,8 @@ import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
 import { readRecoFilterMirror } from "./lib/recoFilterStorage";
+import { bootRoutePreload } from "./lib/bootRoutePreload";
+import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import "./index.css";
@@ -252,6 +254,8 @@ attachQueryPersister(queryClient, persistStorage, persistOptions);
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
 installAnimationAudit();
+// `__cls()` en console — développement uniquement : les décalages de mise en page.
+if (import.meta.env.DEV) installLayoutShiftProbe();
 
 // Diagnostic du lecteur — DÉVELOPPEMENT UNIQUEMENT. Monté à la racine et non
 // dans le lecteur : le panneau est en position fixe et lit l'état de mpv par
@@ -260,7 +264,8 @@ installAnimationAudit();
 // disparaissent alors du bundle.
 const playerDebug = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
 
-createRoot(document.getElementById("root")!).render(
+function renderApp() {
+  createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* Le cadre de fenêtre, là où la page doit le dessiner elle-même. Monté à la
         racine, HORS des fournisseurs : il ne lit aucun contexte, et il doit
@@ -282,4 +287,9 @@ createRoot(document.getElementById("root")!).render(
       </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>
-);
+  );
+}
+
+// Route de démarrage : son chunk d'abord (au plus 300 ms), pour rendre la
+// page d'un coup depuis le cache hydraté — sans spinner à l'arrivée.
+void bootRoutePreload(window.location.pathname).then(renderApp);

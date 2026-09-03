@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { preloadable } from "./lib/preloadable";
 
 /**
  * Pages chargees a la demande.
@@ -40,7 +41,9 @@ export const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({
 export const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").then((m) => ({ default: m.AdminThemeTokens })));
 export const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
 export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
-export const Recommendations = lazy(() => import("./pages/Recommendations").then((m) => ({ default: m.Recommendations })));
+// Préchargeable : le chunk se charge au boot et au survol du lien, et la page
+// se rend alors sans suspendre — jamais de spinner à l'arrivée.
+export const Recommendations = preloadable(() => import("./pages/Recommendations").then((m) => m.Recommendations));
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));
