@@ -26,8 +26,12 @@ import {
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
+  RECO_PAGE_KEY,
+  WATCH_PROVIDERS_KEY,
+  recoFilterKey,
   setRequestTimeoutMs,
 } from "@tentacle-tv/api-client";
+import type { PersisterOptions } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import * as PluginsAPI from "@tentacle-tv/plugins-api";
@@ -42,6 +46,7 @@ import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
+import { readRecoFilterMirror } from "./lib/recoFilterStorage";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import "./index.css";
@@ -227,14 +232,22 @@ const cacheOwner = ((): string | null => {
   }
 })();
 
-void hydrateQueryClient(queryClient, persistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+// La page de recommandations et l'annuaire des plateformes survivent au
+// rechargement comme les hubs de l'accueil : la page se rend d'un coup depuis
+// le disque, puis se revalide en silence. Seules la page « all » et celle du
+// filtre sauvegardé sont gardées (pas chaque combinaison essayée) ; ~150 Ko
+// par page — le plafond passe à 3 Mo (celui de 2 Mo est la borne de tvOS,
+// sans objet ici : localStorage en offre au moins 5).
+const WEB_PERSIST_WHITELIST = [...HOME_PERSIST_WHITELIST, RECO_PAGE_KEY, WATCH_PROVIDERS_KEY[0]] as const;
+const savedRecoFilterKey = recoFilterKey(readRecoFilterMirror(cacheOwner));
+const persistOptions: PersisterOptions = {
+  whitelist: WEB_PERSIST_WHITELIST,
   owner: cacheOwner,
-});
-attachQueryPersister(queryClient, persistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
-  owner: cacheOwner,
-});
+  maxBytes: 3 * 1024 * 1024,
+  shouldPersist: (key) => key[0] !== RECO_PAGE_KEY || key[1] === "all" || key[1] === savedRecoFilterKey,
+};
+void hydrateQueryClient(queryClient, persistStorage, persistOptions);
+attachQueryPersister(queryClient, persistStorage, persistOptions);
 
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
