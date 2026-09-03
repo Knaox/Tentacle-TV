@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "./usePreferences";
+import { invalidateRecoQueries } from "./useRecoPage";
 
 export interface LikedPerson {
   personId: number;
@@ -36,9 +37,7 @@ export function useLikePerson() {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ["reco"] });
-    },
+    onSettled: () => invalidateRecoQueries(qc),
   });
 }
 
@@ -54,9 +53,7 @@ export function useUnlikePerson() {
         old ? { ...old, people: old.people.filter((p) => p.personId !== personId) } : old
       );
     },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ["reco"] });
-    },
+    onSettled: () => invalidateRecoQueries(qc),
   });
 }
 
