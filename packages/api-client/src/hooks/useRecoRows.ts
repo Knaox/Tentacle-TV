@@ -1,35 +1,11 @@
 import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { RecoRowItem, RecoState } from "./recoTypes";
+import { dropRecoItemEverywhere, invalidateRecoQueries } from "./useRecoPage";
 import { tentacleApiFetch } from "./usePreferences";
 
-export type RecoState = "disabled" | "cold" | "warming" | "ready";
-
-export interface RecoReason {
-  kind: "facet" | "seed" | "exploration";
-  key?: string;
-  label?: string;
-  seedTitle?: string;
-}
-
-export interface RecoRowItem {
-  key: string;
-  mediaType: "movie" | "tv";
-  tmdbId: number;
-  title: string;
-  year: number | null;
-  posterPath: string | null;
-  /** Visuel large TMDB (carrousel héros) — optionnel : vieux pools sans le champ. */
-  backdropPath?: string | null;
-  /** null = hors bibliothèque : badge + navigation vers la fiche Vigie. */
-  jellyfinItemId: string | null;
-  source: string;
-  score: number;
-  voteAverage: number | null;
-  reasons: RecoReason[];
-  exploration?: boolean;
-  /** Plateformes de streaming — absent = inconnu, [] = aucune offre incluse. */
-  providers?: Array<{ id: number; name: string; logoPath: string | null }>;
-}
+// Les types vivent dans recoTypes ; ré-exportés pour les importeurs historiques.
+export type { RecoReason, RecoRowItem, RecoState } from "./recoTypes";
 
 export interface RecoOverview {
   state: RecoState;
@@ -130,15 +106,8 @@ export function useSendRecoFeedback() {
         method: "POST",
         body: JSON.stringify(input),
       }),
-    onMutate: async ({ itemKey }) => {
-      await qc.cancelQueries({ queryKey: ["reco", "row"] });
-      qc.setQueriesData<RecoRow>({ queryKey: ["reco", "row"] }, (old) =>
-        old ? { ...old, items: old.items.filter((i) => i.key !== itemKey) } : old
-      );
-    },
-    onSettled: () => {
-      void qc.invalidateQueries({ queryKey: ["reco"] });
-    },
+    onMutate: ({ itemKey }) => dropRecoItemEverywhere(qc, itemKey),
+    onSettled: () => invalidateRecoQueries(qc),
   });
 }
 
@@ -153,7 +122,7 @@ export function useRecoWarmup() {
   return useMutation({
     mutationFn: () =>
       tentacleApiFetch<{ started: boolean }>("/api/reco/profile/rebuild", { method: "POST" }),
-    onSettled: () => qc.invalidateQueries({ queryKey: ["reco"] }),
+    onSettled: () => invalidateRecoQueries(qc),
   });
 }
 

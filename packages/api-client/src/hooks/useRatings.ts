@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tentacleApiFetch } from "./usePreferences";
-import type { RecoRow } from "./useRecoRows";
+import { dropRecoItemEverywhere, invalidateRecoQueries } from "./useRecoPage";
 
 export type RatingMediaType = "movie" | "series" | "episode";
 
@@ -122,12 +122,7 @@ export function useRateItem() {
       // chargées tout de suite (même retrait optimiste que « ne plus me
       // proposer ») au lieu d'y traîner jusqu'au prochain refetch.
       const rowKey = recoKeyOf(input.mediaType, input.tmdbId);
-      if (rowKey) {
-        await qc.cancelQueries({ queryKey: ["reco", "row"] });
-        qc.setQueriesData<RecoRow>({ queryKey: ["reco", "row"] }, (old) =>
-          old ? { ...old, items: old.items.filter((i) => i.key !== rowKey) } : old
-        );
-      }
+      if (rowKey) await dropRecoItemEverywhere(qc, rowKey);
       return { previous };
     },
     onError: (_err, _input, ctx) => {
@@ -135,9 +130,9 @@ export function useRateItem() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["ratings"] });
-      // Resynchronise rangées et aperçu avec les exclusions serveur (et
-      // remet l'item si la note n'a finalement pas été enregistrée).
-      void qc.invalidateQueries({ queryKey: ["reco"] });
+      // Resynchronise la page avec les exclusions serveur (et remet l'item si
+      // la note n'a finalement pas été enregistrée).
+      invalidateRecoQueries(qc);
     },
   });
 }
@@ -164,8 +159,8 @@ export function useDeleteRating() {
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: ["ratings"] });
-      // Note retirée : le titre redevient recommandable — les rangées se resservent.
-      void qc.invalidateQueries({ queryKey: ["reco"] });
+      // Note retirée : le titre redevient recommandable — la page se ressert.
+      invalidateRecoQueries(qc);
     },
   });
 }

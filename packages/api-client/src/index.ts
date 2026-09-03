@@ -184,6 +184,24 @@ export type {
   RecoFeedbackAction,
   ColdStartTitle,
 } from "./hooks/useRecoRows";
+export type { RecoProviderRef } from "./hooks/recoTypes";
+
+// La page de recommandations en UNE requête, et son fil temps réel
+// (cf. hooks/useRecoPage, hooks/useRecoLive)
+export {
+  useRecoPage,
+  prefetchRecoPage,
+  removeRecoItem,
+  dropRecoItemEverywhere,
+  invalidateRecoQueries,
+  normalizeProviderFilter,
+  recoFilterKey,
+  getRecoPageKey,
+  RECO_PAGE_KEY,
+  ALL_PROVIDERS_KEY,
+} from "./hooks/useRecoPage";
+export type { RecoPage, RecoPageRow } from "./hooks/useRecoPage";
+export { useRecoLive } from "./hooks/useRecoLive";
 
 // Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
 export {
@@ -201,6 +219,7 @@ export {
   useSaveHomeLayout,
   useRecoSettings,
   useSaveRecoSettings,
+  useSaveRecoProviderFilter,
   useResetTasteProfile,
 } from "./hooks/useHomeLayout";
 export type {
@@ -212,7 +231,7 @@ export type {
 } from "./hooks/useHomeLayout";
 
 // Annuaire des plateformes de streaming (cf. hooks/useWatchProviders)
-export { useWatchProviders } from "./hooks/useWatchProviders";
+export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
 export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
 
 // Comptes externes — TMDB guest session, AniList (cf. hooks/useExternalAccounts)
