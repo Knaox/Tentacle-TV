@@ -1,4 +1,5 @@
 import { getCachedMetaMany, metaKey } from "../tmdb/metaCache";
+import { enqueueCrawl } from "./metaCrawler";
 import type { RecoRowItem } from "./rowItem";
 
 /**
@@ -14,5 +15,10 @@ export async function attachProviders(items: RecoRowItem[]): Promise<void> {
   for (const item of pending) {
     const meta = metas.get(metaKey(item.mediaType, item.tmdbId));
     item.providers = meta?.providers ?? null;
+  }
+  // Ce qu'on sert sans le savoir, le crawler l'apprendra en fond.
+  const unknown = pending.filter((item) => item.providers === null);
+  if (unknown.length > 0) {
+    enqueueCrawl(unknown.map((item) => ({ mediaType: item.mediaType, tmdbId: item.tmdbId })));
   }
 }

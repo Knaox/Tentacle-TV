@@ -5,6 +5,8 @@ import { canonicalKey } from "./candidates/exclusions";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
 import { WATCH_MIN_SECONDS } from "./cooccurrence";
 import { GLOBAL_CACHE_USER_ID } from "./trendingRow";
+import { enqueueCrawl } from "./metaCrawler";
+import type { CrawlTarget } from "./poolProviders";
 import type { BuiltRow, RecoRowItem } from "./rowBuilder";
 
 /**
@@ -148,6 +150,14 @@ export async function runServerPulseJob(): Promise<{ titles: number }> {
       expiresAt: new Date(Date.now() + PULSE_TTL_MS),
     },
   });
+  // Servi à tous : le crawler apprend les plateformes de ces titres.
+  const targets: CrawlTarget[] = [];
+  for (const { key } of kept) {
+    const [t, idRaw] = key.split(":");
+    const tmdbId = Number(idRaw);
+    if (Number.isFinite(tmdbId)) targets.push({ mediaType: t === "tv" ? "tv" : "movie", tmdbId });
+  }
+  enqueueCrawl(targets);
   return { titles: kept.length };
 }
 

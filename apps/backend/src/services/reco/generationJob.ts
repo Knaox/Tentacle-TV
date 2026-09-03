@@ -18,6 +18,7 @@ import { candidatesFromAnilist } from "./candidates/anilistSource";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { readPool as readStoredPool, writePool } from "./poolStore";
 import { applyCachedProviders } from "./poolProviders";
+import { enqueueFromPool } from "./metaCrawler";
 import { watchRegion } from "../tmdb/providerNormalize";
 
 // Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
@@ -229,6 +230,10 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     labels,
   };
   await writePool(userId, payload);
+
+  // Les plateformes inconnues partent au crawler — pas en passe rapide, que
+  // la relève complète écrase dans la minute.
+  if (!quick) void enqueueFromPool(userId, payload).catch(() => undefined);
 
   return { poolSize: scored.length };
 }

@@ -2,6 +2,7 @@ import { getPrisma } from "../db";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { getSeerrConfig } from "../seerConfig";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
+import { enqueueCrawl } from "./metaCrawler";
 import type { BuiltRow, RecoRowItem } from "./rowBuilder";
 
 /**
@@ -171,6 +172,9 @@ export async function refreshTrending(): Promise<{ count: number; origin: string
       expiresAt: new Date(Date.now() + TRENDING_TTL_MS),
     },
   });
+  // Servies à tous : leurs plateformes s'apprennent pour que le filtre
+  // strict les garde au lieu de les écarter comme inconnues.
+  enqueueCrawl(items.map((i) => ({ mediaType: i.mediaType, tmdbId: i.tmdbId })));
   return { count: items.length, origin };
 }
 
