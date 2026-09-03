@@ -32,6 +32,9 @@ export interface TitleMeta {
   networks: NamedRef[];
   year: number | null;
   originalLanguage: string | null;
+  /** Pays d'origine ISO 3166-1 (films ET séries) — l'indice « animé » quand
+   *  la langue ment (coproduction doublée en anglais). */
+  originCountry: string[];
   runtimeMinutes: number | null;
   popularity: number | null;
   voteAverage: number | null;
@@ -64,6 +67,8 @@ interface RawTmdbTitle {
   release_date?: string;
   first_air_date?: string;
   original_language?: string;
+  origin_country?: string[];
+  production_countries?: Array<{ iso_3166_1?: string }>;
   runtime?: number;
   episode_run_time?: number[];
   popularity?: number;
@@ -103,6 +108,12 @@ function normalizeProviders(raw: RawTmdbTitle): ProviderRef[] | null {
   return out;
 }
 
+/** `origin_country` (films ET séries), sinon les pays de production. */
+function originCountryOf(raw: RawTmdbTitle): string[] {
+  if (raw.origin_country?.length) return raw.origin_country;
+  return (raw.production_countries ?? []).map((c) => c.iso_3166_1 ?? "").filter(Boolean);
+}
+
 function named(refs: Array<{ id: number; name?: string }>): NamedRef[] {
   const seen = new Set<number>();
   const out: NamedRef[] = [];
@@ -139,6 +150,7 @@ function normalize(mediaType: "movie" | "tv", raw: RawTmdbTitle): TitleMeta {
     networks: named(raw.networks ?? []),
     year,
     originalLanguage: raw.original_language ?? null,
+    originCountry: originCountryOf(raw),
     runtimeMinutes: raw.runtime ?? raw.episode_run_time?.[0] ?? null,
     popularity: raw.popularity ?? null,
     voteAverage: raw.vote_average ?? null,

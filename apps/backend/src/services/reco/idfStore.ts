@@ -40,7 +40,7 @@ async function scanLibraryFacets(): Promise<Array<Set<string>>> {
   for (let page = 0; page < PAGES_MAX; page++) {
     const res = await fetch(
       `${url}/Items?Recursive=true&IncludeItemTypes=Movie,Series&EnableImages=false` +
-        `&EnableUserData=false&Fields=Genres,Studios,ProductionYear` +
+        `&EnableUserData=false&Fields=Genres,Studios,ProductionYear,ProviderIds` +
         `&StartIndex=${page * PAGE}&Limit=${PAGE}`,
       { headers: { "X-Emby-Token": apiKey } }
     );
