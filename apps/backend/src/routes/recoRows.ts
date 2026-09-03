@@ -3,126 +3,61 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth } from "../middleware/auth";
 import type { JellyfinUser } from "../middleware/auth";
-import { ensureFreshPool, readPool } from "../services/reco/generationJob";
-import {
-  buildGlobalRow,
-  fallbackRowList,
-  isGlobalRowKey,
-  spreadByGenre,
-  weaveGlobalRows,
-} from "../services/reco/globalRows";
-import { availableRows, buildRow } from "../services/reco/rowBuilder";
 import { getLibraryIndexMemo } from "../services/reco/candidates/libraryMemo";
-import { getSeerrConfig } from "../services/seerConfig";
-import { attachProviders } from "../services/reco/attachProviders";
-import { buildCommunityRow } from "../services/reco/communityRow";
-import { isRebuilding } from "../services/reco/profileBuilder";
-import { serveContext } from "../services/reco/serveContext";
+import { spreadByGenre } from "../services/reco/globalRows";
+import { pokePage } from "../services/reco/pageJobs";
+import { servePage } from "../services/reco/pageService";
 
 const feedbackSchema = z.object({
   itemKey: z.string().regex(/^(movie|tv):\d+$/),
   action: z.enum(["dismissed", "not_interested", "already_seen"]),
 });
 
-/** Rangées de recommandation, feedback, démarrage à froid. */
+/**
+ * Rangées de recommandation (COMPAT), feedback, démarrage à froid.
+ *
+ * `/rows` et `/rows/:rowKey` sont les ADAPTATEURS des anciens clients (un
+ * bureau d'avant la page en une requête) : ils lisent le snapshot « all »
+ * servi par pageService — plus aucun calcul, plus de relecture du pool par
+ * rangée. Les clients à jour passent par GET /page.
+ */
 export const recoRowRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
 
   // ── GET /rows — l'état du moteur et la liste ordonnée des rangées ──
   app.get("/rows", async (request) => {
     const user = (request as any).user as JellyfinUser;
-    const ctx = await serveContext(user.userId);
-    if (ctx.state === "disabled" || ctx.state === "cold") {
-      // « cold » avec une reconstruction en vol (sortie de grille fraîche) :
-      // le client doit continuer à sonder — generating le lui dit.
-      const rebuilding = ctx.state === "cold" && isRebuilding(user.userId);
-      return {
-        state: ctx.state,
-        signalCount: ctx.signalCount,
-        generating: rebuilding,
-        refining: rebuilding,
-        tmdbConfigured: ctx.tmdbConfigured,
-        personalized: ctx.personalized,
-        // Plus jamais une page vide : les rangées globales tiennent la scène
-        // en attendant (ou à la place) de la personnalisation.
-        rows: fallbackRowList(ctx),
-      };
-    }
-    const { status, pool } = await ensureFreshPool(user.userId);
-    const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
-    const inLibraryOnly = !ctx.includeVigie;
-    let rows = pool
-      ? availableRows(pool, { vigieAvailable, inLibraryOnly, userId: user.userId })
-      : [];
-    if (!ctx.community) rows = rows.filter((r) => r.key !== "community");
-    rows = weaveGlobalRows(rows, ctx);
+    const page = await servePage(user.userId, null);
     return {
-      state: ctx.state,
-      signalCount: ctx.signalCount,
-      generating: status === "generating",
-      // « refining » : quelque chose de mieux arrive (pool préliminaire servi
-      // ou génération en cours) — le client garde l'écran et affiche son
-      // bandeau « vos recommandations s'affinent ».
-      refining: status !== "fresh" || ctx.bootstrapping,
-      // Toute première visite : le profil s'analyse encore, les rangées
-      // servies sont le meilleur de la bibliothèque — le client l'annonce
-      // (« on explore vos goûts ») au lieu du bandeau d'affinage générique.
-      exploring: ctx.bootstrapping,
-      generatedAt: pool?.generatedAt ?? null,
-      tmdbConfigured: ctx.tmdbConfigured,
-      personalized: ctx.personalized,
-      rows,
+      state: page.state,
+      signalCount: page.signalCount,
+      generating: page.generating,
+      refining: page.refining,
+      exploring: page.exploring,
+      generatedAt: page.generatedAt,
+      tmdbConfigured: page.tmdbConfigured,
+      personalized: page.personalized,
+      rows: page.rows.map(({ key, seedTitle }) => (seedTitle ? { key, seedTitle } : { key })),
     };
   });
 
-  // ── GET /rows/:rowKey — UNE rangée, dérivée du pool à chaque service ──
+  // ── GET /rows/:rowKey — UNE rangée, depuis le snapshot ──
   app.get("/rows/:rowKey", async (request) => {
     const user = (request as any).user as JellyfinUser;
     const { rowKey } = request.params as { rowKey: string };
-    const ctx = await serveContext(user.userId);
-    // Les rangées globales se servent dans TOUS les états — y compris
-    // « disabled » sans clé TMDB : c'est le contenu du mode générique.
-    if (isGlobalRowKey(rowKey)) {
-      const row = await buildGlobalRow(user.userId, rowKey, ctx);
-      await attachProviders(row.items);
-      return row;
-    }
-    if (ctx.state === "disabled" || ctx.state === "cold") {
-      // L'accueil interroge « forYou » pendant un rebuild à froid : sans ce
-      // drapeau, le client ne re-sonderait jamais et resterait sur le repli.
-      return { key: rowKey, items: [], state: ctx.state, generating: isRebuilding(user.userId) };
-    }
-    // La rangée communautaire vit sur la table de cooccurrences, pas sur le
-    // pool ; le réglage « recommandations communautaires » la coupe net.
-    if (rowKey === "community") {
-      if (!ctx.community) return { key: rowKey, items: [] };
-      const library = await getLibraryIndexMemo(user.userId);
-      const communityRow = await buildCommunityRow(
-        user.userId,
-        library,
-        ctx.exclude,
-        !ctx.includeVigie,
-        await readPool(user.userId)
-      );
-      await attachProviders(communityRow.items);
-      return communityRow;
-    }
-    const { status, pool } = await ensureFreshPool(user.userId);
-    const refining = status !== "fresh";
-    if (!pool) {
-      return { key: rowKey, items: [], generating: status === "generating", refining };
-    }
-    const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
-    const row = buildRow(pool, rowKey, {
-      exclude: ctx.exclude,
-      vigieAvailable,
-      inLibraryOnly: !ctx.includeVigie,
-      lambda: ctx.lambda,
-      profile: ctx.profile,
-    });
-    if (row) await attachProviders(row.items);
-    // Le drapeau voyage avec la rangée : le client re-sonde tant qu'il est vrai.
-    return row ? { ...row, refining } : { key: rowKey, items: [], refining };
+    const page = await servePage(user.userId, null);
+    const row = page.rows.find((r) => r.key === rowKey);
+    // Les drapeaux voyagent avec la rangée : le vieux client re-sonde tant
+    // qu'ils sont vrais. Une rangée absente du snapshot est vide (il la masque).
+    return {
+      key: rowKey,
+      items: row?.items ?? [],
+      seedTitle: row?.seedTitle,
+      generatedAt: page.generatedAt ?? undefined,
+      generating: page.generating,
+      refining: page.refining,
+      state: page.state,
+    };
   });
 
   // ── POST /feedback — « ne plus me proposer » : exclusion définitive ──
@@ -130,11 +65,15 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const body = feedbackSchema.parse(request.body);
     const prisma = getPrisma();
-    return prisma.recommendationFeedback.upsert({
+    const row = await prisma.recommendationFeedback.upsert({
       where: { jellyfinUserId_itemKey: { jellyfinUserId: user.userId, itemKey: body.itemKey } },
       create: { jellyfinUserId: user.userId, itemKey: body.itemKey, action: body.action },
       update: { action: body.action },
     });
+    // L'exclusion est déjà immédiate au service ; la reconstruction en fond
+    // recomble la place laissée dans les rangées.
+    pokePage(user.userId, "feedback");
+    return row;
   });
 
   // ── DELETE /feedback/:itemKey — annulation (idempotent) ──
@@ -145,6 +84,7 @@ export const recoRowRoutes: FastifyPluginAsync = async (app) => {
     await prisma.recommendationFeedback.deleteMany({
       where: { jellyfinUserId: user.userId, itemKey },
     });
+    pokePage(user.userId, "feedback");
     return { ok: true };
   });
 
