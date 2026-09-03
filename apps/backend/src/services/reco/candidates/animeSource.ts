@@ -43,11 +43,11 @@ export async function candidatesFromAnimeDiscover(animeShare: number): Promise<C
     for (const { params, pages } of QUERIES) {
       for (let page = 1; page <= pages; page++) {
         try {
-          const res = await tmdbFetch<{ results?: TmdbListResult[] }>(`/discover/${mediaType}`, {
-            ...params,
-            "vote_count.gte": ANIME_MIN_VOTES,
-            page: String(page),
-          });
+          const res = await tmdbFetch<{ results?: TmdbListResult[] }>(
+            `/discover/${mediaType}`,
+            { ...params, "vote_count.gte": ANIME_MIN_VOTES, page: String(page) },
+            { priority: "background" }
+          );
           for (const raw of res.results ?? []) out.push(toCandidate(raw, mediaType, "tmdb_anime"));
         } catch {
           // Un discover en échec n'empêche pas les autres.

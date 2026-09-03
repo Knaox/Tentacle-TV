@@ -91,7 +91,9 @@ export async function enrichTopEntries(
     // c'est la mise à niveau douce du cache, jusqu'à 60 titres par génération.
     if ((!meta || meta.providers === null) && fetchBudget > 0) {
       fetchBudget--;
-      meta = (await getTitleMeta(candidate.mediaType, candidate.tmdbId)) ?? meta;
+      meta =
+        (await getTitleMeta(candidate.mediaType, candidate.tmdbId, { priority: "background" })) ??
+        meta;
     }
     if (!meta) continue;
     harvestLabels(meta, labels);
