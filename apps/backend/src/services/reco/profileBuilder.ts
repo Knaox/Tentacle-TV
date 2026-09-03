@@ -1,5 +1,6 @@
 import { getPrisma } from "../db";
 import { AttemptGate } from "./attemptGate";
+import { emitProfileRebuilt } from "./recoEvents";
 import { getCachedMetaMany, getTitleMeta } from "../tmdb/metaCache";
 import type { TitleMeta } from "../tmdb/metaCache";
 import { ANIME_UNIVERSE_KEY, facetsFromJellyfin, facetsFromTmdb } from "./facets";
@@ -247,6 +248,7 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
       computedAt: new Date(),
     },
   });
+  emitProfileRebuilt(userId);
 
   return { signalCount: weighted.length, facetCount, ratingMean: mean, ratingStdDev: stdDev, animeShare };
 }
