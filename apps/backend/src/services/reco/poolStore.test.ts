@@ -87,3 +87,13 @@ describe("patchPool", () => {
     expect((JSON.parse(rows.get(keyOf("u1", "pool"))!.payload) as PoolPayload).entries[0].providers).toBeUndefined();
   });
 });
+
+describe("isPoolStale", () => {
+  it("frais sous six heures, périmé au-delà, illisible = périmé", async () => {
+    const { isPoolStale, POOL_TTL_MS } = await import("./poolStore");
+    const at = Date.parse("2026-09-04T00:00:00.000Z");
+    expect(isPoolStale("2026-09-04T00:00:00.000Z", at + POOL_TTL_MS - 1)).toBe(false);
+    expect(isPoolStale(new Date(at), at + POOL_TTL_MS)).toBe(true);
+    expect(isPoolStale("n'importe quoi", at)).toBe(true);
+  });
+});
