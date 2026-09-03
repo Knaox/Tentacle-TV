@@ -16,7 +16,9 @@ import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
 import { candidatesFromAnilist } from "./candidates/anilistSource";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
-import { readPool as readStoredPool, writePool } from "./poolStore";
+import { isPoolStale, readPoolRow, readPoolStamp, writePool } from "./poolStore";
+import type { PoolStamp } from "./poolStore";
+import { AttemptGate } from "./attemptGate";
 import { applyCachedProviders } from "./poolProviders";
 import { enqueueFromPool } from "./metaCrawler";
 import { watchRegion } from "../tmdb/providerNormalize";
@@ -64,6 +66,16 @@ export interface PoolPayload {
 
 // Une génération à la fois par compte — la page peut marteler, le job non.
 const inFlight = new Map<string, Promise<{ poolSize: number }>>();
+
+/** Garde de FRÉQUENCE des relances déclenchées par une requête : un pool
+ *  préliminaire dont la relève échoue (TMDB muet) repartait à chaque requête
+ *  — donc sans cesse sous un client qui sonde. Deux minutes entre deux
+ *  tentatives ; une génération réussie la libère. */
+const poolKickGate = new AttemptGate(2 * 60_000);
+
+export function isPoolGenerating(userId: string): boolean {
+  return inFlight.has(userId);
+}
 
 export async function generatePool(userId: string): Promise<{ poolSize: number }> {
   const pending = inFlight.get(userId);
@@ -230,6 +242,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     labels,
   };
   await writePool(userId, payload);
+  poolKickGate.release(userId);
 
   // Les plateformes inconnues partent au crawler — pas en passe rapide, que
   // la relève complète écrase dans la minute.
@@ -242,26 +255,56 @@ function byTotalDesc(a: PoolEntry, b: PoolEntry): number {
   return b.breakdown.total - a.breakdown.total || (a.candidate.key < b.candidate.key ? -1 : 1);
 }
 
+function kickInBackground(userId: string, work: (userId: string) => Promise<unknown>, what: string): void {
+  if (!poolKickGate.tryAcquire(userId)) return;
+  void work(userId).catch((err) =>
+    console.error(`[Reco] ${what} du pool ${userId.slice(0, 8)}… en échec :`, err)
+  );
+}
+
+export interface PoolStatus {
+  stamp: PoolStamp | null;
+  /** Une génération est en vol pour ce compte. */
+  generating: boolean;
+  /** Le pool a passé sa fraîcheur (servi quand même, régénéré en fond). */
+  stale: boolean;
+}
+
 /**
- * Garantit un pool : complet → rien à faire ; préliminaire → servi tel quel
- * pendant que la relève complète tourne (« refining ») ; absent/expiré →
- * chaîne rapide+complète lancée EN FOND (la requête HTTP n'attend jamais) et
- * l'appelant sert ce qu'il a.
+ * L'état du pool SANS lire son payload — le chemin chaud du service de page.
+ * `kick` : absent → chaîne rapide+complète en fond, périmé → génération
+ * complète en fond, sous la garde de fréquence. La requête n'attend jamais.
+ */
+export async function poolStatus(userId: string, opts: { kick: boolean }): Promise<PoolStatus> {
+  const stamp = await readPoolStamp(userId);
+  const stale = stamp !== null && isPoolStale(stamp.generatedAt);
+  if (opts.kick) {
+    if (!stamp) kickInBackground(userId, bootstrapPool, "Génération");
+    else if (stale) kickInBackground(userId, generatePool, "Régénération");
+  }
+  return { stamp, generating: inFlight.has(userId), stale };
+}
+
+/**
+ * Garantit un pool : complet → servi ; préliminaire → servi tel quel pendant
+ * que la relève complète tourne (« refining ») ; périmé → servi tel quel,
+ * régénéré en fond (stale-while-revalidate, silencieux) ; absent → chaîne
+ * rapide+complète lancée EN FOND et l'appelant sert ce qu'il a. Toute
+ * relance passe par la garde de fréquence : la requête HTTP n'attend jamais
+ * et ne relance jamais sans cesse.
  */
 export async function ensureFreshPool(
   userId: string
 ): Promise<{ status: "fresh" | "refining" | "generating"; pool: PoolPayload | null }> {
-  const pool = await readStoredPool(userId);
-  if (pool?.preliminary) {
-    // generatePool dédoublonne sous le mutex : appel sans condition, sans risque.
-    void generatePool(userId).catch((err) =>
-      console.error(`[Reco] Relève du pool ${userId.slice(0, 8)}… en échec :`, err)
-    );
-    return { status: "refining", pool };
+  const row = await readPoolRow(userId);
+  if (!row) {
+    kickInBackground(userId, bootstrapPool, "Génération");
+    return { status: "generating", pool: null };
   }
-  if (pool) return { status: "fresh", pool };
-  void bootstrapPool(userId).catch((err) =>
-    console.error(`[Reco] Génération du pool ${userId.slice(0, 8)}… en échec :`, err)
-  );
-  return { status: "generating", pool: null };
+  if (row.pool.preliminary) {
+    kickInBackground(userId, generatePool, "Relève");
+    return { status: "refining", pool: row.pool };
+  }
+  if (isPoolStale(row.stamp.generatedAt)) kickInBackground(userId, generatePool, "Régénération");
+  return { status: "fresh", pool: row.pool };
 }

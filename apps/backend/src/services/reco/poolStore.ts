@@ -4,21 +4,58 @@ import type { PoolPayload } from "./generationJob";
 /** Rangée interne portant le pool classé (jamais servie telle quelle à l'UI). */
 export const POOL_ROW_KEY = "pool";
 
-/** Durée de vie du pool en cache — la page relance la génération au-delà. */
+/** FRAÎCHEUR du pool : au-delà, il est servi tel quel et régénéré en fond
+ *  (stale-while-revalidate) — plus jamais une page sans rangées. */
 export const POOL_TTL_MS = 6 * 3600_000;
 
-/** Le pool en cache, ou null (absent/expiré/illisible). */
-export async function readPool(userId: string): Promise<PoolPayload | null> {
+/** Durée de vie DISQUE : la purge horaire ne fauche qu'un pool que personne
+ *  n'a régénéré depuis une semaine (compte parti). */
+export const POOL_DISK_TTL_MS = 7 * 24 * 3600_000;
+
+export interface PoolStamp {
+  generatedAt: Date;
+  expiresAt: Date;
+}
+
+/** Le pool a-t-il passé sa fraîcheur ? (ISO ou Date ; illisible = périmé) */
+export function isPoolStale(generatedAt: Date | string, now = Date.now()): boolean {
+  const at = typeof generatedAt === "string" ? Date.parse(generatedAt) : generatedAt.getTime();
+  return !Number.isFinite(at) || now - at >= POOL_TTL_MS;
+}
+
+/** Les dates seules, sans le payload (1-3 Mo) : le chemin chaud du service. */
+export async function readPoolStamp(userId: string): Promise<PoolStamp | null> {
+  const prisma = getPrisma();
+  const row = await prisma.recommendationCache.findUnique({
+    where: { jellyfinUserId_rowKey: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY } },
+    select: { generatedAt: true, expiresAt: true },
+  });
+  if (!row || row.expiresAt.getTime() < Date.now()) return null;
+  return { generatedAt: row.generatedAt, expiresAt: row.expiresAt };
+}
+
+/** Le pool et ses dates, ou null (absent, hors durée disque, illisible). */
+export async function readPoolRow(
+  userId: string
+): Promise<{ pool: PoolPayload; stamp: PoolStamp } | null> {
   const prisma = getPrisma();
   const row = await prisma.recommendationCache.findUnique({
     where: { jellyfinUserId_rowKey: { jellyfinUserId: userId, rowKey: POOL_ROW_KEY } },
   });
   if (!row || row.expiresAt.getTime() < Date.now()) return null;
   try {
-    return JSON.parse(row.payload) as PoolPayload;
+    return {
+      pool: JSON.parse(row.payload) as PoolPayload,
+      stamp: { generatedAt: row.generatedAt, expiresAt: row.expiresAt },
+    };
   } catch {
     return null;
   }
+}
+
+/** Le pool en cache, ou null — périmé compris (cf. isPoolStale). */
+export async function readPool(userId: string): Promise<PoolPayload | null> {
+  return (await readPoolRow(userId))?.pool ?? null;
 }
 
 /** Écrit (ou remplace) le pool du compte, TTL rechargé. */
@@ -30,12 +67,12 @@ export async function writePool(userId: string, payload: PoolPayload): Promise<v
       jellyfinUserId: userId,
       rowKey: POOL_ROW_KEY,
       payload: JSON.stringify(payload),
-      expiresAt: new Date(Date.now() + POOL_TTL_MS),
+      expiresAt: new Date(Date.now() + POOL_DISK_TTL_MS),
     },
     update: {
       payload: JSON.stringify(payload),
       generatedAt: new Date(),
-      expiresAt: new Date(Date.now() + POOL_TTL_MS),
+      expiresAt: new Date(Date.now() + POOL_DISK_TTL_MS),
     },
   });
 }

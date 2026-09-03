@@ -2,7 +2,7 @@ import { getPrisma } from "../db";
 import { tmdbConfigured } from "../tmdb/client";
 import { getJellyfinUsers } from "../watchTogether/usersCache";
 import { generatePool } from "./generationJob";
-import { readPool } from "./poolStore";
+import { isPoolStale, readPool } from "./poolStore";
 import { PROFILE_SCHEMA_VERSION, rebuildProfile } from "./profileBuilder";
 
 /**
@@ -119,7 +119,9 @@ async function runFanout(opts: FanoutOptions): Promise<void> {
         known.schemaVersion >= PROFILE_SCHEMA_VERSION &&
         Date.now() - known.computedAt.getTime() < PROFILE_FRESH_MS;
       const pool = await readPool(user.id);
-      if (!opts.force && profileFresh && pool && !pool.preliminary) {
+      // Un pool est désormais servi au-delà de sa fraîcheur : c'est ici qu'il
+      // se régénère, pas dans une requête.
+      if (!opts.force && profileFresh && pool && !pool.preliminary && !isPoolStale(pool.generatedAt)) {
         skipped++;
         processed++;
         continue;
