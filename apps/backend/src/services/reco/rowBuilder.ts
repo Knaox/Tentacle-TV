@@ -1,7 +1,7 @@
 import type { PoolEntry, PoolPayload } from "./generationJob";
 import type { ProviderRef } from "../tmdb/metaCache";
-import { explorationQuota, noveltyOf, pickExplorationKeys } from "./exploration";
-import { selectWithMmr } from "./mmr";
+import { explorationQuota } from "./exploration";
+import { explorationPicks, mmrPick } from "./rowSelection";
 import { pickDaily } from "./seedRotation";
 import type { TasteVector } from "./scoring/strategy";
 
@@ -66,9 +66,6 @@ const BECAUSE_SIZE = 18;
 const BECAUSE_MIN_ITEMS = 6;
 const BECAUSE_ROWS_MAX = 3;
 const ACTOR_ROWS_MAX = 2;
-/** Le MMR travaille sur le haut du pool — au-delà, c'est du bruit coûteux. */
-const MMR_INPUT_MAX = 150;
-
 const REASONS_MAX = 2;
 
 function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRowItem {
@@ -93,41 +90,6 @@ function toItem(entry: PoolEntry, labels: Record<string, string>): RecoRowItem {
     voteAverage: candidate.voteAverage,
     reasons,
   };
-}
-
-function mmrPick(entries: PoolEntry[], count: number, lambda: number): PoolEntry[] {
-  const input = entries.slice(0, MMR_INPUT_MAX);
-  const byKey = new Map(input.map((e) => [e.candidate.key, e]));
-  const picked = selectWithMmr(
-    input.map((e) => ({
-      key: e.candidate.key,
-      score: e.breakdown.total,
-      facetKeys: new Set(e.candidate.facets.map((f) => f.key)),
-    })),
-    count,
-    lambda
-  );
-  return picked.map((key) => byKey.get(key)!).filter(Boolean);
-}
-
-function explorationPicks(
-  eligible: PoolEntry[],
-  profile: TasteVector,
-  count: number,
-  alreadyPicked: ReadonlySet<string>
-): PoolEntry[] {
-  const byKey = new Map(eligible.map((e) => [e.candidate.key, e]));
-  const picked = pickExplorationKeys(
-    eligible
-      .filter((e) => !alreadyPicked.has(e.candidate.key))
-      .map((e) => ({
-        key: e.candidate.key,
-        novelty: noveltyOf(profile, e.candidate.facets.map((f) => f.key)),
-        quality: e.breakdown.quality,
-      })),
-    count
-  );
-  return picked.map((key) => byKey.get(key)!).filter(Boolean);
 }
 
 /** Les rangées disponibles pour CE pool, dans l'ordre d'affichage. */
