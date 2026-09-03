@@ -14,6 +14,10 @@ export * from "./utils/textSearch";
 export * from "./types/websocket";
 export * from "./types/watchTogether";
 export * from "./constants";
+// Familles de plateformes de streaming (ids TMDB frères, motifs de nom) :
+// la source unique des filtres « selon vos abonnements », reflétée dans le
+// backend (cf. l'en-tête de platforms.ts).
+export * from "./platforms";
 export * from "./subtitles/vtt";
 export * from "./subtitles/sanitize";
 export * from "./watchState";
