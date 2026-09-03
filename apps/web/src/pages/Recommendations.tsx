@@ -30,13 +30,14 @@ const GLOBAL_ROW_KEYS = new Set(["trending", "serverPulse", "bestOfLibrary"]);
 export function Recommendations() {
   const { t } = useTranslation("reco");
   const { data: overview, isPending } = useRecoOverview();
-  // Même clé de cache que la rangée « Pour vous » : zéro requête en plus.
-  const { excludeKeys } = useRecoHeroSlides();
   // Le filtre de plateformes vit dans son store (miroir local + réglage du
   // compte, synchronisé ici) — la page filtrée arrive par le serveur.
   useRecoFilterServerSync();
   const { selected: selectedProviders } = useRecoFilter();
   const providerFilter = selectedProviders.length > 0 ? selectedProviders : undefined;
+  // Le héros SUIT le filtre : il lit la page filtrée (même entrée de cache).
+  const hero = useRecoHeroSlides(selectedProviders);
+  const { excludeKeys } = hero;
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
   // d'arrière-plan en pleine sélection. « dismissed » survit tant que le
@@ -112,11 +113,12 @@ export function Recommendations() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
-        {/* Le héros n'est PAS filtré par les chips : stabilité visuelle. Tant
-            que la reco n'a rien à montrer (générique, froid, en construction),
-            un en-tête compact tient sa place — jamais de carrousel
-            « Sélectionné pour vous » nourri de contenu générique. */}
+        {/* Le héros suit le filtre. Tant que la reco n'a rien à montrer
+            (générique, froid, en construction), un en-tête compact tient sa
+            place — jamais de carrousel « Sélectionné pour vous » nourri de
+            contenu générique. */}
         <RecoBillboardSlot
+          hero={hero}
           fallback={
             <div className="row-gutter pb-2 pt-8">
               <h1 className="text-2xl font-bold text-content-primary">{t("pageTitle")}</h1>

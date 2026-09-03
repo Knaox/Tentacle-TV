@@ -19,6 +19,7 @@ import { ContentErrorState } from "../components/ContentErrorState";
 import { HomeRow } from "../components/home/homeRowRegistry";
 import type { HomeRowData } from "../components/home/homeRowRegistry";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
+import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { reconcileHomeRows } from "../lib/homeLayout";
 
@@ -54,6 +55,9 @@ export function Home() {
   const { data: layout } = useHomeLayout();
 
   const heroMode = layout?.heroMode ?? "resume";
+  // Héros « reco » : la page « all » (jamais filtrée sur l'accueil), partagée
+  // avec les rangées reco:* — aucune requête en plus.
+  const recoHero = useRecoHeroSlides(null, { enabled: heroMode === "reco" });
   const fixedItem = useMediaItem(heroMode === "fixed" ? layout?.heroFixedItemId ?? undefined : undefined);
 
   // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
@@ -123,6 +127,7 @@ export function Home() {
             nav flotte désormais sur le CADRE, pas sur l'affiche. */}
         {heroMode === "reco" ? (
           <RecoBillboardSlot
+            hero={recoHero}
             fallback={heroLoading ? heroSkeleton : <HeroBillboard items={heroItems} />}
           />
         ) : heroLoading ? (
