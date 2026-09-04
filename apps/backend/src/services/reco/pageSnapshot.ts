@@ -1,5 +1,6 @@
 import { getPrisma } from "../db";
 import { GLOBAL_CACHE_USER_ID } from "../globalCacheStore";
+import { isFamilyFilterKey } from "./providerFilter";
 import type { RecoState } from "./serveContext";
 import type { RecoRowItem } from "./rowItem";
 import { SERVER_PULSE_ROW_KEY } from "./serverPulse";
@@ -147,8 +148,10 @@ export function pickSnapshotsToEvict(
   entries: ReadonlyArray<{ filterKey: string; expiresAt: Date }>,
   keepFiltered = FILTERED_SNAPSHOTS_MAX
 ): string[] {
+  // Les clés « une famille » sont précalculées et protégées : la borne ne
+  // s'applique qu'aux sélections multiples.
   const filtered = entries
-    .filter((e) => e.filterKey !== "all")
+    .filter((e) => e.filterKey !== "all" && !isFamilyFilterKey(e.filterKey))
     .sort((a, b) => b.expiresAt.getTime() - a.expiresAt.getTime() || (a.filterKey < b.filterKey ? -1 : 1));
   return filtered.slice(keepFiltered).map((e) => e.filterKey);
 }
