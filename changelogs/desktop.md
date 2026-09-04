@@ -16,9 +16,9 @@ et Linux reçoivent l'ensemble.
 ## [win-1.21.0]
 ### FR
 - **Les recommandations arrivent** : un moteur complet apprend vos goûts (vus, favoris, notes) et sert « Pour vous », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » — la page s'affiche instantanément et n'est jamais vide
-- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin et sur chaque épisode avec sa note TMDB à côté ; synchronisation TMDB et AniList, confettis à la validation
+- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin et sur chaque épisode avec sa note TMDB à côté ; synchronisation TMDB, confettis à la validation
 - **Filtres par plateforme** avec les logos de vos services, stricts et instantanés
-- **L'accueil se compose** dans Réglages → Personnalisation ; acteurs favoris ; partage de vos coups de cœur depuis Favoris ; Admin → Métadonnées pour les clés TMDB et AniList
+- **L'accueil se compose** dans Réglages → Personnalisation ; acteurs favoris ; partage de vos coups de cœur depuis Favoris ; Admin → Métadonnées pour la clé TMDB
 - **Qualité « Auto »** selon le débit réel ; la bannière repart au premier geste ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant
 - **« L'Étreinte »**, le nouveau logo
 - **Les cartes de recommandation se lancent** : au survol d'un titre en bibliothèque, un bouton Lecture reprend ou démarre l'épisode 1, avec qualité et langues
@@ -29,9 +29,9 @@ et Linux reçoivent l'ensemble.
 
 ### EN
 - **Recommendations are here**: a full engine learns your taste (watched, favorites, ratings) and serves "For you", "Worth discovering", "Because you liked…", "With {actor}", "Anime for you" — the page shows up instantly and is never empty
-- **Rate anywhere**: on hover over a poster, on the details page, on the end poster and on every episode with its TMDB score next to it; TMDB and AniList sync, confetti on validation
+- **Rate anywhere**: on hover over a poster, on the details page, on the end poster and on every episode with its TMDB score next to it; TMDB sync, confetti on validation
 - **Platform filters** with your services' logos, strict and instant
-- **Compose your home** under Settings → Personalization; favorite actors; share your favorites from the Favorites page; Admin → Metadata for the TMDB and AniList keys
+- **Compose your home** under Settings → Personalization; favorite actors; share your favorites from the Favorites page; Admin → Metadata for the TMDB key
 - **"Auto" quality** from the real bandwidth; the banner resumes at the first gesture; the player's episode list opens on the current episode
 - **"The Embrace"**, the new logo
 - **Recommendation cards can be played**: hovering a library title shows a Play button that resumes or starts episode 1, with quality and languages
@@ -45,11 +45,11 @@ et Linux reçoivent l'ensemble.
 - **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » et plus. La page s'affiche instantanément, précalculée par le serveur et gardée sur l'appareil, et elle n'est jamais vide : Tendances, ce que les utilisateurs de Tentacle regardent et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule
 - **L'accueil se compose** dans Réglages → Personnalisation : rangées, bandeau principal, équilibre entre valeurs sûres et découvertes, titres hors bibliothèque, recommandations communautaires, acteurs favoris
 - **Dites-nous ce que vous aimez** : à la première visite d'un compte vierge, cinq choix amorcent votre profil
-- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin d'épisode, et sur chaque épisode avec sa note TMDB à côté. Vos notes se synchronisent vers TMDB et AniList, et valider une note fait jaillir quelques confettis
+- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin d'épisode, et sur chaque épisode avec sa note TMDB à côté. Vos notes se synchronisent vers TMDB, et valider une note fait jaillir quelques confettis
 - **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix
 - **Filtres par plateforme** : un menu avec les logos de vos services filtre les recommandations selon vos abonnements — strict, instantané, et qui suit votre compte
 - **Partagez vos coups de cœur** : la page Favoris fabrique un lien public de vos titres likés
-- **Admin → Métadonnées** : clé TMDB, identifiants AniList et région des plateformes
+- **Admin → Métadonnées** : clé TMDB et région des plateformes
 - **La qualité « Auto »** mesure le débit réel vers le serveur et choisit un palier que la connexion porte ; votre choix manuel prime toujours
 - **La bannière repart au premier geste** après s'être figée pour laisser le GPU redescendre ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant ; la barre de navigation montre son débordement
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
@@ -64,11 +64,11 @@ et Linux reçoivent l'ensemble.
 - **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Anime for you" and more. The page shows up instantly, precomputed by the server and kept on the device, and it is never empty: Trending, what Tentacle users are watching and your library's top rated hold the stage while your profile is computed
 - **Compose your home** under Settings → Personalization: rows, main banner, the balance between safe bets and discoveries, titles outside your library, community recommendations, favorite actors
 - **Tell us what you like**: on the first visit of a fresh account, five picks seed your profile
-- **Rate anywhere**: on hover over a poster, on the details page, on the end-of-episode poster, and on every episode with its TMDB score next to it. Your ratings sync to TMDB and AniList, and validating a rating throws a few confetti
+- **Rate anywhere**: on hover over a poster, on the details page, on the end-of-episode poster, and on every episode with its TMDB score next to it. Your ratings sync to TMDB, and validating a rating throws a few confetti
 - **Your actors**: like an actor or a director and "With …" rows grow from your picks
 - **Platform filters**: a menu with your services' logos filters recommendations by your subscriptions — strict, instant, and following your account
 - **Share your favorites**: the Favorites page builds a public link of your liked titles
-- **Admin → Metadata**: the TMDB key, the AniList credentials and the platform region
+- **Admin → Metadata**: the TMDB key and the platform region
 - **"Auto" quality** measures the real bandwidth to your server and picks a tier the connection can carry; your manual choice always wins
 - **The banner resumes at the first gesture** after freezing to let the GPU rest; the player's episode list opens on the current episode; the navigation bar shows its overflow
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash and icon follow
@@ -88,12 +88,12 @@ et Linux reçoivent l'ensemble.
 - **L'accueil se compose** dans Réglages → Personnalisation : choisissez et ordonnez ses rangées (bibliothèques, rangées de recommandation), le bandeau principal (reprise, aléatoire, recommandation ou un favori fixe), l'équilibre entre valeurs sûres et découvertes, l'inclusion des titres hors bibliothèque, les recommandations communautaires et le partage de votre historique, la remise à zéro du profil
 - **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule — un bandeau dit toujours ce qui se passe
 - **Dites-nous ce que vous aimez** : à la toute première visite d'un compte vierge, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une fois, jamais à un compte qui a déjà un historique
-- **Noter, partout** : des étoiles au survol de n'importe quelle affiche (la note globale reste lisible pendant le survol), sur la fiche, et sur l'affiche de fin d'épisode dont le décompte s'interrompt le temps du geste. Vos notes se synchronisent vers TMDB et AniList si l'admin a posé les clés ; noter ou écarter un titre le retire aussitôt des rangées
+- **Noter, partout** : des étoiles au survol de n'importe quelle affiche (la note globale reste lisible pendant le survol), sur la fiche, et sur l'affiche de fin d'épisode dont le décompte s'interrompt le temps du geste. Vos notes se synchronisent vers TMDB si l'admin a posé la clé ; noter ou écarter un titre le retire aussitôt des rangées
 - **Chaque épisode se note** : étoiles dans la liste Saisons & Épisodes de la fiche et sur la fiche de l'épisode, la note TMDB de l'épisode à côté (Jellyfin à défaut), vos notes visibles dans la liste des épisodes du lecteur — et valider une note fait jaillir quelques confettis, partout où l'on note
 - **Vos acteurs** : aimez un acteur ou un réalisateur depuis une fiche, des rangées « Avec … » naissent de vos choix — gérées au contact des rangées, portraits compris, et dans Réglages → Personnalisation
 - **Filtres par plateforme** : un menu avec les logos de vos services (Netflix, Disney+, Prime Video, Crunchyroll, Apple TV, Paramount+, HBO Max, ADN, OCS, Canal+, Arte) filtre les recommandations selon vos abonnements. Le filtre est strict — un titre dont la disponibilité est inconnue n'apparaît jamais sous un service —, il suit votre compte d'un appareil à l'autre, et en changer est instantané : chaque plateforme a sa page prête, le survol la précharge, l'échange attend les premières affiches
 - **Partagez vos coups de cœur** : la page Favoris fabrique un lien public de vos titres likés, comme pour la liste à voir
-- **Admin → Métadonnées** : la clé TMDB (validée avant d'être stockée), les identifiants AniList et la région des plateformes se règlent depuis l'admin. La clé TMDB active les recommandations de tous les comptes ; sans elle, la page reste utile avec du contenu général
+- **Admin → Métadonnées** : la clé TMDB (validée avant d'être stockée) et la région des plateformes se règlent depuis l'admin. La clé TMDB active les recommandations de tous les comptes ; sans elle, la page reste utile avec du contenu général
 - **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
 - **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
 - **La bannière repart au premier geste** : après vingt secondes sans souris ni clavier, elle se fige pour laisser le GPU redescendre ; au moindre geste ou défilement, la diapositive suivante arrive aussitôt avec son fondu et son zoom
@@ -114,12 +114,12 @@ et Linux reçoivent l'ensemble.
 - **Compose your home** under Settings → Personalization: pick and order its rows (libraries, recommendation rows), the main banner (resume, random, recommendation or a fixed favorite), the balance between safe bets and discoveries, whether to include titles outside your library, community recommendations and the sharing of your history, and a profile reset
 - **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed — a banner always says what's happening
 - **Tell us what you like**: on the very first visit of a fresh account, a grid of titles from your library seeds your profile in five picks — it only imposes itself once, never on an account that already has a history
-- **Rate anywhere**: stars on hover over any poster (the global rating stays readable during the hover), on the details page, and on the end-of-episode poster, whose countdown pauses for the gesture. Your ratings sync to TMDB and AniList when the admin has set the keys; rating or dismissing a title removes it from the rows at once
+- **Rate anywhere**: stars on hover over any poster (the global rating stays readable during the hover), on the details page, and on the end-of-episode poster, whose countdown pauses for the gesture. Your ratings sync to TMDB when the admin has set the key; rating or dismissing a title removes it from the rows at once
 - **Every episode can be rated**: stars in the Seasons & Episodes list of the details page and on the episode page, the TMDB episode score next to them (Jellyfin as a fallback), your ratings shown in the player's episode list — and validating a rating throws a few confetti, wherever you rate
 - **Your actors**: like an actor or a director from a details page and "With …" rows grow from your picks — managed right next to the rows, portraits included, and under Settings → Personalization
 - **Platform filters**: a menu with your services' logos (Netflix, Disney+, Prime Video, Crunchyroll, Apple TV, Paramount+, HBO Max, ADN, OCS, Canal+, Arte) filters recommendations by your subscriptions. The filter is strict — a title with unknown availability never shows up under a service —, it follows your account across devices, and switching is instant: every platform has its page ready, hovering prefetches it, the swap waits for the first posters
 - **Share your favorites**: the Favorites page builds a public link of your liked titles, just like the watchlist
-- **Admin → Metadata**: the TMDB key (validated before being stored), the AniList credentials and the platform region are set from the admin. The TMDB key switches recommendations on for every account; without it the page stays useful with general content
+- **Admin → Metadata**: the TMDB key (validated before being stored) and the platform region are set from the admin. The TMDB key switches recommendations on for every account; without it the page stays useful with general content
 - **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
 - **The player's episode list opens on the current episode**
 - **The banner resumes at the first gesture**: after twenty seconds without mouse or keyboard it freezes to let the GPU rest; at the slightest gesture or scroll, the next slide arrives at once with its fade and zoom
