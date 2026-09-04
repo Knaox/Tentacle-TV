@@ -1,9 +1,8 @@
 import { memo, useCallback } from "react";
-import { View, Text, FlatList, Pressable, StyleSheet } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { View, FlatList, StyleSheet } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
-import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, useThemedStyles, type AppTheme } from "@/theme";
+import { RowHeader } from "@/components/RowHeader";
 
 interface Props {
   title: string;
@@ -13,12 +12,11 @@ interface Props {
 }
 
 /**
- * Row horizontal cinematic — header avec heading-3 + lien "Voir tout" chevron
- * subtle violet. Gap 14px entre cards, scroll snap horizontal edge-to-edge.
+ * Row horizontal cinematic — en-tête `RowHeader` (heading-3 + lien "Voir tout"
+ * chevron subtle violet). Gap 14px entre cards, scroll snap horizontal
+ * edge-to-edge.
  */
 export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeAll }: Props) {
-  const { t } = useTranslation("common");
-  const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const renderFlatItem = useCallback(
     ({ item }: { item: MediaItem }) => <View>{renderItem(item)}</View>,
@@ -27,15 +25,7 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
 
   return (
     <View style={st.root}>
-      <View style={st.header}>
-        <Text style={st.title} numberOfLines={1}>{title}</Text>
-        {onSeeAll != null && (
-          <Pressable onPress={onSeeAll} hitSlop={10} style={st.seeAllBtn}>
-            <Text style={st.seeAll}>{t("seeAll")}</Text>
-            <Feather name="chevron-right" size={14} color={colors.brand.light} />
-          </Pressable>
-        )}
-      </View>
+      <RowHeader title={title} onSeeAll={onSeeAll} />
       <FlatList
         horizontal
         data={data}
@@ -52,35 +42,8 @@ export const MediaRow = memo(function MediaRow({ title, data, renderItem, onSeeA
   );
 });
 
-const makeStyles = (t: AppTheme) => StyleSheet.create({
+const makeStyles = (_t: AppTheme) => StyleSheet.create({
   root: { marginTop: spacing.xxl },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.screenPadding,
-    marginBottom: 14,
-  },
-  title: {
-    ...typography.subtitle,
-    fontFamily: FONT_FAMILY.bold,
-    fontSize: 18,
-    color: t.colors.text.primary,
-    letterSpacing: -0.3,
-    flex: 1,
-  },
-  seeAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    paddingLeft: 8,
-  },
-  seeAll: {
-    ...typography.caption,
-    fontFamily: FONT_FAMILY.semibold,
-    color: t.colors.brand.light,
-    letterSpacing: 0.1,
-  },
   list: {
     paddingHorizontal: spacing.screenPadding,
     gap: 14,
