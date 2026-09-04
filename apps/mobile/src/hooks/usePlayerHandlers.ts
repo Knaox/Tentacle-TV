@@ -1,16 +1,17 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { OnLoadData, OnProgressData, VideoRef } from "react-native-video";
-import { invalidateSeriesWatchViews, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerPlayback } from "./usePlayerPlayback";
 
 /**
  * Gestionnaires du lecteur mobile : chargement, progression, fin, erreur,
- * déplacement, navigation d'épisode, sortie d'écran et nettoyage au démontage.
+ * déplacement, navigation d'épisode, sortie d'écran — et, au démontage, le
+ * rangement de sortie partagé avec le web (arrêt de session, Ma liste, hubs).
  *
  * Extraits de `PlayerScreen`, qui dépassait la limite de 300 lignes par
  * fichier. Extraction mécanique, à une exception près signalée sur `handleEnd`.
@@ -43,25 +44,15 @@ export function usePlayerHandlers({
   const { t } = useTranslation("player");
   const router = useRouter();
   const queryClient = useQueryClient();
-  const jfClient = useJellyfinClient();
-  const userId = useUserId();
+  const runStopInvalidation = useWatchStopInvalidation();
 
-  // Invalidate home queries so watch state refreshes
-  const invalidateAndGoBack = useCallback(() => {
-    pb.reporting.reportStop();
-    // Remove from personal watchlist if fully watched
-    jfClient.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    // La fiche de la série : le téléphone n'en invalidait AUCUNE clé, donc
-    // l'épisode qu'on venait de terminer y restait décoché. Règle partagée
-    // avec le web et le téléviseur.
-    invalidateSeriesWatchViews(queryClient, pb.item?.SeriesId);
+  // Sortie du lecteur : la navigation, rien d'autre. Le rangement — arrêt de
+  // session, Ma liste, hubs de l'accueil — vit dans le cleanup de démontage, en
+  // bas de ce hook : le seul point que TOUTES les sorties traversent, bouton
+  // Retour matériel d'Android compris, qui dépile la route sans passer ici.
+  const leavePlayer = useCallback(() => {
     backOrHome(router);
-  }, [router, pb.reporting, pb.item?.SeriesId, queryClient, itemId, jfClient, userId]);
+  }, [router]);
 
   const handleLoad = useCallback((_data: OnLoadData) => {
     setIsBuffering(false);
@@ -103,7 +94,7 @@ export function usePlayerHandlers({
 
   // La fin du flux ne quitte plus l'écran : elle est ANNONCÉE à l'arbitre, qui
   // affiche l'écran de fin quand il y a une suite, et demande la sortie
-  // (`onEndOfPlayback` → `invalidateAndGoBack`) quand il n'y en a pas. Sortir
+  // (`onEndOfPlayback` → `leavePlayer`) quand il n'y en a pas. Sortir
   // ici privait le mobile de l'écran de fin que les autres surfaces ont.
   const handleEnd = useCallback(() => {
     onEnded();
@@ -134,34 +125,62 @@ export function usePlayerHandlers({
     pb.reporting.reportSeek(clamped, paused);
   }, [pb.jellyfinDuration, pb.streamOffset, paused, pb.reporting]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Épisode précédent/suivant : l'arrêt part maintenant, avec la position
+  // finale, et sa promesse est mémorisée — le cleanup de l'écran remplacé
+  // (`router.replace` en remonte un, sous une nouvelle clé de route) enchaîne
+  // le rangement dessus. Rien à invalider ici.
   const handleNextEpisode = useCallback(() => {
     const next = pb.episodeNav.nextEpisode;
     if (!next) return;
     pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     router.replace(`/watch/${next.Id}`);
-  }, [pb.episodeNav.nextEpisode, pb.reporting, queryClient, router]);
+  }, [pb.episodeNav.nextEpisode, pb.reporting, router]);
 
   const handlePrevEpisode = useCallback(() => {
     const prev = pb.episodeNav.previousEpisode;
     if (!prev) return;
     pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
     router.replace(`/watch/${prev.Id}`);
-  }, [pb.episodeNav.previousEpisode, pb.reporting, queryClient, router]);
+  }, [pb.episodeNav.previousEpisode, pb.reporting, router]);
 
-  // Cleanup on unmount — report stop + refresh resume lists
-  // Note: don't invalidate ["item", itemId] here — it's already done in
-  // invalidateAndGoBack, and double-invalidation resets MediaDetail animations
+  // Rangement de SORTIE, au démontage — la règle partagée avec le web et le
+  // bureau (`useWatchStopInvalidation`) : Ma liste n'est évaluée qu'après un
+  // arrêt réel au-delà de la moitié, un film n'en sort que marqué `Played`, une
+  // série n'en sort qu'entièrement vue. Toutes les sorties passent ici, Retour
+  // matériel Android compris. `router.replace` REMONTE l'écran (nouvelle clé
+  // de route) : le cleanup de l'ancienne instance voit SON item et SA position.
+  // Limite connue, la même que sur le web : la série n'est retirée que si sa
+  // fiche a été ouverte (cache `series-watch-state`) — pas depuis une carte.
+  // Snapshots par refs, lus MAINTENANT : `pb` est un objet neuf à chaque rendu.
+  const itemRef = useRef(pb.item);
+  itemRef.current = pb.item;
+  const reportingRef = useRef(pb.reporting);
+  reportingRef.current = pb.reporting;
+  const runStopRef = useRef(runStopInvalidation);
+  runStopRef.current = runStopInvalidation;
+  const positionRef = pb.positionRef;
+
   useEffect(() => () => {
-    pb.reporting.reportStop();
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
+    const snap = itemRef.current;
+    const stopPositionSeconds = positionRef.current;
+    const reporting = reportingRef.current;
+    // Sans effet si la session est déjà arrêtée (cleanup de usePlaybackReporting
+    // passé avant — même composant, ordre de déclaration — ou `reportStop()` de
+    // l'épisode suivant) ; sinon c'est ici que part le Stopped. Dans tous les cas
+    // `lastStopPromiseRef` porte le DERNIER Stopped réel : on enchaîne dessus.
+    void reporting.reportStop();
+    const run = () => runStopRef.current({
+      itemId, seriesId: snap?.SeriesId, itemType: snap?.Type,
+      stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+    });
+    reporting.lastStopPromiseRef.current.then(run, run);
+    // Hors de la règle partagée : « Ajouts récents » (badge vu). `["item"]`, les
+    // hubs et la fiche série sont invalidés par elle — ne pas doubler.
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [itemId, queryClient, positionRef]);
 
   return {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
-    invalidateAndGoBack, handleNextEpisode, handlePrevEpisode,
+    leavePlayer, handleNextEpisode, handlePrevEpisode,
   };
 }
