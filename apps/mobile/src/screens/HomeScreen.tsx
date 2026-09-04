@@ -21,6 +21,7 @@ import { HomeRow } from "@/components/home/homeRowRegistry";
 import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegistry";
 import { useHomeRows } from "@/components/home/useHomeRows";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
+import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -59,6 +60,7 @@ export function HomeScreen() {
   const libraries = useLibraries();
   const watchlist = useWatchlist();
   const { rows } = useHomeRows();
+  const recoNav = useRecoNavigation();
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -109,12 +111,12 @@ export function HomeScreen() {
     onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),
     onItemLongPress: openActions,
     onSeeAll: (route) => router.push(route),
-    canOpenReco: (item) => item.jellyfinItemId !== null,
-    onRecoPress: (item) => { if (item.jellyfinItemId) router.push(`/media/${item.jellyfinItemId}`); },
+    canOpenReco: recoNav.canOpen,
+    onRecoPress: recoNav.open,
     // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
     // sinon celle des recommandations (« Ne plus me proposer »).
     onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId) : setRecoTarget(item)),
-  }), [renderCard, router, openActions]);
+  }), [renderCard, router, openActions, recoNav]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
   if (isLoading || (!userId && anyFetching)) {
