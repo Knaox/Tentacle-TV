@@ -33,8 +33,11 @@ export function useNearViewport<T extends HTMLElement>(rootMargin = "600px") {
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) setNear(true);
+      (entries) => {
+        // Un seul « proche » suffit, où qu'il soit dans la salve : ne lire que
+        // la première entrée laissait passer un « proche » arrivé second, et
+        // l'image n'était alors jamais demandée.
+        if (entries.some((e) => e.isIntersecting)) setNear(true);
       },
       { rootMargin },
     );
