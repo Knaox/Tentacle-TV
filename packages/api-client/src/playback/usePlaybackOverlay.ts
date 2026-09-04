@@ -186,7 +186,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     input.playbackEnded,
     input.segments,
     input.hasNextEpisode,
-    input.serverAutoplayEnabled,
     input.scrubbing,
     settings,
   ]);
@@ -216,7 +215,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       isEpisode: input.isEpisode,
       hasNextEpisode: input.hasNextEpisode,
       settings,
-      serverAutoplayEnabled: input.serverAutoplayEnabled,
       mutedSegments: muted,
       libraryId: input.libraryId ?? null,
       controlsVisible: input.controlsVisible,

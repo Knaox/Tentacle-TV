@@ -4,12 +4,12 @@
  * À l'EOF, de deux choses l'une : l'affiche de fin est due et l'arbitre la
  * montre, ou PERSONNE n'a plus rien à dire — et il faut alors sortir du
  * lecteur. Rester sur une image figée était le cul-de-sac historique : les
- * gardes locales des lecteurs (`hasNextEpisode && serverAutoplayEnabled`)
+ * gardes locales des lecteurs (`hasNextEpisode` seul)
  * supposaient l'affiche toujours due, un refus ou un réglage la supprimait,
  * et personne ne sortait.
  *
- * Chaque raison de ne pas la montrer — pas d'épisode suivant, garde admin,
- * réglage `nextFinalCard` éteint, croix donnée sur l'affiche — déclenche le
+ * Chaque raison de ne pas la montrer — pas d'épisode suivant, réglage
+ * `nextFinalCard` éteint, croix donnée sur l'affiche — déclenche le
  * MÊME rappel `onEndOfPlayback`, que chaque lecteur câble déjà vers sa
  * sortie : la fiche média (web), la fiche après la session plein écran
  * (bureau), `onFinished` (TV), le retour (mobile).
@@ -32,7 +32,7 @@ export function useEndOfPlaybackExit(
   /** Une seule sortie par média — l'EOF rebat à chaque battement d'horloge. */
   const firedForItemRef = useRef<string | null>(null);
 
-  const { itemId, playbackEnded, hasStarted, hasNextEpisode, serverAutoplayEnabled } = input;
+  const { itemId, playbackEnded, hasStarted, hasNextEpisode } = input;
   const { finalDismissed, chained } = nextState;
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function useEndOfPlaybackExit(
     // d'une navigation vers la fiche — la course était perdue d'avance.
     if (chained) return;
     // L'affiche de fin est due : l'arbitre parle, le lecteur reste monté.
-    if (hasNextEpisode && serverAutoplayEnabled && finalCardEnabled && !finalDismissed) return;
+    if (hasNextEpisode && finalCardEnabled && !finalDismissed) return;
     const key = itemId ?? null;
     if (firedForItemRef.current === key) return;
     firedForItemRef.current = key;
@@ -51,7 +51,6 @@ export function useEndOfPlaybackExit(
     hasStarted,
     chained,
     hasNextEpisode,
-    serverAutoplayEnabled,
     finalCardEnabled,
     finalDismissed,
     itemId,

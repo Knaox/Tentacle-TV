@@ -11,7 +11,6 @@ import {
 
 const CONFIG: AutoNextConfig = {
   hasNextEpisode: true,
-  serverEnabled: true,
   nextCountdown: true,
   nextAutoPlay: true,
 };
@@ -121,11 +120,7 @@ describe("cycle de vie", () => {
     expect(effects).toEqual([1]);
   });
 
-  it("la garde serveur ou l'absence d'épisode suivant éteint tout", () => {
-    const withoutServer = run([...FULL_COUNTDOWN_TICKS], { ...CONFIG, serverEnabled: false });
-    expect(withoutServer.effects).toEqual([]);
-    expect(withoutServer.state.phase).toBe("idle");
-
+  it("l'absence d'épisode suivant éteint tout", () => {
     const withoutNext = run(
       [tick(), { type: "playNow" }],
       { ...CONFIG, hasNextEpisode: false },
@@ -237,7 +232,6 @@ describe("le refus découplé — la carte n'est pas l'affiche", () => {
 describe("le décompte tient dans le temps qui reste", () => {
   const config = {
     hasNextEpisode: true,
-    serverEnabled: true,
     nextCountdown: true,
     nextAutoPlay: true,
     nextCountdownMs: 10_000,

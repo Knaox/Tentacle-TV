@@ -54,7 +54,6 @@ export function useAutoNextDispatch(
       const p = inputRef.current;
       const [state, effect] = decideAutoNext(nextStateRef.current, nextInput, {
         hasNextEpisode: p.hasNextEpisode,
-        serverEnabled: p.serverAutoplayEnabled,
         nextCountdown: settingsRef.current.next.nextCountdown,
         nextAutoPlay: settingsRef.current.next.nextAutoPlay,
         nextCountdownMs: settingsRef.current.next.nextCountdownMs,

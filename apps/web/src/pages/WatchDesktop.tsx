@@ -41,7 +41,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    segments, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource,
   } = useWatchSession({ isDesktop: true, checkAudioTranscode: () => false });
   const { t: tDownloads } = useTranslation("downloads");
@@ -271,7 +271,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
         nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextArtwork.imageUrl}
         nextSeriesBackdropUrl={nextArtwork.seriesBackdropUrl} nextEpisodeThumbUrl={nextArtwork.thumbUrl}
-        nextEpisodeDescription={nextArtwork.description} serverAutoplayEnabled={autoplayNextEnabled}
+        nextEpisodeDescription={nextArtwork.description}
         onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
         isDirectPlay={isDirectPlay} streamOffset={streamOffset} posterUrl={posterUrl}
         segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}

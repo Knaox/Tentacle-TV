@@ -2,7 +2,9 @@ import { useEffect, useMemo } from "react";
 import { useAutoplayConfig, type AutoplayConfig } from "@tentacle-tv/api-client";
 
 const CACHE_KEY = "tentacle_autoplay_config";
-const DEFAULTS: AutoplayConfig = { enabled: true, maxResumePct: 90 };
+// Un cache écrit par une version antérieure peut encore porter `enabled`
+// (l'ancien interrupteur serveur) : clé ignorée, sans effet.
+const DEFAULTS: AutoplayConfig = { maxResumePct: 90 };
 
 function readCache(): AutoplayConfig {
   try {

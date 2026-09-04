@@ -272,7 +272,6 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     if (previousEpisode) navigate(`/watch/${previousEpisode.Id}`, { replace: true });
   }, [previousEpisode, navigate]);
 
-  const autoplayNextEnabled = autoplayConfig.enabled;
   const maxResumePct = autoplayConfig.maxResumePct;
 
   return {
@@ -289,7 +288,7 @@ export function useWatchSession({ isDesktop, checkAudioTranscode }: WatchSession
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, autoplayNextEnabled, maxResumePct, getPositionTicks,
+    segments, maxResumePct, getPositionTicks,
     isLocalPlayback, localSource,
   };
 }
