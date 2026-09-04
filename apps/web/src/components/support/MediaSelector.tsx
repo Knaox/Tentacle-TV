@@ -8,7 +8,7 @@ import { SeriesEpisodePicker } from "./SeriesEpisodePicker";
 /**
  * Sélecteur du média concerné par un ticket : recherche Jellyfin temporisée,
  * un film se choisit directement, une série se déplie en saisons puis
- * épisodes (SeriesEpisodePicker). Sorti de SupportPanel tel quel.
+ * épisodes (SeriesEpisodePicker).
  */
 
 export interface MediaSelection {
