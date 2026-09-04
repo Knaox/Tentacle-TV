@@ -68,8 +68,11 @@ export function RecoHero({ item }: RecoHeroProps) {
             src={posterUrl}
             alt={item.title}
             draggable={false}
-            className="w-40 shrink-0 self-center rounded-xl md:w-52"
-            style={{ boxShadow: "var(--elev-3)", aspectRatio: "2 / 3", objectFit: "cover" }}
+            // Ratio et recadrage en CLASSES, pas en style en ligne : le garde
+            // webOS (Chrome 53) n'accepte `aspect-ratio` que depuis une feuille,
+            // où ses passes de compatibilité savent le remplacer.
+            className="aspect-[2/3] w-40 shrink-0 self-center rounded-xl object-cover md:w-52"
+            style={{ boxShadow: "var(--elev-3)" }}
           />
         )}
         <div className="min-w-0 flex-1">
