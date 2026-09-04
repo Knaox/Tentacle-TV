@@ -10,6 +10,8 @@ try { Haptics = require("expo-haptics"); } catch {}
 interface SwipeableNotifRowProps {
   notif: AppNotification;
   formattedTitle: string;
+  /** Le corps à montrer sous le titre, déjà filtré (null = rien). */
+  formattedBody: string | null;
   formattedAgo: string;
   onPress: () => void;
   onDelete: () => void;
@@ -23,7 +25,7 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.3;
 
 export function SwipeableNotifRow({
-  notif, formattedTitle, formattedAgo, onPress, onDelete,
+  notif, formattedTitle, formattedBody, formattedAgo, onPress, onDelete,
   selectionMode, isSelected, onToggleSelect, onLongPress,
 }: SwipeableNotifRowProps) {
   const { colors } = useTheme();
@@ -121,9 +123,9 @@ export function SwipeableNotifRow({
             >
               {formattedTitle}
             </Text>
-            {notif.body && notif.type !== "ticket_status" && (
+            {formattedBody && (
               <Text style={{ fontSize: 12, color: colors.text.tertiary, marginTop: 4 }} numberOfLines={2}>
-                {notif.body}
+                {formattedBody}
               </Text>
             )}
             <Text style={{ fontSize: 11, color: colors.text.quaternary, marginTop: 6 }}>
