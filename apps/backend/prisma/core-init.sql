@@ -462,3 +462,12 @@ DELETE FROM `server_config` WHERE `key` = 'autoplay_next_enabled';
 
 -- 1.17 : AniList retiré — identifiants du client OAuth déclaré par instance.
 DELETE FROM `server_config` WHERE `key` IN ('anilist_client_id', 'anilist_client_secret');
+
+-- 1.17 : la page Thème de l'admin (presets saisonniers, surcharge de jetons,
+-- CSS personnalisé) est retirée ; `/api/theme` sert un état constant. Les six
+-- clés sont celles de l'ancien themeStore, énumérées plutôt que LIKE : `_` y
+-- est un joker.
+DELETE FROM `server_config` WHERE `key` IN (
+  'theme_active_name', 'theme_active_tokens_override', 'theme_active_css_source',
+  'theme_active_css_content', 'theme_active_css_url', 'theme_active_css_hash'
+);
