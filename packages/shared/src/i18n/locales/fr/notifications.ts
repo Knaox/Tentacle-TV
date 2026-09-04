@@ -47,6 +47,8 @@ export default {
   libraryAddedDesc: "Être notifié des nouveaux contenus ajoutés au serveur",
   seerAvailableTitle: "Contenu demandé disponible",
   seerAvailableDesc: "Quand une de vos demandes devient disponible",
+  ticketsTitle: "Tickets de support",
+  ticketsDesc: "Réponses et changements de statut de vos tickets — et les nouveaux tickets si vous êtes administrateur",
   testButton: "Envoyer une notification de test",
   testHint: "Vérifiez que les notifications arrivent bien sur cet appareil.",
   testSent: "Notification envoyée ✓",
