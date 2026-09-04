@@ -15,6 +15,10 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Chaque plateforme a son logo** : l'annuaire mondial TMDB (persisté) fournit les logos de toutes les familles — Crunchyroll et son canal Amazon ne font qu'un, OCS et Arte retrouvent les bons identifiants, Apple TV et HBO Max leurs nouveaux noms
 - **La recherche d'acteurs ne fait plus la queue** derrière une génération de recommandations : les appels interactifs à TMDB passent devant ceux du fond
 - **Chaque épisode se note** : étoiles dans la liste Saisons & Épisodes de la fiche et sur la fiche de l'épisode, note TMDB de l'épisode à côté (Jellyfin à défaut), et vos notes visibles dans la liste des épisodes du lecteur. Valider une note fait jaillir quelques confettis, partout où l'on note
+- **La bannière repart au premier geste** : après vingt secondes sans souris ni clavier elle se fige pour laisser le GPU redescendre ; au moindre geste ou défilement, la diapositive suivante arrive aussitôt avec son fondu et son zoom
+- **Une rangée ne reste plus vide après un défilement rapide** : les observateurs d'intersection ne lisaient que la première entrée de leur salve — il fallait remonter tout en haut ou recharger
+- **La note reste visible au survol des cartes** de recommandation, à côté de la raison et des étoiles
+- **La fiche s'ouvre depuis les recommandations et leur bannière avec sa transition**, comme depuis toute autre carte
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -26,6 +30,10 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Every platform has its logo**: the persisted worldwide TMDB directory provides logos for every family — Crunchyroll and its Amazon channel are one, OCS and Arte get their right ids back, Apple TV and HBO Max their new names
 - **Actor search no longer queues** behind a recommendation generation: interactive TMDB calls go first
 - **Every episode can be rated**: stars in the Seasons & Episodes list of the detail page and on the episode page, the TMDB episode score next to them (Jellyfin as a fallback), and your ratings shown in the player's episode list. Validating a rating throws a few confetti, wherever you rate
+- **The banner resumes at the first gesture**: after twenty seconds without mouse or keyboard it freezes to let the GPU rest; at the slightest gesture or scroll, the next slide arrives at once with its fade and zoom
+- **A row no longer stays empty after a fast scroll**: intersection observers only read the first entry of their batch — you had to scroll back to the top or reload
+- **The rating stays visible while hovering** recommendation cards, next to the reason and the stars
+- **The details page opens from recommendations and their banner with its transition**, as from any other card
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]
@@ -45,6 +53,15 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et favicon suivent
 - **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
 - **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
+- **Réglages → Personnalisation** : l'accueil se compose (rangées, bandeau principal), l'équilibre entre valeurs sûres et découvertes se règle, ainsi que l'inclusion des titres hors bibliothèque (Vigie), les recommandations communautaires et le partage de votre historique (opt-out), les acteurs favoris et la remise à zéro du profil
+- **Admin → Métadonnées** : clé TMDB validée avant d'être stockée, identifiants AniList et région des plateformes se règlent depuis l'admin — plus seulement par variables d'environnement
+- **Noter un film le marque comme vu dans Jellyfin** (les séries ne sont jamais marquées ; débrayable par `reco_rate_marks_played=false`) ; noter ou écarter un titre le retire aussitôt des rangées, et la raison « En anglais » disparaît (elle désignait la langue originale TMDB, trompeuse en VF)
+- **Vos favoris et vos séries entamées ne sont plus recommandés** : un favori reste une graine, une série entamée vit dans « Reprendre » ; les graines des rangées « Parce que vous avez aimé » tournent chaque jour
+- **Un compte avec un historique ne subit plus la grille de démarrage** — réservée aux comptes vierges, avec 60 titres répartis par genre au lieu de 30 triés par note
+- **« Bibliothèque seule » tient parole** : Vigie désactivée, aucune rangée ne sert de titre hors bibliothèque, et changer ce réglage recalcule le pool
+- **Un lien de partage public n'expose plus l'historique du propriétaire** : la fiche publique d'un titre renvoyait l'objet Jellyfin brut, dates de visionnage et position de lecture comprises
+- **Le recalcul communautaire immédiat devient une action admin** : n'importe quel compte pouvait relancer ce chantier en boucle
+- Sur l'accueil par défaut, vos bibliothèques passent avant « Déjà visionné » ; hors ligne, « Réessayer » montre qu'il essaie
 
 ### EN
 - **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Tentacle users also watch", "Step outside your comfort zone"
@@ -62,6 +79,15 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash and favicon follow
 - **The player's episode list opens on the current episode**
 - **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
+- **Settings → Personalization**: compose your home (rows, main banner), set the balance between safe bets and discoveries, whether to include titles outside your library (Vigie), community recommendations and the sharing of your history (opt-out), favorite actors and a profile reset
+- **Admin → Metadata**: the TMDB key (validated before being stored), the AniList credentials and the platform region are set from the admin — no longer only through environment variables
+- **Rating a movie marks it watched in Jellyfin** (series are never marked; can be turned off with `reco_rate_marks_played=false`); rating or dismissing a title removes it from the rows at once, and the "In English" reason is gone (it named the TMDB original language, misleading for a dubbed copy)
+- **Your favorites and started series are no longer recommended**: a favorite stays a seed, a started series lives in "Resume"; the seeds of the "Because you liked" rows rotate daily
+- **An account with a history no longer gets the onboarding grid** — reserved for fresh accounts, with 60 titles spread by genre instead of 30 sorted by rating
+- **"Library only" keeps its word**: with Vigie off, no row serves a title outside the library, and changing the setting recomputes the pool
+- **A public share link no longer exposes the owner's history**: the public page of a title returned the raw Jellyfin object, watch dates and playback position included
+- **The immediate community recompute becomes an admin action**: any account could hammer that job in a loop
+- On the default home, your libraries come before "Already watched"; offline, "Retry" shows that it is trying
 
 ## [1.15.1]
 ### FR

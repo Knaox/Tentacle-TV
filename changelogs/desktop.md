@@ -13,34 +13,102 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
-## [1.21.0]
+## [win-1.21.0]
 ### FR
-- **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes, et sert des rangées à votre goût : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », et plus
-- **L'accueil assume la personnalisation** : la bannière « Sélectionné pour vous » et la rangée « Pour vous » sont actives d'entrée — et tant que la reco n'a rien à montrer, la bannière de reprise garde sa place
-- **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule
-- **Dites-nous ce que vous aimez** : à la première visite, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une seule fois
-- **Noter, partout** : des étoiles au survol de n'importe quelle affiche, la note globale sur les cartes — et l'affiche de fin d'épisode se note désormais, le décompte s'interrompt le temps du geste
-- **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix
-- **Filtres par plateforme** : un menu avec les logos de vos services filtre les recommandations selon vos abonnements
-- **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
-- **La barre de navigation montre son débordement** : fondu de bord, flèches discrètes et molette quand la fenêtre est étroite — plus d'entrée inatteignable
-- **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
-- **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
-- **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
+- **Les recommandations arrivent** : un moteur complet apprend vos goûts (vus, favoris, notes) et sert « Pour vous », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » — la page s'affiche instantanément et n'est jamais vide
+- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin et sur chaque épisode avec sa note TMDB à côté ; synchronisation TMDB et AniList, confettis à la validation
+- **Filtres par plateforme** avec les logos de vos services, stricts et instantanés
+- **L'accueil se compose** dans Réglages → Personnalisation ; acteurs favoris ; partage de vos coups de cœur depuis Favoris ; Admin → Métadonnées pour les clés TMDB et AniList
+- **Qualité « Auto »** selon le débit réel ; la bannière repart au premier geste ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant
+- **« L'Étreinte »**, le nouveau logo
+- Correctifs : rangées vides après un défilement rapide, transition de la fiche depuis les recommandations, piste Dolby copiée en HLS
+- Nécessite un serveur 1.17.0 ou plus
 
 ### EN
-- **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", and more
-- **The home screen embraces personalization**: the "Picked for you" banner and the "For you" row are on by default — and while recommendations have nothing to show, the resume banner keeps its place
-- **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed
-- **Tell us what you like**: on your first visit, a grid of titles from your library seeds your profile in five picks — it only imposes itself once
-- **Rate anywhere**: stars on hover over any poster, the global rating on cards — and the end-of-episode poster can now be rated, the countdown pauses for the gesture
+- **Recommendations are here**: a full engine learns your taste (watched, favorites, ratings) and serves "For you", "Worth discovering", "Because you liked…", "With {actor}", "Anime for you" — the page shows up instantly and is never empty
+- **Rate anywhere**: on hover over a poster, on the details page, on the end poster and on every episode with its TMDB score next to it; TMDB and AniList sync, confetti on validation
+- **Platform filters** with your services' logos, strict and instant
+- **Compose your home** under Settings → Personalization; favorite actors; share your favorites from the Favorites page; Admin → Metadata for the TMDB and AniList keys
+- **"Auto" quality** from the real bandwidth; the banner resumes at the first gesture; the player's episode list opens on the current episode
+- **"The Embrace"**, the new logo
+- Fixes: rows left empty after a fast scroll, details transition from recommendations, Dolby track copied into HLS
+- Requires server 1.17.0 or newer
+
+## [mac-1.21.0]
+### FR
+- **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » et plus. La page s'affiche instantanément, précalculée par le serveur et gardée sur l'appareil, et elle n'est jamais vide : Tendances, ce que les utilisateurs de Tentacle regardent et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule
+- **L'accueil se compose** dans Réglages → Personnalisation : rangées, bandeau principal, équilibre entre valeurs sûres et découvertes, titres hors bibliothèque, recommandations communautaires, acteurs favoris
+- **Dites-nous ce que vous aimez** : à la première visite d'un compte vierge, cinq choix amorcent votre profil
+- **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin d'épisode, et sur chaque épisode avec sa note TMDB à côté. Vos notes se synchronisent vers TMDB et AniList, un film noté est marqué vu, et valider une note fait jaillir quelques confettis
+- **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix
+- **Filtres par plateforme** : un menu avec les logos de vos services filtre les recommandations selon vos abonnements — strict, instantané, et qui suit votre compte
+- **Partagez vos coups de cœur** : la page Favoris fabrique un lien public de vos titres likés
+- **Admin → Métadonnées** : clé TMDB, identifiants AniList et région des plateformes
+- **La qualité « Auto »** mesure le débit réel vers le serveur et choisit un palier que la connexion porte ; votre choix manuel prime toujours
+- **La bannière repart au premier geste** après s'être figée pour laisser le GPU redescendre ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant ; la barre de navigation montre son débordement
+- **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
+- **Correctifs** : une rangée ne reste plus vide après un défilement rapide ; la fiche s'ouvre depuis les recommandations avec sa transition ; plus de piste Dolby copiée vers le HLS fMP4
+- Nécessite un serveur 1.17.0 ou plus
+
+### EN
+- **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Anime for you" and more. The page shows up instantly, precomputed by the server and kept on the device, and it is never empty: Trending, what Tentacle users are watching and your library's top rated hold the stage while your profile is computed
+- **Compose your home** under Settings → Personalization: rows, main banner, the balance between safe bets and discoveries, titles outside your library, community recommendations, favorite actors
+- **Tell us what you like**: on the first visit of a fresh account, five picks seed your profile
+- **Rate anywhere**: on hover over a poster, on the details page, on the end-of-episode poster, and on every episode with its TMDB score next to it. Your ratings sync to TMDB and AniList, a rated movie is marked watched, and validating a rating throws a few confetti
 - **Your actors**: like an actor or a director and "With …" rows grow from your picks
-- **Platform filters**: a menu with your services' logos filters recommendations by your subscriptions
-- **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
-- **The navigation bar shows its overflow**: edge fade, discreet arrows and mouse-wheel scrolling in narrow windows — no more unreachable entries
+- **Platform filters**: a menu with your services' logos filters recommendations by your subscriptions — strict, instant, and following your account
+- **Share your favorites**: the Favorites page builds a public link of your liked titles
+- **Admin → Metadata**: the TMDB key, the AniList credentials and the platform region
+- **"Auto" quality** measures the real bandwidth to your server and picks a tier the connection can carry; your manual choice always wins
+- **The banner resumes at the first gesture** after freezing to let the GPU rest; the player's episode list opens on the current episode; the navigation bar shows its overflow
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash and icon follow
+- **Fixes**: a row no longer stays empty after a fast scroll; the details page opens from recommendations with its transition; no more Dolby track copied into HLS fMP4
+- Requires server 1.17.0 or newer
+
+## [1.21.0]
+### FR
+- **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes, et sert des rangées à votre goût : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Les utilisateurs de Tentacle regardent aussi », « Sortir de votre zone de confort ». Vos favoris et vos séries entamées n'y figurent jamais : un favori sert de graine, une série entamée vit dans « Reprendre »
+- **La page Recommandations s'affiche instantanément** : le serveur la précalcule en arrière-plan, l'app la garde sur l'appareil et la rend d'un coup, puis la rafraîchit en silence dès qu'elle a été reconstruite — plus de carrousels qui arrivent un par un, plus de squelette hors de la toute première visite, et les premières affiches sont préchargées avant même d'ouvrir la page
+- **Les animés comptent enfin** : les séries suivies pèsent selon leurs épisodes et deviennent des graines, une rangée « Animés pour vous » et une part d'animés dans « Pour vous » pour ceux qui en regardent — rien ne change pour les autres
+- **L'accueil assume la personnalisation** : la bannière « Sélectionné pour vous » et la rangée « Pour vous » sont actives d'entrée — et tant que la reco n'a rien à montrer, la bannière de reprise garde sa place. Sur l'accueil par défaut, vos bibliothèques passent avant « Déjà visionné »
+- **L'accueil se compose** dans Réglages → Personnalisation : choisissez et ordonnez ses rangées (bibliothèques, rangées de recommandation), le bandeau principal (reprise, aléatoire, recommandation ou un favori fixe), l'équilibre entre valeurs sûres et découvertes, l'inclusion des titres hors bibliothèque, les recommandations communautaires et le partage de votre historique, la remise à zéro du profil
+- **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule — un bandeau dit toujours ce qui se passe
+- **Dites-nous ce que vous aimez** : à la toute première visite d'un compte vierge, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une fois, jamais à un compte qui a déjà un historique
+- **Noter, partout** : des étoiles au survol de n'importe quelle affiche (la note globale reste lisible pendant le survol), sur la fiche, et sur l'affiche de fin d'épisode dont le décompte s'interrompt le temps du geste. Vos notes se synchronisent vers TMDB et AniList si l'admin a posé les clés ; noter un film le marque comme vu dans Jellyfin ; noter ou écarter un titre le retire aussitôt des rangées
+- **Chaque épisode se note** : étoiles dans la liste Saisons & Épisodes de la fiche et sur la fiche de l'épisode, la note TMDB de l'épisode à côté (Jellyfin à défaut), vos notes visibles dans la liste des épisodes du lecteur — et valider une note fait jaillir quelques confettis, partout où l'on note
+- **Vos acteurs** : aimez un acteur ou un réalisateur depuis une fiche, des rangées « Avec … » naissent de vos choix — gérées au contact des rangées, portraits compris, et dans Réglages → Personnalisation
+- **Filtres par plateforme** : un menu avec les logos de vos services (Netflix, Disney+, Prime Video, Crunchyroll, Apple TV, Paramount+, HBO Max, ADN, OCS, Canal+, Arte) filtre les recommandations selon vos abonnements. Le filtre est strict — un titre dont la disponibilité est inconnue n'apparaît jamais sous un service —, il suit votre compte d'un appareil à l'autre, et en changer est instantané : chaque plateforme a sa page prête, le survol la précharge, l'échange attend les premières affiches
+- **Partagez vos coups de cœur** : la page Favoris fabrique un lien public de vos titres likés, comme pour la liste à voir
+- **Admin → Métadonnées** : la clé TMDB (validée avant d'être stockée), les identifiants AniList et la région des plateformes se règlent depuis l'admin. La clé TMDB active les recommandations de tous les comptes ; sans elle, la page reste utile avec du contenu général
+- **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
+- **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
+- **La bannière repart au premier geste** : après vingt secondes sans souris ni clavier, elle se fige pour laisser le GPU redescendre ; au moindre geste ou défilement, la diapositive suivante arrive aussitôt avec son fondu et son zoom
+- **La barre de navigation montre son débordement** : fondu de bord, flèches discrètes et molette quand la fenêtre est étroite — plus d'entrée inatteignable
+- **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash, icône et favicon suivent, et le rose d'accent entre dans la palette
+- **Correctifs** : une rangée ne reste plus vide après un défilement rapide (il fallait remonter tout en haut ou recharger) ; la fiche s'ouvre depuis les recommandations et leur bannière avec sa transition ; hors ligne, « Réessayer » montre qu'il essaie ; plus de piste Dolby copiée vers le HLS fMP4 — l'initialisation sortait sans codec et la lecture échouait
+- Compatibilité : cette version demande un serveur 1.17.0 ou plus
+
+### EN
+- **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Tentacle users also watch", "Step outside your comfort zone". Your favorites and started series never show up there: a favorite is a seed, a started series lives in "Resume"
+- **The Recommendations page shows up instantly**: the server precomputes it in the background, the app keeps it on the device and renders it at once, then refreshes it silently as soon as it has been rebuilt — no more rows arriving one by one, no skeleton beyond the very first visit, and the first posters are preloaded before you even open the page
+- **Anime finally counts**: followed series weigh by episodes watched and become seeds, an "Anime for you" row and a share of anime in "For you" for those who watch it — nothing changes for anyone else
+- **The home screen embraces personalization**: the "Picked for you" banner and the "For you" row are on by default — and while recommendations have nothing to show, the resume banner keeps its place. On the default home, your libraries come before "Already watched"
+- **Compose your home** under Settings → Personalization: pick and order its rows (libraries, recommendation rows), the main banner (resume, random, recommendation or a fixed favorite), the balance between safe bets and discoveries, whether to include titles outside your library, community recommendations and the sharing of your history, and a profile reset
+- **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed — a banner always says what's happening
+- **Tell us what you like**: on the very first visit of a fresh account, a grid of titles from your library seeds your profile in five picks — it only imposes itself once, never on an account that already has a history
+- **Rate anywhere**: stars on hover over any poster (the global rating stays readable during the hover), on the details page, and on the end-of-episode poster, whose countdown pauses for the gesture. Your ratings sync to TMDB and AniList when the admin has set the keys; rating a movie marks it watched in Jellyfin; rating or dismissing a title removes it from the rows at once
+- **Every episode can be rated**: stars in the Seasons & Episodes list of the details page and on the episode page, the TMDB episode score next to them (Jellyfin as a fallback), your ratings shown in the player's episode list — and validating a rating throws a few confetti, wherever you rate
+- **Your actors**: like an actor or a director from a details page and "With …" rows grow from your picks — managed right next to the rows, portraits included, and under Settings → Personalization
+- **Platform filters**: a menu with your services' logos (Netflix, Disney+, Prime Video, Crunchyroll, Apple TV, Paramount+, HBO Max, ADN, OCS, Canal+, Arte) filters recommendations by your subscriptions. The filter is strict — a title with unknown availability never shows up under a service —, it follows your account across devices, and switching is instant: every platform has its page ready, hovering prefetches it, the swap waits for the first posters
+- **Share your favorites**: the Favorites page builds a public link of your liked titles, just like the watchlist
+- **Admin → Metadata**: the TMDB key (validated before being stored), the AniList credentials and the platform region are set from the admin. The TMDB key switches recommendations on for every account; without it the page stays useful with general content
+- **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
 - **The player's episode list opens on the current episode**
-- **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
+- **The banner resumes at the first gesture**: after twenty seconds without mouse or keyboard it freezes to let the GPU rest; at the slightest gesture or scroll, the next slide arrives at once with its fade and zoom
+- **The navigation bar shows its overflow**: edge fade, discreet arrows and mouse-wheel scrolling in narrow windows — no more unreachable entries
+- **"The Embrace"**: the new logo hugs the screen — mascot, splash, icon and favicon follow, and the accent pink joins the palette
+- **Fixes**: a row no longer stays empty after a fast scroll (you had to scroll back to the top or reload); the details page opens from recommendations and their banner with its transition; offline, "Retry" shows that it is trying; no more Dolby track copied into HLS fMP4 — the init segment came out without a codec and playback failed
+- Compatibility: this version requires server 1.17.0 or newer
 
 ## [mac-1.20.11]
 <!-- Bloc macOS CUMULATIF : 1.20.9 → 1.20.11. L'App Store est resté en 1.20.8
