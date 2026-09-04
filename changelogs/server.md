@@ -20,7 +20,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **La note reste visible au survol des cartes** de recommandation, à côté de la raison et des étoiles
 - **La fiche s'ouvre depuis les recommandations et leur bannière avec sa transition**, comme depuis toute autre carte
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
-- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même — le serveur mémorise ces sorties et remet la série à l'arrivée d'un épisode
+- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même — le serveur mémorise ces sorties et remet la série à l'arrivée d'un épisode
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -37,7 +37,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **The rating stays visible while hovering** recommendation cards, next to the reason and the stars
 - **The details page opens from recommendations and their banner with its transition**, as from any other card
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
-- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself — the server remembers those exits and puts the series back when an episode arrives
+- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself — the server remembers those exits and puts the series back when an episode arrives
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]
