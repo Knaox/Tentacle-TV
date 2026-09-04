@@ -95,9 +95,6 @@ export const AdminUsers = Unavailable;
 export const AdminDownloads = Unavailable;
 export const AdminTicketsPage = Unavailable;
 export const AdminServicesPage = Unavailable;
-export const AdminTheme = Unavailable;
-export const AdminThemeTokens = Unavailable;
-export const AdminThemeReference = Unavailable;
 
 // Téléchargements et mode hors ligne : le stockage d'une dalle ne s'y prête pas.
 export const DownloadsPage = Unavailable;

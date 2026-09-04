@@ -34,7 +34,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -259,7 +259,7 @@ export function App() {
             <Route path="pair-device" element={onlineOnly(<PairDevice />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,
-                `/admin/theme/tokens`, `/admin/plugins/<id>`), elles deviennent
+                `/admin/services`, `/admin/plugins/<id>`), elles deviennent
                 simplement des enfants — aucun lien profond ne casse. */}
             <Route path="admin" element={onlineOnly(<AdminLayout />)}>
               <Route index element={null} />
@@ -270,9 +270,6 @@ export function App() {
               <Route path="services" element={<AdminServicesPage />} />
               <Route path="metadata" element={<AdminMetadata />} />
               <Route path="plugins" element={<AdminPlugins />} />
-              <Route path="theme" element={<AdminTheme />} />
-              <Route path="theme/tokens" element={<AdminThemeTokens />} />
-              <Route path="theme/reference" element={<AdminThemeReference />} />
 
               {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
               {activePluginsMeta

@@ -6,7 +6,6 @@ import {
   HardDriveDownload,
   LifeBuoy,
   Mail,
-  Palette,
   Puzzle,
   Server,
   Users,
@@ -23,7 +22,7 @@ import { getUserInfo } from "../userMenu/menuItems";
  * n'apportait qu'un titre, une phrase et un bouton « Gérer les X » redondant
  * avec son propre titre.
  *
- * Route PARENTE : les URLs existantes (`/admin/users`, `/admin/theme/tokens`…)
+ * Route PARENTE : les URLs existantes (`/admin/users`, `/admin/plugins/<id>`…)
  * sont inchangées, elles deviennent simplement des enfants. Aucun lien profond
  * ne casse, y compris les routes dynamiques des plugins.
  */
@@ -32,7 +31,6 @@ const ICON_SIZE = 17;
 
 export function AdminLayout() {
   const { t } = useTranslation("admin");
-  const { t: tTheme } = useTranslation("adminTheme");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { isAdmin } = getUserInfo();
@@ -46,12 +44,11 @@ export function AdminLayout() {
       { id: "plugins", label: t("pluginsTitle"), icon: <Puzzle size={ICON_SIZE} /> },
       { id: "services", label: t("services"), icon: <Server size={ICON_SIZE} /> },
       { id: "metadata", label: t("metadataTitle"), icon: <Database size={ICON_SIZE} /> },
-      { id: "theme", label: tTheme("adminCardTitle"), icon: <Palette size={ICON_SIZE} /> },
     ],
-    [t, tTheme],
+    [t],
   );
 
-  // `/admin/theme/tokens` doit garder « theme » actif dans le rail : on ne
+  // `/admin/plugins/<id>` doit garder « plugins » actif dans le rail : on ne
   // retient que le premier segment après /admin.
   const activeId = useMemo(() => {
     const rest = pathname.replace(/^\/admin\/?/, "");
