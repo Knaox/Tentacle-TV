@@ -3,6 +3,7 @@ import type { MediaItem, NextEpisodeResult } from "@tentacle-tv/shared";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { updateItemUserDataInCache, patchSeriesIdSet } from "./cacheUtils";
 import { recordAutoRetired, tentacleBackend, type BackendFetcher } from "./watchlistAutoRetired";
+import { fetchSeriesWatchState } from "./useWatchState";
 
 /** Query keys des Sets d'IDs de séries likées / favorites (cache = string[]). */
 export const WATCHLIST_SERIES_IDS_KEY = ["watchlist-series-ids"] as const;
@@ -39,18 +40,74 @@ export function stoppedPastHalf(
   return (stopPositionSeconds * TICKS_PER_SECOND) / runtimeTicks >= WATCHLIST_RETIRE_MIN_FRACTION;
 }
 
+/** La clé de `useSeriesWatchState` — c'est SON cache qu'on lit et qu'on remplit. */
+function seriesWatchStateKey(seriesId: string): readonly ["series-watch-state", string] {
+  return ["series-watch-state", seriesId] as const;
+}
+
+/**
+ * L'état de visionnage d'une série, FRAIS : redemandé au serveur, puis posé
+ * dans le cache où les fiches qui l'observent le trouvent. `refetchQueries` ne
+ * suffisait pas — il ne refait que ce qui existe, et rien n'existe quand le
+ * lecteur a été ouvert depuis une carte de l'accueil, une fiche d'épisode ou
+ * un lien profond : la série restait alors dans Ma liste pour toujours. Réseau
+ * en échec : l'état déjà en cache, sinon rien — jamais un verdict inventé.
+ */
+async function freshSeriesWatchState(
+  qc: QueryClient,
+  client: Fetcher,
+  userId: string,
+  seriesId: string,
+): Promise<NextEpisodeResult | undefined> {
+  const queryKey = seriesWatchStateKey(seriesId);
+  return qc
+    .fetchQuery({
+      queryKey,
+      queryFn: () => fetchSeriesWatchState(client, userId, seriesId),
+      staleTime: 0,
+      retry: false,
+    })
+    .catch(() => qc.getQueryData<NextEpisodeResult>(queryKey));
+}
+
+/**
+ * La série est-elle dans Ma liste ? Sans réseau quand le cache sait : le Set
+ * d'IDs (`useWatchlistSeriesIds`, jamais monté sur mobile) ou l'item de sa
+ * fiche. Quand ni l'un ni l'autre n'est là, on demande l'item au serveur, sans
+ * l'écrire dans le cache — la fiche y attend une forme plus riche (`Fields`).
+ */
+async function isSeriesInWatchlist(
+  qc: QueryClient,
+  client: Fetcher,
+  userId: string,
+  seriesId: string,
+): Promise<boolean> {
+  const set = qc.getQueryData<string[]>(WATCHLIST_SERIES_IDS_KEY);
+  if (set?.includes(seriesId)) return true;
+  const cached = qc.getQueryData<MediaItem>(["item", seriesId]);
+  if (cached?.UserData) return cached.UserData.Likes === true;
+  if (set !== undefined) return false;
+  const fresh = await client
+    .fetch(`/Users/${userId}/Items/${seriesId}?EnableUserData=true`)
+    .then((r) => r as MediaItem | null, () => null);
+  return fresh?.UserData?.Likes === true;
+}
+
 /**
  * Retire une série de « Ma liste » (Likes) SI elle est entièrement vue.
  * Appelé à l'ARRÊT d'une lecture d'épisode — jamais sur un « marquer vu » posé
  * à la main, qui est un geste de rangement et non un visionnage.
  *
- * - « entièrement vue » : ["series-watch-state", id].type === "completed"
- *   (exclut déjà la Saison 0 / spéciaux, cf. useSeriesWatchState).
+ * - « entièrement vue » : l'état de visionnage REDEMANDÉ au serveur — la
+ *   lecture qui vient de s'arrêter l'a changé — et posé dans le cache
+ *   `["series-watch-state", id]`, qu'une fiche l'ait créé ou non (exclut déjà
+ *   la Saison 0 / spéciaux, cf. `fetchSeriesWatchState`).
  * - série encore EN DIFFUSION : retirée quand même — tout ce qui est disponible
  *   a été vu, elle n'a plus rien à proposer. Elle revient d'elle-même dès qu'un
  *   nouvel épisode entre en bibliothèque : le retrait automatique est mémorisé
  *   côté serveur (`recordAutoRetired`), à l'inverse d'un retrait manuel.
- * - n'agit que si la série est effectivement dans Ma liste (Set ou UserData).
+ * - n'agit que si la série est effectivement dans Ma liste (Set, UserData de
+ *   l'item en cache, ou l'item demandé au serveur quand rien n'est en cache).
  * - le cache n'est patché (série + tous ses épisodes, + Set) qu'APRÈS un retrait
  *   serveur réussi : en échec, la liste continue de dire la vérité du serveur.
  *
@@ -65,12 +122,9 @@ export async function retireSeriesFromWatchlistIfFullyWatched(
 ): Promise<boolean> {
   if (!seriesId || !userId) return false;
 
-  const state = qc.getQueryData<NextEpisodeResult>(["series-watch-state", seriesId]);
+  const state = await freshSeriesWatchState(qc, client, userId, seriesId);
   if (state?.type !== "completed") return false;
-
-  const likedInSet = qc.getQueryData<string[]>(WATCHLIST_SERIES_IDS_KEY)?.includes(seriesId);
-  const likedOnItem = qc.getQueryData<MediaItem>(["item", seriesId])?.UserData?.Likes === true;
-  if (!likedInSet && !likedOnItem) return false;
+  if (!(await isSeriesInWatchlist(qc, client, userId, seriesId))) return false;
 
   const removed = await client
     .fetch(`/Users/${userId}/Items/${seriesId}/Rating`, { method: "DELETE" })
@@ -100,13 +154,11 @@ export async function resetWatchedIfFullyWatchedOnAdd(
 ): Promise<void> {
   if (!targetId || !userId) return;
 
-  let fullyWatched = false;
+  let fullyWatched: boolean;
   if (seriesId) {
-    let state = qc.getQueryData<NextEpisodeResult>(["series-watch-state", seriesId]);
-    if (!state) {
-      await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
-      state = qc.getQueryData<NextEpisodeResult>(["series-watch-state", seriesId]);
-    }
+    // Absent du cache (ajout depuis une carte, sans fiche) : on va le chercher.
+    const state = qc.getQueryData<NextEpisodeResult>(seriesWatchStateKey(seriesId))
+      ?? (await freshSeriesWatchState(qc, client, userId, seriesId));
     fullyWatched = state?.type === "completed";
   } else {
     let played = qc.getQueryData<MediaItem>(["item", targetId])?.UserData?.Played;
@@ -129,5 +181,5 @@ export async function resetWatchedIfFullyWatchedOnAdd(
     seriesId ? { matchSeriesId: seriesId } : targetId,
     () => ({ Played: false, PlayedPercentage: 0 }),
   );
-  if (seriesId) qc.invalidateQueries({ queryKey: ["series-watch-state", seriesId] });
+  if (seriesId) qc.invalidateQueries({ queryKey: seriesWatchStateKey(seriesId) });
 }

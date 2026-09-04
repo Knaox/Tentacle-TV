@@ -149,8 +149,6 @@ export function usePlayerHandlers({
   // série n'en sort qu'entièrement vue. Toutes les sorties passent ici, Retour
   // matériel Android compris. `router.replace` REMONTE l'écran (nouvelle clé
   // de route) : le cleanup de l'ancienne instance voit SON item et SA position.
-  // Limite connue, la même que sur le web : la série n'est retirée que si sa
-  // fiche a été ouverte (cache `series-watch-state`) — pas depuis une carte.
   // Snapshots par refs, lus MAINTENANT : `pb` est un objet neuf à chaque rendu.
   const itemRef = useRef(pb.item);
   itemRef.current = pb.item;

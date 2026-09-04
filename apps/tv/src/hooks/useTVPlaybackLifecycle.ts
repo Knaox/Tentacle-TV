@@ -89,9 +89,7 @@ export function useTVPlaybackLifecycle(args: {
   // TOUTES les sorties traversent : Retour (OSD, BackHandler Android, Menu tvOS
   // qui dépile nativement sans passer par `leavePlayer`), fin de lecture,
   // épisode suivant (`navigation.replace` remonte l'écran sous une nouvelle
-  // clé). Limite connue, la même que sur le web : la série n'est retirée que si
-  // une fiche (ou le panneau Épisodes) a rempli `series-watch-state` — pas
-  // depuis une carte de l'accueil.
+  // clé).
   // Lectures SYNCHRONES, par refs : `item` change à chaque mise à jour de
   // UserData et ne doit pas relancer l'effet.
   const reportStopRef = useRef(reportStop);

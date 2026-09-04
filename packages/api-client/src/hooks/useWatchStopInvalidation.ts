@@ -77,7 +77,8 @@ export function useWatchStopInvalidation() {
       const mayRetire = stoppedPastHalf(stopPositionSeconds, runtimeTicks) !== false;
 
       if (itemType === "Episode" && seriesId) {
-        await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
+        // L'état de la série est redemandé au serveur par le retrait lui-même,
+        // et posé dans le cache — qu'une fiche l'ait créé ou non.
         if (mayRetire) await retireSeriesFromWatchlistIfFullyWatched(qc, client, userId, seriesId);
         // La fiche de la série, ses saisons et sa liste d'épisodes — voir
         // `invalidateSeriesWatchViews`, partagée avec le mobile et le téléviseur.
