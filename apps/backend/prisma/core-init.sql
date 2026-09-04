@@ -99,6 +99,16 @@ CREATE TABLE IF NOT EXISTS `announced_contents` (
   KEY `announced_contents_notifiedAt_idx` (`notifiedAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Séries retirées automatiquement de « Ma liste » (tout le disponible vu), à
+-- remettre au prochain épisode. Voir schema.prisma > WatchlistAutoRetired.
+CREATE TABLE IF NOT EXISTS `watchlist_auto_retired` (
+  `seriesId` varchar(64) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `retiredAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`seriesId`, `jellyfinUserId`),
+  KEY `watchlist_auto_retired_jellyfinUserId_idx` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Segments de visionnage MESURÉS par Tentacle (remplace le greffon Playback
 -- Reporting). Une ligne = une suite continue de lecture d'un titre sur une
 -- session. Le temps est échantillonné toutes les 15 s, jamais extrapolé.
