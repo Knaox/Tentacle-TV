@@ -11,6 +11,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { describe, expect, it } from "vitest";
 import { WATCHLIST_SERIES_IDS_KEY, retireSeriesFromWatchlistIfFullyWatched, stoppedPastHalf } from "./watchlistEffects";
+import { AUTO_RETIRED_PATH, type BackendFetcher } from "./watchlistAutoRetired";
 
 interface Call {
   path: string;
@@ -25,6 +26,18 @@ function fakeClient(deleteFails = false): { calls: Call[]; fetch: (path: string,
     fetch(path, init) {
       calls.push({ path, init });
       return deleteFails ? Promise.reject(new Error("réseau")) : Promise.resolve(undefined);
+    },
+  };
+}
+
+/** Un backend Tentacle qui note ce qu'on lui confie, ou qui est injoignable. */
+function fakeBackend(fails = false): BackendFetcher & { calls: Array<{ path: string; init?: RequestInit }> } {
+  const calls: Array<{ path: string; init?: RequestInit }> = [];
+  return {
+    calls,
+    fetch<T>(path: string, init?: RequestInit): Promise<T> {
+      calls.push({ path, init });
+      return fails ? Promise.reject(new Error("backend")) : Promise.resolve(undefined as T);
     },
   };
 }
@@ -87,6 +100,29 @@ describe("le retrait automatique d'une série entièrement vue", () => {
     expect(client.calls).toHaveLength(1);
     expect(qc.getQueryData<string[]>(WATCHLIST_SERIES_IDS_KEY)).toEqual(["s1", "s2"]);
     expect(qc.getQueryData<MediaItem>(["item", "s1"])?.UserData?.Likes).toBe(true);
+  });
+
+  it("mémorise le retrait côté serveur, après le retrait réussi", async () => {
+    const qc = seededCache();
+    const backend = fakeBackend();
+
+    await retireSeriesFromWatchlistIfFullyWatched(qc, fakeClient(), "u1", "s1", backend);
+
+    expect(backend.calls).toEqual([
+      { path: AUTO_RETIRED_PATH, init: { method: "PUT", body: '{"seriesId":"s1"}' } },
+    ]);
+  });
+
+  it("ne mémorise rien si le retrait serveur a échoué", async () => {
+    const backend = fakeBackend();
+    await retireSeriesFromWatchlistIfFullyWatched(seededCache(), fakeClient(true), "u1", "s1", backend);
+    expect(backend.calls).toHaveLength(0);
+  });
+
+  it("retire quand même si le backend Tentacle est injoignable", async () => {
+    const qc = seededCache();
+    expect(await retireSeriesFromWatchlistIfFullyWatched(qc, fakeClient(), "u1", "s1", fakeBackend(true))).toBe(true);
+    expect(qc.getQueryData<string[]>(WATCHLIST_SERIES_IDS_KEY)).toEqual(["s2"]);
   });
 
   it("ne fait rien sans utilisateur ou sans série", async () => {

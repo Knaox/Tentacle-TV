@@ -96,6 +96,7 @@ export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";
 export { invalidateSeriesWatchViews, invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet } from "./hooks/cacheUtils";
 export type { CacheTarget } from "./hooks/cacheUtils";
 export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./hooks/watchlistEffects";
+export { forgetAutoRetired, recordAutoRetired } from "./hooks/watchlistAutoRetired";
 
 // App config & feature flags
 export { useAppConfig, useAutoplayConfig, setConfigBackendUrl } from "./hooks/useConfig";

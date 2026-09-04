@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useSharedListView, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { useSharedListView, useJellyfinClient, useUserId, forgetAutoRetired } from "@tentacle-tv/api-client";
 import { SharedListHeader } from "../components/share/SharedListHeader";
 import { SharedListGrid } from "../components/share/SharedListGrid";
 import { SharedListAddBar } from "../components/share/SharedListAddBar";
@@ -42,7 +42,11 @@ export function SharedListView() {
         ids.map((id) =>
           kind === "likes"
             ? client.fetch(`/Users/${userId}/FavoriteItems/${id}`, { method: "POST" })
-            : client.fetch(`/Users/${userId}/Items/${id}/Rating?likes=true`, { method: "POST" }),
+            : client
+                .fetch(`/Users/${userId}/Items/${id}/Rating?likes=true`, { method: "POST" })
+                // Un ajout manuel comme un autre : une série sortie de Ma liste
+                // d'elle-même ne doit plus y revenir toute seule.
+                .then(() => forgetAutoRetired(id)),
         ),
       );
     },
