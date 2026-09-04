@@ -165,6 +165,15 @@ export {
 } from "./hooks/useRatings";
 export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } from "./hooks/useRatings";
 export { useEndCardRating } from "./hooks/useEndCardRating";
+// Notes d'épisodes : identité, notes TMDB par saison, index des notes du compte
+export {
+  episodeRatingIdentity,
+  episodeRatingsIndex,
+  useMyEpisodeRatings,
+  useTmdbSeasonEpisodes,
+  TMDB_SEASON_KEY,
+} from "./hooks/useEpisodeRatings";
+export type { TmdbEpisodeRating } from "./hooks/useEpisodeRatings";
 export type { EndCardRating } from "./hooks/useEndCardRating";
 
 // Feedback, démarrage à froid, relance du profil (cf. hooks/useRecoRows)
