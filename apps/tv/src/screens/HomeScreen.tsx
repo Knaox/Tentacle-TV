@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
@@ -22,6 +22,8 @@ import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
 import { TVHomeContextMenu } from "../components/home/TVHomeContextMenu";
 import type { HomeContextTarget } from "../components/home/TVHomeContextMenu";
 import { TVHomeRows } from "../components/home/TVHomeRows";
+import type { TVHomeRowData, TVHomeRowHandlers } from "../components/home/tvHomeRowRegistry";
+import { useTVHomeRows } from "../components/home/useTVHomeRows";
 import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
@@ -70,6 +72,7 @@ function HomeScreenInner({ navigation }: Props) {
         queryClient.invalidateQueries({ queryKey: ["resume-items"] });
         queryClient.invalidateQueries({ queryKey: ["next-up"], exact: true });
         queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+        queryClient.invalidateQueries({ queryKey: ["favorites"] });
       });
       return () => task.cancel();
     }, [queryClient])
@@ -108,6 +111,7 @@ function HomeScreenInner({ navigation }: Props) {
   const librariesQuery = useLibraries();
   const watchlistQuery = useWatchlist();
   const watchedQuery = useWatchedItems();
+  const { rows } = useTVHomeRows();
 
   const featured = featuredQuery.data;
   const resume = resumeQuery.data;
@@ -128,6 +132,24 @@ function HomeScreenInner({ navigation }: Props) {
   const navigateToDetail = useCallback((item: MediaItem) => openDetail(item.Id), [openDetail]);
   const navigateToPlay = useCallback((item: MediaItem) => openPlayer(item.Id), [openPlayer]);
   const openContextMenu = useCallback((item: MediaItem) => setCtxTarget({ kind: "media", item }), []);
+
+  const librariesById = useMemo(() => {
+    const map: TVHomeRowData["librariesById"] = new Map();
+    for (const lib of libraries ?? []) map.set(lib.Id, { id: lib.Id, name: lib.Name, collectionType: lib.CollectionType });
+    return map;
+  }, [libraries]);
+  const rowData = useMemo<TVHomeRowData>(
+    () => ({ resume, nextUp, watchlist, watched, librariesById }),
+    [resume, nextUp, watchlist, watched, librariesById],
+  );
+  const rowHandlers = useMemo<TVHomeRowHandlers>(() => ({
+    onPlay: navigateToPlay,
+    onDetail: navigateToDetail,
+    onLongPress: openContextMenu,
+    onItemFocus: setFocusedItem,
+    onRowLayout: (key, y) => rowYMap.current.set(key, y),
+    onRowFocus: scrollToRow,
+  }), [navigateToPlay, navigateToDetail, openContextMenu, setFocusedItem, scrollToRow]);
 
   // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
   // ici oubliait les credentials et le verrou « lecture en cours ».
@@ -195,18 +217,10 @@ function HomeScreenInner({ navigation }: Props) {
             )}
 
             <TVHomeRows
-              resume={resume}
-              nextUp={nextUp}
-              watchlist={watchlist}
-              watched={watched}
-              libraries={libraries}
-              onPlay={navigateToPlay}
-              onDetail={navigateToDetail}
-              onLongPress={openContextMenu}
-              onItemFocus={setFocusedItem}
+              rows={rows}
+              data={rowData}
+              handlers={rowHandlers}
               onWrapperLayout={(y) => { rowsWrapperY.current = y; }}
-              onRowLayout={(key, y) => rowYMap.current.set(key, y)}
-              onRowFocus={scrollToRow}
             />
           </>
         )}
