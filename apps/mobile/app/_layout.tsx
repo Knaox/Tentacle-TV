@@ -5,13 +5,16 @@ import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, i18n } from "@tentacle-tv/shared";
-import { useAuth, useTentacleConfig, setPreferencesBackendUrl, fetchInterfaceLanguage } from "@tentacle-tv/api-client";
+import {
+  useAuth, useTentacleConfig, setPreferencesBackendUrl, fetchInterfaceLanguage, useAdminMetadataStatus,
+} from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { BrandSpinner } from "@/components/ui";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
+import { TmdbKeyBanner } from "@/components/TmdbKeyBanner";
 import { useServerReachable } from "@/hooks/useServerReachable";
 import { useServerCompat } from "@/hooks/useServerCompat";
 import { clearCredentials } from "@/auth/credentialManager";
@@ -75,13 +78,22 @@ function OfflineOverlay() {
   );
 }
 
-/** Bandeau « serveur à mettre à jour » — admins uniquement, masquable en
- *  mémoire. Nécessite AppProviders (React Query, ServerUrlContext). */
-function ServerCompatOverlay() {
+/** Bandeaux serveur — admins uniquement, masquables en mémoire, UN à la
+ *  fois : « serveur à mettre à jour » prime sur « clé TMDB manquante ».
+ *  Nécessite AppProviders (React Query, ServerUrlContext). */
+function ServerNoticeOverlay() {
   const { incompatible, serverVersion, isAdmin } = useServerCompat();
-  const [dismissed, setDismissed] = useState(false);
-  if (!isAdmin || dismissed || !incompatible) return null;
-  return <ServerOutdatedBanner serverVersion={serverVersion} onDismiss={() => setDismissed(true)} />;
+  const metadata = useAdminMetadataStatus({ enabled: isAdmin });
+  const [dismissedOutdated, setDismissedOutdated] = useState(false);
+  const [dismissedTmdb, setDismissedTmdb] = useState(false);
+  if (!isAdmin) return null;
+  if (incompatible && !dismissedOutdated) {
+    return <ServerOutdatedBanner serverVersion={serverVersion} onDismiss={() => setDismissedOutdated(true)} />;
+  }
+  if (metadata.data?.tmdb.configured === false && !dismissedTmdb) {
+    return <TmdbKeyBanner onDismiss={() => setDismissedTmdb(true)} />;
+  }
+  return null;
 }
 
 export default function RootLayout() {
@@ -240,7 +252,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
       </Stack>
       <OfflineOverlay />
-      <ServerCompatOverlay />
+      <ServerNoticeOverlay />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>
           <BrandSpinner size="large" />
