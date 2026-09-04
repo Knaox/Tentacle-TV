@@ -6,7 +6,7 @@ import en from "./locales/en";
 const NAMESPACES = [
   "common", "auth", "setup", "player", "admin",
   "tickets", "pairing", "preferences", "about", "notifications", "nav",
-  "adminPlugins", "adminTheme", "media", "errors", "profile", "disclaimer",
+  "adminPlugins", "media", "errors", "profile", "disclaimer",
   "watchTogether", "downloads", "easterEggs", "reco",
 ] as const;
 
