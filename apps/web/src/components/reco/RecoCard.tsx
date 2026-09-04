@@ -27,8 +27,9 @@ interface RecoCardProps {
  * Affiche 2:3 d'une recommandation. Même géométrie que PosterCard (largeur de
  * rangée imposée, cadre partagé), mais un contenu différent : badge « à la
  * demande » pour un titre hors bibliothèque, et un calque de survol (raison de
- * la présence, étoiles, « ne plus me proposer » — cf. RecoCardHoverLayer)
- * MONTÉ au survol, jamais laissé à opacité nulle (règle GPU du dépôt).
+ * la présence, bouton Lecture d'un titre en bibliothèque, étoiles, « ne plus me
+ * proposer » — cf. RecoCardHoverLayer) MONTÉ au survol, jamais laissé à opacité
+ * nulle (règle GPU du dépôt).
  */
 export const RecoCard = memo(function RecoCard({
   item,
@@ -145,7 +146,12 @@ export const RecoCard = memo(function RecoCard({
           {/* Calque de survol — monté au survol seulement, deux fondus via
               .hover-reveal (cf. RecoCardHoverLayer). */}
           {overlayMounted && (
-            <RecoCardHoverLayer item={item} shown={hovered} onDismiss={handleDismiss} />
+            <RecoCardHoverLayer
+              item={item}
+              shown={hovered}
+              onDismiss={handleDismiss}
+              onOpenDetail={handleOpen}
+            />
           )}
         </CardFrame>
 
