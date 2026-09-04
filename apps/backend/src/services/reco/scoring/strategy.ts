@@ -12,7 +12,7 @@ export interface Candidate {
   voteAverage: number | null;
   voteCount: number | null;
   popularity: number | null;
-  source: "tmdb_rec" | "tmdb_discover" | "tmdb_anime" | "tmdb_person" | "anilist" | "vigie" | "library";
+  source: "tmdb_rec" | "tmdb_discover" | "tmdb_anime" | "tmdb_person" | "vigie" | "library";
   /** Présent quand le titre est dans la bibliothèque Jellyfin. */
   jellyfinItemId?: string | null;
   posterPath?: string | null;

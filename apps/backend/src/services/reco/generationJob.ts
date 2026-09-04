@@ -14,7 +14,6 @@ import { candidatesFromPeople } from "./candidates/peopleSource";
 import { candidatesFromDiscover, candidatesFromSeeds } from "./candidates/tmdbSource";
 import type { SeedRef } from "./candidates/tmdbSource";
 import { candidatesFromVigie } from "./candidates/vigieSource";
-import { candidatesFromAnilist } from "./candidates/anilistSource";
 import { candidatesFromAnimeDiscover } from "./candidates/animeSource";
 import { isPoolStale, readPoolStamp, writePool } from "./poolStore";
 import type { PoolStamp } from "./poolStore";
@@ -162,8 +161,8 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
   // La source « personnes » tourne même en bibliothèque seule : comme les
   // graines, ses candidats peuvent se rattacher à la bibliothèque — le filtre
   // de service fait foi.
-  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie, fromAnilist] = quick
-    ? [[], [], [], [], [], []]
+  const [fromSeeds, fromAnime, fromPeople, fromDiscover, fromVigie] = quick
+    ? [[], [], [], [], []]
     : await Promise.all([
         candidatesFromSeeds(seeds),
         // Univers animé : gardé par includeVigie comme /discover (il ne produit
@@ -172,7 +171,6 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
         candidatesFromPeople(likedPeople),
         includeVigie ? candidatesFromDiscover(profile) : Promise.resolve([]),
         includeVigie ? candidatesFromVigie() : Promise.resolve([]),
-        candidatesFromAnilist(userId),
       ]);
 
   // L'animé juste après les graines : le plafond d'assemblage (POOL_MAX) coupe
@@ -182,7 +180,6 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     fromSeeds,
     fromAnime,
     fromPeople,
-    fromAnilist,
     fromVigie,
     fromDiscover,
   ]);

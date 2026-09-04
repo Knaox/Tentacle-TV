@@ -18,16 +18,13 @@ const identitySchema = z.object({
 
 const upsertSchema = identitySchema.extend({
   score: z.coerce.number().int().min(1).max(10),
-  tvdbId: z.number().int().positive().nullish(),
-  anilistId: z.number().int().positive().nullish(),
   jellyfinItemId: z.string().min(1).max(64).nullish(),
-  isAnime: z.boolean().optional(),
 });
 
 /**
  * Notes explicites (1..10, 1 = une demi-étoile).
  *
- * La note est écrite en base IMMÉDIATEMENT ; la sync TMDB/AniList est un
+ * La note est écrite en base IMMÉDIATEMENT ; la sync TMDB est un
  * travail de fond (services/reco/syncWorkers) piloté par `syncStatus` /
  * `nextSyncAt` — l'UI ne bloque jamais dessus et une note posée hors ligne
  * part à la reconnexion. Doctrine « absence ≠ 404 » : GET /item rend null.
@@ -82,18 +79,12 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
       create: {
         ...identity,
         score: body.score,
-        tvdbId: body.tvdbId ?? null,
-        anilistId: body.anilistId ?? null,
         jellyfinItemId: body.jellyfinItemId ?? null,
-        isAnime: body.isAnime ?? false,
         nextSyncAt: new Date(),
       },
       update: {
         score: body.score,
-        ...(body.tvdbId != null ? { tvdbId: body.tvdbId } : {}),
-        ...(body.anilistId != null ? { anilistId: body.anilistId } : {}),
         ...(body.jellyfinItemId != null ? { jellyfinItemId: body.jellyfinItemId } : {}),
-        ...(body.isAnime != null ? { isAnime: body.isAnime } : {}),
         syncStatus: "pending",
         syncAttempts: 0,
         nextSyncAt: new Date(),
@@ -103,7 +94,7 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
   });
 
   // ── DELETE /item — retire une note. Idempotent. ──
-  // Une note déjà poussée chez TMDB ou AniList passe en `delete_pending` : le
+  // Une note déjà poussée chez TMDB passe en `delete_pending` : le
   // worker l'efface là-bas PUIS supprime la ligne. Jamais synchronisée, elle
   // disparaît tout de suite.
   app.delete("/item", async (request) => {
@@ -119,7 +110,7 @@ export const ratingRoutes: FastifyPluginAsync = async (app) => {
     const row = await prisma.userRating.findUnique({ where });
     if (!row || row.deletedAt) return { ok: true };
     pokeProfile(user.userId);
-    const syncedSomewhere = row.tmdbSyncedAt !== null || row.anilistSyncedAt !== null;
+    const syncedSomewhere = row.tmdbSyncedAt !== null;
     if (syncedSomewhere) {
       await prisma.userRating.update({
         where,

@@ -111,7 +111,7 @@ export function startRecoJobs(): void {
     if (tmdbConfigured()) kickRecoFanout({ force: false, reason: "boot" });
   }, FANOUT_BOOT_DELAY_MS);
 
-  // Poussée des notes vers TMDB/AniList (tick 15 s, backoff par ligne).
+  // Poussée des notes vers TMDB (tick 15 s, backoff par ligne).
   startSyncWorkers();
 
   // Crawler de plateformes : boucle de fond dès maintenant (la file se
