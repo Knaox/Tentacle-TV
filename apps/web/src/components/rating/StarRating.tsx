@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { RatingBurst } from "./RatingBurst";
 
 interface StarRatingProps {
   /** Note courante 1..10, null si non noté. */
   value: number | null;
   onRate: (score: number) => void;
   onClear: () => void;
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md";
   disabled?: boolean;
   /** « onMedia » : posé sur une affiche — contour blanc et ombre portée
    *  STATIQUES (les jetons de thème y sont illisibles, cf. capture du survol
@@ -14,14 +15,15 @@ interface StarRatingProps {
   tone?: "themed" | "onMedia";
 }
 
-const SIZE_CLASS = { sm: "h-4 w-4", md: "h-6 w-6" } as const;
+const SIZE_CLASS = { xs: "h-3.5 w-3.5", sm: "h-4 w-4", md: "h-6 w-6" } as const;
 
 /**
  * Cinq étoiles, dix niveaux (demi-étoiles), note interne 1..10 — jamais 0.
  * Survol = prévisualisation ; clic = valider ; re-clic sur la même valeur =
  * retrait. Chaque étoile porte DEUX zones cliquables (moitiés gauche/droite),
  * ce qui donne aussi les dix valeurs au clavier, sans arithmétique de souris.
- * Animations : opacité (remplissage) et transform (survol) uniquement.
+ * Animations : opacité (remplissage) et transform (survol) uniquement — plus
+ * un jet de confettis (transform/opacité) sur l'étoile qui vient d'être validée.
  */
 export function StarRating({
   value,
@@ -33,6 +35,17 @@ export function StarRating({
 }: StarRatingProps) {
   const { t } = useTranslation("reco");
   const [hovered, setHovered] = useState<number | null>(null);
+  // Jet de confettis sur l'étoile validée : monté le temps du jet, jamais sur un retrait.
+  const [burst, setBurst] = useState<{ id: number; star: number } | null>(null);
+  const endBurst = useCallback(() => setBurst(null), []);
+  const pick = (score: number) => {
+    if (value === score) {
+      onClear();
+      return;
+    }
+    onRate(score);
+    setBurst({ id: Date.now(), star: Math.ceil(score / 2) });
+  };
 
   const displayed = hovered ?? value ?? 0;
   const starClass = SIZE_CLASS[size];
@@ -79,7 +92,7 @@ export function StarRating({
               current={value}
               disabled={disabled}
               onHover={setHovered}
-              onPick={(s) => (value === s ? onClear() : onRate(s))}
+              onPick={pick}
             />
             <HalfButton
               score={star * 2}
@@ -87,8 +100,9 @@ export function StarRating({
               current={value}
               disabled={disabled}
               onHover={setHovered}
-              onPick={(s) => (value === s ? onClear() : onRate(s))}
+              onPick={pick}
             />
+            {burst?.star === star && <RatingBurst key={burst.id} onDone={endBurst} />}
           </span>
         );
       })}

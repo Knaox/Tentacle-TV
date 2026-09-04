@@ -14,6 +14,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Changer de filtre est instantané** : chaque plateforme a sa page précalculée en arrière-plan, le survol d'une plateforme la précharge, et l'échange n'a lieu qu'une fois les premières affiches décodées — plus de cases vides qui se remplissent
 - **Chaque plateforme a son logo** : l'annuaire mondial TMDB (persisté) fournit les logos de toutes les familles — Crunchyroll et son canal Amazon ne font qu'un, OCS et Arte retrouvent les bons identifiants, Apple TV et HBO Max leurs nouveaux noms
 - **La recherche d'acteurs ne fait plus la queue** derrière une génération de recommandations : les appels interactifs à TMDB passent devant ceux du fond
+- **Chaque épisode se note** : étoiles dans la liste Saisons & Épisodes de la fiche et sur la fiche de l'épisode, note TMDB de l'épisode à côté (Jellyfin à défaut), et vos notes visibles dans la liste des épisodes du lecteur. Valider une note fait jaillir quelques confettis, partout où l'on note
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -24,6 +25,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Switching filters is instant**: every platform gets its page precomputed in the background, hovering a platform prefetches it, and the swap only happens once the first posters are decoded — no more empty cards filling in
 - **Every platform has its logo**: the persisted worldwide TMDB directory provides logos for every family — Crunchyroll and its Amazon channel are one, OCS and Arte get their right ids back, Apple TV and HBO Max their new names
 - **Actor search no longer queues** behind a recommendation generation: interactive TMDB calls go first
+- **Every episode can be rated**: stars in the Seasons & Episodes list of the detail page and on the episode page, the TMDB episode score next to them (Jellyfin as a fallback), and your ratings shown in the player's episode list. Validating a rating throws a few confetti, wherever you rate
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]
