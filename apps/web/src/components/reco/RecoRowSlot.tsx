@@ -1,19 +1,8 @@
 import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { recoRowTitle } from "@tentacle-tv/api-client";
 import type { RecoPageRow } from "@tentacle-tv/api-client";
 import { RecoRow } from "./RecoRow";
-
-const ROW_TITLE_KEYS: Record<string, string> = {
-  forYou: "rowForYou",
-  inLibrary: "rowInLibrary",
-  discover: "rowDiscover",
-  community: "rowCommunity",
-  exploration: "rowExploration",
-  trending: "rowTrending",
-  serverPulse: "rowServerPulse",
-  bestOfLibrary: "rowBestOfLibrary",
-  anime: "rowAnime",
-};
 
 interface RecoRowSlotProps {
   /** La rangée SERVIE (page en une requête) — plus de requête par rangée,
@@ -39,11 +28,9 @@ export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKe
     return row.items.filter((item) => !excluded.has(item.key));
   }, [row.items, excludeKeys]);
 
-  const title = row.key.startsWith("becauseYouLiked:")
-    ? t("rowBecauseYouLiked", { title: row.seedTitle ?? "" })
-    : row.key.startsWith("withActor:")
-      ? t("rowWithActor", { name: row.seedTitle ?? "" })
-      : t(ROW_TITLE_KEYS[row.key] ?? "rowForYou");
+  // Titre : la table partagée (accueil, éditeur, mobile et TV lisent la même).
+  const { key: titleKey, params } = recoRowTitle(row);
+  const title = t(titleKey, params);
 
   if (items.length === 0) return null;
   return <RecoRow title={title} items={items} animDelay={animDelay} />;

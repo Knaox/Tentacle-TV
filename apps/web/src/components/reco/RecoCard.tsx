@@ -10,7 +10,7 @@ import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { RecoCardHoverLayer } from "./RecoCardHoverLayer";
 import { useRecoNavigation } from "../../lib/recoNavigation";
-import { recoPosterUrl } from "./recoImages";
+import { recoPosterUrl } from "@tentacle-tv/api-client";
 import { useMountWhile } from "../../hooks/useMountWhile";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
 

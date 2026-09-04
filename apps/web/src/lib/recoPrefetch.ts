@@ -7,7 +7,7 @@ import {
   recoFilterKey,
 } from "@tentacle-tv/api-client";
 import type { JellyfinClient, RecoPage } from "@tentacle-tv/api-client";
-import { recoBackdropUrl, recoPosterUrl } from "../components/reco/recoImages";
+import { recoBackdropUrl, recoPosterUrl } from "@tentacle-tv/api-client";
 import { Recommendations } from "../lazyPages";
 
 /**
