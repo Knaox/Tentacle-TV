@@ -20,6 +20,12 @@ export interface HomeLayoutData {
    *  alors ancrer les bibliothèques dans l'ordre du défaut. Drapeau de
    *  LECTURE seulement, jamais renvoyé au serveur. */
   stored?: boolean;
+  /** Le catalogue des rangées statiques que CE serveur sait afficher, dans
+   *  l'ordre par défaut avec leur activation par défaut (sans clé TMDB, les
+   *  rangées personnalisées n'y sont pas). LECTURE seulement : l'accueil ne
+   *  rend et l'éditeur ne propose que ses clés (cf. utils/homeRows). Absent
+   *  chez un vieux serveur : tout s'affiche. */
+  catalog?: HomeRowDescriptor[];
 }
 
 export interface RecoSettingsData {
@@ -37,6 +43,7 @@ interface StoredResponse<T> {
   stored: boolean;
   layout?: T;
   settings?: T;
+  catalog?: HomeRowDescriptor[];
 }
 
 /**
@@ -51,7 +58,7 @@ export function useHomeLayout() {
       const res = await tentacleApiFetch<StoredResponse<HomeLayoutData>>(
         "/api/preferences/home-layout"
       );
-      return { ...res.layout!, stored: res.stored };
+      return { ...res.layout!, stored: res.stored, catalog: res.catalog };
     },
     staleTime: 60_000,
   });
@@ -61,9 +68,11 @@ export function useSaveHomeLayout() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (layout: HomeLayoutData) => {
-      // `stored` est un drapeau de lecture : il ne repart jamais au serveur.
+      // `stored` et `catalog` sont des données de lecture : elles ne
+      // repartent jamais au serveur.
       const body = { ...layout };
       delete body.stored;
+      delete body.catalog;
       return tentacleApiFetch<{ ok: boolean }>("/api/preferences/home-layout", {
         method: "PUT",
         body: JSON.stringify(body),

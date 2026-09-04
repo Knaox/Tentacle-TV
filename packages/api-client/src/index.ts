@@ -225,6 +225,17 @@ export type {
   HomeLayoutData,
   RecoSettingsData,
 } from "./hooks/useHomeLayout";
+// La réconciliation des rangées de l'accueil, PURE et partagée par le web, le
+// mobile et la TV (cf. utils/homeRows)
+export {
+  reconcileHomeRows,
+  visibleHomeRows,
+  isHomeRowAvailable,
+  mergeHiddenHomeRows,
+  firstServedRecoRowKey,
+  moveRow,
+} from "./utils/homeRows";
+export type { LibraryRef, ReconcileHomeRowsOptions } from "./utils/homeRows";
 
 // Annuaire des plateformes de streaming (cf. hooks/useWatchProviders)
 export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
