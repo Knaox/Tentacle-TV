@@ -52,7 +52,7 @@ et Linux reçoivent l'ensemble.
 - **La bannière repart au premier geste** après s'être figée pour laisser le GPU redescendre ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant ; la barre de navigation montre son débordement
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
-- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide ; la fiche s'ouvre depuis les recommandations avec sa transition ; plus de piste Dolby copiée vers le HLS fMP4
 - Nécessite un serveur 1.17.0 ou plus
 
@@ -69,7 +69,7 @@ et Linux reçoivent l'ensemble.
 - **The banner resumes at the first gesture** after freezing to let the GPU rest; the player's episode list opens on the current episode; the navigation bar shows its overflow
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash and icon follow
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
-- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
 - **Fixes**: a row no longer stays empty after a fast scroll; the details page opens from recommendations with its transition; no more Dolby track copied into HLS fMP4
 - Requires server 1.17.0 or newer
 
@@ -94,7 +94,7 @@ et Linux reçoivent l'ensemble.
 - **La barre de navigation montre son débordement** : fondu de bord, flèches discrètes et molette quand la fenêtre est étroite — plus d'entrée inatteignable
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash, icône et favicon suivent, et le rose d'accent entre dans la palette
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
-- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide (il fallait remonter tout en haut ou recharger) ; la fiche s'ouvre depuis les recommandations et leur bannière avec sa transition ; hors ligne, « Réessayer » montre qu'il essaie ; plus de piste Dolby copiée vers le HLS fMP4 — l'initialisation sortait sans codec et la lecture échouait
 - Compatibilité : cette version demande un serveur 1.17.0 ou plus
 
@@ -118,7 +118,7 @@ et Linux reçoivent l'ensemble.
 - **The navigation bar shows its overflow**: edge fade, discreet arrows and mouse-wheel scrolling in narrow windows — no more unreachable entries
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash, icon and favicon follow, and the accent pink joins the palette
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
-- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
 - **Fixes**: a row no longer stays empty after a fast scroll (you had to scroll back to the top or reload); the details page opens from recommendations and their banner with its transition; offline, "Retry" shows that it is trying; no more Dolby track copied into HLS fMP4 — the init segment came out without a codec and playback failed
 - Compatibility: this version requires server 1.17.0 or newer
 
