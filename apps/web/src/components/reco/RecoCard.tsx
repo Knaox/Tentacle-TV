@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
@@ -7,6 +7,7 @@ import { CardImage } from "../cards/CardImage";
 import { CardRatingBadge } from "../cards/CardRatingBadge";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
+import { captureDetailOrigin } from "../detail/detailTransition";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { RecoReasonText } from "./RecoReasonText";
 import { useRecoNavigation } from "../../lib/recoNavigation";
@@ -54,9 +55,22 @@ export const RecoCard = memo(function RecoCard({
     client.getImageUrl(id, "Primary", { height: 450, quality: 90 })
   );
   const openable = canOpen(item);
+  const rootRef = useRef<HTMLDivElement>(null);
 
+  // Un titre en bibliothèque ouvre sa fiche : le rectangle de l'AFFICHE est
+  // capturé ici, dernier instant où il existe — même trajet que PosterCard,
+  // sans quoi la fiche joue son entrée par-dessus un écran encore noir. Hors
+  // bibliothèque, la fiche Vigie vit dans une iframe : rien à déposer.
   const handleOpen = () => {
-    if (openable) open(item);
+    if (!openable) return;
+    if (item.jellyfinItemId && posterUrl) {
+      captureDetailOrigin(
+        rootRef.current?.querySelector<HTMLElement>("[data-card-visual]") ?? null,
+        item.jellyfinItemId,
+        posterUrl
+      );
+    }
+    open(item);
   };
 
   const handleDismiss = (e: React.MouseEvent) => {
@@ -68,6 +82,7 @@ export const RecoCard = memo(function RecoCard({
 
   return (
     <div
+      ref={rootRef}
       className="group/card relative shrink-0 snap-start"
       style={{
         width: cardWidthStyle(width, POSTER_WIDTH.md, POSTER_VW),

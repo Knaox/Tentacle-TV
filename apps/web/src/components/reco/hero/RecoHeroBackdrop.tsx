@@ -1,6 +1,6 @@
 import { AnimatePresence, cubicBezier, motion } from "framer-motion";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import type { JellyfinClient, RecoRowItem } from "@tentacle-tv/api-client";
 import { HERO_ZOOM_DURATION_S } from "../../hero/HeroBackdrop";
 import { HeroScrims } from "../../hero/HeroScrims";
 import { HERO_BACKDROP_WIDTH } from "../../hero/resolveBackdrop";
@@ -22,11 +22,17 @@ const FADE_EASE = cadence(AMBIENT_HZ, FADE_DURATION_S, cubicBezier(0, 0, 0.58, 1
  * sans image large) est masqué — l'aplat de page, les scrims et le halo
  * assurent le décor, jamais d'icône d'image cassée.
  */
-export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
-  const client = useJellyfinClient();
-  const url = recoBackdropUrl(item, (id) =>
+/** L'URL EXACTE du fond affiché — la transition d'ouverture la réutilise
+ *  telle quelle (cache HTTP), jamais recomposée. */
+export function recoHeroBackdropUrl(client: JellyfinClient, item: RecoRowItem): string | null {
+  return recoBackdropUrl(item, (id) =>
     client.getImageUrl(id, "Backdrop", { width: HERO_BACKDROP_WIDTH, quality: 85 })
   );
+}
+
+export function RecoHeroBackdrop({ item }: { item: RecoRowItem }) {
+  const client = useJellyfinClient();
+  const url = recoHeroBackdropUrl(client, item);
   const { broken, reportFailure } = useBrokenImage(url ?? undefined);
 
   return (
