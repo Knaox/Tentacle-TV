@@ -45,9 +45,6 @@ export default {
   disabledBanner:
     "Personalized recommendations are turned off for your account — here are general suggestions.",
   disabledBannerCta: "Turn on in settings",
-  tmdbAdminBanner: "Add your TMDB key (Admin → Metadata) to enable personalized recommendations.",
-  tmdbAdminBannerCta: "Open metadata settings",
-  genericOnlyHint: "General suggestions — personalization isn't available right now.",
   coldBannerHint: "Your personalized picks still need a few signals — tell us what you like.",
   coldBannerCta: "Pick titles",
 
