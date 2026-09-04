@@ -8,7 +8,9 @@
 -- PAS dans schema.prisma. Un db push les droperait (ou echouerait sur les donnees).
 --
 -- On applique donc ici les tables core de facon purement additive
--- (CREATE TABLE IF NOT EXISTS) : aucune table n'est jamais supprimee.
+-- (CREATE TABLE IF NOT EXISTS) : aucune table de PLUGIN n'est jamais touchee.
+-- Une table ou une colonne du COEUR retiree par une evolution se supprime ici
+-- explicitement, avec IF EXISTS (idempotent) — voir les blocs « 1.17 ».
 -- => Ajouter ici toute nouvelle table / migration additive cote core.
 
 CREATE TABLE IF NOT EXISTS `share_links` (
@@ -256,18 +258,14 @@ CREATE TABLE IF NOT EXISTS `user_ratings` (
   `jellyfinUserId` varchar(255) NOT NULL,
   `mediaType` varchar(10) NOT NULL,
   `tmdbId` int(11) NOT NULL,
-  `tvdbId` int(11) NULL,
-  `anilistId` int(11) NULL,
   `jellyfinItemId` varchar(64) NULL,
   `seasonNumber` int(11) NOT NULL DEFAULT 0,
   `episodeNumber` int(11) NOT NULL DEFAULT 0,
-  `isAnime` tinyint(1) NOT NULL DEFAULT 0,
   `score` int(11) NOT NULL,
   `syncStatus` varchar(16) NOT NULL DEFAULT 'pending',
   `syncAttempts` int(11) NOT NULL DEFAULT 0,
   `nextSyncAt` datetime(3) NULL,
   `tmdbSyncedAt` datetime(3) NULL,
-  `anilistSyncedAt` datetime(3) NULL,
   `deletedAt` datetime(3) NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updatedAt` datetime(3) NOT NULL,
@@ -276,6 +274,15 @@ CREATE TABLE IF NOT EXISTS `user_ratings` (
   KEY `user_ratings_jellyfinUserId_idx` (`jellyfinUserId`),
   KEY `user_ratings_syncStatus_nextSyncAt_idx` (`syncStatus`, `nextSyncAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : AniList retiré. Les colonnes qu'il était seul à écrire (`anilistId`,
+-- `anilistSyncedAt`) et la chaîne morte `tvdbId` / `isAnime` — qui n'existait
+-- que pour ancrer le mapping AniList — sortent des bases existantes.
+-- `DROP COLUMN IF EXISTS` (MariaDB) : rejouer est sans effet.
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `anilistId`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `anilistSyncedAt`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `tvdbId`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `isAnime`;
 
 -- « J'aime » d'un titre HORS bibliothèque (Vigie). Voir schema.prisma > UserLike.
 CREATE TABLE IF NOT EXISTS `user_likes` (
@@ -369,19 +376,24 @@ CREATE TABLE IF NOT EXISTS `home_layouts` (
 -- ne bougent pas. Rejouer ce SET DEFAULT est sans effet (idempotent).
 ALTER TABLE `home_layouts` ALTER `heroMode` SET DEFAULT 'reco';
 
--- Comptes externes liés (TMDB guest / AniList). Voir schema.prisma > ExternalAccount.
+-- Comptes externes liés (guest session TMDB). Voir schema.prisma > ExternalAccount.
 CREATE TABLE IF NOT EXISTS `external_accounts` (
   `id` varchar(191) NOT NULL,
   `jellyfinUserId` varchar(255) NOT NULL,
   `provider` varchar(20) NOT NULL,
-  `externalId` varchar(64) NULL,
-  `accessToken` text NULL,
   `guestSessionId` varchar(64) NULL,
   `expiresAt` datetime(3) NULL,
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `external_accounts_jellyfinUserId_provider_key` (`jellyfinUserId`, `provider`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : AniList retiré. Les comptes liés AniList et leurs jetons chiffrés
+-- partent ; `accessToken` et `externalId` n'étaient écrits que par cette OAuth.
+-- Le DELETE précède les DROP : une ligne sans ses colonnes ne dirait plus rien.
+DELETE FROM `external_accounts` WHERE `provider` = 'anilist';
+ALTER TABLE `external_accounts` DROP COLUMN IF EXISTS `accessToken`;
+ALTER TABLE `external_accounts` DROP COLUMN IF EXISTS `externalId`;
 
 -- Cooccurrences item-item (communautaire, seuil vie privée userCount >= 5).
 -- Voir schema.prisma > ItemCooccurrence.
@@ -416,17 +428,10 @@ CREATE TABLE IF NOT EXISTS `tmdb_meta_cache` (
   KEY `tmdb_meta_cache_expiresAt_idx` (`expiresAt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Correspondance d'identifiants animé tmdb -> anilist/tvdb.
--- Voir schema.prisma > AnimeIdMap.
-CREATE TABLE IF NOT EXISTS `anime_id_map` (
-  `mediaType` varchar(10) NOT NULL,
-  `tmdbId` int(11) NOT NULL,
-  `anilistId` int(11) NULL,
-  `tvdbId` int(11) NULL,
-  `source` varchar(16) NOT NULL,
-  `resolvedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
-  PRIMARY KEY (`mediaType`, `tmdbId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- 1.17 : la correspondance d'identifiants animé (AniList) n'existe plus. Table
+-- du COEUR, créée par nous puis abandonnée : la doctrine « jamais de DROP » du
+-- haut du fichier protège les tables des plugins, pas celle-ci. Idempotent.
+DROP TABLE IF EXISTS `anime_id_map`;
 
 -- Personnes aimées explicitement (rangées « Avec {acteur} »).
 -- Voir schema.prisma > UserLikedPerson.
@@ -454,3 +459,6 @@ CREATE TABLE IF NOT EXISTS `user_liked_people` (
 -- 1.17 : l'interrupteur serveur « Déclenchement auto-play » n'existe plus —
 -- les réglages de lecture PAR COMPTE (`playback_settings`) sont la seule source.
 DELETE FROM `server_config` WHERE `key` = 'autoplay_next_enabled';
+
+-- 1.17 : AniList retiré — identifiants du client OAuth déclaré par instance.
+DELETE FROM `server_config` WHERE `key` IN ('anilist_client_id', 'anilist_client_secret');

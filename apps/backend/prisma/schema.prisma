@@ -427,7 +427,7 @@ model MediaFrameAnalysis {
 // Note explicite d'un titre, sur 10 (1 = une demi-étoile, jamais 0).
 // `seasonNumber`/`episodeNumber` valent 0 hors épisode : MySQL admet plusieurs
 // NULL dans un index unique, 0 rend l'unicité réelle.
-// La note est écrite ici IMMÉDIATEMENT ; la sync TMDB/AniList est asynchrone
+// La note est écrite ici IMMÉDIATEMENT ; la sync TMDB est asynchrone
 // (services/reco/syncWorkers.ts) et `syncStatus` en reflète l'état — l'UI ne
 // bloque jamais dessus, une note posée hors ligne part à la reconnexion.
 model UserRating {
@@ -435,19 +435,15 @@ model UserRating {
   jellyfinUserId  String    @db.VarChar(255)
   mediaType       String    @db.VarChar(10) // "movie" | "series" | "episode"
   tmdbId          Int
-  tvdbId          Int?
-  anilistId       Int?
   jellyfinItemId  String?   @db.VarChar(64)
   seasonNumber    Int       @default(0)
   episodeNumber   Int       @default(0)
-  isAnime         Boolean   @default(false)
   score           Int // 1..10
   syncStatus      String    @default("pending") @db.VarChar(16) // "pending" | "synced" | "failed" | "disabled" | "delete_pending"
   syncAttempts    Int       @default(0)
   nextSyncAt      DateTime?
   tmdbSyncedAt    DateTime?
-  anilistSyncedAt DateTime?
-  /// Retrait « doux » : une note déjà poussée chez TMDB/AniList doit y être
+  /// Retrait « doux » : une note déjà poussée chez TMDB doit y être
   /// EFFACÉE avant que la ligne disparaisse — le worker traite `delete_pending`
   /// puis supprime. Une note jamais synchronisée se supprime directement.
   /// Toute lecture (profil, exclusions, UI) ignore `deletedAt != null`.
@@ -567,15 +563,11 @@ model HomeLayout {
   @@map("home_layouts")
 }
 
-// Compte externe lié : guest session TMDB (notes anonymes) ou OAuth AniList.
-// `accessToken` est CHIFFRÉ (services/crypto.ts, AES-256-GCM) — les tokens
-// Jellyfin en clair ailleurs sont un héritage, pas un modèle à suivre.
+// Compte externe lié : guest session TMDB (notes anonymes).
 model ExternalAccount {
   id             String    @id @default(cuid())
   jellyfinUserId String    @db.VarChar(255)
-  provider       String    @db.VarChar(20) // "tmdb_guest" | "anilist"
-  externalId     String?   @db.VarChar(64)
-  accessToken    String?   @db.Text
+  provider       String    @db.VarChar(20) // "tmdb_guest"
   guestSessionId String?   @db.VarChar(64)
   expiresAt      DateTime?
   createdAt      DateTime  @default(now())
@@ -628,10 +620,6 @@ model TmdbMetaCache {
   @@map("tmdb_meta_cache")
 }
 
-// Correspondance d'identifiants animé tmdb → anilist/tvdb. Alimentée par le
-// mapping Fribb/anime-lists, repli recherche AniList (titre romaji + année).
-// `source: "none"` = résolution tentée et vaine — à garder, sinon on recherche
-// le même titre à chaque sync.
 // Personnes (acteurs, réalisateurs) aimées explicitement — matière des
 // rangées « Avec {acteur} ». name/profilePath stockés : l'affichage au
 // service ne dépend jamais de TMDB.
@@ -646,18 +634,6 @@ model UserLikedPerson {
 
   @@unique([jellyfinUserId, personId])
   @@map("user_liked_people")
-}
-
-model AnimeIdMap {
-  mediaType  String   @db.VarChar(10) // "movie" | "tv"
-  tmdbId     Int
-  anilistId  Int?
-  tvdbId     Int?
-  source     String   @db.VarChar(16) // "fribb" | "search" | "none"
-  resolvedAt DateTime @default(now())
-
-  @@id([mediaType, tmdbId])
-  @@map("anime_id_map")
 }
 
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,
