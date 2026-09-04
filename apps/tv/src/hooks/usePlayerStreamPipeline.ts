@@ -179,7 +179,7 @@ export function usePlayerStreamPipeline(args: {
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
-  const { reportStart, reportStop, updatePosition, reportSeek } = usePlaybackReporting({
+  const { reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
@@ -232,7 +232,7 @@ export function usePlayerStreamPipeline(args: {
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
     startSeconds, streamUrl, playSessionId, isDirectPlay, isLocalRemux, failed,
     remuxInfoRef, onRemuxStall,
-    reportStart, reportStop, updatePosition, reportSeek,
+    reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek, seekOrRemux,
   };
 }
