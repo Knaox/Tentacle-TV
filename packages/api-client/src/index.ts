@@ -56,7 +56,7 @@ export { resolveNotificationRoute } from "./utils/notificationRoute";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
 
 // Push notifications (mobile)
-export { useRegisterPushDevice, usePushPreferences, useSetPushPreferences, useSendTestPush, setPushBackendUrl, setPushToken } from "./hooks/usePushNotifications";
+export { useRegisterPushDevice, usePushPreferences, useSetPushPreferences, useSendTestPush, setPushBackendUrl, setPushToken, PUSH_PREF_DEFAULTS } from "./hooks/usePushNotifications";
 export type { PushPreferences, TestPushResult } from "./hooks/usePushNotifications";
 
 // WebSocket real-time home updates

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { sendToUser } from "../services/pushService";
+import { PUSH_PREF_DEFAULTS, toPushPrefs } from "../services/pushPreferences";
 
 const registerSchema = z.object({
   token: z.string().min(1).max(255),
@@ -12,9 +13,8 @@ const registerSchema = z.object({
 const prefsSchema = z.object({
   libraryAdded: z.boolean().optional(),
   seerAvailable: z.boolean().optional(),
+  tickets: z.boolean().optional(),
 });
-
-const DEFAULT_PREFS = { libraryAdded: false, seerAvailable: false };
 
 export const pushRoutes: FastifyPluginAsync = async (app) => {
   app.addHook("preHandler", requireAuth);
@@ -38,23 +38,22 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
     return { success: true };
   });
 
-  // GET /api/push/preferences — préférences de notification (défaut : tout off).
+  // GET /api/push/preferences — préférences de notification (ligne absente =
+  // défauts de chaque clé, cf. services/pushPreferences.ts).
   app.get("/preferences", async (request) => {
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
     const pref = await prisma.notificationPreference.findUnique({
       where: { jellyfinUserId: user.userId },
     });
-    return pref
-      ? { libraryAdded: pref.libraryAdded, seerAvailable: pref.seerAvailable }
-      : DEFAULT_PREFS;
+    return toPushPrefs(pref);
   });
 
   // PUT /api/push/preferences — mise à jour partielle des préférences.
   app.put("/preferences", async (request, reply) => {
     const parsed = prefsSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply.status(400).send({ message: "libraryAdded / seerAvailable booléens" });
+      return reply.status(400).send({ message: "libraryAdded / seerAvailable / tickets booléens" });
     }
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
@@ -62,9 +61,9 @@ export const pushRoutes: FastifyPluginAsync = async (app) => {
     const pref = await prisma.notificationPreference.upsert({
       where: { jellyfinUserId: user.userId },
       update: parsed.data,
-      create: { jellyfinUserId: user.userId, ...DEFAULT_PREFS, ...parsed.data },
+      create: { jellyfinUserId: user.userId, ...PUSH_PREF_DEFAULTS, ...parsed.data },
     });
-    return { libraryAdded: pref.libraryAdded, seerAvailable: pref.seerAvailable };
+    return toPushPrefs(pref);
   });
 
   // POST /api/push/test — envoie une notif de test aux appareils de l'utilisateur.

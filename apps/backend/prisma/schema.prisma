@@ -95,13 +95,17 @@ model PushDevice {
   @@map("push_devices")
 }
 
-// Préférences de notifications push par utilisateur (opt-in : tout à false par
-// défaut). libraryAdded = nouveaux ajouts bibliothèque ; seerAvailable =
-// contenu demandé devenu disponible (mappé au type de notif « request_status »).
+// Préférences de notifications push par utilisateur. libraryAdded = nouveaux
+// ajouts bibliothèque ; seerAvailable = contenu demandé devenu disponible
+// (type « request_status ») — toutes deux opt-in (false). tickets = vie des
+// tickets de support (réponse, statut, et nouveaux tickets pour les admins) :
+// ACTIVÉE par défaut, c'est une conversation directe. Une ligne absente vaut
+// les défauts de chaque clé (services/pushPreferences.ts), pas « tout off ».
 model NotificationPreference {
   jellyfinUserId  String   @id @db.VarChar(255)
   libraryAdded    Boolean  @default(false)
   seerAvailable   Boolean  @default(false)
+  tickets         Boolean  @default(true)
   updatedAt       DateTime @updatedAt
 
   @@map("notification_preferences")
