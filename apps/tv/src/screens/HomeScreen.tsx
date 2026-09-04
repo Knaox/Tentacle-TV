@@ -6,8 +6,9 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useHomeWebSocket, useJellyfinClient,
+  useTentacleConfig, useHomeWebSocket, useJellyfinClient, useRecoLive,
 } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
@@ -50,10 +51,13 @@ function HomeScreenInner({ navigation }: Props) {
   // on se déconfigure et on repart sur l'écran de jumelage (doLogout purge
   // aussi le token Jellyfin caché du direct streaming). Respecte le garde
   // « lecture en cours » de doLogout.
+  const token = storage.getItem("tentacle_token");
   useHomeWebSocket({
-    token: storage.getItem("tentacle_token"),
+    token,
     onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
   });
+  // Les recommandations reconstruites en fond arrivent en silence (reco:update).
+  useRecoLive({ token });
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
@@ -132,6 +136,12 @@ function HomeScreenInner({ navigation }: Props) {
   const navigateToDetail = useCallback((item: MediaItem) => openDetail(item.Id), [openDetail]);
   const navigateToPlay = useCallback((item: MediaItem) => openPlayer(item.Id), [openPlayer]);
   const openContextMenu = useCallback((item: MediaItem) => setCtxTarget({ kind: "media", item }), []);
+  // Recommandations : la TV ne montre que des titres en bibliothèque — OK
+  // ouvre la fiche, l'appui long le menu (Plus d'infos, Lecture, Ne plus me
+  // proposer).
+  const openRecoDetail = useCallback((item: RecoRowItem) => { if (item.jellyfinItemId) openDetail(item.jellyfinItemId); }, [openDetail]);
+  const openRecoContextMenu = useCallback((item: RecoRowItem) => setCtxTarget({ kind: "reco", item }), []);
+  const onRecoFocus = useCallback(() => setFocusedItem(null), [setFocusedItem]);
 
   const librariesById = useMemo(() => {
     const map: TVHomeRowData["librariesById"] = new Map();
@@ -147,9 +157,12 @@ function HomeScreenInner({ navigation }: Props) {
     onDetail: navigateToDetail,
     onLongPress: openContextMenu,
     onItemFocus: setFocusedItem,
+    onRecoPress: openRecoDetail,
+    onRecoLongPress: openRecoContextMenu,
+    onRecoFocus,
     onRowLayout: (key, y) => rowYMap.current.set(key, y),
     onRowFocus: scrollToRow,
-  }), [navigateToPlay, navigateToDetail, openContextMenu, setFocusedItem, scrollToRow]);
+  }), [navigateToPlay, navigateToDetail, openContextMenu, setFocusedItem, openRecoDetail, openRecoContextMenu, onRecoFocus, scrollToRow]);
 
   // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
   // ici oubliait les credentials et le verrou « lecture en cours ».
