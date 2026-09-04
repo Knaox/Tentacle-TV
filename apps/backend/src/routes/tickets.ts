@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin, type JellyfinUser } from "../middleware/auth";
 import { excerptOf, notifyAdmins, notifyTicketOwner } from "../services/ticketNotifier";
+import { visibleTicketsWhere } from "../services/ticketLifecycle";
 
 // Plafond de page : le tableau Kanban charge tout d'un coup (200), les listes
 // mobiles gardent leur pas de 20.
@@ -67,7 +68,8 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.limit) || 20));
 
-    const where: any = { jellyfinUserId: user.userId };
+    // Les fermés depuis plus de sept jours ne sont plus listés (ticketLifecycle).
+    const where: any = { jellyfinUserId: user.userId, ...visibleTicketsWhere() };
     if (query.status) where.status = query.status;
 
     const [tickets, total] = await Promise.all([
@@ -91,7 +93,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.limit) || 20));
 
-    const where: any = {};
+    const where: any = { ...visibleTicketsWhere() };
     if (query.status) where.status = query.status;
 
     const [tickets, total] = await Promise.all([

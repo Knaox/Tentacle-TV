@@ -56,6 +56,7 @@ import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
+import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
@@ -320,6 +321,7 @@ async function main() {
     startJellyfinPoller();
     startJellyfinWs();
     startNotificationPushWorker();
+    startTicketLifecycleWorker();
     startLibraryAddedNotifier();
     startAnnouncedPurge();
     startWatchTime();
