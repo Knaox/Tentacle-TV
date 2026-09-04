@@ -18,6 +18,7 @@ import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha } from "../
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
 import { TicketStatusPicker } from "./TicketStatusPicker";
+import { TicketCloseButton } from "./TicketCloseButton";
 
 interface Props {
   ticketId: string;
@@ -134,6 +135,8 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
           renderItem={({ item: msg }) => <MessageBubble msg={msg} />}
         />
 
+        {/* L'auteur peut fermer son ticket lui-même, motif obligatoire. */}
+        {!isClosed && !isAdmin && <TicketCloseButton ticketId={ticketId} />}
         {!isClosed ? (
           <View style={{
             paddingHorizontal: 16,
