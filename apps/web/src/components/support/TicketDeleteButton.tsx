@@ -14,14 +14,16 @@ export function TicketDeleteButton({ ticketId, onDeleted }: TicketDeleteButtonPr
   const { t } = useTranslation("tickets");
   const [confirming, setConfirming] = useState(false);
   const del = useDeleteTickets();
+  // Clé plurielle (deleteTicket_one / _other) : le compte est obligatoire.
+  const label = t("deleteTicket", { count: 1 });
 
   return (
     <>
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        aria-label={t("deleteTicket")}
-        title={t("deleteTicket")}
+        aria-label={label}
+        title={label}
         className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-content-tertiary transition-colors hover:bg-status-error-bg hover:text-status-error-fg"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -32,7 +34,7 @@ export function TicketDeleteButton({ ticketId, onDeleted }: TicketDeleteButtonPr
         open={confirming}
         title={t("deleteConfirmTitle", { count: 1 })}
         message={t("deleteConfirmBody")}
-        confirmLabel={t("deleteTicket")}
+        confirmLabel={label}
         cancelLabel={t("common:cancel")}
         danger
         pending={del.isPending}
