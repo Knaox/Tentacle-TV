@@ -1,5 +1,6 @@
 import { getPrisma, hasPrisma } from "./db";
 import { notifyTicketOwner } from "./ticketNotifier";
+import { TICKET_NOTIF_TYPES } from "./ticketNotifTypes";
 
 /**
  * Cycle de vie automatique des tickets.
@@ -49,6 +50,20 @@ export async function autoCloseResolvedTickets(now = Date.now()): Promise<number
   }
   if (stale.length > 0) console.log(`[Tickets] ${stale.length} ticket(s) résolu(s) fermé(s) automatiquement`);
   return stale.length;
+}
+
+/**
+ * Suppression (admin) d'un ou plusieurs tickets : les messages partent en
+ * cascade, et les notifications qui y menaient aussi — une cloche qui pointe
+ * vers une fiche introuvable ne sert personne. Renvoie le nombre supprimé.
+ */
+export async function deleteTickets(ids: string[]): Promise<number> {
+  const prisma = getPrisma();
+  const { count } = await prisma.supportTicket.deleteMany({ where: { id: { in: ids } } });
+  await prisma.notification.deleteMany({
+    where: { refId: { in: ids }, type: { in: [...TICKET_NOTIF_TYPES] } },
+  });
+  return count;
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;

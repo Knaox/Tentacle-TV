@@ -42,6 +42,13 @@ export function ticketPushText(
         : username ? `${username} a répondu` : "Nouvelle réponse";
       return { title, body: subject };
     }
+    case "ticket_user_closed": {
+      const { username } = parseTicketNotifBody(n.body);
+      const title = en
+        ? username ? `${username} closed the ticket` : "Ticket closed"
+        : username ? `${username} a fermé le ticket` : "Ticket fermé";
+      return { title, body: subject };
+    }
     case "ticket_status": {
       const raw = n.body ?? "";
       const status = STATUS_LABELS[lang][raw] ?? raw;

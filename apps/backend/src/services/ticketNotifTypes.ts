@@ -16,13 +16,14 @@ export const TICKET_NOTIF_TYPES = [
   "ticket_status",
   "ticket_new",
   "ticket_user_reply",
+  "ticket_user_closed",
 ] as const;
 
 export type TicketNotifType = (typeof TICKET_NOTIF_TYPES)[number];
 /** Adressés à l'AUTEUR du ticket. */
 export type TicketOwnerNotifType = "ticket_reply" | "ticket_status";
 /** Adressés aux ADMINS. */
-export type TicketAdminNotifType = "ticket_new" | "ticket_user_reply";
+export type TicketAdminNotifType = "ticket_new" | "ticket_user_reply" | "ticket_user_closed";
 
 export function isTicketNotifType(type: string): type is TicketNotifType {
   return (TICKET_NOTIF_TYPES as readonly string[]).includes(type);

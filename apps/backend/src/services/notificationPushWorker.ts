@@ -39,6 +39,7 @@ const PUSHABLE: Record<string, PushPrefKey> = {
   request_status: "seerAvailable",
   ticket_new: "tickets",
   ticket_user_reply: "tickets",
+  ticket_user_closed: "tickets",
   ticket_reply: "tickets",
   ticket_status: "tickets",
 };

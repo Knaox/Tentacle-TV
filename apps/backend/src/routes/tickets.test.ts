@@ -59,10 +59,15 @@ vi.mock("../services/db", () => ({
         if (!row) return null;
         return args.include ? { ...row, messages: messages.filter((m) => m.ticketId === row.id) } : row;
       },
-      update: async (args: { where: { id: string }; data: Partial<TicketRow> }) => {
+      update: async (args: { where: { id: string }; data: Partial<TicketRow>; include?: unknown }) => {
         const row = { ...tickets.get(args.where.id)!, ...args.data };
         tickets.set(row.id, row);
-        return row;
+        return args.include ? { ...row, messages: messages.filter((m) => m.ticketId === row.id) } : row;
+      },
+      deleteMany: async (args: { where: { id: { in: string[] } } }) => {
+        let count = 0;
+        for (const id of args.where.id.in) if (tickets.delete(id)) count++;
+        return { count };
       },
     },
     ticketMessage: {
@@ -76,6 +81,13 @@ vi.mock("../services/db", () => ({
       createMany: async (args: { data: NotifRow[] }) => {
         notifications.push(...args.data);
         return { count: args.data.length };
+      },
+      deleteMany: async (args: { where: { refId: { in: string[] } } }) => {
+        const before = notifications.length;
+        for (let i = notifications.length - 1; i >= 0; i--) {
+          if (args.where.refId.in.includes(notifications[i].refId)) notifications.splice(i, 1);
+        }
+        return { count: before - notifications.length };
       },
     },
   }),
@@ -227,6 +239,43 @@ describe("changement de statut", () => {
     const { id } = await createTicket(app, "jeton-alice");
     const res = await app.inject({ method: "PATCH", url: `/api/tickets/${id}/status`, headers: as("jeton-alice"), payload: { status: "closed" } });
     expect(res.statusCode).toBe(403);
+    await app.close();
+  });
+});
+
+describe("fermeture par l'auteur et suppression", () => {
+  it("l'auteur ferme avec un motif : message dans le fil, statut fermé, admins prévenus", async () => {
+    const app = await makeApp();
+    const { id } = await createTicket(app, "jeton-alice");
+    notifications.length = 0;
+    const empty = await app.inject({ method: "POST", url: `/api/tickets/${id}/close`, headers: as("jeton-alice"), payload: { reason: "   " } });
+    expect(empty.statusCode).toBe(400);
+    const res = await app.inject({ method: "POST", url: `/api/tickets/${id}/close`, headers: as("jeton-alice"), payload: { reason: "Résolu de mon côté" } });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ status: "closed" });
+    expect(res.json().messages.at(-1)).toMatchObject({ body: "Résolu de mon côté", isAdmin: false });
+    expect(notifications.map((n) => [n.jellyfinUserId, n.type, n.body])).toEqual([
+      ["a-root", "ticket_user_closed", "alice\nRésolu de mon côté"],
+      ["a-bob", "ticket_user_closed", "alice\nRésolu de mon côté"],
+    ]);
+    const again = await app.inject({ method: "POST", url: `/api/tickets/${id}/close`, headers: as("jeton-alice"), payload: { reason: "encore" } });
+    expect(again.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it("l'admin supprime plusieurs tickets, notifications comprises ; un inconnu fait 404", async () => {
+    const app = await makeApp();
+    const { id: a } = await createTicket(app, "jeton-alice");
+    const { id: b } = await createTicket(app, "jeton-alice");
+    expect(notifications.filter((n) => n.refId === a || n.refId === b)).toHaveLength(4);
+    const forbidden = await app.inject({ method: "DELETE", url: "/api/tickets/batch", headers: as("jeton-alice"), payload: { ids: [a] } });
+    expect(forbidden.statusCode).toBe(403);
+    const res = await app.inject({ method: "DELETE", url: "/api/tickets/batch", headers: as("jeton-root"), payload: { ids: [a, b] } });
+    expect(res.json()).toEqual({ deleted: 2 });
+    expect(tickets.size).toBe(0);
+    expect(notifications.filter((n) => n.refId === a || n.refId === b)).toHaveLength(0);
+    const missing = await app.inject({ method: "DELETE", url: `/api/tickets/${a}`, headers: as("jeton-root") });
+    expect(missing.statusCode).toBe(404);
     await app.close();
   });
 });

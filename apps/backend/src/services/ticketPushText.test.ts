@@ -29,6 +29,14 @@ describe("texte poussé", () => {
       .toEqual({ title: "alice replied", body: subject });
   });
 
+  it("la fermeture par l'auteur nomme l'auteur, le motif reste dans le fil", () => {
+    const body = composeTicketNotifBody("alice", "Résolu de mon côté");
+    expect(ticketPushText({ type: "ticket_user_closed", title: subject, body }, "fr"))
+      .toEqual({ title: "alice a fermé le ticket", body: subject });
+    expect(ticketPushText({ type: "ticket_user_closed", title: subject, body }, "en"))
+      .toEqual({ title: "alice closed the ticket", body: subject });
+  });
+
   it("sans auteur, un titre générique", () => {
     expect(ticketPushText({ type: "ticket_new", title: subject, body: null }, "fr").title).toBe("Nouveau ticket");
     expect(ticketPushText({ type: "ticket_user_reply", title: subject, body: null }, "en").title).toBe("New reply");
