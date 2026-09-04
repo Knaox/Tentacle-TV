@@ -25,6 +25,9 @@ export default {
   filtersButton: "Filtres",
   filtersPlatformsLabel: "Plateformes",
   filterEmpty: "Rien à proposer sur les plateformes sélectionnées — élargissez le filtre.",
+  // Puce du filtre sur l'accueil (à côté du titre de la première rangée reco servie)
+  homeFilterRemove: "Retirer le filtre de plateformes",
+  homeFilterGeneric: "Filtre de plateformes",
   rowWithActor: "Avec {{name}}",
   actorsTitle: "Vos acteurs",
   actorsHint:

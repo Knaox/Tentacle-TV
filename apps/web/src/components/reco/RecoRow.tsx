@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { RowHeader } from "../rows/RowHeader";
 import { RowScrollControls } from "../rows/RowScrollControls";
@@ -13,6 +14,8 @@ interface RecoRowProps {
   title: string;
   items: RecoRowItem[];
   animDelay?: number;
+  /** Après le titre, toujours visible (la puce du filtre sur l'accueil). */
+  headerTrailing?: ReactNode;
 }
 
 /**
@@ -24,7 +27,7 @@ interface RecoRowProps {
  * Jellyfin : dupliquer la coquille (~90 lignes) coûte moins que généraliser un
  * composant chaud de l'accueil.
  */
-export function RecoRow({ title, items, animDelay = 0 }: RecoRowProps) {
+export function RecoRow({ title, items, animDelay = 0, headerTrailing }: RecoRowProps) {
   const [rowEl, setRowEl] = useState<HTMLElement | null>(null);
   const [visible, setVisible] = useState(false);
   const { scrollRef, canScrollLeft, canScrollRight, scrollByAmount, onScroll } = useRowScroll();
@@ -87,7 +90,7 @@ export function RecoRow({ title, items, animDelay = 0 }: RecoRowProps) {
         transition: `opacity 0.35s ease ${animDelay}ms, transform 0.35s ease ${animDelay}ms`,
       }}
     >
-      <RowHeader title={title} />
+      <RowHeader title={title} trailing={headerTrailing} />
 
       <div className="relative">
         <RowScrollControls

@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { recoRowTitle } from "@tentacle-tv/api-client";
 import type { RecoPageRow } from "@tentacle-tv/api-client";
@@ -9,9 +10,12 @@ interface RecoRowSlotProps {
    *  plus de filtre client : le serveur a déjà filtré, strictement. */
   row: RecoPageRow;
   animDelay: number;
-  /** Page Recommandations : les items MONTRÉS dans le carrousel héros — la
-   *  rangée les exclut (skip exact, pas « les N premiers »). */
+  /** Les items MONTRÉS dans le carrousel héros (page Recommandations, accueil
+   *  en bandeau « reco ») — la rangée les exclut (skip exact, pas « les N
+   *  premiers »). */
   excludeKeys?: readonly string[];
+  /** Après le titre — un élément d'identité STABLE, la mémo en dépend. */
+  headerTrailing?: ReactNode;
 }
 
 /**
@@ -20,7 +24,7 @@ interface RecoRowSlotProps {
  * structurel de TanStack garde `row` référentiellement stable quand rien
  * n'a changé — un drapeau qui bascule ne re-rend pas treize rangées.
  */
-export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKeys }: RecoRowSlotProps) {
+export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKeys, headerTrailing }: RecoRowSlotProps) {
   const { t } = useTranslation("reco");
   const items = useMemo(() => {
     if (!excludeKeys?.length) return row.items;
@@ -33,5 +37,5 @@ export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKe
   const title = t(titleKey, params);
 
   if (items.length === 0) return null;
-  return <RecoRow title={title} items={items} animDelay={animDelay} />;
+  return <RecoRow title={title} items={items} animDelay={animDelay} headerTrailing={headerTrailing} />;
 });
