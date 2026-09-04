@@ -25,6 +25,7 @@ import type { HomeContextTarget } from "../components/home/TVHomeContextMenu";
 import { TVHomeRows } from "../components/home/TVHomeRows";
 import type { TVHomeRowData, TVHomeRowHandlers } from "../components/home/tvHomeRowRegistry";
 import { useTVHomeRows } from "../components/home/useTVHomeRows";
+import { useRecoFilterChipRow } from "../components/reco/useRecoFilterChipRow";
 import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
@@ -116,6 +117,7 @@ function HomeScreenInner({ navigation }: Props) {
   const watchlistQuery = useWatchlist();
   const watchedQuery = useWatchedItems();
   const { rows } = useTVHomeRows();
+  const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const featured = featuredQuery.data;
   const resume = resumeQuery.data;
@@ -149,8 +151,8 @@ function HomeScreenInner({ navigation }: Props) {
     return map;
   }, [libraries]);
   const rowData = useMemo<TVHomeRowData>(
-    () => ({ resume, nextUp, watchlist, watched, librariesById }),
-    [resume, nextUp, watchlist, watched, librariesById],
+    () => ({ resume, nextUp, watchlist, watched, librariesById, filterChipRowKey }),
+    [resume, nextUp, watchlist, watched, librariesById, filterChipRowKey],
   );
   const rowHandlers = useMemo<TVHomeRowHandlers>(() => ({
     onPlay: navigateToPlay,
