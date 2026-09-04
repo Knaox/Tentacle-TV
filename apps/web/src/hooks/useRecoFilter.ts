@@ -41,14 +41,18 @@ export function useRecoFilter() {
 }
 
 /**
- * Monté UNE fois, par la page : adopte le réglage serveur quand aucune
- * modification locale n'est en attente (multi-appareils), et pousse les
- * modifications locales, débouncées, avec un dernier envoi au démontage.
+ * Monté UNE fois, par la SESSION (RecoFilterBinding) — le filtre vaut pour
+ * l'accueil comme pour la page Recommandations : adopte le réglage serveur
+ * quand aucune modification locale n'est en attente (multi-appareils), et
+ * pousse les modifications locales, débouncées, avec un dernier envoi au
+ * démontage. Lit le store PAR `useRecoFilter` : lier le compte avant toute
+ * écriture — un miroir écrit sous un propriétaire nul serait ignoré au
+ * prochain bind, et le filtre retomberait sur « tout ».
  */
 export function useRecoFilterServerSync(): void {
   const { data: settings } = useRecoSettings();
   const save = useSaveRecoProviderFilter();
-  const selected = useSyncExternalStore(subscribeRecoFilter, getRecoFilter, () => EMPTY);
+  const { selected } = useRecoFilter();
   const saveRef = useRef(save);
   saveRef.current = save;
   const pendingRef = useRef<number[] | null>(null);

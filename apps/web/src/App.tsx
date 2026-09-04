@@ -6,6 +6,7 @@ import { UpdateModal } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
+import { RecoFilterBinding } from "./components/reco/RecoFilterBinding";
 import { RecoPrefetchBoot } from "./components/reco/RecoPrefetchBoot";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
@@ -187,6 +188,9 @@ export function App() {
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
       {authed && <RecoLiveBinding />}
+      {/* Le filtre de plateformes suit le compte pour toute la session — il
+          vaut sur l'accueil, pas seulement sur la page Recommandations. */}
+      {authed && !offlineMode && <RecoFilterBinding />}
       {/* Préchargement de la page Recommandations en temps mort : arriver sur
           la page ne montre ni spinner ni squelette. */}
       {authed && <RecoPrefetchBoot />}

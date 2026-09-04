@@ -9,7 +9,7 @@ import { heroSelectionFromRows } from "../components/reco/hero/recoHeroSlides";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
 import { useSettledRecoPage } from "../components/reco/useSettledRecoPage";
-import { useRecoFilter, useRecoFilterServerSync } from "../hooks/useRecoFilter";
+import { useRecoFilter } from "../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
 
 /**
@@ -23,8 +23,8 @@ import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
  */
 export function Recommendations() {
   const { t } = useTranslation("reco");
-  // Le filtre de plateformes : store (miroir local, synchro serveur ici).
-  useRecoFilterServerSync();
+  // Le filtre de plateformes : store (miroir local) — la synchro serveur vit
+  // au niveau de la session (RecoFilterBinding), l'accueil en dépend aussi.
   const { selected, filterKey } = useRecoFilter();
   const client = useJellyfinClient();
   const { data: served, isPlaceholderData, isError, refetch } = useRecoPage(selected);
