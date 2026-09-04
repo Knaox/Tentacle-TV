@@ -8,8 +8,9 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useUserId,
   useWatchlist,
-  useHomeWebSocket, useTentacleConfig,
+  useHomeWebSocket, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
@@ -21,11 +22,14 @@ import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegis
 import { useHomeRows } from "@/components/home/useHomeRows";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
+import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /** Les caches que « tirer pour rafraîchir » renouvelle, au-delà des requêtes
  *  déjà tenues par l'écran : la mise en page et les rangées auto-alimentées. */
-const REFRESH_KEYS: string[][] = [["home-layout"], ["watched-items"], ["favorites"], ["latest-items"], ["watchlist"]];
+const REFRESH_KEYS: string[][] = [
+  ["home-layout"], ["watched-items"], ["favorites"], ["latest-items"], ["watchlist"], ["reco-page"],
+];
 
 /**
  * Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton
@@ -44,7 +48,10 @@ export function HomeScreen() {
   const onScrollChrome = useScrollChromeHandler();
   const userId = useUserId();
   const { storage } = useTentacleConfig();
-  useHomeWebSocket({ token: storage.getItem("tentacle_token") });
+  const token = storage.getItem("tentacle_token");
+  useHomeWebSocket({ token });
+  // Les recommandations reconstruites en fond arrivent en silence (reco:update).
+  useRecoLive({ token });
 
   const featured = useFeaturedItems();
   const resume = useResumeItems();
@@ -55,6 +62,8 @@ export function HomeScreen() {
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
+  // Appui long sur une recommandation hors bibliothèque : sa propre feuille.
+  const [recoTarget, setRecoTarget] = useState<RecoRowItem | null>(null);
 
   const isLoading = featured.isLoading || resume.isLoading;
 
@@ -100,6 +109,11 @@ export function HomeScreen() {
     onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),
     onItemLongPress: openActions,
     onSeeAll: (route) => router.push(route),
+    canOpenReco: (item) => item.jellyfinItemId !== null,
+    onRecoPress: (item) => { if (item.jellyfinItemId) router.push(`/media/${item.jellyfinItemId}`); },
+    // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
+    // sinon celle des recommandations (« Ne plus me proposer »).
+    onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId) : setRecoTarget(item)),
   }), [renderCard, router, openActions]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
@@ -160,6 +174,7 @@ export function HomeScreen() {
           onClose={() => setActionSheetVisible(false)}
         />
       )}
+      <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />
     </SubtleBackground>
   );
 }
