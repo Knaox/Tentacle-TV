@@ -7,11 +7,13 @@ import { CATEGORIES, STATUS_BADGE, type Ticket } from "./ticketTypes";
 
 interface Props {
   ticket: Ticket;
+  /** L'admin voit tous les tickets : l'auteur compte. */
+  showAuthor?: boolean;
   onOpen: (id: string) => void;
 }
 
 /** Ligne ticket — surface s1 + border subtle, status badge, meta date. */
-export function TicketCard({ ticket, onOpen }: Props) {
+export function TicketCard({ ticket, showAuthor, onOpen }: Props) {
   const { t } = useTranslation("tickets");
   const { colors } = useTheme();
   const sb = STATUS_BADGE[ticket.status];
@@ -52,6 +54,14 @@ export function TicketCard({ ticket, onOpen }: Props) {
 
       <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, gap: 10, flexWrap: "wrap" }}>
         <Badge label={catLabel} />
+        {showAuthor && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Feather name="user" size={11} color={colors.text.quaternary} />
+            <Text style={{ fontSize: 12, fontFamily: FONT_FAMILY.regular, color: colors.text.tertiary }}>
+              {ticket.username}
+            </Text>
+          </View>
+        )}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <Feather name="clock" size={11} color={colors.text.quaternary} />
           <Text style={{

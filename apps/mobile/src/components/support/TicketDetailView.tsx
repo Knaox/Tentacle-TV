@@ -15,7 +15,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground, Badge, IconButton } from "../ui";
 import { FONT_FAMILY, RADIUS, useContentPadding, useTheme, withAlpha } from "../../theme";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { STATUS_BADGE, useTicketApi, type TicketDetail, type TicketMessage } from "./ticketTypes";
+import { TicketStatusPicker } from "./TicketStatusPicker";
 
 interface Props {
   ticketId: string;
@@ -31,6 +33,7 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
   const contentPad = useContentPadding(720);
   const { serverUrl, headers } = useTicketApi();
   const queryClient = useQueryClient();
+  const isAdmin = useIsAdmin();
   const [reply, setReply] = useState("");
 
   const { data: ticket, isLoading } = useQuery({
@@ -106,7 +109,18 @@ export function TicketDetailView({ ticketId, onBack, hideBack }: Props) {
             </Text>
             <Badge label={t(sb.tKey)} variant={sb.variant} />
           </View>
+          {isAdmin && (
+            <Text
+              style={{ marginTop: 4, fontSize: 12, fontFamily: FONT_FAMILY.regular, color: colors.text.tertiary }}
+              numberOfLines={1}
+            >
+              {t("by", { username: ticket.username })}
+            </Text>
+          )}
         </View>
+
+        {/* L'admin change le statut d'ici — l'auteur en est notifié. */}
+        {isAdmin && <TicketStatusPicker ticketId={ticket.id} status={ticket.status} />}
 
         <FlatList
           data={ticket.messages}
