@@ -5,6 +5,7 @@ import { composeItems } from "./libraryAddedFormat";
 import { indexClaims, isClaimed } from "./libraryAddedDedup";
 import { resolveSeriesTmdbIds } from "./libraryAddedSeries";
 import { filterAnnounced, libraryContentKeys, recordAnnounced } from "./announcedRegistry";
+import { forgetRemovedSeries, restoreAutoRetiredSeries } from "./watchlistAutoRetired";
 
 // Notifie en push les ajouts bibliothèque. Détection + nommage par DIFF d'IDs
 // (robuste vs date fichier ET WS muet). Instantané PERSISTANT (table
@@ -16,6 +17,8 @@ import { filterAnnounced, libraryContentKeys, recordAnnounced } from "./announce
 // regarde que celui qui l'a faite (le pipeline Seer, adossé à la vérité
 // Jellyfin, notifie le demandeur) ; le demandeur lui-même ne garde la notif
 // biblio que si la notif Seer ne prend pas le relais (seerAvailable off).
+// Le même diff nourrit le retour automatique dans « Ma liste » des séries
+// sorties parce que tout était vu (watchlistAutoRetired), hors préférences push.
 
 const POLL_INTERVAL = 60_000;
 const WS_DEBOUNCE_MS = 8_000;
@@ -181,7 +184,11 @@ async function poll(reason: string): Promise<void> {
 
     // Rien de neuf (juste des suppressions éventuelles) → MAJ silencieuse.
     if (newIds.length === 0) {
-      if (removedIds.length > 0) { await persistDelta([], removedIds); knownIds = currentSet; }
+      if (removedIds.length > 0) {
+        await persistDelta([], removedIds);
+        knownIds = currentSet;
+        await forgetRemovedSeries(removedIds);
+      }
       return;
     }
 
@@ -211,9 +218,15 @@ async function poll(reason: string): Promise<void> {
     const deferSet = new Set(deferIds);
     await persistDelta(readyIds, removedIds);
     knownIds = new Set(currentIds.filter((id) => !deferSet.has(id)));
+    if (removedIds.length > 0) await forgetRemovedSeries(removedIds);
 
     console.log(`[LibNotif] diff(${reason}): nouveaux=${newIds.length}, prêts=${readyItems.length}, différés=${deferIds.length}, retirés=${removedIds.length}`);
-    if (readyItems.length > 0) await notifyNamed(readyItems);
+    if (readyItems.length > 0) {
+      // La remise dans Ma liste d'abord (elle ne lève jamais), le push ensuite :
+      // elle ne dépend pas des préférences push, et un push en échec ne la bloque pas.
+      await restoreAutoRetiredSeries(readyItems);
+      await notifyNamed(readyItems);
+    }
   } catch (err) {
     console.error("[LibNotif] poll échoué:", err);
   } finally {
