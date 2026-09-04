@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
@@ -12,6 +12,7 @@ import { RecoCardHoverLayer } from "./RecoCardHoverLayer";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "./recoImages";
 import { useMountWhile } from "../../hooks/useMountWhile";
+import { useHoverGuard } from "../../hooks/useHoverGuard";
 
 interface RecoCardProps {
   item: RecoRowItem;
@@ -41,6 +42,15 @@ export const RecoCard = memo(function RecoCard({
   const client = useJellyfinClient();
   const [hovered, setHovered] = useState(false);
   const overlayMounted = useMountWhile(hovered, 200);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // La rangée défile sous un curseur immobile : la carte resterait « survolée »,
+  // boutons cliquables compris, sur une affiche qui n'est plus sous la souris
+  // (cf. useHoverGuard). `onHoverIndex` est stable, donc `unhover` aussi.
+  const unhover = useCallback(() => {
+    setHovered(false);
+    onHoverIndex?.(null);
+  }, [onHoverIndex]);
+  useHoverGuard(rootRef, hovered, unhover);
   const { open, canOpen } = useRecoNavigation();
   const feedback = useSendRecoFeedback();
 
@@ -48,7 +58,6 @@ export const RecoCard = memo(function RecoCard({
     client.getImageUrl(id, "Primary", { height: 450, quality: 90 })
   );
   const openable = canOpen(item);
-  const rootRef = useRef<HTMLDivElement>(null);
 
   // Un titre en bibliothèque ouvre sa fiche : le rectangle de l'AFFICHE est
   // capturé ici, dernier instant où il existe — même trajet que PosterCard,
@@ -79,6 +88,8 @@ export const RecoCard = memo(function RecoCard({
       className="group/card relative shrink-0 snap-start"
       style={{
         width: cardWidthStyle(width, POSTER_WIDTH.md, POSTER_VW),
+        // La carte soulevée passe devant sa voisine — son ombre aussi (cf. CardFrame).
+        zIndex: hovered ? 2 : undefined,
         animation: entranceDelay == null ? undefined : "fadeSlideUp 0.34s ease both",
         animationDelay: entranceDelay == null ? undefined : `${entranceDelay}ms`,
       }}
@@ -86,10 +97,7 @@ export const RecoCard = memo(function RecoCard({
         setHovered(true);
         onHoverIndex?.(index);
       }}
-      onMouseLeave={() => {
-        setHovered(false);
-        onHoverIndex?.(null);
-      }}
+      onMouseLeave={unhover}
     >
       {/* div-bouton et non <button> : le voile porte étoiles et refus, et un
           bouton dans un bouton est du HTML invalide (comportements erratiques). */}
