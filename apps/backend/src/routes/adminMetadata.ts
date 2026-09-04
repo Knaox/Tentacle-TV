@@ -1,11 +1,10 @@
 /**
- * Configuration des services de métadonnées (TMDB, AniList, région des
- * plateformes) — les clés vivent dans server_config (configStore) ; une
- * variable d'environnement, quand elle existe, garde la PRIORITÉ (cf.
- * tmdb/client.ts et anilist/oauth.ts — l'UI l'affiche pour ne pas troubler).
- * Lecture MASQUÉE : jamais une valeur en clair dans une réponse — un booléen
- * « configuré », la source, au plus quatre caractères de la clé TMDB, et
- * JAMAIS le moindre caractère du secret AniList.
+ * Configuration des services de métadonnées (TMDB, région des plateformes) —
+ * les clés vivent dans server_config (configStore) ; une variable
+ * d'environnement, quand elle existe, garde la PRIORITÉ (cf. tmdb/client.ts —
+ * l'UI l'affiche pour ne pas troubler). Lecture MASQUÉE : jamais une valeur en
+ * clair dans une réponse — un booléen « configuré », la source, au plus quatre
+ * caractères de la clé TMDB.
  */
 
 import type { FastifyPluginAsync } from "fastify";
@@ -19,8 +18,6 @@ import { getTmdbApiKey } from "../services/tmdb/client";
 
 const putSchema = z.object({
   tmdbApiKey: z.string().max(128).optional(),
-  anilistClientId: z.string().max(128).optional(),
-  anilistClientSecret: z.string().max(256).optional(),
   /** Région watch-providers (ISO 3166-1 alpha-2), consommée par metaCache. */
   watchRegion: z
     .string()
@@ -58,19 +55,11 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     const envTmdb = process.env.TMDB_API_KEY;
     const dbTmdb = getConfigValue("tmdb_api_key");
     const tmdbKey = envTmdb || dbTmdb;
-    const envAnilistId = process.env.ANILIST_CLIENT_ID;
-    const anilistId = envAnilistId || getConfigValue("anilist_client_id");
-    const anilistSecret = process.env.ANILIST_CLIENT_SECRET || getConfigValue("anilist_client_secret");
     return {
       tmdb: {
         configured: !!tmdbKey,
         source: envTmdb ? "env" : dbTmdb ? "db" : null,
         last4: tmdbKey ? tmdbKey.slice(-4) : null,
-      },
-      anilist: {
-        clientIdConfigured: !!anilistId,
-        clientSecretConfigured: !!anilistSecret,
-        source: envAnilistId ? "env" : anilistId ? "db" : null,
       },
       watchRegion: getConfigValue("tmdb_watch_region") || "FR",
       // L'UI peut dire « calcul des recommandations en cours (3/12) ».
@@ -93,8 +82,6 @@ export const adminMetadataRoutes: FastifyPluginAsync = async (app) => {
     const beforeKey = getTmdbApiKey();
     const beforeRegion = getConfigValue("tmdb_watch_region") || "FR";
     await applyField("tmdb_api_key", body.tmdbApiKey);
-    await applyField("anilist_client_id", body.anilistClientId);
-    await applyField("anilist_client_secret", body.anilistClientSecret);
     await applyField("tmdb_watch_region", body.watchRegion);
     const afterKey = getTmdbApiKey();
     if (afterKey && afterKey !== beforeKey) {
