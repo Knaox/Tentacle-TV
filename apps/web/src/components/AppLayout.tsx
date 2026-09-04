@@ -6,6 +6,7 @@ import { MobileTabBar } from "./MobileTabBar";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { VersionBanner } from "./VersionBanner";
 import { AdminKeyBanner } from "./AdminKeyBanner";
+import { TmdbKeyBanner } from "./TmdbKeyBanner";
 import { useLeaderboardOpen, closeLeaderboard } from "./easterEggs/logoEggStore";
 
 const HIDE_SEARCH_ROUTES = ["/support", "/settings", "/about", "/admin", "/pair-device"];
@@ -45,6 +46,7 @@ export function AppLayout() {
       >
         <VersionBanner />
         <AdminKeyBanner />
+        <TmdbKeyBanner />
         <Outlet />
       </div>
 

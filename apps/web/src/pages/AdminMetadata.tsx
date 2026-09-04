@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQueryClient } from "@tanstack/react-query";
+import { ADMIN_METADATA_KEY } from "@tentacle-tv/api-client";
 import { BACKEND, hdrs, cls, creds } from "./adminUtils";
 
 interface MetadataInfo {
@@ -17,6 +19,7 @@ interface MetadataInfo {
  */
 export function AdminMetadata() {
   const { t } = useTranslation("admin");
+  const queryClient = useQueryClient();
   const [info, setInfo] = useState<MetadataInfo | null>(null);
   const [tmdbKey, setTmdbKey] = useState("");
   const [anilistId, setAnilistId] = useState("");
@@ -57,6 +60,9 @@ export function AdminMetadata() {
         setAnilistId("");
         setAnilistSecret("");
         await load();
+        // Le bandeau « clé TMDB manquante » lit le même état : il s'efface
+        // dès la clé posée, sans attendre ses cinq minutes de fraîcheur.
+        void queryClient.invalidateQueries({ queryKey: ADMIN_METADATA_KEY });
       } else {
         const body = (await r.json().catch(() => null)) as { error?: string } | null;
         setMsg({

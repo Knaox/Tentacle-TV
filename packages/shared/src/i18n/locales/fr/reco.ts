@@ -46,10 +46,6 @@ export default {
   disabledBanner:
     "Les recommandations personnalisées sont désactivées pour votre compte — voici des suggestions générales.",
   disabledBannerCta: "Activer dans les réglages",
-  tmdbAdminBanner:
-    "Ajoutez votre clé TMDB (Admin → Métadonnées) pour activer les recommandations personnalisées.",
-  tmdbAdminBannerCta: "Ouvrir les réglages de métadonnées",
-  genericOnlyHint: "Suggestions générales — la personnalisation n'est pas disponible pour le moment.",
   coldBannerHint:
     "Vos recommandations personnalisées attendent encore quelques signaux — dites-nous ce que vous aimez.",
   coldBannerCta: "Choisir des titres",
