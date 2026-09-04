@@ -4,7 +4,7 @@ import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { RecoReasonText } from "./RecoReasonText";
-import { recoHaloSourceUrl, recoPosterUrl } from "./recoImages";
+import { recoHaloSourceUrl, recoPosterUrl } from "@tentacle-tv/api-client";
 
 interface RecoHeroProps {
   /** La recommandation principale du moment (tête de la rangée « Pour vous »). */

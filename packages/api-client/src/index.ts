@@ -199,6 +199,15 @@ export {
 export type { RecoPage, RecoPageRow } from "./hooks/useRecoPage";
 export { useRecoLive } from "./hooks/useRecoLive";
 
+// Images, titres et état TMDB des recommandations, partagés par les clients
+// (cf. reco/recoImages, reco/recoRowTitles, hooks/useAdminMetadata)
+export { recoPosterUrl, recoHaloSourceUrl, recoBackdropUrl, recoAmbilightSourceUrl } from "./reco/recoImages";
+export type { TmdbPosterSize, TmdbBackdropSize } from "./reco/recoImages";
+export { RECO_ROW_TITLE_KEYS, recoRowTitle } from "./reco/recoRowTitles";
+export type { RecoRowTitle } from "./reco/recoRowTitles";
+export { useAdminMetadataStatus, ADMIN_METADATA_KEY } from "./hooks/useAdminMetadata";
+export type { AdminMetadataStatus } from "./hooks/useAdminMetadata";
+
 // Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
 export {
   useLikedPeople,

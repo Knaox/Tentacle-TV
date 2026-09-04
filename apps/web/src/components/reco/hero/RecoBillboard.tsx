@@ -10,7 +10,7 @@ import { useHoverMount } from "../../../hooks/useHoverMount";
 import { useIdle } from "../../../hooks/useIdle";
 import { useInViewport } from "../../../hooks/useInViewport";
 import { useDataSaverActive } from "../../../offline/useDataSaver";
-import { recoAmbilightSourceUrl } from "../recoImages";
+import { recoAmbilightSourceUrl } from "@tentacle-tv/api-client";
 import { RecoHeroBackdrop } from "./RecoHeroBackdrop";
 import { RecoHeroContent } from "./RecoHeroContent";
 

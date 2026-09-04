@@ -6,7 +6,7 @@ import { HeroScrims } from "../../hero/HeroScrims";
 import { HERO_BACKDROP_WIDTH } from "../../hero/resolveBackdrop";
 import { AMBIENT_HZ, cadence } from "../../../theme/motion";
 import { useBrokenImage } from "../../../hooks/useBrokenImage";
-import { recoBackdropUrl } from "../recoImages";
+import { recoBackdropUrl } from "@tentacle-tv/api-client";
 
 // Miroir de HeroBackdrop pour un RecoRowItem (qui n'est pas un MediaItem) :
 // mêmes durées, mêmes bridages de cadence — les commentaires de mesure vivent
