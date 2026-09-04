@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { MediaItem, NextEpisodeResult } from "@tentacle-tv/shared";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { updateItemUserDataInCache, patchSeriesIdSet } from "./cacheUtils";
+import { recordAutoRetired, tentacleBackend, type BackendFetcher } from "./watchlistAutoRetired";
 
 /** Query keys des Sets d'IDs de séries likées / favorites (cache = string[]). */
 export const WATCHLIST_SERIES_IDS_KEY = ["watchlist-series-ids"] as const;
@@ -48,7 +49,7 @@ export function stoppedPastHalf(
  * - série encore EN DIFFUSION : retirée quand même — tout ce qui est disponible
  *   a été vu, elle n'a plus rien à proposer. Elle revient d'elle-même dès qu'un
  *   nouvel épisode entre en bibliothèque : le retrait automatique est mémorisé
- *   côté serveur, à l'inverse d'un retrait manuel.
+ *   côté serveur (`recordAutoRetired`), à l'inverse d'un retrait manuel.
  * - n'agit que si la série est effectivement dans Ma liste (Set ou UserData).
  * - le cache n'est patché (série + tous ses épisodes, + Set) qu'APRÈS un retrait
  *   serveur réussi : en échec, la liste continue de dire la vérité du serveur.
@@ -60,6 +61,7 @@ export async function retireSeriesFromWatchlistIfFullyWatched(
   client: Fetcher,
   userId: string | null | undefined,
   seriesId: string | undefined,
+  backend: BackendFetcher = tentacleBackend,
 ): Promise<boolean> {
   if (!seriesId || !userId) return false;
 
@@ -78,6 +80,7 @@ export async function retireSeriesFromWatchlistIfFullyWatched(
   updateItemUserDataInCache(qc, { matchSeriesId: seriesId }, () => ({ Likes: false }));
   patchSeriesIdSet(qc, WATCHLIST_SERIES_IDS_KEY, seriesId, false);
   qc.invalidateQueries({ queryKey: ["watchlist"], refetchType: "none" });
+  await recordAutoRetired(seriesId, backend);
   return true;
 }
 

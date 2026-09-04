@@ -14,7 +14,7 @@ const CAROUSEL_KEYS: Record<string, string[][]> = {
   recently_added:    [["latest-items"]],
   next_up:           [["next-up"]],
   trending:          [["featured"]],
-  watchlist:         [["watchlist"]],
+  watchlist:         [["watchlist"], ["watchlist-series-ids"]],
   watched:           [["watched-items"]],
   featured:          [["featured"]],
   notifications:     [["notifications"]],
