@@ -274,7 +274,7 @@ function renderApp() {
     <HostTitleBar />
     {playerDebug}
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider backendUrl={backendUrl}>
+      <ThemeProvider>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
             <PluginProvider backendUrl={backendUrl}>
