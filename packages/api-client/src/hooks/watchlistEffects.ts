@@ -14,59 +14,47 @@ type Fetcher = {
   fetch: (path: string, init?: { method?: string }) => Promise<unknown>;
 };
 
-/** Status Jellyfin d'une série ("Continuing" / "Ended"), depuis le cache ou via fetch. */
-async function getSeriesStatus(
-  qc: QueryClient,
-  client: Fetcher,
-  userId: string,
-  seriesId: string,
-): Promise<string | undefined> {
-  const cached = qc.getQueryData<MediaItem>(["item", seriesId])?.Status;
-  if (cached !== undefined) return cached;
-  const fresh = await client
-    .fetch(`/Users/${userId}/Items/${seriesId}?Fields=Status`)
-    .then((r) => r as MediaItem)
-    .catch(() => null);
-  return fresh?.Status;
-}
-
 /**
  * Retire une série de « Ma liste » (Likes) SI elle est entièrement vue.
- * Appelé après qu'un épisode (ou la série) ait été marqué vu / lu à 100%.
+ * Appelé à l'ARRÊT d'une lecture d'épisode — jamais sur un « marquer vu » posé
+ * à la main, qui est un geste de rangement et non un visionnage.
  *
  * - « entièrement vue » : ["series-watch-state", id].type === "completed"
  *   (exclut déjà la Saison 0 / spéciaux, cf. useSeriesWatchState).
- * - série EN COURS de diffusion (Status "Continuing") : on NE retire JAMAIS —
- *   d'autres épisodes arrivent, l'utilisateur veut garder le suivi.
+ * - série encore EN DIFFUSION : retirée quand même — tout ce qui est disponible
+ *   a été vu, elle n'a plus rien à proposer. Elle revient d'elle-même dès qu'un
+ *   nouvel épisode entre en bibliothèque : le retrait automatique est mémorisé
+ *   côté serveur, à l'inverse d'un retrait manuel.
  * - n'agit que si la série est effectivement dans Ma liste (Set ou UserData).
- * - retrait optimiste : série + tous ses épisodes en cache, + Set.
+ * - le cache n'est patché (série + tous ses épisodes, + Set) qu'APRÈS un retrait
+ *   serveur réussi : en échec, la liste continue de dire la vérité du serveur.
+ *
+ * Rend `true` si la série a effectivement quitté Ma liste.
  */
 export async function retireSeriesFromWatchlistIfFullyWatched(
   qc: QueryClient,
   client: Fetcher,
   userId: string | null | undefined,
   seriesId: string | undefined,
-): Promise<void> {
-  if (!seriesId || !userId) return;
+): Promise<boolean> {
+  if (!seriesId || !userId) return false;
 
   const state = qc.getQueryData<NextEpisodeResult>(["series-watch-state", seriesId]);
-  if (state?.type !== "completed") return;
+  if (state?.type !== "completed") return false;
 
   const likedInSet = qc.getQueryData<string[]>(WATCHLIST_SERIES_IDS_KEY)?.includes(seriesId);
   const likedOnItem = qc.getQueryData<MediaItem>(["item", seriesId])?.UserData?.Likes === true;
-  if (!likedInSet && !likedOnItem) return;
+  if (!likedInSet && !likedOnItem) return false;
 
-  // Série encore en diffusion → on la garde dans Ma liste.
-  const status = await getSeriesStatus(qc, client, userId, seriesId);
-  if (status === "Continuing") return;
-
-  await client
+  const removed = await client
     .fetch(`/Users/${userId}/Items/${seriesId}/Rating`, { method: "DELETE" })
-    .catch(() => {});
+    .then(() => true, () => false);
+  if (!removed) return false;
 
   updateItemUserDataInCache(qc, { matchSeriesId: seriesId }, () => ({ Likes: false }));
   patchSeriesIdSet(qc, WATCHLIST_SERIES_IDS_KEY, seriesId, false);
   qc.invalidateQueries({ queryKey: ["watchlist"], refetchType: "none" });
+  return true;
 }
 
 /**
