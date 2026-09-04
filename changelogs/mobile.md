@@ -12,12 +12,16 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Le filtre de plateformes** du compte s'applique ; une puce à côté du titre le montre et le retire d'une croix, partout
 - Les administrateurs voient un bandeau tant que la clé TMDB manque sur le serveur
 - **Ma liste suit vos visionnages, pas vos clics** : un titre n'en sort plus parce qu'on a ouvert son lecteur, ni parce qu'on l'a marqué vu à la main — seulement une fois réellement regardé jusqu'au bout, un film ou le dernier épisode disponible d'une série, même en cours de diffusion ; une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **Les tickets vous suivent sur le téléphone** : un push pour chaque réponse, chaque changement de statut et — pour les administrateurs — chaque nouveau ticket ; un tap ouvre directement le ticket ; réglage dans Réglages → Notifications, activé par défaut
+- **Les administrateurs gèrent les tickets depuis le mobile** : tous les tickets, l'auteur sur chaque carte, le statut se change depuis la fiche ; et chacun peut fermer son ticket en disant pourquoi
 ### EN
 - **The home follows your account**: the rows and their order chosen in the web settings apply here as they are — "My favorites" and "Already watched" included
 - **Recommendations reach the home**: "For you" and the other rows, the same as on the web; a title outside your library opens in the Vigie catalog
 - **The account's platform filter** applies; a chip next to the title shows it and removes it with a cross, everywhere
 - Administrators see a banner while the TMDB key is missing on the server
 - **My List follows what you watch, not what you click**: a title no longer leaves it because its player was opened, nor because it was marked watched by hand — only once actually watched to the end, a movie or a series' last available episode, even one still airing; a series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **Tickets follow you on the phone**: a push for every reply, every status change and — for administrators — every new ticket; a tap opens the ticket directly; setting under Settings → Notifications, on by default
+- **Administrators manage tickets from the phone**: every ticket, the author on each card, the status changes from the ticket view; and anyone can close their own ticket, saying why
 
 ## [1.6.0]
 ### FR

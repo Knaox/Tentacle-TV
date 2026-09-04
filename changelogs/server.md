@@ -27,6 +27,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation — Tendances, « Ce que les utilisateurs de Tentacle regardent », « Les mieux notés de votre bibliothèque » comprises — et seulement celles que ce serveur sait servir ; l'ordre et les rangées choisis s'appliquent sur toutes les plateformes, mobile et téléviseur compris
 - **Sans clé TMDB, l'accueil garde des recommandations** — le pouls des utilisateurs et les mieux notés de la bibliothèque prennent la place de « Pour vous » — et l'admin voit un bandeau sur toutes les pages jusqu'à la clé posée ; les autres comptes ne voient rien
 - **« Les mieux notés de votre bibliothèque » ferme la page Recommandations** de tous les profils, riches compris
+- **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, un lien direct depuis chaque notification ; l'admin déplace les cartes d'une colonne à l'autre et supprime un ou plusieurs tickets ; l'auteur peut fermer le sien en disant pourquoi
+- **Toute la vie d'un ticket notifie** : nouveau ticket, réponse ou fermeture par l'auteur pour les administrateurs ; réponse et changement de statut pour l'auteur — la cloche se met à jour à l'instant, sur toutes les pages, et le téléphone reçoit un push
+- **Les tickets vivent sept jours** : un ticket résolu sans nouvelle passe en fermé au bout d'une semaine, un ticket fermé quitte le tableau une semaine plus tard
+- **La page Thème de l'admin disparaît** : plus de thèmes saisonniers, de couleurs de marque ni de CSS personnalisé — l'apparence vit dans l'application
+- **Plus d'interrupteur serveur d'auto-play** : les réglages de lecture de chaque compte décident seuls
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -50,6 +55,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **"Home rows" offers everything**: "My favorites" and every permanent recommendation row — Trending, "What Tentacle users are watching", "Top rated in your library" included — and only those this server can serve; the chosen order and rows apply on every platform, mobile and TV included
 - **Without a TMDB key, the home keeps recommendations** — the users' pulse and the library's top rated take the place of "For you" — and the admin sees a banner on every page until the key is set; other accounts see nothing
 - **"Top rated in your library" closes the Recommendations page** for every profile, rich ones included
+- **Support tickets become a board**: one column per status, the ticket in a side panel, a direct link from every notification; the admin drags cards between columns and deletes one or several tickets; the author can close their own, saying why
+- **A ticket's whole life notifies**: new ticket, reply or closing by the author for administrators; reply and status change for the author — the bell updates instantly, on every page, and the phone gets a push
+- **Tickets live seven days**: a resolved ticket without news becomes closed after a week, a closed ticket leaves the board a week later
+- **The admin Theme page is gone**: no more seasonal themes, brand colors or custom CSS — the look lives in the app
+- **No more server-side auto-play switch**: each account's playback settings decide alone
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]

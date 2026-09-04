@@ -18,12 +18,13 @@ et Linux reçoivent l'ensemble.
 - **Les recommandations arrivent** : un moteur complet apprend vos goûts (vus, favoris, notes) et sert « Pour vous », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » — la page s'affiche instantanément et n'est jamais vide
 - **Noter, partout** : au survol d'une affiche, sur la fiche, sur l'affiche de fin et sur chaque épisode avec sa note TMDB à côté ; synchronisation TMDB, confettis à la validation
 - **Filtres par plateforme** avec les logos de vos services, stricts et instantanés
-- **L'accueil se compose** dans Réglages → Personnalisation ; acteurs favoris ; partage de vos coups de cœur depuis Favoris ; Admin → Métadonnées pour la clé TMDB
+- **L'accueil se compose** dans Réglages → Personnalisation ; acteurs favoris ; partage de vos coups de cœur depuis Favoris
 - **Qualité « Auto »** selon le débit réel ; la bannière repart au premier geste ; la liste d'épisodes du lecteur s'ouvre sur l'épisode courant
 - **« L'Étreinte »**, le nouveau logo
-- **Les cartes de recommandation se lancent** : au survol d'un titre en bibliothèque, un bouton Lecture reprend ou démarre l'épisode 1, avec qualité et langues
-- **Ma liste suit vos visionnages** : marquer vu à la main ne retire plus ; un titre sort une fois regardé jusqu'au bout, même série en cours, et revient seul au prochain épisode
+- **Les cartes de recommandation se lancent** : un bouton Lecture au survol reprend ou démarre l'épisode 1
+- **Ma liste suit vos visionnages** : un titre sort une fois regardé jusqu'au bout et revient seul au prochain épisode
 - **« Pour vous » identique accueil/page Recommandations**, filtre compris ; Mes favoris et les rangées reco dans « Rangées de l'accueil »
+- **Tickets de support en tableau** : une colonne par statut, la notification ouvre le ticket, fermeture par l'auteur avec motif
 - Correctifs : rangées vides après défilement, transition depuis les reco, Dolby en HLS
 - Nécessite un serveur 1.17.0 ou plus
 
@@ -31,12 +32,13 @@ et Linux reçoivent l'ensemble.
 - **Recommendations are here**: a full engine learns your taste (watched, favorites, ratings) and serves "For you", "Worth discovering", "Because you liked…", "With {actor}", "Anime for you" — the page shows up instantly and is never empty
 - **Rate anywhere**: on hover over a poster, on the details page, on the end poster and on every episode with its TMDB score next to it; TMDB sync, confetti on validation
 - **Platform filters** with your services' logos, strict and instant
-- **Compose your home** under Settings → Personalization; favorite actors; share your favorites from the Favorites page; Admin → Metadata for the TMDB key
+- **Compose your home** under Settings → Personalization; favorite actors; share your favorites from the Favorites page
 - **"Auto" quality** from the real bandwidth; the banner resumes at the first gesture; the player's episode list opens on the current episode
 - **"The Embrace"**, the new logo
-- **Recommendation cards can be played**: hovering a library title shows a Play button that resumes or starts episode 1, with quality and languages
-- **My List follows what you watch**: marking watched by hand no longer removes; a title leaves once watched to the end, even an airing series, and returns by itself at the next episode
+- **Recommendation cards can be played**: a Play button on hover resumes or starts episode 1
+- **My List follows what you watch**: a title leaves once watched to the end and returns by itself at the next episode
 - **"For you" identical on the home and the Recommendations page**, filter included; "Home rows" lists My favorites and every reco row
+- **Support tickets as a board**: one column per status, the notification opens the ticket, closing by the author with a reason
 - Fixes: rows left empty after a scroll, details transition from recommendations, Dolby track in HLS
 - Requires server 1.17.0 or newer
 
@@ -58,6 +60,8 @@ et Linux reçoivent l'ensemble.
 - **« Pour vous » est le même sur l'accueil et sur la page Recommandations**, filtre de plateformes compris : une puce à côté du titre le montre sur l'accueil et le retire d'une croix ; la bannière tire ses titres au hasard à chaque visite, et seuls les titres sortis sont recommandés
 - **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation, seulement celles que le serveur sait servir ; l'ordre choisi s'applique sur toutes les plateformes. Sans clé TMDB, l'accueil garde des recommandations génériques et l'admin voit un bandeau
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide ; la fiche s'ouvre depuis les recommandations avec sa transition ; plus de piste Dolby copiée vers le HLS fMP4
+- **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, un clic sur une notification ouvre directement le ticket ; l'auteur ferme le sien en disant pourquoi, l'admin déplace les cartes et supprime un ou plusieurs tickets ; la cloche se met à jour à l'instant, et les administrateurs sont prévenus de chaque nouveau ticket
+- **La page Thème de l'admin disparaît**, comme l'interrupteur serveur d'auto-play : les réglages de lecture de chaque compte décident seuls
 - Nécessite un serveur 1.17.0 ou plus
 
 ### EN
@@ -77,6 +81,8 @@ et Linux reçoivent l'ensemble.
 - **"For you" is the same on the home and on the Recommendations page**, platform filter included: a chip next to the title shows it on the home and removes it with a cross; the banner draws its titles at random on every visit, and only released titles are recommended
 - **"Home rows" offers everything**: "My favorites" and every permanent recommendation row, only those the server can serve; the chosen order applies on every platform. Without a TMDB key, the home keeps generic recommendations and the admin sees a banner
 - **Fixes**: a row no longer stays empty after a fast scroll; the details page opens from recommendations with its transition; no more Dolby track copied into HLS fMP4
+- **Support tickets become a board**: one column per status, the ticket in a side panel, clicking a notification opens the ticket directly; the author closes their own, saying why, the admin drags cards and deletes one or several tickets; the bell updates instantly, and administrators are told about every new ticket
+- **The admin Theme page is gone**, and so is the server-side auto-play switch: each account's playback settings decide alone
 - Requires server 1.17.0 or newer
 
 ## [1.21.0]
@@ -104,6 +110,9 @@ et Linux reçoivent l'ensemble.
 - **« Pour vous » est le même sur l'accueil et sur la page Recommandations** : l'accueil lit la page de votre filtre de plateformes — bannière comprise — et la rangée est entière : la bannière tire cinq titres au hasard, d'autres à chaque visite ; le filtre vaut donc aussi pour l'accueil, où une puce à côté du titre de la première rangée le montre et le retire d'une croix, du compte. Seuls les titres sortis sont recommandés — un film au moins en salles, une série déjà diffusée
 - **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation (Tendances, « Ce que les utilisateurs de Tentacle regardent », « Les mieux notés de votre bibliothèque »), seulement celles que le serveur sait servir ; l'ordre choisi s'applique sur toutes les plateformes. Sans clé TMDB, l'accueil garde des recommandations génériques et l'admin voit un bandeau sur toutes les pages
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide (il fallait remonter tout en haut ou recharger) ; la fiche s'ouvre depuis les recommandations et leur bannière avec sa transition ; hors ligne, « Réessayer » montre qu'il essaie ; plus de piste Dolby copiée vers le HLS fMP4 — l'initialisation sortait sans codec et la lecture échouait
+- **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, et un clic sur une notification ouvre directement le ticket ; l'auteur peut fermer le sien en disant pourquoi ; l'admin déplace les cartes et supprime un ou plusieurs tickets
+- **La cloche se met à jour à l'instant**, sur toutes les pages — et les administrateurs sont prévenus de chaque nouveau ticket, réponse ou fermeture
+- **La page Thème de l'admin disparaît** (thèmes saisonniers, couleurs, CSS personnalisé), comme l'interrupteur serveur d'auto-play : les réglages de lecture de chaque compte décident seuls
 - Compatibilité : cette version demande un serveur 1.17.0 ou plus
 
 ### EN
@@ -130,6 +139,9 @@ et Linux reçoivent l'ensemble.
 - **"For you" is the same on the home and on the Recommendations page**: the home reads the page of your platform filter — banner included — and the row is complete: the banner draws five titles at random, different ones on every visit; the filter thus applies to the home too, where a chip next to the first row's title shows it and removes it with a cross, from the account. Only released titles are recommended — a movie at least in theaters, a series already aired
 - **"Home rows" offers everything**: "My favorites" and every permanent recommendation row (Trending, "What Tentacle users are watching", "Top rated in your library"), only those the server can serve; the chosen order applies on every platform. Without a TMDB key, the home keeps generic recommendations and the admin sees a banner on every page
 - **Fixes**: a row no longer stays empty after a fast scroll (you had to scroll back to the top or reload); the details page opens from recommendations and their banner with its transition; offline, "Retry" shows that it is trying; no more Dolby track copied into HLS fMP4 — the init segment came out without a codec and playback failed
+- **Support tickets become a board**: one column per status, the ticket in a side panel, and clicking a notification opens the ticket directly; the author can close their own, saying why; the admin drags cards and deletes one or several tickets
+- **The bell updates instantly**, on every page — and administrators are told about every new ticket, reply or closing
+- **The admin Theme page is gone** (seasonal themes, colors, custom CSS), and so is the server-side auto-play switch: each account's playback settings decide alone
 - Compatibility: this version requires server 1.17.0 or newer
 
 ## [mac-1.20.11]
