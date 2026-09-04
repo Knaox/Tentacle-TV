@@ -8,6 +8,7 @@ import { TV_POSTER_WIDTH, TV_EPISODE_WIDTH } from "../cards/cardSizes";
 import { TVLibraryRow } from "../rows/TVLibraryRow";
 import { TVFavoritesRow } from "../rows/TVFavoritesRow";
 import { TVRecoRow } from "../rows/TVRecoRow";
+import { TVRecoFilterChip } from "../reco/TVRecoFilterChip";
 import { Spacing } from "../../theme/colors";
 import { possessiveLibraryName } from "../../utils/libraryLabel";
 
@@ -17,6 +18,8 @@ export interface TVHomeRowData {
   watchlist?: MediaItem[];
   watched?: MediaItem[];
   librariesById: Map<string, { id: string; name: string; collectionType?: string }>;
+  /** La rangée reco qui porte la pastille du filtre de plateformes (null : aucune). */
+  filterChipRowKey: string | null;
 }
 
 export interface TVHomeRowHandlers {
@@ -72,6 +75,7 @@ export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
     return (
       <TVRecoRow
         rowKey={rowKey.slice("reco:".length)}
+        titleAccessory={rowKey === data.filterChipRowKey ? <TVRecoFilterChip /> : undefined}
         onItemPress={handlers.onRecoPress}
         onItemLongPress={handlers.onRecoLongPress}
         onItemFocus={handlers.onRecoFocus}
