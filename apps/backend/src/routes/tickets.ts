@@ -2,6 +2,11 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { requireAuth, requireAdmin, type JellyfinUser } from "../middleware/auth";
+import { excerptOf, notifyAdmins, notifyTicketOwner } from "../services/ticketNotifier";
+
+// Plafond de page : le tableau Kanban charge tout d'un coup (200), les listes
+// mobiles gardent leur pas de 20.
+const MAX_PAGE_SIZE = 200;
 
 const createTicketSchema = z.object({
   subject: z.string().min(1).max(300),
@@ -48,6 +53,9 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
       include: { messages: true },
     });
 
+    // Les admins apprennent le nouveau ticket (cloche + push) — jamais l'auteur.
+    await notifyAdmins(ticket, "ticket_new", user, excerptOf(body.body));
+
     return reply.status(201).send(ticket);
   });
 
@@ -57,7 +65,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
     const user = (request as any).user as JellyfinUser;
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.limit) || 20));
 
     const where: any = { jellyfinUserId: user.userId };
     if (query.status) where.status = query.status;
@@ -81,7 +89,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
     const prisma = getPrisma();
     const query = request.query as Record<string, string>;
     const page = Math.max(1, Number(query.page) || 1);
-    const limit = Math.min(50, Math.max(1, Number(query.limit) || 20));
+    const limit = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.limit) || 20));
 
     const where: any = {};
     if (query.status) where.status = query.status;
@@ -159,19 +167,11 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
       }),
     ]);
 
-    // Notify the other party
-    const notifyUserId = user.isAdmin ? ticket.jellyfinUserId : null; // admin replies → notify user
-    if (notifyUserId) {
-      await prisma.notification.create({
-        data: {
-          jellyfinUserId: notifyUserId,
-          type: "ticket_reply",
-          title: ticket.subject,
-          body: body.body.slice(0, 200),
-          refId: id,
-        },
-      });
-    }
+    // L'autre partie est prévenue : l'auteur quand un admin répond, les admins
+    // quand c'est l'auteur qui écrit. Jamais celui qui vient de parler.
+    const excerpt = excerptOf(body.body);
+    if (user.isAdmin) await notifyTicketOwner(ticket, "ticket_reply", excerpt, user);
+    else await notifyAdmins(ticket, "ticket_user_reply", user, excerpt);
 
     return reply.status(201).send(message);
   });
@@ -179,6 +179,7 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
   // PATCH /api/tickets/:id/status — Admin: update ticket status
   app.patch("/:id/status", { preHandler: [requireAdmin] }, async (request, reply) => {
     const prisma = getPrisma();
+    const user = (request as any).user as JellyfinUser;
     const { id } = request.params as { id: string };
     const body = statusSchema.parse(request.body);
 
@@ -187,21 +188,17 @@ export const ticketRoutes: FastifyPluginAsync = async (app) => {
       return reply.status(404).send({ message: "Ticket introuvable" });
     }
 
+    // Idempotent : une carte relâchée sur sa propre colonne ne réécrit rien
+    // et ne notifie personne.
+    if (ticket.status === body.status) return ticket;
+
     const updated = await prisma.supportTicket.update({
       where: { id },
       data: { status: body.status },
     });
 
-    // Notify ticket owner — store raw data, frontend renders i18n
-    await prisma.notification.create({
-      data: {
-        jellyfinUserId: ticket.jellyfinUserId,
-        type: "ticket_status",
-        title: ticket.subject,
-        body: body.status,
-        refId: id,
-      },
-    });
+    // L'auteur apprend le nouveau statut — donnée brute, le client traduit.
+    await notifyTicketOwner(ticket, "ticket_status", body.status, user);
 
     return updated;
   });
