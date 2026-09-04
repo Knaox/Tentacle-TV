@@ -67,9 +67,15 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `jellyfinUserId` varchar(255) NOT NULL,
   `libraryAdded` tinyint(1) NOT NULL DEFAULT 0,
   `seerAvailable` tinyint(1) NOT NULL DEFAULT 0,
+  `tickets` tinyint(1) NOT NULL DEFAULT 1,
   `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : préférence push « tickets », ACTIVÉE par défaut (les deux autres sont
+-- opt-in). Une base existante ne repasse pas par le CREATE ci-dessus — ajout
+-- idempotent (MariaDB).
+ALTER TABLE `notification_preferences` ADD COLUMN IF NOT EXISTS `tickets` tinyint(1) NOT NULL DEFAULT 1;
 
 -- Colonne de livraison push sur les notifications existantes (additif, idempotent MariaDB).
 ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `pushedAt` datetime(3) NULL;
