@@ -28,7 +28,6 @@ export interface PlaybackOverlayInput {
    * règles « avant la fin » ciblées ; absente, le seuil global s'applique.
    */
   libraryId?: string | null;
-  serverAutoplayEnabled: boolean;
   /**
    * Une séance Watch Together est active sur CE média. Le refus local d'une
    * carte y annule AUSSI le décompte de l'épisode : sans cela, le refuseur

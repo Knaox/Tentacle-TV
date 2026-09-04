@@ -23,7 +23,6 @@ interface UseDesktopSegmentsOverlayArgs {
   runtimeMs: number;
   /** Bibliothèque du média — les règles « avant la fin » ciblées la lisent. */
   libraryId: string | null;
-  serverAutoplayEnabled: boolean;
   scrubbing: boolean;
   /** Les contrôles du lecteur sont-ils à l'écran ? (un passage mis en sourdine
    *  par la croix n'est plus rendu qu'avec eux). */
@@ -40,7 +39,7 @@ interface UseDesktopSegmentsOverlayArgs {
 
 export function useDesktopSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
-  hasStarted, playbackEnded, segments, runtimeMs, libraryId, serverAutoplayEnabled,
+  hasStarted, playbackEnded, segments, runtimeMs, libraryId,
   scrubbing, controlsVisible, isDirectPlay, effectiveMpvOffset, seek,
   onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
@@ -55,7 +54,6 @@ export function useDesktopSegmentsOverlay({
     segments,
     runtimeMs,
     libraryId,
-    serverAutoplayEnabled,
     groupSession: inGroupSession,
     scrubbing,
     controlsVisible,

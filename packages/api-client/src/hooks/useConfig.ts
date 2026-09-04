@@ -16,14 +16,12 @@ export interface AppConfig {
   version: string;
   brandName: string;
   features: AppFeatures;
-  autoplayNextEnabled: boolean;
 }
 
 const defaultConfig: AppConfig = {
   version: "0.0.0",
   brandName: "Tentacle TV",
   features: { downloads: false, demo: false },
-  autoplayNextEnabled: true,
 };
 
 export function useAppConfig() {
@@ -40,13 +38,11 @@ export function useAppConfig() {
 }
 
 export interface AutoplayConfig {
-  /** Interrupteur admin « Déclenchement auto-play » (bannière épisode suivant). */
-  enabled: boolean;
-  /** Seuil (%) = MaxResumePct de Jellyfin : la bannière apparaît à ce % de lecture. */
+  /** Seuil (%) = MaxResumePct de Jellyfin : à ce % de lecture, l'épisode est « vu ». */
   maxResumePct: number;
 }
 
-const defaultAutoplayConfig: AutoplayConfig = { enabled: true, maxResumePct: 90 };
+const defaultAutoplayConfig: AutoplayConfig = { maxResumePct: 90 };
 
 /**
  * Config du déclenchement auto-play, POLLÉE pendant une lecture active

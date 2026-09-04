@@ -34,7 +34,7 @@ export function WatchWeb() {
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, autoplayNextEnabled, getPositionTicks,
+    segments, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
   // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
@@ -309,7 +309,7 @@ export function WatchWeb() {
           onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-          nextEpisodeDescription={nextEpisodeDescription} serverAutoplayEnabled={autoplayNextEnabled}
+          nextEpisodeDescription={nextEpisodeDescription}
           onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}

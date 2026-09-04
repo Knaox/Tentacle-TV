@@ -44,8 +44,6 @@ export interface DesktopPlayerProps {
   hasNextEpisode?: boolean; hasPreviousEpisode?: boolean; nextEpisodeTitle?: string;
   nextEpisodeImageUrl?: string; nextEpisodeDescription?: string;
   nextSeriesBackdropUrl?: string; nextEpisodeThumbUrl?: string;
-  /** Garde serveur admin « Déclenchement auto-play » (carte + écran de fin). */
-  serverAutoplayEnabled?: boolean;
   itemId?: string;
   item?: MediaItem;
   mediaSourceId?: string;
