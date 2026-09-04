@@ -39,14 +39,3 @@ export function episodeRatingIdentityFor(
   if (episode.ParentIndexNumber == null || episode.IndexNumber == null) return null;
   return episodeRatingIdentity(seriesTmdbId, episode.ParentIndexNumber, episode.IndexNumber);
 }
-
-/**
- * Le tvdbId de l'item, s'il en porte un : transmis à la notation pour ancrer
- * le mapping AniList des séries (la table Fribb pivote sur thetvdb_id).
- */
-export function tvdbIdForItem(item: MediaItem): number | null {
-  const raw = item.ProviderIds?.Tvdb;
-  if (!raw) return null;
-  const tvdbId = Number(raw);
-  return Number.isFinite(tvdbId) && tvdbId > 0 ? tvdbId : null;
-}

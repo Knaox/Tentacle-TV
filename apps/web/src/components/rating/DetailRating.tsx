@@ -1,13 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { useDeleteRating, useItemRating, useMediaItem, useRateItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { episodeRatingIdentityFor, ratingIdentityForItem, tmdbIdForItem, tvdbIdForItem } from "../../lib/ratingIdentity";
+import { episodeRatingIdentityFor, ratingIdentityForItem, tmdbIdForItem } from "../../lib/ratingIdentity";
 import { StarRating } from "./StarRating";
 
 /**
  * Bloc « Votre note » de la fiche détaillée. S'efface totalement quand le
  * titre n'est pas notable (pas de tmdbId). L'écriture est optimiste : la note
- * part en base tout de suite, la sync TMDB/AniList suit en arrière-plan.
+ * part en base tout de suite, la sync TMDB suit en arrière-plan.
  * Un épisode se note avec le tmdb de sa SÉRIE : la fiche série est déjà en
  * cache, la page la charge pour le lien « voir la série ».
  */
@@ -18,7 +18,6 @@ export function DetailRating({ item }: { item: MediaItem }) {
   const identity = isEpisode
     ? episodeRatingIdentityFor(item, tmdbIdForItem(series))
     : ratingIdentityForItem(item);
-  const tvdbId = isEpisode ? (series ? tvdbIdForItem(series) : null) : tvdbIdForItem(item);
   const rating = useItemRating(identity);
   const rate = useRateItem();
   const remove = useDeleteRating();
@@ -32,7 +31,7 @@ export function DetailRating({ item }: { item: MediaItem }) {
       <StarRating
         value={score}
         onRate={(s) =>
-          rate.mutate({ ...identity, jellyfinItemId: item.Id, tvdbId, score: s })
+          rate.mutate({ ...identity, jellyfinItemId: item.Id, score: s })
         }
         onClear={() => remove.mutate(identity)}
       />

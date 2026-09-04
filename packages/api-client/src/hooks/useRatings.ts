@@ -16,12 +16,9 @@ export interface UserRatingEntry {
   id: string;
   mediaType: RatingMediaType;
   tmdbId: number;
-  tvdbId: number | null;
-  anilistId: number | null;
   jellyfinItemId: string | null;
   seasonNumber: number;
   episodeNumber: number;
-  isAnime: boolean;
   score: number; // 1..10 (1 = une demi-étoile)
   syncStatus: "pending" | "synced" | "failed" | "disabled" | "delete_pending";
   updatedAt: string;
@@ -29,7 +26,6 @@ export interface UserRatingEntry {
 
 export interface RateItemInput extends RatingIdentity {
   score: number;
-  tvdbId?: number | null;
   jellyfinItemId?: string | null;
 }
 
@@ -104,12 +100,9 @@ export function useRateItem() {
         id: `optimistic-${key}`,
         mediaType: input.mediaType,
         tmdbId: input.tmdbId,
-        tvdbId: input.tvdbId ?? null,
-        anilistId: null,
         jellyfinItemId: input.jellyfinItemId ?? null,
         seasonNumber: input.seasonNumber ?? 0,
         episodeNumber: input.episodeNumber ?? 0,
-        isAnime: false,
         score: input.score,
         syncStatus: "pending",
         updatedAt: new Date().toISOString(),

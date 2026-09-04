@@ -158,10 +158,6 @@ export default {
     "Clés des services de métadonnées. TMDB alimente les recommandations riches (similaires, acteurs, mots-clés, affiches hors bibliothèque) et la synchronisation anonyme des notes ; sans clé, le moteur retombe sur les genres de la bibliothèque.",
   tmdbDescription: "Une clé API (v3) gratuite, créée sur themoviedb.org — validée avant d'être enregistrée.",
   tmdbKeyLabel: "Clé API TMDB",
-  anilistDescription:
-    "Client OAuth AniList (id + secret) : permet aux comptes de lier AniList et d'y synchroniser leurs notes d'animés. Pas encore de source de suggestions.",
-  anilistClientIdLabel: "Client ID",
-  anilistClientSecretLabel: "Client secret",
   metadataRegionTitle: "Plateformes de streaming",
   metadataRegionDescription:
     "Région des disponibilités (chips Netflix, Crunchyroll…) — code pays à deux lettres, résolu à la lecture : en changer ne redemande rien à TMDB.",

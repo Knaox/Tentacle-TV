@@ -6,12 +6,11 @@ import { BACKEND, hdrs, cls, creds } from "./adminUtils";
 
 interface MetadataInfo {
   tmdb: { configured: boolean; source: "env" | "db" | null; last4: string | null };
-  anilist: { clientIdConfigured: boolean; clientSecretConfigured: boolean; source: "env" | "db" | null };
   watchRegion: string;
 }
 
 /**
- * Onglet « Métadonnées » : clé TMDB, client AniList, région des plateformes.
+ * Onglet « Métadonnées » : clé TMDB, région des plateformes.
  * Les valeurs ne REDESCENDENT jamais en clair (lecture masquée côté serveur) :
  * un champ laissé vide conserve la valeur enregistrée, « Retirer » l'efface.
  * Une variable d'environnement, quand elle existe, garde la priorité — on
@@ -22,8 +21,6 @@ export function AdminMetadata() {
   const queryClient = useQueryClient();
   const [info, setInfo] = useState<MetadataInfo | null>(null);
   const [tmdbKey, setTmdbKey] = useState("");
-  const [anilistId, setAnilistId] = useState("");
-  const [anilistSecret, setAnilistSecret] = useState("");
   const [region, setRegion] = useState("FR");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
@@ -57,8 +54,6 @@ export function AdminMetadata() {
       if (r.ok) {
         setMsg({ ok: true, t: t("saved") });
         setTmdbKey("");
-        setAnilistId("");
-        setAnilistSecret("");
         await load();
         // Le bandeau « clé TMDB manquante » lit le même état : il s'efface
         // dès la clé posée, sans attendre ses cinq minutes de fraîcheur.
@@ -80,8 +75,6 @@ export function AdminMetadata() {
     // Seuls les champs SAISIS partent : vide = valeur conservée côté serveur.
     const payload: Record<string, string> = { watchRegion: region.trim().toUpperCase() };
     if (tmdbKey.trim()) payload.tmdbApiKey = tmdbKey.trim();
-    if (anilistId.trim()) payload.anilistClientId = anilistId.trim();
-    if (anilistSecret.trim()) payload.anilistClientSecret = anilistSecret.trim();
     void save(payload);
   };
 
@@ -127,38 +120,6 @@ export function AdminMetadata() {
             )}
           </div>
           {statusLine(info.tmdb.configured, info.tmdb.last4, info.tmdb.source)}
-        </div>
-      </div>
-
-      <div className={cls.card}>
-        <h2 className="mb-1 text-lg font-semibold text-content-primary">AniList</h2>
-        <p className="mb-4 text-sm text-content-quaternary">{t("anilistDescription")}</p>
-        <div className={cls.sub}>
-          <label className={cls.lbl} htmlFor="anilist-id">{t("anilistClientIdLabel")}</label>
-          <input
-            id="anilist-id"
-            type="text"
-            autoComplete="off"
-            placeholder={info.anilist.clientIdConfigured ? "••••••••" : ""}
-            value={anilistId}
-            onChange={(e) => setAnilistId(e.target.value)}
-            className={cls.inp}
-          />
-          <label className={cls.lbl} htmlFor="anilist-secret">{t("anilistClientSecretLabel")}</label>
-          <input
-            id="anilist-secret"
-            type="password"
-            autoComplete="off"
-            placeholder={info.anilist.clientSecretConfigured ? "••••••••" : ""}
-            value={anilistSecret}
-            onChange={(e) => setAnilistSecret(e.target.value)}
-            className={cls.inp}
-          />
-          {statusLine(
-            info.anilist.clientIdConfigured && info.anilist.clientSecretConfigured,
-            null,
-            info.anilist.source
-          )}
         </div>
       </div>
 

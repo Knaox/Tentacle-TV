@@ -39,9 +39,6 @@ export function useEndCardRating(
 
   const seriesTmdbRaw = series.data?.ProviderIds?.Tmdb;
   const seriesTmdbId = seriesTmdbRaw ? Number(seriesTmdbRaw) : NaN;
-  const tvdbRaw = series.data?.ProviderIds?.Tvdb;
-  const tvdbNum = tvdbRaw ? Number(tvdbRaw) : NaN;
-  const tvdbId = Number.isFinite(tvdbNum) && tvdbNum > 0 ? tvdbNum : null;
 
   const identity: RatingIdentity | null =
     isEpisode && Number.isFinite(seriesTmdbId) && seriesTmdbId > 0
@@ -65,7 +62,7 @@ export function useEndCardRating(
       style: "padded",
     }),
     rate: (score: number) =>
-      rateItem.mutate({ ...identity, score, tvdbId, jellyfinItemId: episode.Id ?? null }),
+      rateItem.mutate({ ...identity, score, jellyfinItemId: episode.Id ?? null }),
     clear: () => deleteRating.mutate(identity),
   };
 }
