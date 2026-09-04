@@ -34,6 +34,7 @@ import {
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
+  RECO_PAGE_KEY,
 } from "@tentacle-tv/api-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setSessionExpired } from "@/auth/sessionState";
@@ -80,11 +81,15 @@ const mobilePersistStorage = {
   setItem: (k: string, v: string) => AsyncStorage.setItem(k, v),
   removeItem: (k: string) => AsyncStorage.removeItem(k),
 };
+// Les hubs de l'accueil, plus la page de recommandations (~150 Ko par filtre,
+// une ou deux en pratique — AsyncStorage en offre 2 Mo) : les rangées reco se
+// rendent d'un coup au démarrage, comme sur le web.
+const MOBILE_PERSIST_WHITELIST = [...HOME_PERSIST_WHITELIST, RECO_PAGE_KEY] as const;
 void hydrateQueryClient(queryClient, mobilePersistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+  whitelist: MOBILE_PERSIST_WHITELIST,
 });
 attachQueryPersister(queryClient, mobilePersistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+  whitelist: MOBILE_PERSIST_WHITELIST,
 });
 
 export function AppProviders({ storage, uuid, serverUrl, storageReady, children }: AppProvidersProps) {

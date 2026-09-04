@@ -1,5 +1,6 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FadeIn } from "@/components/ui";
 import { MediaRow } from "@/components/MediaRow";
@@ -7,6 +8,7 @@ import { MyListRow } from "@/components/MyListRow";
 import { HomeLibraryRow } from "./HomeLibraryRow";
 import { HomeWatchedRow } from "./HomeWatchedRow";
 import { HomeFavoritesRow } from "./HomeFavoritesRow";
+import { HomeRecoRow } from "@/components/reco/HomeRecoRow";
 import { homeRowFadeDelay } from "./homeRowFade";
 
 export interface HomeRowData {
@@ -21,6 +23,11 @@ export interface HomeRowActions {
   onItemPress: (jellyfinId: string) => void;
   onItemLongPress: (jellyfinId: string) => void;
   onSeeAll: (route: "/watchlist" | "/favorites") => void;
+  /** Recommandations : un titre en bibliothèque ouvre sa fiche, un titre
+   *  « à la demande » le catalogue Vigie quand le plugin est actif. */
+  canOpenReco: (item: RecoRowItem) => boolean;
+  onRecoPress: (item: RecoRowItem) => void;
+  onRecoLongPress: (item: RecoRowItem) => void;
 }
 
 interface HomeRowProps {
@@ -36,8 +43,9 @@ interface HomeRowProps {
  * rendu, miroir de `homeRowRegistry` web. Les rangées historiques gardent
  * leurs composants et leurs gardes de non-vacuité ; « Déjà visionné », « Mes
  * favoris » et « Derniers ajouts » s'alimentent seules (aucune requête si la
- * rangée est éteinte). Clé inconnue → rien, jamais une erreur. Mémoïsé :
- * `data` et `actions` sont stables entre deux rendus de l'écran.
+ * rangée est éteinte) ; `reco:<row>` lit la page de recommandations du
+ * compte. Clé inconnue → rien, jamais une erreur. Mémoïsé : `data` et
+ * `actions` sont stables entre deux rendus de l'écran.
  */
 export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: HomeRowProps) {
   const { t } = useTranslation("common");
@@ -86,6 +94,17 @@ export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: H
         collectionType={lib.collectionType}
         renderCard={actions.renderCard}
         index={lib.index}
+      />
+    );
+  }
+  if (rowKey.startsWith("reco:")) {
+    return (
+      <HomeRecoRow
+        rowKey={rowKey.slice("reco:".length)}
+        index={index}
+        canOpen={actions.canOpenReco}
+        onItemPress={actions.onRecoPress}
+        onItemLongPress={actions.onRecoLongPress}
       />
     );
   }
