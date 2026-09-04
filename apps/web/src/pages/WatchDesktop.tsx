@@ -140,6 +140,9 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     return () => {
       const id = itemId;
       const snap = itemRef.current;
+      // Lue MAINTENANT : l'effet [itemId] de useWatchSession remet la position
+      // à zéro juste après ces cleanups — dans le microtask, elle vaudrait 0.
+      const stopPositionSeconds = positionRef.current;
       queryClient.removeQueries({ queryKey: ["item", id] });
       // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
       // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
@@ -148,11 +151,14 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
       // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
       queueMicrotask(() => {
         const run = () =>
-          runStopInvalidation({ itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type });
+          runStopInvalidation({
+            itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
+            stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+          });
         lastStopPromiseRef.current.then(run, run);
       });
     };
-  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
+  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation, positionRef]);
 
   const handleAudioChange = useCallback(async (idx: number) => {
     audioOverrideRef.current = true;
