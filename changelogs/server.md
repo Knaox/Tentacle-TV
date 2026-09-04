@@ -19,6 +19,8 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Une rangée ne reste plus vide après un défilement rapide** : les observateurs d'intersection ne lisaient que la première entrée de leur salve — il fallait remonter tout en haut ou recharger
 - **La note reste visible au survol des cartes** de recommandation, à côté de la raison et des étoiles
 - **La fiche s'ouvre depuis les recommandations et leur bannière avec sa transition**, comme depuis toute autre carte
+- **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
+- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même — le serveur mémorise ces sorties et remet la série à l'arrivée d'un épisode
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -34,6 +36,8 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **A row no longer stays empty after a fast scroll**: intersection observers only read the first entry of their batch — you had to scroll back to the top or reload
 - **The rating stays visible while hovering** recommendation cards, next to the reason and the stars
 - **The details page opens from recommendations and their banner with its transition**, as from any other card
+- **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
+- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself — the server remembers those exits and puts the series back when an episode arrives
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]
@@ -55,7 +59,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
 - **Réglages → Personnalisation** : l'accueil se compose (rangées, bandeau principal), l'équilibre entre valeurs sûres et découvertes se règle, ainsi que l'inclusion des titres hors bibliothèque (Vigie), les recommandations communautaires et le partage de votre historique (opt-out), les acteurs favoris et la remise à zéro du profil
 - **Admin → Métadonnées** : clé TMDB validée avant d'être stockée, identifiants AniList et région des plateformes se règlent depuis l'admin — plus seulement par variables d'environnement
-- **Noter un film le marque comme vu dans Jellyfin** (les séries ne sont jamais marquées ; débrayable par `reco_rate_marks_played=false`) ; noter ou écarter un titre le retire aussitôt des rangées, et la raison « En anglais » disparaît (elle désignait la langue originale TMDB, trompeuse en VF)
+- **Noter ou écarter un titre le retire aussitôt des rangées**, et la raison « En anglais » disparaît (elle désignait la langue originale TMDB, trompeuse en VF)
 - **Vos favoris et vos séries entamées ne sont plus recommandés** : un favori reste une graine, une série entamée vit dans « Reprendre » ; les graines des rangées « Parce que vous avez aimé » tournent chaque jour
 - **Un compte avec un historique ne subit plus la grille de démarrage** — réservée aux comptes vierges, avec 60 titres répartis par genre au lieu de 30 triés par note
 - **« Bibliothèque seule » tient parole** : Vigie désactivée, aucune rangée ne sert de titre hors bibliothèque, et changer ce réglage recalcule le pool
@@ -81,7 +85,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
 - **Settings → Personalization**: compose your home (rows, main banner), set the balance between safe bets and discoveries, whether to include titles outside your library (Vigie), community recommendations and the sharing of your history (opt-out), favorite actors and a profile reset
 - **Admin → Metadata**: the TMDB key (validated before being stored), the AniList credentials and the platform region are set from the admin — no longer only through environment variables
-- **Rating a movie marks it watched in Jellyfin** (series are never marked; can be turned off with `reco_rate_marks_played=false`); rating or dismissing a title removes it from the rows at once, and the "In English" reason is gone (it named the TMDB original language, misleading for a dubbed copy)
+- **Rating or dismissing a title removes it from the rows at once**, and the "In English" reason is gone (it named the TMDB original language, misleading for a dubbed copy)
 - **Your favorites and started series are no longer recommended**: a favorite stays a seed, a started series lives in "Resume"; the seeds of the "Because you liked" rows rotate daily
 - **An account with a history no longer gets the onboarding grid** — reserved for fresh accounts, with 60 titles spread by genre instead of 30 sorted by rating
 - **"Library only" keeps its word**: with Vigie off, no row serves a title outside the library, and changing the setting recomputes the pool
