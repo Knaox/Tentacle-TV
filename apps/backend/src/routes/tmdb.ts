@@ -10,6 +10,7 @@ import { requireAuth } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
 import { getSeerrConfig } from "../services/seerConfig";
 import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
+import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
@@ -120,6 +121,24 @@ export async function tmdbRoutes(app: FastifyInstance) {
    * même hors région) — la source du menu Filtres. Sans clé TMDB : vide.
    */
   app.get("/watch-providers", async () => getWatchProviderDirectory());
+
+  /**
+   * GET /api/tmdb/tv/:tmdbId/season/:seasonNumber/episodes
+   * → { tmdbId, seasonNumber, episodes: [{ episodeNumber, voteAverage, voteCount }] }
+   * Les notes TMDB des épisodes d'une saison (mémoire + disque, un jour de
+   * fraîcheur, copie périmée servie si TMDB ne répond pas). Sans clé TMDB ou
+   * saison inconnue : liste vide, jamais d'erreur.
+   */
+  app.get("/tv/:tmdbId/season/:seasonNumber/episodes", async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = request.params as { tmdbId?: string; seasonNumber?: string };
+    const tmdbId = Number(params.tmdbId);
+    const seasonNumber = Number(params.seasonNumber);
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0 || !Number.isInteger(seasonNumber) || seasonNumber < 0) {
+      return reply.status(400).send({ message: "tmdbId and seasonNumber must be integers" });
+    }
+    const season = await getSeasonEpisodes(tmdbId, seasonNumber);
+    return season ?? { tmdbId, seasonNumber, episodes: [] };
+  });
 
   /**
    * GET /api/tmdb/resolve?tmdbId=123&mediaType=movie
