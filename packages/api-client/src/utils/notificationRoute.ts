@@ -24,6 +24,7 @@ export function resolveNotificationRoute(
     // support est unique et l'admin y voit tous les tickets.
     case "ticket_new":
     case "ticket_user_reply":
+    case "ticket_user_closed":
       if (platform === "mobile") return refId ? `/support?ticketId=${refId}` : "/support";
       return refId ? `/admin/tickets?ticketId=${refId}` : "/admin/tickets";
 

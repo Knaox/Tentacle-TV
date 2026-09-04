@@ -141,6 +141,37 @@ export function useReplyTicket() {
   });
 }
 
+/** L'auteur ferme son ticket en disant pourquoi (motif obligatoire, versé au fil). */
+export function useCloseTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, reason }: { ticketId: string; reason: string }) =>
+      ticketFetch<SupportTicket>(`/${ticketId}/close`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: (data, vars) => {
+      qc.setQueryData(["tickets", "detail", vars.ticketId], data);
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
+/** Admin : supprime un ou plusieurs tickets (messages et notifications compris). */
+export function useDeleteTickets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) =>
+      ticketFetch<{ deleted: number }>("/batch", {
+        method: "DELETE",
+        body: JSON.stringify({ ids }),
+      }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
 type StatusVars = { ticketId: string; status: SupportTicket["status"] };
 
 /** Le statut d'un ticket réécrit dans une page de liste ou dans un détail en cache. */

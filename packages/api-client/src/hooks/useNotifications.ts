@@ -41,6 +41,7 @@ export interface AppNotification {
     | "ticket_status"
     | "ticket_new"
     | "ticket_user_reply"
+    | "ticket_user_closed"
     | "request_status"
     | "watchlist_share";
   title: string;

@@ -44,7 +44,7 @@ export { useItemTrackPreference, useSetItemTrackPreference, useDeleteItemTrackPr
 export type { ItemTrackPreference } from "./hooks/usePreferences";
 
 // Support tickets
-export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, setTicketsBackendUrl } from "./hooks/useTickets";
+export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, useCloseTicket, useDeleteTickets, setTicketsBackendUrl } from "./hooks/useTickets";
 export type { SupportTicket, TicketMessage, TicketsPage } from "./hooks/useTickets";
 
 // Notifications
