@@ -7,8 +7,10 @@ import type { BuiltRow, RecoRowItem } from "./rowBuilder";
 /**
  * Les rangées GLOBALES : servables dans TOUS les états du moteur (générique
  * sans clé, froid, désactivé, profil riche) — c'est elles qui font que la page
- * Recommandations n'est plus jamais vide. Elles vivent uniquement sur la page
- * reco (jamais dans le home layout — rowKeySchema inchangé).
+ * Recommandations n'est plus jamais vide. Elles sont aussi candidates à
+ * l'accueil configurable (catalogue de `homeRowCatalog`) : une rangée qu'un
+ * compte peut activer chez lui doit exister sur SA page, quel que soit son
+ * état — d'où bestOfLibrary tissée en fin des pages personnalisées aussi.
  */
 export const BEST_OF_LIBRARY_ROW_KEY = "bestOfLibrary";
 
@@ -121,8 +123,9 @@ export function fallbackRowList(ctx: GlobalRowContext): Array<{ key: string }> {
 /**
  * Tisse les rangées globales dans une liste personnalisée (warming/ready) :
  * les tendances sont servies à TOUS, même profil riche ; le pouls complète
- * community (souvent vide sous son seuil sur un petit serveur). bestOfLibrary
- * n'est PAS tissée ici — inLibrary personnalisée couvre déjà ce terrain.
+ * community (souvent vide sous son seuil sur un petit serveur) ; bestOfLibrary
+ * ferme la page — inLibrary couvre le même terrain, mais un compte qui l'a
+ * activée sur son accueil doit la trouver dans sa page, profil riche compris.
  */
 export function weaveGlobalRows(
   rows: Array<{ key: string; seedTitle?: string }>,
@@ -137,5 +140,6 @@ export function weaveGlobalRows(
   }
   const exploration = out.findIndex((r) => r.key === "exploration");
   out.splice(exploration >= 0 ? exploration : out.length, 0, { key: SERVER_PULSE_ROW_KEY });
+  out.push({ key: BEST_OF_LIBRARY_ROW_KEY });
   return out;
 }
