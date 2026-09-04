@@ -133,8 +133,16 @@ export const RecoCard = memo(function RecoCard({
               {t("onDemandBadge")}
             </div>
           )}
+          {/* « Découverte » cède la bande du haut aux chips qualité/langues
+              pendant le survol d'un titre en bibliothèque — le voile porte de
+              toute façon la raison « Exploration ». Sans backdrop-filter, un
+              fondu d'opacité suffit. */}
           {item.exploration && (
-            <div className="absolute right-2 top-2 z-10 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg">
+            <div
+              className={`absolute right-2 top-2 z-10 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg transition-opacity duration-150 ${
+                hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
+              }`}
+            >
               {t("explorationBadge")}
             </div>
           )}
