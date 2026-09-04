@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FocusableRow } from "../focus/FocusableRow";
 import { TVPosterCard } from "../cards/TVPosterCard";
@@ -6,6 +7,7 @@ import { TVEpisodeCard } from "../cards/TVEpisodeCard";
 import { TV_POSTER_WIDTH, TV_EPISODE_WIDTH } from "../cards/cardSizes";
 import { TVLibraryRow } from "../rows/TVLibraryRow";
 import { TVFavoritesRow } from "../rows/TVFavoritesRow";
+import { TVRecoRow } from "../rows/TVRecoRow";
 import { Spacing } from "../../theme/colors";
 import { possessiveLibraryName } from "../../utils/libraryLabel";
 
@@ -22,6 +24,10 @@ export interface TVHomeRowHandlers {
   onDetail: (item: MediaItem) => void;
   onLongPress: (item: MediaItem) => void;
   onItemFocus: (item: MediaItem) => void;
+  /** Recommandations (titres en bibliothèque seulement sur le téléviseur). */
+  onRecoPress: (item: RecoRowItem) => void;
+  onRecoLongPress: (item: RecoRowItem) => void;
+  onRecoFocus: (item: RecoRowItem) => void;
   /** Clé de MISE EN PAGE (`resume`, `library:<id>`, `reco:forYou`) — unique
    *  par construction, c'est elle qui sert au défilement vers la rangée. */
   onRowLayout: (key: string, y: number) => void;
@@ -48,18 +54,32 @@ const renderLandscape = (item: MediaItem, _i: number, focused: boolean) => (
  * son rendu, miroir de `homeRowRegistry` web. Les rangées historiques gardent
  * leurs cartes (16:9 pour la reprise, les prochains épisodes et le déjà vu,
  * affiches ailleurs) ; « Mes favoris » et « Derniers ajouts » s'alimentent
- * seules (aucune requête si la rangée est éteinte). Clé inconnue → rien,
- * jamais une erreur.
+ * seules (aucune requête si la rangée est éteinte) ; `reco:<row>` lit la
+ * page de recommandations du compte. Clé inconnue → rien, jamais une erreur.
  */
 export function TVHomeRow({ rowKey, data, handlers }: TVHomeRowProps) {
   const { t, i18n } = useTranslation("common");
   const { onPlay, onDetail, onLongPress, onItemFocus, onRowLayout, onRowFocus } = handlers;
+  const onLayout = (e: { nativeEvent: { layout: { y: number } } }) => onRowLayout(rowKey, e.nativeEvent.layout.y);
   const rowProps = {
     style: { marginBottom: Spacing.rowGap },
     onItemFocus: (item: MediaItem) => onItemFocus(item),
-    onLayout: (e: { nativeEvent: { layout: { y: number } } }) => onRowLayout(rowKey, e.nativeEvent.layout.y),
+    onLayout,
     onRowFocus: () => onRowFocus(rowKey),
   };
+
+  if (rowKey.startsWith("reco:")) {
+    return (
+      <TVRecoRow
+        rowKey={rowKey.slice("reco:".length)}
+        onItemPress={handlers.onRecoPress}
+        onItemLongPress={handlers.onRecoLongPress}
+        onItemFocus={handlers.onRecoFocus}
+        onLayout={onLayout}
+        onRowFocus={rowProps.onRowFocus}
+      />
+    );
+  }
 
   if (rowKey === "resume" || rowKey === "nextUp" || rowKey === "watched") {
     const items = data[rowKey];

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import type { ReactNode } from "react";
 import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
@@ -7,6 +8,9 @@ import { Colors, Spacing, Typography } from "../../theme/colors";
 
 interface FocusableRowProps<T> {
   title?: string;
+  /** Juste après le titre, toujours visible (la pastille du filtre de
+   *  plateformes, focalisable) — sans lui, le titre reste un texte nu. */
+  titleAccessory?: ReactNode;
   data: T[];
   /** `focused` permet de révéler la méta qualité au focus (hover web). */
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
@@ -32,6 +36,7 @@ interface FocusableRowProps<T> {
 
 export function FocusableRow<T>({
   title,
+  titleAccessory,
   data,
   renderItem,
   keyExtractor,
@@ -76,7 +81,7 @@ export function FocusableRow<T>({
 
   return (
     <View style={style} onLayout={onLayout}>
-      {title && (
+      {title && !titleAccessory && (
         <Text style={{
           color: Colors.textPrimary,
           ...Typography.sectionTitle,
@@ -86,6 +91,14 @@ export function FocusableRow<T>({
         }}>
           {title}
         </Text>
+      )}
+      {title && titleAccessory && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4, paddingHorizontal: Spacing.rowGutter }}>
+          <Text style={{ color: Colors.textPrimary, ...Typography.sectionTitle, flexShrink: 1 }} numberOfLines={1}>
+            {title}
+          </Text>
+          {titleAccessory}
+        </View>
       )}
       {/* Pas de trapFocusLeft : LEFT depuis la 1re carte doit atteindre le rail. */}
       <TVFocusGuideView trapFocusRight>
