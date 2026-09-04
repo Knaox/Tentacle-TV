@@ -22,6 +22,7 @@ import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegis
 import { useHomeRows } from "@/components/home/useHomeRows";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
+import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -61,6 +62,7 @@ export function HomeScreen() {
   const watchlist = useWatchlist();
   const { rows } = useHomeRows();
   const recoNav = useRecoNavigation();
+  const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
@@ -105,7 +107,8 @@ export function HomeScreen() {
     nextUp: nextUp.data ?? [],
     watchlist: watchlist.data ?? [],
     librariesById,
-  }), [resume.data, nextUp.data, watchlist.data, librariesById]);
+    filterChipRowKey,
+  }), [resume.data, nextUp.data, watchlist.data, librariesById, filterChipRowKey]);
   const rowActions = useMemo<HomeRowActions>(() => ({
     renderCard,
     onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),

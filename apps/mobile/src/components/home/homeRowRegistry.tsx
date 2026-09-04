@@ -16,6 +16,8 @@ export interface HomeRowData {
   nextUp: MediaItem[];
   watchlist: MediaItem[];
   librariesById: Map<string, { id: string; name: string; collectionType?: string; index: number }>;
+  /** La rangée reco qui porte la puce du filtre de plateformes (null : aucune). */
+  filterChipRowKey: string | null;
 }
 
 export interface HomeRowActions {
@@ -102,6 +104,7 @@ export const HomeRow = memo(function HomeRow({ rowKey, index, data, actions }: H
       <HomeRecoRow
         rowKey={rowKey.slice("reco:".length)}
         index={index}
+        filterChip={rowKey === data.filterChipRowKey}
         canOpen={actions.canOpenReco}
         onItemPress={actions.onRecoPress}
         onItemLongPress={actions.onRecoLongPress}

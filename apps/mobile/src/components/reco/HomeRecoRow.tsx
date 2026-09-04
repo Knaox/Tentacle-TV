@@ -4,13 +4,17 @@ import { recoRowTitle, useRecoPage, useRecoSettings } from "@tentacle-tv/api-cli
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { FadeIn } from "@/components/ui";
 import { homeRowFadeDelay } from "@/components/home/homeRowFade";
+import { RecoFilterChip } from "./RecoFilterChip";
 import { RecoRow } from "./RecoRow";
+
+const EMPTY: number[] = [];
 
 interface Props {
   /** La clé servie (`forYou`, `trending`…), sans son préfixe `reco:`. */
   rowKey: string;
   index: number;
-  accessory?: ReactNode;
+  /** Cette rangée porte la puce du filtre de plateformes (la première servie). */
+  filterChip?: boolean;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
   onItemLongPress: (item: RecoRowItem) => void;
@@ -22,17 +26,19 @@ interface Props {
  * rangées reco (même clé TanStack). Rangée absente : rien, jamais de
  * squelette (l'accueil garde son dégradé silencieux).
  */
-export function HomeRecoRow({ rowKey, index, accessory, canOpen, onItemPress, onItemLongPress }: Props) {
+export function HomeRecoRow({ rowKey, index, filterChip, canOpen, onItemPress, onItemLongPress }: Props) {
   const { t } = useTranslation("reco");
   const settings = useRecoSettings();
   // Attendre le filtre du compte : sans cette garde, le premier rendu
   // demanderait la page « toutes plateformes » puis la page filtrée (deux
   // fois ~150 Ko). En erreur (vieux serveur) : page « toutes plateformes ».
   const settingsReady = settings.isSuccess || settings.isError;
-  const { data: page } = useRecoPage(settings.data?.providerFilter ?? [], { enabled: settingsReady });
+  const providerFilter = settings.data?.providerFilter ?? EMPTY;
+  const { data: page } = useRecoPage(providerFilter, { enabled: settingsReady });
   const row = page?.rows.find((r) => r.key === rowKey);
   if (!row) return null;
   const { key, params } = recoRowTitle(row);
+  const accessory: ReactNode = filterChip ? <RecoFilterChip providerFilter={providerFilter} /> : undefined;
   return (
     <FadeIn delay={homeRowFadeDelay(index)}>
       <RecoRow
