@@ -2,6 +2,7 @@ import { tmdbConfigured, tmdbFetch } from "../../tmdb/client";
 import { ANIME_MIN_SHARE, TMDB_GENRE_ANIMATION, TMDB_KEYWORD_ANIME } from "../facets";
 import type { Candidate } from "../scoring/strategy";
 import { toCandidate } from "./tmdbSource";
+import { cappedReleaseParams, isReleasedResult } from "./released";
 import type { TmdbListResult } from "./tmdbSource";
 
 /** Les animés ont moins de votes TMDB que Hollywood : cinquante suffisent
@@ -45,10 +46,13 @@ export async function candidatesFromAnimeDiscover(animeShare: number): Promise<C
         try {
           const res = await tmdbFetch<{ results?: TmdbListResult[] }>(
             `/discover/${mediaType}`,
-            { ...params, "vote_count.gte": ANIME_MIN_VOTES, page: String(page) },
+            cappedReleaseParams(mediaType, { ...params, "vote_count.gte": ANIME_MIN_VOTES, page: String(page) }),
             { priority: "background" }
           );
-          for (const raw of res.results ?? []) out.push(toCandidate(raw, mediaType, "tmdb_anime"));
+          for (const raw of res.results ?? []) {
+            if (!isReleasedResult(raw)) continue;
+            out.push(toCandidate(raw, mediaType, "tmdb_anime"));
+          }
         } catch {
           // Un discover en échec n'empêche pas les autres.
         }

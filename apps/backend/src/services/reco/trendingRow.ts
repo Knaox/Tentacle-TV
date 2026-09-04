@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { isReleasedResult } from "./candidates/released";
 import { tmdbConfigured, tmdbFetch } from "../tmdb/client";
 import { getSeerrConfig } from "../seerConfig";
 import { getLibraryIndexMemo } from "./candidates/libraryMemo";
@@ -94,8 +95,9 @@ async function trendingFromTmdb(): Promise<TrendingSlim[]> {
   ]);
   // Entrelacement film/série : la rangée mélange les deux mondes au lieu
   // d'empiler vingt films puis dix séries.
-  const a = (movies.results ?? []).map((r) => fromTmdb(r, "movie"));
-  const b = (tv.results ?? []).map((r) => fromTmdb(r, "tv"));
+  // Sortis au minimum : les tendances de la semaine comptent aussi l'annoncé.
+  const a = (movies.results ?? []).filter((r) => isReleasedResult(r)).map((r) => fromTmdb(r, "movie"));
+  const b = (tv.results ?? []).filter((r) => isReleasedResult(r)).map((r) => fromTmdb(r, "tv"));
   const out: TrendingSlim[] = [];
   for (let i = 0; out.length < TRENDING_MAX && (i < a.length || i < b.length); i++) {
     if (i < a.length) out.push(a[i]);
@@ -117,7 +119,7 @@ async function trendingFromVigie(url: string, apiKey: string): Promise<TrendingS
     for (const raw of data.results ?? []) {
       if (raw.mediaType !== "movie" && raw.mediaType !== "tv") continue;
       const title = raw.title ?? raw.name ?? "";
-      if (!title || !raw.posterPath) continue;
+      if (!title || !raw.posterPath || !isReleasedResult(raw)) continue;
       out.push({
         key: `${raw.mediaType}:${raw.id}`,
         mediaType: raw.mediaType,

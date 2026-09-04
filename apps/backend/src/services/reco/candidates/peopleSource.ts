@@ -5,6 +5,7 @@ import type { TmdbFetchOptions } from "../../tmdb/client";
 const BACKGROUND: TmdbFetchOptions = { priority: "background" };
 import type { Candidate } from "../scoring/strategy";
 import { toCandidate } from "./tmdbSource";
+import { cappedReleaseParams, isReleasedResult } from "./released";
 import type { TmdbListResult } from "./tmdbSource";
 
 /** Personnes interrogées au plus par génération — deux appels TMDB chacune. */
@@ -35,15 +36,16 @@ export async function candidatesFromPeople(
     try {
       const page = await tmdbFetch<{ results?: TmdbListResult[] }>(
         "/discover/movie",
-        {
+        cappedReleaseParams("movie", {
           with_people: String(person.personId),
           sort_by: "popularity.desc",
           "vote_count.gte": DISCOVER_MIN_VOTES,
           page: "1",
-        },
+        }),
         BACKGROUND
       );
       for (const raw of page.results ?? []) {
+        if (!isReleasedResult(raw)) continue;
         const candidate = toCandidate(raw, "movie", "tmdb_person");
         candidate.personKey = person.personId;
         out.push(candidate);
@@ -58,8 +60,9 @@ export async function candidatesFromPeople(
         {},
         BACKGROUND
       );
+      // Les crédits listent aussi les projets annoncés : sortis seulement.
       const cast = (credits.cast ?? [])
-        .filter((r) => r.media_type === "movie" || r.media_type === "tv")
+        .filter((r) => (r.media_type === "movie" || r.media_type === "tv") && isReleasedResult(r))
         .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
         .slice(0, CREDITS_MAX);
       for (const raw of cast) {
