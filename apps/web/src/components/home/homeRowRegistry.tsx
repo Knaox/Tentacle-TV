@@ -3,6 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { MediaRow } from "../rows/MediaRow";
 import { ContinueWatchingRow } from "../rows/ContinueWatchingRow";
 import { LibraryLatestRow } from "../rows/LibraryLatestRow";
+import { HomeFavoritesRow } from "./HomeFavoritesRow";
 import { HomeRecoRow } from "./HomeRecoRow";
 
 export interface HomeRowData {
@@ -16,9 +17,10 @@ export interface HomeRowData {
 /**
  * LE registre de l'accueil configurable : une clé de rangée → son rendu. Les
  * quatre rangées historiques gardent leurs composants et leurs gardes de
- * non-vacuité ; `library:<id>` rend la rangée « Derniers ajouts » ;
- * `reco:<row>` rend une rangée de recommandation (mêmes composants que la
- * page Recommandations). Clé inconnue → rien, jamais une erreur.
+ * non-vacuité ; `favorites` rend « Mes favoris » ; `library:<id>` rend la
+ * rangée « Derniers ajouts » ; `reco:<row>` rend une rangée de recommandation
+ * (mêmes composants que la page Recommandations). Clé inconnue → rien, jamais
+ * une erreur.
  */
 export function HomeRow({
   rowKey,
@@ -72,6 +74,9 @@ export function HomeRow({
         animDelay={animDelay}
       />
     );
+  }
+  if (rowKey === "favorites") {
+    return <HomeFavoritesRow animDelay={animDelay} />;
   }
   if (rowKey.startsWith("library:")) {
     const lib = data.librariesById.get(rowKey.slice("library:".length));

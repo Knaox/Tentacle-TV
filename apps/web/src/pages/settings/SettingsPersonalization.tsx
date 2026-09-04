@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   mergeHiddenHomeRows,
+  recoRowTitle,
   reconcileHomeRows,
   useFavoritesAll,
   useHomeLayout,
@@ -78,22 +79,15 @@ export function SettingsPersonalization() {
     if (key === "nextUp") return tCommon("common:nextEpisodes");
     if (key === "watchlist") return tCommon("common:myList");
     if (key === "watched") return tCommon("common:alreadyWatched");
+    if (key === "favorites") return tCommon("common:myFavorites");
     if (key.startsWith("library:")) {
       return tCommon("common:latestAdditions", {
         name: librariesById.get(key.slice("library:".length)) ?? "?",
       });
     }
     if (key.startsWith("reco:")) {
-      const sub = key.slice("reco:".length);
-      const map: Record<string, string> = {
-        forYou: "rowForYou",
-        inLibrary: "rowInLibrary",
-        discover: "rowDiscover",
-        anime: "rowAnime",
-        community: "rowCommunity",
-        exploration: "rowExploration",
-      };
-      return tReco(map[sub] ?? sub);
+      // Même table que les rangées elles-mêmes (tendances, pouls, mieux notés compris).
+      return tReco(recoRowTitle({ key: key.slice("reco:".length) }).key);
     }
     return key;
   };
