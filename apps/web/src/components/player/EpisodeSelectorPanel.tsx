@@ -2,10 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useSeasons, useEpisodes, useJellyfinClient } from "@tentacle-tv/api-client";
+import {
+  useSeasons,
+  useEpisodes,
+  useJellyfinClient,
+  useMediaItem,
+  useMyEpisodeRatings,
+  useTmdbSeasonEpisodes,
+} from "@tentacle-tv/api-client";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
+import { EpisodeScoreChips } from "../rating/EpisodeRatingLine";
+import { tmdbIdForItem } from "../../lib/ratingIdentity";
 
 interface EpisodeSelectorPanelProps {
   seriesId: string;
@@ -32,6 +41,12 @@ export function EpisodeSelectorPanel({
   const [seasonId, setSeasonId] = useState<string | undefined>(currentSeasonId);
   const effectiveSeasonId = seasonId ?? currentSeasonId ?? seasons?.[0]?.Id;
   const { data: episodes } = useEpisodes(seriesId, effectiveSeasonId);
+  // Notes des épisodes (TMDB + compte) : un cache par saison, un seul abonnement.
+  const { data: series } = useMediaItem(seriesId);
+  const seriesTmdbId = tmdbIdForItem(series);
+  const seasonNumber = seasons?.find((s) => s.Id === effectiveSeasonId)?.IndexNumber ?? null;
+  const { data: tmdbEpisodes } = useTmdbSeasonEpisodes(seriesTmdbId, seasonNumber);
+  const myRatings = useMyEpisodeRatings(seriesTmdbId, seasonNumber);
 
   // L'épisode courant s'amène à l'écran de lui-même, une fois par ouverture —
   // une saison longue ne se parcourt plus à la molette (parité mobile/TV).
@@ -103,6 +118,8 @@ export function EpisodeSelectorPanel({
             active={ep.Id === currentEpisodeId}
             innerRef={ep.Id === currentEpisodeId ? activeItemRef : undefined}
             onClick={() => select(ep.Id)}
+            community={ep.IndexNumber != null ? (tmdbEpisodes?.get(ep.IndexNumber)?.voteAverage ?? ep.CommunityRating ?? null) : null}
+            mine={ep.IndexNumber != null ? (myRatings.get(ep.IndexNumber) ?? null) : null}
           />
         ))}
         {(!episodes || episodes.length === 0) && (
@@ -113,8 +130,10 @@ export function EpisodeSelectorPanel({
   );
 }
 
-function EpisodeItem({ ep, active, onClick, innerRef }: {
+function EpisodeItem({ ep, active, onClick, innerRef, community, mine }: {
   ep: MediaItem; active: boolean; onClick: () => void;
+  /** Note globale (TMDB, Jellyfin à défaut) et note du compte — affichage seul. */
+  community: number | null; mine: number | null;
   /** Posée sur l'épisode courant — cible du défilement automatique. */
   innerRef?: React.Ref<HTMLButtonElement>;
 }) {
@@ -153,7 +172,10 @@ function EpisodeItem({ ep, active, onClick, innerRef }: {
           {epLabel}
         </p>
         <p className="line-clamp-1 text-sm font-medium text-content-primary">{ep.Name}</p>
-        {runtime && <p className="mt-0.5 text-xs text-content-quaternary">{runtime}</p>}
+        <p className="mt-0.5 flex items-center gap-2 text-xs text-content-quaternary">
+          {runtime && <span>{runtime}</span>}
+          <EpisodeScoreChips community={community} mine={mine} />
+        </p>
       </div>
     </button>
   );

@@ -9,6 +9,9 @@ import { PremiumQualityBadges } from "../media/PremiumQualityBadges";
 interface DetailMetadataProps {
   item: MediaItem;
   streams: MediaStream[];
+  /** Note globale à afficher à la place de celle de Jellyfin (fiche épisode :
+   *  TMDB). `undefined` = celle de l'item, `null` = aucune. */
+  communityRating?: number | null;
 }
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
@@ -21,8 +24,9 @@ const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } };
  * le badge overlay du hero, pour éviter les divergences (ex : Dolby Vision
  * affiché en "HDR" simple côté metadata).
  */
-export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps) {
+export function DetailMetadata({ item, streams: _streams, communityRating }: DetailMetadataProps) {
   const { t } = useTranslation("common");
+  const community = communityRating === undefined ? item.CommunityRating : communityRating;
   const isSeries = item.Type === "Series";
   const runtime = formatDuration(item.RunTimeTicks);
   const quality = extractMediaQuality(item);
@@ -43,9 +47,9 @@ export function DetailMetadata({ item, streams: _streams }: DetailMetadataProps)
             {item.OfficialRating}
           </span>
         )}
-        {item.CommunityRating && (
+        {community != null && community > 0 && (
           <span className="flex items-center gap-1 font-medium">
-            <StarIcon /> {item.CommunityRating.toFixed(1)}
+            <StarIcon /> {community.toFixed(1)}
           </span>
         )}
         {runtime && <span>{runtime}</span>}
