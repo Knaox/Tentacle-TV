@@ -1,12 +1,19 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { Platform } from "react-native";
-import { useRouter } from "expo-router";
-import { useRegisterPushDevice } from "@tentacle-tv/api-client";
+import { useRootNavigationState, useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  NOTIFICATION_LIVE_KEYS,
+  resolveNotificationRoute,
+  useRegisterPushDevice,
+} from "@tentacle-tv/api-client";
 import type { StorageAdapter } from "@tentacle-tv/api-client";
 import {
   configureNotificationHandler,
   registerForPushToken,
   addNotificationListeners,
+  getInitialNotificationTap,
+  type PushTapData,
 } from "@/services/pushNotifications";
 
 // Composant sans rendu, monté sous les providers. Après login (token + serverUrl
@@ -24,6 +31,10 @@ export function PushRegistrationSync({
   const token = storage.getItem("tentacle_token");
   const register = useRegisterPushDevice();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  // expo-router refuse de naviguer avant le montage de la racine : le tap de
+  // démarrage à froid attend qu'elle existe.
+  const navReady = !!useRootNavigationState()?.key;
 
   useEffect(() => {
     if (!serverUrl || !token) return;
@@ -45,14 +56,34 @@ export function PushRegistrationSync({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl, token]);
 
-  // Tap sur une notification → navigation contextuelle.
-  useEffect(() => {
-    return addNotificationListeners((data) => {
-      if (data?.type === "library_added" || data?.type === "request_status") {
-        router.push("/(tabs)");
+  // Tap sur une notification → la même résolution de route que la cloche : un
+  // ticket s'ouvre directement, le reste (ajout en bibliothèque, demande Seer
+  // — sans métadonnées de plugin ici) mène à l'accueil. La donnée fraîche est
+  // invalidée avant d'arriver : la fiche et la cloche se rechargent.
+  const handleTap = useCallback(
+    (data: PushTapData) => {
+      for (const queryKey of NOTIFICATION_LIVE_KEYS) {
+        void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
+      const route = resolveNotificationRoute({ type: data?.type ?? "", refId: data?.refId ?? null }, "mobile");
+      router.push((route ?? "/(tabs)") as never);
+    },
+    [queryClient, router],
+  );
+
+  useEffect(() => addNotificationListeners(handleTap), [handleTap]);
+
+  // Démarrage à froid : la notification qui a lancé l'app.
+  useEffect(() => {
+    if (!serverUrl || !token || !navReady) return;
+    let cancelled = false;
+    void getInitialNotificationTap().then((data) => {
+      if (!cancelled && data) handleTap(data);
     });
-  }, [router]);
+    return () => {
+      cancelled = true;
+    };
+  }, [serverUrl, token, navReady, handleTap]);
 
   return null;
 }

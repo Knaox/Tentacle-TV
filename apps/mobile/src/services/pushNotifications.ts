@@ -86,3 +86,22 @@ export function addNotificationListeners(onTap: (data: PushTapData) => void): ()
   });
   return () => sub.remove();
 }
+
+let lastInitialResponseId: string | null = null;
+
+/**
+ * La notification qui a LANCÉ l'app (démarrage à froid) : le listener
+ * ci-dessus n'existe pas encore quand l'utilisateur tape, expo-notifications
+ * la garde en mémoire. Sur Android elle est rejouée à chaque démarrage tant
+ * qu'elle n'est pas effacée — d'où l'effacement, doublé d'un garde par
+ * identifiant au cas où l'effacement ne serait pas honoré.
+ */
+export async function getInitialNotificationTap(): Promise<PushTapData | null> {
+  const response = await Notifications.getLastNotificationResponseAsync();
+  if (!response) return null;
+  const id = response.notification.request.identifier;
+  if (id && id === lastInitialResponseId) return null;
+  lastInitialResponseId = id;
+  await Notifications.clearLastNotificationResponseAsync().catch(() => {});
+  return (response.notification.request.content.data ?? {}) as PushTapData;
+}
