@@ -440,3 +440,17 @@ CREATE TABLE IF NOT EXISTS `user_liked_people` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_liked_people_jellyfinUserId_personId_key` (`jellyfinUserId`, `personId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Purge de `server_config` : clés abandonnées par une évolution.
+-- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la
+-- fait naître. Sur une base VIERGE, ce script s'exécute avant le setup et
+-- s'arrête donc ici (comme il s'arrête déjà sur l'ALTER de `notifications`
+-- plus haut) : rien n'est perdu, il n'y a rien à purger, et le prochain
+-- démarrage le rejoue en entier. D'où sa place en toute fin de fichier. Un
+-- DELETE sans ligne correspondante est sans effet : idempotent.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 1.17 : l'interrupteur serveur « Déclenchement auto-play » n'existe plus —
+-- les réglages de lecture PAR COMPTE (`playback_settings`) sont la seule source.
+DELETE FROM `server_config` WHERE `key` = 'autoplay_next_enabled';

@@ -151,21 +151,6 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     return { success: true, message: "Configuration sauvegardée. Redémarrez le serveur pour appliquer." };
   });
 
-  /** GET /api/admin/playback — Read playback settings. Le déclenchement
-   *  auto-play est un interrupteur (défaut ON) ; le SEUIL vient du
-   *  MaxResumePct de Jellyfin (cf. /api/config/autoplay), plus des minutes.
-   *  (L'ancienne clé autoplay_credits_minutes est abandonnée.) */
-  app.get("/playback", async () => {
-    return { autoplayNextEnabled: getConfigValue("autoplay_next_enabled") !== "false" };
-  });
-
-  /** PUT /api/admin/playback — Update playback settings. */
-  app.put("/playback", async (request) => {
-    const body = z.object({ autoplayNextEnabled: z.boolean() }).parse(request.body);
-    await setConfigValue("autoplay_next_enabled", String(body.autoplayNextEnabled));
-    return { success: true };
-  });
-
   /** GET /api/admin/public-url — Read the public server URL (DB value + env fallback). */
   app.get("/public-url", async () => {
     return {
