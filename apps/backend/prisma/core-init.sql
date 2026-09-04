@@ -312,6 +312,9 @@ CREATE TABLE IF NOT EXISTS `reco_settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `reco_settings_jellyfinUserId_key` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Filtre de plateformes (1.17.0) : les installations existantes ne passent pas
+-- par le CREATE TABLE ci-dessus — ajout idempotent.
+ALTER TABLE `reco_settings` ADD COLUMN IF NOT EXISTS `providerFilter` varchar(255) NOT NULL DEFAULT '[]';
 
 -- Cache des rangées de recommandation. Voir schema.prisma > RecommendationCache.
 CREATE TABLE IF NOT EXISTS `recommendation_cache` (
