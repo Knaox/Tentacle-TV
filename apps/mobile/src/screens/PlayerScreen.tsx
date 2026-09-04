@@ -123,7 +123,7 @@ export function PlayerScreen({ itemId }: Props) {
 
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
-    invalidateAndGoBack, handleNextEpisode, handlePrevEpisode,
+    leavePlayer, handleNextEpisode, handlePrevEpisode,
   } = usePlayerHandlers({
     itemId, pb, videoRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
@@ -139,7 +139,7 @@ export function PlayerScreen({ itemId }: Props) {
     scrubbing,
     onSeek: handleSeek,
     onNextEpisode: handleNextEpisode,
-    onEndOfPlayback: invalidateAndGoBack,
+    onEndOfPlayback: leavePlayer,
   });
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
@@ -159,7 +159,7 @@ export function PlayerScreen({ itemId }: Props) {
           retryingRef.current = false;
           pb.retry();
         }}
-        onBack={invalidateAndGoBack}
+        onBack={leavePlayer}
       />
     );
   }
@@ -250,7 +250,7 @@ export function PlayerScreen({ itemId }: Props) {
         overlayVisible={overlayVisible}
         onSeek={handleSeek}
         onToggleOverlay={toggleOverlay}
-        onSwipeDown={invalidateAndGoBack}
+        onSwipeDown={leavePlayer}
       />
 
       <MobilePlayerOverlay
@@ -273,7 +273,7 @@ export function PlayerScreen({ itemId }: Props) {
         mediaSourceId={pb.mediaSourceId}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
-        onBack={invalidateAndGoBack}
+        onBack={leavePlayer}
         onSelectAudio={pb.changeAudio}
         onSelectSubtitle={pb.changeSubtitle}
         onSelectQuality={pb.changeQuality}
