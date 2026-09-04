@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ScrollView, TVFocusGuideView, InteractionManager, Platform } from "react-native";
+import { ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
@@ -11,17 +11,18 @@ import {
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
-import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { useTVNavActions } from "../context/TVNavContext";
-import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
+import { TVHomeContextMenu } from "../components/home/TVHomeContextMenu";
+import type { HomeContextTarget } from "../components/home/TVHomeContextMenu";
 import { TVHomeRows } from "../components/home/TVHomeRows";
+import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
@@ -40,7 +41,6 @@ export function HomeScreen(props: Props) {
 }
 
 function HomeScreenInner({ navigation }: Props) {
-  const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
@@ -55,7 +55,7 @@ function HomeScreenInner({ navigation }: Props) {
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
-  const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
+  const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
 
   // Invalidate volatile queries when screen regains focus (e.g. after Player).
   // - Skip du premier mount (les queries démarrent déjà → évite le double-fetch).
@@ -75,40 +75,8 @@ function HomeScreenInner({ navigation }: Props) {
     }, [queryClient])
   );
 
-  // Retour sur l'accueil (depuis le lecteur, le détail, etc.) : restaurer le
-  // focus sur le DERNIER élément de carrousel focalisé — sinon l'autoFocus
-  // repart sur la 1re carte (tvOS) ou le moteur natif donne le focus à la
-  // sidebar (Android). Sur 1er mount, lastContentNodeRef est null → autoFocus.
-  useFocusEffect(
-    useCallback(() => {
-      /**
-       * Le nœud est relu AU MOMENT DE POSER LE FOCUS, jamais capturé à
-       * l'armement.
-       *
-       * Entre les deux, il s'écoule soixante millisecondes pendant lesquelles
-       * l'effet ci-dessus invalide « Reprendre », « Prochains épisodes » et
-       * « Ma liste » : la liste peut recycler la cellule que la mémoire de
-       * focus désigne. Celle-ci s'efface alors elle-même (`FocusableRow`), et
-       * relire ici suffit à ne rien envoyer à une vue détruite — ce qui levait
-       * « Trying to update non-existent view with tag N ».
-       */
-      const target = (): ({ setNativeProps?: (p: object) => void } | null) =>
-        lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
-      if (!target()?.setNativeProps) return;
-      if (Platform.OS === "ios") {
-        // tvOS : hasTVPreferredFocus n'est honoré que sur un cycle false→true.
-        let id2: ReturnType<typeof setTimeout>;
-        const id1 = setTimeout(() => {
-          target()?.setNativeProps?.({ hasTVPreferredFocus: false });
-          id2 = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
-        }, 60);
-        return () => { clearTimeout(id1); clearTimeout(id2); };
-      }
-      // Android : le set vaut requestFocus() immédiat (one-shot).
-      const id = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
-      return () => clearTimeout(id);
-    }, [lastContentNodeRef])
-  );
+  // Retour sur l'accueil : le focus revient sur la dernière carte focalisée.
+  useHomeFocusRestore(lastContentNodeRef);
 
   // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)
   useTVRemote({ onBack: () => requestRailFocus() });
@@ -154,28 +122,18 @@ function HomeScreenInner({ navigation }: Props) {
   const allFailed = featuredQuery.isError && librariesQuery.isError;
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
 
-  const navigateToDetail = useCallback((item: MediaItem) => {
-    // Épisode → fiche centrée épisode (parité web), plus de redirection série
-    navigation.navigate("MediaDetail", { itemId: item.Id });
-  }, [navigation]);
-
-  const navigateToPlay = useCallback((item: MediaItem) => {
-    navigation.navigate("Player", { itemId: item.Id });
-  }, [navigation]);
+  // Épisode → fiche centrée épisode (parité web), plus de redirection série.
+  const openDetail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);
+  const openPlayer = useCallback((itemId: string) => navigation.navigate("Player", { itemId }), [navigation]);
+  const navigateToDetail = useCallback((item: MediaItem) => openDetail(item.Id), [openDetail]);
+  const navigateToPlay = useCallback((item: MediaItem) => openPlayer(item.Id), [openPlayer]);
+  const openContextMenu = useCallback((item: MediaItem) => setCtxTarget({ kind: "media", item }), []);
 
   // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
   // ici oubliait les credentials et le verrou « lecture en cours ».
   const handleLogout = useCallback(() => {
     doLogout(jfClient, storage, queryClient);
   }, [jfClient, storage, queryClient]);
-
-  const handleCtxSelect = useCallback((value: string) => {
-    const item = ctxItem;
-    setCtxItem(null);
-    if (!item) return;
-    if (value === "details") navigateToDetail(item);
-    else if (value === "play") navigateToPlay(item);
-  }, [ctxItem, navigateToDetail, navigateToPlay]);
 
   return (
     <TVScreenFrame>
@@ -244,7 +202,7 @@ function HomeScreenInner({ navigation }: Props) {
               libraries={libraries}
               onPlay={navigateToPlay}
               onDetail={navigateToDetail}
-              onLongPress={setCtxItem}
+              onLongPress={openContextMenu}
               onItemFocus={setFocusedItem}
               onWrapperLayout={(y) => { rowsWrapperY.current = y; }}
               onRowLayout={(key, y) => rowYMap.current.set(key, y)}
@@ -256,18 +214,12 @@ function HomeScreenInner({ navigation }: Props) {
       </TVFocusGuideView>
 
       {/* Menu contextuel (appui long sur une carte) */}
-      {ctxItem && (
-        <SelectionModal
-          title={ctxItem.Type === "Episode" ? (ctxItem.SeriesName ?? ctxItem.Name) : ctxItem.Name}
-          options={[
-            { value: "details", label: t("moreInfo") },
-            { value: "play", label: t("play") },
-          ]}
-          selectedValue={null}
-          onSelect={handleCtxSelect}
-          onClose={() => setCtxItem(null)}
-        />
-      )}
+      <TVHomeContextMenu
+        target={ctxTarget}
+        onClose={() => setCtxTarget(null)}
+        onDetail={openDetail}
+        onPlay={openPlayer}
+      />
     </TVScreenFrame>
   );
 }
