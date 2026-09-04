@@ -25,6 +25,9 @@ export default {
   filtersButton: "Filters",
   filtersPlatformsLabel: "Platforms",
   filterEmpty: "Nothing to suggest on the selected platforms — widen the filter.",
+  // Filter chip on the home (next to the title of the first served reco row)
+  homeFilterRemove: "Remove the platform filter",
+  homeFilterGeneric: "Platform filter",
   rowWithActor: "Starring {{name}}",
   actorsTitle: "Your actors",
   actorsHint:

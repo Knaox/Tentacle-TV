@@ -14,6 +14,8 @@ export interface HomeRowData {
   librariesById: Map<string, { id: string; name: string; collectionType?: string; index: number }>;
   /** Bandeau « reco » actif : les items qu'il montre, que « Pour vous » saute. */
   heroExcludeKeys?: readonly string[];
+  /** La rangée reco qui porte la puce du filtre de plateformes (null : aucune). */
+  filterChipRowKey?: string | null;
 }
 
 /**
@@ -99,6 +101,7 @@ export function HomeRow({
         rowKey={sub}
         animDelay={animDelay}
         excludeKeys={sub === "forYou" ? data.heroExcludeKeys : undefined}
+        filterChip={rowKey === data.filterChipRowKey}
       />
     );
   }

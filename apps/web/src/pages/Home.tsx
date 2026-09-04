@@ -14,6 +14,8 @@ import {
   notifyUserChange,
   reconcileHomeRows,
   visibleHomeRows,
+  useRecoPage,
+  firstServedRecoRowKey,
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { PageTransition } from "../components/PageTransition";
@@ -83,6 +85,19 @@ export function Home() {
     [layout?.rows, layout?.stored, layout?.catalog, libraries]
   );
 
+  // La puce du filtre de plateformes : sur la première rangée reco, dans
+  // l'ordre de l'accueil, RÉELLEMENT servie sous ce filtre — la page est la
+  // même entrée de cache que les rangées et le héros, aucune requête en plus.
+  const hasRecoRows = rows.some((r) => r.key.startsWith("reco:"));
+  const { data: recoPage } = useRecoPage(recoFilter, { enabled: heroMode === "reco" || hasRecoRows });
+  const filterChipRowKey = useMemo(
+    () =>
+      recoFilter.length > 0 && recoPage
+        ? firstServedRecoRowKey(rows, recoPage.rows.map((r) => r.key))
+        : null,
+    [recoFilter, recoPage, rows]
+  );
+
   const librariesById = useMemo(() => {
     const map: HomeRowData["librariesById"] = new Map();
     (libraries ?? []).forEach((lib, index) =>
@@ -137,6 +152,7 @@ export function Home() {
     watchedItems,
     librariesById,
     heroExcludeKeys: heroMode === "reco" ? recoHero.excludeKeys : undefined,
+    filterChipRowKey,
   };
 
   return (

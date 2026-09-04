@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -5,6 +6,9 @@ interface RowHeaderProps {
   title: string;
   /** Cible de « Tout voir » — révélé au survol de la rangée. */
   href?: string;
+  /** Posé juste après le titre, TOUJOURS visible (la puce du filtre de
+   *  plateformes) — là où « Tout voir » ne paraît qu'au survol. */
+  trailing?: ReactNode;
 }
 
 /**
@@ -12,7 +16,7 @@ interface RowHeaderProps {
  * les rangées, la bannière et l'en-tête de bibliothèque : il s'étire au survol
  * de la rangée, ce qui indique la zone active sans rien déplacer.
  */
-export function RowHeader({ title, href }: RowHeaderProps) {
+export function RowHeader({ title, href, trailing }: RowHeaderProps) {
   const { t } = useTranslation("common");
 
   return (
@@ -27,6 +31,8 @@ export function RowHeader({ title, href }: RowHeaderProps) {
       />
 
       <h2 className="text-heading-3 tracking-tight text-content-primary md:text-heading-2">{title}</h2>
+
+      {trailing}
 
       {href && (
         <Link

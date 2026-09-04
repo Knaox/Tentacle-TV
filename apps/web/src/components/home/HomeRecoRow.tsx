@@ -1,6 +1,7 @@
 import { useRecoPage } from "@tentacle-tv/api-client";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { RecoRowSlot } from "../reco/RecoRowSlot";
+import { HomeRecoFilterChip } from "./HomeRecoFilterChip";
 
 interface HomeRecoRowProps {
   rowKey: string;
@@ -8,7 +9,13 @@ interface HomeRecoRowProps {
   /** Les items MONTRÉS dans le bandeau « reco » de l'accueil — « Pour vous »
    *  les exclut, exactement comme la page Recommandations. */
   excludeKeys?: readonly string[];
+  /** Cette rangée porte la puce du filtre de plateformes (la première servie). */
+  filterChip?: boolean;
 }
+
+// Un SEUL élément, d'identité stable : RecoRowSlot est mémoïsé, un élément
+// neuf à chaque rendu re-rendrait la rangée entière.
+const FILTER_CHIP = <HomeRecoFilterChip />;
 
 /**
  * Une rangée `reco:<row>` de l'accueil configurable : lue dans LA page du
@@ -18,10 +25,17 @@ interface HomeRecoRowProps {
  * miroir : la bonne page se demande dès le premier rendu. Rangée absente :
  * rien, jamais de squelette ici (l'accueil garde son dégradé silencieux).
  */
-export function HomeRecoRow({ rowKey, animDelay, excludeKeys }: HomeRecoRowProps) {
+export function HomeRecoRow({ rowKey, animDelay, excludeKeys, filterChip }: HomeRecoRowProps) {
   const { selected } = useRecoFilter();
   const { data: page } = useRecoPage(selected);
   const row = page?.rows.find((r) => r.key === rowKey);
   if (!row) return null;
-  return <RecoRowSlot row={row} animDelay={animDelay} excludeKeys={excludeKeys} />;
+  return (
+    <RecoRowSlot
+      row={row}
+      animDelay={animDelay}
+      excludeKeys={excludeKeys}
+      headerTrailing={filterChip ? FILTER_CHIP : undefined}
+    />
+  );
 }
