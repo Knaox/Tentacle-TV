@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, SlidersHorizontal } from "lucide-react";
-import { useWatchProviders } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchRecoPage, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { PlatformLogo } from "./PlatformLogo";
@@ -13,6 +14,8 @@ import { activeFamilyCount, buildPlatformCatalog, isFamilyActive, toggleFamily }
  * région (Crunchyroll et son canal Amazon ne font qu'un), avec leur logo,
  * multi-sélection, remise à zéro. La sélection vit dans le store du filtre
  * (miroir local + réglage du compte) : c'est le SERVEUR qui filtre, strictement.
+ * Survoler une plateforme précharge la page qu'un clic donnerait (le serveur
+ * la tient prête en snapshot) : le clic n'attend rien.
  * Panneau MONTÉ à l'ouverture seulement, fond opaque — aucun backdrop-filter.
  */
 export function RecoFiltersMenu() {
@@ -20,6 +23,13 @@ export function RecoFiltersMenu() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const { selected, setSelected, clear } = useRecoFilter();
+  const qc = useQueryClient();
+  const warm = useCallback(
+    (ids: readonly number[]) => {
+      void prefetchRecoPage(qc, ids).catch(() => undefined);
+    },
+    [qc]
+  );
   const { data: directory } = useWatchProviders();
   const catalog = useMemo(() => buildPlatformCatalog(PLATFORM_FAMILIES, directory), [directory]);
   const activeCount = activeFamilyCount(catalog, selected);
@@ -80,6 +90,8 @@ export function RecoFiltersMenu() {
                   key={entry.key}
                   type="button"
                   aria-pressed={active}
+                  onPointerEnter={() => warm(toggleFamily(selected, entry))}
+                  onFocus={() => warm(toggleFamily(selected, entry))}
                   onClick={() => setSelected(toggleFamily(selected, entry))}
                   className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors ${
                     active
@@ -96,6 +108,7 @@ export function RecoFiltersMenu() {
           </div>
           <button
             type="button"
+            onPointerEnter={() => warm([])}
             onClick={clear}
             disabled={activeCount === 0}
             className="mt-3 text-xs font-medium text-content-tertiary transition-colors hover:text-content-primary disabled:opacity-50"

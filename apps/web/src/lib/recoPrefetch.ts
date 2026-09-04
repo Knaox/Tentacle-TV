@@ -68,20 +68,21 @@ export async function runRecoPrefetch(deps: RecoPrefetchDeps): Promise<void> {
   if (savedFilter.length > 0) tasks.push(prefetchRecoPage(qc, savedFilter));
   await Promise.allSettled(tasks);
   const page = qc.getQueryData<RecoPage>([RECO_PAGE_KEY, recoFilterKey(savedFilter)]);
-  if (page) warmRecoImages(page, client);
+  if (page) void warmRecoImages(page, client);
 }
 
 /**
  * `new Image()` sur les premières affiches (et le visuel de la première
  * diapositive) — les MÊMES URLs que les cartes et le héros, sinon le cache
- * HTTP est manqué. Rien en mode économie de données.
+ * HTTP est manqué. Rien en mode économie de données. Tenue quand tout est
+ * décodé (ou en échec) : l'échange de page s'y cale.
  */
 export function warmRecoImages(
   page: RecoPage,
   client: JellyfinClient,
   limits: { rows: number; perRow: number } = { rows: WARM_ROWS, perRow: WARM_PER_ROW }
-): void {
-  if (isDataSaverActive() || typeof Image === "undefined") return;
+): Promise<void> {
+  if (isDataSaverActive() || typeof Image === "undefined") return Promise.resolve();
   const urls = new Set<string>();
   const hero = page.rows.find((row) => row.key === "forYou")?.items[0];
   if (hero?.backdropPath) {
@@ -94,11 +95,14 @@ export function warmRecoImages(
       if (url) urls.add(url);
     }
   }
+  const decoded: Promise<unknown>[] = [];
   for (const url of urls) {
     const img = new Image();
     img.decoding = "async";
     img.src = url;
+    decoded.push(img.decode().catch(() => undefined));
   }
+  return Promise.allSettled(decoded).then(() => undefined);
 }
 
 /** Survol ou focus du lien de navigation : chunk + page (no-op si tout est frais). */

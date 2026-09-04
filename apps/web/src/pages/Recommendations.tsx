@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useRecoPage } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useRecoPage } from "@tentacle-tv/api-client";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
-import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
+import { heroSelectionFromRows } from "../components/reco/hero/recoHeroSlides";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
+import { useSettledRecoPage } from "../components/reco/useSettledRecoPage";
 import { useRecoFilter, useRecoFilterServerSync } from "../hooks/useRecoFilter";
 import { hasColdStartAck, markColdStartAck } from "../lib/coldStartAck";
 
@@ -25,9 +26,13 @@ export function Recommendations() {
   // Le filtre de plateformes : store (miroir local, synchro serveur ici).
   useRecoFilterServerSync();
   const { selected, filterKey } = useRecoFilter();
-  const { data: page, isPlaceholderData, isError, refetch } = useRecoPage(selected);
-  // Le héros SUIT le filtre : même entrée de cache que la page.
-  const hero = useRecoHeroSlides(selected);
+  const client = useJellyfinClient();
+  const { data: served, isPlaceholderData, isError, refetch } = useRecoPage(selected);
+  // La page AFFICHÉE suit la page servie une fois ses premières affiches
+  // décodées (budget borné) : un changement de filtre arrive habillé.
+  const { page, settling } = useSettledRecoPage(served, client);
+  // Le héros SUIT le filtre — et la page affichée, jamais en avance sur elle.
+  const hero = useMemo(() => heroSelectionFromRows(page?.rows), [page?.rows]);
 
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch
@@ -82,7 +87,7 @@ export function Recommendations() {
         <RecoPageBody
           page={page}
           filterKey={filterKey}
-          stale={isPlaceholderData}
+          stale={isPlaceholderData || settling}
           hero={hero}
           onOpenColdStart={() => setPhase("hold")}
         />
