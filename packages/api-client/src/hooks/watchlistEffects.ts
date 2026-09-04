@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { MediaItem, NextEpisodeResult } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { updateItemUserDataInCache, patchSeriesIdSet } from "./cacheUtils";
 
 /** Query keys des Sets d'IDs de séries likées / favorites (cache = string[]). */
@@ -13,6 +14,29 @@ export const FAVORITE_LIST_KEYS = [["favorites"], ["favorites", "all"]] as const
 type Fetcher = {
   fetch: (path: string, init?: { method?: string }) => Promise<unknown>;
 };
+
+/**
+ * Fraction du média au-delà de laquelle un arrêt vaut « lu jusqu'au bout » pour
+ * Ma liste. Le verdict serveur seul ne suffit pas : un titre marqué vu à la
+ * main (donc `Played`, position 0), lancé puis quitté dans les premières
+ * secondes, ressort de Jellyfin avec sa position remise à zéro et `Played`
+ * intact — sous `MinResumePct` (5 %), il ne touche pas au drapeau — et
+ * passerait pour vu jusqu'au bout. La moitié se tient entre `MinResumePct` et
+ * `MaxResumePct` (90 %), quels que soient leurs réglages raisonnables.
+ */
+export const WATCHLIST_RETIRE_MIN_FRACTION = 0.5;
+
+/**
+ * Verdict du CLIENT sur la position d'arrêt : `true`/`false` quand position et
+ * durée sont connues, `null` sinon — l'appelant s'en remet alors au serveur.
+ */
+export function stoppedPastHalf(
+  stopPositionSeconds: number | undefined,
+  runtimeTicks: number | undefined,
+): boolean | null {
+  if (stopPositionSeconds === undefined || runtimeTicks === undefined || runtimeTicks <= 0) return null;
+  return (stopPositionSeconds * TICKS_PER_SECOND) / runtimeTicks >= WATCHLIST_RETIRE_MIN_FRACTION;
+}
 
 /**
  * Retire une série de « Ma liste » (Likes) SI elle est entièrement vue.
