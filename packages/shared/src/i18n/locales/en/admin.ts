@@ -81,11 +81,6 @@ export default {
   servicesDescription: "Jellyfin, database, public URL and server settings.",
   manageServices: "Manage services",
   provisioningNeedsPublicUrl: "Set the public Tentacle TV server URL first to configure the provisioning code.",
-  playback: "Playback",
-  playbackDescription: "Configure automatic episode advancement behavior.",
-  autoplayNextEnabled: "Auto-play trigger",
-  autoplayNextHelp: "Master switch: turned off, there is no “up next” card and no automatic advance, on any device. WHEN the card appears is an account setting (start of the closing credits, or shortly before the end), changed in each user's preferences.",
-  autoplayCurrentThreshold: "“Watched” threshold: {{pct}}% of the episode (Jellyfin MaxResumePct). It marks an episode as watched — it no longer triggers any card.",
   // Segment plugins — a treasure map, not a setting: plugins remain the primary
   // source; the built-in analysis only fills the gaps.
   segmentPlugins: "Passage detection",
