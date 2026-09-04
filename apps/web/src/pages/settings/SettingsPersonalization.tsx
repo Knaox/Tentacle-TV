@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  mergeHiddenHomeRows,
+  reconcileHomeRows,
   useFavoritesAll,
   useHomeLayout,
   useLibraries,
@@ -8,8 +10,9 @@ import {
   useResetTasteProfile,
   useSaveHomeLayout,
   useSaveRecoSettings,
+  visibleHomeRows,
 } from "@tentacle-tv/api-client";
-import type { CardDensity, HeroMode, HomeLayoutData, RecoSettingsData } from "@tentacle-tv/api-client";
+import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
 import { SettingsSection } from "@tentacle-tv/ui";
 import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
@@ -17,7 +20,6 @@ import { HomeRowsEditor } from "../../components/settings/personalization/HomeRo
 import { LinkedAccounts } from "../../components/settings/personalization/LinkedAccounts";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
-import { reconcileHomeRows } from "../../lib/homeLayout";
 
 /**
  * Onglet « Personnalisation » : accueil configurable (mode du bandeau, ordre
@@ -40,21 +42,31 @@ export function SettingsPersonalization() {
   const resetProfile = useResetTasteProfile();
   const [confirmReset, setConfirmReset] = useState(false);
 
+  // La liste COMPLÈTE (clés hors catalogue comprises : elles restent
+  // stockées) et la liste VISIBLE que l'éditeur manipule — seules les rangées
+  // que ce serveur sait servir se proposent.
   const rows = useMemo(
     () =>
       layout
         ? reconcileHomeRows(layout.rows, (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })), {
             // Même ancre que l'accueil : l'éditeur doit montrer l'ordre RÉEL.
             anchorNewLibraries: layout.stored === false,
+            catalog: layout.catalog,
           })
         : [],
     [layout, libraries]
   );
+  const editorRows = useMemo(() => visibleHomeRows(rows, layout?.catalog), [rows, layout?.catalog]);
 
   if (!layout || !settings) return null;
 
   const patchLayout = (patch: Partial<HomeLayoutData>) => {
     saveLayout.mutate({ ...layout, rows, ...patch });
+  };
+  // Les rangées cachées reprennent leur place derrière celles que l'éditeur a
+  // ordonnées : une clé TMDB retirée puis remise ne perd rien.
+  const changeRows = (next: HomeRowDescriptor[]) => {
+    patchLayout({ rows: mergeHiddenHomeRows(rows, next, layout.catalog) });
   };
   const patchSettings = (patch: Partial<RecoSettingsData>) => {
     saveSettings.mutate({ ...settings, ...patch });
@@ -148,7 +160,7 @@ export function SettingsPersonalization() {
           <div>
             <p className="mb-1 text-sm font-medium text-content-primary">{t("persoRowsTitle")}</p>
             <p className="mb-3 text-xs leading-relaxed text-content-tertiary">{t("persoRowsHint")}</p>
-            <HomeRowsEditor rows={rows} labelFor={labelFor} onChange={(next) => patchLayout({ rows: next })} />
+            <HomeRowsEditor rows={editorRows} labelFor={labelFor} onChange={changeRows} />
           </div>
         </div>
       </SettingsSection>

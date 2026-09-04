@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { moveRow } from "@tentacle-tv/api-client";
 import type { HomeRowDescriptor } from "@tentacle-tv/api-client";
 import { ToggleSwitch } from "../ToggleSwitch";
-import { moveRow } from "../../../lib/homeLayout";
 
 interface HomeRowsEditorProps {
   rows: HomeRowDescriptor[];

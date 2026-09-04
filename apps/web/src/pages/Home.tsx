@@ -12,6 +12,8 @@ import {
   useHomeLayout,
   useMediaItem,
   notifyUserChange,
+  reconcileHomeRows,
+  visibleHomeRows,
 } from "@tentacle-tv/api-client";
 import { HeroBillboard } from "../components/hero/HeroBillboard";
 import { PageTransition } from "../components/PageTransition";
@@ -21,7 +23,6 @@ import type { HomeRowData } from "../components/home/homeRowRegistry";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
-import { reconcileHomeRows } from "../lib/homeLayout";
 
 /**
  * Accueil configurable : l'ordre, l'activation et la densité des rangées
@@ -63,15 +64,20 @@ export function Home() {
   // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
   // s'ajoutent en fin (actives), les disparues s'effacent. Sur le DÉFAUT non
   // stocké, elles s'ancrent avant « Déjà visionné » (ordre cible de l'accueil
-  // recommandé).
+  // recommandé). Seules les rangées du catalogue serveur se rendent : une
+  // rangée que ce serveur ne sait pas servir (pas de clé TMDB) reste stockée
+  // mais ne s'affiche pas.
   const rows = useMemo(
     () =>
-      reconcileHomeRows(
-        layout?.rows ?? [],
-        (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })),
-        { anchorNewLibraries: layout?.stored === false }
+      visibleHomeRows(
+        reconcileHomeRows(
+          layout?.rows ?? [],
+          (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })),
+          { anchorNewLibraries: layout?.stored === false, catalog: layout?.catalog }
+        ),
+        layout?.catalog
       ).filter((r) => r.enabled),
-    [layout?.rows, layout?.stored, libraries]
+    [layout?.rows, layout?.stored, layout?.catalog, libraries]
   );
 
   const librariesById = useMemo(() => {
