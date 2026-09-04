@@ -21,6 +21,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **La fiche s'ouvre depuis les recommandations et leur bannière avec sa transition**, comme depuis toute autre carte
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
 - **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même — le serveur mémorise ces sorties et remet la série à l'arrivée d'un épisode
+- **« Pour vous » est le même sur l'accueil et sur la page Recommandations** : l'accueil lit la page de votre filtre de plateformes — le carrousel « Sélectionné pour vous » aussi — et saute comme elle les titres déjà montrés dans le carrousel
+- **Le filtre de plateformes vaut aussi pour l'accueil** : une puce à côté du titre de la première rangée de recommandations montre les plateformes actives et le retire d'une croix — du compte, donc aussi sur la page Recommandations et les autres appareils
+- **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation — Tendances, « Ce que les utilisateurs de Tentacle regardent », « Les mieux notés de votre bibliothèque » comprises — et seulement celles que ce serveur sait servir ; l'ordre et les rangées choisis s'appliquent sur toutes les plateformes, mobile et téléviseur compris
+- **Sans clé TMDB, l'accueil garde des recommandations** — le pouls des utilisateurs et les mieux notés de la bibliothèque prennent la place de « Pour vous » — et l'admin voit un bandeau sur toutes les pages jusqu'à la clé posée ; les autres comptes ne voient rien
+- **« Les mieux notés de votre bibliothèque » ferme la page Recommandations** de tous les profils, riches compris
 - Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
 
 ### EN
@@ -38,6 +43,11 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **The details page opens from recommendations and their banner with its transition**, as from any other card
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
 - **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself — the server remembers those exits and puts the series back when an episode arrives
+- **"For you" is the same on the home and on the Recommendations page**: the home reads the page of your platform filter — the "Picked for you" billboard too — and skips, like it, the titles already shown in the billboard
+- **The platform filter also applies to the home**: a chip next to the title of the first recommendation row shows the active platforms and removes the filter with a cross — from the account, hence on the Recommendations page and the other devices as well
+- **"Home rows" offers everything**: "My favorites" and every permanent recommendation row — Trending, "What Tentacle users are watching", "Top rated in your library" included — and only those this server can serve; the chosen order and rows apply on every platform, mobile and TV included
+- **Without a TMDB key, the home keeps recommendations** — the users' pulse and the library's top rated take the place of "For you" — and the admin sees a banner on every page until the key is set; other accounts see nothing
+- **"Top rated in your library" closes the Recommendations page** for every profile, rich ones included
 - Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
 
 ## [1.16.0]
