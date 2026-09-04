@@ -23,6 +23,7 @@ import type { HomeRowData } from "../components/home/homeRowRegistry";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
 import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
+import { useRecoFilter } from "../hooks/useRecoFilter";
 
 /**
  * Accueil configurable : l'ordre, l'activation et la densité des rangées
@@ -56,9 +57,11 @@ export function Home() {
   const { data: layout } = useHomeLayout();
 
   const heroMode = layout?.heroMode ?? "resume";
-  // Héros « reco » : la page « all » (jamais filtrée sur l'accueil), partagée
-  // avec les rangées reco:* — aucune requête en plus.
-  const recoHero = useRecoHeroSlides(null, { enabled: heroMode === "reco" });
+  // Héros « reco » : LA page du filtre du compte — celle de la page
+  // Recommandations et des rangées reco:* de l'accueil (aucune requête en
+  // plus). Le filtre suit sur l'accueil comme en face.
+  const { selected: recoFilter } = useRecoFilter();
+  const recoHero = useRecoHeroSlides(recoFilter, { enabled: heroMode === "reco" });
   const fixedItem = useMediaItem(heroMode === "fixed" ? layout?.heroFixedItemId ?? undefined : undefined);
 
   // Réconciliation : l'ordre stocké fait foi, les bibliothèques nouvelles
@@ -124,7 +127,17 @@ export function Home() {
     );
   }
 
-  const data: HomeRowData = { resumeItems, nextUp, watchlist, watchedItems, librariesById };
+  // « Pour vous » saute les diapositives du bandeau « reco » — la règle de la
+  // page Recommandations, pour que les deux rangées disent la même chose. Un
+  // autre bandeau ne cache rien : la rangée est alors complète.
+  const data: HomeRowData = {
+    resumeItems,
+    nextUp,
+    watchlist,
+    watchedItems,
+    librariesById,
+    heroExcludeKeys: heroMode === "reco" ? recoHero.excludeKeys : undefined,
+  };
 
   return (
     <PageTransition>

@@ -4,8 +4,8 @@ import { RecoBillboard } from "./RecoBillboard";
 import type { RecoHeroSelection } from "./recoHeroSlides";
 
 interface RecoBillboardSlotProps {
-  /** La sélection du héros (useRecoHeroSlides) — l'appelant choisit la page,
-   *  donc le filtre : la page Recommandations passe le sien, l'accueil « all ». */
+  /** La sélection du héros (useRecoHeroSlides) — l'appelant passe la page du
+   *  filtre du compte : la page Recommandations comme l'accueil. */
   hero: RecoHeroSelection;
   /** Rendu quand la reco n'a RIEN à montrer (chargement, profil froid, perso
    *  coupée, serveur sans clé TMDB) : la bannière de reprise sur l'accueil,
