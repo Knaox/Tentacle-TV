@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { invalidateSeriesWatchViews, useJellyfinClient, useUserId } from "@tentacle-tv/api-client";
+import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
+import type { MediaItem } from "@tentacle-tv/shared";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { setPlayingMedia } from "../auth/playbackGuard";
@@ -9,18 +10,21 @@ import { setPlayingMedia } from "../auth/playbackGuard";
 /**
  * Centralise les effets lifecycle du PlayerScreen TV :
  *  - playbackGuard (empêche logout intempestif)
- *  - invalidations queryClient au démontage
+ *  - rangement de sortie au démontage (règle partagée `useWatchStopInvalidation`)
  *  - écoute AppState (pause + rapport position en arrière-plan)
- *  - helpers `invalidateAndGoBack` et `handleFinished`
+ *  - helpers `leavePlayer` et `handleFinished`
  *
  * Les refs `pausedStateRef` et `reportSeekRef` sont fournies par le caller pour
  * que le listener AppState reste stable ([] deps) sans capter de closures.
  */
 export function useTVPlaybackLifecycle(args: {
   itemId: string;
-  seriesId?: string;
+  /** L'item lu : type, série parente et durée — ce que la règle partagée demande. */
+  item?: MediaItem;
   navigation: NativeStackNavigationProp<RootStackParamList, "Player">;
   reportStop: () => Promise<void> | void;
+  /** Promesse du DERNIER `/Sessions/Playing/Stopped` réel (cf. usePlaybackReporting). */
+  stopPromiseRef: React.MutableRefObject<Promise<void>>;
   positionRef: React.MutableRefObject<number>;
   pausedStateRef: React.MutableRefObject<boolean>;
   reportSeekRef: React.MutableRefObject<(pos: number, paused: boolean) => void>;
@@ -36,66 +40,82 @@ export function useTVPlaybackLifecycle(args: {
    *  le vide et la lecture est impossible à relancer. Doit être idempotent. */
   onForeground?: () => void;
 }) {
-  const { itemId, seriesId, navigation, reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef, onBackground, onForeground } = args;
+  const {
+    itemId, item, navigation, reportStop, stopPromiseRef, positionRef,
+    pausedStateRef, reportSeekRef, reportStartRef, onBackground, onForeground,
+  } = args;
+  const seriesId = item?.SeriesId;
   const onBackgroundRef = useRef(onBackground);
   onBackgroundRef.current = onBackground;
   const onForegroundRef = useRef(onForeground);
   onForegroundRef.current = onForeground;
   const queryClient = useQueryClient();
-  const client = useJellyfinClient();
-  const userId = useUserId();
+  const runStopInvalidation = useWatchStopInvalidation();
 
   useEffect(() => {
     setPlayingMedia(true);
     return () => { setPlayingMedia(false); };
   }, []);
 
-  const invalidateAll = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["item", itemId] });
-    queryClient.invalidateQueries({ queryKey: ["resume-items"] });
-    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
-    queryClient.invalidateQueries({ queryKey: ["next-up"] });
-    queryClient.invalidateQueries({ queryKey: ["watchlist"] });
-    // État de visionnage de la fiche série : bouton Reprendre, saisies et
-    // badges de la liste d'épisodes — sinon ce qu'on vient de regarder
-    // n'apparaît pas au retour. La règle est partagée avec le web et le mobile
-    // (`invalidateSeriesWatchViews`) : elle en couvrait deux clés sur cinq.
-    invalidateSeriesWatchViews(queryClient, seriesId);
-  }, [queryClient, itemId, seriesId]);
-
   // Garde anti-double sortie : BACK pressé pendant l'await de reportStop (ou
   // fin d'épisode + BACK simultanés) déclenchait deux goBack() → warning
   // « GO_BACK not handled by any navigator ».
   const exitingRef = useRef(false);
 
-  const invalidateAndGoBack = useCallback(async () => {
+  // Les deux sorties explicites postent l'arrêt AVANT de naviguer, avec la
+  // position finale ; sa promesse est mémorisée (`stopPromiseRef`) et le
+  // cleanup de démontage, juste derrière la navigation, y enchaîne le
+  // rangement. Rien à invalider ici : le doubler annulait et relançait les
+  // mêmes requêtes que la règle partagée.
+  const leavePlayer = useCallback(async () => {
     if (exitingRef.current) return;
     exitingRef.current = true;
     await reportStop();
-    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    invalidateAll();
     navigation.goBack();
-  }, [reportStop, invalidateAll, navigation, client, userId, itemId]);
+  }, [reportStop, navigation]);
 
   const handleFinished = useCallback(async () => {
     if (exitingRef.current) return;
     exitingRef.current = true;
     await reportStop();
-    client.fetch(`/Users/${userId}/Items/${itemId}/Rating`, { method: "DELETE" }).catch(() => {});
-    invalidateAll();
     if (seriesId) navigation.replace("MediaDetail", { itemId: seriesId });
     else navigation.goBack();
-  }, [reportStop, invalidateAll, navigation, client, userId, itemId, seriesId]);
+  }, [reportStop, navigation, seriesId]);
 
-  // Unmount cleanup
+  // Démontage : le rangement de sortie, par la règle partagée avec le web, le
+  // bureau et le mobile (`useWatchStopInvalidation`) — Ma liste n'est évaluée
+  // qu'après un arrêt réel au-delà de la moitié, un film n'en sort que marqué
+  // `Played`, une série n'en sort qu'entièrement vue. C'est le seul point que
+  // TOUTES les sorties traversent : Retour (OSD, BackHandler Android, Menu tvOS
+  // qui dépile nativement sans passer par `leavePlayer`), fin de lecture,
+  // épisode suivant (`navigation.replace` remonte l'écran sous une nouvelle
+  // clé). Limite connue, la même que sur le web : la série n'est retirée que si
+  // une fiche (ou le panneau Épisodes) a rempli `series-watch-state` — pas
+  // depuis une carte de l'accueil.
+  // Lectures SYNCHRONES, par refs : `item` change à chaque mise à jour de
+  // UserData et ne doit pas relancer l'effet.
   const reportStopRef = useRef(reportStop);
   reportStopRef.current = reportStop;
-  const invalidateAllRef = useRef(invalidateAll);
-  invalidateAllRef.current = invalidateAll;
+  const itemRef = useRef(item);
+  itemRef.current = item;
+  const runStopRef = useRef(runStopInvalidation);
+  runStopRef.current = runStopInvalidation;
   useEffect(() => () => {
-    reportStopRef.current();
-    invalidateAllRef.current();
-  }, []);
+    const snap = itemRef.current;
+    const stopPositionSeconds = positionRef.current;
+    // Sans effet si l'arrêt est déjà parti (sorties explicites ci-dessus,
+    // cleanup de usePlaybackReporting passé avant) ; sinon c'est lui qui le
+    // poste. `stopPromiseRef` porte dans tous les cas le dernier Stopped réel :
+    // on enchaîne dessus, pour que Jellyfin ait écrit `Played` avant de décider.
+    void reportStopRef.current();
+    const run = () => runStopRef.current({
+      itemId, seriesId: snap?.SeriesId, itemType: snap?.Type,
+      stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+    });
+    stopPromiseRef.current.then(run, run);
+    // Hors de la règle partagée : « Ajouts récents » (badge vu).
+    queryClient.invalidateQueries({ queryKey: ["latest-items"] });
+  }, [itemId, stopPromiseRef, positionRef, queryClient]);
 
   // AppState : sortie via bouton Home de la télécommande (l'app passe en
   // arrière-plan sans BACK). On COMMITTE la position avec un vrai Stopped — un
@@ -117,5 +137,5 @@ export function useTVPlaybackLifecycle(args: {
     return () => sub.remove();
   }, [positionRef, pausedStateRef, reportSeekRef, reportStartRef]);
 
-  return { invalidateAndGoBack, handleFinished };
+  return { leavePlayer, handleFinished };
 }
