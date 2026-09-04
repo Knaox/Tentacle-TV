@@ -1,7 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export type SheetPlacement = "right" | "bottom";
 
@@ -18,10 +18,19 @@ interface SheetProps {
   className?: string;
 }
 
+const ENTER = { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const };
+const EXIT = { duration: 0.2, ease: [0.4, 0, 1, 1] as const };
+
 /**
- * Canonical slide-out sheet primitive — replaces filter panels and mobile
- * picker overlays. Slides from right (desktop secondary nav, filters)
- * or bottom (mobile pickers).
+ * Volet coulissant canonique — depuis la droite (navigation secondaire,
+ * filtres, fiche d'un ticket) ou depuis le bas (sélecteurs mobiles).
+ *
+ * Sans AnimatePresence : monté dès l'ouverture, il joue sa sortie puis se
+ * DÉMONTE à la fin de l'animation (`onAnimationComplete`). Avec
+ * AnimatePresence, la sortie restait bloquée ici — le nœud n'était jamais
+ * retiré, et son scrim devenu invisible gobait tous les clics de la page.
+ * Démonter compte aussi pour le GPU : un `backdrop-filter` masqué n'est pas
+ * gratuit (règles de CLAUDE.md).
  */
 export function Sheet({
   open,
@@ -32,6 +41,11 @@ export function Sheet({
   lockScroll = true,
   className,
 }: SheetProps) {
+  const [mounted, setMounted] = useState(open);
+  useEffect(() => {
+    if (open) setMounted(true);
+  }, [open]);
+
   // Esc to close
   useEffect(() => {
     if (!open) return;
@@ -53,55 +67,55 @@ export function Sheet({
     return () => { document.body.style.overflow = prev; };
   }, [open, lockScroll]);
 
+  if (!mounted) return null;
+
   const isRight = placement === "right";
-  const initialOffset = isRight ? { x: "100%" } : { y: "100%" };
-  const settledOffset = isRight ? { x: 0 } : { y: 0 };
+  const hiddenOffset = isRight ? { x: "100%" } : { y: "100%" };
+  const shownOffset = isRight ? { x: 0 } : { y: 0 };
 
   const panelStyle = isRight
     ? { width: size, height: "100%", right: 0, top: 0, bottom: 0 }
     : { maxHeight: size, width: "100%", left: 0, right: 0, bottom: 0 };
 
   return createPortal(
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[90]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.18 } }}
-          exit={{ opacity: 0, transition: { duration: 0.12 } }}
-          onClick={onClose}
-          role="presentation"
-          // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
-          style={{ background: "rgba(0,0,0,0.55)" }}
-        >
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            tabIndex={-1}
-            className={`absolute outline-none ${className ?? ""}`}
-            style={{
-              ...panelStyle,
-              background: "var(--surface-sheet)",
-              borderLeft: isRight ? "1px solid var(--border-subtle)" : undefined,
-              borderTop: !isRight ? "1px solid var(--border-subtle)" : undefined,
-              borderTopLeftRadius: isRight ? "var(--radius-xl)" : "var(--radius-xl)",
-              borderTopRightRadius: !isRight ? "var(--radius-xl)" : 0,
-              borderBottomLeftRadius: isRight ? "var(--radius-xl)" : 0,
-              boxShadow: "var(--shadow-sheet)",
-              backdropFilter: "blur(var(--blur-sheet))",
-              WebkitBackdropFilter: "blur(var(--blur-sheet))",
-              overflowY: "auto",
-            }}
-            initial={initialOffset}
-            animate={{ ...settledOffset, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] } }}
-            exit={{ ...initialOffset, transition: { duration: 0.2, ease: [0.4, 0, 1, 1] } }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {children}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
+    <motion.div
+      className="fixed inset-0 z-[90]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: open ? 1 : 0, transition: { duration: open ? 0.18 : 0.12 } }}
+      onClick={onClose}
+      role="presentation"
+      aria-hidden={!open}
+      // Scrim de sheet : reste sombre dans les deux thèmes (standard iOS) — ne pas migrer.
+      style={{ background: "rgba(0,0,0,0.55)", pointerEvents: open ? "auto" : "none" }}
+    >
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className={`absolute outline-none ${className ?? ""}`}
+        style={{
+          ...panelStyle,
+          background: "var(--surface-sheet)",
+          borderLeft: isRight ? "1px solid var(--border-subtle)" : undefined,
+          borderTop: !isRight ? "1px solid var(--border-subtle)" : undefined,
+          borderTopLeftRadius: "var(--radius-xl)",
+          borderTopRightRadius: !isRight ? "var(--radius-xl)" : 0,
+          borderBottomLeftRadius: isRight ? "var(--radius-xl)" : 0,
+          boxShadow: "var(--shadow-sheet)",
+          backdropFilter: "blur(var(--blur-sheet))",
+          WebkitBackdropFilter: "blur(var(--blur-sheet))",
+          overflowY: "auto",
+        }}
+        initial={hiddenOffset}
+        animate={{ ...(open ? shownOffset : hiddenOffset), transition: open ? ENTER : EXIT }}
+        onAnimationComplete={() => {
+          if (!open) setMounted(false);
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {children}
+      </motion.div>
+    </motion.div>,
     document.body,
   );
 }
