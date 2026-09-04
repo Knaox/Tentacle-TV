@@ -64,7 +64,10 @@ export function RecoBillboard({ slides }: { slides: RecoRowItem[] }) {
         {/* Halo démonté hors écran — une image floutée animée en boucle. */}
         {visible && <AmbilightLayer url={haloUrl} layerKey={item.key} />}
 
+        {/* Repère de la transition d'ouverture : c'est ce cadre que « Voir la
+            fiche » fait voler jusqu'à la fiche (cf. HeroBillboard). */}
         <div
+          data-hero-frame
           className={`group/billboard relative w-full overflow-hidden ${CARD_HEIGHT}`}
           style={{
             borderRadius: "var(--hero-frame-radius)",

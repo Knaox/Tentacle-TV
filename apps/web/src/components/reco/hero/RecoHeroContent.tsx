@@ -1,20 +1,24 @@
 import { useMemo } from "react";
+import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Sparkles } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   useDeleteRating,
   useItemRating,
+  useJellyfinClient,
   useRateItem,
   useSendRecoFeedback,
 } from "@tentacle-tv/api-client";
 import type { RatingIdentity, RecoRowItem } from "@tentacle-tv/api-client";
+import { captureDetailOrigin } from "../../detail/detailTransition";
 import { HeroEyebrow } from "../../hero/HeroEyebrow";
 import { StarIcon } from "../../icons/HeroIcons";
 import { StarRating } from "../../rating/StarRating";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
 import { fadeUp, textCascade } from "../../../theme/motion";
 import { reasonToText } from "../RecoReasonText";
+import { recoHeroBackdropUrl } from "./RecoHeroBackdrop";
 
 interface RecoHeroContentProps {
   item: RecoRowItem;
@@ -35,6 +39,25 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
   const reduced = useReducedMotion();
   const { open, canOpen } = useRecoNavigation();
   const feedback = useSendRecoFeedback();
+  const client = useJellyfinClient();
+
+  /**
+   * Même trajet que HeroActions : pour un titre en bibliothèque, le CADRE de la
+   * bannière est mesuré au clic (dernier instant où il existe) et son fond vole
+   * jusqu'à la place que la fiche lui réserve. Hors bibliothèque, la fiche
+   * Vigie vit dans une iframe : rien à déposer.
+   */
+  const openDetail = (e: MouseEvent<HTMLButtonElement>) => {
+    if (item.jellyfinItemId) {
+      const frame = e.currentTarget.closest<HTMLElement>("[data-hero-frame]");
+      const url = recoHeroBackdropUrl(client, item);
+      if (frame && url) {
+        const radius = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 0;
+        captureDetailOrigin(frame, item.jellyfinItemId, url, radius);
+      }
+    }
+    open(item);
+  };
 
   const identity: RatingIdentity = {
     mediaType: item.mediaType === "tv" ? "series" : "movie",
@@ -131,7 +154,7 @@ export function RecoHeroContent({ item, animationKey }: RecoHeroContentProps) {
           {openable && (
             <button
               type="button"
-              onClick={() => open(item)}
+              onClick={openDetail}
               className="rounded-full border border-cta-primary-border bg-cta-primary-bg px-6 py-2.5 font-bold text-cta-primary-fg transition-colors hover:bg-cta-primary-bg-hover"
               style={{ boxShadow: "var(--elev-2)" }}
             >
