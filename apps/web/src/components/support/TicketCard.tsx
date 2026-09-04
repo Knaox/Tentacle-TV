@@ -11,6 +11,10 @@ interface TicketCardProps {
   /** Glissable d'une colonne à l'autre (admin, pointeur). */
   draggable: boolean;
   onOpen: (id: string) => void;
+  /** Mode sélection (admin) : le clic coche au lieu d'ouvrir. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }
 
 /**
@@ -19,10 +23,12 @@ interface TicketCardProps {
  * statut de la fiche. Pas de verre ni d'ombre animée : une opacité pendant le
  * glisser, un fond au survol, rien d'autre (règles GPU de CLAUDE.md).
  */
-export const TicketCard = memo(function TicketCard({ ticket, scope, draggable, onOpen }: TicketCardProps) {
+export const TicketCard = memo(function TicketCard({
+  ticket, scope, draggable, onOpen, selectable, selected, onToggleSelect,
+}: TicketCardProps) {
   const { t } = useTranslation("tickets");
   const [dragging, setDragging] = useState(false);
-  const open = () => onOpen(ticket.id);
+  const open = () => (selectable ? onToggleSelect?.(ticket.id) : onOpen(ticket.id));
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -42,14 +48,29 @@ export const TicketCard = memo(function TicketCard({ ticket, scope, draggable, o
       tabIndex={0}
       onClick={open}
       onKeyDown={onKeyDown}
-      draggable={draggable || undefined}
-      onDragStart={draggable ? onDragStart : undefined}
+      aria-pressed={selectable ? !!selected : undefined}
+      draggable={(draggable && !selectable) || undefined}
+      onDragStart={draggable && !selectable ? onDragStart : undefined}
       onDragEnd={draggable ? () => setDragging(false) : undefined}
-      className={`rounded-lg border border-line-subtle bg-fill-subtle p-3 outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-[var(--brand)]/50 ${
-        draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
-      } ${dragging ? "opacity-50" : ""}`}
+      className={`relative rounded-lg border bg-fill-subtle p-3 outline-none transition-colors hover:bg-fill-soft focus-visible:ring-2 focus-visible:ring-[var(--brand)]/50 ${
+        selected ? "border-[var(--brand)]/45" : "border-line-subtle"
+      } ${draggable && !selectable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${dragging ? "opacity-50" : ""}`}
     >
-      <p className="line-clamp-2 text-sm font-medium text-content-primary">{ticket.subject}</p>
+      {selectable && (
+        <span
+          aria-hidden
+          className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border ${
+            selected ? "border-[var(--brand)]/45 bg-[var(--brand-soft)] text-[var(--brand-light)]" : "border-line-strong"
+          }`}
+        >
+          {selected && (
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </span>
+      )}
+      <p className={`line-clamp-2 text-sm font-medium text-content-primary ${selectable ? "pr-6" : ""}`}>{ticket.subject}</p>
       {ticket.mediaItemName && (
         <p className="mt-1 truncate text-xs text-[var(--brand)]">{ticket.mediaItemName}</p>
       )}
