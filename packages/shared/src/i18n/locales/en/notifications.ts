@@ -12,6 +12,8 @@ export default {
   daysAgo: "{{count}}d ago",
   ticketReplyTitle: "Reply on \"{{subject}}\"",
   ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
+  ticketNewTitle: "New ticket from {{username}}: \"{{subject}}\"",
+  ticketUserReplyTitle: "{{username}} replied on \"{{subject}}\"",
   watchlistShareTitle: "{{username}} invited you to \"{{listName}}\"",
   requestStatusTitle: "Request update: {{title}}",
   autoRetry: "Automatic retry for \"{{title}}\" ({{count}}/{{max}})",

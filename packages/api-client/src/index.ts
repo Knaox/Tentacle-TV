@@ -54,6 +54,14 @@ export type { AppNotification } from "./hooks/useNotifications";
 // Notification route resolution
 export { resolveNotificationRoute } from "./utils/notificationRoute";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
+export { formatNotifTitle, notifBodyText, parseTicketNotifBody } from "./utils/notificationText";
+export type { NotifTranslate } from "./utils/notificationText";
+export { useNotificationsLive, NOTIFICATION_LIVE_KEYS } from "./hooks/useNotificationsLive";
+export {
+  TICKET_STATUSES, TICKET_CATEGORIES, TICKET_STATUS_LABEL_KEYS, TICKET_STATUS_FILTER_KEYS,
+  TICKET_CATEGORY_LABEL_KEYS, isTicketStatus,
+} from "./utils/ticketMeta";
+export type { TicketStatus, TicketCategory } from "./utils/ticketMeta";
 
 // Push notifications (mobile)
 export { useRegisterPushDevice, usePushPreferences, useSetPushPreferences, useSendTestPush, setPushBackendUrl, setPushToken, PUSH_PREF_DEFAULTS } from "./hooks/usePushNotifications";
