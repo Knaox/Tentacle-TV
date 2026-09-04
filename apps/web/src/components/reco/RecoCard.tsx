@@ -8,8 +8,7 @@ import { CardRatingBadge } from "../cards/CardRatingBadge";
 import { POSTER_VW, POSTER_WIDTH } from "../cards/cardSizes";
 import { cardWidthStyle } from "../cards/cardWidthStyle";
 import { captureDetailOrigin } from "../detail/detailTransition";
-import { HoverRatingStars } from "../rating/HoverRatingStars";
-import { RecoReasonText } from "./RecoReasonText";
+import { RecoCardHoverLayer } from "./RecoCardHoverLayer";
 import { useRecoNavigation } from "../../lib/recoNavigation";
 import { recoPosterUrl } from "./recoImages";
 import { useMountWhile } from "../../hooks/useMountWhile";
@@ -26,10 +25,9 @@ interface RecoCardProps {
 /**
  * Affiche 2:3 d'une recommandation. Même géométrie que PosterCard (largeur de
  * rangée imposée, cadre partagé), mais un contenu différent : badge « à la
- * demande » pour un titre hors bibliothèque, raison de la présence, étoiles et
- * « ne plus me proposer » révélés au survol — MONTÉS au survol, jamais laissés
- * à opacité nulle (règle GPU du dépôt). Aucun backdrop-filter : le voile de
- * survol est un dégradé opaque.
+ * demande » pour un titre hors bibliothèque, et un calque de survol (raison de
+ * la présence, étoiles, « ne plus me proposer » — cf. RecoCardHoverLayer)
+ * MONTÉ au survol, jamais laissé à opacité nulle (règle GPU du dépôt).
  */
 export const RecoCard = memo(function RecoCard({
   item,
@@ -45,11 +43,6 @@ export const RecoCard = memo(function RecoCard({
   const overlayMounted = useMountWhile(hovered, 200);
   const { open, canOpen } = useRecoNavigation();
   const feedback = useSendRecoFeedback();
-
-  const ratingIdentity = {
-    mediaType: item.mediaType === "tv" ? ("series" as const) : ("movie" as const),
-    tmdbId: item.tmdbId,
-  };
 
   const posterUrl = recoPosterUrl(item, (id) =>
     client.getImageUrl(id, "Primary", { height: 450, quality: 90 })
@@ -141,38 +134,10 @@ export const RecoCard = memo(function RecoCard({
               voile, dont la dernière rangée lui laisse le coin (refus à droite). */}
           <CardRatingBadge rating={item.voteAverage} raised />
 
-          {/* Voile de survol : raison + étoiles + refus. Dégradé opaque, pas de
-              backdrop-filter. Monté au survol, deux fondus via .hover-reveal. */}
+          {/* Calque de survol — monté au survol seulement, deux fondus via
+              .hover-reveal (cf. RecoCardHoverLayer). */}
           {overlayMounted && (
-            <div
-              className="hover-reveal absolute inset-x-0 bottom-0 z-20"
-              data-shown={hovered}
-              style={{
-                pointerEvents: hovered ? "auto" : "none",
-                "--reveal-ms": "180ms",
-              } as React.CSSProperties}
-            >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 bottom-0 h-full"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.92) 30%, rgba(0,0,0,0.55) 70%, transparent)" }}
-              />
-              <div className="relative flex flex-col gap-1.5 px-2.5 pb-2.5 pt-6">
-                <RecoReasonText reasons={item.reasons} />
-                {/* Monté au survol seulement — l'abonnement aux notes aussi. */}
-                <HoverRatingStars
-                  identity={ratingIdentity}
-                  jellyfinItemId={item.jellyfinItemId}
-                />
-                <button
-                  type="button"
-                  onClick={handleDismiss}
-                  className="self-end rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
-                >
-                  {t("dismissAction")}
-                </button>
-              </div>
-            </div>
+            <RecoCardHoverLayer item={item} shown={hovered} onDismiss={handleDismiss} />
           )}
         </CardFrame>
 
