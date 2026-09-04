@@ -23,7 +23,8 @@ et Linux reçoivent l'ensemble.
 - **« L'Étreinte »**, le nouveau logo
 - **Les cartes de recommandation se lancent** : au survol d'un titre en bibliothèque, un bouton Lecture reprend ou démarre l'épisode 1, avec qualité et langues
 - **Ma liste suit vos visionnages** : marquer vu à la main ne retire plus ; un titre sort une fois regardé jusqu'au bout, même série en cours, et revient seul au prochain épisode
-- Correctifs : rangées vides après un défilement rapide, transition de la fiche depuis les recommandations, piste Dolby copiée en HLS
+- **« Pour vous » identique accueil/page Recommandations**, filtre compris ; Mes favoris et les rangées reco dans « Rangées de l'accueil »
+- Correctifs : rangées vides après défilement, transition depuis les reco, Dolby en HLS
 - Nécessite un serveur 1.17.0 ou plus
 
 ### EN
@@ -35,7 +36,8 @@ et Linux reçoivent l'ensemble.
 - **"The Embrace"**, the new logo
 - **Recommendation cards can be played**: hovering a library title shows a Play button that resumes or starts episode 1, with quality and languages
 - **My List follows what you watch**: marking watched by hand no longer removes; a title leaves once watched to the end, even an airing series, and returns by itself at the next episode
-- Fixes: rows left empty after a fast scroll, details transition from recommendations, Dolby track copied into HLS
+- **"For you" identical on the home and the Recommendations page**, filter included; "Home rows" lists My favorites and every reco row
+- Fixes: rows left empty after a scroll, details transition from recommendations, Dolby track in HLS
 - Requires server 1.17.0 or newer
 
 ## [mac-1.21.0]
@@ -53,6 +55,8 @@ et Linux reçoivent l'ensemble.
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et icône suivent
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
 - **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **« Pour vous » est le même sur l'accueil et sur la page Recommandations**, filtre de plateformes compris : une puce à côté du titre le montre sur l'accueil et le retire d'une croix
+- **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation, seulement celles que le serveur sait servir ; l'ordre choisi s'applique sur toutes les plateformes. Sans clé TMDB, l'accueil garde des recommandations génériques et l'admin voit un bandeau
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide ; la fiche s'ouvre depuis les recommandations avec sa transition ; plus de piste Dolby copiée vers le HLS fMP4
 - Nécessite un serveur 1.17.0 ou plus
 
@@ -70,6 +74,8 @@ et Linux reçoivent l'ensemble.
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash and icon follow
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
 - **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **"For you" is the same on the home and on the Recommendations page**, platform filter included: a chip next to the title shows it on the home and removes it with a cross
+- **"Home rows" offers everything**: "My favorites" and every permanent recommendation row, only those the server can serve; the chosen order applies on every platform. Without a TMDB key, the home keeps generic recommendations and the admin sees a banner
 - **Fixes**: a row no longer stays empty after a fast scroll; the details page opens from recommendations with its transition; no more Dolby track copied into HLS fMP4
 - Requires server 1.17.0 or newer
 
@@ -95,6 +101,8 @@ et Linux reçoivent l'ensemble.
 - **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash, icône et favicon suivent, et le rose d'accent entre dans la palette
 - **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
 - **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **« Pour vous » est le même sur l'accueil et sur la page Recommandations** : l'accueil lit la page de votre filtre de plateformes — bannière comprise — et saute comme elle les titres du carrousel ; le filtre vaut donc aussi pour l'accueil, où une puce à côté du titre de la première rangée le montre et le retire d'une croix, du compte
+- **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation (Tendances, « Ce que les utilisateurs de Tentacle regardent », « Les mieux notés de votre bibliothèque »), seulement celles que le serveur sait servir ; l'ordre choisi s'applique sur toutes les plateformes. Sans clé TMDB, l'accueil garde des recommandations génériques et l'admin voit un bandeau sur toutes les pages
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide (il fallait remonter tout en haut ou recharger) ; la fiche s'ouvre depuis les recommandations et leur bannière avec sa transition ; hors ligne, « Réessayer » montre qu'il essaie ; plus de piste Dolby copiée vers le HLS fMP4 — l'initialisation sortait sans codec et la lecture échouait
 - Compatibilité : cette version demande un serveur 1.17.0 ou plus
 
@@ -119,6 +127,8 @@ et Linux reçoivent l'ensemble.
 - **"The Embrace"**: the new logo hugs the screen — mascot, splash, icon and favicon follow, and the accent pink joins the palette
 - **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
 - **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **"For you" is the same on the home and on the Recommendations page**: the home reads the page of your platform filter — banner included — and skips, like it, the billboard's titles; the filter thus applies to the home too, where a chip next to the first row's title shows it and removes it with a cross, from the account
+- **"Home rows" offers everything**: "My favorites" and every permanent recommendation row (Trending, "What Tentacle users are watching", "Top rated in your library"), only those the server can serve; the chosen order applies on every platform. Without a TMDB key, the home keeps generic recommendations and the admin sees a banner on every page
 - **Fixes**: a row no longer stays empty after a fast scroll (you had to scroll back to the top or reload); the details page opens from recommendations and their banner with its transition; offline, "Retry" shows that it is trying; no more Dolby track copied into HLS fMP4 — the init segment came out without a codec and playback failed
 - Compatibility: this version requires server 1.17.0 or newer
 
