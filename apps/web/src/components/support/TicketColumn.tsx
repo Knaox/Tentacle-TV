@@ -15,11 +15,17 @@ interface TicketColumnProps {
   isLoading: boolean;
   /** Seule colonne à l'écran (onglets mobiles) : pas de hauteur bornée. */
   single?: boolean;
+  /** Une règle de cycle de vie à rappeler sous l'en-tête (« … après 7 jours »). */
+  hint?: string;
   onOpen: (id: string) => void;
   onDrop: (id: string, status: TicketStatus) => void;
+  /** Mode sélection (admin) : les cartes se cochent au lieu de s'ouvrir. */
+  selection?: { isSelected: (id: string) => boolean; toggle: (id: string) => void } | null;
 }
 
-export function TicketColumn({ status, tickets, scope, canDrop, isLoading, single, onOpen, onDrop }: TicketColumnProps) {
+export function TicketColumn({
+  status, tickets, scope, canDrop, isLoading, single, hint, onOpen, onDrop, selection,
+}: TicketColumnProps) {
   const { t } = useTranslation("tickets");
   const [over, setOver] = useState(false);
 
@@ -60,6 +66,7 @@ export function TicketColumn({ status, tickets, scope, canDrop, isLoading, singl
           {tickets.length}
         </span>
       </header>
+      {hint && <p className="-mt-2 mb-3 px-1 text-[11px] text-content-quaternary">{hint}</p>}
       <div className="flex min-h-[4rem] flex-col gap-2 overflow-y-auto">
         {isLoading && [0, 1, 2].map((i) => <Shimmer key={i} height="88px" />)}
         {!isLoading && tickets.length === 0 && (
@@ -67,7 +74,16 @@ export function TicketColumn({ status, tickets, scope, canDrop, isLoading, singl
         )}
         {!isLoading &&
           tickets.map((tk) => (
-            <TicketCard key={tk.id} ticket={tk} scope={scope} draggable={canDrop} onOpen={onOpen} />
+            <TicketCard
+              key={tk.id}
+              ticket={tk}
+              scope={scope}
+              draggable={canDrop}
+              onOpen={onOpen}
+              selectable={!!selection}
+              selected={selection?.isSelected(tk.id)}
+              onToggleSelect={selection?.toggle}
+            />
           ))}
       </div>
     </section>

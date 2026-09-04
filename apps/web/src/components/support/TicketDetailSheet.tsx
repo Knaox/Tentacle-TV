@@ -7,6 +7,8 @@ import { useIsMobile } from "../../hooks/useIsMobile";
 import { TicketThread } from "./TicketThread";
 import { TicketReplyForm } from "./TicketReplyForm";
 import { TicketStatusControl } from "./TicketStatusControl";
+import { TicketCloseForm } from "./TicketCloseForm";
+import { TicketDeleteButton } from "./TicketDeleteButton";
 import { STATUS_STYLE, TICKET_CATEGORY_LABEL_KEYS, TICKET_STATUS_LABEL_KEYS, type TicketStatus } from "./ticketMeta";
 import type { TicketBoardScope } from "./useTicketBoard";
 
@@ -54,6 +56,7 @@ export function TicketDetailSheet({ ticketId, scope, canMove, onMove, onClose }:
               </>
             )}
           </div>
+          {scope === "all" && ticket && <TicketDeleteButton ticketId={ticket.id} onDeleted={onClose} />}
           <button
             type="button"
             onClick={onClose}
@@ -86,7 +89,10 @@ export function TicketDetailSheet({ ticketId, scope, canMove, onMove, onClose }:
           (ticket.status === "closed" ? (
             <p className="border-t border-line-subtle px-5 py-4 text-sm text-content-quaternary">{t("ticketClosed")}</p>
           ) : (
-            <TicketReplyForm ticketId={ticket.id} />
+            <>
+              <TicketReplyForm ticketId={ticket.id} />
+              {scope === "mine" && <TicketCloseForm ticketId={ticket.id} />}
+            </>
           ))}
       </div>
     </Sheet>
