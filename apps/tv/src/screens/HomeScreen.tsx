@@ -26,6 +26,7 @@ import { TVHomeRows } from "../components/home/TVHomeRows";
 import type { TVHomeRowData, TVHomeRowHandlers } from "../components/home/tvHomeRowRegistry";
 import { useTVHomeRows } from "../components/home/useTVHomeRows";
 import { useRecoFilterChipRow } from "../components/reco/useRecoFilterChipRow";
+import { recoAmbientTarget } from "../components/reco/recoAmbientTarget";
 import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
@@ -143,7 +144,10 @@ function HomeScreenInner({ navigation }: Props) {
   // proposer).
   const openRecoDetail = useCallback((item: RecoRowItem) => { if (item.jellyfinItemId) openDetail(item.jellyfinItemId); }, [openDetail]);
   const openRecoContextMenu = useCallback((item: RecoRowItem) => setCtxTarget({ kind: "reco", item }), []);
-  const onRecoFocus = useCallback(() => setFocusedItem(null), [setFocusedItem]);
+  const onRecoFocus = useCallback(
+    (item: RecoRowItem) => setFocusedItem(recoAmbientTarget(item, jfClient)),
+    [setFocusedItem, jfClient],
+  );
 
   const librariesById = useMemo(() => {
     const map: TVHomeRowData["librariesById"] = new Map();
