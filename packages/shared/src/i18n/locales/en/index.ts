@@ -10,7 +10,6 @@ import about from "./about";
 import notifications from "./notifications";
 import nav from "./nav";
 import adminPlugins from "./adminPlugins";
-import adminTheme from "./adminTheme";
 import media from "./media";
 import errors from "./errors";
 import profile from "./profile";
@@ -23,6 +22,6 @@ import reco from "./reco";
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
-  adminPlugins, adminTheme, media, errors, profile, disclaimer,
+  adminPlugins, media, errors, profile, disclaimer,
   watchTogether, downloads, easterEggs, reco,
 };
