@@ -60,11 +60,6 @@ export default {
   saveFailed: "Échec de la sauvegarde",
   adminBadge: "Admin",
   ticketClosed: "Fermé",
-  playback: "Lecture",
-  playbackDescription: "Configurer le passage automatique à l'épisode suivant.",
-  autoplayNextEnabled: "Déclenchement auto-play",
-  autoplayNextHelp: "Interrupteur maître : éteint, aucune fiche « à suivre » ni enchaînement, sur aucun appareil. Le MOMENT où la fiche paraît, lui, est un réglage de compte (début du générique de fin, ou peu avant la fin) et se change dans les Préférences de chaque utilisateur.",
-  autoplayCurrentThreshold: "Seuil « vu » : {{pct}} % de l'épisode (MaxResumePct Jellyfin). Il marque un épisode comme vu — il ne déclenche plus aucune fiche.",
   // Greffons de segments — une carte au trésor, pas un réglage : les greffons
   // restent la source première ; l'analyse embarquée ne fait que compléter.
   segmentPlugins: "Détection des passages",
