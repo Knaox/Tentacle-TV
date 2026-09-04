@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useJellyfinClient, useRecoPage } from "@tentacle-tv/api-client";
@@ -32,7 +32,10 @@ export function Recommendations() {
   // décodées (budget borné) : un changement de filtre arrive habillé.
   const { page, settling } = useSettledRecoPage(served, client);
   // Le héros SUIT le filtre — et la page affichée, jamais en avance sur elle.
-  const hero = useMemo(() => heroSelectionFromRows(page?.rows), [page?.rows]);
+  // Tirage au hasard, une graine par visite : la bannière change à chaque
+  // passage, et tient le temps de la visite.
+  const heroSeed = useRef(Math.random());
+  const hero = useMemo(() => heroSelectionFromRows(page?.rows, heroSeed.current), [page?.rows]);
 
   // Le démarrage à froid est COLLANT : une fois affiché (« hold »), il ne cède
   // l'écran qu'au bouton « Voir mes recommandations » — jamais à un refetch

@@ -142,18 +142,7 @@ export function Home() {
     );
   }
 
-  // « Pour vous » saute les diapositives du bandeau « reco » — la règle de la
-  // page Recommandations, pour que les deux rangées disent la même chose. Un
-  // autre bandeau ne cache rien : la rangée est alors complète.
-  const data: HomeRowData = {
-    resumeItems,
-    nextUp,
-    watchlist,
-    watchedItems,
-    librariesById,
-    heroExcludeKeys: heroMode === "reco" ? recoHero.excludeKeys : undefined,
-    filterChipRowKey,
-  };
+  const data: HomeRowData = { resumeItems, nextUp, watchlist, watchedItems, librariesById, filterChipRowKey };
 
   return (
     <PageTransition>
