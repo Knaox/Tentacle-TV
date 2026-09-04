@@ -43,6 +43,12 @@ export interface SettingsShellProps {
    * exister en FR et en EN.
    */
   backLabel?: string;
+  /**
+   * Pleine largeur : le panneau de détail n'est plus borné à `max-w-6xl`.
+   * Pour une section qui étale des colonnes (le tableau des tickets), là où
+   * un formulaire se lit mieux étroit.
+   */
+  fluid?: boolean;
   children: ReactNode;
 }
 
@@ -54,6 +60,7 @@ export function SettingsShell({
   description,
   onBack,
   backLabel,
+  fluid = false,
   children,
 }: SettingsShellProps) {
   const groups = sections.reduce<Array<{ name?: string; items: SettingsShellSection[] }>>(
@@ -67,7 +74,7 @@ export function SettingsShell({
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl gap-6 px-4 md:px-8">
+    <div className={`mx-auto flex w-full gap-6 px-4 md:px-8 ${fluid ? "" : "max-w-6xl"}`}>
       <nav
         aria-label={title}
         className={`${activeId ? "hidden md:block" : "block"} w-full shrink-0 md:w-60`}

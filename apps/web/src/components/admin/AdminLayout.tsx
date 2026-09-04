@@ -74,6 +74,9 @@ export function AdminLayout() {
         description={active ? undefined : t("overviewDescription")}
         onBack={() => navigate("/admin")}
         backLabel={t("title")}
+        /* Le tableau des tickets étale quatre colonnes : il prend toute la
+           largeur, les autres sections gardent leur colonne de lecture. */
+        fluid={activeId === "tickets"}
       >
         <Outlet />
       </SettingsShell>
