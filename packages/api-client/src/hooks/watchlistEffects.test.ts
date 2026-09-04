@@ -8,8 +8,9 @@
 
 import { QueryClient } from "@tanstack/react-query";
 import type { MediaItem } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { describe, expect, it } from "vitest";
-import { WATCHLIST_SERIES_IDS_KEY, retireSeriesFromWatchlistIfFullyWatched } from "./watchlistEffects";
+import { WATCHLIST_SERIES_IDS_KEY, retireSeriesFromWatchlistIfFullyWatched, stoppedPastHalf } from "./watchlistEffects";
 
 interface Call {
   path: string;
@@ -95,5 +96,25 @@ describe("le retrait automatique d'une série entièrement vue", () => {
     expect(await retireSeriesFromWatchlistIfFullyWatched(qc, client, null, "s1")).toBe(false);
     expect(await retireSeriesFromWatchlistIfFullyWatched(qc, client, "u1", undefined)).toBe(false);
     expect(client.calls).toHaveLength(0);
+  });
+});
+
+describe("la position d'arrêt qui vaut « lu jusqu'au bout »", () => {
+  const runtime = 3600 * TICKS_PER_SECOND; // une heure
+
+  it("reste sans avis quand la position ou la durée manque", () => {
+    expect(stoppedPastHalf(undefined, runtime)).toBeNull();
+    expect(stoppedPastHalf(1800, undefined)).toBeNull();
+    expect(stoppedPastHalf(1800, 0)).toBeNull();
+  });
+
+  it("refuse un arrêt dans la première moitié", () => {
+    expect(stoppedPastHalf(0, runtime)).toBe(false);
+    expect(stoppedPastHalf(1764, runtime)).toBe(false); // 49 %
+  });
+
+  it("accepte dès la moitié", () => {
+    expect(stoppedPastHalf(1800, runtime)).toBe(true);
+    expect(stoppedPastHalf(3420, runtime)).toBe(true); // 95 %
   });
 });
