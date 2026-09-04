@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { recoRowTitle } from "@tentacle-tv/api-client";
@@ -10,10 +10,6 @@ interface RecoRowSlotProps {
    *  plus de filtre client : le serveur a déjà filtré, strictement. */
   row: RecoPageRow;
   animDelay: number;
-  /** Les items MONTRÉS dans le carrousel héros (page Recommandations, accueil
-   *  en bandeau « reco ») — la rangée les exclut (skip exact, pas « les N
-   *  premiers »). */
-  excludeKeys?: readonly string[];
   /** Après le titre — un élément d'identité STABLE, la mémo en dépend. */
   headerTrailing?: ReactNode;
 }
@@ -24,13 +20,11 @@ interface RecoRowSlotProps {
  * structurel de TanStack garde `row` référentiellement stable quand rien
  * n'a changé — un drapeau qui bascule ne re-rend pas treize rangées.
  */
-export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, excludeKeys, headerTrailing }: RecoRowSlotProps) {
+export const RecoRowSlot = memo(function RecoRowSlot({ row, animDelay, headerTrailing }: RecoRowSlotProps) {
   const { t } = useTranslation("reco");
-  const items = useMemo(() => {
-    if (!excludeKeys?.length) return row.items;
-    const excluded = new Set(excludeKeys);
-    return row.items.filter((item) => !excluded.has(item.key));
-  }, [row.items, excludeKeys]);
+  // La rangée est servie ENTIÈRE : la bannière qui met quelques-uns de ses
+  // titres en lumière ne lui retire rien.
+  const items = row.items;
 
   // Titre : la table partagée (accueil, éditeur, mobile et TV lisent la même).
   const { key: titleKey, params } = recoRowTitle(row);

@@ -72,12 +72,7 @@ export const RecoPageBody = memo(function RecoPageBody({
           <p className="row-gutter mb-10 text-sm text-content-tertiary">{t("filterEmpty")}</p>
         ) : (
           page.rows.map((row, i) => (
-            <RecoRowSlot
-              key={row.key}
-              row={row}
-              animDelay={Math.min(i, 4) * 60}
-              excludeKeys={row.key === "forYou" ? hero.excludeKeys : undefined}
-            />
+            <RecoRowSlot key={row.key} row={row} animDelay={Math.min(i, 4) * 60} />
           ))
         )}
       </div>

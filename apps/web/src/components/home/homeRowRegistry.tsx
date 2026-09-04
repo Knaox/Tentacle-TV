@@ -12,8 +12,6 @@ export interface HomeRowData {
   watchlist: MediaItem[] | undefined;
   watchedItems: MediaItem[] | undefined;
   librariesById: Map<string, { id: string; name: string; collectionType?: string; index: number }>;
-  /** Bandeau « reco » actif : les items qu'il montre, que « Pour vous » saute. */
-  heroExcludeKeys?: readonly string[];
   /** La rangée reco qui porte la puce du filtre de plateformes (null : aucune). */
   filterChipRowKey?: string | null;
 }
@@ -95,12 +93,10 @@ export function HomeRow({
     );
   }
   if (rowKey.startsWith("reco:")) {
-    const sub = rowKey.slice("reco:".length);
     return (
       <HomeRecoRow
-        rowKey={sub}
+        rowKey={rowKey.slice("reco:".length)}
         animDelay={animDelay}
-        excludeKeys={sub === "forYou" ? data.heroExcludeKeys : undefined}
         filterChip={rowKey === data.filterChipRowKey}
       />
     );

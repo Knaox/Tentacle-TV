@@ -6,9 +6,6 @@ import { HomeRecoFilterChip } from "./HomeRecoFilterChip";
 interface HomeRecoRowProps {
   rowKey: string;
   animDelay: number;
-  /** Les items MONTRÉS dans le bandeau « reco » de l'accueil — « Pour vous »
-   *  les exclut, exactement comme la page Recommandations. */
-  excludeKeys?: readonly string[];
   /** Cette rangée porte la puce du filtre de plateformes (la première servie). */
   filterChip?: boolean;
 }
@@ -25,7 +22,7 @@ const FILTER_CHIP = <HomeRecoFilterChip />;
  * miroir : la bonne page se demande dès le premier rendu. Rangée absente :
  * rien, jamais de squelette ici (l'accueil garde son dégradé silencieux).
  */
-export function HomeRecoRow({ rowKey, animDelay, excludeKeys, filterChip }: HomeRecoRowProps) {
+export function HomeRecoRow({ rowKey, animDelay, filterChip }: HomeRecoRowProps) {
   const { selected } = useRecoFilter();
   const { data: page } = useRecoPage(selected);
   const row = page?.rows.find((r) => r.key === rowKey);
@@ -34,7 +31,6 @@ export function HomeRecoRow({ rowKey, animDelay, excludeKeys, filterChip }: Home
     <RecoRowSlot
       row={row}
       animDelay={animDelay}
-      excludeKeys={excludeKeys}
       headerTrailing={filterChip ? FILTER_CHIP : undefined}
     />
   );
