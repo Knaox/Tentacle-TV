@@ -69,6 +69,10 @@ export function formatNotifTitle(
       const { username } = parseTicketNotifBody(n.body);
       return t("notifications:ticketUserReplyTitle", { username, subject: n.title });
     }
+    case "ticket_user_closed": {
+      const { username } = parseTicketNotifBody(n.body);
+      return t("notifications:ticketUserClosedTitle", { username, subject: n.title });
+    }
     default:
       return n.title;
   }
@@ -86,6 +90,7 @@ export function notifBodyText(n: Pick<AppNotification, "type" | "body">): string
       return null;
     case "ticket_new":
     case "ticket_user_reply":
+    case "ticket_user_closed":
       return parseTicketNotifBody(n.body).excerpt || null;
     default:
       return n.body;

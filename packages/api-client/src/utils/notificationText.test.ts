@@ -19,6 +19,9 @@ describe("formatNotifTitle", () => {
       .toBe('notifications:ticketNewTitle{"username":"alice","subject":"Sujet"}');
     expect(formatNotifTitle({ type: "ticket_user_reply", title: "Sujet", body: "bob\nextrait" }, t))
       .toBe('notifications:ticketUserReplyTitle{"username":"bob","subject":"Sujet"}');
+    expect(formatNotifTitle({ type: "ticket_user_closed", title: "Sujet", body: "bob\nmotif" }, t))
+      .toBe('notifications:ticketUserClosedTitle{"username":"bob","subject":"Sujet"}');
+    expect(notifBodyText({ type: "ticket_user_closed", body: "bob\nmotif" })).toBe("motif");
   });
 
   it("le statut brut est traduit, une ancienne phrase française est relue", () => {

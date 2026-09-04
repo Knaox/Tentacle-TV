@@ -11,7 +11,7 @@ describe("resolveNotificationRoute — tickets", () => {
   });
 
   it("l'admin atterrit sur la page admin du web, sur l'écran unique du mobile", () => {
-    for (const type of ["ticket_new", "ticket_user_reply"]) {
+    for (const type of ["ticket_new", "ticket_user_reply", "ticket_user_closed"]) {
       expect(resolveNotificationRoute({ type, refId: "t1" }, "web")).toBe("/admin/tickets?ticketId=t1");
       expect(resolveNotificationRoute({ type, refId: null }, "web")).toBe("/admin/tickets");
       expect(resolveNotificationRoute({ type, refId: "t1" }, "mobile")).toBe("/support?ticketId=t1");

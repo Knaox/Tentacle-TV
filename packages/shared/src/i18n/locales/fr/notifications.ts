@@ -14,6 +14,7 @@ export default {
   ticketStatusTitle: "Ticket \"{{subject}}\" — {{status}}",
   ticketNewTitle: "Nouveau ticket de {{username}} : « {{subject}} »",
   ticketUserReplyTitle: "{{username}} a répondu sur « {{subject}} »",
+  ticketUserClosedTitle: "{{username}} a fermé « {{subject}} »",
   watchlistShareTitle: "{{username}} vous a invité dans la liste \"{{listName}}\"",
   requestStatusTitle: "Mise a jour de demande : {{title}}",
   autoRetry: "Nouvelle tentative automatique pour « {{title}} » ({{count}}/{{max}})",
