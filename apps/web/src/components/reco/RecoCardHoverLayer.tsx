@@ -1,6 +1,7 @@
 import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
+import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { RecoReasonText } from "./RecoReasonText";
 import { RecoCardPlayButton } from "./RecoCardPlayButton";
@@ -20,8 +21,9 @@ interface RecoCardHoverLayerProps {
  * qui s'abonne au cache pour le montrer. Le composant n'est MONTÉ que pendant
  * le survol (`useMountWhile` chez l'appelant) : c'est la règle de
  * `HoverRatingStars`, étendue à tout le calque — au repos, aucune carte ne
- * porte d'abonnement. Voile en dégradé opaque, jamais de backdrop-filter ;
- * les deux fondus viennent de `.hover-reveal`.
+ * porte d'abonnement. Deux calques absolus : les chips qualité et langues en
+ * haut à gauche, le voile en bas (dégradé opaque, jamais de backdrop-filter ;
+ * les deux fondus viennent de `.hover-reveal`).
  */
 export function RecoCardHoverLayer({ item, shown, onDismiss, onOpenDetail }: RecoCardHoverLayerProps) {
   const { t } = useTranslation("reco");
@@ -38,32 +40,40 @@ export function RecoCardHoverLayer({ item, shown, onDismiss, onOpenDetail }: Rec
   };
 
   return (
-    <div
-      className="hover-reveal absolute inset-x-0 bottom-0 z-20"
-      data-shown={shown}
-      onKeyDown={stopKeys}
-      style={{
-        pointerEvents: shown ? "auto" : "none",
-        "--reveal-ms": "180ms",
-      } as CSSProperties}
-    >
+    <>
+      {/* Qualité et langues de ce qui va être lu — le film, ou l'épisode résolu.
+          Chips à backdrop-filter : montées au survol seulement, comme tout le
+          calque ; leur fondu de sortie tient dans le sursis de la carte. */}
+      {target?.media && (
+        <CardMetaOverlay item={target.media} density="compact" reveal="mount" shown={shown} />
+      )}
       <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-full"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.92) 30%, rgba(0,0,0,0.55) 70%, transparent)" }}
-      />
-      <div className="relative flex flex-col gap-1.5 px-2.5 pb-2.5 pt-6">
-        <RecoReasonText reasons={item.reasons} />
-        {target && <RecoCardPlayButton target={target} onOpenDetail={onOpenDetail} />}
-        <HoverRatingStars identity={ratingIdentity} jellyfinItemId={item.jellyfinItemId} />
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="self-end rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
-        >
-          {t("dismissAction")}
-        </button>
+        className="hover-reveal absolute inset-x-0 bottom-0 z-20"
+        data-shown={shown}
+        onKeyDown={stopKeys}
+        style={{
+          pointerEvents: shown ? "auto" : "none",
+          "--reveal-ms": "180ms",
+        } as CSSProperties}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-full"
+          style={{ background: "linear-gradient(to top, rgba(0,0,0,0.92) 30%, rgba(0,0,0,0.55) 70%, transparent)" }}
+        />
+        <div className="relative flex flex-col gap-1.5 px-2.5 pb-2.5 pt-6">
+          <RecoReasonText reasons={item.reasons} />
+          {target && <RecoCardPlayButton target={target} onOpenDetail={onOpenDetail} />}
+          <HoverRatingStars identity={ratingIdentity} jellyfinItemId={item.jellyfinItemId} />
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="self-end rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
+          >
+            {t("dismissAction")}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
