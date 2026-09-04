@@ -198,6 +198,23 @@ model AnnouncedContent {
   @@map("announced_contents")
 }
 
+// Séries retirées AUTOMATIQUEMENT de « Ma liste » (tout le disponible vu) :
+// à remettre dès qu'un épisode (saison > 0) de la série entre en bibliothèque.
+// Écrite par le client au retrait automatique ; effacée par le serveur à la
+// remise, ou par le client dès que l'utilisateur reprend la main (ajout ou
+// retrait manuel — son geste prime, la série ne revient plus toute seule).
+// Une série retirée À LA MAIN n'a jamais de ligne ici.
+// Voir services/watchlistAutoRetired.ts et routes/watchlist.ts.
+model WatchlistAutoRetired {
+  seriesId       String   @db.VarChar(64)
+  jellyfinUserId String   @db.VarChar(255)
+  retiredAt      DateTime @default(now())
+
+  @@id([seriesId, jellyfinUserId])
+  @@index([jellyfinUserId])
+  @@map("watchlist_auto_retired")
+}
+
 model PairingCode {
   id                    String    @id @default(cuid())
   code                  String    @unique @db.VarChar(4)
