@@ -137,8 +137,9 @@ export const RecoCard = memo(function RecoCard({
             </div>
           )}
 
-          {/* Note globale, au repos — le voile de survol couvre le bas. */}
-          <CardRatingBadge rating={item.voteAverage} shown={!hovered} />
+          {/* Note globale, TOUJOURS visible : au survol elle passe au-dessus du
+              voile, dont la dernière rangée lui laisse le coin (refus à droite). */}
+          <CardRatingBadge rating={item.voteAverage} raised />
 
           {/* Voile de survol : raison + étoiles + refus. Dégradé opaque, pas de
               backdrop-filter. Monté au survol, deux fondus via .hover-reveal. */}
@@ -166,7 +167,7 @@ export const RecoCard = memo(function RecoCard({
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="self-start rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
+                  className="self-end rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
                 >
                   {t("dismissAction")}
                 </button>
