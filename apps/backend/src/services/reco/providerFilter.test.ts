@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   PROVIDER_FILTER_MAX,
   expandFamilies,
+  familyFilterKeys,
   filterKeyOf,
+  isFamilyFilterKey,
   itemMatchesFilter,
+  maintainedFilterKeys,
   providerFilterFromQuery,
   providerIdsMatch,
 } from "./providerFilter";
@@ -61,5 +64,29 @@ describe("filtre strict", () => {
     expect(providerIdsMatch([8, 1968], wanted)).toBe(true);
     expect(providerIdsMatch([8], wanted)).toBe(false);
     expect(itemMatchesFilter([{ id: 283 }], wanted)).toBe(true);
+  });
+});
+
+describe("clés « une famille »", () => {
+  it("une clé par famille présente dans la région, par son id canonique", () => {
+    const keys = familyFilterKeys([{ id: 1968 }, { id: 685 }, { id: 8 }]);
+    expect(keys).toEqual(["8", "283", "685"]);
+    expect(familyFilterKeys([])).toEqual([]);
+  });
+  it("reconnaît une clé « une famille » — jamais un frère, jamais une sélection multiple", () => {
+    expect(isFamilyFilterKey("283")).toBe(true);
+    expect(isFamilyFilterKey("1968")).toBe(false);
+    expect(isFamilyFilterKey("8+283")).toBe(false);
+    expect(isFamilyFilterKey("all")).toBe(false);
+  });
+  it("maintient « all », le sauvegardé, les servis puis les familles, sans doublon", () => {
+    expect(maintainedFilterKeys("283+415", ["all", "8", "283+415"], ["8", "283", "337"])).toEqual([
+      "all",
+      "283+415",
+      "8",
+      "283",
+      "337",
+    ]);
+    expect(maintainedFilterKeys(null, [], [])).toEqual(["all"]);
   });
 });

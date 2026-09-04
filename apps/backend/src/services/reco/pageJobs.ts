@@ -1,4 +1,5 @@
 import { getPrisma } from "../db";
+import { getWatchProviderDirectory } from "../tmdb/providerDirectory";
 import { sendToUser } from "../wsManager";
 import { prewarmLibraryMemo } from "./candidates/libraryMemo";
 import { buildPageSnapshot, prepareBuildBase, yieldToLoop } from "./pageBuilder";
@@ -8,7 +9,7 @@ import type { StalenessProbe } from "./pageRows";
 import { msUntilNextUtcMidnight } from "./pageSchedule";
 import { evictSnapshots, listActiveAccounts, listLiveFilterKeys, readSnapshot, writeSnapshot } from "./pageSnapshot";
 import type { PageSnapshot } from "./pageSnapshot";
-import { filterKeyOf, providerFilterFromQuery } from "./providerFilter";
+import { familyFilterKeys, filterKeyOf, maintainedFilterKeys, providerFilterFromQuery } from "./providerFilter";
 import { onPoolWritten, onProfileRebuilt } from "./recoEvents";
 import { serveContext } from "./serveContext";
 import type { ServeContext } from "./serveContext";
@@ -90,17 +91,15 @@ async function savedFilterKey(userId: string): Promise<string | null> {
   }
 }
 
-/** Les clés à tenir à jour pour un compte : « all » dès qu'un snapshot vit
- *  ou qu'un filtre est sauvegardé, le filtre sauvegardé, puis les filtres
- *  servis récemment. Rien de tout cela : le compte n'a jamais visité, sa
- *  première visite construira. */
+/** « all », le filtre sauvegardé, les filtres servis récemment, puis UNE clé
+ *  par famille de plateformes présente dans la région : le premier clic sur
+ *  n'importe quelle plateforme est servi depuis un snapshot, jamais construit
+ *  dans la requête. Un compte sans page vivante ni filtre sauvegardé ne coûte rien. */
 async function filterKeysToMaintain(userId: string): Promise<string[]> {
   const [saved, live] = await Promise.all([savedFilterKey(userId), listLiveFilterKeys(userId)]);
   if (live.length === 0 && !saved) return [];
-  const keys = ["all"];
-  if (saved && saved !== "all") keys.push(saved);
-  for (const key of live) if (!keys.includes(key)) keys.push(key);
-  return keys;
+  const directory = await getWatchProviderDirectory().catch(() => null);
+  return maintainedFilterKeys(saved, live, familyFilterKeys(directory?.providers ?? []));
 }
 
 /**
