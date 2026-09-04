@@ -2,6 +2,7 @@ import { getSeerrConfig } from "../../seerConfig";
 import { ANIME_UNIVERSE_KEY, decadeOf, isAnimeCoarse } from "../facets";
 import type { FacetEntry } from "../facets";
 import type { Candidate } from "../scoring/strategy";
+import { isReleasedResult } from "./released";
 
 // Jellyseerr répond en camelCase (contrairement à TMDB nu).
 interface SeerrResult {
@@ -86,7 +87,7 @@ export async function candidatesFromVigie(): Promise<Candidate[]> {
         const data = (await res.json()) as SeerrPage;
         for (const raw of data.results ?? []) {
           const t = mediaType ?? (raw.mediaType === "tv" ? "tv" : raw.mediaType === "movie" ? "movie" : null);
-          if (!t) continue;
+          if (!t || !isReleasedResult(raw)) continue;
           out.push(toCandidate(raw, t));
         }
       } catch {
