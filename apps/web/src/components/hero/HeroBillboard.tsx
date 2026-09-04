@@ -80,7 +80,10 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   //   rafraîchissement. Or le carrousel relançait une animation toutes les
   //   huit secondes, sans fin — le GPU ne se rendormait jamais. Rien n'est
   //   figé brutalement : le zoom en cours va au bout, puis plus rien ne
-  //   repart ; le moindre geste remet en marche.
+  //   repart. Le moindre geste (souris, défilement, clavier, toucher) remet
+  //   en marche SUR-LE-CHAMP : la diapositive suivante arrive avec son fondu,
+  //   son zoom, son halo et son indicateur — pas une image figée pendant
+  //   encore un cycle (cf. useBillboardRotation).
   const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } =
     useBillboardRotation({
       count: items.length,

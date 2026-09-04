@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+/**
+ * Temps restant du cycle de la diapositive courante — zéro si le cycle est
+ * écoulé : le zoom est allé au bout, l'image est immobile.
+ */
+export function remainingInCycle(rotateMs: number, cycleStartedAt: number, now: number): number {
+  return Math.max(0, rotateMs - (now - cycleStartedAt));
+}
+
 interface BillboardRotationOptions {
   /** Nombre de diapositives — 0 ou 1 : jamais de minuterie. */
   count: number;
   /** Intervalle de rotation en ms (0 = désactivée). */
   rotateMs: number;
   /** Faux = minuterie suspendue (économie de données, hors écran, inactivité —
-   *  les raisons vivent chez l'appelant). L'index est conservé : la reprise
-   *  est invisible. */
+   *  les raisons vivent chez l'appelant). L'index est conservé. À la reprise,
+   *  le cycle repart LÀ OÙ IL EN ÉTAIT ; s'il est écoulé, la diapositive
+   *  suivante arrive aussitôt. */
   active: boolean;
 }
 
@@ -22,8 +31,15 @@ interface BillboardRotationOptions {
 export function useBillboardRotation({ count, rotateMs, active }: BillboardRotationOptions) {
   const [index, setIndex] = useState(0);
   const [animKey, setAnimKey] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const pausedRef = useRef(false);
+  // Début du cycle de la diapositive courante. Déclaré AVANT l'effet de la
+  // minuterie : à index égal, React joue les effets dans l'ordre, et la
+  // minuterie doit lire un début déjà à jour.
+  const cycleStartRef = useRef(performance.now());
+  useEffect(() => {
+    cycleStartRef.current = performance.now();
+  }, [index]);
 
   const advance = useCallback(
     (delta: 1 | -1) => {
@@ -44,18 +60,24 @@ export function useBillboardRotation({ count, rotateMs, active }: BillboardRotat
   );
 
   const startTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    if (!active) return;
-    if (rotateMs > 0 && count > 1 && !pausedRef.current) {
-      timerRef.current = setInterval(() => advance(1), rotateMs);
-    }
+    clearTimeout(timerRef.current);
+    if (!active || rotateMs <= 0 || count <= 1 || pausedRef.current) return;
+    // Un seul tir, jamais un intervalle : chaque avancée change l'index, et
+    // l'effet ci-dessous réarme un cycle entier. Une REPRISE (inactivité,
+    // retour à l'écran, fin du mode économie) n'attend donc que le reste du
+    // cycle en cours ; cycle écoulé — le zoom est allé au bout, l'image est
+    // immobile —, la diapositive suivante arrive aussitôt. C'est ce qui fait
+    // lire « ça repart » au premier geste, au lieu d'une image figée pendant
+    // encore huit secondes.
+    const delay = remainingInCycle(rotateMs, cycleStartRef.current, performance.now());
+    timerRef.current = setTimeout(() => advance(1), delay);
   }, [rotateMs, count, advance, active]);
 
   // Relancée à chaque changement d'index : une diapositive entière après une
   // navigation manuelle, jamais un reliquat de minuterie.
   useEffect(() => {
     startTimer();
-    return () => clearInterval(timerRef.current);
+    return () => clearTimeout(timerRef.current);
   }, [startTimer, index]);
 
   // `count` a rétréci (retrait optimiste d'une diapositive) : on se recale.
@@ -65,7 +87,7 @@ export function useBillboardRotation({ count, rotateMs, active }: BillboardRotat
 
   const pause = useCallback(() => {
     pausedRef.current = true;
-    clearInterval(timerRef.current);
+    clearTimeout(timerRef.current);
   }, []);
 
   const resume = useCallback(() => {
