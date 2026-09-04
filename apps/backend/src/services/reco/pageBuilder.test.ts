@@ -82,6 +82,7 @@ const baseOf = (p: PoolPayload | null, state: ServeContext["state"] = "ready"): 
   globalRows: new Map<string, SnapshotRow>([
     ["trending", { key: "trending", items: [item(900, [283]), item(901, null), item(902, [8])] }],
     ["serverPulse", { key: "serverPulse", items: [] }],
+    ["bestOfLibrary", { key: "bestOfLibrary", items: [item(950, null)] }],
   ]),
   regional: [],
   providerRefOf: (id) => ({ id, name: `P${id}`, logoPath: null }),
@@ -109,6 +110,7 @@ describe("buildPageSnapshot", () => {
     expect(keys).toContain("inLibrary");
     expect(keys).toContain("trending");
     expect(keys).not.toContain("serverPulse");
+    expect(keys.at(-1)).toBe("bestOfLibrary");
     for (const row of snapshot.rows) {
       expect(row.items.length).toBeGreaterThan(0);
       for (const it of row.items) expect(it.providers).not.toBeUndefined();
@@ -123,6 +125,7 @@ describe("buildPageSnapshot", () => {
     const snapshot = await buildPageSnapshot(baseOf(pool(ENTRIES)), [283]);
     expect(snapshot.filter).toEqual({ providers: [283] });
     expect(snapshot.rows.map((r) => r.key)).not.toContain("trending"); // 1 item sur 3 → mince
+    expect(snapshot.rows.map((r) => r.key)).not.toContain("bestOfLibrary"); // disponibilité inconnue
     const forYou = snapshot.rows.find((r) => r.key === "forYou");
     expect(forYou).toBeDefined();
     expect(forYou!.items.length).toBeGreaterThanOrEqual(4);
@@ -135,7 +138,7 @@ describe("buildPageSnapshot", () => {
 
   it("état froid : les rangées globales seules, non filtrées", async () => {
     const snapshot = await buildPageSnapshot(baseOf(null, "cold"), null);
-    expect(snapshot.rows.map((r) => r.key)).toEqual(["trending"]);
+    expect(snapshot.rows.map((r) => r.key)).toEqual(["trending", "bestOfLibrary"]);
     expect(snapshot.rows[0].items).toHaveLength(3);
     expect(snapshot.poolGeneratedAt).toBeNull();
   });
