@@ -83,8 +83,13 @@ export function useCreateTicket() {
   });
 }
 
+interface TicketListOptions {
+  /** `false` : la requête ne part pas (le tableau ne charge qu'un scope). */
+  enabled?: boolean;
+}
+
 /** Pas de page : 20 pour une liste, jusqu'à 200 pour le tableau (plafond serveur). */
-export function useMyTickets(status?: string, page = 1, limit = 20) {
+export function useMyTickets(status?: string, page = 1, limit = 20, options?: TicketListOptions) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
   const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
@@ -92,12 +97,12 @@ export function useMyTickets(status?: string, page = 1, limit = 20) {
   return useQuery({
     queryKey: ["tickets", "mine", status, page, limit],
     queryFn: () => ticketFetch<TicketsPage>(`/?${params}`),
-    enabled: hasToken,
+    enabled: hasToken && (options?.enabled ?? true),
     staleTime: 30_000,
   });
 }
 
-export function useAllTickets(status?: string, page = 1, limit = 20) {
+export function useAllTickets(status?: string, page = 1, limit = 20, options?: TicketListOptions) {
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
   const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
@@ -105,7 +110,7 @@ export function useAllTickets(status?: string, page = 1, limit = 20) {
   return useQuery({
     queryKey: ["tickets", "all", status, page, limit],
     queryFn: () => ticketFetch<TicketsPage>(`/all?${params}`),
-    enabled: hasToken,
+    enabled: hasToken && (options?.enabled ?? true),
     staleTime: 30_000,
   });
 }
