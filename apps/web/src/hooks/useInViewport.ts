@@ -39,7 +39,12 @@ export function useInViewport<T extends HTMLElement>(rootMargin = "0px") {
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => setOnScreen(entry.isIntersecting),
+      // TOUTES les entrées, et la dernière fait foi. Quand le fil principal est
+      // occupé (défilement chargé, rangées qui se révèlent), plusieurs images
+      // d'observation s'accumulent avant le rappel : la première pouvait dire
+      // « sorti » alors que la cible était déjà revenue — la rangée restait
+      // vide jusqu'au prochain passage de l'observateur.
+      (entries) => setOnScreen(entries[entries.length - 1].isIntersecting),
       { rootMargin },
     );
     observer.observe(element);
