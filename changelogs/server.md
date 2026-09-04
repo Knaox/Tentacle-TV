@@ -60,7 +60,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule — un bandeau dit toujours ce qui se passe
 - **La clé TMDB active tout** : posée dans Admin → Métadonnées, elle déclenche le calcul des recommandations de tous les comptes en arrière-plan ; absente, la page reste utile — contenu général, et l'admin voit où poser sa clé
 - **Dites-nous ce que vous aimez** : à la première visite, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une seule fois
-- **Noter, partout** : des étoiles au survol de n'importe quelle affiche, la note globale sur les cartes, vos notes synchronisées vers TMDB et AniList — et l'affiche de fin d'épisode se note désormais, le décompte s'interrompt le temps du geste
+- **Noter, partout** : des étoiles au survol de n'importe quelle affiche, la note globale sur les cartes, vos notes synchronisées vers TMDB — et l'affiche de fin d'épisode se note désormais, le décompte s'interrompt le temps du geste
 - **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix — gérées au contact des rangées, portraits compris
 - **Filtres par plateforme** : un menu avec les logos de vos services (l'annuaire complet de votre région, Crunchyroll et ADN compris) filtre les recommandations selon vos abonnements
 - **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
@@ -70,7 +70,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
 - **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
 - **Réglages → Personnalisation** : l'accueil se compose (rangées, bandeau principal), l'équilibre entre valeurs sûres et découvertes se règle, ainsi que l'inclusion des titres hors bibliothèque (Vigie), les recommandations communautaires et le partage de votre historique (opt-out), les acteurs favoris et la remise à zéro du profil
-- **Admin → Métadonnées** : clé TMDB validée avant d'être stockée, identifiants AniList et région des plateformes se règlent depuis l'admin — plus seulement par variables d'environnement
+- **Admin → Métadonnées** : clé TMDB validée avant d'être stockée et région des plateformes se règlent depuis l'admin — plus seulement par variables d'environnement
 - **Noter ou écarter un titre le retire aussitôt des rangées**, et la raison « En anglais » disparaît (elle désignait la langue originale TMDB, trompeuse en VF)
 - **Vos favoris et vos séries entamées ne sont plus recommandés** : un favori reste une graine, une série entamée vit dans « Reprendre » ; les graines des rangées « Parce que vous avez aimé » tournent chaque jour
 - **Un compte avec un historique ne subit plus la grille de démarrage** — réservée aux comptes vierges, avec 60 titres répartis par genre au lieu de 30 triés par note
@@ -86,7 +86,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed — a banner always says what's happening
 - **The TMDB key switches everything on**: set in Admin → Metadata, it triggers background computation for every account; without it the page stays useful — general content, and the admin sees where to add the key
 - **Tell us what you like**: on your first visit, a grid of titles from your library seeds your profile in five picks — it only imposes itself once
-- **Rate anywhere**: stars on hover over any poster, the global rating on cards, your ratings synced to TMDB and AniList — and the end-of-episode poster can now be rated, the countdown pauses for the gesture
+- **Rate anywhere**: stars on hover over any poster, the global rating on cards, your ratings synced to TMDB — and the end-of-episode poster can now be rated, the countdown pauses for the gesture
 - **Your actors**: like an actor or a director and "With …" rows grow from your picks — managed right next to the rows, portraits included
 - **Platform filters**: a menu with your services' logos (the full directory for your region, Crunchyroll and ADN included) filters recommendations by your subscriptions
 - **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
@@ -96,7 +96,7 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 - **The player's episode list opens on the current episode**
 - **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
 - **Settings → Personalization**: compose your home (rows, main banner), set the balance between safe bets and discoveries, whether to include titles outside your library (Vigie), community recommendations and the sharing of your history (opt-out), favorite actors and a profile reset
-- **Admin → Metadata**: the TMDB key (validated before being stored), the AniList credentials and the platform region are set from the admin — no longer only through environment variables
+- **Admin → Metadata**: the TMDB key (validated before being stored) and the platform region are set from the admin — no longer only through environment variables
 - **Rating or dismissing a title removes it from the rows at once**, and the "In English" reason is gone (it named the TMDB original language, misleading for a dubbed copy)
 - **Your favorites and started series are no longer recommended**: a favorite stays a seed, a started series lives in "Resume"; the seeds of the "Because you liked" rows rotate daily
 - **An account with a history no longer gets the onboarding grid** — reserved for fresh accounts, with 60 titles spread by genre instead of 30 sorted by rating
