@@ -45,6 +45,7 @@ import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { leaderboardRoutes } from "./routes/leaderboard";
 import { ratingRoutes } from "./routes/ratings";
 import { likeRoutes } from "./routes/likes";
+import { watchlistRoutes } from "./routes/watchlist";
 import { recoRoutes } from "./routes/reco";
 import { recoPeopleRoutes } from "./routes/recoPeople";
 import { recoPageRoutes } from "./routes/recoPage";
@@ -249,6 +250,7 @@ async function main() {
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
   await app.register(ratingRoutes, { prefix: "/api/ratings" });
   await app.register(likeRoutes, { prefix: "/api/likes" });
+  await app.register(watchlistRoutes, { prefix: "/api/watchlist" });
   await app.register(recoRoutes, { prefix: "/api/reco" });
   await app.register(recoRowRoutes, { prefix: "/api/reco" });
   await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
