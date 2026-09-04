@@ -44,6 +44,8 @@ export default {
   libraryAddedDesc: "Get notified about new content added to the server",
   seerAvailableTitle: "Requested content available",
   seerAvailableDesc: "When one of your requests becomes available",
+  ticketsTitle: "Support tickets",
+  ticketsDesc: "Replies and status changes on your tickets — and new tickets if you are an administrator",
   testButton: "Send a test notification",
   testHint: "Check that notifications reach this device.",
   testSent: "Notification sent ✓",
