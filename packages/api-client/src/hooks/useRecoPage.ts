@@ -70,10 +70,28 @@ export const selectRecoPage = (page: RecoPage): RecoPage => ({
 });
 
 /**
+ * L'intervalle de sondage de repli. v5 appelle `refetchInterval(query)`, v4
+ * (la TV, au runtime) appelle `refetchInterval(data, query)` : on reconnaît la
+ * query à son `state` OBJET — `RecoPage.state` est une chaîne (« ready »…),
+ * c'est le discriminant. Exportée pour être testée sous les deux formes.
+ */
+export function recoPagePollInterval(socketOpen: boolean, ...args: unknown[]): number | false {
+  const first = args[0] as { state?: unknown } | undefined;
+  const page =
+    first && typeof first.state === "object" && first.state !== null
+      ? (first.state as { data?: RecoPage }).data
+      : (first as RecoPage | undefined);
+  if (!page || !(page.generating || page.refining)) return false;
+  return socketOpen ? false : RECO_PAGE_FALLBACK_POLL_MS;
+}
+
+/**
  * LA page de recommandations en une requête. Changement de filtre : les
  * anciennes rangées restent affichées jusqu'à l'arrivée des neuves (jamais de
- * blanc). Pas d'import de `keepPreviousData` — la TV embarque TanStack v4 au
- * runtime (cf. useLibraryCatalog) ; la fonction identique est écrite ici.
+ * blanc). Double-compat : api-client est typé v5 (web) mais la TV résout la
+ * v4 au runtime — pas d'import de `keepPreviousData` (absent en v4) ; v4 lit
+ * l'option `keepPreviousData`, v5 lit `placeholderData(prev)` (cf.
+ * useLibraryCatalog).
  */
 export function useRecoPage(
   filter: readonly number[] | null | undefined,
@@ -85,14 +103,10 @@ export function useRecoPage(
     queryFn: buildRecoPageFetcher(ids),
     staleTime: RECO_PAGE_STALE_TIME,
     enabled: options.enabled ?? true,
-    placeholderData: (prev: RecoPage | undefined) => prev,
     select: selectRecoPage,
     // Le socket (reco:update) fait foi ; on ne sonde qu'à défaut.
-    refetchInterval: (query) => {
-      const d = query.state.data;
-      if (!d || !(d.generating || d.refining)) return false;
-      return getSocketStatus() === "open" ? false : RECO_PAGE_FALLBACK_POLL_MS;
-    },
+    refetchInterval: (...args: unknown[]) => recoPagePollInterval(getSocketStatus() === "open", ...args),
+    ...({ keepPreviousData: true, placeholderData: (prev: RecoPage | undefined) => prev } as object),
   });
 }
 

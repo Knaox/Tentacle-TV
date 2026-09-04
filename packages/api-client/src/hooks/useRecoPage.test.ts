@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { RecoRowItem } from "./recoTypes";
-import { normalizeProviderFilter, recoFilterKey, removeRecoItem, selectRecoPage } from "./useRecoPage";
+import {
+  RECO_PAGE_FALLBACK_POLL_MS,
+  normalizeProviderFilter,
+  recoFilterKey,
+  recoPagePollInterval,
+  removeRecoItem,
+  selectRecoPage,
+} from "./useRecoPage";
 import type { RecoPage } from "./useRecoPage";
 
 const item = (key: string): RecoRowItem => ({
@@ -60,5 +67,27 @@ describe("selectRecoPage", () => {
     const out = selectRecoPage(raw);
     expect(out.refining).toBe(false);
     expect(out.rows.map((r) => r.key)).toEqual(["a"]);
+  });
+});
+
+describe("recoPagePollInterval", () => {
+  const generating: RecoPage = { ...page([]), generating: true };
+
+  it("forme v5 (query) : sonde seulement sans socket, pendant la construction", () => {
+    expect(recoPagePollInterval(false, { state: { data: generating } })).toBe(RECO_PAGE_FALLBACK_POLL_MS);
+    expect(recoPagePollInterval(true, { state: { data: generating } })).toBe(false);
+    expect(recoPagePollInterval(false, { state: { data: page([]) } })).toBe(false);
+  });
+
+  it("forme v4 (data, query) : la page arrive en premier, son `state` est une chaîne", () => {
+    expect(recoPagePollInterval(false, generating, { state: { data: generating } })).toBe(RECO_PAGE_FALLBACK_POLL_MS);
+    expect(recoPagePollInterval(false, { ...page([]), refining: true }, {})).toBe(RECO_PAGE_FALLBACK_POLL_MS);
+    expect(recoPagePollInterval(false, page([]), {})).toBe(false);
+  });
+
+  it("sans donnée : jamais de sondage", () => {
+    expect(recoPagePollInterval(false)).toBe(false);
+    expect(recoPagePollInterval(false, undefined, {})).toBe(false);
+    expect(recoPagePollInterval(false, { state: {} })).toBe(false);
   });
 });
