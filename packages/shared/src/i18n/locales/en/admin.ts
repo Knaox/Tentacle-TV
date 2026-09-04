@@ -158,10 +158,6 @@ export default {
     "Metadata service keys. TMDB powers rich recommendations (similar titles, actors, keywords, out-of-library posters) and anonymous rating sync; without a key the engine falls back to library genres.",
   tmdbDescription: "A free API key (v3) created on themoviedb.org — validated before being saved.",
   tmdbKeyLabel: "TMDB API key",
-  anilistDescription:
-    "AniList OAuth client (id + secret): lets accounts link AniList and sync their anime ratings there. Not a suggestion source yet.",
-  anilistClientIdLabel: "Client ID",
-  anilistClientSecretLabel: "Client secret",
   metadataRegionTitle: "Streaming platforms",
   metadataRegionDescription:
     "Availability region (Netflix, Crunchyroll chips…) — two-letter country code, resolved at read time: changing it asks nothing more from TMDB.",

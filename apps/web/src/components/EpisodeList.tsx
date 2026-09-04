@@ -21,7 +21,7 @@ import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
 import { DownloadDialog } from "../downloads/DownloadDialog";
 import { EpisodeRow } from "./EpisodeRow";
 import type { EpisodeRowRating } from "./EpisodeRow";
-import { tmdbIdForItem, tvdbIdForItem } from "../lib/ratingIdentity";
+import { tmdbIdForItem } from "../lib/ratingIdentity";
 import { useDownloadsVisibility } from "../downloads/useDownloadState";
 import { RevealCell, RevealScope } from "./grid/RevealCell";
 
@@ -56,7 +56,6 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
   // TMDB de la saison et celles du compte — UN abonnement pour toute la liste,
   // les lignes reçoivent des valeurs (jamais un abonnement par ligne).
   const seriesTmdbId = tmdbIdForItem(seriesItem);
-  const seriesTvdbId = seriesItem ? tvdbIdForItem(seriesItem) : null;
   const seasonNumber = useMemo(
     () => seasons?.find((s) => s.Id === selectedSeasonId)?.IndexNumber ?? null,
     [seasons, selectedSeasonId],
@@ -73,11 +72,11 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
       return {
         community: tmdbEpisodes?.get(ep.IndexNumber)?.voteAverage ?? ep.CommunityRating ?? null,
         mine: myEpisodeRatings.get(ep.IndexNumber) ?? null,
-        onRate: (score) => rateEpisode({ ...identity, score, tvdbId: seriesTvdbId, jellyfinItemId: ep.Id }),
+        onRate: (score) => rateEpisode({ ...identity, score, jellyfinItemId: ep.Id }),
         onClear: () => clearRating(identity),
       };
     },
-    [seriesTmdbId, seriesTvdbId, seasonNumber, tmdbEpisodes, myEpisodeRatings, rateEpisode, clearRating],
+    [seriesTmdbId, seasonNumber, tmdbEpisodes, myEpisodeRatings, rateEpisode, clearRating],
   );
 
   const batchCtx = useMemo(() => ({ seriesId, seasonId: selectedSeasonId }), [seriesId, selectedSeasonId]);

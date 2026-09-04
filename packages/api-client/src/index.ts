@@ -250,13 +250,11 @@ export type { LibraryRef, ReconcileHomeRowsOptions } from "./utils/homeRows";
 export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
 export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
 
-// Comptes externes — TMDB guest session, AniList (cf. hooks/useExternalAccounts)
+// Comptes externes — TMDB guest session (cf. hooks/useExternalAccounts)
 export {
   useExternalAccounts,
   useCreateTmdbGuestSession,
   useUnlinkTmdbGuestSession,
-  useAnilistAuthorizeUrl,
-  useUnlinkAnilist,
   useResyncRatings,
 } from "./hooks/useExternalAccounts";
 export type { ExternalAccountsStatus } from "./hooks/useExternalAccounts";

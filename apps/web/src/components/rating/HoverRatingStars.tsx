@@ -4,8 +4,6 @@ import { StarRating } from "./StarRating";
 
 interface HoverRatingStarsProps {
   identity: RatingIdentity;
-  /** Ancre du mapping AniList des séries (table Fribb, pivot thetvdb_id). */
-  tvdbId?: number | null;
   jellyfinItemId?: string | null;
 }
 
@@ -17,7 +15,7 @@ interface HoverRatingStarsProps {
  * et une note re-rendrait toute la grille. Ici, l'abonnement n'existe que le
  * temps du survol. stopPropagation : noter ne doit jamais naviguer.
  */
-export function HoverRatingStars({ identity, tvdbId, jellyfinItemId }: HoverRatingStarsProps) {
+export function HoverRatingStars({ identity, jellyfinItemId }: HoverRatingStarsProps) {
   const rating = useItemRating(identity);
   const rate = useRateItem();
   const remove = useDeleteRating();
@@ -37,7 +35,6 @@ export function HoverRatingStars({ identity, tvdbId, jellyfinItemId }: HoverRati
           rate.mutate({
             ...identity,
             jellyfinItemId: jellyfinItemId ?? undefined,
-            tvdbId: tvdbId ?? undefined,
             score,
           })
         }

@@ -3,12 +3,6 @@ import { tentacleApiFetch } from "./usePreferences";
 
 export interface ExternalAccountsStatus {
   tmdb: { configured: boolean; linked: boolean; linkedAt: string | null };
-  anilist: {
-    available: boolean;
-    linked: boolean;
-    externalId: string | null;
-    linkedAt: string | null;
-  };
   sync: { pending: number; failed: number; synced: number };
 }
 
@@ -41,22 +35,6 @@ export function useUnlinkTmdbGuestSession() {
   return useMutation({
     mutationFn: () =>
       tentacleApiFetch<{ ok: boolean }>("/api/external/tmdb/guest-session", { method: "DELETE" }),
-    onSettled: () => invalidate(qc),
-  });
-}
-
-/** L'URL de consentement AniList (state à usage unique lié au compte). */
-export function useAnilistAuthorizeUrl() {
-  return useMutation({
-    mutationFn: () =>
-      tentacleApiFetch<{ url: string }>("/api/external/anilist/authorize-url", { method: "POST" }),
-  });
-}
-
-export function useUnlinkAnilist() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => tentacleApiFetch<{ ok: boolean }>("/api/external/anilist", { method: "DELETE" }),
     onSettled: () => invalidate(qc),
   });
 }

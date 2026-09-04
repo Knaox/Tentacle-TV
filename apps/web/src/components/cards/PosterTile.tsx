@@ -14,7 +14,7 @@ import { PlayIcon } from "../icons/HeroIcons";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { PressableScale } from "../ui/PressableScale";
 import { useMountWhile } from "../../hooks/useMountWhile";
-import { ratingIdentityForItem, tvdbIdForItem } from "../../lib/ratingIdentity";
+import { ratingIdentityForItem } from "../../lib/ratingIdentity";
 
 interface PosterTileProps {
   item: MediaItem;
@@ -164,7 +164,6 @@ export function PosterTile({
             {ratingIdentity && (
               <HoverRatingStars
                 identity={ratingIdentity}
-                tvdbId={tvdbIdForItem(item)}
                 jellyfinItemId={item.Id}
               />
             )}
