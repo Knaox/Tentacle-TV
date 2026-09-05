@@ -1,14 +1,17 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RefreshControl, View, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
+import { HeroBanner } from "@/components/HeroBanner";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
+import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
 import { ColdStartScreen } from "@/components/reco/coldstart/ColdStartScreen";
 import { RecoDisabledState, RecoErrorState } from "@/components/reco/page/RecoErrorState";
 import { RecoPageHeader } from "@/components/reco/page/RecoPageHeader";
@@ -33,6 +36,13 @@ export function ForYouScreen() {
   const onScrollChrome = useScrollChromeHandler();
   const model = useRecoPageModel();
   const recoNav = useRecoNavigation();
+  const client = useJellyfinClient();
+  // Le carrousel : les diapositives tirées de « Pour vous » (graine par
+  // montage) — sinon le titre compact tient sa place.
+  const heroSlides = useMemo(
+    () => recoHeroSlides(model.hero.slides, client, { canOpen: recoNav.canOpen, onOpen: recoNav.open }),
+    [model.hero.slides, client, recoNav.canOpen, recoNav.open],
+  );
 
   // Appui long : la feuille habituelle en bibliothèque (favoris, Ma liste,
   // vu — avec les raisons), celle des recommandations sinon.
@@ -107,7 +117,8 @@ export function ForYouScreen() {
           />
         }
       >
-        <RecoPageHeader showTitle />
+        {heroSlides.length > 0 && <HeroBanner slides={heroSlides} />}
+        <RecoPageHeader showTitle={heroSlides.length === 0} />
         <RecoStatusBanner
           page={page}
           hasPersonalizedRows={model.hasPersonalizedRows}
