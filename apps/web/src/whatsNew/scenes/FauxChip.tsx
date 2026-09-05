@@ -12,6 +12,8 @@ interface FauxChipProps extends Placed, Animated {
   logo?: string;
   logoTone?: number;
   size?: "sm" | "md";
+  /** « primary » : la pastille blanche des actions (Lecture), comme dans l'app. */
+  variant?: "default" | "primary";
 }
 
 const ICONS: Record<NonNullable<FauxChipProps["icon"]>, string> = {
@@ -22,13 +24,19 @@ const ICONS: Record<NonNullable<FauxChipProps["icon"]>, string> = {
 };
 
 /** Une pastille : filtre, badge, bouton — le même objet que dans l'app, en faux. */
-export function FauxChip({ label, selected = false, icon, logo, logoTone = 0, size = "md", ...place }: FauxChipProps) {
+export function FauxChip({
+  label, selected = false, icon, logo, logoTone = 0, size = "md", variant = "default", ...place
+}: FauxChipProps) {
   const pad = size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-[12px]";
+  const skin =
+    variant === "primary"
+      ? "border-cta-primary-border bg-cta-primary-bg font-bold text-cta-primary-fg"
+      : "border-line-subtle bg-fill-soft font-medium";
   return (
     <Place {...place}>
       <span
-        className={`relative inline-flex items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border border-line-subtle bg-fill-soft font-medium ${pad}`}
-        style={{ color: selected ? "var(--brand)" : "var(--text-secondary)" }}
+        className={`relative inline-flex items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full border ${skin} ${pad}`}
+        style={variant === "primary" ? undefined : { color: selected ? "var(--brand)" : "var(--text-secondary)" }}
       >
         <motion.span
           aria-hidden

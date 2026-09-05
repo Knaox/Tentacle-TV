@@ -113,6 +113,7 @@ et Linux reçoivent l'ensemble.
 - **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, et un clic sur une notification ouvre directement le ticket ; l'auteur peut fermer le sien en disant pourquoi ; l'admin déplace les cartes et supprime un ou plusieurs tickets
 - **La cloche se met à jour à l'instant**, sur toutes les pages — et les administrateurs sont prévenus de chaque nouveau ticket, réponse ou fermeture
 - **La page Thème de l'admin disparaît** (thèmes saisonniers, couleurs, CSS personnalisé), comme l'interrupteur serveur d'auto-play : les réglages de lecture de chaque compte décident seuls
+- **Les nouveautés se montrent** : après une mise à jour, un écran animé présente ce qui change, une fois par version — et se revoit depuis À propos
 - Compatibilité : cette version demande un serveur 1.17.0 ou plus
 
 ### EN
@@ -142,6 +143,7 @@ et Linux reçoivent l'ensemble.
 - **Support tickets become a board**: one column per status, the ticket in a side panel, and clicking a notification opens the ticket directly; the author can close their own, saying why; the admin drags cards and deletes one or several tickets
 - **The bell updates instantly**, on every page — and administrators are told about every new ticket, reply or closing
 - **The admin Theme page is gone** (seasonal themes, colors, custom CSS), and so is the server-side auto-play switch: each account's playback settings decide alone
+- **What's new shows itself**: after an update, an animated screen presents what changed, once per version — and can be seen again from About
 - Compatibility: this version requires server 1.17.0 or newer
 
 ## [mac-1.20.11]
