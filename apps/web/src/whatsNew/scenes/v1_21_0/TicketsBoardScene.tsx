@@ -12,7 +12,12 @@ const COLS: readonly { x: number; status: TicketStatus }[] = [
   { x: 190, status: "in_progress" },
   { x: 356, status: "resolved" },
 ];
-const CARD_STEP = 100;
+// Une vraie TicketCard fait 135 px logiques à cette largeur (mesuré dans le
+// DOM, sujet sur deux lignes, méta sur deux lignes) : le pas la dépasse.
+const CARD_STEP = 144;
+const COL_Y = 14;
+const COL_H = 340;
+const CARD_Y = COL_Y + 12 + 36;
 const noop = () => {};
 
 function fakeTicket(id: string, subject: string, category: SupportTicket["category"], hoursAgo: number, messages: number): SupportTicket {
@@ -44,7 +49,7 @@ export function TicketsBoardScene({ active, reduced }: SceneProps) {
   return (
     <SceneStage cycle={cycle}>
       {COLS.map((col, i) => (
-        <Place key={col.status} x={col.x} y={20} w={150} h={320} className="flex flex-col rounded-xl border border-line-subtle bg-fill-faint p-3">
+        <Place key={col.status} x={col.x} y={COL_Y} w={150} h={COL_H} className="flex flex-col rounded-xl border border-line-subtle bg-fill-faint p-3">
           <header className="mb-3 flex items-center gap-2 px-1">
             <span className={`h-2.5 w-2.5 rounded-full ${STATUS_STYLE[col.status].dot}`} aria-hidden />
             <span className="text-sm font-semibold text-content-primary">{t(TICKET_STATUS_LABEL_KEYS[col.status])}</span>
@@ -52,14 +57,14 @@ export function TicketsBoardScene({ active, reduced }: SceneProps) {
           </header>
         </Place>
       ))}
-      <Place x={COLS[1].x + 12} y={68} w={126}><TicketCard ticket={tickets.audio} scope="mine" draggable={false} onOpen={noop} /></Place>
-      <Place x={COLS[2].x + 12} y={68} w={126}><TicketCard ticket={tickets.poster} scope="mine" draggable={false} onOpen={noop} /></Place>
-      <Place x={COLS[0].x + 12} y={68 + CARD_STEP} w={126} dy={moved ? -CARD_STEP : 0}>
+      <Place x={COLS[1].x + 12} y={CARD_Y} w={126}><TicketCard ticket={tickets.audio} scope="mine" draggable={false} onOpen={noop} /></Place>
+      <Place x={COLS[2].x + 12} y={CARD_Y} w={126}><TicketCard ticket={tickets.poster} scope="mine" draggable={false} onOpen={noop} /></Place>
+      <Place x={COLS[0].x + 12} y={CARD_Y + CARD_STEP} w={126} dy={moved ? -CARD_STEP : 0}>
         <TicketCard ticket={tickets.login} scope="mine" draggable={false} onOpen={noop} />
       </Place>
       <Place
         x={COLS[0].x + 12}
-        y={68}
+        y={CARD_Y}
         w={126}
         dx={moved ? COLS[1].x - COLS[0].x : 0}
         dy={moved ? CARD_STEP : 0}
@@ -68,7 +73,7 @@ export function TicketsBoardScene({ active, reduced }: SceneProps) {
       >
         <TicketCard ticket={tickets.subtitles} scope="mine" draggable={false} onOpen={noop} />
       </Place>
-      <Place x={520} y={20} w={112} h={320} visible={panel} dx={panel ? 0 : 130} className="rounded-xl border border-line-subtle bg-surface-modal p-3 shadow-2xl">
+      <Place x={520} y={COL_Y} w={112} h={COL_H} visible={panel} dx={panel ? 0 : 130} className="rounded-xl border border-line-subtle bg-surface-modal p-3 shadow-2xl">
         <span className="line-clamp-2 text-sm font-medium text-content-primary">{tickets.subtitles.subject}</span>
         <span className={`mt-2 inline-flex rounded-md px-1.5 py-0.5 text-[11px] font-medium ${STATUS_STYLE.in_progress.chip}`}>
           {t(TICKET_STATUS_LABEL_KEYS.in_progress)}
@@ -78,7 +83,7 @@ export function TicketsBoardScene({ active, reduced }: SceneProps) {
       </Place>
       <FauxCursor
         x={grabbed ? (moved ? COLS[1].x + 70 : COLS[0].x + 70) : 560}
-        y={grabbed ? (moved ? 68 + CARD_STEP + 34 : 102) : 330}
+        y={grabbed ? (moved ? CARD_Y + CARD_STEP + 45 : CARD_Y + 45) : 330}
         pressed={grabbed && !panel}
         hidden={panel}
         reduced={reduced}
