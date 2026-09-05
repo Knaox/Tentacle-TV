@@ -2,7 +2,7 @@ import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { RecoPage } from "@tentacle-tv/api-client";
 import { RecoBillboardSlot } from "./hero/RecoBillboardSlot";
-import type { RecoHeroSelection } from "./hero/recoHeroSlides";
+import type { RecoHeroSelection } from "@tentacle-tv/api-client";
 import { LikedActorsPanel } from "./LikedActorsPanel";
 import { RecoFiltersMenu } from "./RecoFiltersMenu";
 import { RecoRowSkeleton } from "./RecoRowSkeleton";

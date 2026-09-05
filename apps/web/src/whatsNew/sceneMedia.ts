@@ -4,7 +4,7 @@ import {
 } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES, resolvePosterImage } from "@tentacle-tv/shared";
 import { heroBackdropUrl } from "../components/hero/resolveBackdrop";
-import { buildPlatformCatalog, type PlatformCatalogEntry } from "../components/reco/platformCatalog";
+import { buildPlatformCatalog, type PlatformCatalogEntry } from "@tentacle-tv/api-client";
 
 /** Une vraie affiche de la bibliothèque, telle que les rangées de l'accueil la peignent. */
 export interface ScenePoster {

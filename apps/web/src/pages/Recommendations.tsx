@@ -5,7 +5,7 @@ import { useJellyfinClient, useRecoPage } from "@tentacle-tv/api-client";
 import { ContentErrorState } from "../components/ContentErrorState";
 import { PageTransition } from "../components/PageTransition";
 import { ColdStart } from "../components/reco/ColdStart";
-import { heroSelectionFromRows } from "../components/reco/hero/recoHeroSlides";
+import { heroSelectionFromRows } from "@tentacle-tv/api-client";
 import { RecoPageBody } from "../components/reco/RecoPageBody";
 import { RecoPageSkeleton } from "../components/reco/RecoPageSkeleton";
 import { useSettledRecoPage } from "../components/reco/useSettledRecoPage";

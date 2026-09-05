@@ -264,6 +264,15 @@ export type { LibraryRef, ReconcileHomeRowsOptions } from "./utils/homeRows";
 export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
 export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
 
+// Reco partagés entre web, mobile et TV : raisons verbalisées, tirage des
+// diapositives héros, catalogue des familles de plateformes (cf. src/reco).
+export { reasonToText } from "./reco/recoReasonText";
+export type { ReasonTranslate } from "./reco/recoReasonText";
+export { selectHeroSlides, heroSelectionFromRows, useRecoHeroSlides } from "./reco/recoHeroSlides";
+export type { RecoHeroSelection } from "./reco/recoHeroSlides";
+export { buildPlatformCatalog, isFamilyActive, toggleFamily, activeFamilyCount } from "./reco/platformCatalog";
+export type { PlatformCatalogEntry } from "./reco/platformCatalog";
+
 // Comptes externes — TMDB guest session (cf. hooks/useExternalAccounts)
 export {
   useExternalAccounts,

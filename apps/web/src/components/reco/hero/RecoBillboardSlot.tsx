@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { RecoHero } from "../RecoHero";
 import { RecoBillboard } from "./RecoBillboard";
-import type { RecoHeroSelection } from "./recoHeroSlides";
+import type { RecoHeroSelection } from "@tentacle-tv/api-client";
 
 interface RecoBillboardSlotProps {
   /** La sélection du héros (useRecoHeroSlides) — l'appelant passe la page du
