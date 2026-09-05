@@ -53,6 +53,12 @@ export type { AppNotification } from "./hooks/useNotifications";
 
 // Notification route resolution
 export { resolveNotificationRoute } from "./utils/notificationRoute";
+export {
+  EXTENSIONS_TAB_PATH,
+  extensionSectionId,
+  parseExtensionSectionId,
+  extensionSectionHref,
+} from "./utils/extensionSection";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
 export { formatNotifTitle, notifBodyText, parseTicketNotifBody } from "./utils/notificationText";
 export type { NotifTranslate } from "./utils/notificationText";
