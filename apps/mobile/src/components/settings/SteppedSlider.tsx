@@ -3,12 +3,12 @@ import { View, Text, PanResponder, StyleSheet, type LayoutChangeEvent } from "re
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { IconButton } from "@/components/ui";
-import { spacing, typography, FONT_FAMILY, motion, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, typography, FONT_FAMILY, ctlGradient, motion, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 let Haptics: { selectionAsync?: () => void } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* optionnel */ }
 
-const THUMB = 28;
+const THUMB = 24;
 const TRACK_H = 6;
 
 interface Props {
@@ -37,7 +37,9 @@ export function SteppedSlider({
   value, min = 0, max = 100, step = 10, onChange, onChangeEnd,
   accessibilityLabel, valueText, leftLabel, rightLabel,
 }: Props) {
+  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  const gradient = ctlGradient(theme.colors.brand);
   const [trackW, setTrackW] = useState(0);
   const steps = Math.max(1, Math.round((max - min) / step));
   const snap = (v: number) => Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
@@ -116,9 +118,10 @@ export function SteppedSlider({
           {/* Décor insensible au toucher : la piste seule reçoit le geste. */}
           <View style={st.track} pointerEvents="none" />
           <LinearGradient
-            colors={[st.fillStart.color as string, st.fillEnd.color as string]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            colors={gradient.colors}
+            locations={gradient.locations}
+            start={gradient.start}
+            end={gradient.end}
             style={[st.fill, { width: ratio * trackW }]}
             pointerEvents="none"
           />
@@ -141,15 +144,18 @@ export function SteppedSlider({
 const makeStyles = (t: AppTheme) => StyleSheet.create({
   row: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.sm },
   trackHit: { flex: 1, height: 44, justifyContent: "center" as const },
-  track: { height: TRACK_H, borderRadius: TRACK_H / 2, backgroundColor: t.colors.fill.medium },
+  // Le curseur du web (`.ctl-range`) : piste de verre lisérée, remplissage au
+  // dégradé signature, pouce blanc cerclé de marque.
+  track: {
+    height: TRACK_H, borderRadius: TRACK_H / 2, backgroundColor: t.colors.fill.medium,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: t.colors.border.subtle,
+  },
   fill: { position: "absolute" as const, left: 0, height: TRACK_H, borderRadius: TRACK_H / 2 },
-  fillStart: { color: t.colors.brand.violet },
-  fillEnd: { color: t.colors.brand.accent },
   tick: { position: "absolute" as const, width: 2, height: 2, borderRadius: 1, backgroundColor: t.colors.text.quaternary, top: 22 - 1 },
   thumb: {
     position: "absolute" as const, left: 0, width: THUMB, height: THUMB, borderRadius: THUMB / 2,
-    backgroundColor: t.colors.cta.primaryBg, borderWidth: 2, borderColor: t.colors.brand.violet,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3,
+    backgroundColor: "#ffffff", borderWidth: 2, borderColor: withAlpha(t.colors.brand.violet, 0.9, t.colors.brand.violet),
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.55, shadowRadius: 2, elevation: 3,
   },
   labels: { flexDirection: "row" as const, alignItems: "center" as const, justifyContent: "space-between" as const, marginTop: 2, paddingHorizontal: 44 },
   sideLabel: { ...typography.small, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, flex: 1 },
