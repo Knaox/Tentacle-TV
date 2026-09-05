@@ -14,6 +14,8 @@ interface Props {
   canOpen: boolean;
   onPress: () => void;
   onLongPress: () => void;
+  /** La raison verbalisée (« Parce que vous avez aimé… »), sous le titre — la page Pour vous. */
+  reason?: string;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  * « Découverte » pour une exploration, la note globale, titre et année. Même
  * gabarit que MobileMediaCard ; les items ne sont pas des MediaItem.
  */
-export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress }: Props) {
+export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: Props) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const st = useThemedStyles(makeStyles);
@@ -70,6 +72,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
       </View>
       <Text numberOfLines={1} style={st.title}>{item.title}</Text>
       {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}
+      {reason && <Text numberOfLines={2} style={st.reason}>{reason}</Text>}
     </PressableCard>
   );
 });
@@ -85,4 +88,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   ratingText: { fontSize: 11, lineHeight: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
   title: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, marginTop: 8, letterSpacing: -0.1 },
   year: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 2 },
+  reason: { fontSize: 11.5, lineHeight: 15, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 3 },
 });
