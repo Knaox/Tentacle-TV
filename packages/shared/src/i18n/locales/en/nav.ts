@@ -25,6 +25,7 @@ export default {
   more: "More",
   libraries: "Libraries",
   pluginPages: "Plugin pages",
+  forYou: "For you",
   extensions: "Extensions",
   extensionSections: "Extension pages",
   myList: "My List",

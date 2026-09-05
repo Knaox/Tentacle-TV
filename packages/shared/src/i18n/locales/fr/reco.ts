@@ -69,6 +69,7 @@ export default {
   dismissAction: "Ne plus me proposer",
   unavailableHint: "indisponible",
   whyTitle: "Pourquoi ce titre",
+  loadError: "Impossible de charger vos recommandations.",
 
   // Raisons (explicabilité)
   reasonSeed: "Parce que vous avez aimé {{title}}",

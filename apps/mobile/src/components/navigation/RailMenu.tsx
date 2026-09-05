@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { useRouter, usePathname, type Href } from "expo-router";
@@ -14,7 +14,9 @@ const CLOSE_MS = 160; // sortie plus courte que l'entrée (réactivité perçue)
 
 export interface RailMenuItem {
   href: Href;
+  /** Nom Feather — ou, pour une icône d'une autre bibliothèque, `iconNode`. */
   icon: string;
+  iconNode?: (color: string) => ReactNode;
   label: string;
 }
 
@@ -82,7 +84,9 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
                     accessibilityLabel={item.label}
                     style={({ pressed }) => [st.row, active && st.rowActive, pressed && !active && st.pressed]}
                   >
-                    <Feather name={item.icon as never} size={20} color={active ? theme.colors.brand.violet : theme.colors.text.tertiary} />
+                    {item.iconNode
+                      ? item.iconNode(active ? theme.colors.brand.violet : theme.colors.text.tertiary)
+                      : <Feather name={item.icon as never} size={20} color={active ? theme.colors.brand.violet : theme.colors.text.tertiary} />}
                     <Text style={[st.rowLabel, active && { color: theme.colors.brand.violet }]} numberOfLines={1}>
                       {item.label}
                     </Text>
