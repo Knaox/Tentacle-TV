@@ -17,6 +17,7 @@ export default {
   expired: "Expiré",
   shareLink: "Partager le lien",
   preferences: "Préférences",
+  personalizationHint: "Accueil et recommandations",
   language: "Langue",
   french: "Français",
   english: "Anglais",
