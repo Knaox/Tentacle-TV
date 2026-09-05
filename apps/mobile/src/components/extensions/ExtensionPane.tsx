@@ -26,7 +26,13 @@ export const ExtensionPane = memo(function ExtensionPane({ section, active }: Pr
       importantForAccessibility={active ? "auto" : "no-hide-descendants"}
       accessibilityElementsHidden={!active}
     >
-      <PluginWebView pluginId={section.pluginId} path={section.path} label={section.label} padTop={false} />
+      <PluginWebView
+        pluginId={section.pluginId}
+        path={section.path}
+        label={section.label}
+        padTop={false}
+        controlsChrome={active}
+      />
     </View>
   );
 });

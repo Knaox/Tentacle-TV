@@ -31,7 +31,8 @@ export function ExtensionsScreen() {
   const { isPending } = useActivePlugins();
   const { sections, multiPlugin } = useExtensionTab();
   const { section } = useLocalSearchParams<{ section?: string | string[] }>();
-  // Un écran WebView ne défile pas le chrome : on le redéploie à l'arrivée.
+  // Redéployé à l'arrivée ; ensuite, le volet actif pilote le chrome depuis
+  // sa page (PluginWebView, message SCROLL_CHROME).
   useExpandChromeOnFocus();
 
   const wanted = typeof section === "string" ? section : undefined;
