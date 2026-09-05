@@ -30,8 +30,9 @@ export function WhatsNewStagePanel({ feature, index, count, showVersion, onOpenR
   const textEntry = reduced ? false : { opacity: 0, y: 4 };
 
   return (
-    <div className="flex min-h-0 flex-col overflow-y-auto px-6 py-5">
-      <div ref={ref}>
+    <div className="flex min-h-0 flex-col overflow-y-auto px-6 py-4">
+      {/* Bornée en largeur : à 16:9, c'est la hauteur qu'on protège — le texte doit tenir dessous. */}
+      <div ref={ref} className="mx-auto w-full max-w-[620px]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={key}
@@ -45,7 +46,7 @@ export function WhatsNewStagePanel({ feature, index, count, showVersion, onOpenR
         </AnimatePresence>
       </div>
 
-      <div className="mt-5 flex items-center gap-2">
+      <div className="mt-4 flex items-center gap-2">
         <KindBadge kind={feature.kind} />
         {showVersion && (
           <span className="text-xs text-content-quaternary">

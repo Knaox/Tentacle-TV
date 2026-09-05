@@ -9,8 +9,10 @@ interface FauxRowProps extends Placed, Animated {
   count?: number;
   cardW?: number;
   gap?: number;
-  /** Cartes masquées : les suivantes glissent pour refermer le trou. */
+  /** Cartes masquées par un FILTRE : les suivantes glissent pour refermer le trou. */
   hidden?: readonly number[];
+  /** Cartes pas encore apparues : invisibles À LEUR PLACE, sans décalage (défaut : apparues). */
+  revealed?: boolean;
   /** Carte soulevée. */
   highlight?: number;
   tones?: readonly number[];
@@ -22,9 +24,10 @@ interface FauxRowProps extends Placed, Animated {
 
 /** Une rangée de fausses cartes sous son titre, façon accueil. */
 export function FauxRow({
-  title, count = 5, cardW = 72, gap = 10, hidden = [], highlight, tones, stagger = false, after,
+  title, count = 5, cardW = 72, gap = 10, hidden = [], revealed = true, highlight, tones, stagger = false, after,
   w, visible = true, ...place
 }: FauxRowProps) {
+  const shown = visible && revealed;
   const pitch = cardW + gap;
   const width = w ?? count * cardW + (count - 1) * gap;
   return (
@@ -44,11 +47,11 @@ export function FauxRow({
               y={0}
               w={cardW}
               tone={tones?.[i] ?? i % 6}
-              visible={visible && !isHidden}
+              visible={shown && !isHidden}
               dx={-shift * pitch}
-              dy={visible ? 0 : 10}
+              dy={shown ? 0 : 10}
               lifted={highlight === i}
-              transition={{ ...sceneSpring, delay: stagger && visible && !isHidden ? i * 0.07 : 0 }}
+              transition={{ ...sceneSpring, delay: stagger && shown && !isHidden ? i * 0.07 : 0 }}
             />
           );
         })}

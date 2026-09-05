@@ -26,9 +26,12 @@ export function About() {
     : null;
   const versionLabel = rawVersion.replace(/-[a-z]+(\..+)?$/i, "");
   // « Revoir les nouveautés » : desktop seulement, et seulement si la release
-  // courante a quelque chose à montrer. Rouvre sans toucher au drapeau.
+  // courante a quelque chose à montrer. Rouvre sans toucher au drapeau. En
+  // porte forcée (préviz navigateur), la page affiche la version web : la
+  // release à rejouer est celle de la constante desktop.
   const [whatsNew, setWhatsNew] = useState<WhatsNewSelection | null>(null);
-  const canReplayWhatsNew = (isDesktopApp() || whatsNewGateForced()) && selectionForRelease(versionLabel) !== null;
+  const replayVersion = isDesktopApp() ? versionLabel : __APP_VERSION_DESKTOP__;
+  const canReplayWhatsNew = (isDesktopApp() || whatsNewGateForced()) && selectionForRelease(replayVersion) !== null;
 
   return (
     <PageTransition>
@@ -86,7 +89,7 @@ export function About() {
         {canReplayWhatsNew && (
           <button
             type="button"
-            onClick={() => setWhatsNew(selectionForRelease(versionLabel))}
+            onClick={() => setWhatsNew(selectionForRelease(replayVersion))}
             className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
             style={{ color: "var(--brand-light)" }}
           >
