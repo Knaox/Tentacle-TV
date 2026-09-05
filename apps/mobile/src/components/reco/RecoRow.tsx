@@ -15,6 +15,8 @@ interface Props {
   accessory?: ReactNode;
   /** La première raison sous chaque carte (la page Pour vous ; l'accueil s'en passe). */
   showReasons?: boolean;
+  /** « Tout voir » dans l'en-tête (l'accueil → l'onglet Pour vous). */
+  onSeeAll?: () => void;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
   onItemLongPress: (item: RecoRowItem) => void;
@@ -24,7 +26,7 @@ interface Props {
  * Rangée de recommandations — sœur de `MediaRow` (même en-tête, même piste,
  * même écart de 14 px), pour des items qui ne sont pas des MediaItem.
  */
-export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, canOpen, onItemPress, onItemLongPress }: Props) {
+export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, onSeeAll, canOpen, onItemPress, onItemLongPress }: Props) {
   const st = useThemedStyles(makeStyles);
   const { t } = useTranslation("reco");
   const renderItem = useCallback(
@@ -42,7 +44,7 @@ export const RecoRow = memo(function RecoRow({ title, items, accessory, showReas
 
   return (
     <View style={st.root}>
-      <RowHeader title={title} accessory={accessory} />
+      <RowHeader title={title} accessory={accessory} onSeeAll={onSeeAll} />
       <FlatList
         horizontal
         data={items}

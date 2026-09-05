@@ -124,7 +124,8 @@ export function HomeScreen() {
     renderCard,
     onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),
     onItemLongPress: openActions,
-    onSeeAll: (route) => router.push(route),
+    // Un onglet se rejoint (Pour vous) ; une liste s'empile (Ma liste, favoris).
+    onSeeAll: (route) => (route === "/for-you" ? router.navigate(route) : router.push(route)),
     canOpenReco: recoNav.canOpen,
     onRecoPress: recoNav.open,
     // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
