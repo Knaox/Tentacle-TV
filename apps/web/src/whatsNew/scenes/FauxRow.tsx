@@ -26,8 +26,8 @@ interface FauxRowProps extends Placed, Animated {
   after?: ReactNode;
 }
 
-/** Hauteur du bloc titre de `PosterCard`. */
-const TITLE_BLOCK = 40;
+/** Hauteur du bloc titre de `PosterCard` : marge, titre, année. */
+const TITLE_BLOCK = 48;
 
 /** Une rangée de l'accueil, avec de vraies affiches. */
 export function FauxRow({

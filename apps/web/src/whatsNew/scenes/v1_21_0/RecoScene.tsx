@@ -16,9 +16,9 @@ export function RecoScene({ active, reduced }: SceneProps) {
   const seed = media.posters.slice(0, 6).map((p) => p.title).sort((a, b) => a.length - b.length)[0] ?? "Dune";
   return (
     <SceneStage cycle={cycle}>
-      <FauxRow x={38} y={8} title={t("reco:rowForYou")} count={7} cardW={72} showTitles revealed={step >= 1} stagger highlight={hover ? 1 : undefined} />
-      <FauxRow x={38} y={180} title={t("reco:rowBecauseYouLiked", { title: seed })} count={7} cardW={72} showTitles offset={7} revealed={step >= 2} stagger />
-      <FauxCursor x={hover ? 156 : 560} y={hover ? 96 : 330} hidden={step < 2} reduced={reduced} />
+      <FauxRow x={52} y={6} title={t("reco:rowForYou")} count={7} cardW={68} showTitles revealed={step >= 1} stagger highlight={hover ? 1 : undefined} />
+      <FauxRow x={52} y={184} title={t("reco:rowBecauseYouLiked", { title: seed })} count={7} cardW={68} showTitles offset={7} revealed={step >= 2} stagger />
+      <FauxCursor x={hover ? 164 : 560} y={hover ? 90 : 330} hidden={step < 2} reduced={reduced} />
     </SceneStage>
   );
 }
