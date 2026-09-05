@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import { useRouter, usePathname, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,8 +7,13 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { spacing, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassSurface } from "@/components/ui/GlassSurface";
+import { TabIndicator } from "./TabIndicator";
+import { useSlidingIndicator } from "./useSlidingIndicator";
+import { useTabPressFeedback } from "./useTabPressFeedback";
 
 const PANEL_W = 248;
+const PANEL_PAD_H = 12;
+const ROW_H = 46;
 const OPEN_MS = 220;
 const CLOSE_MS = 160; // sortie plus courte que l'entrée (réactivité perçue)
 
@@ -30,6 +35,8 @@ interface RailMenuProps {
  * Menu déroulant du rail paysage iPad : panneau glass discret qui glisse
  * depuis la gauche par-dessus le contenu (scrim tap-pour-fermer). Les items
  * naviguent via expo-router (actif = pathname), puis le menu se referme.
+ * L'entrée active porte la même pilule glissante que la barre et le rail
+ * (TabIndicator) — masquée sur une route hors liste.
  */
 export function RailMenu({ open, onClose, items }: RailMenuProps) {
   const { t } = useTranslation("common");
@@ -47,6 +54,12 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
     });
   }, [open, anim]);
 
+  const activeKey = items.find((item) => pathname === item.href)?.href;
+  const indicator = useSlidingIndicator(
+    activeKey === undefined ? undefined : String(activeKey),
+    { width: PANEL_W - 2 * PANEL_PAD_H, height: ROW_H, align: "center" },
+  );
+
   const scrimStyle = useAnimatedStyle(() => ({ opacity: anim.value }));
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: (anim.value - 1) * (PANEL_W + 24) }],
@@ -61,7 +74,7 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
       <Animated.View style={[st.panel, panelStyle]} accessibilityViewIsModal>
         {/* intensity 50 = valeur pixel-perfect historique du panneau rail. */}
         <GlassSurface tint="strong" intensity={50} radius={0} bordered={false} style={styles.panelFill}>
-          <View style={{ paddingTop: Math.max(insets.top, 24) + 10, paddingHorizontal: 12, flex: 1 }}>
+          <View style={{ paddingTop: Math.max(insets.top, 24) + 10, paddingHorizontal: PANEL_PAD_H, flex: 1 }}>
             <Pressable
               onPress={onClose}
               accessibilityRole="button"
@@ -72,25 +85,20 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
               <Feather name="menu" size={20} color={theme.colors.text.secondary} />
             </Pressable>
 
-            <View style={{ gap: 4 }}>
+            <View style={st.list} accessibilityRole="tablist">
+              <TabIndicator width={PANEL_W - 2 * PANEL_PAD_H} height={ROW_H} style={indicator.style} />
               {items.map((item) => {
                 const active = pathname === item.href;
+                const tint = active ? theme.colors.brand.violet : theme.colors.text.tertiary;
                 return (
-                  <Pressable
+                  <RailMenuRow
                     key={String(item.href)}
+                    label={item.label}
+                    active={active}
+                    icon={item.iconNode ? item.iconNode(tint) : <Feather name={item.icon as never} size={20} color={tint} />}
+                    onLayout={indicator.onItemLayout(String(item.href))}
                     onPress={() => { router.navigate(item.href); onClose(); }}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: active }}
-                    accessibilityLabel={item.label}
-                    style={({ pressed }) => [st.row, active && st.rowActive, pressed && !active && st.pressed]}
-                  >
-                    {item.iconNode
-                      ? item.iconNode(active ? theme.colors.brand.violet : theme.colors.text.tertiary)
-                      : <Feather name={item.icon as never} size={20} color={active ? theme.colors.brand.violet : theme.colors.text.tertiary} />}
-                    <Text style={[st.rowLabel, active && { color: theme.colors.brand.violet }]} numberOfLines={1}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
+                  />
                 );
               })}
             </View>
@@ -98,6 +106,37 @@ export function RailMenu({ open, onClose, items }: RailMenuProps) {
         </GlassSurface>
       </Animated.View>
     </View>
+  );
+}
+
+function RailMenuRow({ label, active, icon, onLayout, onPress }: {
+  label: string;
+  active: boolean;
+  icon: ReactNode;
+  onLayout: (e: LayoutChangeEvent) => void;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const st = useThemedStyles(makeStyles);
+  const press = useTabPressFeedback({ scale: 0.97 });
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
+      onLayout={onLayout}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={label}
+      style={st.row}
+    >
+      <Animated.View style={[st.rowInner, press.bounceStyle]}>
+        {icon}
+        <Text style={[st.rowLabel, active && { color: theme.colors.brand.violet }]} numberOfLines={1}>
+          {label}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 }
 
@@ -128,15 +167,14 @@ const makeStyles = (t: AppTheme) =>
       marginLeft: 4,
       marginBottom: spacing.lg,
     },
-    row: {
+    list: { gap: 4 },
+    row: { height: ROW_H, justifyContent: "center" as const },
+    rowInner: {
       flexDirection: "row" as const,
       alignItems: "center" as const,
       gap: 12,
-      height: 46,
-      borderRadius: 12,
       paddingHorizontal: 14,
     },
-    rowActive: { backgroundColor: t.colors.brand.ghost },
     rowLabel: {
       fontSize: 13.5,
       fontFamily: FONT_FAMILY.semibold,
