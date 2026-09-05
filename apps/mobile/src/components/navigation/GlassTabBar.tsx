@@ -152,9 +152,14 @@ const makeStyles = (t: AppTheme) =>
     },
     // Capsule teintée marque sous l'onglet actif (bien visible sur le verre).
     pillActive: { backgroundColor: t.colors.brand.ghost },
+    // Étiré sur la largeur de l'onglet et centré par le texte : mesuré au
+    // premier rendu à sa largeur naturelle, Android coupait « Profil » en
+    // « Pro… » quel que soit l'espace libre.
     label: {
+      alignSelf: "stretch" as const,
+      textAlign: "center" as const,
+      paddingHorizontal: 2,
       fontSize: 10,
       fontFamily: FONT_FAMILY.semibold,
-      letterSpacing: 0.1,
     },
   });
