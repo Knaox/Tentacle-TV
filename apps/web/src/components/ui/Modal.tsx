@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { GLASS_FILTER_ID } from "@tentacle-tv/ui";
 
 import { useLiquidGlass } from "../../theme/useLiquidGlass";
@@ -39,13 +39,34 @@ const PANEL_VARIANTS = {
   },
 };
 
+// Mouvement réduit : un fondu court, sans déplacement ni échelle. Un jeu de
+// variantes CONSTANT, comme l'autre — framer compare les objets par identité,
+// un objet recréé à chaque rendu relancerait l'animation.
+const PANEL_VARIANTS_REDUCED = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.12 } },
+  exit: { opacity: 0, transition: { duration: 0.08 } },
+};
+
+const FOCUSABLE_SELECTOR =
+  "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+
+/** Les focusables réellement affichés du panneau (un `display: none` n'a aucun rectangle). */
+function focusableIn(panel: HTMLElement): HTMLElement[] {
+  return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => el.getClientRects().length > 0,
+  );
+}
+
 /**
  * Canonical modal primitive — replaces 5+ ad-hoc modal implementations.
  * - Centered, scrim 60%, surface-modal bg, blur 20px
- * - Focus trap (auto-focus first interactive child, restore focus on close)
+ * - Focus trap: autofocus first interactive child, Tab/Shift+Tab cycle inside
+ *   the panel, restore focus on close
  * - Esc to close (always), click-backdrop to close (configurable)
  * - aria-modal + role="dialog" for screen readers
- * - 240ms scale-in, 150ms scale-out (exit-faster-than-enter rule)
+ * - 240ms scale-in, 150ms scale-out (exit-faster-than-enter rule); a short
+ *   opacity-only fade under prefers-reduced-motion
  */
 export function Modal({
   open,
@@ -61,14 +82,41 @@ export function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
   const { level: glassLevel } = useLiquidGlass();
+  const reduced = useReducedMotion();
 
-  // Esc to close
+  // Esc ferme ; Tab boucle dans le panneau. Le piège vit sur `window` : le
+  // focus peut s'être échappé (clic sur le scrim, lecteur d'écran), et c'est
+  // justement là qu'il faut le ramener. Deux modales ouvertes = deux pièges :
+  // acceptable, il n'y a jamais qu'un recouvrement de démarrage à la fois.
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const items = focusableIn(panel);
+      if (items.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const current = document.activeElement;
+      const inside = current instanceof HTMLElement && panel.contains(current);
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey) {
+        if (!inside || current === panel || current === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (!inside || current === panel || current === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
     window.addEventListener("keydown", handler);
@@ -90,10 +138,7 @@ export function Modal({
     const focusFirst = () => {
       const panel = panelRef.current;
       if (!panel) return;
-      const focusable = panel.querySelector<HTMLElement>(
-        "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
-      );
-      (focusable ?? panel).focus();
+      (focusableIn(panel)[0] ?? panel).focus();
     };
     const id = setTimeout(focusFirst, 50);
     return () => {
@@ -112,8 +157,8 @@ export function Modal({
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1, transition: { duration: 0.18 } }}
-          exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          animate={{ opacity: 1, transition: { duration: reduced ? 0.12 : 0.18 } }}
+          exit={{ opacity: 0, transition: { duration: reduced ? 0.08 : 0.12 } }}
           onClick={handleBackdrop}
           role="presentation"
           style={{
@@ -150,7 +195,7 @@ export function Modal({
                   }
                 : {}),
             }}
-            variants={PANEL_VARIANTS}
+            variants={reduced ? PANEL_VARIANTS_REDUCED : PANEL_VARIANTS}
             initial="hidden"
             animate="show"
             exit="exit"

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 interface ModalHeaderProps {
   title: string;
@@ -13,6 +14,7 @@ interface ModalHeaderProps {
  * Provides title + optional subtitle + close button (top-right).
  */
 export function ModalHeader({ title, subtitle, onClose, titleId }: ModalHeaderProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="flex items-start justify-between gap-4 px-6 pb-4 pt-5"
@@ -33,7 +35,7 @@ export function ModalHeader({ title, subtitle, onClose, titleId }: ModalHeaderPr
         <button
           type="button"
           onClick={onClose}
-          aria-label="Fermer"
+          aria-label={t("common:close")}
           className="-mr-2 -mt-1 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-content-tertiary transition-colors hover:bg-fill-soft hover:text-content-primary"
         >
           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
