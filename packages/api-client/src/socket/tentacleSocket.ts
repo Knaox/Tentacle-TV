@@ -19,7 +19,12 @@ export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "authErro
 
 let _wsUrl = "";
 
-/** Set the WebSocket backend URL. Converts http(s):// to ws(s)://. */
+/** Set the WebSocket backend URL. Converts http(s):// to ws(s)://.
+ *  Une acquisition faite AVANT que l'URL soit connue (au démarrage à froid,
+ *  l'accueil monte avant l'effet du fournisseur qui la pose) reste en attente :
+ *  la connexion part d'ici dès que l'URL arrive — sinon `connect()` renonçait
+ *  en silence et plus rien ne se connectait de toute la vie de l'app (mesuré :
+ *  aucun socket après un démarrage à froid sur Android). */
 export function setWsBackendUrl(url: string) {
   if (!url && typeof window !== "undefined") {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -27,6 +32,7 @@ export function setWsBackendUrl(url: string) {
   } else {
     _wsUrl = url.replace(/^http/, "ws").replace(/\/$/, "") + "/api/ws";
   }
+  if (refCount > 0 && !ws && !reconnectTimer) connect();
 }
 
 const INITIAL_BACKOFF = 1_000;
