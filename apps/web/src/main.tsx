@@ -46,6 +46,7 @@ import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
+import { installReducedMotionShim } from "./dev/reducedMotionShim";
 import { readRecoFilterMirror } from "./lib/recoFilterStorage";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
@@ -64,6 +65,9 @@ import "./index.css";
 // `__PLAYER_DEBUG__` est faux dans tout build livré : le module disparaît alors
 // du bundle, et `window.fetch` n'est jamais touché.
 if (import.meta.env.DEV || __PLAYER_DEBUG__) installNetworkProbe();
+// `?reducedmotion=1` : prouver le mode mouvement réduit dans la préviz (voir
+// dev/reducedMotionShim.ts). Même garde, même sort dans les builds livrés.
+if (import.meta.env.DEV || __PLAYER_DEBUG__) installReducedMotionShim();
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();

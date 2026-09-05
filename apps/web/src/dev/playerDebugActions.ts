@@ -145,6 +145,16 @@ export const DEBUG_ACTIONS: readonly DebugAction[] = [
     },
   },
   {
+    key: "n",
+    label: "N · écran de nouveautés",
+    run: async () => {
+      const w = window as unknown as { __tentacleShowWhatsNew?: (version?: string) => void };
+      if (!w.__tentacleShowWhatsNew) return "écran de nouveautés indisponible";
+      w.__tentacleShowWhatsNew();
+      return "écran de nouveautés affiché — tout le registre, sans écrire le drapeau";
+    },
+  },
+  {
     key: "h",
     label: "H · autoriser / interdire la transmission HDR",
     /**

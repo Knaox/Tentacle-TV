@@ -1,6 +1,9 @@
+import { useCallback, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAutoUpdate } from "../hooks/useAutoUpdate";
+import type { WhatsNewSelection } from "../whatsNew/selectFeatures";
 import { useWhatsNewGate } from "../whatsNew/useWhatsNewGate";
+import { useWhatsNewDevHook, whatsNewGateForced } from "../whatsNew/whatsNewDev";
 import { WhatsNewScreen } from "../whatsNew/WhatsNewScreen";
 import { UpdateModal } from "./UpdateModal";
 
@@ -19,15 +22,24 @@ interface StartupOverlaysProps {
 export function StartupOverlays({ authed, disclaimerAccepted }: StartupOverlaysProps) {
   const update = useAutoUpdate();
   const { pathname } = useLocation();
+  const desktopLike = useMemo(whatsNewGateForced, []);
   const updateAtRest = update.phase === "idle" || update.phase === "available";
   const gate = useWhatsNewGate({
     enabled: authed && disclaimerAccepted && !pathname.startsWith("/watch") && updateAtRest,
+    desktopLike,
   });
 
+  // Sélection forcée par le crochet de développement : même écran, fermeture
+  // sans écriture du drapeau.
+  const [forced, setForced] = useState<WhatsNewSelection | null>(null);
+  useWhatsNewDevHook(setForced);
+  const clearForced = useCallback(() => setForced(null), []);
+
+  const open = forced !== null || gate.open;
   return (
     <>
-      <WhatsNewScreen open={gate.open} selection={gate.selection} onClose={gate.close} />
-      <UpdateModal update={update} suspended={gate.open} />
+      <WhatsNewScreen open={open} selection={forced ?? gate.selection} onClose={forced ? clearForced : gate.close} />
+      <UpdateModal update={update} suspended={open} />
     </>
   );
 }
