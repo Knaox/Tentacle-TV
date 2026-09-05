@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "expo-router";
-import { Platform, View, useWindowDimensions } from "react-native";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Sparkles } from "lucide-react-native";
 import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
@@ -24,9 +23,6 @@ import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 export default function TabsLayout() {
   const { t } = useTranslation("nav");
   const theme = useTheme();
-  const { width: screenW } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const isCompact = screenW < 380;
   const ext = useExtensionTab();
   usePrefetchPluginBundles();
 
@@ -54,23 +50,12 @@ export default function TabsLayout() {
       tabBar={sideNav
         ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} />
         : (props) => <GlassTabBar {...props} />}
+      // Les barres sont maison (GlassTabBar, TabRail) : elles ne lisent aucune
+      // option `tabBar*` de react-navigation — seule la position compte.
       screenOptions={{
         headerShown: false,
-        // iPad paysage : rail gauche custom ; sinon barre basse inchangée.
+        // iPad paysage : rail gauche custom ; sinon barre basse.
         tabBarPosition: sideNav ? "left" : "bottom",
-        tabBarStyle: {
-          backgroundColor: theme.colors.tabBar,
-          borderTopColor: theme.colors.border.subtle,
-          borderTopWidth: 0.5,
-          height: 60 + Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
-          paddingBottom: Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
-          paddingTop: isCompact ? 4 : 8,
-          elevation: 0,
-        },
-        tabBarActiveTintColor: theme.colors.brand.violet,
-        tabBarInactiveTintColor: theme.colors.text.quaternary,
-        tabBarLabelStyle: { fontSize: isCompact ? 9 : 11, fontWeight: "600" },
-        tabBarAllowFontScaling: false,
       }}
     >
       {/* Accueil */}
