@@ -1,3 +1,5 @@
+import { extensionSectionHref } from "./extensionSection";
+
 /** Minimal plugin metadata needed for notification route resolution. */
 export interface NotifPluginMeta {
   pluginId: string;
@@ -30,16 +32,15 @@ export function resolveNotificationRoute(
 
     case "request_status": {
       if (!plugins || plugins.length === 0) return null;
-      // Find the first plugin that has a user-facing nav item for this platform
+      // Le premier plugin qui publie une page pour cette plateforme : sa page
+      // des demandes quand il en a une (un changement d'état de demande se lit
+      // là), sinon sa première page. Sur mobile, la page est une section de
+      // l'onglet unique des extensions.
       for (const plugin of plugins) {
-        const nav = plugin.navItems.find((n) =>
-          n.platforms.includes(platform),
-        );
-        if (nav) {
-          return platform === "mobile"
-            ? `/plugin/${plugin.pluginId}`
-            : nav.path;
-        }
+        const navs = plugin.navItems.filter((n) => n.platforms.includes(platform));
+        const nav = navs.find((n) => n.path.endsWith("/requests")) ?? navs[0];
+        if (!nav) continue;
+        return platform === "mobile" ? extensionSectionHref(plugin.pluginId, nav.path) : nav.path;
       }
       return null;
     }
