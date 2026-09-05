@@ -4,6 +4,7 @@ import { Platform, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { Sparkles } from "lucide-react-native";
 import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
 import { useExtensionTab } from "@/hooks/useExtensionSections";
 import { PersistentHeader } from "@/components/PersistentHeader";
@@ -14,7 +15,8 @@ import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
 /**
- * La barre basse est FIXE : Accueil · Bibliothèque · extensions · Profil.
+ * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
+ * Profil.
  * Toutes les pages d'extension vivent dans le seul onglet `extensions` (en
  * sections) : une extension de plus n'ajoute jamais d'onglet. Sans aucune
  * page d'extension, cet onglet se masque.
@@ -38,6 +40,7 @@ export default function TabsLayout() {
 
   const menuItems = useMemo<RailMenuItem[]>(() => [
     { href: "/", icon: "home", label: t("home") },
+    { href: "/for-you", icon: "star", iconNode: (color) => <Sparkles size={20} color={color} />, label: t("forYou") },
     { href: "/libraries", icon: "film", label: t("library") },
     ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
     { href: "/profile", icon: "user", label: t("profile") },
@@ -77,6 +80,16 @@ export default function TabsLayout() {
           title: t("home"),
           tabBarAccessibilityLabel: t("home"),
           tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />,
+        }}
+      />
+
+      {/* Pour vous — la page de recommandations */}
+      <Tabs.Screen
+        name="for-you"
+        options={{
+          title: t("forYou"),
+          tabBarAccessibilityLabel: t("forYou"),
+          tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
         }}
       />
 

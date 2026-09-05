@@ -66,6 +66,7 @@ export default {
   dismissAction: "Not for me",
   unavailableHint: "not available",
   whyTitle: "Why this title",
+  loadError: "Could not load your recommendations.",
 
   // Raisons (explicabilité)
   reasonSeed: "Because you liked {{title}}",
