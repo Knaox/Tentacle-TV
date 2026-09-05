@@ -23,12 +23,14 @@ export interface WhatsNewGate {
 /**
  * La porte de l'écran de nouveautés, desktop uniquement.
  *
- * Dès le montage : la vraie version du bundle, et — première installation,
- * aucune version vue — on l'enregistre sans rien montrer. Puis, quand les
- * conditions sont réunies, UNE décision : version courante plus récente que
- * la vue ET des nouveautés dans l'intervalle → l'écran ; sinon rien, et si
- * l'intervalle est vide on note la version courante tout de suite. Fermer
- * écrit la version courante, quel que soit le geste.
+ * Dès le montage : la vraie version du bundle. Puis, quand les conditions
+ * sont réunies, UNE décision : version courante plus récente que la vue ET
+ * des nouveautés dans l'intervalle → l'écran ; sinon rien, et si l'intervalle
+ * est vide on note la version courante tout de suite. Aucune version vue ne
+ * veut PAS dire première installation — celle-ci se marque à la page de
+ * connexion au serveur (cf. freshInstall.ts) — mais « mis à jour depuis une
+ * version d'avant l'écran » : on montre tout le registre jusqu'à la version
+ * courante. Fermer écrit la version courante, quel que soit le geste.
  */
 export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): WhatsNewGate {
   const eligible = desktopLike || isDesktopApp();
@@ -41,7 +43,6 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
     let cancelled = false;
     void resolveDesktopVersion().then((resolved) => {
       if (cancelled || !resolved) return;
-      if (readSeenVersion() === null) writeSeenVersion(resolved);
       setVersion(resolved);
     });
     return () => {
@@ -53,8 +54,9 @@ export function useWhatsNewGate({ enabled, desktopLike = false }: GateOptions): 
     if (!eligible || !enabled || version === null || decidedRef.current) return;
     decidedRef.current = true;
     const seen = readSeenVersion();
-    // Égale, rétrogradée ou illisible : rien à montrer, et rien à écrire.
-    if (seen === null || !isNewerVersion(version, seen)) return;
+    // Égale ou rétrogradée : rien à montrer, et rien à écrire. Absente : tout
+    // le registre jusqu'à la version courante (mise à jour depuis avant l'écran).
+    if (seen !== null && !isNewerVersion(version, seen)) return;
     const next = selectWhatsNewFeatures(version, seen, WHATS_NEW_RELEASES);
     if (next.features.length === 0) {
       writeSeenVersion(version);
