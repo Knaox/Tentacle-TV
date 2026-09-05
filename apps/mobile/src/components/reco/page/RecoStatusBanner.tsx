@@ -26,10 +26,12 @@ export function RecoStatusBanner({ page, hasPersonalizedRows, onOpenColdStart, o
   const cold = page.state === "cold";
 
   const hint = (text: string) => <Text style={st.hint}>{text}</Text>;
+  // Le bloc du web : texte à gauche, pilule BLANCHE à droite, sur une rangée
+  // qui replie le bouton dessous quand la place manque.
   const actionable = (text: string, cta: string, onPress: () => void) => (
     <View style={st.actionable}>
       <Text style={st.actionableTxt}>{text}</Text>
-      <Button title={cta} variant="secondary" onPress={onPress} style={st.cta} />
+      <Button title={cta} variant="primary" onPress={onPress} style={st.cta} />
     </View>
   );
 
@@ -48,11 +50,12 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   hint: { ...typography.caption, color: t.colors.text.tertiary, paddingHorizontal: spacing.screenPadding, marginTop: spacing.md },
   // Bloc actionnable : bord discret, fond faint — informationnel, pas une panne.
   actionable: {
+    flexDirection: "row" as const, flexWrap: "wrap" as const, alignItems: "center" as const,
     marginHorizontal: spacing.screenPadding, marginTop: spacing.md,
-    padding: spacing.md, gap: spacing.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.sm, columnGap: spacing.md, rowGap: spacing.sm,
     borderRadius: RADIUS.lg, borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.colors.border.subtle, backgroundColor: t.colors.fill.faint,
   },
-  actionableTxt: { ...typography.caption, color: t.colors.text.secondary },
-  cta: { alignSelf: "flex-start" as const },
+  actionableTxt: { ...typography.caption, color: t.colors.text.secondary, flex: 1, minWidth: 180 },
+  cta: { alignSelf: "center" as const },
 });

@@ -62,8 +62,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             />
           )}
         </View>
-        {onDemand && <Badge label={t("onDemandBadge")} variant="muted" style={st.badgeLeft} />}
-        {item.exploration && <Badge label={t("explorationBadge")} variant="brand" style={st.badgeRight} />}
+        {/* Posés sur l'affiche : blanc/noir constants (« À la demande »), dégradé
+            de marque (« Découverte ») — les couleurs du web. */}
+        {onDemand && <Badge label={t("onDemandBadge")} variant="onMedia" style={st.badgeLeft} />}
+        {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" style={st.badgeRight} />}
         {item.voteAverage != null && item.voteAverage > 0 && (
           <View style={st.rating}>
             <Text style={st.ratingText}>★ {item.voteAverage.toFixed(1)}</Text>
