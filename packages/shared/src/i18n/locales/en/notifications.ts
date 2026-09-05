@@ -31,6 +31,13 @@ export default {
   updateStoreUnavailable: "The Microsoft Store did not respond. Try again later, or update from the Store.",
   updateNoLongerAvailable: "The update is no longer pending — you may already be up to date.",
   updateInstallRefused: "The installation did not complete. It can be resumed from the Microsoft Store.",
+  updateReadyAppStore: "A new version is waiting for you on the App Store.",
+  updateReadyMicrosoftStore: "A new version is waiting for you on the Microsoft Store.",
+  updateReadyLinux: "A new version is ready to install.",
+  updateVersionLine: "From version {{from}} to version {{to}}",
+  updateCurrentVersion: "Current version",
+  updateNewVersion: "New version",
+  updateErrorTitle: "The update did not complete",
   // Deletion
   deleteAll: "Delete all",
   confirmDeleteAll: "Are you sure? This cannot be undone.",
