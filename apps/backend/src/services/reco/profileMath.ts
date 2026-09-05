@@ -35,11 +35,17 @@ export function seriesEngagementWeight(playedEpisodes: number): number {
 /** Demi-vie de la décroissance temporelle : un signal de 6 mois pèse moitié. */
 export const HALF_LIFE_DAYS = 180;
 
-/** Écart-type plancher : en dessous, la division amplifierait le bruit. */
-const STD_DEV_FLOOR = 1;
-
-/** Moyenne par défaut tant que l'utilisateur a trop peu de notes. */
-const DEFAULT_MEAN = 6.5;
+/** Point neutre de l'échelle : 6,5 = « j'aime bien, sans plus ». Au-dessus,
+ *  la note tire le profil vers le titre ; en dessous, elle l'en éloigne. Le
+ *  MÊME pour tout le monde : un 7 veut dire « j'ai aimé » chez tous les
+ *  noteurs — c'est d'ailleurs ce que la sync publie chez TMDB. Sert aussi de
+ *  moyenne par défaut quand les notes sont trop peu nombreuses. */
+export const NEUTRAL_SCORE = 6.5;
+/** Unité de l'échelle : deux points de note valent un poids de 1 — un 8 vaut
+ *  un favori (0,75 ≈ 0,7), un 10 en vaut deux et demi, un 4 vaut deux
+ *  abandons. L'écart-type personnel ne s'applique qu'au-delà : un noteur qui
+ *  étale ses notes sur toute l'échelle a des points qui pèsent moins. */
+const SCALE_UNIT = 2;
 const MIN_RATINGS_FOR_STATS = 3;
 
 export function decayFactor(ageDays: number): number {
@@ -54,25 +60,29 @@ export function ageInDays(date: Date | string, now = Date.now()): number {
 }
 
 /**
- * Moyenne et écart-type des notes de l'utilisateur. Sous trois notes, les
- * statistiques personnelles seraient du bruit : moyenne par défaut, écart nul
- * (le plancher prend le relais au moment de normaliser).
+ * Moyenne et écart-type des notes de l'utilisateur. La moyenne est
+ * INFORMATIVE (profil stocké, endpoint de debug) : seul l'écart-type entre
+ * dans le poids. Sous trois notes, les statistiques seraient du bruit :
+ * moyenne au point neutre, écart nul (l'unité d'échelle prend le relais).
  */
 export function ratingStats(scores: number[]): { mean: number; stdDev: number } {
-  if (scores.length < MIN_RATINGS_FOR_STATS) return { mean: DEFAULT_MEAN, stdDev: 0 };
+  if (scores.length < MIN_RATINGS_FOR_STATS) return { mean: NEUTRAL_SCORE, stdDev: 0 };
   const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
   const variance = scores.reduce((a, b) => a + (b - mean) ** 2, 0) / scores.length;
   return { mean, stdDev: Math.sqrt(variance) };
 }
 
 /**
- * Poids d'une note explicite, NORMALISÉE sur l'échelle personnelle : certains
- * notent tout entre 8 et 10, d'autres entre 4 et 7 — seule la position par
- * rapport à SA moyenne informe, divisée par SON écart-type (plancher inclus).
- * Les notes médianes (5..7) pèsent peu (±0,2) ; les extrêmes pèsent plein.
+ * Poids d'une note explicite, sur l'échelle ABSOLUE des étoiles : la distance
+ * au point neutre (6,5), en unités d'échelle. L'ancienne normalisation sur la
+ * moyenne PERSONNELLE faisait d'un 7 un reproche chez qui note généreusement
+ * (moyenne 7,9 : 7 → −0,17, 6 → −0,37) et annulait la grille de démarrage à
+ * froid — cinq titres aimés à 8 font une moyenne de 8, donc cinq poids nuls
+ * et aucune graine. Les notes médianes (5..7) pèsent peu (× 0,2) ; les
+ * extrêmes pèsent plein.
  */
-export function ratingSignalWeight(score: number, mean: number, stdDev: number): number {
-  const z = (score - mean) / Math.max(stdDev, STD_DEV_FLOOR);
+export function ratingSignalWeight(score: number, stdDev: number): number {
+  const z = (score - NEUTRAL_SCORE) / Math.max(stdDev, SCALE_UNIT);
   const k = score >= 8 || score <= 4 ? 1 : 0.2;
   return k * z;
 }

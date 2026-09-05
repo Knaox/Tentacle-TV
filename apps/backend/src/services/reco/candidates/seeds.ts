@@ -14,8 +14,8 @@ const SERIES_SEEDS_MAX = 10;
 const SERIES_SEED_MIN_EPISODES = 6;
 
 /**
- * Les titres les plus FORTS du profil : notes hautes (normalisées sur
- * l'échelle personnelle), favoris, likes hors bibliothèque, et les séries
+ * Les titres les plus FORTS du profil : notes hautes (au-dessus du point
+ * neutre 6,5 de l'échelle), favoris, likes hors bibliothèque, et les séries
  * SUIVIES (force = engagement, cf. seriesEngagementWeight). Ce sont eux qui
  * nourrissent /recommendations, /similar et les rangées « Parce que vous avez
  * aimé [titre] ». Les signaux négatifs ne font jamais graine.
@@ -33,7 +33,7 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
     }),
   ]);
 
-  const { mean, stdDev } = ratingStats(ratings.map((r) => r.score));
+  const { stdDev } = ratingStats(ratings.map((r) => r.score));
   const byKey = new Map<string, SeedRef>();
 
   const push = (mediaType: "movie" | "tv", tmdbId: number, strength: number) => {
@@ -54,7 +54,7 @@ export async function deriveSeeds(userId: string, library: LibraryIndex): Promis
 
   for (const r of ratings) {
     const mediaType = r.mediaType === "movie" ? "movie" : "tv";
-    push(mediaType, r.tmdbId, ratingSignalWeight(r.score, mean, stdDev));
+    push(mediaType, r.tmdbId, ratingSignalWeight(r.score, stdDev));
   }
   for (const entry of library.entries) {
     if (entry.isFavorite) push(entry.mediaType, entry.tmdbId, 0.7);
