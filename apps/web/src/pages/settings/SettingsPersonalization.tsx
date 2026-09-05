@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  isVigieActive,
   mergeHiddenHomeRows,
   recoRowTitle,
   reconcileHomeRows,
@@ -15,6 +16,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
 import { SettingsSection } from "@tentacle-tv/ui";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
@@ -42,6 +44,9 @@ export function SettingsPersonalization() {
   const saveSettings = useSaveRecoSettings();
   const resetProfile = useResetTasteProfile();
   const [confirmReset, setConfirmReset] = useState(false);
+  // « Hors bibliothèque » n'a de sens qu'avec le plugin Vigie présent et
+  // activé : sans lui, le serveur ignore le réglage et l'interrupteur se tait.
+  const vigie = isVigieActive(useActivePluginsMeta());
 
   // La liste COMPLÈTE (clés hors catalogue comprises : elles restent
   // stockées) et la liste VISIBLE que l'éditeur manipule — seules les rangées
@@ -167,12 +172,14 @@ export function SettingsPersonalization() {
             active={settings.personalized}
             onChange={(personalized) => patchSettings({ personalized })}
           />
-          <SettingToggleRow
-            title={t("persoRecoVigie")}
-            hint={t("persoRecoVigieHint")}
-            active={settings.includeVigie}
-            onChange={(includeVigie) => patchSettings({ includeVigie })}
-          />
+          {vigie && (
+            <SettingToggleRow
+              title={t("persoRecoVigie")}
+              hint={t("persoRecoVigieHint")}
+              active={settings.includeVigie}
+              onChange={(includeVigie) => patchSettings({ includeVigie })}
+            />
+          )}
           <SettingToggleRow
             title={t("persoRecoCommunity")}
             hint={t("persoRecoCommunityHint")}
