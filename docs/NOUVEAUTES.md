@@ -132,10 +132,11 @@ export function MaScene({ active, reduced }: SceneProps) {
 
 - Desktop seulement (`isDesktopApp()`), version par `getVersion()` (vraie version du bundle,
   repli `__APP_VERSION_DESKTOP__`).
-- Dès le montage : **aucune version vue = première installation** — on enregistre la version
-  courante, on ne montre rien. Un utilisateur qui vient d'une version SANS l'écran
-  (1.20.x → 1.21.0) est dans ce cas : il ne verra les nouveautés qu'en les rouvrant depuis
-  « À propos ». C'est la règle retenue ; la changer tient en une ligne dans `useWhatsNewGate`.
+- **La première installation se marque à la page de connexion au serveur** (`AppConnect`,
+  `freshInstall.ts`) : on y note la version courante, l'écran ne s'imposera qu'à la suivante.
+  À la porte, **aucune version vue ne veut donc pas dire première installation** mais « mis à
+  jour depuis une version d'avant l'écran » (1.20.x → 1.21.0, ou données effacées) : on montre
+  tout le registre jusqu'à la version courante, plafonné à douze, puis on note.
 - Puis, quand les conditions sont réunies — session ouverte, disclaimer accepté, pas sur
   `/watch`, pop-up de mise à jour au repos —, UNE décision : version courante plus récente que
   la vue ET des nouveautés dans `]vue, courante]` → l'écran, toutes les nouveautés depuis la
