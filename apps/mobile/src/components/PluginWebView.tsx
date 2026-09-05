@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
-import { useActivePlugins, useMobilePluginNavItems, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
+import { useActivePlugins, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
@@ -21,10 +21,20 @@ function getWebView(): typeof import("react-native-webview").WebView | null {
 }
 
 interface PluginWebViewProps {
-  navItemIndex: number;
+  /** Identifiant du plugin (`seer`…) : la WebView n'existe que s'il est actif. */
+  pluginId: string;
+  /** Route du plugin à ouvrir (`/discover`…), telle que publiée par son manifeste. */
+  path: string;
+  /** Libellé déjà localisé, affiché par l'overlay de chargement. */
+  label: string;
+  /**
+   * Vrai (défaut) : le cadre se décale du header flottant. Faux quand le
+   * parent a déjà réservé cette place (bandeau de sections au-dessus).
+   */
+  padTop?: boolean;
 }
 
-export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
+export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWebViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
@@ -41,11 +51,12 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
-  const { isLoading: pluginsLoading } = useActivePlugins();
-  const navItems = useMobilePluginNavItems();
+  const { data: plugins, isLoading: pluginsLoading } = useActivePlugins();
 
-  const navItem = navItems[navItemIndex];
-  const { data: bundleCode, error: bundleError } = usePluginBundle(navItem?.pluginId);
+  // Le plugin est adressé par son identifiant : un emplacement par index
+  // n'est pas une identité (l'ordre des pages change avec le manifeste).
+  const plugin = plugins?.find((p) => p.pluginId === pluginId);
+  const { data: bundleCode, error: bundleError } = usePluginBundle(plugin ? pluginId : undefined);
   const { data: sharedDepsCode, error: depsError } = useSharedDeps();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
@@ -57,19 +68,19 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [webViewError, setWebViewError] = useState<string | null>(null);
 
-  // Reset states when navItem changes (retry implicite)
-  const navKey = navItem ? `${navItem.pluginId}-${navItem.path}` : "";
+  // Remise à zéro quand la page adressée change (retry implicite)
+  const navKey = `${pluginId}:${path}`;
   useEffect(() => {
     setWebViewReady(false);
     setShowOverlay(true);
     setWebViewError(null);
-    if (navItem?.pluginId) clearPluginFailed(navItem.pluginId);
-  }, [navKey]);
+    if (pluginId) clearPluginFailed(pluginId);
+  }, [navKey, pluginId]);
 
   // `theme` en dépendance : au switch clair/sombre la source HTML change et la
-  // WebView remonte re-thémée (événement rare, remontage assumé).
+  // WebView recharge sa page re-thémée (événement rare, rechargement assumé).
   const htmlContent = useMemo(() => {
-    if (!navItem || !bundleCode || !sharedDepsCode) return null;
+    if (!plugin || !bundleCode || !sharedDepsCode) return null;
     return buildPluginHtml({
       backendUrl: serverUrl,
       token,
@@ -77,11 +88,11 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       lang,
       bundleCode,
       sharedDepsCode,
-      pluginPath: navItem.path,
+      pluginPath: path,
       appTheme: theme,
       chromeBottom: chromeRef.current,
     });
-  }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
+  }, [plugin, path, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
 
   /* La hauteur suit l'appareil : l'inset bas d'un iPhone n'est pas le même en
    * portrait et en paysage. On la RÉINJECTE plutôt que de la mettre dans les
@@ -111,20 +122,27 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const onBridgeError = useCallback((msg: string) => {
     setWebViewReady(true);
     setWebViewError(msg);
-    if (navItem?.pluginId) markPluginFailed(navItem.pluginId);
-  }, [navItem?.pluginId]);
+    if (pluginId) markPluginFailed(pluginId);
+  }, [pluginId]);
 
   const handleMessage = useCallback(
     createBridgeHandler(router, onReady, onBridgeError),
     [router, onReady, onBridgeError],
   );
 
+  /* Android peut tuer le processus de rendu des WebViews (mémoire) : sans ce
+   * crochet, chaque cadre resterait blanc en silence. On le traite comme un
+   * plantage du plugin — message + Réessayer. */
+  const onRenderGone = useCallback(() => {
+    onBridgeError("render process gone");
+  }, [onBridgeError]);
+
   const handleRetry = useCallback(() => {
     setWebViewError(null);
     setWebViewReady(false);
     setShowOverlay(true);
-    if (navItem?.pluginId) clearPluginFailed(navItem.pluginId);
-  }, [navItem?.pluginId]);
+    if (pluginId) clearPluginFailed(pluginId);
+  }, [pluginId]);
 
   if (webViewError) {
     return (
@@ -154,7 +172,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
     );
   }
 
-  if (!navItem && !pluginsLoading) {
+  // Plugin absent de la liste active (désactivé, désinstallé, ou pas encore chargé)
+  if (!plugin && !pluginsLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
         <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center" }}>
@@ -186,13 +205,14 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: headerH }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: padTop ? headerH : 0 }}>
       {htmlContent ? (
         <WebViewComponent
           key={navKey}
           ref={webRef as never}
           source={{ html: htmlContent, baseUrl: serverUrl }}
           onMessage={handleMessage}
+          onRenderProcessGone={onRenderGone}
           style={{ flex: 1, backgroundColor: colors.surface.s0 }}
           javaScriptEnabled
           domStorageEnabled
@@ -203,7 +223,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       {showOverlay && (
         <PluginLoadingOverlay
           visible={!webViewReady}
-          label={navItem?.label ?? ""}
+          label={label}
           onHidden={() => setShowOverlay(false)}
         />
       )}
