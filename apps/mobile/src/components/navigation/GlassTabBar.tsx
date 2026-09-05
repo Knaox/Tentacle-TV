@@ -28,6 +28,14 @@ const ROW_PAD_V = 8;
 const BAR_HEIGHT = 2 * ROW_PAD_V + PILL_H + LABEL_GAP + LABEL_LINE_HEIGHT;
 
 /**
+ * Repli : le libellé s'efface et se replie sous l'icône, qui descend d'autant
+ * pour rester au CENTRE de la barre réduite — la moitié de la place que le
+ * libellé occupait (centre de l'icône à 24 pt, centre de la barre à 31,5).
+ * Sans cela l'icône restait ancrée en haut, avec du vide dessous.
+ */
+const ICON_SHIFT = (LABEL_GAP + LABEL_LINE_HEIGHT) / 2;
+
+/**
  * Hauteur TOTALE occupée par la barre flottante, inset bas compris.
  *
  * Le contenu passe DESSOUS (c'est tout l'intérêt du verre), donc personne n'a
@@ -57,7 +65,13 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       { scale: 1 - collapsed.value * 0.12 },
     ],
   }));
-  const labelFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
+  const iconShift = useAnimatedStyle(() => ({
+    transform: [{ translateY: collapsed.value * ICON_SHIFT }],
+  }));
+  const labelFold = useAnimatedStyle(() => ({
+    opacity: 1 - collapsed.value,
+    transform: [{ translateY: -collapsed.value * ICON_SHIFT }, { scale: 1 - collapsed.value * 0.3 }],
+  }));
 
   const routes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
@@ -86,7 +100,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           {/* La piste : sans marge, le même repère pour les `onLayout` des
               items et le `left/top: 0` de l'indicateur. */}
           <View style={st.track} accessibilityRole="tablist">
-            <TabIndicator width={PILL_W} height={PILL_H} style={indicator.style} />
+            <TabIndicator width={PILL_W} height={PILL_H} style={[indicator.style, iconShift]} />
             {routes.map((route) => {
               const focused = state.routes[state.index]?.key === route.key;
               return (
@@ -98,7 +112,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
                   tint={focused ? theme.colors.brand.violet : theme.colors.text.tertiary}
                   navigation={navigation}
                   onLayout={indicator.onItemLayout(route.key)}
-                  labelStyle={labelFade}
+                  iconStyle={iconShift}
+                  labelStyle={labelFold}
                 />
               );
             })}
