@@ -2,7 +2,7 @@ import { useState, useEffect, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { GlassFilters } from "@tentacle-tv/ui";
 import { AppLayout } from "./components/AppLayout";
-import { UpdateModal } from "./components/UpdateModal";
+import { UpdateModalHost } from "./components/UpdateModal";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
@@ -318,7 +318,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <UpdateModal />
+      <UpdateModalHost />
       {authed && <OfflineSessionGate />}
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)

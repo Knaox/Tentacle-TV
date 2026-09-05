@@ -34,6 +34,15 @@ export default {
   updateStoreUnavailable: "Le Microsoft Store n'a pas répondu. Réessayez plus tard, ou mettez à jour depuis le Store.",
   updateNoLongerAvailable: "La mise à jour n'est plus en attente — vous êtes peut-être déjà à jour.",
   updateInstallRefused: "L'installation n'a pas abouti. Elle peut être reprise depuis le Microsoft Store.",
+  // Nouvelle pop-up : phrase du canal en sous-titre, ligne des versions (aria),
+  // encart d'erreur. Les noms des canaux sont des noms propres, en dur.
+  updateReadyAppStore: "Une nouvelle version vous attend sur l'App Store.",
+  updateReadyMicrosoftStore: "Une nouvelle version vous attend sur le Microsoft Store.",
+  updateReadyLinux: "Une nouvelle version est prête à s'installer.",
+  updateVersionLine: "De la version {{from}} à la version {{to}}",
+  updateCurrentVersion: "Version actuelle",
+  updateNewVersion: "Nouvelle version",
+  updateErrorTitle: "La mise à jour n'a pas abouti",
   // Suppression
   deleteAll: "Tout supprimer",
   confirmDeleteAll: "Etes-vous sur ? Cette action est irreversible.",

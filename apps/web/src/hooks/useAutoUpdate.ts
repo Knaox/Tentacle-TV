@@ -41,9 +41,14 @@ export function useAutoUpdate() {
     // couvre le développement ET la coquille Electron de développement, qui sert
     // un build de production : `import.meta.env.DEV` y est FAUX, et ce crochet
     // n'existait donc pas là où il sert le plus.
+    // `override` : forcer une phase (`downloading`, `installing`, une erreur…)
+    // pour la REGARDER — sur ce poste la simulation prend le canal store et
+    // n'y passe jamais d'elle-même. Un état posé, pas une logique de plus.
     if (updateDebugEnabled()) {
-      (window as unknown as { __tentacleSimulateUpdate?: () => void }).__tentacleSimulateUpdate = () => {
-        setInfo(simulatedUpdate(defaultUpdateInfo));
+      (window as unknown as {
+        __tentacleSimulateUpdate?: (override?: Partial<UpdateInfo>) => void;
+      }).__tentacleSimulateUpdate = (override) => {
+        setInfo({ ...simulatedUpdate(defaultUpdateInfo), ...override });
       };
     }
 
