@@ -1,7 +1,7 @@
 import { StyleSheet, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { GlassSurface } from "@/components/ui";
 import { useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useScrollChromeValue } from "./scrollChrome";
@@ -65,8 +65,9 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       { scale: 1 - collapsed.value * 0.12 },
     ],
   }));
+  const shiftY = useDerivedValue(() => collapsed.value * ICON_SHIFT);
   const iconShift = useAnimatedStyle(() => ({
-    transform: [{ translateY: collapsed.value * ICON_SHIFT }],
+    transform: [{ translateY: shiftY.value }],
   }));
   const labelFold = useAnimatedStyle(() => ({
     opacity: 1 - collapsed.value,
@@ -78,7 +79,8 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
     return StyleSheet.flatten(options.tabBarItemStyle)?.display !== "none";
   });
   const activeKey = state.routes[state.index]?.key;
-  const indicator = useSlidingIndicator(activeKey, { width: PILL_W, height: PILL_H, align: "top" });
+  // Le décalage du repli entre dans le style de l'indicateur (un seul `transform`).
+  const indicator = useSlidingIndicator(activeKey, { width: PILL_W, height: PILL_H, align: "top", shiftY });
 
   return (
     <Animated.View
@@ -100,7 +102,7 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
           {/* La piste : sans marge, le même repère pour les `onLayout` des
               items et le `left/top: 0` de l'indicateur. */}
           <View style={st.track} accessibilityRole="tablist">
-            <TabIndicator width={PILL_W} height={PILL_H} style={[indicator.style, iconShift]} />
+            <TabIndicator width={PILL_W} height={PILL_H} style={indicator.style} />
             {routes.map((route) => {
               const focused = state.routes[state.index]?.key === route.key;
               return (
