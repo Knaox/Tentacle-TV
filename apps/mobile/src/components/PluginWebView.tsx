@@ -1,6 +1,6 @@
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
@@ -11,6 +11,7 @@ import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { typography, FONT_FAMILY, RADIUS, useTheme, useResponsive } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
+import { useScrollChromeSetter } from "@/components/navigation/scrollChrome";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -32,9 +33,15 @@ interface PluginWebViewProps {
    * parent a déjà réservé cette place (bandeau de sections au-dessus).
    */
   padTop?: boolean;
+  /**
+   * Vrai (défaut) : le défilement de la page replie et redéploie le chrome
+   * natif, comme un onglet. Faux pour un volet inactif, qui reste monté mais
+   * ne doit pas parler au nom de la section affichée.
+   */
+  controlsChrome?: boolean;
 }
 
-export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWebViewProps) {
+export function PluginWebView({ pluginId, path, label, padTop = true, controlsChrome = true }: PluginWebViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
@@ -52,6 +59,23 @@ export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWe
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
   const { data: plugins, isLoading: pluginsLoading } = useActivePlugins();
+
+  // Le chrome suit le défilement de la page (message SCROLL_CHROME) — seul le
+  // volet actif y a droit ; hors des onglets, le setter est nul : no-op.
+  const setChrome = useScrollChromeSetter();
+  const controlsRef = useRef(controlsChrome);
+  controlsRef.current = controlsChrome;
+  const onScrollChrome = useCallback(
+    (collapsed: boolean) => { if (controlsRef.current) setChrome?.(collapsed); },
+    [setChrome],
+  );
+  // Le natif vient de redéployer le chrome (focus, volet activé) : la page se
+  // réaligne, sinon elle croirait le chrome encore replié.
+  const resetPageChrome = useCallback(() => {
+    webRef.current?.injectJavaScript("window.__tentacleScrollChrome && window.__tentacleScrollChrome.reset(); true;");
+  }, []);
+  useFocusEffect(resetPageChrome);
+  useEffect(() => { if (controlsChrome) resetPageChrome(); }, [controlsChrome, resetPageChrome]);
 
   // Le plugin est adressé par son identifiant : un emplacement par index
   // n'est pas une identité (l'ordre des pages change avec le manifeste).
@@ -126,9 +150,9 @@ export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWe
     setWebViewError(msg);
   }, []);
 
-  const handleMessage = useCallback(
-    createBridgeHandler(router, onReady, onBridgeError),
-    [router, onReady, onBridgeError],
+  const handleMessage = useMemo(
+    () => createBridgeHandler(router, onReady, onBridgeError, onScrollChrome),
+    [router, onReady, onBridgeError, onScrollChrome],
   );
 
   /* Android peut tuer le processus de rendu des WebViews (mémoire) : sans ce

@@ -17,9 +17,16 @@ import { motion } from "@/theme";
  * En mouvement réduit, les bascules sont sèches (durée 0).
  */
 
-const SHOW_NEAR_TOP = 64;
-const DELTA = 12;
-const DURATION_MS = 250;
+/**
+ * Les seuils du repli, source UNIQUE : l'handler natif ci-dessous et le
+ * script injecté dans les pages d'extension (pluginScrollChromeScript) les
+ * lisent tous deux — une page WebView se replie exactement comme un onglet.
+ */
+export const SCROLL_CHROME_TUNING = { showNearTop: 64, delta: 12, durationMs: 250 } as const;
+
+const SHOW_NEAR_TOP = SCROLL_CHROME_TUNING.showNearTop;
+const DELTA = SCROLL_CHROME_TUNING.delta;
+const DURATION_MS = SCROLL_CHROME_TUNING.durationMs;
 
 interface ScrollChrome {
   collapsed: SharedValue<number>;
@@ -97,4 +104,19 @@ export function useExpandChromeOnFocus() {
       if (collapsed) collapsed.value = withTiming(0, { duration });
     }, [collapsed, duration]),
   );
+}
+
+/**
+ * Le pilotage direct du chrome, pour un écran dont le défilement se passe
+ * ailleurs (la page d'une extension, dans sa WebView) : la page calcule
+ * l'hystérésis et ne dit que l'état, replié ou non. `null` hors provider.
+ */
+export function useScrollChromeSetter(): ((collapsed: boolean) => void) | null {
+  const collapsed = useContext(ScrollChromeContext)?.collapsed ?? null;
+  return useMemo(() => {
+    if (!collapsed) return null;
+    return (next: boolean) => {
+      collapsed.value = withTiming(next ? 1 : 0, { duration: motion.respectReducedMotion(DURATION_MS) });
+    };
+  }, [collapsed]);
 }
