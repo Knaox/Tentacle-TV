@@ -70,8 +70,7 @@ export function ForYouScreen() {
     }
   }, []);
 
-  // Jusqu'à l'écran Personnalisation : le profil.
-  const openSettings = useCallback(() => router.navigate("/profile"), [router]);
+  const openSettings = useCallback(() => router.push("/settings/personalization"), [router]);
   const later = useCallback(() => {
     // L'onglet reste monté : sans « dismissed », la grille reviendrait au retour.
     model.dismissColdStart();

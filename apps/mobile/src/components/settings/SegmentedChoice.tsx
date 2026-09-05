@@ -20,6 +20,8 @@ interface Props {
   onChange: (value: string) => void;
   /** Libellé accessible du groupe — les boutons n'en portent pas de contexte. */
   accessibilityLabel: string;
+  /** Quatre options sur un téléphone : deux par rangée, sinon un mot se coupe. */
+  wrap?: boolean;
 }
 
 /**
@@ -29,10 +31,10 @@ interface Props {
  * valeurs coûte deux gestes là où il en faut un. La forme est celle des
  * réglages de lecture — action d'un passage, déclencheur de la suite.
  */
-export function SegmentedChoice({ options, value, onChange, accessibilityLabel }: Props) {
+export function SegmentedChoice({ options, value, onChange, accessibilityLabel, wrap }: Props) {
   const st = useThemedStyles(makeStyles);
   return (
-    <View style={st.row} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+    <View style={[st.row, wrap && st.rowWrap]} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
       {options.map((option) => {
         const isActive = option.value === value;
         return (
@@ -43,6 +45,7 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel }
             accessibilityState={{ selected: isActive }}
             style={({ pressed }) => [
               st.button,
+              wrap && st.buttonWrap,
               isActive && st.buttonActive,
               pressed && { opacity: 0.75 },
             ]}
@@ -63,6 +66,8 @@ export function SegmentedChoice({ options, value, onChange, accessibilityLabel }
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     row: { flexDirection: "row", gap: spacing.xs },
+    rowWrap: { flexWrap: "wrap" },
+    buttonWrap: { flex: 0, flexGrow: 1, flexBasis: "46%" },
     button: {
       flex: 1,
       minHeight: 44,
