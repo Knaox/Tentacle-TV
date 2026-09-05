@@ -50,18 +50,32 @@ export function SteppedSlider({
   const thumbStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value - THUMB / 2 }] }));
 
   // Le PanResponder est créé une fois : il lit des refs, toujours fraîches.
-  const ref = useRef({ trackW, value, onChange, onChangeEnd, min, max, step });
+  const ref = useRef({ trackW, trackX: NaN, value, onChange, onChangeEnd, min, max, step });
   Object.assign(ref.current, { trackW, value, onChange, onChangeEnd, min, max, step });
+  const trackRef = useRef<View>(null);
+  // La position du geste se lit en coordonnées de FENÊTRE (`pageX`) contre
+  // l'abscisse mesurée de la piste : `locationX` est relative à la vue
+  // touchée, et sous Fabric ce n'est pas toujours la piste (un cran, le
+  // remplissage) — mesuré sur Android : un appui à 80 % rendait 0.
+  const gestureX = (e: { nativeEvent: { pageX: number; locationX: number } }) => {
+    const { trackX } = ref.current;
+    return Number.isFinite(trackX) ? e.nativeEvent.pageX - trackX : e.nativeEvent.locationX;
+  };
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2,
-      onPanResponderGrant: (e) => commit(e.nativeEvent.locationX),
-      onPanResponderMove: (e) => commit(e.nativeEvent.locationX),
+      onPanResponderGrant: (e) => commit(gestureX(e)),
+      onPanResponderMove: (e) => commit(gestureX(e)),
       onPanResponderRelease: () => ref.current.onChangeEnd?.(ref.current.value),
       onPanResponderTerminate: () => ref.current.onChangeEnd?.(ref.current.value),
     }),
   ).current;
+
+  const onTrackLayout = (e: LayoutChangeEvent) => {
+    setTrackW(e.nativeEvent.layout.width);
+    trackRef.current?.measureInWindow((x) => { ref.current.trackX = x; });
+  };
 
   function commit(px: number) {
     const r = ref.current;
@@ -69,6 +83,9 @@ export function SteppedSlider({
     const raw = r.min + (Math.min(w, Math.max(0, px)) / w) * (r.max - r.min);
     const next = Math.min(r.max, Math.max(r.min, Math.round((raw - r.min) / r.step) * r.step + r.min));
     if (next === r.value) return;
+    // Mémorisé ici même : pour un simple appui, le relâcher arrive avant le
+    // rendu qui porterait la nouvelle valeur — il sauvegarderait l'ancienne.
+    r.value = next;
     Haptics?.selectionAsync?.();
     r.onChange(next);
   }
@@ -85,8 +102,9 @@ export function SteppedSlider({
       <View style={st.row}>
         <IconButton icon="minus" size={36} onPress={() => nudge(-1)} accessibilityLabel={`${leftLabel} (−${step})`} />
         <View
+          ref={trackRef}
           style={st.trackHit}
-          onLayout={(e: LayoutChangeEvent) => setTrackW(e.nativeEvent.layout.width)}
+          onLayout={onTrackLayout}
           accessible
           accessibilityRole="adjustable"
           accessibilityLabel={accessibilityLabel}
@@ -95,15 +113,17 @@ export function SteppedSlider({
           onAccessibilityAction={(e) => nudge(e.nativeEvent.actionName === "increment" ? 1 : -1)}
           {...pan.panHandlers}
         >
-          <View style={st.track} />
+          {/* Décor insensible au toucher : la piste seule reçoit le geste. */}
+          <View style={st.track} pointerEvents="none" />
           <LinearGradient
             colors={[st.fillStart.color as string, st.fillEnd.color as string]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={[st.fill, { width: ratio * trackW }]}
+            pointerEvents="none"
           />
           {Array.from({ length: steps + 1 }, (_, i) => (
-            <View key={i} style={[st.tick, { left: (i / steps) * trackW - 1 }]} />
+            <View key={i} style={[st.tick, { left: (i / steps) * trackW - 1 }]} pointerEvents="none" />
           ))}
           <Animated.View style={[st.thumb, thumbStyle]} pointerEvents="none" />
         </View>

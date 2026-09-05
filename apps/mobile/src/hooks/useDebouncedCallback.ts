@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 /**
  * Un rappel débouncé : `call` diffère l'appel de `delay` ms (le dernier
  * gagne), `flush` exécute tout de suite ce qui attend (fermeture d'une
- * feuille), `cancel` l'abandonne. Le rappel lu est toujours le plus récent.
+ * feuille), `cancel` l'abandonne, `isPending` dit si un appel attend. Le
+ * rappel lu est toujours le plus récent.
  */
 export function useDebouncedCallback<A extends unknown[]>(fn: (...args: A) => void, delay: number) {
   const fnRef = useRef(fn);
@@ -35,7 +36,9 @@ export function useDebouncedCallback<A extends unknown[]>(fn: (...args: A) => vo
     }, delay);
   }, [delay]);
 
+  const isPending = useCallback(() => timer.current !== null, []);
+
   useEffect(() => cancel, [cancel]);
 
-  return useMemo(() => ({ call, flush, cancel }), [call, flush, cancel]);
+  return useMemo(() => ({ call, flush, cancel, isPending }), [call, flush, cancel, isPending]);
 }

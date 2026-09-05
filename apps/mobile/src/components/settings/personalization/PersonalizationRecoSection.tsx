@@ -31,9 +31,14 @@ export function PersonalizationRecoSection({ settings }: { settings: RecoSetting
   const reset = useResetTasteProfile();
 
   // Le curseur garde un état local pendant le geste ; le compte suit après.
+  // Tant qu'une sauvegarde attend ou vole, le serveur ne dicte rien : le
+  // rafraîchissement d'une sauvegarde précédente ramènerait sinon l'ancienne
+  // valeur sous le doigt (mesuré : deux appuis rapprochés, le second effacé).
   const [balance, setBalance] = useState(settings.explorationBalance);
-  useEffect(() => { setBalance(settings.explorationBalance); }, [settings.explorationBalance]);
   const saveBalance = useDebouncedCallback((value: number) => save.mutate({ explorationBalance: value }), BALANCE_SAVE_MS);
+  useEffect(() => {
+    if (!save.isPending && !saveBalance.isPending()) setBalance(settings.explorationBalance);
+  }, [settings.explorationBalance, save.isPending, saveBalance]);
 
   const confirmReset = () => {
     Alert.alert(t("persoResetProfile"), t("persoResetProfileBody"), [
