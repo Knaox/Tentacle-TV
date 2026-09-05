@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { LayoutChangeEvent } from "react-native";
-import { useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
+import { useAnimatedStyle, useSharedValue, withSpring, withTiming, type SharedValue } from "react-native-reanimated";
 import { motion } from "@/theme";
 
 interface Size {
@@ -19,6 +19,13 @@ interface Options extends Size {
   /** `top` : l'indicateur s'aligne sur le haut de l'item (l'icône y est) ;
    *  `center` : il occupe l'item (rail, menu). */
   align?: "top" | "center";
+  /**
+   * Décalage vertical AJOUTÉ à la position (le repli de la barre) — dans le
+   * MÊME style animé : deux styles combinés se remplacent l'un l'autre sur
+   * `transform`, et la translation horizontale serait perdue (mesuré : pilule
+   * revenue sous le premier onglet dès la barre repliée).
+   */
+  shiftY?: SharedValue<number>;
 }
 
 /** Miroir de `springSoft` du web (320/32) : ~250 ms, sans rebond visible. */
@@ -33,7 +40,7 @@ const SHOW_MS = 120;
  * (pas de glissement depuis l'origine au premier rendu) ou sans onglet actif.
  * Aucune valeur React par image : tout est partagé avec le fil UI.
  */
-export function useSlidingIndicator(activeKey: string | undefined, { width, height, align = "top" }: Options) {
+export function useSlidingIndicator(activeKey: string | undefined, { width, height, align = "top", shiftY }: Options) {
   const x = useSharedValue(0);
   const y = useSharedValue(0);
   const shown = useSharedValue(0);
@@ -81,7 +88,7 @@ export function useSlidingIndicator(activeKey: string | undefined, { width, heig
 
   const style = useAnimatedStyle(() => ({
     opacity: shown.value,
-    transform: [{ translateX: x.value }, { translateY: y.value }],
+    transform: [{ translateX: x.value }, { translateY: y.value + (shiftY?.value ?? 0) }],
   }));
 
   return { onItemLayout, style };
