@@ -53,6 +53,7 @@ export default {
   dismiss: "Masquer",
   // L'affiche de fin : la refuser SORT du lecteur — le bouton dit où l'on va.
   backToDetails: "Retour à la fiche",
+  rateJustWatched: "Notez l'épisode que vous venez de voir",
   // Les segments au-delà de l'intro — chaque libellé a sa forme décomptée.
   skipRecap: "Passer le résumé",
   skipRecapIn: "Passer le résumé dans {{seconds}} s",
@@ -73,6 +74,7 @@ export default {
   playbackError: "Erreur de lecture vidéo",
   playbackGiveUp: "Impossible de lire cette vidéo sur ce téléviseur",
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
+  qualityAutoBadge: "Auto",
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
   retry: "Réessayer",
   back: "Retour",

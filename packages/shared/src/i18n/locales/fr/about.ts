@@ -13,6 +13,7 @@ export default {
   contact: "Contact",
   contactText: "Pour toute question ou signalement de bug, utilisez le système de support intégré depuis le menu Aide ou contactez l'administrateur de votre serveur.",
   creditsLink: "Crédits & Licences open-source",
+  whatsNewAgain: "Revoir les nouveautés",
   copyright: "Tentacle TV {{version}} — {{year}}",
   creditsTitle: "Crédits & Licences",
   creditsIntro: "Tentacle TV est construit grâce à de nombreux projets open-source. Merci à toutes les communautés qui rendent ce projet possible.",

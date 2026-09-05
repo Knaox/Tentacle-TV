@@ -15,9 +15,7 @@
  *    carte SEULEMENT — jamais un bouton de saut sans donnée ;
  *  - l'écran de fin (final) est une autre surface à un autre moment : son
  *    PROPRE réglage (`nextFinalCard`), son PROPRE refus (`finalCard`) —
- *    toujours indépendant du réglage et du refus de la fiche du générique ;
- *  - l'interrupteur admin (autoplay_next_enabled) est une garde serveur sur
- *    l'ENCHAÎNEMENT (carte et écran de fin), pas sur les boutons de saut.
+ *    toujours indépendant du réglage et du refus de la fiche du générique.
  *
  * Les décomptes eux-mêmes vivent dans les réducteurs (saut : introSkip
  * généralisé ; enchaînement : autoNextEngine) — l'arbitre ne fait que les
@@ -114,8 +112,6 @@ export interface ArbiterInput {
    * l'habillage, le second arrive quand il n'y a plus rien à regarder.
    */
   postCreditsClaimed?: boolean;
-  /** Garde serveur `autoplay_next_enabled` (admin). */
-  serverAutoplayEnabled: boolean;
   /** Les passages mis en sourdine — ils gouvernent la croix, pas l'affichage. */
   mutedSegments?: MutedSegments;
   dismissed: OverlayDismissals;
@@ -143,12 +139,7 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   //    de la fiche du générique. Quand il ne paraît pas, la SORTIE appartient
   //    au lecteur (`useEndOfPlaybackExit`), pas à l'arbitre.
   if (input.playbackEnded) {
-    if (
-      input.hasNextEpisode &&
-      input.serverAutoplayEnabled &&
-      settings.next.nextFinalCard &&
-      !dismissed.finalCard
-    ) {
+    if (input.hasNextEpisode && settings.next.nextFinalCard && !dismissed.finalCard) {
       return {
         kind: "nextCard",
         countdownSeconds: settings.next.nextCountdown ? countdowns.next : null,
@@ -168,8 +159,7 @@ export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {
   }
 
   const libraryId = input.libraryId ?? null;
-  const chainable =
-    input.hasNextEpisode && input.serverAutoplayEnabled && input.hasStarted;
+  const chainable = input.hasNextEpisode && input.hasStarted;
 
   // 3. La carte « à suivre ».
   // L'éligibilité vient du sélecteur PARTAGÉ avec le minuteur : la carte et le

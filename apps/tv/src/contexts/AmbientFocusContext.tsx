@@ -21,10 +21,22 @@ import type { MediaItem } from "@tentacle-tv/shared";
  * souvent et l'autre jamais.
  */
 
-/** Ce qui CHANGE — lu par le seul fond ambiant. */
-const AmbientItemContext = createContext<MediaItem | null>(null);
+/**
+ * Ce qui éclaire le fond : un MediaItem Jellyfin (son backdrop se résout dans
+ * la couche), ou une image déjà ADRESSÉE — une recommandation n'est pas un
+ * MediaItem, elle apporte son backdrop et son identité (`recoAmbientTarget`).
+ */
+export type AmbientTarget = MediaItem | { kind: "uri"; id: string; uri: string };
 
-type AmbientSetter = (item: MediaItem | null) => void;
+/** L'identité d'une cible — la clé d'une reco, l'Id d'un item Jellyfin. */
+export function ambientTargetId(target: AmbientTarget): string {
+  return "kind" in target ? target.id : target.Id;
+}
+
+/** Ce qui CHANGE — lu par le seul fond ambiant. */
+const AmbientItemContext = createContext<AmbientTarget | null>(null);
+
+type AmbientSetter = (item: AmbientTarget | null) => void;
 
 const NO_OP: AmbientSetter = () => {};
 
@@ -50,7 +62,7 @@ export function AmbientFocusProvider({
   children,
   debounceMs = DEFAULT_DEBOUNCE,
 }: AmbientFocusProviderProps) {
-  const [focusedItem, setFocusedItemState] = useState<MediaItem | null>(null);
+  const [focusedItem, setFocusedItemState] = useState<AmbientTarget | null>(null);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setFocusedItem = useCallback<AmbientSetter>(
@@ -81,7 +93,7 @@ export function AmbientFocusProvider({
  * S'abonner ici, c'est se re-rendre à chaque déplacement de la télécommande :
  * ne l'appeler que si l'on affiche vraiment quelque chose de cet item.
  */
-export function useAmbientItem(): MediaItem | null {
+export function useAmbientItem(): AmbientTarget | null {
   return useContext(AmbientItemContext);
 }
 

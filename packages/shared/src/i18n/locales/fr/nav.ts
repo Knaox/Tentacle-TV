@@ -1,5 +1,6 @@
 export default {
   home: "Accueil",
+  recommendations: "Recommandations",
   makeRequest: "Faire une demande",
   pendingRequests: "Demandes en cours",
   downloads: "Téléchargements",
@@ -33,4 +34,6 @@ export default {
   railLabel: "Navigation principale",
   railHint: "Maintenir OK pour masquer une entrée",
   railShowAll: "Tout afficher",
+  scrollLeft: "Défiler la navigation vers la gauche",
+  scrollRight: "Défiler la navigation vers la droite",
 } as const;

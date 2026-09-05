@@ -83,28 +83,34 @@ export function useCreateTicket() {
   });
 }
 
-export function useMyTickets(status?: string, page = 1) {
-  const params = new URLSearchParams({ page: String(page), limit: "20" });
+interface TicketListOptions {
+  /** `false` : la requête ne part pas (le tableau ne charge qu'un scope). */
+  enabled?: boolean;
+}
+
+/** Pas de page : 20 pour une liste, jusqu'à 200 pour le tableau (plafond serveur). */
+export function useMyTickets(status?: string, page = 1, limit = 20, options?: TicketListOptions) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
   const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
-    queryKey: ["tickets", "mine", status, page],
+    queryKey: ["tickets", "mine", status, page, limit],
     queryFn: () => ticketFetch<TicketsPage>(`/?${params}`),
-    enabled: hasToken,
+    enabled: hasToken && (options?.enabled ?? true),
     staleTime: 30_000,
   });
 }
 
-export function useAllTickets(status?: string, page = 1) {
-  const params = new URLSearchParams({ page: String(page), limit: "20" });
+export function useAllTickets(status?: string, page = 1, limit = 20, options?: TicketListOptions) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (status) params.set("status", status);
   const hasToken = typeof localStorage !== "undefined" && !!(localStorage.getItem("tentacle_token") || localStorage.getItem("tentacle_user"));
 
   return useQuery({
-    queryKey: ["tickets", "all", status, page],
+    queryKey: ["tickets", "all", status, page, limit],
     queryFn: () => ticketFetch<TicketsPage>(`/all?${params}`),
-    enabled: hasToken,
+    enabled: hasToken && (options?.enabled ?? true),
     staleTime: 30_000,
   });
 }
@@ -135,15 +141,72 @@ export function useReplyTicket() {
   });
 }
 
+/** L'auteur ferme son ticket en disant pourquoi (motif obligatoire, versé au fil). */
+export function useCloseTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, reason }: { ticketId: string; reason: string }) =>
+      ticketFetch<SupportTicket>(`/${ticketId}/close`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: (data, vars) => {
+      qc.setQueryData(["tickets", "detail", vars.ticketId], data);
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
+/** Admin : supprime un ou plusieurs tickets (messages et notifications compris). */
+export function useDeleteTickets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) =>
+      ticketFetch<{ deleted: number }>("/batch", {
+        method: "DELETE",
+        body: JSON.stringify({ ids }),
+      }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["tickets"] });
+    },
+  });
+}
+
+type StatusVars = { ticketId: string; status: SupportTicket["status"] };
+
+/** Le statut d'un ticket réécrit dans une page de liste ou dans un détail en cache. */
+function patchTicketStatus(data: unknown, { ticketId, status }: StatusVars): unknown {
+  if (!data || typeof data !== "object") return data;
+  if (Array.isArray((data as TicketsPage).results)) {
+    const page = data as TicketsPage;
+    return { ...page, results: page.results.map((t) => (t.id === ticketId ? { ...t, status } : t)) };
+  }
+  if ((data as SupportTicket).id === ticketId) return { ...(data as SupportTicket), status };
+  return data;
+}
+
+/**
+ * Optimiste : la carte change de colonne à l'instant du geste (glisser ou
+ * sélecteur), le serveur confirme — ou tout revient à l'état d'avant.
+ */
 export function useUpdateTicketStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ ticketId, status }: { ticketId: string; status: string }) =>
+    mutationFn: async ({ ticketId, status }: StatusVars) =>
       ticketFetch<SupportTicket>(`/${ticketId}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
-    onSuccess: (_data, vars) => {
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: ["tickets"] });
+      const previous = qc.getQueriesData<unknown>({ queryKey: ["tickets"] });
+      qc.setQueriesData<unknown>({ queryKey: ["tickets"] }, (data: unknown) => patchTicketStatus(data, vars));
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      for (const [key, data] of context?.previous ?? []) qc.setQueryData(key, data);
+    },
+    onSettled: (_data, _err, vars) => {
       qc.invalidateQueries({ queryKey: ["tickets", "detail", vars.ticketId] });
       qc.invalidateQueries({ queryKey: ["tickets"] });
     },

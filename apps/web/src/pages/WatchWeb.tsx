@@ -26,7 +26,7 @@ export function WatchWeb() {
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
-    qualityKey, setQualityKey, sourceQuality, qualityPresets, setStartTicks,
+    qualityKey, setQualityKey, sourceQuality, qualityPresets, autoModeArmed, setStartTicks,
     burnInSubtitleIndex, setBurnInSubtitleIndex,
     positionRef, audioOverrideRef, subtitleOverrideRef,
     isDirectPlay, isDirectStream, playSessionId, streamUrl, streamOffset, onDirectPlayNonFiable,
@@ -34,7 +34,7 @@ export function WatchWeb() {
     audioTracks, subtitleTracks,
     jellyfinDuration, startPositionSeconds, posterUrl,
     nextEpisode, previousEpisode, handleNextEpisode, handlePreviousEpisode,
-    segments, autoplayNextEnabled, getPositionTicks,
+    segments, getPositionTicks,
   } = useWatchSession({ isDesktop: false });
 
   // Décidé par `useNativeHlsPreference` : les coquilles dont le décodage passe
@@ -133,6 +133,9 @@ export function WatchWeb() {
     return () => {
       const id = itemId;
       const snap = itemRef.current;
+      // Lue MAINTENANT : l'effet [itemId] de useWatchSession remet la position
+      // à zéro juste après ces cleanups — dans le microtask, elle vaudrait 0.
+      const stopPositionSeconds = positionRef.current;
       queryClient.removeQueries({ queryKey: ["item", id] });
       // Cleanups React s'exécutent en ordre inverse d'enregistrement : ce
       // cleanup tourne AVANT celui de usePlaybackReporting qui assigne le vrai
@@ -141,11 +144,14 @@ export function WatchWeb() {
       // alors mis à jour Played/DatePlayed → décision « 100% vu » fiable).
       queueMicrotask(() => {
         const run = () =>
-          runStopInvalidation({ itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type });
+          runStopInvalidation({
+            itemId: id, seriesId: snap?.SeriesId, itemType: snap?.Type,
+            stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
+          });
         lastStopPromiseRef.current.then(run, run);
       });
     };
-  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation]);
+  }, [itemId, queryClient, lastStopPromiseRef, runStopInvalidation, positionRef]);
 
   // `releaseEncoding` vient de `useWatchSession` : les gestes ci-dessous et les
   // filets de lecture renégocient la même session, et doivent la libérer de la
@@ -297,13 +303,13 @@ export function WatchWeb() {
           key={itemId} src={streamUrl} title={title} subtitle={epSubtitle}
           startPositionSeconds={group.groupStartPositionSeconds ?? startPositionSeconds} jellyfinDuration={jellyfinDuration}
           audioTracks={audioTracks} subtitleTracks={subtitleTracks}
-          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality}
+          currentAudio={audioIndex} currentSubtitle={subtitleIndex} currentQuality={qualityKey} sourceQuality={sourceQuality} autoQualityActive={autoModeArmed}
           qualityPresets={qualityPresets}
           onAudioChange={handleAudioChange} onSubtitleChange={handleSubtitleChange} onQualityChange={handleQualityChange}
           onProgress={handleProgress} onStarted={() => reportStart(group.groupStartPositionSeconds ?? startPositionSeconds)}
           hasNextEpisode={!!nextEpisode} hasPreviousEpisode={!!previousEpisode}
           nextEpisodeTitle={nextEpTitle} nextEpisodeImageUrl={nextEpisodeImageUrl}
-          nextEpisodeDescription={nextEpisodeDescription} serverAutoplayEnabled={autoplayNextEnabled}
+          nextEpisodeDescription={nextEpisodeDescription}
           onNextEpisode={group.handleNextEpisode} onPreviousEpisode={group.handlePreviousEpisode}
           itemId={itemId!} item={item} mediaSourceId={mediaSourceId} posterUrl={posterUrl}
           isDirectPlay={isDirectPlay} streamOffset={streamOffset} useNativeHls={useNativeHls}

@@ -1,8 +1,9 @@
 import type { MutableRefObject } from "react";
 import { useTranslation } from "react-i18next";
+import { useEndCardRating } from "@tentacle-tv/api-client";
 import { LoadingBar } from "./PlayerLoadingScreen";
 import { PlaybackOverlay } from "./PlaybackOverlay";
-import type { PlayerOverlay } from "@tentacle-tv/shared";
+import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
   loading: boolean;
@@ -26,6 +27,10 @@ interface VideoPlayerOverlaysProps {
   nextEpisodeImageUrl?: string;
   nextSeriesBackdropUrl?: string;
   nextEpisodeThumbUrl?: string;
+  /** Média EN COURS — la notation de l'affiche de fin s'y adosse. */
+  item?: MediaItem | null;
+  /** Tue le décompte de la suite quand une note se pose. */
+  onRatingEngage?: () => void;
   videoRef: MutableRefObject<HTMLVideoElement | null>;
   userInteractedRef: MutableRefObject<boolean>;
   setShowPlayButton: (v: boolean) => void;
@@ -47,10 +52,13 @@ export function VideoPlayerOverlays({
   panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
+  item, onRatingEngage,
   videoRef, userInteractedRef,
   setShowPlayButton, setPolicyMuted,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
+  // Notation de l'épisode FINI, servie à l'affiche de fin seulement.
+  const endCardRating = useEndCardRating(item);
 
   return (
     <>
@@ -119,6 +127,8 @@ export function VideoPlayerOverlays({
         nextEpisodeImageUrl={nextEpisodeImageUrl}
         nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        endCardRating={endCardRating}
+        onEndCardRatingEngage={onRatingEngage}
       />
     </>
   );

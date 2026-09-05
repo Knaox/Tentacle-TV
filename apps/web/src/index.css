@@ -224,6 +224,35 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  /* Fondu de bord de la barre de navigation (NavOverflowScroller) : le MASK
+     fond le CONTENU lui-même — l'assise de la barre est translucide et
+     d'opacité variable (useScrollScrim), un voile peint en --surface-0 ferait
+     une tache sur la bannière. Statique : aucune animation, aucune couche
+     composée ajoutée. Doublon -webkit- pour Safari. */
+  .nav-edge-fade[data-fade-left="true"] {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 32px);
+    mask-image: linear-gradient(to right, transparent, #000 32px);
+  }
+  .nav-edge-fade[data-fade-right="true"] {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+  .nav-edge-fade[data-fade-left="true"][data-fade-right="true"] {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -338,9 +367,19 @@ video::cue {
 /* Crying tentacle animations (kept) */
 @keyframes tentacle-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 @keyframes tentacle-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+/* Respiration du halo de la page Recommandations : opacité + échelle
+   UNIQUEMENT (règle GPU), cycle lent, variations faibles. Le composant se
+   démonte hors écran et se fige sous prefers-reduced-motion. */
+@keyframes reco-breathe { 0%, 100% { opacity: 0.72; transform: scale(1.12); } 50% { opacity: 0.9; transform: scale(1.17); } }
 @keyframes tentacle-wiggle { 0%, 100% { transform: rotate(0deg) scaleX(1); } 25% { transform: rotate(1deg) scaleX(0.98); } 75% { transform: rotate(-1deg) scaleX(1.02); } }
 @keyframes tear-fall-left { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }
 @keyframes tear-fall-right { 0% { transform: translateY(0); opacity: 0.8; } 80% { transform: translateY(50px); opacity: 0.3; } 100% { transform: translateY(60px); opacity: 0; } }
+
+/* Jet de confettis à la validation d'une note (cf. rating/RatingBurst) :
+ * transform + opacité seulement, courbe easeOut du thème, ~650 ms. Sous
+ * prefers-reduced-motion la politique globale ramène la durée à zéro. */
+.rating-burst-particle { left: 0; top: 0; opacity: 0; will-change: transform, opacity; animation: rating-burst 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes rating-burst { 0% { transform: translate(-50%, -50%) scale(0.6) rotate(0deg); opacity: 1; } 65% { opacity: 1; } 100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot)); opacity: 0; } }
 @keyframes tentacle-look { 0%, 40%, 100% { transform: translateX(0); } 10% { transform: translateX(-3px); } 25% { transform: translateX(3px); } }
 @keyframes tentacle-tremble { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(1px); } 75% { transform: translateY(-1px); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

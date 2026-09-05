@@ -24,6 +24,8 @@ interface BuildPluginHtmlParams {
   bundleCode: string;
   sharedDepsCode: string;
   pluginPath: string;
+  /** Query string de la route demandée — deep-link (cf. pluginBootstrapScript). */
+  pluginQuery?: string;
   /** Thème mobile actif : la palette WebView COMPLÈTE en est dérivée. */
   appTheme: AppTheme;
   /**
@@ -50,6 +52,7 @@ export function buildPluginHtml({
   bundleCode,
   sharedDepsCode,
   pluginPath,
+  pluginQuery,
   appTheme,
   chromeBottom = 0,
 }: BuildPluginHtmlParams): string {
@@ -193,7 +196,7 @@ export function buildPluginHtml({
   <!-- Shared deps inlinées (WKWebView bloque les requêtes HTTP depuis origin null) -->
   <script>${safeDepsCode}<\/script>
 
-  <script>${buildPluginBootstrapScript({ backendUrl, lang, pluginPath, escapedBundle })}<\/script>
+  <script>${buildPluginBootstrapScript({ backendUrl, lang, pluginPath, pluginQuery, escapedBundle })}<\/script>
 </body>
 </html>`;
 }

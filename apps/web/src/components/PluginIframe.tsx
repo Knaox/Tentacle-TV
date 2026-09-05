@@ -1,5 +1,5 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { buildPluginHtml } from "./buildPluginHtml";
 import { usePluginMount } from "../desktop/pluginDocument";
 import { backendUrl } from "../main";
@@ -115,6 +115,9 @@ export function PluginIframe({
 }: PluginIframeProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
+  // Query de la route hôte, transmise à l'iframe (deep-link du plugin, ex.
+  // « ?media=movie:603 » posé par les cartes de recommandation).
+  const { search } = useLocation();
   const bundleFetched = useRef(false);
   // Trailers demandés par le plugin — joués dans le TrailerModal du HOST
   // (l'embed YouTube ne fonctionne pas dans l'iframe sandboxée du plugin).
@@ -147,10 +150,11 @@ export function PluginIframe({
       backendUrl,
       lang,
       pluginPath,
+      pluginQuery: search,
       sharedDepsCode: deps.sharedDepsCode,
       tailwindCode: deps.tailwindCode,
     });
-  }, [lang, pluginPath, deps]);
+  }, [lang, pluginPath, search, deps]);
 
   // Handle postMessage from iframe
   const handleMessage = useCallback(
@@ -283,10 +287,12 @@ export function PluginIframe({
     return () => window.removeEventListener("message", handleMessage);
   }, [handleMessage]);
 
-  // Reset fetch state when bundle URL or plugin path changes (same plugin, different page)
+  // Reset fetch state when bundle URL or plugin path changes (same plugin,
+  // different page). La query en fait partie : elle recompose le srcDoc
+  // (deep-link), donc l'iframe repart de zéro et le bundle doit être réinjecté.
   useEffect(() => {
     bundleFetched.current = false;
-  }, [bundleUrl, pluginPath]);
+  }, [bundleUrl, pluginPath, search]);
 
   /*
    * Le voile du chrome ne survit pas au cadre qui l'a demandé.

@@ -5,13 +5,16 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
+import { CardRatingBadge } from "./CardRatingBadge";
 import { CardQuickActions } from "./CardQuickActions";
 import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
 import { PlayIcon } from "../icons/HeroIcons";
+import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { PressableScale } from "../ui/PressableScale";
 import { useMountWhile } from "../../hooks/useMountWhile";
+import { ratingIdentityForItem } from "../../lib/ratingIdentity";
 
 interface PosterTileProps {
   item: MediaItem;
@@ -70,6 +73,8 @@ export function PosterTile({
   // qu'une à la fois, et `staleTime: 60s` couvre les allers-retours.
   const isSeries = item.Type === "Series";
   const { data: watchState } = useSeriesWatchState(hovered && isSeries ? item.Id : undefined);
+  // Notable seulement avec un tmdbId (ProviderIds) — fonction pure, sans coût.
+  const ratingIdentity = ratingIdentityForItem(item);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -122,6 +127,9 @@ export function PosterTile({
       {/* Coche « vu » — cède la place aux actions rapides pendant le survol. */}
       {watched && !actionsVisible && <CardWatchedBadge label={t("common:watched")} />}
 
+      {/* Note globale, au repos — la barre de lecture reprend l'angle au survol. */}
+      <CardRatingBadge rating={item.CommunityRating} shown={!actionsVisible} />
+
       {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
           au repos, l'affiche reste entièrement propre — et n'a même plus la
           boîte pour le porter. */}
@@ -140,17 +148,25 @@ export function PosterTile({
             style={{ background: "var(--card-reveal-scrim)" }}
           />
           {/* Lecture seule : le clic sur la carte ouvre déjà la fiche, le
-              bouton « Plus d'infos » qui l'accompagnait faisait doublon. */}
-          <div className="relative flex items-center px-2 pb-2.5">
+              bouton « Plus d'infos » qui l'accompagnait faisait doublon. Les
+              étoiles vivent à droite — montées au survol seulement, comme
+              toute la barre (cf. HoverRatingStars sur l'abonnement). */}
+          <div className="relative flex items-center justify-between gap-2 px-2 pb-2.5">
             <PressableScale
               onClick={handlePlay}
               aria-label={t("common:play")}
               title={t("common:play")}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cta-primary-border bg-cta-primary-bg text-cta-primary-fg"
               style={{ boxShadow: "var(--elev-2)" }}
             >
               <PlayIcon />
             </PressableScale>
+            {ratingIdentity && (
+              <HoverRatingStars
+                identity={ratingIdentity}
+                jellyfinItemId={item.Id}
+              />
+            )}
           </div>
         </div>
       )}

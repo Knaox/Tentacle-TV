@@ -215,7 +215,7 @@ if (import.meta.env.DEV || __TV_DEBUG__) {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider backendUrl={backendUrl}>
+      <ThemeProvider>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
             {/* Le serveur sert cette variante sous `/tv` ; le `basename` doit

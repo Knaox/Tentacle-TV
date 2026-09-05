@@ -1,12 +1,16 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
-import { useLibraries } from "@tentacle-tv/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLibraries, useUserId } from "@tentacle-tv/api-client";
+import { readRecoFilterMirror } from "../../lib/recoFilterStorage";
+import { onRecoNavIntent } from "../../lib/recoPrefetch";
 import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { resolvePluginLabel } from "../lucideIcon";
 import { usePinnedNav, pluginNavKey } from "../../hooks/usePinnedNav";
 import { springSoft } from "../../theme/motion";
+import { NavOverflowScroller } from "./NavOverflowScroller";
 
 interface NavLink {
   key: string;
@@ -21,9 +25,14 @@ export function TopNavLinks() {
   const { data: libraries } = useLibraries();
   const activePluginsMeta = useActivePluginsMeta();
   const pinned = usePinnedNav();
+  const qc = useQueryClient();
+  const userId = useUserId();
+  // Intention de navigation : le chunk et la page se chargent au survol.
+  const recoIntent = useCallback(() => onRecoNavIntent(qc, readRecoFilterMirror(userId)), [qc, userId]);
 
   const links: NavLink[] = useMemo(() => {
     const out: NavLink[] = [{ key: "home", label: t("home"), path: "/" }];
+    out.push({ key: "recommendations", label: t("recommendations"), path: "/recommendations" });
 
     if (pinned.watchlist) {
       out.push({ key: "watchlist", label: t("myList"), path: "/watchlist" });
@@ -63,7 +72,7 @@ export function TopNavLinks() {
   };
 
   return (
-    <nav className="flex items-center gap-1 overflow-x-auto scrollbar-hide" aria-label="Primary">
+    <NavOverflowScroller ariaLabel="Primary">
       {links.map((link) => {
         const active = isActive(link);
         return (
@@ -77,6 +86,8 @@ export function TopNavLinks() {
             key={link.key}
             to={link.path}
             aria-current={active ? "page" : undefined}
+            onMouseEnter={link.key === "recommendations" ? recoIntent : undefined}
+            onFocus={link.key === "recommendations" ? recoIntent : undefined}
             className={`relative whitespace-nowrap rounded-lg px-3 py-1.5 text-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${
               active
                 ? "font-semibold text-content-primary"
@@ -95,6 +106,6 @@ export function TopNavLinks() {
           </Link>
         );
       })}
-    </nav>
+    </NavOverflowScroller>
   );
 }

@@ -7,6 +7,8 @@ interface SpinnerProps {
   /** ARIA label for screen readers. */
   label?: string;
   className?: string;
+  /** Hors écran ou onglet caché : l'anneau s'arrête, rien d'infini ne tourne pour personne. */
+  paused?: boolean;
 }
 
 const SIZE_PX: Record<SpinnerSize, number> = { sm: 16, md: 24, lg: 40 };
@@ -20,6 +22,7 @@ export function Spinner({
   tone = "brand",
   label = "Chargement",
   className,
+  paused = false,
 }: SpinnerProps) {
   const px = SIZE_PX[size];
   const ringColor = TONE_RING[tone];
@@ -36,6 +39,7 @@ export function Spinner({
         height: px,
         border: `${stroke}px solid ${ringColor}`,
         borderTopColor: headColor,
+        animationPlayState: paused ? "paused" : undefined,
       }}
     />
   );

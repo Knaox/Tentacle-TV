@@ -5,13 +5,12 @@ import { getUserInfo } from "../components/userMenu/menuItems";
 import { PublicUrlSection } from "../components/admin/PublicUrlSection";
 import { ServicesSection } from "../components/admin/ServicesSection";
 import { DirectStreamingSection } from "./AdminDirectStreaming";
-import { PlaybackSection } from "../components/admin/PlaybackSection";
 import { SegmentPluginsSection } from "../components/admin/SegmentPluginsSection";
 
 /**
  * Page dédiée « Services » (route /admin/services, admin only). Regroupe les
  * réglages serveur : URL publique, Jellyfin/base de données/reset, lecture
- * directe, et lecture (auto-play). L'ancre #publicurl est ciblée par le lien
+ * directe et détection des passages. L'ancre #publicurl est ciblée par le lien
  * « Configurer maintenant » du verrou de jumelage TV.
  */
 export function AdminServicesPage() {
@@ -27,7 +26,6 @@ export function AdminServicesPage() {
           <div id="publicurl"><PublicUrlSection /></div>
           <ServicesSection />
           <DirectStreamingSection />
-          <PlaybackSection />
           <SegmentPluginsSection />
         </div>
       </div>

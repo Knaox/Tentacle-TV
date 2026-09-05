@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import { getConfigValue, getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
+import { getDirectStreamingConfig, getJellyfinUrl, getPublicUrl } from "../services/configStore";
 import { getMaxResumePct } from "../services/jellyfinSystemConfig";
 import { requireAuth } from "../middleware/auth";
 import { verifyDeviceToken, hashToken } from "../services/jwt";
@@ -19,7 +19,6 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
         downloads: false,
         demo: DEMO_MODE,
       },
-      autoplayNextEnabled: getConfigValue("autoplay_next_enabled") !== "false",
       // URL publique canonique du serveur (domaine fronté par le worker Cloudflare).
       // Utilisée au jumelage TV pour ne PAS graver l'adresse locale/interne du
       // confirmateur (window.location.origin = tauri.localhost sur desktop, ou URL
@@ -29,16 +28,14 @@ export const configRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /**
-   * GET /api/config/autoplay — Config du déclenchement auto-play, POLLÉE par
-   * les lecteurs (toutes plateformes) pendant une lecture active. Le seuil est
-   * le MaxResumePct de Jellyfin (cache serveur 30 s → une mise à jour dans
-   * Jellyfin est prise en compte en ≤ ~60 s sans spammer son API).
+   * GET /api/config/autoplay — Seuil « vu » de l'auto-play, POLLÉ par les
+   * lecteurs pendant une lecture active : le MaxResumePct de Jellyfin (cache
+   * serveur 30 s → une mise à jour dans Jellyfin est prise en compte en
+   * ≤ ~60 s sans spammer son API). Il n'y a plus d'interrupteur serveur : le
+   * déclenchement lui-même est un réglage PAR COMPTE (/api/preferences/playback).
    */
   app.get("/config/autoplay", async () => {
-    return {
-      enabled: getConfigValue("autoplay_next_enabled") !== "false",
-      maxResumePct: await getMaxResumePct(),
-    };
+    return { maxResumePct: await getMaxResumePct() };
   });
 
   /** GET /api/config/streaming — Client-specific streaming config (IP-aware). */

@@ -26,8 +26,12 @@ import {
   hydrateQueryClient,
   attachQueryPersister,
   HOME_PERSIST_WHITELIST,
+  RECO_PAGE_KEY,
+  WATCH_PROVIDERS_KEY,
+  recoFilterKey,
   setRequestTimeoutMs,
 } from "@tentacle-tv/api-client";
+import type { PersisterOptions } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import * as PluginsAPI from "@tentacle-tv/plugins-api";
@@ -42,6 +46,10 @@ import { retryUnlessRateLimited } from "./lib/retryPolicy";
 import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
+import { installReducedMotionShim } from "./dev/reducedMotionShim";
+import { readRecoFilterMirror } from "./lib/recoFilterStorage";
+import { bootRoutePreload } from "./lib/bootRoutePreload";
+import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
 import { HostTitleBar } from "./desktop/HostTitleBar";
 import "./index.css";
@@ -57,6 +65,9 @@ import "./index.css";
 // `__PLAYER_DEBUG__` est faux dans tout build livré : le module disparaît alors
 // du bundle, et `window.fetch` n'est jamais touché.
 if (import.meta.env.DEV || __PLAYER_DEBUG__) installNetworkProbe();
+// `?reducedmotion=1` : prouver le mode mouvement réduit dans la préviz (voir
+// dev/reducedMotionShim.ts). Même garde, même sort dans les builds livrés.
+if (import.meta.env.DEV || __PLAYER_DEBUG__) installReducedMotionShim();
 
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
@@ -227,18 +238,28 @@ const cacheOwner = ((): string | null => {
   }
 })();
 
-void hydrateQueryClient(queryClient, persistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
+// La page de recommandations et l'annuaire des plateformes survivent au
+// rechargement comme les hubs de l'accueil : la page se rend d'un coup depuis
+// le disque, puis se revalide en silence. Seules la page « all » et celle du
+// filtre sauvegardé sont gardées (pas chaque combinaison essayée) ; ~150 Ko
+// par page — le plafond passe à 3 Mo (celui de 2 Mo est la borne de tvOS,
+// sans objet ici : localStorage en offre au moins 5).
+const WEB_PERSIST_WHITELIST = [...HOME_PERSIST_WHITELIST, RECO_PAGE_KEY, WATCH_PROVIDERS_KEY[0]] as const;
+const savedRecoFilterKey = recoFilterKey(readRecoFilterMirror(cacheOwner));
+const persistOptions: PersisterOptions = {
+  whitelist: WEB_PERSIST_WHITELIST,
   owner: cacheOwner,
-});
-attachQueryPersister(queryClient, persistStorage, {
-  whitelist: HOME_PERSIST_WHITELIST,
-  owner: cacheOwner,
-});
+  maxBytes: 3 * 1024 * 1024,
+  shouldPersist: (key) => key[0] !== RECO_PAGE_KEY || key[1] === "all" || key[1] === savedRecoFilterKey,
+};
+void hydrateQueryClient(queryClient, persistStorage, persistOptions);
+attachQueryPersister(queryClient, persistStorage, persistOptions);
 
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
 installAnimationAudit();
+// `__cls()` en console — développement uniquement : les décalages de mise en page.
+if (import.meta.env.DEV) installLayoutShiftProbe();
 
 // Diagnostic du lecteur — DÉVELOPPEMENT UNIQUEMENT. Monté à la racine et non
 // dans le lecteur : le panneau est en position fixe et lit l'état de mpv par
@@ -247,7 +268,8 @@ installAnimationAudit();
 // disparaissent alors du bundle.
 const playerDebug = (import.meta.env.DEV || __PLAYER_DEBUG__) ? <PlayerDebugPanel /> : null;
 
-createRoot(document.getElementById("root")!).render(
+function renderApp() {
+  createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {/* Le cadre de fenêtre, là où la page doit le dessiner elle-même. Monté à la
         racine, HORS des fournisseurs : il ne lit aucun contexte, et il doit
@@ -256,7 +278,7 @@ createRoot(document.getElementById("root")!).render(
     <HostTitleBar />
     {playerDebug}
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider backendUrl={backendUrl}>
+      <ThemeProvider>
         <TentacleConfigContext.Provider value={{ storage, uuid }}>
           <JellyfinClientContext.Provider value={jellyfinClient}>
             <PluginProvider backendUrl={backendUrl}>
@@ -269,4 +291,9 @@ createRoot(document.getElementById("root")!).render(
       </ThemeProvider>
     </QueryClientProvider>
   </StrictMode>
-);
+  );
+}
+
+// Route de démarrage : son chunk d'abord (au plus 300 ms), pour rendre la
+// page d'un coup depuis le cache hydraté — sans spinner à l'arrivée.
+void bootRoutePreload(window.location.pathname).then(renderApp);

@@ -12,6 +12,7 @@ import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AirPlayIndicator } from "../components/player/AirPlayIndicator";
+import { AutoCapBadge } from "../components/player/AutoCapBadge";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerGestures } from "../components/player/PlayerGestures";
@@ -122,7 +123,7 @@ export function PlayerScreen({ itemId }: Props) {
 
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
-    invalidateAndGoBack, handleNextEpisode, handlePrevEpisode,
+    leavePlayer, handleNextEpisode, handlePrevEpisode,
   } = usePlayerHandlers({
     itemId, pb, videoRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
@@ -138,7 +139,7 @@ export function PlayerScreen({ itemId }: Props) {
     scrubbing,
     onSeek: handleSeek,
     onNextEpisode: handleNextEpisode,
-    onEndOfPlayback: invalidateAndGoBack,
+    onEndOfPlayback: leavePlayer,
   });
 
   // Android : libère l'encodage après un arrière-plan prolongé, et relance le
@@ -158,7 +159,7 @@ export function PlayerScreen({ itemId }: Props) {
           retryingRef.current = false;
           pb.retry();
         }}
-        onBack={invalidateAndGoBack}
+        onBack={leavePlayer}
       />
     );
   }
@@ -249,7 +250,7 @@ export function PlayerScreen({ itemId }: Props) {
         overlayVisible={overlayVisible}
         onSeek={handleSeek}
         onToggleOverlay={toggleOverlay}
-        onSwipeDown={invalidateAndGoBack}
+        onSwipeDown={leavePlayer}
       />
 
       <MobilePlayerOverlay
@@ -264,6 +265,7 @@ export function PlayerScreen({ itemId }: Props) {
         selectedSubtitle={pb.subtitleIndex}
         qualityKey={pb.qualityKey}
         qualityPresets={pb.qualityPresets}
+        autoQualityActive={pb.autoModeArmed}
         playback={playback}
         nextEpisode={pb.episodeNav.nextEpisode}
         previousEpisode={pb.episodeNav.previousEpisode}
@@ -271,7 +273,7 @@ export function PlayerScreen({ itemId }: Props) {
         mediaSourceId={pb.mediaSourceId}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
-        onBack={invalidateAndGoBack}
+        onBack={leavePlayer}
         onSelectAudio={pb.changeAudio}
         onSelectSubtitle={pb.changeSubtitle}
         onSelectQuality={pb.changeQuality}
@@ -281,6 +283,9 @@ export function PlayerScreen({ itemId }: Props) {
         visible={overlayVisible}
         onToggle={toggleOverlay}
       />
+
+      {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
+      <AutoCapBadge active={pb.autoCapActive} />
     </View>
   );
 }

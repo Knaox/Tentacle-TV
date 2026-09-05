@@ -29,6 +29,7 @@ import { jellyfinTrickplayRoutes } from "./routes/jellyfinTrickplay";
 import { playbackSegmentRoutes } from "./routes/playbackSegments";
 import { adminRoutes } from "./routes/admin";
 import { adminDownloadRoutes } from "./routes/adminDownloads";
+import { adminMetadataRoutes } from "./routes/adminMetadata";
 import { downloadRoutes } from "./routes/downloads";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
@@ -42,10 +43,20 @@ import { watchTogetherRoutes } from "./routes/watchTogether";
 import { watchTogetherInviteRoutes } from "./routes/watchTogetherInvites";
 import { watchTogetherUsersRoutes } from "./routes/watchTogetherUsers";
 import { leaderboardRoutes } from "./routes/leaderboard";
+import { ratingRoutes } from "./routes/ratings";
+import { likeRoutes } from "./routes/likes";
+import { watchlistRoutes } from "./routes/watchlist";
+import { recoRoutes } from "./routes/reco";
+import { recoPeopleRoutes } from "./routes/recoPeople";
+import { recoPageRoutes } from "./routes/recoPage";
+import { recoRowRoutes } from "./routes/recoRows";
+import { externalAccountRoutes } from "./routes/externalAccounts";
+import { startRecoJobs, stopRecoJobs } from "./services/reco/jobs";
 import { startPairingCleanup } from "./services/pairingCleanup";
 import { startJellyfinPoller } from "./services/jellyfinPoller";
 import { startJellyfinWs } from "./services/jellyfinWs";
 import { startNotificationPushWorker } from "./services/notificationPushWorker";
+import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
@@ -224,6 +235,8 @@ async function main() {
   await app.register(pushRoutes, { prefix: "/api/push" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
+  // Fichier séparé d'admin.ts : lui frôle déjà le plafond de 300 lignes.
+  await app.register(adminMetadataRoutes, { prefix: "/api/admin" });
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
@@ -236,6 +249,14 @@ async function main() {
   await app.register(watchTogetherInviteRoutes, { prefix: "/api/watch-together" });
   await app.register(watchTogetherUsersRoutes, { prefix: "/api/watch-together" });
   await app.register(leaderboardRoutes, { prefix: "/api/leaderboard" });
+  await app.register(ratingRoutes, { prefix: "/api/ratings" });
+  await app.register(likeRoutes, { prefix: "/api/likes" });
+  await app.register(watchlistRoutes, { prefix: "/api/watchlist" });
+  await app.register(recoRoutes, { prefix: "/api/reco" });
+  await app.register(recoRowRoutes, { prefix: "/api/reco" });
+  await app.register(recoPeopleRoutes, { prefix: "/api/reco" });
+  await app.register(recoPageRoutes, { prefix: "/api/reco" });
+  await app.register(externalAccountRoutes, { prefix: "/api/external" });
   await app.register(configRoutes, { prefix: "/api" });
   await app.register(demoRoutes, { prefix: "/api" });
   // Segments de lecture : le résolveur unique (préfixe hors /api/jellyfin —
@@ -300,9 +321,11 @@ async function main() {
     startJellyfinPoller();
     startJellyfinWs();
     startNotificationPushWorker();
+    startTicketLifecycleWorker();
     startLibraryAddedNotifier();
     startAnnouncedPurge();
     startWatchTime();
+    startRecoJobs();
     // Load plugin backend modules (server-side routes declared by plugins)
     await loadPluginBackends(app);
   }
@@ -312,6 +335,7 @@ async function main() {
   // rendre son bail permet à un redémarrage de reprendre la mesure aussitôt, au
   // lieu d'attendre l'expiration.
   app.addHook("onClose", async () => {
+    stopRecoJobs();
     await stopWatchTime();
   });
   for (const signal of ["SIGTERM", "SIGINT"] as const) {

@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useSeasons, useEpisodes, useJellyfinClient, useBatchWatchedToggle } from "@tentacle-tv/api-client";
+import {
+  useSeasons,
+  useEpisodes,
+  useJellyfinClient,
+  useBatchWatchedToggle,
+  useDeleteRating,
+  useRateItem,
+  useMyEpisodeRatings,
+  useTmdbSeasonEpisodes,
+  episodeRatingIdentity,
+} from "@tentacle-tv/api-client";
 import { Shimmer } from "@tentacle-tv/ui";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { WatchedSelectionToolbar } from "./WatchedSelectionToolbar";
@@ -10,6 +20,8 @@ import { HorizontalScrollRow } from "./HorizontalScrollRow";
 import { SeasonDownloadAction } from "../downloads/SeasonDownloadAction";
 import { DownloadDialog } from "../downloads/DownloadDialog";
 import { EpisodeRow } from "./EpisodeRow";
+import type { EpisodeRowRating } from "./EpisodeRow";
+import { tmdbIdForItem } from "../lib/ratingIdentity";
 import { useDownloadsVisibility } from "../downloads/useDownloadState";
 import { RevealCell, RevealScope } from "./grid/RevealCell";
 
@@ -22,9 +34,11 @@ interface EpisodeListProps {
   currentEpisodeId?: string;
   /** Saison à présélectionner (saison de l'épisode courant). */
   initialSeasonId?: string;
+  /** La SÉRIE (fiche série, ou parent d'une fiche épisode) : son tmdb note les épisodes. */
+  seriesItem?: MediaItem | null;
 }
 
-export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: EpisodeListProps) {
+export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, seriesItem }: EpisodeListProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
   const { t: tDownloads } = useTranslation("downloads");
@@ -37,6 +51,33 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | undefined>();
   const { data: episodes, isLoading: episodesLoading } = useEpisodes(seriesId, selectedSeasonId);
   const ms = useMultiSelect();
+
+  // Notes d'épisodes : le tmdb de la SÉRIE, la saison sélectionnée, les notes
+  // TMDB de la saison et celles du compte — UN abonnement pour toute la liste,
+  // les lignes reçoivent des valeurs (jamais un abonnement par ligne).
+  const seriesTmdbId = tmdbIdForItem(seriesItem);
+  const seasonNumber = useMemo(
+    () => seasons?.find((s) => s.Id === selectedSeasonId)?.IndexNumber ?? null,
+    [seasons, selectedSeasonId],
+  );
+  const { data: tmdbEpisodes } = useTmdbSeasonEpisodes(seriesTmdbId, seasonNumber);
+  const myEpisodeRatings = useMyEpisodeRatings(seriesTmdbId, seasonNumber);
+  const { mutate: rateEpisode } = useRateItem();
+  const { mutate: clearRating } = useDeleteRating();
+  const ratingFor = useCallback(
+    (ep: MediaItem): EpisodeRowRating | undefined => {
+      const sn = ep.ParentIndexNumber ?? seasonNumber;
+      if (!seriesTmdbId || sn == null || ep.IndexNumber == null) return undefined;
+      const identity = episodeRatingIdentity(seriesTmdbId, sn, ep.IndexNumber);
+      return {
+        community: tmdbEpisodes?.get(ep.IndexNumber)?.voteAverage ?? ep.CommunityRating ?? null,
+        mine: myEpisodeRatings.get(ep.IndexNumber) ?? null,
+        onRate: (score) => rateEpisode({ ...identity, score, jellyfinItemId: ep.Id }),
+        onClear: () => clearRating(identity),
+      };
+    },
+    [seriesTmdbId, seasonNumber, tmdbEpisodes, myEpisodeRatings, rateEpisode, clearRating],
+  );
 
   const batchCtx = useMemo(() => ({ seriesId, seasonId: selectedSeasonId }), [seriesId, selectedSeasonId]);
   const { markWatched: batchMarkWatched, markUnwatched: batchMarkUnwatched } = useBatchWatchedToggle(batchCtx);
@@ -151,6 +192,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId }: Epi
                   isCurrent={ep.Id === currentEpisodeId}
                   onToggleSelect={() => ms.toggle(ep.Id)}
                   onPlay={() => navigate(`/watch/${ep.Id}`)}
+                  rating={ratingFor(ep)}
                 />
               </RevealCell>
             ))

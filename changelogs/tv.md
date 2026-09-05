@@ -5,6 +5,18 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Connect tvOS (max 4000), Release GitHub (illimité). Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
+## [1.3.0]
+### FR
+- **L'accueil suit votre compte** : les rangées et leur ordre choisis dans les réglages du web s'appliquent sur le téléviseur — « Mes favoris » compris ; rien ne se règle depuis la TV
+- **Les recommandations arrivent sur l'accueil** : « Pour vous » et les autres rangées, celles du web, limitées aux titres de votre bibliothèque ; appui long : Plus d'infos, Lecture, Ne plus me proposer
+- **Le filtre de plateformes** du compte s'applique ; une pastille à côté du titre le retire, le menu d'appui long aussi
+- **Ma liste suit vos visionnages, pas vos clics** : un titre n'en sort plus parce qu'on a ouvert son lecteur, ni parce qu'on l'a marqué vu à la main — seulement une fois réellement regardé jusqu'au bout, un film ou le dernier épisode disponible d'une série, même en cours de diffusion ; une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+### EN
+- **The home follows your account**: the rows and their order chosen in the web settings apply on the TV — "My favorites" included; nothing is set from the TV
+- **Recommendations reach the home**: "For you" and the other rows, the web's, limited to titles in your library; long press: More info, Play, Don't suggest again
+- **The account's platform filter** applies; a chip next to the title removes it, and so does the long-press menu
+- **My List follows what you watch, not what you click**: a title no longer leaves it because its player was opened, nor because it was marked watched by hand — only once actually watched to the end, a movie or a series' last available episode, even one still airing; a series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+
 ## [1.2.2]
 ### FR
 - L'épisode qu'on vient de terminer est coché sur la fiche de la série, saisons et compteurs compris

@@ -8,7 +8,9 @@
 -- PAS dans schema.prisma. Un db push les droperait (ou echouerait sur les donnees).
 --
 -- On applique donc ici les tables core de facon purement additive
--- (CREATE TABLE IF NOT EXISTS) : aucune table n'est jamais supprimee.
+-- (CREATE TABLE IF NOT EXISTS) : aucune table de PLUGIN n'est jamais touchee.
+-- Une table ou une colonne du COEUR retiree par une evolution se supprime ici
+-- explicitement, avec IF EXISTS (idempotent) — voir les blocs « 1.17 ».
 -- => Ajouter ici toute nouvelle table / migration additive cote core.
 
 CREATE TABLE IF NOT EXISTS `share_links` (
@@ -16,12 +18,20 @@ CREATE TABLE IF NOT EXISTS `share_links` (
   `token` varchar(32) NOT NULL,
   `ownerUserId` varchar(255) NOT NULL,
   `ownerUsername` varchar(255) NOT NULL,
+  `kind` varchar(20) NOT NULL DEFAULT 'watchlist',
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`id`),
   UNIQUE KEY `share_links_token_key` (`token`),
-  UNIQUE KEY `share_links_ownerUserId_key` (`ownerUserId`),
+  UNIQUE KEY `share_links_ownerUserId_kind_key` (`ownerUserId`, `kind`),
   KEY `share_links_token_idx` (`token`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Le partage s'est généralisé (watchlist + favoris) : les bases d'avant
+-- reçoivent `kind` et l'unicité passe de (ownerUserId) à (ownerUserId, kind).
+-- Les liens existants deviennent kind='watchlist' et restent valides.
+ALTER TABLE `share_links` ADD COLUMN IF NOT EXISTS `kind` varchar(20) NOT NULL DEFAULT 'watchlist';
+ALTER TABLE `share_links` DROP INDEX IF EXISTS `share_links_ownerUserId_key`;
+CREATE UNIQUE INDEX IF NOT EXISTS `share_links_ownerUserId_kind_key` ON `share_links` (`ownerUserId`, `kind`);
 
 -- Code de jumelage de provisionnement (singleton). Voir schema.prisma > ProvisioningCode.
 CREATE TABLE IF NOT EXISTS `provisioning_codes` (
@@ -57,9 +67,15 @@ CREATE TABLE IF NOT EXISTS `notification_preferences` (
   `jellyfinUserId` varchar(255) NOT NULL,
   `libraryAdded` tinyint(1) NOT NULL DEFAULT 0,
   `seerAvailable` tinyint(1) NOT NULL DEFAULT 0,
+  `tickets` tinyint(1) NOT NULL DEFAULT 1,
   `updatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : préférence push « tickets », ACTIVÉE par défaut (les deux autres sont
+-- opt-in). Une base existante ne repasse pas par le CREATE ci-dessus — ajout
+-- idempotent (MariaDB).
+ALTER TABLE `notification_preferences` ADD COLUMN IF NOT EXISTS `tickets` tinyint(1) NOT NULL DEFAULT 1;
 
 -- Colonne de livraison push sur les notifications existantes (additif, idempotent MariaDB).
 ALTER TABLE `notifications` ADD COLUMN IF NOT EXISTS `pushedAt` datetime(3) NULL;
@@ -89,6 +105,16 @@ CREATE TABLE IF NOT EXISTS `announced_contents` (
   `notifiedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`contentKey`, `jellyfinUserId`),
   KEY `announced_contents_notifiedAt_idx` (`notifiedAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Séries retirées automatiquement de « Ma liste » (tout le disponible vu), à
+-- remettre au prochain épisode. Voir schema.prisma > WatchlistAutoRetired.
+CREATE TABLE IF NOT EXISTS `watchlist_auto_retired` (
+  `seriesId` varchar(64) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `retiredAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`seriesId`, `jellyfinUserId`),
+  KEY `watchlist_auto_retired_jellyfinUserId_idx` (`jellyfinUserId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Segments de visionnage MESURÉS par Tentacle (remplace le greffon Playback
@@ -224,3 +250,230 @@ CREATE TABLE IF NOT EXISTS `media_frame_analysis` (
   `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   PRIMARY KEY (`itemId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Moteur de recommandation. DDL sur le modèle exact des blocs relevés par
+-- `SHOW CREATE TABLE` (varchar(191) pour un id cuid, tinyint(1) pour un
+-- Boolean, double pour un Float, datetime(3), updatedAt sans défaut).
+-- Voir schema.prisma, section « Moteur de recommandation ».
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- Notes explicites (1..10). Voir schema.prisma > UserRating.
+CREATE TABLE IF NOT EXISTS `user_ratings` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `jellyfinItemId` varchar(64) NULL,
+  `seasonNumber` int(11) NOT NULL DEFAULT 0,
+  `episodeNumber` int(11) NOT NULL DEFAULT 0,
+  `score` int(11) NOT NULL,
+  `syncStatus` varchar(16) NOT NULL DEFAULT 'pending',
+  `syncAttempts` int(11) NOT NULL DEFAULT 0,
+  `nextSyncAt` datetime(3) NULL,
+  `tmdbSyncedAt` datetime(3) NULL,
+  `deletedAt` datetime(3) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_ratings_identity_key` (`jellyfinUserId`, `mediaType`, `tmdbId`, `seasonNumber`, `episodeNumber`),
+  KEY `user_ratings_jellyfinUserId_idx` (`jellyfinUserId`),
+  KEY `user_ratings_syncStatus_nextSyncAt_idx` (`syncStatus`, `nextSyncAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : AniList retiré. Les colonnes qu'il était seul à écrire (`anilistId`,
+-- `anilistSyncedAt`) et la chaîne morte `tvdbId` / `isAnime` — qui n'existait
+-- que pour ancrer le mapping AniList — sortent des bases existantes.
+-- `DROP COLUMN IF EXISTS` (MariaDB) : rejouer est sans effet.
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `anilistId`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `anilistSyncedAt`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `tvdbId`;
+ALTER TABLE `user_ratings` DROP COLUMN IF EXISTS `isAnime`;
+
+-- « J'aime » d'un titre HORS bibliothèque (Vigie). Voir schema.prisma > UserLike.
+CREATE TABLE IF NOT EXISTS `user_likes` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_likes_jellyfinUserId_mediaType_tmdbId_key` (`jellyfinUserId`, `mediaType`, `tmdbId`),
+  KEY `user_likes_jellyfinUserId_idx` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Profil de goût (vecteur de facettes JSON). Voir schema.prisma > TasteProfile.
+CREATE TABLE IF NOT EXISTS `taste_profiles` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `facets` mediumtext NOT NULL,
+  `signalCount` int(11) NOT NULL DEFAULT 0,
+  `ratingMean` double NOT NULL DEFAULT 0,
+  `ratingStdDev` double NOT NULL DEFAULT 0,
+  `animeShare` double NOT NULL DEFAULT 0,
+  `schemaVersion` int(11) NOT NULL DEFAULT 1,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `taste_profiles_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Part d'animé, ajoutée après la première livraison du moteur : une base
+-- existante la reçoit ici (idempotent), une base neuve la tient du CREATE.
+ALTER TABLE `taste_profiles` ADD COLUMN IF NOT EXISTS `animeShare` double NOT NULL DEFAULT 0;
+
+-- Réglages de recommandation par compte. Voir schema.prisma > RecoSettings.
+CREATE TABLE IF NOT EXISTS `reco_settings` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `personalized` tinyint(1) NOT NULL DEFAULT 1,
+  `includeVigie` tinyint(1) NOT NULL DEFAULT 1,
+  `community` tinyint(1) NOT NULL DEFAULT 1,
+  `shareHistory` tinyint(1) NOT NULL DEFAULT 1,
+  `explorationBalance` int(11) NOT NULL DEFAULT 70,
+  `providerFilter` varchar(255) NOT NULL DEFAULT '[]',
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `reco_settings_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- Filtre de plateformes (1.17.0) : les installations existantes ne passent pas
+-- par le CREATE TABLE ci-dessus — ajout idempotent.
+ALTER TABLE `reco_settings` ADD COLUMN IF NOT EXISTS `providerFilter` varchar(255) NOT NULL DEFAULT '[]';
+
+-- Cache des rangées de recommandation. Voir schema.prisma > RecommendationCache.
+CREATE TABLE IF NOT EXISTS `recommendation_cache` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `rowKey` varchar(64) NOT NULL,
+  `payload` mediumtext NOT NULL,
+  `generatedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `recommendation_cache_jellyfinUserId_rowKey_key` (`jellyfinUserId`, `rowKey`),
+  KEY `recommendation_cache_expiresAt_idx` (`expiresAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- « Ne plus me proposer ». Voir schema.prisma > RecommendationFeedback.
+CREATE TABLE IF NOT EXISTS `recommendation_feedback` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `itemKey` varchar(32) NOT NULL,
+  `action` varchar(20) NOT NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `recommendation_feedback_jellyfinUserId_itemKey_key` (`jellyfinUserId`, `itemKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mise en page de l'accueil par compte. Voir schema.prisma > HomeLayout.
+CREATE TABLE IF NOT EXISTS `home_layouts` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `heroMode` varchar(20) NOT NULL DEFAULT 'reco',
+  `heroFixedItemId` varchar(64) NULL,
+  `rows` text NOT NULL,
+  `cardDensity` varchar(10) NOT NULL DEFAULT 'normal',
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `updatedAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `home_layouts_jellyfinUserId_key` (`jellyfinUserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- L'accueil par défaut assume la personnalisation (1.16) : seul le DÉFAUT de
+-- colonne s'aligne — les lignes existantes portent des valeurs explicites et
+-- ne bougent pas. Rejouer ce SET DEFAULT est sans effet (idempotent).
+ALTER TABLE `home_layouts` ALTER `heroMode` SET DEFAULT 'reco';
+
+-- Comptes externes liés (guest session TMDB). Voir schema.prisma > ExternalAccount.
+CREATE TABLE IF NOT EXISTS `external_accounts` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `provider` varchar(20) NOT NULL,
+  `guestSessionId` varchar(64) NULL,
+  `expiresAt` datetime(3) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `external_accounts_jellyfinUserId_provider_key` (`jellyfinUserId`, `provider`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : AniList retiré. Les comptes liés AniList et leurs jetons chiffrés
+-- partent ; `accessToken` et `externalId` n'étaient écrits que par cette OAuth.
+-- Le DELETE précède les DROP : une ligne sans ses colonnes ne dirait plus rien.
+DELETE FROM `external_accounts` WHERE `provider` = 'anilist';
+ALTER TABLE `external_accounts` DROP COLUMN IF EXISTS `accessToken`;
+ALTER TABLE `external_accounts` DROP COLUMN IF EXISTS `externalId`;
+
+-- Cooccurrences item-item (communautaire, seuil vie privée userCount >= 5).
+-- Voir schema.prisma > ItemCooccurrence.
+CREATE TABLE IF NOT EXISTS `item_cooccurrences` (
+  `itemAKey` varchar(32) NOT NULL,
+  `itemBKey` varchar(32) NOT NULL,
+  `score` double NOT NULL,
+  `userCount` int(11) NOT NULL,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`itemAKey`, `itemBKey`),
+  KEY `item_cooccurrences_itemAKey_idx` (`itemAKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Poids IDF par facette, recalculés chaque jour. Voir schema.prisma > FacetIdf.
+CREATE TABLE IF NOT EXISTS `facet_idf` (
+  `facetKey` varchar(191) NOT NULL,
+  `docCount` int(11) NOT NULL,
+  `idf` double NOT NULL,
+  `computedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`facetKey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cache de métadonnées TMDB. Un cache, jamais une source.
+-- Voir schema.prisma > TmdbMetaCache.
+CREATE TABLE IF NOT EXISTS `tmdb_meta_cache` (
+  `mediaType` varchar(10) NOT NULL,
+  `tmdbId` int(11) NOT NULL,
+  `payload` mediumtext NOT NULL,
+  `fetchedAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  `expiresAt` datetime(3) NOT NULL,
+  PRIMARY KEY (`mediaType`, `tmdbId`),
+  KEY `tmdb_meta_cache_expiresAt_idx` (`expiresAt`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 1.17 : la correspondance d'identifiants animé (AniList) n'existe plus. Table
+-- du COEUR, créée par nous puis abandonnée : la doctrine « jamais de DROP » du
+-- haut du fichier protège les tables des plugins, pas celle-ci. Idempotent.
+DROP TABLE IF EXISTS `anime_id_map`;
+
+-- Personnes aimées explicitement (rangées « Avec {acteur} »).
+-- Voir schema.prisma > UserLikedPerson.
+CREATE TABLE IF NOT EXISTS `user_liked_people` (
+  `id` varchar(191) NOT NULL,
+  `jellyfinUserId` varchar(255) NOT NULL,
+  `personId` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `profilePath` varchar(255) NULL,
+  `createdAt` datetime(3) NOT NULL DEFAULT current_timestamp(3),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_liked_people_jellyfinUserId_personId_key` (`jellyfinUserId`, `personId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Purge de `server_config` : clés abandonnées par une évolution.
+-- La table n'est pas créée ici — c'est le `prisma db push` du setup qui la
+-- fait naître. Sur une base VIERGE, ce script s'exécute avant le setup et
+-- s'arrête donc ici (comme il s'arrête déjà sur l'ALTER de `notifications`
+-- plus haut) : rien n'est perdu, il n'y a rien à purger, et le prochain
+-- démarrage le rejoue en entier. D'où sa place en toute fin de fichier. Un
+-- DELETE sans ligne correspondante est sans effet : idempotent.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- 1.17 : l'interrupteur serveur « Déclenchement auto-play » n'existe plus —
+-- les réglages de lecture PAR COMPTE (`playback_settings`) sont la seule source.
+DELETE FROM `server_config` WHERE `key` = 'autoplay_next_enabled';
+
+-- 1.17 : AniList retiré — identifiants du client OAuth déclaré par instance.
+DELETE FROM `server_config` WHERE `key` IN ('anilist_client_id', 'anilist_client_secret');
+
+-- 1.17 : la page Thème de l'admin (presets saisonniers, surcharge de jetons,
+-- CSS personnalisé) est retirée ; `/api/theme` sert un état constant. Les six
+-- clés sont celles de l'ancien themeStore, énumérées plutôt que LIKE : `_` y
+-- est un joker.
+DELETE FROM `server_config` WHERE `key` IN (
+  'theme_active_name', 'theme_active_tokens_override', 'theme_active_css_source',
+  'theme_active_css_content', 'theme_active_css_url', 'theme_active_css_hash'
+);

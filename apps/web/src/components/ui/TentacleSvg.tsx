@@ -2,7 +2,6 @@ import { useId, type CSSProperties } from "react";
 import { TentacleBackArms, TentacleFrontArms } from "./TentacleArms";
 import { TentacleFace } from "./TentacleFace";
 import { TentacleHat } from "./TentacleHat";
-import { TentacleOrnaments } from "./TentacleOrnaments";
 
 interface TentacleSvgProps {
   size: number;
@@ -122,9 +121,6 @@ export function TentacleSvg({ size, style, crying = false }: TentacleSvgProps) {
         crying={crying}
       />
       <TentacleHat hatFill={url(ids.hat)} bandFill={url(ids.frame)} />
-
-      {/* Couvre-chefs saisonniers — un seul à la fois, via les presets de thème */}
-      <TentacleOrnaments />
 
       <TentacleFrontArms fill={url(ids.arm)} />
     </svg>

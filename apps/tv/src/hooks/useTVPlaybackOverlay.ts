@@ -1,6 +1,5 @@
 import { useCallback, useMemo } from "react";
 import {
-  useAutoplayConfig,
   usePlaybackOverlay,
   usePlaybackSegments,
   type PlaybackOverlayResult,
@@ -33,8 +32,6 @@ import type { AutoPlayCtx } from "../components/player/TVAutoPlaySwitch";
  */
 export interface TVPlaybackOverlay extends PlaybackOverlayResult {
   autoPlay: AutoPlayCtx;
-  /** Interrupteur admin « Déclenchement auto-play » — lu par la sortie de fin. */
-  autoplayEnabled: boolean;
   /** Miroir synchrone lu par le routage Retour, au sein du même dispatch. */
   surfaceRef: { readonly current: PlayerOverlay };
 }
@@ -62,7 +59,6 @@ export function useTVPlaybackOverlay(args: {
 
   const segments = usePlaybackSegments(itemId);
   const media = useNextEpisodeMedia(item);
-  const { data: autoplayConfig } = useAutoplayConfig(true);
 
   const nextEpisodeId = media.nextEpisode?.Id;
   const goToNext = useCallback(() => {
@@ -82,7 +78,6 @@ export function useTVPlaybackOverlay(args: {
     runtimeMs: segments.runtimeMs,
     // Règles « avant la fin » par bibliothèque — le contrat résolu la porte.
     libraryId: segments.libraryId ?? null,
-    serverAutoplayEnabled: autoplayConfig?.enabled ?? true,
     scrubbing,
     onSeekSeconds: onSeek,
     onNextEpisode: goToNext,
@@ -105,7 +100,6 @@ export function useTVPlaybackOverlay(args: {
   return {
     ...playback,
     autoPlay,
-    autoplayEnabled: autoplayConfig?.enabled ?? true,
     surfaceRef: overlayRef,
   };
 }

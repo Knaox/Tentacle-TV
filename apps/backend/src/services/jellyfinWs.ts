@@ -3,6 +3,8 @@ import { getJellyfinUrl, getJellyfinApiKey } from "./configStore";
 import { broadcastAll } from "./wsManager";
 import { poke as pokeLibraryAdded } from "./libraryAddedNotifier";
 import { pokeWatchTime } from "./watchTime/collector";
+import { pokeProfile } from "./reco/jobs";
+import { refreshLibraryMemo } from "./reco/candidates/libraryMemo";
 import { sessionSignatures } from "./jellyfinWsSessions";
 
 /**
@@ -129,6 +131,12 @@ function handleMessage(data: WebSocket.Data): void {
       case "UserDataChanged":
         broadcastAll("watchlist");
         broadcastAll("watched");
+        // Un favori posé, un titre terminé… : le mémo de bibliothèque se
+        // rafraîchit EN FOND (l'index courant reste servi, jamais de scan
+        // dans une requête) et le profil de goût de CE compte se reconstruit
+        // (débouncé 8 s côté jobs — une salve ne coûte qu'un rebuild).
+        refreshLibraryMemo(msg?.Data?.UserId ?? "");
+        pokeProfile(msg?.Data?.UserId);
         break;
       case "PlaybackStart":
       case "PlaybackStopped":

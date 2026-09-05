@@ -38,6 +38,7 @@ export function ForegroundDataRefresher() {
         queryClient.invalidateQueries({ queryKey: ["latest-items"] });
         queryClient.invalidateQueries({ queryKey: ["watchlist"] });
         queryClient.invalidateQueries({ queryKey: ["watched-items"] });
+        queryClient.invalidateQueries({ queryKey: ["favorites"] });
       });
       // Pas de task.cancel ici : l'écouteur AppState est durable (pas de cleanup
       // par event) ; la task se résout d'elle-même après les interactions.

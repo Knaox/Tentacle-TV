@@ -25,17 +25,15 @@ import { EMPTY_SUBTITLE_FILES, type DesktopPlayerProps } from "./player/desktopP
 export function DesktopPlayer({
   src, title, subtitle, startPositionSeconds, jellyfinDuration,
   audioTracks = [], subtitleTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
   onAudioChange, onSubtitleChange, onQualityChange,
   isLocalPlayback = false, offline = false, localLibraryId = null,
-  localSubtitleFiles = EMPTY_SUBTITLE_FILES,
-  onProgress, onStarted,
+  localSubtitleFiles = EMPTY_SUBTITLE_FILES, onProgress, onStarted,
   isDirectPlay = true, streamOffset = 0, posterUrl,
   segments = [], runtimeMs = 0, libraryId = null,
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  serverAutoplayEnabled = true,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
@@ -207,7 +205,7 @@ export function DesktopPlayer({
     itemId, isEpisode, hasNextEpisode,
     positionSeconds: actualPos, durationSeconds: dur,
     hasStarted: hasStarted, playbackEnded: fileLoaded && state.eof && hasStarted,
-    segments, runtimeMs, libraryId, serverAutoplayEnabled,
+    segments, runtimeMs, libraryId,
     scrubbing: seekbar.dragProgress != null,
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
@@ -272,6 +270,8 @@ export function DesktopPlayer({
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        item={item} ratingEnabled={!isLocalPlayback && !offline}
+        onRatingEngage={playback.cancelNextCountdown}
       />
 
       {/* Badge « +30s / −10s » après un saut */}
@@ -293,7 +293,7 @@ export function DesktopPlayer({
         // mpv : ses mises à jour passent par l'IPC, donc elles arrivent après —
         // le menu montrait brièvement la piste précédente.
         curAudio={currentAudio} curSub={currentSubtitle}
-        currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets}
+        currentQuality={currentQuality} sourceQuality={sourceQuality} qualityPresets={qualityPresets} autoQualityActive={autoQualityActive}
         hasSettings={hasSettings} hasNextEpisode={hasNextEpisode} hasPreviousEpisode={hasPreviousEpisode}
         dur={dur} actualPos={actualPos} displayProgress={displayProgress} bufProg={bufProg}
         seekbar={seekbar}

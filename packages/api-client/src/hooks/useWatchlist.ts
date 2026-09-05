@@ -4,10 +4,11 @@ import { useJellyfinClient } from "./useJellyfinClient";
 import { useUserId } from "./useUserId";
 import { invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet, addItemToLists, removeItemFromLists } from "./cacheUtils";
 import { WATCHLIST_SERIES_IDS_KEY, WATCHLIST_LIST_KEYS, resetWatchedIfFullyWatchedOnAdd } from "./watchlistEffects";
+import { forgetAutoRetired } from "./watchlistAutoRetired";
 
 // MediaSources requis pour afficher le badge qualité (4K/HEVC/DV/etc.) sur
 // les cards des rangées Ma Liste / Favoris (web CardMetaOverlay).
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources";
+const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources,ProviderIds";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 
 export function useWatchlist() {
@@ -78,6 +79,8 @@ export function useToggleWatchlist(
     // (re-regarder à neuf). Si seulement commencé, on laisse la reprise.
     onSuccess: () => {
       resetWatchedIfFullyWatchedOnAdd(qc, client, userId, itemId, seriesId);
+      // L'utilisateur a repris la main : la série ne reviendra plus d'elle-même.
+      void forgetAutoRetired(seriesId);
     },
     onSettled: settle,
   });
@@ -95,6 +98,11 @@ export function useToggleWatchlist(
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.snapshot) restoreFromSnapshot(qc, ctx.snapshot);
+    },
+    // Un retrait manuel n'a pas de suivi en principe — sauf remise serveur qui
+    // aurait croisé le geste : on efface par précaution, le geste prime.
+    onSuccess: () => {
+      void forgetAutoRetired(seriesId);
     },
     onSettled: settle,
   });

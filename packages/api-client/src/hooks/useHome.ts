@@ -17,7 +17,7 @@ import { homeLimits, staleFactor } from "../net/dataSaver";
 
 // MediaSources est requis pour afficher le badge qualité (4K / HDR / Dolby)
 // sur les items du hero. Payload +~5KB par item — acceptable pour un Limit=12.
-const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources";
+const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources,ProviderIds";
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 const USER_DATA = "EnableUserData=true";
 

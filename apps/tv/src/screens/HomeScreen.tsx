@@ -1,27 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ScrollView, TVFocusGuideView, InteractionManager, Platform } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ScrollView, TVFocusGuideView, InteractionManager } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useHomeWebSocket, useJellyfinClient,
+  useTentacleConfig, useHomeWebSocket, useJellyfinClient, useRecoLive,
 } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TV_BANNER_CARD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
-import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { RAIL_COLLAPSED } from "../components/nav/TVSideRail";
 import { useTVNavActions } from "../context/TVNavContext";
-import { SelectionModal } from "../components/SelectionModal";
 import { TVHeroBillboard } from "../components/hero/TVHeroBillboard";
 import { SkeletonHero, SkeletonRow } from "../components/SkeletonLoader";
 import { TVHomeErrorState } from "../components/home/TVHomeErrorState";
+import { TVHomeContextMenu } from "../components/home/TVHomeContextMenu";
+import type { HomeContextTarget } from "../components/home/TVHomeContextMenu";
 import { TVHomeRows } from "../components/home/TVHomeRows";
+import type { TVHomeRowData, TVHomeRowHandlers } from "../components/home/tvHomeRowRegistry";
+import { useTVHomeRows } from "../components/home/useTVHomeRows";
+import { useRecoFilterChipRow } from "../components/reco/useRecoFilterChipRow";
+import { recoAmbientTarget } from "../components/reco/recoAmbientTarget";
+import { useHomeFocusRestore } from "../hooks/useHomeFocusRestore";
 import { preloadCoreScreens } from "../navigation/AppNavigator";
 import { AmbientFocusProvider, useAmbientSetter } from "../contexts/AmbientFocusContext";
 import { TVAmbientBackdrop } from "../components/ambient/TVAmbientBackdrop";
@@ -40,7 +46,6 @@ export function HomeScreen(props: Props) {
 }
 
 function HomeScreenInner({ navigation }: Props) {
-  const { t } = useTranslation("common");
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
   const jfClient = useJellyfinClient();
@@ -48,14 +53,17 @@ function HomeScreenInner({ navigation }: Props) {
   // on se déconfigure et on repart sur l'écran de jumelage (doLogout purge
   // aussi le token Jellyfin caché du direct streaming). Respecte le garde
   // « lecture en cours » de doLogout.
+  const token = storage.getItem("tentacle_token");
   useHomeWebSocket({
-    token: storage.getItem("tentacle_token"),
+    token,
     onSessionRevoked: () => doLogout(jfClient, storage, queryClient),
   });
+  // Les recommandations reconstruites en fond arrivent en silence (reco:update).
+  useRecoLive({ token });
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
-  const [ctxItem, setCtxItem] = useState<MediaItem | null>(null);
+  const [ctxTarget, setCtxTarget] = useState<HomeContextTarget | null>(null);
 
   // Invalidate volatile queries when screen regains focus (e.g. after Player).
   // - Skip du premier mount (les queries démarrent déjà → évite le double-fetch).
@@ -70,45 +78,14 @@ function HomeScreenInner({ navigation }: Props) {
         queryClient.invalidateQueries({ queryKey: ["resume-items"] });
         queryClient.invalidateQueries({ queryKey: ["next-up"], exact: true });
         queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+        queryClient.invalidateQueries({ queryKey: ["favorites"] });
       });
       return () => task.cancel();
     }, [queryClient])
   );
 
-  // Retour sur l'accueil (depuis le lecteur, le détail, etc.) : restaurer le
-  // focus sur le DERNIER élément de carrousel focalisé — sinon l'autoFocus
-  // repart sur la 1re carte (tvOS) ou le moteur natif donne le focus à la
-  // sidebar (Android). Sur 1er mount, lastContentNodeRef est null → autoFocus.
-  useFocusEffect(
-    useCallback(() => {
-      /**
-       * Le nœud est relu AU MOMENT DE POSER LE FOCUS, jamais capturé à
-       * l'armement.
-       *
-       * Entre les deux, il s'écoule soixante millisecondes pendant lesquelles
-       * l'effet ci-dessus invalide « Reprendre », « Prochains épisodes » et
-       * « Ma liste » : la liste peut recycler la cellule que la mémoire de
-       * focus désigne. Celle-ci s'efface alors elle-même (`FocusableRow`), et
-       * relire ici suffit à ne rien envoyer à une vue détruite — ce qui levait
-       * « Trying to update non-existent view with tag N ».
-       */
-      const target = (): ({ setNativeProps?: (p: object) => void } | null) =>
-        lastContentNodeRef.current as { setNativeProps?: (p: object) => void } | null;
-      if (!target()?.setNativeProps) return;
-      if (Platform.OS === "ios") {
-        // tvOS : hasTVPreferredFocus n'est honoré que sur un cycle false→true.
-        let id2: ReturnType<typeof setTimeout>;
-        const id1 = setTimeout(() => {
-          target()?.setNativeProps?.({ hasTVPreferredFocus: false });
-          id2 = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 50);
-        }, 60);
-        return () => { clearTimeout(id1); clearTimeout(id2); };
-      }
-      // Android : le set vaut requestFocus() immédiat (one-shot).
-      const id = setTimeout(() => target()?.setNativeProps?.({ hasTVPreferredFocus: true }), 60);
-      return () => clearTimeout(id);
-    }, [lastContentNodeRef])
-  );
+  // Retour sur l'accueil : le focus revient sur la dernière carte focalisée.
+  useHomeFocusRestore(lastContentNodeRef);
 
   // BACK sur l'accueil → focus sur le rail (pattern tvOS/Netflix)
   useTVRemote({ onBack: () => requestRailFocus() });
@@ -140,6 +117,8 @@ function HomeScreenInner({ navigation }: Props) {
   const librariesQuery = useLibraries();
   const watchlistQuery = useWatchlist();
   const watchedQuery = useWatchedItems();
+  const { rows } = useTVHomeRows();
+  const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const featured = featuredQuery.data;
   const resume = resumeQuery.data;
@@ -154,28 +133,48 @@ function HomeScreenInner({ navigation }: Props) {
   const allFailed = featuredQuery.isError && librariesQuery.isError;
   const isLoading = (featuredQuery.isLoading || librariesQuery.isLoading) && !featured && !libraries;
 
-  const navigateToDetail = useCallback((item: MediaItem) => {
-    // Épisode → fiche centrée épisode (parité web), plus de redirection série
-    navigation.navigate("MediaDetail", { itemId: item.Id });
-  }, [navigation]);
+  // Épisode → fiche centrée épisode (parité web), plus de redirection série.
+  const openDetail = useCallback((itemId: string) => navigation.navigate("MediaDetail", { itemId }), [navigation]);
+  const openPlayer = useCallback((itemId: string) => navigation.navigate("Player", { itemId }), [navigation]);
+  const navigateToDetail = useCallback((item: MediaItem) => openDetail(item.Id), [openDetail]);
+  const navigateToPlay = useCallback((item: MediaItem) => openPlayer(item.Id), [openPlayer]);
+  const openContextMenu = useCallback((item: MediaItem) => setCtxTarget({ kind: "media", item }), []);
+  // Recommandations : la TV ne montre que des titres en bibliothèque — OK
+  // ouvre la fiche, l'appui long le menu (Plus d'infos, Lecture, Ne plus me
+  // proposer).
+  const openRecoDetail = useCallback((item: RecoRowItem) => { if (item.jellyfinItemId) openDetail(item.jellyfinItemId); }, [openDetail]);
+  const openRecoContextMenu = useCallback((item: RecoRowItem) => setCtxTarget({ kind: "reco", item }), []);
+  const onRecoFocus = useCallback(
+    (item: RecoRowItem) => setFocusedItem(recoAmbientTarget(item, jfClient)),
+    [setFocusedItem, jfClient],
+  );
 
-  const navigateToPlay = useCallback((item: MediaItem) => {
-    navigation.navigate("Player", { itemId: item.Id });
-  }, [navigation]);
+  const librariesById = useMemo(() => {
+    const map: TVHomeRowData["librariesById"] = new Map();
+    for (const lib of libraries ?? []) map.set(lib.Id, { id: lib.Id, name: lib.Name, collectionType: lib.CollectionType });
+    return map;
+  }, [libraries]);
+  const rowData = useMemo<TVHomeRowData>(
+    () => ({ resume, nextUp, watchlist, watched, librariesById, filterChipRowKey }),
+    [resume, nextUp, watchlist, watched, librariesById, filterChipRowKey],
+  );
+  const rowHandlers = useMemo<TVHomeRowHandlers>(() => ({
+    onPlay: navigateToPlay,
+    onDetail: navigateToDetail,
+    onLongPress: openContextMenu,
+    onItemFocus: setFocusedItem,
+    onRecoPress: openRecoDetail,
+    onRecoLongPress: openRecoContextMenu,
+    onRecoFocus,
+    onRowLayout: (key, y) => rowYMap.current.set(key, y),
+    onRowFocus: scrollToRow,
+  }), [navigateToPlay, navigateToDetail, openContextMenu, setFocusedItem, openRecoDetail, openRecoContextMenu, onRecoFocus, scrollToRow]);
 
   // Rejumeler depuis l'état d'erreur : doLogout — la purge locale recopiée
   // ici oubliait les credentials et le verrou « lecture en cours ».
   const handleLogout = useCallback(() => {
     doLogout(jfClient, storage, queryClient);
   }, [jfClient, storage, queryClient]);
-
-  const handleCtxSelect = useCallback((value: string) => {
-    const item = ctxItem;
-    setCtxItem(null);
-    if (!item) return;
-    if (value === "details") navigateToDetail(item);
-    else if (value === "play") navigateToPlay(item);
-  }, [ctxItem, navigateToDetail, navigateToPlay]);
 
   return (
     <TVScreenFrame>
@@ -237,18 +236,10 @@ function HomeScreenInner({ navigation }: Props) {
             )}
 
             <TVHomeRows
-              resume={resume}
-              nextUp={nextUp}
-              watchlist={watchlist}
-              watched={watched}
-              libraries={libraries}
-              onPlay={navigateToPlay}
-              onDetail={navigateToDetail}
-              onLongPress={setCtxItem}
-              onItemFocus={setFocusedItem}
+              rows={rows}
+              data={rowData}
+              handlers={rowHandlers}
               onWrapperLayout={(y) => { rowsWrapperY.current = y; }}
-              onRowLayout={(key, y) => rowYMap.current.set(key, y)}
-              onRowFocus={scrollToRow}
             />
           </>
         )}
@@ -256,18 +247,12 @@ function HomeScreenInner({ navigation }: Props) {
       </TVFocusGuideView>
 
       {/* Menu contextuel (appui long sur une carte) */}
-      {ctxItem && (
-        <SelectionModal
-          title={ctxItem.Type === "Episode" ? (ctxItem.SeriesName ?? ctxItem.Name) : ctxItem.Name}
-          options={[
-            { value: "details", label: t("moreInfo") },
-            { value: "play", label: t("play") },
-          ]}
-          selectedValue={null}
-          onSelect={handleCtxSelect}
-          onClose={() => setCtxItem(null)}
-        />
-      )}
+      <TVHomeContextMenu
+        target={ctxTarget}
+        onClose={() => setCtxTarget(null)}
+        onDetail={openDetail}
+        onPlay={openPlayer}
+      />
     </TVScreenFrame>
   );
 }

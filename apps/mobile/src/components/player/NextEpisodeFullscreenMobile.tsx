@@ -7,7 +7,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import type { EndCardRating } from "@tentacle-tv/api-client";
 import { PLAYER, motion, useResponsive } from "../../theme";
+import { StarRatingMobile } from "../rating/StarRatingMobile";
 import { OverlayPill } from "./overlayPill";
 import { useArmedCountdown } from "./useArmedCountdown";
 
@@ -19,6 +21,10 @@ interface Props {
   onPlay: () => void;
   /** Refuser l'affiche — l'arbitre sort du lecteur (retour à la fiche). */
   onDismiss: () => void;
+  /** Notation de l'épisode qu'on VIENT de finir — absente : rendu inchangé. */
+  rating?: EndCardRating | null;
+  /** Appelé quand une note se pose : tue le décompte de la suite. */
+  onRatingEngage?: () => void;
 }
 
 /** Repli sans bannière — le dégradé du cadre d'aperçu des réglages desktop. */
@@ -33,9 +39,10 @@ const FALLBACK_COLORS = ["#2b2436", "#16131c", "#0a0a0d"] as const;
  * entamée par la carte de coin (`initialProgress`), jamais de zéro.
  */
 export function NextEpisodeFullscreenMobile({
-  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss,
+  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss, rating, onRatingEngage,
 }: Props) {
   const { t } = useTranslation("player");
+  const { t: tReco } = useTranslation("reco");
   const client = useJellyfinClient();
   const insets = useSafeAreaInsets();
   const { width, isTablet } = useResponsive();
@@ -165,6 +172,33 @@ export function NextEpisodeFullscreenMobile({
               <Text style={st.ghostLabel}>{t("backToDetails")}</Text>
             </Pressable>
           </View>
+
+          {/* Noter l'épisode FINI — geste secondaire, sous les actions ; poser
+              une étoile tue le décompte, la surface reste une proposition. */}
+          {rating && (
+            <View style={st.ratingBlock}>
+              <Text style={st.rateLabel}>
+                {t("rateJustWatched")}
+                {rating.episodeCode ? ` — ${rating.episodeCode}` : ""}
+              </Text>
+              <View style={st.ratingRow}>
+                <StarRatingMobile
+                  value={rating.value}
+                  onRate={(score) => {
+                    onRatingEngage?.();
+                    rating.rate(score);
+                  }}
+                  onClear={() => {
+                    onRatingEngage?.();
+                    rating.clear();
+                  }}
+                />
+                {rating.value != null && (
+                  <Text style={st.rateValue}>{tReco("ratingValue", { score: rating.value })}</Text>
+                )}
+              </View>
+            </View>
+          )}
         </View>
       </Animated.View>
     </Animated.View>
@@ -231,4 +265,21 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   ghostLabel: { color: "rgba(255, 255, 255, 0.85)", fontSize: 14, fontWeight: "600" },
+  ratingBlock: { marginTop: 18 },
+  rateLabel: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    textShadowColor: "rgba(0,0,0,0.85)",
+    textShadowRadius: 4,
+  },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 },
+  rateValue: {
+    color: "rgba(255, 255, 255, 0.8)",
+    fontSize: 14,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
 });

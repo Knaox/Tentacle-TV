@@ -5,6 +5,116 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.17.0]
+### FR
+- **La page Recommandations s'affiche instantanément.** Le serveur précalcule votre page en arrière-plan (une page par compte et par filtre) et la sert en une seule requête ; l'application la garde sur l'appareil et la rend d'un coup, puis la rafraîchit en silence dès que le serveur l'a reconstruite — plus de carrousels qui arrivent un par un, plus de squelette hors de la toute première visite
+- **Plus jamais de page qui se vide** : un pool de recommandations passé sa fraîcheur est servi tel quel pendant qu'il se régénère, l'index de bibliothèque se remplace en fond au lieu de tomber dans une requête, et une relance en échec ne repart plus à chaque appel
+- **Le filtre par plateforme est fiable** : c'est le serveur qui filtre, strictement — un titre dont la disponibilité est inconnue n'apparaît plus sous « Crunchyroll » ; les rangées se construisent depuis les titres disponibles, le carrousel suit le filtre, et un crawler de fond apprend en continu les plateformes de vos recommandations
+- **Le filtre suit votre compte** d'un appareil à l'autre, et sa page est précalculée
+- **Changer de filtre est instantané** : chaque plateforme a sa page précalculée en arrière-plan, le survol d'une plateforme la précharge, et l'échange n'a lieu qu'une fois les premières affiches décodées — plus de cases vides qui se remplissent
+- **Chaque plateforme a son logo** : l'annuaire mondial TMDB (persisté) fournit les logos de toutes les familles — Crunchyroll et son canal Amazon ne font qu'un, OCS et Arte retrouvent les bons identifiants, Apple TV et HBO Max leurs nouveaux noms
+- **La recherche d'acteurs ne fait plus la queue** derrière une génération de recommandations : les appels interactifs à TMDB passent devant ceux du fond
+- **Chaque épisode se note** : étoiles dans la liste Saisons & Épisodes de la fiche et sur la fiche de l'épisode, note TMDB de l'épisode à côté (Jellyfin à défaut), et vos notes visibles dans la liste des épisodes du lecteur. Valider une note fait jaillir quelques confettis, partout où l'on note
+- **La bannière repart au premier geste** : après vingt secondes sans souris ni clavier elle se fige pour laisser le GPU redescendre ; au moindre geste ou défilement, la diapositive suivante arrive aussitôt avec son fondu et son zoom
+- **Une rangée ne reste plus vide après un défilement rapide** : les observateurs d'intersection ne lisaient que la première entrée de leur salve — il fallait remonter tout en haut ou recharger
+- **La note reste visible au survol des cartes** de recommandation, à côté de la raison et des étoiles
+- **La fiche s'ouvre depuis les recommandations et leur bannière avec sa transition**, comme depuis toute autre carte
+- **Les cartes de recommandation se lancent** : au survol d'un titre présent en bibliothèque, un bouton Lecture reprend là où vous en étiez ou démarre l'épisode 1, avec la qualité (4K, HDR…) et les langues (VF, VOSTFR…) de ce qui va être lu ; les titres « à la demande » restent tels quels
+- **Ma liste suit vos visionnages, pas vos clics** : marquer un titre comme vu à la main ne le retire plus de Ma liste ; il n'en sort qu'une fois réellement regardé jusqu'au bout — un film, ou le dernier épisode disponible d'une série, même encore en cours de diffusion, et quel que soit l'endroit d'où la lecture est partie. Une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même — le serveur mémorise ces sorties et remet la série à l'arrivée d'un épisode
+- **« Pour vous » est le même sur l'accueil et sur la page Recommandations** : l'accueil lit la page de votre filtre de plateformes — le carrousel « Sélectionné pour vous » aussi — et la rangée est entière des deux côtés : le carrousel ne lui prend plus ses premiers titres, il en tire cinq au hasard, d'autres à chaque visite
+- **Seuls les titres sortis sont recommandés** : un film au moins en salles, une série déjà diffusée — plus de titres annoncés dans les rangées, le carrousel ou les tendances
+- **Le filtre de plateformes vaut aussi pour l'accueil** : une puce à côté du titre de la première rangée de recommandations montre les plateformes actives et le retire d'une croix — du compte, donc aussi sur la page Recommandations et les autres appareils
+- **« Rangées de l'accueil » propose tout** : « Mes favoris » et chaque rangée permanente de recommandation — Tendances, « Ce que les utilisateurs de Tentacle regardent », « Les mieux notés de votre bibliothèque » comprises — et seulement celles que ce serveur sait servir ; l'ordre et les rangées choisis s'appliquent sur toutes les plateformes, mobile et téléviseur compris
+- **Sans clé TMDB, l'accueil garde des recommandations** — le pouls des utilisateurs et les mieux notés de la bibliothèque prennent la place de « Pour vous » — et l'admin voit un bandeau sur toutes les pages jusqu'à la clé posée ; les autres comptes ne voient rien
+- **« Les mieux notés de votre bibliothèque » ferme la page Recommandations** de tous les profils, riches compris
+- **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, un lien direct depuis chaque notification ; l'admin déplace les cartes d'une colonne à l'autre et supprime un ou plusieurs tickets ; l'auteur peut fermer le sien en disant pourquoi
+- **Toute la vie d'un ticket notifie** : nouveau ticket, réponse ou fermeture par l'auteur pour les administrateurs ; réponse et changement de statut pour l'auteur — la cloche se met à jour à l'instant, sur toutes les pages, et le téléphone reçoit un push
+- **Les tickets vivent sept jours** : un ticket résolu sans nouvelle passe en fermé au bout d'une semaine, un ticket fermé quitte le tableau une semaine plus tard
+- **La page Thème de l'admin disparaît** : plus de thèmes saisonniers, de couleurs de marque ni de CSS personnalisé — l'apparence vit dans l'application
+- **Plus d'interrupteur serveur d'auto-play** : les réglages de lecture de chaque compte décident seuls
+- Compatibilité : les clients ne se mettent à jour que si le serveur est en 1.17.0 ou plus (les anciennes routes restent servies depuis la page précalculée)
+
+### EN
+- **The Recommendations page shows up instantly.** The server precomputes your page in the background (one per account and per filter) and serves it in a single request; the app keeps it on the device, renders it at once, then refreshes it silently as soon as the server has rebuilt it — no more rows arriving one by one, no skeleton beyond the very first visit
+- **The page never empties anymore**: a recommendation pool past its freshness is served as is while it regenerates, the library index is replaced in the background instead of falling into a request, and a failed relaunch no longer restarts on every call
+- **The platform filter is reliable**: the server filters, strictly — a title with unknown availability no longer shows up under "Crunchyroll"; rows are built from the available titles, the billboard follows the filter, and a background crawler keeps learning the platforms of your recommendations
+- **The filter follows your account** across devices, and its page is precomputed
+- **Switching filters is instant**: every platform gets its page precomputed in the background, hovering a platform prefetches it, and the swap only happens once the first posters are decoded — no more empty cards filling in
+- **Every platform has its logo**: the persisted worldwide TMDB directory provides logos for every family — Crunchyroll and its Amazon channel are one, OCS and Arte get their right ids back, Apple TV and HBO Max their new names
+- **Actor search no longer queues** behind a recommendation generation: interactive TMDB calls go first
+- **Every episode can be rated**: stars in the Seasons & Episodes list of the detail page and on the episode page, the TMDB episode score next to them (Jellyfin as a fallback), and your ratings shown in the player's episode list. Validating a rating throws a few confetti, wherever you rate
+- **The banner resumes at the first gesture**: after twenty seconds without mouse or keyboard it freezes to let the GPU rest; at the slightest gesture or scroll, the next slide arrives at once with its fade and zoom
+- **A row no longer stays empty after a fast scroll**: intersection observers only read the first entry of their batch — you had to scroll back to the top or reload
+- **The rating stays visible while hovering** recommendation cards, next to the reason and the stars
+- **The details page opens from recommendations and their banner with its transition**, as from any other card
+- **Recommendation cards can be played**: hovering a title in your library shows a Play button that resumes where you left off or starts episode 1, with the quality (4K, HDR…) and languages (VF, VOSTFR…) of what will play; "on demand" titles are unchanged
+- **My List follows what you watch, not what you click**: marking a title watched by hand no longer removes it from My List; it only leaves once actually watched to the end — a movie, or the last available episode of a series, even one still airing, wherever playback was started from. A series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself — the server remembers those exits and puts the series back when an episode arrives
+- **"For you" is the same on the home and on the Recommendations page**: the home reads the page of your platform filter — the "Picked for you" billboard too — and the row is complete on both sides: the billboard no longer takes its first titles, it draws five at random, different ones on every visit
+- **Only released titles are recommended**: a movie at least in theaters, a series already aired — no more announced titles in the rows, the billboard or the trends
+- **The platform filter also applies to the home**: a chip next to the title of the first recommendation row shows the active platforms and removes the filter with a cross — from the account, hence on the Recommendations page and the other devices as well
+- **"Home rows" offers everything**: "My favorites" and every permanent recommendation row — Trending, "What Tentacle users are watching", "Top rated in your library" included — and only those this server can serve; the chosen order and rows apply on every platform, mobile and TV included
+- **Without a TMDB key, the home keeps recommendations** — the users' pulse and the library's top rated take the place of "For you" — and the admin sees a banner on every page until the key is set; other accounts see nothing
+- **"Top rated in your library" closes the Recommendations page** for every profile, rich ones included
+- **Support tickets become a board**: one column per status, the ticket in a side panel, a direct link from every notification; the admin drags cards between columns and deletes one or several tickets; the author can close their own, saying why
+- **A ticket's whole life notifies**: new ticket, reply or closing by the author for administrators; reply and status change for the author — the bell updates instantly, on every page, and the phone gets a push
+- **Tickets live seven days**: a resolved ticket without news becomes closed after a week, a closed ticket leaves the board a week later
+- **The admin Theme page is gone**: no more seasonal themes, brand colors or custom CSS — the look lives in the app
+- **No more server-side auto-play switch**: each account's playback settings decide alone
+- Compatibility: clients require server 1.17.0 or newer (the old routes are still served from the precomputed page)
+
+## [1.16.0]
+### FR
+- **Les recommandations arrivent.** Un moteur complet construit votre profil de goût sur vos vus, vos favoris et vos notes, et sert des rangées à votre goût : « Pour vous », « Disponible dans votre bibliothèque », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Les utilisateurs de Tentacle regardent aussi », « Sortir de votre zone de confort »
+- **Les animés comptent enfin** : les séries suivies pèsent selon leurs épisodes et deviennent des graines, une rangée « Animés pour vous » et une part d'animés dans « Pour vous » pour ceux qui en regardent — rien ne change pour les autres
+- **L'accueil assume la personnalisation** : la bannière « Sélectionné pour vous » et la rangée « Pour vous » sont actives d'entrée — et tant que la reco n'a rien à montrer, la bannière de reprise garde sa place
+- **La page Recommandations n'est plus jamais vide** : les Tendances, « Ce que les utilisateurs de Tentacle regardent » et les mieux notés de votre bibliothèque tiennent la scène pendant que votre profil se calcule — un bandeau dit toujours ce qui se passe
+- **La clé TMDB active tout** : posée dans Admin → Métadonnées, elle déclenche le calcul des recommandations de tous les comptes en arrière-plan ; absente, la page reste utile — contenu général, et l'admin voit où poser sa clé
+- **Dites-nous ce que vous aimez** : à la première visite, une grille de titres de votre bibliothèque amorce votre profil en cinq choix — elle ne s'impose qu'une seule fois
+- **Noter, partout** : des étoiles au survol de n'importe quelle affiche, la note globale sur les cartes, vos notes synchronisées vers TMDB — et l'affiche de fin d'épisode se note désormais, le décompte s'interrompt le temps du geste
+- **Vos acteurs** : aimez un acteur ou un réalisateur, des rangées « Avec … » naissent de vos choix — gérées au contact des rangées, portraits compris
+- **Filtres par plateforme** : un menu avec les logos de vos services (l'annuaire complet de votre région, Crunchyroll et ADN compris) filtre les recommandations selon vos abonnements
+- **La qualité « Auto »** : l'app mesure le débit réel vers le serveur — si la connexion ne porte pas le fichier, un palier adapté prend le relais, badge « Auto » au sélecteur et message discret ; votre choix manuel prime toujours
+- **La barre de navigation montre son débordement** : fondu de bord, flèches discrètes et molette quand la fenêtre est étroite — plus d'entrée inatteignable
+- **Partagez vos coups de cœur** : la page Favoris fabrique un lien public de vos titres likés
+- **« L'Étreinte »** : le nouveau logo enlace l'écran — mascotte, splash et favicon suivent
+- **La liste d'épisodes du lecteur s'ouvre sur l'épisode courant**
+- **Lecture : plus de piste Dolby copiée vers le HLS fMP4** — l'initialisation sortait sans codec et la lecture échouait
+- **Réglages → Personnalisation** : l'accueil se compose (rangées, bandeau principal), l'équilibre entre valeurs sûres et découvertes se règle, ainsi que l'inclusion des titres hors bibliothèque (Vigie), les recommandations communautaires et le partage de votre historique (opt-out), les acteurs favoris et la remise à zéro du profil
+- **Admin → Métadonnées** : clé TMDB validée avant d'être stockée et région des plateformes se règlent depuis l'admin — plus seulement par variables d'environnement
+- **Noter ou écarter un titre le retire aussitôt des rangées**, et la raison « En anglais » disparaît (elle désignait la langue originale TMDB, trompeuse en VF)
+- **Vos favoris et vos séries entamées ne sont plus recommandés** : un favori reste une graine, une série entamée vit dans « Reprendre » ; les graines des rangées « Parce que vous avez aimé » tournent chaque jour
+- **Un compte avec un historique ne subit plus la grille de démarrage** — réservée aux comptes vierges, avec 60 titres répartis par genre au lieu de 30 triés par note
+- **« Bibliothèque seule » tient parole** : Vigie désactivée, aucune rangée ne sert de titre hors bibliothèque, et changer ce réglage recalcule le pool
+- **Un lien de partage public n'expose plus l'historique du propriétaire** : la fiche publique d'un titre renvoyait l'objet Jellyfin brut, dates de visionnage et position de lecture comprises
+- **Le recalcul communautaire immédiat devient une action admin** : n'importe quel compte pouvait relancer ce chantier en boucle
+- Sur l'accueil par défaut, vos bibliothèques passent avant « Déjà visionné » ; hors ligne, « Réessayer » montre qu'il essaie
+
+### EN
+- **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Tentacle users also watch", "Step outside your comfort zone"
+- **Anime finally counts**: followed series weigh by episodes watched and become seeds, an "Anime for you" row and a share of anime in "For you" for those who watch it — nothing changes for anyone else
+- **The home screen embraces personalization**: the "Picked for you" banner and the "For you" row are on by default — and while recommendations have nothing to show, the resume banner keeps its place
+- **The Recommendations page is never empty again**: Trending, "What Tentacle users are watching" and your library's top rated hold the stage while your profile is computed — a banner always says what's happening
+- **The TMDB key switches everything on**: set in Admin → Metadata, it triggers background computation for every account; without it the page stays useful — general content, and the admin sees where to add the key
+- **Tell us what you like**: on your first visit, a grid of titles from your library seeds your profile in five picks — it only imposes itself once
+- **Rate anywhere**: stars on hover over any poster, the global rating on cards, your ratings synced to TMDB — and the end-of-episode poster can now be rated, the countdown pauses for the gesture
+- **Your actors**: like an actor or a director and "With …" rows grow from your picks — managed right next to the rows, portraits included
+- **Platform filters**: a menu with your services' logos (the full directory for your region, Crunchyroll and ADN included) filters recommendations by your subscriptions
+- **"Auto" quality**: the app measures the real bandwidth to your server — when the connection can't carry the file, a suitable tier takes over, with an "Auto" badge in the selector and a discreet message; your manual choice always wins
+- **The navigation bar shows its overflow**: edge fade, discreet arrows and mouse-wheel scrolling in narrow windows — no more unreachable entries
+- **Share your favorites**: the Favorites page builds a public link of your liked titles
+- **"The Embrace"**: the new logo hugs the screen — mascot, splash and favicon follow
+- **The player's episode list opens on the current episode**
+- **Playback: no more Dolby track copied into HLS fMP4** — the init segment came out without a codec and playback failed
+- **Settings → Personalization**: compose your home (rows, main banner), set the balance between safe bets and discoveries, whether to include titles outside your library (Vigie), community recommendations and the sharing of your history (opt-out), favorite actors and a profile reset
+- **Admin → Metadata**: the TMDB key (validated before being stored) and the platform region are set from the admin — no longer only through environment variables
+- **Rating or dismissing a title removes it from the rows at once**, and the "In English" reason is gone (it named the TMDB original language, misleading for a dubbed copy)
+- **Your favorites and started series are no longer recommended**: a favorite stays a seed, a started series lives in "Resume"; the seeds of the "Because you liked" rows rotate daily
+- **An account with a history no longer gets the onboarding grid** — reserved for fresh accounts, with 60 titles spread by genre instead of 30 sorted by rating
+- **"Library only" keeps its word**: with Vigie off, no row serves a title outside the library, and changing the setting recomputes the pool
+- **A public share link no longer exposes the owner's history**: the public page of a title returned the raw Jellyfin object, watch dates and playback position included
+- **The immediate community recompute becomes an admin action**: any account could hammer that job in a loop
+- On the default home, your libraries come before "Already watched"; offline, "Retry" shows that it is trying
+
 ## [1.15.1]
 ### FR
 - **L'affiche de fin d'épisode a été redessinée** : la même pastille blanche que les boutons du lecteur, le temps restant montré dans le geste « Lire maintenant », un fond en dégradés qui laisse respirer la bannière de la série

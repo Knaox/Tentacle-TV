@@ -3,16 +3,14 @@ import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, usePlaybackSegments, useEpisodeNavigation,
 } from "@tentacle-tv/api-client";
-import {
-  TICKS_PER_SECOND, ticksToSeconds,
-  buildQualityLadder, findPreset, isPresetOffered,
-} from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import {
   buildStreamUrl, buildTextTracks, detectBurnIn, isBitmapSub,
   buildPlatformDeviceProfile, extractActualStartTicks,
   type TextTrackEntry,
 } from "./usePlaybackInfoFetch";
+import { usePlayerQuality } from "./usePlayerQuality";
 import { recordEncodingSession } from "../lib/transcodeSession";
 
 const DBG = "[Tentacle:Playback]";
@@ -61,7 +59,6 @@ export function usePlayerPlayback(itemId: string) {
   const [fetchNonce, setFetchNonce] = useState(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
-  const [qualityKey, setQualityKey] = useState<QualityKey>("original");
   const positionRef = useRef(0);
   // Refs mirror audioIndex/subtitleIndex for synchronous reads in fetchPlaybackInfo.
   // Fixes race condition when changeAudio + changeSubtitle fire in the same tick.
@@ -73,9 +70,8 @@ export function usePlayerPlayback(itemId: string) {
     [item],
   );
   const mediaSourceId = item?.MediaSources?.[0]?.Id ?? itemId;
-  // Paliers calculés d'après la source : jamais au-dessus de son débit ni de
-  // sa définition (cf. buildQualityLadder).
-  const qualityPresets = useMemo(() => buildQualityLadder(item?.MediaSources?.[0]), [item]);
+  // Échelle, palier et cap automatique de débit : tout vit dans usePlayerQuality.
+  const quality = usePlayerQuality({ itemId, mediaSource: item?.MediaSources?.[0] });
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const episodeNav = useEpisodeNavigation(item);
@@ -98,10 +94,12 @@ export function usePlayerPlayback(itemId: string) {
     const currentFetch = ++fetchIdRef.current;
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    const preset = findPreset(qualityKey, qualityPresets);
-    const bitrate = opts?.maxBitrate ?? preset.bitrate ?? 0;
-    const maxWidth = opts?.maxWidth ?? preset.width ?? 0;
-    const maxHeight = opts?.maxHeight ?? preset.height ?? 0;
+    // Palier servi : celui des opts (changement/retry explicites), sinon la
+    // photographie du moment — cap auto compris quand le mode est armé.
+    const preset = opts?.maxBitrate !== undefined ? null : quality.presetForFetch();
+    const bitrate = opts?.maxBitrate ?? preset?.bitrate ?? 0;
+    const maxWidth = opts?.maxWidth ?? preset?.width ?? 0;
+    const maxHeight = opts?.maxHeight ?? preset?.height ?? 0;
     const profile = buildPlatformDeviceProfile(bitrate, opts?.isRetry ?? false);
 
     try {
@@ -161,13 +159,7 @@ export function usePlayerPlayback(itemId: string) {
       console.error(DBG, "PlaybackInfo failed", err);
       setState((prev) => ({ ...prev, isLoading: false, error: "Playback error" }));
     }
-  }, [client, userId, itemId, mediaSourceId, qualityKey, qualityPresets]);
-
-  // Garde-fou : l'échelle dépend de la source, un palier peut disparaître d'un
-  // média à l'autre. Retomber sur « Originale » plutôt que sur une clé fantôme.
-  useEffect(() => {
-    if (!isPresetOffered(qualityKey, qualityPresets)) setQualityKey("original");
-  }, [qualityPresets, qualityKey]);
+  }, [client, userId, itemId, mediaSourceId, quality]);
 
   const reporting = usePlaybackReporting({
     itemId, mediaSourceId,
@@ -230,8 +222,8 @@ export function usePlayerPlayback(itemId: string) {
   }, [fetchPlaybackInfo, streams, state.burnInSubIndex]);
 
   const changeQuality = useCallback((key: QualityKey) => {
-    setQualityKey(key);
-    const preset = findPreset(key, qualityPresets);
+    // Choix du menu : désarme le cap auto pour cet item, puis applique.
+    const preset = quality.selectQualityManual(key);
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
     fetchPlaybackInfo({
       maxBitrate: preset.bitrate ?? 0,
@@ -239,7 +231,7 @@ export function usePlayerPlayback(itemId: string) {
       maxHeight: preset.height ?? 0,
       startTimeTicks: startTicks > 0 ? startTicks : undefined,
     });
-  }, [fetchPlaybackInfo, qualityPresets]);
+  }, [fetchPlaybackInfo, quality]);
 
   const retry = useCallback(() => {
     const startTicks = Math.floor(positionRef.current * TICKS_PER_SECOND);
@@ -247,12 +239,10 @@ export function usePlayerPlayback(itemId: string) {
     // RIEN à la négociation — Jellyfin resservirait le même encodage. Pour que
     // la relance soit réellement différente, on descend d'un palier de
     // qualité : un débit plafonné force une nouvelle session d'encodage.
-    // Le palier choisi est affiché (setQualityKey) — pas de qualité mentie.
+    // Le palier choisi est affiché (clé effective) — pas de qualité mentie.
     let degraded: QualityPreset | undefined;
     if (!state.isDirectPlay && state.streamUrl) {
-      const idx = qualityPresets.findIndex((p) => p.key === qualityKey);
-      degraded = qualityPresets.slice(idx + 1).find((p) => p.bitrate != null);
-      if (degraded) setQualityKey(degraded.key);
+      degraded = quality.degradeOneTier();
     }
     fetchPlaybackInfo({
       isRetry: true,
@@ -261,7 +251,7 @@ export function usePlayerPlayback(itemId: string) {
         : {}),
       startTimeTicks: startTicks > 0 ? startTicks : undefined,
     });
-  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, qualityKey, qualityPresets]);
+  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, quality]);
 
   /** VTT URL for custom overlay — every mode, every platform (text subs only).
    *  iOS never sideloads native textTracks (sidecar tracks force-disable
@@ -284,7 +274,12 @@ export function usePlayerPlayback(itemId: string) {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
     fetchNonce,
-    audioIndex, subtitleIndex, qualityKey, qualityPresets, positionRef,
+    audioIndex, subtitleIndex, positionRef,
+    // Clé EFFECTIVE au menu (palier servi, cap compris) — comme le web.
+    qualityKey: quality.qualityKeyEffective,
+    qualityPresets: quality.qualityPresets,
+    autoCapActive: quality.autoCapActive,
+    autoModeArmed: quality.autoModeArmed,
     audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, segments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,

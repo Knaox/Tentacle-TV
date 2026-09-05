@@ -1,5 +1,6 @@
 export default {
   home: "Home",
+  recommendations: "Recommendations",
   makeRequest: "Make a request",
   pendingRequests: "Pending requests",
   downloads: "Downloads",
@@ -33,4 +34,6 @@ export default {
   railLabel: "Main navigation",
   railHint: "Hold OK to hide an entry",
   railShowAll: "Show all",
+  scrollLeft: "Scroll navigation left",
+  scrollRight: "Scroll navigation right",
 } as const;

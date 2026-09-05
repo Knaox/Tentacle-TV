@@ -16,7 +16,9 @@ interface SettingToggleRowProps {
 export function SettingToggleRow({ title, hint, active, onChange }: SettingToggleRowProps) {
   return (
     <div className="flex items-start justify-between gap-4">
-      <div>
+      {/* min-w-0 : sans lui, un hint long refuse de rétrécir (min-width:auto)
+          et pousse l'interrupteur hors de la carte. */}
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-content-primary">{title}</p>
         {hint !== undefined && (
           <p className="mt-1 text-xs leading-relaxed text-content-tertiary">{hint}</p>

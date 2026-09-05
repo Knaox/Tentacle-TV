@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { backOrHome } from "@/utils/backOrHome";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Feather } from "@expo/vector-icons";
 import { SubtleBackground } from "../ui";
 import { FONT_FAMILY, useContentPadding, useTheme, withAlpha } from "../../theme";
@@ -25,12 +26,14 @@ export function TicketListView({ onNew, onOpen }: Props) {
   const contentPad = useContentPadding(720);
   const [filter, setFilter] = useState("");
   const { serverUrl, headers } = useTicketApi();
+  // L'admin voit TOUS les tickets (avec leur auteur) — les autres, les leurs.
+  const isAdmin = useIsAdmin();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["tickets", filter],
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["tickets", isAdmin ? "all" : "mine", filter],
     queryFn: async () => {
       const p = filter ? `?status=${filter}` : "";
-      const res = await fetch(`${serverUrl}/api/tickets${p}`, { headers });
+      const res = await fetch(`${serverUrl}/api/tickets${isAdmin ? "/all" : ""}${p}`, { headers });
       if (!res.ok) throw new Error("fetch failed");
       return res.json() as Promise<{ results: Ticket[] }>;
     },
@@ -68,7 +71,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           }}
           accessibilityRole="header"
         >
-          {t("myTickets")}
+          {t(isAdmin ? "allTickets" : "myTickets")}
         </Text>
       </View>
 
@@ -85,9 +88,9 @@ export function TicketListView({ onNew, onOpen }: Props) {
 
       {isLoading ? (
         <ActivityIndicator color={colors.brand.violet} style={{ marginTop: 48 }} />
-      ) : tickets.length === 0 ? (
+      ) : isError || tickets.length === 0 ? (
         <View style={{ alignItems: "center", marginTop: 80, paddingHorizontal: 32 }}>
-          <Feather name="inbox" size={48} color={colors.brand.light} style={{ opacity: 0.5 }} />
+          <Feather name={isError ? "alert-circle" : "inbox"} size={48} color={colors.brand.light} style={{ opacity: 0.5 }} />
           <Text style={{
             fontSize: 15,
             fontFamily: FONT_FAMILY.medium,
@@ -95,7 +98,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
             textAlign: "center",
             marginTop: 16,
           }}>
-            {t("noTickets")}
+            {t(isError ? "loadFailed" : "noTickets")}
           </Text>
         </View>
       ) : (
@@ -105,7 +108,7 @@ export function TicketListView({ onNew, onOpen }: Props) {
           style={{ flex: 1, marginTop: 12 }}
           contentContainerStyle={{ paddingHorizontal: contentPad, paddingBottom: insets.bottom + 120 }}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          renderItem={({ item }) => <TicketCard ticket={item} onOpen={onOpen} />}
+          renderItem={({ item }) => <TicketCard ticket={item} showAuthor={isAdmin} onOpen={onOpen} />}
         />
       )}
 

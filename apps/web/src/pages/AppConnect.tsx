@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GlassCard } from "@tentacle-tv/ui";
 import { verifyServer } from "@tentacle-tv/shared";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
+import { recordFreshInstall } from "../whatsNew/freshInstall";
 
 interface AppConnectProps {
   onConnected: () => void;
@@ -21,6 +22,12 @@ export function AppConnect({ onConnected }: AppConnectProps) {
   const [url, setUrl] = useState("");
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState("");
+
+  // Cette page n'existe qu'à la première installation : l'écran de nouveautés
+  // note la version courante ici, pour ne s'imposer qu'à la suivante.
+  useEffect(() => {
+    void recordFreshInstall();
+  }, []);
 
   const handleConnect = async () => {
     setError("");

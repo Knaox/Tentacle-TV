@@ -17,6 +17,8 @@ export type WsServerMessage =
   /** Poussé à un appareil dont le jumelage vient d'être révoqué : la TV/le
    *  mobile doit se déconfigurer et revenir à l'écran de jumelage. */
   | { type: "session:revoked" }
+  /** Snapshot de page reco reconstruit : le client refait sa requête en silence. */
+  | { type: "reco:update" }
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */
