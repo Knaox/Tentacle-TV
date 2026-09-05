@@ -6,6 +6,7 @@ import {
   ratingSignalWeight,
   ratingStats,
   truncateVector,
+  SIGNAL_ABANDON,
   SIGNAL_FAVORITE,
   seriesEngagementWeight,
   universeShare,
@@ -40,29 +41,54 @@ describe("statistiques de notes", () => {
   });
 });
 
-describe("normalisation des notes sur l'échelle personnelle", () => {
-  it("un noteur généreux (tout entre 8 et 10) reste discriminant", () => {
-    // Moyenne 9 : son « 8 » est une mauvaise note, son « 10 » une excellente.
-    const { mean, stdDev } = ratingStats([8, 8, 9, 9, 9, 10, 10, 10, 10, 10, 8, 9]);
-    const low = ratingSignalWeight(8, mean, stdDev);
-    const high = ratingSignalWeight(10, mean, stdDev);
-    expect(low).toBeLessThan(0);
-    expect(high).toBeGreaterThan(0);
-    // Les deux bords de SON échelle restent des signaux nets (leur amplitude
-    // dépend de la distance à SA moyenne — ici le 8 en est plus loin que le 10).
-    expect(Math.abs(low)).toBeGreaterThan(0.5);
-    expect(high).toBeGreaterThan(0.5);
+describe("échelle absolue des notes — point neutre 6,5", () => {
+  const generous = ratingStats([8, 8, 9, 9, 9, 10, 10, 10, 10, 10, 8, 9]);
+
+  it("un 7 est un « j'aime bien » : jamais négatif, même chez un noteur généreux", () => {
+    // Moyenne 9 : l'ancienne normalisation faisait de son 7 (et de son 8) un
+    // reproche. Une note veut dire la même chose pour tout le monde.
+    expect(ratingSignalWeight(7, generous.stdDev)).toBeGreaterThan(0);
+    expect(ratingSignalWeight(8, generous.stdDev)).toBeGreaterThan(0);
+    expect(ratingSignalWeight(6, generous.stdDev)).toBeGreaterThanOrEqual(-0.1);
   });
 
-  it("les notes médianes (5..7) pèsent peu (±0,2 × écart réduit)", () => {
-    const w = ratingSignalWeight(6, 6.5, 2);
-    expect(Math.abs(w)).toBeLessThanOrEqual(0.2);
+  it("un noteur généreux reste discriminant : son 10 pèse plus du double de son 8", () => {
+    const low = ratingSignalWeight(8, generous.stdDev);
+    const high = ratingSignalWeight(10, generous.stdDev);
+    expect(low).toBeGreaterThan(0);
+    expect(high).toBeGreaterThan(2 * low);
   });
 
-  it("le plancher d'écart-type évite la division par un epsilon", () => {
-    // Écart-type quasi nul : sans plancher, 10 vs moyenne 9,9 exploserait.
-    const w = ratingSignalWeight(10, 9.9, 0.05);
-    expect(w).toBeCloseTo(0.1, 5);
+  it("un 8 vaut un favori, un 10 deux fois et demi, un 4 deux abandons", () => {
+    expect(ratingSignalWeight(8, 0)).toBeCloseTo(0.75, 10);
+    expect(ratingSignalWeight(8, 0)).toBeGreaterThan(SIGNAL_FAVORITE);
+    expect(ratingSignalWeight(10, 0)).toBeCloseTo(1.75, 10);
+    expect(ratingSignalWeight(4, 0)).toBeLessThan(2 * SIGNAL_ABANDON);
+  });
+
+  it("la grille de démarrage : cinq titres aimés à 8 pèsent chacun comme un 8 isolé", () => {
+    // Moyenne personnelle 8, écart nul : l'ancienne formule donnait cinq poids
+    // nuls — aucune graine, un profil vierge au sortir du démarrage à froid.
+    const { stdDev } = ratingStats([8, 8, 8, 8, 8]);
+    const w = ratingSignalWeight(8, stdDev);
+    expect(w).toBeCloseTo(ratingSignalWeight(8, 0), 10);
+    expect(w).toBeGreaterThan(SIGNAL_FAVORITE);
+  });
+
+  it("les notes médianes (5..7) pèsent peu (× 0,2)", () => {
+    expect(Math.abs(ratingSignalWeight(5, 0))).toBeLessThanOrEqual(0.2);
+    expect(Math.abs(ratingSignalWeight(6, 2))).toBeLessThanOrEqual(0.2);
+    expect(Math.abs(ratingSignalWeight(7, 0))).toBeLessThanOrEqual(0.2);
+  });
+
+  it("un noteur qui étale ses notes sur toute l'échelle a des points qui pèsent moins", () => {
+    // Écart-type 3,5 (notes de 1 à 10) : un 10 vaut 1 au lieu de 1,75.
+    expect(ratingSignalWeight(10, 3.5)).toBeCloseTo(1, 10);
+    expect(ratingSignalWeight(10, 3.5)).toBeLessThan(ratingSignalWeight(10, 0));
+  });
+
+  it("l'unité d'échelle évite la division par un epsilon", () => {
+    expect(ratingSignalWeight(10, 0.05)).toBeCloseTo(1.75, 10);
   });
 });
 
