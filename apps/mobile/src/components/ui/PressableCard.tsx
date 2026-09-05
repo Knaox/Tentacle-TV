@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Pressable, type ViewStyle, type AccessibilityRole } from "react-native";
+import { Pressable, type ViewStyle, type AccessibilityRole, type AccessibilityState } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 
 // expo-haptics may not be available in all Expo Go builds
@@ -16,6 +16,8 @@ interface Props {
   scaleValue?: number;
   accessibilityRole?: AccessibilityRole;
   accessibilityLabel?: string;
+  /** L'état lu par les lecteurs d'écran (sélection, case cochée…). */
+  accessibilityState?: AccessibilityState;
   haptic?: boolean;
 }
 
@@ -25,7 +27,7 @@ interface Props {
  */
 export function PressableCard({
   children, onPress, onLongPress, style, scaleValue = 0.97,
-  accessibilityRole, accessibilityLabel, haptic = true,
+  accessibilityRole, accessibilityLabel, accessibilityState, haptic = true,
 }: Props) {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -47,6 +49,7 @@ export function PressableCard({
       onPressOut={handlePressOut}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
     >
       <Animated.View style={[animStyle, style]}>{children}</Animated.View>
     </Pressable>
