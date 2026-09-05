@@ -8,13 +8,14 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useUserId,
   useWatchlist,
-  useHomeWebSocket, useRecoLive, useTentacleConfig,
+  useHomeWebSocket, useJellyfinClient, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
+import { mediaHeroSlides } from "@/components/hero/mediaHeroSlides";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { HomeRow } from "@/components/home/homeRowRegistry";
@@ -55,6 +56,7 @@ export function HomeScreen() {
   // Les recommandations reconstruites en fond arrivent en silence (reco:update).
   useRecoLive({ token });
 
+  const client = useJellyfinClient();
   const featured = useFeaturedItems();
   const resume = useResumeItems();
   const nextUp = useNextUp();
@@ -72,9 +74,10 @@ export function HomeScreen() {
   const isLoading = featured.isLoading || resume.isLoading;
 
   // Hero priorité : resume → featured
-  const heroItems = resume.data && resume.data.length > 0
-    ? resume.data.slice(0, 5)
-    : featured.data ?? [];
+  const heroItems = useMemo(
+    () => (resume.data && resume.data.length > 0 ? resume.data.slice(0, 5) : featured.data ?? []),
+    [resume.data, featured.data],
+  );
 
   const handleRefresh = useCallback(() => {
     featured.refetch();
@@ -91,6 +94,11 @@ export function HomeScreen() {
     setActionSheetVisible(true);
   }, []);
   const handleLongPress = useCallback((item: MediaItem) => openActions(item.Id), [openActions]);
+  // Les diapositives sont mémoïsées : le bandeau (memo) ne se redessine que si elles changent.
+  const heroSlides = useMemo(
+    () => mediaHeroSlides(heroItems, client, { onPlay: handlePlay, onInfo: handlePress }),
+    [heroItems, client, handlePlay, handlePress],
+  );
 
   const renderCard = useCallback((item: MediaItem) => (
     <MobileMediaCard item={item} onPress={() => handlePress(item)} onLongPress={() => handleLongPress(item)} />
@@ -161,9 +169,7 @@ export function HomeScreen() {
         }
       >
         {/* Hero Carousel — natif : reprise, sinon mis en avant. */}
-        {heroItems.length > 0 && (
-          <HeroBanner items={heroItems} onPlay={handlePlay} onInfo={handlePress} />
-        )}
+        {heroSlides.length > 0 && <HeroBanner slides={heroSlides} />}
 
         {/* Les rangées, dans l'ordre du compte (mise en page partagée avec le
             web et la TV) ; chaque clé se rend depuis le registre. */}
