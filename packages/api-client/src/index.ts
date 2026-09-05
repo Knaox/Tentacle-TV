@@ -238,9 +238,36 @@ export {
   useSaveHomeLayout,
   useRecoSettings,
   useSaveRecoSettings,
-  useSaveRecoProviderFilter,
-  useResetTasteProfile,
+    useResetTasteProfile,
 } from "./hooks/useHomeLayout";
+export {
+  HOME_LAYOUT_KEY,
+  RECO_SETTINGS_KEY,
+  HOME_LAYOUT_SAVE_KEY,
+  RECO_SETTINGS_SAVE_KEY,
+  fetchHomeLayout,
+  fetchRecoSettings,
+  putHomeLayout,
+  putRecoSettings,
+} from "./hooks/useHomeLayout";
+export type { HomeLayoutInput } from "./hooks/useHomeLayout";
+// Sauvegardes lire-avant-d'écrire (cf. hooks/usePreferencesPatch)
+export {
+  useSaveHomeLayoutPatch,
+  useSaveRecoSettingsPatch,
+  useSaveRecoProviderFilter,
+  HOME_LAYOUT_PATCH_KEY,
+  RECO_SETTINGS_PATCH_KEY,
+  RECO_FILTER_PATCH_KEY,
+} from "./hooks/usePreferencesPatch";
+export {
+  applyHomeLayoutPatch,
+  applyRecoSettingsPatch,
+  toHomeLayoutBody,
+  pushHomeLayoutPatch,
+  pushRecoSettingsPatch,
+} from "./utils/preferencesPatch";
+export type { HomeLayoutPatch, RecoSettingsPatch, PatchIo } from "./utils/preferencesPatch";
 export type {
   HeroMode,
   CardDensity,
