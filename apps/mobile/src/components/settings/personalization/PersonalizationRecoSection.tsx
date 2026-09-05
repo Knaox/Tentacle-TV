@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, Switch, Alert, StyleSheet } from "react-native";
+import { View, Text, Alert, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { isVigieActive, useResetTasteProfile, useSaveRecoSettingsPatch } from "@tentacle-tv/api-client";
 import type { RecoSettingsData } from "@tentacle-tv/api-client";
-import { SettingsSection, SettingsRow, SteppedSlider } from "@/components/settings";
+import { BrandSwitch, SettingsSection, SettingsRow, SteppedSlider } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
-import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 
 const BALANCE_SAVE_MS = 300;
 
@@ -26,7 +26,6 @@ const TOGGLES: ReadonlyArray<{ key: ToggleKey; icon: "user" | "compass" | "users
 export function PersonalizationRecoSection({ settings }: { settings: RecoSettingsData }) {
   const { t } = useTranslation("preferences");
   const { t: tc } = useTranslation("common");
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const save = useSaveRecoSettingsPatch();
   const reset = useResetTasteProfile();
@@ -62,12 +61,9 @@ export function PersonalizationRecoSection({ settings }: { settings: RecoSetting
           label={t(label)}
           description={t(hint)}
           trailing={
-            <Switch
+            <BrandSwitch
               value={settings[key]}
               onValueChange={(next) => save.mutate({ [key]: next })}
-              trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
-              thumbColor={theme.colors.cta.brandFg}
-              ios_backgroundColor={theme.colors.fill.medium}
               accessibilityLabel={t(label)}
             />
           }

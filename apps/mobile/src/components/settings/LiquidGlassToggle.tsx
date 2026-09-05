@@ -1,11 +1,11 @@
-import { View, Text, Switch, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { BrandSwitch } from "./BrandSwitch";
 import { useTranslation } from "react-i18next";
 
 import {
   spacing,
   typography,
   FONT_FAMILY,
-  useTheme,
   useThemedStyles,
   useThemeMode,
   type AppTheme,
@@ -18,7 +18,6 @@ import {
  */
 export function LiquidGlassToggle() {
   const { t } = useTranslation("preferences");
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { liquidGlass } = useThemeMode();
 
@@ -30,12 +29,9 @@ export function LiquidGlassToggle() {
         <Text style={st.title}>{t("liquidGlassTitle")}</Text>
         <Text style={st.description}>{t("liquidGlassDescription")}</Text>
       </View>
-      <Switch
+      <BrandSwitch
         value={liquidGlass.enabled}
         onValueChange={liquidGlass.setEnabled}
-        trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
-        thumbColor={theme.colors.cta.brandFg}
-        ios_backgroundColor={theme.colors.fill.medium}
         accessibilityLabel={t("liquidGlassTitle")}
       />
     </View>
