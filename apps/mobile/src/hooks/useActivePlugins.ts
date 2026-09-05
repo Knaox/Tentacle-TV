@@ -1,43 +1,7 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig, type NotifPluginMeta } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-
-// --- Mini store réactif pour les plugins en erreur (WebView crash) ---
-const failedPluginIds = new Set<string>();
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  for (const l of listeners) l();
-}
-
-export function markPluginFailed(pluginId: string) {
-  if (!failedPluginIds.has(pluginId)) {
-    failedPluginIds.add(pluginId);
-    emitChange();
-  }
-}
-
-export function clearPluginFailed(pluginId: string) {
-  if (failedPluginIds.delete(pluginId)) {
-    emitChange();
-  }
-}
-
-function subscribeFailedPlugins(callback: () => void) {
-  listeners.push(callback);
-  return () => {
-    listeners = listeners.filter((l) => l !== callback);
-  };
-}
-
-function getFailedSnapshot(): ReadonlySet<string> {
-  return failedPluginIds;
-}
-
-export function useFailedPlugins(): ReadonlySet<string> {
-  return useSyncExternalStore(subscribeFailedPlugins, getFailedSnapshot, getFailedSnapshot);
-}
 
 export interface PluginNavItem {
   path: string;

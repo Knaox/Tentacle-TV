@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
-import { useActivePlugins, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
+import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
@@ -74,8 +74,7 @@ export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWe
     setWebViewReady(false);
     setShowOverlay(true);
     setWebViewError(null);
-    if (pluginId) clearPluginFailed(pluginId);
-  }, [navKey, pluginId]);
+  }, [navKey]);
 
   // `theme` en dépendance : au switch clair/sombre la source HTML change et la
   // WebView recharge sa page re-thémée (événement rare, rechargement assumé).
@@ -119,11 +118,13 @@ export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWe
     setWebViewReady(true);
   }, []);
 
+  // Un plugin qui plante garde sa place (onglet, section) : le cadre montre
+  // l'erreur et « Réessayer » — le retirer de la navigation démonterait ce
+  // cadre et laisserait l'utilisateur sans recours jusqu'au redémarrage.
   const onBridgeError = useCallback((msg: string) => {
     setWebViewReady(true);
     setWebViewError(msg);
-    if (pluginId) markPluginFailed(pluginId);
-  }, [pluginId]);
+  }, []);
 
   const handleMessage = useCallback(
     createBridgeHandler(router, onReady, onBridgeError),
@@ -141,8 +142,7 @@ export function PluginWebView({ pluginId, path, label, padTop = true }: PluginWe
     setWebViewError(null);
     setWebViewReady(false);
     setShowOverlay(true);
-    if (pluginId) clearPluginFailed(pluginId);
-  }, [pluginId]);
+  }, []);
 
   if (webViewError) {
     return (
