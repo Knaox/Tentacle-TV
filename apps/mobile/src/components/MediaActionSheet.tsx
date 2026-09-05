@@ -5,6 +5,8 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
+import type { RecoReason } from "@tentacle-tv/api-client";
+import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "@/components/ui";
 
@@ -18,6 +20,8 @@ interface Props {
   visible: boolean;
   itemId: string;
   onClose: () => void;
+  /** Un titre venu d'une recommandation : ses raisons, sous l'en-tête. */
+  reasons?: RecoReason[];
 }
 
 /**
@@ -26,7 +30,7 @@ interface Props {
  * Ma liste / Liste partagée / Vu) avec ring tinted brand violet sur état
  * actif. BlurView backdrop + drag-to-dismiss.
  */
-export function MediaActionSheet({ visible, itemId, onClose }: Props) {
+export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -145,6 +149,12 @@ export function MediaActionSheet({ visible, itemId, onClose }: Props) {
               </View>
             )}
 
+            {reasons && reasons.length > 0 && (
+              <View style={st.reasons}>
+                <RecoReasonList reasons={reasons} />
+              </View>
+            )}
+
             {/* Grille 2×2 d'actions */}
             <View style={st.grid}>
               <ActionCell
@@ -233,6 +243,7 @@ const makeStyles = (t: AppTheme) =>
     posterWrap: { width: 52, height: 76, borderRadius: RADIUS.sm, overflow: "hidden" as const, backgroundColor: t.colors.surface.s2, ...SHADOW_RN.elev2 },
     title: { fontSize: 16, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, letterSpacing: -0.2, marginBottom: 3 },
     meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.brand.light, letterSpacing: 0.2 },
+    reasons: { marginHorizontal: spacing.lg, marginBottom: spacing.lg },
     grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
     cell: { flex: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: t.colors.fill.faint },
     ring: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 10 },

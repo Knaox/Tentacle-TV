@@ -10,7 +10,7 @@ import {
   useWatchlist,
   useHomeWebSocket, useJellyfinClient, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
@@ -67,6 +67,8 @@ export function HomeScreen() {
   const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
+  // Les raisons d'une recommandation en bibliothèque, pour « Pourquoi ce titre ».
+  const [longPressReasons, setLongPressReasons] = useState<RecoReason[] | undefined>(undefined);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
   // Appui long sur une recommandation hors bibliothèque : sa propre feuille.
   const [recoTarget, setRecoTarget] = useState<RecoRowItem | null>(null);
@@ -89,8 +91,9 @@ export function HomeScreen() {
 
   const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}`); }, [router]);
   const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
-  const openActions = useCallback((jellyfinId: string) => {
+  const openActions = useCallback((jellyfinId: string, reasons?: RecoReason[]) => {
     setLongPressItemId(jellyfinId);
+    setLongPressReasons(reasons);
     setActionSheetVisible(true);
   }, []);
   const handleLongPress = useCallback((item: MediaItem) => openActions(item.Id), [openActions]);
@@ -126,7 +129,7 @@ export function HomeScreen() {
     onRecoPress: recoNav.open,
     // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
     // sinon celle des recommandations (« Ne plus me proposer »).
-    onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId) : setRecoTarget(item)),
+    onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId, item.reasons) : setRecoTarget(item)),
   }), [renderCard, router, openActions, recoNav]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
@@ -182,6 +185,7 @@ export function HomeScreen() {
         <MediaActionSheet
           visible={actionSheetVisible}
           itemId={longPressItemId}
+          reasons={longPressReasons}
           onClose={() => setActionSheetVisible(false)}
         />
       )}

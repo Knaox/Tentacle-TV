@@ -1,16 +1,20 @@
 import { memo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { spacing, useThemedStyles, type AppTheme } from "@/theme";
 import { RowHeader } from "@/components/RowHeader";
 import { RecoCard } from "./RecoCard";
+import { firstReasonText } from "./RecoReasonList";
 
 interface Props {
   title: string;
   items: RecoRowItem[];
   /** Après le titre (la puce du filtre de plateformes). */
   accessory?: ReactNode;
+  /** La première raison sous chaque carte (la page Pour vous ; l'accueil s'en passe). */
+  showReasons?: boolean;
   canOpen: (item: RecoRowItem) => boolean;
   onItemPress: (item: RecoRowItem) => void;
   onItemLongPress: (item: RecoRowItem) => void;
@@ -20,8 +24,9 @@ interface Props {
  * Rangée de recommandations — sœur de `MediaRow` (même en-tête, même piste,
  * même écart de 14 px), pour des items qui ne sont pas des MediaItem.
  */
-export const RecoRow = memo(function RecoRow({ title, items, accessory, canOpen, onItemPress, onItemLongPress }: Props) {
+export const RecoRow = memo(function RecoRow({ title, items, accessory, showReasons, canOpen, onItemPress, onItemLongPress }: Props) {
   const st = useThemedStyles(makeStyles);
+  const { t } = useTranslation("reco");
   const renderItem = useCallback(
     ({ item }: { item: RecoRowItem }) => (
       <RecoCard
@@ -29,9 +34,10 @@ export const RecoRow = memo(function RecoRow({ title, items, accessory, canOpen,
         canOpen={canOpen(item)}
         onPress={() => onItemPress(item)}
         onLongPress={() => onItemLongPress(item)}
+        reason={showReasons ? firstReasonText(item.reasons, t) : undefined}
       />
     ),
-    [canOpen, onItemPress, onItemLongPress],
+    [canOpen, onItemPress, onItemLongPress, showReasons, t],
   );
 
   return (

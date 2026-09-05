@@ -65,6 +65,7 @@ export default {
   explorationBadge: "Discovery",
   dismissAction: "Not for me",
   unavailableHint: "not available",
+  whyTitle: "Why this title",
 
   // Raisons (explicabilité)
   reasonSeed: "Because you liked {{title}}",
