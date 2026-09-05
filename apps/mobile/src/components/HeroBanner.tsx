@@ -36,6 +36,12 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
   const [index, setIndex] = useState(0);
   const indexRef = useRef(index);
   useEffect(() => { indexRef.current = index; }, [index]);
+  // Une diapositive retirée sous le doigt (note posée, « ne plus me
+  // proposer ») ne laisse pas l'index pointer dans le vide.
+  useEffect(() => {
+    if (slides.length && index > slides.length - 1) setIndex(slides.length - 1);
+  }, [slides.length, index]);
+  const safeIndex = Math.min(index, Math.max(0, slides.length - 1));
   const userScrollingRef = useRef(false);
 
   const startTimer = useCallback(() => {
@@ -68,7 +74,7 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
 
   if (!slides.length) return <View style={{ height: bannerH }} />;
 
-  const haloUri = slides[index]?.haloUri ?? null;
+  const haloUri = slides[safeIndex]?.haloUri ?? null;
 
   return (
     <View style={{ paddingHorizontal: margin }}>
@@ -91,7 +97,7 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
           backgroundColor: theme.colors.surface.s0,
         }}
       >
-        <HeroBackdropStack slides={slides} activeIndex={index} />
+        <HeroBackdropStack slides={slides} activeIndex={safeIndex} />
         {/* Les voiles du bureau (scrims.css) : la « bande noire » venait de la
             FORME de la rampe (pente qui retombait à 70 %), pas de sa couleur —
             la rampe corrigée vit dans GradientOverlay. En SOMBRE le bas rejoint
@@ -118,7 +124,7 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
           style={StyleSheet.absoluteFillObject}
           renderItem={({ item, index: i }) => (
             <View style={[st.slide, { width: slideW, height: bannerH }]}>
-              <View style={st.contentInner}>{item.render(i === index)}</View>
+              <View style={st.contentInner}>{item.render(i === safeIndex)}</View>
             </View>
           )}
         />
@@ -126,7 +132,7 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
         {slides.length > 1 && (
           <View style={[st.dots, { bottom: bannerH * 0.04 }]} pointerEvents="none">
             {slides.map((slide, i) =>
-              i === index ? (
+              i === safeIndex ? (
                 // La pastille active porte le dégradé de marque et son halo
                 // rose — la même encre que la barre de progression du bureau.
                 <LinearGradient

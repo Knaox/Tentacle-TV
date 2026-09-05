@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
@@ -35,9 +35,20 @@ function CrossfadeImage({ url, active }: { url: string; active: boolean }) {
     if (active) { scale.value = 1; scale.value = withTiming(HERO_ZOOM_TARGET, { duration: HERO_ROTATE_MS, easing: Easing.linear }); }
   }, [active, opacity, scale]);
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ scale: scale.value }] }));
+  // Image introuvable (backdrop Jellyfin absent) : l'aplat et les voiles
+  // du cadre tiennent le décor, jamais d'icône cassée.
+  const [failed, setFailed] = useState(false);
   return (
     <Animated.View style={[StyleSheet.absoluteFillObject, animStyle]}>
-      <Image source={{ uri: url }} style={StyleSheet.absoluteFillObject} contentFit="cover" transition={0} />
+      {!failed && (
+        <Image
+          source={{ uri: url }}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          transition={0}
+          onError={() => setFailed(true)}
+        />
+      )}
     </Animated.View>
   );
 }
