@@ -53,9 +53,10 @@ const makeStyles = (t: AppTheme) =>
       borderColor: t.colors.border.subtle,
       overflow: "hidden",
     },
+    // Légende en tertiary, comme la carte de réglages du web (packages/ui).
     caption: {
       ...typography.small,
-      color: t.colors.text.quaternary,
+      color: t.colors.text.tertiary,
       marginTop: spacing.sm,
       marginLeft: spacing.xs,
       lineHeight: 17,
