@@ -7,7 +7,7 @@ const NAMESPACES = [
   "common", "auth", "setup", "player", "admin",
   "tickets", "pairing", "preferences", "about", "notifications", "nav",
   "adminPlugins", "media", "errors", "profile", "disclaimer",
-  "watchTogether", "downloads", "easterEggs", "reco",
+  "watchTogether", "downloads", "easterEggs", "reco", "whatsNew",
 ] as const;
 
 export function initI18n(options?: { lng?: string; fallbackLng?: string }) {
