@@ -1,4 +1,4 @@
-import { View, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -35,16 +35,15 @@ export function PersistentHeader() {
   const theme = useTheme();
   const { colors } = theme;
 
-  // Compaction au défilement : la barre remonte de huit points et le TITRE
-  // s'estompe — le logo et les actions restent (demandé : le logo ne se cache
-  // jamais). Transform/opacity sur le wrapper seulement ; `useHeaderHeight()`
+  // Compaction au défilement : la barre remonte de huit points, et c'est tout —
+  // le logo, le titre et les actions restent visibles (demandé : l'identité ne
+  // se cache jamais). Transform sur le wrapper seulement ; `useHeaderHeight()`
   // ne bouge pas (contrat des écrans).
   const fallback = useSharedValue(0);
   const collapsed = useScrollChromeValue() ?? fallback;
   const compactStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: collapsed.value * -8 }],
   }));
-  const identityFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
 
   return (
     <Animated.View style={[styles.wrap, compactStyle]}>
@@ -58,7 +57,7 @@ export function PersistentHeader() {
       <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 2 }]}>
         <View style={styles.logoRow}>
           <TentacleLogo size={28} />
-          <Animated.Text style={[styles.title, { color: colors.text.primary }, identityFade]}>Tentacle TV</Animated.Text>
+          <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
         </View>
 
         <View style={styles.actions}>
