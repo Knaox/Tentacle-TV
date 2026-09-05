@@ -5,6 +5,15 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **Vos réglages voyagent en direct** : la mise en page de l'accueil et les réglages de recommandation enregistrés sur un appareil arrivent aussitôt sur les autres (message `preferences:update`), sans jamais écraser ce qu'un autre appareil vient de changer
+- **Sans le plugin Vigie**, le réglage « inclure les titres hors bibliothèque » est ignoré : plus de titres impossibles à ouvrir
+
+### EN
+- **Your settings travel live**: the home layout and recommendation settings saved on one device reach the others at once (`preferences:update` message), never overwriting what another device just changed
+- **Without the Vigie plugin**, the "include titles outside your library" setting is ignored: no more titles that cannot be opened
+
 ## [1.17.0]
 ### FR
 - **La page Recommandations s'affiche instantanément.** Le serveur précalcule votre page en arrière-plan (une page par compte et par filtre) et la sert en une seule requête ; l'application la garde sur l'appareil et la rend d'un coup, puis la rafraîchit en silence dès que le serveur l'a reconstruite — plus de carrousels qui arrivent un par un, plus de squelette hors de la toute première visite
