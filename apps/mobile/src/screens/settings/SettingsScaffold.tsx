@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { SubtleBackground, IconButton } from "@/components/ui";
+import { backOrHome } from "@/utils/backOrHome";
 import {
   spacing,
   typography,
@@ -35,7 +36,7 @@ export function SettingsScaffold({ title, children, maxWidth = 720 }: Props) {
     <SubtleBackground>
       <View style={{ flex: 1, paddingTop: Math.max(insets.top, 24) + 8 }}>
         <View style={[st.header, { paddingHorizontal: spacing.screenPadding }]}>
-          <IconButton icon="←" onPress={() => router.back()} accessibilityLabel={tc("back")} />
+          <IconButton icon="←" onPress={() => backOrHome(router)} accessibilityLabel={tc("back")} />
           <Text style={st.headerTitle} accessibilityRole="header" numberOfLines={1}>{title}</Text>
         </View>
 
