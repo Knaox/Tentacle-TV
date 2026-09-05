@@ -44,7 +44,7 @@ export function WhatsNewScreen({ open, selection, onClose }: WhatsNewScreenProps
       onClose={onClose}
       maxWidth={980}
       labelledBy="whats-new-title"
-      className="flex h-[min(640px,85vh)] flex-col"
+      className="flex h-[min(720px,90vh)] flex-col"
     >
       <ModalHeader title={t("whatsNew:title")} subtitle={subtitle} onClose={onClose} titleId="whats-new-title" />
       {features.length > 0 && (
