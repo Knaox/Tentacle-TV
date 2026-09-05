@@ -8,7 +8,7 @@ import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useUserId,
   useWatchlist,
-  useHomeWebSocket, useRecoLive, useTentacleConfig,
+  useHomeWebSocket, usePreferencesLive, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
 import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -56,6 +56,9 @@ export function HomeScreen() {
   useHomeWebSocket({ token });
   // Les recommandations reconstruites en fond arrivent en silence (reco:update).
   useRecoLive({ token });
+  // Un réglage enregistré sur un autre appareil aussi (preferences:update) :
+  // l'onglet Accueil est la route initiale et reste monté, un montage suffit.
+  usePreferencesLive({ token });
 
   const featured = useFeaturedItems();
   const resume = useResumeItems();
