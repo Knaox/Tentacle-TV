@@ -1,36 +1,13 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import Animated, { useSharedValue, useAnimatedStyle, withDelay, withTiming } from "react-native-reanimated";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { typography, FONT_FAMILY, RADIUS, motion, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
-
-/**
- * La cascade de texte du hero desktop (fadeUp + stagger) : chaque groupe
- * monte de huit points en fondu, décalé de 40 ms par rang. Rejouée à chaque
- * slide qui devient actif ; inerte (opacité pleine) en mouvement réduit.
- * Transform/opacity uniquement — jamais de layout.
- */
-function CascadeGroup({ order, active, children }: { order: number; active: boolean; children: ReactNode }) {
-  const reduced = motion.isReducedMotion();
-  const progress = useSharedValue(reduced || active ? 1 : 0);
-  useEffect(() => {
-    if (reduced) { progress.value = 1; return; }
-    if (active) {
-      progress.value = 0;
-      progress.value = withDelay(order * 40, withTiming(1, { duration: 220 }));
-    }
-  }, [active, order, progress, reduced]);
-  const style = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ translateY: (1 - progress.value) * 8 }],
-  }));
-  return <Animated.View style={style}>{children}</Animated.View>;
-}
+import { typography, FONT_FAMILY, RADIUS, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { CascadeGroup } from "./hero/CascadeGroup";
 
 function formatRuntime(ticks: number): string {
   const mins = Math.round(ticks / 600_000_000);
