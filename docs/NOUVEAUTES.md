@@ -27,8 +27,10 @@ apps/web/src/whatsNew/
   releases/v1_21_0.tsx     une release = une version + ses nouveautés
   releases/registry.test.ts  le garde-fou (voir plus bas)
   scenes/                  le KIT : SceneStage, Place, FauxCard, FauxRow, FauxChip,
-                           FauxToggle, FauxStars, FauxCursor, FauxConfetti, useSceneClock
+                           FauxToggle, FauxStars, FauxCursor, FauxConfetti,
+                           ScenePlayerPanel, useSceneClock
   scenes/v1_21_0/          les scènes de la 1.21.0
+  sceneMedia.ts            les VRAIES données des scènes (affiches, fond, plateformes)
   selectFeatures.ts        la sélection pure entre version vue et version courante
   whatsNewStorage.ts       tentacle_whats_new_seen (par appareil)
   useWhatsNewGate.ts       la porte : quand montrer, quand noter
@@ -59,6 +61,23 @@ apps/web/src/components/StartupOverlays.tsx           l'orchestration avec la po
    `versions.json → desktop` a son entrée, que les versions sont uniques et triées, les ids
    uniques, les routes absolues, et que chaque clé de texte existe en FR ET en EN.
 8. **Revoir** : F9 → N, ou `__tentacleShowWhatsNew("X.Y.Z")` dans la console.
+
+## De vraies valeurs, pas des dessins
+
+Une scène doit ressembler à l'app : les « faux » composants du kit n'ont de faux que
+l'interaction. `FauxCard` est la pile réelle de l'accueil (`CardFrame`, `CardImage`, badge de
+note, barre de progression, bloc titre de `PosterCard`), `FauxStars` est `StarRating`,
+`FauxToggle` est `ToggleSwitch`, et les scènes réutilisent le balisage réel là où il n'y a pas
+de composant présentationnel (menu Filtres, éditeur de rangées, sélecteur de qualité,
+`TicketCard` avec un ticket fabriqué, `MetaChip`, `PlatformLogo`).
+
+Les données viennent de `sceneMedia.ts` : `useSceneMediaSource()` (appelé dans le corps de
+l'écran, monté seulement ouvert) combine les requêtes que l'accueil a DÉJÀ faites — sélection
+du bandeau, reprises, déjà vus — et l'annuaire des plateformes, avec la même recette d'URL que
+les cartes réelles (`height: 450, quality: 90`) : les affiches sont en cache, rien de neuf n'est
+demandé. Le contexte `SceneMediaContext` les sert aux scènes (`useSceneMedia()`,
+`posterAt(media, i)`). Sans donnée (test, crochet avant la session), le kit retombe sur des
+dégradés de jetons — jamais une image inventée.
 
 ## Écrire une scène — le contrat du kit
 
@@ -101,9 +120,12 @@ export function MaScene({ active, reduced }: SceneProps) {
   `tickets:open`, `player:qualityAutoBadge`…). Un mot que l'app n'a pas prend une clé `scene*`
   dans l'espace `whatsNew`. Le cadre est `aria-hidden` : le sens est porté par le titre et le
   texte à côté, jamais par la scène.
-- **Aucun `backdrop-filter`, aucune couleur en dur** hors ce qui est une image (fond d'une
-  fausse affiche, curseur système). Les teintes des cartes sont des dégradés de jetons
-  (`CARD_TONES`).
+- **Aucun `backdrop-filter`, aucune couleur en dur** hors ce qui est une image (voile d'une
+  affiche, fond du lecteur, curseur système). Les teintes de repli sont des dégradés de jetons
+  (`CARD_TONES`). Et la modale elle-même n'en pose plus sur son panneau : mesuré sur l'écran
+  de nouveautés (Chrome 152, 3808×1971, 240 Hz), la réfraction Liquid Glass du panneau faisait
+  tomber la cadence de 240 à 98 i/s dès que le contenu bougeait — invisible sous un fond à
+  0,96 d'alpha, elle a été retirée de `Modal`. Le flou du scrim, lui, coûte ~5 %.
 - **120 lignes par scène**, comme partout.
 
 ## La porte — quand l'écran s'impose

@@ -1,33 +1,34 @@
-import { useTranslation } from "react-i18next";
+import { posterAt, useSceneMedia } from "../../sceneMedia";
 import type { SceneProps } from "../../types";
-import { FauxCard, FauxChip, FauxConfetti, FauxCursor, FauxStars, SceneStage, useSceneClock } from "..";
+import { FauxCard, FauxConfetti, FauxCursor, FauxStars, SceneStage, useSceneClock } from "..";
 
 const STEPS = [800, 800, 700, 1900] as const;
 
-/** Survoler une affiche fait paraître les étoiles ; la quatrième cliquée, les confettis jaillissent. */
+/** Survoler une affiche fait paraître les vraies étoiles ; la quatrième cliquée, les confettis jaillissent. */
 export function RateScene({ active, reduced }: SceneProps) {
-  const { t } = useTranslation();
+  const media = useSceneMedia();
   const { step, cycle } = useSceneClock(STEPS, { active, reduced });
   const hover = step >= 1;
   const rated = step >= 2;
   return (
     <SceneStage cycle={cycle}>
-      <FauxCard x={200} y={40} w={150} tone={0} label="Dune" lifted={hover}>
-        <FauxStars x={24} y={150} value={rated ? 4 : 0} visible={hover} />
+      <FauxCard x={60} y={70} w={110} poster={posterAt(media, 1)} tone={5} dimmed />
+      <FauxCard x={470} y={70} w={110} poster={posterAt(media, 2)} tone={3} dimmed />
+      <FauxCard x={245} y={28} w={150} poster={posterAt(media, 0)} hovered={hover}>
+        {/* Le voile de survol des cartes reco, avec ses étoiles en bas à gauche. */}
+        <div
+          className="absolute inset-0"
+          style={{ opacity: hover ? 1 : 0, transition: "opacity var(--duration-base) var(--ease-out)", background: "linear-gradient(to top, rgba(0,0,0,0.92) 30%, rgba(0,0,0,0.55) 70%, transparent)" }}
+        />
+        <FauxStars x={10} y={195} value={rated ? 8 : 0} size="sm" tone="onMedia" visible={hover} />
       </FauxCard>
-      <FauxCard x={400} y={70} w={110} tone={3} dimmed />
-      <FauxCard x={60} y={70} w={110} tone={5} dimmed />
-      <FauxConfetti x={296} y={199} fire={rated} reduced={reduced} />
-      <FauxChip
-        x={222}
-        y={290}
-        label={`${t("reco:yourRating")} · ${t("reco:ratingValue", { score: 8 })}`}
-        icon="check"
-        selected
-        visible={step >= 3}
-        dy={step >= 3 ? 0 : 8}
+      <FauxConfetti x={311} y={231} fire={rated} reduced={reduced} />
+      <FauxCursor
+        x={hover ? (rated ? 311 : 320) : 560}
+        y={hover ? (rated ? 231 : 140) : 330}
+        pressed={step === 2}
+        reduced={reduced}
       />
-      <FauxCursor x={hover ? (rated ? 296 : 275) : 520} y={hover ? (rated ? 199 : 120) : 300} pressed={step === 2} reduced={reduced} />
     </SceneStage>
   );
 }

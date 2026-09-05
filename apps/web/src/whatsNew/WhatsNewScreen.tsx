@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Modal } from "../components/ui/Modal";
 import { ModalHeader } from "../components/ui/ModalHeader";
+import { SceneMediaContext, useSceneMediaSource } from "./sceneMedia";
 import type { WhatsNewSelection } from "./selectFeatures";
 import type { WhatsNewSelectedFeature } from "./types";
 import { useWhatsNewKeys } from "./useWhatsNewKeys";
@@ -44,7 +45,7 @@ export function WhatsNewScreen({ open, selection, onClose }: WhatsNewScreenProps
       onClose={onClose}
       maxWidth={980}
       labelledBy="whats-new-title"
-      className="flex h-[min(720px,90vh)] flex-col"
+      className="flex h-[min(760px,92vh)] flex-col"
     >
       <ModalHeader title={t("whatsNew:title")} subtitle={subtitle} onClose={onClose} titleId="whats-new-title" />
       {features.length > 0 && (
@@ -66,6 +67,8 @@ function WhatsNewBody({ features, showVersion, onClose }: WhatsNewBodyProps) {
   const go = useCallback((next: number) => setIndex(Math.max(0, Math.min(count - 1, next))), [count]);
   useWhatsNewKeys({ index, count, go });
   const navigate = useNavigate();
+  // Les vraies affiches des scènes : demandé ICI, corps monté seulement ouvert.
+  const media = useSceneMediaSource();
   const feature = features[index];
   const openRoute = useCallback(() => {
     if (!feature.route) return;
@@ -74,12 +77,12 @@ function WhatsNewBody({ features, showVersion, onClose }: WhatsNewBodyProps) {
   }, [feature, navigate, onClose]);
 
   return (
-    <>
+    <SceneMediaContext.Provider value={media}>
       <div className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[240px_1fr]">
         <WhatsNewFeatureList features={features} index={index} onSelect={go} />
         <WhatsNewStagePanel feature={feature} index={index} count={count} showVersion={showVersion} onOpenRoute={openRoute} />
       </div>
       <WhatsNewFooter index={index} count={count} onSelect={go} onDone={onClose} />
-    </>
+    </SceneMediaContext.Provider>
   );
 }

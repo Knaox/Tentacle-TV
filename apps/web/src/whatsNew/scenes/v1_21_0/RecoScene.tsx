@@ -1,20 +1,24 @@
 import { useTranslation } from "react-i18next";
+import { useSceneMedia } from "../../sceneMedia";
 import type { SceneProps } from "../../types";
 import { FauxCursor, FauxRow, SceneStage, useSceneClock } from "..";
 
-const STEPS = [900, 900, 800, 1700] as const;
+const STEPS = [800, 900, 900, 1700] as const;
 
-/** Les rangées de recommandation se remplissent, puis le curseur s'attarde sur une affiche. */
+/** Les rangées de recommandation se remplissent de vraies affiches, puis le curseur s'attarde sur l'une d'elles. */
 export function RecoScene({ active, reduced }: SceneProps) {
   const { t } = useTranslation();
+  const media = useSceneMedia();
   const { step, cycle } = useSceneClock(STEPS, { active, reduced });
   const hover = step >= 3;
+  // La graine de la rangée « Parce que vous avez aimé » : le titre le plus court
+  // des premières affiches — un titre à rallonge mangerait la rangée.
+  const seed = media.posters.slice(0, 6).map((p) => p.title).sort((a, b) => a.length - b.length)[0] ?? "Dune";
   return (
     <SceneStage cycle={cycle}>
-      <FauxRow x={32} y={14} title={t("reco:rowForYou")} count={7} cardW={54} revealed={step >= 1} stagger highlight={hover ? 1 : undefined} />
-      <FauxRow x={32} y={128} title={t("reco:rowBecauseYouLiked", { title: "Dune" })} count={7} cardW={54} revealed={step >= 2} stagger tones={[3, 0, 4, 1, 5, 2, 3]} />
-      <FauxRow x={32} y={242} title={t("reco:rowDiscover")} count={7} cardW={54} revealed={step >= 2} stagger tones={[5, 2, 3, 0, 1, 4, 5]} />
-      <FauxCursor x={hover ? 126 : 540} y={hover ? 88 : 320} hidden={step < 2} reduced={reduced} />
+      <FauxRow x={38} y={8} title={t("reco:rowForYou")} count={7} cardW={72} showTitles revealed={step >= 1} stagger highlight={hover ? 1 : undefined} />
+      <FauxRow x={38} y={180} title={t("reco:rowBecauseYouLiked", { title: seed })} count={7} cardW={72} showTitles offset={7} revealed={step >= 2} stagger />
+      <FauxCursor x={hover ? 156 : 560} y={hover ? 96 : 330} hidden={step < 2} reduced={reduced} />
     </SceneStage>
   );
 }

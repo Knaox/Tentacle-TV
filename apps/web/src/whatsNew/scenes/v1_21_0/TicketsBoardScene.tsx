@@ -1,55 +1,84 @@
+import type { SupportTicket } from "@tentacle-tv/api-client";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { TicketCard } from "../../../components/support/TicketCard";
+import { STATUS_STYLE, TICKET_STATUS_LABEL_KEYS, type TicketStatus } from "../../../components/support/ticketMeta";
 import type { SceneProps } from "../../types";
-import { FauxChip, FauxCursor, Place, SceneStage, useSceneClock } from "..";
+import { FauxCursor, Place, SceneStage, useSceneClock } from "..";
 
 const STEPS = [900, 700, 1000, 1500] as const;
-const COLS = [32, 200, 368] as const;
-const CARD_STEP = 90;
+const COLS: readonly { x: number; status: TicketStatus }[] = [
+  { x: 24, status: "open" },
+  { x: 190, status: "in_progress" },
+  { x: 356, status: "resolved" },
+];
+const CARD_STEP = 100;
+const noop = () => {};
 
-function TicketCard({ x, y, dx = 0, dy = 0, lifted = false, label }: { x: number; y: number; dx?: number; dy?: number; lifted?: boolean; label: string }) {
-  return (
-    <Place x={x} y={y} w={134} h={70} dx={dx} dy={dy} scale={lifted ? 1.05 : 1} className="rounded-[var(--radius-md)] border border-line-subtle bg-surface-2 p-2.5">
-      <span className="block truncate text-[11px] font-semibold text-content-primary">{label}</span>
-      <span className="mt-1.5 block h-1.5 w-3/4 rounded-sm bg-fill-medium" />
-      <span className="mt-1 block h-1.5 w-1/2 rounded-sm bg-fill-soft" />
-    </Place>
-  );
+function fakeTicket(id: string, subject: string, category: SupportTicket["category"], hoursAgo: number, messages: number): SupportTicket {
+  return {
+    id, subject, category, status: "open", jellyfinUserId: "scene", username: "Knaox",
+    createdAt: new Date(Date.now() - hoursAgo * 3_600_000).toISOString(),
+    updatedAt: new Date(Date.now() - hoursAgo * 3_600_000).toISOString(),
+    _count: { messages },
+  };
 }
 
-/** Une carte glisse d'« Ouverts » à « En cours », le volet latéral s'ouvre. */
+/** Le vrai tableau des tickets, avec ses vraies cartes : l'une glisse d'« Ouvert » à « En cours », le volet s'ouvre. */
 export function TicketsBoardScene({ active, reduced }: SceneProps) {
   const { t } = useTranslation();
   const { step, cycle } = useSceneClock(STEPS, { active, reduced });
   const grabbed = step >= 1;
   const moved = step >= 2;
   const panel = step >= 3;
-  const titles = [t("tickets:open"), t("tickets:inProgress"), t("tickets:resolved")];
+  const tickets = useMemo(
+    () => ({
+      subtitles: fakeTicket("a", t("whatsNew:sceneTicketSubtitles"), "bug", 2, 3),
+      login: fakeTicket("b", t("whatsNew:sceneTicketLogin"), "account", 20, 1),
+      audio: fakeTicket("c", t("whatsNew:sceneTicketAudio"), "bug", 5, 2),
+      poster: fakeTicket("d", t("whatsNew:sceneTicketPoster"), "feature", 48, 4),
+    }),
+    [t],
+  );
+  const counts = [moved ? 1 : 2, moved ? 2 : 1, 1];
   return (
     <SceneStage cycle={cycle}>
-      {COLS.map((x, i) => (
-        <Place key={x} x={x} y={28} w={150} h={304} className="rounded-[var(--radius-lg)] bg-fill-subtle" dx={panel ? -40 : 0}>
-          <span className="absolute left-3 top-3 text-[12px] font-semibold text-content-secondary">{titles[i]}</span>
+      {COLS.map((col, i) => (
+        <Place key={col.status} x={col.x} y={20} w={150} h={320} className="flex flex-col rounded-xl border border-line-subtle bg-fill-faint p-3">
+          <header className="mb-3 flex items-center gap-2 px-1">
+            <span className={`h-2.5 w-2.5 rounded-full ${STATUS_STYLE[col.status].dot}`} aria-hidden />
+            <span className="text-sm font-semibold text-content-primary">{t(TICKET_STATUS_LABEL_KEYS[col.status])}</span>
+            <span className="ml-auto rounded-md bg-fill-subtle px-2 py-0.5 text-xs text-content-tertiary">{counts[i]}</span>
+          </header>
         </Place>
       ))}
-      <TicketCard x={COLS[1] + 8} y={70} label={t("whatsNew:sceneTicketAudio")} dx={panel ? -40 : 0} />
-      <TicketCard x={COLS[2] + 8} y={70} label={t("whatsNew:sceneTicketPoster")} dx={panel ? -40 : 0} />
-      <TicketCard x={COLS[0] + 8} y={70 + CARD_STEP} label={t("whatsNew:sceneTicketLogin")} dx={panel ? -40 : 0} dy={moved ? -CARD_STEP : 0} />
-      <TicketCard
-        x={COLS[0] + 8}
-        y={70}
-        label={t("whatsNew:sceneTicketSubtitles")}
-        lifted={grabbed && !panel}
-        dx={(moved ? COLS[1] - COLS[0] : 0) + (panel ? -40 : 0)}
+      <Place x={COLS[1].x + 12} y={68} w={126}><TicketCard ticket={tickets.audio} scope="mine" draggable={false} onOpen={noop} /></Place>
+      <Place x={COLS[2].x + 12} y={68} w={126}><TicketCard ticket={tickets.poster} scope="mine" draggable={false} onOpen={noop} /></Place>
+      <Place x={COLS[0].x + 12} y={68 + CARD_STEP} w={126} dy={moved ? -CARD_STEP : 0}>
+        <TicketCard ticket={tickets.login} scope="mine" draggable={false} onOpen={noop} />
+      </Place>
+      <Place
+        x={COLS[0].x + 12}
+        y={68}
+        w={126}
+        dx={moved ? COLS[1].x - COLS[0].x : 0}
         dy={moved ? CARD_STEP : 0}
-      />
-      <Place x={520} y={28} w={110} h={304} visible={panel} dx={panel ? 0 : 130} className="rounded-[var(--radius-lg)] border border-line-subtle bg-surface-2 p-3">
-        <span className="block text-[11px] font-semibold text-content-primary">{t("whatsNew:sceneTicketSubtitles")}</span>
-        <FauxChip x={12} y={40} label={t("tickets:statusInProgress")} size="sm" selected />
-        <span className="absolute left-3 top-80 block h-1.5 w-3/4 rounded-sm bg-fill-medium" />
+        scale={grabbed && !panel ? 1.05 : 1}
+        className={grabbed && !panel ? "opacity-90" : ""}
+      >
+        <TicketCard ticket={tickets.subtitles} scope="mine" draggable={false} onOpen={noop} />
+      </Place>
+      <Place x={520} y={20} w={112} h={320} visible={panel} dx={panel ? 0 : 130} className="rounded-xl border border-line-subtle bg-surface-modal p-3 shadow-2xl">
+        <span className="line-clamp-2 text-sm font-medium text-content-primary">{tickets.subtitles.subject}</span>
+        <span className={`mt-2 inline-flex rounded-md px-1.5 py-0.5 text-[11px] font-medium ${STATUS_STYLE.in_progress.chip}`}>
+          {t(TICKET_STATUS_LABEL_KEYS.in_progress)}
+        </span>
+        <span className="mt-3 block h-1.5 w-3/4 rounded-sm bg-fill-medium" />
+        <span className="mt-1.5 block h-1.5 w-1/2 rounded-sm bg-fill-soft" />
       </Place>
       <FauxCursor
-        x={grabbed ? (moved ? COLS[1] + 70 : COLS[0] + 70) : 560}
-        y={grabbed ? (moved ? 70 + CARD_STEP + 30 : 100) : 330}
+        x={grabbed ? (moved ? COLS[1].x + 70 : COLS[0].x + 70) : 560}
+        y={grabbed ? (moved ? 68 + CARD_STEP + 34 : 102) : 330}
         pressed={grabbed && !panel}
         hidden={panel}
         reduced={reduced}
