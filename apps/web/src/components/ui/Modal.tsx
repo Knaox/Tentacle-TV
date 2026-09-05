@@ -2,9 +2,6 @@ import { useEffect, useRef, useCallback } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { GLASS_FILTER_ID } from "@tentacle-tv/ui";
-
-import { useLiquidGlass } from "../../theme/useLiquidGlass";
 
 interface ModalProps {
   open: boolean;
@@ -60,7 +57,8 @@ function focusableIn(panel: HTMLElement): HTMLElement[] {
 
 /**
  * Canonical modal primitive — replaces 5+ ad-hoc modal implementations.
- * - Centered, scrim 60%, surface-modal bg, blur 20px
+ * - Centered, scrim 60% with blur 20px, surface-modal bg (no backdrop-filter
+ *   on the panel: measured too costly under animated content, see below)
  * - Focus trap: autofocus first interactive child, Tab/Shift+Tab cycle inside
  *   the panel, restore focus on close
  * - Esc to close (always), click-backdrop to close (configurable)
@@ -81,7 +79,6 @@ export function Modal({
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const lastFocusRef = useRef<HTMLElement | null>(null);
-  const { level: glassLevel } = useLiquidGlass();
   const reduced = useReducedMotion();
 
   // Esc ferme ; Tab boucle dans le panneau. Le piège vit sur `window` : le
@@ -185,15 +182,13 @@ export function Modal({
               border: "1px solid var(--border-subtle)",
               borderRadius: "var(--radius-xl)",
               boxShadow: "var(--shadow-modal)",
-              // Réfraction Liquid Glass sur le panneau, quand le moteur sait
-              // l'exécuter ET que l'utilisateur l'a laissée active. Sinon la
-              // surface garde son fond tokenisé, jamais une surface nue.
-              ...(glassLevel === "refraction"
-                ? {
-                    backdropFilter: `blur(var(--blur-modal)) saturate(180%) url(#${GLASS_FILTER_ID})`,
-                    WebkitBackdropFilter: `blur(var(--blur-modal)) saturate(180%)`,
-                  }
-                : {}),
+              // AUCUN backdrop-filter sur le panneau. Il portait la réfraction
+              // Liquid Glass — sous un fond à 0,96 d'alpha, invisible (règle du
+              // dépôt : au-delà de ~0,9, rien ne se floute), mais recalculée à
+              // CHAQUE image dès que le contenu bouge. Mesuré (Chrome 152,
+              // 3808×1971, 240 Hz, écran de nouveautés animé) : 98 i/s avec,
+              // p95 à 21 ms ; 219 i/s sans — le flou du scrim seul coûte ~5 %.
+              // Le tableau des scores saccadait pour la même raison.
             }}
             variants={reduced ? PANEL_VARIANTS_REDUCED : PANEL_VARIANTS}
             initial="hidden"
