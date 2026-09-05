@@ -6,6 +6,8 @@ import type { ExtensionSection } from "@/hooks/useExtensionSections";
 interface Props {
   section: ExtensionSection;
   active: boolean;
+  /** Ce que l'écran a posé SOUS le bord bas (le bandeau replié) — à réserver en plus de la barre. */
+  chromeBottomExtra?: number;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * la mesure 0 × 0 : page rechargée ou repliée), ni `zIndex` (réparentage
  * natif inutile : un volet transparent et non tapable n'a pas à être dessous).
  */
-export const ExtensionPane = memo(function ExtensionPane({ section, active }: Props) {
+export const ExtensionPane = memo(function ExtensionPane({ section, active, chromeBottomExtra }: Props) {
   return (
     <View
       style={[StyleSheet.absoluteFill, active ? styles.shown : styles.hidden]}
@@ -32,6 +34,7 @@ export const ExtensionPane = memo(function ExtensionPane({ section, active }: Pr
         label={section.label}
         padTop={false}
         controlsChrome={active}
+        chromeBottomExtra={chromeBottomExtra}
       />
     </View>
   );

@@ -39,9 +39,13 @@ interface PluginWebViewProps {
    * ne doit pas parler au nom de la section affichée.
    */
   controlsChrome?: boolean;
+  /** Hauteur que le parent pose SOUS le bord bas de l'écran (bandeau replié), en plus de la barre. */
+  chromeBottomExtra?: number;
 }
 
-export function PluginWebView({ pluginId, path, label, padTop = true, controlsChrome = true }: PluginWebViewProps) {
+export function PluginWebView({
+  pluginId, path, label, padTop = true, controlsChrome = true, chromeBottomExtra = 0,
+}: PluginWebViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
@@ -52,7 +56,7 @@ export function PluginWebView({ pluginId, path, label, padTop = true, controlsCh
    * ne recouvre rien. */
   const tabBarH = useGlassTabBarHeight();
   const { isTablet, isLandscape } = useResponsive();
-  const chromeBottom = Math.round(isTablet && isLandscape ? 0 : tabBarH);
+  const chromeBottom = Math.round((isTablet && isLandscape ? 0 : tabBarH) + chromeBottomExtra);
   const chromeRef = useRef(chromeBottom);
   const webRef = useRef<{ injectJavaScript: (js: string) => void } | null>(null);
   const { storage } = useTentacleConfig();
