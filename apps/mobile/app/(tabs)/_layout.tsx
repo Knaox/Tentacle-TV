@@ -113,6 +113,11 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* Onglet des extensions — provisoirement caché, le temps que les
+          onglets par index disparaissent (un fichier du dossier devient un
+          écran même non déclaré : on fixe son option ici). */}
+      <Tabs.Screen name="extensions" options={{ href: null }} />
+
       {/* Tab 5: Profile */}
       <Tabs.Screen
         name="profile"

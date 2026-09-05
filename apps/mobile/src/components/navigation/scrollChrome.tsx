@@ -83,3 +83,18 @@ export function useScrollChromeHandler() {
     },
   });
 }
+
+/**
+ * Redéploie le chrome (en-tête, barre) quand l'écran prend le focus — pour un
+ * écran qui ne défile pas lui-même (WebView) et ne peut donc pas le piloter :
+ * sans cela, il hériterait du repli laissé par l'écran précédent.
+ */
+export function useExpandChromeOnFocus() {
+  const collapsed = useContext(ScrollChromeContext)?.collapsed ?? null;
+  const duration = motion.isReducedMotion() ? 0 : DURATION_MS;
+  useFocusEffect(
+    useCallback(() => {
+      if (collapsed) collapsed.value = withTiming(0, { duration });
+    }, [collapsed, duration]),
+  );
+}
