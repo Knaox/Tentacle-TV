@@ -9,10 +9,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### FR
 - **Vos réglages voyagent en direct** : la mise en page de l'accueil et les réglages de recommandation enregistrés sur un appareil arrivent aussitôt sur les autres (message `preferences:update`), sans jamais écraser ce qu'un autre appareil vient de changer
 - **Sans le plugin Vigie**, le réglage « inclure les titres hors bibliothèque » est ignoré : plus de titres impossibles à ouvrir
+- **Vos notes pèsent selon l'échelle des étoiles, plus selon votre moyenne** : 6,5 est le point neutre (« j'aime bien, sans plus »), un 7 n'est plus un reproche pour qui note généreusement, un 8 vaut un favori et un 10 en vaut deux et demi ; la grille de démarrage façonne enfin le profil — ses cinq titres aimés s'annulaient entre eux, aucun ne faisait graine
 
 ### EN
 - **Your settings travel live**: the home layout and recommendation settings saved on one device reach the others at once (`preferences:update` message), never overwriting what another device just changed
 - **Without the Vigie plugin**, the "include titles outside your library" setting is ignored: no more titles that cannot be opened
+- **Your ratings weigh by the star scale, no longer by your average**: 6.5 is the neutral point ("liked it, nothing more"), a 7 is no longer a reproach for generous raters, an 8 is worth a favorite and a 10 two and a half; the onboarding grid finally shapes the profile — its five liked titles used to cancel each other out, none of them seeding recommendations
 
 ## [1.17.0]
 ### FR
