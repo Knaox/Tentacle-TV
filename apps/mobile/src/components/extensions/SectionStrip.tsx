@@ -1,9 +1,14 @@
 import { Fragment, useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { FONT_FAMILY, RADIUS, motion, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { FONT_FAMILY, RADIUS, motion, spacing, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { shortPluginName, type ExtensionSection } from "@/hooks/useExtensionSections";
+
+/** Largeur du fondu qui efface les pilules sous le nom du plugin — un palier
+ *  opaque d'abord, sinon un libellé clair reste lisible à travers. */
+const FADE_W = 40;
 
 interface Props {
   sections: ExtensionSection[];
@@ -33,7 +38,7 @@ export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Prop
     if (!activeId) return;
     const x = layouts.current[activeId];
     if (x === undefined) return;
-    scrollRef.current?.scrollTo({ x: Math.max(0, x - 8), animated: !motion.isReducedMotion() });
+    scrollRef.current?.scrollTo({ x: Math.max(0, x - FADE_W), animated: !motion.isReducedMotion() });
   }, [activeId]);
 
   const pluginLabel = (name: string) => (
@@ -48,11 +53,11 @@ export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Prop
       {/* Un seul plugin : son nom reste FIXE à gauche, hors du défilement — le
           bandeau qui se cale sur la section active le cacherait sinon. */}
       {!multiPlugin && sections[0] && pluginLabel(sections[0].pluginName)}
+      <View style={st.scroll}>
       <ScrollView
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={st.scroll}
         contentContainerStyle={st.content}
         accessibilityRole="tablist"
         accessibilityLabel={t("extensionSections")}
@@ -81,6 +86,17 @@ export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Prop
           );
         })}
       </ScrollView>
+      {/* Les pilules défilées s'effacent en fondu sous le nom du plugin au
+          lieu d'être coupées net à son bord. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.colors.surface.s0, theme.colors.surface.s0, withAlpha(theme.colors.surface.s0, 0, "transparent")]}
+        locations={[0, 0.4, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={st.fade}
+      />
+      </View>
     </View>
   );
 }
@@ -100,9 +116,11 @@ const makeStyles = (t: AppTheme) =>
       flexDirection: "row" as const,
       alignItems: "center" as const,
       gap: 8,
+      paddingLeft: FADE_W,
       paddingRight: spacing.screenPadding,
       paddingVertical: spacing.xs,
     },
+    fade: { position: "absolute" as const, left: 0, top: 0, bottom: 0, width: FADE_W },
     pill: {
       flexDirection: "row" as const,
       alignItems: "center" as const,
@@ -134,7 +152,6 @@ const makeStyles = (t: AppTheme) =>
       alignItems: "center" as const,
       gap: 5,
       maxWidth: 160,
-      marginRight: 10,
     },
     pluginLabelTxt: {
       fontSize: 11,
