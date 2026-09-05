@@ -200,6 +200,8 @@ export type { RecoProviderRef } from "./hooks/recoTypes";
 
 // La page de recommandations en UNE requête, et son fil temps réel
 // (cf. hooks/useRecoPage, hooks/useRecoLive)
+export { usePreferencesLive, applyPreferencesUpdate, catchUpPreferences, PREFERENCES_LIVE_SCOPES } from "./hooks/usePreferencesLive";
+export type { UsePreferencesLiveOptions } from "./hooks/usePreferencesLive";
 export {
   useRecoPage,
   prefetchRecoPage,
