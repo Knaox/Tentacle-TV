@@ -103,7 +103,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Extensions — libellé et icône décidés par les plugins actifs ;
+      {/* Extensions — libellé fixe, icône choisie par le plugin actif ;
           `href: null` masque l'onglet quand aucune page n'est publiée. */}
       <Tabs.Screen
         name="extensions"
