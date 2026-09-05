@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isDesktopApp } from "../desktop/bridge";
 import { useDesktopVersion } from "../hooks/useDesktopVersion";
 import { PageTransition } from "../components/PageTransition";
 import { TentacleLogo } from "../components/ui/TentacleLogo";
+import type { WhatsNewSelection } from "../whatsNew/selectFeatures";
+import { selectionForRelease, whatsNewGateForced } from "../whatsNew/whatsNewDev";
+import { WhatsNewScreen } from "../whatsNew/WhatsNewScreen";
 
 export function About() {
   const { t } = useTranslation("about");
@@ -21,6 +25,10 @@ export function About() {
         : preReleaseMatch[1].toUpperCase())
     : null;
   const versionLabel = rawVersion.replace(/-[a-z]+(\..+)?$/i, "");
+  // « Revoir les nouveautés » : desktop seulement, et seulement si la release
+  // courante a quelque chose à montrer. Rouvre sans toucher au drapeau.
+  const [whatsNew, setWhatsNew] = useState<WhatsNewSelection | null>(null);
+  const canReplayWhatsNew = (isDesktopApp() || whatsNewGateForced()) && selectionForRelease(versionLabel) !== null;
 
   return (
     <PageTransition>
@@ -66,14 +74,28 @@ export function About() {
         {t("about:contactText")}
       </p>
 
-      <Link
-        to="/credits"
-        className="mt-10 inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
-        style={{ color: "var(--brand-light)" }}
-      >
-        {t("about:creditsLink")}
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-      </Link>
+      <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3">
+        <Link
+          to="/credits"
+          className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
+          style={{ color: "var(--brand-light)" }}
+        >
+          {t("about:creditsLink")}
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </Link>
+        {canReplayWhatsNew && (
+          <button
+            type="button"
+            onClick={() => setWhatsNew(selectionForRelease(versionLabel))}
+            className="inline-flex items-center gap-2 text-sm font-medium transition-colors hover:underline"
+            style={{ color: "var(--brand-light)" }}
+          >
+            {t("about:whatsNewAgain")}
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        )}
+      </div>
+      <WhatsNewScreen open={whatsNew !== null} selection={whatsNew} onClose={() => setWhatsNew(null)} />
 
       <p className="mt-8 text-xs text-content-quaternary">
         {t("about:copyright", { version: versionLabel, year: new Date().getFullYear() })}
