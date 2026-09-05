@@ -20,7 +20,8 @@ import {
   useDeleteNotificationsMobile,
   useDeleteAllNotificationsMobile,
 } from "@/hooks/useNotificationsMobile";
-import { useActivePlugins } from "@/hooks/useActivePlugins";
+import { toNotifPluginMeta, useActivePlugins } from "@/hooks/useActivePlugins";
+import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import { BottomSheet } from "./ui";
 import { SwipeableNotifRow } from "./notifications/SwipeableNotifRow";
 import { spacing, typography, useTheme } from "@/theme";
@@ -67,13 +68,7 @@ export function NotificationBell() {
   const { storage } = useTentacleConfig();
   useNotificationsLive({ token: storage.getItem("tentacle_token") });
 
-  const pluginNavMeta = useMemo(
-    () => (plugins ?? []).map((p: { pluginId: string; navItems?: Array<{ path: string; platforms: string[] }> }) => ({
-      pluginId: p.pluginId,
-      navItems: p.navItems ?? [],
-    })),
-    [plugins],
-  );
+  const pluginNavMeta = useMemo(() => toNotifPluginMeta(plugins ?? []), [plugins]);
 
   const count = unread?.count ?? 0;
 
@@ -100,7 +95,8 @@ export function NotificationBell() {
     exitSelection();
     if (!n.read) markOne.mutate(n.id);
     const route = resolveNotificationRoute(n, "mobile", pluginNavMeta);
-    if (route) router.push(route as never);
+    // Une destination d'onglet (section d'extension…) se rejoint sans empiler.
+    if (route) openNotificationRoute(router, route);
   }, [markOne, router, pluginNavMeta, exitSelection]);
 
   const handleDeleteAll = useCallback(() => {
