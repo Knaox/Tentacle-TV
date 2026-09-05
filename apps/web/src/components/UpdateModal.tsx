@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useAutoUpdate } from "../hooks/useAutoUpdate";
+import type { useAutoUpdate } from "../hooks/useAutoUpdate";
 import { useDesktopVersion } from "../hooks/useDesktopVersion";
 import { useInViewport } from "../hooks/useInViewport";
 import { Modal } from "./ui/Modal";
@@ -86,10 +86,4 @@ export function UpdateModal({ update, suspended = false }: UpdateModalProps) {
       </div>
     </Modal>
   );
-}
-
-/** Monte le hook de détection et la pop-up — le point d'entrée d'App.tsx. */
-export function UpdateModalHost() {
-  const update = useAutoUpdate();
-  return <UpdateModal update={update} />;
 }
