@@ -7,7 +7,9 @@ import {
   resolveNotificationRoute,
   useRegisterPushDevice,
 } from "@tentacle-tv/api-client";
-import type { StorageAdapter } from "@tentacle-tv/api-client";
+import type { NotifPluginMeta, StorageAdapter } from "@tentacle-tv/api-client";
+import { activePluginsQueryOptions, toNotifPluginMeta } from "@/hooks/useActivePlugins";
+import { openNotificationRoute } from "@/utils/openNotificationRoute";
 import {
   configureNotificationHandler,
   registerForPushToken,
@@ -15,6 +17,9 @@ import {
   getInitialNotificationTap,
   type PushTapData,
 } from "@/services/pushNotifications";
+
+/** Un tap ne doit jamais rester figé : au-delà, on part sans les plugins. */
+const PLUGIN_META_TIMEOUT_MS = 3000;
 
 // Composant sans rendu, monté sous les providers. Après login (token + serverUrl
 // présents), configure le handler et enregistre l'ExpoPushToken auprès du
@@ -56,19 +61,35 @@ export function PushRegistrationSync({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverUrl, token]);
 
-  // Tap sur une notification → la même résolution de route que la cloche : un
-  // ticket s'ouvre directement, le reste (ajout en bibliothèque, demande Seer
-  // — sans métadonnées de plugin ici) mène à l'accueil. La donnée fraîche est
-  // invalidée avant d'arriver : la fiche et la cloche se rechargent.
+  // Tap sur une notification → la même résolution de route que la cloche. Un
+  // changement d'état de demande a besoin des métadonnées des plugins : le
+  // cache s'il est chaud, sinon un fetch borné (serveur injoignable → accueil).
+  // La donnée fraîche est invalidée avant d'arriver : la fiche et la cloche se
+  // rechargent.
   const handleTap = useCallback(
-    (data: PushTapData) => {
+    async (data: PushTapData) => {
       for (const queryKey of NOTIFICATION_LIVE_KEYS) {
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
-      const route = resolveNotificationRoute({ type: data?.type ?? "", refId: data?.refId ?? null }, "mobile");
-      router.push((route ?? "/(tabs)") as never);
+      const type = data?.type ?? "";
+      let meta: NotifPluginMeta[] = [];
+      if (type === "request_status" && serverUrl && token) {
+        try {
+          const plugins = await Promise.race([
+            queryClient.ensureQueryData(activePluginsQueryOptions(serverUrl, token)),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("plugins timeout")), PLUGIN_META_TIMEOUT_MS),
+            ),
+          ]);
+          meta = toNotifPluginMeta(plugins);
+        } catch {
+          // Repli : l'accueil.
+        }
+      }
+      const route = resolveNotificationRoute({ type, refId: data?.refId ?? null }, "mobile", meta);
+      openNotificationRoute(router, route);
     },
-    [queryClient, router],
+    [queryClient, router, serverUrl, token],
   );
 
   useEffect(() => addNotificationListeners(handleTap), [handleTap]);
