@@ -21,6 +21,7 @@ import { MobileMediaCard } from "@/components/MobileMediaCard";
 import { HomeRow } from "@/components/home/homeRowRegistry";
 import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegistry";
 import { useHomeRows } from "@/components/home/useHomeRows";
+import { CardDensityProvider } from "@/contexts/CardDensityContext";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useRecoNavigation } from "@/hooks/useRecoNavigation";
 import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
@@ -62,7 +63,7 @@ export function HomeScreen() {
   const nextUp = useNextUp();
   const libraries = useLibraries();
   const watchlist = useWatchlist();
-  const { rows } = useHomeRows();
+  const { rows, layout } = useHomeRows();
   const recoNav = useRecoNavigation();
   const filterChipRowKey = useRecoFilterChipRow(rows);
 
@@ -157,6 +158,9 @@ export function HomeScreen() {
 
   return (
     <SubtleBackground ambient>
+      {/* La densité des cartes du compte (compacte, normale, large) — la même
+          mise en page que le web. */}
+      <CardDensityProvider value={layout?.cardDensity ?? "normal"}>
       <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: 100 }}
@@ -181,6 +185,7 @@ export function HomeScreen() {
           <HomeRow key={row.key} rowKey={row.key} index={index} data={rowData} actions={rowActions} />
         ))}
       </Animated.ScrollView>
+      </CardDensityProvider>
 
       {longPressItemId && (
         <MediaActionSheet

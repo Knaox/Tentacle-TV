@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { ProgressBar } from "@/components/ui";
-import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useCardWidth } from "@/contexts/CardDensityContext";
 
 /**
  * Carrousel « Ma liste » de l'accueil — déduplique les entrées personnelles.
@@ -35,8 +36,7 @@ export function MyListRow({ personalItems, onSeeAll, onItemPress, onItemLongPres
   const theme = useTheme();
   const mlst = useThemedStyles(makeMyListStyles);
   const client = useJellyfinClient();
-  const { isTablet } = useResponsive();
-  const cardW = isTablet ? 168 : 130;
+  const cardW = useCardWidth();
 
   const merged = useMemo<CarouselItem[]>(() => {
     const seen = new Set<string>();
@@ -115,9 +115,9 @@ const makeMyListStyles = (t: AppTheme) => StyleSheet.create({
   seeAllBtn: { flexDirection: "row", alignItems: "center", gap: 2 },
   seeAll: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
   list: { paddingHorizontal: spacing.screenPadding, gap: 14 },
-  card: { width: 130 },
+  card: {},
   posterWrap: { borderRadius: RADIUS.lg, overflow: "hidden", ...SHADOW_RN.elev2 },
-  poster: { width: 130, aspectRatio: 2 / 3, backgroundColor: t.colors.surface.s2 },
+  poster: { aspectRatio: 2 / 3, backgroundColor: t.colors.surface.s2 },
   cardName: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, marginTop: 8, letterSpacing: -0.1 },
   cardYear: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 2 },
   watchedBadge: { position: "absolute" as const, top: 7, right: 7, width: 22, height: 22, borderRadius: 11, backgroundColor: t.colors.cta.primaryBg, alignItems: "center" as const, justifyContent: "center" as const, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 4, elevation: 4 }, // R11 watched unifié (cf PosterCard.tsx:90)
