@@ -47,6 +47,18 @@ export interface PluginNavItem {
   labels: Record<string, string>;
 }
 
+/**
+ * Champ `tab` du manifeste, relayé tel quel par le serveur : comment le plugin
+ * veut nommer et illustrer l'onglet mobile qui regroupe ses pages. `icon` est
+ * un nom Feather, `labels` est indexé par code de langue (l'anglais sert de
+ * repli). Optionnel : sans lui, l'app retombe sur sa table des plugins connus,
+ * puis sur le nom du plugin.
+ */
+export interface PluginTabMeta {
+  icon?: string;
+  labels?: Record<string, string>;
+}
+
 export interface ActivePlugin {
   id: string;
   pluginId: string;
@@ -55,6 +67,7 @@ export interface ActivePlugin {
   hasBundle: boolean;
   navItems: PluginNavItem[];
   configEnabled?: boolean;
+  tab?: PluginTabMeta;
 }
 
 export function useActivePlugins() {
