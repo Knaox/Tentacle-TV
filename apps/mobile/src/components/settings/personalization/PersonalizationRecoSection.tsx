@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { View, Text, Switch, Alert, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useResetTasteProfile, useSaveRecoSettingsPatch } from "@tentacle-tv/api-client";
+import { isVigieActive, useResetTasteProfile, useSaveRecoSettingsPatch } from "@tentacle-tv/api-client";
 import type { RecoSettingsData } from "@tentacle-tv/api-client";
 import { SettingsSection, SettingsRow, SteppedSlider } from "@/components/settings";
+import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -29,6 +30,11 @@ export function PersonalizationRecoSection({ settings }: { settings: RecoSetting
   const st = useThemedStyles(makeStyles);
   const save = useSaveRecoSettingsPatch();
   const reset = useResetTasteProfile();
+  // « Hors bibliothèque » n'a de sens qu'avec le plugin Vigie présent et
+  // activé : sans lui, le serveur ignore le réglage et l'interrupteur se tait.
+  const { data: plugins } = useActivePlugins();
+  const vigie = isVigieActive(plugins);
+  const toggles = TOGGLES.filter((toggle) => toggle.key !== "includeVigie" || vigie);
 
   // Le curseur garde un état local pendant le geste ; le compte suit après.
   // Tant qu'une sauvegarde attend ou vole, le serveur ne dicte rien : le
@@ -49,7 +55,7 @@ export function PersonalizationRecoSection({ settings }: { settings: RecoSetting
 
   return (
     <SettingsSection title={t("persoRecoTitle")} caption={t("persoRecoCaption")}>
-      {TOGGLES.map(({ key, icon, label, hint }) => (
+      {toggles.map(({ key, icon, label, hint }) => (
         <SettingsRow
           key={key}
           icon={icon}
