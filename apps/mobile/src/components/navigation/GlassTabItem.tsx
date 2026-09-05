@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, type LayoutChangeEvent, type StyleProp, type Tex
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Animated from "react-native-reanimated";
 import { FONT_FAMILY } from "@/theme";
+import { useTabPressFeedback } from "./useTabPressFeedback";
 
 export const PILL_W = 52;
 export const PILL_H = 32;
@@ -26,11 +27,14 @@ interface Props {
 /**
  * Un onglet de la barre basse : le cadre de l'icône (celui que l'indicateur
  * vient couvrir) puis le libellé. La cible est l'item entier (≥ 44 pt de
- * large sur cinq onglets, contigus : pas de `hitSlop`).
+ * large sur cinq onglets, contigus : pas de `hitSlop`). L'icône rebondit
+ * sous le doigt (useTabPressFeedback) — l'`Animated.View` vit DANS le
+ * Pressable, la cible ne rétrécit pas.
  */
 export function GlassTabItem({ route, descriptor, focused, tint, navigation, onLayout, iconStyle, labelStyle }: Props) {
   const { options } = descriptor;
   const label = options.tabBarAccessibilityLabel ?? options.title ?? route.name;
+  const press = useTabPressFeedback();
 
   const onPress = () => {
     const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
@@ -41,6 +45,8 @@ export function GlassTabItem({ route, descriptor, focused, tint, navigation, onL
     <Pressable
       onPress={onPress}
       onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       onLayout={onLayout}
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
@@ -48,7 +54,9 @@ export function GlassTabItem({ route, descriptor, focused, tint, navigation, onL
       style={st.item}
     >
       <Animated.View style={[st.pill, iconStyle]}>
-        {options.tabBarIcon?.({ focused, color: tint, size: 22 })}
+        <Animated.View style={press.bounceStyle}>
+          {options.tabBarIcon?.({ focused, color: tint, size: 22 })}
+        </Animated.View>
       </Animated.View>
       {/* Étiré sur la largeur de l'onglet et centré par le texte : mesuré au
           premier rendu à sa largeur naturelle, Android coupait « Profil » en
