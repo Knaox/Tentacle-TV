@@ -14,6 +14,7 @@ import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
 import { RecoFilterSheet } from "@/components/reco/filters/RecoFilterSheet";
+import { LikedActorsPanel } from "@/components/reco/people/LikedActorsPanel";
 import { ColdStartScreen } from "@/components/reco/coldstart/ColdStartScreen";
 import { RecoDisabledState, RecoErrorState } from "@/components/reco/page/RecoErrorState";
 import { RecoPageHeader } from "@/components/reco/page/RecoPageHeader";
@@ -117,6 +118,7 @@ export function ForYouScreen() {
         style={styles.fill}
         contentContainerStyle={{ paddingTop: headerH, paddingBottom: tabBarH + spacing.xl }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         onScroll={onScrollChrome}
         scrollEventThrottle={16}
         refreshControl={
@@ -144,6 +146,10 @@ export function ForYouScreen() {
           onItemPress={recoNav.open}
           onItemLongPress={onItemLongPress}
         />
+        {/* Ajuster ses acteurs se fait ICI, au contact des rangées — masqué
+            quand la personnalisation est indisponible (perso coupée, pas de
+            clé TMDB : la recherche serait une impasse). */}
+        {model.canPersonalize && <LikedActorsPanel />}
       </Animated.ScrollView>
 
       {sheet && (
