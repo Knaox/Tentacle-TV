@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useExtensionTab } from "@/hooks/useExtensionSections";
-import { useHeaderHeight } from "@/components/PersistentHeader";
+import { HEADER_COLLAPSE_SHIFT, useHeaderHeight } from "@/components/PersistentHeader";
 import { useExpandChromeOnFocus, useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { SectionStrip } from "@/components/extensions/SectionStrip";
 import { ExtensionPane } from "@/components/extensions/ExtensionPane";
@@ -22,11 +22,12 @@ const STRIP_FALLBACK_H = 52;
  * volet par section, conservé une fois visité.
  *
  * Le bandeau suit le repli du chrome : quand la page défile vers le bas, il
- * glisse sous l'en-tête et les volets montent prendre sa place — en
- * TRANSLATION seulement. Les volets sont posés en absolu, de la hauteur du
- * bandeau jusqu'à autant SOUS le bord bas : la WebView ne se redimensionne
- * jamais (pas de remise en page du plugin), et la page réserve cette hauteur
- * en plus de la barre (`chromeBottomExtra`).
+ * glisse sous l'en-tête et les volets montent prendre sa place, plus les
+ * huit points dont l'en-tête lui-même remonte (sinon une bande vide reste
+ * entre les deux) — en TRANSLATION seulement. Les volets sont posés en
+ * absolu, de la hauteur du bandeau jusqu'à autant SOUS le bord bas : la
+ * WebView ne se redimensionne jamais (pas de remise en page du plugin), et
+ * la page réserve cette hauteur en plus de la barre (`chromeBottomExtra`).
  *
  * L'adresse est la vérité : le lien profond `/extensions?section=<id>` et la
  * pilule écrivent tous deux le paramètre, il n'y a pas d'état parallèle à
@@ -49,7 +50,8 @@ export function ExtensionsScreen() {
   const collapsed = useScrollChromeValue() ?? fallback;
   const hasStrip = sections.length > 1;
   const [stripH, setStripH] = useState(STRIP_FALLBACK_H);
-  const slide = hasStrip ? stripH : 0;
+  const stripSlot = hasStrip ? stripH : 0;
+  const slide = stripSlot + HEADER_COLLAPSE_SHIFT;
   const slideStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -collapsed.value * slide }] }), [slide]);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
 
@@ -97,7 +99,7 @@ export function ExtensionsScreen() {
             <SectionStrip sections={sections} activeId={activeId} multiPlugin={multiPlugin} onSelect={select} />
           </Animated.View>
         )}
-        <Animated.View style={[st.panes, { top: slide, bottom: -slide }, slideStyle]}>
+        <Animated.View style={[st.panes, { top: stripSlot, bottom: -slide }, slideStyle]}>
           {sections
             .filter((s) => s.id === activeId || visited.includes(s.id))
             .map((s) => (
