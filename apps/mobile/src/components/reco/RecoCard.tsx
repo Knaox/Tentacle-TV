@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { recoPosterUrl, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
-import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
+import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
+import { useCardWidth } from "@/contexts/CardDensityContext";
 
 interface Props {
   item: RecoRowItem;
@@ -28,8 +29,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const st = useThemedStyles(makeStyles);
-  const { isTablet } = useResponsive();
-  const width = isTablet ? 168 : 130;
+  const width = useCardWidth();
   const [imgError, setImgError] = useState(false);
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const showFallback = !poster || imgError;
