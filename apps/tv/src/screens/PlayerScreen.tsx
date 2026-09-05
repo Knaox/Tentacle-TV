@@ -85,8 +85,8 @@ export function PlayerScreen({ route, navigation }: Props) {
   reportStartRef.current = p.reportStart;
 
   const lifecycle = useTVPlaybackLifecycle({
-    itemId, seriesId: item?.SeriesId, navigation,
-    reportStop: p.reportStop, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
+    itemId, item, navigation,
+    reportStop: p.reportStop, stopPromiseRef: p.lastStopPromiseRef, positionRef, pausedStateRef, reportSeekRef, reportStartRef,
     onBackground: () => setPaused(true),
     // Retour au premier plan : refocus OSD (le focus natif tvOS meurt au background) — sauf panneau ouvert.
     onForeground: () => { if (!showSettingsRef.current && !showEpisodesRef.current) bumpOsdFocus(); },
@@ -134,7 +134,7 @@ export function PlayerScreen({ route, navigation }: Props) {
         bumpOsdFocus();
         return;
       }
-      lifecycle.invalidateAndGoBack();
+      lifecycle.leavePlayer();
     },
     onPlayPause: handlePlayPause,
     // Le scrub met la lecture en pause et la reprend à la confirmation/annulation
@@ -274,7 +274,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onPlayPause={handlePlayPause}
       // Bouton Retour de l'OSD : MÊME routage que le bouton physique (avant : sortie
       // brute qui bypassait overlay auto-play/scrub — quittait même bannière ouverte).
-      onBack={() => { if (!routeBackRef.current()) void lifecycle.invalidateAndGoBack(); }}
+      onBack={() => { if (!routeBackRef.current()) void lifecycle.leavePlayer(); }}
       onToggleSettings={() => {
         // Ouvre la MODALE Réglages/Qualité (cf. PlayerSettingsScreen).
         setShowSettings(true);

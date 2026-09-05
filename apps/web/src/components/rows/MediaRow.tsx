@@ -100,7 +100,8 @@ export function MediaRow({ title, items, variant = "poster", animDelay = 0, href
   useEffect(() => {
     if (!rowEl) return;
     const observer = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setVisible(true),
+      // Toute la salve, pas la première entrée (cf. useInViewport).
+      (entries) => { if (entries.some((e) => e.isIntersecting)) setVisible(true); },
       { threshold: 0.1 },
     );
     observer.observe(rowEl);

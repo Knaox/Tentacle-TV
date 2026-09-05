@@ -71,7 +71,7 @@ export function useLibraryItems(
     queryFn: () => {
       let url = `/Users/${userId}/Items?ParentId=${libraryId}` +
         `&SortBy=${sortBy}&SortOrder=${sortOrder}&IncludeItemTypes=Movie,Series` +
-        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio,RecursiveItemCount,MediaSources` +
+        `&Recursive=true&Fields=Overview,PrimaryImageAspectRatio,RecursiveItemCount,MediaSources,ProviderIds` +
         `&ExcludeLocationTypes=Virtual&IsMissing=false&Limit=${limit}` +
         `&EnableImageTypes=Primary,Backdrop&ImageTypeLimit=1&EnableUserData=true`;
       if (search.length >= 2) url += `&searchTerm=${encodeURIComponent(search)}`;

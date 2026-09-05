@@ -1,3 +1,4 @@
+import { formatNotifTitle, notifBodyText } from "@tentacle-tv/api-client";
 import type { AppNotification } from "@tentacle-tv/api-client";
 import type { TFunction } from "i18next";
 
@@ -18,6 +19,7 @@ export function NotifRow({
 }: NotifRowProps) {
   const date = new Date(notif.createdAt);
   const ago = formatAgo(date, t);
+  const body = notifBodyText(notif);
 
   return (
     <div
@@ -45,8 +47,8 @@ export function NotifRow({
           <p className={`text-sm ${!notif.read ? "font-medium text-content-primary" : "text-content-secondary"}`}>
             {formatNotifTitle(notif, t)}
           </p>
-          {notif.body && notif.type !== "ticket_status" && (
-            <p className="mt-0.5 text-xs text-content-quaternary line-clamp-2">{notif.body}</p>
+          {body && (
+            <p className="mt-0.5 text-xs text-content-quaternary line-clamp-2">{body}</p>
           )}
           <div className="mt-1 flex items-center gap-2">
             <span className="text-[10px] text-content-quaternary">{ago}</span>
@@ -67,39 +69,8 @@ export function NotifRow({
 }
 
 // ── Helpers ──
-
-const STATUS_TKEYS: Record<string, string> = {
-  open: "tickets:statusOpen",
-  in_progress: "tickets:statusInProgress",
-  resolved: "tickets:statusResolved",
-  closed: "tickets:statusClosed",
-};
-
-const FR_STATUS_TO_KEY: Record<string, string> = {
-  "Ouvert": "open", "En cours": "in_progress", "Résolu": "resolved", "Fermé": "closed",
-};
-
-export function formatNotifTitle(n: AppNotification, t: TFunction): string {
-  if (n.type === "ticket_reply") {
-    const legacy = n.title.match(/^Réponse sur\s+"(.+)"$/);
-    const subject = legacy ? legacy[1] : n.title;
-    return t("notifications:ticketReplyTitle", { subject });
-  }
-  if (n.type === "ticket_status") {
-    const isNew = n.body && STATUS_TKEYS[n.body];
-    if (isNew) {
-      return t("notifications:ticketStatusTitle", { subject: n.title, status: t(STATUS_TKEYS[n.body!]) });
-    }
-    const legacy = n.title.match(/^Ticket\s+"(.+?)"\s+—\s+(.+)$/);
-    if (legacy) {
-      const statusKey = FR_STATUS_TO_KEY[legacy[2]];
-      if (statusKey) {
-        return t("notifications:ticketStatusTitle", { subject: legacy[1], status: t(STATUS_TKEYS[statusKey]) });
-      }
-    }
-  }
-  return n.title;
-}
+// Le titre vient du formatage PARTAGÉ (api-client/utils/notificationText) :
+// la même ligne s'affiche pareil ici et dans la cloche mobile.
 
 export function formatAgo(date: Date, t: TFunction): string {
   const diff = Date.now() - date.getTime();

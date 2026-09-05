@@ -95,13 +95,17 @@ model PushDevice {
   @@map("push_devices")
 }
 
-// Préférences de notifications push par utilisateur (opt-in : tout à false par
-// défaut). libraryAdded = nouveaux ajouts bibliothèque ; seerAvailable =
-// contenu demandé devenu disponible (mappé au type de notif « request_status »).
+// Préférences de notifications push par utilisateur. libraryAdded = nouveaux
+// ajouts bibliothèque ; seerAvailable = contenu demandé devenu disponible
+// (type « request_status ») — toutes deux opt-in (false). tickets = vie des
+// tickets de support (réponse, statut, et nouveaux tickets pour les admins) :
+// ACTIVÉE par défaut, c'est une conversation directe. Une ligne absente vaut
+// les défauts de chaque clé (services/pushPreferences.ts), pas « tout off ».
 model NotificationPreference {
   jellyfinUserId  String   @id @db.VarChar(255)
   libraryAdded    Boolean  @default(false)
   seerAvailable   Boolean  @default(false)
+  tickets         Boolean  @default(true)
   updatedAt       DateTime @updatedAt
 
   @@map("notification_preferences")
@@ -198,6 +202,23 @@ model AnnouncedContent {
   @@map("announced_contents")
 }
 
+// Séries retirées AUTOMATIQUEMENT de « Ma liste » (tout le disponible vu) :
+// à remettre dès qu'un épisode (saison > 0) de la série entre en bibliothèque.
+// Écrite par le client au retrait automatique ; effacée par le serveur à la
+// remise, ou par le client dès que l'utilisateur reprend la main (ajout ou
+// retrait manuel — son geste prime, la série ne revient plus toute seule).
+// Une série retirée À LA MAIN n'a jamais de ligne ici.
+// Voir services/watchlistAutoRetired.ts et routes/watchlist.ts.
+model WatchlistAutoRetired {
+  seriesId       String   @db.VarChar(64)
+  jellyfinUserId String   @db.VarChar(255)
+  retiredAt      DateTime @default(now())
+
+  @@id([seriesId, jellyfinUserId])
+  @@index([jellyfinUserId])
+  @@map("watchlist_auto_retired")
+}
+
 model PairingCode {
   id                    String    @id @default(cuid())
   code                  String    @unique @db.VarChar(4)
@@ -251,16 +272,20 @@ model PairedDevice {
   @@map("paired_devices")
 }
 
-// Lien de partage « Partager ma liste » — 1 lien actif par propriétaire.
-// Le lien est Live : à l'ouverture, le backend relit la watchlist Jellyfin
-// du propriétaire (via la clé admin), aucun item n'est stocké ici.
+// Lien de partage d'une liste — 1 lien actif par (propriétaire, liste).
+// Le lien est Live : à l'ouverture, le backend relit la liste Jellyfin du
+// propriétaire (via la clé admin), aucun item n'est stocké ici.
+// `kind` est arrivé avec le partage des favoris : les bases d'avant reçoivent
+// la colonne et la bascule d'index unique par core-init.sql (additif).
 model ShareLink {
   id            String   @id @default(cuid())
   token         String   @unique @db.VarChar(32)
-  ownerUserId   String   @unique @db.VarChar(255)
+  ownerUserId   String   @db.VarChar(255)
   ownerUsername String   @db.VarChar(255)
+  kind          String   @default("watchlist") @db.VarChar(20) // "watchlist" | "likes"
   createdAt     DateTime @default(now())
 
+  @@unique([ownerUserId, kind])
   @@index([token])
   @@map("share_links")
 }
@@ -393,6 +418,226 @@ model MediaFrameAnalysis {
   createdAt DateTime @default(now())
 
   @@map("media_frame_analysis")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Moteur de recommandation. Doctrine commune à tous les modèles ci-dessous :
+// - aucun enum, aucun Json — unions en VarChar commenté, JSON en Text/MediumText ;
+// - identité média = (mediaType, tmdbId), la clé canonique de Vigie ("movie:603") ;
+// - chaque modèle a son bloc dans core-init.sql : en production le schéma
+//   n'arrive QUE par ce fichier (incident item_track_preferences).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Note explicite d'un titre, sur 10 (1 = une demi-étoile, jamais 0).
+// `seasonNumber`/`episodeNumber` valent 0 hors épisode : MySQL admet plusieurs
+// NULL dans un index unique, 0 rend l'unicité réelle.
+// La note est écrite ici IMMÉDIATEMENT ; la sync TMDB est asynchrone
+// (services/reco/syncWorkers.ts) et `syncStatus` en reflète l'état — l'UI ne
+// bloque jamais dessus, une note posée hors ligne part à la reconnexion.
+model UserRating {
+  id              String    @id @default(cuid())
+  jellyfinUserId  String    @db.VarChar(255)
+  mediaType       String    @db.VarChar(10) // "movie" | "series" | "episode"
+  tmdbId          Int
+  jellyfinItemId  String?   @db.VarChar(64)
+  seasonNumber    Int       @default(0)
+  episodeNumber   Int       @default(0)
+  score           Int // 1..10
+  syncStatus      String    @default("pending") @db.VarChar(16) // "pending" | "synced" | "failed" | "disabled" | "delete_pending"
+  syncAttempts    Int       @default(0)
+  nextSyncAt      DateTime?
+  tmdbSyncedAt    DateTime?
+  /// Retrait « doux » : une note déjà poussée chez TMDB doit y être
+  /// EFFACÉE avant que la ligne disparaisse — le worker traite `delete_pending`
+  /// puis supprime. Une note jamais synchronisée se supprime directement.
+  /// Toute lecture (profil, exclusions, UI) ignore `deletedAt != null`.
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // `map:` : le nom que Prisma génèrerait dépasse les 64 caractères de MySQL.
+  @@unique([jellyfinUserId, mediaType, tmdbId, seasonNumber, episodeNumber], map: "user_ratings_identity_key")
+  @@index([jellyfinUserId])
+  @@index([syncStatus, nextSyncAt])
+  @@map("user_ratings")
+}
+
+// « J'aime » d'un titre HORS bibliothèque (catalogue Vigie) : Jellyfin ne peut
+// pas porter IsFavorite pour un média qu'il n'a pas. En bibliothèque, le like
+// RESTE IsFavorite chez Jellyfin — la vue unifiée vit dans services/reco.
+model UserLike {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  mediaType      String   @db.VarChar(10) // "movie" | "series"
+  tmdbId         Int
+  createdAt      DateTime @default(now())
+
+  @@unique([jellyfinUserId, mediaType, tmdbId])
+  @@index([jellyfinUserId])
+  @@map("user_likes")
+}
+
+// Profil de goût : vecteur de facettes pondérées, construit par
+// services/reco/profileBuilder.ts (incrémental, poké par le WS Jellyfin).
+// `facets` est un JSON { "genre:18": poids, "kw:time-travel": … } — rien ne
+// l'interroge en SQL ; MediumText car un gros historique dépasse les 64 Ko.
+model TasteProfile {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @unique @db.VarChar(255)
+  facets         String   @db.MediumText
+  signalCount    Int      @default(0)
+  ratingMean     Float    @default(0)
+  ratingStdDev   Float    @default(0)
+  /// Part de l'univers animé dans les signaux de CONSOMMATION (0..1) — pilote
+  /// la source /discover animé, le quota des rangées mixtes et la rangée
+  /// « Animés pour vous ». Calculée par services/reco/profileBuilder.ts.
+  animeShare     Float    @default(0)
+  schemaVersion  Int      @default(1)
+  computedAt     DateTime @default(now())
+
+  @@map("taste_profiles")
+}
+
+// Réglages de recommandation d'UN compte (page Personnalisation). Colonnes
+// typées, TOUTES posées dès la première création (doctrine PlaybackSettings).
+model RecoSettings {
+  id                 String   @id @default(cuid())
+  jellyfinUserId     String   @unique @db.VarChar(255)
+  personalized       Boolean  @default(true)
+  includeVigie       Boolean  @default(true)
+  community          Boolean  @default(true)
+  /// Vie privée : false = l'historique de ce compte n'alimente PAS le job de
+  /// cooccurrence communautaire (désinscription, page Personnalisation).
+  shareHistory       Boolean  @default(true)
+  /// Curseur « Sûr ↔ Aventureux » : λ du MMR × 100 (70 = 0.7). Pilote aussi le
+  /// quota d'exploration.
+  explorationBalance Int      @default(70)
+  /// Filtre de plateformes de la page Recommandations : JSON d'ids TMDB
+  /// PRINCIPAUX (« [283,415] », douze au plus). Persisté ici pour suivre le
+  /// compte d'un appareil à l'autre — et pour que le serveur précalcule la
+  /// page de ce filtre en fond.
+  providerFilter     String   @default("[]") @db.VarChar(255)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("reco_settings")
+}
+
+// Cache des rangées calculées : la page LIT ce cache ; la génération est un job
+// asynchrone (services/reco/generationJob.ts), jamais dans la requête HTTP.
+// MediumText : une rangée porte des dizaines d'items avec leur ScoreBreakdown.
+model RecommendationCache {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  rowKey         String   @db.VarChar(64) // "forYou" | "inLibrary" | "anime" | "discover" | "becauseYouLiked:<n>" | "community" | "exploration"
+  payload        String   @db.MediumText
+  generatedAt    DateTime @default(now())
+  expiresAt      DateTime
+
+  @@unique([jellyfinUserId, rowKey])
+  @@index([expiresAt])
+  @@map("recommendation_cache")
+}
+
+// « Ne plus me proposer » : exclusion DÉFINITIVE d'un titre des recommandations.
+model RecommendationFeedback {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  itemKey        String   @db.VarChar(32) // "movie:603"
+  action         String   @db.VarChar(20) // "dismissed" | "not_interested" | "already_seen"
+  createdAt      DateTime @default(now())
+
+  @@unique([jellyfinUserId, itemKey])
+  @@map("recommendation_feedback")
+}
+
+// Mise en page de l'accueil d'UN compte. `rows` est un JSON ordonné
+// [{ key, enabled }] — l'ordre EST la position dans le tableau. Aucune ligne
+// stockée = accueil historique (défauts servis en 200, migration silencieuse).
+model HomeLayout {
+  id              String   @id @default(cuid())
+  jellyfinUserId  String   @unique @db.VarChar(255)
+  heroMode        String   @default("reco") @db.VarChar(20) // "resume" | "random" | "reco" | "fixed"
+  heroFixedItemId String?  @db.VarChar(64)
+  rows            String   @db.Text
+  cardDensity     String   @default("normal") @db.VarChar(10) // "compact" | "normal" | "large"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("home_layouts")
+}
+
+// Compte externe lié : guest session TMDB (notes anonymes).
+model ExternalAccount {
+  id             String    @id @default(cuid())
+  jellyfinUserId String    @db.VarChar(255)
+  provider       String    @db.VarChar(20) // "tmdb_guest"
+  guestSessionId String?   @db.VarChar(64)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@unique([jellyfinUserId, provider])
+  @@map("external_accounts")
+}
+
+// Cooccurrence de visionnage entre paires d'items — rangée « Les utilisateurs
+// de Tentacle regardent aussi ». Recalculée par un job, jamais à la volée.
+// VIE PRIVÉE : une paire n'est JAMAIS exposée si userCount < 5 — sur un serveur
+// familial, une paire issue d'un seul compte révèle ce que ce compte regarde.
+// Le job filtre en amont ET rowBuilder refiltre en aval.
+model ItemCooccurrence {
+  itemAKey   String   @db.VarChar(32)
+  itemBKey   String   @db.VarChar(32)
+  score      Float
+  userCount  Int
+  computedAt DateTime @default(now())
+
+  @@id([itemAKey, itemBKey])
+  @@index([itemAKey])
+  @@map("item_cooccurrences")
+}
+
+// Poids IDF d'une facette : log(N_total / N_facette), recalculé chaque jour sur
+// bibliothèque + titres notés. Sans lui, « Drame » écraserait tout et le moteur
+// recommanderait de la bouillie.
+model FacetIdf {
+  facetKey   String   @id @db.VarChar(191)
+  docCount   Int
+  idf        Float
+  computedAt DateTime @default(now())
+
+  @@map("facet_idf")
+}
+
+// Cache persistant des métadonnées TMDB (détails + keywords + credits en un
+// appel via append_to_response). Un cache, jamais une source : vider la table
+// ne coûte que des re-fetchs.
+model TmdbMetaCache {
+  mediaType String   @db.VarChar(10) // "movie" | "tv"
+  tmdbId    Int
+  payload   String   @db.MediumText
+  fetchedAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@id([mediaType, tmdbId])
+  @@index([expiresAt])
+  @@map("tmdb_meta_cache")
+}
+
+// Personnes (acteurs, réalisateurs) aimées explicitement — matière des
+// rangées « Avec {acteur} ». name/profilePath stockés : l'affichage au
+// service ne dépend jamais de TMDB.
+model UserLikedPerson {
+  id             String   @id @default(cuid())
+  jellyfinUserId String   @db.VarChar(255)
+  /// id TMDB de la personne
+  personId       Int
+  name           String   @db.VarChar(255)
+  profilePath    String?  @db.VarChar(255)
+  createdAt      DateTime @default(now())
+
+  @@unique([jellyfinUserId, personId])
+  @@map("user_liked_people")
 }
 
 // NB : les tables du plugin Seer (seer_requests, seer_cleanup_queue,

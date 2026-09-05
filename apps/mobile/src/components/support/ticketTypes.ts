@@ -9,9 +9,13 @@ export type Category = "general" | "bug" | "feature" | "account";
 
 export interface Ticket {
   id: string;
+  jellyfinUserId: string;
+  /** L'auteur — affiché à l'admin, qui voit les tickets de tout le monde. */
+  username: string;
   subject: string;
   category: string;
   status: Status;
+  mediaItemName?: string | null;
   createdAt: string;
   updatedAt: string;
   _count?: { messages: number };

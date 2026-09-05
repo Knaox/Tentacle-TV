@@ -32,6 +32,8 @@ interface Props {
   selectedAudio: number;
   selectedSubtitle: number;
   qualityKey: QualityKey;
+  /** Badge « Auto » sur le palier actif du menu qualité. */
+  autoQualityActive?: boolean;
   /** Paliers calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets: readonly QualityPreset[];
   /** L'arbitre partagé : ce qu'il faut afficher, et de quoi y répondre. */
@@ -57,7 +59,7 @@ interface Props {
 
 export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
-  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets,
+  audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive,
   playback, nextEpisode, previousEpisode,
   item, mediaSourceId,
   onPlayPause, onSeek, onBack,
@@ -213,10 +215,12 @@ export function MobilePlayerOverlay({
         overlay={playback.overlay}
         countdownTotals={playback.countdownTotals}
         nextEpisode={nextEpisode}
+        currentItem={item}
         controlsVisible={visible}
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
+        onRatingEngage={playback.cancelNextCountdown}
         bottom={Math.max(110, insets.bottom + 86)}
         right={Math.max(20, insets.right + 16)}
       />
@@ -231,6 +235,7 @@ export function MobilePlayerOverlay({
         selectedSubtitle={selectedSubtitle}
         qualityKey={qualityKey}
         qualityPresets={qualityPresets}
+        autoQualityActive={autoQualityActive}
         sourceQuality={sourceQuality}
         onSelectAudio={onSelectAudio}
         onSelectSubtitle={onSelectSubtitle}

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { CarouselId } from "@tentacle-tv/shared";
+import { NOTIFICATION_LIVE_KEYS } from "./useNotificationsLive";
 import { acquireSocket, onSocketStatus, subscribeSocket } from "../socket/tentacleSocket";
 
 // Ré-export de compatibilité : la configuration de l'URL vit désormais dans le
@@ -14,7 +15,7 @@ const CAROUSEL_KEYS: Record<string, string[][]> = {
   recently_added:    [["latest-items"]],
   next_up:           [["next-up"]],
   trending:          [["featured"]],
-  watchlist:         [["watchlist"]],
+  watchlist:         [["watchlist"], ["watchlist-series-ids"]],
   watched:           [["watched-items"]],
   featured:          [["featured"]],
   notifications:     [["notifications"]],
@@ -96,7 +97,9 @@ export function useHomeWebSocket(options: UseHomeWebSocketOptions = {}) {
       if (msg.type === "home:update") {
         invalidateCarousel(msg.carousel);
       } else if (msg.type === "notifications:update") {
-        qcRef.current.invalidateQueries({ queryKey: ["notifications"] });
+        for (const queryKey of NOTIFICATION_LIVE_KEYS) {
+          qcRef.current.invalidateQueries({ queryKey: [...queryKey] });
+        }
       } else if (msg.type === "session:revoked") {
         onSessionRevokedRef.current?.();
       }

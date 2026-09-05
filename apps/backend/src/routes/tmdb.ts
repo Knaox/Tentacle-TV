@@ -1,34 +1,20 @@
 /* ------------------------------------------------------------------ */
-/*  Watch Providers — via Jellyseerr discover                          */
+/*  Watch Providers — filtre bibliothèque via Jellyseerr discover      */
 /*  Warm par plateforme à la demande (pas toutes au démarrage)         */
 /*  Si Seer pas installé → retourne {} (fallback Studios côté client)  */
+/*  GET /watch-providers : l'annuaire TMDB de la région (id, nom, logo)*/
 /* ------------------------------------------------------------------ */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { resolve } from "path";
-import { existsSync, readFileSync } from "fs";
 import { requireAuth } from "../middleware/auth";
 import { getJellyfinUrl, getJellyfinApiKey } from "../services/configStore";
+import { getSeerrConfig } from "../services/seerConfig";
+import { getWatchProviderDirectory } from "../services/tmdb/providerDirectory";
+import { getSeasonEpisodes } from "../services/tmdb/seasonEpisodes";
 
 // Cache par plateforme : "movies-8" → Set<tmdbId>
 const discoverCache = new Map<string, Set<number>>();
 const warmingPlatforms = new Set<number>();
-
-const INSTALLED_PATH = resolve(__dirname, "../../data/plugins/installed.json");
-
-function getSeerrConfig(): { url: string; apiKey: string } | null {
-  try {
-    if (!existsSync(INSTALLED_PATH)) return null;
-    const installed = JSON.parse(readFileSync(INSTALLED_PATH, "utf-8"));
-    const seer = installed.find((p: { pluginId?: string }) => p.pluginId === "seer");
-    const url = seer?.config?.url as string;
-    const apiKey = seer?.config?.apiKey as string;
-    if (!url || !apiKey) return null;
-    return { url: url.replace(/\/$/, ""), apiKey };
-  } catch {
-    return null;
-  }
-}
 
 /** Charge les TMDB IDs d'UNE plateforme (movies + tv) */
 async function warmPlatform(seerr: { url: string; apiKey: string }, platformId: number): Promise<void> {
@@ -125,6 +111,33 @@ export async function tmdbRoutes(app: FastifyInstance) {
       .map((item) => item.tmdbId);
 
     return { matchingIds, cacheReady: isPlatformCached(body.platformId) };
+  });
+
+  /**
+   * GET /api/tmdb/watch-providers
+   *   → { region, providers: [{ id, name, logoPath }], logos: { [id]: logoPath } }
+   * L'annuaire COMPLET des plateformes de la région configurée, dérivé de la
+   * liste mondiale persistée, et la carte des logos (région + familles connues,
+   * même hors région) — la source du menu Filtres. Sans clé TMDB : vide.
+   */
+  app.get("/watch-providers", async () => getWatchProviderDirectory());
+
+  /**
+   * GET /api/tmdb/tv/:tmdbId/season/:seasonNumber/episodes
+   * → { tmdbId, seasonNumber, episodes: [{ episodeNumber, voteAverage, voteCount }] }
+   * Les notes TMDB des épisodes d'une saison (mémoire + disque, un jour de
+   * fraîcheur, copie périmée servie si TMDB ne répond pas). Sans clé TMDB ou
+   * saison inconnue : liste vide, jamais d'erreur.
+   */
+  app.get("/tv/:tmdbId/season/:seasonNumber/episodes", async (request: FastifyRequest, reply: FastifyReply) => {
+    const params = request.params as { tmdbId?: string; seasonNumber?: string };
+    const tmdbId = Number(params.tmdbId);
+    const seasonNumber = Number(params.seasonNumber);
+    if (!Number.isInteger(tmdbId) || tmdbId <= 0 || !Number.isInteger(seasonNumber) || seasonNumber < 0) {
+      return reply.status(400).send({ message: "tmdbId and seasonNumber must be integers" });
+    }
+    const season = await getSeasonEpisodes(tmdbId, seasonNumber);
+    return season ?? { tmdbId, seasonNumber, episodes: [] };
   });
 
   /**

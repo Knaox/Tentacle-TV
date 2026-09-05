@@ -2,10 +2,10 @@ import { useMemo } from "react";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  Database,
   HardDriveDownload,
   LifeBuoy,
   Mail,
-  Palette,
   Puzzle,
   Server,
   Users,
@@ -22,7 +22,7 @@ import { getUserInfo } from "../userMenu/menuItems";
  * n'apportait qu'un titre, une phrase et un bouton « Gérer les X » redondant
  * avec son propre titre.
  *
- * Route PARENTE : les URLs existantes (`/admin/users`, `/admin/theme/tokens`…)
+ * Route PARENTE : les URLs existantes (`/admin/users`, `/admin/plugins/<id>`…)
  * sont inchangées, elles deviennent simplement des enfants. Aucun lien profond
  * ne casse, y compris les routes dynamiques des plugins.
  */
@@ -31,7 +31,6 @@ const ICON_SIZE = 17;
 
 export function AdminLayout() {
   const { t } = useTranslation("admin");
-  const { t: tTheme } = useTranslation("adminTheme");
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { isAdmin } = getUserInfo();
@@ -44,12 +43,12 @@ export function AdminLayout() {
       { id: "tickets", label: t("supportTickets"), icon: <LifeBuoy size={ICON_SIZE} /> },
       { id: "plugins", label: t("pluginsTitle"), icon: <Puzzle size={ICON_SIZE} /> },
       { id: "services", label: t("services"), icon: <Server size={ICON_SIZE} /> },
-      { id: "theme", label: tTheme("adminCardTitle"), icon: <Palette size={ICON_SIZE} /> },
+      { id: "metadata", label: t("metadataTitle"), icon: <Database size={ICON_SIZE} /> },
     ],
-    [t, tTheme],
+    [t],
   );
 
-  // `/admin/theme/tokens` doit garder « theme » actif dans le rail : on ne
+  // `/admin/plugins/<id>` doit garder « plugins » actif dans le rail : on ne
   // retient que le premier segment après /admin.
   const activeId = useMemo(() => {
     const rest = pathname.replace(/^\/admin\/?/, "");
@@ -75,6 +74,9 @@ export function AdminLayout() {
         description={active ? undefined : t("overviewDescription")}
         onBack={() => navigate("/admin")}
         backLabel={t("title")}
+        /* Le tableau des tickets étale quatre colonnes : il prend toute la
+           largeur, les autres sections gardent leur colonne de lecture. */
+        fluid={activeId === "tickets"}
       >
         <Outlet />
       </SettingsShell>

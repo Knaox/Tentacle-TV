@@ -44,7 +44,7 @@ export { useItemTrackPreference, useSetItemTrackPreference, useDeleteItemTrackPr
 export type { ItemTrackPreference } from "./hooks/usePreferences";
 
 // Support tickets
-export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, setTicketsBackendUrl } from "./hooks/useTickets";
+export { useCreateTicket, useMyTickets, useAllTickets, useTicketDetail, useReplyTicket, useUpdateTicketStatus, useCloseTicket, useDeleteTickets, setTicketsBackendUrl } from "./hooks/useTickets";
 export type { SupportTicket, TicketMessage, TicketsPage } from "./hooks/useTickets";
 
 // Notifications
@@ -54,9 +54,17 @@ export type { AppNotification } from "./hooks/useNotifications";
 // Notification route resolution
 export { resolveNotificationRoute } from "./utils/notificationRoute";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
+export { formatNotifTitle, notifBodyText, parseTicketNotifBody } from "./utils/notificationText";
+export type { NotifTranslate } from "./utils/notificationText";
+export { useNotificationsLive, NOTIFICATION_LIVE_KEYS } from "./hooks/useNotificationsLive";
+export {
+  TICKET_STATUSES, TICKET_CATEGORIES, TICKET_STATUS_LABEL_KEYS, TICKET_STATUS_FILTER_KEYS,
+  TICKET_CATEGORY_LABEL_KEYS, isTicketStatus,
+} from "./utils/ticketMeta";
+export type { TicketStatus, TicketCategory } from "./utils/ticketMeta";
 
 // Push notifications (mobile)
-export { useRegisterPushDevice, usePushPreferences, useSetPushPreferences, useSendTestPush, setPushBackendUrl, setPushToken } from "./hooks/usePushNotifications";
+export { useRegisterPushDevice, usePushPreferences, useSetPushPreferences, useSendTestPush, setPushBackendUrl, setPushToken, PUSH_PREF_DEFAULTS } from "./hooks/usePushNotifications";
 export type { PushPreferences, TestPushResult } from "./hooks/usePushNotifications";
 
 // WebSocket real-time home updates
@@ -84,7 +92,7 @@ export {
   useCreateShareLink, useMyShareLink, useRevokeShareLink, useSharedListView, useSharedItem,
   setShareLinkBackendUrl, setShareLinkToken,
 } from "./hooks/useShareLink";
-export type { SharedListData, SharedListItem } from "./hooks/useShareLink";
+export type { SharedListData, SharedListItem, ShareListKind } from "./hooks/useShareLink";
 
 // Batch remove
 export { useBatchRemoveFavorites, useBatchRemoveWatchlist } from "./hooks/useBatchRemove";
@@ -96,6 +104,7 @@ export { useBatchWatchedToggle } from "./hooks/useBatchWatchedToggle";
 export { invalidateSeriesWatchViews, invalidateAllMediaQueries, updateItemUserDataInCache, restoreFromSnapshot, patchSeriesIdSet } from "./hooks/cacheUtils";
 export type { CacheTarget } from "./hooks/cacheUtils";
 export { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY, FAVORITE_SERIES_IDS_KEY } from "./hooks/watchlistEffects";
+export { forgetAutoRetired, recordAutoRetired } from "./hooks/watchlistAutoRetired";
 
 // App config & feature flags
 export { useAppConfig, useAutoplayConfig, setConfigBackendUrl } from "./hooks/useConfig";
@@ -154,3 +163,106 @@ export {
   setNetworkSuspectListener,
   setOfflineHintSupplier,
 } from "./net/requestPolicy";
+
+// Notes explicites du moteur de recommandation (cf. hooks/useRatings)
+export {
+  useMyRatings,
+  useItemRating,
+  useRateItem,
+  useDeleteRating,
+  ratingKey,
+} from "./hooks/useRatings";
+export type { RatingIdentity, RatingMediaType, UserRatingEntry, RateItemInput } from "./hooks/useRatings";
+export { useEndCardRating } from "./hooks/useEndCardRating";
+// Notes d'épisodes : identité, notes TMDB par saison, index des notes du compte
+export {
+  episodeRatingIdentity,
+  episodeRatingsIndex,
+  useMyEpisodeRatings,
+  useTmdbSeasonEpisodes,
+  TMDB_SEASON_KEY,
+} from "./hooks/useEpisodeRatings";
+export type { TmdbEpisodeRating } from "./hooks/useEpisodeRatings";
+export type { EndCardRating } from "./hooks/useEndCardRating";
+
+// Feedback, démarrage à froid, relance du profil (cf. hooks/useRecoRows)
+export { useSendRecoFeedback, useColdStartTitles, useRecoWarmup } from "./hooks/useRecoRows";
+export type { RecoState, RecoReason, RecoRowItem, RecoFeedbackAction, ColdStartTitle } from "./hooks/useRecoRows";
+export type { RecoProviderRef } from "./hooks/recoTypes";
+
+// La page de recommandations en UNE requête, et son fil temps réel
+// (cf. hooks/useRecoPage, hooks/useRecoLive)
+export {
+  useRecoPage,
+  prefetchRecoPage,
+  removeRecoItem,
+  dropRecoItemEverywhere,
+  invalidateRecoQueries,
+  normalizeProviderFilter,
+  recoFilterKey,
+  getRecoPageKey,
+  RECO_PAGE_KEY,
+  ALL_PROVIDERS_KEY,
+} from "./hooks/useRecoPage";
+export type { RecoPage, RecoPageRow } from "./hooks/useRecoPage";
+export { useRecoLive } from "./hooks/useRecoLive";
+
+// Images, titres et état TMDB des recommandations, partagés par les clients
+// (cf. reco/recoImages, reco/recoRowTitles, hooks/useAdminMetadata)
+export { recoPosterUrl, recoHaloSourceUrl, recoBackdropUrl, recoAmbilightSourceUrl } from "./reco/recoImages";
+export type { TmdbPosterSize, TmdbBackdropSize } from "./reco/recoImages";
+export { RECO_ROW_TITLE_KEYS, recoRowTitle } from "./reco/recoRowTitles";
+export type { RecoRowTitle } from "./reco/recoRowTitles";
+export { useAdminMetadataStatus, ADMIN_METADATA_KEY } from "./hooks/useAdminMetadata";
+export type { AdminMetadataStatus } from "./hooks/useAdminMetadata";
+
+// Personnes aimées — rangées « Avec {acteur} » (cf. hooks/useLikedPeople)
+export {
+  useLikedPeople,
+  useLikePerson,
+  useUnlikePerson,
+  usePersonSearch,
+  usePersonSuggestions,
+} from "./hooks/useLikedPeople";
+export type { LikedPerson, PersonSearchResult } from "./hooks/useLikedPeople";
+
+// Accueil configurable + réglages de recommandation (cf. hooks/useHomeLayout)
+export {
+  useHomeLayout,
+  useSaveHomeLayout,
+  useRecoSettings,
+  useSaveRecoSettings,
+  useSaveRecoProviderFilter,
+  useResetTasteProfile,
+} from "./hooks/useHomeLayout";
+export type {
+  HeroMode,
+  CardDensity,
+  HomeRowDescriptor,
+  HomeLayoutData,
+  RecoSettingsData,
+} from "./hooks/useHomeLayout";
+// La réconciliation des rangées de l'accueil, PURE et partagée par le web, le
+// mobile et la TV (cf. utils/homeRows)
+export {
+  reconcileHomeRows,
+  visibleHomeRows,
+  isHomeRowAvailable,
+  mergeHiddenHomeRows,
+  firstServedRecoRowKey,
+  moveRow,
+} from "./utils/homeRows";
+export type { LibraryRef, ReconcileHomeRowsOptions } from "./utils/homeRows";
+
+// Annuaire des plateformes de streaming (cf. hooks/useWatchProviders)
+export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
+export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
+
+// Comptes externes — TMDB guest session (cf. hooks/useExternalAccounts)
+export {
+  useExternalAccounts,
+  useCreateTmdbGuestSession,
+  useUnlinkTmdbGuestSession,
+  useResyncRatings,
+} from "./hooks/useExternalAccounts";
+export type { ExternalAccountsStatus } from "./hooks/useExternalAccounts";

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState } from "@tentacle-tv/api-client";
+import { useMediaItem, useSimilarItems, useCollectionItems, useJellyfinClient, useSeriesWatchState, useTmdbSeasonEpisodes } from "@tentacle-tv/api-client";
 import { CastRow } from "../components/CastRow";
 import { EpisodeList } from "../components/EpisodeList";
 import { MediaRow } from "../components/rows/MediaRow";
@@ -18,6 +18,7 @@ import { DetailOpenOverlay, type TargetRect } from "../components/detail/DetailO
 import { consumeDetailOrigin, skipsEntrance, type DetailOrigin } from "../components/detail/detailTransition";
 import { ExtrasSection } from "../components/detail/ExtrasSection";
 import { resolveBackdropId } from "../components/hero/resolveBackdrop";
+import { tmdbIdForItem } from "../lib/ratingIdentity";
 import { ChevronRightIcon } from "../components/media/MediaDetailIcons";
 import { fadeIn, fadeUp, textCascadeDelayed } from "../theme/motion";
 
@@ -34,6 +35,17 @@ export function MediaDetail() {
   const { data: item, isLoading } = useMediaItem(itemId);
   const isEpisode = item?.Type === "Episode";
   const { data: parentSeries } = useMediaItem(isEpisode ? item?.SeriesId : undefined);
+  // Note TMDB de l'épisode (fiche épisode) : lue par saison, cache partagé
+  // avec la liste plus bas ; Jellyfin en repli.
+  const seriesTmdbId = tmdbIdForItem(isEpisode ? parentSeries : item);
+  const { data: tmdbSeasonEpisodes } = useTmdbSeasonEpisodes(
+    isEpisode ? seriesTmdbId : null,
+    isEpisode ? (item?.ParentIndexNumber ?? null) : null,
+  );
+  const episodeCommunityRating =
+    isEpisode && item?.IndexNumber != null
+      ? (tmdbSeasonEpisodes?.get(item.IndexNumber)?.voteAverage ?? item.CommunityRating ?? null)
+      : undefined;
   // Sur une fiche SÉRIE, on récupère l'épisode "à reprendre" pour le surligner
   // dans la liste (même traitement que l'épisode courant sur une fiche épisode).
   const { data: seriesWatchState } = useSeriesWatchState(item?.Type === "Series" ? item.Id : undefined);
@@ -194,7 +206,7 @@ export function MediaDetail() {
                 </motion.button>
               )}
 
-              <DetailMetadata item={item} streams={streams} />
+              <DetailMetadata item={item} streams={streams} communityRating={episodeCommunityRating} />
               <DetailOverview item={item} />
               <DetailActions item={item} />
 
@@ -245,6 +257,7 @@ export function MediaDetail() {
               seriesId={episodeListSeriesId}
               currentEpisodeId={highlightEpisodeId}
               initialSeasonId={highlightSeasonId}
+              seriesItem={isSeries ? item : parentSeries}
             />
           </motion.section>
         )}

@@ -27,6 +27,9 @@ interface TrackSelectorProps {
   onClose: () => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */
   applyToSeries?: ApplyToSeriesControl;
+  /** Le mode « Auto » est armé : badge sur le palier ACTIF (la clé affichée
+   *  est déjà le palier servi, cap compris) — un choix manuel l'éteint. */
+  autoQualityActive?: boolean;
 }
 
 export function TrackSelector({
@@ -34,6 +37,7 @@ export function TrackSelector({
   currentAudio, currentSubtitle, currentQuality, sourceQuality,
   qualityPresets = QUALITY_PRESETS,
   onAudioChange, onSubtitleChange, onQualityChange, onClose, applyToSeries,
+  autoQualityActive = false,
 }: TrackSelectorProps) {
   const { t } = useTranslation("player");
   // Panneau de réglages DÉTACHÉ (fond quasi-opaque `surface-dropdown`, pas la
@@ -92,6 +96,7 @@ export function TrackSelector({
                 presetKey={preset.key}
                 bitrate={preset.bitrate}
                 active={currentQuality === preset.key}
+                autoBadge={autoQualityActive && currentQuality === preset.key}
                 sourceQuality={sourceQuality}
                 onClick={() => onQualityChange(preset.key)}
                 t={t}
@@ -147,11 +152,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function QualityOption({
-  presetKey, bitrate, active, sourceQuality, onClick, t,
+  presetKey, bitrate, active, autoBadge, sourceQuality, onClick, t,
 }: {
   presetKey: QualityKey;
   bitrate: number | null;
   active: boolean;
+  /** Le palier est servi par le mode « Auto » (cap armé, aucun choix manuel). */
+  autoBadge?: boolean;
   sourceQuality?: SourceQuality;
   onClick: () => void;
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -171,6 +178,7 @@ function QualityOption({
       <span className={`h-2 w-2 flex-shrink-0 rounded-full transition-colors ${active ? "bg-tentacle-accent shadow-[0_0_6px_rgba(var(--brand-rgb), 0.6)]" : "bg-fill-medium"}`} />
       <span className="flex flex-1 items-center gap-1.5 overflow-hidden">
         <span className="truncate">{label}</span>
+        {autoBadge && <Badge color="purple">{t("player:qualityAutoBadge")}</Badge>}
         {resSuffix && <span className="text-content-quaternary">— {resSuffix}</span>}
         {isOriginal && sourceQuality?.isDolbyVision && <Badge color="purple">DV</Badge>}
         {isOriginal && sourceQuality?.isHDR && <Badge color="amber">HDR</Badge>}

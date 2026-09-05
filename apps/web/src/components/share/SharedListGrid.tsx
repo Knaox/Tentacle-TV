@@ -15,8 +15,9 @@ interface Props {
   token?: string;
 }
 
-/** Image d'affiche via le proxy public (visible aussi pour les anonymes). */
+/** Image d'affiche : proxy public Jellyfin (bibliothèque), TMDB sinon. */
 function posterUrl(item: SharedListItem): string {
+  if (!item.Id && item.PosterUrl) return item.PosterUrl;
   const tag = item.ImageTags?.Primary;
   const params = `fillHeight=450&quality=90${tag ? `&tag=${tag}` : ""}`;
   return `/api/jellyfin/Items/${item.Id}/Images/Primary?${params}`;
@@ -39,9 +40,12 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
     <div className="grid grid-cols-2 gap-2.5 xs:grid-cols-3 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6">
       {items.map((item, index) => {
         const isSel = selected.has(item.Id);
+        // Titre hors bibliothèque (liste de likés) : pas d'Id Jellyfin, donc
+        // ni fiche détail ni ajout — la vignette est inerte, badge « catalogue ».
+        const inLibrary = item.Id !== "";
         return (
           <RevealCell
-            key={item.Id}
+            key={item.Id || `tmdb-${item.Name}-${index}`}
             minHeight={CELL_HEIGHT}
             aspect={2 / 3}
             textHeight={48}
@@ -50,8 +54,9 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
           >
             <button
               type="button"
-              onClick={() => openDetail(item.Id)}
-              className="block w-full text-left transition-transform hover:scale-[1.02]"
+              onClick={() => inLibrary && openDetail(item.Id)}
+              disabled={!inLibrary}
+              className={`block w-full text-left ${inLibrary ? "transition-transform hover:scale-[1.02]" : "cursor-default"}`}
             >
               <div className="relative aspect-[2/3]">
                 <img src={posterUrl(item)} alt={item.Name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
@@ -62,9 +67,15 @@ export function SharedListGrid({ items, authed, selected, onToggle, token }: Pro
               </div>
             </button>
 
+            {!inLibrary && (
+              <span className="absolute left-1.5 top-1.5 rounded-md border border-white/30 bg-black/65 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                {t("common:sharedOffLibraryBadge")}
+              </span>
+            )}
+
             {/* Case de sélection (connecté) — badge posé sur l'affiche, reste
                 constant dans les deux thèmes (règle "posé sur une image"). */}
-            {authed && (
+            {authed && inLibrary && (
               <button
                 type="button"
                 onClick={() => onToggle(item.Id)}

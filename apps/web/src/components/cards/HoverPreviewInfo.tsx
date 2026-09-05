@@ -86,7 +86,10 @@ export function HoverPreviewInfo({
           {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
           {item.CommunityRating != null && (
             <span className="flex items-center gap-0.5 font-medium">
-              <StarIcon /> {item.CommunityRating.toFixed(1)}
+              <span aria-hidden className="text-[var(--brand-accent)]">
+                <StarIcon />
+              </span>
+              {item.CommunityRating.toFixed(1)}
             </span>
           )}
           {runtime && <span>{runtime}</span>}

@@ -2,12 +2,15 @@ import { useState, useEffect, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { GlassFilters } from "@tentacle-tv/ui";
 import { AppLayout } from "./components/AppLayout";
-import { UpdateModal } from "./components/UpdateModal";
+import { StartupOverlays } from "./components/StartupOverlays";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
+import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
+import { RecoFilterBinding } from "./components/reco/RecoFilterBinding";
+import { RecoPrefetchBoot } from "./components/reco/RecoPrefetchBoot";
 import { ServerSetup } from "./pages/ServerSetup";
 import { AppConnect } from "./pages/AppConnect";
-import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useStreamingConfig, STREAMING_CONFIG_QUERY_KEY, useUserId, notifyUserChange, primeBitrateMeasure } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useActivePluginsMeta, useRefreshPlugins } from "@tentacle-tv/plugins-api";
 import { PluginIframe } from "./components/PluginIframe";
@@ -31,7 +34,7 @@ import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminTheme, AdminThemeTokens, AdminThemeReference, Watchlist, Favorites, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, OfflineCatalog, OfflineSeriesView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -62,6 +65,12 @@ function DirectStreamingSync() {
   // to satisfy the `enabled: !!token` guard. Mobile/desktop pass real token.
   const token = localStorage.getItem("tentacle_token") || (localStorage.getItem("tentacle_user") ? "__cookie__" : null);
   const { data } = useStreamingConfig(token);
+
+  // Préchauffage de la mesure de débit (miroir du téléviseur) : la PREMIÈRE
+  // lecture après le lancement peut déjà être capée — cache 10 min.
+  useEffect(() => {
+    if (token) primeBitrateMeasure(client);
+  }, [client, token]);
 
   useEffect(() => {
     // Direct Streaming is applied on every client (web/native) when the admin
@@ -176,6 +185,15 @@ export function App() {
       {authed && <DownloadsEvents />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
+      {/* Fil temps réel des recommandations : la page en cache se rafraîchit
+          en silence quand le serveur l'a reconstruite. */}
+      {authed && <RecoLiveBinding />}
+      {/* Le filtre de plateformes suit le compte pour toute la session — il
+          vaut sur l'accueil, pas seulement sur la page Recommandations. */}
+      {authed && !offlineMode && <RecoFilterBinding />}
+      {/* Préchargement de la page Recommandations en temps mort : arriver sur
+          la page ne montre ni spinner ni squelette. */}
+      {authed && <RecoPrefetchBoot />}
       <ScrollMemoryWrapper />
       {/* Banc de torture du lecteur (dev only) : tentacleSoak("<itemId>", 200) */}
       {import.meta.env.DEV && <SoakHarness />}
@@ -206,6 +224,7 @@ export function App() {
             <Route path="library/:libraryId" element={onlineOnly(<Library />)} />
             <Route path="watchlist" element={onlineOnly(<Watchlist />)} />
             <Route path="favorites" element={onlineOnly(<Favorites />)} />
+            <Route path="recommendations" element={onlineOnly(<Recommendations />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
@@ -221,6 +240,12 @@ export function App() {
             <Route path="settings" element={<SettingsLayout />}>
               <Route index element={<SettingsIndex />} />
               <Route path="appearance" element={<SettingsAppearance />} />
+              {/* Personnalisation (accueil + recommandations) : réglages serveur,
+                  sans objet hors ligne. */}
+              <Route
+                path="personalization"
+                element={offlineMode ? <Navigate to="/settings/appearance" replace /> : <SettingsPersonalization />}
+              />
               {/* Sécurité (mot de passe, appareils, serveur) : sans objet hors ligne. */}
               <Route
                 path="security"
@@ -234,7 +259,7 @@ export function App() {
             <Route path="pair-device" element={onlineOnly(<PairDevice />)} />
             {/* Admin en maitre-detail : route PARENTE avec rail de sections.
                 Les URLs restent identiques a l'avant (`/admin/users`,
-                `/admin/theme/tokens`, `/admin/plugins/<id>`), elles deviennent
+                `/admin/services`, `/admin/plugins/<id>`), elles deviennent
                 simplement des enfants — aucun lien profond ne casse. */}
             <Route path="admin" element={onlineOnly(<AdminLayout />)}>
               <Route index element={null} />
@@ -243,10 +268,8 @@ export function App() {
               <Route path="invites" element={<AdminInvites />} />
               <Route path="tickets" element={<AdminTicketsPage />} />
               <Route path="services" element={<AdminServicesPage />} />
+              <Route path="metadata" element={<AdminMetadata />} />
               <Route path="plugins" element={<AdminPlugins />} />
-              <Route path="theme" element={<AdminTheme />} />
-              <Route path="theme/tokens" element={<AdminThemeTokens />} />
-              <Route path="theme/reference" element={<AdminThemeReference />} />
 
               {/* Dynamic plugin admin routes (sandboxed iframes) — convention: /admin/plugins/:pluginId */}
               {activePluginsMeta
@@ -295,7 +318,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
-      <UpdateModal />
+      <StartupOverlays authed={authed} disclaimerAccepted={disclaimerAccepted} />
       {authed && <OfflineSessionGate />}
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)

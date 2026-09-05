@@ -2,6 +2,9 @@ import { getPrisma, hasPrisma } from "./db";
 import { sendToUser } from "./pushService";
 import { exactPushKey, isAnnounced, recordAnnounced } from "./announcedRegistry";
 import { planSeerAvailabilityPush } from "./seerPushPlanner";
+import { isPushPrefEnabled, type PushPrefKey } from "./pushPreferences";
+import { isTicketNotifType } from "./ticketNotifTypes";
+import { normalizePushLang, ticketPushText, type PushLang } from "./ticketPushText";
 
 // Livraison push GÉNÉRIQUE des notifications in-app. Le core possède déjà la
 // table Notification ; ce worker se contente de « délivrer » en push celles dont
@@ -27,10 +30,18 @@ import { planSeerAvailabilityPush } from "./seerPushPlanner";
 // notif dans la cloche) = abandon du différé ; la ligne (fausse) écrite par le
 // plugin reste visible dans la cloche.
 //
-// Correspondance type de notification → clé de préférence (extensible :
-// ex. ticket_reply → une future préférence « tickets »).
-const PUSHABLE: Record<string, "seerAvailable"> = {
+// Correspondance type de notification → clé de préférence. Les quatre types
+// de ticket partagent la préférence « tickets » (activée par défaut) et
+// court-circuitent tout ce qui est propre à Seer : ni registre d'annonces ni
+// planificateur — chaque ligne est unique par construction, `pushedAt`
+// suffit contre le doublon.
+const PUSHABLE: Record<string, PushPrefKey> = {
   request_status: "seerAvailable",
+  ticket_new: "tickets",
+  ticket_user_reply: "tickets",
+  ticket_user_closed: "tickets",
+  ticket_reply: "tickets",
+  ticket_status: "tickets",
 };
 
 const POLL_INTERVAL = 15_000;
@@ -63,6 +74,9 @@ async function tick(): Promise<void> {
       where: { jellyfinUserId: { in: userIds } },
     });
     const prefByUser = new Map(prefs.map((p) => [p.jellyfinUserId, p]));
+    const langByUser = notifications.some((n) => isTicketNotifType(n.type))
+      ? await loadPushLangs(userIds)
+      : new Map<string, PushLang>();
 
     // Claims des utilisateurs du lot — IDENTIFICATION du contenu (titre → tmdb)
     // pour les clés du registre, pas suppression : on n'exclut pas les expirés.
@@ -80,8 +94,19 @@ async function tick(): Promise<void> {
     const deferredIds = new Set<string>();
     for (const n of notifications) {
       const prefKey = PUSHABLE[n.type];
-      const enabled = !!prefKey && prefByUser.get(n.jellyfinUserId)?.[prefKey] === true;
+      const enabled = !!prefKey && isPushPrefEnabled(prefByUser.get(n.jellyfinUserId), prefKey);
       if (!enabled) continue;
+      if (isTicketNotifType(n.type)) {
+        const text = ticketPushText(n, langByUser.get(n.jellyfinUserId) ?? "fr");
+        const res = await sendToUser(n.jellyfinUserId, {
+          ...text,
+          data: { type: n.type, refId: n.refId ?? undefined },
+        });
+        console.log(
+          `[NotifPush] push[${n.jellyfinUserId.slice(0, 8)}] ticket ${n.type} (sent:${res.sent}, invalid:${res.invalid})`,
+        );
+        continue;
+      }
       // Annonce de dispo Seer → plan du planificateur (vérité Jellyfin,
       // découpage par saison, clés tmdb via claim synthétique). Sinon (autres
       // statuts de demande), chemin générique à clé exacte.
@@ -127,6 +152,16 @@ async function tick(): Promise<void> {
   } finally {
     running = false;
   }
+}
+
+/** La langue d'interface choisie côté serveur par chaque utilisateur du lot
+ *  (`user_lang_<id>`, cf. routes/preferences.ts) — le texte poussé la suit. */
+async function loadPushLangs(userIds: string[]): Promise<Map<string, PushLang>> {
+  const prefix = "user_lang_";
+  const rows = await getPrisma().serverConfig.findMany({
+    where: { key: { in: userIds.map((id) => `${prefix}${id}`) } },
+  });
+  return new Map(rows.map((r) => [r.key.slice(prefix.length), normalizePushLang(r.value)]));
 }
 
 export function startNotificationPushWorker(): void {

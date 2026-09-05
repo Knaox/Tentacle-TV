@@ -1,4 +1,4 @@
-import { useAutoplayConfig, usePlaybackOverlay } from "@tentacle-tv/api-client";
+import { usePlaybackOverlay } from "@tentacle-tv/api-client";
 import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import type { PlayerPlayback } from "./usePlayerPlayback";
 
@@ -43,10 +43,6 @@ export function usePlaybackOverlayMobile({
   itemId, pb, currentTime, ended, hasStarted, controlsVisible, scrubbing,
   onSeek, onNextEpisode, onEndOfPlayback,
 }: Options): PlaybackOverlayResult {
-  // `active` : la config d'auto-play est repollée pendant la lecture, comme
-  // sur le web — un interrupteur admin s'applique sans relancer l'app.
-  const autoplay = useAutoplayConfig(true);
-
   return usePlaybackOverlay({
     itemId,
     // Parité web : un « épisode » orphelin de série n'en est pas un pour
@@ -64,7 +60,6 @@ export function usePlaybackOverlayMobile({
     // Les règles « avant la fin » ciblées par bibliothèque ne s'appliquent
     // qu'avec lui — le contrat résolu le porte déjà, il suffisait de le passer.
     libraryId: pb.segments.libraryId ?? null,
-    serverAutoplayEnabled: autoplay.data?.enabled ?? true,
     onSeekSeconds: onSeek,
     onNextEpisode,
     onEndOfPlayback,

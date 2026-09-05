@@ -118,8 +118,6 @@ export type AutoNextEffect = "none" | "nextEpisode";
 
 export interface AutoNextConfig {
   hasNextEpisode: boolean;
-  /** Garde serveur admin (`autoplay_next_enabled`). */
-  serverEnabled: boolean;
   nextCountdown: boolean;
   nextAutoPlay: boolean;
   /** Durée voulue du décompte. Absente : la valeur livrée. */
@@ -166,7 +164,7 @@ export function decideAutoNext(
   // Chaque surface n'obéit qu'à SON refus : la carte au sien, l'affiche de
   // fin au sien — écarter l'une n'a jamais éteint l'autre.
   const refused = input.ended ? state.finalDismissed : state.dismissed;
-  const active = config.hasNextEpisode && config.serverEnabled && !refused && !state.chained;
+  const active = config.hasNextEpisode && !refused && !state.chained;
   if (!active || (!input.eligible && !input.ended)) {
     // Hors fenêtre (ou refusé) : le minuteur retombe, prêt à se réarmer.
     if (state.phase === "idle" && state.remainingMs === null) return [state, "none"];

@@ -4,7 +4,13 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { AppNotification } from "@tentacle-tv/api-client";
-import { resolveNotificationRoute } from "@tentacle-tv/api-client";
+import {
+  formatNotifTitle,
+  notifBodyText,
+  resolveNotificationRoute,
+  useNotificationsLive,
+  useTentacleConfig,
+} from "@tentacle-tv/api-client";
 import {
   useNotificationsMobile,
   useUnreadCountMobile,
@@ -23,31 +29,8 @@ let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: Recor
 try { Haptics = require("expo-haptics"); } catch {}
 
 // ── Helpers ──
-
-const STATUS_TKEYS: Record<string, string> = {
-  open: "tickets:statusOpen", in_progress: "tickets:statusInProgress",
-  resolved: "tickets:statusResolved", closed: "tickets:statusClosed",
-};
-const FR_STATUS_TO_KEY: Record<string, string> = {
-  "Ouvert": "open", "En cours": "in_progress", "Résolu": "resolved", "Fermé": "closed",
-};
-
-function formatNotifTitle(n: AppNotification, t: (key: string, opts?: Record<string, unknown>) => string): string {
-  if (n.type === "ticket_reply") {
-    const legacy = n.title.match(/^Réponse sur\s+"(.+)"$/);
-    return t("ticketReplyTitle", { subject: legacy ? legacy[1] : n.title });
-  }
-  if (n.type === "ticket_status") {
-    const isNew = n.body && STATUS_TKEYS[n.body];
-    if (isNew) return t("ticketStatusTitle", { subject: n.title, status: t(STATUS_TKEYS[n.body!]) });
-    const legacy = n.title.match(/^Ticket\s+"(.+?)"\s+—\s+(.+)$/);
-    if (legacy) {
-      const sk = FR_STATUS_TO_KEY[legacy[2]];
-      if (sk) return t("ticketStatusTitle", { subject: legacy[1], status: t(STATUS_TKEYS[sk]) });
-    }
-  }
-  return n.title;
-}
+// Le titre vient du formatage PARTAGÉ (api-client/utils/notificationText),
+// le même que la cloche web ; seul « il y a … » reste ici (ses clés diffèrent).
 
 function formatAgo(dateStr: string, t: (k: string, opts?: Record<string, unknown>) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -78,6 +61,11 @@ export function NotificationBell() {
   const deleteBatch = useDeleteNotificationsMobile();
   const deleteAll = useDeleteAllNotificationsMobile();
   const { data: plugins } = useActivePlugins();
+
+  // Rafraîchissement à l'instant où une notification est écrite (socket
+  // partagé), quel que soit l'onglet ouvert.
+  const { storage } = useTentacleConfig();
+  useNotificationsLive({ token: storage.getItem("tentacle_token") });
 
   const pluginNavMeta = useMemo(
     () => (plugins ?? []).map((p: { pluginId: string; navItems?: Array<{ path: string; platforms: string[] }> }) => ({
@@ -184,6 +172,7 @@ export function NotificationBell() {
             <SwipeableNotifRow
               notif={n}
               formattedTitle={formatNotifTitle(n, t)}
+              formattedBody={notifBodyText(n)}
               formattedAgo={formatAgo(n.createdAt, t)}
               onPress={() => handleNotifPress(n)}
               onDelete={() => deleteOne.mutate(n.id)}

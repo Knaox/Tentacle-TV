@@ -1,6 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import {
+  useJellyfinClient,
+  useLikedPeople,
+  useLikePerson,
+  useUnlikePerson,
+} from "@tentacle-tv/api-client";
 import { FadeImage } from "./FadeImage";
+import { ActorLikeButton } from "./reco/ActorLikeButton";
 
 interface Person {
   Name: string;
@@ -32,6 +38,21 @@ export function CastRow({ people, studios }: CastRowProps) {
   const { t } = useTranslation("media");
   const client = useJellyfinClient();
   const actors = people.filter((p) => p.Type === "Actor").slice(0, 20);
+
+  // Personnes aimées (rangées « Avec {acteur} ») : le casting Jellyfin ne
+  // connaît que le NOM — la correspondance se fait dessus, et le serveur
+  // résout l'id TMDB au like.
+  const { data: likedData } = useLikedPeople();
+  const likePerson = useLikePerson();
+  const unlikePerson = useUnlikePerson();
+  const likedByName = new Map(
+    (likedData?.people ?? []).map((p) => [p.name.toLowerCase(), p.personId])
+  );
+  const toggleLike = (person: Person) => {
+    const likedId = likedByName.get(person.Name.toLowerCase());
+    if (likedId != null) unlikePerson.mutate(likedId);
+    else likePerson.mutate({ name: person.Name });
+  };
 
   const crewGroups = CREW_TYPES.map((type) => ({
     type,
@@ -75,7 +96,13 @@ export function CastRow({ people, studios }: CastRowProps) {
           <h3 className="mb-3 text-lg font-semibold text-content-primary">{t("media:castSection")}</h3>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {actors.map((person) => (
-              <div key={person.Id} className="w-20 flex-shrink-0 text-center sm:w-24 group/actor">
+              <div key={person.Id} className="relative w-20 flex-shrink-0 text-center sm:w-24 group/actor">
+                <ActorLikeButton
+                  name={person.Name}
+                  liked={likedByName.has(person.Name.toLowerCase())}
+                  pending={likePerson.isPending || unlikePerson.isPending}
+                  onToggle={() => toggleLike(person)}
+                />
                 <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-tentacle-surface transition-all duration-300 group-hover/actor:scale-105 group-hover/actor:ring-2 group-hover/actor:ring-[rgba(var(--brand-rgb),0.5)] sm:h-24 sm:w-24">
                   {person.PrimaryImageTag ? (
                     <FadeImage

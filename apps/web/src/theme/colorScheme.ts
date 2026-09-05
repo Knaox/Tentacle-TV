@@ -2,8 +2,8 @@
  * Mode d'apparence (clair / sombre / auto) — store et persistance.
  *
  * Réglage PAR APPAREIL (`localStorage`), comme le réglage d'apparence de l'OS.
- * À ne pas confondre avec le thème de MARQUE, lui global à l'instance et servi
- * par `/api/theme` (voir `ThemeProvider`).
+ * Les jetons eux-mêmes vivent dans `tokens.css`, qui redéclare les couleurs
+ * sous `:root[data-theme="light"]` : ce module ne fait que poser l'attribut.
  *
  * DÉTECTION OS — `matchMedia('(prefers-color-scheme: dark)')` est le signal
  * primaire, et le seul. Vérifié : il suit l'OS dans les deux webviews Tauri
@@ -121,8 +121,8 @@ export function syncFromDocument(): void {
  * Ce fond existe pour qu'une fenetre Tauri `transparent: true` ne laisse pas
  * voir le bureau avant que la feuille de style ne soit appliquee. Une fois
  * l'app montee, le CSS prend le relais via `--surface-0` : on doit liberer le
- * style inline, sinon il FIGERAIT le fond et neutraliserait a la fois la
- * bascule clair/sombre et la surcharge de surface de l'admin.
+ * style inline, sinon il FIGERAIT le fond et neutraliserait la bascule
+ * clair/sombre.
  */
 export function releaseBootBackground(): void {
   document.documentElement.style.background = "";

@@ -1,48 +1,73 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { RefreshControl, View, Text, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
-  useLibraries, useLatestItems, useUserId,
+  useLibraries, useUserId,
   useWatchlist,
-  useHomeWebSocket, useTentacleConfig,
+  useHomeWebSocket, useRecoLive, useTentacleConfig,
 } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { SkeletonHero, SkeletonRow, FadeIn, SubtleBackground } from "@/components/ui";
+import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { MobileMediaCard } from "@/components/MobileMediaCard";
-import { MediaRow } from "@/components/MediaRow";
-import { MyListRow } from "@/components/MyListRow";
+import { HomeRow } from "@/components/home/homeRowRegistry";
+import type { HomeRowActions, HomeRowData } from "@/components/home/homeRowRegistry";
+import { useHomeRows } from "@/components/home/useHomeRows";
 import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
+import { useRecoNavigation } from "@/hooks/useRecoNavigation";
+import { useRecoFilterChipRow } from "@/components/reco/useRecoFilterChipRow";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
+import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
-/** Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton stylé. */
+/** Les caches que « tirer pour rafraîchir » renouvelle, au-delà des requêtes
+ *  déjà tenues par l'écran : la mise en page et les rangées auto-alimentées. */
+const REFRESH_KEYS: string[][] = [
+  ["home-layout"], ["watched-items"], ["favorites"], ["latest-items"], ["watchlist"], ["reco-page"],
+];
+
+/**
+ * Home — ambient orbe + HeroBanner cinematic + rangées cascade + skeleton
+ * stylé. Les rangées viennent de la mise en page du COMPTE (celle que le web
+ * édite) : ordre et activation identiques sur toutes les plateformes ; le
+ * rendu de chaque clé vit dans `homeRowRegistry`.
+ */
 export function HomeScreen() {
-  const { t } = useTranslation("common");
   const { t: te } = useTranslation("errors");
   const theme = useTheme();
   const st = useThemedStyles(makeErrStyles);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const headerH = useHeaderHeight();
   // La nav se replie au défilement — le signal part d'ici (fil UI seul).
   const onScrollChrome = useScrollChromeHandler();
   const userId = useUserId();
   const { storage } = useTentacleConfig();
-  useHomeWebSocket({ token: storage.getItem("tentacle_token") });
+  const token = storage.getItem("tentacle_token");
+  useHomeWebSocket({ token });
+  // Les recommandations reconstruites en fond arrivent en silence (reco:update).
+  useRecoLive({ token });
 
   const featured = useFeaturedItems();
   const resume = useResumeItems();
   const nextUp = useNextUp();
   const libraries = useLibraries();
   const watchlist = useWatchlist();
+  const { rows } = useHomeRows();
+  const recoNav = useRecoNavigation();
+  const filterChipRowKey = useRecoFilterChipRow(rows);
 
   const [longPressItemId, setLongPressItemId] = useState<string | null>(null);
   const [actionSheetVisible, setActionSheetVisible] = useState(false);
+  // Appui long sur une recommandation hors bibliothèque : sa propre feuille.
+  const [recoTarget, setRecoTarget] = useState<RecoRowItem | null>(null);
 
   const isLoading = featured.isLoading || resume.isLoading;
 
@@ -51,26 +76,50 @@ export function HomeScreen() {
     ? resume.data.slice(0, 5)
     : featured.data ?? [];
 
-  const resumeRowItems = resume.data ?? [];
-  const nextUpRowItems = nextUp.data ?? [];
-
   const handleRefresh = useCallback(() => {
     featured.refetch();
     resume.refetch();
     nextUp.refetch();
     libraries.refetch();
-  }, [featured, resume, nextUp, libraries]);
+    for (const queryKey of REFRESH_KEYS) void queryClient.invalidateQueries({ queryKey });
+  }, [featured, resume, nextUp, libraries, queryClient]);
 
   const handlePress = useCallback((item: MediaItem) => { router.push(`/media/${item.Id}`); }, [router]);
   const handlePlay = useCallback((item: MediaItem) => { router.push(`/watch/${item.Id}`); }, [router]);
-  const handleLongPress = useCallback((item: MediaItem) => {
-    setLongPressItemId(item.Id);
+  const openActions = useCallback((jellyfinId: string) => {
+    setLongPressItemId(jellyfinId);
     setActionSheetVisible(true);
   }, []);
+  const handleLongPress = useCallback((item: MediaItem) => openActions(item.Id), [openActions]);
 
   const renderCard = useCallback((item: MediaItem) => (
     <MobileMediaCard item={item} onPress={() => handlePress(item)} onLongPress={() => handleLongPress(item)} />
   ), [handlePress, handleLongPress]);
+
+  const librariesById = useMemo(() => {
+    const map: HomeRowData["librariesById"] = new Map();
+    (libraries.data ?? []).forEach((lib, index) =>
+      map.set(lib.Id, { id: lib.Id, name: lib.Name, collectionType: lib.CollectionType, index }));
+    return map;
+  }, [libraries.data]);
+  const rowData = useMemo<HomeRowData>(() => ({
+    resume: resume.data ?? [],
+    nextUp: nextUp.data ?? [],
+    watchlist: watchlist.data ?? [],
+    librariesById,
+    filterChipRowKey,
+  }), [resume.data, nextUp.data, watchlist.data, librariesById, filterChipRowKey]);
+  const rowActions = useMemo<HomeRowActions>(() => ({
+    renderCard,
+    onItemPress: (jellyfinId) => router.push(`/media/${jellyfinId}`),
+    onItemLongPress: openActions,
+    onSeeAll: (route) => router.push(route),
+    canOpenReco: recoNav.canOpen,
+    onRecoPress: recoNav.open,
+    // En bibliothèque : la feuille habituelle (favoris, Ma liste, vu) ;
+    // sinon celle des recommandations (« Ne plus me proposer »).
+    onRecoLongPress: (item) => (item.jellyfinItemId ? openActions(item.jellyfinItemId) : setRecoTarget(item)),
+  }), [renderCard, router, openActions, recoNav]);
 
   const anyFetching = featured.isFetching || resume.isFetching;
   if (isLoading || (!userId && anyFetching)) {
@@ -111,45 +160,15 @@ export function HomeScreen() {
           />
         }
       >
-        {/* Hero Carousel */}
+        {/* Hero Carousel — natif : reprise, sinon mis en avant. */}
         {heroItems.length > 0 && (
           <HeroBanner items={heroItems} onPlay={handlePlay} onInfo={handlePress} />
         )}
 
-        {/* Reprendre la lecture — strict parité avec le desktop (hero inclus). */}
-        {resumeRowItems.length > 0 && (
-          <FadeIn delay={100}>
-            <MediaRow title={t("resumeWatching")} data={resumeRowItems} renderItem={renderCard} />
-          </FadeIn>
-        )}
-
-        {/* Prochains épisodes — row séparée comme sur le desktop. */}
-        {nextUpRowItems.length > 0 && (
-          <FadeIn delay={170}>
-            <MediaRow title={t("nextEpisodes")} data={nextUpRowItems} renderItem={renderCard} />
-          </FadeIn>
-        )}
-
-        {/* Ma liste */}
-        <FadeIn delay={240}>
-          <MyListRow
-            personalItems={watchlist.data ?? []}
-            onSeeAll={() => router.push("/watchlist")}
-            onItemPress={(jellyfinId) => router.push(`/media/${jellyfinId}`)}
-            onItemLongPress={(jellyfinId) => { setLongPressItemId(jellyfinId); setActionSheetVisible(true); }}
-          />
-        </FadeIn>
-
-        {/* Library rows */}
-        {(libraries.data ?? []).map((lib, index) => (
-          <LibraryRow
-            key={lib.Id}
-            libraryId={lib.Id}
-            libraryName={lib.Name}
-            collectionType={lib.CollectionType}
-            renderCard={renderCard}
-            index={index}
-          />
+        {/* Les rangées, dans l'ordre du compte (mise en page partagée avec le
+            web et la TV) ; chaque clé se rend depuis le registre. */}
+        {rows.map((row, index) => (
+          <HomeRow key={row.key} rowKey={row.key} index={index} data={rowData} actions={rowActions} />
         ))}
       </Animated.ScrollView>
 
@@ -160,6 +179,7 @@ export function HomeScreen() {
           onClose={() => setActionSheetVisible(false)}
         />
       )}
+      <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />
     </SubtleBackground>
   );
 }
@@ -168,22 +188,3 @@ const makeErrStyles = (t: AppTheme) => StyleSheet.create({
   errTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, marginBottom: 8, textAlign: "center" as const },
   errMsg: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary, textAlign: "center" as const, maxWidth: 320 },
 });
-
-function LibraryRow({ libraryId, libraryName, collectionType, renderCard, index }: {
-  libraryId: string;
-  libraryName: string;
-  collectionType?: string;
-  renderCard: (item: MediaItem) => React.ReactNode;
-  index: number;
-}) {
-  const { t } = useTranslation("common");
-  // collectionType active le regroupement en collection des bibliothèques
-  // séries (runs d'épisodes → tuile série + badge "+N") — parité desktop.
-  const { data } = useLatestItems(libraryId, { collectionType });
-  if (!data || data.length === 0) return null;
-  return (
-    <FadeIn delay={320 + index * 90}>
-      <MediaRow title={t("latestAdditions", { name: libraryName })} data={data} renderItem={renderCard} />
-    </FadeIn>
-  );
-}

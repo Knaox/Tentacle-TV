@@ -49,8 +49,10 @@ export function usePlaybackReporting({
   const startedRef = useRef(false);
   const playMethod = isDirectPlay ? "DirectPlay" : isDirectStream ? "DirectStream" : "Transcode";
 
-  // Promise from the last stop call — lets callers (Watch.tsx) chain cache
-  // invalidation after Jellyfin has processed the final position.
+  // Promesse du DERNIER `/Sessions/Playing/Stopped` réellement posté — par le
+  // cleanup de démontage (web, bureau) comme par `reportStop()` explicite
+  // (mobile, téléviseur). Les appelants y enchaînent leur rangement de sortie,
+  // une fois que Jellyfin a écrit la position finale et `Played`.
   const lastStopPromiseRef = useRef<Promise<void>>(Promise.resolve());
 
   // Refs for unmount cleanup (avoids premature Stop events on dep changes)
@@ -225,9 +227,11 @@ export function usePlaybackReporting({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Explicit stop for platforms that call it manually (TV, mobile).
-  // Returns a Promise so callers can wait for Jellyfin to acknowledge
-  // the final position before invalidating caches.
+  // Arrêt explicite, pour les plateformes qui l'appellent elles-mêmes (mobile,
+  // téléviseur). Rend la promesse du POST et la mémorise AUSSI dans
+  // `lastStopPromiseRef` : une seule source de vérité du « dernier Stopped
+  // réel », quel que soit le chemin qui l'a posté. Une lecture déjà arrêtée ne
+  // touche pas au ref — il garde la promesse du vrai arrêt.
   const reportStop = useCallback((): Promise<void> => {
     clearProgressInterval();
     // Le transcodage est lancé par la REQUÊTE DE FLUX, pas par `reportStart` :
@@ -241,12 +245,14 @@ export function usePlaybackReporting({
     const id = itemIdRef.current;
     if (!id || !startedRef.current) return Promise.resolve();
     startedRef.current = false;
-    return sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
+    const stopped = sessionPost(clientRef.current, "/Sessions/Playing/Stopped", {
       ItemId: id,
       MediaSourceId: msIdRef.current ?? id,
       PlaySessionId: playSessionIdRef.current ?? undefined,
       PositionTicks: safePositionTicks(positionRef.current),
     }, "reportStop");
+    lastStopPromiseRef.current = stopped;
+    return stopped;
   }, []);
 
   /** Kill the active transcode — exposed for seek in transcoded mode. */

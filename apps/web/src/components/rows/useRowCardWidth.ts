@@ -6,6 +6,7 @@ import {
   POSTER_WIDTH,
   idealCardWidth,
 } from "../cards/cardSizes";
+import { useCardSize } from "../../contexts/CardDensityContext";
 
 /**
  * Largeur de carte calée sur la rangée : un nombre ENTIER de cartes remplit
@@ -34,6 +35,9 @@ export function useRowCardWidth(
   variant: "poster" | "episode",
 ): number | null {
   const [width, setWidth] = useState<number | null>(null);
+  // Densité choisie dans Personnalisation — lue AU point de mesure, pour que
+  // ni les rangées ni les cartes n'aient à transporter la prop.
+  const size = useCardSize();
 
   const measure = useCallback(() => {
     const el = scrollRef.current;
@@ -48,8 +52,8 @@ export function useRowCardWidth(
 
     const ideal =
       variant === "episode"
-        ? idealCardWidth(EPISODE_WIDTH.md, EPISODE_VW, window.innerWidth)
-        : idealCardWidth(POSTER_WIDTH.md, POSTER_VW, window.innerWidth);
+        ? idealCardWidth(EPISODE_WIDTH[size], EPISODE_VW, window.innerWidth)
+        : idealCardWidth(POSTER_WIDTH[size], POSTER_VW, window.innerWidth);
 
     const count = Math.round((content + gap) / (ideal + gap));
     if (count < 2) {
@@ -57,7 +61,7 @@ export function useRowCardWidth(
       return;
     }
     setWidth((content - gap * (count - 1)) / count);
-  }, [scrollRef, variant]);
+  }, [scrollRef, variant, size]);
 
   useEffect(() => {
     measure();

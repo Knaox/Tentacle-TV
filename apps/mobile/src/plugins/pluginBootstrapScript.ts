@@ -12,8 +12,28 @@ interface BootstrapParams {
   backendUrl: string;
   lang: string;
   pluginPath: string;
+  /** Query string de la route demandée (« ?media=movie:603 ») — deep-link
+   *  vers un contenu du plugin, lue par lui dans `__tentacle_env.query`. */
+  pluginQuery?: string;
   /** Bundle IIFE déjà échappé pour insertion dans un template literal JS. */
   escapedBundle: string;
+}
+
+/**
+ * L'environnement hôte exposé aux plugins — le MÊME contrat que l'iframe web
+ * (`PluginHostEnv`, cf. buildPluginBridge.ts) : `tauri` figé à faux (API
+ * publique), pas de bureau, `query` du deep-link. Posé avant l'injection du
+ * bundle, qui le lit au montage.
+ */
+function hostEnv(backendUrl: string, query: string | undefined): string {
+  return JSON.stringify({
+    tauri: false,
+    desktop: false,
+    mac: false,
+    prod: !__DEV__,
+    backendUrl,
+    ...(query ? { query } : {}),
+  });
 }
 
 /** Contenu du `<script>` final (sans les balises). */
@@ -21,9 +41,11 @@ export function buildPluginBootstrapScript({
   backendUrl,
   lang,
   pluginPath,
+  pluginQuery,
   escapedBundle,
 }: BootstrapParams): string {
   return `
+    window.__tentacle_env = ${hostEnv(backendUrl, pluginQuery)};
     __perf.sharedDepsLoaded = performance.now();
     (async function() {
       try {

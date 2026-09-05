@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { preloadable } from "./lib/preloadable";
 
 /**
  * Pages chargees a la demande.
@@ -25,6 +26,7 @@ export const Preferences = lazy(() => import("./pages/Preferences").then((m) => 
 export const SettingsLayout = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsLayout })));
 export const SettingsIndex = lazy(() => import("./components/settings/SettingsLayout").then((m) => ({ default: m.SettingsIndex })));
 export const SettingsAppearance = lazy(() => import("./pages/settings/SettingsAppearance").then((m) => ({ default: m.SettingsAppearance })));
+export const SettingsPersonalization = lazy(() => import("./pages/settings/SettingsPersonalization").then((m) => ({ default: m.SettingsPersonalization })));
 export const SettingsSecurity = lazy(() => import("./pages/settings/SettingsSecurity").then((m) => ({ default: m.SettingsSecurity })));
 export const About = lazy(() => import("./pages/About").then((m) => ({ default: m.About })));
 export const Credits = lazy(() => import("./pages/Credits").then((m) => ({ default: m.Credits })));
@@ -34,10 +36,11 @@ export const AdminUsers = lazy(() => import("./pages/AdminUsers").then((m) => ({
 export const AdminDownloads = lazy(() => import("./pages/AdminDownloads").then((m) => ({ default: m.AdminDownloads })));
 export const AdminTicketsPage = lazy(() => import("./pages/AdminTicketsPage").then((m) => ({ default: m.AdminTicketsPage })));
 export const AdminServicesPage = lazy(() => import("./pages/AdminServicesPage").then((m) => ({ default: m.AdminServicesPage })));
-export const AdminTheme = lazy(() => import("./pages/AdminTheme").then((m) => ({ default: m.AdminTheme })));
-export const AdminThemeTokens = lazy(() => import("./pages/AdminThemeTokens").then((m) => ({ default: m.AdminThemeTokens })));
-export const AdminThemeReference = lazy(() => import("./pages/AdminThemeReference").then((m) => ({ default: m.AdminThemeReference })));
+export const AdminMetadata = lazy(() => import("./pages/AdminMetadata").then((m) => ({ default: m.AdminMetadata })));
 export const Watchlist = lazy(() => import("./pages/Watchlist").then((m) => ({ default: m.Watchlist })));
+// Préchargeable : le chunk se charge au boot et au survol du lien, et la page
+// se rend alors sans suspendre — jamais de spinner à l'arrivée.
+export const Recommendations = preloadable(() => import("./pages/Recommendations").then((m) => m.Recommendations));
 export const Favorites = lazy(() => import("./pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const DownloadsPage = lazy(() => import("./downloads/DownloadsPage").then((m) => ({ default: m.DownloadsPage })));
 export const OfflineCatalog = lazy(() => import("./downloads/OfflineCatalog").then((m) => ({ default: m.OfflineCatalog })));

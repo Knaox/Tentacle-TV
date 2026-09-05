@@ -51,6 +51,7 @@ export default {
   dismiss: "Dismiss",
   // L'affiche de fin : la refuser SORT du lecteur — le bouton dit où l'on va.
   backToDetails: "Back to details",
+  rateJustWatched: "Rate the episode you just watched",
   // Les segments au-delà de l'intro — chaque libellé a sa forme décomptée.
   skipRecap: "Skip recap",
   skipRecapIn: "Skip recap in {{seconds}}s",
@@ -69,6 +70,7 @@ export default {
   playbackError: "Video playback error",
   playbackGiveUp: "This video can't be played on this TV",
   qualityReduced: "Quality lowered to match your network speed",
+  qualityAutoBadge: "Auto",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
   retry: "Retry",
   back: "Back",

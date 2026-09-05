@@ -6,7 +6,9 @@ import { useUserId } from "./useUserId";
 import {
   updateItemUserDataInCache, patchSeriesIdSet, hoistResumeItem, invalidateSeriesWatchViews,
 } from "./cacheUtils";
-import { retireSeriesFromWatchlistIfFullyWatched, WATCHLIST_SERIES_IDS_KEY } from "./watchlistEffects";
+import {
+  retireSeriesFromWatchlistIfFullyWatched, stoppedPastHalf, WATCHLIST_SERIES_IDS_KEY,
+} from "./watchlistEffects";
 import { clearPlayedWhenResumable } from "./resumeOverPlayed";
 
 /**
@@ -23,16 +25,25 @@ interface StopArgs {
   /** Présent si l'item lu est un ÉPISODE → série parente. */
   seriesId?: string;
   itemType?: string;
+  /** Position au moment de l'arrêt, en secondes — inconnue, le serveur tranche seul. */
+  stopPositionSeconds?: number;
+  /** Durée du média (`RunTimeTicks`), pour situer la position d'arrêt. */
+  runtimeTicks?: number;
 }
 
 /**
  * Logique d'invalidation à l'ARRÊT de lecture, partagée web/desktop.
  *
- * Retrait de « Ma liste » à 100% vu :
- * - Film / série : on retire le like UNIQUEMENT si Jellyfin a marqué l'item
- *   `Played` (≥ seuil), pas au simple lancement du player.
+ * Retrait de « Ma liste » après un visionnage COMPLET — et seulement après un
+ * visionnage : marquer vu à la main ne retire rien (cf. useWatchedToggle).
+ * - Film : on retire le like UNIQUEMENT si Jellyfin a marqué l'item `Played`
+ *   (≥ son seuil de fin), pas au simple lancement du player.
  * - Épisode : on ne touche pas au like de l'épisode ; si la série devient
  *   entièrement vue, c'est ELLE qui quitte Ma liste.
+ * - Dans les deux cas, la position d'arrêt doit dépasser la moitié du média
+ *   (`stoppedPastHalf`) : un titre déjà marqué vu à la main, lancé puis quitté
+ *   dans les premières secondes, garde son `Played` — le serveur seul le
+ *   croirait vu jusqu'au bout.
  */
 export function useWatchStopInvalidation() {
   const qc = useQueryClient();
@@ -40,7 +51,7 @@ export function useWatchStopInvalidation() {
   const userId = useUserId();
 
   return useCallback(
-    async ({ itemId, seriesId, itemType }: StopArgs) => {
+    async ({ itemId, seriesId, itemType, stopPositionSeconds, runtimeTicks }: StopArgs) => {
       if (!itemId || !userId) return;
 
       // AVANT tout réseau : « Reprendre la lecture » se réordonne à l'instant.
@@ -62,13 +73,17 @@ export function useWatchStopInvalidation() {
         }));
       }
 
+      // Position inconnue (appelant qui ne la fournit pas) → verdict serveur seul.
+      const mayRetire = stoppedPastHalf(stopPositionSeconds, runtimeTicks) !== false;
+
       if (itemType === "Episode" && seriesId) {
-        await qc.refetchQueries({ queryKey: ["series-watch-state", seriesId] });
-        await retireSeriesFromWatchlistIfFullyWatched(qc, client, userId, seriesId);
+        // L'état de la série est redemandé au serveur par le retrait lui-même,
+        // et posé dans le cache — qu'une fiche l'ait créé ou non.
+        if (mayRetire) await retireSeriesFromWatchlistIfFullyWatched(qc, client, userId, seriesId);
         // La fiche de la série, ses saisons et sa liste d'épisodes — voir
         // `invalidateSeriesWatchViews`, partagée avec le mobile et le téléviseur.
         invalidateSeriesWatchViews(qc, seriesId);
-      } else {
+      } else if (mayRetire) {
         const fresh = await client
           .fetch<MediaItem>(`/Users/${userId}/Items/${itemId}?EnableUserData=true`)
           .catch(() => null);

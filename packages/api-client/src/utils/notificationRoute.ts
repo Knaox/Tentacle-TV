@@ -20,6 +20,14 @@ export function resolveNotificationRoute(
     case "ticket_status":
       return refId ? `/support?ticketId=${refId}` : "/support";
 
+    // Adressés aux admins : la page admin sur le web ; sur mobile, l'écran de
+    // support est unique et l'admin y voit tous les tickets.
+    case "ticket_new":
+    case "ticket_user_reply":
+    case "ticket_user_closed":
+      if (platform === "mobile") return refId ? `/support?ticketId=${refId}` : "/support";
+      return refId ? `/admin/tickets?ticketId=${refId}` : "/admin/tickets";
+
     case "request_status": {
       if (!plugins || plugins.length === 0) return null;
       // Find the first plugin that has a user-facing nav item for this platform

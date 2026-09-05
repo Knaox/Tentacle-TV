@@ -30,7 +30,7 @@ export type { AudioTrack, SubtitleTrack } from "./player/videoPlayer.types";
 export function VideoPlayer({
   src, itemId, item, mediaSourceId, title, subtitle, startPositionSeconds, jellyfinDuration,
   subtitleTracks = [], audioTracks = [],
-  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets,
+  currentAudio, currentSubtitle, currentQuality, sourceQuality, qualityPresets, autoQualityActive,
   isDirectPlay = true, streamOffset = 0, useNativeHls,
   onAudioChange, onSubtitleChange, onQualityChange,
   onProgress, onStarted, onSeekRequest, onSeekComplete, onDirectPlayNonFiable, onTrackNotFound,
@@ -38,7 +38,6 @@ export function VideoPlayer({
   hasNextEpisode, hasPreviousEpisode, nextEpisodeTitle,
   nextEpisodeImageUrl, nextEpisodeDescription,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
-  serverAutoplayEnabled = true,
   onNextEpisode, onPreviousEpisode,
   segments = [], runtimeMs = 0, libraryId = null, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
@@ -120,7 +119,6 @@ export function VideoPlayer({
     segments,
     runtimeMs,
     libraryId,
-    serverAutoplayEnabled,
     groupSession: inGroupSession,
     controlsVisible: showControls,
     onSeekSeconds: handleSeek,
@@ -265,6 +263,7 @@ export function VideoPlayer({
         nextEpisodeTitle={nextEpisodeTitle} nextEpisodeDescription={nextEpisodeDescription}
         nextEpisodeImageUrl={nextEpisodeImageUrl} nextSeriesBackdropUrl={nextSeriesBackdropUrl}
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
+        item={item} onRatingEngage={playback.cancelNextCountdown}
         videoRef={videoRef} userInteractedRef={userInteractedRef}
         setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
       />
@@ -282,7 +281,7 @@ export function VideoPlayer({
           playing, currentTime, duration, buffered, volume, fullscreen,
           item, itemId, mediaSourceId, title, subtitle,
           audioTracks, subtitleTracks, qualityPresets,
-          currentAudio, currentSubtitle, currentQuality, sourceQuality,
+          currentAudio, currentSubtitle, currentQuality, sourceQuality, autoQualityActive,
           hasNextEpisode, hasPreviousEpisode,
           onTogglePlay: togglePlay, onSeek: handleSeek, onSkip: skipBy,
           onVolumeChange: handleVolumeChange, onToggleMute: handleToggleMute,

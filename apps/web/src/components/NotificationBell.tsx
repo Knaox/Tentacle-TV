@@ -9,6 +9,8 @@ import {
   useDeleteNotification,
   useDeleteNotifications,
   useDeleteAllNotifications,
+  useNotificationsLive,
+  useJellyfinClient,
   resolveNotificationRoute,
 } from "@tentacle-tv/api-client";
 import type { AppNotification } from "@tentacle-tv/api-client";
@@ -37,6 +39,12 @@ export function NotificationBell({ dropdownPosition = "below" }: NotificationBel
   const deleteBatchMut = useDeleteNotifications();
   const deleteAllMut = useDeleteAllNotifications();
   const sel = useMultiSelect();
+
+  // La cloche vit sur toutes les pages : elle s'abonne elle-même au socket
+  // (même jeton que l'accueil ; null = cookie sur le web) pour se rafraîchir
+  // à l'instant où une notification est écrite, sans attendre le polling.
+  const client = useJellyfinClient();
+  useNotificationsLive({ token: client.getAccessToken() || localStorage.getItem("tentacle_token") });
 
   const activePluginsMeta = useActivePluginsMeta();
   const pluginNavMeta = useMemo(

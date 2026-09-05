@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
+import { preloadable } from "@/lib/preloadable";
 import { UnavailableScreen } from "./unavailableScreen";
 import { UnpairedScreen } from "../ui/screens/UnpairedScreen";
 import { AccountScreenTv } from "../ui/settings/AccountScreenTv";
@@ -87,15 +88,13 @@ export const Preferences = PlaybackScreenTv;
 
 // Administration : gestion de serveur, à faire depuis un ordinateur.
 export const AdminLayout = Unavailable;
+export const AdminMetadata = Unavailable;
 export const AdminInvites = Unavailable;
 export const AdminPlugins = Unavailable;
 export const AdminUsers = Unavailable;
 export const AdminDownloads = Unavailable;
 export const AdminTicketsPage = Unavailable;
 export const AdminServicesPage = Unavailable;
-export const AdminTheme = Unavailable;
-export const AdminThemeTokens = Unavailable;
-export const AdminThemeReference = Unavailable;
 
 // Téléchargements et mode hors ligne : le stockage d'une dalle ne s'y prête pas.
 export const DownloadsPage = Unavailable;
@@ -110,3 +109,11 @@ export const Support = Unavailable;
 
 // Écrans pensés pour un téléphone.
 export const MobileProfile = Unavailable;
+
+// L'accueil se compose depuis un ordinateur ou un téléphone : le téléviseur
+// LIT la mise en page du compte (rangées, ordre, recommandations), il ne la
+// règle pas. La page Recommandations n'a pas de version télécommande — ses
+// rangées vivent sur l'accueil ; `preloadable`, car le préchargement de
+// session appelle `Recommendations.preload()` au démarrage.
+export const SettingsPersonalization = Unavailable;
+export const Recommendations = preloadable(async () => UnavailableScreen);

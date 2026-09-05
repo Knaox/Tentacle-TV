@@ -56,7 +56,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   const skipTargetMsRef = useRef<number | null>(null);
 
   // L'enchaînement d'épisode vit dans son propre bloc — état, gestes, refus.
-  const { nextState, dispatchNext, playNow, dismissNext, signalRemoteNextDismiss } =
+  const { nextState, dispatchNext, playNow, dismissNext, cancelNextCountdown, signalRemoteNextDismiss } =
     useAutoNextDispatch(inputRef, settingsRef);
 
   // Quand l'affiche de fin n'est pas due à l'EOF, la sortie du lecteur part
@@ -186,7 +186,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     input.playbackEnded,
     input.segments,
     input.hasNextEpisode,
-    input.serverAutoplayEnabled,
     input.scrubbing,
     settings,
   ]);
@@ -216,7 +215,6 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       isEpisode: input.isEpisode,
       hasNextEpisode: input.hasNextEpisode,
       settings,
-      serverAutoplayEnabled: input.serverAutoplayEnabled,
       mutedSegments: muted,
       libraryId: input.libraryId ?? null,
       controlsVisible: input.controlsVisible,
@@ -292,6 +290,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
     mutedSegments: muted,
     skipNow,
     playNow,
+    cancelNextCountdown,
     signalRemoteSegmentDismiss,
     signalRemoteNextDismiss,
   };

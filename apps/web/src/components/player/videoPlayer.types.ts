@@ -49,6 +49,8 @@ export interface VideoPlayerProps {
   sourceQuality?: SourceQuality;
   /** Paliers de qualité calculés d'après la source (cf. buildQualityLadder). */
   qualityPresets?: readonly QualityPreset[];
+  /** Badge « Auto » sur le palier actif du sélecteur (cap de débit armé). */
+  autoQualityActive?: boolean;
   isDirectPlay?: boolean;
   streamOffset?: number;
   /** Force native HLS via WKWebView/AVFoundation (skip hls.js). */
@@ -85,8 +87,6 @@ export interface VideoPlayerProps {
   nextEpisodeDescription?: string;
   nextSeriesBackdropUrl?: string;
   nextEpisodeThumbUrl?: string;
-  /** Garde serveur admin « Déclenchement auto-play » (carte + écran de fin). */
-  serverAutoplayEnabled?: boolean;
   onNextEpisode?: () => void;
   onPreviousEpisode?: () => void;
   /** Les segments RÉSOLUS du média (contrat v1, ms) — l'arbitre décide de tout. */

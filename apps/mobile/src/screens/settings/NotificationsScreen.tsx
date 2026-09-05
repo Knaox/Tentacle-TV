@@ -6,20 +6,24 @@ import {
   useSetPushPreferences,
   useSendTestPush,
   useRegisterPushDevice,
-  useTentacleConfig,
+  PUSH_PREF_DEFAULTS,
   type PushPreferences,
 } from "@tentacle-tv/api-client";
 
 import { SettingsScaffold } from "./SettingsScaffold";
 import { SettingsSection, SettingsRow } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 /**
- * Sous-écran « Notifications » : deux préférences push (opt-in). Le toggle Seer
- * n'apparaît que si le plugin `seer` est actif sur le serveur. Un bouton envoie
- * une notif de test pour valider la chaîne bout-en-bout sur l'appareil.
+ * Sous-écran « Notifications » : les préférences push. Ajouts bibliothèque et
+ * Seer sont opt-in ; « Tickets de support » est ACTIVÉE par défaut (même
+ * table de défauts que le serveur, PUSH_PREF_DEFAULTS — un serveur ancien qui
+ * ne renvoie pas la clé n'éteint pas le réglage). Le toggle Seer n'apparaît
+ * que si le plugin `seer` est actif. Un bouton envoie une notif de test pour
+ * valider la chaîne bout-en-bout sur l'appareil.
  */
 export function NotificationsScreen() {
   const { t } = useTranslation("notifications");
@@ -36,15 +40,7 @@ export function NotificationsScreen() {
   // Bouton de test : outil de diagnostic DEV uniquement (invisible en prod,
   // même pour les admins — l'endpoint backend refuse aussi) et réservé aux
   // admins en dev.
-  const { storage } = useTentacleConfig();
-  const isAdmin = (() => {
-    try {
-      const raw = storage.getItem("tentacle_user");
-      return raw ? JSON.parse(raw)?.Policy?.IsAdministrator === true : false;
-    } catch {
-      return false;
-    }
-  })();
+  const isAdmin = useIsAdmin();
   const showTestButton = __DEV__ && isAdmin;
 
   const toggle = useCallback(
@@ -83,14 +79,19 @@ export function NotificationsScreen() {
     });
   }, [testPush, t]);
 
+  const labels: Record<keyof PushPreferences, string> = {
+    libraryAdded: t("libraryAddedTitle"),
+    seerAvailable: t("seerAvailableTitle"),
+    tickets: t("ticketsTitle"),
+  };
   const renderSwitch = (key: keyof PushPreferences) => (
     <Switch
-      value={prefs?.[key] ?? false}
+      value={prefs?.[key] ?? PUSH_PREF_DEFAULTS[key]}
       onValueChange={(next) => toggle(key, next)}
       trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
       thumbColor={theme.colors.cta.brandFg}
       ios_backgroundColor={theme.colors.fill.medium}
-      accessibilityLabel={key === "libraryAdded" ? t("libraryAddedTitle") : t("seerAvailableTitle")}
+      accessibilityLabel={labels[key]}
     />
   );
 
@@ -102,7 +103,6 @@ export function NotificationsScreen() {
           label={t("libraryAddedTitle")}
           description={t("libraryAddedDesc")}
           trailing={renderSwitch("libraryAdded")}
-          last={!seerActive}
         />
         {seerActive ? (
           <SettingsRow
@@ -110,9 +110,15 @@ export function NotificationsScreen() {
             label={t("seerAvailableTitle")}
             description={t("seerAvailableDesc")}
             trailing={renderSwitch("seerAvailable")}
-            last
           />
         ) : null}
+        <SettingsRow
+          icon="life-buoy"
+          label={t("ticketsTitle")}
+          description={t("ticketsDesc")}
+          trailing={renderSwitch("tickets")}
+          last
+        />
       </SettingsSection>
 
       {showTestButton ? (

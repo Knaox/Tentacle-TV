@@ -58,7 +58,6 @@ const makeInput = (patch?: Partial<ArbiterInput>): ArbiterInput => ({
   isEpisode: true,
   hasNextEpisode: true,
   settings: makeSettings(),
-  serverAutoplayEnabled: true,
   dismissed: { segments: {}, nextCard: false, finalCard: false },
   countdowns: { skip: null, next: null },
   ...patch,
@@ -252,18 +251,6 @@ describe("priorités et gardes", () => {
     // La pilule, elle, a le droit d'y être : elle ne couvre pas l'image et ne
     // décompte rien. C'est la CARTE qu'on ne veut pas voir ici.
     expect(overlay).toEqual({ kind: "nextButton", dismissible: true });
-  });
-
-  it("la garde serveur coupe la carte, jamais les boutons de saut", () => {
-    const card = arbitrateOverlay(
-      makeInput({ segments: [OUTRO_AT_END], positionMs: 1_310_000, serverAutoplayEnabled: false }),
-    );
-    expect(card).toEqual({ kind: "none" });
-
-    const button = arbitrateOverlay(
-      makeInput({ segments: [INTRO], positionMs: 60_000, serverAutoplayEnabled: false }),
-    );
-    expect(button.kind).toBe("skip");
   });
 
   it("fiche refusée : plus de carte pendant le générique — mais l'écran de fin reste dû", () => {

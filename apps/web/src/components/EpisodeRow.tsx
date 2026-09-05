@@ -13,6 +13,14 @@ import { QualityChips, LanguagePill } from "./media/MetaChips";
 import { extractMediaQuality } from "../lib/mediaQuality";
 import { EpisodeDownloadAction } from "../downloads/EpisodeDownloadAction";
 import { RichOverview } from "../lib/overviewHtml";
+import { EpisodeRatingLine } from "./rating/EpisodeRatingLine";
+import type { EpisodeRatingValues } from "./rating/EpisodeRatingLine";
+
+/** Notes d'un épisode + saisie : valeurs et rappels fournis par la liste (un seul abonnement). */
+export interface EpisodeRowRating extends EpisodeRatingValues {
+  onRate: (score: number) => void;
+  onClear: () => void;
+}
 
 export interface EpisodeRowProps {
   episode: MediaItem;
@@ -24,9 +32,11 @@ export interface EpisodeRowProps {
   isCurrent?: boolean;
   onToggleSelect: () => void;
   onPlay: () => void;
+  /** Absent quand l'épisode n'est pas notable (série sans tmdb, numéros manquants). */
+  rating?: EpisodeRowRating;
 }
 
-export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay }: EpisodeRowProps) {
+export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelecting, isSelected, isCurrent, onToggleSelect, onPlay, rating }: EpisodeRowProps) {
   const { t } = useTranslation("common");
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
   const quality = useMemo(() => extractMediaQuality(ep), [ep]);
@@ -144,6 +154,7 @@ export function EpisodeRow({ episode: ep, client, seriesId, seasonId, isSelectin
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-quaternary">
           {runtime && <span>{t("common:minutesShort", { count: runtime })}</span>}
           {ep.PremiereDate && <span>{new Date(ep.PremiereDate).toLocaleDateString()}</span>}
+          {rating && <EpisodeRatingLine {...rating} />}
           {/* Méta qualité + langues à côté du titre (plus sur la miniature). */}
           <QualityChips quality={quality} density="full" />
           <LanguagePill labels={quality.audioLabels} max={3} />

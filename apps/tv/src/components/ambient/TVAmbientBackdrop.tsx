@@ -8,8 +8,8 @@ import Animated, {
 } from "react-native-reanimated";
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
-import { useAmbientItem } from "../../contexts/AmbientFocusContext";
+import { ambientTargetId, useAmbientItem } from "../../contexts/AmbientFocusContext";
+import type { AmbientTarget } from "../../contexts/AmbientFocusContext";
 import { Colors, AmbientConfig } from "../../theme/colors";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -27,7 +27,7 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
   const focusedItem = useAmbientItem();
   const client = useJellyfinClient();
   const [reduceMotion, setReduceMotion] = useState(false);
-  const [layers, setLayers] = useState<{ a: MediaItem | null; b: MediaItem | null }>({
+  const [layers, setLayers] = useState<{ a: AmbientTarget | null; b: AmbientTarget | null }>({
     a: null,
     b: null,
   });
@@ -68,7 +68,7 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
     }
     const incomingLayer = activeLayerRef.current === "a" ? "b" : "a";
     pendingLayerRef.current = incomingLayer;
-    pendingItemIdRef.current = focusedItem.Id;
+    pendingItemIdRef.current = ambientTargetId(focusedItem);
     setLayers((prev) => ({ ...prev, [incomingLayer]: focusedItem }));
   }, [focusedItem, aOpacity, bOpacity]);
 
@@ -132,7 +132,7 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
 });
 
 interface LayerProps {
-  item: MediaItem | null;
+  item: AmbientTarget | null;
   client: ReturnType<typeof useJellyfinClient>;
   style: ReturnType<typeof useAnimatedStyle>;
   /** Signale que l'image de CET item est chargée (déclenche le crossfade). */
@@ -141,11 +141,18 @@ interface LayerProps {
 
 function Layer({ item, client, style, onLoaded }: LayerProps) {
   if (!item) return null;
-  const backdropId = item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id;
   // Source volontairement étroite : l'image vit à 0,32 d'opacité sous un scrim
   // qui l'écrase encore. Aucun détail n'en réchappe, et chaque pixel de moins
-  // est un pixel de moins à décoder, à téléverser et à échantillonner.
-  const uri = client.getImageUrl(backdropId, "Backdrop", { width: AmbientConfig.sourceWidth, quality: 60 });
+  // est un pixel de moins à décoder, à téléverser et à échantillonner. Une
+  // cible déjà adressée (recommandation) apporte la sienne.
+  const uri = "kind" in item
+    ? item.uri
+    : client.getImageUrl(
+        item.Type === "Episode" && item.SeriesId ? item.SeriesId : item.Id,
+        "Backdrop",
+        { width: AmbientConfig.sourceWidth, quality: 60 },
+      );
+  const itemId = ambientTargetId(item);
 
   return (
     <Animated.View style={[{ position: "absolute", inset: 0 }, style]}>
@@ -157,7 +164,7 @@ function Layer({ item, client, style, onLoaded }: LayerProps) {
         // plus du nôtre : deux fondus superposés, et une couche redessinée à
         // chaque image pendant un tiers de seconde. Le nôtre suffit.
         fadeDuration={0}
-        onLoad={() => onLoaded(item.Id)}
+        onLoad={() => onLoaded(itemId)}
         // Suppress error visuals — backdrop is decorative
         onError={() => {}}
       />

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { HeroAmbilight } from "./HeroAmbilight";
 import { HeroBackdrop, HERO_ZOOM_DURATION_S } from "./HeroBackdrop";
 import { HeroContent } from "./HeroContent";
 import { HeroIndicators } from "./HeroIndicators";
+import { useBillboardRotation } from "./useBillboardRotation";
 import { useDataSaverActive } from "../../offline/useDataSaver";
 import { useInViewport } from "../../hooks/useInViewport";
 import { useHoverMount } from "../../hooks/useHoverMount";
@@ -25,10 +25,12 @@ const IDLE_MS = 20_000;
  * voir son cadre en bas — sans quoi il n'y a plus de cadre, juste une bannière
  * aux coins arrondis.
  */
-const CARD_HEIGHT = "h-[62vh] md:h-[70vh] lg:h-[76vh]";
+export const CARD_HEIGHT = "h-[62vh] md:h-[70vh] lg:h-[76vh]";
 /** Gouttière du cadre = celle des rangées : le bord gauche de la bannière tombe
- *  alors exactement sur la première affiche de chaque rangée. */
-const FRAME_GUTTER = "px-[var(--row-gutter-mobile)] md:px-[var(--row-gutter-desktop)]";
+ *  alors exactement sur la première affiche de chaque rangée. Exportées (avec
+ *  CARD_HEIGHT) : le carrousel des recommandations partage la géométrie au
+ *  pixel près. */
+export const FRAME_GUTTER = "px-[var(--row-gutter-mobile)] md:px-[var(--row-gutter-desktop)]";
 
 interface HeroBillboardProps {
   items: MediaItem[];
@@ -62,76 +64,32 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
   // montées à `opacity: 0` faisait recalculer leur flou à chaque image.
   // `duration-300` était le tempo de la classe Tailwind remplacée.
   const arrows = useHoverMount(300);
-  const [index, setIndex] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const pausedRef = useRef(false);
 
-  const advance = useCallback(
-    (delta: 1 | -1) => {
-      if (!items.length) return;
-      setIndex((i) => (i + delta + items.length) % items.length);
-      setAnimKey((k) => k + 1);
-    },
-    [items.length],
-  );
-
-  const goTo = useCallback(
-    (i: number) => {
-      if (i < 0 || i >= items.length) return;
-      setIndex(i);
-      setAnimKey((k) => k + 1);
-    },
-    [items.length],
-  );
-
-  const startTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    // Mode économie : hero figé. Chaque rotation charge un backdrop 1920px
-    // sans lazy ni préchargement (~250-400 Ko), et rien n'est mis en cache :
-    // 5 min passées sur l'accueil coûtent jusqu'à ~10 Mo en pure perte.
-    // La navigation manuelle (flèches, indicateurs) reste disponible.
-    if (dataSaver) return;
-    // Hors écran ou fenêtre en arrière-plan : on suspend. Chaque rotation
-    // recrée un fond 1920 px ET un halo flouté plein cadre — les deux
-    // coexistant pendant le fondu — pour une bannière que personne ne regarde,
-    // pendant que l'utilisateur fait défiler les rangées plus bas. On suspend
-    // sans réinitialiser : l'index est conservé, la reprise est invisible.
-    if (!visible) return;
-    // Inactivité : on ne relance PAS de diapositive, et c'est le seul geste qui
-    // fasse vraiment redescendre le GPU sur cette page.
-    //
-    // Brider la cadence d'une animation allège le travail par image, mais
-    // n'endort pas le compositeur : tant qu'une animation est en cours, le
-    // navigateur produit une image à chaque rafraîchissement de l'écran, que la
-    // valeur ait changé ou non. Or le carrousel relançait une animation toutes
-    // les huit secondes, sans fin — il y avait donc TOUJOURS une animation
-    // active, et le GPU ne se rendormait jamais.
-    //
-    // Rien n'est figé brutalement : le zoom en cours va au bout de ses huit
-    // secondes, puis plus rien ne repart. Aucun saut, aucune coupure — la
-    // bannière s'immobilise simplement sur son image, et le moindre geste la
-    // remet en marche (cet effet se rejoue quand `idle` repasse à faux).
-    if (idle) return;
-    if (rotateMs > 0 && items.length > 1 && !pausedRef.current) {
-      timerRef.current = setInterval(() => advance(1), rotateMs);
-    }
-  }, [rotateMs, items.length, advance, dataSaver, visible, idle]);
-
-  useEffect(() => {
-    startTimer();
-    return () => clearInterval(timerRef.current);
-  }, [startTimer, index]);
-
-  const pause = () => {
-    pausedRef.current = true;
-    clearInterval(timerRef.current);
-  };
-
-  const resume = () => {
-    pausedRef.current = false;
-    startTimer();
-  };
+  // La minuterie est suspendue (index conservé, reprise invisible) dans trois
+  // cas, chacun payé par une mesure :
+  // — Mode économie : chaque rotation charge un backdrop 1920 px sans lazy ni
+  //   préchargement (~250-400 Ko), rien n'est mis en cache — 5 min sur
+  //   l'accueil coûtaient jusqu'à ~10 Mo en pure perte. La navigation manuelle
+  //   (flèches, indicateurs) reste disponible.
+  // — Hors écran ou fenêtre en arrière-plan : chaque rotation recrée un fond
+  //   1920 px ET un halo flouté plein cadre, les deux coexistant pendant le
+  //   fondu — pour une bannière que personne ne regarde.
+  // — Inactivité : le seul geste qui fasse vraiment redescendre le GPU ici.
+  //   Brider la cadence d'une animation n'endort pas le compositeur : tant
+  //   qu'une animation est en cours, le navigateur produit une image à chaque
+  //   rafraîchissement. Or le carrousel relançait une animation toutes les
+  //   huit secondes, sans fin — le GPU ne se rendormait jamais. Rien n'est
+  //   figé brutalement : le zoom en cours va au bout, puis plus rien ne
+  //   repart. Le moindre geste (souris, défilement, clavier, toucher) remet
+  //   en marche SUR-LE-CHAMP : la diapositive suivante arrive avec son fondu,
+  //   son zoom, son halo et son indicateur — pas une image figée pendant
+  //   encore un cycle (cf. useBillboardRotation).
+  const { index, animKey, selectWithGrace, prevWithGrace, nextWithGrace } =
+    useBillboardRotation({
+      count: items.length,
+      rotateMs,
+      active: !dataSaver && visible && !idle,
+    });
 
   if (!items.length) {
     return <div className={`w-full ${CARD_HEIGHT}`} />;
@@ -180,9 +138,9 @@ export function HeroBillboard({ items, rotateMs = DEFAULT_ROTATE_MS }: HeroBillb
             durationMs={rotateMs}
             arrowsMounted={arrows.mounted}
             arrowsShown={arrows.hovered}
-            onSelect={(i) => { goTo(i); pause(); setTimeout(resume, 100); }}
-            onPrev={() => { advance(-1); pause(); setTimeout(resume, 100); }}
-            onNext={() => { advance(1); pause(); setTimeout(resume, 100); }}
+            onSelect={selectWithGrace}
+            onPrev={prevWithGrace}
+            onNext={nextWithGrace}
           />
         </div>
       </div>

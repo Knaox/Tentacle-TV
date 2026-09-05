@@ -20,8 +20,14 @@ function getWebView(): typeof import("react-native-webview").WebView | null {
   }
 }
 
+/**
+ * L'écran d'un plugin en WebView. Ouvert par un onglet (premier chemin mobile
+ * du plugin) ou par un deep-link : `path` désigne une route mobile du plugin,
+ * `query` sa query string — c'est ainsi qu'une recommandation hors
+ * bibliothèque ouvre sa fiche dans le catalogue Vigie (`?media=movie:603`).
+ */
 export function PluginWebViewScreen() {
-  const { pluginId } = useLocalSearchParams<{ pluginId: string }>();
+  const { pluginId, path, query } = useLocalSearchParams<{ pluginId: string; path?: string; query?: string }>();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { colors } = theme;
@@ -39,10 +45,13 @@ export function PluginWebViewScreen() {
   const userRaw = storage.getItem("tentacle_user") ?? "";
   const lang = i18n.language ?? "fr";
 
-  // Utiliser le premier path mobile du plugin
+  // Le chemin demandé s'il est une route mobile du plugin, sinon la première.
   const pluginPath = useMemo(() => {
-    return plugin?.navItems?.find((n) => n.platforms.includes("mobile"))?.path ?? "/";
-  }, [plugin]);
+    const mobileItems = (plugin?.navItems ?? []).filter((n) => n.platforms.includes("mobile"));
+    const requested = typeof path === "string" ? mobileItems.find((n) => n.path === path) : undefined;
+    return requested?.path ?? mobileItems[0]?.path ?? "/";
+  }, [plugin, path]);
+  const pluginQuery = typeof query === "string" && query.startsWith("?") ? query : undefined;
 
   // `theme` en dépendance : au switch clair/sombre la WebView remonte re-thémée.
   const htmlContent = useMemo(() => {
@@ -55,9 +64,10 @@ export function PluginWebViewScreen() {
       bundleCode,
       sharedDepsCode,
       pluginPath,
+      pluginQuery,
       appTheme: theme,
     });
-  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, theme]);
+  }, [bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, pluginPath, pluginQuery, theme]);
 
   const handleMessage = useCallback(
     createBridgeHandler(router),

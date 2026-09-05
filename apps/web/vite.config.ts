@@ -107,13 +107,16 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
     host: "0.0.0.0", // accessible depuis le LAN (mobile, autres appareils)
+    // Cible du proxy /api : surchargée par TENTACLE_DEV_API pour brancher une
+    // instance backend jetable (3002) sans toucher ce fichier — le défaut
+    // reste le backend de dev historique.
     proxy: {
       "/api/ws": {
-        target: "ws://localhost:3001",
+        target: (process.env.TENTACLE_DEV_API ?? "http://localhost:3001").replace(/^http/, "ws"),
         ws: true,
       },
       "/api": {
-        target: "http://localhost:3001",
+        target: process.env.TENTACLE_DEV_API ?? "http://localhost:3001",
         changeOrigin: true,
       },
     },
