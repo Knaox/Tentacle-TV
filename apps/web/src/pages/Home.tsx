@@ -23,7 +23,7 @@ import { ContentErrorState } from "../components/ContentErrorState";
 import { HomeRow } from "../components/home/homeRowRegistry";
 import type { HomeRowData } from "../components/home/homeRowRegistry";
 import { RecoBillboardSlot } from "../components/reco/hero/RecoBillboardSlot";
-import { useRecoHeroSlides } from "../components/reco/hero/recoHeroSlides";
+import { useRecoHeroSlides } from "@tentacle-tv/api-client";
 import { CardDensityProvider } from "../contexts/CardDensityContext";
 import { useRecoFilter } from "../hooks/useRecoFilter";
 
