@@ -48,16 +48,19 @@ export function resolveIcon(icon: string | undefined, fallback: FeatherName): Fe
   return name in Feather.glyphMap ? (name as FeatherName) : fallback;
 }
 
-// Plugins connus sans champ `tab` dans leur manifeste : un nom parlant pour
-// l'utilisateur plutôt que la marque du plugin.
-const KNOWN_PLUGIN_TABS: Record<string, { icon: FeatherName; labelKey: "requests" }> = {
-  seer: { icon: "send", labelKey: "requests" },
-};
-
 const DEFAULT_TAB_ICON: FeatherName = "grid";
 
 function pickLabel(labels: Record<string, string> | undefined, lang: string): string | undefined {
   return labels?.[lang] ?? labels?.en;
+}
+
+/**
+ * Le nom court d'un plugin, pour le bandeau : « Vigie — Demandes de médias »
+ * se présente comme « Vigie ». La devise après le tiret reste un affichage
+ * du manifeste, jamais une identité.
+ */
+export function shortPluginName(name: string): string {
+  return name.split(/\s+[—–-]\s+/)[0].trim() || name;
 }
 
 /** Les pages mobiles de tous les plugins actifs, dans l'ordre des manifestes. */
@@ -76,34 +79,30 @@ export function buildExtensionSections(plugins: ActivePlugin[] | undefined, lang
   );
 }
 
-type NavT = (key: "extensions" | "requests") => string;
+type NavT = (key: "extensions") => string;
 
 /**
- * Identité de l'onglet. Plusieurs plugins → « Extensions » + grille. Un seul →
- * le manifeste (`tab.labels[lang]` → `tab.labels.en`), sinon la table des
- * plugins connus, sinon le nom du plugin ; même cascade pour l'icône, avec
- * l'icône de la première page en avant-dernier recours.
+ * Identité de l'onglet. Le libellé est FIXE, « Extensions » : un nom de page
+ * (« Demandes ») laissait croire que l'onglet ne contenait qu'elle, alors
+ * qu'il regroupe toutes les pages des plugins — c'est le bandeau qui nomme le
+ * plugin devant ses pages. Le champ `tab.labels` du manifeste reste accepté
+ * par le serveur, mais n'est plus consommé ici pour la même raison. Un seul
+ * plugin peut encore choisir son icône (`tab.icon`) ; plusieurs → la grille.
  */
 export function resolveExtensionTab(
   plugins: ActivePlugin[] | undefined,
   sections: ExtensionSection[],
-  lang: string,
   t: NavT,
 ): ExtensionTab {
   const visible = sections.length > 0;
   const pluginIds = new Set(sections.map((s) => s.pluginId));
+  const label = t("extensions");
   if (pluginIds.size > 1) {
-    return { visible, label: t("extensions"), icon: DEFAULT_TAB_ICON, multiPlugin: true, sections };
+    return { visible, label, icon: DEFAULT_TAB_ICON, multiPlugin: true, sections };
   }
   const first = sections[0];
   const plugin = first ? plugins?.find((p) => p.pluginId === first.pluginId) : undefined;
-  const known = first ? KNOWN_PLUGIN_TABS[first.pluginId] : undefined;
-  const label =
-    pickLabel(plugin?.tab?.labels, lang) ??
-    (known ? t(known.labelKey) : undefined) ??
-    plugin?.name ??
-    t("extensions");
-  const icon = resolveIcon(plugin?.tab?.icon, known?.icon ?? first?.icon ?? DEFAULT_TAB_ICON);
+  const icon = resolveIcon(plugin?.tab?.icon, DEFAULT_TAB_ICON);
   return { visible, label, icon, multiPlugin: false, sections };
 }
 
@@ -123,7 +122,7 @@ export function useExtensionTab(): ExtensionTab {
   const { t } = useTranslation("nav");
   const lang = useInterfaceLang();
   return useMemo(
-    () => resolveExtensionTab(plugins, buildExtensionSections(plugins, lang), lang, t),
+    () => resolveExtensionTab(plugins, buildExtensionSections(plugins, lang), t),
     [plugins, lang, t],
   );
 }

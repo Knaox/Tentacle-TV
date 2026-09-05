@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { FONT_FAMILY, RADIUS, motion, spacing, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import type { ExtensionSection } from "@/hooks/useExtensionSections";
+import { shortPluginName, type ExtensionSection } from "@/hooks/useExtensionSections";
 
 interface Props {
   sections: ExtensionSection[];
@@ -15,8 +15,10 @@ interface Props {
 
 /**
  * Le bandeau de sections de l'onglet des extensions : une pilule par page,
- * sous l'en-tête. Surface plate (le contenu ne défile pas dessous, un verre
- * n'aurait rien à réfracter). Cibles de 44 pt, 8 pt entre elles.
+ * sous l'en-tête, précédée du NOM du plugin qui les publie — c'est lui qui
+ * dit d'où viennent ces pages, l'onglet ne portant qu'un nom générique.
+ * Surface plate (le contenu ne défile pas dessous, un verre n'aurait rien à
+ * réfracter). Cibles de 44 pt, 8 pt entre elles.
  */
 export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Props) {
   const { t } = useTranslation("nav");
@@ -31,29 +33,37 @@ export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Prop
     if (!activeId) return;
     const x = layouts.current[activeId];
     if (x === undefined) return;
-    scrollRef.current?.scrollTo({
-      x: Math.max(0, x - spacing.screenPadding),
-      animated: !motion.isReducedMotion(),
-    });
+    scrollRef.current?.scrollTo({ x: Math.max(0, x - 8), animated: !motion.isReducedMotion() });
   }, [activeId]);
+
+  const pluginLabel = (name: string) => (
+    <View style={st.pluginLabel} accessibilityRole="header">
+      <Feather name="package" size={13} color={theme.colors.text.tertiary} />
+      <Text style={st.pluginLabelTxt} numberOfLines={1}>{shortPluginName(name)}</Text>
+    </View>
+  );
 
   return (
     <View style={st.wrap}>
+      {/* Un seul plugin : son nom reste FIXE à gauche, hors du défilement — le
+          bandeau qui se cale sur la section active le cacherait sinon. */}
+      {!multiPlugin && sections[0] && pluginLabel(sections[0].pluginName)}
       <ScrollView
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={st.scroll}
         contentContainerStyle={st.content}
         accessibilityRole="tablist"
         accessibilityLabel={t("extensionSections")}
       >
         {sections.map((section, i) => {
           const active = section.id === activeId;
-          const groupBreak = multiPlugin && i > 0 && sections[i - 1].pluginId !== section.pluginId;
+          const groupStart = multiPlugin && (i === 0 || sections[i - 1].pluginId !== section.pluginId);
           const tint = active ? theme.colors.brand.light : theme.colors.text.tertiary;
           return (
             <Fragment key={section.id}>
-              {groupBreak && <View style={st.divider} />}
+              {groupStart && pluginLabel(section.pluginName)}
               <Pressable
                 onPress={() => onSelect(section.id)}
                 onLayout={(e) => { layouts.current[section.id] = e.nativeEvent.layout.x; }}
@@ -78,15 +88,19 @@ export function SectionStrip({ sections, activeId, multiPlugin, onSelect }: Prop
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     wrap: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      paddingLeft: spacing.screenPadding,
       backgroundColor: t.colors.surface.s0,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: t.colors.border.subtle,
     },
+    scroll: { flex: 1 },
     content: {
       flexDirection: "row" as const,
       alignItems: "center" as const,
       gap: 8,
-      paddingHorizontal: spacing.screenPadding,
+      paddingRight: spacing.screenPadding,
       paddingVertical: spacing.xs,
     },
     pill: {
@@ -115,10 +129,18 @@ const makeStyles = (t: AppTheme) =>
       fontFamily: FONT_FAMILY.semibold,
       color: t.colors.brand.light,
     },
-    divider: {
-      width: 1,
-      height: 20,
-      marginHorizontal: 2,
-      backgroundColor: t.colors.border.subtle,
+    pluginLabel: {
+      flexDirection: "row" as const,
+      alignItems: "center" as const,
+      gap: 5,
+      maxWidth: 160,
+      marginRight: 10,
+    },
+    pluginLabelTxt: {
+      fontSize: 11,
+      fontFamily: FONT_FAMILY.semibold,
+      color: t.colors.text.tertiary,
+      letterSpacing: 0.8,
+      textTransform: "uppercase" as const,
     },
   });
