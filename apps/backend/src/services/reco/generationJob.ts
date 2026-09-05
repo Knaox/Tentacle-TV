@@ -22,6 +22,8 @@ import { emitPoolWritten } from "./recoEvents";
 import { applyCachedProviders } from "./poolProviders";
 import { enqueueFromPool } from "./metaCrawler";
 import { watchRegion } from "../tmdb/providerNormalize";
+import { getSeerrConfig } from "../seerConfig";
+import { effectiveIncludeVigie } from "./vigieSetting";
 
 // Lecture/écriture/invalidation du pool : extraites dans poolStore, ré-exportées
 // ici pour ne pas casser les importeurs historiques.
@@ -129,7 +131,7 @@ async function doGenerate(userId: string, quick = false): Promise<{ poolSize: nu
     // Profil illisible : pool sur profil vide, le prochain rebuild réécrit.
   }
   const profile: TasteVector = { facets, signalCount: profileRow?.signalCount ?? 0 };
-  const includeVigie = settingsRow?.includeVigie ?? true;
+  const includeVigie = effectiveIncludeVigie(settingsRow?.includeVigie, getSeerrConfig() !== null);
   const animeShare = profileRow?.animeShare ?? 0;
 
   const [exclusions, seeds] = await Promise.all([

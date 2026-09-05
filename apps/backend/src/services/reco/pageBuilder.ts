@@ -94,6 +94,9 @@ export async function buildPageSnapshot(base: PageBuildBase, filter: number[] | 
   const { ctx } = base;
   const wanted = filter ? expandFamilies(filter, base.regional) : null;
   const personalized = (ctx.state === "warming" || ctx.state === "ready") && base.pool !== null;
+  // `ctx.includeVigie` est déjà le réglage EFFECTIF (faux sans Vigie, cf.
+  // vigieSetting) ; le second terme reste une ceinture si le plugin se coupe
+  // entre le contexte et la page.
   const vigieAvailable = ctx.includeVigie && getSeerrConfig() !== null;
   const inLibraryOnly = !ctx.includeVigie;
 
