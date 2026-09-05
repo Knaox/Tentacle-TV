@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { Text, Switch, Pressable, Alert, Linking, Platform, ActivityIndicator, StyleSheet } from "react-native";
+import { Text, Pressable, Alert, Linking, Platform, ActivityIndicator, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import {
   usePushPreferences,
@@ -11,7 +11,7 @@ import {
 } from "@tentacle-tv/api-client";
 
 import { SettingsScaffold } from "./SettingsScaffold";
-import { SettingsSection, SettingsRow } from "@/components/settings";
+import { BrandSwitch, SettingsSection, SettingsRow } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { ensureNotificationPermission, registerForPushToken } from "@/services/pushNotifications";
@@ -85,12 +85,9 @@ export function NotificationsScreen() {
     tickets: t("ticketsTitle"),
   };
   const renderSwitch = (key: keyof PushPreferences) => (
-    <Switch
+    <BrandSwitch
       value={prefs?.[key] ?? PUSH_PREF_DEFAULTS[key]}
       onValueChange={(next) => toggle(key, next)}
-      trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
-      thumbColor={theme.colors.cta.brandFg}
-      ios_backgroundColor={theme.colors.fill.medium}
       accessibilityLabel={labels[key]}
     />
   );

@@ -1,7 +1,8 @@
-import { View, Text, Pressable, Switch, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { moveRow } from "@tentacle-tv/api-client";
+import { BrandSwitch } from "@/components/settings/BrandSwitch";
 import type { HomeRowDescriptor } from "@tentacle-tv/api-client";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -20,7 +21,6 @@ interface Props {
  */
 export function HomeRowsEditor({ rows, labelFor, onChange, disabled }: Props) {
   const { t } = useTranslation("preferences");
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
 
   return (
@@ -44,13 +44,10 @@ export function HomeRowsEditor({ rows, labelFor, onChange, disabled }: Props) {
               disabled={downDisabled}
               onPress={() => onChange(moveRow(rows, index, index + 1))}
             />
-            <Switch
+            <BrandSwitch
               value={row.enabled}
               disabled={disabled}
               onValueChange={(enabled) => onChange(rows.map((r) => (r.key === row.key ? { ...r, enabled } : r)))}
-              trackColor={{ false: theme.colors.fill.medium, true: theme.colors.brand.violet }}
-              thumbColor={theme.colors.cta.brandFg}
-              ios_backgroundColor={theme.colors.fill.medium}
               accessibilityLabel={label}
             />
           </View>
@@ -66,8 +63,8 @@ function MoveButton({ icon, label, disabled, onPress }: {
   disabled: boolean;
   onPress: () => void;
 }) {
-  const theme = useTheme();
   const st = useThemedStyles(makeStyles);
+  const theme = useTheme();
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
