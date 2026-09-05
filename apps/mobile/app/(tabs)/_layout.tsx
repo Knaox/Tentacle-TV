@@ -4,8 +4,8 @@ import { Platform, View, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
-import { resolveIcon } from "@/hooks/useExtensionSections";
+import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
+import { useExtensionTab } from "@/hooks/useExtensionSections";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
@@ -13,16 +13,20 @@ import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
+/**
+ * La barre basse est FIXE : Accueil · Bibliothèque · extensions · Profil.
+ * Toutes les pages d'extension vivent dans le seul onglet `extensions` (en
+ * sections) : une extension de plus n'ajoute jamais d'onglet. Sans aucune
+ * page d'extension, cet onglet se masque.
+ */
 export default function TabsLayout() {
   const { t } = useTranslation("nav");
   const theme = useTheme();
   const { width: screenW } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isCompact = screenW < 380;
-  const navItems = useMobilePluginNavItems();
+  const ext = useExtensionTab();
   usePrefetchPluginBundles();
-  const first = navItems[0];
-  const second = navItems[1];
 
   // Nav : portrait (et iPhone) = barre basse ; iPad PAYSAGE = rail gauche fin
   // + menu déroulant (RailMenu). La largeur du rail est publiée via contexte
@@ -35,10 +39,9 @@ export default function TabsLayout() {
   const menuItems = useMemo<RailMenuItem[]>(() => [
     { href: "/", icon: "home", label: t("home") },
     { href: "/libraries", icon: "film", label: t("library") },
-    ...(first ? [{ href: "/plugins" as const, icon: resolveIcon(first.icon, "compass"), label: first.label }] : []),
-    ...(second ? [{ href: "/plugin-extra" as const, icon: resolveIcon(second.icon, "list"), label: second.label }] : []),
+    ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
     { href: "/profile", icon: "user", label: t("profile") },
-  ], [t, first, second]);
+  ], [t, ext.visible, ext.icon, ext.label]);
 
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
@@ -67,7 +70,7 @@ export default function TabsLayout() {
         tabBarAllowFontScaling: false,
       }}
     >
-      {/* Tab 1: Home */}
+      {/* Accueil */}
       <Tabs.Screen
         name="index"
         options={{
@@ -77,7 +80,7 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 2: Libraries */}
+      {/* Bibliothèque */}
       <Tabs.Screen
         name="libraries"
         options={{
@@ -87,38 +90,19 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 3: Plugin navItem[0] (e.g. Discover) */}
+      {/* Extensions — libellé et icône décidés par les plugins actifs ;
+          `href: null` masque l'onglet quand aucune page n'est publiée. */}
       <Tabs.Screen
-        name="plugins"
+        name="extensions"
         options={{
-          title: first?.label ?? "Plugins",
-          tabBarAccessibilityLabel: first?.label ?? "Plugins",
-          href: first ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={resolveIcon(first?.icon, "compass") as never} size={size} color={color} />
-          ),
+          title: ext.label,
+          tabBarAccessibilityLabel: ext.label,
+          href: ext.visible ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Feather name={ext.icon} size={size} color={color} />,
         }}
       />
 
-      {/* Tab 4: Plugin navItem[1] (e.g. Requests) */}
-      <Tabs.Screen
-        name="plugin-extra"
-        options={{
-          title: second?.label ?? "Plugins",
-          tabBarAccessibilityLabel: second?.label ?? "Plugins",
-          href: second ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={resolveIcon(second?.icon, "list") as never} size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* Onglet des extensions — provisoirement caché, le temps que les
-          onglets par index disparaissent (un fichier du dossier devient un
-          écran même non déclaré : on fixe son option ici). */}
-      <Tabs.Screen name="extensions" options={{ href: null }} />
-
-      {/* Tab 5: Profile */}
+      {/* Profil */}
       <Tabs.Screen
         name="profile"
         options={{

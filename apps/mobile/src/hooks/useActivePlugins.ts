@@ -1,7 +1,6 @@
-import { useMemo, useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { useTranslation } from "react-i18next";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 
 // --- Mini store réactif pour les plugins en erreur (WebView crash) ---
@@ -134,30 +133,4 @@ export function usePrefetchPluginBundles() {
       });
     }
   }, [plugins, serverUrl, storage, queryClient]);
-}
-
-/** Returns all mobile navItems across all active plugins, localized.
- *  Exclut les plugins dont la WebView a crashé (markPluginFailed). */
-export function useMobilePluginNavItems() {
-  const { data: plugins } = useActivePlugins();
-  const { i18n } = useTranslation();
-  const lang = i18n.language?.slice(0, 2) ?? "en";
-  const failed = useFailedPlugins();
-
-  return useMemo(() => {
-    if (!plugins) return [];
-    return plugins
-      .filter((plugin) => !failed.has(plugin.pluginId))
-      .flatMap((plugin) =>
-        (plugin.navItems ?? [])
-          .filter((item) => item.platforms.includes("mobile"))
-          .map((item) => ({
-            pluginId: plugin.pluginId,
-            pluginName: plugin.name,
-            path: item.path,
-            icon: item.icon,
-            label: item.labels[lang] ?? item.labels["en"] ?? plugin.name,
-          })),
-      );
-  }, [plugins, lang, failed]);
 }
