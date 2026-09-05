@@ -6,7 +6,8 @@ import { APP_STORE_ID, appStoreUrlFor, checkAppStoreUpdate, checkMsixUpdate } fr
 import { checkLinuxUpdate, downloadLinuxUpdate, applyLinuxUpdate, type LinuxUpdateFound } from "../lib/linuxUpdate";
 import { defaultUpdateInfo, type UpdateInfo, type UpdatePhase } from "../lib/updateTypes";
 import {
-  isSimulatingUpdate, runSimulatedInstall, simulatedUpdate, stopSimulatingUpdate, updateDebugEnabled,
+  isSimulatingUpdate, runSimulatedInstall, simulatedChannel, simulatedUpdate, stopSimulatingUpdate,
+  updateDebugEnabled,
 } from "../lib/updateSimulation";
 
 export type { UpdateInfo, UpdatePhase } from "../lib/updateTypes";
@@ -126,9 +127,11 @@ export function useAutoUpdate() {
     if (isSimulatingUpdate()) {
       // macOS : on ouvre POUR DE BON la fiche de l'App Store. C'est tout l'objet
       // de la démonstration — vérifier que le lien aboutit sur la bonne fiche,
-      // dans l'application App Store et pas dans un navigateur.
+      // dans l'application App Store et pas dans un navigateur. Le canal imité
+      // est celui de la plateforme (cf. simulatedChannel) : Linux n'est pas
+      // « tout ce qui n'est pas Windows ».
       const url = storeUrlRef.current ?? appStoreUrlFor(APP_STORE_ID);
-      if (isAppStoreBuild() || !isWindows()) {
+      if (simulatedChannel() === "appStore") {
         try {
           await openExternal(url);
           patch({ storeOpened: true, error: null });
