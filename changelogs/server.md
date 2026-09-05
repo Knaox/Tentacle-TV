@@ -5,6 +5,13 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.17.1]
+### FR
+- **Vos notes pèsent selon l'échelle des étoiles, plus selon votre moyenne** : 6,5 est le point neutre (« j'aime bien, sans plus »), un 7 n'est plus un reproche pour qui note généreusement, un 8 vaut un favori et un 10 en vaut deux et demi ; la grille de démarrage façonne enfin le profil — ses cinq titres aimés s'annulaient entre eux, aucun ne faisait graine
+
+### EN
+- **Your ratings weigh by the star scale, no longer by your average**: 6.5 is the neutral point ("liked it, nothing more"), a 7 is no longer a reproach for generous raters, an 8 is worth a favorite and a 10 two and a half; the onboarding grid finally shapes the profile — its five liked titles used to cancel each other out, none of them seeding recommendations
+
 ## [1.17.0]
 ### FR
 - **La page Recommandations s'affiche instantanément.** Le serveur précalcule votre page en arrière-plan (une page par compte et par filtre) et la sert en une seule requête ; l'application la garde sur l'appareil et la rend d'un coup, puis la rafraîchit en silence dès que le serveur l'a reconstruite — plus de carrousels qui arrivent un par un, plus de squelette hors de la toute première visite
