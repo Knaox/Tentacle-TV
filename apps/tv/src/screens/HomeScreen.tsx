@@ -6,7 +6,7 @@ import { useTVRemote } from "../components/focus/useTVRemote";
 import {
   useFeaturedItems, useResumeItems, useNextUp,
   useLibraries, useWatchlist, useWatchedItems,
-  useTentacleConfig, useHomeWebSocket, useJellyfinClient, useRecoLive,
+  useTentacleConfig, useHomeWebSocket, useJellyfinClient, usePreferencesLive, useRecoLive,
 } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { doLogout } from "../auth/sessionFlow";
@@ -60,6 +60,8 @@ function HomeScreenInner({ navigation }: Props) {
   });
   // Les recommandations reconstruites en fond arrivent en silence (reco:update).
   useRecoLive({ token });
+  // La mise en page de l'accueil et les réglages changés ailleurs arrivent en direct.
+  usePreferencesLive({ token });
   const setFocusedItem = useAmbientSetter();
   const { requestRailFocus, lastContentNodeRef } = useTVNavActions();
   // Appui long sur une carte → menu contextuel (Plus d'infos / Lecture)
