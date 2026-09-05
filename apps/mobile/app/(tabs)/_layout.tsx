@@ -5,24 +5,13 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
+import { resolveIcon } from "@/hooks/useExtensionSections";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
-
-// Mapping des icônes unicode du plugin.json → noms Feather
-const ICON_MAP: Record<string, string> = {
-  "✦": "compass",
-  "☰": "list",
-  "▥": "bar-chart-2",
-};
-
-function resolveIcon(icon: string | undefined, fallback: string): string {
-  if (!icon) return fallback;
-  return ICON_MAP[icon] ?? icon;
-}
 
 export default function TabsLayout() {
   const { t } = useTranslation("nav");

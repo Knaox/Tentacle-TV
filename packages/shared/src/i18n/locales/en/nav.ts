@@ -25,6 +25,8 @@ export default {
   more: "More",
   libraries: "Libraries",
   pluginPages: "Plugin pages",
+  extensions: "Extensions",
+  extensionSections: "Extension pages",
   myList: "My List",
   myFavorites: "My Favorites",
   pinned: "Pinned",
