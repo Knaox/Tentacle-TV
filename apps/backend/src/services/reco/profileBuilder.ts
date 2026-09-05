@@ -28,9 +28,10 @@ import { idfFor, idfLoadedAt, loadIdfFromDb } from "./idfStore";
  *  repli Jellyfin — la reconstruction suivante reprendra où celle-ci s'arrête. */
 const TMDB_FETCH_BUDGET = 40;
 const PROFILE_MAX_FACETS = 400;
-/** Version du profil stocké : 2 = animeShare. Le fan-out de boot reconstruit
- *  une fois les profils d'une version antérieure. */
-export const PROFILE_SCHEMA_VERSION = 2;
+/** Version du profil stocké : 2 = animeShare, 3 = notes sur l'échelle absolue
+ *  (point neutre 6,5, plus la moyenne personnelle). Le fan-out de boot
+ *  reconstruit une fois les profils d'une version antérieure. */
+export const PROFILE_SCHEMA_VERSION = 3;
 
 const ABANDON_MAX_PROGRESS = 0.25;
 const ABANDON_MIN_IDLE_DAYS = 30;
@@ -127,11 +128,11 @@ async function doRebuild(userId: string): Promise<ProfileSummary> {
   signals.playedMovies.forEach(indexItem);
   signals.seriesById.forEach(indexItem);
 
-  // 1) Notes explicites, normalisées sur l'échelle personnelle.
+  // 1) Notes explicites, sur l'échelle absolue des étoiles (point neutre 6,5).
   for (const r of ratings) {
     const mediaType = r.mediaType === "movie" ? "movie" : "tv";
     pendings.push({
-      weight: ratingSignalWeight(r.score, mean, stdDev),
+      weight: ratingSignalWeight(r.score, stdDev),
       ageDays: ageInDays(r.updatedAt),
       tmdb: { mediaType, tmdbId: r.tmdbId },
       fallback: libraryByRef.get(`${mediaType}:${r.tmdbId}`) ?? null,
