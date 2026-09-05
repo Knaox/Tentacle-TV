@@ -58,6 +58,7 @@ export default {
   persoRowsTitle: "Rangées de l'accueil",
   persoRowsHint: "Glissez-déposez pour réordonner, ou utilisez les flèches. L'interrupteur masque une rangée sans la supprimer.",
   persoRowsDragHint: "Glisser pour réordonner",
+  persoRowsHintMobile: "Les flèches réordonnent ; l'interrupteur masque une rangée sans la supprimer.",
   persoRowMoveUp: "Monter la rangée",
   persoRowMoveDown: "Descendre la rangée",
   persoRecoTitle: "Recommandations",

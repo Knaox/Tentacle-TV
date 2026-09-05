@@ -58,6 +58,7 @@ export default {
   persoRowsTitle: "Home rows",
   persoRowsHint: "Drag and drop to reorder, or use the arrows. The switch hides a row without deleting it.",
   persoRowsDragHint: "Drag to reorder",
+  persoRowsHintMobile: "Arrows reorder; the switch hides a row without deleting it.",
   persoRowMoveUp: "Move row up",
   persoRowMoveDown: "Move row down",
   persoRecoTitle: "Recommendations",
