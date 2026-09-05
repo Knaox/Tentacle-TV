@@ -1,3 +1,4 @@
+import { ToggleSwitch } from "../../components/settings/ToggleSwitch";
 import { Place, type Animated, type Placed } from "./Place";
 
 interface FauxToggleProps extends Placed, Animated {
@@ -5,19 +6,15 @@ interface FauxToggleProps extends Placed, Animated {
   label?: string;
 }
 
-/**
- * L'interrupteur des réglages, en faux : les classes réelles de
- * `theme/controls.css` (`.ctl-switch`, allumé par `aria-checked`) sur un span
- * décoratif — le pouce se déplace en transform, le dégradé se révèle en opacité.
- */
+const noop = () => {};
+
+/** L'interrupteur des réglages, le vrai (`ToggleSwitch`), inerte : c'est la scène qui bascule. */
 export function FauxToggle({ on, label, ...place }: FauxToggleProps) {
   return (
     <Place {...place}>
       <span className="flex items-center gap-3">
-        {label && <span className="whitespace-nowrap text-[12px] font-medium text-content-secondary">{label}</span>}
-        <span className="ctl-switch relative inline-block h-6 w-11" aria-checked={on}>
-          <span className="ctl-switch-thumb" />
-        </span>
+        {label && <span className="whitespace-nowrap text-sm text-content-primary">{label}</span>}
+        <ToggleSwitch checked={on} onChange={noop} label={label ?? ""} />
       </span>
     </Place>
   );
