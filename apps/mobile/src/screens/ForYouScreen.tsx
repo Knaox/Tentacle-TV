@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { RefreshControl, View, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
-import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { activeFamilyCount, buildPlatformCatalog, useJellyfinClient, useWatchProviders } from "@tentacle-tv/api-client";
+import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import type { RecoReason, RecoRowItem } from "@tentacle-tv/api-client";
 import { SkeletonHero, SkeletonRow, SubtleBackground } from "@/components/ui";
 import { HeroBanner } from "@/components/HeroBanner";
@@ -12,6 +13,7 @@ import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
 import { RecoActionSheet } from "@/components/reco/RecoActionSheet";
 import { recoHeroSlides } from "@/components/reco/hero/recoHeroSlides";
+import { RecoFilterSheet } from "@/components/reco/filters/RecoFilterSheet";
 import { ColdStartScreen } from "@/components/reco/coldstart/ColdStartScreen";
 import { RecoDisabledState, RecoErrorState } from "@/components/reco/page/RecoErrorState";
 import { RecoPageHeader } from "@/components/reco/page/RecoPageHeader";
@@ -43,6 +45,15 @@ export function ForYouScreen() {
     () => recoHeroSlides(model.hero.slides, client, { canOpen: recoNav.canOpen, onOpen: recoNav.open }),
     [model.hero.slides, client, recoNav.canOpen, recoNav.open],
   );
+
+  // Le filtre de plateformes : le catalogue des familles présentes dans la
+  // région (toutes sans annuaire), le compteur du bouton, la feuille.
+  const providers = useWatchProviders();
+  const catalog = useMemo(() => buildPlatformCatalog(PLATFORM_FAMILIES, providers.data), [providers.data]);
+  const activeCount = activeFamilyCount(catalog, model.providerFilter);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const openFilters = useCallback(() => setFiltersOpen(true), []);
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
 
   // Appui long : la feuille habituelle en bibliothèque (favoris, Ma liste,
   // vu — avec les raisons), celle des recommandations sinon.
@@ -118,7 +129,7 @@ export function ForYouScreen() {
         }
       >
         {heroSlides.length > 0 && <HeroBanner slides={heroSlides} />}
-        <RecoPageHeader showTitle={heroSlides.length === 0} />
+        <RecoPageHeader showTitle={heroSlides.length === 0} filterCount={activeCount} onOpenFilters={openFilters} />
         <RecoStatusBanner
           page={page}
           hasPersonalizedRows={model.hasPersonalizedRows}
@@ -144,6 +155,7 @@ export function ForYouScreen() {
         />
       )}
       <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />
+      <RecoFilterSheet visible={filtersOpen} onClose={closeFilters} catalog={catalog} providerFilter={model.providerFilter} />
     </SubtleBackground>
   );
 }

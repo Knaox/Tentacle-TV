@@ -44,6 +44,18 @@ export const HeroBanner = memo(function HeroBanner({ slides }: HeroBannerProps) 
   const safeIndex = Math.min(index, Math.max(0, slides.length - 1));
   const userScrollingRef = useRef(false);
 
+  // Un AUTRE jeu de diapositives (filtre changé, reprise renouvelée) repart de
+  // la première : sinon la liste retombe à zéro pendant que l'index reste où
+  // il était — image d'une diapositive, texte d'une autre.
+  const signature = slides.map((s) => s.id).join("|");
+  const signatureRef = useRef(signature);
+  useEffect(() => {
+    if (signatureRef.current === signature) return;
+    signatureRef.current = signature;
+    setIndex(0);
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [signature]);
+
   const startTimer = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (slides.length <= 1) return;

@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Feather } from "@expo/vector-icons";
 import { IconButton } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
@@ -37,7 +36,6 @@ export function RecoPageHeader({ showTitle, filterCount = 0, onOpenFilters }: Pr
               <Text style={st.countTxt}>{filterCount}</Text>
             </View>
           )}
-          <Feather name="chevron-down" size={0} color="transparent" />
         </View>
       )}
     </View>
