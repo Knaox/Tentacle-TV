@@ -18,7 +18,11 @@ import type { UpdateInfo } from "./updateTypes";
  *    navigateur ;
  *  • Windows — la phase de téléchargement, avec sa barre INDÉTERMINÉE (le Store
  *    ne rend aucun pourcentage), puis l'installation et le redémarrage. Aucun
- *    redémarrage réel : la démonstration s'arrête avant.
+ *    redémarrage réel : la démonstration s'arrête avant ;
+ *  • Linux — l'auto-updater intégré : téléchargement à progression RÉELLE
+ *    (barre déterminée), installation, redémarrage. Longtemps confondu avec
+ *    macOS (« tout ce qui n'est pas Windows ») : la pop-up y annonçait l'App
+ *    Store, et le bouton l'ouvrait.
  *
  * # La garde
  *
@@ -45,34 +49,61 @@ export function stopSimulatingUpdate(): void {
   simulation = false;
 }
 
+export type SimulatedChannel = "appStore" | "microsoftStore" | "linux";
+
+/** Le canal que la démonstration imite : celui de la plateforme courante. */
+export function simulatedChannel(): SimulatedChannel {
+  if (isMacOS()) return "appStore";
+  if (isWindows()) return "microsoftStore";
+  return "linux";
+}
+
+const SIMULATED_NOTES: Record<SimulatedChannel, string> = {
+  appStore:
+    "Démonstration — le bouton ouvre réellement la fiche de l'App Store.\n• Vérification de la pop-up\n• Vérification du lien vers le Store\n• Aucune mise à jour ne sera installée",
+  microsoftStore:
+    "Démonstration — aucune mise à jour ne sera installée.\n• Vérification de la pop-up\n• Barre indéterminée du Microsoft Store\n• Aucun redémarrage",
+  linux:
+    "Démonstration — aucune mise à jour ne sera installée.\n• Vérification de la pop-up\n• Barre de téléchargement de l'auto-updater Linux\n• Aucun redémarrage",
+};
+
 /** L'état à afficher pour une pop-up de démonstration. */
 export function simulatedUpdate(defaults: UpdateInfo): UpdateInfo {
   simulation = true;
-  const store = isMacOS() || !isWindows();
+  const channel = simulatedChannel();
+  const store = channel === "appStore";
   return {
     ...defaults,
     available: true,
     phase: "available",
     version: "9.9.9",
-    notes: store
-      ? "Démonstration — le bouton ouvre réellement la fiche de l'App Store.\n• Vérification de la pop-up\n• Vérification du lien vers le Store\n• Aucune mise à jour ne sera installée"
-      : "Démonstration — aucune mise à jour ne sera installée.\n• Vérification de la pop-up\n• Barre indéterminée du Microsoft Store\n• Aucun redémarrage",
+    notes: SIMULATED_NOTES[channel],
     isStoreUpdate: store,
     storeUrl: store ? appStoreUrlFor(APP_STORE_ID) : undefined,
   };
 }
 
 /**
- * Déroulé factice de la phase Windows : téléchargement indéterminé, installation,
- * redémarrage. Rend la main sans avoir rien installé ni relancé.
+ * Déroulé factice de l'installation : téléchargement (indéterminé sur le
+ * Microsoft Store, à progression réelle sur Linux), installation, redémarrage.
+ * Rend la main sans avoir rien installé ni relancé.
  */
 export async function runSimulatedInstall(
   patch: (next: Partial<UpdateInfo>) => void,
   reset: () => void,
 ): Promise<void> {
-  patch({ downloading: true, phase: "downloading", progress: 0, indeterminate: true, error: null });
-  await pause(3500);
-  patch({ phase: "installing", indeterminate: false, progress: 100 });
+  if (simulatedChannel() === "linux") {
+    patch({ downloading: true, phase: "downloading", progress: 0, indeterminate: false, error: null });
+    for (let pct = 5; pct <= 100; pct += 5) {
+      await pause(140);
+      patch({ progress: pct });
+    }
+    patch({ phase: "installing", progress: 100 });
+  } else {
+    patch({ downloading: true, phase: "downloading", progress: 0, indeterminate: true, error: null });
+    await pause(3500);
+    patch({ phase: "installing", indeterminate: false, progress: 100 });
+  }
   await pause(1500);
   patch({ phase: "restarting" });
   await pause(2000);
