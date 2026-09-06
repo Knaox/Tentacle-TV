@@ -11,7 +11,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { run, TransferFlags, type TransferJob } from "./transfer";
+import { nodeFiles, nodeVolume } from "./node/nodeFiles";
+import { nodePartWriter } from "./node/nodePartWriter";
+import { createStreamDriver } from "./node/streamDriver";
+import { run as transferRun, TransferFlags, type TransferJob } from "./transfer";
 import type { TransferNet, TransferStream } from "./transferNet";
 import { preparedRoot } from "./testkit";
 
@@ -72,6 +75,7 @@ function job(root: string, partial: Partial<TransferJob> = {}): TransferJob {
     variant: "original",
     expectedSize: null,
     serverUrl: "https://tv.exemple",
+    transcodeSession: null,
     ...partial,
   };
 }
@@ -86,8 +90,25 @@ function job(root: string, partial: Partial<TransferJob> = {}): TransferJob {
  * premier vrai téléchargement échouait en `io` à zéro octet. Créer le dossier
  * de l'item est le travail du code testé.
  */
+let currentRoot = "";
+
 function prepare(): string {
-  return preparedRoot("tentacle-transfer-");
+  currentRoot = preparedRoot("tentacle-transfer-");
+  return currentRoot;
+}
+
+/**
+ * Politique + pilote de flux, sur le vrai disque : c'est le transfert du
+ * bureau de bout en bout, le réseau seul étant simulé.
+ */
+function run(
+  net: TransferNet,
+  target: TransferJob,
+  flags: TransferFlags,
+  onProgress: (bytes: number) => void,
+): ReturnType<typeof transferRun> {
+  const driver = createStreamDriver(net, nodePartWriter, nodeFiles);
+  return transferRun(driver, nodeVolume(currentRoot), target, flags, onProgress, () => Date.now());
 }
 
 /**

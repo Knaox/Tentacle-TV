@@ -8,7 +8,7 @@
  * question de sortie pour rien, ou laisserait partir un transfert sans un mot.
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
 import { getFile } from "./queue";
 import {
@@ -106,5 +106,60 @@ describe("transferts en cours", () => {
     const { engine } = makeEngine(db, root, immediateNet(200));
 
     expect(engine.pending()).toBe(0);
+  });
+});
+
+describe("pause systeme globale", () => {
+  it("suspendForSystem met de cote l'actif ET la file, sans marquer une pause explicite", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const ids = [seed(db, "item1", 1_000), seed(db, "item2", 2_000), seed(db, "item3", 3_000)];
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    engine.suspendForSystem();
+    held.release();
+    await vi.waitFor(() => {
+      expect(engine.pending()).toBe(0);
+    });
+
+    for (const id of ids) {
+      expect(getFile(db, id)?.status).toBe("paused");
+      const raw = db.prepare("SELECT paused_by_user AS p FROM files WHERE id = ?").get(id);
+      // Pause SYSTEME : le retour des conditions la releve tout seul.
+      expect(Number(raw?.["p"])).toBe(0);
+    }
+
+    engine.resumeSystemPauses();
+    await vi.waitFor(() => {
+      for (const id of ids) expect(getFile(db, id)?.status).toBe("complete");
+    });
+  });
+});
+
+describe("redemarrage sous transfert", () => {
+  it("un second start ne relance pas un transfert qui tourne", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(held.opened).toBe(1);
+
+    // Reconnexion pendant le transfert : sans garde, le fichier repassait en
+    // file et repartait une seconde fois sur le meme .part.
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(held.opened).toBe(1);
+    expect(getFile(db, fileId)?.status).toBe("downloading");
+    held.release();
+    await vi.waitFor(() => {
+      expect(engine.pending()).toBe(0);
+    });
   });
 });

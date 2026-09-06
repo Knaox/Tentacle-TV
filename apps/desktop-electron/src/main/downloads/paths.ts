@@ -89,7 +89,7 @@ export function setRoot(db: DatabaseHandle, files: FileStore, newRoot: string): 
     // `EACCES` une ACL, `EROFS` un volume monté en lecture seule — trois
     // conduites à tenir différentes, que « pas accessible en écriture »
     // confondait en une seule.
-    throw new Error(`root-not-writable: ${files.describe(error)}`);
+    throw new Error(`root-not-writable: ${files.describe(error)}`, { cause: error });
   }
 
   settingSet(db, STORAGE_ROOT_KEY, newRoot);
@@ -156,7 +156,7 @@ export function removeMediaFile(volume: Volume, rel: string): void {
     try {
       volume.files.remove(file);
     } catch (error) {
-      throw new Error(`remove ${rel}: ${volume.files.describe(error)}`);
+      throw new Error(`remove ${rel}: ${volume.files.describe(error)}`, { cause: error });
     }
   }
 }

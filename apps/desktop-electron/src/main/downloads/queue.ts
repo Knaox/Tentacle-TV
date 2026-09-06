@@ -96,6 +96,20 @@ export function requeueSystemPauses(db: DatabaseHandle, nowMs: number): number {
   return Number(done.changes);
 }
 
+/**
+ * Pause SYSTÈME de tout ce qui attend une place. Renvoie le nombre de
+ * transferts mis de côté ; `resumeSystemPauses` les remettra en file.
+ */
+export function suspendQueued(db: DatabaseHandle, nowMs: number): number {
+  const done = db
+    .prepare(
+      `UPDATE files SET status = 'paused', paused_by_user = 0, updated_at = ?
+       WHERE status = 'queued'`,
+    )
+    .run(nowMs);
+  return Number(done.changes);
+}
+
 /** Transferts en attente d'une place. */
 export function countQueued(db: DatabaseHandle): number {
   const row = db.prepare("SELECT COUNT(*) AS n FROM files WHERE status = 'queued'").get();

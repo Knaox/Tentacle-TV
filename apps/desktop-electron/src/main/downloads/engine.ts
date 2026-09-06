@@ -15,8 +15,7 @@
  * l'entrelacement, qui ne se produit qu'aux `await`.
  */
 
-import type { DatabaseHandle, Volume } from "./adapters";
-import type { EventName } from "../channels";
+import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import {
   countQueued,
@@ -27,10 +26,10 @@ import {
   setBytesDone,
   setPausedByUser,
   setStatus,
+  suspendQueued,
 } from "./queue";
 import { removeMediaFile } from "./paths";
 import { TransferFlags, type TransferEnd } from "./transfer";
-import type { TransferNet } from "./transferNet";
 import { runWorker, type Creds } from "./worker";
 
 /** Deux transferts simultanés : au-delà, on se dispute la bande passante. */
@@ -40,9 +39,9 @@ export interface EngineDeps {
   db: DatabaseHandle;
   /** Relu à chaque usage : l'utilisateur peut changer de racine. */
   volume: () => Volume;
-  net: TransferNet;
+  driver: TransferDriver;
   makeFetcher: (token: string) => FetchBytes;
-  emit: (event: EventName, payload: unknown) => void;
+  emit: (event: EngineEvent, payload: unknown) => void;
   now: () => number;
   /** Lancé au démarrage du moteur — réparation et purge (branchés plus tard). */
   onStarted?: (creds: Creds) => void;
@@ -88,7 +87,11 @@ export class DownloadEngine {
    */
   start(creds: Creds): void {
     this.creds = creds;
-    normalizeOnEngineStart(this.deps.db, this.deps.now());
+    // Moteur vivant (reconnexion) : les transferts qui tournent ne sont pas
+    // « interrompus » — les remettre en file les lancerait deux fois sur le
+    // même `.part`. Seules les pauses système sont alors rattrapées.
+    if (this.active.size === 0) normalizeOnEngineStart(this.deps.db, this.deps.now());
+    else requeueSystemPauses(this.deps.db, this.deps.now());
     this.notifyChanged();
     this.pump();
     this.deps.onStarted?.(creds);
@@ -146,9 +149,10 @@ export class DownloadEngine {
           {
             db: this.deps.db,
             volume: this.deps.volume(),
-            net: this.deps.net,
+            driver: this.deps.driver,
             fetchBytes: this.deps.makeFetcher(creds.token),
             onProgress: (id, bytes) => this.progress(id, bytes, file.expectedSize),
+            now: this.deps.now,
           },
           creds,
           file,
@@ -243,6 +247,17 @@ export class DownloadEngine {
     if (requeueSystemPauses(this.deps.db, this.deps.now()) === 0) return;
     this.notifyChanged();
     this.pump();
+  }
+
+  /**
+   * Pause SYSTÈME de tout ce qui tourne ou attend — réseau cellulaire quand
+   * seul le Wi-Fi est autorisé, par exemple. `paused_by_user` reste à 0 :
+   * `resumeSystemPauses` relance tout au retour des conditions.
+   */
+  suspendForSystem(): void {
+    for (const flags of this.active.values()) flags.pause = true;
+    const suspended = suspendQueued(this.deps.db, this.deps.now());
+    if (suspended > 0 || this.active.size > 0) this.notifyChanged();
   }
 
   cancel(fileId: number): void {

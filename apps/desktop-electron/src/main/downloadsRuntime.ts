@@ -12,6 +12,8 @@ import { heal } from "./downloads/heal";
 import { makeFetcher } from "./downloads/netFetch";
 import type { Volume } from "./downloads/adapters";
 import { nodeFiles } from "./downloads/node/nodeFiles";
+import { nodePartWriter } from "./downloads/node/nodePartWriter";
+import { createStreamDriver } from "./downloads/node/streamDriver";
 import { resolveRoot } from "./downloads/paths";
 import { purgeDueClaims } from "./downloads/purge";
 import { electronTransferNet } from "./downloads/transferNet";
@@ -58,7 +60,7 @@ export function downloadsEngine(): DownloadEngine {
   engine = new DownloadEngine({
     db: localDb(),
     volume: downloadsVolume,
-    net: electronTransferNet,
+    driver: createStreamDriver(electronTransferNet, nodePartWriter, nodeFiles),
     makeFetcher,
     emit: sendToPage,
     now: () => Date.now(),

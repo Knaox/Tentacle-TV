@@ -10,12 +10,13 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, EngineEvent } from "./adapters";
 import { afterEach } from "vitest";
-import type { EventName } from "../channels";
 import { DownloadEngine } from "./engine";
 import type { FetchBytes } from "./fetcher";
-import { nodeVolume } from "./node/nodeFiles";
+import { nodeFiles, nodeVolume } from "./node/nodeFiles";
+import { nodePartWriter } from "./node/nodePartWriter";
+import { createStreamDriver } from "./node/streamDriver";
 import { ensureLayout, forgetRoot } from "./paths";
 import { integer } from "./rows";
 import { claimOrCreateFile, type ClaimSpec } from "./store";
@@ -133,13 +134,13 @@ export function makeEngine(
   db: DatabaseHandle,
   root: string,
   net: TransferNet,
-): { engine: DownloadEngine; events: EventName[]; toggles: boolean[] } {
-  const events: EventName[] = [];
+): { engine: DownloadEngine; events: EngineEvent[]; toggles: boolean[] } {
+  const events: EngineEvent[] = [];
   const toggles: boolean[] = [];
   const engine = new DownloadEngine({
     db,
     volume: () => nodeVolume(root),
-    net,
+    driver: createStreamDriver(net, nodePartWriter, nodeFiles),
     makeFetcher: () => NO_NETWORK,
     emit: (event) => events.push(event),
     now: () => 1_000,

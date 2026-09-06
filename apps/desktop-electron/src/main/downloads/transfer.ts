@@ -1,15 +1,21 @@
 /**
- * Boucle de transfert d'UN fichier : flux HTTP → `.part` → synchronisation →
- * renommage atomique.
+ * La POLITIQUE du transfert d'UN fichier : reprise, `.part`, intégrité,
+ * classification des erreurs, arrêt du transcodage.
+ *
+ * Le MÉCANISME — lire un flux HTTP et l'écrire sur le disque — est l'affaire
+ * du `TransferDriver` (voir `adapters.ts`) : sur le bureau, la boucle de blocs
+ * de `node/streamDriver.ts` ; sur le mobile, le téléchargeur natif de la
+ * plateforme. Ce fichier ne sait donc plus ni lire un flux ni ouvrir un
+ * fichier : il décide, puis il CONSTATE sur le disque.
  *
  * Le renommage n'est pas un détail de rangement : tant que le fichier porte
  * `.part`, il n'est pas le fichier final, et rien ne peut le présenter comme
  * lisible. Un transfert interrompu ne laisse donc jamais un média à moitié
  * jouable.
  *
- * Reprise par `Range` pour l'Original — le backend relaie `Accept-Ranges` de
- * Jellyfin. L'Allégé, lui, est un transcodage : il n'est pas rejouable et
- * repart toujours de zéro.
+ * Reprise par plage d'octets pour l'Original — le backend relaie
+ * `Accept-Ranges` de Jellyfin ; c'est le pilote qui pose l'en-tête. L'Allégé,
+ * lui, est un transcodage : il n'est pas rejouable et repart toujours de zéro.
  *
  * Le jeton part en EN-TÊTE, jamais en query, et n'est jamais écrit sur le
  * disque.
@@ -17,19 +23,59 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/transfer.rs`.
  */
 
-import { existsSync } from "node:fs";
-import { mkdir, open, rename, unlink } from "node:fs/promises";
-import path from "node:path";
-import type { TransferNet } from "./transferNet";
+import type {
+  Clock,
+  FileStore,
+  TranscodeSession,
+  TransferDriver,
+  TransferOutcome,
+  TransferSignal,
+  Volume,
+} from "./adapters";
 
 /** Cadence de persistance de la progression : au plus tôt des deux. */
 const PERSIST_EVERY_BYTES = 4 * 1024 * 1024;
 const PERSIST_EVERY_MS = 700;
 
-/** Bascules lues à chaque bloc reçu. */
-export class TransferFlags {
-  cancel = false;
-  pause = false;
+/**
+ * Bascules posées par le moteur.
+ *
+ * Observables : un pilote dont la lecture est bloquée sur un serveur muet doit
+ * pouvoir être annulé sans attendre un bloc qui ne viendra pas.
+ */
+export class TransferFlags implements TransferSignal {
+  private cancelFlag = false;
+  private pauseFlag = false;
+  private readonly listeners = new Set<() => void>();
+
+  get cancel(): boolean {
+    return this.cancelFlag;
+  }
+
+  set cancel(value: boolean) {
+    this.cancelFlag = value;
+    this.notify();
+  }
+
+  get pause(): boolean {
+    return this.pauseFlag;
+  }
+
+  set pause(value: boolean) {
+    this.pauseFlag = value;
+    this.notify();
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener();
+  }
 }
 
 export type TransferEnd =
@@ -42,43 +88,33 @@ export type TransferEnd =
 export interface TransferJob {
   url: string;
   token: string;
-  /** Chemin ABSOLU du fichier final. Le `.part` en dérive. */
+  /** Chemin STORE du fichier final (absolu, ou `file://` sur mobile). Le `.part` en dérive. */
   finalPath: string;
   variant: string;
   expectedSize: number | null;
   /** Base du serveur Tentacle — arrêt propre du transcodage Allégé. */
   serverUrl: string;
+  /**
+   * Session de transcodage choisie par le CLIENT (Allégé), pour les pilotes
+   * qui ne livrent pas les en-têtes de réponse avant la fin. Les en-têtes,
+   * quand ils arrivent, la remplacent.
+   */
+  transcodeSession: TranscodeSession | null;
 }
 
-/** Session de transcodage annoncée par le backend (mode Allégé uniquement). */
-interface TranscodeSession {
-  playSessionId: string;
-  deviceId: string;
-}
-
-/**
- * Fin de session serveur, best-effort : libère ffmpeg et les fichiers
- * temporaires côté Jellyfin, que le transfert ait abouti, été annulé ou mis en
- * pause. Sans cet appel, un transcodage abandonné continue de tourner.
- */
-async function killTranscode(
-  net: TransferNet,
-  job: TransferJob,
-  session: TranscodeSession | null,
-): Promise<void> {
-  if (session === null) return;
-  const url =
+function transcodeUrl(job: TransferJob, session: TranscodeSession): string {
+  return (
     `${job.serverUrl}/api/jellyfin/Videos/ActiveEncodings` +
-    `?deviceId=${session.deviceId}&playSessionId=${session.playSessionId}`;
-  // X-Emby-Token : la route passe par le proxy `/api/jellyfin`.
-  await net.killTranscode(url, { "X-Emby-Token": job.token });
+    `?deviceId=${session.deviceId}&playSessionId=${session.playSessionId}`
+  );
 }
 
-async function remove(path: string): Promise<void> {
+/** Jette un `.part` ; déjà absent ou verrouillé : rien de mieux à faire ici. */
+function discard(files: FileStore, part: string): void {
   try {
-    await unlink(path);
+    files.remove(part);
   } catch {
-    // Déjà absent : c'est le cas courant après un échec.
+    // Un `.part` qui reste sera jeté au prochain passage.
   }
 }
 
@@ -89,151 +125,143 @@ async function remove(path: string): Promise<void> {
  * pouvoir écrire un statut en base dans tous les cas.
  */
 export async function run(
-  net: TransferNet,
+  driver: TransferDriver,
+  volume: Volume,
   job: TransferJob,
   flags: TransferFlags,
   onProgress: (bytes: number) => void,
+  now: Clock,
 ): Promise<TransferEnd> {
+  const { files } = volume;
   const part = `${job.finalPath}.part`;
 
   // Le dossier de l'item n'existe pas au premier transfert, et RIEN d'autre ne
   // le crée : `ensureLayout` ne pose que `media/` et `meta/` à la racine, et
   // `meta`, `subs` et `trickplay` créent chacun LEUR dossier, jamais celui du
-  // média. Sans cette ligne, `open(part, "w")` échoue en ENOENT et TOUT
+  // média. Sans cette ligne, l'ouverture du `.part` échoue et TOUT
   // téléchargement se solde par un `io` à zéro octet.
   //
   // Même geste que `transfer.rs:85`, que le portage avait perdu — et que les
   // tests ne pouvaient pas voir : leur fixture créait le dossier elle-même.
   try {
-    await mkdir(path.dirname(job.finalPath), { recursive: true });
+    files.mkdirp(files.dirname(job.finalPath));
   } catch {
     return { kind: "failed", code: "io", bytesDone: 0 };
   }
 
   // Reprise : Original uniquement. Un transcodage n'est pas rejouable, et
   // reprendre son flux à mi-course donnerait un fichier incohérent.
-  let start = 0;
-  if (job.variant === "original" && existsSync(part)) {
-    const fh = await open(part, "r");
-    try {
-      start = (await fh.stat()).size;
-    } finally {
-      await fh.close();
-    }
+  let resumeFrom = 0;
+  if (job.variant === "original") {
+    resumeFrom = files.size(part) ?? 0;
   } else {
-    await remove(part);
+    discard(files, part);
+    driver.forget?.(part);
   }
 
-  const abort = new AbortController();
-  const headers: Record<string, string> = { Authorization: `Bearer ${job.token}` };
-  if (start > 0) headers["Range"] = `bytes=${start}-`;
+  // Session capturée par les en-têtes dès qu'ils arrivent — AVANT la
+  // consommation du corps sur le bureau —, à défaut celle du client : il faut
+  // pouvoir l'arrêter à toute sortie.
+  let session: TranscodeSession | null = job.transcodeSession;
+  let total = resumeFrom;
+  let lastPersistBytes = resumeFrom;
+  let lastPersistAt = now();
 
-  let stream;
+  let outcome: TransferOutcome;
   try {
-    stream = await net.open(job.url, headers, abort.signal);
+    outcome = await driver.download({
+      url: job.url,
+      headers: { Authorization: `Bearer ${job.token}` },
+      partPath: part,
+      resumeFrom,
+      signal: flags,
+      onBytes: (bytes) => {
+        total = bytes;
+        const at = now();
+        if (total - lastPersistBytes >= PERSIST_EVERY_BYTES || at - lastPersistAt >= PERSIST_EVERY_MS) {
+          lastPersistBytes = total;
+          lastPersistAt = at;
+          onProgress(total);
+        }
+      },
+      onHeaders: (_status, header) => {
+        const play = header("x-tentacle-play-session");
+        const device = header("x-tentacle-device-id");
+        if (play !== null && device !== null) session = { playSessionId: play, deviceId: device };
+      },
+    });
   } catch {
-    return { kind: "failed", code: "network", bytesDone: start };
-  }
-  if (stream.status >= 400) {
-    const code = stream.status === 404 || stream.status === 403 || stream.status === 401
-      ? "unavailable"
-      : "network";
-    return { kind: "failed", code, bytesDone: start };
+    // Un pilote qui lève ne doit pas laisser le fichier en `downloading`.
+    outcome = { kind: "failed", cause: "io", bytesKnown: total };
   }
 
-  // Session de transcodage capturée AVANT la consommation du corps : il faut
-  // pouvoir l'arrêter à toute sortie de boucle.
-  const play = stream.header("x-tentacle-play-session");
-  const device = stream.header("x-tentacle-device-id");
-  const session: TranscodeSession | null =
-    play !== null && device !== null ? { playSessionId: play, deviceId: device } : null;
+  // Fin de session serveur, best-effort, à TOUTE sortie : libère ffmpeg et les
+  // fichiers temporaires côté Jellyfin, que le transfert ait abouti, été
+  // annulé ou mis en pause. Sans cet appel, un transcodage abandonné continue
+  // de tourner.
+  const stopTranscode = async (): Promise<void> => {
+    if (session === null) return;
+    await driver.stopTranscode(transcodeUrl(job, session), { "X-Emby-Token": job.token });
+  };
 
-  // 200 alors qu'on demandait une reprise : le serveur a ignoré le `Range`.
-  // On repart de zéro proprement plutôt que d'écrire à côté.
-  if (stream.status === 200 && start > 0) {
-    await remove(part);
-    start = 0;
+  switch (outcome.kind) {
+    case "canceled":
+      discard(files, part);
+      await stopTranscode();
+      return { kind: "canceled" };
+    case "paused":
+      await stopTranscode();
+      // iOS ne pose le `.part` qu'à la fin : le compte du pilote fait foi.
+      return { kind: "paused", bytesDone: files.size(part) ?? outcome.bytesKnown };
+    case "failed":
+      await stopTranscode();
+      if (outcome.cause === "range-ignored") {
+        // Le pilote n'a pas pu tronquer : on repart de zéro, en pause SYSTÈME,
+        // donc reprise automatique.
+        discard(files, part);
+        return { kind: "failed", code: "network", bytesDone: 0 };
+      }
+      return { kind: "failed", code: outcome.cause, bytesDone: files.size(part) ?? outcome.bytesKnown };
+    case "done":
+      break;
   }
 
-  let total = start;
-  let lastPersistBytes = start;
-  let lastPersistAt = Date.now();
-  const fh = await open(part, existsSync(part) ? "r+" : "w").catch(() => null);
-  if (fh === null) return { kind: "failed", code: "io", bytesDone: start };
-
-  try {
-    for await (const chunk of stream.chunks) {
-      if (flags.cancel) {
-        abort.abort();
-        await fh.close();
-        await remove(part);
-        await killTranscode(net, job, session);
-        return { kind: "canceled" };
-      }
-      if (flags.pause) {
-        abort.abort();
-        await fh.sync().catch(() => undefined);
-        await fh.close();
-        await killTranscode(net, job, session);
-        return { kind: "paused", bytesDone: total };
-      }
-
-      try {
-        await fh.write(chunk, 0, chunk.byteLength, total);
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code === "ENOSPC" ? "disk-full" : "io";
-        await fh.sync().catch(() => undefined);
-        await fh.close();
-        await killTranscode(net, job, session);
-        return { kind: "failed", code, bytesDone: total };
-      }
-      total += chunk.byteLength;
-
-      const now = Date.now();
-      if (
-        total - lastPersistBytes >= PERSIST_EVERY_BYTES ||
-        now - lastPersistAt >= PERSIST_EVERY_MS
-      ) {
-        lastPersistBytes = total;
-        lastPersistAt = now;
-        onProgress(total);
-      }
+  if (outcome.status >= 400) {
+    await stopTranscode();
+    const code =
+      outcome.status === 404 || outcome.status === 403 || outcome.status === 401
+        ? "unavailable"
+        : "network";
+    // Un pilote natif peut avoir écrit le corps de l'erreur dans le `.part` :
+    // ce qui dépasse la reprise n'est pas du média, on le jette.
+    if ((files.size(part) ?? 0) !== resumeFrom) {
+      discard(files, part);
+      return { kind: "failed", code, bytesDone: 0 };
     }
-  } catch {
-    await fh.sync().catch(() => undefined);
-    await fh.close();
-    await killTranscode(net, job, session);
-    // Flux coupé en cours de route : pause SYSTÈME, donc reprise automatique.
-    return { kind: "failed", code: "network", bytesDone: total };
+    return { kind: "failed", code, bytesDone: resumeFrom };
   }
 
-  await killTranscode(net, job, session);
-  try {
-    await fh.sync();
-  } catch {
-    await fh.close();
-    return { kind: "failed", code: "io", bytesDone: total };
-  }
-  await fh.close();
+  await stopTranscode();
+  const written = files.size(part) ?? 0;
 
   // Intégrité : l'Original doit faire EXACTEMENT la taille annoncée. Sinon le
   // fichier source a changé en cours de route, et on repart propre plutôt que
   // de présenter comme lisible un média tronqué.
   if (job.variant === "original" && job.expectedSize !== null && job.expectedSize > 0) {
-    if (total !== job.expectedSize) {
-      await remove(part);
+    if (written !== job.expectedSize) {
+      discard(files, part);
       return { kind: "failed", code: "integrity", bytesDone: 0 };
     }
   }
-  if (total === 0) {
-    await remove(part);
+  if (written === 0) {
+    discard(files, part);
     return { kind: "failed", code: "integrity", bytesDone: 0 };
   }
 
   try {
-    await rename(part, job.finalPath);
+    files.rename(part, job.finalPath);
   } catch {
-    return { kind: "failed", code: "io", bytesDone: total };
+    return { kind: "failed", code: "io", bytesDone: written };
   }
-  return { kind: "complete", finalSize: total };
+  return { kind: "complete", finalSize: written };
 }
