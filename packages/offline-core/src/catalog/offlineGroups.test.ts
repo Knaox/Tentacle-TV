@@ -43,6 +43,7 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     positionTicks: 0,
     createdAt: 0,
     lastPlayedAt: null,
+    pausedByUser: false,
     ...over,
   };
 }

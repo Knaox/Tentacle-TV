@@ -31,6 +31,7 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     positionTicks: 0,
     createdAt: 0,
     lastPlayedAt: null,
+    pausedByUser: false,
     ...over,
   };
 }

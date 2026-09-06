@@ -54,6 +54,12 @@ export interface DownloadListEntry extends PublicFile {
    * sans lecture — l'ordre de « Reprendre ». ⚠️ `deleteScheduledAt` est en SECONDES.
    */
   lastPlayedAt: number | null;
+  /**
+   * Pause EXPLICITE (l'utilisateur a appuyé sur pause, jamais relevée toute
+   * seule) ou pause SYSTÈME (réseau, Wi-Fi seulement — relevée dès que les
+   * conditions reviennent). L'écran de gestion ne les libelle pas pareil.
+   */
+  pausedByUser: boolean;
 }
 
 const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id,
@@ -61,7 +67,7 @@ const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item
    item_meta.runtime_ticks, claims.auto_delete_after_watch,
    claims.auto_delete_delay_minutes, claims.delete_scheduled_at,
    playback_state.played, playback_state.position_ticks,
-   files.created_at, playback_state.updated_at AS last_played_at`;
+   files.created_at, playback_state.updated_at AS last_played_at, files.paused_by_user`;
 
 /**
  * Progression du PROPRIÉTAIRE DU CLAIM, jamais d'un autre compte : deux
@@ -91,6 +97,7 @@ function mapEntry(row: Row): DownloadListEntry {
     positionTicks: integerOrNull(row, "position_ticks") ?? 0,
     createdAt: integer(row, "created_at"),
     lastPlayedAt: integerOrNull(row, "last_played_at"),
+    pausedByUser: flag(row, "paused_by_user"),
   };
 }
 
