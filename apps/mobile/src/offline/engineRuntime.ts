@@ -1,7 +1,8 @@
 /**
  * Le moteur hors ligne du mobile, et ce qui l'entoure : le pilote expo, la
- * base et la racine locales, l'anti-veille de l'écran pendant un transfert,
- * la purge des échéances et la réparation au démarrage.
+ * base et la racine locales, ce qui tient un transfert vivant en arrière-plan
+ * (`backgroundTransfers.ts`), la purge des échéances et la réparation au
+ * démarrage.
  *
  * Singleton de module, construit au premier appel : un utilisateur qui ne
  * garde rien hors ligne n'ouvre ni base ni dossier. Les évènements du moteur
@@ -9,7 +10,6 @@
  * par deux abonnements — l'équivalent du canal IPC du bureau.
  */
 
-import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import {
   DownloadEngine,
   heal,
@@ -19,6 +19,7 @@ import {
   type ProgressPayload,
 } from "@tentacle-tv/offline-core";
 import { setExcludedFromBackup } from "../../modules/offline-storage";
+import { onEngineBusy, onEngineProgress, onEngineQueueChanged, stopBackgroundTransfers } from "./backgroundTransfers";
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { canStartTransfers } from "./transferGate";
@@ -30,7 +31,6 @@ import { offlineVolume } from "./volume";
 
 /** Tour de purge, comme le bureau. */
 const PURGE_TICK_MS = 60_000;
-const KEEP_AWAKE_TAG = "offline-transfer";
 
 const changedListeners = new Set<() => void>();
 const progressListeners = new Set<(payload: ProgressPayload) => void>();
@@ -65,9 +65,12 @@ export function notifyOfflineChanged(): void {
 function emit(event: EngineEvent, payload: unknown): void {
   if (event === "downloads://changed") {
     notifyOfflineChanged();
+    onEngineQueueChanged(engine?.pending() ?? 0);
     return;
   }
-  for (const listener of progressListeners) listener(payload as ProgressPayload);
+  const progress = payload as ProgressPayload;
+  for (const listener of progressListeners) listener(progress);
+  onEngineProgress(progress);
 }
 
 let engine: DownloadEngine | null = null;
@@ -87,13 +90,9 @@ export function offlineEngine(): DownloadEngine {
     // Wi-Fi seulement, réseau identifié, serveur joignable : la garde est
     // consultée à chaque relance, jamais mise en cache.
     canTransfer: canStartTransfers,
-    // L'écran reste allumé tant qu'un transfert tourne : un téléphone qui se
-    // verrouille suspend l'application, et le flux avec elle (sauf iOS, dont
-    // la session d'arrière-plan continue).
-    onBusy: (busy) => {
-      if (busy) activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => undefined);
-      else deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
-    },
+    // Service de premier plan Android, session d'arrière-plan iOS ou
+    // anti-veille de l'écran : voir `backgroundTransfers.ts`.
+    onBusy: onEngineBusy,
     onStarted: (started) => {
       startPeriodicPurge();
       // Hors ligne, la réparation n'aurait que des requêtes à faire échouer.
@@ -160,9 +159,9 @@ function runHeal(started: Creds): void {
     });
 }
 
-/** Arrête le minuteur de purge et rend l'anti-veille. */
+/** Arrête le minuteur de purge et rend le service, la notification et l'anti-veille. */
 export function stopOfflineRuntime(): void {
   if (purgeTimer !== null) clearInterval(purgeTimer);
   purgeTimer = null;
-  deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => undefined);
+  stopBackgroundTransfers();
 }
