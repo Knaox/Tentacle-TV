@@ -6,6 +6,7 @@ import { bootstrapPool } from "../services/reco/generationJob";
 import { invalidatePool } from "../services/reco/poolStore";
 import { pokePage } from "../services/reco/pageJobs";
 import { PROVIDER_FILTER_MAX, providerFilterFromQuery } from "../services/reco/providerFilter";
+import { notifyPreferencesUpdate } from "./preferences.notify";
 
 const settingsSchema = z.object({
   personalized: z.boolean(),
@@ -79,6 +80,8 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
       create: { jellyfinUserId: user.userId, ...data },
       update: data,
     });
+    // Les autres appareils du compte relisent les réglages en direct.
+    notifyPreferencesUpdate(request, user.userId, "reco-settings");
     // La page se reconstruit en fond avec les réglages neufs (curseur,
     // interrupteurs, filtre sauvegardé) — la prochaine visite est déjà prête.
     pokePage(user.userId, "settings");

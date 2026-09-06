@@ -8,7 +8,8 @@ import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
-import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useResponsive, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useCardWidth } from "@/contexts/CardDensityContext";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -29,10 +30,10 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   const client = useJellyfinClient();
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
-  const { isTablet } = useResponsive();
-  // Rails : carte 130 sur iPhone (inchangé), agrandie sur iPad. Une `width`
-  // explicite (grilles) l'emporte toujours.
-  const cardWidth = width ?? (isTablet ? 168 : 130);
+  // Rails : la largeur du compte (densité) ; une `width` explicite (grilles)
+  // l'emporte toujours. Le hook est appelé sans condition.
+  const contextWidth = useCardWidth();
+  const cardWidth = width ?? contextWidth;
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
   // Tuile série synthétique des « Derniers ajouts » (groupLatestByRuns) :

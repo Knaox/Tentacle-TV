@@ -15,6 +15,7 @@ interface FakeRow extends Record<string, unknown> {
 }
 const rows = new Map<string, FakeRow>();
 const caps = vi.hoisted(() => ({ tmdb: true, seerr: null as { url: string } | null }));
+const ws = vi.hoisted(() => ({ sendToUser: vi.fn() }));
 
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
@@ -25,6 +26,9 @@ vi.mock("../services/jwt", () => ({
   hashToken: (value: string) => value,
 }));
 vi.mock("../services/tmdb/client", () => ({ tmdbConfigured: () => caps.tmdb }));
+vi.mock("../services/wsManager", () => ({
+  sendToUser: (...args: unknown[]) => ws.sendToUser(...args),
+}));
 vi.mock("../services/seerConfig", () => ({ getSeerrConfig: () => caps.seerr }));
 vi.mock("../services/db", () => ({
   hasPrisma: () => true,
@@ -54,6 +58,7 @@ beforeEach(() => {
   rows.clear();
   caps.tmdb = true;
   caps.seerr = null;
+  ws.sendToUser.mockClear();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -147,6 +152,20 @@ describe("GET/PUT /api/preferences/home-layout", () => {
     await app.close();
   });
 
+  it("un PUT prévient les autres appareils du compte, jamais l'auteur", async () => {
+    const app = await makeApp();
+    const payload = layoutWith([{ key: "resume", enabled: true }]);
+    expect((await app.inject({ method: "PUT", url: URL_PATH, headers, payload })).statusCode).toBe(200);
+    // hashToken est l'identité dans ce banc : le hash exclu EST le jeton envoyé.
+    expect(ws.sendToUser).toHaveBeenCalledTimes(1);
+    expect(ws.sendToUser).toHaveBeenCalledWith(
+      "u1",
+      { type: "preferences:update", scope: "home-layout" },
+      { exceptTokenHash: "jeton-banc" },
+    );
+    await app.close();
+  });
+
   it("PUT « Pour vous » sans clé TMDB : accepté — la mise en page survit aux capacités", async () => {
     caps.tmdb = false;
     const app = await makeApp();
@@ -158,11 +177,12 @@ describe("GET/PUT /api/preferences/home-layout", () => {
     await app.close();
   });
 
-  it("PUT avec une clé inconnue : 400, rien n'est écrit", async () => {
+  it("PUT avec une clé inconnue : 400, rien n'est écrit, personne n'est prévenu", async () => {
     const app = await makeApp();
     const payload = layoutWith([{ key: "reco:banana", enabled: true }]);
     expect((await app.inject({ method: "PUT", url: URL_PATH, headers, payload })).statusCode).toBe(400);
     expect(rows.size).toBe(0);
+    expect(ws.sendToUser).not.toHaveBeenCalled();
     await app.close();
   });
 

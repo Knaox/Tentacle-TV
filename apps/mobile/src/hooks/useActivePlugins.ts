@@ -1,50 +1,25 @@
-import { useMemo, useEffect, useSyncExternalStore } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTentacleConfig } from "@tentacle-tv/api-client";
-import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTentacleConfig, type NotifPluginMeta } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
-
-// --- Mini store réactif pour les plugins en erreur (WebView crash) ---
-const failedPluginIds = new Set<string>();
-let listeners: Array<() => void> = [];
-
-function emitChange() {
-  for (const l of listeners) l();
-}
-
-export function markPluginFailed(pluginId: string) {
-  if (!failedPluginIds.has(pluginId)) {
-    failedPluginIds.add(pluginId);
-    emitChange();
-  }
-}
-
-export function clearPluginFailed(pluginId: string) {
-  if (failedPluginIds.delete(pluginId)) {
-    emitChange();
-  }
-}
-
-function subscribeFailedPlugins(callback: () => void) {
-  listeners.push(callback);
-  return () => {
-    listeners = listeners.filter((l) => l !== callback);
-  };
-}
-
-function getFailedSnapshot(): ReadonlySet<string> {
-  return failedPluginIds;
-}
-
-export function useFailedPlugins(): ReadonlySet<string> {
-  return useSyncExternalStore(subscribeFailedPlugins, getFailedSnapshot, getFailedSnapshot);
-}
 
 export interface PluginNavItem {
   path: string;
   icon: string;
   platforms: string[];
   labels: Record<string, string>;
+}
+
+/**
+ * Champ `tab` du manifeste, relayé tel quel par le serveur : comment le plugin
+ * veut nommer et illustrer l'onglet mobile qui regroupe ses pages. `icon` est
+ * un nom Feather, `labels` est indexé par code de langue (l'anglais sert de
+ * repli). Optionnel : sans lui, l'app retombe sur sa table des plugins connus,
+ * puis sur le nom du plugin.
+ */
+export interface PluginTabMeta {
+  icon?: string;
+  labels?: Record<string, string>;
 }
 
 export interface ActivePlugin {
@@ -55,14 +30,16 @@ export interface ActivePlugin {
   hasBundle: boolean;
   navItems: PluginNavItem[];
   configEnabled?: boolean;
+  tab?: PluginTabMeta;
 }
 
-export function useActivePlugins() {
-  const { storage } = useTentacleConfig();
-  const { serverUrl } = useServerUrl();
-  const token = storage.getItem("tentacle_token");
-
-  return useQuery({
+/**
+ * La requête des plugins actifs, partagée par le hook et par l'impératif
+ * (tap sur une notification poussée : `queryClient.ensureQueryData`). La clé
+ * ne change pas : le cache persisté et les préchargements la connaissent.
+ */
+export function activePluginsQueryOptions(serverUrl: string | null, token: string | null) {
+  return queryOptions({
     queryKey: ["plugins", "active", serverUrl],
     queryFn: async (): Promise<ActivePlugin[]> => {
       const res = await fetch(`${serverUrl}/api/plugins/active`, {
@@ -75,6 +52,17 @@ export function useActivePlugins() {
     enabled: !!serverUrl && !!token,
     staleTime: 5 * 60_000,
   });
+}
+
+export function useActivePlugins() {
+  const { storage } = useTentacleConfig();
+  const { serverUrl } = useServerUrl();
+  return useQuery(activePluginsQueryOptions(serverUrl, storage.getItem("tentacle_token")));
+}
+
+/** Ce que la résolution d'une route de notification a besoin de savoir des plugins. */
+export function toNotifPluginMeta(plugins: readonly ActivePlugin[]): NotifPluginMeta[] {
+  return plugins.map((p) => ({ pluginId: p.pluginId, navItems: p.navItems ?? [] }));
 }
 
 /**
@@ -121,30 +109,4 @@ export function usePrefetchPluginBundles() {
       });
     }
   }, [plugins, serverUrl, storage, queryClient]);
-}
-
-/** Returns all mobile navItems across all active plugins, localized.
- *  Exclut les plugins dont la WebView a crashé (markPluginFailed). */
-export function useMobilePluginNavItems() {
-  const { data: plugins } = useActivePlugins();
-  const { i18n } = useTranslation();
-  const lang = i18n.language?.slice(0, 2) ?? "en";
-  const failed = useFailedPlugins();
-
-  return useMemo(() => {
-    if (!plugins) return [];
-    return plugins
-      .filter((plugin) => !failed.has(plugin.pluginId))
-      .flatMap((plugin) =>
-        (plugin.navItems ?? [])
-          .filter((item) => item.platforms.includes("mobile"))
-          .map((item) => ({
-            pluginId: plugin.pluginId,
-            pluginName: plugin.name,
-            path: item.path,
-            icon: item.icon,
-            label: item.labels[lang] ?? item.labels["en"] ?? plugin.name,
-          })),
-      );
-  }, [plugins, lang, failed]);
 }

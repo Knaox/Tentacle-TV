@@ -6,6 +6,7 @@ import { StartupOverlays } from "./components/StartupOverlays";
 import { OfflineBanner } from "./components/OfflineBanner";
 import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { RecoLiveBinding } from "./components/reco/RecoLiveBinding";
+import { PreferencesLiveBinding } from "./components/reco/PreferencesLiveBinding";
 import { RecoFilterBinding } from "./components/reco/RecoFilterBinding";
 import { RecoPrefetchBoot } from "./components/reco/RecoPrefetchBoot";
 import { ServerSetup } from "./pages/ServerSetup";
@@ -188,6 +189,9 @@ export function App() {
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
           en silence quand le serveur l'a reconstruite. */}
       {authed && <RecoLiveBinding />}
+      {/* Un réglage enregistré sur un autre appareil arrive en direct :
+          accueil et réglages de recommandation se relisent en silence. */}
+      {authed && <PreferencesLiveBinding />}
       {/* Le filtre de plateformes suit le compte pour toute la session — il
           vaut sur l'accueil, pas seulement sur la page Recommandations. */}
       {authed && !offlineMode && <RecoFilterBinding />}

@@ -21,6 +21,9 @@ const STORAGE_KEYS = [
   // magasin les lit UNE fois pour semer les réglages d'un compte qui n'en a
   // pas encore. Sans elles au préchargement, le semis ne verrait rien.
   "tentacle_auto_skip_intro", "tentacle_up_next_card", "tentacle_up_next_countdown",
+  // L'accusé du démarrage à froid des recommandations (par compte, sur cet
+  // appareil) : lu au premier rendu de « Pour vous ».
+  "tentacle_coldstart_ack",
 ];
 
 /** Keys stored in Keychain via SecureStore instead of AsyncStorage. */

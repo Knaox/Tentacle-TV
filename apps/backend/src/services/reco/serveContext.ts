@@ -1,8 +1,10 @@
 import { getPrisma } from "../db";
+import { getSeerrConfig } from "../seerConfig";
 import { tmdbConfigured } from "../tmdb/client";
 import { canonicalKey } from "./candidates/exclusions";
 import { profileRebuildGate, rebuildProfile } from "./profileBuilder";
 import type { TasteVector } from "./scoring/strategy";
+import { effectiveIncludeVigie } from "./vigieSetting";
 
 // Démarrage à froid (spec) : < 5 signaux → pas de reco personnalisée du tout ;
 // 5..14 → recos servies avec l'indicateur « vos recommandations s'affinent ».
@@ -99,7 +101,7 @@ export async function serveContext(userId: string): Promise<ServeContext> {
     state,
     signalCount,
     lambda: (settings?.explorationBalance ?? 70) / 100,
-    includeVigie: settings?.includeVigie ?? true,
+    includeVigie: effectiveIncludeVigie(settings?.includeVigie, getSeerrConfig() !== null),
     community: settings?.community ?? true,
     exclude,
     profile: { facets, signalCount, animeShare: profileRow?.animeShare ?? 0 },

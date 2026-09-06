@@ -1,5 +1,6 @@
 import type { AppTheme } from "../theme/palette.types";
 import { buildPluginBootstrapScript } from "./pluginBootstrapScript";
+import { buildScrollChromeScript } from "./pluginScrollChromeScript";
 import {
   buildPluginThemeVars,
   buildPluginTokenCss,
@@ -192,6 +193,10 @@ export function buildPluginHtml({
       if (userJson) localStorage.setItem('tentacle_user', userJson);
     } catch(e) {}
   <\/script>
+
+  <!-- Le défilement de la page pilote le chrome natif — avant les deps :
+       actif même si le bundle de l'extension plante. -->
+  <script>${buildScrollChromeScript()}<\/script>
 
   <!-- Shared deps inlinées (WKWebView bloque les requêtes HTTP depuis origin null) -->
   <script>${safeDepsCode}<\/script>

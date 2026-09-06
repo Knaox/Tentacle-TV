@@ -1,4 +1,4 @@
-import type { WatchProviderDirectory } from "@tentacle-tv/api-client";
+import type { WatchProviderDirectory } from "../hooks/useWatchProviders";
 import { resolvePlatformFamilies } from "@tentacle-tv/shared";
 import type { PlatformFamily } from "@tentacle-tv/shared";
 

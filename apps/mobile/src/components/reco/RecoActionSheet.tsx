@@ -1,9 +1,10 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSendRecoFeedback } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { BottomSheet } from "@/components/ui";
+import { RecoReasonList } from "./RecoReasonList";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
@@ -30,23 +31,28 @@ export function RecoActionSheet({ item, onClose }: Props) {
   };
 
   return (
-    <BottomSheet visible={item !== null} onClose={onClose} snapPoints={[0.3, 0.3]}>
+    <BottomSheet visible={item !== null} onClose={onClose} snapPoints={[0.45, 0.8]}>
       {item && (
-        <View style={st.body}>
+        <ScrollView contentContainerStyle={st.body} showsVerticalScrollIndicator={false}>
           <Text style={st.title} numberOfLines={2}>{item.title}</Text>
           {item.year != null && <Text style={st.meta}>{item.year}</Text>}
+          {/* « Pourquoi ce titre » : le moteur explique sa proposition. */}
+          <View style={st.reasons}>
+            <RecoReasonList reasons={item.reasons} />
+          </View>
           <Pressable onPress={dismissItem} style={st.action} accessibilityRole="button">
             <Feather name="eye-off" size={18} color={theme.colors.text.primary} />
             <Text style={st.actionLabel}>{t("dismissAction")}</Text>
           </Pressable>
-        </View>
+        </ScrollView>
       )}
     </BottomSheet>
   );
 }
 
 const makeStyles = (t: AppTheme) => StyleSheet.create({
-  body: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  body: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
+  reasons: { marginTop: spacing.sm },
   title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
   meta: { ...typography.caption, color: t.colors.text.tertiary },
   action: {

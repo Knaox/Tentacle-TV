@@ -1,10 +1,13 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { GlassSurface } from "@/components/ui";
-import { FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useScrollChromeValue } from "./scrollChrome";
+import { GlassTabItem, LABEL_GAP, LABEL_LINE_HEIGHT, PILL_H, PILL_W } from "./GlassTabItem";
+import { TabIndicator } from "./TabIndicator";
+import { useSlidingIndicator } from "./useSlidingIndicator";
 
 /**
  * Tab bar basse **Liquid Glass flottante** (iPhone / portrait).
@@ -13,14 +16,24 @@ import { useScrollChromeValue } from "./scrollChrome";
  * FLOTTE au-dessus du contenu (absolute) — le contenu défile dessous et se
  * réfracte à travers le verre (c'est là que le Liquid Glass se voit vraiment,
  * contrairement à un bandeau opaque). Le verre réel est rendu par GlassSurface
- * (bascule expo-glass-effect ↔ fallback blur). L'onglet actif porte une capsule
- * teintée marque (pas de verre-sur-verre, déconseillé par Apple).
+ * (bascule expo-glass-effect ↔ fallback blur). L'onglet actif est marqué par
+ * UNE pilule neutre qui glisse d'un onglet à l'autre (TabIndicator) — pas de
+ * verre-sur-verre, déconseillé par Apple.
  */
 /** Marge basse minimale sous la pilule, sur un appareil sans encoche. */
 const MIN_BOTTOM_INSET = 10;
+const ROW_PAD_V = 8;
 
-/** Hauteur de la pilule elle-même (icône, capsule, libellé, marges internes). */
-const BAR_HEIGHT = 63;
+/** Hauteur de la pilule elle-même, DÉRIVÉE de sa géométrie (63). */
+const BAR_HEIGHT = 2 * ROW_PAD_V + PILL_H + LABEL_GAP + LABEL_LINE_HEIGHT;
+
+/**
+ * Repli : le libellé s'efface et se replie sous l'icône, qui descend d'autant
+ * pour rester au CENTRE de la barre réduite — la moitié de la place que le
+ * libellé occupait (centre de l'icône à 24 pt, centre de la barre à 31,5).
+ * Sans cela l'icône restait ancrée en haut, avec du vide dessous.
+ */
+const ICON_SHIFT = (LABEL_GAP + LABEL_LINE_HEIGHT) / 2;
 
 /**
  * Hauteur TOTALE occupée par la barre flottante, inset bas compris.
@@ -52,12 +65,22 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
       { scale: 1 - collapsed.value * 0.12 },
     ],
   }));
-  const labelFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
+  const shiftY = useDerivedValue(() => collapsed.value * ICON_SHIFT);
+  const iconShift = useAnimatedStyle(() => ({
+    transform: [{ translateY: shiftY.value }],
+  }));
+  const labelFold = useAnimatedStyle(() => ({
+    opacity: 1 - collapsed.value,
+    transform: [{ translateY: -collapsed.value * ICON_SHIFT }, { scale: 1 - collapsed.value * 0.3 }],
+  }));
 
   const routes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
     return StyleSheet.flatten(options.tabBarItemStyle)?.display !== "none";
   });
+  const activeKey = state.routes[state.index]?.key;
+  // Le décalage du repli entre dans le style de l'indicateur (un seul `transform`).
+  const indicator = useSlidingIndicator(activeKey, { width: PILL_W, height: PILL_H, align: "top", shiftY });
 
   return (
     <Animated.View
@@ -76,37 +99,27 @@ export function GlassTabBar({ state, descriptors, navigation }: BottomTabBarProp
         style={st.bar}
       >
         <View style={st.row}>
-          {routes.map((route) => {
-            const index = state.routes.indexOf(route);
-            const { options } = descriptors[route.key];
-            const focused = state.index === index;
-            const tint = focused ? theme.colors.brand.violet : theme.colors.text.tertiary;
-            const label = options.tabBarAccessibilityLabel ?? options.title ?? route.name;
-
-            const onPress = () => {
-              const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
-              if (!focused && !event.defaultPrevented) navigation.navigate(route.name, route.params);
-            };
-
-            return (
-              <Pressable
-                key={route.key}
-                onPress={onPress}
-                onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: focused }}
-                accessibilityLabel={label}
-                style={st.item}
-              >
-                <View style={[st.pill, focused && st.pillActive]}>
-                  {options.tabBarIcon?.({ focused, color: tint, size: 22 })}
-                </View>
-                <Animated.Text numberOfLines={1} style={[st.label, { color: tint }, labelFade]}>
-                  {options.title ?? route.name}
-                </Animated.Text>
-              </Pressable>
-            );
-          })}
+          {/* La piste : sans marge, le même repère pour les `onLayout` des
+              items et le `left/top: 0` de l'indicateur. */}
+          <View style={st.track} accessibilityRole="tablist">
+            <TabIndicator width={PILL_W} height={PILL_H} style={indicator.style} />
+            {routes.map((route) => {
+              const focused = state.routes[state.index]?.key === route.key;
+              return (
+                <GlassTabItem
+                  key={route.key}
+                  route={route}
+                  descriptor={descriptors[route.key]}
+                  focused={focused}
+                  tint={focused ? theme.colors.brand.violet : theme.colors.text.tertiary}
+                  navigation={navigation}
+                  onLayout={indicator.onItemLayout(route.key)}
+                  iconStyle={iconShift}
+                  labelStyle={labelFold}
+                />
+              );
+            })}
+          </View>
         </View>
       </GlassSurface>
     </Animated.View>
@@ -131,30 +144,11 @@ const makeStyles = (t: AppTheme) =>
       elevation: 12,
     },
     row: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      justifyContent: "space-around" as const,
-      paddingVertical: 8,
+      paddingVertical: ROW_PAD_V,
       paddingHorizontal: 6,
     },
-    item: {
-      flex: 1,
+    track: {
+      flexDirection: "row" as const,
       alignItems: "center" as const,
-      justifyContent: "center" as const,
-      gap: 2,
-    },
-    pill: {
-      width: 52,
-      height: 32,
-      borderRadius: 16,
-      alignItems: "center" as const,
-      justifyContent: "center" as const,
-    },
-    // Capsule teintée marque sous l'onglet actif (bien visible sur le verre).
-    pillActive: { backgroundColor: t.colors.brand.ghost },
-    label: {
-      fontSize: 10,
-      fontFamily: FONT_FAMILY.semibold,
-      letterSpacing: 0.1,
     },
   });

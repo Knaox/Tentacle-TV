@@ -17,6 +17,8 @@ export interface ActivePluginMeta {
     platforms: string[];
     admin?: boolean;
   }>;
+  /** Onglet mobile de l'extension (champ `tab` du manifeste), relayé s'il est bien formé. */
+  tab?: { icon?: string; labels?: Record<string, string> };
 }
 
 export interface PluginContextValue {

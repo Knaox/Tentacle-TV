@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Tabs } from "expo-router";
-import { Platform, View, useWindowDimensions } from "react-native";
+import { View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { useMobilePluginNavItems, usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
+import { Sparkles } from "lucide-react-native";
+import { usePrefetchPluginBundles } from "@/hooks/useActivePlugins";
+import { useExtensionTab } from "@/hooks/useExtensionSections";
 import { PersistentHeader } from "@/components/PersistentHeader";
 import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
@@ -12,28 +13,18 @@ import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
-// Mapping des icônes unicode du plugin.json → noms Feather
-const ICON_MAP: Record<string, string> = {
-  "✦": "compass",
-  "☰": "list",
-  "▥": "bar-chart-2",
-};
-
-function resolveIcon(icon: string | undefined, fallback: string): string {
-  if (!icon) return fallback;
-  return ICON_MAP[icon] ?? icon;
-}
-
+/**
+ * La barre basse est FIXE : Accueil · Pour vous · Bibliothèque · extensions ·
+ * Profil.
+ * Toutes les pages d'extension vivent dans le seul onglet `extensions` (en
+ * sections) : une extension de plus n'ajoute jamais d'onglet. Sans aucune
+ * page d'extension, cet onglet se masque.
+ */
 export default function TabsLayout() {
   const { t } = useTranslation("nav");
   const theme = useTheme();
-  const { width: screenW } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const isCompact = screenW < 380;
-  const navItems = useMobilePluginNavItems();
+  const ext = useExtensionTab();
   usePrefetchPluginBundles();
-  const first = navItems[0];
-  const second = navItems[1];
 
   // Nav : portrait (et iPhone) = barre basse ; iPad PAYSAGE = rail gauche fin
   // + menu déroulant (RailMenu). La largeur du rail est publiée via contexte
@@ -45,11 +36,11 @@ export default function TabsLayout() {
 
   const menuItems = useMemo<RailMenuItem[]>(() => [
     { href: "/", icon: "home", label: t("home") },
+    { href: "/for-you", icon: "star", iconNode: (color) => <Sparkles size={20} color={color} />, label: t("forYou") },
     { href: "/libraries", icon: "film", label: t("library") },
-    ...(first ? [{ href: "/plugins" as const, icon: resolveIcon(first.icon, "compass"), label: first.label }] : []),
-    ...(second ? [{ href: "/plugin-extra" as const, icon: resolveIcon(second.icon, "list"), label: second.label }] : []),
+    ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
     { href: "/profile", icon: "user", label: t("profile") },
-  ], [t, first, second]);
+  ], [t, ext.visible, ext.icon, ext.label]);
 
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
@@ -59,26 +50,15 @@ export default function TabsLayout() {
       tabBar={sideNav
         ? (props) => <TabRail {...props} onOpenMenu={() => setMenuOpen(true)} />
         : (props) => <GlassTabBar {...props} />}
+      // Les barres sont maison (GlassTabBar, TabRail) : elles ne lisent aucune
+      // option `tabBar*` de react-navigation — seule la position compte.
       screenOptions={{
         headerShown: false,
-        // iPad paysage : rail gauche custom ; sinon barre basse inchangée.
+        // iPad paysage : rail gauche custom ; sinon barre basse.
         tabBarPosition: sideNav ? "left" : "bottom",
-        tabBarStyle: {
-          backgroundColor: theme.colors.tabBar,
-          borderTopColor: theme.colors.border.subtle,
-          borderTopWidth: 0.5,
-          height: 60 + Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
-          paddingBottom: Math.max(insets.bottom, Platform.OS === "android" ? 8 : 0),
-          paddingTop: isCompact ? 4 : 8,
-          elevation: 0,
-        },
-        tabBarActiveTintColor: theme.colors.brand.violet,
-        tabBarInactiveTintColor: theme.colors.text.quaternary,
-        tabBarLabelStyle: { fontSize: isCompact ? 9 : 11, fontWeight: "600" },
-        tabBarAllowFontScaling: false,
       }}
     >
-      {/* Tab 1: Home */}
+      {/* Accueil */}
       <Tabs.Screen
         name="index"
         options={{
@@ -88,7 +68,17 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 2: Libraries */}
+      {/* Pour vous — la page de recommandations */}
+      <Tabs.Screen
+        name="for-you"
+        options={{
+          title: t("forYou"),
+          tabBarAccessibilityLabel: t("forYou"),
+          tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
+        }}
+      />
+
+      {/* Bibliothèque */}
       <Tabs.Screen
         name="libraries"
         options={{
@@ -98,33 +88,19 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* Tab 3: Plugin navItem[0] (e.g. Discover) */}
+      {/* Extensions — libellé fixe, icône choisie par le plugin actif ;
+          `href: null` masque l'onglet quand aucune page n'est publiée. */}
       <Tabs.Screen
-        name="plugins"
+        name="extensions"
         options={{
-          title: first?.label ?? "Plugins",
-          tabBarAccessibilityLabel: first?.label ?? "Plugins",
-          href: first ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={resolveIcon(first?.icon, "compass") as never} size={size} color={color} />
-          ),
+          title: ext.label,
+          tabBarAccessibilityLabel: ext.label,
+          href: ext.visible ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Feather name={ext.icon} size={size} color={color} />,
         }}
       />
 
-      {/* Tab 4: Plugin navItem[1] (e.g. Requests) */}
-      <Tabs.Screen
-        name="plugin-extra"
-        options={{
-          title: second?.label ?? "Plugins",
-          tabBarAccessibilityLabel: second?.label ?? "Plugins",
-          href: second ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Feather name={resolveIcon(second?.icon, "list") as never} size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* Tab 5: Profile */}
+      {/* Profil */}
       <Tabs.Screen
         name="profile"
         options={{

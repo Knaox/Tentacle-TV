@@ -5,7 +5,7 @@ import { useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { PlatformLogo } from "../reco/PlatformLogo";
-import { buildPlatformCatalog, isFamilyActive } from "../reco/platformCatalog";
+import { buildPlatformCatalog, isFamilyActive } from "@tentacle-tv/api-client";
 
 const LOGOS_MAX = 3;
 

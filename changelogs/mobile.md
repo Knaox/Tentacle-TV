@@ -5,6 +5,19 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [Unreleased]
+### FR
+- **Un onglet « Pour vous »** : vos recommandations, avec un carrousel, les raisons sous chaque affiche, un filtre par plateforme et vos acteurs
+- **Un seul onglet « Extensions »** réunit toutes les pages de vos plugins, le nom du plugin en tête
+- **Personnalisation depuis le mobile** : bandeau, rangées, densité, recommandations — et vos réglages suivent en direct sur vos autres appareils
+- **Barre d'onglets refaite** : sélection qui glisse, rebond à l'appui, contrôles aux couleurs du web
+
+### EN
+- **A "For you" tab**: your recommendations, with a carousel, the reasons under each poster, a platform filter and your favorite actors
+- **A single "Extensions" tab** gathers every page of your plugins, with the plugin's name ahead of its pages
+- **Personalization from your phone**: banner, row order, density and recommendation settings — and your settings reach your other devices live
+- **Rebuilt tab bar**: sliding selection, bounce on tap, readable labels, controls in the web's colors
+
 ## [1.7.0]
 ### FR
 - **L'accueil suit votre compte** : les rangées et leur ordre choisis dans les réglages du web s'appliquent ici tels quels — « Mes favoris » et « Déjà visionné » compris

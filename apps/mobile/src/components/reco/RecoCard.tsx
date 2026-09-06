@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { recoPosterUrl, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
-import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
+import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
+import { useCardWidth } from "@/contexts/CardDensityContext";
 
 interface Props {
   item: RecoRowItem;
@@ -14,6 +15,8 @@ interface Props {
   canOpen: boolean;
   onPress: () => void;
   onLongPress: () => void;
+  /** La raison verbalisée (« Parce que vous avez aimé… »), sous le titre — la page Pour vous. */
+  reason?: string;
 }
 
 /**
@@ -22,12 +25,11 @@ interface Props {
  * « Découverte » pour une exploration, la note globale, titre et année. Même
  * gabarit que MobileMediaCard ; les items ne sont pas des MediaItem.
  */
-export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress }: Props) {
+export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongPress, reason }: Props) {
   const { t } = useTranslation("reco");
   const client = useJellyfinClient();
   const st = useThemedStyles(makeStyles);
-  const { isTablet } = useResponsive();
-  const width = isTablet ? 168 : 130;
+  const width = useCardWidth();
   const [imgError, setImgError] = useState(false);
   const poster = recoPosterUrl(item, (id) => client.getImageUrl(id, "Primary", { width: 300, quality: 80 }));
   const showFallback = !poster || imgError;
@@ -60,8 +62,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             />
           )}
         </View>
-        {onDemand && <Badge label={t("onDemandBadge")} variant="muted" style={st.badgeLeft} />}
-        {item.exploration && <Badge label={t("explorationBadge")} variant="brand" style={st.badgeRight} />}
+        {/* Posés sur l'affiche : blanc/noir constants (« À la demande »), dégradé
+            de marque (« Découverte ») — les couleurs du web. */}
+        {onDemand && <Badge label={t("onDemandBadge")} variant="onMedia" style={st.badgeLeft} />}
+        {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" style={st.badgeRight} />}
         {item.voteAverage != null && item.voteAverage > 0 && (
           <View style={st.rating}>
             <Text style={st.ratingText}>★ {item.voteAverage.toFixed(1)}</Text>
@@ -70,6 +74,7 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
       </View>
       <Text numberOfLines={1} style={st.title}>{item.title}</Text>
       {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}
+      {reason && <Text numberOfLines={2} style={st.reason}>{reason}</Text>}
     </PressableCard>
   );
 });
@@ -85,4 +90,5 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   ratingText: { fontSize: 11, lineHeight: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
   title: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, marginTop: 8, letterSpacing: -0.1 },
   year: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 2 },
+  reason: { fontSize: 11.5, lineHeight: 15, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 3 },
 });

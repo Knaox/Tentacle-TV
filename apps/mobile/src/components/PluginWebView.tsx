@@ -1,9 +1,9 @@
 import { useMemo, useCallback, useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
-import { useActivePlugins, useMobilePluginNavItems, markPluginFailed, clearPluginFailed } from "@/hooks/useActivePlugins";
+import { useActivePlugins } from "@/hooks/useActivePlugins";
 import { usePluginBundle, useSharedDeps } from "@/plugins/usePluginBundle";
 import { buildPluginHtml } from "@/plugins/pluginHtmlTemplate";
 import { createBridgeHandler } from "@/plugins/pluginBridge";
@@ -11,6 +11,7 @@ import { PluginLoadingOverlay } from "./PluginLoadingOverlay";
 import { typography, FONT_FAMILY, RADIUS, useTheme, useResponsive } from "@/theme";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { useGlassTabBarHeight } from "@/components/navigation/GlassTabBar";
+import { useScrollChromeSetter } from "@/components/navigation/scrollChrome";
 
 function getWebView(): typeof import("react-native-webview").WebView | null {
   try {
@@ -21,10 +22,30 @@ function getWebView(): typeof import("react-native-webview").WebView | null {
 }
 
 interface PluginWebViewProps {
-  navItemIndex: number;
+  /** Identifiant du plugin (`seer`…) : la WebView n'existe que s'il est actif. */
+  pluginId: string;
+  /** Route du plugin à ouvrir (`/discover`…), telle que publiée par son manifeste. */
+  path: string;
+  /** Libellé déjà localisé, affiché par l'overlay de chargement. */
+  label: string;
+  /**
+   * Vrai (défaut) : le cadre se décale du header flottant. Faux quand le
+   * parent a déjà réservé cette place (bandeau de sections au-dessus).
+   */
+  padTop?: boolean;
+  /**
+   * Vrai (défaut) : le défilement de la page replie et redéploie le chrome
+   * natif, comme un onglet. Faux pour un volet inactif, qui reste monté mais
+   * ne doit pas parler au nom de la section affichée.
+   */
+  controlsChrome?: boolean;
+  /** Hauteur que le parent pose SOUS le bord bas de l'écran (bandeau replié), en plus de la barre. */
+  chromeBottomExtra?: number;
 }
 
-export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
+export function PluginWebView({
+  pluginId, path, label, padTop = true, controlsChrome = true, chromeBottomExtra = 0,
+}: PluginWebViewProps) {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
@@ -35,17 +56,35 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
    * ne recouvre rien. */
   const tabBarH = useGlassTabBarHeight();
   const { isTablet, isLandscape } = useResponsive();
-  const chromeBottom = Math.round(isTablet && isLandscape ? 0 : tabBarH);
+  const chromeBottom = Math.round((isTablet && isLandscape ? 0 : tabBarH) + chromeBottomExtra);
   const chromeRef = useRef(chromeBottom);
   const webRef = useRef<{ injectJavaScript: (js: string) => void } | null>(null);
   const { storage } = useTentacleConfig();
   const { i18n, t: tc } = useTranslation("common");
   const { t: te } = useTranslation("errors");
-  const { isLoading: pluginsLoading } = useActivePlugins();
-  const navItems = useMobilePluginNavItems();
+  const { data: plugins, isLoading: pluginsLoading } = useActivePlugins();
 
-  const navItem = navItems[navItemIndex];
-  const { data: bundleCode, error: bundleError } = usePluginBundle(navItem?.pluginId);
+  // Le chrome suit le défilement de la page (message SCROLL_CHROME) — seul le
+  // volet actif y a droit ; hors des onglets, le setter est nul : no-op.
+  const setChrome = useScrollChromeSetter();
+  const controlsRef = useRef(controlsChrome);
+  controlsRef.current = controlsChrome;
+  const onScrollChrome = useCallback(
+    (collapsed: boolean) => { if (controlsRef.current) setChrome?.(collapsed); },
+    [setChrome],
+  );
+  // Le natif vient de redéployer le chrome (focus, volet activé) : la page se
+  // réaligne, sinon elle croirait le chrome encore replié.
+  const resetPageChrome = useCallback(() => {
+    webRef.current?.injectJavaScript("window.__tentacleScrollChrome && window.__tentacleScrollChrome.reset(); true;");
+  }, []);
+  useFocusEffect(resetPageChrome);
+  useEffect(() => { if (controlsChrome) resetPageChrome(); }, [controlsChrome, resetPageChrome]);
+
+  // Le plugin est adressé par son identifiant : un emplacement par index
+  // n'est pas une identité (l'ordre des pages change avec le manifeste).
+  const plugin = plugins?.find((p) => p.pluginId === pluginId);
+  const { data: bundleCode, error: bundleError } = usePluginBundle(plugin ? pluginId : undefined);
   const { data: sharedDepsCode, error: depsError } = useSharedDeps();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
@@ -57,19 +96,18 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   const [showOverlay, setShowOverlay] = useState(true);
   const [webViewError, setWebViewError] = useState<string | null>(null);
 
-  // Reset states when navItem changes (retry implicite)
-  const navKey = navItem ? `${navItem.pluginId}-${navItem.path}` : "";
+  // Remise à zéro quand la page adressée change (retry implicite)
+  const navKey = `${pluginId}:${path}`;
   useEffect(() => {
     setWebViewReady(false);
     setShowOverlay(true);
     setWebViewError(null);
-    if (navItem?.pluginId) clearPluginFailed(navItem.pluginId);
   }, [navKey]);
 
   // `theme` en dépendance : au switch clair/sombre la source HTML change et la
-  // WebView remonte re-thémée (événement rare, remontage assumé).
+  // WebView recharge sa page re-thémée (événement rare, rechargement assumé).
   const htmlContent = useMemo(() => {
-    if (!navItem || !bundleCode || !sharedDepsCode) return null;
+    if (!plugin || !bundleCode || !sharedDepsCode) return null;
     return buildPluginHtml({
       backendUrl: serverUrl,
       token,
@@ -77,11 +115,11 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       lang,
       bundleCode,
       sharedDepsCode,
-      pluginPath: navItem.path,
+      pluginPath: path,
       appTheme: theme,
       chromeBottom: chromeRef.current,
     });
-  }, [navItem, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
+  }, [plugin, path, bundleCode, sharedDepsCode, serverUrl, token, userRaw, lang, theme]);
 
   /* La hauteur suit l'appareil : l'inset bas d'un iPhone n'est pas le même en
    * portrait et en paysage. On la RÉINJECTE plutôt que de la mettre dans les
@@ -108,23 +146,31 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
     setWebViewReady(true);
   }, []);
 
+  // Un plugin qui plante garde sa place (onglet, section) : le cadre montre
+  // l'erreur et « Réessayer » — le retirer de la navigation démonterait ce
+  // cadre et laisserait l'utilisateur sans recours jusqu'au redémarrage.
   const onBridgeError = useCallback((msg: string) => {
     setWebViewReady(true);
     setWebViewError(msg);
-    if (navItem?.pluginId) markPluginFailed(navItem.pluginId);
-  }, [navItem?.pluginId]);
+  }, []);
 
-  const handleMessage = useCallback(
-    createBridgeHandler(router, onReady, onBridgeError),
-    [router, onReady, onBridgeError],
+  const handleMessage = useMemo(
+    () => createBridgeHandler(router, onReady, onBridgeError, onScrollChrome),
+    [router, onReady, onBridgeError, onScrollChrome],
   );
+
+  /* Android peut tuer le processus de rendu des WebViews (mémoire) : sans ce
+   * crochet, chaque cadre resterait blanc en silence. On le traite comme un
+   * plantage du plugin — message + Réessayer. */
+  const onRenderGone = useCallback(() => {
+    onBridgeError("render process gone");
+  }, [onBridgeError]);
 
   const handleRetry = useCallback(() => {
     setWebViewError(null);
     setWebViewReady(false);
     setShowOverlay(true);
-    if (navItem?.pluginId) clearPluginFailed(navItem.pluginId);
-  }, [navItem?.pluginId]);
+  }, []);
 
   if (webViewError) {
     return (
@@ -154,7 +200,8 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
     );
   }
 
-  if (!navItem && !pluginsLoading) {
+  // Plugin absent de la liste active (désactivé, désinstallé, ou pas encore chargé)
+  if (!plugin && !pluginsLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.surface.s0, justifyContent: "center", alignItems: "center", padding: 32 }}>
         <Text style={{ ...typography.body, color: colors.text.tertiary, textAlign: "center" }}>
@@ -186,13 +233,14 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: headerH }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface.s0, paddingTop: padTop ? headerH : 0 }}>
       {htmlContent ? (
         <WebViewComponent
           key={navKey}
           ref={webRef as never}
           source={{ html: htmlContent, baseUrl: serverUrl }}
           onMessage={handleMessage}
+          onRenderProcessGone={onRenderGone}
           style={{ flex: 1, backgroundColor: colors.surface.s0 }}
           javaScriptEnabled
           domStorageEnabled
@@ -203,7 +251,7 @@ export function PluginWebView({ navItemIndex }: PluginWebViewProps) {
       {showOverlay && (
         <PluginLoadingOverlay
           visible={!webViewReady}
-          label={navItem?.label ?? ""}
+          label={label}
           onHidden={() => setShowOverlay(false)}
         />
       )}
