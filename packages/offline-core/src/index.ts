@@ -44,6 +44,7 @@ export { snapshot } from "./core/snapshot";
 // segments locaux, droits, resynchronisation.
 export * from "./catalog/offlineGroups";
 export * from "./catalog/localEpisodeNav";
+export * from "./catalog/offlineHighlights";
 export {
   prune as pruneSelection,
   state as selectionState,
