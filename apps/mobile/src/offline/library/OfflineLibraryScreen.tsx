@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
@@ -21,7 +21,7 @@ import { OfflineEmptyState } from "./OfflineEmptyState";
 import { OfflineHomeHero } from "./OfflineHomeHero";
 import { OfflineLibrarySkeleton } from "./OfflineLibrarySkeleton";
 import { OfflineStateStrip } from "./OfflineStateStrip";
-import { useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
+import { ALL_LIBRARIES, useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
 
 interface Props {
   /**
@@ -47,9 +47,13 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const onScrollChrome = useScrollChromeHandler();
   const layout = useGrid({ phoneColumns: 3 });
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
+  const [filter, setFilter] = useState<OfflineCatalogFilter>(ALL_LIBRARIES);
   const [more, setMore] = useState<OfflineEntry | null>(null);
-  const { movies, series, hero, counts, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, hero, libraries, hasContent, ready } = useOfflineCatalog(search, filter);
+  // Une bibliothèque filtrée dont le dernier titre vient d'être retiré : retour à « Tout ».
+  useEffect(() => {
+    if (filter !== ALL_LIBRARIES && !libraries.some((library) => library.id === filter)) setFilter(ALL_LIBRARIES);
+  }, [filter, libraries]);
 
   const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
   const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
@@ -95,7 +99,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(2)}>
-            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} counts={counts} />
+            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} />
           </FadeIn>
           {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
           <OfflineCatalogSections
