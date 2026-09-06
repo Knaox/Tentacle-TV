@@ -14,6 +14,7 @@ import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { OfflineRowActionsSheet } from "@/offline/manage/OfflineRowActionsSheet";
 import { backOrHome } from "@/utils/backOrHome";
 import { spacing, typography, FONT_FAMILY, useGrid, useThemedStyles, type AppTheme } from "@/theme";
+import { OfflineBackOnlineCard } from "./OfflineBackOnlineCard";
 import { OfflineCatalogSections } from "./OfflineCatalogSections";
 import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
 import { OfflineEmptyState } from "./OfflineEmptyState";
@@ -49,7 +50,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
   const [more, setMore] = useState<OfflineEntry | null>(null);
-  const { movies, series, resume, hero, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, resume, hero, counts, hasContent, ready } = useOfflineCatalog(search, filter);
 
   const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
   const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
@@ -91,6 +92,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
           {!searching && (
             <FadeIn delay={homeRowFadeDelay(0)}>
               <OfflineStateStrip showManage={!standalone} />
+              <OfflineBackOnlineCard />
             </FadeIn>
           )}
           {!searching && resume.length > 0 && (
@@ -99,7 +101,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(2)}>
-            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} />
+            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} counts={counts} />
           </FadeIn>
           {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
           <OfflineCatalogSections
