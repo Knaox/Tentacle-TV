@@ -1,0 +1,12 @@
+{
+  // Le verrou du cœur : `src/core` seul, sans les types de Node. Un
+  // `node:fs`, un `Buffer`, un `NodeJS.ErrnoException` qui s'y glisserait ne
+  // compilerait pas — et ne tournerait pas sur le mobile.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/core"],
+  "exclude": ["src/core/*.test.ts", "src/core/testkit.ts"]
+}

@@ -8,8 +8,8 @@
 import { z } from "zod";
 import { downloadsRoot, downloadsVolume } from "../downloadsRuntime";
 import { nodeFiles } from "../downloads/node/nodeFiles";
-import { freeSpace, setRoot } from "../downloads/paths";
-import { diskUsage } from "../downloads/store";
+import { freeSpace, setRoot } from "../downloads/core/paths";
+import { diskUsage } from "../downloads/core/store";
 import { localDb } from "../localDb";
 import { LOCAL_ASSET_TOKEN, LOCAL_HOST } from "../localAssets";
 import { APP_SCHEME } from "../appProtocol";

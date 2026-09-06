@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { nodeVolume } from "./downloads/node/nodeFiles";
-import { ensureLayout } from "./downloads/paths";
+import { ensureLayout } from "./downloads/core/paths";
 import { LOCAL_ASSET_TOKEN, mimeFor, serveLocalAsset } from "./localAssets";
 
 const APP_ORIGIN = "tentacle://app";

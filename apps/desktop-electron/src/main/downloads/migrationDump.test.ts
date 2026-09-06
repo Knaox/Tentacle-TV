@@ -4,9 +4,9 @@
  * seule preuve avant la campagne d'essais.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle } from "./core/adapters";
 import { describe, expect, it } from "vitest";
-import { settingGet } from "./db";
+import { settingGet } from "./core/db";
 import { openInMemory } from "./node/nodeDatabase";
 import { MIGRATION_KEY, TRACE_KEY, takeMigrationDump } from "./migrationDump";
 

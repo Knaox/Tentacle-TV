@@ -12,7 +12,7 @@
  */
 
 import { app } from "electron";
-import type { DatabaseHandle } from "./downloads/adapters";
+import type { DatabaseHandle } from "./downloads/core/adapters";
 import { dbPath, openNodeDatabase } from "./downloads/node/nodeDatabase";
 
 let handle: DatabaseHandle | null = null;

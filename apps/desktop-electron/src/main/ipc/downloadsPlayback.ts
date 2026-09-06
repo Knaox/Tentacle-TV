@@ -11,8 +11,8 @@ import {
   pendingReports,
   restartPlayback,
   setPlaybackState,
-} from "../downloads/playback";
-import { purgeDueClaims, scheduleOnPlayed } from "../downloads/purge";
+} from "../downloads/core/playback";
+import { purgeDueClaims, scheduleOnPlayed } from "../downloads/core/purge";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 
