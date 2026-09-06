@@ -1,19 +1,22 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useUserId } from "@tentacle-tv/api-client";
 import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "@tentacle-tv/offline-core";
+import { SelectionBar } from "@/components/SelectionBar";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing, typography, FONT_FAMILY, LETTER_SPACING, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import type { OfflineEntry } from "../engineApi";
 import { useWifiOnly } from "../settings";
 import { useConnectivity } from "../useConnectivity";
+import { BulkAutoDeleteSheet, useBulkOfflineActions } from "./OfflineBulkActions";
 import { OfflineEntryRow } from "./OfflineEntryRow";
 import { OfflineRowActionsSheet } from "./OfflineRowActionsSheet";
 import { OfflineSpaceBar } from "./OfflineSpaceBar";
+import { useOfflineSelection } from "./useOfflineSelection";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const st = useThemedStyles(makeStyles);
@@ -43,6 +46,10 @@ export function OfflineManageScreen() {
   const wifiOnly = useWifiOnly();
   const waitingWifi = wifiOnly && networkType === "cellular";
   const [more, setMore] = useState<OfflineEntry | null>(null);
+  const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
+  const selection = useOfflineSelection(ids);
+  const [bulkAutoDelete, setBulkAutoDelete] = useState(false);
+  const bulk = useBulkOfflineActions(userId, selection.selection, selection.exit);
 
   const groups = useMemo(() => {
     const active = entries.filter((entry) => entry.status !== "complete");
@@ -53,11 +60,26 @@ export function OfflineManageScreen() {
 
   const onPlay = (entry: OfflineEntry) => router.push(`/watch/${entry.itemId}`);
   const row = (entry: OfflineEntry) => (
-    <OfflineEntryRow key={entry.id} entry={entry} onPlay={onPlay} onMore={setMore} waitingWifi={waitingWifi && entry.status !== "complete"} />
+    <OfflineEntryRow
+      key={entry.id}
+      entry={entry}
+      onPlay={onPlay}
+      onMore={setMore}
+      waitingWifi={waitingWifi && entry.status !== "complete"}
+      selection={selection.active ? { selected: selection.selection.has(entry.id), onToggle: selection.toggle } : undefined}
+    />
   );
 
+  // « Sélectionner » à droite du titre, puis « Annuler la sélection ».
+  const trailing = entries.length > 0 ? (
+    <Pressable onPress={selection.active ? selection.exit : selection.enter} hitSlop={8} accessibilityRole="button">
+      <Text style={st.trailing}>{selection.active ? t("selectCancel") : t("selectMode")}</Text>
+    </Pressable>
+  ) : undefined;
+
   return (
-    <SettingsScaffold title={to("manageTitle")}>
+    <View style={st.screen}>
+    <SettingsScaffold title={to("manageTitle")} trailing={trailing}>
       <View style={st.space}><OfflineSpaceBar /></View>
 
       {entries.length === 0 && (
@@ -83,14 +105,31 @@ export function OfflineManageScreen() {
         </Section>
       ))}
 
+      {selection.active && <View style={st.barSpacer} />}
       <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={onPlay} />
+      <BulkAutoDeleteSheet visible={bulkAutoDelete} onClose={() => setBulkAutoDelete(false)} onApply={bulk.applyAutoDelete} />
     </SettingsScaffold>
+    {selection.active && (
+      <SelectionBar
+        count={selection.count}
+        totalCount={ids.length}
+        onSelectAll={selection.toggleAll}
+        onDelete={bulk.removeSelected}
+        onCancel={selection.exit}
+        removeLabel={to("bulkRemove", { count: selection.count })}
+        secondaryAction={{ label: t("autoDeleteShort"), onPress: () => setBulkAutoDelete(true) }}
+      />
+    )}
+    </View>
   );
 }
 
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
+    screen: { flex: 1 },
     space: { marginBottom: spacing.xl },
+    trailing: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+    barSpacer: { height: 140 },
     section: { marginBottom: spacing.xl },
     sectionTitle: {
       ...typography.caption,

@@ -19,13 +19,17 @@ interface Props {
   onSelectAll: () => void;
   onDelete: () => void;
   onCancel: () => void;
+  /** Libellé du bouton rouge (défaut : « Retirer (N) » de `common`). */
+  removeLabel?: string;
+  /** Un geste de plus, entre « tout » et le bouton rouge (« Auto-suppression… »). */
+  secondaryAction?: { label: string; onPress: () => void };
 }
 
 /**
  * Barre flottante d'actions multi-select : surface s1 floating avec border
  * subtle, pill bouton supprimer rouge avec halo, secondaire glass minimal.
  */
-export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCancel }: Props) {
+export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCancel, removeLabel, secondaryAction }: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -77,18 +81,33 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
             </Text>
           </Pressable>
 
+          {secondaryAction && (
+            <Pressable
+              onPress={secondaryAction.onPress}
+              disabled={disabled}
+              style={styles.secondaryBtn}
+              accessibilityRole="button"
+              accessibilityLabel={secondaryAction.label}
+              accessibilityState={{ disabled }}
+              hitSlop={6}
+            >
+              <Feather name="clock" size={16} color={colors.text.tertiary} />
+              <Text style={styles.secondaryTxt} numberOfLines={1}>{secondaryAction.label}</Text>
+            </Pressable>
+          )}
+
           <Pressable
             onPress={onDelete}
             disabled={disabled}
             style={[styles.deleteBtn, disabled && styles.deleteBtnDisabled]}
             accessibilityRole="button"
-            accessibilityLabel={t("removeCount", { count })}
+            accessibilityLabel={removeLabel ?? t("removeCount", { count })}
             accessibilityState={{ disabled }}
             hitSlop={6}
           >
             <Feather name="trash-2" size={16} color={disabled ? colors.text.quaternary : colors.cta.brandFg} />
-            <Text style={[styles.deleteTxt, disabled && styles.deleteTxtDisabled]}>
-              {t("removeCount", { count })}
+            <Text style={[styles.deleteTxt, disabled && styles.deleteTxtDisabled]} numberOfLines={1}>
+              {removeLabel ?? t("removeCount", { count })}
             </Text>
           </Pressable>
         </View>
