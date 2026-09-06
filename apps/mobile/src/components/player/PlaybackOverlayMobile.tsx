@@ -5,6 +5,7 @@ import { useEndCardRating } from "@tentacle-tv/api-client";
 import { SkipButton } from "./SkipButton";
 import { NextEpisodeFullscreenMobile } from "./NextEpisodeFullscreenMobile";
 import { UpNextCardMobile } from "./UpNextCardMobile";
+import type { NextEpisodeArtwork } from "../../hooks/offline/useNextEpisodeArtwork";
 
 interface Props {
   overlay: PlayerOverlay;
@@ -22,6 +23,10 @@ interface Props {
   onRatingEngage?: () => void;
   bottom: number;
   right: number;
+  /** Lecture locale : visuels du suivant lus sur l'appareil. */
+  nextArtwork?: NextEpisodeArtwork | null;
+  /** Lecture locale : pas de notation (elle parle au serveur). */
+  ratingEnabled?: boolean;
 }
 
 /**
@@ -41,12 +46,12 @@ interface Props {
  */
 export function PlaybackOverlayMobile({
   overlay, countdownTotals, nextEpisode, currentItem, controlsVisible,
-  onSkip, onDismiss, onPlayNow, onRatingEngage, bottom, right,
+  onSkip, onDismiss, onPlayNow, onRatingEngage, bottom, right, nextArtwork, ratingEnabled = true,
 }: Props) {
   const { t } = useTranslation("player");
   // AVANT les retours anticipés (règle des hooks) : la notation de l'épisode
   // FINI, servie à l'affiche plein écran seulement.
-  const endCardRating = useEndCardRating(currentItem ?? null);
+  const endCardRating = useEndCardRating(currentItem ?? null, { enabled: ratingEnabled });
 
   if (overlay.kind === "skip") {
     const count = overlay.countdownSeconds;
@@ -97,11 +102,13 @@ export function PlaybackOverlayMobile({
           controlsVisible={controlsVisible}
           onPlay={onPlayNow}
           onDismiss={onDismiss}
+          thumbUri={nextArtwork?.thumbUri}
         />
       );
     }
     return (
       <NextEpisodeFullscreenMobile
+        artwork={nextArtwork}
         nextEpisode={nextEpisode}
         countdownSeconds={overlay.countdownSeconds}
         countdownTotalMs={countdownTotals.nextMs}

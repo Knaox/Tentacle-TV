@@ -5,7 +5,9 @@ import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
 import { localExists, type OfflineLocalSource } from "@/offline/engineApi";
 import { cachedMaxResumePct } from "@/offline/prefsCache";
 import { useConnectivity } from "@/offline/useConnectivity";
+import { useLocalEpisodeNavigation } from "./useLocalEpisodeNavigation";
 import { useLocalPlaybackReporter } from "./useLocalPlaybackReporter";
+import { useNextEpisodeArtwork } from "./useNextEpisodeArtwork";
 import { useLocalPlayerTracks } from "./useLocalPlayerTracks";
 import { useLocalSegments } from "./useLocalSegments";
 import { useLocalSnapshotItem } from "./useLocalSnapshot";
@@ -41,6 +43,9 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
   // Segments et planches depuis le snapshot local — jamais le réseau.
   const segments = useLocalSegments(itemId, item);
   const localTrickplay = useLocalTrickplay(itemId);
+  // Précédent / suivant parmi les titres de l'appareil, à travers les saisons.
+  const episodeNav = useLocalEpisodeNavigation(itemId);
+  const nextArtwork = useNextEpisodeArtwork(episodeNav.nextEpisode?.Id);
 
   /** Relance : le fichier a-t-il disparu ? Sinon on recharge une fois. */
   const retry = useCallback(() => {
@@ -55,7 +60,7 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
 
   const core: PlayerSessionCore = {
     item, positionRef, isDirectPlay: true, streamOffset: 0, jellyfinDuration,
-    episodeNav: {}, segments, reporting, retry, fetchNonce,
+    episodeNav, segments, reporting, retry, fetchNonce,
     streamUrl: localSource.fileUri, mediaSourceId: item?.MediaSources?.[0]?.Id ?? itemId, headers: {},
     // Hors ligne, le rangement partagé n'a rien à invalider.
     invalidateOnStop: () => online,
@@ -64,7 +69,7 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
   return {
     ...core,
     ...tracks,
-    streams, localSource, mediaMissing, startPositionMs, localTrickplay,
+    streams, localSource, mediaMissing, startPositionMs, localTrickplay, nextArtwork, online,
   };
 }
 

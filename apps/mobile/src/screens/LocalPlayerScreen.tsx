@@ -169,6 +169,9 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
         item={pb.item}
         mediaSourceId={pb.mediaSourceId}
         localTrickplay={pb.localTrickplay}
+        nextArtwork={pb.nextArtwork}
+        ratingEnabled={false}
+        episodePicker={pb.online ? "server" : "local"}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
         onBack={leavePlayer}

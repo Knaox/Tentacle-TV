@@ -14,6 +14,8 @@ import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
 import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
 import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
+import type { NextEpisodeArtwork } from "../hooks/offline/useNextEpisodeArtwork";
+import { LocalPlayerEpisodePicker } from "./player/LocalPlayerEpisodePicker";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -46,6 +48,10 @@ interface Props {
   mediaSourceId?: string;
   /** Planches gardées sur l'appareil (lecture locale). */
   localTrickplay?: LocalTrickplay | null;
+  /** Lecture locale : visuels du suivant, notation coupée, sélecteur local hors ligne. */
+  nextArtwork?: NextEpisodeArtwork | null;
+  ratingEnabled?: boolean;
+  episodePicker?: "server" | "local";
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -64,7 +70,7 @@ export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive,
   playback, nextEpisode, previousEpisode,
-  item, mediaSourceId, localTrickplay,
+  item, mediaSourceId, localTrickplay, nextArtwork, ratingEnabled, episodePicker = "server",
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
@@ -221,6 +227,8 @@ export function MobilePlayerOverlay({
         nextEpisode={nextEpisode}
         currentItem={item}
         controlsVisible={visible}
+        nextArtwork={nextArtwork}
+        ratingEnabled={ratingEnabled}
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
@@ -248,8 +256,16 @@ export function MobilePlayerOverlay({
         onCloseSubtitles={() => { setShowSubtitles(false); resetHideTimer(); }}
       />
 
-      {/* Sélecteur saison/épisode (séries) */}
-      {item?.SeriesId && (
+      {/* Sélecteur saison/épisode (séries) — serveur en ligne, local hors ligne */}
+      {item?.SeriesId && episodePicker === "local" && (
+        <LocalPlayerEpisodePicker
+          visible={showEpisodes}
+          seriesId={item.SeriesId}
+          currentEpisodeId={item.Id}
+          onClose={() => { setShowEpisodes(false); resetHideTimer(); }}
+        />
+      )}
+      {item?.SeriesId && episodePicker === "server" && (
         <PlayerEpisodePicker
           visible={showEpisodes}
           seriesId={item.SeriesId}
