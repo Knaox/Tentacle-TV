@@ -20,6 +20,7 @@ import type { FetchBytes } from "./fetcher";
 import {
   countQueued,
   getFile,
+  isPausedByUser,
   nextQueued,
   normalizeOnEngineStart,
   requeueSystemPauses,
@@ -64,6 +65,8 @@ export class DownloadEngine {
   private creds: Creds | null = null;
   private readonly active = new Map<number, TransferFlags>();
   private busy = false;
+  /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
+  private systemSuspended = false;
 
   constructor(private readonly deps: EngineDeps) {}
 
@@ -94,6 +97,7 @@ export class DownloadEngine {
    */
   start(creds: Creds): void {
     this.creds = creds;
+    this.systemSuspended = false;
     // Moteur vivant (reconnexion) : les transferts qui tournent ne sont pas
     // « interrompus » — les remettre en file les lancerait deux fois sur le
     // même `.part`. Seules les pauses système sont alors rattrapées.
@@ -198,7 +202,15 @@ export class DownloadEngine {
         break;
       case "paused":
         setBytesDone(db, fileId, end.bytesDone, now);
-        setStatus(db, fileId, "paused", null, now);
+        // Une pause SYSTÈME qui aboutit APRÈS le retour des conditions : la
+        // relance n'avait rien trouvé à relancer (le transfert se mettait
+        // encore en pause) — sans ceci, la ligne attendait le prochain
+        // évènement. Une pause explicite reste en pause.
+        if (!isPausedByUser(db, fileId) && !this.systemSuspended && this.deps.canTransfer?.() !== false) {
+          setStatus(db, fileId, "queued", null, now);
+        } else {
+          setStatus(db, fileId, "paused", null, now);
+        }
         break;
       case "canceled":
         setBytesDone(db, fileId, 0, now);
@@ -256,6 +268,7 @@ export class DownloadEngine {
    * réveil de veille (`downloadsRuntime.ts`), cette méthode ferme ce trou.
    */
   resumeSystemPauses(): void {
+    this.systemSuspended = false;
     if (this.creds === null) return;
     if (requeueSystemPauses(this.deps.db, this.deps.now()) === 0) return;
     this.notifyChanged();
@@ -268,6 +281,7 @@ export class DownloadEngine {
    * `resumeSystemPauses` relance tout au retour des conditions.
    */
   suspendForSystem(): void {
+    this.systemSuspended = true;
     for (const flags of this.active.values()) flags.pause = true;
     const suspended = suspendQueued(this.deps.db, this.deps.now());
     if (suspended > 0 || this.active.size > 0) this.notifyChanged();

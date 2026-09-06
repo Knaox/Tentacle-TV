@@ -191,3 +191,47 @@ describe("politique de plateforme (canTransfer)", () => {
     held.release();
   });
 });
+
+describe("pause systeme tardive", () => {
+  it("un transfert qui se met en pause APRES le retour des conditions repart de lui-meme", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const first = seed(db, "item1", 1_000);
+    const second = seed(db, "item2", 2_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(held.opened).toBe(2);
+
+    // Le reseau tombe puis revient AVANT que les flux n'aient vu la pause.
+    engine.suspendForSystem();
+    engine.resumeSystemPauses();
+    held.release();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    // Les deux ont ete remis en file et relances (un second flux chacun), pas
+    // laisses en pause jusqu'au prochain evenement.
+    expect(held.opened).toBe(4);
+    expect(getFile(db, first)?.status).toBe("complete");
+    expect(getFile(db, second)?.status).toBe("complete");
+  });
+
+  it("une pause explicite reste en pause, meme conditions revenues", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const first = seed(db, "item1", 1_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net);
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    engine.pause(first);
+    held.release();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(getFile(db, first)?.status).toBe("paused");
+    expect(held.opened).toBe(1);
+  });
+});
