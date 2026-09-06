@@ -20,6 +20,7 @@ import {
   seriesPrimaryExists,
   snapshotExists,
 } from "./meta";
+import * as segments from "./segments";
 import { snapshot } from "./snapshot";
 import { firstMediaSourceId } from "./store";
 import { fetchAll, parseSpecs } from "./subs";
@@ -80,6 +81,13 @@ export async function heal(
           // Item non réparé ce tour-ci ; on continue avec les suivants.
         }
       }
+    }
+
+    // Segments pris pendant une analyse en cours : l'intro ou le générique
+    // manquaient peut-être. Redemandés tant que l'analyse n'a pas abouti —
+    // sauf si le re-snapshot ci-dessus vient de les reprendre.
+    if (!touched && segments.needsRefresh(volume, item.itemId)) {
+      touched = await segments.fetchAndSave(fetchBytes, serverUrl, volume, item.itemId);
     }
 
     // Trickplay manquant : récupérer le manifeste puis les planches.
