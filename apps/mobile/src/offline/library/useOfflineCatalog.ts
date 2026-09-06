@@ -5,7 +5,6 @@ import {
   groupOfflineEntries,
   groupSeasonsBySeries,
   pickHeroEntries,
-  pickResumeEntries,
   seriesGroupMatches,
   type OfflineSeriesGroup,
 } from "@tentacle-tv/offline-core";
@@ -24,7 +23,6 @@ export interface OfflineCatalog {
   movies: OfflineEntry[];
   series: OfflineSeriesGroup[];
   /** Les titres entamés, dernier repris d'abord — la rangée « Reprendre » (hors recherche). */
-  resume: OfflineEntry[];
   /** Les diapositives du bandeau : reprises, puis nouveautés, une par série (hors recherche). */
   hero: OfflineEntry[];
   /** Les comptes de l'appareil, avant recherche et filtre. */
@@ -60,12 +58,11 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
     [series, filter, needle],
   );
 
-  const resume = useMemo(() => pickResumeEntries(complete), [complete]);
   const hero = useMemo(() => pickHeroEntries(complete), [complete]);
   const counts = useMemo<OfflineCatalogCounts>(
     () => ({ titles: complete.length, movies: groups.movies.length, series: series.length }),
     [complete.length, groups.movies.length, series.length],
   );
 
-  return { movies, series: shownSeries, resume, hero, counts, hasContent: complete.length > 0, ready: isFetched };
+  return { movies, series: shownSeries, hero, counts, hasContent: complete.length > 0, ready: isFetched };
 }
