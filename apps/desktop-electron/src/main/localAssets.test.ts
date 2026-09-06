@@ -9,6 +9,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { nodeVolume } from "./downloads/node/nodeFiles";
 import { ensureLayout } from "./downloads/paths";
 import { LOCAL_ASSET_TOKEN, mimeFor, serveLocalAsset } from "./localAssets";
 
@@ -18,7 +19,7 @@ const folders: string[] = [];
 function preparedRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), "tentacle-assets-"));
   folders.push(root);
-  ensureLayout(root);
+  ensureLayout(nodeVolume(root));
   mkdirSync(path.join(root, "meta", "i1"), { recursive: true });
   writeFileSync(path.join(root, "meta", "i1", "primary.jpg"), "affiche");
   writeFileSync(path.join(root, "meta", "i1", "trickplay.json"), '{"width":320}');
@@ -57,7 +58,7 @@ describe("service", () => {
   it("rend l'affiche avec son type et l'en-tete CORS", async () => {
     const root = preparedRoot();
 
-    const response = await serveLocalAsset(get("/meta/i1/primary.jpg"), "/meta/i1/primary.jpg", root, APP_ORIGIN);
+    const response = await serveLocalAsset(get("/meta/i1/primary.jpg"), "/meta/i1/primary.jpg", nodeVolume(root), APP_ORIGIN);
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("image/jpeg");
@@ -70,13 +71,13 @@ describe("service", () => {
     const root = preparedRoot();
     const p = "/media/i1/original-ms1.mkv";
 
-    expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status).toBe(404);
+    expect((await serveLocalAsset(get(p), p, nodeVolume(root), APP_ORIGIN)).status).toBe(404);
   });
 
   it("refuse toute traversee", async () => {
     const root = preparedRoot();
     for (const p of ["/../../secret.jpg", "/media/../../secret.jpg", "/autre/x.jpg", "/meta/%2e%2e/x.jpg"]) {
-      expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status, p).toBe(404);
+      expect((await serveLocalAsset(get(p), p, nodeVolume(root), APP_ORIGIN)).status, p).toBe(404);
     }
   });
 
@@ -84,7 +85,7 @@ describe("service", () => {
     const root = preparedRoot();
     const p = "/meta/inconnu/primary.jpg";
 
-    expect((await serveLocalAsset(get(p), p, root, APP_ORIGIN)).status).toBe(404);
+    expect((await serveLocalAsset(get(p), p, nodeVolume(root), APP_ORIGIN)).status).toBe(404);
   });
 
   it("seul GET est servi", async () => {
@@ -92,7 +93,7 @@ describe("service", () => {
     const p = "/meta/i1/primary.jpg";
     const request = new Request(`tentacle://local${p}`, { method: "POST" });
 
-    expect((await serveLocalAsset(request, p, root, APP_ORIGIN)).status).toBe(405);
+    expect((await serveLocalAsset(request, p, nodeVolume(root), APP_ORIGIN)).status).toBe(405);
   });
 });
 

@@ -11,6 +11,7 @@ import path from "node:path";
 import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeVolume } from "./node/nodeFiles";
 import { setAutoDelete } from "./listing";
 import { setPlaybackState } from "./playback";
 import { purgeDueClaims, scheduleOnPlayed } from "./purge";
@@ -76,7 +77,7 @@ describe("purge", () => {
     markWatchedAndSchedule(db, fileId, 0);
 
     // Bien apres l'echeance : le heartbeat n'est plus frais.
-    const purges = purgeDueClaims(db, root, WATCHED_AT + 10 * 60_000, null);
+    const purges = purgeDueClaims(db, nodeVolume(root), WATCHED_AT + 10 * 60_000, null);
 
     expect(purges).toBe(1);
     expect(countRows(db, "claims")).toBe(0);
@@ -87,7 +88,7 @@ describe("purge", () => {
     const { db, root, fileId } = prepare();
     markWatchedAndSchedule(db, fileId, 60);
 
-    expect(purgeDueClaims(db, root, WATCHED_AT + 60_000, null)).toBe(0);
+    expect(purgeDueClaims(db, nodeVolume(root), WATCHED_AT + 60_000, null)).toBe(0);
     expect(countRows(db, "claims")).toBe(1);
   });
 
@@ -98,7 +99,7 @@ describe("purge", () => {
     const now = WATCHED_AT + 10 * 60_000;
     setPlaybackState(db, "u", "item1", 500, false, false, now - 10_000);
 
-    expect(purgeDueClaims(db, root, now, null)).toBe(0);
+    expect(purgeDueClaims(db, nodeVolume(root), now, null)).toBe(0);
     expect(existsSync(path.join(root, REL))).toBe(true);
   });
 
@@ -110,7 +111,7 @@ describe("purge", () => {
     setPlaybackState(db, "u", "item1", 9_000, true, false, now);
 
     // Sans l'exemption, le delai « immediatement » ne s'appliquerait jamais.
-    expect(purgeDueClaims(db, root, now, "item1")).toBe(1);
+    expect(purgeDueClaims(db, nodeVolume(root), now, "item1")).toBe(1);
     expect(existsSync(path.join(root, REL))).toBe(false);
   });
 
@@ -124,7 +125,7 @@ describe("purge", () => {
     setPlaybackState(db, "userA", "item1", 9_000, true, false, WATCHED_AT);
     scheduleOnPlayed(db, "userA", "item1", WATCHED_AT);
 
-    expect(purgeDueClaims(db, root, WATCHED_AT + 10 * 60_000, null)).toBe(1);
+    expect(purgeDueClaims(db, nodeVolume(root), WATCHED_AT + 10 * 60_000, null)).toBe(1);
     // Le claim de userA est parti, le fichier reste pour userB.
     expect(countRows(db, "claims")).toBe(1);
     expect(existsSync(path.join(root, REL))).toBe(true);
@@ -132,6 +133,6 @@ describe("purge", () => {
 
   it("sans echeance, il n'y a rien a purger", () => {
     const { db, root } = prepare();
-    expect(purgeDueClaims(db, root, WATCHED_AT + 10 * 60_000, null)).toBe(0);
+    expect(purgeDueClaims(db, nodeVolume(root), WATCHED_AT + 10 * 60_000, null)).toBe(0);
   });
 });

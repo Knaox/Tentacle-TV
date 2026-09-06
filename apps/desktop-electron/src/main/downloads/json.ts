@@ -7,10 +7,17 @@
  * règle « aucun `any` » sur toute la lecture des DTO.
  */
 
-/** Analyse, ou `null` si ce n'est pas du JSON. */
+import { decodeUtf8 } from "./utf8";
+
+/** Analyse des octets UTF-8, ou `null` si ce n'est pas du JSON. */
 export function parseJson(bytes: Uint8Array): unknown {
+  return parseJsonText(decodeUtf8(bytes));
+}
+
+/** Analyse un texte, ou `null` si ce n'est pas du JSON. */
+export function parseJsonText(text: string): unknown {
   try {
-    return JSON.parse(Buffer.from(bytes).toString("utf8"));
+    return JSON.parse(text);
   } catch {
     return null;
   }

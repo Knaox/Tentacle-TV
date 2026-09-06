@@ -15,7 +15,7 @@
  * l'entrelacement, qui ne se produit qu'aux `await`.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import type { EventName } from "../channels";
 import type { FetchBytes } from "./fetcher";
 import {
@@ -38,8 +38,8 @@ export const MAX_PARALLEL = 2;
 
 export interface EngineDeps {
   db: DatabaseHandle;
-  /** Relue à chaque usage : l'utilisateur peut changer de racine. */
-  root: () => string;
+  /** Relu à chaque usage : l'utilisateur peut changer de racine. */
+  volume: () => Volume;
   net: TransferNet;
   makeFetcher: (token: string) => FetchBytes;
   emit: (event: EventName, payload: unknown) => void;
@@ -145,7 +145,7 @@ export class DownloadEngine {
         end = await runWorker(
           {
             db: this.deps.db,
-            root: this.deps.root(),
+            volume: this.deps.volume(),
             net: this.deps.net,
             fetchBytes: this.deps.makeFetcher(creds.token),
             onProgress: (id, bytes) => this.progress(id, bytes, file.expectedSize),
@@ -254,7 +254,7 @@ export class DownloadEngine {
     }
     const file = getFile(this.deps.db, fileId);
     if (file !== null) {
-      removeMediaFile(this.deps.root(), file.relPath);
+      removeMediaFile(this.deps.volume(), file.relPath);
       setBytesDone(this.deps.db, fileId, 0, this.deps.now());
       setStatus(this.deps.db, fileId, "canceled", null, this.deps.now());
     }

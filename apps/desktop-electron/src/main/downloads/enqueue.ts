@@ -12,7 +12,7 @@
 import type { DatabaseHandle } from "./adapters";
 import { setAutoDelete } from "./listing";
 import { upsertItemMeta } from "./meta";
-import { hasCapacity } from "./paths";
+import { CAPACITY_MARGIN_BYTES, hasCapacity } from "./paths";
 import { pendingBytes } from "./queue";
 import { claimOrCreateFile, findFile, setLightParams } from "./store";
 import type { SubtitleSpec } from "./subs";
@@ -104,18 +104,24 @@ export function neededBytesFor(db: DatabaseHandle, items: readonly EnqueueItem[]
   return needed;
 }
 
-/** Met le lot en file, ou le refuse en bloc faute de place. */
+/**
+ * Met le lot en file, ou le refuse en bloc faute de place.
+ *
+ * `margin` : la réserve laissée libre sur le disque — 2 Gio par défaut, moins
+ * sur un téléphone.
+ */
 export function enqueueBatch(
   db: DatabaseHandle,
   userId: string,
   items: readonly EnqueueItem[],
   freeBytes: number,
   nowMs: number,
+  margin = CAPACITY_MARGIN_BYTES,
 ): EnqueueOutcome {
   validateBatch(items);
 
   const needed = neededBytesFor(db, items);
-  if (needed > 0 && !hasCapacity(needed, freeBytes)) {
+  if (needed > 0 && !hasCapacity(needed, freeBytes, margin)) {
     return { accepted: false, neededBytes: needed, freeBytes, fileIds: [] };
   }
 

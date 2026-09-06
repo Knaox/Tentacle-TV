@@ -11,7 +11,7 @@
  */
 
 import { z } from "zod";
-import { downloadsEngine, downloadsRoot } from "../downloadsRuntime";
+import { downloadsEngine, downloadsVolume } from "../downloadsRuntime";
 import { enqueueBatch, type EnqueueItem } from "../downloads/enqueue";
 import { backfill } from "../downloads/episodeNumbers";
 import { listForUser, setAutoDelete, stateForItem } from "../downloads/listing";
@@ -131,7 +131,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
           localDb(),
           userId,
           items.map(normalize),
-          freeSpace(downloadsRoot()),
+          freeSpace(downloadsVolume()),
           Date.now(),
         );
         if (outcome.accepted) {
@@ -154,7 +154,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
           engine.cancel(fileId);
           await engine.waitNotActive(fileId, 5_000);
         }
-        const outcome = deleteClaim(localDb(), downloadsRoot(), userId, fileId);
+        const outcome = deleteClaim(localDb(), downloadsVolume(), userId, fileId);
         engine.notifyChanged();
         return outcome;
       },
@@ -178,7 +178,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
         if (!backfillDone) {
           backfillDone = true;
           try {
-            backfill(db, downloadsRoot());
+            backfill(db, downloadsVolume());
           } catch {
             // Racine indisponible : les numéros manqueront, la liste sera là.
           }

@@ -11,6 +11,7 @@ import path from "node:path";
 import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeVolume } from "./node/nodeFiles";
 import {
   localSource,
   markItemSynced,
@@ -40,7 +41,7 @@ describe("source locale", () => {
     seedComplete(db, 4);
     setPlaybackState(db, "u", "item1", 5_000, false, false, 2_000);
 
-    const source = localSource(db, root, "u", "item1", 3_000);
+    const source = localSource(db, nodeVolume(root), "u", "item1", 3_000);
 
     expect(source?.absolutePath).toBe(path.join(root, REL));
     expect(source?.positionTicks).toBe(5_000);
@@ -55,8 +56,8 @@ describe("source locale", () => {
     const db = openInMemory();
     seedComplete(db, 4);
 
-    expect(localSource(db, root, "u", "item1", 3_000)).not.toBeNull();
-    expect(localSource(db, root, "autre", "item1", 3_000)).toBeNull();
+    expect(localSource(db, nodeVolume(root), "u", "item1", 3_000)).not.toBeNull();
+    expect(localSource(db, nodeVolume(root), "autre", "item1", 3_000)).toBeNull();
   });
 
   it("un fichier tronque hors application est marque en defaut", () => {
@@ -65,7 +66,7 @@ describe("source locale", () => {
     const db = openInMemory();
     const fileId = seedComplete(db, 4);
 
-    expect(localSource(db, root, "u", "item1", 3_000)).toBeNull();
+    expect(localSource(db, nodeVolume(root), "u", "item1", 3_000)).toBeNull();
 
     const file = getFile(db, fileId);
     expect(file?.status).toBe("error");
@@ -77,7 +78,7 @@ describe("source locale", () => {
     const db = openInMemory();
     const fileId = seedComplete(db, 4);
 
-    expect(localSource(db, root, "u", "item1", 3_000)).toBeNull();
+    expect(localSource(db, nodeVolume(root), "u", "item1", 3_000)).toBeNull();
 
     expect(getFile(db, fileId)?.errorCode).toBe("missing");
   });
@@ -94,7 +95,7 @@ describe("source locale", () => {
     db.prepare("UPDATE files SET status = 'complete' WHERE id = ?").run(fileId);
 
     // La taille d'un transcodage n'est pas connue d'avance.
-    expect(localSource(db, root, "u", "item1", 3_000)).not.toBeNull();
+    expect(localSource(db, nodeVolume(root), "u", "item1", 3_000)).not.toBeNull();
   });
 
   it("la meta denormalisee accompagne la source", () => {
@@ -108,7 +109,7 @@ describe("source locale", () => {
        VALUES ('item1', 'episode', 'Une serie', 'Un episode', 4, 2, 'lib-1', 1, 1)`,
     ).run();
 
-    const source = localSource(db, root, "u", "item1", 3_000);
+    const source = localSource(db, nodeVolume(root), "u", "item1", 3_000);
 
     // Le lecteur reste presentable en demarrage 100 % hors ligne.
     expect(source?.seriesName).toBe("Une serie");

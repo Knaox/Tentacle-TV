@@ -15,6 +15,7 @@
  * réparation (meta v3) les re-photographie au prochain démarrage en ligne.
  */
 
+import type { Volume } from "./adapters";
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { parseJson } from "./json";
 import { saveBytes } from "./meta";
@@ -35,7 +36,7 @@ function plausibleContract(raw: unknown): boolean {
 export async function fetchAndSave(
   fetchBytes: FetchBytes,
   serverUrl: string,
-  root: string,
+  volume: Volume,
   itemId: string,
 ): Promise<boolean> {
   const bytes = await fetchBytes(`${serverUrl}/api/playback/segments/${itemId}`, MAX_JSON_BYTES);
@@ -44,5 +45,5 @@ export async function fetchAndSave(
   const contract = parseJson(bytes);
   if (!plausibleContract(contract)) return false;
 
-  return saveBytes(root, `meta/${itemId}/segments.json`, Buffer.from(bytes));
+  return saveBytes(volume, `meta/${itemId}/segments.json`, bytes);
 }

@@ -10,6 +10,8 @@ import { app, powerMonitor, powerSaveBlocker } from "electron";
 import { DownloadEngine } from "./downloads/engine";
 import { heal } from "./downloads/heal";
 import { makeFetcher } from "./downloads/netFetch";
+import type { Volume } from "./downloads/adapters";
+import { nodeFiles } from "./downloads/node/nodeFiles";
 import { resolveRoot } from "./downloads/paths";
 import { purgeDueClaims } from "./downloads/purge";
 import { electronTransferNet } from "./downloads/transferNet";
@@ -40,9 +42,14 @@ const systemWakeLock =
     ? combine(createSystemWakeLock(powerSaveBlocker), createLogindBackup(systemLauncher))
     : createSystemWakeLock(powerSaveBlocker);
 
+/** Volume de téléchargement effectif : la racine et le système de fichiers de Node. */
+export function downloadsVolume(): Volume {
+  return resolveRoot(localDb(), nodeFiles, app.getPath("userData"));
+}
+
 /** Racine de téléchargement effective. */
 export function downloadsRoot(): string {
-  return resolveRoot(localDb(), app.getPath("userData"));
+  return downloadsVolume().root;
 }
 
 /** Le moteur, construit au premier appel. */
@@ -50,7 +57,7 @@ export function downloadsEngine(): DownloadEngine {
   if (engine !== null) return engine;
   engine = new DownloadEngine({
     db: localDb(),
-    root: downloadsRoot,
+    volume: downloadsVolume,
     net: electronTransferNet,
     makeFetcher,
     emit: sendToPage,
@@ -113,7 +120,7 @@ function startPeriodicPurge(): void {
   if (purgeTimer !== null) return;
   const tick = (): void => {
     try {
-      if (purgeDueClaims(localDb(), downloadsRoot(), Date.now(), null) > 0) {
+      if (purgeDueClaims(localDb(), downloadsVolume(), Date.now(), null) > 0) {
         sendToPage("downloads://changed", undefined);
       }
     } catch {
@@ -128,7 +135,7 @@ function startPeriodicPurge(): void {
 
 /** Réparation en tâche de fond, jamais attendue. */
 function runHeal(creds: Creds): void {
-  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsRoot(), Date.now())
+  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsVolume(), Date.now())
     .then((healed) => {
       if (healed > 0) sendToPage("downloads://changed", undefined);
     })

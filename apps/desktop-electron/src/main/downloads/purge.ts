@@ -16,7 +16,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/purge.rs`.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import { integer, text } from "./rows";
 import { deleteClaim } from "./store";
 
@@ -55,7 +55,7 @@ export function scheduleOnPlayed(
  */
 export function purgeDueClaims(
   db: DatabaseHandle,
-  root: string,
+  volume: Volume,
   nowMs: number,
   exemptItem: string | null,
 ): number {
@@ -81,7 +81,7 @@ export function purgeDueClaims(
       continue;
     }
     try {
-      deleteClaim(db, root, dueClaim.userId, dueClaim.fileId);
+      deleteClaim(db, volume, dueClaim.userId, dueClaim.fileId);
       // On compte le CLAIM retiré, pas le fichier effacé : avec deux comptes,
       // le premier passage ne touche pas le disque et compte quand même.
       purges += 1;

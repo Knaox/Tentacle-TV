@@ -15,6 +15,7 @@ import { afterEach } from "vitest";
 import type { EventName } from "../channels";
 import { DownloadEngine } from "./engine";
 import type { FetchBytes } from "./fetcher";
+import { nodeVolume } from "./node/nodeFiles";
 import { ensureLayout, forgetRoot } from "./paths";
 import { integer } from "./rows";
 import { claimOrCreateFile, type ClaimSpec } from "./store";
@@ -26,7 +27,7 @@ const folders: string[] = [];
 export function preparedRoot(prefix = "tentacle-test-"): string {
   const root = mkdtempSync(path.join(tmpdir(), prefix));
   folders.push(root);
-  ensureLayout(root);
+  ensureLayout(nodeVolume(root));
   return root;
 }
 
@@ -137,7 +138,7 @@ export function makeEngine(
   const toggles: boolean[] = [];
   const engine = new DownloadEngine({
     db,
-    root: () => root,
+    volume: () => nodeVolume(root),
     net,
     makeFetcher: () => NO_NETWORK,
     emit: (event) => events.push(event),

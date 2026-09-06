@@ -10,7 +10,7 @@
  * `apps/desktop/src-tauri/src/downloads/meta.rs`.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import * as episodeNumbers from "./episodeNumbers";
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { asArray, asString, field, parseJson } from "./json";
@@ -42,7 +42,7 @@ export async function snapshot(
   fetchBytes: FetchBytes,
   db: DatabaseHandle,
   serverUrl: string,
-  root: string,
+  volume: Volume,
   spec: MetaSpec,
   nowMs: number,
 ): Promise<void> {
@@ -53,17 +53,17 @@ export async function snapshot(
   const itemJson = await fetchJson(
     fetchBytes,
     `${base}/Items/${spec.itemId}?fields=${ITEM_FIELDS}`,
-    root,
+    volume,
     `${dir}/item.json`,
   );
   if (itemJson !== null) succeeded.push("item");
 
   if (spec.seriesId !== null) {
-    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seriesId}`, root, `${dir}/series.json`);
+    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seriesId}`, volume, `${dir}/series.json`);
     if (ok !== null) succeeded.push("series");
   }
   if (spec.seasonId !== null) {
-    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seasonId}`, root, `${dir}/season.json`);
+    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seasonId}`, volume, `${dir}/season.json`);
     if (ok !== null) succeeded.push("season");
   }
 
@@ -76,7 +76,7 @@ export async function snapshot(
     const sheets = await trickplay.download(
       fetchBytes,
       serverUrl,
-      root,
+      volume,
       spec.itemId,
       mediaSourceId,
       parseJson(itemJson),
@@ -103,20 +103,20 @@ export async function snapshot(
   ];
   for (const [url, rel, name] of images) {
     const bytes = await fetchBytes(url, MAX_JSON_BYTES);
-    if (bytes !== null && bytes.byteLength > 0 && saveBytes(root, rel, bytes)) succeeded.push(name);
+    if (bytes !== null && bytes.byteLength > 0 && saveBytes(volume, rel, bytes)) succeeded.push(name);
   }
 
   if (spec.seriesId !== null) {
     const url = `${base}/Items/${spec.seriesId}/Images/Primary?maxWidth=600&quality=90&format=Jpg`;
     const bytes = await fetchBytes(url, MAX_JSON_BYTES);
-    if (bytes !== null && saveBytes(root, `${dir}/series-primary.jpg`, bytes)) {
+    if (bytes !== null && saveBytes(volume, `${dir}/series-primary.jpg`, bytes)) {
       succeeded.push("seriesPrimary");
     }
   }
 
   if (await setLibrary(fetchBytes, db, base, spec.itemId)) succeeded.push("library");
   // Les segments viennent du résolveur du backend, pas du proxy Jellyfin.
-  if (await segments.fetchAndSave(fetchBytes, serverUrl, root, spec.itemId)) {
+  if (await segments.fetchAndSave(fetchBytes, serverUrl, volume, spec.itemId)) {
     succeeded.push("segments");
   }
 
@@ -127,12 +127,12 @@ export async function snapshot(
 async function fetchJson(
   fetchBytes: FetchBytes,
   url: string,
-  root: string,
+  volume: Volume,
   rel: string,
 ): Promise<Uint8Array | null> {
   const bytes = await fetchBytes(url, MAX_JSON_BYTES);
   if (bytes === null) return null;
-  return saveBytes(root, rel, bytes) ? bytes : null;
+  return saveBytes(volume, rel, bytes) ? bytes : null;
 }
 
 /**

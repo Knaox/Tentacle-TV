@@ -10,7 +10,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/store.rs`.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import { transaction } from "./db";
 import { removeItemMediaDir, removeItemMetaDir, removeMediaFile } from "./paths";
 import { bit, integer, integerOrNull, rowId, text, textOrNull, type Row } from "./rows";
@@ -189,7 +189,7 @@ export interface DeleteOutcome {
  */
 export function deleteClaim(
   db: DatabaseHandle,
-  root: string,
+  volume: Volume,
   userId: string,
   fileId: number,
 ): DeleteOutcome {
@@ -217,12 +217,12 @@ export function deleteClaim(
 
   if (toDelete === null) return { fileDeleted: false, metaDeleted: false };
 
-  removeMediaFile(root, toDelete.relPath);
+  removeMediaFile(volume, toDelete.relPath);
   if (toDelete.metaOrphan) {
-    removeItemMetaDir(root, toDelete.itemId);
+    removeItemMetaDir(volume, toDelete.itemId);
     // Plus aucun fichier pour cet item : le dossier média entier part avec lui,
     // side-cars de sous-titres compris — ils restaient sinon orphelins.
-    removeItemMediaDir(root, toDelete.itemId);
+    removeItemMediaDir(volume, toDelete.itemId);
   }
   return { fileDeleted: true, metaDeleted: toDelete.metaOrphan };
 }

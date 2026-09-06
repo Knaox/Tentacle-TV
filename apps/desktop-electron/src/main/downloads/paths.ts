@@ -10,13 +10,13 @@
  * de dossier : ces chemins viennent de la base, mais la base a été remplie à
  * partir d'identifiants venus d'un serveur.
  *
- * Portage de `apps/desktop/src-tauri/src/downloads/fsops.rs`. N'importe pas
- * `electron` : le dossier de données lui est donné.
+ * Ce fichier ne touche JAMAIS au système de fichiers lui-même : tout passe par
+ * le `FileStore` du `Volume` (voir `adapters.ts`), ce qui le rend commun au
+ * bureau et au mobile. Portage de
+ * `apps/desktop/src-tauri/src/downloads/fsops.rs`.
  */
 
-import { existsSync, mkdirSync, renameSync, rmSync, statfsSync, unlinkSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, FileStore, Volume } from "./adapters";
 import { integer } from "./rows";
 import { settingGet, settingSet } from "./db";
 
@@ -29,33 +29,34 @@ export const CAPACITY_MARGIN_BYTES = 2 * 1024 * 1024 * 1024;
 const PREFIXES = new Set(["media", "meta"]);
 
 /**
- * Racine résolue, une seule lecture SQLite par session.
+ * Volume résolu, une seule lecture SQLite par session.
  *
  * Remplace le `RootCache` de Tauri, qui devait être un `RwLock` partagé entre
  * threads. Ici tout vit sur la boucle d'évènements : une variable suffit.
  */
-let cache: string | null = null;
+let cache: Volume | null = null;
 
 /** Racine par défaut, sous le dossier de données. */
-export function defaultRoot(userDataDir: string): string {
-  return path.join(userDataDir, "downloads");
+export function defaultRoot(files: FileStore, userDataDir: string): string {
+  return files.join(userDataDir, "downloads");
 }
 
 /** Crée `media/` et `meta/` sous la racine. */
-export function ensureLayout(root: string): void {
-  for (const sub of ["media", "meta"]) mkdirSync(path.join(root, sub), { recursive: true });
+export function ensureLayout(volume: Volume): void {
+  for (const sub of ["media", "meta"]) volume.files.mkdirp(volume.files.join(volume.root, sub));
 }
 
-/** Racine effective : cache mémoire → paramètre enregistré → défaut. */
-export function resolveRoot(db: DatabaseHandle, userDataDir: string): string {
+/** Volume effectif : cache mémoire → paramètre enregistré → défaut. */
+export function resolveRoot(db: DatabaseHandle, files: FileStore, userDataDir: string): Volume {
   if (cache !== null) return cache;
-  const root = settingGet(db, STORAGE_ROOT_KEY) ?? defaultRoot(userDataDir);
-  ensureLayout(root);
-  cache = root;
-  return root;
+  const root = settingGet(db, STORAGE_ROOT_KEY) ?? defaultRoot(files, userDataDir);
+  const volume: Volume = { files, root };
+  ensureLayout(volume);
+  cache = volume;
+  return volume;
 }
 
-/** Oublie la racine mémorisée. Réservé aux tests et à `setRoot`. */
+/** Oublie le volume mémorisé. Réservé aux tests et à `setRoot`. */
 export function forgetRoot(): void {
   cache = null;
 }
@@ -66,18 +67,19 @@ export function forgetRoot(): void {
  * Codes d'erreur STABLES, consommés tels quels par l'interface :
  * `root-not-empty` (des téléchargements existent), `root-not-writable`.
  */
-export function setRoot(db: DatabaseHandle, newRoot: string): string {
+export function setRoot(db: DatabaseHandle, files: FileStore, newRoot: string): string {
   const row = db.prepare("SELECT COUNT(*) AS n FROM files").get();
   if (row !== undefined && integer(row, "n") > 0) throw new Error("root-not-empty");
 
+  const volume: Volume = { files, root: newRoot };
   try {
-    mkdirSync(newRoot, { recursive: true });
-    ensureLayout(newRoot);
+    files.mkdirp(newRoot);
+    ensureLayout(volume);
     // Un dossier créable n'est pas forcément inscriptible — lecteur réseau en
     // lecture seule, quota, ACL. On écrit vraiment pour le savoir.
-    const probe = path.join(newRoot, ".tentacle-write-probe");
-    writeFileSync(probe, "ok");
-    rmSync(probe, { force: true });
+    const probe = files.join(newRoot, ".tentacle-write-probe");
+    files.writeText(probe, "ok");
+    files.remove(probe);
   } catch (error) {
     // Le code reste le PRÉFIXE — `api.ts` le lit tel quel. Ce qui suit est la
     // cause système, et elle n'est pas un luxe : dans un paquet livré (MSIX,
@@ -87,40 +89,28 @@ export function setRoot(db: DatabaseHandle, newRoot: string): string {
     // `EACCES` une ACL, `EROFS` un volume monté en lecture seule — trois
     // conduites à tenir différentes, que « pas accessible en écriture »
     // confondait en une seule.
-    throw new Error(`root-not-writable: ${systemCause(error)}`);
+    throw new Error(`root-not-writable: ${files.describe(error)}`);
   }
 
   settingSet(db, STORAGE_ROOT_KEY, newRoot);
-  cache = newRoot;
+  cache = volume;
   return newRoot;
 }
 
-/**
- * Cause système d'un échec d'écriture, en une ligne lisible.
- *
- * Le code errno ET le chemin fautif : `ensureLayout` crée deux sous-dossiers et
- * la sonde en écrit un troisième, savoir LEQUEL a cédé oriente le diagnostic.
- * Le message verbeux de Node est écarté — il répète le code et l'appel système.
- */
-function systemCause(error: unknown): string {
-  const errno = error as NodeJS.ErrnoException;
-  const code = errno?.code ?? "";
-  if (code === "") return String(error);
-  const target = errno?.path ?? "";
-  return target === "" ? code : `${code} ${target}`;
-}
-
 /** Espace libre du volume portant la racine, en octets. */
-export function freeSpace(root: string): number {
-  const stats = statfsSync(root);
-  return stats.bavail * stats.bsize;
+export function freeSpace(volume: Volume): number {
+  return volume.files.freeSpace(volume.root);
 }
 
-/** Assez de place pour `needed` octets en respectant la marge ? */
-export function hasCapacity(needed: number, free: number): boolean {
+/**
+ * Assez de place pour `needed` octets en respectant la marge ?
+ *
+ * La marge est un paramètre : 2 Gio sur un ordinateur, moins sur un téléphone.
+ */
+export function hasCapacity(needed: number, free: number, margin = CAPACITY_MARGIN_BYTES): boolean {
   // STRICTEMENT supérieur : demander exactement l'espace libre moins la marge
   // ne laisse rien, et un fichier annoncé est rarement exact à l'octet.
-  return free > needed + CAPACITY_MARGIN_BYTES;
+  return free > needed + margin;
 }
 
 /**
@@ -130,9 +120,10 @@ export function hasCapacity(needed: number, free: number): boolean {
  * décodée plus tard par quelqu'un d'autre), un premier composant `media` ou
  * `meta`, et aucun composant qui ne soit un nom simple. Le résultat est
  * revérifié comme étant SOUS la racine — c'est l'invariant qui compte, les
- * trois autres n'en sont que les gardiens.
+ * trois autres n'en sont que les gardiens. La revérification se fait avec le
+ * séparateur DU MAGASIN, pas celui de Node : le cœur n'a plus `path`.
  */
-export function safeJoin(root: string, rel: string): string {
+export function safeJoin(volume: Volume, rel: string): string {
   if (rel === "" || rel.includes("%")) throw new Error("invalid-path");
 
   const segments = rel.split(/[/\\]/);
@@ -145,8 +136,12 @@ export function safeJoin(root: string, rel: string): string {
     }
   }
 
-  const joined = path.resolve(root, ...segments);
-  const rootWithSep = root.endsWith(path.sep) ? root : root + path.sep;
+  const { files } = volume;
+  // La racine passe elle aussi par `join` : sur Node, c'est ce qui normalise
+  // ses séparateurs avant la comparaison.
+  const base = files.join(volume.root);
+  const joined = files.join(base, ...segments);
+  const rootWithSep = base.endsWith(files.sep) ? base : base + files.sep;
   if (!joined.startsWith(rootWithSep)) throw new Error("invalid-path");
   return joined;
 }
@@ -155,21 +150,20 @@ export function safeJoin(root: string, rel: string): string {
  * Supprime le fichier final ET son éventuel `.part`. Un fichier déjà absent
  * n'est pas une erreur — c'est même le cas courant après un échec de transfert.
  */
-export function removeMediaFile(root: string, rel: string): void {
-  const target = safeJoin(root, rel);
+export function removeMediaFile(volume: Volume, rel: string): void {
+  const target = safeJoin(volume, rel);
   for (const file of [target, `${target}.part`]) {
     try {
-      unlinkSync(file);
+      volume.files.remove(file);
     } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") throw new Error(`remove ${rel}: ${String(error)}`);
+      throw new Error(`remove ${rel}: ${volume.files.describe(error)}`);
     }
   }
 }
 
 /** Supprime récursivement le dossier de méta d'un item. */
-export function removeItemMetaDir(root: string, itemId: string): void {
-  removeItemDir(root, "meta", itemId);
+export function removeItemMetaDir(volume: Volume, itemId: string): void {
+  removeItemDir(volume, "meta", itemId);
 }
 
 /**
@@ -178,25 +172,24 @@ export function removeItemMetaDir(root: string, itemId: string): void {
  * Le fichier vidéo est déjà parti, mais les side-cars de sous-titres
  * (`media/<id>/subs/`) restaient orphelins sur le disque.
  */
-export function removeItemMediaDir(root: string, itemId: string): void {
-  removeItemDir(root, "media", itemId);
+export function removeItemMediaDir(volume: Volume, itemId: string): void {
+  removeItemDir(volume, "media", itemId);
 }
 
-function removeItemDir(root: string, kind: string, itemId: string): void {
-  const dir = safeJoin(root, `${kind}/${itemId}`);
-  rmSync(dir, { recursive: true, force: true });
+function removeItemDir(volume: Volume, kind: string, itemId: string): void {
+  volume.files.removeTree(safeJoin(volume, `${kind}/${itemId}`));
 }
 
-/** Le fichier existe-t-il, et quelle taille fait-il ? Confinement compris. */
-export function mediaFileExists(root: string, rel: string): boolean {
+/** Le fichier existe-t-il ? Confinement compris. */
+export function mediaFileExists(volume: Volume, rel: string): boolean {
   try {
-    return existsSync(safeJoin(root, rel));
+    return volume.files.exists(safeJoin(volume, rel));
   } catch {
     return false;
   }
 }
 
 /** Renomme le `.part` en fichier final. Utilisé en fin de transfert. */
-export function promotePartFile(finalPath: string): void {
-  renameSync(`${finalPath}.part`, finalPath);
+export function promotePartFile(volume: Volume, finalPath: string): void {
+  volume.files.rename(`${finalPath}.part`, finalPath);
 }

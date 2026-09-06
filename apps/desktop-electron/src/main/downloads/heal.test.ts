@@ -4,9 +4,12 @@
  * mesure ici : le journal des URL vues, pas seulement le résultat.
  */
 
+import { writeFileSync } from "node:fs";
+import path from "node:path";
 import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeVolume } from "./node/nodeFiles";
 import type { FetchBytes } from "./fetcher";
 import { heal } from "./heal";
 import { markSnapshotDone, saveBytes, upsertItemMeta, type MetaSpec } from "./meta";
@@ -56,7 +59,7 @@ function completeItem(db: DatabaseHandle, root: string, itemId: string): void {
   upsertItemMeta(db, film(itemId), 1_000);
   const claim = claimOrCreateFile(db, spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv` }));
   setStatus(db, claim.fileId, "complete", null, 1_000);
-  saveBytes(root, `meta/${itemId}/item.json`, new Uint8Array(Buffer.from("{}", "utf8")));
+  saveBytes(nodeVolume(root), `meta/${itemId}/item.json`, new Uint8Array(Buffer.from("{}", "utf8")));
   markSnapshotDone(db, itemId, "{}", 1_000);
 }
 
@@ -68,13 +71,13 @@ describe("reparation", () => {
 
     // Le serveur répond, mais son DTO ne porte aucun Trickplay.
     const first = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(first.fetchBytes, db, SERVER, root, 10_000);
+    await heal(first.fetchBytes, db, SERVER, nodeVolume(root), 10_000);
     expect(first.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
-    expect(noneRecently(root, "f1", 10_000)).toBe(true);
+    expect(noneRecently(nodeVolume(root), "f1", 10_000)).toBe(true);
 
     // Second démarrage, le lendemain : plus rien ne part.
     const second = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(second.fetchBytes, db, SERVER, root, 10_000 + 24 * 3_600_000);
+    await heal(second.fetchBytes, db, SERVER, nodeVolume(root), 10_000 + 24 * 3_600_000);
     expect(second.views).toHaveLength(0);
   });
 
@@ -82,10 +85,10 @@ describe("reparation", () => {
     const db = openInMemory();
     const root = preparedRoot("tentacle-heal-");
     completeItem(db, root, "f1");
-    markNone(root, "f1", 0);
+    markNone(nodeVolume(root), "f1", 0);
 
     const later = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(later.fetchBytes, db, SERVER, root, RECHECK_AFTER_MS + 1);
+    await heal(later.fetchBytes, db, SERVER, nodeVolume(root), RECHECK_AFTER_MS + 1);
 
     expect(later.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
   });
@@ -97,12 +100,12 @@ describe("reparation", () => {
 
     // Rien ne répond : c'est du réseau, pas un verdict sur l'item.
     const silent = net();
-    await heal(silent.fetchBytes, db, SERVER, root, 10_000);
+    await heal(silent.fetchBytes, db, SERVER, nodeVolume(root), 10_000);
 
-    expect(noneRecently(root, "f1", 10_000)).toBe(false);
+    expect(noneRecently(nodeVolume(root), "f1", 10_000)).toBe(false);
     // Donc le démarrage suivant redemande, comme il se doit.
     const returns = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
-    await heal(returns.fetchBytes, db, SERVER, root, 20_000);
+    await heal(returns.fetchBytes, db, SERVER, nodeVolume(root), 20_000);
     expect(returns.views.filter((u) => u.includes("fields=Trickplay"))).toHaveLength(1);
   });
 
@@ -115,7 +118,7 @@ describe("reparation", () => {
     claimOrCreateFile(db, spec({ itemId: "f2", relPath: "media/f2/original-ms1.mkv" }));
 
     const { fetchBytes, views } = net();
-    await heal(fetchBytes, db, SERVER, root, 10_000);
+    await heal(fetchBytes, db, SERVER, nodeVolume(root), 10_000);
 
     expect(views.some((u) => u.includes("/Items/f2"))).toBe(false);
   });
@@ -126,9 +129,14 @@ describe("reparation", () => {
     completeItem(db, root, "f1");
     const { fetchBytes } = net({ "/Items/f1?fields=Trickplay": '{"Name":"Un film"}' });
 
-    // Racine inexistante : chaque écriture échoue, la réparation continue.
+    // Une racine SOUS un fichier : aucun dossier ne peut s'y créer, chaque
+    // écriture échoue, et la réparation continue quand même. (Un chemin
+    // relatif fantaisiste ferait le même effet… en créant le dossier sous le
+    // répertoire courant — vu le 6.09.)
+    const blocker = path.join(preparedRoot("tentacle-heal-"), "pas-un-dossier");
+    writeFileSync(blocker, "x");
     await expect(
-      heal(fetchBytes, db, SERVER, "Z:\\racine-absente", 10_000),
+      heal(fetchBytes, db, SERVER, nodeVolume(path.join(blocker, "racine")), 10_000),
     ).resolves.toBeTypeOf("number");
   });
 });

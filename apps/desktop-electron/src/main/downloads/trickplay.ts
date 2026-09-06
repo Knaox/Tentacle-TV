@@ -12,8 +12,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/trickplay.rs`.
  */
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import type { Volume } from "./adapters";
 import { MAX_TILE_BYTES, type FetchBytes } from "./fetcher";
 import { asInteger, asRecord, field } from "./json";
 import { mediaFileExists, safeJoin } from "./paths";
@@ -141,7 +140,7 @@ export function tileCount(info: TrickplayInfo): number {
 export async function download(
   fetchBytes: FetchBytes,
   serverUrl: string,
-  root: string,
+  volume: Volume,
   itemId: string,
   mediaSourceId: string,
   itemJson: unknown,
@@ -149,18 +148,18 @@ export async function download(
 ): Promise<number> {
   const manifest = field(itemJson, "Trickplay");
   if (manifest === null || manifest === undefined) {
-    markNone(root, itemId, nowMs);
+    markNone(volume, itemId, nowMs);
     return 0;
   }
 
   const choice = pickWidth(manifest, mediaSourceId);
   if (choice === null) {
-    markNone(root, itemId, nowMs);
+    markNone(volume, itemId, nowMs);
     return 0;
   }
   const sheets = tileCount(choice.info);
   if (sheets <= 0 || sheets > MAX_SHEETS) {
-    markNone(root, itemId, nowMs);
+    markNone(volume, itemId, nowMs);
     return 0;
   }
 
@@ -169,11 +168,11 @@ export async function download(
   for (let index = 0; index < sheets; index += 1) {
     let target: string;
     try {
-      target = safeJoin(root, `${folder}/${index}.jpg`);
+      target = safeJoin(volume, `${folder}/${index}.jpg`);
     } catch {
       continue;
     }
-    if (existsSync(target)) {
+    if (volume.files.exists(target)) {
       fetched += 1;
       continue;
     }
@@ -185,8 +184,8 @@ export async function download(
     if (bytes === null || bytes.byteLength === 0) continue;
 
     try {
-      mkdirSync(path.dirname(target), { recursive: true });
-      writeFileSync(target, bytes);
+      volume.files.mkdirp(volume.files.dirname(target));
+      volume.files.writeBytes(target, bytes);
       fetched += 1;
     } catch {
       // Une planche manquante dégrade l'aperçu, elle ne casse rien.
@@ -196,14 +195,14 @@ export async function download(
   if (fetched > 0) {
     // Un marqueur d'un passage précédent n'a plus lieu d'être : la
     // bibliothèque s'est mise à générer des planches depuis.
-    forgetMarker(root, itemId);
+    forgetMarker(volume, itemId);
     const resume: LocalTrickplay = {
       mediaSourceId: choice.mediaSourceId,
       width: choice.width,
       info: choice.info,
     };
     try {
-      writeFileSync(safeJoin(root, `meta/${itemId}/trickplay.json`), JSON.stringify(resume));
+      volume.files.writeText(safeJoin(volume, `meta/${itemId}/trickplay.json`), JSON.stringify(resume));
     } catch {
       // Sans résumé, le lecteur retombe sur l'aperçu serveur : pas bloquant.
     }
@@ -212,13 +211,13 @@ export async function download(
 }
 
 /** Le manifeste trickplay local est-il déjà là ? */
-export function exists(root: string, itemId: string): boolean {
-  return mediaFileExists(root, `meta/${itemId}/trickplay.json`);
+export function exists(volume: Volume, itemId: string): boolean {
+  return mediaFileExists(volume, `meta/${itemId}/trickplay.json`);
 }
 
-function markerPath(root: string, itemId: string): string | null {
+function markerPath(volume: Volume, itemId: string): string | null {
   try {
-    return safeJoin(root, `meta/${itemId}/${MARKER}`);
+    return safeJoin(volume, `meta/${itemId}/${MARKER}`);
   } catch {
     return null;
   }
@@ -231,34 +230,34 @@ function markerPath(root: string, itemId: string): string | null {
  * un échec réseau, sans quoi une coupure passagère priverait l'item d'aperçu
  * pour un mois.
  */
-export function markNone(root: string, itemId: string, nowMs: number): void {
-  const target = markerPath(root, itemId);
+export function markNone(volume: Volume, itemId: string, nowMs: number): void {
+  const target = markerPath(volume, itemId);
   if (target === null) return;
   try {
-    mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, String(nowMs));
+    volume.files.mkdirp(volume.files.dirname(target));
+    volume.files.writeText(target, String(nowMs));
   } catch {
     // Sans marqueur, on redemandera : c'est le comportement d'avant, pas une panne.
   }
 }
 
 /** Item constaté sans trickplay, et depuis moins d'un mois ? */
-export function noneRecently(root: string, itemId: string, nowMs: number): boolean {
-  const target = markerPath(root, itemId);
+export function noneRecently(volume: Volume, itemId: string, nowMs: number): boolean {
+  const target = markerPath(volume, itemId);
   if (target === null) return false;
   try {
-    const writtenAt = Number.parseInt(readFileSync(target, "utf8"), 10);
+    const writtenAt = Number.parseInt(volume.files.readText(target), 10);
     return Number.isFinite(writtenAt) && nowMs - writtenAt < RECHECK_AFTER_MS;
   } catch {
     return false;
   }
 }
 
-function forgetMarker(root: string, itemId: string): void {
-  const target = markerPath(root, itemId);
+function forgetMarker(volume: Volume, itemId: string): void {
+  const target = markerPath(volume, itemId);
   if (target === null) return;
   try {
-    rmSync(target, { force: true });
+    volume.files.remove(target);
   } catch {
     // Un marqueur qui traîne à côté d'un trickplay.json présent est inerte :
     // `exists()` est consulté en premier.

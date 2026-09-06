@@ -58,3 +58,61 @@ export interface DatabaseHandle {
   exec(sql: string): void;
   close(): void;
 }
+
+// ————————————————————————————————————————————————————————————————————————
+// Fichiers
+// ————————————————————————————————————————————————————————————————————————
+
+/** Ce que le cœur a besoin de distinguer parmi les échecs du système de fichiers. */
+export type FsErrorKind = "not-found" | "disk-full" | "other";
+
+/**
+ * Le système de fichiers, tel que le cœur le voit.
+ *
+ * Tout est SYNCHRONE : le cœur vit sur une boucle d'évènements et ses
+ * opérations de fichiers sont petites (JSON, images, sous-titres). Le média,
+ * lui, ne passe pas par ici — c'est l'affaire du transfert.
+ *
+ * Les chemins sont des chaînes OPAQUES pour le cœur : un chemin absolu sur le
+ * bureau, une URI `file://` sur le mobile. Il ne les assemble que par `join`,
+ * et ne les compare qu'à travers `sep` (voir `safeJoin`).
+ */
+export interface FileStore {
+  /** Séparateur de composants du magasin — `path.sep` sur Node, `/` ailleurs. */
+  readonly sep: string;
+  join(...parts: string[]): string;
+  dirname(target: string): string;
+  exists(target: string): boolean;
+  /** Taille d'un FICHIER, ou `null` s'il est absent ou si c'est un dossier. */
+  size(target: string): number | null;
+  /** Crée le dossier et ses parents ; déjà là = pas une erreur. */
+  mkdirp(dir: string): void;
+  writeBytes(target: string, bytes: Uint8Array): void;
+  writeText(target: string, text: string): void;
+  /** Lèvent si le fichier est absent. */
+  readBytes(target: string): Uint8Array;
+  readText(target: string): string;
+  /** Supprime un fichier ; absent = pas une erreur. */
+  remove(target: string): void;
+  /** Supprime un dossier et tout ce qu'il contient ; absent = pas une erreur. */
+  removeTree(dir: string): void;
+  /** Sur le même volume — c'est ce qui rend la promotion du `.part` atomique. */
+  rename(from: string, to: string): void;
+  /** Noms simples des FICHIERS d'un dossier ; dossier absent → `[]`. */
+  listFiles(dir: string): string[];
+  /** Octets libres du volume portant ce chemin. */
+  freeSpace(target: string): number;
+  classify(error: unknown): FsErrorKind;
+  /** La cause en une ligne, pour un message que l'utilisateur lira. */
+  describe(error: unknown): string;
+}
+
+/**
+ * Une racine ET la façon d'y toucher — ce qu'un `root: string` seul ne pouvait
+ * pas dire une fois le cœur partagé entre deux plateformes.
+ */
+export interface Volume {
+  readonly files: FileStore;
+  /** Racine de stockage, SANS séparateur final. */
+  readonly root: string;
+}
