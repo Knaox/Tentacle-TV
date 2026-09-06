@@ -1,6 +1,6 @@
 import { usePlaybackOverlay } from "@tentacle-tv/api-client";
 import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
-import type { PlayerPlayback } from "./usePlayerPlayback";
+import type { PlayerSessionCore } from "./usePlayerPlayback";
 
 /**
  * L'arbitre de lecture partagé, câblé pour le mobile.
@@ -23,7 +23,7 @@ import type { PlayerPlayback } from "./usePlayerPlayback";
  */
 interface Options {
   itemId: string;
-  pb: PlayerPlayback;
+  pb: PlayerSessionCore;
   /** Position affichée, en secondes (offset de flux déjà appliqué). */
   currentTime: number;
   /** Le flux est arrivé au bout (`onEnd` de react-native-video). */

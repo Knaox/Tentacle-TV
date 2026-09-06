@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useJellyfinClient, useUserId, useMediaItem, useItemAncestors,
   usePlaybackReporting, usePlaybackSegments, useEpisodeNavigation,
+  type PlaybackReporter,
 } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND, ticksToSeconds } from "@tentacle-tv/shared";
-import type { MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import type { MediaItem, MediaStream as JfStream, MediaSource, QualityKey, QualityPreset } from "@tentacle-tv/shared";
 import {
   buildStreamUrl, buildTextTracks, detectBurnIn, isBitmapSub,
   buildPlatformDeviceProfile, extractActualStartTicks,
@@ -44,6 +45,30 @@ const INITIAL_STATE: PlaybackState = {
 
 /** Tout ce que le hook rend à l'écran — repris tel quel par `usePlayerHandlers`. */
 export type PlayerPlayback = ReturnType<typeof usePlayerPlayback>;
+
+/**
+ * Le NOYAU d'une session de lecture, commun au flux serveur et au fichier
+ * local : ce que les gestionnaires, l'arbitre et l'habillage consomment.
+ * `PlayerPlayback` le satisfait ; le lecteur local en construit un autre,
+ * sans PlaybackInfo ni réseau.
+ */
+export interface PlayerSessionCore {
+  item: MediaItem | undefined;
+  positionRef: { current: number };
+  isDirectPlay: boolean;
+  streamOffset: number;
+  jellyfinDuration: number;
+  episodeNav: { nextEpisode?: MediaItem | null; previousEpisode?: MediaItem | null };
+  segments: ReturnType<typeof usePlaybackSegments>;
+  reporting: PlaybackReporter;
+  retry: () => void;
+  fetchNonce: number;
+  streamUrl: string | null;
+  mediaSourceId: string;
+  headers: Record<string, string>;
+  /** À la sortie, jouer le rangement partagé (Ma liste, hubs) ? Hors ligne, non. */
+  invalidateOnStop: () => boolean;
+}
 
 export function usePlayerPlayback(itemId: string) {
   const client = useJellyfinClient();
@@ -283,5 +308,7 @@ export function usePlayerPlayback(itemId: string) {
     audioTrackSelectedIndex, subtitleVttUrl,
     episodeNav, segments, reporting,
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,
+    // Flux serveur : le rangement de sortie partagé s'applique toujours.
+    invalidateOnStop: () => true,
   };
 }
