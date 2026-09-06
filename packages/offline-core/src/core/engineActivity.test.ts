@@ -163,3 +163,31 @@ describe("redemarrage sous transfert", () => {
     });
   });
 });
+
+describe("politique de plateforme (canTransfer)", () => {
+  it("refusee : rien ne part et la file passe en pause systeme ; accordee, resumeSystemPauses relance", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const first = seed(db, "item1", 1_000);
+    seed(db, "item2", 2_000);
+    const held = heldNet();
+    let allowed = false;
+    const { engine } = makeEngine(db, root, held.net, { canTransfer: () => allowed });
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    // Refus : aucun flux ouvert, la file est en pause SYSTEME (relevable).
+    expect(held.opened).toBe(0);
+    expect(getFile(db, first)?.status).toBe("paused");
+    const row = db.prepare("SELECT paused_by_user AS byUser FROM files WHERE id = ?").get(first);
+    expect(row?.byUser).toBe(0);
+
+    allowed = true;
+    engine.resumeSystemPauses();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(held.opened).toBe(2);
+    held.release();
+  });
+});

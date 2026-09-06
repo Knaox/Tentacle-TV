@@ -51,6 +51,13 @@ export interface EngineDeps {
    * l'anti-suspension du système (`downloadsRuntime.ts`).
    */
   onBusy?: (busy: boolean) => void;
+  /**
+   * Les transferts peuvent-ils PARTIR maintenant (réseau autorisé, serveur
+   * tenu pour joignable) ? Consultée à chaque `pump`, jamais mise en cache.
+   * Refus : ce qui attend une place passe en pause SYSTÈME, que
+   * `resumeSystemPauses` relèvera. Absente (bureau) : toujours oui.
+   */
+  canTransfer?: () => boolean;
 }
 
 export class DownloadEngine {
@@ -111,7 +118,13 @@ export class DownloadEngine {
    * dispersée dans quatre appelants qui finiraient par en oublier un.
    */
   pump(): void {
-    this.startWhatCanRun();
+    if (this.deps.canTransfer?.() === false) {
+      // Une seule garde, ici : la mise en file, la reprise explicite, le
+      // démarrage et le retour au premier plan passent tous par `pump`.
+      if (suspendQueued(this.deps.db, this.deps.now()) > 0) this.notifyChanged();
+    } else {
+      this.startWhatCanRun();
+    }
     this.updateActivity();
   }
 
