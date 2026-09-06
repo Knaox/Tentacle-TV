@@ -13,8 +13,9 @@ import {
 import { syncAvatarCache } from "./avatarCache";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
+import { isLocalPlaybackActive } from "./nowPlaying";
 import { refreshOfflineCaches } from "./prefsCache";
-import { drainReportQueue } from "./resync";
+import { syncPlaybackState } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { isBackgroundTransfers, useWifiOnly } from "./settings";
 import { wifiBlocked } from "./transferGate";
@@ -28,7 +29,7 @@ const CREDS_RECHECK_MS = 3_000;
  *
  * - Chaque passage en ligne et chaque changement de compte relancent le
  *   moteur (`start` re-normalise la file, répare, purge), repoussent la photo
- *   de session et vident la file de resynchronisation — le moteur d'abord,
+ *   de session et synchronisent l'état de visionnage dans les deux sens — le moteur d'abord,
  *   avant toute autre requête du retour en ligne. Hors ligne, le moteur
  *   démarre aussi (normalisation, purge), sans rien lancer ni réparer.
  * - Un RETOUR en ligne (pas le premier démarrage) déclenche, après la
@@ -71,7 +72,7 @@ export function OfflineRuntimeSync() {
     // lecture locale n'interroge jamais le serveur, même en ligne.
     const returning = wasOfflineRef.current;
     wasOfflineRef.current = false;
-    void drainReportQueue(serverUrl, token, userId).then(() => {
+    void syncPlaybackState(serverUrl, token, userId, "all", { force: true }).then(() => {
       if (returning) runOnlineCascade(queryClient);
       return refreshOfflineCaches(serverUrl, token, userId, storage);
     });
@@ -112,9 +113,14 @@ export function OfflineRuntimeSync() {
       offlineEngineIfStarted()?.resumeSystemPauses();
       purgeTick();
       setTimeout(syncCreds, CREDS_RECHECK_MS);
+      // Retour au premier plan en ligne : l'état de visionnage repart dans les
+      // deux sens (au plus une fois par minute) — jamais pendant une lecture.
+      if (state === "online" && serverUrl && token && userId && !isLocalPlaybackActive()) {
+        void syncPlaybackState(serverUrl, token, userId, "all");
+      }
     });
     return () => subscription.remove();
-  }, [storage, state, token]);
+  }, [storage, state, token, serverUrl, userId]);
 
   // Wi-Fi seulement : pause système en données mobiles — sauf accusé
   // « continuer en données mobiles », qui tombe au retour du Wi-Fi —, reprise

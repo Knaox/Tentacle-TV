@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { useTentacleConfig, type PlaybackReporter } from "@tentacle-tv/api-client";
 import { localPlaybackState } from "@tentacle-tv/offline-core";
 import { purgeDue, restartLocalPlayback, savePlaybackState, type OfflineLocalSource } from "@/offline/engineApi";
-import { drainReportQueue } from "@/offline/resync";
+import { syncPlaybackState } from "@/offline/resync";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 
@@ -23,7 +23,7 @@ interface Options {
  * Le rapporteur d'une lecture LOCALE — rien ne part pendant la lecture :
  * toutes les 10 s la position et l'état « vu » vont en SQLite, doublés dans
  * la file de resynchronisation ; à l'arrêt (idempotent), l'écriture finale
- * puis, en ligne, un seul envoi par titre ; « supprimer après visionnage »
+ * puis, en ligne, la synchronisation de ce titre ; « supprimer après visionnage »
  * purge tout de suite si le seuil est atteint. Un titre déjà vu qu'on
  * relance repart à neuf localement.
  */
@@ -72,7 +72,9 @@ export function useLocalPlaybackReporter({ userId, itemId, localSource, position
     if (ticks > 0 || played) persist();
     const token = storage.getItem("tentacle_token");
     const done = (async () => {
-      if (onlineRef.current && serverUrl && token) await drainReportQueue(serverUrl, token, userId);
+      // Ce titre seul : son rapport part, et l'état serveur (vu ailleurs
+      // entre-temps ?) revient — le seul échange réseau d'une lecture locale.
+      if (onlineRef.current && serverUrl && token) await syncPlaybackState(serverUrl, token, userId, "pending");
       // L'échéance a été posée par l'écriture finale ; la purge immédiate
       // couvre le délai « immédiatement » (titre exempté de la garde de lecture).
       if (localSource.autoDeleteAfterWatch && played) purgeDue(itemId);
