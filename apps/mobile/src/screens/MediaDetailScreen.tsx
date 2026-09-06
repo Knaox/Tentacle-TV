@@ -64,7 +64,7 @@ export function MediaDetailScreen({ itemId }: Props) {
   const highlightSeasonId = isEpisode ? item.SeasonId : seriesResumeEp?.SeasonId;
   const isWatched = item.UserData?.Played === true;
 
-  const headerActions = { target: actionTargetItem, isWatched, favorite, watchlist: watchlistToggle, watched };
+  const headerActions = { target: actionTargetItem, item, isWatched, favorite, watchlist: watchlistToggle, watched };
   const header = (
     <DetailHeader item={item} twoCol={twoCol} isEpisode={isEpisode} seriesWatchState={seriesWatchState}
       posterW={POSTER_W} posterH={POSTER_H} actions={headerActions} anims={anims} />

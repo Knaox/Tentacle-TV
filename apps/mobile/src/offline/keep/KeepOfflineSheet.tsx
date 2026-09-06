@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
+import { useUserId } from "@tentacle-tv/api-client";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { LightPresetId, OfflineVariantKind } from "@tentacle-tv/offline-core";
 import { BottomSheet, Button } from "@/components/ui";
-import { useDiskInfo } from "@/hooks/offline/useOfflineList";
+import { useDiskInfo, useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useOfflineCapabilities } from "@/hooks/offline/useOfflineCapabilities";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import { audioTracks, batchSizeBytes, imageSubtitleTracks, LOCAL_PLATFORM_SUPPORT, type KeepOptions } from "../keepTargets";
+import { audioTracks, batchSizeBytes, imageSubtitleTracks, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
 import { useWifiOnly } from "../settings";
 import { useConnectivity } from "../useConnectivity";
 import { AutoDeleteChips, type AutoDeleteValue } from "./AutoDeleteChips";
+import { ItemChecklist } from "./ItemChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
 import { PresetChoice } from "./PresetChoice";
@@ -38,7 +40,26 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const { networkType } = useConnectivity();
   const wifiOnly = useWifiOnly();
 
-  const { items } = request;
+  const userId = useUserId();
+  const { data: entries } = useOfflineList(userId);
+  // Un lot : chaque épisode a sa case, tous cochés sauf ceux déjà sur l'appareil.
+  const onDevice = useMemo(
+    () => new Set((entries ?? []).filter((entry) => entry.status === "complete").map((entry) => entry.itemId)),
+    [entries],
+  );
+  const batch = request.mode !== "single";
+  const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
+  const toggle = (itemId: string) => setUnchecked((prev) => {
+    const next = new Set(prev);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    return next;
+  });
+  const items = useMemo(
+    () => (batch ? request.items.filter((item) => !onDevice.has(item.Id) && !unchecked.has(item.Id)) : request.items),
+    [batch, request.items, onDevice, unchecked],
+  );
+  const selected = useMemo(() => new Set(items.map((item) => item.Id)), [items]);
   const single = request.mode === "single" && items.length === 1 ? items[0] : null;
   const plan = useMemo(() => planForItems(items, LOCAL_PLATFORM_SUPPORT, capabilities), [items, capabilities]);
   const firstKind = plan.cards[0]?.kind ?? null;
@@ -85,7 +106,8 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
         : to("dialogTitle");
   const subtitle = request.title ?? (single ? single.Name : items[0]?.SeriesName ?? "");
 
-  if (plan.cards.length === 0) {
+  const nothingLeft = batch && request.items.every((item) => onDevice.has(item.Id));
+  if (plan.cards.length === 0 && !nothingLeft && items.length > 0) {
     return (
       <View style={st.body}>
         <Text style={st.title} accessibilityRole="header">{to("noVariantTitle")}</Text>
@@ -101,6 +123,15 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       <ScrollView contentContainerStyle={st.scroll} showsVerticalScrollIndicator={false}>
         <Text style={st.title} accessibilityRole="header">{title}</Text>
         {subtitle ? <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        {batch && (
+          <ItemChecklist
+            items={request.items}
+            selected={selected}
+            onDevice={onDevice}
+            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
+            onToggle={toggle}
+          />
+        )}
         <VariantCards cards={plan.cards} value={kind} onChange={setChosenKind} />
         {kind === "light" && <PresetChoice value={activePreset} onChange={setPreset} available={presets} />}
         {single !== null && kind !== "original" && audio.length > 1 && (
@@ -122,7 +153,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       </ScrollView>
       <View style={st.actions}>
         <Button title={tc("cancel")} onPress={closeKeepOffline} variant="secondary" />
-        <Button title={to("start")} onPress={submit} loading={submitting} />
+        <Button title={to("start")} onPress={submit} loading={submitting} disabled={items.length === 0 || kind === null} />
       </View>
     </View>
   );
