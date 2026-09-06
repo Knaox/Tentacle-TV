@@ -37,6 +37,12 @@ export interface RecoSettingsData {
   /** Filtre de plateformes de la page Recommandations (ids TMDB principaux,
    *  triés) — suit le compte ; le serveur précalcule la page de ce filtre. */
   providerFilter: number[];
+  /** Vigie utilisable POUR LES RECOS, selon le serveur : plugin installé,
+   *  activé, intégration allumée ET service configuré. LECTURE seulement (le
+   *  PUT ne la reçoit pas) : c'est elle qui décide si l'interrupteur « hors
+   *  bibliothèque » a le droit d'exister. Absente chez un vieux serveur —
+   *  repli sur la liste des plugins actifs (cf. utils/pluginPresence). */
+  vigieAvailable?: boolean;
 }
 
 /** Le corps d'un PUT : la mise en page sans ses données de lecture. */
@@ -47,6 +53,7 @@ interface StoredResponse<T> {
   layout?: T;
   settings?: T;
   catalog?: HomeRowDescriptor[];
+  vigieAvailable?: boolean;
 }
 
 export const HOME_LAYOUT_KEY = ["home-layout"] as const;
@@ -70,10 +77,17 @@ export function putHomeLayout(body: HomeLayoutInput): Promise<{ ok: boolean }> {
   });
 }
 
+/** Le corps du PUT : sans la donnée de LECTURE (l'état du plugin sur CE
+ *  serveur n'est pas un réglage du compte) — pendant de `toHomeLayoutBody`. */
+export function toRecoSettingsBody(settings: RecoSettingsData): Omit<RecoSettingsData, "vigieAvailable"> {
+  const { vigieAvailable: _vigieAvailable, ...body } = settings;
+  return body;
+}
+
 export function putRecoSettings(body: RecoSettingsData): Promise<{ ok: boolean }> {
   return tentacleApiFetch<{ ok: boolean }>("/api/preferences/reco", {
     method: "PUT",
-    body: JSON.stringify(body),
+    body: JSON.stringify(toRecoSettingsBody(body)),
   });
 }
 
@@ -117,11 +131,16 @@ export function useSaveHomeLayout() {
   });
 }
 
-/** Un vieux serveur ne renvoie pas `providerFilter` : tableau vide. */
+/** Un vieux serveur ne renvoie pas `providerFilter` : tableau vide. Ni
+ *  `vigieAvailable` : indéfini, et le client retombe sur les plugins actifs. */
 export async function fetchRecoSettings(): Promise<RecoSettingsData> {
   const res = await tentacleApiFetch<StoredResponse<RecoSettingsData>>("/api/preferences/reco");
   const settings = res.settings!;
-  return { ...settings, providerFilter: normalizeProviderFilter(settings.providerFilter) };
+  return {
+    ...settings,
+    providerFilter: normalizeProviderFilter(settings.providerFilter),
+    vigieAvailable: res.vigieAvailable,
+  };
 }
 
 export function useRecoSettings() {

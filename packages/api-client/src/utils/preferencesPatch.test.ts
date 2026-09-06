@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { HomeLayoutData, HomeLayoutInput, RecoSettingsData } from "../hooks/useHomeLayout";
+import { toRecoSettingsBody } from "../hooks/useHomeLayout";
 import {
   applyHomeLayoutPatch,
   applyRecoSettingsPatch,
@@ -110,5 +111,12 @@ describe("applyRecoSettingsPatch / pushRecoSettingsPatch", () => {
     const merged = await pushRecoSettingsPatch({ personalized: false }, { read, write });
     expect(write).toHaveBeenCalledWith({ ...SETTINGS, shareHistory: false, personalized: false });
     expect(merged.shareHistory).toBe(false);
+  });
+
+  it("la disponibilité de Vigie survit dans le cache mais jamais dans le PUT", async () => {
+    const fresh: RecoSettingsData = { ...SETTINGS, vigieAvailable: true };
+    const merged = applyRecoSettingsPatch(fresh, { community: false });
+    expect(merged.vigieAvailable).toBe(true);
+    expect(toRecoSettingsBody(merged)).not.toHaveProperty("vigieAvailable");
   });
 });
