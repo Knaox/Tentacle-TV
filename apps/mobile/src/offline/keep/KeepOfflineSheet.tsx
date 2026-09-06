@@ -12,6 +12,7 @@ import { useWifiOnly } from "../settings";
 import { useConnectivity } from "../useConnectivity";
 import { AutoDeleteChips, type AutoDeleteValue } from "./AutoDeleteChips";
 import { ItemChecklist } from "./ItemChecklist";
+import { SeasonChecklist } from "./SeasonChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
 import { PresetChoice } from "./PresetChoice";
@@ -48,17 +49,23 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
     [entries],
   );
   const batch = request.mode !== "single";
+  const series = request.mode === "series";
+  // Sélection : par épisode (saison, sélection) ou par saison (série entière).
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
-  const toggle = (itemId: string) => setUnchecked((prev) => {
+  const toggle = (key: string) => setUnchecked((prev) => {
     const next = new Set(prev);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
     return next;
   });
-  const items = useMemo(
-    () => (batch ? request.items.filter((item) => !onDevice.has(item.Id) && !unchecked.has(item.Id)) : request.items),
-    [batch, request.items, onDevice, unchecked],
-  );
+  const items = useMemo(() => {
+    if (!batch) return request.items;
+    return request.items.filter((item) => {
+      if (onDevice.has(item.Id)) return false;
+      const key = series ? (item.SeasonId ?? `n${item.ParentIndexNumber ?? 0}`) : item.Id;
+      return !unchecked.has(key);
+    });
+  }, [batch, series, request.items, onDevice, unchecked]);
   const selected = useMemo(() => new Set(items.map((item) => item.Id)), [items]);
   const single = request.mode === "single" && items.length === 1 ? items[0] : null;
   const plan = useMemo(() => planForItems(items, LOCAL_PLATFORM_SUPPORT, capabilities), [items, capabilities]);
@@ -123,7 +130,16 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       <ScrollView contentContainerStyle={st.scroll} showsVerticalScrollIndicator={false}>
         <Text style={st.title} accessibilityRole="header">{title}</Text>
         {subtitle ? <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
-        {batch && (
+        {series && (
+          <SeasonChecklist
+            episodes={request.items}
+            uncheckedSeasons={unchecked}
+            onDevice={onDevice}
+            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
+            onToggle={toggle}
+          />
+        )}
+        {batch && !series && (
           <ItemChecklist
             items={request.items}
             selected={selected}
