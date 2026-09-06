@@ -1,22 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { ticksToSeconds, type MediaStream as JfStream } from "@tentacle-tv/shared";
-import { formatLocalTrackLabel, parseSideCarFileName, DEFAULT_WATCHED_THRESHOLD } from "@tentacle-tv/offline-core";
-import { i18n } from "@tentacle-tv/shared";
-import { useTranslation } from "react-i18next";
 import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
-import { formatTrackLabel } from "@/lib/playerUtils";
 import { localExists, type OfflineLocalSource } from "@/offline/engineApi";
+import { cachedMaxResumePct } from "@/offline/prefsCache";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useLocalPlaybackReporter } from "./useLocalPlaybackReporter";
+import { useLocalPlayerTracks } from "./useLocalPlayerTracks";
 import { useLocalSegments } from "./useLocalSegments";
 import { useLocalSnapshotItem } from "./useLocalSnapshot";
 import { useLocalTrickplay } from "./useLocalTrickplay";
-
-interface Track {
-  index: number;
-  label: string;
-}
 
 /**
  * La session d'une lecture LOCALE : le fichier de l'appareil, sans
@@ -25,7 +18,6 @@ interface Track {
  * voient pas la différence.
  */
 export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocalSource) {
-  const { t } = useTranslation("player");
   const userId = useUserId();
   const { state } = useConnectivity();
   const online = state === "online";
@@ -33,58 +25,18 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
   const positionRef = useRef(localSource.played ? 0 : ticksToSeconds(localSource.positionTicks));
   const [fetchNonce, setFetchNonce] = useState(0);
   const [mediaMissing, setMediaMissing] = useState(false);
-  const [audioIndex, setAudioIndex] = useState(0);
-  const [subtitleIndex, setSubtitleIndex] = useState(-1);
-
   const streams: JfStream[] = useMemo(() => item?.MediaSources?.[0]?.MediaStreams ?? [], [item]);
   const jellyfinDuration = useMemo(
     () => ticksToSeconds(item?.RunTimeTicks ?? localSource.runtimeTicks ?? undefined),
     [item, localSource.runtimeTicks],
   );
-
-  // Pistes audio : celles du snapshot pour l'Original (le fichier est celui du
-  // serveur) ; une seule piste dans une version réemballée ou allégée.
-  const audioTracks: Track[] = useMemo(
-    () => (localSource.variant === "original"
-      ? streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) }))
-      : []),
-    [streams, localSource.variant],
-  );
-  const audioTrackSelectedIndex = useMemo(() => {
-    const audio = streams.filter((s) => s.Type === "Audio");
-    return localSource.variant === "original" ? audio.findIndex((s) => s.Index === audioIndex) : -1;
-  }, [streams, audioIndex, localSource.variant]);
-
-  // Sous-titres : les side-cars VTT gardés à côté du fichier, nommés par index Jellyfin.
-  const sideCars = useMemo(
-    () => localSource.subtitleUris
-      .map((file) => ({ ...file, parsed: parseSideCarFileName(file.fileName) }))
-      .filter((file) => file.parsed !== null && file.parsed.format === "vtt"),
-    [localSource.subtitleUris],
-  );
-  const subtitleTracks: Track[] = useMemo(
-    () => sideCars.map((file) => {
-      const parsed = file.parsed!;
-      const stream = streams.find((s) => s.Type === "Subtitle" && s.Index === parsed.jfIndex);
-      return {
-        index: parsed.jfIndex,
-        label: formatLocalTrackLabel(
-          { lang: parsed.lang, title: stream?.Title, codec: parsed.format, forced: parsed.forced, sdh: parsed.sdh },
-          { locale: i18n.language, fallback: t("trackFallback", { defaultValue: `#${parsed.jfIndex}` }) },
-        ),
-      };
-    }),
-    [sideCars, streams, t],
-  );
-  const subtitleVttUrl = useMemo(
-    () => sideCars.find((file) => file.parsed!.jfIndex === subtitleIndex)?.uri ?? null,
-    [sideCars, subtitleIndex],
-  );
+  const tracks = useLocalPlayerTracks({ userId, itemId, localSource, streams });
+  const maxResumePct = useMemo(() => cachedMaxResumePct(), []);
 
   const reporting = useLocalPlaybackReporter({
     userId, itemId, localSource, positionRef,
     durationSeconds: jellyfinDuration || 0,
-    maxResumePct: DEFAULT_WATCHED_THRESHOLD,
+    maxResumePct,
   });
   // Segments et planches depuis le snapshot local — jamais le réseau.
   const segments = useLocalSegments(itemId, item);
@@ -111,9 +63,8 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
 
   return {
     ...core,
+    ...tracks,
     streams, localSource, mediaMissing, startPositionMs, localTrickplay,
-    audioIndex, subtitleIndex, audioTracks, subtitleTracks, audioTrackSelectedIndex, subtitleVttUrl,
-    changeAudio: setAudioIndex, changeSubtitle: setSubtitleIndex,
   };
 }
 

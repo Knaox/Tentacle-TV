@@ -10,6 +10,7 @@ import {
   updateOfflineCreds,
 } from "./engineRuntime";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
+import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { useWifiOnly } from "./settings";
@@ -52,7 +53,9 @@ export function OfflineRuntimeSync() {
     if (!online || !serverUrl || !token || !userId) return;
     startOfflineRuntime({ serverUrl, token });
     photographSession(userId, storage, null);
-    void drainReportQueue(serverUrl, token, userId);
+    // Le moteur d'abord, puis les caches de langues et le seuil « vu » — la
+    // lecture locale n'interroge jamais le serveur, même en ligne.
+    void drainReportQueue(serverUrl, token, userId).then(() => refreshOfflineCaches(serverUrl, token, userId));
     // Le jeton est suivi à part (voir ci-dessous) : un rafraîchissement ne
     // doit pas relancer une normalisation complète.
     // eslint-disable-next-line react-hooks/exhaustive-deps

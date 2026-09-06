@@ -133,14 +133,14 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
       title={pb.item?.Name ?? ""}
       artist={pb.item?.SeriesName ?? ""}
       paused={paused}
-      audioTrackSelectedIndex={pb.audioTrackSelectedIndex}
+      audioTrackSelectedIndex={pb.audioIndex}
       videoReady={videoReady}
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
       isAirPlaying={isAirPlaying}
       showLoading={isBuffering && !hasEverPlayed.current}
       overlayVisible={overlayVisible}
-      onLoad={handleLoad}
+      onLoad={(data) => { pb.onLoad(data); handleLoad(data); }}
       onProgress={handleProgress}
       onEnd={handleEnd}
       onError={handleError}
