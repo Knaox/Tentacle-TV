@@ -10,6 +10,7 @@ import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing, typography, FONT_FAMILY, LETTER_SPACING, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import type { OfflineEntry } from "../engineApi";
+import { useCellularAck } from "../deviceSettings";
 import { useWifiOnly } from "../settings";
 import { useConnectivity } from "../useConnectivity";
 import { BulkAutoDeleteSheet, useBulkOfflineActions } from "./OfflineBulkActions";
@@ -17,6 +18,7 @@ import { OfflineEntryRow } from "./OfflineEntryRow";
 import { OfflineRowActionsSheet } from "./OfflineRowActionsSheet";
 import { OfflineSpaceBar } from "./OfflineSpaceBar";
 import { useOfflineSelection } from "./useOfflineSelection";
+import { WifiWaitCard } from "./WifiWaitCard";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const st = useThemedStyles(makeStyles);
@@ -44,7 +46,8 @@ export function OfflineManageScreen() {
   const entries = useMemo(() => data ?? [], [data]);
   const { networkType } = useConnectivity();
   const wifiOnly = useWifiOnly();
-  const waitingWifi = wifiOnly && networkType === "cellular";
+  const cellularAck = useCellularAck();
+  const waitingWifi = wifiOnly && networkType === "cellular" && !cellularAck;
   const [more, setMore] = useState<OfflineEntry | null>(null);
   const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
   const selection = useOfflineSelection(ids);
@@ -90,6 +93,7 @@ export function OfflineManageScreen() {
         </View>
       )}
 
+      {waitingWifi && <WifiWaitCard count={groups.active.filter((entry) => entry.status !== "error" && entry.status !== "canceled").length} />}
       {groups.active.length > 0 && <Section title={t("sectionActive")}>{groups.active.map(row)}</Section>}
       {groups.movies.length > 0 && <Section title={t("sectionMovies")}>{groups.movies.map(row)}</Section>}
       {groups.series.map((series) => (

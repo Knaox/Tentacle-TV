@@ -9,6 +9,7 @@ import {
   startOfflineRuntime,
   updateOfflineCreds,
 } from "./engineRuntime";
+import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { drainReportQueue } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { useWifiOnly } from "./settings";
@@ -28,8 +29,8 @@ const CREDS_RECHECK_MS = 3_000;
  *   re-normaliser.
  * - Le retour au premier plan relance les pauses système et fait un tour de
  *   purge (iOS gèle les minuteurs en arrière-plan).
- * - « Wi-Fi seulement » : les données mobiles mettent tout en pause système,
- *   le Wi-Fi relance.
+ * - « Wi-Fi seulement » : les données mobiles mettent tout en pause système
+ *   (sauf « continuer en données mobiles »), le Wi-Fi relance.
  */
 export function OfflineRuntimeSync() {
   const { serverUrl } = useServerUrl();
@@ -37,10 +38,15 @@ export function OfflineRuntimeSync() {
   const userId = useUserId();
   const { state, networkType, reachable } = useConnectivity();
   const wifiOnly = useWifiOnly();
+  const cellularAck = useCellularAck();
   const online = state === "online";
   const token = storage.getItem("tentacle_token");
   const tokenRef = useRef(token);
   tokenRef.current = token;
+
+  useEffect(() => {
+    configureDeviceSettings(storage);
+  }, [storage]);
 
   useEffect(() => {
     if (!online || !serverUrl || !token || !userId) return;
@@ -71,13 +77,16 @@ export function OfflineRuntimeSync() {
     return () => subscription.remove();
   }, [storage, state, token]);
 
-  // Wi-Fi seulement : pause système en données mobiles, reprise au retour du Wi-Fi.
+  // Wi-Fi seulement : pause système en données mobiles — sauf accusé
+  // « continuer en données mobiles », qui tombe au retour du Wi-Fi —, reprise
+  // au retour du Wi-Fi.
   useEffect(() => {
+    if (networkType === "wifi") setCellularAck(false);
     const engine = offlineEngineIfStarted();
     if (engine === null) return;
-    if (wifiOnly && networkType === "cellular") engine.suspendForSystem();
+    if (wifiOnly && networkType === "cellular" && !cellularAck) engine.suspendForSystem();
     else if (reachable === true) engine.resumeSystemPauses();
-  }, [wifiOnly, networkType, reachable, online]);
+  }, [wifiOnly, cellularAck, networkType, reachable, online]);
 
   return null;
 }
