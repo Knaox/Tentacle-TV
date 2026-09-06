@@ -52,6 +52,12 @@ export function setPausedByUser(db: DatabaseHandle, fileId: number, byUser: bool
   db.prepare("UPDATE files SET paused_by_user = ? WHERE id = ?").run(bit(byUser), fileId);
 }
 
+/** La pause de ce fichier est-elle explicite (l'utilisateur) ? */
+export function isPausedByUser(db: DatabaseHandle, fileId: number): boolean {
+  const row = db.prepare("SELECT paused_by_user FROM files WHERE id = ?").get(fileId);
+  return row !== undefined && integer(row, "paused_by_user") !== 0;
+}
+
 export function setBytesDone(
   db: DatabaseHandle,
   fileId: number,
