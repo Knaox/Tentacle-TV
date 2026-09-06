@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Platform, View } from "react-native";
 import type { ReactNode, RefObject } from "react";
 import Video, { type OnLoadData, type OnProgressData, type VideoRef, SelectedTrackType } from "react-native-video";
@@ -53,25 +54,35 @@ export function PlayerVideoSurface({
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
   onSeek, onToggleOverlay, onSwipeDown, children,
 }: PlayerVideoSurfaceProps) {
+  // La source est MÉMOÏSÉE sur ses valeurs : react-native-video (Android,
+  // `Source.equals`) recrée le lecteur dès que l'objet reçu diffère — avec un
+  // littéral reconstruit à chaque rendu, chaque `setState` du lecteur
+  // rechargeait le média (progression figée, sous-titres jamais affichés,
+  // erreurs de lecture en boucle).
+  const headersKey = JSON.stringify(headers);
+  const textTracksKey = JSON.stringify(textTracks);
+  const source = useMemo(() => ({
+    uri: streamUrl,
+    // Auth headers — Android only (iOS uses cookies / query string token)
+    ...(Platform.OS === "android" && Object.keys(headers).length > 0 ? { headers } : {}),
+    startPosition: startPositionMs > 0 ? startPositionMs : undefined,
+    // Sideloaded VTT tracks — Android only. iOS uses SubtitleOverlay to keep AirPlay working
+    // (sidecar textTracks create AVMutableComposition which force-disables external playback)
+    textTracks: isDirectPlay && textTracks.length > 0 && Platform.OS === "android"
+      ? textTracks as any // eslint-disable-line @typescript-eslint/no-explicit-any
+      : undefined,
+    // Help ExoPlayer identify HLS streams (Jellyfin URLs may lack .m3u8 extension)
+    ...(Platform.OS === "android" && !isDirectPlay ? { type: "m3u8" } : {}),
+    // Now Playing metadata for lock screen / AirPlay / Control Center
+    metadata: { title, artist },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [streamUrl, headersKey, startPositionMs, isDirectPlay, textTracksKey, title, artist]);
+
   return (
     <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
       <Video
         ref={videoRef}
-        source={{
-          uri: streamUrl,
-          // Auth headers — Android only (iOS uses cookies / query string token)
-          ...(Platform.OS === "android" && Object.keys(headers).length > 0 ? { headers } : {}),
-          startPosition: startPositionMs > 0 ? startPositionMs : undefined,
-          // Sideloaded VTT tracks — Android only. iOS uses SubtitleOverlay to keep AirPlay working
-          // (sidecar textTracks create AVMutableComposition which force-disables external playback)
-          textTracks: isDirectPlay && textTracks.length > 0 && Platform.OS === "android"
-            ? textTracks as any // eslint-disable-line @typescript-eslint/no-explicit-any
-            : undefined,
-          // Help ExoPlayer identify HLS streams (Jellyfin URLs may lack .m3u8 extension)
-          ...(Platform.OS === "android" && !isDirectPlay ? { type: "m3u8" } : {}),
-          // Now Playing metadata for lock screen / AirPlay / Control Center
-          metadata: { title, artist },
-        }}
+        source={source}
         style={{ flex: 1 }}
         resizeMode="contain"
         paused={paused}
