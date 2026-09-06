@@ -8,7 +8,9 @@ import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
+import { DataSaverPill } from "@/offline/DataSaverPill";
 import { useConnectivity } from "@/offline/useConnectivity";
+import { useDataSaverActive } from "@/offline/useDataSaver";
 import { useOfflineMode } from "@/offline/useOfflineMode";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
@@ -47,6 +49,9 @@ export function PersistentHeader() {
   const { state } = useConnectivity();
   const offline = state === "offline-auto" || state === "offline-manual";
   const localNav = useOfflineMode();
+  // En ligne, la pastille « Économie » prend elle aussi la place du titre :
+  // l'en-tête d'un petit iPhone n'a pas la place pour les deux.
+  const saver = useDataSaverActive();
 
   // Compaction au défilement : la barre remonte de huit points, et c'est tout —
   // le logo, le titre et les actions restent visibles (demandé : l'identité ne
@@ -75,6 +80,8 @@ export function PersistentHeader() {
           <TentacleLogo size={28} />
           {offline ? (
             <ConnectivityPill variant="header" />
+          ) : saver ? (
+            <DataSaverPill />
           ) : (
             <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
           )}

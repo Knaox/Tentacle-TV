@@ -92,7 +92,8 @@ export function ProfileScreen() {
         <SettingsSection title={t("preferences")}>
           <SettingsRow icon="sun" label={t("appearance")} value={tp(THEME_MODE_LABEL[mode])} chevron onPress={() => router.push("/settings/appearance")} />
           {!offline && <SettingsRow icon="bell" label={t("notifications")} chevron onPress={() => router.push("/settings/notifications")} />}
-          <SettingsRow icon="play-circle" label={t("playback")} chevron last onPress={() => router.push("/settings/playback")} />
+          <SettingsRow icon="play-circle" label={t("playback")} chevron last={offline} onPress={() => router.push("/settings/playback")} />
+          {!offline && <SettingsRow icon="bar-chart-2" label={tp("sectionData")} chevron last onPress={() => router.push("/settings/data")} />}
         </SettingsSection>
       </FadeIn>
 
