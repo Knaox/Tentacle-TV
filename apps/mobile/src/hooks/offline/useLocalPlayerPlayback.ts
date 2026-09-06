@@ -1,8 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { ticksToSeconds, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
 import { localExists, type OfflineLocalSource } from "@/offline/engineApi";
+import { clearNowPlaying, setNowPlaying } from "@/offline/nowPlaying";
 import { cachedMaxResumePct } from "@/offline/prefsCache";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useLocalEpisodeNavigation } from "./useLocalEpisodeNavigation";
@@ -56,7 +57,14 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
     setFetchNonce((n) => n + 1);
   }, [localSource.fileUri]);
 
-  const startPositionMs = localSource.played ? 0 : Math.round(localSource.positionTicks / 10_000);
+  // Figée pour la session : `startPosition` changé = le lecteur recharge le média.
+  const [startPositionMs] = useState(() => (localSource.played ? 0 : Math.round(localSource.positionTicks / 10_000)));
+
+  // Le titre en lecture : la purge l'épargne, rien ne part sur le réseau.
+  useEffect(() => {
+    setNowPlaying(itemId);
+    return () => clearNowPlaying(itemId);
+  }, [itemId]);
 
   const core: PlayerSessionCore = {
     item, positionRef, isDirectPlay: true, streamOffset: 0, jellyfinDuration,

@@ -136,3 +136,19 @@ describe("purge", () => {
     expect(purgeDueClaims(db, nodeVolume(root), WATCHED_AT + 10 * 60_000, null)).toBe(0);
   });
 });
+
+describe("titre en lecture", () => {
+  it("est epargne par la purge, meme avec un battement perime ; le suivant, non", () => {
+    const { db, root, fileId } = prepare();
+    markWatchedAndSchedule(db, fileId, 0);
+    // Dix minutes plus tard : l'echeance est passee et le battement de lecture
+    // est perime (application restee derriere) — seule la protection tient.
+    const later = WATCHED_AT + 10 * 60_000;
+
+    expect(purgeDueClaims(db, nodeVolume(root), later, null, "item1")).toBe(0);
+    expect(existsSync(path.join(root, REL))).toBe(true);
+
+    expect(purgeDueClaims(db, nodeVolume(root), later, null, null)).toBe(1);
+    expect(existsSync(path.join(root, REL))).toBe(false);
+  });
+});

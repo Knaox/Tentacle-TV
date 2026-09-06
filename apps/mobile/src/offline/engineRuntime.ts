@@ -22,6 +22,7 @@ import { setExcludedFromBackup } from "../../modules/offline-storage";
 import { onEngineBusy, onEngineProgress, onEngineQueueChanged, stopBackgroundTransfers } from "./backgroundTransfers";
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
+import { nowPlayingItemId } from "./nowPlaying";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
 import { createExpoTransferDriver } from "./expoTransferDriver";
@@ -34,6 +35,7 @@ const PURGE_TICK_MS = 60_000;
 
 const changedListeners = new Set<() => void>();
 const progressListeners = new Set<(payload: ProgressPayload) => void>();
+const playbackListeners = new Set<() => void>();
 
 /** « Quelque chose a changé » : les listes locales se rechargent. */
 export function subscribeOfflineChanged(listener: () => void): () => void {
@@ -49,6 +51,21 @@ export function subscribeOfflineProgress(listener: (payload: ProgressPayload) =>
   return () => {
     progressListeners.delete(listener);
   };
+}
+
+/**
+ * La progression LOCALE a changé (position, vu) : les listes et états se
+ * rechargent — jamais la source du lecteur, qui rechargerait le média.
+ */
+export function subscribeOfflinePlaybackChanged(listener: () => void): () => void {
+  playbackListeners.add(listener);
+  return () => {
+    playbackListeners.delete(listener);
+  };
+}
+
+export function notifyOfflinePlaybackChanged(): void {
+  for (const listener of playbackListeners) listener();
 }
 
 export function notifyOfflineChanged(): void {
@@ -136,7 +153,7 @@ export function updateOfflineCreds(next: Creds): void {
  */
 export function purgeTick(): void {
   try {
-    if (purgeDueClaims(localDb(), offlineVolume(), Date.now(), null) > 0) notifyOfflineChanged();
+    if (purgeDueClaims(localDb(), offlineVolume(), Date.now(), null, nowPlayingItemId()) > 0) notifyOfflineChanged();
   } catch {
     // Base ou racine indisponible : on retentera au prochain tour.
   }
