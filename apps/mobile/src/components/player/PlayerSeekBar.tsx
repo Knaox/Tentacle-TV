@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PLAYER, TABLET_MIN_WIDTH } from "@/theme";
 import { useTrickplay } from "../../hooks/useTrickplay";
+import type { LocalTrickplay } from "../../hooks/offline/useLocalTrickplay";
 import { TrickplayPreview } from "./TrickplayPreview";
 
 const BAR_H = 16;
@@ -23,6 +24,8 @@ interface Props {
   /** When provided, enables trickplay preview above the bar while scrubbing. */
   item?: MediaItem;
   mediaSourceId?: string;
+  /** Planches gardées sur l'appareil (lecture locale). */
+  localTrickplay?: LocalTrickplay | null;
 }
 
 function formatTime(s: number): string {
@@ -36,7 +39,7 @@ function formatTime(s: number): string {
 
 export function PlayerSeekBar({
   currentTime, duration, bufferedTime, onSeek, onSeeking, onScrubStateChange,
-  item, mediaSourceId,
+  item, mediaSourceId, localTrickplay,
 }: Props) {
   const { width: winW, height: winH } = useWindowDimensions();
   const isTablet = Math.min(winW, winH) >= TABLET_MIN_WIDTH;
@@ -47,7 +50,7 @@ export function PlayerSeekBar({
   const barWidth = useRef(winW - 32);
   const dragProgressRef = useRef(0);
 
-  const trickplay = useTrickplay(item, mediaSourceId);
+  const trickplay = useTrickplay(item, mediaSourceId, localTrickplay);
 
   const pctToTime = useCallback((pct: number) => {
     return Math.max(0, Math.min(duration, pct * duration));

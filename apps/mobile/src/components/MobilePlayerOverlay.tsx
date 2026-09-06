@@ -13,6 +13,7 @@ import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
 import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
+import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -43,6 +44,8 @@ interface Props {
   /** Current item — passed to the seekbar so it can fetch trickplay tiles. */
   item?: MediaItem;
   mediaSourceId?: string;
+  /** Planches gardées sur l'appareil (lecture locale). */
+  localTrickplay?: LocalTrickplay | null;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -61,7 +64,7 @@ export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive,
   playback, nextEpisode, previousEpisode,
-  item, mediaSourceId,
+  item, mediaSourceId, localTrickplay,
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
@@ -175,6 +178,7 @@ export function MobilePlayerOverlay({
                 }}
                 item={item}
                 mediaSourceId={mediaSourceId}
+                localTrickplay={localTrickplay}
               />
             </View>
             <View style={{ flexDirection: "row", gap: isTablet ? 10 : 6, marginBottom: Math.max(34, insets.bottom + 12) }}>
