@@ -6,8 +6,10 @@
  *
  * - `tentacle_offline_notify_ready` : la notification « Prêt hors ligne »
  *   (activée par défaut) ;
- * - `tentacle_offline_cellular_ack` : « Continuer en données mobiles » — vaut
- *   jusqu'au prochain retour du Wi-Fi, et survit à un relancement.
+ * - « Continuer en données mobiles » : en MÉMOIRE seulement — vaut jusqu'au
+ *   prochain retour du Wi-Fi ou au prochain lancement. Il survivait à un arrêt
+ *   forcé : relancée en cellulaire, l'application transférait sans accord
+ *   frais ni carte visible. L'ancienne clé de stockage est effacée.
  *
  * Amorcé par `configureDeviceSettings(storage)` ; sans effet au chargement.
  */
@@ -29,11 +31,11 @@ const notify = (): void => {
 
 export function configureDeviceSettings(adapter: StorageAdapter): void {
   storage = adapter;
+  // Trace des versions qui persistaient l'accusé : effacée, jamais relue.
+  if (adapter.getItem(CELLULAR_ACK_KEY) !== null) adapter.removeItem(CELLULAR_ACK_KEY);
   const nextNotify = adapter.getItem(NOTIFY_READY_KEY) !== "0";
-  const nextAck = adapter.getItem(CELLULAR_ACK_KEY) === "1";
-  if (nextNotify === notifyReady && nextAck === cellularAck) return;
+  if (nextNotify === notifyReady) return;
   notifyReady = nextNotify;
-  cellularAck = nextAck;
   notify();
 }
 
@@ -52,8 +54,6 @@ export const isCellularAcked = (): boolean => cellularAck;
 export function setCellularAck(on: boolean): void {
   if (cellularAck === on) return;
   cellularAck = on;
-  if (on) storage?.setItem(CELLULAR_ACK_KEY, "1");
-  else storage?.removeItem(CELLULAR_ACK_KEY);
   notify();
 }
 

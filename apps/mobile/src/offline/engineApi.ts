@@ -35,7 +35,6 @@ import { localDb } from "./database";
 import { notifyOfflineChanged, offlineEngine } from "./engineRuntime";
 import { expoFileStore } from "./expoFileStore";
 import { localResourceUri } from "./localUri";
-import { transfersAllowedNow } from "./transferGate";
 import { offlineVolume } from "./volume";
 
 /** Une entrée telle que les écrans la consomment (nom du cœur conservé en alias). */
@@ -92,10 +91,10 @@ export function keepOffline(userId: string, items: readonly EnqueueItemInput[]):
     OFFLINE_SPACE_MARGIN_BYTES,
   );
   if (outcome.accepted) {
-    // En données mobiles avec « Wi-Fi seulement » : le lot attend le Wi-Fi
-    // dès la mise en file (pause système), au lieu de partir puis d'être coupé.
-    if (transfersAllowedNow()) engine.pump();
-    else engine.suspendForSystem();
+    // En données mobiles avec « Wi-Fi seulement », le `pump` refuse : le lot
+    // attend le Wi-Fi dès la mise en file (pause système), au lieu de partir
+    // puis d'être coupé.
+    engine.pump();
     engine.notifyChanged();
   }
   return outcome;

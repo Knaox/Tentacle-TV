@@ -17,6 +17,7 @@ import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { useWifiOnly } from "./settings";
+import { wifiBlocked } from "./transferGate";
 import { useConnectivity } from "./useConnectivity";
 
 /** Le jeton rafraîchi par AppProviders arrive un peu après le retour au premier plan. */
@@ -104,7 +105,7 @@ export function OfflineRuntimeSync() {
     if (networkType === "wifi") setCellularAck(false);
     const engine = offlineEngineIfStarted();
     if (engine === null) return;
-    if (wifiOnly && networkType === "cellular" && !cellularAck) engine.suspendForSystem();
+    if (wifiBlocked({ wifiOnly, networkType, cellularAck })) engine.suspendForSystem();
     else if (reachable === true) engine.resumeSystemPauses();
   }, [wifiOnly, cellularAck, networkType, reachable, online]);
 

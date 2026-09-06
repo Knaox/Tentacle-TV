@@ -20,6 +20,7 @@ import {
 } from "@tentacle-tv/offline-core";
 import { setExcludedFromBackup } from "../../modules/offline-storage";
 import { localDb } from "./database";
+import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
 import { createExpoTransferDriver } from "./expoTransferDriver";
 import { makeFetcher } from "./fetcher";
@@ -82,6 +83,9 @@ export function offlineEngine(): DownloadEngine {
     makeFetcher,
     emit,
     now: () => Date.now(),
+    // Wi-Fi seulement, réseau identifié, serveur joignable : la garde est
+    // consultée à chaque relance, jamais mise en cache.
+    canTransfer: canStartTransfers,
     // L'écran reste allumé tant qu'un transfert tourne : un téléphone qui se
     // verrouille suspend l'application, et le flux avec elle (sauf iOS, dont
     // la session d'arrière-plan continue).
