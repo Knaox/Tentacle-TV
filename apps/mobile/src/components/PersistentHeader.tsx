@@ -9,6 +9,7 @@ import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { DataSaverPill } from "@/offline/DataSaverPill";
+import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useDataSaverActive } from "@/offline/useDataSaver";
 import { useOfflineMode } from "@/offline/useOfflineMode";
@@ -88,9 +89,14 @@ export function PersistentHeader() {
         </View>
 
         {/* Hors ligne, les actions serveur (listes, recherche, cloche) n'ont
-            rien à ouvrir : elles disparaissent ; la gestion locale arrive ici. */}
-        {!localNav && (
+            rien à ouvrir : elles disparaissent ; seule la gestion locale reste. */}
+        {localNav ? (
           <View style={styles.actions}>
+            <OnDeviceHeaderButton />
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <OnDeviceHeaderButton />
             <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
               <Feather name="bookmark" size={20} color={colors.text.primary} />
             </Pressable>
