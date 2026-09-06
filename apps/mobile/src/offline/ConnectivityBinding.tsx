@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { useStorageReady } from "@/providers/StorageReadyContext";
 import {
   configureConnectivity,
   reportPossibleOutage,
@@ -27,10 +28,15 @@ export function ConnectivityBinding() {
   const { serverUrl } = useServerUrl();
   const { storage } = useTentacleConfig();
   const queryClient = useQueryClient();
+  const storageReady = useStorageReady();
 
+  // Après l'hydratation seulement : le mode manuel se lit dans le stockage,
+  // et avant elle le cache est vide — « Passer hors ligne » se perdait à
+  // chaque redémarrage.
   useEffect(() => {
+    if (!storageReady) return;
     configureConnectivity({ serverUrl, storage });
-  }, [serverUrl, storage]);
+  }, [serverUrl, storage, storageReady]);
 
   useEffect(() => startConnectivityListeners(), []);
 

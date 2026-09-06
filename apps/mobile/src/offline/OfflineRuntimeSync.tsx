@@ -20,6 +20,7 @@ import { photographSession } from "./sessionPhoto";
 import { isBackgroundTransfers, useWifiOnly } from "./settings";
 import { wifiBlocked } from "./transferGate";
 import { useConnectivity } from "./useConnectivity";
+import { useStorageReady } from "@/providers/StorageReadyContext";
 
 /** Le jeton rafraîchi par AppProviders arrive un peu après le retour au premier plan. */
 const CREDS_RECHECK_MS = 3_000;
@@ -59,9 +60,12 @@ export function OfflineRuntimeSync() {
     if (state === "offline-auto" || state === "offline-manual") wasOfflineRef.current = true;
   }, [state]);
 
+  // Après l'hydratation seulement (voir StorageReadyContext).
+  const storageReady = useStorageReady();
   useEffect(() => {
+    if (!storageReady) return;
     configureDeviceSettings(storage);
-  }, [storage]);
+  }, [storage, storageReady]);
 
   useEffect(() => {
     if (!online || !serverUrl || !token || !userId) return;
