@@ -16,6 +16,7 @@
 
 import { AppState, type AppStateStatus } from "react-native";
 import {
+  applyLinkLost,
   applyProbeResult,
   deriveLinkQuality,
   deriveState,
@@ -76,8 +77,12 @@ export const MANUAL_OFFLINE_STORAGE_KEY = "tentacle_offline_manual";
 const PROBE_TIMEOUT_MS = 5_000;
 /** Hors « online » : sonde complète, comme le bureau. */
 const OFFLINE_PROBE_INTERVAL_MS = 15_000;
-/** En ligne : sonde légère (latence seule), cadence du bureau. */
+/** En ligne : sonde complète elle aussi (une panne de Jellyfin seul se voit
+ *  ainsi en moins de deux minutes au repos), à la cadence du bureau. */
 const ONLINE_PROBE_INTERVAL_MS = 90_000;
+/** Un relais Wi-Fi ↔ cellulaire produit un « aucun réseau » transitoire :
+ *  on laisse ce délai avant de basculer sur un évènement du listener. */
+const LINK_LOST_GRACE_MS = 1_500;
 const CONFIRM_PROBE_DELAY_MS = 3_000;
 const MIN_PROBE_SPACING_MS = 2_000;
 const INITIAL_PROBE_DELAY_MS = 1_000;
@@ -138,7 +143,7 @@ const ensureTimers = (): void => {
   if (intervalId !== null && intervalMs === wanted) return;
   if (intervalId !== null) clearInterval(intervalId);
   intervalMs = wanted;
-  intervalId = setInterval(() => void probe(online), wanted);
+  intervalId = setInterval(() => void probe(), wanted);
 };
 
 const scheduleConfirm = (): void => {
@@ -156,8 +161,8 @@ interface ProbeResult {
   latencyMs: number | null;
 }
 
-/** Backend puis Jellyfin (via proxy), délai commun de 5 s ; `latencyOnly` s'arrête au backend. */
-async function runProbe(base: string, latencyOnly: boolean): Promise<ProbeResult> {
+/** Backend puis Jellyfin (via proxy), délai commun de 5 s. */
+async function runProbe(base: string): Promise<ProbeResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   const startedAt = Date.now();
@@ -165,7 +170,6 @@ async function runProbe(base: string, latencyOnly: boolean): Promise<ProbeResult
     const backendRes = await fetch(`${base}/api/health`, { signal: controller.signal });
     const latencyMs = Date.now() - startedAt;
     if (!backendRes.ok) return { ok: false, reason: "backend", latencyMs: null };
-    if (latencyOnly) return { ok: true, reason: null, latencyMs };
     try {
       const jellyfinRes = await fetch(`${base}/api/jellyfin/System/Info/Public`, {
         signal: controller.signal,
@@ -185,13 +189,13 @@ async function runProbe(base: string, latencyOnly: boolean): Promise<ProbeResult
   }
 }
 
-async function probe(latencyOnly = false): Promise<void> {
+async function probe(): Promise<void> {
   const base = serverUrl;
   if (base === null || probing) return;
   probing = true;
   lastProbeStartAt = Date.now();
   try {
-    const result = await runProbe(base, latencyOnly);
+    const result = await runProbe(base);
     const now = Date.now();
     const outcome = applyProbeResult(hysteresis, result.ok, now, HYSTERESIS);
     hysteresis = outcome.next;
@@ -231,6 +235,28 @@ export function isOfflineMode(): boolean {
   return snapshot.state === "offline-auto" || snapshot.state === "offline-manual";
 }
 
+let linkLostTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Le téléphone n'a plus aucun réseau (un `UNKNOWN` n'est jamais une bascule). */
+function isLinkLost(state: NetworkState): boolean {
+  return state.isConnected === false && (state.type ?? "").toUpperCase() === "NONE";
+}
+
+/** Bascule hors ligne sans attendre deux sondes ; le retour garde son anti-rebond. */
+function linkLost(): void {
+  const outcome = applyLinkLost(hysteresis, Date.now());
+  if (!outcome.flipped) return;
+  hysteresis = outcome.next;
+  reason = "backend";
+  rebuildSnapshot();
+  ensureTimers();
+}
+
+function cancelLinkLost(): void {
+  if (linkLostTimer !== null) clearTimeout(linkLostTimer);
+  linkLostTimer = null;
+}
+
 function mapNetworkType(state: NetworkState): NetworkType {
   if (state.isConnected === false) return "none";
   switch ((state.type ?? "").toUpperCase()) {
@@ -267,6 +293,12 @@ export function configureConnectivity(options: { serverUrl: string | null; stora
     hysteresis = initialHysteresis;
     latency = initialHysteresis;
     reason = null;
+    // Réseau déjà connu comme absent : hors ligne dès le premier rendu, plutôt
+    // qu'un accueil serveur qui tire ses requêtes pour rien le temps d'une sonde.
+    if (networkType === "none" && serverUrl !== null) {
+      hysteresis = applyLinkLost(initialHysteresis, Date.now()).next;
+      reason = "backend";
+    }
   }
   rebuildSnapshot();
   ensureTimers();
@@ -287,9 +319,22 @@ export function startConnectivityListeners(): () => void {
     rebuildSnapshot();
   };
   if (Network !== null) {
-    const apply = (state: NetworkState, force: boolean): void => {
+    const apply = (state: NetworkState, fromListener: boolean): void => {
       settle(mapNetworkType(state));
-      if (force) void probeNow(true);
+      if (isLinkLost(state)) {
+        // Lecture initiale : vérité immédiate. Évènement : le délai de grâce
+        // absorbe le « aucun réseau » d'un relais Wi-Fi ↔ cellulaire.
+        if (!fromListener) linkLost();
+        else if (linkLostTimer === null) {
+          linkLostTimer = setTimeout(() => {
+            linkLostTimer = null;
+            linkLost();
+          }, LINK_LOST_GRACE_MS);
+        }
+        return;
+      }
+      cancelLinkLost();
+      if (fromListener) void probeNow(true);
     };
     Network.getNetworkStateAsync()
       .then((state) => apply(state, false))
@@ -301,6 +346,7 @@ export function startConnectivityListeners(): () => void {
   return () => {
     appState.remove();
     network?.remove();
+    cancelLinkLost();
   };
 }
 

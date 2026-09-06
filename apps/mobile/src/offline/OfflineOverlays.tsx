@@ -15,7 +15,7 @@ export function OfflineOverlays() {
 
   return (
     <OfflineBanner
-      visible={state === "offline-auto" && !hasLocalContent}
+      visible={state === "offline-auto" && hasLocalContent === false}
       isChecking={isChecking}
       onRetry={retry}
       onLogout={handleLogout}

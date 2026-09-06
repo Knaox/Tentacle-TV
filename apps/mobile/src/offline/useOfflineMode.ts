@@ -6,13 +6,14 @@ import { useConnectivity } from "./useConnectivity";
  * Y a-t-il au moins un titre complet sur cet appareil pour ce compte ?
  *
  * Lu dans la liste locale (SQLite), invalidée à chaque évènement du moteur.
- * Tant qu'elle n'a pas répondu, la réponse est « non » : le voile plein
- * écran garde son comportement d'aujourd'hui.
+ * Tant qu'elle n'a pas répondu : `null` — ni oui ni non. Dire « non » trop
+ * tôt montrait le voile « aucun contenu » une seconde à qui a des titres.
  */
-export function useHasLocalContent(): boolean {
+export function useHasLocalContent(): boolean | null {
   const userId = useUserId();
   const { data } = useOfflineList(userId);
-  return (data ?? []).some((entry) => entry.status === "complete");
+  if (data === undefined) return null;
+  return data.some((entry) => entry.status === "complete");
 }
 
 /**
@@ -26,5 +27,7 @@ export function useHasLocalContent(): boolean {
 export function useOfflineMode(): boolean {
   const { state } = useConnectivity();
   const hasLocalContent = useHasLocalContent();
-  return state === "offline-manual" || (state === "offline-auto" && hasLocalContent);
+  // Liste pas encore lue : le catalogue local (qui a sa propre attente),
+  // jamais l'accueil serveur.
+  return state === "offline-manual" || (state === "offline-auto" && hasLocalContent !== false);
 }
