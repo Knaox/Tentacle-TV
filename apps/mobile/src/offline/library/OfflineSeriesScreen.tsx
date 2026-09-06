@@ -9,7 +9,6 @@ import { OfflineRowActionsSheet } from "@/offline/manage/OfflineRowActionsSheet"
 import { backOrHome } from "@/utils/backOrHome";
 import { BANNER_ART } from "./offlineArt";
 import { OfflineDetailShell, useOfflineDetailMetrics } from "./OfflineDetailShell";
-import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflineSeriesBody } from "./OfflineSeriesBody";
 import { OfflineSeriesHeader } from "./OfflineSeriesHeader";
 import { useOfflineSeries } from "./useOfflineSeries";
@@ -27,7 +26,6 @@ export function OfflineSeriesScreen() {
   const userId = useUserId();
   const metrics = useOfflineDetailMetrics();
   const local = useOfflineSeries(seriesKey, seasonParam);
-  const [selected, setSelected] = useState<OfflineEntry | null>(null);
   const [more, setMore] = useState<OfflineEntry | null>(null);
   const anims = useMediaDetailAnimations(seriesKey ?? "", local.series ? local.seriesItem : undefined, metrics.backdropH);
 
@@ -36,11 +34,8 @@ export function OfflineSeriesScreen() {
     if (local.isFetched && !local.series) backOrHome(router);
   }, [local.isFetched, local.series, router]);
 
-  const play = useCallback((entry: OfflineEntry) => {
-    setSelected(null);
-    router.push(`/watch/${entry.itemId}` as never);
-  }, [router]);
-  const info = useCallback((entry: OfflineEntry) => setSelected(entry), []);
+  const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
+  const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
   const toggleWatched = useCallback((entry: OfflineEntry, played: boolean) => {
     if (userId !== null) setLocalWatched(userId, entry.itemId, played);
   }, [userId]);
@@ -83,7 +78,6 @@ export function OfflineSeriesScreen() {
           />
         }
       />
-      <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} onPlay={play} />
       <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={play} onInfo={info} />
     </>
   );
