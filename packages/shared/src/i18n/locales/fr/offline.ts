@@ -127,6 +127,8 @@ export default {
   networkCellular: "Données mobiles",
   networkNone: "Aucun réseau",
   networkOther: "Autre",
+  serverReachableTitle: "Le serveur répond",
+  serverReachableHint: "Vous êtes hors ligne à la main : l'accueil en ligne est à un geste.",
   saverAutoReason: "Connexion lente détectée : l'application réduit ce qu'elle transfère.",
   sessionExpiredMessage:
     "La session hors ligne a expiré (plus de 30 jours sans contact avec le serveur). Reconnectez-vous en ligne pour vérifier le compte et retrouver vos titres. Les données locales sont conservées.",

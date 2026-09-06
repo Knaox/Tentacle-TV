@@ -118,6 +118,8 @@ export default {
   networkCellular: "Cellular",
   networkNone: "No network",
   networkOther: "Other",
+  serverReachableTitle: "The server is answering",
+  serverReachableHint: "You went offline by hand: the online home is one tap away.",
   saverAutoReason: "Slow connection detected: the app transfers less data.",
   sessionExpiredMessage:
     "The offline session has expired (more than 30 days without contacting the server). Reconnect online to verify the account and get your titles back. Local data is kept.",
