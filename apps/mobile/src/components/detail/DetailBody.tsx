@@ -8,6 +8,8 @@ import { Badge } from "../ui";
 import { MobileMediaCard } from "../MobileMediaCard";
 import { MediaRow } from "../MediaRow";
 import { MobileEpisodeList } from "../MobileEpisodeList";
+import { EpisodeKeepOfflineButton } from "@/offline/entry/EpisodeKeepOfflineButton";
+import { SeasonKeepOfflinePill } from "@/offline/entry/SeasonKeepOfflinePill";
 import { CastRow } from "../CastRow";
 import { LicenseAttribution } from "../LicenseAttribution";
 import { MobileExtrasSection } from "./MobileExtrasSection";
@@ -81,6 +83,8 @@ export function DetailBody({ item, isEpisode, parentSeries, similar, episodeList
             currentEpisodeId={highlightEpisodeId}
             initialSeasonId={highlightSeasonId}
             onPlay={(ep) => router.push(`/watch/${ep.Id}`)}
+            seasonTrailing={(episodes) => <SeasonKeepOfflinePill episodes={episodes} />}
+            rowLeading={(ep) => <EpisodeKeepOfflineButton episode={ep} />}
           />
         </>
       )}
