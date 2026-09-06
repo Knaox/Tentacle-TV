@@ -32,7 +32,8 @@ import {
 } from "@tentacle-tv/offline-core";
 import { clearProgress } from "@tentacle-tv/offline-core/react";
 import { localDb } from "./database";
-import { notifyOfflineChanged, offlineEngine } from "./engineRuntime";
+import { notifyOfflineChanged, offlineEngine, notifyOfflinePlaybackChanged } from "./engineRuntime";
+import { clearNowPlaying, nowPlayingItemId } from "./nowPlaying";
 import { expoFileStore } from "./expoFileStore";
 import { localResourceUri } from "./localUri";
 import { offlineVolume } from "./volume";
@@ -160,10 +161,13 @@ export function savePlaybackState(
   const now = Date.now();
   setPlaybackState(db, userId, itemId, positionTicks, played, queueForSync, now);
   scheduleOnPlayed(db, userId, itemId, now);
+  // Les barres et coches du catalogue suivent la lecture (le tick de 10 s).
+  notifyOfflinePlaybackChanged();
 }
 
 export function restartLocalPlayback(userId: string, itemId: string): void {
   restartPlayback(localDb(), userId, itemId, Date.now());
+  notifyOfflinePlaybackChanged();
 }
 
 /**
@@ -175,12 +179,16 @@ export function restartLocalPlayback(userId: string, itemId: string): void {
 export function setLocalWatched(userId: string, itemId: string, played: boolean): void {
   if (played) savePlaybackState(userId, itemId, 0, true, true);
   else restartLocalPlayback(userId, itemId);
-  notifyOfflineChanged();
 }
 
-/** Purge à la demande ; `exemptItemId` = le titre en cours de lecture. */
+/**
+ * Purge à la demande ; `exemptItemId` = le titre qu'on VIENT de finir (purgé
+ * malgré son battement frais) — il cesse d'être protégé ; le titre encore en
+ * lecture, lui, ne l'est jamais.
+ */
 export function purgeDue(exemptItemId: string | null = null): number {
-  const purged = purgeDueClaims(localDb(), offlineVolume(), Date.now(), exemptItemId);
+  if (exemptItemId !== null) clearNowPlaying(exemptItemId);
+  const purged = purgeDueClaims(localDb(), offlineVolume(), Date.now(), exemptItemId, nowPlayingItemId());
   if (purged > 0) notifyOfflineChanged();
   return purged;
 }

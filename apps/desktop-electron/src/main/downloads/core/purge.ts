@@ -58,6 +58,8 @@ export function purgeDueClaims(
   volume: Volume,
   nowMs: number,
   exemptItem: string | null,
+  /** Le titre EN LECTURE : jamais purgé sous le lecteur, même battement périmé (app restée derrière). */
+  protectedItem: string | null = null,
 ): number {
   const dueClaims = db
     .prepare(
@@ -76,6 +78,7 @@ export function purgeDueClaims(
 
   let purges = 0;
   for (const dueClaim of dueClaims) {
+    if (dueClaim.itemId === protectedItem) continue;
     if (dueClaim.itemId !== exemptItem && playbackActive(db, dueClaim.userId, dueClaim.itemId, nowMs)) {
       // Re-visionnage en cours : sauté, retenté au prochain tour.
       continue;
