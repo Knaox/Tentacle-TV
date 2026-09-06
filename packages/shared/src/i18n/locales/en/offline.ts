@@ -136,6 +136,8 @@ export default {
   diskFullNotifTitle: "Not enough space",
   diskFullNotifBody: "The transfer of \"{{title}}\" stopped.",
 
+  notOnDeviceTitle: "This title isn't on the device",
+  notOnDeviceHint: "It will play as soon as the server answers. You can keep it offline from its page.",
   fileMissingTitle: "File not found",
   fileMissingHint:
     "This title is no longer on the device. Retry restarts playback — from the server if it can be reached.",

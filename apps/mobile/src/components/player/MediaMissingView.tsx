@@ -5,23 +5,33 @@ import { Button } from "@/components/ui";
 import { PLAYER, spacing } from "@/theme";
 
 interface Props {
+  /** « Fichier introuvable » (retiré sous le lecteur) ou « pas sur l'appareil » (hors ligne). */
+  variant?: "fileMissing" | "notOnDevice";
   /** Réessayer : la route re-résout la source — le serveur s'il répond. */
-  onRetry: () => void;
+  onRetry?: () => void;
+  /** Libellé du premier bouton quand ce n'est pas « Réessayer » (« Repasser en ligne »). */
+  retryLabel?: string;
   onBack: () => void;
 }
 
-/** « Fichier introuvable » : le titre n'est plus sur l'appareil. */
-export function MediaMissingView({ onRetry, onBack }: Props) {
+/** Le titre ne peut pas se lire depuis l'appareil : le dire, et proposer la suite. */
+export function MediaMissingView({ variant = "fileMissing", onRetry, retryLabel, onBack }: Props) {
   const { t } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
   const { t: tp } = useTranslation("player");
+  const notOnDevice = variant === "notOnDevice";
   return (
     <View style={st.root}>
-      <Feather name="file" size={40} color={PLAYER.textTertiary} />
-      <Text style={st.title} accessibilityRole="header">{t("fileMissingTitle")}</Text>
-      <Text style={st.hint}>{t("fileMissingHint")}</Text>
+      <Feather name={notOnDevice ? "wifi-off" : "file"} size={40} color={PLAYER.textTertiary} />
+      <Text style={st.title} accessibilityRole="header">{t(notOnDevice ? "notOnDeviceTitle" : "fileMissingTitle")}</Text>
+      <Text style={st.hint}>{t(notOnDevice ? "notOnDeviceHint" : "fileMissingHint")}</Text>
       <View style={st.actions}>
-        <Button title={tp("retry", { defaultValue: tc("retry", { defaultValue: "Réessayer" }) })} onPress={onRetry} />
+        {onRetry && (
+          <Button
+            title={retryLabel ?? tp("retry", { defaultValue: tc("retry", { defaultValue: "Réessayer" }) })}
+            onPress={onRetry}
+          />
+        )}
         <Button title={tc("back")} onPress={onBack} variant="secondary" />
       </View>
     </View>
