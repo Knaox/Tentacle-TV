@@ -10,6 +10,7 @@ import { SubtleBackground } from "@/components/ui";
 import { SegmentedChoice } from "@/components/settings/SegmentedChoice";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { spacing, typography, FONT_FAMILY, RADIUS, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
 import { useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
 
@@ -33,6 +34,7 @@ export function OfflineLibraryScreen() {
   const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
+  const [selected, setSelected] = useState<OfflineEntry | null>(null);
   const { movies, series, hasContent, ready } = useOfflineCatalog(search, filter);
 
   const filterOptions = useMemo(
@@ -45,7 +47,10 @@ export function OfflineLibraryScreen() {
   );
   const noResult = ready && hasContent && movies.length === 0 && series.length === 0;
 
-  const openMovie = (entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never);
+  const play = (entry: OfflineEntry) => {
+    setSelected(null);
+    router.push(`/watch/${entry.itemId}` as never);
+  };
   const openSeries = (group: OfflineSeriesGroup) =>
     router.push(`/on-device/series/${encodeURIComponent(group.key)}` as never);
 
@@ -118,7 +123,7 @@ export function OfflineLibraryScreen() {
                     watched={watched}
                     percent={percent}
                     width={itemWidth}
-                    onPress={() => openMovie(movie)}
+                    onPress={() => setSelected(movie)}
                     accessibilityLabel={percent !== null ? `${title}, ${Math.round(percent)} %` : title}
                   />
                 );
@@ -153,6 +158,7 @@ export function OfflineLibraryScreen() {
           </View>
         )}
       </ScrollView>
+      <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} onPlay={play} />
     </SubtleBackground>
   );
 }

@@ -17,6 +17,7 @@ import { backOrHome } from "@/utils/backOrHome";
 import { spacing, typography, FONT_FAMILY, useGrid, useResponsive, useThemedStyles, type AppTheme } from "@/theme";
 import { OfflineLocalImage } from "./OfflineLocalImage";
 import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
+import { OfflineItemSheet } from "./OfflineItemSheet";
 
 /** La bannière de la série, sinon son affiche. */
 const BANNER_ART = ["backdrop.jpg", "series-primary.jpg"] as const;
@@ -37,6 +38,7 @@ export function OfflineSeriesScreen() {
   const userId = useUserId();
   const { data, isFetched } = useOfflineList(userId);
   const [seasonKey, setSeasonKey] = useState<string | null>(null);
+  const [selected, setSelected] = useState<OfflineEntry | null>(null);
 
   const series = useMemo(() => {
     const complete = (data ?? []).filter((e) => e.status === "complete");
@@ -63,7 +65,10 @@ export function OfflineSeriesScreen() {
     [series, t],
   );
 
-  const play = (entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never);
+  const play = (entry: OfflineEntry) => {
+    setSelected(null);
+    router.push(`/watch/${entry.itemId}` as never);
+  };
 
   if (!series || !season) return <SubtleBackground ambient><View style={st.wrap} /></SubtleBackground>;
 
@@ -106,11 +111,12 @@ export function OfflineSeriesScreen() {
           )}
           <View style={[st.grid, { paddingHorizontal: padding, gap: gutter }]}>
             {season.episodes.map((episode) => (
-              <OfflineEpisodeCard key={episode.itemId} entry={episode} width={itemWidth} onSelect={play} onPlay={play} />
+              <OfflineEpisodeCard key={episode.itemId} entry={episode} width={itemWidth} onSelect={setSelected} onPlay={play} />
             ))}
           </View>
         </View>
       </ScrollView>
+      <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} onPlay={play} />
     </SubtleBackground>
   );
 }
