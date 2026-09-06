@@ -168,6 +168,7 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
         previousEpisode={pb.episodeNav.previousEpisode}
         item={pb.item}
         mediaSourceId={pb.mediaSourceId}
+        localTrickplay={pb.localTrickplay}
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
         onBack={leavePlayer}

@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { usePlaybackSegments, useUserId } from "@tentacle-tv/api-client";
+import { useUserId } from "@tentacle-tv/api-client";
 import { ticksToSeconds, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import { formatLocalTrackLabel, parseSideCarFileName, DEFAULT_WATCHED_THRESHOLD } from "@tentacle-tv/offline-core";
 import { i18n } from "@tentacle-tv/shared";
@@ -9,7 +9,9 @@ import { formatTrackLabel } from "@/lib/playerUtils";
 import { localExists, type OfflineLocalSource } from "@/offline/engineApi";
 import { useConnectivity } from "@/offline/useConnectivity";
 import { useLocalPlaybackReporter } from "./useLocalPlaybackReporter";
+import { useLocalSegments } from "./useLocalSegments";
 import { useLocalSnapshotItem } from "./useLocalSnapshot";
+import { useLocalTrickplay } from "./useLocalTrickplay";
 
 interface Track {
   index: number;
@@ -84,8 +86,9 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
     durationSeconds: jellyfinDuration || 0,
     maxResumePct: DEFAULT_WATCHED_THRESHOLD,
   });
-  // Les segments locaux arrivent avec le snapshot ; en attendant, rien — jamais le réseau.
-  const segments = usePlaybackSegments(itemId, { enabled: false });
+  // Segments et planches depuis le snapshot local — jamais le réseau.
+  const segments = useLocalSegments(itemId, item);
+  const localTrickplay = useLocalTrickplay(itemId);
 
   /** Relance : le fichier a-t-il disparu ? Sinon on recharge une fois. */
   const retry = useCallback(() => {
@@ -108,7 +111,7 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
 
   return {
     ...core,
-    streams, localSource, mediaMissing, startPositionMs,
+    streams, localSource, mediaMissing, startPositionMs, localTrickplay,
     audioIndex, subtitleIndex, audioTracks, subtitleTracks, audioTrackSelectedIndex, subtitleVttUrl,
     changeAudio: setAudioIndex, changeSubtitle: setSubtitleIndex,
   };
