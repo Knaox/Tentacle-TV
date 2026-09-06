@@ -11,6 +11,7 @@ import { TabRail, RAIL_WIDTH } from "@/components/navigation/TabRail";
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 import { RailMenu, type RailMenuItem } from "@/components/navigation/RailMenu";
 import { ScrollChromeProvider } from "@/components/navigation/scrollChrome";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { useResponsive, useTheme, RailWidthContext } from "@/theme";
 
 /**
@@ -19,11 +20,17 @@ import { useResponsive, useTheme, RailWidthContext } from "@/theme";
  * Toutes les pages d'extension vivent dans le seul onglet `extensions` (en
  * sections) : une extension de plus n'ajoute jamais d'onglet. Sans aucune
  * page d'extension, cet onglet se masque.
+ *
+ * Hors ligne, il n'en reste que deux : l'Accueil devient « Sur cet appareil »
+ * (le catalogue local) et le Profil se réduit ; Pour vous, Bibliothèque et
+ * extensions n'ont rien à montrer sans serveur.
  */
 export default function TabsLayout() {
   const { t } = useTranslation("nav");
+  const { t: to } = useTranslation("offline");
   const theme = useTheme();
   const ext = useExtensionTab();
+  const offline = useOfflineMode();
   usePrefetchPluginBundles();
 
   // Nav : portrait (et iPhone) = barre basse ; iPad PAYSAGE = rail gauche fin
@@ -34,13 +41,18 @@ export default function TabsLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => { if (!sideNav) setMenuOpen(false); }, [sideNav]);
 
+  const homeLabel = offline ? to("tabOnDevice") : t("home");
+  const homeIcon: keyof typeof Feather.glyphMap = offline ? "smartphone" : "home";
+
   const menuItems = useMemo<RailMenuItem[]>(() => [
-    { href: "/", icon: "home", label: t("home") },
-    { href: "/for-you", icon: "star", iconNode: (color) => <Sparkles size={20} color={color} />, label: t("forYou") },
-    { href: "/libraries", icon: "film", label: t("library") },
-    ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
+    { href: "/", icon: homeIcon, label: homeLabel },
+    ...(offline ? [] : [
+      { href: "/for-you" as const, icon: "star", iconNode: (color: string) => <Sparkles size={20} color={color} />, label: t("forYou") },
+      { href: "/libraries" as const, icon: "film", label: t("library") },
+      ...(ext.visible ? [{ href: "/extensions" as const, icon: ext.icon, label: ext.label }] : []),
+    ]),
     { href: "/profile", icon: "user", label: t("profile") },
-  ], [t, ext.visible, ext.icon, ext.label]);
+  ], [t, offline, homeIcon, homeLabel, ext.visible, ext.icon, ext.label]);
 
   return (
     <RailWidthContext.Provider value={sideNav ? RAIL_WIDTH : 0}>
@@ -58,13 +70,13 @@ export default function TabsLayout() {
         tabBarPosition: sideNav ? "left" : "bottom",
       }}
     >
-      {/* Accueil */}
+      {/* Accueil — ou « Sur cet appareil » hors ligne */}
       <Tabs.Screen
         name="index"
         options={{
-          title: t("home"),
-          tabBarAccessibilityLabel: t("home"),
-          tabBarIcon: ({ color, size }) => <Feather name="home" size={size} color={color} />,
+          title: homeLabel,
+          tabBarAccessibilityLabel: homeLabel,
+          tabBarIcon: ({ color, size }) => <Feather name={homeIcon} size={size} color={color} />,
         }}
       />
 
@@ -74,6 +86,7 @@ export default function TabsLayout() {
         options={{
           title: t("forYou"),
           tabBarAccessibilityLabel: t("forYou"),
+          href: offline ? null : undefined,
           tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} />,
         }}
       />
@@ -84,6 +97,7 @@ export default function TabsLayout() {
         options={{
           title: t("library"),
           tabBarAccessibilityLabel: t("library"),
+          href: offline ? null : undefined,
           tabBarIcon: ({ color, size }) => <Feather name="film" size={size} color={color} />,
         }}
       />
@@ -95,7 +109,7 @@ export default function TabsLayout() {
         options={{
           title: ext.label,
           tabBarAccessibilityLabel: ext.label,
-          href: ext.visible ? undefined : null,
+          href: ext.visible && !offline ? undefined : null,
           tabBarIcon: ({ color, size }) => <Feather name={ext.icon} size={size} color={color} />,
         }}
       />

@@ -9,6 +9,7 @@ import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { useConnectivity } from "@/offline/useConnectivity";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
 /** Hauteur de la barre de contenu du header (hors safe-area). */
@@ -41,9 +42,11 @@ export function PersistentHeader() {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
-  // Hors ligne, la pastille prend la place du titre — le logo reste.
+  // Hors ligne, la pastille prend la place du titre — le logo reste — et, dès
+  // que la navigation locale s'impose, les actions serveur s'effacent.
   const { state } = useConnectivity();
   const offline = state === "offline-auto" || state === "offline-manual";
+  const localNav = useOfflineMode();
 
   // Compaction au défilement : la barre remonte de huit points, et c'est tout —
   // le logo, le titre et les actions restent visibles (demandé : l'identité ne
@@ -77,18 +80,22 @@ export function PersistentHeader() {
           )}
         </View>
 
-        <View style={styles.actions}>
-          <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
-            <Feather name="bookmark" size={20} color={colors.text.primary} />
-          </Pressable>
-          <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
-            <Feather name="heart" size={20} color={colors.text.primary} />
-          </Pressable>
-          <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
-            <Feather name="search" size={20} color={colors.text.primary} />
-          </Pressable>
-          <NotificationBell />
-        </View>
+        {/* Hors ligne, les actions serveur (listes, recherche, cloche) n'ont
+            rien à ouvrir : elles disparaissent ; la gestion locale arrive ici. */}
+        {!localNav && (
+          <View style={styles.actions}>
+            <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
+              <Feather name="bookmark" size={20} color={colors.text.primary} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
+              <Feather name="heart" size={20} color={colors.text.primary} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
+              <Feather name="search" size={20} color={colors.text.primary} />
+            </Pressable>
+            <NotificationBell />
+          </View>
+        )}
       </View>
       <View style={[styles.hairline, { backgroundColor: withAlpha(colors.brand.violet, 0.12, colors.brand.soft) }]} />
     </GlassSurface>
