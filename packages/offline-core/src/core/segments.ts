@@ -19,6 +19,7 @@ import type { Volume } from "./adapters";
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { parseJson } from "./json";
 import { saveBytes } from "./meta";
+import { mediaFileExists, safeJoin } from "./paths";
 
 /** Le corps est-il un contrat v1 plausible ? (relecture stricte côté lecture) */
 function plausibleContract(raw: unknown): boolean {
@@ -46,4 +47,26 @@ export async function fetchAndSave(
   if (!plausibleContract(contract)) return false;
 
   return saveBytes(volume, `meta/${itemId}/segments.json`, bytes);
+}
+
+/** Le contrat a-t-il été pris pendant une analyse serveur encore en cours ? */
+export function analysisPending(raw: unknown): boolean {
+  return plausibleContract(raw) && (raw as Record<string, unknown>).analysisPending === true;
+}
+
+/**
+ * `segments.json` porte une analyse en attente : l'intro ou le générique
+ * manquaient peut-être quand il a été pris. À redemander au prochain démarrage
+ * en ligne — une petite requête par item concerné, tant que l'analyse n'a pas
+ * abouti. Absent ou illisible : rien à rafraîchir ici (le re-snapshot s'en
+ * charge).
+ */
+export function needsRefresh(volume: Volume, itemId: string): boolean {
+  const rel = `meta/${itemId}/segments.json`;
+  if (!mediaFileExists(volume, rel)) return false;
+  try {
+    return analysisPending(JSON.parse(volume.files.readText(safeJoin(volume, rel))));
+  } catch {
+    return false;
+  }
 }

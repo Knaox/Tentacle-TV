@@ -4,7 +4,7 @@
  * mesure ici : le journal des URL vues, pas seulement le résultat.
  */
 
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
@@ -15,6 +15,7 @@ import { heal } from "./heal";
 import { markSnapshotDone, saveBytes, upsertItemMeta, type MetaSpec } from "./meta";
 import { claimOrCreateFile } from "./store";
 import { setStatus } from "./queue";
+import { needsRefresh } from "./segments";
 import { markNone, noneRecently, RECHECK_AFTER_MS } from "./trickplay";
 import { preparedRoot, spec } from "./testkit";
 
@@ -64,6 +65,30 @@ function completeItem(db: DatabaseHandle, root: string, itemId: string): void {
 }
 
 describe("reparation", () => {
+  it("des segments pris pendant une analyse en cours sont redemandes, les autres non", async () => {
+    const db = openInMemory();
+    const root = preparedRoot("tentacle-heal-");
+    const volume = nodeVolume(root);
+    const utf8 = (body: string) => new Uint8Array(Buffer.from(body, "utf8"));
+    for (const itemId of ["f1", "f2"]) {
+      completeItem(db, root, itemId);
+      markNone(volume, itemId, 0);
+    }
+    saveBytes(volume, "meta/f1/segments.json", utf8('{"version":1,"itemId":"f1","segments":[],"analysisPending":true}'));
+    saveBytes(volume, "meta/f2/segments.json", utf8('{"version":1,"itemId":"f2","segments":[]}'));
+    expect(needsRefresh(volume, "f1")).toBe(true);
+    expect(needsRefresh(volume, "f2")).toBe(false);
+
+    const final = '{"version":1,"itemId":"f1","segments":[{"type":"Intro","startTicks":0,"endTicks":600000000}]}';
+    const n = net({ "/api/playback/segments/f1": final });
+    const healed = await heal(n.fetchBytes, db, SERVER, volume, 10_000);
+
+    expect(n.views.filter((u) => u.includes("/api/playback/segments/"))).toEqual([`${SERVER}/api/playback/segments/f1`]);
+    expect(readFileSync(path.join(root, "meta", "f1", "segments.json"), "utf8")).toBe(final);
+    expect(needsRefresh(volume, "f1")).toBe(false);
+    expect(healed).toBe(1);
+  });
+
   it("un item sans trickplay n'est demande qu'UNE fois, pas a chaque demarrage", async () => {
     const db = openInMemory();
     const root = preparedRoot("tentacle-heal-");
