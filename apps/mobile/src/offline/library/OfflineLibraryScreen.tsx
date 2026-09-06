@@ -18,7 +18,6 @@ import { OfflineCatalogSections } from "./OfflineCatalogSections";
 import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
 import { OfflineEmptyState } from "./OfflineEmptyState";
 import { OfflineHomeHero } from "./OfflineHomeHero";
-import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflineLibrarySkeleton } from "./OfflineLibrarySkeleton";
 import { OfflineResumeRail } from "./OfflineResumeRail";
 import { OfflineStateStrip } from "./OfflineStateStrip";
@@ -49,15 +48,11 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const layout = useGrid({ phoneColumns: 3 });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
-  const [selected, setSelected] = useState<OfflineEntry | null>(null);
   const [more, setMore] = useState<OfflineEntry | null>(null);
   const { movies, series, resume, hero, hasContent, ready } = useOfflineCatalog(search, filter);
 
-  const play = useCallback((entry: OfflineEntry) => {
-    setSelected(null);
-    router.push(`/watch/${entry.itemId}` as never);
-  }, [router]);
-  const info = useCallback((entry: OfflineEntry) => setSelected(entry), []);
+  const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
+  const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
   const openSeries = useCallback(
     (group: OfflineSeriesGroup) => router.push(`/on-device/series/${encodeURIComponent(group.key)}` as never),
     [router],
@@ -119,7 +114,6 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
         </Animated.ScrollView>
       )}
 
-      <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} onPlay={play} />
       <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={play} onInfo={info} />
     </SubtleBackground>
   );
