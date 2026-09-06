@@ -32,6 +32,14 @@ const ITEM_FIELDS =
   "Chapters,ParentId,Trickplay,RemoteTrailers,SeriesId,SeasonId,Status";
 
 /**
+ * Champs demandés sur la SÉRIE et la SAISON.
+ *
+ * Sans eux, le DTO de la série n'a ni genres ni casting : la fiche locale de
+ * série n'avait rien à montrer que son synopsis (version de contenu 5).
+ */
+const PARENT_FIELDS = "Overview,Genres,People,Studios,Taglines,ProviderIds";
+
+/**
  * Récupère et enregistre le snapshot complet.
  *
  * Le résumé de ce qui a réussi est écrit dans `item_meta.images_state`, et la
@@ -59,11 +67,13 @@ export async function snapshot(
   if (itemJson !== null) succeeded.push("item");
 
   if (spec.seriesId !== null) {
-    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seriesId}`, volume, `${dir}/series.json`);
+    const url = `${base}/Items/${spec.seriesId}?fields=${PARENT_FIELDS}`;
+    const ok = await fetchJson(fetchBytes, url, volume, `${dir}/series.json`);
     if (ok !== null) succeeded.push("series");
   }
   if (spec.seasonId !== null) {
-    const ok = await fetchJson(fetchBytes, `${base}/Items/${spec.seasonId}`, volume, `${dir}/season.json`);
+    const url = `${base}/Items/${spec.seasonId}?fields=${PARENT_FIELDS}`;
+    const ok = await fetchJson(fetchBytes, url, volume, `${dir}/season.json`);
     if (ok !== null) succeeded.push("season");
   }
 
