@@ -14,6 +14,7 @@ import { useCellularAck } from "../deviceSettings";
 import { useWifiOnly } from "../settings";
 import { useConnectivity } from "../useConnectivity";
 import { BulkAutoDeleteSheet, useBulkOfflineActions } from "./OfflineBulkActions";
+import { OfflineCatalogLinkCard } from "./OfflineCatalogLinkCard";
 import { OfflineEntryRow } from "./OfflineEntryRow";
 import { OfflineRowActionsSheet } from "./OfflineRowActionsSheet";
 import { OfflineSpaceBar } from "./OfflineSpaceBar";
@@ -31,9 +32,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /**
- * « Sur cet appareil » — l'écran de gestion : la jauge d'espace, puis les
- * sections En cours / Films / une par série (saison par saison), chaque ligne
- * avec sa progression en direct et ses actions. Vide : l'état d'accueil.
+ * « Sur cet appareil » — l'écran de gestion : la jauge d'espace, l'entrée
+ * vers le catalogue hors ligne, puis les sections En cours / Films / une par
+ * série (saison par saison), chaque ligne avec sa progression en direct et
+ * ses actions. Vide : l'état d'accueil.
  */
 export function OfflineManageScreen() {
   const { t } = useTranslation("downloads");
@@ -62,6 +64,7 @@ export function OfflineManageScreen() {
   }, [entries]);
 
   const onPlay = (entry: OfflineEntry) => router.push(`/watch/${entry.itemId}`);
+  const onInfo = (entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never);
   const row = (entry: OfflineEntry) => (
     <OfflineEntryRow
       key={entry.id}
@@ -84,6 +87,7 @@ export function OfflineManageScreen() {
     <View style={st.screen}>
     <SettingsScaffold title={to("manageTitle")} trailing={trailing}>
       <View style={st.space}><OfflineSpaceBar /></View>
+      <OfflineCatalogLinkCard />
 
       {entries.length === 0 && (
         <View style={st.empty}>
@@ -110,7 +114,7 @@ export function OfflineManageScreen() {
       ))}
 
       {selection.active && <View style={st.barSpacer} />}
-      <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={onPlay} />
+      <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={onPlay} onInfo={onInfo} />
       <BulkAutoDeleteSheet visible={bulkAutoDelete} onClose={() => setBulkAutoDelete(false)} onApply={bulk.applyAutoDelete} />
     </SettingsScaffold>
     {selection.active && (

@@ -206,6 +206,7 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
         <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
         <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
 
         <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
