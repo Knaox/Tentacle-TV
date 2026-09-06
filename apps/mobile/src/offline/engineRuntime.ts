@@ -19,6 +19,7 @@ import {
   type ProgressPayload,
 } from "@tentacle-tv/offline-core";
 import { setExcludedFromBackup } from "../../modules/offline-storage";
+import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
@@ -95,7 +96,8 @@ export function offlineEngine(): DownloadEngine {
     },
     onStarted: (started) => {
       startPeriodicPurge();
-      runHeal(started);
+      // Hors ligne, la réparation n'aurait que des requêtes à faire échouer.
+      if (!isOfflineMode()) runHeal(started);
     },
   });
   return engine;
