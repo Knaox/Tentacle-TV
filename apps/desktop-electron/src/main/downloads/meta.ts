@@ -8,9 +8,7 @@
  * Portage de la moitié « état » de `apps/desktop/src-tauri/src/downloads/meta.rs`.
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
-import path from "node:path";
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import { mediaFileExists, safeJoin } from "./paths";
 import { integer, integerOrNull, text, textOrNull } from "./rows";
 
@@ -108,11 +106,11 @@ export function getSpec(db: DatabaseHandle, itemId: string): MetaSpec | null {
 }
 
 /** Enregistre des octets sous la racine, dossiers créés au besoin. */
-export function saveBytes(root: string, rel: string, bytes: Uint8Array): boolean {
+export function saveBytes(volume: Volume, rel: string, bytes: Uint8Array): boolean {
   try {
-    const target = safeJoin(root, rel);
-    mkdirSync(path.dirname(target), { recursive: true });
-    writeFileSync(target, bytes);
+    const target = safeJoin(volume, rel);
+    volume.files.mkdirp(volume.files.dirname(target));
+    volume.files.writeBytes(target, bytes);
     return true;
   } catch {
     return false;
@@ -120,8 +118,8 @@ export function saveBytes(root: string, rel: string, bytes: Uint8Array): boolean
 }
 
 /** Le snapshot est-il déjà là (`item.json`) ? */
-export function snapshotExists(root: string, itemId: string): boolean {
-  return mediaFileExists(root, `meta/${itemId}/item.json`);
+export function snapshotExists(volume: Volume, itemId: string): boolean {
+  return mediaFileExists(volume, `meta/${itemId}/item.json`);
 }
 
 /**
@@ -131,8 +129,8 @@ export function snapshotExists(root: string, itemId: string): boolean {
  * téléchargements antérieurs à son ajout ne l'ont pas — d'où le re-snapshot par
  * la réparation.
  */
-export function seriesPrimaryExists(root: string, itemId: string): boolean {
-  return mediaFileExists(root, `meta/${itemId}/series-primary.jpg`);
+export function seriesPrimaryExists(volume: Volume, itemId: string): boolean {
+  return mediaFileExists(volume, `meta/${itemId}/series-primary.jpg`);
 }
 
 /** Version de snapshot enregistrée (0 si jamais posée). */

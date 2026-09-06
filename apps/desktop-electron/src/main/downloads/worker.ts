@@ -10,7 +10,7 @@
  * Portage de `run_worker` (`apps/desktop/src-tauri/src/downloads/engine.rs`).
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { getSpec, snapshotExists } from "./meta";
 import { safeJoin } from "./paths";
@@ -27,7 +27,7 @@ export interface Creds {
 
 export interface WorkerDeps {
   db: DatabaseHandle;
-  root: string;
+  volume: Volume;
   net: TransferNet;
   fetchBytes: FetchBytes;
   onProgress: (fileId: number, bytes: number) => void;
@@ -56,11 +56,11 @@ export async function runWorker(
 ): Promise<TransferEnd> {
   // Les à-côtés sont best-effort : leur échec ne doit jamais empêcher le média
   // de se télécharger, et la réparation repassera derrière.
-  if (!snapshotExists(deps.root, file.itemId)) {
+  if (!snapshotExists(deps.volume, file.itemId)) {
     const spec = getSpec(deps.db, file.itemId);
     if (spec !== null) {
       try {
-        await snapshot(deps.fetchBytes, deps.db, creds.serverUrl, deps.root, spec, nowMs);
+        await snapshot(deps.fetchBytes, deps.db, creds.serverUrl, deps.volume, spec, nowMs);
       } catch {
         // Snapshot manqué : la fiche sera pauvre hors ligne, le film sera là.
       }
@@ -74,7 +74,7 @@ export async function runWorker(
         await fetchAll(
           deps.fetchBytes,
           creds.serverUrl,
-          deps.root,
+          deps.volume,
           file.itemId,
           file.mediaSourceId,
           specs,
@@ -87,7 +87,7 @@ export async function runWorker(
 
   let finalPath: string;
   try {
-    finalPath = safeJoin(deps.root, file.relPath);
+    finalPath = safeJoin(deps.volume, file.relPath);
   } catch {
     return { kind: "failed", code: "io", bytesDone: 0 };
   }

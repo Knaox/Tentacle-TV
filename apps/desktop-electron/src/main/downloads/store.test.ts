@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeVolume } from "./node/nodeFiles";
 import { getFile } from "./queue";
 import {
   claimOrCreateFile,
@@ -41,12 +42,12 @@ describe("deduplication par claims", () => {
     claimOrCreateFile(db, spec({ userId: "userB" }));
 
     // userA supprime : userB reference encore le fichier.
-    const d1 = deleteClaim(db, root, "userA", o.fileId);
+    const d1 = deleteClaim(db, nodeVolume(root), "userA", o.fileId);
     expect(d1.fileDeleted).toBe(false);
     expect(existsSync(path.join(root, rel))).toBe(true);
 
     // Dernier claim : suppression physique, et meta orpheline purgee avec.
-    const d2 = deleteClaim(db, root, "userB", o.fileId);
+    const d2 = deleteClaim(db, nodeVolume(root), "userB", o.fileId);
     expect(d2.fileDeleted).toBe(true);
     expect(d2.metaDeleted).toBe(true);
     expect(existsSync(path.join(root, rel))).toBe(false);
@@ -59,7 +60,7 @@ describe("deduplication par claims", () => {
     const db = openInMemory();
     const o = claimOrCreateFile(db, spec());
 
-    deleteClaim(db, root, "u", o.fileId);
+    deleteClaim(db, nodeVolume(root), "u", o.fileId);
 
     // Sans cette suppression recursive, les sous-titres restaient orphelins.
     expect(existsSync(path.join(root, "media", "item1"))).toBe(false);
@@ -69,7 +70,7 @@ describe("deduplication par claims", () => {
     const root = preparedRoot("tentacle-store-");
     const db = openInMemory();
 
-    expect(deleteClaim(db, root, "inconnu", 999)).toEqual({
+    expect(deleteClaim(db, nodeVolume(root), "inconnu", 999)).toEqual({
       fileDeleted: false,
       metaDeleted: false,
     });

@@ -13,9 +13,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/playback.rs`.
  */
 
-import { readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import { safeJoin } from "./paths";
 import { setStatus } from "./queue";
 import { bit, flag, integer, integerOrNull, text, textOrNull } from "./rows";
@@ -52,24 +50,18 @@ export interface LocalSource {
 }
 
 /** Side-cars présents sur le disque, triés par nom pour un ordre stable. */
-function listSubtitles(root: string, itemId: string): LocalSubtitleFile[] {
-  let entries: string[];
+function listSubtitles(volume: Volume, itemId: string): LocalSubtitleFile[] {
+  let dir: string;
   try {
-    const dir = safeJoin(root, `media/${itemId}/subs`);
-    entries = readdirSync(dir).filter((name) => {
-      try {
-        return statSync(path.join(dir, name)).isFile();
-      } catch {
-        return false;
-      }
-    });
-    return entries
-      .sort((a, b) => a.localeCompare(b))
-      .map((fileName) => ({ absolutePath: path.join(dir, fileName), fileName }));
+    dir = safeJoin(volume, `media/${itemId}/subs`);
   } catch {
-    // Pas de dossier `subs` : c'est le cas courant.
     return [];
   }
+  // Dossier `subs` absent : `listFiles` rend une liste vide, c'est le cas courant.
+  return volume.files
+    .listFiles(dir)
+    .sort((a, b) => a.localeCompare(b))
+    .map((fileName) => ({ absolutePath: volume.files.join(dir, fileName), fileName }));
 }
 
 /**
@@ -80,7 +72,7 @@ function listSubtitles(root: string, itemId: string): LocalSubtitleFile[] {
  */
 export function localSource(
   db: DatabaseHandle,
-  root: string,
+  volume: Volume,
   userId: string,
   itemId: string,
   nowMs: number,
@@ -91,8 +83,10 @@ export function localSource(
   let absolutePath: string;
   let size: number;
   try {
-    absolutePath = safeJoin(root, file.relPath);
-    size = statSync(absolutePath).size;
+    absolutePath = safeJoin(volume, file.relPath);
+    const measured = volume.files.size(absolutePath);
+    if (measured === null) throw new Error("missing");
+    size = measured;
   } catch {
     setStatus(db, file.id, "error", "missing", nowMs);
     return null;
@@ -126,7 +120,7 @@ export function localSource(
     fileId: file.id,
     variant: file.variant,
     absolutePath,
-    subtitleFiles: listSubtitles(root, itemId),
+    subtitleFiles: listSubtitles(volume, itemId),
     positionTicks: state === undefined ? 0 : integer(state, "position_ticks"),
     played: state !== undefined && flag(state, "played"),
     autoDeleteAfterWatch: claim !== undefined && flag(claim, "auto_delete_after_watch"),

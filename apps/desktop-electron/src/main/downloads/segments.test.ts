@@ -10,6 +10,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { fetchAndSave } from "./segments";
 import type { FetchBytes } from "./fetcher";
+import { nodeVolume } from "./node/nodeFiles";
 
 const CONTRACT = {
   version: 1,
@@ -51,20 +52,20 @@ const PATH = () => path.join(root, "meta", "ep-1", "segments.json");
 
 describe("fetchAndSave", () => {
   it("interroge le résolveur du backend et persiste le contrat tel quel", async () => {
-    const ok = await fetchAndSave(settle(JSON.stringify(CONTRACT)), "http://srv.test", root, "ep-1");
+    const ok = await fetchAndSave(settle(JSON.stringify(CONTRACT)), "http://srv.test", nodeVolume(root), "ep-1");
     expect(ok).toBe(true);
     expect(urls).toEqual(["http://srv.test/api/playback/segments/ep-1"]);
     expect(JSON.parse(readFileSync(PATH(), "utf8"))).toEqual(CONTRACT);
   });
 
   it("réponse hors contrat (HTML, ancien format brut) : rien n'est écrit", async () => {
-    const html = await fetchAndSave(settle("<html>proxy</html>"), "http://srv.test", root, "ep-1");
+    const html = await fetchAndSave(settle("<html>proxy</html>"), "http://srv.test", nodeVolume(root), "ep-1");
     expect(html).toBe(false);
 
     const previous = await fetchAndSave(
       settle(JSON.stringify({ mediaSegments: null, pluginDict: null, pluginTs: null })),
       "http://srv.test",
-      root,
+      nodeVolume(root),
       "ep-1",
     );
     expect(previous).toBe(false);
@@ -72,7 +73,7 @@ describe("fetchAndSave", () => {
   });
 
   it("réseau muet : faux, sans fichier", async () => {
-    const ok = await fetchAndSave(settle(null), "http://srv.test", root, "ep-1");
+    const ok = await fetchAndSave(settle(null), "http://srv.test", nodeVolume(root), "ep-1");
     expect(ok).toBe(false);
     expect(existsSync(PATH())).toBe(false);
   });

@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeVolume } from "./node/nodeFiles";
 import * as episodeNumbers from "./episodeNumbers";
 import type { FetchBytes } from "./fetcher";
 import { CURRENT_META_VERSION, getSpec, metaVersion, snapshotExists, upsertItemMeta, type MetaSpec } from "./meta";
@@ -23,7 +24,7 @@ const folders: string[] = [];
 function preparedRoot(): string {
   const root = mkdtempSync(path.join(tmpdir(), "tentacle-snap-"));
   folders.push(root);
-  ensureLayout(root);
+  ensureLayout(nodeVolume(root));
   return root;
 }
 
@@ -78,9 +79,9 @@ describe("snapshot", () => {
       "/Ancestors": '[{"Type":"Season","Id":"s"},{"Type":"CollectionFolder","Id":"lib-42"}]',
     });
 
-    await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
+    await snapshot(fetchBytes, db, "https://tv.exemple", nodeVolume(root), specEpisode(), 2_000);
 
-    expect(snapshotExists(root, "ep1")).toBe(true);
+    expect(snapshotExists(nodeVolume(root), "ep1")).toBe(true);
     expect(existsSync(path.join(root, "meta", "ep1", "series.json"))).toBe(true);
     expect(existsSync(path.join(root, "meta", "ep1", "season.json"))).toBe(true);
     // Le DTO fait autorite sur les numeros.
@@ -100,12 +101,12 @@ describe("snapshot", () => {
     const { fetchBytes } = net({});
 
     await expect(
-      snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000),
+      snapshot(fetchBytes, db, "https://tv.exemple", nodeVolume(root), specEpisode(), 2_000),
     ).resolves.toBeUndefined();
 
     // La version est posee quand meme : la reparation reprendra le reste.
     expect(metaVersion(db, "ep1")).toBe(CURRENT_META_VERSION);
-    expect(snapshotExists(root, "ep1")).toBe(false);
+    expect(snapshotExists(nodeVolume(root), "ep1")).toBe(false);
   });
 
   it("un film ne demande ni serie, ni saison, ni segments de greffon", async () => {
@@ -115,7 +116,7 @@ describe("snapshot", () => {
     upsertItemMeta(db, film, 1_000);
     const { fetchBytes, views } = net({ "/Items/f1?fields=": '{"Name":"Un film"}' });
 
-    await snapshot(fetchBytes, db, "https://tv.exemple", root, film, 2_000);
+    await snapshot(fetchBytes, db, "https://tv.exemple", nodeVolume(root), film, 2_000);
 
     expect(views.some((u) => u.includes("IntroSkipperSegments"))).toBe(false);
     expect(views.some((u) => u.includes("series-primary"))).toBe(false);
@@ -127,7 +128,7 @@ describe("snapshot", () => {
     upsertItemMeta(db, specEpisode(), 1_000);
     const { fetchBytes } = net({ "/Items/ep1?fields=": '{"Name":"Un episode"}' });
 
-    await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
+    await snapshot(fetchBytes, db, "https://tv.exemple", nodeVolume(root), specEpisode(), 2_000);
 
     const row = db.prepare("SELECT images_state FROM item_meta WHERE item_id = 'ep1'").get();
     expect(String(row?.["images_state"])).toContain("item");
@@ -142,10 +143,10 @@ describe("numeros d'episode", () => {
     mkdirSync(path.join(root, "meta", "ep1"), { recursive: true });
     writeFileSync(path.join(root, "meta", "ep1", "item.json"), '{"IndexNumber":4,"ParentIndexNumber":2}');
 
-    expect(episodeNumbers.backfill(db, root)).toBe(1);
+    expect(episodeNumbers.backfill(db, nodeVolume(root))).toBe(1);
     expect(getSpec(db, "ep1")?.indexNumber).toBe(4);
     // Idempotent : plus rien a rattraper au second passage.
-    expect(episodeNumbers.backfill(db, root)).toBe(0);
+    expect(episodeNumbers.backfill(db, nodeVolume(root))).toBe(0);
   });
 
   it("un JSON casse laisse les numeros nuls", () => {
@@ -240,7 +241,7 @@ describe("segments", () => {
       "/api/playback/segments/ep1": contract,
     });
 
-    await snapshot(fetchBytes, db, "https://tv.exemple", root, specEpisode(), 2_000);
+    await snapshot(fetchBytes, db, "https://tv.exemple", nodeVolume(root), specEpisode(), 2_000);
 
     expect(views).toContain("https://tv.exemple/api/playback/segments/ep1");
     expect(views.some((u) => u.includes("/MediaSegments/"))).toBe(false);

@@ -9,7 +9,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/heal.rs`.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { MAX_JSON_BYTES } from "./fetcher";
 import { parseJson } from "./json";
@@ -56,7 +56,7 @@ export async function heal(
   fetchBytes: FetchBytes,
   db: DatabaseHandle,
   serverUrl: string,
-  root: string,
+  volume: Volume,
   nowMs: number,
 ): Promise<number> {
   let healed = 0;
@@ -70,11 +70,11 @@ export async function heal(
     const spec = getSpec(db, item.itemId);
     if (spec !== null) {
       const seriesPosterMissing =
-        spec.seriesId !== null && !seriesPrimaryExists(root, item.itemId);
+        spec.seriesId !== null && !seriesPrimaryExists(volume, item.itemId);
       const versionStale = metaVersion(db, item.itemId) < CURRENT_META_VERSION;
-      if (!snapshotExists(root, item.itemId) || seriesPosterMissing || versionStale) {
+      if (!snapshotExists(volume, item.itemId) || seriesPosterMissing || versionStale) {
         try {
-          await snapshot(fetchBytes, db, serverUrl, root, spec, nowMs);
+          await snapshot(fetchBytes, db, serverUrl, volume, spec, nowMs);
           touched = true;
         } catch {
           // Item non réparé ce tour-ci ; on continue avec les suivants.
@@ -89,8 +89,8 @@ export async function heal(
     // illustrer. Sans lui, un catalogue de cinquante films sans planches
     // faisait cinquante appels au lancement, en série, à chaque fois.
     if (
-      !trickplay.exists(root, item.itemId) &&
-      !trickplay.noneRecently(root, item.itemId, nowMs)
+      !trickplay.exists(volume, item.itemId) &&
+      !trickplay.noneRecently(volume, item.itemId, nowMs)
     ) {
       const itemJson = await fetchBytes(
         `${serverUrl}/api/jellyfin/Items/${item.itemId}?fields=Trickplay`,
@@ -101,7 +101,7 @@ export async function heal(
         const sheets = await trickplay.download(
           fetchBytes,
           serverUrl,
-          root,
+          volume,
           item.itemId,
           msrc,
           parseJson(itemJson),
@@ -118,7 +118,7 @@ export async function heal(
         const fetched = await fetchAll(
           fetchBytes,
           serverUrl,
-          root,
+          volume,
           item.itemId,
           item.mediaSourceId,
           specs,

@@ -9,7 +9,9 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import type { FileStore, Volume } from "./adapters";
 import { openInMemory } from "./node/nodeDatabase";
+import { nodeFiles, nodeVolume } from "./node/nodeFiles";
 import {
   CAPACITY_MARGIN_BYTES,
   defaultRoot,
@@ -42,10 +44,11 @@ afterEach(() => {
 
 describe("safeJoin", () => {
   const root = path.resolve("/tmp/root");
+  const volume = nodeVolume(root);
 
   it("accepte les deux prefixes attendus", () => {
-    expect(safeJoin(root, "media/abc/file.mkv")).toBe(path.join(root, "media", "abc", "file.mkv"));
-    expect(safeJoin(root, "meta/abc/primary.jpg")).toBe(path.join(root, "meta", "abc", "primary.jpg"));
+    expect(safeJoin(volume, "media/abc/file.mkv")).toBe(path.join(root, "media", "abc", "file.mkv"));
+    expect(safeJoin(volume, "meta/abc/primary.jpg")).toBe(path.join(root, "meta", "abc", "primary.jpg"));
   });
 
   it("refuse toute traversee", () => {
@@ -64,13 +67,22 @@ describe("safeJoin", () => {
       "C:/Windows/System32",
       "media/x:stream",
     ]) {
-      expect(() => safeJoin(root, bad), bad).toThrow("invalid-path");
+      expect(() => safeJoin(volume, bad), bad).toThrow("invalid-path");
     }
   });
 
   it("le prefixe seul est un chemin valide", () => {
     // `media` designe le dossier lui-meme : c'est ce que fait `removeItemDir`.
-    expect(safeJoin(root, "media")).toBe(path.join(root, "media"));
+    expect(safeJoin(volume, "media")).toBe(path.join(root, "media"));
+  });
+
+  it("reverifie le confinement avec le separateur DU MAGASIN, pas celui de Node", () => {
+    // Un magasin a la Windows sur un poste Linux : `path` de Node n'est plus
+    // dans la boucle, c'est le magasin qui joint et qui dit son separateur.
+    const windows: FileStore = { ...nodeFiles, sep: "\\", join: (...parts) => parts.join("\\") };
+    const drive: Volume = { files: windows, root: "D:\\Films" };
+    expect(safeJoin(drive, "media/abc/file.mkv")).toBe("D:\\Films\\media\\abc\\file.mkv");
+    expect(() => safeJoin(drive, "../evil")).toThrow("invalid-path");
   });
 });
 
@@ -95,7 +107,7 @@ describe("marge disque", () => {
   it("l'espace libre est lisible sur un vrai volume", () => {
     // `statfsSync` remplace `fs4::available_space` : verifie qu'il repond, et
     // qu'il repond quelque chose de credible.
-    const free = freeSpace(tempFolder());
+    const free = freeSpace(nodeVolume(tempFolder()));
     expect(free).toBeGreaterThan(0);
     expect(Number.isFinite(free)).toBe(true);
   });
@@ -106,9 +118,9 @@ describe("racine de stockage", () => {
     const db = openInMemory();
     const userData = tempFolder();
 
-    const root = resolveRoot(db, userData);
+    const root = resolveRoot(db, nodeFiles, userData).root;
 
-    expect(root).toBe(defaultRoot(userData));
+    expect(root).toBe(defaultRoot(nodeFiles, userData));
     expect(existsSync(path.join(root, "media"))).toBe(true);
     expect(existsSync(path.join(root, "meta"))).toBe(true);
   });
@@ -120,7 +132,7 @@ describe("racine de stockage", () => {
        VALUES ('i1', 'ms1', 'original', 'media/i1/original-ms1.mkv', 1, 1)`,
     ).run();
 
-    expect(() => setRoot(db, tempFolder())).toThrow("root-not-empty");
+    expect(() => setRoot(db, nodeFiles, tempFolder())).toThrow("root-not-empty");
   });
 
   it("un refus d'ecriture porte le code EN PREFIXE, suivi de la cause systeme", () => {
@@ -134,7 +146,7 @@ describe("racine de stockage", () => {
 
     let capture: Error | null = null;
     try {
-      setRoot(db, path.join(file, "films"));
+      setRoot(db, nodeFiles, path.join(file, "films"));
     } catch (error) {
       capture = error as Error;
     }
@@ -152,18 +164,18 @@ describe("racine de stockage", () => {
     const db = openInMemory();
     const elsewhere = path.join(tempFolder(), "films");
 
-    expect(setRoot(db, elsewhere)).toBe(elsewhere);
+    expect(setRoot(db, nodeFiles, elsewhere)).toBe(elsewhere);
     expect(existsSync(path.join(elsewhere, "media"))).toBe(true);
 
     forgetRoot();
-    expect(resolveRoot(db, tempFolder())).toBe(elsewhere);
+    expect(resolveRoot(db, nodeFiles, tempFolder()).root).toBe(elsewhere);
   });
 });
 
 describe("suppressions", () => {
   function preparedRoot(): string {
     const root = tempFolder();
-    ensureLayout(root);
+    ensureLayout(nodeVolume(root));
     return root;
   }
 
@@ -174,14 +186,14 @@ describe("suppressions", () => {
     writeFileSync(path.join(root, rel), "video");
     writeFileSync(path.join(root, `${rel}.part`), "partiel");
 
-    removeMediaFile(root, rel);
+    removeMediaFile(nodeVolume(root), rel);
 
     expect(readdirSync(path.join(root, "media", "i1"))).toEqual([]);
   });
 
   it("un fichier deja absent n'est pas une erreur", () => {
     const root = preparedRoot();
-    expect(() => removeMediaFile(root, "media/i1/absent.mkv")).not.toThrow();
+    expect(() => removeMediaFile(nodeVolume(root), "media/i1/absent.mkv")).not.toThrow();
   });
 
   it("le dossier media emporte les side-cars de sous-titres", () => {
@@ -189,7 +201,7 @@ describe("suppressions", () => {
     mkdirSync(path.join(root, "media", "i1", "subs"), { recursive: true });
     writeFileSync(path.join(root, "media", "i1", "subs", "3-fre.srt"), "1");
 
-    removeItemMediaDir(root, "i1");
+    removeItemMediaDir(nodeVolume(root), "i1");
 
     expect(existsSync(path.join(root, "media", "i1"))).toBe(false);
   });

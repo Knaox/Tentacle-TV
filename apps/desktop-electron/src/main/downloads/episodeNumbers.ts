@@ -14,8 +14,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/episode_numbers.rs`.
  */
 
-import { readFileSync } from "node:fs";
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle, Volume } from "./adapters";
 import { asInteger, field, parseJson } from "./json";
 import { safeJoin } from "./paths";
 import { text } from "./rows";
@@ -52,7 +51,7 @@ export function apply(db: DatabaseHandle, itemId: string, itemJson: Uint8Array):
  * depuis leur `item.json` sur le disque. Idempotent — ne cible que les NULL.
  * Retourne le nombre d'items complétés.
  */
-export function backfill(db: DatabaseHandle, root: string): number {
+export function backfill(db: DatabaseHandle, volume: Volume): number {
   const ids = db
     .prepare(
       `SELECT item_id FROM item_meta
@@ -65,7 +64,7 @@ export function backfill(db: DatabaseHandle, root: string): number {
   for (const itemId of ids) {
     let bytes: Uint8Array;
     try {
-      bytes = readFileSync(safeJoin(root, `meta/${itemId}/item.json`));
+      bytes = volume.files.readBytes(safeJoin(volume, `meta/${itemId}/item.json`));
     } catch {
       continue;
     }

@@ -12,10 +12,9 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/subs.rs`.
  */
 
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import path from "node:path";
+import type { Volume } from "./adapters";
 import { MAX_SUBTITLE_BYTES, type FetchBytes } from "./fetcher";
-import { asInteger, asString, field, parseJson } from "./json";
+import { asInteger, asString, field, parseJsonText } from "./json";
 import { safeJoin } from "./paths";
 
 export interface SubtitleSpec {
@@ -44,7 +43,7 @@ export function sanitizeTag(tag: string): string {
 
 /** Analyse la liste stockée en base. Tolère un JSON abîmé. */
 export function parseSpecs(json: string): SubtitleSpec[] {
-  const raw = parseJson(Buffer.from(json, "utf8"));
+  const raw = parseJsonText(json);
   if (!Array.isArray(raw)) return [];
   const specs: SubtitleSpec[] = [];
   for (const entry of raw) {
@@ -70,7 +69,7 @@ export function subtitleRelPath(itemId: string, spec: SubtitleSpec): string {
 export async function fetchAll(
   fetchBytes: FetchBytes,
   serverUrl: string,
-  root: string,
+  volume: Volume,
   itemId: string,
   mediaSourceId: string,
   specs: readonly SubtitleSpec[],
@@ -81,11 +80,11 @@ export async function fetchAll(
 
     let target: string;
     try {
-      target = safeJoin(root, subtitleRelPath(itemId, spec));
+      target = safeJoin(volume, subtitleRelPath(itemId, spec));
     } catch {
       continue;
     }
-    if (existsSync(target)) {
+    if (volume.files.exists(target)) {
       fetched += 1;
       continue;
     }
@@ -97,8 +96,8 @@ export async function fetchAll(
     if (bytes === null || bytes.byteLength === 0) continue;
 
     try {
-      mkdirSync(path.dirname(target), { recursive: true });
-      writeFileSync(target, bytes);
+      volume.files.mkdirp(volume.files.dirname(target));
+      volume.files.writeBytes(target, bytes);
       fetched += 1;
     } catch {
       // Disque plein ou droits : le média reste lisible sans ses sous-titres.

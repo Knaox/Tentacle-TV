@@ -6,7 +6,8 @@
  */
 
 import { z } from "zod";
-import { downloadsRoot } from "../downloadsRuntime";
+import { downloadsRoot, downloadsVolume } from "../downloadsRuntime";
+import { nodeFiles } from "../downloads/node/nodeFiles";
 import { freeSpace, setRoot } from "../downloads/paths";
 import { diskUsage } from "../downloads/store";
 import { localDb } from "../localDb";
@@ -22,9 +23,9 @@ export function registerDownloadsStorageCommands(registry: CommandRegistry): voi
     .add("downloads_get_root", { schema: NO_ARGS, run: () => downloadsRoot() })
     .add("downloads_set_root", {
       schema: SET_ROOT,
-      run: ({ path }) => setRoot(localDb(), path),
+      run: ({ path }) => setRoot(localDb(), nodeFiles, path),
     })
-    .add("downloads_disk_free", { schema: NO_ARGS, run: () => freeSpace(downloadsRoot()) })
+    .add("downloads_disk_free", { schema: NO_ARGS, run: () => freeSpace(downloadsVolume()) })
     .add("downloads_disk_usage", { schema: NO_ARGS, run: () => diskUsage(localDb()) })
     .add("downloads_asset_base", {
       schema: NO_ARGS,

@@ -25,6 +25,7 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import type { Volume } from "./downloads/adapters";
 import { safeJoin } from "./downloads/paths";
 
 /** Hôte réservé aux ressources locales, distinct de l'application. */
@@ -75,7 +76,7 @@ export function mimeFor(rel: string): string | null {
 export async function serveLocalAsset(
   request: Request,
   pathname: string,
-  root: string,
+  volume: Volume,
   appOrigin: string,
 ): Promise<Response> {
   if (request.method !== "GET") return new Response("methode refusee", { status: 405 });
@@ -91,7 +92,7 @@ export async function serveLocalAsset(
   // partagée. La copie porte sur quelques centaines de kilo-octets.
   let bytes: Uint8Array<ArrayBuffer>;
   try {
-    bytes = Uint8Array.from(await readFile(safeJoin(root, rel)));
+    bytes = Uint8Array.from(await readFile(safeJoin(volume, rel)));
   } catch {
     // Chemin refusé ou fichier absent : la page n'a rien à en tirer de plus
     // qu'une absence, et distinguer les deux renseignerait sur l'arborescence.
