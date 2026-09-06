@@ -148,6 +148,8 @@ export default {
   diskFullNotifBody: "Le transfert de « {{title}} » s'est arrêté.",
 
   // Le lecteur
+  notOnDeviceTitle: "Ce titre n'est pas sur l'appareil",
+  notOnDeviceHint: "Il se lira dès que le serveur répondra. Vous pourrez le garder hors ligne depuis sa fiche.",
   fileMissingTitle: "Fichier introuvable",
   fileMissingHint:
     "Ce titre n'est plus sur l'appareil. Réessayer relance la lecture — depuis le serveur s'il est joignable.",
