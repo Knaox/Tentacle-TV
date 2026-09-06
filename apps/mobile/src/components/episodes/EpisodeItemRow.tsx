@@ -1,20 +1,18 @@
 import { useCallback, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import { useWatchedToggle, type useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { FONT_FAMILY, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { useTheme, useThemedStyles } from "@/theme";
 import { MetaTokens } from "../detail/MetaTokens";
+import { makeEpisodeRowStyles } from "./episodeRowStyles";
 import { EpisodeThumb } from "./EpisodeThumb";
 
 let Haptics: { impactAsync: (style: unknown) => void; ImpactFeedbackStyle: { Light: unknown } } | null = null;
 try { Haptics = require("expo-haptics"); } catch { /* module natif absent */ }
-
-const THUMB_W = 110;
-const THUMB_H = 62;
 
 interface Props {
   ep: MediaItem;
@@ -31,7 +29,7 @@ interface Props {
 export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurrent, leading }: Props) {
   const { t } = useTranslation("common");
   const { colors, isDark } = useTheme();
-  const st = useThemedStyles(makeStyles);
+  const st = useThemedStyles(makeEpisodeRowStyles);
   // Texte d'accent lisible : la nuance vive en sombre, la foncée en clair.
   const accentText = isDark ? colors.brand.accentLight : colors.brand.accent;
   const { markWatched, markUnwatched } = useWatchedToggle(ep.Id, { seriesId, seasonId });
@@ -102,34 +100,3 @@ export function EpisodeItemRow({ ep, seriesId, seasonId, client, onPlay, isCurre
     </View>
   );
 }
-
-const makeStyles = (t: AppTheme) =>
-  StyleSheet.create({
-    row: { flexDirection: "row", alignItems: "center", backgroundColor: t.colors.fill.faint, borderRadius: 10, overflow: "hidden", minHeight: THUMB_H },
-    main: { flexDirection: "row", flex: 1 },
-    thumb: { width: THUMB_W, height: THUMB_H, alignSelf: "center", backgroundColor: t.colors.surface.s2, borderRadius: 6, overflow: "hidden" },
-    progressTrack: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: t.colors.fill.strong },
-    body: { flex: 1, padding: 10, justifyContent: "center" },
-    titleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-    currentDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: t.colors.brand.accent },
-    title: { flex: 1, color: t.colors.text.primary, fontSize: 13, fontWeight: "600" },
-    metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
-    current: { fontSize: 10, fontFamily: FONT_FAMILY.bold, letterSpacing: 0.6, textTransform: "uppercase" },
-    runtime: { color: t.colors.text.quaternary, fontSize: 11 },
-    overview: { color: t.colors.text.quaternary, fontSize: 11, marginTop: 4, lineHeight: 15 },
-    toggle: { paddingRight: 12, paddingLeft: 4 },
-    ring: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: t.colors.fill.subtle,
-      borderWidth: 1,
-      borderColor: t.colors.border.subtle,
-    },
-    ringPlayed: {
-      backgroundColor: withAlpha(t.colors.brand.accent, 0.15, t.colors.brand.soft),
-      borderColor: withAlpha(t.colors.brand.accent, 0.45, t.colors.brand.glow),
-    },
-  });
