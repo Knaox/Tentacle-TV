@@ -15,6 +15,8 @@
  */
 
 import { AppState, type AppStateStatus } from "react-native";
+import { runProbe, type OfflineReason } from "./connectivityProbe";
+import { isLinkLost, mapNetworkType, Network, type NetworkState, type NetworkType } from "./networkState";
 import { isLocalPlaybackActive } from "./nowPlaying";
 import {
   applyLinkLost,
@@ -36,29 +38,8 @@ import {
   type StorageAdapter,
 } from "@tentacle-tv/api-client";
 
-interface NetworkState {
-  type?: string;
-  isConnected?: boolean;
-}
-
-interface NetworkModule {
-  getNetworkStateAsync(): Promise<NetworkState>;
-  addNetworkStateListener(listener: (state: NetworkState) => void): { remove(): void };
-}
-
-// Module natif optionnel, chargé en `require` protégé (patron haptique /
-// SecureStore) : sans lui, tout marche sauf la sonde sur changement de réseau.
-let Network: NetworkModule | null = null;
-try {
-  Network = require("expo-network");
-} catch {
-  Network = null;
-}
-
-export type OfflineReason = "backend" | "jellyfin" | null;
-
-export type NetworkType = "wifi" | "cellular" | "none" | "other" | "unknown";
-
+export type { OfflineReason } from "./connectivityProbe";
+export type { NetworkType } from "./networkState";
 export interface ConnectivitySnapshot {
   state: ConnectivityState;
   manual: boolean;
@@ -75,7 +56,6 @@ export interface ConnectivitySnapshot {
 /** Même clé que le web : un réglage d'appareil, comme le thème. */
 export const MANUAL_OFFLINE_STORAGE_KEY = "tentacle_offline_manual";
 
-const PROBE_TIMEOUT_MS = 5_000;
 /** Hors « online » : sonde complète, comme le bureau. */
 const OFFLINE_PROBE_INTERVAL_MS = 15_000;
 /** En ligne : sonde complète elle aussi (une panne de Jellyfin seul se voit
@@ -160,41 +140,6 @@ const scheduleConfirm = (): void => {
   }, CONFIRM_PROBE_DELAY_MS);
 };
 
-interface ProbeResult {
-  ok: boolean;
-  reason: OfflineReason;
-  /** Latence de `/api/health` en ms — `null` si la sonde a échoué. */
-  latencyMs: number | null;
-}
-
-/** Backend puis Jellyfin (via proxy), délai commun de 5 s. */
-async function runProbe(base: string): Promise<ProbeResult> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
-  const startedAt = Date.now();
-  try {
-    const backendRes = await fetch(`${base}/api/health`, { signal: controller.signal });
-    const latencyMs = Date.now() - startedAt;
-    if (!backendRes.ok) return { ok: false, reason: "backend", latencyMs: null };
-    try {
-      const jellyfinRes = await fetch(`${base}/api/jellyfin/System/Info/Public`, {
-        signal: controller.signal,
-      });
-      // 503 = Jellyfin non configuré (assistant) → ne bascule PAS hors ligne.
-      if (jellyfinRes.status === 503) return { ok: true, reason: null, latencyMs };
-      return jellyfinRes.ok
-        ? { ok: true, reason: null, latencyMs }
-        : { ok: false, reason: "jellyfin", latencyMs };
-    } catch {
-      return { ok: false, reason: "jellyfin", latencyMs };
-    }
-  } catch {
-    return { ok: false, reason: "backend", latencyMs: null };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 async function probe(): Promise<void> {
   const base = serverUrl;
   if (base === null || probing) return;
@@ -243,11 +188,6 @@ export function isOfflineMode(): boolean {
 
 let linkLostTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** Le téléphone n'a plus aucun réseau (un `UNKNOWN` n'est jamais une bascule). */
-function isLinkLost(state: NetworkState): boolean {
-  return state.isConnected === false && (state.type ?? "").toUpperCase() === "NONE";
-}
-
 /** Bascule hors ligne sans attendre deux sondes ; le retour garde son anti-rebond. */
 function linkLost(): void {
   const outcome = applyLinkLost(hysteresis, Date.now());
@@ -261,23 +201,6 @@ function linkLost(): void {
 function cancelLinkLost(): void {
   if (linkLostTimer !== null) clearTimeout(linkLostTimer);
   linkLostTimer = null;
-}
-
-function mapNetworkType(state: NetworkState): NetworkType {
-  if (state.isConnected === false) return "none";
-  switch ((state.type ?? "").toUpperCase()) {
-    case "WIFI":
-      return "wifi";
-    case "CELLULAR":
-      return "cellular";
-    case "NONE":
-      return "none";
-    case "UNKNOWN":
-    case "":
-      return "unknown";
-    default:
-      return "other";
-  }
 }
 
 /**
