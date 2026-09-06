@@ -9,3 +9,13 @@ export function backOrHome(router: Router): void {
   if (router.canGoBack()) router.back();
   else router.replace("/(tabs)");
 }
+
+/**
+ * Retour à l'accueil depuis une pile de fiches : on dépile tout ce qui est
+ * au-dessus des onglets (l'accueil reste monté, avec son défilement), sinon
+ * on le remplace.
+ */
+export function goHome(router: Router): void {
+  if (router.canDismiss()) router.dismissAll();
+  else router.replace("/(tabs)");
+}
