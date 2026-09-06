@@ -1,173 +1,126 @@
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { useCallback, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { formatDuration } from "@tentacle-tv/shared";
-import { groupWatchState, watchStateOf, type OfflineSeriesGroup } from "@tentacle-tv/offline-core";
+import type { OfflineSeriesGroup } from "@tentacle-tv/offline-core";
 import type { OfflineEntry } from "@/offline/engineApi";
-import { SubtleBackground } from "@/components/ui";
-import { SegmentedChoice } from "@/components/settings/SegmentedChoice";
+import { FadeIn, IconButton, SubtleBackground } from "@/components/ui";
+import { homeRowFadeDelay } from "@/components/home/homeRowFade";
+import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useHeaderHeight } from "@/components/PersistentHeader";
-import { spacing, typography, FONT_FAMILY, RADIUS, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { ConnectivityPill } from "@/offline/ConnectivityPill";
+import { OfflineRowActionsSheet } from "@/offline/manage/OfflineRowActionsSheet";
+import { backOrHome } from "@/utils/backOrHome";
+import { spacing, typography, FONT_FAMILY, useGrid, useThemedStyles, type AppTheme } from "@/theme";
+import { OfflineCatalogSections } from "./OfflineCatalogSections";
+import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
+import { OfflineEmptyState } from "./OfflineEmptyState";
 import { OfflineHomeHero } from "./OfflineHomeHero";
 import { OfflineItemSheet } from "./OfflineItemSheet";
-import { OfflinePosterCard } from "./OfflinePosterCard";
+import { OfflineLibrarySkeleton } from "./OfflineLibrarySkeleton";
+import { OfflineResumeRail } from "./OfflineResumeRail";
+import { OfflineStateStrip } from "./OfflineStateStrip";
 import { useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
 
-/** Un film : sa propre affiche, sinon celle de sa « série » (collection). */
-const MOVIE_ART = ["primary.jpg", "series-primary.jpg"] as const;
-/** Une série : l'affiche de la série, sinon la vignette de l'épisode porteur. */
-const SERIES_ART = ["series-primary.jpg", "primary.jpg"] as const;
+interface Props {
+  /**
+   * Ouvert comme une page (depuis « Sur cet appareil », en ligne) : son propre
+   * en-tête ; sinon c'est l'onglet Accueil hors ligne, sous l'en-tête flottant.
+   */
+  standalone?: boolean;
+}
 
 /**
- * « Sur cet appareil » — l'accueil du mode hors ligne : ce qui se lit sans
- * réseau, et rien d'autre. Recherche sur l'appareil, filtre Tout / Films /
- * Séries, grille d'affiches 2:3 ; une série est UNE carte qui ouvre sa vue
- * locale, un film part en lecture.
+ * L'accueil du mode hors ligne : le bandeau cinématique des titres de
+ * l'appareil, le résumé (titres, espace, transferts), la rangée « Reprendre »
+ * à l'image exacte, la recherche et le filtre, puis les grilles Films et
+ * Séries. Une recherche active ne garde que les grilles. Tout vient de la
+ * base et des snapshots locaux — cet écran ne touche jamais le réseau.
  */
-export function OfflineLibraryScreen() {
-  const { t } = useTranslation(["offline", "downloads"]);
-  const theme = useTheme();
+export function OfflineLibraryScreen({ standalone = false }: Props) {
+  const { t } = useTranslation(["offline", "common"]);
   const st = useThemedStyles(makeStyles);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const headerH = useHeaderHeight();
-  const { itemWidth, gutter, padding } = useGrid({ phoneColumns: 3 });
+  const onScrollChrome = useScrollChromeHandler();
+  const layout = useGrid({ phoneColumns: 3 });
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
   const [selected, setSelected] = useState<OfflineEntry | null>(null);
-  const { movies, series, hero, hasContent, ready } = useOfflineCatalog(search, filter);
-
-  const filterOptions = useMemo(
-    () => [
-      { value: "all", label: t("downloads:filterAll") },
-      { value: "movies", label: t("downloads:sectionMovies") },
-      { value: "series", label: t("downloads:sectionSeries") },
-    ],
-    [t],
-  );
-  const noResult = ready && hasContent && movies.length === 0 && series.length === 0;
+  const [more, setMore] = useState<OfflineEntry | null>(null);
+  const { movies, series, resume, hero, hasContent, ready } = useOfflineCatalog(search, filter);
 
   const play = useCallback((entry: OfflineEntry) => {
     setSelected(null);
     router.push(`/watch/${entry.itemId}` as never);
   }, [router]);
   const info = useCallback((entry: OfflineEntry) => setSelected(entry), []);
-  const openSeries = (group: OfflineSeriesGroup) =>
-    router.push(`/on-device/series/${encodeURIComponent(group.key)}` as never);
+  const openSeries = useCallback(
+    (group: OfflineSeriesGroup) => router.push(`/on-device/series/${encodeURIComponent(group.key)}` as never),
+    [router],
+  );
+
+  const searching = search.trim().length > 0;
+  const noResult = ready && hasContent && movies.length === 0 && series.length === 0;
 
   return (
     <SubtleBackground ambient>
-      <ScrollView
-        style={st.wrap}
-        contentContainerStyle={{ paddingTop: headerH + spacing.lg, paddingHorizontal: padding, paddingBottom: 140 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        <Text style={st.title} accessibilityRole="header">{t("offline:tabOnDevice")}</Text>
+      {standalone && (
+        <View style={[st.header, { paddingTop: Math.max(insets.top, 24) + 8 }]}>
+          <IconButton icon="←" onPress={() => backOrHome(router)} accessibilityLabel={t("common:back")} />
+          <Text style={st.headerTitle} accessibilityRole="header" numberOfLines={1}>{t("offline:tabOnDevice")}</Text>
+          <ConnectivityPill variant="inline" />
+        </View>
+      )}
 
-        {hasContent && hero.length > 0 ? (
-          // La carte du bandeau porte ses propres gouttières : on annule celles du contenu.
-          <View style={{ marginHorizontal: -padding, marginTop: spacing.md }}>
-            <OfflineHomeHero entries={hero} onPlay={play} onInfo={info} />
-          </View>
-        ) : null}
+      {!ready ? (
+        <View style={{ paddingTop: standalone ? spacing.md : headerH }}>
+          <OfflineLibrarySkeleton layout={layout} />
+        </View>
+      ) : !hasContent ? (
+        <OfflineEmptyState standalone={standalone} />
+      ) : (
+        <Animated.ScrollView
+          style={st.wrap}
+          contentContainerStyle={{ paddingTop: standalone ? spacing.md : headerH, paddingBottom: 120 }}
+          onScroll={onScrollChrome}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          {!searching && <OfflineHomeHero entries={hero} onPlay={play} onInfo={info} />}
+          {!searching && (
+            <FadeIn delay={homeRowFadeDelay(0)}>
+              <OfflineStateStrip showManage={!standalone} />
+            </FadeIn>
+          )}
+          {!searching && resume.length > 0 && (
+            <FadeIn delay={homeRowFadeDelay(1)}>
+              <OfflineResumeRail entries={resume} onPlay={play} onMore={setMore} />
+            </FadeIn>
+          )}
+          <FadeIn delay={homeRowFadeDelay(2)}>
+            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} />
+          </FadeIn>
+          {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
+          <OfflineCatalogSections
+            movies={movies}
+            series={series}
+            layout={layout}
+            fadeIndex={3}
+            onMovie={info}
+            onMovieLongPress={setMore}
+            onSeries={openSeries}
+          />
+        </Animated.ScrollView>
+      )}
 
-        {ready && !hasContent ? (
-          <View style={st.empty}>
-            <Feather name="smartphone" size={40} color={theme.colors.text.quaternary} />
-            <Text style={st.emptyTitle}>{t("offline:libraryEmptyTitle")}</Text>
-            <Text style={st.emptyMessage}>{t("offline:libraryEmptyMessage")}</Text>
-          </View>
-        ) : null}
-
-        {hasContent ? (
-          <>
-            <View style={st.searchBox}>
-              <Feather name="search" size={16} color={theme.colors.text.tertiary} />
-              <TextInput
-                value={search}
-                onChangeText={setSearch}
-                placeholder={t("offline:searchPlaceholder")}
-                placeholderTextColor={theme.colors.text.quaternary}
-                style={st.searchInput}
-                autoCorrect={false}
-                autoCapitalize="none"
-                returnKeyType="search"
-                accessibilityLabel={t("offline:searchPlaceholder")}
-              />
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")} hitSlop={10} accessibilityRole="button" accessibilityLabel={t("common:clear")}>
-                  <Feather name="x" size={16} color={theme.colors.text.tertiary} />
-                </Pressable>
-              )}
-            </View>
-            <View style={st.filters}>
-              <SegmentedChoice
-                options={filterOptions}
-                value={filter}
-                onChange={(v) => setFilter(v as OfflineCatalogFilter)}
-                accessibilityLabel={t("downloads:filterAll")}
-              />
-            </View>
-          </>
-        ) : null}
-
-        {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
-
-        {movies.length > 0 && (
-          <View style={st.section}>
-            <Text style={st.sectionTitle}>{t("downloads:sectionMovies")}</Text>
-            <View style={[st.grid, { gap: gutter }]}>
-              {movies.map((movie) => {
-                const { watched, percent } = watchStateOf(movie);
-                const title = movie.title ?? movie.itemId;
-                return (
-                  <OfflinePosterCard
-                    key={movie.itemId}
-                    title={title}
-                    subtitle={formatDuration(movie.runtimeTicks)}
-                    posterItemId={movie.itemId}
-                    candidates={MOVIE_ART}
-                    watched={watched}
-                    percent={percent}
-                    width={itemWidth}
-                    onPress={() => setSelected(movie)}
-                    accessibilityLabel={percent !== null ? `${title}, ${Math.round(percent)} %` : title}
-                  />
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {series.length > 0 && (
-          <View style={st.section}>
-            <Text style={st.sectionTitle}>{t("downloads:sectionSeries")}</Text>
-            <View style={[st.grid, { gap: gutter }]}>
-              {series.map((group) => {
-                const { watched, percent } = groupWatchState(group.seasons.flatMap((s) => s.episodes));
-                const subtitle = `${t("downloads:seasonsCount", { count: group.seasons.length })} · ${t("downloads:episodesCount", { count: group.episodeCount })}`;
-                return (
-                  <OfflinePosterCard
-                    key={group.key}
-                    title={group.seriesName}
-                    subtitle={subtitle}
-                    posterItemId={group.posterItemId}
-                    candidates={SERIES_ART}
-                    watched={watched}
-                    percent={percent}
-                    width={itemWidth}
-                    onPress={() => openSeries(group)}
-                    accessibilityLabel={`${group.seriesName}, ${subtitle}`}
-                  />
-                );
-              })}
-            </View>
-          </View>
-        )}
-      </ScrollView>
       <OfflineItemSheet entry={selected} onClose={() => setSelected(null)} onPlay={play} />
+      <OfflineRowActionsSheet entry={more} onClose={() => setMore(null)} onPlay={play} onInfo={info} />
     </SubtleBackground>
   );
 }
@@ -175,26 +128,13 @@ export function OfflineLibraryScreen() {
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     wrap: { flex: 1 },
-    title: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, letterSpacing: -0.4 },
-    empty: { alignItems: "center", justifyContent: "center", gap: spacing.sm, paddingTop: 96, paddingHorizontal: spacing.xl },
-    emptyTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, textAlign: "center", marginTop: spacing.sm },
-    emptyMessage: { ...typography.body, color: t.colors.text.tertiary, textAlign: "center", lineHeight: 20 },
-    searchBox: {
-      marginTop: spacing.md,
+    header: {
       flexDirection: "row",
       alignItems: "center",
-      gap: spacing.sm,
-      minHeight: 44,
-      paddingHorizontal: spacing.md,
-      borderRadius: RADIUS.xl,
-      backgroundColor: t.colors.fill.subtle,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.colors.border.subtle,
+      gap: spacing.md,
+      paddingHorizontal: spacing.screenPadding,
+      paddingBottom: spacing.sm,
     },
-    searchInput: { flex: 1, ...typography.body, color: t.colors.text.primary, paddingVertical: 0 },
-    filters: { marginTop: spacing.sm },
+    headerTitle: { ...typography.title, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, flex: 1, letterSpacing: -0.4 },
     noResult: { ...typography.body, color: t.colors.text.tertiary, textAlign: "center", marginTop: spacing.xl },
-    section: { marginTop: spacing.lg },
-    sectionTitle: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary, marginBottom: spacing.sm },
-    grid: { flexDirection: "row", flexWrap: "wrap" },
   });
