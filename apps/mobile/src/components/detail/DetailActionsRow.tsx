@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailActionButton } from "./DetailActionButton";
 import { DetailKeepOfflineButton } from "@/offline/entry/DetailKeepOfflineButton";
+import { SeriesKeepOfflineButton } from "@/offline/entry/SeriesKeepOfflineButton";
 import { spacing, useTheme } from "@/theme";
 
 interface MutationHandle { mutate: () => void }
@@ -61,7 +62,7 @@ export function DetailActionsRow({ target, item, isWatched, favorite, watchlist,
         fillOnActive
         onPress={() => isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()}
       />
-      {item && item.Type !== "Series" && <DetailKeepOfflineButton item={item} />}
+      {item && (item.Type === "Series" ? <SeriesKeepOfflineButton series={item} /> : <DetailKeepOfflineButton item={item} />)}
     </View>
   );
 }
