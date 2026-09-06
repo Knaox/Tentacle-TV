@@ -16,7 +16,7 @@ export interface OfflineVisibility {
 /** Ce que les points d'entrée (fiche, épisode, profil, en-tête) consultent. */
 export function useOfflineVisibility(): OfflineVisibility {
   const { capabilities } = useOfflineCapabilities();
-  const hasContent = useHasLocalContent();
+  const hasContent = useHasLocalContent() === true;
   const canKeep = capabilities.downloads;
   const canLight = canKeep && capabilities.lightDownloads;
   const canRemux = canLight && capabilities.lightPresets.includes(REMUX_PRESET);
