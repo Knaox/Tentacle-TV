@@ -10,6 +10,7 @@ import { Badge, Divider, FadeIn, SubtleBackground } from "../components/ui";
 import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
+import { OnDeviceSection } from "../components/profile/OnDeviceSection";
 import { useHeaderHeight } from "../components/PersistentHeader";
 import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
 import { useProfileActions } from "../hooks/useProfileActions";
@@ -135,6 +136,8 @@ export function ProfileScreen() {
           <SettingsRow icon="info" label={t("about")} chevron last onPress={() => router.push("/about")} />
         </SettingsSection>
       </FadeIn>
+
+      <OnDeviceSection />
 
       {/* « Passer hors ligne » : seulement quand le serveur répond — hors
           ligne, c'est la pastille de l'en-tête qui ramène en ligne. */}
