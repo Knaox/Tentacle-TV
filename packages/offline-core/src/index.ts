@@ -64,5 +64,6 @@ export * from "./playback/localTrackLabels";
 export * from "./prefs/trackPrefsCache";
 export * from "./sync/capabilities";
 export * from "./sync/reportBody";
+export * from "./core/reconcile";
 export * from "./variants/platformSupport";
 export * from "./variants/offlineVariants";
