@@ -65,18 +65,23 @@ function hasSession(): boolean {
  * étoiles d'une fiche ou d'une carte se servent dans cette liste (au plus un
  * millier de lignes) plutôt que d'ouvrir une requête par titre affiché.
  */
-export function useMyRatings() {
+export function useMyRatings(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["ratings"],
     queryFn: () => tentacleApiFetch<UserRatingEntry[]>("/api/ratings"),
     staleTime: 60_000,
-    enabled: hasSession(),
+    // `enabled: false` = un écran qui n'affiche aucune étoile (lecture locale) :
+    // pas une requête de plus pour rien.
+    enabled: hasSession() && (options?.enabled ?? true),
   });
 }
 
 /** La note du compte pour UN titre (null si non noté, undefined en chargement). */
-export function useItemRating(identity: RatingIdentity | null): UserRatingEntry | null | undefined {
-  const { data, isPending } = useMyRatings();
+export function useItemRating(
+  identity: RatingIdentity | null,
+  options?: { enabled?: boolean },
+): UserRatingEntry | null | undefined {
+  const { data, isPending } = useMyRatings(options);
   if (!identity) return null;
   if (isPending) return undefined;
   const key = ratingKey(identity);
