@@ -8,6 +8,8 @@ import {
   matchAudioStreams,
   parseSideCarFileName,
   prefForLibrary,
+  readUserTrackConfig,
+  resolveWithUserConfig,
   snapshotTrackLabel,
   subtitleModeOf,
   type ItemTrackChoice,
@@ -68,8 +70,9 @@ interface Options {
  * piste retrouve son flux du snapshot et porte le NOM que Jellyfin affiche
  * (« Français - AAC - Stereo », « English (SDH) »). Les langues préférées sont
  * résolues localement par LE MÊME algorithme que le serveur (le contenu
- * d'abord, la bibliothèque ensuite), une fois, quand le fichier est chargé ;
- * un choix explicite est mémorisé.
+ * d'abord, la bibliothèque ensuite, les réglages du compte Jellyfin en
+ * dernier), une fois, quand le fichier est chargé ; un choix explicite est
+ * mémorisé.
  */
 export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: Options) {
   const { t } = useTranslation("player");
@@ -140,13 +143,19 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
   useEffect(() => {
     if (appliedRef.current || userId === null || nativeAudio.length === 0) return;
     appliedRef.current = true;
+    const audio = audioTracks.map((track) => ({ index: track.index, language: track.lang, isDefault: track.isDefault === true, title: track.label }));
+    const subs = subtitleTracks.map((track) => ({ index: track.index, language: track.lang, isForced: track.forced === true, title: track.label }));
+    const libraryId = localSource.libraryId ?? "";
+    // Le contenu, la bibliothèque, puis les réglages du compte Jellyfin ; sans
+    // rien de tout cela, le lecteur choisit.
     const cached = itemTracksFor(prefsStore, userId, itemId) ?? prefForLibrary(prefsStore, userId, localSource.libraryId);
-    if (!cached) return;
-    const resolved = resolveMediaTracks(
-      { jellyfinUserId: userId, libraryId: localSource.libraryId ?? "", audioLang: cached.audioLang, subtitleLang: cached.subtitleLang, subtitleMode: cached.subtitleMode },
-      audioTracks.map((track) => ({ index: track.index, language: track.lang, isDefault: track.isDefault === true, title: track.label })),
-      subtitleTracks.map((track) => ({ index: track.index, language: track.lang, isForced: track.forced === true, title: track.label })),
-    );
+    const userConfig = cached ? null : readUserTrackConfig(prefsStore, userId);
+    const resolved = cached
+      ? resolveMediaTracks({ jellyfinUserId: userId, libraryId, audioLang: cached.audioLang, subtitleLang: cached.subtitleLang, subtitleMode: cached.subtitleMode }, audio, subs)
+      : userConfig
+        ? resolveWithUserConfig(userConfig, userId, libraryId, audio, subs)
+        : null;
+    if (resolved === null) return;
     if (resolved.audioIndex != null) setAudioIndex(resolved.audioIndex);
     setSubtitleIndex(resolved.subtitleIndex ?? -1);
   }, [userId, itemId, localSource.libraryId, nativeAudio, audioTracks, subtitleTracks]);

@@ -62,6 +62,7 @@ export * from "./playback/langNames";
 export * from "./playback/localTrackNames";
 export * from "./playback/localTrackLabels";
 export * from "./prefs/trackPrefsCache";
+export * from "./prefs/userTrackConfig";
 export * from "./sync/capabilities";
 export * from "./sync/reportBody";
 export * from "./core/reconcile";
