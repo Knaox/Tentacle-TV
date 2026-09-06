@@ -12,9 +12,13 @@ interface OfflineBannerProps {
   onRetry: () => void;
   onLogout?: () => void;
   onChangeServer?: () => void;
+  /** Textes de remplacement (voile de session expirée) ; `hint: null` le retire. */
+  title?: string;
+  message?: string;
+  hint?: string | null;
 }
 
-export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChangeServer }: OfflineBannerProps) {
+export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChangeServer, title, message, hint }: OfflineBannerProps) {
   const { t } = useTranslation("common");
   const styles = useThemedStyles(makeStyles);
   const opacity = useRef(new Animated.Value(0)).current;
@@ -33,9 +37,9 @@ export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChange
     <Animated.View style={[styles.overlay, { opacity }]}>
       <View style={styles.content}>
         <CryingTentacle size={120} />
-        <Text style={styles.title}>{t("offlineTitle")}</Text>
-        <Text style={styles.message}>{t("offlineMessage")}</Text>
-        <Text style={styles.hint}>{t("offlineHint")}</Text>
+        <Text style={styles.title}>{title ?? t("offlineTitle")}</Text>
+        <Text style={styles.message}>{message ?? t("offlineMessage")}</Text>
+        {hint !== null && <Text style={styles.hint}>{hint ?? t("offlineHint")}</Text>}
         {/* Les pilules du socle — le Réessayer MONTRE l'essai en cours. */}
         <View style={styles.buttons}>
           <Button
