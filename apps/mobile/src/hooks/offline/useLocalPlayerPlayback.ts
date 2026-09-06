@@ -64,6 +64,7 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
     streamUrl: localSource.fileUri, mediaSourceId: item?.MediaSources?.[0]?.Id ?? itemId, headers: {},
     // Hors ligne, le rangement partagé n'a rien à invalider.
     invalidateOnStop: () => online,
+    localSession: true,
   };
 
   return {
