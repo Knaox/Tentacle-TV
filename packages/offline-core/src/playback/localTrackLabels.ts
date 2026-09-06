@@ -2,8 +2,9 @@
  * Libellés lisibles des pistes d'un fichier LOCAL.
  *
  * En ligne, Jellyfin fournit un `DisplayTitle` déjà présentable
- * (« Français - AAC »). Hors ligne il n'y a que la track-list mpv, dont les
- * champs sont bruts : le menu affichait « fr-BE », « en », « Forced », « SDH ».
+ * (« Français - AAC »). Hors ligne il n'y a que la liste de pistes du lecteur
+ * natif, dont les champs sont bruts : le menu affichait « fr-BE », « en »,
+ * « Forced », « SDH ».
  * Ce module en fait « Français (Belgique) », « Anglais », « Français — Forced ».
  *
  * La sortie suit la convention de `formatTrackLabel` (« Nom - CODEC ») pour que
@@ -12,7 +13,7 @@
  * avec le « - » de découpe.
  */
 
-import { primaryLangSubtag } from "../components/player/mpvTrackMapping";
+import { primaryLangSubtag } from "./langSubtags";
 
 export interface LocalTrackInput {
   lang?: string;

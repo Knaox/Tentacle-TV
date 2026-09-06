@@ -53,6 +53,12 @@ export {
 } from "./catalog/selection";
 export * from "./connectivity/connectivityMachine";
 export * from "./playback/localSegments";
+export * from "./playback/localPlaybackProgress";
+export * from "./playback/playbackFailure";
+export * from "./playback/sideCarNames";
+export * from "./playback/langSubtags";
+export * from "./playback/localTrackLabels";
+export * from "./prefs/trackPrefsCache";
 export * from "./sync/capabilities";
 export * from "./sync/reportBody";
 export * from "./variants/platformSupport";
