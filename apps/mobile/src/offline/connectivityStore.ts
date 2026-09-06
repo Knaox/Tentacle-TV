@@ -279,19 +279,24 @@ export function startConnectivityListeners(): () => void {
     if (status === "active") void probeNow(false);
   });
   let network: { remove(): void } | null = null;
+  // Sans réponse d'expo-network, le réseau vaut « autre » plutôt que
+  // « inconnu » : « inconnu » retient les transferts sous Wi-Fi seulement.
+  const settle = (next: NetworkType): void => {
+    if (next === networkType) return;
+    networkType = next;
+    rebuildSnapshot();
+  };
   if (Network !== null) {
     const apply = (state: NetworkState, force: boolean): void => {
-      const next = mapNetworkType(state);
-      if (next !== networkType) {
-        networkType = next;
-        rebuildSnapshot();
-      }
+      settle(mapNetworkType(state));
       if (force) void probeNow(true);
     };
     Network.getNetworkStateAsync()
       .then((state) => apply(state, false))
-      .catch(() => undefined);
+      .catch(() => settle("other"));
     network = Network.addNetworkStateListener((state) => apply(state, true));
+  } else {
+    settle("other");
   }
   return () => {
     appState.remove();
