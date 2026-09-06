@@ -79,7 +79,7 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
             </View>
           )}
         </View>
-        <View style={st.body}>
+        <View style={[st.body, ex.body]}>
           <View style={st.titleRow}>
             {isCurrent && <View style={st.currentDot} />}
             <Text numberOfLines={1} style={[st.title, isCurrent && { fontWeight: "800" }]}>{code}{title}</Text>
@@ -87,7 +87,7 @@ export const OfflineEpisodeRow = memo(function OfflineEpisodeRow({ entry, isCurr
           <View style={st.metaRow}>
             {isCurrent && <Text style={[st.current, { color: accentText }]}>{t("common:currentEpisode")}</Text>}
             {runtime ? <Text style={st.runtime}>{t("common:minutesShort", { count: runtime })}</Text> : null}
-            <Text style={st.runtime} numberOfLines={1}>{version}</Text>
+            <Text style={[st.runtime, ex.version]} numberOfLines={1}>{version}</Text>
           </View>
           <MetaTokens item={item ?? undefined} compact />
           {overview.length > 0 && <Text numberOfLines={2} style={st.overview}>{overview}</Text>}
@@ -118,4 +118,7 @@ const makeExtraStyles = (t: AppTheme) =>
     fallback: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
     fallbackText: { fontSize: 14, fontFamily: FONT_FAMILY.bold, color: t.colors.text.tertiary },
     more: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
+    // Sans `minWidth: 0`, un texte long élargit le corps sous les boutons de droite.
+    body: { minWidth: 0 },
+    version: { flexShrink: 1 },
   });
