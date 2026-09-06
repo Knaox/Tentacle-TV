@@ -22,14 +22,17 @@ interface Props {
   entry: OfflineEntry | null;
   onClose: () => void;
   onPlay: (entry: OfflineEntry) => void;
+  /** « Plus d'infos » : la fiche locale du titre (absent : pas de ligne). */
+  onInfo?: (entry: OfflineEntry) => void;
 }
 
 /**
- * La feuille « ⋯ » d'une ligne : Lire, Pause / Reprendre / Annuler le
- * transfert, Supprimer après visionnage (avec l'échéance), et « Retirer de
- * l'appareil » en rouge, avec la confirmation multi-comptes.
+ * La feuille « ⋯ » d'une ligne — et la feuille d'appui long du catalogue :
+ * Lire, Plus d'infos, Pause / Reprendre / Annuler le transfert, Supprimer
+ * après visionnage (avec l'échéance), et « Retirer de l'appareil » en rouge,
+ * avec la confirmation multi-comptes.
  */
-export function OfflineRowActionsSheet({ entry, onClose, onPlay }: Props) {
+export function OfflineRowActionsSheet({ entry, onClose, onPlay, onInfo }: Props) {
   const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { colors } = useTheme();
@@ -75,6 +78,7 @@ export function OfflineRowActionsSheet({ entry, onClose, onPlay }: Props) {
       <View style={st.body}>
         <Text style={st.title} numberOfLines={2}>{entryTitle(entry)}</Text>
         {entry.status === "complete" && row("play", entry.kind === "episode" ? t("episodePlay") : i18n.t("common:play"), act(() => onPlay(entry)))}
+        {entry.status === "complete" && onInfo && row("info", i18n.t("common:moreInfo"), act(() => onInfo(entry)))}
         {(entry.status === "downloading" || entry.status === "queued") && row("pause", t("pause"), act(() => pauseTransfer(entry.id)))}
         {(entry.status === "paused" || entry.status === "error") && row("play", t("resume"), act(() => resumeTransfer(entry.id)))}
         {active && row("x-circle", t("cancelTransfer"), act(() => cancelTransfer(entry.id)))}

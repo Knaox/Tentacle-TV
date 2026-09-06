@@ -85,6 +85,14 @@ export default {
   episodesOnDeviceHint: "Sur l'appareil",
   seasonGone: "Cette saison n'est plus sur l'appareil.",
   seriesGone: "Cette série n'est plus sur l'appareil.",
+  openCatalog: "Voir le catalogue hors ligne",
+  openCatalogHint: "L'accueil hors ligne, tel qu'il s'affiche sans réseau.",
+  minutesLeft_one: "{{count}} min restante",
+  minutesLeft_other: "{{count}} min restantes",
+  episodesShort: "{{count}} ép.",
+  alsoOnDevice: "Aussi sur l'appareil",
+  emptyGoHome: "Retour à l'accueil",
+  a11yWatchedToggle: "{{title}}, marquer comme vu",
 
   // Les réglages
   settingsTitle: "Sur cet appareil",

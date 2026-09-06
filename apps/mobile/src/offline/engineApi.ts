@@ -167,6 +167,18 @@ export function restartLocalPlayback(userId: string, itemId: string): void {
   restartPlayback(localDb(), userId, itemId, Date.now());
 }
 
+/**
+ * Le rond « vu » des fiches locales. Marquer vu = une lecture complète (mise en
+ * file pour le serveur, auto-suppression armée) ; marquer non vu = repartir de
+ * zéro, en local seulement — Jellyfin ne reçoit jamais un « non vu » par la
+ * file de resynchronisation.
+ */
+export function setLocalWatched(userId: string, itemId: string, played: boolean): void {
+  if (played) savePlaybackState(userId, itemId, 0, true, true);
+  else restartLocalPlayback(userId, itemId);
+  notifyOfflineChanged();
+}
+
 /** Purge à la demande ; `exemptItemId` = le titre en cours de lecture. */
 export function purgeDue(exemptItemId: string | null = null): number {
   const purged = purgeDueClaims(localDb(), offlineVolume(), Date.now(), exemptItemId);
