@@ -9,6 +9,7 @@ import {
   startOfflineRuntime,
   updateOfflineCreds,
 } from "./engineRuntime";
+import { syncAvatarCache } from "./avatarCache";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
@@ -53,6 +54,7 @@ export function OfflineRuntimeSync() {
     if (!online || !serverUrl || !token || !userId) return;
     startOfflineRuntime({ serverUrl, token });
     photographSession(userId, storage, null);
+    syncAvatarCache(userId, serverUrl, token, storage);
     // Le moteur d'abord, puis les caches de langues et le seuil « vu » — la
     // lecture locale n'interroge jamais le serveur, même en ligne.
     void drainReportQueue(serverUrl, token, userId).then(() => refreshOfflineCaches(serverUrl, token, userId));

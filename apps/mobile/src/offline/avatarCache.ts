@@ -11,6 +11,7 @@
  */
 
 import { Directory, File, Paths } from "expo-file-system";
+import type { StorageAdapter } from "@tentacle-tv/api-client";
 
 const DIR_NAME = "offline-avatars";
 /** Au-delà, ce n'est pas la photo qu'on croit (l'envoi redimensionne à 512 px). */
@@ -69,4 +70,25 @@ export function forgetAvatar(userId: string): void {
   } catch {
     // Rien à retirer.
   }
+}
+
+/**
+ * Aligne la copie locale sur le profil stocké (`tentacle_user`) : une photo
+ * présente est recopiée sous son étiquette du moment, une photo retirée est
+ * oubliée. Appelé à chaque passage en ligne, best-effort.
+ */
+export function syncAvatarCache(userId: string, serverUrl: string, token: string, storage: StorageAdapter): void {
+  let tag: string | null;
+  try {
+    const user = JSON.parse(storage.getItem("tentacle_user") ?? "null") as { PrimaryImageTag?: string | null } | null;
+    tag = user?.PrimaryImageTag ?? null;
+  } catch {
+    return;
+  }
+  if (tag === null) {
+    forgetAvatar(userId);
+    return;
+  }
+  const url = `${serverUrl}/api/jellyfin/Users/${encodeURIComponent(userId)}/Images/Primary?tag=${encodeURIComponent(tag)}&quality=90&maxWidth=200`;
+  void cacheAvatarFrom(userId, url, token);
 }

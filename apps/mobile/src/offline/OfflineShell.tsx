@@ -5,6 +5,7 @@ import { OfflineReadyNotifier } from "./OfflineReadyNotifier";
 import { KeepOfflineHost } from "./keep/KeepOfflineHost";
 import { OfflineOverlays } from "./OfflineOverlays";
 import { OfflineRouteGuard } from "./OfflineRouteGuard";
+import { OfflineSessionGate } from "./OfflineSessionGate";
 import { OfflineRuntimeSync } from "./OfflineRuntimeSync";
 
 /**
@@ -23,6 +24,7 @@ export function OfflineShell() {
       <KeepOfflineHost />
       <OfflineRouteGuard />
       <OfflineOverlays />
+      <OfflineSessionGate />
     </>
   );
 }
