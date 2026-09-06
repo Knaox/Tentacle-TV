@@ -12,7 +12,7 @@
  */
 
 import type { MediaItem } from "@tentacle-tv/shared";
-import type { DownloadEntry } from "./api";
+import type { DownloadListEntry as DownloadEntry } from "../core/listing";
 import { byEpisodeNumber } from "./offlineGroups";
 
 export interface LocalEpisodeNavigation {

@@ -13,7 +13,7 @@
  */
 
 import { matchesSearch } from "@tentacle-tv/shared";
-import type { DownloadEntry } from "./api";
+import type { DownloadListEntry as DownloadEntry } from "../core/listing";
 
 export interface OfflineSeasonGroup {
   /** Clé d'URL stable de la saison. */

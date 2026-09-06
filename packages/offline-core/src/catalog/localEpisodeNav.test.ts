@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { DownloadEntry, DownloadStatus } from "./api";
+import type { DownloadListEntry as DownloadEntry } from "../core/listing";
+import type { DownloadStatus } from "../core/store";
 import { findAdjacentLocalEpisodes } from "./localEpisodeNav";
 
 function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry {
@@ -13,6 +14,8 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     bytesDone: 0,
     status: "complete",
     errorCode: null,
+    audioStreamIndex: null,
+    burnSubtitleIndex: null,
     title: over.itemId,
     seriesName: "Rick et Morty",
     kind: "episode",

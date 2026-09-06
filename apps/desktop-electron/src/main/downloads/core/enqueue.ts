@@ -14,20 +14,21 @@ import { setAutoDelete } from "./listing";
 import { upsertItemMeta } from "./meta";
 import { CAPACITY_MARGIN_BYTES, hasCapacity } from "./paths";
 import { pendingBytes } from "./queue";
-import { claimOrCreateFile, findFile, setLightParams } from "./store";
+import { claimOrCreateFile, findFile, setLightParams, type DownloadVariant } from "./store";
+import type { DownloadKind } from "./listing";
 import type { SubtitleSpec } from "./subs";
 
 export interface EnqueueItem {
   itemId: string;
   mediaSourceId: string;
-  variant: string;
+  variant: DownloadVariant;
   preset: string | null;
   containerExt: string;
   /** Taille EXACTE (Original seulement) — contrôle d'intégrité final. */
   expectedSize: number | null;
   /** Estimation pour le contrôle d'espace (Allégé : durée × débit × 1,15). */
   estimatedSize: number | null;
-  kind: string;
+  kind: DownloadKind;
   seriesId: string | null;
   seasonId: string | null;
   libraryId: string | null;
@@ -41,6 +42,69 @@ export interface EnqueueItem {
   audioStreamIndex: number | null;
   burnSubtitleIndex: number | null;
   subtitles: SubtitleSpec[] | null;
+}
+
+export interface SubtitleSideCarInput {
+  index: number;
+  format: "srt" | "ass" | "vtt";
+  langTag: string;
+}
+
+/**
+ * Un item tel que l'INTERFACE le décrit : les champs absents sont optionnels,
+ * `null` ou `undefined` (l'IPC du bureau rend les deux). `normalizeEnqueueItem`
+ * en fait un `EnqueueItem` où tout absent vaut `null` — la base refuse
+ * `undefined`.
+ */
+export interface EnqueueItemInput {
+  itemId: string;
+  mediaSourceId: string;
+  variant: DownloadVariant;
+  preset?: string | null | undefined;
+  containerExt: string;
+  expectedSize?: number | null | undefined;
+  estimatedSize?: number | null | undefined;
+  kind: DownloadKind;
+  seriesId?: string | null | undefined;
+  seasonId?: string | null | undefined;
+  libraryId?: string | null | undefined;
+  runtimeTicks?: number | null | undefined;
+  title?: string | null | undefined;
+  seriesName?: string | null | undefined;
+  indexNumber?: number | null | undefined;
+  parentIndexNumber?: number | null | undefined;
+  autoDeleteAfterWatch: boolean;
+  /** Délai d'auto-suppression après visionnage (minutes, 0 = immédiat). */
+  autoDeleteDelayMinutes?: number | null | undefined;
+  audioStreamIndex?: number | null | undefined;
+  burnSubtitleIndex?: number | null | undefined;
+  subtitles?: SubtitleSideCarInput[] | null | undefined;
+}
+
+export function normalizeEnqueueItem(input: EnqueueItemInput): EnqueueItem {
+  return {
+    itemId: input.itemId,
+    mediaSourceId: input.mediaSourceId,
+    variant: input.variant,
+    preset: input.preset ?? null,
+    containerExt: input.containerExt,
+    expectedSize: input.expectedSize ?? null,
+    estimatedSize: input.estimatedSize ?? null,
+    kind: input.kind,
+    seriesId: input.seriesId ?? null,
+    seasonId: input.seasonId ?? null,
+    libraryId: input.libraryId ?? null,
+    runtimeTicks: input.runtimeTicks ?? null,
+    title: input.title ?? null,
+    seriesName: input.seriesName ?? null,
+    indexNumber: input.indexNumber ?? null,
+    parentIndexNumber: input.parentIndexNumber ?? null,
+    autoDeleteAfterWatch: input.autoDeleteAfterWatch,
+    autoDeleteDelayMinutes: input.autoDeleteDelayMinutes ?? 0,
+    audioStreamIndex: input.audioStreamIndex ?? null,
+    burnSubtitleIndex: input.burnSubtitleIndex ?? null,
+    subtitles: input.subtitles ?? null,
+  };
 }
 
 export interface EnqueueOutcome {

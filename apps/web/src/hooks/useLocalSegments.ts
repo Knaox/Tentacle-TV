@@ -7,7 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { emptyPlaybackSegments, type MediaItem, type PlaybackSegmentsResponse } from "@tentacle-tv/shared";
 import { localResourceUrl, useDownloadsRootReady } from "../downloads/localFiles";
-import { resolveLocalSegmentsPayload } from "../lib/localSegments";
+import { resolveLocalSegmentsPayload } from "@tentacle-tv/offline-core";
 
 const EMPTY: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
 

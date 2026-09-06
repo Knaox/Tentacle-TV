@@ -89,82 +89,27 @@ export async function getDiskUsage(): Promise<number | null> {
 
 /* ---- Moteur de téléchargement ---- */
 
-export type DownloadStatus =
-  | "queued"
-  | "downloading"
-  | "paused"
-  | "complete"
-  | "error"
-  | "canceled";
-
-export interface DownloadEntry {
-  id: number;
-  itemId: string;
-  mediaSourceId: string;
-  variant: "original" | "light";
-  preset: string | null;
-  relPath: string;
-  expectedSize: number | null;
-  bytesDone: number;
-  status: DownloadStatus;
-  errorCode: string | null;
-  title: string | null;
-  seriesName: string | null;
-  kind: "movie" | "episode" | null;
-  seriesId: string | null;
-  seasonId: string | null;
-  /** Épisode : numéros de saison/épisode (regroupement et tri du catalogue). */
-  indexNumber: number | null;
-  parentIndexNumber: number | null;
-  /** Durée de l'item (vignettes d'épisode). */
-  runtimeTicks: number | null;
-  autoDeleteAfterWatch: boolean;
-  /** Délai après visionnage avant suppression (minutes, 0 = immédiat). */
-  autoDeleteDelayMinutes: number;
-  /** Échéance de suppression (epoch secondes) — posée quand l'item est vu. */
-  deleteScheduledAt: number | null;
-  /** Progression locale de ce compte : coche « vu » et barre des vignettes. */
-  played: boolean;
-  positionTicks: number;
-}
-
-export interface SubtitleSideCarInput {
-  index: number;
-  format: "srt" | "ass" | "vtt";
-  langTag: string;
-}
-
-export interface EnqueueItemInput {
-  itemId: string;
-  mediaSourceId: string;
-  variant: "original" | "light";
-  preset?: string;
-  containerExt: string;
-  expectedSize?: number;
-  estimatedSize?: number;
-  kind: "movie" | "episode";
-  seriesId?: string;
-  seasonId?: string;
-  libraryId?: string;
-  runtimeTicks?: number;
-  title?: string;
-  seriesName?: string;
-  indexNumber?: number;
-  parentIndexNumber?: number;
-  autoDeleteAfterWatch: boolean;
-  /** Délai d'auto-suppression après visionnage (minutes, 0 = immédiat). */
-  autoDeleteDelayMinutes?: number;
-  audioStreamIndex?: number;
-  burnSubtitleIndex?: number;
-  subtitles?: SubtitleSideCarInput[];
-}
-
-export interface EnqueueOutcome {
-  accepted: boolean;
-  neededBytes: number;
-  freeBytes: number;
-  fileIds: number[];
-}
+// Les types du moteur viennent du cœur hors ligne : une seule déclaration,
+// commune au bureau, au web et au mobile.
+export type {
+  DownloadStatus,
+  DownloadVariant,
+  EnqueueItemInput,
+  EnqueueOutcome,
+  SubtitleSideCarInput,
+} from "@tentacle-tv/offline-core";
+export type {
+  DeleteOutcome,
+  DownloadListEntry as DownloadEntry,
+  ProgressPayload as DownloadProgressEvent,
+} from "@tentacle-tv/offline-core";
+import type {
+  DeleteOutcome,
+  DownloadListEntry as DownloadEntry,
+  EnqueueItemInput,
+  EnqueueOutcome,
+  ProgressPayload as DownloadProgressEvent,
+} from "@tentacle-tv/offline-core";
 
 /** Démarre/rafraîchit le moteur (credentials en mémoire côté Rust, jamais persistés). */
 export async function engineStart(serverUrl: string, token: string): Promise<void> {
@@ -214,11 +159,6 @@ export async function cancelDownload(fileId: number): Promise<void> {
   try {
     await invoke("downloads_cancel", { fileId });
   } catch { /* no-op */ }
-}
-
-export interface DeleteOutcome {
-  fileDeleted: boolean;
-  metaDeleted: boolean;
 }
 
 export async function deleteDownload(userId: string, fileId: number): Promise<DeleteOutcome | null> {
@@ -273,12 +213,6 @@ export async function purgeDueDownloads(itemId?: string): Promise<number> {
   } catch {
     return 0;
   }
-}
-
-export interface DownloadProgressEvent {
-  fileId: number;
-  bytesDone: number;
-  expectedSize: number | null;
 }
 
 /** Abonnement aux changements d'état (invalider les listes). */

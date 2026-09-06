@@ -5,10 +5,10 @@
  */
 
 import { useMemo } from "react";
-import { findAdjacentLocalEpisodes, type LocalEpisodeNavigation } from "./localEpisodeNav";
+import { findAdjacentLocalEpisodes, type LocalEpisodeNavigation } from "@tentacle-tv/offline-core";
 import { useDownloadsList } from "./useDownloadState";
 
-export type { LocalEpisodeNavigation } from "./localEpisodeNav";
+export type { LocalEpisodeNavigation } from "@tentacle-tv/offline-core";
 
 const NONE: LocalEpisodeNavigation = { previousEpisode: null, nextEpisode: null };
 

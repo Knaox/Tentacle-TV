@@ -6,7 +6,7 @@
  */
 
 import { useTranslation } from "react-i18next";
-import { seasonLabel, type OfflineSeasonGroup } from "./offlineGroups";
+import { seasonLabel, type OfflineSeasonGroup } from "@tentacle-tv/offline-core";
 
 interface SeasonPickerProps {
   seasons: OfflineSeasonGroup[];
