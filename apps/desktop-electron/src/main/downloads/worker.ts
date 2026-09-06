@@ -10,7 +10,7 @@
  * Portage de `run_worker` (`apps/desktop/src-tauri/src/downloads/engine.rs`).
  */
 
-import type { DatabaseHandle, Volume } from "./adapters";
+import type { Clock, DatabaseHandle, TransferDriver, Volume } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { getSpec, snapshotExists } from "./meta";
 import { safeJoin } from "./paths";
@@ -18,7 +18,6 @@ import { snapshot } from "./snapshot";
 import type { FileRow } from "./store";
 import { parseSpecs, fetchAll } from "./subs";
 import { run, type TransferEnd, type TransferFlags, type TransferJob } from "./transfer";
-import type { TransferNet } from "./transferNet";
 
 export interface Creds {
   serverUrl: string;
@@ -28,9 +27,10 @@ export interface Creds {
 export interface WorkerDeps {
   db: DatabaseHandle;
   volume: Volume;
-  net: TransferNet;
+  driver: TransferDriver;
   fetchBytes: FetchBytes;
   onProgress: (fileId: number, bytes: number) => void;
+  now: Clock;
 }
 
 /** URL de téléchargement du média, selon la variante. */
@@ -99,6 +99,9 @@ export async function runWorker(
     variant: file.variant,
     expectedSize: file.expectedSize,
     serverUrl: creds.serverUrl,
+    // Le bureau lit la session dans les en-têtes de réponse ; le client n'en
+    // choisit pas encore.
+    transcodeSession: null,
   };
-  return await run(deps.net, job, flags, (bytes) => deps.onProgress(file.id, bytes));
+  return await run(deps.driver, deps.volume, job, flags, (bytes) => deps.onProgress(file.id, bytes), deps.now);
 }
