@@ -26,6 +26,8 @@ interface Props {
   mediaSourceId?: string;
   /** Planches gardées sur l'appareil (lecture locale). */
   localTrickplay?: LocalTrickplay | null;
+  /** Lecture locale : jamais de planche demandée au serveur. */
+  trickplayLocalOnly?: boolean;
 }
 
 function formatTime(s: number): string {
@@ -39,7 +41,7 @@ function formatTime(s: number): string {
 
 export function PlayerSeekBar({
   currentTime, duration, bufferedTime, onSeek, onSeeking, onScrubStateChange,
-  item, mediaSourceId, localTrickplay,
+  item, mediaSourceId, localTrickplay, trickplayLocalOnly,
 }: Props) {
   const { width: winW, height: winH } = useWindowDimensions();
   const isTablet = Math.min(winW, winH) >= TABLET_MIN_WIDTH;
@@ -50,7 +52,7 @@ export function PlayerSeekBar({
   const barWidth = useRef(winW - 32);
   const dragProgressRef = useRef(0);
 
-  const trickplay = useTrickplay(item, mediaSourceId, localTrickplay);
+  const trickplay = useTrickplay(item, mediaSourceId, localTrickplay, { localOnly: trickplayLocalOnly });
 
   const pctToTime = useCallback((pct: number) => {
     return Math.max(0, Math.min(duration, pct * duration));

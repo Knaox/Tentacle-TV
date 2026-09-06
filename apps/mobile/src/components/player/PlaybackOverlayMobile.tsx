@@ -27,6 +27,8 @@ interface Props {
   nextArtwork?: NextEpisodeArtwork | null;
   /** Lecture locale : pas de notation (elle parle au serveur). */
   ratingEnabled?: boolean;
+  /** Lecture locale : sans visuel sur l'appareil, un aplat — jamais le serveur. */
+  artworkLocalOnly?: boolean;
 }
 
 /**
@@ -46,7 +48,7 @@ interface Props {
  */
 export function PlaybackOverlayMobile({
   overlay, countdownTotals, nextEpisode, currentItem, controlsVisible,
-  onSkip, onDismiss, onPlayNow, onRatingEngage, bottom, right, nextArtwork, ratingEnabled = true,
+  onSkip, onDismiss, onPlayNow, onRatingEngage, bottom, right, nextArtwork, ratingEnabled = true, artworkLocalOnly = false,
 }: Props) {
   const { t } = useTranslation("player");
   // AVANT les retours anticipés (règle des hooks) : la notation de l'épisode
@@ -103,12 +105,14 @@ export function PlaybackOverlayMobile({
           onPlay={onPlayNow}
           onDismiss={onDismiss}
           thumbUri={nextArtwork?.thumbUri}
+          artworkLocalOnly={artworkLocalOnly}
         />
       );
     }
     return (
       <NextEpisodeFullscreenMobile
         artwork={nextArtwork}
+        artworkLocalOnly={artworkLocalOnly}
         nextEpisode={nextEpisode}
         countdownSeconds={overlay.countdownSeconds}
         countdownTotalMs={countdownTotals.nextMs}

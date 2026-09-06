@@ -21,6 +21,8 @@ interface Props {
   onDismiss: () => void;
   /** Lecture locale : la vignette du suivant, lue sur l'appareil. */
   thumbUri?: string | null;
+  /** Lecture locale : sans vignette sur l'appareil, l'aplat — jamais le serveur. */
+  artworkLocalOnly?: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ interface Props {
  * Elle remonte quand l'habillage du lecteur est à l'écran, comme sur le web.
  */
 export function UpNextCardMobile({
-  nextEpisode, countdownSeconds, countdownTotalMs, controlsVisible, onPlay, onDismiss, thumbUri }: Props) {
+  nextEpisode, countdownSeconds, countdownTotalMs, controlsVisible, onPlay, onDismiss, thumbUri, artworkLocalOnly = false }: Props) {
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
   const insets = useSafeAreaInsets();
@@ -63,7 +65,7 @@ export function UpNextCardMobile({
 
   const armed = useArmedCountdown(countdownSeconds, countdownTotalMs);
 
-  const thumbUrl = thumbUri ?? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
+  const thumbUrl = thumbUri ?? (artworkLocalOnly ? null : client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 }));
   const isEpisode = nextEpisode.Type === "Episode";
   const episodeLabel = isEpisode && nextEpisode.ParentIndexNumber != null && nextEpisode.IndexNumber != null
     ? `S${String(nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(nextEpisode.IndexNumber).padStart(2, "0")}`
@@ -90,7 +92,7 @@ export function UpNextCardMobile({
     >
       <View style={st.card}>
         <View style={st.thumbWrap}>
-          <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+          {thumbUrl !== null && <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />}
           {/* La vignette fond dans la surface de la carte, comme sur le web. */}
           <LinearGradient
             colors={["rgba(0,0,0,0)", "rgba(15,15,21,0.55)", "rgba(15,15,21,0.96)"]}
