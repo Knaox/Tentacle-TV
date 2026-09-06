@@ -23,8 +23,12 @@ import { integer, integerOrNull, text, textOrNull } from "./rows";
  *     bibliothèque ne peut pas s'appliquer hors ligne — le média téléchargé
  *     ne sait plus d'où il vient. Un fichier v3 reste lisible et vaut `null`
  *     (le seuil global s'applique alors) ; la réparation le rephotographie.
+ * 5 = `series.json` et `season.json` enrichis (genres, casting, studios,
+ *     accroches) : la fiche locale de série les lit. Un snapshot v4 reste
+ *     lisible (la fiche se replie sur le DTO d'un épisode) ; la réparation le
+ *     rephotographie au prochain démarrage en ligne.
  */
-export const CURRENT_META_VERSION = 4;
+export const CURRENT_META_VERSION = 5;
 
 export interface MetaSpec {
   itemId: string;

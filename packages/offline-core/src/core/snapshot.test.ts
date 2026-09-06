@@ -84,6 +84,10 @@ describe("snapshot", () => {
     expect(snapshotExists(nodeVolume(root), "ep1")).toBe(true);
     expect(existsSync(path.join(root, "meta", "ep1", "series.json"))).toBe(true);
     expect(existsSync(path.join(root, "meta", "ep1", "season.json"))).toBe(true);
+    // La serie et la saison sont demandees AVEC leurs champs : la fiche locale
+    // de serie lit genres et casting dans series.json.
+    expect(views.some((u) => u.includes("/Items/serie1?fields=Overview,Genres,People"))).toBe(true);
+    expect(views.some((u) => u.includes("/Items/saison1?fields=Overview,Genres,People"))).toBe(true);
     // Le DTO fait autorite sur les numeros.
     const spec = getSpec(db, "ep1");
     expect(spec?.indexNumber).toBe(4);
