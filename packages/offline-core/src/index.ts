@@ -55,3 +55,5 @@ export * from "./connectivity/connectivityMachine";
 export * from "./playback/localSegments";
 export * from "./sync/capabilities";
 export * from "./sync/reportBody";
+export * from "./variants/platformSupport";
+export * from "./variants/offlineVariants";

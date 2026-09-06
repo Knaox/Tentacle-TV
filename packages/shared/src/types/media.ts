@@ -138,6 +138,12 @@ export interface MediaStream {
   /** Profil Dolby Vision (5, 7, 8…) — sert à router : P7 double couche = mur tvOS. */
   DvProfile?: number;
   DvBlSignalCompatibilityId?: number;
+  /** Entrelacé : un lecteur qui ne désentrelace pas (AVPlayer) le rend saccadé. */
+  IsInterlaced?: boolean;
+  /** Profondeur de couleur (8, 10…). */
+  BitDepth?: number;
+  /** Profil du codec (« Main 10 », « High »…). */
+  Profile?: string;
 }
 
 export interface UserItemData {
