@@ -6,10 +6,12 @@ import { useLocalPlayerPlayback } from "../hooks/offline/useLocalPlayerPlayback"
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
+import { classifyLocalPlaybackFailure } from "@tentacle-tv/offline-core";
 import { LocalPlaybackBadge } from "../components/player/LocalPlaybackBadge";
+import { MediaMissingView } from "../components/player/MediaMissingView";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
 import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
-import type { OfflineLocalSource } from "../offline/engineApi";
+import { localExists, type OfflineLocalSource } from "../offline/engineApi";
 
 interface Props {
   itemId: string;
@@ -26,7 +28,6 @@ interface Props {
  */
 export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props) {
   const { t } = useTranslation("player");
-  const { t: to } = useTranslation("offline");
   const videoRef = useRef<VideoRef>(null);
 
   const pb = useLocalPlayerPlayback(itemId, localSource);
@@ -104,8 +105,14 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
-  if (pb.mediaMissing) {
-    return <PlayerErrorView message={`${to("fileMissingTitle")} — ${to("fileMissingHint")}`} onRetry={onMediaMissing} onBack={leavePlayer} />;
+  // Échec classé : le fichier a disparu (« Fichier introuvable », relance par la
+  // route — flux serveur s'il répond) ou le lecteur a calé (relance locale).
+  if (pb.mediaMissing || playerError) {
+    const failure = classifyLocalPlaybackFailure({
+      isLocalPlayback: true,
+      localFilePresent: pb.mediaMissing ? false : localExists(localSource.fileUri),
+    });
+    if (failure.kind === "media") return <MediaMissingView onRetry={onMediaMissing} onBack={leavePlayer} />;
   }
   if (playerError) {
     return (
