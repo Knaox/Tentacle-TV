@@ -89,6 +89,16 @@ export function applyProbeResult(
   return { next: { ...state, streak }, flipped: false, wantConfirm: true };
 }
 
+/**
+ * Le téléphone n'a plus AUCUN réseau : inutile d'attendre deux sondes qui
+ * échoueront. Bascule immédiate vers `reachable = false` (déjà hors ligne :
+ * rien) ; le RETOUR garde sa confirmation et son temps de séjour.
+ */
+export function applyLinkLost(state: HysteresisState, now: number): ProbeOutcome {
+  if (state.reachable === false) return { next: state, flipped: false, wantConfirm: false };
+  return { next: { reachable: false, streak: 0, lastFlipAt: now }, flipped: true, wantConfirm: false };
+}
+
 /** Dérive l'état affiché : le mode manuel gagne toujours. */
 export function deriveState(manual: boolean, reachable: boolean | null): ConnectivityState {
   if (manual) return "offline-manual";
