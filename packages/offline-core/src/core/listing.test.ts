@@ -62,6 +62,25 @@ describe("listes", () => {
     expect(stateForItem(db, "u", "item1")?.played).toBe(true);
   });
 
+  it("portent la date d'ajout du fichier, en millisecondes", () => {
+    const db = openInMemory();
+    claimOrCreateFile(db, spec({ nowMs: 1_700_000_000_000 }));
+
+    expect(listForUser(db, "u")[0]?.createdAt).toBe(1_700_000_000_000);
+  });
+
+  // L'ordre de « Reprendre » : le titre repris en dernier d'abord — et sans
+  // lecture, aucune date plutôt qu'une date inventée.
+  it("portent la date de la derniere lecture, nulle sans lecture", () => {
+    const db = openInMemory();
+    unClaim(db);
+    expect(listForUser(db, "u")[0]?.lastPlayedAt).toBeNull();
+
+    markWatched(db, "u", "item1");
+    expect(listForUser(db, "u")[0]?.lastPlayedAt).toBe(1);
+    expect(stateForItem(db, "u", "item1")?.lastPlayedAt).toBe(1);
+  });
+
   it("rendent une progression NEUTRE pour un item jamais ouvert", () => {
     // Jointure externe : sans ligne de progression, SQLite rend NULL — et une
     // lecture stricte y leverait au lieu de rendre « pas encore vu ».
