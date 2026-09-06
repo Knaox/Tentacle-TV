@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { setDataSaverActive, useTentacleConfig } from "@tentacle-tv/api-client";
+import { useStorageReady } from "@/providers/StorageReadyContext";
 import { configureDataSaver, resolveDataSaver } from "./dataSaverStore";
 import { useConnectivity } from "./useConnectivity";
 import { useDataSaverSetting } from "./useDataSaver";
@@ -13,10 +14,13 @@ export function DataSaverBinding() {
   const { storage } = useTentacleConfig();
   const { linkQuality, networkType } = useConnectivity();
   const { setting } = useDataSaverSetting();
+  const storageReady = useStorageReady();
 
+  // Après l'hydratation seulement (voir StorageReadyContext).
   useEffect(() => {
+    if (!storageReady) return;
     configureDataSaver(storage);
-  }, [storage]);
+  }, [storage, storageReady]);
 
   useEffect(() => {
     setDataSaverActive(resolveDataSaver(setting, linkQuality === "slow", networkType === "cellular"));

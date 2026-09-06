@@ -43,6 +43,7 @@ import type { StorageAdapter, UuidGenerator } from "@tentacle-tv/api-client";
 import { ThemeProvider } from "@/theme";
 import { PushRegistrationSync } from "@/hooks/usePushRegistration";
 import { TranscodeCleanupSync } from "@/providers/TranscodeCleanupSync";
+import { StorageReadyContext } from "./StorageReadyContext";
 
 /** AbortSignal.timeout() polyfill for React Native */
 function timeoutSignal(ms: number): AbortSignal {
@@ -268,12 +269,14 @@ export function AppProviders({ storage, uuid, serverUrl, storageReady, children 
     <QueryClientProvider client={queryClient}>
       <ThemeProvider backendUrl={serverUrl} storage={storage}>
         <TentacleConfigContext.Provider value={configValue}>
+          <StorageReadyContext.Provider value={storageReady}>
           <JellyfinClientContext.Provider value={client}>
             <DirectStreamingSync storage={storage} />
             <PushRegistrationSync storage={storage} serverUrl={serverUrl} />
             <TranscodeCleanupSync serverUrl={serverUrl} />
             {children}
           </JellyfinClientContext.Provider>
+          </StorageReadyContext.Provider>
         </TentacleConfigContext.Provider>
       </ThemeProvider>
     </QueryClientProvider>
