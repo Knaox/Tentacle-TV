@@ -9,6 +9,8 @@ import { useOfflineCapabilities } from "@/hooks/offline/useOfflineCapabilities";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { audioTracks, batchSizeBytes, imageSubtitleTracks, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
 import { useWifiOnly } from "../settings";
+import { useCellularAck } from "../deviceSettings";
+import { wifiBlocked } from "../transferGate";
 import { useConnectivity } from "../useConnectivity";
 import { AutoDeleteChips, type AutoDeleteValue } from "./AutoDeleteChips";
 import { ItemChecklist } from "./ItemChecklist";
@@ -40,6 +42,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const { data: disk } = useDiskInfo();
   const { networkType } = useConnectivity();
   const wifiOnly = useWifiOnly();
+  const cellularAck = useCellularAck();
 
   const userId = useUserId();
   const { data: entries } = useOfflineList(userId);
@@ -163,7 +166,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
           batch={items.length > 1}
           freeBytes={disk?.freeBytes ?? null}
           spaceError={spaceError}
-          wifiHint={wifiOnly && networkType === "cellular"}
+          wifiHint={wifiBlocked({ wifiOnly, networkType, cellularAck })}
           hints={hints}
         />
       </ScrollView>

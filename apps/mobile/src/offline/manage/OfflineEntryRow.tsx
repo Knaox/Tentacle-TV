@@ -6,6 +6,7 @@ import { useFileProgress } from "@tentacle-tv/offline-core/react";
 import { FONT_FAMILY, RADIUS, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { pauseTransfer, resumeTransfer, type OfflineEntry } from "../engineApi";
 import { formatBytes } from "../formatBytes";
+import type { TransferWait } from "../transferGate";
 import { OfflineLocalImage } from "../library/OfflineLocalImage";
 import { OfflineStatusBadge } from "./OfflineStatusBadge";
 
@@ -15,8 +16,8 @@ interface Props {
   entry: OfflineEntry;
   onPlay: (entry: OfflineEntry) => void;
   onMore: (entry: OfflineEntry) => void;
-  /** Le transfert attend le Wi-Fi. */
-  waitingWifi?: boolean;
+  /** Ce que la ligne attend (`transferWait`) : le Wi-Fi, le réseau, ou rien. */
+  wait?: TransferWait;
   /** Mode sélection : la ligne porte une case et bascule au toucher. */
   selection?: { selected: boolean; onToggle: (fileId: number) => void };
 }
@@ -40,7 +41,7 @@ export function entryTitle(entry: OfflineEntry): string {
  * barre de progression en direct (magasin de progression, hors TanStack),
  * action rapide selon l'état et « ⋯ » vers la feuille d'actions.
  */
-export function OfflineEntryRow({ entry, onPlay, onMore, waitingWifi, selection }: Props) {
+export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection }: Props) {
   const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { colors } = useTheme();
@@ -80,7 +81,7 @@ export function OfflineEntryRow({ entry, onPlay, onMore, waitingWifi, selection 
         <Text style={st.title} numberOfLines={2}>{entryTitle(entry)}</Text>
         <Text style={st.meta} numberOfLines={1}>{meta}</Text>
         <View style={st.badgeRow}>
-          <OfflineStatusBadge status={entry.status} errorCode={entry.errorCode} waitingWifi={waitingWifi} />
+          <OfflineStatusBadge status={entry.status} errorCode={entry.errorCode} wait={wait} />
         </View>
         {active && (
           <View style={st.progressRow}>

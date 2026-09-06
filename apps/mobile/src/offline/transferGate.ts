@@ -9,9 +9,12 @@
  * cellulaire aussi, et rien ne part sur un réseau pas encore identifié.
  */
 
+import { useMemo } from "react";
+import type { DownloadStatus } from "@tentacle-tv/offline-core";
 import { getConnectivitySnapshot, isOfflineMode, type NetworkType } from "./connectivityStore";
-import { isCellularAcked } from "./deviceSettings";
-import { isWifiOnly } from "./settings";
+import { isCellularAcked, useCellularAck } from "./deviceSettings";
+import { isWifiOnly, useWifiOnly } from "./settings";
+import { useConnectivity } from "./useConnectivity";
 
 export interface WifiGateContext {
   wifiOnly: boolean;
@@ -43,4 +46,36 @@ export function transfersAllowedNow(): boolean {
 /** La politique du moteur (`EngineDeps.canTransfer`) : réseau autorisé ET serveur tenu pour joignable. */
 export function canStartTransfers(): boolean {
   return transfersAllowedNow() && !isOfflineMode();
+}
+
+/** Pourquoi une entrée n'avance pas : le Wi-Fi, le réseau — ou rien de tel. */
+export type TransferWait = "wifi" | "network" | null;
+
+export interface TransferWaitContext extends WifiGateContext {
+  offline: boolean;
+}
+
+/**
+ * Ce qu'une ligne parquée attend. Parquée = en file, ou en pause SYSTÈME (une
+ * pause explicite n'attend rien : elle lit « En pause »). Un seul prédicat pour
+ * le badge, la carte d'attente et l'indice du dialogue.
+ */
+export function transferWait(
+  entry: { status: DownloadStatus; pausedByUser: boolean },
+  ctx: TransferWaitContext,
+): TransferWait {
+  const parked = entry.status === "queued" || (entry.status === "paused" && !entry.pausedByUser);
+  if (!parked) return null;
+  if (wifiBlocked(ctx)) return "wifi";
+  if (ctx.offline) return "network";
+  return null;
+}
+
+/** Le contexte vivant du prédicat, pour les écrans. */
+export function useTransferWaitContext(): TransferWaitContext {
+  const wifiOnly = useWifiOnly();
+  const cellularAck = useCellularAck();
+  const { networkType, state } = useConnectivity();
+  const offline = state === "offline-auto" || state === "offline-manual";
+  return useMemo(() => ({ wifiOnly, networkType, cellularAck, offline }), [wifiOnly, networkType, cellularAck, offline]);
 }

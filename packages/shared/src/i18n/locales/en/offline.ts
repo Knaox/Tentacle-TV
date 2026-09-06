@@ -15,6 +15,7 @@ export default {
   stateOnDevice: "On device",
   stateInProgress: "Preparing",
   stateWaitingWifi: "Waiting for Wi-Fi",
+  stateWaitingNetwork: "Waiting for the network",
   statusPreparing: "Preparing",
   statusReady: "Ready",
   variantOriginal: "Original quality",
