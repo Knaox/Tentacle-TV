@@ -32,6 +32,7 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     createdAt: 0,
     lastPlayedAt: null,
     pausedByUser: false,
+    libraryId: null,
     ...over,
   };
 }

@@ -27,6 +27,8 @@ export interface DownloadListEntry extends PublicFile {
   kind: DownloadKind | null;
   seriesId: string | null;
   seasonId: string | null;
+  /** La bibliothèque Jellyfin d'origine (Films, Séries, Animés…) : le filtre du catalogue local. */
+  libraryId: string | null;
   /** Numéros d'épisode et de saison : regroupement et tri du catalogue local. */
   indexNumber: number | null;
   parentIndexNumber: number | null;
@@ -63,7 +65,7 @@ export interface DownloadListEntry extends PublicFile {
 }
 
 const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id,
-   item_meta.season_id, item_meta.index_number, item_meta.parent_index_number,
+   item_meta.season_id, item_meta.library_id, item_meta.index_number, item_meta.parent_index_number,
    item_meta.runtime_ticks, claims.auto_delete_after_watch,
    claims.auto_delete_delay_minutes, claims.delete_scheduled_at,
    playback_state.played, playback_state.position_ticks,
@@ -85,6 +87,7 @@ function mapEntry(row: Row): DownloadListEntry {
     kind: kindOf(row),
     seriesId: textOrNull(row, "series_id"),
     seasonId: textOrNull(row, "season_id"),
+    libraryId: textOrNull(row, "library_id"),
     indexNumber: integerOrNull(row, "index_number"),
     parentIndexNumber: integerOrNull(row, "parent_index_number"),
     runtimeTicks: integerOrNull(row, "runtime_ticks"),
