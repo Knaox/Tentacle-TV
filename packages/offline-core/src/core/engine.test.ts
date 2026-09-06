@@ -15,7 +15,9 @@ import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
-import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed } from "./testkit";
+import path from "node:path";
+import { claimOrCreateFile } from "./store";
+import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed, spec } from "./testkit";
 
 describe("parallelisme", () => {
   it("n'ouvre jamais plus de deux transferts a la fois", async () => {
@@ -53,6 +55,44 @@ describe("traduction des fins de transfert", () => {
     expect(getFile(db, first)?.status).toBe("complete");
     expect(getFile(db, second)?.status).toBe("complete");
     expect(events).toContain("downloads://changed");
+  });
+
+  // Le mode Allégé est un MP4 fragmenté : la plateforme le finalise (remux
+  // indexé) avant « complete » ; un original n'est jamais touché.
+  it("un fichier Allege est finalise par la plateforme avant complete, jamais un original", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath: "media/item1/light-ms1-p480.mp4", expectedSize: null,
+    })).fileId;
+    const original = seed(db, "item2", 2_000);
+    const finalized: string[] = [];
+    const { engine } = makeEngine(db, root, immediateNet(200), {
+      finalizeMedia: async (absPath) => { finalized.push(absPath); },
+    });
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(finalized).toEqual([path.join(root, "media", "item1", "light-ms1-p480.mp4")]);
+    expect(getFile(db, light)?.status).toBe("complete");
+    expect(getFile(db, original)?.status).toBe("complete");
+  });
+
+  it("une finalisation qui echoue laisse le fichier Allege en erreur, pas en complete", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath: "media/item1/light-ms1-p480.mp4", expectedSize: null,
+    })).fileId;
+    const { engine } = makeEngine(db, root, immediateNet(200), {
+      finalizeMedia: async () => { throw new Error("remux impossible"); },
+    });
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+
+    expect(getFile(db, light)?.status).toBe("error");
   });
 
   it("une coupure reseau devient une pause SYSTEME, pas une erreur", async () => {

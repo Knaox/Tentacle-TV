@@ -29,7 +29,7 @@ import {
   setStatus,
   suspendQueued,
 } from "./queue";
-import { removeMediaFile } from "./paths";
+import { removeMediaFile, safeJoin } from "./paths";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
 
@@ -59,6 +59,14 @@ export interface EngineDeps {
    * `resumeSystemPauses` relèvera. Absente (bureau) : toujours oui.
    */
   canTransfer?: () => boolean;
+  /**
+   * Finalise un fichier ALLÉGÉ avant `complete`. Le transcodage progressif de
+   * Jellyfin est un MP4 fragmenté (sans index ni durée) : mpv s'en accommode,
+   * les lecteurs natifs du mobile non — la plateforme le remuxe en MP4 indexé,
+   * sur place. Rejet = erreur d'entrée-sortie (mieux qu'un titre « prêt »
+   * illisible). Absente (bureau) : rien à faire.
+   */
+  finalizeMedia?: (absPath: string, file: { variant: string; relPath: string }) => Promise<void>;
 }
 
 export class DownloadEngine {
@@ -181,8 +189,23 @@ export class DownloadEngine {
         // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
         end = { kind: "failed", code: "io", bytesDone: file.bytesDone };
       }
+      if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
+        end = await this.finalize(file, end.finalSize);
+      }
     }
     this.finish(fileId, end);
+  }
+
+  /** Voir `EngineDeps.finalizeMedia` : la taille finale est relue après le remux. */
+  private async finalize(file: { variant: string; relPath: string; bytesDone: number }, finalSize: number): Promise<TransferEnd> {
+    const volume = this.deps.volume();
+    try {
+      const target = safeJoin(volume, file.relPath);
+      await this.deps.finalizeMedia!(target, file);
+      return { kind: "complete", finalSize: volume.files.size(target) ?? finalSize };
+    } catch {
+      return { kind: "failed", code: "io", bytesDone: file.bytesDone };
+    }
   }
 
   private progress(fileId: number, bytes: number, expectedSize: number | null): void {
