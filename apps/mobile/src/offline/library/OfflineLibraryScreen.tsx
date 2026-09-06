@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import { SubtleBackground } from "@/components/ui";
 import { SegmentedChoice } from "@/components/settings/SegmentedChoice";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { spacing, typography, FONT_FAMILY, RADIUS, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
+import { OfflineHomeHero } from "./OfflineHomeHero";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
 import { useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
@@ -35,7 +36,7 @@ export function OfflineLibraryScreen() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
   const [selected, setSelected] = useState<OfflineEntry | null>(null);
-  const { movies, series, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, hero, hasContent, ready } = useOfflineCatalog(search, filter);
 
   const filterOptions = useMemo(
     () => [
@@ -47,10 +48,11 @@ export function OfflineLibraryScreen() {
   );
   const noResult = ready && hasContent && movies.length === 0 && series.length === 0;
 
-  const play = (entry: OfflineEntry) => {
+  const play = useCallback((entry: OfflineEntry) => {
     setSelected(null);
     router.push(`/watch/${entry.itemId}` as never);
-  };
+  }, [router]);
+  const info = useCallback((entry: OfflineEntry) => setSelected(entry), []);
   const openSeries = (group: OfflineSeriesGroup) =>
     router.push(`/on-device/series/${encodeURIComponent(group.key)}` as never);
 
@@ -63,6 +65,13 @@ export function OfflineLibraryScreen() {
         keyboardDismissMode="on-drag"
       >
         <Text style={st.title} accessibilityRole="header">{t("offline:tabOnDevice")}</Text>
+
+        {hasContent && hero.length > 0 ? (
+          // La carte du bandeau porte ses propres gouttières : on annule celles du contenu.
+          <View style={{ marginHorizontal: -padding, marginTop: spacing.md }}>
+            <OfflineHomeHero entries={hero} onPlay={play} onInfo={info} />
+          </View>
+        ) : null}
 
         {ready && !hasContent ? (
           <View style={st.empty}>
