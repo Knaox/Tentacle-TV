@@ -10,6 +10,7 @@ import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { listForUser, setAutoDelete, stateForItem } from "./listing";
+import { setPausedByUser, setStatus } from "./queue";
 import { claimOrCreateFile } from "./store";
 import { markWatched, spec } from "./testkit";
 
@@ -79,6 +80,19 @@ describe("listes", () => {
     markWatched(db, "u", "item1");
     expect(listForUser(db, "u")[0]?.lastPlayedAt).toBe(1);
     expect(stateForItem(db, "u", "item1")?.lastPlayedAt).toBe(1);
+  });
+
+  // « En pause » (l'utilisateur) et « En attente du Wi-Fi » (le système) ne
+  // se libellent pas pareil : la liste doit dire laquelle des deux c'est.
+  it("distinguent une pause explicite d'une pause systeme", () => {
+    const db = openInMemory();
+    const fileId = unClaim(db);
+    setStatus(db, fileId, "paused", null, 2_000);
+    expect(listForUser(db, "u")[0]?.pausedByUser).toBe(false);
+
+    setPausedByUser(db, fileId, true);
+    expect(listForUser(db, "u")[0]?.pausedByUser).toBe(true);
+    expect(stateForItem(db, "u", "item1")?.pausedByUser).toBe(true);
   });
 
   it("rendent une progression NEUTRE pour un item jamais ouvert", () => {
