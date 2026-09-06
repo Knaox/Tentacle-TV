@@ -5,9 +5,13 @@ import type {
   CodecProfile,
   SubtitleProfile,
 } from "@tentacle-tv/shared";
+import { ANDROID_LOCAL_SUPPORT, supportList } from "@tentacle-tv/offline-core";
 
 /**
  * DeviceProfile pour Android ExoPlayer (react-native-video).
+ *
+ * Les chaînes DirectPlay viennent de `ANDROID_LOCAL_SUPPORT` : la même source
+ * dit ce qui se lit en direct en ligne et ce qui peut être gardé hors ligne.
  *
  * ExoPlayer supporte nativement :
  * - Vidéo : H.264 (AVC), HEVC (H.265), VP9
@@ -24,10 +28,10 @@ import type {
 export function buildAndroidDeviceProfile(maxBitrate?: number): DeviceProfile {
   const directPlayProfiles: DirectPlayProfile[] = [
     {
-      Container: "mp4,m4v,mkv,webm",
+      Container: supportList(ANDROID_LOCAL_SUPPORT.containers),
       Type: "Video",
-      VideoCodec: "h264,hevc,vp9",
-      AudioCodec: "aac,mp3,flac,opus,vorbis,ac3,eac3",
+      VideoCodec: supportList(ANDROID_LOCAL_SUPPORT.videoCodecs),
+      AudioCodec: supportList(ANDROID_LOCAL_SUPPORT.audioCodecs),
     },
     // Audio-only
     { Container: "mp3", Type: "Audio" },

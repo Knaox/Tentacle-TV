@@ -180,6 +180,9 @@ importers:
       '@tentacle-tv/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@tentacle-tv/offline-core':
+        specifier: workspace:*
+        version: link:../../packages/offline-core
       '@tentacle-tv/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -8364,7 +8367,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.29.0
       '@babel/helper-module-imports': 7.28.6
-      '@babel/helper-validator-identifier': 7.28.5
+      '@babel/helper-validator-identifier': 7.29.7
       '@babel/traverse': 7.29.0
     transitivePeerDependencies:
       - supports-color
@@ -11188,9 +11191,7 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.80.1': {}
