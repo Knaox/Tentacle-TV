@@ -29,7 +29,8 @@ const CREDS_RECHECK_MS = 3_000;
  * - Chaque passage en ligne et chaque changement de compte relancent le
  *   moteur (`start` re-normalise la file, répare, purge), repoussent la photo
  *   de session et vident la file de resynchronisation — le moteur d'abord,
- *   avant toute autre requête du retour en ligne.
+ *   avant toute autre requête du retour en ligne. Hors ligne, le moteur
+ *   démarre aussi (normalisation, purge), sans rien lancer ni réparer.
  * - Un RETOUR en ligne (pas le premier démarrage) déclenche, après la
  *   resynchronisation, la cascade de rafraîchissement de l'accueil.
  * - Le jeton rafraîchi (401, premier plan) est poussé au moteur sans
@@ -78,6 +79,17 @@ export function OfflineRuntimeSync() {
     // doit pas relancer une normalisation complète.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online, serverUrl, userId]);
+
+  // Démarrage hors ligne : le moteur se normalise quand même (transferts
+  // interrompus et pauses système remis d'aplomb) et la purge tourne — la
+  // politique refuse tout lancement ; le retour en ligne relancera (`start`
+  // est réentrant). Sans lui, une ligne figée en « En préparation » le
+  // restait toute la session, et rien ne purgeait les échéances.
+  useEffect(() => {
+    if (online || state === "checking" || !serverUrl || !token || !userId) return;
+    if (offlineCreds() !== null) return;
+    startOfflineRuntime({ serverUrl, token });
+  }, [online, state, serverUrl, token, userId]);
 
   // Jeton rafraîchi : les transferts suivants l'utilisent.
   useEffect(() => {
