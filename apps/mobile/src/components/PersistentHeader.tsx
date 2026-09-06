@@ -7,6 +7,8 @@ import { NotificationBell } from "./NotificationBell";
 import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
+import { ConnectivityPill } from "@/offline/ConnectivityPill";
+import { useConnectivity } from "@/offline/useConnectivity";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
 /** Hauteur de la barre de contenu du header (hors safe-area). */
@@ -39,6 +41,9 @@ export function PersistentHeader() {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
+  // Hors ligne, la pastille prend la place du titre — le logo reste.
+  const { state } = useConnectivity();
+  const offline = state === "offline-auto" || state === "offline-manual";
 
   // Compaction au défilement : la barre remonte de huit points, et c'est tout —
   // le logo, le titre et les actions restent visibles (demandé : l'identité ne
@@ -65,7 +70,11 @@ export function PersistentHeader() {
       <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 4 }]}>
         <View style={styles.logoRow}>
           <TentacleLogo size={28} />
-          <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
+          {offline ? (
+            <ConnectivityPill variant="header" />
+          ) : (
+            <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
+          )}
         </View>
 
         <View style={styles.actions}>
