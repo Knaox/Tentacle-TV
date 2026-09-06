@@ -81,6 +81,7 @@ export default {
   libraryEmptyMessage:
     "Aucun titre lisible sur cet appareil pour ce compte. Le catalogue complet reviendra dès que le serveur répondra.",
   searchPlaceholder: "Rechercher sur cet appareil",
+  noResults: "Aucun titre ne correspond sur cet appareil.",
   episodesOnDeviceHint: "Sur l'appareil",
   seasonGone: "Cette saison n'est plus sur l'appareil.",
   seriesGone: "Cette série n'est plus sur l'appareil.",

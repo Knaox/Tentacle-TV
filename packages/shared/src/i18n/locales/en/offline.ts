@@ -75,6 +75,7 @@ export default {
   libraryEmptyMessage:
     "No playable title on this device for this account. The full catalog comes back as soon as the server responds.",
   searchPlaceholder: "Search on this device",
+  noResults: "No title on this device matches.",
   episodesOnDeviceHint: "On device",
   seasonGone: "This season is no longer on the device.",
   seriesGone: "This series is no longer on the device.",
