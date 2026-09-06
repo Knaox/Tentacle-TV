@@ -38,6 +38,11 @@ export interface PlaybackOverlayInput {
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;
   /**
+   * Resynchroniser les réglages de lecture au montage ? `false` pour une
+   * lecture LOCALE : ils se lisent dans le cache, rien ne part sur le réseau.
+   */
+  remoteSettingsSync?: boolean;
+  /**
    * Les contrôles du lecteur sont-ils à l'écran ? Seule chose qui rende encore
    * un passage MIS EN SOURDINE. Absent = pas d'OSD connu : la sourdine masque
    * alors complètement.

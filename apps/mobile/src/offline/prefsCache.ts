@@ -6,6 +6,7 @@
  * après avoir poussé les modifications faites hors ligne.
  */
 
+import { initPlaybackSettingsStore, type StorageAdapter } from "@tentacle-tv/api-client";
 import {
   cacheItemTracks,
   cacheLibrariesList,
@@ -91,8 +92,16 @@ export async function flushPendingPrefs(serverUrl: string, token: string, userId
  * liste des bibliothèques (page des langues hors ligne), langues retenues par
  * contenu, seuil « vu ». Chaque photo est best-effort et garde la précédente.
  */
-export async function refreshOfflineCaches(serverUrl: string, token: string, userId: string): Promise<void> {
+export async function refreshOfflineCaches(
+  serverUrl: string,
+  token: string,
+  userId: string,
+  storage: StorageAdapter,
+): Promise<void> {
   await flushPendingPrefs(serverUrl, token, userId);
+  // Les réglages de lecture (saut d'intro automatique, décomptes…) : le
+  // lecteur local les lit dans ce cache, sans jamais les redemander.
+  await initPlaybackSettingsStore(storage).resync().catch(() => undefined);
   const bearer = { Authorization: `Bearer ${token}` };
   const emby = { "X-Emby-Token": token };
   const [prefs, views, items, autoplay] = await Promise.all([

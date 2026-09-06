@@ -73,7 +73,7 @@ export function OfflineRuntimeSync() {
     wasOfflineRef.current = false;
     void drainReportQueue(serverUrl, token, userId).then(() => {
       if (returning) runOnlineCascade(queryClient);
-      return refreshOfflineCaches(serverUrl, token, userId);
+      return refreshOfflineCaches(serverUrl, token, userId, storage);
     });
     // Le jeton est suivi à part (voir ci-dessous) : un rafraîchissement ne
     // doit pas relancer une normalisation complète.

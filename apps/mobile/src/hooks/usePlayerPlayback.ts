@@ -68,6 +68,8 @@ export interface PlayerSessionCore {
   headers: Record<string, string>;
   /** À la sortie, jouer le rangement partagé (Ma liste, hubs) ? Hors ligne, non. */
   invalidateOnStop: () => boolean;
+  /** Lecture d'un fichier de l'appareil : rien ne doit partir sur le réseau pendant. */
+  localSession: boolean;
 }
 
 export function usePlayerPlayback(itemId: string) {
@@ -310,5 +312,6 @@ export function usePlayerPlayback(itemId: string) {
     fetchPlaybackInfo, changeAudio, changeSubtitle, changeQuality, retry,
     // Flux serveur : le rangement de sortie partagé s'applique toujours.
     invalidateOnStop: () => true,
+    localSession: false,
   };
 }
