@@ -53,9 +53,7 @@ export function KeepOfflineActionCell({ item, onClose }: Props) {
   if (isSeries ? !canKeep && !seriesActive : !entry.visible) return null;
 
   const state = isSeries ? (seriesActive ? "active" : "idle") : entry.state;
-  const label = isSeries
-    ? (seriesActive ? t("stateInProgress") : t("keepSeriesOffline"))
-    : state === "idle" && item.Type === "Episode" ? t("keepEpisodeOffline") : entry.label;
+  const label = isSeries ? (seriesActive ? t("stateInProgress") : t("keepSeriesOffline")) : entry.label;
 
   const onPress = (): void => {
     if (state !== "idle") {
