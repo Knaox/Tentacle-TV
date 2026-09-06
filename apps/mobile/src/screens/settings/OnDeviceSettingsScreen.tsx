@@ -8,7 +8,7 @@ import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { removeOfflineEntry } from "@/offline/engineApi";
 import { setNotifyReady, useNotifyReady } from "@/offline/deviceSettings";
 import { OfflineSpaceBar } from "@/offline/manage/OfflineSpaceBar";
-import { setWifiOnly, useWifiOnly } from "@/offline/settings";
+import { setBackgroundTransfers, setWifiOnly, useBackgroundTransfers, useWifiOnly } from "@/offline/settings";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
 import { spacing } from "@/theme";
@@ -16,7 +16,8 @@ import { spacing } from "@/theme";
 /**
  * Réglages « Sur cet appareil » : l'espace (jauge — les titres vivent dans
  * l'espace de l'application, aucun dossier à choisir), les transferts
- * (Wi-Fi seulement, notification « prêt »), les titres (gérer, tout retirer).
+ * (Wi-Fi seulement, continuer en arrière-plan, notification « prêt »), les
+ * titres (gérer, tout retirer).
  */
 export function OnDeviceSettingsScreen() {
   const { t } = useTranslation("offline");
@@ -24,6 +25,7 @@ export function OnDeviceSettingsScreen() {
   const router = useRouter();
   const userId = useUserId();
   const wifiOnly = useWifiOnly();
+  const background = useBackgroundTransfers();
   const notifyReady = useNotifyReady();
   const [denied, setDenied] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -71,6 +73,12 @@ export function OnDeviceSettingsScreen() {
           label={t("wifiOnly")}
           description={t("wifiOnlyDesc")}
           trailing={<BrandSwitch value={wifiOnly} onValueChange={setWifiOnly} accessibilityLabel={t("wifiOnly")} />}
+        />
+        <SettingsRow
+          icon="moon"
+          label={t("backgroundTransfers")}
+          description={t("backgroundTransfersDesc")}
+          trailing={<BrandSwitch value={background} onValueChange={setBackgroundTransfers} accessibilityLabel={t("backgroundTransfers")} />}
         />
         <SettingsRow
           icon="bell"

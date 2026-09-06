@@ -22,6 +22,7 @@ import { Platform } from "react-native";
 import { createDownloadResumable, FileSystemSessionType } from "expo-file-system/legacy";
 import type { FileStore, TransferDriver, TransferOutcome, TransferRequest } from "@tentacle-tv/offline-core";
 import type { ResumeTokenStore } from "./resumeTokens";
+import { isBackgroundTransfers } from "./settings";
 
 const IS_ANDROID = Platform.OS === "android";
 
@@ -67,10 +68,14 @@ async function download(
     : (resumeToken ?? undefined);
 
   let bytesKnown = request.resumeFrom;
+  // iOS : la session d'arrière-plan continue une fois l'application
+  // suspendue ; « Continuer en arrière-plan » désactivé, on respecte le choix
+  // avec une session de premier plan (lue à la création de la tâche).
+  const sessionType = isBackgroundTransfers() ? FileSystemSessionType.BACKGROUND : FileSystemSessionType.FOREGROUND;
   const task = createDownloadResumable(
     request.url,
     request.partPath,
-    { headers: request.headers, sessionType: FileSystemSessionType.BACKGROUND },
+    { headers: request.headers, sessionType },
     ({ totalBytesWritten }) => {
       bytesKnown = totalBytesWritten;
       request.onBytes(totalBytesWritten);
