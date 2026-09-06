@@ -2,13 +2,15 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
 import type { VideoRef } from "react-native-video";
 import { PLAYER } from "@/theme";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, itemTrackChoiceFromStreams } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
+import { useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
+import { useRememberLocalTracks } from "../hooks/offline/useRememberLocalTracks";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
@@ -108,6 +110,19 @@ export function PlayerScreen({ itemId }: Props) {
     onAudioResolved: (idx) => pb.changeAudio(idx),
     onSubtitleResolved: (idx) => pb.changeSubtitle(idx),
   });
+
+  // Un changement EXPLICITE de piste est mémorisé pour ce contenu (miroir
+  // local, puis serveur) — des langues, jamais des index. La résolution
+  // automatique ci-dessus ne compte pas comme un choix.
+  const userId = useUserId();
+  const [trackOverride, setTrackOverride] = useState(false);
+  const handleSelectAudio = useCallback((idx: number) => { setTrackOverride(true); pb.changeAudio(idx); }, [pb.changeAudio]);
+  const handleSelectSubtitle = useCallback((idx: number) => { setTrackOverride(true); pb.changeSubtitle(idx); }, [pb.changeSubtitle]);
+  const trackChoice = useMemo(
+    () => (trackOverride ? itemTrackChoiceFromStreams(pb.streams, pb.audioIndex, pb.subtitleIndex) : null),
+    [trackOverride, pb.streams, pb.audioIndex, pb.subtitleIndex],
+  );
+  useRememberLocalTracks({ userId, itemId, choice: trackChoice });
 
   // Audio/subtitle track lists for the modal
   const audioTracks = useMemo(() =>
@@ -220,8 +235,8 @@ export function PlayerScreen({ itemId }: Props) {
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
         onBack={leavePlayer}
-        onSelectAudio={pb.changeAudio}
-        onSelectSubtitle={pb.changeSubtitle}
+        onSelectAudio={handleSelectAudio}
+        onSelectSubtitle={handleSelectSubtitle}
         onSelectQuality={pb.changeQuality}
         onNextEpisode={handleNextEpisode}
         onPreviousEpisode={handlePrevEpisode}
