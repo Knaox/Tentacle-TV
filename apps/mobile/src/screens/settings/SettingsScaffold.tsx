@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { SubtleBackground, IconButton } from "@/components/ui";
+import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { backOrHome } from "@/utils/backOrHome";
 import {
   spacing,
@@ -19,13 +20,15 @@ interface Props {
   children: ReactNode;
   /** Largeur de colonne centrée sur grand écran (défaut 720, comme À propos). */
   maxWidth?: number;
+  /** À droite du titre ; par défaut la pastille « Hors ligne » (invisible en ligne). */
+  trailing?: ReactNode;
 }
 
 /**
  * Ossature commune des sous-écrans de réglages : fond thémé, en-tête avec
  * bouton retour + titre, contenu scrollable en colonne centrée sur tablette.
  */
-export function SettingsScaffold({ title, children, maxWidth = 720 }: Props) {
+export function SettingsScaffold({ title, children, maxWidth = 720, trailing }: Props) {
   const { t: tc } = useTranslation("common");
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -38,6 +41,7 @@ export function SettingsScaffold({ title, children, maxWidth = 720 }: Props) {
         <View style={[st.header, { paddingHorizontal: spacing.screenPadding }]}>
           <IconButton icon="←" onPress={() => backOrHome(router)} accessibilityLabel={tc("back")} />
           <Text style={st.headerTitle} accessibilityRole="header" numberOfLines={1}>{title}</Text>
+          {trailing === undefined ? <ConnectivityPill variant="inline" /> : trailing}
         </View>
 
         <ScrollView
