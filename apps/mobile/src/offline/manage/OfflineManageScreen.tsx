@@ -10,9 +10,7 @@ import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing, typography, FONT_FAMILY, LETTER_SPACING, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import type { OfflineEntry } from "../engineApi";
-import { useCellularAck } from "../deviceSettings";
-import { useWifiOnly } from "../settings";
-import { useConnectivity } from "../useConnectivity";
+import { transferWait, useTransferWaitContext, wifiBlocked } from "../transferGate";
 import { BulkAutoDeleteSheet, useBulkOfflineActions } from "./OfflineBulkActions";
 import { OfflineCatalogLinkCard } from "./OfflineCatalogLinkCard";
 import { OfflineEntryRow } from "./OfflineEntryRow";
@@ -46,10 +44,8 @@ export function OfflineManageScreen() {
   const userId = useUserId();
   const { data } = useOfflineList(userId);
   const entries = useMemo(() => data ?? [], [data]);
-  const { networkType } = useConnectivity();
-  const wifiOnly = useWifiOnly();
-  const cellularAck = useCellularAck();
-  const waitingWifi = wifiOnly && networkType === "cellular" && !cellularAck;
+  const waitCtx = useTransferWaitContext();
+  const waitingWifi = wifiBlocked(waitCtx);
   const [more, setMore] = useState<OfflineEntry | null>(null);
   const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
   const selection = useOfflineSelection(ids);
@@ -71,7 +67,7 @@ export function OfflineManageScreen() {
       entry={entry}
       onPlay={onPlay}
       onMore={setMore}
-      waitingWifi={waitingWifi && entry.status !== "complete"}
+      wait={transferWait(entry, waitCtx)}
       selection={selection.active ? { selected: selection.selection.has(entry.id), onToggle: selection.toggle } : undefined}
     />
   );
@@ -97,7 +93,7 @@ export function OfflineManageScreen() {
         </View>
       )}
 
-      {waitingWifi && <WifiWaitCard count={groups.active.filter((entry) => entry.status !== "error" && entry.status !== "canceled").length} />}
+      {waitingWifi && <WifiWaitCard count={groups.active.filter((entry) => transferWait(entry, waitCtx) === "wifi").length} />}
       {groups.active.length > 0 && <Section title={t("sectionActive")}>{groups.active.map(row)}</Section>}
       {groups.movies.length > 0 && <Section title={t("sectionMovies")}>{groups.movies.map(row)}</Section>}
       {groups.series.map((series) => (
