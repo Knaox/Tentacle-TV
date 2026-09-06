@@ -28,12 +28,56 @@ import {
 
 const ITEM_ID_RE = /^[0-9a-fA-F-]{32,36}$/;
 
-/** Presets du mode Allégé — miroir de `apps/web/src/downloads/presets.ts`. */
-const LIGHT_PRESETS: Record<string, { videoBitRate: number; audioBitRate: number; maxHeight: number }> = {
-  p1080: { videoBitRate: 8_000_000, audioBitRate: 192_000, maxHeight: 1080 },
-  p720: { videoBitRate: 4_000_000, audioBitRate: 160_000, maxHeight: 720 },
-  p480: { videoBitRate: 1_500_000, audioBitRate: 128_000, maxHeight: 480 },
+interface TranscodePreset {
+  /** Listes acceptées par Jellyfin : le premier codec est la cible d'un réencodage, toute la liste autorise la copie. */
+  videoCodec: string;
+  audioCodec: string;
+  videoBitRate?: number;
+  audioBitRate?: number;
+  maxHeight?: number;
+  /** `Static` = MP4 classique (moov en fin) ; sinon fMP4 fragmenté. */
+  context?: "Static";
+}
+
+/**
+ * Paliers du mode Allégé — les trois premiers sont le miroir de
+ * `packages/offline-core/src/core/presets.ts`.
+ *
+ * `pmax` = QUALITÉ D'ORIGINE EN MP4, pour les appareils qui ne lisent pas le
+ * MKV (iPhone, iPad) : aucun plafond de débit — Jellyfin REFUSE la copie de
+ * flux dès qu'un `videoBitRate` est demandé et que le débit de la source est
+ * inconnu, ce qui est fréquent en MKV —, donc la vidéo H.264/HEVC est recopiée
+ * telle quelle (10 bits et HDR compris), et l'audio n'est réencodé en AAC que
+ * s'il n'est ni AAC, ni AC3, ni E-AC3. `context=Static` produit un MP4
+ * classique, dans lequel la recherche est immédiate sur mobile.
+ */
+const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
+  p1080: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 8_000_000, audioBitRate: 192_000, maxHeight: 1080 },
+  p720: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 4_000_000, audioBitRate: 160_000, maxHeight: 720 },
+  p480: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 1_500_000, audioBitRate: 128_000, maxHeight: 480 },
+  pmax: { videoCodec: "h264,hevc", audioCodec: "aac,ac3,eac3", context: "Static" },
 };
+
+const LIGHT_PRESET_IDS = Object.keys(TRANSCODE_PRESETS);
+
+/** Identifiant d'appareil qu'un client peut choisir pour sa session de transcodage. */
+const DEVICE_ID_RE = /^tentacle-dl-[0-9a-fA-F]{8}$/;
+
+/**
+ * Session de transcodage choisie par le CLIENT, si elle a la bonne forme.
+ *
+ * Sur mobile, le téléchargeur natif ne livre les en-têtes de réponse qu'à la
+ * fin du transfert : une pause ou une annulation ne pourrait pas arrêter la
+ * conversion côté Jellyfin. Le téléphone choisit donc ses identifiants et les
+ * transmet ; un client qui n'en envoie pas (le bureau) reçoit ceux du serveur
+ * dans les en-têtes, comme avant.
+ */
+function clientSession(query: Record<string, string | undefined>): { playSessionId: string; deviceId: string } | null {
+  const playSessionId = query.playSessionId ?? "";
+  const deviceId = query.deviceId ?? "";
+  if (!ITEM_ID_RE.test(playSessionId) || !DEVICE_ID_RE.test(deviceId)) return null;
+  return { playSessionId, deviceId };
+}
 
 /** En-têtes amont relayés tels quels vers le client (Range compris). */
 const RELAYED_HEADERS = [
@@ -57,8 +101,11 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
    *  indiscernable d'une fonctionnalité désactivée côté serveur. */
   app.get("/capabilities", async (request) => {
     const token = getTokenFromRequest(request);
-    if (!token) return { downloads: false, lightDownloads: false };
-    return getDownloadCapabilities(token);
+    if (!token) return { downloads: false, lightDownloads: false, lightPresets: [] };
+    const capabilities = await getDownloadCapabilities(token);
+    // Les paliers servis : un client ancien ignore le champ, un client récent
+    // n'y propose « qualité d'origine » que si `pmax` y figure.
+    return { ...capabilities, lightPresets: capabilities.lightDownloads ? LIGHT_PRESET_IDS : [] };
   });
 
   /** Fichier original — pipe de `GET /Items/{id}/Download` (Range passthrough). */
@@ -107,25 +154,24 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     const query = request.query as Record<string, string | undefined>;
-    const preset = LIGHT_PRESETS[query.preset ?? "p720"];
+    const preset = TRANSCODE_PRESETS[query.preset ?? "p720"];
     if (!token || !ITEM_ID_RE.test(itemId) || !preset) return notFound(reply);
     if (!(await checkLightRight(token, itemId))) return notFound(reply);
 
     const jellyfinUrl = getJellyfinUrl();
     if (!jellyfinUrl) return notFound(reply);
 
-    // Session de transcodage dédiée — renvoyée au client pour l'arrêt propre
+    // Session de transcodage dédiée — celle du client s'il en a choisi une,
+    // sinon la nôtre — renvoyée dans les en-têtes pour l'arrêt propre
     // (DELETE Videos/ActiveEncodings via le proxy) à toute fin de transfert.
-    const playSessionId = randomUUID();
-    const deviceId = `tentacle-dl-${playSessionId.slice(0, 8)}`;
+    const client = clientSession(query);
+    const playSessionId = client?.playSessionId ?? randomUUID();
+    const deviceId = client?.deviceId ?? `tentacle-dl-${playSessionId.slice(0, 8)}`;
     const params = new URLSearchParams({
       static: "false",
       container: "mp4",
-      videoCodec: "h264",
-      audioCodec: "aac",
-      videoBitRate: String(preset.videoBitRate),
-      audioBitRate: String(preset.audioBitRate),
-      maxHeight: String(preset.maxHeight),
+      videoCodec: preset.videoCodec,
+      audioCodec: preset.audioCodec,
       deviceId,
       playSessionId,
       // Copie de flux autorisée sous le plafond de débit : une source déjà
@@ -133,6 +179,10 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
       allowVideoStreamCopy: "true",
       allowAudioStreamCopy: "true",
     });
+    if (preset.videoBitRate !== undefined) params.set("videoBitRate", String(preset.videoBitRate));
+    if (preset.audioBitRate !== undefined) params.set("audioBitRate", String(preset.audioBitRate));
+    if (preset.maxHeight !== undefined) params.set("maxHeight", String(preset.maxHeight));
+    if (preset.context !== undefined) params.set("context", preset.context);
     const mediaSourceId = query.mediaSourceId;
     if (mediaSourceId && ITEM_ID_RE.test(mediaSourceId)) {
       params.set("mediaSourceId", mediaSourceId);
