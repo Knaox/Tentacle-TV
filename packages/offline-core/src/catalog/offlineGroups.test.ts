@@ -5,8 +5,10 @@ import {
   groupSeasonsBySeries,
   groupWatchState,
   seasonGroupMatches,
+  seasonKeyOf,
   seasonLabel,
   seriesGroupMatches,
+  seriesKeyOf,
   watchStateOf,
 } from "./offlineGroups";
 
@@ -244,5 +246,27 @@ describe("seasonLabel", () => {
 
     expect(seasonLabel(t, 2)).toBe("Saison 2");
     expect(seasonLabel(t, null)).toBe("Épisodes");
+  });
+});
+
+describe("seriesKeyOf / seasonKeyOf", () => {
+  it("donnent à une entrée la clé de son groupe", () => {
+    const a = episode("Malcolm", 1, 1, "Pilote");
+    const b = episode("Malcolm", 1, 2, "Rouge");
+    const { seasons } = groupOfflineEntries([a, b]);
+    const [series] = groupSeasonsBySeries(seasons);
+
+    expect(seriesKeyOf(a)).toBe(series?.key);
+    expect(seasonKeyOf(a)).toBe(seasons[0]?.key);
+    expect(seasonKeyOf(b)).toBe(seasonKeyOf(a));
+  });
+
+  it("retombent sur le nom, puis sur le titre, sans identifiant", () => {
+    const named = entry({ kind: "episode", seriesId: null, seriesName: "Sans id", title: "Ep" });
+    const bare = entry({ kind: "episode", seriesId: null, seriesName: null, title: "Titre seul" });
+    const { seasons } = groupOfflineEntries([bare]);
+
+    expect(seriesKeyOf(named)).toBe("name:Sans id");
+    expect(seriesKeyOf(bare)).toBe(groupSeasonsBySeries(seasons)[0]?.key);
   });
 });

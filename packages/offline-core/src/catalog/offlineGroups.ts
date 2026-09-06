@@ -34,13 +34,19 @@ export interface OfflineGroups {
 
 const LAST = Number.MAX_SAFE_INTEGER;
 
-function seasonKey(entry: DownloadEntry): string {
-  // Le seasonId est l'identité la plus fiable ; sinon on retombe sur la série
-  // (une saison inconnue vaut mieux qu'un groupe par épisode).
+/**
+ * Clé stable d'une saison d'après une entrée — la même que celle du groupe.
+ *
+ * Le seasonId est l'identité la plus fiable ; sinon on retombe sur la série
+ * (une saison inconnue vaut mieux qu'un groupe par épisode).
+ */
+export function seasonKeyOf(entry: DownloadEntry): string {
   if (entry.seasonId) return entry.seasonId;
   const series = entry.seriesId ?? entry.seriesName ?? "?";
   return `series:${series}`;
 }
+
+const seasonKey = seasonKeyOf;
 
 /** Ordre de diffusion : saison, puis épisode. Sans numéro → à la fin. */
 export function byEpisodeNumber(a: DownloadEntry, b: DownloadEntry): number {
@@ -147,12 +153,22 @@ export interface OfflineSeriesGroup {
   posterItemId: string;
 }
 
-function seriesKey(group: OfflineSeasonGroup): string {
-  // L'identifiant de série est l'identité la plus fiable ; à défaut le nom,
-  // qui regroupe au moins ce qui s'affiche pareil.
-  if (group.seriesId) return group.seriesId;
-  return `name:${group.seriesName}`;
+/**
+ * Clé stable d'une série d'après une entrée ou un groupe — celle de l'URL de
+ * la vue série locale. L'identifiant de série est l'identité la plus fiable ;
+ * à défaut le nom, qui regroupe au moins ce qui s'affiche pareil (pour une
+ * entrée : le nom de série, sinon le titre, comme le fait le groupe).
+ */
+export function seriesKeyOf(source: {
+  seriesId: string | null;
+  seriesName: string | null;
+  title?: string | null;
+}): string {
+  if (source.seriesId) return source.seriesId;
+  return `name:${source.seriesName ?? source.title ?? ""}`;
 }
+
+const seriesKey = (group: OfflineSeasonGroup): string => seriesKeyOf(group);
 
 /**
  * Réunit les saisons par série. L'entrée est la sortie de
