@@ -24,6 +24,12 @@ const STORAGE_KEYS = [
   // L'accusé du démarrage à froid des recommandations (par compte, sur cet
   // appareil) : lu au premier rendu de « Pour vous ».
   "tentacle_coldstart_ack",
+  // Le hors ligne — réglages D'APPAREIL, comme le thème (mêmes clés que le
+  // web) : mode hors ligne manuel, économie de données, notification « prêt »,
+  // accusé « continuer en données mobiles ». Les caches de langues et
+  // « Wi-Fi seulement » vivent, eux, dans la base locale du hors ligne.
+  "tentacle_offline_manual", "tentacle_data_saver", "tentacle_offline_notify_ready",
+  "tentacle_offline_cellular_ack",
 ];
 
 /** Keys stored in Keychain via SecureStore instead of AsyncStorage. */
