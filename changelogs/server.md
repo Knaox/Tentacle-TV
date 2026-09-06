@@ -9,12 +9,12 @@ GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 ### FR
 - **Qualité d'origine en MP4 pour le hors ligne mobile** : un nouveau palier `pmax` du mode Allégé copie la vidéo telle quelle (H.264/HEVC, 10 bits et HDR compris) dans un MP4 classique lisible par iPhone et iPad, et ne convertit l'audio en AAC que s'il est incompatible ; les paliers disponibles sont annoncés dans `/api/downloads/capabilities` (`lightPresets`), et un client peut choisir sa session de transcodage pour l'arrêter proprement
 - **Vos réglages voyagent en direct** : la mise en page de l'accueil et les réglages de recommandation enregistrés sur un appareil arrivent aussitôt sur les autres (message `preferences:update`), sans jamais écraser ce qu'un autre appareil vient de changer
-- **Sans le plugin Vigie**, le réglage « inclure les titres hors bibliothèque » est ignoré : plus de titres impossibles à ouvrir
+- **Sans le plugin Vigie**, le réglage « inclure les titres hors bibliothèque » est ignoré et l'interrupteur disparaît des réglages : plus de titres impossibles à ouvrir, plus de bascule sans effet — y compris quand le plugin est allumé mais que son service n'est pas encore configuré
 
 ### EN
 - **Original quality as MP4 for mobile offline**: a new `pmax` tier of the Light mode copies the video stream as is (H.264/HEVC, 10-bit and HDR included) into a regular MP4 that iPhone and iPad can play, converting audio to AAC only when incompatible; available tiers are advertised in `/api/downloads/capabilities` (`lightPresets`), and a client may pick its own transcoding session to stop it cleanly
 - **Your settings travel live**: the home layout and recommendation settings saved on one device reach the others at once (`preferences:update` message), never overwriting what another device just changed
-- **Without the Vigie plugin**, the "include titles outside your library" setting is ignored: no more titles that cannot be opened
+- **Without the Vigie plugin**, the "include titles outside your library" setting is ignored and its switch disappears from the settings: no more titles that cannot be opened, no more switch without effect — including when the plugin is on but its service is not configured yet
 
 ## [1.17.1]
 ### FR
