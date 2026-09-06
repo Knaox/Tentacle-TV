@@ -17,6 +17,8 @@ import {
   type ItemTrackChoice,
   type KeyValueStore,
   type PendingPrefUpsert,
+  cacheUserTrackConfig,
+  parseUserTrackConfig,
 } from "@tentacle-tv/offline-core";
 import { localDb } from "./database";
 import { offlineSettingGet, offlineSettingSet } from "./settings";
@@ -54,6 +56,17 @@ async function get(url: string, headers: Record<string, string>): Promise<unknow
     return null;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** Le DTO de connexion (`tentacle_user`), s'il est encore là. */
+function parseStoredUser(storage: StorageAdapter): unknown {
+  const raw = storage.getItem("tentacle_user");
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
   }
 }
 
@@ -104,14 +117,19 @@ export async function refreshOfflineCaches(
   await initPlaybackSettingsStore(storage).resync().catch(() => undefined);
   const bearer = { Authorization: `Bearer ${token}` };
   const emby = { "X-Emby-Token": token };
-  const [prefs, views, items, autoplay] = await Promise.all([
+  const [prefs, views, items, autoplay, me] = await Promise.all([
     get(`${serverUrl}/api/preferences`, bearer),
     get(`${serverUrl}/api/jellyfin/Users/${userId}/Views`, emby),
     get(`${serverUrl}/api/preferences/items`, bearer),
     get(`${serverUrl}/api/config/autoplay`, bearer),
+    get(`${serverUrl}/api/jellyfin/Users/Me`, emby),
   ]);
   try {
     if (prefs !== null) cacheLibraryPrefs(prefsStore, userId, prefs);
+    // Les réglages de langues du compte Jellyfin — le dernier repli du lecteur
+    // local ; sans réponse, le DTO de connexion gardé dans le stockage suffit.
+    const userConfig = parseUserTrackConfig(me) ?? parseUserTrackConfig(parseStoredUser(storage));
+    if (userConfig !== null) cacheUserTrackConfig(prefsStore, userId, userConfig);
     const libraries = (views as { Items?: Array<{ Id?: unknown; Name?: unknown }> } | null)?.Items;
     if (Array.isArray(libraries)) {
       cacheLibrariesList(
