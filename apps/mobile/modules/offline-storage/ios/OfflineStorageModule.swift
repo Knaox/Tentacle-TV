@@ -20,5 +20,19 @@ public class OfflineStorageModule: Module {
       try url.setResourceValues(values)
       return true
     }
+
+    // Le service de premier plan n'existe que sur Android : sur iOS, la
+    // session d'arrière-plan d'expo-file-system suffit. Même surface, sans effet.
+    AsyncFunction("startTransferService") { (_: String, _: String, _: String) -> Bool in
+      false
+    }
+
+    Function("updateTransferService") { (_: String) -> Bool in
+      false
+    }
+
+    AsyncFunction("stopTransferService") { () -> Bool in
+      false
+    }
   }
 }
