@@ -15,6 +15,7 @@ interface Props {
   item: MediaItem | undefined;
   userId: string | null;
   people: NonNullable<MediaItem["People"]>;
+  genres: string[];
   siblings: OfflineEntry[];
   seasonName: string;
   busy: boolean;
@@ -29,10 +30,9 @@ interface Props {
  * genres, synopsis, casting (initiales), la carte « Sur l'appareil », puis,
  * pour un épisode, les autres épisodes de sa saison présents sur l'appareil.
  */
-export function OfflineItemBody({ entry, item, userId, people, siblings, seasonName, busy, onPlay, onMore, onToggleWatched, onRemove }: Props) {
+export function OfflineItemBody({ entry, item, userId, people, genres, siblings, seasonName, busy, onPlay, onMore, onToggleWatched, onRemove }: Props) {
   const { t } = useTranslation("offline");
   const st = useThemedStyles(makeMediaDetailStyles);
-  const genres = item?.Genres ?? [];
   const overview = (item?.Overview ?? "").replace(/<[^>]+>/g, "").trim();
   return (
     <View>

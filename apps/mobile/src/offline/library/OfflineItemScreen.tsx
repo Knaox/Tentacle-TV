@@ -95,6 +95,7 @@ export function OfflineItemScreen({ itemId }: { itemId: string }) {
             item={local.item}
             userId={userId}
             people={local.people}
+            genres={local.genres}
             siblings={local.siblings}
             seasonName={local.seasonName}
             busy={busy}
