@@ -59,6 +59,26 @@ async function get(url: string, headers: Record<string, string>): Promise<unknow
   }
 }
 
+let lastRefreshAt = 0;
+const REFRESH_MIN_INTERVAL_MS = 5 * 60_000;
+
+/**
+ * Le rafraîchissement des caches hors des transitions : au premier plan (au
+ * plus toutes les cinq minutes) et tout de suite après un enregistrement en
+ * ligne du téléphone (`force`) — une préférence changée sur le web n'attend
+ * plus le prochain passage hors ligne / en ligne.
+ */
+export async function maybeRefreshOfflineCaches(
+  serverUrl: string,
+  token: string,
+  userId: string,
+  storage: StorageAdapter,
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (!options.force && Date.now() - lastRefreshAt < REFRESH_MIN_INTERVAL_MS) return;
+  await refreshOfflineCaches(serverUrl, token, userId, storage);
+}
+
 /** Le DTO de connexion (`tentacle_user`), s'il est encore là. */
 function parseStoredUser(storage: StorageAdapter): unknown {
   const raw = storage.getItem("tentacle_user");
@@ -111,6 +131,7 @@ export async function refreshOfflineCaches(
   userId: string,
   storage: StorageAdapter,
 ): Promise<void> {
+  lastRefreshAt = Date.now();
   await flushPendingPrefs(serverUrl, token, userId);
   // Les réglages de lecture (saut d'intro automatique, décomptes…) : le
   // lecteur local les lit dans ce cache, sans jamais les redemander.

@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useUserId } from "@tentacle-tv/api-client";
+import { useLibraries, useLibraryPreferences, useSetLibraryPreference, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { queuePendingPref, readLibrariesList, readLibraryPrefs, type CachedLibraryPref } from "@tentacle-tv/offline-core";
-import { prefsStore } from "@/offline/prefsCache";
+import { maybeRefreshOfflineCaches, prefsStore } from "@/offline/prefsCache";
 import { useOfflineMode } from "@/offline/useOfflineMode";
+import { useServerUrl } from "@/providers/ServerUrlContext";
 import { spacing, typography, RADIUS, useTheme, useThemedStyles, type AppTheme } from "../../theme";
 import { LibraryPrefCard, type LibraryPrefValues } from "./LibraryPrefCard";
 
@@ -24,6 +25,8 @@ export function MediaPreferencesSection() {
   const { data: libraries } = useLibraries({ enabled: !offline });
   const { data: prefs } = useLibraryPreferences({ enabled: !offline });
   const setMut = useSetLibraryPreference();
+  const { serverUrl } = useServerUrl();
+  const { storage } = useTentacleConfig();
   // `nonce` relit la base locale après une écriture en attente.
   const [nonce, setNonce] = useState(0);
   const local = useMemo(() => {
@@ -44,7 +47,14 @@ export function MediaPreferencesSection() {
       setNonce((n) => n + 1);
       return;
     }
-    setMut.mutate({ libraryId, ...values });
+    setMut.mutate({ libraryId, ...values }, {
+      // Le miroir local suit tout de suite : la prochaine lecture hors ligne
+      // n'attend pas un passage en ligne pour connaître ce choix.
+      onSuccess: () => {
+        const token = storage.getItem("tentacle_token");
+        if (serverUrl && token && userId) void maybeRefreshOfflineCaches(serverUrl, token, userId, storage, { force: true });
+      },
+    });
   };
 
   if (!local && rows.length === 0) return null;

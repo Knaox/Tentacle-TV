@@ -14,7 +14,7 @@ import { syncAvatarCache } from "./avatarCache";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { isLocalPlaybackActive } from "./nowPlaying";
-import { refreshOfflineCaches } from "./prefsCache";
+import { maybeRefreshOfflineCaches, refreshOfflineCaches } from "./prefsCache";
 import { syncPlaybackState } from "./resync";
 import { photographSession } from "./sessionPhoto";
 import { isBackgroundTransfers, useWifiOnly } from "./settings";
@@ -117,6 +117,7 @@ export function OfflineRuntimeSync() {
       // deux sens (au plus une fois par minute) — jamais pendant une lecture.
       if (state === "online" && serverUrl && token && userId && !isLocalPlaybackActive()) {
         void syncPlaybackState(serverUrl, token, userId, "all");
+        void maybeRefreshOfflineCaches(serverUrl, token, userId, storage);
       }
     });
     return () => subscription.remove();
