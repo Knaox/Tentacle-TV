@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
@@ -10,6 +11,7 @@ import {
   updateOfflineCreds,
 } from "./engineRuntime";
 import { syncAvatarCache } from "./avatarCache";
+import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
@@ -27,6 +29,8 @@ const CREDS_RECHECK_MS = 3_000;
  *   moteur (`start` re-normalise la file, répare, purge), repoussent la photo
  *   de session et vident la file de resynchronisation — le moteur d'abord,
  *   avant toute autre requête du retour en ligne.
+ * - Un RETOUR en ligne (pas le premier démarrage) déclenche, après la
+ *   resynchronisation, la cascade de rafraîchissement de l'accueil.
  * - Le jeton rafraîchi (401, premier plan) est poussé au moteur sans
  *   re-normaliser.
  * - Le retour au premier plan relance les pauses système et fait un tour de
@@ -45,6 +49,12 @@ export function OfflineRuntimeSync() {
   const token = storage.getItem("tentacle_token");
   const tokenRef = useRef(token);
   tokenRef.current = token;
+  const queryClient = useQueryClient();
+  // L'état précédent : la cascade ne vaut que pour un retour, pas un démarrage.
+  const wasOfflineRef = useRef(false);
+  useEffect(() => {
+    if (state === "offline-auto" || state === "offline-manual") wasOfflineRef.current = true;
+  }, [state]);
 
   useEffect(() => {
     configureDeviceSettings(storage);
@@ -57,7 +67,12 @@ export function OfflineRuntimeSync() {
     syncAvatarCache(userId, serverUrl, token, storage);
     // Le moteur d'abord, puis les caches de langues et le seuil « vu » — la
     // lecture locale n'interroge jamais le serveur, même en ligne.
-    void drainReportQueue(serverUrl, token, userId).then(() => refreshOfflineCaches(serverUrl, token, userId));
+    const returning = wasOfflineRef.current;
+    wasOfflineRef.current = false;
+    void drainReportQueue(serverUrl, token, userId).then(() => {
+      if (returning) runOnlineCascade(queryClient);
+      return refreshOfflineCaches(serverUrl, token, userId);
+    });
     // Le jeton est suivi à part (voir ci-dessous) : un rafraîchissement ne
     // doit pas relancer une normalisation complète.
     // eslint-disable-next-line react-hooks/exhaustive-deps
