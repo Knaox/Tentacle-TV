@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  isVigieActive,
+  isVigieRecoAvailable,
   mergeHiddenHomeRows,
   recoRowTitle,
   reconcileHomeRows,
@@ -68,9 +68,11 @@ export function SettingsPersonalization() {
       saveSettings.mutate({ explorationBalance: value });
     }, BALANCE_SAVE_MS);
   };
-  // « Hors bibliothèque » n'a de sens qu'avec le plugin Vigie présent et
-  // activé : sans lui, le serveur ignore le réglage et l'interrupteur se tait.
-  const vigie = isVigieActive(useActivePluginsMeta());
+  // « Hors bibliothèque » n'a de sens que si CE serveur sait servir du hors
+  // bibliothèque : il le dit lui-même (`vigieAvailable`), avec le terme exact
+  // du moteur — plugin installé, activé, intégration allumée ET configurée.
+  // La liste des plugins ne reste que le repli des serveurs d'avant ce champ.
+  const vigie = isVigieRecoAvailable(settings?.vigieAvailable, useActivePluginsMeta());
 
   // La liste COMPLÈTE (clés hors catalogue comprises : elles restent
   // stockées) et la liste VISIBLE que l'éditeur manipule — seules les rangées
