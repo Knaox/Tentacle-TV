@@ -16,6 +16,7 @@ import { useProfileActions } from "../hooks/useProfileActions";
 import { setManualOffline } from "../offline/connectivityStore";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useOfflineMode } from "../offline/useOfflineMode";
+import { useOfflineVisibility } from "../hooks/offline/useOfflineVisibility";
 
 // Version du binaire natif (patchée par les CI par plateforme) ; app.json = repli.
 const appVersion: string = Application.nativeApplicationVersion ?? require("../../app.json").expo?.version ?? "1.0.0";
@@ -56,6 +57,9 @@ export function ProfileScreen() {
   } = useProfileActions();
   const offline = useOfflineMode();
   const { state: connectivity } = useConnectivity();
+  // « Passer hors ligne » n'a de sens qu'avec le droit de garder des titres
+  // ou du contenu déjà sur l'appareil : sinon il n'y aurait rien à voir.
+  const { visible: offlineVisible } = useOfflineVisibility();
 
   const contentPad = useContentPadding();
   const { isTablet, isLandscape } = useResponsive();
@@ -134,7 +138,7 @@ export function ProfileScreen() {
 
       {/* « Passer hors ligne » : seulement quand le serveur répond — hors
           ligne, c'est la pastille de l'en-tête qui ramène en ligne. */}
-      {connectivity === "online" && (
+      {connectivity === "online" && offlineVisible && (
         <FadeIn delay={360}>
           <SettingsSection title={to("sectionConnection")}>
             <SettingsRow icon="wifi-off" label={tn("goOffline")} description={to("goOfflineHint")} last onPress={() => setManualOffline(true)} />

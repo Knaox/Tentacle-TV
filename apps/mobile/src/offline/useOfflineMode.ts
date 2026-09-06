@@ -1,14 +1,18 @@
+import { useUserId } from "@tentacle-tv/api-client";
+import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useConnectivity } from "./useConnectivity";
 
 /**
  * Y a-t-il au moins un titre complet sur cet appareil pour ce compte ?
  *
- * Tant que le moteur hors ligne n'est pas branché, la réponse est « non » :
- * le voile plein écran garde alors exactement son comportement d'aujourd'hui,
- * hystérésis en plus. Le moteur remplacera ce corps par la liste locale.
+ * Lu dans la liste locale (SQLite), invalidée à chaque évènement du moteur.
+ * Tant qu'elle n'a pas répondu, la réponse est « non » : le voile plein
+ * écran garde son comportement d'aujourd'hui.
  */
 export function useHasLocalContent(): boolean {
-  return false;
+  const userId = useUserId();
+  const { data } = useOfflineList(userId);
+  return (data ?? []).some((entry) => entry.status === "complete");
 }
 
 /**
