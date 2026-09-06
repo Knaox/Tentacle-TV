@@ -21,15 +21,19 @@ export function OfflineBackOnlineCard() {
   return (
     <View style={st.wrap}>
       <GlassSurface tier="subtle" tint="regular" radius={RADIUS.lg}>
-        <View style={st.row}>
-          <View style={st.disc} collapsable={false}>
-            <Feather name="wifi" size={18} color={colors.brand.light} />
+        <View style={st.body}>
+          <View style={st.row}>
+            <View style={st.disc} collapsable={false}>
+              <Feather name="wifi" size={18} color={colors.brand.light} />
+            </View>
+            <View style={st.texts}>
+              <Text style={st.title}>{t("offline:serverReachableTitle")}</Text>
+              <Text style={st.hint}>{t("offline:serverReachableHint")}</Text>
+            </View>
           </View>
-          <View style={st.texts}>
-            <Text style={st.title} numberOfLines={1}>{t("offline:serverReachableTitle")}</Text>
-            <Text style={st.hint} numberOfLines={2}>{t("offline:serverReachableHint")}</Text>
+          <View style={st.ctaRow}>
+            <Button title={t("downloads:offlineGoOnline")} onPress={() => setManualOffline(false)} />
           </View>
-          <Button title={t("downloads:offlineGoOnline")} onPress={() => setManualOffline(false)} />
         </View>
       </GlassSurface>
     </View>
@@ -39,7 +43,9 @@ export function OfflineBackOnlineCard() {
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     wrap: { paddingHorizontal: spacing.screenPadding, marginTop: spacing.lg },
-    row: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md },
+    body: { padding: spacing.md, gap: spacing.md },
+    row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+    ctaRow: { flexDirection: "row", justifyContent: "flex-end" },
     disc: {
       width: 36,
       height: 36,
