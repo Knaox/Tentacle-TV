@@ -5,7 +5,8 @@
  * (« Français - AAC »). Hors ligne il n'y a que la liste de pistes du lecteur
  * natif, dont les champs sont bruts : le menu affichait « fr-BE », « en »,
  * « Forced », « SDH ».
- * Ce module en fait « Français (Belgique) », « Anglais », « Français — Forced ».
+ * Ce module en fait « Français (Belgique) », « Anglais », « Français — Forced »
+ * — sans `Intl.DisplayNames`, absent de Hermes (voir `langNames`).
  *
  * La sortie suit la convention de `formatTrackLabel` (« Nom - CODEC ») pour que
  * `parseTrackLabel` de TrackSelector en extraie le badge de codec ; les
@@ -13,6 +14,7 @@
  * avec le « - » de découpe.
  */
 
+import { languageDisplayName } from "./langNames";
 import { primaryLangSubtag } from "./langSubtags";
 
 export interface LocalTrackInput {
@@ -42,10 +44,24 @@ function codecLabel(codec: string | undefined): string | null {
   return /^[a-z0-9]{2,8}$/i.test(codec) ? codec.toUpperCase() : null;
 }
 
-/** « fr-BE » → « Français (Belgique) », avec repli sur la langue seule puis le code. */
+/**
+ * « fr-BE » → « Français (Belgique) » : la table d'abord (déterministe, Hermes
+ * compris), `Intl.DisplayNames` en repli pour un code qu'elle ignore, le code
+ * brut en dernier.
+ */
 function languageLabel(lang: string | undefined, locale: string): string | null {
   const raw = lang?.trim();
   if (!raw || raw.toLowerCase() === "und") return null;
+  return languageDisplayName(raw, locale) ?? intlLanguageLabel(raw, locale) ?? raw.toUpperCase();
+}
+
+/**
+ * `Intl.DisplayNames` quand le moteur l'a (V8, JavaScriptCore) — Hermes ne
+ * l'a pas : jamais référencé au chargement, testé à l'appel.
+ */
+function intlLanguageLabel(raw: string, locale: string): string | null {
+  const DisplayNames = (globalThis.Intl as { DisplayNames?: typeof Intl.DisplayNames } | undefined)?.DisplayNames;
+  if (typeof DisplayNames !== "function") return null;
   // mpv rend des codes ISO 639-2/B (« fre ») qu'Intl ne connaît pas toujours :
   // on repasse d'abord par le sous-tag primaire à 2 lettres.
   const [base, ...rest] = raw.split("-");
@@ -54,14 +70,14 @@ function languageLabel(lang: string | undefined, locale: string): string | null 
   const attempts = region ? [`${primary}-${region.toUpperCase()}`, primary] : [primary];
   for (const tag of attempts) {
     try {
-      const display = new Intl.DisplayNames([locale], { type: "language" }).of(tag);
+      const display = new DisplayNames([locale], { type: "language" }).of(tag);
       // Intl renvoie le code inchangé quand il ne connaît pas la langue.
       if (display && display.toLowerCase() !== tag.toLowerCase()) return capitalize(display);
     } catch {
       /* tag invalide (RangeError) → candidat suivant */
     }
   }
-  return raw.toUpperCase();
+  return null;
 }
 
 function capitalize(value: string): string {

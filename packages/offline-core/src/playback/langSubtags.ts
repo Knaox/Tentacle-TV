@@ -16,12 +16,15 @@ export const LANGUAGE_CODE_GROUPS: ReadonlyArray<readonly string[]> = [
   ["el", "gre", "ell"], ["tr", "tur"], ["he", "heb"], ["th", "tha"],
   ["vi", "vie"], ["hi", "hin"], ["uk", "ukr"], ["sv", "swe"],
   ["no", "nor"], ["da", "dan"], ["fi", "fin"], ["hr", "hrv"],
-  ["sk", "slo", "slk"], ["sr", "srp"], ["bg", "bul"], ["sl", "slv"],
+  ["sk", "slo", "slk"], ["sr", "srp", "scc"], ["bg", "bul"], ["sl", "slv"],
   ["is", "ice", "isl"], ["cy", "wel", "cym"], ["eu", "baq", "eus"],
   ["sq", "alb", "sqi"], ["hy", "arm", "hye"], ["ka", "geo", "kat"],
   ["mk", "mac", "mkd"], ["ms", "may", "msa"], ["my", "bur", "mya"],
   ["fa", "per", "fas"], ["bo", "tib", "bod"], ["la", "lat"],
   ["nb", "nob"], ["nn", "nno"], ["ta", "tam"], ["te", "tel"],
+  ["id", "ind"], ["ca", "cat"], ["lt", "lit"], ["lv", "lav"], ["et", "est"],
+  ["ml", "mal"], ["bn", "ben"], ["ur", "urd"], ["tl", "tgl", "fil"], ["sw", "swa"],
+  ["af", "afr"],
 ];
 
 /** Code canonique (639-2/T) → sous-tag primaire ISO 639-1, pour `Intl.DisplayNames`. */

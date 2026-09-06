@@ -58,6 +58,7 @@ export * from "./playback/localPlaybackProgress";
 export * from "./playback/playbackFailure";
 export * from "./playback/sideCarNames";
 export * from "./playback/langSubtags";
+export * from "./playback/langNames";
 export * from "./playback/localTrackLabels";
 export * from "./prefs/trackPrefsCache";
 export * from "./sync/capabilities";
