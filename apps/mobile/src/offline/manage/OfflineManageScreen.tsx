@@ -6,6 +6,8 @@ import { Feather } from "@expo/vector-icons";
 import { useUserId } from "@tentacle-tv/api-client";
 import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "@tentacle-tv/offline-core";
 import { SelectionBar } from "@/components/SelectionBar";
+import { IconButton } from "@/components/ui";
+import { goHome } from "@/utils/backOrHome";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { SettingsScaffold } from "@/screens/settings/SettingsScaffold";
 import { spacing, typography, FONT_FAMILY, LETTER_SPACING, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -72,12 +74,18 @@ export function OfflineManageScreen() {
     />
   );
 
-  // « Sélectionner » à droite du titre, puis « Annuler la sélection ».
-  const trailing = entries.length > 0 ? (
-    <Pressable onPress={selection.active ? selection.exit : selection.enter} hitSlop={8} accessibilityRole="button">
-      <Text style={st.trailing}>{selection.active ? t("selectCancel") : t("selectMode")}</Text>
-    </Pressable>
-  ) : undefined;
+  // À droite du titre : « Sélectionner » (puis « Annuler la sélection ») et
+  // le retour à l'accueil — l'écran s'ouvre aussi en ligne, loin des onglets.
+  const trailing = (
+    <View style={st.trailingRow}>
+      {entries.length > 0 && (
+        <Pressable onPress={selection.active ? selection.exit : selection.enter} hitSlop={8} accessibilityRole="button">
+          <Text style={st.trailing}>{selection.active ? t("selectCancel") : t("selectMode")}</Text>
+        </Pressable>
+      )}
+      <IconButton icon="home" size={32} onPress={() => goHome(router)} accessibilityLabel={to("emptyGoHome")} />
+    </View>
+  );
 
   return (
     <View style={st.screen}>
@@ -133,6 +141,7 @@ const makeStyles = (t: AppTheme) =>
     screen: { flex: 1 },
     space: { marginBottom: spacing.xl },
     trailing: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
+    trailingRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
     barSpacer: { height: 140 },
     section: { marginBottom: spacing.xl },
     sectionTitle: {

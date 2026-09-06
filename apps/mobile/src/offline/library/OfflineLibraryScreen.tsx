@@ -12,7 +12,7 @@ import { useScrollChromeHandler } from "@/components/navigation/scrollChrome";
 import { useHeaderHeight } from "@/components/PersistentHeader";
 import { ConnectivityPill } from "@/offline/ConnectivityPill";
 import { OfflineRowActionsSheet } from "@/offline/manage/OfflineRowActionsSheet";
-import { backOrHome } from "@/utils/backOrHome";
+import { backOrHome, goHome } from "@/utils/backOrHome";
 import { spacing, typography, FONT_FAMILY, useGrid, useThemedStyles, type AppTheme } from "@/theme";
 import { OfflineBackOnlineCard } from "./OfflineBackOnlineCard";
 import { OfflineCatalogSections } from "./OfflineCatalogSections";
@@ -72,6 +72,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
           <IconButton icon="←" onPress={() => backOrHome(router)} accessibilityLabel={t("common:back")} />
           <Text style={st.headerTitle} accessibilityRole="header" numberOfLines={1}>{t("offline:tabOnDevice")}</Text>
           <ConnectivityPill variant="inline" />
+          <IconButton icon="home" onPress={() => goHome(router)} accessibilityLabel={t("offline:emptyGoHome")} />
         </View>
       )}
 
