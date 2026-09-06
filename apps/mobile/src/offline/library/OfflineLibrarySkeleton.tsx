@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { Skeleton, SkeletonCard, SkeletonHero, SkeletonRow } from "@/components/ui";
+import { Skeleton, SkeletonCard, SkeletonHero } from "@/components/ui";
 import { spacing, type GridLayout } from "@/theme";
 
 interface Props {
@@ -16,9 +16,6 @@ export function OfflineLibrarySkeleton({ layout }: Props) {
       <SkeletonHero />
       <View style={{ paddingHorizontal: spacing.screenPadding, marginTop: spacing.lg }}>
         <Skeleton width={220} height={14} />
-      </View>
-      <View style={{ marginTop: spacing.xxl }}>
-        <SkeletonRow count={3} cardWidth={232} cardHeight={130} />
       </View>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: layout.gutter, paddingHorizontal: layout.padding, marginTop: spacing.xxl }}>
         {Array.from({ length: 6 }).map((_, index) => (

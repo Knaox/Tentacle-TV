@@ -20,7 +20,6 @@ import { OfflineCatalogToolbar } from "./OfflineCatalogToolbar";
 import { OfflineEmptyState } from "./OfflineEmptyState";
 import { OfflineHomeHero } from "./OfflineHomeHero";
 import { OfflineLibrarySkeleton } from "./OfflineLibrarySkeleton";
-import { OfflineResumeRail } from "./OfflineResumeRail";
 import { OfflineStateStrip } from "./OfflineStateStrip";
 import { useOfflineCatalog, type OfflineCatalogFilter } from "./useOfflineCatalog";
 
@@ -50,7 +49,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>("all");
   const [more, setMore] = useState<OfflineEntry | null>(null);
-  const { movies, series, resume, hero, counts, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, hero, counts, hasContent, ready } = useOfflineCatalog(search, filter);
 
   const play = useCallback((entry: OfflineEntry) => router.push(`/watch/${entry.itemId}` as never), [router]);
   const info = useCallback((entry: OfflineEntry) => router.push(`/on-device/item/${entry.itemId}` as never), [router]);
@@ -93,11 +92,6 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             <FadeIn delay={homeRowFadeDelay(0)}>
               <OfflineStateStrip showManage={!standalone} />
               <OfflineBackOnlineCard />
-            </FadeIn>
-          )}
-          {!searching && resume.length > 0 && (
-            <FadeIn delay={homeRowFadeDelay(1)}>
-              <OfflineResumeRail entries={resume} onPlay={play} onMore={setMore} />
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(2)}>
