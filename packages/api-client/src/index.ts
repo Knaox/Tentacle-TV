@@ -53,6 +53,14 @@ export type { AppNotification } from "./hooks/useNotifications";
 
 // Notification route resolution
 export { resolveNotificationRoute } from "./utils/notificationRoute";
+export {
+  EXTENSIONS_TAB_PATH,
+  extensionSectionId,
+  parseExtensionSectionId,
+  extensionSectionHref,
+} from "./utils/extensionSection";
+export { isPluginActive, isVigieActive, SEER_PLUGIN_ID } from "./utils/pluginPresence";
+export type { PluginPresence } from "./utils/pluginPresence";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
 export { formatNotifTitle, notifBodyText, parseTicketNotifBody } from "./utils/notificationText";
 export type { NotifTranslate } from "./utils/notificationText";
@@ -192,6 +200,8 @@ export type { RecoProviderRef } from "./hooks/recoTypes";
 
 // La page de recommandations en UNE requête, et son fil temps réel
 // (cf. hooks/useRecoPage, hooks/useRecoLive)
+export { usePreferencesLive, applyPreferencesUpdate, catchUpPreferences, PREFERENCES_LIVE_SCOPES } from "./hooks/usePreferencesLive";
+export type { UsePreferencesLiveOptions } from "./hooks/usePreferencesLive";
 export {
   useRecoPage,
   prefetchRecoPage,
@@ -232,9 +242,36 @@ export {
   useSaveHomeLayout,
   useRecoSettings,
   useSaveRecoSettings,
-  useSaveRecoProviderFilter,
-  useResetTasteProfile,
+    useResetTasteProfile,
 } from "./hooks/useHomeLayout";
+export {
+  HOME_LAYOUT_KEY,
+  RECO_SETTINGS_KEY,
+  HOME_LAYOUT_SAVE_KEY,
+  RECO_SETTINGS_SAVE_KEY,
+  fetchHomeLayout,
+  fetchRecoSettings,
+  putHomeLayout,
+  putRecoSettings,
+} from "./hooks/useHomeLayout";
+export type { HomeLayoutInput } from "./hooks/useHomeLayout";
+// Sauvegardes lire-avant-d'écrire (cf. hooks/usePreferencesPatch)
+export {
+  useSaveHomeLayoutPatch,
+  useSaveRecoSettingsPatch,
+  useSaveRecoProviderFilter,
+  HOME_LAYOUT_PATCH_KEY,
+  RECO_SETTINGS_PATCH_KEY,
+  RECO_FILTER_PATCH_KEY,
+} from "./hooks/usePreferencesPatch";
+export {
+  applyHomeLayoutPatch,
+  applyRecoSettingsPatch,
+  toHomeLayoutBody,
+  pushHomeLayoutPatch,
+  pushRecoSettingsPatch,
+} from "./utils/preferencesPatch";
+export type { HomeLayoutPatch, RecoSettingsPatch, PatchIo } from "./utils/preferencesPatch";
 export type {
   HeroMode,
   CardDensity,
@@ -257,6 +294,15 @@ export type { LibraryRef, ReconcileHomeRowsOptions } from "./utils/homeRows";
 // Annuaire des plateformes de streaming (cf. hooks/useWatchProviders)
 export { useWatchProviders, prefetchWatchProviders, WATCH_PROVIDERS_KEY } from "./hooks/useWatchProviders";
 export type { WatchProviderDirectory, WatchProviderEntry } from "./hooks/useWatchProviders";
+
+// Reco partagés entre web, mobile et TV : raisons verbalisées, tirage des
+// diapositives héros, catalogue des familles de plateformes (cf. src/reco).
+export { reasonToText } from "./reco/recoReasonText";
+export type { ReasonTranslate } from "./reco/recoReasonText";
+export { selectHeroSlides, heroSelectionFromRows, useRecoHeroSlides } from "./reco/recoHeroSlides";
+export type { RecoHeroSelection } from "./reco/recoHeroSlides";
+export { buildPlatformCatalog, isFamilyActive, toggleFamily, activeFamilyCount } from "./reco/platformCatalog";
+export type { PlatformCatalogEntry } from "./reco/platformCatalog";
 
 // Comptes externes — TMDB guest session (cf. hooks/useExternalAccounts)
 export {

@@ -12,6 +12,11 @@ import { spacing, useTheme, withAlpha } from "@/theme";
 /** Hauteur de la barre de contenu du header (hors safe-area). */
 export const HEADER_BAR_HEIGHT = 44;
 
+/** De combien le header remonte quand le chrome se replie — un écran dont le
+ *  contenu ne passe pas SOUS le header (pages d'extension) le suit d'autant,
+ *  sinon une bande vide apparaît entre les deux. */
+export const HEADER_COLLAPSE_SHIFT = 8;
+
 /**
  * Hauteur TOTALE du header flottant (safe-area + barre). Les écrans d'onglets
  * l'ajoutent en `paddingTop` de leur contenu : le contenu reste à la même place
@@ -35,15 +40,15 @@ export function PersistentHeader() {
   const theme = useTheme();
   const { colors } = theme;
 
-  // Compaction au défilement : la barre remonte de huit points et l'identité
-  // (logo + titre) s'estompe — les actions restent. Transform/opacity sur le
-  // wrapper seulement ; `useHeaderHeight()` ne bouge pas (contrat des écrans).
+  // Compaction au défilement : la barre remonte de huit points, et c'est tout —
+  // le logo, le titre et les actions restent visibles (demandé : l'identité ne
+  // se cache jamais). Transform sur le wrapper seulement ; `useHeaderHeight()`
+  // ne bouge pas (contrat des écrans).
   const fallback = useSharedValue(0);
   const collapsed = useScrollChromeValue() ?? fallback;
   const compactStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: collapsed.value * -8 }],
+    transform: [{ translateY: collapsed.value * -HEADER_COLLAPSE_SHIFT }],
   }));
-  const identityFade = useAnimatedStyle(() => ({ opacity: 1 - collapsed.value }));
 
   return (
     <Animated.View style={[styles.wrap, compactStyle]}>
@@ -54,11 +59,14 @@ export function PersistentHeader() {
       bordered={false}
       tintColor={theme.isDark ? undefined : "rgba(255, 255, 255, 0.25)"}
     >
-      <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 2 }]}>
-        <Animated.View style={[styles.logoRow, identityFade]}>
+      {/* 4 + 28 (logo) + 12 = HEADER_BAR_HEIGHT : le header mesure ce qu'il
+          publie — un écran dont le contenu ne passe pas dessous (pages
+          d'extension) s'y cale sans bande vide. */}
+      <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 4 }]}>
+        <View style={styles.logoRow}>
           <TentacleLogo size={28} />
           <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
-        </Animated.View>
+        </View>
 
         <View style={styles.actions}>
           <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
@@ -82,7 +90,7 @@ export function PersistentHeader() {
 const styles = StyleSheet.create({
   wrap: { position: "absolute", top: 0, left: 0, right: 0, zIndex: 20 },
   bar: {
-    paddingBottom: 10,
+    paddingBottom: 12,
     paddingHorizontal: spacing.screenPadding,
     flexDirection: "row",
     alignItems: "center",

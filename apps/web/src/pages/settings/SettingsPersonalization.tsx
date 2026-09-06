@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  isVigieActive,
   mergeHiddenHomeRows,
   recoRowTitle,
   reconcileHomeRows,
@@ -9,12 +10,13 @@ import {
   useLibraries,
   useRecoSettings,
   useResetTasteProfile,
-  useSaveHomeLayout,
-  useSaveRecoSettings,
+  useSaveHomeLayoutPatch,
+  useSaveRecoSettingsPatch,
   visibleHomeRows,
 } from "@tentacle-tv/api-client";
 import type { CardDensity, HeroMode, HomeLayoutData, HomeRowDescriptor, RecoSettingsData } from "@tentacle-tv/api-client";
 import { SettingsSection } from "@tentacle-tv/ui";
+import { useActivePluginsMeta } from "@tentacle-tv/plugins-api";
 import { SegmentedChoice } from "../../components/settings/SegmentedChoice";
 import { SettingToggleRow, SETTING_FIELD } from "../../components/settings/SettingToggleRow";
 import { HomeRowsEditor } from "../../components/settings/personalization/HomeRowsEditor";
@@ -22,13 +24,17 @@ import { LinkedAccounts } from "../../components/settings/personalization/Linked
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { rangeFill } from "../../lib/rangeFill";
 
+/** Le curseur n'écrit qu'au repos : une mutation par cran ferait vingt allers-retours. */
+const BALANCE_SAVE_MS = 300;
+
 /**
  * Onglet « Personnalisation » : accueil configurable (mode du bandeau, ordre
  * et activation des rangées, densité) et moteur de recommandation (activation,
  * Vigie, communautaire, désinscription vie privée, curseur Sûr ↔ Aventureux,
- * remise à zéro du profil). Chaque changement se sauvegarde immédiatement
- * (backend = source de vérité, visible sur les autres appareils au prochain
- * chargement — le cache local n'est qu'optimiste).
+ * remise à zéro du profil). Chaque changement se sauvegarde immédiatement en
+ * « lire avant d'écrire » : le serveur est relu, seul le changement demandé
+ * s'applique au bloc frais — un autre appareil qui écrit au même moment n'est
+ * pas écrasé, et lui-même reçoit ce changement en direct.
  */
 export function SettingsPersonalization() {
   const { t } = useTranslation("preferences");
@@ -38,10 +44,33 @@ export function SettingsPersonalization() {
   const { data: settings } = useRecoSettings();
   const { data: libraries } = useLibraries();
   const { data: favorites } = useFavoritesAll();
-  const saveLayout = useSaveHomeLayout();
-  const saveSettings = useSaveRecoSettings();
+  const libs = useMemo(() => (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })), [libraries]);
+  const saveLayout = useSaveHomeLayoutPatch({ libraries: libs });
+  const saveSettings = useSaveRecoSettingsPatch();
   const resetProfile = useResetTasteProfile();
   const [confirmReset, setConfirmReset] = useState(false);
+
+  // Le curseur garde un état local pendant le geste et n'écrit qu'au repos ;
+  // tant qu'une sauvegarde attend ou vole, le serveur ne dicte rien (le
+  // rafraîchissement d'une sauvegarde précédente ramènerait l'ancienne valeur).
+  const [balance, setBalance] = useState(settings?.explorationBalance ?? 70);
+  const balanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const serverBalance = settings?.explorationBalance;
+  useEffect(() => {
+    if (serverBalance !== undefined && !saveSettings.isPending && balanceTimer.current === null) setBalance(serverBalance);
+  }, [serverBalance, saveSettings.isPending]);
+  useEffect(() => () => { if (balanceTimer.current) clearTimeout(balanceTimer.current); }, []);
+  const changeBalance = (value: number) => {
+    setBalance(value);
+    if (balanceTimer.current) clearTimeout(balanceTimer.current);
+    balanceTimer.current = setTimeout(() => {
+      balanceTimer.current = null;
+      saveSettings.mutate({ explorationBalance: value });
+    }, BALANCE_SAVE_MS);
+  };
+  // « Hors bibliothèque » n'a de sens qu'avec le plugin Vigie présent et
+  // activé : sans lui, le serveur ignore le réglage et l'interrupteur se tait.
+  const vigie = isVigieActive(useActivePluginsMeta());
 
   // La liste COMPLÈTE (clés hors catalogue comprises : elles restent
   // stockées) et la liste VISIBLE que l'éditeur manipule — seules les rangées
@@ -49,28 +78,29 @@ export function SettingsPersonalization() {
   const rows = useMemo(
     () =>
       layout
-        ? reconcileHomeRows(layout.rows, (libraries ?? []).map((l) => ({ id: l.Id, name: l.Name })), {
+        ? reconcileHomeRows(layout.rows, libs, {
             // Même ancre que l'accueil : l'éditeur doit montrer l'ordre RÉEL.
             anchorNewLibraries: layout.stored === false,
             catalog: layout.catalog,
           })
         : [],
-    [layout, libraries]
+    [layout, libs]
   );
   const editorRows = useMemo(() => visibleHomeRows(rows, layout?.catalog), [rows, layout?.catalog]);
 
   if (!layout || !settings) return null;
 
-  const patchLayout = (patch: Partial<HomeLayoutData>) => {
-    saveLayout.mutate({ ...layout, rows, ...patch });
+  const patchLayout = (patch: Partial<Omit<HomeLayoutData, "stored" | "catalog">>) => {
+    saveLayout.mutate(patch);
   };
   // Les rangées cachées reprennent leur place derrière celles que l'éditeur a
-  // ordonnées : une clé TMDB retirée puis remise ne perd rien.
+  // ordonnées : une clé TMDB retirée puis remise ne perd rien. Patch
+  // FONCTIONNEL : appliqué sur la copie fraîche du serveur, réconciliée.
   const changeRows = (next: HomeRowDescriptor[]) => {
-    patchLayout({ rows: mergeHiddenHomeRows(rows, next, layout.catalog) });
+    saveLayout.mutate((fresh) => ({ rows: mergeHiddenHomeRows(fresh.rows, next, fresh.catalog) }));
   };
   const patchSettings = (patch: Partial<RecoSettingsData>) => {
-    saveSettings.mutate({ ...settings, ...patch });
+    saveSettings.mutate(patch);
   };
 
   const librariesById = new Map((libraries ?? []).map((l) => [l.Id, l.Name]));
@@ -167,12 +197,14 @@ export function SettingsPersonalization() {
             active={settings.personalized}
             onChange={(personalized) => patchSettings({ personalized })}
           />
-          <SettingToggleRow
-            title={t("persoRecoVigie")}
-            hint={t("persoRecoVigieHint")}
-            active={settings.includeVigie}
-            onChange={(includeVigie) => patchSettings({ includeVigie })}
-          />
+          {vigie && (
+            <SettingToggleRow
+              title={t("persoRecoVigie")}
+              hint={t("persoRecoVigieHint")}
+              active={settings.includeVigie}
+              onChange={(includeVigie) => patchSettings({ includeVigie })}
+            />
+          )}
           <SettingToggleRow
             title={t("persoRecoCommunity")}
             hint={t("persoRecoCommunityHint")}
@@ -198,10 +230,10 @@ export function SettingsPersonalization() {
                 min={0}
                 max={100}
                 step={5}
-                value={settings.explorationBalance}
-                onChange={(e) => patchSettings({ explorationBalance: Number(e.target.value) })}
+                value={balance}
+                onChange={(e) => changeBalance(Number(e.target.value))}
                 className="ctl-range flex-1"
-                style={rangeFill(settings.explorationBalance, 0, 100)}
+                style={rangeFill(balance, 0, 100)}
                 aria-label={t("persoBalance")}
               />
               <span className="shrink-0 text-xs text-content-tertiary">{t("persoBalanceSafe")}</span>

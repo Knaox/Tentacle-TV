@@ -15,13 +15,20 @@ type WebToNativeMessage =
   | { type: "NAVIGATE"; route: string }
   | { type: "NAVIGATE_MEDIA"; tmdbId: number; mediaType: string }
   | { type: "TOAST"; message: string; variant: "success" | "error" | "info" }
-  | { type: "PERF_TIMINGS"; timings: PerfTimings };
+  | { type: "PERF_TIMINGS"; timings: PerfTimings }
+  /** La page dit si son défilement a replié le chrome (cf. pluginScrollChromeScript). */
+  | { type: "SCROLL_CHROME"; collapsed: boolean };
 
 /**
  * Crée un handler pour les messages postMessage envoyés depuis la WebView plugin.
  * Gère la navigation native, les erreurs, et les toasts.
  */
-export function createBridgeHandler(router: Router, onReady?: () => void, onError?: (msg: string) => void) {
+export function createBridgeHandler(
+  router: Router,
+  onReady?: () => void,
+  onError?: (msg: string) => void,
+  onScrollChrome?: (collapsed: boolean) => void,
+) {
   return (event: { nativeEvent: { data: string } }) => {
     try {
       const msg: WebToNativeMessage = JSON.parse(event.nativeEvent.data);
@@ -73,6 +80,9 @@ export function createBridgeHandler(router: Router, onReady?: () => void, onErro
           break;
         case "TOAST":
           // TODO: intégrer avec un système de toast natif
+          break;
+        case "SCROLL_CHROME":
+          onScrollChrome?.(msg.collapsed === true);
           break;
       }
     } catch {

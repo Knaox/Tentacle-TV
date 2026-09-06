@@ -17,7 +17,7 @@ import { StarIcon } from "../../icons/HeroIcons";
 import { StarRating } from "../../rating/StarRating";
 import { useRecoNavigation } from "../../../lib/recoNavigation";
 import { fadeUp, textCascade } from "../../../theme/motion";
-import { reasonToText } from "../RecoReasonText";
+import { reasonToText } from "@tentacle-tv/api-client";
 import { recoHeroBackdropUrl } from "./RecoHeroBackdrop";
 
 interface RecoHeroContentProps {

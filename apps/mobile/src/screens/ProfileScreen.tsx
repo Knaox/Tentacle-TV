@@ -1,21 +1,18 @@
-import { useState, useCallback, type ReactNode } from "react";
-import { View, Text, Pressable, Alert, Linking, StyleSheet } from "react-native";
+import { type ReactNode } from "react";
+import { View, Text, Pressable, Linking, StyleSheet } from "react-native";
 import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import * as Application from "expo-application";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { spacing, typography, FONT_FAMILY, useContentPadding, useResponsive, useThemeMode, useTheme, useThemedStyles, type AppTheme, type ThemeMode } from "../theme";
-import { Badge, FadeIn, GlassCard, SubtleBackground } from "../components/ui";
+import { Badge, Divider, FadeIn, SubtleBackground } from "../components/ui";
 import { SettingsSection, SettingsRow } from "../components/settings";
 import { LanguageToggle } from "../components/profile/LanguageToggle";
 import { ProfileAvatar } from "../components/profile/ProfileAvatar";
 import { useHeaderHeight } from "../components/PersistentHeader";
 import { useScrollChromeHandler } from "../components/navigation/scrollChrome";
-import { clearCredentials } from "../auth/credentialManager";
-import { useServerUrl } from "../providers/ServerUrlContext";
+import { useProfileActions } from "../hooks/useProfileActions";
 
 // Version du binaire natif (patchée par les CI par plateforme) ; app.json = repli.
 const appVersion: string = Application.nativeApplicationVersion ?? require("../../app.json").expo?.version ?? "1.0.0";
@@ -28,10 +25,12 @@ const THEME_MODE_LABEL: Record<ThemeMode, string> = {
 };
 
 /**
- * Profil — hub de réglages : identité en tête, puis sections logiques
- * (Compte, Préférences, TV, Administration, Aide, Serveur, Zone sensible).
- * Les domaines lourds (Apparence, Lecture, Appareils, Invitations, Mot de
- * passe) vivent dans des sous-écrans dédiés `/settings/*`.
+ * Profil — hub de réglages : identité en tête, puis Personnalisation (accueil
+ * et recommandations), Préférences, Langue, TV ; à droite (ou dessous)
+ * Administration, Aide, Sécurité (mot de passe, appareils, serveur, puis les
+ * actions destructives en rouge), confidentialité, version. Les domaines
+ * lourds vivent dans des sous-écrans `/settings/*` ; les actions de compte
+ * dans `useProfileActions`.
  */
 export function ProfileScreen() {
   const { t } = useTranslation("profile");
@@ -42,66 +41,10 @@ export function ProfileScreen() {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { mode } = useThemeMode();
-  const { logout, changeServer } = useAuth();
-  const { storage } = useTentacleConfig();
-  const { setServerUrl } = useServerUrl();
-  const queryClient = useQueryClient();
-  const [deleting, setDeleting] = useState(false);
-
-  const user = (() => {
-    try { const raw = storage.getItem("tentacle_user"); return raw ? JSON.parse(raw) : null; }
-    catch { return null; }
-  })();
-
-  const isAdmin = user?.Policy?.IsAdministrator === true;
-  const userName = user?.Name ?? t("defaultUsername");
-  const initial = userName.charAt(0).toUpperCase();
-  const serverUrl = storage.getItem("tentacle_server_url") ?? "";
-
-  const handleLogout = useCallback(() => {
-    logout.mutate(undefined, { onSuccess: () => { clearCredentials(storage); router.replace("/(auth)/login"); } });
-  }, [logout, storage, router]);
-
-  const handleChangeServer = useCallback(() => {
-    Alert.alert(t("changeServerTitle"), t("changeServerMessage"), [
-      { text: t("clearCacheCancel"), style: "cancel" },
-      { text: t("changeServerConfirm"), style: "destructive",
-        onPress: () => changeServer.mutate(undefined, {
-          onSettled: () => { setServerUrl(null); router.replace("/(auth)/server-setup"); },
-        }),
-      },
-    ]);
-  }, [t, changeServer, setServerUrl, router]);
-
-  const handleClearCache = useCallback(() => {
-    Alert.alert(t("clearCacheTitle"), t("clearCacheMessage"), [
-      { text: t("clearCacheCancel"), style: "cancel" },
-      { text: t("clearCacheConfirm"), style: "destructive",
-        onPress: () => { storage.clear?.(); queryClient.clear(); router.replace("/(auth)/server-setup"); },
-      },
-    ]);
-  }, [t, queryClient, router, storage]);
-
-  const handleDeleteAccount = useCallback(() => {
-    if (isAdmin) { Alert.alert(t("deleteAccountTitle"), t("deleteAccountAdminError")); return; }
-    Alert.alert(t("deleteAccountTitle"), t("deleteAccountMessage"), [
-      { text: t("deleteAccountCancel"), style: "cancel" },
-      { text: t("deleteAccountConfirm"), style: "destructive",
-        onPress: async () => {
-          setDeleting(true);
-          try {
-            const token = storage.getItem("tentacle_token");
-            if (!serverUrl || !token) return;
-            const res = await fetch(`${serverUrl}/api/auth/account`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-            if (res.status === 403) { Alert.alert(t("deleteAccountTitle"), t("deleteAccountAdminError")); return; }
-            if (!res.ok) { Alert.alert(t("deleteAccountTitle"), t("deleteAccountError")); return; }
-            storage.clear?.(); queryClient.clear(); router.replace("/(auth)/server-setup");
-          } catch { Alert.alert(t("deleteAccountTitle"), t("deleteAccountError")); }
-          finally { setDeleting(false); }
-        },
-      },
-    ]);
-  }, [t, isAdmin, storage, serverUrl, queryClient, router]);
+  const {
+    user, isAdmin, userName, initial, serverUrl, deleting,
+    handleLogout, handleChangeServer, handleClearCache, handleDeleteAccount,
+  } = useProfileActions();
 
   const contentPad = useContentPadding();
   const { isTablet, isLandscape } = useResponsive();
@@ -120,9 +63,15 @@ export function ProfileScreen() {
       </FadeIn>
 
       <FadeIn delay={80}>
-        <SettingsSection title={t("account")}>
-          <SettingsRow icon="lock" label={t("password")} chevron onPress={() => router.push("/settings/password")} />
-          <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron last onPress={() => router.push("/settings/devices")} />
+        <SettingsSection title={tp("sectionPersonalization")}>
+          <SettingsRow
+            icon="sliders"
+            label={tp("sectionPersonalization")}
+            description={t("personalizationHint")}
+            chevron
+            last
+            onPress={() => router.push("/settings/personalization")}
+          />
         </SettingsSection>
       </FadeIn>
 
@@ -132,12 +81,17 @@ export function ProfileScreen() {
           <SettingsRow icon="bell" label={t("notifications")} chevron onPress={() => router.push("/settings/notifications")} />
           <SettingsRow icon="play-circle" label={t("playback")} chevron last onPress={() => router.push("/settings/playback")} />
         </SettingsSection>
-        <GlassCard style={st.langCard}>
-          <LanguageToggle />
-        </GlassCard>
       </FadeIn>
 
       <FadeIn delay={200}>
+        <SettingsSection title={t("language")}>
+          <View style={st.langWrap}>
+            <LanguageToggle hideLabel />
+          </View>
+        </SettingsSection>
+      </FadeIn>
+
+      <FadeIn delay={260}>
         <SettingsSection title={t("pairTV")}>
           <SettingsRow icon="cast" label={t("pairTV")} chevron last onPress={() => router.push("/pair-tv")} />
         </SettingsSection>
@@ -148,28 +102,27 @@ export function ProfileScreen() {
   const rightCol: ReactNode = (
     <>
       {isAdmin ? (
-        <FadeIn delay={260}>
+        <FadeIn delay={300}>
           <SettingsSection title={t("administration")}>
             <SettingsRow icon="mail" label={t("invitations")} chevron last onPress={() => router.push("/settings/invites")} />
           </SettingsSection>
         </FadeIn>
       ) : null}
 
-      <FadeIn delay={300}>
+      <FadeIn delay={340}>
         <SettingsSection title={t("help")}>
           <SettingsRow icon="help-circle" label={t("support")} chevron onPress={() => router.push("/support")} />
           <SettingsRow icon="info" label={t("about")} chevron last onPress={() => router.push("/about")} />
         </SettingsSection>
       </FadeIn>
 
-      <FadeIn delay={340}>
-        <SettingsSection title={t("serverSection")} caption={serverUrl || undefined}>
-          <SettingsRow icon="server" label={t("changeServer")} chevron last onPress={handleChangeServer} />
-        </SettingsSection>
-      </FadeIn>
-
       <FadeIn delay={380}>
-        <SettingsSection title={t("dangerZone")}>
+        <SettingsSection title={tp("sectionSecurity")}>
+          <SettingsRow icon="lock" label={t("password")} chevron onPress={() => router.push("/settings/password")} />
+          <SettingsRow icon="smartphone" label={t("pairedDevices")} chevron onPress={() => router.push("/settings/devices")} />
+          <SettingsRow icon="server" label={t("changeServer")} description={serverUrl || undefined} chevron last onPress={handleChangeServer} />
+          {/* Les actions destructives, séparées et en rouge, ferment la carte. */}
+          <Divider intensity="strong" style={st.dangerDivider} />
           <SettingsRow icon="trash-2" label={t("clearCache")} destructive onPress={handleClearCache} />
           <SettingsRow icon="user-x" label={t("deleteAccount")} destructive disabled={deleting} onPress={handleDeleteAccount} />
           <SettingsRow icon="log-out" label={t("logout")} destructive last onPress={handleLogout} />
@@ -216,7 +169,8 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   hero: { flexDirection: "row" as const, alignItems: "center" as const, gap: spacing.lg, marginBottom: spacing.xl },
   heroName: { ...typography.title, fontSize: 22, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.primary, letterSpacing: -0.4 },
   heroSub: { ...typography.caption, fontFamily: FONT_FAMILY.regular, color: t.colors.text.tertiary },
-  langCard: { marginTop: -spacing.md, marginBottom: spacing.xl },
+  langWrap: { padding: spacing.md },
+  dangerDivider: { marginVertical: 0 },
   twoCol: { flexDirection: "row" as const, gap: spacing.xl, width: "100%", maxWidth: 940, alignSelf: "center" as const, paddingHorizontal: spacing.screenPadding, paddingTop: spacing.xl },
   privacy: { marginTop: spacing.sm, alignItems: "center" as const, flexDirection: "row" as const, justifyContent: "center" as const, gap: spacing.sm, paddingVertical: 12 },
   privacyTxt: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, textDecorationLine: "underline" as const },

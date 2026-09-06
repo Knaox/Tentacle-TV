@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
-import { useRecoPage } from "@tentacle-tv/api-client";
-import type { RecoPageRow, RecoRowItem } from "@tentacle-tv/api-client";
+import { useRecoPage, type RecoPageRow } from "../hooks/useRecoPage";
+import type { RecoRowItem } from "../hooks/recoTypes";
 
 /** Diapositives au plus — au-delà, le carrousel dilue plus qu'il ne montre. */
 const SLIDES_MAX = 5;

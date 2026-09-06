@@ -6,7 +6,7 @@ import { prefetchRecoPage, useWatchProviders } from "@tentacle-tv/api-client";
 import { PLATFORM_FAMILIES } from "@tentacle-tv/shared";
 import { useRecoFilter } from "../../hooks/useRecoFilter";
 import { PlatformLogo } from "./PlatformLogo";
-import { activeFamilyCount, buildPlatformCatalog, isFamilyActive, toggleFamily } from "./platformCatalog";
+import { activeFamilyCount, buildPlatformCatalog, isFamilyActive, toggleFamily } from "@tentacle-tv/api-client";
 
 /**
  * Filtres de la page Recommandations : un bouton « Filtres » (avec compteur)

@@ -4,6 +4,7 @@ import { getPrisma } from "../services/db";
 import type { JellyfinUser } from "../middleware/auth";
 import { homeRowCatalog, isKnownHomeRowKey, serverHomeRowCapabilities } from "../services/homeRowCatalog";
 import type { HomeRowDescriptor } from "../services/homeRowCatalog";
+import { notifyPreferencesUpdate } from "./preferences.notify";
 
 // Clés de rangées admises : celles du catalogue — TOUTES, quel que soit l'état
 // des capacités du moment — et les bibliothèques dynamiques (`library:<guid>`).
@@ -76,6 +77,8 @@ export function registerHomeLayoutRoutes(app: FastifyInstance): void {
       create: { jellyfinUserId: user.userId, ...data },
       update: data,
     });
+    // Les autres appareils du compte relisent l'accueil en direct.
+    notifyPreferencesUpdate(request, user.userId, "home-layout");
     return { ok: true };
   });
 }

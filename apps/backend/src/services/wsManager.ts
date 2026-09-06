@@ -19,6 +19,9 @@ export type WsServerMessage =
   | { type: "session:revoked" }
   /** Snapshot de page reco reconstruit : le client refait sa requête en silence. */
   | { type: "reco:update" }
+  /** Un autre appareil du compte a enregistré ses préférences (doublon du
+   *  membre de packages/shared, les deux vivent côte à côte). */
+  | { type: "preferences:update"; scope: "home-layout" | "reco-settings" }
   | WtServerMessage;
 
 /** Map of userId -> active WebSocket connections */
@@ -164,11 +167,19 @@ export function broadcastAll(carousel: CarouselId): void {
 
 /** Envoi direct d'un message arbitraire à toutes les connexions d'un user.
  *  Contrairement à broadcastToUser : pas de debounce, pas d'invalidation de
- *  cache — utilisé par Watch Together (états de room, invitations). */
-export function sendToUser(userId: string, msg: WsServerMessage): void {
+ *  cache — utilisé par Watch Together (états de room, invitations).
+ *  `exceptTokenHash` : les sockets de CET appareil (celui qui vient d'écrire)
+ *  sont sautées — il n'a rien à relire, et un refetch écraserait son
+ *  optimiste. Le web envoie le même jeton en cookie et sur le socket ; les
+ *  onglets d'un même navigateur partagent ce jeton et sont exclus ensemble. */
+export function sendToUser(userId: string, msg: WsServerMessage, opts?: { exceptTokenHash?: string }): void {
   const set = connections.get(userId);
   if (!set) return;
-  for (const ws of set) send(ws, msg);
+  const skip = opts?.exceptTokenHash ? deviceSockets.get(opts.exceptTokenHash) : undefined;
+  for (const ws of set) {
+    if (skip?.has(ws)) continue;
+    send(ws, msg);
+  }
 }
 
 /** Number of connected users (for health/debug). */

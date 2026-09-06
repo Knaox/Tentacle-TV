@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { reconcileHomeRows, useHomeLayout, useLibraries, visibleHomeRows } from "@tentacle-tv/api-client";
-import type { HomeRowDescriptor } from "@tentacle-tv/api-client";
+import type { HomeLayoutData, HomeRowDescriptor } from "@tentacle-tv/api-client";
 
 /** L'ordre historique du mobile — servi tant que la mise en page du compte
  *  n'est pas là (premier chargement, vieux serveur) ; les bibliothèques
@@ -17,7 +17,7 @@ export const LEGACY_HOME_ROWS: readonly HomeRowDescriptor[] = [
  * et le catalogue de ce serveur, réduite aux rangées actives. MÊME
  * réconciliation que le web et la TV (api-client) : même accueil partout.
  */
-export function useHomeRows(): { rows: HomeRowDescriptor[] } {
+export function useHomeRows(): { rows: HomeRowDescriptor[]; layout: HomeLayoutData | undefined } {
   const { data: layout } = useHomeLayout();
   const { data: libraries } = useLibraries();
   const rows = useMemo(() => {
@@ -28,5 +28,5 @@ export function useHomeRows(): { rows: HomeRowDescriptor[] } {
       layout?.catalog,
     ).filter((row) => row.enabled);
   }, [layout, libraries]);
-  return { rows };
+  return { rows, layout };
 }

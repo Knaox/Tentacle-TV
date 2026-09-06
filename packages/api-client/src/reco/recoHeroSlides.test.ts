@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RecoRowItem } from "@tentacle-tv/api-client";
+import type { RecoRowItem } from "../hooks/recoTypes";
 import { heroSelectionFromRows, selectHeroSlides } from "./recoHeroSlides";
 
 const item = (key: string, backdrop: boolean, jellyfin = false): RecoRowItem => ({

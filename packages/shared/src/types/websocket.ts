@@ -28,7 +28,14 @@ export type WsServerMessage =
   /** La page de recommandations du compte vient d'être reconstruite en fond :
    *  le client la redemande en silence (les données affichées restent). */
   | { type: "reco:update" }
+  /** Un AUTRE appareil du compte vient d'enregistrer ses préférences (mise en
+   *  page de l'accueil ou réglages de recommandation) : relire ce bloc. L'auteur
+   *  de l'écriture n'est jamais destinataire. */
+  | { type: "preferences:update"; scope: PreferencesScope }
   | WtServerMessage;
+
+/** Les blocs de préférences diffusés en direct — les clés de cache des clients. */
+export type PreferencesScope = "home-layout" | "reco-settings";
 
 /** Messages sent from clients to the server. */
 export type WsClientMessage =

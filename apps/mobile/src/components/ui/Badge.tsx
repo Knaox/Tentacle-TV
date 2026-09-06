@@ -1,9 +1,15 @@
-import { View, Text, type ViewStyle } from "react-native";
+import { View, Text, StyleSheet, type ViewStyle } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
-import { typography, FONT_FAMILY, LETTER_SPACING, RADIUS, useTheme, withAlpha } from "../../theme";
+import { typography, FONT_FAMILY, LETTER_SPACING, RADIUS, progressGradient, useTheme, withAlpha } from "../../theme";
 import type { AppTheme } from "../../theme";
 
-type Variant = "accent" | "success" | "gold" | "muted" | "danger" | "warning" | "info" | "brand";
+/**
+ * `onMedia` : posé sur une affiche — noir translucide et blanc constants dans
+ * les deux thèmes (un jeton de texte thème-dépendant y devient illisible en
+ * clair). `gradient` : le dégradé de marque du web (« Découverte »).
+ */
+type Variant = "accent" | "success" | "gold" | "muted" | "danger" | "warning" | "info" | "brand" | "onMedia" | "gradient";
 
 interface Props {
   label: string;
@@ -15,6 +21,7 @@ interface Props {
 interface BadgeStyle {
   bg: string;
   text: string;
+  border?: string;
 }
 
 function variantStyle(t: AppTheme, variant: Variant): BadgeStyle {
@@ -38,12 +45,17 @@ function variantStyle(t: AppTheme, variant: Variant): BadgeStyle {
       };
     case "muted":
       return { bg: colors.fill.soft, text: colors.text.tertiary };
+    case "onMedia":
+      return { bg: "rgba(0, 0, 0, 0.65)", text: colors.onMedia.primary, border: colors.onMedia.muted };
+    case "gradient":
+      return { bg: "transparent", text: colors.cta.brandFg };
   }
 }
 
 export function Badge({ label, variant = "muted", style, uppercase = true }: Props) {
   const theme = useTheme();
   const v = variantStyle(theme, variant);
+  const gradient = variant === "gradient" ? progressGradient(theme.colors.brand) : null;
   return (
     <View
       style={[
@@ -53,10 +65,15 @@ export function Badge({ label, variant = "muted", style, uppercase = true }: Pro
           paddingVertical: 3.5,
           borderRadius: RADIUS.xs,
           alignSelf: "flex-start",
+          overflow: "hidden",
         },
+        v.border ? { borderWidth: StyleSheet.hairlineWidth, borderColor: v.border } : null,
         style,
       ]}
     >
+      {gradient && (
+        <LinearGradient colors={gradient.colors} start={gradient.start} end={gradient.end} style={StyleSheet.absoluteFill} />
+      )}
       <Text
         style={{
           ...typography.badge,

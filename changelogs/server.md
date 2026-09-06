@@ -5,6 +5,15 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [Unreleased]
+### FR
+- **Vos réglages voyagent en direct** : la mise en page de l'accueil et les réglages de recommandation enregistrés sur un appareil arrivent aussitôt sur les autres (message `preferences:update`), sans jamais écraser ce qu'un autre appareil vient de changer
+- **Sans le plugin Vigie**, le réglage « inclure les titres hors bibliothèque » est ignoré : plus de titres impossibles à ouvrir
+
+### EN
+- **Your settings travel live**: the home layout and recommendation settings saved on one device reach the others at once (`preferences:update` message), never overwriting what another device just changed
+- **Without the Vigie plugin**, the "include titles outside your library" setting is ignored: no more titles that cannot be opened
+
 ## [1.17.1]
 ### FR
 - **Vos notes pèsent selon l'échelle des étoiles, plus selon votre moyenne** : 6,5 est le point neutre (« j'aime bien, sans plus »), un 7 n'est plus un reproche pour qui note généreusement, un 8 vaut un favori et un 10 en vaut deux et demi ; la grille de démarrage façonne enfin le profil — ses cinq titres aimés s'annulaient entre eux, aucun ne faisait graine
