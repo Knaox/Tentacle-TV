@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, Animated, PanResponder, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
-import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useMediaItem, useFavorite, useToggleWatchlist, useWatchedToggle, useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoReason } from "@tentacle-tv/api-client";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
-import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "@/components/ui";
+import { ActionCell } from "@/components/ActionCell";
+import { KeepOfflineActionCell } from "@/offline/entry/KeepOfflineActionCell";
 
 // expo-haptics optional
 let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null = null;
@@ -27,7 +28,7 @@ interface Props {
 /**
  * Action sheet moderne pour long-press sur un media — pattern Apple TV /
  * Disney+ : poster overlay en haut, grille 2×2 d'actions rondes (Like /
- * Ma liste / Liste partagée / Vu) avec ring tinted brand violet sur état
+ * Ma liste / Vu / Garder hors ligne) avec ring tinted brand violet sur état
  * actif. BlurView backdrop + drag-to-dismiss.
  */
 export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
@@ -181,46 +182,14 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
                 activeColor={theme.colors.brand.violet}
                 onPress={handleAction(() => (isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()))}
               />
+              {/* Quatrième cellule : le hors ligne vise le titre APPUYÉ (l'épisode,
+                  pas sa série) ; absente pour un titre hors bibliothèque. */}
+              {item && <KeepOfflineActionCell item={item} onClose={dismiss} />}
             </View>
         </>
       </Animated.View>
       </View>
     </Modal>
-  );
-}
-
-/* ── Cellule action ronde (style Apple TV +) ─────────────────────────────── */
-
-function ActionCell({ icon, iconActive, label, active, activeColor, fillOnActive, onPress }: {
-  icon: keyof typeof Feather.glyphMap;
-  iconActive?: keyof typeof Feather.glyphMap;
-  label: string;
-  active: boolean;
-  activeColor: string;
-  fillOnActive?: boolean;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  const st = useThemedStyles(makeStyles);
-  const ringBg = active ? withAlpha(activeColor, 0.13, colors.brand.soft) : colors.fill.subtle;
-  const ringBorder = active ? withAlpha(activeColor, 0.33, colors.brand.glow) : colors.border.subtle;
-  const iconColor = active ? activeColor : colors.text.primary;
-  const iconName = (active && iconActive) ? iconActive : icon;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [st.cell, pressed && { opacity: 0.75 }]}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-    >
-      <View style={[st.ring, { backgroundColor: ringBg, borderColor: ringBorder }]}>
-        <Feather name={iconName} size={26} color={iconColor} fill={fillOnActive && active ? activeColor : "none"} />
-      </View>
-      <Text numberOfLines={2} style={[st.cellLabel, { color: active ? activeColor : colors.text.secondary }]}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -245,9 +214,6 @@ const makeStyles = (t: AppTheme) =>
     meta: { ...typography.caption, fontFamily: FONT_FAMILY.medium, color: t.colors.brand.light, letterSpacing: 0.2 },
     reasons: { marginHorizontal: spacing.lg, marginBottom: spacing.lg },
     grid: { flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 10, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-    cell: { flex: 1, alignItems: "center" as const, paddingVertical: 16, paddingHorizontal: 10, borderRadius: RADIUS.lg, backgroundColor: t.colors.fill.faint },
-    ring: { width: 60, height: 60, borderRadius: 30, borderWidth: 1, alignItems: "center" as const, justifyContent: "center" as const, marginBottom: 10 },
-    cellLabel: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, fontSize: 12.5, textAlign: "center" as const, letterSpacing: 0.1, lineHeight: 15 },
     backLink: { flexDirection: "row" as const, alignItems: "center" as const, gap: 4, marginBottom: spacing.md, paddingVertical: 4 },
     backLinkTxt: { ...typography.caption, fontFamily: FONT_FAMILY.semibold, color: t.colors.brand.light },
   });
