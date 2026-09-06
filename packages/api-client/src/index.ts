@@ -59,7 +59,7 @@ export {
   parseExtensionSectionId,
   extensionSectionHref,
 } from "./utils/extensionSection";
-export { isPluginActive, isVigieActive, SEER_PLUGIN_ID } from "./utils/pluginPresence";
+export { isPluginActive, isVigieActive, isVigieRecoAvailable, SEER_PLUGIN_ID } from "./utils/pluginPresence";
 export type { PluginPresence } from "./utils/pluginPresence";
 export type { NotifPluginMeta } from "./utils/notificationRoute";
 export { formatNotifTitle, notifBodyText, parseTicketNotifBody } from "./utils/notificationText";

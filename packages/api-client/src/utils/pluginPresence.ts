@@ -26,3 +26,22 @@ export function isPluginActive(
 export function isVigieActive(plugins: readonly PluginPresence[] | null | undefined): boolean {
   return isPluginActive(plugins, SEER_PLUGIN_ID);
 }
+
+/**
+ * Vigie utilisable POUR LES RECOMMANDATIONS — le prédicat qui décide si
+ * l'interrupteur « inclure les titres hors bibliothèque » existe. La liste
+ * des plugins ne suffit PAS : elle ignore que l'intégration puisse être
+ * allumée sans URL ni clé, cas où le moteur ignore le réglage et n'envoie
+ * aucun titre hors bibliothèque — l'interrupteur serait mort. Le serveur,
+ * lui, tranche avec le MÊME terme que le moteur (`vigieAvailable` de
+ * /api/preferences/reco) : on le suit dès qu'il parle. Un serveur d'avant ce
+ * champ ne dit rien (undefined) — repli sur la liste des plugins, l'ancien
+ * comportement, plutôt qu'un réglage qui disparaîtrait à la mise à jour du
+ * seul client.
+ */
+export function isVigieRecoAvailable(
+  vigieAvailable: boolean | undefined,
+  plugins: readonly PluginPresence[] | null | undefined,
+): boolean {
+  return vigieAvailable ?? isVigieActive(plugins);
+}
