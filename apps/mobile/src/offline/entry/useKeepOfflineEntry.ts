@@ -28,7 +28,10 @@ export function useKeepOfflineEntry(item: MediaItem | undefined): KeepOfflineEnt
     status === "complete" ? "complete"
       : status === "queued" || status === "downloading" || status === "paused" ? "active"
         : "idle";
-  const label = state === "complete" ? t("stateOnDevice") : state === "active" ? t("stateInProgress") : t("keepOffline");
+  // Au repos, un épisode dit « Garder l'épisode » : la fiche d'un épisode ne
+  // garde que lui — « Toute la série » n'existe que sur la fiche de la série.
+  const idleLabel = item?.Type === "Episode" ? t("keepEpisodeOffline") : t("keepOffline");
+  const label = state === "complete" ? t("stateOnDevice") : state === "active" ? t("stateInProgress") : idleLabel;
 
   const onPress = useCallback(() => {
     if (!item) return;
