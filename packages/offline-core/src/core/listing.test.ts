@@ -10,6 +10,7 @@ import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { listForUser, setAutoDelete, stateForItem } from "./listing";
+import { upsertItemMeta } from "./meta";
 import { setPausedByUser, setStatus } from "./queue";
 import { claimOrCreateFile } from "./store";
 import { markWatched, spec } from "./testkit";
@@ -48,6 +49,19 @@ describe("listes", () => {
 
     expect(entry).toBeDefined();
     expect(Object.keys(entry ?? {})).not.toContain("subtitlesJson");
+  });
+
+  // Le filtre du catalogue local se fait sur la bibliothèque Jellyfin
+  // D'ORIGINE (Films, Séries, Animés…), pas sur le type du titre.
+  it("portent la bibliotheque d'origine du titre", () => {
+    const db = openInMemory();
+    unClaim(db);
+    expect(listForUser(db, "u")[0]?.libraryId).toBeNull();
+    upsertItemMeta(db, {
+      itemId: "item1", kind: "movie", seriesId: null, seasonId: null, libraryId: "lib-animes",
+      runtimeTicks: null, title: "Un film", seriesName: null, indexNumber: null, parentIndexNumber: null,
+    }, 1_000);
+    expect(listForUser(db, "u")[0]?.libraryId).toBe("lib-animes");
   });
 
   // Hors ligne il n'y a AUCUN DTO serveur : cette liste est la seule voie par

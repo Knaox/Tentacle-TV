@@ -44,6 +44,7 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     createdAt: 0,
     lastPlayedAt: null,
     pausedByUser: false,
+    libraryId: null,
     ...over,
   };
 }
