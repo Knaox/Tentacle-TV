@@ -16,8 +16,8 @@
  *
  * # Pourquoi le seuil est borné ici
  *
- * La photo vit dans `localStorage` : elle peut avoir été bricolée, ou écrite par
- * une version antérieure. Un seuil à 0 marquerait tout « vu » à la première
+ * La photo vit dans un cache local : elle peut avoir été bricolée, ou écrite
+ * par une version antérieure. Un seuil à 0 marquerait tout « vu » à la première
  * seconde, et supprimerait dans la foulée les téléchargements réglés sur
  * « effacer après visionnage ». On borne donc au point de décision, une fois.
  */

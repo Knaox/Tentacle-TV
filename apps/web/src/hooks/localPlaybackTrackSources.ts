@@ -16,8 +16,10 @@
 
 import type { AudioTrack, SubtitleTrack } from "../components/VideoPlayer";
 import type { MpvTrack } from "./useDesktopPlayer";
+import { formatLocalTrackLabel, parseSideCarFileName } from "@tentacle-tv/offline-core";
 import type { LocalSubtitleFile } from "../downloads/playbackApi";
-import { formatLocalTrackLabel } from "./localTrackLabels";
+
+export { parseSideCarFileName, type ParsedSideCar } from "@tentacle-tv/offline-core";
 
 /** Décalage des index de side-cars (les sid mpv et index Jellyfin restent < 1000). */
 export const SIDECAR_INDEX_BASE = 1000;
@@ -29,30 +31,6 @@ export function isSideCarIndex(index: number | null | undefined): boolean {
 export interface LabelContext {
   locale: string;
   fallbackFor: (index: number) => string;
-}
-
-export interface ParsedSideCar {
-  /** Index Jellyfin d'origine (celui du nom de fichier). */
-  jfIndex: number;
-  lang: string;
-  forced: boolean;
-  sdh: boolean;
-  format: string;
-}
-
-/** `3-fre-forced.srt` → index 3, français, forcé. */
-export function parseSideCarFileName(fileName: string): ParsedSideCar | null {
-  const match = fileName.match(/^(\d+)-([a-z0-9-]+)\.(srt|ass|vtt)$/i);
-  if (!match) return null;
-  const parts = match[2].split("-");
-  const suffixes = parts.slice(1).map((p) => p.toLowerCase());
-  return {
-    jfIndex: Number(match[1]),
-    lang: parts[0] ?? "und",
-    forced: suffixes.includes("forced"),
-    sdh: suffixes.includes("sdh"),
-    format: match[3].toLowerCase(),
-  };
 }
 
 export function buildLocalAudioTracks(mpvAudio: MpvTrack[], ctx: LabelContext): AudioTrack[] {

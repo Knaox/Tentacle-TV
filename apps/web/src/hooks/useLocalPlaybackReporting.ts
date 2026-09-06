@@ -23,7 +23,7 @@ import {
 } from "../downloads/playbackApi";
 import { drainReportQueue } from "../offline/resync";
 import { useConnectivity } from "../offline/useConnectivity";
-import { localPlaybackState } from "./localPlaybackProgress";
+import { localPlaybackState } from "@tentacle-tv/offline-core";
 
 const SAVE_INTERVAL_MS = 10_000;
 
