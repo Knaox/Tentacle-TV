@@ -34,13 +34,16 @@ export function useTrickplay(
   mediaSourceId?: string,
   /** Planches gardées sur l'appareil : elles priment, et rien ne part vers le serveur. */
   local?: LocalTrickplay | null,
+  /** Lecture locale : sans planche sur l'appareil, pas d'aperçu — jamais celles du serveur. */
+  options?: { localOnly?: boolean },
 ): UseTrickplayResult {
   const client = useJellyfinClient();
+  const localOnly = options?.localOnly === true;
   const selection = useMemo(
     () => (local
       ? { mediaSourceId: local.mediaSourceId, width: local.width, info: local.info }
-      : pickBestTrickplayWidth(item?.Trickplay, mediaSourceId)),
-    [item?.Trickplay, mediaSourceId, local],
+      : localOnly ? null : pickBestTrickplayWidth(item?.Trickplay, mediaSourceId)),
+    [item?.Trickplay, mediaSourceId, local, localOnly],
   );
 
   const prefetchedRef = useRef<Set<number>>(new Set());

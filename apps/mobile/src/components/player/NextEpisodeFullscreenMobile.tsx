@@ -28,6 +28,8 @@ interface Props {
   onRatingEngage?: () => void;
   /** Lecture locale : visuels et synopsis du suivant lus sur l'appareil. */
   artwork?: NextEpisodeArtwork | null;
+  /** Lecture locale : sans visuel sur l'appareil, le dégradé de repli — jamais le serveur. */
+  artworkLocalOnly?: boolean;
 }
 
 /** Repli sans bannière — le dégradé du cadre d'aperçu des réglages desktop. */
@@ -42,7 +44,7 @@ const FALLBACK_COLORS = ["#2b2436", "#16131c", "#0a0a0d"] as const;
  * entamée par la carte de coin (`initialProgress`), jamais de zéro.
  */
 export function NextEpisodeFullscreenMobile({
-  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss, rating, onRatingEngage, artwork,
+  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss, rating, onRatingEngage, artwork, artworkLocalOnly = false,
 }: Props) {
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
@@ -71,8 +73,8 @@ export function NextEpisodeFullscreenMobile({
   const seriesId = isEpisode
     ? (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id)
     : nextEpisode.Id;
-  const backdropUrl = artwork?.backdropUri ?? client.getImageUrl(seriesId, "Backdrop", { width: 1280, quality: 80 });
-  const thumbUrl = artwork?.thumbUri ?? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
+  const backdropUrl = artwork?.backdropUri ?? (artworkLocalOnly ? null : client.getImageUrl(seriesId, "Backdrop", { width: 1280, quality: 80 }));
+  const thumbUrl = artwork?.thumbUri ?? (artworkLocalOnly ? null : client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 }));
   const overview = nextEpisode.Overview || artwork?.description || "";
   const episodeLabel = isEpisode && nextEpisode.ParentIndexNumber != null && nextEpisode.IndexNumber != null
     ? `S${String(nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(nextEpisode.IndexNumber).padStart(2, "0")}`
@@ -90,7 +92,7 @@ export function NextEpisodeFullscreenMobile({
       {/* Fond : bannière série en dézoom, repli dégradé sombre. */}
       <LinearGradient colors={[...FALLBACK_COLORS]} locations={[0, 0.55, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ scale: zoom }] }]}>
-        <Image source={{ uri: backdropUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+        {backdropUrl !== null && <Image source={{ uri: backdropUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />}
       </Animated.View>
       {/* Deux voiles, comme sur le bureau : latéral puis vertical. */}
       <LinearGradient
@@ -140,7 +142,7 @@ export function NextEpisodeFullscreenMobile({
         ]}
       >
         <View style={{ width: thumbW, aspectRatio: 16 / 9, borderRadius: 12, overflow: "hidden", backgroundColor: "#16131c" }}>
-          <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+          {thumbUrl !== null && <Image source={{ uri: thumbUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />}
         </View>
 
         <View style={{ flex: row ? 1 : undefined, minWidth: 0 }}>

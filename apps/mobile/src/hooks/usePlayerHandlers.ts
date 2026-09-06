@@ -178,7 +178,8 @@ export function usePlayerHandlers({
     });
     reporting.lastStopPromiseRef.current.then(run, run);
     // Hors de la règle partagée : « Ajouts récents » (badge vu). `["item"]`, les
-    // hubs et la fiche série sont invalidés par elle — ne pas doubler.
+    // hubs et la fiche série sont invalidés par elle — ne pas doubler. Sous la
+    // garde, comme le reste : hors ligne, rien à invalider.
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, queryClient, positionRef]);
 
