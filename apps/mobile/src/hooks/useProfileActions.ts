@@ -32,8 +32,19 @@ export function useProfileActions() {
   const initial = userName.charAt(0).toUpperCase();
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
 
+  // Sans serveur (hors ligne), la révocation échoue : on purge quand même la
+  // session locale — comme le voile hors ligne — sinon « Se déconnecter » ne
+  // ferait rien.
   const handleLogout = useCallback(() => {
-    logout.mutate(undefined, { onSuccess: () => { clearCredentials(storage); router.replace("/(auth)/login"); } });
+    const leave = () => { clearCredentials(storage); router.replace("/(auth)/login"); };
+    logout.mutate(undefined, {
+      onSuccess: leave,
+      onError: () => {
+        storage.removeItem("tentacle_token");
+        storage.removeItem("tentacle_user");
+        leave();
+      },
+    });
   }, [logout, storage, router]);
 
   const handleChangeServer = useCallback(() => {
