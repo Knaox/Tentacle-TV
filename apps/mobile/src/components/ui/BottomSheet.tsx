@@ -33,16 +33,19 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
   const { height: SCREEN_H } = useWindowDimensions();
   const snapHeights = snapPoints.map((p) => Math.round(SCREEN_H * p));
   const [minH, maxH] = snapHeights;
-  const translateY = useRef(new Animated.Value(SCREEN_H)).current;
+  // Translation RELATIVE À LA FEUILLE (haute de maxH, ancrée en bas) : `maxH`
+  // la cache entièrement, `maxH - minH` en montre `minH`, 0 la déplie. Une
+  // translation calée sur la hauteur de l'ÉCRAN n'était juste que pour un
+  // second palier à 1,0 — à [0.42, 0.6], il n'en dépassait que deux pour cent.
+  const translateY = useRef(new Animated.Value(maxH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Ref bag — PanResponder lit toujours des valeurs fraîches (dont la hauteur H).
-  const ref = useRef({ currentSnap: 0, minH, maxH, onClose, H: SCREEN_H });
+  // Ref bag — PanResponder lit toujours des valeurs fraîches (dont les paliers).
+  const ref = useRef({ currentSnap: 0, minH, maxH, onClose });
   ref.current.minH = minH;
   ref.current.maxH = maxH;
   ref.current.onClose = onClose;
-  ref.current.H = SCREEN_H;
 
   const animateTo = useCallback((toValue: number, onDone?: () => void) => {
     Animated.spring(translateY, {
@@ -55,7 +58,7 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     ref.current.currentSnap = 0;
     Animated.parallel([
       Animated.spring(translateY, {
-        toValue: ref.current.H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+        toValue: ref.current.maxH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
       } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start(() => ref.current.onClose());
@@ -70,51 +73,51 @@ export function BottomSheet({ visible, onClose, snapPoints = [0.5, 1.0], childre
     if (visible && !wasVisible) {
       ref.current.currentSnap = 0;
       setIsExpanded(false);
-      translateY.setValue(SCREEN_H);
+      translateY.setValue(maxH);
       Animated.parallel([
         Animated.spring(translateY, {
-          toValue: SCREEN_H - minH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+          toValue: maxH - minH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
         } as Animated.SpringAnimationConfig),
         Animated.timing(overlayOpacity, { toValue: 1, duration: 260, useNativeDriver: true }),
       ]).start();
     } else if (visible && wasVisible) {
       ref.current.currentSnap = 0;
       setIsExpanded(false);
-      animateTo(SCREEN_H - minH);
+      animateTo(maxH - minH);
     } else if (!visible) {
       Animated.parallel([
         Animated.spring(translateY, {
-          toValue: SCREEN_H, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
+          toValue: maxH, useNativeDriver: true, damping: 22, stiffness: 240, mass: 0.9,
         } as Animated.SpringAnimationConfig),
         Animated.timing(overlayOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
       ]).start();
     }
-  }, [visible, translateY, overlayOpacity, minH, animateTo]);
+  }, [visible, translateY, overlayOpacity, minH, maxH, animateTo]);
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_: GestureResponderEvent, g: PanResponderGestureState) => Math.abs(g.dy) > 5,
       onPanResponderMove: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH, H } = ref.current;
-        const base = currentSnap === 0 ? H - mH : H - xH;
-        const next = Math.max(H - xH, base + g.dy);
+        const { currentSnap, minH: mH, maxH: xH } = ref.current;
+        const base = currentSnap === 0 ? xH - mH : 0;
+        const next = Math.max(0, base + g.dy);
         translateY.setValue(next);
       },
       onPanResponderRelease: (_: GestureResponderEvent, g: PanResponderGestureState) => {
-        const { currentSnap, minH: mH, maxH: xH, H } = ref.current;
+        const { currentSnap, minH: mH, maxH: xH } = ref.current;
 
         if (g.dy > DISMISS_THRESHOLD && currentSnap === 0) { setIsExpanded(false); dismiss(); return; }
         if (g.dy > DISMISS_THRESHOLD && currentSnap === 1) {
           ref.current.currentSnap = 0; setIsExpanded(false);
-          animateTo(H - mH); return;
+          animateTo(xH - mH); return;
         }
         if (g.dy < -DISMISS_THRESHOLD && currentSnap === 0) {
           ref.current.currentSnap = 1; setIsExpanded(true);
-          animateTo(H - xH); return;
+          animateTo(0); return;
         }
 
-        const snapTo = currentSnap === 0 ? H - mH : H - xH;
+        const snapTo = currentSnap === 0 ? xH - mH : 0;
         animateTo(snapTo);
       },
     })
