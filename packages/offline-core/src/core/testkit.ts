@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { DatabaseHandle, EngineEvent } from "./adapters";
 import { afterEach } from "vitest";
-import { DownloadEngine } from "./engine";
+import { DownloadEngine, type EngineDeps } from "./engine";
 import type { FetchBytes } from "./fetcher";
 import { nodeFiles, nodeVolume } from "../node/nodeFiles";
 import { nodePartWriter } from "../node/nodePartWriter";
@@ -134,6 +134,7 @@ export function makeEngine(
   db: DatabaseHandle,
   root: string,
   net: TransferNet,
+  extra: Partial<EngineDeps> = {},
 ): { engine: DownloadEngine; events: EngineEvent[]; toggles: boolean[] } {
   const events: EngineEvent[] = [];
   const toggles: boolean[] = [];
@@ -145,6 +146,7 @@ export function makeEngine(
     emit: (event) => events.push(event),
     now: () => 1_000,
     onBusy: (busy) => toggles.push(busy),
+    ...extra,
   });
   return { engine, events, toggles };
 }
