@@ -14,7 +14,7 @@
 
 import { useTranslation } from "react-i18next";
 import { AutoDeleteSelect } from "./AutoDeleteSelect";
-import type { SelectionState } from "./selection";
+import type { SelectionState } from "@tentacle-tv/offline-core";
 
 interface Props {
   active: boolean;

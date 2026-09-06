@@ -1,6 +1,7 @@
 /**
- * Progression des transferts — external store module-level (patron
- * colorScheme.ts) alimenté par les événements Tauri `downloads://progress`.
+ * Progression des transferts — external store module-level, alimenté par
+ * l'évènement `downloads://progress` du moteur (IPC sur le bureau, appel
+ * direct sur le mobile).
  * Évite d'invalider TanStack Query ~2 fois par seconde par transfert : seules
  * les barres abonnées re-rendent.
  */

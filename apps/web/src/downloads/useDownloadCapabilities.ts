@@ -14,27 +14,16 @@ import { backendUrl } from "../main";
 import { supportsDownloads } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { getCachedSession, saveCachedSession } from "../offline/offlineSession";
-import { LOCAL_QUERY } from "../offline/localQuery";
+import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
+import {
+  NO_CAPABILITIES as NONE,
+  parseCapabilities,
+  type DownloadCapabilities,
+} from "@tentacle-tv/offline-core";
 
-export interface DownloadCapabilities {
-  downloads: boolean;
-  lightDownloads: boolean;
-}
+export type { DownloadCapabilities } from "@tentacle-tv/offline-core";
 
 export const DOWNLOAD_CAPABILITIES_QUERY_KEY = "download-capabilities";
-
-const NONE: DownloadCapabilities = { downloads: false, lightDownloads: false };
-
-function parseCapabilities(raw: unknown): DownloadCapabilities {
-  if (raw && typeof raw === "object") {
-    const value = raw as Partial<DownloadCapabilities>;
-    return {
-      downloads: value.downloads === true,
-      lightDownloads: value.lightDownloads === true,
-    };
-  }
-  return NONE;
-}
 
 async function fetchCapabilities(userId: string): Promise<DownloadCapabilities> {
   const token = localStorage.getItem("tentacle_token");

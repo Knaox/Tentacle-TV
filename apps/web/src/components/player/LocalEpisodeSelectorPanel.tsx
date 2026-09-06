@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import { HorizontalScrollRow } from "../HorizontalScrollRow";
 import { useDownloadsList } from "../../downloads/useDownloadState";
-import { byEpisodeNumber } from "../../downloads/offlineGroups";
+import { byEpisodeNumber } from "@tentacle-tv/offline-core";
 import { localResourceUrl, useDownloadsRootReady } from "../../downloads/localFiles";
 import type { DownloadEntry } from "../../downloads/api";
 

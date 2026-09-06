@@ -29,6 +29,8 @@ export * from "./core/transfer";
 export * from "./core/transferNet";
 export * from "./core/worker";
 export * from "./core/engine";
+export * from "./core/presets";
+export type { CachedSession } from "./core/session";
 export * as session from "./core/session";
 export * as trickplay from "./core/trickplay";
 export * as segments from "./core/segments";
@@ -36,3 +38,20 @@ export * as subs from "./core/subs";
 export * as episodeNumbers from "./core/episodeNumbers";
 export { heal } from "./core/heal";
 export { snapshot } from "./core/snapshot";
+
+// Hors du cœur miroir : la logique pure que l'interface (web comme mobile)
+// partage — catalogue, navigation d'épisode locale, sélection, connectivité,
+// segments locaux, droits, resynchronisation.
+export * from "./catalog/offlineGroups";
+export * from "./catalog/localEpisodeNav";
+export {
+  prune as pruneSelection,
+  state as selectionState,
+  toggle as toggleSelection,
+  toggleAll as toggleAllSelection,
+  type SelectionState,
+} from "./catalog/selection";
+export * from "./connectivity/connectivityMachine";
+export * from "./playback/localSegments";
+export * from "./sync/capabilities";
+export * from "./sync/reportBody";

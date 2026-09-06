@@ -58,7 +58,8 @@ describe("validation", () => {
   });
 
   it("refuse ce qui ne peut pas entrer dans un nom de fichier", () => {
-    const bad: Array<Partial<EnqueueItem>> = [
+    // Hors type volontairement : ce sont les valeurs qu'un client fautif enverrait.
+    const bad: Array<Record<string, unknown>> = [
       { itemId: "" },
       { itemId: "../evil" },
       { itemId: "a".repeat(65) },
@@ -71,7 +72,7 @@ describe("validation", () => {
       { kind: "serie" },
     ];
     for (const partial of bad) {
-      expect(() => enqueue(openInMemory(), [item(partial)]), JSON.stringify(partial)).toThrow(
+      expect(() => enqueue(openInMemory(), [item(partial as Partial<EnqueueItem>)]), JSON.stringify(partial)).toThrow(
         "invalid-item",
       );
     }

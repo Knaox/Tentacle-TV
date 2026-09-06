@@ -12,10 +12,19 @@ import { FILE_COLS, mapFileRow, publicFile, type PublicFile } from "./store";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
 
 /** Une entrée telle que la page la consomme (`DownloadEntry`, `api.ts`). */
+export type DownloadKind = "movie" | "episode";
+
+function kindOf(row: Row): DownloadKind | null {
+  const value = textOrNull(row, "kind");
+  if (value === null) return null;
+  if (value !== "movie" && value !== "episode") throw new Error(`colonne kind : valeur inattendue ${value}`);
+  return value;
+}
+
 export interface DownloadListEntry extends PublicFile {
   title: string | null;
   seriesName: string | null;
-  kind: string | null;
+  kind: DownloadKind | null;
   seriesId: string | null;
   seasonId: string | null;
   /** Numéros d'épisode et de saison : regroupement et tri du catalogue local. */
@@ -59,7 +68,7 @@ function mapEntry(row: Row): DownloadListEntry {
     ...publicFile(mapFileRow(row)),
     title: textOrNull(row, "title"),
     seriesName: textOrNull(row, "series_name"),
-    kind: textOrNull(row, "kind"),
+    kind: kindOf(row),
     seriesId: textOrNull(row, "series_id"),
     seasonId: textOrNull(row, "season_id"),
     indexNumber: integerOrNull(row, "index_number"),

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useUserId } from "@tentacle-tv/api-client";
 import { localSourceForItem, type LocalSource } from "../downloads/playbackApi";
-import { LOCAL_QUERY } from "../offline/localQuery";
+import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
 
 /**
  * Résolution de la source locale (téléchargement complet vérifié côté Rust) —

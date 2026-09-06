@@ -23,16 +23,47 @@ import { bit, integer, integerOrNull, rowId, text, textOrNull, type Row } from "
  * la liste des side-cars à récupérer, et le Rust le marquait
  * `#[serde(skip_serializing)]`. Voir `publicFile`.
  */
+export type DownloadVariant = "original" | "light";
+
+export type DownloadStatus = "queued" | "downloading" | "paused" | "complete" | "error" | "canceled";
+
+const VARIANTS: ReadonlySet<string> = new Set<DownloadVariant>(["original", "light"]);
+const STATUSES: ReadonlySet<string> = new Set<DownloadStatus>([
+  "queued",
+  "downloading",
+  "paused",
+  "complete",
+  "error",
+  "canceled",
+]);
+
+/**
+ * Les deux colonnes portent un `CHECK` en base : une autre valeur est une
+ * incohérence entre le code et le schéma, donc un défaut — on lève, comme
+ * `rows.ts`.
+ */
+function variantOf(row: Row): DownloadVariant {
+  const value = text(row, "variant");
+  if (!VARIANTS.has(value)) throw new Error(`colonne variant : valeur inattendue ${value}`);
+  return value as DownloadVariant;
+}
+
+function statusOf(row: Row): DownloadStatus {
+  const value = text(row, "status");
+  if (!STATUSES.has(value)) throw new Error(`colonne status : valeur inattendue ${value}`);
+  return value as DownloadStatus;
+}
+
 export interface FileRow {
   id: number;
   itemId: string;
   mediaSourceId: string;
-  variant: string;
+  variant: DownloadVariant;
   preset: string | null;
   relPath: string;
   expectedSize: number | null;
   bytesDone: number;
-  status: string;
+  status: DownloadStatus;
   errorCode: string | null;
   audioStreamIndex: number | null;
   burnSubtitleIndex: number | null;
@@ -52,12 +83,12 @@ export function mapFileRow(row: Row): FileRow {
     id: integer(row, "id"),
     itemId: text(row, "item_id"),
     mediaSourceId: text(row, "media_source_id"),
-    variant: text(row, "variant"),
+    variant: variantOf(row),
     preset: textOrNull(row, "preset"),
     relPath: text(row, "rel_path"),
     expectedSize: integerOrNull(row, "expected_size"),
     bytesDone: integer(row, "bytes_done"),
-    status: text(row, "status"),
+    status: statusOf(row),
     errorCode: textOrNull(row, "error_code"),
     audioStreamIndex: integerOrNull(row, "audio_stream_index"),
     burnSubtitleIndex: integerOrNull(row, "burn_subtitle_index"),
@@ -89,7 +120,7 @@ export function setLightParams(
 export interface FileIdentity {
   itemId: string;
   mediaSourceId: string;
-  variant: string;
+  variant: DownloadVariant;
   preset: string | null;
 }
 
@@ -97,7 +128,7 @@ export interface FileIdentity {
 export function findFile(
   db: DatabaseHandle,
   identity: FileIdentity,
-): { id: number; status: string } | null {
+): { id: number; status: DownloadStatus } | null {
   const row = db
     .prepare(
       `SELECT id, status FROM files
@@ -105,7 +136,7 @@ export function findFile(
          AND COALESCE(preset, '') = COALESCE(?, '')`,
     )
     .get(identity.itemId, identity.mediaSourceId, identity.variant, identity.preset);
-  return row === undefined ? null : { id: integer(row, "id"), status: text(row, "status") };
+  return row === undefined ? null : { id: integer(row, "id"), status: statusOf(row) };
 }
 
 export interface ClaimSpec extends FileIdentity {

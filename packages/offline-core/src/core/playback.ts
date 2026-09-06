@@ -14,6 +14,7 @@
  */
 
 import type { DatabaseHandle, Volume } from "./adapters";
+import type { DownloadVariant } from "./store";
 import { safeJoin } from "./paths";
 import { setStatus } from "./queue";
 import { bit, flag, integer, integerOrNull, text, textOrNull } from "./rows";
@@ -26,7 +27,7 @@ export interface LocalSubtitleFile {
 
 export interface LocalSource {
   fileId: number;
-  variant: string;
+  variant: DownloadVariant;
   /** Chemin ABSOLU, passé tel quel à mpv (`loadfile`). */
   absolutePath: string;
   subtitleFiles: LocalSubtitleFile[];

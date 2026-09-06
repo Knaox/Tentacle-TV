@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DownloadEntry } from "./api";
+import type { DownloadListEntry as DownloadEntry } from "../core/listing";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
@@ -24,6 +24,8 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     bytesDone: 0,
     status: "complete",
     errorCode: null,
+    audioStreamIndex: null,
+    burnSubtitleIndex: null,
     title: `Titre ${id}`,
     seriesName: null,
     kind: "movie",
