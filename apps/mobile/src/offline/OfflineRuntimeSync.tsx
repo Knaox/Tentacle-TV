@@ -16,7 +16,7 @@ import { configureDeviceSettings, setCellularAck, useCellularAck } from "./devic
 import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
 import { photographSession } from "./sessionPhoto";
-import { useWifiOnly } from "./settings";
+import { isBackgroundTransfers, useWifiOnly } from "./settings";
 import { wifiBlocked } from "./transferGate";
 import { useConnectivity } from "./useConnectivity";
 
@@ -102,6 +102,12 @@ export function OfflineRuntimeSync() {
     };
     syncCreds();
     const subscription = AppState.addEventListener("change", (status) => {
+      if (status === "background") {
+        // « Continuer en arrière-plan » désactivé : les transferts ne tournent
+        // qu'à l'écran — pause système, relevée au retour au premier plan.
+        if (!isBackgroundTransfers()) offlineEngineIfStarted()?.suspendForSystem();
+        return;
+      }
       if (status !== "active") return;
       offlineEngineIfStarted()?.resumeSystemPauses();
       purgeTick();
