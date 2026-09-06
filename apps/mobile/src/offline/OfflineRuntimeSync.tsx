@@ -12,6 +12,7 @@ import {
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { refreshOfflineCaches } from "./prefsCache";
 import { drainReportQueue } from "./resync";
+import { setTransferConditions } from "./transferGate";
 import { photographSession } from "./sessionPhoto";
 import { useWifiOnly } from "./settings";
 import { useConnectivity } from "./useConnectivity";
@@ -85,6 +86,7 @@ export function OfflineRuntimeSync() {
   // au retour du Wi-Fi.
   useEffect(() => {
     if (networkType === "wifi") setCellularAck(false);
+    setTransferConditions({ wifiOnly, networkType, cellularAck });
     const engine = offlineEngineIfStarted();
     if (engine === null) return;
     if (wifiOnly && networkType === "cellular" && !cellularAck) engine.suspendForSystem();
