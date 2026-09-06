@@ -1,0 +1,132 @@
+/**
+ * Offline mode on MOBILE.
+ *
+ * ⚠️ Never "download", "downloaded", "downloading" here: these strings are read
+ * by App Store reviewers. Keys of `downloads` that don't contain the word stay
+ * reusable; those that do have their counterpart here.
+ */
+export default {
+  keepOffline: "Keep offline",
+  keepEpisodeOffline: "Keep episode",
+  keepSeasonOffline: "Whole season",
+  keepSeriesOffline: "Whole series",
+  keepSelectionOffline: "Keep selection ({{count}})",
+  tabOnDevice: "On this device",
+  stateOnDevice: "On device",
+  stateInProgress: "Preparing",
+  stateWaitingWifi: "Waiting for Wi-Fi",
+  statusPreparing: "Preparing",
+  statusReady: "Ready",
+  variantOriginal: "Original quality",
+  variantOriginalDesc: "The file as is.",
+  variantRemux: "Original quality (MP4)",
+  variantRemuxDesc: "Same picture, repackaged for this device.",
+  remove: "Remove from device",
+  myOfflineTitles: "My offline titles",
+
+  dialogTitle: "Keep offline",
+  dialogTitleSeason: "Keep season offline ({{count}} episodes)",
+  dialogTitleSeries: "Keep series offline",
+  dialogTitleSelection: "Keep selection offline ({{count}} episodes)",
+  start: "Keep offline",
+  queued: "The title will soon be on your device.",
+  seasonQueued: "{{count}} episodes being prepared.",
+  startFailed: "Could not start.",
+  noVariantTitle: "No compatible version",
+  noVariantMessage:
+    "This title can't be kept offline on this device: the server offers no version playable here.",
+  audioUnplayableWarning: "The \"{{track}}\" track won't be playable on this device.",
+  singleAudioTrackHint: "Only one audio track is kept in this version.",
+  dolbyVisionColorsHint: "Colors not guaranteed: this title's Dolby Vision depends on the server's conversion.",
+  presetBitrate: "{{mbps}} Mb/s",
+  sizeUnknown: "Unknown size",
+  totalSize: "Total: {{size}}",
+  alreadyOnDevice_one: "{{count}} already on device",
+  alreadyOnDevice_other: "{{count}} already on device",
+  seasonsPickerLabel: "Seasons to keep",
+  wifiOnlyHint: "You're on cellular data: the transfer will wait for Wi-Fi (adjustable in On this device).",
+
+  manage: "Manage",
+  manageTitle: "On this device",
+  countTitles_one: "{{count}} title",
+  countTitles_other: "{{count}} titles",
+  countActive_one: "{{count}} in progress",
+  countActive_other: "{{count}} in progress",
+  spaceUsed: "Used by your titles: {{size}}",
+  waitingWifiCard_one: "{{count}} transfer is waiting for Wi-Fi",
+  waitingWifiCard_other: "{{count}} transfers are waiting for Wi-Fi",
+  continueOnCellular: "Continue on cellular",
+  removeConfirmTitle: "Remove this title from the device?",
+  removeConfirmMessage:
+    "The file is removed for this account. Another account on this device that kept it still has it.",
+  bulkRemove: "Remove ({{count}})",
+  bulkRemoveConfirmTitle_one: "Remove {{count}} title from the device?",
+  bulkRemoveConfirmTitle_other: "Remove {{count}} titles from the device?",
+  bulkRemoveConfirmMessage:
+    "The files will be removed from this device. Other accounts that kept them keep their copy.",
+  removeAll: "Remove everything from the device",
+  removeAllConfirmTitle: "Remove everything?",
+  removeAllConfirmMessage: "All your offline titles will be removed from this device.",
+  emptyTitle: "Nothing on this device yet",
+  emptyMessage:
+    "Movies and episodes kept offline from their page will show up here, ready to watch without a network.",
+
+  libraryEmptyTitle: "No offline title",
+  libraryEmptyMessage:
+    "No playable title on this device for this account. The full catalog comes back as soon as the server responds.",
+  searchPlaceholder: "Search on this device",
+  episodesOnDeviceHint: "On device",
+  seasonGone: "This season is no longer on the device.",
+  seriesGone: "This series is no longer on the device.",
+
+  settingsTitle: "On this device",
+  sectionSpace: "Space",
+  storageHint: "Titles live in the app's own space. No folder to pick.",
+  sectionTransfers: "Transfers",
+  wifiOnly: "Wi-Fi only",
+  wifiOnlyDesc: "Transfers wait for a Wi-Fi connection.",
+  notifyReady: "Notify me when a title is ready",
+  notifyReadyDesc: "One notification when the queue is done.",
+  notifyReadyDenied: "Notifications are off in the phone settings.",
+  sectionTitles: "Titles",
+  manageTitles: "Manage titles",
+  sectionOnDevice: "On this device",
+  profileRowSettings: "Offline settings",
+  sectionConnection: "Connection",
+  goOfflineHint: "Use only what's on this device. Go back online from the \"Offline\" pill.",
+  dataTitle: "Data",
+
+  networkLabel: "Phone network: {{type}}",
+  networkWifi: "Wi-Fi",
+  networkCellular: "Cellular",
+  networkNone: "No network",
+  networkOther: "Other",
+  saverAutoReason: "Slow connection detected: the app transfers less data.",
+  sessionExpiredMessage:
+    "The offline session has expired (more than 30 days without contacting the server). Reconnect online to verify the account and get your titles back. Local data is kept.",
+
+  clearCacheKeepsTitles: "Your offline titles will be kept.",
+  changeServerWithTitlesMessage:
+    "You have {{count}} offline titles tied to this server. They stay hidden until you come back to it.",
+  changeServerKeepTitles: "Switch and keep titles",
+  changeServerRemoveTitles: "Remove titles and switch",
+
+  readyNotifTitle: "Ready offline",
+  readyNotifBody_one: "\"{{title}}\" is on your device.",
+  readyNotifBody_other: "{{count}} titles are ready on your device.",
+  diskFullNotifTitle: "Not enough space",
+  diskFullNotifBody: "The transfer of \"{{title}}\" stopped.",
+
+  fileMissingTitle: "File not found",
+  fileMissingHint:
+    "This title is no longer on the device. Retry restarts playback — from the server if it can be reached.",
+
+  selectEpisodes: "Select episodes",
+  unitGiB: "GiB",
+  unitMiB: "MiB",
+  unitKiB: "KiB",
+  a11yPill: "Offline, open details",
+  a11yOnDeviceButton: "On this device",
+  a11yTransferActive: "transfer in progress",
+  a11yKeepState: "{{title}}, {{state}}",
+};
