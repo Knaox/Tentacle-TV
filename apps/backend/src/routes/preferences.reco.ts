@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
+import { getSeerrConfig } from "../services/seerConfig";
 import type { JellyfinUser } from "../middleware/auth";
 import { bootstrapPool } from "../services/reco/generationJob";
 import { invalidatePool } from "../services/reco/poolStore";
@@ -48,10 +49,18 @@ export function registerRecoSettingsRoutes(app: FastifyInstance): void {
   app.get("/reco", async (request) => {
     const user = (request as any).user as JellyfinUser;
     const prisma = getPrisma();
+    // LA vérité du serveur sur « hors bibliothèque » : le MÊME terme que
+    // `effectiveIncludeVigie` — plugin installé, activé, intégration allumée
+    // ET service joignable (url + clé). La liste des plugins actifs ne dit
+    // pas les deux derniers : un client qui gate l'interrupteur dessus
+    // affiche une bascule que le moteur ignore. Lecture seule, jamais reçu
+    // au PUT (le bloc stocké garde le choix de l'utilisateur).
+    const vigieAvailable = getSeerrConfig() !== null;
     const row = await prisma.recoSettings.findUnique({ where: { jellyfinUserId: user.userId } });
-    if (!row) return { stored: false, settings: DEFAULT_RECO_SETTINGS };
+    if (!row) return { stored: false, vigieAvailable, settings: DEFAULT_RECO_SETTINGS };
     return {
       stored: true,
+      vigieAvailable,
       settings: {
         personalized: row.personalized,
         includeVigie: row.includeVigie,
