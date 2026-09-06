@@ -48,6 +48,12 @@ export interface LocalSource {
   parentIndexNumber: number | null;
   /** Bibliothèque de l'item — préférences de pistes hors ligne. */
   libraryId: string | null;
+  /**
+   * Flux audio Jellyfin gardé dans une variante Allégée (une seule piste) ;
+   * `null` pour un Original, qui garde toutes ses pistes. Sert à nommer la
+   * piste comme en ligne (`DisplayTitle` du snapshot).
+   */
+  audioStreamIndex: number | null;
 }
 
 /** Side-cars présents sur le disque, triés par nom pour un ordre stable. */
@@ -133,6 +139,7 @@ export function localSource(
     indexNumber: meta === undefined ? null : integerOrNull(meta, "index_number"),
     parentIndexNumber: meta === undefined ? null : integerOrNull(meta, "parent_index_number"),
     libraryId: meta === undefined ? null : textOrNull(meta, "library_id"),
+    audioStreamIndex: file.audioStreamIndex,
   };
 }
 
