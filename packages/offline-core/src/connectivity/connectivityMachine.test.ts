@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyLinkLost,
   applyProbeResult,
   deriveLinkQuality,
   deriveState,
@@ -151,5 +152,36 @@ describe("hystérésis de la latence", () => {
   it("le seuil sépare bien rapide et lent", () => {
     expect(measure(initialHysteresis, SLOW_LINK_MS - 1, 0).next.reachable).toBe(true);
     expect(measure(initialHysteresis, SLOW_LINK_MS, 0).next.reachable).toBe(false);
+  });
+});
+
+describe("applyLinkLost", () => {
+  it("bascule tout de suite hors ligne depuis en ligne, sans confirmation", () => {
+    const r = applyLinkLost(online(0), 5_000);
+    expect(r.flipped).toBe(true);
+    expect(r.wantConfirm).toBe(false);
+    expect(r.next).toEqual({ reachable: false, streak: 0, lastFlipAt: 5_000 });
+  });
+
+  it("ne change rien quand on est déjà hors ligne", () => {
+    const state = offline(1_000);
+    const r = applyLinkLost(state, 5_000);
+    expect(r.flipped).toBe(false);
+    expect(r.next).toBe(state);
+  });
+
+  it("vaut vérité au démarrage à froid", () => {
+    const r = applyLinkLost(initialHysteresis, 5_000);
+    expect(r.flipped).toBe(true);
+    expect(r.next.reachable).toBe(false);
+  });
+
+  it("le retour en ligne garde le seuil et le temps de séjour", () => {
+    const lost = applyLinkLost(online(0), 5_000).next;
+    const once = applyProbeResult(lost, true, 6_000, CFG);
+    expect(once.flipped).toBe(false);
+    expect(once.wantConfirm).toBe(true);
+    const twice = applyProbeResult(once.next, true, 16_000, CFG);
+    expect(twice.flipped).toBe(true);
   });
 });
