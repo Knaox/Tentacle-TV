@@ -1,39 +1,40 @@
 import { useMemo } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { GlassSurface } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, RADIUS, useResponsive, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
-import type { OfflineCatalogCounts, OfflineCatalogFilter } from "./useOfflineCatalog";
+import { ALL_LIBRARIES, type OfflineCatalogFilter, type OfflineCatalogLibrary } from "./useOfflineCatalog";
 
 interface Props {
   search: string;
   onSearch: (value: string) => void;
   filter: OfflineCatalogFilter;
   onFilter: (value: OfflineCatalogFilter) => void;
-  /** Les comptes de l'appareil, affichés dans les puces Films / Séries. */
-  counts: OfflineCatalogCounts;
+  /** Les bibliothèques d'origine des titres de l'appareil — une puce chacune. */
+  libraries: OfflineCatalogLibrary[];
 }
 
 /**
- * La recherche en pilule de verre et le filtre Tout / Films / Séries en
- * PUCES — les mêmes que celles de la bibliothèque en ligne (`GenreFilter`),
- * avec le compte de chaque famille. Empilés sur téléphone, sur une ligne sur
- * tablette.
+ * La recherche en pilule de verre et le filtre par BIBLIOTHÈQUE Jellyfin
+ * d'origine (Tout, Films, Séries, Animés…) en puces — les mêmes que celles de
+ * la bibliothèque en ligne (`GenreFilter`), avec le compte de chacune. Une
+ * seule bibliothèque sur l'appareil : rien à filtrer, les puces s'effacent.
+ * Empilés sur téléphone, sur une ligne sur tablette.
  */
-export function OfflineCatalogToolbar({ search, onSearch, filter, onFilter, counts }: Props) {
+export function OfflineCatalogToolbar({ search, onSearch, filter, onFilter, libraries }: Props) {
   const { t } = useTranslation(["offline", "downloads", "common"]);
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
   const { isTablet } = useResponsive();
   const options = useMemo<Array<{ value: OfflineCatalogFilter; label: string; count: number | null }>>(
     () => [
-      { value: "all", label: t("downloads:filterAll"), count: null },
-      { value: "movies", label: t("downloads:sectionMovies"), count: counts.movies },
-      { value: "series", label: t("downloads:sectionSeries"), count: counts.series },
+      { value: ALL_LIBRARIES, label: t("downloads:filterAll"), count: null },
+      ...libraries.map((library) => ({ value: library.id, label: library.label, count: library.count })),
     ],
-    [t, counts.movies, counts.series],
+    [t, libraries],
   );
+  const showChips = libraries.length >= 2;
 
   return (
     <View style={[st.wrap, isTablet && st.wrapTablet]}>
@@ -60,7 +61,15 @@ export function OfflineCatalogToolbar({ search, onSearch, filter, onFilter, coun
           </View>
         </GlassSurface>
       </View>
-      <View style={st.chips} accessibilityRole="radiogroup" accessibilityLabel={t("downloads:filterAll")}>
+      {showChips && (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={st.chipsScroll}
+        contentContainerStyle={st.chips}
+        accessibilityRole="radiogroup"
+        accessibilityLabel={t("downloads:filterAll")}
+      >
         {options.map((option) => {
           const active = option.value === filter;
           return (
@@ -79,7 +88,8 @@ export function OfflineCatalogToolbar({ search, onSearch, filter, onFilter, coun
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
+      )}
     </View>
   );
 }
@@ -91,6 +101,7 @@ const makeStyles = (t: AppTheme) =>
     searchWrap: { flex: 1 },
     searchRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.md },
     input: { flex: 1, ...typography.body, color: t.colors.text.primary, paddingVertical: 0 },
+    chipsScroll: { flexGrow: 0, flexShrink: 1 },
     chips: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
     chip: {
       flexDirection: "row",
