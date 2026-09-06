@@ -15,7 +15,7 @@
 
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { safeJoin } from "./paths";
 import { setStatus } from "./queue";
 import { bit, flag, integer, integerOrNull, text, textOrNull } from "./rows";
@@ -79,7 +79,7 @@ function listSubtitles(root: string, itemId: string): LocalSubtitleFile[] {
  * taille attendue.
  */
 export function localSource(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   root: string,
   userId: string,
   itemId: string,
@@ -152,7 +152,7 @@ export function localSource(
  * été vu.
  */
 export function setPlaybackState(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
   positionTicks: number,
@@ -198,7 +198,7 @@ export function setPlaybackState(
  * le prochain franchissement du seuil lui enverra `played` de toute façon.
  */
 export function restartPlayback(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
   nowMs: number,
@@ -228,7 +228,7 @@ export interface PendingReport {
  * Les entrées plus anciennes du même item seront marquées en même temps que
  * lui — voir `markItemSynced`.
  */
-export function pendingReports(db: DatabaseSync, userId: string): PendingReport[] {
+export function pendingReports(db: DatabaseHandle, userId: string): PendingReport[] {
   return db
     .prepare(
       `SELECT id, item_id, position_ticks, played, occurred_at_utc
@@ -251,7 +251,7 @@ export function pendingReports(db: DatabaseSync, userId: string): PendingReport[
 
 /** Marque synchronisés TOUS les rapports d'un item jusqu'à `upToId` inclus. */
 export function markItemSynced(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
   upToId: number,

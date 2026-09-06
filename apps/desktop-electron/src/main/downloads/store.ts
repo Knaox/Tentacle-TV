@@ -10,7 +10,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/store.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { transaction } from "./db";
 import { removeItemMediaDir, removeItemMetaDir, removeMediaFile } from "./paths";
 import { bit, integer, integerOrNull, rowId, text, textOrNull, type Row } from "./rows";
@@ -73,7 +73,7 @@ export function publicFile(file: FileRow): PublicFile {
 
 /** Paramètres du mode Allégé et des side-cars, posés à la mise en file. */
 export function setLightParams(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   fileId: number,
   audioStreamIndex: number | null,
   burnSubtitleIndex: number | null,
@@ -95,7 +95,7 @@ export interface FileIdentity {
 
 /** Le fichier existe-t-il déjà pour cette identité ? */
 export function findFile(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   identity: FileIdentity,
 ): { id: number; status: string } | null {
   const row = db
@@ -126,7 +126,7 @@ export interface ClaimOutcome {
  * Attache un claim au fichier correspondant (déduplication), ou crée le
  * fichier en file d'attente. Un fichier `canceled` est RÉACTIVÉ en `queued`.
  */
-export function claimOrCreateFile(db: DatabaseSync, spec: ClaimSpec): ClaimOutcome {
+export function claimOrCreateFile(db: DatabaseHandle, spec: ClaimSpec): ClaimOutcome {
   return transaction(db, () => {
     const existing = findFile(db, spec);
     let fileId: number;
@@ -188,7 +188,7 @@ export interface DeleteOutcome {
  * L'inverse laisserait un index qui promet un fichier disparu.
  */
 export function deleteClaim(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   root: string,
   userId: string,
   fileId: number,
@@ -232,7 +232,7 @@ export function deleteClaim(
  * Original prioritaire sur Allégé — c'est la résolution de source à la lecture.
  */
 export function completeFileForItem(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
 ): FileRow | null {
@@ -253,7 +253,7 @@ export function completeFileForItem(
  * `mediaSourceId` d'un fichier de cet item, le plus récent. Sert à cibler le
  * manifeste trickplay, dont la clé est le `mediaSourceId` Jellyfin.
  */
-export function firstMediaSourceId(db: DatabaseSync, itemId: string): string | null {
+export function firstMediaSourceId(db: DatabaseHandle, itemId: string): string | null {
   const row = db
     .prepare("SELECT media_source_id FROM files WHERE item_id = ? ORDER BY id DESC LIMIT 1")
     .get(itemId);
@@ -261,7 +261,7 @@ export function firstMediaSourceId(db: DatabaseSync, itemId: string): string | n
 }
 
 /** Octets occupés sur le disque par TOUS les fichiers, partiels compris. */
-export function diskUsage(db: DatabaseSync): number {
+export function diskUsage(db: DatabaseHandle): number {
   const row = db.prepare("SELECT COALESCE(SUM(bytes_done), 0) AS n FROM files").get();
   return row === undefined ? 0 : integer(row, "n");
 }

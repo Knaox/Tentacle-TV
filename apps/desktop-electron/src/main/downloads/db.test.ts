@@ -10,7 +10,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it } from "vitest";
-import { dbPath, open, openInMemory, settingGet, settingSet, userVersion } from "./db";
+import type { DatabaseHandle } from "./adapters";
+import { settingGet, settingSet, userVersion } from "./db";
+import { dbPath, openInMemory, openNodeDatabase } from "./node/nodeDatabase";
 import { SCHEMA_VERSION } from "./schema";
 import { integer, text } from "./rows";
 
@@ -30,7 +32,7 @@ afterEach(() => {
 });
 
 /** Noms des tables présentes, triés. */
-function tables(db: DatabaseSync): string[] {
+function tables(db: DatabaseHandle): string[] {
   return db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
     .all()
@@ -56,11 +58,11 @@ describe("migrations", () => {
   it("une base deja a jour n'est pas retouchee", () => {
     const file = dbPath(tempFolder());
 
-    const first = open(file);
+    const first = openNodeDatabase(file);
     settingSet(first, "storage_root", "D:/films");
     first.close();
 
-    const second = open(file);
+    const second = openNodeDatabase(file);
     expect(userVersion(second)).toBe(SCHEMA_VERSION);
     expect(settingGet(second, "storage_root")).toBe("D:/films");
     second.close();
@@ -89,7 +91,7 @@ describe("migrations", () => {
     previous.exec("PRAGMA user_version = 1");
     previous.close();
 
-    const migrated = open(file);
+    const migrated = openNodeDatabase(file);
     expect(userVersion(migrated)).toBe(SCHEMA_VERSION);
 
     // La session d'origine est intacte...

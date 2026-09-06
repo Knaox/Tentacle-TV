@@ -7,9 +7,9 @@
  * fichier.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import { enqueueBatch, mediaRelPath, neededBytesFor, type EnqueueItem } from "./enqueue";
 import { listForUser } from "./listing";
 import { CAPACITY_MARGIN_BYTES } from "./paths";
@@ -45,7 +45,7 @@ function item(partial: Partial<EnqueueItem> = {}): EnqueueItem {
 }
 
 function enqueue(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   items: EnqueueItem[],
   free = 100 * GIB,
 ): ReturnType<typeof enqueueBatch> {

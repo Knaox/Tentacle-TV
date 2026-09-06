@@ -9,7 +9,7 @@
  * Portage de `downloads_enqueue` (`engine_commands.rs`).
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { setAutoDelete } from "./listing";
 import { upsertItemMeta } from "./meta";
 import { hasCapacity } from "./paths";
@@ -94,7 +94,7 @@ export function mediaRelPath(item: EnqueueItem): string {
  * Un fichier existant et non annulé ne compte pas : on va s'y accrocher, pas
  * le retélécharger.
  */
-export function neededBytesFor(db: DatabaseSync, items: readonly EnqueueItem[]): number {
+export function neededBytesFor(db: DatabaseHandle, items: readonly EnqueueItem[]): number {
   let needed = pendingBytes(db);
   for (const item of items) {
     const existing = findFile(db, item);
@@ -106,7 +106,7 @@ export function neededBytesFor(db: DatabaseSync, items: readonly EnqueueItem[]):
 
 /** Met le lot en file, ou le refuse en bloc faute de place. */
 export function enqueueBatch(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   items: readonly EnqueueItem[],
   freeBytes: number,

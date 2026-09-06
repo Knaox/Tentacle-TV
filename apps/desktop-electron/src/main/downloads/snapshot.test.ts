@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import * as episodeNumbers from "./episodeNumbers";
 import type { FetchBytes } from "./fetcher";
 import { CURRENT_META_VERSION, getSpec, metaVersion, snapshotExists, upsertItemMeta, type MetaSpec } from "./meta";

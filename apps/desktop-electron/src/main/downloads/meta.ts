@@ -10,7 +10,7 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { mediaFileExists, safeJoin } from "./paths";
 import { integer, integerOrNull, text, textOrNull } from "./rows";
 
@@ -50,7 +50,7 @@ export interface MetaSpec {
  * `COALESCE` sur les titres et les numéros : un re-téléchargement qui ne les
  * porte pas ne doit pas effacer ce qu'on savait déjà.
  */
-export function upsertItemMeta(db: DatabaseSync, spec: MetaSpec, nowMs: number): void {
+export function upsertItemMeta(db: DatabaseHandle, spec: MetaSpec, nowMs: number): void {
   db.prepare(
     `INSERT INTO item_meta (item_id, kind, series_id, season_id, library_id,
                             runtime_ticks, title, series_name,
@@ -84,7 +84,7 @@ export function upsertItemMeta(db: DatabaseSync, spec: MetaSpec, nowMs: number):
 }
 
 /** Relit le spec catalogique, posé à la mise en file. */
-export function getSpec(db: DatabaseSync, itemId: string): MetaSpec | null {
+export function getSpec(db: DatabaseHandle, itemId: string): MetaSpec | null {
   const row = db
     .prepare(
       `SELECT item_id, kind, series_id, season_id, library_id, runtime_ticks, title,
@@ -136,7 +136,7 @@ export function seriesPrimaryExists(root: string, itemId: string): boolean {
 }
 
 /** Version de snapshot enregistrée (0 si jamais posée). */
-export function metaVersion(db: DatabaseSync, itemId: string): number {
+export function metaVersion(db: DatabaseHandle, itemId: string): number {
   const row = db
     .prepare("SELECT COALESCE(meta_version, 0) AS v FROM item_meta WHERE item_id = ?")
     .get(itemId);
@@ -145,7 +145,7 @@ export function metaVersion(db: DatabaseSync, itemId: string): number {
 
 /** Marque le snapshot comme fait, avec le résumé de ce qui a réussi. */
 export function markSnapshotDone(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   itemId: string,
   imagesState: string,
   nowMs: number,
@@ -156,6 +156,6 @@ export function markSnapshotDone(
 }
 
 /** Pose la bibliothèque de l'item (préférences de pistes hors ligne). */
-export function setLibraryId(db: DatabaseSync, itemId: string, libraryId: string): void {
+export function setLibraryId(db: DatabaseHandle, itemId: string, libraryId: string): void {
   db.prepare("UPDATE item_meta SET library_id = ? WHERE item_id = ?").run(libraryId, itemId);
 }

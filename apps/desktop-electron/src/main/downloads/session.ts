@@ -12,7 +12,7 @@
  * la page ne doit voir aucune différence entre les deux coquilles.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { integer, text, textOrNull } from "./rows";
 
 /** 30 jours en millisecondes. */
@@ -26,7 +26,7 @@ export interface CachedSession {
   expired: boolean;
 }
 
-export function get(db: DatabaseSync, userId: string, nowMs: number): CachedSession | null {
+export function get(db: DatabaseHandle, userId: string, nowMs: number): CachedSession | null {
   const row = db
     .prepare(
       `SELECT profile_json, policy_json, cached_at, expires_at
@@ -53,7 +53,7 @@ export function get(db: DatabaseSync, userId: string, nowMs: number): CachedSess
  * de profil ne doit pas effacer des droits connus.
  */
 export function set(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   profileJson: string,
   policyJson: string | null,
@@ -70,6 +70,6 @@ export function set(
   ).run(userId, profileJson, policyJson, nowMs, nowMs + SESSION_TTL_MS);
 }
 
-export function clear(db: DatabaseSync, userId: string): void {
+export function clear(db: DatabaseHandle, userId: string): void {
   db.prepare("DELETE FROM session_cache WHERE jellyfin_user_id = ?").run(userId);
 }

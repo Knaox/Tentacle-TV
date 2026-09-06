@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import { clear, get, SESSION_TTL_MS, set } from "./session";
 
 const USER = "u-123";

@@ -16,7 +16,7 @@
 
 import { existsSync, mkdirSync, renameSync, rmSync, statfsSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { integer } from "./rows";
 import { settingGet, settingSet } from "./db";
 
@@ -47,7 +47,7 @@ export function ensureLayout(root: string): void {
 }
 
 /** Racine effective : cache mémoire → paramètre enregistré → défaut. */
-export function resolveRoot(db: DatabaseSync, userDataDir: string): string {
+export function resolveRoot(db: DatabaseHandle, userDataDir: string): string {
   if (cache !== null) return cache;
   const root = settingGet(db, STORAGE_ROOT_KEY) ?? defaultRoot(userDataDir);
   ensureLayout(root);
@@ -66,7 +66,7 @@ export function forgetRoot(): void {
  * Codes d'erreur STABLES, consommés tels quels par l'interface :
  * `root-not-empty` (des téléchargements existent), `root-not-writable`.
  */
-export function setRoot(db: DatabaseSync, newRoot: string): string {
+export function setRoot(db: DatabaseHandle, newRoot: string): string {
   const row = db.prepare("SELECT COUNT(*) AS n FROM files").get();
   if (row !== undefined && integer(row, "n") > 0) throw new Error("root-not-empty");
 

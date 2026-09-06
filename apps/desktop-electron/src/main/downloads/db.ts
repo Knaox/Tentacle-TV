@@ -19,39 +19,27 @@
  * le fichier peut être partagé avec l'app Tauri sur une machine de
  * développement.
  *
- * Ce fichier n'importe JAMAIS `electron` : c'est ce qui permet de le tester
- * sous vitest sur une base en mémoire. Le chemin lui est donné, il ne le
- * cherche pas.
+ * # Aucune plateforme nommée ici
+ *
+ * Ce fichier ne connaît ni `node:sqlite`, ni `electron`, ni Expo : il reçoit
+ * une connexion déjà ouverte (`DatabaseHandle`, voir `adapters.ts`) et la
+ * prépare. C'est `node/nodeDatabase.ts` qui ouvre le fichier sur le bureau,
+ * l'adaptateur expo-sqlite sur le mobile. Testable sous vitest sur une base en
+ * mémoire.
  */
 
-import { DatabaseSync } from "node:sqlite";
-import { mkdirSync } from "node:fs";
-import path from "node:path";
+import type { DatabaseHandle } from "./adapters";
 import { MIGRATIONS } from "./schema";
 import { integer, textOrNull } from "./rows";
 
-export const DB_FILE_NAME = "tentacle-local.db";
-
-/** `<dossier de données>/tentacle-local.db`, dossier créé au besoin. */
-export function dbPath(userDataDir: string): string {
-  mkdirSync(userDataDir, { recursive: true });
-  return path.join(userDataDir, DB_FILE_NAME);
-}
-
-/** Ouvre la base, pose les PRAGMA de rigueur et applique les migrations. */
-export function open(file: string): DatabaseSync {
-  const db = new DatabaseSync(file);
+/** Pose les PRAGMA de rigueur et applique les migrations sur une connexion ouverte. */
+export function open(db: DatabaseHandle): DatabaseHandle {
   configure(db);
   migrate(db);
   return db;
 }
 
-/** Base en mémoire, même schéma que la vraie. Réservée aux tests. */
-export function openInMemory(): DatabaseSync {
-  return open(":memory:");
-}
-
-function configure(db: DatabaseSync): void {
+function configure(db: DatabaseHandle): void {
   // WAL : lectures et écriture concurrentes sans blocage mutuel. Sans effet sur
   // `:memory:`, qui rend « memory » — ce n'est pas une erreur.
   db.exec("PRAGMA journal_mode = WAL");
@@ -61,7 +49,7 @@ function configure(db: DatabaseSync): void {
   db.exec("PRAGMA busy_timeout = 5000");
 }
 
-function migrate(db: DatabaseSync): void {
+function migrate(db: DatabaseHandle): void {
   const version = userVersion(db);
   // L'INDEX vaut la version : le palier 0 amène à `user_version = 1`. Une base
   // en v7 démarre donc la boucle au-delà du dernier palier et ne fait rien.
@@ -72,7 +60,7 @@ function migrate(db: DatabaseSync): void {
   }
 }
 
-function apply(db: DatabaseSync, sql: string, target: number): void {
+function apply(db: DatabaseHandle, sql: string, target: number): void {
   // Chaque palier est atomique : une migration à moitié appliquée laisserait
   // une base dont la version ment sur le contenu.
   db.exec(`BEGIN;\n${sql}\nCOMMIT;`);
@@ -88,7 +76,7 @@ function apply(db: DatabaseSync, sql: string, target: number): void {
  * n'en avons qu'une. Aucun appelant n'en imbrique aujourd'hui — la purge, qui
  * boucle sur des suppressions, en ouvre une par tour.
  */
-export function transaction<T>(db: DatabaseSync, body: () => T): T {
+export function transaction<T>(db: DatabaseHandle, body: () => T): T {
   db.exec("BEGIN");
   try {
     const result = body();
@@ -101,18 +89,18 @@ export function transaction<T>(db: DatabaseSync, body: () => T): T {
 }
 
 /** Version de schéma de la base ouverte. */
-export function userVersion(db: DatabaseSync): number {
+export function userVersion(db: DatabaseHandle): number {
   const row = db.prepare("PRAGMA user_version").get();
   return row === undefined ? 0 : integer(row, "user_version");
 }
 
 /** Lecture d'un paramètre local (racine de stockage, préférences). */
-export function settingGet(db: DatabaseSync, key: string): string | null {
+export function settingGet(db: DatabaseHandle, key: string): string | null {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
   return row === undefined ? null : textOrNull(row, "value");
 }
 
-export function settingSet(db: DatabaseSync, key: string, value: string): void {
+export function settingSet(db: DatabaseHandle, key: string, value: string): void {
   db.prepare(
     `INSERT INTO settings (key, value) VALUES (?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value`,

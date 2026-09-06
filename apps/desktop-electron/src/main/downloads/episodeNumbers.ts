@@ -15,7 +15,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { asInteger, field, parseJson } from "./json";
 import { safeJoin } from "./paths";
 import { text } from "./rows";
@@ -35,7 +35,7 @@ function read(itemJson: Uint8Array): { index: number | null; parent: number | nu
  * `false` si le DTO n'en porte pas — un film n'a pas de numéro d'épisode — ou
  * si le JSON est illisible.
  */
-export function apply(db: DatabaseSync, itemId: string, itemJson: Uint8Array): boolean {
+export function apply(db: DatabaseHandle, itemId: string, itemJson: Uint8Array): boolean {
   const { index, parent } = read(itemJson);
   if (index === null && parent === null) return false;
   db.prepare(
@@ -52,7 +52,7 @@ export function apply(db: DatabaseSync, itemId: string, itemJson: Uint8Array): b
  * depuis leur `item.json` sur le disque. Idempotent — ne cible que les NULL.
  * Retourne le nombre d'items complétés.
  */
-export function backfill(db: DatabaseSync, root: string): number {
+export function backfill(db: DatabaseHandle, root: string): number {
   const ids = db
     .prepare(
       `SELECT item_id FROM item_meta

@@ -8,9 +8,9 @@
  */
 
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import {
   localSource,
   markItemSynced,
@@ -24,7 +24,7 @@ import { writeMedia, preparedRoot, spec } from "./testkit";
 
 const REL = "media/item1/original-ms1.mkv";
 
-function seedComplete(db: DatabaseSync, size: number): number {
+function seedComplete(db: DatabaseHandle, size: number): number {
   const fileId = claimOrCreateFile(db, spec({ expectedSize: size })).fileId;
   db.prepare("UPDATE files SET status = 'complete', bytes_done = ? WHERE id = ?").run(size, fileId);
   return fileId;
