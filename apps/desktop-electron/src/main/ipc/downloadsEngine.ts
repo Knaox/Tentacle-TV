@@ -12,11 +12,11 @@
 
 import { z } from "zod";
 import { downloadsEngine, downloadsVolume } from "../downloadsRuntime";
-import { enqueueBatch, type EnqueueItem } from "../downloads/enqueue";
-import { backfill } from "../downloads/episodeNumbers";
-import { listForUser, setAutoDelete, stateForItem } from "../downloads/listing";
-import { freeSpace } from "../downloads/paths";
-import { deleteClaim } from "../downloads/store";
+import { enqueueBatch, type EnqueueItem } from "../downloads/core/enqueue";
+import { backfill } from "../downloads/core/episodeNumbers";
+import { listForUser, setAutoDelete, stateForItem } from "../downloads/core/listing";
+import { freeSpace } from "../downloads/core/paths";
+import { deleteClaim } from "../downloads/core/store";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 

@@ -20,9 +20,9 @@
  * être éprouvée à l'écran en développement : sa seule preuve est ici.
  */
 
-import type { DatabaseHandle } from "./adapters";
+import type { DatabaseHandle } from "./core/adapters";
 import { z } from "zod";
-import { settingGet, settingSet } from "./db";
+import { settingGet, settingSet } from "./core/db";
 
 /** Identifiant synthétique : jamais un vrai identifiant Jellyfin. */
 export const MIGRATION_KEY = "__tentacle_migration_v1__";

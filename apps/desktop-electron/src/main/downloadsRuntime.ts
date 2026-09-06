@@ -7,17 +7,17 @@
  */
 
 import { app, powerMonitor, powerSaveBlocker } from "electron";
-import { DownloadEngine } from "./downloads/engine";
-import { heal } from "./downloads/heal";
+import { DownloadEngine } from "./downloads/core/engine";
+import { heal } from "./downloads/core/heal";
 import { makeFetcher } from "./downloads/netFetch";
-import type { Volume } from "./downloads/adapters";
+import type { Volume } from "./downloads/core/adapters";
 import { nodeFiles } from "./downloads/node/nodeFiles";
 import { nodePartWriter } from "./downloads/node/nodePartWriter";
 import { createStreamDriver } from "./downloads/node/streamDriver";
-import { resolveRoot } from "./downloads/paths";
-import { purgeDueClaims } from "./downloads/purge";
-import { electronTransferNet } from "./downloads/transferNet";
-import type { Creds } from "./downloads/worker";
+import { resolveRoot } from "./downloads/core/paths";
+import { purgeDueClaims } from "./downloads/core/purge";
+import { electronTransferNet } from "./downloads/electronTransferNet";
+import type { Creds } from "./downloads/core/worker";
 import { localDb } from "./localDb";
 import { sendToPage } from "./pageEvents";
 import { createSystemWakeLock } from "./powerSave";

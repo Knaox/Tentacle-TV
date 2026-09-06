@@ -25,8 +25,8 @@
 
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import type { Volume } from "./downloads/adapters";
-import { safeJoin } from "./downloads/paths";
+import type { Volume } from "./downloads/core/adapters";
+import { safeJoin } from "./downloads/core/paths";
 
 /** Hôte réservé aux ressources locales, distinct de l'application. */
 export const LOCAL_HOST = "local";
