@@ -39,6 +39,8 @@ function entry(over: Partial<DownloadEntry> = {}): DownloadEntry {
     deleteScheduledAt: null,
     played: false,
     positionTicks: 0,
+    createdAt: 0,
+    lastPlayedAt: null,
     ...over,
   };
 }

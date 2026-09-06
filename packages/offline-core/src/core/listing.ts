@@ -47,13 +47,21 @@ export interface DownloadListEntry extends PublicFile {
    */
   played: boolean;
   positionTicks: number;
+  /** Date d'ajout du fichier (epoch MILLISECONDES) — les « derniers ajoutés » du catalogue local. */
+  createdAt: number;
+  /**
+   * Dernière écriture de la progression de CE compte (epoch MILLISECONDES), `null`
+   * sans lecture — l'ordre de « Reprendre ». ⚠️ `deleteScheduledAt` est en SECONDES.
+   */
+  lastPlayedAt: number | null;
 }
 
 const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id,
    item_meta.season_id, item_meta.index_number, item_meta.parent_index_number,
    item_meta.runtime_ticks, claims.auto_delete_after_watch,
    claims.auto_delete_delay_minutes, claims.delete_scheduled_at,
-   playback_state.played, playback_state.position_ticks`;
+   playback_state.played, playback_state.position_ticks,
+   files.created_at, playback_state.updated_at AS last_played_at`;
 
 /**
  * Progression du PROPRIÉTAIRE DU CLAIM, jamais d'un autre compte : deux
@@ -81,6 +89,8 @@ function mapEntry(row: Row): DownloadListEntry {
     // et `flag` lèverait sur le NULL que rend alors SQLite.
     played: (integerOrNull(row, "played") ?? 0) !== 0,
     positionTicks: integerOrNull(row, "position_ticks") ?? 0,
+    createdAt: integer(row, "created_at"),
+    lastPlayedAt: integerOrNull(row, "last_played_at"),
   };
 }
 
