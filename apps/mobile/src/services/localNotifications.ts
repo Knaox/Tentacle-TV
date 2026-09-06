@@ -26,8 +26,9 @@ export async function presentLocalNotification(title: string, body: string, data
       });
     }
     await Notifications.scheduleNotificationAsync({
-      content: { title, body, data, ...(Platform.OS === "android" ? { channelId: CHANNEL_ID } : {}) },
-      trigger: null,
+      content: { title, body, data },
+      // Android : le canal se donne par le déclencheur — seul, il vaut « tout de suite ».
+      trigger: Platform.OS === "android" ? { channelId: CHANNEL_ID } : null,
     });
     return true;
   } catch {
