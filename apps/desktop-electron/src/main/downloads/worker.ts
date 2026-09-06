@@ -10,7 +10,7 @@
  * Portage de `run_worker` (`apps/desktop/src-tauri/src/downloads/engine.rs`).
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { getSpec, snapshotExists } from "./meta";
 import { safeJoin } from "./paths";
@@ -26,7 +26,7 @@ export interface Creds {
 }
 
 export interface WorkerDeps {
-  db: DatabaseSync;
+  db: DatabaseHandle;
   root: string;
   net: TransferNet;
   fetchBytes: FetchBytes;

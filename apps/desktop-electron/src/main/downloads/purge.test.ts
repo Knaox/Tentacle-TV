@@ -8,9 +8,9 @@
 
 import { existsSync } from "node:fs";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import { setAutoDelete } from "./listing";
 import { setPlaybackState } from "./playback";
 import { purgeDueClaims, scheduleOnPlayed } from "./purge";
@@ -21,7 +21,7 @@ const REL = "media/item1/original-ms1.mkv";
 /** t = 1 000 s, en millisecondes. */
 const WATCHED_AT = 1_000_000;
 
-function prepare(): { db: DatabaseSync; root: string; fileId: number } {
+function prepare(): { db: DatabaseHandle; root: string; fileId: number } {
   const root = preparedRoot("tentacle-purge-");
   writeMedia(root, REL);
   const db = openInMemory();
@@ -30,7 +30,7 @@ function prepare(): { db: DatabaseSync; root: string; fileId: number } {
 }
 
 /** Marque vu et pose l'échéance, comme le fait l'enregistrement de progression. */
-function markWatchedAndSchedule(db: DatabaseSync, fileId: number, delayMinutes: number): void {
+function markWatchedAndSchedule(db: DatabaseHandle, fileId: number, delayMinutes: number): void {
   setAutoDelete(db, "u", fileId, true, delayMinutes, WATCHED_AT);
   setPlaybackState(db, "u", "item1", 9_000, true, false, WATCHED_AT);
   scheduleOnPlayed(db, "u", "item1", WATCHED_AT);

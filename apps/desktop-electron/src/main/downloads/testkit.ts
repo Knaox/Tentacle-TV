@@ -10,7 +10,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { afterEach } from "vitest";
 import type { EventName } from "../channels";
 import { DownloadEngine } from "./engine";
@@ -57,13 +57,13 @@ export function spec(partial: Partial<ClaimSpec> = {}): ClaimSpec {
 }
 
 /** Nombre de lignes d'une table. */
-export function countRows(db: DatabaseSync, table: string): number {
+export function countRows(db: DatabaseHandle, table: string): number {
   const row = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get();
   return row === undefined ? 0 : integer(row, "n");
 }
 
 /** Marque l'item comme vu — plusieurs invariants en dépendent. */
-export function markWatched(db: DatabaseSync, userId: string, itemId: string): void {
+export function markWatched(db: DatabaseHandle, userId: string, itemId: string): void {
   db.prepare(
     `INSERT INTO playback_state (jellyfin_user_id, item_id, position_ticks, played, updated_at)
      VALUES (?, ?, 0, 1, 1)`,
@@ -129,7 +129,7 @@ export function immediateNet(status: number): TransferNet {
 
 /** Un moteur instrumenté : ses évènements et ses bascules d'activité. */
 export function makeEngine(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   root: string,
   net: TransferNet,
 ): { engine: DownloadEngine; events: EventName[]; toggles: boolean[] } {
@@ -157,7 +157,7 @@ export function rootWithThreeItems(): string {
 }
 
 /** Met un fichier en file, daté — l'ordre FIFO se joue sur `created_at`. */
-export function seed(db: DatabaseSync, itemId: string, at: number): number {
+export function seed(db: DatabaseHandle, itemId: string, at: number): number {
   return claimOrCreateFile(
     db,
     spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv`, expectedSize: null, nowMs: at }),
@@ -165,7 +165,7 @@ export function seed(db: DatabaseSync, itemId: string, at: number): number {
 }
 
 /** Pose un statut de pause directement, sans jouer de transfert. */
-export function applyPause(db: DatabaseSync, fileId: number, byUser: boolean): void {
+export function applyPause(db: DatabaseHandle, fileId: number, byUser: boolean): void {
   db.prepare("UPDATE files SET status = 'paused', paused_by_user = ? WHERE id = ?").run(
     byUser ? 1 : 0,
     fileId,

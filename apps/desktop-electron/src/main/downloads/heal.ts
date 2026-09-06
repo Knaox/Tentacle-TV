@@ -9,7 +9,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/heal.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import type { FetchBytes } from "./fetcher";
 import { MAX_JSON_BYTES } from "./fetcher";
 import { parseJson } from "./json";
@@ -32,7 +32,7 @@ interface CompleteItem {
   subtitlesJson: string | null;
 }
 
-function complete(db: DatabaseSync): CompleteItem[] {
+function complete(db: DatabaseHandle): CompleteItem[] {
   return db
     .prepare(
       `SELECT DISTINCT item_id, media_source_id, subtitles_json
@@ -54,7 +54,7 @@ function complete(db: DatabaseSync): CompleteItem[] {
  */
 export async function heal(
   fetchBytes: FetchBytes,
-  db: DatabaseSync,
+  db: DatabaseHandle,
   serverUrl: string,
   root: string,
   nowMs: number,

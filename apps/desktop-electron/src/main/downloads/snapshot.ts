@@ -10,7 +10,7 @@
  * `apps/desktop/src-tauri/src/downloads/meta.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import * as episodeNumbers from "./episodeNumbers";
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { asArray, asString, field, parseJson } from "./json";
@@ -40,7 +40,7 @@ const ITEM_FIELDS =
  */
 export async function snapshot(
   fetchBytes: FetchBytes,
-  db: DatabaseSync,
+  db: DatabaseHandle,
   serverUrl: string,
   root: string,
   spec: MetaSpec,
@@ -144,7 +144,7 @@ async function fetchJson(
  */
 async function setLibrary(
   fetchBytes: FetchBytes,
-  db: DatabaseSync,
+  db: DatabaseHandle,
   base: string,
   itemId: string,
 ): Promise<boolean> {

@@ -6,9 +6,9 @@
  * l'application le verrait repartir tout seul au lancement suivant.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import {
   getFile,
   nextQueued,
@@ -21,7 +21,7 @@ import {
 import { claimOrCreateFile, diskUsage } from "./store";
 import { spec } from "./testkit";
 
-function seed(db: DatabaseSync, itemId: string, at: number): number {
+function seed(db: DatabaseHandle, itemId: string, at: number): number {
   return claimOrCreateFile(
     db,
     spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv`, expectedSize: 100, nowMs: at }),

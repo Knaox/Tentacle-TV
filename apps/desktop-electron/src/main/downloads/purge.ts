@@ -16,7 +16,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/purge.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { integer, text } from "./rows";
 import { deleteClaim } from "./store";
 
@@ -31,7 +31,7 @@ const ACTIVE_PLAYBACK_MS = 60_000;
  * elle reste ainsi robuste même si la page meurt avant le démontage du lecteur.
  */
 export function scheduleOnPlayed(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
   nowMs: number,
@@ -54,7 +54,7 @@ export function scheduleOnPlayed(
  * tient le compteur de références. Retourne le nombre de claims purgés.
  */
 export function purgeDueClaims(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   root: string,
   nowMs: number,
   exemptItem: string | null,
@@ -93,7 +93,7 @@ export function purgeDueClaims(
 }
 
 function playbackActive(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
   nowMs: number,

@@ -7,7 +7,7 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/listing.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { FILE_COLS, mapFileRow, publicFile, type PublicFile } from "./store";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
 
@@ -75,7 +75,7 @@ function mapEntry(row: Row): DownloadListEntry {
   };
 }
 
-export function listForUser(db: DatabaseSync, userId: string): DownloadListEntry[] {
+export function listForUser(db: DatabaseHandle, userId: string): DownloadListEntry[] {
   return db
     .prepare(
       `SELECT ${FILE_COLS}, ${EXTRA_COLS} FROM files
@@ -94,7 +94,7 @@ export function listForUser(db: DatabaseSync, userId: string): DownloadListEntry
  * fichier complet en priorité, sinon le transfert le plus récent.
  */
 export function stateForItem(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   itemId: string,
 ): DownloadListEntry | null {
@@ -125,7 +125,7 @@ export function stateForItem(
  *    jamais de suppression immédiate pour avoir coché une case a posteriori.
  */
 export function setAutoDelete(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   userId: string,
   fileId: number,
   enabled: boolean,

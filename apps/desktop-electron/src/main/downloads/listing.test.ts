@@ -6,14 +6,14 @@
  * mesurerait en heures.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import { listForUser, setAutoDelete, stateForItem } from "./listing";
 import { claimOrCreateFile } from "./store";
 import { markWatched, spec } from "./testkit";
 
-function unClaim(db: DatabaseSync): number {
+function unClaim(db: DatabaseHandle): number {
   return claimOrCreateFile(db, spec()).fileId;
 }
 

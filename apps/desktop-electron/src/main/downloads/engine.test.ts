@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it, vi } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
 import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed } from "./testkit";

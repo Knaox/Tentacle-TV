@@ -4,9 +4,9 @@
  * mesure ici : le journal des URL vues, pas seulement le résultat.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory } from "./db";
+import { openInMemory } from "./node/nodeDatabase";
 import type { FetchBytes } from "./fetcher";
 import { heal } from "./heal";
 import { markSnapshotDone, saveBytes, upsertItemMeta, type MetaSpec } from "./meta";
@@ -52,7 +52,7 @@ function net(responses: Record<string, string> = {}): {
  * Un item complet dont le snapshot est À JOUR : sans ça la réparation le
  * refait, et son trafic couvrirait celui qu'on vient observer.
  */
-function completeItem(db: DatabaseSync, root: string, itemId: string): void {
+function completeItem(db: DatabaseHandle, root: string, itemId: string): void {
   upsertItemMeta(db, film(itemId), 1_000);
   const claim = claimOrCreateFile(db, spec({ itemId, relPath: `media/${itemId}/original-ms1.mkv` }));
   setStatus(db, claim.fileId, "complete", null, 1_000);

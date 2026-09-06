@@ -12,17 +12,17 @@
  * Portage de `apps/desktop/src-tauri/src/downloads/queue.rs`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import { FILE_COLS, mapFileRow, type FileRow } from "./store";
 import { bit, integer } from "./rows";
 
-export function getFile(db: DatabaseSync, fileId: number): FileRow | null {
+export function getFile(db: DatabaseHandle, fileId: number): FileRow | null {
   const row = db.prepare(`SELECT ${FILE_COLS} FROM files WHERE files.id = ?`).get(fileId);
   return row === undefined ? null : mapFileRow(row);
 }
 
 /** Prochain transfert à lancer. FIFO sur la création. */
-export function nextQueued(db: DatabaseSync): FileRow | null {
+export function nextQueued(db: DatabaseHandle): FileRow | null {
   const row = db
     .prepare(
       `SELECT ${FILE_COLS} FROM files
@@ -34,7 +34,7 @@ export function nextQueued(db: DatabaseSync): FileRow | null {
 }
 
 export function setStatus(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   fileId: number,
   status: string,
   errorCode: string | null,
@@ -48,12 +48,12 @@ export function setStatus(
   );
 }
 
-export function setPausedByUser(db: DatabaseSync, fileId: number, byUser: boolean): void {
+export function setPausedByUser(db: DatabaseHandle, fileId: number, byUser: boolean): void {
   db.prepare("UPDATE files SET paused_by_user = ? WHERE id = ?").run(bit(byUser), fileId);
 }
 
 export function setBytesDone(
-  db: DatabaseSync,
+  db: DatabaseHandle,
   fileId: number,
   bytes: number,
   nowMs: number,
@@ -70,7 +70,7 @@ export function setBytesDone(
  * processus a été tué en cours de route) et les pauses SYSTÈME redeviennent
  * `queued`. Les pauses UTILISATEUR restent.
  */
-export function normalizeOnEngineStart(db: DatabaseSync, nowMs: number): void {
+export function normalizeOnEngineStart(db: DatabaseHandle, nowMs: number): void {
   db.prepare(
     `UPDATE files SET status = 'queued', updated_at = ?
      WHERE status = 'downloading'
@@ -86,7 +86,7 @@ export function normalizeOnEngineStart(db: DatabaseSync, nowMs: number): void {
  * vivant, elle ne doit surtout pas remettre en file un transfert qui est en
  * train d'écrire. Il se retrouverait lancé deux fois sur le même `.part`.
  */
-export function requeueSystemPauses(db: DatabaseSync, nowMs: number): number {
+export function requeueSystemPauses(db: DatabaseHandle, nowMs: number): number {
   const done = db
     .prepare(
       `UPDATE files SET status = 'queued', updated_at = ?
@@ -97,7 +97,7 @@ export function requeueSystemPauses(db: DatabaseSync, nowMs: number): number {
 }
 
 /** Transferts en attente d'une place. */
-export function countQueued(db: DatabaseSync): number {
+export function countQueued(db: DatabaseHandle): number {
   const row = db.prepare("SELECT COUNT(*) AS n FROM files WHERE status = 'queued'").get();
   return row === undefined ? 0 : integer(row, "n");
 }
@@ -107,7 +107,7 @@ export function countQueued(db: DatabaseSync): number {
  * dans le contrôle d'espace disque d'une nouvelle mise en file, sans quoi on
  * promettrait deux fois la même place.
  */
-export function pendingBytes(db: DatabaseSync): number {
+export function pendingBytes(db: DatabaseHandle): number {
   const row = db
     .prepare(
       `SELECT COALESCE(SUM(MAX(COALESCE(expected_size, 0) - bytes_done, 0)), 0) AS n

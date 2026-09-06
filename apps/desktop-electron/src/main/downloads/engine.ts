@@ -15,7 +15,7 @@
  * l'entrelacement, qui ne se produit qu'aux `await`.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./adapters";
 import type { EventName } from "../channels";
 import type { FetchBytes } from "./fetcher";
 import {
@@ -37,7 +37,7 @@ import { runWorker, type Creds } from "./worker";
 export const MAX_PARALLEL = 2;
 
 export interface EngineDeps {
-  db: DatabaseSync;
+  db: DatabaseHandle;
   /** Relue à chaque usage : l'utilisateur peut changer de racine. */
   root: () => string;
   net: TransferNet;

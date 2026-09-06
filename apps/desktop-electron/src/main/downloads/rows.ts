@@ -1,9 +1,9 @@
 /**
- * Lecture TYPÉE des lignes rendues par `node:sqlite`.
+ * Lecture TYPÉE des lignes rendues par la base (`DatabaseHandle`, `adapters.ts`).
  *
  * # Pourquoi ce fichier existe
  *
- * `StatementSync.get()` rend un `Record<string, SQLOutputValue>` : chaque
+ * `Statement.get()` rend un `Record<string, SqlValue>` : chaque
  * colonne peut valoir `null | number | bigint | string | Uint8Array`, et le
  * compilateur ne sait rien du schéma. Sans ce passage obligé, chaque lecture
  * demanderait un transtypage, et la règle « aucun `any` » tomberait au premier
@@ -15,19 +15,18 @@
  *
  * # Le piège que ces fonctions évitent
  *
- * `SQLInputValue` n'admet ni `undefined` ni `boolean` : les deux lèvent à
+ * `SqlParam` n'admet ni `undefined` ni `boolean` : les deux lèvent à
  * l'exécution (« Provided value cannot be bound to SQLite parameter »). Tout
  * `Option<T>` du Rust devient donc `T | null`, jamais `T | undefined`, et tout
  * booléen passe par `bit()`. TypeScript refuse les deux avant l'exécution :
  * c'est ce qui fait du typecheck une vraie porte sur cette couche.
  */
 
-import type { SQLOutputValue } from "node:sqlite";
+import type { Row, SqlValue } from "./adapters";
 
-/** Une ligne, telle que `node:sqlite` la rend. */
-export type Row = Record<string, SQLOutputValue>;
+export type { Row } from "./adapters";
 
-function pick(row: Row, column: string): SQLOutputValue {
+function pick(row: Row, column: string): SqlValue {
   const value = row[column];
   // `undefined` = colonne ABSENTE de la requête ; `null` = colonne présente et
   // nulle. Les confondre ferait chercher un défaut de données là où c'est le
@@ -36,7 +35,7 @@ function pick(row: Row, column: string): SQLOutputValue {
   return value;
 }
 
-function refuse(column: string, expected: string, got: SQLOutputValue): never {
+function refuse(column: string, expected: string, got: SqlValue): never {
   throw new Error(`colonne ${column} : ${expected} attendu, recu ${typeof got}`);
 }
 
