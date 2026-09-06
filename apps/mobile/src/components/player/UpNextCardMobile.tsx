@@ -19,6 +19,8 @@ interface Props {
   controlsVisible: boolean;
   onPlay: () => void;
   onDismiss: () => void;
+  /** Lecture locale : la vignette du suivant, lue sur l'appareil. */
+  thumbUri?: string | null;
 }
 
 /**
@@ -32,8 +34,7 @@ interface Props {
  * Elle remonte quand l'habillage du lecteur est à l'écran, comme sur le web.
  */
 export function UpNextCardMobile({
-  nextEpisode, countdownSeconds, countdownTotalMs, controlsVisible, onPlay, onDismiss,
-}: Props) {
+  nextEpisode, countdownSeconds, countdownTotalMs, controlsVisible, onPlay, onDismiss, thumbUri }: Props) {
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
   const insets = useSafeAreaInsets();
@@ -62,7 +63,7 @@ export function UpNextCardMobile({
 
   const armed = useArmedCountdown(countdownSeconds, countdownTotalMs);
 
-  const thumbUrl = client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
+  const thumbUrl = thumbUri ?? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
   const isEpisode = nextEpisode.Type === "Episode";
   const episodeLabel = isEpisode && nextEpisode.ParentIndexNumber != null && nextEpisode.IndexNumber != null
     ? `S${String(nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(nextEpisode.IndexNumber).padStart(2, "0")}`

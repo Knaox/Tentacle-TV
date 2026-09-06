@@ -9,7 +9,8 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { EndCardRating } from "@tentacle-tv/api-client";
 import { PLAYER, motion, useResponsive } from "../../theme";
-import { StarRatingMobile } from "../rating/StarRatingMobile";
+import type { NextEpisodeArtwork } from "../../hooks/offline/useNextEpisodeArtwork";
+import { EndCardRatingBlock } from "./EndCardRatingBlock";
 import { OverlayPill } from "./overlayPill";
 import { useArmedCountdown } from "./useArmedCountdown";
 
@@ -25,6 +26,8 @@ interface Props {
   rating?: EndCardRating | null;
   /** Appelé quand une note se pose : tue le décompte de la suite. */
   onRatingEngage?: () => void;
+  /** Lecture locale : visuels et synopsis du suivant lus sur l'appareil. */
+  artwork?: NextEpisodeArtwork | null;
 }
 
 /** Repli sans bannière — le dégradé du cadre d'aperçu des réglages desktop. */
@@ -39,10 +42,9 @@ const FALLBACK_COLORS = ["#2b2436", "#16131c", "#0a0a0d"] as const;
  * entamée par la carte de coin (`initialProgress`), jamais de zéro.
  */
 export function NextEpisodeFullscreenMobile({
-  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss, rating, onRatingEngage,
+  nextEpisode, countdownSeconds, countdownTotalMs, onPlay, onDismiss, rating, onRatingEngage, artwork,
 }: Props) {
   const { t } = useTranslation("player");
-  const { t: tReco } = useTranslation("reco");
   const client = useJellyfinClient();
   const insets = useSafeAreaInsets();
   const { width, isTablet } = useResponsive();
@@ -69,8 +71,9 @@ export function NextEpisodeFullscreenMobile({
   const seriesId = isEpisode
     ? (nextEpisode.ParentBackdropItemId ?? nextEpisode.SeriesId ?? nextEpisode.Id)
     : nextEpisode.Id;
-  const backdropUrl = client.getImageUrl(seriesId, "Backdrop", { width: 1280, quality: 80 });
-  const thumbUrl = client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
+  const backdropUrl = artwork?.backdropUri ?? client.getImageUrl(seriesId, "Backdrop", { width: 1280, quality: 80 });
+  const thumbUrl = artwork?.thumbUri ?? client.getImageUrl(nextEpisode.Id, "Primary", { width: 500, quality: 85 });
+  const overview = nextEpisode.Overview || artwork?.description || "";
   const episodeLabel = isEpisode && nextEpisode.ParentIndexNumber != null && nextEpisode.IndexNumber != null
     ? `S${String(nextEpisode.ParentIndexNumber).padStart(2, "0")}E${String(nextEpisode.IndexNumber).padStart(2, "0")}`
     : null;
@@ -146,9 +149,9 @@ export function NextEpisodeFullscreenMobile({
           <Text numberOfLines={2} style={[st.title, { fontSize: titleSize, lineHeight: titleSize + 5 }]}>
             {nextEpisode.Name}
           </Text>
-          {!!nextEpisode.Overview && (
+          {!!overview && (
             <Text numberOfLines={3} style={[st.overview, isTablet && { fontSize: 15, lineHeight: 22 }]}>
-              {nextEpisode.Overview}
+              {overview}
             </Text>
           )}
           <View style={st.actions}>
@@ -173,32 +176,7 @@ export function NextEpisodeFullscreenMobile({
             </Pressable>
           </View>
 
-          {/* Noter l'épisode FINI — geste secondaire, sous les actions ; poser
-              une étoile tue le décompte, la surface reste une proposition. */}
-          {rating && (
-            <View style={st.ratingBlock}>
-              <Text style={st.rateLabel}>
-                {t("rateJustWatched")}
-                {rating.episodeCode ? ` — ${rating.episodeCode}` : ""}
-              </Text>
-              <View style={st.ratingRow}>
-                <StarRatingMobile
-                  value={rating.value}
-                  onRate={(score) => {
-                    onRatingEngage?.();
-                    rating.rate(score);
-                  }}
-                  onClear={() => {
-                    onRatingEngage?.();
-                    rating.clear();
-                  }}
-                />
-                {rating.value != null && (
-                  <Text style={st.rateValue}>{tReco("ratingValue", { score: rating.value })}</Text>
-                )}
-              </View>
-            </View>
-          )}
+          {rating && <EndCardRatingBlock rating={rating} onRatingEngage={onRatingEngage} />}
         </View>
       </Animated.View>
     </Animated.View>
@@ -265,21 +243,4 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   ghostLabel: { color: "rgba(255, 255, 255, 0.85)", fontSize: 14, fontWeight: "600" },
-  ratingBlock: { marginTop: 18 },
-  rateLabel: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    textShadowColor: "rgba(0,0,0,0.85)",
-    textShadowRadius: 4,
-  },
-  ratingRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 8 },
-  rateValue: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 14,
-    fontWeight: "600",
-    fontVariant: ["tabular-nums"],
-  },
 });
