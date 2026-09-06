@@ -28,6 +28,7 @@ function source(files: Array<{ fileName: string; absolutePath: string }>): Local
     indexNumber: null,
     parentIndexNumber: null,
     libraryId: null,
+    audioStreamIndex: null,
   };
 }
 
