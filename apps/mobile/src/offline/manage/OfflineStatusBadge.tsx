@@ -9,10 +9,29 @@ interface Props {
   errorCode: string | null;
   /** Ce que la ligne attend (`transferWait`) : le Wi-Fi, le réseau, ou rien. */
   wait?: TransferWait;
+  /** Étape hors transfert : `"finalize"` pendant le remux. */
+  phase?: string | null;
 }
 
-/** Le badge d'état d'une ligne : En attente (du Wi-Fi, du réseau) · En préparation · En pause · Prêt · Erreur · Annulé. */
-export function OfflineStatusBadge({ status, errorCode, wait = null }: Props) {
+/**
+ * Les causes d'erreur, telles qu'elles sont écrites en base. `missing` et
+ * `integrity` y étaient déjà posées par la lecture locale sans avoir jamais eu
+ * de libellé : l'écran disait « Erreur », sans plus.
+ */
+const ERROR_KEYS: Record<string, string> = {
+  "disk-full": "errorDiskFull",
+  unavailable: "errorUnavailable",
+  integrity: "errorIntegrity",
+  missing: "errorMissing",
+  io: "errorIo",
+};
+
+/**
+ * Le badge d'état d'une ligne : En attente (du Wi-Fi, du réseau) · En
+ * préparation · Finalisation · En pause · Prêt · la CAUSE d'une erreur ·
+ * Annulé.
+ */
+export function OfflineStatusBadge({ status, errorCode, wait = null, phase = null }: Props) {
   const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { colors } = useTheme();
@@ -28,7 +47,9 @@ export function OfflineStatusBadge({ status, errorCode, wait = null }: Props) {
       label = waiting ?? t("statusQueued");
       break;
     case "downloading":
-      label = to("statusPreparing");
+      // Le remux dure parfois des minutes après le dernier octet reçu : sans
+      // libellé, la ligne semblait figée à 100 %.
+      label = phase === "finalize" ? to("statusFinalizing") : to("statusPreparing");
       pair = pairs.info;
       break;
     case "paused":
@@ -39,10 +60,14 @@ export function OfflineStatusBadge({ status, errorCode, wait = null }: Props) {
       label = to("statusReady");
       pair = pairs.success;
       break;
-    case "error":
-      label = errorCode === "disk-full" ? t("errorDiskFull") : t("statusError");
+    case "error": {
+      // La finalisation a sa clé dans `offline` : le mot y est interdit ailleurs.
+      const key = errorCode === null ? undefined : ERROR_KEYS[errorCode];
+      label =
+        errorCode === "finalize" ? to("errorFinalize") : key === undefined ? t("statusError") : t(key);
       pair = pairs.error;
       break;
+    }
     default:
       label = t("statusCanceled");
   }

@@ -77,6 +77,10 @@ export default {
   statusError: "Error",
   statusCanceled: "Canceled",
   errorDiskFull: "Disk full",
+  errorUnavailable: "Unavailable on the server",
+  errorIntegrity: "Incomplete file",
+  errorMissing: "File not found",
+  errorIo: "Write error",
 
   sectionActive: "In progress",
   sectionMovies: "Movies",

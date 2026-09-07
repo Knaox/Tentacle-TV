@@ -6,9 +6,11 @@ import { useFileProgress } from "@tentacle-tv/offline-core/react";
 import { FONT_FAMILY, RADIUS, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { pauseTransfer, resumeTransfer, type OfflineEntry } from "../engineApi";
 import { formatBytes } from "../formatBytes";
+import { formatRate, formatTimeLeft } from "../formatTransfer";
 import type { TransferWait } from "../transferGate";
 import { OfflineLocalImage } from "../library/OfflineLocalImage";
 import { OfflineStatusBadge } from "./OfflineStatusBadge";
+import { useRetryCountdown } from "./useRetryCountdown";
 
 const ACTIVE = new Set(["queued", "downloading", "paused"]);
 
@@ -48,10 +50,18 @@ export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection 
   const st = useThemedStyles(makeStyles);
   const live = useFileProgress(entry.id);
 
+  const retryIn = useRetryCountdown(entry.status === "error" ? entry.nextRetryAt : null);
+
+  const finalizing = entry.phase === "finalize";
   const bytesDone = live?.bytesDone ?? entry.bytesDone;
   const expected = live?.expectedSize ?? entry.expectedSize;
-  const pct = expected && expected > 0 ? Math.min(100, (bytesDone / expected) * 100) : null;
+  // Le remux vient APRÈS le dernier octet : la barre est pleine, elle attend.
+  const pct = finalizing ? 100 : expected && expected > 0 ? Math.min(100, (bytesDone / expected) * 100) : null;
   const active = ACTIVE.has(entry.status) || entry.status === "error";
+  // Débit et temps restant n'ont de sens que pendant un transfert qui avance.
+  const rate = entry.status === "downloading" && !finalizing ? formatRate(live?.rateBps ?? null) : null;
+  const timeLeft = entry.status === "downloading" && !finalizing ? formatTimeLeft(live?.etaMs ?? null) : null;
+  const pace = [rate, timeLeft].filter(Boolean).join(" · ");
   const complete = entry.status === "complete";
 
   const meta = [variantLabel(entry, t, to), complete ? formatBytes(entry.bytesDone) : expected ? formatBytes(expected) : null]
@@ -81,18 +91,25 @@ export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection 
         <Text style={st.title} numberOfLines={2}>{entryTitle(entry)}</Text>
         <Text style={st.meta} numberOfLines={1}>{meta}</Text>
         <View style={st.badgeRow}>
-          <OfflineStatusBadge status={entry.status} errorCode={entry.errorCode} wait={wait} />
+          <OfflineStatusBadge status={entry.status} errorCode={entry.errorCode} wait={wait} phase={entry.phase} />
+          {retryIn !== null && (
+            <Text style={st.retry} numberOfLines={1}>
+              {retryIn > 0 ? to("retryIn", { seconds: retryIn }) : to("retryNow")}
+            </Text>
+          )}
         </View>
         {active && (
           <View style={st.progressRow}>
             <View style={st.track}>
-              <View style={[st.fill, { width: `${pct ?? (entry.status === "downloading" ? 8 : 0)}%` }]} />
+              {/* Pas de repli : une barre inventée mentait sur l'avancement. */}
+              <View style={[st.fill, { width: `${pct ?? 0}%` }]} />
             </View>
             <Text style={st.progressText}>
               {formatBytes(bytesDone)}{expected ? ` / ${formatBytes(expected)}` : ""}
             </Text>
           </View>
         )}
+        {pace.length > 0 && <Text style={st.pace} numberOfLines={1}>{pace}</Text>}
       </View>
       {!selection && (
         <View style={st.actions}>
@@ -130,11 +147,13 @@ const makeStyles = (t: AppTheme) =>
     series: { ...typography.small, color: t.colors.brand.light, fontFamily: FONT_FAMILY.medium },
     title: { ...typography.body, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, fontSize: 14, lineHeight: 18 },
     meta: { ...typography.small, color: t.colors.text.quaternary },
-    badgeRow: { marginTop: 4 },
+    badgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
     progressRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
     track: { flex: 1, height: 4, borderRadius: RADIUS.pill, backgroundColor: t.colors.fill.subtle, overflow: "hidden" },
     fill: { height: "100%", backgroundColor: t.colors.brand.violet },
     progressText: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"], minWidth: 88, textAlign: "right" },
+    pace: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"], marginTop: 2 },
+    retry: { ...typography.small, color: t.colors.text.quaternary, fontVariant: ["tabular-nums"] },
     actions: { flexDirection: "row", alignItems: "center", gap: 4 },
     iconBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18 },
   });
