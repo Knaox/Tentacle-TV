@@ -180,8 +180,8 @@ export function claimOrCreateFile(db: DatabaseHandle, spec: ClaimSpec): ClaimOut
         db.prepare(
           `UPDATE files SET status = 'queued', bytes_done = 0, error_code = NULL,
                   paused_by_user = 0, retry_count = 0, next_retry_at = NULL,
-                  phase = NULL, updated_at = ? WHERE id = ?`,
-        ).run(spec.nowMs, existing.id);
+                  phase = NULL, expected_size = ?, updated_at = ? WHERE id = ?`,
+        ).run(spec.expectedSize, spec.nowMs, existing.id);
       }
       fileId = existing.id;
       created = false;

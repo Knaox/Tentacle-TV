@@ -176,6 +176,24 @@ describe("effets de la mise en file", () => {
     expect(String(raw?.["s"])).toContain('"index":7');
   });
 
+  // Sans taille attendue, la barre n'a aucun total a montrer et les octets
+  // restants d'un lot comptent zero pour un Allege.
+  it("l'Allege persiste son estimation comme taille attendue", () => {
+    const db = openInMemory();
+    enqueue(db, [item({ variant: "light", preset: "p720", expectedSize: null, estimatedSize: 700 })]);
+
+    expect(listForUser(db, "u")[0]?.expectedSize).toBe(700);
+  });
+
+  it("l'Original garde sa taille exacte, jamais l'estimation", () => {
+    const db = openInMemory();
+    // L'estimation servirait de controle d'integrite et ferait jeter un
+    // fichier pourtant sain.
+    enqueue(db, [item({ expectedSize: 1_234, estimatedSize: 999 })]);
+
+    expect(listForUser(db, "u")[0]?.expectedSize).toBe(1_234);
+  });
+
   it("re-mettre en file applique l'intention du dialogue", () => {
     const db = openInMemory();
     enqueue(db, [item()]);

@@ -153,6 +153,12 @@ export interface TransferRequest {
   onBytes(bytesOnDisk: number): void;
   /** Dès que possible ; un pilote natif peut ne jamais l'appeler. */
   onHeaders?(status: number, header: (name: string) => string | null): void;
+  /**
+   * Total attendu, dès que le pilote le connaît (`Content-Length` plus la
+   * reprise, `totalBytesExpectedToWrite` sur mobile). N'entre JAMAIS dans le
+   * contrôle d'intégrité : seule la taille annoncée par le serveur en décide.
+   */
+  onTotal?(totalBytes: number): void;
 }
 
 /**

@@ -76,9 +76,14 @@ async function download(
     request.url,
     request.partPath,
     { headers: request.headers, sessionType },
-    ({ totalBytesWritten }) => {
+    ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
       bytesKnown = totalBytesWritten;
       request.onBytes(totalBytesWritten);
+      // iOS rend -1 quand la longueur est inconnue (transcodage progressif au
+      // tout début) ; la politique ignore aussi les valeurs répétées.
+      if (totalBytesExpectedToWrite > 0) {
+        request.onTotal?.(request.resumeFrom + totalBytesExpectedToWrite);
+      }
     },
     resumeData,
   );

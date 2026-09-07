@@ -215,7 +215,12 @@ export function enqueueBatch(
       variant: item.variant,
       preset: item.preset,
       relPath: mediaRelPath(item),
-      expectedSize: item.expectedSize,
+      // L'Allégé n'a pas de taille exacte — le serveur transcode à la volée —,
+      // mais son ESTIMATION vaut mieux qu'un vide : sans elle la barre n'a
+      // aucun total à montrer, et les octets restants d'un lot comptent zéro.
+      // Jamais pour l'Original : c'est sa taille serveur qui sert de contrôle
+      // d'intégrité, une estimation y ferait jeter des fichiers sains.
+      expectedSize: item.expectedSize ?? (item.variant === "light" ? item.estimatedSize : null),
       autoDeleteAfterWatch: item.autoDeleteAfterWatch,
       nowMs,
     });

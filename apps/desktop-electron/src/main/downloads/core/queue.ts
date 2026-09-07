@@ -67,6 +67,14 @@ export function setPhase(db: DatabaseHandle, fileId: number, phase: string | nul
   db.prepare("UPDATE files SET phase = ?, updated_at = ? WHERE id = ?").run(phase, nowMs, fileId);
 }
 
+/**
+ * Taille attendue apprise en cours de route. Ne sert QU'À l'affichage : le
+ * contrôle d'intégrité, lui, ne connaît que la taille annoncée par le serveur.
+ */
+export function setExpectedSize(db: DatabaseHandle, fileId: number, bytes: number, nowMs: number): void {
+  db.prepare("UPDATE files SET expected_size = ?, updated_at = ? WHERE id = ?").run(bytes, nowMs, fileId);
+}
+
 export function setBytesDone(
   db: DatabaseHandle,
   fileId: number,

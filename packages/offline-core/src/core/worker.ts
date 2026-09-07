@@ -30,6 +30,8 @@ export interface WorkerDeps {
   driver: TransferDriver;
   fetchBytes: FetchBytes;
   onProgress: (fileId: number, bytes: number) => void;
+  /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
+  onExpected: (fileId: number, totalBytes: number) => void;
   now: Clock;
 }
 
@@ -103,5 +105,13 @@ export async function runWorker(
     // choisit pas encore.
     transcodeSession: null,
   };
-  return await run(deps.driver, deps.volume, job, flags, (bytes) => deps.onProgress(file.id, bytes), deps.now);
+  return await run(
+    deps.driver,
+    deps.volume,
+    job,
+    flags,
+    (bytes) => deps.onProgress(file.id, bytes),
+    deps.now,
+    (totalBytes) => deps.onExpected(file.id, totalBytes),
+  );
 }
