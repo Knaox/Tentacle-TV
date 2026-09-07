@@ -15,7 +15,8 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * Il porte en revanche le service de premier plan des transferts
  * (`OfflineTransferService`) : démarrage, mise à jour du corps de la
  * notification, arrêt — et arrêt d'office quand le module meurt (un
- * rechargement JavaScript ne laisse pas de notification orpheline).
+ * rechargement JavaScript ne laisse pas de notification orpheline) — et la
+ * finalisation des fichiers Allégé (`Mp4Finalizer`).
  */
 class OfflineStorageModule : Module() {
   private val context: Context
@@ -36,6 +37,13 @@ class OfflineStorageModule : Module() {
 
     AsyncFunction("stopTransferService") {
       OfflineTransferService.stop(context)
+    }
+
+    // Remux d'un MP4 fragmenté (mode Allégé) en MP4 indexé, sur place —
+    // long (quelques secondes par centaine de Mo) : fonction asynchrone, hors
+    // du fil JavaScript.
+    AsyncFunction("finalizeMp4") { path: String ->
+      Mp4Finalizer.finalize(path.removePrefix("file://"))
     }
 
     OnDestroy {

@@ -8,6 +8,10 @@
  * Sur Android, l'exclusion passe par les règles de sauvegarde XML
  * (`res/xml/offline_*_rules.xml`) : le module y rend `false`, sans effet.
  *
+ * Il finalise aussi les fichiers Allégé : le transcodage progressif de
+ * Jellyfin est un MP4 fragmenté sans index ni durée, que les lecteurs natifs
+ * ne savent pas parcourir — remux sur place à la fin du transfert.
+ *
  * Sur Android, un transfert ne survit ni à l'écran éteint ni à l'application
  * passée derrière sans service de premier plan (`OfflineTransferService`) :
  * le JavaScript le démarre quand le moteur s'occupe et l'arrête quand il se
@@ -25,7 +29,10 @@ interface OfflineStorageNative {
   startTransferService?(channelName: string, title: string, body: string): Promise<boolean>;
   updateTransferService?(body: string): boolean;
   stopTransferService?(): Promise<boolean>;
+  finalizeMp4?(path: string): Promise<boolean>;
 }
+
+export type FinalizeOutcome = "done" | "failed" | "unavailable";
 
 const native = requireOptionalNativeModule<OfflineStorageNative>("OfflineStorage");
 
@@ -74,5 +81,19 @@ export async function stopTransferService(): Promise<boolean> {
     return await module.stopTransferService();
   } catch {
     return false;
+  }
+}
+
+/**
+ * Remux d'un MP4 fragmenté (mode Allégé) en MP4 indexé, sur place.
+ * `unavailable` sans module ou sur un build qui l'ignore : le fichier reste tel
+ * quel — le moteur ne le tient pas pour un échec.
+ */
+export async function finalizeMp4(path: string): Promise<FinalizeOutcome> {
+  if (native === null || typeof native.finalizeMp4 !== "function") return "unavailable";
+  try {
+    return (await native.finalizeMp4(path)) ? "done" : "failed";
+  } catch {
+    return "failed";
   }
 }
