@@ -25,6 +25,7 @@ import { onEngineBusy, onEngineProgress, onEngineQueueChanged, stopBackgroundTra
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { nowPlayingItemId } from "./nowPlaying";
+import { transferParallelLimit } from "./backgroundParallel";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
 import { runHevcRepair } from "./hevcRepair";
@@ -119,6 +120,9 @@ export function offlineEngine(): DownloadEngine {
     // Wi-Fi seulement, réseau identifié, serveur joignable : la garde est
     // consultée à chaque relance, jamais mise en cache.
     canTransfer: canStartTransfers,
+    // Un seul transfert à la fois quand l'application est là ; plusieurs le
+    // temps d'une suspension iOS, où rien de neuf ne peut plus partir.
+    parallelLimit: transferParallelLimit,
     // Le fichier Allégé est un MP4 fragmenté : remux indexé par le module natif
     // avant « complete » ; sans module (ancien build), il reste tel quel.
     finalizeMedia: finalizeLightFile,

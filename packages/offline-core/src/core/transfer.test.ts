@@ -189,6 +189,21 @@ describe("reprise", () => {
     expect(readFileSync(target.finalPath, "utf8")).toBe("neuf");
   });
 
+  it("un .part deja complet ne se retelecharge pas", async () => {
+    const root = prepare();
+    const target = job(root, { expectedSize: 6 });
+    // L'iPhone verrouille : la session d'arriere-plan a fini toute seule, le
+    // JavaScript dormait, et la file a remis le fichier en attente au reveil.
+    seedPart(target.finalPath, "abcdef");
+    const simulated = net({ status: 200, chunks: ["jamais"] });
+
+    const end = await run(simulated.net, target, new TransferFlags(), () => undefined);
+
+    expect(end).toEqual({ kind: "complete", finalSize: 6 });
+    expect(readFileSync(target.finalPath, "utf8")).toBe("abcdef");
+    expect(simulated.headers["Range"]).toBeUndefined();
+  });
+
   it("l'Allege repart TOUJOURS de zero", async () => {
     const root = prepare();
     const target = job(root, {
@@ -238,11 +253,19 @@ describe("integrite", () => {
 });
 
 describe("erreurs", () => {
-  it("404, 403 et 401 disent `unavailable`", async () => {
+  it("404 dit `unavailable` : le media n'est plus la", async () => {
     const root = prepare();
-    for (const status of [401, 403, 404]) {
+    const end = await run(net({ status: 404 }).net, job(root), new TransferFlags(), () => undefined);
+    expect(end).toEqual({ kind: "failed", code: "unavailable", bytesDone: 0 });
+  });
+
+  it("401 et 403 disent `network` : un jeton perime se repare tout seul", async () => {
+    const root = prepare();
+    for (const status of [401, 403]) {
       const end = await run(net({ status }).net, job(root), new TransferFlags(), () => undefined);
-      expect(end, String(status)).toEqual({ kind: "failed", code: "unavailable", bytesDone: 0 });
+      // Pause SYSTEME, donc reprise au retour au premier plan, une fois le
+      // jeton rafraichi — pas une erreur qui demande un geste.
+      expect(end, String(status)).toEqual({ kind: "failed", code: "network", bytesDone: 0 });
     }
   });
 

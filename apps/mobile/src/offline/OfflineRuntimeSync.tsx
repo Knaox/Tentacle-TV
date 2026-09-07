@@ -11,6 +11,7 @@ import {
   updateOfflineCreds,
 } from "./engineRuntime";
 import { syncAvatarCache } from "./avatarCache";
+import { setTransfersSuspended } from "./backgroundParallel";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { isLocalPlaybackActive } from "./nowPlaying";
@@ -110,10 +111,20 @@ export function OfflineRuntimeSync() {
       if (status === "background") {
         // « Continuer en arrière-plan » désactivé : les transferts ne tournent
         // qu'à l'écran — pause système, relevée au retour au premier plan.
-        if (!isBackgroundTransfers()) offlineEngineIfStarted()?.suspendForSystem();
+        if (!isBackgroundTransfers()) {
+          offlineEngineIfStarted()?.suspendForSystem();
+          return;
+        }
+        // Activé, sur iOS : le JavaScript va être suspendu et ne lancera plus
+        // rien. On remet au système tout ce qu'on peut MAINTENANT — il mènera
+        // ces transferts à leur terme sans nous. Sans ça, la file s'arrêtait
+        // au premier épisode achevé.
+        setTransfersSuspended(true);
+        offlineEngineIfStarted()?.pump();
         return;
       }
       if (status !== "active") return;
+      setTransfersSuspended(false);
       offlineEngineIfStarted()?.resumeSystemPauses();
       // Le système gèle les minuteurs en arrière-plan : les relances dont
       // l'échéance est passée pendant ce temps se rattrapent ici.

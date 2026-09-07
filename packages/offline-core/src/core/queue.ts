@@ -133,6 +133,25 @@ export function suspendQueued(db: DatabaseHandle, nowMs: number): number {
   return Number(done.changes);
 }
 
+/**
+ * Les transferts que « tout mettre en pause » vise : ce qui tourne et ce qui
+ * attend. Les pauses en cours n'y sont pas — les reprendre serait l'inverse.
+ */
+export function runningFileIds(db: DatabaseHandle): number[] {
+  return db
+    .prepare("SELECT id FROM files WHERE status IN ('queued', 'downloading') ORDER BY id")
+    .all()
+    .map((row) => integer(row, "id"));
+}
+
+/** Les transferts mis en pause PAR L'UTILISATEUR — ceux qu'une reprise globale relance. */
+export function userPausedFileIds(db: DatabaseHandle): number[] {
+  return db
+    .prepare("SELECT id FROM files WHERE status = 'paused' AND paused_by_user = 1 ORDER BY id")
+    .all()
+    .map((row) => integer(row, "id"));
+}
+
 /** Transferts en attente d'une place. */
 export function countQueued(db: DatabaseHandle): number {
   const row = db.prepare("SELECT COUNT(*) AS n FROM files WHERE status = 'queued'").get();
