@@ -31,6 +31,13 @@ export interface KeepOptions {
   /** Délai d'auto-suppression après visionnage (minutes, 0 = immédiat). */
   autoDeleteDelayMinutes: number;
   audioStreamIndex?: number;
+  /**
+   * Langue audio à embarquer, quand le choix porte sur un LOT : les index de
+   * flux diffèrent d'un épisode à l'autre, la langue non. Résolue par item.
+   * ⚠️ Code de langue Jellyfin (`fra`, `eng`…) : il traverse une API, il ne se
+   * traduit ni ne se normalise.
+   */
+  audioLanguage?: string;
   burnSubtitleIndex?: number;
 }
 
@@ -61,6 +68,42 @@ export function imageSubtitleTracks(item: MediaItem): MediaStream[] {
   return streams(item).filter(
     (s) => s.Type === "Subtitle" && typeof s.Index === "number" && IMAGE_SUB_CODECS.has((s.Codec ?? "").toLowerCase()),
   );
+}
+
+/** Les langues audio présentes dans ce lot, une seule fois chacune. */
+export function audioLanguages(items: readonly MediaItem[]): Array<{ code: string; stream: MediaStream }> {
+  const seen = new Map<string, MediaStream>();
+  for (const item of items) {
+    for (const stream of audioTracks(item)) {
+      const code = (stream.Language ?? "").toLowerCase();
+      if (code === "" || seen.has(code)) continue;
+      seen.set(code, stream);
+    }
+  }
+  return [...seen].map(([code, stream]) => ({ code, stream }));
+}
+
+/** L'index audio de CET item pour cette langue, `undefined` s'il ne l'a pas. */
+function languageIndex(item: MediaItem, language: string | undefined): number | undefined {
+  if (language === undefined) return undefined;
+  return audioTracks(item).find((stream) => (stream.Language ?? "").toLowerCase() === language)?.Index;
+}
+
+/**
+ * La piste audio qui sera RÉELLEMENT embarquée. Les paliers Allégé et remux
+ * passent par le transcodage de Jellyfin, qui n'en sort jamais qu'une : sans
+ * consigne, c'est celle que le fichier déclare par défaut. Sert à le DIRE
+ * avant de lancer le transfert.
+ */
+export function keptAudioTrack(item: MediaItem, options: KeepOptions): MediaStream | null {
+  const tracks = audioTracks(item);
+  if (tracks.length === 0) return null;
+  if (options.audioStreamIndex !== undefined) {
+    return tracks.find((stream) => stream.Index === options.audioStreamIndex) ?? null;
+  }
+  const index = languageIndex(item, options.audioLanguage);
+  if (index !== undefined) return tracks.find((stream) => stream.Index === index) ?? null;
+  return tracks.find((stream) => stream.IsDefault) ?? tracks[0] ?? null;
 }
 
 function langTag(stream: MediaStream & { IsHearingImpaired?: boolean }): string {
@@ -113,7 +156,10 @@ export function buildKeepItem(item: MediaItem, options: KeepOptions): EnqueueIte
     base.expectedSize = size ?? undefined;
   } else {
     base.preset = options.kind === "remux" ? REMUX_PRESET : options.preset;
-    if (options.audioStreamIndex !== undefined) base.audioStreamIndex = options.audioStreamIndex;
+    // L'index explicite (un seul titre) prime ; sinon la langue choisie pour
+    // le lot est résolue dans CET item, dont les index lui sont propres.
+    const audio = options.audioStreamIndex ?? languageIndex(item, options.audioLanguage);
+    if (audio !== undefined) base.audioStreamIndex = audio;
     if (options.kind === "light" && options.burnSubtitleIndex !== undefined) base.burnSubtitleIndex = options.burnSubtitleIndex;
   }
   return base;
