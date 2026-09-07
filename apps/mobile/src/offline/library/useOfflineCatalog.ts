@@ -22,7 +22,7 @@ export interface OfflineCatalogLibrary {
   id: string;
   /** Le nom Jellyfin porté par le snapshot, sinon le cache des bibliothèques, sinon Films / Séries d'après le contenu. */
   label: string;
-  /** Films + séries de cette bibliothèque sur l'appareil. */
+  /** Titres (films et épisodes) de cette bibliothèque sur l'appareil — le même compte que le résumé. */
   count: number;
   /** `CollectionType` Jellyfin (`movies`, `tvshows`…) — l'icône de la tuile ; `null` si inconnu. */
   type: string | null;
@@ -73,32 +73,28 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
 
   const libraries = useMemo<OfflineCatalogLibrary[]>(() => {
     const cachedNames = new Map(userId ? readLibrariesList(prefsStore, userId).map((l) => [l.id, l.name] as const) : []);
-    interface Tally { movies: number; series: number; name: string | null; type: string | null; artItemId: string | null }
+    interface Tally { count: number; movies: number; name: string | null; type: string | null; artItemId: string | null }
     const tally = new Map<string, Tally>();
-    const bump = (entry: OfflineEntry, key: "movies" | "series") => {
-      if (entry.libraryId === null) return;
-      const row = tally.get(entry.libraryId) ?? { movies: 0, series: 0, name: null, type: null, artItemId: null };
-      row[key] += 1;
+    for (const entry of complete) {
+      if (entry.libraryId === null) continue;
+      const row = tally.get(entry.libraryId) ?? { count: 0, movies: 0, name: null, type: null, artItemId: null };
+      row.count += 1;
+      if (entry.kind === "movie") row.movies += 1;
       row.name ??= entry.libraryName;
       row.type ??= entry.libraryType;
       row.artItemId ??= entry.itemId;
       tally.set(entry.libraryId, row);
-    };
-    for (const movie of groups.movies) bump(movie, "movies");
-    for (const group of series) {
-      const sample = group.seasons.flatMap((season) => season.episodes).find((e) => e.libraryId !== null);
-      if (sample) bump(sample, "series");
     }
     return [...tally.entries()]
       .map(([id, row]) => ({
         id,
-        label: row.name ?? cachedNames.get(id) ?? t(row.series > row.movies ? "sectionSeries" : "sectionMovies"),
-        count: row.movies + row.series,
+        label: row.name ?? cachedNames.get(id) ?? t(row.movies * 2 > row.count ? "sectionMovies" : "sectionSeries"),
+        count: row.count,
         type: row.type,
         artItemId: row.artItemId,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [groups.movies, series, userId, t]);
+  }, [complete, userId, t]);
 
   // Terme brut : c'est le comparateur partagé qui normalise (accents, casse).
   const needle = search.trim();
