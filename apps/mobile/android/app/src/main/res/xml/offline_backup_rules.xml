@@ -5,9 +5,14 @@
   gardées (sauf le SecureStore, comme chez expo-secure-store) ; les titres
   hors ligne (`files/offline`) sont ÉCARTÉS : ils se re-transfèrent depuis
   le serveur et dépasseraient de toute façon le quota de 25 Mio.
+
+  L'écart ne se DÉCLARE pas : dès qu'un `<include>` paraît, seul ce qu'il
+  nomme est sauvegardé — le domaine `file` est donc déjà entièrement dehors.
+  Un `<exclude domain="file">` y ajoutait un chemin hors de toute inclusion,
+  ce que le lint d'Android refuse (`FullBackupContent`), et la construction de
+  l'AAB s'arrêtait là.
 -->
 <full-backup-content>
   <include domain="sharedpref" path="."/>
   <exclude domain="sharedpref" path="SecureStore"/>
-  <exclude domain="file" path="offline"/>
 </full-backup-content>
