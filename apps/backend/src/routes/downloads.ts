@@ -55,7 +55,12 @@ const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
   p1080: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 8_000_000, audioBitRate: 192_000, maxHeight: 1080 },
   p720: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 4_000_000, audioBitRate: 160_000, maxHeight: 720 },
   p480: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 1_500_000, audioBitRate: 128_000, maxHeight: 480 },
-  pmax: { videoCodec: "h264,hevc", audioCodec: "aac,ac3,eac3", context: "Static" },
+  // Le remux garde l'IMAGE telle quelle, mais jamais le Dolby Digital : en
+  // copiant de l'ac3/eac3 vers un MP4, Jellyfin écrit un fichier sans `moov`
+  // (mesuré — `ftyp`, `free`, puis un `mdat` de taille nulle). Ni lisible, ni
+  // finalisable : deux épisodes entièrement reçus étaient bons à jeter. L'audio
+  // repasse donc en AAC, la vidéo reste copiée.
+  pmax: { videoCodec: "h264,hevc", audioCodec: "aac", context: "Static" },
 };
 
 const LIGHT_PRESET_IDS = Object.keys(TRANSCODE_PRESETS);

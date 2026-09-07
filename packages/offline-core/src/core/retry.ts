@@ -24,7 +24,8 @@ export const RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 60_000];
 export const RETRYABLE_CODES: ReadonlySet<string> = new Set(["io", "finalize", "unexpected"]);
 
 /**
- * Compte l'échec et programme la relance suivante, s'il y en a une.
+ * Compte l'échec et programme la relance suivante, s'il y en a une. Rend
+ * `true` si une relance est effectivement programmée.
  *
  * `delays` vide (le banc d'essai, ou une plateforme qui n'en veut pas) : on
  * compte quand même, mais rien n'est programmé.
@@ -35,15 +36,16 @@ export function recordFailure(
   code: string,
   delays: readonly number[],
   nowMs: number,
-): void {
+): boolean {
   const row = db.prepare("SELECT retry_count FROM files WHERE id = ?").get(fileId);
-  if (row === undefined) return;
+  if (row === undefined) return false;
   const attempt = integer(row, "retry_count");
   const delay = RETRYABLE_CODES.has(code) ? delays[attempt] : undefined;
   db.prepare(
     `UPDATE files SET retry_count = retry_count + 1, last_error_at = ?,
             next_retry_at = ?, updated_at = ? WHERE id = ?`,
   ).run(nowMs, delay === undefined ? null : nowMs + delay, nowMs, fileId);
+  return delay !== undefined;
 }
 
 /** Un geste de l'utilisateur, ou une réussite : le compteur repart de zéro. */
