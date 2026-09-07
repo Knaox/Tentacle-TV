@@ -4,6 +4,7 @@ export default {
   offlinePopoverTitle: "Mode hors ligne",
   offlineReasonBackend: "Le serveur Tentacle ne répond pas.",
   offlineReasonJellyfin: "Jellyfin ne répond pas.",
+  offlineReasonNetwork: "Cet appareil n'a aucun réseau.",
   offlineManualEnabled: "Mode hors ligne activé manuellement.",
   offlineServerReachable: "Le serveur est joignable.",
   offlineServerUnreachable: "Le serveur est injoignable.",

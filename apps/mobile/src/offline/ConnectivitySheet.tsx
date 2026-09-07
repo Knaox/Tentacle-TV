@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { BottomSheet, Button } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { probeNow, setManualOffline, type NetworkType } from "./connectivityStore";
+import { offlineReasonKey } from "./offlineReasonText";
 import { useConnectivity } from "./useConnectivity";
 
 interface Props {
@@ -66,9 +67,7 @@ export function ConnectivitySheet({ visible, onClose }: Props) {
   const networkKey = NETWORK_KEYS[snap.networkType];
   const description = manual
     ? `${t("offlineManualEnabled")} ${snap.reachable ? t("offlineServerReachable") : t("offlineServerUnreachable")}`
-    : snap.reason === "jellyfin"
-      ? t("offlineReasonJellyfin")
-      : t("offlineReasonBackend");
+    : t(offlineReasonKey(snap.reason));
 
   return (
     <BottomSheet visible={visible} onClose={onClose} snapPoints={[0.42, 0.6]}>

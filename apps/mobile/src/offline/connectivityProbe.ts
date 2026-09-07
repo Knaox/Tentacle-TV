@@ -4,7 +4,11 @@
  * cause de l'échec et la latence du backend pour la qualité du lien.
  */
 
-export type OfflineReason = "backend" | "jellyfin" | null;
+/**
+ * Pourquoi on est hors ligne. `"network"` ne vient jamais d'une sonde — c'est
+ * le téléphone qui n'a pas de lien, et il n'y a rien eu à sonder.
+ */
+export type OfflineReason = "backend" | "jellyfin" | "network" | null;
 
 const PROBE_TIMEOUT_MS = 5_000;
 
