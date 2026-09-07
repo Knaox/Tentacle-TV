@@ -118,6 +118,11 @@ export async function finalizeMp4(path: string): Promise<FinalizeOutcome> {
  * des jeux de paramètres : quand le `hvcC` porte les siens, quatre octets
  * suffisent, sans réencodage. `false` si rien n'avait à changer.
  */
+/** Le build embarque-t-il la promotion ? Sans elle, rien ne sert de balayer les titres. */
+export function canPromoteHevcTag(): boolean {
+  return native !== null && typeof native.promoteHevcTag === "function";
+}
+
 export async function promoteHevcTag(path: string): Promise<boolean> {
   if (native === null || typeof native.promoteHevcTag !== "function") return false;
   try {

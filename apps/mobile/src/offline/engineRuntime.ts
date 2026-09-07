@@ -27,6 +27,7 @@ import { localDb } from "./database";
 import { nowPlayingItemId } from "./nowPlaying";
 import { canStartTransfers } from "./transferGate";
 import { expoFileStore } from "./expoFileStore";
+import { runHevcRepair } from "./hevcRepair";
 import { createExpoTransferDriver } from "./expoTransferDriver";
 import { makeFetcher } from "./fetcher";
 import { resumeTokens } from "./resumeTokens";
@@ -130,9 +131,10 @@ export function offlineEngine(): DownloadEngine {
     },
     onStarted: (started) => {
       startPeriodicPurge();
-      // Le disque, lui, est toujours là : ce recalage tourne même hors ligne,
-      // contrairement à `heal` qui a besoin du serveur.
+      // Le disque, lui, est toujours là : ces deux passes tournent même hors
+      // ligne, contrairement à `heal` qui a besoin du serveur.
       runUsageRepair();
+      runHevcRepair();
       if (!isOfflineMode()) runHeal(started);
     },
   });
