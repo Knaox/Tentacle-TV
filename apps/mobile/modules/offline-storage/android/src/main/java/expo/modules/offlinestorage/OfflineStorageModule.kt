@@ -13,10 +13,14 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * plateformes.
  *
  * Il porte en revanche le service de premier plan des transferts
- * (`OfflineTransferService`) : démarrage, mise à jour du corps de la
- * notification, arrêt — et arrêt d'office quand le module meurt (un
- * rechargement JavaScript ne laisse pas de notification orpheline) — et la
- * finalisation des fichiers Allégé (`Mp4Finalizer`).
+ * (`OfflineTransferService`) : démarrage, mise à jour du corps et de la
+ * progression de la notification, arrêt — et arrêt d'office quand le module
+ * meurt (un rechargement JavaScript ne laisse pas de notification orpheline)
+ * — et la finalisation des fichiers Allégé (`Mp4Finalizer`).
+ *
+ * L'appui sur le bouton « Pause » de la notification remonte ici puis au
+ * JavaScript (`onTransferPause`) : la file appartient au moteur, le natif ne
+ * décide de rien.
  */
 class OfflineStorageModule : Module() {
   private val context: Context
@@ -25,14 +29,24 @@ class OfflineStorageModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("OfflineStorage")
 
-    Function("setExcludedFromBackup") { _: String, _: Boolean -> false }
+    Events("onTransferPause")
 
-    AsyncFunction("startTransferService") { channelName: String, title: String, body: String ->
-      OfflineTransferService.start(context, channelName, title, body)
+    OnStartObserving {
+      OfflineTransferService.onPauseRequested = { sendEvent("onTransferPause", mapOf<String, Any>()) }
     }
 
-    Function("updateTransferService") { body: String ->
-      OfflineTransferService.update(context, body)
+    OnStopObserving {
+      OfflineTransferService.onPauseRequested = null
+    }
+
+    Function("setExcludedFromBackup") { _: String, _: Boolean -> false }
+
+    AsyncFunction("startTransferService") { channelName: String, title: String, body: String, pauseLabel: String ->
+      OfflineTransferService.start(context, channelName, title, body, pauseLabel)
+    }
+
+    Function("updateTransferService") { body: String, progress: Int ->
+      OfflineTransferService.update(context, body, progress)
     }
 
     AsyncFunction("stopTransferService") {
@@ -69,6 +83,7 @@ class OfflineStorageModule : Module() {
     }
 
     OnDestroy {
+      OfflineTransferService.onPauseRequested = null
       appContext.reactContext?.let { OfflineTransferService.stop(it) }
     }
   }

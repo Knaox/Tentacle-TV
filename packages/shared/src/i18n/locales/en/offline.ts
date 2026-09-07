@@ -73,6 +73,9 @@ export default {
   seasonsPickerLabel: "Seasons to keep",
   wifiOnlyHint: "You're on cellular data: the transfer will wait for Wi-Fi (adjustable in On this device).",
 
+  // The global gesture: the Android notification carries it too.
+  pauseAll: "Pause all",
+  resumeAll: "Resume all",
   manage: "Manage",
   manageTitle: "On this device",
   countTitles_one: "{{count}} title",

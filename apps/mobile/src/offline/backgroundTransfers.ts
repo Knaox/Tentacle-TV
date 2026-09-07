@@ -4,9 +4,11 @@
  *
  * - « Continuer en arrière-plan » ACTIVÉ : sur Android, le service de premier
  *   plan du module natif (notification « Transferts en cours · 2 titres en
- *   préparation · 43 % ») ; sur iOS, rien à faire, la session d'arrière-plan
- *   d'expo-file-system survit à la suspension. Plus d'anti-veille : tenir
- *   l'écran allumé n'était que de la batterie perdue.
+ *   préparation · 43 % »), avec sa barre de progression et son bouton
+ *   « Tout mettre en pause » — écran verrouillé, c'est le seul endroit d'où
+ *   l'on peut arrêter un transfert ; sur iOS, rien à faire, la session
+ *   d'arrière-plan d'expo-file-system survit à la suspension. Plus
+ *   d'anti-veille : tenir l'écran allumé n'était que de la batterie perdue.
  * - DÉSACTIVÉ : l'anti-veille comme avant (l'écran tient le transfert), et
  *   `OfflineRuntimeSync` met tout en pause système quand l'application passe
  *   derrière.
@@ -27,8 +29,14 @@ import { Platform } from "react-native";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { i18n } from "@tentacle-tv/shared";
 import type { ProgressPayload } from "@tentacle-tv/offline-core";
-import { startTransferService, stopTransferService, updateTransferService } from "../../modules/offline-storage";
+import {
+  onTransferPause,
+  startTransferService,
+  stopTransferService,
+  updateTransferService,
+} from "../../modules/offline-storage";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
+import { pauseAllTransfers } from "./engineApi";
 import { isBackgroundTransfers } from "./settings";
 
 const KEEP_AWAKE_TAG = "offline-transfer";
@@ -43,9 +51,10 @@ let pending = 0;
 /** La progression des fichiers vus pendant cette période d'activité. */
 const seen = new Map<number, { bytesDone: number; expectedSize: number | null }>();
 let lastNoticeAt = 0;
+let unlistenPause: (() => void) | null = null;
 
-function noticeBody(): string {
-  let text = String(i18n.t("offline:transferNotifBody", { count: Math.max(1, pending) }));
+/** Le pour-cent de l'ensemble, ou `-1` tant qu'aucune taille n'est connue. */
+function noticePercent(): number {
   let done = 0;
   let total = 0;
   for (const file of seen.values()) {
@@ -53,10 +62,13 @@ function noticeBody(): string {
     done += Math.min(file.bytesDone, file.expectedSize);
     total += file.expectedSize;
   }
-  if (total > 0) {
-    text += ` · ${i18n.t("offline:transferNotifProgress", { percent: Math.round((done / total) * 100) })}`;
-  }
-  return text;
+  return total > 0 ? Math.round((done / total) * 100) : -1;
+}
+
+function noticeBody(): string {
+  const text = String(i18n.t("offline:transferNotifBody", { count: Math.max(1, pending) }));
+  const percent = noticePercent();
+  return percent < 0 ? text : `${text} · ${i18n.t("offline:transferNotifProgress", { percent })}`;
 }
 
 function holdKeepAwake(): void {
@@ -74,7 +86,21 @@ function releaseKeepAwake(): void {
 function releaseService(): void {
   if (!serviceRunning) return;
   serviceRunning = false;
+  unlistenPause?.();
+  unlistenPause = null;
   void stopTransferService();
+}
+
+/**
+ * Le bouton « Pause » de la notification : le natif prévient, le moteur agit.
+ * Un seul abonnement à la fois — le service peut redémarrer plusieurs fois
+ * dans une même session.
+ */
+function listenToPauseButton(): void {
+  if (unlistenPause !== null) return;
+  unlistenPause = onTransferPause(() => {
+    pauseAllTransfers();
+  });
 }
 
 function notice(force: boolean): void {
@@ -82,7 +108,7 @@ function notice(force: boolean): void {
   const now = Date.now();
   if (!force && now - lastNoticeAt < NOTICE_MIN_INTERVAL_MS) return;
   lastNoticeAt = now;
-  updateTransferService(noticeBody());
+  updateTransferService(noticeBody(), noticePercent());
 }
 
 /** La bascule « au moins un transfert tourne » du moteur (`EngineDeps.onBusy`). */
@@ -107,13 +133,15 @@ export function onEngineBusy(active: boolean): void {
     String(i18n.t("offline:transferNotifChannel")),
     String(i18n.t("offline:transferNotifTitle")),
     noticeBody(),
+    String(i18n.t("offline:pauseAll")),
   ).then((started) => {
     if (!busy) {
       if (started) void stopTransferService();
       return;
     }
     serviceRunning = started;
-    if (!started) holdKeepAwake();
+    if (started) listenToPauseButton();
+    else holdKeepAwake();
   });
 }
 

@@ -15,7 +15,9 @@
  * Sur Android, un transfert ne survit ni à l'écran éteint ni à l'application
  * passée derrière sans service de premier plan (`OfflineTransferService`) :
  * le JavaScript le démarre quand le moteur s'occupe et l'arrête quand il se
- * libère. iOS rend `false` : sa session d'arrière-plan suffit.
+ * libère. Sa notification porte la progression et un bouton « Pause », relayé
+ * ici par `onTransferPause`. iOS rend `false` : sa session d'arrière-plan
+ * suffit, et le système n'y autorise pas de notification permanente.
  *
  * Chargé en optionnel : sans le module (Expo Go, ancien build), tout marche,
  * seule l'exclusion manque — et la CI construit toujours avec.
@@ -26,9 +28,11 @@ import { Platform } from "react-native";
 
 interface OfflineStorageNative {
   setExcludedFromBackup(uri: string, excluded: boolean): boolean;
-  startTransferService?(channelName: string, title: string, body: string): Promise<boolean>;
-  updateTransferService?(body: string): boolean;
+  startTransferService?(channelName: string, title: string, body: string, pauseLabel: string): Promise<boolean>;
+  /** `progress` en pour-cent ; négatif quand la taille attendue est inconnue. */
+  updateTransferService?(body: string, progress: number): boolean;
   stopTransferService?(): Promise<boolean>;
+  addListener?(event: string, listener: () => void): { remove: () => void };
   /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
   finalizeMp4?(path: string): Promise<string | boolean>;
   promoteHevcTag?(path: string): Promise<boolean>;
@@ -55,24 +59,47 @@ function transferServiceModule(): OfflineStorageNative | null {
 }
 
 /** Démarre le service de premier plan ; `false` si Android refuse (arrière-plan, quota) ou sans module. */
-export async function startTransferService(channelName: string, title: string, body: string): Promise<boolean> {
+export async function startTransferService(
+  channelName: string,
+  title: string,
+  body: string,
+  pauseLabel: string,
+): Promise<boolean> {
   const module = transferServiceModule();
   if (module === null || module.startTransferService === undefined) return false;
   try {
-    return await module.startTransferService(channelName, title, body);
+    return await module.startTransferService(channelName, title, body, pauseLabel);
+  } catch {
+    // Un binaire antérieur au bouton « Pause » refuse le quatrième argument :
+    // sans service, le moteur retombe sur l'anti-veille.
+    return false;
+  }
+}
+
+/** Corps et progression de la notification ; `false` sans service en cours. */
+export function updateTransferService(body: string, progress: number): boolean {
+  const module = transferServiceModule();
+  if (module === null || module.updateTransferService === undefined) return false;
+  try {
+    return module.updateTransferService(body, progress);
   } catch {
     return false;
   }
 }
 
-/** Met à jour le corps de la notification du service ; `false` sans service en cours. */
-export function updateTransferService(body: string): boolean {
+/**
+ * L'appui sur « Pause » dans la notification. Le natif ne touche pas à la
+ * file : il prévient, et c'est le moteur qui met en pause.
+ * Rend une fonction de retrait — sans module, elle ne fait rien.
+ */
+export function onTransferPause(listener: () => void): () => void {
   const module = transferServiceModule();
-  if (module === null || module.updateTransferService === undefined) return false;
+  if (module === null || typeof module.addListener !== "function") return () => {};
   try {
-    return module.updateTransferService(body);
+    const subscription = module.addListener("onTransferPause", listener);
+    return () => subscription.remove();
   } catch {
-    return false;
+    return () => {};
   }
 }
 
