@@ -37,8 +37,6 @@ interface TranscodePreset {
   maxHeight?: number;
   /** Plafond de canaux — un MAXIMUM : une source stéréo n'est pas gonflée. */
   maxAudioChannels?: number;
-  /** `Static` = MP4 classique (moov en fin) ; sinon fMP4 fragmenté. */
-  context?: "Static";
 }
 
 /**
@@ -49,8 +47,17 @@ interface TranscodePreset {
  * MKV (iPhone, iPad) : aucun plafond de débit — Jellyfin REFUSE la copie de
  * flux dès qu'un `videoBitRate` est demandé et que le débit de la source est
  * inconnu, ce qui est fréquent en MKV —, donc la vidéo H.264/HEVC est recopiée
- * telle quelle (10 bits et HDR compris). `context=Static` produit un MP4
- * classique, dans lequel la recherche est immédiate sur mobile.
+ * telle quelle (10 bits et HDR compris).
+ *
+ * ⚠️ JAMAIS `context=Static` ici. Il demande un MP4 classique, dont l'index
+ * (`moov`) s'écrit EN DERNIER — or Jellyfin sert le fichier pendant que ffmpeg
+ * l'écrit encore. Dès que le client va plus vite que le transcodage, la réponse
+ * s'achève sur la fin du `mdat` et l'index n'arrive jamais : fichier ni lisible
+ * ni finalisable (mesuré sur deux épisodes de Rick et Morty — HEVC copié, mais
+ * audio E-AC3 à réencoder, donc un transcodage assez lent pour se faire
+ * doubler ; Naruto, lui, en pure copie, passait). Le fMP4 fragmenté que rend
+ * Jellyfin par défaut se décrit dès son premier octet ; la finalisation native
+ * du client en fait ensuite un MP4 indexé, ce qui est précisément son travail.
  *
  * L'audio, lui, passe TOUJOURS en AAC sur ce palier : voir le commentaire de
  * `pmax` ci-dessous, cette copie-là écrivait des fichiers illisibles.
@@ -66,7 +73,7 @@ const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
   // repasse donc en AAC, et le plafond de canaux lui évite de redescendre en
   // stéréo au passage — puisqu'il ne peut plus être copié, qu'il perde au
   // moins le minimum.
-  pmax: { videoCodec: "h264,hevc", audioCodec: "aac", maxAudioChannels: 6, context: "Static" },
+  pmax: { videoCodec: "h264,hevc", audioCodec: "aac", maxAudioChannels: 6 },
 };
 
 const LIGHT_PRESET_IDS = Object.keys(TRANSCODE_PRESETS);
@@ -157,8 +164,10 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
 
   /** Mode Allégé — flux transcodé progressif fMP4 (`stream.mp4?static=false`,
    *  fragmenté par Jellyfin : `frag_keyframe+empty_moov`, fichier valide une
-   *  fois complet — vérifié source v10.11.11). Pas de Range possible sur un
-   *  transcode : toute reprise repart de zéro (géré côté moteur desktop).
+   *  fois complet — vérifié source v10.11.11), pour TOUS les paliers, `pmax`
+   *  compris : voir l'avertissement sur `context=Static` plus haut. Pas de
+   *  Range possible sur un transcode : toute reprise repart de zéro (géré côté
+   *  moteur desktop).
    *  Le droit appliqué ICI est `EnableMediaConversion` (Jellyfin ne l'enforce
    *  pas lui-même) + les droits de transcodage de lecture. */
   app.get("/light/:itemId", async (request, reply) => {
@@ -196,7 +205,6 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     if (preset.maxAudioChannels !== undefined) {
       params.set("maxAudioChannels", String(preset.maxAudioChannels));
     }
-    if (preset.context !== undefined) params.set("context", preset.context);
     const mediaSourceId = query.mediaSourceId;
     if (mediaSourceId && ITEM_ID_RE.test(mediaSourceId)) {
       params.set("mediaSourceId", mediaSourceId);
