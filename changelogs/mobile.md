@@ -7,20 +7,24 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ## [Unreleased]
 ### FR
-- **Le hors ligne arrive sur le téléphone** : « Garder hors ligne » depuis la fiche d'un film, d'un épisode, d'une saison ou de toute une série — qualité d'origine ou version allégée, pistes et sous-titres compris ; les titres se lisent sans réseau avec leurs aperçus, leurs sous-titres et l'épisode suivant
-- **Un onglet « Sur cet appareil »** quand le serveur ne répond pas : recherche, films et séries regroupées, reprise à l'image exacte
-- **Transferts en Wi-Fi seulement** par défaut, notification quand un titre est prêt, suppression automatique après visionnage, espace occupé dans les réglages
-- **Mode Économie de données** et pastille « Hors ligne » dans l'en-tête ; la page des langues et vos visionnages se synchronisent au retour en ligne
+- **Le hors ligne arrive sur le téléphone** : « Garder hors ligne » depuis la fiche d'un film, d'un épisode, d'une saison ou de toute une série — qualité d'origine ou version allégée, pistes et sous-titres compris ; les titres se lisent sans réseau, avec leurs aperçus, leurs sous-titres et l'épisode suivant
+- **Un accueil hors ligne à part entière** : bandeau cinématique avec le logo du titre et la reprise, résumé de l'appareil, recherche, filtre par bibliothèque (Films, Séries, Animés…), fiches de série et de titre avec synopsis, casting et épisodes — aussi accessible en ligne depuis « Sur cet appareil »
+- **Lecture locale sans une seule requête**, même en ligne : les vrais noms des pistes audio et des sous-titres, vos préférences de langue (du titre, de la bibliothèque, puis du compte Jellyfin), le saut d'intro et de générique ; la progression et les titres vus se synchronisent dans les deux sens au retour en ligne
+- **Transferts en arrière-plan** (réglable, activé par défaut), Wi-Fi seulement respecté jusqu'au retour du Wi-Fi, notification quand un titre est prêt, suppression automatique après visionnage, espace occupé dans les réglages
+- **Bascule hors ligne immédiate** quand le réseau tombe, pastille dans l'en-tête et retour en ligne d'un geste dès que le serveur répond ; un titre absent de l'appareil le dit tout de suite ; mode Économie de données automatique en cellulaire
+- **Adapté à la tablette**, portrait comme paysage
 - **Un onglet « Pour vous »** : vos recommandations, avec un carrousel, les raisons sous chaque affiche, un filtre par plateforme et vos acteurs
 - **Un seul onglet « Extensions »** réunit toutes les pages de vos plugins, le nom du plugin en tête
 - **Personnalisation depuis le mobile** : bandeau, rangées, densité, recommandations — et vos réglages suivent en direct sur vos autres appareils
 - **Barre d'onglets refaite** : sélection qui glisse, rebond à l'appui, contrôles aux couleurs du web
 
 ### EN
-- **Offline arrives on the phone**: "Keep offline" from a movie, an episode, a season or a whole series — original quality or a lighter version, tracks and subtitles included; titles play without a network with their previews, subtitles and the next episode
-- **An "On this device" tab** when the server does not answer: search, movies and grouped series, resume on the exact frame
-- **Wi-Fi only transfers** by default, a notification when a title is ready, automatic deletion after watching, space used in the settings
-- **Data saver mode** and an "Offline" pill in the header; the languages page and your watch history sync when you are back online
+- **Offline arrives on the phone**: "Keep offline" from a movie, an episode, a season or a whole series — original quality or a lighter version, tracks and subtitles included; titles play without a network, with their previews, subtitles and the next episode
+- **A full offline home**: cinematic banner with the title's logo and resume point, device summary, search, a filter by library (Movies, Shows, Anime…), series and title pages with synopsis, cast and episodes — also reachable online from "On this device"
+- **Local playback without a single request**, even online: the real names of audio and subtitle tracks, your language preferences (title, library, then Jellyfin account), intro and credits skipping; progress and watched titles sync both ways when you are back online
+- **Background transfers** (adjustable, on by default), Wi-Fi only honored until Wi-Fi is back, a notification when a title is ready, automatic deletion after watching, space used in the settings
+- **Immediate offline switch** when the network drops, a pill in the header and one-tap return online as soon as the server answers; a title missing from the device says so right away; automatic Data saver mode on cellular
+- **Tablet ready**, portrait and landscape
 - **A "For you" tab**: your recommendations, with a carousel, the reasons under each poster, a platform filter and your favorite actors
 - **A single "Extensions" tab** gathers every page of your plugins, with the plugin's name ahead of its pages
 - **Personalization from your phone**: banner, row order, density and recommendation settings — and your settings reach your other devices live
