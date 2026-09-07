@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useUserId } from "@tentacle-tv/api-client";
 import { i18n } from "@tentacle-tv/shared";
 import { BottomSheet } from "@/components/ui";
+import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import {
   cancelTransfer,
@@ -19,6 +20,7 @@ import { scheduleText } from "./autoDeleteText";
 import { entryTitle } from "../entryTitle";
 
 interface Props {
+  /** L'entrée à l'ouverture ; son état frais est relu à chaque changement. */
   entry: OfflineEntry | null;
   onClose: () => void;
   onPlay: (entry: OfflineEntry) => void;
@@ -32,13 +34,22 @@ interface Props {
  * après visionnage (avec l'échéance), et « Retirer de l'appareil » en rouge,
  * avec la confirmation multi-comptes.
  */
-export function OfflineRowActionsSheet({ entry, onClose, onPlay, onInfo }: Props) {
+export function OfflineRowActionsSheet({ entry: opened, onClose, onPlay, onInfo }: Props) {
   const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { colors } = useTheme();
   const st = useThemedStyles(makeStyles);
   const userId = useUserId();
   const [busy, setBusy] = useState(false);
+  // L'appelant passe l'entrée telle qu'elle était à l'ouverture. Elle ne
+  // change plus : c'est un objet figé, et la feuille montrait donc toujours
+  // l'ancien réglage d'auto-suppression — les puces avaient l'air mortes.
+  // On relit l'entrée fraîche dans la liste, qui, elle, est invalidée à chaque
+  // évènement du moteur.
+  const { data: entries } = useOfflineList(userId);
+  const entry = opened === null
+    ? null
+    : (entries ?? []).find((row) => row.id === opened.id) ?? opened;
 
   const act = useCallback((fn: () => void) => () => { fn(); onClose(); }, [onClose]);
 
