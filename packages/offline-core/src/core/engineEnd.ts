@@ -12,6 +12,7 @@ import { safeJoin } from "./paths";
 import { isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
 import { clearRetry, recordFailure } from "./retry";
 import type { TransferEnd } from "./transfer";
+import type { FinalizeVerdict } from "./engineDeps";
 
 export interface EndContext {
   nowMs: number;
@@ -100,12 +101,18 @@ export function mediaAwaitingFinalize(
  * remux travaille sur un temporaire à côté), donc un remux raté laisse un
  * fichier complet — le retélécharger coûterait des centaines de mégaoctets
  * pour rien. Et la phase survit à un arrêt de l'application.
+ *
+ * Sauf quand la plateforme rend `"unusable"` : le média est arrivé SANS son
+ * index (le transcodage progressif de Jellyfin l'écrit en dernier, et la
+ * réponse s'est achevée avant). Aucun remux ne le réparera — s'y reprendre
+ * trois fois n'use que la batterie, et le fichier occuperait des centaines de
+ * mégaoctets sans jamais se lire. On le jette et on repart du transfert.
  */
 export async function runFinalize(
   db: DatabaseHandle,
   volume: Volume,
   fileId: number,
-  finalizeMedia: (absPath: string, file: { variant: string; relPath: string }) => Promise<void>,
+  finalizeMedia: (absPath: string, file: { variant: string; relPath: string }) => Promise<FinalizeVerdict>,
   file: { variant: string; relPath: string },
   finalSize: number,
   nowMs: number,
@@ -114,7 +121,16 @@ export async function runFinalize(
   setPhase(db, fileId, "finalize", nowMs);
   setBytesDone(db, fileId, finalSize, nowMs);
   try {
-    await finalizeMedia(target, file);
+    if ((await finalizeMedia(target, file)) === "unusable") {
+      try {
+        volume.files.remove(target);
+      } catch {
+        // Un média qui résiste sera écrasé par le transfert suivant.
+      }
+      // La phase tombe : la reprise repart du téléchargement, pas du remux.
+      setPhase(db, fileId, null, nowMs);
+      return { kind: "failed", code: "integrity", bytesDone: 0 };
+    }
     setPhase(db, fileId, null, nowMs);
     return { kind: "complete", finalSize: volume.files.size(target) ?? finalSize };
   } catch {

@@ -11,6 +11,9 @@ import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adap
 import type { FetchBytes } from "./fetcher";
 import type { Creds } from "./worker";
 
+/** Ce que la plateforme rend d'une finalisation : voir `EngineDeps.finalizeMedia`. */
+export type FinalizeVerdict = "ok" | "unusable" | void;
+
 export interface EngineDeps {
   db: DatabaseHandle;
   /** Relu à chaque usage : l'utilisateur peut changer de racine. */
@@ -53,6 +56,9 @@ export interface EngineDeps {
    * les lecteurs natifs du mobile non — la plateforme le remuxe en MP4 indexé,
    * sur place. Rejet = erreur d'entrée-sortie (mieux qu'un titre « prêt »
    * illisible). Absente (bureau) : rien à faire.
+   *
+   * `"unusable"` dit autre chose qu'un échec : le média est arrivé sans son
+   * index, aucun remux ne le sauvera, et il faut le retélécharger.
    */
-  finalizeMedia?: (absPath: string, file: { variant: string; relPath: string }) => Promise<void>;
+  finalizeMedia?: (absPath: string, file: { variant: string; relPath: string }) => Promise<FinalizeVerdict>;
 }

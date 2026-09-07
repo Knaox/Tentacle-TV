@@ -29,10 +29,12 @@ interface OfflineStorageNative {
   startTransferService?(channelName: string, title: string, body: string): Promise<boolean>;
   updateTransferService?(body: string): boolean;
   stopTransferService?(): Promise<boolean>;
-  finalizeMp4?(path: string): Promise<boolean>;
+  /** Verdict `"ok" | "unusable" | "failed"` ; un ancien build rend encore un booléen. */
+  finalizeMp4?(path: string): Promise<string | boolean>;
+  promoteHevcTag?(path: string): Promise<boolean>;
 }
 
-export type FinalizeOutcome = "done" | "failed" | "unavailable";
+export type FinalizeOutcome = "done" | "failed" | "unusable" | "unavailable";
 
 const native = requireOptionalNativeModule<OfflineStorageNative>("OfflineStorage");
 
@@ -85,15 +87,42 @@ export async function stopTransferService(): Promise<boolean> {
 }
 
 /**
- * Remux d'un MP4 fragmenté (mode Allégé) en MP4 indexé, sur place.
+ * Finalise un fichier Allégé : remux d'un MP4 fragmenté en MP4 indexé, et
+ * promotion de l'entrée d'échantillon HEVC (voir `promoteHevcTag`).
+ *
+ * `unusable` dit que le fichier est arrivé SANS son index et qu'aucun remux ne
+ * le sauvera — le moteur le retélécharge au lieu de s'acharner.
  * `unavailable` sans module ou sur un build qui l'ignore : le fichier reste tel
  * quel — le moteur ne le tient pas pour un échec.
  */
 export async function finalizeMp4(path: string): Promise<FinalizeOutcome> {
   if (native === null || typeof native.finalizeMp4 !== "function") return "unavailable";
   try {
-    return (await native.finalizeMp4(path)) ? "done" : "failed";
+    const verdict = await native.finalizeMp4(path);
+    // Un build antérieur au verdict rend un booléen : il ne sait rien dire
+    // d'un fichier sans index, et son échec reste un échec ordinaire.
+    if (typeof verdict === "boolean") return verdict ? "done" : "failed";
+    if (verdict === "ok") return "done";
+    return verdict === "unusable" ? "unusable" : "failed";
   } catch {
     return "failed";
+  }
+}
+
+/**
+ * Renomme l'entrée d'échantillon HEVC `hev1` en `hvc1`, sur place.
+ *
+ * AVFoundation n'ouvre le HEVC que sous `hvc1` : sous `hev1` — ce que produit
+ * ffmpeg en copiant la vidéo — la piste existe, le son sort et l'image reste
+ * NOIRE, sans la moindre erreur. Les deux formes ne diffèrent que par la place
+ * des jeux de paramètres : quand le `hvcC` porte les siens, quatre octets
+ * suffisent, sans réencodage. `false` si rien n'avait à changer.
+ */
+export async function promoteHevcTag(path: string): Promise<boolean> {
+  if (native === null || typeof native.promoteHevcTag !== "function") return false;
+  try {
+    return await native.promoteHevcTag(path);
+  } catch {
+    return false;
   }
 }
