@@ -55,6 +55,8 @@ export default {
   noVariantMessage:
     "Ce titre ne peut pas être gardé hors ligne sur cet appareil : le serveur ne propose pas de version lisible ici.",
   audioUnplayableWarning: "La piste « {{track}} » ne sera pas lisible sur cet appareil.",
+  lightOnlyHint:
+    "Cet appareil ne sait pas lire ce fichier tel quel, et il ne peut pas être recopié sans conversion : cette version est recompressée par le serveur, donc moins fine que l'originale.",
   singleAudioTrackHint: "Une seule piste audio est conservée dans cette version.",
   // Jellyfin ne sait sortir qu'UNE piste audio de son transcodage : autant
   // dire laquelle avant de lancer le transfert, plutôt que de le découvrir

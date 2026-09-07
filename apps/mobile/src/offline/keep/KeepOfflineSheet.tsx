@@ -19,7 +19,6 @@ import { ItemChecklist } from "./ItemChecklist";
 import { SeasonChecklist } from "./SeasonChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
-import { PresetChoice } from "./PresetChoice";
 import { SizeSummary } from "./SizeSummary";
 import { LanguagePickerRow, TrackPickerRow, trackLabel } from "./TrackPickerRow";
 import { useKeepOfflineSubmit } from "./useKeepOfflineSubmit";
@@ -81,9 +80,10 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const firstKind = plan.cards[0]?.kind ?? null;
   const [chosenKind, setChosenKind] = useState<OfflineVariantKind | null>(null);
   const kind = chosenKind !== null && plan.cards.some((card) => card.kind === chosenKind) ? chosenKind : firstKind;
-  const presets = capabilities.lightPresets.filter((preset) => preset !== "pmax");
-  const [preset, setPreset] = useState<LightPresetId>("p720");
-  const activePreset = presets.includes(preset) ? preset : ((presets[0] as LightPresetId | undefined) ?? "p720");
+  // L'Allégé n'apparaît plus que faute de mieux : on ne demande pas à
+  // l'utilisateur d'arbitrer sa propre perte de qualité, on prend le meilleur
+  // palier que le serveur annonce.
+  const activePreset = bestPreset(capabilities.lightPresets);
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
   // Sur un lot, le choix porte sur la LANGUE : les index de flux diffèrent
   // d'un épisode à l'autre, la langue non.
@@ -130,6 +130,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       if (track) hints.push(to("audioUnplayableWarning", { track: trackLabel(track) }));
     }
   }
+  if (kind === "light") hints.push(to("lightOnlyHint"));
   if (kind !== null && kind !== "original") {
     hints.push(kept === null ? to("singleAudioTrackHint") : to("audioKeptHint", { track: trackLabel(kept) }));
   }
@@ -191,7 +192,6 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
           />
         )}
         <VariantCards cards={plan.cards} value={kind} onChange={setChosenKind} />
-        {kind === "light" && <PresetChoice value={activePreset} onChange={setPreset} available={presets} />}
         {single !== null && kind !== "original" && audio.length > 1 && (
           <TrackPickerRow label={t("audioTrack")} emptyLabel={t("audioDefault")} tracks={audio} value={audioIndex} onChange={setAudioIndex} unplayable={card?.audio.unplayable} />
         )}
@@ -227,6 +227,12 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       </View>
     </View>
   );
+}
+
+/** Le meilleur palier annoncé par le serveur ; `pmax` n'en est pas un (c'est le remux). */
+function bestPreset(available: readonly string[]): LightPresetId {
+  const ranked: LightPresetId[] = ["p1080", "p720", "p480"];
+  return ranked.find((preset) => available.includes(preset)) ?? "p720";
 }
 
 /** Le voile dégradé qui annonce la suite ; monté seulement quand il sert. */
