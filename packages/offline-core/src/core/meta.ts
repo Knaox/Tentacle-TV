@@ -27,8 +27,12 @@ import { integer, integerOrNull, text, textOrNull } from "./rows";
  *     accroches) : la fiche locale de série les lit. Un snapshot v4 reste
  *     lisible (la fiche se replie sur le DTO d'un épisode) ; la réparation le
  *     rephotographie au prochain démarrage en ligne.
+ * 6 = la bibliothèque d'origine porte son NOM et son type de collection
+ *     (`item_meta.library_name` / `library_type`) : le filtre du catalogue
+ *     hors ligne. Un snapshot v5 reste lisible (le nom manque, la puce se
+ *     replie sur Films / Séries) ; la réparation le rephotographie.
  */
-export const CURRENT_META_VERSION = 5;
+export const CURRENT_META_VERSION = 6;
 
 export interface MetaSpec {
   itemId: string;
@@ -158,6 +162,19 @@ export function markSnapshotDone(
 }
 
 /** Pose la bibliothèque de l'item (préférences de pistes hors ligne). */
-export function setLibraryId(db: DatabaseHandle, itemId: string, libraryId: string): void {
-  db.prepare("UPDATE item_meta SET library_id = ? WHERE item_id = ?").run(libraryId, itemId);
+export interface LibraryRef {
+  id: string;
+  /** Le nom Jellyfin de la bibliothèque (« Animés »), tel qu'on le filtre hors ligne. */
+  name: string | null;
+  /** `CollectionType` Jellyfin (`movies`, `tvshows`…) — l'icône de la puce. */
+  collectionType: string | null;
+}
+
+export function setLibrary(db: DatabaseHandle, itemId: string, library: LibraryRef): void {
+  db.prepare("UPDATE item_meta SET library_id = ?, library_name = ?, library_type = ? WHERE item_id = ?").run(
+    library.id,
+    library.name,
+    library.collectionType,
+    itemId,
+  );
 }

@@ -148,6 +148,17 @@ ALTER TABLE claims ADD COLUMN delete_scheduled_at INTEGER;
 `;
 
 /**
+ * v8 — bibliothèque d'origine NOMMÉE : le catalogue hors ligne filtre par
+ * vraie bibliothèque Jellyfin (Films, Séries, Animés…) avec son type de
+ * collection pour l'icône — sans dépendre d'un cache réseau qui peut manquer
+ * au premier démarrage hors ligne.
+ */
+const SCHEMA_V8 = `
+ALTER TABLE item_meta ADD COLUMN library_name TEXT;
+ALTER TABLE item_meta ADD COLUMN library_type TEXT;
+`;
+
+/**
  * Les paliers, dans l'ordre. L'INDEX vaut la version : le palier 0 amène à
  * `user_version = 1`, et ainsi de suite. Ajouter un palier, c'est pousser à la
  * fin de ce tableau — jamais réordonner.
@@ -160,6 +171,7 @@ export const MIGRATIONS: readonly string[] = [
   SCHEMA_V5,
   SCHEMA_V6,
   SCHEMA_V7,
+  SCHEMA_V8,
 ];
 
 /** Version de schéma que ce code sait produire et lire. */

@@ -10,7 +10,7 @@ import type { DatabaseHandle } from "./adapters";
 import { describe, expect, it } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { listForUser, setAutoDelete, stateForItem } from "./listing";
-import { upsertItemMeta } from "./meta";
+import { setLibrary, upsertItemMeta } from "./meta";
 import { setPausedByUser, setStatus } from "./queue";
 import { claimOrCreateFile } from "./store";
 import { markWatched, spec } from "./testkit";
@@ -62,6 +62,12 @@ describe("listes", () => {
       runtimeTicks: null, title: "Un film", seriesName: null, indexNumber: null, parentIndexNumber: null,
     }, 1_000);
     expect(listForUser(db, "u")[0]?.libraryId).toBe("lib-animes");
+
+    // Le snapshot pose ensuite le nom et le type de la bibliothèque (ancêtres).
+    setLibrary(db, "item1", { id: "lib-animes", name: "Animés", collectionType: "tvshows" });
+    const entry = listForUser(db, "u")[0];
+    expect(entry?.libraryName).toBe("Animés");
+    expect(entry?.libraryType).toBe("tvshows");
   });
 
   // Hors ligne il n'y a AUCUN DTO serveur : cette liste est la seule voie par
