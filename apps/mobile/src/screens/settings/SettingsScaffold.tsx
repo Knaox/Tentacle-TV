@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { Platform, View, Text, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,8 @@ export function SettingsScaffold({ title, children, maxWidth = 720, trailing }: 
             paddingHorizontal: contentPadding,
             paddingBottom: insets.bottom + spacing.xxl,
           }}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
+          indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
         >
           {children}
         </ScrollView>

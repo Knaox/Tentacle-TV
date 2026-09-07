@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { languageDisplayName, type LightPresetId, type OfflineVariantKind } from "@tentacle-tv/offline-core";
 import { BottomSheet, Button } from "@/components/ui";
+import { useScrollOverflow } from "@/hooks/useScrollOverflow";
 import { useDiskInfo, useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useOfflineCapabilities } from "@/hooks/offline/useOfflineCapabilities";
-import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
+import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { audioLanguages, audioTracks, batchSizeBytes, imageSubtitleTracks, keptAudioTrack, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
 import { useWifiOnly } from "../settings";
 import { useCellularAck } from "../deviceSettings";
@@ -38,6 +40,10 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const { t: to } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
   const st = useThemedStyles(makeStyles);
+  const theme = useTheme();
+  // Le dialogue est long et s'ouvre à son premier palier : sans barre ni
+  // fondu, rien ne disait qu'il continuait sous la coupure.
+  const overflow = useScrollOverflow();
   const { capabilities } = useOfflineCapabilities();
   const { data: disk } = useDiskInfo();
   const { networkType } = useConnectivity();
@@ -155,7 +161,15 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
 
   return (
     <View style={st.body}>
-      <ScrollView contentContainerStyle={st.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={st.scroll}
+        showsVerticalScrollIndicator
+        indicatorStyle={Platform.OS === "ios" ? "white" : "default"}
+        scrollEventThrottle={32}
+        onLayout={overflow.onLayout}
+        onContentSizeChange={overflow.onContentSizeChange}
+        onScroll={overflow.onScroll}
+      >
         <Text style={st.title} accessibilityRole="header">{title}</Text>
         {subtitle ? <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
         {series && (
@@ -204,6 +218,9 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
           hints={hints}
         />
       </ScrollView>
+      {/* Fondu de bas : seule l'opacité s'anime — un dégradé repeint à chaque
+          image coûterait une passe de peinture plein écran. */}
+      <FadeHint visible={overflow.more} color={theme.colors.glass.panel} style={st.fade} />
       <View style={st.actions}>
         <Button title={tc("cancel")} onPress={closeKeepOffline} variant="secondary" />
         <Button title={to("start")} onPress={submit} loading={submitting} disabled={items.length === 0 || kind === null} />
@@ -212,10 +229,24 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   );
 }
 
+/** Le voile dégradé qui annonce la suite ; monté seulement quand il sert. */
+function FadeHint({ visible, color, style }: { visible: boolean; color: string; style: object }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, { toValue: visible ? 1 : 0, duration: 180, useNativeDriver: true }).start();
+  }, [visible, opacity]);
+  return (
+    <Animated.View pointerEvents="none" style={[style, { opacity }]}>
+      <LinearGradient colors={["transparent", color]} style={StyleSheet.absoluteFill} />
+    </Animated.View>
+  );
+}
+
 const makeStyles = (t: AppTheme) =>
   StyleSheet.create({
     body: { flex: 1, paddingHorizontal: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
     scroll: { gap: spacing.lg, paddingBottom: spacing.md },
+    fade: { position: "absolute", left: 0, right: 0, bottom: 52, height: 36 },
     title: { ...typography.subtitle, fontFamily: FONT_FAMILY.bold, color: t.colors.text.primary },
     subtitle: { ...typography.caption, color: t.colors.text.tertiary, marginTop: -spacing.md },
     text: { ...typography.body, color: t.colors.text.secondary, lineHeight: 20 },
