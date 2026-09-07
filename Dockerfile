@@ -29,6 +29,12 @@ COPY packages/theme/package.json packages/theme/package.json
 # `@tentacle-tv/shared` ; la source arrive ensuite par le COPY global, et
 # rollup meurt sur un import qu'il ne peut plus résoudre.
 COPY packages/tv-core/package.json packages/tv-core/package.json
+# offline-core : le cœur du hors ligne, compilé DEPUIS les sources par le
+# client web (téléchargements, catalogue local). Même piège que tv-core
+# ci-dessus — sans son `package.json` ici, pnpm ignore le paquet, ne lui pose
+# pas son lien vers `@tentacle-tv/shared`, et tsc meurt sur chacun de ses
+# imports une fois les sources arrivées par le COPY global.
+COPY packages/offline-core/package.json packages/offline-core/package.json
 COPY patches/ patches/
 
 # Install dependencies
