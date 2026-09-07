@@ -155,6 +155,7 @@ export default {
   readyNotifTitle: "Prêt hors ligne",
   readyNotifBody_one: "« {{title}} » est sur votre appareil.",
   readyNotifBody_other: "{{count}} titres sont prêts sur votre appareil.",
+  readyNotifBodySeries: "{{series}} : {{count}} épisodes sont prêts sur votre appareil.",
   diskFullNotifTitle: "Espace insuffisant",
   diskFullNotifBody: "Le transfert de « {{title}} » s'est arrêté.",
 

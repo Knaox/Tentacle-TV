@@ -16,7 +16,7 @@ import {
 } from "../engineApi";
 import { AutoDeleteChips, type AutoDeleteValue } from "../keep/AutoDeleteChips";
 import { scheduleText } from "./autoDeleteText";
-import { entryTitle } from "./OfflineEntryRow";
+import { entryTitle } from "../entryTitle";
 
 interface Props {
   entry: OfflineEntry | null;

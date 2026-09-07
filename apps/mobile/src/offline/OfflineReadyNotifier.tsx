@@ -5,6 +5,8 @@ import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { presentLocalNotification } from "@/services/localNotifications";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
 import { useNotifyReady } from "./deviceSettings";
+import { entryTitle } from "./entryTitle";
+import { summarizeReady } from "./readySummary";
 import type { OfflineEntry } from "./engineApi";
 
 const ACTIVE = new Set(["queued", "downloading", "paused"]);
@@ -17,7 +19,9 @@ function countActive(entries: Iterable<OfflineEntry>): number {
 
 /**
  * La notification « Prêt hors ligne » : UNE par lot — quand la file se vide,
- * avec le titre s'il n'y en a qu'un, le compte sinon —, plus une « Espace
+ * avec le titre et son numéro d'épisode s'il n'y en a qu'un, le nom de la
+ * série et le compte si tout vient de la même, le compte seul sinon (voir
+ * `summarizeReady`) —, plus une « Espace
  * insuffisant » quand un transfert s'arrête faute de place. La permission
  * est demandée au premier transfert. Ne rend rien ; suit la liste locale,
  * invalidée à chaque évènement du moteur.
@@ -28,7 +32,7 @@ export function OfflineReadyNotifier() {
   const notifyReady = useNotifyReady();
   const { data: entries } = useOfflineList(userId);
   const previousRef = useRef<Map<number, OfflineEntry> | null>(null);
-  const completedRef = useRef<string[]>([]);
+  const completedRef = useRef<OfflineEntry[]>([]);
 
   useEffect(() => {
     if (!entries) return;
@@ -45,20 +49,21 @@ export function OfflineReadyNotifier() {
     for (const [id, entry] of current) {
       const before = previous.get(id);
       if (!before || before.status === entry.status) continue;
-      if (entry.status === "complete") completedRef.current.push(entry.title ?? entry.itemId);
+      if (entry.status === "complete") completedRef.current.push(entry);
       if (entry.status === "error" && entry.errorCode === "disk-full" && notifyReady) {
-        void presentLocalNotification(t("diskFullNotifTitle"), t("diskFullNotifBody", { title: entry.title ?? "" }), { type: "offline_disk_full" });
+        void presentLocalNotification(t("diskFullNotifTitle"), t("diskFullNotifBody", { title: entryTitle(entry) }), { type: "offline_disk_full" });
       }
     }
 
     if (activeBefore > 0 && activeNow === 0 && completedRef.current.length > 0) {
-      const titles = completedRef.current;
+      const done = completedRef.current;
       completedRef.current = [];
       if (!notifyReady) return;
-      const body = titles.length === 1
-        ? t("readyNotifBody", { count: 1, title: titles[0] })
-        : t("readyNotifBody", { count: titles.length });
-      void presentLocalNotification(t("readyNotifTitle"), body, { type: "offline_ready" });
+      const summary = summarizeReady(done);
+      if (summary === null) return;
+      void presentLocalNotification(t("readyNotifTitle"), t(summary.key, summary.params), {
+        type: "offline_ready",
+      });
     }
   }, [entries, notifyReady, t]);
 

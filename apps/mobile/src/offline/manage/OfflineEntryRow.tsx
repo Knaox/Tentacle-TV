@@ -5,6 +5,7 @@ import { REMUX_PRESET } from "@tentacle-tv/offline-core";
 import { useFileProgress } from "@tentacle-tv/offline-core/react";
 import { FONT_FAMILY, RADIUS, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { pauseTransfer, resumeTransfer, type OfflineEntry } from "../engineApi";
+import { entryTitle } from "../entryTitle";
 import { formatBytes } from "../formatBytes";
 import { formatRate, formatTimeLeft } from "../formatTransfer";
 import type { TransferWait } from "../transferGate";
@@ -29,13 +30,6 @@ export function variantLabel(entry: OfflineEntry, t: (key: string) => string, to
   if (entry.variant === "original") return to("variantOriginal");
   if (entry.preset === REMUX_PRESET) return to("variantRemux");
   return `${t("variantLight")} ${entry.preset?.replace(/^p/, "") ?? ""}p`;
-}
-
-export function entryTitle(entry: OfflineEntry): string {
-  const code = entry.kind === "episode" && entry.indexNumber != null
-    ? `S${String(entry.parentIndexNumber ?? 1).padStart(2, "0")}E${String(entry.indexNumber).padStart(2, "0")} · `
-    : "";
-  return `${code}${entry.title ?? entry.itemId}`;
 }
 
 /**
