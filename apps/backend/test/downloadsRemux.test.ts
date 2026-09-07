@@ -60,10 +60,14 @@ describe("palier pmax — qualité d'origine en MP4", () => {
     expect(url).toContain("static=false");
     expect(url).toContain("container=mp4");
     expect(url).toContain("videoCodec=h264,hevc");
-    expect(url).toContain("audioCodec=aac,ac3,eac3");
+    // L'audio Dolby n'est JAMAIS copié sur ce palier : mesuré, la copie
+    // rendait un fichier sans `moov`, donc illisible (cf. `downloads.ts`).
+    expect(url).toContain("audioCodec=aac");
     expect(url).toContain("allowVideoStreamCopy=true");
     expect(url).toContain("allowAudioStreamCopy=true");
-    expect(url).toContain("context=Static");
+    // Et jamais `context=Static` : le client dépasse ffmpeg et reçoit un
+    // fichier dont l'index n'a pas encore été écrit.
+    expect(url).not.toContain("context=Static");
     // Un plafond, quel qu'il soit, ferait refuser la copie de flux.
     expect(url).not.toContain("videoBitRate");
     expect(url).not.toContain("audioBitRate");
