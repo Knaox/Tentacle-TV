@@ -14,7 +14,7 @@ import type { DatabaseHandle, Volume } from "./adapters";
 import * as episodeNumbers from "./episodeNumbers";
 import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { asArray, asString, field, parseJson } from "./json";
-import { markSnapshotDone, saveBytes, setLibraryId, type MetaSpec } from "./meta";
+import { markSnapshotDone, saveBytes, setLibrary as writeLibrary, type MetaSpec } from "./meta";
 import * as segments from "./segments";
 import { firstMediaSourceId } from "./store";
 import * as trickplay from "./trickplay";
@@ -167,7 +167,11 @@ async function setLibrary(
     if (asString(field(ancestor, "Type")) !== "CollectionFolder") continue;
     const id = asString(field(ancestor, "Id"));
     if (id === null) continue;
-    setLibraryId(db, itemId, id);
+    writeLibrary(db, itemId, {
+      id,
+      name: asString(field(ancestor, "Name")),
+      collectionType: asString(field(ancestor, "CollectionType")),
+    });
     return true;
   }
   return false;
