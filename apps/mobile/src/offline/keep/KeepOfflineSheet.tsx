@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import type { LightPresetId, OfflineVariantKind } from "@tentacle-tv/offline-core";
+import { languageDisplayName, type LightPresetId, type OfflineVariantKind } from "@tentacle-tv/offline-core";
 import { BottomSheet, Button } from "@/components/ui";
 import { useDiskInfo, useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useOfflineCapabilities } from "@/hooks/offline/useOfflineCapabilities";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import { audioTracks, batchSizeBytes, imageSubtitleTracks, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
+import { audioLanguages, audioTracks, batchSizeBytes, imageSubtitleTracks, keptAudioTrack, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
 import { useWifiOnly } from "../settings";
 import { useCellularAck } from "../deviceSettings";
 import { wifiBlocked } from "../transferGate";
@@ -19,7 +19,7 @@ import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from
 import { planForItems } from "./keepPlan";
 import { PresetChoice } from "./PresetChoice";
 import { SizeSummary } from "./SizeSummary";
-import { TrackPickerRow, trackLabel } from "./TrackPickerRow";
+import { LanguagePickerRow, TrackPickerRow, trackLabel } from "./TrackPickerRow";
 import { useKeepOfflineSubmit } from "./useKeepOfflineSubmit";
 import { VariantCards } from "./VariantCards";
 
@@ -34,7 +34,7 @@ export function KeepOfflineSheet() {
 }
 
 function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
-  const { t } = useTranslation("downloads");
+  const { t, i18n } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
   const st = useThemedStyles(makeStyles);
@@ -79,6 +79,9 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const [preset, setPreset] = useState<LightPresetId>("p720");
   const activePreset = presets.includes(preset) ? preset : ((presets[0] as LightPresetId | undefined) ?? "p720");
   const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
+  // Sur un lot, le choix porte sur la LANGUE : les index de flux diffèrent
+  // d'un épisode à l'autre, la langue non.
+  const [audioLanguage, setAudioLanguage] = useState<string | undefined>(undefined);
   const [burnIndex, setBurnIndex] = useState<number | undefined>(undefined);
   const [autoDelete, setAutoDelete] = useState<AutoDeleteValue>(null);
 
@@ -88,14 +91,31 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
     autoDeleteAfterWatch: autoDelete !== null,
     autoDeleteDelayMinutes: autoDelete ?? 0,
     audioStreamIndex: audioIndex,
+    audioLanguage,
     burnSubtitleIndex: burnIndex,
-  }), [kind, activePreset, autoDelete, audioIndex, burnIndex]);
+  }), [kind, activePreset, autoDelete, audioIndex, audioLanguage, burnIndex]);
   const { submit, submitting, spaceError } = useKeepOfflineSubmit(items, options);
 
   const card = plan.cards.find((entry) => entry.kind === kind) ?? null;
   const size = kind === null ? { total: null, estimate: false } : batchSizeBytes(items, kind, activePreset);
   const audio = useMemo(() => (single ? audioTracks(single) : []), [single]);
   const imageSubs = useMemo(() => (single ? imageSubtitleTracks(single) : []), [single]);
+  // Une langue, pas une piste : sur un lot, « Français » se lit mieux que
+  // « French - Dolby Digital+ - Stereo », dont les canaux varient d'un
+  // épisode à l'autre.
+  const languages = useMemo(
+    () => audioLanguages(items).map(({ code, stream }) => ({
+      code,
+      label: languageDisplayName(code, i18n.language) ?? stream.DisplayTitle ?? code,
+    })),
+    [items, i18n.language],
+  );
+  // Les paliers Allégé et remux passent par le transcodage de Jellyfin, qui
+  // n'en sort jamais qu'une : on dit laquelle. Le premier titre du lot fait foi.
+  const kept = useMemo(
+    () => (kind !== null && kind !== "original" && items[0] !== undefined ? keptAudioTrack(items[0], options) : null),
+    [kind, items, options],
+  );
 
   const hints: string[] = [];
   if (card !== null && kind === "original" && single !== null) {
@@ -104,7 +124,12 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       if (track) hints.push(to("audioUnplayableWarning", { track: trackLabel(track) }));
     }
   }
-  if (kind !== null && kind !== "original") hints.push(to("singleAudioTrackHint"));
+  if (kind !== null && kind !== "original") {
+    hints.push(kept === null ? to("singleAudioTrackHint") : to("audioKeptHint", { track: trackLabel(kept) }));
+  }
+  // Ce que le hors ligne emporte TOUJOURS, et ce qu'il ne sait pas emporter.
+  if (kind !== null) hints.push(to("subtitlesAllKeptHint"));
+  if (imageSubs.length > 0 && burnIndex === undefined) hints.push(to("imageSubsHint"));
   if (kind === "light" && plan.excluded.some((entry) => entry.reason === "dolbyVision")) hints.push(to("dolbyVisionColorsHint"));
 
   const title = request.mode === "season"
@@ -155,6 +180,15 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
         {kind === "light" && <PresetChoice value={activePreset} onChange={setPreset} available={presets} />}
         {single !== null && kind !== "original" && audio.length > 1 && (
           <TrackPickerRow label={t("audioTrack")} emptyLabel={t("audioDefault")} tracks={audio} value={audioIndex} onChange={setAudioIndex} unplayable={card?.audio.unplayable} />
+        )}
+        {single === null && kind !== null && kind !== "original" && languages.length > 1 && (
+          <LanguagePickerRow
+            label={to("audioLanguagePicker")}
+            emptyLabel={to("audioLanguageDefault")}
+            languages={languages}
+            value={audioLanguage}
+            onChange={setAudioLanguage}
+          />
         )}
         {single !== null && kind === "light" && imageSubs.length > 0 && (
           <TrackPickerRow label={t("burnSubtitle")} emptyLabel={t("burnNone")} tracks={imageSubs} value={burnIndex} onChange={setBurnIndex} />

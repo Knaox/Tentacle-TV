@@ -36,9 +36,9 @@ export default {
   timeLeftMinutes: "{{minutes}} min restantes",
   timeLeftSeconds: "moins d'une minute",
   variantOriginal: "Qualité d'origine",
-  variantOriginalDesc: "Le fichier tel quel.",
+  variantOriginalDesc: "Le fichier tel quel, avec toutes ses langues et ses sous-titres.",
   variantRemux: "Qualité d'origine (MP4)",
-  variantRemuxDesc: "La même image, réemballée pour cet appareil.",
+  variantRemuxDesc: "La même image, réemballée pour cet appareil — une seule langue audio.",
   remove: "Retirer de l'appareil",
   myOfflineTitles: "Mes titres hors ligne",
 
@@ -56,6 +56,14 @@ export default {
     "Ce titre ne peut pas être gardé hors ligne sur cet appareil : le serveur ne propose pas de version lisible ici.",
   audioUnplayableWarning: "La piste « {{track}} » ne sera pas lisible sur cet appareil.",
   singleAudioTrackHint: "Une seule piste audio est conservée dans cette version.",
+  // Jellyfin ne sait sortir qu'UNE piste audio de son transcodage : autant
+  // dire laquelle avant de lancer le transfert, plutôt que de le découvrir
+  // une fois le titre sur l'appareil.
+  audioKeptHint: "Une seule piste audio sera embarquée : {{track}}. Les autres langues resteront sur le serveur.",
+  audioLanguagePicker: "Langue à embarquer",
+  audioLanguageDefault: "Langue par défaut",
+  subtitlesAllKeptHint: "Tous les sous-titres texte sont conservés, dans toutes leurs langues.",
+  imageSubsHint: "Les sous-titres image (PGS, VobSub) ne se conservent pas : seule l'incrustation les embarque.",
   dolbyVisionColorsHint: "Couleurs non garanties : le format Dolby Vision de ce titre dépend de la conversion du serveur.",
   presetBitrate: "{{mbps}} Mb/s",
   sizeUnknown: "Taille inconnue",
