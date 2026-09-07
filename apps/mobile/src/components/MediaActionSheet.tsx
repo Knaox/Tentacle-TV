@@ -54,14 +54,18 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
 
   const favorite = useFavorite(targetId);
   const watchlist = useToggleWatchlist(targetId);
-  const watched = useWatchedToggle(
-    targetId,
-    isEpisode && item?.SeriesId ? { seriesId: item.SeriesId, seasonId: item.SeasonId ?? undefined } : undefined,
-  );
+  // Favoris et Ma liste visent la SÉRIE pour un épisode — la règle du produit.
+  // « Vu » vise le titre APPUYÉ : sur la série, `/PlayedItems/{seriesId}`
+  // marquait tous ses épisodes d'un coup.
+  const watched = useWatchedToggle(itemId, {
+    seriesId: item?.SeriesId,
+    seasonId: item?.SeasonId ?? undefined,
+    itemType: item?.Type,
+  });
 
   const isFav = target?.UserData?.IsFavorite === true;
   const isInList = target?.UserData?.Likes === true;
-  const isWatched = target?.UserData?.Played === true;
+  const isWatched = item?.UserData?.Played === true;
 
   // Drag-to-dismiss
   const translateY = useRef(new Animated.Value(SCREEN_H)).current;
