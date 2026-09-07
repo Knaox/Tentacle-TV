@@ -33,8 +33,12 @@ import { removeMediaFile, safeJoin } from "./paths";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
 
-/** Deux transferts simultanés : au-delà, on se dispute la bande passante. */
-export const MAX_PARALLEL = 2;
+/**
+ * Un seul transfert à la fois. Deux se disputaient la bande passante, le disque
+ * et — sur le téléphone — le processeur de la finalisation MP4 : deux barres
+ * qui avancent lentement plutôt qu'une qui aboutit. La file reste FIFO.
+ */
+export const MAX_PARALLEL = 1;
 
 export interface EngineDeps {
   db: DatabaseHandle;

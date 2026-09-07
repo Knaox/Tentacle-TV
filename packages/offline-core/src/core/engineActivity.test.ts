@@ -187,7 +187,10 @@ describe("politique de plateforme (canTransfer)", () => {
     engine.resumeSystemPauses();
     await new Promise((resolve) => setTimeout(resolve, 30));
 
-    expect(held.opened).toBe(2);
+    // Un seul flux part : le second attend son tour, remis en file mais pas
+    // laisse en pause.
+    expect(held.opened).toBe(1);
+    expect(getFile(db, first)?.status).toBe("downloading");
     held.release();
   });
 });
@@ -203,19 +206,20 @@ describe("pause systeme tardive", () => {
 
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(held.opened).toBe(2);
+    expect(held.opened).toBe(1);
 
-    // Le reseau tombe puis revient AVANT que les flux n'aient vu la pause.
+    // Le reseau tombe puis revient AVANT que le flux n'ait vu la pause.
     engine.suspendForSystem();
     engine.resumeSystemPauses();
     held.release();
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await vi.waitFor(() => {
+      expect(getFile(db, second)?.status).toBe("complete");
+    });
 
-    // Les deux ont ete remis en file et relances (un second flux chacun), pas
-    // laisses en pause jusqu'au prochain evenement.
-    expect(held.opened).toBe(4);
+    // Le premier a ete remis en file et RELANCE (un second flux pour lui), pas
+    // laisse en pause jusqu'au prochain evenement ; le second a suivi.
+    expect(held.opened).toBe(3);
     expect(getFile(db, first)?.status).toBe("complete");
-    expect(getFile(db, second)?.status).toBe("complete");
   });
 
   it("une pause explicite reste en pause, meme conditions revenues", async () => {
