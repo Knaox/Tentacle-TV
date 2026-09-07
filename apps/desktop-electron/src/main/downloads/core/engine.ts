@@ -21,6 +21,7 @@
 
 import type { EngineDeps } from "./engineDeps";
 import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
+import { clearRetry, nextRetryDueAt, requeueDueRetries, RETRY_DELAYS_MS } from "./retry";
 import {
   countQueued,
   getFile,
@@ -53,6 +54,8 @@ export class DownloadEngine {
   private busy = false;
   /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
   private systemSuspended = false;
+  /** Un seul minuteur pour toute la file : celui de la prochaine échéance. */
+  private retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly deps: EngineDeps) {}
 
@@ -116,6 +119,38 @@ export class DownloadEngine {
       this.startWhatCanRun();
     }
     this.updateActivity();
+    this.armRetryTimer();
+  }
+
+  /**
+   * Remet en file ce dont l'échéance de relance est atteinte.
+   *
+   * Public parce que le minuteur ne suffit pas sur le téléphone : le système
+   * gèle les minuteurs en arrière-plan, et le retour au premier plan doit
+   * rattraper les échéances passées entre-temps.
+   */
+  sweepRetries(): void {
+    if (requeueDueRetries(this.deps.db, this.deps.now()) > 0) {
+      this.notifyChanged();
+      this.pump();
+    } else {
+      this.armRetryTimer();
+    }
+  }
+
+  /** Un seul minuteur, toujours calé sur la PROCHAINE échéance. */
+  private armRetryTimer(): void {
+    if (this.retryTimer !== null) {
+      clearTimeout(this.retryTimer);
+      this.retryTimer = null;
+    }
+    const due = nextRetryDueAt(this.deps.db);
+    if (due === null) return;
+    const delay = Math.max(0, due - this.deps.now());
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      this.sweepRetries();
+    }, delay);
   }
 
   private startWhatCanRun(): void {
@@ -205,6 +240,7 @@ export class DownloadEngine {
       nowMs: this.deps.now(),
       systemSuspended: this.systemSuspended,
       canTransfer: this.deps.canTransfer,
+      retryDelaysMs: this.deps.retryDelaysMs ?? RETRY_DELAYS_MS,
     });
     this.notifyChanged();
     this.pump();
@@ -212,6 +248,7 @@ export class DownloadEngine {
 
   pause(fileId: number): void {
     setPausedByUser(this.deps.db, fileId, true);
+    clearRetry(this.deps.db, fileId);
     const flags = this.active.get(fileId);
     if (flags !== undefined) {
       flags.pause = true;
@@ -230,6 +267,9 @@ export class DownloadEngine {
     if (file !== null && (file.status === "paused" || file.status === "error")) {
       setPausedByUser(this.deps.db, fileId, false);
       setStatus(this.deps.db, fileId, "queued", null, this.deps.now());
+      // Reprise demandée : les tentatives repartent de zéro, et l'échéance
+      // programmée n'a plus lieu d'être.
+      clearRetry(this.deps.db, fileId);
     }
     this.notifyChanged();
     this.pump();
