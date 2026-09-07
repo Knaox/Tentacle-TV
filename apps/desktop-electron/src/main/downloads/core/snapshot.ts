@@ -16,7 +16,7 @@ import { MAX_JSON_BYTES, type FetchBytes } from "./fetcher";
 import { asArray, asString, field, parseJson } from "./json";
 import { markSnapshotDone, saveBytes, setLibrary as writeLibrary, type MetaSpec } from "./meta";
 import * as segments from "./segments";
-import { firstMediaSourceId } from "./store";
+import { firstMediaSourceId } from "./fileLookup";
 import * as trickplay from "./trickplay";
 
 /**

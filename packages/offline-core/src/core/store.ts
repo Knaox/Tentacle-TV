@@ -68,6 +68,13 @@ export interface FileRow {
   audioStreamIndex: number | null;
   burnSubtitleIndex: number | null;
   subtitlesJson: string | null;
+  /** Échecs enchaînés depuis la dernière réussite ou le dernier geste. */
+  retryCount: number;
+  lastErrorAt: number | null;
+  /** Échéance de la relance automatique, `null` s'il n'y en a pas. */
+  nextRetryAt: number | null;
+  /** Étape hors téléchargement : `null`, ou `'finalize'` (remux MP4 à faire). */
+  phase: string | null;
 }
 
 /** Ce que la page voit d'un fichier : tout, sauf la liste des side-cars. */
@@ -76,7 +83,8 @@ export type PublicFile = Omit<FileRow, "subtitlesJson">;
 /** Colonnes de `files`, PRÉFIXÉES — les requêtes joignent `claims` et `item_meta`. */
 export const FILE_COLS = `files.id, files.item_id, files.media_source_id, files.variant,
    files.preset, files.rel_path, files.expected_size, files.bytes_done, files.status,
-   files.error_code, files.audio_stream_index, files.burn_subtitle_index, files.subtitles_json`;
+   files.error_code, files.audio_stream_index, files.burn_subtitle_index, files.subtitles_json,
+   files.retry_count, files.last_error_at, files.next_retry_at, files.phase`;
 
 export function mapFileRow(row: Row): FileRow {
   return {
@@ -93,6 +101,10 @@ export function mapFileRow(row: Row): FileRow {
     audioStreamIndex: integerOrNull(row, "audio_stream_index"),
     burnSubtitleIndex: integerOrNull(row, "burn_subtitle_index"),
     subtitlesJson: textOrNull(row, "subtitles_json"),
+    retryCount: integer(row, "retry_count"),
+    lastErrorAt: integerOrNull(row, "last_error_at"),
+    nextRetryAt: integerOrNull(row, "next_retry_at"),
+    phase: textOrNull(row, "phase"),
   };
 }
 
@@ -167,7 +179,8 @@ export function claimOrCreateFile(db: DatabaseHandle, spec: ClaimSpec): ClaimOut
       if (existing.status === "canceled") {
         db.prepare(
           `UPDATE files SET status = 'queued', bytes_done = 0, error_code = NULL,
-                  paused_by_user = 0, updated_at = ? WHERE id = ?`,
+                  paused_by_user = 0, retry_count = 0, next_retry_at = NULL,
+                  phase = NULL, updated_at = ? WHERE id = ?`,
         ).run(spec.nowMs, existing.id);
       }
       fileId = existing.id;
@@ -256,43 +269,4 @@ export function deleteClaim(
     removeItemMediaDir(volume, toDelete.itemId);
   }
   return { fileDeleted: true, metaDeleted: toDelete.metaOrphan };
-}
-
-/**
- * Meilleur fichier COMPLET revendiqué par cet utilisateur pour cet item.
- * Original prioritaire sur Allégé — c'est la résolution de source à la lecture.
- */
-export function completeFileForItem(
-  db: DatabaseHandle,
-  userId: string,
-  itemId: string,
-): FileRow | null {
-  const row = db
-    .prepare(
-      `SELECT ${FILE_COLS} FROM files
-       JOIN claims ON claims.file_id = files.id
-       WHERE claims.jellyfin_user_id = ? AND files.item_id = ?
-         AND files.status = 'complete'
-       ORDER BY CASE files.variant WHEN 'original' THEN 0 ELSE 1 END
-       LIMIT 1`,
-    )
-    .get(userId, itemId);
-  return row === undefined ? null : mapFileRow(row);
-}
-
-/**
- * `mediaSourceId` d'un fichier de cet item, le plus récent. Sert à cibler le
- * manifeste trickplay, dont la clé est le `mediaSourceId` Jellyfin.
- */
-export function firstMediaSourceId(db: DatabaseHandle, itemId: string): string | null {
-  const row = db
-    .prepare("SELECT media_source_id FROM files WHERE item_id = ? ORDER BY id DESC LIMIT 1")
-    .get(itemId);
-  return row === undefined ? null : text(row, "media_source_id");
-}
-
-/** Octets occupés sur le disque par TOUS les fichiers, partiels compris. */
-export function diskUsage(db: DatabaseHandle): number {
-  const row = db.prepare("SELECT COALESCE(SUM(bytes_done), 0) AS n FROM files").get();
-  return row === undefined ? 0 : integer(row, "n");
 }

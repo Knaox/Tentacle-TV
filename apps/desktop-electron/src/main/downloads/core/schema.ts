@@ -159,6 +159,23 @@ ALTER TABLE item_meta ADD COLUMN library_type TEXT;
 `;
 
 /**
+ * v9 — la vie d'un transfert après un échec : combien de tentatives, quand la
+ * dernière a eu lieu, quand relancer, et à quelle ÉTAPE le fichier en est.
+ *
+ * `phase` vaut `NULL` en temps normal et `'finalize'` quand le média est
+ * entièrement reçu mais attend son remux MP4 : c'est ce qui permet de retenter
+ * la seule finalisation, sans retélécharger. Elle n'a délibérément PAS de
+ * `CHECK` — celui du `status` (v2) est précisément ce qui interdit aujourd'hui
+ * d'ajouter un statut à une base figée.
+ */
+const SCHEMA_V9 = `
+ALTER TABLE files ADD COLUMN retry_count   INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE files ADD COLUMN last_error_at INTEGER;
+ALTER TABLE files ADD COLUMN next_retry_at INTEGER;
+ALTER TABLE files ADD COLUMN phase         TEXT;
+`;
+
+/**
  * Les paliers, dans l'ordre. L'INDEX vaut la version : le palier 0 amène à
  * `user_version = 1`, et ainsi de suite. Ajouter un palier, c'est pousser à la
  * fin de ce tableau — jamais réordonner.
@@ -172,6 +189,7 @@ export const MIGRATIONS: readonly string[] = [
   SCHEMA_V6,
   SCHEMA_V7,
   SCHEMA_V8,
+  SCHEMA_V9,
 ];
 
 /** Version de schéma que ce code sait produire et lire. */

@@ -18,6 +18,8 @@ export * from "./core/schema";
 export * from "./core/db";
 export * from "./core/paths";
 export * from "./core/store";
+export * from "./core/usage";
+export * from "./core/fileLookup";
 export * from "./core/queue";
 export * from "./core/enqueue";
 export * from "./core/listing";

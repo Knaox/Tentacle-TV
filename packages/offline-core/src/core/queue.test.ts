@@ -18,7 +18,8 @@ import {
   setPausedByUser,
   setStatus,
 } from "./queue";
-import { claimOrCreateFile, diskUsage } from "./store";
+import { claimOrCreateFile } from "./store";
+import { diskUsage } from "./usage";
 import { spec } from "./testkit";
 
 function seed(db: DatabaseHandle, itemId: string, at: number): number {
