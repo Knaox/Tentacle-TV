@@ -10,9 +10,11 @@
  *   fichier corrompu : on le jette et on rend `range-ignored`. La progression
  *   rendue est déjà cumulée (`bytesRead + resumeData`).
  * - **iOS** n'écrit le fichier qu'à la FIN (rien sur le disque avant). La
- *   reprise passe par un jeton opaque rendu à la pause, gardé dans la base
- *   locale (`resumeTokens`) ; un jeton périmé (conteneur renommé à une mise à
- *   jour) fait échouer la reprise → on l'oublie, la politique repart de zéro.
+ *   reprise passe par un jeton opaque : celui d'une pause, gardé dans la base
+ *   locale (`resumeTokens`), ou celui qu'une COUPURE laisse à côté du `.part`
+ *   (`resumeSidecar`, rendu possible par `patches/expo-file-system.patch`).
+ *   Un jeton périmé (conteneur renommé à une mise à jour) fait échouer la
+ *   reprise → on l'oublie, la politique repart de zéro.
  * - Sur les deux, les en-têtes de réponse n'arrivent qu'à la résolution :
  *   `onHeaders` n'est jamais appelé — la session de transcodage est choisie
  *   par le client (voir `worker.ts`) et le serveur l'honore.
@@ -21,6 +23,7 @@
 import { Platform } from "react-native";
 import { createDownloadResumable, FileSystemSessionType } from "expo-file-system/legacy";
 import type { FileStore, TransferDriver, TransferOutcome, TransferRequest } from "@tentacle-tv/offline-core";
+import { dropResumeSidecar, readResumeSidecar } from "./resumeSidecar";
 import type { ResumeTokenStore } from "./resumeTokens";
 import { isBackgroundTransfers } from "./settings";
 
@@ -55,12 +58,26 @@ function lowercaseKeys(headers: Record<string, string>): Record<string, string> 
   return out;
 }
 
+/** Jeton d'une pause, sinon celui d'une coupure — consommé au passage. */
+async function pickResumeToken(tokens: ResumeTokenStore, partPath: string): Promise<string | null> {
+  const paused = tokens.get(partPath);
+  if (paused !== null) return paused;
+  const afterOutage = await readResumeSidecar(partPath);
+  if (afterOutage !== null) await dropResumeSidecar(partPath);
+  return afterOutage;
+}
+
 async function download(
   files: FileStore,
   tokens: ResumeTokenStore,
   request: TransferRequest,
 ): Promise<TransferOutcome> {
-  const resumeToken = IS_ANDROID ? null : tokens.get(request.partPath);
+  // iOS : d'abord le jeton d'une pause explicite, sinon celui qu'une coupure a
+  // laissé à côté du `.part` — sans lui, une erreur réseau coûtait le fichier
+  // entier. Ce dernier ne sert QU'UNE fois : consommé tout de suite, il ne peut
+  // pas boucler s'il est périmé, et le natif en réécrira un frais au prochain
+  // échec s'il en a un.
+  const resumeToken = IS_ANDROID ? null : await pickResumeToken(tokens, request.partPath);
   const resumeData = IS_ANDROID
     ? request.resumeFrom > 0
       ? String(request.resumeFrom)
@@ -122,7 +139,9 @@ async function download(
       return { kind: "canceled" };
     }
     if (request.signal.pause) return { kind: "paused", bytesKnown };
-    // Reprise iOS refusée (jeton périmé) : on l'oublie, la politique repartira de zéro.
+    // Reprise iOS refusée (jeton périmé) : on l'oublie, la politique repartira
+    // de zéro. Le natif vient d'écrire un jeton frais à côté du `.part` :
+    // c'est lui qui servira au prochain essai.
     if (resumeToken !== null) tokens.forget(request.partPath);
     const cause = files.classify(error) === "disk-full" ? "disk-full" : "network";
     return { kind: "failed", cause, bytesKnown };
@@ -135,7 +154,10 @@ async function download(
   if (result === undefined) {
     if (request.signal.cancel) {
       discard(files, request.partPath);
-      if (!IS_ANDROID) tokens.forget(request.partPath);
+      if (!IS_ANDROID) {
+        tokens.forget(request.partPath);
+        void dropResumeSidecar(request.partPath);
+      }
       return { kind: "canceled" };
     }
     if (request.signal.pause) return { kind: "paused", bytesKnown };
@@ -144,7 +166,10 @@ async function download(
   }
 
   // Transfert terminé : le jeton de reprise ne sert plus.
-  if (!IS_ANDROID) tokens.forget(request.partPath);
+  if (!IS_ANDROID) {
+    tokens.forget(request.partPath);
+    void dropResumeSidecar(request.partPath);
+  }
 
   // Android a AJOUTÉ un corps complet à la suite du `.part` : corrompu.
   if (IS_ANDROID && result.status === 200 && request.resumeFrom > 0) {
