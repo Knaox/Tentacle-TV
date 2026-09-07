@@ -188,7 +188,7 @@ export function WatchlistScreen() {
           <MediaActionSheet
             visible={actionSheetVisible}
             itemId={longPressItemId}
-            onClose={() => setActionSheetVisible(false)}
+            onClose={() => { setActionSheetVisible(false); setLongPressItemId(null); }}
           />
         )}
 

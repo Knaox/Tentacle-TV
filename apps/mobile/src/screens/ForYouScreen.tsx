@@ -156,7 +156,7 @@ export function ForYouScreen() {
           visible={sheetVisible}
           itemId={sheet.itemId}
           reasons={sheet.reasons}
-          onClose={() => setSheetVisible(false)}
+          onClose={() => { setSheetVisible(false); setSheet(null); }}
         />
       )}
       <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />

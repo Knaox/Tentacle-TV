@@ -8,6 +8,7 @@ import type { RecoReason } from "@tentacle-tv/api-client";
 import { RecoReasonList } from "@/components/reco/RecoReasonList";
 import { spacing, typography, FONT_FAMILY, RADIUS, SHADOW_RN, SHEET_MAX_WIDTH, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { GlassBackdrop } from "@/components/ui";
+import { retainModal } from "@/components/ui/modalGate";
 import { ActionCell } from "@/components/ActionCell";
 import { KeepOfflineActionCell } from "@/offline/entry/KeepOfflineActionCell";
 
@@ -16,6 +17,8 @@ let Haptics: { impactAsync: (s: any) => void; ImpactFeedbackStyle: any } | null 
 try { Haptics = require("expo-haptics"); } catch { /* ignore */ }
 
 const DISMISS = 80;
+/** Au-delà, la sortie est tenue pour finie : un ressort interrompu n'appelle jamais son rappel. */
+const EXIT_GUARD_MS = 600;
 
 interface Props {
   visible: boolean;
@@ -66,11 +69,21 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
   // Ref-bag — le PanResponder (créé une fois) et `dismiss` lisent la hauteur fraîche.
   const stateRef = useRef({ H: SCREEN_H });
   stateRef.current.H = SCREEN_H;
+  // La fermeture DOIT aboutir : sans elle la feuille reste montée, et son
+  // voile plein écran — invisible à `opacity: 0` — avale toutes les touches.
+  // Une animation interrompue n'appelle jamais son rappel : garde-fou.
   const dismiss = useCallback(() => {
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      onClose();
+    };
     Animated.parallel([
       Animated.spring(translateY, { toValue: stateRef.current.H, useNativeDriver: true, damping: 22, stiffness: 240 } as Animated.SpringAnimationConfig),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
-    ]).start(() => { onClose(); });
+    ]).start(finish);
+    setTimeout(finish, EXIT_GUARD_MS);
   }, [translateY, overlayOpacity, onClose]);
 
   useEffect(() => {
@@ -83,6 +96,13 @@ export function MediaActionSheet({ visible, itemId, onClose, reasons }: Props) {
       ]).start();
     }
   }, [visible, translateY, overlayOpacity]);
+
+  // Déclarée au portier tant qu'elle est à l'écran : le dialogue « Garder hors
+  // ligne » attendra sa fermeture au lieu de se présenter par-dessus.
+  useEffect(() => {
+    if (!visible) return;
+    return retainModal();
+  }, [visible]);
 
   const panResponder = useRef(
     PanResponder.create({
