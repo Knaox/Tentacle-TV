@@ -49,6 +49,8 @@ export default {
   noVariantMessage:
     "This title can't be kept offline on this device: the server offers no version playable here.",
   audioUnplayableWarning: "The \"{{track}}\" track won't be playable on this device.",
+  lightOnlyHint:
+    "This device cannot play this file as it is, and it cannot be repackaged without converting: this version is re-encoded by the server, so it is less sharp than the original.",
   singleAudioTrackHint: "Only one audio track is kept in this version.",
   audioKeptHint: "Only one audio track is embedded: {{track}}. The other languages stay on the server.",
   audioLanguagePicker: "Language to embed",

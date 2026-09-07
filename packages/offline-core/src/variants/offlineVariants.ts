@@ -10,6 +10,11 @@
  *
  * Trois cartes possibles, dans cet ordre : `original`, `remux`, `light`. Ce
  * qui est exclu l'est avec sa raison : le dialogue peut l'expliquer.
+ *
+ * `lossyAsLastResort` change la règle du jeu : l'Allégé — le seul des trois à
+ * perdre de l'image — n'est plus proposé À CÔTÉ d'une version sans perte, mais
+ * seulement quand il ne reste rien d'autre. On ne choisit pas de dégrader ; on
+ * y consent quand l'appareil ne sait pas faire autrement.
  */
 
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
@@ -40,7 +45,9 @@ export type OfflineExclusionReason =
   | "serverPreset"
   | "right"
   /** Remux inutile : l'original est déjà entièrement lisible. */
-  | "redundant";
+  | "redundant"
+  /** Allégé écarté : une version SANS PERTE existe (cf. `lossyAsLastResort`). */
+  | "lossless";
 
 export interface OfflineVariantCard {
   kind: OfflineVariantKind;
@@ -55,6 +62,14 @@ export interface OfflineVariantCard {
 export interface OfflineVariantPlan {
   cards: OfflineVariantCard[];
   excluded: Array<{ kind: OfflineVariantKind; reason: OfflineExclusionReason }>;
+}
+
+export interface OfflineVariantOptions {
+  /**
+   * L'Allégé n'est offert que si NI l'original NI le remux ne conviennent.
+   * Le mobile l'exige ; le bureau garde le choix des trois (défaut `false`).
+   */
+  lossyAsLastResort?: boolean;
 }
 
 /** Même découpe que `containerExt` du dialogue : premier jeton, repli `mkv`. */
@@ -86,6 +101,7 @@ export function offlineVariantsFor(
   item: MediaItem,
   platform: PlatformMediaSupport,
   capabilities: DownloadCapabilities,
+  options?: OfflineVariantOptions,
 ): OfflineVariantPlan {
   // Invisibilité stricte : sans droit, pas même une raison.
   if (!capabilities.downloads) return { cards: [], excluded: [] };
@@ -138,9 +154,11 @@ export function offlineVariantsFor(
   else if (audio.unplayable.length > 0) offer("remux", "audioCodec", size, true);
   else exclude("remux", "redundant");
 
-  // Allégé : le repli, dès que la conversion est permise.
-  if (capabilities.lightDownloads) offer("light", "fallback", null, true);
-  else exclude("light", "right");
+  // Allégé : le repli, dès que la conversion est permise — et, quand on ne
+  // veut pas perdre d'image, seulement s'il ne reste rien d'autre.
+  if (!capabilities.lightDownloads) exclude("light", "right");
+  else if (options?.lossyAsLastResort === true && plan.cards.length > 0) exclude("light", "lossless");
+  else offer("light", "fallback", null, true);
 
   return plan;
 }

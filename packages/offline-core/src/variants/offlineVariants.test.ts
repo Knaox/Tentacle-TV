@@ -180,6 +180,49 @@ describe("offlineVariantsFor", () => {
     expect(kinds(plan)).toEqual(["original", "light"]);
   });
 
+  // ── Sans perte d'abord : l'Allégé n'est plus un choix, c'est un recours.
+  it("sans perte d'abord : un MP4 lisible n'a que son original", () => {
+    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL, {
+      lossyAsLastResort: true,
+    });
+    expect(kinds(plan)).toEqual(["original"]);
+    expect(excluded(plan, "light")).toBe("lossless");
+  });
+
+  it("sans perte d'abord : un MKV sur iOS n'a que son remux", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL, {
+      lossyAsLastResort: true,
+    });
+    expect(kinds(plan)).toEqual(["remux"]);
+    expect(excluded(plan, "light")).toBe("lossless");
+  });
+
+  it("sans perte d'abord : le Dolby Vision profil 5 garde son Allégé, faute de mieux", () => {
+    const plan = offlineVariantsFor(
+      item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
+      IOS_LOCAL_SUPPORT,
+      FULL,
+      { lossyAsLastResort: true },
+    );
+    expect(kinds(plan)).toEqual(["light"]);
+  });
+
+  it("sans perte d'abord : sans droit de conversion, il ne reste rien", () => {
+    const plan = offlineVariantsFor(
+      item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
+      IOS_LOCAL_SUPPORT,
+      { downloads: true, lightDownloads: false, lightPresets: [] },
+      { lossyAsLastResort: true },
+    );
+    expect(kinds(plan)).toEqual([]);
+    expect(excluded(plan, "light")).toBe("right");
+  });
+
+  it("le bureau garde le choix des trois : l'option est éteinte par défaut", () => {
+    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["original", "light"]);
+  });
+
   it("« h265 » vaut hevc", () => {
     const plan = offlineVariantsFor(item("mp4", { Codec: "h265" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
     expect(kinds(plan)).toEqual(["original", "light"]);
