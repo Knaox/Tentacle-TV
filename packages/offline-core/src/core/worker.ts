@@ -15,7 +15,7 @@ import type { FetchBytes } from "./fetcher";
 import { getSpec, snapshotExists } from "./meta";
 import { safeJoin } from "./paths";
 import { snapshot } from "./snapshot";
-import type { FileRow } from "./store";
+import { setSubtitlesDone, type FileRow } from "./store";
 import { parseSpecs, fetchAll } from "./subs";
 import { run, type TransferEnd, type TransferFlags, type TransferJob } from "./transfer";
 
@@ -75,14 +75,19 @@ export async function runWorker(
     const specs = parseSpecs(file.subtitlesJson);
     if (specs.length > 0) {
       try {
-        await fetchAll(
+        const fetched = await fetchAll(
           deps.fetchBytes,
           creds.serverUrl,
           deps.volume,
           file.itemId,
           file.mediaSourceId,
           specs,
+          // Une piste sautée ne disparaît plus sans un mot : le serveur met
+          // parfois plus de vingt secondes à extraire un sous-titre, et le
+          // fetcher n'en rend qu'un `null` muet.
+          (spec, reason) => deps.onUnexpected?.("subs.fetch", `${file.itemId} piste ${spec.index} (${spec.langTag}) : ${reason}`),
         );
+        setSubtitlesDone(deps.db, file.itemId, file.mediaSourceId, fetched);
       } catch {
         // Idem : sans sous-titres, le média reste lisible.
       }

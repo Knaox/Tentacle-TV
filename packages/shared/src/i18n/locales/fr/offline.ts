@@ -27,6 +27,10 @@ export default {
   errorFinalize: "La finalisation a échoué",
   retryIn: "Nouvelle tentative dans {{seconds}} s",
   retryNow: "Nouvelle tentative…",
+  // Le serveur extrait chaque piste à la demande : une extraction trop
+  // lente manquait, et rien ne le disait. La réparation les rattrape au
+  // retour du réseau.
+  subtitlesPartial: "Sous-titres : {{done}} sur {{total}}",
   transferRate: "{{rate}}/s",
   timeLeftHours: "{{hours}} h {{minutes}} min restantes",
   timeLeftMinutes: "{{minutes}} min restantes",

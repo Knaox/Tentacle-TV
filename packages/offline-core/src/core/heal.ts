@@ -23,6 +23,7 @@ import {
 import * as segments from "./segments";
 import { snapshot } from "./snapshot";
 import { firstMediaSourceId } from "./fileLookup";
+import { setSubtitlesDone } from "./store";
 import { fetchAll, parseSpecs } from "./subs";
 import { text, textOrNull } from "./rows";
 import * as trickplay from "./trickplay";
@@ -131,6 +132,9 @@ export async function heal(
           item.mediaSourceId,
           specs,
         );
+        // Le compte se recale à chaque passage : ce qui manquait au transfert
+        // — une extraction trop lente côté serveur — arrive souvent ici.
+        setSubtitlesDone(db, item.itemId, item.mediaSourceId, fetched);
         touched = touched || fetched > 0;
       }
     }
