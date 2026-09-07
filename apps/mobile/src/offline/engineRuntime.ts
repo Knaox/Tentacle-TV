@@ -14,6 +14,7 @@ import {
   DownloadEngine,
   heal,
   purgeDueClaims,
+  repairUsage,
   type Creds,
   type EngineEvent,
   type ProgressPayload,
@@ -119,7 +120,9 @@ export function offlineEngine(): DownloadEngine {
     onBusy: onEngineBusy,
     onStarted: (started) => {
       startPeriodicPurge();
-      // Hors ligne, la réparation n'aurait que des requêtes à faire échouer.
+      // Le disque, lui, est toujours là : ce recalage tourne même hors ligne,
+      // contrairement à `heal` qui a besoin du serveur.
+      runUsageRepair();
       if (!isOfflineMode()) runHeal(started);
     },
   });
@@ -170,6 +173,30 @@ function startPeriodicPurge(): void {
   if (purgeTimer !== null) return;
   purgeTick();
   purgeTimer = setInterval(purgeTick, PURGE_TICK_MS);
+}
+
+/**
+ * Recale l'espace occupé sur ce qui est réellement sur l'appareil, et efface
+ * ce qui n'a plus de propriétaire — un remux tué laisse son temporaire, une
+ * suppression interrompue laisse son média.
+ */
+function runUsageRepair(): void {
+  const running = engine;
+  if (running === null) return;
+  const alive = new Set<number>();
+  for (const row of localDb().prepare("SELECT id FROM files WHERE status = 'downloading'").all()) {
+    const id = Number(row["id"]);
+    if (running.isActive(id)) alive.add(id);
+  }
+  try {
+    const report = repairUsage(localDb(), offlineVolume(), Date.now(), {
+      skipFileIds: alive,
+      removeOrphans: true,
+    });
+    if (report.rebased + report.missing + report.removed > 0) notifyOfflineChanged();
+  } catch {
+    // Best-effort : elle repassera au prochain démarrage.
+  }
 }
 
 /** Réparation en tâche de fond, jamais attendue. */
