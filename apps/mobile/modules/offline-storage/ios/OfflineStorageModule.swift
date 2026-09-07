@@ -1,3 +1,4 @@
+import AVFoundation
 import ExpoModulesCore
 import Foundation
 
@@ -33,6 +34,39 @@ public class OfflineStorageModule: Module {
 
     AsyncFunction("stopTransferService") { () -> Bool in
       false
+    }
+
+    // Remux SANS ré-encodage d'un MP4 fragmenté (mode Allégé : transcodage
+    // progressif Jellyfin, sans index ni durée) en MP4 classique, sur place.
+    // Passthrough AVFoundation ; `false` si l'export échoue — le fichier
+    // d'origine reste alors intact.
+    AsyncFunction("finalizeMp4") { (path: String, promise: Promise) in
+      let cleaned = path.hasPrefix("file://") ? String(path.dropFirst(7)) : path
+      let source = URL(fileURLWithPath: cleaned)
+      let target = URL(fileURLWithPath: cleaned + ".finalizing")
+      try? FileManager.default.removeItem(at: target)
+      let asset = AVURLAsset(url: source)
+      guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
+        promise.resolve(false)
+        return
+      }
+      session.outputURL = target
+      session.outputFileType = .mp4
+      session.shouldOptimizeForNetworkUse = true
+      session.exportAsynchronously {
+        guard session.status == .completed else {
+          try? FileManager.default.removeItem(at: target)
+          promise.resolve(false)
+          return
+        }
+        do {
+          _ = try FileManager.default.replaceItemAt(source, withItemAt: target)
+          promise.resolve(true)
+        } catch {
+          try? FileManager.default.removeItem(at: target)
+          promise.resolve(false)
+        }
+      }
     }
   }
 }

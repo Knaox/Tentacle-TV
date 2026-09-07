@@ -18,7 +18,7 @@ import {
   type EngineEvent,
   type ProgressPayload,
 } from "@tentacle-tv/offline-core";
-import { setExcludedFromBackup } from "../../modules/offline-storage";
+import { finalizeMp4, setExcludedFromBackup } from "../../modules/offline-storage";
 import { onEngineBusy, onEngineProgress, onEngineQueueChanged, stopBackgroundTransfers } from "./backgroundTransfers";
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
@@ -94,6 +94,10 @@ let engine: DownloadEngine | null = null;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
 let creds: Creds | null = null;
 
+async function finalizeLightFile(absPath: string): Promise<void> {
+  if ((await finalizeMp4(absPath)) === "failed") throw new Error("finalizeMp4 failed");
+}
+
 /** Le moteur, construit au premier appel. */
 export function offlineEngine(): DownloadEngine {
   if (engine !== null) return engine;
@@ -107,6 +111,9 @@ export function offlineEngine(): DownloadEngine {
     // Wi-Fi seulement, réseau identifié, serveur joignable : la garde est
     // consultée à chaque relance, jamais mise en cache.
     canTransfer: canStartTransfers,
+    // Le fichier Allégé est un MP4 fragmenté : remux indexé par le module natif
+    // avant « complete » ; sans module (ancien build), il reste tel quel.
+    finalizeMedia: finalizeLightFile,
     // Service de premier plan Android, session d'arrière-plan iOS ou
     // anti-veille de l'écran : voir `backgroundTransfers.ts`.
     onBusy: onEngineBusy,
