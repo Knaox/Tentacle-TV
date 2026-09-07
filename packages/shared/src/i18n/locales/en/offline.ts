@@ -144,6 +144,7 @@ export default {
   readyNotifTitle: "Ready offline",
   readyNotifBody_one: "\"{{title}}\" is on your device.",
   readyNotifBody_other: "{{count}} titles are ready on your device.",
+  readyNotifBodySeries: "{{series}}: {{count}} episodes are ready on your device.",
   diskFullNotifTitle: "Not enough space",
   diskFullNotifBody: "The transfer of \"{{title}}\" stopped.",
 
