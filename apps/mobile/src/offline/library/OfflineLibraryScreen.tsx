@@ -100,7 +100,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(2)}>
-            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} total={counts.movies + counts.series} />
+            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} total={counts.titles} />
           </FadeIn>
           {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
           <OfflineCatalogSections

@@ -34,7 +34,7 @@ interface Tile {
 
 interface Props {
   libraries: OfflineCatalogLibrary[];
-  /** Films + séries de l'appareil, pour la tuile « Tout ». */
+  /** Titres de l'appareil, pour la tuile « Tout » — le compte du résumé. */
   total: number;
   filter: OfflineCatalogFilter;
   onFilter: (value: OfflineCatalogFilter) => void;

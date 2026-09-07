@@ -13,7 +13,7 @@ interface Props {
   onFilter: (value: OfflineCatalogFilter) => void;
   /** Les bibliothèques d'origine des titres de l'appareil — une tuile chacune. */
   libraries: OfflineCatalogLibrary[];
-  /** Films + séries de l'appareil (tuile « Tout »). */
+  /** Titres de l'appareil (tuile « Tout »), le compte du résumé. */
   total: number;
 }
 
