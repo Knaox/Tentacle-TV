@@ -12,11 +12,11 @@ import { nodeVolume } from "../node/nodeFiles";
 import { getFile } from "./queue";
 import {
   claimOrCreateFile,
-  completeFileForItem,
   deleteClaim,
   findFile,
   publicFile,
 } from "./store";
+import { completeFileForItem } from "./fileLookup";
 import { countRows, writeMedia, preparedRoot, spec } from "./testkit";
 
 describe("deduplication par claims", () => {

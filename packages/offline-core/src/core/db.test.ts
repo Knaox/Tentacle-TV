@@ -102,8 +102,8 @@ describe("migrations", () => {
     // ...et les colonnes ajoutées par les paliers suivants sont là.
     migrated.exec(`
       INSERT INTO files (item_id, media_source_id, variant, rel_path, created_at, updated_at,
-                         paused_by_user, audio_stream_index)
-      VALUES ('i1', 'ms1', 'light', 'media/i1/light-ms1-p720.mp4', 1, 1, 1, 3)
+                         paused_by_user, audio_stream_index, retry_count, phase)
+      VALUES ('i1', 'ms1', 'light', 'media/i1/light-ms1-p720.mp4', 1, 1, 1, 3, 2, 'finalize')
     `);
     migrated.exec(`
       INSERT INTO claims (jellyfin_user_id, file_id, created_at, auto_delete_delay_minutes)
@@ -143,6 +143,15 @@ describe("contraintes du schema", () => {
     db.prepare("INSERT INTO claims (jellyfin_user_id, file_id, created_at) VALUES (?, ?, 1)").run("u-1", 1);
     db.exec("DELETE FROM files WHERE id = 1");
     expect(integer(db.prepare("SELECT COUNT(*) AS n FROM claims").get() ?? {}, "n")).toBe(0);
+  });
+
+  // La phase n'a PAS de `CHECK`, et c'est voulu : celui du `status` (v2) est
+  // ce qui interdit aujourd'hui d'ajouter un statut à une base figée.
+  it("la phase n'est pas contrainte : une valeur inconnue passe", () => {
+    const db = openInMemory();
+    db.prepare(insertFile).run("i1", "ms1", "original", null, "media/i1/original-ms1.mkv");
+    db.exec("UPDATE files SET phase = 'futur' WHERE id = 1");
+    expect(text(db.prepare("SELECT phase FROM files WHERE id = 1").get() ?? {}, "phase")).toBe("futur");
   });
 
   it("les ticks Jellyfin traversent sans perte", () => {

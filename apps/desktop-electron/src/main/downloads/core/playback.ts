@@ -18,7 +18,7 @@ import type { DownloadVariant } from "./store";
 import { safeJoin } from "./paths";
 import { setStatus } from "./queue";
 import { bit, flag, integer, integerOrNull, text, textOrNull } from "./rows";
-import { completeFileForItem } from "./store";
+import { completeFileForItem } from "./fileLookup";
 
 export interface LocalSubtitleFile {
   absolutePath: string;

@@ -22,7 +22,7 @@ import {
 } from "./meta";
 import * as segments from "./segments";
 import { snapshot } from "./snapshot";
-import { firstMediaSourceId } from "./store";
+import { firstMediaSourceId } from "./fileLookup";
 import { fetchAll, parseSpecs } from "./subs";
 import { text, textOrNull } from "./rows";
 import * as trickplay from "./trickplay";
