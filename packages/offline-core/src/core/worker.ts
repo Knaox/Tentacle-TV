@@ -32,6 +32,8 @@ export interface WorkerDeps {
   onProgress: (fileId: number, bytes: number) => void;
   /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
   onExpected: (fileId: number, totalBytes: number) => void;
+  /** Trace d'une défaillance inattendue — voir `EngineDeps.onUnexpected`. */
+  onUnexpected?: ((context: string, error: unknown) => void) | undefined;
   now: Clock;
 }
 
@@ -112,6 +114,9 @@ export async function runWorker(
     flags,
     (bytes) => deps.onProgress(file.id, bytes),
     deps.now,
-    (totalBytes) => deps.onExpected(file.id, totalBytes),
+    {
+      onExpected: (totalBytes) => deps.onExpected(file.id, totalBytes),
+      onUnexpected: deps.onUnexpected,
+    },
   );
 }

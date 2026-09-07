@@ -168,15 +168,22 @@ describe("politique seule", () => {
     expect(end).toEqual({ kind: "paused", bytesDone: 42 });
   });
 
-  it("un pilote qui leve ne laisse pas le transfert sans verdict", async () => {
+  // « imprevu » et pas « io » : confondre une exception avec une ecriture
+  // disque ratee rendait indechiffrable la seule trace qui restait en base.
+  it("un pilote qui leve rend un verdict imprevu, et le signale", async () => {
     const root = preparedRoot("tentacle-policy-");
+    const casse = new Error("pilote casse");
     const d: FakeDriver = fake(() => {
-      throw new Error("pilote casse");
+      throw casse;
+    });
+    const traces: Array<{ context: string; error: unknown }> = [];
+
+    const end = await run(d.driver, nodeVolume(root), job(root), new TransferFlags(), () => undefined, NOW, {
+      onUnexpected: (context, error) => traces.push({ context, error }),
     });
 
-    const end = await run(d.driver, nodeVolume(root), job(root), new TransferFlags(), () => undefined, NOW);
-
-    expect(end).toEqual({ kind: "failed", code: "io", bytesDone: 0 });
+    expect(end).toEqual({ kind: "failed", code: "unexpected", bytesDone: 0 });
+    expect(traces).toEqual([{ context: "transfer.download", error: casse }]);
   });
 });
 
@@ -196,8 +203,8 @@ describe("total annonce par le pilote", () => {
       return { kind: "done", status: 200, header: NONE };
     });
 
-    await run(d.driver, nodeVolume(root), job(root), new TransferFlags(), () => undefined, NOW, (total) => {
-      totaux.push(total);
+    await run(d.driver, nodeVolume(root), job(root), new TransferFlags(), () => undefined, NOW, {
+      onExpected: (total) => totaux.push(total),
     });
 
     expect(totaux).toEqual([1_000, 2_000]);
@@ -214,7 +221,9 @@ describe("total annonce par le pilote", () => {
       return { kind: "done", status: 200, header: NONE };
     });
 
-    const end = await run(d.driver, nodeVolume(root), target, new TransferFlags(), () => undefined, NOW, () => undefined);
+    const end = await run(d.driver, nodeVolume(root), target, new TransferFlags(), () => undefined, NOW, {
+      onExpected: () => undefined,
+    });
 
     expect(end.kind).toBe("complete");
   });

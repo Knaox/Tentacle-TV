@@ -190,6 +190,7 @@ export class DownloadEngine {
               expected = totalBytes;
               setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
             },
+            onUnexpected: this.deps.onUnexpected,
             now: this.deps.now,
           },
           creds,
@@ -197,10 +198,13 @@ export class DownloadEngine {
           flags,
           this.deps.now(),
         );
-      } catch {
+      } catch (error) {
         // Un défaut inattendu ne doit pas laisser le fichier en `downloading`
         // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
-        end = { kind: "failed", code: "io", bytesDone: file.bytesDone };
+        // La trace est tout ce qui restera pour comprendre : le statut, lui,
+        // ne dit rien de plus que « imprévu ».
+        this.deps.onUnexpected?.("engine.work", error);
+        end = { kind: "failed", code: "unexpected", bytesDone: file.bytesDone };
       }
       if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
         end = await this.finalize(file, end.finalSize);

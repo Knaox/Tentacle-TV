@@ -24,6 +24,7 @@ const ERROR_KEYS: Record<string, string> = {
   integrity: "errorIntegrity",
   missing: "errorMissing",
   io: "errorIo",
+  unexpected: "errorUnexpected",
 };
 
 /**

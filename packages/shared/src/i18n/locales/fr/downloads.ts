@@ -82,6 +82,7 @@ export default {
   errorIntegrity: "Fichier incomplet",
   errorMissing: "Fichier introuvable",
   errorIo: "Erreur d'écriture",
+  errorUnexpected: "Erreur inattendue",
 
   sectionActive: "En cours",
   sectionMovies: "Films",

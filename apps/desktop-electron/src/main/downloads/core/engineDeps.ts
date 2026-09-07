@@ -24,6 +24,14 @@ export interface EngineDeps {
    * `RETRY_DELAYS_MS`. Tableau vide : aucune relance (le banc d'essai).
    */
   retryDelaysMs?: readonly number[];
+  /**
+   * Défaillance INATTENDUE : une exception qu'aucun chemin prévu n'explique.
+   * Le transfert est déjà retombé sur ses pieds quand ceci est appelé — c'est
+   * une TRACE, pas une gestion d'erreur. Sans elle, le code `unexpected` reste
+   * un mystère : c'est exactement ce qui est arrivé le jour où une pause s'est
+   * soldée par une erreur d'écriture que personne n'a pu expliquer.
+   */
+  onUnexpected?: (context: string, error: unknown) => void;
   /** Lancé au démarrage du moteur — réparation et purge (branchés plus tard). */
   onStarted?: (creds: Creds) => void;
   /**

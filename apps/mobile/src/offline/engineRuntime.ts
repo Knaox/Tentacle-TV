@@ -118,6 +118,10 @@ export function offlineEngine(): DownloadEngine {
     // Service de premier plan Android, session d'arrière-plan iOS ou
     // anti-veille de l'écran : voir `backgroundTransfers.ts`.
     onBusy: onEngineBusy,
+    // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
+    onUnexpected: (context, error) => {
+      console.warn(`[transferts] ${context} : ${String(error)}`);
+    },
     onStarted: (started) => {
       startPeriodicPurge();
       // Le disque, lui, est toujours là : ce recalage tourne même hors ligne,

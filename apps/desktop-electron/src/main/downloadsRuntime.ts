@@ -64,6 +64,10 @@ export function downloadsEngine(): DownloadEngine {
     makeFetcher,
     emit: sendToPage,
     now: () => Date.now(),
+    // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
+    onUnexpected: (context, error) => {
+      console.warn(`[transferts] ${context} : ${String(error)}`);
+    },
     onBusy: (busy) => {
       if (busy) systemWakeLock.prevent();
       else systemWakeLock.release();
