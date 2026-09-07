@@ -1,6 +1,10 @@
 /**
- * Orchestrateur des transferts : deux en parallèle, FIFO, reprise au
+ * Orchestrateur des transferts : un seul à la fois, FIFO, reprise au
  * démarrage, pause, reprise, annulation.
+ *
+ * Ce qui suit la fin d'un transfert — sa traduction en statut, la finalisation
+ * du fichier Allégé — vit dans `engineEnd.ts` ; les dépendances de plateforme
+ * dans `engineDeps.ts`.
  *
  * Les identifiants de connexion vivent EN MÉMOIRE seulement, fournis par la
  * page à chaque session — jamais écrits en base.
@@ -15,12 +19,11 @@
  * l'entrelacement, qui ne se produit qu'aux `await`.
  */
 
-import type { DatabaseHandle, EngineEvent, TransferDriver, Volume } from "./adapters";
-import type { FetchBytes } from "./fetcher";
+import type { EngineDeps } from "./engineDeps";
+import { applyEnd, runFinalize } from "./engineEnd";
 import {
   countQueued,
   getFile,
-  isPausedByUser,
   nextQueued,
   normalizeOnEngineStart,
   requeueSystemPauses,
@@ -29,9 +32,11 @@ import {
   setStatus,
   suspendQueued,
 } from "./queue";
-import { removeMediaFile, safeJoin } from "./paths";
+import { removeMediaFile } from "./paths";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
+
+export type { EngineDeps } from "./engineDeps";
 
 /**
  * Un seul transfert à la fois. Deux se disputaient la bande passante, le disque
@@ -39,39 +44,6 @@ import { runWorker, type Creds } from "./worker";
  * qui avancent lentement plutôt qu'une qui aboutit. La file reste FIFO.
  */
 export const MAX_PARALLEL = 1;
-
-export interface EngineDeps {
-  db: DatabaseHandle;
-  /** Relu à chaque usage : l'utilisateur peut changer de racine. */
-  volume: () => Volume;
-  driver: TransferDriver;
-  makeFetcher: (token: string) => FetchBytes;
-  emit: (event: EngineEvent, payload: unknown) => void;
-  now: () => number;
-  /** Lancé au démarrage du moteur — réparation et purge (branchés plus tard). */
-  onStarted?: (creds: Creds) => void;
-  /**
-   * Bascule « au moins un transfert en cours ». Notifiée AUX SEULES
-   * TRANSITIONS, jamais à chaque bloc reçu : c'est elle qui pose et rend
-   * l'anti-suspension du système (`downloadsRuntime.ts`).
-   */
-  onBusy?: (busy: boolean) => void;
-  /**
-   * Les transferts peuvent-ils PARTIR maintenant (réseau autorisé, serveur
-   * tenu pour joignable) ? Consultée à chaque `pump`, jamais mise en cache.
-   * Refus : ce qui attend une place passe en pause SYSTÈME, que
-   * `resumeSystemPauses` relèvera. Absente (bureau) : toujours oui.
-   */
-  canTransfer?: () => boolean;
-  /**
-   * Finalise un fichier ALLÉGÉ avant `complete`. Le transcodage progressif de
-   * Jellyfin est un MP4 fragmenté (sans index ni durée) : mpv s'en accommode,
-   * les lecteurs natifs du mobile non — la plateforme le remuxe en MP4 indexé,
-   * sur place. Rejet = erreur d'entrée-sortie (mieux qu'un titre « prêt »
-   * illisible). Absente (bureau) : rien à faire.
-   */
-  finalizeMedia?: (absPath: string, file: { variant: string; relPath: string }) => Promise<void>;
-}
 
 export class DownloadEngine {
   private creds: Creds | null = null;
@@ -193,23 +165,12 @@ export class DownloadEngine {
         // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
         end = { kind: "failed", code: "io", bytesDone: file.bytesDone };
       }
-      if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
-        end = await this.finalize(file, end.finalSize);
+      const finalizeMedia = this.deps.finalizeMedia;
+      if (end.kind === "complete" && file.variant === "light" && finalizeMedia !== undefined) {
+        end = await runFinalize(this.deps.volume(), finalizeMedia, file, end.finalSize);
       }
     }
     this.finish(fileId, end);
-  }
-
-  /** Voir `EngineDeps.finalizeMedia` : la taille finale est relue après le remux. */
-  private async finalize(file: { variant: string; relPath: string; bytesDone: number }, finalSize: number): Promise<TransferEnd> {
-    const volume = this.deps.volume();
-    try {
-      const target = safeJoin(volume, file.relPath);
-      await this.deps.finalizeMedia!(target, file);
-      return { kind: "complete", finalSize: volume.files.size(target) ?? finalSize };
-    } catch {
-      return { kind: "failed", code: "io", bytesDone: file.bytesDone };
-    }
   }
 
   private progress(fileId: number, bytes: number, expectedSize: number | null): void {
@@ -219,44 +180,11 @@ export class DownloadEngine {
 
   private finish(fileId: number, end: TransferEnd): void {
     this.active.delete(fileId);
-    const now = this.deps.now();
-    const db = this.deps.db;
-
-    switch (end.kind) {
-      case "complete":
-        setBytesDone(db, fileId, end.finalSize, now);
-        setStatus(db, fileId, "complete", null, now);
-        break;
-      case "paused":
-        setBytesDone(db, fileId, end.bytesDone, now);
-        // Une pause SYSTÈME qui aboutit APRÈS le retour des conditions : la
-        // relance n'avait rien trouvé à relancer (le transfert se mettait
-        // encore en pause) — sans ceci, la ligne attendait le prochain
-        // évènement. Une pause explicite reste en pause.
-        if (!isPausedByUser(db, fileId) && !this.systemSuspended && this.deps.canTransfer?.() !== false) {
-          setStatus(db, fileId, "queued", null, now);
-        } else {
-          setStatus(db, fileId, "paused", null, now);
-        }
-        break;
-      case "canceled":
-        setBytesDone(db, fileId, 0, now);
-        setStatus(db, fileId, "canceled", null, now);
-        break;
-      case "failed":
-        setBytesDone(db, fileId, end.bytesDone, now);
-        if (end.code === "network") {
-          // Coupure réseau = pause SYSTÈME, donc reprise automatique au retour.
-          // La marquer `error` demanderait un geste à l'utilisateur pour un
-          // incident qui se résout tout seul.
-          setPausedByUser(db, fileId, false);
-          setStatus(db, fileId, "paused", null, now);
-        } else {
-          setStatus(db, fileId, "error", end.code, now);
-        }
-        break;
-    }
-
+    applyEnd(this.deps.db, fileId, end, {
+      nowMs: this.deps.now(),
+      systemSuspended: this.systemSuspended,
+      canTransfer: this.deps.canTransfer,
+    });
     this.notifyChanged();
     this.pump();
   }
