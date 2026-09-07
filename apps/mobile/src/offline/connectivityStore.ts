@@ -14,9 +14,9 @@
  * écrans de connexion, il n'y a rien à sonder.
  */
 
-import { AppState, type AppStateStatus } from "react-native";
 import { runProbe, type OfflineReason } from "./connectivityProbe";
-import { isLinkLost, mapNetworkType, Network, type NetworkState, type NetworkType } from "./networkState";
+import { startNetworkListeners } from "./connectivityListeners";
+import { type NetworkType } from "./networkState";
 import { isLocalPlaybackActive } from "./nowPlaying";
 import {
   applyLinkLost,
@@ -193,7 +193,9 @@ function linkLost(): void {
   const outcome = applyLinkLost(hysteresis, Date.now());
   if (!outcome.flipped) return;
   hysteresis = outcome.next;
-  reason = "backend";
+  // Rien n'a été sondé : dire « le serveur ne répond pas » serait faux, et
+  // enverrait l'utilisateur chercher une panne côté serveur.
+  reason = networkType === "none" ? "network" : "backend";
   rebuildSnapshot();
   ensureTimers();
 }
@@ -226,7 +228,7 @@ export function configureConnectivity(options: { serverUrl: string | null; stora
     // qu'un accueil serveur qui tire ses requêtes pour rien le temps d'une sonde.
     if (networkType === "none" && serverUrl !== null) {
       hysteresis = applyLinkLost(initialHysteresis, Date.now()).next;
-      reason = "backend";
+      reason = "network";
     }
   }
   rebuildSnapshot();
@@ -236,45 +238,30 @@ export function configureConnectivity(options: { serverUrl: string | null; stora
 
 /** Retour au premier plan et changements de réseau → sondes. Rend le nettoyage. */
 export function startConnectivityListeners(): () => void {
-  const appState = AppState.addEventListener("change", (status: AppStateStatus) => {
-    if (status === "active") void probeNow(false);
-  });
-  let network: { remove(): void } | null = null;
-  // Sans réponse d'expo-network, le réseau vaut « autre » plutôt que
-  // « inconnu » : « inconnu » retient les transferts sous Wi-Fi seulement.
   const settle = (next: NetworkType): void => {
     if (next === networkType) return;
     networkType = next;
     rebuildSnapshot();
   };
-  if (Network !== null) {
-    const apply = (state: NetworkState, fromListener: boolean): void => {
-      settle(mapNetworkType(state));
-      if (isLinkLost(state)) {
-        // Lecture initiale : vérité immédiate. Évènement : le délai de grâce
-        // absorbe le « aucun réseau » d'un relais Wi-Fi ↔ cellulaire.
-        if (!fromListener) linkLost();
-        else if (linkLostTimer === null) {
-          linkLostTimer = setTimeout(() => {
-            linkLostTimer = null;
-            linkLost();
-          }, LINK_LOST_GRACE_MS);
-        }
+  const stop = startNetworkListeners({
+    onType: settle,
+    onLinkLost: (graced) => {
+      if (!graced) {
+        linkLost();
         return;
       }
-      cancelLinkLost();
-      if (fromListener) void probeNow(true);
-    };
-    Network.getNetworkStateAsync()
-      .then((state) => apply(state, false))
-      .catch(() => settle("other"));
-    network = Network.addNetworkStateListener((state) => apply(state, true));
-  } else {
-    settle("other");
-  }
+      if (linkLostTimer !== null) return;
+      linkLostTimer = setTimeout(() => {
+        linkLostTimer = null;
+        linkLost();
+      }, LINK_LOST_GRACE_MS);
+    },
+    onLinkBack: cancelLinkLost,
+    onNetworkChange: () => void probeNow(true),
+    onForeground: () => void probeNow(false),
+  });
   return () => {
-    appState.remove();
-    network?.remove();
+    stop();
     cancelLinkLost();
   };
 }

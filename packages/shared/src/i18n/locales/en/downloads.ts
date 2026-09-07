@@ -4,6 +4,7 @@ export default {
   offlinePopoverTitle: "Offline mode",
   offlineReasonBackend: "The Tentacle server is not responding.",
   offlineReasonJellyfin: "Jellyfin is not responding.",
+  offlineReasonNetwork: "This device has no network.",
   offlineManualEnabled: "Offline mode enabled manually.",
   offlineServerReachable: "The server is reachable.",
   offlineServerUnreachable: "The server is unreachable.",
