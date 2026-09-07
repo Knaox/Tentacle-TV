@@ -22,7 +22,8 @@ export interface OfflineCatalogLibrary {
   id: string;
   /** Le nom Jellyfin porté par le snapshot, sinon le cache des bibliothèques, sinon Films / Séries d'après le contenu. */
   label: string;
-  /** Titres (films et épisodes) de cette bibliothèque sur l'appareil — le même compte que le résumé. */
+/** Œuvres de cette bibliothèque sur l'appareil — ce que la grille montre : une
+   *  série compte pour un, quel que soit le nombre d'épisodes gardés. */
   count: number;
 }
 
@@ -48,8 +49,10 @@ export interface OfflineCatalog {
 }
 
 /** Une série vit dans une seule bibliothèque : celle du premier épisode qui la connaît. */
-const libraryOf = (group: OfflineSeriesGroup): string | null =>
-  group.seasons.flatMap((season) => season.episodes).find((e) => e.libraryId !== null)?.libraryId ?? null;
+const libraryOf = (group: OfflineSeriesGroup): { id: string; name: string | null } | null => {
+  const known = group.seasons.flatMap((season) => season.episodes).find((e) => e.libraryId !== null);
+  return known?.libraryId == null ? null : { id: known.libraryId, name: known.libraryName };
+};
 
 /**
  * Le catalogue local : les titres COMPLETS du compte, regroupés par série,
@@ -67,26 +70,35 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
   const groups = useMemo(() => groupOfflineEntries(complete), [complete]);
   const series = useMemo(() => groupSeasonsBySeries(groups.seasons), [groups.seasons]);
 
+  // La puce compte des ŒUVRES, pas des fichiers : elle surmonte une grille
+  // d'affiches, et l'en-tête de cette grille compte déjà les séries. Compter
+  // les épisodes affichait « Séries 2 » au-dessus de « Séries 1 », pour une
+  // seule affiche. Le résumé de l'appareil, lui, garde son compte de titres :
+  // c'est de l'espace disque qu'il parle.
   const libraries = useMemo<OfflineCatalogLibrary[]>(() => {
     const cachedNames = new Map(userId ? readLibrariesList(prefsStore, userId).map((l) => [l.id, l.name] as const) : []);
-    interface Tally { count: number; movies: number; name: string | null }
+    interface Tally { works: number; movies: number; name: string | null }
     const tally = new Map<string, Tally>();
-    for (const entry of complete) {
-      if (entry.libraryId === null) continue;
-      const row = tally.get(entry.libraryId) ?? { count: 0, movies: 0, name: null };
-      row.count += 1;
-      if (entry.kind === "movie") row.movies += 1;
-      row.name ??= entry.libraryName;
-      tally.set(entry.libraryId, row);
+    const add = (library: { id: string; name: string | null } | null, isMovie: boolean): void => {
+      if (library === null) return;
+      const row = tally.get(library.id) ?? { works: 0, movies: 0, name: null };
+      row.works += 1;
+      if (isMovie) row.movies += 1;
+      row.name ??= library.name;
+      tally.set(library.id, row);
+    };
+    for (const movie of groups.movies) {
+      add(movie.libraryId === null ? null : { id: movie.libraryId, name: movie.libraryName }, true);
     }
+    for (const group of series) add(libraryOf(group), false);
     return [...tally.entries()]
       .map(([id, row]) => ({
         id,
-        label: row.name ?? cachedNames.get(id) ?? t(row.movies * 2 > row.count ? "sectionMovies" : "sectionSeries"),
-        count: row.count,
+        label: row.name ?? cachedNames.get(id) ?? t(row.movies * 2 > row.works ? "sectionMovies" : "sectionSeries"),
+        count: row.works,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [complete, userId, t]);
+  }, [groups.movies, series, userId, t]);
 
   // Terme brut : c'est le comparateur partagé qui normalise (accents, casse).
   const needle = search.trim();
@@ -96,7 +108,7 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
     [groups.movies, all, filter, needle],
   );
   const shownSeries = useMemo(
-    () => series.filter((s) => (all || libraryOf(s) === filter) && seriesGroupMatches(s, needle)),
+    () => series.filter((s) => (all || libraryOf(s)?.id === filter) && seriesGroupMatches(s, needle)),
     [series, all, filter, needle],
   );
 
