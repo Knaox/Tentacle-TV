@@ -18,7 +18,7 @@
  */
 
 import { net } from "electron";
-import type { FetchBytes } from "./fetcher";
+import type { FetchBytes } from "./core/fetcher";
 
 /** Au-delà, on considère la source morte. Même valeur que l'agent `ureq`. */
 const TIMEOUT_MS = 20_000;

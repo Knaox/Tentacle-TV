@@ -13,6 +13,9 @@ import { SkipIndicator } from "./player/SkipIndicator";
 import { PlayerSettingsMenus } from "./player/PlayerSettingsMenus";
 import { PlaybackOverlayMobile } from "./player/PlaybackOverlayMobile";
 import { PlayerEpisodePicker } from "./player/PlayerEpisodePicker";
+import type { LocalTrickplay } from "../hooks/offline/useLocalTrickplay";
+import type { NextEpisodeArtwork } from "../hooks/offline/useNextEpisodeArtwork";
+import { LocalPlayerEpisodePicker } from "./player/LocalPlayerEpisodePicker";
 
 // AirPlay button — iOS only (native AVRoutePickerView)
 const AirPlaySection = Platform.OS === "ios"
@@ -43,6 +46,15 @@ interface Props {
   /** Current item — passed to the seekbar so it can fetch trickplay tiles. */
   item?: MediaItem;
   mediaSourceId?: string;
+  /** Planches gardées sur l'appareil (lecture locale). */
+  localTrickplay?: LocalTrickplay | null;
+  /** Lecture locale : visuels du suivant lus sur l'appareil. */
+  nextArtwork?: NextEpisodeArtwork | null;
+  /**
+   * Lecture d'un fichier de l'appareil : rien ne part sur le réseau — planches
+   * et visuels locaux seulement, pas de notation, sélecteur d'épisodes local.
+   */
+  localSession?: boolean;
   onPlayPause: () => void;
   onSeek: (seconds: number) => void;
   onBack: () => void;
@@ -61,7 +73,7 @@ export function MobilePlayerOverlay({
   title, currentTime, duration, bufferedTime, paused,
   audioTracks, subtitleTracks, selectedAudio, selectedSubtitle, qualityKey, qualityPresets, autoQualityActive,
   playback, nextEpisode, previousEpisode,
-  item, mediaSourceId,
+  item, mediaSourceId, localTrickplay, nextArtwork, localSession = false,
   onPlayPause, onSeek, onBack,
   onSelectAudio, onSelectSubtitle, onSelectQuality,
   onNextEpisode, onPreviousEpisode, onScrubStateChange,
@@ -164,6 +176,7 @@ export function MobilePlayerOverlay({
                 currentTime={currentTime}
                 duration={duration}
                 bufferedTime={bufferedTime}
+                trickplayLocalOnly={localSession}
                 onSeek={(s) => { onSeek(s); resetHideTimer(); }}
                 onScrubStateChange={(active) => {
                   onScrubStateChange?.(active);
@@ -175,6 +188,7 @@ export function MobilePlayerOverlay({
                 }}
                 item={item}
                 mediaSourceId={mediaSourceId}
+                localTrickplay={localTrickplay}
               />
             </View>
             <View style={{ flexDirection: "row", gap: isTablet ? 10 : 6, marginBottom: Math.max(34, insets.bottom + 12) }}>
@@ -217,6 +231,9 @@ export function MobilePlayerOverlay({
         nextEpisode={nextEpisode}
         currentItem={item}
         controlsVisible={visible}
+        nextArtwork={nextArtwork}
+        ratingEnabled={!localSession}
+        artworkLocalOnly={localSession}
         onSkip={playback.skipNow}
         onDismiss={playback.dismissOverlay}
         onPlayNow={playback.playNow}
@@ -244,8 +261,17 @@ export function MobilePlayerOverlay({
         onCloseSubtitles={() => { setShowSubtitles(false); resetHideTimer(); }}
       />
 
-      {/* Sélecteur saison/épisode (séries) */}
-      {item?.SeriesId && (
+      {/* Sélecteur saison/épisode (séries) — celui de l'appareil en lecture
+          locale (en ligne aussi : rien ne part), celui du serveur sinon. */}
+      {item?.SeriesId && localSession && (
+        <LocalPlayerEpisodePicker
+          visible={showEpisodes}
+          seriesId={item.SeriesId}
+          currentEpisodeId={item.Id}
+          onClose={() => { setShowEpisodes(false); resetHideTimer(); }}
+        />
+      )}
+      {item?.SeriesId && !localSession && (
         <PlayerEpisodePicker
           visible={showEpisodes}
           seriesId={item.SeriesId}

@@ -10,7 +10,7 @@ import { app } from "electron";
 import path from "node:path";
 import { z } from "zod";
 import * as avatar from "../downloads/avatar";
-import * as session from "../downloads/session";
+import * as session from "../downloads/core/session";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 

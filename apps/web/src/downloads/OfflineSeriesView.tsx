@@ -15,7 +15,7 @@ import { useTranslation } from "react-i18next";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { useDownloadsList } from "./useDownloadState";
-import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "./offlineGroups";
+import { groupOfflineEntries, groupSeasonsBySeries, seasonLabel } from "@tentacle-tv/offline-core";
 import { OfflineEpisodeCard } from "./OfflineEpisodeCard";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { SeasonPicker } from "./SeasonPicker";

@@ -2,8 +2,10 @@
  * GET/PUT /api/preferences/reco : les défauts sont servis sans ligne, le PUT
  * fait l'aller-retour et prévient les autres appareils du compte (jamais
  * l'auteur), un corps invalide ne prévient personne, et changer « hors
- * bibliothèque » invalide le pool. Prisma en Map mémoire, auth réelle contre
- * un faux /Users/Me (motif preferences.homeLayout.test.ts).
+ * bibliothèque » invalide le pool. Le GET porte aussi `vigieAvailable` : la
+ * vérité du serveur sur le plugin, celle qui décide si l'interrupteur « hors
+ * bibliothèque » a le droit d'exister chez le client. Prisma en Map mémoire,
+ * auth réelle contre un faux /Users/Me (motif preferences.homeLayout.test.ts).
  */
 
 import Fastify from "fastify";
@@ -15,6 +17,7 @@ interface FakeRow extends Record<string, unknown> {
 }
 const rows = new Map<string, FakeRow>();
 const spies = vi.hoisted(() => ({
+  seerrConfig: vi.fn((): unknown => ({ url: "http://vigie.test", apiKey: "k" })),
   sendToUser: vi.fn(),
   pokePage: vi.fn(),
   invalidatePool: vi.fn(async (..._args: unknown[]) => undefined),
@@ -23,6 +26,9 @@ const spies = vi.hoisted(() => ({
 
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
+}));
+vi.mock("../services/seerConfig", () => ({
+  getSeerrConfig: () => spies.seerrConfig(),
 }));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -67,6 +73,7 @@ import { requireAuth } from "../middleware/auth";
 beforeEach(() => {
   rows.clear();
   for (const spy of Object.values(spies)) spy.mockClear();
+  spies.seerrConfig.mockReturnValue({ url: "http://vigie.test", apiKey: "k" });
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -110,7 +117,7 @@ describe("GET/PUT /api/preferences/reco", () => {
     const app = await makeApp();
     const response = await app.inject({ method: "GET", url: URL_PATH, headers });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ stored: false, settings: DEFAULT_RECO_SETTINGS });
+    expect(response.json()).toEqual({ stored: false, vigieAvailable: true, settings: DEFAULT_RECO_SETTINGS });
     await app.close();
   });
 
@@ -127,7 +134,18 @@ describe("GET/PUT /api/preferences/reco", () => {
     );
     expect(spies.pokePage).toHaveBeenCalledWith("u1", "settings");
     const readBack = (await app.inject({ method: "GET", url: URL_PATH, headers })).json();
-    expect(readBack).toEqual({ stored: true, settings: SETTINGS });
+    expect(readBack).toEqual({ stored: true, vigieAvailable: true, settings: SETTINGS });
+    await app.close();
+  });
+
+  it("Vigie absente ou coupée : vigieAvailable=false, le réglage stocké est intact", async () => {
+    const app = await makeApp();
+    await app.inject({ method: "PUT", url: URL_PATH, headers, payload: DEFAULT_RECO_SETTINGS });
+    spies.seerrConfig.mockReturnValue(null);
+    const read = (await app.inject({ method: "GET", url: URL_PATH, headers })).json();
+    expect(read.vigieAvailable).toBe(false);
+    // Le choix de l'utilisateur reste écrit : il reprend effet si Vigie revient.
+    expect(read.settings.includeVigie).toBe(true);
     await app.close();
   });
 

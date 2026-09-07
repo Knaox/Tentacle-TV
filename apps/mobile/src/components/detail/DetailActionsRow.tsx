@@ -2,6 +2,8 @@ import { View, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { DetailActionButton } from "./DetailActionButton";
+import { DetailKeepOfflineButton } from "@/offline/entry/DetailKeepOfflineButton";
+import { SeriesKeepOfflineButton } from "@/offline/entry/SeriesKeepOfflineButton";
 import { spacing, useTheme } from "@/theme";
 
 interface MutationHandle { mutate: () => void }
@@ -11,6 +13,8 @@ interface WatchedHandle { markWatched: MutationHandle; markUnwatched: MutationHa
 
 interface Props {
   target?: MediaItem;
+  /** Le titre AFFICHÉ (film, épisode, série) : cible du bouton « Garder hors ligne ». */
+  item?: MediaItem;
   isWatched: boolean;
   favorite: FavHandle;
   watchlist: ToggleHandle;
@@ -18,10 +22,13 @@ interface Props {
 }
 
 /**
- * Row des actions (Favoris / Ma liste / Vu) — pattern Apple TV, colonnes fixes.
- * Labels courts via i18n `actionFavorite`/`actionMyList`/`actionWatched`.
+ * Row des actions (Favoris / Ma liste / Vu / Garder hors ligne) — pattern
+ * Apple TV, colonnes fixes. Labels courts via i18n
+ * `actionFavorite`/`actionMyList`/`actionWatched`. La quatrième colonne, libre
+ * par construction, porte le bouton du hors ligne (film et épisode ; la série
+ * a le sien).
  */
-export function DetailActionsRow({ target, isWatched, favorite, watchlist, watched }: Props) {
+export function DetailActionsRow({ target, item, isWatched, favorite, watchlist, watched }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const isFav = !!target?.UserData?.IsFavorite;
@@ -55,6 +62,7 @@ export function DetailActionsRow({ target, isWatched, favorite, watchlist, watch
         fillOnActive
         onPress={() => isWatched ? watched.markUnwatched.mutate() : watched.markWatched.mutate()}
       />
+      {item && (item.Type === "Series" ? <SeriesKeepOfflineButton series={item} /> : <DetailKeepOfflineButton item={item} />)}
     </View>
   );
 }

@@ -91,15 +91,19 @@ export function usePlaybackSettingsStore(): PlaybackSettingsStore {
  * Together, c'est l'hôte qui décide pour tout le monde. Hors groupe, il est
  * nul et rien ne change.
  */
-export function usePlaybackSettings(): PlaybackSettings {
+export function usePlaybackSettings(options?: { resync?: boolean }): PlaybackSettings {
   const store = usePlaybackSettingsStore();
+  // `resync: false` = une lecture locale : les réglages se lisent dans le
+  // cache, photographié à chaque passage en ligne — pas une requête pendant.
+  const resync = options?.resync ?? true;
 
   useEffect(() => {
+    if (!resync) return;
     const now = Date.now();
     if (now - lastResync < RESYNC_MIN_INTERVAL_MS) return;
     lastResync = now;
     void store.resync();
-  }, [store]);
+  }, [store, resync]);
 
   const subscribe = useCallback(
     (callback: () => void) => {

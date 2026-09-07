@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { View, Text, Alert, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
-import { isVigieActive, useResetTasteProfile, useSaveRecoSettingsPatch } from "@tentacle-tv/api-client";
+import { isVigieRecoAvailable, useResetTasteProfile, useSaveRecoSettingsPatch } from "@tentacle-tv/api-client";
 import type { RecoSettingsData } from "@tentacle-tv/api-client";
 import { BrandSwitch, SettingsSection, SettingsRow, SteppedSlider } from "@/components/settings";
 import { useActivePlugins } from "@/hooks/useActivePlugins";
@@ -29,10 +29,12 @@ export function PersonalizationRecoSection({ settings }: { settings: RecoSetting
   const st = useThemedStyles(makeStyles);
   const save = useSaveRecoSettingsPatch();
   const reset = useResetTasteProfile();
-  // « Hors bibliothèque » n'a de sens qu'avec le plugin Vigie présent et
-  // activé : sans lui, le serveur ignore le réglage et l'interrupteur se tait.
+  // « Hors bibliothèque » n'a de sens que si CE serveur sait servir du hors
+  // bibliothèque : il le dit lui-même (`vigieAvailable`), avec le terme exact
+  // du moteur — plugin installé, activé, intégration allumée ET configurée.
+  // La liste des plugins ne reste que le repli des serveurs d'avant ce champ.
   const { data: plugins } = useActivePlugins();
-  const vigie = isVigieActive(plugins);
+  const vigie = isVigieRecoAvailable(settings.vigieAvailable, plugins);
   const toggles = TOGGLES.filter((toggle) => toggle.key !== "includeVigie" || vigie);
 
   // Le curseur garde un état local pendant le geste ; le compte suit après.

@@ -19,13 +19,18 @@ interface Props {
   onSelectAll: () => void;
   onDelete: () => void;
   onCancel: () => void;
+  /** Libellé du bouton rouge (défaut : « Retirer (N) » de `common`). */
+  removeLabel?: string;
+  /** Un geste de plus, entre « tout » et le bouton rouge (« Auto-suppression… »). */
+  secondaryAction?: { label: string; onPress: () => void };
 }
 
 /**
  * Barre flottante d'actions multi-select : surface s1 floating avec border
- * subtle, pill bouton supprimer rouge avec halo, secondaire glass minimal.
+ * subtle, pill bouton supprimer rouge avec halo, secondaires en verre
+ * minimal — sur deux rangées, un téléphone n'en aligne pas quatre.
  */
-export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCancel }: Props) {
+export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCancel, removeLabel, secondaryAction }: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -44,22 +49,39 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
       ]}
     >
       <View style={styles.bar}>
-        <Text style={styles.countText} numberOfLines={1}>
-          {t("selectedCount", { count })}
-        </Text>
-
-        <View style={styles.actions}>
+        {/* Rangée 1 : le compte, le geste secondaire, la croix. Rangée 2 :
+            « Tout sélectionner » et le bouton rouge — quatre pilules sur une
+            seule ligne débordaient d'un téléphone. */}
+        <View style={styles.header}>
+          <Text style={styles.countText} numberOfLines={1}>
+            {t("selectedCount", { count })}
+          </Text>
+          {secondaryAction && (
+            <Pressable
+              onPress={secondaryAction.onPress}
+              disabled={disabled}
+              style={styles.secondaryBtn}
+              accessibilityRole="button"
+              accessibilityLabel={secondaryAction.label}
+              accessibilityState={{ disabled }}
+              hitSlop={6}
+            >
+              <Feather name="clock" size={16} color={colors.text.tertiary} />
+              <Text style={styles.secondaryTxt} numberOfLines={1}>{secondaryAction.label}</Text>
+            </Pressable>
+          )}
           <Pressable
             onPress={onCancel}
-            style={styles.secondaryBtn}
+            style={styles.iconBtn}
             accessibilityRole="button"
             accessibilityLabel={t("cancel")}
             hitSlop={6}
           >
             <Feather name="x" size={16} color={colors.text.tertiary} />
-            <Text style={styles.secondaryTxt}>{t("cancel")}</Text>
           </Pressable>
+        </View>
 
+        <View style={styles.actions}>
           <Pressable
             onPress={onSelectAll}
             style={styles.secondaryBtn}
@@ -72,7 +94,7 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
               size={16}
               color={colors.brand.light}
             />
-            <Text style={[styles.secondaryTxt, { color: colors.brand.light }]}>
+            <Text style={[styles.secondaryTxt, { color: colors.brand.light }]} numberOfLines={1}>
               {allSelected ? t("cancel") : t("selectAll")}
             </Text>
           </Pressable>
@@ -82,13 +104,13 @@ export function SelectionBar({ count, totalCount, onSelectAll, onDelete, onCance
             disabled={disabled}
             style={[styles.deleteBtn, disabled && styles.deleteBtnDisabled]}
             accessibilityRole="button"
-            accessibilityLabel={t("removeCount", { count })}
+            accessibilityLabel={removeLabel ?? t("removeCount", { count })}
             accessibilityState={{ disabled }}
             hitSlop={6}
           >
             <Feather name="trash-2" size={16} color={disabled ? colors.text.quaternary : colors.cta.brandFg} />
-            <Text style={[styles.deleteTxt, disabled && styles.deleteTxtDisabled]}>
-              {t("removeCount", { count })}
+            <Text style={[styles.deleteTxt, disabled && styles.deleteTxtDisabled]} numberOfLines={1}>
+              {removeLabel ?? t("removeCount", { count })}
             </Text>
           </Pressable>
         </View>
@@ -118,12 +140,14 @@ const makeStyles = (t: AppTheme) =>
       borderColor: t.colors.border.strong,
       ...SHADOW_RN.elev3,
     },
+    header: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
     countText: {
       ...typography.caption,
       fontFamily: FONT_FAMILY.semibold,
       color: t.colors.brand.light,
-      marginBottom: spacing.sm,
       letterSpacing: 0.3,
+      flex: 1,
+      minWidth: 0,
     },
     actions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
     secondaryBtn: {
@@ -137,6 +161,17 @@ const makeStyles = (t: AppTheme) =>
       borderWidth: 1,
       borderColor: t.colors.border.subtle,
       minWidth: 44,
+      flexShrink: 1,
+    },
+    iconBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: t.colors.fill.subtle,
+      borderWidth: 1,
+      borderColor: t.colors.border.subtle,
     },
     secondaryTxt: {
       ...typography.small,

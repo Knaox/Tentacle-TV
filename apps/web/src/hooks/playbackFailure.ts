@@ -7,28 +7,15 @@
  * 27.08. À l'inverse, ne PAS basculer sur un vrai défaut de lecteur (décodeur
  * absent, chaîne incomplète) laisserait l'utilisateur sans image.
  *
- * # Pourquoi le code d'erreur mpv ne décide pas
- *
  * Mesuré : `MPV_ERROR.LOADING_FAILED` (−13) sort autant pour un fichier local
- * disparu (média) que pour un protocole absent de la chaîne (lecteur). Le seul
- * discriminant fiable est la VÉRIFICATION D'EXISTENCE du fichier, et elle n'a
- * de sens qu'en lecture locale. D'où la règle, volontairement étroite :
- *
- * - MÉDIA : lecture locale ET sonde formelle « le fichier n'est plus là ».
- * - LECTEUR : tout le reste — réseau, fichier présent mais illisible, sonde
- *   muette. Dans le doute, la bascule reste le comportement sûr : elle rend
- *   une lecture qui marche (repli web §3.9), jamais un écran mort.
+ * disparu (média) que pour un protocole absent de la chaîne (lecteur). La règle
+ * — « média » seulement sur une sonde formelle d'absence — vit dans le cœur
+ * hors ligne, commune au mobile ; ici ne reste que le détail mpv.
  */
 
-export type PlaybackFailureKind = "media" | "player";
+import { classifyLocalPlaybackFailure, type PlaybackFailure } from "@tentacle-tv/offline-core";
 
-export interface PlaybackFailure {
-  kind: PlaybackFailureKind;
-  /** Clé i18n complète (« player:… ») quand le message est des nôtres. */
-  messageKey?: string;
-  /** Détail brut (mpv, init) — injecté dans `player:mpvError` en dernier recours. */
-  detail?: string;
-}
+export type { PlaybackFailure, PlaybackFailureKind } from "@tentacle-tv/offline-core";
 
 /**
  * Classe un `end-file(reason=ERROR)`.
@@ -42,11 +29,9 @@ export function classifyEndFileFailure(input: {
   isLocalPlayback: boolean;
   localFilePresent: boolean | null;
 }): PlaybackFailure {
-  if (input.isLocalPlayback && input.localFilePresent === false) {
-    return { kind: "media" };
-  }
-  return {
-    kind: "player",
+  return classifyLocalPlaybackFailure({
+    isLocalPlayback: input.isLocalPlayback,
+    localFilePresent: input.localFilePresent,
     detail: `end-file (error=${input.errorCode ?? "?"})`,
-  };
+  });
 }

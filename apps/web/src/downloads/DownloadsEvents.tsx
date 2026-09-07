@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supportsDownloads } from "../desktop/bridge";
 import { onDownloadsChanged, onDownloadsProgress } from "./api";
-import { updateProgress } from "./progressStore";
+import { updateProgress } from "@tentacle-tv/offline-core/react";
 import {
   DOWNLOADS_LIST_QUERY_KEY,
   DOWNLOAD_STATE_QUERY_KEY,

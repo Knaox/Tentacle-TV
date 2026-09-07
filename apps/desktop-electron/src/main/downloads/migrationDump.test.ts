@@ -4,15 +4,16 @@
  * seule preuve avant la campagne d'essais.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./core/adapters";
 import { describe, expect, it } from "vitest";
-import { openInMemory, settingGet } from "./db";
+import { settingGet } from "./core/db";
+import { openInMemory } from "./node/nodeDatabase";
 import { MIGRATION_KEY, TRACE_KEY, takeMigrationDump } from "./migrationDump";
 
 const NOW = 1_700_000_000_000;
 
 /** Écrit la sauvegarde telle que l'app Tauri la produit. */
-function writeDump(db: DatabaseSync, profileJson: string): void {
+function writeDump(db: DatabaseHandle, profileJson: string): void {
   db.prepare(
     `INSERT INTO session_cache (jellyfin_user_id, profile_json, policy_json, cached_at, expires_at)
      VALUES (?, ?, NULL, ?, ?)`,
@@ -29,7 +30,7 @@ function validDump(entries: Record<string, string>): string {
   });
 }
 
-function lines(db: DatabaseSync): number {
+function lines(db: DatabaseHandle): number {
   const row = db.prepare("SELECT COUNT(*) AS n FROM session_cache WHERE jellyfin_user_id = ?").get(MIGRATION_KEY);
   return Number(row?.["n"] ?? 0);
 }

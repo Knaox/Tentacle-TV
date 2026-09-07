@@ -19,10 +19,11 @@ import downloads from "./downloads";
 import easterEggs from "./easterEggs";
 import reco from "./reco";
 import whatsNew from "./whatsNew";
+import offline from "./offline";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, media, errors, profile, disclaimer,
-  watchTogether, downloads, easterEggs, reco, whatsNew,
+  watchTogether, downloads, easterEggs, reco, whatsNew, offline,
 };

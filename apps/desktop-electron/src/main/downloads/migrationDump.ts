@@ -20,9 +20,9 @@
  * être éprouvée à l'écran en développement : sa seule preuve est ici.
  */
 
-import type { DatabaseSync } from "node:sqlite";
+import type { DatabaseHandle } from "./core/adapters";
 import { z } from "zod";
-import { settingGet, settingSet } from "./db";
+import { settingGet, settingSet } from "./core/db";
 
 /** Identifiant synthétique : jamais un vrai identifiant Jellyfin. */
 export const MIGRATION_KEY = "__tentacle_migration_v1__";
@@ -62,7 +62,7 @@ export type DumpTake =
  * plus tard doit pouvoir retenter. Une sauvegarde lue est retirée — elle porte
  * le jeton en clair, on ne le laisse pas en double dans la base.
  */
-export function takeMigrationDump(db: DatabaseSync, now: number): DumpTake {
+export function takeMigrationDump(db: DatabaseHandle, now: number): DumpTake {
   if (settingGet(db, TRACE_KEY) !== null) return { state: "deja-faite" };
 
   const row = db

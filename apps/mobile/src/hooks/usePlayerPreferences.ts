@@ -33,6 +33,9 @@ export function usePlayerPreferences({
 
     applied.current = true;
     resolveTracks.mutate({
+      // Le choix retenu pour CE contenu passe devant les préférences de
+      // bibliothèque (parité web, et avec le lecteur local).
+      itemId: item.Id,
       libraryId: allCandidates[0],
       libraryIds: allCandidates,
       audioTracks: streams

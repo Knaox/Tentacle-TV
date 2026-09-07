@@ -72,6 +72,11 @@ export function PushRegistrationSync({
         void queryClient.invalidateQueries({ queryKey: [...queryKey] });
       }
       const type = data?.type ?? "";
+      // Notifications LOCALES du hors ligne : l'écran « Sur cet appareil ».
+      if (type === "offline_ready" || type === "offline_disk_full") {
+        router.push("/on-device" as never);
+        return;
+      }
       let meta: NotifPluginMeta[] = [];
       if (type === "request_status" && serverUrl && token) {
         try {

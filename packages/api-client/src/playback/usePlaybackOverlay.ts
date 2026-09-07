@@ -38,7 +38,7 @@ import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOver
 export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
 
 export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlayResult {
-  const settings = usePlaybackSettings();
+  const settings = usePlaybackSettings({ resync: input.remoteSettingsSync !== false });
 
   const [skipState, setSkipState] = useState<IntroSkipState>(INTRO_SKIP_IDLE);
   const { muted, mutedRef, mute, releaseRewound } = useMutedSegments(input.itemId);

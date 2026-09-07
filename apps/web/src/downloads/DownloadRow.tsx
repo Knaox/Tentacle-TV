@@ -16,7 +16,7 @@ import {
 import { AutoDeleteControl } from "./AutoDeleteControl";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
-import { useFileProgress } from "./progressStore";
+import { useFileProgress } from "@tentacle-tv/offline-core/react";
 
 const ACTIVE = new Set(["queued", "downloading", "paused"]);
 

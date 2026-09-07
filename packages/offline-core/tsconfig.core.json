@@ -1,0 +1,12 @@
+{
+  // Le verrou du cœur : tout ce qui est portable, sans les types de Node. Un
+  // `node:fs`, un `Buffer`, un `NodeJS.ErrnoException` qui s'y glisserait ne
+  // compilerait pas — et ne tournerait pas sur le mobile.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/core", "src/catalog", "src/connectivity", "src/playback", "src/sync", "src/variants", "src/prefs"],
+  "exclude": ["src/**/*.test.ts", "src/core/testkit.ts"]
+}

@@ -6,7 +6,7 @@ import type { OnLoadData, OnProgressData, VideoRef } from "react-native-video";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { backOrHome } from "@/utils/backOrHome";
-import type { PlayerPlayback } from "./usePlayerPlayback";
+import type { PlayerSessionCore } from "./usePlayerPlayback";
 
 /**
  * Gestionnaires du lecteur mobile : chargement, progression, fin, erreur,
@@ -18,7 +18,7 @@ import type { PlayerPlayback } from "./usePlayerPlayback";
  */
 export interface PlayerHandlersOptions {
   itemId: string;
-  pb: PlayerPlayback;
+  pb: PlayerSessionCore;
   videoRef: { current: VideoRef | null };
   paused: boolean;
   /** Refs de cycle de vie portés par l'écran, repris tels quels. */
@@ -156,6 +156,8 @@ export function usePlayerHandlers({
   reportingRef.current = pb.reporting;
   const runStopRef = useRef(runStopInvalidation);
   runStopRef.current = runStopInvalidation;
+  const invalidateRef = useRef(pb.invalidateOnStop);
+  invalidateRef.current = pb.invalidateOnStop;
   const positionRef = pb.positionRef;
 
   useEffect(() => () => {
@@ -167,13 +169,17 @@ export function usePlayerHandlers({
     // l'épisode suivant) ; sinon c'est ici que part le Stopped. Dans tous les cas
     // `lastStopPromiseRef` porte le DERNIER Stopped réel : on enchaîne dessus.
     void reporting.reportStop();
+    // Hors ligne (lecture locale, serveur injoignable), le rangement partagé
+    // n'a rien à invalider : il attendrait des requêtes qui ne partiront pas.
+    if (!invalidateRef.current()) return;
     const run = () => runStopRef.current({
       itemId, seriesId: snap?.SeriesId, itemType: snap?.Type,
       stopPositionSeconds, runtimeTicks: snap?.RunTimeTicks,
     });
     reporting.lastStopPromiseRef.current.then(run, run);
     // Hors de la règle partagée : « Ajouts récents » (badge vu). `["item"]`, les
-    // hubs et la fiche série sont invalidés par elle — ne pas doubler.
+    // hubs et la fiche série sont invalidés par elle — ne pas doubler. Sous la
+    // garde, comme le reste : hors ligne, rien à invalider.
     queryClient.invalidateQueries({ queryKey: ["latest-items"] });
   }, [itemId, queryClient, positionRef]);
 

@@ -5,22 +5,17 @@ import { Stack, useRouter, useSegments, SplashScreen } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { initI18n, i18n } from "@tentacle-tv/shared";
-import {
-  useAuth, useTentacleConfig, setPreferencesBackendUrl, fetchInterfaceLanguage, useAdminMetadataStatus,
-} from "@tentacle-tv/api-client";
+import { setPreferencesBackendUrl, fetchInterfaceLanguage, useAdminMetadataStatus } from "@tentacle-tv/api-client";
 import { ErrorBoundary } from "@/providers/ErrorBoundary";
 import { AppProviders } from "@/providers/AppProviders";
 import { ServerUrlContext } from "@/providers/ServerUrlContext";
 import { BrandSpinner } from "@/components/ui";
-import { OfflineBanner } from "@/components/OfflineBanner";
 import { ServerOutdatedBanner } from "@/components/ServerOutdatedBanner";
 import { TmdbKeyBanner } from "@/components/TmdbKeyBanner";
-import { useServerReachable } from "@/hooks/useServerReachable";
 import { useServerCompat } from "@/hooks/useServerCompat";
-import { clearCredentials } from "@/auth/credentialManager";
 import { RNStorageAdapter, RNUuidGenerator } from "@/storage/RNStorageAdapter";
 import { isSessionExpired } from "@/auth/sessionState";
-import { useServerUrl } from "@/providers/ServerUrlContext";
+import { OfflineShell } from "@/offline/OfflineShell";
 import { IS_TABLET_DEVICE, useTheme } from "@/theme";
 import { useAppFonts } from "@/theme/fonts";
 
@@ -34,49 +29,6 @@ const uuid = new RNUuidGenerator();
 // Init i18n immediately so useTranslation works on first render.
 // Language will be corrected after storage hydration if needed.
 initI18n({ lng: "fr" });
-
-/** Composant interne — nécessite AppProviders comme parent */
-function OfflineOverlay() {
-  const { isReachable, isChecking, retry } = useServerReachable();
-  const { logout, changeServer } = useAuth();
-  const { storage: appStorage } = useTentacleConfig();
-  const { setServerUrl } = useServerUrl();
-  const router = useRouter();
-
-  const handleLogout = useCallback(() => {
-    logout.mutate(undefined, {
-      onSuccess: () => {
-        clearCredentials(appStorage);
-        router.replace("/(auth)/login");
-      },
-      onError: () => {
-        appStorage.removeItem("tentacle_token");
-        appStorage.removeItem("tentacle_user");
-        clearCredentials(appStorage);
-        router.replace("/(auth)/login");
-      },
-    });
-  }, [logout, appStorage, router]);
-
-  const handleChangeServer = useCallback(() => {
-    changeServer.mutate(undefined, {
-      onSettled: () => {
-        setServerUrl(null);
-        router.replace("/(auth)/server-setup");
-      },
-    });
-  }, [changeServer, router, setServerUrl]);
-
-  return (
-    <OfflineBanner
-      visible={!isReachable}
-      isChecking={isChecking}
-      onRetry={retry}
-      onLogout={handleLogout}
-      onChangeServer={handleChangeServer}
-    />
-  );
-}
 
 /** Bandeaux serveur — admins uniquement, masquables en mémoire, UN à la
  *  fois : « serveur à mettre à jour » prime sur « clé TMDB manquante ».
@@ -250,10 +202,16 @@ function ThemedShell({ showLoading }: { showLoading: boolean }) {
         <Stack.Screen name="settings/notifications" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/devices" options={{ presentation: "card" }} />
         <Stack.Screen name="settings/invites" options={{ presentation: "card" }} />
+        <Stack.Screen name="settings/data" options={{ presentation: "card" }} />
+        <Stack.Screen name="on-device/index" options={{ presentation: "card" }} />
+        <Stack.Screen name="on-device/series/[seriesKey]" options={{ presentation: "card" }} />
+        <Stack.Screen name="on-device/item/[itemId]" options={{ presentation: "card" }} />
+        <Stack.Screen name="on-device/library" options={{ presentation: "card" }} />
+        <Stack.Screen name="settings/on-device" options={{ presentation: "card" }} />
 
         <Stack.Screen name="settings/personalization" options={{ presentation: "card" }} />
       </Stack>
-      <OfflineOverlay />
+      <OfflineShell />
       <ServerNoticeOverlay />
       {showLoading && (
         <View style={[styles.loading, { backgroundColor: theme.colors.surface.s0 }]}>

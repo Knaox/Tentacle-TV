@@ -1,6 +1,6 @@
 import { usePlaybackOverlay } from "@tentacle-tv/api-client";
 import type { PlaybackOverlayResult } from "@tentacle-tv/api-client";
-import type { PlayerPlayback } from "./usePlayerPlayback";
+import type { PlayerSessionCore } from "./usePlayerPlayback";
 
 /**
  * L'arbitre de lecture partagé, câblé pour le mobile.
@@ -23,7 +23,7 @@ import type { PlayerPlayback } from "./usePlayerPlayback";
  */
 interface Options {
   itemId: string;
-  pb: PlayerPlayback;
+  pb: PlayerSessionCore;
   /** Position affichée, en secondes (offset de flux déjà appliqué). */
   currentTime: number;
   /** Le flux est arrivé au bout (`onEnd` de react-native-video). */
@@ -60,6 +60,8 @@ export function usePlaybackOverlayMobile({
     // Les règles « avant la fin » ciblées par bibliothèque ne s'appliquent
     // qu'avec lui — le contrat résolu le porte déjà, il suffisait de le passer.
     libraryId: pb.segments.libraryId ?? null,
+    // Lecture locale : les réglages viennent du cache, aucune requête pendant.
+    remoteSettingsSync: !pb.localSession,
     onSeekSeconds: onSeek,
     onNextEpisode,
     onEndOfPlayback,

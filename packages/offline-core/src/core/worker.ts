@@ -1,0 +1,127 @@
+/**
+ * Le travail d'UN transfert : photographier l'item, récupérer ses side-cars,
+ * puis tirer le média.
+ *
+ * L'ordre compte. Le snapshot et les sous-titres passent AVANT le média : ce
+ * sont quelques centaines de kilo-octets, et ils décident si la fiche sera
+ * présentable hors ligne. Les faire après voudrait dire qu'un transfert
+ * interrompu à 90 % laisse un film sans titre ni affiche.
+ *
+ * Portage de `run_worker` (`apps/desktop/src-tauri/src/downloads/engine.rs`).
+ */
+
+import type { Clock, DatabaseHandle, TransferDriver, Volume } from "./adapters";
+import type { FetchBytes } from "./fetcher";
+import { getSpec, snapshotExists } from "./meta";
+import { safeJoin } from "./paths";
+import { snapshot } from "./snapshot";
+import { setSubtitlesDone, type FileRow } from "./store";
+import { parseSpecs, fetchAll } from "./subs";
+import { run, type TransferEnd, type TransferFlags, type TransferJob } from "./transfer";
+
+export interface Creds {
+  serverUrl: string;
+  token: string;
+}
+
+export interface WorkerDeps {
+  db: DatabaseHandle;
+  volume: Volume;
+  driver: TransferDriver;
+  fetchBytes: FetchBytes;
+  onProgress: (fileId: number, bytes: number) => void;
+  /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
+  onExpected: (fileId: number, totalBytes: number) => void;
+  /** Trace d'une défaillance inattendue — voir `EngineDeps.onUnexpected`. */
+  onUnexpected?: ((context: string, error: unknown) => void) | undefined;
+  now: Clock;
+}
+
+/** URL de téléchargement du média, selon la variante. */
+export function mediaUrl(serverUrl: string, file: FileRow): string {
+  if (file.variant === "original") {
+    return `${serverUrl}/api/downloads/original/${file.itemId}?mediaSourceId=${file.mediaSourceId}`;
+  }
+  const preset = file.preset ?? "p720";
+  let url =
+    `${serverUrl}/api/downloads/light/${file.itemId}` +
+    `?mediaSourceId=${file.mediaSourceId}&preset=${preset}`;
+  if (file.audioStreamIndex !== null) url += `&audioStreamIndex=${file.audioStreamIndex}`;
+  if (file.burnSubtitleIndex !== null) url += `&burnSubtitleIndex=${file.burnSubtitleIndex}`;
+  return url;
+}
+
+export async function runWorker(
+  deps: WorkerDeps,
+  creds: Creds,
+  file: FileRow,
+  flags: TransferFlags,
+  nowMs: number,
+): Promise<TransferEnd> {
+  // Les à-côtés sont best-effort : leur échec ne doit jamais empêcher le média
+  // de se télécharger, et la réparation repassera derrière.
+  if (!snapshotExists(deps.volume, file.itemId)) {
+    const spec = getSpec(deps.db, file.itemId);
+    if (spec !== null) {
+      try {
+        await snapshot(deps.fetchBytes, deps.db, creds.serverUrl, deps.volume, spec, nowMs);
+      } catch {
+        // Snapshot manqué : la fiche sera pauvre hors ligne, le film sera là.
+      }
+    }
+  }
+
+  if (file.subtitlesJson !== null) {
+    const specs = parseSpecs(file.subtitlesJson);
+    if (specs.length > 0) {
+      try {
+        const fetched = await fetchAll(
+          deps.fetchBytes,
+          creds.serverUrl,
+          deps.volume,
+          file.itemId,
+          file.mediaSourceId,
+          specs,
+          // Une piste sautée ne disparaît plus sans un mot : le serveur met
+          // parfois plus de vingt secondes à extraire un sous-titre, et le
+          // fetcher n'en rend qu'un `null` muet.
+          (spec, reason) => deps.onUnexpected?.("subs.fetch", `${file.itemId} piste ${spec.index} (${spec.langTag}) : ${reason}`),
+        );
+        setSubtitlesDone(deps.db, file.itemId, file.mediaSourceId, fetched);
+      } catch {
+        // Idem : sans sous-titres, le média reste lisible.
+      }
+    }
+  }
+
+  let finalPath: string;
+  try {
+    finalPath = safeJoin(deps.volume, file.relPath);
+  } catch {
+    return { kind: "failed", code: "io", bytesDone: 0 };
+  }
+
+  const job: TransferJob = {
+    url: mediaUrl(creds.serverUrl, file),
+    token: creds.token,
+    finalPath,
+    variant: file.variant,
+    expectedSize: file.expectedSize,
+    serverUrl: creds.serverUrl,
+    // Le bureau lit la session dans les en-têtes de réponse ; le client n'en
+    // choisit pas encore.
+    transcodeSession: null,
+  };
+  return await run(
+    deps.driver,
+    deps.volume,
+    job,
+    flags,
+    (bytes) => deps.onProgress(file.id, bytes),
+    deps.now,
+    {
+      onExpected: (totalBytes) => deps.onExpected(file.id, totalBytes),
+      onUnexpected: deps.onUnexpected,
+    },
+  );
+}

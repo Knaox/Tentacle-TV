@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    // Pas les options strictes supplémentaires du main Electron
+    // (`noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`…) : tsc les
+    // appliquerait aussi aux sources de `packages/shared` importées, qui ne
+    // sont pas écrites pour elles. La zone miroir, elle, est vérifiée sous
+    // ces options par le typecheck du bureau, sur sa copie.
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

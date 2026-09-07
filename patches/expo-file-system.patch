@@ -1,0 +1,34 @@
+diff --git a/ios/Legacy/EXSessionTasks/EXSessionDownloadTaskDelegate.h b/ios/Legacy/EXSessionTasks/EXSessionDownloadTaskDelegate.h
+index add56c836173674166feca3f4d851156d7d4d883..7f4c5f2ce052868330be750d4e6951ded972edd7 100644
+--- a/ios/Legacy/EXSessionTasks/EXSessionDownloadTaskDelegate.h
++++ b/ios/Legacy/EXSessionTasks/EXSessionDownloadTaskDelegate.h	
+@@ -4,6 +4,10 @@
+ 
+ @interface EXSessionDownloadTaskDelegate : EXSessionTaskDelegate
+ 
++// Destination du telechargement, lisible par les sous-classes : la reprise
++// apres erreur range son jeton a cote (voir EXSessionResumableDownloadTaskDelegate).
++@property (strong, nonatomic, readonly) NSURL *localUrl;
++
+ - (nonnull instancetype)initWithResolve:(EXPromiseResolveBlock)resolve
+                                  reject:(EXPromiseRejectBlock)reject
+                                localUrl:(NSURL *)localUrl
+diff --git a/ios/Legacy/EXSessionTasks/EXSessionResumableDownloadTaskDelegate.m b/ios/Legacy/EXSessionTasks/EXSessionResumableDownloadTaskDelegate.m
+index d8b9a897eeae6ac70e41c82ed74f78dd24ec9526..daa7fad97e1d38041104c48dc91583deab59497f 100644
+--- a/ios/Legacy/EXSessionTasks/EXSessionResumableDownloadTaskDelegate.m
++++ b/ios/Legacy/EXSessionTasks/EXSessionResumableDownloadTaskDelegate.m	
+@@ -44,6 +44,14 @@
+     if (error.code == NSURLErrorCancelled) {
+       self.resolve([NSNull null]);
+     } else {
++      // Une coupure reseau porte son jeton de reprise dans l'erreur ; le jeter
++      // obligeait a retelecharger le fichier entier. On le range a cote du
++      // fichier vise, ou l'appelant ira le chercher au prochain essai.
++      NSData *resumeData = error.userInfo[NSURLSessionDownloadTaskResumeData];
++      if (resumeData.length > 0 && self.localUrl) {
++        NSURL *sidecar = [NSURL fileURLWithPath:[self.localUrl.path stringByAppendingPathExtension:@"resume"]];
++        [resumeData writeToURL:sidecar atomically:YES];
++      }
+       self.reject(@"ERR_FILESYSTEM_CANNOT_DOWNLOAD",
+                   [NSString stringWithFormat:@"Unable to download file: %@", error.description],
+                   error);

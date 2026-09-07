@@ -11,7 +11,7 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { supportsDownloads } from "../desktop/bridge";
 import { getDiskFree, getDiskUsage, listDownloads, downloadStateForItem, type DownloadEntry } from "./api";
 import { useDownloadCapabilities } from "./useDownloadCapabilities";
-import { LOCAL_QUERY } from "../offline/localQuery";
+import { LOCAL_QUERY } from "@tentacle-tv/offline-core/react";
 
 export const DOWNLOADS_LIST_QUERY_KEY = "downloads-list";
 export const DOWNLOAD_STATE_QUERY_KEY = "download-state";

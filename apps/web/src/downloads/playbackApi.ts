@@ -3,35 +3,11 @@
  * et progression locale par utilisateur (+ file de resynchro hors ligne).
  */
 
+import type { LocalSource, PendingReport } from "@tentacle-tv/offline-core";
 import { invoke } from "../desktop/bridge";
 import { supportsDownloads } from "../desktop/bridge";
 
-export interface LocalSubtitleFile {
-  absolutePath: string;
-  fileName: string;
-}
-
-export interface LocalSource {
-  fileId: number;
-  variant: "original" | "light";
-  absolutePath: string;
-  subtitleFiles: LocalSubtitleFile[];
-  positionTicks: number;
-  played: boolean;
-  autoDeleteAfterWatch: boolean;
-  /** Délai (minutes, 0 = immédiat) + échéance (epoch secondes) posée au « vu ». */
-  autoDeleteDelayMinutes: number;
-  deleteScheduledAt: number | null;
-  /** Méta dénormalisée — lecteur présentable en démarrage 100 % hors ligne. */
-  title: string | null;
-  seriesName: string | null;
-  runtimeTicks: number | null;
-  /** Numéros de saison/épisode : sous-titre du lecteur sans DTO serveur. */
-  indexNumber: number | null;
-  parentIndexNumber: number | null;
-  /** Bibliothèque de l'item (préférences de pistes hors ligne). */
-  libraryId: string | null;
-}
+export type { LocalSource, LocalSubtitleFile, PendingReport } from "@tentacle-tv/offline-core";
 
 export async function localSourceForItem(
   userId: string,
@@ -75,14 +51,6 @@ export async function restartLocalPlayback(userId: string, itemId: string): Prom
   } catch {
     /* best-effort : au pire la reprise repart du début */
   }
-}
-
-export interface PendingReport {
-  id: number;
-  itemId: string;
-  positionTicks: number;
-  played: boolean;
-  occurredAtUtc: number;
 }
 
 /** File de resynchronisation, dédupliquée (dernier état par item). */

@@ -11,7 +11,9 @@ import { app, net, protocol } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { resolveRoot } from "./downloads/paths";
+import type { Volume } from "./downloads/core/adapters";
+import { nodeFiles } from "./downloads/node/nodeFiles";
+import { resolveRoot } from "./downloads/core/paths";
 import { localDb } from "./localDb";
 import { LOCAL_HOST, serveLocalAsset } from "./localAssets";
 import { getPluginDocument, PLUGIN_HOST } from "./pluginDocuments";
@@ -134,13 +136,13 @@ function servePluginDocument(pathname: string): Response {
  * plus haut qu'un 404.
  */
 async function serveLocalAssetFrom(request: Request, pathname: string): Promise<Response> {
-  let root: string;
+  let volume: Volume;
   try {
-    root = resolveRoot(localDb(), app.getPath("userData"));
+    volume = resolveRoot(localDb(), nodeFiles, app.getPath("userData"));
   } catch {
     return new Response("racine indisponible", { status: 404 });
   }
-  return await serveLocalAsset(request, pathname, root, APP_ORIGIN);
+  return await serveLocalAsset(request, pathname, volume, APP_ORIGIN);
 }
 
 /** Branche le service des fichiers. À appeler après `app.whenReady()`. */

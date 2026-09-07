@@ -12,14 +12,14 @@
  */
 
 import { app } from "electron";
-import type { DatabaseSync } from "node:sqlite";
-import { dbPath, open } from "./downloads/db";
+import type { DatabaseHandle } from "./downloads/core/adapters";
+import { dbPath, openNodeDatabase } from "./downloads/node/nodeDatabase";
 
-let handle: DatabaseSync | null = null;
+let handle: DatabaseHandle | null = null;
 
 /** La connexion, ouverte au premier appel. */
-export function localDb(): DatabaseSync {
-  if (handle === null) handle = open(dbPath(app.getPath("userData")));
+export function localDb(): DatabaseHandle {
+  if (handle === null) handle = openNodeDatabase(dbPath(app.getPath("userData")));
   return handle;
 }
 

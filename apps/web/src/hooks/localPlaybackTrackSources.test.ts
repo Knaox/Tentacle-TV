@@ -4,7 +4,6 @@ import {
   buildLocalSubtitleTracks,
   isForcedTrack,
   isSideCarIndex,
-  parseSideCarFileName,
   SIDECAR_INDEX_BASE,
   type LabelContext,
 } from "./localPlaybackTrackSources";
@@ -14,23 +13,6 @@ const ctx: LabelContext = { locale: "fr", fallbackFor: (i) => `Piste ${i}` };
 
 const sub = (id: number, extra: Partial<MpvTrack> = {}): MpvTrack => ({
   id, type: "sub", selected: false, ...extra,
-});
-
-describe("parseSideCarFileName", () => {
-  it("lit index, langue et drapeaux", () => {
-    expect(parseSideCarFileName("3-fre-forced.srt")).toEqual({
-      jfIndex: 3, lang: "fre", forced: true, sdh: false, format: "srt",
-    });
-    expect(parseSideCarFileName("12-eng-sdh.ass")).toEqual({
-      jfIndex: 12, lang: "eng", forced: false, sdh: true, format: "ass",
-    });
-    expect(parseSideCarFileName("4-fr-be.vtt")?.lang).toBe("fr");
-  });
-
-  it("rejette ce qui n'est pas un side-car", () => {
-    expect(parseSideCarFileName("original-ms1.mkv")).toBeNull();
-    expect(parseSideCarFileName("notes.txt")).toBeNull();
-  });
 });
 
 describe("buildLocalSubtitleTracks", () => {
