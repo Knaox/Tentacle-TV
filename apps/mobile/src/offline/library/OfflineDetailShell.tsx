@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { GradientOverlay, IconButton } from "@/components/ui";
+import { DetailTopBar } from "@/components/detail/DetailTopBar";
 import type { useMediaDetailAnimations } from "@/hooks/useMediaDetailAnimations";
 import { backOrHome } from "@/utils/backOrHome";
 import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from "@/theme";
@@ -37,6 +38,8 @@ interface Props {
   metrics: OfflineDetailMetrics;
   header: ReactNode;
   body: ReactNode;
+  /** Titre repris par la barre haute quand celui de la page est parti. */
+  title: string;
 }
 
 /**
@@ -46,7 +49,7 @@ interface Props {
  * statique voilé, rail gauche figé et corps défilant. Le bouton retour vit sur
  * un wrapper absolu (`IconButton` pose `style` sur son Pressable interne).
  */
-export function OfflineDetailShell({ backdropItemId, backdropCandidates, anims, metrics, header, body }: Props) {
+export function OfflineDetailShell({ backdropItemId, backdropCandidates, anims, metrics, header, body, title }: Props) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -96,13 +99,19 @@ export function OfflineDetailShell({ backdropItemId, backdropCandidates, anims, 
           {/* Voile SOMBRE en clair (noir pur : le plafond 0,70 est dans la rampe). */}
           <GradientOverlay direction="bottom" height={metrics.backdropH * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
         </View>
-        {!isTablet && backBtn}
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
           {header}
           {content}
         </View>
       </AnimatedScrollView>
-      {isTablet && backBtn}
+      {/* Même barre que la fiche serveur : elle protège la zone d'état dès le
+          premier pixel, puis se remplit quand la bannière est passée. */}
+      <DetailTopBar
+        title={title}
+        scrollY={anims.scrollY}
+        revealAt={metrics.backdropH * 0.62}
+        onBack={() => backOrHome(router)}
+      />
     </View>
   );
 }
