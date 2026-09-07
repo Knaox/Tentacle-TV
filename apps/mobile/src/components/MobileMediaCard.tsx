@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import Animated from "react-native-reanimated";
@@ -6,6 +6,8 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { resolvePosterImage } from "@tentacle-tv/shared";
+import { useResilientImage } from "@/hooks/useResilientImage";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
@@ -40,14 +42,23 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   // Id = SeriesId, sans ImageTags — le poster série existe côté Jellyfin.
   const addedCount = item.RecentlyAddedCount ?? 0;
   const isGroupedSeries = addedCount > 1;
-  const posterId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
-  const hasPrimary = (isEpisode && item.SeriesId) || isGroupedSeries ? true : !!item.ImageTags?.Primary;
-  const poster = hasPrimary ? client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 }) : null;
-  const [imgError, setImgError] = useState(false);
+  // La chaîne de repli est celle du web et de la TV (`cardImage` partagé) :
+  // affiche de l'épisode, puis de la série, avec son `tag` — sans lui l'URL
+  // est immuable, et une affiche apparue après un 404 resterait grise à vie.
+  const resolved = resolvePosterImage(item, "series");
+  const posterId = resolved?.id ?? item.Id;
+  const poster = resolved
+    ? client.getImageUrl(resolved.id, resolved.type, {
+        width: 300,
+        quality: 80,
+        ...(resolved.tag ? { tag: resolved.tag } : {}),
+      })
+    : null;
+  const image = useResilientImage(poster);
   const progress = item.UserData?.PlayedPercentage ?? 0;
   const isWatched = item.UserData?.Played === true;
   const hasProgress = progress > 0 && progress < 100;
-  const showFallback = !poster || imgError;
+  const posterUri = image.uri;
 
   return (
     <PressableCard
@@ -60,25 +71,26 @@ export const MobileMediaCard = memo(function MobileMediaCard({
       <View style={st.poster}>
         {/* Inner clip — sépare le clipping de l'image du shadow du poster (sinon l'image déborde légèrement les coins arrondis sur certains renders). */}
         <View style={st.imageClip} pointerEvents="none">
-          {showFallback ? (
+          {posterUri === null ? (
             <View style={st.fallback}>
               <Text style={st.fallbackLetter}>{item.Name?.charAt(0).toUpperCase() ?? "?"}</Text>
             </View>
           ) : ENABLE_SHARED_POSTER_TRANSITION ? (
             <Animated.Image
-              source={{ uri: poster }}
+              source={{ uri: posterUri }}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
-              onError={() => setImgError(true)}
+              onError={image.onError}
               sharedTransitionTag={`poster-${posterId}`}
             />
           ) : (
             <Image
-              source={{ uri: poster }}
+              source={{ uri: posterUri }}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
-              onError={() => setImgError(true)}
+              onError={image.onError}
               transition={250}
+              recyclingKey={posterUri}
             />
           )}
         </View>
