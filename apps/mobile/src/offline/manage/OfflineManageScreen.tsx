@@ -14,6 +14,7 @@ import { spacing, typography, FONT_FAMILY, LETTER_SPACING, useTheme, useThemedSt
 import type { OfflineEntry } from "../engineApi";
 import { transferWait, useTransferWaitContext, wifiBlocked } from "../transferGate";
 import { BulkAutoDeleteSheet, useBulkOfflineActions } from "./OfflineBulkActions";
+import { PauseAllRow } from "./PauseAllRow";
 import { OfflineCatalogLinkCard } from "./OfflineCatalogLinkCard";
 import { OfflineEntryRow } from "./OfflineEntryRow";
 import { OfflineRowActionsSheet } from "./OfflineRowActionsSheet";
@@ -102,7 +103,12 @@ export function OfflineManageScreen() {
       )}
 
       {waitingWifi && <WifiWaitCard count={groups.active.filter((entry) => transferWait(entry, waitCtx) === "wifi").length} />}
-      {groups.active.length > 0 && <Section title={t("sectionActive")}>{groups.active.map(row)}</Section>}
+      {groups.active.length > 0 && (
+        <Section title={t("sectionActive")}>
+          <PauseAllRow entries={groups.active} />
+          {groups.active.map(row)}
+        </Section>
+      )}
       {groups.movies.length > 0 && <Section title={t("sectionMovies")}>{groups.movies.map(row)}</Section>}
       {groups.series.map((series) => (
         <Section key={series.key} title={series.seriesName}>

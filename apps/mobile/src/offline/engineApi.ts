@@ -20,10 +20,12 @@ import {
   normalizeEnqueueItem,
   purgeDueClaims,
   restartPlayback,
+  runningFileIds,
   scheduleOnPlayed,
   setAutoDelete,
   setPlaybackState,
   stateForItem,
+  userPausedFileIds,
   type DeleteOutcome,
   type DownloadListEntry,
   type EnqueueItemInput,
@@ -107,6 +109,27 @@ export function pauseTransfer(fileId: number): void {
 
 export function resumeTransfer(fileId: number): void {
   offlineEngine().resume(fileId);
+}
+
+/**
+ * « Tout mettre en pause » — le bouton de la notification et celui de l'écran
+ * de gestion. Une pause EXPLICITE, fichier par fichier : elle survit au retour
+ * du réseau, contrairement à la pause système, et ne se relance qu'au geste.
+ * Rend le nombre de transferts touchés.
+ */
+export function pauseAllTransfers(): number {
+  const ids = runningFileIds(localDb());
+  const engine = offlineEngine();
+  for (const id of ids) engine.pause(id);
+  return ids.length;
+}
+
+/** L'inverse : ne relance QUE ce que l'utilisateur avait mis en pause. */
+export function resumeAllTransfers(): number {
+  const ids = userPausedFileIds(localDb());
+  const engine = offlineEngine();
+  for (const id of ids) engine.resume(id);
+  return ids.length;
 }
 
 export function cancelTransfer(fileId: number): void {

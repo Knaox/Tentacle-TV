@@ -84,6 +84,9 @@ export default {
     "Vous êtes en données mobiles : le transfert attendra le Wi-Fi (réglable dans Sur cet appareil).",
 
   // L'écran de gestion
+  // Le geste global : la notification Android le porte aussi.
+  pauseAll: "Tout mettre en pause",
+  resumeAll: "Tout reprendre",
   manage: "Gérer",
   manageTitle: "Sur cet appareil",
   countTitles_one: "{{count}} titre",
