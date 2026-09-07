@@ -39,11 +39,33 @@ class OfflineStorageModule : Module() {
       OfflineTransferService.stop(context)
     }
 
-    // Remux d'un MP4 fragmenté (mode Allégé) en MP4 indexé, sur place —
-    // long (quelques secondes par centaine de Mo) : fonction asynchrone, hors
-    // du fil JavaScript.
+    // La finalisation d'un fichier Allégé, et son verdict — long (quelques
+    // secondes par centaine de Mo) : fonction asynchrone, hors du fil
+    // JavaScript.
+    //
+    //   `unusable` — aucun `moov` : le transfert s'est achevé avant que
+    //                Jellyfin serve l'index. Aucun remux ne le répare, et s'y
+    //                reprendre à trois fois ne fait qu'user la batterie : le
+    //                moteur retéléchargera.
+    //   `ok`       — le fichier se lit. Déjà indexé, il n'est PAS réécrit :
+    //                recopier 500 Mo pour rien coûte du temps, de la batterie
+    //                et le double d'espace disque le temps du remux.
+    //   `failed`   — le remux d'un fichier fragmenté a échoué ; l'original
+    //                reste intact et la finalisation se retentera.
     AsyncFunction("finalizeMp4") { path: String ->
-      Mp4Finalizer.finalize(path.removePrefix("file://"))
+      val cleaned = path.removePrefix("file://")
+      when (Mp4Boxes.index(cleaned)) {
+        Mp4Index.MISSING -> "unusable"
+        Mp4Index.INDEXED -> "ok"
+        Mp4Index.FRAGMENTED -> if (Mp4Finalizer.finalize(cleaned)) "ok" else "failed"
+      }
+    }
+
+    // `MediaMuxer` écrit déjà l'entrée d'échantillon HEVC sous `hvc1`, et
+    // ExoPlayer lit les deux formes : la réparation que réclame iOS n'a rien
+    // à faire ici. Même surface, sans effet.
+    AsyncFunction("promoteHevcTag") { _: String ->
+      false
     }
 
     OnDestroy {

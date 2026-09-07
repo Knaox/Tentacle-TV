@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
+import fs from "node:fs";
 import path from "node:path";
 import { claimOrCreateFile } from "./store";
 import type { TransferNet } from "./transferNet";
@@ -108,6 +109,33 @@ describe("traduction des fins de transfert", () => {
     expect(file?.phase).toBe("finalize");
     // La taille REELLE du fichier recu, pas la valeur lue en debut de travail.
     expect(file?.bytesDone).toBe(3);
+  });
+
+  // Un media arrive SANS son index : aucun remux ne le reparera. Le garder
+  // reviendrait a occuper des centaines de megaoctets pour un titre qui ne se
+  // lira jamais, et a rejouer trois fois un remux impossible.
+  it("un media sans index est jete, et le transfert repart de zero", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const relPath = "media/item1/light-ms1-p480.mp4";
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath, expectedSize: null,
+    })).fileId;
+    const { engine } = makeEngine(db, root, immediateNet(200), {
+      finalizeMedia: async () => "unusable" as const,
+    });
+
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, light)?.status).toBe("error");
+    });
+
+    const file = getFile(db, light);
+    expect(file?.errorCode).toBe("integrity");
+    // La phase tombe : la reprise repart du telechargement, pas du remux.
+    expect(file?.phase).toBeNull();
+    expect(file?.bytesDone).toBe(0);
+    expect(fs.existsSync(path.join(root, relPath))).toBe(false);
   });
 
   it("reprendre une finalisation ratee ne retelecharge rien", async () => {

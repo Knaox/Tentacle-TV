@@ -38,7 +38,7 @@ import type { FileRow } from "./store";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
 
-export type { EngineDeps } from "./engineDeps";
+export type { EngineDeps, FinalizeVerdict } from "./engineDeps";
 
 /**
  * Un seul transfert à la fois. Deux se disputaient la bande passante, le disque

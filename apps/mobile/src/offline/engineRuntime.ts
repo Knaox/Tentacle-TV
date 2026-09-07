@@ -17,6 +17,7 @@ import {
   repairUsage,
   type Creds,
   type EngineEvent,
+  type FinalizeVerdict,
   type ProgressPayload,
 } from "@tentacle-tv/offline-core";
 import { finalizeMp4, setExcludedFromBackup } from "../../modules/offline-storage";
@@ -95,8 +96,13 @@ let engine: DownloadEngine | null = null;
 let purgeTimer: ReturnType<typeof setInterval> | null = null;
 let creds: Creds | null = null;
 
-async function finalizeLightFile(absPath: string): Promise<void> {
-  if ((await finalizeMp4(absPath)) === "failed") throw new Error("finalizeMp4 failed");
+async function finalizeLightFile(absPath: string): Promise<FinalizeVerdict> {
+  const outcome = await finalizeMp4(absPath);
+  // Un fichier arrivé sans son index n'est pas un remux raté : le moteur le
+  // jette et repart du transfert plutôt que de rejouer un remux impossible.
+  if (outcome === "unusable") return "unusable";
+  if (outcome === "failed") throw new Error("finalizeMp4 failed");
+  return "ok";
 }
 
 /** Le moteur, construit au premier appel. */
