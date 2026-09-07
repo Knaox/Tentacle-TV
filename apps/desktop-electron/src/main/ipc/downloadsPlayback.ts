@@ -4,15 +4,15 @@
  */
 
 import { z } from "zod";
-import { downloadsRoot, downloadsEngine } from "../downloadsRuntime";
+import { downloadsVolume, downloadsEngine } from "../downloadsRuntime";
 import {
   localSource,
   markItemSynced,
   pendingReports,
   restartPlayback,
   setPlaybackState,
-} from "../downloads/playback";
-import { purgeDueClaims, scheduleOnPlayed } from "../downloads/purge";
+} from "../downloads/core/playback";
+import { purgeDueClaims, scheduleOnPlayed } from "../downloads/core/purge";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 
@@ -44,7 +44,7 @@ export function registerDownloadsPlaybackCommands(registry: CommandRegistry): vo
     .add("downloads_local_source", {
       schema: USER_ITEM,
       run: ({ userId, itemId }) =>
-        localSource(localDb(), downloadsRoot(), userId, itemId, Date.now()),
+        localSource(localDb(), downloadsVolume(), userId, itemId, Date.now()),
     })
     .add("downloads_playback_set", {
       schema: PLAYBACK,
@@ -76,7 +76,7 @@ export function registerDownloadsPlaybackCommands(registry: CommandRegistry): vo
     .add("downloads_purge_due", {
       schema: PURGE,
       run: ({ itemId }) => {
-        const purges = purgeDueClaims(localDb(), downloadsRoot(), Date.now(), itemId ?? null);
+        const purges = purgeDueClaims(localDb(), downloadsVolume(), Date.now(), itemId ?? null);
         if (purges > 0) downloadsEngine().notifyChanged();
         return purges;
       },

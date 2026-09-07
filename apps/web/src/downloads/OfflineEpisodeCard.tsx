@@ -16,7 +16,7 @@ import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
 import { useLocalTrickplay } from "../hooks/useLocalTrickplay";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
-import { watchStateOf } from "./offlineGroups";
+import { watchStateOf } from "@tentacle-tv/offline-core";
 
 interface OfflineEpisodeCardProps {
   entry: DownloadEntry;

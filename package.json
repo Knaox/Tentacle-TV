@@ -45,7 +45,9 @@
     },
     "patchedDependencies": {
       "react-native-video@6.19.0": "patches/react-native-video@6.19.0.patch",
-      "react-native-tvos@0.80.1-0": "patches/react-native-tvos@0.80.1-0.patch"
+      "react-native-tvos@0.80.1-0": "patches/react-native-tvos@0.80.1-0.patch",
+      "expo-constants": "patches/expo-constants.patch",
+      "expo-file-system": "patches/expo-file-system.patch"
     }
   },
   "devDependencies": {

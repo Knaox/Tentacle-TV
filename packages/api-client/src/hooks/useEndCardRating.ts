@@ -50,7 +50,8 @@ export function useEndCardRating(
         }
       : null;
 
-  const current = useItemRating(identity);
+  // Coupée (lecture locale) : ni la fiche, ni la liste des notes ne partent.
+  const current = useItemRating(identity, { enabled });
   const rateItem = useRateItem();
   const deleteRating = useDeleteRating();
 

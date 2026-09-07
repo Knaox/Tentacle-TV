@@ -7,13 +7,17 @@
  */
 
 import { app, powerMonitor, powerSaveBlocker } from "electron";
-import { DownloadEngine } from "./downloads/engine";
-import { heal } from "./downloads/heal";
+import { DownloadEngine } from "./downloads/core/engine";
+import { heal } from "./downloads/core/heal";
 import { makeFetcher } from "./downloads/netFetch";
-import { resolveRoot } from "./downloads/paths";
-import { purgeDueClaims } from "./downloads/purge";
-import { electronTransferNet } from "./downloads/transferNet";
-import type { Creds } from "./downloads/worker";
+import type { Volume } from "./downloads/core/adapters";
+import { nodeFiles } from "./downloads/node/nodeFiles";
+import { nodePartWriter } from "./downloads/node/nodePartWriter";
+import { createStreamDriver } from "./downloads/node/streamDriver";
+import { resolveRoot } from "./downloads/core/paths";
+import { purgeDueClaims } from "./downloads/core/purge";
+import { electronTransferNet } from "./downloads/electronTransferNet";
+import type { Creds } from "./downloads/core/worker";
 import { localDb } from "./localDb";
 import { sendToPage } from "./pageEvents";
 import { createSystemWakeLock } from "./powerSave";
@@ -40,9 +44,14 @@ const systemWakeLock =
     ? combine(createSystemWakeLock(powerSaveBlocker), createLogindBackup(systemLauncher))
     : createSystemWakeLock(powerSaveBlocker);
 
+/** Volume de téléchargement effectif : la racine et le système de fichiers de Node. */
+export function downloadsVolume(): Volume {
+  return resolveRoot(localDb(), nodeFiles, app.getPath("userData"));
+}
+
 /** Racine de téléchargement effective. */
 export function downloadsRoot(): string {
-  return resolveRoot(localDb(), app.getPath("userData"));
+  return downloadsVolume().root;
 }
 
 /** Le moteur, construit au premier appel. */
@@ -50,11 +59,15 @@ export function downloadsEngine(): DownloadEngine {
   if (engine !== null) return engine;
   engine = new DownloadEngine({
     db: localDb(),
-    root: downloadsRoot,
-    net: electronTransferNet,
+    volume: downloadsVolume,
+    driver: createStreamDriver(electronTransferNet, nodePartWriter, nodeFiles),
     makeFetcher,
     emit: sendToPage,
     now: () => Date.now(),
+    // Le statut en base ne dira que « imprévu » : la cause ne vit que là.
+    onUnexpected: (context, error) => {
+      console.warn(`[transferts] ${context} : ${String(error)}`);
+    },
     onBusy: (busy) => {
       if (busy) systemWakeLock.prevent();
       else systemWakeLock.release();
@@ -113,7 +126,7 @@ function startPeriodicPurge(): void {
   if (purgeTimer !== null) return;
   const tick = (): void => {
     try {
-      if (purgeDueClaims(localDb(), downloadsRoot(), Date.now(), null) > 0) {
+      if (purgeDueClaims(localDb(), downloadsVolume(), Date.now(), null) > 0) {
         sendToPage("downloads://changed", undefined);
       }
     } catch {
@@ -128,7 +141,7 @@ function startPeriodicPurge(): void {
 
 /** Réparation en tâche de fond, jamais attendue. */
 function runHeal(creds: Creds): void {
-  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsRoot(), Date.now())
+  void heal(makeFetcher(creds.token), localDb(), creds.serverUrl, downloadsVolume(), Date.now())
     .then((healed) => {
       if (healed > 0) sendToPage("downloads://changed", undefined);
     })

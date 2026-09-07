@@ -46,7 +46,8 @@ export function PlayerSettingsMenus({
             options: audioTracks.map((tr) => ({ key: tr.index, label: tr.label, active: selectedAudio === tr.index })),
             onSelect: (k: string | number) => { onSelectAudio(k as number); onCloseSettings(); },
           }] : []),
-          {
+          // Lecture locale : aucun palier — la section n'est pas rendue.
+          ...(qualityPresets.length === 0 ? [] : [{
             title: t("quality").toUpperCase(),
             options: qualityPresets.map((p) => {
               const isOriginal = p.key === "original";
@@ -68,7 +69,7 @@ export function PlayerSettingsMenus({
               };
             }),
             onSelect: (k: string | number) => { onSelectQuality(k as QualityKey); onCloseSettings(); },
-          },
+          }]),
         ]}
         onClose={onCloseSettings}
       />

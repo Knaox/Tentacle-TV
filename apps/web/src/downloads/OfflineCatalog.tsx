@@ -27,7 +27,7 @@ import {
   seriesGroupMatches,
   watchStateOf,
   type OfflineSeriesGroup,
-} from "./offlineGroups";
+} from "@tentacle-tv/offline-core";
 
 type Filter = "all" | "movies" | "series";
 

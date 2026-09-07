@@ -7,6 +7,7 @@
  * en file et sera retenté au prochain passage en ligne.
  */
 
+import { reportBody } from "@tentacle-tv/offline-core";
 import { backendUrl } from "../main";
 import { markReportSynced, pendingReports } from "../downloads/playbackApi";
 
@@ -22,13 +23,7 @@ export async function drainReportQueue(userId: string): Promise<number> {
   const pending = await pendingReports(userId);
   let synced = 0;
   for (const report of pending) {
-    const body: Record<string, unknown> = {
-      PlaybackPositionTicks: report.played ? 0 : report.positionTicks,
-      Played: report.played,
-    };
-    if (report.played && report.occurredAtUtc > 0) {
-      body.LastPlayedDate = new Date(report.occurredAtUtc).toISOString();
-    }
+    const body = reportBody(report);
     try {
       // X-Emby-Token : format du proxy /api/jellyfin (un Bearer y ferait 401).
       const res = await fetch(`${backendUrl}/api/jellyfin/UserItems/${report.itemId}/UserData`, {

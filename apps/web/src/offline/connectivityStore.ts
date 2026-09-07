@@ -26,7 +26,7 @@ import {
   type HysteresisConfig,
   type HysteresisState,
   type LinkQuality,
-} from "./connectivityMachine";
+} from "@tentacle-tv/offline-core";
 import { setNetworkSuspectListener, setOfflineHintSupplier } from "@tentacle-tv/api-client";
 import { isTauri } from "../hooks/mpvRuntime";
 import { backendUrl } from "../main";

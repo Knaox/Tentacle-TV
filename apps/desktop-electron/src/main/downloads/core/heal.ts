@@ -1,0 +1,142 @@
+/**
+ * Auto-réparation des à-côtés d'un téléchargement.
+ *
+ * Snapshots, affiches et side-cars manquants pour les fichiers DÉJÀ complets.
+ * Lancée en tâche de fond à chaque démarrage du moteur, en ligne. Idempotente —
+ * tout ce qui existe est sauté —, best-effort, et c'est elle qui rattrape les
+ * téléchargements faits avant un correctif de récupération.
+ *
+ * Portage de `apps/desktop/src-tauri/src/downloads/heal.rs`.
+ */
+
+import type { DatabaseHandle, Volume } from "./adapters";
+import type { FetchBytes } from "./fetcher";
+import { MAX_JSON_BYTES } from "./fetcher";
+import { parseJson } from "./json";
+import {
+  CURRENT_META_VERSION,
+  getSpec,
+  metaVersion,
+  seriesPrimaryExists,
+  snapshotExists,
+} from "./meta";
+import * as segments from "./segments";
+import { snapshot } from "./snapshot";
+import { firstMediaSourceId } from "./fileLookup";
+import { fetchAll, parseSpecs } from "./subs";
+import { text, textOrNull } from "./rows";
+import * as trickplay from "./trickplay";
+
+interface CompleteItem {
+  itemId: string;
+  mediaSourceId: string;
+  subtitlesJson: string | null;
+}
+
+function complete(db: DatabaseHandle): CompleteItem[] {
+  return db
+    .prepare(
+      `SELECT DISTINCT item_id, media_source_id, subtitles_json
+       FROM files WHERE status = 'complete'`,
+    )
+    .all()
+    .map((row) => ({
+      itemId: text(row, "item_id"),
+      mediaSourceId: text(row, "media_source_id"),
+      subtitlesJson: textOrNull(row, "subtitles_json"),
+    }));
+}
+
+/**
+ * Répare ce qui manque. Retourne le nombre d'items touchés.
+ *
+ * Ne lève jamais : elle tourne en fond, et un item récalcitrant ne doit pas
+ * empêcher les suivants d'être réparés.
+ */
+export async function heal(
+  fetchBytes: FetchBytes,
+  db: DatabaseHandle,
+  serverUrl: string,
+  volume: Volume,
+  nowMs: number,
+): Promise<number> {
+  let healed = 0;
+
+  for (const item of complete(db)) {
+    let touched = false;
+
+    // Snapshot absent, affiche de série manquante, ou snapshot d'une version
+    // antérieure (sans segments ni DTO enrichi) : un re-snapshot complet répare
+    // tout, et il saute ce qui est déjà en place.
+    const spec = getSpec(db, item.itemId);
+    if (spec !== null) {
+      const seriesPosterMissing =
+        spec.seriesId !== null && !seriesPrimaryExists(volume, item.itemId);
+      const versionStale = metaVersion(db, item.itemId) < CURRENT_META_VERSION;
+      if (!snapshotExists(volume, item.itemId) || seriesPosterMissing || versionStale) {
+        try {
+          await snapshot(fetchBytes, db, serverUrl, volume, spec, nowMs);
+          touched = true;
+        } catch {
+          // Item non réparé ce tour-ci ; on continue avec les suivants.
+        }
+      }
+    }
+
+    // Segments pris pendant une analyse en cours : l'intro ou le générique
+    // manquaient peut-être. Redemandés tant que l'analyse n'a pas abouti —
+    // sauf si le re-snapshot ci-dessus vient de les reprendre.
+    if (!touched && segments.needsRefresh(volume, item.itemId)) {
+      touched = await segments.fetchAndSave(fetchBytes, serverUrl, volume, item.itemId);
+    }
+
+    // Trickplay manquant : récupérer le manifeste puis les planches.
+    //
+    // Le marqueur `trickplay.none` est ce qui empêche cette requête de
+    // repartir à CHAQUE démarrage pour chaque item que le serveur ne sait pas
+    // illustrer. Sans lui, un catalogue de cinquante films sans planches
+    // faisait cinquante appels au lancement, en série, à chaque fois.
+    if (
+      !trickplay.exists(volume, item.itemId) &&
+      !trickplay.noneRecently(volume, item.itemId, nowMs)
+    ) {
+      const itemJson = await fetchBytes(
+        `${serverUrl}/api/jellyfin/Items/${item.itemId}?fields=Trickplay`,
+        MAX_JSON_BYTES,
+      );
+      if (itemJson !== null) {
+        const msrc = firstMediaSourceId(db, item.itemId) ?? item.itemId;
+        const sheets = await trickplay.download(
+          fetchBytes,
+          serverUrl,
+          volume,
+          item.itemId,
+          msrc,
+          parseJson(itemJson),
+          nowMs,
+        );
+        touched = touched || sheets > 0;
+      }
+    }
+
+    if (item.subtitlesJson !== null) {
+      const specs = parseSpecs(item.subtitlesJson);
+      if (specs.length > 0) {
+        // `fetchAll` saute les fichiers déjà présents : rappeler est gratuit.
+        const fetched = await fetchAll(
+          fetchBytes,
+          serverUrl,
+          volume,
+          item.itemId,
+          item.mediaSourceId,
+          specs,
+        );
+        touched = touched || fetched > 0;
+      }
+    }
+
+    if (touched) healed += 1;
+  }
+
+  return healed;
+}

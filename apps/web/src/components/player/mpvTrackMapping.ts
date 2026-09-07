@@ -1,40 +1,16 @@
+import { LANGUAGE_CODE_GROUPS } from "@tentacle-tv/offline-core";
 import type { MpvTrack } from "../../hooks/useDesktopPlayer";
 
-// ── Comprehensive language code normalization ──
-// Handles ISO 639-1 (ja, fr), 639-2/B (fre, ger) and 639-2/T (fra, deu).
-// All variants for each language map to the same canonical (639-2/T) code.
-const LANG_NORM: Record<string, string> = {};
-/** Code canonique (639-2/T) → sous-tag primaire ISO 639-1, pour Intl.DisplayNames. */
-const LANG_PRIMARY: Record<string, string> = {};
-([
-  ["ja", "jpn"], ["fr", "fre", "fra"], ["en", "eng"], ["de", "ger", "deu"],
-  ["es", "spa"], ["it", "ita"], ["pt", "por"], ["ru", "rus"],
-  ["zh", "chi", "zho"], ["ko", "kor"], ["ar", "ara"], ["nl", "dut", "nld"],
-  ["pl", "pol"], ["cs", "cze", "ces"], ["hu", "hun"], ["ro", "rum", "ron"],
-  ["el", "gre", "ell"], ["tr", "tur"], ["he", "heb"], ["th", "tha"],
-  ["vi", "vie"], ["hi", "hin"], ["uk", "ukr"], ["sv", "swe"],
-  ["no", "nor"], ["da", "dan"], ["fi", "fin"], ["hr", "hrv"],
-  ["sk", "slo", "slk"], ["sr", "srp"], ["bg", "bul"], ["sl", "slv"],
-  ["is", "ice", "isl"], ["cy", "wel", "cym"], ["eu", "baq", "eus"],
-  ["sq", "alb", "sqi"], ["hy", "arm", "hye"], ["ka", "geo", "kat"],
-  ["mk", "mac", "mkd"], ["ms", "may", "msa"], ["my", "bur", "mya"],
-  ["fa", "per", "fas"], ["bo", "tib", "bod"], ["la", "lat"],
-  ["nb", "nob"], ["nn", "nno"], ["ta", "tam"], ["te", "tel"],
-] as string[][]).forEach(group => {
-  const canon = group[group.length - 1];
-  const primary = group[0]; // toujours le code ISO 639-1 dans ces groupes
-  group.forEach(c => { LANG_NORM[c] = canon; LANG_PRIMARY[c] = primary; });
-});
+export { primaryLangSubtag } from "@tentacle-tv/offline-core";
 
-/**
- * Sous-tag primaire à 2 lettres d'un code de langue (« fre »/« fra » → « fr »).
- * Intl.DisplayNames ne reconnaît pas les codes ISO 639-2/B que rend mpv.
- * null si le code est inconnu de la table.
- */
-export function primaryLangSubtag(code: string | undefined): string | null {
-  if (!code) return null;
-  const lower = code.toLowerCase();
-  return LANG_PRIMARY[lower] ?? (/^[a-z]{2}$/.test(lower) ? lower : null);
+// ── Normalisation des codes de langue ──
+// ISO 639-1 (ja, fr), 639-2/B (fre, ger) et 639-2/T (fra, deu) : toutes les
+// variantes d'une langue vont au même code canonique (639-2/T). La table vit
+// dans le cœur hors ligne, partagée avec le mobile.
+const LANG_NORM: Record<string, string> = {};
+for (const group of LANGUAGE_CODE_GROUPS) {
+  const canon = group[group.length - 1] ?? "";
+  for (const c of group) LANG_NORM[c] = canon;
 }
 
 /** Compare two language codes — normalizes all ISO 639 variants. */

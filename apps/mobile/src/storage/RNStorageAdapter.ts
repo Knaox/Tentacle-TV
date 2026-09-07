@@ -24,7 +24,16 @@ const STORAGE_KEYS = [
   // L'accusé du démarrage à froid des recommandations (par compte, sur cet
   // appareil) : lu au premier rendu de « Pour vous ».
   "tentacle_coldstart_ack",
+  // Le hors ligne — réglages D'APPAREIL, comme le thème (mêmes clés que le
+  // web) : mode hors ligne manuel, économie de données, notification « prêt »,
+  // accusé « continuer en données mobiles ». Les caches de langues et
+  // « Wi-Fi seulement » vivent, eux, dans la base locale du hors ligne.
+  "tentacle_offline_manual", "tentacle_data_saver", "tentacle_offline_notify_ready",
+  "tentacle_offline_cellular_ack",
 ];
+
+/** Délai avant le second essai de lecture du trousseau. */
+const SECURE_RETRY_MS = 300;
 
 /** Keys stored in Keychain via SecureStore instead of AsyncStorage. */
 const SECURE_KEYS = new Set(["tentacle_token", "tentacle_credentials"]);
@@ -39,6 +48,20 @@ try {
   SecureStore = require("expo-secure-store");
 } catch {
   // Native module not available (Expo Go) — fallback to AsyncStorage
+}
+
+/**
+ * Une lecture du trousseau peut échouer de façon passagère (Keystore pas prêt
+ * juste après le lancement) : un second essai avant de conclure, sinon la
+ * session paraît perdue alors que le jeton est bien sur le disque.
+ */
+async function readSecure(store: NonNullable<typeof SecureStore>, key: string): Promise<string | null> {
+  try {
+    return await store.getItemAsync(key);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, SECURE_RETRY_MS));
+    return store.getItemAsync(key);
+  }
 }
 
 /**
@@ -74,7 +97,7 @@ export class RNStorageAdapter implements StorageAdapter {
     if (SecureStore) {
       for (const key of SECURE_KEYS) {
         try {
-          const value = await SecureStore.getItemAsync(key);
+          const value = await readSecure(SecureStore, key);
           if (value != null) {
             diskValues.set(key, value);
             // Clean up legacy AsyncStorage entry

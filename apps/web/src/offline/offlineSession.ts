@@ -7,13 +7,9 @@
 import { invoke } from "../desktop/bridge";
 import { supportsOfflineSession } from "../desktop/bridge";
 
-export interface CachedSession {
-  profileJson: string;
-  policyJson: string | null;
-  cachedAt: number;
-  expiresAt: number;
-  expired: boolean;
-}
+import type { CachedSession } from "@tentacle-tv/offline-core";
+
+export type { CachedSession } from "@tentacle-tv/offline-core";
 
 export async function getCachedSession(userId: string): Promise<CachedSession | null> {
   if (!supportsOfflineSession()) return null;

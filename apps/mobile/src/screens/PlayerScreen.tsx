@@ -1,22 +1,22 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, StatusBar, Platform } from "react-native";
-import Video, { type VideoRef, SelectedTrackType } from "react-native-video";
+import { View, StatusBar } from "react-native";
+import type { VideoRef } from "react-native-video";
 import { PLAYER } from "@/theme";
-import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import { TICKS_PER_SECOND, itemTrackChoiceFromStreams } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
 import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
+import { useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
+import { useRememberLocalTracks } from "../hooks/offline/useRememberLocalTracks";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
-import { AirPlayIndicator } from "../components/player/AirPlayIndicator";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
 import { PlayerLoadingView } from "../components/player/PlayerLoadingView";
+import { PlayerVideoSurface } from "../components/player/PlayerVideoSurface";
 import { PlayerErrorView } from "../components/player/PlayerErrorView";
-import { PlayerGestures } from "../components/player/PlayerGestures";
-import { SubtitleOverlay } from "../components/player/SubtitleOverlay";
 
 interface Props { itemId: string }
 
@@ -111,6 +111,19 @@ export function PlayerScreen({ itemId }: Props) {
     onSubtitleResolved: (idx) => pb.changeSubtitle(idx),
   });
 
+  // Un changement EXPLICITE de piste est mémorisé pour ce contenu (miroir
+  // local, puis serveur) — des langues, jamais des index. La résolution
+  // automatique ci-dessus ne compte pas comme un choix.
+  const userId = useUserId();
+  const [trackOverride, setTrackOverride] = useState(false);
+  const handleSelectAudio = useCallback((idx: number) => { setTrackOverride(true); pb.changeAudio(idx); }, [pb.changeAudio]);
+  const handleSelectSubtitle = useCallback((idx: number) => { setTrackOverride(true); pb.changeSubtitle(idx); }, [pb.changeSubtitle]);
+  const trackChoice = useMemo(
+    () => (trackOverride ? itemTrackChoiceFromStreams(pb.streams, pb.audioIndex, pb.subtitleIndex) : null),
+    [trackOverride, pb.streams, pb.audioIndex, pb.subtitleIndex],
+  );
+  useRememberLocalTracks({ userId, itemId, choice: trackChoice });
+
   // Audio/subtitle track lists for the modal
   const audioTracks = useMemo(() =>
     pb.streams.filter((s) => s.Type === "Audio").map((s) => ({ index: s.Index, label: formatTrackLabel(s) })),
@@ -174,85 +187,33 @@ export function PlayerScreen({ itemId }: Props) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
-      <Video
-        ref={videoRef}
-        source={{
-          uri: pb.streamUrl,
-          // Auth headers — Android only (iOS uses cookies / query string token)
-          ...(Platform.OS === "android" && Object.keys(pb.headers).length > 0 ? { headers: pb.headers } : {}),
-          startPosition: pb.startPositionMs > 0 ? pb.startPositionMs : undefined,
-          // Sideloaded VTT tracks — Android only. iOS uses SubtitleOverlay to keep AirPlay working
-          // (sidecar textTracks create AVMutableComposition which force-disables external playback)
-          textTracks: pb.isDirectPlay && pb.textTracks.length > 0 && Platform.OS === "android"
-            ? pb.textTracks as any
-            : undefined,
-          // Help ExoPlayer identify HLS streams (Jellyfin URLs may lack .m3u8 extension)
-          ...(Platform.OS === "android" && !pb.isDirectPlay ? { type: "m3u8" } : {}),
-          // Now Playing metadata for lock screen / AirPlay / Control Center
-          metadata: { title: pb.item?.Name ?? "", artist: pb.item?.SeriesName ?? "" },
-        }}
-        style={{ flex: 1 }}
-        resizeMode="contain"
-        paused={paused}
-        // Android ExoPlayer buffer config — larger buffer for smoother playback
-        {...(Platform.OS === "android" ? {
-          bufferConfig: {
-            minBufferMs: 15000,
-            maxBufferMs: 50000,
-            bufferForPlaybackMs: 2500,
-            bufferForPlaybackAfterRebufferMs: 5000,
-          },
-        } : {})}
-        selectedAudioTrack={
-          pb.isDirectPlay && pb.audioTrackSelectedIndex >= 0
-            ? { type: SelectedTrackType.INDEX, value: pb.audioTrackSelectedIndex }
-            : undefined
-        }
-        selectedTextTrack={
-          // All subtitles handled by custom SubtitleOverlay — disable native tracks
-          videoReady ? { type: SelectedTrackType.DISABLED } : undefined
-        }
-        onLoad={handleLoad}
-        onProgress={handleProgress}
-        onEnd={handleEnd}
-        onError={handleError}
-        onBuffer={({ isBuffering: b }) => setIsBuffering(b)}
-        onReadyForDisplay={() => setIsBuffering(false)}
-        progressUpdateInterval={250}
-        preventsDisplaySleepDuringVideoPlayback
-        showNotificationControls={Platform.OS === "ios"}
-        allowsExternalPlayback={Platform.OS === "ios"}
-        onExternalPlaybackChange={({ isExternalPlaybackActive }) => {
-          setIsAirPlaying(isExternalPlaybackActive);
-          // Restore position when AirPlay activates (AVPlayer reloads the stream)
-          if (isExternalPlaybackActive && currentTime > 1) {
-            setTimeout(() => videoRef.current?.seek(currentTime), 500);
-          }
-        }}
-        // iOS: background playback + PiP for AirPlay continuity
-        {...(Platform.OS === "ios" ? {
-          playInBackground: true,
-          playWhenInactive: true,
-          enterPictureInPictureOnLeave: true,
-        } : {})}
-      />
-
-      <SubtitleOverlay vttUrl={pb.subtitleVttUrl} currentTime={currentTime} headers={pb.headers} />
-
-      {/* AirPlay active indicator */}
-      {isAirPlaying && <AirPlayIndicator />}
-
-      {isBuffering && !hasEverPlayed.current && <PlayerLoadingView />}
-
-      <PlayerGestures
-        currentTime={currentTime}
-        overlayVisible={overlayVisible}
-        onSeek={handleSeek}
-        onToggleOverlay={toggleOverlay}
-        onSwipeDown={leavePlayer}
-      />
-
+    <PlayerVideoSurface
+      videoRef={videoRef}
+      streamUrl={pb.streamUrl}
+      headers={pb.headers}
+      startPositionMs={pb.startPositionMs}
+      isDirectPlay={pb.isDirectPlay}
+      textTracks={pb.textTracks}
+      title={pb.item?.Name ?? ""}
+      artist={pb.item?.SeriesName ?? ""}
+      paused={paused}
+      audioTrackSelectedIndex={pb.audioTrackSelectedIndex}
+      videoReady={videoReady}
+      currentTime={currentTime}
+      subtitleVttUrl={pb.subtitleVttUrl}
+      isAirPlaying={isAirPlaying}
+      showLoading={isBuffering && !hasEverPlayed.current}
+      overlayVisible={overlayVisible}
+      onLoad={handleLoad}
+      onProgress={handleProgress}
+      onEnd={handleEnd}
+      onError={handleError}
+      onBuffering={setIsBuffering}
+      onExternalPlaybackChange={setIsAirPlaying}
+      onSeek={handleSeek}
+      onToggleOverlay={toggleOverlay}
+      onSwipeDown={leavePlayer}
+    >
       <MobilePlayerOverlay
         title={pb.item?.Name ?? ""}
         currentTime={currentTime}
@@ -274,8 +235,8 @@ export function PlayerScreen({ itemId }: Props) {
         onPlayPause={() => setPaused((p) => !p)}
         onSeek={handleSeek}
         onBack={leavePlayer}
-        onSelectAudio={pb.changeAudio}
-        onSelectSubtitle={pb.changeSubtitle}
+        onSelectAudio={handleSelectAudio}
+        onSelectSubtitle={handleSelectSubtitle}
         onSelectQuality={pb.changeQuality}
         onNextEpisode={handleNextEpisode}
         onPreviousEpisode={handlePrevEpisode}
@@ -286,6 +247,6 @@ export function PlayerScreen({ itemId }: Props) {
 
       {/* Badge éphémère « Qualité réduite » — le message temporaire du cap. */}
       <AutoCapBadge active={pb.autoCapActive} />
-    </View>
+    </PlayerVideoSurface>
   );
 }

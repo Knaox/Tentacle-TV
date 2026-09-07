@@ -25,116 +25,7 @@ vi.mock("../src/services/db", () => ({
 
 import { downloadRoutes } from "../src/routes/downloads";
 import { clearPolicyCache } from "../src/services/jellyfinPolicy";
-
-const LIB_A_DASHED = "1111aaaa-bbbb-cccc-dddd-eeeeffff0000";
-const LIB_A_PLAIN = "1111aaaabbbbccccddddeeeeffff0000";
-const LIB_B_PLAIN = "2222aaaabbbbccccddddeeeeffff0000";
-const ITEM_IN_A = "a".repeat(32);
-const ITEM_IN_B = "b".repeat(32);
-
-interface FakePolicy {
-  EnableContentDownloading: boolean;
-  EnableMediaConversion: boolean;
-  EnableVideoPlaybackTranscoding: boolean;
-  EnableAudioPlaybackTranscoding: boolean;
-  EnablePlaybackRemuxing: boolean;
-  EnableAllFolders: boolean;
-  EnabledFolders: string[];
-  BlockedMediaFolders: string[] | null;
-}
-
-const basePolicy: FakePolicy = {
-  EnableContentDownloading: true,
-  EnableMediaConversion: true,
-  EnableVideoPlaybackTranscoding: true,
-  EnableAudioPlaybackTranscoding: true,
-  EnablePlaybackRemuxing: true,
-  EnableAllFolders: true,
-  EnabledFolders: [],
-  BlockedMediaFolders: null,
-};
-
-const POLICIES: Record<string, FakePolicy> = {
-  "tok-full": { ...basePolicy },
-  "tok-nodl": { ...basePolicy, EnableContentDownloading: false },
-  "tok-noconv": { ...basePolicy, EnableMediaConversion: false },
-  "tok-scoped": {
-    ...basePolicy,
-    EnableAllFolders: false,
-    // Forme AVEC tirets côté policy, SANS tirets côté ancêtres → doit matcher.
-    EnabledFolders: [LIB_A_DASHED],
-  },
-  "tok-blocked": { ...basePolicy, BlockedMediaFolders: [LIB_A_PLAIN] },
-};
-
-function tokenFromHeaders(headers: Headers): string | null {
-  const emby = headers.get("x-emby-token");
-  if (emby) return emby;
-  const auth = headers.get("authorization") ?? "";
-  const match = auth.match(/Token="([^"]+)"/);
-  return match ? match[1] : null;
-}
-
-/** Dernière URL de stream Allégé reçue par le faux Jellyfin (assertions). */
-let lastStreamUrl = "";
-
-function fakeJellyfin(input: RequestInfo | URL, init?: RequestInit): Response {
-  const url = String(input);
-  const headers = new Headers(init?.headers);
-  const token = tokenFromHeaders(headers);
-  const policy = token ? POLICIES[token] : undefined;
-
-  if (url.includes("/stream.mp4")) {
-    if (!policy) return new Response("", { status: 401 });
-    lastStreamUrl = url;
-    return new Response("LIGHTDATA", {
-      status: 200,
-      headers: { "content-type": "video/mp4" },
-    });
-  }
-
-  if (url.includes("/Users/Me")) {
-    if (!policy) return new Response("", { status: 401 });
-    return Response.json({ Id: `user-${token}`, Name: token, Policy: policy });
-  }
-
-  if (url.includes("/Ancestors")) {
-    if (!policy) return new Response("", { status: 401 });
-    const lib = url.includes(ITEM_IN_A) ? LIB_A_PLAIN : LIB_B_PLAIN;
-    return Response.json([
-      { Id: "season-1", Type: "Season" },
-      { Id: "series-1", Type: "Series" },
-      { Id: lib, Type: "CollectionFolder" },
-    ]);
-  }
-
-  if (url.includes("/Download")) {
-    if (!policy?.EnableContentDownloading) return new Response("", { status: 403 });
-    const range = headers.get("range");
-    if (range) {
-      return new Response("KEDA", {
-        status: 206,
-        headers: {
-          "content-type": "video/x-matroska",
-          "content-length": "4",
-          "content-range": "bytes 2-5/8",
-          "accept-ranges": "bytes",
-        },
-      });
-    }
-    return new Response("FAKEDATA", {
-      status: 200,
-      headers: {
-        "content-type": "video/x-matroska",
-        "content-length": "8",
-        "accept-ranges": "bytes",
-        "content-disposition": 'attachment; filename="film.mkv"',
-      },
-    });
-  }
-
-  return new Response("", { status: 404 });
-}
+import { fakeJellyfin, ITEM_IN_A, ITEM_IN_B, streamCapture } from "./fakeJellyfinDownloads";
 
 async function buildApp() {
   const app = Fastify();
@@ -161,7 +52,11 @@ describe("GET /api/downloads/capabilities", () => {
       headers: { authorization: "Bearer tok-full" },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ downloads: true, lightDownloads: true });
+    expect(res.json()).toEqual({
+      downloads: true,
+      lightDownloads: true,
+      lightPresets: ["p1080", "p720", "p480", "pmax"],
+    });
   });
 
   it("sans droit de téléchargement → tout à false (indiscernable d'une feature éteinte)", async () => {
@@ -170,7 +65,7 @@ describe("GET /api/downloads/capabilities", () => {
       url: "/api/downloads/capabilities",
       headers: { authorization: "Bearer tok-nodl" },
     });
-    expect(res.json()).toEqual({ downloads: false, lightDownloads: false });
+    expect(res.json()).toEqual({ downloads: false, lightDownloads: false, lightPresets: [] });
   });
 
   it("téléchargement OK mais conversion refusée → lightDownloads false", async () => {
@@ -179,7 +74,7 @@ describe("GET /api/downloads/capabilities", () => {
       url: "/api/downloads/capabilities",
       headers: { authorization: "Bearer tok-noconv" },
     });
-    expect(res.json()).toEqual({ downloads: true, lightDownloads: false });
+    expect(res.json()).toEqual({ downloads: true, lightDownloads: false, lightPresets: [] });
   });
 
   it("sans token → 401 du middleware (uniforme app-wide)", async () => {
@@ -269,12 +164,12 @@ describe("GET /api/downloads/light/:itemId", () => {
     expect(res.body).toBe("LIGHTDATA");
     expect(res.headers["x-tentacle-play-session"]).toBeTruthy();
     expect(res.headers["x-tentacle-device-id"]).toContain("tentacle-dl-");
-    expect(lastStreamUrl).toContain("static=false");
-    expect(lastStreamUrl).toContain("videoCodec=h264");
-    expect(lastStreamUrl).toContain("videoBitRate=4000000");
-    expect(lastStreamUrl).toContain("maxHeight=720");
-    expect(lastStreamUrl).toContain("audioStreamIndex=2");
-    expect(lastStreamUrl).not.toContain("subtitleMethod");
+    expect(streamCapture.lastUrl).toContain("static=false");
+    expect(streamCapture.lastUrl).toContain("videoCodec=h264");
+    expect(streamCapture.lastUrl).toContain("videoBitRate=4000000");
+    expect(streamCapture.lastUrl).toContain("maxHeight=720");
+    expect(streamCapture.lastUrl).toContain("audioStreamIndex=2");
+    expect(streamCapture.lastUrl).not.toContain("subtitleMethod");
   });
 
   it("burn-in demandé → subtitleStreamIndex + subtitleMethod=Encode transmis", async () => {
@@ -284,8 +179,8 @@ describe("GET /api/downloads/light/:itemId", () => {
       headers: { authorization: "Bearer tok-full" },
     });
     expect(res.statusCode).toBe(200);
-    expect(lastStreamUrl).toContain("subtitleStreamIndex=5");
-    expect(lastStreamUrl).toContain("subtitleMethod=Encode");
+    expect(streamCapture.lastUrl).toContain("subtitleStreamIndex=5");
+    expect(streamCapture.lastUrl).toContain("subtitleMethod=Encode");
   });
 
   it("sans droit de conversion → 404 générique (même avec droit de téléchargement)", async () => {

@@ -7,6 +7,12 @@ import { NotificationBell } from "./NotificationBell";
 import { TentacleLogo } from "./TentacleLogo";
 import { GlassSurface } from "@/components/ui";
 import { useScrollChromeValue } from "@/components/navigation/scrollChrome";
+import { ConnectivityPill } from "@/offline/ConnectivityPill";
+import { DataSaverPill } from "@/offline/DataSaverPill";
+import { OnDeviceHeaderButton } from "@/offline/entry/OnDeviceHeaderButton";
+import { useConnectivity } from "@/offline/useConnectivity";
+import { useDataSaverActive } from "@/offline/useDataSaver";
+import { useOfflineMode } from "@/offline/useOfflineMode";
 import { spacing, useTheme, withAlpha } from "@/theme";
 
 /** Hauteur de la barre de contenu du header (hors safe-area). */
@@ -39,6 +45,14 @@ export function PersistentHeader() {
   const router = useRouter();
   const theme = useTheme();
   const { colors } = theme;
+  // Hors ligne, la pastille prend la place du titre — le logo reste — et, dès
+  // que la navigation locale s'impose, les actions serveur s'effacent.
+  const { state } = useConnectivity();
+  const offline = state === "offline-auto" || state === "offline-manual";
+  const localNav = useOfflineMode();
+  // En ligne, la pastille « Économie » prend elle aussi la place du titre :
+  // l'en-tête d'un petit iPhone n'a pas la place pour les deux.
+  const saver = useDataSaverActive();
 
   // Compaction au défilement : la barre remonte de huit points, et c'est tout —
   // le logo, le titre et les actions restent visibles (demandé : l'identité ne
@@ -65,21 +79,36 @@ export function PersistentHeader() {
       <View style={[styles.bar, { paddingTop: Math.max(insets.top, 24) + 4 }]}>
         <View style={styles.logoRow}>
           <TentacleLogo size={28} />
-          <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
+          {offline ? (
+            <ConnectivityPill variant="header" />
+          ) : saver ? (
+            <DataSaverPill />
+          ) : (
+            <Text style={[styles.title, { color: colors.text.primary }]}>Tentacle TV</Text>
+          )}
         </View>
 
-        <View style={styles.actions}>
-          <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
-            <Feather name="bookmark" size={20} color={colors.text.primary} />
-          </Pressable>
-          <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
-            <Feather name="heart" size={20} color={colors.text.primary} />
-          </Pressable>
-          <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
-            <Feather name="search" size={20} color={colors.text.primary} />
-          </Pressable>
-          <NotificationBell />
-        </View>
+        {/* Hors ligne, les actions serveur (listes, recherche, cloche) n'ont
+            rien à ouvrir : elles disparaissent ; seule la gestion locale reste. */}
+        {localNav ? (
+          <View style={styles.actions}>
+            <OnDeviceHeaderButton />
+          </View>
+        ) : (
+          <View style={styles.actions}>
+            <OnDeviceHeaderButton />
+            <Pressable onPress={() => router.push("/watchlist")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Watchlist">
+              <Feather name="bookmark" size={20} color={colors.text.primary} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/favorites")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Favorites">
+              <Feather name="heart" size={20} color={colors.text.primary} />
+            </Pressable>
+            <Pressable onPress={() => router.push("/search")} hitSlop={8} accessibilityRole="button" accessibilityLabel="Search">
+              <Feather name="search" size={20} color={colors.text.primary} />
+            </Pressable>
+            <NotificationBell />
+          </View>
+        )}
       </View>
       <View style={[styles.hairline, { backgroundColor: withAlpha(colors.brand.violet, 0.12, colors.brand.soft) }]} />
     </GlassSurface>

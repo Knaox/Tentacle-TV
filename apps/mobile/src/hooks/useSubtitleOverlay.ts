@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { parseVttCues } from "@tentacle-tv/shared";
 import type { SubtitleCue } from "@tentacle-tv/shared";
+import { readLocalText } from "@/offline/engineApi";
 
 /**
  * Fetch a VTT subtitle file and return the active cue based on playback time.
@@ -22,6 +23,13 @@ export function useSubtitleOverlay(
     cuesRef.current = [];
     setCurrentCue(null);
     if (!vttUrl) return;
+
+    // Side-car local : lu sur le disque — `fetch("file://")` n'est pas fiable sur Android.
+    if (vttUrl.startsWith("file://")) {
+      const text = readLocalText(vttUrl);
+      if (text !== null) cuesRef.current = parseVttCues(text);
+      return;
+    }
 
     const controller = new AbortController();
 

@@ -11,12 +11,12 @@
  */
 
 import { z } from "zod";
-import { downloadsEngine, downloadsRoot } from "../downloadsRuntime";
-import { enqueueBatch, type EnqueueItem } from "../downloads/enqueue";
-import { backfill } from "../downloads/episodeNumbers";
-import { listForUser, setAutoDelete, stateForItem } from "../downloads/listing";
-import { freeSpace } from "../downloads/paths";
-import { deleteClaim } from "../downloads/store";
+import { downloadsEngine, downloadsVolume } from "../downloadsRuntime";
+import { enqueueBatch, normalizeEnqueueItem } from "../downloads/core/enqueue";
+import { backfill } from "../downloads/core/episodeNumbers";
+import { listForUser, setAutoDelete, stateForItem } from "../downloads/core/listing";
+import { freeSpace } from "../downloads/core/paths";
+import { deleteClaim } from "../downloads/core/store";
 import { localDb } from "../localDb";
 import { CommandRegistry } from "./registry";
 
@@ -38,26 +38,23 @@ const AUTO_DELETE = z.object({
 
 const SUBTITLE = z.object({
   index: z.number().int(),
-  format: z.string(),
+  format: z.enum(["srt", "ass", "vtt"]),
   langTag: z.string(),
 });
 
 /**
- * Un item du lot.
- *
- * Les champs absents deviennent `null` et non `undefined` : `node:sqlite`
- * refuse `undefined` à la liaison, et le compilateur nous le dirait — autant
- * normaliser une fois ici plutôt qu'à chaque usage.
+ * Un item du lot. La forme est celle de `EnqueueItemInput` du cœur, qui
+ * normalise ensuite les absents en `null` (la base refuse `undefined`).
  */
 const ITEM = z.object({
   itemId: z.string(),
   mediaSourceId: z.string(),
-  variant: z.string(),
+  variant: z.enum(["original", "light"]),
   preset: z.string().nullish(),
   containerExt: z.string(),
   expectedSize: z.number().nullish(),
   estimatedSize: z.number().nullish(),
-  kind: z.string(),
+  kind: z.enum(["movie", "episode"]),
   seriesId: z.string().nullish(),
   seasonId: z.string().nullish(),
   libraryId: z.string().nullish(),
@@ -79,32 +76,6 @@ const ENQUEUE = z.object({
   token: z.string().min(1),
   items: z.array(ITEM),
 });
-
-function normalize(raw: z.infer<typeof ITEM>): EnqueueItem {
-  return {
-    itemId: raw.itemId,
-    mediaSourceId: raw.mediaSourceId,
-    variant: raw.variant,
-    preset: raw.preset ?? null,
-    containerExt: raw.containerExt,
-    expectedSize: raw.expectedSize ?? null,
-    estimatedSize: raw.estimatedSize ?? null,
-    kind: raw.kind,
-    seriesId: raw.seriesId ?? null,
-    seasonId: raw.seasonId ?? null,
-    libraryId: raw.libraryId ?? null,
-    runtimeTicks: raw.runtimeTicks ?? null,
-    title: raw.title ?? null,
-    seriesName: raw.seriesName ?? null,
-    indexNumber: raw.indexNumber ?? null,
-    parentIndexNumber: raw.parentIndexNumber ?? null,
-    autoDeleteAfterWatch: raw.autoDeleteAfterWatch,
-    autoDeleteDelayMinutes: raw.autoDeleteDelayMinutes ?? 0,
-    audioStreamIndex: raw.audioStreamIndex ?? null,
-    burnSubtitleIndex: raw.burnSubtitleIndex ?? null,
-    subtitles: raw.subtitles ?? null,
-  };
-}
 
 /**
  * Rattrapage des numéros d'épisode : une seule fois par session, à la première
@@ -130,8 +101,8 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
         const outcome = enqueueBatch(
           localDb(),
           userId,
-          items.map(normalize),
-          freeSpace(downloadsRoot()),
+          items.map(normalizeEnqueueItem),
+          freeSpace(downloadsVolume()),
           Date.now(),
         );
         if (outcome.accepted) {
@@ -154,7 +125,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
           engine.cancel(fileId);
           await engine.waitNotActive(fileId, 5_000);
         }
-        const outcome = deleteClaim(localDb(), downloadsRoot(), userId, fileId);
+        const outcome = deleteClaim(localDb(), downloadsVolume(), userId, fileId);
         engine.notifyChanged();
         return outcome;
       },
@@ -178,7 +149,7 @@ export function registerDownloadsEngineCommands(registry: CommandRegistry): void
         if (!backfillDone) {
           backfillDone = true;
           try {
-            backfill(db, downloadsRoot());
+            backfill(db, downloadsVolume());
           } catch {
             // Racine indisponible : les numéros manqueront, la liste sera là.
           }

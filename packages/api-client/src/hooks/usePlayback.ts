@@ -21,6 +21,19 @@ export interface PlaybackReportingOptions {
   localPlayback?: boolean;
 }
 
+/**
+ * Ce qu'un lecteur attend de son rapporteur — le serveur (`usePlaybackReporting`)
+ * comme le fichier local (progression en SQLite, un seul envoi à la sortie).
+ */
+export interface PlaybackReporter {
+  reportStart: (initialPositionSeconds?: number) => void;
+  updatePosition: (seconds: number, isPaused: boolean) => void;
+  reportSeek: (seconds: number, isPaused: boolean) => void;
+  reportStop: () => Promise<void>;
+  /** Promesse du DERNIER arrêt réellement posté ; le rangement de sortie s'y enchaîne. */
+  lastStopPromiseRef: { current: Promise<void> };
+}
+
 export function usePlaybackReporting({
   itemId, mediaSourceId, isDirectPlay, isDirectStream,
   playSessionId, audioStreamIndex, subtitleStreamIndex, localPlayback,

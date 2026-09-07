@@ -15,11 +15,16 @@ import { supportsDownloads } from "../desktop/bridge";
 import { deleteDownload, setAutoDeleteAfterWatch, type DownloadEntry } from "./api";
 import { DownloadRow } from "./DownloadRow";
 import { DownloadsBulkBar } from "./DownloadsBulkBar";
-import { toggle as toggleOne, prune, state as selectionState, toggleAll } from "./selection";
+import {
+  pruneSelection as prune,
+  selectionState,
+  toggleAllSelection as toggleAll,
+  toggleSelection as toggleOne,
+} from "@tentacle-tv/offline-core";
 import { DownloadsSpaceBar } from "./DownloadsSpaceBar";
 import { DeleteDownloadModal } from "./DeleteDownloadModal";
 import { useDownloadsList, useDownloadsVisibility, DOWNLOADS_LIST_QUERY_KEY, DOWNLOAD_STATE_QUERY_KEY, DISK_INFO_QUERY_KEY } from "./useDownloadState";
-import { clearProgress } from "./progressStore";
+import { clearProgress } from "@tentacle-tv/offline-core/react";
 
 const ACTIVE = new Set(["queued", "downloading", "paused", "error"]);
 

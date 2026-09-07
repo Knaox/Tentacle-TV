@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Sauvegarde automatique, Android 11 et avant. Les préférences partagées sont
+  gardées (sauf le SecureStore, comme chez expo-secure-store) ; les titres
+  hors ligne (`files/offline`) sont ÉCARTÉS : ils se re-transfèrent depuis
+  le serveur et dépasseraient de toute façon le quota de 25 Mio.
+-->
+<full-backup-content>
+  <include domain="sharedpref" path="."/>
+  <exclude domain="sharedpref" path="SecureStore"/>
+  <exclude domain="file" path="offline"/>
+</full-backup-content>

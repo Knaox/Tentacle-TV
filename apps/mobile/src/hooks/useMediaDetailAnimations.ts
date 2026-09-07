@@ -52,5 +52,6 @@ export function useMediaDetailAnimations(itemId: string, item: MediaItem | undef
   const actionsStyle = useAnimatedStyle(() => ({ opacity: actionsAnim.value, transform: [{ translateY: (1 - actionsAnim.value) * 14 }] }));
   const contentStyle = useAnimatedStyle(() => ({ opacity: contentAnim.value }));
 
-  return { scrollHandler, backdropStyle, posterStyle, titleStyle, metaStyle, actionsStyle, contentStyle };
+  // `scrollY` sort d'ici : la barre haute s'y accroche pour se solidifier.
+  return { scrollY, scrollHandler, backdropStyle, posterStyle, titleStyle, metaStyle, actionsStyle, contentStyle };
 }

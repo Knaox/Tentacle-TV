@@ -86,6 +86,10 @@ export default {
   showMore: "Show more",
   showLess: "Show less",
   cast: "Cast",
+  director: "Director",
+  writer: "Writer",
+  producer: "Producer",
+  composer: "Composer",
   crew: "Crew",
   trailer: "Trailer",
   watchTrailer: "Watch trailer",
@@ -127,6 +131,9 @@ export default {
   removeFromMyList: "Remove from My List",
   addToFavorites: "Add to Favorites",
   removeFromFavorites: "Remove from Favorites",
+  // États « déjà fait » de la feuille d'appui long du mobile.
+  inFavorites: "In Favorites",
+  inMyList: "In My List",
   // Action shortcuts (short labels ≤ 2 words — toggle via color)
   actionFavorite: "Favorites",
   actionMyList: "My List",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -7,6 +7,8 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient, useTentacleConfig } from "@tentacle-tv/api-client";
 import { FONT_FAMILY, SHADOW_RN, useTheme, useThemedStyles, type AppTheme } from "../../theme";
+import { useOfflineMode } from "@/offline/useOfflineMode";
+import { cachedAvatarUri, syncAvatarCache } from "@/offline/avatarCache";
 
 interface JellyfinUser {
   Id: string;
@@ -34,15 +36,22 @@ export function ProfileAvatar({ user, initial }: Props) {
   const { storage } = useTentacleConfig();
   const [tag, setTag] = useState<string | null>(user?.PrimaryImageTag ?? null);
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const offline = useOfflineMode();
 
   const serverUrl = storage.getItem("tentacle_server_url") ?? "";
   const jfBase = serverUrl ? `${serverUrl}/api/jellyfin` : "";
   const photoUrl = user && tag && jfBase
     ? `${jfBase}/Users/${user.Id}/Images/Primary?tag=${encodeURIComponent(tag)}&quality=90&maxWidth=200`
     : null;
+  // Hors ligne — ou dès que Jellyfin ne répond pas — la copie locale prend le
+  // relais : perdre son visage au premier tunnel donne l'impression d'être déconnecté.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `tag` : re-résolution après un envoi
+  const cachedUri = useMemo(() => (user ? cachedAvatarUri(user.Id) : null), [user, tag]);
+  const shownUri = offline || failed ? cachedUri : (photoUrl ?? cachedUri);
 
   const pickAndUpload = async () => {
-    if (!user || !jfBase || busy) return;
+    if (!user || !jfBase || busy || offline) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert(t("photoErrorTitle"), t("photoPermissionMessage"));
@@ -76,6 +85,9 @@ export function ProfileAvatar({ user, initial }: Props) {
       const fresh = await client.fetch<JellyfinUser>(`/Users/${user.Id}`);
       storage.setItem("tentacle_user", JSON.stringify(fresh));
       setTag(fresh.PrimaryImageTag ?? `${Date.now()}`);
+      setFailed(false);
+      const token = storage.getItem("tentacle_token");
+      if (token) syncAvatarCache(user.Id, serverUrl, token, storage);
     } catch {
       Alert.alert(t("photoErrorTitle"), t("photoErrorMessage"));
     } finally {
@@ -86,13 +98,13 @@ export function ProfileAvatar({ user, initial }: Props) {
   return (
     <Pressable
       onPress={pickAndUpload}
-      disabled={busy}
+      disabled={busy || offline}
       accessibilityRole="button"
       accessibilityLabel={t("changePhoto")}
       style={({ pressed }) => [pressed && { opacity: 0.85 }]}
     >
-      {photoUrl ? (
-        <Image source={{ uri: photoUrl }} style={st.photo} contentFit="cover" transition={200} />
+      {shownUri ? (
+        <Image source={{ uri: shownUri }} style={st.photo} contentFit="cover" transition={200} onError={() => setFailed(true)} />
       ) : (
         <LinearGradient
           colors={[theme.colors.brand.dark, theme.colors.brand.violet, theme.colors.brand.light]}
