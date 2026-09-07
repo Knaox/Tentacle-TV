@@ -58,6 +58,15 @@ export function isPausedByUser(db: DatabaseHandle, fileId: number): boolean {
   return row !== undefined && integer(row, "paused_by_user") !== 0;
 }
 
+/**
+ * Étape hors téléchargement du fichier : `null`, ou `'finalize'` quand le média
+ * est reçu et n'attend plus que son remux. Écrite AVANT l'appel natif, elle
+ * survit à un arrêt de l'application — c'est ce qui évite de retélécharger.
+ */
+export function setPhase(db: DatabaseHandle, fileId: number, phase: string | null, nowMs: number): void {
+  db.prepare("UPDATE files SET phase = ?, updated_at = ? WHERE id = ?").run(phase, nowMs, fileId);
+}
+
 export function setBytesDone(
   db: DatabaseHandle,
   fileId: number,
