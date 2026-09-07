@@ -20,7 +20,7 @@
  */
 
 import type { EngineDeps } from "./engineDeps";
-import { applyEnd, runFinalize } from "./engineEnd";
+import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
 import {
   countQueued,
   getFile,
@@ -29,10 +29,12 @@ import {
   requeueSystemPauses,
   setBytesDone,
   setPausedByUser,
+  setPhase,
   setStatus,
   suspendQueued,
 } from "./queue";
 import { removeMediaFile } from "./paths";
+import type { FileRow } from "./store";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
 
@@ -142,8 +144,16 @@ export class DownloadEngine {
   private async work(creds: Creds, fileId: number, flags: TransferFlags): Promise<void> {
     const file = getFile(this.deps.db, fileId);
     let end: TransferEnd;
+    const received =
+      file === null || this.deps.finalizeMedia === undefined
+        ? null
+        : mediaAwaitingFinalize(this.deps.db, this.deps.volume(), file, this.deps.now());
     if (file === null) {
       end = { kind: "failed", code: "io", bytesDone: 0 };
+    } else if (received !== null) {
+      // Média entièrement reçu, seul le remux avait échoué : on le retente, et
+      // rien ne repart sur le réseau.
+      end = await this.finalize(file, received);
     } else {
       try {
         end = await runWorker(
@@ -165,12 +175,23 @@ export class DownloadEngine {
         // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
         end = { kind: "failed", code: "io", bytesDone: file.bytesDone };
       }
-      const finalizeMedia = this.deps.finalizeMedia;
-      if (end.kind === "complete" && file.variant === "light" && finalizeMedia !== undefined) {
-        end = await runFinalize(this.deps.volume(), finalizeMedia, file, end.finalSize);
+      if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
+        end = await this.finalize(file, end.finalSize);
       }
     }
     this.finish(fileId, end);
+  }
+
+  private finalize(file: FileRow, finalSize: number): Promise<TransferEnd> {
+    return runFinalize(
+      this.deps.db,
+      this.deps.volume(),
+      file.id,
+      this.deps.finalizeMedia!,
+      file,
+      finalSize,
+      this.deps.now(),
+    );
   }
 
   private progress(fileId: number, bytes: number, expectedSize: number | null): void {
@@ -253,6 +274,8 @@ export class DownloadEngine {
     if (file !== null) {
       removeMediaFile(this.deps.volume(), file.relPath);
       setBytesDone(this.deps.db, fileId, 0, this.deps.now());
+      // Le média part avec l'annulation : plus rien à finaliser.
+      setPhase(this.deps.db, fileId, null, this.deps.now());
       setStatus(this.deps.db, fileId, "canceled", null, this.deps.now());
     }
     this.notifyChanged();

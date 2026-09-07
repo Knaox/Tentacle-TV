@@ -17,7 +17,8 @@ import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
 import path from "node:path";
 import { claimOrCreateFile } from "./store";
-import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed, spec } from "./testkit";
+import type { TransferNet } from "./transferNet";
+import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed, spec, writeMedia } from "./testkit";
 
 describe("parallelisme", () => {
   it("n'ouvre qu'un seul transfert a la fois", async () => {
@@ -76,14 +77,19 @@ describe("traduction des fins de transfert", () => {
     });
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Les deux se suivent, et le remux s'intercale : on attend le second.
+    await vi.waitFor(() => {
+      expect(getFile(db, original)?.status).toBe("complete");
+    });
 
     expect(finalized).toEqual([path.join(root, "media", "item1", "light-ms1-p480.mp4")]);
     expect(getFile(db, light)?.status).toBe("complete");
-    expect(getFile(db, original)?.status).toBe("complete");
   });
 
-  it("une finalisation qui echoue laisse le fichier Allege en erreur, pas en complete", async () => {
+  // Le media est deja renomme en fichier final quand le remux part : un remux
+  // rate laisse donc un fichier COMPLET sur le disque. Le perdre couterait des
+  // centaines de megaoctets a retelecharger.
+  it("une finalisation qui echoue garde le media recu et retient la phase", async () => {
     const db = openInMemory();
     const root = rootWithThreeItems();
     const light = claimOrCreateFile(db, spec({
@@ -96,7 +102,83 @@ describe("traduction des fins de transfert", () => {
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 30));
 
-    expect(getFile(db, light)?.status).toBe("error");
+    const file = getFile(db, light);
+    expect(file?.status).toBe("error");
+    expect(file?.errorCode).toBe("finalize");
+    expect(file?.phase).toBe("finalize");
+    // La taille REELLE du fichier recu, pas la valeur lue en debut de travail.
+    expect(file?.bytesDone).toBe(3);
+  });
+
+  it("reprendre une finalisation ratee ne retelecharge rien", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath: "media/item1/light-ms1-p480.mp4", expectedSize: null,
+    })).fileId;
+    let opened = 0;
+    let remuxRate = true;
+    const net: TransferNet = {
+      async open() {
+        opened += 1;
+        return {
+          status: 200,
+          header: () => null,
+          chunks: (async function* () { yield new Uint8Array([1, 2, 3]); })(),
+        };
+      },
+      async killTranscode() { /* rien */ },
+    };
+    const { engine } = makeEngine(db, root, net, {
+      finalizeMedia: async () => {
+        if (remuxRate) throw new Error("remux impossible");
+      },
+    });
+
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, light)?.status).toBe("error");
+    });
+    expect(opened).toBe(1);
+
+    remuxRate = false;
+    engine.resume(light);
+    await vi.waitFor(() => {
+      expect(getFile(db, light)?.status).toBe("complete");
+    });
+
+    // Aucun second flux : seule la finalisation a rejoue.
+    expect(opened).toBe(1);
+    expect(getFile(db, light)?.phase).toBeNull();
+  });
+
+  it("une finalisation interrompue par un arret de l'application se termine au redemarrage", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath: "media/item1/light-ms1-p480.mp4", expectedSize: null,
+    })).fileId;
+    // L'etat laisse par un processus tue en plein remux : le media est la, le
+    // statut est reste `downloading`, la phase dit ce qu'il restait a faire.
+    writeMedia(root, "media/item1/light-ms1-p480.mp4", "media complete");
+    db.prepare("UPDATE files SET status = 'downloading', phase = 'finalize' WHERE id = ?").run(light);
+    let opened = 0;
+    const net: TransferNet = {
+      async open() {
+        opened += 1;
+        throw new Error("le reseau ne doit pas etre sollicite");
+      },
+      async killTranscode() { /* rien */ },
+    };
+    const { engine } = makeEngine(db, root, net, { finalizeMedia: async () => { /* remux reussi */ } });
+
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, light)?.status).toBe("complete");
+    });
+
+    expect(opened).toBe(0);
+    expect(getFile(db, light)?.bytesDone).toBe("media complete".length);
   });
 
   it("une coupure reseau devient une pause SYSTEME, pas une erreur", async () => {

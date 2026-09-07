@@ -83,7 +83,11 @@ export type TransferEnd =
   | { kind: "paused"; bytesDone: number }
   | { kind: "canceled" }
   /** Codes STABLES, consommés par l'interface. */
-  | { kind: "failed"; code: "network" | "disk-full" | "integrity" | "unavailable" | "io"; bytesDone: number };
+  | {
+      kind: "failed";
+      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize";
+      bytesDone: number;
+    };
 
 export interface TransferJob {
   url: string;
