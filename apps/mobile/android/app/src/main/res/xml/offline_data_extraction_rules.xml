@@ -2,18 +2,18 @@
 
 <!--
   Sauvegarde automatique et transfert d'appareil, Android 12 et après. Mêmes
-  règles que `offline_backup_rules.xml` : préférences gardées, SecureStore et
-  titres hors ligne (`files/offline`) écartés.
+  règles que `offline_backup_rules.xml` : préférences gardées, SecureStore
+  écarté, et les titres hors ligne (`files/offline`) hors sauvegarde du seul
+  fait qu'aucun `<include>` ne nomme le domaine `file` — voir le commentaire
+  de l'autre fichier, le lint refuse de l'écrire autrement.
 -->
 <data-extraction-rules>
   <cloud-backup>
     <include domain="sharedpref" path="."/>
     <exclude domain="sharedpref" path="SecureStore"/>
-    <exclude domain="file" path="offline"/>
   </cloud-backup>
   <device-transfer>
     <include domain="sharedpref" path="."/>
     <exclude domain="sharedpref" path="SecureStore"/>
-    <exclude domain="file" path="offline"/>
   </device-transfer>
 </data-extraction-rules>
