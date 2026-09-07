@@ -19,9 +19,17 @@ import {
   type EngineEvent,
   type FinalizeVerdict,
   type ProgressPayload,
+  runningFileIds,
+  userPausedFileIds,
 } from "@tentacle-tv/offline-core";
 import { finalizeMp4, setExcludedFromBackup } from "../../modules/offline-storage";
-import { onEngineBusy, onEngineProgress, onEngineQueueChanged, stopBackgroundTransfers } from "./backgroundTransfers";
+import {
+  onEngineBusy,
+  onEngineProgress,
+  onEngineQueueChanged,
+  setPauseAllHandler,
+  stopBackgroundTransfers,
+} from "./backgroundTransfers";
 import { isOfflineMode } from "./connectivityStore";
 import { localDb } from "./database";
 import { nowPlayingItemId } from "./nowPlaying";
@@ -134,6 +142,9 @@ export function offlineEngine(): DownloadEngine {
       console.warn(`[transferts] ${context} : ${String(error)}`);
     },
     onStarted: (started) => {
+      // Le bouton « Pause » de la notification passe par ici : le module des
+      // transferts d'arrière-plan reçoit le geste, il ne va pas le chercher.
+      setPauseAllHandler(pauseAllTransfers);
       startPeriodicPurge();
       // Le disque, lui, est toujours là : ces deux passes tournent même hors
       // ligne, contrairement à `heal` qui a besoin du serveur.
@@ -143,6 +154,27 @@ export function offlineEngine(): DownloadEngine {
     },
   });
   return engine;
+}
+
+/**
+ * « Tout mettre en pause » — le bouton de la notification et celui de l'écran
+ * de gestion. Une pause EXPLICITE, fichier par fichier : elle survit au retour
+ * du réseau, contrairement à la pause système, et ne se relance qu'au geste.
+ * Rend le nombre de transferts touchés.
+ */
+export function pauseAllTransfers(): number {
+  const ids = runningFileIds(localDb());
+  const engine = offlineEngine();
+  for (const id of ids) engine.pause(id);
+  return ids.length;
+}
+
+/** L'inverse : ne relance QUE ce que l'utilisateur avait mis en pause. */
+export function resumeAllTransfers(): number {
+  const ids = userPausedFileIds(localDb());
+  const engine = offlineEngine();
+  for (const id of ids) engine.resume(id);
+  return ids.length;
 }
 
 /** Le moteur s'il existe déjà — sans le construire (ni ouvrir la base). */
