@@ -12,6 +12,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Une saison entière tient l'écran verrouillé** : elle ne s'arrête plus au premier épisode quand le téléphone se met en veille, et ce qui est arrivé pendant ce temps n'est pas redemandé
 - **Android : la notification montre l'avance** et permet de tout mettre en pause sans rouvrir l'application ; le même bouton existe dans « Sur cet appareil »
 - **« Marquer comme vu » ne marque plus que ce qu'on désigne** — un épisode reste un épisode, et le bouton change de couleur tout de suite
+- **« Prochains épisodes » suit vos gestes** : revenir sur un épisode marqué vu le remet en tête, au lieu de rester sur le suivant
+- **Une saison n'apparaît plus deux fois** dans la liste des saisons à garder
 - **Une affiche qui manquait revient** : celle de la série s'affiche pour un épisode sans vignette, et une image refusée est redemandée au lieu de laisser une case grise
 - **Le dialogue dit qu'il continue plus bas**, au lieu de couper son contenu sans prévenir
 - **Plus d'écran figé** après « Garder l'épisode » depuis un appui long
@@ -38,6 +40,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **A whole season survives a locked screen**: it no longer stops after the first episode when the phone sleeps, and what arrived meanwhile is not asked for again
 - **Android: the notification shows the progress** and lets you pause everything without reopening the app; the same button lives in "On this device"
 - **"Mark as watched" only marks what you point at** — an episode stays an episode, and the button changes colour right away
+- **"Next episodes" follows what you do**: unmarking an episode brings it back to the front, instead of staying on the next one
+- **A season no longer appears twice** in the list of seasons to keep
 - **A missing poster comes back**: the show's poster stands in for an episode without a still, and a refused image is asked for again instead of leaving a grey tile
 - **The dialog says it continues below**, instead of cutting its content without warning
 - **No more frozen screen** after "Keep this episode" from a long press
