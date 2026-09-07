@@ -25,12 +25,24 @@ describe("bascule occupe / inoccupe", () => {
   it("ne signale qu'aux transitions, une fois a l'entree et une a la sortie", async () => {
     const db = openInMemory();
     const root = rootWithThreeItems();
-    seed(db, "item1", 1_000);
-    seed(db, "item2", 2_000);
+    const first = seed(db, "item1", 1_000);
+    const second = seed(db, "item2", 2_000);
     const { engine, toggles } = makeEngine(db, root, immediateNet(200));
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // La FIN du travail, jamais un délai fixe. Les 30 ms qui tenaient ici ne
+    // suffisaient que la machine au repos : sous les 37 fichiers de la suite en
+    // parallèle, les deux transferts n'étaient pas toujours finis à l'échéance
+    // et le test lisait `[true]` — la descente n'avait pas encore été signalée.
+    // Deux échecs sur vingt suites complètes, mesurés.
+    await vi.waitFor(() => {
+      expect(getFile(db, first)?.status).toBe("complete");
+      expect(getFile(db, second)?.status).toBe("complete");
+      expect(toggles).toHaveLength(2);
+    });
+    // Le moteur est au repos : ce délai-ci ne court plus après les transferts,
+    // il laisse seulement à une bascule de trop le temps de paraître.
+    await new Promise((resolve) => setTimeout(resolve, 10));
 
     // Deux transferts, deux fins : et pourtant une seule montee, une seule
     // descente.
