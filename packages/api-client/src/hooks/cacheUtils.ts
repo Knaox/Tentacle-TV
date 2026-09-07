@@ -22,6 +22,26 @@ const LIST_QUERY_PREFIXES = [
   "series-watch-state",
 ] as const;
 
+/**
+ * Les listes dont l'APPARTENANCE dépend de l'état « vu », et non le seul badge.
+ *
+ * Un patch de `UserData` en cache suffit à corriger une pastille ; il ne sait
+ * pas retirer un titre d'une liste ni l'y remettre. « Prochains épisodes » se
+ * recompose à partir de trois requêtes serveur (proposition, vivier des non
+ * vus, épisodes vus par date) : démarquer un épisode ne le ramenait donc
+ * jamais en tête — la rangée restait sur l'épisode d'après jusqu'à ce qu'un
+ * hasard la rafraîchisse. Ces listes-là se redemandent vraiment.
+ *
+ * Seules celles qui ont un observateur actif partent : `refetchType: "active"`.
+ */
+const WATCH_COMPOSED_PREFIXES = [
+  "next-up",
+  "resume-items",
+  "watched-items",
+  "continue-watching",
+  "series-watch-state",
+] as const;
+
 /** Clé de la rangée « Reprendre la lecture » (cf. `useResumeItems`). */
 const RESUME_KEY = ["resume-items"] as const;
 
@@ -102,8 +122,12 @@ export function invalidateAllMediaQueries(
   // sauf si l'appelant veut explicitement rafraîchir le contexte série
   // (ex. batch saison où on veut une source de vérité immédiate).
   const listRefetch: "none" | "active" = opts?.refetchSeriesContext ? "active" : "none";
+  const composed = new Set<string>(WATCH_COMPOSED_PREFIXES);
   for (const prefix of LIST_QUERY_PREFIXES) {
-    qc.invalidateQueries({ queryKey: [prefix], refetchType: listRefetch });
+    // Les listes composées se redemandent : leur contenu ne se déduit pas de
+    // ce qu'on vient de patcher.
+    const refetchType = composed.has(prefix) ? "active" : listRefetch;
+    qc.invalidateQueries({ queryKey: [prefix], refetchType });
   }
 }
 

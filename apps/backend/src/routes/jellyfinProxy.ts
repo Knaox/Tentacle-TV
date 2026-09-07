@@ -11,6 +11,7 @@ import {
   SKIP_RESPONSE_HEADERS,
   SKIP_API_RESPONSE_HEADERS,
   buildForwardHeaders,
+  apiCacheControl,
   imageCacheControl,
 } from "./jellyfinProxy/headers";
 import { emitProxyEvents } from "./jellyfinProxy/events";
@@ -177,8 +178,12 @@ export const jellyfinProxyRoutes: FastifyPluginAsync = async (app) => {
 
       // Images : cache navigateur explicite (cf. imageCacheControl). Après la
       // boucle pour écraser Jellyfin, et jamais sur une 404 d'affiche.
+      // Tout le reste : `no-store` — ces réponses portent l'état d'un compte,
+      // et Jellyfin n'émet aucune directive, ce qui laissait le cache du
+      // système en resservir de périmées (cf. apiCacheControl).
       const imageCache = response.status < 400 ? imageCacheControl(wildcardPath) : null;
-      if (imageCache) reply.header("cache-control", imageCache);
+      const cacheControl = imageCache ?? (isMediaResponse ? null : apiCacheControl(wildcardPath));
+      if (cacheControl) reply.header("cache-control", cacheControl);
 
       // Log Jellyfin error responses for debugging — without buffering the
       // whole body, which would force the entire (potentially multi-MB) error

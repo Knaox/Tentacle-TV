@@ -43,6 +43,27 @@ export function imageCacheControl(path: string): string | null {
   return IMAGE_PATH.test(path) ? "private, max-age=86400, stale-while-revalidate=604800" : null;
 }
 
+/**
+ * Ce qu'on répond pour tout le reste : `no-store`, sans discussion.
+ *
+ * Jellyfin n'émet AUCUN en-tête de cache sur ses réponses de données (mesuré
+ * sur `/Shows/NextUp` : ni `Cache-Control`, ni `ETag`, ni `Last-Modified`).
+ * Une réponse 200 sans directive laisse le cache HTTP du client libre de la
+ * garder et de la resservir — et `NSURLCache`, sur iPhone, ne s'en prive pas.
+ *
+ * Conséquence mesurée : après avoir retiré « vu » d'un épisode, deux requêtes
+ * successives de l'application rendaient l'ANCIENNE liste « Prochains
+ * épisodes » (l'épisode d'après), quand le serveur, lui, rendait déjà la
+ * bonne — le cache la servait sans jamais toucher le réseau.
+ *
+ * Ces réponses portent l'état d'un compte : elles ne se resservent pas. Le
+ * cache applicatif (TanStack Query) fait déjà ce travail, lui, en sachant
+ * quand l'invalider.
+ */
+export function apiCacheControl(path: string): string | null {
+  return IMAGE_PATH.test(path) ? null : "no-store";
+}
+
 /** Build the headers to forward to Jellyfin, swapping the X-Emby auth fields
  *  to use the admin API key when the incoming request carries a verified
  *  device JWT. */

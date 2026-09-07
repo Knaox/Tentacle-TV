@@ -36,7 +36,6 @@ import {
   updateTransferService,
 } from "../../modules/offline-storage";
 import { ensureNotificationPermission } from "@/services/pushNotifications";
-import { pauseAllTransfers } from "./engineApi";
 import { isBackgroundTransfers } from "./settings";
 
 const KEEP_AWAKE_TAG = "offline-transfer";
@@ -52,6 +51,19 @@ let pending = 0;
 const seen = new Map<number, { bytesDone: number; expectedSize: number | null }>();
 let lastNoticeAt = 0;
 let unlistenPause: (() => void) | null = null;
+/**
+ * Le geste « tout mettre en pause », posé par le moteur.
+ *
+ * Il n'est pas importé : ce module est déjà une dépendance du moteur, et
+ * aller y chercher la file fermerait le cercle (`engineApi → engineRuntime →
+ * backgroundTransfers → engineApi`). Un cycle de modules rend des valeurs non
+ * initialisées, en silence.
+ */
+let pauseAll: (() => void) | null = null;
+
+export function setPauseAllHandler(handler: () => void): void {
+  pauseAll = handler;
+}
 
 /** Le pour-cent de l'ensemble, ou `-1` tant qu'aucune taille n'est connue. */
 function noticePercent(): number {
@@ -99,7 +111,7 @@ function releaseService(): void {
 function listenToPauseButton(): void {
   if (unlistenPause !== null) return;
   unlistenPause = onTransferPause(() => {
-    pauseAllTransfers();
+    pauseAll?.();
   });
 }
 
