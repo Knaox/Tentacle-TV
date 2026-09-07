@@ -47,6 +47,7 @@ export function OfflineSeriesScreen() {
       <OfflineDetailShell
         backdropItemId={local.series.posterItemId}
         backdropCandidates={BANNER_ART}
+        title={local.series.seriesName}
         anims={anims}
         metrics={metrics}
         header={

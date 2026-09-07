@@ -11,6 +11,7 @@ import { spacing, DETAIL_MAX_WIDTH, useResponsive, useTheme, withAlpha } from ".
 import { GradientOverlay, IconButton } from "../components/ui";
 import { DetailSkeleton } from "../components/detail/DetailSkeleton";
 import { DetailHeader } from "../components/detail/DetailHeader";
+import { DetailTopBar } from "../components/detail/DetailTopBar";
 import { DetailBody } from "../components/detail/DetailBody";
 import { useMediaDetailAnimations } from "../hooks/useMediaDetailAnimations";
 
@@ -130,16 +131,20 @@ export function MediaDetailScreen({ itemId }: Props) {
               clair est déjà dans la rampe (cf. GradientOverlay). */}
           <GradientOverlay direction="bottom" height={BACKDROP_H * 0.8} intensity="detail" color={theme.isDark ? undefined : `rgb(${theme.colors.onMedia.scrimRgb})`} />
         </View>
-        {!isTablet && backBtn}
         <View style={{ width: "100%", maxWidth: DETAIL_MAX_WIDTH, alignSelf: "center" }}>
           {header}
           {body}
         </View>
       </AnimatedScrollView>
       {/* Après le ScrollView : peint au-dessus (l'ordre des siblings fait
-          l'ordre de peinture ; le style absolu vit sur le Pressable interne
-          de IconButton, pas sur son wrapper). */}
-      {isTablet && backBtn}
+          l'ordre de peinture). La barre protège la zone d'état dès le premier
+          pixel — sans elle, l'heure et la batterie se posaient sur l'affiche. */}
+      <DetailTopBar
+        title={item?.Name ?? ""}
+        scrollY={anims.scrollY}
+        revealAt={BACKDROP_H * 0.62}
+        onBack={() => backOrHome(router)}
+      />
     </View>
   );
 }

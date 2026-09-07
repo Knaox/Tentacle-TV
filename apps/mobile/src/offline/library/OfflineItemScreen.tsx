@@ -75,6 +75,7 @@ export function OfflineItemScreen({ itemId }: { itemId: string }) {
       <OfflineDetailShell
         backdropItemId={itemId}
         backdropCandidates={ITEM_BANNER_ART}
+        title={entry.title ?? ""}
         anims={anims}
         metrics={metrics}
         header={
