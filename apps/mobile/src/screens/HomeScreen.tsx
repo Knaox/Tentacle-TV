@@ -194,7 +194,7 @@ export function HomeScreen() {
           visible={actionSheetVisible}
           itemId={longPressItemId}
           reasons={longPressReasons}
-          onClose={() => setActionSheetVisible(false)}
+          onClose={() => { setActionSheetVisible(false); setLongPressItemId(null); }}
         />
       )}
       <RecoActionSheet item={recoTarget} onClose={() => setRecoTarget(null)} />

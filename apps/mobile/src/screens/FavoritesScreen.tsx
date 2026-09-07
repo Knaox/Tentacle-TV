@@ -173,7 +173,7 @@ export function FavoritesScreen() {
           <MediaActionSheet
             visible={actionSheetVisible}
             itemId={longPressItemId}
-            onClose={() => setActionSheetVisible(false)}
+            onClose={() => { setActionSheetVisible(false); setLongPressItemId(null); }}
           />
         )}
 
