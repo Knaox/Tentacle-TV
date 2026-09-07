@@ -60,7 +60,15 @@ export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, c
         setStatus(db, fileId, "error", end.code, now);
         // Une coupure réseau n'arrive pas ici : elle est déjà une pause
         // système, qui reprend d'elle-même sans consommer de tentative.
-        recordFailure(db, fileId, end.code, ctx.retryDelaysMs, now);
+        const scheduled = recordFailure(db, fileId, end.code, ctx.retryDelaysMs, now);
+        // Une finalisation qui a épuisé ses essais bute sur un média que le
+        // remux n'arrive pas à lire — un conteneur sans index, par exemple.
+        // La phase tombe : « Reprendre » repartira du transfert plutôt que de
+        // rejouer indéfiniment un remux impossible. Sans échelle de relances,
+        // rien n'a été épuisé : le geste de l'utilisateur garde son raccourci.
+        if (end.code === "finalize" && !scheduled && ctx.retryDelaysMs.length > 0) {
+          setPhase(db, fileId, null, now);
+        }
       }
       break;
   }

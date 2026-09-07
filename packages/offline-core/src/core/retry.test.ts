@@ -9,6 +9,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
+import { applyEnd } from "./engineEnd";
 import { getFile } from "./queue";
 import {
   clearRetry,
@@ -99,6 +100,33 @@ describe("echeance atteinte", () => {
     recordFailure(db, second, "io", [5_000], 1_000);
 
     expect(nextRetryDueAt(db)).toBe(6_000);
+  });
+});
+
+describe("finalisation impossible", () => {
+  // Un conteneur sans index ne sera jamais finalisable : rejouer le remux
+  // indefiniment laisserait un titre bloque pour toujours.
+  it("les essais epuises font tomber la phase, pour repartir du transfert", () => {
+    const db = openInMemory();
+    const fileId = seed(db, "item1", 1_000);
+    db.prepare("UPDATE files SET phase = 'finalize' WHERE id = ?").run(fileId);
+
+    applyEnd(db, fileId, { kind: "failed", code: "finalize", bytesDone: 10 }, {
+      nowMs: 1_000,
+      systemSuspended: false,
+      retryDelaysMs: [5_000],
+    });
+    // Premier echec : une relance est programmee, la phase tient.
+    expect(getFile(db, fileId)?.phase).toBe("finalize");
+
+    applyEnd(db, fileId, { kind: "failed", code: "finalize", bytesDone: 10 }, {
+      nowMs: 2_000,
+      systemSuspended: false,
+      retryDelaysMs: [5_000],
+    });
+    // L'echelle est epuisee : la phase tombe.
+    expect(getFile(db, fileId)?.phase).toBeNull();
+    expect(getFile(db, fileId)?.status).toBe("error");
   });
 });
 
