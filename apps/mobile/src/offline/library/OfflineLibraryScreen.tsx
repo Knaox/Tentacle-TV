@@ -49,7 +49,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<OfflineCatalogFilter>(ALL_LIBRARIES);
   const [more, setMore] = useState<OfflineEntry | null>(null);
-  const { movies, series, hero, libraries, counts, hasContent, ready } = useOfflineCatalog(search, filter);
+  const { movies, series, hero, libraries, hasContent, ready } = useOfflineCatalog(search, filter);
   // Une bibliothèque filtrée dont le dernier titre vient d'être retiré : retour à « Tout ».
   useEffect(() => {
     if (filter !== ALL_LIBRARIES && !libraries.some((library) => library.id === filter)) setFilter(ALL_LIBRARIES);
@@ -100,7 +100,7 @@ export function OfflineLibraryScreen({ standalone = false }: Props) {
             </FadeIn>
           )}
           <FadeIn delay={homeRowFadeDelay(2)}>
-            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} total={counts.titles} />
+            <OfflineCatalogToolbar search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} libraries={libraries} />
           </FadeIn>
           {noResult && <Text style={st.noResult}>{t("offline:noResults")}</Text>}
           <OfflineCatalogSections
