@@ -1,5 +1,5 @@
 /**
- * L'orchestrateur : deux transferts à la fois, et surtout la traduction d'une
+ * L'orchestrateur : un seul transfert à la fois, et surtout la traduction d'une
  * fin de transfert en statut.
  *
  * Celle qui compte : une coupure réseau devient une pause SYSTÈME, donc reprise
@@ -20,11 +20,11 @@ import { claimOrCreateFile } from "./store";
 import { CREDS, makeEngine, rootWithThreeItems, immediateNet, heldNet, seed, spec } from "./testkit";
 
 describe("parallelisme", () => {
-  it("n'ouvre jamais plus de deux transferts a la fois", async () => {
+  it("n'ouvre qu'un seul transfert a la fois", async () => {
     const db = openInMemory();
     const root = rootWithThreeItems();
     seed(db, "item1", 1_000);
-    seed(db, "item2", 2_000);
+    const second = seed(db, "item2", 2_000);
     const third = seed(db, "item3", 3_000);
     const held = heldNet();
     const { engine } = makeEngine(db, root, held.net);
@@ -35,7 +35,8 @@ describe("parallelisme", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     expect(held.opened).toBe(MAX_PARALLEL);
-    // Le troisieme reste en file tant qu'une place ne se libere pas.
+    // Les suivants restent en file tant que la place ne se libere pas.
+    expect(getFile(db, second)?.status).toBe("queued");
     expect(getFile(db, third)?.status).toBe("queued");
     held.release();
   });
@@ -50,10 +51,13 @@ describe("traduction des fins de transfert", () => {
     const { engine, events } = makeEngine(db, root, immediateNet(200));
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // Les deux se suivent : le second ne part que quand le premier a libere la
+    // place, d'ou l'attente sur le resultat plutot qu'un delai fixe.
+    await vi.waitFor(() => {
+      expect(getFile(db, second)?.status).toBe("complete");
+    });
 
     expect(getFile(db, first)?.status).toBe("complete");
-    expect(getFile(db, second)?.status).toBe("complete");
     expect(events).toContain("downloads://changed");
   });
 
