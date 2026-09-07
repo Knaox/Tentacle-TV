@@ -21,7 +21,8 @@
 
 import type { EngineDeps } from "./engineDeps";
 import { applyEnd, mediaAwaitingFinalize, runFinalize } from "./engineEnd";
-import { clearRetry, nextRetryDueAt, requeueDueRetries, RETRY_DELAYS_MS } from "./retry";
+import { cancelFile, pauseFile, resumeFile } from "./engineGestures";
+import { RETRY_DELAYS_MS, RetryScheduler } from "./retry";
 import {
   countQueued,
   getFile,
@@ -29,12 +30,10 @@ import {
   normalizeOnEngineStart,
   requeueSystemPauses,
   setBytesDone,
-  setPausedByUser,
-  setPhase,
+  setExpectedSize,
   setStatus,
   suspendQueued,
 } from "./queue";
-import { removeMediaFile } from "./paths";
 import type { FileRow } from "./store";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
@@ -54,10 +53,11 @@ export class DownloadEngine {
   private busy = false;
   /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
   private systemSuspended = false;
-  /** Un seul minuteur pour toute la file : celui de la prochaine échéance. */
-  private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly retries: RetryScheduler;
 
-  constructor(private readonly deps: EngineDeps) {}
+  constructor(private readonly deps: EngineDeps) {
+    this.retries = new RetryScheduler(deps.db, deps.now, () => this.sweepRetries());
+  }
 
   isActive(fileId: number): boolean {
     return this.active.has(fileId);
@@ -119,7 +119,7 @@ export class DownloadEngine {
       this.startWhatCanRun();
     }
     this.updateActivity();
-    this.armRetryTimer();
+    this.retries.arm();
   }
 
   /**
@@ -130,27 +130,12 @@ export class DownloadEngine {
    * rattraper les échéances passées entre-temps.
    */
   sweepRetries(): void {
-    if (requeueDueRetries(this.deps.db, this.deps.now()) > 0) {
+    if (this.retries.sweep()) {
       this.notifyChanged();
       this.pump();
     } else {
-      this.armRetryTimer();
+      this.retries.arm();
     }
-  }
-
-  /** Un seul minuteur, toujours calé sur la PROCHAINE échéance. */
-  private armRetryTimer(): void {
-    if (this.retryTimer !== null) {
-      clearTimeout(this.retryTimer);
-      this.retryTimer = null;
-    }
-    const due = nextRetryDueAt(this.deps.db);
-    if (due === null) return;
-    const delay = Math.max(0, due - this.deps.now());
-    this.retryTimer = setTimeout(() => {
-      this.retryTimer = null;
-      this.sweepRetries();
-    }, delay);
   }
 
   private startWhatCanRun(): void {
@@ -190,6 +175,9 @@ export class DownloadEngine {
       // rien ne repart sur le réseau.
       end = await this.finalize(file, received);
     } else {
+      // Mutable : le pilote peut annoncer le total en cours de route, et une
+      // valeur gelée ici laisserait la barre sans repère jusqu'à la fin.
+      let expected = file.expectedSize;
       try {
         end = await runWorker(
           {
@@ -197,7 +185,11 @@ export class DownloadEngine {
             volume: this.deps.volume(),
             driver: this.deps.driver,
             fetchBytes: this.deps.makeFetcher(creds.token),
-            onProgress: (id, bytes) => this.progress(id, bytes, file.expectedSize),
+            onProgress: (id, bytes) => this.progress(id, bytes, expected),
+            onExpected: (id, totalBytes) => {
+              expected = totalBytes;
+              setExpectedSize(this.deps.db, id, totalBytes, this.deps.now());
+            },
             now: this.deps.now,
           },
           creds,
@@ -247,30 +239,12 @@ export class DownloadEngine {
   }
 
   pause(fileId: number): void {
-    setPausedByUser(this.deps.db, fileId, true);
-    clearRetry(this.deps.db, fileId);
-    const flags = this.active.get(fileId);
-    if (flags !== undefined) {
-      flags.pause = true;
-    } else {
-      const file = getFile(this.deps.db, fileId);
-      // Encore en file : on le sort avant qu'il ne démarre.
-      if (file?.status === "queued") {
-        setStatus(this.deps.db, fileId, "paused", null, this.deps.now());
-      }
-    }
+    pauseFile(this.deps.db, fileId, this.active.get(fileId), this.deps.now());
     this.notifyChanged();
   }
 
   resume(fileId: number): void {
-    const file = getFile(this.deps.db, fileId);
-    if (file !== null && (file.status === "paused" || file.status === "error")) {
-      setPausedByUser(this.deps.db, fileId, false);
-      setStatus(this.deps.db, fileId, "queued", null, this.deps.now());
-      // Reprise demandée : les tentatives repartent de zéro, et l'échéance
-      // programmée n'a plus lieu d'être.
-      clearRetry(this.deps.db, fileId);
-    }
+    resumeFile(this.deps.db, fileId, this.deps.now());
     this.notifyChanged();
     this.pump();
   }
@@ -305,20 +279,9 @@ export class DownloadEngine {
 
   cancel(fileId: number): void {
     const flags = this.active.get(fileId);
-    if (flags !== undefined) {
-      // Le transfert nettoie son `.part` et pose le statut lui-même.
-      flags.cancel = true;
-      return;
-    }
-    const file = getFile(this.deps.db, fileId);
-    if (file !== null) {
-      removeMediaFile(this.deps.volume(), file.relPath);
-      setBytesDone(this.deps.db, fileId, 0, this.deps.now());
-      // Le média part avec l'annulation : plus rien à finaliser.
-      setPhase(this.deps.db, fileId, null, this.deps.now());
-      setStatus(this.deps.db, fileId, "canceled", null, this.deps.now());
-    }
-    this.notifyChanged();
+    cancelFile(this.deps.db, this.deps.volume(), fileId, flags, this.deps.now());
+    // Un transfert en vol posera son statut lui-même en se terminant.
+    if (flags === undefined) this.notifyChanged();
   }
 
   /**

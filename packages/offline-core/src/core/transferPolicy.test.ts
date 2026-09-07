@@ -179,3 +179,43 @@ describe("politique seule", () => {
     expect(end).toEqual({ kind: "failed", code: "io", bytesDone: 0 });
   });
 });
+
+describe("total annonce par le pilote", () => {
+  it("remonte a la politique, une seule fois par valeur", async () => {
+    const root = preparedRoot("tentacle-total-");
+    const totaux: number[] = [];
+    const d = fake((request) => {
+      // Le pilote mobile l'annonce a chaque bloc : la meme valeur ne doit
+      // pas provoquer une ecriture en base par bloc.
+      request.onTotal?.(1_000);
+      request.onTotal?.(1_000);
+      request.onTotal?.(2_000);
+      // Une longueur inconnue (-1 sur iOS) ne dit rien.
+      request.onTotal?.(-1);
+      writeFileSync(request.partPath, "abc");
+      return { kind: "done", status: 200, header: NONE };
+    });
+
+    await run(d.driver, nodeVolume(root), job(root), new TransferFlags(), () => undefined, NOW, (total) => {
+      totaux.push(total);
+    });
+
+    expect(totaux).toEqual([1_000, 2_000]);
+  });
+
+  it("un total annonce ne remplace pas la taille de controle", async () => {
+    const root = preparedRoot("tentacle-total-integrite-");
+    // La taille du SERVEUR fait foi : le fichier recu la respecte, meme si le
+    // pilote a annonce n'importe quoi entre-temps.
+    const target = job(root, { expectedSize: 3 });
+    const d = fake((request) => {
+      request.onTotal?.(9_999);
+      writeFileSync(request.partPath, "abc");
+      return { kind: "done", status: 200, header: NONE };
+    });
+
+    const end = await run(d.driver, nodeVolume(root), target, new TransferFlags(), () => undefined, NOW, () => undefined);
+
+    expect(end.kind).toBe("complete");
+  });
+});

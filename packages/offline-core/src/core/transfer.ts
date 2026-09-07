@@ -135,6 +135,7 @@ export async function run(
   flags: TransferFlags,
   onProgress: (bytes: number) => void,
   now: Clock,
+  onExpected?: (totalBytes: number) => void,
 ): Promise<TransferEnd> {
   const { files } = volume;
   const part = `${job.finalPath}.part`;
@@ -168,6 +169,7 @@ export async function run(
   // pouvoir l'arrêter à toute sortie.
   let session: TranscodeSession | null = job.transcodeSession;
   let total = resumeFrom;
+  let lastTotal = 0;
   let lastPersistBytes = resumeFrom;
   let lastPersistAt = now();
 
@@ -186,6 +188,14 @@ export async function run(
           lastPersistBytes = total;
           lastPersistAt = at;
           onProgress(total);
+        }
+      },
+      onTotal: (totalBytes) => {
+        // Une seule remontée par valeur : le pilote mobile l'annonce à CHAQUE
+        // bloc reçu, et une écriture en base par bloc n'aurait aucun sens.
+        if (totalBytes > 0 && totalBytes !== lastTotal) {
+          lastTotal = totalBytes;
+          onExpected?.(totalBytes);
         }
       },
       onHeaders: (_status, header) => {

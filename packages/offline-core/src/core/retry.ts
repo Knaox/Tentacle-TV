@@ -80,3 +80,39 @@ export function nextRetryDueAt(db: DatabaseHandle): number | null {
     .get();
   return row === undefined ? null : integerOrNull(row, "due");
 }
+
+/**
+ * Le minuteur des relances : un seul pour toute la file, toujours calé sur la
+ * PROCHAINE échéance. Un minuteur par fichier en aurait armé autant que
+ * d'erreurs, pour un seul réveil utile.
+ */
+export class RetryScheduler {
+  private timer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(
+    private readonly db: DatabaseHandle,
+    private readonly now: () => number,
+    private readonly onDue: () => void,
+  ) {}
+
+  /** Remet en file ce qui est échu ; `true` si quelque chose a bougé. */
+  sweep(): boolean {
+    return requeueDueRetries(this.db, this.now()) > 0;
+  }
+
+  arm(): void {
+    this.clear();
+    const due = nextRetryDueAt(this.db);
+    if (due === null) return;
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.onDue();
+    }, Math.max(0, due - this.now()));
+  }
+
+  clear(): void {
+    if (this.timer === null) return;
+    clearTimeout(this.timer);
+    this.timer = null;
+  }
+}
