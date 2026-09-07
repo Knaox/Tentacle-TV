@@ -20,10 +20,14 @@ export const ALL_LIBRARIES: OfflineCatalogFilter = "all";
 
 export interface OfflineCatalogLibrary {
   id: string;
-  /** Le nom Jellyfin (cache des bibliothèques) ; sinon Films ou Séries, d'après le contenu. */
+  /** Le nom Jellyfin porté par le snapshot, sinon le cache des bibliothèques, sinon Films / Séries d'après le contenu. */
   label: string;
   /** Films + séries de cette bibliothèque sur l'appareil. */
   count: number;
+  /** `CollectionType` Jellyfin (`movies`, `tvshows`…) — l'icône de la tuile ; `null` si inconnu. */
+  type: string | null;
+  /** Un titre de la bibliothèque dont la bannière locale illustre la tuile. */
+  artItemId: string | null;
 }
 
 export interface OfflineCatalogCounts {
@@ -68,21 +72,30 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
   const series = useMemo(() => groupSeasonsBySeries(groups.seasons), [groups.seasons]);
 
   const libraries = useMemo<OfflineCatalogLibrary[]>(() => {
-    const names = new Map(userId ? readLibrariesList(prefsStore, userId).map((l) => [l.id, l.name] as const) : []);
-    const tally = new Map<string, { movies: number; series: number }>();
-    const bump = (id: string | null, key: "movies" | "series") => {
-      if (id === null) return;
-      const row = tally.get(id) ?? { movies: 0, series: 0 };
+    const cachedNames = new Map(userId ? readLibrariesList(prefsStore, userId).map((l) => [l.id, l.name] as const) : []);
+    interface Tally { movies: number; series: number; name: string | null; type: string | null; artItemId: string | null }
+    const tally = new Map<string, Tally>();
+    const bump = (entry: OfflineEntry, key: "movies" | "series") => {
+      if (entry.libraryId === null) return;
+      const row = tally.get(entry.libraryId) ?? { movies: 0, series: 0, name: null, type: null, artItemId: null };
       row[key] += 1;
-      tally.set(id, row);
+      row.name ??= entry.libraryName;
+      row.type ??= entry.libraryType;
+      row.artItemId ??= entry.itemId;
+      tally.set(entry.libraryId, row);
     };
-    for (const movie of groups.movies) bump(movie.libraryId, "movies");
-    for (const group of series) bump(libraryOf(group), "series");
+    for (const movie of groups.movies) bump(movie, "movies");
+    for (const group of series) {
+      const sample = group.seasons.flatMap((season) => season.episodes).find((e) => e.libraryId !== null);
+      if (sample) bump(sample, "series");
+    }
     return [...tally.entries()]
       .map(([id, row]) => ({
         id,
-        label: names.get(id) ?? t(row.series > row.movies ? "sectionSeries" : "sectionMovies"),
+        label: row.name ?? cachedNames.get(id) ?? t(row.series > row.movies ? "sectionSeries" : "sectionMovies"),
         count: row.movies + row.series,
+        type: row.type,
+        artItemId: row.artItemId,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [groups.movies, series, userId, t]);
