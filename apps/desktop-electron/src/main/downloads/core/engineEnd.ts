@@ -10,6 +10,7 @@
 import type { DatabaseHandle, Volume } from "./adapters";
 import { safeJoin } from "./paths";
 import { isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
+import { clearRetry, recordFailure } from "./retry";
 import type { TransferEnd } from "./transfer";
 
 export interface EndContext {
@@ -17,6 +18,8 @@ export interface EndContext {
   /** Entre `suspendForSystem` et `resumeSystemPauses` : les conditions manquent. */
   systemSuspended: boolean;
   canTransfer?: (() => boolean) | undefined;
+  /** Échelle des relances automatiques ; vide = aucune. */
+  retryDelaysMs: readonly number[];
 }
 
 /** Traduit une fin de transfert en statut de base. */
@@ -26,6 +29,7 @@ export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, c
     case "complete":
       setBytesDone(db, fileId, end.finalSize, now);
       setStatus(db, fileId, "complete", null, now);
+      clearRetry(db, fileId);
       break;
     case "paused":
       setBytesDone(db, fileId, end.bytesDone, now);
@@ -42,6 +46,7 @@ export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, c
     case "canceled":
       setBytesDone(db, fileId, 0, now);
       setStatus(db, fileId, "canceled", null, now);
+      clearRetry(db, fileId);
       break;
     case "failed":
       setBytesDone(db, fileId, end.bytesDone, now);
@@ -53,6 +58,9 @@ export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, c
         setStatus(db, fileId, "paused", null, now);
       } else {
         setStatus(db, fileId, "error", end.code, now);
+        // Une coupure réseau n'arrive pas ici : elle est déjà une pause
+        // système, qui reprend d'elle-même sans consommer de tentative.
+        recordFailure(db, fileId, end.code, ctx.retryDelaysMs, now);
       }
       break;
   }

@@ -143,6 +143,9 @@ export function makeEngine(
     volume: () => nodeVolume(root),
     driver: createStreamDriver(net, nodePartWriter, nodeFiles),
     makeFetcher: () => NO_NETWORK,
+    // Aucune relance par défaut : un minuteur laissé armé ferait traîner la
+    // suite. Les tests de relance passent leur propre échelle.
+    retryDelaysMs: [],
     emit: (event) => events.push(event),
     now: () => 1_000,
     onBusy: (busy) => toggles.push(busy),

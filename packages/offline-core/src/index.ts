@@ -31,6 +31,7 @@ export * from "./core/transfer";
 export * from "./core/transferNet";
 export * from "./core/worker";
 export * from "./core/engine";
+export * from "./core/retry";
 export * from "./core/presets";
 export type { CachedSession } from "./core/session";
 export * as session from "./core/session";

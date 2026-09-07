@@ -115,6 +115,9 @@ export function OfflineRuntimeSync() {
       }
       if (status !== "active") return;
       offlineEngineIfStarted()?.resumeSystemPauses();
+      // Le système gèle les minuteurs en arrière-plan : les relances dont
+      // l'échéance est passée pendant ce temps se rattrapent ici.
+      offlineEngineIfStarted()?.sweepRetries();
       purgeTick();
       setTimeout(syncCreds, CREDS_RECHECK_MS);
       // Retour au premier plan en ligne : l'état de visionnage repart dans les

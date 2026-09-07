@@ -19,6 +19,11 @@ export interface EngineDeps {
   makeFetcher: (token: string) => FetchBytes;
   emit: (event: EngineEvent, payload: unknown) => void;
   now: () => number;
+  /**
+   * Échelle des relances automatiques après une erreur réparable. Absente :
+   * `RETRY_DELAYS_MS`. Tableau vide : aucune relance (le banc d'essai).
+   */
+  retryDelaysMs?: readonly number[];
   /** Lancé au démarrage du moteur — réparation et purge (branchés plus tard). */
   onStarted?: (creds: Creds) => void;
   /**
