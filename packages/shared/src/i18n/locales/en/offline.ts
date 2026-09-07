@@ -45,6 +45,13 @@ export default {
   queued: "The title will soon be on your device.",
   seasonQueued: "{{count}} episodes being prepared.",
   startFailed: "Could not start.",
+  // Scope, when the request starts from an episode.
+  scopeLabel: "What to keep",
+  scopeEpisode: "This episode",
+  scopeSeason: "The season",
+  scopeSeries: "The show",
+  scopeLoading: "Reading episodes…",
+  scopeFailed: "Could not read the show's episodes.",
   noVariantTitle: "No compatible version",
   noVariantMessage:
     "This title can't be kept offline on this device: the server offers no version playable here.",
