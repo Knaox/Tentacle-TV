@@ -24,10 +24,6 @@ export interface OfflineCatalogLibrary {
   label: string;
   /** Titres (films et épisodes) de cette bibliothèque sur l'appareil — le même compte que le résumé. */
   count: number;
-  /** `CollectionType` Jellyfin (`movies`, `tvshows`…) — l'icône de la tuile ; `null` si inconnu. */
-  type: string | null;
-  /** Un titre de la bibliothèque dont la bannière locale illustre la tuile. */
-  artItemId: string | null;
 }
 
 export interface OfflineCatalogCounts {
@@ -73,16 +69,14 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
 
   const libraries = useMemo<OfflineCatalogLibrary[]>(() => {
     const cachedNames = new Map(userId ? readLibrariesList(prefsStore, userId).map((l) => [l.id, l.name] as const) : []);
-    interface Tally { count: number; movies: number; name: string | null; type: string | null; artItemId: string | null }
+    interface Tally { count: number; movies: number; name: string | null }
     const tally = new Map<string, Tally>();
     for (const entry of complete) {
       if (entry.libraryId === null) continue;
-      const row = tally.get(entry.libraryId) ?? { count: 0, movies: 0, name: null, type: null, artItemId: null };
+      const row = tally.get(entry.libraryId) ?? { count: 0, movies: 0, name: null };
       row.count += 1;
       if (entry.kind === "movie") row.movies += 1;
       row.name ??= entry.libraryName;
-      row.type ??= entry.libraryType;
-      row.artItemId ??= entry.itemId;
       tally.set(entry.libraryId, row);
     }
     return [...tally.entries()]
@@ -90,8 +84,6 @@ export function useOfflineCatalog(search: string, filter: OfflineCatalogFilter):
         id,
         label: row.name ?? cachedNames.get(id) ?? t(row.movies * 2 > row.count ? "sectionMovies" : "sectionSeries"),
         count: row.count,
-        type: row.type,
-        artItemId: row.artItemId,
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [complete, userId, t]);
