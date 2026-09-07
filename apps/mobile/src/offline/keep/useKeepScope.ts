@@ -3,6 +3,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import { useSeriesEpisodes } from "@/hooks/offline/useSeriesEpisodes";
 import type { KeepOfflineMode, KeepOfflineRequest } from "./keepOfflineStore";
 import type { KeepScope } from "./ScopeChoice";
+import { seasonKey } from "./SeasonChecklist";
 
 /**
  * Le périmètre d'une demande partie d'UN épisode : lui seul, sa saison, ou
@@ -37,14 +38,13 @@ export function useKeepScope(request: KeepOfflineRequest): KeepScopeState {
   const items = useMemo(() => {
     if (!wanted || episodes === undefined) return request.items;
     if (scope === "series") return episodes;
-    // La saison de l'épisode appuyé : par identifiant, avec repli sur le
-    // numéro de saison — un épisode hors saison déclarée garde le sien.
-    const seasonId = episode?.SeasonId;
-    const seasonNumber = episode?.ParentIndexNumber;
-    return episodes.filter((item) =>
-      seasonId !== undefined ? item.SeasonId === seasonId : item.ParentIndexNumber === seasonNumber,
-    );
-  }, [wanted, episodes, scope, request.items, episode?.SeasonId, episode?.ParentIndexNumber]);
+    // La saison se reconnaît à son NUMÉRO, comme dans la checklist : une même
+    // saison peut porter plusieurs identifiants côté Jellyfin, et filtrer sur
+    // l'identifiant n'en aurait pris que la moitié.
+    const wantedKey = episode === undefined ? null : seasonKey(episode);
+    if (wantedKey === null) return request.items;
+    return episodes.filter((item) => seasonKey(item) === wantedKey);
+  }, [wanted, episodes, scope, request.items, episode]);
 
   const ready = !wanted || (episodes !== undefined && !isError);
   const mode: KeepOfflineMode = !ready || scope === "episode"

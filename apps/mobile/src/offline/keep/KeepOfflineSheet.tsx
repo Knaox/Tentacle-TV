@@ -16,7 +16,7 @@ import { wifiBlocked } from "../transferGate";
 import { useConnectivity } from "../useConnectivity";
 import { AutoDeleteChips, type AutoDeleteValue } from "./AutoDeleteChips";
 import { ItemChecklist } from "./ItemChecklist";
-import { SeasonChecklist } from "./SeasonChecklist";
+import { SeasonChecklist, seasonKey } from "./SeasonChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
 import { ScopeChoice } from "./ScopeChoice";
@@ -77,7 +77,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
     if (!batch) return sourceItems;
     return sourceItems.filter((item) => {
       if (onDevice.has(item.Id)) return false;
-      const key = series ? (item.SeasonId ?? `n${item.ParentIndexNumber ?? 0}`) : item.Id;
+      const key = series ? seasonKey(item) : item.Id;
       return !unchecked.has(key);
     });
   }, [batch, series, sourceItems, onDevice, unchecked]);

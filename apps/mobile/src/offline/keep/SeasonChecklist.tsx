@@ -12,11 +12,26 @@ export interface SeasonGroup {
   episodes: MediaItem[];
 }
 
+/**
+ * Ce qui fait UNE saison, du point de vue de l'utilisateur : son NUMÉRO.
+ *
+ * Pas son identifiant : une même saison peut en porter plusieurs côté Jellyfin
+ * — mesuré sur Naruto, dont la saison 3 existe en deux entités de 56 épisodes
+ * au total. Grouper par identifiant affichait deux lignes « Saison 3 », et
+ * cocher l'une n'en décochait que la moitié. Le numéro manque (épisodes hors
+ * saison) : on retombe sur l'identifiant, faute de mieux.
+ */
+export function seasonKey(episode: MediaItem): string {
+  const number = episode.ParentIndexNumber;
+  if (typeof number === "number") return `n${number}`;
+  return episode.SeasonId ?? "n?";
+}
+
 /** Les épisodes d'une série regroupés par saison, dans l'ordre des numéros. */
 export function groupBySeason(episodes: readonly MediaItem[]): SeasonGroup[] {
   const groups = new Map<string, SeasonGroup>();
   for (const episode of episodes) {
-    const key = episode.SeasonId ?? `n${episode.ParentIndexNumber ?? 0}`;
+    const key = seasonKey(episode);
     const group = groups.get(key) ?? { key, number: episode.ParentIndexNumber ?? null, episodes: [] };
     group.episodes.push(episode);
     groups.set(key, group);
