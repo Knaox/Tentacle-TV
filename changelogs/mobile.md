@@ -7,6 +7,11 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ## [Unreleased]
 ### FR
+- **Les titres se préparent un par un**, sans se disputer la connexion : le suivant attend son tour au lieu de ralentir le premier
+- **Un titre dont la finalisation échoue n'est plus perdu** : elle se retente seule, sans reprendre le transfert depuis le début, et jusqu'à trois relances automatiques suivent une erreur passagère
+- **« Sur cet appareil » dit la vérité** : taille réelle, débit et temps restant, étape en cours (transfert puis finalisation), cause exacte d'une erreur et délai avant la prochaine tentative ; l'espace occupé se recale sur ce qui est réellement sur le téléphone
+- **Une coupure ne fait plus tout recommencer sur iPhone** : le transfert reprend là où il s'était arrêté
+- **L'application explique sa bascule hors ligne** au lieu de basculer en silence, et distingue « aucun réseau sur cet appareil » d'un serveur qui ne répond pas
 - **Le hors ligne arrive sur le téléphone** : « Garder hors ligne » depuis la fiche d'un film, d'un épisode, d'une saison ou de toute une série — qualité d'origine ou version allégée, pistes et sous-titres compris ; les titres se lisent sans réseau, avec leurs aperçus, leurs sous-titres et l'épisode suivant
 - **Un accueil hors ligne à part entière** : bandeau cinématique avec le logo du titre et la reprise, résumé de l'appareil, recherche, filtre par bibliothèque (Films, Séries, Animés…), fiches de série et de titre avec synopsis, casting et épisodes — aussi accessible en ligne depuis « Sur cet appareil »
 - **Lecture locale sans une seule requête**, même en ligne : les vrais noms des pistes audio et des sous-titres, vos préférences de langue (du titre, de la bibliothèque, puis du compte Jellyfin), le saut d'intro et de générique ; la progression et les titres vus se synchronisent dans les deux sens au retour en ligne
@@ -19,6 +24,11 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Barre d'onglets refaite** : sélection qui glisse, rebond à l'appui, contrôles aux couleurs du web
 
 ### EN
+- **Titles are prepared one at a time**, without competing for the connection: the next one waits its turn instead of slowing the first
+- **A title whose finalizing fails is no longer lost**: it retries on its own, without restarting the transfer, and up to three automatic retries follow a transient error
+- **"On this device" tells the truth**: real size, speed and time left, current step (transfer then finalizing), the exact cause of an error and the delay before the next attempt; space used is realigned with what is actually on the phone
+- **An outage no longer restarts everything on iPhone**: the transfer resumes where it stopped
+- **The app explains why it went offline** instead of switching silently, and tells "no network on this device" apart from a server that does not answer
 - **Offline arrives on the phone**: "Keep offline" from a movie, an episode, a season or a whole series — original quality or a lighter version, tracks and subtitles included; titles play without a network, with their previews, subtitles and the next episode
 - **A full offline home**: cinematic banner with the title's logo and resume point, device summary, search, a filter by library (Movies, Shows, Anime…), series and title pages with synopsis, cast and episodes — also reachable online from "On this device"
 - **Local playback without a single request**, even online: the real names of audio and subtitle tracks, your language preferences (title, library, then Jellyfin account), intro and credits skipping; progress and watched titles sync both ways when you are back online
