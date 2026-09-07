@@ -63,7 +63,13 @@ export function OfflineRowActionsSheet({ entry, onClose, onPlay, onInfo }: Props
   }, [entry, userId]);
 
   if (entry === null) return null;
-  const active = entry.status === "queued" || entry.status === "downloading" || entry.status === "paused";
+  // « Annuler » vaut aussi pour une erreur définitive : sans ça, un titre que
+  // le disque plein a arrêté ne pouvait plus être retiré de la file.
+  const active =
+    entry.status === "queued" ||
+    entry.status === "downloading" ||
+    entry.status === "paused" ||
+    entry.status === "error";
   const autoDelete: AutoDeleteValue = entry.autoDeleteAfterWatch ? entry.autoDeleteDelayMinutes : null;
 
   const row = (icon: keyof typeof Feather.glyphMap, label: string, onPress: () => void, danger = false) => (
