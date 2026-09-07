@@ -10,6 +10,7 @@
 import type { DatabaseHandle } from "./adapters";
 import { FILE_COLS, mapFileRow, publicFile, type PublicFile } from "./store";
 import { flag, integer, integerOrNull, text, textOrNull, type Row } from "./rows";
+import { parseSpecs } from "./subs";
 
 /** Une entrée telle que la page la consomme (`DownloadEntry`, `api.ts`). */
 export type DownloadKind = "movie" | "episode";
@@ -65,6 +66,12 @@ export interface DownloadListEntry extends PublicFile {
    * conditions reviennent). L'écran de gestion ne les libelle pas pareil.
    */
   pausedByUser: boolean;
+  /**
+   * Sous-titres PRÉVUS pour ce titre. À comparer à `subtitlesDone`, qui dit
+   * combien sont réellement sur le disque : un serveur lent à extraire une
+   * piste la faisait manquer sans que rien ne le signale.
+   */
+  subtitlesExpected: number;
 }
 
 const EXTRA_COLS = `item_meta.title, item_meta.series_name, item_meta.kind, item_meta.series_id,
@@ -84,8 +91,10 @@ const PLAYBACK_JOIN = `LEFT JOIN playback_state
     AND playback_state.jellyfin_user_id = claims.jellyfin_user_id`;
 
 function mapEntry(row: Row): DownloadListEntry {
+  const file = mapFileRow(row);
   return {
-    ...publicFile(mapFileRow(row)),
+    ...publicFile(file),
+    subtitlesExpected: file.subtitlesJson === null ? 0 : parseSpecs(file.subtitlesJson).length,
     title: textOrNull(row, "title"),
     seriesName: textOrNull(row, "series_name"),
     kind: kindOf(row),

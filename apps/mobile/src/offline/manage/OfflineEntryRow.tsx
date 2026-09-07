@@ -62,6 +62,14 @@ export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection 
     .filter(Boolean)
     .join(" · ");
 
+  // Un side-car qui n'est pas arrivé — extraction trop lente côté serveur —
+  // ne se perd plus en silence : la ligne le dit, et la réparation le rattrape
+  // au retour du réseau.
+  const subsMissing =
+    complete && entry.subtitlesDone !== null && entry.subtitlesDone < entry.subtitlesExpected
+      ? { done: entry.subtitlesDone, total: entry.subtitlesExpected }
+      : null;
+
   const quick = complete
     ? { icon: "play" as const, label: entry.kind === "episode" ? t("episodePlay") : to("stateOnDevice"), onPress: () => onPlay(entry) }
     : entry.status === "downloading" || entry.status === "queued"
@@ -90,6 +98,9 @@ export function OfflineEntryRow({ entry, onPlay, onMore, wait = null, selection 
             <Text style={st.retry} numberOfLines={1}>
               {retryIn > 0 ? to("retryIn", { seconds: retryIn }) : to("retryNow")}
             </Text>
+          )}
+          {subsMissing !== null && (
+            <Text style={st.retry} numberOfLines={1}>{to("subtitlesPartial", subsMissing)}</Text>
           )}
         </View>
         {active && (

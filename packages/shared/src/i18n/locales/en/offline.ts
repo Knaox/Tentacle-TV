@@ -25,6 +25,7 @@ export default {
   errorFinalize: "Finalizing failed",
   retryIn: "Retrying in {{seconds}}s",
   retryNow: "Retrying…",
+  subtitlesPartial: "Subtitles: {{done}} of {{total}}",
   transferRate: "{{rate}}/s",
   timeLeftHours: "{{hours}}h {{minutes}}m left",
   timeLeftMinutes: "{{minutes}} min left",

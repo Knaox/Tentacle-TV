@@ -20,6 +20,8 @@ function entry(over: Partial<DownloadEntry> & { itemId: string }): DownloadEntry
     lastErrorAt: null,
     nextRetryAt: null,
     phase: null,
+    subtitlesDone: null,
+    subtitlesExpected: 0,
     title: over.itemId,
     seriesName: "Rick et Morty",
     kind: "episode",
