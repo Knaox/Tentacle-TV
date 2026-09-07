@@ -19,9 +19,11 @@ import { ItemChecklist } from "./ItemChecklist";
 import { SeasonChecklist } from "./SeasonChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
+import { ScopeChoice } from "./ScopeChoice";
 import { SizeSummary } from "./SizeSummary";
 import { LanguagePickerRow, TrackPickerRow, trackLabel } from "./TrackPickerRow";
 import { useKeepOfflineSubmit } from "./useKeepOfflineSubmit";
+import { useKeepScope } from "./useKeepScope";
 import { VariantCards } from "./VariantCards";
 
 /** Le dialogue « Garder hors ligne », monté une fois ; ouvert par `openKeepOffline`. */
@@ -56,8 +58,13 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
     () => new Set((entries ?? []).filter((entry) => entry.status === "complete").map((entry) => entry.itemId)),
     [entries],
   );
-  const batch = request.mode !== "single";
-  const series = request.mode === "series";
+  // Partie d'un épisode, la demande peut s'élargir à sa saison ou à sa série
+  // — dans CETTE feuille, sans en ouvrir une seconde.
+  const scope = useKeepScope(request);
+  const sourceItems = scope.items;
+  const mode = scope.mode;
+  const batch = mode !== "single";
+  const series = mode === "series";
   // Sélection : par épisode (saison, sélection) ou par saison (série entière).
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
   const toggle = (key: string) => setUnchecked((prev) => {
@@ -67,15 +74,15 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
     return next;
   });
   const items = useMemo(() => {
-    if (!batch) return request.items;
-    return request.items.filter((item) => {
+    if (!batch) return sourceItems;
+    return sourceItems.filter((item) => {
       if (onDevice.has(item.Id)) return false;
       const key = series ? (item.SeasonId ?? `n${item.ParentIndexNumber ?? 0}`) : item.Id;
       return !unchecked.has(key);
     });
-  }, [batch, series, request.items, onDevice, unchecked]);
+  }, [batch, series, sourceItems, onDevice, unchecked]);
   const selected = useMemo(() => new Set(items.map((item) => item.Id)), [items]);
-  const single = request.mode === "single" && items.length === 1 ? items[0] : null;
+  const single = mode === "single" && items.length === 1 ? items[0] : null;
   const plan = useMemo(() => planForItems(items, LOCAL_PLATFORM_SUPPORT, capabilities), [items, capabilities]);
   const firstKind = plan.cards[0]?.kind ?? null;
   const [chosenKind, setChosenKind] = useState<OfflineVariantKind | null>(null);
@@ -139,16 +146,16 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   if (imageSubs.length > 0 && burnIndex === undefined) hints.push(to("imageSubsHint"));
   if (kind === "light" && plan.excluded.some((entry) => entry.reason === "dolbyVision")) hints.push(to("dolbyVisionColorsHint"));
 
-  const title = request.mode === "season"
+  const title = mode === "season"
     ? to("dialogTitleSeason", { count: items.length })
-    : request.mode === "series"
+    : mode === "series"
       ? to("dialogTitleSeries")
-      : request.mode === "selection"
+      : mode === "selection"
         ? to("dialogTitleSelection", { count: items.length })
         : to("dialogTitle");
   const subtitle = request.title ?? (single ? single.Name : items[0]?.SeriesName ?? "");
 
-  const nothingLeft = batch && request.items.every((item) => onDevice.has(item.Id));
+  const nothingLeft = batch && sourceItems.every((item) => onDevice.has(item.Id));
   if (plan.cards.length === 0 && !nothingLeft && items.length > 0) {
     return (
       <View style={st.body}>
@@ -173,9 +180,20 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       >
         <Text style={st.title} accessibilityRole="header">{title}</Text>
         {subtitle ? <Text style={st.subtitle} numberOfLines={1}>{subtitle}</Text> : null}
+        {scope.scope !== null && (
+          <ScopeChoice
+            value={scope.scope}
+            busy={scope.loading}
+            onChange={(next) => {
+              setUnchecked(new Set());
+              scope.setScope(next);
+            }}
+          />
+        )}
+        {scope.failed && <Text style={st.text}>{to("scopeFailed")}</Text>}
         {series && (
           <SeasonChecklist
-            episodes={request.items}
+            episodes={sourceItems}
             uncheckedSeasons={unchecked}
             onDevice={onDevice}
             sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
@@ -184,7 +202,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
         )}
         {batch && !series && (
           <ItemChecklist
-            items={request.items}
+            items={sourceItems}
             selected={selected}
             onDevice={onDevice}
             sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
@@ -223,7 +241,12 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       <FadeHint visible={overflow.more} color={theme.colors.glass.panel} style={st.fade} />
       <View style={st.actions}>
         <Button title={tc("cancel")} onPress={closeKeepOffline} variant="secondary" />
-        <Button title={to("start")} onPress={submit} loading={submitting} disabled={items.length === 0 || kind === null} />
+        <Button
+          title={to("start")}
+          onPress={submit}
+          loading={submitting || scope.loading}
+          disabled={items.length === 0 || kind === null || scope.loading}
+        />
       </View>
     </View>
   );

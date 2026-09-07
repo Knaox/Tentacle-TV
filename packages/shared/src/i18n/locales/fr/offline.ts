@@ -51,6 +51,13 @@ export default {
   queued: "Le titre sera bientôt sur votre appareil.",
   seasonQueued: "{{count}} épisodes en préparation.",
   startFailed: "Impossible de lancer la mise de côté.",
+  // Le périmètre, quand la demande part d'un épisode.
+  scopeLabel: "Ce qu'on garde",
+  scopeEpisode: "Cet épisode",
+  scopeSeason: "La saison",
+  scopeSeries: "La série",
+  scopeLoading: "Lecture des épisodes…",
+  scopeFailed: "Impossible de lire les épisodes de la série.",
   noVariantTitle: "Pas de version compatible",
   noVariantMessage:
     "Ce titre ne peut pas être gardé hors ligne sur cet appareil : le serveur ne propose pas de version lisible ici.",
