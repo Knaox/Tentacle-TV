@@ -35,6 +35,8 @@ interface TranscodePreset {
   videoBitRate?: number;
   audioBitRate?: number;
   maxHeight?: number;
+  /** Plafond de canaux — un MAXIMUM : une source stéréo n'est pas gonflée. */
+  maxAudioChannels?: number;
   /** `Static` = MP4 classique (moov en fin) ; sinon fMP4 fragmenté. */
   context?: "Static";
 }
@@ -47,9 +49,11 @@ interface TranscodePreset {
  * MKV (iPhone, iPad) : aucun plafond de débit — Jellyfin REFUSE la copie de
  * flux dès qu'un `videoBitRate` est demandé et que le débit de la source est
  * inconnu, ce qui est fréquent en MKV —, donc la vidéo H.264/HEVC est recopiée
- * telle quelle (10 bits et HDR compris), et l'audio n'est réencodé en AAC que
- * s'il n'est ni AAC, ni AC3, ni E-AC3. `context=Static` produit un MP4
+ * telle quelle (10 bits et HDR compris). `context=Static` produit un MP4
  * classique, dans lequel la recherche est immédiate sur mobile.
+ *
+ * L'audio, lui, passe TOUJOURS en AAC sur ce palier : voir le commentaire de
+ * `pmax` ci-dessous, cette copie-là écrivait des fichiers illisibles.
  */
 const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
   p1080: { videoCodec: "h264", audioCodec: "aac", videoBitRate: 8_000_000, audioBitRate: 192_000, maxHeight: 1080 },
@@ -59,8 +63,10 @@ const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
   // copiant de l'ac3/eac3 vers un MP4, Jellyfin écrit un fichier sans `moov`
   // (mesuré — `ftyp`, `free`, puis un `mdat` de taille nulle). Ni lisible, ni
   // finalisable : deux épisodes entièrement reçus étaient bons à jeter. L'audio
-  // repasse donc en AAC, la vidéo reste copiée.
-  pmax: { videoCodec: "h264,hevc", audioCodec: "aac", context: "Static" },
+  // repasse donc en AAC, et le plafond de canaux lui évite de redescendre en
+  // stéréo au passage — puisqu'il ne peut plus être copié, qu'il perde au
+  // moins le minimum.
+  pmax: { videoCodec: "h264,hevc", audioCodec: "aac", maxAudioChannels: 6, context: "Static" },
 };
 
 const LIGHT_PRESET_IDS = Object.keys(TRANSCODE_PRESETS);
@@ -187,6 +193,9 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     if (preset.videoBitRate !== undefined) params.set("videoBitRate", String(preset.videoBitRate));
     if (preset.audioBitRate !== undefined) params.set("audioBitRate", String(preset.audioBitRate));
     if (preset.maxHeight !== undefined) params.set("maxHeight", String(preset.maxHeight));
+    if (preset.maxAudioChannels !== undefined) {
+      params.set("maxAudioChannels", String(preset.maxAudioChannels));
+    }
     if (preset.context !== undefined) params.set("context", preset.context);
     const mediaSourceId = query.mediaSourceId;
     if (mediaSourceId && ITEM_ID_RE.test(mediaSourceId)) {
