@@ -42,14 +42,18 @@ export function MediaDetailScreen({ itemId }: Props) {
   const { data: similar } = useSimilarItems(similarId, similarParentId);
   // Séries : prochain épisode à regarder (next-up / continue / start) — parité desktop.
   const { data: seriesWatchState } = useSeriesWatchState(item?.Type === "Series" ? item.Id : undefined);
+  // Favoris et Ma liste visent la SÉRIE pour un épisode — c'est la règle du
+  // produit. « Vu » non : il ne marque que ce qu'on a désigné. Le confondre
+  // envoyait `/PlayedItems/{seriesId}`, et Jellyfin marquait toute la série.
   const actionTargetId = isEpisode ? (item?.SeriesId ?? itemId) : itemId;
   const actionTargetItem = isEpisode ? parentSeries : item;
   const favorite = useFavorite(actionTargetId);
   const watchlistToggle = useToggleWatchlist(actionTargetId);
-  const watched = useWatchedToggle(
-    actionTargetId,
-    isEpisode && item?.SeriesId ? { seriesId: item.SeriesId, seasonId: item.SeasonId ?? undefined } : undefined,
-  );
+  const watched = useWatchedToggle(itemId, {
+    seriesId: item?.SeriesId,
+    seasonId: item?.SeasonId ?? undefined,
+    itemType: item?.Type,
+  });
   const onRefresh = useCallback(() => { refetch(); }, [refetch]);
 
   const anims = useMediaDetailAnimations(itemId, item, BACKDROP_H);
