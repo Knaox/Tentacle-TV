@@ -85,7 +85,7 @@ export type TransferEnd =
   /** Codes STABLES, consommés par l'interface. */
   | {
       kind: "failed";
-      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize";
+      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize" | "unexpected";
       bytesDone: number;
     };
 
@@ -128,6 +128,16 @@ function discard(files: FileStore, part: string): void {
  * Ne lève jamais : toute sortie est un `TransferEnd`, parce que l'appelant doit
  * pouvoir écrire un statut en base dans tous les cas.
  */
+export interface TransferHooks {
+  /** Le pilote a annoncé le total attendu — voir `TransferRequest.onTotal`. */
+  onExpected?: ((totalBytes: number) => void) | undefined;
+  /**
+   * Une exception qu'aucun chemin prévu n'explique. Purement informatif : la
+   * fonction rend malgré tout un `TransferEnd`.
+   */
+  onUnexpected?: ((context: string, error: unknown) => void) | undefined;
+}
+
 export async function run(
   driver: TransferDriver,
   volume: Volume,
@@ -135,7 +145,7 @@ export async function run(
   flags: TransferFlags,
   onProgress: (bytes: number) => void,
   now: Clock,
-  onExpected?: (totalBytes: number) => void,
+  hooks: TransferHooks = {},
 ): Promise<TransferEnd> {
   const { files } = volume;
   const part = `${job.finalPath}.part`;
@@ -173,6 +183,15 @@ export async function run(
   let lastPersistBytes = resumeFrom;
   let lastPersistAt = now();
 
+  // Fin de session serveur, best-effort, à TOUTE sortie : libère ffmpeg et les
+  // fichiers temporaires côté Jellyfin, que le transfert ait abouti, été
+  // annulé ou mis en pause. Sans cet appel, un transcodage abandonné continue
+  // de tourner.
+  const stopTranscode = async (): Promise<void> => {
+    if (session === null) return;
+    await driver.stopTranscode(transcodeUrl(job, session), { "X-Emby-Token": job.token });
+  };
+
   let outcome: TransferOutcome;
   try {
     outcome = await driver.download({
@@ -195,7 +214,7 @@ export async function run(
         // bloc reçu, et une écriture en base par bloc n'aurait aucun sens.
         if (totalBytes > 0 && totalBytes !== lastTotal) {
           lastTotal = totalBytes;
-          onExpected?.(totalBytes);
+          hooks.onExpected?.(totalBytes);
         }
       },
       onHeaders: (_status, header) => {
@@ -204,19 +223,14 @@ export async function run(
         if (play !== null && device !== null) session = { playSessionId: play, deviceId: device };
       },
     });
-  } catch {
-    // Un pilote qui lève ne doit pas laisser le fichier en `downloading`.
-    outcome = { kind: "failed", cause: "io", bytesKnown: total };
+  } catch (error) {
+    // Un pilote qui lève ne doit pas laisser le fichier en `downloading`. Le
+    // code dit « imprévu » plutôt que « écriture disque » : confondre les deux
+    // rendait indéchiffrable la seule trace qui restait en base.
+    hooks.onUnexpected?.("transfer.download", error);
+    await stopTranscode();
+    return { kind: "failed", code: "unexpected", bytesDone: files.size(part) ?? total };
   }
-
-  // Fin de session serveur, best-effort, à TOUTE sortie : libère ffmpeg et les
-  // fichiers temporaires côté Jellyfin, que le transfert ait abouti, été
-  // annulé ou mis en pause. Sans cet appel, un transcodage abandonné continue
-  // de tourner.
-  const stopTranscode = async (): Promise<void> => {
-    if (session === null) return;
-    await driver.stopTranscode(transcodeUrl(job, session), { "X-Emby-Token": job.token });
-  };
 
   switch (outcome.kind) {
     case "canceled":

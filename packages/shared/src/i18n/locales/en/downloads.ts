@@ -82,6 +82,7 @@ export default {
   errorIntegrity: "Incomplete file",
   errorMissing: "File not found",
   errorIo: "Write error",
+  errorUnexpected: "Unexpected error",
 
   sectionActive: "In progress",
   sectionMovies: "Movies",

@@ -21,7 +21,7 @@ import { integer, integerOrNull } from "./rows";
 export const RETRY_DELAYS_MS: readonly number[] = [5_000, 15_000, 60_000];
 
 /** Ce qui peut guérir tout seul. Voir l'en-tête pour ce qui en est exclu. */
-export const RETRYABLE_CODES: ReadonlySet<string> = new Set(["io", "finalize"]);
+export const RETRYABLE_CODES: ReadonlySet<string> = new Set(["io", "finalize", "unexpected"]);
 
 /**
  * Compte l'échec et programme la relance suivante, s'il y en a une.
