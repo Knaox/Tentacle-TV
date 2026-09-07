@@ -5,7 +5,7 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
-## [Unreleased]
+## [1.7.0]
 ### FR
 - **Rien n'est gardé en moins bien** : un titre que l'appareil sait lire est gardé tel quel, sinon réemballé sans retoucher l'image ; la version recompressée n'arrive plus qu'en dernier recours, et le dit
 - **Depuis un épisode, on garde ce qu'on veut** : cet épisode, sa saison ou toute la série, épisode par épisode ou saison par saison, avec la place occupée avant de se décider
@@ -33,7 +33,13 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Un seul onglet « Extensions »** réunit toutes les pages de vos plugins, le nom du plugin en tête
 - **Personnalisation depuis le mobile** : bandeau, rangées, densité, recommandations — et vos réglages suivent en direct sur vos autres appareils
 - **Barre d'onglets refaite** : sélection qui glisse, rebond à l'appui, contrôles aux couleurs du web
-
+- **L'accueil suit votre compte** : les rangées et leur ordre choisis dans les réglages du web s'appliquent ici tels quels — « Mes favoris » et « Déjà visionné » compris
+- **Les recommandations arrivent sur l'accueil** : « Pour vous » et les autres rangées, les mêmes que sur le web ; un titre hors bibliothèque s'ouvre dans le catalogue Vigie
+- **Le filtre de plateformes** du compte s'applique ; une puce à côté du titre le montre et le retire d'une croix, partout
+- Les administrateurs voient un bandeau tant que la clé TMDB manque sur le serveur
+- **Ma liste suit vos visionnages, pas vos clics** : un titre n'en sort plus parce qu'on a ouvert son lecteur, ni parce qu'on l'a marqué vu à la main — seulement une fois réellement regardé jusqu'au bout, un film ou le dernier épisode disponible d'une série, même en cours de diffusion ; une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **Les tickets vous suivent sur le téléphone** : un push pour chaque réponse, chaque changement de statut et — pour les administrateurs — chaque nouveau ticket ; un tap ouvre directement le ticket ; réglage dans Réglages → Notifications, activé par défaut
+- **Les administrateurs gèrent les tickets depuis le mobile** : tous les tickets, l'auteur sur chaque carte, le statut se change depuis la fiche ; et chacun peut fermer son ticket en disant pourquoi
 ### EN
 - **Nothing is kept in a lesser form**: a title this device can play is kept as it is, otherwise repackaged without touching the picture; the re-encoded version now only appears as a last resort, and says so
 - **From an episode, keep what you want**: this episode, its season or the whole show, episode by episode or season by season, with the space it takes before you decide
@@ -61,17 +67,6 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **A single "Extensions" tab** gathers every page of your plugins, with the plugin's name ahead of its pages
 - **Personalization from your phone**: banner, row order, density and recommendation settings — and your settings reach your other devices live
 - **Rebuilt tab bar**: sliding selection, bounce on tap, readable labels, controls in the web's colors
-
-## [1.7.0]
-### FR
-- **L'accueil suit votre compte** : les rangées et leur ordre choisis dans les réglages du web s'appliquent ici tels quels — « Mes favoris » et « Déjà visionné » compris
-- **Les recommandations arrivent sur l'accueil** : « Pour vous » et les autres rangées, les mêmes que sur le web ; un titre hors bibliothèque s'ouvre dans le catalogue Vigie
-- **Le filtre de plateformes** du compte s'applique ; une puce à côté du titre le montre et le retire d'une croix, partout
-- Les administrateurs voient un bandeau tant que la clé TMDB manque sur le serveur
-- **Ma liste suit vos visionnages, pas vos clics** : un titre n'en sort plus parce qu'on a ouvert son lecteur, ni parce qu'on l'a marqué vu à la main — seulement une fois réellement regardé jusqu'au bout, un film ou le dernier épisode disponible d'une série, même en cours de diffusion ; une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
-- **Les tickets vous suivent sur le téléphone** : un push pour chaque réponse, chaque changement de statut et — pour les administrateurs — chaque nouveau ticket ; un tap ouvre directement le ticket ; réglage dans Réglages → Notifications, activé par défaut
-- **Les administrateurs gèrent les tickets depuis le mobile** : tous les tickets, l'auteur sur chaque carte, le statut se change depuis la fiche ; et chacun peut fermer son ticket en disant pourquoi
-### EN
 - **The home follows your account**: the rows and their order chosen in the web settings apply here as they are — "My favorites" and "Already watched" included
 - **Recommendations reach the home**: "For you" and the other rows, the same as on the web; a title outside your library opens in the Vigie catalog
 - **The account's platform filter** applies; a chip next to the title shows it and removes it with a cross, everywhere
