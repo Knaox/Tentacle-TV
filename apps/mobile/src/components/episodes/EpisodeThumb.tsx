@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import type { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { resolveBannerImage, type MediaItem } from "@tentacle-tv/shared";
+import { useResilientImage } from "@/hooks/useResilientImage";
 import { useThemedStyles, type AppTheme } from "@/theme";
 
 interface Props {
@@ -14,13 +14,21 @@ interface Props {
 /** La vignette d'un épisode : son image, sinon la bannière de la série, sinon son numéro. */
 export function EpisodeThumb({ ep, seriesId, client }: Props) {
   const st = useThemedStyles(makeStyles);
-  const hasPrimary = !!ep.ImageTags?.Primary;
-  const thumbUrl = hasPrimary
-    ? client.getImageUrl(ep.Id, "Primary", { width: 300, quality: 70 })
+  // Chaîne 16:9 du web et de la TV : image de l'épisode, backdrop propre,
+  // backdrop du parent, affiche de la série. L'ancien repli visait le backdrop
+  // de la série sans vérifier qu'elle en avait un.
+  const resolved = resolveBannerImage(ep);
+  const thumbUrl = resolved
+    ? client.getImageUrl(resolved.id, resolved.type, {
+        width: 300,
+        quality: 70,
+        ...(resolved.tag ? { tag: resolved.tag } : {}),
+      })
     : client.getImageUrl(seriesId, "Backdrop", { width: 300, quality: 70 });
-  const [imgError, setImgError] = useState(false);
+  const image = useResilientImage(thumbUrl);
+  const uri = image.uri;
 
-  if (imgError) {
+  if (uri === null) {
     return (
       <View style={st.fallback}>
         <Text style={st.fallbackText}>
@@ -30,7 +38,9 @@ export function EpisodeThumb({ ep, seriesId, client }: Props) {
     );
   }
 
-  return <Image source={{ uri: thumbUrl }} style={st.image} contentFit="cover" onError={() => setImgError(true)} />;
+  return (
+    <Image source={{ uri }} style={st.image} contentFit="cover" onError={image.onError} recyclingKey={uri} />
+  );
 }
 
 const makeStyles = (t: AppTheme) =>
