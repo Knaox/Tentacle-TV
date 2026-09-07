@@ -51,6 +51,19 @@ export interface EngineDeps {
    */
   canTransfer?: () => boolean;
   /**
+   * Combien de transferts peuvent tourner ensemble, MAINTENANT. Consultée à
+   * chaque `pump`.
+   *
+   * Un seul à la fois est la bonne réponse quand l'application est là : deux
+   * se disputent la bande passante, le disque et le processeur de la
+   * finalisation. Elle devient FAUSSE quand le système suspend le JavaScript
+   * — iPhone verrouillé : la file est pilotée par le JavaScript, et la seule
+   * tâche déjà remise au système continue pendant que les suivantes ne
+   * partent jamais. En enfiler plusieurs avant la suspension les laisse
+   * aboutir. Absente (bureau) : `MAX_PARALLEL`.
+   */
+  parallelLimit?: () => number;
+  /**
    * Finalise un fichier ALLÉGÉ avant `complete`. Le transcodage progressif de
    * Jellyfin est un MP4 fragmenté (sans index ni durée) : mpv s'en accommode,
    * les lecteurs natifs du mobile non — la plateforme le remuxe en MP4 indexé,

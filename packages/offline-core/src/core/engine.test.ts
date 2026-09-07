@@ -42,6 +42,41 @@ describe("parallelisme", () => {
     expect(getFile(db, third)?.status).toBe("queued");
     held.release();
   });
+
+  it("la plateforme peut ouvrir plusieurs places, le temps d'une suspension", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    seed(db, "item1", 1_000);
+    seed(db, "item2", 2_000);
+    seed(db, "item3", 3_000);
+    const held = heldNet();
+    // iPhone verrouille : ce qui n'est pas parti avant la suspension ne
+    // partira pas du tout, le JavaScript ne lancant plus rien.
+    const { engine } = makeEngine(db, root, held.net, { parallelLimit: () => 3 });
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(held.opened).toBe(3);
+    held.release();
+  });
+
+  it("la demande est bornee : on ne sature pas la connexion", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    seed(db, "item1", 1_000);
+    seed(db, "item2", 2_000);
+    seed(db, "item3", 3_000);
+    const held = heldNet();
+    const { engine } = makeEngine(db, root, held.net, { parallelLimit: () => 99 });
+
+    engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // Trois fichiers seulement en file : le plafond n'en invente pas.
+    expect(held.opened).toBe(3);
+    held.release();
+  });
 });
 
 describe("traduction des fins de transfert", () => {
