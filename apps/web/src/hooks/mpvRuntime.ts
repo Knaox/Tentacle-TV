@@ -359,11 +359,16 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     "force-media-title": "Tentacle TV",
     "audio-client-name": "Tentacle TV",
     title: "Tentacle TV",
-    // Diagnostic : `localStorage.tentacle_mpv_log = "1"` écrit un log
-    // mpv verbeux (le plugin forwarde ces options verbatim à mpv) —
-    // indispensable pour débugger un flux HLS qui ne démarre pas.
+    // Diagnostic : `localStorage.tentacle_mpv_log = "1"` écrit un journal mpv
+    // verbeux — indispensable pour débugger un flux HLS qui ne démarre pas.
+    //
+    // ⚠️ On ne donne QUE le nom du fichier. Le chemin appartient à la coquille :
+    // elle seule sait où le bac à sable d'un paquet livré laisse écrire, et
+    // `/tmp` — ce qu'on demandait avant — y échoue EN SILENCE (voir
+    // `main/video/mpvLogFile.ts`). La coquille annonce le chemin retenu sur sa
+    // sortie standard.
     ...(typeof localStorage !== "undefined" && localStorage.getItem("tentacle_mpv_log") === "1" ? {
-      "log-file": isWindows() ? "C:\\tmp\\tentacle-mpv.log" : "/tmp/tentacle-mpv.log",
+      "log-file": "tentacle-mpv.log",
       "msg-level": "all=v",
     } : {}),
   };
