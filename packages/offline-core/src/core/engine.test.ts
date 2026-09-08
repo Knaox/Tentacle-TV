@@ -334,6 +334,103 @@ describe("gestes de l'utilisateur", () => {
     });
   });
 
+  // Un pilote coupe net LEVE, la plupart du temps : c'est ce que fait le
+  // telechargeur natif quand on annule sa tache. Cette exception devenait une
+  // erreur « imprevue », donc relancable — et le transfert annule repartait
+  // cinq secondes plus tard.
+  function dyingNet(): { net: TransferNet; die: () => void } {
+    let unblock: (() => void) | null = null;
+    const pending = new Promise<void>((resolve) => { unblock = resolve; });
+    return {
+      die: () => unblock?.(),
+      net: {
+        async open() {
+          return {
+            status: 200,
+            header: () => null,
+            chunks: (async function* () {
+              await pending;
+              throw new Error("tache native interrompue");
+              // eslint-disable-next-line no-unreachable
+              yield new Uint8Array();
+            })(),
+          };
+        },
+        async killTranscode() { /* rien */ },
+      },
+    };
+  }
+
+  it("annuler un transfert EN VOL ne programme aucune relance", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const dying = dyingNet();
+    const { engine } = makeEngine(db, root, dying.net, { retryDelaysMs: RETRY_DELAYS_MS });
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, fileId)?.status).toBe("downloading");
+    });
+
+    engine.cancel(fileId);
+    // L'intention est ecrite AU GESTE, pas a la fin du transfert : une
+    // application tuee ici ne laisse pas une ligne que le demarrage remettrait
+    // en file.
+    expect(getFile(db, fileId)?.status).toBe("canceled");
+
+    dying.die();
+    await vi.waitFor(() => {
+      expect(engine.pending()).toBe(0);
+    });
+    expect(getFile(db, fileId)?.status).toBe("canceled");
+    expect(getFile(db, fileId)?.errorCode).toBeNull();
+    expect(nextRetryDueAt(db)).toBeNull();
+  });
+
+  it("une pause en vol soldee par une exception reste une pause", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const dying = dyingNet();
+    const { engine } = makeEngine(db, root, dying.net, { retryDelaysMs: RETRY_DELAYS_MS });
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, fileId)?.status).toBe("downloading");
+    });
+
+    // C'est le bouton de la notification Android : il met tout en pause.
+    engine.pause(fileId);
+    dying.die();
+    await vi.waitFor(() => {
+      expect(engine.pending()).toBe(0);
+    });
+    expect(getFile(db, fileId)?.status).toBe("paused");
+    expect(nextRetryDueAt(db)).toBeNull();
+  });
+
+  it("une ligne annulee survit au redemarrage du moteur", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const fileId = seed(db, "item1", 1_000);
+    const dying = dyingNet();
+    const first = makeEngine(db, root, dying.net, { retryDelaysMs: RETRY_DELAYS_MS });
+    first.engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, fileId)?.status).toBe("downloading");
+    });
+    first.engine.cancel(fileId);
+
+    // Le processus est mort avant la fin du transfert : c'est le cas frequent
+    // sur Android, ou l'on annule puis l'on balaye l'application. Un moteur
+    // neuf sur la MEME base rejoue `normalizeOnEngineStart`, qui remet en file
+    // tout ce qui etait reste `downloading` — la ligne annulee doit lui
+    // echapper.
+    const second = makeEngine(db, root, immediateNet(200), { retryDelaysMs: RETRY_DELAYS_MS });
+    second.engine.start(CREDS);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(getFile(db, fileId)?.status).toBe("canceled");
+  });
+
   it("reprendre remet en file et relance", async () => {
     const db = openInMemory();
     const root = rootWithThreeItems();

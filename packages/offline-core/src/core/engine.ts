@@ -213,12 +213,21 @@ export class DownloadEngine {
           this.deps.now(),
         );
       } catch (error) {
-        // Un défaut inattendu ne doit pas laisser le fichier en `downloading`
-        // pour l'éternité — il resterait invisible jusqu'au prochain démarrage.
-        // La trace est tout ce qui restera pour comprendre : le statut, lui,
-        // ne dit rien de plus que « imprévu ».
-        this.deps.onUnexpected?.("engine.work", error);
-        end = { kind: "failed", code: "unexpected", bytesDone: file.bytesDone };
+        // Une exception levée PARCE QU'ON VIENT D'INTERROMPRE n'est pas une
+        // panne : le pilote a été coupé net, c'est tout ce qu'elle dit. La
+        // traduire en « imprévu » armait une relance à cinq secondes, qui
+        // faisait repartir ce que l'utilisateur venait d'arrêter — depuis la
+        // notification Android comme depuis la feuille d'actions.
+        if (flags.cancel) end = { kind: "canceled" };
+        else if (flags.pause) end = { kind: "paused", bytesDone: file.bytesDone };
+        else {
+          // Un défaut inattendu ne doit pas laisser le fichier en `downloading`
+          // pour l'éternité — il resterait invisible jusqu'au prochain
+          // démarrage. La trace est tout ce qui restera pour comprendre : le
+          // statut, lui, ne dit rien de plus que « imprévu ».
+          this.deps.onUnexpected?.("engine.work", error);
+          end = { kind: "failed", code: "unexpected", bytesDone: file.bytesDone };
+        }
       }
       if (end.kind === "complete" && file.variant === "light" && this.deps.finalizeMedia !== undefined) {
         end = await this.finalize(file, end.finalSize);

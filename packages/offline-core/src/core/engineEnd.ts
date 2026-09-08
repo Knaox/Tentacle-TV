@@ -9,7 +9,7 @@
 
 import type { DatabaseHandle, Volume } from "./adapters";
 import { safeJoin } from "./paths";
-import { isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
+import { getFile, isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
 import { clearRetry, recordFailure } from "./retry";
 import type { TransferEnd } from "./transfer";
 import type { FinalizeVerdict } from "./engineDeps";
@@ -23,9 +23,18 @@ export interface EndContext {
   retryDelaysMs: readonly number[];
 }
 
-/** Traduit une fin de transfert en statut de base. */
+/**
+ * Traduit une fin de transfert en statut de base.
+ *
+ * Une ligne DÉJÀ annulée ne se laisse pas recouvrir : `cancelFile` a écrit son
+ * intention au moment du geste, et ce qui arrive ensuite n'est que la fin d'un
+ * transfert qu'on avait interrompu. Sans cette garde, un pilote coupé net
+ * repassait la ligne en `error` — et une erreur relançable fait repartir, cinq
+ * secondes plus tard, ce que l'utilisateur venait d'arrêter.
+ */
 export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, ctx: EndContext): void {
   const now = ctx.nowMs;
+  if (end.kind !== "canceled" && getFile(db, fileId)?.status === "canceled") return;
   switch (end.kind) {
     case "complete":
       setBytesDone(db, fileId, end.finalSize, now);
