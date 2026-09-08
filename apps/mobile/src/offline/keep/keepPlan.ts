@@ -4,9 +4,9 @@
  * panachage — une carte ne reste que si TOUS les épisodes la proposent, et
  * elle s'aligne sur le pire d'entre eux (avertissement audio, taille estimée).
  *
- * Sur le téléphone, on ne CHOISIT pas de perdre de l'image : l'original quand
- * l'appareil le lit, sinon la copie sans réencodage, et l'Allégé seulement
- * quand rien d'autre ne passe.
+ * L'ordre des cartes fait le défaut — l'original quand l'appareil lit le
+ * fichier, sinon la copie sans réencodage — mais l'Allégé reste offert à côté :
+ * sur un téléphone, réduire la taille d'un titre est un besoin.
  */
 
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -21,16 +21,13 @@ import {
 
 const KINDS: readonly OfflineVariantKind[] = ["original", "remux", "light"];
 
-/** La règle du mobile : jamais d'Allégé à côté d'une version sans perte. */
-const LOSSLESS_FIRST = { lossyAsLastResort: true } as const;
-
 export function planForItems(
   items: readonly MediaItem[],
   platform: PlatformMediaSupport,
   capabilities: DownloadCapabilities,
 ): OfflineVariantPlan {
   if (items.length === 0) return { cards: [], excluded: [] };
-  const plans = items.map((item) => offlineVariantsFor(item, platform, capabilities, LOSSLESS_FIRST));
+  const plans = items.map((item) => offlineVariantsFor(item, platform, capabilities));
   if (plans.length === 1) return plans[0] as OfflineVariantPlan;
 
   const cards: OfflineVariantCard[] = [];

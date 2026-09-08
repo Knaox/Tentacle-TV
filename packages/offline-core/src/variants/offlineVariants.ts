@@ -4,17 +4,18 @@
  *
  * Hors ligne, personne ne transcode : le fichier doit se lire tel quel. Sur
  * iPhone, un MKV « Original » serait illisible ; d'où la variante `remux` —
- * la vidéo recopiée telle quelle dans un MP4 par le serveur (palier `pmax` du
- * mode Allégé), l'audio converti seulement s'il est incompatible. L'Allégé
- * reste le repli universel.
+ * la vidéo recopiée telle quelle dans un MP4 par le serveur (palier `pmax`),
+ * l'audio converti seulement s'il est incompatible. L'Allégé reste le repli
+ * universel.
  *
  * Trois cartes possibles, dans cet ordre : `original`, `remux`, `light`. Ce
- * qui est exclu l'est avec sa raison : le dialogue peut l'expliquer.
+ * qui est exclu l'est avec sa raison : le dialogue peut l'expliquer. L'ordre
+ * fait le défaut — on ne dégrade jamais par inadvertance —, mais les trois
+ * cohabitent : réduire la taille d'un titre reste un choix qu'on peut faire,
+ * y compris quand la seule version sans perte est un remux.
  *
- * `lossyAsLastResort` change la règle du jeu : l'Allégé — le seul des trois à
- * perdre de l'image — n'est plus proposé À CÔTÉ d'une version sans perte, mais
- * seulement quand il ne reste rien d'autre. On ne choisit pas de dégrader ; on
- * y consent quand l'appareil ne sait pas faire autrement.
+ * DEUX droits distincts, et non un seul : le remux recopie l'image, l'Allégé
+ * la recompresse. Un compte sans mode Allégé garde donc le remux.
  */
 
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
@@ -45,9 +46,7 @@ export type OfflineExclusionReason =
   | "serverPreset"
   | "right"
   /** Remux inutile : l'original est déjà entièrement lisible. */
-  | "redundant"
-  /** Allégé écarté : une version SANS PERTE existe (cf. `lossyAsLastResort`). */
-  | "lossless";
+  | "redundant";
 
 export interface OfflineVariantCard {
   kind: OfflineVariantKind;
@@ -62,14 +61,6 @@ export interface OfflineVariantCard {
 export interface OfflineVariantPlan {
   cards: OfflineVariantCard[];
   excluded: Array<{ kind: OfflineVariantKind; reason: OfflineExclusionReason }>;
-}
-
-export interface OfflineVariantOptions {
-  /**
-   * L'Allégé n'est offert que si NI l'original NI le remux ne conviennent.
-   * Le mobile l'exige ; le bureau garde le choix des trois (défaut `false`).
-   */
-  lossyAsLastResort?: boolean;
 }
 
 /** Même découpe que `containerExt` du dialogue : premier jeton, repli `mkv`. */
@@ -101,7 +92,6 @@ export function offlineVariantsFor(
   item: MediaItem,
   platform: PlatformMediaSupport,
   capabilities: DownloadCapabilities,
-  options?: OfflineVariantOptions,
 ): OfflineVariantPlan {
   // Invisibilité stricte : sans droit, pas même une raison.
   if (!capabilities.downloads) return { cards: [], excluded: [] };
@@ -145,7 +135,7 @@ export function offlineVariantsFor(
 
   // Qualité d'origine en MP4 : seulement si elle apporte quelque chose.
   const remuxable = videoCodec === "h264" || videoCodec === "hevc";
-  if (!capabilities.lightDownloads) exclude("remux", "right");
+  if (!capabilities.remuxDownloads) exclude("remux", "right");
   else if (!capabilities.lightPresets.includes(REMUX_PRESET)) exclude("remux", "serverPreset");
   else if (dolbyVision) exclude("remux", "dolbyVision");
   else if (interlaced) exclude("remux", "interlaced");
@@ -154,10 +144,11 @@ export function offlineVariantsFor(
   else if (audio.unplayable.length > 0) offer("remux", "audioCodec", size, true);
   else exclude("remux", "redundant");
 
-  // Allégé : le repli, dès que la conversion est permise — et, quand on ne
-  // veut pas perdre d'image, seulement s'il ne reste rien d'autre.
+  // Allégé : le repli, dès que la conversion est permise. Il vient APRÈS les
+  // deux autres, donc il n'est jamais le défaut — mais il reste offert à côté
+  // d'elles : sur un téléphone, réduire la taille d'un titre est un besoin, pas
+  // un accident.
   if (!capabilities.lightDownloads) exclude("light", "right");
-  else if (options?.lossyAsLastResort === true && plan.cards.length > 0) exclude("light", "lossless");
   else offer("light", "fallback", null, true);
 
   return plan;
