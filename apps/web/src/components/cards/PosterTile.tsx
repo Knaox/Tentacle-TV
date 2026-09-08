@@ -10,6 +10,7 @@ import { CardQuickActions } from "./CardQuickActions";
 import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { PlayIcon } from "../icons/HeroIcons";
 import { HoverRatingStars } from "../rating/HoverRatingStars";
 import { PressableScale } from "../ui/PressableScale";
@@ -120,7 +121,15 @@ export function PosterTile({
             "--reveal-ms": "150ms",
           } as React.CSSProperties}
         >
-          <CardQuickActions item={item} variant="compact" />
+          <div className="flex flex-col gap-1.5">
+            <CardQuickActions item={item} variant="compact" />
+            {/* Téléchargement — bureau ET droit, sinon PAS rendu (ni grisé, ni
+                cadenas). Dans le même cluster : même gabarit, même rythme, et
+                il hérite du montage au survol au lieu d'en réclamer un autre.
+                Sur une tuile de série groupée (« +N »), il propose TOUTE la
+                série — c'est son identifiant que la tuile porte. */}
+            <CardDownloadAction item={item} variant="compact" />
+          </div>
         </div>
       )}
 
