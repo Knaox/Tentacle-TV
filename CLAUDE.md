@@ -162,6 +162,26 @@ Trois pièges déjà payés :
   l'usage AVANT de renommer, et laisser un commentaire là où le français doit
   rester (cf. `masquees` dans `railPinning.ts`).
 
+### Mobile — le mot « téléchargement » ne s'écrit nulle part
+
+Zéro occurrence de **téléchargement, télécharger, téléchargé, download** dans
+un texte que l'utilisateur du mobile peut lire. Les relecteurs d'Apple ouvrent
+ces écrans, et le mot y désigne pour eux une distribution de contenu hors
+boutique — la confusion coûte un rejet. Le vocabulaire de remplacement est déjà
+posé : « garder hors ligne », « sur cet appareil », « transfert », « préparer »,
+« sur le téléphone ». Sa source est l'espace de noms `offline`
+(`packages/shared/src/i18n/locales/{fr,en}/offline.ts`), dont l'en-tête porte la
+même consigne ; toute clé fautive y a son équivalent.
+
+Concrètement : le mobile lit `offline` en priorité, et ne réutilise de
+`downloads` — l'espace du web et du bureau, où le mot reste légitime — que les
+clés qui ne le contiennent pas. Une chaîne visible en dur ne déroge pas.
+
+Ne sont PAS concernés (rien de tout cela ne s'affiche) : les noms d'icônes
+Feather (`download`, `download-cloud`), les statuts de base (`downloading`), les
+noms d'évènements du moteur (`downloads://changed`), les chemins et les
+identifiants de code. Les renommer ne gagnerait rien et casserait l'exécution.
+
 ### Linux — le compromis Wayland / X11, et la troisième voie du compositeur
 
 Deux vérités s'opposent, et toute l'architecture du lecteur Linux en découle.
