@@ -39,6 +39,11 @@ export default {
   downloadSelection: "Télécharger la sélection",
   dialogTitleSelection: "Télécharger la sélection ({{count}} épisodes)",
   downloadedBadge: "Téléchargé",
+  // Sur une carte, le bouton d'un titre déjà pris en charge ne relance rien :
+  // il mène à l'écran des téléchargements. Sans texte à côté, l'infobulle est
+  // le seul endroit où le dire — d'où deux libellés à part.
+  cardDownloadActive: "Téléchargement en cours — voir les téléchargements",
+  cardDownloadOnDevice: "Sur cet appareil — voir les téléchargements",
   dialogTitle: "Télécharger",
   dialogTitleSeason: "Télécharger la saison ({{count}} épisodes)",
   variantOriginal: "Original",
