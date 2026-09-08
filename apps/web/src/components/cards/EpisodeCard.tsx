@@ -14,11 +14,13 @@ import { prefetchDetailRoute } from "./prefetchDetail";
 import { useCardContextMenu } from "./useCardContextMenu";
 import { MediaContextMenu } from "../MediaContextMenu";
 import { CardMetaOverlay } from "../media/CardMetaOverlay";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { resolveBannerImage } from "@tentacle-tv/shared";
 import { CardTrickplayImage } from "./CardTrickplayImage";
 import { EPISODE_VW, EPISODE_WIDTH, type CardSize } from "./cardSizes";
 import { cardWidthStyle } from "./cardWidthStyle";
 import { useHoverGuard } from "../../hooks/useHoverGuard";
+import { useMountWhile } from "../../hooks/useMountWhile";
 import { useResumeFrame } from "../../hooks/useResumeFrame";
 
 interface EpisodeCardProps {
@@ -67,6 +69,16 @@ export const EpisodeCard = memo(function EpisodeCard({
   // sa propre boucle de suivi.
   const unhover = useCallback(() => setHovered(false), []);
   useHoverGuard(preview.anchorRef, hovered, unhover);
+  /**
+   * Le repli sans panneau était le DERNIER survol de carte laissé à
+   * `opacity: 0`, contrôles montés en permanence. Il porte désormais trois
+   * abonnements au cache — vu/favori/liste, file de téléchargement, droits —
+   * et chaque vignette de « Reprendre » les gardait au repos.
+   * 200 ms couvre le plus lent des deux fondus (150 pour les actions, 200
+   * pour le chevron « Plus d'infos »).
+   */
+  const fallbackVisible = !preview.panelActive && hovered;
+  const fallbackMounted = useMountWhile(fallbackVisible, 200);
 
   const isEpisode = item.Type === "Episode";
   // La vignette EXACTE de la reprise, croppée dans sa planche trickplay —
@@ -203,15 +215,20 @@ export const EpisodeCard = memo(function EpisodeCard({
             PAS s'ouvrir : appareil tactile, petit écran, mais aussi carte trop
             basse ou rognée par le bord de la rangée. Sans ce repli, ces cartes
             n'offraient plus aucune action au survol. */}
-        {!preview.panelActive && (
+        {!preview.panelActive && fallbackMounted && (
           <>
             <div
-              className="absolute right-2 top-2 z-20 transition-opacity duration-150"
-              style={{ opacity: hovered ? 1 : 0, pointerEvents: hovered ? "auto" : "none" }}
+              className="hover-reveal absolute right-2 top-2 z-20 flex items-center gap-1.5"
+              data-shown={fallbackVisible}
+              style={{
+                pointerEvents: fallbackVisible ? "auto" : "none",
+                "--reveal-ms": "150ms",
+              } as React.CSSProperties}
             >
               <CardQuickActions item={item} variant="bar" />
+              <CardDownloadAction item={item} variant="bar" />
             </div>
-            <CardMoreInfoButton detailId={item.Id} visible={hovered} />
+            <CardMoreInfoButton detailId={item.Id} visible={fallbackVisible} />
           </>
         )}
 
