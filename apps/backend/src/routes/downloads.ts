@@ -22,6 +22,7 @@ import { getJellyfinUrl } from "../services/configStore";
 import {
   checkDownloadRight,
   checkLightRight,
+  checkRemuxRight,
   getDownloadCapabilities,
   mediaBrowserAuthHeader,
 } from "../services/jellyfinPolicy";
@@ -76,7 +77,15 @@ const TRANSCODE_PRESETS: Record<string, TranscodePreset> = {
   pmax: { videoCodec: "h264,hevc", audioCodec: "aac", maxAudioChannels: 6 },
 };
 
-const LIGHT_PRESET_IDS = Object.keys(TRANSCODE_PRESETS);
+/** Le palier qui recopie l'image ; il ne dépend PAS du droit de conversion. */
+const REMUX_PRESET_ID = "pmax";
+/** Ce que ces droits-là donnent droit à demander. L'ordre reste celui de
+ *  `TRANSCODE_PRESETS` : un client ancien lit la liste telle qu'il l'attendait. */
+function presetsFor(capabilities: { remuxDownloads: boolean; lightDownloads: boolean }): string[] {
+  return Object.keys(TRANSCODE_PRESETS).filter((id) =>
+    id === REMUX_PRESET_ID ? capabilities.remuxDownloads : capabilities.lightDownloads,
+  );
+}
 
 /** Identifiant d'appareil qu'un client peut choisir pour sa session de transcodage. */
 const DEVICE_ID_RE = /^tentacle-dl-[0-9a-fA-F]{8}$/;
@@ -119,11 +128,20 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
    *  indiscernable d'une fonctionnalité désactivée côté serveur. */
   app.get("/capabilities", async (request) => {
     const token = getTokenFromRequest(request);
-    if (!token) return { downloads: false, lightDownloads: false, lightPresets: [] };
+    if (!token) {
+      return {
+        downloads: false,
+        remuxDownloads: false,
+        lightDownloads: false,
+        audioConversion: false,
+        lightPresets: [],
+      };
+    }
     const capabilities = await getDownloadCapabilities(token);
     // Les paliers servis : un client ancien ignore le champ, un client récent
-    // n'y propose « qualité d'origine » que si `pmax` y figure.
-    return { ...capabilities, lightPresets: capabilities.lightDownloads ? LIGHT_PRESET_IDS : [] };
+    // n'y propose « qualité d'origine » que si `pmax` y figure. Les deux
+    // familles sont désormais indépendantes — `pmax` seul est un cas normal.
+    return { ...capabilities, lightPresets: presetsFor(capabilities) };
   });
 
   /** Fichier original — pipe de `GET /Items/{id}/Download` (Range passthrough). */
@@ -168,15 +186,25 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
    *  compris : voir l'avertissement sur `context=Static` plus haut. Pas de
    *  Range possible sur un transcode : toute reprise repart de zéro (géré côté
    *  moteur desktop).
-   *  Le droit appliqué ICI est `EnableMediaConversion` (Jellyfin ne l'enforce
-   *  pas lui-même) + les droits de transcodage de lecture. */
+   *  Le droit appliqué ICI dépend du palier : `pmax` recopie l'image, il ne
+   *  demande que les droits de transcodage de lecture ; les trois autres
+   *  recompressent et exigent en plus `EnableMediaConversion` (que Jellyfin
+   *  n'enforce pas lui-même). */
   app.get("/light/:itemId", async (request, reply) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     const query = request.query as Record<string, string | undefined>;
-    const preset = TRANSCODE_PRESETS[query.preset ?? "p720"];
+    const presetId = query.preset ?? "p720";
+    const preset = TRANSCODE_PRESETS[presetId];
     if (!token || !ITEM_ID_RE.test(itemId) || !preset) return notFound(reply);
-    if (!(await checkLightRight(token, itemId))) return notFound(reply);
+    // La garde suit le palier : `pmax` recopie l'image et n'exige donc que le
+    // transcodage de lecture ; les paliers qui recompressent gardent
+    // `EnableMediaConversion`.
+    const allowed =
+      presetId === REMUX_PRESET_ID
+        ? await checkRemuxRight(token, itemId)
+        : await checkLightRight(token, itemId);
+    if (!allowed) return notFound(reply);
 
     const jellyfinUrl = getJellyfinUrl();
     if (!jellyfinUrl) return notFound(reply);
