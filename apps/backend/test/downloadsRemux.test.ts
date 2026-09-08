@@ -87,14 +87,32 @@ describe("palier pmax — qualité d'origine en MP4", () => {
     expect(upstream()).toContain("subtitleMethod=Encode");
   });
 
-  it("exige le droit de conversion, comme l'Allégé", async () => {
+  it("n'exige PAS le droit de conversion : il recopie l'image", async () => {
     const app = await buildApp();
     const res = await app.inject({
       url: `/api/downloads/light/${ITEM_IN_A}?preset=pmax`,
       headers: { authorization: "Bearer tok-noconv" },
     });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("mais tombe sans aucun droit de transcodage de lecture", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=pmax`,
+      headers: { authorization: "Bearer tok-nostream" },
+    });
     expect(res.statusCode).toBe(404);
     expect(res.json()).toEqual({ error: "Not found" });
+  });
+
+  it("le même compte se voit toujours refuser un palier qui recompresse", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p720`,
+      headers: { authorization: "Bearer tok-noconv" },
+    });
+    expect(res.statusCode).toBe(404);
   });
 
   it("les paliers historiques ne changent pas d'un octet", async () => {
