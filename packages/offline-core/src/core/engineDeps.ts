@@ -12,7 +12,7 @@ import type { FetchBytes } from "./fetcher";
 import type { Creds } from "./worker";
 
 /** Ce que la plateforme rend d'une finalisation : voir `EngineDeps.finalizeMedia`. */
-export type FinalizeVerdict = "ok" | "unusable" | void;
+export type FinalizeVerdict = "ok" | "unusable" | "noaudio" | void;
 
 export interface EngineDeps {
   db: DatabaseHandle;
@@ -72,6 +72,9 @@ export interface EngineDeps {
    *
    * `"unusable"` dit autre chose qu'un échec : le média est arrivé sans son
    * index, aucun remux ne le sauvera, et il faut le retélécharger.
+   *
+   * `"noaudio"` en dit encore autre chose : le remux a produit une image SANS
+   * SON. Retélécharger donnerait le même fichier — on s'arrête, et on le dit.
    */
   finalizeMedia?: (absPath: string, file: { variant: string; relPath: string }) => Promise<FinalizeVerdict>;
 }

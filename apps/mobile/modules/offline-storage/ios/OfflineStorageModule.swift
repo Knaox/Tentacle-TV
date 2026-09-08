@@ -48,6 +48,9 @@ public class OfflineStorageModule: Module {
     //                double d'espace disque le temps de l'export.
     //   `failed`   — l'export d'un fichier fragmenté a échoué ; l'original
     //                reste intact et la finalisation se retentera.
+    //   `noaudio`  — l'export a réussi, mais il a laissé tomber LA piste
+    //                audio : le titre serait muet. On le jette, et le moteur
+    //                le dit au lieu de le présenter comme prêt.
     //
     // Dans tous les cas où le fichier est exploitable, l'entrée d'échantillon
     // HEVC est promue en `hvc1` : voir `Mp4Boxes`.
@@ -77,9 +80,15 @@ public class OfflineStorageModule: Module {
 /// Remux SANS ré-encodage d'un MP4 fragmenté (transcodage progressif de
 /// Jellyfin : ni index ni durée) en MP4 classique, sur place. Passthrough
 /// AVFoundation ; l'original n'est remplacé qu'une fois le nouveau écrit.
+///
+/// Le passthrough vers un `.mp4` ABANDONNE EN SILENCE les pistes que le
+/// conteneur cible refuse : l'export réussit, et le titre n'a plus de son. On
+/// compte donc les pistes audio des deux côtés avant de remplacer quoi que ce
+/// soit. Une source qui n'en avait aucune n'a rien perdu.
 private func remuxFragmented(source: URL, promise: Promise) {
   let target = URL(fileURLWithPath: source.path + ".finalizing")
   try? FileManager.default.removeItem(at: target)
+  let expectedAudio = Mp4Boxes.audioTrackCount(of: source)
   let asset = AVURLAsset(url: source)
   guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
     promise.resolve("failed")
@@ -92,6 +101,11 @@ private func remuxFragmented(source: URL, promise: Promise) {
     guard session.status == .completed else {
       try? FileManager.default.removeItem(at: target)
       promise.resolve("failed")
+      return
+    }
+    if expectedAudio > 0, Mp4Boxes.audioTrackCount(of: target) == 0 {
+      try? FileManager.default.removeItem(at: target)
+      promise.resolve("noaudio")
       return
     }
     _ = Mp4Boxes.promoteHevcTag(at: target)

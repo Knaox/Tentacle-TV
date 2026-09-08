@@ -38,7 +38,7 @@ interface OfflineStorageNative {
   promoteHevcTag?(path: string): Promise<boolean>;
 }
 
-export type FinalizeOutcome = "done" | "failed" | "unusable" | "unavailable";
+export type FinalizeOutcome = "done" | "failed" | "unusable" | "noaudio" | "unavailable";
 
 const native = requireOptionalNativeModule<OfflineStorageNative>("OfflineStorage");
 
@@ -119,6 +119,9 @@ export async function stopTransferService(): Promise<boolean> {
  *
  * `unusable` dit que le fichier est arrivé SANS son index et qu'aucun remux ne
  * le sauvera — le moteur le retélécharge au lieu de s'acharner.
+ * `noaudio` dit que le remux a laissé tomber la piste audio : le titre serait
+ * muet, et le retélécharger donnerait le même fichier — le moteur s'arrête et
+ * le dit.
  * `unavailable` sans module ou sur un build qui l'ignore : le fichier reste tel
  * quel — le moteur ne le tient pas pour un échec.
  */
@@ -130,7 +133,8 @@ export async function finalizeMp4(path: string): Promise<FinalizeOutcome> {
     // d'un fichier sans index, et son échec reste un échec ordinaire.
     if (typeof verdict === "boolean") return verdict ? "done" : "failed";
     if (verdict === "ok") return "done";
-    return verdict === "unusable" ? "unusable" : "failed";
+    if (verdict === "unusable") return "unusable";
+    return verdict === "noaudio" ? "noaudio" : "failed";
   } catch {
     return "failed";
   }
