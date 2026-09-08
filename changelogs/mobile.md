@@ -5,6 +5,21 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.7.1]
+### FR
+- **Réduire la taille d'un titre redevient possible** : le choix 1080p / 720p / 480p était parti, et il disparaissait entièrement dès qu'un fichier devait être réemballé pour l'appareil — c'est-à-dire sur presque tous les MKV
+- **Un compte sans « mode allégé » garde quand même ses titres** : le réemballage ne recompresse rien, il n'a donc plus à demander ce droit-là ; seules les options de réduction de qualité disparaissent
+- **Jamais un titre sans le son** : une piste que le format d'arrivée refusait était abandonnée en silence, et le titre s'annonçait prêt ; il est maintenant refusé, avec la raison. Un titre dont le serveur ne peut pas convertir l'audio n'est plus proposé au réemballage
+- **Une pause ou un abandon ne repart plus tout seul** : arrêté depuis la notification ou depuis la fiche, un transfert était pris pour une panne et relancé cinq secondes plus tard — et une application fermée dans la foulée le retrouvait relancé au démarrage suivant
+- **Deux avertissements cessent de mentir** : « vous perdez de la qualité » ne s'affiche plus quand une version sans perte existe à côté, et « une seule piste audio est conservée » disparaît quand le titre n'en a aucune
+
+### EN
+- **Shrinking a title is possible again**: the 1080p / 720p / 480p choice had gone, and it vanished entirely as soon as a file had to be repackaged for the device — that is, on almost every MKV
+- **An account without "light mode" still keeps its titles**: repackaging recompresses nothing, so it no longer asks for that right; only the quality-reduction options disappear
+- **Never a title without sound**: a track the target format refused was dropped in silence and the title announced itself ready; it is now refused, with the reason. A title whose audio the server cannot convert is no longer offered for repackaging
+- **A pause or an abort never restarts on its own**: stopped from the notification or from the list, a transfer was taken for a failure and retried five seconds later — and an app closed right after found it running again on the next launch
+- **Two warnings stop lying**: "you lose quality" no longer shows when a lossless version sits next to it, and "only one audio track is kept" disappears when the title has none
+
 ## [1.7.0]
 ### FR
 - **Rien n'est gardé en moins bien** : un titre que l'appareil sait lire est gardé tel quel, sinon réemballé sans retoucher l'image ; la version recompressée n'arrive plus qu'en dernier recours, et le dit
