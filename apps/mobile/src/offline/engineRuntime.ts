@@ -111,6 +111,8 @@ async function finalizeLightFile(absPath: string): Promise<FinalizeVerdict> {
   // Un fichier arrivé sans son index n'est pas un remux raté : le moteur le
   // jette et repart du transfert plutôt que de rejouer un remux impossible.
   if (outcome === "unusable") return "unusable";
+  // Un titre muet non plus : le retélécharger donnerait le même fichier.
+  if (outcome === "noaudio") return "noaudio";
   if (outcome === "failed") throw new Error("finalizeMp4 failed");
   return "ok";
 }

@@ -45,6 +45,12 @@ export type OfflineExclusionReason =
   | "interlaced"
   | "serverPreset"
   | "right"
+  /**
+   * Remux écarté : il sort toujours de l'AAC, et le serveur n'a pas le droit
+   * de convertir l'audio d'une source qui n'en a aucune piste. Le fichier
+   * arriverait muet — mieux vaut ne pas le proposer.
+   */
+  | "audioRight"
   /** Remux inutile : l'original est déjà entièrement lisible. */
   | "redundant";
 
@@ -107,6 +113,10 @@ export function offlineVariantsFor(
     playable: audios.filter((a) => platform.audioCodecs.has(codecOf(a))).map((a) => a.Index),
     unplayable: audios.filter((a) => !platform.audioCodecs.has(codecOf(a))).map((a) => a.Index),
   };
+  // Le palier `pmax` sort TOUJOURS de l'AAC (copier de l'ac3 vers un MP4 écrit
+  // un fichier sans index) : une piste déjà en AAC se recopie, les autres
+  // doivent être converties — ce que tout serveur n'autorise pas.
+  const aacOnBoard = audios.some((a) => codecOf(a) === "aac");
   const dolbyVision = video !== undefined && incompatibleDolbyVision(video);
   const interlaced = video?.IsInterlaced === true && !platform.deinterlaces;
 
@@ -137,7 +147,9 @@ export function offlineVariantsFor(
   const remuxable = videoCodec === "h264" || videoCodec === "hevc";
   if (!capabilities.remuxDownloads) exclude("remux", "right");
   else if (!capabilities.lightPresets.includes(REMUX_PRESET)) exclude("remux", "serverPreset");
-  else if (dolbyVision) exclude("remux", "dolbyVision");
+  else if (!capabilities.audioConversion && audios.length > 0 && !aacOnBoard) {
+    exclude("remux", "audioRight");
+  } else if (dolbyVision) exclude("remux", "dolbyVision");
   else if (interlaced) exclude("remux", "interlaced");
   else if (!remuxable) exclude("remux", "videoCodec");
   else if (!platform.containers.has(container)) offer("remux", "container", size, true);

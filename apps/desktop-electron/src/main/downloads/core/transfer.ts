@@ -85,7 +85,16 @@ export type TransferEnd =
   /** Codes STABLES, consommés par l'interface. */
   | {
       kind: "failed";
-      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize" | "unexpected";
+      code:
+        | "network"
+        | "disk-full"
+        | "integrity"
+        | "unavailable"
+        | "io"
+        | "finalize"
+        /** Le remux a rendu une image sans son : rien à retenter. */
+        | "audio"
+        | "unexpected";
       bytesDone: number;
     };
 
@@ -169,6 +178,19 @@ export async function run(
   let resumeFrom = 0;
   if (job.variant === "original") {
     resumeFrom = files.size(part) ?? 0;
+    // Le `.part` est DÉJÀ complet : le transfert s'est achevé pendant que le
+    // JavaScript dormait — iPhone verrouillé, la session d'arrière-plan a fini
+    // toute seule, et le moteur n'a jamais vu sa promesse se résoudre. Au
+    // réveil, la file remet ce fichier en attente ; sans cette reconnaissance,
+    // on retéléchargerait des gigaoctets déjà sur le disque.
+    if (job.expectedSize !== null && job.expectedSize > 0 && resumeFrom === job.expectedSize) {
+      try {
+        files.rename(part, job.finalPath);
+      } catch {
+        return { kind: "failed", code: "io", bytesDone: resumeFrom };
+      }
+      return { kind: "complete", finalSize: resumeFrom };
+    }
   } else {
     discard(files, part);
     driver.forget?.(part);
@@ -256,10 +278,16 @@ export async function run(
 
   if (outcome.status >= 400) {
     await stopTranscode();
+    // 401/403 : le jeton a expiré pendant le transfert — typique d'une longue
+    // session écran verrouillé. Ce n'est pas « le média n'existe plus » : le
+    // rafraîchissement au retour au premier plan répare, et une pause système
+    // repart d'elle-même. Le marquer en erreur demandait un geste pour rien.
     const code =
-      outcome.status === 404 || outcome.status === 403 || outcome.status === 401
-        ? "unavailable"
-        : "network";
+      outcome.status === 401 || outcome.status === 403
+        ? "network"
+        : outcome.status === 404
+          ? "unavailable"
+          : "network";
     // Un pilote natif peut avoir écrit le corps de l'erreur dans le `.part` :
     // ce qui dépasse la reprise n'est pas du média, on le jette.
     if ((files.size(part) ?? 0) !== resumeFrom) {

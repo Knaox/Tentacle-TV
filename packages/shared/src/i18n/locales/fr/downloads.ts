@@ -77,6 +77,7 @@ export default {
   statusComplete: "Téléchargé",
   statusError: "Erreur",
   statusCanceled: "Annulé",
+  errorAudio: "Version sans piste audio",
   errorDiskFull: "Disque plein",
   errorUnavailable: "Indisponible sur le serveur",
   errorIntegrity: "Fichier incomplet",

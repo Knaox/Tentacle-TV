@@ -85,7 +85,16 @@ export type TransferEnd =
   /** Codes STABLES, consommés par l'interface. */
   | {
       kind: "failed";
-      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize" | "unexpected";
+      code:
+        | "network"
+        | "disk-full"
+        | "integrity"
+        | "unavailable"
+        | "io"
+        | "finalize"
+        /** Le remux a rendu une image sans son : rien à retenter. */
+        | "audio"
+        | "unexpected";
       bytesDone: number;
     };
 

@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from "vitest";
 import { openInMemory } from "../node/nodeDatabase";
 import { MAX_PARALLEL } from "./engine";
 import { getFile } from "./queue";
+import { nextRetryDueAt, RETRY_DELAYS_MS } from "./retry";
 import fs from "node:fs";
 import path from "node:path";
 import { claimOrCreateFile } from "./store";
@@ -171,6 +172,34 @@ describe("traduction des fins de transfert", () => {
     expect(file?.phase).toBeNull();
     expect(file?.bytesDone).toBe(0);
     expect(fs.existsSync(path.join(root, relPath))).toBe(false);
+  });
+
+  // Le remux a rendu une image SANS SON. Retelecharger donnerait le meme
+  // fichier : on s'arrete sur une cause lisible plutot que de livrer un titre
+  // muet ou de boucler.
+  it("un media sans son est jete, sans relance", async () => {
+    const db = openInMemory();
+    const root = rootWithThreeItems();
+    const relPath = "media/item1/light-ms1-p480.mp4";
+    const light = claimOrCreateFile(db, spec({
+      itemId: "item1", variant: "light", preset: "p480", relPath, expectedSize: null,
+    })).fileId;
+    const { engine } = makeEngine(db, root, immediateNet(200), {
+      finalizeMedia: async () => "noaudio" as const,
+      retryDelaysMs: RETRY_DELAYS_MS,
+    });
+
+    engine.start(CREDS);
+    await vi.waitFor(() => {
+      expect(getFile(db, light)?.status).toBe("error");
+    });
+
+    const file = getFile(db, light);
+    expect(file?.errorCode).toBe("audio");
+    expect(file?.phase).toBeNull();
+    expect(fs.existsSync(path.join(root, relPath))).toBe(false);
+    // `audio` n'est pas relancable : aucune echeance n'est armee.
+    expect(nextRetryDueAt(db)).toBeNull();
   });
 
   it("reprendre une finalisation ratee ne retelecharge rien", async () => {

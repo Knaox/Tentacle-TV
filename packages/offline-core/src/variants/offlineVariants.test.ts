@@ -227,6 +227,26 @@ describe("offlineVariantsFor", () => {
     expect(excluded(plan, "light")).toBe("right");
   });
 
+  // ── Le remux sort toujours de l'AAC : sans droit de conversion audio, une
+  // source qui n'en a aucune piste arriverait MUETTE.
+  it("sans conversion audio, un MKV en DTS ne propose plus son remux", () => {
+    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, noAudioConv);
+    expect(kinds(plan)).toEqual(["light"]);
+    expect(excluded(plan, "remux")).toBe("audioRight");
+  });
+
+  it("une piste AAC parmi les autres suffit : elle se recopie", () => {
+    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts", "aac"]), IOS_LOCAL_SUPPORT, noAudioConv);
+    expect(kinds(plan)).toEqual(["remux", "light"]);
+  });
+
+  it("avec le droit de conversion, le DTS passe par le remux", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["remux", "light"]);
+  });
+
   it("« h265 » vaut hevc", () => {
     const plan = offlineVariantsFor(item("mp4", { Codec: "h265" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
     expect(kinds(plan)).toEqual(["original", "light"]);

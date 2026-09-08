@@ -12,6 +12,7 @@ import { safeJoin } from "./paths";
 import { isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
 import { clearRetry, recordFailure } from "./retry";
 import type { TransferEnd } from "./transfer";
+import type { FinalizeVerdict } from "./engineDeps";
 
 export interface EndContext {
   nowMs: number;
@@ -100,12 +101,24 @@ export function mediaAwaitingFinalize(
  * remux travaille sur un temporaire à côté), donc un remux raté laisse un
  * fichier complet — le retélécharger coûterait des centaines de mégaoctets
  * pour rien. Et la phase survit à un arrêt de l'application.
+ *
+ * Sauf quand la plateforme rend `"unusable"` : le média est arrivé SANS son
+ * index (le transcodage progressif de Jellyfin l'écrit en dernier, et la
+ * réponse s'est achevée avant). Aucun remux ne le réparera — s'y reprendre
+ * trois fois n'use que la batterie, et le fichier occuperait des centaines de
+ * mégaoctets sans jamais se lire. On le jette et on repart du transfert.
+ *
+ * Et sauf `"noaudio"` : le fichier se lit, mais SANS SON — la finalisation a
+ * dû laisser tomber une piste que le conteneur cible refusait. Ici on ne
+ * retélécharge PAS : le serveur reproduirait le même fichier. On le jette,
+ * l'erreur porte sa cause (`audio`, hors des codes relançables) et l'écran la
+ * dit. Un fichier muet livré comme « prêt » serait pire.
  */
 export async function runFinalize(
   db: DatabaseHandle,
   volume: Volume,
   fileId: number,
-  finalizeMedia: (absPath: string, file: { variant: string; relPath: string }) => Promise<void>,
+  finalizeMedia: (absPath: string, file: { variant: string; relPath: string }) => Promise<FinalizeVerdict>,
   file: { variant: string; relPath: string },
   finalSize: number,
   nowMs: number,
@@ -113,8 +126,25 @@ export async function runFinalize(
   const target = safeJoin(volume, file.relPath);
   setPhase(db, fileId, "finalize", nowMs);
   setBytesDone(db, fileId, finalSize, nowMs);
+  const discardMedia = (): void => {
+    try {
+      volume.files.remove(target);
+    } catch {
+      // Un média qui résiste sera écrasé par le transfert suivant.
+    }
+    // La phase tombe : la reprise repart du téléchargement, pas du remux.
+    setPhase(db, fileId, null, nowMs);
+  };
   try {
-    await finalizeMedia(target, file);
+    const verdict = await finalizeMedia(target, file);
+    if (verdict === "unusable") {
+      discardMedia();
+      return { kind: "failed", code: "integrity", bytesDone: 0 };
+    }
+    if (verdict === "noaudio") {
+      discardMedia();
+      return { kind: "failed", code: "audio", bytesDone: 0 };
+    }
     setPhase(db, fileId, null, nowMs);
     return { kind: "complete", finalSize: volume.files.size(target) ?? finalSize };
   } catch {
