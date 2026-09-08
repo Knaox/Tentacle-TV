@@ -10,6 +10,7 @@ import { isDesktopApp } from "../desktop/bridge";
 import { useConnectivity } from "../offline/useConnectivity";
 import { setManualOffline } from "../offline/connectivityStore";
 import { useOfflineMode } from "../offline/useOfflineMode";
+import { useDownloadsVisibility } from "../downloads/useDownloadState";
 
 /**
  * Bouton avatar + dropdown menu pour le desktop (TopNav).
@@ -29,6 +30,8 @@ export function UserAvatarMenu() {
   const connectivity = useConnectivity();
   const offline = useOfflineMode();
   const { avatarSrc, onAvatarError, avatarVersion, uploading, upload } = useAvatarUpload();
+  // Le catalogue local : visible dès qu'il y a un droit ou du contenu.
+  const { visible: onDeviceVisible } = useDownloadsVisibility();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const close = useCallback(() => setOpen(false), []);
@@ -66,6 +69,7 @@ export function UserAvatarMenu() {
     handleLogout,
     goOffline,
     offline,
+    onDevice: onDeviceVisible,
   });
 
   // `avatarSrc` retombe tout seul sur la copie locale hors ligne, puis sur
