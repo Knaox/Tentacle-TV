@@ -39,6 +39,8 @@ export default {
   downloadSelection: "Download selection",
   dialogTitleSelection: "Download selection ({{count}} episodes)",
   downloadedBadge: "Downloaded",
+  cardDownloadActive: "Downloading — open downloads",
+  cardDownloadOnDevice: "On this device — open downloads",
   dialogTitle: "Download",
   dialogTitleSeason: "Download season ({{count}} episodes)",
   variantOriginal: "Original",
