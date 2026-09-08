@@ -29,6 +29,13 @@ export default {
   sceneLogoAccent: "Rose d'accent",
 
   // 1.21.0
+  v1_21_1_scope_title: "Une saison, une série, d'un seul geste",
+  v1_21_1_scope_body: "Depuis un épisode, élargissez à sa saison ou à toute la série sans quitter la fenêtre — et la fiche d'une série a enfin son bouton, avec une case par saison.",
+  v1_21_1_onDevice_title: "« Sur cet appareil », même en ligne",
+  v1_21_1_onDevice_body: "Ce que la machine porte s'ouvre depuis le menu du profil, serveur joignable ou non. Il fallait attendre une coupure pour revoir ce qu'on avait gardé.",
+  v1_21_1_transfers_title: "Les transferts disent ce qui se passe",
+  v1_21_1_transfers_body: "Étape en cours, débit, temps restant, pourcentage, cause exacte d'une erreur et délai avant la prochaine tentative — et « Tout mettre en pause ».",
+
   v1_21_0_reco_title: "Des recommandations à votre goût",
   v1_21_0_reco_body: "Vos vus, vos favoris et vos notes construisent votre profil. La page Recommandations et l'accueil vous servent des rangées « Pour vous », « À découvrir » et « Parce que vous avez aimé… ».",
   v1_21_0_rate_title: "Notez partout, d'un survol",
