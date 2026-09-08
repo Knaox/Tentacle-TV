@@ -11,6 +11,8 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { captureDetailOrigin } from "../detail/detailTransition";
 import { useBrokenImage } from "../../hooks/useBrokenImage";
+import { useHoverMount } from "../../hooks/useHoverMount";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
 export function SearchResultCard({
   item,
@@ -28,6 +30,10 @@ export function SearchResultCard({
   const imageId = isEpisode && item.SeriesId ? item.SeriesId : item.Id;
   const imageUrl = client.getImageUrl(imageId, "Primary", { height: 360, quality: 85 });
   const { broken, reportFailure } = useBrokenImage(imageUrl);
+  // Ici la carte EST un bouton : le clavier l'atteint. On branche donc le
+  // survol sur le focus aussi — c'est la seule grille de l'app où le
+  // téléchargement devient accessible sans souris.
+  const hover = useHoverMount(150);
   const type =
     item.Type === "Movie" ? t("common:movie") :
     item.Type === "Series" ? t("common:series") :
@@ -48,7 +54,13 @@ export function SearchResultCard({
   };
 
   return (
-    <li>
+    <li
+      className="relative"
+      onMouseEnter={hover.onMouseEnter}
+      onMouseLeave={hover.onMouseLeave}
+      onFocus={hover.onMouseEnter}
+      onBlur={hover.onMouseLeave}
+    >
       <button
         type="button"
         onClick={handleClick}
@@ -76,6 +88,21 @@ export function SearchResultCard({
           {item.ProductionYear ? ` · ${item.ProductionYear}` : ""}
         </p>
       </button>
+      {/* FRÈRE du bouton de carte, jamais enfant : un <button> dans un <button>
+          est invalide, et le navigateur défait alors l'imbrication en silence.
+          Posé sur l'affiche, qui occupe toute la largeur en haut de la carte. */}
+      {hover.mounted && (
+        <div
+          className="hover-reveal absolute right-2 top-2 z-10"
+          data-shown={hover.hovered}
+          style={{
+            pointerEvents: hover.hovered ? "auto" : "none",
+            "--reveal-ms": "150ms",
+          } as React.CSSProperties}
+        >
+          <CardDownloadAction item={item} variant="compact" />
+        </div>
+      )}
     </li>
   );
 }
