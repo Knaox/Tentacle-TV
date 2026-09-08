@@ -1,8 +1,14 @@
 /**
- * Ligne d'un téléchargement : affiche locale (protocole asset Tauri),
- * titre, méta (variante/preset/taille), progression LIVE (store de
- * progression, hors TanStack), badge d'état en tokens status-*, actions par
- * statut (pause, reprise, annulation, suppression, auto-suppression).
+ * Ligne d'un téléchargement : affiche locale (protocole asset Tauri), titre,
+ * méta (variante/palier/taille), progression LIVE (store de progression, hors
+ * TanStack), badge d'état en jetons status-*, actions par statut (pause,
+ * reprise, annulation, suppression, auto-suppression).
+ *
+ * La ligne DIT ce qui se passe, comme celle du téléphone : l'étape en cours
+ * (transfert puis finalisation), le débit et le temps restant, la CAUSE exacte
+ * d'une erreur, et le décompte avant la prochaine tentative. Elle n'affichait
+ * qu'une barre et deux tailles — un remux de plusieurs minutes après le dernier
+ * octet reçu la laissait figée à 100 %, sans un mot.
  */
 
 import { useMemo, useState } from "react";
@@ -16,6 +22,7 @@ import {
 import { AutoDeleteControl } from "./AutoDeleteControl";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 import { formatBytes } from "./presets";
+import { formatRate, formatTimeLeft, useRetryCountdown } from "./transferText";
 import { useFileProgress } from "@tentacle-tv/offline-core/react";
 
 const ACTIVE = new Set(["queued", "downloading", "paused"]);
@@ -40,6 +47,19 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
   const expected = live?.expectedSize ?? entry.expectedSize;
   const pct = expected && expected > 0 ? Math.min(100, (bytesDone / expected) * 100) : null;
   const isActive = ACTIVE.has(entry.status) || entry.status === "error";
+  const retryIn = useRetryCountdown(entry.status === "error" ? entry.nextRetryAt : null);
+  // Le remux dure parfois des minutes APRÈS le dernier octet : sans ce mot, la
+  // ligne semblait figée. Débit et temps restant n'ont de sens qu'en transfert.
+  const finalizing = entry.status === "downloading" && entry.phase === "finalize";
+  // Le débit du store SURVIT à la fin du transfert (dernière mesure gardée) :
+  // sans cette garde, une ligne terminée affichait encore « 75 Mio/s · moins
+  // d'une minute ». Il n'a de sens que pendant un transfert qui court.
+  const pace =
+    entry.status !== "downloading" || finalizing
+      ? []
+      : [formatRate(t, live?.rateBps ?? null), formatTimeLeft(t, live?.etaMs ?? null)].filter(
+          (part): part is string => part !== null,
+        );
 
   const displayTitle = useMemo(() => {
     if (entry.kind === "episode" && entry.seriesName) {
@@ -96,7 +116,7 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
           >
             {displayTitle}
           </button>
-          <StatusBadge status={entry.status} errorCode={entry.errorCode} />
+          <StatusBadge status={entry.status} errorCode={entry.errorCode} phase={entry.phase} />
         </div>
         <p className="mt-0.5 text-xs text-content-quaternary">{meta.join(" · ")}</p>
         {isActive && (
@@ -104,14 +124,24 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
             <div className="h-1 flex-1 overflow-hidden rounded-full bg-fill-soft">
               <div
                 className="h-full rounded-full bg-brand transition-[width] duration-300"
-                style={{ width: `${pct ?? (entry.status === "downloading" ? 8 : 0)}%` }}
+                style={{ width: `${finalizing ? 100 : pct ?? (entry.status === "downloading" ? 8 : 0)}%` }}
               />
             </div>
-            <span className="w-24 flex-shrink-0 text-right text-[10px] tabular-nums text-content-quaternary">
+            <span className="w-28 flex-shrink-0 text-right text-[10px] tabular-nums text-content-quaternary">
               {formatBytes(bytesDone)}
               {expected ? ` / ${formatBytes(expected)}` : ""}
+              {pct !== null && !finalizing ? ` · ${Math.round(pct)} %` : ""}
             </span>
           </div>
+        )}
+        {(pace.length > 0 || retryIn !== null) && (
+          <p className="mt-1 text-[10px] tabular-nums text-content-quaternary">
+            {retryIn !== null
+              ? retryIn > 0
+                ? t("retryIn", { seconds: retryIn })
+                : t("retryNow")
+              : pace.join(" · ")}
+          </p>
         )}
       </div>
 
@@ -139,15 +169,44 @@ export function DownloadRow({ entry, userId, onDelete, onPlay, selection }: Down
   );
 }
 
-function StatusBadge({ status, errorCode }: { status: DownloadEntry["status"]; errorCode: string | null }) {
+/**
+ * Les causes d'erreur telles qu'elles sont écrites en base. Seul `disk-full`
+ * avait un libellé : tout le reste disait « Erreur », sans plus — y compris un
+ * média retiré du serveur ou un fichier reçu tronqué, qui n'appellent pas du
+ * tout le même geste.
+ */
+const ERROR_KEYS: Record<string, string> = {
+  "disk-full": "errorDiskFull",
+  unavailable: "errorUnavailable",
+  integrity: "errorIntegrity",
+  missing: "errorMissing",
+  io: "errorIo",
+  finalize: "errorFinalize",
+  audio: "errorAudio",
+  unexpected: "errorUnexpected",
+};
+
+function StatusBadge({
+  status,
+  errorCode,
+  phase,
+}: {
+  status: DownloadEntry["status"];
+  errorCode: string | null;
+  phase?: string | null;
+}) {
   const { t } = useTranslation("downloads");
+  const errorKey = errorCode === null ? undefined : ERROR_KEYS[errorCode];
   const map: Record<string, { label: string; className: string }> = {
     queued: { label: t("statusQueued"), className: "bg-status-info-bg text-status-info-fg" },
-    downloading: { label: t("statusDownloading"), className: "bg-status-info-bg text-status-info-fg" },
+    downloading: {
+      label: phase === "finalize" ? t("statusFinalizing") : t("statusDownloading"),
+      className: "bg-status-info-bg text-status-info-fg",
+    },
     paused: { label: t("statusPaused"), className: "bg-status-warning-bg text-status-warning-fg" },
     complete: { label: t("statusComplete"), className: "bg-status-success-bg text-status-success-fg" },
     error: {
-      label: errorCode === "disk-full" ? t("errorDiskFull") : t("statusError"),
+      label: errorKey === undefined ? t("statusError") : t(errorKey),
       className: "bg-status-error-bg text-status-error-fg",
     },
     canceled: { label: t("statusCanceled"), className: "bg-fill-soft text-content-tertiary" },
