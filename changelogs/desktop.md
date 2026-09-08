@@ -62,6 +62,7 @@ et Linux reçoivent l'ensemble.
 - **Correctifs** : une rangée ne reste plus vide après un défilement rapide ; la fiche s'ouvre depuis les recommandations avec sa transition ; plus de piste Dolby copiée vers le HLS fMP4
 - **Les tickets de support deviennent un tableau** : une colonne par statut, la fiche en volet latéral, un clic sur une notification ouvre directement le ticket ; l'auteur ferme le sien en disant pourquoi, l'admin déplace les cartes et supprime un ou plusieurs tickets ; la cloche se met à jour à l'instant, et les administrateurs sont prévenus de chaque nouveau ticket
 - **La page Thème de l'admin disparaît**, comme l'interrupteur serveur d'auto-play : les réglages de lecture de chaque compte décident seuls
+- **Le journal de diagnostic du lecteur s'écrit enfin** : quand on l'active pour un dépannage, le paquet de l'App Store visait un dossier que son bac à sable lui interdit — il repartait vide, sans rien dire
 - Nécessite un serveur 1.17.0 ou plus
 
 ### EN
@@ -83,6 +84,7 @@ et Linux reçoivent l'ensemble.
 - **Fixes**: a row no longer stays empty after a fast scroll; the details page opens from recommendations with its transition; no more Dolby track copied into HLS fMP4
 - **Support tickets become a board**: one column per status, the ticket in a side panel, clicking a notification opens the ticket directly; the author closes their own, saying why, the admin drags cards and deletes one or several tickets; the bell updates instantly, and administrators are told about every new ticket
 - **The admin Theme page is gone**, and so is the server-side auto-play switch: each account's playback settings decide alone
+- **The player's diagnostic log is finally written**: when turned on for troubleshooting, the App Store package aimed at a folder its sandbox forbids — it came back empty, without a word
 - Requires server 1.17.0 or newer
 
 ## [1.21.0]
@@ -115,6 +117,7 @@ et Linux reçoivent l'ensemble.
 - **La page Thème de l'admin disparaît** (thèmes saisonniers, couleurs, CSS personnalisé), comme l'interrupteur serveur d'auto-play : les réglages de lecture de chaque compte décident seuls
 - **Les nouveautés se montrent** : après une mise à jour, un écran animé présente ce qui change, une fois par version — et se revoit depuis À propos
 - Compatibilité : cette version demande un serveur 1.17.0 ou plus
+- **Le journal de diagnostic du lecteur s'écrit enfin** : quand on l'active pour un dépannage, le paquet de l'App Store visait un dossier que son bac à sable lui interdit — il repartait vide, sans rien dire
 
 ### EN
 - **Recommendations are here.** A full engine builds your taste profile from what you watch, favorite and rate, and serves rows to match: "For you", "Available in your library", "Worth discovering", "Because you liked…", "With {actor}", "Tentacle users also watch", "Step outside your comfort zone". Your favorites and started series never show up there: a favorite is a seed, a started series lives in "Resume"
@@ -145,6 +148,7 @@ et Linux reçoivent l'ensemble.
 - **The admin Theme page is gone** (seasonal themes, colors, custom CSS), and so is the server-side auto-play switch: each account's playback settings decide alone
 - **What's new shows itself**: after an update, an animated screen presents what changed, once per version — and can be seen again from About
 - Compatibility: this version requires server 1.17.0 or newer
+- **The player's diagnostic log is finally written**: when turned on for troubleshooting, the App Store package aimed at a folder its sandbox forbids — it came back empty, without a word
 
 ## [mac-1.20.11]
 <!-- Bloc macOS CUMULATIF : 1.20.9 → 1.20.11. L'App Store est resté en 1.20.8
