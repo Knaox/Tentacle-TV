@@ -29,6 +29,7 @@ import { OfflineSwitchBanner } from "./offline/OfflineSwitchBanner";
 import { OfflineSessionGate } from "./offline/OfflineSessionGate";
 import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
+import { DownloadRequestHost } from "./downloads/DownloadRequestHost";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { isDesktopApp } from "./desktop/bridge";
@@ -188,6 +189,10 @@ export function App() {
       {authed && <OfflineSwitchBanner />}
       {authed && <DownloadsEngineBoot />}
       {authed && <DownloadsEvents />}
+      {/* Le dialogue des demandes parties d'une CARTE : le bouton qui le
+          déclenche est démonté dès que le curseur s'en va, il ne peut pas le
+          porter (cf. downloadRequest.ts). */}
+      {authed && <DownloadRequestHost />}
       {authed && <DirectStreamingSync />}
       {authed && <ImpersonationBanner />}
       {/* Fil temps réel des recommandations : la page en cache se rafraîchit
