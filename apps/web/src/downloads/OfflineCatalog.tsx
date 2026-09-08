@@ -1,13 +1,20 @@
 /**
- * Catalogue local — page d'accueil du mode Hors ligne (desktop).
+ * Catalogue local — accueil du mode Hors ligne, et page « Sur cet appareil »
+ * quand le serveur répond (`/on-device`).
  *
- * Films en affiches verticales, épisodes regroupés par SÉRIE : une carte
- * « Rick et Morty », qui ouvre la série et laisse choisir la saison. Une série
- * de six saisons occupait sinon six cartes côte à côte — c'est la série qu'on
- * cherche, la saison ne vient qu'après.
+ * Un bandeau reprend ce qu'on regardait, un résumé dit ce que la machine
+ * porte, puis les films en affiches verticales et les épisodes regroupés par
+ * SÉRIE : une carte « Rick et Morty », qui ouvre la série et laisse choisir la
+ * saison. Une série de six saisons occupait sinon six cartes côte à côte —
+ * c'est la série qu'on cherche, la saison ne vient qu'après.
  *
- * Images servies depuis le disque. Seuls les téléchargements COMPLETS et
- * lisibles du compte sont montrés.
+ * Le filtre porte sur les BIBLIOTHÈQUES d'origine (Films, Séries, Animés…) et
+ * non plus sur « film ou épisode » : c'est ainsi qu'on range son catalogue, et
+ * l'entrée existe en base depuis le premier transfert.
+ *
+ * Images servies depuis le disque : cette page ne coûte pas un octet de
+ * réseau. Seuls les téléchargements COMPLETS et lisibles du compte sont
+ * montrés.
  */
 
 import { useMemo, useState } from "react";
@@ -19,6 +26,9 @@ import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
 import { RevealCell, RevealScope } from "../components/grid/RevealCell";
+import { useOfflineMode } from "../offline/useOfflineMode";
+import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
+import { OfflineHomeHero } from "./OfflineHomeHero";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
@@ -29,7 +39,8 @@ import {
   type OfflineSeriesGroup,
 } from "@tentacle-tv/offline-core";
 
-type Filter = "all" | "movies" | "series";
+/** `all`, sinon le nom de la bibliothèque d'origine. */
+type Filter = string;
 
 /**
  * Hauteur réservée à une cellule d'affiche avant son premier passage — affiche
@@ -47,36 +58,47 @@ export function OfflineCatalog() {
   const { t } = useTranslation(["downloads", "nav", "common"]);
   const navigate = useNavigate();
   const entries = useDownloadsList();
+  const offline = useOfflineMode();
   const [filter, setFilter] = useState<Filter>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<DownloadEntry | null>(null);
 
   const complete = useMemo(() => entries.filter((e) => e.status === "complete"), [entries]);
-  const { movies, seasons } = useMemo(() => groupOfflineEntries(complete), [complete]);
+  // Les bibliothèques réellement présentes, dans l'ordre d'apparition — pas de
+  // puce pour une bibliothèque dont rien n'est sur la machine.
+  const libraries = useMemo(() => {
+    const seen: string[] = [];
+    for (const entry of complete) {
+      const name = entry.libraryName;
+      if (name && !seen.includes(name)) seen.push(name);
+    }
+    return seen;
+  }, [complete]);
+  const scoped = useMemo(
+    () => (filter === "all" ? complete : complete.filter((e) => e.libraryName === filter)),
+    [complete, filter],
+  );
+  const { movies, seasons } = useMemo(() => groupOfflineEntries(scoped), [scoped]);
   const series = useMemo(() => groupSeasonsBySeries(seasons), [seasons]);
 
   // Terme brut : c'est le comparateur partagé qui normalise.
   const needle = search.trim();
   const shownMovies = useMemo(
-    () => (filter === "series" ? [] : movies.filter((m) => matchesSearch(m.title ?? "", needle))),
-    [movies, filter, needle],
+    () => movies.filter((m) => matchesSearch(m.title ?? "", needle)),
+    [movies, needle],
   );
   const shownSeries = useMemo(
-    () => (filter === "movies" ? [] : series.filter((s) => seriesGroupMatches(s, needle))),
-    [series, filter, needle],
+    () => series.filter((s) => seriesGroupMatches(s, needle)),
+    [series, needle],
   );
 
   return (
     <div className="mx-auto min-h-screen w-full max-w-6xl px-4 pb-16 pt-24 md:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-content-primary">{t("nav:downloads")}</h1>
-        <Link
-          to="/downloads"
-          className="rounded-md bg-fill-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:bg-fill-soft hover:text-content-primary"
-        >
-          {t("downloads:offlineManage")}
-        </Link>
-      </div>
+      <h1 className="mb-5 text-2xl font-bold text-content-primary">{t("downloads:heroLabel")}</h1>
+
+      <OfflineHomeHero entries={complete} />
+
+      {complete.length > 0 && <OfflineDeviceSummary complete={complete} />}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <input
@@ -84,34 +106,42 @@ export function OfflineCatalog() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t("downloads:offlineSearchPlaceholder")}
-          className="h-9 w-64 rounded-md border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary placeholder:text-content-quaternary"
+          className="h-9 w-80 max-w-full rounded-md border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary placeholder:text-content-quaternary"
         />
-        {(["all", "movies", "series"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
-              filter === value
-                ? "bg-fill-medium text-content-primary"
-                : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
-            }`}
-          >
-            {value === "all"
-              ? t("downloads:filterAll")
-              : value === "movies"
-                ? t("downloads:sectionMovies")
-                : t("downloads:sectionSeries")}
-          </button>
-        ))}
+        {/* Une seule bibliothèque : la puce « Tout » n'arbitre rien. */}
+        {libraries.length > 1 &&
+          ["all", ...libraries].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilter(value)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
+                filter === value
+                  ? "bg-fill-medium text-content-primary"
+                  : "bg-fill-subtle text-content-tertiary hover:bg-fill-soft hover:text-content-primary"
+              }`}
+            >
+              {value === "all" ? t("downloads:filterAll") : value}
+            </button>
+          ))}
       </div>
 
       {complete.length === 0 ? (
         <div className="mt-20 flex flex-col items-center text-center">
           <p className="text-lg font-semibold text-content-secondary">{t("downloads:offlineEmptyTitle")}</p>
-          <p className="mt-2 max-w-sm text-sm leading-relaxed text-content-quaternary">
-            {t("downloads:offlineEmptyMessage")}
+          <p className="mt-2 max-w-md text-sm leading-relaxed text-content-quaternary">
+            {/* En ligne, « le catalogue reviendra dès que le serveur répondra »
+                est faux : le serveur répond, il n'y a simplement rien de gardé. */}
+            {offline ? t("downloads:offlineEmptyMessage") : t("downloads:offlineEmptyOnlineMessage")}
           </p>
+          {!offline && (
+            <Link
+              to="/"
+              className="mt-5 rounded-md bg-cta-primary-bg px-4 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+            >
+              {t("downloads:emptyAction")}
+            </Link>
+          )}
         </div>
       ) : shownMovies.length === 0 && shownSeries.length === 0 ? (
         <div className="mt-20 flex flex-col items-center text-center">
