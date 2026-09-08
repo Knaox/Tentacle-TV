@@ -1,5 +1,6 @@
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardQuickActions } from "./CardQuickActions";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
 /**
  * Actions rapides en superposition sur la vignette du panneau d'aperçu : dans
@@ -14,8 +15,9 @@ import { CardQuickActions } from "./CardQuickActions";
  */
 export function HoverPreviewCorner({ item }: { item: MediaItem }) {
   return (
-    <div className="absolute right-2 top-2 z-10" onClick={(e) => e.stopPropagation()}>
+    <div className="absolute right-2 top-2 z-10 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
       <CardQuickActions item={item} variant="bar" />
+      <CardDownloadAction item={item} variant="bar" />
     </div>
   );
 }
