@@ -11,6 +11,7 @@ export default {
   admin: "Administration",
   logout: "Sign out",
   changeServer: "Change server",
+  onDevice: "On this device",
   goOffline: "Go offline",
   profile: "Profile",
   search: "Search",

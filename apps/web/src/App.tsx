@@ -25,6 +25,7 @@ import { useSetupStatus } from "./hooks/useSetupStatus";
 import { ConnectivityBinding } from "./offline/ConnectivityBinding";
 import { DataSaverBinding } from "./offline/DataSaverBinding";
 import { OfflineSessionSync } from "./offline/OfflineSessionSync";
+import { OfflineSwitchBanner } from "./offline/OfflineSwitchBanner";
 import { OfflineSessionGate } from "./offline/OfflineSessionGate";
 import { DownloadsEngineBoot } from "./downloads/DownloadsEngineBoot";
 import { DownloadsEvents } from "./downloads/DownloadsEvents";
@@ -182,6 +183,9 @@ export function App() {
       {/* Desktop : photo de session (profil+droits) rafraîchie en ligne, et
           garde « reconnexion nécessaire » à l'expiration des 30 j hors ligne. */}
       {authed && <OfflineSessionSync />}
+      {/* Le bandeau qui EXPLIQUE la bascule automatique — desktop uniquement,
+          et seulement à la transition. */}
+      {authed && <OfflineSwitchBanner />}
       {authed && <DownloadsEngineBoot />}
       {authed && <DownloadsEvents />}
       {authed && <DirectStreamingSync />}
@@ -232,6 +236,11 @@ export function App() {
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
+            {/* « Sur cet appareil » : le catalogue local, atteignable EN LIGNE
+                aussi. Hors ligne il tient déjà lieu d'accueil ; en ligne, rien
+                n'y menait — il fallait attendre une coupure pour revoir ce
+                qu'on avait gardé. La page se vide d'elle-même sans contenu. */}
+            <Route path="on-device" element={<OfflineCatalog />} />
             {/* Série téléchargée : contenu 100 % local, donc accessible aussi
                 en ligne (le retour navigateur fonctionne normalement). Le
                 choix de la saison se fait dans la page. */}
