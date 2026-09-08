@@ -21,6 +21,7 @@ import {
 } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
+import { withWritableLogFile } from "../video/mpvLogFile";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
 import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
@@ -162,6 +163,9 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // non rejetée : mpv lui-même tolère les options inconnues, et faire
         // échouer `mpv_init` empêcherait toute lecture.
         const { kept } = filterInitOptions(options?.initialOptions ?? {});
+        // Le journal que la page demande arrive sans chemin utilisable : c'est
+        // ici qu'il en reçoit un que le bac à sable laisse écrire.
+        const asked = withWritableLogFile(kept);
         // Le montage Render API réécrit ce que la page a demandé : elle décrit
         // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
         // Voir `macosRenderOptions.ts`.
@@ -170,8 +174,8 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // pas laisser macOS ouvrir un second bureau. Voir `macosWindowOptions.ts`.
         const mpvOptions =
           videoMontage() === "gl"
-            ? renderApiOptions(kept)
-            : adaptToFullscreen(kept, win);
+            ? renderApiOptions(asked)
+            : adaptToFullscreen(asked, win);
         // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
         // sans quoi il naît à la taille du média, plein écran apparent pendant
         // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
