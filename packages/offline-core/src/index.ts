@@ -47,6 +47,7 @@ export { snapshot } from "./core/snapshot";
 // partage — catalogue, navigation d'épisode locale, sélection, connectivité,
 // segments locaux, droits, resynchronisation.
 export * from "./catalog/offlineGroups";
+export { seasonKey } from "./catalog/seasonKey";
 export * from "./catalog/localEpisodeNav";
 export * from "./catalog/offlineHighlights";
 export {

@@ -33,6 +33,7 @@ export default {
     "The offline session has expired (more than 30 days without contacting the server). An online reconnection is required to verify the account and access downloads again. Local data is preserved.",
 
   download: "Download",
+  seriesDownload: "Download the show",
   seasonDownload: "Download season",
   episodeDownload: "Download episode",
   downloadSelection: "Download selection",
@@ -134,6 +135,15 @@ export default {
   locationFailed: "Changing the location failed.",
   spaceTitle: "Disk space",
 
+  scopeLabel: "What to download",
+  scopeEpisode: "This episode",
+  scopeSeason: "The season",
+  scopeSeries: "The show",
+  seasonsPickerLabel: "Seasons to download",
+  alreadyOnDevice_one: "{{count}} already on this machine",
+  alreadyOnDevice_other: "{{count}} already on this machine",
+  scopeFailed: "The show's episodes could not be read.",
+  dialogTitleSeries: "Download the show",
   seasonLabel: "Season {{num}}",
   seasonUnknown: "Episodes",
   episodesDownloadedHint: "Downloaded",

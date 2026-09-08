@@ -27,7 +27,7 @@ export function SeasonDownloadAction({ episodes }: { episodes: MediaItem[] }) {
       >
         {t("seasonDownload")}
       </button>
-      {open && <DownloadDialog items={episodes} seasonMode onClose={() => setOpen(false)} />}
+      {open && <DownloadDialog items={episodes} mode="season" onClose={() => setOpen(false)} />}
     </>
   );
 }

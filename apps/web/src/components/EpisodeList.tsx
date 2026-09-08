@@ -227,7 +227,7 @@ export function EpisodeList({ seriesId, currentEpisodeId, initialSeasonId, serie
       {batchItems && (
         <DownloadDialog
           items={batchItems}
-          seasonMode
+          mode="season"
           batchTitle={tDownloads("dialogTitleSelection", { count: batchItems.length })}
           onClose={() => setBatchItems(null)}
         />
