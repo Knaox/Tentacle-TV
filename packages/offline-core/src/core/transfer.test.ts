@@ -15,6 +15,7 @@ import { nodeFiles, nodeVolume } from "../node/nodeFiles";
 import { nodePartWriter } from "../node/nodePartWriter";
 import { createStreamDriver } from "../node/streamDriver";
 import { run as transferRun, TransferFlags, type TransferJob } from "./transfer";
+import type { TransferDriver } from "./adapters";
 import type { TransferNet, TransferStream } from "./transferNet";
 import { preparedRoot } from "./testkit";
 
@@ -109,6 +110,23 @@ function run(
 ): ReturnType<typeof transferRun> {
   const driver = createStreamDriver(net, nodePartWriter, nodeFiles);
   return transferRun(driver, nodeVolume(currentRoot), target, flags, onProgress, () => Date.now());
+}
+
+/** Le pilote natif coupé net : il lève, sans rien rendre. */
+const dyingDriver: TransferDriver = {
+  async download(): Promise<never> {
+    throw new Error("tache native interrompue");
+  },
+  async stopTranscode() { /* rien */ },
+};
+
+/** Même chose que `run`, mais avec un pilote choisi plutôt que celui du bureau. */
+function runWith(
+  driver: TransferDriver,
+  target: TransferJob,
+  flags: TransferFlags,
+): ReturnType<typeof transferRun> {
+  return transferRun(driver, nodeVolume(currentRoot), target, flags, () => undefined, () => Date.now());
 }
 
 /**
@@ -308,6 +326,35 @@ describe("pause et annulation", () => {
       kind: "canceled",
     });
     expect(existsSync(`${cancelled.finalPath}.part`)).toBe(false);
+  });
+
+  // Le telechargeur natif du mobile LEVE quand on coupe sa tache : c'est le
+  // chemin normal d'une annulation depuis la feuille d'actions, et d'une pause
+  // demandee depuis la notification Android alors que la tache n'existe deja
+  // plus. Prise pour une panne, l'exception armait une relance a cinq secondes
+  // qui faisait repartir ce qu'on venait d'arreter.
+  it("un pilote qui leve APRES un geste rend ce geste, pas une panne", async () => {
+    const root = prepare();
+
+    const cancelFlags = new TransferFlags();
+    cancelFlags.cancel = true;
+    const cancelled = job(root);
+    expect(await runWith(dyingDriver, cancelled, cancelFlags)).toEqual({ kind: "canceled" });
+    expect(existsSync(`${cancelled.finalPath}.part`)).toBe(false);
+
+    const pauseFlags = new TransferFlags();
+    pauseFlags.pause = true;
+    const held = job(root, { finalPath: path.join(root, "media", "item1", "autre.mkv") });
+    expect(await runWith(dyingDriver, held, pauseFlags)).toEqual({ kind: "paused", bytesDone: 0 });
+  });
+
+  it("sans geste, la meme exception reste une panne imprevue", async () => {
+    const root = prepare();
+    expect(await runWith(dyingDriver, job(root), new TransferFlags())).toEqual({
+      kind: "failed",
+      code: "unexpected",
+      bytesDone: 0,
+    });
   });
 
   it("le transcodage est arrete a TOUTE sortie", async () => {
