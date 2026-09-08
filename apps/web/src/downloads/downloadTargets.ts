@@ -10,7 +10,7 @@ import type { MediaItem } from "@tentacle-tv/shared";
 import type { EnqueueItemInput, SubtitleSideCarInput } from "./api";
 import { estimateLightSizeBytes, type LightPresetId } from "./presets";
 
-interface MediaStreamLike {
+export interface MediaStreamLike {
   Type?: string;
   Index?: number;
   Codec?: string;

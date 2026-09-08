@@ -33,6 +33,7 @@ export default {
     "La session hors ligne a expiré (plus de 30 jours sans contact avec le serveur). Une reconnexion en ligne est nécessaire pour vérifier le compte et retrouver les téléchargements. Les données locales sont conservées.",
 
   download: "Télécharger",
+  seriesDownload: "Télécharger la série",
   seasonDownload: "Télécharger la saison",
   episodeDownload: "Télécharger l'épisode",
   downloadSelection: "Télécharger la sélection",
@@ -134,6 +135,15 @@ export default {
   locationFailed: "Le changement d'emplacement a échoué.",
   spaceTitle: "Espace disque",
 
+  scopeLabel: "Ce qu'on télécharge",
+  scopeEpisode: "Cet épisode",
+  scopeSeason: "La saison",
+  scopeSeries: "La série",
+  seasonsPickerLabel: "Saisons à télécharger",
+  alreadyOnDevice_one: "{{count}} déjà sur la machine",
+  alreadyOnDevice_other: "{{count}} déjà sur la machine",
+  scopeFailed: "Les épisodes de la série n'ont pas pu être lus.",
+  dialogTitleSeries: "Télécharger la série",
   seasonLabel: "Saison {{num}}",
   seasonUnknown: "Épisodes",
   episodesDownloadedHint: "Téléchargés",

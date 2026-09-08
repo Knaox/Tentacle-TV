@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { useSeriesEpisodes } from "@/hooks/offline/useSeriesEpisodes";
+import { useSeriesEpisodes } from "@tentacle-tv/api-client";
 import type { KeepOfflineMode, KeepOfflineRequest } from "./keepOfflineStore";
 import type { KeepScope } from "./ScopeChoice";
 import { seasonKey } from "./SeasonChecklist";

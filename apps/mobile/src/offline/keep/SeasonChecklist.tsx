@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
+import { seasonKey } from "@tentacle-tv/offline-core";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FONT_FAMILY, RADIUS, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 import { formatBytes } from "../formatBytes";
@@ -12,20 +13,8 @@ export interface SeasonGroup {
   episodes: MediaItem[];
 }
 
-/**
- * Ce qui fait UNE saison, du point de vue de l'utilisateur : son NUMÉRO.
- *
- * Pas son identifiant : une même saison peut en porter plusieurs côté Jellyfin
- * — mesuré sur Naruto, dont la saison 3 existe en deux entités de 56 épisodes
- * au total. Grouper par identifiant affichait deux lignes « Saison 3 », et
- * cocher l'une n'en décochait que la moitié. Le numéro manque (épisodes hors
- * saison) : on retombe sur l'identifiant, faute de mieux.
- */
-export function seasonKey(episode: MediaItem): string {
-  const number = episode.ParentIndexNumber;
-  if (typeof number === "number") return `n${number}`;
-  return episode.SeasonId ?? "n?";
-}
+/** La clé de saison vit dans le cœur : le bureau la partage. */
+export { seasonKey };
 
 /** Les épisodes d'une série regroupés par saison, dans l'ordre des numéros. */
 export function groupBySeason(episodes: readonly MediaItem[]): SeasonGroup[] {

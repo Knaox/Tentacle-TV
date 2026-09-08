@@ -101,6 +101,33 @@ export function useSeasons(seriesId: string | undefined) {
   });
 }
 
+/**
+ * TOUS les épisodes d'une série en une requête — le périmètre « toute la
+ * série » des dialogues de mise hors ligne, sur le téléphone comme sur le
+ * bureau. Mêmes champs que `useEpisodes` : tailles et pistes de chaque épisode
+ * arrivent avec, sans requête par épisode.
+ *
+ * `enabled` est explicite : la requête ne part qu'au premier élargissement,
+ * et la clé est partagée par tous les points d'entrée.
+ */
+export function useSeriesEpisodes(seriesId: string | undefined, options?: { enabled?: boolean }) {
+  const client = useJellyfinClient();
+  const userId = useUserId();
+
+  return useQuery({
+    queryKey: ["series-episodes", seriesId],
+    queryFn: () =>
+      client
+        .fetch<{ Items: MediaItem[] }>(
+          `/Shows/${seriesId}/Episodes?userId=${userId}` +
+            "&Fields=Overview,PrimaryImageAspectRatio,MediaSources,MediaStreams&EnableUserData=true",
+        )
+        .then((response) => response.Items),
+    enabled: userId !== null && seriesId !== undefined && (options?.enabled ?? true),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
 export function useEpisodes(seriesId: string | undefined, seasonId: string | undefined) {
   const client = useJellyfinClient();
   const userId = useUserId();
