@@ -24,7 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
   arbitrateOverlay, autoNextEligible, displayedCountdown, displayedNextCountdown,
-  decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
+  countdownAllowed, decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
   isSegmentSilenced,
   type IntroSkipState,
   type PlayerOverlay, type SegmentType, type SkipCandidate, type SkipCandidateInput,
@@ -113,7 +113,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const visible = candidate !== null && !p.scrubbing;
       // Un passage mis en sourdine ne compte plus : la croix a aussi coupé ça.
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
-      const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
+      const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto"
+        && countdownAllowed(p.groupSession, p.groupHost);
 
       // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée, les
       // passages refusés (jamais en séance : `segmentsToRelease`), le saut attendu.

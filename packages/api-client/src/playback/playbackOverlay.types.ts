@@ -37,6 +37,12 @@ export interface PlaybackOverlayInput {
    * de dérive n'est pas un rembobinage.
    */
   groupSession?: boolean;
+  /**
+   * En séance : ce lecteur est celui de l'hôte. Seul son décompte de saut va
+   * jusqu'au seek — les invités gardent le bouton, sans décompte
+   * (`countdownAllowed`). Ignoré hors séance.
+   */
+  groupHost?: boolean;
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;
   /**
