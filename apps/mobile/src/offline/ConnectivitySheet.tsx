@@ -1,19 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { BottomSheet, Button } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
-import { probeNow, setManualOffline, type NetworkType } from "./connectivityStore";
+import { setManualOffline, type NetworkType } from "./connectivityStore";
 import { offlineReasonKey } from "./offlineReasonText";
 import { useConnectivity } from "./useConnectivity";
+import { useProbeRetry } from "./useProbeRetry";
 
 interface Props {
   visible: boolean;
   onClose: () => void;
 }
-
-/** Comme le voile : l'essai se montre au moins ce temps. */
-const RETRY_MIN_VISIBLE_MS = 600;
 
 const NETWORK_KEYS: Partial<Record<NetworkType, string>> = {
   wifi: "networkWifi",
@@ -32,7 +30,7 @@ export function ConnectivitySheet({ visible, onClose }: Props) {
   const { t: to } = useTranslation("offline");
   const snap = useConnectivity();
   const st = useThemedStyles(makeStyles);
-  const [isChecking, setIsChecking] = useState(false);
+  const { isChecking, retry } = useProbeRetry();
 
   const offline = snap.state === "offline-auto" || snap.state === "offline-manual";
   const manual = snap.state === "offline-manual";
@@ -41,18 +39,6 @@ export function ConnectivitySheet({ visible, onClose }: Props) {
   useEffect(() => {
     if (visible && !offline) onClose();
   }, [visible, offline, onClose]);
-
-  const retry = useCallback(async () => {
-    setIsChecking(true);
-    try {
-      await Promise.all([
-        probeNow(true),
-        new Promise((resolve) => setTimeout(resolve, RETRY_MIN_VISIBLE_MS)),
-      ]);
-    } finally {
-      setIsChecking(false);
-    }
-  }, []);
 
   const stayOffline = useCallback(() => {
     onClose();
