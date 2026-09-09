@@ -9,6 +9,7 @@ import { useOfflineMode } from "../offline/useOfflineMode";
 import { PageTransition } from "../components/PageTransition";
 import { LibraryPrefCard } from "./preferences/LibraryPrefCard";
 import { HardwareDecodingSelect } from "../components/settings/HardwareDecodingSelect";
+import { RenderQualitySelect } from "../components/settings/RenderQualitySelect";
 import { HdrAutoToggle } from "../components/settings/HdrAutoToggle";
 import { LinuxSessionSelect } from "../components/settings/LinuxSessionSelect";
 import { SettingsSection } from "@tentacle-tv/ui";
@@ -235,6 +236,7 @@ export function Preferences() {
         {/* Qui décode la vidéo — bureau uniquement, réglage d'APPAREIL : c'est
             son pilote graphique qui décide, pas le compte. */}
         <HardwareDecodingSelect />
+        <RenderQualitySelect />
 
         {/* Bascule HDR de l'écran — ne se rend que sur un bureau Windows doté
             du lecteur natif, le composant s'efface ailleurs. */}

@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { desktopPlatform, supportsMpv } from "../../desktop/bridge";
 import {
+  activeDecoder,
+  decoderIsSoftware,
   hardwareDecodingChoice,
   setHardwareDecoding,
   type HardwareDecoding,
@@ -24,6 +26,8 @@ import { SegmentedChoice } from "./SegmentedChoice";
 export function HardwareDecodingSelect() {
   const { t } = useTranslation("preferences");
   const [choice, setChoice] = useState<HardwareDecoding>(hardwareDecodingChoice);
+  // Relu au montage : la lecture est finie quand on ouvre les Préférences.
+  const [active] = useState<string | null>(activeDecoder);
 
   // Windows n'a jamais montré ce défaut (D3D11VA est natif) mais le réglage y
   // a le même sens : un pilote peut mal se comporter partout.
@@ -50,6 +54,15 @@ export function HardwareDecodingSelect() {
         <p className="mt-3 text-xs leading-relaxed text-content-quaternary">
           {t(choice === "auto" ? "hwDecodeAutoHint" : choice === "copy" ? "hwDecodeCopyHint" : "hwDecodeOffHint")}
         </p>
+        {/* Ce qui a RÉELLEMENT décodé, et non ce qu'on a demandé — voir
+            `rememberActiveDecoder`. Rien tant qu'aucune lecture n'a eu lieu. */}
+        {active !== null && (
+          <p className="mt-2 text-xs leading-relaxed text-content-quaternary">
+            {decoderIsSoftware(active)
+              ? t("hwDecodeActiveSoftware")
+              : t("hwDecodeActiveHardware", { decoder: active })}
+          </p>
+        )}
       </div>
     </SettingsSection>
   );
