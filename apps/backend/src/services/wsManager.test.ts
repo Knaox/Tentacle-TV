@@ -54,6 +54,20 @@ describe("sendToUser", () => {
     ws.removeConnection("u1", web as never, "hash-web");
   });
 
+  it("saute la seule socket désignée — même quand une autre porte le même jeton", () => {
+    const tab = socket();
+    ws.addConnection("u1", tab as never, "hash-web"); // second onglet du même navigateur
+    ws.sendToUser("u1", MSG, { exceptSocket: web as never });
+    expect(web.send).not.toHaveBeenCalled();
+    expect(tab.send).toHaveBeenCalledTimes(1);
+    expect(phone.send).toHaveBeenCalledTimes(1);
+    expect(tablet.send).toHaveBeenCalledTimes(1);
+    ws.removeConnection("u1", tab as never, "hash-web");
+    ws.removeConnection("u1", phone as never, "hash-phone");
+    ws.removeConnection("u1", tablet as never, "hash-tablet");
+    ws.removeConnection("u1", web as never, "hash-web");
+  });
+
   it("un hash inconnu n'exclut personne ; une socket fermée ne reçoit rien", () => {
     web.readyState = 3;
     ws.sendToUser("u1", MSG, { exceptTokenHash: "hash-inconnu" });
