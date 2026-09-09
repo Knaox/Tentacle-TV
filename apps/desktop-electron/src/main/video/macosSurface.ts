@@ -21,9 +21,10 @@ import { setPlayerSurfaceTransparent } from "../window";
 import { neverThrow, trace } from "./native";
 import { fromHandle, msg, type Rect } from "./objc";
 import { windowGone, watchMpvWindow, mpvLeftovers } from "./macosWindowWatch";
-import { attachBelowPage, createSeamKeeper, reorderBelowPage } from "./macosChildWindow";
+import { attachBelowPage, reorderBelowPage } from "./macosChildWindow";
+import { SETTLE_MS, createSeam } from "./macosSeam";
 import { watchEdr, forgetEdr } from "./macosEdr";
-import { videoTarget, applyFrame } from "./macosFrame";
+import { videoLevel, videoTarget, applyFrame } from "./macosFrame";
 import { bannerInset } from "../macosTitleBar";
 import { describeMontage, stateAtDiscovery } from "./macosSurfaceDiag";
 import type { VideoSurface } from "./surface";
@@ -53,12 +54,14 @@ export class MacosSurface implements VideoSurface {
   private number = 0;
 
   /**
-   * Le liseré de la fenêtre vidéo — voir `macosChildWindow.ts`.
-   *
-   * Détenu par la surface et non par le module : une lecture ne doit pas rendre
-   * à la fenêtre suivante le masque relevé sur la précédente.
+   * Le liseré de la fenêtre vidéo — voir `macosSeam.ts`. La cible est une
+   * FONCTION, relue quand le geste part : la lecture a pu s'arrêter entre-temps.
    */
-  private readonly seam = createSeamKeeper();
+  private readonly seam = createSeam(() =>
+    this.mpvWindow === null || this.host.isDestroyed()
+      ? null
+      : { window: this.mpvWindow, fullscreen: this.host.isFullScreen() },
+  );
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.scheduleAlign();
@@ -72,13 +75,15 @@ export class MacosSurface implements VideoSurface {
   private readonly fullscreenTransition = (): void => {
     this.reattach();
     this.scheduleAlign();
+    // Le liseré une fois qu'AppKit se sera posé ; `schedule` se réarme au besoin.
+    this.seam.schedule();
     // Une seconde fois APRÈS l'animation : `enter-full-screen` arrive quand
     // Electron croit la transition finie, mais macOS bouge encore la fenêtre.
     setTimeout(() => {
       if (this.host.isDestroyed()) return;
       this.reattach();
       trace(`plein ecran — ${this.geometrie()}`);
-    }, 500);
+    }, SETTLE_MS);
   };
 
   constructor(private readonly host: BrowserWindow) {
@@ -126,6 +131,10 @@ export class MacosSurface implements VideoSurface {
     attachBelowPage(this.parent, this.mpvWindow);
     watchEdr(this.mpvWindow, "fenetre video attachee");
     this.align();
+    // ⚠️ `addChildWindow:` juste au-dessus provoque l'affichage initial, donc la
+    // décision de promotion d'AppKit : le liseré ne se touche pas dans le même
+    // tour de boucle. `schedule` s'en charge — c'est le correctif de la 1.21.0.
+    this.seam.schedule();
     // ⚠️ La transparence se pose ICI, et pas une milliseconde plus tôt.
     //
     // La page la demandait dès que `mpv_initialize` avait rendu la main
@@ -151,23 +160,8 @@ export class MacosSurface implements VideoSurface {
       reorderBelowPage(this.parent, this.mpvWindow);
       // `poserCadre` et NON `align` : `align` vérifie l'ordre et rappellerait
       // cette fonction — la boucle serait sans fin si l'ordre résistait.
-      applyFrame(this.mpvWindow, this.target(), this.videoLevel());
+      applyFrame(this.mpvWindow, this.target(), videoLevel(this.host, this.parent));
     });
-  }
-
-  /**
-   * Le niveau où poser la vidéo : celui de la page, ou UN DE MOINS en plein écran.
-   *
-   * ⚠️ Dans un espace de plein écran, le serveur de fenêtres place la fille
-   * DEVANT son parent quoi que dise `addChildWindow:ordered:NSWindowBelow` —
-   * relevé par CoreGraphics, mpv au rang 6 et la page au rang 7, tout l'overlay
-   * masqué. Les NIVEAUX, eux, sont respectés partout. Un seul cran, et seulement
-   * là : plus bas, ou en fenêtré, la vidéo passerait aussi sous les fenêtres des
-   * AUTRES applications. Toute l'histoire est dans `fullscreen.ts`.
-   */
-  private videoLevel(): number {
-    const page = msg.int(this.parent, "level");
-    return this.host.isFullScreen() || this.host.isSimpleFullScreen() ? page - 1 : page;
   }
 
   /**
@@ -191,9 +185,13 @@ export class MacosSurface implements VideoSurface {
     // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
     // la décision du compositeur — voir `guetterEdr`.
     watchEdr(this.mpvWindow, "veille");
-    this.seam.apply(this.mpvWindow, this.host.isFullScreen());
+    // ⚠️ LE LISERÉ N'EST PLUS ICI, et il ne doit pas y revenir : il s'écrivait
+    // dix fois par seconde, y compris pendant qu'AppKit déplaçait la fenêtre, ce
+    // qui a tué l'application chez un utilisateur (`macosSeam.ts`). Le CALAGE,
+    // lui, reste : `setFrame:` et `setLevel:` ne lèvent pas, et macOS déplace la
+    // fenêtre sans prévenir.
     neverThrow("calage de la fenetre video", () => {
-      applyFrame(this.mpvWindow, this.target(), this.videoLevel());
+      applyFrame(this.mpvWindow, this.target(), videoLevel(this.host, this.parent));
     });
   }
 

@@ -86,6 +86,21 @@ export function videoTarget(host: BrowserWindow, parent: unknown, topInset = 0):
 }
 
 /**
+ * Le niveau où poser la vidéo : celui de la page, ou UN DE MOINS en plein écran.
+ *
+ * ⚠️ Dans un espace de plein écran, le serveur de fenêtres place la fille DEVANT
+ * son parent quoi que dise `addChildWindow:ordered:NSWindowBelow` — relevé par
+ * CoreGraphics, mpv au rang 6 et la page au rang 7, tout l'overlay masqué. Les
+ * NIVEAUX, eux, sont respectés partout. Un seul cran, et seulement là : plus
+ * bas, ou en fenêtré, la vidéo passerait aussi sous les fenêtres des AUTRES
+ * applications. Toute l'histoire est dans `fullscreen.ts`.
+ */
+export function videoLevel(host: BrowserWindow, parent: unknown): number {
+  const page = msg.int(parent, "level");
+  return host.isFullScreen() || host.isSimpleFullScreen() ? page - 1 : page;
+}
+
+/**
  * `CGWindowLevelForKey(kCGDesktopWindowLevelKey)`, en dur.
  *
  * `INT32_MIN + 25`. La constante est fixée par CoreGraphics et c'est la valeur
