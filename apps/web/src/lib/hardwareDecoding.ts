@@ -53,12 +53,20 @@ export function setHardwareDecoding(choice: HardwareDecoding): void {
   }
 }
 
+/** Le système, pour ce que `hwdec` en dépend — et il en dépend beaucoup. */
+export type HwdecPlatform = "linux" | "macos" | "other";
+
 /**
  * La valeur de l'option `hwdec` de mpv.
  *
- * @param onLinux Le seul système où l'ordre par défaut change (voir l'en-tête).
+ * ⚠️ macOS ne se contente pas d'un ordre différent : il n'a qu'UN décodeur
+ * matériel, `videotoolbox`, et `auto-safe` ne le nomme pas de la même façon.
+ * Ses trois réponses lui sont donc propres — et le mode « copie mémoire » y
+ * garde tout son sens : le défaut d'import qui a motivé ce réglage sous Linux a
+ * son exact équivalent sur macOS, où le zéro-copie traverse
+ * `VK_EXT_metal_objects` puis MoltenVK avant d'atteindre Metal.
  */
-export function mpvHwdecValue(onLinux: boolean): string {
+export function mpvHwdecValue(platform: HwdecPlatform): string {
   switch (hardwareDecodingChoice()) {
     case "off":
       return "no";
@@ -66,8 +74,9 @@ export function mpvHwdecValue(onLinux: boolean): string {
       // Décodage sur le GPU, trames rapatriées en mémoire, renvoyées au moteur
       // de rendu : plus aucun partage direct entre pilotes, donc plus aucun
       // import à rater. Coûte une copie par image.
-      return "auto-safe-copy";
+      return platform === "macos" ? "videotoolbox-copy" : "auto-safe-copy";
     default:
-      return onLinux ? "nvdec,vaapi,auto-safe" : "auto-safe";
+      if (platform === "macos") return "videotoolbox";
+      return platform === "linux" ? "nvdec,vaapi,auto-safe" : "auto-safe";
   }
 }
