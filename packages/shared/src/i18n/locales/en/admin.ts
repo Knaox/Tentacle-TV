@@ -148,7 +148,7 @@ export default {
   bandwidthIntro:
     "Maximum rate the server devotes to offline downloads, shared fairly between the accounts downloading: 6 MiB/s for two active accounts is 3 MiB/s each, and whatever a slow account does not use goes to the others. An account running two transfers splits its share between them. Changes apply at once to transfers in progress.",
   bandwidthPoolsHelp:
-    "Local network or external: same rule as direct streaming — a client with a private IP address (192.168.x.x, 10.x.x.x…) is on the local network, any other is external. Each cap is independent, unlimited by default.",
+    "Local network or external: same rule as direct streaming — a client with a private IP address (192.168.x.x, 10.x.x.x…) is on the local network, any other is external; the “+” on the “Local network” row lets you add addresses to it. Each cap is independent, unlimited by default.",
   bandwidthExternal: "External clients",
   bandwidthInternal: "Local network",
   bandwidthLimit: "Limit",
@@ -157,6 +157,12 @@ export default {
   bandwidthInvalid: "Enter a rate between 0.1 and 10,240 MiB/s.",
   bandwidthSaved: "Cap saved — applied to transfers in progress.",
   bandwidthLoadError: "Could not read the speed cap.",
+  bandwidthIpsHelp: "These addresses are treated as the local network whatever their range — cap set or not: if only external clients are limited, they are not. An IPv4 or IPv6 address, or an IPv4 range (203.0.113.0/24).",
+  bandwidthAddIp: "Add an address to treat as local",
+  bandwidthIpPlaceholder: "203.0.113.5 or 203.0.113.0/24",
+  bandwidthIpAdd: "Add",
+  bandwidthIpInvalid: "Invalid IP address or range.",
+  bandwidthIpRemove: "Remove {{ip}}",
   metadataTitle: "Metadata",
   metadataDescription:
     "Metadata service keys. TMDB powers rich recommendations (similar titles, actors, keywords, out-of-library posters) and anonymous rating sync; without a key the engine falls back to library genres.",

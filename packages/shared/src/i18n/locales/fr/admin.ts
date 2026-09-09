@@ -148,7 +148,7 @@ export default {
   bandwidthIntro:
     "Débit maximal que le serveur consacre aux téléchargements hors ligne, partagé équitablement entre les comptes qui téléchargent : 6 Mio/s pour deux comptes actifs, c'est 3 Mio/s chacun, et ce qu'un compte lent n'utilise pas revient aux autres. Un compte qui mène deux transferts partage sa part entre eux. Un changement s'applique aussitôt aux transferts en cours.",
   bandwidthPoolsHelp:
-    "Réseau local ou extérieur : même règle que la lecture directe — un client dont l'adresse IP est privée (192.168.x.x, 10.x.x.x…) est sur le réseau local, tout autre est à l'extérieur. Chaque plafond est indépendant, illimité par défaut.",
+    "Réseau local ou extérieur : même règle que la lecture directe — un client dont l'adresse IP est privée (192.168.x.x, 10.x.x.x…) est sur le réseau local, tout autre est à l'extérieur ; le « + » de la ligne « Réseau local » permet d'y ajouter des adresses. Chaque plafond est indépendant, illimité par défaut.",
   bandwidthExternal: "Clients extérieurs",
   bandwidthInternal: "Réseau local",
   bandwidthLimit: "Limiter",
@@ -157,6 +157,12 @@ export default {
   bandwidthInvalid: "Saisissez un débit entre 0,1 et 10 240 Mio/s.",
   bandwidthSaved: "Plafond enregistré — appliqué aux transferts en cours.",
   bandwidthLoadError: "Impossible de lire le plafond de débit.",
+  bandwidthIpsHelp: "Ces adresses sont traitées comme le réseau local, quoi qu'en dise leur plage — plafond posé ou non : si seul l'extérieur est limité, elles ne le sont pas. Une adresse IPv4 ou IPv6, ou une plage IPv4 (203.0.113.0/24).",
+  bandwidthAddIp: "Ajouter une adresse à traiter comme locale",
+  bandwidthIpPlaceholder: "203.0.113.5 ou 203.0.113.0/24",
+  bandwidthIpAdd: "Ajouter",
+  bandwidthIpInvalid: "Adresse IP ou plage invalide.",
+  bandwidthIpRemove: "Retirer {{ip}}",
   metadataTitle: "Métadonnées",
   metadataDescription:
     "Clés des services de métadonnées. TMDB alimente les recommandations riches (similaires, acteurs, mots-clés, affiches hors bibliothèque) et la synchronisation anonyme des notes ; sans clé, le moteur retombe sur les genres de la bibliothèque.",

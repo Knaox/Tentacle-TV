@@ -7,20 +7,23 @@
  * l'application à chaud sont l'affaire du backend ; ici, deux lignes.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { BACKEND, cls, creds, hdrs } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";
+import { AdminBandwidthIps } from "./AdminBandwidthIps";
 import { MAX_MIB_PER_S, MIN_MIB_PER_S, toBps, toDraft, type CapDraft } from "./adminBandwidthUnits";
 
-/** Octets par seconde, `null` = illimité — la forme de l'API. */
+/** Octets par seconde, `null` = illimité, et les adresses déclarées locales — la forme de l'API. */
 interface BandwidthCaps {
   external: number | null;
   internal: number | null;
+  internalIps: string[];
 }
-type PoolId = keyof BandwidthCaps;
+type PoolId = "external" | "internal";
 
 const POOLS: readonly PoolId[] = ["external", "internal"];
 const QUERY_KEY = ["admin-download-bandwidth"];
@@ -66,7 +69,7 @@ export function AdminDownloadBandwidth() {
         </p>
       )}
       {/* La clé remonte le brouillon sur ce que le serveur vient de confirmer. */}
-      {data && <BandwidthForm key={`${data.external}:${data.internal}`} initial={data} />}
+      {data && <BandwidthForm key={`${data.external}:${data.internal}:${data.internalIps.join(",")}`} initial={data} />}
     </section>
   );
 }
@@ -79,6 +82,8 @@ function BandwidthForm({ initial }: { initial: BandwidthCaps }) {
     external: toDraft(initial.external),
     internal: toDraft(initial.internal),
   });
+  const [ips, setIps] = useState<string[]>(initial.internalIps);
+  const [addingIp, setAddingIp] = useState(false);
 
   const mutation = useMutation({
     mutationFn: putBandwidth,
@@ -91,27 +96,45 @@ function BandwidthForm({ initial }: { initial: BandwidthCaps }) {
 
   const values = { external: toBps(drafts.external), internal: toBps(drafts.internal) };
   const invalid = POOLS.some((pool) => values[pool] === undefined);
-  const unchanged = POOLS.every((pool) => values[pool] === initial[pool]);
+  const sameIps = ips.length === initial.internalIps.length && ips.every((ip, i) => ip === initial.internalIps[i]);
+  const unchanged = sameIps && POOLS.every((pool) => values[pool] === initial[pool]);
 
   const update = (pool: PoolId, patch: Partial<CapDraft>) =>
     setDrafts((previous) => ({ ...previous, [pool]: { ...previous[pool], ...patch } }));
 
   const save = () => {
     if (invalid) return;
-    mutation.mutate({ external: values.external ?? null, internal: values.internal ?? null });
+    mutation.mutate({ external: values.external ?? null, internal: values.internal ?? null, internalIps: ips });
   };
 
   return (
     <div className="mt-4 space-y-2">
-      {POOLS.map((pool) => (
-        <CapRow
-          key={pool}
-          label={t(pool === "external" ? "bandwidthExternal" : "bandwidthInternal")}
-          draft={drafts[pool]}
-          invalid={values[pool] === undefined}
-          onChange={(patch) => update(pool, patch)}
-        />
-      ))}
+      <CapRow
+        label={t("bandwidthExternal")}
+        draft={drafts.external}
+        invalid={values.external === undefined}
+        onChange={(patch) => update("external", patch)}
+      />
+      <CapRow
+        label={t("bandwidthInternal")}
+        draft={drafts.internal}
+        invalid={values.internal === undefined}
+        onChange={(patch) => update("internal", patch)}
+        // Le « + » : des adresses à traiter comme locales, plafond ou non.
+        extra={
+          <button
+            type="button"
+            onClick={() => setAddingIp((open) => !open)}
+            aria-label={t("bandwidthAddIp")}
+            aria-expanded={addingIp}
+            title={t("bandwidthAddIp")}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line-subtle bg-fill-soft text-content-secondary transition hover:bg-fill-medium hover:text-content-primary"
+          >
+            <Plus size={16} />
+          </button>
+        }
+      />
+      <AdminBandwidthIps ips={ips} onChange={setIps} adding={addingIp} onAddingChange={setAddingIp} />
       <div className="flex flex-wrap items-center gap-3 pt-2">
         <button
           type="button"
@@ -132,11 +155,14 @@ function CapRow({
   draft,
   invalid,
   onChange,
+  extra,
 }: {
   label: string;
   draft: CapDraft;
   invalid: boolean;
   onChange: (patch: Partial<CapDraft>) => void;
+  /** Un bouton de plus après l'interrupteur (le « + » des adresses locales). */
+  extra?: ReactNode;
 }) {
   const { t } = useTranslation("admin");
   return (
@@ -150,6 +176,7 @@ function CapRow({
           label={`${label} — ${t("bandwidthLimit")}`}
         />
       </label>
+      {extra}
       {draft.enabled ? (
         <label className="flex items-center gap-2">
           <span className="w-28">
