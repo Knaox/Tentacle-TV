@@ -6,7 +6,7 @@
  * n'est dupliqué.
  */
 
-import { screen } from "electron";
+import { screen, type BrowserWindow } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
@@ -21,7 +21,6 @@ import {
 } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
-import { adaptToDisplay } from "../video/macosHdrOptions";
 import { withWritableLogFile } from "../video/mpvLogFile";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
@@ -30,6 +29,22 @@ import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, resetReport } from "./videoProbe";
 import { CommandRegistry } from "./registry";
+
+/**
+ * Les options mpv adaptées à l'écran — macOS SEULEMENT, et chargé à la demande :
+ * `macosHdrOptions` tire le pont Objective-C, dont `koffi.load` s'exécute à
+ * l'import et tue le processus sur Linux et Windows avant la première fenêtre
+ * (mesuré le 9 sept. 2026 : « Failed to load shared library »). Ailleurs, les
+ * options passent telles quelles.
+ */
+function adaptToDisplay(
+  options: Readonly<Record<string, MpvValue>>,
+  host: BrowserWindow,
+): Record<string, MpvValue> {
+  if (process.platform !== "darwin") return { ...options };
+  const macos = require("../video/macosHdrOptions") as typeof import("../video/macosHdrOptions");
+  return macos.adaptToDisplay(options, host);
+}
 
 /** Valeur scalaire acceptée par mpv. */
 const SCALAR = z.union([z.string(), z.number(), z.boolean()]);
