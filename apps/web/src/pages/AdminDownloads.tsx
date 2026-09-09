@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BACKEND, hdrs, creds } from "./adminUtils";
 import { useToast } from "../contexts/ToastContext";
 import { ToggleSwitch } from "../components/settings/ToggleSwitch";
+import { AdminDownloadBandwidth } from "./AdminDownloadBandwidth";
 
 interface AdminUserRights {
   id: string;
@@ -85,7 +86,10 @@ export function AdminDownloads() {
   return (
     <div>
       <h1 className="text-xl font-bold text-content-primary">{t("downloadsTitle")}</h1>
-      <p className="mt-1 text-sm text-content-tertiary">{t("downloadsIntro")}</p>
+      {/* Le réglage du serveur d'abord, puis les droits par compte que l'intro
+          annonce : une carte entre les deux les aurait séparés. */}
+      <AdminDownloadBandwidth />
+      <p className="mt-6 text-sm text-content-tertiary">{t("downloadsIntro")}</p>
 
       {isLoading && (
         <div className="mt-6 space-y-2">

@@ -4,7 +4,7 @@
  */
 
 /** Check if an IPv4 address falls within a CIDR block. */
-function ipv4InCidr(ip: string, cidr: string): boolean {
+export function ipv4InCidr(ip: string, cidr: string): boolean {
   const [cidrIp, bits] = cidr.split("/");
   const mask = ~((1 << (32 - Number(bits))) - 1) >>> 0;
   const ipNum = ipv4ToNumber(ip);

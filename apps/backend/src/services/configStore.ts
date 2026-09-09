@@ -1,4 +1,11 @@
 import { getPrisma, hasPrisma } from "./db";
+import {
+  DOWNLOAD_BANDWIDTH_KEYS,
+  INTERNAL_IPS_KEY,
+  parseCap,
+  parseInternalIps,
+  type BandwidthCaps,
+} from "./downloadBandwidth/caps";
 
 export type AppState =
   | "setup_db"       // No database connection
@@ -104,4 +111,21 @@ export function getDirectStreamingConfig(): DirectStreamingConfig {
  */
 export function getPublicUrl(): string | null {
   return (cache.get("public_url") || process.env.TENTACLE_PUBLIC_URL || "").replace(/\/$/, "") || null;
+}
+
+/**
+ * Plafonds de débit des téléchargements. Lu à CHAQUE tick de l'arbitre de
+ * débit : synchrone, depuis le cache — c'est ce qui rend un changement de
+ * réglage effectif sur les transferts en cours, sans redémarrage.
+ */
+export function getDownloadBandwidthConfig(): BandwidthCaps {
+  return {
+    internal: parseCap(cache.get(DOWNLOAD_BANDWIDTH_KEYS.internal)),
+    external: parseCap(cache.get(DOWNLOAD_BANDWIDTH_KEYS.external)),
+  };
+}
+
+/** Les adresses traitées comme le réseau local par le plafond de débit. */
+export function getDownloadInternalIps(): string[] {
+  return parseInternalIps(cache.get(INTERNAL_IPS_KEY));
 }

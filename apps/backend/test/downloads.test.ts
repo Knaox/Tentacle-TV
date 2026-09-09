@@ -8,8 +8,14 @@
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/** Les plafonds de débit vus par les routes — `null` = illimité (le défaut). */
+const caps = vi.hoisted(() => ({ internal: null as number | null, external: null as number | null }));
+/** Les adresses déclarées locales par l'admin — vide par défaut. */
+const internalIps = vi.hoisted(() => [] as string[]);
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
+  getDownloadBandwidthConfig: () => ({ ...caps }),
+  getDownloadInternalIps: () => [...internalIps],
 }));
 vi.mock("../src/services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -24,6 +30,7 @@ vi.mock("../src/services/db", () => ({
 }));
 
 import { downloadRoutes } from "../src/routes/downloads";
+import { downloadArbiter } from "../src/services/downloadBandwidth/instance";
 import { clearPolicyCache } from "../src/services/jellyfinPolicy";
 import { fakeJellyfin, ITEM_IN_A, ITEM_IN_B, streamCapture } from "./fakeJellyfinDownloads";
 
@@ -35,6 +42,9 @@ async function buildApp() {
 
 beforeEach(() => {
   clearPolicyCache();
+  caps.internal = null;
+  caps.external = null;
+  internalIps.length = 0;
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
     fakeJellyfin(input, init),
   ));
@@ -238,5 +248,70 @@ describe("GET /api/downloads/light/:itemId", () => {
       headers: { authorization: "Bearer tok-full" },
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+describe("le plafond de débit sur /api/downloads", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("sous plafond, corps et en-têtes ne changent pas — Range compris", async () => {
+    caps.external = 1024 * 1024;
+    const app = await buildApp();
+    const headers = { authorization: "Bearer tok-full", "cf-connecting-ip": "203.0.113.10" };
+    const res = await app.inject({ url: `/api/downloads/original/${ITEM_IN_A}`, headers });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe("FAKEDATA");
+    expect(res.headers["content-length"]).toBe("8");
+    expect(res.headers["accept-ranges"]).toBe("bytes");
+    expect(res.headers["x-accel-buffering"]).toBe("no");
+
+    const range = await app.inject({
+      url: `/api/downloads/original/${ITEM_IN_A}`,
+      headers: { ...headers, range: "bytes=2-5" },
+    });
+    expect(range.statusCode).toBe(206);
+    expect(range.headers["content-range"]).toBe("bytes 2-5/8");
+    expect(range.body).toBe("KEDA");
+  });
+
+  it("l'adresse du client décide du pool : privée = réseau local, publique = extérieur", async () => {
+    const register = vi.spyOn(downloadArbiter, "register");
+    const app = await buildApp();
+    await app.inject({
+      url: `/api/downloads/original/${ITEM_IN_A}`,
+      headers: { authorization: "Bearer tok-full" },
+    });
+    expect(register).toHaveBeenLastCalledWith("user-tok-full", "internal");
+
+    await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p720`,
+      headers: { authorization: "Bearer tok-full", "cf-connecting-ip": "203.0.113.10" },
+    });
+    expect(register).toHaveBeenLastCalledWith("user-tok-full", "external");
+  });
+
+  it("une adresse publique déclarée locale par l'admin va dans le pool local", async () => {
+    internalIps.push("203.0.113.0/24");
+    const register = vi.spyOn(downloadArbiter, "register");
+    const app = await buildApp();
+    await app.inject({
+      url: `/api/downloads/original/${ITEM_IN_A}`,
+      headers: { authorization: "Bearer tok-full", "cf-connecting-ip": "203.0.113.10" },
+    });
+    expect(register).toHaveBeenLastCalledWith("user-tok-full", "internal");
+  });
+
+  it("sans plafond, le flux est tout de même enregistré — un plafond posé plus tard s'y appliquerait", async () => {
+    const register = vi.spyOn(downloadArbiter, "register");
+    const app = await buildApp();
+    const res = await app.inject({
+      url: `/api/downloads/light/${ITEM_IN_A}?preset=p720`,
+      headers: { authorization: "Bearer tok-full" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toBe("LIGHTDATA");
+    expect(register).toHaveBeenCalledTimes(1);
   });
 });
