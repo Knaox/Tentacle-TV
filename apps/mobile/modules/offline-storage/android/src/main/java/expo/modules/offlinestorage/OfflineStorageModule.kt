@@ -66,12 +66,14 @@ class OfflineStorageModule : Module() {
     //                et le double d'espace disque le temps du remux.
     //   `failed`   — le remux d'un fichier fragmenté a échoué ; l'original
     //                reste intact et la finalisation se retentera.
+    //   `noaudio`  — `MediaMuxer` a refusé LA piste audio : le titre serait
+    //                muet. On s'arrête, et le moteur le dit.
     AsyncFunction("finalizeMp4") { path: String ->
       val cleaned = path.removePrefix("file://")
       when (Mp4Boxes.index(cleaned)) {
         Mp4Index.MISSING -> "unusable"
         Mp4Index.INDEXED -> "ok"
-        Mp4Index.FRAGMENTED -> if (Mp4Finalizer.finalize(cleaned)) "ok" else "failed"
+        Mp4Index.FRAGMENTED -> Mp4Finalizer.finalize(cleaned)
       }
     }
 

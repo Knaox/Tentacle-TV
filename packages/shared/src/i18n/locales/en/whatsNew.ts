@@ -25,6 +25,13 @@ export default {
   sceneLogoAccent: "Accent pink",
 
   // 1.21.0
+  v1_21_1_scope_title: "A season, a show, in one gesture",
+  v1_21_1_scope_body: "From an episode, widen to its season or the whole show without leaving the window — and a show's page finally has its button, with one checkbox per season.",
+  v1_21_1_onDevice_title: "\"On this device\", online too",
+  v1_21_1_onDevice_body: "What the machine holds opens from the profile menu, server reachable or not. Until now you had to wait for an outage to see what you had kept.",
+  v1_21_1_transfers_title: "Transfers say what is happening",
+  v1_21_1_transfers_body: "Current step, rate, time left, percentage, the exact cause of an error and the delay before the next attempt — plus \"Pause everything\".",
+
   v1_21_0_reco_title: "Recommendations, made for you",
   v1_21_0_reco_body: "What you watch, favorite and rate builds your profile. The Recommendations page and the home serve rows like “For you”, “Worth discovering” and “Because you liked…”.",
   v1_21_0_rate_title: "Rate anywhere, on hover",

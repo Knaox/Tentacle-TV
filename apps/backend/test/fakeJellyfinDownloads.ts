@@ -36,6 +36,15 @@ export const POLICIES: Record<string, FakePolicy> = {
   "tok-full": { ...basePolicy },
   "tok-nodl": { ...basePolicy, EnableContentDownloading: false },
   "tok-noconv": { ...basePolicy, EnableMediaConversion: false },
+  // Ni conversion, ni transcodage de lecture : même le remux tombe.
+  "tok-nostream": {
+    ...basePolicy,
+    EnableMediaConversion: false,
+    EnableVideoPlaybackTranscoding: false,
+    EnablePlaybackRemuxing: false,
+  },
+  // Le remux passe, mais Jellyfin n'a pas le droit de convertir l'audio.
+  "tok-noaudioconv": { ...basePolicy, EnableAudioPlaybackTranscoding: false },
   "tok-scoped": {
     ...basePolicy,
     EnableAllFolders: false,

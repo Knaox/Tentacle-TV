@@ -19,6 +19,7 @@ export function useOfflineVisibility(): OfflineVisibility {
   const hasContent = useHasLocalContent() === true;
   const canKeep = capabilities.downloads;
   const canLight = canKeep && capabilities.lightDownloads;
-  const canRemux = canLight && capabilities.lightPresets.includes(REMUX_PRESET);
+  // Le remux a son propre droit : il recopie l'image, il ne la convertit pas.
+  const canRemux = canKeep && capabilities.remuxDownloads && capabilities.lightPresets.includes(REMUX_PRESET);
   return { visible: canKeep || hasContent, canKeep, canLight, canRemux, hasContent, capabilities };
 }

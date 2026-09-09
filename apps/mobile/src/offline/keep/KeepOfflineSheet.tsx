@@ -3,25 +3,26 @@ import { useUserId } from "@tentacle-tv/api-client";
 import { Animated, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
-import { languageDisplayName, type LightPresetId, type OfflineVariantKind } from "@tentacle-tv/offline-core";
 import { BottomSheet, Button } from "@/components/ui";
 import { useScrollOverflow } from "@/hooks/useScrollOverflow";
 import { useDiskInfo, useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useOfflineCapabilities } from "@/hooks/offline/useOfflineCapabilities";
 import { spacing, typography, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
-import { audioLanguages, audioTracks, batchSizeBytes, imageSubtitleTracks, keptAudioTrack, LOCAL_PLATFORM_SUPPORT, sizeFor, type KeepOptions } from "../keepTargets";
+import { LOCAL_PLATFORM_SUPPORT, sizeFor } from "../keepTargets";
 import { useWifiOnly } from "../settings";
 import { useCellularAck } from "../deviceSettings";
 import { wifiBlocked } from "../transferGate";
 import { useConnectivity } from "../useConnectivity";
-import { AutoDeleteChips, type AutoDeleteValue } from "./AutoDeleteChips";
+import { AutoDeleteChips } from "./AutoDeleteChips";
 import { ItemChecklist } from "./ItemChecklist";
 import { SeasonChecklist, seasonKey } from "./SeasonChecklist";
 import { closeKeepOffline, useKeepOfflineRequest, type KeepOfflineRequest } from "./keepOfflineStore";
 import { planForItems } from "./keepPlan";
+import { PresetChoice } from "./PresetChoice";
 import { ScopeChoice } from "./ScopeChoice";
 import { SizeSummary } from "./SizeSummary";
-import { LanguagePickerRow, TrackPickerRow, trackLabel } from "./TrackPickerRow";
+import { LanguagePickerRow, TrackPickerRow } from "./TrackPickerRow";
+import { useKeepChoices } from "./useKeepChoices";
 import { useKeepOfflineSubmit } from "./useKeepOfflineSubmit";
 import { useKeepScope } from "./useKeepScope";
 import { VariantCards } from "./VariantCards";
@@ -37,7 +38,7 @@ export function KeepOfflineSheet() {
 }
 
 function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
-  const { t, i18n } = useTranslation("downloads");
+  const { t } = useTranslation("downloads");
   const { t: to } = useTranslation("offline");
   const { t: tc } = useTranslation("common");
   const st = useThemedStyles(makeStyles);
@@ -84,67 +85,9 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
   const selected = useMemo(() => new Set(items.map((item) => item.Id)), [items]);
   const single = mode === "single" && items.length === 1 ? items[0] : null;
   const plan = useMemo(() => planForItems(items, LOCAL_PLATFORM_SUPPORT, capabilities), [items, capabilities]);
-  const firstKind = plan.cards[0]?.kind ?? null;
-  const [chosenKind, setChosenKind] = useState<OfflineVariantKind | null>(null);
-  const kind = chosenKind !== null && plan.cards.some((card) => card.kind === chosenKind) ? chosenKind : firstKind;
-  // L'Allégé n'apparaît plus que faute de mieux : on ne demande pas à
-  // l'utilisateur d'arbitrer sa propre perte de qualité, on prend le meilleur
-  // palier que le serveur annonce.
-  const activePreset = bestPreset(capabilities.lightPresets);
-  const [audioIndex, setAudioIndex] = useState<number | undefined>(undefined);
-  // Sur un lot, le choix porte sur la LANGUE : les index de flux diffèrent
-  // d'un épisode à l'autre, la langue non.
-  const [audioLanguage, setAudioLanguage] = useState<string | undefined>(undefined);
-  const [burnIndex, setBurnIndex] = useState<number | undefined>(undefined);
-  const [autoDelete, setAutoDelete] = useState<AutoDeleteValue>(null);
-
-  const options: KeepOptions = useMemo(() => ({
-    kind: kind ?? "original",
-    preset: activePreset,
-    autoDeleteAfterWatch: autoDelete !== null,
-    autoDeleteDelayMinutes: autoDelete ?? 0,
-    audioStreamIndex: audioIndex,
-    audioLanguage,
-    burnSubtitleIndex: burnIndex,
-  }), [kind, activePreset, autoDelete, audioIndex, audioLanguage, burnIndex]);
-  const { submit, submitting, spaceError } = useKeepOfflineSubmit(items, options);
-
-  const card = plan.cards.find((entry) => entry.kind === kind) ?? null;
-  const size = kind === null ? { total: null, estimate: false } : batchSizeBytes(items, kind, activePreset);
-  const audio = useMemo(() => (single ? audioTracks(single) : []), [single]);
-  const imageSubs = useMemo(() => (single ? imageSubtitleTracks(single) : []), [single]);
-  // Une langue, pas une piste : sur un lot, « Français » se lit mieux que
-  // « French - Dolby Digital+ - Stereo », dont les canaux varient d'un
-  // épisode à l'autre.
-  const languages = useMemo(
-    () => audioLanguages(items).map(({ code, stream }) => ({
-      code,
-      label: languageDisplayName(code, i18n.language) ?? stream.DisplayTitle ?? code,
-    })),
-    [items, i18n.language],
-  );
-  // Les paliers Allégé et remux passent par le transcodage de Jellyfin, qui
-  // n'en sort jamais qu'une : on dit laquelle. Le premier titre du lot fait foi.
-  const kept = useMemo(
-    () => (kind !== null && kind !== "original" && items[0] !== undefined ? keptAudioTrack(items[0], options) : null),
-    [kind, items, options],
-  );
-
-  const hints: string[] = [];
-  if (card !== null && kind === "original" && single !== null) {
-    for (const index of card.audio.unplayable) {
-      const track = audio.find((stream) => stream.Index === index);
-      if (track) hints.push(to("audioUnplayableWarning", { track: trackLabel(track) }));
-    }
-  }
-  if (kind === "light") hints.push(to("lightOnlyHint"));
-  if (kind !== null && kind !== "original") {
-    hints.push(kept === null ? to("singleAudioTrackHint") : to("audioKeptHint", { track: trackLabel(kept) }));
-  }
-  // Ce que le hors ligne emporte TOUJOURS, et ce qu'il ne sait pas emporter.
-  if (kind !== null) hints.push(to("subtitlesAllKeptHint"));
-  if (imageSubs.length > 0 && burnIndex === undefined) hints.push(to("imageSubsHint"));
-  if (kind === "light" && plan.excluded.some((entry) => entry.reason === "dolbyVision")) hints.push(to("dolbyVisionColorsHint"));
+  const choices = useKeepChoices(items, single, plan, capabilities);
+  const { kind, card, preset, hints } = choices;
+  const { submit, submitting, spaceError } = useKeepOfflineSubmit(items, choices.options);
 
   const title = mode === "season"
     ? to("dialogTitleSeason", { count: items.length })
@@ -196,7 +139,7 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
             episodes={sourceItems}
             uncheckedSeasons={unchecked}
             onDevice={onDevice}
-            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
+            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, preset))}
             onToggle={toggle}
           />
         )}
@@ -205,30 +148,33 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
             items={sourceItems}
             selected={selected}
             onDevice={onDevice}
-            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, activePreset))}
+            sizeOf={(item) => (kind === null ? null : sizeFor(item, kind, preset))}
             onToggle={toggle}
           />
         )}
-        <VariantCards cards={plan.cards} value={kind} onChange={setChosenKind} />
-        {single !== null && kind !== "original" && audio.length > 1 && (
-          <TrackPickerRow label={t("audioTrack")} emptyLabel={t("audioDefault")} tracks={audio} value={audioIndex} onChange={setAudioIndex} unplayable={card?.audio.unplayable} />
+        <VariantCards cards={plan.cards} value={kind} onChange={choices.setKind} />
+        {kind === "light" && (
+          <PresetChoice value={preset} onChange={choices.setPreset} available={choices.presets} />
         )}
-        {single === null && kind !== null && kind !== "original" && languages.length > 1 && (
+        {single !== null && kind !== "original" && choices.audio.length > 1 && (
+          <TrackPickerRow label={t("audioTrack")} emptyLabel={t("audioDefault")} tracks={choices.audio} value={choices.audioIndex} onChange={choices.setAudioIndex} unplayable={card?.audio.unplayable} />
+        )}
+        {single === null && kind !== null && kind !== "original" && choices.languages.length > 1 && (
           <LanguagePickerRow
             label={to("audioLanguagePicker")}
             emptyLabel={to("audioLanguageDefault")}
-            languages={languages}
-            value={audioLanguage}
-            onChange={setAudioLanguage}
+            languages={choices.languages}
+            value={choices.audioLanguage}
+            onChange={choices.setAudioLanguage}
           />
         )}
-        {single !== null && kind === "light" && imageSubs.length > 0 && (
-          <TrackPickerRow label={t("burnSubtitle")} emptyLabel={t("burnNone")} tracks={imageSubs} value={burnIndex} onChange={setBurnIndex} />
+        {single !== null && kind === "light" && choices.imageSubs.length > 0 && (
+          <TrackPickerRow label={t("burnSubtitle")} emptyLabel={t("burnNone")} tracks={choices.imageSubs} value={choices.burnIndex} onChange={choices.setBurnIndex} />
         )}
-        <AutoDeleteChips value={autoDelete} onChange={setAutoDelete} />
+        <AutoDeleteChips value={choices.autoDelete} onChange={choices.setAutoDelete} />
         <SizeSummary
-          sizeBytes={size.total}
-          estimate={size.estimate}
+          sizeBytes={choices.size.total}
+          estimate={choices.size.estimate}
           batch={items.length > 1}
           freeBytes={disk?.freeBytes ?? null}
           spaceError={spaceError}
@@ -250,12 +196,6 @@ function KeepOfflineBody({ request }: { request: KeepOfflineRequest }) {
       </View>
     </View>
   );
-}
-
-/** Le meilleur palier annoncé par le serveur ; `pmax` n'en est pas un (c'est le remux). */
-function bestPreset(available: readonly string[]): LightPresetId {
-  const ranked: LightPresetId[] = ["p1080", "p720", "p480"];
-  return ranked.find((preset) => available.includes(preset)) ?? "p720";
 }
 
 /** Le voile dégradé qui annonce la suite ; monté seulement quand il sert. */

@@ -12,8 +12,19 @@ import { ANDROID_LOCAL_SUPPORT, IOS_LOCAL_SUPPORT } from "./platformSupport";
 
 const FULL: DownloadCapabilities = {
   downloads: true,
+  remuxDownloads: true,
   lightDownloads: true,
+  audioConversion: true,
   lightPresets: ["p1080", "p720", "p480", REMUX_PRESET],
+};
+
+/** Le compte sans mode Allégé : il garde le remux, qui ne recompresse rien. */
+const NO_CONVERSION: DownloadCapabilities = {
+  downloads: true,
+  remuxDownloads: true,
+  lightDownloads: false,
+  audioConversion: true,
+  lightPresets: [REMUX_PRESET],
 };
 
 function stream(partial: Partial<MediaStream> & Pick<MediaStream, "Type" | "Codec" | "Index">): MediaStream {
@@ -144,16 +155,22 @@ describe("offlineVariantsFor", () => {
     expect(excluded(plan, "remux")).toBe("serverPreset");
   });
 
-  it("sans droit de conversion : ni remux ni Allégé", () => {
-    const noConv: DownloadCapabilities = { downloads: true, lightDownloads: false, lightPresets: [] };
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, noConv);
+  it("sans droit de conversion : le remux reste, l'Allégé tombe", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, NO_CONVERSION);
+    expect(kinds(plan)).toEqual(["remux"]);
+    expect(excluded(plan, "light")).toBe("right");
+  });
+
+  it("sans aucun droit de transcodage : ni remux ni Allégé", () => {
+    const nothing: DownloadCapabilities = { ...NO_CONVERSION, remuxDownloads: false, lightPresets: [] };
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, nothing);
     expect(kinds(plan)).toEqual([]);
     expect(excluded(plan, "remux")).toBe("right");
     expect(excluded(plan, "light")).toBe("right");
   });
 
   it("sans droit du tout : rien, pas même une raison", () => {
-    const none: DownloadCapabilities = { downloads: false, lightDownloads: false, lightPresets: [] };
+    const none: DownloadCapabilities = { ...NO_CONVERSION, downloads: false, remuxDownloads: false, lightPresets: [] };
     expect(offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, none)).toEqual({
       cards: [],
       excluded: [],
@@ -180,47 +197,54 @@ describe("offlineVariantsFor", () => {
     expect(kinds(plan)).toEqual(["original", "light"]);
   });
 
-  // ── Sans perte d'abord : l'Allégé n'est plus un choix, c'est un recours.
-  it("sans perte d'abord : un MP4 lisible n'a que son original", () => {
-    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL, {
-      lossyAsLastResort: true,
-    });
-    expect(kinds(plan)).toEqual(["original"]);
-    expect(excluded(plan, "light")).toBe("lossless");
+  // ── Les trois cohabitent : l'ordre fait le défaut, pas l'exclusion.
+  it("un MP4 lisible propose l'original ET l'Allégé, l'original en tête", () => {
+    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["original", "light"]);
   });
 
-  it("sans perte d'abord : un MKV sur iOS n'a que son remux", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL, {
-      lossyAsLastResort: true,
-    });
-    expect(kinds(plan)).toEqual(["remux"]);
-    expect(excluded(plan, "light")).toBe("lossless");
+  it("un MKV sur iOS propose son remux ET l'Allégé : réduire reste possible", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["remux", "light"]);
   });
 
-  it("sans perte d'abord : le Dolby Vision profil 5 garde son Allégé, faute de mieux", () => {
+  it("le Dolby Vision profil 5 n'a que son Allégé", () => {
     const plan = offlineVariantsFor(
       item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
       IOS_LOCAL_SUPPORT,
       FULL,
-      { lossyAsLastResort: true },
     );
     expect(kinds(plan)).toEqual(["light"]);
   });
 
-  it("sans perte d'abord : sans droit de conversion, il ne reste rien", () => {
+  it("Dolby Vision profil 5 sans mode Allégé : il ne reste rien", () => {
     const plan = offlineVariantsFor(
       item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
       IOS_LOCAL_SUPPORT,
-      { downloads: true, lightDownloads: false, lightPresets: [] },
-      { lossyAsLastResort: true },
+      NO_CONVERSION,
     );
     expect(kinds(plan)).toEqual([]);
     expect(excluded(plan, "light")).toBe("right");
   });
 
-  it("le bureau garde le choix des trois : l'option est éteinte par défaut", () => {
-    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["original", "light"]);
+  // ── Le remux sort toujours de l'AAC : sans droit de conversion audio, une
+  // source qui n'en a aucune piste arriverait MUETTE.
+  it("sans conversion audio, un MKV en DTS ne propose plus son remux", () => {
+    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, noAudioConv);
+    expect(kinds(plan)).toEqual(["light"]);
+    expect(excluded(plan, "remux")).toBe("audioRight");
+  });
+
+  it("une piste AAC parmi les autres suffit : elle se recopie", () => {
+    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts", "aac"]), IOS_LOCAL_SUPPORT, noAudioConv);
+    expect(kinds(plan)).toEqual(["remux", "light"]);
+  });
+
+  it("avec le droit de conversion, le DTS passe par le remux", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["remux", "light"]);
   });
 
   it("« h265 » vaut hevc", () => {

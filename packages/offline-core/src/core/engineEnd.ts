@@ -9,7 +9,7 @@
 
 import type { DatabaseHandle, Volume } from "./adapters";
 import { safeJoin } from "./paths";
-import { isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
+import { getFile, isPausedByUser, setBytesDone, setPausedByUser, setPhase, setStatus } from "./queue";
 import { clearRetry, recordFailure } from "./retry";
 import type { TransferEnd } from "./transfer";
 import type { FinalizeVerdict } from "./engineDeps";
@@ -23,9 +23,18 @@ export interface EndContext {
   retryDelaysMs: readonly number[];
 }
 
-/** Traduit une fin de transfert en statut de base. */
+/**
+ * Traduit une fin de transfert en statut de base.
+ *
+ * Une ligne DÉJÀ annulée ne se laisse pas recouvrir : `cancelFile` a écrit son
+ * intention au moment du geste, et ce qui arrive ensuite n'est que la fin d'un
+ * transfert qu'on avait interrompu. Sans cette garde, un pilote coupé net
+ * repassait la ligne en `error` — et une erreur relançable fait repartir, cinq
+ * secondes plus tard, ce que l'utilisateur venait d'arrêter.
+ */
 export function applyEnd(db: DatabaseHandle, fileId: number, end: TransferEnd, ctx: EndContext): void {
   const now = ctx.nowMs;
+  if (end.kind !== "canceled" && getFile(db, fileId)?.status === "canceled") return;
   switch (end.kind) {
     case "complete":
       setBytesDone(db, fileId, end.finalSize, now);
@@ -107,6 +116,12 @@ export function mediaAwaitingFinalize(
  * réponse s'est achevée avant). Aucun remux ne le réparera — s'y reprendre
  * trois fois n'use que la batterie, et le fichier occuperait des centaines de
  * mégaoctets sans jamais se lire. On le jette et on repart du transfert.
+ *
+ * Et sauf `"noaudio"` : le fichier se lit, mais SANS SON — la finalisation a
+ * dû laisser tomber une piste que le conteneur cible refusait. Ici on ne
+ * retélécharge PAS : le serveur reproduirait le même fichier. On le jette,
+ * l'erreur porte sa cause (`audio`, hors des codes relançables) et l'écran la
+ * dit. Un fichier muet livré comme « prêt » serait pire.
  */
 export async function runFinalize(
   db: DatabaseHandle,
@@ -120,16 +135,24 @@ export async function runFinalize(
   const target = safeJoin(volume, file.relPath);
   setPhase(db, fileId, "finalize", nowMs);
   setBytesDone(db, fileId, finalSize, nowMs);
+  const discardMedia = (): void => {
+    try {
+      volume.files.remove(target);
+    } catch {
+      // Un média qui résiste sera écrasé par le transfert suivant.
+    }
+    // La phase tombe : la reprise repart du téléchargement, pas du remux.
+    setPhase(db, fileId, null, nowMs);
+  };
   try {
-    if ((await finalizeMedia(target, file)) === "unusable") {
-      try {
-        volume.files.remove(target);
-      } catch {
-        // Un média qui résiste sera écrasé par le transfert suivant.
-      }
-      // La phase tombe : la reprise repart du téléchargement, pas du remux.
-      setPhase(db, fileId, null, nowMs);
+    const verdict = await finalizeMedia(target, file);
+    if (verdict === "unusable") {
+      discardMedia();
       return { kind: "failed", code: "integrity", bytesDone: 0 };
+    }
+    if (verdict === "noaudio") {
+      discardMedia();
+      return { kind: "failed", code: "audio", bytesDone: 0 };
     }
     setPhase(db, fileId, null, nowMs);
     return { kind: "complete", finalSize: volume.files.size(target) ?? finalSize };
