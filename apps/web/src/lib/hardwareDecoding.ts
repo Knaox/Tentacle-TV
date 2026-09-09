@@ -53,6 +53,46 @@ export function setHardwareDecoding(choice: HardwareDecoding): void {
   }
 }
 
+/**
+ * Le décodeur RÉELLEMENT employé à la dernière lecture, tel que mpv le rapporte.
+ *
+ * ⚠️ Ce qu'on demande n'est pas ce qu'on obtient. `hwdec` est un souhait : mpv
+ * retombe SILENCIEUSEMENT sur son décodeur logiciel quand le matériel ne sait
+ * pas lire le flux — l'AV1 sur n'importe quel Mac Intel, le HEVC 10 bits sur les
+ * iGPU d'avant Kaby Lake. La lecture se déroule normalement, le processeur
+ * chauffe, et RIEN dans l'application ne le disait : `hwdec-current` n'était lu
+ * que sous `__PLAYER_DEBUG__`, donc jamais dans un build livré.
+ *
+ * Persisté parce que le réglage se consulte APRÈS la lecture, pas pendant.
+ */
+const ACTIVE_KEY = "tentacle_hw_decode_active";
+
+export function rememberActiveDecoder(value: string | null): void {
+  if (!value) return;
+  try {
+    localStorage.setItem(ACTIVE_KEY, value);
+  } catch {
+    /* stockage indisponible : on ne saura pas, ce n'est pas une erreur */
+  }
+}
+
+/** `null` tant qu'aucune lecture n'a eu lieu sur cet appareil. */
+export function activeDecoder(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * mpv rend `no` quand c'est le processeur qui décode — la seule valeur qui
+ * compte vraiment ici.
+ */
+export function decoderIsSoftware(value: string | null): boolean {
+  return value !== null && (value === "no" || value === "");
+}
+
 /** Le système, pour ce que `hwdec` en dépend — et il en dépend beaucoup. */
 export type HwdecPlatform = "linux" | "macos" | "other";
 

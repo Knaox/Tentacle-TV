@@ -305,6 +305,10 @@ export default {
   hwDecodeOffHint:
     "The processor decodes on its own. The safest and the hungriest — keep it for when the other two fail.",
 
+  hwDecodeActiveHardware: "Last playback: hardware decoding ({{decoder}}).",
+  hwDecodeActiveSoftware:
+    "Last playback: the processor decoded on its own, with no help from the graphics card. That is what heats the device up and spins the fans — some formats, AV1 among them, cannot be read any other way on any machine.",
+
   // Render quality — DEVICE setting, desktop only.
   renderQualityTitle: "Render quality",
   renderQualityHint:

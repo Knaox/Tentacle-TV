@@ -142,6 +142,12 @@ export const OBSERVED_PROPERTIES = [
   // Watch Together (signal buffering + gel de la boucle de drift).
   ["seeking", "flag"],
   ["eof-reached", "flag"],
+  // Le décodeur réellement employé. ⚠️ EN PRODUCTION, et c'est tout l'intérêt :
+  // `hwdec` n'est qu'un souhait, mpv retombe en silence sur le processeur quand
+  // le matériel ne sait pas lire le flux. Une machine qui décode tout en
+  // logiciel était jusqu'ici indiscernable d'une machine saine. Coût : une
+  // propriété de plus, changée une fois par fichier.
+  ["hwdec-current", "string", "none"],
 ] as const satisfies readonly MpvObservableProperty[];
 
 /**
