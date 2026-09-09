@@ -130,6 +130,18 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
   "gpu-api",
   "gpu-context",
   "target-colorspace-hint",
+  // Qualité de rendu (`apps/web/src/lib/renderQuality.ts`) : posées seulement en
+  // mode « Économe », et chacune vérifiée acceptée par la mpv du dépôt. Sans
+  // elles ici, le filtre les écarterait EN SILENCE et le réglage n'aurait aucun
+  // effet. Aucune ne désigne un fichier ni un programme : ce sont des noms de
+  // filtres de rééchantillonnage et de tramage.
+  "scale",
+  "dscale",
+  "correct-downscaling",
+  "linear-downscaling",
+  "sigmoid-upscaling",
+  "dither",
+  "hdr-compute-peak",
   "border",
   // Distincte de `border`, et c'est elle qui retire la barre de titre plutôt que
   // de la masquer — voir `mpvRuntime.ts`. Un nom de style de fenêtre, rien qui
