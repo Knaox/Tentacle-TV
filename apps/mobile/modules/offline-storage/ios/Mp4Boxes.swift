@@ -15,6 +15,12 @@ import Foundation
  *    ne diffèrent que par la place des jeux de paramètres ; quand le `hvcC`
  *    porte déjà les siens, renommer ces quatre octets suffit, sans réencodage.
  *    C'est exactement ce que fait `ffmpeg -tag:v hvc1`.
+ *
+ * 3. Le défaut symétrique du précédent : un export `passthrough` vers un `.mp4`
+ *    ABANDONNE EN SILENCE toute piste que le conteneur cible refuse. L'image
+ *    est là, le fichier passe pour valide, et il n'y a PAS DE SON. Compter les
+ *    pistes audio avant et après suffit à s'en apercevoir — et c'est le même
+ *    arbre de boîtes, déjà parcouru ici.
  */
 
 /// Ce que l'index d'un fichier permet d'en faire.
@@ -39,6 +45,36 @@ enum Mp4Boxes {
     guard let moov = topLevelBox(named: "moov", in: handle) else { return .missing }
     guard let payload = read(handle, at: moov.contentOffset, length: moov.contentLength) else { return .missing }
     return child(named: "mvex", in: payload, from: 0, to: payload.count) == nil ? .indexed : .fragmented
+  }
+
+  // MARK: - Pistes audio
+
+  /// Nombre de pistes AUDIO déclarées par le `moov` (gestionnaire `soun`).
+  /// `0` aussi quand le fichier est illisible : l'appelant compare deux
+  /// fichiers, et « je ne sais pas » n'a pas à valoir « il y en a ».
+  static func audioTrackCount(of url: URL) -> Int {
+    guard let handle = try? FileHandle(forReadingFrom: url) else { return 0 }
+    defer { try? handle.close() }
+    guard let moov = topLevelBox(named: "moov", in: handle),
+          let payload = read(handle, at: moov.contentOffset, length: moov.contentLength)
+    else { return 0 }
+    return audioTrackCount(in: payload)
+  }
+
+  private static func audioTrackCount(in moov: Data) -> Int {
+    var count = 0
+    forEachBox(in: moov, from: 0, to: moov.count) { trak in
+      guard trak.type == "trak" else { return }
+      guard let mdia = child(named: "mdia", in: moov, from: trak.contentStart, to: trak.end),
+            let hdlr = child(named: "hdlr", in: moov, from: mdia.contentStart, to: mdia.end)
+      else { return }
+      // `hdlr` est une FullBox : version et drapeaux (4), `pre_defined` (4),
+      // puis le type du gestionnaire.
+      let at = hdlr.contentStart + 8
+      guard at + 4 <= hdlr.end else { return }
+      if type(moov, at) == "soun" { count += 1 }
+    }
+    return count
   }
 
   // MARK: - `hev1` → `hvc1`

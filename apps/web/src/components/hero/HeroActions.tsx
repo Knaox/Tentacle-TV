@@ -7,6 +7,7 @@ import { captureDetailOrigin } from "../detail/detailTransition";
 import { PlayIcon, InfoIcon } from "../icons/HeroIcons";
 import { PressableScale } from "../ui/PressableScale";
 import { CardQuickActions } from "../cards/CardQuickActions";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 
 interface HeroActionsProps {
   item: MediaItem;
@@ -79,8 +80,11 @@ export function HeroActions({ item, onPlay, resuming, episodeCode }: HeroActions
         {t("common:moreInfo")}
       </PressableScale>
 
-      <div className="ml-1 hidden sm:block">
+      <div className="ml-1 hidden items-center gap-1.5 sm:flex">
         <CardQuickActions item={item} variant="inline" />
+        {/* La bannière n'est pas montée au survol : une seule instance, et un
+            seul abonnement à la file des téléchargements pour tout l'écran. */}
+        <CardDownloadAction item={item} variant="inline" />
       </div>
     </div>
   );

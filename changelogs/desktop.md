@@ -13,6 +13,27 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.21.1]
+### FR
+- **« Sur cet appareil » se trouve enfin** : le catalogue de ce que la machine porte s'ouvre depuis le menu du profil, serveur joignable ou non — il fallait jusqu'ici attendre une coupure pour revoir ce qu'on avait gardé
+- **Une bascule hors ligne qui s'explique** : un bandeau dit pourquoi l'application vient de passer au contenu local, au lieu de laisser la bibliothèque rétrécir en silence
+- **Toute une série depuis sa fiche** : le bouton de téléchargement apparaît sur les séries, avec une case par saison ; depuis un épisode, on élargit à sa saison ou à toute la série sans quitter la fenêtre
+- **Un accueil hors ligne à part entière** : bandeau avec le logo du titre et la reprise, résumé de la machine (titres, espace, dernier ajout), filtre par bibliothèque, et des écrans vides qui proposent quelque chose
+- **Les transferts disent ce qui se passe** : étape en cours (transfert puis finalisation), débit, temps restant, pourcentage, cause exacte d'une erreur et délai avant la prochaine tentative
+- **« Tout mettre en pause »** : suspendre une saison demandait vingt-quatre clics
+- **Une pause ou une annulation ne repart plus toute seule** : un transfert coupé net était pris pour une panne, et relancé cinq secondes plus tard
+- Nécessite un serveur 1.17.0 ou plus
+
+### EN
+- **"On this device" is finally findable**: the catalogue of what the machine holds opens from the profile menu, server reachable or not — until now you had to wait for an outage to see what you had kept
+- **An offline switch that explains itself**: a banner says why the app just fell back to local content, instead of letting the library shrink in silence
+- **A whole show from its page**: the download button now appears on shows, with one checkbox per season; from an episode you can widen to its season or the whole show without leaving the window
+- **A real offline home**: a banner with the title's logo and resume, a summary of the machine (titles, space, last added), a filter by library, and empty screens that offer something
+- **Transfers say what is happening**: current step (transfer then finalizing), rate, time left, percentage, the exact cause of an error and the delay before the next attempt
+- **"Pause everything"**: pausing a season used to take twenty-four clicks
+- **A pause or a cancel never restarts on its own**: a transfer cut short was taken for a failure, and retried five seconds later
+- Requires a server on 1.17.0 or newer
+
 ## [win-1.21.0]
 ### FR
 - **Les recommandations arrivent** : un moteur complet apprend vos goûts (vus, favoris, notes) et sert « Pour vous », « À découvrir », « Parce que vous avez aimé… », « Avec {acteur} », « Animés pour vous » — la page s'affiche instantanément et n'est jamais vide

@@ -8,7 +8,9 @@
  * - `EnableContentDownloading` gate le vrai endpoint /Items/{id}/Download
  *   (double enforcement : Jellyfin revérifie derrière notre garde) ;
  * - `EnableMediaConversion` n'est appliqué NULLE PART par Jellyfin (vestige
- *   Emby « Convert media ») → c'est ICI que le mode Allégé l'applique ;
+ *   Emby « Convert media ») → c'est ICI que le mode Allégé l'applique, et LUI
+ *   SEUL : le remux, qui recopie l'image, ne dépend que des droits de
+ *   transcodage de lecture ;
  * - périmètre bibliothèques : `BlockedMediaFolders` (blacklist) PRIORITAIRE,
  *   puis `EnableAllFolders`, sinon whitelist `EnabledFolders`. Les GUIDs sont
  *   ceux des CollectionFolder de premier niveau — comparaison NORMALISÉE
@@ -35,7 +37,22 @@ export interface DownloadPolicySnapshot {
 
 export interface DownloadCapabilities {
   downloads: boolean;
+  /**
+   * Le remux — « qualité d'origine en MP4 », palier `pmax`. Il RECOPIE l'image :
+   * ce n'est pas une conversion de média, donc `EnableMediaConversion` ne le
+   * concerne pas. Seuls les droits de transcodage de lecture l'ouvrent. Sans
+   * ce découplage, un compte sans mode Allégé ne pouvait RIEN garder d'un MKV
+   * sur iPhone, alors que rien n'y était recompressé.
+   */
+  remuxDownloads: boolean;
   lightDownloads: boolean;
+  /**
+   * Jellyfin peut-il CONVERTIR l'audio ? Le palier `pmax` sort toujours de
+   * l'AAC (une copie d'ac3/eac3 vers un MP4 écrit un fichier sans index) :
+   * sans ce droit, une source qui n'a aucune piste AAC arriverait muette. Le
+   * client s'en sert pour ne pas proposer ce qu'il ne pourrait pas écouter.
+   */
+  audioConversion: boolean;
 }
 
 const POLICY_TTL_MS = 30_000;
@@ -118,13 +135,15 @@ export function capabilitiesFromPolicy(
   policy: DownloadPolicySnapshot | null,
 ): DownloadCapabilities {
   if (!policy || !policy.enableContentDownloading) {
-    return { downloads: false, lightDownloads: false };
+    return { downloads: false, remuxDownloads: false, lightDownloads: false, audioConversion: false };
   }
   const canTranscode =
     policy.enableVideoPlaybackTranscoding || policy.enablePlaybackRemuxing;
   return {
     downloads: true,
+    remuxDownloads: canTranscode,
     lightDownloads: policy.enableMediaConversion && canTranscode,
+    audioConversion: policy.enableAudioPlaybackTranscoding,
   };
 }
 
@@ -180,5 +199,12 @@ export async function checkDownloadRight(token: string, itemId: string): Promise
 export async function checkLightRight(token: string, itemId: string): Promise<boolean> {
   const policy = await getUserDownloadPolicy(token);
   if (!capabilitiesFromPolicy(policy).lightDownloads) return false;
+  return checkDownloadRight(token, itemId);
+}
+
+/** Le remux (`pmax`) : les droits de transcodage de lecture suffisent. */
+export async function checkRemuxRight(token: string, itemId: string): Promise<boolean> {
+  const policy = await getUserDownloadPolicy(token);
+  if (!capabilitiesFromPolicy(policy).remuxDownloads) return false;
   return checkDownloadRight(token, itemId);
 }

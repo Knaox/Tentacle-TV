@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useUserId } from "@tentacle-tv/api-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import { supportsDownloads } from "../desktop/bridge";
 import { deleteDownload, setAutoDeleteAfterWatch, type DownloadEntry } from "./api";
 import { DownloadRow } from "./DownloadRow";
 import { DownloadsBulkBar } from "./DownloadsBulkBar";
+import { DownloadsPauseAll } from "./DownloadsPauseAll";
 import {
   pruneSelection as prune,
   selectionState,
@@ -131,8 +132,9 @@ export function DownloadsPage() {
     <div className="mx-auto min-h-screen w-full max-w-4xl px-4 pb-16 pt-24 md:px-8">
       <h1 className="text-2xl font-bold text-content-primary">{t("nav:downloads")}</h1>
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-3">
         <DownloadsSpaceBar />
+        <DownloadsPauseAll entries={entries} />
       </div>
 
       {entries.length === 0 ? (
@@ -141,6 +143,13 @@ export function DownloadsPage() {
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-content-quaternary">
             {t("downloads:emptyMessage")}
           </p>
+          {/* Un état vide qui ne propose rien laisse l'utilisateur sur place. */}
+          <Link
+            to="/"
+            className="mt-5 rounded-md bg-cta-primary-bg px-4 py-2 text-sm font-bold text-cta-primary-fg transition-colors duration-150 hover:bg-cta-primary-bg-hover"
+          >
+            {t("downloads:emptyAction")}
+          </Link>
         </div>
       ) : (
         <div className="mt-6 space-y-4">

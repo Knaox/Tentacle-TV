@@ -25,6 +25,8 @@ const ERROR_KEYS: Record<string, string> = {
   missing: "errorMissing",
   io: "errorIo",
   unexpected: "errorUnexpected",
+  // Le remux a rendu une image sans son : le fichier est jeté, la cause reste.
+  audio: "errorAudio",
 };
 
 /**

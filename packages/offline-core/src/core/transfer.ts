@@ -85,7 +85,16 @@ export type TransferEnd =
   /** Codes STABLES, consommés par l'interface. */
   | {
       kind: "failed";
-      code: "network" | "disk-full" | "integrity" | "unavailable" | "io" | "finalize" | "unexpected";
+      code:
+        | "network"
+        | "disk-full"
+        | "integrity"
+        | "unavailable"
+        | "io"
+        | "finalize"
+        /** Le remux a rendu une image sans son : rien à retenter. */
+        | "audio"
+        | "unexpected";
       bytesDone: number;
     };
 
@@ -237,6 +246,21 @@ export async function run(
       },
     });
   } catch (error) {
+    // Un pilote coupé net LÈVE : c'est ce que fait le téléchargeur natif quand
+    // on annule sa tâche, ou qu'on la met en pause alors qu'elle n'existe déjà
+    // plus. L'exception ne dit rien d'autre que « on vient de m'interrompre »,
+    // et la prendre pour une panne armait une relance qui faisait repartir ce
+    // que l'utilisateur venait d'arrêter — depuis la notification Android
+    // comme depuis la feuille d'actions. On lit donc les bascules d'abord.
+    if (flags.cancel) {
+      discard(files, part);
+      await stopTranscode();
+      return { kind: "canceled" };
+    }
+    if (flags.pause) {
+      await stopTranscode();
+      return { kind: "paused", bytesDone: files.size(part) ?? total };
+    }
     // Un pilote qui lève ne doit pas laisser le fichier en `downloading`. Le
     // code dit « imprévu » plutôt que « écriture disque » : confondre les deux
     // rendait indéchiffrable la seule trace qui restait en base.

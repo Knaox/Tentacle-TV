@@ -54,7 +54,9 @@ describe("GET /api/downloads/capabilities", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({
       downloads: true,
+      remuxDownloads: true,
       lightDownloads: true,
+      audioConversion: true,
       lightPresets: ["p1080", "p720", "p480", "pmax"],
     });
   });
@@ -65,16 +67,52 @@ describe("GET /api/downloads/capabilities", () => {
       url: "/api/downloads/capabilities",
       headers: { authorization: "Bearer tok-nodl" },
     });
-    expect(res.json()).toEqual({ downloads: false, lightDownloads: false, lightPresets: [] });
+    expect(res.json()).toEqual({
+      downloads: false,
+      remuxDownloads: false,
+      lightDownloads: false,
+      audioConversion: false,
+      lightPresets: [],
+    });
   });
 
-  it("téléchargement OK mais conversion refusée → lightDownloads false", async () => {
+  it("conversion refusée → l'Allégé tombe, le remux reste (il ne recompresse rien)", async () => {
     const app = await buildApp();
     const res = await app.inject({
       url: "/api/downloads/capabilities",
       headers: { authorization: "Bearer tok-noconv" },
     });
-    expect(res.json()).toEqual({ downloads: true, lightDownloads: false, lightPresets: [] });
+    expect(res.json()).toEqual({
+      downloads: true,
+      remuxDownloads: true,
+      lightDownloads: false,
+      audioConversion: true,
+      lightPresets: ["pmax"],
+    });
+  });
+
+  it("sans aucun droit de transcodage → même le remux tombe", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: "/api/downloads/capabilities",
+      headers: { authorization: "Bearer tok-nostream" },
+    });
+    expect(res.json()).toEqual({
+      downloads: true,
+      remuxDownloads: false,
+      lightDownloads: false,
+      audioConversion: true,
+      lightPresets: [],
+    });
+  });
+
+  it("sans droit de conversion audio → le champ le dit, les paliers ne bougent pas", async () => {
+    const app = await buildApp();
+    const res = await app.inject({
+      url: "/api/downloads/capabilities",
+      headers: { authorization: "Bearer tok-noaudioconv" },
+    });
+    expect(res.json()).toMatchObject({ audioConversion: false, remuxDownloads: true });
   });
 
   it("sans token → 401 du middleware (uniforme app-wide)", async () => {

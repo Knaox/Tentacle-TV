@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardQuickActions } from "./CardQuickActions";
+import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { LanguagePill, QualityChips } from "../media/MetaChips";
 import { StarIcon } from "../icons/HeroIcons";
 import { extractMediaQuality } from "../../lib/mediaQuality";
@@ -136,6 +137,9 @@ export function HoverPreviewInfo({
           et le bouton « Plus d'infos » vit dans son coin haut-gauche. */}
       <div className="flex items-center gap-1.5">
         <CardQuickActions item={item} variant="bar" />
+        {/* La racine du tiroir ouvre la fiche : le bouton coupe la
+            propagation lui-même, sinon télécharger naviguerait. */}
+        <CardDownloadAction item={item} variant="bar" />
       </div>
 
       {epLabel && (

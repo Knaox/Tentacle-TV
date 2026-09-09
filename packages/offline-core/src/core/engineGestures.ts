@@ -41,8 +41,19 @@ export function resumeFile(db: DatabaseHandle, fileId: number, nowMs: number): v
 }
 
 /**
- * Annulation. Un transfert en vol reçoit la bascule et nettoie son `.part`
- * lui-même — rien à écrire ici, il poserait le statut par-dessus.
+ * Annulation.
+ *
+ * Un transfert en vol reçoit la bascule ET l'intention est écrite en base tout
+ * de suite. Elle ne l'était pas : la ligne restait `downloading` jusqu'à ce que
+ * le transfert veuille bien s'achever, et deux choses en profitaient — une
+ * application tuée entre les deux laissait une ligne que
+ * `normalizeOnEngineStart` remettait en file, et une exception levée par le
+ * pilote coupé net devenait une erreur « imprévue », relancée cinq secondes
+ * plus tard. Dans les deux cas, ce qu'on venait d'annuler repartait.
+ *
+ * Le fichier, lui, n'est retiré que hors vol : le transfert nettoie son `.part`
+ * tout seul, et le lui arracher pendant l'écriture ne ferait que des dégâts.
+ * `applyEnd` respecte ce statut au lieu de le recouvrir.
  */
 export function cancelFile(
   db: DatabaseHandle,
@@ -51,13 +62,10 @@ export function cancelFile(
   flags: TransferFlags | undefined,
   nowMs: number,
 ): void {
-  if (flags !== undefined) {
-    flags.cancel = true;
-    return;
-  }
   const file = getFile(db, fileId);
   if (file === null) return;
-  removeMediaFile(volume, file.relPath);
+  if (flags !== undefined) flags.cancel = true;
+  else removeMediaFile(volume, file.relPath);
   setBytesDone(db, fileId, 0, nowMs);
   // Le média part avec l'annulation : plus rien à finaliser.
   setPhase(db, fileId, null, nowMs);

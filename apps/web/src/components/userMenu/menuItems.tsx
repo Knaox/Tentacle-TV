@@ -5,7 +5,7 @@
  */
 
 import type { ReactNode } from "react";
-import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, PairIcon, SettingsIcon } from "./icons";
+import { AdminIcon, CreditsIcon, HelpIcon, InfoIcon, LogoutIcon, OfflineIcon, OnDeviceIcon, PairIcon, SettingsIcon } from "./icons";
 
 export interface UserInfo {
   name: string;
@@ -31,6 +31,13 @@ interface BuildItemsOptions {
   extended?: boolean;
   /** Bascule manuelle en mode hors ligne (desktop Tauri, uniquement en ligne). */
   goOffline?: () => void;
+  /**
+   * Le catalogue local est-il atteignable ? Il l'est EN LIGNE aussi : ce qui
+   * est sur la machine s'y trouve encore quand le serveur répond, et le mobile
+   * l'ouvre depuis son profil depuis toujours. Sans cette entrée, la seule
+   * façon de le voir était d'attendre une coupure.
+   */
+  onDevice?: boolean;
   /**
    * Mode hors ligne actif : les entrées que le routeur refuse sont retirées.
    *
@@ -58,10 +65,11 @@ export function getUserInfo(): UserInfo {
 
 /**
  * Ordre canonique : Préférences → Admin (si admin) → Jumeler → À propos →
- * Aide → Crédits (mobile uniquement) → séparateur → Déconnexion.
+ * Aide → Crédits (mobile uniquement) → Sur cet appareil → Passer hors ligne →
+ * séparateur → Déconnexion.
  */
 export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
-  const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline } = opts;
+  const { t, isAdmin, navigate, handleLogout, extended, goOffline, offline, onDevice } = opts;
   const items: UserMenuItem[] = [
     { key: "settings", label: t("preferences"), icon: <SettingsIcon />, action: () => navigate("/settings") },
   ];
@@ -77,6 +85,11 @@ export function buildUserMenuItems(opts: BuildItemsOptions): UserMenuItem[] {
   }
   if (extended) {
     items.push({ key: "credits", label: t("credits"), icon: <CreditsIcon />, action: () => navigate("/credits") });
+  }
+  // Hors ligne, la barre porte déjà les deux destinations (`OfflineNavLinks`) :
+  // l'entrée n'a de sens qu'EN LIGNE, où rien d'autre n'y mène.
+  if (onDevice && !offline) {
+    items.push({ key: "onDevice", label: t("onDevice"), icon: <OnDeviceIcon />, action: () => navigate("/on-device") });
   }
   if (goOffline) {
     items.push({ key: "goOffline", label: t("goOffline"), icon: <OfflineIcon />, action: goOffline });
