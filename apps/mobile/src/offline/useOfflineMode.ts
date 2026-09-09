@@ -1,4 +1,5 @@
 import { useUserId } from "@tentacle-tv/api-client";
+import { isDeviceSideReason } from "@tentacle-tv/offline-core";
 import { useOfflineList } from "@/hooks/offline/useOfflineList";
 import { useConnectivity } from "./useConnectivity";
 
@@ -21,13 +22,17 @@ export function useHasLocalContent(): boolean | null {
  * l'appareil, onglets réduits) ?
  *
  * Oui en mode manuel — l'utilisateur l'a demandé —, et en hors ligne
- * automatique seulement s'il y a quelque chose à montrer ; sans contenu local,
- * il n'y a rien d'autre à faire que le voile.
+ * automatique s'il y a quelque chose à montrer OU si c'est la CONNEXION qui
+ * manque (aucun réseau, délai dépassé) : l'accueil serveur n'a alors rien à
+ * offrir, même sans titre — l'état vide l'explique. Sans titre et le serveur
+ * en cause, il ne reste que le voile.
  */
 export function useOfflineMode(): boolean {
-  const { state } = useConnectivity();
+  const { state, reason } = useConnectivity();
   const hasLocalContent = useHasLocalContent();
+  if (state === "offline-manual") return true;
+  if (state !== "offline-auto") return false;
   // Liste pas encore lue : le catalogue local (qui a sa propre attente),
   // jamais l'accueil serveur.
-  return state === "offline-manual" || (state === "offline-auto" && hasLocalContent !== false);
+  return hasLocalContent !== false || isDeviceSideReason(reason);
 }

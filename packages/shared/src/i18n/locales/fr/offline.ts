@@ -117,6 +117,8 @@ export default {
   libraryEmptyTitle: "Aucun titre hors ligne",
   libraryEmptyMessage:
     "Aucun titre lisible sur cet appareil pour ce compte. Le catalogue complet reviendra dès que le serveur répondra.",
+  libraryEmptyOfflineTitle: "Hors ligne, et rien sur cet appareil",
+  libraryEmptyOfflineHint: "Aucun titre n'est gardé hors ligne pour ce compte. Le catalogue complet reviendra avec la connexion.",
   searchPlaceholder: "Rechercher sur cet appareil",
   noResults: "Aucun titre ne correspond sur cet appareil.",
   episodesOnDeviceHint: "Sur l'appareil",
