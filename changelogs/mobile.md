@@ -7,6 +7,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 
 ## [1.7.1]
 ### FR
+- **Sans connexion utilisable, l'application passe d'elle-même sur ce qui est sur l'appareil** : Wi-Fi coupé, mode avion, réseau sans données ou serveur qui ne répond pas à temps — le catalogue local s'affiche, avec la cause, même s'il est vide, et l'accueil revient de lui-même dès que le serveur répond à nouveau
+- **Le voile « le serveur fait une pause » n'accuse plus le serveur quand c'est la connexion qui manque** : il ne s'affiche que si le serveur (ou Jellyfin) est réellement en cause, et propose alors « Passer hors ligne »
 - **Réduire la taille d'un titre redevient possible** : le choix 1080p / 720p / 480p était parti, et il disparaissait entièrement dès qu'un fichier devait être réemballé pour l'appareil — c'est-à-dire sur presque tous les MKV
 - **Un compte sans « mode allégé » garde quand même ses titres** : le réemballage ne recompresse rien, il n'a donc plus à demander ce droit-là ; seules les options de réduction de qualité disparaissent
 - **Jamais un titre sans le son** : une piste que le format d'arrivée refusait était abandonnée en silence, et le titre s'annonçait prêt ; il est maintenant refusé, avec la raison. Un titre dont le serveur ne peut pas convertir l'audio n'est plus proposé au réemballage
@@ -14,6 +16,8 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Deux avertissements cessent de mentir** : « vous perdez de la qualité » ne s'affiche plus quand une version sans perte existe à côté, et « une seule piste audio est conservée » disparaît quand le titre n'en a aucune
 
 ### EN
+- **Without a usable connection, the app switches on its own to what is on the device**: Wi-Fi off, airplane mode, a network without data or a server that does not answer in time — the local catalog shows up, with the cause, even when empty, and the home comes back on its own once the server answers again
+- **The "server is taking a break" veil no longer blames the server when the connection is missing**: it only shows when the server (or Jellyfin) really is at fault, and then offers "Go offline"
 - **Shrinking a title is possible again**: the 1080p / 720p / 480p choice had gone, and it vanished entirely as soon as a file had to be repackaged for the device — that is, on almost every MKV
 - **An account without "light mode" still keeps its titles**: repackaging recompresses nothing, so it no longer asks for that right; only the quality-reduction options disappear
 - **Never a title without sound**: a track the target format refused was dropped in silence and the title announced itself ready; it is now refused, with the reason. A title whose audio the server cannot convert is no longer offered for repackaging
