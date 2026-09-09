@@ -38,14 +38,21 @@ import type { FileRow } from "./store";
 import { TransferFlags, type TransferEnd } from "./transfer";
 import { runWorker, type Creds } from "./worker";
 
-export type { EngineDeps } from "./engineDeps";
+export type { EngineDeps, FinalizeVerdict } from "./engineDeps";
 
 /**
  * Un seul transfert à la fois. Deux se disputaient la bande passante, le disque
  * et — sur le téléphone — le processeur de la finalisation MP4 : deux barres
  * qui avancent lentement plutôt qu'une qui aboutit. La file reste FIFO.
+ *
+ * La plateforme peut en demander plus le temps d'une suspension système
+ * (cf. `EngineDeps.parallelLimit`) : là, ce qui n'est pas déjà parti ne
+ * partira pas du tout.
  */
 export const MAX_PARALLEL = 1;
+
+/** Garde-fou : au-delà, on sature la connexion sans rien terminer plus vite. */
+const PARALLEL_CEILING = 4;
 
 export class DownloadEngine {
   private creds: Creds | null = null;
@@ -138,10 +145,17 @@ export class DownloadEngine {
     }
   }
 
+  /** Places ouvertes maintenant, bornées : la plateforme demande, elle n'impose pas. */
+  private parallelLimit(): number {
+    const asked = this.deps.parallelLimit?.() ?? MAX_PARALLEL;
+    return Math.min(Math.max(1, Math.trunc(asked)), PARALLEL_CEILING);
+  }
+
   private startWhatCanRun(): void {
     const creds = this.creds;
     if (creds === null) return;
-    while (this.active.size < MAX_PARALLEL) {
+    const limit = this.parallelLimit();
+    while (this.active.size < limit) {
       const file = nextQueued(this.deps.db);
       if (file === null) return;
       // Le statut passe à `downloading` AVANT le premier `await` : sans ça, le

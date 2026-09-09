@@ -75,6 +75,8 @@ export interface FileRow {
   nextRetryAt: number | null;
   /** Étape hors téléchargement : `null`, ou `'finalize'` (remux MP4 à faire). */
   phase: string | null;
+  /** Side-cars réellement sur le disque après la dernière tentative ; `null` : jamais tentée. */
+  subtitlesDone: number | null;
 }
 
 /** Ce que la page voit d'un fichier : tout, sauf la liste des side-cars. */
@@ -84,7 +86,8 @@ export type PublicFile = Omit<FileRow, "subtitlesJson">;
 export const FILE_COLS = `files.id, files.item_id, files.media_source_id, files.variant,
    files.preset, files.rel_path, files.expected_size, files.bytes_done, files.status,
    files.error_code, files.audio_stream_index, files.burn_subtitle_index, files.subtitles_json,
-   files.retry_count, files.last_error_at, files.next_retry_at, files.phase`;
+   files.retry_count, files.last_error_at, files.next_retry_at, files.phase,
+   files.subtitles_done`;
 
 export function mapFileRow(row: Row): FileRow {
   return {
@@ -105,6 +108,7 @@ export function mapFileRow(row: Row): FileRow {
     lastErrorAt: integerOrNull(row, "last_error_at"),
     nextRetryAt: integerOrNull(row, "next_retry_at"),
     phase: textOrNull(row, "phase"),
+    subtitlesDone: integerOrNull(row, "subtitles_done"),
   };
 }
 
@@ -112,6 +116,18 @@ export function mapFileRow(row: Row): FileRow {
 export function publicFile(file: FileRow): PublicFile {
   const { subtitlesJson: _interne, ...rest } = file;
   return rest;
+}
+
+/**
+ * Combien de side-cars sont sur le disque après la dernière tentative. Écrit
+ * par le transfert comme par la réparation : c'est ce qui permet de DIRE qu'il
+ * en manque, au lieu de les perdre en silence.
+ */
+export function setSubtitlesDone(db: DatabaseHandle, itemId: string, mediaSourceId: string, done: number): void {
+  // Les side-cars appartiennent au COUPLE item / source, pas à un fichier :
+  // toutes les variantes gardées du même épisode les partagent.
+  db.prepare("UPDATE files SET subtitles_done = ? WHERE item_id = ? AND media_source_id = ?")
+    .run(done, itemId, mediaSourceId);
 }
 
 /** Paramètres du mode Allégé et des side-cars, posés à la mise en file. */
