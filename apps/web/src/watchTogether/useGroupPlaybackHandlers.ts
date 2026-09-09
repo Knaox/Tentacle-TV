@@ -35,7 +35,7 @@ export function useGroupPlaybackHandlers({
   handlePreviousEpisode: () => void;
   setStartTicks: (ticks: number) => void;
 }) {
-  const { room, send, serverNow, isInGroup } = useWatchTogether();
+  const { room, send, serverNow, isInGroup, isHost } = useWatchTogether();
   const active = isInGroup && !!itemId;
 
   // Position de départ figée une fois PAR ITEM (un state ultérieur ne doit pas
@@ -83,6 +83,8 @@ export function useGroupPlaybackHandlers({
 
   return {
     groupActive: active,
+    /** En séance, seul l'hôte laisse le décompte de saut aller au seek. */
+    groupIsHost: active && isHost,
     groupStartPositionSeconds: groupStartSeconds,
     handleNextEpisode: active ? groupNextEpisode : handleNextEpisode,
     handlePreviousEpisode: active ? groupPreviousEpisode : handlePreviousEpisode,

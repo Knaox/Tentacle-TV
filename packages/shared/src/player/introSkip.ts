@@ -69,6 +69,16 @@ export type IntroSkipAction = "none" | "skip";
 export const INTRO_SKIP_IDLE: IntroSkipState = { name: "idle" };
 
 /**
+ * Le décompte peut-il courir ici ? En séance Watch Together, chez l'HÔTE
+ * seulement : son saut est un seek de groupe, et deux décomptes qui courent
+ * ne peuvent que se doubler. Les invités gardent le bouton — un clic reste un
+ * seek de groupe — et la croix, qui fait taire le décompte de l'hôte. Hors
+ * séance, la question ne se pose pas.
+ */
+export const countdownAllowed = (groupSession?: boolean, groupHost?: boolean): boolean =>
+  groupSession !== true || groupHost === true;
+
+/**
  * `visible` est la fenêtre d'intro telle que le lecteur la calcule déjà. Son
  * front MONTANT réarme : c'est là, et nulle part ailleurs, que le refus tombe.
  */

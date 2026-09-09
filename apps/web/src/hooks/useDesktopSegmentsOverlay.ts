@@ -35,13 +35,15 @@ interface UseDesktopSegmentsOverlayArgs {
   onAutoNextDismiss?: () => void;
   /** Watch Together — une séance est active (refus ⇒ décompte annulé). */
   inGroupSession?: boolean;
+  /** Watch Together — ce lecteur est celui de l'hôte (le seul décompte qui va au bout). */
+  inGroupHost?: boolean;
 }
 
 export function useDesktopSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
   hasStarted, playbackEnded, segments, runtimeMs, libraryId,
   scrubbing, controlsVisible, isDirectPlay, effectiveMpvOffset, seek,
-  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
+  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession, inGroupHost,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
   const playback = usePlaybackOverlay({
     itemId,
@@ -55,6 +57,7 @@ export function useDesktopSegmentsOverlay({
     runtimeMs,
     libraryId,
     groupSession: inGroupSession,
+    groupHost: inGroupHost,
     scrubbing,
     controlsVisible,
     onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },
