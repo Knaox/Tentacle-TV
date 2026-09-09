@@ -57,13 +57,18 @@ export function OfflineHomeHero({ entries }: { entries: readonly DownloadListEnt
           {percent > 0 ? t("heroResume") : t("heroLatest")}
         </p>
         {logo ? (
-          <img
-            src={logo}
-            alt={title ?? ""}
-            decoding="async"
-            className="max-h-16 w-auto max-w-[min(22rem,70%)] object-contain object-left"
-            onError={() => setLogoFailed(true)}
-          />
+          // Le logo tient dans min(70 % du bandeau, 22rem) — dit avec une largeur
+          // et un plafond, jamais `min()` : le socle Chrome 53 du téléviseur
+          // ignorerait la déclaration entière (passe compat webOS).
+          <span className="block w-[70%] max-w-[22rem]">
+            <img
+              src={logo}
+              alt={title ?? ""}
+              decoding="async"
+              className="max-h-16 w-auto max-w-full object-contain object-left"
+              onError={() => setLogoFailed(true)}
+            />
+          </span>
         ) : (
           <h2 className="max-w-xl truncate text-2xl font-bold text-content-primary md:text-3xl">{title}</h2>
         )}
