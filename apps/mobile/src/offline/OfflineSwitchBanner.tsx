@@ -4,6 +4,7 @@ import Animated, { FadeInUp, FadeOutUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
+import { isDeviceSideReason } from "@tentacle-tv/offline-core";
 
 import {
   spacing,
@@ -73,6 +74,10 @@ export function OfflineSwitchBanner() {
     setSheetOpen(true);
   }, []);
 
+  // « Serveur injoignable » au-dessus de « Cet appareil n'a aucun réseau »
+  // accuserait le serveur dans la même phrase.
+  const title = to(isDeviceSideReason(reason) ? "switchedOfflineDeviceTitle" : "switchedOfflineTitle");
+
   return (
     <>
       {visible && (
@@ -82,11 +87,11 @@ export function OfflineSwitchBanner() {
           style={[st.wrap, { paddingTop: Math.max(insets.top, 24) + 8 }]}
           accessibilityRole="alert"
         >
-          <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={to("switchedOfflineTitle")}>
+          <Pressable onPress={open} accessibilityRole="button" accessibilityLabel={title}>
             <View style={st.row}>
               <Feather name="cloud-off" size={18} color={theme.colors.status.warning} style={st.icon} />
               <View style={st.textWrap}>
-                <Text style={st.title}>{to("switchedOfflineTitle")}</Text>
+                <Text style={st.title}>{title}</Text>
                 <Text style={st.message}>
                   {t(offlineReasonKey(reason))} {to("switchedOfflineHint")}
                 </Text>
