@@ -18,7 +18,7 @@ import { useOfflineVeilActions } from "./useOfflineVeilActions";
 export function OfflineOverlays() {
   const { state, reason } = useConnectivity();
   const hasLocalContent = useHasLocalContent();
-  const { isChecking, retry, handleLogout, handleChangeServer } = useOfflineVeilActions();
+  const { isChecking, retry, handleLogout, handleChangeServer, goOffline } = useOfflineVeilActions();
 
   return (
     <>
@@ -28,6 +28,7 @@ export function OfflineOverlays() {
         onRetry={retry}
         onLogout={handleLogout}
         onChangeServer={handleChangeServer}
+        onGoOffline={goOffline}
       />
       <OfflineSwitchBanner />
     </>

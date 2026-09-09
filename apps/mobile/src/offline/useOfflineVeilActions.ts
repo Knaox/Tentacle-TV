@@ -3,12 +3,14 @@ import { useRouter } from "expo-router";
 import { useAuth, useTentacleConfig } from "@tentacle-tv/api-client";
 import { clearCredentials } from "@/auth/credentialManager";
 import { useServerUrl } from "@/providers/ServerUrlContext";
+import { setManualOffline } from "./connectivityStore";
 import { useProbeRetry } from "./useProbeRetry";
 
 /**
  * Les gestes communs aux voiles du hors ligne — serveur injoignable, session
  * expirée : réessayer (sonde forcée), se déconnecter (purge locale même sans
- * serveur), changer de serveur.
+ * serveur), changer de serveur — et passer hors ligne à la main, qui ne se
+ * quitte qu'à la main (carte « Repasser en ligne »).
  */
 export function useOfflineVeilActions() {
   const { isChecking, retry } = useProbeRetry();
@@ -41,5 +43,7 @@ export function useOfflineVeilActions() {
     });
   }, [changeServer, router, setServerUrl]);
 
-  return { isChecking, retry, handleLogout, handleChangeServer };
+  const goOffline = useCallback(() => setManualOffline(true), []);
+
+  return { isChecking, retry, handleLogout, handleChangeServer, goOffline };
 }
