@@ -305,6 +305,17 @@ export default {
   hwDecodeOffHint:
     "The processor decodes on its own. The safest and the hungriest — keep it for when the other two fail.",
 
+  // Render quality — DEVICE setting, desktop only.
+  renderQualityTitle: "Render quality",
+  renderQualityHint:
+    "How much care the player takes resizing and smoothing the picture. If the device runs hot or the fans spin up during a film, this is where to fix it.",
+  renderQualityAuto: "Automatic",
+  renderQualityEco: "Lighter",
+  renderQualityAutoHint:
+    "The best picture the machine can produce. Keep it as long as playback stays smooth and the device stays quiet.",
+  renderQualityEcoHint:
+    "The player does less work on every frame: simpler resizing, less smoothing. The picture is slightly softer, the machine breathes.",
+
   hdrAutoUnsupported:
     "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",
 } as const;
