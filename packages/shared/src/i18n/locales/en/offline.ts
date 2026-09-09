@@ -105,6 +105,8 @@ export default {
   libraryEmptyTitle: "No offline title",
   libraryEmptyMessage:
     "No playable title on this device for this account. The full catalog comes back as soon as the server responds.",
+  libraryEmptyOfflineTitle: "Offline, and nothing on this device",
+  libraryEmptyOfflineHint: "No title is kept offline for this account. The full catalog comes back with the connection.",
   searchPlaceholder: "Search on this device",
   noResults: "No title on this device matches.",
   episodesOnDeviceHint: "On device",
