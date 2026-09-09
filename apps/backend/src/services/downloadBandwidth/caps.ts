@@ -31,3 +31,22 @@ export function parseCap(raw: string | undefined): number | null {
   const value = Number.parseInt(raw ?? "", 10);
   return Number.isInteger(value) && value > 0 ? value : null;
 }
+
+/**
+ * Les adresses à traiter comme le réseau local, quoi qu'en dise leur plage :
+ * un poste distant de confiance, une box… Stockées en JSON (tableau de
+ * chaînes), IPv4, IPv6 ou plage IPv4 en notation CIDR.
+ */
+export const INTERNAL_IPS_KEY = "download_bandwidth_internal_ips";
+export const MAX_INTERNAL_IPS = 50;
+
+/** Clé absente ou illisible → aucune adresse. */
+export function parseInternalIps(raw: string | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}

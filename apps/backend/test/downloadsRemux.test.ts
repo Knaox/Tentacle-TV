@@ -10,9 +10,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Les plafonds de débit vus par les routes — `null` = illimité (le défaut). */
 const caps = vi.hoisted(() => ({ internal: null as number | null, external: null as number | null }));
+/** Les adresses déclarées locales par l'admin — vide par défaut. */
+const internalIps = vi.hoisted(() => [] as string[]);
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getDownloadBandwidthConfig: () => ({ ...caps }),
+  getDownloadInternalIps: () => [...internalIps],
 }));
 vi.mock("../src/services/jwt", () => ({
   verifyImpersonationToken: async () => null,
