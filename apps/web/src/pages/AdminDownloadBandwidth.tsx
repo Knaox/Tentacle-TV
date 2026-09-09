@@ -28,13 +28,26 @@ type PoolId = "external" | "internal";
 const POOLS: readonly PoolId[] = ["external", "internal"];
 const QUERY_KEY = ["admin-download-bandwidth"];
 
+/**
+ * Ce que le serveur rend, mis en forme : un serveur d'avant la liste
+ * d'adresses (ou un champ absent) ne doit pas faire tomber la page — la liste
+ * vaut alors « aucune ».
+ */
+function readCaps(raw: Partial<BandwidthCaps> | null | undefined): BandwidthCaps {
+  return {
+    external: typeof raw?.external === "number" ? raw.external : null,
+    internal: typeof raw?.internal === "number" ? raw.internal : null,
+    internalIps: Array.isArray(raw?.internalIps) ? raw.internalIps.filter((ip) => typeof ip === "string") : [],
+  };
+}
+
 async function fetchBandwidth(): Promise<BandwidthCaps> {
   const res = await fetch(`${BACKEND}/api/admin/downloads/bandwidth`, {
     headers: hdrs(),
     credentials: creds(),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return readCaps(await res.json());
 }
 
 async function putBandwidth(caps: BandwidthCaps): Promise<BandwidthCaps> {
@@ -45,7 +58,7 @@ async function putBandwidth(caps: BandwidthCaps): Promise<BandwidthCaps> {
     body: JSON.stringify(caps),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return readCaps(await res.json());
 }
 
 export function AdminDownloadBandwidth() {
