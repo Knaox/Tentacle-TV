@@ -25,6 +25,10 @@ vi.mock("../src/services/configStore", async () => {
       external: parseCap(configStore.get("download_bandwidth_external_bps")),
       internal: parseCap(configStore.get("download_bandwidth_internal_bps")),
     }),
+    getDownloadInternalIps: () => {
+      const raw = configStore.get("download_bandwidth_internal_ips");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    },
   };
 });
 vi.mock("../src/services/jwt", () => ({
@@ -215,18 +219,42 @@ describe("/api/admin/downloads/bandwidth", () => {
       headers: { authorization: "Bearer tok-admin" },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ external: null, internal: null });
+    expect(res.json()).toEqual({ external: null, internal: null, internalIps: [] });
+  });
+
+  it("les adresses locales se gardent canoniques et sans doublon, et s'effacent avec une liste vide", async () => {
+    const res = await put({ external: 6 * MIB, internal: null, internalIps: [" 203.0.113.5", "2001:DB8::1", "203.0.113.5", "198.51.100.0/24"] });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      external: 6 * MIB,
+      internal: null,
+      internalIps: ["203.0.113.5", "2001:db8::1", "198.51.100.0/24"],
+    });
+
+    const untouched = await put({ external: 6 * MIB, internal: null });
+    expect(untouched.json().internalIps).toEqual(["203.0.113.5", "2001:db8::1", "198.51.100.0/24"]);
+
+    const cleared = await put({ external: 6 * MIB, internal: null, internalIps: [] });
+    expect(cleared.json().internalIps).toEqual([]);
+    expect(configStore.has("download_bandwidth_internal_ips")).toBe(false);
+  });
+
+  it("refuse une adresse illisible ou une liste trop longue", async () => {
+    const bad = await put({ external: null, internal: null, internalIps: ["maison"] });
+    expect(bad.statusCode).toBe(400);
+    const tooMany = await put({ external: null, internal: null, internalIps: Array.from({ length: 51 }, (_, i) => `203.0.113.${i % 250}`) });
+    expect(tooMany.statusCode).toBe(400);
   });
 
   it("PUT écrit les plafonds, efface l'illimité, et répond par la relecture", async () => {
     const res = await put({ external: 6 * MIB, internal: null });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ external: 6 * MIB, internal: null });
+    expect(res.json()).toEqual({ external: 6 * MIB, internal: null, internalIps: [] });
     expect(configStore.get("download_bandwidth_external_bps")).toBe(String(6 * MIB));
     expect(configStore.has("download_bandwidth_internal_bps")).toBe(false);
 
     const cleared = await put({ external: null, internal: 2 * MIB });
-    expect(cleared.json()).toEqual({ external: null, internal: 2 * MIB });
+    expect(cleared.json()).toEqual({ external: null, internal: 2 * MIB, internalIps: [] });
     expect(configStore.has("download_bandwidth_external_bps")).toBe(false);
   });
 

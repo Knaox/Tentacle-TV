@@ -10,9 +10,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Les plafonds de débit vus par les routes — `null` = illimité (le défaut). */
 const caps = vi.hoisted(() => ({ internal: null as number | null, external: null as number | null }));
+/** Les adresses déclarées locales par l'admin — vide par défaut. */
+const internalIps = vi.hoisted(() => [] as string[]);
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getDownloadBandwidthConfig: () => ({ ...caps }),
+  getDownloadInternalIps: () => [...internalIps],
 }));
 vi.mock("../src/services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -41,6 +44,7 @@ beforeEach(() => {
   clearPolicyCache();
   caps.internal = null;
   caps.external = null;
+  internalIps.length = 0;
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
     fakeJellyfin(input, init),
   ));
@@ -286,6 +290,17 @@ describe("le plafond de débit sur /api/downloads", () => {
       headers: { authorization: "Bearer tok-full", "cf-connecting-ip": "203.0.113.10" },
     });
     expect(register).toHaveBeenLastCalledWith("user-tok-full", "external");
+  });
+
+  it("une adresse publique déclarée locale par l'admin va dans le pool local", async () => {
+    internalIps.push("203.0.113.0/24");
+    const register = vi.spyOn(downloadArbiter, "register");
+    const app = await buildApp();
+    await app.inject({
+      url: `/api/downloads/original/${ITEM_IN_A}`,
+      headers: { authorization: "Bearer tok-full", "cf-connecting-ip": "203.0.113.10" },
+    });
+    expect(register).toHaveBeenLastCalledWith("user-tok-full", "internal");
   });
 
   it("sans plafond, le flux est tout de même enregistré — un plafond posé plus tard s'y appliquerait", async () => {

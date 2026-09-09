@@ -16,10 +16,11 @@
 import { Readable } from "node:stream";
 import type { FastifyRequest } from "fastify";
 import type { JellyfinUser } from "../../middleware/auth";
-import { getRealClientIp, isPrivateIp } from "../networkUtils";
+import { getDownloadInternalIps } from "../configStore";
+import { getRealClientIp } from "../networkUtils";
 import { MAX_BLOCK, type FlowHandle } from "./arbiter";
-import type { PoolId } from "./caps";
 import { downloadArbiter } from "./instance";
+import { poolFor } from "./pool";
 
 export class ThrottledReadable extends Readable {
   private readonly source: AsyncIterator<Uint8Array>;
@@ -85,12 +86,12 @@ export class ThrottledReadable extends Readable {
 
 /**
  * Le flux d'un téléchargement, sous le plafond de son pool. Le pool suit la
- * même règle que la lecture directe : IP privée = réseau local. Le compte est
- * celui que `requireAuth` a posé — un même compte partage sa part entre ses
- * appareils.
+ * règle de la lecture directe — IP privée = réseau local — plus les adresses
+ * que l'admin a déclarées locales (`poolFor`). Le compte est celui que
+ * `requireAuth` a posé — un même compte partage sa part entre ses appareils.
  */
 export function throttled(request: FastifyRequest, upstream: Readable): Readable {
   const user = (request as FastifyRequest & { user?: JellyfinUser }).user;
-  const pool: PoolId = isPrivateIp(getRealClientIp(request)) ? "internal" : "external";
+  const pool = poolFor(getRealClientIp(request), getDownloadInternalIps());
   return new ThrottledReadable(upstream, downloadArbiter.register(user?.userId ?? "anonymous", pool));
 }

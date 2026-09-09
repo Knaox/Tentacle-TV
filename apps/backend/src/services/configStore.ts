@@ -1,5 +1,11 @@
 import { getPrisma, hasPrisma } from "./db";
-import { DOWNLOAD_BANDWIDTH_KEYS, parseCap, type BandwidthCaps } from "./downloadBandwidth/caps";
+import {
+  DOWNLOAD_BANDWIDTH_KEYS,
+  INTERNAL_IPS_KEY,
+  parseCap,
+  parseInternalIps,
+  type BandwidthCaps,
+} from "./downloadBandwidth/caps";
 
 export type AppState =
   | "setup_db"       // No database connection
@@ -117,4 +123,9 @@ export function getDownloadBandwidthConfig(): BandwidthCaps {
     internal: parseCap(cache.get(DOWNLOAD_BANDWIDTH_KEYS.internal)),
     external: parseCap(cache.get(DOWNLOAD_BANDWIDTH_KEYS.external)),
   };
+}
+
+/** Les adresses traitées comme le réseau local par le plafond de débit. */
+export function getDownloadInternalIps(): string[] {
+  return parseInternalIps(cache.get(INTERNAL_IPS_KEY));
 }
