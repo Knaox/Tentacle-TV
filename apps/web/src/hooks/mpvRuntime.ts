@@ -162,10 +162,16 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
 
   return {
     vo: "gpu-next",
-    // Sous Linux, l'ordre par défaut n'est pas `auto-safe` : VA-API y est
-    // souvent une traduction (`nvidia-vaapi-driver`) dont l'export de trames
-    // rend des macroblocs. Voir `lib/hardwareDecoding.ts`, tout y est.
-    hwdec: mpvHwdecValue(onLinux),
+    // Chaque système a sa table : sous Linux l'ordre par défaut n'est pas
+    // `auto-safe` (VA-API y est souvent une traduction dont l'export rend des
+    // macroblocs), et macOS n'a qu'un décodeur, `videotoolbox`. Voir
+    // `lib/hardwareDecoding.ts`, tout y est.
+    //
+    // ⚠️ Le bloc macOS plus bas ÉCRASAIT cette ligne par `videotoolbox` en dur :
+    // la préférence de l'utilisateur n'y décidait de rien alors que le réglage
+    // lui était présenté. Elle décide à nouveau — et « copie mémoire » y est
+    // précisément la sortie de secours d'un import zéro-copie qui échoue.
+    hwdec: mpvHwdecValue(onMacos ? "macos" : onLinux ? "linux" : "other"),
     "keep-open": "yes",
     // Windows (--wid) : la fenêtre vidéo mpv est une fenêtre enfant
     // vivant sur son propre thread, dont la file d'entrée est attachée à celle
@@ -235,8 +241,6 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
       // ses propriétés : c'est le gamma qu'il CALCULE, pas ce qu'il POSE sur
       // l'écran. S'y fier ferait conclure à tort que le HDR passe.
       "target-colorspace-hint": "yes",
-      // Zéro-copie jusqu'à Vulkan par `VK_EXT_metal_objects`, 10 bits compris.
-      hwdec: "videotoolbox",
       // La fenêtre est attachée sous la nôtre : ni cadre, ni ombre, ni titre.
       border: "no",
       // ⚠️ `border=no` ne suffit pas, et les deux options ne font PAS la même
