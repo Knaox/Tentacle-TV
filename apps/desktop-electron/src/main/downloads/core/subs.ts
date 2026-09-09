@@ -61,10 +61,17 @@ export function subtitleRelPath(itemId: string, spec: SubtitleSpec): string {
   return `media/${itemId}/subs/${spec.index}-${sanitizeTag(spec.langTag)}.${spec.format}`;
 }
 
+/** Pourquoi une piste n'est pas arrivée — assez pour distinguer le serveur du disque. */
+export type SubtitleSkip = "format" | "path" | "fetch" | "write";
+
 /**
  * Télécharge chaque sous-titre texte manquant. Retourne le nombre disponible
  * en fin d'opération — un fichier déjà là compte, la fonction est idempotente
  * et c'est ce qui permet à la réparation de la rappeler sans coût.
+ *
+ * `onSkipped` est la seule trace d'une piste perdue. Sur une série dont le
+ * serveur extrait chaque sous-titre à coups de ffmpeg, une extraction lente
+ * dépasse le délai du fetcher et rendait `null` — sauté sans un mot.
  */
 export async function fetchAll(
   fetchBytes: FetchBytes,
@@ -73,15 +80,20 @@ export async function fetchAll(
   itemId: string,
   mediaSourceId: string,
   specs: readonly SubtitleSpec[],
+  onSkipped?: (spec: SubtitleSpec, reason: SubtitleSkip) => void,
 ): Promise<number> {
   let fetched = 0;
   for (const spec of specs) {
-    if (!FORMATS.has(spec.format) || spec.index < 0) continue;
+    if (!FORMATS.has(spec.format) || spec.index < 0) {
+      onSkipped?.(spec, "format");
+      continue;
+    }
 
     let target: string;
     try {
       target = safeJoin(volume, subtitleRelPath(itemId, spec));
     } catch {
+      onSkipped?.(spec, "path");
       continue;
     }
     if (volume.files.exists(target)) {
@@ -93,7 +105,12 @@ export async function fetchAll(
       `${serverUrl}/api/jellyfin/Videos/${itemId}/${mediaSourceId}` +
       `/Subtitles/${spec.index}/Stream.${spec.format}`;
     const bytes = await fetchBytes(url, MAX_SUBTITLE_BYTES);
-    if (bytes === null || bytes.byteLength === 0) continue;
+    if (bytes === null || bytes.byteLength === 0) {
+      // Délai dépassé, refus du serveur, corps vide : le fetcher les confond
+      // tous en `null`, et la réparation repassera au retour du réseau.
+      onSkipped?.(spec, "fetch");
+      continue;
+    }
 
     try {
       volume.files.mkdirp(volume.files.dirname(target));
@@ -101,6 +118,7 @@ export async function fetchAll(
       fetched += 1;
     } catch {
       // Disque plein ou droits : le média reste lisible sans ses sous-titres.
+      onSkipped?.(spec, "write");
     }
   }
   return fetched;
