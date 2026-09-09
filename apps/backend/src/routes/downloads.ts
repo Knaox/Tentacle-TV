@@ -26,6 +26,7 @@ import {
   getDownloadCapabilities,
   mediaBrowserAuthHeader,
 } from "../services/jellyfinPolicy";
+import { throttled } from "../services/downloadBandwidth/throttledStream";
 
 const ITEM_ID_RE = /^[0-9a-fA-F-]{32,36}$/;
 
@@ -117,6 +118,15 @@ const RELAYED_HEADERS = [
   "last-modified",
 ] as const;
 
+/**
+ * Les deux routes de flux relaient des octets TELS QUELS. `@fastify/compress`
+ * est enregistré pour tout le serveur et compresse `application/octet-stream`
+ * par défaut : un Original servi sous ce type à un client qui annonce `gzip`
+ * perdrait son `content-length` et son Range — et un tampon zlib entre le
+ * limiteur de débit et la socket n'aurait aucun sens.
+ */
+const RAW_STREAM = { config: { compress: false } } as const;
+
 function notFound(reply: FastifyReply) {
   return reply.status(404).send({ error: "Not found" });
 }
@@ -145,7 +155,7 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
   });
 
   /** Fichier original — pipe de `GET /Items/{id}/Download` (Range passthrough). */
-  app.get("/original/:itemId", async (request, reply) => {
+  app.get("/original/:itemId", RAW_STREAM, async (request, reply) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     if (!token || !ITEM_ID_RE.test(itemId)) return notFound(reply);
@@ -171,12 +181,15 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     }
 
     reply.status(upstream.status);
+    // Un nginx devant ne doit pas absorber le débit à notre place : sous
+    // plafond, la contre-pression doit traverser jusqu'au client.
+    reply.header("x-accel-buffering", "no");
     for (const name of RELAYED_HEADERS) {
       const value = upstream.headers.get(name);
       if (value) reply.header(name, value);
     }
     return reply.send(
-      Readable.fromWeb(upstream.body as unknown as import("node:stream/web").ReadableStream),
+      throttled(request, Readable.fromWeb(upstream.body as unknown as import("node:stream/web").ReadableStream)),
     );
   });
 
@@ -190,7 +203,7 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
    *  demande que les droits de transcodage de lecture ; les trois autres
    *  recompressent et exigent en plus `EnableMediaConversion` (que Jellyfin
    *  n'enforce pas lui-même). */
-  app.get("/light/:itemId", async (request, reply) => {
+  app.get("/light/:itemId", RAW_STREAM, async (request, reply) => {
     const token = getTokenFromRequest(request);
     const { itemId } = request.params as { itemId: string };
     const query = request.query as Record<string, string | undefined>;
@@ -258,11 +271,12 @@ export const downloadRoutes: FastifyPluginAsync = async (app) => {
     if (upstream.status !== 200 || !upstream.body) return notFound(reply);
 
     reply.status(200);
+    reply.header("x-accel-buffering", "no");
     reply.header("content-type", upstream.headers.get("content-type") ?? "video/mp4");
     reply.header("x-tentacle-play-session", playSessionId);
     reply.header("x-tentacle-device-id", deviceId);
     return reply.send(
-      Readable.fromWeb(upstream.body as unknown as import("node:stream/web").ReadableStream),
+      throttled(request, Readable.fromWeb(upstream.body as unknown as import("node:stream/web").ReadableStream)),
     );
   });
 };

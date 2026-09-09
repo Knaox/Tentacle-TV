@@ -8,8 +8,11 @@
 import Fastify from "fastify";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+/** Les plafonds de débit vus par les routes — `null` = illimité (le défaut). */
+const caps = vi.hoisted(() => ({ internal: null as number | null, external: null as number | null }));
 vi.mock("../src/services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
+  getDownloadBandwidthConfig: () => ({ ...caps }),
 }));
 vi.mock("../src/services/jwt", () => ({
   verifyImpersonationToken: async () => null,
