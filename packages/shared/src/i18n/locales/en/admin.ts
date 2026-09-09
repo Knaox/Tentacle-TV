@@ -144,6 +144,19 @@ export default {
   rightLight: "Light mode",
   downloadsAllLibraries: "All libraries",
   downloadsSomeLibraries: "{{count}} allowed library(ies) — managed in Jellyfin",
+  bandwidthTitle: "Download speed cap",
+  bandwidthIntro:
+    "Maximum rate the server devotes to offline downloads, shared fairly between the accounts downloading: 6 MiB/s for two active accounts is 3 MiB/s each, and whatever a slow account does not use goes to the others. An account running two transfers splits its share between them. Changes apply at once to transfers in progress.",
+  bandwidthPoolsHelp:
+    "Local network or external: same rule as direct streaming — a client with a private IP address (192.168.x.x, 10.x.x.x…) is on the local network, any other is external. Each cap is independent, unlimited by default.",
+  bandwidthExternal: "External clients",
+  bandwidthInternal: "Local network",
+  bandwidthLimit: "Limit",
+  bandwidthUnlimited: "Unlimited",
+  bandwidthUnit: "MiB/s",
+  bandwidthInvalid: "Enter a rate between 0.1 and 10,240 MiB/s.",
+  bandwidthSaved: "Cap saved — applied to transfers in progress.",
+  bandwidthLoadError: "Could not read the speed cap.",
   metadataTitle: "Metadata",
   metadataDescription:
     "Metadata service keys. TMDB powers rich recommendations (similar titles, actors, keywords, out-of-library posters) and anonymous rating sync; without a key the engine falls back to library genres.",
