@@ -1,5 +1,12 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { mpvHwdecValue, setHardwareDecoding, type HardwareDecoding } from "./hardwareDecoding";
+import {
+  activeDecoder,
+  decoderIsSoftware,
+  mpvHwdecValue,
+  rememberActiveDecoder,
+  setHardwareDecoding,
+  type HardwareDecoding,
+} from "./hardwareDecoding";
 
 /**
  * Le choix vit dans `localStorage`, absent de l'environnement de test — sans
@@ -12,11 +19,42 @@ beforeAll(() =>
   vi.stubGlobal("localStorage", {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
   }),
 );
 
 const choose = (c: HardwareDecoding) => setHardwareDecoding(c);
-afterEach(() => choose("auto"));
+afterEach(() => {
+  choose("auto");
+  store.delete("tentacle_hw_decode_active");
+});
+
+describe("le decodeur reellement employe", () => {
+  it("ne sait rien tant qu'aucune lecture n'a eu lieu", () => {
+    expect(activeDecoder()).toBeNull();
+  });
+
+  it("retient ce que mpv rapporte, et le rend aux Préférences", () => {
+    rememberActiveDecoder("videotoolbox");
+    expect(activeDecoder()).toBe("videotoolbox");
+    expect(decoderIsSoftware(activeDecoder())).toBe(false);
+  });
+
+  it("reconnaît le repli logiciel — c'est tout l'objet de la mesure", () => {
+    // mpv rend `no` quand le matériel n'a pas su lire le flux : l'AV1 sur un Mac
+    // Intel, le HEVC 10 bits sur un iGPU ancien. La lecture se déroule
+    // normalement, et rien d'autre ne le dit.
+    rememberActiveDecoder("no");
+    expect(decoderIsSoftware(activeDecoder())).toBe(true);
+  });
+
+  it("ignore une valeur vide plutôt que d'effacer ce qu'on savait", () => {
+    rememberActiveDecoder("videotoolbox");
+    rememberActiveDecoder(null);
+    rememberActiveDecoder("");
+    expect(activeDecoder()).toBe("videotoolbox");
+  });
+});
 
 describe("mpvHwdecValue", () => {
   it("macOS n'a qu'un décodeur matériel, et il se nomme", () => {

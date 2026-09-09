@@ -305,6 +305,10 @@ export default {
   hwDecodeOffHint:
     "Le processeur décode seul. C'est le plus sûr, et le plus gourmand — à réserver au cas où les deux autres échouent.",
 
+  hwDecodeActiveHardware: "Dernière lecture : décodage matériel ({{decoder}}).",
+  hwDecodeActiveSoftware:
+    "Dernière lecture : le processeur a décodé seul, sans aide de la carte graphique. C'est ce qui fait chauffer l'appareil et tourner les ventilateurs — certains formats, comme l'AV1, ne sont lisibles autrement sur aucune machine.",
+
   // Qualité de rendu — réglage d'APPAREIL, visible seulement sur le bureau.
   renderQualityTitle: "Qualité de rendu",
   renderQualityHint:
