@@ -61,6 +61,20 @@ describe("decideIntroSkip", () => {
     expect(displayedCountdown(state)).toBe(INTRO_SKIP_START_SECONDS);
   });
 
+  // En séance, la sourdine d'un refus ne se lève plus (`segmentsToRelease`) :
+  // la coquille la traduit en `active: false`, et ré-entrer dans le passage —
+  // correction de dérive, saut d'un membre — ne réarme alors rien.
+  it("un passage tenu en sourdine ne compte jamais, même ré-entré", () => {
+    const { state, skips } = run([
+      tick(true), { type: "dismiss" }, // refusé, sourdine posée
+      tick(false, false),              // recalé avant l'intro
+      tick(true, false), tick(true, false), tick(true, false), tick(true, false),
+    ]);
+    expect(skips).toEqual([]);
+    expect(displayedCountdown(state)).toBeNull();
+    expect(showSkipPill(state, true)).toBe(true); // le bouton manuel reste
+  });
+
   // Le second : la pilule ne doit pas réapparaître pendant que la position
   // rattrape — elle est échantillonnée à 1 Hz et un saut HLS prend des secondes.
   it("masque la pilule tant que la lecture n'a pas rejoint la cible", () => {
