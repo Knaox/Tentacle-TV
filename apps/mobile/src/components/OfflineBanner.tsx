@@ -12,14 +12,21 @@ interface OfflineBannerProps {
   onRetry: () => void;
   onLogout?: () => void;
   onChangeServer?: () => void;
+  /** « Passer hors ligne » — le voile du serveur injoignable seulement : la
+   *  session expirée n'offre pas ce chemin. */
+  onGoOffline?: () => void;
   /** Textes de remplacement (voile de session expirée) ; `hint: null` le retire. */
   title?: string;
   message?: string;
   hint?: string | null;
 }
 
-export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChangeServer, title, message, hint }: OfflineBannerProps) {
-  const { t } = useTranslation("common");
+export function OfflineBanner({
+  visible, isChecking, onRetry, onLogout, onChangeServer, onGoOffline, title, message, hint,
+}: OfflineBannerProps) {
+  // Les clés nues restent celles de `common` ; le bouton reprend `nav:goOffline`,
+  // le libellé du profil — un seul texte par geste.
+  const { t } = useTranslation(["common", "nav"]);
   const styles = useThemedStyles(makeStyles);
   const opacity = useRef(new Animated.Value(0)).current;
 
@@ -48,6 +55,10 @@ export function OfflineBanner({ visible, isChecking, onRetry, onLogout, onChange
             loading={isChecking}
             fullWidth
           />
+          {/* La seule issue non destructive : avant « Se déconnecter », en rouge. */}
+          {onGoOffline && (
+            <Button title={t("nav:goOffline")} onPress={onGoOffline} variant="secondary" fullWidth />
+          )}
           {onLogout && (
             <Button title={t("offlineLogout")} onPress={onLogout} variant="danger" fullWidth />
           )}
