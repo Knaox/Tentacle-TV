@@ -41,6 +41,17 @@ function sendError(socket: WebSocket, code: WtErrorCode, message?: string): void
   socket.send(JSON.stringify(msg));
 }
 
+/** Relais d'un événement transient (hors state/epoch) à toute la salle, SAUF
+ *  la socket émettrice. Par socket et non par compte : un second appareil du
+ *  même utilisateur est un autre lecteur, avec son propre décompte — il doit
+ *  recevoir le refus comme n'importe quel invité, sinon il saute seul et, la
+ *  position étant commune, embarque toute la salle (vu en production). */
+function relayTransient(room: Room, from: WebSocket, msg: WtServerMessage): void {
+  for (const memberId of room.members.keys()) {
+    sendToUser(memberId, msg, { exceptSocket: from });
+  }
+}
+
 /** Traite un message `wt:*` d'un client authentifié. */
 export function handleWtMessage(
   user: JellyfinUser,
@@ -96,26 +107,17 @@ export function handleWtMessage(
     // Même nature que l'auto-next : transient, hors state/epoch. Refuser le
     // saut d'un passage vaut pour la séance — la position est commune. Le type
     // voyage tel quel, absence comprise : c'est le client qui sait quoi en faire.
-    for (const memberId of room.members.keys()) {
-      if (memberId !== user.userId) {
-        sendToUser(memberId, {
-          type: "wt:skipIntroDismiss",
-          originUserId: user.userId,
-          segmentType: msg.segmentType,
-        });
-      }
-    }
+    relayTransient(room, socket, {
+      type: "wt:skipIntroDismiss",
+      originUserId: user.userId,
+      segmentType: msg.segmentType,
+    });
     return;
   }
 
   if (msg.type === "wt:autonextDismiss") {
-    // Événement transient (hors state/epoch) : relayer aux AUTRES membres —
-    // la bannière « épisode suivant » se masque partout.
-    for (const memberId of room.members.keys()) {
-      if (memberId !== user.userId) {
-        sendToUser(memberId, { type: "wt:autonextDismiss", originUserId: user.userId });
-      }
-    }
+    // Transient aussi : la bannière « épisode suivant » se masque partout.
+    relayTransient(room, socket, { type: "wt:autonextDismiss", originUserId: user.userId });
     return;
   }
 
