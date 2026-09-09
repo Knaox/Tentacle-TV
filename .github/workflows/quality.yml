@@ -1,0 +1,69 @@
+# Tentacle TV — le garde-fou de qualité
+#
+# Le SEUL workflow qui juge le code plutôt que de le livrer. Il tourne sur les
+# poussées vers `main` et sur les pull requests ; il ne construit rien, ne signe
+# rien, ne publie rien.
+#
+# POURQUOI IL EXISTE. Il n'y en avait aucun : sur les sept workflows du dépôt,
+# seul `webos.yml` jouait `typecheck` et les tests, et uniquement au moment
+# d'empaqueter un IPK sur tag. Tout ce qui n'était pas livré n'était donc jamais
+# vérifié — et `main` a porté sans que personne le voie un miroir de
+# `packages/offline-core` désynchronisé pendant quatre commits, alors qu'un test
+# l'attendait au tournant.
+#
+# ⚠️ PAS DE LINT ICI, et ce n'est pas un oubli. `pnpm lint` est cassé dans tout
+# le dépôt — eslint n'y est déclaré en dépendance nulle part — donc l'ajouter
+# ferait naître ce workflow rouge et l'apprendrait à être ignoré. Le typecheck
+# est le seul gate de qualité tant que ce n'est pas réparé.
+#
+# ⚠️ `prisma generate` AVANT `typecheck`. Le client Prisma du backend est un stub
+# tant qu'il n'a pas tourné : chaque résultat de requête devient `any` et une
+# quinzaine de TS7006 tombent sur du code parfaitement sain. Elles ne se voient
+# jamais en local, où le client a été généré une fois pour toutes. Même raison,
+# même geste que dans `webos.yml`.
+
+name: Qualité
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+# Une poussée de plus sur la même référence rend le run précédent sans objet :
+# on l'annule. Contrairement aux workflows de livraison, rien n'est perdu.
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controles:
+    name: Typecheck et tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # `--frozen-lockfile` : un lockfile qui ne correspond pas au manifeste doit
+      # faire ÉCHOUER la CI, jamais être corrigé en silence à l'installation.
+      - name: Installer les dépendances
+        run: pnpm install --frozen-lockfile
+
+      - name: Générer le client Prisma
+        run: pnpm --filter @tentacle-tv/backend db:generate
+
+      # Deux étapes et non une : quand ça casse, l'onglet doit dire tout de suite
+      # lequel des deux a lâché.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # `pnpm -r test` couvre les neuf paquets qui en ont un — web, bureau,
+      # backend, webOS, et les cinq paquets partagés. Aucun n'a besoin d'une base
+      # de données ni d'un service tiers.
+      - name: Tests
+        run: pnpm test

@@ -19,6 +19,7 @@
     "build:mobile:ios": "pnpm --filter @tentacle-tv/mobile ios",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
     "clean": "pnpm -r exec rm -rf node_modules dist .turbo && rm -rf node_modules",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",

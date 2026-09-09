@@ -176,6 +176,17 @@ ALTER TABLE files ADD COLUMN phase         TEXT;
 `;
 
 /**
+ * v10 — combien de side-cars sont RÉELLEMENT sur le disque. Le nombre prévu
+ * vit déjà dans `subtitles_json` ; ce qui manquait, c'est ce qui est arrivé.
+ * Une extraction que le serveur met plus de vingt secondes à produire était
+ * sautée sans un mot, et personne — pas même la réparation — ne savait qu'il y
+ * avait quelque chose à rattraper. `NULL` : jamais tenté.
+ */
+const SCHEMA_V10 = `
+ALTER TABLE files ADD COLUMN subtitles_done INTEGER;
+`;
+
+/**
  * Les paliers, dans l'ordre. L'INDEX vaut la version : le palier 0 amène à
  * `user_version = 1`, et ainsi de suite. Ajouter un palier, c'est pousser à la
  * fin de ce tableau — jamais réordonner.
@@ -190,6 +201,7 @@ export const MIGRATIONS: readonly string[] = [
   SCHEMA_V7,
   SCHEMA_V8,
   SCHEMA_V9,
+  SCHEMA_V10,
 ];
 
 /** Version de schéma que ce code sait produire et lire. */
