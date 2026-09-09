@@ -24,7 +24,7 @@ et Linux reçoivent l'ensemble.
 - **« Tout mettre en pause »** : suspendre une saison demandait vingt-quatre clics
 - **Une pause ou une annulation ne repart plus toute seule** : un transfert coupé net était pris pour une panne, et relancé cinq secondes plus tard
 - **En visionnage de groupe, refuser de passer l'intro vaut vraiment pour tous** : la croix masquait le bouton chez chacun, mais un compte à rebours pouvait repartir — sur un second appareil du même compte, ou après un recalage de position — et son saut entraînait toute la salle. Le refus tient désormais jusqu'à l'épisode suivant, seul l'hôte passe l'intro automatiquement (les autres gardent le bouton, sans décompte), et vos autres appareils reçoivent aussi le refus (serveur 1.17.2 ou plus)
-- Nécessite un serveur 1.17.0 ou plus
+- Nécessite un serveur 1.17.2 ou plus
 
 ### EN
 - **For administrators: a download speed cap**, set from the admin Downloads page — external clients and local network separately, with addresses to treat as local, shared fairly between accounts (server 1.17.2 or newer)
@@ -36,7 +36,7 @@ et Linux reçoivent l'ensemble.
 - **"Pause everything"**: pausing a season used to take twenty-four clicks
 - **A pause or a cancel never restarts on its own**: a transfer cut short was taken for a failure, and retried five seconds later
 - **In group watching, refusing to skip the intro truly counts for everyone**: the cross hid the button for each member, but a countdown could start again — on a second device signed in with the same account, or after a position correction — and its skip dragged the whole room along. The refusal now holds until the next episode, only the host skips the intro automatically (everyone else keeps the button, without a countdown), and your other devices receive the refusal too (server 1.17.2 or newer)
-- Requires a server on 1.17.0 or newer
+- Requires a server on 1.17.2 or newer
 
 ## [win-1.21.0]
 ### FR

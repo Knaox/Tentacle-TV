@@ -14,6 +14,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Jamais un titre sans le son** : une piste que le format d'arrivée refusait était abandonnée en silence, et le titre s'annonçait prêt ; il est maintenant refusé, avec la raison. Un titre dont le serveur ne peut pas convertir l'audio n'est plus proposé au réemballage
 - **Une pause ou un abandon ne repart plus tout seul** : arrêté depuis la notification ou depuis la fiche, un transfert était pris pour une panne et relancé cinq secondes plus tard — et une application fermée dans la foulée le retrouvait relancé au démarrage suivant
 - **Deux avertissements cessent de mentir** : « vous perdez de la qualité » ne s'affiche plus quand une version sans perte existe à côté, et « une seule piste audio est conservée » disparaît quand le titre n'en a aucune
+- Nécessite un serveur 1.17.2 ou plus
 
 ### EN
 - **Without a usable connection, the app switches on its own to what is on the device**: Wi-Fi off, airplane mode, a network without data or a server that does not answer in time — the local catalog shows up, with the cause, even when empty, and the home comes back on its own once the server answers again
@@ -23,6 +24,7 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobil
 - **Never a title without sound**: a track the target format refused was dropped in silence and the title announced itself ready; it is now refused, with the reason. A title whose audio the server cannot convert is no longer offered for repackaging
 - **A pause or an abort never restarts on its own**: stopped from the notification or from the list, a transfer was taken for a failure and retried five seconds later — and an app closed right after found it running again on the next launch
 - **Two warnings stop lying**: "you lose quality" no longer shows when a lossless version sits next to it, and "only one audio track is kept" disappears when the title has none
+- Requires a server on 1.17.2 or newer
 
 ## [1.7.0]
 ### FR
