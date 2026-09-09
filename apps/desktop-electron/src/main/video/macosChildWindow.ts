@@ -8,7 +8,7 @@
  */
 
 import { trace } from "./native";
-import { NSWindowBelow, cls, msg } from "./objc";
+import { FULLSCREEN_MASK, NSWindowBelow, cls, msg } from "./objc";
 
 /**
  * Les trois bits de plein écran d'un `collectionBehavior` — voir `auxiliaryFullscreen`.
@@ -82,10 +82,31 @@ let originalStyle = 0;
  * ⚠️ Écartés, mesurés : `title-bar=no` côté mpv ATTÉNUE le liseré (50 → 14,6)
  * sans le supprimer — gardé tout de même, le gain est réel ; retirer l'ombre de
  * la fenêtre principale l'AGGRAVE (14,6 → 50).
+ *
+ * # La fenêtre que macOS a promue — on n'y touche pas
+ *
+ * ⚠️ Quand la lecture démarre alors que l'application est DÉJÀ en plein écran,
+ * AppKit peut donner à la fenêtre de mpv son propre espace et lui poser
+ * `NSWindowStyleMaskFullScreen`. Écrire `borderless` efface alors ce bit, et
+ * `-[NSWindow setStyleMask:]` lève — c'est un crash MORTEL, pas une erreur : une
+ * exception Objective-C ne traverse pas koffi, aucun `try` JavaScript ne la
+ * rattrape, et Chromium arme le gestionnaire fatal d'AppKit. Un utilisateur
+ * Mac Intel l'a payé en 1.21.0, `SIGILL` en pleine lecture.
+ *
+ * La garde n'est donc pas défensive, elle est nécessaire — et elle est aussi la
+ * bonne réponse au fond : une fenêtre à qui macOS a donné un espace à elle n'a
+ * aucun liseré à retirer, puisque notre page n'est plus devant. Il n'y a
+ * littéralement rien à faire.
+ *
+ * La promotion est une transition ASYNCHRONE décidée à l'affichage — voir
+ * `stateAtDiscovery` dans `macosSurfaceDiag.ts` et l'en-tête de
+ * `macosWindowOptions.ts`, qui la mesure : `masque=49159`.
  */
 export function frameWithoutSeam(window: unknown, fullscreen: boolean): void {
   if (!window) return;
   const current = msg.count(window, "styleMask");
+  // La seule lecture de `styleMask` du dépôt qui décidait sans regarder ce bit.
+  if ((current & FULLSCREEN_MASK) !== 0) return;
   if (fullscreen) {
     if (current === NO_DECORATION) return;
     originalStyle = current;

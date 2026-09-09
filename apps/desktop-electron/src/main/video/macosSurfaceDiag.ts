@@ -14,7 +14,7 @@
 
 import type { BrowserWindow } from "electron";
 import { fmt, sameRect } from "./macosFrame";
-import { cls, msg, type Rect } from "./objc";
+import { FULLSCREEN_MASK, cls, msg, type Rect } from "./objc";
 
 export function describeMontage(
   host: BrowserWindow,
@@ -51,10 +51,6 @@ export function describeMontage(
     `niveaux=${levels} pleinEcran=${fullscreen} ${videoState(mpvWindow)} ${display(parent)}`
   );
 }
-
-/** `NSWindowStyleMaskFullScreen` — le bit que macOS pose sur une fenêtre à qui
- *  il a donné son propre espace. */
-export const FULLSCREEN_MASK = 1 << 14;
 
 /**
  * Ce que la fenêtre de mpv porte À L'INSTANT OÙ ON LA TROUVE, avant qu'on y
