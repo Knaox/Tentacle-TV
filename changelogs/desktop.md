@@ -15,7 +15,7 @@ et Linux reçoivent l'ensemble.
 
 ## [1.21.1]
 ### FR
-- **Pour les administrateurs : un plafond de débit des téléchargements**, réglable dans la page Téléchargements de l'administration — clients extérieurs et réseau local séparément, partagé équitablement entre les comptes (serveur 1.17.2 ou plus)
+- **Pour les administrateurs : un plafond de débit des téléchargements**, réglable dans la page Téléchargements de l'administration — clients extérieurs et réseau local séparément, avec des adresses à traiter comme locales, partagé équitablement entre les comptes (serveur 1.17.2 ou plus)
 - **« Sur cet appareil » se trouve enfin** : le catalogue de ce que la machine porte s'ouvre depuis le menu du profil, serveur joignable ou non — il fallait jusqu'ici attendre une coupure pour revoir ce qu'on avait gardé
 - **Une bascule hors ligne qui s'explique** : un bandeau dit pourquoi l'application vient de passer au contenu local, au lieu de laisser la bibliothèque rétrécir en silence
 - **Toute une série depuis sa fiche** : le bouton de téléchargement apparaît sur les séries, avec une case par saison ; depuis un épisode, on élargit à sa saison ou à toute la série sans quitter la fenêtre
@@ -26,7 +26,7 @@ et Linux reçoivent l'ensemble.
 - Nécessite un serveur 1.17.0 ou plus
 
 ### EN
-- **For administrators: a download speed cap**, set from the admin Downloads page — external clients and local network separately, shared fairly between accounts (server 1.17.2 or newer)
+- **For administrators: a download speed cap**, set from the admin Downloads page — external clients and local network separately, with addresses to treat as local, shared fairly between accounts (server 1.17.2 or newer)
 - **"On this device" is finally findable**: the catalogue of what the machine holds opens from the profile menu, server reachable or not — until now you had to wait for an outage to see what you had kept
 - **An offline switch that explains itself**: a banner says why the app just fell back to local content, instead of letting the library shrink in silence
 - **A whole show from its page**: the download button now appears on shows, with one checkbox per season; from an episode you can widen to its season or the whole show without leaving the window
