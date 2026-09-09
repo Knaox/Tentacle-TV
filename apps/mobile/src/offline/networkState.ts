@@ -1,17 +1,23 @@
 /**
  * Le réseau du téléphone vu par le magasin de connectivité : le module
- * expo-network en `require` protégé, le type de réseau ramené à cinq valeurs,
- * et « le lien est perdu » (aucun réseau — un `UNKNOWN` n'en est pas un).
+ * expo-network en `require` protégé — la logique (type ramené à cinq valeurs,
+ * « le lien est perdu ») vit dans le cœur, pure et testée (`networkLink`).
+ *
+ * Ce que vaut `isInternetReachable`, mesuré dans les sources natives
+ * d'expo-network 8 : `isConnected` sur iOS, « un réseau actif existe » sur
+ * Android 10+ — jamais « internet est validé ». Il n'est donc lu qu'en
+ * `false` strict, et jamais sur un type inconnu. Ne pas le prendre pour un
+ * détecteur de portail captif.
  */
 
-export interface NetworkState {
-  type?: string;
-  isConnected?: boolean;
-}
+import type { NetworkLinkState } from "@tentacle-tv/offline-core";
+
+export { isLinkLost, mapNetworkType, type NetworkType } from "@tentacle-tv/offline-core";
+export type { NetworkLinkState as NetworkState } from "@tentacle-tv/offline-core";
 
 export interface NetworkModule {
-  getNetworkStateAsync(): Promise<NetworkState>;
-  addNetworkStateListener(listener: (state: NetworkState) => void): { remove(): void };
+  getNetworkStateAsync(): Promise<NetworkLinkState>;
+  addNetworkStateListener(listener: (state: NetworkLinkState) => void): { remove(): void };
 }
 
 // Module natif optionnel, chargé en `require` protégé (patron haptique /
@@ -21,28 +27,4 @@ try {
   Network = require("expo-network");
 } catch {
   Network = null;
-}
-
-export type NetworkType = "wifi" | "cellular" | "none" | "other" | "unknown";
-
-export function mapNetworkType(state: NetworkState): NetworkType {
-  if (state.isConnected === false) return "none";
-  switch ((state.type ?? "").toUpperCase()) {
-    case "WIFI":
-      return "wifi";
-    case "CELLULAR":
-      return "cellular";
-    case "NONE":
-      return "none";
-    case "UNKNOWN":
-    case "":
-      return "unknown";
-    default:
-      return "other";
-  }
-}
-
-/** Le téléphone n'a plus aucun réseau (un `UNKNOWN` n'est jamais une bascule). */
-export function isLinkLost(state: NetworkState): boolean {
-  return state.isConnected === false && (state.type ?? "").toUpperCase() === "NONE";
 }
