@@ -119,6 +119,19 @@ export function sel(name: string): unknown {
 export const NSWindowBelow = -1;
 
 /**
+ * `NSWindowStyleMaskFullScreen` — le bit que macOS pose sur une fenêtre à qui il
+ * a donné son propre espace de plein écran.
+ *
+ * ⚠️ Il appartient à AppKit, PAS à l'application. Une fenêtre promue porte
+ * `masque=49159` (`0xC007`) contre `32783` en fenêtré ; l'effacer en écrivant un
+ * `styleMask` qui ne le contient pas fait lever `-[NSWindow setStyleMask:]`, et
+ * une exception Objective-C ne se rattrape pas depuis JavaScript — elle ne
+ * traverse pas koffi et tue le processus. Le lire avant d'écrire n'est donc pas
+ * une précaution : c'est la condition pour écrire.
+ */
+export const FULLSCREEN_MASK = 1 << 14;
+
+/**
  * Déclare une forme d'appel d'`objc_msgSend` que ce module ne connaît pas.
  *
  * ⚠️ L'ABI variadique de C n'étant pas devinable, il faut UNE signature par
@@ -226,8 +239,10 @@ export const msg = {
     if (!window) return;
     send1ul(window, sel("setCollectionBehavior:"), mask);
   },
-  /** `[fenêtre setStyleMask: masque]` — voir `frameWithoutSeam`, qui dit ce qu'on
-   *  a le droit d'y retirer, et ce qu'il faut rendre en échange. */
+  /** `[fenêtre setStyleMask: masque]` — ⚠️ voir `macosSeam.ts`, SEUL appelant
+   *  légitime : il dit ce qu'on a le droit d'y retirer, ce qu'il faut rendre en
+   *  échange, et surtout QUAND — écrire pendant une transition d'AppKit lève une
+   *  exception que rien, côté JavaScript, ne peut rattraper. */
   setStyleMask(window: unknown, mask: number): void {
     if (!window) return;
     send1ul(window, sel("setStyleMask:"), mask);

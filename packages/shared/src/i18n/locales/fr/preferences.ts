@@ -305,6 +305,21 @@ export default {
   hwDecodeOffHint:
     "Le processeur décode seul. C'est le plus sûr, et le plus gourmand — à réserver au cas où les deux autres échouent.",
 
+  hwDecodeActiveHardware: "Dernière lecture : décodage matériel ({{decoder}}).",
+  hwDecodeActiveSoftware:
+    "Dernière lecture : le processeur a décodé seul, sans aide de la carte graphique. C'est ce qui fait chauffer l'appareil et tourner les ventilateurs — certains formats, comme l'AV1, ne sont lisibles autrement sur aucune machine.",
+
+  // Qualité de rendu — réglage d'APPAREIL, visible seulement sur le bureau.
+  renderQualityTitle: "Qualité de rendu",
+  renderQualityHint:
+    "Le soin que le lecteur met à redimensionner et à lisser l'image. Si l'appareil chauffe ou si les ventilateurs se réveillent pendant un film, c'est ici que ça se règle.",
+  renderQualityAuto: "Automatique",
+  renderQualityEco: "Économe",
+  renderQualityAutoHint:
+    "La meilleure image que la machine sache produire. À garder tant que la lecture reste fluide et l'appareil calme.",
+  renderQualityEcoHint:
+    "Le lecteur allège son travail à chaque image : redimensionnement plus simple, moins de lissage. L'image est un peu plus douce, la machine respire.",
+
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
 } as const;

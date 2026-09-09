@@ -21,6 +21,7 @@ import {
 } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
+import { adaptToDisplay } from "../video/macosHdrOptions";
 import { withWritableLogFile } from "../video/mpvLogFile";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
@@ -175,7 +176,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         const mpvOptions =
           videoMontage() === "gl"
             ? renderApiOptions(asked)
-            : adaptToFullscreen(asked, win);
+            : adaptToDisplay(adaptToFullscreen(asked, win), win);
         // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
         // sans quoi il naît à la taille du média, plein écran apparent pendant
         // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).

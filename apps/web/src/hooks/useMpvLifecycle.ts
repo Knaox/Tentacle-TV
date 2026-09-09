@@ -2,6 +2,7 @@ import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } 
 import { invoke, isElectronShell } from "../desktop/bridge";
 import { setSurfaceOpaque, setSurfaceTransparent } from "../lib/playerSurface";
 import { MPV_END_FILE_REASON, type MpvEndFileEvent } from "../lib/mpvTypes";
+import { rememberActiveDecoder } from "../lib/hardwareDecoding";
 import type { PlaybackFailure } from "./playbackFailure";
 import { queryTrackList } from "./mpvTrackList";
 import {
@@ -128,6 +129,12 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               if (cache != null) bufferedRef.current = cache;
               return; // ref only — no setState
             }
+            case "hwdec-current":
+              // Rangée pour les Préférences, qui se consultent APRÈS la lecture.
+              // Hors de l'état React : rien à l'écran n'en dépend, et un rendu
+              // de plus par fichier n'aurait servi personne.
+              rememberActiveDecoder(event.data as string | null);
+              return;
             default:
               break;
           }
