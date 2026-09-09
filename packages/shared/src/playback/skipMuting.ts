@@ -77,3 +77,23 @@ export function segmentsRewoundInto(
   }
   return out;
 }
+
+/**
+ * Les sourdines à lever à ce battement.
+ *
+ * Hors séance : celles derrière lesquelles on est revenu (`segmentsRewoundInto`).
+ * En séance Watch Together : AUCUNE. La position n'y est pas la nôtre — une
+ * correction de dérive (seek dur dès quatre secondes) ou le saut d'un autre
+ * membre ressemble à un rembobinage sans en être un — et relever la sourdine
+ * relancerait un décompte que la salle venait de refuser : son saut, propagé
+ * par la synchronisation, embarquerait tout le monde. Le refus tient donc
+ * jusqu'au changement d'épisode, comme celui de la carte « à suivre »
+ * (`useAutoNextDispatch`). Le bouton reste atteignable avec les contrôles.
+ */
+export function segmentsToRelease(
+  refusedAt: ReadonlyMap<SegmentType, number>,
+  positionMs: number,
+  groupSession: boolean,
+): SegmentType[] {
+  return groupSession ? [] : segmentsRewoundInto(refusedAt, positionMs);
+}

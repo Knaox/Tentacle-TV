@@ -3,6 +3,7 @@ import {
   INTRO_SKIP_START_SECONDS,
   SKIP_GUARD_MS,
   INTRO_SKIP_IDLE,
+  countdownAllowed,
   displayedCountdown,
   decideIntroSkip,
   showSkipPill,
@@ -59,6 +60,20 @@ describe("decideIntroSkip", () => {
     ]);
     expect(skips).toEqual([]);
     expect(displayedCountdown(state)).toBe(INTRO_SKIP_START_SECONDS);
+  });
+
+  // En séance, la sourdine d'un refus ne se lève plus (`segmentsToRelease`) :
+  // la coquille la traduit en `active: false`, et ré-entrer dans le passage —
+  // correction de dérive, saut d'un membre — ne réarme alors rien.
+  it("un passage tenu en sourdine ne compte jamais, même ré-entré", () => {
+    const { state, skips } = run([
+      tick(true), { type: "dismiss" }, // refusé, sourdine posée
+      tick(false, false),              // recalé avant l'intro
+      tick(true, false), tick(true, false), tick(true, false), tick(true, false),
+    ]);
+    expect(skips).toEqual([]);
+    expect(displayedCountdown(state)).toBeNull();
+    expect(showSkipPill(state, true)).toBe(true); // le bouton manuel reste
   });
 
   // Le second : la pilule ne doit pas réapparaître pendant que la position
@@ -151,5 +166,18 @@ describe("sauter puis revenir dans le passage", () => {
       true,
     );
     expect(encore.name).toBe("dismissed");
+  });
+});
+
+describe("countdownAllowed — en séance, seul l'hôte laisse le décompte courir", () => {
+  it("hors séance, toujours", () => {
+    expect(countdownAllowed(undefined, undefined)).toBe(true);
+    expect(countdownAllowed(false, false)).toBe(true);
+  });
+
+  it("en séance : l'hôte oui, un invité non", () => {
+    expect(countdownAllowed(true, true)).toBe(true);
+    expect(countdownAllowed(true, false)).toBe(false);
+    expect(countdownAllowed(true, undefined)).toBe(false);
   });
 });

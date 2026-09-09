@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { SegmentType } from "./segmentTypes";
-import { segmentsRewoundInto, hasRewoundPastSkip, isSegmentSilenced, REWIND_TOLERANCE_MS } from "./skipMuting";
+import {
+  segmentsRewoundInto, segmentsToRelease, hasRewoundPastSkip, isSegmentSilenced, REWIND_TOLERANCE_MS,
+} from "./skipMuting";
 
 const muted = (...types: SegmentType[]): ReadonlySet<SegmentType> => new Set(types);
 
@@ -72,5 +74,27 @@ describe("segmentsRewoundInto — le retour en arrière lève la sourdine", () =
 
   it("aucun refus : rien à faire", () => {
     expect(segmentsRewoundInto(new Map(), 0)).toEqual([]);
+  });
+});
+
+/**
+ * En séance Watch Together, la position n'est pas la nôtre : une correction
+ * de dérive ou le saut d'un membre ressemble à un rembobinage sans en être un.
+ * Lever la sourdine y relançait un décompte que la salle venait de refuser.
+ */
+describe("segmentsToRelease — en séance, le refus tient jusqu'au changement d'épisode", () => {
+  const refusals = new Map<SegmentType, number>([["Intro", 40_000]]);
+
+  it("hors séance : la règle du retour en arrière s'applique telle quelle", () => {
+    expect(segmentsToRelease(refusals, 30_000, false)).toEqual(["Intro"]);
+    expect(segmentsToRelease(refusals, 45_000, false)).toEqual([]);
+  });
+
+  it("en séance : un recalage de quatre secondes en arrière ne lève rien", () => {
+    expect(segmentsToRelease(refusals, 36_000, true)).toEqual([]);
+  });
+
+  it("en séance : même un retour au tout début ne lève rien", () => {
+    expect(segmentsToRelease(refusals, 0, true)).toEqual([]);
   });
 });

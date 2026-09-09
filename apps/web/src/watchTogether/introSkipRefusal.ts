@@ -66,6 +66,9 @@ export function useGroupIntroSkip(
   useEffect(() => {
     return subscribeSocket((msg) => {
       if (msg.type === "wt:skipIntroDismiss") {
+        // Aucun filtre sur `originUserId` : le serveur n'écho jamais à la
+        // socket émettrice, et un refus qui porte NOTRE compte vient d'un
+        // AUTRE de nos appareils — il compte autant que celui d'un invité.
         // Type absent : un client d'avant la refonte, qui ne savait sauter que
         // l'intro. C'est la compatibilité ascendante du protocole.
         const type = msg.segmentType ?? "Intro";

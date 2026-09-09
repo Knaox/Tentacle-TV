@@ -9,7 +9,9 @@
  *
  * Trois propriétés qui en découlent, sans code supplémentaire :
  *  - rouvrir le média la lève (elle est indexée sur l'item) ;
- *  - en Watch Together elle voyage au groupe, par le même canal que le refus ;
+ *  - en Watch Together elle voyage au groupe, par le même canal que le refus —
+ *    et y tient jusqu'au changement d'épisode, la position n'y étant pas la
+ *    nôtre (`segmentsToRelease`) ;
  *  - hors ligne elle marche, puisqu'elle ne vit que dans cette mémoire.
  *
  * # Pourquoi une table et non un ensemble
@@ -22,7 +24,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { segmentsRewoundInto, type MutedSegments, type SegmentType } from "@tentacle-tv/shared";
+import { segmentsToRelease, type MutedSegments, type SegmentType } from "@tentacle-tv/shared";
 
 /** Aucune sourdine — une seule instance, pour que les comparaisons tiennent. */
 export const NO_MUTED_SEGMENTS: ReadonlyMap<SegmentType, number> = new Map<SegmentType, number>();
@@ -34,8 +36,9 @@ export interface MutedSegmentsState {
   readonly mutedRef: { readonly current: MutedSegments & ReadonlyMap<SegmentType, number> };
   /** Refuser un passage, en mémorisant d'où on l'a fait. */
   readonly mute: (type: SegmentType, positionMs: number) => void;
-  /** Lever les sourdines que le retour en arrière a rendues caduques. */
-  readonly releaseRewound: (positionMs: number) => void;
+  /** Lever les sourdines que le retour en arrière a rendues caduques — aucune
+   *  en séance, où la position n'est pas la nôtre (`segmentsToRelease`). */
+  readonly releaseRewound: (positionMs: number, groupSession: boolean) => void;
 }
 
 export function useMutedSegments(itemId: string | undefined): MutedSegmentsState {
@@ -53,11 +56,11 @@ export function useMutedSegments(itemId: string | undefined): MutedSegmentsState
     commit(next);
   }, [commit]);
 
-  const releaseRewound = useCallback((positionMs: number) => {
+  const releaseRewound = useCallback((positionMs: number, groupSession: boolean) => {
     // Le cas courant ne reconstruit rien : l'identité de la table sert de
     // dépendance à un `useMemo` chez l'appelant.
     if (mutedRef.current.size === 0) return;
-    const stale = segmentsRewoundInto(mutedRef.current, positionMs);
+    const stale = segmentsToRelease(mutedRef.current, positionMs, groupSession);
     if (stale.length === 0) return;
     const next = new Map(mutedRef.current);
     for (const type of stale) next.delete(type);

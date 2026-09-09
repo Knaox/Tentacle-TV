@@ -23,6 +23,8 @@ export default {
   sceneLogoSplash: "Splash",
   sceneLogoFavicon: "Favicon",
   sceneLogoAccent: "Accent pink",
+  sceneGuest: "Guest",
+  sceneRefusalShared: "The refusal holds for the whole room",
 
   // 1.21.0
   v1_21_1_scope_title: "A season, a show, in one gesture",
@@ -31,6 +33,8 @@ export default {
   v1_21_1_onDevice_body: "What the machine holds opens from the profile menu, server reachable or not. Until now you had to wait for an outage to see what you had kept.",
   v1_21_1_transfers_title: "Transfers say what is happening",
   v1_21_1_transfers_body: "Current step, rate, time left, percentage, the exact cause of an error and the delay before the next attempt — plus \"Pause everything\".",
+  v1_21_1_groupSkip_title: "In a group, the cross counts for all",
+  v1_21_1_groupSkip_body: "Refusing to skip the intro stops the countdown for every participant — and on your other devices. Only the host skips automatically; everyone else keeps the button.",
 
   v1_21_0_reco_title: "Recommendations, made for you",
   v1_21_0_reco_body: "What you watch, favorite and rate builds your profile. The Recommendations page and the home serve rows like “For you”, “Worth discovering” and “Because you liked…”.",
