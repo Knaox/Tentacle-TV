@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { MIB, toBps, toDraft } from "./adminBandwidthUnits";
+import { MIB, isValidIpOrCidr, toBps, toDraft } from "./adminBandwidthUnits";
 
 describe("adminBandwidthUnits", () => {
   it("illimité se dessine éteint et vide, un plafond allumé avec sa valeur", () => {
@@ -33,6 +33,20 @@ describe("adminBandwidthUnits", () => {
   it("un aller-retour rend la valeur d'origine", () => {
     for (const bps of [6 * MIB, Math.round(2.5 * MIB), 10_240 * MIB]) {
       expect(toBps(toDraft(bps))).toBe(bps);
+    }
+  });
+});
+
+describe("isValidIpOrCidr", () => {
+  it("accepte IPv4, IPv6 et une plage IPv4, espaces autour compris", () => {
+    for (const ok of ["203.0.113.5", " 203.0.113.5 ", "2001:db8::1", "::1", "203.0.113.0/24", "10.0.0.0/8"]) {
+      expect(isValidIpOrCidr(ok), ok).toBe(true);
+    }
+  });
+
+  it("refuse le reste", () => {
+    for (const bad of ["", "203.0.113", "203.0.113.256", "203.0.113.0/33", "2001:db8::/64", "maison", "1.2.3.4/abc"]) {
+      expect(isValidIpOrCidr(bad), bad).toBe(false);
     }
   });
 });
