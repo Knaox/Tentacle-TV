@@ -20,15 +20,14 @@ import { type NetworkType } from "./networkState";
 import { isLocalPlaybackActive } from "./nowPlaying";
 import {
   applyLinkLost,
-  applyProbeResult,
+  applyProbe,
   deriveLinkQuality,
   deriveState,
+  initialConnectivityCore,
   initialHysteresis,
-  LATENCY_HYSTERESIS,
-  SLOW_LINK_MS,
+  type ConnectivityCore,
   type ConnectivityState,
   type HysteresisConfig,
-  type HysteresisState,
   type LinkQuality,
 } from "@tentacle-tv/offline-core";
 import {
@@ -75,19 +74,17 @@ let serverUrl: string | null = null;
 let storage: StorageAdapter | null = null;
 let hooksInstalled = false;
 
-let hysteresis: HysteresisState = initialHysteresis;
-/** Hystérésis de la LATENCE — `reachable` y porte « dernière mesure rapide ». */
-let latency: HysteresisState = initialHysteresis;
+/** Joignabilité, latence et cause — composées par le réducteur du cœur. */
+let core: ConnectivityCore = initialConnectivityCore;
 let manual = false;
-let reason: OfflineReason = null;
 let networkType: NetworkType = "unknown";
 
 const buildSnapshot = (): ConnectivitySnapshot => ({
-  state: deriveState(manual, hysteresis.reachable),
+  state: deriveState(manual, core.hysteresis.reachable),
   manual,
-  reachable: hysteresis.reachable,
-  reason,
-  linkQuality: deriveLinkQuality(latency.reachable),
+  reachable: core.hysteresis.reachable,
+  reason: core.reason,
+  linkQuality: deriveLinkQuality(core.latency.reachable),
   networkType,
 });
 
@@ -147,25 +144,14 @@ async function probe(): Promise<void> {
   lastProbeStartAt = Date.now();
   try {
     const result = await runProbe(base);
-    const now = Date.now();
-    const outcome = applyProbeResult(hysteresis, result.ok, now, HYSTERESIS);
-    hysteresis = outcome.next;
-    reason = result.ok ? null : result.reason;
-
-    // Qualité du lien : même machine, dimension indépendante ; sans mesure
-    // (sonde en échec) on garde la dernière qualité connue.
-    let qualityFlipped = false;
-    if (result.latencyMs !== null) {
-      const q = applyProbeResult(latency, result.latencyMs < SLOW_LINK_MS, now, LATENCY_HYSTERESIS);
-      latency = q.next;
-      qualityFlipped = q.flipped;
-    }
-
-    if (outcome.flipped || qualityFlipped) {
+    // Sans réseau côté appareil, un échec n'accuse pas le serveur (réducteur du cœur).
+    const applied = applyProbe(core, result, Date.now(), HYSTERESIS, networkType === "none");
+    core = applied.next;
+    if (applied.changed) {
       rebuildSnapshot();
       ensureTimers();
     }
-    if (outcome.wantConfirm) scheduleConfirm();
+    if (applied.wantConfirm) scheduleConfirm();
   } finally {
     probing = false;
   }
@@ -190,12 +176,11 @@ let linkLostTimer: ReturnType<typeof setTimeout> | null = null;
 
 /** Bascule hors ligne sans attendre deux sondes ; le retour garde son anti-rebond. */
 function linkLost(): void {
-  const outcome = applyLinkLost(hysteresis, Date.now());
+  const outcome = applyLinkLost(core.hysteresis, Date.now());
   if (!outcome.flipped) return;
-  hysteresis = outcome.next;
   // Rien n'a été sondé : dire « le serveur ne répond pas » serait faux, et
   // enverrait l'utilisateur chercher une panne côté serveur.
-  reason = networkType === "none" ? "network" : "backend";
+  core = { ...core, hysteresis: outcome.next, reason: "network" };
   rebuildSnapshot();
   ensureTimers();
 }
@@ -221,14 +206,11 @@ export function configureConnectivity(options: { serverUrl: string | null; stora
   }
   if (serverUrl !== options.serverUrl) {
     serverUrl = options.serverUrl;
-    hysteresis = initialHysteresis;
-    latency = initialHysteresis;
-    reason = null;
+    core = initialConnectivityCore;
     // Réseau déjà connu comme absent : hors ligne dès le premier rendu, plutôt
     // qu'un accueil serveur qui tire ses requêtes pour rien le temps d'une sonde.
     if (networkType === "none" && serverUrl !== null) {
-      hysteresis = applyLinkLost(initialHysteresis, Date.now()).next;
-      reason = "network";
+      core = { ...core, hysteresis: applyLinkLost(initialHysteresis, Date.now()).next, reason: "network" };
     }
   }
   rebuildSnapshot();

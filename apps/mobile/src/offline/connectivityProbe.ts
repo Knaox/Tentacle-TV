@@ -2,28 +2,31 @@
  * La sonde du magasin de connectivité : `GET /api/health` puis
  * `GET /api/jellyfin/System/Info/Public`, délai commun de cinq secondes, la
  * cause de l'échec et la latence du backend pour la qualité du lien.
+ *
+ * La cause distingue le serveur de la connexion : une réponse rapide en
+ * erreur (connexion refusée, 5xx) accuse le serveur — `"backend"`, ou
+ * `"jellyfin"` derrière lui — ; notre délai dépassé, c'est `"timeout"` : la
+ * connexion ne permet pas de joindre le serveur, et l'application passe sur
+ * ce qui est sur l'appareil. « Juste lent » reste en ligne : les données
+ * finissent par arriver.
  */
 
-/**
- * Pourquoi on est hors ligne. `"network"` ne vient jamais d'une sonde — c'est
- * le téléphone qui n'a pas de lien, et il n'y a rien eu à sonder.
- */
-export type OfflineReason = "backend" | "jellyfin" | "network" | null;
+import type { OfflineReason, ProbeMeasure } from "@tentacle-tv/offline-core";
+
+export type { OfflineReason } from "@tentacle-tv/offline-core";
 
 const PROBE_TIMEOUT_MS = 5_000;
 
-export interface ProbeResult {
-  ok: boolean;
-  reason: OfflineReason;
-  /** Latence de `/api/health` en ms — `null` si la sonde a échoué. */
-  latencyMs: number | null;
-}
+export type ProbeResult = ProbeMeasure;
 
 /** Backend puis Jellyfin (via proxy), délai commun de 5 s. */
 export async function runProbe(base: string): Promise<ProbeResult> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
   const startedAt = Date.now();
+  // Seul notre minuteur interrompt la sonde : un abandon EST un délai dépassé.
+  const failure = (serverSide: OfflineReason): OfflineReason =>
+    controller.signal.aborted ? "timeout" : serverSide;
   try {
     const backendRes = await fetch(`${base}/api/health`, { signal: controller.signal });
     const latencyMs = Date.now() - startedAt;
@@ -38,10 +41,10 @@ export async function runProbe(base: string): Promise<ProbeResult> {
         ? { ok: true, reason: null, latencyMs }
         : { ok: false, reason: "jellyfin", latencyMs };
     } catch {
-      return { ok: false, reason: "jellyfin", latencyMs };
+      return { ok: false, reason: failure("jellyfin"), latencyMs };
     }
   } catch {
-    return { ok: false, reason: "backend", latencyMs: null };
+    return { ok: false, reason: failure("backend"), latencyMs: null };
   } finally {
     clearTimeout(timeout);
   }
