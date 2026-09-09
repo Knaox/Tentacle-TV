@@ -21,7 +21,7 @@ import { setPlayerSurfaceTransparent } from "../window";
 import { neverThrow, trace } from "./native";
 import { fromHandle, msg, type Rect } from "./objc";
 import { windowGone, watchMpvWindow, mpvLeftovers } from "./macosWindowWatch";
-import { attachBelowPage, frameWithoutSeam, reorderBelowPage } from "./macosChildWindow";
+import { attachBelowPage, createSeamKeeper, reorderBelowPage } from "./macosChildWindow";
 import { watchEdr, forgetEdr } from "./macosEdr";
 import { videoTarget, applyFrame } from "./macosFrame";
 import { bannerInset } from "../macosTitleBar";
@@ -51,6 +51,14 @@ export class MacosSurface implements VideoSurface {
 
   /** Numéro de la fenêtre retenue, pour la reconnaître ensuite. */
   private number = 0;
+
+  /**
+   * Le liseré de la fenêtre vidéo — voir `macosChildWindow.ts`.
+   *
+   * Détenu par la surface et non par le module : une lecture ne doit pas rendre
+   * à la fenêtre suivante le masque relevé sur la précédente.
+   */
+  private readonly seam = createSeamKeeper();
 
   /** Référence stable — sans elle, `off()` ne retirerait rien. */
   private readonly follow = (): void => this.scheduleAlign();
@@ -183,7 +191,7 @@ export class MacosSurface implements VideoSurface {
     // La veille passe ici dix fois par seconde : c'est notre horloge pour dater
     // la décision du compositeur — voir `guetterEdr`.
     watchEdr(this.mpvWindow, "veille");
-    frameWithoutSeam(this.mpvWindow, this.host.isFullScreen());
+    this.seam.apply(this.mpvWindow, this.host.isFullScreen());
     neverThrow("calage de la fenetre video", () => {
       applyFrame(this.mpvWindow, this.target(), this.videoLevel());
     });
@@ -256,6 +264,7 @@ export class MacosSurface implements VideoSurface {
       });
       this.mpvWindow = null;
     }
+    this.seam.forget();
     if (this.attached) {
       this.host.off("resize", this.follow);
       this.host.off("move", this.follow);

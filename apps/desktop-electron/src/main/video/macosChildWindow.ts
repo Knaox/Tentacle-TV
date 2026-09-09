@@ -48,8 +48,16 @@ function auxiliaryFullscreen(current: number): number {
 /** `NSWindowStyleMaskBorderless` — aucun style, donc aucune décoration. */
 const NO_DECORATION = 0;
 
-/** Le style que mpv a donné à sa fenêtre, pour le lui rendre en sortant. */
-let originalStyle = 0;
+/**
+ * Le gardien du liseré, tel que le détient la surface qui l'a créé.
+ *
+ * `apply` retire le cadre en plein écran et le rend en fenêtré ; `forget` oublie
+ * le masque relevé, et se dit au détachement.
+ */
+export interface SeamKeeper {
+  apply(window: unknown, fullscreen: boolean): void;
+  forget(): void;
+}
 
 /**
  * Retire son cadre à la fenêtre de mpv — toujours — et lui rend ses coins.
@@ -101,21 +109,47 @@ let originalStyle = 0;
  * La promotion est une transition ASYNCHRONE décidée à l'affichage — voir
  * `stateAtDiscovery` dans `macosSurfaceDiag.ts` et l'en-tête de
  * `macosWindowOptions.ts`, qui la mesure : `masque=49159`.
+ *
+ * # Pourquoi une fabrique, et non deux fonctions
+ *
+ * ⚠️ Le masque à rendre était un `let` de MODULE, jamais réinitialisé et partagé
+ * par toutes les lectures. Or une fenêtre de mpv ne survit pas à la sienne :
+ * avec `force-window=no` elle naît au premier `loadfile` et meurt avec la sortie
+ * vidéo. Le masque relevé sur l'une pouvait donc être réécrit sur la suivante,
+ * qui n'est pas le même objet. L'état appartient à la surface, `forget()` le
+ * rend au détachement, et le pointeur est mémorisé AVEC le masque : on ne
+ * restaure que là où l'on a relevé.
  */
-export function frameWithoutSeam(window: unknown, fullscreen: boolean): void {
-  if (!window) return;
-  const current = msg.count(window, "styleMask");
-  // La seule lecture de `styleMask` du dépôt qui décidait sans regarder ce bit.
-  if ((current & FULLSCREEN_MASK) !== 0) return;
-  if (fullscreen) {
-    if (current === NO_DECORATION) return;
-    originalStyle = current;
-    msg.setStyleMask(window, NO_DECORATION);
-    return;
-  }
-  if (current !== NO_DECORATION || originalStyle === 0) return;
-  msg.setStyleMask(window, originalStyle);
-  rehideTitleBar(window);
+export function createSeamKeeper(): SeamKeeper {
+  /** Le style que mpv a donné à sa fenêtre, pour le lui rendre en sortant. */
+  let originalStyle = 0;
+  /** Et la fenêtre d'où il vient — un masque ne se rend pas à une autre. */
+  let owner: unknown = null;
+
+  return {
+    apply(window: unknown, fullscreen: boolean): void {
+      if (!window) return;
+      const current = msg.count(window, "styleMask");
+      // La seule lecture de `styleMask` du dépôt qui décidait sans regarder ce bit.
+      if ((current & FULLSCREEN_MASK) !== 0) return;
+      if (fullscreen) {
+        if (current === NO_DECORATION) return;
+        originalStyle = current;
+        owner = window;
+        msg.setStyleMask(window, NO_DECORATION);
+        return;
+      }
+      if (current !== NO_DECORATION || originalStyle === 0) return;
+      if (owner !== window) return;
+      msg.setStyleMask(window, originalStyle);
+      rehideTitleBar(window);
+    },
+
+    forget(): void {
+      originalStyle = 0;
+      owner = null;
+    },
+  };
 }
 
 /** `NSWindowTitleHidden` — le titre existe, AppKit ne le dessine pas. */
