@@ -171,13 +171,20 @@ export function broadcastAll(carousel: CarouselId): void {
  *  `exceptTokenHash` : les sockets de CET appareil (celui qui vient d'écrire)
  *  sont sautées — il n'a rien à relire, et un refetch écraserait son
  *  optimiste. Le web envoie le même jeton en cookie et sur le socket ; les
- *  onglets d'un même navigateur partagent ce jeton et sont exclus ensemble. */
-export function sendToUser(userId: string, msg: WsServerMessage, opts?: { exceptTokenHash?: string }): void {
+ *  onglets d'un même navigateur partagent ce jeton et sont exclus ensemble.
+ *  `exceptSocket` : LA connexion qui vient d'écrire (relais Watch Together) —
+ *  plus fin que le jeton : deux onglets d'un même navigateur partagent le
+ *  jeton, pas la socket, et chacun tient son propre lecteur. */
+export function sendToUser(
+  userId: string,
+  msg: WsServerMessage,
+  opts?: { exceptTokenHash?: string; exceptSocket?: WebSocket },
+): void {
   const set = connections.get(userId);
   if (!set) return;
   const skip = opts?.exceptTokenHash ? deviceSockets.get(opts.exceptTokenHash) : undefined;
   for (const ws of set) {
-    if (skip?.has(ws)) continue;
+    if (ws === opts?.exceptSocket || skip?.has(ws)) continue;
     send(ws, msg);
   }
 }

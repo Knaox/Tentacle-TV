@@ -32,9 +32,17 @@ export interface PlaybackOverlayInput {
    * Une séance Watch Together est active sur CE média. Le refus local d'une
    * carte y annule AUSSI le décompte de l'épisode : sans cela, le refuseur
    * ré-armerait seul à l'EOF, enchaînerait, et son `wt:setItem` embarquerait
-   * la salle qu'il venait de refuser.
+   * la salle qu'il venait de refuser. Le refus d'un passage — le nôtre ou celui
+   * d'un membre — y tient aussi jusqu'au changement d'épisode : une correction
+   * de dérive n'est pas un rembobinage.
    */
   groupSession?: boolean;
+  /**
+   * En séance : ce lecteur est celui de l'hôte. Seul son décompte de saut va
+   * jusqu'au seek — les invités gardent le bouton, sans décompte
+   * (`countdownAllowed`). Ignoré hors séance.
+   */
+  groupHost?: boolean;
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;
   /**

@@ -36,7 +36,7 @@ export function DesktopPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
-  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
+  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession, inGroupHost,
   onControlsVisibilityChange, applyToSeries,
 }: DesktopPlayerProps) {
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
@@ -210,7 +210,7 @@ export function DesktopPlayer({
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
-    onAutoNextDismiss, inGroupSession,
+    onAutoNextDismiss, inGroupSession, inGroupHost,
   });
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.

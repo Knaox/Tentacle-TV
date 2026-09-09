@@ -66,6 +66,8 @@ export interface DesktopPlayerProps {
   onAutoNextDismiss?: () => void;
   /** Watch Together — une séance est active sur ce média (refus ⇒ décompte annulé). */
   inGroupSession?: boolean;
+  /** Watch Together — ce lecteur est celui de l'hôte : seul son décompte de saut va au bout. */
+  inGroupHost?: boolean;
   /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
   onControlsVisibilityChange?: (visible: boolean) => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */

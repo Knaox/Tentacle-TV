@@ -187,17 +187,21 @@ export function useGroupSyncEngine({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onGroupItem, room?.epoch]);
 
-  // ── Événements transients : dismiss auto-next d'un autre membre ──
+  // ── Événements transients : dismiss auto-next d'un autre LECTEUR ──
+  // Un autre membre, ou un autre appareil de ce compte : le serveur exclut la
+  // socket émettrice, jamais le compte (gateway.ts). Filtrer `originUserId`
+  // ici priverait le second appareil de l'hôte du refus — son décompte
+  // partirait seul et son enchaînement embarquerait la salle.
   useEffect(() => {
     if (!onGroupItem) return;
     return subscribeSocket((msg) => {
-      if (msg.type === "wt:autonextDismiss" && msg.originUserId !== selfId) {
+      if (msg.type === "wt:autonextDismiss") {
         wtLog("engine", "auto-next dismiss distant", { from: msg.originUserId });
         transportRef.current?.cancelAutoNext?.();
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onGroupItem, selfId]);
+  }, [onGroupItem]);
 
   // ── Boucle de drift (1 Hz) ──
   useGroupDriftLoop({ enabled: !!onGroupItem, itemId, transportRef, shared });

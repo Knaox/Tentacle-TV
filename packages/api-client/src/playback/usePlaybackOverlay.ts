@@ -15,7 +15,8 @@
  * vaut refus — la croix ne supprime pas le candidat), et la revendication tient
  * jusque dans le générique final, où il n'y a plus de bouton. Le RETOUR EN
  * ARRIÈRE lève ces gestes-là, saut compris — qui revient derrière l'endroit
- * d'un geste le redemande. Les refus de la SUITE (carte, affiche de fin), eux,
+ * d'un geste le redemande —, sauf en séance, où la position n'est pas la nôtre
+ * (`segmentsToRelease`). Les refus de la SUITE (carte, affiche de fin), eux,
  * tiennent jusqu'au changement d'épisode : ils vivent dans `useAutoNextDispatch`.
  */
 
@@ -23,7 +24,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SKIP_DELAY_DEFAULT_MS, NEXT_COUNTDOWN_MS, INTRO_SKIP_IDLE,
   arbitrateOverlay, autoNextEligible, displayedCountdown, displayedNextCountdown,
-  decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
+  countdownAllowed, decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
   isSegmentSilenced,
   type IntroSkipState,
   type PlayerOverlay, type SegmentType, type SkipCandidate, type SkipCandidateInput,
@@ -112,12 +113,13 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const visible = candidate !== null && !p.scrubbing;
       // Un passage mis en sourdine ne compte plus : la croix a aussi coupé ça.
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
-      const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
+      const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto"
+        && countdownAllowed(p.groupSession, p.groupHost);
 
-      // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée,
-      // les passages refusés, et le saut qu'on attendait encore.
+      // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée, les
+      // passages refusés (jamais en séance : `segmentsToRelease`), le saut attendu.
       releasePostCredits(nowMs);
-      releaseRewound(nowMs);
+      releaseRewound(nowMs, p.groupSession === true);
       if (hasRewoundPastSkip(nowMs, skipTargetMsRef.current)) {
         skipTargetMsRef.current = null;
         if (skipStateRef.current.name === "skipped") commitSkipState(INTRO_SKIP_IDLE);
