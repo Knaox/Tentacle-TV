@@ -27,6 +27,8 @@ export default {
   sceneLogoSplash: "Splash",
   sceneLogoFavicon: "Favicon",
   sceneLogoAccent: "Rose d'accent",
+  sceneGuest: "Invité",
+  sceneRefusalShared: "Le refus vaut pour toute la salle",
 
   // 1.21.0
   v1_21_1_scope_title: "Une saison, une série, d'un seul geste",
@@ -35,6 +37,8 @@ export default {
   v1_21_1_onDevice_body: "Ce que la machine porte s'ouvre depuis le menu du profil, serveur joignable ou non. Il fallait attendre une coupure pour revoir ce qu'on avait gardé.",
   v1_21_1_transfers_title: "Les transferts disent ce qui se passe",
   v1_21_1_transfers_body: "Étape en cours, débit, temps restant, pourcentage, cause exacte d'une erreur et délai avant la prochaine tentative — et « Tout mettre en pause ».",
+  v1_21_1_groupSkip_title: "En groupe, la croix vaut pour tous",
+  v1_21_1_groupSkip_body: "Refuser de passer l'intro arrête le compte à rebours chez chaque participant — et sur vos autres appareils. Seul l'hôte passe l'intro automatiquement ; les autres gardent le bouton.",
 
   v1_21_0_reco_title: "Des recommandations à votre goût",
   v1_21_0_reco_body: "Vos vus, vos favoris et vos notes construisent votre profil. La page Recommandations et l'accueil vous servent des rangées « Pour vous », « À découvrir » et « Parce que vous avez aimé… ».",
