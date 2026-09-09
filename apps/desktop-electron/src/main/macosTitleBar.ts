@@ -49,7 +49,7 @@ const TRAFFIC_LIGHTS = { x: 16, y: 13 } as const;
  * De combien la fenêtre de mpv passe SOUS le bandeau, en points.
  *
  * ⚠️ Sans ce recouvrement, on voit les COINS ARRONDIS de la fenêtre de mpv en
- * plein milieu de la nôtre. Elle est titrée — `frameWithoutSeam` ne lui retire
+ * plein milieu de la nôtre. Elle est titrée — `macosSeam.ts` ne lui retire
  * son cadre qu'en plein écran — et AppKit arrondit toute fenêtre titrée. Tant
  * qu'elle couvrait le cadre entier, ses coins coïncidaient avec les nôtres et ne
  * se voyaient pas ; calée sous une bande, ils apparaissent. Le liseré d'AppKit

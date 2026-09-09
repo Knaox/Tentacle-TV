@@ -7,7 +7,7 @@
  * aller-retour en plein écran. Deux explications tiennent également debout, et
  * elles se corrigent de façons opposées :
  *
- *  - la fenêtre de MPV. `frameWithoutSeam` lui rend son `styleMask` titré en
+ *  - la fenêtre de MPV. `macosSeam.ts` lui rend son `styleMask` titré en
  *    sortant du plein écran, et AppKit reconstruit alors la barre de titre que
  *    `title-bar=no` avait masquée, avec ses propres feux et le titre
  *    « Tentacle TV » que mpv pose sur sa fenêtre ;

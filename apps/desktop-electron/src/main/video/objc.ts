@@ -239,8 +239,10 @@ export const msg = {
     if (!window) return;
     send1ul(window, sel("setCollectionBehavior:"), mask);
   },
-  /** `[fenêtre setStyleMask: masque]` — voir `frameWithoutSeam`, qui dit ce qu'on
-   *  a le droit d'y retirer, et ce qu'il faut rendre en échange. */
+  /** `[fenêtre setStyleMask: masque]` — ⚠️ voir `macosSeam.ts`, SEUL appelant
+   *  légitime : il dit ce qu'on a le droit d'y retirer, ce qu'il faut rendre en
+   *  échange, et surtout QUAND — écrire pendant une transition d'AppKit lève une
+   *  exception que rien, côté JavaScript, ne peut rattraper. */
   setStyleMask(window: unknown, mask: number): void {
     if (!window) return;
     send1ul(window, sel("setStyleMask:"), mask);
