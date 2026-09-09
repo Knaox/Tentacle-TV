@@ -15,7 +15,8 @@
  * vaut refus — la croix ne supprime pas le candidat), et la revendication tient
  * jusque dans le générique final, où il n'y a plus de bouton. Le RETOUR EN
  * ARRIÈRE lève ces gestes-là, saut compris — qui revient derrière l'endroit
- * d'un geste le redemande. Les refus de la SUITE (carte, affiche de fin), eux,
+ * d'un geste le redemande —, sauf en séance, où la position n'est pas la nôtre
+ * (`segmentsToRelease`). Les refus de la SUITE (carte, affiche de fin), eux,
  * tiennent jusqu'au changement d'épisode : ils vivent dans `useAutoNextDispatch`.
  */
 
@@ -114,10 +115,10 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
       const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto";
 
-      // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée,
-      // les passages refusés, et le saut qu'on attendait encore.
+      // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée, les
+      // passages refusés (jamais en séance : `segmentsToRelease`), le saut attendu.
       releasePostCredits(nowMs);
-      releaseRewound(nowMs);
+      releaseRewound(nowMs, p.groupSession === true);
       if (hasRewoundPastSkip(nowMs, skipTargetMsRef.current)) {
         skipTargetMsRef.current = null;
         if (skipStateRef.current.name === "skipped") commitSkipState(INTRO_SKIP_IDLE);
