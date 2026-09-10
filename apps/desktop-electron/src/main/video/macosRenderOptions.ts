@@ -3,12 +3,12 @@
  *
  * # Pourquoi le natif les réécrit
  *
- * La page décrit ce qu'elle veut voir — du HDR, du décodage matériel — sans
- * savoir COMMENT la coquille l'obtient. Le choix du montage
- * (`TENTACLE_VIDEO_MONTAGE`) vit dans le processus principal, et lui seul sait
- * qu'il faut alors une sortie `libmpv` plutôt qu'une fenêtre Metal. Faire
- * remonter ce détail jusqu'au navigateur pour qu'il le renvoie aussitôt
- * n'apprendrait rien à personne, et donnerait deux endroits à tenir d'accord.
+ * La page décrit ce qu'elle veut voir — du décodage matériel, un cache — sans
+ * savoir COMMENT la coquille l'obtient. Le choix du montage (`surface.ts`) vit
+ * dans le processus principal, et lui seul sait qu'il faut alors une sortie
+ * `libmpv` plutôt qu'une fenêtre Metal. Faire remonter ce détail jusqu'au
+ * navigateur pour qu'il le renvoie aussitôt n'apprendrait rien à personne, et
+ * donnerait deux endroits à tenir d'accord.
  *
  * # Ce que la Render API change
  *
@@ -16,10 +16,26 @@
  * plus. Et le passthrough PQ non plus — `target-colorspace-hint` s'adresse au
  * backend Metal, qui négocie l'espace de sa couche avec le compositeur. Une
  * `NSOpenGLView` n'est pas gérée en couleur : on lui envoie des valeurs, elle
- * les affiche. C'est donc à mpv de produire directement ce que l'écran attend.
+ * les affiche.
+ *
+ * # Une sortie en plage standard, comme pour n'importe quel écran SDR
+ *
+ * La vue est en RGBA 8 bits, sans plage étendue (`macosGlView.ts`). mpv doit
+ * donc produire ce qu'il produit pour tout écran SDR : ses défauts —
+ * `target-trc`, `target-prim` et `target-peak` à `auto` —, et un contenu HDR
+ * est tone-mappé vers le SDR par mpv lui-même.
+ *
+ * ⚠️ Ce module imposait `target-trc=pq`, `target-prim=display-p3` et un
+ * `target-peak` lu sur l'écran : l'expérience EDR, abandonnée. Du PQ écrit
+ * dans une surface sRGB, c'est une image délavée sur tout écran sans plage
+ * étendue — donc sur tous les Mac Intel. C'est le défaut que ce fichier ne
+ * reproduit plus.
+ *
+ * ⚠️ Aucun import natif ici, et c'est voulu. `ipc/video.ts` charge ce module à
+ * la demande pour épargner Windows ; son test n'a besoin d'aucun mock, et le
+ * jour où il en réclamera un, c'est qu'une dépendance à `objc.ts` est revenue.
  */
 
-import { readEdr } from "./macosEdr";
 import type { MpvValue } from "./mpvAllowlist";
 
 /** Options qui n'ont de sens qu'avec une fenêtre à mpv. */
@@ -38,33 +54,11 @@ const NOT_APPLICABLE: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Le pic lumineux à viser, en nits.
- *
- * ⚠️ Laisser `target-peak` à `auto` ferait deviner à mpv un pic qu'il ne peut
- * pas connaître : une `NSOpenGLView` ne lui dit rien de l'écran. Le headroom
- * EDR, lui, est mesurable — c'est le facteur au-delà du blanc SDR que le
- * compositeur accorde. Sur un Liquid Retina XDR il vaut 16, soit 1600 nits pour
- * un blanc de référence à 100.
- *
- * Borné à la plage acceptée par mpv (10 à 10000). Sur un écran sans plage
- * étendue, le potentiel vaut 1 et l'on retombe sur 100 nits — la bonne réponse,
- * qui fait tone-mapper mpv vers du SDR.
- */
-const SDR_WHITE_NITS = 100;
-
-export function edrPeak(): number {
-  const potential = readEdr(null).potential;
-  const nits = Math.round((potential > 1 ? potential : 1) * SDR_WHITE_NITS);
-  return Math.min(10000, Math.max(10, nits));
-}
-
-/**
  * Réécrit les options d'init pour le rendu par la Render API.
  *
- * `vo=libmpv` est imposé : c'est la sortie qui délègue le dessin à l'hôte.
- * `target-trc=pq` et `target-prim=display-p3` sont le couple qui déclenche
- * l'EDR — `bt.2020` est déprécié depuis macOS 11, et c'est aussi le choix
- * d'IINA pour la même raison.
+ * `vo=libmpv` est imposé : c'est la sortie qui délègue le dessin à l'hôte. Le
+ * reste passe tel quel — décodage, cache et réseau ne dépendent pas du montage.
+ * Rend une copie : l'objet reçu appartient à l'appelant.
  */
 export function adaptForRenderApi(
   options: Readonly<Record<string, MpvValue>>,
@@ -74,8 +68,5 @@ export function adaptForRenderApi(
     if (!NOT_APPLICABLE.has(name)) output[name] = value;
   }
   output["vo"] = "libmpv";
-  output["target-trc"] = "pq";
-  output["target-prim"] = "display-p3";
-  output["target-peak"] = edrPeak();
   return output;
 }
