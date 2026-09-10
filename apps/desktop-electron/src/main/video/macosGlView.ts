@@ -1,5 +1,5 @@
 /**
- * La vue OpenGL du lecteur, dans NOTRE fenêtre — et avec la plage étendue.
+ * La vue OpenGL du lecteur, dans NOTRE fenêtre.
  *
  * # Pourquoi une vue, et plus une fenêtre
  *
@@ -9,28 +9,19 @@
  * fenêtre. Une seule fenêtre, donc : plus de calage à la main, plus d'ordre
  * d'empilement à réaffirmer, plus de liseré transparent au bord de l'overlay.
  *
- * C'est aussi ce que font IINA et IPTVnator, qui n'ont qu'une fenêtre.
+ * C'est aussi ce que font IINA et IPTVnator, qui n'ont qu'une fenêtre — et ce
+ * que faisait la coquille Tauri de ce projet, dont aucun Mac Intel ne s'est
+ * jamais plaint. Le montage retenu par machine est dans `surface.ts`.
  *
- * # Les trois lignes qui donnent l'EDR
+ * # Une surface en plage standard, et rien d'autre
  *
- * ⚠️ La plage étendue n'est PAS réservée à Metal, contrairement à ce que la
- * phase 1 avait conclu. Apple la documente sur `NSOpenGLView` (WWDC21, « Explore
- * HDR rendering with EDR »), à trois conditions :
- *
- *  1. `NSOpenGLPFAColorFloat` avec `NSOpenGLPFAColorSize` à **64** — quatre
- *     canaux de 16 bits flottants. En 32 bits entiers, rien ne dépasse 1.0 et
- *     l'EDR n'a aucun sens ;
- *  2. `wantsExtendedDynamicRangeOpenGLSurface` à `YES` ;
- *  3. un contenu qui dépasse réellement 1.0, ce dont mpv se charge (voir les
- *     options `target-*` de `mpvRuntime.ts`).
- *
- * Aucun espace colorimétrique étendu à poser : une `NSOpenGLView` n'est pas
- * gérée en couleur, contrairement à une `CAMetalLayer`.
- *
- * Ce que cette voie ne donne PAS : `edrMetadata`, les métadonnées de mastering,
- * qui n'existent que sur `CAMetalLayer`. mpv fait donc du tone-mapping vers le
- * headroom disponible au lieu de transmettre le PQ tel quel. C'est la limite
- * qu'IINA constate, et elle est assumée ici.
+ * La vue est opaque, en RGBA 8 bits, sous le compositeur de Chromium. Elle ne
+ * demande PAS la plage étendue : l'EDR par `NSOpenGLView` a été construit,
+ * mesuré et abandonné — mpv ne produit pas de valeurs au-delà de 1.0, et
+ * `wantsExtendedDynamicRangeOpenGLSurface` faisait MENTIR la sonde de headroom
+ * (16,00 sur 16,00 pour une image sans HDR). Le raisonnement complet est dans
+ * `surface.ts` et `docs/MACOS-FENETRE-VIDEO.md` ; le HDR, c'est l'affaire du
+ * montage à deux fenêtres.
  *
  * ⚠️ **macOS uniquement** : remonte à `objc.ts`, qui charge le runtime à
  * l'import.
@@ -55,12 +46,19 @@ const initWithFramePixelFormat = signature("void*", ["void*", "void*", "NSRect",
 const ATTR = {
   DOUBLE_BUFFER: 5,
   COLOR_SIZE: 8,
-  DEPTH_SIZE: 11,
+  /** ⚠️ 11 est l'ALPHA (`NSOpenGLPFAAlphaSize`). La profondeur est 12 — et on n'en veut pas. */
+  ALPHA_SIZE: 11,
   OPENGL_PROFILE: 99,
   ACCELERATED: 73,
+  /**
+   * `NSOpenGLPFAAllowOfflineRenderers` — À GARDER. C'est l'attribut qu'Apple
+   * exige d'une application qui déclare `NSSupportsAutomaticGraphicsSwitching`
+   * (Electron le déclare) pour que le contexte puisse vivre sur un renderer
+   * qui ne pilote pas d'écran — donc RESTER sur le GPU intégré d'un MacBook Pro
+   * à deux GPU. Le retirer force le GPU dédié : l'inverse du but.
+   */
   ALLOW_OFFLINE: 96,
-  COLOR_FLOAT: 58,
-  /** Cœur 3.2 : le float 16 bits et les FBO modernes l'exigent. */
+  /** Cœur 3.2 : les FBO modernes de la Render API l'exigent. */
   PROFILE_3_2_CORE: 0x3200,
   END_MARK: 0,
 } as const;
@@ -106,7 +104,18 @@ function viewTree(content: unknown): string {
   return `contentView=${classNameOf(content)}(${contentLayer}) → [${names.join(", ")}]`;
 }
 
-/** Le format de pixels flottant 64 bits, ou `null` s'il est refusé. */
+/**
+ * Le format de pixels RGBA 8 bits, ou `null` s'il est refusé.
+ *
+ * Ni profondeur — mpv dessine un quad, il n'y a rien à trier —, ni flottant :
+ * sans plage étendue à servir, seize bits par canal doublent la bande passante
+ * de chaque pixel écrit, pour rien. C'est le format de la chaîne Tauri, celle
+ * qui tenait sur les GPU intégrés Intel.
+ *
+ * ⚠️ L'ancien tableau demandait `NSOpenGLPFAAlphaSize = 24` en croyant poser
+ * une profondeur (la constante 11 est l'alpha). Un alpha de 24 bits n'existe
+ * sur aucun renderer, et un format impossible se refuse en silence.
+ */
 function pixelFormat(): unknown {
   const className = cls("NSOpenGLPixelFormat");
   if (!className) return null;
@@ -114,11 +123,10 @@ function pixelFormat(): unknown {
     ATTR.ACCELERATED,
     ATTR.ALLOW_OFFLINE,
     ATTR.DOUBLE_BUFFER,
-    ATTR.COLOR_FLOAT,
     ATTR.COLOR_SIZE,
-    64,
-    ATTR.DEPTH_SIZE,
     24,
+    ATTR.ALPHA_SIZE,
+    8,
     ATTR.OPENGL_PROFILE,
     ATTR.PROFILE_3_2_CORE,
     ATTR.END_MARK,
@@ -146,7 +154,7 @@ export function createGlView(host: BrowserWindow): GlView | null {
 
   const format = pixelFormat();
   if (!format) {
-    trace("vue GL : format de pixels flottant 64 bits refuse");
+    trace("vue GL : format de pixels RGBA 8 bits refuse");
     return null;
   }
 
@@ -178,9 +186,6 @@ export function createGlView(host: BrowserWindow): GlView | null {
   // celui qu'on a demandé.
   msg.setFlag(view, "setWantsLayer:", true);
   msg.setFlag(view, "setWantsBestResolutionOpenGLSurface:", true);
-  // ⚠️ LA ligne de l'EDR. Sans elle, la surface reste en plage standard quoi
-  // que mpv dessine, et les hautes lumières sont écrêtées à 1.0.
-  msg.setFlag(view, "setWantsExtendedDynamicRangeOpenGLSurface:", true);
   msg.setAutoresizingMask(view, FOLLOWS_WINDOW);
 
   // ⚠️ SOUS TOUTES LES SOUS-VUES — `relativeTo: nil`, ce qu'AppKit garantit.
@@ -210,10 +215,7 @@ export function createGlView(host: BrowserWindow): GlView | null {
 
   const scale = msg.double(window, "backingScaleFactor");
   const size = sizeInPixels(view, scale);
-  trace(
-    `vue GL creee — ${String(size.w)}x${String(size.h)} px, EDR demande, ` +
-      `flottant 64 bits, profil 3.2 core`,
-  );
+  trace(`vue GL creee — ${String(size.w)}x${String(size.h)} px, RGBA 8 bits, profil 3.2 core`);
   return { view, context, nsContext };
 }
 
