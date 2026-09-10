@@ -364,6 +364,14 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     "stream-lavf-o": "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=4xx\\,5xx,reconnect_delay_max=5,reconnect_max_retries=8",
     "demuxer-lavf-o": "probesize=10000000,analyzeduration=10000000",
     osc: "no",
+    // L'OSD de mpv ne dessine JAMAIS : l'interface est intégralement en HTML.
+    // Sans ces deux lignes — la coquille Tauri les posait —, mpv affichait sa
+    // barre de volume à la restauration du volume et son texte de remplissage
+    // du cache au démarrage ; et chaque mise à jour de cet OSD est un redessin
+    // complet de l'image, mesuré à 55-68 rendus/s au lancement d'un 24 i/s sur
+    // la vue GL. Rien de tout cela n'est voulu, ni jamais visible.
+    "osd-level": 0,
+    "osd-bar": "no",
     "input-default-bindings": "no",
     "input-vo-keyboard": "no",
     "force-media-title": "Tentacle TV",
