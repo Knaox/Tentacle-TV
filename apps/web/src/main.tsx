@@ -41,6 +41,7 @@ import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
 import { installReducedMotionShim } from "./dev/reducedMotionShim";
 import { installQueryPersistence } from "./lib/queryPersistence";
+import { cleanupObsoleteStorage } from "./lib/storageCleanup";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
@@ -65,6 +66,9 @@ if (import.meta.env.DEV || __PLAYER_DEBUG__) installReducedMotionShim();
 // Initialize i18n before rendering (local cache first for instant display)
 const savedLang = localStorage.getItem("tentacle_language") ?? detectLanguage();
 initI18n({ lng: savedLang });
+// Les clés des réglages disparus partent AVANT tout rendu : un utilisateur qui
+// avait choisi un mode retiré revient au défaut sans rien faire.
+cleanupObsoleteStorage(localStorage);
 
 // Application de bureau (Tauri sur macOS et Linux, Electron sur Windows) par
 // opposition au déploiement web. La détection vit dans `desktop/detect.ts` et
