@@ -176,6 +176,11 @@ describe("detection de derive avec apps/web", () => {
   });
 
   it("toute option d'init produite cote web est dans la liste", () => {
+    // ⚠️ Ce scan lit le CORPS de `buildMpvInitOptions`. Toute option qu'un
+    // `...spread()` venu d'un AUTRE module y verserait lui échapperait
+    // entièrement, et la liste blanche l'écarterait EN SILENCE — le réglage
+    // « Qualité de rendu » en versait sept, relues à part tant qu'il a existé.
+    // Un nouveau spread externe exige sa propre relecture ici.
     const source = webSource("hooks/mpvRuntime.ts");
     const start = source.indexOf("export function buildMpvInitOptions");
     expect(start, "buildMpvInitOptions introuvable dans mpvRuntime.ts").toBeGreaterThan(-1);
@@ -193,27 +198,5 @@ describe("detection de derive avec apps/web", () => {
     const known = new Set(INVENTORY.options());
     const unknown = [...found].filter((o) => !known.has(o));
     expect(unknown, "options produites par apps/web mais absentes de la liste blanche").toEqual([]);
-  });
-
-  it("les options de rendu aussi, qui arrivent par un spread", () => {
-    // ⚠️ Le test ci-dessus lit le CORPS de `buildMpvInitOptions` : les options
-    // qu'un `...spread()` y verse lui échappent entièrement. `renderQuality.ts`
-    // en verse sept, et sans cette relecture elles pourraient être écartées en
-    // silence — le défaut exact que ce réglage vient corriger ailleurs.
-    const source = webSource("lib/renderQuality.ts");
-    const start = source.indexOf("export function mpvRenderOptions");
-    expect(start, "mpvRenderOptions introuvable dans renderQuality.ts").toBeGreaterThan(-1);
-    const body = source.slice(start);
-
-    const found = new Set<string>();
-    for (const m of body.matchAll(/^\s*"?([a-z][a-z0-9-]*)"?\s*:/gim)) {
-      const name = m[1];
-      if (name !== undefined) found.add(name);
-    }
-    expect(found.size, "aucune option trouvee dans mpvRenderOptions").toBeGreaterThan(5);
-
-    const known = new Set(INVENTORY.options());
-    const unknown = [...found].filter((o) => !known.has(o));
-    expect(unknown, "options de rendu absentes de la liste blanche").toEqual([]);
   });
 });
