@@ -214,6 +214,19 @@ Le verdict HDR se lit sur le COUPLE `video-params` / `video-target-params`, jama
 sur l'un des deux : sur un écran laissé en HDR, un contenu SDR sort lui aussi en
 PQ. Relevé complet : `docs/LINUX-FENETRE-VIDEO.md`.
 
+### macOS — deux montages vidéo, choisis par la machine
+
+Apple Silicon : mpv ouvre SA fenêtre Metal (`gpu-context=macvk`), calée sous la
+nôtre — le seul chemin HDR mesuré. Intel : mpv dessine par la Render API OpenGL
+dans une `NSOpenGLView` de NOTRE fenêtre (`vo=libmpv`), la chaîne de l'ancienne
+coquille Tauri — une fenêtre, pas de MoltenVK, VideoToolbox zéro-copie par
+`CGLTexImageIOSurface2D`. La décision est `decideMacosMontage` (`process.arch`),
+forçable par `TENTACLE_VIDEO_MONTAGE=gl|fenetre`. Sur Intel, le montage Metal
+chauffait (mpv#12675 : import zéro-copie en échec, donc décodage logiciel en
+silence) pour un HDR qu'aucun écran Intel intégré n'affiche. `hwdec` macOS est
+une liste (`videotoolbox,videotoolbox-copy`) : jamais de repli logiciel silencieux.
+Aucun réglage exposé — un seul mode. Relevé : `docs/MACOS-FENETRE-VIDEO.md`.
+
 ### Coût GPU — ce qui n'est pas affiché ne doit rien consommer
 
 Trois règles, chacune payée par une régression mesurée à `powermetrics`. Elles
