@@ -71,6 +71,11 @@ export function framesPresented(): number {
   return session?.images ?? 0;
 }
 
+/** L'échelle a changé — la fenêtre a changé d'écran : le rendu la suit. */
+export function setRenderScale(scale: number): void {
+  if (session !== null) session.scale = scale;
+}
+
 /** Un tampon de `mpv_opengl_init_params` pointant sur notre rappel. */
 function initParams(callback: unknown): Buffer {
   const buffer = Buffer.alloc(INIT_PARAMS_SIZE);

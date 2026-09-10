@@ -28,6 +28,7 @@
  */
 
 import type { BrowserWindow } from "electron";
+import { bannerInset } from "../macosTitleBar";
 import { neverThrow, trace } from "./native";
 import { NSWindowBelow, cls, fromHandle, msg, sel, signature, type Rect } from "./objc";
 import { classNameOf } from "./objcWindows";
@@ -63,7 +64,13 @@ const ATTR = {
   END_MARK: 0,
 } as const;
 
-/** `NSViewWidthSizable | NSViewHeightSizable` — la vue suit son hôte. */
+/**
+ * `NSViewWidthSizable | NSViewHeightSizable` — la vue suit son hôte.
+ *
+ * Sans `NSViewMaxYMargin` : la marge HAUTE — le bandeau d'hôte — reste fixe, et
+ * c'est la hauteur qui absorbe le redimensionnement. Un simple `resize` n'a
+ * donc rien à recalculer ; seule la transition plein écran change le retrait.
+ */
 const FOLLOWS_WINDOW = 2 | 16;
 
 /** Ce qu'il faut retenir d'une vue une fois créée. */
@@ -74,12 +81,33 @@ export interface GlView {
   context: unknown;
   /** Le `NSOpenGLContext`, pour `flushBuffer` après chaque image. */
   nsContext: unknown;
+  /** La vue de contenu qui la porte — pour reposer le cadre, sans remonter par `superview`. */
+  content: unknown;
 }
 
 /** Taille en PIXELS de la vue — celle que la Render API doit recevoir. */
 export function sizeInPixels(view: unknown, scale: number): { w: number; h: number } {
   const frame: Rect = msg.rect(view, "frame");
   return { w: Math.round(frame.width * scale), h: Math.round(frame.height * scale) };
+}
+
+/**
+ * Le cadre de la vue dans la vue de contenu : tout, moins le bandeau d'hôte.
+ *
+ * ⚠️ Coordonnées AppKit — l'origine est en BAS à gauche, donc `y + height` est
+ * le bord HAUT. Retrancher à la hauteur en laissant `y` à zéro libère le haut ;
+ * déplacer `y` libérerait le bas. Même geste que `macosFrame.ts` pour la
+ * fenêtre du montage à deux fenêtres. Nul en plein écran, où la page démonte sa
+ * bande (`bannerInset`).
+ */
+export function viewFrame(host: BrowserWindow, content: unknown): Rect {
+  const bounds: Rect = msg.rect(content, "bounds");
+  return { x: 0, y: 0, width: bounds.width, height: bounds.height - bannerInset(host) };
+}
+
+/** Repose le cadre après une transition qui change le retrait (22 → 0 → 22). */
+export function alignGlView(host: BrowserWindow, view: GlView): void {
+  msg.setViewFrame(view.view, viewFrame(host, view.content));
 }
 
 /**
@@ -159,7 +187,7 @@ export function createGlView(host: BrowserWindow): GlView | null {
   }
 
   const viewClass = cls("NSOpenGLView");
-  const frame: Rect = msg.rect(content, "bounds");
+  const frame = viewFrame(host, content);
   const raw = msg.get(viewClass, "alloc");
   const view = initWithFramePixelFormat(
     raw,
@@ -216,7 +244,7 @@ export function createGlView(host: BrowserWindow): GlView | null {
   const scale = msg.double(window, "backingScaleFactor");
   const size = sizeInPixels(view, scale);
   trace(`vue GL creee — ${String(size.w)}x${String(size.h)} px, RGBA 8 bits, profil 3.2 core`);
-  return { view, context, nsContext };
+  return { view, context, nsContext, content };
 }
 
 /** Retire la vue de la fenêtre. Idempotent. */
