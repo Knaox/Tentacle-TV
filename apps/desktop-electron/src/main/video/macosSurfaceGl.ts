@@ -15,6 +15,7 @@
  */
 
 import type { BrowserWindow } from "electron";
+import { setPlayerSurfaceTransparent } from "../window";
 import { trace } from "./native";
 import { msg } from "./objc";
 import { handle } from "./mpv";
@@ -57,7 +58,17 @@ export class MacosSurfaceGl implements VideoSurface {
       trace(`surface GL : ${error}`);
       removeGlView(view);
       this.view = null;
+      return;
     }
+
+    // ⚠️ ICI, et pas avant : la page ne cesse de peindre son fond que quand il y
+    // a quelque chose dessous. La vue GL est opaque (voir son format de pixels)
+    // — tant qu'aucune image n'est rendue, elle montre du noir, jamais le
+    // bureau. C'est ce qui rend l'appel sûr dès l'attache, là où le montage à
+    // deux fenêtres doit attendre que mpv ait créé la sienne
+    // (`macosSurface.ts`). Et la page ne le fait PAS sur macOS
+    // (`useMpvLifecycle.ts`) : seule la coquille sait quand la vidéo est là.
+    setPlayerSurfaceTransparent(true);
   }
 
   /**
@@ -90,6 +101,12 @@ export class MacosSurfaceGl implements VideoSurface {
 
   detach(): void {
     stopRender();
+    // La page reprend son fond AVANT que la vue ne parte : dans l'autre ordre,
+    // il y aurait une image où plus personne ne peint — le bureau au travers.
+    // La page le demande déjà au démontage du lecteur (`setSurfaceOpaque`) ;
+    // ceci couvre les chemins où elle ne parle pas : la séquence de fermeture,
+    // et un changement d'épisode qui se chevauche (`mpv_init` → `stopPlayer`).
+    setPlayerSurfaceTransparent(false);
     removeGlView(this.view);
     this.view = null;
   }
