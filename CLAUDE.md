@@ -251,6 +251,13 @@ Corollaire de la première règle : un `backdrop-filter` derrière un fond à pl
 ~0,9 d'alpha ne floute rien de visible — le retirer ne change pas le rendu et
 supprime une passe de compositing. Vérifier avant d'en poser un.
 
+4. **Une fenêtre `transparent` n'a pas d'ombre (macOS).** macOS calcule l'ombre
+   d'une fenêtre transparente depuis son masque alpha, à CHAQUE recomposition —
+   dès que quoi que ce soit bouge derrière ou dedans. Mesuré sur un build de
+   production, app au repos sur l'accueil : 72 % d'utilisation GPU avec
+   l'ombre, 19 % sans — plus que la lecture d'un film. `hasShadow: false` à la
+   fabrication (`macosTitleBar.ts`), et rien ne la rallume.
+
 Mesure de référence : `sudo powermetrics --samplers gpu_power -i 1000 -n 10` sur
 un **build de production** (le compteur d'images de `dev/` tient une boucle
 `requestAnimationFrame` permanente qui fausse toute mesure au repos).
