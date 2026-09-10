@@ -16,16 +16,32 @@
 
 import type { BrowserWindow } from "electron";
 import { setPlayerSurfaceTransparent } from "../window";
-import { trace } from "./native";
+import { neverThrow, trace } from "./native";
 import { msg } from "./objc";
 import { handle } from "./mpv";
-import { createGlView, scale, removeGlView, sizeInPixels, type GlView } from "./macosGlView";
-import { stopRender, startRender, renderState, framesPresented } from "./macosRenderMpv";
+import { alignGlView, createGlView, scale, removeGlView, sizeInPixels, type GlView } from "./macosGlView";
+import { stopRender, startRender, renderState, framesPresented, setRenderScale } from "./macosRenderMpv";
+import { SETTLE_MS } from "./macosSeam";
 import type { VideoSurface } from "./surface";
 
 export class MacosSurfaceGl implements VideoSurface {
   private view: GlView | null = null;
   private factor = 1;
+  private attached = false;
+
+  /**
+   * Référence stable — sans elle, `off()` ne retirerait rien.
+   *
+   * Le plein écran est la seule transition qui change le retrait du bandeau
+   * (22 → 0 → 22) ; le masque d'autoresize couvre tout le reste. Une seconde
+   * passe APRÈS l'animation : `enter-full-screen` arrive quand Electron croit
+   * la transition finie, mais AppKit bouge encore la fenêtre — même délai et
+   * même raison que `macosSurface.ts`.
+   */
+  private readonly fullscreenTransition = (): void => {
+    this.realign();
+    setTimeout(() => this.realign(), SETTLE_MS);
+  };
 
   constructor(private readonly host: BrowserWindow) {}
 
@@ -69,18 +85,34 @@ export class MacosSurfaceGl implements VideoSurface {
     // (`macosSurface.ts`). Et la page ne le fait PAS sur macOS
     // (`useMpvLifecycle.ts`) : seule la coquille sait quand la vidéo est là.
     setPlayerSurfaceTransparent(true);
+
+    // ⚠️ Personne n'appelle `align()` sur macOS : le retrait du bandeau aux
+    // transitions plein écran ne se rejoue que si l'on s'y abonne soi-même.
+    this.host.on("enter-full-screen", this.fullscreenTransition);
+    this.host.on("leave-full-screen", this.fullscreenTransition);
+    this.attached = true;
   }
 
   /**
-   * Rien à caler : le masque de redimensionnement fait suivre la vue, et le
-   * rendu relit sa taille à chaque image.
-   *
-   * L'échelle, elle, change quand la fenêtre passe d'un écran à l'autre — c'est
-   * la seule chose à reprendre ici.
+   * Le masque de redimensionnement fait suivre la vue, et le rendu relit sa
+   * taille à chaque image. Il reste l'échelle — elle change quand la fenêtre
+   * passe d'un écran à l'autre — et le retrait du bandeau, aux transitions
+   * plein écran.
    */
   align(): void {
-    if (this.view === null) return;
+    this.realign();
+  }
+
+  private realign(): void {
+    // ⚠️ Quitter pendant une lecture détruit la `BrowserWindow` alors que le
+    // minuteur de `fullscreenTransition` est armé : tout accès à `this.host`
+    // lèverait « Object has been destroyed », FATAL dans un rappel de minuteur
+    // — Electron ouvre sa boîte d'erreur (`macosSurface.ts` a payé pour le savoir).
+    if (this.view === null || this.host.isDestroyed()) return;
+    const view = this.view;
     this.factor = scale(this.host);
+    setRenderScale(this.factor);
+    neverThrow("calage de la vue GL", () => alignGlView(this.host, view));
   }
 
   /** Aucune fenêtre à désarmer : il n'y en a plus qu'une. */
@@ -109,6 +141,11 @@ export class MacosSurfaceGl implements VideoSurface {
     setPlayerSurfaceTransparent(false);
     removeGlView(this.view);
     this.view = null;
+    if (this.attached) {
+      this.host.off("enter-full-screen", this.fullscreenTransition);
+      this.host.off("leave-full-screen", this.fullscreenTransition);
+      this.attached = false;
+    }
   }
 
   /**
