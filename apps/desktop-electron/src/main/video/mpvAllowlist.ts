@@ -146,6 +146,9 @@ const OPTIONS_INIT: ReadonlySet<string> = new Set([
   "input-default-bindings",
   "input-vo-keyboard",
   "osc",
+  // L'OSD de mpv, coupé : l'interface est en HTML — voir `mpvRuntime.ts`.
+  "osd-level",
+  "osd-bar",
   // Cache et réseau
   "cache",
   "cache-pause-wait",
