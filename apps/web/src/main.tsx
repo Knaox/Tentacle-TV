@@ -23,15 +23,8 @@ import {
   setShareLinkBackendUrl,
   setWsBackendUrl,
   setWatchTogetherBackendUrl,
-  hydrateQueryClient,
-  attachQueryPersister,
-  HOME_PERSIST_WHITELIST,
-  RECO_PAGE_KEY,
-  WATCH_PROVIDERS_KEY,
-  recoFilterKey,
   setRequestTimeoutMs,
 } from "@tentacle-tv/api-client";
-import type { PersisterOptions } from "@tentacle-tv/api-client";
 import { initI18n, detectLanguage, i18n } from "@tentacle-tv/shared";
 import { fetchInterfaceLanguage } from "@tentacle-tv/api-client";
 import * as PluginsAPI from "@tentacle-tv/plugins-api";
@@ -47,7 +40,7 @@ import { installSessionGuard } from "./auth/sessionGuard";
 import { installAnimationAudit } from "./dev/animationAudit";
 import { installNetworkProbe } from "./dev/networkProbe";
 import { installReducedMotionShim } from "./dev/reducedMotionShim";
-import { readRecoFilterMirror } from "./lib/recoFilterStorage";
+import { installQueryPersistence } from "./lib/queryPersistence";
 import { bootRoutePreload } from "./lib/bootRoutePreload";
 import { installLayoutShiftProbe } from "./dev/layoutShiftProbe";
 import { PlayerDebugPanel } from "./dev/PlayerDebugPanel";
@@ -214,46 +207,9 @@ const queryClient = new QueryClient({
 // son cache. Cf. auth/sessionGuard.
 installSessionGuard({ client: jellyfinClient, storage, queryClient });
 
-// Cold start instantané : hydrate le cache depuis localStorage avant le premier
-// render — la home affichera ses données précédentes pendant que les refetchs
-// arrière-plan se déclenchent (le WebSocket pousse les vrais nouveaux ajouts).
-const persistStorage = {
-  getItem: (k: string) => localStorage.getItem(k),
-  setItem: (k: string, v: string) => localStorage.setItem(k, v),
-  removeItem: (k: string) => localStorage.removeItem(k),
-};
-// Le cache est étiqueté au nom du compte qui l'a produit, et n'est rendu qu'à
-// lui. Sans cette étiquette, un admin sorti du mode impersonation retrouvait
-// les reprises de lecture de l'autre : la sauvegarde sur `pagehide` réécrivait
-// le cache en mémoire — celui de l'usurpé — juste après l'effacement, pendant
-// la navigation de sortie.
-const cacheOwner = ((): string | null => {
-  try {
-    const raw = localStorage.getItem("tentacle_user");
-    if (!raw) return null;
-    const id = (JSON.parse(raw) as { Id?: unknown }).Id;
-    return typeof id === "string" ? id : null;
-  } catch {
-    return null;
-  }
-})();
-
-// La page de recommandations et l'annuaire des plateformes survivent au
-// rechargement comme les hubs de l'accueil : la page se rend d'un coup depuis
-// le disque, puis se revalide en silence. Seules la page « all » et celle du
-// filtre sauvegardé sont gardées (pas chaque combinaison essayée) ; ~150 Ko
-// par page — le plafond passe à 3 Mo (celui de 2 Mo est la borne de tvOS,
-// sans objet ici : localStorage en offre au moins 5).
-const WEB_PERSIST_WHITELIST = [...HOME_PERSIST_WHITELIST, RECO_PAGE_KEY, WATCH_PROVIDERS_KEY[0]] as const;
-const savedRecoFilterKey = recoFilterKey(readRecoFilterMirror(cacheOwner));
-const persistOptions: PersisterOptions = {
-  whitelist: WEB_PERSIST_WHITELIST,
-  owner: cacheOwner,
-  maxBytes: 3 * 1024 * 1024,
-  shouldPersist: (key) => key[0] !== RECO_PAGE_KEY || key[1] === "all" || key[1] === savedRecoFilterKey,
-};
-void hydrateQueryClient(queryClient, persistStorage, persistOptions);
-attachQueryPersister(queryClient, persistStorage, persistOptions);
+// Cold start instantané : le cache de requêtes revient du disque avant le
+// premier render, et y retourne — voir `lib/queryPersistence.ts`.
+installQueryPersistence(queryClient);
 
 // `__animations()` en console — développement uniquement. Dit POURQUOI le
 // compositeur tourne, là où le compteur d'images ne dit qu'à quelle cadence.
