@@ -101,10 +101,21 @@ export type HwdecPlatform = "linux" | "macos" | "other";
  *
  * ⚠️ macOS ne se contente pas d'un ordre différent : il n'a qu'UN décodeur
  * matériel, `videotoolbox`, et `auto-safe` ne le nomme pas de la même façon.
- * Ses trois réponses lui sont donc propres — et le mode « copie mémoire » y
- * garde tout son sens : le défaut d'import qui a motivé ce réglage sous Linux a
- * son exact équivalent sur macOS, où le zéro-copie traverse
- * `VK_EXT_metal_objects` puis MoltenVK avant d'atteindre Metal.
+ * Ses trois réponses lui sont donc propres.
+ *
+ * Mais un décodeur, DEUX chemins pour remettre la trame au moteur de rendu :
+ * l'import direct (par `VK_EXT_metal_objects` puis MoltenVK sur la fenêtre
+ * Metal, par `CGLTexImageIOSurface2D` dans la vue OpenGL) ou la copie mémoire.
+ * Et l'import direct échoue sur certains Mac Intel (mpv#12675 : MacBook Pro
+ * 2017, seul `videotoolbox-copy` fonctionne sous `macvk`).
+ *
+ * ⚠️ Or `hwdec` est un SOUHAIT, pas une exigence : une valeur unique dont
+ * l'import échoue fait retomber mpv en décodage LOGICIEL, en silence — un
+ * 1080p décodé au processeur, c'est ce qui fait chauffer un Mac Intel dès la
+ * première image. D'où la LISTE : mpv essaie chaque méthode dans l'ordre et
+ * retient la première qui s'initialise ; la copie mémoire coûte une copie par
+ * image, jamais un cœur entier. Le choix explicite « copie mémoire » reste une
+ * valeur seule : c'est l'utilisateur qui l'a demandée.
  */
 export function mpvHwdecValue(platform: HwdecPlatform): string {
   switch (hardwareDecodingChoice()) {
@@ -116,7 +127,7 @@ export function mpvHwdecValue(platform: HwdecPlatform): string {
       // import à rater. Coûte une copie par image.
       return platform === "macos" ? "videotoolbox-copy" : "auto-safe-copy";
     default:
-      if (platform === "macos") return "videotoolbox";
+      if (platform === "macos") return "videotoolbox,videotoolbox-copy";
       return platform === "linux" ? "nvdec,vaapi,auto-safe" : "auto-safe";
   }
 }

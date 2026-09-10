@@ -57,9 +57,12 @@ describe("le decodeur reellement employe", () => {
 });
 
 describe("mpvHwdecValue", () => {
-  it("macOS n'a qu'un décodeur matériel, et il se nomme", () => {
+  it("macOS essaie l'import direct, puis la copie mémoire — jamais le logiciel en silence", () => {
+    // Une valeur unique dont l'import échoue (mpv#12675, Mac Intel) ferait
+    // décoder le processeur : la liste garde le décodeur matériel, au prix
+    // d'une copie par image.
     choose("auto");
-    expect(mpvHwdecValue("macos")).toBe("videotoolbox");
+    expect(mpvHwdecValue("macos")).toBe("videotoolbox,videotoolbox-copy");
   });
 
   it("« copie mémoire » a son équivalent macOS — le défaut d'import y existe aussi", () => {
