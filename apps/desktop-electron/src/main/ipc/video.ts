@@ -117,10 +117,10 @@ export async function stopPlayer(): Promise<void> {
 /**
  * La réécriture Render API des options, chargée À LA DEMANDE.
  *
- * ⚠️ L'`import` ne peut PAS être en tête de fichier : `macosRenderOptions.ts`
- * remonte à `objc.ts`, qui appelle `koffi.load("/usr/lib/libobjc.A.dylib")` dès
- * l'import — introuvable sur Windows, où le processus principal tombe alors
- * avant la première fenêtre. Même précaution que `surface.ts`, en miroir.
+ * ⚠️ `macosRenderOptions.ts` n'importe plus rien de natif, mais l'`import`
+ * reste hors de la tête de fichier : la paresse garantit qu'un import ajouté
+ * là-bas par mégarde (`objc.ts` charge `libobjc.A.dylib`, introuvable sur
+ * Windows) ne tue pas le processus principal. Miroir de `surface.ts` (`a9a1f065`).
  */
 function renderApiOptions(
   kept: Readonly<Record<string, MpvValue>>,
