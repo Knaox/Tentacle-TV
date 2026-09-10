@@ -2,7 +2,6 @@ import type { MpvObservableProperty } from "../lib/mpvElectronApi";
 import { desktopPlatform, isDesktopApp, isElectronShell } from "../desktop/bridge";
 import type { MpvTrack } from "./mpvTrackList";
 import { mpvHwdecValue } from "../lib/hardwareDecoding";
-import { mpvRenderOptions } from "../lib/renderQuality";
 
 /**
  * Runtime mpv partagé : détection de plateforme, singleton du plugin
@@ -370,10 +369,6 @@ export function buildMpvInitOptions(): Record<string, string | number | boolean>
     "force-media-title": "Tentacle TV",
     "audio-client-name": "Tentacle TV",
     title: "Tentacle TV",
-    // La qualité de rendu, si l'utilisateur l'a allégée. « Automatique » ne pose
-    // RIEN : mpv garde ses défauts, et le jour où il les changera on suivra.
-    // Voir `lib/renderQuality.ts`, qui porte les mesures.
-    ...mpvRenderOptions(),
     // Diagnostic : `localStorage.tentacle_mpv_log = "1"` écrit un journal mpv
     // verbeux — indispensable pour débugger un flux HLS qui ne démarre pas.
     //
