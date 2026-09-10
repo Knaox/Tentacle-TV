@@ -20,6 +20,7 @@
 import type { BrowserWindow } from "electron";
 
 import { linuxWindowing, linuxMontage } from "../linux/session";
+import { decideMacosMontage } from "./macosMontage";
 
 /**
  * Ce qu'une surface vidéo doit savoir faire, quel que soit le système.
@@ -101,20 +102,26 @@ class InertSurface implements VideoSurface {
 }
 
 /**
- * Le montage vidéo retenu sur macOS. Deux existent, et un seul fait du HDR.
+ * Le montage vidéo retenu sur macOS : deux montages, choisis par la machine.
  *
- * # `fenetre` — la fenêtre de mpv calée sous la nôtre (DÉFAUT)
+ * La décision est dans `macosMontage.ts` — Intel prend la vue GL, Apple Silicon
+ * la fenêtre de mpv — et le pourquoi avec elle. Ici, ce que chaque montage EST.
+ *
+ * # `fenetre` — la fenêtre de mpv calée sous la nôtre (Apple Silicon)
  *
  * mpv y dessine sur SA couche Metal. C'est le seul chemin qui donne du vrai
  * HDR sur macOS, et le rendu lui-même l'écrit dans le journal :
  * `Metal layer colorspace changed: ITUR_2100_PQ`, `Metal layer HDR active`,
  * `edrMetadata … max 3999 nits`. Le PQ est transmis tel quel.
  *
- * # `gl` — Render API dans une vue à nous
+ * # `gl` — Render API dans une vue à nous (Intel)
  *
- * Architecturalement supérieur : une seule fenêtre, donc ni calage manuel, ni
- * ordre d'empilement à réaffirmer, ni liseré transparent. Il a été construit,
- * mesuré, et il ne tient pas — pour deux raisons qui ne se corrigent pas ici :
+ * Architecturalement plus simple : une seule fenêtre, donc ni calage manuel, ni
+ * ordre d'empilement à réaffirmer, ni liseré transparent. OpenGL natif, le
+ * renderer classique de mpv, une surface en plage standard.
+ *
+ * Ce qu'il ne fait PAS, et ne fera pas : le HDR. L'EDR par `NSOpenGLView` a
+ * été construit et mesuré, pour deux raisons qui ne se corrigent pas ici :
  *
  * ⚠️ **mpv ne sait pas produire de valeurs au-delà de 1.0.** L'EDR de macOS
  * demande exactement cela : des hautes lumières qui dépassent le blanc SDR.
@@ -130,13 +137,11 @@ class InertSurface implements VideoSurface {
  * piège que ce projet paie depuis le début : une mesure qui ne mesure pas ce
  * qu'on croit. Le journal de la couche Metal, lui, est écrit par le rendu.
  *
- * Il reste accessible par `TENTACLE_VIDEO_MONTAGE=gl` : le jour où `gpu-next`
- * arrivera dans la Render API (mpv#16818, en draft), c'est par là qu'il faudra
- * repasser.
+ * Sur Intel, rien de tout cela ne manque : aucun Mac Intel n'a d'écran EDR
+ * intégré. Le jour où `gpu-next` arrivera dans la Render API (mpv#16818, en
+ * draft), c'est par là qu'il faudra repasser. Relevé complet :
+ * `docs/MACOS-FENETRE-VIDEO.md`.
  */
-function macosMontage(): "gl" | "fenetre" {
-  return process.env["TENTACLE_VIDEO_MONTAGE"] === "gl" ? "gl" : "fenetre";
-}
 
 /** La surface adaptée au système, pour la fenêtre donnée. */
 export function createVideoSurface(host: BrowserWindow): VideoSurface {
@@ -165,7 +170,7 @@ export function createVideoSurface(host: BrowserWindow): VideoSurface {
     return new SurfaceX11(host);
   }
   if (process.platform === "darwin") {
-    if (macosMontage() === "fenetre") {
+    if (decideMacosMontage(process.arch, process.env) === "fenetre") {
       const { MacosSurface } = require("./macosSurface") as typeof import("./macosSurface");
       return new MacosSurface(host);
     }
@@ -182,5 +187,5 @@ export function videoMontage(): string {
     return `linux/${linuxMontage() ?? "inconnu"}${glue}`;
   }
   if (process.platform !== "darwin") return process.platform;
-  return macosMontage();
+  return decideMacosMontage(process.arch, process.env);
 }
