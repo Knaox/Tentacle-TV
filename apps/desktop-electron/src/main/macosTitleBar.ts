@@ -75,7 +75,19 @@ const OVERLAP = 16;
  */
 export function macosFrameOptions(): Record<string, unknown> {
   if (process.platform !== "darwin") return {};
-  return { transparent: true, titleBarStyle: "hidden", trafficLightPosition: TRAFFIC_LIGHTS };
+  // ⚠️ `hasShadow: false` n'est pas cosmétique. Sur une fenêtre `transparent`,
+  // macOS calcule l'ombre depuis le MASQUE ALPHA de la fenêtre, et la recalcule
+  // à chaque recomposition — c'est-à-dire dès que quoi que ce soit bouge
+  // derrière ou dedans. Mesuré le 2026-09-10 (M4, build de production, app au
+  // repos sur l'accueil, utilisation GPU par `ioreg`) : 72 % avec l'ombre,
+  // 19 % sans. Elle coûtait plus que la lecture d'un film (5 %). Voir
+  // `window.ts`, `setPlayerSurfaceTransparent`.
+  return {
+    transparent: true,
+    titleBarStyle: "hidden",
+    trafficLightPosition: TRAFFIC_LIGHTS,
+    hasShadow: false,
+  };
 }
 
 /**
