@@ -12,6 +12,8 @@ export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
 export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
 export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
 export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
+export { filterCollection, collectionGenres } from "./utils/collectionFilter";
+export type { CollectionFilterInput, CollectionTypeTab } from "./utils/collectionFilter";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream } from "./hooks/useStream";
