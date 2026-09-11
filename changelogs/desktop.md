@@ -13,6 +13,93 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [win-1.21.2]
+<!-- Bloc Windows : la 1.21.1 EST arrivée sur le Microsoft Store, donc Windows
+     ne reçoit que ce qui a suivi — et rien de ce qui ne concerne que macOS
+     (fenêtre Intel, écran SDR, ombre de fenêtre, panneau de greffon). Sans ce
+     bloc, le Store lirait le bloc nu et tronquerait à 1500 caractères, EN
+     SILENCE : la ligne de compatibilité serveur y passait déjà à la trappe en
+     1.21.1 (1495 caractères sur 1500). -->
+### FR
+- **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
+- **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
+- **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
+- Nécessite un serveur 1.17.2 ou plus
+
+### EN
+- **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
+- **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
+- **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
+- Requires a server on 1.17.2 or newer
+
+## [mac-1.21.2]
+<!-- Bloc macOS CUMULATIF : 1.21.1 → 1.21.2. L'App Store est resté en 1.21.0 —
+     la 1.21.1 est partie sur le Microsoft Store et sur la Release GitHub Linux,
+     nulle part ailleurs. Sans ce cumul, les neuf nouveautés de la 1.21.1
+     (plafond de débit, « Sur cet appareil », téléchargement par série, accueil
+     hors ligne, détail des transferts…) ne seraient jamais annoncées aux
+     utilisateurs Mac. Le bloc nu ## [1.21.1] reste l'archive de ce que Windows
+     et Linux ont reçu, et ne bouge plus. Commentaire posé AVANT ### FR : placé
+     après les puces, il serait happé par la dernière section. -->
+### FR
+- **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
+- **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
+- **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
+- **Le panneau d'un module ne fige plus la fenêtre entière** (macOS) : ouvrir les filtres d'un greffon floutait et assombrissait tout, sans plus rien de cliquable nulle part
+- **Sur un Mac à processeur Intel, la vidéo tient dans une seule fenêtre** : elle est peinte dans la nôtre au lieu d'une seconde calée dessous, et le décodage matériel y propose la copie mémoire avant tout repli logiciel. La machine chauffait dès la première image d'un film
+- **Un écran SDR n'affiche plus des couleurs délavées** (macOS) : la chaîne vidéo n'y impose plus la courbe HDR, et la vue repasse en huit bits
+- **La fenêtre ne coûte plus rien quand rien ne bouge** (macOS) : son ombre, invisible sur une fenêtre transparente, était recalculée à chaque image — 72 % du processeur graphique sur l'accueil au repos, contre 19 % sans elle
+- **Pour les administrateurs : un plafond de débit des téléchargements**, réglable dans la page Téléchargements de l'administration — clients extérieurs et réseau local séparément, avec des adresses à traiter comme locales, partagé équitablement entre les comptes (serveur 1.17.2 ou plus)
+- **« Sur cet appareil » se trouve enfin** : le catalogue de ce que la machine porte s'ouvre depuis le menu du profil, serveur joignable ou non — il fallait jusqu'ici attendre une coupure pour revoir ce qu'on avait gardé
+- **Une bascule hors ligne qui s'explique** : un bandeau dit pourquoi l'application vient de passer au contenu local, au lieu de laisser la bibliothèque rétrécir en silence
+- **Toute une série depuis sa fiche** : le bouton de téléchargement apparaît sur les séries, avec une case par saison ; depuis un épisode, on élargit à sa saison ou à toute la série sans quitter la fenêtre
+- **Un accueil hors ligne à part entière** : bandeau avec le logo du titre et la reprise, résumé de la machine (titres, espace, dernier ajout), filtre par bibliothèque, et des écrans vides qui proposent quelque chose
+- **Les transferts disent ce qui se passe** : étape en cours (transfert puis finalisation), débit, temps restant, pourcentage, cause exacte d'une erreur et délai avant la prochaine tentative
+- **« Tout mettre en pause »** : suspendre une saison demandait vingt-quatre clics
+- **Une pause ou une annulation ne repart plus toute seule** : un transfert coupé net était pris pour une panne, et relancé cinq secondes plus tard
+- **En visionnage de groupe, refuser de passer l'intro vaut vraiment pour tous** : la croix masquait le bouton chez chacun, mais un compte à rebours pouvait repartir — sur un second appareil du même compte, ou après un recalage de position — et son saut entraînait toute la salle. Le refus tient désormais jusqu'à l'épisode suivant, seul l'hôte passe l'intro automatiquement (les autres gardent le bouton, sans décompte), et vos autres appareils reçoivent aussi le refus (serveur 1.17.2 ou plus)
+- Nécessite un serveur 1.17.2 ou plus
+
+### EN
+- **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
+- **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
+- **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
+- **A plugin's panel no longer freezes the whole window** (macOS): opening a module's filters blurred and darkened everything, with nothing left to click anywhere
+- **On an Intel Mac, video fits in a single window**: it is painted inside ours instead of a second one parked underneath, and hardware decoding there offers the memory copy before any software fallback. The machine used to heat up from a film's first frame
+- **An SDR display no longer shows washed-out colours** (macOS): the video chain stops forcing the HDR curve on it, and the view goes back to eight bits
+- **The window costs nothing when nothing moves** (macOS): its shadow, invisible on a transparent window, was recomputed on every frame — 72% of the GPU on an idle home screen, against 19% without it
+- **For administrators: a download speed cap**, set from the admin Downloads page — external clients and local network separately, with addresses to treat as local, shared fairly between accounts (server 1.17.2 or newer)
+- **"On this device" is finally findable**: the catalogue of what the machine holds opens from the profile menu, server reachable or not — until now you had to wait for an outage to see what you had kept
+- **An offline switch that explains itself**: a banner says why the app just fell back to local content, instead of letting the library shrink in silence
+- **A whole show from its page**: the download button now appears on shows, with one checkbox per season; from an episode you can widen to its season or the whole show without leaving the window
+- **A real offline home**: a banner with the title's logo and resume, a summary of the machine (titles, space, last added), a filter by library, and empty screens that offer something
+- **Transfers say what is happening**: current step (transfer then finalizing), rate, time left, percentage, the exact cause of an error and the delay before the next attempt
+- **"Pause everything"**: pausing a season used to take twenty-four clicks
+- **A pause or a cancel never restarts on its own**: a transfer cut short was taken for a failure, and retried five seconds later
+- **In group watching, refusing to skip the intro truly counts for everyone**: the cross hid the button for each member, but a countdown could start again — on a second device signed in with the same account, or after a position correction — and its skip dragged the whole room along. The refusal now holds until the next episode, only the host skips the intro automatically (everyone else keeps the button, without a countdown), and your other devices receive the refusal too (server 1.17.2 or newer)
+- Requires a server on 1.17.2 or newer
+
+## [1.21.2]
+### FR
+- **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
+- **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
+- **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
+- **Le panneau d'un module ne fige plus la fenêtre entière** (macOS) : ouvrir les filtres d'un greffon floutait et assombrissait tout, sans plus rien de cliquable nulle part
+- **Sur un Mac à processeur Intel, la vidéo tient dans une seule fenêtre** : elle est peinte dans la nôtre au lieu d'une seconde calée dessous, et le décodage matériel y propose la copie mémoire avant tout repli logiciel. La machine chauffait dès la première image d'un film
+- **Un écran SDR n'affiche plus des couleurs délavées** (macOS) : la chaîne vidéo n'y impose plus la courbe HDR, et la vue repasse en huit bits
+- **La fenêtre ne coûte plus rien quand rien ne bouge** (macOS) : son ombre, invisible sur une fenêtre transparente, était recalculée à chaque image — 72 % du processeur graphique sur l'accueil au repos, contre 19 % sans elle
+- Nécessite un serveur 1.17.2 ou plus
+
+### EN
+- **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
+- **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
+- **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
+- **A plugin's panel no longer freezes the whole window** (macOS): opening a module's filters blurred and darkened everything, with nothing left to click anywhere
+- **On an Intel Mac, video fits in a single window**: it is painted inside ours instead of a second one parked underneath, and hardware decoding there offers the memory copy before any software fallback. The machine used to heat up from a film's first frame
+- **An SDR display no longer shows washed-out colours** (macOS): the video chain stops forcing the HDR curve on it, and the view goes back to eight bits
+- **The window costs nothing when nothing moves** (macOS): its shadow, invisible on a transparent window, was recomputed on every frame — 72% of the GPU on an idle home screen, against 19% without it
+- Requires a server on 1.17.2 or newer
+
 ## [1.21.1]
 ### FR
 - **Pour les administrateurs : un plafond de débit des téléchargements**, réglable dans la page Téléchargements de l'administration — clients extérieurs et réseau local séparément, avec des adresses à traiter comme locales, partagé équitablement entre les comptes (serveur 1.17.2 ou plus)
