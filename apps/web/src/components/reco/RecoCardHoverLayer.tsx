@@ -45,7 +45,7 @@ export function RecoCardHoverLayer({ item, shown, onDismiss, onOpenDetail }: Rec
           Chips à backdrop-filter : montées au survol seulement, comme tout le
           calque ; leur fondu de sortie tient dans le sursis de la carte. */}
       {target?.media && (
-        <CardMetaOverlay item={target.media} density="compact" reveal="mount" shown={shown} />
+        <CardMetaOverlay item={target.media} density="compact" reveal="mount" shown={shown} reserveCorner />
       )}
       <div
         className="hover-reveal absolute inset-x-0 bottom-0 z-20"
@@ -65,10 +65,22 @@ export function RecoCardHoverLayer({ item, shown, onDismiss, onOpenDetail }: Rec
           <RecoReasonText reasons={item.reasons} />
           {target && <RecoCardPlayButton target={target} onOpenDetail={onOpenDetail} />}
           <HoverRatingStars identity={ratingIdentity} jellyfinItemId={item.jellyfinItemId} />
+          {/* Le refus a toute la largeur : la note ne partage plus cette ligne,
+              elle a rejoint le coin haut-droit de l'affiche (cf. RecoCard).
+              Elle était ancrée en bas à gauche, sous ce bouton poussé à droite,
+              et rien ne les tenait à distance — mesuré, « Ne plus me proposer »
+              (132 px) mordait de 8 px sur la pastille à 183 px de carte, d'une
+              cinquantaine à 150. Les faire cohabiter sur une seule ligne
+              obligeait à tronquer le libellé ; les séparer verticalement le
+              laisse entier à toutes les largeurs. Et il s'ENVELOPPE plutôt que
+              de se tronquer : sur la carte la plus étroite (141 px mesurés), le
+              libellé français dépasse la ligne quoi qu'on fasse — deux lignes
+              le gardent lisible là où une ellipse le mutilait. */}
           <button
             type="button"
             onClick={onDismiss}
-            className="self-end rounded-full border border-white/30 px-2 py-0.5 text-[11px] text-white/90 transition-colors hover:border-white hover:text-white"
+            title={t("dismissAction")}
+            className="max-w-full self-end rounded-full border border-white/30 px-2 py-0.5 text-right text-[11px] leading-tight text-white/90 transition-colors hover:border-white hover:text-white"
           >
             {t("dismissAction")}
           </button>

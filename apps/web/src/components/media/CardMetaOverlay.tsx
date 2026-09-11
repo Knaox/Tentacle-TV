@@ -30,6 +30,15 @@ interface Props {
    * qu'une transition puisse se jouer.
    */
   shown?: boolean;
+  /**
+   * Le coin haut-DROIT est occupé par l'appelant (note, actions rapides) :
+   * borner la bande à gauche de ce coin. Sans borne, un absolu ancré à gauche
+   * s'étend jusqu'au bord de la carte et passe sous ce qui s'y trouve —
+   * mesuré sur une carte de recommandation de 141 px, où les chips
+   * rejoignaient la note. Le `flex-wrap` déjà posé fait alors son travail :
+   * les chips passent à la ligne au lieu de se superposer.
+   */
+  reserveCorner?: boolean;
 }
 
 /**
@@ -40,7 +49,7 @@ interface Props {
  * Qualité + langues partagent le même système de chips monochromes
  * (cf. MetaChips), seule source de vérité du style. Le 4K est le seul accent.
  */
-export function CardMetaOverlay({ item, density = "full", reveal = "always", shown }: Props) {
+export function CardMetaOverlay({ item, density = "full", reveal = "always", shown, reserveCorner = false }: Props) {
   const quality = useMemo(() => extractMediaQuality(item), [item]);
   const compact = density === "compact";
 
@@ -74,7 +83,9 @@ export function CardMetaOverlay({ item, density = "full", reveal = "always", sho
 
   return (
     <div
-      className={`pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-wrap items-center gap-1 ${revealClass}`}
+      className={`pointer-events-none absolute left-1.5 top-1.5 z-10 flex flex-wrap items-center gap-1 ${
+        reserveCorner ? "right-14" : ""
+      } ${revealClass}`}
       data-shown={shown}
       style={shown === undefined ? undefined : ({ "--reveal-ms": "200ms" } as CSSProperties)}
     >
