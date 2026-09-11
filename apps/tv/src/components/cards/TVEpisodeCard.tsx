@@ -2,12 +2,13 @@ import { memo, useMemo } from "react";
 import { View, Text } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import { buildTrickplayTileUrl, useJellyfinClient } from "@tentacle-tv/api-client";
-import { resolveBannerImage, resolveResumeSprite, ticksToSeconds } from "@tentacle-tv/shared";
+import { cardRatingFor, resolveBannerImage, resolveResumeSprite, ticksToSeconds } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { Colors, Typography } from "../../theme/colors";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardTrickplayImage } from "./TVCardTrickplayImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
+import { TVCardRatingBadge } from "./TVCardRatingBadge";
 import { TVMetaChips } from "../TVMetaChips";
 import { TV_EPISODE_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
@@ -101,6 +102,16 @@ export const TVEpisodeCard = memo(function TVEpisodeCard({
           />
         ) : (
           <TVCardImage uri={imageUrl} style={{ width: "100%", height: "100%" }} />
+        )}
+
+        {/* La note de CET épisode — la vignette porte son nom et son numéro.
+            En haut-gauche, et seulement hors focus : les chips y prennent la
+            place, et le bas est tenu par le titre. */}
+        {!focused && (
+          <TVCardRatingBadge
+            rating={cardRatingFor(item, "item").rating}
+            style={{ left: 8, top: 8, bottom: undefined }}
+          />
         )}
 
         {/* Chips qualité/langues AU FOCUS (haut-gauche — le temps restant

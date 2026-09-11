@@ -4,11 +4,13 @@ import { useTranslation } from "react-i18next";
 import LinearGradient from "react-native-linear-gradient";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { BRAND, resolvePosterImage } from "@tentacle-tv/shared";
+import { BRAND, cardRatingFor, resolvePosterImage } from "@tentacle-tv/shared";
 import { Colors, Typography, Fonts } from "../../theme/colors";
 import { CheckIcon } from "../icons/TVIcons";
 import { TVCardImage } from "./TVCardImage";
 import { TVCardProgressBar } from "./TVCardProgressBar";
+import { TVCardRatingBadge } from "./TVCardRatingBadge";
+import { useSeriesRatingMap } from "../../contexts/SeriesRatingContext";
 import { TVMetaChips } from "../TVMetaChips";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS, type TVCardSize } from "./cardSizes";
 
@@ -29,6 +31,10 @@ interface TVPosterCardProps {
 export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused = false }: { item: MediaItem; width: number; focused?: boolean }) {
   const client = useJellyfinClient();
   const addedCount = item.RecentlyAddedCount ?? 0;
+  // L'affiche montre le visage d'une SÉRIE : elle en porte la note, lot « +N »
+  // comme épisode isolé. Sans fournisseur au-dessus, la carte est vide et le
+  // badge se tait.
+  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
   // Même résolveur que le web (`cardImage.ts`, shared), en mode « series » :
   // pour un épisode, l'affiche de la SÉRIE (un still 16:9 rogné en 2:3 rend
   // mal) — comportement historique conservé, avec le tag (URL adressée par
@@ -91,6 +97,11 @@ export const TVPosterFrame = memo(function TVPosterFrame({ item, width, focused 
 
       {!watched && <TVCardProgressBar percent={progress} />}
 
+      {/* La note cède le bas de l'affiche aux chips pendant le focus : les deux
+          s'y superposeraient. Elle reste donc visible au repos, ce qui est
+          l'essentiel — une rangée du salon se lit sans rien toucher. */}
+      {!(focused && addedCount <= 1) && <TVCardRatingBadge rating={rating} />}
+
       {/* Méta qualité/langues révélée AU FOCUS (équivalent du hover web
           CardMetaOverlay) — pas sur les tuiles groupées « +N » (comme web). */}
       {focused && addedCount <= 1 && (
@@ -107,6 +118,10 @@ export const TVPosterMeta = memo(function TVPosterMeta({ item, width }: { item: 
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
+  // L'affiche montre le visage d'une SÉRIE : elle en porte la note, lot « +N »
+  // comme épisode isolé. Sans fournisseur au-dessus, la carte est vide et le
+  // badge se tait.
+  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
   const epLabel = isEpisode && item.ParentIndexNumber != null && item.IndexNumber != null
     ? `S${pad2(item.ParentIndexNumber)}E${pad2(item.IndexNumber)}`
     : null;
