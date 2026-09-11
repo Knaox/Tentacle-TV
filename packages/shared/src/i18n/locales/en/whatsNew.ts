@@ -26,6 +26,12 @@ export default {
   sceneGuest: "Guest",
   sceneRefusalShared: "The refusal holds for the whole room",
 
+  // 1.21.2
+  v1_21_2_ratings_title: "Every card shows its score",
+  v1_21_2_ratings_body: "A \"+6 episodes\" batch or a lone episode now shows its SERIES score — it is already the show's poster and title they carry. Episode thumbnails, search results and the on-device catalogue have one too.",
+  v1_21_2_collectionFilters_title: "My List can be searched and filtered",
+  v1_21_2_collectionFilters_body: "Search, genres, years, minimum score, platforms and sorting: the library's own filters, in My List and My Favorites. Until now you scrolled through hundreds of posters.",
+
   // 1.21.0
   v1_21_1_scope_title: "A season, a show, in one gesture",
   v1_21_1_scope_body: "From an episode, widen to its season or the whole show without leaving the window — and a show's page finally has its button, with one checkbox per season.",

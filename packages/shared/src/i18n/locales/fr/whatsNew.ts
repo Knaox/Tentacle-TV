@@ -30,6 +30,12 @@ export default {
   sceneGuest: "Invité",
   sceneRefusalShared: "Le refus vaut pour toute la salle",
 
+  // 1.21.2
+  v1_21_2_ratings_title: "La note, sur toutes les cartes",
+  v1_21_2_ratings_body: "Un lot « +6 épisodes » ou un épisode isolé affiche désormais la note de sa SÉRIE — c'est déjà son affiche et son titre qu'ils portent. Les vignettes d'épisodes, la recherche et le catalogue local en ont une, eux aussi.",
+  v1_21_2_collectionFilters_title: "Ma liste se cherche et se filtre",
+  v1_21_2_collectionFilters_body: "Recherche, genres, années, note minimum, plateformes et tri : les filtres de la bibliothèque, dans Ma liste et Mes favoris. Il fallait jusqu'ici faire défiler des centaines d'affiches.",
+
   // 1.21.0
   v1_21_1_scope_title: "Une saison, une série, d'un seul geste",
   v1_21_1_scope_body: "Depuis un épisode, élargissez à sa saison ou à toute la série sans quitter la fenêtre — et la fiche d'une série a enfin son bouton, avec une case par saison.",
