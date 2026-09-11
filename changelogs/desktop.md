@@ -21,12 +21,16 @@ et Linux reçoivent l'ensemble.
      SILENCE : la ligne de compatibilité serveur y passait déjà à la trappe en
      1.21.1 (1495 caractères sur 1500). -->
 ### FR
+- **La note s'affiche sur toutes les cartes, et c'est la bonne** : un lot « +6 épisodes » ou un épisode isolé porte la note de sa SÉRIE — c'est déjà son affiche et son titre qu'ils montrent. Les vignettes d'épisodes, la recherche et le catalogue hors ligne en ont une, eux aussi
+- **Ma liste et Mes favoris se cherchent et se filtrent** : recherche, genres, années, note minimum, plateformes, tri et compte de résultats — les filtres de la bibliothèque, au même endroit et au même rendu, avec une bannière. Il fallait jusqu'ici faire défiler des centaines d'affiches
 - **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
 - **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
 - **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
 - Nécessite un serveur 1.17.2 ou plus
 
 ### EN
+- **Every card shows a score, and it is the right one**: a “+6 episodes” batch or a lone episode carries its SERIES score — it is already the show's poster and title they display. Episode thumbnails, search results and the offline catalogue have one too
+- **My List and My Favorites can be searched and filtered**: search, genres, years, minimum score, platforms, sorting and a result count — the library's own filters, in the same place with the same look, with a banner. Until now you scrolled through hundreds of posters
 - **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
 - **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
 - **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
@@ -42,6 +46,8 @@ et Linux reçoivent l'ensemble.
      et Linux ont reçu, et ne bouge plus. Commentaire posé AVANT ### FR : placé
      après les puces, il serait happé par la dernière section. -->
 ### FR
+- **La note s'affiche sur toutes les cartes, et c'est la bonne** : un lot « +6 épisodes » ou un épisode isolé porte la note de sa SÉRIE — c'est déjà son affiche et son titre qu'ils montrent. Les vignettes d'épisodes, la recherche et le catalogue hors ligne en ont une, eux aussi
+- **Ma liste et Mes favoris se cherchent et se filtrent** : recherche, genres, années, note minimum, plateformes, tri et compte de résultats — les filtres de la bibliothèque, au même endroit et au même rendu, avec une bannière. Il fallait jusqu'ici faire défiler des centaines d'affiches
 - **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
 - **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
 - **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
@@ -61,6 +67,8 @@ et Linux reçoivent l'ensemble.
 - Nécessite un serveur 1.17.2 ou plus
 
 ### EN
+- **Every card shows a score, and it is the right one**: a “+6 episodes” batch or a lone episode carries its SERIES score — it is already the show's poster and title they display. Episode thumbnails, search results and the offline catalogue have one too
+- **My List and My Favorites can be searched and filtered**: search, genres, years, minimum score, platforms, sorting and a result count — the library's own filters, in the same place with the same look, with a banner. Until now you scrolled through hundreds of posters
 - **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
 - **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
 - **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
@@ -81,6 +89,8 @@ et Linux reçoivent l'ensemble.
 
 ## [1.21.2]
 ### FR
+- **La note s'affiche sur toutes les cartes, et c'est la bonne** : un lot « +6 épisodes » ou un épisode isolé porte la note de sa SÉRIE — c'est déjà son affiche et son titre qu'ils montrent. Les vignettes d'épisodes, la recherche et le catalogue hors ligne en ont une, eux aussi
+- **Ma liste et Mes favoris se cherchent et se filtrent** : recherche, genres, années, note minimum, plateformes, tri et compte de résultats — les filtres de la bibliothèque, au même endroit et au même rendu, avec une bannière. Il fallait jusqu'ici faire défiler des centaines d'affiches
 - **Le réglage « Qualité de rendu » disparaît** : son mode « Économe » allégeait le lissage de l'image, là où le coût est dans le décodage. Un seul rendu désormais, et le réglage laissé sur l'appareil est effacé au démarrage
 - **L'affichage interne de mpv ne dessine plus par-dessus la vidéo** : ce qui paraît pendant la lecture est l'interface, une seule fois
 - **La note d'un titre recommandé reste lisible** : « Ne plus me proposer » la recouvrait au survol d'une carte étroite
@@ -91,6 +101,8 @@ et Linux reçoivent l'ensemble.
 - Nécessite un serveur 1.17.2 ou plus
 
 ### EN
+- **Every card shows a score, and it is the right one**: a “+6 episodes” batch or a lone episode carries its SERIES score — it is already the show's poster and title they display. Episode thumbnails, search results and the offline catalogue have one too
+- **My List and My Favorites can be searched and filtered**: search, genres, years, minimum score, platforms, sorting and a result count — the library's own filters, in the same place with the same look, with a banner. Until now you scrolled through hundreds of posters
 - **The "Rendering quality" setting is gone**: its "Data saver" mode eased the picture's smoothing passes, where the cost is in decoding. One renderer from now on, and the setting left on the device is cleared at startup
 - **mpv's own on-screen display no longer draws over the video**: what appears during playback is the interface, once
 - **A recommended title's score stays readable**: "Stop suggesting this" covered it when hovering a narrow card
