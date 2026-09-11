@@ -60,7 +60,13 @@ const STATUS_QUICK = [
 ] as const;
 
 interface LibraryFilterBarProps {
-  libraryId: string;
+  /** Les genres proposés, fournis par l'appelant (cf. `GenreMenu`). */
+  genres: Array<{ Id: string; Name: string }>;
+  /**
+   * Proposer le filtre « Favoris ». Faux sur la page Favoris elle-même, où il
+   * ne filtrerait rien : toute la liste l'est déjà.
+   */
+  showFavorite?: boolean;
   filters: LibraryFilterState;
   activeCount: number;
   hasActiveFilters: boolean;
@@ -110,14 +116,16 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
             {t(`common:${opt.key}`)}
           </button>
         ))}
-        <button
-          onClick={() => { props.onFavoriteChange(!props.filters.isFavorite); if (!props.filters.isFavorite) props.onStatusChange(null); }}
-          aria-selected={props.filters.isFavorite}
-          className={`${chipCls(props.filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
-        >
-          <HeartIcon filled={props.filters.isFavorite} />
-          {t("common:favorites")}
-        </button>
+        {(props.showFavorite ?? true) && (
+          <button
+            onClick={() => { props.onFavoriteChange(!props.filters.isFavorite); if (!props.filters.isFavorite) props.onStatusChange(null); }}
+            aria-selected={props.filters.isFavorite}
+            className={`${chipCls(props.filters.isFavorite, "rose")} inline-flex items-center gap-1.5`}
+          >
+            <HeartIcon filled={props.filters.isFavorite} />
+            {t("common:favorites")}
+          </button>
+        )}
 
         <div className="mx-1 h-5 w-px bg-fill-soft" />
 
@@ -127,7 +135,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           onSortOrderChange={props.onSortOrderChange}
         />
         <GenreMenu
-          libraryId={props.libraryId}
+          genres={props.genres}
           filters={props.filters}
           onToggleGenre={props.onToggleGenre}
           onClear={clearGenres}
@@ -163,7 +171,7 @@ export function LibraryFilterBar(props: LibraryFilterBarProps) {
           portent déjà leur propre valeur : cette ligne ne sert plus qu'au
           total, et disparaît quand rien n'est filtré. */}
       <LibraryActiveFilterPills
-        libraryId={props.libraryId}
+        genres={props.genres}
         filters={props.filters}
         hasActiveFilters={props.hasActiveFilters}
         totalResults={props.totalResults}
