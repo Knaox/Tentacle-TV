@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useLatestItems } from "@tentacle-tv/api-client";
+import { useLatestItems, useSeriesRatings } from "@tentacle-tv/api-client";
+import { missingSeriesRatingIds } from "@tentacle-tv/shared";
 import { MediaRow } from "./MediaRow";
+import { SeriesRatingProvider } from "../cards/SeriesRatingContext";
 import { RowErrorState } from "./RowErrorState";
 import { useNearViewport } from "../../hooks/useNearViewport";
 import { useDataSaverActive } from "../../offline/useDataSaver";
@@ -41,6 +43,14 @@ export function LibraryLatestRow({
     isFetching,
     refetch,
   } = useLatestItems(libraryId, { collectionType, enabled });
+
+  // Les notes qui manquent aux tuiles de cette rangée — celles des lots « +N »,
+  // fabriqués côté client sans rien de la série, et celles des épisodes isolés,
+  // qui paraissent sous l'affiche de la leur. Une bibliothèque de FILMS n'en
+  // réclame aucune : la liste est vide, et le hook ne requête pas. Appelé avant
+  // les sorties anticipées ci-dessous, comme tout hook.
+  const ratings = useSeriesRatings(missingSeriesRatingIds(items ?? []));
+
   const title = t("common:latestAdditions", { name: libraryName });
 
   // Squelette tant que la requête n'a pas abouti. Il porte AUSSI la cible de
@@ -81,12 +91,14 @@ export function LibraryLatestRow({
   if (!items || items.length === 0) return null;
 
   return (
-    <MediaRow
-      title={title}
-      items={items}
-      animDelay={550 + delayIndex * 80}
-      href={`/library/${libraryId}`}
-      posterImageMode="series"
-    />
+    <SeriesRatingProvider ratings={ratings}>
+      <MediaRow
+        title={title}
+        items={items}
+        animDelay={550 + delayIndex * 80}
+        href={`/library/${libraryId}`}
+        posterImageMode="series"
+      />
+    </SeriesRatingProvider>
   );
 }
