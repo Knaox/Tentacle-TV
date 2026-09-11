@@ -10,7 +10,7 @@ import type { SelectionMode } from "./selectionMode";
 const GAP = 16;
 const POSTER_ASPECT = 2 / 3;
 /** Bloc titre : deux lignes plus la marge du haut. */
-const TEXT_HEIGHT = 50;
+const TEXT_HEIGHT = 52;
 
 interface CollectionGridBodyProps {
   items: MediaItem[];
@@ -67,7 +67,9 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
   const virtualizer = useWindowVirtualizer({
     count: rowCount,
     estimateSize,
-    overscan: 5,
+    // Trois rangées d'avance, comme la bibliothèque. À cinq, une grille large
+    // en gardait une dizaine montées en permanence.
+    overscan: 3,
     scrollMargin,
   });
 
@@ -86,12 +88,24 @@ export function CollectionGridBody({ items, selectionMode, headerKey }: Collecti
           return (
             <div
               key={row.key}
+              // Mesurée, pas estimée. `data-index` est ce par quoi le
+              // virtualiseur reconnaît la rangée qu'on lui rend ; sans hauteur
+              // imposée, il lit celle du contenu et corrige son estimation.
+              // Poser `height: row.size` ici, comme c'était fait, revenait à
+              // lui faire mesurer sa propre supposition : les rangées se
+              // recouvraient dès que la typographie grandissait — le bug déjà
+              // corrigé côté bibliothèque, et resté ici.
+              ref={virtualizer.measureElement}
+              data-index={row.index}
               style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: row.size,
+                // La gouttière appartient à la rangée, en PADDING et non en
+                // marge : c'est la boîte que le virtualiseur mesure, et une
+                // marge n'y entrerait pas.
+                paddingBottom: GAP,
                 transform: `translateY(${row.start - virtualizer.options.scrollMargin}px)`,
               }}
             >
