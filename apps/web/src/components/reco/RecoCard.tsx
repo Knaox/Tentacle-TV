@@ -133,23 +133,32 @@ export const RecoCard = memo(function RecoCard({
               {t("onDemandBadge")}
             </div>
           )}
-          {/* « Découverte » cède la bande du haut aux chips qualité/langues
-              pendant le survol d'un titre en bibliothèque — le voile porte de
-              toute façon la raison « Exploration ». Sans backdrop-filter, un
-              fondu d'opacité suffit. */}
-          {item.exploration && (
-            <div
-              className={`absolute right-2 top-2 z-10 rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg transition-opacity duration-150 ${
-                hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              {t("explorationBadge")}
-            </div>
-          )}
+          {/* Coin haut-droit : « Découverte » et la note, EMPILÉS — deux
+              ancrages au même coin se recouvriraient, et c'est exactement le
+              travers qu'on vient de corriger en bas.
 
-          {/* Note globale, TOUJOURS visible : au survol elle passe au-dessus du
-              voile, dont la dernière rangée lui laisse le coin (refus à droite). */}
-          <CardRatingBadge rating={item.voteAverage} raised />
+              La note vivait en bas à gauche de l'affiche, sous le bouton
+              « Ne plus me proposer » que le voile pousse à droite : rien ne les
+              tenait à distance, et à 150-200 px de carte le refus (132 px en
+              français) mordait dessus. Les loger sur une même ligne aurait
+              obligé à tronquer le libellé ; monter la note libère la ligne du
+              bas pour lui seul, et la laisse lisible au repos comme au survol.
+
+              « Découverte » s'efface toujours au survol d'un titre en
+              bibliothèque, mais GARDE sa place (opacité seule) : la note ne
+              saute pas d'un cran quand le curseur arrive. */}
+          <div className="absolute right-2 top-2 z-30 flex flex-col items-end gap-1">
+            {item.exploration && (
+              <span
+                className={`rounded-md bg-gradient-to-br from-[var(--brand)] to-[var(--brand-accent)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-cta-brand-fg transition-opacity duration-150 ${
+                  hovered && item.jellyfinItemId ? "opacity-0" : "opacity-100"
+                }`}
+              >
+                {t("explorationBadge")}
+              </span>
+            )}
+            <CardRatingBadge rating={item.voteAverage} inline />
+          </div>
 
           {/* Calque de survol — monté au survol seulement, deux fondus via
               .hover-reveal (cf. RecoCardHoverLayer). */}
