@@ -11,6 +11,7 @@ export { useLocalTrailers, useSpecialFeatures } from "./hooks/useTrailers";
 export { useFavorite, useFavoriteForItem } from "./hooks/useFavorite";
 export { useWatchlist, useToggleWatchlist, useToggleWatchlistForItem, useFavorites, useWatchlistAll, useFavoritesAll } from "./hooks/useWatchlist";
 export { useWatchlistSeriesIds, useFavoriteSeriesIds, seriesStateId } from "./hooks/useSeriesListMembership";
+export { useSeriesRatings, SERIES_RATINGS_KEY } from "./hooks/useSeriesRatings";
 export { useWatchedToggle } from "./hooks/useWatchedToggle";
 export { useWatchStopInvalidation } from "./hooks/useWatchStopInvalidation";
 export { useStream } from "./hooks/useStream";
