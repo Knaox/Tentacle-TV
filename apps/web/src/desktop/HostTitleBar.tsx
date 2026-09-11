@@ -15,7 +15,11 @@ import { useHostFullscreen } from "../hooks/useHostFullscreen";
  * # Ce que ce composant fait, et ce qu'il délègue
  *
  * Il pose `data-hote-bandeau` et `--hote-bandeau` sur la racine, puis dessine la
- * bande. Tout le décalage du contenu est en CSS (`index.css`) : le remplissage
+ * bande. ⚠️ Cet attribut marque un ÉTAT du document — « la page tient lieu de
+ * barre de titre » — il ne désigne pas un élément à traiter. Rien ne doit le
+ * prendre pour cible : un `querySelectorAll` qui le suit atteint `<html>`, donc
+ * la fenêtre entière. Le voile des greffons l'a appris (`hostChromeVeil`), et
+ * vise maintenant `data-hote-voile`. Tout le décalage du contenu est en CSS (`index.css`) : le remplissage
  * du `body`, la hauteur d'écran utile — sur cette coquille, « plein écran »
  * signifie désormais « la fenêtre moins sa bande » — et la barre de navigation
  * qui descend d'autant. Le faire là plutôt que composant par composant garantit

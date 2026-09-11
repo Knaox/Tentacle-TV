@@ -14,9 +14,17 @@
  * barre du haut floue, assombrie et INERTE (`pointer-events: none`) sur la page
  * d'arrivée, et pour tout le reste de la session. Un seul endroit écrit ces
  * styles, donc un seul endroit sait les retirer.
+ *
+ * ⚠️ L'attribut ciblé est `data-hote-voile`, et SURTOUT PAS `data-hote-bandeau`.
+ * Ce dernier a un homonyme : `HostTitleBar` le pose sur la RACINE du document
+ * pour signaler que la page dessine elle-même sa barre de titre. Le voile visait
+ * les deux, et sur la seule coquille où cette racine est marquée — Electron
+ * macOS, hors plein écran — `filter` et `pointer-events: none` tombaient sur
+ * `<html>` : fenêtre entière floue et morte au clic dès qu'un greffon ouvrait un
+ * panneau, sans aucun moyen d'en sortir. Deux rôles, deux noms.
  */
 
-const SELECTOR = "[data-hote-bandeau]";
+const SELECTOR = "[data-hote-voile]";
 
 export function setHostChromeVeil(active: boolean): void {
   document.querySelectorAll<HTMLElement>(SELECTOR).forEach((el) => {
