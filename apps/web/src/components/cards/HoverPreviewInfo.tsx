@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { cardRatingFor, formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardQuickActions } from "./CardQuickActions";
 import { CardDownloadAction } from "../../downloads/CardDownloadAction";
 import { LanguagePill, QualityChips } from "../media/MetaChips";
 import { StarIcon } from "../icons/HeroIcons";
+import { useSeriesRatingMap } from "./SeriesRatingContext";
 import { extractMediaQuality } from "../../lib/mediaQuality";
 import { RichOverview } from "../../lib/overviewHtml";
 
@@ -62,6 +63,9 @@ export function HoverPreviewInfo({
   const addedCount = item.RecentlyAddedCount ?? 0;
   const progress = item.UserData?.PlayedPercentage;
   const hasProgress = progress != null && progress > 0 && progress < 99;
+  // La même note que le badge de l'affiche, par la même règle : un lot en a
+  // désormais une — celle de sa série — là où il n'affichait rien.
+  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
 
   const onMedia = tone === "media";
   const metaClass = onMedia ? "text-on-media-secondary" : "text-content-tertiary";
@@ -85,14 +89,21 @@ export function HoverPreviewInfo({
       ) : (
         <>
           {item.ProductionYear && <span className="font-medium">{item.ProductionYear}</span>}
-          {item.CommunityRating != null && (
-            <span className="flex items-center gap-0.5 font-medium">
-              <span aria-hidden className="text-[var(--brand-accent)]">
-                <StarIcon />
-              </span>
-              {item.CommunityRating.toFixed(1)}
-            </span>
-          )}
+        </>
+      )}
+      {/* La note, elle, vaut AUSSI pour un lot : c'est celle de la série, et un
+          lot est précisément une série. Seuls l'année, la durée et le
+          pourcentage restent sans objet pour un groupe d'épisodes. */}
+      {rating != null && (
+        <span className="flex items-center gap-0.5 font-medium">
+          <span aria-hidden className="text-[var(--brand-accent)]">
+            <StarIcon />
+          </span>
+          {rating.toFixed(1)}
+        </span>
+      )}
+      {addedCount <= 1 && (
+        <>
           {runtime && <span>{runtime}</span>}
           {hasProgress && (
             <span className={`font-medium ${highlightClass}`}>
@@ -148,8 +159,10 @@ export function HoverPreviewInfo({
         </p>
       )}
 
-      {/* Ligne méta. Un lot d'épisodes n'a ni note ni durée propres : on annonce
-          alors le nombre d'épisodes plutôt qu'une ligne vide. */}
+      {/* Ligne méta. Un lot d'épisodes n'a ni année, ni durée, ni progression
+          propres : on annonce alors leur nombre. Sa NOTE, en revanche, existe
+          désormais — c'est celle de la série, que `cardRatingFor` résout comme
+          pour le badge de l'affiche. */}
       {metaLine}
 
       {/* Synopsis : UNE ligne, tronquée par « … » (`line-clamp-1`) — pas de

@@ -1,11 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useSeriesWatchState } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
 import { CardRatingBadge } from "./CardRatingBadge";
+import { useSeriesRatingMap } from "./SeriesRatingContext";
 import { CardQuickActions } from "./CardQuickActions";
 import { CardWatchedBadge } from "./CardWatchedBadge";
 import { playTargetPath } from "./playTarget";
@@ -76,6 +77,9 @@ export function PosterTile({
   const { data: watchState } = useSeriesWatchState(hovered && isSeries ? item.Id : undefined);
   // Notable seulement avec un tmdbId (ProviderIds) — fonction pure, sans coût.
   const ratingIdentity = ratingIdentityForItem(item);
+  // La note à poser. `cardRatingFor` est pure elle aussi ; la carte des notes
+  // vient du fournisseur de la rangée, vide partout ailleurs.
+  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
 
   const handlePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -136,8 +140,13 @@ export function PosterTile({
       {/* Coche « vu » — cède la place aux actions rapides pendant le survol. */}
       {watched && !actionsVisible && <CardWatchedBadge label={t("common:watched")} />}
 
-      {/* Note globale, au repos — la barre de lecture reprend l'angle au survol. */}
-      <CardRatingBadge rating={item.CommunityRating} shown={!actionsVisible} />
+      {/* Note globale, au repos — la barre de lecture reprend l'angle au survol.
+          Elle passe par la règle partagée : cette affiche montre le visage
+          d'une SÉRIE, donc sa note — y compris sur une tuile de lot « +N »,
+          qui n'en porte aucune, et sur un épisode isolé, qui porte la sienne.
+          Sans fournisseur de notes au-dessus, `useSeriesRatingMap` rend une
+          carte vide et le badge se tait, exactement comme avant. */}
+      <CardRatingBadge rating={rating} shown={!actionsVisible} />
 
       {/* Barre d'actions qui remonte du bas. Le scrim n'apparaît QU'AU survol :
           au repos, l'affiche reste entièrement propre — et n'a même plus la
