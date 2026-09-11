@@ -1,11 +1,12 @@
 import { memo, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
+import { cardRatingFor, formatDuration, formatEpisodeCode } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { CardFrame } from "./CardFrame";
 import { CardImage } from "./CardImage";
 import { CardProgressBar } from "./CardProgressBar";
+import { CardRatingBadge } from "./CardRatingBadge";
 import { CardQuickActions } from "./CardQuickActions";
 import { CardMoreInfoButton } from "./CardMoreInfoButton";
 import { CardHoverPreview } from "./CardHoverPreview";
@@ -200,6 +201,17 @@ export const EpisodeCard = memo(function EpisodeCard({
           aria-hidden
           className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2"
           style={{ background: "var(--card-reveal-scrim)" }}
+        />
+
+        {/* La note de CET épisode — portée `item` : la vignette porte son nom et
+            son numéro, elle porte donc sa note, jamais celle de la série. En
+            HAUT à gauche : le bas est déjà pris par le code d'épisode et son
+            titre. Elle s'efface quand le panneau d'aperçu prend le relais, qui
+            la répète dans sa ligne méta. */}
+        <CardRatingBadge
+          rating={cardRatingFor(item, "item").rating}
+          shown={!preview.panelActive}
+          className="left-2 top-2"
         />
 
         <div className="absolute inset-x-0 bottom-1.5 pl-3 pr-28 text-on-media-primary">

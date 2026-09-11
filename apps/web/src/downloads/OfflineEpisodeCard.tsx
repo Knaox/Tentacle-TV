@@ -11,8 +11,10 @@ import { memo, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDuration, formatEpisodeCode, resolveResumeSprite } from "@tentacle-tv/shared";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
+import { CardRatingBadge } from "../components/cards/CardRatingBadge";
 import { CardTrickplayImage } from "../components/cards/CardTrickplayImage";
 import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
+import { useLocalSnapshot } from "./useLocalSnapshot";
 import { useLocalTrickplay } from "../hooks/useLocalTrickplay";
 import type { DownloadEntry } from "./api";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
@@ -33,6 +35,11 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
   const rootReady = useDownloadsRootReady();
   const [failed, setFailed] = useState(false);
   const { watched, percent } = watchStateOf(entry);
+  // Sa propre note — la vignette porte le nom et le numéro de CET épisode, pas
+  // ceux de la série. Lue dans le snapshot du disque, sans requête ; la cellule
+  // est démontée hors du champ (`RevealCell`), le nombre de lectures est donc
+  // borné par ce qui est à l'écran.
+  const snapshot = useLocalSnapshot(entry.itemId, "item.json", rootReady);
   const url = rootReady ? localResourceUrl(`meta/${entry.itemId}/primary.jpg`) : null;
 
   // La vignette EXACTE de la reprise, croppée dans les planches DÉJÀ
@@ -112,6 +119,8 @@ export const OfflineEpisodeCard = memo(function OfflineEpisodeCard({
         {watched
           ? <CardWatchedBadge label={t("common:watched")} />
           : <CardProgressBar percent={percent} border />}
+        {/* En haut : le bas porte déjà le code d'épisode et son titre. */}
+        <CardRatingBadge rating={snapshot?.CommunityRating ?? null} className="left-2 top-2" />
       </div>
 
       {runtime && <p className="mt-1 px-0.5 text-[11px] text-content-quaternary">{runtime}</p>}

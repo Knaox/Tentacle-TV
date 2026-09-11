@@ -8,6 +8,7 @@
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CardProgressBar } from "../components/cards/CardProgressBar";
+import { CardRatingBadge } from "../components/cards/CardRatingBadge";
 import { CardWatchedBadge } from "../components/cards/CardWatchedBadge";
 import { localResourceUrl, useDownloadsRootReady } from "./localFiles";
 
@@ -19,6 +20,13 @@ interface OfflinePosterCardProps {
   /** Progression LOCALE (`watchStateOf`) : hors ligne, aucun DTO serveur. */
   watched?: boolean;
   percent?: number | null;
+  /**
+   * Note globale, lue dans le SNAPSHOT du disque par l'appelant — cette carte
+   * ne connaît rien des DTO Jellyfin, son API est faite de primitives. Pour un
+   * groupe de saisons, c'est `series.json` qui la porte : la note de la série,
+   * exactement ce que la règle en ligne affiche sur un lot.
+   */
+  rating?: number | null;
   onClick: () => void;
 }
 
@@ -28,6 +36,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
   imageCandidates,
   watched = false,
   percent = null,
+  rating = null,
   onClick,
 }: OfflinePosterCardProps) {
   const { t } = useTranslation("common");
@@ -65,6 +74,9 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
         )}
         {/* Coche OU barre, jamais les deux — même règle qu'en ligne. */}
         {watched ? <CardWatchedBadge label={t("common:watched")} /> : <CardProgressBar percent={percent} />}
+        {/* La note se pose en HAUT : le bas de l'affiche porte déjà la coche,
+            ou la barre de progression. */}
+        <CardRatingBadge rating={rating} className="left-2 top-2" />
       </div>
       <p className="mt-1.5 truncate text-xs font-medium text-content-secondary group-hover/card:text-content-primary">
         {title}

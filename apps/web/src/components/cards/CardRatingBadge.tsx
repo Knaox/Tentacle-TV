@@ -17,6 +17,11 @@ interface CardRatingBadgeProps {
    * l'accueille garantit l'espacement à toute largeur de carte.
    */
   inline?: boolean;
+  /**
+   * Autre ancrage que le coin bas-gauche. La vignette 16:9 d'un épisode y a
+   * déjà son code et son titre : sa note se pose en haut.
+   */
+  className?: string;
 }
 
 /**
@@ -24,7 +29,13 @@ interface CardRatingBadgeProps {
  * les deux thèmes), étoile de MARQUE — jamais dorée. Aucun backdrop-filter :
  * montée en permanence, seule l'opacité transitionne (règle GPU du dépôt).
  */
-export function CardRatingBadge({ rating, shown = true, raised = false, inline = false }: CardRatingBadgeProps) {
+export function CardRatingBadge({
+  rating,
+  shown = true,
+  raised = false,
+  inline = false,
+  className,
+}: CardRatingBadgeProps) {
   const { t } = useTranslation("reco");
   if (rating == null || rating <= 0) return null;
   const score = rating.toFixed(1);
@@ -32,7 +43,7 @@ export function CardRatingBadge({ rating, shown = true, raised = false, inline =
   return (
     <div
       className={`${
-        inline ? "shrink-0" : `absolute bottom-2 left-2 ${raised ? "z-30" : "z-10"}`
+        inline ? "shrink-0" : `absolute ${className ?? "bottom-2 left-2"} ${raised ? "z-30" : "z-10"}`
       } flex items-center gap-1 rounded-md border border-white/20 bg-black/65 px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white transition-opacity duration-150 ${
         shown ? "opacity-100" : "opacity-0"
       }`}
