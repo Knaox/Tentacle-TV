@@ -7,6 +7,7 @@ import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { Badge, PressableCard } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
+import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
 
 interface Props {
   item: RecoRowItem;
@@ -66,11 +67,10 @@ export const RecoCard = memo(function RecoCard({ item, canOpen, onPress, onLongP
             de marque (« Découverte ») — les couleurs du web. */}
         {onDemand && <Badge label={t("onDemandBadge")} variant="onMedia" style={st.badgeLeft} />}
         {item.exploration && <Badge label={t("explorationBadge")} variant="gradient" style={st.badgeRight} />}
-        {item.voteAverage != null && item.voteAverage > 0 && (
-          <View style={st.rating}>
-            <Text style={st.ratingText}>★ {item.voteAverage.toFixed(1)}</Text>
-          </View>
-        )}
+        {/* Le même badge que les autres cartes : la note d'un titre recommandé
+            ne se dessine plus à part. Ancré à DROITE ici — « À la demande »
+            occupe le coin gauche. */}
+        <CardRatingBadge rating={item.voteAverage} style={st.rating} />
       </View>
       <Text numberOfLines={1} style={st.title}>{item.title}</Text>
       {subtitle && <Text numberOfLines={1} style={st.year}>{subtitle}</Text>}
@@ -86,8 +86,9 @@ const makeStyles = (t: AppTheme) => StyleSheet.create({
   fallbackLetter: { fontSize: 36, fontFamily: FONT_FAMILY.extrabold, color: t.colors.text.disabled, letterSpacing: -0.5 },
   badgeLeft: { position: "absolute", top: 7, left: 7 },
   badgeRight: { position: "absolute", top: 7, right: 7 },
-  rating: { position: "absolute", bottom: 7, right: 7, borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2, backgroundColor: t.colors.glass.tintStrong },
-  ratingText: { fontSize: 11, lineHeight: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary },
+  // Placement seul : la pastille, sa bordure et sa typographie vivent dans
+  // `CardRatingBadge`. Ancrée à droite, « À la demande » tenant le coin gauche.
+  rating: { bottom: 7, right: 7, left: undefined },
   title: { ...typography.small, fontSize: 13, fontFamily: FONT_FAMILY.semibold, color: t.colors.text.primary, marginTop: 8, letterSpacing: -0.1 },
   year: { ...typography.badge, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 2 },
   reason: { fontSize: 11.5, lineHeight: 15, fontFamily: FONT_FAMILY.medium, color: t.colors.text.tertiary, marginTop: 3 },

@@ -17,6 +17,7 @@ import {
   useJellyfinClient,
   useBatchRemoveWatchlist,
 } from "@tentacle-tv/api-client";
+import { cardRatingFor } from "@tentacle-tv/shared";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { FadeIn, SkeletonCard, SubtleBackground } from "@/components/ui";
 import { MediaActionSheet } from "@/components/MediaActionSheet";
@@ -98,6 +99,7 @@ export function WatchlistScreen() {
         year={item.ProductionYear ?? null}
         progressPercent={item.UserData?.PlayedPercentage ?? null}
         watched={item.UserData?.Played === true}
+        rating={cardRatingFor(item, "series").rating}
         width={cardWidth}
         selectable={selection.active}
         selected={selection.selected.has(item.Id)}
