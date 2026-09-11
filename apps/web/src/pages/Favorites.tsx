@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useFavoritesAll, useBatchRemoveFavorites } from "@tentacle-tv/api-client";
 import { CollectionGrid } from "../components/CollectionGrid";
+import { CollectionHero } from "../components/collection/CollectionHero";
 import { useCollectionFilters } from "../components/collection/useCollectionFilters";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
@@ -30,6 +31,19 @@ export function Favorites() {
   return (
     <PageTransition>
       <div className="min-h-screen pb-20">
+        {/* La bannière remonte sous la barre de navigation, qui flotte alors
+            transparente au-dessus du fond — même montage que l'accueil et la
+            bibliothèque. */}
+        <div className="-mt-[56px] md:-mt-[68px]">
+          <CollectionHero
+            title={t("common:myFavorites")}
+            kicker={t("common:myFavorites")}
+            items={items}
+            subtitle={t("common:resultCount", { count: filters.resultCount })}
+          />
+        </div>
+
+        <div className="relative z-10 -mt-10 md:-mt-14">
         <CollectionGrid
           title={t("common:myFavorites")}
           items={items}
@@ -39,6 +53,7 @@ export function Favorites() {
           selectionMode={sel}
           onFilteredIdsChange={handleFilteredIdsChange}
           filters={filters}
+          hideHeader
           searchName={t("common:myFavorites")}
           showFavorite={false}
           actions={
@@ -59,6 +74,7 @@ export function Favorites() {
             ) : undefined
           }
         />
+        </div>
       </div>
 
       {sel.isSelecting && (

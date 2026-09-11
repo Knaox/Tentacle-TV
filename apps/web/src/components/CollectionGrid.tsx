@@ -31,6 +31,12 @@ interface CollectionGridProps {
   searchName?: string;
   /** Faux sur la page Favoris — cf. `LibraryFilterBar`. */
   showFavorite?: boolean;
+  /**
+   * Taire l'en-tête titre : une bannière le porte déjà, au-dessus. Le bouton
+   * de retour part avec — la barre de navigation reste, et le geste arrière du
+   * navigateur aussi.
+   */
+  hideHeader?: boolean;
 }
 
 /**
@@ -42,7 +48,7 @@ interface CollectionGridProps {
  */
 export function CollectionGrid({
   title, items, isLoading, emptyMessage, emptyHint, emptyIcon, actions, selectionMode, onFilteredIdsChange,
-  filters, searchName, showFavorite,
+  filters, searchName, showFavorite, hideHeader,
 }: CollectionGridProps) {
   const navigate = useNavigate();
   const { t } = useTranslation("common");
@@ -59,6 +65,7 @@ export function CollectionGrid({
 
   return (
     <div className="px-4 pt-6 md:px-8">
+      {!hideHeader && (
       <div className="mb-4 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
@@ -70,6 +77,7 @@ export function CollectionGrid({
         </button>
         <h1 className="truncate text-2xl font-bold text-content-primary">{title}</h1>
       </div>
+      )}
 
       {filters ? (
         <CollectionToolbar

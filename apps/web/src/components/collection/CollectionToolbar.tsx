@@ -1,4 +1,3 @@
-import { useTranslation } from "react-i18next";
 import { LibrarySearchField } from "../library/LibrarySearchField";
 import { LibraryFilterBar } from "../LibraryFilters";
 import type { CollectionFiltersApi } from "./useCollectionFilters";
@@ -22,8 +21,6 @@ interface CollectionToolbarProps {
  * `genres`, que le hook dérive des titres chargés.
  */
 export function CollectionToolbar({ filters, name, showFavorite, actions }: CollectionToolbarProps) {
-  const { t } = useTranslation("common");
-
   return (
     <div className="mb-6 flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -73,14 +70,6 @@ export function CollectionToolbar({ filters, name, showFavorite, actions }: Coll
         onClearRating={filters.clearRating}
       />
 
-      {/* Le compte, en permanence — sur une liste qu'on vient soi-même de
-          constituer, savoir combien il reste est une information, pas un
-          rappel de filtre. La barre ne l'affiche que filtrée. */}
-      {!filters.hasActiveFilters && (
-        <p className="text-xs text-content-quaternary">
-          {t("common:resultCount", { count: filters.resultCount })}
-        </p>
-      )}
     </div>
   );
 }
