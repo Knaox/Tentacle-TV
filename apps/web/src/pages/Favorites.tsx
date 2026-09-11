@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useFavoritesAll, useBatchRemoveFavorites } from "@tentacle-tv/api-client";
 import { CollectionGrid } from "../components/CollectionGrid";
+import { useCollectionFilters } from "../components/collection/useCollectionFilters";
 import { SelectionToolbar } from "../components/SelectionToolbar";
 import { PageTransition } from "../components/PageTransition";
 import { ShareMyListButton } from "../components/share/ShareMyListButton";
@@ -18,6 +19,10 @@ export function Favorites() {
     filteredIdsRef.current = ids;
   }, []);
 
+  // Les filtres de la bibliothèque, appliqués à cette liste — en mémoire, sans
+  // toucher à la clé de cache qui porte l'ajout optimiste.
+  const filters = useCollectionFilters(items, handleFilteredIdsChange);
+
   const handleDelete = () => {
     batchRemove.mutate([...sel.selected], { onSettled: () => sel.exitSelectionMode() });
   };
@@ -33,6 +38,9 @@ export function Favorites() {
           emptyHint={t("common:emptyFavoritesHint")}
           selectionMode={sel}
           onFilteredIdsChange={handleFilteredIdsChange}
+          filters={filters}
+          searchName={t("common:myFavorites")}
+          showFavorite={false}
           actions={
             !sel.isSelecting ? (
               <div className="flex items-center gap-2">
