@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { useGenres } from "@tentacle-tv/api-client";
 import { PLATFORMS } from "../hooks/usePlatformFilter";
 import type { LibraryFilterState } from "../hooks/useLibraryFilters";
 
 interface Props {
-  libraryId: string;
+  /** Les genres, fournis — cf. `GenreMenu` : plus de `ParentId` exigé. */
+  genres: Array<{ Id: string; Name: string }>;
   filters: LibraryFilterState;
   hasActiveFilters: boolean;
   totalResults: number | undefined;
@@ -29,11 +29,10 @@ function Pill({ label, onRemove }: { label: string; onRemove: () => void }) {
 }
 
 export function LibraryActiveFilterPills({
-  libraryId, filters, hasActiveFilters, totalResults,
+  genres, filters, hasActiveFilters, totalResults,
   onRemoveGenre, onClearPlatform, onClearYears, onClearRating, onReset,
 }: Props) {
   const { t } = useTranslation("common");
-  const { data: genres } = useGenres(libraryId);
 
   if (!hasActiveFilters) return null;
 

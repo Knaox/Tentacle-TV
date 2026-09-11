@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useGenres } from "@tentacle-tv/api-client";
 import { matchesSearch } from "@tentacle-tv/shared";
 import { FilterMenu } from "./FilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
@@ -92,28 +91,34 @@ export function SortMenu({
 }
 
 export function GenreMenu({
-  libraryId, filters, onToggleGenre, onClear,
+  genres, filters, onToggleGenre, onClear,
 }: {
-  libraryId: string;
+  /**
+   * La liste des genres, FOURNIE — ce menu ne la cherche plus lui-même.
+   * `useGenres` exige un `ParentId`, que Ma liste et Mes favoris n'ont pas :
+   * ces pages dérivent leurs genres des titres déjà chargés. Obligatoire, et
+   * pas optionnelle : un appelant l'oublierait, et le menu serait vide sans
+   * que rien ne le dise.
+   */
+  genres: Array<{ Id: string; Name: string }>;
   filters: LibraryFilterState;
   onToggleGenre: (id: string) => void;
   onClear: () => void;
 }) {
   const { t } = useTranslation("common");
-  const { data: genres } = useGenres(libraryId);
   const [query, setQuery] = useState("");
 
   // Une bibliothèque d'animés dépasse la centaine de genres : le mur de
   // pastilles était illisible et interminable à parcourir. Recherche d'abord.
   const shown = useMemo(() => {
-    const list = genres ?? [];
+    const list = genres;
     const q = query.trim();
     return q ? list.filter((g) => matchesSearch(g.Name, q)) : list;
   }, [genres, query]);
 
   const count = filters.genreIds.length;
   const label = count === 1
-    ? (genres?.find((g) => g.Id === filters.genreIds[0])?.Name ?? t("common:genres"))
+    ? (genres.find((g) => g.Id === filters.genreIds[0])?.Name ?? t("common:genres"))
     : `${t("common:genres")} · ${count}`;
 
   return (
@@ -226,13 +231,14 @@ export function PlatformMenu({
   onTogglePlatform: (id: number) => void;
   onClear: () => void;
 }) {
+  const { t } = useTranslation("common");
   const count = filters.platformIds.length;
   const label = count === 1
-    ? (PLATFORMS.find((p) => p.id === filters.platformIds[0])?.name ?? "Plateformes")
-    : `Plateformes · ${count}`;
+    ? (PLATFORMS.find((p) => p.id === filters.platformIds[0])?.name ?? t("common:platforms"))
+    : `${t("common:platforms")} · ${count}`;
 
   return (
-    <FilterMenu label="Plateformes" value={count > 0 ? label : null} onClear={onClear} width={240}>
+    <FilterMenu label={t("common:platforms")} value={count > 0 ? label : null} onClear={onClear} width={240}>
       <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto" role="menu">
         {PLATFORMS.map((p) => (
           <CheckRow

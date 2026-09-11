@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useLibraryCatalog } from "@tentacle-tv/api-client";
+import { useGenres, useLibraryCatalog } from "@tentacle-tv/api-client";
 import { useItemsPerRow } from "../hooks/useItemsPerRow";
 import { LibraryFilterBar } from "./LibraryFilters";
 import { useLibraryFilters } from "../hooks/useLibraryFilters";
@@ -62,6 +62,11 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
     }, 300);
     return () => clearTimeout(timer);
   }, [input, search, setSearch]);
+
+  // Les genres proposés par les menus. UN seul abonnement : ils étaient
+  // demandés deux fois — par le menu et par les pastilles — sur la même clé de
+  // cache, donc sans requête en double, mais avec deux composants re-rendus.
+  const { data: genres } = useGenres(libraryId);
 
   // Construire les années pour le hook
   const yearsParam = useMemo(() => {
@@ -168,7 +173,7 @@ export function LibraryGrid({ libraryId, libraryName }: LibraryGridProps) {
       {/* Filtres rapides + avancés */}
       <div className="mb-6 px-4 md:px-8">
         <LibraryFilterBar
-          libraryId={libraryId}
+          genres={genres ?? []}
           filters={filters}
           activeCount={activeCount}
           hasActiveFilters={hasActiveFilters}
