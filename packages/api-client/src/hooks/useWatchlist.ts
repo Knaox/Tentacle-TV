@@ -9,6 +9,16 @@ import { forgetAutoRetired } from "./watchlistAutoRetired";
 // MediaSources requis pour afficher le badge qualité (4K/HEVC/DV/etc.) sur
 // les cards des rangées Ma Liste / Favoris (web CardMetaOverlay).
 const FIELDS = "Overview,Genres,PrimaryImageAspectRatio,MediaSources,ProviderIds";
+
+/**
+ * Les listes COMPLÈTES demandent en plus `Studios` : le filtre par plateforme
+ * y lit d'abord les studios (repli instantané quand le greffon Seer n'est pas
+ * installé), et sans eux il rendrait une liste vide, en silence. Environ
+ * quatre-vingts octets par titre, soit une quarantaine de kilo-octets sur une
+ * liste de cinq cents — payés une fois par session, sur la page qui s'en sert.
+ * Les carrousels `Limit=20`, eux, gardent `FIELDS`.
+ */
+const ALL_FIELDS = `${FIELDS},Studios`;
 const IMAGE_OPTS = "EnableImageTypes=Primary,Backdrop,Thumb&ImageTypeLimit=1";
 
 export function useWatchlist() {
@@ -149,7 +159,7 @@ export function useWatchlistAll() {
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?Filters=Likes&Recursive=true` +
             `&IncludeItemTypes=Movie,Series&SortBy=DateCreated&SortOrder=Descending` +
-            `&Fields=${FIELDS}&${IMAGE_OPTS}&EnableUserData=true`
+            `&Fields=${ALL_FIELDS}&${IMAGE_OPTS}&EnableUserData=true`
         )
         .then((r) => r.Items),
     enabled: !!userId,
@@ -168,7 +178,7 @@ export function useFavoritesAll() {
         .fetch<{ Items: MediaItem[] }>(
           `/Users/${userId}/Items?Filters=IsFavorite&Recursive=true` +
             `&IncludeItemTypes=Movie,Series&SortBy=DateCreated&SortOrder=Descending` +
-            `&Fields=${FIELDS}&${IMAGE_OPTS}&EnableUserData=true`
+            `&Fields=${ALL_FIELDS}&${IMAGE_OPTS}&EnableUserData=true`
         )
         .then((r) => r.Items),
     enabled: !!userId,
