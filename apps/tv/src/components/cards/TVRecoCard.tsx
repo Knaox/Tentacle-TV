@@ -6,6 +6,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import type { RecoRowItem } from "@tentacle-tv/api-client";
 import { BRAND } from "@tentacle-tv/shared";
 import { Colors, Typography, Fonts } from "../../theme/colors";
+import { TVCardRatingBadge } from "./TVCardRatingBadge";
 import { TVCardImage } from "./TVCardImage";
 import { TV_POSTER_WIDTH, TV_CARD_RADIUS } from "./cardSizes";
 
@@ -44,11 +45,9 @@ export const TVRecoCard = memo(function TVRecoCard({ item, focused = false, widt
             <Text style={{ color: "#fff", fontSize: 12, fontFamily: Fonts.bold }}>{t("explorationBadge")}</Text>
           </LinearGradient>
         )}
-        {item.voteAverage != null && item.voteAverage > 0 && (
-          <View style={{ position: "absolute", bottom: 8, right: 8, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: "rgba(0,0,0,0.65)" }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 12, fontFamily: Fonts.bold }}>★ {item.voteAverage.toFixed(1)}</Text>
-          </View>
-        )}
+        {/* Le badge commun : la note d'un titre recommandé ne se dessine plus
+            à part. Ancrée à DROITE ici — « Découverte » tient le coin gauche. */}
+        <TVCardRatingBadge rating={item.voteAverage} style={{ right: 8, left: undefined }} />
       </View>
       <Text numberOfLines={1} style={{ color: Colors.textSecondary, ...Typography.cardTitle, marginTop: 10 }}>
         {item.title}
