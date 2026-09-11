@@ -4,12 +4,18 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { PressableCard, ProgressBar } from "@/components/ui";
 import { spacing, typography, FONT_FAMILY, RADIUS, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
+import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
 
 const POSTER_ASPECT = 2 / 3;
 
 export interface SelectableGridCardProps {
   /** URL de l'affiche (Primary 300x). */
   posterUri: string;
+  /**
+   * Note globale, résolue par l'appelant avec `cardRatingFor` : cette carte a
+   * une API de primitives, elle ne connaît pas les DTO Jellyfin.
+   */
+  rating?: number | null;
   title: string;
   year?: number | null;
   /** Progression 0-100 (côté Jellyfin) — caché si null/0 ou si vu. */
@@ -32,6 +38,7 @@ export interface SelectableGridCardProps {
  */
 export const SelectableGridCard = memo(function SelectableGridCard({
   posterUri,
+  rating = null,
   title,
   year,
   progressPercent,
@@ -57,6 +64,7 @@ export const SelectableGridCard = memo(function SelectableGridCard({
     >
       <View style={styles.poster}>
         <Image source={{ uri: posterUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        <CardRatingBadge rating={rating} />
         {showProgress && (
           <View style={styles.progressContainer}>
             <ProgressBar progress={(progressPercent ?? 0) / 100} height={3} />

@@ -6,12 +6,14 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import { resolvePosterImage } from "@tentacle-tv/shared";
+import { cardRatingFor, resolvePosterImage } from "@tentacle-tv/shared";
 import { useResilientImage } from "@/hooks/useResilientImage";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { PressableCard, ProgressBar } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { useCardWidth } from "@/contexts/CardDensityContext";
+import { useSeriesRatingMap } from "@/contexts/SeriesRatingContext";
+import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
 import { ENABLE_SHARED_POSTER_TRANSITION } from "@/constants/featureFlags";
 
 interface Props {
@@ -57,6 +59,9 @@ export const MobileMediaCard = memo(function MobileMediaCard({
   const image = useResilientImage(poster);
   const progress = item.UserData?.PlayedPercentage ?? 0;
   const isWatched = item.UserData?.Played === true;
+  // Cette affiche montre le visage d'une SÉRIE (même chaîne de repli d'image
+  // que le web) : elle en porte donc la note, lot « +N » comme épisode isolé.
+  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
   const hasProgress = progress > 0 && progress < 100;
   const posterUri = image.uri;
 
@@ -104,6 +109,9 @@ export const MobileMediaCard = memo(function MobileMediaCard({
             <Feather name="check" size={12} color={theme.colors.cta.primaryFg} />
           </View>
         )}
+        {/* En BAS à gauche, comme le web. La barre de progression occupe le
+            bord inférieur sur toute la largeur, pas ce coin. */}
+        <CardRatingBadge rating={rating} />
         {isGroupedSeries && (
           // Badge "+N" violet→rose top-left — match desktop PosterCard.tsx:81
           // (from-[var(--brand)] to-[var(--brand-accent)]) : le rose est

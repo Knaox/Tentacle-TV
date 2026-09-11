@@ -8,7 +8,9 @@ import { Badge, FadeIn } from "@/components/ui";
 import type { OfflineEntry } from "@/offline/engineApi";
 import { spacing, type GridLayout } from "@/theme";
 import { MOVIE_ART, SERIES_ART } from "./offlineArt";
+import type { MediaItem } from "@tentacle-tv/shared";
 import { OfflinePosterCard } from "./OfflinePosterCard";
+import { useLocalSnapshotJson } from "@/hooks/offline/useLocalSnapshot";
 
 interface Props {
   movies: readonly OfflineEntry[];
@@ -41,8 +43,9 @@ export function OfflineCatalogSections({ movies, series, layout, fadeIndex, onMo
                 const { watched, percent } = watchStateOf(movie);
                 const title = movie.title ?? movie.itemId;
                 return (
-                  <OfflinePosterCard
+                  <MovieTile
                     key={movie.itemId}
+                    itemId={movie.itemId}
                     title={title}
                     subtitle={formatDuration(movie.runtimeTicks)}
                     posterItemId={movie.itemId}
@@ -70,8 +73,9 @@ export function OfflineCatalogSections({ movies, series, layout, fadeIndex, onMo
                 const { watched, percent } = groupWatchState(group.seasons.flatMap((season) => season.episodes));
                 const subtitle = `${t("downloads:seasonsCount", { count: group.seasons.length })} · ${t("downloads:episodesCount", { count: group.episodeCount })}`;
                 return (
-                  <OfflinePosterCard
+                  <SeriesTile
                     key={group.key}
+                    posterItemIdForRating={group.posterItemId}
                     title={group.seriesName}
                     subtitle={subtitle}
                     posterItemId={group.posterItemId}
@@ -97,3 +101,28 @@ const styles = StyleSheet.create({
   section: { marginTop: spacing.xxl },
   grid: { flexDirection: "row", flexWrap: "wrap" },
 });
+
+/**
+ * Une carte de film, plus sa note.
+ *
+ * Un composant plutôt qu'un appel en ligne dans le `.map()` : la note se lit
+ * dans le snapshot du disque, donc par un hook, et un hook ne s'appelle pas
+ * dans une boucle. Aucune requête réseau — le fichier est déjà là, le moteur
+ * enregistre le DTO brut au téléchargement.
+ */
+function MovieTile({
+  itemId,
+  ...props
+}: { itemId: string } & React.ComponentProps<typeof OfflinePosterCard>) {
+  const { data } = useLocalSnapshotJson<MediaItem>(itemId, "item.json");
+  return <OfflinePosterCard {...props} rating={data?.CommunityRating ?? null} />;
+}
+
+/** Idem pour un groupe de saisons — `series.json`, donc la note de la SÉRIE. */
+function SeriesTile({
+  posterItemIdForRating,
+  ...props
+}: { posterItemIdForRating: string } & React.ComponentProps<typeof OfflinePosterCard>) {
+  const { data } = useLocalSnapshotJson<MediaItem>(posterItemIdForRating, "series.json");
+  return <OfflinePosterCard {...props} rating={data?.CommunityRating ?? null} />;
+}

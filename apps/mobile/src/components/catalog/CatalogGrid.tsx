@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 import { Feather } from "@expo/vector-icons";
 import type { UseInfiniteQueryResult } from "@tanstack/react-query";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
-import type { MediaItem } from "@tentacle-tv/shared";
+import { cardRatingFor, type MediaItem } from "@tentacle-tv/shared";
 import { BrandSpinner, PressableCard, ProgressBar, FadeIn } from "@/components/ui";
+import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
 import { spacing, typography, useGrid, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 
 const POSTER_ASPECT = 2 / 3;
@@ -101,6 +102,10 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
   const poster = client.getImageUrl(posterId, "Primary", { width: 300, quality: 80 });
   const progress = item.UserData?.PlayedPercentage;
   const isWatched = item.UserData?.Played === true;
+  // Portée `series` : cette grille montre l'affiche de la série pour un épisode
+  // (cf. `posterId` ci-dessus). Le catalogue ne rend que des films et des
+  // séries, donc rien à résoudre — aucune requête ici.
+  const { rating } = cardRatingFor(item, "series");
 
   return (
     <PressableCard onPress={onPress} style={{ width, marginBottom: spacing.md }}>
@@ -116,6 +121,7 @@ const CatalogItemCard = memo(function CatalogItemCard({ item, width, client, onP
             <Feather name="check" size={12} color={colors.cta.primaryFg} />
           </View>
         )}
+        <CardRatingBadge rating={rating} />
       </View>
       <Text numberOfLines={1} style={styles.itemTitle}>
         {isEpisode && item.SeriesName ? item.SeriesName : item.Name}

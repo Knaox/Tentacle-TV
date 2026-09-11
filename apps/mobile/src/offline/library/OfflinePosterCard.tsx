@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { PressableCard, ProgressBar } from "@/components/ui";
 import { typography, RADIUS, SHADOW_RN, FONT_FAMILY, useTheme, useThemedStyles, type AppTheme } from "@/theme";
 import { OfflineLocalImage } from "./OfflineLocalImage";
+import { CardRatingBadge } from "@/components/cards/CardRatingBadge";
 
 interface Props {
   title: string;
@@ -14,6 +15,8 @@ interface Props {
   /** Fichiers du snapshot, dans l'ordre de préférence. */
   candidates: readonly string[];
   watched: boolean;
+  /** Note globale lue dans le snapshot du disque par l'appelant. */
+  rating?: number | null;
   /** Pourcentage entamé, `null` sans reprise. */
   percent: number | null;
   /** Badge dégradé en haut à gauche (« 14 ép. »), comme le « +N » des cartes en ligne. */
@@ -30,7 +33,7 @@ interface Props {
  * repli reste SOUS l'image : sans fichier elle se voit, avec elle est couverte.
  */
 export const OfflinePosterCard = memo(function OfflinePosterCard({
-  title, subtitle, posterItemId, candidates, watched, percent, countBadge, width, onPress, onLongPress, accessibilityLabel,
+  title, subtitle, posterItemId, candidates, watched, rating = null, percent, countBadge, width, onPress, onLongPress, accessibilityLabel,
 }: Props) {
   const theme = useTheme();
   const st = useThemedStyles(makeStyles);
@@ -57,6 +60,7 @@ export const OfflinePosterCard = memo(function OfflinePosterCard({
             <ProgressBar progress={progress / 100} height={3} />
           </View>
         )}
+        <CardRatingBadge rating={rating} />
         {watched && !hasProgress && (
           <View style={st.watchedBadge}>
             <Feather name="check" size={12} color={theme.colors.cta.primaryFg} />
