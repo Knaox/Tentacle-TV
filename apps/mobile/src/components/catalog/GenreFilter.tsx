@@ -5,16 +5,25 @@ import { useGenres } from "@tentacle-tv/api-client";
 import { spacing, typography, useTheme, useThemedStyles, withAlpha, type AppTheme } from "@/theme";
 
 interface Props {
-  libraryId: string;
+  /** La bibliothèque dont tirer les genres. Absente, `genres` doit être fourni. */
+  libraryId?: string;
+  /**
+   * Les genres, FOURNIS. Ma liste et Mes favoris n'ont pas de bibliothèque
+   * parente à interroger : elles dérivent les leurs des titres chargés. Quand
+   * cette liste est là, elle prime et aucune requête n'est faite.
+   */
+  genres?: Array<{ Id: string; Name: string }>;
   selectedGenres: string[];
   onGenresChange: (genres: string[]) => void;
 }
 
-export const GenreFilter = memo(function GenreFilter({ libraryId, selectedGenres, onGenresChange }: Props) {
+export const GenreFilter = memo(function GenreFilter({ libraryId, genres: fournis, selectedGenres, onGenresChange }: Props) {
   const { t } = useTranslation("common");
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { data: genres, isLoading } = useGenres(libraryId);
+  const { data: charges, isLoading: chargement } = useGenres(fournis ? undefined : libraryId);
+  const genres = fournis ?? charges;
+  const isLoading = !fournis && chargement;
 
   const toggleGenre = useCallback(
     (genreId: string) => {
