@@ -25,6 +25,8 @@ import type { DownloadEntry } from "./api";
 import { useDownloadsList } from "./useDownloadState";
 import { OfflineItemSheet } from "./OfflineItemSheet";
 import { OfflinePosterCard } from "./OfflinePosterCard";
+import { useLocalSnapshot } from "./useLocalSnapshot";
+import { useDownloadsRootReady } from "./localFiles";
 import { RevealCell, RevealScope } from "../components/grid/RevealCell";
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
@@ -196,12 +198,18 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function MovieCard({ entry, onOpen }: { entry: DownloadEntry; onOpen: () => void }) {
   const { watched, percent } = watchStateOf(entry);
+  // La note vient du snapshot écrit au téléchargement — aucune requête, et le
+  // fichier est déjà là : le moteur enregistre le DTO brut, dont
+  // `CommunityRating` fait partie d'office.
+  const rootReady = useDownloadsRootReady();
+  const snapshot = useLocalSnapshot(entry.itemId, "item.json", rootReady);
   return (
     <OfflinePosterCard
       title={entry.title ?? entry.itemId}
       imageCandidates={[`meta/${entry.itemId}/primary.jpg`]}
       watched={watched}
       percent={percent}
+      rating={snapshot?.CommunityRating ?? null}
       onClick={onOpen}
     />
   );
@@ -216,9 +224,14 @@ function SeriesCard({ group, onOpen }: { group: OfflineSeriesGroup; onOpen: () =
       : t("downloads:seasonsCount", { count: group.seasons.length });
   // Série vue = TOUS ses épisodes téléchargés le sont.
   const { watched } = groupWatchState(group.seasons.flatMap((s) => s.episodes));
+  // `series.json`, donc la note de la SÉRIE — la même que celle qu'une tuile de
+  // lot affiche en ligne.
+  const rootReady = useDownloadsRootReady();
+  const snapshot = useLocalSnapshot(group.posterItemId, "series.json", rootReady);
   return (
     <OfflinePosterCard
       title={group.seriesName}
+      rating={snapshot?.CommunityRating ?? null}
       subtitle={`${label} · ${t("downloads:episodesCount", { count: group.episodeCount })}`}
       watched={watched}
       // Affiche verticale de la série ; à défaut (téléchargement hérité non
