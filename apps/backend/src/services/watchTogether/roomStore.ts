@@ -24,6 +24,7 @@ function newMember(user: UserBasic, now: number): RoomMember {
     protocolVersion: 1,
     rttMs: null,
     driftMs: null,
+    playbackSocket: null,
   };
 }
 
@@ -47,6 +48,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     waitingFor: new Set(),
     waitingSince: new Map(),
     barrierId: 0,
+    barrier: null,
     waitCause: null,
     pendingSkip: null,
     members: new Map([[user.userId, newMember(user, now)]]),
@@ -81,6 +83,7 @@ export function removeMember(userId: string): RemovalResult | null {
   if (!room) return null;
   const removed = room.members.get(userId)!;
   cancelGrace(userId);
+  removed.playbackSocket = null;
   room.members.delete(userId);
   room.waitingFor.delete(userId);
   room.waitingSince.delete(userId);

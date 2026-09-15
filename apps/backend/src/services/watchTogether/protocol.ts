@@ -38,6 +38,14 @@ export const WT_SCHEDULE_MARGIN_MS = 100;
 export const WT_SCHEDULE_MAX_MS = 900;
 /** Aller-retour supposé d'un membre qui n'a encore rien déclaré (ms). */
 export const WT_DEFAULT_RTT_MS = 250;
+/**
+ * Barrière de synchronisation (seek, saut, reprise) : au-delà, les
+ * retardataires sont lâchés SANS être déclarés en échec — un far-seek HLS
+ * (renégociation ffmpeg) coûte légitimement une dizaine de secondes — et la
+ * salle repart ; ils se recaleront d'un seek dur. Les chargements de média
+ * gardent leur propre délai (WT_GROUP_WAIT_TIMEOUT_MS).
+ */
+export const WT_BARRIER_TIMEOUT_MS = 20_000;
 /** Garde-fou : position max acceptée (~28 h) contre les payloads absurdes. */
 export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
 /** Chat : longueur max d'un message (caractères, tronqué au-delà). */

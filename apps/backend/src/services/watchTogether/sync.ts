@@ -2,7 +2,6 @@ import {
   clampTicks,
   wtPositionTicksAt,
   WT_GROUP_WAIT_TIMEOUT_MS,
-  WT_MIN_SEEK_INTERVAL_MS,
   WT_PROTOCOL_VERSION,
   type WtClientMessage,
   type WtStateCause,
@@ -10,6 +9,10 @@ import {
 import { removeMember } from "./roomStore";
 import type { RemovalResult, Room, RoomMember } from "./roomTypes";
 import { anchorOnPlayingSender, computeLead, scheduleResume, touch } from "./syncSchedule";
+import {
+  barrierParticipants, cancelResumeOnRelease, confirmReady, dropBarrier, joinBarrier, openBarrier,
+  requestResumeOnRelease,
+} from "./syncBarrier";
 
 export { bumpEpoch } from "./syncSchedule";
 
@@ -24,22 +27,11 @@ export type SyncOutcome =
   | { kind: "broadcast"; cause: WtStateCause }
   | { kind: "ignore" };
 
-/** Ajoute un membre au group-wait (avec horodatage pour le timeout anti-gel). */
-function addWaiting(room: Room, userId: string, now: number): void {
-  room.waitingFor.add(userId);
-  room.waitingSince.set(userId, now);
-}
-
-/** Retire un membre du group-wait ; programme la reprise si plus personne
- *  n'est attendu — planifiée, pour que tous repartent au même instant. */
+/** Retire un membre de l'attente ; libère la barrière s'il était le dernier
+ *  (reprise planifiée si la salle jouait). */
 function pruneWaiting(room: Room, userId: string, now: number): boolean {
-  room.waitingFor.delete(userId);
-  room.waitingSince.delete(userId);
-  if (room.waitingFor.size === 0 && room.paused && room.pauseReason === "buffering") {
-    scheduleResume(room, now, room.positionTicks); // gelée pendant le group-wait
-    return true;
-  }
-  return false;
+  if (!room.waitingFor.has(userId)) return false;
+  return confirmReady(room, { userId }, now).resumed;
 }
 
 /** Anti-gel infini : les membres attendus depuis plus de WT_GROUP_WAIT_TIMEOUT_MS
@@ -65,6 +57,20 @@ export function expireStaleWaits(room: Room, now: number): { expired: string[]; 
   return { expired, resumed };
 }
 
+/** Un lecteur de la salle bufferise ou recharge : la salle l'attend. */
+function waitForMember(room: Room, member: RoomMember, now: number, frozenTicks: number): WtStateCause {
+  if (room.barrier) {
+    joinBarrier(room, member.userId, now);
+    touch(room, now);
+    return "presence";
+  }
+  // Salle en lecture : gel à la position du membre qui bufferise (les autres
+  // se recaleront dessus) ; en pause utilisateur : attente sans reprise.
+  const resume = !room.paused;
+  openBarrier(room, now, "buffering", resume ? frozenTicks : room.positionTicks, [member.userId], resume, false);
+  return resume ? "buffering" : "presence";
+}
+
 /** Applique une commande de lecture d'un membre. Validation de forme déjà faite
  *  (protocol.parseWtClientMessage) ; ici on applique les règles métier. */
 export function applyCommand(
@@ -83,10 +89,14 @@ export function applyCommand(
   switch (msg.type) {
     case "wt:play": {
       if (!room.paused) return { kind: "ignore" };
-      // Un play manuel force la reprise, y compris pendant un group-wait
-      // (déblocage utilisateur si un membre reste coincé en buffering).
-      room.waitingFor.clear();
-      room.waitingSince.clear();
+      if (room.barrier && !msg.force) {
+        // Une attente est en cours : la reprise aura lieu quand tous seront
+        // posés — jamais avant, sauf demande explicite de passer outre.
+        requestResumeOnRelease(room);
+        const { resumed } = confirmReady(room, member, now);
+        return { kind: "broadcast", cause: resumed ? "schedule" : "play" };
+      }
+      dropBarrier(room);
       // Reprise PLANIFIÉE. Un lecteur v2 n'a pas lancé sa lecture : tout le
       // monde, lui compris, repart de la position qu'il a envoyée, à T. Un
       // client d'avant joue déjà : on ancre la salle là où IL sera à T.
@@ -101,6 +111,7 @@ export function applyCommand(
 
     case "wt:pause": {
       if (room.paused && room.pauseReason === "user") return { kind: "ignore" };
+      cancelResumeOnRelease(room);
       room.paused = true;
       room.pauseReason = "user";
       touch(room, now, clampTicks(msg.positionTicks));
@@ -108,10 +119,13 @@ export function applyCommand(
     }
 
     case "wt:seek": {
-      const last = room.lastSeekAt.get(member.userId) ?? 0;
-      if (now - last < WT_MIN_SEEK_INTERVAL_MS) return { kind: "ignore" };
+      // Une barrière sur la cible : chacun se cale en pause et confirme, le
+      // dernier déclenche la reprise planifiée — si la salle jouait, ou si une
+      // reprise était déjà demandée. Un nouveau seek REMPLACE l'attente en
+      // cours (coalescence) : jamais d'ignorance silencieuse.
+      const resume = !room.paused || (room.barrier?.resumeOnRelease ?? false);
       room.lastSeekAt.set(member.userId, now);
-      touch(room, now, clampTicks(msg.positionTicks));
+      openBarrier(room, now, "seek", clampTicks(msg.positionTicks), barrierParticipants(room), resume, true);
       return { kind: "broadcast", cause: "seek" };
     }
 
@@ -122,23 +136,29 @@ export function applyCommand(
       if (msg.itemId === room.itemId) return { kind: "ignore" };
       room.itemId = msg.itemId;
       room.contextItemId = msg.itemId;
-      // Démarrage gelé : group-wait jusqu'à ce que les membres qui REGARDAIENT
-      // (auto-follow → rechargement) soient prêts. Un membre qui a quitté la
-      // lecture ne suit pas le changement — l'attendre gèlerait le groupe.
-      // Le lanceur (pas encore inPlayback au moment du setItem) s'ajoute par
-      // son wt:buffering envoyé juste après, sur le même socket (FIFO).
-      room.paused = true;
-      room.pauseReason = "buffering";
-      room.waitingFor.clear();
-      room.waitingSince.clear();
+      // Démarrage gelé : attente des membres qui REGARDAIENT (auto-follow →
+      // rechargement), toutes versions — un chargement se signale même d'un
+      // client d'avant. Un membre qui a quitté la lecture ne suit pas le
+      // changement — l'attendre gèlerait le groupe. Le lanceur (pas encore
+      // inPlayback au moment du setItem) s'ajoute par son wt:buffering envoyé
+      // juste après, sur le même socket (FIFO).
+      const waitFor: string[] = [];
       for (const m of room.members.values()) {
-        if (m.inPlayback && isUserOnline(m.userId)) addWaiting(room, m.userId, now);
+        if (m.inPlayback && isUserOnline(m.userId)) waitFor.push(m.userId);
         m.inPlayback = false;
         m.buffering = false;
         m.playbackError = false;
       }
       // Position initiale = reprise Jellyfin du lanceur (« Reprendre la
-      // lecture » reprend là où IL en était), 0 sinon.
+      // lecture » reprend là où IL en était), 0 sinon. La salle reste en
+      // attente même sans membre à attendre : le lanceur arrive juste après.
+      dropBarrier(room);
+      room.barrierId += 1;
+      room.paused = true;
+      room.pauseReason = "buffering";
+      room.waitCause = "buffering";
+      room.barrier = { id: room.barrierId, targetTicks: clampTicks(msg.startPositionTicks ?? 0), cause: "buffering", openedAt: now, resumeOnRelease: true, timer: null };
+      for (const userId of waitFor) joinBarrier(room, userId, now);
       touch(room, now, clampTicks(msg.startPositionTicks ?? 0));
       return { kind: "broadcast", cause: "setItem" };
     }
@@ -151,21 +171,12 @@ export function applyCommand(
           touch(room, now);
           return { kind: "broadcast", cause: "presence" };
         }
-        addWaiting(room, member.userId, now);
-        if (!room.paused) {
-          // Group-wait : on gèle à la position du membre qui bufferise (les
-          // autres se recaleront dessus), sinon à la position extrapolée.
-          const frozen = msg.positionTicks ?? wtPositionTicksAt(room, now);
-          room.paused = true;
-          room.pauseReason = "buffering";
-          touch(room, now, clampTicks(frozen));
-          return { kind: "broadcast", cause: "buffering" };
-        }
-        touch(room, now);
-        return { kind: "broadcast", cause: "presence" };
+        const frozen = msg.positionTicks ?? wtPositionTicksAt(room, now);
+        return { kind: "broadcast", cause: waitForMember(room, member, now, clampTicks(frozen)) };
       }
-      const resumed = pruneWaiting(room, member.userId, now);
-      if (!resumed) touch(room, now);
+      const { released, resumed, stale } = confirmReady(room, member, now, msg.barrierId);
+      if (stale) return { kind: "ignore" };
+      if (!released) touch(room, now);
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
 
@@ -197,6 +208,18 @@ export function applyCommand(
       return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
   }
+}
+
+/** Le socket d'un lecteur en séance s'est fermé : son attente est levée (il ne
+ *  peut plus rien confirmer) ; il se redéclarera à sa reconnexion. */
+export function releaseMemberWait(room: Room, member: RoomMember): boolean {
+  member.inPlayback = false;
+  member.buffering = false;
+  member.playbackSocket = null;
+  const now = Date.now();
+  const resumed = pruneWaiting(room, member.userId, now);
+  if (!resumed) touch(room, now);
+  return resumed;
 }
 
 export interface MemberRemoval extends RemovalResult {
