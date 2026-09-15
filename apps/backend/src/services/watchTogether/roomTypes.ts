@@ -1,0 +1,85 @@
+import type { PlaybackSettings } from "../../playback/playbackSettings";
+import type { WtChatMessageDto, WtPauseReason } from "./protocol";
+
+/**
+ * Watch Together — les formes de l'état en mémoire (salles, membres,
+ * invitations). Rien que des types : le registre (`roomRegistry.ts`) tient les
+ * maps, `roomStore.ts` les mutations de composition, `roomInvites.ts` les
+ * invitations, `sync.ts` la lecture.
+ */
+
+export interface RoomMember {
+  userId: string;
+  username: string;
+  hasAvatar: boolean;
+  inPlayback: boolean;
+  buffering: boolean;
+  playbackError: boolean;
+  joinedAt: number;
+  /** Timer de grâce armé quand le membre passe hors ligne (F5, coupure). */
+  graceTimer: ReturnType<typeof setTimeout> | null;
+}
+
+export interface Room {
+  groupId: string;
+  epoch: number;
+  hostUserId: string;
+  /**
+   * Les réglages de lecture de l'hôte, tels que la base les portait au dernier
+   * rafraîchissement (`hostSettings.ts`). `null` = pas encore lus, ou base en
+   * panne : chacun garde alors les siens.
+   */
+  hostSettings: PlaybackSettings | null;
+  /** Média « contexte » (fiche média au moment du create) — affichage/invites. */
+  contextItemId: string | null;
+  /** Média en cours de lecture synchronisée (null = rien lancé). */
+  itemId: string | null;
+  paused: boolean;
+  positionTicks: number;
+  stateAtServerTime: number;
+  pauseReason: WtPauseReason;
+  /** Membres dont on attend la fin de mise en mémoire tampon (group-wait). */
+  waitingFor: Set<string>;
+  /** Horodatage d'entrée dans waitingFor (miroir) — timeout anti-gel infini. */
+  waitingSince: Map<string, number>;
+  members: Map<string, RoomMember>;
+  /** Anti-spam seek : dernier seek accepté par membre. */
+  lastSeekAt: Map<string, number>;
+  /** Fil de chat (ring buffer WT_CHAT_HISTORY_SIZE) — survit aux départs,
+   *  détruit avec la room. Voir chat.ts. */
+  chat: WtChatMessageDto[];
+  /** Compteur monotone d'ids de messages (`groupId:seq`). */
+  chatSeq: number;
+  /** Anti-spam chat/réactions/GIFs : dernier envoi accepté par membre. */
+  lastChatAt: Map<string, number>;
+  lastReactionAt: Map<string, number>;
+  lastGifAt: Map<string, number>;
+  createdAt: number;
+}
+
+export interface Invite {
+  inviteId: string;
+  groupId: string;
+  fromUserId: string;
+  fromUsername: string;
+  toUserId: string;
+  /** Snapshot du média du groupe au moment de l'invitation (contexte UI). */
+  itemId: string | null;
+  itemName: string | null;
+  createdAt: number;
+}
+
+export interface UserBasic {
+  userId: string;
+  username: string;
+  hasAvatar: boolean;
+}
+
+export interface RemovalResult {
+  room: Room;
+  removed: RoomMember;
+  /** Nouvel hôte élu (plus ancien joinedAt) si l'hôte est parti, sinon null. */
+  newHostId: string | null;
+  /** Le groupe est vide et a été détruit. */
+  dissolved: boolean;
+}

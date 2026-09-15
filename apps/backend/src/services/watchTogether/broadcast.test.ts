@@ -12,7 +12,7 @@ vi.mock("../wsManager", () => ({
 }));
 
 import { roomToDto } from "./broadcast";
-import type { Room } from "./roomStore";
+import type { Room } from "./roomTypes";
 import { DEFAULT_PLAYBACK_SETTINGS } from "../../playback/playbackSettings";
 
 function makeRoom(hostSettings: Room["hostSettings"]): Room {

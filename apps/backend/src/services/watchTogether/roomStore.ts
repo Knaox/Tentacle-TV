@@ -1,87 +1,15 @@
 import { randomUUID } from "node:crypto";
-import type { PlaybackSettings } from "../../playback/playbackSettings";
-import { WT_GRACE_PERIOD_MS, type WtChatMessageDto, type WtPauseReason } from "./protocol";
+import { WT_GRACE_PERIOD_MS } from "./protocol";
+import { memberIndex, getRoomOf, rooms } from "./roomRegistry";
+import { deleteInvitesForGroup } from "./roomInvites";
+import type { RemovalResult, Room, RoomMember, UserBasic } from "./roomTypes";
 
 /**
- * Watch Together — état en mémoire des groupes (éphémères, aucune persistance).
- * Ce module est purement mécanique : pas d'I/O WebSocket, pas de logique de
- * lecture (voir sync.ts) ni de diffusion (voir broadcast.ts).
- *
- * Invariant central : un utilisateur appartient à AU PLUS un groupe
- * (`memberIndex`), et n'a qu'une invitation pendante par groupe.
+ * Watch Together — composition des groupes : création, adhésion, retrait,
+ * grâce de déconnexion. Purement mécanique : pas d'I/O WebSocket, pas de
+ * logique de lecture (voir sync.ts) ni de diffusion (voir broadcast.ts). Les
+ * maps vivent dans `roomRegistry.ts`, les invitations dans `roomInvites.ts`.
  */
-
-export interface RoomMember {
-  userId: string;
-  username: string;
-  hasAvatar: boolean;
-  inPlayback: boolean;
-  buffering: boolean;
-  playbackError: boolean;
-  joinedAt: number;
-  /** Timer de grâce armé quand le membre passe hors ligne (F5, coupure). */
-  graceTimer: ReturnType<typeof setTimeout> | null;
-}
-
-export interface Room {
-  groupId: string;
-  epoch: number;
-  hostUserId: string;
-  /**
-   * Les réglages de lecture de l'hôte, tels que la base les portait au dernier
-   * rafraîchissement (`hostSettings.ts`). `null` = pas encore lus, ou hôte
-   * sans ligne enregistrée : chacun garde alors les siens.
-   */
-  hostSettings: PlaybackSettings | null;
-  /** Média « contexte » (fiche média au moment du create) — affichage/invites. */
-  contextItemId: string | null;
-  /** Média en cours de lecture synchronisée (null = rien lancé). */
-  itemId: string | null;
-  paused: boolean;
-  positionTicks: number;
-  stateAtServerTime: number;
-  pauseReason: WtPauseReason;
-  /** Membres dont on attend la fin de mise en mémoire tampon (group-wait). */
-  waitingFor: Set<string>;
-  /** Horodatage d'entrée dans waitingFor (miroir) — timeout anti-gel infini. */
-  waitingSince: Map<string, number>;
-  members: Map<string, RoomMember>;
-  /** Anti-spam seek : dernier seek accepté par membre. */
-  lastSeekAt: Map<string, number>;
-  /** Fil de chat (ring buffer WT_CHAT_HISTORY_SIZE) — survit aux départs,
-   *  détruit avec la room. Voir chat.ts. */
-  chat: WtChatMessageDto[];
-  /** Compteur monotone d'ids de messages (`groupId:seq`). */
-  chatSeq: number;
-  /** Anti-spam chat/réactions/GIFs : dernier envoi accepté par membre. */
-  lastChatAt: Map<string, number>;
-  lastReactionAt: Map<string, number>;
-  lastGifAt: Map<string, number>;
-  createdAt: number;
-}
-
-export interface Invite {
-  inviteId: string;
-  groupId: string;
-  fromUserId: string;
-  fromUsername: string;
-  toUserId: string;
-  /** Snapshot du média du groupe au moment de l'invitation (contexte UI). */
-  itemId: string | null;
-  itemName: string | null;
-  createdAt: number;
-}
-
-export interface UserBasic {
-  userId: string;
-  username: string;
-  hasAvatar: boolean;
-}
-
-const rooms = new Map<string, Room>();
-/** userId → groupId (un seul groupe par utilisateur). */
-const memberIndex = new Map<string, string>();
-const invites = new Map<string, Invite>();
 
 function newMember(user: UserBasic, now: number): RoomMember {
   return {
@@ -97,20 +25,6 @@ function newMember(user: UserBasic, now: number): RoomMember {
 }
 
 // ── Rooms ──
-
-export function getRoom(groupId: string): Room | null {
-  return rooms.get(groupId) ?? null;
-}
-
-/** Itérateur des rooms actives (sweeps périodiques du gateway). */
-export function allRooms(): IterableIterator<Room> {
-  return rooms.values();
-}
-
-export function getRoomOf(userId: string): Room | null {
-  const groupId = memberIndex.get(userId);
-  return groupId ? (rooms.get(groupId) ?? null) : null;
-}
 
 /** Crée un groupe avec `user` comme hôte. Renvoie null si déjà en groupe. */
 export function createRoom(user: UserBasic, contextItemId: string | null): Room | null {
@@ -153,15 +67,6 @@ export function addMember(room: Room, user: UserBasic): RoomMember | null {
   room.members.set(user.userId, member);
   memberIndex.set(user.userId, room.groupId);
   return member;
-}
-
-export interface RemovalResult {
-  room: Room;
-  removed: RoomMember;
-  /** Nouvel hôte élu (plus ancien joinedAt) si l'hôte est parti, sinon null. */
-  newHostId: string | null;
-  /** Le groupe est vide et a été détruit. */
-  dissolved: boolean;
 }
 
 /** Retire un membre ; transfert d'hôte au plus ancien ; GC si vide. */
@@ -225,54 +130,5 @@ export function cancelGrace(userId: string): void {
   if (member?.graceTimer) {
     clearTimeout(member.graceTimer);
     member.graceTimer = null;
-  }
-}
-
-// ── Invitations ──
-
-/** Crée une invitation (dédupliquée par groupe+destinataire). */
-export function createInvite(
-  room: Room,
-  from: { userId: string; username: string },
-  toUserId: string,
-  itemId: string | null,
-  itemName: string | null,
-): Invite {
-  for (const inv of invites.values()) {
-    if (inv.groupId === room.groupId && inv.toUserId === toUserId) return inv;
-  }
-  const invite: Invite = {
-    inviteId: randomUUID(),
-    groupId: room.groupId,
-    fromUserId: from.userId,
-    fromUsername: from.username,
-    toUserId,
-    itemId,
-    itemName,
-    createdAt: Date.now(),
-  };
-  invites.set(invite.inviteId, invite);
-  return invite;
-}
-
-/** Consomme une invitation (retire et renvoie) si elle appartient bien à `toUserId`. */
-export function takeInvite(inviteId: string, toUserId: string): Invite | null {
-  const inv = invites.get(inviteId);
-  if (!inv || inv.toUserId !== toUserId) return null;
-  invites.delete(inviteId);
-  return inv;
-}
-
-export function invitesFor(userId: string): Invite[] {
-  const list: Invite[] = [];
-  for (const inv of invites.values()) {
-    if (inv.toUserId === userId && rooms.has(inv.groupId)) list.push(inv);
-  }
-  return list;
-}
-
-export function deleteInvitesForGroup(groupId: string): void {
-  for (const [id, inv] of invites) {
-    if (inv.groupId === groupId) invites.delete(id);
   }
 }

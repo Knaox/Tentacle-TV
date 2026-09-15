@@ -1,7 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
-import { createRoom, getRoomOf } from "../services/watchTogether/roomStore";
+import { createRoom } from "../services/watchTogether/roomStore";
+import { getRoomOf } from "../services/watchTogether/roomRegistry";
 import { removeMemberAndSync } from "../services/watchTogether/sync";
 import { broadcastRoom, notifyDissolved, roomToDto } from "../services/watchTogether/broadcast";
 import { refreshHostSettings } from "../services/watchTogether/hostSettings";

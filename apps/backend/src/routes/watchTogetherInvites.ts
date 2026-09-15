@@ -2,14 +2,9 @@ import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { requireAuth, type JellyfinUser } from "../middleware/auth";
 import { getJellyfinApiKey, getJellyfinUrl } from "../services/configStore";
-import {
-  addMember,
-  createInvite,
-  getRoom,
-  getRoomOf,
-  invitesFor,
-  takeInvite,
-} from "../services/watchTogether/roomStore";
+import { addMember } from "../services/watchTogether/roomStore";
+import { getRoom, getRoomOf } from "../services/watchTogether/roomRegistry";
+import { createInvite, invitesFor, takeInvite } from "../services/watchTogether/roomInvites";
 import { bumpEpoch, removeMemberAndSync } from "../services/watchTogether/sync";
 import {
   broadcastRoom,
