@@ -16,20 +16,26 @@
  * du groupe. Un invité ne repart pas avec les habitudes de son hôte.
  *
  * Le rafraîchissement est explicite, à trois moments seulement : création du
- * groupe, changement d'hôte, et écriture des réglages PAR l'hôte. Aucune
+ * groupe, changement d'hôte (départ, grâce expirée, expulsion, départ implicite
+ * en acceptant une autre invitation), et écriture des réglages PAR l'hôte. Aucune
  * lecture en base sur le chemin des diffusions — `roomToDto` reste synchrone.
  */
 
 import { getRoomOf } from "./roomStore";
 import type { Room } from "./roomStore";
 import { broadcastRoom } from "./broadcast";
+import { bumpEpoch } from "./sync";
 import { readPlaybackSettings } from "../playbackSettingsService";
+import { DEFAULT_PLAYBACK_SETTINGS } from "../../playback/playbackSettings";
 
-/** Relit les réglages de l'hôte et les pose sur la salle. Silencieux en cas
- *  d'échec : un groupe doit vivre même sans base de réglages. */
+/** Relit les réglages de l'hôte et les pose sur la salle. Un hôte qui n'a
+ *  jamais rien réglé vit avec les défauts — ce sont donc les défauts qui
+ *  gouvernent la salle, pas les réglages de chaque invité. Silencieux en cas
+ *  d'échec de la base (`null` : chacun garde alors les siens) : un groupe doit
+ *  vivre même sans base de réglages. */
 export async function refreshHostSettings(room: Room): Promise<void> {
   try {
-    room.hostSettings = await readPlaybackSettings(room.hostUserId);
+    room.hostSettings = (await readPlaybackSettings(room.hostUserId)) ?? DEFAULT_PLAYBACK_SETTINGS;
   } catch {
     room.hostSettings = null;
   }
@@ -43,5 +49,9 @@ export async function pushHostSettingsIfHosting(userId: string): Promise<void> {
   const room = getRoomOf(userId);
   if (!room || room.hostUserId !== userId) return;
   await refreshHostSettings(room);
+  // L'epoch AVANCE : un état diffusé au même epoch est jeté comme périmé par
+  // chaque client (garde anti-stale du réducteur) — la salle croyait alors
+  // informer le groupe et personne n'entendait rien.
+  bumpEpoch(room);
   broadcastRoom(room, "sync", userId);
 }

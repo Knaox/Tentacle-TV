@@ -16,6 +16,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { getPrisma } from "../services/db";
 import { rowToSettings, settingsToColumns } from "../services/playbackSettingsService";
+import { pushHostSettingsIfHosting } from "../services/watchTogether/hostSettings";
 import type { JellyfinUser } from "../middleware/auth";
 import {
   BEFORE_END_MAX_RULES,
@@ -113,6 +114,14 @@ export function registerPlaybackSettingsRoutes(app: FastifyInstance): void {
       create: { jellyfinUserId: user.userId, ...columns },
       update: columns,
     });
+    // L'hôte d'une séance Watch Together vient de changer ses réglages : la
+    // salle les reprend et le groupe en est informé. Sans effet s'il n'héberge
+    // rien, et jamais bloquant pour l'enregistrement lui-même.
+    try {
+      await pushHostSettingsIfHosting(user.userId);
+    } catch (err) {
+      request.log.warn({ err }, "[wt] réglages de l'hôte non diffusés");
+    }
     return { stored: true, settings: rowToSettings(row) };
   });
 }

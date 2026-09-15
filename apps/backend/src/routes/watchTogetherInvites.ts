@@ -20,6 +20,7 @@ import {
 } from "../services/watchTogether/broadcast";
 import { getJellyfinUsers, getUserBasic } from "../services/watchTogether/usersCache";
 import { sendChatHistory } from "../services/watchTogether/chat";
+import { refreshHostSettings } from "../services/watchTogether/hostSettings";
 import { WT_MAX_INVITES_PER_REQUEST } from "../services/watchTogether/protocol";
 
 /** Nom d'un item Jellyfin (clé admin, best-effort — contexte d'invitation). */
@@ -116,6 +117,8 @@ export const watchTogetherInviteRoutes: FastifyPluginAsync = async (app) => {
       // + broadcast aux anciens co-membres) et rejoindre le nouveau.
       const removal = removeMemberAndSync(user.userId);
       if (removal && !removal.dissolved) {
+        // L'ancien groupe change d'hôte : ses réglages avant la diffusion.
+        if (removal.newHostId) await refreshHostSettings(removal.room);
         broadcastRoom(removal.room, "leave", user.userId);
       }
       member = addMember(room, {

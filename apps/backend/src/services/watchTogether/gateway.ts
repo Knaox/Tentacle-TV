@@ -5,6 +5,7 @@ import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor, type Room } fro
 import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
+import { refreshHostSettings } from "./hostSettings";
 import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
 
 /**
@@ -141,6 +142,16 @@ function onGraceExpired(userId: string): void {
   });
   if (!result.dissolved) {
     broadcastRoom(result.room, "leave", userId);
+    // Nouvel hôte : ses réglages gouvernent désormais. La lecture en base est
+    // asynchrone, le départ est diffusé tout de suite — les réglages suivent
+    // dans un état à part, avec son propre epoch.
+    if (result.newHostId) {
+      const room = result.room;
+      void refreshHostSettings(room).then(() => {
+        bumpEpoch(room);
+        broadcastRoom(room, "sync", null);
+      });
+    }
   }
 }
 
