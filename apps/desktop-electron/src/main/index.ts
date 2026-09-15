@@ -24,6 +24,7 @@ import {
   linuxWindowing,
   linuxMontage,
 } from "./linux/session";
+import { refreshDesktopIcons } from "./linux/desktopIcons";
 import { buildCsp, buildPluginCsp, hashesFromFile } from "./csp";
 import { COMMANDS } from "./channels";
 import { PLUGIN_HOST } from "./pluginDocuments";
@@ -253,6 +254,12 @@ function main(): void {
       };
 
       open();
+
+      // Les icônes du bureau, remises au niveau de l'AppImage qui tourne. Notre
+      // updater ne remplace QUE l'exécutable : sans ce rattrapage, la barre des
+      // tâches garderait l'icône du jour de l'installation (`desktopIcons.ts`).
+      // Sans effet ailleurs — les paquets reçoivent la leur du gestionnaire.
+      if (process.platform === "linux") refreshDesktopIcons();
 
       app.on("activate", () => {
         if (BrowserWindow.getAllWindows().length === 0) open();
