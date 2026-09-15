@@ -25,6 +25,11 @@ export interface PlayerTransport {
    *  de drift NE corrige PAS pendant un seek en vol : un far-seek HLS prend
    *  plusieurs secondes et chaque re-seek relancerait ffmpeg (spirale). */
   isSeeking?(): boolean;
+  /** Appelé DANS le geste de l'utilisateur quand la lecture est demandée au
+   *  serveur au lieu d'être lancée : un lecteur qui n'a jamais joué s'en sert
+   *  pour lever ses restrictions de lecture automatique (WebKit) — sans rien
+   *  laisser voir. Inutile côté mpv. */
+  primeGesture?(): void;
 }
 
 export type PlayerTransportRef = MutableRefObject<PlayerTransport | null>;

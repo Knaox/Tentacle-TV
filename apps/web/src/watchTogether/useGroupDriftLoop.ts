@@ -5,7 +5,11 @@ import {
   WT_SOFT_CORRECTION_TIMEOUT_MS, wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
-import { armEcho, isWaitedForMe, setTransportRate, type GroupSyncSharedRefs } from "./groupSyncShared";
+import {
+  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isWaitedForMe, setTransportRate,
+  type GroupSyncSharedRefs,
+} from "./groupSyncShared";
+import { isFutureAnchor } from "./groupSchedule";
 import { wtLog } from "./wtLog";
 
 /**
@@ -19,7 +23,12 @@ import { wtLog } from "./wtLog";
  *  - le group-wait en cours est causé par MOI (mon player charge : pause/seek
  *    tomberaient en plein démarrage HLS → demuxer coincé, écran noir) ;
  *  - un seek local est encore en vol (far-seek HLS : re-seeker à chaque tick
- *    relancerait ffmpeg en spirale — position figée, timer bloqué).
+ *    relancerait ffmpeg en spirale — position figée, timer bloqué) ;
+ *  - une reprise planifiée attend son instant (le play() est programmé par le
+ *    moteur : réconcilier ici lancerait la lecture avant l'heure) ;
+ *  - un intent local est en vol : entre une pause locale et son écho, la
+ *    salle joue encore — réconcilier relancerait la lecture sous les doigts
+ *    de l'utilisateur ; après un seek, elle le ramènerait en arrière.
  */
 export function useGroupDriftLoop({
   enabled,
@@ -57,9 +66,24 @@ export function useGroupDriftLoop({
         }
         return;
       }
+      const nowSrv = shared.serverNowRef.current();
+      if (isFutureAnchor(r, nowSrv) || isAwaitingScheduledPlay(shared)) {
+        if (lastSkipLogged !== "scheduled") {
+          lastSkipLogged = "scheduled";
+          wtLog("engine", "drift: SKIP — reprise planifiée en attente");
+        }
+        return;
+      }
+      if (hasPendingIntent(shared)) {
+        if (lastSkipLogged !== "intent") {
+          lastSkipLogged = "intent";
+          wtLog("engine", "drift: SKIP — intent local en vol", shared.pendingIntentRef.current);
+        }
+        return;
+      }
       lastSkipLogged = null;
 
-      const expected = wtPositionSecondsAt(r, shared.serverNowRef.current());
+      const expected = wtPositionSecondsAt(r, nowSrv);
       const pos = t.getPositionSeconds();
 
       // Réconciliation pause/lecture (rattrape un play() refusé par la policy,

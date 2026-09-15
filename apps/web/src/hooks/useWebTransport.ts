@@ -58,6 +58,16 @@ export function useWebTransport({
         return !!v && v.readyState >= 3 && !sourceChangingRef.current;
       },
       isSeeking: () => videoRef.current?.seeking ?? false,
+      // Jamais joué (`played` vide) : un play() puis pause() DANS le geste
+      // bénit l'élément — WebKit n'autorise un play() différé qu'après ça.
+      primeGesture: () => {
+        const v = videoRef.current;
+        if (!v || !v.paused || v.played.length > 0) return;
+        wtLog("transport", "primeGesture() [web] — play/pause dans le geste");
+        const attempt = v.play();
+        v.pause();
+        attempt?.catch(() => {});
+      },
     };
     return () => { transportRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -45,6 +45,27 @@ export const WT_DRIFT_LOOP_MS = 1_000;
 /** Rafale de pings à l'entrée en groupe pour estimer l'offset d'horloge. */
 export const WT_CLOCK_BURST_COUNT = 5;
 export const WT_CLOCK_BURST_SPACING_MS = 200;
+/** Horloge en séance : un échantillon toutes les 5 s, fenêtre de 24 (2 min),
+ *  rien de plus vieux que 3 min — deux horloges dérivent de quelques ms par
+ *  minute, un offset figé au début d'un film de deux heures finirait à 100 ms. */
+export const WT_CLOCK_SAMPLE_MS = 5_000;
+export const WT_CLOCK_WINDOW = 24;
+export const WT_CLOCK_MAX_AGE_MS = 180_000;
+/** Un échantillon aussi net que le meilleur mais décalé d'autant : l'horloge a
+ *  sauté (NTP, sortie de veille) — la fenêtre repart de zéro. */
+export const WT_CLOCK_JUMP_MS = 200;
+/** Un intent envoyé (pause, lecture, seek) reste « en vol » jusqu'à l'écho du
+ *  serveur — au moins ce délai, ou deux allers-retours : la boucle de dérive ne
+ *  doit ni réconcilier ni seeker contre lui. */
+export const WT_PENDING_INTENT_MIN_MS = 1_500;
+/** Latence de démarrage d'un lecteur (play() → première avance), bornée. */
+export const WT_PLAY_LATENCY_MAX_MS = 300;
+/** Pré-calage avant une reprise planifiée : en dessous, pas de seek (secondes). */
+export const WT_PRESEEK_TOLERANCE_S = 0.04;
+/** Lecture demandée au serveur sans réponse : on joue localement (ms). */
+export const WT_REQUEST_PLAY_WATCHDOG_MS = 2_000;
+/** Après un play() planifié, délai pour que le lecteur se déclare en lecture. */
+export const WT_SCHEDULED_PLAY_SETTLE_MS = 2_000;
 /** Chat : longueur max d'un message (caractères, tronqué au-delà). */
 export const WT_CHAT_MAX_LENGTH = 500;
 /** Chat : fil conservé en mémoire par room (renvoyé au join/resync). */
