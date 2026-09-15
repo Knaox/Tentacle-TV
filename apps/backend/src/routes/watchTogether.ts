@@ -29,6 +29,10 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     if (!room) {
       return reply.status(409).send({ code: "already_in_group", message: "Vous êtes déjà dans un groupe" });
     }
+    // Les réglages de l'hôte partent AVEC la salle : la première diffusion
+    // (et la réponse REST elle-même) les porte, sinon chaque invité garderait
+    // les siens jusqu'au premier changement d'hôte.
+    await refreshHostSettings(room);
     request.log.info({ groupId: room.groupId, host: user.username }, "[wt] groupe créé");
     return roomToDto(room);
   });
@@ -53,6 +57,8 @@ export const watchTogetherRoutes: FastifyPluginAsync = async (app) => {
     const result = removeMemberAndSync(user.userId);
     if (!result) return reply.status(404).send({ code: "not_in_group" });
     if (!result.dissolved) {
+      // Nouvel hôte = nouveaux réglages pour le groupe, avant la diffusion.
+      if (result.newHostId) await refreshHostSettings(result.room);
       broadcastRoom(result.room, "leave", user.userId);
     }
     request.log.info(
