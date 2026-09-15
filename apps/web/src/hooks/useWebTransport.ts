@@ -11,6 +11,7 @@ export function useWebTransport({
   transportRef,
   videoRef,
   lastKnownPositionRef,
+  effectiveOffsetRef,
   sourceChangingRef,
   handleSeek,
   cancelAutoNextLocal,
@@ -18,6 +19,8 @@ export function useWebTransport({
   transportRef?: PlayerTransportRef;
   videoRef: RefObject<HTMLVideoElement | null>;
   lastKnownPositionRef: MutableRefObject<number>;
+  /** À retrancher de `currentTime` pour obtenir la position du film. */
+  effectiveOffsetRef: MutableRefObject<number>;
   sourceChangingRef: MutableRefObject<boolean>;
   handleSeek: (seconds: number) => void;
   cancelAutoNextLocal: () => void;
@@ -41,7 +44,12 @@ export function useWebTransport({
         });
         handleSeek(seconds);
       },
-      getPositionSeconds: () => lastKnownPositionRef.current,
+      // Lue EN DIRECT sur l'élément : `lastKnownPositionRef` suit `timeupdate`,
+      // soit ~250 ms de retard — plus que la dérive qu'on veut corriger.
+      getPositionSeconds: () => {
+        const v = videoRef.current;
+        return v && !sourceChangingRef.current ? effectiveOffsetRef.current + v.currentTime : lastKnownPositionRef.current;
+      },
       isPaused: () => videoRef.current?.paused ?? true,
       setRate: (rate: number) => {
         const v = videoRef.current;

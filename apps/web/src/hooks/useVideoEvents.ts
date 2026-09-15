@@ -90,7 +90,9 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       if (!a.hasStartedRef.current) {
         a.hasStartedRef.current = true; a.setHasStarted(true); a.onStarted?.();
       }
-      a.onPlayStateChange?.(false);
+      // Pas de `onPlayStateChange` ici : `play` part à l'ORDRE, `playing` à la
+      // première image — c'est elle qui compte pour la synchro (latence de
+      // démarrage mesurée par le moteur), et un play() refusé n'en émet pas.
     },
     onPause: () => {
       wtLog("web-video", "event pause", { pos: a.lastKnownPositionRef.current.toFixed(1) });
@@ -119,6 +121,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       wtLog("web-video", "event playing → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       clearTimeout(a.waitingTimer.current);
       if (!a.sourceChangingRef.current) a.setLoading(false);
+      a.onPlayStateChange?.(false);
       a.onBufferingChange?.(false);
     },
     onCanPlay: () => {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
-import { formatEpisodeCode } from "@tentacle-tv/shared";
+import { formatEpisodeCode, TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import { useConnectivity } from "../offline/useConnectivity";
 import { useLocalPlaybackReporting } from "../hooks/useLocalPlaybackReporting";
 import type { MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
@@ -110,7 +110,10 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
     if (!streamUrl) return;
     if (firstSrcRef.current) { firstSrcRef.current = false; return; }
     wtLog("page", "rebuild de source → déclarer buffering au groupe", { playSessionId });
-    groupSync.notifyBuffering(true);
+    // Gel à la position que le rechargement VISE : le lecteur qui se détruit
+    // rapporterait la sienne, en retard de ce que la boucle ne rattraperait
+    // qu'après la reprise.
+    groupSync.notifyBuffering(true, getPositionTicks() / TICKS_PER_SECOND);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 

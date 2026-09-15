@@ -20,6 +20,9 @@ export interface MpvLifecycleCtx {
   setFileLoaded: (v: boolean) => void;
   setMediaReady: (v: boolean) => void;
   positionRef: MutableRefObject<number>;
+  /** `Date.now()` de la dernière valeur de `time-pos` (instant de mesure côté
+   *  processus principal) — le transport Watch Together extrapole entre deux. */
+  positionAtRef: MutableRefObject<number>;
   bufferedRef: MutableRefObject<number>;
   /** Miroir synchrone de `paused-for-cache` — lu par le nudge de réveil. */
   bufferingRef: MutableRefObject<boolean>;
@@ -49,7 +52,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setFailure, setFileLoaded, setMediaReady,
-      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
+      positionRef, positionAtRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
       playbackWatchdogRef, wakeupRef, loadfileAtRef, onEndFileFailure,
     } = ctx;
 
@@ -112,7 +115,10 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           if (cancelled) return;
           switch (event.name) {
             case "time-pos":
-              positionRef.current = (event.data as number | null) ?? positionRef.current;
+              if (event.data !== null && event.data !== undefined) {
+                positionRef.current = event.data as number;
+                positionAtRef.current = event.at ?? Date.now();
+              }
               return; // ref only — no setState
             case "demuxer-cache-duration": {
               // ⚠️ `null` veut dire INDISPONIBLE, pas « cache vide ». mpv rend
