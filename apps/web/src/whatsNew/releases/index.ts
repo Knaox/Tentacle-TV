@@ -2,6 +2,7 @@ import type { WhatsNewRelease } from "../types";
 import { RELEASE_1_21_0 } from "./v1_21_0";
 import { RELEASE_1_21_1 } from "./v1_21_1";
 import { RELEASE_1_21_2 } from "./v1_21_2";
+import { RELEASE_1_21_3 } from "./v1_21_3";
 
 /**
  * Le registre, du plus récent au plus ancien. L'ordre est vérifié par
@@ -10,6 +11,7 @@ import { RELEASE_1_21_2 } from "./v1_21_2";
  * entrée, vide — elle dit « rien », elle ne laisse pas supposer « oublié ».
  */
 export const WHATS_NEW_RELEASES: readonly WhatsNewRelease[] = [
+  RELEASE_1_21_3,
   RELEASE_1_21_2,
   RELEASE_1_21_1,
   RELEASE_1_21_0,
