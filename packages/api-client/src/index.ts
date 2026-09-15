@@ -84,8 +84,9 @@ export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 // Socket Tentacle partagé (multiplexé : home, notifications, Watch Together)
 export {
   acquireSocket, sendSocketMessage, subscribeSocket, onSocketStatus,
-  getSocketStatus, getClockOffsetMs, sampleClock,
+  getSocketStatus, sampleClock, setClockSampling,
 } from "./socket/tentacleSocket";
+export { getClockOffsetMs, getClockRttMs } from "./socket/clockSync";
 export type { SocketStatus } from "./socket/tentacleSocket";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le

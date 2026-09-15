@@ -9,8 +9,7 @@ import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
 import { useVideoEvents } from "../hooks/useVideoEvents";
-import { usePlaybackOverlay } from "@tentacle-tv/api-client";
-import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
+import { useWebSegmentsOverlay } from "../hooks/useWebSegmentsOverlay";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
 import { usePlayerHotkeys } from "../hooks/usePlayerHotkeys";
 import { useWebTransport } from "../hooks/useWebTransport";
@@ -19,6 +18,7 @@ import { VideoPlayerControlsLayer } from "./player/VideoPlayerControlsLayer";
 import { useControlsAutoHide } from "../hooks/useControlsAutoHide";
 import { useVideoClock } from "../hooks/useVideoClock";
 import { useVideoCommands } from "../hooks/useVideoCommands";
+import { useGatedPlay } from "../hooks/useGatedPlay";
 import { usePlayerSwipe } from "../hooks/usePlayerSwipe";
 import { usePlayerVolume } from "../hooks/usePlayerVolume";
 import { PgsSubtitleOverlay } from "./player/PgsSubtitleOverlay";
@@ -40,7 +40,7 @@ export function VideoPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   onNextEpisode, onPreviousEpisode,
   segments = [], runtimeMs = 0, libraryId = null, posterUrl,
-  transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss,
+  transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss, onRequestPlay,
   inGroupSession, inGroupHost, onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -92,8 +92,13 @@ export function VideoPlayer({
   const currentTime = effectiveOffsetRef.current + displayTime;
   const duration = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : videoDuration;
 
-  // Lecture/pause et vitesse — les deux ordres donnés à l'élément lui-même.
-  const { togglePlay, applyRate } = useVideoCommands(videoRef);
+  // Lecture/pause et vitesse — les deux ordres donnés à l'élément lui-même ;
+  // en séance, la lecture passe d'abord par le moteur (reprise commune).
+  const { togglePlay: rawTogglePlay, applyRate } = useVideoCommands(videoRef);
+  const { toggle: togglePlay } = useGatedPlay({
+    rawToggle: rawTogglePlay, rawPlay: rawTogglePlay,
+    isPaused: () => videoRef.current?.paused ?? true, onRequestPlay,
+  });
 
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
     videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
@@ -105,41 +110,17 @@ export function VideoPlayer({
   });
 
   const [controlPanelOpen, setControlPanelOpen] = useState(false); // panneau ouvert → pilules effacées
-  // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
-  // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
-  // coquille commune aux six surfaces. ──
-  const playback = usePlaybackOverlay({
-    itemId,
-    isEpisode: item?.Type === "Episode" && !!item.SeriesId,
-    hasNextEpisode: !!hasNextEpisode,
-    positionSeconds: currentTime,
-    durationSeconds: duration,
-    hasStarted: hasStarted,
-    playbackEnded: ended,
-    segments,
-    runtimeMs,
-    libraryId,
-    groupSession: inGroupSession, groupHost: inGroupHost,
-    controlsVisible: showControls,
-    onSeekSeconds: handleSeek,
-    onNextEpisode: () => onNextEpisode?.(),
+  // L'arbitre partagé (boutons de saut, carte, affiche de fin), Watch Together
+  // compris — câblé dans le hook, comme sur le bureau.
+  const playback = useWebSegmentsOverlay({
+    itemId, isEpisode: item?.Type === "Episode" && !!item.SeriesId, hasNextEpisode,
+    positionSeconds: currentTime, durationSeconds: duration, hasStarted, playbackEnded: ended,
+    segments, runtimeMs, libraryId, controlsVisible: showControls,
+    onSeekSeconds: handleSeek, onNextEpisode,
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
     onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
-    // Watch Together : le refus local part au groupe par le bus existant.
-    onSegmentDismissNotify: (type) => { announceLocalRefusal(type); },
-    onNextDismissNotify: onAutoNextDismiss,
+    onAutoNextDismiss, inGroupSession, inGroupHost,
   });
-
-  // Watch Together entrant : un membre a refusé un saut — on s'aligne, sur le
-  // passage qu'IL a gardé (un client d'avant la refonte dit « Intro »).
-  const remoteRefusals = useIntroSkipRefusal();
-  const seenRefusalsRef = useRef(remoteRefusals.counter);
-  const { signalRemoteSegmentDismiss } = playback;
-  useEffect(() => {
-    if (remoteRefusals.counter === seenRefusalsRef.current) return;
-    seenRefusalsRef.current = remoteRefusals.counter;
-    signalRemoteSegmentDismiss(remoteRefusals.type);
-  }, [remoteRefusals, signalRemoteSegmentDismiss]);
 
   // La sortie de fin (film, dernier épisode, affiche refusée ou éteinte) est
   // décidée par la coquille (`useEndOfPlaybackExit`) : elle appelle

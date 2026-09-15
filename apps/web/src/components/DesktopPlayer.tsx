@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
-import { useMpvPrebuffer } from "../hooks/useMpvPrebuffer";
+import { useDesktopLoadingOverlay } from "../hooks/useDesktopLoadingOverlay";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
-import { SEEK_END_EPS_S } from "../hooks/useSmartSeek";
+import { useDesktopSkip } from "../hooks/useDesktopSkip";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
+import { useGatedPlay } from "../hooks/useGatedPlay";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
@@ -37,13 +38,18 @@ export function DesktopPlayer({
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
   transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession, inGroupHost,
-  onControlsVisibilityChange, applyToSeries,
+  onControlsVisibilityChange, applyToSeries, onRequestPlay,
 }: DesktopPlayerProps) {
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
   // échec de chargement (voir playbackFailure.ts). Absente hors lecture locale.
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
-  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause, setPause, seek, seekRelative,
+  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer({ probeLocalMedia });
+  // En séance, la lecture passe d'abord par le moteur (reprise commune) ; la pause reste immédiate.
+  const { toggle: togglePause, play: playGated } = useGatedPlay({
+    rawToggle: () => { void rawTogglePause(); }, rawPlay: () => { void setPause(false); },
+    isPaused: () => state.paused, onRequestPlay,
+  });
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
@@ -150,31 +156,15 @@ export function DesktopPlayer({
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
   useDesktopMediaControls({
     title, subtitle, posterUrl, paused: state.paused,
-    togglePause, setPause, goBack,
+    togglePause, setPause: async (paused) => { if (paused) await setPause(true); else playGated(); }, goBack,
     onNext: onNextEpisode, onPrevious: onPreviousEpisode,
     hasNext: hasNextEpisode, hasPrevious: hasPreviousEpisode,
   });
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
-  // La FIN, en espace mpv : la durée de SON flux — l'offset de transcode ne
-  // s'y applique pas. Avec `keep-open`, ce saut lève l'EOF réel de mpv
-  // (`eof-reached`), et l'affiche de fin paraît : le geste manuel vaut l'EOF
-  // naturel. Les cibles se comparent, elles, en POSITION FILM.
-  const seekToMpvEnd = useCallback(() => {
-    if (state.duration > 0) void seek(state.duration);
-  }, [state.duration, seek]);
-
-  // Un +30 s dont la cible atteint la fin — ou la dépasse — TERMINE la
-  // lecture au lieu de se caler sur le bord. Un recul ne termine jamais.
-  const skipRelativeOrEnd = useCallback((delta: number) => {
-    const filmPos = state.position + effectiveMpvOffset.current;
-    if (delta > 0 && dur > 0 && filmPos + delta >= dur - SEEK_END_EPS_S) {
-      seekToMpvEnd();
-      return;
-    }
-    void seekRelative(delta);
-  }, [dur, state.position, effectiveMpvOffset, seekRelative, seekToMpvEnd]);
+  // ±10/30 s et « jusqu'au bout » (un +30 s qui atteint la fin la termine).
+  const { seekToMpvEnd, skipRelativeOrEnd } = useDesktopSkip({ state, dur, effectiveMpvOffset, seek, seekRelative });
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
@@ -224,20 +214,8 @@ export function DesktopPlayer({
     onPlayStateChange, onBufferingChange,
   });
 
-  // Show loading overlay: initial load OR source change (quality/audio switch).
-  // Sécurité anti-spinner-éternel : mpv qui lit sans le dire (event "playing"
-  // perdu — configs Windows + EAC3 5.1). Le signe, c'est une position qui
-  // AVANCE : `position > 0` ne le prouve pas, time-pos valant déjà la position
-  // de départ dès l'ouverture du fichier sur une REPRISE.
-  const startPosRef = useRef<number | null>(null);
-  if (startPosRef.current === null && state.position > 0) startPosRef.current = state.position;
-  const playbackStarted = startPosRef.current !== null && state.position > startPosRef.current + 0.25;
-  // Réserve constituée avant de lancer l'image, l'écran de chargement couvrant
-  // l'attente : un seul chargement, et il ne recommence pas derrière.
-  const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
-  const showLoadingOverlay = prebuffering || (playbackStarted
-    ? false
-    : sourceChanging || (!state.playing && !hasStarted));
+  // Écran de chargement et réserve avant l'image (cf. hook dédié).
+  const { showLoadingOverlay } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause });
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode

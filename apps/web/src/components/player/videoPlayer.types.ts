@@ -107,6 +107,9 @@ export interface VideoPlayerProps {
   onFatalError?: () => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
+  /** Watch Together — lecture demandée : vrai si le moteur la prend en charge
+   *  (reprise planifiée pour toute la salle), faux = jouer localement. */
+  onRequestPlay?: () => boolean;
   /** Watch Together — une séance est active sur ce média (refus ⇒ décompte annulé). */
   inGroupSession?: boolean;
   /** Watch Together — ce lecteur est celui de l'hôte : seul son décompte de saut va au bout. */
