@@ -5,7 +5,8 @@ import { armGrace, cancelGrace } from "./roomStore";
 import { allRooms, getRoomOf } from "./roomRegistry";
 import { invitesFor } from "./roomInvites";
 import type { Room } from "./roomTypes";
-import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
+import { applyCommand, bumpEpoch, expireStaleWaits, releaseMemberWait, removeMemberAndSync } from "./sync";
+import { onBarrierExpired } from "./syncBarrier";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { refreshHostSettings } from "./hostSettings";
@@ -135,6 +136,9 @@ export function handleWtMessage(
 
   const member = room.members.get(user.userId)!;
   const outcome = applyCommand(room, member, msg, isUserOnline);
+  // Le socket du lecteur en séance : sa fermeture lèvera l'attente (un second
+  // onglet du même compte peut rester ouvert avec un lecteur mort derrière).
+  if (msg.type === "wt:presence") member.playbackSocket = member.inPlayback ? socket : null;
   wtSrvLog(
     `${user.username} → ${JSON.stringify(msg)} ⇒ ${outcome.kind === "broadcast" ? `broadcast(${outcome.cause})` : "ignore"}`,
     roomSnapshot(room),
@@ -166,12 +170,29 @@ function onGraceExpired(userId: string): void {
   }
 }
 
+/** Le socket d'un membre vient de se fermer (routes/ws.ts). Si c'était celui
+ *  de son lecteur en séance, la salle ne l'attend plus. */
+export function handleSocketClosed(userId: string, socket: WebSocket): void {
+  const room = getRoomOf(userId);
+  const member = room?.members.get(userId);
+  if (!room || !member || member.playbackSocket !== socket) return;
+  const resumed = releaseMemberWait(room, member);
+  wtSrvLog(`socket de lecture fermé : ${userId} n'est plus attendu`, { resumed, ...roomSnapshot(room) });
+  broadcastRoom(room, resumed ? "schedule" : "presence", null);
+}
+
 let registered = false;
 
 /** Branche la gestion de présence (appelé une fois au démarrage du serveur). */
 export function registerWatchTogetherGateway(): void {
   if (registered) return;
   registered = true;
+
+  // Barrière expirée : les retardataires sont lâchés, la salle repart.
+  onBarrierExpired((room) => {
+    wtSrvLog("barrière expirée : retardataires lâchés, la salle repart", roomSnapshot(room));
+    broadcastRoom(room, room.paused ? "presence" : "schedule", null);
+  });
 
   // Anti-gel infini : un membre attendu par le group-wait depuis trop
   // longtemps (player coincé, réseau mort sans déconnexion WS) est déclaré

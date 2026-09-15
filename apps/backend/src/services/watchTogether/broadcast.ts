@@ -38,7 +38,7 @@ export function roomToDto(room: Room): WtRoomStateDto {
     // il est appelé depuis chaque diffusion. La clé n'apparaît QUE si la salle
     // les connaît — un client d'avant ne doit rien voir de nouveau.
     ...(room.hostSettings ? { hostPlaybackSettings: room.hostSettings } : {}),
-    ...(room.barrierId > 0 && room.waitingFor.size > 0 ? { barrierId: room.barrierId } : {}),
+    ...(room.barrier ? { barrierId: room.barrier.id } : {}),
     ...(room.waitCause ? { waitCause: room.waitCause } : {}),
     ...(room.pendingSkip ? { pendingSkip: { ...room.pendingSkip } } : {}),
   };

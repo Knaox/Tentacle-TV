@@ -30,13 +30,14 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     waitingFor: new Set(),
     waitingSince: new Map(),
     barrierId: 0,
+    barrier: null,
     waitCause: null,
     pendingSkip: null,
     members: new Map([
       ["u-hote", {
         userId: "u-hote", username: "Hôte", hasAvatar: false, inPlayback: true,
         buffering: false, playbackError: false, joinedAt: 1, graceTimer: null,
-        protocolVersion: 1, rttMs: null, driftMs: null,
+        protocolVersion: 1, rttMs: null, driftMs: null, playbackSocket: null,
       }],
     ]),
     lastSeekAt: new Map(),
@@ -76,6 +77,7 @@ describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
   it("présents dès qu'ils disent quelque chose", () => {
     const room = makeRoom(null);
     room.barrierId = 3;
+    room.barrier = { id: 3, targetTicks: 900, cause: "seek", openedAt: 0, resumeOnRelease: true, timer: null };
     room.waitingFor.add("u-hote");
     room.waitCause = "seek";
     room.pendingSkip = { segmentType: "Intro", segmentStartTicks: 10, toTicks: 900, skipAtPositionTicks: 60, byUserId: "u-hote" };
@@ -88,7 +90,7 @@ describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
     expect(dto.members[0]).toMatchObject({ protocolVersion: 2, rttMs: 42, driftMs: -12 });
   });
 
-  it("une barrière que plus personne n'attend n'est plus annoncée", () => {
+  it("une barrière libérée n'est plus annoncée, même si le compteur a tourné", () => {
     const room = makeRoom(null);
     room.barrierId = 3;
     expect("barrierId" in roomToDto(room)).toBe(false);

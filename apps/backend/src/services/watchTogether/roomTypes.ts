@@ -1,4 +1,5 @@
 import type { PlaybackSettings } from "../../playback/playbackSettings";
+import type { WebSocket } from "@fastify/websocket";
 import type { SegmentType } from "../../playback/segmentTypes";
 import type { WtChatMessageDto, WtPauseReason, WtWaitCause } from "./protocol";
 
@@ -25,6 +26,28 @@ export interface RoomMember {
   rttMs: number | null;
   /** Écart au dernier `wt:tick` (ms, > 0 = en avance), null sans balise. */
   driftMs: number | null;
+  /** Le socket dont le lecteur est en séance (`wt:presence inPlayback`) : sa
+   *  fermeture libère l'attente — un compte peut garder un autre socket ouvert
+   *  (second onglet) alors que son lecteur est mort. */
+  playbackSocket: WebSocket | null;
+}
+
+/**
+ * Une barrière : la salle attend que des lecteurs soient posés (sur une cible
+ * de seek, après un rechargement…) avant de repartir — ou de rester en pause,
+ * si c'est l'utilisateur qui l'avait mise en pause (`resumeOnRelease`).
+ */
+export interface Barrier {
+  /** Identifiant monotone (Room.barrierId) : un « prêt » d'une barrière
+   *  précédente ne libère jamais celle-ci. */
+  id: number;
+  targetTicks: number;
+  cause: WtWaitCause;
+  openedAt: number;
+  resumeOnRelease: boolean;
+  /** Délai de lâcher des retardataires (seek, saut, reprise) ; null pour un
+   *  chargement (délai du sweep anti-gel). */
+  timer: ReturnType<typeof setTimeout> | null;
 }
 
 /** Saut de passage armé par le serveur (voir `WtPendingSkipDto`). */
@@ -58,8 +81,10 @@ export interface Room {
   waitingFor: Set<string>;
   /** Horodatage d'entrée dans waitingFor (miroir) — timeout anti-gel infini. */
   waitingSince: Map<string, number>;
-  /** Barrière de synchronisation courante (0 = aucune) — monotone. */
+  /** Compteur monotone des barrières ouvertes. */
   barrierId: number;
+  /** La barrière en cours, null quand personne n'est attendu. */
+  barrier: Barrier | null;
   /** Pourquoi la salle attend, null quand elle n'attend pas. */
   waitCause: WtWaitCause | null;
   /** Saut de passage armé, null sans décompte en cours. */
