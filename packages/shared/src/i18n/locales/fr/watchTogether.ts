@@ -61,6 +61,8 @@ export default {
   waitingForGroup: "En attente du groupe…",
   syncing: "Synchronisation…",
   skippedByGroup: "Passage sauté",
+  driftBadge: "{{ms}} ms",
+  driftBadgeAria: "Écart de synchronisation : {{ms}} ms",
 
   // Pilule flottante
   groupPlaybackActive: "Lecture de groupe en cours",

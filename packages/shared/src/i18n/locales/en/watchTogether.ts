@@ -61,6 +61,8 @@ export default {
   waitingForGroup: "Waiting for the group…",
   syncing: "Syncing…",
   skippedByGroup: "Segment skipped",
+  driftBadge: "{{ms}} ms",
+  driftBadgeAria: "Sync offset: {{ms}} ms",
 
   // Floating pill
   groupPlaybackActive: "Group playback in progress",

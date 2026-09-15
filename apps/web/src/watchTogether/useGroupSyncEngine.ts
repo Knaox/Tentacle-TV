@@ -10,6 +10,7 @@ import { cancelScheduledPlay, isGroupSessionActive, type GroupSyncSharedRefs } f
 import { useGroupDriftLoop } from "./useGroupDriftLoop";
 import { useGroupRemoteApply } from "./useGroupRemoteApply";
 import { useGroupIntents } from "./useGroupIntents";
+import { useGroupTick } from "./useGroupTick";
 import { wtLog } from "./wtLog";
 
 /**
@@ -140,6 +141,9 @@ export function useGroupSyncEngine({
 
   // ── Boucle de drift ──
   useGroupDriftLoop({ enabled: !!onGroupItem, itemId, transportRef, shared });
+
+  // ── Balise (écart, aller-retour) ──
+  useGroupTick({ enabled: !!onGroupItem, transportRef, shared });
 
   // ── Intents locaux (observe & report, lecture demandée) ──
   const intents = useGroupIntents({ active, itemId, transportRef, shared, declaredRef });

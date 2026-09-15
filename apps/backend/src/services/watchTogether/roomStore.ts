@@ -53,6 +53,7 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     pendingSkip: null,
     skipHistory: new Map(),
     skipTimer: null,
+    lastTickBroadcastAt: 0,
     members: new Map([[user.userId, newMember(user, now)]]),
     lastSeekAt: new Map(),
     chat: [],

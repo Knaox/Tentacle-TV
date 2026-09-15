@@ -35,6 +35,7 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     pendingSkip: null,
     skipHistory: new Map(),
     skipTimer: null,
+    lastTickBroadcastAt: 0,
     members: new Map([
       ["u-hote", {
         userId: "u-hote", username: "Hôte", hasAvatar: false, inPlayback: true,

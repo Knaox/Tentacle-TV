@@ -94,6 +94,8 @@ export interface Room {
   skipHistory: Map<string, number>;
   /** Minuteur du saut armé (réarmé de lui-même tant que la salle est en pause). */
   skipTimer: ReturnType<typeof setTimeout> | null;
+  /** Dernière diffusion due aux balises (`wt:tick`) — au plus une par 5 s. */
+  lastTickBroadcastAt: number;
   members: Map<string, RoomMember>;
   /** Anti-spam seek : dernier seek accepté par membre. */
   lastSeekAt: Map<string, number>;
