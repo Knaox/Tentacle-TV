@@ -7,7 +7,7 @@ import {
 import { useWatchTogether } from "./WatchTogetherProvider";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
-  armEcho, isApplying, isWaitedForMe, setTransportRate,
+  armEcho, isApplying, isGroupSessionActive, isWaitedForMe, setTransportRate,
   REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs,
 } from "./groupSyncShared";
 import { useGroupDriftLoop } from "./useGroupDriftLoop";
@@ -34,7 +34,7 @@ export function useGroupSyncEngine({
   claimStartSeconds?: number;
 }) {
   const { room, send, serverNow, isInGroup, selfId } = useWatchTogether();
-  const active = isInGroup && !!itemId;
+  const active = isGroupSessionActive(isInGroup, room, itemId);
   const onGroupItem = active && room?.itemId === itemId;
 
   const roomRef = useRef(room);
