@@ -118,10 +118,8 @@ export const TVPosterMeta = memo(function TVPosterMeta({ item, width }: { item: 
   const { t } = useTranslation("common");
   const isEpisode = item.Type === "Episode";
   const addedCount = item.RecentlyAddedCount ?? 0;
-  // L'affiche montre le visage d'une SÉRIE : elle en porte la note, lot « +N »
-  // comme épisode isolé. Sans fournisseur au-dessus, la carte est vide et le
-  // badge se tait.
-  const { rating } = cardRatingFor(item, "series", useSeriesRatingMap());
+  // Pas de note ICI : le badge est ancré en absolu au bas de l'AFFICHE, donc à
+  // `TVPosterFrame` — ce bloc-ci ne porte que le titre et son sous-titre.
   const epLabel = isEpisode && item.ParentIndexNumber != null && item.IndexNumber != null
     ? `S${pad2(item.ParentIndexNumber)}E${pad2(item.IndexNumber)}`
     : null;
