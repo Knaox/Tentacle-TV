@@ -1,5 +1,6 @@
 import type { PlaybackSettings } from "../../playback/playbackSettings";
-import type { WtChatMessageDto, WtPauseReason } from "./protocol";
+import type { SegmentType } from "../../playback/segmentTypes";
+import type { WtChatMessageDto, WtPauseReason, WtWaitCause } from "./protocol";
 
 /**
  * Watch Together — les formes de l'état en mémoire (salles, membres,
@@ -18,6 +19,21 @@ export interface RoomMember {
   joinedAt: number;
   /** Timer de grâce armé quand le membre passe hors ligne (F5, coupure). */
   graceTimer: ReturnType<typeof setTimeout> | null;
+  /** Version annoncée par son lecteur (`wt:presence`) — 1 = client d'avant. */
+  protocolVersion: number;
+  /** Dernier aller-retour déclaré (ms), null tant qu'il ne l'a pas dit. */
+  rttMs: number | null;
+  /** Écart au dernier `wt:tick` (ms, > 0 = en avance), null sans balise. */
+  driftMs: number | null;
+}
+
+/** Saut de passage armé par le serveur (voir `WtPendingSkipDto`). */
+export interface PendingSkip {
+  segmentType: SegmentType;
+  segmentStartTicks: number;
+  toTicks: number;
+  skipAtPositionTicks: number;
+  byUserId: string | null;
 }
 
 export interface Room {
@@ -42,6 +58,12 @@ export interface Room {
   waitingFor: Set<string>;
   /** Horodatage d'entrée dans waitingFor (miroir) — timeout anti-gel infini. */
   waitingSince: Map<string, number>;
+  /** Barrière de synchronisation courante (0 = aucune) — monotone. */
+  barrierId: number;
+  /** Pourquoi la salle attend, null quand elle n'attend pas. */
+  waitCause: WtWaitCause | null;
+  /** Saut de passage armé, null sans décompte en cours. */
+  pendingSkip: PendingSkip | null;
   members: Map<string, RoomMember>;
   /** Anti-spam seek : dernier seek accepté par membre. */
   lastSeekAt: Map<string, number>;

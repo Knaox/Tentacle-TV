@@ -120,6 +120,13 @@ export function handleWtMessage(
     return;
   }
 
+  if (msg.type === "wt:tick" || msg.type === "wt:skipPropose") {
+    // Balises et propositions de saut : le contrat les accepte déjà, la salle
+    // ne les exploite pas encore (balises → syncBeacon, sauts → syncSkip).
+    wtSrvLog(`${user.username} → ${msg.type} (reçu, pas encore exploité)`);
+    return;
+  }
+
   if (msg.type === "wt:autonextDismiss") {
     // Transient aussi : la bannière « épisode suivant » se masque partout.
     relayTransient(room, socket, { type: "wt:autonextDismiss", originUserId: user.userId });

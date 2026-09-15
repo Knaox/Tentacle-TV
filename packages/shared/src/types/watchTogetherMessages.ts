@@ -17,6 +17,15 @@ import type { SegmentType } from "../playback/segmentTypes";
 /** Ticks Jellyfin par milliseconde (10 000 000 par seconde). */
 const TICKS_PER_MS = 10_000;
 
+/**
+ * Version du protocole annoncée par un client (`wt:presence`). Un client
+ * d'avant n'annonce rien : le serveur le tient pour la version 1 et ne
+ * l'attend jamais dans une barrière de synchronisation (il ne saurait pas
+ * répondre « prêt » — voir syncBarrier.ts) ; il reçoit les mêmes états et se
+ * recale comme il l'a toujours fait.
+ */
+export const WT_PROTOCOL_VERSION = 2;
+
 // ── DTOs ──
 
 export interface WtMemberDto {
@@ -33,9 +42,40 @@ export interface WtMemberDto {
   playbackError: boolean;
   isHost: boolean;
   joinedAt: number;
+  /** Version annoncée par son lecteur (absente = client d'avant, version 1). */
+  protocolVersion?: number;
+  /** Aller-retour client ↔ serveur mesuré par son lecteur (ms), s'il l'a dit. */
+  rttMs?: number;
+  /** Écart de son lecteur à la position de la salle au dernier `wt:tick`
+   *  (ms, > 0 = en avance) — diagnostic, jamais une consigne. */
+  driftMs?: number;
 }
 
 export type WtPauseReason = "user" | "buffering" | null;
+
+/**
+ * Pourquoi la salle attend (elle est alors `paused` avec `pauseReason`
+ * « buffering » : les clients d'avant ne connaissent que cette valeur, et
+ * elle garde tout son sens — on attend que des lecteurs soient prêts).
+ *  - buffering : un membre charge ou bufferise ;
+ *  - seek / skip : tout le monde se cale sur la cible avant de repartir ;
+ *  - play : une reprise a été demandée, elle attend les retardataires.
+ */
+export type WtWaitCause = "buffering" | "seek" | "skip" | "play";
+
+/** Saut de passage armé par le serveur — le même décompte pour tous. */
+export interface WtPendingSkipDto {
+  segmentType: SegmentType;
+  /** Début du passage (ticks) : identifie le passage, un par média. */
+  segmentStartTicks: number;
+  /** Cible du saut (ticks). */
+  toTicks: number;
+  /** Position de la salle à laquelle le saut s'exécute (ticks) — en position
+   *  de média, pas en heure murale : une pause fige le décompte. */
+  skipAtPositionTicks: number;
+  /** Qui l'a proposé (null = client d'avant ou proposition serveur). */
+  byUserId: string | null;
+}
 
 export interface WtRoomStateDto {
   groupId: string;
@@ -66,6 +106,16 @@ export interface WtRoomStateDto {
    * l'ignore. Absent, chacun garde ses réglages, comme aujourd'hui.
    */
   hostPlaybackSettings?: PlaybackSettings;
+  /**
+   * Barrière de synchronisation en cours : identifiant monotone que chaque
+   * lecteur renvoie avec son « prêt » (`wt:buffering`), pour qu'un prêt
+   * périmé ne libère jamais la barrière suivante. Absent = aucune barrière.
+   */
+  barrierId?: number;
+  /** Pourquoi la salle attend — absent quand elle n'attend pas. */
+  waitCause?: WtWaitCause;
+  /** Saut de passage armé (décompte serveur) — absent quand il n'y en a pas. */
+  pendingSkip?: WtPendingSkipDto;
 }
 
 export interface WtInviteDto {
@@ -102,7 +152,10 @@ export interface WtChatMessageDto {
 export type WtSetItemReason = "manual" | "nextEp" | "prevEp" | "autonext";
 
 export type WtClientMessage =
-  | { type: "wt:play"; positionTicks: number }
+  /** `force` : reprendre SANS attendre les retardataires d'une barrière —
+   *  réservé à un geste explicite ; absent, une reprise demandée pendant une
+   *  attente ne fait qu'en programmer la fin. */
+  | { type: "wt:play"; positionTicks: number; force?: boolean }
   | { type: "wt:pause"; positionTicks: number }
   | { type: "wt:seek"; positionTicks: number }
   /** `fromItemId` = item courant vu par l'émetteur — sert à dédupliquer les
@@ -110,8 +163,21 @@ export type WtClientMessage =
    *  `startPositionTicks` = position initiale du groupe (reprise Jellyfin du
    *  lanceur) — absent/0 pour un démarrage du début (épisode suivant…). */
   | { type: "wt:setItem"; itemId: string; fromItemId: string | null; reason: WtSetItemReason; startPositionTicks?: number }
-  | { type: "wt:buffering"; buffering: boolean; positionTicks?: number }
-  | { type: "wt:presence"; inPlayback: boolean; itemId?: string }
+  /** `barrierId` : la barrière à laquelle ce « prêt » répond (écho de l'état
+   *  reçu) — sans lui (client d'avant), le prêt vaut pour la barrière courante.
+   *  `rttMs` : l'aller-retour mesuré, pour le délai des reprises planifiées. */
+  | { type: "wt:buffering"; buffering: boolean; positionTicks?: number; barrierId?: number; rttMs?: number }
+  /** `protocolVersion` : ce que ce lecteur sait faire (WT_PROTOCOL_VERSION) ;
+   *  absent = client d'avant. */
+  | { type: "wt:presence"; inPlayback: boolean; itemId?: string; protocolVersion?: number; rttMs?: number }
+  /** Balise périodique d'un lecteur en séance : sa position, son horloge, son
+   *  aller-retour. Diagnostic (écart par membre) et délai des reprises — jamais
+   *  une commande : la salle ne bouge pas. */
+  | { type: "wt:tick"; positionTicks: number; paused: boolean; atServerTime: number; rttMs?: number }
+  /** Un lecteur entre dans un passage que les réglages de l'HÔTE sautent tout
+   *  seuls : il propose le saut, le serveur arme UN décompte pour la salle
+   *  (dédupliqué par passage — tous les lecteurs proposent, un seul gagne). */
+  | { type: "wt:skipPropose"; segmentType: SegmentType; isEpisode: boolean; segmentStartTicks: number; toTicks: number }
   | { type: "wt:playbackError"; itemId: string }
   /** L'utilisateur a masqué la bannière « épisode suivant » — masquée partout. */
   | { type: "wt:autonextDismiss" }
@@ -139,7 +205,12 @@ export type WtClientMessage =
 export type WtStateCause =
   | "join" | "leave" | "kick" | "hostChange"
   | "play" | "pause" | "seek" | "setItem"
-  | "buffering" | "resume" | "presence" | "sync";
+  | "buffering" | "resume" | "presence" | "sync"
+  /** Saut de passage exécuté par le serveur (décompte arrivé à son terme). */
+  | "skip"
+  /** Reprise planifiée : `stateAtServerTime` est dans le futur, chacun repart
+   *  à cet instant-là (un client d'avant repart à la réception et se recale). */
+  | "schedule";
 
 export type WtErrorCode = "not_in_group" | "not_host" | "invalid" | "stale_item";
 

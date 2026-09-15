@@ -38,10 +38,38 @@ function gifDim(v: unknown): number | undefined {
     : undefined;
 }
 
+/** Aller-retour déclaré (ms) : fini, borné à une minute, sinon absent. */
+function rttMs(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) && v >= 0
+    ? Math.min(Math.round(v), 60_000)
+    : undefined;
+}
+
+/** Identifiant de barrière écho : entier positif, sinon absent (client d'avant). */
+function barrierId(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isInteger(v) && v > 0 ? v : undefined;
+}
+
+/** Version de protocole annoncée : entier de 1 à 99, sinon absente. */
+function protocolVersion(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 99 ? v : undefined;
+}
+
+/** Nombre fini, sinon absent. */
+function finite(v: unknown): number | undefined {
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
 /** Validation de forme des messages entrants (payloads non fiables). */
 export function parseWtClientMessage(msg: { type: string } & Record<string, unknown>): WtClientMessage | null {
   switch (msg.type) {
     case "wt:play":
+      if (typeof msg.positionTicks !== "number" || !Number.isFinite(msg.positionTicks)) return null;
+      return {
+        type: "wt:play",
+        positionTicks: clampTicks(msg.positionTicks),
+        ...(msg.force === true ? { force: true } : {}),
+      };
     case "wt:pause":
     case "wt:seek":
       if (typeof msg.positionTicks !== "number" || !Number.isFinite(msg.positionTicks)) return null;
@@ -68,6 +96,8 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
         buffering: msg.buffering,
         positionTicks: typeof msg.positionTicks === "number" && Number.isFinite(msg.positionTicks)
           ? clampTicks(msg.positionTicks) : undefined,
+        barrierId: barrierId(msg.barrierId),
+        rttMs: rttMs(msg.rttMs),
       };
     case "wt:presence":
       if (typeof msg.inPlayback !== "boolean") return null;
@@ -75,7 +105,32 @@ export function parseWtClientMessage(msg: { type: string } & Record<string, unkn
         type: "wt:presence",
         inPlayback: msg.inPlayback,
         itemId: typeof msg.itemId === "string" ? msg.itemId : undefined,
+        protocolVersion: protocolVersion(msg.protocolVersion),
+        rttMs: rttMs(msg.rttMs),
       };
+    case "wt:tick": {
+      const atServerTime = finite(msg.atServerTime);
+      if (typeof msg.positionTicks !== "number" || !Number.isFinite(msg.positionTicks)) return null;
+      if (typeof msg.paused !== "boolean" || atServerTime === undefined) return null;
+      return {
+        type: "wt:tick",
+        positionTicks: clampTicks(msg.positionTicks),
+        paused: msg.paused,
+        atServerTime,
+        rttMs: rttMs(msg.rttMs),
+      };
+    }
+    case "wt:skipPropose": {
+      if (!isSegmentType(msg.segmentType) || typeof msg.isEpisode !== "boolean") return null;
+      if (finite(msg.segmentStartTicks) === undefined || finite(msg.toTicks) === undefined) return null;
+      return {
+        type: "wt:skipPropose",
+        segmentType: msg.segmentType,
+        isEpisode: msg.isEpisode,
+        segmentStartTicks: clampTicks(msg.segmentStartTicks),
+        toTicks: clampTicks(msg.toTicks),
+      };
+    }
     case "wt:playbackError":
       if (typeof msg.itemId !== "string" || !msg.itemId) return null;
       return { type: "wt:playbackError", itemId: msg.itemId };
