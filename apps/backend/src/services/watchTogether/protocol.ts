@@ -46,6 +46,9 @@ export const WT_DEFAULT_RTT_MS = 250;
  * gardent leur propre délai (WT_GROUP_WAIT_TIMEOUT_MS).
  */
 export const WT_BARRIER_TIMEOUT_MS = 20_000;
+/** Balises (`wt:tick`) : les écarts par membre partent au plus une fois par
+ *  5 s et par salle — trois membres à 5 s feraient sinon un état par 1,7 s. */
+export const WT_TICK_BROADCAST_MS = 5_000;
 /** Garde-fou : position max acceptée (~28 h) contre les payloads absurdes. */
 export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
 /** Chat : longueur max d'un message (caractères, tronqué au-delà). */

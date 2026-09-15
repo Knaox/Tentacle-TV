@@ -8,6 +8,7 @@ import type { Room } from "./roomTypes";
 import { applyCommand, bumpEpoch, expireStaleWaits, releaseMemberWait, removeMemberAndSync } from "./sync";
 import { onBarrierExpired } from "./syncBarrier";
 import { cancelPendingSkip, onSkipExecuted, proposeSkip } from "./syncSkip";
+import { recordTick } from "./syncBeacon";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { refreshHostSettings } from "./hostSettings";
@@ -137,8 +138,15 @@ export function handleWtMessage(
   }
 
   if (msg.type === "wt:tick") {
-    // Balises : le contrat les accepte déjà, la salle ne les exploite pas encore.
-    wtSrvLog(`${user.username} → wt:tick (reçu, pas encore exploité)`);
+    // Balise : l'écart de ce lecteur à la salle, son aller-retour — jamais une
+    // commande. Diffusé au plus une fois par 5 s et par salle.
+    const beaconMember = room.members.get(user.userId)!;
+    const due = recordTick(room, beaconMember, msg, Date.now());
+    wtSrvLog(`${user.username} → tick`, { driftMs: beaconMember.driftMs, rttMs: beaconMember.rttMs, due });
+    if (due) {
+      bumpEpoch(room);
+      broadcastRoom(room, "presence", null);
+    }
     return;
   }
 

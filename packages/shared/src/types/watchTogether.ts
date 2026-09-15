@@ -62,6 +62,8 @@ export const WT_DRIFT_LOOP_MS = 200;
 /** Rafale de pings à l'entrée en groupe pour estimer l'offset d'horloge. */
 export const WT_CLOCK_BURST_COUNT = 5;
 export const WT_CLOCK_BURST_SPACING_MS = 200;
+/** Balise de position d'un lecteur en séance (diagnostic d'écart, aller-retour). */
+export const WT_TICK_INTERVAL_MS = 5_000;
 /** Horloge en séance : un échantillon toutes les 5 s, fenêtre de 24 (2 min),
  *  rien de plus vieux que 3 min — deux horloges dérivent de quelques ms par
  *  minute, un offset figé au début d'un film de deux heures finirait à 100 ms. */
