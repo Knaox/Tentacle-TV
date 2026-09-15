@@ -56,3 +56,20 @@ export function setTransportRate(
   shared.currentRateRef.current = rate;
   transport?.setRate(rate);
 }
+
+/**
+ * Une séance est active sur CE média quand une salle existe VRAIMENT.
+ *
+ * Le drapeau `isInGroup` ne suffit pas : le shim webOS le pose à vrai sans
+ * salle, pour masquer le bouton d'invitation et le menu de vitesse — le
+ * téléviseur n'a pas de Watch Together. Le lecteur, lui, en déduisait une
+ * séance : plus de décompte de saut, plus d'indicateur de reprise, et des
+ * messages `wt:*` envoyés dans le vide.
+ */
+export function isGroupSessionActive(
+  isInGroup: boolean,
+  room: WtRoomStateDto | null | undefined,
+  itemId: string | undefined,
+): boolean {
+  return isInGroup && !!room && !!itemId;
+}
