@@ -13,6 +13,17 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.21.3]
+### FR
+- **La barre des tâches ne passe plus devant le film** (Linux) : en plein écran, le panneau du bureau pouvait s'afficher par-dessus l'image — le plus souvent au retour de la souris depuis un autre écran. Il ne l'a jamais recouverte : il s'intercalait entre la vidéo et la fenêtre, transparente, qui la laissait voir
+- **L'icône de l'application a ses coins arrondis** (Windows, Linux, macOS) : elle s'affichait en carré dans la barre des tâches et dans le Dock, là où l'App Store la montre déjà arrondie sur un Mac récent
+- Nécessite un serveur 1.17.2 ou plus
+
+### EN
+- **The taskbar no longer sits in front of the film** (Linux): in fullscreen, the desktop panel could show up over the picture — most often when the mouse came back from another screen. It never covered it: it slipped between the video and our window, which is transparent and let it through
+- **The app icon has rounded corners** (Windows, Linux, macOS): it appeared as a square in the taskbar and in the Dock, where the App Store already shows it rounded on a recent Mac
+- Requires a server on 1.17.2 or newer
+
 ## [win-1.21.2]
 <!-- Bloc Windows : la 1.21.1 EST arrivée sur le Microsoft Store, donc Windows
      ne reçoit que ce qui a suivi — et rien de ce qui ne concerne que macOS
