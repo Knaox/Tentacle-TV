@@ -391,6 +391,45 @@ Dans l'app réelle (film 4K HEVC PQ, réseau, lecture directe) :
   fenêtre de 1200x700** — KWin sert le PQ aux surfaces fenêtrées, rien n'est
   sacrifié. Captures : `app-colle-{1,2,3}.png`.
 
+### Le panneau du bureau passait DEVANT la vidéo (15.09)
+
+Symptôme rapporté : film en plein écran sur l'écran 1, la souris revient de
+l'écran 2, et la barre des tâches s'affiche par-dessus l'image. Le relevé de la
+pile KWin (même script D-Bus que plus haut) montre pourquoi — les panneaux
+Plasma (`dock=true`) coiffent TOUTES les fenêtres ordinaires :
+
+```
+   8 cls=mpv          dock=false           la vidéo, couche normale
+   9 cls=tentacle-tv  dock=false           notre fenêtre, juste au-dessus
+  13 cls=plasmashell  dock=true            les trois panneaux, au-dessus des deux
+```
+
+En plein écran, seul l'hôte ACTIF est promu au-dessus du panneau : mpv reste
+dessous, le panneau s'intercale entre les deux, et notre fenêtre étant
+TRANSPARENTE, il se voit à travers elle. Rien n'est « passé devant la vidéo » —
+il n'a jamais été derrière.
+
+Remède mesuré sur KWin 6.7.5, deux fenêtres témoins (`konsole`), une par rôle :
+
+| État | Pile relevée (de bas en haut) |
+|---|---|
+| hôte plein écran ACTIF, vidéo `keepAbove` | panneaux 13-15 · **vidéo 16** · **hôte 17** |
+| hôte plein écran INACTIF, vidéo `keepAbove` | **hôte 12** · panneaux 14-16 · **vidéo 17** |
+| hôte fenêtré, `keepAbove` retiré | vidéo · hôte · panneaux 15-17 |
+
+La première ligne est le correctif : `keepAbove` monte la fenêtre mpv d'une
+couche — au-dessus du panneau, sous l'hôte plein écran actif. **La deuxième
+dit pourquoi la condition d'activation n'est pas décorative** : un hôte plein
+écran qui perd le focus retombe en couche normale, et une vidéo laissée
+`keepAbove` recouvrirait alors l'interface et tout le reste du bureau. D'où
+`video.keepAbove = hote.fullScreen && hote.active`, rejoué sur
+`activeChanged` et `fullScreenChanged`, et rendu à la destruction de
+l'instance QML (décrochée en pleine lecture, la fenêtre mpv survit quelques
+instants au démontage du lecteur).
+
+Non traité, faute de banc : **X11**, où la fenêtre mpv est calée par nous et
+subit la même règle de couches. Le montage X11 est celui du repli, sans HDR.
+
 ### Le dossier neuf, ou pourquoi la colle mourait au 2e lancement (28.08, soir)
 
 Symptôme rapporté : « parfois quand je lance un média, la fenêtre mpv n'est plus
