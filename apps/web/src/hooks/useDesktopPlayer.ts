@@ -59,6 +59,7 @@ export function useDesktopPlayer(opts?: {
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const positionAtRef = useRef(0);
+  const restartCountRef = useRef(0);
   const bufferedRef = useRef(0);
   // Miroir synchrone de `paused-for-cache` : le nudge s'exécute dans un timer,
   // hors rendu React, et ne peut donc pas lire `state.buffering`.
@@ -75,7 +76,7 @@ export function useDesktopPlayer(opts?: {
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setFailure, setFileLoaded, setMediaReady,
-    positionRef, positionAtRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
+    positionRef, positionAtRef, restartCountRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
     playbackWatchdogRef, wakeupRef, loadfileAtRef,
     onEndFileFailure: (endFile) => endFileFailureRef.current(endFile),
   });
@@ -266,5 +267,5 @@ export function useDesktopPlayer(opts?: {
 
   const commands = useMpvCommands({ state, setState, mutedRef });
 
-  return { state, ready, fileLoaded, mediaReady, failure, play, positionRef, positionAtRef, ...commands };
+  return { state, ready, fileLoaded, mediaReady, failure, play, positionRef, positionAtRef, restartCountRef, ...commands };
 }

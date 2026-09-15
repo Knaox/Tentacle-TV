@@ -5,8 +5,8 @@ import {
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
-  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isWaitedForMe, seekLookaheadS, setTransportRate,
-  updateSeekLatency, type GroupSyncSharedRefs,
+  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isBarrierParticipant, isWaitedForMe, seekLookaheadS,
+  setTransportRate, updateSeekLatency, type GroupSyncSharedRefs,
 } from "./groupSyncShared";
 import { isFutureAnchor } from "./groupSchedule";
 import { wtLog } from "./wtLog";
@@ -62,6 +62,10 @@ export function useGroupDriftLoop({
       // (chargement initial : le group-wait nous couvre).
       if (!t || !r || r.itemId !== itemId || shared.lastBufferingSentRef.current !== false) return;
 
+      if (isBarrierParticipant(r, shared.selfIdRef.current)) {
+        skip("barrier", "drift: SKIP — la salle m'attend sur une cible (barrière)");
+        return;
+      }
       if (isWaitedForMe(r, shared.selfIdRef.current)) {
         skip("waitedForMe", "drift: SKIP — group-wait causé par moi (player en (re)chargement)");
         return;

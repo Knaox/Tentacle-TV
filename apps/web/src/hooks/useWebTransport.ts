@@ -66,6 +66,14 @@ export function useWebTransport({
         return !!v && v.readyState >= 3 && !sourceChangingRef.current;
       },
       isSeeking: () => videoRef.current?.seeking ?? false,
+      // Posé : plus de seek en vol, HAVE_FUTURE_DATA, et la position à moins
+      // de 150 ms de la cible (en PTS). Jamais `canplaythrough` : WebKit le
+      // tire trop tôt, Chromium ne le retire pas sur un seek dans le tampon.
+      isSettledAt: (targetSeconds: number) => {
+        const v = videoRef.current;
+        if (!v || v.seeking || v.readyState < 3 || sourceChangingRef.current) return false;
+        return Math.abs(v.currentTime - (targetSeconds - effectiveOffsetRef.current)) < 0.15;
+      },
       // Jamais joué (`played` vide) : un play() puis pause() DANS le geste
       // bénit l'élément — WebKit n'autorise un play() différé qu'après ça.
       primeGesture: () => {

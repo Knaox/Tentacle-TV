@@ -45,7 +45,7 @@ export function DesktopPlayer({
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
   const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen,
-    positionRef, positionAtRef } = useDesktopPlayer({ probeLocalMedia });
+    positionRef, positionAtRef, restartCountRef } = useDesktopPlayer({ probeLocalMedia });
   // En séance, la lecture passe d'abord par le moteur (reprise commune) ; la pause reste immédiate.
   const { toggle: togglePause, play: playGated } = useGatedPlay({
     rawToggle: () => { void rawTogglePause(); }, rawPlay: () => { void setPause(false); },
@@ -74,6 +74,10 @@ export function DesktopPlayer({
   const offsetDetectedForSrc = useRef("");
   const fullscreenRef = useRef(state.fullscreen);
   fullscreenRef.current = state.fullscreen;
+  // Glissement de la seekbar en cours : la détection de discontinuité se tait
+  // (un glissement n'est pas un seek à rapporter — le relâchement, si).
+  const draggingRef = useRef(false);
+  const reportUserSeek = (seconds: number) => onSeekComplete?.(seconds, state.paused, true);
 
   // MPV tracks split by type
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
@@ -126,7 +130,8 @@ export function DesktopPlayer({
   // Chargement de la source + détection PTS + report de progression
   const { sourceChanging } = useMpvSource({
     state, ready, fileLoaded, src, startPositionSeconds, isDirectPlay, streamOffset,
-    play, onStarted, onProgress, onSeekComplete,
+    play, onStarted, onProgress,
+    onSeekComplete: (seconds, paused) => { if (!draggingRef.current) onSeekComplete?.(seconds, paused); },
     lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
     hasStartedRef, loadedExternalSubs,
     // Pour poser les pistes AVANT l'ouverture du fichier (cf. useMpvSource) —
@@ -165,7 +170,9 @@ export function DesktopPlayer({
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
   // ±10/30 s et « jusqu'au bout » (un +30 s qui atteint la fin la termine).
-  const { seekToMpvEnd, skipRelativeOrEnd } = useDesktopSkip({ state, dur, effectiveMpvOffset, seek, seekRelative });
+  const { seekToMpvEnd, skipRelativeOrEnd } = useDesktopSkip({
+    state, dur, effectiveMpvOffset, seek, seekRelative, groupActive: inGroupSession, onUserSeek: reportUserSeek,
+  });
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
@@ -182,6 +189,9 @@ export function DesktopPlayer({
     ignoreNextToggle,
     // Relâcher la poignée sur le bord termine la lecture (affiche de fin).
     onSeekToEnd: seekToMpvEnd,
+    // En séance : un seul seek pour la salle, au relâchement.
+    group: { active: !!inGroupSession, onRelease: reportUserSeek },
+    isDraggingRef: draggingRef,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
@@ -212,7 +222,7 @@ export function DesktopPlayer({
   // que la croix locale, sans ré-annonce au groupe.
   useDesktopTransport({
     transportRef, state, mediaReady, prebuffering, isDirectPlay,
-    positionRef, positionAtRef, lastAbsolutePosRef, effectiveMpvOffset,
+    positionRef, positionAtRef, restartCountRef, lastAbsolutePosRef, effectiveMpvOffset,
     setPause, seek, setSpeed,
     cancelAutoPlay: playback.signalRemoteNextDismiss,
     onPlayStateChange, onBufferingChange,

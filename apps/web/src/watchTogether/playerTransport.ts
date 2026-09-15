@@ -28,6 +28,10 @@ export interface PlayerTransport {
    *  de drift NE corrige PAS pendant un seek en vol : un far-seek HLS prend
    *  plusieurs secondes et chaque re-seek relancerait ffmpeg (spirale). */
   isSeeking?(): boolean;
+  /** Posé sur `targetSeconds` (position film) : plus de seek en vol, données
+   *  décodables à cet endroit, position à moins de 150 ms de la cible. Lu par
+   *  la barrière de synchronisation avant de confirmer « prêt ». */
+  isSettledAt?(targetSeconds: number): boolean;
   /** Appelé DANS le geste de l'utilisateur quand la lecture est demandée au
    *  serveur au lieu d'être lancée : un lecteur qui n'a jamais joué s'en sert
    *  pour lever ses restrictions de lecture automatique (WebKit) — sans rien

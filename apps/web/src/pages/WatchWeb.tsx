@@ -244,7 +244,8 @@ export function WatchWeb() {
   const handleSeekComplete = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
     reportSeek(seconds, paused);
-    groupSync.notifySeek(seconds);
+    // Le lecteur web rapporte ses seeks à la demande (useSmartSeek) : tous explicites.
+    groupSync.notifySeek(seconds, { explicit: true });
   }, [reportSeek, positionRef, groupSync.notifySeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);

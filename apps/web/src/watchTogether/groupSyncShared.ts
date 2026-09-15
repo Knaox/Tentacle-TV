@@ -1,9 +1,10 @@
 import type { MutableRefObject } from "react";
 import {
-  WT_SEEK_LATENCY_MAX_S, WT_SEEK_LATENCY_MIN_S, WT_SEEK_LOOKAHEAD_S,
+  TICKS_PER_SECOND, WT_SEEK_LATENCY_MAX_S, WT_SEEK_LATENCY_MIN_S, WT_SEEK_LOOKAHEAD_S,
   type WsClientMessage, type WtRoomStateDto,
 } from "@tentacle-tv/shared";
 import type { PlayerTransport } from "./playerTransport";
+import { getClockRttMs } from "@tentacle-tv/api-client";
 import { pendingIntentUntil, type PendingIntent, type PendingIntentKind } from "./groupSchedule";
 
 /**
@@ -39,6 +40,20 @@ export interface ScheduledPlay {
   /** Date.now() au-delà duquel on cesse d'attendre que le lecteur se déclare
    *  en lecture (la boucle de dérive reprend alors la main). */
   until: number;
+}
+
+/** La salle attend que JE sois posé sur une cible (barrière v2) : à moi de
+ *  me caler et de confirmer — quelle que soit la raison de pause. */
+export function isBarrierParticipant(room: WtRoomStateDto | null | undefined, selfId: string | null): boolean {
+  return !!room && !!selfId && room.barrierId !== undefined && room.waitingForUserIds.includes(selfId);
+}
+
+/** Confirme au serveur que ce lecteur est posé sur la cible de la barrière. */
+export function sendBarrierReady(shared: GroupSyncSharedRefs, transport: PlayerTransport, barrierId: number): void {
+  const positionTicks = Math.max(0, Math.round(transport.getPositionSeconds() * TICKS_PER_SECOND));
+  shared.sendRef.current({
+    type: "wt:buffering", buffering: false, barrierId, positionTicks, rttMs: getClockRttMs() ?? undefined,
+  });
 }
 
 /** Refs partagées moteur ↔ boucle de drift (identités stables). */

@@ -17,6 +17,11 @@ const SEEK_STALL_MS = 1200;
 /** Après une commande de seek, le temps que mpv l'annonce (`seeking`) : pas
  *  d'extrapolation depuis l'ancienne position. */
 const SEEK_SETTLE_MS = 150;
+/** Sans `playback-restart` vu après un seek, on se fie à la position au bout
+ *  de ce délai (un seek dans le cache peut ne rien annoncer de visible). */
+const SEEK_RESTART_GRACE_MS = 1_500;
+/** Posé : à moins de ça de la cible (secondes). */
+const SETTLED_TOLERANCE_S = 0.15;
 
 interface UseDesktopTransportArgs {
   transportRef?: PlayerTransportRef;
@@ -29,6 +34,8 @@ interface UseDesktopTransportArgs {
   /** Dernier `time-pos` brut (secondes de flux) et son instant de mesure. */
   positionRef: MutableRefObject<number>;
   positionAtRef: MutableRefObject<number>;
+  /** `playback-restart` reçus (useMpvLifecycle) — un seek abouti en émet un. */
+  restartCountRef: MutableRefObject<number>;
   lastAbsolutePosRef: MutableRefObject<number>;
   effectiveMpvOffset: MutableRefObject<number>;
   setPause: (paused: boolean) => Promise<void>;
@@ -58,7 +65,7 @@ interface UseDesktopTransportArgs {
  */
 export function useDesktopTransport({
   transportRef, state, mediaReady, prebuffering, isDirectPlay,
-  positionRef, positionAtRef, lastAbsolutePosRef, effectiveMpvOffset,
+  positionRef, positionAtRef, restartCountRef, lastAbsolutePosRef, effectiveMpvOffset,
   setPause, seek, setSpeed, cancelAutoPlay,
   onPlayStateChange, onBufferingChange,
 }: UseDesktopTransportArgs) {
@@ -70,6 +77,7 @@ export function useDesktopTransport({
   prebufferingRef.current = prebuffering;
   const speedRef = useRef(1);
   const lastSeekAtRef = useRef(0);
+  const seekRestartBaseRef = useRef(0);
   const clockRef = useRef(createPositionClock());
 
   useEffect(() => {
@@ -92,6 +100,7 @@ export function useDesktopTransport({
           fromS: lastAbsolutePosRef.current.toFixed(1), seeking: stateRef.current.seeking,
         });
         lastSeekAtRef.current = Date.now();
+        seekRestartBaseRef.current = restartCountRef.current;
         clockRef.current.reset();
         void seek(streamPos);
       },
@@ -115,6 +124,18 @@ export function useDesktopTransport({
       cancelAutoNext: () => cancelAutoPlay(),
       isMediaReady: () => mediaReadyRef.current && !prebufferingRef.current,
       isSeeking: () => stateRef.current.seeking,
+      // Posé : pas de seek en vol ni de cache vide, position à moins de 150 ms
+      // de la cible, et un `playback-restart` vu depuis le dernier seek (ou
+      // assez de temps écoulé pour se fier à la position seule).
+      isSettledAt: (targetSeconds: number) => {
+        const s = stateRef.current;
+        if (s.seeking || s.buffering || !mediaReadyRef.current || prebufferingRef.current) return false;
+        const streamTarget = isDirectPlay ? targetSeconds : Math.max(0, targetSeconds - effectiveMpvOffset.current);
+        if (Math.abs(positionRef.current - streamTarget) > SETTLED_TOLERANCE_S) return false;
+        const seekIssued = lastSeekAtRef.current !== 0;
+        const restarted = restartCountRef.current !== seekRestartBaseRef.current;
+        return !seekIssued || restarted || Date.now() - lastSeekAtRef.current > SEEK_RESTART_GRACE_MS;
+      },
     };
     return () => { transportRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
