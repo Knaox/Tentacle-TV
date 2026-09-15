@@ -6,7 +6,8 @@ import {
   type WtClientMessage,
   type WtStateCause,
 } from "./protocol";
-import { removeMember, type RemovalResult, type Room, type RoomMember } from "./roomStore";
+import { removeMember } from "./roomStore";
+import type { RemovalResult, Room, RoomMember } from "./roomTypes";
 
 /**
  * Watch Together — mutations de l'état de lecture d'une room.

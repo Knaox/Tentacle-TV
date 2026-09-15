@@ -1,12 +1,16 @@
 import type { WebSocket } from "@fastify/websocket";
 import type { JellyfinUser } from "../../middleware/auth";
 import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
-import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor, type Room } from "./roomStore";
+import { armGrace, cancelGrace } from "./roomStore";
+import { allRooms, getRoomOf } from "./roomRegistry";
+import { invitesFor } from "./roomInvites";
+import type { Room } from "./roomTypes";
 import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { refreshHostSettings } from "./hostSettings";
-import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
+import type { WtErrorCode, WtServerMessage } from "./protocol";
+import { parseWtClientMessage } from "./protocolParse";
 
 /**
  * Watch Together — pont WebSocket : dispatch des messages métier `wt:*`

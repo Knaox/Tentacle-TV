@@ -1,5 +1,5 @@
 import { isUserOnline, sendToUser } from "../wsManager";
-import type { Invite, Room } from "./roomStore";
+import type { Invite, Room } from "./roomTypes";
 import type { WtDissolvedReason, WtInviteDto, WtRoomStateDto, WtStateCause } from "./protocol";
 
 /** Watch Together — projection Room→DTO et diffusion aux membres. */

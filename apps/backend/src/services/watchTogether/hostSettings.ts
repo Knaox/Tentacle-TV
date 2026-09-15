@@ -21,8 +21,8 @@
  * lecture en base sur le chemin des diffusions — `roomToDto` reste synchrone.
  */
 
-import { getRoomOf } from "./roomStore";
-import type { Room } from "./roomStore";
+import { getRoomOf } from "./roomRegistry";
+import type { Room } from "./roomTypes";
 import { broadcastRoom } from "./broadcast";
 import { bumpEpoch } from "./sync";
 import { readPlaybackSettings } from "../playbackSettingsService";
