@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { getClockOffsetMs, getClockRttMs, getSocketStatus, onSocketStatus } from "@tentacle-tv/api-client";
 import {
-  TICKS_PER_SECOND, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS, wtPositionSecondsAt,
-  type SegmentType,
+  TICKS_PER_SECOND, WT_LATE_START_SEEK_S, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
+  wtPositionSecondsAt, type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
-  armEcho, clearPendingIntent, isApplying, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
+  armEcho, clearPendingIntent, isApplying, seekLookaheadS, setPendingIntent, REMOTE_JUMP_THRESHOLD_S,
   type GroupSyncSharedRefs,
 } from "./groupSyncShared";
 import { updatePlayLatency } from "./groupSchedule";
@@ -50,7 +50,19 @@ export function useGroupIntents({
       const measured = performance.now() - scheduled.playCalledAt;
       shared.playLatencyMsRef.current = updatePlayLatency(shared.playLatencyMsRef.current, measured);
       shared.scheduledPlayRef.current = null;
-      wtLog("engine", "reprise planifiée : lecture effective", { latencyMs: Math.round(measured), emaMs: shared.playLatencyMsRef.current });
+      // Parti en retard (onglet en arrière-plan, sortie audio lente) : à +5 %,
+      // une seconde prendrait vingt secondes — UN seek correctif, tout de suite.
+      const t = transportRef.current;
+      const behind = wtPositionSecondsAt(r, shared.serverNowRef.current()) - (t?.getPositionSeconds() ?? 0);
+      wtLog("engine", "reprise planifiée : lecture effective", {
+        latencyMs: Math.round(measured), emaMs: shared.playLatencyMsRef.current, behindS: behind.toFixed(2),
+      });
+      if (t && !r.paused && behind > WT_LATE_START_SEEK_S) {
+        const target = wtPositionSecondsAt(r, shared.serverNowRef.current()) + seekLookaheadS(shared);
+        wtLog("engine", "reprise planifiée : départ tardif → seek correctif", { toS: target.toFixed(2) });
+        armEcho(shared);
+        t.seekTo(target);
+      }
       return;
     }
     // (Re)chargement local en cours : les flips pause de mpv sont des artefacts

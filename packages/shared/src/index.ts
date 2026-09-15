@@ -25,6 +25,9 @@ export * from "./watchState";
 // La décision « faut-il sauter l'intro, et quand » — une machine à états pure,
 // partagée par le web, le bureau, l'Apple TV, l'Android TV et la LG.
 export * from "./player/introSkip";
+// La correction de dérive d'un lecteur en séance Watch Together : un
+// contrôleur proportionnel pur, partagé par tous les lecteurs.
+export * from "./player/driftController";
 // Le contrat des segments de lecture (v1) et son résolveur — UNE implémentation,
 // appelée par le backend (via miroir, cf. l'en-tête de segmentTypes.ts) et par
 // la lecture locale hors ligne du bureau. Ré-exports NOMMÉS : TICKS_PER_MS y

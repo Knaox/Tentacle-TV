@@ -1,22 +1,27 @@
 import { useEffect } from "react";
 import {
-  WT_DRIFT_HARD_S, WT_DRIFT_LOOP_MS, WT_DRIFT_PAUSED_S, WT_DRIFT_SETTLED_S,
-  WT_DRIFT_SOFT_S, WT_RATE_CATCHUP, WT_RATE_SLOWDOWN, WT_SEEK_LOOKAHEAD_S,
-  WT_SOFT_CORRECTION_TIMEOUT_MS, wtPositionSecondsAt,
+  WT_DRIFT_ENGAGE_MPV_S, WT_DRIFT_ENGAGE_WEB_S, WT_DRIFT_LOOP_MS, WT_DRIFT_SETTLE_MPV_S,
+  WT_DRIFT_SETTLE_WEB_S, decideDrift, wtPositionSecondsAt,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
-  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isWaitedForMe, setTransportRate,
-  type GroupSyncSharedRefs,
+  armEcho, hasPendingIntent, isAwaitingScheduledPlay, isWaitedForMe, seekLookaheadS, setTransportRate,
+  updateSeekLatency, type GroupSyncSharedRefs,
 } from "./groupSyncShared";
 import { isFutureAnchor } from "./groupSchedule";
 import { wtLog } from "./wtLog";
 
+/** Un seek dur dont l'atterrissage n'est pas vu en ce délai ne mesure rien. */
+const HARD_SEEK_MEASURE_MAX_MS = 5_000;
+/** Atterri : la position est revenue à moins de ça de la cible visée. */
+const HARD_SEEK_LANDED_S = 0.5;
+
 /**
- * Watch Together — boucle de correction de dérive (1 Hz).
- * Compare la position du player à la position canonique extrapolée du groupe :
- * réconciliation pause/lecture, recalage dur (seek), rattrapage doux (vitesse
- * 0.95/1.05), retour à 1× une fois recalé.
+ * Watch Together — boucle de correction de dérive (5 Hz).
+ * Compare la position du player à la position canonique extrapolée du groupe
+ * et applique la décision du contrôleur partagé (driftController) :
+ * réconciliation pause/lecture, vitesse proportionnelle, seek dur, recalage
+ * en pause. Mesure au passage la latence des seeks durs (lookahead adaptatif).
  *
  * La boucle NE corrige PAS quand :
  *  - le player n'a jamais été « prêt » depuis le montage (group-wait initial) ;
@@ -43,8 +48,13 @@ export function useGroupDriftLoop({
 }) {
   useEffect(() => {
     if (!enabled) return;
-    // Anti-spam : les raisons de skip se loggent au changement, pas à 1 Hz.
+    // Anti-spam : les raisons de skip se loggent au changement, pas à 5 Hz.
     let lastSkipLogged: string | null = null;
+    const skip = (reason: string, message: string, data?: unknown) => {
+      if (lastSkipLogged === reason) return;
+      lastSkipLogged = reason;
+      wtLog("engine", message, data);
+    };
     const loop = setInterval(() => {
       const t = transportRef.current;
       const r = shared.roomRef.current;
@@ -53,38 +63,39 @@ export function useGroupDriftLoop({
       if (!t || !r || r.itemId !== itemId || shared.lastBufferingSentRef.current !== false) return;
 
       if (isWaitedForMe(r, shared.selfIdRef.current)) {
-        if (lastSkipLogged !== "waitedForMe") {
-          lastSkipLogged = "waitedForMe";
-          wtLog("engine", "drift: SKIP — group-wait causé par moi (player en (re)chargement)");
-        }
+        skip("waitedForMe", "drift: SKIP — group-wait causé par moi (player en (re)chargement)");
         return;
       }
       if (t.isSeeking?.()) {
-        if (lastSkipLogged !== "seeking") {
-          lastSkipLogged = "seeking";
-          wtLog("engine", "drift: SKIP — seek local encore en vol (pas de re-correction)");
-        }
+        skip("seeking", "drift: SKIP — seek local encore en vol (pas de re-correction)");
         return;
       }
       const nowSrv = shared.serverNowRef.current();
       if (isFutureAnchor(r, nowSrv) || isAwaitingScheduledPlay(shared)) {
-        if (lastSkipLogged !== "scheduled") {
-          lastSkipLogged = "scheduled";
-          wtLog("engine", "drift: SKIP — reprise planifiée en attente");
-        }
+        skip("scheduled", "drift: SKIP — reprise planifiée en attente");
         return;
       }
       if (hasPendingIntent(shared)) {
-        if (lastSkipLogged !== "intent") {
-          lastSkipLogged = "intent";
-          wtLog("engine", "drift: SKIP — intent local en vol", shared.pendingIntentRef.current);
-        }
+        skip("intent", "drift: SKIP — intent local en vol", shared.pendingIntentRef.current);
         return;
       }
       lastSkipLogged = null;
 
       const expected = wtPositionSecondsAt(r, nowSrv);
       const pos = t.getPositionSeconds();
+
+      // Un seek dur vient d'atterrir : sa latence devient le lookahead du prochain.
+      const pending = shared.pendingHardSeekRef.current;
+      if (pending) {
+        const elapsedMs = Date.now() - pending.at;
+        if (Math.abs(pos - pending.targetS) < HARD_SEEK_LANDED_S) {
+          shared.seekLatencySRef.current = updateSeekLatency(shared.seekLatencySRef.current, elapsedMs / 1000);
+          shared.pendingHardSeekRef.current = null;
+          wtLog("engine", "drift: seek dur atterri", { latencyMs: elapsedMs, emaS: shared.seekLatencySRef.current.toFixed(2) });
+        } else if (elapsedMs > HARD_SEEK_MEASURE_MAX_MS) {
+          shared.pendingHardSeekRef.current = null;
+        }
+      }
 
       // Réconciliation pause/lecture (rattrape un play() refusé par la policy,
       // un broadcast perdu…).
@@ -97,55 +108,40 @@ export function useGroupDriftLoop({
         else t.play();
       }
 
-      if (r.paused) {
-        setTransportRate(shared, t, 1);
-        shared.softCorrectionSinceRef.current = null;
-        if (Math.abs(pos - expected) > WT_DRIFT_PAUSED_S) {
-          wtLog("engine", "drift: recalage en pause", { posS: pos.toFixed(1), expectedS: expected.toFixed(1) });
-          armEcho(shared);
-          t.seekTo(expected);
-        }
-        return;
-      }
-
+      const coarse = t.precision === "coarse";
       const drift = pos - expected; // > 0 : en avance sur le groupe
-      const abs = Math.abs(drift);
+      const decision = decideDrift({
+        driftS: drift,
+        paused: r.paused,
+        currentRate: shared.currentRateRef.current,
+        engageS: coarse ? WT_DRIFT_ENGAGE_MPV_S : WT_DRIFT_ENGAGE_WEB_S,
+        settleS: coarse ? WT_DRIFT_SETTLE_MPV_S : WT_DRIFT_SETTLE_WEB_S,
+        correctingForMs: shared.softCorrectionSinceRef.current === null
+          ? null : Date.now() - shared.softCorrectionSinceRef.current,
+      });
 
-      if (abs >= WT_DRIFT_HARD_S) {
+      if (decision.seek === "paused") {
+        wtLog("engine", "drift: recalage en pause", { posS: pos.toFixed(2), expectedS: expected.toFixed(2) });
+        armEcho(shared);
+        t.seekTo(expected);
+      } else if (decision.seek === "hard") {
+        const lookahead = seekLookaheadS(shared);
         wtLog("engine", "drift: HARD — seek de recalage", {
-          driftS: drift.toFixed(2), posS: pos.toFixed(1), expectedS: expected.toFixed(1),
+          driftS: drift.toFixed(2), posS: pos.toFixed(1), expectedS: expected.toFixed(1), lookaheadS: lookahead.toFixed(2),
         });
         armEcho(shared);
-        t.seekTo(expected + WT_SEEK_LOOKAHEAD_S);
-        setTransportRate(shared, t, 1);
-        shared.softCorrectionSinceRef.current = null;
-        return;
+        t.seekTo(expected + lookahead);
+        shared.pendingHardSeekRef.current = { at: Date.now(), targetS: expected + lookahead };
       }
-      if (abs >= WT_DRIFT_SOFT_S) {
-        if (shared.softCorrectionSinceRef.current === null) {
-          shared.softCorrectionSinceRef.current = Date.now();
-          wtLog("engine", "drift: correction douce ON", {
-            driftS: drift.toFixed(2), rate: drift > 0 ? WT_RATE_SLOWDOWN : WT_RATE_CATCHUP,
-          });
-        } else if (Date.now() - shared.softCorrectionSinceRef.current > WT_SOFT_CORRECTION_TIMEOUT_MS) {
-          // Rattrapage doux inefficace → recalage dur.
-          wtLog("engine", "drift: correction douce inefficace → HARD seek", {
-            driftS: drift.toFixed(2), posS: pos.toFixed(1), expectedS: expected.toFixed(1),
-          });
-          armEcho(shared);
-          t.seekTo(expected + WT_SEEK_LOOKAHEAD_S);
-          setTransportRate(shared, t, 1);
-          shared.softCorrectionSinceRef.current = null;
-          return;
-        }
-        setTransportRate(shared, t, drift > 0 ? WT_RATE_SLOWDOWN : WT_RATE_CATCHUP);
-        return;
+
+      if (decision.rate !== shared.currentRateRef.current) {
+        wtLog("engine", decision.rate === 1 ? "drift: recalé — vitesse 1×" : "drift: correction douce", {
+          driftS: drift.toFixed(3), rate: decision.rate,
+        });
       }
-      if (abs <= WT_DRIFT_SETTLED_S && shared.currentRateRef.current !== 1) {
-        wtLog("engine", "drift: recalé — correction douce OFF", { driftS: drift.toFixed(2) });
-        setTransportRate(shared, t, 1);
-        shared.softCorrectionSinceRef.current = null;
-      }
+      setTransportRate(shared, t, decision.rate);
+      if (decision.rate === 1) shared.softCorrectionSinceRef.current = null;
+      else if (shared.softCorrectionSinceRef.current === null) shared.softCorrectionSinceRef.current = Date.now();
     }, WT_DRIFT_LOOP_MS);
     return () => clearInterval(loop);
   }, [enabled, itemId, transportRef, shared]);

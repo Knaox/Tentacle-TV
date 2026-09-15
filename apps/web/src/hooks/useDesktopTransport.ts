@@ -75,6 +75,7 @@ export function useDesktopTransport({
   useEffect(() => {
     if (!transportRef) return;
     transportRef.current = {
+      precision: "coarse",
       play: () => {
         wtLog("transport", "cmd play()", { pos: lastAbsolutePosRef.current.toFixed(1) });
         void setPause(false);

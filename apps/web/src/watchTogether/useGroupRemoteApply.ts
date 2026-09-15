@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 import { subscribeSocket } from "@tentacle-tv/api-client";
 import {
-  TICKS_PER_SECOND, WT_SCHEDULED_PLAY_SETTLE_MS, WT_SEEK_LOOKAHEAD_S, wtPositionSecondsAt,
+  TICKS_PER_SECOND, WT_SCHEDULED_PLAY_SETTLE_MS, wtPositionSecondsAt,
   type WtRoomStateDto,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
-  armEcho, cancelScheduledPlay, clearPendingIntent, isWaitedForMe, setTransportRate,
+  armEcho, cancelScheduledPlay, clearPendingIntent, isWaitedForMe, seekLookaheadS, setTransportRate,
   REMOTE_JUMP_THRESHOLD_S, type GroupSyncSharedRefs, type ScheduledPlay,
 } from "./groupSyncShared";
 import { computePlayDelayMs, isFutureAnchor, needsPreseek } from "./groupSchedule";
@@ -87,7 +87,7 @@ export function useGroupRemoteApply({
           armEcho(shared);
           // Le lookahead compense le temps de seek d'un lecteur EN LECTURE ;
           // un lecteur qui se pré-cale en pause vise exactement la cible.
-          t.seekTo(expectedNew + (room.paused || futureAnchor ? 0 : WT_SEEK_LOOKAHEAD_S));
+          t.seekTo(expectedNew + (room.paused || futureAnchor ? 0 : seekLookaheadS(shared)));
           setTransportRate(shared, t, 1);
           shared.softCorrectionSinceRef.current = null;
         }
