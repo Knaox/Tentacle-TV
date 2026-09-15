@@ -15,6 +15,9 @@
  *   reste adjacente, l'hôte devant, SANS toucher à l'activation ; un intrus
  *   activé passe devant la paire (comportement fenêtré normal) et la paire se
  *   reforme à la réactivation de l'hôte ;
+ * - couche : `keepAbove` sur mpv tant que l'hôte est plein écran ET actif,
+ *   sinon le panneau du bureau s'intercale entre les deux et se voit par la
+ *   transparence de notre fenêtre (mesuré le 15.09) ;
  * - habillage : mpv sans bordure, absent de la barre des tâches et d'alt-tab ;
  * - activation : le compositeur active volontiers la fenêtre mpv à sa
  *   naissance — la colle rend aussitôt l'activation à l'hôte, sinon le clavier
@@ -95,6 +98,19 @@ Qml.QtObject {
         Kwin.Workspace.raiseWindow(racine.video);
         Kwin.Workspace.raiseWindow(racine.hote);
     }
+    // Le panneau du bureau (barre des tâches, dock) vit dans une couche AU-DESSUS
+    // des fenêtres ordinaires. En plein écran, l'hôte ACTIF la passe — mpv, lui,
+    // reste dessous, et notre fenêtre étant transparente, le panneau se voit À
+    // TRAVERS elle dès qu'il se montre. 'keepAbove' monte mpv d'une couche :
+    // au-dessus du panneau, sous l'hôte plein écran actif (mesuré sur KWin 6.7.5,
+    // docs/LINUX-FENETRE-VIDEO.md). La condition n'est pas décorative : un hôte
+    // plein écran INACTIF retombe en couche normale, et mpv laissé au-dessus
+    // recouvrirait l'interface — et tout le reste du bureau.
+    function suivreCouche() {
+        if (racine.hote === null || racine.video === null) return;
+        racine.video.keepAbove = racine.hote.fullScreen && racine.hote.active;
+        if (racine.hote.active) racine.coller();
+    }
     function reprendreActivation() {
         if (racine.hote !== null && racine.video !== null && racine.video.active) {
             Kwin.Workspace.activeWindow = racine.hote;
@@ -117,6 +133,7 @@ Qml.QtObject {
             w.activeChanged.connect(racine.reprendreActivation);
             racine.reprendreActivation();
             racine.suivreMinimise();
+            racine.suivreCouche();
             racine.coller();
             racine.rattrapage.restart();
             return;
@@ -125,12 +142,18 @@ Qml.QtObject {
         if (w.caption.indexOf("Developer Tools") === 0) return;
         racine.hote = w;
         w.frameGeometryChanged.connect(racine.coller);
-        w.activeChanged.connect(function () {
-            if (racine.hote !== null && racine.hote.active) racine.coller();
-        });
+        w.activeChanged.connect(racine.suivreCouche);
+        try { w.fullScreenChanged.connect(racine.suivreCouche); } catch (e) { }
         try { w.minimizedChanged.connect(racine.suivreMinimise); } catch (e) { }
         w.closed.connect(function () { racine.hote = null; });
+        racine.suivreCouche();
         racine.coller();
+    }
+    // Décrochée en pleine lecture, l'instance meurt mais la fenêtre mpv vit
+    // encore le temps que le lecteur se démonte : sans ça, elle resterait la
+    // seule chose au-dessus du bureau entier.
+    Qml.Component.onDestruction: {
+        if (racine.video !== null) racine.video.keepAbove = false;
     }
     Qml.Component.onCompleted: {
         var ws = Kwin.Workspace.windows;

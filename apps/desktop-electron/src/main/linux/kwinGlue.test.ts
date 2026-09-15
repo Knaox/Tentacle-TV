@@ -81,6 +81,21 @@ describe("gabaritColle", () => {
     // composant entier meurt — mesuré au banc du 28.08.
     expect(qml).toContain("Qml.Component.onCompleted");
     expect(qml).not.toMatch(/(^|[^.])\bComponent\.onCompleted/m);
+    expect(qml).toContain("Qml.Component.onDestruction");
+    expect(qml).not.toMatch(/(^|[^.])\bComponent\.onDestruction/m);
+  });
+
+  it("monte la vidéo d'une couche, et SEULEMENT sous un hôte plein écran actif", () => {
+    const qml = glueTemplate(1);
+    // Le panneau du bureau passe devant une fenêtre ordinaire : en plein écran,
+    // il s'intercalait entre mpv et notre fenêtre transparente, donc se voyait.
+    expect(qml).toContain(
+      "racine.video.keepAbove = racine.hote.fullScreen && racine.hote.active",
+    );
+    expect(qml).toContain("w.fullScreenChanged.connect(racine.suivreCouche)");
+    // Sans la condition d'activation, un hôte plein écran qui perd le focus
+    // retombe en couche normale et la vidéo recouvrirait TOUT le bureau.
+    expect(qml).not.toContain("racine.video.keepAbove = true");
   });
 
   it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
