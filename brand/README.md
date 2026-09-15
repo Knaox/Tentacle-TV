@@ -10,10 +10,12 @@ Source unique de vérité pour le logo. Tout PNG/ICNS/ICO/WEBP du dépôt est
 | `logo-color-nohat.svg` | Sans le chapeau. **À servir sous 24 px** (favicon, badge) : le tricorne y devient une masse indistincte. |
 | `app-icon-color.svg` | Icône d'application, 1024², poulpe couleur sur fond cinéma. |
 | `app-icon-mono.svg` | Icône d'application, 1024², mono blanc sur dégradé de marque. |
+| `app-icon-rounded.svg` | La même, **à coins continus**, pleine cadre. Windows et Linux, qui posent l'image telle quelle. |
+| `app-icon-macos.svg` | La même au gabarit macOS : le squircle tient 824 sur 1024, marge comprise. |
 
 ## Régénérer
 
-Les cinq SVG **et** les constantes TypeScript du composant web sont générés :
+Les SVG **et** les constantes TypeScript du composant web sont générés :
 
 ```bash
 python3 brand/generate-svg.py brand
@@ -37,7 +39,7 @@ visage et chapeau. Le composant web existe séparément du fichier statique parc
 que lui seul résout les variables CSS : une couleur de marque redéfinie par un
 administrateur doit se propager au logo.
 
-## Trois règles apprises à leurs frais
+## Quatre règles apprises à leurs frais
 
 - **Huit bras, pas sept.** Deux sont dressés en antennes : il en faut donc six en
   dessous. La première version n'en posait que cinq.
@@ -47,6 +49,14 @@ administrateur doit se propager au logo.
   occupe 86 % de la largeur, sur un fond plein — jamais de transparence, jamais
   de marge décorative. L'`ic_launcher_foreground` adaptatif Android est cadré
   plus large encore, le système en rogne les bords.
+
+- **Le carré est pour les boutiques mobiles, pas pour les bureaux.** iOS et
+  Android masquent l'icône eux-mêmes et exigent donc un carré plein ;
+  Windows, Linux, et macOS d'avant Tahoe posent l'image TELLE QUELLE — un carré
+  plein y reste un carré dans la barre des tâches. D'où `app-icon-rounded.svg`
+  et son gabarit macOS, et la règle de `generate-icons.py` : les cibles de
+  `apps/desktop-electron/` en dérivent, tout le reste garde le carré.
+
 - **Le nom des fichiers publics ne change pas.** `tentacle-logo-pirate.svg` est
   chargé par URL depuis les iframes de plugins — y compris des plugins déjà
   publiés, hors de ce dépôt. Renommer le fichier casserait leur affichage en

@@ -1,5 +1,5 @@
 """
-Génère les quinze SVG de `brand/` ET les constantes TypeScript des clients,
+Génère les dix-sept SVG de `brand/` ET les constantes TypeScript des clients,
 depuis une seule géométrie. Rien ici ne s'édite à la main.
 
     python3 brand/generate-svg.py            # écrit brand/ + les modules TS
@@ -20,7 +20,8 @@ identiques.
 """
 import pathlib, sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from geometry import arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at
+from geometry import (arm_spine, tapered, suckers, mirror_pts, spire_gap, width_at,
+                      squircle_path)
 
 BRAND = pathlib.Path(__file__).parent
 OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else BRAND
@@ -156,19 +157,46 @@ MONO_BODY = ("".join(f'<path d="{d}"/>' for d in BACK_DS)
     f'<title>Tentacle TV — monochrome</title>{NOTE}<defs>{CLIP_ARMS}{MASK}</defs>'
     f'<g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></svg>\n')
 
+BG_CINEMA = ('<linearGradient id="bg" x1="0" y1="0" x2="{w}" y2="{h}" gradientUnits="userSpaceOnUse">'
+             '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/>'
+             '<stop offset="1" stop-color="#000000"/></linearGradient>'
+             '<radialGradient id="halo" cx="50%" cy="44%" r="62%">'
+             '<stop offset="0" stop-color="#C026D3" stop-opacity=".40"/>'
+             '<stop offset=".62" stop-color="#A855F7" stop-opacity=".10"/>'
+             '<stop offset="1" stop-color="#A855F7" stop-opacity="0"/></radialGradient>')
+
 # ── Icônes d'application : 86 % de large, fond plein (exigence Play) ─────────
 SCALE = 1024 * 0.86 / 240
 OFF = (1024 - 240 * SCALE) / 2
 PLACE = f'transform="translate({OFF:.1f} {OFF:.1f}) scale({SCALE:.4f})"'
-(OUT / "app-icon-color.svg").write_text(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
-    f"<title>Tentacle TV — icône d'application</title>{NOTE}<defs>{GRADS}"
-    '<linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">'
-    '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/><stop offset="1" stop-color="#000000"/></linearGradient>'
-    '<radialGradient id="halo" cx="50%" cy="44%" r="62%"><stop offset="0" stop-color="#C026D3" stop-opacity=".40"/>'
-    '<stop offset=".62" stop-color="#A855F7" stop-opacity=".10"/><stop offset="1" stop-color="#A855F7" stop-opacity="0"/></radialGradient></defs>'
-    '<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#halo)"/>'
-    f'<g {PLACE}>{BODY}{HAT_G}{FRONT_G}</g></svg>\n')
+
+def color_icon(span, fond, title):
+    """
+    L'icône couleur dans un cadre de 1024. `fond` est la forme peinte — le carré
+    plein qu'exigent les boutiques mobiles, ou le squircle des bureaux. `span`
+    est le côté OCCUPÉ : la mascotte tient 86 % de LUI, jamais du cadre, sinon
+    la marge du gabarit macOS la ferait déborder de la forme.
+    """
+    scale = span * 0.86 / 240
+    off = (1024 - 240 * scale) / 2
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
+            f'<title>Tentacle TV{title}</title>{NOTE}<defs>{GRADS}{BG_CINEMA.format(w=span, h=span)}</defs>{fond}'
+            f'<g transform="translate({off:.1f} {off:.1f}) scale({scale:.4f})">{BODY}{HAT_G}{FRONT_G}</g></svg>\n')
+
+SQUARE = '<rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#halo)"/>'
+
+def squircle_bg(span):
+    d = squircle_path(1024, span)
+    return f'<path d="{d}" fill="url(#bg)"/><path d="{d}" fill="url(#halo)"/>'
+
+(OUT / "app-icon-color.svg").write_text(color_icon(1024, SQUARE, " — icône d'application"))
+# Les deux icônes de BUREAU. Windows et Linux posent l'image telle quelle : le
+# squircle y remplit le cadre. macOS, lui, a un gabarit — 824 sur 1024 — et une
+# icône qui remplirait son cadre toucherait ses voisines dans le Dock.
+(OUT / "app-icon-rounded.svg").write_text(
+    color_icon(1024, squircle_bg(1024), " — icône de bureau"))
+(OUT / "app-icon-macos.svg").write_text(
+    color_icon(824, squircle_bg(824), " — icône macOS"))
 (OUT / "app-icon-mono.svg").write_text(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img">'
     f"<title>Tentacle TV — icône d'application (mono)</title>{NOTE}<defs>{CLIP_ARMS}{MASK}"
@@ -180,14 +208,6 @@ PLACE = f'transform="translate({OFF:.1f} {OFF:.1f}) scale({SCALE:.4f})"'
     f'<g {PLACE} color="#FFFFFF"><g mask="url(#mCut)" fill="currentColor">{MONO_BODY}</g></g></svg>\n')
 
 # ── Compositions dérivées : bannières, écrans de lancement, couches tvOS ────
-BG_CINEMA = ('<linearGradient id="bg" x1="0" y1="0" x2="{w}" y2="{h}" gradientUnits="userSpaceOnUse">'
-             '<stop offset="0" stop-color="#241145"/><stop offset=".55" stop-color="#12081F"/>'
-             '<stop offset="1" stop-color="#000000"/></linearGradient>'
-             '<radialGradient id="halo" cx="50%" cy="44%" r="62%">'
-             '<stop offset="0" stop-color="#C026D3" stop-opacity=".40"/>'
-             '<stop offset=".62" stop-color="#A855F7" stop-opacity=".10"/>'
-             '<stop offset="1" stop-color="#A855F7" stop-opacity="0"/></radialGradient>')
-
 def compose(w, h, ratio, with_bg=True, with_hat=True, title=""):
     """
     Place la mascotte dans un cadre w×h, occupant `ratio` de la plus petite
@@ -293,6 +313,6 @@ if not PREVIEW:
         else:
             print(f"  (ignoré, dossier absent : {target})")
 
-print(f"{5 + len(COMPOSITIONS)} SVG — {len(CUPS)} ventouses, "
+print(f"{7 + len(COMPOSITIONS)} SVG — {len(CUPS)} ventouses, "
       f"{len(FRONT_DS) + len(BACK_DS)} bras"
       + (" (aperçu : modules TS non écrits)" if PREVIEW else " + 3 modules TS"))

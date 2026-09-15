@@ -113,3 +113,32 @@ def polyline_length(pts):
     """Longueur développée d'une polyligne."""
     return sum(math.hypot(pts[i+1][0]-pts[i][0], pts[i+1][1]-pts[i][1])
                for i in range(len(pts) - 1))
+
+def squircle_path(size, span, exponent=5.0, samples=256):
+    """
+    Contour d'icône « coins continus », centré dans un carré de `size`.
+
+    La forme d'Apple n'est PAS un rectangle à coins circulaires : le rayon y
+    naît progressivement, et c'est ce raccord qui distingue une icône du
+    système d'un `rx` posé sur un rect. On échantillonne la superellipse
+    |x/a|^n + |y/a|^n = 1 — n = 5 en approche la courbure de très près, et
+    l'échantillonnage suit la même règle que les bras : une forme calculée ne
+    se recopie pas à la main.
+
+    `span` est le côté OCCUPÉ. macOS attend une marge (824 sur 1024) ; Windows
+    et Linux affichent l'image telle quelle, `span == size` y remplit le cadre.
+
+    256 points : l'écart maximal entre la corde et la courbe y vaut 0,03 px sur
+    un cadre de 1024 (mesuré) — sous le pixel à toutes les tailles rendues.
+    """
+    c = size / 2
+    a = span / 2
+    k = 2 / exponent
+    pts = []
+    for i in range(samples):
+        th = 2 * math.pi * i / samples
+        ct, st = math.cos(th), math.sin(th)
+        x = c + a * math.copysign(abs(ct) ** k, ct)
+        y = c + a * math.copysign(abs(st) ** k, st)
+        pts.append(f"{x:.2f} {y:.2f}")
+    return "M " + " L ".join(pts) + " Z"
