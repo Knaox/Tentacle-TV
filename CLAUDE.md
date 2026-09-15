@@ -116,8 +116,9 @@ Extensible plugin architecture with admin marketplace. Plugins can add frontend 
 `brand/` est la source unique. Rien de ce qui en dérive ne se retouche à la main :
 
 ```bash
-python3 brand/generate-svg.py brand      # les 15 SVG + 3 modules TS
-python3 brand/generate-icons.py --write  # les 83 binaires (aperçu sans --write)
+python3 brand/generate-svg.py brand      # les 17 SVG + 3 modules TS
+python3 brand/generate-icons.py --write  # les 84 binaires (aperçu sans --write ;
+                                         #  un mot en plus = filtre de chemin)
 pnpm --filter @tentacle-tv/tv-webos icons  # webOS, à part — voir plus bas
 ```
 

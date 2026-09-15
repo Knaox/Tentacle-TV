@@ -1,21 +1,30 @@
 """
 Rasterise tous les dérivés binaires depuis `brand/*.svg`.
 
-    python3 brand/generate-icons.py            # aperçu, n'écrit rien
-    python3 brand/generate-icons.py --write    # écrit
+    python3 brand/generate-icons.py                        # aperçu, n'écrit rien
+    python3 brand/generate-icons.py --write                # écrit
+    python3 brand/generate-icons.py --write desktop-electron   # une part seulement
+
+Le filtre — toute mot qui n'est pas `--write` — retient les cibles dont le
+chemin le contient. Il ne sert pas qu'au confort : deux versions de librsvg ne
+rendent pas au bit près, et régénérer les 84 cibles pour en corriger cinq
+remplacerait le reste par un bruit binaire indiscernable d'un vrai changement.
 
 Chaque cible est régénérée **à ses dimensions actuelles**, relevées sur le
 fichier en place : les formats attendus par les stores ne se devinent pas, et une
 icône à la mauvaise taille est un rejet. Une cible absente est signalée, jamais
 créée à l'aveugle.
 
-Exige `rsvg-convert` (brew install librsvg), `magick`, et sur macOS `iconutil`.
+Exige `rsvg-convert` (brew install librsvg) et `magick`. L'ICNS est écrit
+ici même : `iconutil` n'existe que sur macOS, et son absence faisait sauter
+l'icône du Dock EN SILENCE quand le script tournait sous Linux.
 """
-import pathlib, shutil, subprocess, sys
+import pathlib, shutil, struct, subprocess, sys
 
 ROOT = pathlib.Path(__file__).parent.parent
 BRAND = pathlib.Path(__file__).parent
 WRITE = "--write" in sys.argv
+FILTER = [a for a in sys.argv[1:] if not a.startswith("--")]
 
 # Motif de chemin → SVG source. Le premier motif qui correspond gagne, donc les
 # règles les plus précises viennent d'abord.
@@ -23,8 +32,11 @@ RULES = [
     # ── Desktop (Electron) ───────────────────────────────────────────────────
     ("apps/desktop-electron/msix/Assets/Wide310x150Logo.png", "banner-wide.svg"),
     ("apps/desktop-electron/msix/Assets/SplashScreen.png", "banner-wide.svg"),
-    ("apps/desktop-electron/msix/Assets/*.png", "app-icon-color.svg"),
-    ("apps/desktop-electron/icons/*.png", "app-icon-color.svg"),
+    # Windows et Linux posent l'image TELLE QUELLE : sans coins, l'application
+    # est un carré dans la barre des tâches. macOS ne masque de lui-même que
+    # depuis Tahoe — sur les versions d'avant, le carré restait carré.
+    ("apps/desktop-electron/msix/Assets/*.png", "app-icon-rounded.svg"),
+    ("apps/desktop-electron/icons/*.png", "app-icon-rounded.svg"),
     # ── Mobile ───────────────────────────────────────────────────────────────
     ("apps/mobile/assets/adaptive-icon.png", "app-icon-foreground.svg"),
     ("apps/mobile/assets/splash-icon.png", "logo-plain.svg"),
@@ -81,6 +93,32 @@ def render(svg, target, w, h):
     else:
         tmp.replace(target)
 
+# Le tableau d'`iconutil`, à l'identique : un type ICNS par entrée d'iconset.
+# Deux types peuvent porter la même taille (`ic08` = 256, `ic13` = 128@2x) —
+# macOS les distingue par la densité, et le fichier porte alors deux fois les
+# mêmes octets. C'est ce que produit iconutil.
+ICNS_TYPES = (("icp4", 16), ("icp5", 32), ("ic07", 128), ("ic08", 256),
+              ("ic09", 512), ("ic10", 1024), ("ic11", 32), ("ic12", 64),
+              ("ic13", 256), ("ic14", 512))
+
+def build_icns(svg, target):
+    """
+    Écrit l'ICNS sans `iconutil` : depuis les types `icp4`/`ic07`+, un bloc ICNS
+    n'est rien d'autre qu'un PNG précédé de son type et de sa longueur. Le
+    conteneur se réduit à un en-tête `icns` et à la somme des blocs.
+    """
+    pngs, blocks = {}, []
+    for kind, size in ICNS_TYPES:
+        if size not in pngs:
+            tmp = BRAND / f"icns-{size}.png"
+            render(svg, tmp, size, size)
+            pngs[size] = tmp.read_bytes()
+            tmp.unlink()
+        png = pngs[size]
+        blocks.append(kind.encode("ascii") + struct.pack(">I", len(png) + 8) + png)
+    body = b"".join(blocks)
+    target.write_bytes(b"icns" + struct.pack(">I", len(body) + 8) + body)
+
 def main():
     need("rsvg-convert"); need("magick")
     done, seen = [], set()
@@ -91,6 +129,9 @@ def main():
         for target in sorted(ROOT.glob(pattern)):
             if target in seen:
                 continue
+            rel = str(target.relative_to(ROOT))
+            if FILTER and not any(f in rel for f in FILTER):
+                continue
             seen.add(target)
             w, h = dimensions(target)
             done.append((target.relative_to(ROOT), source, w, h))
@@ -99,26 +140,19 @@ def main():
 
     for rel, source, w, h in done:
         print(f"  {w:>5}×{h:<5} ← {source:<26} {rel}")
-    print(f"\n{len(done)} cibles" + ("" if WRITE else " — aperçu, rien écrit (ajouter --write)"))
+    print(f"\n{len(done)} cibles" + (f" (filtre : {' '.join(FILTER)})" if FILTER else "") + ("" if WRITE else " — aperçu, rien écrit (ajouter --write)"))
 
     # ── macOS et Windows attendent des conteneurs multi-résolutions ─────────
     icns = ROOT / "apps/desktop-electron/icons/icon.icns"
     ico = ROOT / "apps/desktop-electron/icons/icon.ico"
-    if WRITE and icns.exists() and shutil.which("iconutil"):
-        iconset = BRAND / "icon.iconset"
-        shutil.rmtree(iconset, ignore_errors=True); iconset.mkdir()
-        for size in (16, 32, 64, 128, 256, 512, 1024):
-            render(BRAND / "app-icon-color.svg", iconset / f"icon_{size}x{size}.png", size, size)
-            if size <= 512:
-                render(BRAND / "app-icon-color.svg", iconset / f"icon_{size}x{size}@2x.png", size*2, size*2)
-        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(icns)], check=True)
-        shutil.rmtree(iconset)
+    if WRITE and icns.exists():
+        build_icns(BRAND / "app-icon-macos.svg", icns)
         print(f"  icns reconstruit : {icns.relative_to(ROOT)}")
     if WRITE and ico.exists():
         pngs = []
         for size in (16, 24, 32, 48, 64, 128, 256):
             out = BRAND / f"ico-{size}.png"
-            render(BRAND / "app-icon-color.svg", out, size, size)
+            render(BRAND / "app-icon-rounded.svg", out, size, size)
             pngs.append(str(out))
         subprocess.run(["magick"] + pngs + [str(ico)], check=True)
         for f in pngs:
