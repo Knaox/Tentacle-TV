@@ -185,7 +185,7 @@ export function registerWatchTogetherGateway(): void {
         wtSrvLog("SWEEP anti-gel : membres attendus > 60s marqués playbackError, le groupe reprend sans eux", {
           expired, resumed, ...roomSnapshot(room),
         });
-        broadcastRoom(room, resumed ? "resume" : "presence", null);
+        broadcastRoom(room, resumed ? "schedule" : "presence", null);
       }
     }
   }, 15_000);
