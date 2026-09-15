@@ -85,7 +85,12 @@ export function expireStaleWaits(room: Room, now: number): { expired: string[]; 
 export function applyCommand(
   room: Room,
   member: RoomMember,
-  msg: Exclude<WtClientMessage, { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:skipIntroDismiss" } | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" }>,
+  msg: Exclude<
+    WtClientMessage,
+    | { type: "wt:syncRequest" } | { type: "wt:autonextDismiss" } | { type: "wt:skipIntroDismiss" }
+    | { type: "wt:goodbye" } | { type: "wt:chat" } | { type: "wt:reaction" } | { type: "wt:gif" }
+    | { type: "wt:tick" } | { type: "wt:skipPropose" }
+  >,
   isUserOnline: (userId: string) => boolean,
 ): SyncOutcome {
   const now = Date.now();
@@ -149,6 +154,7 @@ export function applyCommand(
 
     case "wt:buffering": {
       member.buffering = msg.buffering;
+      if (msg.rttMs !== undefined) member.rttMs = msg.rttMs;
       if (msg.buffering) {
         if (!room.itemId || !member.inPlayback) {
           touch(room, now);
@@ -173,6 +179,10 @@ export function applyCommand(
     }
 
     case "wt:presence": {
+      // Ce que ce lecteur sait faire, et son aller-retour : notés, jamais
+      // écrasés par une absence (un message d'avant n'annonce rien).
+      if (msg.protocolVersion !== undefined) member.protocolVersion = msg.protocolVersion;
+      if (msg.rttMs !== undefined) member.rttMs = msg.rttMs;
       const onCurrentItem = msg.itemId === undefined || msg.itemId === room.itemId;
       member.inPlayback = msg.inPlayback && onCurrentItem;
       if (member.inPlayback) {

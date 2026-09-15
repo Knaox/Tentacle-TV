@@ -21,6 +21,9 @@ function newMember(user: UserBasic, now: number): RoomMember {
     playbackError: false,
     joinedAt: now,
     graceTimer: null,
+    protocolVersion: 1,
+    rttMs: null,
+    driftMs: null,
   };
 }
 
@@ -43,6 +46,9 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     pauseReason: "user",
     waitingFor: new Set(),
     waitingSince: new Map(),
+    barrierId: 0,
+    waitCause: null,
+    pendingSkip: null,
     members: new Map([[user.userId, newMember(user, now)]]),
     lastSeekAt: new Map(),
     chat: [],

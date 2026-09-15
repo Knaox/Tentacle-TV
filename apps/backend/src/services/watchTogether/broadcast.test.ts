@@ -29,10 +29,14 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     pauseReason: null,
     waitingFor: new Set(),
     waitingSince: new Map(),
+    barrierId: 0,
+    waitCause: null,
+    pendingSkip: null,
     members: new Map([
       ["u-hote", {
         userId: "u-hote", username: "Hôte", hasAvatar: false, inPlayback: true,
         buffering: false, playbackError: false, joinedAt: 1, graceTimer: null,
+        protocolVersion: 1, rttMs: null, driftMs: null,
       }],
     ]),
     lastSeekAt: new Map(),
@@ -54,5 +58,39 @@ describe("roomToDto — les réglages de l'hôte", () => {
   it("n'ajoute AUCUNE clé quand elle ne les connaît pas — compatibilité", () => {
     const dto = roomToDto(makeRoom(null));
     expect("hostPlaybackSettings" in dto).toBe(false);
+  });
+});
+
+describe("roomToDto — les champs du protocole v2 sont facultatifs", () => {
+  it("absents tant qu'ils ne disent rien (salle sans barrière, membre d'avant)", () => {
+    const dto = roomToDto(makeRoom(null));
+    expect("barrierId" in dto).toBe(false);
+    expect("waitCause" in dto).toBe(false);
+    expect("pendingSkip" in dto).toBe(false);
+    const member = dto.members[0];
+    expect("protocolVersion" in member).toBe(false);
+    expect("rttMs" in member).toBe(false);
+    expect("driftMs" in member).toBe(false);
+  });
+
+  it("présents dès qu'ils disent quelque chose", () => {
+    const room = makeRoom(null);
+    room.barrierId = 3;
+    room.waitingFor.add("u-hote");
+    room.waitCause = "seek";
+    room.pendingSkip = { segmentType: "Intro", segmentStartTicks: 10, toTicks: 900, skipAtPositionTicks: 60, byUserId: "u-hote" };
+    const m = room.members.get("u-hote")!;
+    m.protocolVersion = 2; m.rttMs = 42; m.driftMs = -12;
+    const dto = roomToDto(room);
+    expect(dto.barrierId).toBe(3);
+    expect(dto.waitCause).toBe("seek");
+    expect(dto.pendingSkip).toEqual(room.pendingSkip);
+    expect(dto.members[0]).toMatchObject({ protocolVersion: 2, rttMs: 42, driftMs: -12 });
+  });
+
+  it("une barrière que plus personne n'attend n'est plus annoncée", () => {
+    const room = makeRoom(null);
+    room.barrierId = 3;
+    expect("barrierId" in roomToDto(room)).toBe(false);
   });
 });
