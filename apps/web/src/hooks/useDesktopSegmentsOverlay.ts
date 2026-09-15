@@ -10,6 +10,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import { usePlaybackOverlay, type PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import type { ResolvedSegment } from "@tentacle-tv/shared";
 import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
+import { useGroupSkipCountdown } from "../watchTogether/useGroupSkipCountdown";
 
 interface UseDesktopSegmentsOverlayArgs {
   itemId?: string;
@@ -33,18 +34,20 @@ interface UseDesktopSegmentsOverlayArgs {
   onNextEpisode?: () => void;
   onEndOfPlayback: () => void;
   onAutoNextDismiss?: () => void;
-  /** Watch Together — une séance est active (refus ⇒ décompte annulé). */
+  /** Watch Together — une séance est active (refus ⇒ décompte annulé,
+   *  décompte de saut porté par le serveur). */
   inGroupSession?: boolean;
-  /** Watch Together — ce lecteur est celui de l'hôte (le seul décompte qui va au bout). */
-  inGroupHost?: boolean;
 }
 
 export function useDesktopSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
   hasStarted, playbackEnded, segments, runtimeMs, libraryId,
   scrubbing, controlsVisible, isDirectPlay, effectiveMpvOffset, seek,
-  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession, inGroupHost,
+  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
+  // Le décompte de saut de la salle (serveur) et la proposition de passage.
+  const { groupSkip, onSkipPropose } = useGroupSkipCountdown(itemId);
+
   const playback = usePlaybackOverlay({
     itemId,
     isEpisode,
@@ -57,7 +60,7 @@ export function useDesktopSegmentsOverlay({
     runtimeMs,
     libraryId,
     groupSession: inGroupSession,
-    groupHost: inGroupHost,
+    groupSkip, onSkipPropose,
     scrubbing,
     controlsVisible,
     onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },

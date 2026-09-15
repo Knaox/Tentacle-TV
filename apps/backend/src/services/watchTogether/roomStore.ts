@@ -51,6 +51,8 @@ export function createRoom(user: UserBasic, contextItemId: string | null): Room 
     barrier: null,
     waitCause: null,
     pendingSkip: null,
+    skipHistory: new Map(),
+    skipTimer: null,
     members: new Map([[user.userId, newMember(user, now)]]),
     lastSeekAt: new Map(),
     chat: [],

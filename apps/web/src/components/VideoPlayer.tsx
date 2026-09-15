@@ -41,7 +41,7 @@ export function VideoPlayer({
   onNextEpisode, onPreviousEpisode,
   segments = [], runtimeMs = 0, libraryId = null, posterUrl,
   transportRef, onPlayStateChange, onBufferingChange, onFatalError, onAutoNextDismiss, onRequestPlay,
-  inGroupSession, inGroupHost, onControlsVisibilityChange, applyToSeries,
+  inGroupSession, onControlsVisibilityChange, applyToSeries,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +119,7 @@ export function VideoPlayer({
     onSeekSeconds: handleSeek, onNextEpisode,
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
     onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
-    onAutoNextDismiss, inGroupSession, inGroupHost,
+    onAutoNextDismiss, inGroupSession,
   });
 
   // La sortie de fin (film, dernier épisode, affiche refusée ou éteinte) est

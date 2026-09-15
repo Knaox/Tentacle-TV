@@ -110,10 +110,9 @@ export interface VideoPlayerProps {
   /** Watch Together — lecture demandée : vrai si le moteur la prend en charge
    *  (reprise planifiée pour toute la salle), faux = jouer localement. */
   onRequestPlay?: () => boolean;
-  /** Watch Together — une séance est active sur ce média (refus ⇒ décompte annulé). */
+  /** Watch Together — une séance est active sur ce média (refus ⇒ décompte
+   *  annulé, décompte de saut porté par le serveur). */
   inGroupSession?: boolean;
-  /** Watch Together — ce lecteur est celui de l'hôte : seul son décompte de saut va au bout. */
-  inGroupHost?: boolean;
   /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
   onControlsVisibilityChange?: (visible: boolean) => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */

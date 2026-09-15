@@ -325,7 +325,7 @@ export function WatchWeb() {
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
           onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
-          inGroupSession={group.groupActive} inGroupHost={group.groupIsHost}
+          inGroupSession={group.groupActive}
           onControlsVisibilityChange={setControlsVisible}
           applyToSeries={applyToSeries}
         />

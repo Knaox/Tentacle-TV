@@ -10,6 +10,7 @@ import { useEffect, useRef } from "react";
 import { usePlaybackOverlay, type PlaybackOverlayResult } from "@tentacle-tv/api-client";
 import type { ResolvedSegment } from "@tentacle-tv/shared";
 import { announceLocalRefusal, useIntroSkipRefusal } from "../watchTogether/introSkipRefusal";
+import { useGroupSkipCountdown } from "../watchTogether/useGroupSkipCountdown";
 
 interface UseWebSegmentsOverlayArgs {
   itemId: string;
@@ -30,20 +31,22 @@ interface UseWebSegmentsOverlayArgs {
   onNextEpisode?: () => void;
   onEndOfPlayback: () => void;
   onAutoNextDismiss?: () => void;
-  /** Watch Together — une séance est active (refus ⇒ décompte annulé). */
+  /** Watch Together — une séance est active (refus ⇒ décompte annulé,
+   *  décompte de saut porté par le serveur). */
   inGroupSession?: boolean;
-  /** Watch Together — ce lecteur est celui de l'hôte (le seul décompte qui va au bout). */
-  inGroupHost?: boolean;
 }
 
 export function useWebSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
   hasStarted, playbackEnded, segments, runtimeMs, libraryId, controlsVisible,
-  onSeekSeconds, onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession, inGroupHost,
+  onSeekSeconds, onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
 }: UseWebSegmentsOverlayArgs): PlaybackOverlayResult {
   // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
   // décisions (fenêtres, priorités, décomptes, réglages) viennent de la
   // coquille commune aux six surfaces. ──
+  // Le décompte de saut de la salle (serveur) et la proposition de passage.
+  const { groupSkip, onSkipPropose } = useGroupSkipCountdown(itemId);
+
   const playback = usePlaybackOverlay({
     itemId,
     isEpisode,
@@ -55,7 +58,8 @@ export function useWebSegmentsOverlay({
     segments,
     runtimeMs,
     libraryId,
-    groupSession: inGroupSession, groupHost: inGroupHost,
+    groupSession: inGroupSession,
+    groupSkip, onSkipPropose,
     controlsVisible,
     onSeekSeconds,
     onNextEpisode: () => onNextEpisode?.(),
