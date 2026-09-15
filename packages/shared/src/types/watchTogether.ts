@@ -21,27 +21,44 @@ export const TICKS_PER_MS = TICKS_PER_SECOND / 1000;
 
 /** Grâce après déconnexion WS avant exclusion du groupe (un F5 ne kick pas). */
 export const WT_GRACE_PERIOD_MS = 120_000;
-/** |drift| en dessous duquel on ne corrige pas (secondes). */
-export const WT_DRIFT_SOFT_S = 0.4;
+/**
+ * Correction de dérive (driftController.ts) — un contrôleur proportionnel :
+ * la vitesse s'écarte de 1 d'autant que la dérive est grande, bornée à ±5 %
+ * (au-delà, l'oreille l'entend malgré la correction de hauteur), avec une
+ * constante de temps de 3 s : 150 ms de dérive se résorbent en une poignée
+ * de secondes, sans à-coup. Une zone morte évite de courir après le bruit de
+ * mesure — plus large sur mpv (time-pos étranglé et extrapolé) que sur le
+ * web (currentTime lu en direct) — et une hystérésis évite de battre autour.
+ */
+export const WT_DRIFT_TAU_S = 3;
+export const WT_RATE_MAX_DEV = 0.05;
+/** Pas d'arrondi de la vitesse : au-dessous, un changement ne vaut pas l'IPC. */
+export const WT_RATE_STEP = 0.005;
+export const WT_DRIFT_ENGAGE_WEB_S = 0.04;
+export const WT_DRIFT_SETTLE_WEB_S = 0.025;
+export const WT_DRIFT_ENGAGE_MPV_S = 0.06;
+export const WT_DRIFT_SETTLE_MPV_S = 0.03;
 /** |drift| au-dessus duquel on seek dur au lieu du rattrapage doux (secondes). */
-export const WT_DRIFT_HARD_S = 4;
+export const WT_DRIFT_HARD_S = 1.5;
 /** Écart max toléré à l'arrêt (room en pause) avant seek de réalignement. */
-export const WT_DRIFT_PAUSED_S = 0.5;
-/** Drift résorbé : on repasse le playbackRate à 1.0 sous ce seuil (secondes). */
-export const WT_DRIFT_SETTLED_S = 0.1;
-/** Vitesses de rattrapage doux (inaudibles, pitch préservé par défaut). */
-export const WT_RATE_CATCHUP = 1.05;
-export const WT_RATE_SLOWDOWN = 0.95;
+export const WT_DRIFT_PAUSED_S = 0.04;
 /** Garde-fou : rattrapage doux non résorbé au bout de ce délai → seek dur. */
 export const WT_SOFT_CORRECTION_TIMEOUT_MS = 15_000;
-/** Lookahead ajouté à un seek dur pour compenser le temps de seek (secondes). */
+/** Lookahead ajouté à un seek dur pour compenser le temps de seek (secondes)
+ *  — valeur de repli tant que la latence de seek de ce lecteur n'est pas
+ *  mesurée ; ensuite, la mesure lissée, bornée ci-dessous. */
 export const WT_SEEK_LOOKAHEAD_S = 0.25;
+export const WT_SEEK_LATENCY_MIN_S = 0.05;
+export const WT_SEEK_LATENCY_MAX_S = 1.5;
+/** Après une reprise planifiée, un départ en retard de plus que ça se corrige
+ *  d'un seul seek (à +5 %, une seconde de retard prendrait vingt secondes). */
+export const WT_LATE_START_SEEK_S = 0.25;
 /** Anti-spam serveur : intervalle minimal entre deux seeks d'un même membre. */
 export const WT_MIN_SEEK_INTERVAL_MS = 200;
 /** Nombre max d'utilisateurs invitables en une requête. */
 export const WT_MAX_INVITES_PER_REQUEST = 20;
 /** Période de la boucle de correction de drift côté client. */
-export const WT_DRIFT_LOOP_MS = 1_000;
+export const WT_DRIFT_LOOP_MS = 200;
 /** Rafale de pings à l'entrée en groupe pour estimer l'offset d'horloge. */
 export const WT_CLOCK_BURST_COUNT = 5;
 export const WT_CLOCK_BURST_SPACING_MS = 200;

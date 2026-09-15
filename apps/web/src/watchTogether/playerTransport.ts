@@ -8,6 +8,9 @@ import type { MutableRefObject } from "react";
  * (0 → durée), jamais en PTS.
  */
 export interface PlayerTransport {
+  /** Précision de `getPositionSeconds` : `coarse` = position extrapolée depuis
+   *  une valeur étranglée (mpv) — la boucle de dérive élargit sa zone morte. */
+  precision?: "fine" | "coarse";
   play(): void;
   pause(): void;
   seekTo(seconds: number): void;

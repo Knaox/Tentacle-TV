@@ -50,12 +50,14 @@ export function useGroupSyncEngine({
   const pendingIntentRef = useRef<GroupSyncSharedRefs["pendingIntentRef"]["current"]>(null);
   const scheduledPlayRef = useRef<GroupSyncSharedRefs["scheduledPlayRef"]["current"]>(null);
   const playLatencyMsRef = useRef<number | null>(null);
+  const seekLatencySRef = useRef<number | null>(null);
+  const pendingHardSeekRef = useRef<GroupSyncSharedRefs["pendingHardSeekRef"]["current"]>(null);
 
   // Bundle stable des refs partagées entre les trois parties du moteur.
   const shared = useRef<GroupSyncSharedRefs>({
     roomRef, serverNowRef, selfIdRef, sendRef,
     applyingUntilRef, lastBufferingSentRef, softCorrectionSinceRef, currentRateRef,
-    pendingIntentRef, scheduledPlayRef, playLatencyMsRef,
+    pendingIntentRef, scheduledPlayRef, playLatencyMsRef, seekLatencySRef, pendingHardSeekRef,
   }).current;
 
   // ── Session : horloge (rafale puis cadence de séance) + nettoyage au démontage ──

@@ -1,5 +1,8 @@
 import type { MutableRefObject } from "react";
-import type { WsClientMessage, WtRoomStateDto } from "@tentacle-tv/shared";
+import {
+  WT_SEEK_LATENCY_MAX_S, WT_SEEK_LATENCY_MIN_S, WT_SEEK_LOOKAHEAD_S,
+  type WsClientMessage, type WtRoomStateDto,
+} from "@tentacle-tv/shared";
 import type { PlayerTransport } from "./playerTransport";
 import { pendingIntentUntil, type PendingIntent, type PendingIntentKind } from "./groupSchedule";
 
@@ -59,6 +62,22 @@ export interface GroupSyncSharedRefs {
   scheduledPlayRef: MutableRefObject<ScheduledPlay | null>;
   /** Latence de démarrage mesurée de ce lecteur (ms), null tant qu'inconnue. */
   playLatencyMsRef: MutableRefObject<number | null>;
+  /** Latence de seek mesurée (secondes, lissée), null tant qu'inconnue — le
+   *  lookahead d'un seek dur en lecture. */
+  seekLatencySRef: MutableRefObject<number | null>;
+  /** Seek dur en vol, pour mesurer sa latence à l'atterrissage. */
+  pendingHardSeekRef: MutableRefObject<{ at: number; targetS: number } | null>;
+}
+
+/** Lookahead d'un seek dur en lecture : la latence mesurée, sinon le repli. */
+export function seekLookaheadS(shared: GroupSyncSharedRefs): number {
+  return shared.seekLatencySRef.current ?? WT_SEEK_LOOKAHEAD_S;
+}
+
+/** Latence de seek lissée (moyenne mobile exponentielle, 0,3), bornée. */
+export function updateSeekLatency(previous: number | null, measuredS: number): number {
+  const clamped = Math.min(WT_SEEK_LATENCY_MAX_S, Math.max(WT_SEEK_LATENCY_MIN_S, measuredS));
+  return previous === null ? clamped : previous * 0.7 + clamped * 0.3;
 }
 
 export function setPendingIntent(shared: GroupSyncSharedRefs, kind: PendingIntentKind, rttMs: number | null): void {
