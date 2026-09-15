@@ -23,6 +23,21 @@ export const WT_MIN_SEEK_INTERVAL_MS = 200;
 export const WT_GROUP_WAIT_TIMEOUT_MS = 60_000;
 /** Nombre max d'utilisateurs invitables en une requête. */
 export const WT_MAX_INVITES_PER_REQUEST = 20;
+/**
+ * Reprise planifiée : l'instant de reprise est posé dans le futur, à
+ * `now + lead`, pour que TOUS les lecteurs repartent au même instant serveur
+ * — l'écart d'une reprise « à la réception » vaut la différence de latence
+ * entre membres. Le délai suit le membre le plus lent (son aller-retour
+ * déclaré + une marge), borné : sous 180 ms un message n'a pas le temps
+ * d'arriver partout ; au-delà de 900 ms un client d'avant, qui repart à la
+ * réception, resterait trop longtemps devant (sa boucle ne corrige qu'à
+ * partir de 0,4 s et ne seeke dur qu'après 15 s).
+ */
+export const WT_SCHEDULE_MIN_MS = 180;
+export const WT_SCHEDULE_MARGIN_MS = 100;
+export const WT_SCHEDULE_MAX_MS = 900;
+/** Aller-retour supposé d'un membre qui n'a encore rien déclaré (ms). */
+export const WT_DEFAULT_RTT_MS = 250;
 /** Garde-fou : position max acceptée (~28 h) contre les payloads absurdes. */
 export const WT_MAX_POSITION_TICKS = 1_000_000_000_000;
 /** Chat : longueur max d'un message (caractères, tronqué au-delà). */

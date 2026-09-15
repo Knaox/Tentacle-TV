@@ -3,11 +3,15 @@ import {
   wtPositionTicksAt,
   WT_GROUP_WAIT_TIMEOUT_MS,
   WT_MIN_SEEK_INTERVAL_MS,
+  WT_PROTOCOL_VERSION,
   type WtClientMessage,
   type WtStateCause,
 } from "./protocol";
 import { removeMember } from "./roomStore";
 import type { RemovalResult, Room, RoomMember } from "./roomTypes";
+import { anchorOnPlayingSender, computeLead, scheduleResume, touch } from "./syncSchedule";
+
+export { bumpEpoch } from "./syncSchedule";
 
 /**
  * Watch Together — mutations de l'état de lecture d'une room.
@@ -20,38 +24,19 @@ export type SyncOutcome =
   | { kind: "broadcast"; cause: WtStateCause }
   | { kind: "ignore" };
 
-/** Re-base l'état de lecture à `now` (+1 epoch). Sans position explicite, la
- *  position est ré-extrapolée depuis l'état de pause ACTUEL de la room — tout
- *  handler qui bascule `paused` doit donc fournir la position calculée AVANT
- *  le flip, sinon le temps de pause/lecture serait compté à tort. */
-function touch(room: Room, now: number, positionTicks?: number): void {
-  room.positionTicks = positionTicks !== undefined ? positionTicks : wtPositionTicksAt(room, now);
-  room.stateAtServerTime = now;
-  room.epoch += 1;
-}
-
-/** Mutation de composition/statut sans effet sur la lecture (join, statut
- *  membre) : re-base neutre + epoch, pour que le broadcast ne soit pas ignoré
- *  comme stale par les clients. */
-export function bumpEpoch(room: Room): void {
-  touch(room, Date.now());
-}
-
 /** Ajoute un membre au group-wait (avec horodatage pour le timeout anti-gel). */
 function addWaiting(room: Room, userId: string, now: number): void {
   room.waitingFor.add(userId);
   room.waitingSince.set(userId, now);
 }
 
-/** Retire un membre du group-wait ; reprend la lecture si plus personne n'est attendu. */
+/** Retire un membre du group-wait ; programme la reprise si plus personne
+ *  n'est attendu — planifiée, pour que tous repartent au même instant. */
 function pruneWaiting(room: Room, userId: string, now: number): boolean {
   room.waitingFor.delete(userId);
   room.waitingSince.delete(userId);
   if (room.waitingFor.size === 0 && room.paused && room.pauseReason === "buffering") {
-    const frozen = room.positionTicks; // gelée pendant le group-wait
-    room.paused = false;
-    room.pauseReason = null;
-    touch(room, now, frozen);
+    scheduleResume(room, now, room.positionTicks); // gelée pendant le group-wait
     return true;
   }
   return false;
@@ -100,11 +85,17 @@ export function applyCommand(
       if (!room.paused) return { kind: "ignore" };
       // Un play manuel force la reprise, y compris pendant un group-wait
       // (déblocage utilisateur si un membre reste coincé en buffering).
-      room.paused = false;
-      room.pauseReason = null;
       room.waitingFor.clear();
       room.waitingSince.clear();
-      touch(room, now, clampTicks(msg.positionTicks));
+      // Reprise PLANIFIÉE. Un lecteur v2 n'a pas lancé sa lecture : tout le
+      // monde, lui compris, repart de la position qu'il a envoyée, à T. Un
+      // client d'avant joue déjà : on ancre la salle là où IL sera à T.
+      const lead = computeLead(room);
+      const received = clampTicks(msg.positionTicks);
+      const frozen = member.protocolVersion >= WT_PROTOCOL_VERSION
+        ? received
+        : anchorOnPlayingSender(received, member, lead);
+      scheduleResume(room, now, frozen);
       return { kind: "broadcast", cause: "play" };
     }
 
@@ -175,7 +166,7 @@ export function applyCommand(
       }
       const resumed = pruneWaiting(room, member.userId, now);
       if (!resumed) touch(room, now);
-      return { kind: "broadcast", cause: resumed ? "resume" : "presence" };
+      return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
 
     case "wt:presence": {
@@ -193,7 +184,7 @@ export function applyCommand(
       member.buffering = false;
       const resumed = pruneWaiting(room, member.userId, now);
       if (!resumed) touch(room, now);
-      return { kind: "broadcast", cause: resumed ? "resume" : "presence" };
+      return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
 
     case "wt:playbackError": {
@@ -203,7 +194,7 @@ export function applyCommand(
       member.inPlayback = false;
       const resumed = pruneWaiting(room, member.userId, now);
       if (!resumed) touch(room, now);
-      return { kind: "broadcast", cause: resumed ? "resume" : "presence" };
+      return { kind: "broadcast", cause: resumed ? "schedule" : "presence" };
     }
   }
 }
