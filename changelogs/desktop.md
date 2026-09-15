@@ -16,12 +16,12 @@ et Linux reçoivent l'ensemble.
 ## [1.21.3]
 ### FR
 - **La barre des tâches ne passe plus devant le film** (Linux) : en plein écran, le panneau du bureau pouvait s'afficher par-dessus l'image — le plus souvent au retour de la souris depuis un autre écran. Il ne l'a jamais recouverte : il s'intercalait entre la vidéo et la fenêtre, transparente, qui la laissait voir
-- **L'icône de l'application a ses coins arrondis** (Windows, Linux, macOS) : elle s'affichait en carré dans la barre des tâches et dans le Dock, là où l'App Store la montre déjà arrondie sur un Mac récent
+- **L'icône de l'application a ses coins arrondis** (Windows, Linux, macOS) : elle s'affichait en carré dans la barre des tâches et dans le Dock, là où l'App Store la montre déjà arrondie sur un Mac récent. Sous Linux, une mise à jour la rafraîchit désormais — l'AppImage ne remplaçait que le programme, et la barre des tâches gardait l'icône du jour de l'installation
 - Nécessite un serveur 1.17.2 ou plus
 
 ### EN
 - **The taskbar no longer sits in front of the film** (Linux): in fullscreen, the desktop panel could show up over the picture — most often when the mouse came back from another screen. It never covered it: it slipped between the video and our window, which is transparent and let it through
-- **The app icon has rounded corners** (Windows, Linux, macOS): it appeared as a square in the taskbar and in the Dock, where the App Store already shows it rounded on a recent Mac
+- **The app icon has rounded corners** (Windows, Linux, macOS): it appeared as a square in the taskbar and in the Dock, where the App Store already shows it rounded on a recent Mac. On Linux an update now refreshes it — the AppImage only replaced the program, and the taskbar kept the icon from installation day
 - Requires a server on 1.17.2 or newer
 
 ## [win-1.21.2]
