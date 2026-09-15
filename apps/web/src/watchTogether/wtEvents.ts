@@ -63,6 +63,12 @@ export interface WtEventHelpers {
   onInviteArrived?: (invite: WtInviteDto) => void;
 }
 
+/** Anti-rafale : un seek se coalesce désormais côté serveur, mais chaque
+ *  remplacement de barrière est un état `seek` — un seul toast par membre et
+ *  par fenêtre de deux secondes. */
+const SEEK_TOAST_WINDOW_MS = 2_000;
+const lastSeekToastAt = new Map<string, number>();
+
 function username(state: WtRoomStateDto, userId: string | null): string {
   if (!userId) return "";
   return state.members.find((m) => m.userId === userId)?.username ?? "";
@@ -115,8 +121,17 @@ function emitStateToasts(
     case "play":
       h.toast("info", h.t("resumedBy", { name: originName }));
       break;
-    case "seek":
+    case "seek": {
+      const key = originUserId ?? "";
+      const now = Date.now();
+      if (now - (lastSeekToastAt.get(key) ?? 0) < SEEK_TOAST_WINDOW_MS) break;
+      lastSeekToastAt.set(key, now);
       h.toast("info", h.t("seekedBy", { name: originName }));
+      break;
+    }
+    case "skip":
+      // Saut exécuté par le serveur (décompte arrivé à terme) : personne à nommer.
+      h.toast("info", h.t("skippedByGroup"));
       break;
     case "setItem":
       h.toast("info", h.t("itemStartedBy", { name: originName }));

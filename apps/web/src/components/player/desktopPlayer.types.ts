@@ -60,8 +60,9 @@ export interface DesktopPlayerProps {
   onPlayStateChange?: (paused: boolean) => void;
   /** Watch Together — buffering mpv (paused-for-cache) + premier « prêt ». */
   onBufferingChange?: (buffering: boolean) => void;
-  /** Watch Together — seek local détecté (saut de position discontinu). */
-  onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /** Watch Together — seek local : déduit d'une discontinuité de position, ou
+   *  EXPLICITE (`explicit`) — barre, flèches, bouton de saut. */
+  onSeekComplete?: (seconds: number, paused: boolean, explicit?: boolean) => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
   /** Watch Together — lecture demandée : vrai si le moteur la prend en charge

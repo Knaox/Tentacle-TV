@@ -23,6 +23,10 @@ export interface MpvLifecycleCtx {
   /** `Date.now()` de la dernière valeur de `time-pos` (instant de mesure côté
    *  processus principal) — le transport Watch Together extrapole entre deux. */
   positionAtRef: MutableRefObject<number>;
+  /** Nombre de `playback-restart` reçus — mpv en émet un après CHAQUE seek
+   *  abouti : c'est ainsi qu'on sait qu'un seek a atterri (`seeking` est
+   *  coalescé par le pompage et peut ne jamais être vu à vrai). */
+  restartCountRef: MutableRefObject<number>;
   bufferedRef: MutableRefObject<number>;
   /** Miroir synchrone de `paused-for-cache` — lu par le nudge de réveil. */
   bufferingRef: MutableRefObject<boolean>;
@@ -52,7 +56,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setFailure, setFileLoaded, setMediaReady,
-      positionRef, positionAtRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
+      positionRef, positionAtRef, restartCountRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
       playbackWatchdogRef, wakeupRef, loadfileAtRef, onEndFileFailure,
     } = ctx;
 
@@ -277,6 +281,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           }
           case "playback-restart": {
             if (cancelled) return;
+            restartCountRef.current += 1;
             wtLog("mpv", "playback-restart (média prêt, première frame)", {
               sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1,
               pos: positionRef.current.toFixed(1),

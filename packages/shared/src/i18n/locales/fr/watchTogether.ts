@@ -59,6 +59,8 @@ export default {
   memberBuffering: "{{name}} met en mémoire tampon…",
   membersBuffering: "{{count}} membres mettent en mémoire tampon…",
   waitingForGroup: "En attente du groupe…",
+  syncing: "Synchronisation…",
+  skippedByGroup: "Passage sauté",
 
   // Pilule flottante
   groupPlaybackActive: "Lecture de groupe en cours",

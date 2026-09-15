@@ -282,7 +282,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onFallbackToWeb={onFallbackToWeb} onMediaMissing={handleMediaMissing}
         transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
         onBufferingChange={groupSync.notifyBuffering}
-        onSeekComplete={(seconds) => groupSync.notifySeek(seconds)}
+        onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}
         onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
         inGroupSession={group.groupActive} inGroupHost={group.groupIsHost}
         onControlsVisibilityChange={setControlsVisible}

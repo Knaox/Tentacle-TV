@@ -59,6 +59,8 @@ export default {
   memberBuffering: "{{name}} is buffering…",
   membersBuffering: "{{count}} members are buffering…",
   waitingForGroup: "Waiting for the group…",
+  syncing: "Syncing…",
+  skippedByGroup: "Segment skipped",
 
   // Floating pill
   groupPlaybackActive: "Group playback in progress",

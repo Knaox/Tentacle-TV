@@ -79,6 +79,14 @@ export const WT_PENDING_INTENT_MIN_MS = 1_500;
 export const WT_PLAY_LATENCY_MAX_MS = 300;
 /** Pré-calage avant une reprise planifiée : en dessous, pas de seek (secondes). */
 export const WT_PRESEEK_TOLERANCE_S = 0.04;
+/** Idem sur mpv pour une barrière : un re-seek à moins de ça relance ffmpeg
+ *  sur un flux HLS (cache vide → re-gel) pour rien. */
+export const WT_BARRIER_PRESEEK_MPV_S = 0.3;
+/** Barrière : au-delà, on se déclare prêt même sans être posé (le serveur
+ *  nous aurait lâchés à 20 s de toute façon). */
+export const WT_BARRIER_CONFIRM_TIMEOUT_MS = 25_000;
+/** Seeks rapprochés (flèches martelées) : un seul wt:seek, le dernier (ms). */
+export const WT_SEEK_NOTIFY_DEBOUNCE_MS = 250;
 /** Lecture demandée au serveur sans réponse : on joue localement (ms). */
 export const WT_REQUEST_PLAY_WATCHDOG_MS = 2_000;
 /** Après un play() planifié, délai pour que le lecteur se déclare en lecture. */

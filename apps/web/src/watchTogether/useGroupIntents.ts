@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { getClockOffsetMs, getClockRttMs, getSocketStatus, onSocketStatus } from "@tentacle-tv/api-client";
 import {
   TICKS_PER_SECOND, WT_LATE_START_SEEK_S, WT_PROTOCOL_VERSION, WT_REQUEST_PLAY_WATCHDOG_MS,
-  wtPositionSecondsAt, type SegmentType,
+  WT_SEEK_NOTIFY_DEBOUNCE_MS, wtPositionSecondsAt, type SegmentType,
 } from "@tentacle-tv/shared";
 import type { PlayerTransportRef } from "./playerTransport";
 import {
@@ -84,7 +84,13 @@ export function useGroupIntents({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks]);
 
-  const notifySeek = useCallback((seconds: number) => {
+  /** Seeks rapprochés (flèches martelées) : un seul wt:seek, le dernier. */
+  const seekDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** `explicit` : un geste de l'utilisateur (barre, flèches, bouton de saut),
+   *  pas un saut déduit d'une discontinuité — la dédup contre la position de
+   *  la salle est alors plus serrée (relâcher la poignée là où l'on est n'est
+   *  pas un seek), et rien d'autre ne le filtre. */
+  const notifySeek = useCallback((seconds: number, opts?: { explicit?: boolean }) => {
     const r = shared.roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
     // Sauts de position pendant un (re)chargement = start-position/artefacts.
@@ -92,16 +98,21 @@ export function useGroupIntents({
       wtLog("engine", "intent seek ignoré (player en chargement déclaré)", { toS: seconds.toFixed(1) });
       return;
     }
-    if (isApplying(shared)) {
+    if (!opts?.explicit && isApplying(shared)) {
       wtLog("engine", "intent seek ignoré (écho d'un seek distant)", { toS: seconds.toFixed(1) });
       return;
     }
     // Dédup : un seek vers la position (extrapolée) du groupe est un recalage
     // local (ex. fallback niveau 3 différé d'un seek distant), pas un intent.
-    if (Math.abs(seconds - wtPositionSecondsAt(r, shared.serverNowRef.current())) < REMOTE_JUMP_THRESHOLD_S) return;
-    wtLog("engine", "intent → wt:seek", { toS: seconds.toFixed(1) });
+    const nearGroup = Math.abs(seconds - wtPositionSecondsAt(r, shared.serverNowRef.current()));
+    if (nearGroup < (opts?.explicit ? 0.3 : REMOTE_JUMP_THRESHOLD_S)) return;
+    wtLog("engine", "intent → wt:seek (dé-bouncé)", { toS: seconds.toFixed(1), explicit: !!opts?.explicit });
     setPendingIntent(shared, "seek", getClockRttMs());
-    shared.sendRef.current({ type: "wt:seek", positionTicks: Math.max(0, Math.round(seconds * TICKS_PER_SECOND)) });
+    if (seekDebounceRef.current) clearTimeout(seekDebounceRef.current);
+    seekDebounceRef.current = setTimeout(() => {
+      seekDebounceRef.current = null;
+      shared.sendRef.current({ type: "wt:seek", positionTicks: Math.max(0, Math.round(seconds * TICKS_PER_SECOND)) });
+    }, WT_SEEK_NOTIFY_DEBOUNCE_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId]);
 
