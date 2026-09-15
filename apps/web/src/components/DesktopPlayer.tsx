@@ -44,7 +44,8 @@ export function DesktopPlayer({
   // échec de chargement (voir playbackFailure.ts). Absente hors lecture locale.
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
   const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer({ probeLocalMedia });
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen,
+    positionRef, positionAtRef } = useDesktopPlayer({ probeLocalMedia });
   // En séance, la lecture passe d'abord par le moteur (reprise commune) ; la pause reste immédiate.
   const { toggle: togglePause, play: playGated } = useGatedPlay({
     rawToggle: () => { void rawTogglePause(); }, rawPlay: () => { void setPause(false); },
@@ -203,19 +204,19 @@ export function DesktopPlayer({
     onAutoNextDismiss, inGroupSession, inGroupHost,
   });
 
+  // Écran de chargement et réserve avant l'image (cf. hook dédié).
+  const { prebuffering, showLoadingOverlay } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause });
+
   // Watch Together : transport impératif + signaux prêt/buffering/pause.
   // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
   // que la croix locale, sans ré-annonce au groupe.
   useDesktopTransport({
-    transportRef, state, mediaReady, isDirectPlay,
-    lastAbsolutePosRef, effectiveMpvOffset,
+    transportRef, state, mediaReady, prebuffering, isDirectPlay,
+    positionRef, positionAtRef, lastAbsolutePosRef, effectiveMpvOffset,
     setPause, seek, setSpeed,
     cancelAutoPlay: playback.signalRemoteNextDismiss,
     onPlayStateChange, onBufferingChange,
   });
-
-  // Écran de chargement et réserve avant l'image (cf. hook dédié).
-  const { showLoadingOverlay } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause });
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode

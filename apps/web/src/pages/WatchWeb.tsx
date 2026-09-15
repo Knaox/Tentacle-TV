@@ -71,7 +71,10 @@ export function WatchWeb() {
     if (!streamUrl) return;
     if (firstSrcRef.current) { firstSrcRef.current = false; return; }
     wtLog("page", "rebuild de source → déclarer buffering au groupe", { playSessionId });
-    groupSync.notifyBuffering(true);
+    // Gel à la position que le rechargement VISE : le lecteur qui se détruit
+    // rapporterait la sienne, en retard de ce que la boucle ne rattraperait
+    // qu'après la reprise.
+    groupSync.notifyBuffering(true, getPositionTicks() / TICKS_PER_SECOND);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 

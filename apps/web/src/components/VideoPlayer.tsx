@@ -130,7 +130,7 @@ export function VideoPlayer({
   // Watch Together : surface de commande impérative pour le moteur de sync.
   // `wt:cancelAutoNext` = refus de carte distant, même sémantique que la croix.
   useWebTransport({
-    transportRef, videoRef, lastKnownPositionRef, sourceChangingRef,
+    transportRef, videoRef, lastKnownPositionRef, effectiveOffsetRef, sourceChangingRef,
     handleSeek, cancelAutoNextLocal: playback.signalRemoteNextDismiss,
   });
 

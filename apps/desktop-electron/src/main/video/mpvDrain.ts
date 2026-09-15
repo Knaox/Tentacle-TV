@@ -171,10 +171,10 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
         data: unknown;
       };
       // Étranglement : voir TIME_POS_INTERVAL_MS.
+      const at = Date.now();
       if (p.name === "time-pos") {
-        const now = Date.now();
-        if (now - lastTimePos < TIME_POS_INTERVAL_MS) continue;
-        lastTimePos = now;
+        if (at - lastTimePos < TIME_POS_INTERVAL_MS) continue;
+        lastTimePos = at;
       }
       const value = decodeProperty(p.format, p.data);
       // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
@@ -184,6 +184,7 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
         name: p.name,
         data: value,
         id: Number(ev.reply_userdata),
+        at,
       });
       continue;
     }

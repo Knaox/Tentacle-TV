@@ -99,7 +99,10 @@ export function useGroupIntents({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemId]);
 
-  const notifyBuffering = useCallback((buffering: boolean) => {
+  /** `freezeAtSeconds` : la position à laquelle geler la salle quand c'est un
+   *  rechargement qui commence — celle que le rechargement VISE (la page la
+   *  connaît), pas celle qu'un lecteur en train de se détruire rapporte. */
+  const notifyBuffering = useCallback((buffering: boolean, freezeAtSeconds?: number) => {
     const r = shared.roomRef.current;
     if (!active || !r || r.itemId !== itemId) return;
     // Re-présence : si le serveur m'a éjecté de la lecture (timeout anti-gel
@@ -114,8 +117,11 @@ export function useGroupIntents({
     }
     if (shared.lastBufferingSentRef.current === buffering) return;
     shared.lastBufferingSentRef.current = buffering;
-    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (posTicks() / TICKS_PER_SECOND).toFixed(1) });
-    shared.sendRef.current({ type: "wt:buffering", buffering, positionTicks: posTicks(), rttMs: rtt() });
+    const positionTicks = freezeAtSeconds !== undefined
+      ? Math.max(0, Math.round(freezeAtSeconds * TICKS_PER_SECOND))
+      : posTicks();
+    wtLog("engine", `intent → wt:buffering ${buffering}`, { posS: (positionTicks / TICKS_PER_SECOND).toFixed(1) });
+    shared.sendRef.current({ type: "wt:buffering", buffering, positionTicks, rttMs: rtt() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, itemId, posTicks, sendPresence]);
 
