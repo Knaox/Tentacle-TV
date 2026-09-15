@@ -13,6 +13,7 @@ import {
   barrierParticipants, cancelResumeOnRelease, confirmReady, dropBarrier, joinBarrier, openBarrier,
   requestResumeOnRelease,
 } from "./syncBarrier";
+import { cancelPendingSkip, forgetSkipsFrom, resetSkips } from "./syncSkip";
 
 export { bumpEpoch } from "./syncSchedule";
 
@@ -124,8 +125,13 @@ export function applyCommand(
       // reprise était déjà demandée. Un nouveau seek REMPLACE l'attente en
       // cours (coalescence) : jamais d'ignorance silencieuse.
       const resume = !room.paused || (room.barrier?.resumeOnRelease ?? false);
+      const target = clampTicks(msg.positionTicks);
       room.lastSeekAt.set(member.userId, now);
-      openBarrier(room, now, "seek", clampTicks(msg.positionTicks), barrierParticipants(room), resume, true);
+      // Un seek règle le décompte en cours (un clic « passer » EST un seek) ;
+      // rembobiner avant le début d'un passage le redemande.
+      cancelPendingSkip(room, true);
+      forgetSkipsFrom(room, target);
+      openBarrier(room, now, "seek", target, barrierParticipants(room), resume, true);
       return { kind: "broadcast", cause: "seek" };
     }
 
@@ -153,6 +159,7 @@ export function applyCommand(
       // lecture » reprend là où IL en était), 0 sinon. La salle reste en
       // attente même sans membre à attendre : le lanceur arrive juste après.
       dropBarrier(room);
+      resetSkips(room);
       room.barrierId += 1;
       room.paused = true;
       room.pauseReason = "buffering";
@@ -233,7 +240,10 @@ export function removeMemberAndSync(userId: string): MemberRemoval | null {
   if (!result) return null;
   const now = Date.now();
   let resumed = false;
-  if (!result.dissolved) {
+  if (result.dissolved) {
+    resetSkips(result.room);
+    dropBarrier(result.room);
+  } else {
     resumed = pruneWaiting(result.room, userId, now);
     if (!resumed) touch(result.room, now);
   }

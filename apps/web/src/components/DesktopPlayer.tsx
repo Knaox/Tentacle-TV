@@ -37,7 +37,7 @@ export function DesktopPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
-  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession, inGroupHost,
+  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
   onControlsVisibilityChange, applyToSeries, onRequestPlay,
 }: DesktopPlayerProps) {
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
@@ -211,7 +211,7 @@ export function DesktopPlayer({
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
-    onAutoNextDismiss, inGroupSession, inGroupHost,
+    onAutoNextDismiss, inGroupSession,
   });
 
   // Écran de chargement et réserve avant l'image (cf. hook dédié).

@@ -169,15 +169,13 @@ describe("sauter puis revenir dans le passage", () => {
   });
 });
 
-describe("countdownAllowed — en séance, seul l'hôte laisse le décompte courir", () => {
+describe("countdownAllowed — en séance, le décompte est celui du serveur, jamais le local", () => {
   it("hors séance, toujours", () => {
-    expect(countdownAllowed(undefined, undefined)).toBe(true);
-    expect(countdownAllowed(false, false)).toBe(true);
+    expect(countdownAllowed(undefined)).toBe(true);
+    expect(countdownAllowed(false)).toBe(true);
   });
 
-  it("en séance : l'hôte oui, un invité non", () => {
-    expect(countdownAllowed(true, true)).toBe(true);
-    expect(countdownAllowed(true, false)).toBe(false);
-    expect(countdownAllowed(true, undefined)).toBe(false);
+  it("en séance, jamais — hôte compris", () => {
+    expect(countdownAllowed(true)).toBe(false);
   });
 });

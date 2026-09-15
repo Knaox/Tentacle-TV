@@ -89,6 +89,11 @@ export interface Room {
   waitCause: WtWaitCause | null;
   /** Saut de passage armé, null sans décompte en cours. */
   pendingSkip: PendingSkip | null;
+  /** Passages réglés pour ce média (sautés, refusés, dépassés) : clé
+   *  `item:type:début` → début (ticks), pour lever l'entrée au rembobinage. */
+  skipHistory: Map<string, number>;
+  /** Minuteur du saut armé (réarmé de lui-même tant que la salle est en pause). */
+  skipTimer: ReturnType<typeof setTimeout> | null;
   members: Map<string, RoomMember>;
   /** Anti-spam seek : dernier seek accepté par membre. */
   lastSeekAt: Map<string, number>;

@@ -284,7 +284,7 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
         onBufferingChange={groupSync.notifyBuffering}
         onSeekComplete={(seconds, _paused, explicit) => groupSync.notifySeek(seconds, { explicit })}
         onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
-        inGroupSession={group.groupActive} inGroupHost={group.groupIsHost}
+        inGroupSession={group.groupActive}
         onControlsVisibilityChange={setControlsVisible}
         applyToSeries={applyToSeries}
       />

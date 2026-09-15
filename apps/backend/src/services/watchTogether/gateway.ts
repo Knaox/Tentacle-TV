@@ -7,6 +7,7 @@ import { invitesFor } from "./roomInvites";
 import type { Room } from "./roomTypes";
 import { applyCommand, bumpEpoch, expireStaleWaits, releaseMemberWait, removeMemberAndSync } from "./sync";
 import { onBarrierExpired } from "./syncBarrier";
+import { cancelPendingSkip, onSkipExecuted, proposeSkip } from "./syncSkip";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
 import { refreshHostSettings } from "./hostSettings";
@@ -118,13 +119,26 @@ export function handleWtMessage(
       originUserId: user.userId,
       segmentType: msg.segmentType,
     });
+    // Et le décompte armé par le serveur s'éteint pour tout le monde.
+    if (cancelPendingSkip(room, true)) {
+      wtSrvLog(`${user.username} → refus : décompte de saut annulé`, roomSnapshot(room));
+      bumpEpoch(room);
+      broadcastRoom(room, "presence", user.userId);
+    }
     return;
   }
 
-  if (msg.type === "wt:tick" || msg.type === "wt:skipPropose") {
-    // Balises et propositions de saut : le contrat les accepte déjà, la salle
-    // ne les exploite pas encore (balises → syncBeacon, sauts → syncSkip).
-    wtSrvLog(`${user.username} → ${msg.type} (reçu, pas encore exploité)`);
+  if (msg.type === "wt:skipPropose") {
+    const proposer = room.members.get(user.userId)!;
+    const armed = proposeSkip(room, proposer, msg, Date.now());
+    wtSrvLog(`${user.username} → skipPropose ${msg.segmentType} ⇒ ${armed ? "armé" : "ignoré"}`, roomSnapshot(room));
+    if (armed) broadcastRoom(room, "presence", user.userId);
+    return;
+  }
+
+  if (msg.type === "wt:tick") {
+    // Balises : le contrat les accepte déjà, la salle ne les exploite pas encore.
+    wtSrvLog(`${user.username} → wt:tick (reçu, pas encore exploité)`);
     return;
   }
 
@@ -192,6 +206,12 @@ export function registerWatchTogetherGateway(): void {
   onBarrierExpired((room) => {
     wtSrvLog("barrière expirée : retardataires lâchés, la salle repart", roomSnapshot(room));
     broadcastRoom(room, room.paused ? "presence" : "schedule", null);
+  });
+
+  // Décompte de saut arrivé à terme : la salle saute, par barrière.
+  onSkipExecuted((room) => {
+    wtSrvLog("saut de passage exécuté par le serveur", roomSnapshot(room));
+    broadcastRoom(room, "skip", null);
   });
 
   // Anti-gel infini : un membre attendu par le group-wait depuis trop

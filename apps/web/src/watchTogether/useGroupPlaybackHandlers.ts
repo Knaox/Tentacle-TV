@@ -36,7 +36,7 @@ export function useGroupPlaybackHandlers({
   handlePreviousEpisode: () => void;
   setStartTicks: (ticks: number) => void;
 }) {
-  const { room, send, serverNow, isInGroup, isHost } = useWatchTogether();
+  const { room, send, serverNow, isInGroup } = useWatchTogether();
   // Une salle RÉELLE, pas seulement le drapeau : le shim webOS pose
   // `isInGroup: true` pour masquer deux boutons (le téléviseur n'a pas de
   // Watch Together), et le lecteur se croyait en séance — sans décompte de
@@ -88,8 +88,6 @@ export function useGroupPlaybackHandlers({
 
   return {
     groupActive: active,
-    /** En séance, seul l'hôte laisse le décompte de saut aller au seek. */
-    groupIsHost: active && isHost,
     groupStartPositionSeconds: groupStartSeconds,
     handleNextEpisode: active ? groupNextEpisode : handleNextEpisode,
     handlePreviousEpisode: active ? groupPreviousEpisode : handlePreviousEpisode,

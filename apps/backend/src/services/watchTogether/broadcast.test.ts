@@ -33,6 +33,8 @@ function makeRoom(hostSettings: Room["hostSettings"]): Room {
     barrier: null,
     waitCause: null,
     pendingSkip: null,
+    skipHistory: new Map(),
+    skipTimer: null,
     members: new Map([
       ["u-hote", {
         userId: "u-hote", username: "Hôte", hasAvatar: false, inPlayback: true,
