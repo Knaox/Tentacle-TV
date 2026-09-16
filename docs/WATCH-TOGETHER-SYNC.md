@@ -81,11 +81,13 @@ jamais être vu à vrai.
 Boucle à 5 Hz (`useGroupDriftLoop`), décision pure (`driftController.ts`) :
 `vitesse = 1 − dérive / 3 s`, bornée à ±5 % (au-delà, l'oreille l'entend
 malgré la correction de hauteur), arrondie au demi-pour-cent ; zone morte
-40 ms sur le web, 60 ms sur mpv (position extrapolée) ; hystérésis (25/30 ms)
-pour ne pas battre ; seek dur dès 1,5 s ou après 15 s de douceur vaine ; en
-pause, recalage exact dès 40 ms. Le lookahead d'un seek dur est la latence
-de seek mesurée de ce lecteur (repli 0,25 s). Après une reprise planifiée,
-un départ en retard de plus de 250 ms se corrige d'un seul seek.
+40 ms sur le web, 45 ms sur mpv (horloge à 8 Hz, extrapolée) ; hystérésis
+(25 ms) pour ne pas battre ; seek dur dès 1,5 s ou après 15 s de douceur
+vaine ; en pause, recalage exact dès 40 ms. Le lookahead d'un seek dur est la
+latence de seek mesurée de ce lecteur (repli 0,25 s). Après une reprise
+planifiée, un départ en retard de plus de 250 ms se corrige d'un seul seek.
+Le pré-calage d'une barrière se fait dès 40 ms d'écart sur le web, 100 ms sur
+mpv.
 
 La boucle se tait quand : le lecteur n'a jamais été prêt ; un seek local est
 en vol ; une reprise planifiée attend son instant ; un intent local est en
@@ -114,11 +116,46 @@ arrière dans la même session mélangerait en tampon deux passes ffmpeg
 passe, ou à plus de 6 s devant le tampon, renégocie de même
 (`hlsSeekOutsideRun`). Les sessions suivantes partent directement au bon
 endroit (`startPosition = cible − atterrissage`).
-mpv : `time-pos` arrive étranglé à 8 Hz et traverse l'IPC — le processus
-principal horodate chaque valeur à sa lecture dans la file de mpv, et le
-transport extrapole depuis cet instant à la vitesse courante, médiane de
-trois échantillons contre la gigue du pompage (`mpvPositionClock.ts`), sauf
-en pause, en seek ou en buffering.
+mpv : `time-pos` et `audio-pts` arrivent étranglés à 8 Hz et traversent
+l'IPC — le processus principal horodate chaque valeur à sa lecture dans la
+file de mpv, et le transport extrapole depuis cet instant à la vitesse
+courante, médiane de trois échantillons contre la gigue du pompage
+(`mpvPositionClock.ts`), sauf en pause, en seek ou en buffering. En lecture,
+c'est l'HORLOGE AUDIO (`audio-pts`) qui est retenue quand elle est fraîche
+(`mpvClock.ts`) : `time-pos` est la position de l'image affichée, posée à sa
+mise en file — elle avance par sauts d'une image et peut précéder ou suivre
+ce qui sort du haut-parleur de jusqu'à 40 ms, dans un sens qui dépend de la
+sortie vidéo ; `audio-pts` est l'échantillon qui sort à l'instant de la
+lecture, latence de sortie déduite — la même horloge que le `currentTime` du
+web. Deux clients comparés sur la même horloge n'ont plus ce biais d'une
+image. À l'arrêt, `time-pos` fait foi (l'horloge audio y est figée ou périmée).
+
+## L'atterrissage de mpv en transcodage
+
+Mesuré le 16 septembre 2026 (mpv 0.37 sans écran depuis le conteneur, One
+Piece S16E25 mkv h264, Jellyfin 10.11 + QSV) : sur un HLS Jellyfin, la
+playlist annonce le segment N à N × 3 s, mais le ffmpeg relancé pour le
+produire part de l'image clé voisine — une à dix secondes plus loin selon le
+fichier. mpv lit les horodatages réels et rapporte honnêtement sa position ;
+c'est l'atterrissage qui est faux : `--start=+500` → 501,042 s ; `seek 100
+absolute` → 102,060 s ; un seek en avant hors passe (900) → 900,024 s. En
+séance, un lecteur qui se cale sur une cible et atterrit une seconde trop
+loin n'est jamais posé, et la boucle de dérive le renverrait au même endroit
+en spirale.
+
+Le remède est `hr-seek-demuxer-offset` : mpv recule le démuxeur de ce nombre
+de secondes avant la cible, puis décode et jette les images jusqu'à elle —
+son mécanisme de seek précis, que la playlist mensongère mettait en échec.
+Avec douze secondes de recul, même fichier : `--start=+500` → 500,000 s ;
+`seek 100 absolute` → 100,017 s (une image), en 1,3 s au lieu de 1,1. Le
+recul vaut douze secondes sur un HLS (les intervalles d'images clés d'un
+WEB-DL vont jusqu'à dix), zéro en lecture directe, et il est posé par
+`play()` avant chaque `loadfile` ; un atterrissage encore en retard (images
+clés plus rares) élargit le recul du retard mesuré plus trois secondes,
+jusqu'à trente, et refait le seek une fois (`mpvSeekLanding.ts`,
+`useMpvExactSeek.ts`). Tous les seeks absolus du lecteur de bureau passent
+par là — barre, ±30 s, arbitre de passages, Watch Together — et l'ouverture
+d'une source à une position est jugée de même.
 
 ## Le décompte de saut
 
@@ -152,10 +189,19 @@ affiché dans le panneau (vert ≤ 50 ms, ambre ≤ 200, rouge). Journaux :
 
 ## Vérification (à consigner)
 
+Mesuré le 16 septembre 2026 : deux onglets web sur le même média (lecture
+directe comme transcodage) se tiennent à l'oreille — l'utilisateur les juge
+parfaitement synchrones. Web + bureau présentait un décalage audible à
+secondes affichées égales : c'est ce qui a conduit à l'horloge audio de mpv
+et aux seeks exacts ci-dessus, à revérifier à deux vrais clients.
+
 Deux comptes, même média avec intro/générique, web + bureau, puis un
 troisième membre : écart en régime établi (cible ≤ 40 ms en lecture
-directe, ≤ 60 ms en transcodage), reprise après pause (aucun recalage dur
-dans les journaux), scrub rapide (une seule reprise), changement de langue
-côté invité (chip « En attente », reprise alignée), coupure Wi-Fi 10 s
-(la salle repart), décompte d'intro identique des deux côtés, clic et croix
-d'un invité répercutés, client d'avant dans la salle.
+directe, ≤ 60 ms en transcodage), écart web/bureau à l'oreille (aucun écho,
+les deux sur la même sortie audio), bureau en transcodage : entrée dans la
+salle et seeks posés à la cible sans spirale (journaux `[WT … mpv-seek]`
+« atterrissage posé »), reprise après pause (aucun recalage dur dans les
+journaux), scrub rapide (une seule reprise), changement de langue côté
+invité (chip « En attente », reprise alignée), coupure Wi-Fi 10 s (la salle
+repart), décompte d'intro identique des deux côtés, clic et croix d'un
+invité répercutés, client d'avant dans la salle.
