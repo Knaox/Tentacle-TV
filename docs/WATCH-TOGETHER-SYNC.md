@@ -72,9 +72,12 @@ anti-gel à 60 s, avec `playbackError`).
 « Posé » — web : plus de seek en vol, `readyState ≥ 3`, position à moins de
 150 ms de la cible ; jamais `canplaythrough` (WebKit le tire trop tôt,
 Chromium ne le retire pas sur un seek dans le tampon). mpv : ni `seeking`
-ni `paused-for-cache`, position à la cible, et un `playback-restart` vu
-depuis le seek — `seeking` est coalescé par le pompage à 20 ms et peut ne
-jamais être vu à vrai.
+ni `paused-for-cache`, position à moins de 100 ms de la cible (la même
+tolérance que le pré-calage de la reprise, pour ne pas rejouer un seek juste
+avant T), et un `playback-restart` vu depuis le seek — `seeking` est coalescé
+par le pompage à 20 ms et peut ne jamais être vu à vrai. Pendant l'attente,
+un lecteur qui se remet à jouer ou quitte la cible y est ramené en pause (au
+plus toutes les 1,5 s).
 
 ## La correction de dérive
 
@@ -119,9 +122,14 @@ base du conteneur, 677 s sur un enregistrement de diffusion), et l'écart
 d'une session ultérieure à cette base se corrige (−43 ms mesurés : l'audio
 coupé à une trame AAC ; une image clé plus loin chez un serveur dont l'`-ss`
 ne serait pas précis). Une session neuve vise sa cible (un segment plus tôt
-seulement si un atterrissage positif est connu), et le replacement / les
-sauts hors de la passe restent (`hlsTimeline.ts`) : revenir en arrière dans
-une session mélange en tampon deux passes ffmpeg et fige le décodeur.
+seulement si un atterrissage positif est connu), et le replacement / le
+retour AVANT la passe restent (`hlsTimeline.ts`) : revenir en arrière dans
+une session mélange en tampon deux passes ffmpeg et fige le décodeur. Un saut
+en avant, lui, reste dans la session : le lecteur garde son état de pause —
+une session neuve relançait la lecture d'elle-même au milieu de la barrière
+d'un saut de passage, le lecteur n'était plus jamais posé, et la salle
+attendait les vingt secondes du délai en pause (« la lecture se met en pause
+étrangement » après une intro sautée).
 mpv : `time-pos` et `audio-pts` arrivent étranglés à 8 Hz et traversent
 l'IPC — le processus principal horodate chaque valeur à sa lecture dans la
 file de mpv, et le transport extrapole depuis cet instant à la vitesse

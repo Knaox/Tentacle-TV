@@ -41,4 +41,8 @@ describe("needsPreseek", () => {
     expect(needsPreseek(10, 10.03)).toBe(false);
     expect(needsPreseek(10, 10.05)).toBe(true);
   });
+  it("la tolérance de mpv est plus large : posé par la barrière, il ne rejoue pas son seek", () => {
+    expect(needsPreseek(10, 10.08, 0.1)).toBe(false);
+    expect(needsPreseek(10, 10.12, 0.1)).toBe(true);
+  });
 });

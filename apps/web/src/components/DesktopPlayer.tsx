@@ -202,7 +202,7 @@ export function DesktopPlayer({
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
-    onAutoNextDismiss, inGroupSession,
+    onAutoNextDismiss, inGroupSession, onUserSeek: reportUserSeek,
   });
 
   // Écran de chargement et réserve avant l'image (cf. hook dédié).
