@@ -94,7 +94,26 @@ sous les doigts de l'utilisateur) ; la salle m'attend dans une barrière.
 
 ## La position lue
 
-Web : `currentTime` lu en direct sur l'élément (`timeupdate` date de 250 ms).
+Web : `currentTime` lu en direct sur l'élément (`timeupdate` date de 250 ms),
+PLUS l'atterrissage de la session hls.js (`hlsTimeline.ts`). Mesuré le
+16 septembre 2026 : un transcodage relancé en cours de film (qualité, piste,
+incrustation, arrivée dans une salle) fait demander le segment N, annoncé à
+N × 3 s ; le ffmpeg relancé (`-ss`, `-copyts`) atterrit sur l'image clé
+SUIVANTE, dix secondes plus loin, et hls.js recale toute la session sur
+l'heure de la playlist (`initPTS`, posé en `timestampOffset`). Sans
+correction, `currentTime` ment de 7 à 10 s, la balise dit ±30 ms, et les deux
+membres ne regardent pas la même image. La position du film vaut donc
+`currentTime + (initPTS − base)`, la base étant apprise d'une session partie
+du segment 0 (zéro pour presque tout, 677 s sur un enregistrement de
+diffusion) ; un écart qu'aucune image clé n'explique (> 45 s) laisse le
+comportement d'avant. Une session partie en avance d'au moins 1,5 s sur sa
+cible renégocie une session NEUVE à `cible − atterrissage` : revenir en
+arrière dans la même session mélangerait en tampon deux passes ffmpeg
+(Jellyfin ressert les fichiers de la première), et le décodeur vidéo se fige
+à leur frontière — mesuré deux fois sur deux. Un saut avant le début de la
+passe, ou à plus de 6 s devant le tampon, renégocie de même
+(`hlsSeekOutsideRun`). Les sessions suivantes partent directement au bon
+endroit (`startPosition = cible − atterrissage`).
 mpv : `time-pos` arrive étranglé à 8 Hz et traverse l'IPC — le processus
 principal horodate chaque valeur à sa lecture dans la file de mpv, et le
 transport extrapole depuis cet instant à la vitesse courante, médiane de

@@ -1,4 +1,4 @@
-import type { HlsConfig } from "hls.js";
+import Hls, { type HlsConfig } from "hls.js";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -11,6 +11,20 @@ const DBG = "[Tentacle:VideoPlayer]";
  *  Returns "" on Chrome/Brave/Firefox/Edge → all Safari-specific code paths are inert. */
 export const HAS_NATIVE_HLS = typeof document !== "undefined"
   && document.createElement("video").canPlayType("application/vnd.apple.mpegurl") !== "";
+
+/**
+ * La source sera-t-elle lue par hls.js (MSE) plutôt que par l'élément lui-même ?
+ *
+ * Décide aussi de l'IDENTITÉ de la balise `<video>` : passer d'une lecture
+ * directe (fichier progressif) à une session MSE sur le même élément fige le
+ * décodeur vidéo une dizaine de secondes plus tard — image arrêtée, son
+ * maintenu, `currentTime` qui avance, aucun événement. Reproduit trois fois
+ * sur trois le 16 septembre 2026 (jamais d'une session MSE à une autre) ;
+ * un élément neuf par sorte de source évite la transition.
+ */
+export function isMseSource(src: string, useNativeHls?: boolean): boolean {
+  return src.includes(".m3u8") && !useNativeHls && Hls.isSupported();
+}
 
 /** Max time (ms) to wait for canplaythrough before falling back to play anyway.
  *  Progressive transcode: video=copy is instant but audio transcode takes 1-3s.

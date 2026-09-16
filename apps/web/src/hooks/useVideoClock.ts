@@ -38,6 +38,15 @@ export interface VideoClock {
   containerPtsOffsetRef: MutableRefObject<number>;
   /** Le décalage a-t-il été mesuré pour la source courante ? */
   offsetDetectedRef: MutableRefObject<boolean>;
+  /** Début de la passe ffmpeg de la session hls.js courante (temps élément),
+   *  null hors hls.js ou tant que rien n'est en tampon — cf. `hlsTimeline.ts`. */
+  hlsRunStartRef: MutableRefObject<number | null>;
+  /** Atterrissage de la dernière session hls.js de ce média (s) : sert de
+   *  départ à la suivante, et ne vaut rien pour une autre sorte de source. */
+  hlsLandingRef: MutableRefObject<number>;
+  /** Base d'horodatage du conteneur mesurée sur une source progressive (s),
+   *  à rétablir quand on y revient. */
+  containerBaseRef: MutableRefObject<number>;
 }
 
 export function useVideoClock(): VideoClock {
@@ -47,6 +56,9 @@ export function useVideoClock(): VideoClock {
   const effectiveOffsetRef = useRef(0);
   const containerPtsOffsetRef = useRef(0);
   const offsetDetectedRef = useRef(false);
+  const hlsRunStartRef = useRef<number | null>(null);
+  const hlsLandingRef = useRef(0);
+  const containerBaseRef = useRef(0);
 
   useEffect(() => {
     const id = setInterval(() => setDisplayTime(rawTimeRef.current), 1000);
@@ -60,5 +72,8 @@ export function useVideoClock(): VideoClock {
     effectiveOffsetRef,
     containerPtsOffsetRef,
     offsetDetectedRef,
+    hlsRunStartRef,
+    hlsLandingRef,
+    containerBaseRef,
   };
 }
