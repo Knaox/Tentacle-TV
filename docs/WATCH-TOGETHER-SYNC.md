@@ -96,26 +96,32 @@ sous les doigts de l'utilisateur) ; la salle m'attend dans une barrière.
 
 ## La position lue
 
-Web : `currentTime` lu en direct sur l'élément (`timeupdate` date de 250 ms),
-PLUS l'atterrissage de la session hls.js (`hlsTimeline.ts`). Mesuré le
-16 septembre 2026 : un transcodage relancé en cours de film (qualité, piste,
-incrustation, arrivée dans une salle) fait demander le segment N, annoncé à
-N × 3 s ; le ffmpeg relancé (`-ss`, `-copyts`) atterrit sur l'image clé
-SUIVANTE, dix secondes plus loin, et hls.js recale toute la session sur
-l'heure de la playlist (`initPTS`, posé en `timestampOffset`). Sans
-correction, `currentTime` ment de 7 à 10 s, la balise dit ±30 ms, et les deux
-membres ne regardent pas la même image. La position du film vaut donc
-`currentTime + (initPTS − base)`, la base étant apprise d'une session partie
-du segment 0 (zéro pour presque tout, 677 s sur un enregistrement de
-diffusion) ; un écart qu'aucune image clé n'explique (> 45 s) laisse le
-comportement d'avant. Une session partie en avance d'au moins 1,5 s sur sa
-cible renégocie une session NEUVE à `cible − atterrissage` : revenir en
-arrière dans la même session mélangerait en tampon deux passes ffmpeg
-(Jellyfin ressert les fichiers de la première), et le décodeur vidéo se fige
-à leur frontière — mesuré deux fois sur deux. Un saut avant le début de la
-passe, ou à plus de 6 s devant le tampon, renégocie de même
-(`hlsSeekOutsideRun`). Les sessions suivantes partent directement au bon
-endroit (`startPosition = cible − atterrissage`).
+Web : `currentTime` lu en direct sur l'élément (`timeupdate` date de 250 ms).
+C'est la position du film, sans correction. Mesuré le 16 septembre 2026 au
+ffprobe sur les segments de Jellyfin 10.11 : TOUS les horodatages d'un
+transcodage HLS sont décalés de dix secondes par rapport à l'heure de la
+playlist — le segment 0 (0 s) porte de l'audio à 10,000 s, le segment 166
+(498 s) à 507,957 s — sur des conteneurs qui partent de zéro. C'est le muxeur
+MPEG-TS de ffmpeg (2 × `max_delay`, Jellyfin passe `-max_delay 5000000`), un
+décalage constant que hls.js absorbe dans `initPTS` (premier PTS − heure
+playlist du premier fragment, dix secondes quel que soit le fragment) : le
+temps de l'élément est l'heure de la playlist, donc le temps du film. mpv le
+rebase de la même façon (`rebase-start-time`, sur le premier segment lu).
+Une version d'un jour avait pris ces dix secondes pour un atterrissage
+d'image clé et les ajoutait à `currentTime` : toute session partie ailleurs
+qu'au segment 0 rapportait dix secondes de trop — un épisode de 22 min 39
+« finissait » à 22 min 49, et le lecteur web se calait dix secondes derrière
+le bureau à secondes affichées égales ; deux onglets web, faux du même
+montant, paraissaient synchrones. Retirée le jour même. Il reste le vrai
+atterrissage, mesurable seulement contre une base : une session partie du
+segment 0 retient son `initPTS` comme base du média (décalage du muxeur +
+base du conteneur, 677 s sur un enregistrement de diffusion), et l'écart
+d'une session ultérieure à cette base se corrige (−43 ms mesurés : l'audio
+coupé à une trame AAC ; une image clé plus loin chez un serveur dont l'`-ss`
+ne serait pas précis). Une session neuve vise sa cible (un segment plus tôt
+seulement si un atterrissage positif est connu), et le replacement / les
+sauts hors de la passe restent (`hlsTimeline.ts`) : revenir en arrière dans
+une session mélange en tampon deux passes ffmpeg et fige le décodeur.
 mpv : `time-pos` et `audio-pts` arrivent étranglés à 8 Hz et traversent
 l'IPC — le processus principal horodate chaque valeur à sa lecture dans la
 file de mpv, et le transport extrapole depuis cet instant à la vitesse
