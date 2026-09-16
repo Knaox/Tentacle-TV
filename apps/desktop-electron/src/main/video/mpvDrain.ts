@@ -49,14 +49,35 @@ export interface Sink {
  * `time-pos` avance par sauts d'une image. Le transport Watch Together s'en sert
  * pour comparer la position de mpv à celle d'un navigateur, dont `currentTime`
  * est lui aussi l'horloge audio (voir `useDesktopTransport.ts`).
+ *
+ * ⚠️ La DERNIÈRE valeur ne se perd jamais. Un étranglement qui jette ce qui
+ * arrive trop tôt jetait l'atterrissage d'un seek en pause : mpv annonce la
+ * cible comme position au départ du seek, puis la position réelle 88 ms plus
+ * tard (mesuré, lecture directe) — et plus rien tant que la lecture ne reprend
+ * pas. La page gardait la cible, jamais l'atterrissage. Une valeur retenue est
+ * donc gardée en attente et diffusée au passage suivant où la cadence le permet.
  */
 const TIME_POS_INTERVAL_MS = 125;
 const THROTTLED_PROPERTIES: ReadonlySet<string> = new Set(["time-pos", "audio-pts"]);
 const lastEmitted = new Map<string, number>();
+const held = new Map<string, PropertyChange>();
 
 /** Repart de zéro entre deux instances. */
 export function forgetCadence(): void {
   lastEmitted.clear();
+  held.clear();
+}
+
+/** Diffuse les valeurs retenues dont la cadence est revenue. */
+function flushHeld(sink: Sink, now: number): void {
+  for (const [name, change] of held) {
+    if (now - (lastEmitted.get(name) ?? 0) < TIME_POS_INTERVAL_MS) continue;
+    held.delete(name);
+    lastEmitted.set(name, now);
+    // L'instant de mesure reste celui de la lecture dans la file : c'est de là
+    // que la page extrapole.
+    sink.property(change);
+  }
 }
 
 /** Décode la valeur d'une propriété selon son format. */
@@ -131,6 +152,7 @@ function logLine(data: unknown): void {
 /** Vide la file d'évènements et diffuse. */
 export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
   if (!ctx) return;
+  flushHeld(sink, Date.now());
   for (let n = 0; n < MAX_PER_PASS; n += 1) {
     const ptr = mpvApi().waitEvent(ctx, 0) as unknown;
     if (!ptr) return;
@@ -178,22 +200,20 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
         data: unknown;
       };
       // Étranglement : voir TIME_POS_INTERVAL_MS. Chaque propriété a sa
-      // propre cadence — l'une ne doit pas faire taire l'autre.
+      // propre cadence — l'une ne doit pas faire taire l'autre — et une
+      // valeur trop tôt n'est pas jetée mais retenue (la dernière gagne).
       const at = Date.now();
-      if (THROTTLED_PROPERTIES.has(p.name)) {
-        if (at - (lastEmitted.get(p.name) ?? 0) < TIME_POS_INTERVAL_MS) continue;
-        lastEmitted.set(p.name, at);
-      }
       const value = decodeProperty(p.format, p.data);
       // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
       // macOS, où interroger mpv depuis ce thread fige l'application.
       remember(p.name, value);
-      sink.property({
-        name: p.name,
-        data: value,
-        id: Number(ev.reply_userdata),
-        at,
-      });
+      const change: PropertyChange = { name: p.name, data: value, id: Number(ev.reply_userdata), at };
+      if (THROTTLED_PROPERTIES.has(p.name)) {
+        if (at - (lastEmitted.get(p.name) ?? 0) < TIME_POS_INTERVAL_MS) { held.set(p.name, change); continue; }
+        held.delete(p.name);
+        lastEmitted.set(p.name, at);
+      }
+      sink.property(change);
       continue;
     }
 
