@@ -101,18 +101,15 @@ export function configHls(seekTo: number): Partial<HlsConfig> {
   };
 }
 
-export function attemptPlay(
-  v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void,
-) {
+export function attemptPlay(v: HTMLVideoElement, onPlayFailed: () => void) {
   // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
   // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
-  const wantMuted = localStorage.getItem("tentacle_player_muted") === "1";
-  v.muted = wantMuted;
-  v.play().catch(() => {
-    v.muted = true;
-    v.play().then(() => { if (!wantMuted) onPolicyMuted(); }).catch((err) => {
-      console.error(DBG, "muted play also failed:", err);
-      onPlayFailed();
-    });
+  // Jamais de relance en muet : un lecteur qui coupe le son de lui-même et
+  // pose un bouton « appuyer pour le son » surprend plus qu'il n'aide. Lecture
+  // refusée par le navigateur → bouton de lecture, et le geste rend le son.
+  v.muted = localStorage.getItem("tentacle_player_muted") === "1";
+  v.play().catch((err) => {
+    console.warn(DBG, "lecture refusée par le navigateur — bouton de lecture", err instanceof Error ? err.name : err);
+    onPlayFailed();
   });
 }

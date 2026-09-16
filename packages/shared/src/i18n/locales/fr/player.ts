@@ -1,6 +1,5 @@
 export default {
   pressToPlay: "Appuyez pour lire",
-  pressForSound: "Appuyez pour le son",
   skipIntro: "Passer l'intro",
   skipCredits: "Passer le générique",
   settings: "Paramètres",
