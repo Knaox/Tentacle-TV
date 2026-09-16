@@ -27,8 +27,9 @@ export const WT_GRACE_PERIOD_MS = 120_000;
  * (au-delà, l'oreille l'entend malgré la correction de hauteur), avec une
  * constante de temps de 3 s : 150 ms de dérive se résorbent en une poignée
  * de secondes, sans à-coup. Une zone morte évite de courir après le bruit de
- * mesure — plus large sur mpv (time-pos étranglé et extrapolé) que sur le
- * web (currentTime lu en direct) — et une hystérésis évite de battre autour.
+ * mesure — un peu plus large sur mpv (horloge étranglée à 8 Hz et extrapolée)
+ * que sur le web (currentTime lu en direct) — et une hystérésis évite de
+ * battre autour.
  */
 export const WT_DRIFT_TAU_S = 3;
 export const WT_RATE_MAX_DEV = 0.05;
@@ -36,8 +37,11 @@ export const WT_RATE_MAX_DEV = 0.05;
 export const WT_RATE_STEP = 0.005;
 export const WT_DRIFT_ENGAGE_WEB_S = 0.04;
 export const WT_DRIFT_SETTLE_WEB_S = 0.025;
-export const WT_DRIFT_ENGAGE_MPV_S = 0.06;
-export const WT_DRIFT_SETTLE_MPV_S = 0.03;
+/** mpv lit son horloge AUDIO (`audio-pts`, continue) à 8 Hz : à peine moins
+ *  fine que le `currentTime` du web — 60 ms de zone morte laissaient un écart
+ *  audible tenir sans être corrigé. */
+export const WT_DRIFT_ENGAGE_MPV_S = 0.045;
+export const WT_DRIFT_SETTLE_MPV_S = 0.025;
 /** |drift| au-dessus duquel on seek dur au lieu du rattrapage doux (secondes). */
 export const WT_DRIFT_HARD_S = 1.5;
 /** Écart max toléré à l'arrêt (room en pause) avant seek de réalignement. */
@@ -81,9 +85,10 @@ export const WT_PENDING_INTENT_MIN_MS = 1_500;
 export const WT_PLAY_LATENCY_MAX_MS = 300;
 /** Pré-calage avant une reprise planifiée : en dessous, pas de seek (secondes). */
 export const WT_PRESEEK_TOLERANCE_S = 0.04;
-/** Idem sur mpv pour une barrière : un re-seek à moins de ça relance ffmpeg
- *  sur un flux HLS (cache vide → re-gel) pour rien. */
-export const WT_BARRIER_PRESEEK_MPV_S = 0.3;
+/** Idem sur mpv pour une barrière. Un seek précis de mpv atterrit à l'image
+ *  (recul du démuxeur compris sur un HLS, cf. `mpvSeekLanding.ts`) : au-dessus
+ *  de 100 ms, se caler coûte moins qu'une reprise décalée d'autant. */
+export const WT_BARRIER_PRESEEK_MPV_S = 0.1;
 /** Barrière : au-delà, on se déclare prêt même sans être posé (le serveur
  *  nous aurait lâchés à 20 s de toute façon). */
 export const WT_BARRIER_CONFIRM_TIMEOUT_MS = 25_000;
