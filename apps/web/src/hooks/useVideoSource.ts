@@ -59,7 +59,6 @@ export function useVideoSource({
 
   const [loading, setLoading] = useState(true);
   const [showPlayButton, setShowPlayButton] = useState(false);
-  const [policyMuted, setPolicyMuted] = useState(false);
 
   // Synchronously reset state when src changes
   const [prevSrc, setPrevSrc] = useState(src);
@@ -175,7 +174,7 @@ export function useVideoSource({
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
       // until actual playback starts (onPlay). This prevents the black-screen gap
       // between metadata/canplay and real audio+video output.
-      attemptPlay(v, () => setPolicyMuted(true), () => {
+      attemptPlay(v, () => {
         // Play completely blocked — show manual play button, clear loading state.
         sourceChangingRef.current = false;
         setLoading(false);
@@ -294,5 +293,5 @@ export function useVideoSource({
 
   useEffect(() => () => { hlsRef.current?.destroy(); clearInterval(seekStallTimer.current); }, []);
 
-  return { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted };
+  return { loading, setLoading, showPlayButton, setShowPlayButton };
 }

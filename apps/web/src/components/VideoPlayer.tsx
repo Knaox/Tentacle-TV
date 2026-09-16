@@ -80,7 +80,7 @@ export function VideoPlayer({
   const seekTargetRef = useRef<number | null>(null);
   const seekStallTimer = useRef<ReturnType<typeof setInterval>>(undefined);
 
-  const { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted } = useVideoSource({
+  const { loading, setLoading, showPlayButton, setShowPlayButton } = useVideoSource({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
     effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
     seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
@@ -88,9 +88,7 @@ export function VideoPlayer({
     onDirectPlayNonFiable,
   });
 
-  const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({
-    videoRef, onSoundRestored: () => setPolicyMuted(false), elementKey: mediaKind,
-  });
+  const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({ videoRef, elementKey: mediaKind });
   // Filet : un décodeur qui s'arrête sans rien dire se relance d'une recherche.
   useVideoStallWatch(videoRef);
   // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
@@ -204,8 +202,6 @@ export function VideoPlayer({
     <div ref={containerRef} onMouseMove={scheduleHide}
       onClick={() => {
         userInteractedRef.current = true;
-        const v = videoRef.current;
-        if (policyMuted && v && !v.paused) { v.muted = false; setPolicyMuted(false); return; }
         togglePlay();
       }}
       onDoubleClick={toggleFullscreen}
@@ -243,8 +239,8 @@ export function VideoPlayer({
       )}
 
       <VideoPlayerOverlays
-        loading={loading} playing={playing} hasStarted={hasStarted}
-        showPlayButton={showPlayButton} policyMuted={policyMuted}
+        loading={loading} hasStarted={hasStarted}
+        showPlayButton={showPlayButton}
         posterUrl={posterUrl}
         overlay={playback.overlay} countdownTotals={playback.countdownTotals}
         onSkip={playback.skipNow} onDismissOverlay={playback.dismissOverlay}
@@ -254,7 +250,7 @@ export function VideoPlayer({
         nextEpisodeThumbUrl={nextEpisodeThumbUrl}
         item={item} onRatingEngage={playback.cancelNextCountdown}
         videoRef={videoRef} userInteractedRef={userInteractedRef}
-        setShowPlayButton={setShowPlayButton} setPolicyMuted={setPolicyMuted}
+        setShowPlayButton={setShowPlayButton}
       />
 
       <SkipBadge flash={skipFlash} />

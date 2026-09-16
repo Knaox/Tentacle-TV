@@ -7,11 +7,9 @@ import type { MediaItem, PlayerOverlay } from "@tentacle-tv/shared";
 
 interface VideoPlayerOverlaysProps {
   loading: boolean;
-  playing: boolean;
   /** La première image a été rendue au moins une fois pour ce média. */
   hasStarted: boolean;
   showPlayButton: boolean;
-  policyMuted: boolean;
   posterUrl?: string;
   overlay: PlayerOverlay;
   countdownTotals: { skipMs: number; nextMs: number };
@@ -34,7 +32,6 @@ interface VideoPlayerOverlaysProps {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
   userInteractedRef: MutableRefObject<boolean>;
   setShowPlayButton: (v: boolean) => void;
-  setPolicyMuted: (v: boolean) => void;
 }
 
 /**
@@ -47,14 +44,14 @@ interface VideoPlayerOverlaysProps {
  * identiques dans les deux thèmes clair/sombre.
  */
 export function VideoPlayerOverlays({
-  loading, playing, hasStarted, showPlayButton, policyMuted, posterUrl,
+  loading, hasStarted, showPlayButton, posterUrl,
   overlay, countdownTotals, onSkip, onDismissOverlay, onPlayNow, controlsVisible,
   panelOpen,
   nextEpisodeTitle, nextEpisodeDescription, nextEpisodeImageUrl,
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   item, onRatingEngage,
   videoRef, userInteractedRef,
-  setShowPlayButton, setPolicyMuted,
+  setShowPlayButton,
 }: VideoPlayerOverlaysProps) {
   const { t } = useTranslation("player");
   // Notation de l'épisode FINI, servie à l'affiche de fin seulement.
@@ -93,7 +90,7 @@ export function VideoPlayerOverlays({
           onClick={(e) => {
             e.stopPropagation(); userInteractedRef.current = true;
             const v = videoRef.current;
-            if (v) { v.muted = false; v.play().then(() => { setShowPlayButton(false); setPolicyMuted(false); }).catch(() => {}); }
+            if (v) v.play().then(() => setShowPlayButton(false)).catch(() => {});
           }}>
           <div className="flex flex-col items-center gap-3">
             <svg className="h-20 w-20 text-white/90" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -102,16 +99,6 @@ export function VideoPlayerOverlays({
         </div>
       )}
 
-      {policyMuted && playing && !showPlayButton && (
-        <button onClick={(e) => { e.stopPropagation(); userInteractedRef.current = true; const v = videoRef.current; if (v) { v.muted = false; setPolicyMuted(false); } }}
-          className="absolute left-4 top-4 z-20 flex items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-sm text-white/80 ring-1 ring-white/20 backdrop-blur-sm transition-all hover:bg-black/80">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-          </svg>
-          {t("player:pressForSound")}
-        </button>
-      )}
 
       <PlaybackOverlay
         overlay={overlay}
