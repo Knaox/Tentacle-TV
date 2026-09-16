@@ -48,7 +48,8 @@ export function updatePlayLatency(previous: number | null, measuredMs: number): 
 }
 
 /** Se pré-caler avant une reprise planifiée ? En dessous de la tolérance, un
- *  seek coûterait plus qu'il ne corrige. */
-export function needsPreseek(positionS: number, targetS: number): boolean {
-  return Math.abs(positionS - targetS) > WT_PRESEEK_TOLERANCE_S;
+ *  seek coûterait plus qu'il ne corrige — 40 ms sur le web, davantage sur
+ *  mpv, dont le seek précis atterrit à l'image (WT_BARRIER_PRESEEK_MPV_S). */
+export function needsPreseek(positionS: number, targetS: number, toleranceS: number = WT_PRESEEK_TOLERANCE_S): boolean {
+  return Math.abs(positionS - targetS) > toleranceS;
 }

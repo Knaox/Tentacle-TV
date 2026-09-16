@@ -85,9 +85,10 @@ export const WT_PENDING_INTENT_MIN_MS = 1_500;
 export const WT_PLAY_LATENCY_MAX_MS = 300;
 /** Pré-calage avant une reprise planifiée : en dessous, pas de seek (secondes). */
 export const WT_PRESEEK_TOLERANCE_S = 0.04;
-/** Idem sur mpv pour une barrière. Un seek précis de mpv atterrit à l'image
- *  (recul du démuxeur compris sur un HLS, cf. `mpvSeekLanding.ts`) : au-dessus
- *  de 100 ms, se caler coûte moins qu'une reprise décalée d'autant. */
+/** Idem sur mpv, barrière comme reprise planifiée. Un seek précis de mpv
+ *  atterrit à l'image (recul du démuxeur compris sur un HLS, cf.
+ *  `mpvSeekLanding.ts`) : au-dessus de 100 ms, se caler coûte moins qu'une
+ *  reprise décalée d'autant ; en dessous, un seek de plus ferait manquer T. */
 export const WT_BARRIER_PRESEEK_MPV_S = 0.1;
 /** Barrière : au-delà, on se déclare prêt même sans être posé (le serveur
  *  nous aurait lâchés à 20 s de toute façon). */

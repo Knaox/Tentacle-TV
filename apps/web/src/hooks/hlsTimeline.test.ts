@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  decideHlsTimeline, HLS_ADJACENT_S, HLS_LANDING_MAX_S, HLS_START_MARGIN_S, hlsSeekOutsideRun, hlsSessionStart,
+  decideHlsTimeline, HLS_LANDING_MAX_S, HLS_START_MARGIN_S, hlsSeekOutsideRun, hlsSessionStart,
 } from "./hlsTimeline";
 
 /**
@@ -46,20 +46,14 @@ describe("decideHlsTimeline — le temps du film est celui de hls.js, sauf atter
   });
 });
 
-describe("hlsSeekOutsideRun — un saut qui ferait relancer ffmpeg dans la session", () => {
+describe("hlsSeekOutsideRun — seul un retour avant la passe la quitte", () => {
   it("avant le début de la passe : session neuve", () => {
-    expect(hlsSeekOutsideRun(330, 342, 500)).toBe(true);
+    expect(hlsSeekOutsideRun(330, 342)).toBe(true);
   });
-  it("dans la passe, ou juste devant le tampon : hls.js s'en charge", () => {
-    expect(hlsSeekOutsideRun(400, 342, 500)).toBe(false);
-    expect(hlsSeekOutsideRun(500 + HLS_ADJACENT_S - 0.1, 342, 500)).toBe(false);
-  });
-  it("loin devant le tampon : session neuve", () => {
-    expect(hlsSeekOutsideRun(500 + HLS_ADJACENT_S + 0.1, 342, 500)).toBe(true);
-  });
-  it("tampon vide : seul le début de la passe compte", () => {
-    expect(hlsSeekOutsideRun(900, 342, null)).toBe(false);
-    expect(hlsSeekOutsideRun(300, 342, null)).toBe(true);
+  it("dans la passe, ou loin devant : la session tient, hls.js demande le segment", () => {
+    expect(hlsSeekOutsideRun(400, 342)).toBe(false);
+    expect(hlsSeekOutsideRun(900, 342)).toBe(false);
+    expect(hlsSeekOutsideRun(342, 342)).toBe(false);
   });
 });
 

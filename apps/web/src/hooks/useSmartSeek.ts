@@ -190,12 +190,14 @@ export function useSmartSeek({
       return;
     }
 
-    // --- Hors de la passe ffmpeg en cours (avant son début, ou loin devant le
-    // tampon) : Jellyfin relancerait ffmpeg DANS la session et servirait les
-    // restes de la première passe — deux encodages en tampon, décodeur figé
-    // (cf. `hlsTimeline.ts`). Une session neuve, comme le niveau 3. ---
+    // --- AVANT le début de la passe ffmpeg en cours : Jellyfin relancerait
+    // ffmpeg DANS la session et servirait les restes de la première passe —
+    // deux encodages en tampon, décodeur figé (cf. `hlsTimeline.ts`). Une
+    // session neuve, comme le niveau 3. En avant, le niveau 2 suffit et le
+    // lecteur garde son état de pause — ce dont dépend la barrière d'un saut
+    // de passage en séance. ---
     const runStart = hlsRunStartRef?.current;
-    if (isHlsStream && runStart != null && hlsSeekOutsideRun(ptsTarget, runStart, bufferEnd(v))) {
+    if (isHlsStream && runStart != null && hlsSeekOutsideRun(ptsTarget, runStart)) {
       onSeekComplete?.(clamped, v.paused);
       seekTargetRef.current = clamped;
       onSeekRequest?.(clamped);

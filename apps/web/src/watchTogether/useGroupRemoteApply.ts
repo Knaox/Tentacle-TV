@@ -25,6 +25,12 @@ import { wtLog } from "./wtLog";
 
 /** Cadence du sondage « suis-je posé ? » pendant une barrière. */
 const BARRIER_POLL_MS = 100;
+/** Pendant une barrière, un lecteur qui s'est remis à jouer ou qui a quitté la
+ *  cible y est ramené — au plus une fois par ce délai, le temps qu'un seek
+ *  atterrisse. Le cas mesuré : un rechargement de source relance la lecture
+ *  de lui-même, et sans rappel le lecteur n'était plus jamais posé — la salle
+ *  attendait les vingt secondes du délai de barrière, en pause. */
+const BARRIER_REALIGN_MIN_MS = 1_500;
 export function useGroupRemoteApply({
   enabled,
   room,
@@ -95,6 +101,7 @@ export function useGroupRemoteApply({
           shared.softCorrectionSinceRef.current = null;
         }
         const startedAt = Date.now();
+        let realignedAt = 0;
         barrierPollRef.current = setInterval(() => {
           const player = transportRef.current;
           const current = shared.roomRef.current;
@@ -102,7 +109,24 @@ export function useGroupRemoteApply({
           const settled = player.isSettledAt
             ? player.isSettledAt(targetS)
             : !player.isSeeking?.() && player.isMediaReady?.() !== false;
-          if (!settled && Date.now() - startedAt < WT_BARRIER_CONFIRM_TIMEOUT_MS) return;
+          if (!settled && Date.now() - startedAt < WT_BARRIER_CONFIRM_TIMEOUT_MS) {
+            // Prêt à être jugé (pas de seek en vol, média chargé) mais pas posé :
+            // en lecture, ou hors de la cible → pause et re-calage.
+            const judgeable = !player.isSeeking?.() && player.isMediaReady?.() !== false;
+            if (judgeable && Date.now() - realignedAt > BARRIER_REALIGN_MIN_MS) {
+              const offS = Math.abs(player.getPositionSeconds() - targetS);
+              if (!player.isPaused() || offS > tolerance) {
+                realignedAt = Date.now();
+                wtLog("engine", "barrière : le lecteur a bougé — pause et re-calage", {
+                  barrierId, playing: !player.isPaused(), offS: offS.toFixed(2), toS: targetS.toFixed(2),
+                });
+                armEcho(shared);
+                if (!player.isPaused()) player.pause();
+                if (offS > tolerance) player.seekTo(targetS);
+              }
+            }
+            return;
+          }
           stopBarrierPoll();
           confirmedBarrierRef.current = barrierId;
           wtLog("engine", settled ? "barrière : posé → prêt" : "barrière : pas posé à temps → prêt quand même", {
@@ -143,8 +167,12 @@ export function useGroupRemoteApply({
     if (!futureAnchor || skipApply) return;
 
     // ── Reprise planifiée : pré-calage en pause, puis play() à l'instant T ──
+    // Même tolérance que la barrière qui vient de poser ce lecteur : un seek de
+    // plus juste avant T ferait manquer l'instant (sur un HLS, mpv recule le
+    // démuxeur de douze secondes à chaque seek précis).
     const targetS = room.positionTicks / TICKS_PER_SECOND;
-    if (needsPreseek(t.getPositionSeconds(), targetS)) {
+    const preseekTolerance = t.precision === "coarse" ? WT_BARRIER_PRESEEK_MPV_S : WT_PRESEEK_TOLERANCE_S;
+    if (needsPreseek(t.getPositionSeconds(), targetS, preseekTolerance)) {
       wtLog("engine", "apply: pré-calage avant reprise planifiée", { fromS: t.getPositionSeconds().toFixed(2), toS: targetS.toFixed(2) });
       armEcho(shared);
       t.seekTo(targetS);

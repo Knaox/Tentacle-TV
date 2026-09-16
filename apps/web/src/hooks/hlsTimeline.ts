@@ -53,9 +53,13 @@
  * en avance d'au moins HLS_RELOCATE_MIN_S sur sa cible, on renégocie donc une
  * session NEUVE (nouveau `PlaySessionId`, dossier vierge) à `cible −
  * atterrissage` — le chemin de niveau 3 de `useSmartSeek`, pas un vidage de
- * tampon. Pour la même raison, un saut avant le début de la passe en cours, ou
- * loin devant ce qui est chargé, renégocie lui aussi une session neuve
- * (`hlsSeekOutsideRun`).
+ * tampon. Pour la même raison, un saut AVANT le début de la passe en cours
+ * renégocie lui aussi une session neuve (`hlsSeekOutsideRun`). Un saut en
+ * avant, lui, reste dans la session : Jellyfin relance ffmpeg au segment
+ * demandé, les fichiers de la passe précédente sont tous derrière, et le
+ * lecteur garde son état — c'est ce qui compte en séance, où la barrière d'un
+ * saut de passage l'a mis en pause : une session neuve relançait la lecture
+ * d'elle-même et il n'était plus jamais posé sur la cible.
  *
  * La décision est pure et testée sans lecteur ; `attachHlsTimeline`
  * (`hlsTimelineAttach.ts`) la branche sur une instance hls.js.
@@ -90,19 +94,13 @@ export function hlsSessionStart(targetFilmS: number, landingS: number): number {
   return Math.max(0, targetFilmS - landingS - HLS_START_MARGIN_S);
 }
 
-/** Un saut à moins de ça devant le tampon reste dans la passe : hls.js demande
- *  le segment suivant et Jellyfin le sert dès qu'il est produit. Au-delà,
- *  Jellyfin relancerait ffmpeg dans la même session — donc session neuve. */
-export const HLS_ADJACENT_S = 6;
-
 /**
- * Un saut (temps élément) sort-il de la passe ffmpeg en cours ? `runStartS` :
- * début de la passe (heure playlist du premier fragment de la session) ;
- * `bufferEndS` : fin du tampon, null s'il est vide.
+ * Un saut (temps élément) sort-il de la passe ffmpeg en cours — c'est-à-dire
+ * revient-il AVANT son début ? `runStartS` : heure playlist du premier
+ * fragment de la session. En avant, la session tient (voir l'en-tête).
  */
-export function hlsSeekOutsideRun(targetS: number, runStartS: number, bufferEndS: number | null): boolean {
-  if (targetS < runStartS) return true;
-  return bufferEndS !== null && targetS > bufferEndS + HLS_ADJACENT_S;
+export function hlsSeekOutsideRun(targetS: number, runStartS: number): boolean {
+  return targetS < runStartS;
 }
 
 export interface HlsTimelineInput {

@@ -37,13 +37,17 @@ interface UseDesktopSegmentsOverlayArgs {
   /** Watch Together — une séance est active (refus ⇒ décompte annulé,
    *  décompte de saut porté par le serveur). */
   inGroupSession?: boolean;
+  /** En séance : le saut d'un passage est rapporté à la salle avec sa cible
+   *  EXACTE, au geste — la détection de discontinuité, elle, lit une position
+   *  qui date de jusqu'à 375 ms et forçait un second seek de pré-calage. */
+  onUserSeek?: (targetFilmSeconds: number) => void;
 }
 
 export function useDesktopSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
   hasStarted, playbackEnded, segments, runtimeMs, libraryId,
   scrubbing, controlsVisible, isDirectPlay, effectiveMpvOffset, seek,
-  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
+  onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession, onUserSeek,
 }: UseDesktopSegmentsOverlayArgs): PlaybackOverlayResult {
   // Le décompte de saut de la salle (serveur) et la proposition de passage.
   const { groupSkip, onSkipPropose } = useGroupSkipCountdown(itemId);
@@ -63,7 +67,10 @@ export function useDesktopSegmentsOverlay({
     groupSkip, onSkipPropose,
     scrubbing,
     controlsVisible,
-    onSeekSeconds: (s) => { void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current)); },
+    onSeekSeconds: (s) => {
+      void seek(isDirectPlay ? s : Math.max(0, s - effectiveMpvOffset.current));
+      if (inGroupSession) onUserSeek?.(s);
+    },
     onNextEpisode: () => onNextEpisode?.(),
     onEndOfPlayback,
     // Watch Together : le refus local part au groupe par le bus existant.

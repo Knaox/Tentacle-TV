@@ -21,8 +21,11 @@ const SEEK_SETTLE_MS = 150;
 /** Sans `playback-restart` vu après un seek, on se fie à la position au bout
  *  de ce délai (un seek dans le cache peut ne rien annoncer de visible). */
 const SEEK_RESTART_GRACE_MS = 1_500;
-/** Posé : à moins de ça de la cible (secondes). */
-const SETTLED_TOLERANCE_S = 0.15;
+/** Posé : à moins de ça de la cible (secondes) — un seek précis atterrit à
+ *  l'image (≤ 42 ms), et c'est la tolérance du pré-calage de la reprise
+ *  (WT_BARRIER_PRESEEK_MPV_S) : posé par la barrière, le lecteur ne rejoue
+ *  pas son seek juste avant l'instant T. */
+const SETTLED_TOLERANCE_S = 0.1;
 
 interface UseDesktopTransportArgs {
   transportRef?: PlayerTransportRef;
