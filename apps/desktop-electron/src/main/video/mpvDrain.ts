@@ -43,13 +43,20 @@ export interface Sink {
  * film, davantage sur un flux à 60. Le traverser tel quel noierait le pont IPC
  * et ferait rendre React à chaque image pour déplacer une barre de progression
  * de moins d'un pixel. On l'étrangle à 8 Hz, ce qui reste fluide à l'œil.
+ *
+ * `audio-pts` suit la même cadence et le même étranglement : c'est l'horloge
+ * audio — ce qui sort du haut-parleur à l'instant de la lecture, continue là où
+ * `time-pos` avance par sauts d'une image. Le transport Watch Together s'en sert
+ * pour comparer la position de mpv à celle d'un navigateur, dont `currentTime`
+ * est lui aussi l'horloge audio (voir `useDesktopTransport.ts`).
  */
 const TIME_POS_INTERVAL_MS = 125;
-let lastTimePos = 0;
+const THROTTLED_PROPERTIES: ReadonlySet<string> = new Set(["time-pos", "audio-pts"]);
+const lastEmitted = new Map<string, number>();
 
 /** Repart de zéro entre deux instances. */
 export function forgetCadence(): void {
-  lastTimePos = 0;
+  lastEmitted.clear();
 }
 
 /** Décode la valeur d'une propriété selon son format. */
@@ -170,11 +177,12 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
         format: number;
         data: unknown;
       };
-      // Étranglement : voir TIME_POS_INTERVAL_MS.
+      // Étranglement : voir TIME_POS_INTERVAL_MS. Chaque propriété a sa
+      // propre cadence — l'une ne doit pas faire taire l'autre.
       const at = Date.now();
-      if (p.name === "time-pos") {
-        if (at - lastTimePos < TIME_POS_INTERVAL_MS) continue;
-        lastTimePos = at;
+      if (THROTTLED_PROPERTIES.has(p.name)) {
+        if (at - (lastEmitted.get(p.name) ?? 0) < TIME_POS_INTERVAL_MS) continue;
+        lastEmitted.set(p.name, at);
       }
       const value = decodeProperty(p.format, p.data);
       // Retenu AVANT diffusion : c'est ce souvenir que `getProperty` sert sur
