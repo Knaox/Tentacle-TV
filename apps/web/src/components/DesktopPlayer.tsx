@@ -17,6 +17,8 @@ import { useDesktopSegmentsOverlay } from "../hooks/useDesktopSegmentsOverlay";
 import { useWaylandFullscreenNotice } from "../hooks/useWaylandFullscreenNotice";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
+import { useMpvExactSeek } from "../hooks/useMpvExactSeek";
+import { useTransparentPageDuringPlayback } from "../hooks/useTransparentPageDuringPlayback";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
@@ -43,9 +45,14 @@ export function DesktopPlayer({
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
   // échec de chargement (voir playbackFailure.ts). Absente hors lecture locale.
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
-  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek, seekRelative,
+  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek: rawSeek, seekRelative,
     setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen,
-    positionRef, positionAtRef, restartCountRef } = useDesktopPlayer({ probeLocalMedia });
+    clock } = useDesktopPlayer({ probeLocalMedia });
+  // Chaque seek absolu du lecteur passe par ici : sur un HLS Jellyfin, mpv
+  // atterrit sinon une image clé trop loin (cf. `mpvSeekLanding.ts`).
+  const isHls = !isDirectPlay && src.includes(".m3u8");
+  const exactSeek = useMpvExactSeek({ src, isHls, state, clock, seek: rawSeek });
+  const seek = exactSeek.seek;
   // En séance, la lecture passe d'abord par le moteur (reprise commune) ; la pause reste immédiate.
   const { toggle: togglePause, play: playGated } = useGatedPlay({
     rawToggle: () => { void rawTogglePause(); }, rawPlay: () => { void setPause(false); },
@@ -104,25 +111,8 @@ export function DesktopPlayer({
     onAudioChange, onSubtitleChange, loadedExternalSubs,
   });
 
-  // Fond de page transparent PENDANT LA LECTURE — et seulement une fois la
-  // surface native prête (`ready` est posé au retour de mpv_init, qui vient
-  // justement de rendre la webview transparente).
-  //
-  // L'ordre compte désormais : hors lecture, la webview macOS est OPAQUE
-  // (cf. macos/window_opacity.rs — une fenêtre transparente coûtait une
-  // recomposition alpha permanente). Rendre la page transparente avant la
-  // bascule native laisserait voir, le temps d'une image ou deux, le fond de
-  // base blanc de WebKit. À la sortie c'est l'inverse : le nettoyage React
-  // rend la page opaque de façon synchrone, la webview repasse en opaque
-  // juste après (mpv_destroy) — jamais de fenêtre de temps où les deux sont
-  // transparents.
-  useEffect(() => {
-    if (!ready) return;
-    const prev = document.body.style.background;
-    document.body.style.background = "transparent";
-    document.documentElement.style.background = "transparent";
-    return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
-  }, [ready]);
+  // Fond de page transparent pendant la lecture, une fois la surface native prête.
+  useTransparentPageDuringPlayback(ready);
 
   // Pédagogie du plein écran Wayland (une fois, et seulement où il est imposé).
   useWaylandFullscreenNotice(ready);
@@ -137,6 +127,7 @@ export function DesktopPlayer({
     // Pour poser les pistes AVANT l'ouverture du fichier (cf. useMpvSource) —
     // jamais en lecture locale, où les pistes réelles ne sont connues qu'après.
     audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
+    hrSeekDemuxerOffset: exactSeek.backoffS, onLoadTarget: exactSeek.noteLoadTarget,
   });
 
   // Le miroir réactif du démarrage — armé dès que useMpvSource a posé la ref,
@@ -222,7 +213,7 @@ export function DesktopPlayer({
   // que la croix locale, sans ré-annonce au groupe.
   useDesktopTransport({
     transportRef, state, mediaReady, prebuffering, isDirectPlay,
-    positionRef, positionAtRef, restartCountRef, lastAbsolutePosRef, effectiveMpvOffset,
+    clock, lastAbsolutePosRef, effectiveMpvOffset,
     setPause, seek, setSpeed,
     cancelAutoPlay: playback.signalRemoteNextDismiss,
     onPlayStateChange, onBufferingChange,

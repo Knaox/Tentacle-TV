@@ -2,6 +2,7 @@ import { useEffect, useRef, type MutableRefObject } from "react";
 import type { MpvState } from "./useDesktopPlayer";
 import type { PlayerTransportRef } from "../watchTogether/playerTransport";
 import { createPositionClock } from "./mpvPositionClock";
+import { pickClockSample, type MpvClockRefs } from "./mpvClock";
 import { wtLog } from "../watchTogether/wtLog";
 
 /** Stabilité requise avant de déclarer « prêt » au groupe : un flux transcodé
@@ -31,11 +32,9 @@ interface UseDesktopTransportArgs {
    *  un lecteur qui remplit sa réserve n'est pas « prêt » pour le groupe. */
   prebuffering: boolean;
   isDirectPlay: boolean;
-  /** Dernier `time-pos` brut (secondes de flux) et son instant de mesure. */
-  positionRef: MutableRefObject<number>;
-  positionAtRef: MutableRefObject<number>;
-  /** `playback-restart` reçus (useMpvLifecycle) — un seek abouti en émet un. */
-  restartCountRef: MutableRefObject<number>;
+  /** `time-pos`, `audio-pts` et les `playback-restart`, tels que mpv les émet
+   *  (useMpvLifecycle) — voir `mpvClock.ts`. */
+  clock: MpvClockRefs;
   lastAbsolutePosRef: MutableRefObject<number>;
   effectiveMpvOffset: MutableRefObject<number>;
   setPause: (paused: boolean) => Promise<void>;
@@ -50,12 +49,15 @@ interface UseDesktopTransportArgs {
  * Watch Together côté desktop : surface de commande impérative (transportRef)
  * + signaux prêt/buffering/pause vers le moteur de sync.
  *
- * Position : `time-pos` arrive étranglé à 8 Hz puis passe l'IPC — lue telle
- * quelle, elle date de jusqu'à 125 ms. Elle est donc EXTRAPOLÉE depuis son
- * instant de mesure (`positionAtRef`, posé dans le processus principal) à la
+ * Position : `time-pos` et `audio-pts` arrivent étranglés à 8 Hz puis passent
+ * l'IPC — lus tels quels, ils datent de jusqu'à 125 ms. La position est donc
+ * EXTRAPOLÉE depuis l'instant de mesure (posé dans le processus principal) à la
  * vitesse courante, médiane de trois échantillons contre la gigue du pompage
  * (mpvPositionClock) — sauf en pause, en seek ou en buffering, où le flux ne
- * court pas.
+ * court pas. En lecture, c'est l'horloge AUDIO qui est retenue quand elle est
+ * fraîche (mpvClock.ts) : continue, et de même nature que le `currentTime` du
+ * lecteur web — `time-pos` avance par image, jusqu'à 40 ms devant ou derrière
+ * ce qui sort du haut-parleur. À l'arrêt, `time-pos` fait foi.
  *
  * Signal buffering (gate `mediaReady` — pendant un rebuild de source, c'est la
  * page qui a déjà déclaré le buffering au groupe) :
@@ -65,10 +67,11 @@ interface UseDesktopTransportArgs {
  */
 export function useDesktopTransport({
   transportRef, state, mediaReady, prebuffering, isDirectPlay,
-  positionRef, positionAtRef, restartCountRef, lastAbsolutePosRef, effectiveMpvOffset,
+  clock, lastAbsolutePosRef, effectiveMpvOffset,
   setPause, seek, setSpeed, cancelAutoPlay,
   onPlayStateChange, onBufferingChange,
 }: UseDesktopTransportArgs) {
+  const { positionRef, positionAtRef, audioPtsRef, audioPtsAtRef, restartCountRef } = clock;
   const stateRef = useRef(state);
   stateRef.current = state;
   const mediaReadyRef = useRef(mediaReady);
@@ -112,8 +115,13 @@ export function useDesktopTransport({
         if (at === 0) return lastAbsolutePosRef.current;
         const still = s.paused || s.seeking || s.buffering || now - lastSeekAtRef.current < SEEK_SETTLE_MS;
         if (still) { clockRef.current.reset(); return raw + effectiveMpvOffset.current; }
-        clockRef.current.push(raw, at, speedRef.current);
-        return (clockRef.current.estimate(now) ?? raw) + effectiveMpvOffset.current;
+        const sample = pickClockSample(
+          { positionS: raw, at },
+          { positionS: audioPtsRef.current, at: audioPtsAtRef.current },
+          now,
+        );
+        clockRef.current.push(sample.positionS, sample.at, speedRef.current);
+        return (clockRef.current.estimate(now) ?? sample.positionS) + effectiveMpvOffset.current;
       },
       isPaused: () => stateRef.current.paused,
       setRate: (rate: number) => {
