@@ -8,6 +8,8 @@ import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
 import { markPlayerExit } from "./detail/detailTransition";
 import { useSmartSeek } from "../hooks/useSmartSeek";
 import { useVideoSource } from "../hooks/useVideoSource";
+import { isMseSource } from "../hooks/videoSourceHelpers";
+import { useVideoStallWatch } from "../hooks/useVideoStallWatch";
 import { useVideoEvents } from "../hooks/useVideoEvents";
 import { useWebSegmentsOverlay } from "../hooks/useWebSegmentsOverlay";
 import { useNativeMediaTracks } from "../hooks/useNativeMediaTracks";
@@ -46,12 +48,15 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  // Une balise `<video>` par SORTE de source : passer d'une lecture directe à
+  // une session MSE sur le même élément fige le décodeur (cf. `isMseSource`).
+  const mediaKind = isMseSource(src, useNativeHls) ? "mse" : "native";
 
   const [playing, setPlaying] = useState(false);
   // L'horloge à 1 Hz et les décalages de PTS du conteneur — voir `useVideoClock`.
   const {
     rawTimeRef, displayTime, lastKnownPositionRef,
-    effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
+    effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef, hlsRunStartRef, hlsLandingRef, containerBaseRef,
   } = useVideoClock();
 
   const [videoDuration, setVideoDuration] = useState(0);
@@ -79,12 +84,15 @@ export function VideoPlayer({
     videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
     effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
     seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-    lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
+    lastKnownPositionRef, currentTimeRef, onSeekRequest, onSeekComplete, hlsRunStartRef, hlsLandingRef, containerBaseRef,
+    onDirectPlayNonFiable,
   });
 
   const { volume, handleVolumeChange, handleToggleMute } = usePlayerVolume({
-    videoRef, onSoundRestored: () => setPolicyMuted(false),
+    videoRef, onSoundRestored: () => setPolicyMuted(false), elementKey: mediaKind,
   });
+  // Filet : un décodeur qui s'arrête sans rien dire se relance d'une recherche.
+  useVideoStallWatch(videoRef);
   // Le lecteur web ne met pas en pause pour chercher un passage (sa barre appelle
   // `onSeek` sans toucher à la lecture), il n'a donc rien à faire taire.
   const { flash: playbackFlash } = usePlaybackFlash(!playing, volume === 0);
@@ -101,7 +109,7 @@ export function VideoPlayer({
   });
 
   const { handleSeek, skipBy, skipFlash } = useSmartSeek({
-    videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
+    videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, hlsRunStartRef,
     src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete,
     reportLoading: setLoading,
     // Sauter à la fin VAUT la fin : même canal que l'événement `ended` — la
@@ -185,8 +193,8 @@ export function VideoPlayer({
 
   const videoEvents = useVideoEvents({
     videoRef, rawTimeRef, lastKnownPositionRef, effectiveOffsetRef, containerPtsOffsetRef,
-    offsetDetectedRef, sourceChangingRef, hasStartedRef, waitingTimer,
-    src, itemId, startPositionSeconds, jellyfinDuration,
+    offsetDetectedRef, containerBaseRef, sourceChangingRef, hasStartedRef, waitingTimer,
+    src, itemId, isDirectPlay, startPositionSeconds, jellyfinDuration,
     setPlaying, setHasStarted, setLoading, setShowPlayButton, setBuffered, setVideoDuration,
     onPlaybackEnded: () => setEnded(true),
     onProgress, onStarted, onPlayStateChange, onBufferingChange, onFatalError,
@@ -210,7 +218,7 @@ export function VideoPlayer({
           sans en-tête. Rien n'en a besoin ici : les pistes VTT et le `.sup` PGS
           passent par le proxy, même origine, et personne ne dessine la vidéo
           dans un canvas. */}
-      <video ref={videoRef} className="h-full w-full" playsInline preload="auto"
+      <video key={mediaKind} ref={videoRef} className="h-full w-full" playsInline preload="auto"
         {...videoEvents}
       >
         {/* Tous les <track> restent montés, sélectionnés ou non : la

@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback, type MutableRefObject } from "react";
 import type { SkipFlash } from "../components/SkipBadge";
 import { observeSeek, EMPTY_SEEK, SEEK_WATCH_PERIOD_MS } from "./seekLanding";
+import { hlsSeekOutsideRun } from "./hlsTimeline";
 
 interface UseSmartSeekOptions {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
@@ -9,6 +10,9 @@ interface UseSmartSeekOptions {
   /** Veille de calage du saut — un INTERVALLE, cf. `seekLanding.ts`. */
   seekStallTimer: MutableRefObject<ReturnType<typeof setInterval> | undefined>;
   currentTimeRef: MutableRefObject<number>;
+  /** Début de la passe ffmpeg de la session hls.js (temps élément), null sinon
+   *  — un saut hors de la passe renégocie une session (cf. `hlsTimeline.ts`). */
+  hlsRunStartRef?: MutableRefObject<number | null>;
   src: string;
   isDirectPlay: boolean;
   streamOffset: number;
@@ -60,7 +64,7 @@ function bufferEnd(video: HTMLVideoElement): number | null {
 }
 
 export function useSmartSeek({
-  videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef,
+  videoRef, containerPtsOffsetRef, seekTargetRef, seekStallTimer, currentTimeRef, hlsRunStartRef,
   src, isDirectPlay, streamOffset, onSeekRequest, onSeekComplete, reportLoading, onSeekToEnd,
 }: UseSmartSeekOptions) {
   // 3-level smart seek — handles direct play, HLS, and progressive transcode streams.
@@ -186,6 +190,18 @@ export function useSmartSeek({
       return;
     }
 
+    // --- Hors de la passe ffmpeg en cours (avant son début, ou loin devant le
+    // tampon) : Jellyfin relancerait ffmpeg DANS la session et servirait les
+    // restes de la première passe — deux encodages en tampon, décodeur figé
+    // (cf. `hlsTimeline.ts`). Une session neuve, comme le niveau 3. ---
+    const runStart = hlsRunStartRef?.current;
+    if (isHlsStream && runStart != null && hlsSeekOutsideRun(ptsTarget, runStart, bufferEnd(v))) {
+      onSeekComplete?.(clamped, v.paused);
+      seekTargetRef.current = clamped;
+      onSeekRequest?.(clamped);
+      return;
+    }
+
     // --- LEVEL 2: HLS → try v.currentTime, hls.js fetches the segment ---
     // jellyfin-web pattern (playbackmanager.js:canPlayerSeek): HLS streams are
     // client-seekable — hls.js requests segments on demand. The existing ffmpeg
@@ -201,6 +217,7 @@ export function useSmartSeek({
 
     // --- Progressive transcode: always full restart (level 3) ---
     // No in-stream seek support — must rebuild URL with new StartTimeTicks.
+    onSeekComplete?.(clamped, v.paused);
     seekTargetRef.current = clamped;
     onSeekRequest?.(clamped);
   }, [isDirectPlay, streamOffset, src, onSeekRequest, onSeekComplete, onSeekToEnd, armWatch]);
