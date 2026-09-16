@@ -60,14 +60,17 @@ export interface DesktopPlayerProps {
   onPlayStateChange?: (paused: boolean) => void;
   /** Watch Together — buffering mpv (paused-for-cache) + premier « prêt ». */
   onBufferingChange?: (buffering: boolean) => void;
-  /** Watch Together — seek local détecté (saut de position discontinu). */
-  onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /** Watch Together — seek local : déduit d'une discontinuité de position, ou
+   *  EXPLICITE (`explicit`) — barre, flèches, bouton de saut. */
+  onSeekComplete?: (seconds: number, paused: boolean, explicit?: boolean) => void;
   /** Watch Together — l'utilisateur a masqué la bannière auto-next (à propager). */
   onAutoNextDismiss?: () => void;
-  /** Watch Together — une séance est active sur ce média (refus ⇒ décompte annulé). */
+  /** Watch Together — lecture demandée : vrai si le moteur la prend en charge
+   *  (reprise planifiée pour toute la salle), faux = jouer localement. */
+  onRequestPlay?: () => boolean;
+  /** Watch Together — une séance est active sur ce média (refus ⇒ décompte
+   *  annulé, décompte de saut porté par le serveur). */
   inGroupSession?: boolean;
-  /** Watch Together — ce lecteur est celui de l'hôte : seul son décompte de saut va au bout. */
-  inGroupHost?: boolean;
   /** Visibilité de l'overlay lecteur (contrôles) — synchronise les overlays externes. */
   onControlsVisibilityChange?: (visible: boolean) => void;
   /** Épisode : case « Appliquer à cette série » (préférence de langues). */

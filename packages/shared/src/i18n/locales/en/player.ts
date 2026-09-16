@@ -1,6 +1,5 @@
 export default {
   pressToPlay: "Tap to play",
-  pressForSound: "Tap for sound",
   skipIntro: "Skip intro",
   skipCredits: "Skip credits",
   settings: "Settings",

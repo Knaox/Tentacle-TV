@@ -33,7 +33,12 @@ export function GroupPlaybackOverlay({
     .filter((id) => id !== selfId)
     .map((id) => room.members.find((m) => m.userId === id))
     .filter((m): m is NonNullable<typeof m> => !!m);
-  const groupWait = room.pauseReason === "buffering" && waitingOthers.length > 0;
+  // Toute attente d'autres lecteurs se montre — group-wait d'un chargement
+  // (« X met en mémoire tampon… ») ou barrière de synchronisation (seek,
+  // saut, reprise : « Synchronisation… »), même quand la salle est en pause
+  // utilisateur. Un serveur d'avant n'envoie pas `waitCause` : chargement.
+  const groupWait = room.paused && waitingOthers.length > 0;
+  const syncing = room.waitCause !== undefined && room.waitCause !== "buffering";
 
   return (
     <>
@@ -73,9 +78,11 @@ export function GroupPlaybackOverlay({
             >
               <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-400/40 border-t-amber-400" />
               <span className="text-sm text-white/85">
-                {waitingOthers.length === 1
-                  ? t("memberBuffering", { name: waitingOthers[0].username })
-                  : t("membersBuffering", { count: waitingOthers.length })}
+                {syncing
+                  ? t("syncing")
+                  : waitingOthers.length === 1
+                    ? t("memberBuffering", { name: waitingOthers[0].username })
+                    : t("membersBuffering", { count: waitingOthers.length })}
               </span>
             </div>
           </motion.div>

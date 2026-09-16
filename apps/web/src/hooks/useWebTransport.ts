@@ -11,6 +11,7 @@ export function useWebTransport({
   transportRef,
   videoRef,
   lastKnownPositionRef,
+  effectiveOffsetRef,
   sourceChangingRef,
   handleSeek,
   cancelAutoNextLocal,
@@ -18,6 +19,8 @@ export function useWebTransport({
   transportRef?: PlayerTransportRef;
   videoRef: RefObject<HTMLVideoElement | null>;
   lastKnownPositionRef: MutableRefObject<number>;
+  /** À retrancher de `currentTime` pour obtenir la position du film. */
+  effectiveOffsetRef: MutableRefObject<number>;
   sourceChangingRef: MutableRefObject<boolean>;
   handleSeek: (seconds: number) => void;
   cancelAutoNextLocal: () => void;
@@ -41,7 +44,12 @@ export function useWebTransport({
         });
         handleSeek(seconds);
       },
-      getPositionSeconds: () => lastKnownPositionRef.current,
+      // Lue EN DIRECT sur l'élément : `lastKnownPositionRef` suit `timeupdate`,
+      // soit ~250 ms de retard — plus que la dérive qu'on veut corriger.
+      getPositionSeconds: () => {
+        const v = videoRef.current;
+        return v && !sourceChangingRef.current ? effectiveOffsetRef.current + v.currentTime : lastKnownPositionRef.current;
+      },
       isPaused: () => videoRef.current?.paused ?? true,
       setRate: (rate: number) => {
         const v = videoRef.current;
@@ -58,6 +66,24 @@ export function useWebTransport({
         return !!v && v.readyState >= 3 && !sourceChangingRef.current;
       },
       isSeeking: () => videoRef.current?.seeking ?? false,
+      // Posé : plus de seek en vol, HAVE_FUTURE_DATA, et la position à moins
+      // de 150 ms de la cible (en PTS). Jamais `canplaythrough` : WebKit le
+      // tire trop tôt, Chromium ne le retire pas sur un seek dans le tampon.
+      isSettledAt: (targetSeconds: number) => {
+        const v = videoRef.current;
+        if (!v || v.seeking || v.readyState < 3 || sourceChangingRef.current) return false;
+        return Math.abs(v.currentTime - (targetSeconds - effectiveOffsetRef.current)) < 0.15;
+      },
+      // Jamais joué (`played` vide) : un play() puis pause() DANS le geste
+      // bénit l'élément — WebKit n'autorise un play() différé qu'après ça.
+      primeGesture: () => {
+        const v = videoRef.current;
+        if (!v || !v.paused || v.played.length > 0) return;
+        wtLog("transport", "primeGesture() [web] — play/pause dans le geste");
+        const attempt = v.play();
+        v.pause();
+        attempt?.catch(() => {});
+      },
     };
     return () => { transportRef.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

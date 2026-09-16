@@ -1,4 +1,4 @@
-import type { HlsConfig } from "hls.js";
+import Hls, { type HlsConfig } from "hls.js";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -11,6 +11,20 @@ const DBG = "[Tentacle:VideoPlayer]";
  *  Returns "" on Chrome/Brave/Firefox/Edge → all Safari-specific code paths are inert. */
 export const HAS_NATIVE_HLS = typeof document !== "undefined"
   && document.createElement("video").canPlayType("application/vnd.apple.mpegurl") !== "";
+
+/**
+ * La source sera-t-elle lue par hls.js (MSE) plutôt que par l'élément lui-même ?
+ *
+ * Décide aussi de l'IDENTITÉ de la balise `<video>` : passer d'une lecture
+ * directe (fichier progressif) à une session MSE sur le même élément fige le
+ * décodeur vidéo une dizaine de secondes plus tard — image arrêtée, son
+ * maintenu, `currentTime` qui avance, aucun événement. Reproduit trois fois
+ * sur trois le 16 septembre 2026 (jamais d'une session MSE à une autre) ;
+ * un élément neuf par sorte de source évite la transition.
+ */
+export function isMseSource(src: string, useNativeHls?: boolean): boolean {
+  return src.includes(".m3u8") && !useNativeHls && Hls.isSupported();
+}
 
 /** Max time (ms) to wait for canplaythrough before falling back to play anyway.
  *  Progressive transcode: video=copy is instant but audio transcode takes 1-3s.
@@ -87,18 +101,15 @@ export function configHls(seekTo: number): Partial<HlsConfig> {
   };
 }
 
-export function attemptPlay(
-  v: HTMLVideoElement, onPolicyMuted: () => void, onPlayFailed: () => void,
-) {
+export function attemptPlay(v: HTMLVideoElement, onPlayFailed: () => void) {
   // Respecte le mute choisi par l'utilisateur (persisté) — sinon un changement
   // d'épisode/média rétablirait le son (gênant à 2 players sur une machine).
-  const wantMuted = localStorage.getItem("tentacle_player_muted") === "1";
-  v.muted = wantMuted;
-  v.play().catch(() => {
-    v.muted = true;
-    v.play().then(() => { if (!wantMuted) onPolicyMuted(); }).catch((err) => {
-      console.error(DBG, "muted play also failed:", err);
-      onPlayFailed();
-    });
+  // Jamais de relance en muet : un lecteur qui coupe le son de lui-même et
+  // pose un bouton « appuyer pour le son » surprend plus qu'il n'aide. Lecture
+  // refusée par le navigateur → bouton de lecture, et le geste rend le son.
+  v.muted = localStorage.getItem("tentacle_player_muted") === "1";
+  v.play().catch((err) => {
+    console.warn(DBG, "lecture refusée par le navigateur — bouton de lecture", err instanceof Error ? err.name : err);
+    onPlayFailed();
   });
 }

@@ -1,4 +1,5 @@
 import type { WsClientMessage, WsServerMessage } from "@tentacle-tv/shared";
+import { recordClockSample } from "./clockSync";
 
 /**
  * Socket Tentacle partagé — UNE connexion WebSocket `/api/ws` par application,
@@ -11,8 +12,9 @@ import type { WsClientMessage, WsServerMessage } from "@tentacle-tv/shared";
  * d'authentification ferme sans reconnexion (statut "authError").
  *
  * Horloge : chaque ping keepalive porte `t = Date.now()` ; le pong du serveur
- * renvoie `t` + `serverTime`, d'où `offset ≈ serverTime − (t + rtt/2)`.
- * L'échantillon au plus petit RTT d'une fenêtre glissante est retenu.
+ * renvoie `t` + `serverTime` (estimation dans `clockSync.ts`). Un premier
+ * échantillon part dès l'ouverture, et une cadence dédiée (`setClockSampling`)
+ * resserre la mesure le temps d'une séance Watch Together.
  */
 
 export type SocketStatus = "idle" | "connecting" | "open" | "closed" | "authError";
@@ -39,7 +41,6 @@ const INITIAL_BACKOFF = 1_000;
 const MAX_BACKOFF = 30_000;
 const PING_INTERVAL = 30_000;
 const RELEASE_LINGER_MS = 150;
-const CLOCK_WINDOW = 8;
 
 type MessageListener = (msg: WsServerMessage) => void;
 type StatusListener = (status: SocketStatus) => void;
@@ -53,10 +54,12 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let pingTimer: ReturnType<typeof setInterval> | null = null;
 let lingerTimer: ReturnType<typeof setTimeout> | null = null;
 let authClosed = false;
+/** Cadence d'échantillonnage d'horloge demandée (séance en cours), et son timer. */
+let clockCadenceMs: number | null = null;
+let clockTimer: ReturnType<typeof setInterval> | null = null;
 
 const messageListeners = new Set<MessageListener>();
 const statusListeners = new Set<StatusListener>();
-const clockSamples: Array<{ offset: number; rtt: number }> = [];
 
 function setStatus(s: SocketStatus): void {
   if (status === s) return;
@@ -71,15 +74,19 @@ function dispatch(msg: WsServerMessage): void {
 function clearTimers(): void {
   if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
   if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
 }
 
 function handlePong(msg: { t?: number; serverTime?: number }): void {
   if (typeof msg.t !== "number" || typeof msg.serverTime !== "number") return;
-  const now = Date.now();
-  const rtt = Math.max(0, now - msg.t);
-  const offset = msg.serverTime - (msg.t + rtt / 2);
-  clockSamples.push({ offset, rtt });
-  if (clockSamples.length > CLOCK_WINDOW) clockSamples.shift();
+  recordClockSample(msg.t, msg.serverTime);
+}
+
+/** (Re)pose le timer d'horloge selon la cadence demandée, sur le socket ouvert. */
+function armClockTimer(): void {
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+  if (clockCadenceMs === null || ws?.readyState !== WebSocket.OPEN) return;
+  clockTimer = setInterval(() => { sampleClock(); }, clockCadenceMs);
 }
 
 function connect(): void {
@@ -103,6 +110,10 @@ function connect(): void {
         ws.send(JSON.stringify({ type: "ping", t: Date.now() }));
       }
     }, PING_INTERVAL);
+    // Un premier échantillon d'horloge tout de suite : rejoindre une séance en
+    // cours calcule sa position de départ avant tout ping keepalive.
+    sampleClock();
+    armClockTimer();
   };
 
   ws.onmessage = (event) => {
@@ -218,16 +229,14 @@ export function getSocketStatus(): SocketStatus {
   return status;
 }
 
-/** Offset horloge serveur−client (ms) — échantillon au plus petit RTT, null si
- *  aucun pong horodaté reçu. `serverNow ≈ Date.now() + offset`. */
-export function getClockOffsetMs(): number | null {
-  if (clockSamples.length === 0) return null;
-  let best = clockSamples[0];
-  for (const s of clockSamples) if (s.rtt < best.rtt) best = s;
-  return best.offset;
-}
-
 /** Déclenche un ping horodaté immédiat (rafale d'échantillonnage d'horloge). */
 export function sampleClock(): boolean {
   return sendSocketMessage({ type: "ping", t: Date.now() });
+}
+
+/** Cadence d'échantillonnage d'horloge (ms) le temps d'une séance — `null`
+ *  pour revenir au seul keepalive. Survit aux reconnexions. */
+export function setClockSampling(intervalMs: number | null): void {
+  clockCadenceMs = intervalMs;
+  armClockTimer();
 }

@@ -98,10 +98,10 @@ export async function observeProperties<
   T extends ReadonlyArray<MpvObservableProperty>,
 >(
   _properties: T,
-  callback: (event: { name: string; data: unknown; id: number }) => void,
+  callback: (event: { name: string; data: unknown; id: number; at?: number }) => void,
 ): Promise<UnlistenFn> {
   return listen("mpv://property-change", (e) =>
-    callback(e.payload as { name: string; data: unknown; id: number }),
+    callback(e.payload as { name: string; data: unknown; id: number; at?: number }),
   );
 }
 

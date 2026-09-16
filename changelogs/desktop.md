@@ -15,14 +15,39 @@ et Linux reçoivent l'ensemble.
 
 ## [1.21.3]
 ### FR
+- **Regarder ensemble, vraiment ensemble** : la synchronisation du visionnage de groupe est refondue. La reprise après une pause est planifiée par le serveur — chaque lecteur s'y cale et démarre en avance de sa propre latence, au lieu de repartir à la réception du message ; après un saut, la salle attend que chacun soit posé sur l'image visée avant de repartir au même instant ; la dérive se corrige en continu par une variation de vitesse inaudible (±5 % au plus, hauteur préservée). Le compte à rebours d'un saut est celui de la salle, réglé par l'hôte : le même chiffre chez tous, un clic saute, une croix éteint pour tous. L'écart de chaque membre se lit dans le panneau du groupe
+- **La position de mpv est lue sur son horloge audio** : ce qui sort du haut-parleur à l'instant, et non l'image en file d'affichage, qui avance par sauts de 40 ms — c'est aussi ce que mesure un navigateur, et deux lecteurs comparés sur la même horloge n'ont plus ce décalage d'une image, que l'on entendait comme un léger écho entre un ordinateur et un onglet web
+- **En transcodage, un saut atterrit là où vous l'avez demandé** : la liste de lecture du serveur annonce ses segments à trois secondes près, mais leur contenu commence à l'image clé suivante — mpv atterrissait une à dix secondes trop loin à chaque déplacement, et en séance de groupe il ne parvenait jamais à se caler sur la position commune. Le lecteur recule désormais le décodeur avant chaque saut et vient s'arrêter à l'image
 - **La barre des tâches ne passe plus devant le film** (Linux) : en plein écran, le panneau du bureau pouvait s'afficher par-dessus l'image — le plus souvent au retour de la souris depuis un autre écran. Il ne l'a jamais recouverte : il s'intercalait entre la vidéo et la fenêtre, transparente, qui la laissait voir
 - **L'icône de l'application a ses coins arrondis** (Windows, Linux, macOS) : elle s'affichait en carré dans la barre des tâches et dans le Dock, là où l'App Store la montre déjà arrondie sur un Mac récent. Sous Linux, une mise à jour la rafraîchit désormais — l'AppImage ne remplaçait que le programme, et la barre des tâches gardait l'icône du jour de l'installation
-- Nécessite un serveur 1.17.2 ou plus
+- Nécessite un serveur 1.17.3 ou plus
 
 ### EN
+- **Watching together, truly together**: group-watch synchronization is rebuilt. Resuming after a pause is scheduled by the server — every player lines up on it and starts early by its own latency, instead of restarting when the message arrives; after a seek, the room waits until everyone is settled on the target frame before restarting at the same instant; drift is corrected continuously by an inaudible speed change (±5 % at most, pitch preserved). The skip countdown belongs to the room and follows the host's settings: the same number for everyone, a click skips, a cross turns it off for all. Each member's offset shows in the group panel
+- **mpv's position is read from its audio clock**: what comes out of the speaker right now, not the frame queued for display, which moves in 40 ms steps — that is also what a browser measures, and two players compared on the same clock no longer carry that one-frame offset, heard as a slight echo between a computer and a web tab
+- **While transcoding, a seek lands where you asked**: the server's playlist announces its segments to the nearest three seconds, but their content starts at the next keyframe — mpv landed one to ten seconds too far on every move, and in a group session it could never settle on the shared position. The player now backs the decoder up before each seek and stops on the exact frame
 - **The taskbar no longer sits in front of the film** (Linux): in fullscreen, the desktop panel could show up over the picture — most often when the mouse came back from another screen. It never covered it: it slipped between the video and our window, which is transparent and let it through
 - **The app icon has rounded corners** (Windows, Linux, macOS): it appeared as a square in the taskbar and in the Dock, where the App Store already shows it rounded on a recent Mac. On Linux an update now refreshes it — the AppImage only replaced the program, and the taskbar kept the icon from installation day
-- Requires a server on 1.17.2 or newer
+- Requires a server on 1.17.3 or newer
+
+## [win-1.21.3]
+<!-- Bloc Windows par LONGUEUR, pas par point de départ : le bloc nu dépasse les
+     1500 caractères du Microsoft Store, qui coupe à la puce en silence — la
+     puce de l'icône (Windows compris) partait à la trappe. Mêmes nouveautés,
+     dites court. Commentaire posé AVANT ### FR (cf. mac-1.21.2). -->
+### FR
+- **Regarder ensemble, vraiment ensemble** : la reprise après une pause est planifiée par le serveur et chaque lecteur s'y cale ; après un saut, la salle attend que chacun soit posé sur l'image visée ; la dérive se corrige en continu par une variation de vitesse inaudible. Le compte à rebours d'un saut est celui de la salle, réglé par l'hôte, et l'écart de chaque membre se lit dans le panneau du groupe
+- **La position de mpv est lue sur son horloge audio**, celle qu'un navigateur mesure aussi : plus de décalage d'une image, entendu comme un léger écho entre un ordinateur et un onglet web
+- **En transcodage, un saut atterrit là où vous l'avez demandé** : mpv atterrissait une à dix secondes trop loin, et ne parvenait jamais à se caler sur la position d'une séance de groupe
+- **L'icône de l'application a ses coins arrondis** : elle s'affichait en carré dans la barre des tâches
+- Nécessite un serveur 1.17.3 ou plus
+
+### EN
+- **Watching together, truly together**: resuming after a pause is scheduled by the server and every player lines up on it; after a seek, the room waits until everyone is settled on the target frame; drift is corrected continuously by an inaudible speed change. The skip countdown belongs to the room, set by the host, and each member's offset shows in the group panel
+- **mpv's position is read from its audio clock**, the one a browser measures too: no more one-frame offset, heard as a slight echo between a computer and a web tab
+- **While transcoding, a seek lands where you asked**: mpv landed one to ten seconds too far, and could never settle on a group session's position
+- **The app icon has rounded corners**: it appeared as a square in the taskbar
+- Requires a server on 1.17.3 or newer
 
 ## [win-1.21.2]
 <!-- Bloc Windows : la 1.21.1 EST arrivée sur le Microsoft Store, donc Windows

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TICKS_PER_SECOND, wtPositionSecondsAt, type MediaItem } from "@tentacle-tv/shared";
 import { useWatchTogether } from "./WatchTogetherProvider";
+import { isGroupSessionActive } from "./groupSyncShared";
 
 /**
  * Watch Together — adaptation de la session de lecture au mode groupe :
@@ -35,8 +36,12 @@ export function useGroupPlaybackHandlers({
   handlePreviousEpisode: () => void;
   setStartTicks: (ticks: number) => void;
 }) {
-  const { room, send, serverNow, isInGroup, isHost } = useWatchTogether();
-  const active = isInGroup && !!itemId;
+  const { room, send, serverNow, isInGroup } = useWatchTogether();
+  // Une salle RÉELLE, pas seulement le drapeau : le shim webOS pose
+  // `isInGroup: true` pour masquer deux boutons (le téléviseur n'a pas de
+  // Watch Together), et le lecteur se croyait en séance — sans décompte de
+  // saut, sans indicateur de reprise. Prédicat pur, testé (groupSyncShared).
+  const active = isGroupSessionActive(isInGroup, room, itemId);
 
   // Position de départ figée une fois PAR ITEM (un state ultérieur ne doit pas
   // re-déclencher un chargement du player). Keyée par itemId : la page /watch
@@ -83,8 +88,6 @@ export function useGroupPlaybackHandlers({
 
   return {
     groupActive: active,
-    /** En séance, seul l'hôte laisse le décompte de saut aller au seek. */
-    groupIsHost: active && isHost,
     groupStartPositionSeconds: groupStartSeconds,
     handleNextEpisode: active ? groupNextEpisode : handleNextEpisode,
     handlePreviousEpisode: active ? groupPreviousEpisode : handlePreviousEpisode,

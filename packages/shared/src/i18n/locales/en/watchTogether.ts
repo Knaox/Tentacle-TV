@@ -59,6 +59,10 @@ export default {
   memberBuffering: "{{name}} is buffering…",
   membersBuffering: "{{count}} members are buffering…",
   waitingForGroup: "Waiting for the group…",
+  syncing: "Syncing…",
+  skippedByGroup: "Segment skipped",
+  driftBadge: "{{ms}} ms",
+  driftBadgeAria: "Sync offset: {{ms}} ms",
 
   // Floating pill
   groupPlaybackActive: "Group playback in progress",

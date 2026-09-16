@@ -34,6 +34,7 @@ export type { SkipSegments, RawSkipSources, MediaSegmentsResponse, PluginSegment
 export { usePlaybackSegments } from "./hooks/usePlaybackSegments";
 export { usePlaybackSettings, usePlaybackSettingsStore, setPlaybackSettings, rehydratePlaybackSettings, initPlaybackSettingsStore } from "./hooks/usePlaybackSettings";
 export { usePlaybackOverlay } from "./playback/usePlaybackOverlay";
+export type { SkipProposal } from "./playback/playbackOverlay.types";
 export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playback/playbackOverlay.types";
 export { useMutedSegments, NO_MUTED_SEGMENTS } from "./playback/useMutedSegments";
 export { usePostCreditsClaim } from "./playback/usePostCreditsClaim";
@@ -84,8 +85,9 @@ export { useHomeWebSocket, setWsBackendUrl } from "./hooks/useHomeWebSocket";
 // Socket Tentacle partagé (multiplexé : home, notifications, Watch Together)
 export {
   acquireSocket, sendSocketMessage, subscribeSocket, onSocketStatus,
-  getSocketStatus, getClockOffsetMs, sampleClock,
+  getSocketStatus, sampleClock, setClockSampling,
 } from "./socket/tentacleSocket";
+export { getClockOffsetMs, getClockRttMs } from "./socket/clockSync";
 export type { SocketStatus } from "./socket/tentacleSocket";
 
 // Mesure du débit réel (téléchargement témoin Jellyfin BitrateTest) — sert le

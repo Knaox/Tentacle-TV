@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useCallback, useEffect, useState, type MutableRefObject } from "react";
 
 interface Options {
   videoRef: MutableRefObject<HTMLVideoElement | null>;
+  /** Identité de la balise `<video>` : change quand elle est remontée, et le
+   *  volume doit être reposé sur la nouvelle. */
+  elementKey?: string;
   /**
    * Le son vient d'être rétabli à la main. Sert au lecteur à retirer son badge
    * « appuyer pour le son », posé quand la politique d'autoplay a imposé le
    * silence.
    */
-  onSoundRestored: () => void;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Options {
  * `volume` vaut 0 dès que le son est coupé — la bascule le pose elle-même, il
  * n'y a donc pas d'état muet séparé à tenir.
  */
-export function usePlayerVolume({ videoRef, onSoundRestored }: Options) {
+export function usePlayerVolume({ videoRef, elementKey }: Options) {
   const [volume, setVolume] = useState(() => {
     const s = localStorage.getItem("tentacle_player_volume");
     if (s != null) { const v = Number(s); if (!Number.isNaN(v)) return Math.min(1, Math.max(0, v / 100)); }
@@ -27,9 +29,6 @@ export function usePlayerVolume({ videoRef, onSoundRestored }: Options) {
 
   // Le rappel change d'identité à chaque rendu du lecteur ; le garder dans une
   // ref laisse les deux handlers stables — ils partent dans les raccourcis
-  // clavier, qui réattacheraient sinon leurs écouteurs à chaque image.
-  const soundRestored = useRef(onSoundRestored);
-  soundRestored.current = onSoundRestored;
 
   useEffect(() => {
     const v = videoRef.current;
@@ -37,7 +36,7 @@ export function usePlayerVolume({ videoRef, onSoundRestored }: Options) {
     v.volume = volume;
     // Mute persisté : survit aux changements d'épisode/média (remount).
     if (localStorage.getItem("tentacle_player_muted") === "1") v.muted = true;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [elementKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleVolumeChange = useCallback((val: number) => {
     setVolume(val);
@@ -57,7 +56,6 @@ export function usePlayerVolume({ videoRef, onSoundRestored }: Options) {
     const v = videoRef.current;
     if (!v) return;
     v.muted = !v.muted;
-    if (!v.muted) soundRestored.current();
     try { localStorage.setItem("tentacle_player_muted", v.muted ? "1" : "0"); } catch {}
     setVolume(v.muted ? 0 : 1);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

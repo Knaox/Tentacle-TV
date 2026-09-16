@@ -1,11 +1,19 @@
 import type { WebSocket } from "@fastify/websocket";
 import type { JellyfinUser } from "../../middleware/auth";
 import { isUserOnline, onPresenceChange, sendToUser } from "../wsManager";
-import { allRooms, armGrace, cancelGrace, getRoomOf, invitesFor, type Room } from "./roomStore";
-import { applyCommand, bumpEpoch, expireStaleWaits, removeMemberAndSync } from "./sync";
+import { armGrace, cancelGrace } from "./roomStore";
+import { allRooms, getRoomOf } from "./roomRegistry";
+import { invitesFor } from "./roomInvites";
+import type { Room } from "./roomTypes";
+import { applyCommand, bumpEpoch, expireStaleWaits, releaseMemberWait, removeMemberAndSync } from "./sync";
+import { onBarrierExpired } from "./syncBarrier";
+import { cancelPendingSkip, onSkipExecuted, proposeSkip } from "./syncSkip";
+import { recordTick } from "./syncBeacon";
 import { broadcastRoom, inviteToDto, sendRoomState } from "./broadcast";
 import { handleChat, handleGif, handleReaction, sendChatHistory } from "./chat";
-import { parseWtClientMessage, type WtErrorCode, type WtServerMessage } from "./protocol";
+import { refreshHostSettings } from "./hostSettings";
+import type { WtErrorCode, WtServerMessage } from "./protocol";
+import { parseWtClientMessage } from "./protocolParse";
 
 /**
  * Watch Together — pont WebSocket : dispatch des messages métier `wt:*`
@@ -112,6 +120,33 @@ export function handleWtMessage(
       originUserId: user.userId,
       segmentType: msg.segmentType,
     });
+    // Et le décompte armé par le serveur s'éteint pour tout le monde.
+    if (cancelPendingSkip(room, true)) {
+      wtSrvLog(`${user.username} → refus : décompte de saut annulé`, roomSnapshot(room));
+      bumpEpoch(room);
+      broadcastRoom(room, "presence", user.userId);
+    }
+    return;
+  }
+
+  if (msg.type === "wt:skipPropose") {
+    const proposer = room.members.get(user.userId)!;
+    const armed = proposeSkip(room, proposer, msg, Date.now());
+    wtSrvLog(`${user.username} → skipPropose ${msg.segmentType} ⇒ ${armed ? "armé" : "ignoré"}`, roomSnapshot(room));
+    if (armed) broadcastRoom(room, "presence", user.userId);
+    return;
+  }
+
+  if (msg.type === "wt:tick") {
+    // Balise : l'écart de ce lecteur à la salle, son aller-retour — jamais une
+    // commande. Diffusé au plus une fois par 5 s et par salle.
+    const beaconMember = room.members.get(user.userId)!;
+    const due = recordTick(room, beaconMember, msg, Date.now());
+    wtSrvLog(`${user.username} → tick`, { driftMs: beaconMember.driftMs, rttMs: beaconMember.rttMs, due });
+    if (due) {
+      bumpEpoch(room);
+      broadcastRoom(room, "presence", null);
+    }
     return;
   }
 
@@ -123,6 +158,9 @@ export function handleWtMessage(
 
   const member = room.members.get(user.userId)!;
   const outcome = applyCommand(room, member, msg, isUserOnline);
+  // Le socket du lecteur en séance : sa fermeture lèvera l'attente (un second
+  // onglet du même compte peut rester ouvert avec un lecteur mort derrière).
+  if (msg.type === "wt:presence") member.playbackSocket = member.inPlayback ? socket : null;
   wtSrvLog(
     `${user.username} → ${JSON.stringify(msg)} ⇒ ${outcome.kind === "broadcast" ? `broadcast(${outcome.cause})` : "ignore"}`,
     roomSnapshot(room),
@@ -141,7 +179,28 @@ function onGraceExpired(userId: string): void {
   });
   if (!result.dissolved) {
     broadcastRoom(result.room, "leave", userId);
+    // Nouvel hôte : ses réglages gouvernent désormais. La lecture en base est
+    // asynchrone, le départ est diffusé tout de suite — les réglages suivent
+    // dans un état à part, avec son propre epoch.
+    if (result.newHostId) {
+      const room = result.room;
+      void refreshHostSettings(room).then(() => {
+        bumpEpoch(room);
+        broadcastRoom(room, "sync", null);
+      });
+    }
   }
+}
+
+/** Le socket d'un membre vient de se fermer (routes/ws.ts). Si c'était celui
+ *  de son lecteur en séance, la salle ne l'attend plus. */
+export function handleSocketClosed(userId: string, socket: WebSocket): void {
+  const room = getRoomOf(userId);
+  const member = room?.members.get(userId);
+  if (!room || !member || member.playbackSocket !== socket) return;
+  const resumed = releaseMemberWait(room, member);
+  wtSrvLog(`socket de lecture fermé : ${userId} n'est plus attendu`, { resumed, ...roomSnapshot(room) });
+  broadcastRoom(room, resumed ? "schedule" : "presence", null);
 }
 
 let registered = false;
@@ -150,6 +209,18 @@ let registered = false;
 export function registerWatchTogetherGateway(): void {
   if (registered) return;
   registered = true;
+
+  // Barrière expirée : les retardataires sont lâchés, la salle repart.
+  onBarrierExpired((room) => {
+    wtSrvLog("barrière expirée : retardataires lâchés, la salle repart", roomSnapshot(room));
+    broadcastRoom(room, room.paused ? "presence" : "schedule", null);
+  });
+
+  // Décompte de saut arrivé à terme : la salle saute, par barrière.
+  onSkipExecuted((room) => {
+    wtSrvLog("saut de passage exécuté par le serveur", roomSnapshot(room));
+    broadcastRoom(room, "skip", null);
+  });
 
   // Anti-gel infini : un membre attendu par le group-wait depuis trop
   // longtemps (player coincé, réseau mort sans déconnexion WS) est déclaré
@@ -163,7 +234,7 @@ export function registerWatchTogetherGateway(): void {
         wtSrvLog("SWEEP anti-gel : membres attendus > 60s marqués playbackError, le groupe reprend sans eux", {
           expired, resumed, ...roomSnapshot(room),
         });
-        broadcastRoom(room, resumed ? "resume" : "presence", null);
+        broadcastRoom(room, resumed ? "schedule" : "presence", null);
       }
     }
   }, 15_000);

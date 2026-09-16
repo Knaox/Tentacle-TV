@@ -1,6 +1,6 @@
 import type { JellyfinUser } from "../../middleware/auth";
 import { sendToUser } from "../wsManager";
-import type { Room } from "./roomStore";
+import type { Room } from "./roomTypes";
 import {
   WT_CHAT_HISTORY_SIZE,
   WT_MIN_CHAT_INTERVAL_MS,

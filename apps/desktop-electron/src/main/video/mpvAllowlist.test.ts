@@ -96,7 +96,7 @@ describe("ecriture directe de propriete", () => {
   });
 
   it("accepte celles du lecteur", () => {
-    for (const name of ["pause", "volume", "mute", "ao-volume", "speed", "sub-visibility"]) {
+    for (const name of ["pause", "volume", "mute", "ao-volume", "speed", "sub-visibility", "hr-seek-demuxer-offset"]) {
       expect(refuseWrite(name), name).toBeNull();
     }
   });
@@ -126,6 +126,8 @@ describe("ce que apps/web emet reellement passe", () => {
       ["seek", ["120", "absolute"]],
       ["set", ["start", "+12.5"]],
       ["set", ["start", "none"]],
+      ["set", ["hr-seek-demuxer-offset", "12"]],
+      ["set", ["hr-seek-demuxer-offset", "0"]],
       ["set", ["aid", "2"]],
       ["set", ["sid", "no"]],
       ["set", ["sid", "3"]],
@@ -158,6 +160,7 @@ describe("detection de derive avec apps/web", () => {
       "hooks/useMpvCommands.ts",
       "hooks/useMpvLifecycle.ts",
       "hooks/useDesktopPlayer.ts",
+      "hooks/useMpvExactSeek.ts",
     ].map(webSource).join("\n");
 
     const found = new Set<string>();

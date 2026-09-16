@@ -28,6 +28,11 @@ interface UseMpvSourceOptions {
   currentSubtitle: number | null;
   /** Fichier téléchargé, lu depuis le disque. */
   isLocalPlayback: boolean;
+  /** Recul du démuxeur pour cette source (secondes) — cf. `useMpvExactSeek`. */
+  hrSeekDemuxerOffset?: number;
+  /** La position (secondes de flux) que l'ouverture vise : son premier
+   *  `playback-restart` sera jugé comme l'atterrissage d'un seek. */
+  onLoadTarget?: (streamPosS: number | undefined) => void;
 }
 
 /**
@@ -72,6 +77,7 @@ export function useMpvSource({
   lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
   hasStartedRef, loadedExternalSubs,
   audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
+  hrSeekDemuxerOffset, onLoadTarget,
 }: UseMpvSourceOptions) {
   const [sourceChanging, setSourceChanging] = useState(false);
   // State (not ref!) — transitioning to true triggers preference effect re-runs
@@ -145,7 +151,9 @@ export function useMpvSource({
       subtitleTrack: isLocalPlayback
         ? undefined
         : sidBeforeOpen(subtitleTracks, currentSubtitle, isDirectPlay),
+      hrSeekDemuxerOffset,
     });
+    onLoadTarget?.(startPos);
     loadedExternalSubs.current.clear();
     // State transition triggers preference effects in the NEXT render
     if (!initialLoaded) setInitialLoaded(true);

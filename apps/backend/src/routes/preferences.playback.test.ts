@@ -16,6 +16,12 @@ const rows = new Map<string, FakeRow>();
 vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
 }));
+// L'hôte d'une séance Watch Together : ses réglages sont poussés à la salle
+// après l'écriture. Espionné ici, jamais exécuté (pas de socket sur le banc).
+const pushHostSettingsIfHosting = vi.fn(async (_userId: string): Promise<void> => undefined);
+vi.mock("../services/watchTogether/hostSettings", () => ({
+  pushHostSettingsIfHosting: (userId: string) => pushHostSettingsIfHosting(userId),
+}));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
   verifyDeviceToken: async () => null,
@@ -66,6 +72,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  pushHostSettingsIfHosting.mockClear();
+  pushHostSettingsIfHosting.mockResolvedValue(undefined);
 });
 
 async function makeApp() {
@@ -288,6 +296,31 @@ describe("le repli « avant la fin » traverse la base", () => {
       },
     });
     expect(response.statusCode).toBe(400);
+  });
+
+  it("l'écriture pousse les réglages à la salle que l'utilisateur héberge", async () => {
+    const app = await makeApp();
+    const response = await app.inject({
+      method: "PUT",
+      url: "/api/preferences/playback",
+      headers,
+      payload: VALID_SETTINGS,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(pushHostSettingsIfHosting).toHaveBeenCalledWith("u1");
+  });
+
+  it("une diffusion qui échoue ne fait pas échouer l'enregistrement", async () => {
+    pushHostSettingsIfHosting.mockRejectedValueOnce(new Error("socket fermé"));
+    const app = await makeApp();
+    const response = await app.inject({
+      method: "PUT",
+      url: "/api/preferences/playback",
+      headers,
+      payload: VALID_SETTINGS,
+    });
+    expect(response.statusCode).toBe(200);
+    expect(rows.get("u1")).toBeDefined();
   });
 
   it("une règle sans bibliothèque est refusée — elle ne s'appliquerait à rien", async () => {

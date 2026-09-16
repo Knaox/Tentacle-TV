@@ -85,6 +85,12 @@ const WRITABLE_PROPERTIES: ReadonlySet<string> = new Set([
   "pause",
   "speed",
   "start",
+  // Recul du démuxeur avant un seek précis (secondes). Sur un HLS Jellyfin, la
+  // playlist annonce des segments à N × 3 s dont le contenu commence une image
+  // clé plus loin : sans recul, chaque seek atterrit en retard de une à dix
+  // secondes — mesuré le 16 septembre 2026, voir `hooks/mpvSeekLanding.ts`.
+  // Un nombre de secondes, rien qui désigne un fichier ni un programme.
+  "hr-seek-demuxer-offset",
   // Son
   "volume",
   "mute",

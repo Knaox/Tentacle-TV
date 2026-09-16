@@ -59,6 +59,10 @@ export default {
   memberBuffering: "{{name}} met en mémoire tampon…",
   membersBuffering: "{{count}} membres mettent en mémoire tampon…",
   waitingForGroup: "En attente du groupe…",
+  syncing: "Synchronisation…",
+  skippedByGroup: "Passage sauté",
+  driftBadge: "{{ms}} ms",
+  driftBadgeAria: "Écart de synchronisation : {{ms}} ms",
 
   // Pilule flottante
   groupPlaybackActive: "Lecture de groupe en cours",
