@@ -10,6 +10,7 @@ import type { LocalMediaProbe } from "./useLocalMediaProbe";
 import type { MpvEndFileEvent } from "../lib/mpvTypes";
 import { noteAid, noteSid, forgetRequestedTracks } from "./mpvTrackIntent";
 import { openStartup, traceCommand } from "./startupTrace";
+import type { MpvClockRefs } from "./mpvClock";
 import { wtLog } from "../watchTogether/wtLog";
 
 // Ré-exports de compatibilité — de nombreux modules importent la détection de
@@ -59,7 +60,12 @@ export function useDesktopPlayer(opts?: {
   // High-frequency refs — synced to React state via throttle timer
   const positionRef = useRef(0);
   const positionAtRef = useRef(0);
+  // L'horloge audio (`audio-pts`), jamais rendue : le transport Watch Together
+  // la lit en direct (cf. `mpvClock.ts`).
+  const audioPtsRef = useRef(0);
+  const audioPtsAtRef = useRef(0);
   const restartCountRef = useRef(0);
+  const restartAtRef = useRef(0);
   const bufferedRef = useRef(0);
   // Miroir synchrone de `paused-for-cache` : le nudge s'exécute dans un timer,
   // hors rendu React, et ne peut donc pas lire `state.buffering`.
@@ -76,10 +82,15 @@ export function useDesktopPlayer(opts?: {
   // Init mpv + observers + destroy (sérialisé) au montage/démontage.
   useMpvLifecycle({
     setState, setReady, setFailure, setFileLoaded, setMediaReady,
-    positionRef, positionAtRef, restartCountRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
-    playbackWatchdogRef, wakeupRef, loadfileAtRef,
+    positionRef, positionAtRef, audioPtsRef, audioPtsAtRef, restartCountRef, restartAtRef, bufferedRef,
+    bufferingRef, mutedRef, fileLoadedRef, playbackWatchdogRef, wakeupRef, loadfileAtRef,
     onEndFileFailure: (endFile) => endFileFailureRef.current(endFile),
   });
+  // Les refs de l'horloge, en un bundle stable pour le transport et le suivi
+  // des seeks (identité constante : créé une fois par montage).
+  const clock = useRef<MpvClockRefs>({
+    positionRef, positionAtRef, audioPtsRef, audioPtsAtRef, restartCountRef, restartAtRef,
+  }).current;
 
   // Throttle position/buffer sync to React state at ~4Hz
   useEffect(() => {
@@ -181,6 +192,15 @@ export function useDesktopPlayer(opts?: {
       // une pause légitime (group-wait d'un autre membre) sera réappliquée
       // par le moteur de sync juste après.
       await api.setProperty("pause", false).catch(() => {});
+      // Le recul du démuxeur suit la SORTE de source : douze secondes sur un
+      // HLS Jellyfin, dont la playlist ment sur le contenu des segments, zéro
+      // en lecture directe. Posé avant `start`, qui est déjà un seek précis.
+      // Voir `mpvSeekLanding.ts` — mesuré le 16 septembre 2026.
+      if (options.hrSeekDemuxerOffset !== undefined) {
+        traceCommand("set hr-seek-demuxer-offset", `${options.hrSeekDemuxerOffset} s`);
+        await api.command("set", ["hr-seek-demuxer-offset", String(options.hrSeekDemuxerOffset)])
+          .catch((e) => console.warn("[mpv] set hr-seek-demuxer-offset:", e));
+      }
       if (options.startPosition != null && options.startPosition > 0) {
         console.debug("[mpv] play: setting start position", options.startPosition);
         await api.command("set", ["start", `+${options.startPosition.toFixed(1)}`]);
@@ -267,5 +287,5 @@ export function useDesktopPlayer(opts?: {
 
   const commands = useMpvCommands({ state, setState, mutedRef });
 
-  return { state, ready, fileLoaded, mediaReady, failure, play, positionRef, positionAtRef, restartCountRef, ...commands };
+  return { state, ready, fileLoaded, mediaReady, failure, play, clock, ...commands };
 }
