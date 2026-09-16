@@ -12,11 +12,16 @@ interface UseVideoEventsArgs {
   effectiveOffsetRef: MutableRefObject<number>;
   containerPtsOffsetRef: MutableRefObject<number>;
   offsetDetectedRef: MutableRefObject<boolean>;
+  containerBaseRef: MutableRefObject<number>;
   sourceChangingRef: MutableRefObject<boolean>;
   hasStartedRef: MutableRefObject<boolean>;
   waitingTimer: MutableRefObject<ReturnType<typeof setTimeout> | undefined>;
   src: string;
   itemId: string;
+  /** Lecture directe : la ligne de temps de l'élément est celle du film, il
+   *  n'y a pas de base de conteneur à mesurer — la mesure ne sait produire
+   *  qu'un faux positif (premier `timeupdate` loin de la position de départ). */
+  isDirectPlay: boolean;
   startPositionSeconds?: number;
   jellyfinDuration?: number;
   setPlaying: (v: boolean) => void;
@@ -50,7 +55,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       // CopyTimestamps=true preserves the original container's PTS base, which
       // may be non-zero (e.g., 677s for broadcast recordings). Subtract it
       // so displayed time shows movie position (0 to duration), not raw PTS.
-      if (!a.offsetDetectedRef.current && t > 0) {
+      if (!a.offsetDetectedRef.current && t > 0 && !a.isDirectPlay) {
         a.offsetDetectedRef.current = true;
         const expectedStart = a.startPositionSeconds || 0;
         const detectedOffset = t - expectedStart;
@@ -58,6 +63,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
         if (detectedOffset > 5) {
           a.containerPtsOffsetRef.current = Math.round(detectedOffset);
           a.effectiveOffsetRef.current = -a.containerPtsOffsetRef.current;
+          a.containerBaseRef.current = a.containerPtsOffsetRef.current;
         }
       }
       const absoluteTime = a.effectiveOffsetRef.current + t;
@@ -90,7 +96,9 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       if (!a.hasStartedRef.current) {
         a.hasStartedRef.current = true; a.setHasStarted(true); a.onStarted?.();
       }
-      a.onPlayStateChange?.(false);
+      // Pas de `onPlayStateChange` ici : `play` part à l'ORDRE, `playing` à la
+      // première image — c'est elle qui compte pour la synchro (latence de
+      // démarrage mesurée par le moteur), et un play() refusé n'en émet pas.
     },
     onPause: () => {
       wtLog("web-video", "event pause", { pos: a.lastKnownPositionRef.current.toFixed(1) });
@@ -119,6 +127,7 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       wtLog("web-video", "event playing → signal buffering=false", { pos: a.lastKnownPositionRef.current.toFixed(1) });
       clearTimeout(a.waitingTimer.current);
       if (!a.sourceChangingRef.current) a.setLoading(false);
+      a.onPlayStateChange?.(false);
       a.onBufferingChange?.(false);
     },
     onCanPlay: () => {
@@ -164,5 +173,5 @@ export function useVideoEvents(a: UseVideoEventsArgs) {
       a.onPlaybackEnded();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [a.src, a.itemId, a.startPositionSeconds, a.jellyfinDuration, a.onPlaybackEnded, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError]);
+  }), [a.src, a.itemId, a.isDirectPlay, a.startPositionSeconds, a.jellyfinDuration, a.onPlaybackEnded, a.onProgress, a.onStarted, a.onPlayStateChange, a.onBufferingChange, a.onFatalError]);
 }

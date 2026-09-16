@@ -38,11 +38,11 @@ export interface PlaybackOverlayInput {
    */
   groupSession?: boolean;
   /**
-   * En séance : ce lecteur est celui de l'hôte. Seul son décompte de saut va
-   * jusqu'au seek — les invités gardent le bouton, sans décompte
-   * (`countdownAllowed`). Ignoré hors séance.
+   * En séance : le décompte de saut ARMÉ PAR LE SERVEUR pour ce passage —
+   * le même chez tous les membres, figé pendant une pause. Il remplace le
+   * décompte local (`countdownAllowed`) quand le passage affiché est le sien.
    */
-  groupHost?: boolean;
+  groupSkip?: { segmentType: SegmentType; countdownSeconds: number } | null;
   /** TV : le décompte se suspend et rien ne s'affiche pendant le scrub. */
   scrubbing?: boolean;
   /**
@@ -62,6 +62,18 @@ export interface PlaybackOverlayInput {
   /** Watch Together : annoncer un refus local au groupe. */
   onSegmentDismissNotify?: (type: SegmentType) => void;
   onNextDismissNotify?: () => void;
+  /** Watch Together : ce lecteur entre dans un passage que les réglages de
+   *  l'hôte sautent tout seuls — proposer le saut à la salle (le serveur arme
+   *  UN décompte, dédupliqué par passage). */
+  onSkipPropose?: (proposal: SkipProposal) => void;
+}
+
+/** Un passage à sauter, tel que la salle le comprend (ms de média). */
+export interface SkipProposal {
+  segmentType: SegmentType;
+  isEpisode: boolean;
+  segmentStartMs: number;
+  toMs: number;
 }
 
 export interface PlaybackOverlayResult {

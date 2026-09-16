@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { SkipBadge } from "./SkipBadge";
 import { PlaybackBadge } from "./PlaybackBadge";
-import { useMpvPrebuffer } from "../hooks/useMpvPrebuffer";
+import { useDesktopLoadingOverlay } from "../hooks/useDesktopLoadingOverlay";
 import { usePlaybackFlash } from "../hooks/usePlaybackFlash";
-import { SEEK_END_EPS_S } from "../hooks/useSmartSeek";
+import { useDesktopSkip } from "../hooks/useDesktopSkip";
 import { useDesktopPlayerShortcuts } from "../hooks/useDesktopPlayerShortcuts";
 import { useDesktopPlayer } from "../hooks/useDesktopPlayer";
 import { useLocalMediaProbe } from "../hooks/useLocalMediaProbe";
 import { useDesktopMediaControls } from "../hooks/useDesktopMediaControls";
+import { useGatedPlay } from "../hooks/useGatedPlay";
 import { useMpvTrackSync } from "../hooks/useMpvTrackSync";
 import { useLocalPlaybackTracks } from "../hooks/useLocalPlaybackTracks";
 import { useMpvSource } from "../hooks/useMpvSource";
@@ -16,6 +17,8 @@ import { useDesktopSegmentsOverlay } from "../hooks/useDesktopSegmentsOverlay";
 import { useWaylandFullscreenNotice } from "../hooks/useWaylandFullscreenNotice";
 import { useDesktopTransport } from "../hooks/useDesktopTransport";
 import { useDesktopSeekbar } from "../hooks/useDesktopSeekbar";
+import { useMpvExactSeek } from "../hooks/useMpvExactSeek";
+import { useTransparentPageDuringPlayback } from "../hooks/useTransparentPageDuringPlayback";
 import { DesktopPlayerControls } from "./player/DesktopPlayerControls";
 import { DesktopPlayerOverlays } from "./player/DesktopPlayerOverlays";
 import { DesktopPlayerError, DesktopPlayerLoading } from "./player/DesktopPlayerFallback";
@@ -36,14 +39,25 @@ export function DesktopPlayer({
   nextSeriesBackdropUrl, nextEpisodeThumbUrl,
   itemId, item, mediaSourceId,
   onNextEpisode, onPreviousEpisode, onFallbackToWeb, onMediaMissing,
-  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession, inGroupHost,
-  onControlsVisibilityChange, applyToSeries,
+  transportRef, onPlayStateChange, onBufferingChange, onSeekComplete, onAutoNextDismiss, inGroupSession,
+  onControlsVisibilityChange, applyToSeries, onRequestPlay,
 }: DesktopPlayerProps) {
   // Sonde d'existence du fichier local — le discriminant média/lecteur d'un
   // échec de chargement (voir playbackFailure.ts). Absente hors lecture locale.
   const probeLocalMedia = useLocalMediaProbe({ isLocalPlayback, itemId });
-  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause, setPause, seek, seekRelative,
-    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen } = useDesktopPlayer({ probeLocalMedia });
+  const { state, ready, fileLoaded, mediaReady, failure, play, togglePause: rawTogglePause, setPause, seek: rawSeek, seekRelative,
+    setAudioTrack, setSubtitleTrack, addSubtitle, setVolume, setSpeed, toggleMute, toggleFullscreen,
+    clock } = useDesktopPlayer({ probeLocalMedia });
+  // Chaque seek absolu du lecteur passe par ici : sur un HLS Jellyfin, mpv
+  // atterrit sinon une image clé trop loin (cf. `mpvSeekLanding.ts`).
+  const isHls = !isDirectPlay && src.includes(".m3u8");
+  const exactSeek = useMpvExactSeek({ src, isHls, state, clock, seek: rawSeek });
+  const seek = exactSeek.seek;
+  // En séance, la lecture passe d'abord par le moteur (reprise commune) ; la pause reste immédiate.
+  const { toggle: togglePause, play: playGated } = useGatedPlay({
+    rawToggle: () => { void rawTogglePause(); }, rawPlay: () => { void setPause(false); },
+    isPaused: () => state.paused, onRequestPlay,
+  });
   const { showControls, scheduleHide } = useControlsAutoHide(!state.paused);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
@@ -67,6 +81,10 @@ export function DesktopPlayer({
   const offsetDetectedForSrc = useRef("");
   const fullscreenRef = useRef(state.fullscreen);
   fullscreenRef.current = state.fullscreen;
+  // Glissement de la seekbar en cours : la détection de discontinuité se tait
+  // (un glissement n'est pas un seek à rapporter — le relâchement, si).
+  const draggingRef = useRef(false);
+  const reportUserSeek = (seconds: number) => onSeekComplete?.(seconds, state.paused, true);
 
   // MPV tracks split by type
   const mpvAudio = useMemo(() => state.tracks.filter((t) => t.type === "audio"), [state.tracks]);
@@ -93,25 +111,8 @@ export function DesktopPlayer({
     onAudioChange, onSubtitleChange, loadedExternalSubs,
   });
 
-  // Fond de page transparent PENDANT LA LECTURE — et seulement une fois la
-  // surface native prête (`ready` est posé au retour de mpv_init, qui vient
-  // justement de rendre la webview transparente).
-  //
-  // L'ordre compte désormais : hors lecture, la webview macOS est OPAQUE
-  // (cf. macos/window_opacity.rs — une fenêtre transparente coûtait une
-  // recomposition alpha permanente). Rendre la page transparente avant la
-  // bascule native laisserait voir, le temps d'une image ou deux, le fond de
-  // base blanc de WebKit. À la sortie c'est l'inverse : le nettoyage React
-  // rend la page opaque de façon synchrone, la webview repasse en opaque
-  // juste après (mpv_destroy) — jamais de fenêtre de temps où les deux sont
-  // transparents.
-  useEffect(() => {
-    if (!ready) return;
-    const prev = document.body.style.background;
-    document.body.style.background = "transparent";
-    document.documentElement.style.background = "transparent";
-    return () => { document.body.style.background = prev; document.documentElement.style.background = ""; };
-  }, [ready]);
+  // Fond de page transparent pendant la lecture, une fois la surface native prête.
+  useTransparentPageDuringPlayback(ready);
 
   // Pédagogie du plein écran Wayland (une fois, et seulement où il est imposé).
   useWaylandFullscreenNotice(ready);
@@ -119,12 +120,14 @@ export function DesktopPlayer({
   // Chargement de la source + détection PTS + report de progression
   const { sourceChanging } = useMpvSource({
     state, ready, fileLoaded, src, startPositionSeconds, isDirectPlay, streamOffset,
-    play, onStarted, onProgress, onSeekComplete,
+    play, onStarted, onProgress,
+    onSeekComplete: (seconds, paused) => { if (!draggingRef.current) onSeekComplete?.(seconds, paused); },
     lastAbsolutePosRef, effectiveMpvOffset, offsetDetectedForSrc, prevSrcRef,
     hasStartedRef, loadedExternalSubs,
     // Pour poser les pistes AVANT l'ouverture du fichier (cf. useMpvSource) —
     // jamais en lecture locale, où les pistes réelles ne sont connues qu'après.
     audioTracks, subtitleTracks, currentAudio, currentSubtitle, isLocalPlayback,
+    hrSeekDemuxerOffset: exactSeek.backoffS, onLoadTarget: exactSeek.noteLoadTarget,
   });
 
   // Le miroir réactif du démarrage — armé dès que useMpvSource a posé la ref,
@@ -150,31 +153,17 @@ export function DesktopPlayer({
   // Touches média du système, incrustation de volume, Stream Deck (SMTC).
   useDesktopMediaControls({
     title, subtitle, posterUrl, paused: state.paused,
-    togglePause, setPause, goBack,
+    togglePause, setPause: async (paused) => { if (paused) await setPause(true); else playGated(); }, goBack,
     onNext: onNextEpisode, onPrevious: onPreviousEpisode,
     hasNext: hasNextEpisode, hasPrevious: hasPreviousEpisode,
   });
 
   const dur = jellyfinDuration && jellyfinDuration > 0 ? jellyfinDuration : state.duration;
 
-  // La FIN, en espace mpv : la durée de SON flux — l'offset de transcode ne
-  // s'y applique pas. Avec `keep-open`, ce saut lève l'EOF réel de mpv
-  // (`eof-reached`), et l'affiche de fin paraît : le geste manuel vaut l'EOF
-  // naturel. Les cibles se comparent, elles, en POSITION FILM.
-  const seekToMpvEnd = useCallback(() => {
-    if (state.duration > 0) void seek(state.duration);
-  }, [state.duration, seek]);
-
-  // Un +30 s dont la cible atteint la fin — ou la dépasse — TERMINE la
-  // lecture au lieu de se caler sur le bord. Un recul ne termine jamais.
-  const skipRelativeOrEnd = useCallback((delta: number) => {
-    const filmPos = state.position + effectiveMpvOffset.current;
-    if (delta > 0 && dur > 0 && filmPos + delta >= dur - SEEK_END_EPS_S) {
-      seekToMpvEnd();
-      return;
-    }
-    void seekRelative(delta);
-  }, [dur, state.position, effectiveMpvOffset, seekRelative, seekToMpvEnd]);
+  // ±10/30 s et « jusqu'au bout » (un +30 s qui atteint la fin la termine).
+  const { seekToMpvEnd, skipRelativeOrEnd } = useDesktopSkip({
+    state, dur, effectiveMpvOffset, seek, seekRelative, groupActive: inGroupSession, onUserSeek: reportUserSeek,
+  });
 
   // Raccourcis clavier + badge « +30s / −10s » (extrait — cf. hook dédié).
   const { skipFlash, skipBy } = useDesktopPlayerShortcuts({
@@ -191,6 +180,9 @@ export function DesktopPlayer({
     ignoreNextToggle,
     // Relâcher la poignée sur le bord termine la lecture (affiche de fin).
     onSeekToEnd: seekToMpvEnd,
+    // En séance : un seul seek pour la salle, au relâchement.
+    group: { active: !!inGroupSession, onRelease: reportUserSeek },
+    isDraggingRef: draggingRef,
   });
 
   const actualPos = state.position + effectiveMpvOffset.current;
@@ -210,34 +202,22 @@ export function DesktopPlayer({
     controlsVisible: showControls,
     isDirectPlay, effectiveMpvOffset, seek,
     onNextEpisode, onEndOfPlayback: () => { void goToDetail(); },
-    onAutoNextDismiss, inGroupSession, inGroupHost,
+    onAutoNextDismiss, inGroupSession, onUserSeek: reportUserSeek,
   });
+
+  // Écran de chargement et réserve avant l'image (cf. hook dédié).
+  const { prebuffering, showLoadingOverlay } = useDesktopLoadingOverlay({ state, mediaReady, sourceChanging, hasStarted, setPause });
 
   // Watch Together : transport impératif + signaux prêt/buffering/pause.
   // `wt:cancelAutoNext` = un membre a refusé l'enchaînement — même sémantique
   // que la croix locale, sans ré-annonce au groupe.
   useDesktopTransport({
-    transportRef, state, mediaReady, isDirectPlay,
-    lastAbsolutePosRef, effectiveMpvOffset,
+    transportRef, state, mediaReady, prebuffering, isDirectPlay,
+    clock, lastAbsolutePosRef, effectiveMpvOffset,
     setPause, seek, setSpeed,
     cancelAutoPlay: playback.signalRemoteNextDismiss,
     onPlayStateChange, onBufferingChange,
   });
-
-  // Show loading overlay: initial load OR source change (quality/audio switch).
-  // Sécurité anti-spinner-éternel : mpv qui lit sans le dire (event "playing"
-  // perdu — configs Windows + EAC3 5.1). Le signe, c'est une position qui
-  // AVANCE : `position > 0` ne le prouve pas, time-pos valant déjà la position
-  // de départ dès l'ouverture du fichier sur une REPRISE.
-  const startPosRef = useRef<number | null>(null);
-  if (startPosRef.current === null && state.position > 0) startPosRef.current = state.position;
-  const playbackStarted = startPosRef.current !== null && state.position > startPosRef.current + 0.25;
-  // Réserve constituée avant de lancer l'image, l'écran de chargement couvrant
-  // l'attente : un seul chargement, et il ne recommence pas derrière.
-  const prebuffering = useMpvPrebuffer({ mediaReady, buffered: state.buffered, eof: state.eof, setPause });
-  const showLoadingOverlay = prebuffering || (playbackStarted
-    ? false
-    : sourceChanging || (!state.playing && !hasStarted));
 
   // La bascule de secours est un setState du PARENT : elle part d'un effet,
   // jamais du rendu — React tolérait l'appel en place mais l'interdit en mode

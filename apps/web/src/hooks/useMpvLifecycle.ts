@@ -20,6 +20,18 @@ export interface MpvLifecycleCtx {
   setFileLoaded: (v: boolean) => void;
   setMediaReady: (v: boolean) => void;
   positionRef: MutableRefObject<number>;
+  /** `Date.now()` de la dernière valeur de `time-pos` (instant de mesure côté
+   *  processus principal) — le transport Watch Together extrapole entre deux. */
+  positionAtRef: MutableRefObject<number>;
+  /** `audio-pts` et son instant — l'horloge audio, continue (cf. `mpvClock.ts`). */
+  audioPtsRef: MutableRefObject<number>;
+  audioPtsAtRef: MutableRefObject<number>;
+  /** Nombre de `playback-restart` reçus — mpv en émet un après CHAQUE seek
+   *  abouti : c'est ainsi qu'on sait qu'un seek a atterri (`seeking` est
+   *  coalescé par le pompage et peut ne jamais être vu à vrai). */
+  restartCountRef: MutableRefObject<number>;
+  /** `Date.now()` du dernier `playback-restart` (cf. `mpvClock.ts`). */
+  restartAtRef: MutableRefObject<number>;
   bufferedRef: MutableRefObject<number>;
   /** Miroir synchrone de `paused-for-cache` — lu par le nudge de réveil. */
   bufferingRef: MutableRefObject<boolean>;
@@ -49,8 +61,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
     const unlisteners: (() => void)[] = [];
     const {
       setState, setReady, setFailure, setFileLoaded, setMediaReady,
-      positionRef, bufferedRef, bufferingRef, mutedRef, fileLoadedRef,
-      playbackWatchdogRef, wakeupRef, loadfileAtRef, onEndFileFailure,
+      positionRef, positionAtRef, audioPtsRef, audioPtsAtRef, restartCountRef, restartAtRef, bufferedRef,
+      bufferingRef, mutedRef, fileLoadedRef, playbackWatchdogRef, wakeupRef, loadfileAtRef, onEndFileFailure,
     } = ctx;
 
     (async () => {
@@ -112,7 +124,18 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           if (cancelled) return;
           switch (event.name) {
             case "time-pos":
-              positionRef.current = (event.data as number | null) ?? positionRef.current;
+              if (event.data !== null && event.data !== undefined) {
+                positionRef.current = event.data as number;
+                positionAtRef.current = event.at ?? Date.now();
+              }
+              return; // ref only — no setState
+            case "audio-pts":
+              // `null` = pas d'audio qui joue (pause, seek, média muet) : la
+              // dernière valeur reste, son instant la périme (cf. mpvClock.ts).
+              if (typeof event.data === "number") {
+                audioPtsRef.current = event.data;
+                audioPtsAtRef.current = event.at ?? Date.now();
+              }
               return; // ref only — no setState
             case "demuxer-cache-duration": {
               // ⚠️ `null` veut dire INDISPONIBLE, pas « cache vide ». mpv rend
@@ -271,6 +294,8 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
           }
           case "playback-restart": {
             if (cancelled) return;
+            restartCountRef.current += 1;
+            restartAtRef.current = Date.now();
             wtLog("mpv", "playback-restart (média prêt, première frame)", {
               sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1,
               pos: positionRef.current.toFixed(1),

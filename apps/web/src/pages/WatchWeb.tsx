@@ -71,7 +71,10 @@ export function WatchWeb() {
     if (!streamUrl) return;
     if (firstSrcRef.current) { firstSrcRef.current = false; return; }
     wtLog("page", "rebuild de source → déclarer buffering au groupe", { playSessionId });
-    groupSync.notifyBuffering(true);
+    // Gel à la position que le rechargement VISE : le lecteur qui se détruit
+    // rapporterait la sienne, en retard de ce que la boucle ne rattraperait
+    // qu'après la reprise.
+    groupSync.notifyBuffering(true, getPositionTicks() / TICKS_PER_SECOND);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamUrl]);
 
@@ -241,7 +244,8 @@ export function WatchWeb() {
   const handleSeekComplete = useCallback((seconds: number, paused: boolean) => {
     positionRef.current = seconds;
     reportSeek(seconds, paused);
-    groupSync.notifySeek(seconds);
+    // Le lecteur web rapporte ses seeks à la demande (useSmartSeek) : tous explicites.
+    groupSync.notifySeek(seconds, { explicit: true });
   }, [reportSeek, positionRef, groupSync.notifySeek]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [showResumeIndicator, setShowResumeIndicator] = useState(false);
@@ -320,8 +324,8 @@ export function WatchWeb() {
           segments={segments.segments} runtimeMs={segments.runtimeMs} libraryId={segments.libraryId}
           transportRef={transportRef} onPlayStateChange={groupSync.notifyPlayState}
           onBufferingChange={groupSync.notifyBuffering} onFatalError={groupSync.notifyFatalError}
-          onAutoNextDismiss={groupSync.notifyAutoNextDismiss}
-          inGroupSession={group.groupActive} inGroupHost={group.groupIsHost}
+          onAutoNextDismiss={groupSync.notifyAutoNextDismiss} onRequestPlay={groupSync.requestPlay}
+          inGroupSession={group.groupActive}
           onControlsVisibilityChange={setControlsVisible}
           applyToSeries={applyToSeries}
         />

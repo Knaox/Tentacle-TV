@@ -27,16 +27,18 @@ import {
   countdownAllowed, decideIntroSkip, findSkipCandidate, hasRewoundPastSkip,
   isSegmentSilenced,
   type IntroSkipState,
-  type PlayerOverlay, type SegmentType, type SkipCandidate, type SkipCandidateInput,
+  type PlayerOverlay, type SegmentType, type SkipCandidate,
 } from "@tentacle-tv/shared";
 import { usePlaybackSettings } from "../hooks/usePlaybackSettings";
+import { buildFrameInput } from "./overlayFrame";
 import { useAutoNextDispatch } from "./useAutoNextDispatch";
+import { useGroupSkipProposal } from "./useGroupSkipProposal";
 import { useEndOfPlaybackExit } from "./useEndOfPlaybackExit";
 import { useMutedSegments } from "./useMutedSegments";
 import { usePostCreditsClaim } from "./usePostCreditsClaim";
 import type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
 
-export type { PlaybackOverlayInput, PlaybackOverlayResult } from "./playbackOverlay.types";
+export type { PlaybackOverlayInput, PlaybackOverlayResult, SkipProposal } from "./playbackOverlay.types";
 
 export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlayResult {
   const settings = usePlaybackSettings({ resync: input.remoteSettingsSync !== false });
@@ -87,22 +89,14 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   }, [claimPostCredits]);
 
   /** La même forme d'entrée pour le candidat ET l'éligibilité — décrite une fois. */
-  const frameInput = useCallback((): SkipCandidateInput => {
-    const p = inputRef.current;
-    return {
-      segments: p.segments,
-      positionMs: Math.round(p.positionSeconds * 1000),
-      hasStarted: p.hasStarted,
-      isEpisode: p.isEpisode,
-      hasNextEpisode: p.hasNextEpisode,
-      settings: settingsRef.current,
-    };
-  }, []);
+  const frameInput = useCallback(() => buildFrameInput(inputRef.current, settingsRef.current), []);
 
   const currentCandidate = useCallback(
     (): SkipCandidate | null => findSkipCandidate(frameInput()),
     [frameInput],
   );
+
+  const proposeGroupSkip = useGroupSkipProposal(inputRef, mutedRef); // en séance : le serveur décompte
 
   /** Un battement : fait avancer les deux réducteurs, joue le saut à échéance. */
   const tick = useCallback(
@@ -114,7 +108,8 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
       // Un passage mis en sourdine ne compte plus : la croix a aussi coupé ça.
       const silenced = candidate !== null && mutedRef.current.has(candidate.segment.type);
       const active = visible && !silenced && candidate !== null && candidate.settings.action === "auto"
-        && countdownAllowed(p.groupSession, p.groupHost);
+        && countdownAllowed(p.groupSession);
+      proposeGroupSkip(visible && !silenced ? candidate : null);
 
       // Les trois refus que le RETOUR EN ARRIÈRE lève : la scène revendiquée, les
       // passages refusés (jamais en séance : `segmentsToRelease`), le saut attendu.
@@ -165,7 +160,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         remainingMediaMs: Math.max(0, pRuntimeMs - nowMs),
       });
     },
-    [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, releaseRewound, mutedRef, postCreditsClaimedRef],
+    [currentCandidate, frameInput, dispatchNext, runAction, commitSkipState, releasePostCredits, releaseRewound, mutedRef, postCreditsClaimedRef, proposeGroupSkip],
   );
 
   // Changement d'épisode : tout se réarme.
@@ -193,7 +188,7 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
   ]);
 
   // L'horloge : fine (250 ms) pendant un décompte, lente (1 s) sinon.
-  const countingDown = skipState.name === "countdown" || nextState.remainingMs !== null;
+  const countingDown = skipState.name === "countdown" || nextState.remainingMs !== null || !!input.groupSkip;
   useEffect(() => {
     const periodMs = countingDown ? 250 : 1000;
     let last = Date.now();
@@ -239,7 +234,12 @@ export function usePlaybackOverlay(input: PlaybackOverlayInput): PlaybackOverlay
         // ne doit plus paraître le temps qu'elle aboutisse.
         finalCard: nextState.finalDismissed || nextState.chained,
       },
-      countdowns: { skip: displayedCountdown(skipState), next: displayedNextCountdown(nextState) },
+      // En séance : le décompte de la salle, quand il vise le passage affiché.
+      countdowns: {
+        skip: input.groupSkip && candidate?.segment.type === input.groupSkip.segmentType
+          ? input.groupSkip.countdownSeconds : displayedCountdown(skipState),
+        next: displayedNextCountdown(nextState),
+      },
     });
   }, [input, positionMs, runtimeMs, settings, skipState, nextState, muted, postCredits.claimed, frameInput]);
 

@@ -71,6 +71,17 @@ export function WtAvatar({
   );
 }
 
+/** Couleur de l'écart mesuré : vert sous 50 ms, ambre sous 200, rouge au-delà. */
+function driftTone(ms: number): string {
+  const abs = Math.abs(ms);
+  return abs <= 50 ? "text-status-success-fg" : abs <= 200 ? "text-status-warning-fg" : "text-status-error-fg";
+}
+
+/** Signe explicite : « +40 » en avance, « −40 » en retard. */
+function signed(ms: number): string {
+  return ms > 0 ? `+${ms}` : ms < 0 ? `−${Math.abs(ms)}` : "0";
+}
+
 export function memberStatus(m: WtMemberDto): WtAvatarStatus {
   if (!m.online) return "offline";
   if (m.playbackError) return "error";
@@ -112,6 +123,17 @@ export function MemberRow({
           )}
         </div>
         <span className="text-xs text-content-quaternary">{statusLabel}</span>
+        {/* L'écart mesuré par sa balise (wt:tick) : la synchro rendue visible.
+            Pas de flou ni d'animation — un chiffre, une couleur. */}
+        {member.inPlayback && member.driftMs !== undefined && (
+          <span
+            className={`ml-2 text-[10px] font-semibold tabular-nums ${driftTone(member.driftMs)}`}
+            aria-label={t("driftBadgeAria", { ms: signed(member.driftMs) })}
+            title={t("driftBadgeAria", { ms: signed(member.driftMs) })}
+          >
+            {t("driftBadge", { ms: signed(member.driftMs) })}
+          </span>
+        )}
       </div>
       {canKick && !isSelf && (
         <button

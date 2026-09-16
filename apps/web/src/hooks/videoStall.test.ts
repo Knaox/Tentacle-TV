@@ -1,0 +1,23 @@
+import { describe, expect, it } from "vitest";
+import { STALL_MIN_PLAYED_S, videoStalled } from "./videoStall";
+
+const live = { playedS: 2, decodedFrames: 0, paused: false, seeking: false, readyState: 4, visible: true, hasVideo: true };
+
+describe("videoStalled — l'image figée que rien n'annonce", () => {
+  it("deux secondes lues sans une image décodée : gel", () => {
+    expect(videoStalled(live)).toBe(true);
+  });
+  it("des images décodées : pas de gel", () => {
+    expect(videoStalled({ ...live, decodedFrames: 12 })).toBe(false);
+  });
+  it("trop peu de lecture pour conclure", () => {
+    expect(videoStalled({ ...live, playedS: STALL_MIN_PLAYED_S - 0.1 })).toBe(false);
+  });
+  it("en pause, en recherche, onglet masqué, sans vidéo, ou sans données : on ne juge pas", () => {
+    expect(videoStalled({ ...live, paused: true })).toBe(false);
+    expect(videoStalled({ ...live, seeking: true })).toBe(false);
+    expect(videoStalled({ ...live, visible: false })).toBe(false);
+    expect(videoStalled({ ...live, hasVideo: false })).toBe(false);
+    expect(videoStalled({ ...live, readyState: 2 })).toBe(false);
+  });
+});

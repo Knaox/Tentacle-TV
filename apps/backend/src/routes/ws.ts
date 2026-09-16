@@ -3,10 +3,13 @@ import type { WebSocket } from "@fastify/websocket";
 import { validateToken, type JellyfinUser } from "../middleware/auth";
 import { addConnection, removeConnection } from "../services/wsManager";
 import { hashToken } from "../services/jwt";
-import { handleWtMessage } from "../services/watchTogether/gateway";
+import { handleSocketClosed, handleWtMessage } from "../services/watchTogether/gateway";
 
 const AUTH_TIMEOUT_MS = 15_000;
-const PING_INTERVAL_MS = 30_000;
+/** Ping protocolaire toutes les 10 s ; deux pongs manqués = socket mort,
+ *  fermé d'office — une séance ne doit pas attendre un lecteur disparu
+ *  jusqu'à ce que TCP s'en aperçoive. */
+const PING_INTERVAL_MS = 10_000;
 
 type WsClientMessage = { type: string; token?: string } & Record<string, unknown>;
 
@@ -41,8 +44,13 @@ function handleParsedMessage(
 }
 
 function setupPing(ws: WebSocket): ReturnType<typeof setInterval> {
+  let alive = true;
+  ws.on("pong", () => { alive = true; });
   return setInterval(() => {
-    if (ws.readyState === 1) ws.ping();
+    if (ws.readyState !== 1) return;
+    if (!alive) { ws.terminate(); return; }
+    alive = false;
+    ws.ping();
   }, PING_INTERVAL_MS);
 }
 
@@ -82,7 +90,10 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
 
     const cleanup = () => {
       if (pingInterval) clearInterval(pingInterval);
-      if (user) removeConnection(user.userId, socket, tokenHash ?? undefined);
+      if (user) {
+        handleSocketClosed(user.userId, socket);
+        removeConnection(user.userId, socket, tokenHash ?? undefined);
+      }
     };
 
     socket.on("close", cleanup);

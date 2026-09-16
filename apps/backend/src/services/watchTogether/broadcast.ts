@@ -1,5 +1,5 @@
 import { isUserOnline, sendToUser } from "../wsManager";
-import type { Invite, Room } from "./roomStore";
+import type { Invite, Room } from "./roomTypes";
 import type { WtDissolvedReason, WtInviteDto, WtRoomStateDto, WtStateCause } from "./protocol";
 
 /** Watch Together — projection Room→DTO et diffusion aux membres. */
@@ -17,6 +17,11 @@ export function roomToDto(room: Room): WtRoomStateDto {
       playbackError: m.playbackError,
       isHost: m.userId === room.hostUserId,
       joinedAt: m.joinedAt,
+      // Clés FACULTATIVES : absentes tant qu'elles ne disent rien, pour qu'un
+      // client d'avant ne voie jamais une valeur qu'il ne saurait pas lire.
+      ...(m.protocolVersion > 1 ? { protocolVersion: m.protocolVersion } : {}),
+      ...(m.rttMs !== null ? { rttMs: m.rttMs } : {}),
+      ...(m.driftMs !== null ? { driftMs: m.driftMs } : {}),
     }));
   return {
     groupId: room.groupId,
@@ -33,6 +38,9 @@ export function roomToDto(room: Room): WtRoomStateDto {
     // il est appelé depuis chaque diffusion. La clé n'apparaît QUE si la salle
     // les connaît — un client d'avant ne doit rien voir de nouveau.
     ...(room.hostSettings ? { hostPlaybackSettings: room.hostSettings } : {}),
+    ...(room.barrier ? { barrierId: room.barrier.id } : {}),
+    ...(room.waitCause ? { waitCause: room.waitCause } : {}),
+    ...(room.pendingSkip ? { pendingSkip: { ...room.pendingSkip } } : {}),
   };
 }
 

@@ -3,8 +3,10 @@ import Hls from "hls.js";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
 
 import {
-  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, DIRECT_PLAY_GUARD_MS, HAS_NATIVE_HLS,
+  attemptPlay, BUFFER_GATE_TIMEOUT, configHls, DIRECT_PLAY_GUARD_MS, HAS_NATIVE_HLS, isMseSource,
 } from "./videoSourceHelpers";
+import { attachHlsTimeline } from "./hlsTimelineAttach";
+import { hlsSessionStart } from "./hlsTimeline";
 
 const DBG = "[Tentacle:VideoPlayer]";
 
@@ -26,6 +28,13 @@ interface UseVideoSourceOptions {
   lastKnownPositionRef: MutableRefObject<number>;
   currentTimeRef: MutableRefObject<number>;
   onSeekRequest?: (seconds: number) => void;
+  /** Un saut vient d'être posé (position film) — même canal que `useSmartSeek`,
+   *  pour que la page et la séance de groupe suivent un replacement. */
+  onSeekComplete?: (seconds: number, paused: boolean) => void;
+  /** Début de la passe ffmpeg de la session hls.js courante (cf. useVideoClock). */
+  hlsRunStartRef: MutableRefObject<number | null>;
+  hlsLandingRef: MutableRefObject<number>;
+  containerBaseRef: MutableRefObject<number>;
   /**
    * Rattrapage d'une lecture directe muette. Fourni UNIQUEMENT quand il y a
    * quelque chose à rattraper — un conteneur à risque, pas encore disqualifié.
@@ -38,14 +47,18 @@ export function useVideoSource({
   videoRef, src, isDirectPlay, streamOffset, useNativeHls, startPositionSeconds,
   effectiveOffsetRef, containerPtsOffsetRef, offsetDetectedRef,
   seekTargetRef, seekStallTimer, sourceChangingRef, hasStartedRef,
-  lastKnownPositionRef, currentTimeRef, onSeekRequest, onDirectPlayNonFiable,
+  lastKnownPositionRef, currentTimeRef, onSeekRequest, onSeekComplete, hlsRunStartRef, hlsLandingRef, containerBaseRef,
+  onDirectPlayNonFiable,
 }: UseVideoSourceOptions) {
   const hlsRef = useRef<Hls | null>(null);
+  // Base d'horodatage du conteneur apprise sur CE média (session partie du
+  // segment 0) — un rechargement en cours de film ne peut pas la mesurer seul.
+  const hlsPtsBaseRef = useRef<number | null>(null);
+  const hlsRelocationsRef = useRef(0);
   const jfClient = useJellyfinClient();
 
   const [loading, setLoading] = useState(true);
   const [showPlayButton, setShowPlayButton] = useState(false);
-  const [policyMuted, setPolicyMuted] = useState(false);
 
   // Synchronously reset state when src changes
   const [prevSrc, setPrevSrc] = useState(src);
@@ -55,9 +68,16 @@ export function useVideoSource({
     // (quality/audio switch). Keep showing the last known position until the
     // new source provides timeupdate events with the correct absolute time.
     // Full reset only happens on episode switch (key={itemId} triggers remount).
-    // Container PTS offset persists across source changes (same media).
+    // Les décalages suivent la SORTE de source : atterrissage hls.js d'un côté,
+    // base du conteneur de l'autre (cf. `hlsTimeline.ts`).
     offsetDetectedRef.current = true;
-    effectiveOffsetRef.current = -containerPtsOffsetRef.current;
+    if (isMseSource(src, useNativeHls)) {
+      containerPtsOffsetRef.current = -hlsLandingRef.current;
+      effectiveOffsetRef.current = hlsLandingRef.current;
+    } else {
+      containerPtsOffsetRef.current = containerBaseRef.current;
+      effectiveOffsetRef.current = -containerBaseRef.current;
+    }
   }
 
   // Source loading — handles both HLS (transcoded) and direct play
@@ -69,6 +89,7 @@ export function useVideoSource({
     const isHlsUrl = src.includes(".m3u8");
     let bufferGateTimer: ReturnType<typeof setTimeout> | undefined;
     sourceChangingRef.current = true;
+    hlsRunStartRef.current = null;
     setLoading(true);
     // Don't reset hasStartedRef on source changes (seek, audio, quality).
     // reportStart should fire only ONCE per episode mount — subsequent changes
@@ -138,6 +159,10 @@ export function useVideoSource({
         const isProgressiveTranscode = !isHlsUrl && !isDirectPlay;
         if (isProgressiveTranscode && streamOffset > 0) {
           // Progressive with CopyTimestamps: stream naturally starts at correct PTS
+        } else if (isMseSource(src, useNativeHls)) {
+          // Même départ que `startPosition` : viser la cible ici ferait
+          // charger un segment plus loin, devant la passe qu'on vient d'ouvrir.
+          if (isSourceChange) v.currentTime = hlsSessionStart(seekTo, hlsLandingRef.current);
         } else if (!isHlsUrl || isSourceChange || useNativeHls) {
           // Add container PTS offset to convert movie position → PTS.
           // Native HLS (WKWebView): manifest starts at seekTo via StartTimeTicks
@@ -149,7 +174,7 @@ export function useVideoSource({
       // Keep sourceChangingRef=true and loading=true so the spinner stays visible
       // until actual playback starts (onPlay). This prevents the black-screen gap
       // between metadata/canplay and real audio+video output.
-      attemptPlay(v, () => setPolicyMuted(true), () => {
+      attemptPlay(v, () => {
         // Play completely blocked — show manual play button, clear loading state.
         sourceChangingRef.current = false;
         setLoading(false);
@@ -164,8 +189,14 @@ export function useVideoSource({
       // Configuration extraite (cf. `configHls`) : c'est elle qui porte
       // `videoPreference.preferHDR`, le réglage qui décide de la copie ou du
       // ré-encodage de l'image côté serveur.
-      const hls = new Hls(configHls(seekTo));
+      // `seekTo` est une position FILM ; la session part un segment avant, en
+      // temps playlist, et le premier fragment ramène à la cible (cf. `hlsTimeline.ts`).
+      const hls = new Hls(configHls(hlsSessionStart(seekTo, hlsLandingRef.current)));
       hlsRef.current = hls;
+      attachHlsTimeline(hls, v, seekTo, {
+        containerPtsOffsetRef, effectiveOffsetRef, offsetDetectedRef,
+        ptsBaseRef: hlsPtsBaseRef, runStartRef: hlsRunStartRef, relocationsRef: hlsRelocationsRef, landingRef: hlsLandingRef,
+      }, { seekTargetRef, onSeekComplete, onSeekRequest });
       // HLS play timing:
       // - Source change (audio/quality switch): play immediately on MANIFEST_PARSED
       //   for fast switching. Explicit seek handles frame-accurate positioning.
@@ -262,5 +293,5 @@ export function useVideoSource({
 
   useEffect(() => () => { hlsRef.current?.destroy(); clearInterval(seekStallTimer.current); }, []);
 
-  return { loading, setLoading, showPlayButton, setShowPlayButton, policyMuted, setPolicyMuted };
+  return { loading, setLoading, showPlayButton, setShowPlayButton };
 }

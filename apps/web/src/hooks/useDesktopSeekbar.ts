@@ -29,6 +29,16 @@ interface UseDesktopSeekbarArgs {
    * décide : un glissement qui passe par la droite ne ferme rien.
    */
   onSeekToEnd?: () => void;
+  /**
+   * Séance Watch Together : la salle se cale sur UN seek, au relâchement. Pas
+   * de pause pendant le glissement (elle partirait comme un intent à toute la
+   * salle), pas de seek à chaque mousemove (la barrière n'en attend qu'un) ;
+   * la reprise viendra de la reprise planifiée du serveur.
+   */
+  group?: { active: boolean; onRelease: (targetFilmSeconds: number) => void };
+  /** Le drapeau de glissement, partagé : le lecteur y lit s'il doit taire la
+   *  détection de discontinuité (un glissement n'est pas un seek à rapporter). */
+  isDraggingRef?: MutableRefObject<boolean>;
 }
 
 /**
@@ -38,11 +48,14 @@ interface UseDesktopSeekbarArgs {
  */
 export function useDesktopSeekbar({
   dur, paused, isDirectPlay, item, mediaSourceId, localItemId, effectiveMpvOffset, seek, setPause,
-  ignoreNextToggle, onSeekToEnd,
+  ignoreNextToggle, onSeekToEnd, group, isDraggingRef,
 }: UseDesktopSeekbarArgs) {
   const seekBarRef = useRef<HTMLDivElement>(null);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
-  const isDragging = useRef(false);
+  const ownDragging = useRef(false);
+  const isDragging = isDraggingRef ?? ownDragging;
+  const groupRef = useRef(group);
+  groupRef.current = group;
   const wasPlayingBeforeDrag = useRef(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState(0);
@@ -63,17 +76,18 @@ export function useDesktopSeekbar({
     e.preventDefault();
     isDragging.current = true;
     wasPlayingBeforeDrag.current = !paused;
+    const inGroup = groupRef.current?.active === true;
     // L'armement va de pair avec l'appel : une pause qu'on ne demande pas ne
     // doit pas laisser d'armement en attente, sinon c'est la pause SUIVANTE —
     // celle de l'utilisateur — qui serait avalée.
-    if (!paused) {
+    if (!paused && !inGroup) {
       ignoreNextToggle?.();
       setPause(true);
     }
     const pct = pctFromEvent(e as unknown as MouseEvent);
     setDragProgress(pct);
     const target = pct * dur;
-    seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+    if (!inGroup) seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dur, paused, setPause, pctFromEvent, seek, isDirectPlay]);
 
@@ -83,7 +97,7 @@ export function useDesktopSeekbar({
       const pct = pctFromEvent(e);
       setDragProgress(pct);
       const target = pct * dur;
-      seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+      if (groupRef.current?.active !== true) seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
     };
     const onUp = (e: MouseEvent) => {
       if (!isDragging.current) return;
@@ -98,6 +112,12 @@ export function useDesktopSeekbar({
         return;
       }
       seek(isDirectPlay ? target : Math.max(0, target - effectiveMpvOffset.current));
+      const groupNow = groupRef.current;
+      if (groupNow?.active) {
+        // UN seek pour la salle ; la reprise viendra du serveur, une fois tous posés.
+        groupNow.onRelease(target);
+        return;
+      }
       // La reprise non plus n'est pas une intention : c'est le retour à l'état
       // d'avant le glissement.
       if (wasPlayingBeforeDrag.current) {

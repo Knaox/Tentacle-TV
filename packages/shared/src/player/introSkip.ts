@@ -69,14 +69,15 @@ export type IntroSkipAction = "none" | "skip";
 export const INTRO_SKIP_IDLE: IntroSkipState = { name: "idle" };
 
 /**
- * Le décompte peut-il courir ici ? En séance Watch Together, chez l'HÔTE
- * seulement : son saut est un seek de groupe, et deux décomptes qui courent
- * ne peuvent que se doubler. Les invités gardent le bouton — un clic reste un
- * seek de groupe — et la croix, qui fait taire le décompte de l'hôte. Hors
- * séance, la question ne se pose pas.
+ * Le décompte LOCAL peut-il courir ici ? Jamais en séance Watch Together :
+ * c'est le serveur qui arme le décompte pour la salle — le même pour tous,
+ * en position de média, exécuté par une barrière (syncSkip.ts) — et le
+ * lecteur ne fait que l'afficher (`groupSkip`). Deux décomptes qui courent
+ * ne peuvent que se doubler. Chacun garde le bouton — un clic reste un seek
+ * de groupe — et la croix, qui éteint le décompte de la salle. Hors séance,
+ * la question ne se pose pas.
  */
-export const countdownAllowed = (groupSession?: boolean, groupHost?: boolean): boolean =>
-  groupSession !== true || groupHost === true;
+export const countdownAllowed = (groupSession?: boolean): boolean => groupSession !== true;
 
 /**
  * `visible` est la fenêtre d'intro telle que le lecteur la calcule déjà. Son

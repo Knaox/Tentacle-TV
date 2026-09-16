@@ -28,6 +28,8 @@ export interface PlayOptions {
   startPosition?: number;
   audioTrack?: number;
   subtitleTrack?: number;
+  /** Recul du démuxeur avant un seek précis (secondes) — voir `mpvSeekLanding.ts`. */
+  hrSeekDemuxerOffset?: number;
 }
 
 /** Application de bureau, quel que soit le shell (Tauri ou Electron).
@@ -124,6 +126,9 @@ export function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promis
 export const OBSERVED_PROPERTIES = [
   ["pause", "flag"],
   ["time-pos", "double", "none"],
+  // L'horloge AUDIO, continue là où `time-pos` avance par image : c'est elle
+  // que le transport Watch Together compare à celle d'un navigateur (`mpvClock.ts`).
+  ["audio-pts", "double", "none"],
   ["duration", "double", "none"],
   ["volume", "double"],
   // Volume du flux AUDIO NATIF (PipeWire/Pulse sur Linux) — distinct du softvol
