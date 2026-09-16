@@ -4,10 +4,11 @@ import { wtLog } from "../watchTogether/wtLog";
 import { decideHlsTimeline, HLS_CATCH_UP_MIN_S, HLS_RELOCATE_MAX, HLS_RELOCATE_MIN_S } from "./hlsTimeline";
 
 /**
- * Le branchement de `hlsTimeline.ts` sur une instance hls.js : mesure de
- * l'atterrissage au premier fragment, puis replacement si la session est
- * partie trop loin. Séparé du module pur pour que celui-ci se teste sans
- * charger hls.js.
+ * Le branchement de `hlsTimeline.ts` sur une instance hls.js : lecture de
+ * l'`initPTS` au premier fragment (base du média si la session part du segment
+ * 0, atterrissage sinon — et zéro tant qu'aucune base n'est connue, voir le
+ * module), puis replacement si la session est partie trop loin. Séparé du
+ * module pur pour que celui-ci se teste sans charger hls.js.
  */
 export interface HlsTimelineRefs {
   /** À ajouter à une cible film pour viser en temps élément (= −atterrissage). */
