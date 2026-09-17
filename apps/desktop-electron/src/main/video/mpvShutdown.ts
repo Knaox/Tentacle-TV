@@ -69,7 +69,7 @@
  */
 
 import { mpvApi } from "./mpvFfi";
-import { clearState, handle, idleCount, setOnShutdown, setHandle } from "./mpv";
+import { clearState, handle, idleCount, isIdle, setOnShutdown, setHandle } from "./mpv";
 
 /**
  * Délai au-delà duquel on cesse d'attendre.
@@ -130,8 +130,15 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
   //
   // Relevé AVANT l'envoi : l'idle qui compte est celui qui SUIT le `stop`.
   const idleBefore = idleCount();
+  // Déjà à l'idle — une instance gardée au chaud dont le délai a expiré
+  // (`mpvPark.ts`) : rien à arrêter, et aucun idle ne viendra. Mais mpv rejoue
+  // `handle_force_window` au changement de l'option (`player/command.c`) :
+  // `force-window=no` détruit sa sortie vidéo sur-le-champ, et `quit` suit
+  // dans la même file. Linux seulement — sur macOS, un `quit` avec une sortie
+  // vidéo vivante est précisément l'interblocage décrit en tête de fichier.
+  const parkedIdle = process.platform === "linux" && isIdle();
   mpvApi().commandAsync(ctx, 0, ["set", "force-window", "no", null]);
-  mpvApi().commandAsync(ctx, 0, ["stop", null]);
+  mpvApi().commandAsync(ctx, 0, [parkedIdle ? "quit" : "stop", null]);
 
   inFlightCtx = ctx;
   inFlight = new Promise<void>((resolve) => {
@@ -172,6 +179,7 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
     let ticks = 0;
     const watch = setInterval(() => {
       ticks += 1;
+      if (parkedIdle) return clearInterval(watch);
       const idle = idleCount() > idleBefore;
       const gone = idle || (videoIsGone === undefined ? ticks >= FALLBACK_TICKS : videoIsGone());
       if (!gone && ticks < WATCH_MAX) return;

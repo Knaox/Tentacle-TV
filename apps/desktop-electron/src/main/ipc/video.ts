@@ -9,14 +9,25 @@
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
-import { stop } from "../video/mpvShutdown";
-import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
+import { command, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { libmpvAvailable } from "../video/mpvFfi";
 import { refuseCommand, refuseWrite } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
 import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
-import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
+import { createVideoSurface, videoMontage } from "../video/surface";
 import { assembleInitOptions } from "./videoInitOptions";
+import {
+  adoptSurface,
+  currentSurface,
+  releasePlayer,
+  rememberInit,
+  reuseParked,
+  stopPlayer,
+} from "./videoLifecycle";
+
+// Deux autres appelants — le point d'entrée et la séquence de fermeture —
+// l'importent d'ici : le déménagement ne les regarde pas.
+export { stopPlayer } from "./videoLifecycle";
 import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, resetReport } from "./videoProbe";
@@ -48,48 +59,6 @@ const SET_PROPERTY = z.object({ name: z.string(), value: SCALAR });
 const GET_PROPERTY = z.object({ name: z.string(), format: z.string().optional() });
 const NO_ARGS = z.object({}).passthrough();
 
-let video: VideoSurface | null = null;
-
-/**
- * Arrête le lecteur, par le chemin que la plateforme supporte.
- *
- * ⚠️ macOS ne peut PAS détruire d'un bloc : `mpv_terminate_destroy` y attend le
- * démontage de la sortie vidéo, lequel réclame le thread principal — celui qui
- * appelle. Linux le PEUT, mais au prix d'une seconde de gel : l'appel est un
- * FFI synchrone qui joint démuxeur, décodage et contexte Vulkan, et la fenêtre
- * de mpv — de premier niveau chez nous, jamais enfant — n'est démontée qu'en
- * dernier : elle restait seule à l'écran tout ce temps. Les deux prennent donc
- * l'arrêt gracieux (voir `mpvShutdown.ts`) : la vidéo d'abord, sans bloquer.
- * Sous Linux le témoin est l'évènement `idle` de mpv, émis une fois la sortie
- * vidéo — et sa fenêtre — détruite : `quit` part aussitôt, là où dix tours
- * de 50 ms l'attendaient. Windows détruit comme il l'a toujours fait
- * (fenêtre enfant Win32, aucun couplage, en production).
- *
- * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
- * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à
- * l'écran — et `SurfaceWayland.detach` sort du plein écran, ce qui ne doit
- * arriver qu'une fois la vidéo partie.
- *
- * EXPORTÉE pour un second appelant : la séquence de fermeture (`closeSequence.ts`)
- * s'en sert sous Linux, où la fenêtre de mpv survivrait sinon à la nôtre.
- */
-export async function stopPlayer(): Promise<void> {
-  const surface = video;
-  video = null;
-  // ⚠️ AVANT l'arrêt, et seule la Render API s'en sert : son contexte de rendu
-  // doit être libéré pendant que mpv est encore debout. L'inverse fait
-  // s'attendre les deux — `mpv_render_context_free` attend la fin du rendu en
-  // cours, et mpv démonte sa sortie vidéo à l'arrêt.
-  surface?.preStop?.();
-  if (process.platform !== "win32") {
-    const witness = surface?.videoGone?.bind(surface);
-    await stop(witness);
-  } else {
-    destroy();
-  }
-  surface?.detach();
-}
-
 export function registerVideoCommands(registry: CommandRegistry): void {
   // Sans libmpv chargeable, les commandes mpv ne sont pas DÉCLARÉES : la liste
   // des capacités les tait, `supportsMpv()` côté page devient honnête, et le
@@ -105,11 +74,11 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     );
   }
   if (nativePlayer) registerMpvCommands(registry);
-  registerDisplayHdrCommands(registry, () => video);
+  registerDisplayHdrCommands(registry, currentSurface);
 
   // Sans effet hors macOS et hors développement — la commande n'est alors même
   // pas déclarée, et la page cesse d'elle-même de proposer la sonde.
-  registerVideoProbe(registry, () => video);
+  registerVideoProbe(registry, currentSurface);
 }
 
 function registerMpvCommands(registry: CommandRegistry): void {
@@ -123,6 +92,22 @@ function registerMpvCommands(registry: CommandRegistry): void {
         const win = getMainWindow();
         if (!win) throw new Error("aucune fenetre pour accueillir la video");
 
+        const observed = (options?.observedProperties ?? []).map(
+          ([name, format]) => [name, format] as const,
+        );
+        // Ce que la page demande, ce que la coquille y ajoute, ce que le
+        // montage réécrit : `videoInitOptions.ts`.
+        const mpvOptions = await assembleInitOptions(win, options?.initialOptions ?? {});
+
+        // L'instance gardée au chaud par le `mpv_destroy` précédent reprend du
+        // service si ses options sont les mêmes — sortie vidéo, décodeur et
+        // fenêtre collée compris. Voir `mpvPark.ts` pour ce que ça épargne.
+        if (reuseParked(mpvOptions, observed)) {
+          resetReport();
+          trace("mpv reste chaud — instance reprise, sortie vidéo conservée");
+          return "ok";
+        }
+
         // Une instance encore vivante doit partir par la porte que la
         // plateforme supporte. `init` fait bien un `destroy()` de son côté,
         // mais celui-ci est l'arrêt de SECOURS : sur macOS il ne convient
@@ -134,18 +119,13 @@ function registerMpvCommands(registry: CommandRegistry): void {
           markStartup("previous-stopped");
         }
 
-        const observed = (options?.observedProperties ?? []).map(
-          ([name, format]) => [name, format] as const,
-        );
-        // Ce que la page demande, ce que la coquille y ajoute, ce que le
-        // montage réécrit : `videoInitOptions.ts`.
-        const mpvOptions = await assembleInitOptions(win, options?.initialOptions ?? {});
         const parent = nativeHandle(win);
         const err = init(
           { options: mpvOptions, observed, wid: parent },
-          eventRelay(() => video),
+          eventRelay(currentSurface),
         );
         if (err) throw new Error(err);
+        rememberInit(mpvOptions, observed);
         markStartup("init");
 
         // Le journal doit dire ce que mpv a REELLEMENT recu : une option
@@ -164,9 +144,8 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // géométrie. Les écouteurs de la fenêtre principale appartiennent à
         // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
         // et le lecteur est remonté à chaque épisode.
-        video?.detach();
-        video = createVideoSurface(win);
-        await video.attach();
+        adoptSurface(createVideoSurface(win));
+        await currentSurface()?.attach();
         markStartup("attach");
         resetReport();
 
@@ -181,7 +160,8 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // basculé et laissé en HDR délave tout le reste de Windows.
         finish();
         forgetStartup();
-        await stopPlayer();
+        // Garée si l'on peut, arrêtée sinon — voir `videoLifecycle.ts`.
+        await releasePlayer();
       },
     })
     .add("mpv_command", {
@@ -262,7 +242,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
       // que mpv n'ait créé sa fenêtre — elle rendait donc `false` en silence, et
       // rien n'était jamais désarmé. Conservée parce que le contrat avec la page
       // est partagé avec l'app Tauri, et qu'elle ne coûte rien.
-      run: () => video?.harden() ?? false,
+      run: () => currentSurface()?.harden() ?? false,
     });
 }
 

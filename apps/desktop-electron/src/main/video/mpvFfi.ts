@@ -232,6 +232,14 @@ function bind(lib: ReturnType<typeof koffi.load>) {
     "int mpv_observe_property(void* ctx, uint64 userdata, const char* name, int format)",
   ),
   /**
+   * Retire les observations posées sous cet identifiant. Sert à RÉ-observer
+   * une instance gardée au chaud : mpv rejoue alors la valeur initiale de
+   * chaque propriété, comme à une instance neuve (`mpvPark.ts`).
+   */
+  unobserveProperty: lib.func(
+    "int mpv_unobserve_property(void* ctx, uint64 registered_reply_userdata)",
+  ),
+  /**
    * Libère NOTRE poignée, sans attendre l'arrêt du cœur.
    *
    * ⚠️ Indispensable sur macOS, où `terminateDestroy` fige l'application : elle

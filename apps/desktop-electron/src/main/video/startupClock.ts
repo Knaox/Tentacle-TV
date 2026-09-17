@@ -20,6 +20,8 @@
 
 export type StartupMilestone =
   | "previous-stopped"
+  | "init-received"
+  | "reused"
   | "init"
   | "attach"
   | "loadfile"
@@ -48,13 +50,41 @@ interface Startup {
 
 let current: Startup | null = null;
 
+/** L'arrêt du précédent, s'il vient d'avoir lieu : son début et sa fin. */
+let shutdown: { startedAt: number; endedAt: number | null } | null = null;
+
+/** Au-delà, un arrêt n'a plus rien à voir avec le démarrage qui suit. */
+const SHUTDOWN_RELEVANT_MS = 10_000;
+
 function now(): number {
   return performance.now();
 }
 
-/** Ouvre une chronologie : `mpv_init` vient d'arriver. */
+/** `mpv_destroy` vient d'arriver : c'est de LÀ que le changement d'épisode se compte. */
+export function beginShutdown(at: number = now()): void {
+  shutdown = { startedAt: at, endedAt: null };
+}
+
+/** L'instance précédente est arrêtée — ou garée, ce qui est immédiat. */
+export function endShutdown(at: number = now()): void {
+  if (shutdown !== null) shutdown.endedAt = at;
+}
+
+/**
+ * Ouvre une chronologie : `mpv_init` vient d'arriver. Si un arrêt vient de
+ * précéder, l'origine est la sienne — la page attend cet arrêt avant de
+ * relancer, et l'utilisateur, lui, attend depuis le début.
+ */
 export function beginStartup(at: number = now()): void {
-  current = { startedAt: at, marks: new Map() };
+  const recent = shutdown !== null && shutdown.endedAt !== null && at - shutdown.startedAt < SHUTDOWN_RELEVANT_MS
+    ? shutdown
+    : null;
+  shutdown = null;
+  current = { startedAt: recent?.startedAt ?? at, marks: new Map() };
+  if (recent !== null && recent.endedAt !== null) {
+    current.marks.set("previous-stopped", recent.endedAt - recent.startedAt);
+  }
+  current.marks.set("init-received", at - current.startedAt);
 }
 
 /** Ferme la chronologie : plus rien à dater, la page a demandé l'arrêt. */
@@ -100,6 +130,9 @@ export function describeStartup(marks: ReadonlyMap<StartupMilestone, number>): s
     previous = at;
   };
   phase("arrêt du précédent", "previous-stopped");
+  if (marks.has("previous-stopped")) phase("relance de la page", "init-received");
+  else previous = marks.get("init-received") ?? 0;
+  phase("instance gardée au chaud", "reused");
   phase("init", "init");
   phase("attache", "attach");
   const loadfile = marks.get("loadfile");
