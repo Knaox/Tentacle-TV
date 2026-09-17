@@ -6,47 +6,21 @@
  * n'est dupliqué.
  */
 
-import { app, screen, type BrowserWindow } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
 import { stop } from "../video/mpvShutdown";
 import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { libmpvAvailable } from "../video/mpvFfi";
-import {
-  filterInitOptions,
-  refuseCommand,
-  refuseWrite,
-  type MpvValue,
-} from "../video/mpvAllowlist";
+import { refuseCommand, refuseWrite } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
-import { adaptToFullscreen } from "../video/macosWindowOptions";
-import { withWritableLogFile } from "../video/mpvLogFile";
-import { withShaderCache } from "../video/mpvShaderCache";
 import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
-import { initialGeometryOption } from "../linux/initialGeometry";
-import { linuxWindowing, linuxMontage } from "../linux/session";
 import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
+import { assembleInitOptions } from "./videoInitOptions";
 import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, resetReport } from "./videoProbe";
 import { CommandRegistry } from "./registry";
-
-/**
- * Les options mpv adaptées à l'écran — macOS SEULEMENT, et chargé à la demande :
- * `macosHdrOptions` tire le pont Objective-C, dont `koffi.load` s'exécute à
- * l'import et tue le processus sur Linux et Windows avant la première fenêtre
- * (mesuré le 9 sept. 2026 : « Failed to load shared library »). Ailleurs, les
- * options passent telles quelles.
- */
-function adaptToDisplay(
-  options: Readonly<Record<string, MpvValue>>,
-  host: BrowserWindow,
-): Record<string, MpvValue> {
-  if (process.platform !== "darwin") return { ...options };
-  const macos = require("../video/macosHdrOptions") as typeof import("../video/macosHdrOptions");
-  return macos.adaptToDisplay(options, host);
-}
 
 /** Valeur scalaire acceptée par mpv. */
 const SCALAR = z.union([z.string(), z.number(), z.boolean()]);
@@ -86,9 +60,9 @@ let video: VideoSurface | null = null;
  * de mpv — de premier niveau chez nous, jamais enfant — n'est démontée qu'en
  * dernier : elle restait seule à l'écran tout ce temps. Les deux prennent donc
  * l'arrêt gracieux (voir `mpvShutdown.ts`) : la vidéo d'abord, sans bloquer.
- * Sous Linux le témoin `videoGone` n'existe pas — le guet se replie sur ses
- * dix tours de 50 ms avant `quit`, sans effet visible : la fenêtre part avec
- * la sortie vidéo dès le `stop`. Windows détruit comme il l'a toujours fait
+ * Sous Linux le témoin est l'évènement `idle` de mpv, émis une fois la sortie
+ * vidéo — et sa fenêtre — détruite : `quit` part aussitôt, là où dix tours
+ * de 50 ms l'attendaient. Windows détruit comme il l'a toujours fait
  * (fenêtre enfant Win32, aucun couplage, en production).
  *
  * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
@@ -114,22 +88,6 @@ export async function stopPlayer(): Promise<void> {
     destroy();
   }
   surface?.detach();
-}
-
-/**
- * La réécriture Render API des options, chargée À LA DEMANDE.
- *
- * ⚠️ `macosRenderOptions.ts` n'importe plus rien de natif, mais l'`import`
- * reste hors de la tête de fichier : la paresse garantit qu'un import ajouté
- * là-bas par mégarde (`objc.ts` charge `libobjc.A.dylib`, introuvable sur
- * Windows) ne tue pas le processus principal. Miroir de `surface.ts` (`a9a1f065`).
- */
-function renderApiOptions(
-  kept: Readonly<Record<string, MpvValue>>,
-): Record<string, MpvValue> {
-  const { adaptForRenderApi } =
-    require("../video/macosRenderOptions") as typeof import("../video/macosRenderOptions");
-  return adaptForRenderApi(kept);
 }
 
 export function registerVideoCommands(registry: CommandRegistry): void {
@@ -179,42 +137,12 @@ function registerMpvCommands(registry: CommandRegistry): void {
         const observed = (options?.observedProperties ?? []).map(
           ([name, format]) => [name, format] as const,
         );
-        // Les options d'init sont passées VERBATIM à mpv. Parmi les 959
-        // propriétés de la libmpv du dépôt figurent `scripts` (chargement de
-        // code Lua), `input-ipc-server` (tuyau nommé donnant le contrôle total
-        // de mpv) et `input-conf` — relevé par sonde. On ne retient donc que ce
-        // que `buildMpvInitOptions` produit. Une option écartée est IGNORÉE et
-        // non rejetée : mpv lui-même tolère les options inconnues, et faire
-        // échouer `mpv_init` empêcherait toute lecture.
-        const { kept } = filterInitOptions(options?.initialOptions ?? {});
-        // Le journal que la page demande arrive sans chemin utilisable : c'est
-        // ici qu'il en reçoit un que le bac à sable laisse écrire. Le cache de
-        // nuanceurs, lui, n'existe pas du tout sous libmpv sans dossier
-        // explicite — voir `mpvShaderCache.ts`.
-        const asked = withShaderCache(withWritableLogFile(kept), app.getPath("userData"));
-        // Le montage Render API réécrit ce que la page a demandé : elle décrit
-        // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
-        // Voir `macosRenderOptions.ts`.
-        // Et le montage à deux fenêtres a sa propre réécriture : une lecture qui
-        // démarre alors que l'app est DÉJÀ en plein écran doit dire à mpv de ne
-        // pas laisser macOS ouvrir un second bureau. Voir `macosWindowOptions.ts`.
-        const mpvOptions =
-          videoMontage() === "gl"
-            ? renderApiOptions(asked)
-            : adaptToDisplay(adaptToFullscreen(asked, win), win);
-        // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
-        // sans quoi il naît à la taille du média, plein écran apparent pendant
-        // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
-        const bounds = win.getBounds();
-        const geometry = initialGeometryOption(
-          linuxMontage(),
-          linuxWindowing(),
-          bounds,
-          screen.getDisplayMatching(bounds).scaleFactor,
-        );
+        // Ce que la page demande, ce que la coquille y ajoute, ce que le
+        // montage réécrit : `videoInitOptions.ts`.
+        const mpvOptions = await assembleInitOptions(win, options?.initialOptions ?? {});
         const parent = nativeHandle(win);
         const err = init(
-          { options: { ...mpvOptions, ...geometry }, observed, wid: parent },
+          { options: mpvOptions, observed, wid: parent },
           eventRelay(() => video),
         );
         if (err) throw new Error(err);
