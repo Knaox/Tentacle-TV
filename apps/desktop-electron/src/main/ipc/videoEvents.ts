@@ -74,6 +74,9 @@ export function eventRelay(surface: () => VideoSurface | null): {
       // peut la mettre devant la nôtre. La surface qui doit redemander
       // l'activation l'apprend ici (Wayland seulement, voir `surfaceWayland.ts`).
       if (p.event === "file-loaded") surface()?.fileLoaded?.();
+      // Et la sortie vidéo configurée est l'instant où une fenêtre mpv se
+      // MESURE — la surface collée vérifie là qu'elle suit bien la nôtre.
+      if (p.event === "video-reconfig") surface()?.videoReconfigured?.();
       if (TRACES.has(p.event)) {
         const reason = p.event === "end-file" ? ` (raison ${String(p["reason"])})` : "";
         // `trace` et non `console.info` : ces lignes servent à diagnostiquer une
