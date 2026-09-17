@@ -6,7 +6,7 @@
  * n'est dupliqué.
  */
 
-import { screen, type BrowserWindow } from "electron";
+import { app, screen, type BrowserWindow } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
@@ -22,6 +22,7 @@ import {
 import { nativeHandle, trace } from "../video/native";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
 import { withWritableLogFile } from "../video/mpvLogFile";
+import { withShaderCache } from "../video/mpvShaderCache";
 import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
@@ -187,8 +188,10 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // échouer `mpv_init` empêcherait toute lecture.
         const { kept } = filterInitOptions(options?.initialOptions ?? {});
         // Le journal que la page demande arrive sans chemin utilisable : c'est
-        // ici qu'il en reçoit un que le bac à sable laisse écrire.
-        const asked = withWritableLogFile(kept);
+        // ici qu'il en reçoit un que le bac à sable laisse écrire. Le cache de
+        // nuanceurs, lui, n'existe pas du tout sous libmpv sans dossier
+        // explicite — voir `mpvShaderCache.ts`.
+        const asked = withShaderCache(withWritableLogFile(kept), app.getPath("userData"));
         // Le montage Render API réécrit ce que la page a demandé : elle décrit
         // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
         // Voir `macosRenderOptions.ts`.
