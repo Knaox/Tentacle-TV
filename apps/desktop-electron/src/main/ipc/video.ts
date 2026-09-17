@@ -281,10 +281,10 @@ function registerMpvCommands(registry: CommandRegistry): void {
       run: async ({ name, value }) => {
         const refusal = refuseWrite(name);
         if (refusal !== null) throw new Error(refusal);
-        // `await` : sur macOS l'écriture passe par la file de commandes et
-        // attend sa réponse dans la file d'évènements, faute de quoi elle
-        // figerait le thread principal (voir `mpv.ts`). Sous Windows la
-        // promesse est déjà résolue.
+        // `await` : hors Windows l'écriture passe par la file de commandes et
+        // attend sa réponse dans la file d'évènements — sur macOS elle figerait
+        // sinon le thread principal, sous Linux elle le retiendrait (voir
+        // `mpv.ts`). Sous Windows la promesse est déjà résolue.
         const err = await setProperty(
           name,
           typeof value === "boolean" ? (value ? "yes" : "no") : String(value),
@@ -295,8 +295,8 @@ function registerMpvCommands(registry: CommandRegistry): void {
     .add("mpv_get_property", {
       schema: GET_PROPERTY,
       run: async ({ name, format }) => {
-        // `await` : sur macOS la valeur arrive par la file d'évènements, seule
-        // façon de lire sans figer le thread principal (voir `mpvRead.ts`).
+        // `await` : hors Windows la valeur arrive par la file d'évènements,
+        // seule façon de lire sans retenir le thread principal (`mpvRead.ts`).
         const raw = await getProperty(name);
         if (raw === null) return null;
         // mpv ne rend que des chaînes par cette porte ; on retype selon ce que
