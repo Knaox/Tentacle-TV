@@ -1,5 +1,5 @@
 /**
- * Lire une propriété de mpv sur macOS, sans jamais attendre.
+ * Lire une propriété de mpv sur macOS et Linux, sans jamais attendre.
  *
  * # Ce que le souvenir ne pouvait pas donner
  *
@@ -21,6 +21,11 @@
  *
  * `mpv_get_property_async` répond par la file d'évènements, celle qu'on vide
  * déjà. On peut donc tout lire, sans rien attendre.
+ *
+ * Linux emprunte le même chemin depuis le 17.09.2026 : la lecture synchrone
+ * n'y fige pas l'application, mais elle retient le thread principal le temps
+ * que le cœur de mpv monte ou démonte sa chaîne vidéo — 216 ms mesurés au
+ * changement d'épisode. Voir `mpv.ts`.
  *
  * Le souvenir reste, en REPLI : si mpv ne répond pas dans le délai — il
  * reconfigure sa sortie, il est occupé —, mieux vaut la dernière valeur connue

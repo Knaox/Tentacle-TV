@@ -90,10 +90,22 @@ export function setOnShutdown(callback: (() => void) | null): void {
  * `mpv_get_property_async` répond par la file d'évènements, qu'on vide déjà :
  * on peut donc tout lire sans rien attendre. Voir `mpvRead.ts`, qui garde le
  * souvenir des propriétés observées en REPLI quand mpv ne répond pas.
+ *
+ * # Sous Linux, on ne bloque pas non plus — pas un interblocage, un gel
+ *
+ * La fenêtre de mpv n'y dépend pas de notre thread, donc rien ne se fige pour
+ * de bon. Mais `mp_dispatch_lock` attend que le cœur de mpv serve sa file, et
+ * il ne la sert pas pendant qu'il monte ou démonte sa chaîne vidéo — contexte
+ * Vulkan, CUDA. Mesuré le 17.09.2026, battement à 50 ms : la lecture synchrone
+ * posée sur `video-reconfig` retenait le thread principal 216 ms au démontage
+ * d'un épisode, puis 81 et 84 ms ; pendant ce temps ni la pompe d'évènements,
+ * ni l'IPC, ni la page n'avançaient — au pire moment, celui de la première
+ * image et du changement d'épisode. Même remède que macOS : on demande, on
+ * n'attend pas. Windows garde l'appel direct, qui n'y a jamais coûté.
  */
 export function getProperty(name: string): Promise<string | null> {
   if (!ctx) return Promise.resolve(null);
-  if (process.platform === "darwin") return readAsync(ctx, name);
+  if (process.platform !== "win32") return readAsync(ctx, name);
   const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
   if (!ptr) return Promise.resolve(null);
   const value = koffi.decode(ptr, "char", -1) as string;
@@ -126,10 +138,13 @@ export function getProperty(name: string): Promise<string | null> {
  *
  * Windows garde l'appel direct : sa fenêtre vidéo est une fenêtre enfant Win32
  * sans couplage au thread principal, et rien n'y a jamais bloqué.
+ *
+ * Linux passe par la même file depuis le 17.09.2026, pour la raison dite à
+ * `getProperty` : la jumelle en écriture prend le même verrou.
  */
 export function setProperty(name: string, value: string): Promise<string | null> {
   if (!ctx) return Promise.resolve("mpv n'est pas demarre");
-  if (process.platform !== "darwin") {
+  if (process.platform === "win32") {
     return Promise.resolve(mpvError(mpvApi().setPropertyString(ctx, name, value) as number));
   }
   return command(["set", name, value]);

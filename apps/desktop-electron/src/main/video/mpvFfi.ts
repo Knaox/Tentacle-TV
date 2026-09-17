@@ -20,6 +20,10 @@
  * pourcent de processeur, sans erreur et sans rapport de plantage. Le défaut a
  * été rencontré quatre fois sous quatre visages différents.
  *
+ * Sous Linux la même famille ne fige pas, elle RETIENT : le thread principal
+ * attend que le cœur serve sa file, jusqu'à 216 ms mesurés au démontage d'un
+ * épisode (17.09.2026). Même règle, même remède — les `*_async`, voir `mpv.ts`.
+ *
  * Interdites : `mpv_command`, `mpv_get_property_string`, `mpv_set_property_string`,
  * `mpv_terminate_destroy`.
  *
@@ -180,14 +184,15 @@ function bind(lib: ReturnType<typeof koffi.load>) {
   ),
   /**
    * ⚠️ BLOQUANTE : elle prend `mp_dispatch_lock` et ne rend la main qu'une fois
-   * la propriété appliquée par le cœur. Réservée à Windows — sur macOS
-   * `mpv.ts` passe par `set` dans la file de commandes.
+   * la propriété appliquée par le cœur. Réservée à Windows — macOS et Linux
+   * passent par `set` dans la file de commandes (`mpv.ts`).
    */
   setPropertyString: lib.func(
     "int mpv_set_property_string(void* ctx, const char* name, const char* data)",
   ),
   /**
-   * ⚠️ BLOQUANTE, comme sa jumelle en écriture. Réservée à Windows.
+   * ⚠️ BLOQUANTE, comme sa jumelle en écriture. Réservée à Windows — macOS
+   * et Linux lisent par `getPropertyAsync` (`mpvRead.ts`).
    *
    * `void*` et non `char*` : koffi décoderait sinon la chaîne tout seul et on
    * perdrait le pointeur, donc la possibilité d'appeler `mpv_free` — une fuite
@@ -198,7 +203,8 @@ function bind(lib: ReturnType<typeof koffi.load>) {
    * Demande une propriété SANS attendre ; la valeur arrive en
    * `GET_PROPERTY_REPLY`, avec la même charge utile qu'un changement observé.
    *
-   * C'est la seule façon de lire une propriété sur macOS. Elle ouvre au passage
+   * C'est la seule façon de lire une propriété sur macOS, et la seule qui ne
+   * retienne pas le thread principal sous Linux. Elle ouvre au passage
    * ce que le souvenir ne pouvait pas donner : `track-list/*` — donc les pistes
    * audio et les sous-titres —, qu'on n'observe pas et qu'on ne peut donc pas
    * avoir entendu passer.
