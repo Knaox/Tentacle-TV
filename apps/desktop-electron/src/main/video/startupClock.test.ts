@@ -87,6 +87,17 @@ describe("l'horloge du démarrage", () => {
     expect(markStartup("playback-restart", 5300)).toBe("[mpv] démarrage — première image à +300 ms");
   });
 
+  it("une instance vivante arrêtée DANS mpv_init — options différentes — est une phase à part", () => {
+    beginShutdown(0);
+    endShutdown(1);
+    beginStartup(95);
+    markStartup("stopped-in-init", 335);
+    markStartup("init", 340);
+    expect(markStartup("playback-restart", 900)).toContain(
+      "relance de la page 94 ms · arrêt de l'instance vivante 240 ms · init 5 ms",
+    );
+  });
+
   it("la ligne reste lisible avec des jalons manquants", () => {
     expect(describeStartup(new Map([["playback-restart", 830]]))).toBe(
       "[mpv] démarrage — première image à +830 ms",

@@ -116,7 +116,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
         if (isRunning()) {
           await stopPlayer();
-          markStartup("previous-stopped");
+          markStartup("stopped-in-init");
         }
 
         const parent = nativeHandle(win);
