@@ -21,6 +21,7 @@
 export type StartupMilestone =
   | "previous-stopped"
   | "init-received"
+  | "stopped-in-init"
   | "reused"
   | "init"
   | "attach"
@@ -137,6 +138,7 @@ export function describeStartup(marks: ReadonlyMap<StartupMilestone, number>): s
   phase("arrêt du précédent", "previous-stopped");
   if (marks.has("previous-stopped")) phase("relance de la page", "init-received");
   else previous = marks.get("init-received") ?? 0;
+  phase("arrêt de l'instance vivante", "stopped-in-init");
   phase("instance gardée au chaud", "reused");
   phase("init", "init");
   phase("attache", "attach");
