@@ -49,6 +49,15 @@ describe("relaisEvenements", () => {
     expect(h.grant).toHaveBeenCalledTimes(2);
   });
 
+  it("sous Linux, le relevé HDR attend video-reconfig — à file-loaded il n'y a rien à lire", () => {
+    onPlatform("linux");
+    const relay = eventRelay(() => null);
+    relay.event({ event: "file-loaded" });
+    expect(h.grant).not.toHaveBeenCalled();
+    relay.event({ event: "video-reconfig" });
+    expect(h.grant).toHaveBeenCalledTimes(1);
+  });
+
   it("une surface absente, ou sans fichierCharge, ne fait pas tomber le relais", () => {
     // X11 cale au pixel et n'implémente pas fichierCharge ; et un file-loaded
     // peut arriver après l'arrêt du lecteur, quand la surface n'existe plus.
