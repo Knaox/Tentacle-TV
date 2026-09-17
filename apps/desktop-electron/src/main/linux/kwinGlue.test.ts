@@ -98,6 +98,23 @@ describe("gabaritColle", () => {
     expect(qml).not.toContain("racine.video.keepAbove = true");
   });
 
+  it("défait à la destruction TOUT ce que prendre() a noué — les gestionnaires morts", () => {
+    const qml = glueTemplate(1);
+    // 2 827 « TypeError: Cannot read property 'hote' of null » au journal de
+    // KWin en sept jours (17.09.2026) : les connexions survivaient à l'instance.
+    expect(qml).toContain("Qml.Component.onDestruction: racine.lacher()");
+    expect(qml).toContain("Kwin.Workspace.windowAdded.disconnect(racine.prendre)");
+    expect(qml).toContain("racine.hote.frameGeometryChanged.disconnect(racine.coller)");
+    expect(qml).toContain("racine.hote.activeChanged.disconnect(racine.suivreCouche)");
+    expect(qml).toContain("racine.hote.closed.disconnect(racine.hoteFerme)");
+    expect(qml).toContain("racine.video.closed.disconnect(racine.videoFermee)");
+    expect(qml).toContain("racine.video.activeChanged.disconnect(racine.reprendreActivation)");
+    // Une fermeture anonyme ne se déconnecte pas : plus aucune dans le gabarit.
+    expect(qml).not.toContain("connect(function");
+    // Et la couche est rendue AVANT de lâcher la fenêtre.
+    expect(qml).toContain("racine.video.keepAbove = false;");
+  });
+
   it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
     const qml = glueTemplate(1);
     // La minuterie one-shot, redémarrée à l'adoption de la fenêtre vidéo.

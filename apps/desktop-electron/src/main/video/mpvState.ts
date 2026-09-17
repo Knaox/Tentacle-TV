@@ -17,8 +17,9 @@
  * plusieurs minutes, et l'application se fige au générique.
  *
  * `mpv_observe_property` ne souffre pas de ce défaut : les changements arrivent
- * par la file d'évènements, que l'on vide déjà. Sur macOS on ne demande donc
- * plus rien à mpv — on écoute, et on se souvient.
+ * par la file d'évènements, que l'on vide déjà. Sur macOS — et sur Linux,
+ * où la même lecture retient le thread au lieu de le figer — on ne demande
+ * donc plus rien à mpv en bloquant : on écoute, et on se souvient.
  *
  * Windows conserve la lecture directe : sa fenêtre vidéo est une fenêtre enfant
  * Win32 sans couplage au thread principal, et rien n'y a jamais bloqué.

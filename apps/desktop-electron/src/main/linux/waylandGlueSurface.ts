@@ -14,6 +14,13 @@
  * haute ; la colle tient la paire et rend l'activation à l'hôte — tout vit
  * côté compositeur une fois posé.
  *
+ * # La colle est celle du PROCESSUS
+ *
+ * Posée à la première lecture, gardée jusqu'au départ (`liveGlue.ts`) : elle ré-adopte d'elle-même chaque fenêtre mpv suivante.
+ * `attach` ne pose donc que s'il n'y a rien de vivant, et `detach` ne retire
+ * rien — la décrocher à chaque épisode coûtait quatre appels D-Bus et laissait
+ * des gestionnaires morts dans le compositeur.
+ *
  * # La contre-lecture, parce que « posée » a déjà menti
  *
  * Une pose peut réussir de bout en bout côté D-Bus et n'avoir RIEN collé : le
@@ -21,27 +28,41 @@
  * remonte pas (voir `kwinGlue.ts`). On mesure donc, une fois la fenêtre mpv
  * née : si elle n'a pas la taille de la nôtre, on repose la colle — une fois —
  * et on le dit. Le journal ne porte plus une promesse, il porte deux tailles.
+ *
+ * ⚠️ Trois pièges de cette mesure, tous payés le 17.09.2026 — la colle était
+ * reposée À CHAQUE LECTURE, pour rien (journal KWin sur sept jours) :
+ *
+ * - elle se prend sur `video-reconfig`, pas sur `file-loaded` : à
+ *   `file-loaded` la sortie vidéo n'existe pas encore, à `video-reconfig` la
+ *   fenêtre est là, à sa taille ;
+ * - l'échelle vient de la PAGE (`devicePixelRatio`), jamais de
+ *   `screen.getDisplayMatching(getBounds())` : sur Wayland `getBounds` rend
+ *   (0,0) et désigne l'écran à l'origine — mesuré, `attendu 1440x1000 ×1.25`
+ *   pour une fenêtre sur un écran ×2 qui faisait bien `2304x1656` ;
+ * - un verdict « libre » se confirme par une seconde mesure : l'écriture de
+ *   géométrie par la colle est asynchrone, mpv peut ne pas l'avoir encore lue.
  */
 
-import { screen, type BrowserWindow } from "electron";
+import type { BrowserWindow } from "electron";
 import type { VideoSurface } from "../video/surface";
 import { getProperty } from "../video/mpv";
+import { pageMeasure } from "./displayTarget";
 import { measureDescription, mpvNumber, glueVerdict, type GlueVerdict } from "./glueCheck";
-import { KwinGlue } from "./kwinGlue";
+import { ensureLiveGlue, liveGlue, reposeLiveGlue } from "./liveGlue";
 
 /**
- * Le temps que la fenêtre mpv naisse et soit mappée avant qu'on la mesure.
- * Même ordre de grandeur que la reprise d'activation de `surfaceWayland.ts`,
- * pour la même raison : mesurer plus tôt, c'est mesurer une fenêtre absente.
+ * Le temps que la colle ait recopié la géométrie de l'hôte une fois la sortie
+ * vidéo configurée — et, sur un doute, le temps de la remesurer.
  */
-const CHECK_DELAY_MS = 400;
+const CHECK_DELAY_MS = 300;
 
 export class SurfaceWaylandGlue implements VideoSurface {
-  private glue: KwinGlue | null = null;
   /** Coupe les vérifications en vol : `detach()` ouvre une ère nouvelle. */
   private epoch = 0;
   private checkTimer: ReturnType<typeof setTimeout> | null = null;
   private verdict: GlueVerdict = "indécidable";
+  /** Un premier « libre » est un doute, pas un verdict : on remesure. */
+  private doubted = false;
   private reapplied = false;
   /** Plus rien à mesurer : la colle est prouvée, ou définitivement perdue. */
   private settled = false;
@@ -50,10 +71,9 @@ export class SurfaceWaylandGlue implements VideoSurface {
 
   async attach(): Promise<void> {
     if (this.host.isDestroyed()) return;
-    const glue = new KwinGlue();
-    if (await glue.apply()) {
-      this.glue = glue;
-      console.info("[video] Wayland : colle KWin posée — la vidéo suit la fenêtre");
+    const { live, fresh } = await ensureLiveGlue();
+    if (live) {
+      if (fresh) console.info("[video] Wayland : colle KWin posée — la vidéo suit la fenêtre");
       return;
     }
     // La détection disait oui mais la pose a échoué (KWin relancé, /tmp plein…).
@@ -69,9 +89,9 @@ export class SurfaceWaylandGlue implements VideoSurface {
     return false;
   }
 
-  /** mpv vient d'ouvrir un fichier : sa fenêtre est née, elle se mesure. */
-  fileLoaded(): void {
-    if (this.glue === null || this.settled || this.checkTimer !== null) return;
+  /** mpv vient de configurer sa sortie vidéo : sa fenêtre existe, elle se mesure. */
+  videoReconfigured(): void {
+    if (liveGlue() === null || this.settled || this.checkTimer !== null) return;
     this.armCheck();
   }
 
@@ -85,11 +105,16 @@ export class SurfaceWaylandGlue implements VideoSurface {
   private async check(): Promise<void> {
     const epoch = this.epoch;
     const measure = await this.takeMeasure();
-    if (this.epoch !== epoch || this.glue === null || measure === null) return;
+    if (this.epoch !== epoch || liveGlue() === null || measure === null) return;
     this.verdict = measure.verdict;
     if (measure.verdict === "collée") {
       this.settled = true;
       console.info(`[video] colle vérifiée — ${measure.description}`);
+      return;
+    }
+    if (!this.doubted) {
+      this.doubted = true;
+      this.armCheck();
       return;
     }
     if (this.reapplied) {
@@ -99,27 +124,35 @@ export class SurfaceWaylandGlue implements VideoSurface {
     }
     this.reapplied = true;
     console.warn(`[video] colle sans effet — ${measure.description} ; seconde pose`);
-    await this.reapply();
-    if (this.epoch !== epoch || this.glue === null) return;
+    const reposed = await reposeLiveGlue();
+    if (this.epoch !== epoch) return;
+    if (!reposed) {
+      this.settled = true;
+      console.warn("[video] seconde pose refusée par KWin — la fenêtre vidéo restera libre");
+      return;
+    }
+    this.doubted = false;
     this.armCheck();
   }
 
   /**
    * La mesure, ou `null` quand elle ne veut rien dire — fenêtre réduite ou
-   * détruite, sortie vidéo pas encore montée. On ne repose JAMAIS une colle
-   * sur un doute : elle marche peut-être très bien.
+   * détruite, page muette, sortie vidéo pas encore montée. On ne repose JAMAIS
+   * une colle sur un doute : elle marche peut-être très bien.
    */
   private async takeMeasure(): Promise<{ verdict: GlueVerdict; description: string } | null> {
     if (this.host.isDestroyed() || this.host.isMinimized()) return null;
-    const width = await this.mpvSize("w", "osd-width");
-    const height = await this.mpvSize("h", "osd-height");
-    const b = this.host.getBounds();
-    const host = { width: b.width, height: b.height };
-    const scale = screen.getDisplayMatching(b).scaleFactor;
+    const [width, height, page] = await Promise.all([
+      this.mpvSize("w", "osd-width"),
+      this.mpvSize("h", "osd-height"),
+      pageMeasure(this.host.webContents),
+    ]);
+    if (page === null) return null;
+    const host = { width: page.width, height: page.height };
     const mpv = width === null || height === null ? null : { width, height };
-    const verdict = glueVerdict(mpv, host, scale);
+    const verdict = glueVerdict(mpv, host, page.density);
     if (verdict === "indécidable") return null;
-    return { verdict, description: measureDescription(mpv, host, scale) };
+    return { verdict, description: measureDescription(mpv, host, page.density) };
   }
 
   /** `osd-dimensions` d'abord, les propriétés historiques en repli. */
@@ -128,31 +161,17 @@ export class SurfaceWaylandGlue implements VideoSurface {
     return dimension ?? mpvNumber(await getProperty(fallback));
   }
 
-  private async reapply(): Promise<void> {
-    const previous = this.glue;
-    this.glue = null;
-    if (previous !== null) await previous.remove();
-    const fresh = new KwinGlue();
-    if (await fresh.apply()) {
-      this.glue = fresh;
-      return;
-    }
-    console.warn("[video] seconde pose refusée par KWin — la fenêtre vidéo restera libre");
-  }
-
+  /** La colle RESTE : elle ré-adopte d'elle-même la fenêtre mpv suivante. */
   detach(): void {
     this.epoch += 1;
     if (this.checkTimer !== null) {
       clearTimeout(this.checkTimer);
       this.checkTimer = null;
     }
-    const glue = this.glue;
-    this.glue = null;
     this.verdict = "indécidable";
+    this.doubted = false;
     this.reapplied = false;
     this.settled = false;
-    // Sans attendre : le démontage du lecteur ne doit pas dépendre du bus.
-    if (glue !== null) void glue.remove();
   }
 
   geometrie(): string {
@@ -160,7 +179,7 @@ export class SurfaceWaylandGlue implements VideoSurface {
     const b = this.host.getBounds();
     return (
       `wayland-colle hôte=${String(b.width)}x${String(b.height)}+${String(b.x)}+${String(b.y)}` +
-      ` pleinÉcran=${String(this.host.isFullScreen())} colle=${this.glue !== null ? "posée" : "absente"}` +
+      ` pleinÉcran=${String(this.host.isFullScreen())} colle=${liveGlue() !== null ? "posée" : "absente"}` +
       ` témoin=${this.verdict}`
     );
   }

@@ -45,6 +45,28 @@
  * `run` réussit, et seul le journal du compositeur dit que le composant n'a
  * jamais été construit. C'est `glueCheck.ts` qui rattrape ce mensonge.
  *
+ * # UNE colle par processus — posée à la première lecture, gardée jusqu'au départ
+ *
+ * La colle n'a rien à savoir du fichier en cours : elle adopte TOUTE fenêtre
+ * `mpv` de notre pid (`windowAdded`), et `video` retombe à null quand celle-ci
+ * se ferme (`closed`). Une pose sert donc à tous les épisodes d'un lancement.
+ * La décrocher et la reposer à chaque lecture — ce qu'on faisait — coûtait
+ * quatre appels D-Bus par épisode, et surtout laissait derrière elle des
+ * gestionnaires morts (ci-dessous). Depuis le 17.09.2026, `liveGlue.ts` ne
+ * pose que s'il n'y a rien de vivant ; seule la contre-lecture
+ * (`waylandGlueSurface.ts`) repose, quand la fenêtre ne suit vraiment pas.
+ *
+ * # Les gestionnaires MORTS — 2 827 exceptions en sept jours
+ *
+ * Décrocher un greffon détruit son instance QML, mais PAS ce qu'elle a
+ * connecté : KWin garde les gestionnaires posés sur ses fenêtres et sur
+ * `Workspace.windowAdded`, et les rappelle avec `racine` déjà null. Relevé au
+ * journal du compositeur le 17.09.2026 : « TypeError: Cannot read property
+ * 'hote' of null » à chaque évènement de fenêtre, N fois — N poses depuis le
+ * lancement, jamais décrémenté. `lacher()` défait donc, à la destruction, tout
+ * ce que `prendre()` a noué ; les fermetures sont NOMMÉES pour cela, une
+ * fonction anonyme ne se déconnectant pas.
+ *
  * # Un greffon NOMMÉ, `tentacle-colle-<pid>`
  *
  * Un script chargé survit au processus qui l'a posé : quitter en pleine
@@ -120,6 +142,9 @@ Qml.QtObject {
         if (racine.hote === null || racine.video === null) return;
         racine.video.minimized = racine.hote.minimized;
     }
+    // Nommées, et non anonymes : disconnect() exige la même référence.
+    function videoFermee() { racine.video = null; }
+    function hoteFerme() { racine.hote = null; }
     function prendre(w) {
         if (w.pid !== __PID__) return;
         if (w.resourceClass === "mpv") {
@@ -129,7 +154,7 @@ Qml.QtObject {
             w.skipTaskbar = true;
             w.skipSwitcher = true;
             w.skipPager = true;
-            w.closed.connect(function () { racine.video = null; });
+            w.closed.connect(racine.videoFermee);
             w.activeChanged.connect(racine.reprendreActivation);
             racine.reprendreActivation();
             racine.suivreMinimise();
@@ -145,16 +170,31 @@ Qml.QtObject {
         w.activeChanged.connect(racine.suivreCouche);
         try { w.fullScreenChanged.connect(racine.suivreCouche); } catch (e) { }
         try { w.minimizedChanged.connect(racine.suivreMinimise); } catch (e) { }
-        w.closed.connect(function () { racine.hote = null; });
+        w.closed.connect(racine.hoteFerme);
         racine.suivreCouche();
         racine.coller();
     }
-    // Décrochée en pleine lecture, l'instance meurt mais la fenêtre mpv vit
-    // encore le temps que le lecteur se démonte : sans ça, elle resterait la
-    // seule chose au-dessus du bureau entier.
-    Qml.Component.onDestruction: {
-        if (racine.video !== null) racine.video.keepAbove = false;
+    // Décrochée, l'instance meurt — mais pas ses connexions : KWin les garde
+    // et les rappelle avec racine à null (voir l'en-tête). On défait TOUT ce
+    // que prendre() a noué, et l'on rend la couche : décrochée en pleine
+    // lecture, la fenêtre mpv survit quelques instants au démontage du lecteur
+    // et resterait sinon seule au-dessus du bureau entier.
+    function lacher() {
+        if (racine.video !== null) {
+            racine.video.keepAbove = false;
+            racine.video.closed.disconnect(racine.videoFermee);
+            racine.video.activeChanged.disconnect(racine.reprendreActivation);
+        }
+        if (racine.hote !== null) {
+            racine.hote.frameGeometryChanged.disconnect(racine.coller);
+            racine.hote.activeChanged.disconnect(racine.suivreCouche);
+            try { racine.hote.fullScreenChanged.disconnect(racine.suivreCouche); } catch (e) { }
+            try { racine.hote.minimizedChanged.disconnect(racine.suivreMinimise); } catch (e) { }
+            racine.hote.closed.disconnect(racine.hoteFerme);
+        }
+        Kwin.Workspace.windowAdded.disconnect(racine.prendre);
     }
+    Qml.Component.onDestruction: racine.lacher()
     Qml.Component.onCompleted: {
         var ws = Kwin.Workspace.windows;
         for (var i = 0; i < ws.length; i++) racine.prendre(ws[i]);

@@ -472,7 +472,8 @@ Deux corollaires du même banc :
 
 Enfin, l'échec était MUET : `loadDeclarativeScript` rend un numéro et `run`
 réussit même quand le composant n'a jamais été construit. On ne peut donc pas
-croire la pose sur parole — 400 ms après `file-loaded`, la taille de la fenêtre
+croire la pose sur parole — 300 ms après `video-reconfig` (et non `file-loaded`,
+où la sortie vidéo n'existe pas encore : voir « Le démarrage, mesuré »), la taille de la fenêtre
 mpv (`osd-dimensions`) est comparée à celle de l'hôte ; si elle ne suit pas, la
 colle est reposée une fois, et le journal porte les deux tailles
 (`linux/glueCheck.ts`).
@@ -483,3 +484,99 @@ La colle demande l'API de script de KWin : **KDE Plasma seulement**. Ailleurs
 sous Wayland (GNOME, wlroots), `surfaceWayland.ts` — plein écran forcé —
 reste le montage, avec l'avis pédagogique. X11 inchangé. La détection
 (`detecterFenetrage`, un ping D-Bus avant la fenêtre) choisit seule.
+
+## Le démarrage, mesuré (17.09.2026)
+
+Symptôme rapporté : « l'initialisation mpv est très longue, même pour un
+épisode léger en réseau local » — là où Windows et macOS sont instantanés.
+Banc : l'application de développement sur l'hôte (KWin 6.7.5 Wayland,
+RTX 5090, pilote 615.71), `TENTACLE_AUTOWATCH` sur Rick et Morty S1E1 (HEVC
+1080p 10 bits, 3,5 Mb/s, MKV, lecture directe HTTPS par le nom public),
+`TENTACLE_HEARTBEAT_MS=50`, journal verbeux de mpv (`tentacle_mpv_log`),
+journal de KWin. La ligne `[mpv] démarrage` (`video/startupClock.ts`) est
+celle qu'on lit — dans tous les builds.
+
+### Avant
+
+| Phase | 1er film | Épisode suivant |
+|---|---|---|
+| arrêt du précédent (dix tours de 50 ms avant `quit`) | — | ~500 ms, gels de 216 et 81 ms |
+| init + attache | 8 + 19 ms | 5 + 30 ms |
+| `loadfile` envoyé à | +108 ms | +105 ms |
+| ouverture (`loadfile` → `file-loaded`) | 1 043 ms | 962 ms |
+| sortie vidéo → première image | 60 + ~200 ms | 117 + ~100 ms |
+| **première image après `loadfile`** | **1 195 ms** | **1 080 ms** |
+
+Le journal verbeux dit où passe la seconde d'« ouverture » — ce n'est PAS le
+réseau :
+
+    tcp + TLS + en-têtes HTTP                  106 ms
+    en-têtes MKV + pochette (3,2 Mo)            44 ms
+    énumération des extensions Vulkan          134 ms  (slow!) — 12 couches implicites
+    vkCreateDevice (NVIDIA)                    569 ms  (slow!)
+    chargement du décodeur cuda (nvdec)         62 ms
+    reconfig + première image                 ~100 ms
+
+`file-loaded` n'est émis qu'après l'init des chaînes vidéo et audio : trois
+quarts de seconde de création de périphérique Vulkan par INSTANCE, donc par
+épisode — Windows (D3D11) et macOS (MoltenVK) créent le leur en quelques
+dizaines de millisecondes. C'est LA différence Linux. Et le journal KWin, sur
+sept jours : la colle posée DEUX fois à chaque lecture (verdict « libre » sur
+`attendu 1440x1000 ×1.25` pour une fenêtre `2304x1656` qui suivait — l'échelle
+lue était celle d'un autre écran), et 2 827 `TypeError` de gestionnaires
+morts, un par pose décrochée et par évènement de fenêtre.
+
+Écartés par la mesure : `gdbus` (1-2 ms l'appel, quatre par pose), fontconfig
+(`fc-match` 5-14 ms), le cache de pilote NVIDIA (présent, 468 Mo).
+
+### Après
+
+| Phase | 1er film | Épisode suivant (instance reprise) | Film HDR 4K repris |
+|---|---|---|---|
+| arrêt du précédent | — | 0 ms | 0 ms |
+| relance de la page | — | 76-107 ms | 91 ms |
+| init + attache | 4 + 18 ms | 0 | 0 |
+| `loadfile` envoyé à | +26 ms | +80 ms | +94 ms |
+| ouverture | 757 ms | 143 ms | 306 ms |
+| sortie vidéo | 121 ms | 39 ms | 41 ms |
+| **première image depuis `mpv_destroy`** | (+1 025 ms depuis `mpv_init`) | **262 ms** | **543 ms** |
+
+Journal verbeux de la reprise : `Opening done` +136 ms, `Using hardware
+decoding (nvdec)` +160, `VO: [gpu-next]` +169, `playback restart complete`
++179 — et aucune ligne `Spent … creating vulkan device`. `[hdr] contenu pq →
+sortie pq/bt.2020 · pic 3.81×` sur le film HDR chargé dans une sortie vidéo
+née en SDR : le compositeur suit la reconfiguration, le HDR ne dépend pas de
+la naissance de la fenêtre. Journal KWin : UNE pose par lancement,
+`colle vérifiée — mpv 2304x1656 · attendu 2304x1600 (hôte 1152x800 ×2)`, zéro
+`TypeError`. Aucun `[battement]` sur le chemin de lecture ; un seul, 107 ms, à
+l'expiration du parking au retour à la bibliothèque — `mpv_destroy` du dernier
+client attend la fin du cœur, invisible là.
+
+### Ce qui a changé, et ce qui reste
+
+- `mpvProperties.ts` : Linux lit et écrit par la file, comme macOS — c'étaient
+  les gels de 216, 84 et 81 ms, pris au moment où le cœur monte sa chaîne vidéo.
+- `mpvShutdown.ts` : `quit` dès l'évènement `idle` (vérifié dans
+  `player/playloop.c` de mpv 0.41 : `uninit_video_out` précède
+  `MPV_EVENT_IDLE`) ; déjà à l'idle, `force-window=no` puis `quit`
+  (`player/command.c` rejoue `handle_force_window` au changement de l'option).
+- `mpvPark.ts` / `ipc/videoLifecycle.ts` : mpv gardé au chaud trois secondes
+  après `mpv_destroy` (`force-window=yes` puis `stop`), repris par un `mpv_init`
+  aux mêmes options — montage collé seulement, la seule fenêtre garée garantie
+  sous la nôtre.
+- `liveGlue.ts` / `kwinGlue.ts` / `waylandGlueSurface.ts` : une pose par
+  processus, `lacher()` à la destruction, contre-lecture sur `video-reconfig`
+  + 300 ms à l'échelle de la page, doute confirmé avant toute repose.
+- `mpvShaderCache.ts` : le cache de nuanceurs, mort sous libmpv (`config=no`
+  → `mp_get_platform_path` rend NULL pour « cache »), rallumé sous le dossier
+  de données.
+- `useDesktopPlayer.ts` : les réglages d'ouverture d'un trait — `loadfile` à
+  +26 ms au lieu de +108.
+
+Reste, pour le PREMIER film d'un lancement : les ~700 ms de Vulkan (énumération
++ `vkCreateDevice`). Une piste : préchauffer l'instance à l'ouverture de la
+page de lecture, en recouvrant le `PlaybackInfo`. Non fait — un VkDevice tenu à
+vide garde un GPU dédié éveillé sur un portable Optimus, et la mesure ne
+l'exigeait pas. Autre reste, préexistant : l'application de développement sort
+en SIGSEGV à la fermeture par `window.close()`, avant comme après ce chantier,
+une fois le ménage de la colle fait.

@@ -185,25 +185,34 @@ export function useDesktopPlayer(opts?: {
       armWakeup();
     }
     try {
+      // ⚠️ Les réglages d'ouverture partent D'UN TRAIT : sérialisés, ces cinq
+      // allers-retours (IPC + un tour de pompe de 20 ms) plaçaient `loadfile`
+      // à +105 ms de `mpv_init` (mesuré le 17.09.2026). L'ORDRE reste garanti :
+      // `invoke` livre dans l'ordre, la coquille enfile chaque commande chez mpv
+      // avant de rendre la main (`ipc/registry.ts`, `mpv.ts command`), et mpv
+      // sert sa file en FIFO. Seul `loadfile` est attendu : il porte l'échec.
+      //
       // La propriété `pause` de mpv PERSISTE entre les loadfile : un rebuild
       // lancé pendant une pause (de groupe notamment) chargerait le nouveau
       // stream en pause → aucune frame décodée, pas de playback-restart →
       // écran noir/silence jusqu'au watchdog. Toujours charger en lecture ;
       // une pause légitime (group-wait d'un autre membre) sera réappliquée
       // par le moteur de sync juste après.
-      await api.setProperty("pause", false).catch(() => {});
+      void api.setProperty("pause", false).catch(() => {});
       // Le recul du démuxeur suit la SORTE de source : douze secondes sur un
       // HLS Jellyfin, dont la playlist ment sur le contenu des segments, zéro
       // en lecture directe. Posé avant `start`, qui est déjà un seek précis.
       // Voir `mpvSeekLanding.ts` — mesuré le 16 septembre 2026.
       if (options.hrSeekDemuxerOffset !== undefined) {
         traceCommand("set hr-seek-demuxer-offset", `${options.hrSeekDemuxerOffset} s`);
-        await api.command("set", ["hr-seek-demuxer-offset", String(options.hrSeekDemuxerOffset)])
+        void api.command("set", ["hr-seek-demuxer-offset", String(options.hrSeekDemuxerOffset)])
           .catch((e) => console.warn("[mpv] set hr-seek-demuxer-offset:", e));
       }
       if (options.startPosition != null && options.startPosition > 0) {
         console.debug("[mpv] play: setting start position", options.startPosition);
-        await api.command("set", ["start", `+${options.startPosition.toFixed(1)}`]);
+        // Un `start` refusé n'est pas une panne : le fichier part du début.
+        void api.command("set", ["start", `+${options.startPosition.toFixed(1)}`])
+          .catch((e) => console.warn("[mpv] set start:", e));
       } else {
         // Reset start property so the stream starts from its natural beginning
         // (important for transcoded streams where position is baked into the URL)
@@ -216,7 +225,7 @@ export function useDesktopPlayer(opts?: {
         // 30:00. Mesuré sur le libmpv du dépôt :
         //   set start no   -> -12, start vaut toujours "+1800"
         //   set start none ->   0, start vaut "none"
-        await api.command("set", ["start", "none"]).catch((e) => console.warn("[mpv] reset start:", e));
+        void api.command("set", ["start", "none"]).catch((e) => console.warn("[mpv] reset start:", e));
       }
       // Pistes AVANT le loadfile, comme `start` et `pause` : `aid`/`sid`
       // persistent d'un fichier à l'autre, donc mpv ouvre celui-ci déjà sur la
@@ -230,15 +239,15 @@ export function useDesktopPlayer(opts?: {
         traceCommand("set aid (avant ouverture)", String(options.audioTrack));
         // Noté seulement si la commande a ABOUTI : un `set` refusé ne doit pas
         // laisser croire à une intention posée, sans quoi la correction
-        // ultérieure serait avalée.
-        await api.command("set", ["aid", String(options.audioTrack)])
+        // ultérieure serait avalée. L'intention n'est relue qu'à la liste des pistes.
+        void api.command("set", ["aid", String(options.audioTrack)])
           .then(() => noteAid(options.audioTrack as number))
           .catch((e) => console.warn("[mpv] set aid:", e));
       }
       if (options.subtitleTrack != null) {
         const sid = options.subtitleTrack === 0 ? "no" : String(options.subtitleTrack);
         traceCommand("set sid (avant ouverture)", sid);
-        await api.command("set", ["sid", sid])
+        void api.command("set", ["sid", sid])
           .then(() => noteSid(options.subtitleTrack as number))
           .catch((e) => console.warn("[mpv] set sid:", e));
       }

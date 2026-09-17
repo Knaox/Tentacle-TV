@@ -6,45 +6,32 @@
  * n'est dupliqué.
  */
 
-import { screen, type BrowserWindow } from "electron";
 import { z } from "zod";
 import { getMainWindow, setPlayerSurfaceTransparent } from "../window";
 import { finish } from "../video/hdrSession";
-import { stop } from "../video/mpvShutdown";
-import { command, destroy, getProperty, init, isRunning, setProperty } from "../video/mpv";
+import { command, getProperty, init, isRunning, setProperty } from "../video/mpv";
 import { libmpvAvailable } from "../video/mpvFfi";
-import {
-  filterInitOptions,
-  refuseCommand,
-  refuseWrite,
-  type MpvValue,
-} from "../video/mpvAllowlist";
+import { refuseCommand, refuseWrite } from "../video/mpvAllowlist";
 import { nativeHandle, trace } from "../video/native";
-import { adaptToFullscreen } from "../video/macosWindowOptions";
-import { withWritableLogFile } from "../video/mpvLogFile";
-import { initialGeometryOption } from "../linux/initialGeometry";
-import { linuxWindowing, linuxMontage } from "../linux/session";
-import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
+import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
+import { createVideoSurface, videoMontage } from "../video/surface";
+import { assembleInitOptions } from "./videoInitOptions";
+import {
+  adoptSurface,
+  currentSurface,
+  releasePlayer,
+  rememberInit,
+  reuseParked,
+  stopPlayer,
+} from "./videoLifecycle";
+
+// Deux autres appelants — le point d'entrée et la séquence de fermeture —
+// l'importent d'ici : le déménagement ne les regarde pas.
+export { stopPlayer } from "./videoLifecycle";
 import { eventRelay } from "./videoEvents";
 import { registerDisplayHdrCommands } from "./videoHdr";
 import { registerVideoProbe, resetReport } from "./videoProbe";
 import { CommandRegistry } from "./registry";
-
-/**
- * Les options mpv adaptées à l'écran — macOS SEULEMENT, et chargé à la demande :
- * `macosHdrOptions` tire le pont Objective-C, dont `koffi.load` s'exécute à
- * l'import et tue le processus sur Linux et Windows avant la première fenêtre
- * (mesuré le 9 sept. 2026 : « Failed to load shared library »). Ailleurs, les
- * options passent telles quelles.
- */
-function adaptToDisplay(
-  options: Readonly<Record<string, MpvValue>>,
-  host: BrowserWindow,
-): Record<string, MpvValue> {
-  if (process.platform !== "darwin") return { ...options };
-  const macos = require("../video/macosHdrOptions") as typeof import("../video/macosHdrOptions");
-  return macos.adaptToDisplay(options, host);
-}
 
 /** Valeur scalaire acceptée par mpv. */
 const SCALAR = z.union([z.string(), z.number(), z.boolean()]);
@@ -72,64 +59,6 @@ const SET_PROPERTY = z.object({ name: z.string(), value: SCALAR });
 const GET_PROPERTY = z.object({ name: z.string(), format: z.string().optional() });
 const NO_ARGS = z.object({}).passthrough();
 
-let video: VideoSurface | null = null;
-
-/**
- * Arrête le lecteur, par le chemin que la plateforme supporte.
- *
- * ⚠️ macOS ne peut PAS détruire d'un bloc : `mpv_terminate_destroy` y attend le
- * démontage de la sortie vidéo, lequel réclame le thread principal — celui qui
- * appelle. Linux le PEUT, mais au prix d'une seconde de gel : l'appel est un
- * FFI synchrone qui joint démuxeur, décodage et contexte Vulkan, et la fenêtre
- * de mpv — de premier niveau chez nous, jamais enfant — n'est démontée qu'en
- * dernier : elle restait seule à l'écran tout ce temps. Les deux prennent donc
- * l'arrêt gracieux (voir `mpvShutdown.ts`) : la vidéo d'abord, sans bloquer.
- * Sous Linux le témoin `videoGone` n'existe pas — le guet se replie sur ses
- * dix tours de 50 ms avant `quit`, sans effet visible : la fenêtre part avec
- * la sortie vidéo dès le `stop`. Windows détruit comme il l'a toujours fait
- * (fenêtre enfant Win32, aucun couplage, en production).
- *
- * L'ORDRE compte : mpv s'arrête AVANT le détachement. L'inverse rendrait la
- * fenêtre de mpv indépendante le temps de sa mort, donc visible seule à
- * l'écran — et `SurfaceWayland.detach` sort du plein écran, ce qui ne doit
- * arriver qu'une fois la vidéo partie.
- *
- * EXPORTÉE pour un second appelant : la séquence de fermeture (`closeSequence.ts`)
- * s'en sert sous Linux, où la fenêtre de mpv survivrait sinon à la nôtre.
- */
-export async function stopPlayer(): Promise<void> {
-  const surface = video;
-  video = null;
-  // ⚠️ AVANT l'arrêt, et seule la Render API s'en sert : son contexte de rendu
-  // doit être libéré pendant que mpv est encore debout. L'inverse fait
-  // s'attendre les deux — `mpv_render_context_free` attend la fin du rendu en
-  // cours, et mpv démonte sa sortie vidéo à l'arrêt.
-  surface?.preStop?.();
-  if (process.platform !== "win32") {
-    const witness = surface?.videoGone?.bind(surface);
-    await stop(witness);
-  } else {
-    destroy();
-  }
-  surface?.detach();
-}
-
-/**
- * La réécriture Render API des options, chargée À LA DEMANDE.
- *
- * ⚠️ `macosRenderOptions.ts` n'importe plus rien de natif, mais l'`import`
- * reste hors de la tête de fichier : la paresse garantit qu'un import ajouté
- * là-bas par mégarde (`objc.ts` charge `libobjc.A.dylib`, introuvable sur
- * Windows) ne tue pas le processus principal. Miroir de `surface.ts` (`a9a1f065`).
- */
-function renderApiOptions(
-  kept: Readonly<Record<string, MpvValue>>,
-): Record<string, MpvValue> {
-  const { adaptForRenderApi } =
-    require("../video/macosRenderOptions") as typeof import("../video/macosRenderOptions");
-  return adaptForRenderApi(kept);
-}
-
 export function registerVideoCommands(registry: CommandRegistry): void {
   // Sans libmpv chargeable, les commandes mpv ne sont pas DÉCLARÉES : la liste
   // des capacités les tait, `supportsMpv()` côté page devient honnête, et le
@@ -145,11 +74,11 @@ export function registerVideoCommands(registry: CommandRegistry): void {
     );
   }
   if (nativePlayer) registerMpvCommands(registry);
-  registerDisplayHdrCommands(registry, () => video);
+  registerDisplayHdrCommands(registry, currentSurface);
 
   // Sans effet hors macOS et hors développement — la commande n'est alors même
   // pas déclarée, et la page cesse d'elle-même de proposer la sonde.
-  registerVideoProbe(registry, () => video);
+  registerVideoProbe(registry, currentSurface);
 }
 
 function registerMpvCommands(registry: CommandRegistry): void {
@@ -157,8 +86,27 @@ function registerMpvCommands(registry: CommandRegistry): void {
     .add("mpv_init", {
       schema: INIT,
       run: async ({ options }) => {
+        // L'horloge part ICI, avant l'arrêt du précédent : au changement
+        // d'épisode, c'est lui que la page attend en premier (`startupClock.ts`).
+        beginStartup();
         const win = getMainWindow();
         if (!win) throw new Error("aucune fenetre pour accueillir la video");
+
+        const observed = (options?.observedProperties ?? []).map(
+          ([name, format]) => [name, format] as const,
+        );
+        // Ce que la page demande, ce que la coquille y ajoute, ce que le
+        // montage réécrit : `videoInitOptions.ts`.
+        const mpvOptions = await assembleInitOptions(win, options?.initialOptions ?? {});
+
+        // L'instance gardée au chaud par le `mpv_destroy` précédent reprend du
+        // service si ses options sont les mêmes — sortie vidéo, décodeur et
+        // fenêtre collée compris. Voir `mpvPark.ts` pour ce que ça épargne.
+        if (reuseParked(mpvOptions, observed)) {
+          resetReport();
+          trace("mpv reste chaud — instance reprise, sortie vidéo conservée");
+          return "ok";
+        }
 
         // Une instance encore vivante doit partir par la porte que la
         // plateforme supporte. `init` fait bien un `destroy()` de son côté,
@@ -166,48 +114,19 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // qu'en l'absence de sortie vidéo. La page appelle normalement
         // `mpv_destroy` avant de remonter le lecteur ; ceci couvre le cas où
         // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
-        if (isRunning()) await stopPlayer();
+        if (isRunning()) {
+          await stopPlayer();
+          markStartup("stopped-in-init");
+        }
 
-        const observed = (options?.observedProperties ?? []).map(
-          ([name, format]) => [name, format] as const,
-        );
-        // Les options d'init sont passées VERBATIM à mpv. Parmi les 959
-        // propriétés de la libmpv du dépôt figurent `scripts` (chargement de
-        // code Lua), `input-ipc-server` (tuyau nommé donnant le contrôle total
-        // de mpv) et `input-conf` — relevé par sonde. On ne retient donc que ce
-        // que `buildMpvInitOptions` produit. Une option écartée est IGNORÉE et
-        // non rejetée : mpv lui-même tolère les options inconnues, et faire
-        // échouer `mpv_init` empêcherait toute lecture.
-        const { kept } = filterInitOptions(options?.initialOptions ?? {});
-        // Le journal que la page demande arrive sans chemin utilisable : c'est
-        // ici qu'il en reçoit un que le bac à sable laisse écrire.
-        const asked = withWritableLogFile(kept);
-        // Le montage Render API réécrit ce que la page a demandé : elle décrit
-        // ce qu'elle veut voir, le processus principal sait comment l'obtenir.
-        // Voir `macosRenderOptions.ts`.
-        // Et le montage à deux fenêtres a sa propre réécriture : une lecture qui
-        // démarre alors que l'app est DÉJÀ en plein écran doit dire à mpv de ne
-        // pas laisser macOS ouvrir un second bureau. Voir `macosWindowOptions.ts`.
-        const mpvOptions =
-          videoMontage() === "gl"
-            ? renderApiOptions(asked)
-            : adaptToDisplay(adaptToFullscreen(asked, win), win);
-        // Montage fenêtré libre (colle KDE) : mpv naît à la TAILLE de l'hôte —
-        // sans quoi il naît à la taille du média, plein écran apparent pendant
-        // ~0,5 s avant le premier coller() (voir linux/initialGeometry.ts).
-        const bounds = win.getBounds();
-        const geometry = initialGeometryOption(
-          linuxMontage(),
-          linuxWindowing(),
-          bounds,
-          screen.getDisplayMatching(bounds).scaleFactor,
-        );
         const parent = nativeHandle(win);
         const err = init(
-          { options: { ...mpvOptions, ...geometry }, observed, wid: parent },
-          eventRelay(() => video),
+          { options: mpvOptions, observed, wid: parent },
+          eventRelay(currentSurface),
         );
         if (err) throw new Error(err);
+        rememberInit(mpvOptions, observed);
+        markStartup("init");
 
         // Le journal doit dire ce que mpv a REELLEMENT recu : une option
         // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
@@ -225,9 +144,9 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // géométrie. Les écouteurs de la fenêtre principale appartiennent à
         // `VideoWindow` et partent avec elle — posés ici, rien ne les retirait,
         // et le lecteur est remonté à chaque épisode.
-        video?.detach();
-        video = createVideoSurface(win);
-        await video.attach();
+        adoptSurface(createVideoSurface(win));
+        await currentSurface()?.attach();
+        markStartup("attach");
         resetReport();
 
         return "ok";
@@ -240,7 +159,9 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // transmission. L'écran est rendu dans la foulée — un écran qu'on a
         // basculé et laissé en HDR délave tout le reste de Windows.
         finish();
-        await stopPlayer();
+        forgetStartup();
+        // Garée si l'on peut, arrêtée sinon — voir `videoLifecycle.ts`.
+        await releasePlayer();
       },
     })
     .add("mpv_command", {
@@ -252,6 +173,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // page pouvait lancer un programme hors du bac à sable.
         const refusal = refuseCommand(name, list);
         if (refusal !== null) throw new Error(refusal);
+        if (name === "loadfile") markStartup("loadfile");
         // `await` : la commande ne bloque plus le processus principal, elle
         // attend sa réponse dans la file d'évènements. Un `sub-add` vers une
         // source injoignable prend donc son temps sans geler l'application.
@@ -270,10 +192,10 @@ function registerMpvCommands(registry: CommandRegistry): void {
       run: async ({ name, value }) => {
         const refusal = refuseWrite(name);
         if (refusal !== null) throw new Error(refusal);
-        // `await` : sur macOS l'écriture passe par la file de commandes et
-        // attend sa réponse dans la file d'évènements, faute de quoi elle
-        // figerait le thread principal (voir `mpv.ts`). Sous Windows la
-        // promesse est déjà résolue.
+        // `await` : hors Windows l'écriture passe par la file de commandes et
+        // attend sa réponse dans la file d'évènements — sur macOS elle figerait
+        // sinon le thread principal, sous Linux elle le retiendrait (voir
+        // `mpv.ts`). Sous Windows la promesse est déjà résolue.
         const err = await setProperty(
           name,
           typeof value === "boolean" ? (value ? "yes" : "no") : String(value),
@@ -284,8 +206,8 @@ function registerMpvCommands(registry: CommandRegistry): void {
     .add("mpv_get_property", {
       schema: GET_PROPERTY,
       run: async ({ name, format }) => {
-        // `await` : sur macOS la valeur arrive par la file d'évènements, seule
-        // façon de lire sans figer le thread principal (voir `mpvRead.ts`).
+        // `await` : hors Windows la valeur arrive par la file d'évènements,
+        // seule façon de lire sans retenir le thread principal (`mpvRead.ts`).
         const raw = await getProperty(name);
         if (raw === null) return null;
         // mpv ne rend que des chaînes par cette porte ; on retype selon ce que
@@ -320,7 +242,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
       // que mpv n'ait créé sa fenêtre — elle rendait donc `false` en silence, et
       // rien n'était jamais désarmé. Conservée parce que le contrat avec la page
       // est partagé avec l'app Tauri, et qu'elle ne coûte rien.
-      run: () => video?.harden() ?? false,
+      run: () => currentSurface()?.harden() ?? false,
     });
 }
 

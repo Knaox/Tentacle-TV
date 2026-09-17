@@ -74,6 +74,15 @@ export interface VideoSurface {
    */
   fileLoaded?(): void;
   /**
+   * mpv vient de CONFIGURER sa sortie vidéo : sa fenêtre existe, à sa taille.
+   *
+   * Facultatif : la surface collée (Wayland + KWin) y mesure que la fenêtre
+   * suit bien la nôtre. À `file-loaded` la sortie vidéo n'existe pas encore —
+   * la mesure prise là reposait la colle à chaque lecture, pour rien (mesuré
+   * le 17.09.2026, voir `waylandGlueSurface.ts`).
+   */
+  videoReconfigured?(): void;
+  /**
    * Ce qu'il faut défaire AVANT que mpv ne s'arrête.
    *
    * Facultatif, et seule la Render API en a besoin : le contexte de rendu doit

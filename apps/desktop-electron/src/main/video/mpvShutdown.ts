@@ -28,8 +28,18 @@
  * démontage-la-vidéo-d'abord règle les deux maux : `stop` part en asynchrone,
  * la sortie vidéo (et sa fenêtre, née avec elle — `force-window=no`) meurt en
  * dizaines de millisecondes sur les threads de mpv, et le cœur finit de mourir
- * sans que personne l'attende. Sans témoin `videoGone`, le guet se replie sur
- * dix tours (500 ms) avant `quit`.
+ * sans que personne l'attende.
+ *
+ * # Le témoin qui manquait à Linux : l'évènement `idle`
+ *
+ * Sans témoin, le guet se repliait sur dix tours de 50 ms avant `quit` — une
+ * demi-seconde FIXE, payée à chaque changement d'épisode (mesurée le
+ * 17.09.2026). Or mpv dit lui-même quand sa fenêtre est partie : vérifié dans
+ * les sources 0.41 (`player/playloop.c`, `idle_loop`), après un `stop` il
+ * appelle `uninit_video_out` — thread vidéo joint, fenêtre détruite, puisque
+ * `force-window=no` — PUIS émet `MPV_EVENT_IDLE`. L'idle est donc un témoin
+ * exact, sur les trois systèmes ; macOS garde en plus le sien (AppKit), et le
+ * repli reste pour un mpv qui ne répondrait pas.
  *
  * # Ce qui ne marche PAS
  *
@@ -48,7 +58,8 @@
  *
  *   1. `force-window=no` + `stop` — le démontage commence sur les threads de
  *      mpv, que le thread principal est libre de servir ;
- *   2. on guette la disparition de la fenêtre vidéo ;
+ *   2. on guette la disparition de la fenêtre vidéo — l'idle de mpv, ou le
+ *      témoin AppKit sur macOS ;
  *   3. `quit` — le cœur s'arrête, `shutdown` arrive ;
  *   4. `mpv_destroy` — il n'y a plus de sortie vidéo, plus rien ne bloque.
  *
@@ -58,7 +69,7 @@
  */
 
 import { mpvApi } from "./mpvFfi";
-import { clearState, handle, setOnShutdown, setHandle } from "./mpv";
+import { clearState, handle, idleCount, isIdle, setOnShutdown, setHandle } from "./mpv";
 
 /**
  * Délai au-delà duquel on cesse d'attendre.
@@ -68,9 +79,15 @@ import { clearState, handle, setOnShutdown, setHandle } from "./mpv";
  * fin du processus, une application qui ne se ferme plus coûte bien plus cher.
  */
 const SHUTDOWN_DELAY_MS = 3000;
-/** Cadence du guet, et nombre maximal de tours avant de passer outre. */
-const WATCH_MS = 50;
-const WATCH_MAX = 20;
+/**
+ * Cadence du guet : celle de la pompe d'évènements (`mpv.ts`), qui apporte
+ * l'idle — plus vite ne verrait rien de plus.
+ */
+const WATCH_MS = 20;
+/** Sans aucun témoin : l'ancien repli d'une demi-seconde, inchangé. */
+const FALLBACK_TICKS = 25;
+/** Plafond absolu du guet : une seconde, puis `quit` quoi qu'il arrive. */
+const WATCH_MAX = 50;
 
 /**
  * L'arrêt en cours, pour rendre `stop` IDEMPOTENT.
@@ -110,8 +127,18 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
   // pire de tous : la sortie vidéo est encore debout, donc mpv a précisément
   // besoin de ce thread. Les deux commandes partent dans l'ordre d'envoi, mpv
   // les traite dans le même.
+  //
+  // Relevé AVANT l'envoi : l'idle qui compte est celui qui SUIT le `stop`.
+  const idleBefore = idleCount();
+  // Déjà à l'idle — une instance gardée au chaud dont le délai a expiré
+  // (`mpvPark.ts`) : rien à arrêter, et aucun idle ne viendra. Mais mpv rejoue
+  // `handle_force_window` au changement de l'option (`player/command.c`) :
+  // `force-window=no` détruit sa sortie vidéo sur-le-champ, et `quit` suit
+  // dans la même file. Linux seulement — sur macOS, un `quit` avec une sortie
+  // vidéo vivante est précisément l'interblocage décrit en tête de fichier.
+  const parkedIdle = process.platform === "linux" && isIdle();
   mpvApi().commandAsync(ctx, 0, ["set", "force-window", "no", null]);
-  mpvApi().commandAsync(ctx, 0, ["stop", null]);
+  mpvApi().commandAsync(ctx, 0, [parkedIdle ? "quit" : "stop", null]);
 
   inFlightCtx = ctx;
   inFlight = new Promise<void>((resolve) => {
@@ -146,11 +173,15 @@ export function stop(videoIsGone?: () => boolean): Promise<void> {
       finish();
     });
 
-    // Étape 2 : la fenêtre vidéo a disparu, on peut demander `quit`.
+    // Étape 2 : la fenêtre vidéo a disparu, on peut demander `quit`. L'idle
+    // de mpv le dit le premier ; le témoin de fenêtre (macOS) et le repli
+    // d'une demi-seconde restent derrière lui.
     let ticks = 0;
     const watch = setInterval(() => {
       ticks += 1;
-      const gone = videoIsGone === undefined ? ticks >= 10 : videoIsGone();
+      if (parkedIdle) return clearInterval(watch);
+      const idle = idleCount() > idleBefore;
+      const gone = idle || (videoIsGone === undefined ? ticks >= FALLBACK_TICKS : videoIsGone());
       if (!gone && ticks < WATCH_MAX) return;
       clearInterval(watch);
       const still = handle();

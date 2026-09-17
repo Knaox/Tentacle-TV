@@ -6,14 +6,15 @@
  * de vue de la page (le lecteur est remonté à chaque épisode).
  */
 
-import koffi from "koffi";
 import { app } from "electron";
 import { FORMAT, mpvApi, mpvError } from "./mpvFfi";
 import { setNumericLocaleC } from "./cLocale";
 import { forgetState } from "./mpvState";
 import { forgetLayer } from "./metalLayer";
 import { forgetOutput } from "../linux/hdr";
-import { readAsync, forgetReads } from "./mpvRead";
+import { forgetReads } from "./mpvRead";
+import { readProperty, writeProperty } from "./mpvProperties";
+import { sendCommand, settleAllCommands, settleCommand } from "./mpvCommand";
 import { drain, forgetCadence, type Sink } from "./mpvDrain";
 import { applyOptions } from "./mpvOptions";
 export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
@@ -22,6 +23,22 @@ export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 let ctx: unknown = null;
 let pump: ReturnType<typeof setInterval> | null = null;
 let observedIds = new Map<number, string>();
+/**
+ * Évènements `idle` reçus depuis le lancement — monotone, jamais remis à
+ * zéro : `mpvShutdown.ts` relève la valeur avant `stop` et attend qu'elle
+ * bouge. libmpv en émet un à sa naissance (`idle=yes`), qui ne compte donc pas.
+ */
+let idleEvents = 0;
+/** mpv est-il à l'idle — aucun fichier, depuis le dernier `idle` reçu ? */
+let idle = false;
+
+export function idleCount(): number {
+  return idleEvents;
+}
+
+export function isIdle(): boolean {
+  return idle;
+}
 
 export function isRunning(): boolean {
   return ctx !== null;
@@ -53,8 +70,7 @@ export function clearState(): void {
   forgetLayer();
   forgetOutput();
   forgetReads();
-  for (const resolve of inFlight.values()) resolve("instance mpv detruite");
-  inFlight.clear();
+  settleAllCommands("instance mpv detruite");
 }
 
 /**
@@ -70,123 +86,19 @@ export function setOnShutdown(callback: (() => void) | null): void {
   onShutdown = callback;
 }
 
-/**
- * Lit une propriété sous forme de chaîne. `null` si absente.
- *
- * # Sur macOS, on DEMANDE — mais on n'attend pas
- *
- * ⚠️ `mpv_get_property_string` est synchrone et prend le verrou du cœur de mpv.
- * Pour une propriété qui dépend de la sortie vidéo — `video-params/*`,
- * `video-target-params/*`, tout ce que le panneau de diagnostic affiche — mpv
- * doit toucher sa NSWindow, donc passer par le thread principal. Appelée DEPUIS
- * ce thread, la lecture attend un thread qui l'attend : l'application se fige,
- * sans un pourcent de processeur ni un message d'erreur.
- *
- * Le piège est qu'il ne se referme pas tout de suite : tout fonctionne pendant
- * plusieurs minutes, et l'application meurt au générique — au moment où mpv
- * reconfigure sa sortie pendant qu'on l'interroge. C'est le défaut le plus cher
- * de la phase 1, rencontré deux fois.
- *
- * `mpv_get_property_async` répond par la file d'évènements, qu'on vide déjà :
- * on peut donc tout lire sans rien attendre. Voir `mpvRead.ts`, qui garde le
- * souvenir des propriétés observées en REPLI quand mpv ne répond pas.
- */
+/** Lit une propriété sous forme de chaîne, `null` si absente — `mpvProperties.ts`. */
 export function getProperty(name: string): Promise<string | null> {
-  if (!ctx) return Promise.resolve(null);
-  if (process.platform === "darwin") return readAsync(ctx, name);
-  const ptr = mpvApi().getPropertyString(ctx, name) as unknown;
-  if (!ptr) return Promise.resolve(null);
-  const value = koffi.decode(ptr, "char", -1) as string;
-  mpvApi().free(ptr);
-  return Promise.resolve(value);
+  return readProperty(ctx, name);
 }
 
-/**
- * Écrit une propriété. Rend le motif de l'échec, ou `null`.
- *
- * # Sur macOS, on n'écrit pas non plus depuis ce thread
- *
- * ⚠️ `mpv_set_property_string` est le JUMEAU de la lecture ci-dessus, et il a
- * coûté exactement aussi cher : elle prend `mp_dispatch_lock`, donc attend le
- * cœur de mpv — lequel attend le thread principal pour créer sa `NSWindow`.
- * Chacun attend l'autre, à zéro pourcent de processeur et sans une erreur.
- *
- * Le défaut se déclenchait à COUP SÛR, et avant même la première image : la page
- * restaure le volume dès que le lecteur est prêt (`useMpvLifecycle`), puis pose
- * `pause=false` en tête de `play()` — les deux partent avant `loadfile`. D'où le
- * symptôme constaté pendant toute la phase 2 : chargement perpétuel, aucun
- * évènement mpv, aucun rapport de plantage. Pile du thread principal relevée au
- * `sample`, sans ambiguïté possible :
- *
- *   com.apple.main-thread → mpv_set_property_string → mpv_set_property
- *                         → mp_dispatch_lock → _pthread_cond_wait
- *
- * `set` par la file de commandes fait rigoureusement la même chose — c'est la
- * porte que `mpv_set_property_string` emprunte elle-même — mais sans attendre.
- *
- * Windows garde l'appel direct : sa fenêtre vidéo est une fenêtre enfant Win32
- * sans couplage au thread principal, et rien n'y a jamais bloqué.
- */
+/** Écrit une propriété ; rend le motif de l'échec, ou `null` — `mpvProperties.ts`. */
 export function setProperty(name: string, value: string): Promise<string | null> {
-  if (!ctx) return Promise.resolve("mpv n'est pas demarre");
-  if (process.platform !== "darwin") {
-    return Promise.resolve(mpvError(mpvApi().setPropertyString(ctx, name, value) as number));
-  }
-  return command(["set", name, value]);
+  return writeProperty(ctx, name, value);
 }
 
-/**
- * Commandes en vol : identifiant de réponse → résolution de la promesse.
- *
- * Base haute et volontairement distincte des identifiants de propriétés
- * observées (`index + 1`, donc quelques unités) : les deux familles partagent
- * le champ `reply_userdata` des évènements, et les confondre à la lecture d'un
- * journal coûterait cher.
- */
-const COMMAND_ID_BASE = 1_000_000;
-const inFlight = new Map<number, (err: string | null) => void>();
-let nextCommand = COMMAND_ID_BASE;
-
-/**
- * Exécute une commande mpv SANS bloquer le processus principal.
- *
- * ⚠️ C'est la raison d'être de cette fonction. `mpv_command` ne rend la main
- * qu'une fois la commande terminée, et l'appel FFI est synchrone sur le thread
- * du processus principal : un `sub-add` vers une URL injoignable y restait le
- * temps du `network-timeout` — trente secondes, multipliées par les
- * reconnexions. Pendant tout ce temps l'application entière était gelée, plus
- * un clic ne passait, et la lecture continuait imperturbablement puisque mpv
- * vit sur ses propres threads. Symptôme constaté, journal à l'appui.
- *
- * `mpv_command_async` part et rend la main ; le résultat arrive en
- * `COMMAND_REPLY`, que la boucle d'évènements récupère déjà.
- *
- * Les arguments passent en tableau, jamais concaténés : un chemin de fichier
- * contient des espaces et des guillemets.
- */
+/** Exécute une commande SANS bloquer le processus principal — `mpvCommand.ts`. */
 export function command(args: readonly string[]): Promise<string | null> {
-  if (!ctx) return Promise.resolve("mpv n'est pas demarre");
-
-  const id = nextCommand;
-  nextCommand += 1;
-  return new Promise<string | null>((resolve) => {
-    inFlight.set(id, resolve);
-    const sent = mpvError(mpvApi().commandAsync(ctx, id, [...args, null]) as number);
-    // Refus à l'ENVOI (arguments invalides, file pleine) : aucune réponse ne
-    // viendra jamais, la promesse ne doit pas rester en suspens.
-    if (sent !== null) {
-      inFlight.delete(id);
-      resolve(sent);
-    }
-  });
-}
-
-/** Règle une commande en vol. Un identifiant inconnu est ignoré sans bruit. */
-function settle(id: number, code: number): void {
-  const resolve = inFlight.get(id);
-  if (resolve === undefined) return;
-  inFlight.delete(id);
-  resolve(mpvError(code));
+  return sendCommand(ctx, args);
 }
 
 
@@ -223,6 +135,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   const handle = mpvApi().create() as unknown;
   if (!handle) return "mpv_create a echoue";
   ctx = handle;
+  idle = false;
 
   // Les options de la page, puis un socle non négociable : sans lui, mpv charge
   // sept scripts Lua, LuaJIT écrit du code machine, et la signature durcie du
@@ -262,19 +175,46 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     mpvApi().requestLogMessages(ctx, "v");
   }
 
-  observedIds = new Map();
-  opts.observed.forEach(([name, format], index) => {
-    const id = index + 1;
-    observedIds.set(id, name);
-    mpvApi().observeProperty(ctx, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
-  });
+  observe(ctx, opts.observed);
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
   // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
-  pump = setInterval(() => drain(ctx, sink, { settle, onShutdown: () => {
-    if (onShutdown !== null) onShutdown();
-  } }), 20);
+  pump = setInterval(() => drain(ctx, sink, {
+    settle: settleCommand,
+    onIdle: () => {
+      idleEvents += 1;
+      idle = true;
+    },
+    onStartFile: () => {
+      idle = false;
+    },
+    onShutdown: () => {
+      if (onShutdown !== null) onShutdown();
+    },
+  }), 20);
   return null;
+}
+
+function observe(handle: unknown, observed: InitOptions["observed"]): void {
+  observedIds = new Map();
+  observed.forEach(([name, format], index) => {
+    const id = index + 1;
+    observedIds.set(id, name);
+    mpvApi().observeProperty(handle, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
+  });
+}
+
+/**
+ * Ré-observe une instance gardée au chaud (`mpvPark.ts`) : les observations
+ * sont retirées puis reposées, et mpv rejoue la valeur initiale de chaque
+ * propriété — la page qui vient de se remonter les attend, exactement comme
+ * d'une instance neuve.
+ */
+export function reobserve(observed: InitOptions["observed"]): void {
+  if (!ctx) return;
+  for (const id of observedIds.keys()) mpvApi().unobserveProperty(ctx, id);
+  forgetState();
+  observe(ctx, observed);
 }
 
 /**
@@ -304,10 +244,6 @@ export function destroy(): void {
   forgetOutput();
   forgetReads();
 
-  // La file d'évènements vient de mourir : plus aucune réponse n'arrivera. Une
-  // commande laissée en suspens retiendrait pour toujours l'appelant — et donc
-  // la poignée IPC qui l'attend, ce qui vaut une commande native perdue à
-  // chaque changement d'épisode.
-  for (const resolve of inFlight.values()) resolve("instance mpv detruite");
-  inFlight.clear();
+  // La file d'évènements vient de mourir : plus aucune réponse n'arrivera.
+  settleAllCommands("instance mpv detruite");
 }
