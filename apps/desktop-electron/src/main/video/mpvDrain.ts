@@ -31,6 +31,12 @@ export interface Hooks {
   settle: (id: number, code: number) => void;
   /** mpv annonce son arrêt — le seul instant où libérer ne bloque pas. */
   onShutdown: () => void;
+  /**
+   * mpv est retombé à l'idle : plus de fichier, et sa sortie vidéo DÉTRUITE
+   * (`force-window=no`). C'est le témoin qu'attend l'arrêt gracieux
+   * (`mpvShutdown.ts`).
+   */
+  onIdle: () => void;
 }
 
 export interface Sink {
@@ -225,6 +231,7 @@ export function drain(ctx: unknown, sink: Sink, hooks: Hooks): void {
 
     const name = EVENT_NAMES[id];
     if (name) sink.event({ event: name });
+    if (id === EVENT.IDLE) hooks.onIdle();
 
     // mpv annonce son arrêt : c'est le seul instant où libérer la poignée ne
     // bloque pas. On rend la main immédiatement, la file n'a plus rien à dire.
