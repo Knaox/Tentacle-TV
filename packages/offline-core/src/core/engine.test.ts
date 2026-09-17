@@ -33,11 +33,11 @@ describe("parallelisme", () => {
     const { engine } = makeEngine(db, root, held.net);
 
     engine.start(CREDS);
-    // Un tour de boucle complet : le worker passe par plusieurs `await` avant
-    // d'ouvrir son flux (snapshot, nettoyage du `.part`).
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    expect(held.opened).toBe(MAX_PARALLEL);
+    // Le worker passe par plusieurs `await` avant d'ouvrir son flux (snapshot,
+    // nettoyage du `.part`) : on attend l'OUVERTURE, jamais un délai fixe.
+    // Sous la suite complète du dépôt en parallèle, 20 ms ne suffisaient pas
+    // toujours au runner (voir `engineActivity.test.ts`).
+    await vi.waitFor(() => expect(held.opened).toBe(MAX_PARALLEL));
     // Les suivants restent en file tant que la place ne se libere pas.
     expect(getFile(db, second)?.status).toBe("queued");
     expect(getFile(db, third)?.status).toBe("queued");
@@ -56,9 +56,7 @@ describe("parallelisme", () => {
     const { engine } = makeEngine(db, root, held.net, { parallelLimit: () => 3 });
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
-    expect(held.opened).toBe(3);
+    await vi.waitFor(() => expect(held.opened).toBe(3));
     held.release();
   });
 
@@ -72,10 +70,8 @@ describe("parallelisme", () => {
     const { engine } = makeEngine(db, root, held.net, { parallelLimit: () => 99 });
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-
     // Trois fichiers seulement en file : le plafond n'en invente pas.
-    expect(held.opened).toBe(3);
+    await vi.waitFor(() => expect(held.opened).toBe(3));
     held.release();
   });
 });
@@ -137,7 +133,9 @@ describe("traduction des fins de transfert", () => {
     });
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // L'état visé, jamais un délai fixe : la traduction de la fin de transfert
+    // est écrite par le worker, après l'échéance sur un runner chargé.
+    await vi.waitFor(() => expect(getFile(db, light)?.status).toBe("error"));
 
     const file = getFile(db, light);
     expect(file?.status).toBe("error");
@@ -280,7 +278,9 @@ describe("traduction des fins de transfert", () => {
     const { engine } = makeEngine(db, root, immediateNet(502));
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // L'état visé, jamais un délai fixe : la traduction de la fin de transfert
+    // est écrite par le worker, après l'échéance sur un runner chargé.
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("paused"));
 
     const file = getFile(db, fileId);
     expect(file?.status).toBe("paused");
@@ -298,7 +298,9 @@ describe("traduction des fins de transfert", () => {
     const { engine } = makeEngine(db, root, immediateNet(404));
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    // L'état visé, jamais un délai fixe : la traduction de la fin de transfert
+    // est écrite par le worker, après l'échéance sur un runner chargé.
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("error"));
 
     const file = getFile(db, fileId);
     expect(file?.status).toBe("error");
@@ -427,6 +429,8 @@ describe("gestes de l'utilisateur", () => {
     // echapper.
     const second = makeEngine(db, root, immediateNet(200), { retryDelaysMs: RETRY_DELAYS_MS });
     second.engine.start(CREDS);
+    // Période CALME, à dessein : rien ne doit repartir. Un délai fixe convient
+    // ici — une machine lente ne peut que le rendre plus indulgent.
     await new Promise((resolve) => setTimeout(resolve, 30));
     expect(getFile(db, fileId)?.status).toBe("canceled");
   });
@@ -435,17 +439,28 @@ describe("gestes de l'utilisateur", () => {
     const db = openInMemory();
     const root = rootWithThreeItems();
     const fileId = seed(db, "item1", 1_000);
-    const { engine } = makeEngine(db, root, immediateNet(502));
+    // Le réseau est COMPTÉ : « relancé » se prouve par un second flux ouvert,
+    // pas par un état final identique au précédent.
+    const cut = immediateNet(502);
+    let opened = 0;
+    const net: TransferNet = {
+      ...cut,
+      open: async (...args: Parameters<TransferNet["open"]>) => {
+        opened += 1;
+        return cut.open(...args);
+      },
+    };
+    const { engine } = makeEngine(db, root, net);
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(getFile(db, fileId)?.status).toBe("paused");
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("paused"));
+    expect(opened).toBe(1);
 
     engine.resume(fileId);
-    await new Promise((resolve) => setTimeout(resolve, 30));
 
     // Le reseau est toujours coupe : il repasse en pause, mais il a bien
     // ete relance.
-    expect(getFile(db, fileId)?.status).toBe("paused");
+    await vi.waitFor(() => expect(opened).toBe(2));
+    await vi.waitFor(() => expect(getFile(db, fileId)?.status).toBe("paused"));
   });
 
   it("annuler un transfert qui n'a pas demarre le marque annule", () => {
