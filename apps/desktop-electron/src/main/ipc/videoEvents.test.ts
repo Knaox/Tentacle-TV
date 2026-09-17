@@ -6,7 +6,7 @@
  * une ligne d'erreur. Et l'inverse : une surface sans `fileLoaded` (X11,
  * macOS, Windows) ne doit pas faire tomber le relais.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { eventRelay } from "./videoEvents";
 import type { VideoSurface } from "../video/surface";
 
@@ -23,19 +23,39 @@ vi.mock("./videoProbe", () => ({ scheduleReport: h.scheduleReport }));
 
 /** Une surface Wayland réduite à ce que le relais lui demande. */
 function surfaceRemappable() {
-  return { fileLoaded: vi.fn() } as unknown as VideoSurface & { fileLoaded: () => void };
+  return { fileLoaded: vi.fn(), videoReconfigured: vi.fn() } as unknown as VideoSurface & {
+    fileLoaded: () => void;
+    videoReconfigured: () => void;
+  };
+}
+
+const realPlatform = process.platform;
+function onPlatform(platform: NodeJS.Platform): void {
+  Object.defineProperty(process, "platform", { value: platform, configurable: true });
 }
 
 beforeEach(() => vi.clearAllMocks());
+afterEach(() => onPlatform(realPlatform));
 
 describe("relaisEvenements", () => {
-  it("file-loaded prévient la surface ; video-reconfig accorde sans re-mapper", () => {
+  it("file-loaded prévient la surface ; video-reconfig la fait mesurer et accorde", () => {
+    onPlatform("win32");
     const surface = surfaceRemappable();
     const relay = eventRelay(() => surface);
     relay.event({ event: "file-loaded" });
     relay.event({ event: "video-reconfig" });
     expect(surface.fileLoaded).toHaveBeenCalledTimes(1);
+    expect(surface.videoReconfigured).toHaveBeenCalledTimes(1);
     expect(h.grant).toHaveBeenCalledTimes(2);
+  });
+
+  it("sous Linux, le relevé HDR attend video-reconfig — à file-loaded il n'y a rien à lire", () => {
+    onPlatform("linux");
+    const relay = eventRelay(() => null);
+    relay.event({ event: "file-loaded" });
+    expect(h.grant).not.toHaveBeenCalled();
+    relay.event({ event: "video-reconfig" });
+    expect(h.grant).toHaveBeenCalledTimes(1);
   });
 
   it("une surface absente, ou sans fichierCharge, ne fait pas tomber le relais", () => {

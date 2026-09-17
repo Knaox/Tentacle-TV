@@ -13,6 +13,21 @@ cas en 1.20.10 — la 1.20.9 est arrivée sur le Microsoft Store, nulle part
 ailleurs, donc Windows ne reçoit que les correctifs qui ont suivi, là où macOS
 et Linux reçoivent l'ensemble.
 
+## [1.21.4]
+### FR
+- **Sous Linux, l'épisode suivant démarre en un quart de seconde** (KDE Plasma) : mpv reste au chaud entre deux lectures — sa sortie vidéo, son décodeur et sa fenêtre survivent au changement de fichier, là où chaque épisode recréait tout, trois quarts de seconde de pilote graphique puis une demi-seconde d'attente fixe à l'arrêt. Mesuré : 262 ms au lieu de 1,9 s
+- **La lecture ne retient plus l'application** (Linux) : mpv était interrogé depuis le thread principal au moment précis où il montait sa sortie vidéo, et tout attendait avec lui — jusqu'à 216 ms par épisode
+- **La fenêtre vidéo n'est plus recollée à chaque film** (Linux, KDE Plasma) : la vérification du calage lisait l'échelle d'un autre écran et reposait la colle après chaque première image ; elle mesure désormais au bon moment, à la bonne échelle, et la colle, posée une fois, ne laisse plus rien derrière elle dans le compositeur
+- **Les nuanceurs de mpv sont mis en cache, et les réglages d'ouverture partent d'un trait** (Windows, macOS, Linux) : le cache n'existait pas sous libmpv, et cinq allers-retours précédaient chaque ouverture
+- Nécessite un serveur 1.17.3 ou plus
+
+### EN
+- **On Linux, the next episode starts in a quarter of a second** (KDE Plasma): mpv stays warm between two playbacks — its video output, decoder and window survive the file change, where every episode used to rebuild everything, three quarters of a second of graphics driver and then a fixed half-second wait on stop. Measured: 262 ms instead of 1.9 s
+- **Playback no longer holds the application** (Linux): mpv was queried from the main thread at the very moment it was setting up its video output, and everything waited with it — up to 216 ms per episode
+- **The video window is no longer re-glued on every film** (Linux, KDE Plasma): the alignment check read another screen's scale and re-applied the glue after every first frame; it now measures at the right moment, at the right scale, and the glue, applied once, leaves nothing behind in the compositor
+- **mpv's shaders are cached, and the opening settings are sent in one go** (Windows, macOS, Linux): the cache did not exist under libmpv, and five round trips preceded every open
+- Requires a server on 1.17.3 or newer
+
 ## [1.21.3]
 ### FR
 - **Regarder ensemble, vraiment ensemble** : la synchronisation du visionnage de groupe est refondue. La reprise après une pause est planifiée par le serveur — chaque lecteur s'y cale et démarre en avance de sa propre latence, au lieu de repartir à la réception du message ; après un saut, la salle attend que chacun soit posé sur l'image visée avant de repartir au même instant ; la dérive se corrige en continu par une variation de vitesse inaudible (±5 % au plus, hauteur préservée). Le compte à rebours d'un saut est celui de la salle, réglé par l'hôte : le même chiffre chez tous, un clic saute, une croix éteint pour tous. L'écart de chaque membre se lit dans le panneau du groupe

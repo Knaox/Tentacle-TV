@@ -13,6 +13,16 @@ import {
 import { LABEL_BUFFERING, traceStartup } from "./startupTrace";
 import { wtLog } from "../watchTogether/wtLog";
 
+/**
+ * Le décalage depuis `mpv_init`, daté par la coquille Electron (`startupClock.ts`)
+ * et glissé dans l'évènement : la chronologie de la page part au `loadfile`,
+ * celui-ci dit ce qui s'est joué AVANT — arrêt du précédent, init, attache.
+ */
+function sinceInit(event: { [key: string]: unknown }): string | undefined {
+  const ms = event.sinceInitMs;
+  return typeof ms === "number" ? `+${String(ms)} ms depuis mpv_init` : undefined;
+}
+
 export interface MpvLifecycleCtx {
   setState: Dispatch<SetStateAction<MpvState>>;
   setReady: (v: boolean) => void;
@@ -255,7 +265,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
         switch (event.event) {
           case "file-loaded": {
             wtLog("mpv", "file-loaded", { sinceLoadfileMs: loadfileAtRef.current ? Date.now() - loadfileAtRef.current : -1 });
-            traceStartup("file-loaded");
+            traceStartup("file-loaded", sinceInit(event));
             // Réapplique le volume/mute persistés à CHAQUE média — filet de
             // sécurité si le restore post-init a été perdu (course à l'init,
             // vue sur Linux). Avant la 1re frame audio → transparent.
@@ -301,7 +311,7 @@ export function useMpvLifecycle(ctx: MpvLifecycleCtx): void {
               pos: positionRef.current.toFixed(1),
             });
             traceStartup("playback-restart (première image)",
-              `cache ${bufferedRef.current.toFixed(1)} s`);
+              [`cache ${bufferedRef.current.toFixed(1)} s`, sinceInit(event)].filter(Boolean).join(" · "));
             // playback-restart reçu : on annule les watchdogs
             if (playbackWatchdogRef.current) {
               clearTimeout(playbackWatchdogRef.current);
