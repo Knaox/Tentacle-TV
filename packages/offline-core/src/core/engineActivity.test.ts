@@ -105,7 +105,7 @@ describe("transferts en cours", () => {
     const { engine } = makeEngine(db, root, held.net);
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await vi.waitFor(() => expect(held.opened).toBe(1));
 
     expect(engine.pending()).toBe(3);
     held.release();
@@ -129,7 +129,8 @@ describe("pause systeme globale", () => {
     const held = heldNet();
     const { engine } = makeEngine(db, root, held.net);
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Le transfert doit être ACTIF quand la suspension tombe : on attend son flux.
+    await vi.waitFor(() => expect(held.opened).toBe(1));
 
     engine.suspendForSystem();
     held.release();
@@ -159,11 +160,11 @@ describe("redemarrage sous transfert", () => {
     const held = heldNet();
     const { engine } = makeEngine(db, root, held.net);
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    expect(held.opened).toBe(1);
+    await vi.waitFor(() => expect(held.opened).toBe(1));
 
     // Reconnexion pendant le transfert : sans garde, le fichier repassait en
-    // file et repartait une seconde fois sur le meme .part.
+    // file et repartait une seconde fois sur le meme .part. Période CALME, à
+    // dessein : un second flux ne doit PAS s'ouvrir.
     engine.start(CREDS);
     await new Promise((resolve) => setTimeout(resolve, 20));
 
@@ -187,7 +188,7 @@ describe("politique de plateforme (canTransfer)", () => {
     const { engine } = makeEngine(db, root, held.net, { canTransfer: () => allowed });
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await vi.waitFor(() => expect(getFile(db, first)?.status).toBe("paused"));
 
     // Refus : aucun flux ouvert, la file est en pause SYSTEME (relevable).
     expect(held.opened).toBe(0);
@@ -197,7 +198,7 @@ describe("politique de plateforme (canTransfer)", () => {
 
     allowed = true;
     engine.resumeSystemPauses();
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await vi.waitFor(() => expect(held.opened).toBe(1));
 
     // Un seul flux part : le second attend son tour, remis en file mais pas
     // laisse en pause.
@@ -217,8 +218,7 @@ describe("pause systeme tardive", () => {
     const { engine } = makeEngine(db, root, held.net);
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(held.opened).toBe(1);
+    await vi.waitFor(() => expect(held.opened).toBe(1));
 
     // Le reseau tombe puis revient AVANT que le flux n'ait vu la pause.
     engine.suspendForSystem();
@@ -242,12 +242,13 @@ describe("pause systeme tardive", () => {
     const { engine } = makeEngine(db, root, held.net);
 
     engine.start(CREDS);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await vi.waitFor(() => expect(held.opened).toBe(1));
     engine.pause(first);
     held.release();
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    // La pause est ÉCRITE par le worker en se terminant : on l'attend. C'est
+    // l'assertion qui lisait encore « downloading » sur le runner (17.09.2026).
+    await vi.waitFor(() => expect(getFile(db, first)?.status).toBe("paused"));
 
-    expect(getFile(db, first)?.status).toBe("paused");
     expect(held.opened).toBe(1);
   });
 });
