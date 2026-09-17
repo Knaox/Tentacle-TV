@@ -6,8 +6,10 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  beginShutdown,
   beginStartup,
   describeStartup,
+  endShutdown,
   forgetStartup,
   markStartup,
   sinceStartupMs,
@@ -57,14 +59,30 @@ describe("l'horloge du démarrage", () => {
     );
   });
 
-  it("l'arrêt du précédent est une phase à part entière — c'est le changement d'épisode", () => {
-    beginStartup(0);
-    markStartup("previous-stopped", 520);
-    markStartup("init", 530);
-    markStartup("attach", 545);
+  it("le changement d'épisode se compte depuis mpv_destroy : arrêt, relance de la page, init", () => {
+    beginShutdown(0);
+    endShutdown(520);
+    beginStartup(700);
+    markStartup("init", 710);
+    markStartup("attach", 725);
     expect(markStartup("playback-restart", 900)).toContain(
-      "arrêt du précédent 520 ms · init 10 ms · attache 15 ms",
+      "arrêt du précédent 520 ms · relance de la page 180 ms · init 10 ms · attache 15 ms · première image à +900 ms",
     );
+  });
+
+  it("une instance gardée au chaud se dit, et un arrêt trop ancien ne compte plus", () => {
+    beginShutdown(0);
+    endShutdown(1);
+    beginStartup(150);
+    markStartup("reused", 152);
+    expect(markStartup("playback-restart", 400)).toBe(
+      "[mpv] démarrage — arrêt du précédent 1 ms · relance de la page 149 ms · instance gardée au chaud 2 ms · première image à +400 ms",
+    );
+
+    beginShutdown(0);
+    endShutdown(100);
+    beginStartup(50_000);
+    expect(markStartup("playback-restart", 50_300)).toBe("[mpv] démarrage — première image à +300 ms");
   });
 
   it("la ligne reste lisible avec des jalons manquants", () => {

@@ -28,9 +28,15 @@ let observedIds = new Map<number, string>();
  * bouge. libmpv en émet un à sa naissance (`idle=yes`), qui ne compte donc pas.
  */
 let idleEvents = 0;
+/** mpv est-il à l'idle — aucun fichier, depuis le dernier `idle` reçu ? */
+let idle = false;
 
 export function idleCount(): number {
   return idleEvents;
+}
+
+export function isIdle(): boolean {
+  return idle;
 }
 
 export function isRunning(): boolean {
@@ -248,6 +254,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
   const handle = mpvApi().create() as unknown;
   if (!handle) return "mpv_create a echoue";
   ctx = handle;
+  idle = false;
 
   // Les options de la page, puis un socle non négociable : sans lui, mpv charge
   // sept scripts Lua, LuaJIT écrit du code machine, et la signature durcie du
@@ -287,12 +294,7 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     mpvApi().requestLogMessages(ctx, "v");
   }
 
-  observedIds = new Map();
-  opts.observed.forEach(([name, format], index) => {
-    const id = index + 1;
-    observedIds.set(id, name);
-    mpvApi().observeProperty(ctx, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
-  });
+  observe(ctx, opts.observed);
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
   // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
@@ -300,12 +302,38 @@ export function init(opts: InitOptions, sink: Sink): string | null {
     settle,
     onIdle: () => {
       idleEvents += 1;
+      idle = true;
+    },
+    onStartFile: () => {
+      idle = false;
     },
     onShutdown: () => {
       if (onShutdown !== null) onShutdown();
     },
   }), 20);
   return null;
+}
+
+function observe(handle: unknown, observed: InitOptions["observed"]): void {
+  observedIds = new Map();
+  observed.forEach(([name, format], index) => {
+    const id = index + 1;
+    observedIds.set(id, name);
+    mpvApi().observeProperty(handle, id, name, FORMAT_BY_NAME[format] ?? FORMAT.STRING);
+  });
+}
+
+/**
+ * Ré-observe une instance gardée au chaud (`mpvPark.ts`) : les observations
+ * sont retirées puis reposées, et mpv rejoue la valeur initiale de chaque
+ * propriété — la page qui vient de se remonter les attend, exactement comme
+ * d'une instance neuve.
+ */
+export function reobserve(observed: InitOptions["observed"]): void {
+  if (!ctx) return;
+  for (const id of observedIds.keys()) mpvApi().unobserveProperty(ctx, id);
+  forgetState();
+  observe(ctx, observed);
 }
 
 /**
