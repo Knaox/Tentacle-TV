@@ -22,6 +22,16 @@ export type { MpvEventPayload, PropertyChange } from "./mpvTypes";
 let ctx: unknown = null;
 let pump: ReturnType<typeof setInterval> | null = null;
 let observedIds = new Map<number, string>();
+/**
+ * Évènements `idle` reçus depuis le lancement — monotone, jamais remis à
+ * zéro : `mpvShutdown.ts` relève la valeur avant `stop` et attend qu'elle
+ * bouge. libmpv en émet un à sa naissance (`idle=yes`), qui ne compte donc pas.
+ */
+let idleEvents = 0;
+
+export function idleCount(): number {
+  return idleEvents;
+}
 
 export function isRunning(): boolean {
   return ctx !== null;
@@ -286,9 +296,15 @@ export function init(opts: InitOptions, sink: Sink): string | null {
 
   // 20 ms : assez fin pour que la file ne déborde jamais — libmpv se bloque
   // quand elle est pleine, c'est documenté et ça gèlerait la lecture.
-  pump = setInterval(() => drain(ctx, sink, { settle, onShutdown: () => {
-    if (onShutdown !== null) onShutdown();
-  } }), 20);
+  pump = setInterval(() => drain(ctx, sink, {
+    settle,
+    onIdle: () => {
+      idleEvents += 1;
+    },
+    onShutdown: () => {
+      if (onShutdown !== null) onShutdown();
+    },
+  }), 20);
   return null;
 }
 
