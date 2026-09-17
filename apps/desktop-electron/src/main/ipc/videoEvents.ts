@@ -68,8 +68,12 @@ export function eventRelay(surface: () => VideoSurface | null): {
       // lecteurs, on le fait UNE fois au démarrage — changer le mode d'un écran
       // coûte une à deux secondes de noir. `file-loaded` d'abord, au cas où les
       // paramètres seraient déjà là, puis `video-reconfig`, où ils le sont à
-      // coup sûr.
-      if (p.event === "file-loaded" || p.event === "video-reconfig") grant();
+      // coup sûr. Sauf sous Linux, où il n'y a rien à basculer, seulement à
+      // relever (`linux/hdr.ts`) — et `video-target-params` n'est JAMAIS là à
+      // `file-loaded` : la lecture y était un aller-retour pour rien.
+      if (p.event === "video-reconfig" || (p.event === "file-loaded" && process.platform !== "linux")) {
+        grant();
+      }
       // La fenêtre de mpv naît à l'ouverture du fichier, et le compositeur
       // peut la mettre devant la nôtre. La surface qui doit redemander
       // l'activation l'apprend ici (Wayland seulement, voir `surfaceWayland.ts`).
