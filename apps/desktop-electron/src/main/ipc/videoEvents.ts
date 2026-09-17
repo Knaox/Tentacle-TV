@@ -10,6 +10,7 @@ import { sendToPage } from "../pageEvents";
 import { trace } from "../video/native";
 import { grant } from "../video/hdrSession";
 import type { MpvEventPayload, PropertyChange } from "../video/mpv";
+import { markStartup, sinceStartupMs, type StartupMilestone } from "../video/startupClock";
 import type { VideoSurface } from "../video/surface";
 import { scheduleReport } from "./videoProbe";
 
@@ -27,6 +28,28 @@ const TRACES: ReadonlySet<string> = new Set([
   "end-file",
 ]);
 
+/** Les jalons de mpv que l'horloge du démarrage date (`startupClock.ts`). */
+const MILESTONES: ReadonlySet<string> = new Set<StartupMilestone>([
+  "start-file",
+  "file-loaded",
+  "video-reconfig",
+  "playback-restart",
+]);
+
+function isMilestone(event: string): event is StartupMilestone {
+  return MILESTONES.has(event);
+}
+
+/**
+ * Le décalage depuis `mpv_init`, glissé dans la charge utile : la chronologie
+ * de la page part au `loadfile` et ne voit pas ce que la coquille paie avant.
+ * Absent hors démarrage — la page traite déjà les champs qu'elle ne connaît pas.
+ */
+function stamped(p: MpvEventPayload): MpvEventPayload {
+  const since = sinceStartupMs();
+  return since === null ? p : { ...p, sinceInitMs: since };
+}
+
 /** Le relais d'évènements, pour la surface courante. */
 export function eventRelay(surface: () => VideoSurface | null): {
   event: (p: MpvEventPayload) => void;
@@ -34,6 +57,12 @@ export function eventRelay(surface: () => VideoSurface | null): {
 } {
   return {
     event: (p) => {
+      // L'horloge date les quatre jalons de mpv ; à la première image elle rend
+      // sa ligne, écrite dans TOUS les builds — c'est elle qu'un ticket cite.
+      if (isMilestone(p.event)) {
+        const line = markStartup(p.event);
+        if (line !== null) console.info(line);
+      }
       // Le contenu ne se déclare qu'une fois le fichier ouvert : c'est le seul
       // moment où l'on sait s'il faut basculer l'écran. Comme tous les bons
       // lecteurs, on le fait UNE fois au démarrage — changer le mode d'un écran
@@ -56,7 +85,7 @@ export function eventRelay(surface: () => VideoSurface | null): {
       // l'écran montre, plutôt que ce que mpv en dit. Sans effet hors
       // développement, et une seule fois par lecture.
       if (p.event === "playback-restart") scheduleReport(surface);
-      sendToPage("mpv://event", p);
+      sendToPage("mpv://event", stamped(p));
     },
     property: (p) => sendToPage("mpv://property-change", p),
   };

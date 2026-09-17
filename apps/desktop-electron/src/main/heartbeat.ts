@@ -30,19 +30,31 @@ const PERIOD_MS = 100;
  * dizaines de millisecondes ; ce n'est pas ce qu'on cherche. Un gel, lui, se
  * compte en secondes.
  */
-const THRESHOLD_MS = 250;
+const DEFAULT_THRESHOLD_MS = 250;
+
+/**
+ * `TENTACLE_HEARTBEAT_MS=50` abaisse le seuil le temps d'une mesure : un
+ * démarrage de lecture se joue en retenues de 50 à 200 ms — une lecture de
+ * propriété qui attend le montage de la sortie vidéo, par exemple — que le
+ * seuil de croisière ne voit pas. Développement seulement, comme le battement.
+ */
+function thresholdMs(): number {
+  const asked = Number(process.env["TENTACLE_HEARTBEAT_MS"]);
+  return Number.isFinite(asked) && asked > 0 ? asked : DEFAULT_THRESHOLD_MS;
+}
 
 let pulse: ReturnType<typeof setInterval> | null = null;
 
 /** Démarre le battement. Sans effet dans un paquet livré, ou s'il bat déjà. */
 export function startHeartbeat(): void {
   if (app.isPackaged || pulse !== null) return;
+  const threshold = thresholdMs();
   let previous = Date.now();
   pulse = setInterval(() => {
     const now = Date.now();
     const lateness = now - previous - PERIOD_MS;
     previous = now;
-    if (lateness >= THRESHOLD_MS) {
+    if (lateness >= threshold) {
       console.warn(`[battement] thread principal retenu ${String(lateness)} ms`);
     }
   }, PERIOD_MS);

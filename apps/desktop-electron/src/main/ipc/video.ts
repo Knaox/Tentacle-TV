@@ -22,6 +22,7 @@ import {
 import { nativeHandle, trace } from "../video/native";
 import { adaptToFullscreen } from "../video/macosWindowOptions";
 import { withWritableLogFile } from "../video/mpvLogFile";
+import { beginStartup, forgetStartup, markStartup } from "../video/startupClock";
 import { initialGeometryOption } from "../linux/initialGeometry";
 import { linuxWindowing, linuxMontage } from "../linux/session";
 import { createVideoSurface, videoMontage, type VideoSurface } from "../video/surface";
@@ -157,6 +158,9 @@ function registerMpvCommands(registry: CommandRegistry): void {
     .add("mpv_init", {
       schema: INIT,
       run: async ({ options }) => {
+        // L'horloge part ICI, avant l'arrêt du précédent : au changement
+        // d'épisode, c'est lui que la page attend en premier (`startupClock.ts`).
+        beginStartup();
         const win = getMainWindow();
         if (!win) throw new Error("aucune fenetre pour accueillir la video");
 
@@ -166,7 +170,10 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // qu'en l'absence de sortie vidéo. La page appelle normalement
         // `mpv_destroy` avant de remonter le lecteur ; ceci couvre le cas où
         // elle ne l'a pas fait — un changement d'épisode qui se chevauche.
-        if (isRunning()) await stopPlayer();
+        if (isRunning()) {
+          await stopPlayer();
+          markStartup("previous-stopped");
+        }
 
         const observed = (options?.observedProperties ?? []).map(
           ([name, format]) => [name, format] as const,
@@ -208,6 +215,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
           eventRelay(() => video),
         );
         if (err) throw new Error(err);
+        markStartup("init");
 
         // Le journal doit dire ce que mpv a REELLEMENT recu : une option
         // ecartee par la liste blanche l'est en SILENCE, et le defaut ne se
@@ -228,6 +236,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         video?.detach();
         video = createVideoSurface(win);
         await video.attach();
+        markStartup("attach");
         resetReport();
 
         return "ok";
@@ -240,6 +249,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // transmission. L'écran est rendu dans la foulée — un écran qu'on a
         // basculé et laissé en HDR délave tout le reste de Windows.
         finish();
+        forgetStartup();
         await stopPlayer();
       },
     })
@@ -252,6 +262,7 @@ function registerMpvCommands(registry: CommandRegistry): void {
         // page pouvait lancer un programme hors du bac à sable.
         const refusal = refuseCommand(name, list);
         if (refusal !== null) throw new Error(refusal);
+        if (name === "loadfile") markStartup("loadfile");
         // `await` : la commande ne bloque plus le processus principal, elle
         // attend sa réponse dans la file d'évènements. Un `sub-add` vers une
         // source injoignable prend donc son temps sans geler l'application.
