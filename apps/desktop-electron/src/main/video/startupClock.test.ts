@@ -79,10 +79,12 @@ describe("l'horloge du démarrage", () => {
       "[mpv] démarrage — arrêt du précédent 1 ms · relance de la page 149 ms · instance gardée au chaud 2 ms · première image à +400 ms",
     );
 
+    // Retour à la bibliothèque, puis une lecture cinq secondes plus tard : ce
+    // que l'utilisateur a fait entre les deux n'est pas une attente.
     beginShutdown(0);
     endShutdown(100);
-    beginStartup(50_000);
-    expect(markStartup("playback-restart", 50_300)).toBe("[mpv] démarrage — première image à +300 ms");
+    beginStartup(5000);
+    expect(markStartup("playback-restart", 5300)).toBe("[mpv] démarrage — première image à +300 ms");
   });
 
   it("la ligne reste lisible avec des jalons manquants", () => {

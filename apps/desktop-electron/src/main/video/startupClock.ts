@@ -53,8 +53,13 @@ let current: Startup | null = null;
 /** L'arrêt du précédent, s'il vient d'avoir lieu : son début et sa fin. */
 let shutdown: { startedAt: number; endedAt: number | null } | null = null;
 
-/** Au-delà, un arrêt n'a plus rien à voir avec le démarrage qui suit. */
-const SHUTDOWN_RELEVANT_MS = 10_000;
+/**
+ * Au-delà, un arrêt n'a plus rien à voir avec le démarrage qui suit : un
+ * changement d'épisode relance la page en ~100 ms ; deux secondes plus tard,
+ * l'utilisateur est retourné à la bibliothèque et ce qu'il y fait n'est pas
+ * une attente (mesuré le 17.09.2026 : « relance de la page 5075 ms »).
+ */
+const SHUTDOWN_RELEVANT_MS = 2000;
 
 function now(): number {
   return performance.now();
