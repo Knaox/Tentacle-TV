@@ -116,7 +116,7 @@ describe("fetchAudioWindowToFile", () => {
   });
 
   beforeEach(async () => {
-    dir = await mkdtemp(join(tmpdir(), "tentacle-audio-test-"));
+    dir = await mkdtemp(join(tmpdir(), "tentacle-win-test-"));
     calls = [];
     cancelled = 0;
   });
