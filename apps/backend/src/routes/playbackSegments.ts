@@ -22,6 +22,13 @@ import {
   startFrameAnalysis,
 } from "../services/frameAnalysis";
 import { getSegmentSourceBundle } from "../services/jellyfinSegments";
+import {
+  audioAnalysisPending,
+  audioNeeds,
+  enqueueAudioAnalysis,
+  needsAudioAnalysis,
+  readStoredAudioVerdict,
+} from "../services/audioAnalysis";
 
 const ParamsSchema = z.object({
   itemId: z.string().min(1).max(64).regex(/^[A-Za-z0-9-]+$/),
@@ -35,12 +42,15 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
 
     const bundle = await getSegmentSourceBundle(itemId);
     const resolvedAt = new Date().toISOString();
-    // Le verdict des vignettes, quand ce média en a déjà un.
-    const frames = await readFrameVerdict(itemId, bundle.runtimeMs);
+    // Les verdicts déjà rendus sur ce média : les vignettes, l'audio des voisins.
+    const [frames, audio] = await Promise.all([
+      readFrameVerdict(itemId, bundle.runtimeMs),
+      readStoredAudioVerdict(itemId, bundle.runtimeMs),
+    ]);
     const response = resolvePlaybackSegments(
       itemId,
       bundle.runtimeMs,
-      { ...bundle.sources, frames: frames ?? null },
+      { ...bundle.sources, frames: frames ?? null, audio: audio?.verdict ?? null },
       resolvedAt,
       bundle.libraryId,
     );
@@ -66,9 +76,28 @@ export const playbackSegmentRoutes: FastifyPluginAsync = async (app) => {
         });
       }
     }
+    // L'audio des voisins de saison, pour un épisode qu'aucun fournisseur n'a
+    // entièrement décrit — file à un slot, jamais attendue (voir le service).
+    if (bundle.episode !== null && needsAudioAnalysis(response, bundle, audio)) {
+      const url = getJellyfinUrl();
+      const apiKey = getJellyfinApiKey();
+      if (url && apiKey) {
+        enqueueAudioAnalysis({
+          itemId,
+          runtimeMs: bundle.runtimeMs,
+          mediaSourceId: bundle.defaultMediaSourceId,
+          episode: bundle.episode,
+          need: audioNeeds(response),
+          pluginInstalled: bundle.sources.pluginDict != null,
+          previousNeighbourKey: audio?.verdict.neighbourKey ?? null,
+          jellyfinUrl: url.replace(/\/$/, ""),
+          apiKey,
+        });
+      }
+    }
     // Le lecteur n'attend pas : il redemandera le contrat, et le générique
     // n'arrive qu'à la fin du média.
-    if (frameAnalysisRunning(itemId)) response.analysisPending = true;
+    if (frameAnalysisRunning(itemId) || audioAnalysisPending(itemId)) response.analysisPending = true;
 
     // Court : aligné sur le TTL du cache serveur — un segment fraîchement
     // détecté par un scan est visible en ~1 min sans marteler le backend.
