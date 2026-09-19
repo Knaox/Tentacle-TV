@@ -89,6 +89,14 @@ export function isSetupComplete(): boolean {
   return cache.get("setup_completed") === "true";
 }
 
+/**
+ * L'analyse audio inter-épisodes (services/audioAnalysis.ts) : ACTIVE tant que
+ * l'administrateur ne l'a pas coupée — la clé absente vaut « oui ».
+ */
+export function isAudioAnalysisEnabled(): boolean {
+  return cache.get("audio_analysis_enabled") !== "false";
+}
+
 export interface DirectStreamingConfig {
   enabled: boolean;
   publicUrl: string | null;
