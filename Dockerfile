@@ -100,7 +100,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # yt-dlp : résolution des bandes-annonces YouTube → flux MP4 jouable (Apple TV
 # n'a pas de WebView). Paquet du dépôt community Alpine (tire python3 en dépendance).
-RUN apk add --no-cache yt-dlp
+# chromaprint : fournit `fpcalc`, l'empreinte audio de l'analyse inter-épisodes
+# (services/audioFingerprintTool.ts). Binaire LGPL invoqué, jamais lié — comme
+# yt-dlp. Tire les bibliothèques ffmpeg d'Alpine (≈ 60-80 Mo, amd64 et arm64).
+RUN apk add --no-cache yt-dlp chromaprint
 
 WORKDIR /app
 

@@ -13,6 +13,17 @@ vi.mock("../services/configStore", () => ({
   getJellyfinUrl: () => "http://jf.test",
   getJellyfinApiKey: () => "admin-key",
   getConfigValue: (key: string) => (key === "admin_jellyfin_id" ? "admin-user-id" : undefined),
+  isAudioAnalysisEnabled: () => true,
+}));
+const audioMocks = vi.hoisted(() => ({
+  readStoredAudioVerdict: vi.fn(),
+  needsAudioAnalysis: vi.fn(),
+  enqueueAudioAnalysis: vi.fn(),
+  audioAnalysisPending: vi.fn(),
+}));
+vi.mock("../services/audioAnalysis", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../services/audioAnalysis")>()),
+  ...audioMocks,
 }));
 vi.mock("../services/jwt", () => ({
   verifyImpersonationToken: async () => null,
@@ -37,6 +48,10 @@ const USER = { Id: "u1", Name: "banc", Policy: { IsAdministrator: false } };
 beforeEach(() => {
   clearSegmentSourceCache();
   scenario = [];
+  audioMocks.readStoredAudioVerdict.mockReset().mockResolvedValue(undefined);
+  audioMocks.needsAudioAnalysis.mockReset().mockReturnValue(false);
+  audioMocks.enqueueAudioAnalysis.mockReset();
+  audioMocks.audioAnalysisPending.mockReset().mockReturnValue(false);
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -176,5 +191,71 @@ describe("GET /api/playback/segments/:itemId", () => {
     const response = await request("ep-panne");
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({ version: 1, runtimeMs: 0, segments: [] });
+  });
+});
+
+describe("l'analyse audio des voisins de saison", () => {
+  const episode = () => ({
+    ...item(),
+    SeriesId: "series-1",
+    SeasonId: "season-4",
+    ParentIndexNumber: 4,
+    IndexNumber: 3,
+    MediaSources: [{ Id: "src-3", Bitrate: 8_000_000 }],
+  });
+  const bare = () => [
+    [/\/MediaSegments\//, { json: { Items: [] } }],
+    [/IntroSkipperSegments/, { status: 404 }],
+    [/\/Timestamps$/, { status: 404 }],
+  ] as Scenario;
+
+  it("se met en file pour un épisode que personne n'a décrit, et le contrat se dit incomplet", async () => {
+    scenario = [[/\/Items\//, { json: episode() }], ...bare()];
+    audioMocks.needsAudioAnalysis.mockReturnValue(true);
+    audioMocks.audioAnalysisPending.mockReturnValue(true);
+    const response = await request("ep-audio");
+    expect(audioMocks.enqueueAudioAnalysis).toHaveBeenCalledWith(
+      expect.objectContaining({
+        itemId: "ep-audio",
+        runtimeMs: 1_440_000,
+        mediaSourceId: "src-3",
+        episode: expect.objectContaining({ seriesId: "series-1", seasonId: "season-4", indexNumber: 3 }),
+        need: { head: true, tail: true },
+        pluginInstalled: false,
+        previousNeighbourKey: null,
+        jellyfinUrl: "http://jf.test",
+      }),
+    );
+    expect(response.json().analysisPending).toBe(true);
+    expect(response.headers["cache-control"]).toBe("no-store");
+  });
+
+  it("un film n'est jamais mis en file", async () => {
+    scenario = [[/\/Items\//, { json: { ...item(), Type: "Movie" } }], [/\/MediaSegments\//, { json: { Items: [] } }]];
+    audioMocks.needsAudioAnalysis.mockReturnValue(true);
+    await request("film-audio");
+    expect(audioMocks.enqueueAudioAnalysis).not.toHaveBeenCalled();
+  });
+
+  it("un verdict rangé alimente le contrat, source audio, sans relancer quoi que ce soit", async () => {
+    scenario = [[/\/Items\//, { json: episode() }], ...bare()];
+    audioMocks.readStoredAudioVerdict.mockResolvedValue({
+      verdict: {
+        intro: { startMs: 140_000, endMs: 226_000, source: "audio" },
+        outro: { startMs: 1_337_000, endMs: 1_440_000, source: "audio" },
+        confirmedBy: 2,
+        neighbourKey: "ep-2,ep-4",
+      },
+      createdAt: new Date(),
+    });
+    const response = await request("ep-verdict");
+    const body = response.json();
+    expect(body.segments.map((s: { type: string; source: string }) => [s.type, s.source])).toEqual([
+      ["Intro", "audio"],
+      ["Outro", "audio"],
+    ]);
+    expect(body.analysisPending).toBeUndefined();
+    expect(response.headers["cache-control"]).toBe("private, max-age=60");
+    expect(audioMocks.enqueueAudioAnalysis).not.toHaveBeenCalled();
   });
 });

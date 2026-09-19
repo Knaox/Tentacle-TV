@@ -420,6 +420,47 @@ model MediaFrameAnalysis {
   @@map("media_frame_analysis")
 }
 
+/// Les EMPREINTES audio d'un épisode — sa tête et sa queue — pour l'analyse
+/// inter-épisodes (services/audioFingerprint.ts).
+///
+/// Une ligne par épisode, une colonne par fenêtre, écrites l'une après l'autre :
+/// une ligne à moitié remplie est « à compléter », jamais fausse. Un épisode
+/// n'est transcodé qu'une fois — ses voisins relisent sa ligne. Les points
+/// chromaprint (uint32, ≈ 8 par seconde) sont rangés tels quels, en boutisme
+/// natif : ≈ 23 Ko par fenêtre de dix minutes. `runtimeMs` est le témoin du
+/// fichier, comme pour les vignettes. Purgée après 90 jours (un cache).
+model MediaAudioFingerprint {
+  itemId        String   @id @db.VarChar(64)
+  /// Version de l'outil et de la géométrie (`AUDIO_FINGERPRINT_VERSION`).
+  version       Int
+  runtimeMs     Int
+  mediaSourceId String?  @db.VarChar(64)
+  headStartMs   Int?
+  headWindowMs  Int?
+  head          Bytes?   @db.MediumBlob
+  tailStartMs   Int?
+  tailWindowMs  Int?
+  tail          Bytes?   @db.MediumBlob
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("media_audio_fingerprint")
+}
+
+/// Ce que l'AUDIO des voisins de saison a dit d'un épisode — opening, ending
+/// (services/audioAnalysis.ts). Même forme et même règle que les vignettes :
+/// une ligne par épisode, `null` gardé quand rien n'a été conclu.
+model MediaAudioAnalysis {
+  itemId    String   @id @db.VarChar(64)
+  /// Version des règles du verdict (`AUDIO_ANALYSIS_VERSION`).
+  version   Int
+  runtimeMs Int
+  verdict   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("media_audio_analysis")
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Moteur de recommandation. Doctrine commune à tous les modèles ci-dessous :
 // - aucun enum, aucun Json — unions en VarChar commenté, JSON en Text/MediumText ;

@@ -66,6 +66,14 @@ export default {
     "Ils s'empilent : chacun signale ce qu'il sait, le plus précis l'emporte, et en installer deux ne crée pas de conflit. Après installation, lancez la tâche planifiée « Media segment scan » de Jellyfin — les passages n'apparaissent qu'une fois la bibliothèque analysée.",
   segmentPluginsFrameAnalysisNote:
     "Quand aucune source ne dit rien de crédible sur le générique de fin, Tentacle analyse lui-même les vignettes de la barre de progression (générique, scène post-générique) — à condition que la tâche « Générer des images Trickplay » de Jellyfin soit passée sur le média.",
+  segmentPluginsAudioAnalysisEnabled: "Analyse audio des épisodes",
+  segmentPluginsAudioAnalysisNote:
+    "Pour un épisode que personne n'a décrit, Tentacle écoute le début et la fin de l'épisode et de ses voisins de saison : ce qui se répète est l'opening ou l'ending. Une fois par épisode, à la première lecture ; deux courts extraits audio transcodés par Jellyfin, jamais pendant qu'un autre spectateur transcode une vidéo ; rien n'est posé en cas de doute.",
+  segmentPluginsAudioAnalysisTool: "Outil d'empreinte sur ce serveur : {{tool}}.",
+  segmentPluginsAudioAnalysisUnavailable:
+    "Aucun outil d'empreinte sur ce serveur (fpcalc, ou ffmpeg avec chromaprint) : l'analyse audio est inactive. L'image Docker officielle l'embarque.",
+  segmentPluginsAudioAnalysisCounters:
+    "Depuis le démarrage : {{jobs}} analyse(s), {{windows}} extrait(s) transcodé(s) ({{megabytes}} Mo, {{seconds}} s), {{verdicts}} verdict(s), {{silent}} silence(s).",
   publicUrl: "URL publique du serveur Tentacle TV",
   publicUrlDescription: "URL publique par laquelle les appareils joignent le serveur après jumelage (domaine Cloudflare). Indispensable pour que le jumelage TV fonctionne depuis l'extérieur.",
   publicUrlLabel: "URL publique",

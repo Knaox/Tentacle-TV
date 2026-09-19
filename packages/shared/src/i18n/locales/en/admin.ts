@@ -85,6 +85,14 @@ export default {
     "They stack: each reports what it knows, the most precise wins, and installing two creates no conflict. Once installed, run Jellyfin's “Media segment scan” scheduled task — passages only appear after the library has been scanned.",
   segmentPluginsFrameAnalysisNote:
     "When no source says anything credible about the end credits, Tentacle analyses the seekbar thumbnails itself (credits, post-credits scene) — provided Jellyfin's “Generate Trickplay Images” task has run on the media.",
+  segmentPluginsAudioAnalysisEnabled: "Episode audio analysis",
+  segmentPluginsAudioAnalysisNote:
+    "For an episode nobody has described, Tentacle listens to the start and the end of the episode and of its season neighbours: what repeats is the opening or the ending. Once per episode, on first playback; two short audio excerpts transcoded by Jellyfin, never while another viewer is transcoding a video; nothing is set when in doubt.",
+  segmentPluginsAudioAnalysisTool: "Fingerprint tool on this server: {{tool}}.",
+  segmentPluginsAudioAnalysisUnavailable:
+    "No fingerprint tool on this server (fpcalc, or ffmpeg built with chromaprint): audio analysis is inactive. The official Docker image ships it.",
+  segmentPluginsAudioAnalysisCounters:
+    "Since startup: {{jobs}} analysis run(s), {{windows}} excerpt(s) transcoded ({{megabytes}} MB, {{seconds}} s), {{verdicts}} verdict(s), {{silent}} silence(s).",
   publicUrl: "Public Tentacle TV server URL",
   publicUrlDescription: "Public URL devices use to reach the server after pairing (Cloudflare domain). Required for TV pairing to work from outside the local network.",
   publicUrlLabel: "Public URL",
