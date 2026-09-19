@@ -139,6 +139,7 @@ describe("getSegmentSourceBundle", () => {
       libraryId: null,
       trickplay: null,
       defaultMediaSourceId: null,
+      episode: null,
       sources: {},
     });
 
@@ -185,5 +186,52 @@ describe("l'URL de l'item", () => {
     expect(bundle.runtimeMs).toBe(0);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("illisible"));
     warn.mockRestore();
+  });
+});
+
+describe("la place de l'épisode dans sa série", () => {
+  const EPISODE = {
+    ...ITEM,
+    SeriesId: "series-1",
+    SeasonId: "season-4",
+    ParentIndexNumber: 4,
+    IndexNumber: 3,
+    DateCreated: "2026-09-01T12:00:00.0000000Z",
+    MediaSources: [{ Id: "src-1", Bitrate: 8_600_000 }],
+  };
+
+  it("un épisode connu de sa série et de sa saison porte son contexte, sans toucher à fields=", async () => {
+    scenario = [
+      [/\/Items\/ep-ctx\?userId=admin-user-id&fields=Chapters,Trickplay,MediaSources$/, { json: EPISODE }],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    const bundle = await getSegmentSourceBundle("ep-ctx");
+    expect(bundle.episode).toEqual({
+      seriesId: "series-1",
+      seasonId: "season-4",
+      seasonNumber: 4,
+      indexNumber: 3,
+      sourceBitrate: 8_600_000,
+      createdAt: "2026-09-01T12:00:00.0000000Z",
+    });
+  });
+
+  it("un film, ou un épisode sans saison, n'en a pas", async () => {
+    scenario = [
+      [/\/Items\/film/, { json: { ...EPISODE, Type: "Movie" } }],
+      [/\/Items\/orphan/, { json: { ...EPISODE, SeasonId: undefined } }],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    expect((await getSegmentSourceBundle("film")).episode).toBeNull();
+    expect((await getSegmentSourceBundle("orphan")).episode).toBeNull();
+  });
+
+  it("les numéros et le débit absents valent null, pas zéro", async () => {
+    scenario = [
+      [/\/Items\//, { json: { ...EPISODE, ParentIndexNumber: undefined, IndexNumber: undefined, MediaSources: [{ Id: "src-1" }] } }],
+      [/MediaSegments/, { json: NATIVE }],
+    ];
+    const bundle = await getSegmentSourceBundle("ep-nums");
+    expect(bundle.episode).toMatchObject({ seasonNumber: null, indexNumber: null, sourceBitrate: null });
   });
 });
