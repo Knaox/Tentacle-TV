@@ -30,6 +30,7 @@ import { playbackSegmentRoutes } from "./routes/playbackSegments";
 import { adminRoutes } from "./routes/admin";
 import { adminDownloadRoutes } from "./routes/adminDownloads";
 import { adminMetadataRoutes } from "./routes/adminMetadata";
+import { adminSegmentRoutes } from "./routes/adminSegments";
 import { downloadRoutes } from "./routes/downloads";
 import { pluginRoutes } from "./routes/plugins";
 import { pairRoutes } from "./routes/pair";
@@ -59,6 +60,7 @@ import { startNotificationPushWorker } from "./services/notificationPushWorker";
 import { startTicketLifecycleWorker } from "./services/ticketLifecycle";
 import { startLibraryAddedNotifier } from "./services/libraryAddedNotifier";
 import { startAnnouncedPurge } from "./services/announcedRegistry";
+import { startFingerprintPurge, sweepStaleTempDirs } from "./services/audioFingerprint";
 import { startWatchTime, stopWatchTime } from "./services/watchTime/collector";
 import { loadPluginBackends } from "./services/pluginBackendLoader";
 import { registerWatchTogetherGateway } from "./services/watchTogether/gateway";
@@ -237,6 +239,7 @@ async function main() {
   await app.register(adminDownloadRoutes, { prefix: "/api/admin/downloads" });
   // Fichier séparé d'admin.ts : lui frôle déjà le plafond de 300 lignes.
   await app.register(adminMetadataRoutes, { prefix: "/api/admin" });
+  await app.register(adminSegmentRoutes, { prefix: "/api/admin" });
   await app.register(downloadRoutes, { prefix: "/api/downloads" });
   await app.register(pluginRoutes, { prefix: "/api/plugins" });
   await app.register(pairRoutes, { prefix: "/api/pair" });
@@ -324,6 +327,9 @@ async function main() {
     startTicketLifecycleWorker();
     startLibraryAddedNotifier();
     startAnnouncedPurge();
+    // Analyse audio : les temporaires d'une analyse interrompue, les empreintes de plus de 90 jours.
+    void sweepStaleTempDirs();
+    startFingerprintPurge();
     startWatchTime();
     startRecoJobs();
     // Load plugin backend modules (server-side routes declared by plugins)

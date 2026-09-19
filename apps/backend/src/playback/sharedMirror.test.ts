@@ -5,8 +5,8 @@
  * tsc CommonJS, image Docker sans packages/). La source canonique est SHARED ;
  * on modifie là-bas, on recopie ici :
  *
- *   cp packages/shared/src/playback/{segmentTypes,resolveSegments,\
- *      playbackSettings,segmentChapters}.ts apps/backend/src/playback/
+ *   for f in <PLAYBACK_FILES>; do cp packages/shared/src/playback/$f \
+ *      apps/backend/src/playback/; done
  *   cp packages/shared/src/platforms.ts apps/backend/src/services/tmdb/
  *
  * Même esprit que le test croisé RN ↔ CSS de packages/theme : deux mondes qui
@@ -38,6 +38,7 @@ const PLAYBACK_FILES = [
   "creditsFromFrames.ts",
   "claimGuards.ts",
   "sceneChecks.ts",
+  "audioVerdict.ts",
 ];
 
 /** Paires [canonique, miroir], relatives à la racine du dépôt. */

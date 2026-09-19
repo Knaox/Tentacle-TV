@@ -47,7 +47,7 @@ export interface ChapterMarker {
 export interface RawBounds {
   startMs: number;
   endMs: number;
-  source: "jellyfin" | "chapters" | "frames";
+  source: "jellyfin" | "chapters" | "frames" | "audio";
 }
 
 /**

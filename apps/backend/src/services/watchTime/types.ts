@@ -29,6 +29,10 @@ export interface RawSession {
     SeriesId?: string;
     SeriesName?: string;
   };
+  /** Lu par l'analyse audio : un transcodage VIDÉO en cours chez un autre spectateur. */
+  TranscodingInfo?: {
+    IsVideoDirect?: boolean;
+  };
 }
 
 /** Une session en lecture, à un relevé donné. */

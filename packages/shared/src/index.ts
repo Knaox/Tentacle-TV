@@ -53,6 +53,7 @@ export * from "./playback/frameBlocks";
 export * from "./playback/claimGuards";
 export * from "./playback/sceneChecks";
 export * from "./playback/creditsFromFrames";
+export * from "./playback/audioVerdict";
 export * from "./playback/playbackSettings";
 export * from "./playback/playbackPresets";
 export * from "./playback/segmentWindow";
