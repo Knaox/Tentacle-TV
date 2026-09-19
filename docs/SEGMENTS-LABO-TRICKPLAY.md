@@ -113,3 +113,9 @@ d'apparition du bouton.
 Le bon substrat est l'AUDIO côté serveur (rupture musique/silence à l'entrée
 des crédits, comme Intro Skipper le fait pour les épisodes) ou l'édition
 manuelle (Segment Editor). Pas les vignettes.
+
+Fait pour les ÉPISODES le 20.09.2026 : l'audio des voisins de saison
+(`SEGMENTS-LABO-AUDIO.md`) retrouve opening et ending à ±5 s, sans accès aux
+fichiers. Les récaps y restent fermés (le son ne les voit pas : narration et
+nouveau lit musical sous les images reprises), et le stylisé clair des films
+reste ouvert — un film n'a pas de voisin.
