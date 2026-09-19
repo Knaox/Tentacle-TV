@@ -62,3 +62,16 @@ describe("libraryId — le champ additif", () => {
     expect(parsePlaybackSegmentsResponse({ ...CONTRACT, libraryId: 42 })?.libraryId).toBeNull();
   });
 });
+
+describe("source — le champ additif", () => {
+  it("relit la source audio telle quelle, et ramène une source inconnue à jellyfin", () => {
+    const reread = parsePlaybackSegmentsResponse({
+      ...CONTRACT,
+      segments: [
+        { ...CONTRACT.segments[0], source: "audio" },
+        { ...CONTRACT.segments[0], source: "sonar" },
+      ],
+    });
+    expect(reread?.segments.map((s) => s.source)).toEqual(["audio", "jellyfin"]);
+  });
+});

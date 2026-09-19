@@ -101,13 +101,14 @@ export interface ResolvedSegment {
   endMs: number;
   /**
    * D'où vient la borne : segments Jellyfin (natif ou greffon), chapitres
-   * nommés, ou l'analyse des vignettes (`creditsFromFrames.ts`).
+   * nommés, l'analyse des vignettes (`creditsFromFrames.ts`) ou l'audio des
+   * voisins de saison (`audioVerdict.ts`).
    *
    * Champ ADDITIF au fil des versions : un client qui ne connaît pas une valeur
    * ne fait rien de moins — personne ne branche sur elle, elle sert au journal
    * et au diagnostic.
    */
-  source: "jellyfin" | "chapters" | "frames";
+  source: "jellyfin" | "chapters" | "frames" | "audio";
   /** `endMs` touche la fin du média (au seuil POST_CREDITS_THRESHOLD_MS près). */
   endsAtMediaEnd: boolean;
   /** Il reste quelque chose à voir après ce segment — une scène post-générique. */
@@ -212,7 +213,10 @@ export function parsePlaybackSegmentsResponse(raw: unknown): PlaybackSegmentsRes
       type: s.type,
       startMs,
       endMs,
-      source: s.source === "chapters" || s.source === "frames" ? s.source : "jellyfin",
+      source:
+        s.source === "chapters" || s.source === "frames" || s.source === "audio"
+          ? s.source
+          : "jellyfin",
       endsAtMediaEnd: s.endsAtMediaEnd === true,
       hasContentAfter: s.hasContentAfter === true,
     });

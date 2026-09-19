@@ -16,7 +16,11 @@
  *      post-générique (`segmentChapters.ts`) ;
  *   6. à défaut de chapitres, les VIGNETTES de la barre de progression rendent
  *      le même service — et fournissent le générique quand personne ne l'a vu
- *      (`creditsFromFrames.ts`).
+ *      (`creditsFromFrames.ts`) ;
+ *   7. l'AUDIO des voisins de saison comble ce qui manque ENCORE — opening,
+ *      ending (`audioVerdict.ts`). Il s'applique AVANT les gardes et avant les
+ *      vignettes : une intro entendue passé la moitié du média tombe sous la
+ *      même garde que celle d'un greffon.
  *
  * L'API native rend une UNION : plusieurs greffons écrivent leurs segments
  * côte à côte, et le même passage y figure deux fois à une seconde près
@@ -49,6 +53,7 @@ import {
 } from "./segmentChapters";
 import { applyClaimGuards } from "./claimGuards";
 import { applyFrameVerdict, type FrameVerdict } from "./creditsFromFrames";
+import { applyAudioVerdict, type AudioVerdict } from "./audioVerdict";
 import {
   collectDict,
   collectTimestamps,
@@ -87,6 +92,11 @@ export interface SegmentSources {
    * vivent côté serveur (`services/trickplayFrames.ts`), la décision vit ici.
    */
   frames?: FrameVerdict | null;
+  /**
+   * Ce que l'audio des voisins de saison a reconnu — opening, ending — quand
+   * l'analyse a eu lieu. Déjà jugé côté serveur (`services/audioAnalysis.ts`).
+   */
+  audio?: AudioVerdict | null;
 }
 
 // ---------- Collecte par source ----------
@@ -256,6 +266,10 @@ export function resolvePlaybackSegments(
     (new Map() as BoundsByType);
   fillFromChapters(bounds, sources.chapters, runtime);
   refineOutroWithChapters(bounds, sources.chapters, runtime);
+  // L'audio des voisins comble ce qui manque ENCORE, et il passe AVANT les
+  // gardes : un opening rejoué sous le générique de fin donne une intro à 80 %
+  // du fichier, qui doit tomber comme celle d'un greffon.
+  applyAudioVerdict(bounds, sources.audio ?? null, runtime);
   // Les gardes de vraisemblance écartent les réclamations absurdes (intro en
   // fin de fichier, et l'outro qui la chevauche) quelle que soit leur source.
   applyClaimGuards(bounds, runtime);
