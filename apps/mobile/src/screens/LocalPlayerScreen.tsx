@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { StatusBar } from "react-native";
-import type { VideoRef } from "react-native-video";
+import type { PlayerEngineHandle } from "../player/engine/types";
 import { useTranslation } from "react-i18next";
 import { useLocalPlayerPlayback } from "../hooks/offline/useLocalPlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
@@ -28,7 +28,7 @@ interface Props {
  */
 export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props) {
   const { t } = useTranslation("player");
-  const videoRef = useRef<VideoRef>(null);
+  const engineRef = useRef<PlayerEngineHandle>(null);
 
   const pb = useLocalPlayerPlayback(itemId, localSource);
   const [paused, setPaused] = useState(false);
@@ -88,7 +88,7 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
     leavePlayer, handleNextEpisode, handlePrevEpisode,
   } = usePlayerHandlers({
-    itemId, pb, videoRef, paused,
+    itemId, pb, engineRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
     setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
     onEnded: () => { setEnded(true); },
@@ -131,11 +131,19 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
 
   return (
     <PlayerVideoSurface
-      videoRef={videoRef}
+      // Le fichier local passe encore par le lecteur système ; la façade
+      // (moteur décidé sur le snapshot, toutes les pistes) arrive avec
+      // l'étape « hors ligne complet ».
+      engine="native"
+      engineRef={engineRef}
       streamUrl={pb.streamUrl as string}
       headers={pb.headers}
       startPositionMs={pb.startPositionMs}
       isDirectPlay
+      streams={pb.streams}
+      selectedAudioIndex={-1}
+      selectedSubtitleIndex={-1}
+      externalSubtitles={[]}
       textTracks={[]}
       title={pb.item?.Name ?? ""}
       artist={pb.item?.SeriesName ?? ""}
@@ -147,6 +155,7 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
       isAirPlaying={isAirPlaying}
       showLoading={isBuffering && !hasEverPlayed.current}
       overlayVisible={overlayVisible}
+      reloadToken={String(pb.fetchNonce)}
       onLoad={(data) => { pb.onLoad(data); handleLoad(data); }}
       onProgress={handleProgress}
       onEnd={handleEnd}

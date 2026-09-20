@@ -1,6 +1,9 @@
 import { Platform } from "react-native";
 import { TextTrackType } from "react-native-video";
 import type { MediaSource, MediaStream as JfStream, PlaybackInfoResponse } from "@tentacle-tv/shared";
+import { supportsAv1HardwareDecode } from "../../modules/mpv-player";
+import { externalSubtitleFormat } from "@/player/engine/trackMapping";
+import type { ExternalSubtitleSource, PlayerEngineKind } from "@/player/engine/types";
 import { buildIosDeviceProfile } from "../lib/iosDeviceProfile";
 import { buildAndroidDeviceProfile } from "../lib/androidDeviceProfile";
 import { toISO6391 } from "../lib/playerUtils";
@@ -19,6 +22,19 @@ export interface TextTrackEntry {
   uri: string;
 }
 
+/** Ce que `fetchPlaybackInfo` accepte : pistes, position, plafond, relance, moteur. */
+export interface PlaybackFetchOptions {
+  audioStreamIndex?: number;
+  subtitleStreamIndex?: number;
+  startTimeTicks?: number;
+  maxBitrate?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  isRetry?: boolean;
+  /** Le moteur pour lequel négocier ; sinon celui de la session. */
+  engine?: PlayerEngineKind;
+}
+
 /** Build sideloaded VTT tracks for iOS AVPlayer (direct play only) */
 export function buildTextTracks(
   ms: MediaSource,
@@ -34,6 +50,27 @@ export function buildTextTracks(
       type: TextTrackType.VTT,
       uri: getSubtitleUrl(itemId, ms.Id, s.Index, "vtt"),
     }));
+}
+
+/**
+ * Les sous-titres texte que le lecteur avancé ajoute lui-même (`sub-add`),
+ * servis dans leur FORMAT D'ORIGINE (`Stream.ass`, jamais converti). En lecture
+ * directe, seuls les externes : les pistes intégrées sont dans le fichier. Sous
+ * un plafond de débit (HLS), tous les textes : le flux transcodé n'en porte aucun.
+ */
+export function buildExternalSubtitles(
+  ms: MediaSource,
+  getSubtitleUrl: (itemId: string, msId: string, idx: number, ext: string) => string,
+  itemId: string,
+  options: { externalOnly: boolean },
+): ExternalSubtitleSource[] {
+  if (!ms.MediaStreams) return [];
+  return ms.MediaStreams
+    .filter((s) => s.Type === "Subtitle" && !isBitmapSub(s) && (!options.externalOnly || s.IsExternal === true))
+    .map((s) => {
+      const format = externalSubtitleFormat(s.Codec);
+      return { jellyfinIndex: s.Index, url: getSubtitleUrl(itemId, ms.Id, s.Index, format), format };
+    });
 }
 
 export function detectBurnIn(ms: MediaSource, subIdx: number): number {
@@ -98,11 +135,12 @@ export function buildStreamUrl(opts: {
   return url;
 }
 
-/** Construit le device profile selon la plateforme et le bitrate cible. */
-export function buildPlatformDeviceProfile(bitrate: number, isRetry: boolean) {
+/** Le profil d'appareil du MOTEUR qui lira, selon la plateforme et le débit cible. */
+export function buildPlatformDeviceProfile(engine: PlayerEngineKind, bitrate: number, isRetry: boolean) {
+  const maxBitrate = bitrate > 0 ? bitrate : undefined;
   const profile = Platform.OS === "android"
-    ? buildAndroidDeviceProfile(bitrate > 0 ? bitrate : undefined)
-    : buildIosDeviceProfile(bitrate > 0 ? bitrate : undefined);
+    ? buildAndroidDeviceProfile(engine, maxBitrate)
+    : buildIosDeviceProfile(engine, maxBitrate, { av1Hardware: supportsAv1HardwareDecode() });
   if (isRetry) profile.DirectPlayProfiles = [];
   return profile;
 }
