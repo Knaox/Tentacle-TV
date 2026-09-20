@@ -47,11 +47,18 @@ Composants de MPVKit (liste du script de construction du fork, `Sources/BuildScr
 
 Conformité LGPL : les sources des versions utilisées et la recette de
 compilation sont publiques (dépôts ci-dessus, workflow `mpvkit.yml` versionné
-ici) ; la mention figure dans « À propos › Crédits » de l'application. Les
-xcframeworks du fork sont **statiques** : la variante LGPL destinée au store
-doit être livrée en frameworks dynamiques, ou accompagnée des objets permettant
-la réédition de liens, pour satisfaire la section 6 de la LGPL v2.1 — à vérifier
-dans `mpvkit.yml` avant soumission.
+ici) ; la mention figure dans « À propos › Crédits » de l'application.
+
+**Liaison statique — tranché (2026-09-20).** Le xcframework est statique et le
+reste. La LGPL (v2.1 §6 a, v3 §4 d 0) exige qu'un utilisateur puisse
+**relier** l'application avec une version modifiée de la bibliothèque ; elle
+n'impose pas une bibliothèque partagée. Tentacle TV est publié sous MIT, code
+complet sur GitHub, chaque version livrée étant taguée (`mobile-vX.Y.Z`) :
+quiconque peut reconstruire l'application depuis ses sources avec un autre
+MPVKit. C'est le « code de l'application » en forme source que la licence
+demande. Trois obligations en découlent, et rien d'autre : le tag de chaque
+version soumise reste public ; ce fichier et les crédits restent à jour ; la
+variante LGPL (`mpvkit.yml`) est celle du paquet soumis à l'App Store.
 
 ### Android — libmpv-android et le décodeur FFmpeg de Jellyfin
 

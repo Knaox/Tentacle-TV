@@ -112,9 +112,13 @@ développement et TestFlight seulement.
    `license`, `:http`, `:sha256`), `pod install`, build TestFlight de contrôle.
 3. `apps/mobile/THIRD-PARTY-LICENSES.md` et « À propos › Crédits » listent les
    composants et leurs licences ; les sources et la recette sont publiques.
-4. **Liaison statique** : le xcframework combiné est statique ; la LGPL §6
-   demande la relinkabilité (frameworks dynamiques ou objets fournis). À
-   trancher dans `mpvkit.yml` avant la soumission.
+4. **Liaison statique — tranché** : le xcframework reste statique. La LGPL
+   demande de pouvoir relier l'app avec une bibliothèque modifiée, pas une
+   bibliothèque partagée ; le code complet de Tentacle TV est public (MIT) et
+   chaque version soumise est taguée, donc reconstructible. Obligations :
+   tag public, crédits et `THIRD-PARTY-LICENSES.md` à jour, variante LGPL dans
+   le paquet soumis. TestFlight avec les binaires GPL du fork reste le chemin
+   de test (décision de session).
 
 ## 6. Ouvert, non vérifié, à trancher
 
