@@ -4,9 +4,9 @@
  * panachage — une carte ne reste que si TOUS les épisodes la proposent, et
  * elle s'aligne sur le pire d'entre eux (avertissement audio, taille estimée).
  *
- * L'ordre des cartes fait le défaut — l'original quand l'appareil lit le
- * fichier, sinon la copie sans réencodage — mais l'Allégé reste offert à côté :
- * sur un téléphone, réduire la taille d'un titre est un besoin.
+ * L'ordre des cartes fait le défaut — l'original, que l'appareil lit tel quel
+ * dans presque tous les cas depuis le lecteur avancé — mais l'Allégé reste
+ * offert à côté : sur un téléphone, réduire la taille d'un titre est un besoin.
  */
 
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -19,7 +19,7 @@ import {
   type PlatformMediaSupport,
 } from "@tentacle-tv/offline-core";
 
-const KINDS: readonly OfflineVariantKind[] = ["original", "remux", "light"];
+const KINDS: readonly OfflineVariantKind[] = ["original", "light"];
 
 export function planForItems(
   items: readonly MediaItem[],

@@ -94,12 +94,13 @@ export function unionSupport(a: PlatformMediaSupport, b: PlatformMediaSupport): 
 }
 
 /**
- * Hors ligne : ce que l'appareil sait lire. Le lecteur local passe encore par
- * le seul lecteur natif ; l'union des deux moteurs arrive avec lui (étape
- * « hors ligne complet »), sans changer ces deux noms.
+ * Hors ligne : ce que l'appareil sait lire à lui seul, ses deux moteurs
+ * réunis — le lecteur local passe par la même façade que le flux serveur, et
+ * personne ne transcode un fichier déjà sur l'appareil. Le natif vient en
+ * premier : ses jetons gardent la tête des listes.
  */
-export const IOS_LOCAL_SUPPORT: PlatformMediaSupport = IOS_NATIVE_SUPPORT;
-export const ANDROID_LOCAL_SUPPORT: PlatformMediaSupport = ANDROID_NATIVE_SUPPORT;
+export const IOS_LOCAL_SUPPORT: PlatformMediaSupport = unionSupport(IOS_NATIVE_SUPPORT, IOS_MPV_SUPPORT);
+export const ANDROID_LOCAL_SUPPORT: PlatformMediaSupport = unionSupport(ANDROID_NATIVE_SUPPORT, ANDROID_MPV_SUPPORT);
 
 /** La forme attendue par un `DirectPlayProfile` Jellyfin : « a,b,c ». */
 export function supportList(values: ReadonlySet<string>): string {

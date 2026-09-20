@@ -65,9 +65,14 @@ describe("platformSupport", () => {
     expect(supportList(union.containers).startsWith("mp4,m4v,mov")).toBe(true);
   });
 
-  it("hors ligne : encore le natif seul, jusqu'au lecteur local par la façade", () => {
-    expect(IOS_LOCAL_SUPPORT).toBe(IOS_NATIVE_SUPPORT);
-    expect(ANDROID_LOCAL_SUPPORT).toBe(ANDROID_NATIVE_SUPPORT);
+  it("hors ligne : les deux moteurs réunis — un MKV DTS se garde tel quel sur iPhone", () => {
+    expect(IOS_LOCAL_SUPPORT.containers.has("mkv")).toBe(true);
+    expect(IOS_LOCAL_SUPPORT.audioCodecs.has("dts")).toBe(true);
+    expect(IOS_LOCAL_SUPPORT.subtitleCodecs.has("pgssub")).toBe(true);
+    expect(IOS_LOCAL_SUPPORT.deinterlaces).toBe(true);
+    expect(supportList(IOS_LOCAL_SUPPORT.containers).startsWith("mp4,m4v,mov")).toBe(true);
+    expect(ANDROID_LOCAL_SUPPORT.containers.has("avi")).toBe(true);
+    expect(ANDROID_LOCAL_SUPPORT.audioCodecs.has("truehd")).toBe(true);
   });
 
   it("un conteneur Jellyfin en liste est lu si un jeton est connu", () => {
