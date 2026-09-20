@@ -1,59 +1,31 @@
-import { useMemo } from "react";
+import { useImperativeHandle, useMemo, useRef } from "react";
 import { Platform, View } from "react-native";
-import type { ReactNode, RefObject } from "react";
 import Video, { type OnLoadData, type OnProgressData, type VideoRef, SelectedTrackType } from "react-native-video";
 import { PLAYER } from "@/theme";
-import type { TextTrackEntry } from "@/hooks/usePlaybackInfoFetch";
-import { AirPlayIndicator } from "./AirPlayIndicator";
-import { PlayerGestures } from "./PlayerGestures";
-import { PlayerLoadingView } from "./PlayerLoadingView";
-import { SubtitleOverlay } from "./SubtitleOverlay";
-
-export interface PlayerVideoSurfaceProps {
-  videoRef: RefObject<VideoRef | null>;
-  /** URL du flux serveur, ou URI `file://` d'un fichier local. */
-  streamUrl: string;
-  headers: Record<string, string>;
-  startPositionMs: number;
-  isDirectPlay: boolean;
-  textTracks: TextTrackEntry[];
-  title: string;
-  artist: string;
-  paused: boolean;
-  /** Index NATIF de la piste audio (-1 = laisser le lecteur choisir). */
-  audioTrackSelectedIndex: number;
-  videoReady: boolean;
-  currentTime: number;
-  subtitleVttUrl: string | null;
-  isAirPlaying: boolean;
-  /** Le spinner de premier chargement. */
-  showLoading: boolean;
-  overlayVisible: boolean;
-  onLoad: (data: OnLoadData) => void;
-  onProgress: (data: OnProgressData) => void;
-  onEnd: () => void;
-  onError: (error: unknown) => void;
-  onBuffering: (buffering: boolean) => void;
-  onExternalPlaybackChange: (active: boolean) => void;
-  onSeek: (seconds: number) => void;
-  onToggleOverlay: () => void;
-  onSwipeDown: () => void;
-  /** L'habillage (contrôles, cartes de fin) et les badges, par-dessus. */
-  children?: ReactNode;
-}
+import { AirPlayIndicator } from "@/components/player/AirPlayIndicator";
+import { PlayerGestures } from "@/components/player/PlayerGestures";
+import { PlayerLoadingView } from "@/components/player/PlayerLoadingView";
+import { SubtitleOverlay } from "@/components/player/SubtitleOverlay";
+import type { EngineSurfaceProps } from "./types";
 
 /**
- * La surface vidéo du lecteur mobile — `<Video>`, sous-titres dessinés,
- * indicateur AirPlay, spinner, gestes — commune au flux serveur et au fichier
- * local. Extraction mécanique de `PlayerScreen` : rien n'y change pour le
- * streaming.
+ * La surface du lecteur SYSTÈME (AVPlayer sur iOS, ExoPlayer sur Android, par
+ * react-native-video) — `<Video>`, sous-titres dessinés par l'overlay,
+ * indicateur AirPlay, spinner, gestes. C'est l'ancienne `PlayerVideoSurface`,
+ * derrière le contrat commun des deux moteurs : rien n'y change pour le
+ * streaming, la poignée `engineRef` remplace la ref vidéo des gestionnaires.
  */
-export function PlayerVideoSurface({
-  videoRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
+export function NativeVideoSurface({
+  engineRef, streamUrl, headers, startPositionMs, isDirectPlay, textTracks, title, artist,
   paused, audioTrackSelectedIndex, videoReady, currentTime, subtitleVttUrl, isAirPlaying, showLoading,
   overlayVisible, onLoad, onProgress, onEnd, onError, onBuffering, onExternalPlaybackChange,
   onSeek, onToggleOverlay, onSwipeDown, children,
-}: PlayerVideoSurfaceProps) {
+}: EngineSurfaceProps) {
+  const videoRef = useRef<VideoRef>(null);
+  useImperativeHandle(engineRef, () => ({
+    seek: (seconds: number) => videoRef.current?.seek(seconds),
+  }), []);
+
   // La source est MÉMOÏSÉE sur ses valeurs : react-native-video (Android,
   // `Source.equals`) recrée le lecteur dès que l'objet reçu diffère — avec un
   // littéral reconstruit à chaque rendu, chaque `setState` du lecteur
@@ -104,8 +76,16 @@ export function PlayerVideoSurface({
           // All subtitles handled by custom SubtitleOverlay — disable native tracks
           videoReady ? { type: SelectedTrackType.DISABLED } : undefined
         }
-        onLoad={onLoad}
-        onProgress={onProgress}
+        onLoad={(data: OnLoadData) => onLoad({
+          duration: data.duration,
+          audioTracks: data.audioTracks ?? [],
+          naturalWidth: data.naturalSize?.width,
+          naturalHeight: data.naturalSize?.height,
+        })}
+        onProgress={(data: OnProgressData) => onProgress({
+          currentTime: data.currentTime,
+          playableDuration: data.playableDuration,
+        })}
         onEnd={onEnd}
         onError={onError}
         onBuffer={({ isBuffering }) => onBuffering(isBuffering)}

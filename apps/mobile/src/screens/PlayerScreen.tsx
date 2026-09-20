@@ -1,16 +1,19 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, StatusBar } from "react-native";
-import type { VideoRef } from "react-native-video";
 import { PLAYER } from "@/theme";
 import { TICKS_PER_SECOND, itemTrackChoiceFromStreams } from "@tentacle-tv/shared";
 import { useTranslation } from "react-i18next";
-import { usePlayerPlayback } from "../hooks/usePlayerPlayback";
+import { useMediaItem, useUserId } from "@tentacle-tv/api-client";
+import { usePlayerPlayback, startTicksOf } from "../hooks/usePlayerPlayback";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
 import { usePlayerBackground } from "../hooks/usePlayerBackground";
-import { useUserId } from "@tentacle-tv/api-client";
 import { usePlayerPreferences } from "../hooks/usePlayerPreferences";
 import { useRememberLocalTracks } from "../hooks/offline/useRememberLocalTracks";
+import { useEngineSettings } from "../player/engine/engineSettings";
+import { usePlayerEngine } from "../player/engine/usePlayerEngine";
+import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
+import type { PlayerEngineHandle } from "../player/engine/types";
 import { formatTrackLabel } from "../lib/playerUtils";
 import { MobilePlayerOverlay } from "../components/MobilePlayerOverlay";
 import { AutoCapBadge } from "../components/player/AutoCapBadge";
@@ -22,9 +25,14 @@ interface Props { itemId: string }
 
 export function PlayerScreen({ itemId }: Props) {
   const { t } = useTranslation("player");
-  const videoRef = useRef<VideoRef>(null);
+  const engineRef = useRef<PlayerEngineHandle>(null);
 
-  const pb = usePlayerPlayback(itemId);
+  // Le moteur se décide sur les flux de l'élément, AVANT PlaybackInfo : le
+  // profil envoyé à Jellyfin est celui du moteur qui lira.
+  const { data: routedItem } = useMediaItem(itemId);
+  const eng = usePlayerEngine(routedItem);
+  const engineSettings = useEngineSettings();
+  const pb = usePlayerPlayback(itemId, eng.engine);
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [bufferedTime, setBufferedTime] = useState(0);
@@ -36,6 +44,7 @@ export function PlayerScreen({ itemId }: Props) {
   const retryingRef = useRef(false);
   const hasEverPlayed = useRef(false);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [playerDetail, setPlayerDetail] = useState<string | null>(null);
   const [isAirPlaying, setIsAirPlaying] = useState(false);
   /** Le flux est allé au bout — donné à l'arbitre, qui en tire l'écran de fin. */
   const [ended, setEnded] = useState(false);
@@ -134,13 +143,24 @@ export function PlayerScreen({ itemId }: Props) {
     [pb.streams],
   );
 
+  // Une lecture directe a échoué : l'autre moteur, s'il est plausible, avec le
+  // profil de CE moteur et la position courante — sans transcodage.
+  const onDirectPlayFailed = useCallback((): boolean => {
+    const next = eng.fallbackEngine();
+    if (next === null) return false;
+    eng.forceEngine(next, "fallback");
+    pb.fetchPlaybackInfo({ engine: next, startTimeTicks: startTicksOf(pb.positionRef.current) });
+    return true;
+  }, [eng, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
     leavePlayer, handleNextEpisode, handlePrevEpisode,
   } = usePlayerHandlers({
-    itemId, pb, videoRef, paused,
+    itemId, pb, engineRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
-    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
+    setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
+    onDirectPlayFailed,
     onEnded: () => { setEnded(true); },
   });
 
@@ -159,6 +179,12 @@ export function PlayerScreen({ itemId }: Props) {
   // flux au retour. iOS ne bouge pas — la lecture en fond y est voulue.
   usePlayerBackground(pb);
 
+  // Développement : le lecteur pilotable depuis l'inspecteur (voir le crochet).
+  usePlayerDevHook(useMemo(() => ({
+    engine: pb.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: pb.isDirectPlay,
+    changeAudio: handleSelectAudio, changeSubtitle: handleSelectSubtitle, seek: handleSeek, setPaused,
+  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, handleSelectAudio, handleSelectSubtitle, handleSeek]));
+
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
   // Error screen — from playback hook (HTTP error) or player (codec/stream error)
@@ -166,8 +192,10 @@ export function PlayerScreen({ itemId }: Props) {
     return (
       <PlayerErrorView
         message={playerError ?? t("playbackError")}
+        details={[`${pb.engine} · ${eng.reason}`, pb.error, playerDetail].filter(Boolean).join("\n")}
         onRetry={() => {
           setPlayerError(null);
+          setPlayerDetail(null);
           retryCount.current = 0;
           retryingRef.current = false;
           pb.retry();
@@ -188,28 +216,37 @@ export function PlayerScreen({ itemId }: Props) {
 
   return (
     <PlayerVideoSurface
-      videoRef={videoRef}
+      engine={pb.engine}
+      engineRef={engineRef}
       streamUrl={pb.streamUrl}
       headers={pb.headers}
       startPositionMs={pb.startPositionMs}
       isDirectPlay={pb.isDirectPlay}
+      streams={pb.streams}
+      selectedAudioIndex={pb.audioIndex}
+      selectedSubtitleIndex={pb.subtitleIndex}
+      externalSubtitles={pb.externalSubtitles}
       textTracks={pb.textTracks}
+      audioTrackSelectedIndex={pb.audioTrackSelectedIndex}
       title={pb.item?.Name ?? ""}
       artist={pb.item?.SeriesName ?? ""}
       paused={paused}
-      audioTrackSelectedIndex={pb.audioTrackSelectedIndex}
       videoReady={videoReady}
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
       isAirPlaying={isAirPlaying}
       showLoading={isBuffering && !hasEverPlayed.current}
       overlayVisible={overlayVisible}
+      reloadToken={String(pb.fetchNonce)}
+      subtitleScale={engineSettings.subtitleScale}
+      subtitlePosition={engineSettings.subtitlePosition}
       onLoad={handleLoad}
       onProgress={handleProgress}
       onEnd={handleEnd}
       onError={handleError}
       onBuffering={setIsBuffering}
       onExternalPlaybackChange={setIsAirPlaying}
+      onPausedChange={setPaused}
       onSeek={handleSeek}
       onToggleOverlay={toggleOverlay}
       onSwipeDown={leavePlayer}

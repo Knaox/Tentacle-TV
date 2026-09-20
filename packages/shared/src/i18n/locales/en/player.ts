@@ -71,6 +71,8 @@ export default {
   qualityReduced: "Quality lowered to match your network speed",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Jellyfin session expired — confirm pairing again from a signed-in device",
+  // Le motif technique d'une erreur de lecture, replié.
+  details: "Details",
   retry: "Retry",
   back: "Back",
   airplayActive: "Playing on external display",

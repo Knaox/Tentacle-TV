@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { OnLoadData } from "react-native-video";
 import { i18n, resolveMediaTracks, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import {
   formatLocalTrackLabel,
@@ -17,6 +16,7 @@ import {
   type SubtitleMode,
 } from "@tentacle-tv/offline-core";
 import type { OfflineLocalSource } from "@/offline/engineApi";
+import type { EngineAudioTrack, EngineLoadData } from "@/player/engine/types";
 import { prefsStore } from "@/offline/prefsCache";
 import { useRememberLocalTracks } from "./useRememberLocalTracks";
 
@@ -32,7 +32,7 @@ export interface Track {
   isDefault?: boolean;
 }
 
-type NativeAudioTrack = OnLoadData["audioTracks"][number];
+type NativeAudioTrack = EngineAudioTrack;
 
 /** `langMatches` compare des codes nus : « fr-BE » ne correspondrait à rien sans ce découpage. */
 const baseLang = (lang: string | undefined): string | undefined => lang?.split("-")[0]?.toLowerCase();
@@ -90,8 +90,8 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
   );
   const snapshotStreams = useMemo(() => toSnapshotStreams(streams), [streams]);
 
-  const onLoad = useCallback((data: OnLoadData) => {
-    setNativeAudio(data.audioTracks ?? []);
+  const onLoad = useCallback((data: EngineLoadData) => {
+    setNativeAudio(data.audioTracks);
   }, []);
 
   const audioTracks: Track[] = useMemo(() => {
