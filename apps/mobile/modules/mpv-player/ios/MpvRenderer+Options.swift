@@ -41,7 +41,27 @@ extension MpvRenderer {
       setInitOption(handle, name, value)
     }
     setupSubtitleFonts(handle)
+    #if DEBUG
+    applyDeveloperOverrides(handle)
+    #endif
   }
+
+  #if DEBUG
+  /// Développement seulement : `TENTACLE_MPV_OPTS="vd-lavc-threads=1;hwdec=no"`
+  /// dans l'environnement du processus (au simulateur, préfixe
+  /// `SIMCTL_CHILD_`) pose des options d'initialisation en plus, pour isoler
+  /// un plantage sans reconstruire. Le même levier que `TENTACLE_VIDEO_MONTAGE`
+  /// au bureau ; absent des builds Release.
+  func applyDeveloperOverrides(_ handle: OpaquePointer) {
+    guard let raw = ProcessInfo.processInfo.environment["TENTACLE_MPV_OPTS"], !raw.isEmpty else { return }
+    for pair in raw.split(separator: ";") {
+      let parts = pair.split(separator: "=", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
+      guard parts.count == 2, !parts[0].isEmpty else { continue }
+      MpvLogger.shared.log("option de développement : \(parts[0])=\(parts[1])", type: "Info")
+      setInitOption(handle, parts[0], parts[1])
+    }
+  }
+  #endif
 
   /// Une option d'initialisation ; le refus est journalisé (même règle que le bureau).
   func setInitOption(_ handle: OpaquePointer, _ name: String, _ value: String) {
@@ -71,7 +91,11 @@ extension MpvRenderer {
     ("cache-pause-wait", "10"),
     ("network-timeout", "30"),
     ("stream-lavf-o",
-     "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_on_http_error=4xx\\,5xx,reconnect_delay_max=5,reconnect_max_retries=8"),
+     "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5,reconnect_max_retries=8"),
+    // La valeur contient une virgule, le séparateur de la liste : `\,` n'est pas
+    // un échappement pour mpv (mesuré : « Could not set AVOption 5xx,… »),
+    // `-append` ajoute UN couple sans le redécouper.
+    ("stream-lavf-o-append", "reconnect_on_http_error=4xx,5xx"),
     ("demuxer-lavf-o", "probesize=10000000,analyzeduration=10000000"),
     // fetch vérifie les certificats : mpv aussi.
     ("tls-verify", "yes"),
