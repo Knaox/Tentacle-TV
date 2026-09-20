@@ -3,6 +3,7 @@ export { SettingsRow } from "./SettingsRow";
 export { ThemeModeToggle } from "./ThemeModeToggle";
 export { LiquidGlassToggle } from "./LiquidGlassToggle";
 export { PlaybackSettingsSection } from "./PlaybackSettingsSection";
+export { VideoEngineSection } from "./VideoEngineSection";
 export { SegmentedChoice } from "./SegmentedChoice";
 export { SteppedSlider } from "./SteppedSlider";
 export { BrandSwitch } from "./BrandSwitch";
