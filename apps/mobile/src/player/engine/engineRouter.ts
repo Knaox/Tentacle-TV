@@ -13,8 +13,9 @@ import type { MobilePlatform, PlayerEngineKind, VideoEngineSetting } from "./typ
  * envoyé à Jellyfin est celui du moteur choisi. On garde le lecteur système
  * là où il gagne (AirPlay, Dolby Vision profil 5, Atmos du système, HDR
  * Android) et le lecteur avancé prend tout ce que le système ne lit pas tel
- * quel. Aucune bascule automatique du système vers l'avancé en cours de
- * lecture : la décision vaut pour la session.
+ * quel. La décision vaut pour la session, à deux exceptions près tenues par
+ * la façade `usePlayerEngine` : le repli après un échec de lecture, et
+ * AirPlay, réactif dans les deux sens.
  */
 export type EngineReason =
   | "setting"

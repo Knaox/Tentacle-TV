@@ -7,6 +7,7 @@ import { useLocalSnapshotItem, useLocalSnapshotJson } from "../hooks/offline/use
 import type { MediaItem } from "@tentacle-tv/shared";
 import { localRouterItem } from "../hooks/offline/localRouterItem";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
+import { useAirPlayRestoreSeek } from "../player/engine/useAirPlayRoute";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
@@ -131,6 +132,15 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
     onEndOfPlayback: leavePlayer,
   });
 
+  // AirPlay sur un fichier local lu par le lecteur système : pas de bascule de
+  // moteur (le lecteur avancé ne diffuse pas, le système ne lit pas un MKV),
+  // seulement la position rétablie quand l'AVPlayer recharge son flux.
+  const restoreAfterAirPlay = useAirPlayRestoreSeek({ engineRef, positionRef: pb.positionRef, streamOffset: 0, videoReady });
+  const onExternalPlaybackChange = useCallback((active: boolean) => {
+    setIsAirPlaying(active);
+    restoreAfterAirPlay(active);
+  }, [restoreAfterAirPlay]);
+
   // Développement : le lecteur local pilotable depuis l'inspecteur (pas d'AirPlay à simuler ici).
   usePlayerDevHook(useMemo(() => ({
     engine: eng.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: true,
@@ -201,7 +211,7 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
       onEnd={handleEnd}
       onError={handleError}
       onBuffering={setIsBuffering}
-      onExternalPlaybackChange={setIsAirPlaying}
+      onExternalPlaybackChange={onExternalPlaybackChange}
       onSeek={handleSeek}
       onToggleOverlay={toggleOverlay}
       onSwipeDown={leavePlayer}

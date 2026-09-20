@@ -94,13 +94,9 @@ export function NativeVideoSurface({
         preventsDisplaySleepDuringVideoPlayback
         showNotificationControls={Platform.OS === "ios"}
         allowsExternalPlayback={Platform.OS === "ios"}
-        onExternalPlaybackChange={({ isExternalPlaybackActive }) => {
-          onExternalPlaybackChange(isExternalPlaybackActive);
-          // Restore position when AirPlay activates (AVPlayer reloads the stream)
-          if (isExternalPlaybackActive && currentTime > 1) {
-            setTimeout(() => videoRef.current?.seek(currentTime), 500);
-          }
-        }}
+        // La position à rétablir quand AirPlay s'allume est l'affaire de
+        // l'écran : lui seul connaît le décalage du flux (transcodage).
+        onExternalPlaybackChange={({ isExternalPlaybackActive }) => onExternalPlaybackChange(isExternalPlaybackActive)}
         // iOS: background playback + PiP for AirPlay continuity
         {...(Platform.OS === "ios" ? {
           playInBackground: true,
