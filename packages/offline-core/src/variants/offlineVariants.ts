@@ -2,27 +2,26 @@
  * Quelles variantes proposer pour GARDER un titre hors ligne, sur cette
  * plateforme, pour ce fichier — logique pure, testée.
  *
- * Hors ligne, personne ne transcode : le fichier doit se lire tel quel. Sur
- * iPhone, un MKV « Original » serait illisible ; d'où la variante `remux` —
- * la vidéo recopiée telle quelle dans un MP4 par le serveur (palier `pmax`),
- * l'audio converti seulement s'il est incompatible. L'Allégé reste le repli
- * universel.
+ * Hors ligne, personne ne transcode : le fichier doit se lire tel quel. Depuis
+ * que le mobile embarque le lecteur avancé (libmpv), l'appareil lit presque
+ * tout — MKV, DTS, TrueHD, ASS stylé, PGS —, l'original est donc la carte
+ * normale. L'Allégé (recompressé par le serveur) reste offert à côté : sur un
+ * téléphone, réduire la taille d'un titre est un besoin, pas un accident.
  *
- * Trois cartes possibles, dans cet ordre : `original`, `remux`, `light`. Ce
- * qui est exclu l'est avec sa raison : le dialogue peut l'expliquer. L'ordre
- * fait le défaut — on ne dégrade jamais par inadvertance —, mais les trois
- * cohabitent : réduire la taille d'un titre reste un choix qu'on peut faire,
- * y compris quand la seule version sans perte est un remux.
+ * La variante `remux` (« qualité d'origine en MP4 », palier `pmax`) n'est plus
+ * proposée : elle ne servait qu'à contourner un lecteur qui ne lisait pas le
+ * MKV. Le type et `REMUX_PRESET` restent : les titres déjà gardés sous cette
+ * forme se lisent et s'affichent encore.
  *
- * DEUX droits distincts, et non un seul : le remux recopie l'image, l'Allégé
- * la recompresse. Un compte sans mode Allégé garde donc le remux.
+ * Deux cartes possibles, dans cet ordre : `original`, `light`. Ce qui est
+ * exclu l'est avec sa raison : le dialogue peut l'expliquer.
  */
 
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import type { DownloadCapabilities } from "../sync/capabilities";
 import type { PlatformMediaSupport } from "./platformSupport";
 
-/** Le palier « qualité d'origine en MP4 » côté serveur. */
+/** Le palier « qualité d'origine en MP4 » côté serveur — lu, plus jamais écrit. */
 export const REMUX_PRESET = "pmax";
 
 export type OfflineVariantKind = "original" | "remux" | "light";
@@ -30,10 +29,6 @@ export type OfflineVariantKind = "original" | "remux" | "light";
 export type OfflineVariantReason =
   /** Original : lisible tel quel. */
   | "playable"
-  /** Remux : le conteneur (mkv…) n'est pas lu, la vidéo est recopiée dans un MP4. */
-  | "container"
-  /** Remux : vidéo recopiée, audio incompatible converti. */
-  | "audioCodec"
   /** Allégé : toujours disponible avec le droit de conversion. */
   | "fallback";
 
@@ -43,23 +38,14 @@ export type OfflineExclusionReason =
   | "audioCodec"
   | "dolbyVision"
   | "interlaced"
-  | "serverPreset"
-  | "right"
-  /**
-   * Remux écarté : il sort toujours de l'AAC, et le serveur n'a pas le droit
-   * de convertir l'audio d'une source qui n'en a aucune piste. Le fichier
-   * arriverait muet — mieux vaut ne pas le proposer.
-   */
-  | "audioRight"
-  /** Remux inutile : l'original est déjà entièrement lisible. */
-  | "redundant";
+  | "right";
 
 export interface OfflineVariantCard {
   kind: OfflineVariantKind;
   reason: OfflineVariantReason;
   /** Pistes audio de la source lisibles / non lisibles ici (index Jellyfin). */
   audio: { playable: number[]; unplayable: number[] };
-  /** Exacte (original), borne haute (remux = taille de la source), `null` pour l'Allégé. */
+  /** Exacte (original), `null` pour l'Allégé. */
   sizeBytes: number | null;
   sizeIsEstimate: boolean;
 }
@@ -81,10 +67,10 @@ function codecOf(stream: MediaStream | undefined): string {
 }
 
 /**
- * Dolby Vision qu'aucun des deux lecteurs ne rend correctement dans un MP4 :
- * le profil 5 (couche de base IPT, couleurs fausses) et le profil 7 (double
- * couche). Un `VideoRangeType` textuel « DOVI » sans profil connu est traité
- * de même, par prudence. Les profils 8 (base HDR10/HLG/SDR) et 4 passent.
+ * Dolby Vision qu'aucun des deux lecteurs ne rend correctement : le profil 5
+ * (couche de base IPT, couleurs fausses) et le profil 7 (double couche). Un
+ * `VideoRangeType` textuel « DOVI » sans profil connu est traité de même, par
+ * prudence. Les profils 8 (base HDR10/HLG/SDR) et 4 passent.
  */
 function incompatibleDolbyVision(video: MediaStream): boolean {
   const profile = video.DvProfile;
@@ -113,10 +99,6 @@ export function offlineVariantsFor(
     playable: audios.filter((a) => platform.audioCodecs.has(codecOf(a))).map((a) => a.Index),
     unplayable: audios.filter((a) => !platform.audioCodecs.has(codecOf(a))).map((a) => a.Index),
   };
-  // Le palier `pmax` sort TOUJOURS de l'AAC (copier de l'ac3 vers un MP4 écrit
-  // un fichier sans index) : une piste déjà en AAC se recopie, les autres
-  // doivent être converties — ce que tout serveur n'autorise pas.
-  const aacOnBoard = audios.some((a) => codecOf(a) === "aac");
   const dolbyVision = video !== undefined && incompatibleDolbyVision(video);
   const interlaced = video?.IsInterlaced === true && !platform.deinterlaces;
 
@@ -143,23 +125,8 @@ export function offlineVariantsFor(
   else if (audios.length > 0 && audio.playable.length === 0) exclude("original", "audioCodec");
   else offer("original", "playable", size, false);
 
-  // Qualité d'origine en MP4 : seulement si elle apporte quelque chose.
-  const remuxable = videoCodec === "h264" || videoCodec === "hevc";
-  if (!capabilities.remuxDownloads) exclude("remux", "right");
-  else if (!capabilities.lightPresets.includes(REMUX_PRESET)) exclude("remux", "serverPreset");
-  else if (!capabilities.audioConversion && audios.length > 0 && !aacOnBoard) {
-    exclude("remux", "audioRight");
-  } else if (dolbyVision) exclude("remux", "dolbyVision");
-  else if (interlaced) exclude("remux", "interlaced");
-  else if (!remuxable) exclude("remux", "videoCodec");
-  else if (!platform.containers.has(container)) offer("remux", "container", size, true);
-  else if (audio.unplayable.length > 0) offer("remux", "audioCodec", size, true);
-  else exclude("remux", "redundant");
-
-  // Allégé : le repli, dès que la conversion est permise. Il vient APRÈS les
-  // deux autres, donc il n'est jamais le défaut — mais il reste offert à côté
-  // d'elles : sur un téléphone, réduire la taille d'un titre est un besoin, pas
-  // un accident.
+  // Allégé : le repli, dès que la conversion est permise. Il vient APRÈS
+  // l'original, donc il n'est jamais le défaut — mais il reste offert à côté.
   if (!capabilities.lightDownloads) exclude("light", "right");
   else offer("light", "fallback", null, true);
 
