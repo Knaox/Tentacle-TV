@@ -1,19 +1,25 @@
 /**
  * Construction des entrées de mise en file à partir des DTO Jellyfin — la
- * version mobile de `downloadTargets.ts` du web, avec deux différences :
- * la variante « qualité d'origine (MP4) » (= Allégé, palier `pmax`) et les
- * side-cars : TOUTES les pistes texte, en VTT, pour TOUTES les variantes,
- * Original compris — le lecteur mobile dessine lui-même ses sous-titres depuis
- * du VTT, et les pistes internes d'un MP4 seraient perdues sinon.
+ * version mobile de `downloadTargets.ts` du web. Les side-cars de sous-titres
+ * suivent le moteur qui lira le fichier : une piste EXTERNE est gardée dans
+ * son format d'origine (l'ASS avec ses styles, que le lecteur avancé rend) ;
+ * une piste INTÉGRÉE n'a de side-car (VTT, pour l'overlay du lecteur système)
+ * que si le fichier gardé est un conteneur que ce lecteur lit — sinon le
+ * lecteur avancé la lit dans le fichier même, et un side-car la doublerait.
+ * Les variantes recompressées sortent en MP4 sans sous-titres : toutes les
+ * pistes texte y sont des side-cars.
  */
 
 import { Platform } from "react-native";
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import {
   ANDROID_LOCAL_SUPPORT,
+  ANDROID_NATIVE_SUPPORT,
   IOS_LOCAL_SUPPORT,
+  IOS_NATIVE_SUPPORT,
   REMUX_PRESET,
   estimateLightSizeBytes,
+  supportsToken,
   type EnqueueItemInput,
   type LightPresetId,
   type OfflineVariantKind,
@@ -41,9 +47,13 @@ export interface KeepOptions {
   burnSubtitleIndex?: number;
 }
 
-/** Ce que CET appareil lit tel quel. */
+/** Ce que CET appareil lit tel quel, ses deux moteurs réunis. */
 export const LOCAL_PLATFORM_SUPPORT: PlatformMediaSupport =
   Platform.OS === "ios" ? IOS_LOCAL_SUPPORT : ANDROID_LOCAL_SUPPORT;
+
+/** Ce que le seul lecteur système lit — décide si une piste intégrée a besoin d'un side-car. */
+const NATIVE_PLATFORM_SUPPORT: PlatformMediaSupport =
+  Platform.OS === "ios" ? IOS_NATIVE_SUPPORT : ANDROID_NATIVE_SUPPORT;
 
 function primarySource(item: MediaItem) {
   return item.MediaSources?.[0];
@@ -113,11 +123,28 @@ function langTag(stream: MediaStream & { IsHearingImpaired?: boolean }): string 
   return parts.join("-").replace(/[^a-z0-9-]/g, "");
 }
 
-/** Toutes les pistes texte, en VTT, quelle que soit la variante. */
-export function subtitleSideCars(item: MediaItem): SubtitleSideCarInput[] {
-  return streams(item)
-    .filter((s) => s.Type === "Subtitle" && TEXT_SUB_CODECS.has((s.Codec ?? "").toLowerCase()))
-    .map((s) => ({ index: s.Index, format: "vtt" as const, langTag: langTag(s) }));
+/** Le format servi tel quel par `/Subtitles/{index}/Stream.{format}` : jamais de conversion d'un ASS. */
+function originalFormat(codec: string): SubtitleSideCarInput["format"] {
+  if (codec === "ass" || codec === "ssa") return "ass";
+  if (codec === "vtt" || codec === "webvtt") return "vtt";
+  return "srt";
+}
+
+/**
+ * Les side-cars d'une variante : les pistes externes dans leur format, les
+ * intégrées en VTT quand le fichier gardé est lu par le lecteur système (un
+ * MP4 ; toute variante recompressée) — jamais quand le lecteur avancé lira
+ * le fichier lui-même (un MKV original).
+ */
+export function subtitleSideCars(item: MediaItem, kind: OfflineVariantKind): SubtitleSideCarInput[] {
+  const container = kind === "original" ? primarySource(item)?.Container : "mp4";
+  const embeddedNeedSideCar = supportsToken(NATIVE_PLATFORM_SUPPORT.containers, container);
+  return streams(item).flatMap((s) => {
+    const codec = (s.Codec ?? "").toLowerCase();
+    if (s.Type !== "Subtitle" || !TEXT_SUB_CODECS.has(codec)) return [];
+    if (s.IsExternal) return [{ index: s.Index, format: originalFormat(codec), langTag: langTag(s) }];
+    return embeddedNeedSideCar ? [{ index: s.Index, format: "vtt" as const, langTag: langTag(s) }] : [];
+  });
 }
 
 /** Taille annoncée pour UN titre : exacte (original), borne haute (remux), estimée (allégé). */
@@ -149,7 +176,7 @@ export function buildKeepItem(item: MediaItem, options: KeepOptions): EnqueueIte
     parentIndexNumber: isEpisode ? (item.ParentIndexNumber ?? undefined) : undefined,
     autoDeleteAfterWatch: options.autoDeleteAfterWatch,
     autoDeleteDelayMinutes: options.autoDeleteDelayMinutes,
-    subtitles: subtitleSideCars(item),
+    subtitles: subtitleSideCars(item, options.kind),
     estimatedSize: size ?? undefined,
   };
   if (original) {
