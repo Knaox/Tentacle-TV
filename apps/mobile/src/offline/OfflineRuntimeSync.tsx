@@ -14,6 +14,7 @@ import { syncAvatarCache } from "./avatarCache";
 import { setTransfersSuspended } from "./backgroundParallel";
 import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
+import { configureEngineSettings } from "@/player/engine/engineSettings";
 import { isLocalPlaybackActive } from "./nowPlaying";
 import { maybeRefreshOfflineCaches, refreshOfflineCaches } from "./prefsCache";
 import { syncPlaybackState } from "./resync";
@@ -66,6 +67,8 @@ export function OfflineRuntimeSync() {
   useEffect(() => {
     if (!storageReady) return;
     configureDeviceSettings(storage);
+    // Les réglages d'appareil du lecteur (moteur vidéo…) : même stockage, même moment.
+    configureEngineSettings(storage);
   }, [storage, storageReady]);
 
   useEffect(() => {
