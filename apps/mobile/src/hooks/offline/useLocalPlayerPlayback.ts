@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUserId } from "@tentacle-tv/api-client";
 import { ticksToSeconds, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { PlayerSessionCore } from "@/hooks/usePlayerPlayback";
+import type { PlayerEngineKind } from "@/player/engine/types";
 import { localExists, type OfflineLocalSource } from "@/offline/engineApi";
 import { clearNowPlaying, setNowPlaying } from "@/offline/nowPlaying";
 import { cachedMaxResumePct } from "@/offline/prefsCache";
@@ -18,9 +19,10 @@ import { useLocalTrickplay } from "./useLocalTrickplay";
  * La session d'une lecture LOCALE : le fichier de l'appareil, sans
  * PlaybackInfo ni réseau. Même noyau que le flux serveur
  * (`PlayerSessionCore`) — les gestionnaires, l'arbitre et l'habillage ne
- * voient pas la différence.
+ * voient pas la différence. Le moteur, décidé par la façade sur le snapshot,
+ * fixe le sens des index de pistes.
  */
-export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocalSource) {
+export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocalSource, engine: PlayerEngineKind) {
   const userId = useUserId();
   const { state } = useConnectivity();
   const online = state === "online";
@@ -33,7 +35,7 @@ export function useLocalPlayerPlayback(itemId: string, localSource: OfflineLocal
     () => ticksToSeconds(item?.RunTimeTicks ?? localSource.runtimeTicks ?? undefined),
     [item, localSource.runtimeTicks],
   );
-  const tracks = useLocalPlayerTracks({ userId, itemId, localSource, streams });
+  const tracks = useLocalPlayerTracks({ userId, itemId, localSource, streams, engine });
   const maxResumePct = useMemo(() => cachedMaxResumePct(), []);
 
   const reporting = useLocalPlaybackReporter({
