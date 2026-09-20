@@ -1,0 +1,40 @@
+diff --git a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
+index 75e2307fc6616aff7f0f9d884c907b4bdad14899..aed823173532611dfe96a9c3c9f7fb7736c34978 100644
+--- a/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
++++ b/android/src/main/java/com/brentvatne/exoplayer/ExoPlayerView.kt
+@@ -110,9 +110,16 @@ class ExoPlayerView @JvmOverloads constructor(context: Context, attrs: Attribute
+ 
+     fun setSubtitleStyle(style: SubtitleStyle) {
+         playerView.subtitleView?.let { subtitleView ->
+-            // Reset to defaults
+-            subtitleView.setUserDefaultStyle()
+-            subtitleView.setUserDefaultTextSize()
++            // Apply transparent background caption style (no black box)
++            val captionStyle = androidx.media3.ui.CaptionStyleCompat(
++                android.graphics.Color.WHITE,                    // foreground
++                android.graphics.Color.TRANSPARENT,              // background
++                android.graphics.Color.TRANSPARENT,              // window
++                androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW, // edge type
++                android.graphics.Color.BLACK,                    // edge color
++                null                                             // typeface
++            )
++            subtitleView.setStyle(captionStyle)
+ 
+             // Apply custom styling
+             if (style.fontSize > 0) {
+diff --git a/android/src/main/java/com/brentvatne/exoplayer/ReactExoplayerView.java b/android/src/main/java/com/brentvatne/exoplayer/ReactExoplayerView.java
+index 623d90c8b3ea080edd16a14fa0a494b1547d9dd7..4e2f4fc4b9bc8953205668c8332d230d5fbf3439 100644
+--- a/android/src/main/java/com/brentvatne/exoplayer/ReactExoplayerView.java
++++ b/android/src/main/java/com/brentvatne/exoplayer/ReactExoplayerView.java
+@@ -821,7 +821,10 @@ public class ReactExoplayerView extends FrameLayout implements
+ 
+         DefaultRenderersFactory renderersFactory =
+                 new DefaultRenderersFactory(getContext())
+-                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF)
++                        // Tentacle TV : les décodeurs d'extension (FFmpeg audio de Jellyfin) passent
++                        // AVANT MediaCodec — DTS et TrueHD n'ont pas de décodeur système, et le
++                        // c2.dolby.eac3.decoder des Pixel 6-8 est défaillant. Le repli reste actif.
++                        .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                         .setEnableDecoderFallback(true)
+                         .forceEnableMediaCodecAsynchronousQueueing();
+ 

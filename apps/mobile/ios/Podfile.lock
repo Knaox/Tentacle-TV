@@ -1494,7 +1494,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-video (6.19.0):
+  - react-native-video (6.19.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1506,7 +1506,7 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-video/Video (= 6.19.0)
+    - react-native-video/Video (= 6.19.3)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1517,7 +1517,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-video/Fabric (6.19.0):
+  - react-native-video/Fabric (6.19.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -1539,7 +1539,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - react-native-video/Video (6.19.0):
+  - react-native-video/Video (6.19.3):
     - hermes-engine
     - RCTRequired
     - RCTTypeSafety
@@ -2566,7 +2566,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: 9050ee10c19f4f7fca8963d0211b2854d624973e
   React-microtasksnativemodule: f775db9e991c6f3b8ccbc02bfcde22770f96e23b
   react-native-safe-area-context: 37e680fc4cace3c0030ee46e8987d24f5d3bdab2
-  react-native-video: bca076cfff2a3e749fc63b3ac88118e1d8ee2689
+  react-native-video: ac17a0ae5b2754ce40902d7d79e580a5179ec6ff
   react-native-webview: b29007f4723bca10872028067b07abacfa1cb35a
   React-NativeModulesApple: 8969913947d5b576de4ed371a939455a8daf28aa
   React-oscompat: ce47230ed20185e91de62d8c6d139ae61763d09c
