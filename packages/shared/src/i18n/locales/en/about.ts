@@ -39,6 +39,17 @@ export default {
   techFFmpeg: "Audio/video decoding (LGPL v2.1+)",
   techMoltenVK: "macOS video rendering — Vulkan on Metal (Apache 2.0)",
   techVoidTV: "Android TV player architecture inspiration",
+  // The mobile advanced player (iOS: MPVKit; Android: libmpv-android).
+  techMpvMobile: "Mobile advanced player — plays MKV, DTS, TrueHD, ASS and PGS as they are (LGPL v2.1+)",
+  techMpvkit: "libmpv packaging for iOS, Streamyfin fork with AVFoundation video output (LGPL v3)",
+  techLibass: "Styled subtitle rendering (ISC)",
+  techLibplacebo: "Image processing, HDR and tone mapping (LGPL v2.1+)",
+  techDav1d: "AV1 decoding (BSD-2)",
+  techStreamyfin: "The advanced player's native module derives from it (MPL-2.0)",
+  techLibmpvAndroid: "libmpv for Android, with FFmpeg (GPL v3)",
+  techMedia3Ffmpeg: "FFmpeg audio decoders for the Android system player — DTS, TrueHD (GPL v3)",
+  licenseTextMobile:
+    "The mobile advanced player embeds libmpv: on iOS an LGPL build of MPVKit (mpv, FFmpeg, libass, libplacebo, MoltenVK, dav1d, libdovi), on Android libmpv-android and Jellyfin's FFmpeg extension for Media3, under GPL v3. The module driving them derives from Streamyfin (MPL-2.0). Sources, licenses and the build recipe of these components are published with Tentacle TV's code (apps/mobile/THIRD-PARTY-LICENSES.md).",
   serviceJellyfin: "Open-source media server",
   privacyPolicy: "Privacy Policy",
 } as const;
