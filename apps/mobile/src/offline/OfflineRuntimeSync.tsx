@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
+import { useJellyfinClient, useTentacleConfig, useUserId } from "@tentacle-tv/api-client";
 import { useServerUrl } from "@/providers/ServerUrlContext";
 import {
   offlineCreds,
@@ -16,6 +16,7 @@ import { runOnlineCascade } from "./onlineCascade";
 import { configureDeviceSettings, setCellularAck, useCellularAck } from "./deviceSettings";
 import { configureEngineSettings } from "@/player/engine/engineSettings";
 import { isLocalPlaybackActive } from "./nowPlaying";
+import { useOfflineDevHook } from "./offlineDevHook";
 import { maybeRefreshOfflineCaches, refreshOfflineCaches } from "./prefsCache";
 import { syncPlaybackState } from "./resync";
 import { photographSession } from "./sessionPhoto";
@@ -48,6 +49,9 @@ export function OfflineRuntimeSync() {
   const { serverUrl } = useServerUrl();
   const { storage } = useTentacleConfig();
   const userId = useUserId();
+  const client = useJellyfinClient();
+  // Développement : le hors ligne pilotable depuis l'inspecteur (voir le crochet).
+  useOfflineDevHook(client, userId);
   const { state, networkType, reachable } = useConnectivity();
   const wifiOnly = useWifiOnly();
   const cellularAck = useCellularAck();
