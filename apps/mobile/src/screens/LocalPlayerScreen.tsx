@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useLocalPlayerPlayback } from "../hooks/offline/useLocalPlayerPlayback";
 import { useLocalSnapshotItem } from "../hooks/offline/useLocalSnapshot";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
+import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
 import { usePlayerHandlers } from "../hooks/usePlayerHandlers";
 import { usePlaybackOverlayMobile } from "../hooks/usePlaybackOverlayMobile";
@@ -38,6 +39,7 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
 
   const snapshotItem = useLocalSnapshotItem(itemId, localSource);
   const eng = usePlayerEngine(snapshotItem);
+  const engineSettings = useEngineSettings();
   const pb = useLocalPlayerPlayback(itemId, localSource, eng.engine);
   const [paused, setPaused] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -179,6 +181,8 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
       videoReady={videoReady}
       currentTime={currentTime}
       subtitleVttUrl={pb.subtitleVttUrl}
+      subtitleScale={engineSettings.subtitleScale}
+      subtitlePosition={engineSettings.subtitlePosition}
       isAirPlaying={isAirPlaying}
       showLoading={isBuffering && !hasEverPlayed.current}
       overlayVisible={overlayVisible}
