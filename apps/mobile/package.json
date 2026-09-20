@@ -15,6 +15,7 @@
     "submit:android": "eas submit --platform android",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
+    "test": "vitest run",
     "postinstall": "node -e \"['@tanstack/react-query','@tanstack/query-core','react-native-reanimated'].forEach(p=>{try{const f=require.resolve(p+'/package.json');const j=JSON.parse(require('fs').readFileSync(f,'utf8'));if(j['react-native']){delete j['react-native'];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')}}catch{}})\""
   },
   "dependencies": {
@@ -70,6 +71,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "react-native-css-interop": "~0.1.22",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
   }
 }
