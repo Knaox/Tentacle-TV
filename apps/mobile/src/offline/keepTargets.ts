@@ -11,6 +11,7 @@
  */
 
 import { Platform } from "react-native";
+import { supportsAv1HardwareDecode } from "../../modules/mpv-player";
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import {
   ANDROID_LOCAL_SUPPORT,
@@ -47,9 +48,21 @@ export interface KeepOptions {
   burnSubtitleIndex?: number;
 }
 
+/**
+ * iOS sans la puce AV1 : le libdav1d de MPVKit plante à l'ouverture du
+ * décodeur (mesuré au simulateur, quatre fichiers 10 bits) — et hors ligne,
+ * aucun serveur ne peut prendre le relais. Pas d'original AV1 sur ces
+ * appareils ; à lever avec la règle homologue du routeur (`av1-software`).
+ */
+function withoutAv1(support: PlatformMediaSupport): PlatformMediaSupport {
+  return { ...support, videoCodecs: new Set([...support.videoCodecs].filter((codec) => codec !== "av1")) };
+}
+
 /** Ce que CET appareil lit tel quel, ses deux moteurs réunis. */
 export const LOCAL_PLATFORM_SUPPORT: PlatformMediaSupport =
-  Platform.OS === "ios" ? IOS_LOCAL_SUPPORT : ANDROID_LOCAL_SUPPORT;
+  Platform.OS === "ios"
+    ? (supportsAv1HardwareDecode() ? IOS_LOCAL_SUPPORT : withoutAv1(IOS_LOCAL_SUPPORT))
+    : ANDROID_LOCAL_SUPPORT;
 
 /** Ce que le seul lecteur système lit — décide si une piste intégrée a besoin d'un side-car. */
 const NATIVE_PLATFORM_SUPPORT: PlatformMediaSupport =
