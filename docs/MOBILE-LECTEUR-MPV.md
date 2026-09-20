@@ -36,8 +36,11 @@ Deux moteurs par plateforme derrière **une** façade JavaScript :
 ## 2. Règles du routeur (`decideEngine`)
 
 Décidé une fois par élément, AVANT PlaybackInfo, sur les flux et les pistes par
-défaut ; un repli ou AirPlay peuvent ensuite imposer l'autre moteur pour la
-session ; jamais de retour automatique vers le lecteur avancé.
+défaut ; un repli (échec de lecture) impose ensuite l'autre moteur pour la
+session. AirPlay est réactif dans les deux sens : actif, le lecteur système
+l'emporte sur tout ; éteint, le lecteur avancé reprend à la même seconde (une
+négociation par bascule ; la décision de retour juge les pistes par défaut,
+comme au départ).
 
 Ordre iOS : réglage forcé → AirPlay actif → natif · Dolby Vision profil 5 → natif
 · « Préférer l'Atmos du système » (opt-in) + E-AC-3 JOC → natif · **AV1 sans
@@ -58,7 +61,7 @@ Repli après échec d'une lecture directe : l'autre moteur s'il est plausible
 1. Plafond de débit / palier de qualité choisi par l'utilisateur.
 2. **AirPlay** avec un média non natif : bascule mpv → natif à la même position,
    remux ou transcodage acceptés (mesuré : DirectPlay 500,8 s → Transcode mp4,
-   h264 copié, aac, à 501 s).
+   h264 copié, aac, à 501 s) ; AirPlay éteint, retour à mpv à la même position.
 3. **Dolby Vision profil 5** sur iOS (le lecteur système seul le rend).
 4. Échec des deux moteurs en lecture directe.
 5. « Préférer l'Atmos du système » (opt-in, iOS).
