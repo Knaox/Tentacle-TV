@@ -237,6 +237,18 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
+      # Le binaire MPVKit (257 Mio) est téléchargé par CocoaPods : mis en cache
+      # avec les pods, clé sur le lockfile ET le podspec qui porte l'URL/la somme.
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'apps/mobile/ios/MPVKit.podspec') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
       - name: CocoaPods install
         working-directory: apps/mobile/ios
         run: pod install --repo-update
@@ -433,3 +445,51 @@ jobs:
           BUILD: ${{ needs.version.outputs.build }}
           CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-attach-build.mjs
+
+  # Après une livraison RÉUSSIE seulement (aucun job lancé en échec, au moins
+  # un réussi — `target` peut n'en lancer qu'un), `apps/mobile/package.json`
+  # est aligné sur `versions.json → mobile` par un commit sur main. Ce numéro
+  # ne sert à rien à la CI (elle lit versions.json), mais il mentait sur le
+  # dépôt. Motif de commit repris de desktop.yml (tentacle-bot, pull --rebase).
+  sync-package-version:
+    needs: [version, ios, android]
+    if: >-
+      !cancelled()
+      && needs.version.result == 'success'
+      && needs.ios.result != 'failure' && needs.android.result != 'failure'
+      && (needs.ios.result == 'success' || needs.android.result == 'success')
+    name: Align package.json on versions.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Write version into apps/mobile/package.json
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "apps/mobile/package.json";
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+            if (pkg.version === process.env.VERSION) { console.log("déjà à jour :", pkg.version); process.exit(0); }
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+            console.log("package.json →", pkg.version);
+          '
+      - name: Commit + push sur main
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          git config user.name "tentacle-bot"
+          git config user.email "bot@tentacletv.app"
+          git add apps/mobile/package.json
+          git commit -m "chore(mobile): package.json ${VERSION}" || { echo "rien à committer"; exit 0; }
+          git pull --rebase origin main
+          git push origin main
