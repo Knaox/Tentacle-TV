@@ -86,10 +86,16 @@ describe("decideEngine — iOS, mode Auto", () => {
     expect(ios({ container: "mp4", streams, selectedAudioIndex: 2 })).toEqual({ engine: "mpv", reason: "audio-codec" });
   });
 
-  it("AV1 : le système seulement avec la puce (A17 Pro et plus)", () => {
+  it("AV1 avec la puce (A17 Pro et plus) : le système en MP4, le lecteur avancé en MKV", () => {
     const streams = [video("av1"), audio("aac")];
-    expect(ios({ container: "mp4", streams, av1Hardware: false })).toEqual({ engine: "mpv", reason: "video-codec" });
     expect(ios({ container: "mp4", streams, av1Hardware: true })).toEqual({ engine: "native", reason: "native-media" });
+    expect(ios({ container: "mkv", streams, av1Hardware: true })).toEqual({ engine: "mpv", reason: "container" });
+  });
+
+  it("AV1 sans la puce : jamais le lecteur avancé (libdav1d plante), le système demande au serveur", () => {
+    const streams = [video("av1"), audio("opus")];
+    expect(ios({ container: "mp4", streams, av1Hardware: false })).toEqual({ engine: "native", reason: "av1-software" });
+    expect(ios({ container: "mkv", streams, av1Hardware: false })).toEqual({ engine: "native", reason: "av1-software" });
   });
 
   it("Dolby Vision profil 5 : le lecteur système, même en MKV (remux HLS accepté)", () => {

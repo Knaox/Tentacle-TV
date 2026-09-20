@@ -22,6 +22,7 @@ export type EngineReason =
   | "airplay"
   | "dolby-vision-p5"
   | "system-atmos"
+  | "av1-software"
   | "native-media"
   | "container"
   | "video-codec"
@@ -118,11 +119,15 @@ function decideIos(input: EngineRouterInput, support: PlatformMediaSupport): Eng
 
   if (isDolbyVisionProfile5(video)) return native("dolby-vision-p5");
   if (input.preferSystemAtmos && isEac3Atmos(audio)) return native("system-atmos");
-  if (!supportsToken(support.containers, input.container)) return mpv("container");
   const videoCodec = codecOf(video);
-  if (video && !support.videoCodecs.has(videoCodec) && !(videoCodec === "av1" && input.av1Hardware)) {
-    return mpv("video-codec");
-  }
+  // AV1 sans la puce : le libdav1d de MPVKit (sans assembleur) plante à
+  // l'ouverture du décodeur — mesuré au simulateur sur quatre fichiers 10 bits,
+  // quel que soit le nombre de fils — et un AV1 logiciel viderait la batterie.
+  // Le lecteur système le demande au serveur ; à lever quand un appareil sans
+  // puce AV1 aura prouvé le contraire.
+  if (video && videoCodec === "av1" && !input.av1Hardware) return native("av1-software");
+  if (!supportsToken(support.containers, input.container)) return mpv("container");
+  if (video && !support.videoCodecs.has(videoCodec) && videoCodec !== "av1") return mpv("video-codec");
   // AVPlayer ne décode que le H.264 8 bits.
   if (video && videoCodec === "h264" && (video.BitDepth ?? 8) > 8) return mpv("video-bit-depth");
   if (audio && !support.audioCodecs.has(codecOf(audio))) return mpv("audio-codec");
