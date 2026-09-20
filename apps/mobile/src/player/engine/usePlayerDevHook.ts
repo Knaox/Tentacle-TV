@@ -11,6 +11,8 @@ export interface PlayerDevHook {
   changeSubtitle: (index: number) => void;
   seek: (seconds: number) => void;
   setPaused: (paused: boolean) => void;
+  /** Simule un changement de route AirPlay (le simulateur n'en a pas). */
+  simulateAirPlay: (active: boolean) => void;
 }
 
 type DevGlobal = typeof globalThis & { __tentaclePlayer?: PlayerDevHook };

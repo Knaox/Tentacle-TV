@@ -153,6 +153,23 @@ export function PlayerScreen({ itemId }: Props) {
     return true;
   }, [eng, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // AirPlay apparu pendant une lecture par le lecteur avancé (qui ne diffuse
+  // pas) : le lecteur système prend le relais à la même position, avec SON
+  // profil — remux ou transcodage serveur acceptés, c'est le cas nécessaire.
+  // Jamais de retour automatique vers le lecteur avancé.
+  const onAirPlayRoute = useCallback((active: boolean) => {
+    setIsAirPlaying(active);
+    if (!active || pb.engine !== "mpv") return;
+    console.log("[Tentacle:Player] AirPlay — bascule vers le lecteur système à", Math.round(pb.positionRef.current), "s");
+    eng.forceEngine("native", "airplay");
+    pb.fetchPlaybackInfo({ engine: "native", startTimeTicks: startTicksOf(pb.positionRef.current) });
+  }, [eng, pb.engine, pb.fetchPlaybackInfo, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Image dans l'image : l'habillage n'a rien à faire dans la petite fenêtre.
+  const onPipChange = useCallback((active: boolean) => {
+    if (active) setOverlayVisible(false);
+  }, []);
+
   const {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
     leavePlayer, handleNextEpisode, handlePrevEpisode,
@@ -183,7 +200,8 @@ export function PlayerScreen({ itemId }: Props) {
   usePlayerDevHook(useMemo(() => ({
     engine: pb.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: pb.isDirectPlay,
     changeAudio: handleSelectAudio, changeSubtitle: handleSelectSubtitle, seek: handleSeek, setPaused,
-  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, handleSelectAudio, handleSelectSubtitle, handleSeek]));
+    simulateAirPlay: onAirPlayRoute,
+  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 
@@ -247,6 +265,8 @@ export function PlayerScreen({ itemId }: Props) {
       onBuffering={setIsBuffering}
       onExternalPlaybackChange={setIsAirPlaying}
       onPausedChange={setPaused}
+      onAirPlayRoute={onAirPlayRoute}
+      onPipChange={onPipChange}
       onSeek={handleSeek}
       onToggleOverlay={toggleOverlay}
       onSwipeDown={leavePlayer}
