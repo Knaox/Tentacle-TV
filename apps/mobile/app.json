@@ -28,7 +28,9 @@
         "NSLocalNetworkUsageDescription": "Tentacle TV needs access to your local network to connect to your self-hosted media server.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "NSCameraUsageDescription": "Tentacle TV does not use the camera. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called.",
+        "NSMicrophoneUsageDescription": "Tentacle TV does not use the microphone. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called."
       }
     },
     "android": {
