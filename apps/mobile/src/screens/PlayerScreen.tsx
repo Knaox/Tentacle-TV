@@ -237,7 +237,7 @@ export function PlayerScreen({ itemId }: Props) {
       isAirPlaying={isAirPlaying}
       showLoading={isBuffering && !hasEverPlayed.current}
       overlayVisible={overlayVisible}
-      reloadToken={String(pb.fetchNonce)}
+      reloadToken={String(pb.retryNonce)}
       subtitleScale={engineSettings.subtitleScale}
       subtitlePosition={engineSettings.subtitlePosition}
       onLoad={handleLoad}

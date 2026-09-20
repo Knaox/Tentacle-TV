@@ -16,6 +16,8 @@ interface Options {
   subtitleIndexRef: MutableRefObject<number>;
   setAudioIndex: (index: number) => void;
   setSubtitleIndex: (index: number) => void;
+  /** Une relance explicite commence : le lecteur avancé doit recharger même une URL identique. */
+  onRetry: () => void;
 }
 
 /**
@@ -29,21 +31,27 @@ interface Options {
  */
 export function usePlaybackControls({
   state, streams, quality, positionRef, fetchPlaybackInfo,
-  audioIndexRef, subtitleIndexRef, setAudioIndex, setSubtitleIndex,
+  audioIndexRef, subtitleIndexRef, setAudioIndex, setSubtitleIndex, onRetry,
 }: Options) {
   const startTicks = (): number | undefined => {
     const ticks = Math.floor(positionRef.current * TICKS_PER_SECOND);
     return ticks > 0 ? ticks : undefined;
   };
 
-  /** Lecture directe : la piste change dans le moteur. Transcodage : le serveur la choisit. */
+  /**
+   * Lecture directe : la piste change dans le moteur. Transcodage : le serveur
+   * la choisit. Tant que la PREMIÈRE négociation n'a pas répondu (préférences
+   * de langue arrivées pendant le PlaybackInfo initial, fréquent à froid), on
+   * ne renégocie pas : `fetchPlaybackInfo` relit les index à sa réponse et ne
+   * repart que si le flux est transcodé — sinon le moteur applique la piste.
+   */
   const changeAudio = useCallback((newIndex: number) => {
     audioIndexRef.current = newIndex;
     setAudioIndex(newIndex);
-    if (state.isDirectPlay) return;
+    if (state.isDirectPlay || state.streamUrl === null) return;
     fetchPlaybackInfo({ audioStreamIndex: newIndex, startTimeTicks: startTicks() });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchPlaybackInfo, state.isDirectPlay]);
+  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl]);
 
   /**
    * Lecteur avancé en direct : tout sous-titre, image comprise, se rend dans
@@ -53,6 +61,7 @@ export function usePlaybackControls({
   const changeSubtitle = useCallback((newIndex: number) => {
     subtitleIndexRef.current = newIndex;
     setSubtitleIndex(newIndex);
+    if (state.streamUrl === null) return;
     if (state.engine === "mpv" && state.isDirectPlay) return;
     const sub = streams.find((s) => s.Index === newIndex && s.Type === "Subtitle");
     const needsBurnIn = sub ? isBitmapSub(sub) : false;
@@ -63,7 +72,7 @@ export function usePlaybackControls({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchPlaybackInfo, streams, state.engine, state.isDirectPlay, state.burnInSubIndex]);
+  }, [fetchPlaybackInfo, streams, state.engine, state.isDirectPlay, state.burnInSubIndex, state.streamUrl]);
 
   const changeQuality = useCallback((key: QualityKey) => {
     // Choix du menu : désarme le cap auto pour cet item, puis applique.
@@ -78,6 +87,7 @@ export function usePlaybackControls({
   }, [fetchPlaybackInfo, quality]);
 
   const retry = useCallback(() => {
+    onRetry();
     // Déjà en transcodage : retirer les DirectPlayProfiles (isRetry) ne change
     // RIEN à la négociation — Jellyfin resservirait le même encodage. Pour que
     // la relance soit réellement différente, on descend d'un palier de
@@ -95,7 +105,7 @@ export function usePlaybackControls({
       startTimeTicks: startTicks(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, quality]);
+  }, [fetchPlaybackInfo, state.isDirectPlay, state.streamUrl, quality, onRetry]);
 
   return { changeAudio, changeSubtitle, changeQuality, retry };
 }
