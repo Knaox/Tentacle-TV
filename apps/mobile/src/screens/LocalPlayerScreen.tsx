@@ -3,7 +3,9 @@ import { StatusBar } from "react-native";
 import type { PlayerEngineHandle } from "../player/engine/types";
 import { useTranslation } from "react-i18next";
 import { useLocalPlayerPlayback } from "../hooks/offline/useLocalPlayerPlayback";
-import { useLocalSnapshotItem } from "../hooks/offline/useLocalSnapshot";
+import { useLocalSnapshotItem, useLocalSnapshotJson } from "../hooks/offline/useLocalSnapshot";
+import type { MediaItem } from "@tentacle-tv/shared";
+import { localRouterItem } from "../hooks/offline/localRouterItem";
 import { usePlayerEngine } from "../player/engine/usePlayerEngine";
 import { useEngineSettings } from "../player/engine/engineSettings";
 import { usePlayerDevHook } from "../player/engine/usePlayerDevHook";
@@ -38,7 +40,12 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
   const engineRef = useRef<PlayerEngineHandle>(null);
 
   const snapshotItem = useLocalSnapshotItem(itemId, localSource);
-  const eng = usePlayerEngine(snapshotItem);
+  // Le moteur ne se décide qu'une fois item.json lu (même requête, même cache) :
+  // décidé sur l'item minimal, le lecteur avancé démarrait puis cédait la place.
+  const { isFetched: snapshotReady } = useLocalSnapshotJson<MediaItem>(itemId, "item.json");
+  // Le routeur juge le FICHIER gardé : une variante recompressée est un MP4, pas la source.
+  const routerItem = useMemo(() => localRouterItem(snapshotItem, localSource), [snapshotItem, localSource]);
+  const eng = usePlayerEngine(routerItem);
   const engineSettings = useEngineSettings();
   const pb = useLocalPlayerPlayback(itemId, localSource, eng.engine);
   const [paused, setPaused] = useState(false);
@@ -158,6 +165,8 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
       />
     );
   }
+
+  if (!snapshotReady) return null;
 
   return (
     <PlayerVideoSurface
