@@ -5,6 +5,23 @@ Blocs `## [X.Y.Z]` avec sous-sections `### FR` / `### EN`. Lu par
 Google Play (max 500). UN seul bloc sert iOS ET Android. Renommer `[Unreleased]`
 en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `mobile`).
 
+## [1.8.0]
+### FR
+- **Tout se lit tel quel, sans conversion par le serveur** : un lecteur avancé (libmpv) rejoint le lecteur système et prend ce que celui-ci ne lit pas — MKV, DTS, TrueHD, Opus, HEVC 10 bits, AVI et DivX, sous-titres ASS stylés et PGS ; le lecteur système garde AirPlay, le Dolby Vision profil 5 et, sur demande, l'Atmos
+- **Changer de langue ou de sous-titre ne relance plus rien** : la piste bascule dans le lecteur, à l'image près
+- **AirPlay en cours de lecture** : le lecteur système reprend à la même seconde
+- **Hors ligne, toutes les pistes du fichier** : un MKV gardé tel quel se lit avec ses langues et ses sous-titres ; les sous-titres externes sont gardés dans leur format d'origine, ASS compris. La version « qualité d'origine (MP4) » n'est plus proposée — celles déjà gardées se lisent toujours
+- **Réglages › Lecture** : moteur Auto / Lecteur système / Lecteur avancé, « Préférer l'Atmos du système » (iOS), sous-titres stylés (Android), taille et position des sous-titres
+- Android : DTS et TrueHD décodés par le lecteur système grâce à l'extension FFmpeg de Jellyfin
+
+### EN
+- **Everything plays as it is, with no server conversion**: an advanced player (libmpv) joins the system player and takes what the latter cannot play — MKV, DTS, TrueHD, Opus, 10-bit HEVC, AVI and DivX, styled ASS subtitles and PGS; the system player keeps AirPlay, Dolby Vision profile 5 and, on request, Atmos
+- **Switching language or subtitle no longer restarts anything**: the track changes inside the player, to the frame
+- **AirPlay during playback**: the system player takes over at the same second
+- **Offline, every track of the file**: an MKV kept as it is plays with its languages and subtitles; external subtitles are kept in their original format, ASS included. The "original quality (MP4)" version is no longer offered — those already kept still play
+- **Settings › Playback**: Auto / System player / Advanced player engine, "Prefer system Atmos" (iOS), styled subtitles (Android), subtitle size and position
+- Android: DTS and TrueHD decoded by the system player thanks to Jellyfin's FFmpeg extension
+
 ## [1.7.1]
 ### FR
 - **Sans connexion utilisable, l'application passe d'elle-même sur ce qui est sur l'appareil** : Wi-Fi coupé, mode avion, réseau sans données ou serveur qui ne répond pas à temps — le catalogue local s'affiche, avec la cause, même s'il est vide, et l'accueil revient de lui-même dès que le serveur répond à nouveau
