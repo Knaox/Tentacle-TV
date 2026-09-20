@@ -93,7 +93,8 @@ format`, `aid`/`sid`) ; une seule négociation PlaybackInfo par lecture.
 
 Tailles : `.app` Debug simulateur 97 Mo → 145 Mo ; tranche `ios-arm64` du
 xcframework MPVKit : 128 Mo (statique — le binaire final embarque ce que
-l'éditeur de liens retient). Android : ~24 Mo par ABI (libmpv) + 1,4 Mo
+l'éditeur de liens retient) ; **IPA release construit par la CI (1.8.0, build
+1431115, TestFlight) : 35,4 Mo**. Android : ~24 Mo par ABI (libmpv) + 1,4 Mo
 (décodeur FFmpeg), **non mesuré sur une build**.
 
 Spécificités du simulateur : `hwdec=no`, `avfoundation-composite-osd=no` (les
