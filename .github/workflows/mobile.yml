@@ -32,9 +32,9 @@ on:
         type: boolean
         default: true
       target:
-        description: "Quelle plateforme construire"
+        description: "Quelle plateforme construire (asc-status : ne construit rien, liste l'état des builds sur App Store Connect)"
         type: choice
-        options: [all, android, ios]
+        options: [all, android, ios, asc-status]
         default: all
 
 concurrency:
@@ -445,6 +445,39 @@ jobs:
           BUILD: ${{ needs.version.outputs.build }}
           CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-attach-build.mjs
+      # Délai dépassé ou build invalide : l'état brut des derniers builds, sans le
+      # filtre preReleaseVersion qui peut cacher un build rejeté.
+      - name: État des builds ASC (diagnostic)
+        if: failure()
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+        run: node .github/scripts/asc-list-builds.mjs
+
+  # Diagnostic seul (dispatch, target=asc-status) : rien n'est construit ni
+  # envoyé, la liste des derniers builds et leur état de traitement suffit à
+  # savoir si un envoi a été traité, rejeté ou perdu.
+  asc-status:
+    needs: version
+    if: inputs.target == 'asc-status'
+    name: État des builds App Store Connect
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lister les builds (App Store Connect API)
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          LIMIT: "12"
+        run: node .github/scripts/asc-list-builds.mjs
 
   # Après une livraison RÉUSSIE seulement (aucun job lancé en échec, au moins
   # un réussi — `target` peut n'en lancer qu'un), et seulement depuis main ou
