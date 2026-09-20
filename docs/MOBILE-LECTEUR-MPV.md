@@ -123,6 +123,17 @@ développement et TestFlight seulement.
 
 ## 6. Ouvert, non vérifié, à trancher
 
+- **Rejet silencieux au traitement App Store Connect (vécu deux fois, builds
+  1431115 et 1431202)** : « UPLOAD SUCCEEDED », puis le build n'apparaît
+  jamais — ni en traitement, ni invalide (voir la cible `asc-status` de
+  `mobile.yml`). Cause : le module de capture `avfoundation` de libavdevice
+  (FFmpeg, lié par mpv) référence `AVCaptureSession`, `AVCaptureDeviceInput`
+  et les types caméra/micro ; sans `NSCameraUsageDescription` ni
+  `NSMicrophoneUsageDescription`, Apple rejette (ITMS-90683). Les deux chaînes
+  sont posées (Info.plist et app.json), avec la vérité : la caméra et le
+  micro ne servent jamais. Mieux, pour la variante LGPL : construire MPVKit
+  **sans libavdevice** (`mpvkit.yml`), et retirer les chaînes.
+
 - **AV1 (iOS)** : les quatre AV1 10 bits de la bibliothèque tuent l'app dès
   « Opening decoder libdav1d » (SIGSEGV, saut à 0 dans le thread `core`, `lr`
   nul) — avec 1 ou 11 fils, `vd-lavc-dr=no`, grain de film CPU : le binaire du
