@@ -100,6 +100,8 @@ export interface EngineSurfaceProps {
   onPausedChange?: (paused: boolean) => void;
   /** iOS, lecteur avancé : la sortie audio est passée sur AirPlay (ou en est revenue). */
   onAirPlayRoute?: (active: boolean) => void;
+  /** L'image dans l'image s'est ouverte ou fermée. */
+  onPipChange?: (active: boolean) => void;
   onSeek: (seconds: number) => void;
   onToggleOverlay: () => void;
   onSwipeDown: () => void;

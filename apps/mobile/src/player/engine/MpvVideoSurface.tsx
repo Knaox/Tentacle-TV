@@ -25,7 +25,7 @@ export function MpvVideoSurface({
   engineRef, streamUrl, headers, startPositionMs, selectedAudioIndex, selectedSubtitleIndex,
   externalSubtitles, title, artist, paused, currentTime, isAirPlaying, showLoading, overlayVisible,
   reloadToken, subtitleScale, subtitlePosition, subtitleDelay, audioDelay,
-  onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute,
+  onLoad, onProgress, onEnd, onError, onBuffering, onPausedChange, onAirPlayRoute, onPipChange,
   onSeek, onToggleOverlay, onSwipeDown, children,
 }: EngineSurfaceProps) {
   const viewRef = useRef<MpvPlayerViewHandle>(null);
@@ -131,6 +131,7 @@ export function MpvVideoSurface({
         onError={(event) => onError(event.nativeEvent)}
         onPlaybackStateChange={(event) => onPausedChange?.(event.nativeEvent.paused)}
         onAirPlayRoute={(event) => onAirPlayRoute?.(event.nativeEvent.active)}
+        onPipChanged={(event) => onPipChange?.(event.nativeEvent.active)}
       />
 
       {isAirPlaying && <AirPlayIndicator />}
