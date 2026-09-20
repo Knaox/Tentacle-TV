@@ -447,14 +447,17 @@ jobs:
         run: node .github/scripts/asc-attach-build.mjs
 
   # Après une livraison RÉUSSIE seulement (aucun job lancé en échec, au moins
-  # un réussi — `target` peut n'en lancer qu'un), `apps/mobile/package.json`
-  # est aligné sur `versions.json → mobile` par un commit sur main. Ce numéro
+  # un réussi — `target` peut n'en lancer qu'un), et seulement depuis main ou
+  # un tag mobile-v* (un dispatch depuis une branche de travail n'écrit pas sur
+  # main), `apps/mobile/package.json` est aligné sur `versions.json → mobile`
+  # par un commit sur main. Ce numéro
   # ne sert à rien à la CI (elle lit versions.json), mais il mentait sur le
   # dépôt. Motif de commit repris de desktop.yml (tentacle-bot, pull --rebase).
   sync-package-version:
     needs: [version, ios, android]
     if: >-
       !cancelled()
+      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/mobile-v'))
       && needs.version.result == 'success'
       && needs.ios.result != 'failure' && needs.android.result != 'failure'
       && (needs.ios.result == 'success' || needs.android.result == 'success')
