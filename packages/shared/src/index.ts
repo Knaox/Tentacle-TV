@@ -20,6 +20,7 @@ export * from "./constants";
 // backend (cf. l'en-tête de platforms.ts).
 export * from "./platforms";
 export * from "./subtitles/vtt";
+export * from "./subtitles/srt";
 export * from "./subtitles/sanitize";
 export * from "./watchState";
 // La décision « faut-il sauter l'intro, et quand » — une machine à états pure,
