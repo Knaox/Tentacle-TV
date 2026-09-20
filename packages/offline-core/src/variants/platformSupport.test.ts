@@ -23,10 +23,15 @@ describe("platformSupport", () => {
     expect(supportList(IOS_NATIVE_SUPPORT.audioCodecs)).toBe("aac,flac,alac,ac3,eac3,mp3");
   });
 
-  it("le natif Android aussi", () => {
-    expect(supportList(ANDROID_NATIVE_SUPPORT.containers)).toBe("mp4,m4v,mkv,webm");
+  it("le natif Android aussi, ses jetons historiques en tête ; l'extension FFmpeg ajoute DTS, TrueHD, PCM", () => {
+    expect(supportList(ANDROID_NATIVE_SUPPORT.containers).startsWith("mp4,m4v,mkv,webm")).toBe(true);
     expect(supportList(ANDROID_NATIVE_SUPPORT.videoCodecs)).toBe("h264,hevc,vp9");
-    expect(supportList(ANDROID_NATIVE_SUPPORT.audioCodecs)).toBe("aac,mp3,flac,opus,vorbis,ac3,eac3");
+    expect(supportList(ANDROID_NATIVE_SUPPORT.audioCodecs).startsWith("aac,mp3,flac,opus,vorbis,ac3,eac3")).toBe(true);
+    for (const audio of ["dts", "truehd", "mlp", "alac", "pcm_s16le", "mp2"]) {
+      expect(ANDROID_NATIVE_SUPPORT.audioCodecs.has(audio)).toBe(true);
+    }
+    expect(ANDROID_NATIVE_SUPPORT.containers.has("ts")).toBe(true);
+    expect(ANDROID_NATIVE_SUPPORT.subtitleCodecs.has("pgssub")).toBe(true);
   });
 
   it("le lecteur avancé lit ce que le natif refuse : MKV, DTS, TrueHD, ASS, PGS, DivX", () => {
