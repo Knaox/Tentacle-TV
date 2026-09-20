@@ -97,6 +97,12 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
    *  L'écran s'y accroche pour réarmer ses gardes de retry : sur `streamUrl`
    *  seul, une relance qui rend la même URL laissait le lecteur muet. */
   const [fetchNonce, setFetchNonce] = useState(0);
+  /** Incrémenté par une RELANCE explicite seulement : c'est lui qui force le
+   *  lecteur avancé à recharger une URL identique. `fetchNonce`, lui, bouge à
+   *  chaque négociation — y compris celles qui rendent la même URL (préférences
+   *  de langue arrivées pendant la première), et recharger là serait un
+   *  redémarrage visible pour rien. */
+  const [retryNonce, setRetryNonce] = useState(0);
   const [audioIndex, setAudioIndex] = useState(0);
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const positionRef = useRef(0);
@@ -136,11 +142,14 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
     const mpv = targetEngine === "mpv";
     const profile = buildPlatformDeviceProfile(targetEngine, bitrate, opts?.isRetry ?? false);
 
+    const sentAudio = opts?.audioStreamIndex ?? audioIndexRef.current;
+    const sentSubtitle = opts?.subtitleStreamIndex ?? (subtitleIndexRef.current >= 0 ? subtitleIndexRef.current : undefined);
+
     try {
       const result = await client.getPlaybackInfo(itemId, {
         userId, deviceProfile: profile, mediaSourceId,
-        audioStreamIndex: opts?.audioStreamIndex ?? audioIndexRef.current,
-        subtitleStreamIndex: opts?.subtitleStreamIndex ?? (subtitleIndexRef.current >= 0 ? subtitleIndexRef.current : undefined),
+        audioStreamIndex: sentAudio,
+        subtitleStreamIndex: sentSubtitle,
         startTimeTicks: opts?.startTimeTicks,
         maxStreamingBitrate: bitrate > 0 ? bitrate : undefined,
         maxWidth: maxWidth > 0 ? maxWidth : undefined,
@@ -191,6 +200,19 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
         textTracks, externalSubtitles, burnInSubIndex: burnIn, startPositionMs, headers,
       });
       setFetchNonce((n) => n + 1);
+
+      // Les pistes ont changé pendant la négociation (préférences de langue).
+      // En lecture directe, le moteur les applique ; en transcodage, seul le
+      // serveur peut — une renégociation, et une seule, avec les index frais.
+      const wantedSubtitle = subtitleIndexRef.current >= 0 ? subtitleIndexRef.current : undefined;
+      if (!directPlay && !opts?.isRetry
+          && (audioIndexRef.current !== sentAudio || wantedSubtitle !== sentSubtitle)) {
+        void fetchPlaybackInfo({
+          audioStreamIndex: audioIndexRef.current, subtitleStreamIndex: wantedSubtitle,
+          startTimeTicks: opts?.startTimeTicks, maxBitrate: opts?.maxBitrate,
+          maxWidth: opts?.maxWidth, maxHeight: opts?.maxHeight, engine: targetEngine,
+        });
+      }
     } catch (err) {
       if (fetchIdRef.current !== currentFetch) return;
       console.error(DBG, "PlaybackInfo failed", err);
@@ -237,6 +259,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
   const controls = usePlaybackControls({
     state, streams, quality, positionRef, fetchPlaybackInfo,
     audioIndexRef, subtitleIndexRef, setAudioIndex, setSubtitleIndex,
+    onRetry: () => setRetryNonce((n) => n + 1),
   });
 
   /** VTT URL for the native overlay — every mode, every platform (text subs only).
@@ -260,7 +283,7 @@ export function usePlayerPlayback(itemId: string, engine: PlayerEngineKind) {
   return {
     item, ancestors, streams, mediaSourceId, jellyfinDuration,
     ...state,
-    fetchNonce,
+    fetchNonce, retryNonce,
     audioIndex, subtitleIndex, positionRef,
     // Clé EFFECTIVE au menu (palier servi, cap compris) — comme le web.
     qualityKey: quality.qualityKeyEffective,

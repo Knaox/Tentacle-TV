@@ -39,13 +39,18 @@ export function MpvVideoSurface({
   }), []);
 
   // La source, mémoïsée sur ses valeurs (une prop identique ne recharge rien).
+  // La position de départ n'en fait PAS partie : elle ne compte qu'au chargement,
+  // et une renégociation qui rend la même URL avec une position avancée
+  // rechargerait le média pour rien.
+  const startPositionRef = useRef(startPositionMs);
+  startPositionRef.current = startPositionMs;
   const headersKey = JSON.stringify(headers);
   const initialExternal = externalSubtitles.find((s) => s.jellyfinIndex === selectedSubtitleIndex);
   const initialExternalUrl = initialExternal?.url;
   const source = useMemo<MpvSource>(() => ({
     url: streamUrl,
     headers: Object.keys(headers).length > 0 ? headers : undefined,
-    startPosition: startPositionMs > 0 ? startPositionMs / 1000 : undefined,
+    startPosition: startPositionRef.current > 0 ? startPositionRef.current / 1000 : undefined,
     externalSubtitles: initialExternalUrl ? [{ url: initialExternalUrl, select: true }] : undefined,
     initialAudioFfIndex: selectedAudioIndex >= 0 ? selectedAudioIndex : undefined,
     initialSubtitleFfIndex: !initialExternalUrl && selectedSubtitleIndex >= 0 ? selectedSubtitleIndex : undefined,
@@ -53,7 +58,7 @@ export function MpvVideoSurface({
     // Les pistes initiales ne comptent qu'au chargement : les changer ensuite
     // passe par les effets ci-dessous, pas par un rechargement.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [streamUrl, headersKey, startPositionMs, reloadToken]);
+  }), [streamUrl, headersKey, reloadToken]);
 
   // Nouvelle source : l'état des pistes repart de zéro.
   useEffect(() => {
