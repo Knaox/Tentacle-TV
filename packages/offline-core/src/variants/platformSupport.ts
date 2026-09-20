@@ -67,15 +67,21 @@ export const IOS_MPV_SUPPORT: PlatformMediaSupport = {
 };
 
 /**
- * Android / ExoPlayer : MKV et WebM en plus ; les décodeurs audio Dolby varient
- * selon l'appareil. L'ASS y est rendu, mais appauvri (ni positions ni polices) :
- * le routeur l'envoie au lecteur avancé quand le réglage le demande.
+ * Android / ExoPlayer : MKV, WebM et TS en plus ; l'extension FFmpeg de
+ * Jellyfin (Media3 1.9, préférée à MediaCodec) décode DTS, TrueHD, MLP, ALAC
+ * et PCM là où l'appareil n'a rien — et remplace le décodeur E-AC-3 défaillant
+ * des Pixel 6-8. Les PGS sont rendus. L'ASS l'est aussi, mais appauvri (ni
+ * positions ni polices) : le routeur l'envoie au lecteur avancé quand le
+ * réglage le demande. Les jetons historiques restent en tête, dans l'ordre.
  */
 export const ANDROID_NATIVE_SUPPORT: PlatformMediaSupport = {
-  containers: new Set(["mp4", "m4v", "mkv", "webm"]),
+  containers: new Set(["mp4", "m4v", "mkv", "webm", "ts", "mpegts"]),
   videoCodecs: new Set(["h264", "hevc", "vp9"]),
-  audioCodecs: new Set(["aac", "mp3", "flac", "opus", "vorbis", "ac3", "eac3"]),
-  subtitleCodecs: new Set([...TEXT_SUBTITLES, "ass", "ssa"]),
+  audioCodecs: new Set([
+    "aac", "mp3", "flac", "opus", "vorbis", "ac3", "eac3",
+    "dts", "truehd", "mlp", "alac", "pcm_s16le", "pcm_s24le", "pcm_mulaw", "pcm_alaw", "mp2",
+  ]),
+  subtitleCodecs: new Set([...TEXT_SUBTITLES, "ass", "ssa", "pgssub"]),
   deinterlaces: true,
 };
 
