@@ -23,6 +23,13 @@ prepare_react_native_project!
 target 'TentacleTV' do
   use_expo_modules!
 
+  # Le lecteur avancé (libmpv) : le binaire MPVKit vient d'une Release GitHub,
+  # épinglé par URL + SHA-256 dans `ios/MPVKit.podspec` — une seule source de
+  # vérité, changée avant soumission (variante LGPL). Le podspec vit ICI et pas
+  # dans modules/mpv-player : l'autolinking Expo y ramasserait tout `*.podspec`
+  # comme pod de développement (`:path`), qui ne télécharge jamais sa source.
+  pod 'MPVKit', :podspec => 'MPVKit.podspec'
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else
