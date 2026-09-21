@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
@@ -14,6 +14,7 @@ import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
 import type { PlayerMediaState } from "./usePlayerMediaState";
+import { prismBitmapRenditionIndex } from "../utils/prismSubtitleMatch";
 
 type Ancestors = Parameters<typeof useTVTrackResolution>[0]["ancestors"];
 type PlayerRefs = Pick<Parameters<typeof useTVPlayerRouting>[0], "exoRef" | "mpvRef">;
@@ -106,9 +107,12 @@ export function usePlayerStreamPipeline(args: {
   const { audioIndex, setAudioIndex, handleAudioChange } = audio;
   setAudioIndexRef.current = setAudioIndex;
 
+  // Rendition OCR PrismCore d'une piste image — lue au CLIC par
+  // handleSubtitleChange (ref : `prism` n'existe qu'après useTVStreamUrl).
+  const prismBitmapRef = useRef<(idx: number) => number | null>(() => null);
   const subtitle = useTVSubtitleControl({
     streams, isDirectPlayRef, subtitleTrackMapRef,
-    positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks,
+    positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks, prismBitmapRef,
   });
   const { subtitleIndex, setSubtitleIndex, handleSubtitleChange } = subtitle;
   setSubtitleIndexRef.current = setSubtitleIndex;
@@ -129,6 +133,13 @@ export function usePlayerStreamPipeline(args: {
   // Synchronisation des refs miroir lues par les handlers/callbacks.
   isDirectPlayRef.current = isDirectPlay;
   isPrismCoreRef.current = isPrismCore;
+  const prismRenditions = prism?.subtitleRenditions;
+  prismBitmapRef.current = (idx) => prismBitmapRenditionIndex({ streams, subtitleIndex: idx, renditions: prismRenditions ?? [] });
+  // Sous-titre image sélectionné nativement sur PrismCore (index AVPlayer), sinon null.
+  const prismTextTrackIndex = useMemo(
+    () => (isPrismCore ? prismBitmapRenditionIndex({ streams, subtitleIndex, renditions: prismRenditions ?? [] }) : null),
+    [isPrismCore, streams, subtitleIndex, prismRenditions],
+  );
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -174,7 +185,7 @@ export function usePlayerStreamPipeline(args: {
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
-    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed,
+    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,
   };

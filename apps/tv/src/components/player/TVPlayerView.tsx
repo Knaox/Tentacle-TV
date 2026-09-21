@@ -59,6 +59,8 @@ export interface TVPlayerViewProps {
   useExoPlayer: boolean;
   /** Direct play vs transcode HLS (décision serveur) — gate le sideload tvOS. */
   isDirectPlay: boolean;
+  /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
+  prismTextTrackIndex?: number | null;
   exoRef: React.Ref<MPVPlayerHandle>;
   mpvRef: React.Ref<MPVPlayerHandle>;
   backgroundRef: React.Ref<ElementRef<typeof TouchableOpacity>>;
@@ -118,7 +120,7 @@ export interface TVPlayerViewProps {
 export function TVPlayerView({
   item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, autoCapActive, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isDirectPlay, prismTextTrackIndex, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
   autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
@@ -161,7 +163,7 @@ export function TVPlayerView({
         // Mute de transition (filet secondaire) : tant que l'image figée masque la vidéo, couper l'audio de
         // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
         muted={reloadFrameSec != null && hasStarted}
-        textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay}
+        textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay} prismTextTrackIndex={prismTextTrackIndex}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />

@@ -11,7 +11,10 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
  *      · Android + direct play : si la piste EMBARQUÉE est exposée par ExoPlayer
  *        (subtitleTrackMapRef, rempli via handleTracks), sélection native —
  *        Media3 décode PGS/DVB/VobSub — AUCUN reload, AUCUN transcodage.
- *      · sinon (piste non exposée, transcodage en cours, tvOS) : repli burn-in
+ *      · tvOS + PrismCore : si PrismCore a produit une rendition OCR pour la
+ *        piste (prismBitmapRef, cf. utils/prismSubtitleMatch), sélection native
+ *        dans le groupe legible d'AVPlayer — AUCUN reload, AUCUN transcodage.
+ *      · sinon (piste non exposée, transcodage en cours) : repli burn-in
  *        serveur (reload doux + éventuel transcode).
  *  - Un transcodage engagé PAR un burn-in (subtitleForcedRef) est ANNULÉ dès
  *    qu'on repasse sur une piste texte / aucune → retour en lecture directe.
@@ -31,10 +34,12 @@ export function useTVSubtitleControl(args: {
   setReloadFrameSec: (v: number | null) => void;
   setForceTranscode: (on: boolean) => void;
   captureReloadTicks: () => void;
+  /** tvOS : index de la rendition OCR PrismCore d'une piste image, ou null. */
+  prismBitmapRef: React.MutableRefObject<(idx: number) => number | null>;
 }) {
   const {
     streams, isDirectPlayRef, subtitleTrackMapRef,
-    positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks,
+    positionRef, softReloadRef, setReloadFrameSec, setForceTranscode, captureReloadTicks, prismBitmapRef,
   } = args;
 
   const [subtitleIndex, setSubtitleIndex] = useState(-1);
@@ -59,7 +64,15 @@ export function useTVSubtitleControl(args: {
       return;
     }
 
-    const prevBurnIn = isBurnIn(subtitleIndex);
+    // tvOS + PrismCore : une piste IMAGE qui a sa rendition OCR se sélectionne
+    // NATIVEMENT — aucun reload, aucun transcodage ; en sortir non plus.
+    const nativeBitmap = (idx: number) => Platform.OS === "ios" && prismBitmapRef.current(idx) != null;
+    if (needsBurnIn && nativeBitmap(newIndex)) {
+      setSubtitleIndex(newIndex);
+      return;
+    }
+
+    const prevBurnIn = isBurnIn(subtitleIndex) && !nativeBitmap(subtitleIndex);
     if (!needsBurnIn && !prevBurnIn && !subtitleForcedRef.current) {
       // Sous-titres TEXTE : bascule instantanée, AUCUN rechargement du player.
       setSubtitleIndex(newIndex);

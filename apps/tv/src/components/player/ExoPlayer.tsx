@@ -44,6 +44,8 @@ interface ExoPlayerProps {
   /** Parité de signature tvOS (gate sideload HLS) ; ignoré côté Android (ExoPlayer
    *  sait sideloader sur HLS). */
   isDirectPlay?: boolean;
+  /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
+  prismTextTrackIndex?: number | null;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;

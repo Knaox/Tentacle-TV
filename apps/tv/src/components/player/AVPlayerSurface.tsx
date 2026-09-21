@@ -42,6 +42,9 @@ export interface AVPlayerSurfaceProps {
    *  Apple) → chargement infini. On ne sideload donc qu'en direct play ; en HLS
    *  les sous-titres viennent du manifeste et sont sélectionnés nativement. */
   isDirectPlay?: boolean;
+  /** PrismCore : index AVPlayer (groupe legible) de la rendition OCR du sous-titre
+   *  image sélectionné — prime sur tout le reste ; null = rien de natif. */
+  prismTextTrackIndex?: number | null;
   onLoad?: (duration: number) => void;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onEnd?: () => void;
@@ -52,7 +55,7 @@ export interface AVPlayerSurfaceProps {
 
 export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>(
   function AVPlayerSurface(
-    { source, paused, muted = false, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
+    { source, paused, muted = false, progressInterval = 1000, style, textTracks, subtitleIndex, isDirectPlay = true, prismTextTrackIndex = null, onLoad, onProgress, onEnd, onError, onTracks, onVideoSize },
     ref,
   ) {
     const videoRef = useRef<VideoRef>(null);
@@ -101,6 +104,9 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // remonte un ordre différent (onTextTracks), on remappe par langue + titre
     // (NAME = DisplayTitle Jellyfin) pour fiabiliser.
     const selectedTextTrack = useMemo<{ type: SelectedTrackType; value?: number }>(() => {
+      // PrismCore : rendition OCR d'une piste image, sélectionnée par index dans
+      // le groupe legible (cf. utils/prismSubtitleMatch). Le texte reste l'overlay JS.
+      if (prismTextTrackIndex != null) return { type: SelectedTrackType.INDEX, value: prismTextTrackIndex };
       if (subtitleIndex == null || subtitleIndex < 0 || !textTracks?.length) {
         return { type: SelectedTrackType.DISABLED };
       }
@@ -115,7 +121,7 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         if (match) return { type: SelectedTrackType.INDEX, value: match.index };
       }
       return { type: SelectedTrackType.INDEX, value: pos };
-    }, [textTracks, subtitleIndex, avTextTracks]);
+    }, [textTracks, subtitleIndex, avTextTracks, prismTextTrackIndex]);
 
     const handleTextTracks = useCallback(
       (e: { textTracks?: Array<{ index: number; title?: string; language?: string }> }) => {
