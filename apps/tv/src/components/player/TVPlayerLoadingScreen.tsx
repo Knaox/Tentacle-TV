@@ -69,9 +69,12 @@ function TVLoadingBar() {
  * titre + sous-titre (S##E## — épisode) bas-gauche, barre de chargement animée.
  * `failed` : la résolution du flux a échoué → message + bouton « Réessayer »
  * (avant : la barre tournait pour toujours, sans erreur ni issue).
+ * `progressLabel` : ce que l'ouverture fait en ce moment (jalons PrismCore sur
+ * tvOS, cf. useTVPrismProgress) — la seule attente longue et explicable est
+ * l'indexation d'un premier visionnage, et elle mérite d'être dite.
  */
-export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
-  item?: MediaItem | null; failed?: boolean; onRetry?: () => void;
+export function TVPlayerLoadingScreen({ item, failed, onRetry, progressLabel }: {
+  item?: MediaItem | null; failed?: boolean; onRetry?: () => void; progressLabel?: string | null;
 }) {
   const { t } = useTranslation("player");
   const client = useJellyfinClient();
@@ -145,6 +148,11 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
         {!!subtitle && (
           <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, marginTop: 6, maxWidth: "75%" }}>
             {subtitle}
+          </Text>
+        )}
+        {!failed && !!progressLabel && (
+          <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, marginTop: 10, maxWidth: "75%" }}>
+            {progressLabel}
           </Text>
         )}
         <View style={{ marginTop: 24 }}>

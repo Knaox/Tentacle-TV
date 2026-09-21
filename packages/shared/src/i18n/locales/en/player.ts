@@ -90,4 +90,10 @@ export default {
   // l'action, et n'a d'emploi que la ou se deplacer est un mode — la
   // telecommande.
   seekMode: "Seek",
+  // tvOS loading screen: what PrismCore is doing while opening the file.
+  prismOpening: "Opening the file…",
+  prismResolving: "Reading the tracks…",
+  prismIndexing: "Indexing (first play)…",
+  prismPreparing: "Preparing…",
+  prismStarting: "Starting playback…",
 } as const;

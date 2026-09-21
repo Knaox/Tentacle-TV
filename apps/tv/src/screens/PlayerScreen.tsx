@@ -24,6 +24,7 @@ import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
 import { useTVPanelControls } from "../hooks/useTVPanelControls";
 import { useTVSettingsBridge } from "../hooks/useTVSettingsBridge";
 import { useTVSubtitleSync } from "../hooks/useTVSubtitleSync";
+import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
 
@@ -76,6 +77,8 @@ export function PlayerScreen({ route, navigation }: Props) {
     notifySeekRef, resetLoadedRef, routeBackRef,
   } = s;
   const { streamUrl, isDirectPlay, jellyfinDuration, handleSeek, quality } = p;
+  // Jalons d'ouverture PrismCore (tvOS) pour l'écran de chargement, tant que l'URL manque.
+  const prismProgress = useTVPrismProgress(!!item && !streamUrl);
 
   // Refs stables pour les listeners à deps [] (AppState de lifecycle).
   const reportSeekRef = useRef(p.reportSeek);
@@ -244,7 +247,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       <View style={{ flex: 1, backgroundColor: "#000" }}>
         <TVPlayerLoadingScreen
           item={item ?? placeholderItem}
-          failed={p.failed}
+          failed={p.failed} progressLabel={prismProgress.label}
           onRetry={() => p.setReloadNonce((n) => n + 1)}
         />
       </View>
