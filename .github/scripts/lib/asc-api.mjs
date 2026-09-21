@@ -62,3 +62,81 @@ export async function ensureAppStoreVersion(api, appId, { version, platform }) {
   }
   return ver;
 }
+
+// ── Ce que trois scripts ASC refaisaient chacun de leur côté ────────────────
+
+/** PLATFORM ASC → canal de changelog (bloc « ## [<canal>-<version>] »). */
+export const CHANNEL_BY_PLATFORM = { MAC_OS: 'mac', IOS: 'ios', TV_OS: 'atv' };
+
+/** Les deux seules langues publiées sur les fiches. */
+export const ASC_LOCALES = ['fr-FR', 'en-US'];
+
+/** `{ fr, en }` → `[[locale, texte], …]`, les vides retirés. */
+export const localePairs = (notes) =>
+  [['fr-FR', notes?.fr], ['en-US', notes?.en]].filter(([, t]) => t);
+
+/**
+ * Le build d'une version donnée. TRIPLE filtre indispensable : la fiche
+ * com.tentacle.mobile est PARTAGÉE mac/iOS/tvOS — un même numéro de build peut
+ * exister sur plusieurs plateformes.
+ */
+export async function findBuild(api, appId, { build, version, platform }) {
+  const r = await api('GET',
+    `/v1/builds?filter[app]=${appId}` +
+    `&filter[version]=${build}` +
+    (version ? `&filter[preReleaseVersion.version]=${version}` : '') +
+    `&filter[preReleaseVersion.platform]=${platform}` +
+    `&sort=-uploadedDate&limit=1`);
+  return r.data?.[0] ?? null;
+}
+
+/**
+ * « À tester » TestFlight. L'attribut s'appelle bien `whatsNew`, comme les
+ * Nouveautés App Store : « whatsToTest » n'existe pas et renvoie 409.
+ */
+export async function setBetaBuildNotes(api, buildId, pairs, log = console.log) {
+  const bl = await api('GET', `/v1/builds/${buildId}/betaBuildLocalizations?limit=50`);
+  for (const [locale, text] of pairs) {
+    const existing = bl.data.find((l) => l.attributes.locale === locale);
+    if (existing) {
+      await api('PATCH', `/v1/betaBuildLocalizations/${existing.id}`,
+        { data: { type: 'betaBuildLocalizations', id: existing.id, attributes: { whatsNew: text } } });
+    } else {
+      await api('POST', '/v1/betaBuildLocalizations',
+        { data: { type: 'betaBuildLocalizations', attributes: { locale, whatsNew: text }, relationships: { build: { data: { type: 'builds', id: buildId } } } } });
+    }
+    log(`« À tester » ${locale} ✓`);
+  }
+}
+
+/**
+ * « Nouveautés de cette version » sur la fiche App Store. On PATCHE `whatsNew`
+ * et RIEN d'autre : description, mots-clés, texte promotionnel et captures
+ * appartiennent à l'utilisateur, la CI n'y touche jamais.
+ */
+export async function setAppStoreNotes(api, versionId, pairs, log = console.log) {
+  const locs = await api('GET', `/v1/appStoreVersions/${versionId}/appStoreVersionLocalizations?limit=50`);
+  for (const [locale, text] of pairs) {
+    const existing = locs.data.find((l) => l.attributes.locale === locale);
+    try {
+      if (existing) {
+        await api('PATCH', `/v1/appStoreVersionLocalizations/${existing.id}`,
+          { data: { type: 'appStoreVersionLocalizations', id: existing.id, attributes: { whatsNew: text } } });
+      } else {
+        await api('POST', '/v1/appStoreVersionLocalizations',
+          { data: { type: 'appStoreVersionLocalizations', attributes: { locale, whatsNew: text }, relationships: { appStoreVersion: { data: { type: 'appStoreVersions', id: versionId } } } } });
+      }
+      log(`« Nouveautés » ${locale} ✓ (${text.length} car.)`);
+    } catch (e) {
+      log(`whatsNew ${locale} échec (non bloquant): ${e.message}`);
+    }
+  }
+}
+
+/** États d'une version App Store où le build et les métadonnées sont modifiables. */
+export const EDITABLE_VERSION_STATES = new Set([
+  'PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY',
+]);
+
+/** L'état d'une version : `appVersionState` fait foi, `appStoreState` est déprécié. */
+export const versionState = (ver) => ver?.attributes?.appVersionState ?? ver?.attributes?.appStoreState ?? null;
