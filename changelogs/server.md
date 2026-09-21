@@ -5,6 +5,13 @@ quand `versions.json` → `server` change dans un push sur `main`, une Release
 GitHub `server-vX.Y.Z` est créée avec ces notes. Chaque push publie l'image
 `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`).
 
+## [1.18.1]
+### FR
+- **Mise à jour requise pour le lecteur avancé du mobile** : la version minimale de serveur exigée par les applications passe à 1.18.1. L'application mobile 1.8.0 lit désormais les fichiers tels quels, sans transcodage (lecteur avancé, libmpv) — sans cette mise à jour du serveur, cette lecture est impossible. Les applications qui trouvent un serveur plus ancien le disent par leur bandeau de compatibilité
+
+### EN
+- **Update required for the mobile advanced player**: the minimum server version required by the apps rises to 1.18.1. The mobile app 1.8.0 now plays files as they are, without transcoding (advanced player, libmpv) — without this server update, that playback is impossible. Apps that find an older server say so through their compatibility banner
+
 ## [1.18.0]
 ### FR
 - **Les intros et les génériques des épisodes se trouvent à l'oreille** : pour un épisode qu'aucun greffon ni chapitre ne décrit, le serveur écoute le début et la fin de l'épisode et de ses voisins de saison — ce qui se répète d'un épisode à l'autre est l'opening ou l'ending, retrouvé à quelques secondes près. Une seule analyse par épisode, à sa première lecture, jamais de passe de fond : Jellyfin transcode deux courts extraits audio (5 à 10 minutes chacun, en qualité voix), coupés net dès qu'on a assez entendu ; les voisins déjà écoutés sont réutilisés, et une saison de douze épisodes ne demande qu'une quinzaine d'extraits. Rien ne part pendant qu'un autre spectateur transcode une vidéo, un serveur trop lent met la fonction au repos une heure, les fichiers de plus de 25 Mbit/s sont laissés de côté, et le lecteur n'attend jamais : la réponse arrive une minute plus tard, bien avant le générique. Une scène qui continue après le générique est reconnue comme telle quand les deux voisins la confirment ; au moindre doute rien n'est posé, et les greffons gardent toujours raison
