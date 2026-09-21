@@ -133,9 +133,29 @@ export async function setAppStoreNotes(api, versionId, pairs, log = console.log)
   }
 }
 
-/** États d'une version App Store où le build et les métadonnées sont modifiables. */
+/**
+ * États d'une version App Store où le build et les métadonnées sont modifiables.
+ * `READY_FOR_REVIEW` en fait partie : il ne veut pas dire « partie à l'examen »
+ * mais « tout est rempli, rien n'a encore été envoyé » — c'est précisément
+ * l'état qu'atteint une version une fois son build rattaché.
+ */
 export const EDITABLE_VERSION_STATES = new Set([
-  'PREPARE_FOR_SUBMISSION', 'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY',
+  'PREPARE_FOR_SUBMISSION', 'READY_FOR_REVIEW',
+  'DEVELOPER_REJECTED', 'REJECTED', 'METADATA_REJECTED', 'INVALID_BINARY',
+]);
+
+/**
+ * États d'une version DÉJÀ envoyée ou déjà en vente : rejouer un run ne doit
+ * rien casser. Les deux générations d'énumération y cohabitent — `versionState`
+ * lit `appVersionState` en priorité, mais retombe sur `appStoreState`.
+ */
+export const SUBMITTED_VERSION_STATES = new Set([
+  // appVersionState
+  'WAITING_FOR_REVIEW', 'IN_REVIEW', 'ACCEPTED', 'PENDING_APPLE_RELEASE',
+  'PENDING_DEVELOPER_RELEASE', 'PROCESSING_FOR_DISTRIBUTION',
+  'READY_FOR_DISTRIBUTION', 'WAITING_FOR_EXPORT_COMPLIANCE', 'REPLACED_WITH_NEW_VERSION',
+  // appStoreState (déprécié, encore servi par certaines réponses)
+  'READY_FOR_SALE', 'PROCESSING_FOR_APP_STORE', 'PENDING_CONTRACT', 'PREORDER_READY_FOR_SALE',
 ]);
 
 /** L'état d'une version : `appVersionState` fait foi, `appStoreState` est déprécié. */
