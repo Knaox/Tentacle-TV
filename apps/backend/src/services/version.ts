@@ -34,8 +34,8 @@ export const BACKEND_VERSION: string = (() => {
  * seul levier qui couvre un parc — révoquer depuis l'interface est un geste
  * manuel, appareil par appareil.
  *
- * Se bump à la main dans `versions.json` : `scripts/bump-version.mjs` ne
- * connaît que les champs en X.Y.Z et n'a rien à faire ici.
+ * Se bump à la main dans `versions.json` : `.github/scripts/bump-version.mjs`
+ * ne connaît que les champs en X.Y.Z et n'a rien à faire ici.
  *
  * Repli à 0 : une image sans le champ ne déjumelle personne. La chaîne est
  * acceptée autant que le nombre — un `"2"` recopié à la main ne doit pas se
