@@ -17,9 +17,13 @@
   },
   "playMobile": {
     "$comment": "Version Android (téléphone/tablette) RÉELLEMENT en ligne sur la fiche Play. MAINTENU AUTOMATIQUEMENT par mobile.yml (.github/scripts/patch-store-manifest.mjs --only=play-mobile --changelog=changelogs/mobile.md), au moment où play-publish.mjs a réellement posé la release. C'était auparavant un geste manuel, parce que la CI publiait en `status: draft` : « publié » n'était alors pas déductible d'un run. Ne PAS le déduire de versions.json → mobile, qui porte l'intention et non la publication.",
-    "version": "1.0.0",
+    "version": "1.8.0",
     "packageName": "com.tentacletv.mobile",
-    "track": "alpha"
+    "track": "alpha",
+    "notes": {
+      "fr": "• Tout se lit tel quel : un lecteur avancé prend ce que le lecteur du système refuse — MKV, DTS, TrueHD, HEVC 10 bits, AVI, sous-titres ASS et PGS. Plus de conversion par le serveur\n• Changer de langue ou de sous-titre ne relance plus rien\n• AirPlay en cours de lecture, et retour au lecteur avancé dès qu'il s'arrête\n• Hors ligne avec toutes les pistes du fichier, langues et sous-titres compris\n• Réglages › Lecture : choix du moteur, sous-titres stylés, taille et position",
+      "en": "• Everything plays as it is: an advanced player takes what the system player refuses — MKV, DTS, TrueHD, 10-bit HEVC, AVI, ASS and PGS subtitles. No more server conversion\n• Switching language or subtitle no longer restarts anything\n• AirPlay during playback, and back to the advanced player as soon as it stops\n• Offline with every track of the file, languages and subtitles included\n• Settings › Playback: engine choice, styled subtitles, size and position"
+    }
   },
   "playTv": {
     "$comment": "Version Android TV en ligne. MÊME fiche Play que le mobile (com.tentacletv.mobile, form factor TV), mais piste distincte et versionCode préfixé 2e9 — donc un numéro de version propre. MAINTENU AUTOMATIQUEMENT par tv.yml (--only=play-tv --changelog=changelogs/tv.md), comme playMobile.",
