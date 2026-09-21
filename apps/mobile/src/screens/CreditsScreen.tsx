@@ -21,6 +21,16 @@ const TECH_STACK: { name: string; descKey: string }[] = [
   { name: "Fastify", descKey: "techFastify" },
   // La coquille de bureau, désormais unique pour les trois systèmes.
   { name: "Electron", descKey: "techElectron" },
+  // Le lecteur avancé du mobile et ce qu'il embarque.
+  { name: "mpv / libmpv", descKey: "techMpvMobile" },
+  { name: "MPVKit", descKey: "techMpvkit" },
+  { name: "FFmpeg", descKey: "techFFmpeg" },
+  { name: "libass", descKey: "techLibass" },
+  { name: "libplacebo", descKey: "techLibplacebo" },
+  { name: "dav1d", descKey: "techDav1d" },
+  { name: "Streamyfin", descKey: "techStreamyfin" },
+  { name: "libmpv-android", descKey: "techLibmpvAndroid" },
+  { name: "Jellyfin Media3 FFmpeg", descKey: "techMedia3Ffmpeg" },
 ];
 
 const sectionHeaderStyle = (t: AppTheme): TextStyle => ({
@@ -198,6 +208,8 @@ export function CreditsScreen() {
                 lineHeight: 20,
               }}>
                 {t("licenseText")}
+                {"\n\n"}
+                {t("licenseTextMobile")}
               </Text>
             </View>
           </GlassCard>

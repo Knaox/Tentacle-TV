@@ -1,6 +1,6 @@
 {
   "name": "@tentacle-tv/mobile",
-  "version": "1.2.4",
+  "version": "1.8.0",
   "private": true,
   "main": "./index.js",
   "scripts": {
@@ -15,6 +15,7 @@
     "submit:android": "eas submit --platform android",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
+    "test": "vitest run",
     "postinstall": "node -e \"['@tanstack/react-query','@tanstack/query-core','react-native-reanimated'].forEach(p=>{try{const f=require.resolve(p+'/package.json');const j=JSON.parse(require('fs').readFileSync(f,'utf8'));if(j['react-native']){delete j['react-native'];require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'\\n')}}catch{}})\""
   },
   "dependencies": {
@@ -62,7 +63,7 @@
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "~15.12.1",
-    "react-native-video": "^6.9.0",
+    "react-native-video": "6.19.3",
     "react-native-webview": "13.15.0"
   },
   "devDependencies": {
@@ -70,6 +71,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "react-native-css-interop": "~0.1.22",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
   }
 }

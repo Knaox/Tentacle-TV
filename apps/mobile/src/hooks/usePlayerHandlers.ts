@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
+import type { RefObject } from "react";
 import { useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import type { OnLoadData, OnProgressData, VideoRef } from "react-native-video";
 import { useWatchStopInvalidation } from "@tentacle-tv/api-client";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
+import type { EngineLoadData, EngineProgressData, PlayerEngineHandle } from "@/player/engine/types";
 import { backOrHome } from "@/utils/backOrHome";
 import type { PlayerSessionCore } from "./usePlayerPlayback";
 
@@ -14,12 +15,13 @@ import type { PlayerSessionCore } from "./usePlayerPlayback";
  * rangement de sortie partagé avec le web (arrêt de session, Ma liste, hubs).
  *
  * Extraits de `PlayerScreen`, qui dépassait la limite de 300 lignes par
- * fichier. Extraction mécanique, à une exception près signalée sur `handleEnd`.
+ * fichier. Ils ne connaissent pas le moteur : ils parlent à `engineRef`, la
+ * poignée commune des deux surfaces.
  */
 export interface PlayerHandlersOptions {
   itemId: string;
   pb: PlayerSessionCore;
-  videoRef: { current: VideoRef | null };
+  engineRef: RefObject<PlayerEngineHandle | null>;
   paused: boolean;
   /** Refs de cycle de vie portés par l'écran, repris tels quels. */
   resumeApplied: { current: boolean };
@@ -31,15 +33,23 @@ export interface PlayerHandlersOptions {
   setIsBuffering: (v: boolean) => void;
   setVideoReady: (v: boolean) => void;
   setPlayerError: (v: string | null) => void;
+  /** Le détail brut de la dernière erreur, pour le panneau « Détails ». */
+  setPlayerDetail?: (v: string | null) => void;
+  /**
+   * Une lecture DIRECTE a échoué : l'écran peut basculer sur l'autre moteur
+   * (vrai) au lieu de demander un transcodage. Sinon, ou en cas de second
+   * échec, la relance transcodée existante prend le relais.
+   */
+  onDirectPlayFailed?: () => boolean;
   /** Le flux est arrivé au bout — l'écran le donne à l'arbitre, qui décide. */
   onEnded: () => void;
 }
 
 export function usePlayerHandlers({
-  itemId, pb, videoRef, paused,
+  itemId, pb, engineRef, paused,
   resumeApplied, retryCount, retryingRef, hasEverPlayed,
-  setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError,
-  onEnded,
+  setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
+  onDirectPlayFailed, onEnded,
 }: PlayerHandlersOptions) {
   const { t } = useTranslation("player");
   const router = useRouter();
@@ -54,7 +64,7 @@ export function usePlayerHandlers({
     backOrHome(router);
   }, [router]);
 
-  const handleLoad = useCallback((_data: OnLoadData) => {
+  const handleLoad = useCallback((_data: EngineLoadData) => {
     setIsBuffering(false);
     setVideoReady(true);
     hasEverPlayed.current = true;
@@ -69,13 +79,13 @@ export function usePlayerHandlers({
       if (pb.isDirectPlay) {
         // Direct play: seek absolute (startPosition should already have positioned,
         // but seek as backup)
-        videoRef.current?.seek(targetPosition);
+        engineRef.current?.seek(targetPosition);
       } else {
         // Transcode: HLS stream starts at streamOffset,
         // so seek to (target - streamOffset) within the stream
         const seekInStream = targetPosition - pb.streamOffset;
         if (seekInStream > 1) {
-          videoRef.current?.seek(seekInStream);
+          engineRef.current?.seek(seekInStream);
         }
       }
     }
@@ -83,7 +93,7 @@ export function usePlayerHandlers({
     pb.reporting.reportStart(targetPosition);
   }, [pb.item, pb.reporting, pb.isDirectPlay, pb.streamOffset, pb.positionRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleProgress = useCallback((data: OnProgressData) => {
+  const handleProgress = useCallback((data: EngineProgressData) => {
     const raw = Math.max(0, data.currentTime);
     const pos = raw + pb.streamOffset;
     setCurrentTime(pos);
@@ -100,28 +110,40 @@ export function usePlayerHandlers({
     onEnded();
   }, [onEnded]);
 
+  /**
+   * Un échec de lecture, dans l'ordre : l'autre moteur si une lecture directe a
+   * échoué et qu'il est plausible, puis le transcodage (chemin de repli
+   * existant), puis l'écran d'erreur. Le motif est journalisé et gardé pour
+   * « Détails ».
+   */
   const handleError = useCallback((e: unknown) => {
     // Guard against duplicate onError from ExoPlayer or race with retryingRef
     if (retryingRef.current) return;
     const errorDetail = e && typeof e === "object" ? JSON.stringify(e) : String(e);
-    if (retryCount.current < 1) {
-      // First error = expected on emulators / unsupported codecs → auto-retry with transcode
-      console.log("[Tentacle:Player] onError — retrying with transcode fallback", errorDetail);
+    setPlayerDetail?.(errorDetail);
+    const budget = onDirectPlayFailed ? 2 : 1;
+    if (retryCount.current < budget) {
       retryCount.current++;
       retryingRef.current = true;
+      if (pb.isDirectPlay && onDirectPlayFailed?.()) {
+        console.log("[Tentacle:Player] onError — lecture directe en échec, bascule sur l'autre moteur", errorDetail);
+        return;
+      }
+      // First error = expected on emulators / unsupported codecs → auto-retry with transcode
+      console.log("[Tentacle:Player] onError — retrying with transcode fallback", errorDetail);
       pb.retry();
     } else {
       // All retries exhausted — show error screen
       console.error("[Tentacle:Player] onError — all retries exhausted", errorDetail);
       setPlayerError(t("playbackError"));
     }
-  }, [pb, t]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pb, t, onDirectPlayFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSeek = useCallback((seconds: number) => {
     const dur = pb.jellyfinDuration || 0;
     const clamped = Math.max(0, dur > 0 ? Math.min(seconds, dur) : seconds);
     const offset = pb.streamOffset;
-    videoRef.current?.seek(Math.max(0, clamped - offset));
+    engineRef.current?.seek(Math.max(0, clamped - offset));
     pb.reporting.reportSeek(clamped, paused);
   }, [pb.jellyfinDuration, pb.streamOffset, paused, pb.reporting]); // eslint-disable-line react-hooks/exhaustive-deps
 

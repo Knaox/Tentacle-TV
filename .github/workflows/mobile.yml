@@ -32,9 +32,9 @@ on:
         type: boolean
         default: true
       target:
-        description: "Quelle plateforme construire"
+        description: "Quelle plateforme construire (asc-status : ne construit rien, liste l'état des builds sur App Store Connect)"
         type: choice
-        options: [all, android, ios]
+        options: [all, android, ios, asc-status]
         default: all
 
 concurrency:
@@ -133,13 +133,12 @@ jobs:
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
 
-      # NB : aucune installation explicite de NDK ici — le mobile (Expo SDK 54 /
-      # RN 0.81) résout la sienne via expo-root-project et s'appuie sur celle,
-      # préinstallée, du runner, comme le faisait release-play.yml. Depuis que la
-      # TV est passée à RN 0.81 elle aussi, les deux visent la MÊME 27.1.12297006
-      # (celle qui aligne les .so sur 16 Ko) ; tv.yml, lui, l'installe en clair.
-      # Si un jour « NDK not configured » apparaît : ajouter
-      # android-actions/setup-android@v3 puis `sdkmanager "ndk;27.1.12297006"`.
+      # NDK 29.0.14206865 (android.ndkVersion dans gradle.properties et app.json) :
+      # celui avec lequel libmpv-android 1.0.0 est construit — son libmpv.so
+      # exige le libc++ de cette génération, et c'est le libc++_shared.so du NDK
+      # de l'app qui est paqueté. Le runner ne le préinstalle pas forcément.
+      - name: NDK 29 (libmpv-android)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;29.0.14206865" > /dev/null
       - name: Decode upload keystore
         id: keystore
         env:
@@ -236,6 +235,18 @@ jobs:
 
       - name: Install dependencies (monorepo)
         run: pnpm install --frozen-lockfile
+
+      # Le binaire MPVKit (257 Mio) est téléchargé par CocoaPods : mis en cache
+      # avec les pods, clé sur le lockfile ET le podspec qui porte l'URL/la somme.
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/CocoaPods
+            apps/mobile/ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'apps/mobile/ios/MPVKit.podspec') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
 
       - name: CocoaPods install
         working-directory: apps/mobile/ios
@@ -433,3 +444,87 @@ jobs:
           BUILD: ${{ needs.version.outputs.build }}
           CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-attach-build.mjs
+      # Délai dépassé ou build invalide : l'état brut des derniers builds, sans le
+      # filtre preReleaseVersion qui peut cacher un build rejeté.
+      - name: État des builds ASC (diagnostic)
+        if: failure()
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+        run: node .github/scripts/asc-list-builds.mjs
+
+  # Diagnostic seul (dispatch, target=asc-status) : rien n'est construit ni
+  # envoyé, la liste des derniers builds et leur état de traitement suffit à
+  # savoir si un envoi a été traité, rejeté ou perdu.
+  asc-status:
+    needs: version
+    if: inputs.target == 'asc-status'
+    name: État des builds App Store Connect
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lister les builds (App Store Connect API)
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          LIMIT: "12"
+        run: node .github/scripts/asc-list-builds.mjs
+
+  # Après une livraison RÉUSSIE seulement (aucun job lancé en échec, au moins
+  # un réussi — `target` peut n'en lancer qu'un), et seulement depuis main ou
+  # un tag mobile-v* (un dispatch depuis une branche de travail n'écrit pas sur
+  # main), `apps/mobile/package.json` est aligné sur `versions.json → mobile`
+  # par un commit sur main. Ce numéro
+  # ne sert à rien à la CI (elle lit versions.json), mais il mentait sur le
+  # dépôt. Motif de commit repris de desktop.yml (tentacle-bot, pull --rebase).
+  sync-package-version:
+    needs: [version, ios, android]
+    if: >-
+      !cancelled()
+      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/mobile-v'))
+      && needs.version.result == 'success'
+      && needs.ios.result != 'failure' && needs.android.result != 'failure'
+      && (needs.ios.result == 'success' || needs.android.result == 'success')
+    name: Align package.json on versions.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Write version into apps/mobile/package.json
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = "apps/mobile/package.json";
+            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+            if (pkg.version === process.env.VERSION) { console.log("déjà à jour :", pkg.version); process.exit(0); }
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+            console.log("package.json →", pkg.version);
+          '
+      - name: Commit + push sur main
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          git config user.name "tentacle-bot"
+          git config user.email "bot@tentacletv.app"
+          git add apps/mobile/package.json
+          git commit -m "chore(mobile): package.json ${VERSION}" || { echo "rien à committer"; exit 0; }
+          git pull --rebase origin main
+          git push origin main

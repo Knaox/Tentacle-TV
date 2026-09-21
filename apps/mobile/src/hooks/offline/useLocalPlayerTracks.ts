@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { OnLoadData } from "react-native-video";
 import { i18n, resolveMediaTracks, type MediaStream as JfStream } from "@tentacle-tv/shared";
 import {
   formatLocalTrackLabel,
   itemTracksFor,
   matchAudioStreams,
-  parseSideCarFileName,
   prefForLibrary,
   readUserTrackConfig,
   resolveWithUserConfig,
@@ -17,7 +15,9 @@ import {
   type SubtitleMode,
 } from "@tentacle-tv/offline-core";
 import type { OfflineLocalSource } from "@/offline/engineApi";
+import type { EngineAudioTrack, EngineLoadData, PlayerEngineKind } from "@/player/engine/types";
 import { prefsStore } from "@/offline/prefsCache";
+import { mpvExternalSubtitles, mpvSubtitleStreams, parseSideCars } from "./localTrackLists";
 import { useRememberLocalTracks } from "./useRememberLocalTracks";
 
 export interface Track {
@@ -32,7 +32,7 @@ export interface Track {
   isDefault?: boolean;
 }
 
-type NativeAudioTrack = OnLoadData["audioTracks"][number];
+type NativeAudioTrack = EngineAudioTrack;
 
 /** `langMatches` compare des codes nus : « fr-BE » ne correspondrait à rien sans ce découpage. */
 const baseLang = (lang: string | undefined): string | undefined => lang?.split("-")[0]?.toLowerCase();
@@ -61,20 +61,27 @@ interface Options {
   localSource: OfflineLocalSource;
   /** Les pistes du snapshot — leurs `DisplayTitle` nomment les pistes comme en ligne. */
   streams: JfStream[];
+  /** Le moteur qui lit : il fixe le sens des index et d'où viennent les sous-titres. */
+  engine: PlayerEngineKind;
 }
 
 /**
- * Les pistes d'une lecture LOCALE. L'audio vient de la liste NATIVE du fichier
- * (`onLoad.audioTracks`, comme la track-list mpv du bureau — un lecteur qui
- * omet une piste ne décale rien), les sous-titres des side-cars VTT ; chaque
- * piste retrouve son flux du snapshot et porte le NOM que Jellyfin affiche
- * (« Français - AAC - Stereo », « English (SDH) »). Les langues préférées sont
- * résolues localement par LE MÊME algorithme que le serveur (le contenu
+ * Les pistes d'une lecture LOCALE. L'audio vient de la liste que le MOTEUR
+ * annonce (`onLoad.audioTracks` : positions du lecteur système, index du
+ * fichier — donc Jellyfin — pour le lecteur avancé) ; chaque piste retrouve
+ * son flux du snapshot et porte le NOM que Jellyfin affiche (« Français - AAC
+ * - Stereo », « English (SDH) »). Les sous-titres : side-cars VTT/SRT pour
+ * l'overlay du lecteur système ; pour le lecteur avancé, les pistes du fichier
+ * plus les side-cars externes, ajoutés par leur fichier. Les langues préférées
+ * sont résolues localement par LE MÊME algorithme que le serveur (le contenu
  * d'abord, la bibliothèque ensuite, les réglages du compte Jellyfin en
  * dernier), une fois, quand le fichier est chargé ; un choix explicite est
  * mémorisé.
  */
-export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: Options) {
+export function useLocalPlayerTracks({ userId, itemId, localSource, streams, engine }: Options) {
+  const mpv = engine === "mpv";
+  /** Un original garde ses pistes intégrées ; une variante recompressée n'en a plus. */
+  const embeddedInFile = localSource.variant === "original";
   const { t } = useTranslation("player");
   const [nativeAudio, setNativeAudio] = useState<readonly NativeAudioTrack[]>([]);
   /** Index NATIF de la piste audio (-1 : laisser le lecteur choisir). */
@@ -90,8 +97,8 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
   );
   const snapshotStreams = useMemo(() => toSnapshotStreams(streams), [streams]);
 
-  const onLoad = useCallback((data: OnLoadData) => {
-    setNativeAudio(data.audioTracks ?? []);
+  const onLoad = useCallback((data: EngineLoadData) => {
+    setNativeAudio(data.audioTracks);
   }, []);
 
   const audioTracks: Track[] = useMemo(() => {
@@ -100,7 +107,10 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
       audioStreamIndex: localSource.audioStreamIndex,
     });
     return nativeAudio.map((track, position) => {
-      const stream = matched[position] ?? null;
+      // Lecteur avancé sur un original : l'index de la piste EST l'index Jellyfin.
+      const stream = mpv && embeddedInFile
+        ? (snapshotStreams.find((s) => s.Type === "Audio" && s.Index === track.index) ?? null)
+        : (matched[position] ?? null);
       return {
         index: track.index,
         label: snapshotTrackLabel(stream, () => label({ lang: track.language, title: track.title }, track.index)),
@@ -109,17 +119,31 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
         isDefault: stream?.IsDefault ?? track.selected === true,
       };
     });
-  }, [nativeAudio, snapshotStreams, localSource.variant, localSource.audioStreamIndex, label]);
+  }, [nativeAudio, snapshotStreams, localSource.variant, localSource.audioStreamIndex, label, mpv, embeddedInFile]);
 
-  const sideCars = useMemo(
-    () => localSource.subtitleUris
-      .map((file) => ({ ...file, parsed: parseSideCarFileName(file.fileName) }))
-      .filter((file) => file.parsed !== null && file.parsed.format === "vtt"),
-    [localSource.subtitleUris],
+  const allSideCars = useMemo(() => parseSideCars(localSource.subtitleUris), [localSource.subtitleUris]);
+  /** L'overlay du lecteur système lit le VTT et le SRT ; l'ASS lui est illisible. */
+  const overlaySideCars = useMemo(
+    () => allSideCars.filter((file) => file.parsed.format === "vtt" || file.parsed.format === "srt"),
+    [allSideCars],
   );
-  const subtitleTracks: Track[] = useMemo(
-    () => sideCars.map((file) => {
-      const parsed = file.parsed!;
+  const externalSubtitles = useMemo(
+    () => (mpv ? mpvExternalSubtitles(streams, allSideCars, embeddedInFile) : []),
+    [mpv, streams, allSideCars, embeddedInFile],
+  );
+  const subtitleTracks: Track[] = useMemo(() => {
+    if (mpv) {
+      return mpvSubtitleStreams(streams, externalSubtitles, embeddedInFile).map((stream) => ({
+        index: stream.Index as number,
+        label: snapshotTrackLabel(toSnapshotStreams([stream])[0] ?? null, () =>
+          label({ lang: stream.Language, title: stream.Title, codec: stream.Codec, forced: stream.IsForced }, stream.Index as number)),
+        lang: baseLang(stream.Language),
+        forced: stream.IsForced === true,
+        title: stream.Title,
+      }));
+    }
+    return overlaySideCars.map((file) => {
+      const parsed = file.parsed;
       // Le side-car porte l'index Jellyfin d'origine : le flux se retrouve exactement.
       const stream = snapshotStreams.find((s) => s.Type === "Subtitle" && s.Index === parsed.jfIndex) ?? null;
       return {
@@ -131,12 +155,12 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
         sdh: parsed.sdh,
         title: stream?.Title,
       };
-    }),
-    [sideCars, snapshotStreams, label],
-  );
+    });
+  }, [mpv, streams, externalSubtitles, embeddedInFile, overlaySideCars, snapshotStreams, label]);
+  /** Le lecteur avancé dessine lui-même : rien pour l'overlay. */
   const subtitleVttUrl = useMemo(
-    () => sideCars.find((file) => file.parsed!.jfIndex === subtitleIndex)?.uri ?? null,
-    [sideCars, subtitleIndex],
+    () => (mpv ? null : (overlaySideCars.find((file) => file.parsed.jfIndex === subtitleIndex)?.uri ?? null)),
+    [mpv, overlaySideCars, subtitleIndex],
   );
 
   // Résolution des préférences : une fois, quand les pistes du fichier sont connues.
@@ -176,5 +200,5 @@ export function useLocalPlayerTracks({ userId, itemId, localSource, streams }: O
   }, [override, audioTracks, subtitleTracks, audioIndex, subtitleIndex]);
   useRememberLocalTracks({ userId, itemId, choice });
 
-  return { onLoad, audioTracks, subtitleTracks, audioIndex, subtitleIndex, subtitleVttUrl, changeAudio, changeSubtitle };
+  return { onLoad, audioTracks, subtitleTracks, externalSubtitles, audioIndex, subtitleIndex, subtitleVttUrl, changeAudio, changeSubtitle };
 }
