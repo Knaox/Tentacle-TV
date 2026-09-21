@@ -6,7 +6,6 @@
 package expo.modules.mpvplayer
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
@@ -66,6 +65,8 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
     @Volatile internal var pausedForCache = false
     @Volatile internal var isSeeking = false
     @Volatile internal var lastProgressUpdateTime = 0L
+    /** Pause imposée par la vue (surface perdue) : la prochaine `pause=true` observée ne remonte pas à JS. */
+    @Volatile internal var silentPause = false
 
     /** Crée le handle, pose les options, initialise. Idempotent ; vrai si un handle vit. */
     fun start(): Boolean {
@@ -74,7 +75,6 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
             val handle = MPVLib.create(context)
             mpv = handle
             handle.addObserver(this)
-            MpvLogger.verboseToLogcat = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
             handle.addLogObserver(MpvLogger)
             applyInitOptions(handle)
             handle.initialize()
@@ -95,10 +95,11 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
     }
 
     /**
-     * Arrête la lecture et lâche le handle. Le `stop` mpv libère le décodeur
-     * MediaCodec : travail JNI synchrone qui peut bloquer des centaines de
-     * millisecondes — sur un thread d'arrière-plan, jamais sur le principal.
-     * Le handle est oublié AVANT : plus personne ne lui parle pendant qu'il meurt.
+     * Arrête la lecture et détruit le handle. Le `stop` mpv libère le décodeur
+     * MediaCodec et `destroy` attend le thread d'événements : travail JNI
+     * synchrone qui peut bloquer des centaines de millisecondes — sur un thread
+     * d'arrière-plan, jamais sur le principal. Le handle est oublié AVANT : plus
+     * personne ne lui parle pendant qu'il meurt.
      */
     fun stop() {
         val handle = mpv ?: return
@@ -108,14 +109,22 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
         startedCurrentLoad = false
         pendingConfig = null
         Thread {
-            // `force-window=no` AVANT `stop` : avec keep-open, mpv garde le VO
-            // vivant et tente une reconfiguration sur une surface détachée —
-            // « Missing surface pointer », fatal (mesuré par Streamyfin).
+            // `vo=null` d'abord : le VO et sa surface EGL sont libérés, synchrone.
+            // Puis `force-window=no` avant `stop` : avec keep-open, mpv garderait
+            // le VO vivant et tenterait une reconfiguration sur une surface
+            // détachée — « Missing surface pointer », fatal (mesuré par Streamyfin).
+            try { handle.setPropertyString("vo", "null") } catch (e: Exception) { Log.w(TAG, "vo=null : ${e.message}") }
             try { handle.setOptionString("force-window", "no") } catch (e: Exception) { Log.w(TAG, "force-window : ${e.message}") }
             try { handle.command(arrayOf("stop")) } catch (e: Exception) { Log.w(TAG, "stop : ${e.message}") }
             try { handle.removeObserver(this) } catch (e: Exception) { Log.w(TAG, "observer : ${e.message}") }
             try { handle.removeLogObserver(MpvLogger) } catch (e: Exception) { Log.w(TAG, "log observer : ${e.message}") }
             try { handle.detachSurface() } catch (e: Exception) { Log.w(TAG, "detachSurface : ${e.message}") }
+            // Sans `destroy`, le thread d'événements de libmpv-android resterait
+            // bloqué dans mpv_wait_event et sa ref globale épinglerait l'instance :
+            // un cœur mpv (décodeur, cache) de plus à chaque lecture. Jamais
+            // depuis un rappel mpv (le thread se joindrait lui-même) ; ici, sur
+            // un thread à nous, le handle déjà oublié de tous.
+            try { handle.destroy() } catch (e: Throwable) { Log.w(TAG, "destroy : ${e.message}") }
         }.also { it.isDaemon = true }.start()
     }
 
@@ -129,11 +138,36 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
         handle.setOptionString("force-window", "yes")
     }
 
-    /** La surface disparaît : les images sont simplement ignorées jusqu'à la suivante. */
-    fun detachSurface() {
+    /**
+     * La surface meurt : le VO aussi (`vo=null`, synchrone). mpv ne lit `wid`
+     * qu'à la création du VO — un VO gardé vivant rendrait dans une fenêtre
+     * libérée (noir, erreurs EGL) — c'est le motif de mpv-android.
+     */
+    fun releaseVideoOutput() {
         val handle = mpv ?: return
         if (!isRunning) return
+        handle.setPropertyString("vo", "null")
+        handle.setOptionString("force-window", "no")
         handle.detachSurface()
+    }
+
+    /** Une surface neuve est attachée : le VO renaît dessus. */
+    fun restoreVideoOutput() {
+        val handle = mpv ?: return
+        if (!isRunning) return
+        handle.setPropertyString("vo", VIDEO_OUTPUT)
+    }
+
+    /**
+     * Pause imposée par la vue (surface perdue : l'app est en fond), sans
+     * l'annoncer à JS — sa prop `paused` reste la vérité, et la reprise suit la
+     * surface. Parité avec le lecteur système Android.
+     */
+    fun suspendPlayback() {
+        val handle = mpv ?: return
+        if (!isRunning || isPaused) return
+        silentPause = true
+        handle.setPropertyBoolean("pause", true)
     }
 
     fun updateSurfaceSize(width: Int, height: Int) {

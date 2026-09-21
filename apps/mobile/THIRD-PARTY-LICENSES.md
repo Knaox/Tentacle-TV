@@ -70,6 +70,15 @@ variante LGPL (`mpvkit.yml`) est celle du paquet soumis à l'App Store.
 Ces composants GPL sont compatibles avec la licence MIT de l'application,
 dont les sources sont publiées ; Google Play n'y oppose aucune règle.
 
+### Android — certificats racine
+
+`apps/mobile/modules/mpv-player/android/src/main/assets/mpv/cacert.pem` : le
+paquet de certificats racine de Mozilla, extrait par curl
+(https://curl.se/docs/caextract.html), **Mozilla Public License 2.0**. Le FFmpeg de
+libmpv-android parle mbedTLS, qui ne lit aucun magasin système : sans ce
+fichier (`tls-ca-file`), tout https échouerait dans le lecteur avancé. Copie du
+21 septembre 2026 ; à rafraîchir à chaque mise à jour du lecteur.
+
 ## Module natif dérivé de Streamyfin (MPL-2.0)
 
 Le module `apps/mobile/modules/mpv-player` (Swift, Kotlin, TypeScript) est
