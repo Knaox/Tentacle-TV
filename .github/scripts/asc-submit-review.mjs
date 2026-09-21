@@ -56,6 +56,16 @@ const main = async () => {
     process.exit(1);
   }
 
+  // Une version sans build rattaché n'atteindra jamais READY_FOR_REVIEW : au
+  // cran « promote », c'est le signe qu'aucun run de test n'est passé par là.
+  // Mieux vaut le dire tout de suite que d'attendre le délai d'expiration.
+  const attached = await api('GET', `/v1/appStoreVersions/${ver.id}/relationships/build`).catch(() => null);
+  if (!attached?.data?.id) {
+    console.error(`::error::la version ${VERSION} (${PLATFORM}) n'a AUCUN build rattaché — rien à soumettre.`);
+    console.error('Livre d\'abord au cran « test » (le build sera envoyé puis rattaché), ou relance au cran « store » sans « reprendre le binaire testé ».');
+    process.exit(1);
+  }
+
   // 1) Mise en vente automatique à l'approbation.
   await api('PATCH', `/v1/appStoreVersions/${ver.id}`, {
     data: { type: 'appStoreVersions', id: ver.id, attributes: { releaseType: RELEASE_TYPE } },
