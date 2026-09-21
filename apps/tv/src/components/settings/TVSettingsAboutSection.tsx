@@ -83,6 +83,24 @@ export function TVSettingsAboutSection() {
         ))}
       </View>
 
+      {/* Licences : la mention qu'exige l'exception App Store de PrismCore (nom,
+          licence, source) — du texte, rien de focusable, comme le reste de la page. */}
+      <Text
+        style={{
+          color: Colors.textTertiary,
+          fontSize: 13,
+          fontWeight: "600",
+          letterSpacing: 1.2,
+          textTransform: "uppercase",
+          marginBottom: 14,
+        }}
+      >
+        {t("about:license")}
+      </Text>
+      <Text style={{ color: Colors.textSecondary, fontSize: 14, lineHeight: 21, maxWidth: 760, marginBottom: 36 }}>
+        {t("about:licenseTextTv")}
+      </Text>
+
       <Text style={{ color: Colors.textTertiary, fontSize: 12 }}>
         {t("about:copyright", { version: APP_VERSION, year: new Date().getFullYear() })}
       </Text>
