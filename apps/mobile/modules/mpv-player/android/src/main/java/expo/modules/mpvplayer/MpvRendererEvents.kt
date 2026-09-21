@@ -62,9 +62,16 @@ internal object MpvRendererEvents {
 
     fun onBoolean(renderer: MpvRenderer, property: String, value: Boolean) {
         when (property) {
-            "pause" -> if (value != renderer.isPaused) {
-                renderer.isPaused = value
-                renderer.notify { it.rendererDidChangePause(value) }
+            "pause" -> {
+                if (value && renderer.silentPause) {
+                    renderer.silentPause = false
+                    renderer.isPaused = true
+                    return
+                }
+                if (value != renderer.isPaused) {
+                    renderer.isPaused = value
+                    renderer.notify { it.rendererDidChangePause(value) }
+                }
             }
             "paused-for-cache" -> {
                 renderer.pausedForCache = value

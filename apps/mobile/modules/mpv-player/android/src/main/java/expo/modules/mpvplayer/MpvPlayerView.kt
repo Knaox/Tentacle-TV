@@ -2,13 +2,17 @@
 // (modules/mpv-player/android/src/main/java/expo/modules/mpvplayer/MpvPlayerView.kt,
 // révision 4faddc5f du 2026-09-12), publié sous Mozilla Public License 2.0. Ce
 // fichier reste couvert par la MPL-2.0 (https://mozilla.org/MPL/2.0/) ;
-// adaptation Tentacle TV : contrat d'événements commun aux deux plateformes.
+// adaptation Tentacle TV : contrat d'événements commun aux deux plateformes,
+// cycle de vie de la surface selon mpv-android, pause en arrière-plan, focus audio.
 package expo.modules.mpvplayer
 
 import android.app.Activity
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.graphics.Color
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.os.Build
 import android.util.Rational
 import android.view.SurfaceHolder
@@ -20,11 +24,14 @@ import expo.modules.kotlin.views.ExpoView
 
 /**
  * La vue native du lecteur avancé sur Android : une `SurfaceView` (la surface
- * va droit au compositeur, ce qui tient l'image dans l'image) et le rendu
- * libmpv. Même contrat d'événements que `MpvPlayerView.swift`.
+ * va droit au compositeur) et le rendu libmpv. Même contrat d'événements que
+ * `MpvPlayerView.swift`. La surface commande le VO (mpv ne lit `wid` qu'à sa
+ * création) et la lecture : sans surface — l'app en fond —, mpv se met en
+ * pause, comme le lecteur système Android ; elle reprend avec la surface si
+ * JS ne l'a pas mise en pause entre-temps.
  */
 class MpvPlayerView(context: Context, appContext: AppContext) :
-    ExpoView(context, appContext), MpvRendererDelegate, SurfaceHolder.Callback {
+    ExpoView(context, appContext), MpvRendererDelegate, SurfaceHolder.Callback, AudioManager.OnAudioFocusChangeListener {
 
     val onLoad by EventDispatcher()
     val onProgress by EventDispatcher()
@@ -45,6 +52,11 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     private var videoWidth = 0
     private var videoHeight = 0
     var pipAutoStart = true
+    /** L'intention de JS (la prop `paused`) : la reprise après une perte de surface s'y réfère. */
+    private var jsPaused = false
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    private var focusRequest: AudioFocusRequest? = null
+    private var hasAudioFocus = false
 
     init {
         setBackgroundColor(Color.BLACK)
@@ -53,15 +65,6 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         }
         surfaceView.holder.addCallback(this)
         addView(surfaceView)
-        // Chaque changement de taille est poussé à mpv : le passage en image
-        // dans l'image redimensionne la surface avant le prochain rendu.
-        surfaceView.addOnLayoutChangeListener { _, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom ->
-            val width = right - left
-            val height = bottom - top
-            if (width > 0 && height > 0 && (width != oldRight - oldLeft || height != oldBottom - oldTop)) {
-                renderer.updateSurfaceSize(width, height)
-            }
-        }
         renderer.delegate = this
         renderer.start()
     }
@@ -72,8 +75,16 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         surfaceReady = true
         renderer.attachSurface(holder.surface)
         if (surfaceView.width > 0 && surfaceView.height > 0) renderer.updateSurfaceSize(surfaceView.width, surfaceView.height)
-        pendingConfig?.let { load(it) }
-        pendingConfig = null
+        val pending = pendingConfig
+        if (pending != null) {
+            pendingConfig = null
+            load(pending)
+            return
+        }
+        // Surface recréée (retour au premier plan) : le VO renaît dessus, et la
+        // lecture reprend si c'est nous qui l'avions suspendue.
+        renderer.restoreVideoOutput()
+        if (!jsPaused) resumePlayback()
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
@@ -82,8 +93,8 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         surfaceReady = false
-        // Pas de `stop` : la lecture continue sur le démuxeur et reprend à la surface suivante.
-        renderer.detachSurface()
+        renderer.suspendPlayback()
+        renderer.releaseVideoOutput()
     }
 
     // MARK: - Source et transport
@@ -102,10 +113,21 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
             if (surfaceView.width > 0 && surfaceView.height > 0) renderer.updateSurfaceSize(surfaceView.width, surfaceView.height)
         }
         currentConfig = config
+        if (!jsPaused) requestAudioFocus()
         renderer.load(config)
     }
 
-    fun setPaused(paused: Boolean) = if (paused) renderer.pause() else renderer.play()
+    fun setPaused(paused: Boolean) {
+        jsPaused = paused
+        surfaceView.keepScreenOn = !paused
+        if (paused) renderer.pause() else resumePlayback()
+    }
+
+    private fun resumePlayback() {
+        requestAudioFocus()
+        renderer.play()
+    }
+
     fun seekTo(seconds: Double) = renderer.seekTo(seconds)
     fun getPosition(): Double = renderer.cachedPosition
 
@@ -114,6 +136,7 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         renderer.stop()
         currentConfig = null
         pendingConfig = null
+        abandonAudioFocus()
     }
 
     /** Destruction par React Native : plus rien ne remonte, le handle meurt. */
@@ -123,6 +146,42 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         surfaceReady = false
         pendingConfig = null
         currentConfig = null
+        surfaceView.keepScreenOn = false
+        abandonAudioFocus()
+    }
+
+    // MARK: - Focus audio (une autre app qui joue, un appel : on se tait ; on ne reprend pas seul)
+
+    private fun requestAudioFocus() {
+        if (hasAudioFocus) return
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+            .build()
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(attributes)
+            .setOnAudioFocusChangeListener(this)
+            .build()
+        focusRequest = request
+        hasAudioFocus = audioManager.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+    }
+
+    private fun abandonAudioFocus() {
+        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+        focusRequest = null
+        hasAudioFocus = false
+    }
+
+    override fun onAudioFocusChange(change: Int) {
+        when (change) {
+            // Perte : pause, annoncée à JS par l'observation de `pause` — c'est
+            // l'utilisateur qui relance. Un simple « duck » (notification) passe
+            // par-dessus sans rien changer.
+            AudioManager.AUDIOFOCUS_LOSS, AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                hasAudioFocus = false
+                renderer.pause()
+            }
+        }
     }
 
     // MARK: - Image dans l'image (minimale : le système la gère, on lui donne le format)

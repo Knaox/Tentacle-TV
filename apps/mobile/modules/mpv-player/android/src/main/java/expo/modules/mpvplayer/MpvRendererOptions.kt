@@ -10,6 +10,9 @@ import android.system.Os
 import android.util.Log
 import java.io.File
 
+/** La sortie vidéo, avec son repli : `gpu` si le contexte de gpu-next ne s'ouvre pas. */
+internal const val VIDEO_OUTPUT = "gpu-next,gpu"
+
 /**
  * Vrai seulement sur l'émulateur : son MediaCodec (goldfish/ranchu) ne sait
  * pas lier une surface de sortie — le HEVC échoue proprement, le H.264
@@ -27,8 +30,10 @@ internal fun isEmulator(): Boolean {
 
 /** Les options communes au bureau et à iOS (`mpvRuntime.ts`, `MpvRenderer+Options.swift`). */
 private val BASE_OPTIONS: List<Pair<String, String>> = listOf(
-    "keep-open" to "always",
+    "keep-open" to "yes",
+    "idle" to "yes",
     "deinterlace" to "auto",
+    "hwdec-software-fallback" to "yes",
     // Cache : 30 s de pré-tampon, plafonné pour un téléphone.
     "cache" to "yes",
     "demuxer-readahead-secs" to "30",
@@ -37,9 +42,10 @@ private val BASE_OPTIONS: List<Pair<String, String>> = listOf(
     "cache-pause-initial" to "yes",
     "cache-pause-wait" to "10",
     "network-timeout" to "30",
-    "stream-lavf-o" to "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5,reconnect_max_retries=8",
-    // La valeur contient une virgule, le séparateur de la liste : `-append` ajoute UN couple sans le redécouper.
-    "stream-lavf-o-append" to "reconnect_on_http_error=4xx,5xx",
+    // La dernière valeur contient une virgule, le séparateur de la liste : la
+    // forme `%n%` de mpv (longueur, puis la chaîne) la protège. `-append`,
+    // lui, est refusé par mpv_set_option_string (mesuré : -5).
+    "stream-lavf-o" to "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5,reconnect_max_retries=8,reconnect_on_http_error=%7%4xx,5xx",
     "demuxer-lavf-o" to "probesize=10000000,analyzeduration=10000000",
     "tls-verify" to "yes",
     // Sous-titres : on ajoute les externes nous-mêmes ; styles ASS respectés
@@ -54,7 +60,7 @@ private val BASE_OPTIONS: List<Pair<String, String>> = listOf(
     "load-scripts" to "no",
     "scripts" to "",
     "load-auto-profiles" to "no",
-    "load-osd-console" to "no",
+    "load-console" to "no",
     "load-stats-overlay" to "no",
     "load-select" to "no",
     "load-positioning" to "no",
@@ -74,26 +80,29 @@ private val BASE_OPTIONS: List<Pair<String, String>> = listOf(
  * Options posées AVANT `init()`. Le rendu passe par gpu-next sur le contexte
  * Android (OpenGL ES) ; le HDR y est tone-mappé (libplacebo sans Vulkan) — ce
  * moteur ne sert qu'à ce qu'ExoPlayer ne lit pas, en SDR dans la pratique.
+ * `profile=fast` est le réglage de mpv-android pour un téléphone (écrans
+ * denses, GPU modestes) : divergence assumée avec iOS, où le VO ne met rien à
+ * l'échelle.
  */
 internal fun MpvRenderer.applyInitOptions(handle: MPVLib) {
-    // Dossier de configuration et fontconfig (nouveau dans libmpv 1.0) sur des
-    // dossiers inscriptibles : l'index des polices persiste entre les lancements
-    // au lieu de reparcourir /system/fonts à chaque sous-titre (1 à 2 s, 10 à
-    // 30 Mio, mesuré par Streamyfin).
-    val mpvDir = File(context.getExternalFilesDir(null) ?: context.filesDir, "mpv")
+    // Dossier de configuration et fontconfig (nouveau dans libmpv 1.0) dans le
+    // stockage interne : l'index des polices persiste entre les lancements au
+    // lieu de reparcourir /system/fonts à chaque sous-titre (1 à 2 s, 10 à
+    // 30 Mio, mesuré par Streamyfin). Un `mpv.conf` posé là (par `adb shell
+    // run-as` sur un build debuggable) surcharge les options ci-dessous.
+    val mpvDir = File(context.filesDir, "mpv")
     if (!mpvDir.exists()) mpvDir.mkdirs()
     try {
-        val configDir = (context.getExternalFilesDir(null) ?: context.filesDir).absolutePath
         Os.setenv("XDG_CACHE_HOME", context.cacheDir.absolutePath, true)
-        Os.setenv("XDG_CONFIG_HOME", configDir, true)
-        Os.setenv("HOME", configDir, true)
+        Os.setenv("XDG_CONFIG_HOME", context.filesDir.absolutePath, true)
+        Os.setenv("HOME", context.filesDir.absolutePath, true)
     } catch (e: Exception) {
         Log.w(MpvRenderer.TAG, "environnement fontconfig : ${e.message}")
     }
     handle.setOptionString("config", "yes")
     handle.setOptionString("config-dir", mpvDir.path)
 
-    handle.setOptionString("vo", "gpu-next")
+    handle.setOptionString("vo", VIDEO_OUTPUT)
     handle.setOptionString("gpu-context", "android")
     handle.setOptionString("opengl-es", "yes")
     handle.setOptionString("profile", "fast")
@@ -103,10 +112,36 @@ internal fun MpvRenderer.applyInitOptions(handle: MPVLib) {
     handle.setOptionString("ao", "audiotrack,opensles")
     // La fenêtre n'existe qu'avec une surface : `force-window` passe à yes à l'attache.
     handle.setOptionString("force-window", "no")
+    // TLS : le FFmpeg de libmpv-android parle mbedTLS, qui ne connaît aucun
+    // magasin système — sans fichier de certificats, tout https échoue.
+    installCaBundle(mpvDir)?.let { handle.setOptionString("tls-ca-file", it.path) }
 
     for ((name, value) in BASE_OPTIONS) {
         val status = handle.setOptionString(name, value)
         if (status < 0) Log.w(MpvRenderer.TAG, "option refusée ($status) : $name=$value")
+    }
+}
+
+/**
+ * Le paquet de certificats racine de Mozilla (extrait par curl, embarqué dans
+ * les assets), copié une fois dans le dossier mpv. Même confiance que le
+ * lecteur système : les autorités du système, pas celles de l'utilisateur.
+ */
+private fun MpvRenderer.installCaBundle(mpvDir: File): File? {
+    val target = File(mpvDir, "cacert.pem")
+    try {
+        context.assets.open("mpv/cacert.pem").use { input ->
+            val bytes = input.readBytes()
+            if (!target.exists() || target.length() != bytes.size.toLong()) {
+                val temp = File(mpvDir, "cacert.pem.tmp")
+                temp.writeBytes(bytes)
+                if (!temp.renameTo(target)) target.writeBytes(bytes)
+            }
+        }
+        return target
+    } catch (e: Exception) {
+        Log.w(MpvRenderer.TAG, "certificats racine indisponibles : ${e.message}")
+        return null
     }
 }
 
