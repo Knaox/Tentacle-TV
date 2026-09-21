@@ -258,7 +258,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
+      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} prismTextTrackIndex={p.prismTextTrackIndex} exoRef={exoRef} mpvRef={mpvRef}
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}

@@ -18,6 +18,8 @@ interface MemoizedPlayerProps {
   subtitleIndex?: number;
   /** Direct play vs transcode HLS — gate le sideload des sous-titres sur tvOS */
   isDirectPlay?: boolean;
+  /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
+  prismTextTrackIndex?: number | null;
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
@@ -27,7 +29,7 @@ interface MemoizedPlayerProps {
 }
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay, prismTextTrackIndex,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
@@ -40,6 +42,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       textTracks={textTracks}
       subtitleIndex={subtitleIndex}
       isDirectPlay={isDirectPlay}
+      prismTextTrackIndex={prismTextTrackIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}
@@ -58,6 +61,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       textTracks={textTracks}
       subtitleIndex={subtitleIndex}
       isDirectPlay={isDirectPlay}
+      prismTextTrackIndex={prismTextTrackIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}

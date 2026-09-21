@@ -21,6 +21,8 @@ interface ExoPlayerProps {
   subtitleIndex?: number;
   /** Direct play vs transcode HLS — gate le sideload des sous-titres (cf. AVPlayerSurface). */
   isDirectPlay?: boolean;
+  /** PrismCore : rendition OCR du sous-titre image sélectionné (cf. AVPlayerSurface). */
+  prismTextTrackIndex?: number | null;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
