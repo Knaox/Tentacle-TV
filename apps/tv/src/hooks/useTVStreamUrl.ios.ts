@@ -5,14 +5,20 @@ import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import { plog } from "../utils/playerDiag";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
+import {
+  fallbackMuxedPrismCore, preferredAudioLanguageOf, prismEligible, prismHeaders, startPrismCore, stopPrismCore,
+  type PrismStart,
+} from "../utils/prismCoreStart";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
- * `useTVStreamUrl.ts` intact). Pilotée par `POST PlaybackInfo` + DeviceProfile
- * AVPlayer : le SERVEUR décide DirectPlay / transcode (DirectStream remux,
- * re-encode…), ce qui maximise les formats lisibles par Apple TV et évite
- * l'écran noir des MKV.
+ * `useTVStreamUrl.ts` intact). Deux chemins, dans cet ordre :
+ *  1. PrismCore (utils/prismCoreStart.ts) — lecture DIRECTE des HEVC/H.264 que
+ *     AVPlayer ne sait pas ouvrir tel quel (MKV/TS, DTS/TrueHD, HDR/DV) : HLS
+ *     local VOD, multi-audio natif, badge HDR/DV programmé avant le chargement ;
+ *  2. sinon, ou en cas de refus, `POST PlaybackInfo` + DeviceProfile AVPlayer :
+ *     le SERVEUR décide DirectPlay / transcode (DirectStream, re-encode…).
  *
  * IMPORTANT : l'URL est construite via `client.getStreamUrl()` (et NON à la main)
  * afin de passer par `resolveMediaUrl` (réécriture proxy same-origin → host de
@@ -26,7 +32,7 @@ import { getHdrCapabilities } from "../lib/hdrCapabilities";
 export function useTVStreamUrl(args: {
   itemId: string;
   mediaSourceId?: string;
-  /** Conteneur Jellyfin (mp4/mkv/mov/ts…) — parité de signature avec Android. */
+  /** Conteneur Jellyfin (mp4/mkv/mov/ts…) — gate PrismCore : MP4/MOV/M4V = Direct Play natif. */
   container?: string;
   streams: JfStream[];
   audioIndex: number;
@@ -43,7 +49,7 @@ export function useTVStreamUrl(args: {
   reloadNonce?: number;
 }) {
   const {
-    itemId, mediaSourceId, streams, audioIndex, subtitleIndex, startTicks,
+    itemId, mediaSourceId, container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight,
   } = args;
   const client = useJellyfinClient();
@@ -64,6 +70,10 @@ export function useTVStreamUrl(args: {
     resumeFrag?: string;
     playSessionId?: string;
     isDirectPlay: boolean;
+    /** Lecture directe servie par PrismCore (HLS local, timeline absolue). */
+    isPrismCore?: boolean;
+    /** Ce que PrismCore a rendu au démarrage (pistes transportées, renditions…). */
+    prism?: PrismStart;
     /** Résolution du flux ÉCHOUÉE : l'écran de chargement affiche une erreur +
      *  « Réessayer » au lieu de tourner pour toujours. */
     failed?: boolean;
@@ -104,9 +114,22 @@ export function useTVStreamUrl(args: {
   // écran de chargement) d'un reload « doux » (audio/qualité → on GARDE l'ancienne
   // URL pour ne pas démonter le player ; juste un re-buffer discret).
   const contentKeyRef = useRef("");
+  // Session PrismCore courante : clé = CONTENU seul. Le changement de piste audio
+  // est natif (groupe de sélection AVPlayer), la position est absolue, la reprise
+  // ne reconstruit rien → un seul start() par titre, réutilisé à chaque
+  // ré-exécution de l'effet (reload de piste/qualité, bump de nonce).
+  const prismCacheRef = useRef<{ key: string; start: PrismStart } | null>(null);
+  // Jeton de session natif (gen) : stop() au démontage n'arrête que LA nôtre.
+  const prismGenRef = useRef(0);
+  const dropPrismSession = () => {
+    stopPrismCore(prismGenRef.current);
+    prismGenRef.current = 0;
+    prismCacheRef.current = null;
+  };
 
-  // Démontage du player : bump de fetchIdRef → les fetchs en vol ne setState plus.
-  useEffect(() => () => { fetchIdRef.current++; }, []);
+  // Démontage du player : les fetchs en vol ne setState plus, la session
+  // PrismCore s'arrête (le start() de l'écran suivant a déjà sa propre gen).
+  useEffect(() => () => { fetchIdRef.current++; dropPrismSession(); }, []);
 
   useEffect(() => {
     if (!itemId || !userId) return;
@@ -143,6 +166,37 @@ export function useTVStreamUrl(args: {
 
     (async () => {
       try {
+        if (prismEligible({ container, streams, audioIndex: effAudio, vcodec, forceTranscode, isTranscodingQuality })) {
+          const cached = prismCacheRef.current;
+          if (cached && cached.key === contentKey) {
+            plog("prism", "session en cache réutilisée");
+            setResult({ baseUrl: cached.start.url, resumeFrag, isDirectPlay: true, isPrismCore: true, prism: cached.start });
+            return;
+          }
+          // Une session d'un AUTRE titre traîne encore (changement de source sans
+          // démontage) : on la stoppe avant d'en ouvrir une nouvelle.
+          if (prismGenRef.current > 0) dropPrismSession();
+          plog("prism", `éligible → start(audio=${effAudio}, t=${Math.floor(startSeconds ?? 0)}s)`);
+          const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
+          const start = await startPrismCore({
+            rawUrl, headers: prismHeaders(client),
+            preferredAudioLanguage: preferredAudioLanguageOf(streams, effAudio),
+            isCancelled: () => fetchIdRef.current !== fetchId,
+          });
+          if (fetchIdRef.current !== fetchId) return;
+          if (start) {
+            prismCacheRef.current = { key: contentKey, start };
+            prismGenRef.current = start.gen;
+            setResult({ baseUrl: start.url, resumeFrag, isDirectPlay: true, isPrismCore: true, prism: start });
+            return;
+          }
+          plog("prism", "refusé → repli PlaybackInfo serveur");
+        } else if (prismGenRef.current > 0) {
+          // Plus éligible (transcode forcé par une erreur codec, palier de qualité
+          // transcodé) : la session ne sert plus à rien, on la libère.
+          dropPrismSession();
+        }
+
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
         const cap = isTranscodingQuality && maxBitrate ? maxBitrate : undefined;
         // burnInIndex >= 0 ⇒ sous-titre IMAGE (PGS/VOBSUB) sélectionné : profil sans
@@ -205,7 +259,7 @@ export function useTVStreamUrl(args: {
     // déclenchent l'effet — startTicks/vcodec — coïncident avec sa bonne valeur),
     // puis cuit dans resumeFrag.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemId, mediaSourceId, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec]);
+  }, [itemId, mediaSourceId, container, userId, forceTranscode, isTranscodingQuality, maxBitrate, maxHeight, startTicks, resumeSec, burnInIndex, args.reloadNonce, vcodec]);
 
   // `streamUrl` = baseUrl + fragment de reprise, TOUS DEUX cuits ensemble dans
   // `result` (cf. plus haut) → change exactement une fois par reload (plus de
@@ -215,11 +269,26 @@ export function useTVStreamUrl(args: {
     ? result.baseUrl + (result.resumeFrag ?? "")
     : null;
 
-  // `isPrismCore` : lecture directe servie par PrismCore — toujours faux tant que
-  // le pont n'est pas branché (cf. utils/prismCoreStart.ts).
+  // Master refusé par AVPlayer (-11868 / -11848 / -1002 — « Adapter la plage
+  // dynamique » coupé sur un panneau HDR) : la même session rejouée en forme
+  // muxée (une piste audio, sans renditions), à la position courante. Rend
+  // false si PrismCore ne peut plus (successeur déjà minté, session stoppée) :
+  // le caller replie alors sur PlaybackInfo en forçant le transcode.
+  const retryMuxed = async (positionSec: number): Promise<boolean> => {
+    const gen = prismGenRef.current;
+    if (gen <= 0) return false;
+    const start = await fallbackMuxedPrismCore(gen);
+    if (!start) return false;
+    prismGenRef.current = start.gen;
+    prismCacheRef.current = { key: contentKeyRef.current, start };
+    const frag = positionSec > 1 ? `#tnt-start=${Math.floor(positionSec)}` : "";
+    setResult({ baseUrl: start.url, resumeFrag: frag, isDirectPlay: true, isPrismCore: true, prism: start });
+    return true;
+  };
+
   return {
     streamUrl, playSessionId: result.playSessionId,
-    isDirectPlay: result.isDirectPlay, isPrismCore: false,
-    failed: result.failed ?? false,
+    isDirectPlay: result.isDirectPlay, isPrismCore: result.isPrismCore ?? false, prism: result.prism,
+    failed: result.failed ?? false, retryMuxed,
   };
 }
