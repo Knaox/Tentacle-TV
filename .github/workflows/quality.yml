@@ -77,11 +77,19 @@ jobs:
       # réécriture d'historique ou une branche neuve, la base est introuvable →
       # on contrôle TOUT le dépôt, jamais moins.
       - name: Portée des contrôles
+        env:
+          # Les valeurs de contexte passent par l'environnement plutôt que par
+          # une interpolation directe dans le script : c'est la forme qui ne
+          # peut pas devenir une injection le jour où l'une d'elles cesse
+          # d'être un identifiant contrôlé par GitHub.
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: |
           BASE=""
-          case "${{ github.event_name }}" in
-            pull_request) CAND="${{ github.event.pull_request.base.sha }}" ;;
-            push)         CAND="${{ github.event.before }}" ;;
+          case "$EVENT_NAME" in
+            pull_request) CAND="$PR_BASE" ;;
+            push)         CAND="$PUSH_BEFORE" ;;
             *)            CAND="" ;;
           esac
           if [ -n "$CAND" ] && git rev-parse --verify --quiet "${CAND}^{commit}" >/dev/null; then
@@ -95,7 +103,10 @@ jobs:
             echo "Base introuvable — contrôle de tout le dépôt."
           fi
           # GITHUB_ENV et non GITHUB_OUTPUT : la valeur porte des guillemets, et
-          # l'interpoler par ${{ }} dans un `run` est une porte d'injection.
+          # une interpolation de contexte dans un « run » est une porte
+          # d'injection. (À ne PAS écrire en toutes lettres dans un commentaire :
+          # GitHub évalue la syntaxe d'expression jusque dans les commentaires
+          # d'un script, et un marqueur vide fait échouer le workflow entier.)
           echo "QUALITY_FILTER=$FILTER" >> "$GITHUB_ENV"
           eval pnpm $FILTER list --depth -1 --json | node -e \
             "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const n=JSON.parse(s).map(p=>p.name);console.log(n.length?'Paquets retenus : '+n.join(', '):'Aucun paquet touché.')})"

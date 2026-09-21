@@ -1,7 +1,27 @@
-# Tentacle TV — MOBILE (iOS TestFlight + Android Play), UN SEUL TAG
+# Tentacle TV — MOBILE (iOS + Android), UN SEUL DÉCLENCHEMENT
 #
-# Déclenché par le tag `mobile-vX.Y.Z` (ou manuellement). La version vient de
-# versions.json → champ `mobile` (SOURCE UNIQUE — garde-fou au job `version`).
+# TROIS CRANS, choisis au lancement (`channel`) :
+#   • build — construire et archiver les artefacts. Rien ne part nulle part.
+#   • test  — piste Play FERMÉE « alpha » en `completed` (donc PUBLIÉE, plus de
+#             draft à promouvoir à la main) et TestFlight distribué au groupe
+#             externe avec demande d'examen bêta.
+#   • store — production Play à 100 %, et App Store soumis à l'examen avec
+#             mise en vente automatique à l'approbation. Aucun clic ensuite.
+#
+# `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
+# TESTÉ au lieu d'en reconstruire un autre : le versionCode servi par la piste
+# fermée passe en production, et la version App Store part à l'examen avec le
+# build qui y est déjà rattaché. Décoché, tout est reconstruit.
+#
+# TOUT EST FIGÉ SUR UN COMMIT. Le job `prepare` publie un `sha`, et chaque job
+# checkout CE sha — y compris `ios-attach`, qui attend jusqu'à 35 minutes. Une
+# retouche de changelog poussée pendant un run ne peut donc pas partir au store.
+#
+# La version vient de versions.json → `mobile` (SOURCE UNIQUE). L'entrée
+# `version` du dispatch la BUMPE : prepare écrit versions.json, aligne
+# apps/mobile/package.json, commite, tague `mobile-vX.Y.Z` et pousse — aucune
+# commande locale. Le tag reste accepté comme déclencheur, au cran `store`.
+#
 # Build AUTO-INCRÉMENTÉ (minutes depuis 2024-01-01 UTC) :
 #   • iOS CFBundleVersion = BUILD   (Info.plist patché via plutil — la version y
 #     est codée en dur, pas de $(MARKETING_VERSION))
@@ -12,12 +32,12 @@
 # iOS  : xcodebuild archive, signature MANUELLE (cert Distribution + profil App
 #        Store recréé de façon idempotente via l'API ASC), altool upload TestFlight.
 #        Fiche App Store Connect com.tentacle.mobile (partagée mac/iOS/tvOS).
-# Android : AAB signé release (keystore d'upload MOBILE_*) → Play Console, app
-#        com.tentacletv.mobile, piste de tests FERMÉS « alpha » (env PLAY_MOBILE_TRACK),
-#        status draft → promotion manuelle dans la console. Sans keystore : build
-#        debug-signed, upload Play sauté. AAB toujours archivé en artefact.
+# Android : AAB signé release (keystore d'upload MOBILE_*). Sans keystore : build
+#        debug-signed, publication Play sautée. AAB toujours archivé en artefact.
 #
 # Notes de version : changelogs/mobile.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
+# Le bloc est EXIGÉ par le pré-vol de `prepare` — un bloc manquant ne donne plus
+# une publication silencieusement sans notes, il arrête le run avant le build.
 # Limites : Play 500 car., App Store 4000. UN seul bloc sert iOS ET Android.
 
 name: Release Mobile
@@ -27,15 +47,23 @@ on:
     tags: ["mobile-v*"]
   workflow_dispatch:
     inputs:
-      submit:
-        description: "Soumettre aux stores (Play Console / TestFlight) — sinon artefacts seulement"
+      targets:
+        description: "Cibles : all, ou une liste séparée par des virgules (android, ios)"
+        type: string
+        default: all
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
+        type: string
+        default: ""
+      promote:
+        description: "Au cran store : reprendre le binaire déjà testé au lieu de reconstruire"
         type: boolean
         default: true
-      target:
-        description: "Quelle plateforme construire (asc-status : ne construit rien, liste l'état des builds sur App Store Connect)"
-        type: choice
-        options: [all, android, ios, asc-status]
-        default: all
 
 concurrency:
   group: release-mobile-${{ github.ref }}
@@ -52,49 +80,146 @@ env:
   # fiche com.tentacletv.mobile). Lister les identifiants exacts : workflow
   # « Play — lister les pistes » (play-tracks.yml).
   PLAY_MOBILE_TRACK: "alpha"
+  PLAY_PACKAGE: "com.tentacletv.mobile"
 
 jobs:
-  # 0) Version depuis versions.json + build auto-incrémenté + garde-fou tag.
-  version:
+  # ── Ce qui rend tout le reste reproductible ────────────────────────────────
+  # Sort un `sha` que TOUS les jobs suivants checkout. Refuse de partir si la
+  # qualité n'est pas verte sur ce commit, ou si le changelog n'a pas son bloc.
+  prepare:
+    name: Préparer la livraison
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      build: ${{ steps.v.outputs.build }}
-      vcode: ${{ steps.v.outputs.vcode }}
-      submit: ${{ steps.v.outputs.submit }}
-      is_tag: ${{ steps.v.outputs.is_tag }}
+      sha: ${{ steps.plan.outputs.sha }}
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      vcode: ${{ steps.plan.outputs.vcode }}
+      channel: ${{ steps.plan.outputs.channel }}
+      android: ${{ steps.plan.outputs.android }}
+      ios: ${{ steps.plan.outputs.ios }}
+      play_track: ${{ steps.plan.outputs.play_track }}
+      tag: ${{ steps.plan.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - id: v
+        with:
+          fetch-depth: 0
+
+      # Le filet du crochet pre-push : rattrape un --no-verify ou une machine
+      # dont core.hooksPath n'est pas posé. Porte sur le commit DISPATCHÉ, donc
+      # avant le bump ci-dessous (qui ne touche que versions.json, un changelog
+      # et un package.json).
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Le bump est posé PAR LA CI : aucune commande locale à jouer. Le tag
+      # suit, et c'est le commit de bump qui devient le sha figé du run.
+      - name: Bump versions.json (si une version est demandée)
+        id: bump
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          WANTED: ${{ inputs.version }}
+        run: node .github/scripts/bump-version.mjs mobile "$WANTED"
+
+      - uses: ./.github/actions/push-main
+        id: pushed
+        if: steps.bump.outputs.changed == 'true'
+        with:
+          paths: ${{ steps.bump.outputs.files }}
+          message: "release(mobile) : v${{ inputs.version }}"
+
+      - name: Poser le tag mobile-v*
+        if: steps.pushed.outputs.committed == 'true'
+        env:
+          TAG: mobile-v${{ inputs.version }}
         run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::warning::le tag $TAG existe déjà — on le laisse en place."
+          else
+            git tag "$TAG" "${{ steps.pushed.outputs.sha }}"
+            git push origin "$TAG"
+          fi
+
+      # Le plan du run : quelle version, quel build, et QUE FAIRE de chaque
+      # cible. « promote » n'est pas un cran mais un raccourci du cran store :
+      # rien n'est reconstruit, on porte en production ce qui a été testé.
+      - name: Plan du run
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_TARGETS: ${{ inputs.targets }}
+          IN_CHANNEL: ${{ inputs.channel }}
+          IN_PROMOTE: ${{ inputs.promote }}
+          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${BUMPED_SHA:-${{ github.sha }}}"
+          git checkout --quiet "$SHA"
           VERSION=$(jq -r .mobile versions.json)
           BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
           VCODE=$BUILD   # mobile = form factor de base : versionCode = BUILD (TV = 2e9+BUILD)
-          if [ "${{ github.event_name }}" = "push" ]; then
-            IS_TAG=true; SUBMIT=true
-            # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
-            # unique, version marketing inchangée, build auto-incrémenté).
+
+          if [ "$EVENT" = "push" ]; then
+            # Un tag veut dire « livrer », donc le cran le plus haut. Le suffixe
+            # -rN reste une RE-LIVRAISON de la même version marketing.
+            TARGETS="android,ios"; CHANNEL=store; PROMOTE=false
             if [[ ! "${GITHUB_REF_NAME}" =~ ^mobile-v${VERSION}(-r[0-9]+)?$ ]]; then
               echo "::error::Tag ${GITHUB_REF_NAME} ≠ mobile-v${VERSION}[-rN] (versions.json → mobile). Mets à jour versions.json (source unique) ou corrige le tag."
               exit 1
             fi
           else
-            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+            TARGETS="$IN_TARGETS"; CHANNEL="$IN_CHANNEL"; PROMOTE="$IN_PROMOTE"
           fi
-          echo "Mobile ${VERSION} (build ${BUILD}, versionCode ${VCODE}, submit=${SUBMIT})"
-          { echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+          [ "$TARGETS" = "all" ] && TARGETS="android,ios"
 
-  # ── Android mobile : AAB → Play Console (piste de tests fermés « alpha ») ──
+          want() { case ",$TARGETS," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+          plan() {  # cible → build | promote | skip
+            want "$1" || { echo skip; return; }
+            if [ "$CHANNEL" = "store" ] && [ "$PROMOTE" = "true" ]; then echo promote; else echo build; fi
+          }
+          ANDROID=$(plan android); IOS=$(plan ios)
+          [ "$CHANNEL" = "store" ] && TRACK=production || TRACK="${PLAY_MOBILE_TRACK}"
+
+          echo "Mobile ${VERSION} — cran ${CHANNEL} · android=${ANDROID} · ios=${IOS} · piste ${TRACK} · build ${BUILD} · sha ${SHA}"
+          {
+            echo "sha=$SHA"; echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"
+            echo "channel=$CHANNEL"; echo "android=$ANDROID"; echo "ios=$IOS"
+            echo "play_track=$TRACK"; echo "tag=mobile-v$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      # LE PRÉ-VOL. Un bloc de changelog manquant donnait jusqu'ici une
+      # publication SANS NOTES, en silence : `release-notes.mjs` sort en 0 sans
+      # écrire de fichier, et les étapes enchaînaient avec « || true ».
+      - name: Pré-vol des notes de version
+        if: steps.plan.outputs.channel != 'build'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/mobile.md --version "${{ steps.plan.outputs.version }}" \
+            --check play --check asc:ios
+
+  # ── Android : l'AAB seulement. La publication est un job à part (voir « play »),
+  #    pour que la sérialisation avec la TV dure des secondes et non l'heure du build.
   android:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'android'
-    name: Android mobile (AAB → Play Console)
+    needs: prepare
+    if: needs.prepare.outputs.android == 'build'
+    name: Android mobile (AAB)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -173,11 +298,11 @@ jobs:
           KS_ALIAS: ${{ secrets.MOBILE_KEY_ALIAS }}
           KS_KEY_PASSWORD: ${{ secrets.MOBILE_KEY_PASSWORD }}
         run: |
-          ARGS="-PmobileVersionName=${{ needs.version.outputs.version }} -PmobileVersionCode=${{ needs.version.outputs.vcode }}"
+          ARGS="-PmobileVersionName=${{ needs.prepare.outputs.version }} -PmobileVersionCode=${{ needs.prepare.outputs.vcode }}"
           if [ "${{ steps.keystore.outputs.present }}" = "true" ]; then
             ARGS="$ARGS -PmobileKeystoreFile=$RUNNER_TEMP/upload.jks -PmobileKeystorePassword=$KS_PASSWORD -PmobileKeyAlias=$KS_ALIAS -PmobileKeyPassword=$KS_KEY_PASSWORD"
           fi
-          echo "Android mobile build → versionName=${{ needs.version.outputs.version }} versionCode=${{ needs.version.outputs.vcode }}"
+          echo "Android mobile build → versionName=${{ needs.prepare.outputs.version }} versionCode=${{ needs.prepare.outputs.vcode }}"
           chmod +x ./gradlew
           ./gradlew bundleRelease --no-daemon $ARGS
 
@@ -190,37 +315,84 @@ jobs:
           path: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      - name: Notes Play (whatsnew FR/EN)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        run: |
-          mkdir -p distribution/whatsnew
-          V="${{ needs.version.outputs.version }}"
-          node .github/scripts/release-notes.mjs --changelog changelogs/mobile.md \
-            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
-          node .github/scripts/release-notes.mjs --changelog changelogs/mobile.md \
-            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
-          ls -l distribution/whatsnew || true
-
-      - name: Upload AAB → Play Console (piste « alpha », test fermé mobile)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        uses: r0adkll/upload-google-play@v1
+  # ── Play : envoi OU promotion, en une édition. Sérialisé avec tv.yml : Android
+  #    TV et Android mobile partagent la fiche com.tentacletv.mobile, et deux
+  #    éditions concurrentes s'invalident l'une l'autre.
+  play:
+    needs: [prepare, android]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel != 'build'
+      && (needs.prepare.outputs.android == 'promote'
+          || (needs.prepare.outputs.android == 'build' && needs.android.result == 'success'))
+    name: Play Console (${{ needs.prepare.outputs.play_track }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: play-com.tentacletv.mobile
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
         with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.tentacletv.mobile
-          releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
-          track: ${{ env.PLAY_MOBILE_TRACK }}
-          status: draft
-          whatsNewDirectory: distribution/whatsnew
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  # ── iOS (TestFlight) — bloc de signature repris de release-ios.yml ──────────
+      - name: Récupérer l'AAB
+        if: needs.prepare.outputs.android == 'build'
+        uses: actions/download-artifact@v4
+        with:
+          name: tentacle-mobile-aab
+          path: aab
+
+      - name: Publier
+        id: publish
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ "${{ needs.prepare.outputs.android }}" = "promote" ]; then
+            SOURCE="--promote-from ${{ env.PLAY_MOBILE_TRACK }}"
+          else
+            SOURCE="--aab aab/app-release.aab"
+          fi
+          # shellcheck disable=SC2086
+          node .github/scripts/play-publish.mjs \
+            --package "${{ env.PLAY_PACKAGE }}" \
+            --track "${{ needs.prepare.outputs.play_track }}" \
+            --version "${{ needs.prepare.outputs.version }}" \
+            --changelog changelogs/mobile.md $SOURCE
+
+      # Le manifeste que lit le site : « publié » est enfin déductible d'un run,
+      # puisque la release est posée en « completed » et non plus en draft.
+      # Le manifeste est repris de `main` et non du sha figé : c'est un fichier
+      # que d'autres jobs écrivent aussi, et repartir d'une copie périmée
+      # effacerait leur bloc. Le CHANGELOG, lui, reste celui du sha figé.
+      - name: Aligner updates/store-versions.json
+        if: steps.publish.outputs.committed == 'true'
+        run: |
+          git fetch --depth=1 origin main
+          git checkout FETCH_HEAD -- updates/store-versions.json
+          node .github/scripts/patch-store-manifest.mjs "${{ needs.prepare.outputs.version }}" \
+            --changelog=changelogs/mobile.md --only=play-mobile
+      - uses: ./.github/actions/push-main
+        if: steps.publish.outputs.committed == 'true'
+        with:
+          paths: updates/store-versions.json
+          message: "chore(update) : manifeste Play mobile ${{ needs.prepare.outputs.version }} (${{ needs.prepare.outputs.play_track }})"
+
+  # ── iOS ────────────────────────────────────────────────────────────────────
   ios:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'ios'
-    name: Build + submit iOS
+    needs: prepare
+    if: needs.prepare.outputs.ios == 'build'
+    name: Build + envoi iOS
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -336,8 +508,8 @@ jobs:
       - name: Set version / build (Info.plist)
         run: |
           PLIST=apps/mobile/ios/TentacleTV/Info.plist
-          plutil -replace CFBundleShortVersionString -string "${{ needs.version.outputs.version }}" "$PLIST"
-          plutil -replace CFBundleVersion -string "${{ needs.version.outputs.build }}" "$PLIST"
+          plutil -replace CFBundleShortVersionString -string "${{ needs.prepare.outputs.version }}" "$PLIST"
+          plutil -replace CFBundleVersion -string "${{ needs.prepare.outputs.build }}" "$PLIST"
           plutil -p "$PLIST" | grep -E "CFBundleShortVersionString|CFBundleVersion"
 
       # Build de diffusion (TestFlight/App Store) → APNs production. L'entitlement
@@ -394,8 +566,8 @@ jobs:
           path: ${{ runner.temp }}/ipa/*.ipa
           if-no-files-found: error
 
-      - name: Submit to TestFlight
-        if: needs.version.outputs.submit == 'true'
+      - name: Envoi TestFlight
+        if: needs.prepare.outputs.channel != 'build'
         env:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -404,9 +576,10 @@ jobs:
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
 
       # Notes FR+EN depuis changelogs/mobile.md (bloc « ## [X.Y.Z] » nu, SANS canal).
-      # Non bloquant.
-      - name: Set release notes (App Store / TestFlight iOS)
-        if: needs.version.outputs.submit == 'true'
+      # Non bloquant : le pré-vol a déjà garanti que le bloc existe, et
+      # asc-attach-build les repose de toute façon après traitement.
+      - name: Poser les notes (App Store / TestFlight iOS)
+        if: needs.prepare.outputs.channel != 'build'
         continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
@@ -414,36 +587,52 @@ jobs:
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: IOS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-release-notes.mjs
 
-  # Attend le traitement ASC (~10-35 min) puis rattache le build iOS à la version
-  # App Store (+ « À tester » TestFlight). Job séparé ; continue-on-error.
+  # Attend le traitement ASC (~10-35 min), rattache le build à la version App
+  # Store, puis le DISTRIBUE au groupe de test — sans quoi un build TestFlight
+  # reste visible mais n'atteint personne.
   ios-attach:
-    needs: [version, ios]
-    if: needs.version.outputs.submit == 'true'
-    name: iOS attach build to App Store version
+    needs: [prepare, ios]
+    if: needs.prepare.outputs.ios == 'build' && needs.prepare.outputs.channel != 'build' && needs.ios.result == 'success'
+    name: iOS — rattacher et distribuer
     runs-on: ubuntu-latest
     timeout-minutes: 50
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Wait for ASC processing + attach build
+      # Les blocs `env` sont recopiés d'une étape à l'autre : GitHub Actions ne
+      # sait pas lire les ancres YAML (« &x » / « <<: *x »), le workflow serait
+      # refusé au chargement.
+      - name: Attendre le traitement ASC + rattacher le build
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: IOS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/mobile.md
         run: node .github/scripts/asc-attach-build.mjs
+      - name: Distribuer au groupe de test
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: IOS
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
+          ASC_BETA_GROUP_ID: ${{ secrets.ASC_BETA_GROUP_ID }}
+        run: node .github/scripts/asc-testflight-distribute.mjs
       # Délai dépassé ou build invalide : l'état brut des derniers builds, sans le
       # filtre preReleaseVersion qui peut cacher un build rejeté.
       - name: État des builds ASC (diagnostic)
@@ -455,76 +644,31 @@ jobs:
           BUNDLE_ID: com.tentacle.mobile
         run: node .github/scripts/asc-list-builds.mjs
 
-  # Diagnostic seul (dispatch, target=asc-status) : rien n'est construit ni
-  # envoyé, la liste des derniers builds et leur état de traitement suffit à
-  # savoir si un envoi a été traité, rejeté ou perdu.
-  asc-status:
-    needs: version
-    if: inputs.target == 'asc-status'
-    name: État des builds App Store Connect
+  # Le dernier geste manuel côté Apple : soumettre à l'examen, et mettre en
+  # vente dès l'approbation. Au cran store seulement.
+  ios-review:
+    needs: [prepare, ios-attach]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel == 'store'
+      && needs.prepare.outputs.ios != 'skip'
+      && (needs.prepare.outputs.ios == 'promote' || needs['ios-attach'].result == 'success')
+    name: iOS — soumettre à l'examen
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Lister les builds (App Store Connect API)
+      - name: Soumettre à l'examen App Store
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
-          LIMIT: "12"
-        run: node .github/scripts/asc-list-builds.mjs
+          PLATFORM: IOS
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node .github/scripts/asc-submit-review.mjs
 
-  # Après une livraison RÉUSSIE seulement (aucun job lancé en échec, au moins
-  # un réussi — `target` peut n'en lancer qu'un), et seulement depuis main ou
-  # un tag mobile-v* (un dispatch depuis une branche de travail n'écrit pas sur
-  # main), `apps/mobile/package.json` est aligné sur `versions.json → mobile`
-  # par un commit sur main. Ce numéro
-  # ne sert à rien à la CI (elle lit versions.json), mais il mentait sur le
-  # dépôt. Motif de commit repris de desktop.yml (tentacle-bot, pull --rebase).
-  sync-package-version:
-    needs: [version, ios, android]
-    if: >-
-      !cancelled()
-      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/mobile-v'))
-      && needs.version.result == 'success'
-      && needs.ios.result != 'failure' && needs.android.result != 'failure'
-      && (needs.ios.result == 'success' || needs.android.result == 'success')
-    name: Align package.json on versions.json
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Write version into apps/mobile/package.json
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          node -e '
-            const fs = require("fs");
-            const path = "apps/mobile/package.json";
-            const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
-            if (pkg.version === process.env.VERSION) { console.log("déjà à jour :", pkg.version); process.exit(0); }
-            pkg.version = process.env.VERSION;
-            fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
-            console.log("package.json →", pkg.version);
-          '
-      - name: Commit + push sur main
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          git config user.name "tentacle-bot"
-          git config user.email "bot@tentacletv.app"
-          git add apps/mobile/package.json
-          git commit -m "chore(mobile): package.json ${VERSION}" || { echo "rien à committer"; exit 0; }
-          git pull --rebase origin main
-          git push origin main
