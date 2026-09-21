@@ -34,10 +34,29 @@ on:
     tags: ["webos-v*"]
   workflow_dispatch:
     inputs:
-      publier:
-        description: "Publier les releases GitHub — sinon artefact du run seulement"
-        type: boolean
-        default: true
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
+        type: string
+        default: ""
+
+# TROIS CRANS, comme les autres workflows :
+#   • build — l'IPK en artefact du run. Aucune Release.
+#   • test  — Release VERSIONNÉE « webos-vX.Y.Z » seule. L'adresse permanente
+#             « webos-latest » NE BOUGE PAS : ce que les téléviseurs installés
+#             tirent reste l'ancienne version.
+#   • store — l'adresse permanente bascule elle aussi. C'est ce cran, et lui
+#             seul, qui met la nouvelle coquille en service.
+
+concurrency:
+  # Pas de cancel-in-progress : deux runs écriraient la MÊME release
+  # « webos-latest », qui est réécrite à chaque livraison.
+  group: release-webos
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -51,18 +70,57 @@ env:
   INSTALLATEUR: installateur-tentacle-tv.zip
 
 jobs:
-  version:
-    name: Version
+  prepare:
+    name: Préparer la livraison
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     outputs:
       version: ${{ steps.lire.outputs.version }}
+      sha: ${{ steps.lire.outputs.sha }}
+      channel: ${{ steps.lire.outputs.channel }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Bump versions.json (si une version est demandée)
+        id: bump
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          WANTED: ${{ inputs.version }}
+        run: node .github/scripts/bump-version.mjs webos "$WANTED"
+
+      - uses: ./.github/actions/push-main
+        id: pushed
+        if: steps.bump.outputs.changed == 'true'
+        with:
+          paths: ${{ steps.bump.outputs.files }}
+          message: "release(webos) : v${{ inputs.version }}"
 
       - name: Lire versions.json, et vérifier le tag
         id: lire
+        env:
+          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
         run: |
           set -euo pipefail
+          SHA="${BUMPED_SHA:-${{ github.sha }}}"
+          git checkout --quiet "$SHA"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          # Un tag veut dire « livrer », donc le cran le plus haut.
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then CHANNEL=store; else CHANNEL="${{ inputs.channel }}"; fi
+          echo "channel=$CHANNEL" >> "$GITHUB_OUTPUT"
           VERSION="$(node -p "require('./versions.json').webos")"
           if [ -z "$VERSION" ] || [ "$VERSION" = "undefined" ]; then
             echo "::error::versions.json ne porte pas de champ « webos »."
@@ -81,12 +139,24 @@ jobs:
             fi
           fi
 
+      # Le pré-vol : un bloc manquant donnait jusqu'ici une Release au corps
+      # générique « Tentacle TV pour LG webOS — version X.Y.Z », sans que
+      # personne ne voie passer l'oubli.
+      - name: Pré-vol des notes de version
+        if: steps.lire.outputs.channel != 'build'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/webos.md --version "${{ steps.lire.outputs.version }}" \
+            --check github
+
   paquet:
     name: Construire l'IPK
-    needs: version
+    needs: prepare
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -132,7 +202,7 @@ jobs:
           # Deux exemplaires du MÊME paquet : l'un versionné pour l'historique,
           # l'autre au nom fixe pour l'adresse de téléchargement permanente.
           cp "$SOURCE" "livraison/${{ env.IPK_STABLE }}"
-          cp "$SOURCE" "livraison/tentacle-tv-${{ needs.version.outputs.version }}.ipk"
+          cp "$SOURCE" "livraison/tentacle-tv-${{ needs.prepare.outputs.version }}.ipk"
           ls -l livraison
           echo "source=$SOURCE" >> "$GITHUB_OUTPUT"
 
@@ -160,37 +230,30 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: webos-ipk-${{ needs.version.outputs.version }}
+          name: webos-ipk-${{ needs.prepare.outputs.version }}
           path: |
             livraison/*.ipk
             livraison/${{ env.INSTALLATEUR }}
           if-no-files-found: error
 
+      # Le awk maison qui extrayait le bloc cède la place à la bibliothèque
+      # partagée : lui ne s'arrêtait pas au séparateur « --- » du pied de page
+      # et embarquait les titres « ### FR » / « ### EN » tels quels.
       - name: Extraire les notes de version
-        id: notes
+        if: needs.prepare.outputs.channel != 'build'
         run: |
-          set -euo pipefail
-          V="${{ needs.version.outputs.version }}"
-          if [ -f changelogs/webos.md ]; then
-            # Le bloc « ## [X.Y.Z] » jusqu'au titre suivant.
-            awk -v v="$V" '
-              $0 ~ "^## \\[" v "\\]" { dans=1; next }
-              dans && /^## \[/ { exit }
-              dans { print }
-            ' changelogs/webos.md > notes.md
-          fi
-          if [ ! -s notes.md ]; then
-            printf 'Tentacle TV pour LG webOS — version %s.\n' "$V" > notes.md
-          fi
+          node .github/scripts/release-notes.mjs \
+            --changelog changelogs/webos.md --version "${{ needs.prepare.outputs.version }}" \
+            --format github --out notes.md
           cat notes.md
 
       # L'historique : une release par version, jamais réécrite.
       - name: Release versionnée
-        if: github.event_name == 'push' || inputs.publier
+        if: needs.prepare.outputs.channel != 'build' 
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: webos-v${{ needs.version.outputs.version }}
-          name: webOS ${{ needs.version.outputs.version }}
+          tag_name: webos-v${{ needs.prepare.outputs.version }}
+          name: webOS ${{ needs.prepare.outputs.version }}
           body_path: notes.md
           files: |
             livraison/*.ipk
@@ -199,13 +262,13 @@ jobs:
 
       # L'adresse permanente : même tag, réécrit à chaque fois.
       - name: Release à adresse fixe
-        if: github.event_name == 'push' || inputs.publier
+        if: needs.prepare.outputs.channel == 'store' 
         uses: softprops/action-gh-release@v2
         with:
           tag_name: webos-latest
           name: webOS — dernière version
           body: |
-            Dernier paquet LG webOS — **version ${{ needs.version.outputs.version }}**.
+            Dernier paquet LG webOS — **version ${{ needs.prepare.outputs.version }}**.
 
             Cette release est réécrite à chaque livraison : les deux adresses de
             téléchargement ci-dessous ne changent jamais.

@@ -1,26 +1,115 @@
 # Tentacle TV — SERVEUR (backend + web, image Docker multi-arch)
 #
-# Déclenché par CHAQUE push sur main (pas de tag) : publie l'image
-# ghcr.io/knaox/tentacle-tv en `:latest` + `:v<server>` (version lue dans
-# versions.json → champ `server`, la source unique des versions).
+# DÉCLENCHEMENT À LA DEMANDE, PLUS AU PUSH. Publier le serveur était jusqu'ici
+# un effet de bord de `git push origin main` : chaque poussée reconstruisait et
+# republiait `:latest`, y compris les commits de manifeste du bot (ce workflow
+# n'avait aucun filtre `paths:`). La mise en service est redevenue un geste —
+# celui qu'on pose depuis la page de déploiement.
 #
-# Si le push CHANGE la version `server` de versions.json, une Release GitHub
-# `server-vX.Y.Z` est créée avec les notes de changelogs/server.md
-# (bloc « ## [X.Y.Z] », sections ### FR / ### EN).
+# TROIS CRANS, choisis au lancement (`channel`) :
+#   • build — l'image est construite, rien n'est poussé. Vérifie que ça compile.
+#   • test  — image poussée en `:vX.Y.Z` SEULEMENT. `:latest` ne bouge pas, donc
+#             la production ne suit pas : on peut tirer la version à la main
+#             pour l'éprouver.
+#   • store — `:latest` bascule et la Release GitHub `server-vX.Y.Z` est créée.
+#             C'est ce cran, et lui seul, qui met en service.
+#
+# L'image Docker EST le serveur : une seule cible, `docker`.
+#
+# La version vient de versions.json → `server` (SOURCE UNIQUE). L'entrée
+# `version` du dispatch la BUMPE : prepare écrit versions.json, aligne
+# apps/backend/package.json, commite et pousse — `minServer` reste à la main,
+# c'est une exigence et non une livraison.
+#
+# Notes de la Release : changelogs/server.md (bloc « ## [X.Y.Z] », ### FR/### EN),
+# EXIGÉ par le pré-vol de `prepare` — un bloc manquant ne donne plus une Release
+# au corps vide, il arrête le run avant le build.
 
 name: Server (Docker)
 
 on:
-  push:
-    branches: ["main"]
   workflow_dispatch:
+    inputs:
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
+        type: string
+        default: ""
+
+concurrency:
+  group: release-server
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: knaox/tentacle-tv
 
 jobs:
+  # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
+  prepare:
+    name: Préparer la livraison
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      sha: ${{ steps.plan.outputs.sha }}
+      version: ${{ steps.plan.outputs.version }}
+      channel: ${{ inputs.channel }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump versions.json (si une version est demandée)
+        id: bump
+        if: inputs.version != ''
+        env:
+          WANTED: ${{ inputs.version }}
+        run: node .github/scripts/bump-version.mjs server "$WANTED"
+
+      - uses: ./.github/actions/push-main
+        id: pushed
+        if: steps.bump.outputs.changed == 'true'
+        with:
+          paths: ${{ steps.bump.outputs.files }}
+          message: "release(server) : v${{ inputs.version }}"
+
+      - name: Plan du run
+        id: plan
+        env:
+          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${BUMPED_SHA:-${{ github.sha }}}"
+          git checkout --quiet "$SHA"
+          VERSION=$(jq -r .server versions.json)
+          echo "Serveur ${VERSION} — cran ${{ inputs.channel }} · sha ${SHA}"
+          { echo "sha=$SHA"; echo "version=$VERSION"; } >> "$GITHUB_OUTPUT"
+
+      - name: Pré-vol des notes de version
+        if: inputs.channel == 'store'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/server.md --version "${{ steps.plan.outputs.version }}" \
+            --check github
+
   build:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +129,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -63,7 +154,9 @@ jobs:
             KLIPY_API_KEY=${{ secrets.KLIPY_API_KEY }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
-          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          # Au cran « build » l'image reste sur le runner : rien n'est poussé
+          # dans le registre, on vérifie seulement que ça compile.
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ needs.prepare.outputs.channel != 'build' }}
 
       - name: Export digest
         run: |
@@ -80,18 +173,18 @@ jobs:
           retention-days: 1
 
   merge:
+    name: Manifeste multi-arch
     runs-on: ubuntu-latest
-    needs: build
+    needs: [prepare, build]
+    if: needs.prepare.outputs.channel != 'build'
     permissions:
       contents: read
       packages: write
     steps:
       - name: Checkout repository (versions.json)
         uses: actions/checkout@v4
-
-      - name: Read server version
-        id: v
-        run: echo "version=$(jq -r .server versions.json)" >> "$GITHUB_OUTPUT"
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Download digests
         uses: actions/download-artifact@v4
@@ -110,69 +203,81 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create manifest list and push (latest + version)
+      # `:latest` N'EST POSÉ QU'AU CRAN STORE : c'est lui que suit la
+      # production, et le cran test doit pouvoir livrer une version à éprouver
+      # sans la mettre en service.
+      - name: Créer le manifeste multi-arch et le pousser
         working-directory: /tmp/digests
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
         run: |
-          docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.v.outputs.version }} \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+          TAGS="-t ${IMAGE}:v${VERSION}"
+          [ "$CHANNEL" = "store" ] && TAGS="$TAGS -t ${IMAGE}:latest"
+          echo "Étiquettes posées : ${TAGS}"
+          # shellcheck disable=SC2086
+          docker buildx imagetools create $TAGS \
+            $(printf "${IMAGE}@sha256:%s " *)
 
-      - name: Inspect manifest
-        run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+      - name: Inspecter le manifeste
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: docker buildx imagetools inspect "${IMAGE}:v${VERSION}"
 
   # ── Release GitHub server-vX.Y.Z — UNIQUEMENT quand le push change la
   #    version `server` de versions.json (notes : changelogs/server.md). ──
+  # ── Release GitHub server-vX.Y.Z — au cran STORE seulement ────────────────
+  # La détection « est-ce que versions.json → server a changé dans ce push ? »
+  # disparaît avec le déclencheur qui la portait. Elle était fragile de toute
+  # façon : elle retombait silencieusement sur « non » après une réécriture
+  # d'historique ou sur une branche neuve, et comptait un RETOUR EN ARRIÈRE de
+  # version comme un changement. C'est le cran choisi qui décide, désormais.
   release:
+    name: Release GitHub
     runs-on: ubuntu-latest
-    needs: merge
-    if: github.event_name == 'push'
+    needs: [prepare, merge]
+    if: needs.prepare.outputs.channel == 'store'
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Detect server version change
-        id: chg
+      - name: Corps de release
+        env:
+          V: ${{ needs.prepare.outputs.version }}
         run: |
-          NEW=$(jq -r .server versions.json)
-          OLD=$(git show '${{ github.event.before }}:versions.json' 2>/dev/null | jq -r .server 2>/dev/null || echo "")
-          echo "Version serveur : ${OLD:-«absente»} → $NEW"
-          if [ -n "$OLD" ] && [ "$OLD" != "null" ] && [ "$OLD" != "$NEW" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-
-      - name: Build release notes
-        if: steps.chg.outputs.changed == 'true'
-        run: |
-          V="${{ steps.chg.outputs.version }}"
           {
             echo "Image Docker : \`ghcr.io/knaox/tentacle-tv:v${V}\` (et \`:latest\`)."
             echo ""
           } > release-body.md
+          # Plus de « || true » : le pré-vol a déjà garanti que le bloc existe,
+          # et une Release au corps vide n'a jamais rendu service à personne.
           node .github/scripts/release-notes.mjs \
             --changelog changelogs/server.md --version "$V" \
-            --format github --out notes.md || true
-          [ -s notes.md ] && cat notes.md >> release-body.md
+            --format github --out notes.md
+          cat notes.md >> release-body.md
           cat release-body.md
 
-      - name: Create GitHub Release server-vX.Y.Z
-        if: steps.chg.outputs.changed == 'true'
+      - name: Créer la Release server-vX.Y.Z
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.prepare.outputs.version }}
+          SHA: ${{ needs.prepare.outputs.sha }}
         run: |
-          V="${{ steps.chg.outputs.version }}"
+          if gh release view "server-v${V}" >/dev/null 2>&1; then
+            echo "::warning::la Release server-v${V} existe déjà — on la laisse en place."
+            exit 0
+          fi
           gh release create "server-v${V}" \
             --title "Tentacle TV Server v${V}" \
             --notes-file release-body.md \
-            --target "${{ github.sha }}" || echo "Release server-v${V} existe déjà — ignoré."
+            --target "$SHA"
