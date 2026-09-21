@@ -59,29 +59,23 @@ if (!notes) {
   process.exit(0);
 }
 
-// Limites stores (caractères) — promises par l'en-tête mais jamais implémentées
-// jusqu'ici : Play a rejeté une note de 501 car. (max 500). `github` = brut.
-const LIMITS = { asc: 4000, play: 500, msstore: 1500 };
-
-/** Coupe à la dernière puce complète sous la limite (repli : coupe dure + …). */
-function truncate(t, limit) {
-  if (t.length <= limit) return t;
-  const cut = t.slice(0, limit);
-  const nl = cut.lastIndexOf('\n');
-  if (nl > limit * 0.5) return cut.slice(0, nl).trimEnd();
-  return cut.slice(0, limit - 1).trimEnd() + '…';
-}
-
+// La troncature est faite UNE SEULE FOIS, par `loadNotes` (lib/changelog.mjs).
+// Ce fichier en portait une seconde copie, avec une règle de coupe DIFFÉRENTE
+// (« nl > limit * 0.5 » contre « nl > 0 ») et une table de limites dupliquée.
+// Elle ne pouvait jamais mordre — `loadNotes` avait déjà ramené le texte sous
+// la limite — mais deux tables de limites finissent toujours par diverger.
 let text = lang === 'both' ? notes.raw : (lang === 'fr' ? notes.fr : notes.en);
 if (!text || !text.trim()) {
   console.error(`[release-notes] section trouvée mais vide pour lang=${lang} — rien produit.`);
   process.exit(0);
 }
 text = text.trimEnd();
-if (format !== 'github') text = truncate(text, LIMITS[format]);
 
-// Formats stores : PAS de saut de ligne final — Google Play compte les octets
-// du fichier (500 + '\n' = 501 → rejet).
+// Formats stores : PAS de saut de ligne final. Play plafonne à 500 caractères
+// Unicode par langue, sauts de ligne et espaces COMPRIS, et rejette la release
+// entière plutôt que de couper — un fichier de 500 caractères plus son '\n'
+// final en fait 501. (La limite est bien en caractères et non en octets : les
+// notes TV 1.3.0 font 495 caractères pour 518 octets et passent.)
 const payload = format === 'github' ? text + '\n' : text;
 if (out) {
   fs.writeFileSync(out, payload);
