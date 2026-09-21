@@ -16,6 +16,8 @@ scripts/
 # dernier est réexclu plus bas par un bloc auto-généré, où une exception ne
 # survivrait pas à la prochaine régénération.
 !apps/tv-webos/scripts/
+# Le mobile aussi : le pilote de l'inspecteur Hermes (scripts/dev-hook.mjs).
+!apps/mobile/scripts/
 !apps/desktop-electron/scripts/
 !.github/scripts/
 !apps/tv/ios/scripts/
