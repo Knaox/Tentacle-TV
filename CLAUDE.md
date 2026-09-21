@@ -38,28 +38,89 @@ pnpm docker:up        # Start MariaDB + Tentacle containers
 pnpm docker:reset     # Full teardown + rebuild (volumes included)
 pnpm docker:logs      # Tail container logs
 
-# Deploy to production
-git push production main  # Triggers post-receive hook on server
+# Livrer — voir « Livraison » plus bas. RIEN ne part d'un push :
+# tout passe par un déclenchement de workflow, depuis « Tentacle Deploy.html ».
+gh workflow run server.yml -f channel=store   # le serveur, par exemple
 ```
 
-## Releases / Tags (CI)
+> Le remote `production` n'existe plus. `origin` (GitHub) est le seul.
 
-**Source unique des versions : `versions.json` (racine)** — champs `desktop`, `tv`, `mobile`, `server`, `minServer` (version serveur minimale exigée par les clients — bannière de compat `useServerCompat.ts`). On change la version À UN SEUL ENDROIT ; le tag doit correspondre (garde-fou CI). Exception desktop : reporter AUSSI le numéro dans `apps/desktop-electron/package.json`. C'est la version du bundle lue par « À propos » ; la CI l'injecte aux builds mac/win/linux, mais le dev lit le fichier. Les **numéros de build** (CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play). Un workflow par plateforme :
+## Livraison (CI)
 
-| Déclencheur | Workflow | Cible |
-|-------------|----------|-------|
-| tag `desktop-vX.Y.Z` | `.github/workflows/desktop.yml` | **macOS** (App Store/TestFlight, universal LGPL) + **Windows** (Microsoft Store MSIX) + **Linux** (deb/rpm/pacman/AppImage, **mpv embarqué** → Release GitHub `desktop-v*` + manifeste auto-update) |
-| tag `tv-vX.Y.Z` | `.github/workflows/tv.yml` | **Android TV** (AAB → Play Console UNIQUEMENT — MÊME app que mobile `com.tentacletv.mobile`, piste tests fermés « Alpha », plus d'APK GitHub ; AAB archivé en artefact) + **Apple TV** (tvOS → TestFlight, `continue-on-error`) |
-| push `main` | `.github/workflows/server.yml` | Image Docker `ghcr.io/knaox/tentacle-tv` (`:latest` + `:v<server>`) ; si `versions.json → server` change dans le push → Release GitHub `server-vX.Y.Z` |
-| tag `mobile-vX.Y.Z` | `.github/workflows/mobile.yml` | **iOS** (TestFlight, `com.tentacle.mobile`) + **Android** (AAB → Play Console, piste tests fermés « alpha », MÊME fiche `com.tentacletv.mobile` que la TV) — build auto-incrémenté (`versionCode = build` nu, sous le préfixe TV `2e9+`), notes `changelogs/mobile.md`. `target` (dispatch) : `all`/`android`/`ios`. |
+**Source unique des versions : `versions.json` (racine)** — champs `desktop`,
+`tv`, `webos`, `mobile`, `server`, `minServer` (version serveur minimale exigée
+par les clients — bannière de compat `useServerCompat.ts`). On change la version
+À UN SEUL ENDROIT, et c'est la CI qui l'écrit : `.github/scripts/bump-version.mjs`
+aligne au passage le `package.json` de la cible. Les **numéros de build**
+(CFBundleVersion / versionCode) sont **auto-incrémentés** par la CI (minutes
+depuis 2024-01-01 UTC — jamais réutilisés, exigence ASC/Play).
 
-**Publier** : bump `versions.json` + remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`), commit, puis `git tag desktop-v1.12.0 && git push origin main desktop-v1.12.0`. Le fichier `Tentacle Deploy.html` (hors repo, Desktop) génère la commande complète. Re-livrer une même version (nouveau build) : relancer via `workflow_dispatch` (`gh workflow run tv.yml`) — le build est auto-incrémenté.
+### Un seul geste : la page « Tentacle Deploy.html »
 
-- **Changelogs par domaine** : `changelogs/{desktop,tv,server,mobile}.md`. Limites stores gérées (`.github/scripts/lib/changelog.mjs`) : ASC 4000, MS Store 1500, Play 500 caractères. `CHANGELOG.md` racine = archive pure (les anciens blocs `ios-`/`play-` y restent, mais `mobile.yml` lit désormais `changelogs/mobile.md`).
-- **Desktop = stores uniquement** (macOS App Store, Windows Microsoft Store) ; Linux = Release GitHub, avec auto-updater intégré (deb/rpm/pacman/AppImage). Un échec d'un OS ne bloque pas les autres (jobs indépendants).
-- **Android TV = Play Console uniquement** : même fiche que le mobile (`com.tentacletv.mobile`), keystore d'upload mobile réutilisé (secrets `MOBILE_*`), `versionCode = 2000000000 + build` (préfixe form-factor, jamais en collision avec le mobile qui utilise `build` nu). Piste TV = `tv:Alpha` (id API préfixé) ≠ piste mobile = `alpha`. **Plus d'APK GitHub ni de `tv-latest`** : la distribution passe par la piste de tests fermés (opt-in Play) — le site `tentacletv.app` doit pointer vers le lien d'opt-in du test, plus vers un APK.
-- **Apple TV** : signature MANUELLE (profil `TVOS_PROVISIONING_PROFILE_BASE64`) ; l'app tvOS reste à finaliser (icône placeholder).
-- Versions affichées (À propos) : web = `versions.json → server`, desktop = version du bundle (injectée depuis `versions.json`), TV = `versions.json → tv` (`AboutScreen.tsx`).
+Elle vit **hors dépôt** (Bureau) parce qu'elle porte un jeton GitHub. Elle
+déclenche les workflows elle-même par l'API : on choisit une plateforme, des
+cibles, un cran, éventuellement une version, et on clique. Elle affiche avant le
+clic l'état du contrôle qualité et la taille des notes de version par store.
+
+⚠️ **Son vocabulaire est celui des entrées de workflow** (`targets`, `channel`,
+`version`, `promote`). Changer l'un sans l'autre casse le déclenchement en
+silence — GitHub ignore une entrée inconnue.
+
+### Les trois crans
+
+| `channel` | Ce qui se passe |
+|-----------|-----------------|
+| `build` | Construit et archive les artefacts. **Rien ne part nulle part.** |
+| `test` | Piste Play FERMÉE en `completed` · TestFlight distribué au groupe externe · Linux en pré-version · serveur en `:vX.Y.Z` sans bouger `:latest` · webOS sans toucher `webos-latest`. **Publié, sans aucun geste ensuite.** |
+| `store` | Production Play à 100 % · App Store soumis à l'examen avec mise en vente automatique · Microsoft Store · Release GitHub publiée et manifeste d'auto-update patché · `:latest` basculé. **En ligne, sans un clic de plus.** |
+
+`promote` (le défaut au cran store) reprend **le binaire déjà testé** au lieu
+d'en reconstruire un autre. Windows fait exception : le Microsoft Store exige le
+paquet à chaque soumission.
+
+### Les cinq workflows
+
+| Workflow | Cibles (`targets`) |
+|----------|--------------------|
+| `desktop.yml` | `macos` · `windows` · `linux` |
+| `mobile.yml` | `android` · `ios` |
+| `tv.yml` | `androidtv` · `appletv` |
+| `webos.yml` | `ipk` |
+| `server.yml` | `docker` (l'image Docker EST le serveur) |
+
+Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
+cran `store` ; c'est la CI qui les pose quand on demande une version.
+
+### Ce qui garde les livraisons
+
+- **`.githooks/pre-push`** refuse un push dont le typecheck ou les tests
+  échouent, AVANT qu'il parte. Il ne contrôle que les paquets touchés et ceux
+  qui en dépendent. Il s'active seul (`pnpm install` pose `core.hooksPath`).
+- **`quality.yml`** rejoue le même contrôle sur GitHub, et **aucun workflow de
+  livraison n'accepte de tourner sans son feu vert** sur le commit visé.
+- **Le pré-vol** (`check-changelog.mjs`) exige le bloc `## [X.Y.Z]` de la version
+  livrée AVANT le moindre build. Un bloc manquant ne donne plus une publication
+  silencieusement sans notes.
+- **Le SHA est figé** par le job `prepare` : tous les jobs d'un run lisent le
+  même commit. Une retouche de changelog poussée pendant un run ne part pas.
+
+### Changelogs
+
+`changelogs/{desktop,tv,server,mobile,webos}.md`, blocs `## [X.Y.Z]` avec
+`### FR` / `### EN`. Limites appliquées (`lib/changelog.mjs`) : ASC 4000,
+MS Store 1500, Play 500 **caractères Unicode**. Les blocs par canal
+`## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu pour ces cibles-là.
+`CHANGELOG.md` racine = archive pure.
+
+### Deux fiches partagées, deux pièges
+
+- macOS, iOS et tvOS partagent la fiche App Store Connect `com.tentacle.mobile` :
+  toute recherche de build exige le triple filtre `version` + `preReleaseVersion.version`
+  + `preReleaseVersion.platform`.
+- Android TV et Android mobile partagent la fiche Play `com.tentacletv.mobile` :
+  les pistes par form factor sont PRÉFIXÉES dans l'API (`tv:Alpha` ≠ `alpha`), le
+  versionCode TV vaut `2e9 + build`, et les deux workflows partagent un groupe de
+  concurrence — deux éditions Play concurrentes s'invalident l'une l'autre.
 
 ## Architecture
 

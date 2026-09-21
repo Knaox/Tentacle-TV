@@ -13,40 +13,53 @@
 
 ## 1. Préparer une release
 
-### Mettre à jour la version — UN SEUL fichier : `versions.json` (racine)
+### Écrire les notes — le SEUL geste manuel
+
+Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR` / `### EN`) et
+le pousser. C'est de la prose : elle ne s'écrit pas toute seule, et le reste ne
+part pas sans elle — le pré-vol (`check-changelog.mjs`) refuse une livraison dont
+le bloc manque, AVANT le moindre build.
+
+### La version, elle, est posée par la CI
+
+`versions.json` (racine) reste la **source unique**, mais on ne l'édite plus à la
+main : on demande une version dans la page de déploiement, et le job `prepare` du
+workflow l'écrit, aligne le `package.json` de la cible, commite, tague et pousse.
 
 ```json
-{ "desktop": "1.12.0", "tv": "1.0.0", "mobile": "1.2.2", "server": "1.3.0" }
+{ "desktop": "1.21.4", "tv": "1.3.0", "webos": "1.0.0", "mobile": "1.8.0", "server": "1.18.1", "minServer": "1.18.1" }
 ```
 
-- Le champ de la plateforme est la **source unique** : la CI injecte cette version
-  dans tous les artefacts (package.json Electron, Info.plist, versionName…).
 - Les numéros de build (CFBundleVersion / versionCode) sont **auto-incrémentés**
-  par la CI — plus rien à gérer.
-- Optionnel (builds desktop locaux) : garder `apps/desktop-electron/package.json`
-  aligné sur `versions.json → desktop`. La CI, elle, injecte la version dans le
-  paquet Electron avant l’empaquetage — pour les trois systèmes.
-- Remplir `changelogs/<plateforme>.md` (bloc `## [X.Y.Z]`, `### FR`/`### EN`).
+  par la CI — rien à gérer.
+- `minServer` reste manuel : c'est une exigence, pas une livraison.
+- Réparer à la main si besoin :
+  `node .github/scripts/bump-version.mjs <clé> <X.Y.Z> [--dry-run]`.
 
-### Commit et tag
+### Livrer
 
-```bash
-git add versions.json changelogs/
-git commit -m "release(desktop): v1.12.0"
-git tag desktop-v1.12.0
-git push origin main desktop-v1.12.0
-```
+Ouvrir **`Tentacle Deploy.html`** (Bureau, hors dépôt), choisir la plateforme,
+les cibles et le cran, puis cliquer. Rien d'autre.
 
-Le fichier `Tentacle Deploy.html` (hors repo) génère cette commande.
+Le détail des crans, des gardes et des pièges par store :
+**`docs/RELEASE-TAGS.md`**.
 
 ## 2. Workflows
 
-| Déclencheur | Workflow | Cibles |
-|-------------|----------|--------|
-| tag `desktop-vX.Y.Z` | `desktop.yml` | macOS App Store + Microsoft Store + Linux (Release GitHub) |
-| tag `tv-vX.Y.Z` | `tv.yml` | Android TV (Play Console UNIQUEMENT, test fermé « Alpha ») + Apple TV (TestFlight) |
-| push `main` | `server.yml` | Image Docker (`:latest` + `:v<server>`) + Release GitHub si la version server change |
-| tag `mobile-vX.Y.Z` | `mobile.yml` | iOS (TestFlight) + Android (Play Console, test fermé « alpha ») |
+| Workflow | `targets` | Cibles |
+|----------|-----------|--------|
+| `desktop.yml` | `macos` `windows` `linux` | Mac App Store · Microsoft Store · Release GitHub + auto-update |
+| `mobile.yml` | `android` `ios` | Play (test fermé « alpha » ou production) · App Store |
+| `tv.yml` | `androidtv` `appletv` | Play (piste TV `tv:Alpha` ou production) · App Store tvOS |
+| `webos.yml` | `ipk` | Release GitHub (`webos-latest` au cran store) |
+| `server.yml` | `docker` | `ghcr.io/knaox/tentacle-tv` + Release GitHub |
+
+Trois crans partout : `build` (artefacts seuls), `test` (publié aux testeurs,
+sans geste ensuite), `store` (en ligne, sans un clic de plus). Les tags
+`<plateforme>-vX.Y.Z` restent acceptés et valent le cran `store`.
+
+> ⚠️ **Le serveur ne part plus au push.** `git push origin main` ne déploie rien.
+> Le remote `production` n'existe plus non plus : `origin` est le seul.
 
 > L'ancien découpage (mac-v*/atv-v*/win-store-v*/linux-v* + docker.yml) a été
 > fusionné dans ces workflows. Le DMG macOS notarisé (tag `v*`) reste retiré :

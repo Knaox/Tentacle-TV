@@ -1,83 +1,89 @@
-# Releases par tags — guide développeur
+# Livraison — guide développeur
 
-**Un workflow par plateforme, une version par plateforme, un fichier de versions.**
-La CI (GitHub Actions, gratuite car repo public) build + signe + envoie.
+**Un workflow par plateforme, trois crans, un seul geste.** La CI (GitHub
+Actions, gratuite car le dépôt est public) construit, signe, envoie, publie —
+et ne laisse rien à cliquer ensuite.
 
-## Source unique : `versions.json` (racine)
+## Le geste : « Tentacle Deploy.html »
 
-```json
-{ "desktop": "1.12.0", "tv": "1.1.0", "mobile": "1.3.1", "server": "1.4.0", "minServer": "1.4.0" }
-```
+La page vit **hors dépôt** (Bureau) parce qu'elle porte un jeton GitHub à portée
+fine (Actions : lecture et écriture ; Contenu : lecture), rangé dans le
+localStorage du navigateur. Elle déclenche les workflows par l'API : plateforme,
+cibles, cran, éventuellement une version, puis **Déployer**. Elle suit ensuite
+l'avancement des jobs sans qu'on quitte la page.
 
-- `minServer` = version serveur **minimale** exigée par les clients (bannière de
-  compatibilité admin, `apps/web/src/hooks/useServerCompat.ts`) — à bumper quand
-  un client dépend d'une nouveauté serveur.
+Avant le clic, elle affiche deux choses qui décident de tout :
 
-- On change la version **à un seul endroit** ; elle s'applique à tous les OS de la
-  plateforme (desktop : macOS + Windows + Linux ensemble).
-- Le tag **doit correspondre** (`desktop-v1.12.0` ⇔ `versions.json → desktop = 1.12.0`),
-  sinon le job `version` échoue immédiatement (garde-fou).
-- Les **numéros de build** (CFBundleVersion / versionCode) sont **AUTO-INCRÉMENTÉS**
-  par la CI : minutes écoulées depuis 2024-01-01 UTC. Strictement croissants, jamais
-  réutilisés → plus jamais d'erreur Apple 90061 ni de collision TestFlight/Play.
-  Android TV : `versionCode = 2000000000 + build` (préfixe form-factor — pas de
-  collision avec le mobile sur la même fiche Play).
+- **l'état du contrôle qualité** sur la tête de `main` — rouge, la livraison
+  serait refusée ;
+- **la taille des notes de version** par store, avec le nombre de caractères que
+  la coupe va jeter. C'est là qu'on voit qu'un bloc manque : le bouton se
+  désactive.
 
-## Publier
+> ⚠️ Son vocabulaire est celui des entrées de workflow (`targets`, `channel`,
+> `version`, `promote`). Changer l'un sans l'autre casse le déclenchement **en
+> silence** : GitHub ignore une entrée inconnue et applique le défaut.
 
-```bash
-# 1. Bump versions.json (champ de la plateforme) + remplir changelogs/<plateforme>.md
-# 2. Commit + tag + push :
-git add versions.json changelogs/
-git commit -m "release(desktop): v1.12.0"
-git tag desktop-v1.12.0
-git push origin main desktop-v1.12.0
-```
+Sans jeton, la page affiche la commande `gh workflow run` équivalente.
 
-Le fichier **`Tentacle Deploy.html`** (hors repo) génère cette commande complète.
+## Les trois crans
 
-### Après promotion d'une release Play (geste MANUEL)
+| `channel` | Ce qui se passe |
+|-----------|-----------------|
+| `build` | Artefacts du run. **Rien ne part nulle part.** |
+| `test` | Play : piste FERMÉE en `completed` (plus de draft à promouvoir) · Apple : TestFlight distribué au groupe externe + examen bêta demandé · Linux : Release en **pré-version**, manifeste non patché · serveur : `:vX.Y.Z` seul, `:latest` intact · webOS : Release versionnée, `webos-latest` intact · Windows : artefact seulement (le Microsoft Store n'a pas de canal de test). |
+| `store` | Play : **production, 100 %** · Apple : **examen soumis**, `releaseType: AFTER_APPROVAL` — en vente dès l'approbation · Microsoft Store : soumission immédiate · Linux : Release publiée + manifeste d'auto-update · serveur : `:latest` + Release · webOS : `webos-latest` basculé. |
 
-Le site `tentacletv.app` affiche les versions **publiées**, lues dans
-`updates/store-versions.json`. Les blocs Apple et desktop y sont tenus par la CI et par
-le veilleur ASC (`store-watch.yml`) ; **les deux blocs Play, non** — `tv.yml`/`mobile.yml`
-publient en `status: draft` sur une piste de tests fermés, donc « publié » n'est pas
-déductible d'un run. Quand tu promeus une release dans la Play Console, reporte le
-numéro à la main :
+`promote` (le défaut au cran store) reprend **le binaire déjà testé** : le
+versionCode servi par la piste fermée passe en production, la version App Store
+part à l'examen avec le build qui y est rattaché, la pré-version Linux devient
+une version pleine. Rien n'est reconstruit, donc rien ne change entre ce qui a
+été testé et ce qui est publié. **Windows fait exception** — le Microsoft Store
+veut le paquet à chaque soumission.
 
-```bash
-# updates/store-versions.json → playMobile.version (Android) / playTv.version (Android TV)
-git add updates/store-versions.json
-git commit -m "chore(update): manifeste Play 1.1.0 (promue en tests fermés)"
-git push origin main
-```
+## Les cinq workflows
 
-Sans ce geste, le site continue d'annoncer l'ancienne version — c'est exactement
-comme ça qu'il avait fossilisé.
+| Workflow | `targets` | Destinations |
+|----------|-----------|--------------|
+| `desktop.yml` | `macos` `windows` `linux` | Mac App Store · Microsoft Store (MSIX) · Release GitHub + auto-update |
+| `mobile.yml` | `android` `ios` | Play `com.tentacletv.mobile` · App Store `com.tentacle.mobile` |
+| `tv.yml` | `androidtv` `appletv` | Play (MÊME fiche que le mobile, form factor TV) · App Store tvOS |
+| `webos.yml` | `ipk` | Release GitHub — adresse permanente `webos-latest` |
+| `server.yml` | `docker` | `ghcr.io/knaox/tentacle-tv` + Release `server-vX.Y.Z` |
 
-**Re-livrer une même version** (nouveau build, ex. rejet store ou tag déjà pris) :
-tag avec suffixe `-rN` — ex. `tv-v1.0.0-r1` — version marketing inchangée, build
-auto-incrémenté, Release GitHub complète. Alternative sans Release GitHub :
-`gh workflow run tv.yml` (stores uniquement).
+Les tags `<plateforme>-vX.Y.Z` restent acceptés comme déclencheurs et valent le
+cran `store`. C'est la CI qui les pose quand on demande une version : elle écrit
+`versions.json`, aligne le `package.json` de la cible, commite, tague, pousse.
+Le suffixe `-rN` reste la re-livraison d'une même version marketing.
 
-## Plateformes
+⚠️ **Le serveur ne part plus au push.** `git push origin main` ne déploie rien :
+il faut le cran `store` de `server.yml`. Le cran `test` permet d'éprouver une
+image (`:vX.Y.Z`) sans que la production, qui suit `:latest`, la prenne.
 
-| Tag | Workflow | Cibles |
-|-----|----------|--------|
-| `desktop-vX.Y.Z` | `desktop.yml` | macOS → App Store/TestFlight (universal LGPL, sandbox) · Windows → Microsoft Store (MSIX auto) · Linux → Release GitHub `desktop-v*` (.deb/.rpm/.pkg.tar.zst/AppImage, mpv embarqué) + manifeste auto-update |
-| `tv-vX.Y.Z` | `tv.yml` | Android TV → Play Console UNIQUEMENT (AAB, MÊME app que mobile `com.tentacletv.mobile`, **piste de tests fermés TV dédiée** — homonyme de la piste mobile mais identifiant API distinct, env `PLAY_TV_TRACK` ; AAB archivé en artefact ; plus d'APK GitHub) · Apple TV → TestFlight (`continue-on-error`) |
-| push `main` (sans tag) | `server.yml` | Image `ghcr.io/knaox/tentacle-tv` `:latest` + `:v<server>` ; Release GitHub `server-vX.Y.Z` **si** `versions.json → server` change dans le push |
-| `mobile-vX.Y.Z` | `mobile.yml` | iOS → TestFlight (`com.tentacle.mobile`, Info.plist patché) · Android → Play Console (AAB, MÊME fiche `com.tentacletv.mobile` que la TV, **piste de tests fermés mobile `alpha`** — id API distinct de la piste TV `tv:Alpha`, `versionCode = build` nu sous le préfixe TV `2e9+`). UN tag → iOS ET Android, notes `changelogs/mobile.md`. Dispatch `target` : `all`/`android`/`ios`. |
+## Ce qui garde les livraisons
 
-> macOS + iOS + tvOS partagent la fiche App Store Connect `com.tentacle.mobile` mais se
-> déploient par leurs workflows respectifs. Android TV et Android mobile partagent la
-> fiche Play `com.tentacletv.mobile` (form factors distincts, keystore d'upload commun —
-> secrets `MOBILE_*`).
+Quatre gardes, dans l'ordre où elles mordent :
 
-## Notes de version (FR + EN) — `changelogs/`
+1. **`.githooks/pre-push`** refuse un push dont le typecheck ou les tests
+   échouent, AVANT qu'il parte. Il ne contrôle que les paquets touchés et ceux
+   qui en dépendent (sélecteur pnpm `...[ref]`). Il vit dans le dépôt, donc il
+   voyage avec lui et avec Syncthing ; `pnpm install` pose `core.hooksPath`.
+   Échappatoire : `TENTACLE_SKIP_HOOK=1` ou `--no-verify`.
+2. **`quality.yml`** rejoue le même contrôle sur GitHub, et
+   `.github/actions/require-quality` **refuse de livrer** un commit sans run
+   vert. C'est ce qui rattrape un `--no-verify`. Un run en cours est attendu,
+   pas refusé.
+3. **Le pré-vol** (`check-changelog.mjs`) exige le bloc `## [X.Y.Z]` de la
+   version livrée, non vide dans les deux langues, AVANT le moindre build. Il
+   avertit aussi, sans bloquer, quand la coupe à la puce va mordre.
+4. **Le SHA figé.** Le job `prepare` publie un `sha` que TOUS les jobs
+   checkout — y compris ceux qui attendent trente-cinq minutes (`*-attach`) et
+   ceux qui écrivent le manifeste. Une retouche de changelog poussée pendant un
+   run ne peut pas partir au store.
 
-Un fichier par domaine : `changelogs/desktop.md`, `changelogs/tv.md`,
-`changelogs/server.md`, `changelogs/mobile.md`. Blocs :
+## Notes de version — `changelogs/`
+
+Un fichier par domaine. Blocs :
 
 ```markdown
 ## [1.12.0]
@@ -87,41 +93,69 @@ Un fichier par domaine : `changelogs/desktop.md`, `changelogs/tv.md`,
 - …
 ```
 
-Travaux en cours dans `## [Unreleased]` → renommer en `## [X.Y.Z]` avant le tag.
 Sans `### EN`, la section FR sert aux deux langues. Le markdown est converti en
 texte brut pour les stores.
 
-| Plateforme | Store | Champ rempli | Limite |
-|-----------|-------|--------------|--------|
-| desktop (mac) | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
-| desktop (win) | Microsoft Store | « Nouveautés de cette version » (fr-fr + en-us) | 1500 car. |
-| desktop (linux) | Release GitHub | corps de la release (markdown) | — |
-| tv (android) | Google Play | « Nouveautés » (fr-FR + en-US) | 500 car. |
-| tv (android) | Release GitHub | corps de la release (markdown) | — |
-| tv (apple) | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
-| server | Release GitHub | corps de la release (markdown) | — |
-| mobile (ios) | App Store + TestFlight | « Nouveautés » + « À tester » | 4000 car. |
-| mobile (android) | Google Play | « Nouveautés » (fr-FR + en-US) | 500 car. |
+| Cible | Champ rempli | Limite |
+|-------|--------------|--------|
+| Apple (mac/iOS/tvOS) | « Nouveautés » + « À tester » | 4000 car. |
+| Microsoft Store | « Nouveautés de cette version » (fr-fr + en-us) | 1500 car. |
+| Google Play | « Nouveautés » (fr-FR + en-US) | **500 caractères Unicode** |
+| Release GitHub | corps de la release (markdown) | — |
 
-**Flux Apple « je clique juste Publier »** : après l'upload, la CI pose les notes
-(`asc-release-notes.mjs`, non bloquant), puis un job séparé attend la fin du traitement du
-build (~10-35 min) et le **rattache à la version App Store** avec « À tester »
-(`asc-attach-build.mjs`, non bloquant). Il ne reste qu'à cliquer **« Soumettre pour
-examen »** dans App Store Connect.
+⚠️ La limite Play est en **caractères**, pas en octets : les notes TV 1.3.0 font
+495 caractères pour 518 octets et passent. Play rejette la release ENTIÈRE au
+lieu de couper — d'où l'absence de saut de ligne final.
 
-**Microsoft Store** : soumission via `msstore-submit.mjs` (API Store Submission — clone de
-la dernière soumission publiée, notes FR/EN, remplacement du package, publication auto).
-⚠️ La version soumise doit être **strictement supérieure** à la publiée → re-livrer
-Windows exige un bump de `versions.json → desktop`.
+**Blocs par canal** : `## [mac-X.Y.Z]` et `## [win-X.Y.Z]` remplacent le bloc nu
+pour ces cibles-là. Deux usages : des notes Apple plus génériques, et surtout un
+texte plus court pour le Microsoft Store, dont le bloc nu dépasse régulièrement
+1500 caractères.
 
-**Google Play (TV)** : `tv.yml` génère `whatsnew-fr-FR`/`whatsnew-en-US` depuis
-`changelogs/tv.md` (rien n'est envoyé si le bloc n'existe pas). Release en **draft**
-sur la piste `alpha` (« Tests fermés - Alpha ») → promotion manuelle dans la console.
+## Deux fiches partagées, deux pièges
 
-Scripts : `.github/scripts/release-notes.mjs` (CLI — `--changelog changelogs/tv.md
---version X.Y.Z`, `--channel` réservé au mode legacy `CHANGELOG.md`),
-`asc-release-notes.mjs`, `asc-attach-build.mjs`, `msstore-submit.mjs`
-(+ libs `lib/changelog.mjs`, `lib/asc-api.mjs`).
+- **macOS + iOS + tvOS** partagent la fiche App Store Connect
+  `com.tentacle.mobile`. Toute recherche de build exige le TRIPLE filtre
+  `version` + `preReleaseVersion.version` + `preReleaseVersion.platform` : un
+  même numéro de build peut exister sur trois plateformes.
+- **Android TV + Android mobile** partagent la fiche Play
+  `com.tentacletv.mobile`. Les pistes par form factor sont PRÉFIXÉES dans l'API
+  (`tv:Alpha` ≠ `alpha`, homonymes dans l'UI de la console) — le workflow
+  « Play — lister les pistes » (`play-tracks.yml`) donne les identifiants exacts,
+  et `play-publish.mjs` refuse une piste inconnue en listant celles qui existent.
+  Le versionCode TV vaut `2e9 + build`. Les deux workflows partagent un groupe de
+  concurrence : deux éditions Play concurrentes s'invalident l'une l'autre.
+
+## Le manifeste d'auto-update
+
+`updates/store-versions.json`, lu par l'app (`apps/web/src/lib/storeVersions.ts`).
+Chaque bloc appartient au job de sa cible (`patch-store-manifest.mjs --only=…`) :
+
+| Bloc | Qui l'écrit |
+|------|-------------|
+| `linux` | `desktop.yml`, job `manifest`, au cran store |
+| `microsoftStore` | `desktop.yml`, job `manifest-stores` |
+| `playMobile` / `playTv` | `mobile.yml` / `tv.yml`, job `play` |
+| `macAppStore` | **`store-watch.yml` seul** (cron 30 min) |
+
+Le bloc macOS est délibérément hors du run : entre la soumission et
+l'approbation d'Apple il s'écoule des heures, et l'annoncer tout de suite faisait
+pointer la pop-up de mise à jour vers une version introuvable. Le veilleur
+rattrape aussi les blocs Play, mais seulement s'ils divergent de `versions.json`
+— rien à détecter, aucun appel à Play.
+
+## Réglages de console à vérifier une fois
+
+Trois choses peuvent annuler l'automatisation sans la moindre erreur visible :
+
+- **Play — « Publication gérée » doit être DÉSACTIVÉE.** Sinon tout reste en
+  « Prêt à publier » et attend un clic, malgré `status: completed`.
+- **App Store Connect — un groupe de test EXTERNE** doit exister par plateforme
+  (secrets `ASC_BETA_GROUP_ID`, `ASC_BETA_GROUP_MACOS_ID`,
+  `ASC_BETA_GROUP_TVOS_ID`). Sans lui, le cran test échoue en listant les groupes.
+- **App Store Connect — métadonnées complètes** (captures, classification,
+  conformité chiffrement) : `reviewSubmissions` refuse une version incomplète,
+  exactement comme la console.
 
 ## Pré-requis / assets de signature (secrets GitHub)
 
@@ -130,11 +164,11 @@ Scripts : `.github/scripts/release-notes.mjs` (CLI — `--changelog changelogs/t
 | macOS | Apple Distribution + Mac Installer Distribution + profil MAS | ✅ en place |
 | Windows Store | `PARTNER_TENANT_ID` / `PARTNER_CLIENT_ID` / `PARTNER_CLIENT_SECRET` | ✅ en place |
 | Apple TV | cert Apple Distribution + profil tvOS (`TVOS_PROVISIONING_PROFILE_BASE64`) | ✅ en place |
-| Android TV (Play) | keystore d'upload mobile réutilisé (`MOBILE_KEYSTORE_BASE64/_PASSWORD`, `MOBILE_KEY_ALIAS/_PASSWORD`) + `PLAY_SERVICE_ACCOUNT_JSON` | ✅ secrets en place — côté console : form factor TV + piste « Tests fermés - Alpha » sur la fiche `com.tentacletv.mobile` |
+| Android (TV + mobile) | keystore d'upload `MOBILE_*` + `PLAY_SERVICE_ACCOUNT_JSON` | ✅ en place |
 | Apple (commun) | `APPLE_API_KEY` / `APPLE_API_ISSUER` / `APPLE_API_KEY_CONTENT` | ✅ en place |
-| Mobile iOS | cert Apple Distribution + profil App Store recréé via l'API ASC (`com.tentacle.mobile`) | ✅ en place |
-| Mobile Android (Play) | keystore d'upload mobile (`MOBILE_KEYSTORE_BASE64/_PASSWORD`, `MOBILE_KEY_ALIAS/_PASSWORD`) + `PLAY_SERVICE_ACCOUNT_JSON` — piste « alpha » sur `com.tentacletv.mobile` | ✅ en place |
+| Groupes TestFlight | `ASC_BETA_GROUP_ID` / `_MACOS_ID` / `_TVOS_ID` | ⚠️ à poser |
 
-> macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails build :
-> `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`. Voir aussi `docs/RELEASE.md`.
-> Conformité chiffrement déclarée exemptée (`ITSAppUsesNonExemptEncryption=false`).
+> macOS embarque libmpv/FFmpeg recompilés **LGPL** (sandbox App Store). Détails
+> build : `apps/desktop-electron/scripts/build-mpv-lgpl-macos.sh`. Voir aussi
+> `docs/RELEASE.md`. Conformité chiffrement déclarée exemptée
+> (`ITSAppUsesNonExemptEncryption=false`).
