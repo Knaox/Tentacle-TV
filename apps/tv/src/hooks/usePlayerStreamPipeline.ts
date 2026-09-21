@@ -157,7 +157,7 @@ export function usePlayerStreamPipeline(args: {
 
   const mpvTracks = useTVMpvTracks({
     playerRef, streams, audioIndex, subtitleIndex,
-    isDirectPlay, itemId, mediaSourceId,
+    isDirectPlay, itemId, mediaSourceId, prismAudio: prism?.audioTracks,
   });
   mpvTrackMapRef.current = mpvTracks.mpvTrackMap;
   subtitleTrackMapRef.current = mpvTracks.subtitleTrackMap;
