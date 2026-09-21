@@ -311,4 +311,31 @@ export default {
 
   hdrAutoUnsupported:
     "Aucun écran compatible HDR n'a été détecté. Les films HDR restent adaptés à votre écran, sans perte de compatibilité.",
+
+  // Réglages d'APPAREIL du lecteur vidéo (mobile). Jamais « mpv » ni « natif »
+  // à l'écran : « lecteur avancé » et « lecteur système ».
+  videoEngineTitle: "Lecteur vidéo",
+  videoEngineDevice: "Ces réglages sont propres à cet appareil.",
+  videoEngineLabel: "Moteur de lecture",
+  videoEngineAuto: "Auto",
+  videoEngineSystem: "Lecteur système",
+  videoEngineAdvanced: "Lecteur avancé",
+  videoEngineAutoHint:
+    "Le lecteur système quand il lit le fichier tel quel (AirPlay, Dolby Vision, Atmos), le lecteur avancé pour tout le reste — MKV, DTS, TrueHD, sous-titres stylés — sans conversion par le serveur.",
+  videoEngineSystemHint: "Toujours le lecteur système : le serveur convertit ce qu'il ne lit pas.",
+  videoEngineAdvancedHint:
+    "Toujours le lecteur avancé : tout se lit tel quel. AirPlay et le Dolby Vision profil 5 repassent au lecteur système.",
+  preferSystemAtmos: "Préférer l'Atmos du système",
+  preferSystemAtmosHint:
+    "Le lecteur système décode le Dolby Atmos (E-AC-3) pour l'audio spatial des écouteurs ; le serveur réemballe le fichier si besoin.",
+  styledSubtitlesViaMpv: "Sous-titres stylés par le lecteur avancé",
+  styledSubtitlesViaMpvHint:
+    "Les sous-titres ASS gardent polices, couleurs et positions. Désactivé, le lecteur système les affiche en texte simple.",
+  subtitleScale: "Taille des sous-titres",
+  subtitleScaleSmall: "Petit",
+  subtitleScaleLarge: "Grand",
+  subtitlePosition: "Position des sous-titres",
+  subtitlePositionHigh: "Haut",
+  subtitlePositionLow: "Bas",
+  subtitleTuningHint: "Taille et position s'appliquent au lecteur avancé.",
 } as const;

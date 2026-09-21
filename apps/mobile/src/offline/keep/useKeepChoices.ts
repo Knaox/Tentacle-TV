@@ -135,9 +135,11 @@ export function useKeepChoices(
   if (kind !== null && kind !== "original" && hasAudio) {
     hints.push(kept === null ? to("singleAudioTrackHint") : to("audioKeptHint", { track: trackLabel(kept) }));
   }
-  // Ce que le hors ligne emporte TOUJOURS, et ce qu'il ne sait pas emporter.
+  // Ce que le hors ligne emporte TOUJOURS, et ce que l'Allégé ne sait pas
+  // emporter : l'original garde ses sous-titres image dans le fichier, le
+  // lecteur avancé les rend.
   if (kind !== null) hints.push(to("subtitlesAllKeptHint"));
-  if (imageSubs.length > 0 && burnIndex === undefined) hints.push(to("imageSubsHint"));
+  if (kind === "light" && imageSubs.length > 0 && burnIndex === undefined) hints.push(to("imageSubsHint"));
   if (kind === "light" && plan.excluded.some((entry) => entry.reason === "dolbyVision")) {
     hints.push(to("dolbyVisionColorsHint"));
   }

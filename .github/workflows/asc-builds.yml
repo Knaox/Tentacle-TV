@@ -1,0 +1,33 @@
+# Diagnostic App Store Connect : liste les derniers builds d'une app avec leur
+# état de traitement — pour savoir si un envoi « UPLOAD SUCCEEDED » a été
+# traité, rejeté (INVALID/FAILED : le courriel d'Apple dit pourquoi) ou perdu.
+# Lancement manuel seulement ; n'écrit rien.
+name: ASC — lister les builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: "Identifiant de bundle"
+        default: "com.tentacle.mobile"
+      limit:
+        description: "Nombre de builds"
+        default: "12"
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Lister les builds (App Store Connect API)
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: ${{ inputs.bundle_id }}
+          LIMIT: ${{ inputs.limit }}
+        run: node .github/scripts/asc-list-builds.mjs

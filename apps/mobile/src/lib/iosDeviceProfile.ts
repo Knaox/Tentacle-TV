@@ -1,20 +1,25 @@
 import type {
   DeviceProfile,
   DirectPlayProfile,
-  TranscodingProfile,
   CodecProfile,
   SubtitleProfile,
 } from "@tentacle-tv/shared";
-import { IOS_LOCAL_SUPPORT, supportList } from "@tentacle-tv/offline-core";
+import { IOS_NATIVE_SUPPORT, supportList } from "@tentacle-tv/offline-core";
+import type { PlayerEngineKind } from "@/player/engine/types";
+import { buildIosMpvDeviceProfile } from "./iosMpvDeviceProfile";
+import { iosTranscodingProfiles } from "./iosTranscodingProfiles";
 
 /**
- * DeviceProfile pour iOS AVPlayer (react-native-video).
+ * DeviceProfile iOS, par MOTEUR : le lecteur système (AVPlayer via
+ * react-native-video) ou le lecteur avancé (libmpv, `iosMpvDeviceProfile.ts`).
+ * Le routeur choisit le moteur avant PlaybackInfo ; le profil envoyé à
+ * Jellyfin est celui du moteur qui lira.
  *
- * Les chaînes DirectPlay viennent de `IOS_LOCAL_SUPPORT` : la même source dit
- * ce qui se lit en direct en ligne et ce qui peut être gardé hors ligne.
+ * Profil natif : les chaînes DirectPlay viennent de `IOS_NATIVE_SUPPORT`, la
+ * même source qui dit ce que le lecteur système lit tel quel.
  *
  * AVPlayer supporte nativement :
- * - Vidéo : H.264 (AVC), HEVC (H.265)
+ * - Vidéo : H.264 (AVC), HEVC (H.265) ; AV1 sur A17 Pro et plus (`av1Hardware`)
  * - Audio : AAC, FLAC, AC3, EAC3, ALAC, MP3
  * - Containers : MP4, MOV, HLS (fMP4/TS)
  * - PAS de MKV, AVI, WMV, DTS, TrueHD
@@ -22,66 +27,25 @@ import { IOS_LOCAL_SUPPORT, supportList } from "@tentacle-tv/offline-core";
  * Sans ce profil, Jellyfin tente du direct play sur des MKV
  * → écran noir car AVPlayer ne lit pas ce container.
  */
-export function buildIosDeviceProfile(maxBitrate?: number): DeviceProfile {
+export function buildIosDeviceProfile(
+  engine: PlayerEngineKind,
+  maxBitrate?: number,
+  options: { av1Hardware?: boolean } = {},
+): DeviceProfile {
+  if (engine === "mpv") return buildIosMpvDeviceProfile(maxBitrate);
+
   const directPlayProfiles: DirectPlayProfile[] = [
     {
-      Container: supportList(IOS_LOCAL_SUPPORT.containers),
+      Container: supportList(IOS_NATIVE_SUPPORT.containers),
       Type: "Video",
-      VideoCodec: supportList(IOS_LOCAL_SUPPORT.videoCodecs),
-      AudioCodec: supportList(IOS_LOCAL_SUPPORT.audioCodecs),
+      VideoCodec: supportList(IOS_NATIVE_SUPPORT.videoCodecs) + (options.av1Hardware ? ",av1" : ""),
+      AudioCodec: supportList(IOS_NATIVE_SUPPORT.audioCodecs),
     },
     // Audio-only
     { Container: "mp3", Type: "Audio" },
     { Container: "aac,m4a", Type: "Audio" },
     { Container: "flac", Type: "Audio" },
     { Container: "alac", Type: "Audio" },
-  ];
-
-  const transcodingProfiles: TranscodingProfile[] = [
-    // HLS avec fMP4 — préféré par AVPlayer pour HEVC
-    //
-    // JAMAIS d'ac3/eac3 ici : en COPIE Dolby vers fMP4, le muxeur de ffmpeg ne
-    // connaît les paramètres du codec qu'à l'arrivée des premiers paquets, et
-    // Jellyfin ne pose pas `-movflags delay_moov` — selon l'entrelacement du
-    // fichier, l'init sort avec un moov de taille 0 (stsd vide) et AVPlayer
-    // rend CoreMediaErrorDomain -16172 (mesuré : « Cannot write moov atom
-    // before AC3 packets » dans le log de transcodage, One Piece S10E12).
-    // L'audio Dolby est donc RÉENCODÉ en AAC sur ce chemin ; la lecture
-    // directe MP4 (ci-dessus) garde le passthrough.
-    {
-      Container: "mp4",
-      Type: "Video",
-      VideoCodec: "hevc,h264",
-      AudioCodec: "aac",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // Fallback TS segments
-    {
-      Container: "ts",
-      Type: "Video",
-      VideoCodec: "h264",
-      AudioCodec: "aac",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // Audio-only
-    {
-      Container: "mp4",
-      Type: "Audio",
-      AudioCodec: "aac",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-    },
   ];
 
   const codecProfiles: CodecProfile[] = [
@@ -136,7 +100,7 @@ export function buildIosDeviceProfile(maxBitrate?: number): DeviceProfile {
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: transcodingProfiles,
+    TranscodingProfiles: iosTranscodingProfiles(),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

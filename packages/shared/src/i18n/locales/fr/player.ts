@@ -75,6 +75,8 @@ export default {
   qualityReduced: "Qualité réduite pour s'adapter au débit du réseau",
   qualityAutoBadge: "Auto",
   directSessionExpired: "Session Jellyfin expirée — reconfirmez le jumelage depuis un appareil connecté",
+  // Le motif technique d'une erreur de lecture, replié.
+  details: "Détails",
   retry: "Réessayer",
   back: "Retour",
   airplayActive: "Lecture sur un écran externe",

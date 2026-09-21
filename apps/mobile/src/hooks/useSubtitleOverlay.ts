@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { parseVttCues } from "@tentacle-tv/shared";
+import { parseVttCues, srtToVtt } from "@tentacle-tv/shared";
 import type { SubtitleCue } from "@tentacle-tv/shared";
 import { readLocalText } from "@/offline/engineApi";
 
@@ -10,6 +10,14 @@ import { readLocalText } from "@/offline/engineApi";
  * ({\pos}, colors, karaoke…) is stripped — nothing ever renders as raw markup.
  * Returns null when no cue is active, URL is null, or fetch failed.
  */
+/**
+ * Un side-car gardé dans son format d'origine peut être du SRT : il n'a rien à
+ * perdre dans la conversion, l'overlay le lit comme du VTT.
+ */
+function cuesOf(text: string): SubtitleCue[] {
+  return parseVttCues(/^\uFEFF?\s*WEBVTT/.test(text) ? text : srtToVtt(text));
+}
+
 export function useSubtitleOverlay(
   vttUrl: string | null,
   currentTime: number,
@@ -27,7 +35,7 @@ export function useSubtitleOverlay(
     // Side-car local : lu sur le disque — `fetch("file://")` n'est pas fiable sur Android.
     if (vttUrl.startsWith("file://")) {
       const text = readLocalText(vttUrl);
-      if (text !== null) cuesRef.current = parseVttCues(text);
+      if (text !== null) cuesRef.current = cuesOf(text);
       return;
     }
 
@@ -36,7 +44,7 @@ export function useSubtitleOverlay(
     fetch(vttUrl, { signal: controller.signal, headers })
       .then((r) => r.text())
       .then((text) => {
-        cuesRef.current = parseVttCues(text);
+        cuesRef.current = cuesOf(text);
       })
       .catch(() => {
         console.warn("[Tentacle:Subtitles] VTT fetch failed", vttUrl?.slice(0, 120));

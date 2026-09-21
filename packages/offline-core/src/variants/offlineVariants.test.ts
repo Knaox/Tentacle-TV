@@ -1,14 +1,17 @@
 /**
  * La décision des variantes est ce qui évite un fichier illisible sur
- * l'appareil : un MKV « Original » sur iPhone, un DTS sur Android. Chaque cas
- * ci-dessous est un fichier réel d'une bibliothèque Jellyfin.
+ * l'appareil. Depuis le lecteur avancé, l'appareil lit presque tout : ces cas
+ * vérifient surtout que l'original est bien OFFERT — un MKV DTS sur iPhone,
+ * un AVI DivX sur Android — et que les vrais murs (Dolby Vision 5 et 7, les
+ * droits du compte) tiennent. Chaque cas est un fichier réel d'une
+ * bibliothèque Jellyfin.
  */
 
 import { describe, expect, it } from "vitest";
 import type { MediaItem, MediaStream } from "@tentacle-tv/shared";
 import type { DownloadCapabilities } from "../sync/capabilities";
 import { offlineVariantsFor, REMUX_PRESET, type OfflineVariantKind } from "./offlineVariants";
-import { ANDROID_LOCAL_SUPPORT, IOS_LOCAL_SUPPORT } from "./platformSupport";
+import { ANDROID_LOCAL_SUPPORT, IOS_LOCAL_SUPPORT, IOS_NATIVE_SUPPORT } from "./platformSupport";
 
 const FULL: DownloadCapabilities = {
   downloads: true,
@@ -18,7 +21,7 @@ const FULL: DownloadCapabilities = {
   lightPresets: ["p1080", "p720", "p480", REMUX_PRESET],
 };
 
-/** Le compte sans mode Allégé : il garde le remux, qui ne recompresse rien. */
+/** Le compte sans mode Allégé : il ne lui reste que l'original. */
 const NO_CONVERSION: DownloadCapabilities = {
   downloads: true,
   remuxDownloads: true,
@@ -66,189 +69,122 @@ const excluded = (plan: ReturnType<typeof offlineVariantsFor>, kind: OfflineVari
   plan.excluded.find((e) => e.kind === kind)?.reason;
 
 describe("offlineVariantsFor", () => {
-  it("MP4 h264/aac sur iOS : l'original, l'Allégé, et un remux inutile", () => {
+  it("MP4 h264/aac sur iOS : l'original en tête, l'Allégé à côté, jamais de remux", () => {
     const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
     expect(kinds(plan)).toEqual(["original", "light"]);
-    expect(excluded(plan, "remux")).toBe("redundant");
-    expect(plan.cards[0]?.sizeBytes).toBe(1_500_000_000);
-    expect(plan.cards[0]?.sizeIsEstimate).toBe(false);
+    expect(plan.excluded).toEqual([]);
+    expect(plan.cards[0]).toMatchObject({ reason: "playable", sizeBytes: 1_500_000_000, sizeIsEstimate: false });
   });
 
-  it("MKV h264/aac sur iOS : pas d'original, le remux à cause du conteneur", () => {
+  it("MKV h264/aac sur iOS : l'original, le lecteur avancé lit le MKV", () => {
     const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["remux", "light"]);
-    expect(excluded(plan, "original")).toBe("container");
-    expect(plan.cards[0]?.reason).toBe("container");
-    expect(plan.cards[0]?.sizeIsEstimate).toBe(true);
-  });
-
-  it("MKV h264/aac sur Android : l'original, le remux est inutile", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), ANDROID_LOCAL_SUPPORT, FULL);
     expect(kinds(plan)).toEqual(["original", "light"]);
-    expect(excluded(plan, "remux")).toBe("redundant");
   });
 
-  it("MKV hevc/dts sur Android : le remux convertit l'audio", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "hevc" }, ["dts"]), ANDROID_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["remux", "light"]);
-    expect(excluded(plan, "original")).toBe("audioCodec");
-    expect(plan.cards[0]?.reason).toBe("audioCodec");
+  it("MKV hevc/dts sur iOS et Android : l'original, toutes les pistes lisibles", () => {
+    for (const platform of [IOS_LOCAL_SUPPORT, ANDROID_LOCAL_SUPPORT]) {
+      const plan = offlineVariantsFor(item("mkv", { Codec: "hevc" }, ["dts", "truehd"]), platform, FULL);
+      expect(kinds(plan)).toEqual(["original", "light"]);
+      expect(plan.cards[0]?.audio).toEqual({ playable: [1, 2], unplayable: [] });
+    }
   });
 
-  it("MP4 hevc avec [dts, aac] sur iOS : les deux cartes, l'original prévient", () => {
-    const plan = offlineVariantsFor(item("mp4", { Codec: "hevc" }, ["dts", "aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["original", "remux", "light"]);
-    expect(plan.cards[0]?.audio).toEqual({ playable: [2], unplayable: [1] });
-    expect(plan.cards[1]?.reason).toBe("audioCodec");
+  it("AVI mpeg4/mp3 (DivX) : l'original, sur les deux plateformes", () => {
+    for (const platform of [IOS_LOCAL_SUPPORT, ANDROID_LOCAL_SUPPORT]) {
+      expect(kinds(offlineVariantsFor(item("avi", { Codec: "mpeg4" }, ["mp3"]), platform, FULL))).toEqual(["original", "light"]);
+    }
   });
 
-  it("MKV hevc 10 bits HDR10 eac3 sur iOS : remux", () => {
-    const plan = offlineVariantsFor(
-      item("mkv", { Codec: "hevc", BitDepth: 10, VideoRangeType: "HDR10" }, ["eac3"]),
-      IOS_LOCAL_SUPPORT,
-      FULL,
-    );
-    expect(kinds(plan)).toEqual(["remux", "light"]);
+  it("AV1 en MKV sur iOS : l'original (décodage logiciel du lecteur avancé)", () => {
+    expect(kinds(offlineVariantsFor(item("mkv", { Codec: "av1" }, ["opus"]), IOS_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
+  });
+
+  it("MKV hevc 10 bits HDR10 eac3 sur iOS : l'original", () => {
+    const hdr = item("mkv", { Codec: "hevc", BitDepth: 10, VideoRangeType: "HDR10" }, ["eac3"]);
+    expect(kinds(offlineVariantsFor(hdr, IOS_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
   });
 
   it("Dolby Vision profil 5 : l'Allégé seul, sur les deux plateformes", () => {
-    const dv5 = item("mkv", { Codec: "hevc", DvProfile: 5, VideoRangeType: "DOVI" }, ["eac3"]);
+    const dv5 = item("mp4", { Codec: "hevc", DvProfile: 5 }, ["eac3"]);
     for (const platform of [IOS_LOCAL_SUPPORT, ANDROID_LOCAL_SUPPORT]) {
       const plan = offlineVariantsFor(dv5, platform, FULL);
       expect(kinds(plan)).toEqual(["light"]);
       expect(excluded(plan, "original")).toBe("dolbyVision");
-      expect(excluded(plan, "remux")).toBe("dolbyVision");
     }
   });
 
-  it("Dolby Vision profil 8.1 (base HDR10) : compatible, remux sur iOS", () => {
-    const plan = offlineVariantsFor(
-      item("mkv", { Codec: "hevc", DvProfile: 8, VideoRangeType: "DOVIWithHDR10" }, ["eac3"]),
-      IOS_LOCAL_SUPPORT,
-      FULL,
-    );
-    expect(kinds(plan)).toEqual(["remux", "light"]);
+  it("Dolby Vision profil 8.1 (base HDR10) : compatible, l'original", () => {
+    const dv81 = item("mkv", { Codec: "hevc", DvProfile: 8, VideoRangeType: "DOVIWithHDR10" }, ["eac3"]);
+    expect(kinds(offlineVariantsFor(dv81, IOS_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
   });
 
   it("Dolby Vision profil 7 sur Android : l'Allégé seul", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "hevc", DvProfile: 7 }, ["truehd"]), ANDROID_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["light"]);
+    const dv7 = item("mkv", { Codec: "hevc", DvProfile: 7 }, ["truehd"]);
+    expect(kinds(offlineVariantsFor(dv7, ANDROID_LOCAL_SUPPORT, FULL))).toEqual(["light"]);
   });
 
-  it("AV1 en MKV sur iOS : rien à copier, l'Allégé seul", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "av1" }, ["opus"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["light"]);
-    expect(excluded(plan, "original")).toBe("container");
-    expect(excluded(plan, "remux")).toBe("videoCodec");
-  });
-
-  it("WebM vp9/opus sur Android : l'original se lit tel quel", () => {
-    const plan = offlineVariantsFor(item("webm", { Codec: "vp9" }, ["opus"]), ANDROID_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["original", "light"]);
-    expect(excluded(plan, "remux")).toBe("videoCodec");
-  });
-
-  it("serveur sans le palier pmax : pas de remux, l'Allégé seul", () => {
-    const old: DownloadCapabilities = { ...FULL, lightPresets: ["p1080", "p720", "p480"] };
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, old);
-    expect(kinds(plan)).toEqual(["light"]);
-    expect(excluded(plan, "remux")).toBe("serverPreset");
-  });
-
-  it("sans droit de conversion : le remux reste, l'Allégé tombe", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, NO_CONVERSION);
-    expect(kinds(plan)).toEqual(["remux"]);
+  it("le Dolby Vision profil 5 sans mode Allégé : il ne reste rien", () => {
+    const dv5 = item("mp4", { Codec: "hevc", DvProfile: 5 }, ["eac3"]);
+    const plan = offlineVariantsFor(dv5, IOS_LOCAL_SUPPORT, NO_CONVERSION);
+    expect(kinds(plan)).toEqual([]);
+    expect(excluded(plan, "original")).toBe("dolbyVision");
     expect(excluded(plan, "light")).toBe("right");
   });
 
-  it("sans aucun droit de transcodage : ni remux ni Allégé", () => {
-    const nothing: DownloadCapabilities = { ...NO_CONVERSION, remuxDownloads: false, lightPresets: [] };
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, nothing);
-    expect(kinds(plan)).toEqual([]);
-    expect(excluded(plan, "remux")).toBe("right");
+  it("sans mode Allégé : l'original seul", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "hevc" }, ["dts"]), IOS_LOCAL_SUPPORT, NO_CONVERSION);
+    expect(kinds(plan)).toEqual(["original"]);
     expect(excluded(plan, "light")).toBe("right");
   });
 
   it("sans droit du tout : rien, pas même une raison", () => {
     const none: DownloadCapabilities = { ...NO_CONVERSION, downloads: false, remuxDownloads: false, lightPresets: [] };
-    expect(offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, none)).toEqual({
-      cards: [],
-      excluded: [],
-    });
+    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, none);
+    expect(plan).toEqual({ cards: [], excluded: [] });
   });
 
-  it("entrelacé : exclu sur iOS, lisible sur Android", () => {
+  it("entrelacé : l'union désentrelace, l'original reste — le natif seul l'écartait", () => {
     const interlaced = item("mp4", { Codec: "h264", IsInterlaced: true }, ["aac"]);
-    expect(kinds(offlineVariantsFor(interlaced, IOS_LOCAL_SUPPORT, FULL))).toEqual(["light"]);
-    expect(kinds(offlineVariantsFor(interlaced, ANDROID_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
+    expect(kinds(offlineVariantsFor(interlaced, IOS_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
+    const nativeOnly = offlineVariantsFor(interlaced, IOS_NATIVE_SUPPORT, FULL);
+    expect(kinds(nativeOnly)).toEqual(["light"]);
+    expect(excluded(nativeOnly, "original")).toBe("interlaced");
+  });
+
+  it("le natif seul : un MKV n'a pas d'original — la raison est le conteneur", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_NATIVE_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["light"]);
+    expect(excluded(plan, "original")).toBe("container");
+  });
+
+  it("une piste audio inconnue parmi d'autres : l'original prévient, sans l'écarter", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "hevc" }, ["atrac3", "aac"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["original", "light"]);
+    expect(plan.cards[0]?.audio).toEqual({ playable: [2], unplayable: [1] });
+  });
+
+  it("aucune piste audio lisible : l'original est écarté pour l'audio", () => {
+    const plan = offlineVariantsFor(item("mkv", { Codec: "hevc" }, ["atrac3"]), IOS_LOCAL_SUPPORT, FULL);
+    expect(kinds(plan)).toEqual(["light"]);
+    expect(excluded(plan, "original")).toBe("audioCodec");
   });
 
   it("un conteneur à plusieurs noms se lit par son premier jeton", () => {
-    const plan = offlineVariantsFor(item("mov,mp4,m4a", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
+    const plan = offlineVariantsFor(item("mov,mp4,m4a", { Codec: "h264" }, ["aac"]), IOS_NATIVE_SUPPORT, FULL);
     expect(kinds(plan)).toEqual(["original", "light"]);
   });
 
   it("un VideoRangeType numérique n'est jamais pris pour du Dolby Vision", () => {
-    const plan = offlineVariantsFor(
-      item("mp4", { Codec: "hevc", VideoRangeType: 3, DvProfile: 8 }, ["aac"]),
-      IOS_LOCAL_SUPPORT,
-      FULL,
-    );
-    expect(kinds(plan)).toEqual(["original", "light"]);
-  });
-
-  // ── Les trois cohabitent : l'ordre fait le défaut, pas l'exclusion.
-  it("un MP4 lisible propose l'original ET l'Allégé, l'original en tête", () => {
-    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["original", "light"]);
-  });
-
-  it("un MKV sur iOS propose son remux ET l'Allégé : réduire reste possible", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["remux", "light"]);
-  });
-
-  it("le Dolby Vision profil 5 n'a que son Allégé", () => {
-    const plan = offlineVariantsFor(
-      item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
-      IOS_LOCAL_SUPPORT,
-      FULL,
-    );
-    expect(kinds(plan)).toEqual(["light"]);
-  });
-
-  it("Dolby Vision profil 5 sans mode Allégé : il ne reste rien", () => {
-    const plan = offlineVariantsFor(
-      item("mkv", { Codec: "hevc", DvProfile: 5 }, ["eac3"]),
-      IOS_LOCAL_SUPPORT,
-      NO_CONVERSION,
-    );
-    expect(kinds(plan)).toEqual([]);
-    expect(excluded(plan, "light")).toBe("right");
-  });
-
-  // ── Le remux sort toujours de l'AAC : sans droit de conversion audio, une
-  // source qui n'en a aucune piste arriverait MUETTE.
-  it("sans conversion audio, un MKV en DTS ne propose plus son remux", () => {
-    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, noAudioConv);
-    expect(kinds(plan)).toEqual(["light"]);
-    expect(excluded(plan, "remux")).toBe("audioRight");
-  });
-
-  it("une piste AAC parmi les autres suffit : elle se recopie", () => {
-    const noAudioConv: DownloadCapabilities = { ...FULL, audioConversion: false };
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts", "aac"]), IOS_LOCAL_SUPPORT, noAudioConv);
-    expect(kinds(plan)).toEqual(["remux", "light"]);
-  });
-
-  it("avec le droit de conversion, le DTS passe par le remux", () => {
-    const plan = offlineVariantsFor(item("mkv", { Codec: "h264" }, ["dts"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["remux", "light"]);
+    const weird = item("mkv", { Codec: "hevc", VideoRangeType: 3 as unknown as string }, ["aac"]);
+    expect(kinds(offlineVariantsFor(weird, IOS_LOCAL_SUPPORT, FULL))).toEqual(["original", "light"]);
   });
 
   it("« h265 » vaut hevc", () => {
-    const plan = offlineVariantsFor(item("mp4", { Codec: "h265" }, ["aac"]), IOS_LOCAL_SUPPORT, FULL);
-    expect(kinds(plan)).toEqual(["original", "light"]);
+    expect(kinds(offlineVariantsFor(item("mp4", { Codec: "h265" }, ["aac"]), IOS_NATIVE_SUPPORT, FULL))).toEqual(["original", "light"]);
+  });
+
+  it("une taille inconnue : la carte originale la dit inconnue", () => {
+    const plan = offlineVariantsFor(item("mp4", { Codec: "h264" }, ["aac"], 0), IOS_LOCAL_SUPPORT, FULL);
+    expect(plan.cards[0]?.sizeBytes).toBeNull();
   });
 });

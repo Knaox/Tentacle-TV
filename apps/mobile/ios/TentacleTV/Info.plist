@@ -51,6 +51,10 @@
 	<string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Tentacle TV needs access to your local network to connect to your self-hosted media server.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Tentacle TV does not use the camera. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Tentacle TV does not use the microphone. This entry is required because the video playback library (FFmpeg) includes a capture module that is never called.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choisissez une photo de votre photothèque pour votre photo de profil. / Pick a photo from your library for your profile picture.</string>
 	<key>NSUserActivityTypes</key>

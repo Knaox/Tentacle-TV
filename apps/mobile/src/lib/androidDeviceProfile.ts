@@ -1,17 +1,20 @@
 import type {
   DeviceProfile,
   DirectPlayProfile,
-  TranscodingProfile,
   CodecProfile,
   SubtitleProfile,
 } from "@tentacle-tv/shared";
-import { ANDROID_LOCAL_SUPPORT, supportList } from "@tentacle-tv/offline-core";
+import { ANDROID_NATIVE_SUPPORT, supportList } from "@tentacle-tv/offline-core";
+import type { PlayerEngineKind } from "@/player/engine/types";
+import { buildAndroidMpvDeviceProfile } from "./androidMpvDeviceProfile";
+import { androidTranscodingProfiles } from "./androidTranscodingProfiles";
 
 /**
- * DeviceProfile pour Android ExoPlayer (react-native-video).
+ * DeviceProfile Android, par MOTEUR : le lecteur système (ExoPlayer via
+ * react-native-video) ou le lecteur avancé (libmpv, `androidMpvDeviceProfile.ts`).
  *
- * Les chaînes DirectPlay viennent de `ANDROID_LOCAL_SUPPORT` : la même source
- * dit ce qui se lit en direct en ligne et ce qui peut être gardé hors ligne.
+ * Profil natif : les chaînes DirectPlay viennent de `ANDROID_NATIVE_SUPPORT`,
+ * la même source qui dit ce que le lecteur système lit tel quel.
  *
  * ExoPlayer supporte nativement :
  * - Vidéo : H.264 (AVC), HEVC (H.265), VP9
@@ -25,57 +28,21 @@ import { ANDROID_LOCAL_SUPPORT, supportList } from "@tentacle-tv/offline-core";
  * - Transcode HLS TS préféré (fMP4 HLS peut poser problème sur certains devices)
  * - Niveaux codec plus conservateurs (mid-range Android)
  */
-export function buildAndroidDeviceProfile(maxBitrate?: number): DeviceProfile {
+export function buildAndroidDeviceProfile(engine: PlayerEngineKind, maxBitrate?: number): DeviceProfile {
+  if (engine === "mpv") return buildAndroidMpvDeviceProfile(maxBitrate);
+
   const directPlayProfiles: DirectPlayProfile[] = [
     {
-      Container: supportList(ANDROID_LOCAL_SUPPORT.containers),
+      Container: supportList(ANDROID_NATIVE_SUPPORT.containers),
       Type: "Video",
-      VideoCodec: supportList(ANDROID_LOCAL_SUPPORT.videoCodecs),
-      AudioCodec: supportList(ANDROID_LOCAL_SUPPORT.audioCodecs),
+      VideoCodec: supportList(ANDROID_NATIVE_SUPPORT.videoCodecs),
+      AudioCodec: supportList(ANDROID_NATIVE_SUPPORT.audioCodecs),
     },
     // Audio-only
     { Container: "mp3", Type: "Audio" },
     { Container: "aac,m4a", Type: "Audio" },
     { Container: "flac", Type: "Audio" },
     { Container: "ogg,webm", Type: "Audio" },
-  ];
-
-  const transcodingProfiles: TranscodingProfile[] = [
-    // HLS TS — universel, fonctionne même sur émulateur
-    {
-      Container: "ts",
-      Type: "Video",
-      VideoCodec: "h264",
-      AudioCodec: "aac,mp3",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // HLS TS — devices modernes avec HEVC
-    {
-      Container: "ts",
-      Type: "Video",
-      VideoCodec: "hevc,h264",
-      AudioCodec: "aac,mp3",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-      MinSegments: 2,
-      BreakOnNonKeyFrames: true,
-      CopyTimestamps: true,
-    },
-    // Audio-only
-    {
-      Container: "mp4",
-      Type: "Audio",
-      AudioCodec: "aac",
-      Protocol: "hls",
-      Context: "Streaming",
-      MaxAudioChannels: "6",
-    },
   ];
 
   const codecProfiles: CodecProfile[] = [
@@ -129,7 +96,7 @@ export function buildAndroidDeviceProfile(maxBitrate?: number): DeviceProfile {
     MaxStaticBitrate: 120_000_000,
     MusicStreamingTranscodingBitrate: 384_000,
     DirectPlayProfiles: directPlayProfiles,
-    TranscodingProfiles: transcodingProfiles,
+    TranscodingProfiles: androidTranscodingProfiles(),
     CodecProfiles: codecProfiles,
     SubtitleProfiles: subtitleProfiles,
   };

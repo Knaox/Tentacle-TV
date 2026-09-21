@@ -1,0 +1,96 @@
+# Construit la variante LGPL de MPVKit (fork Streamyfin, sortie vidéo
+# AVFoundation) : mpv « -Dgpl=false », FFmpeg sans « --enable-gpl », sans
+# libsmbclient ni LuaJIT. C'est le binaire OBLIGATOIRE pour une soumission
+# à l'App Store — les binaires du tag du fork sont GPL (dev et TestFlight
+# seulement). Lancement MANUEL uniquement ; jamais déclenché par un tag.
+#
+# Après un run réussi : reporter l'URL et la somme SHA-256 de la Release
+# « mpvkit-lgpl-<version> » dans apps/mobile/ios/MPVKit.podspec (version,
+# license, :http, :sha256), puis pod install et une build TestFlight de
+# contrôle. La recette (dépendances, make, script de combinaison) est celle
+# de `.github/workflows/release-combined.yml` du fork, GPL retiré.
+name: MPVKit LGPL (iOS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mpvkit_ref:
+        description: "Tag ou commit du fork streamyfin/MPVKit à construire"
+        required: true
+        default: "0.41.0-av5"
+      release_suffix:
+        description: "Suffixe de la Release (mpvkit-lgpl-<ref><suffixe>), pour relivrer"
+        required: false
+        default: ""
+
+concurrency:
+  group: mpvkit-lgpl
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build LGPL xcframework
+    runs-on: macos-26
+    timeout-minutes: 350
+    permissions:
+      contents: write
+    env:
+      MPVKIT_REF: ${{ inputs.mpvkit_ref }}
+      RELEASE_TAG: mpvkit-lgpl-${{ inputs.mpvkit_ref }}${{ inputs.release_suffix }}
+    steps:
+      - name: Checkout du fork MPVKit
+        uses: actions/checkout@v4
+        with:
+          repository: streamyfin/MPVKit
+          ref: ${{ inputs.mpvkit_ref }}
+          path: MPVKit
+
+      - name: Dépendances de construction
+        run: |
+          brew install autoconf automake libtool ninja
+          pipx install meson==1.4.2
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      # Sans « enable-gpl » : le script du fork passe « -Dgpl=false » à mpv,
+      # n'ajoute pas « --enable-gpl » à FFmpeg et n'inclut ni libsmbclient ni
+      # LuaJIT. tvOS est construit aussi : le script de combinaison attend les
+      # quatre plateformes.
+      - name: Build LGPL (iOS + simulateur, tvOS + simulateur)
+        working-directory: MPVKit
+        run: make build platform=ios,isimulator,tvos,tvsimulator version="${MPVKIT_REF}"
+
+      - name: MPVKit.xcframework combiné (symboles internes masqués)
+        working-directory: MPVKit
+        run: ./Sources/BuildScripts/create-combined-framework.sh
+
+      # Garde-fou : aucun symbole Samba ni LuaJIT ne doit subsister.
+      - name: Vérifier l'absence de composants GPL
+        working-directory: MPVKit/dist/MPVKit-combined
+        run: |
+          unzip -q MPVKit.xcframework.zip -d check
+          BIN=check/MPVKit.xcframework/ios-arm64/MPVKit.framework/MPVKit
+          if nm -g "$BIN" | grep -qiE 'smbc_|lua_'; then
+            echo "::error::symboles GPL (Samba / LuaJIT) présents dans le binaire"; exit 1
+          fi
+          shasum -a 256 MPVKit.xcframework.zip | tee MPVKit.xcframework.sha256
+          du -h MPVKit.xcframework.zip
+
+      - name: Release GitHub (pré-version)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          fail_on_unmatched_files: true
+          files: |
+            MPVKit/dist/MPVKit-combined/MPVKit.xcframework.zip
+            MPVKit/dist/MPVKit-combined/MPVKit.xcframework.sha256
+          body: |
+            MPVKit.xcframework **LGPL** (iOS + tvOS), fork streamyfin/MPVKit @ `${{ inputs.mpvkit_ref }}`.
+
+            * mpv `-Dgpl=false`, FFmpeg sans `--enable-gpl`, sans libsmbclient ni LuaJIT
+            * vo_avfoundation, ao_audiounit, VideoToolbox, libass, libplacebo, dav1d, libdovi
+            * À reporter dans `apps/mobile/ios/MPVKit.podspec` (`:http`, `:sha256`) avant toute soumission à l'App Store.
+            * Sources et recette : dépôt du fork au commit ci-dessus, et `.github/workflows/mpvkit.yml` de ce dépôt.

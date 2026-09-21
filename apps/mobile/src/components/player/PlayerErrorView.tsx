@@ -1,15 +1,19 @@
+import { useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useTranslation } from "react-i18next";
 import { PLAYER } from "@/theme";
 
 interface Props {
   message: string;
+  /** Le motif technique (moteur, décision, erreur brute), replié derrière « Détails ». */
+  details?: string | null;
   onRetry: () => void;
   onBack: () => void;
 }
 
-export function PlayerErrorView({ message, onRetry, onBack }: Props) {
+export function PlayerErrorView({ message, details, onRetry, onBack }: Props) {
   const { t } = useTranslation("player");
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <View style={{
@@ -59,6 +63,20 @@ export function PlayerErrorView({ message, onRetry, onBack }: Props) {
           {t("back")}
         </Text>
       </Pressable>
+
+      {/* Le motif, discret : un mot pour l'ouvrir, du texte brut sélectionnable. */}
+      {details ? (
+        <Pressable onPress={() => setShowDetails((v) => !v)} accessibilityRole="button" hitSlop={8} style={{ marginTop: 20 }}>
+          <Text style={{ color: PLAYER.textSecondary, fontSize: 12, textDecorationLine: "underline" }}>
+            {t("details")}
+          </Text>
+        </Pressable>
+      ) : null}
+      {details && showDetails ? (
+        <Text selectable style={{ color: PLAYER.textSecondary, fontSize: 11, marginTop: 8, textAlign: "center", maxWidth: 360 }}>
+          {details}
+        </Text>
+      ) : null}
     </View>
   );
 }

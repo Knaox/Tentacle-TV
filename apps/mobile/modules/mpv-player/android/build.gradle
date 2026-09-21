@@ -1,0 +1,29 @@
+// Le lecteur avancé de Tentacle TV sur Android : libmpv (libmpv-android,
+// GPL-3.0) en repli d'ExoPlayer pour ce qu'il ne démuxe ni ne décode (AVI,
+// MPEG-2, DivX, VobSub) et pour l'ASS stylé. Code Kotlin dérivé du module
+// `mpv-player` de Streamyfin (MPL-2.0) — voir apps/mobile/THIRD-PARTY-LICENSES.md.
+//
+// Les ABI viennent de l'AAR (arm64-v8a, armeabi-v7a, x86, x86_64, 64 bits
+// alignés 16 Ko) et se filtrent par `reactNativeArchitectures` de l'application :
+// un `abiFilters` ici ne toucherait que du code natif que ce module ne construit pas.
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'expo.modules.mpvplayer'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.mpvplayer"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  // libmpv 0.41 + FFmpeg 8.1 (GPL) + libass + libplacebo + dav1d, Maven Central.
+  implementation 'dev.jdtech.mpv:libmpv:1.0.0'
+}

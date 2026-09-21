@@ -311,4 +311,30 @@ export default {
 
   hdrAutoUnsupported:
     "No HDR-capable display was detected. HDR films are still adapted to your display, with nothing lost.",
+
+  // Device-level video player settings (mobile). Never "mpv" nor "native" on screen.
+  videoEngineTitle: "Video player",
+  videoEngineDevice: "These settings belong to this device.",
+  videoEngineLabel: "Playback engine",
+  videoEngineAuto: "Auto",
+  videoEngineSystem: "System player",
+  videoEngineAdvanced: "Advanced player",
+  videoEngineAutoHint:
+    "The system player when it plays the file as it is (AirPlay, Dolby Vision, Atmos), the advanced player for everything else — MKV, DTS, TrueHD, styled subtitles — with no server conversion.",
+  videoEngineSystemHint: "Always the system player: the server converts what it cannot play.",
+  videoEngineAdvancedHint:
+    "Always the advanced player: everything plays as it is. AirPlay and Dolby Vision profile 5 go back to the system player.",
+  preferSystemAtmos: "Prefer system Atmos",
+  preferSystemAtmosHint:
+    "The system player decodes Dolby Atmos (E-AC-3) for spatial audio on headphones; the server repackages the file when needed.",
+  styledSubtitlesViaMpv: "Styled subtitles by the advanced player",
+  styledSubtitlesViaMpvHint:
+    "ASS subtitles keep their fonts, colors and positions. Off, the system player shows them as plain text.",
+  subtitleScale: "Subtitle size",
+  subtitleScaleSmall: "Small",
+  subtitleScaleLarge: "Large",
+  subtitlePosition: "Subtitle position",
+  subtitlePositionHigh: "High",
+  subtitlePositionLow: "Low",
+  subtitleTuningHint: "Size and position apply to the advanced player.",
 } as const;
