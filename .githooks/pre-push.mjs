@@ -30,7 +30,11 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 const ZERO = '0'.repeat(40);
-const ROOT_PACKAGE = 'tentacle-tv'; // la racine du workspace, jamais contrôlée
+// La racine du workspace est TOUJOURS retenue par le sélecteur `...[ref]`, et
+// son script `typecheck` vaut `pnpm -r typecheck` : la laisser passer relance
+// tout le dépôt et annule la portée. Mesuré : un commit mobile seul donnait
+// « Scope: 13 of 14 workspace projects ». D'où les filtres nommés un par un.
+const ROOT_PACKAGE = 'tentacle-tv';
 const BACKEND = '@tentacle-tv/backend';
 
 /** Exécute une commande en héritant du terminal. `shell` pour pnpm.cmd (Windows). */

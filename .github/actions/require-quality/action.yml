@@ -1,0 +1,70 @@
+name: Exiger un contrôle qualité vert
+description: >-
+  Refuse de livrer un commit dont « quality.yml » n'est pas passé au vert.
+  Le filet de la garde locale : le crochet `.githooks/pre-push` refuse le push
+  avant qu'il parte, celle-ci rattrape un `--no-verify` ou une machine dont
+  `core.hooksPath` n'est pas posé.
+
+# POURQUOI LE SHA DISPATCHÉ ET PAS UN AUTRE. La garde porte sur le commit tel
+# qu'il était au déclenchement, AVANT le commit de bump que le job « prepare »
+# pose ensuite : ce dernier ne touche que versions.json, un changelog et un
+# package.json — rien qui puisse casser un typecheck, et rien que quality.yml
+# n'aurait de toute façon eu le temps de contrôler.
+#
+# L'ATTENTE. Pousser puis lancer une livraison dans la foulée est le geste
+# normal ; le run de qualité est alors encore en cours. On l'attend plutôt que
+# de refuser bêtement — d'où le sondage.
+
+inputs:
+  sha:
+    description: Commit à contrôler.
+    required: true
+  token:
+    description: Jeton pour lire les runs (GITHUB_TOKEN suffit).
+    required: true
+  wait-minutes:
+    description: Attente maximale d'un run en cours, en minutes.
+    required: false
+    default: "20"
+
+runs:
+  using: composite
+  steps:
+    - name: Contrôle qualité du commit
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        SHA: ${{ inputs.sha }}
+        WAIT_MINUTES: ${{ inputs.wait-minutes }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        DEADLINE=$(( $(date +%s) + WAIT_MINUTES * 60 ))
+        while :; do
+          RUNS=$(gh api "repos/${REPO}/actions/workflows/quality.yml/runs?head_sha=${SHA}&per_page=20" \
+                   --jq '[.workflow_runs[] | {status, conclusion}]')
+          SUCCESS=$(echo "$RUNS" | jq '[.[] | select(.conclusion == "success")] | length')
+          PENDING=$(echo "$RUNS" | jq '[.[] | select(.status != "completed")] | length')
+          TOTAL=$(echo "$RUNS" | jq 'length')
+
+          if [ "$SUCCESS" -gt 0 ]; then
+            echo "✓ qualité verte sur ${SHA}."
+            exit 0
+          fi
+          if [ "$PENDING" -gt 0 ]; then
+            echo "⏳ contrôle qualité en cours sur ${SHA} — on attend."
+          elif [ "$TOTAL" -eq 0 ]; then
+            echo "⏳ aucun contrôle qualité lancé sur ${SHA} — on attend qu'il démarre."
+          else
+            echo "::error::Le contrôle qualité a ÉCHOUÉ sur ${SHA} : rien ne part."
+            echo "Voir l'onglet Actions → Qualité. Corrige, pousse, relance la livraison."
+            exit 1
+          fi
+
+          if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+            echo "::error::Pas de contrôle qualité vert sur ${SHA} après ${WAIT_MINUTES} min."
+            echo "Si le commit n'a jamais été poussé sur main, quality.yml n'a pas pu tourner."
+            exit 1
+          fi
+          sleep 30
+        done
