@@ -1,0 +1,6 @@
+#!/bin/sh
+# Garde de qualité AVANT que le push parte (cf. .githooks/pre-push.mjs).
+# Volontairement minuscule et en sh pur : ce fichier est joué tel quel par
+# Git pour Windows (bash embarqué), par macOS et par Linux. Toute la logique
+# est en Node, seul interpréteur réellement identique sur les trois.
+exec node "$(dirname "$0")/pre-push.mjs" "$@"
