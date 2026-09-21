@@ -1,14 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import type { ViewStyle } from "react-native";
-import { NativeModules } from "react-native";
-
-/** Module natif tvOS : pilote AVDisplayManager pour la bascule HDR/DV HDMI. */
-const TVDisplayCriteria = (NativeModules as {
-  TVDisplayCriteria?: { engage?: () => void; reset?: () => void };
-}).TVDisplayCriteria;
-const TVLocalRemux = (NativeModules as {
-  TVLocalRemux?: { setPosition?: (seconds: number) => void };
-}).TVLocalRemux;
 import Video, {
   type OnLoadData,
   type OnProgressData,
@@ -27,10 +18,11 @@ import type { MPVPlayerHandle, MpvTrack, ExoTextTrack } from "./playerTypes";
  * vues Android → toute l'UI/OSD partagée (`PlayerScreen`, `useTVMpvTracks`, `useTVPlayerEventHandlers`)
  * marche sans modif. Différences plateforme assumées :
  *  - Reprise : on parse `#tnt-start=` de l'URL (AVPlayer ne le lit pas), on l'enlève de l'URI, on
- *    positionne via startPosition + seek de filet (cf. OFFSET plus bas pour le remux 0-based).
+ *    positionne via startPosition + seek de filet. La timeline est ABSOLUE quel que soit le flux
+ *    (fichier progressif, HLS de transcodage, HLS local de PrismCore).
  *  - Sous-titres : rendus NATIVEMENT (AVPlayer ne sideload PAS sur HLS → chargement infini sinon) :
- *    direct play progressif → sideload VTT (`source.textTracks`) ; transcode/remux HLS → pistes du
- *    manifeste Jellyfin. Sélection via `selectedTextTrack`, servies en `.vtt`. Burn-in PGS → transcode.
+ *    direct play progressif → sideload VTT (`source.textTracks`) ; HLS → pistes du manifeste.
+ *    Sélection via `selectedTextTrack`, servies en `.vtt`. Burn-in PGS → transcode.
  */
 
 export interface AVPlayerSurfaceProps {
@@ -45,11 +37,10 @@ export interface AVPlayerSurfaceProps {
   textTracks?: ExoTextTrack[];
   /** Index Jellyfin du sous-titre sélectionné (-1 = aucun). */
   subtitleIndex?: number;
-  /** Direct play (fichier progressif) vs transcode/remux HLS (master.m3u8).
+  /** Direct play (fichier progressif) vs HLS (master.m3u8, transcodage ou PrismCore).
    *  En HLS, AVPlayer NE SAIT PAS sideloader `source.textTracks` (limitation
    *  Apple) → chargement infini. On ne sideload donc qu'en direct play ; en HLS
-   *  les sous-titres viennent du manifeste (EnableSubtitlesInManifest côté
-   *  Jellyfin) et sont sélectionnés nativement. */
+   *  les sous-titres viennent du manifeste et sont sélectionnés nativement. */
   isDirectPlay?: boolean;
   onLoad?: (duration: number) => void;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
@@ -67,14 +58,10 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     const videoRef = useRef<VideoRef>(null);
     const client = useJellyfinClient();
     const { uri, startSec } = parseStart(source);
-    // OFFSET absolu⇄relatif CONFINÉ ici : le remux (HLS 127.0.0.1) est une session 0-based (make_zero)
-    // qu'AVPlayer mesure depuis 0 mais qui représente l'absolu [startSec…]. On AJOUTE offset aux positions
-    // remontées à JS (scrubber/reprise/sous-titres restent absolus) et on le RETIRE des seeks ; le pacing
-    // natif reçoit la position BRUTE. Direct play/transcode (déjà absolu, lu depuis 0) → offset 0.
-    const isRemux = uri.includes("127.0.0.1");
-    const offset = isRemux ? startSec : 0;
-    const offsetRef = useRef(0);
-    offsetRef.current = offset;
+    // Serveur HLS LOCAL (PrismCore, 127.0.0.1) : il ignore les en-têtes d'auth — et en
+    // poser ferait passer react-native-video par un resource-loader maison qui casse
+    // l'indirection master → variantes. Tout le reste (Jellyfin direct ou proxy) les exige.
+    const isLoopback = uri.startsWith("http://127.0.0.1");
     // Pistes texte réellement exposées par AVPlayer : sideload (direct play) ou
     // renditions du manifeste HLS (transcode, SubtitleMethod=Hls). Sert à mapper
     // l'index Jellyfin → l'index AVPlayer quand l'ordre diffère.
@@ -89,10 +76,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     // On la RE-APPLIQUE une fois la lecture réellement démarrée (1ᵉʳ onProgress),
     // exactement comme une re-sélection manuelle (qui, elle, corrige).
     const desiredAudioRef = useRef<number | null>(null);
-    // ANTI-RESTART : le seek anti-bord-live (cf. handleLoad) ne doit se faire qu'UNE SEULE fois
-    // par source. react-native-video refire `onLoad` à chaque mise à jour de la playlist HLS
-    // EVENT croissante (segments ajoutés, ENDLIST final) → un seek non gardé relancerait la
-    // vidéo au début. On le remet à zéro quand la source (uri) change.
+    // ANTI-RESTART : le seek de filet ne se fait qu'UNE SEULE fois par source.
+    // react-native-video refire `onLoad` à chaque mise à jour d'une playlist HLS
+    // EVENT (transcodage serveur : segments ajoutés, ENDLIST final) → un seek non
+    // gardé relancerait la vidéo à la position de départ. Remis à zéro quand la
+    // source (uri) change.
     const didSeekRef = useRef(false);
     useEffect(() => { didSeekRef.current = false; }, [uri]);
     const audioReappliedRef = useRef(false);
@@ -107,15 +95,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       })),
       [textTracks],
     );
-    // Sélection native. La position dans notre liste (`pos`) suit le même ordre
-    // que les pistes texte du flux (sideload en direct play ; groupe `#EXT-X-MEDIA`
-    // du manifeste en HLS) → utilisable directement comme index AVPlayer. En HLS,
-    // si AVPlayer remonte un ordre différent (onTextTracks), on remappe par
-    // langue + titre (NAME = DisplayTitle Jellyfin) pour fiabiliser.
     // Sélection native, valable pour les deux modes : sideload (direct play) ET
     // pistes du manifeste HLS (transcode, SubtitleMethod=Hls). La position dans
     // notre liste suit le même ordre que les pistes du flux. En HLS, si AVPlayer
-    // remonte un ordre différent (onTextTracks), on remappe par langue + titre.
+    // remonte un ordre différent (onTextTracks), on remappe par langue + titre
+    // (NAME = DisplayTitle Jellyfin) pour fiabiliser.
     const selectedTextTrack = useMemo<{ type: SelectedTrackType; value?: number }>(() => {
       if (subtitleIndex == null || subtitleIndex < 0 || !textTracks?.length) {
         return { type: SelectedTrackType.DISABLED };
@@ -155,8 +139,8 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
     }, [client]);
 
     useImperativeHandle(ref, () => ({
-      // Le JS passe une position ABSOLUE → retirer l'offset pour le seek RELATIF d'AVPlayer (remux).
-      seek: (seconds: number) => videoRef.current?.seek(Math.max(0, seconds - offsetRef.current)),
+      // Timeline absolue partout : la position JS est celle d'AVPlayer.
+      seek: (seconds: number) => videoRef.current?.seek(Math.max(0, seconds)),
       setAudioTrack: (id: number) => {
         desiredAudioRef.current = id;
         setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: id });
@@ -167,21 +151,10 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       loadSubtitle: () => {},
     }), []);
 
-    // Au démontage : revenir au mode d'affichage par défaut de l'UI.
-    useEffect(() => () => TVDisplayCriteria?.reset?.(), []);
-
     const handleLoad = useCallback(
       (data: OnLoadData) => {
         audioReappliedRef.current = false; // nouvelle source → re-appliquer l'audio voulu une fois démarré
         onLoad?.(data.duration ?? 0);
-
-        // tvOS : la media-playlist HLS du REMUX local (127.0.0.1, sans master) ne
-        // déclenche PAS la bascule HDR/DV de la sortie HDMI → on l'engage à la main via
-        // AVDisplayManager (gTVDynRange fraîchement posé par TVLocalRemux.start). Léger
-        // délai pour que la couche/asset soient prêts. Direct Play NATIF / transcode :
-        // PAS d'engage manuel — AVPlayer bascule seul sur un fichier progressif, et
-        // gTVDynRange serait périmé d'un remux précédent (mauvais badge sur du SDR natif).
-        if (uri.includes("127.0.0.1")) setTimeout(() => TVDisplayCriteria?.engage?.(), 250);
 
         const ns = data.naturalSize;
         if (ns && ns.width > 0 && ns.height > 0) onVideoSize?.(ns.width, ns.height, 1);
@@ -200,22 +173,18 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         }));
         onTracks?.(tracks);
 
-        // Anti BORD-LIVE + reprise : AVPlayer démarre au segment récent sur une playlist EVENT. REMUX =
-        // session 0-based (la reprise à T EST le début de session) → seek 0 RELATIF (PAS startSec = offset
-        // absolu → viserait absolu-2T) ; direct play/transcode (absolu) → seek startSec. GARDE didSeekRef.
-        if (!didSeekRef.current && (startSec > 1 || isRemux)) {
+        // Reprise : `startPosition` fait l'essentiel, le seek de filet rattrape AVPlayer
+        // quand il démarre au segment récent d'une playlist EVENT. GARDE didSeekRef.
+        if (!didSeekRef.current && startSec > 1) {
           didSeekRef.current = true;
-          videoRef.current?.seek(isRemux ? 0 : Math.max(0, startSec));
+          videoRef.current?.seek(startSec);
         }
       },
-      [onLoad, onVideoSize, onTracks, startSec, uri, isRemux],
+      [onLoad, onVideoSize, onTracks, startSec],
     );
 
     const handleProgress = useCallback(
       (data: OnProgressData) => {
-        // PHASE 2 : pousser la position au remux on-device → il ne tire que ~ce qui est consommé (+ tampon).
-        // BRUT (relatif) : le pacing/purge natif raisonne en 0-based (cf. make_zero), comme currentTime.
-        TVLocalRemux?.setPosition?.(Math.max(0, data.currentTime));
         // Lecture démarrée → RE-APPLIQUER la piste audio voulue une seule fois :
         // sur les formats lents (Atmos), la sélection posée à onLoad a été ignorée
         // et AVPlayer joue la piste par défaut. Re-poser un nouvel objet la force.
@@ -223,11 +192,9 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
           audioReappliedRef.current = true;
           setSelectedAudioTrack({ type: SelectedTrackType.INDEX, value: desiredAudioRef.current });
         }
-        // + offset → positions ABSOLUES pour le JS (scrubber/reprise/sous-titres) ; relatif sur le remux.
-        const off = offsetRef.current;
         onProgress?.(
-          Math.max(0, data.currentTime) + off,
-          data.playableDuration > 0 ? data.playableDuration + off : 0,
+          Math.max(0, data.currentTime),
+          data.playableDuration > 0 ? data.playableDuration : 0,
         );
       },
       [onProgress],
@@ -240,19 +207,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
       (e: { error?: { code?: number; localizedDescription?: string; localizedFailureReason?: string } }) => {
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
-        plog("averr", `AVPlayer BRUT code=${err?.code ?? "?"} remux=${isRemux ? 1 : 0} : ${detail}`);
-        // Remux : -11866 (manifeste event figé après pause longue) et -1004 (serveur LOCAL
-        // injoignable — sockets gelées par une suspension/pause VOD, observé en session) sont
-        // RÉCUPÉRABLES → chemin REMUX_STALL (lazy en pause, remount en lecture), jamais surfacés.
-        if (isRemux && (err?.code === -11866 || err?.code === -1004 || /ended unexpectedly/i.test(detail))) { onError?.("REMUX_STALL"); return; }
-        // -19601 (CoreMedia) : flux remux invalide (ex. hvcC vide — extradata source introuvable).
-        // Classé « codec » → PlayerScreen bascule en transcode serveur au lieu d'afficher l'erreur.
+        plog("averr", `AVPlayer BRUT code=${err?.code ?? "?"} local=${isLoopback ? 1 : 0} : ${detail}`);
         const codecLike =
-          err?.code === -11828 || err?.code === -11800 || (isRemux && err?.code === -19601)
+          err?.code === -11828 || err?.code === -11800
           || /format|codec|cannot open|decode/i.test(detail);
         onError?.(codecLike ? `Could not open: ${detail}` : detail);
       },
-      [onError, isRemux],
+      [onError, isLoopback],
     );
 
     return (
@@ -260,14 +221,11 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         ref={videoRef}
         source={{
           uri,
-          // REMUX : session 0-based → startPosition 0 (début relatif = absolu startSec ; PAS startSec*1000
-          // qui viserait relatif-startSec = absolu-2T). Direct play / transcode (absolu) → startSec*1000.
-          startPosition: isRemux ? 0 : (startSec > 0 ? startSec * 1000 : undefined),
-          // Remux local (127.0.0.1) : pas de headers (le serveur local les ignore) → évite un
-          // resource-loader custom de react-native-video qui casserait l'indirection master→variant.
-          headers: uri.includes("127.0.0.1") ? undefined : headers,
+          // Timeline absolue : la reprise est la position demandée, telle quelle.
+          startPosition: startSec > 0 ? startSec * 1000 : undefined,
+          headers: isLoopback ? undefined : headers,
           // Sideload UNIQUEMENT en direct play PROGRESSIF (fichier) : AVPlayer ne sait pas
-          // sideloader sur du HLS (.m3u8 — transcode Jellyfin OU remux local HLS) → chargement
+          // sideloader sur du HLS (.m3u8 — transcode Jellyfin OU PrismCore) → chargement
           // infini. En HLS les pistes viennent du manifeste.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           textTracks: isDirectPlay && !uri.includes(".m3u8") && rnvTextTracks.length ? (rnvTextTracks as any) : undefined,

@@ -59,7 +59,7 @@ export function useTVSubtitleSync(args: {
     if (nativeId != null) exoRef.current?.setSubtitleTrack(nativeId);
   }, [useExoPlayer, subtitleIndex, subtitleTrackMap]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Overlay JS = TOUT le texte tvOS (direct play, transcode ET remux local) +
+  // Overlay JS = TOUT le texte tvOS (direct play, PrismCore ET transcode) +
   // Android MPV/transcode. -1 (pas d'overlay) uniquement sur Android ExoPlayer
   // (direct play) où le VTT est rendu nativement (subtitleView).
   // ⚠️ `useExoPlayer` ne doit gater QUE sur Android : sur tvOS il vaut true hors

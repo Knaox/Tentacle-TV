@@ -1,9 +1,9 @@
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 
 /** Reprise tvOS : le fragment `#tnt-start=<sec>` (AVPlayer ne lit pas les fragments) porte la position
- *  absolue de reprise. On le parse puis on le retire de l'URI. Cf. AVPlayerSurface (offset confiné).
- *  Décimal accepté : le remux renvoie le départ RÉEL de session (keyframe ≤ T, précision ~1 frame) —
- *  un entier tronqué re-décalerait la timeline que ce départ exact vient justement corriger. */
+ *  absolue de reprise. On le parse puis on le retire de l'URI. Cf. AVPlayerSurface (timeline absolue).
+ *  Décimal accepté : une position de reprise n'est pas forcément entière, et un entier tronqué
+ *  décalerait la timeline d'une fraction de seconde à chaque reload. */
 const START_RE = /#tnt-start=(-?[\d.]+)/;
 export function parseStart(source: string): { uri: string; startSec: number } {
   const m = source.match(START_RE);

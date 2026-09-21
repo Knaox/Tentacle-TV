@@ -19,7 +19,6 @@ import { useTVEpisodeNav } from "../hooks/useTVEpisodeNav";
 import { useTVPlaybackOverlay } from "../hooks/useTVPlaybackOverlay";
 import { useTVPlaybackExit } from "../hooks/useTVPlaybackExit";
 import { useTVSourceReset } from "../hooks/useTVSourceReset";
-import { useTVEndFallback } from "../hooks/useTVEndFallback";
 import { useTVPlayerBack } from "../hooks/useTVPlayerBack";
 import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
 import { useTVPanelControls } from "../hooks/useTVPanelControls";
@@ -71,12 +70,12 @@ export function PlayerScreen({ route, navigation }: Props) {
   const {
     paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
     displayTimeRef, bufferedTimeRef, lastDisplayUpdate, positionRef, controlsCurrentTimeRef,
-    pausedStateRef, endedRef, handleEndRef, pauseFrameUri,
+    pausedStateRef, endedRef, handleEndRef,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
-    reloadHold, reloadHoldRef,
+    reloadHold,
     notifySeekRef, resetLoadedRef, routeBackRef,
   } = s;
-  const { streamUrl, isDirectPlay, isLocalRemux, jellyfinDuration, seekOrRemux, quality } = p;
+  const { streamUrl, isDirectPlay, jellyfinDuration, handleSeek, quality } = p;
 
   // Refs stables pour les listeners à deps [] (AppState de lifecycle).
   const reportSeekRef = useRef(p.reportSeek);
@@ -98,7 +97,7 @@ export function PlayerScreen({ route, navigation }: Props) {
     previousEpisode, navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
   } = useTVEpisodeNav({
     item, reportStop: p.reportStop, queryClient, itemId, navigation,
-    handleSeek: seekOrRemux, setPaused,
+    handleSeek, setPaused,
   });
 
   /** La fin du média, en état : c'est une ENTRÉE de l'arbitre. */
@@ -111,7 +110,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const playback = useTVPlaybackOverlay({
     itemId, item, displayTime, displayDuration: jellyfinDuration ?? 0,
     hasStarted, ended, scrubbing,
-    onSeek: seekOrRemux,
+    onSeek: handleSeek,
     navigateToEpisode,
     onFinished: () => { void lifecycle.handleFinished(); },
   });
@@ -120,7 +119,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
     currentTimeRef: controlsCurrentTimeRef,
-    onSeek: seekOrRemux,
+    onSeek: handleSeek,
     onBack: () => {
       if (routeBackRef.current()) return;   // scrub/overlay auto-play/grâce (source unique)
       if (showSettingsRef.current) {
@@ -193,14 +192,6 @@ export function PlayerScreen({ route, navigation }: Props) {
   resetLoadedRef.current = events.resetLoaded;
   handleEndRef.current = handleEnd;
 
-  // Filet de FIN (remux local uniquement) : l'onEnd AVPlayer peut ne JAMAIS venir sur la
-  // playlist EVENT (bug durée indéfinie post-ENDLIST) → détecteur de stagnation près de
-  // la fin réelle. No-op Android/direct play/transcode (cf. useTVEndFallback[.ios]).
-  useTVEndFallback({
-    isLocalRemux, paused, jellyfinDuration, positionRef, infoRef: p.remuxInfoRef,
-    reloadHoldRef, softReloadRef: p.softReloadRef, endedRef, onEndRef: handleEndRef,
-  });
-
   // Remise à zéro de la source — voir `useTVSourceReset`.
   useTVSourceReset({
     streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef,
@@ -212,11 +203,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     softReloadRef: p.softReloadRef, setReloadFrameSec: p.setReloadFrameSec,
   });
 
-  // Erreur de codec en direct play → bascule transcode ; stall remux → recovery ;
-  // 401 direct streaming → token frais + reload (useTVDirectStreamRecovery).
+  // Erreur de codec en direct play → bascule transcode ; 401 direct streaming →
+  // token frais + reload (useTVDirectStreamRecovery).
   const { handleError } = useTVErrorHandler({
     forceTranscode: p.forceTranscode, captureReloadTicks: p.captureReloadTicks,
-    setVideoError, setForceTranscode: p.setForceTranscode, onRemuxStall: p.onRemuxStall, pausedStateRef,
+    setVideoError, setForceTranscode: p.setForceTranscode,
     bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
   });
 
@@ -286,7 +277,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} pauseFrameUri={pauseFrameUri} osdFocusSignal={osdFocusSignal}
+      trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} osdFocusSignal={osdFocusSignal}
       subtitleCue={subtitleCue} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}

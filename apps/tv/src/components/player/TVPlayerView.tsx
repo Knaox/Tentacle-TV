@@ -40,7 +40,7 @@ export interface TVPlayerViewProps {
   streamUrl: string;
   paused: boolean;
   /** Pause EFFECTIVE de la surface (paused || reloadHold) : garde le lecteur en pause pendant un reload
-   *  remux (anti son sortant) sans changer l'intention `paused` (OSD/reporting). Défaut = paused. */
+   *  de piste ou de qualité (anti son sortant) sans changer l'intention `paused` (OSD/reporting). Défaut = paused. */
   playerPaused?: boolean;
   isLoading: boolean;
   /** Lecture déjà démarrée — distingue chargement initial / rebuffering */
@@ -100,9 +100,6 @@ export interface TVPlayerViewProps {
   /** Position figée (s) à afficher pendant un reload doux (audio/qualité) ;
    *  null = pas de reload doux en cours. */
   reloadFrameSec?: number | null;
-  /** Capture réelle de la dernière frame (pause longue remux) — prioritaire
-   *  sur la vignette trickplay dans TVReloadFrame. */
-  pauseFrameUri?: string | null;
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
   /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
@@ -127,7 +124,7 @@ export function TVPlayerView({
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onBack, onToggleSettings,
   
-  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleCue, textTracks,
+  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
   overlay, onSkipSegment, onDismissSegment,
 }: TVPlayerViewProps) {
@@ -200,7 +197,6 @@ export function TVPlayerView({
           <TVReloadFrame
             trickplay={trickplay}
             positionSeconds={reloadFrameSec}
-            captureUri={pauseFrameUri}
             width={typeof playerStyle.width === "number" ? playerStyle.width : 0}
             height={typeof playerStyle.height === "number" ? playerStyle.height : 0}
           />
