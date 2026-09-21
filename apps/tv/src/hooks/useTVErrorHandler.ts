@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { useTVDirectStreamRecovery } from "./useTVDirectStreamRecovery";
 import { plog } from "../utils/playerDiag";
 
@@ -14,36 +14,17 @@ export function useTVErrorHandler(args: {
   captureReloadTicks: () => void;
   setVideoError: (e: string | null) => void;
   setForceTranscode: (on: boolean) => void;
-  /** Stall remux (-11866 sur pause longue d'une playlist HLS `event`) : récupère
-   *  au lieu de surfacer l'erreur (cf. useTVRemuxStallRecovery). */
-  onRemuxStall?: () => void;
-  /** État de pause utilisateur : un stall PENDANT une pause est absorbé en lazy
-   *  et ne compte pas dans la garde anti-boucle (AVPlayer peut réémettre
-   *  l'erreur en continu sur une pause morte). */
-  pausedStateRef?: React.MutableRefObject<boolean>;
   /** Récupération 401 direct-streaming : reconstruit l'URL avec un token frais.
    *  Absent (tvOS/local) → aucune récupération, comportement historique. */
   bumpReloadNonce?: () => void;
   setIsLoading?: (v: boolean) => void;
 }) {
-  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, onRemuxStall, pausedStateRef, bumpReloadNonce, setIsLoading } = args;
+  const { forceTranscode, captureReloadTicks, setVideoError, setForceTranscode, bumpReloadNonce, setIsLoading } = args;
   const { tryDirectAuthRecovery } = useTVDirectStreamRecovery({
     captureReloadTicks, bumpReloadNonce, setVideoError, setIsLoading,
   });
-  // Garde-fou stall remux : compte les récupérations rapprochées (<8 s) → au-delà
-  // de 4 (récup qui ne tient pas), on cesse et on surface l'erreur.
-  const stallRef = useRef({ count: 0, last: 0 });
 
   const handleError = useCallback((error: string) => {
-    if (error === "REMUX_STALL") {
-      // En pause : récupération différée (lazy) — hors garde anti-boucle.
-      if (pausedStateRef?.current) { plog("err", "REMUX_STALL en pause → récupération lazy"); onRemuxStall?.(); return; }
-      const now = Date.now(); const s = stallRef.current;
-      s.count = now - s.last < 8000 ? s.count + 1 : 1; s.last = now;
-      if (s.count > 4) { plog("err", `REMUX_STALL x${s.count} en <8 s → Playback Stopped`); setVideoError("Playback Stopped"); return; }
-      plog("err", `REMUX_STALL (${s.count}/4) → récupération`);
-      onRemuxStall?.(); return;
-    }
     // 401/403 sur le stream en DIRECT streaming : token Jellyfin mort →
     // redemande d'un token frais + reload en direct (jamais de bascule proxy).
     if (tryDirectAuthRecovery(error)) { plog("err", "401/403 direct → refresh token + reload"); return; }
@@ -60,7 +41,7 @@ export function useTVErrorHandler(args: {
     }
     plog("err", `erreur SURFACÉE à l'écran : ${error}`);
     setVideoError(error);
-  }, [forceTranscode, captureReloadTicks, onRemuxStall, tryDirectAuthRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [forceTranscode, captureReloadTicks, tryDirectAuthRecovery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { handleError };
 }

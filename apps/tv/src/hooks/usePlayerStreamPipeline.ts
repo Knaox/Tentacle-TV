@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
 import { usePlaybackReporting } from "@tentacle-tv/api-client";
-import { parseStart } from "../utils/playerHelpers";
 import { useTVPlaybackQuality } from "./useTVPlaybackQuality";
 import { useTVAutoQualityCap } from "./useTVAutoQualityCap";
 import { useTVReloadState } from "./useTVReloadState";
@@ -11,15 +10,9 @@ import { useTVAudioTrack } from "./useTVAudioTrack";
 import { useTVSubtitleControl } from "./useTVSubtitleControl";
 import { useTVInitialResume } from "./useTVInitialResume";
 import { useTVStreamUrl } from "./useTVStreamUrl";
-import { useTVRemuxInfo } from "./useTVRemuxInfo";
-import { useTVRemuxLogPump } from "./useTVRemuxLogPump";
-import { useTVRemuxStallRecovery } from "./useTVRemuxStallRecovery";
-import { useTVRemuxStarvationWatchdog } from "./useTVRemuxStarvationWatchdog";
-import { useTVRemuxPause } from "./useTVRemuxPause";
 import { useTVTrackResolution } from "./useTVTrackResolution";
 import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
-import { useTVRemuxSeek } from "./useTVRemuxSeek";
 import type { PlayerMediaState } from "./usePlayerMediaState";
 
 type Ancestors = Parameters<typeof useTVTrackResolution>[0]["ancestors"];
@@ -28,10 +21,9 @@ type PlayerRefs = Pick<Parameters<typeof useTVPlayerRouting>[0], "exoRef" | "mpv
 /**
  * PIPELINE DE FLUX du PlayerScreen — extrait VERBATIM (budget 300 lignes) : qualité →
  * état de reload → routage lecteur → pistes audio/sous-titres → reprise → URL de flux
- * (remux local / PlaybackInfo) → sync des refs miroir → info remux → récupération de
- * stall → pause permanente → reporting → résolution de pistes → seek (natif/remux).
- * L'ordre des hooks et leurs branchements sont ceux du composant plat d'origine ;
- * `s` (usePlayerMediaState) est le bus d'état partagé.
+ * (lecture directe / PlaybackInfo) → sync des refs miroir → reporting → résolution de
+ * pistes → seek natif. L'ordre des hooks et leurs branchements sont ceux du composant
+ * plat d'origine ; `s` (usePlayerMediaState) est le bus d'état partagé.
  */
 export function usePlayerStreamPipeline(args: {
   itemId: string;
@@ -43,13 +35,12 @@ export function usePlayerStreamPipeline(args: {
   const { itemId, item, ancestors, refs, s } = args;
   const {
     paused, hasStarted, isLoading,
-    positionRef, displayTimeRef, lastDisplayUpdate, lastProgressTime, pausedStateRef,
-    controlsCurrentTimeRef, deadSessionRef, endedRef, handleEndRef, sessionStartRef,
-    setDisplayTime, setVideoError, setPauseFrameUri, capturePauseFrame,
-    reloadHoldRef, holdForReload,
-    isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, subtitleTrackMapRef,
+    positionRef, displayTimeRef, lastDisplayUpdate, lastProgressTime,
+    controlsCurrentTimeRef,
+    setDisplayTime, setVideoError,
+    isDirectPlayRef, isPrismCoreRef, mpvTrackMapRef, subtitleTrackMapRef,
     notifySeekRef, setAudioIndexRef, setSubtitleIndexRef,
-    resetPrefsAppliedRef, resetLoadedRef,
+    resetPrefsAppliedRef,
   } = s;
 
   const mediaSource = item?.MediaSources?.[0];
@@ -71,7 +62,7 @@ export function usePlayerStreamPipeline(args: {
   const reload = useTVReloadState({
     itemId, defaultAudio, isLoading,
     positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError,
-    resetPrefsAppliedRef, qualityReset: rawQuality.reset, deadSessionRef,
+    resetPrefsAppliedRef, qualityReset: rawQuality.reset,
   });
   const {
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
@@ -81,8 +72,8 @@ export function usePlayerStreamPipeline(args: {
   // Cap automatique selon le débit mesuré : traité comme un choix de qualité
   // par tout l'aval — le choix MANUEL de l'utilisateur prime (cf. hook).
   // `startTicks` : le cap se re-photographie à chaque reconstruction de session
-  // (seek re-remuxé, reload) — une lecture partie en Originale-remux parce que
-  // la mesure n'était pas prête bascule au premier seek au lieu de ramer à vie.
+  // (reload) — une lecture partie en Originale parce que la mesure n'était pas
+  // prête bascule au premier reload au lieu de ramer à vie.
   const cap = useTVAutoQualityCap({ mediaSource, itemId, qualityKey: rawQuality.qualityKey, startTicks });
   const transcodingQuality = rawQuality.isTranscodingQuality || cap.active;
   const effectiveMaxBitrate = rawQuality.maxBitrate ?? cap.maxBitrate;
@@ -109,7 +100,7 @@ export function usePlayerStreamPipeline(args: {
   });
 
   const audio = useTVAudioTrack({
-    defaultAudio, isDirectPlayRef, isLocalRemuxRef, mpvTrackMapRef, playerRef,
+    defaultAudio, isDirectPlayRef, mpvTrackMapRef, playerRef,
     positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, captureReloadTicks,
   });
   const { audioIndex, setAudioIndex, handleAudioChange } = audio;
@@ -126,7 +117,7 @@ export function usePlayerStreamPipeline(args: {
   // position posée par un changement de piste/qualité (startTicks).
   const { startSeconds } = useTVInitialResume({ item, startTicks, started: hasStarted });
 
-  const { streamUrl, playSessionId, isDirectPlay, isLocalRemux, failed } = useTVStreamUrl({
+  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, failed } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: transcodingQuality,
@@ -137,45 +128,7 @@ export function usePlayerStreamPipeline(args: {
 
   // Synchronisation des refs miroir lues par les handlers/callbacks.
   isDirectPlayRef.current = isDirectPlay;
-  isLocalRemuxRef.current = isLocalRemux;
-  // Début (absolu) RÉEL de la session courante : le frag #tnt-start de l'URL porte
-  // l'origine exacte renvoyée par le natif (keyframe ≤ T) — plus le T demandé.
-  sessionStartRef.current = streamUrl ? parseStart(streamUrl).startSec : (startSeconds ?? 0);
-
-  // État de production du remux (poll 1 Hz sessionInfo) : borne la fenêtre de seek natif
-  // à l'ÉCRIT réel + alimente stall-recovery et détecteur de fin. Inerte hors remux.
-  const remuxInfoRef = useTVRemuxInfo(isLocalRemux);
-  // Dev : déverse les logs NATIFS [TVLR] du remux dans Metro (diagnostic device).
-  useTVRemuxLogPump();
-
-  // Récupération de stall remux (-11866) — sauf à ≤5 s de la fin d'un remux terminé (= FIN).
-  const { onRemuxStall } = useTVRemuxStallRecovery({
-    pausedStateRef, positionRef, softReloadRef, reloadHoldRef, deadSessionRef,
-    setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload, notifySeekRef, resetLoadedRef,
-    infoRef: remuxInfoRef, endedRef, onEndRef: handleEndRef,
-  });
-
-  // Vraie pause permanente du remux on-device (anti -11866) : keepalive puis snapshot
-  // VOD+ENDLIST après 20 s — la reprise post-VOD remonte une session fraîche à P.
-  useTVRemuxPause({
-    paused, isLocalRemux, positionRef, softReloadRef, setReloadFrameSec, setReloadNonce, setStartTicks, holdForReload,
-    notifySeekRef, resetLoadedRef, deadSessionRef, capturePauseFrame, infoRef: remuxInfoRef,
-  });
-
-  // Filet ANTI-FAMINE : un stall SANS -11866 (famine post-reprise, race de production)
-  // n'avait aucune récupération (spinner infini) — même chemin de remount que le -11866.
-  useTVRemuxStarvationWatchdog({
-    isLocalRemux, hasStarted,
-    pausedStateRef, endedRef, deadSessionRef, softReloadRef, reloadHoldRef,
-    lastProgressTime, positionRef, infoRef: remuxInfoRef,
-    onRemuxStall, setVideoError,
-  });
-
-  // Capture de pause consommée : invalidée dès que la lecture reprend réellement.
-  useEffect(() => {
-    if (!paused && reloadFrameSec == null) setPauseFrameUri(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paused, reloadFrameSec]);
+  isPrismCoreRef.current = isPrismCore;
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
@@ -189,13 +142,13 @@ export function usePlayerStreamPipeline(args: {
     streams, item, ancestors,
     positionRef, setAudioIndex, setSubtitleIndex, setStartTicks,
     // Préférence audio ≠ défaut → reload INCONDITIONNEL. L'ancien gate
-    // (`!isDirectPlayRef || isLocalRemuxRef`) se fermait à tort pendant le
-    // DÉMARRAGE : la résolution des préférences (async backend) arrive souvent
-    // AVANT que le mode soit établi (result init isDirectPlay=true, remux pas
-    // encore résolu) → aucun reload, l'UI affichait la préférence (VFQ) mais le
-    // flux gardait l'audio par défaut (eng). En direct play natif établi, le
-    // bump est un no-op d'URL (même stream, image figée auto-retirée) — sans
-    // danger ; en remux/transcode il relance avec la bonne piste.
+    // (`!isDirectPlayRef`) se fermait à tort pendant le DÉMARRAGE : la
+    // résolution des préférences (async backend) arrive souvent AVANT que le
+    // mode soit établi (result init isDirectPlay=true) → aucun reload, l'UI
+    // affichait la préférence (VFQ) mais le flux gardait l'audio par défaut
+    // (eng). En direct play natif établi, le bump est un no-op d'URL (même
+    // stream, image figée auto-retirée) — sans danger ; en transcode il
+    // relance avec la bonne piste.
     onAudioReloadNeeded: () => {
       softReloadRef.current = true; setReloadFrameSec(positionRef.current); setReloadNonce((n) => n + 1);
     },
@@ -215,24 +168,14 @@ export function usePlayerStreamPipeline(args: {
     reportSeek, setDisplayTime, notifySeekRef, controlsCurrentTimeRef,
   });
 
-  // SEEK tvOS REMUX : natif dans la fenêtre ÉCRITE, différé devant l'écrit, re-remux hors fenêtre.
-  const seekOrRemux = useTVRemuxSeek({
-    jellyfinDuration, handleSeek, isLocalRemuxRef, sessionStartRef, infoRef: remuxInfoRef,
-    positionRef, displayTimeRef,
-    lastDisplayUpdate, lastProgressTime, pausedStateRef, softReloadRef, setReloadFrameSec,
-    setDisplayTime, notifySeekRef, reportSeek, setStartTicks, holdForReload,
-    controlsCurrentTimeRef, deadSessionRef,
-  });
-
   return {
     quality, autoCapActive: cap.active, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
-    startSeconds, streamUrl, playSessionId, isDirectPlay, isLocalRemux, failed,
-    remuxInfoRef, onRemuxStall,
+    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, failed,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
-    mpvTracks, handleSeek, seekOrRemux,
+    mpvTracks, handleSeek,
   };
 }

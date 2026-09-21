@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 
 /**
- * État de rechargement du flux côté Android TV (changement de piste/qualité/
+ * État de rechargement du flux (changement de piste/qualité/
  * transcode codec, sans changement de contenu) :
  *  - `reloadNonce` : reload explicite du flux en transcode (audio non couplé à
  *    la position) — bumpé par le changement de piste audio et l'application de
@@ -37,14 +37,10 @@ export function useTVReloadState(args: {
   setVideoError: (e: string | null) => void;
   resetPrefsAppliedRef: React.MutableRefObject<(() => void) | null>;
   qualityReset: () => void;
-  /** Pause morte (stall remux, cf. useTVRemuxStallRecovery) : l'image figée doit
-   *  PERSISTER (aucun reload en vol, isLoading reste faux) jusqu'à la reprise. */
-  deadSessionRef?: React.MutableRefObject<boolean>;
 }) {
   const {
     itemId, defaultAudio, isLoading,
     positionRef, setAudioIndexRef, setSubtitleIndexRef, setVideoError, resetPrefsAppliedRef, qualityReset,
-    deadSessionRef,
   } = args;
 
   // Reload explicite du flux en transcode (changement audio non couplé à la
@@ -76,7 +72,6 @@ export function useTVReloadState(args: {
       // sinon un échec sur l'item N contamine l'item N+1 (lancé sur le mauvais lecteur, sans HDR/DV).
       setForceTranscode(false);
       setVideoError(null);
-      if (deadSessionRef) deadSessionRef.current = false;
     }
   }, [itemId, defaultAudio]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -91,11 +86,9 @@ export function useTVReloadState(args: {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Image figée du reload doux : la retirer dès que le nouveau flux rend
-  // (première position réelle → isLoading repasse à false). Exception : pause
-  // morte (aucun reload en vol, isLoading faux) — l'image doit rester affichée
-  // jusqu'à la reprise.
+  // (première position réelle → isLoading repasse à false).
   useEffect(() => {
-    if (!isLoading && reloadFrameSec !== null && !deadSessionRef?.current) setReloadFrameSec(null);
+    if (!isLoading && reloadFrameSec !== null) setReloadFrameSec(null);
   }, [isLoading, reloadFrameSec]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {

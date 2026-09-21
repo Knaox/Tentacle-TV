@@ -9,7 +9,7 @@ interface MemoizedPlayerProps {
   mpvRef: React.Ref<MPVPlayerHandle>;
   source: string;
   paused: boolean;
-  /** Mute de transition (reload/reprise remux tvOS) : coupe l'audio de la session sortante. */
+  /** Mute de transition (reload de piste/qualité, tvOS) : coupe l'audio de la session sortante. */
   muted?: boolean;
   playerStyle: ViewStyle;
   /** Pistes texte VTT pour le rendu natif (ExoPlayer Android + AVPlayer tvOS) */

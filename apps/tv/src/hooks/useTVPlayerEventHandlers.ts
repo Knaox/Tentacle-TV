@@ -101,7 +101,7 @@ export function useTVPlayerEventHandlers(args: {
       const { target, until, afterReload } = pendingSeekRef.current;
       // afterReload (reprise / reload de piste-qualité) : la timeline est ABSOLUE et le
       // player SEEK vers `target` — sa 1ʳᵉ position n'est PAS la cible mais la position
-      // PRÉ-SEEK (≈0 sur le remux/HLS absolu) ou le BORD LIVE (playlist EVENT). Exiger la
+      // PRÉ-SEEK (≈0 sur un HLS absolu) ou le BORD LIVE (playlist EVENT d'un transcodage). Exiger la
       // convergence PRÈS de la cible (et le flux chargé) — et NON « toute position >0.5 »,
       // qui acceptait ce point parasite → l'écran de chargement se levait à 0:01 puis la vidéo
       // resautait à T (double saut). On garde l'écran/l'image figée jusqu'à l'atterrissage réel

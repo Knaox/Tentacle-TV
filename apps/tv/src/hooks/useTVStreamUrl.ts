@@ -16,7 +16,7 @@ import { randomSessionId } from "../utils/playerHelpers";
 export function useTVStreamUrl(args: {
   itemId: string;
   mediaSourceId?: string;
-  /** Parité de signature tvOS (gate remux par conteneur) ; ignoré côté Android. */
+  /** Parité de signature tvOS (gate PrismCore par conteneur) ; ignoré côté Android. */
   container?: string;
   streams: JfStream[];
   audioIndex: number;
@@ -84,7 +84,7 @@ export function useTVStreamUrl(args: {
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
-  // `isLocalRemux` toujours false ici (remux on-device = tvOS uniquement) ; `failed` toujours
-  // false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité de type `.ios.ts`.
-  return { streamUrl, playSessionId, isDirectPlay, isLocalRemux: false, failed: false };
+  // `isPrismCore` toujours false ici (lecture directe PrismCore = tvOS uniquement) ; `failed`
+  // toujours false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité `.ios.ts`.
+  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, failed: false };
 }
