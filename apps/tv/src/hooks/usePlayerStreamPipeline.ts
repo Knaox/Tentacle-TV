@@ -15,6 +15,7 @@ import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
 import type { PlayerMediaState } from "./usePlayerMediaState";
 import { prismBitmapRenditionIndex } from "../utils/prismSubtitleMatch";
+import { videoFrameRate } from "../utils/playerHelpers";
 import { plog } from "../utils/playerDiag";
 
 type Ancestors = Parameters<typeof useTVTrackResolution>[0]["ancestors"];
@@ -165,6 +166,8 @@ export function usePlayerStreamPipeline(args: {
   }, [captureReloadTicks, setForceTranscode, softReloadRef, setReloadFrameSec, positionRef]);
 
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
+  // Cadence du flux (Android TV : bascule de fréquence d'affichage dans la vue native).
+  const frameRate = useMemo(() => videoFrameRate(streams), [streams]);
 
   const { reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
@@ -203,7 +206,7 @@ export function usePlayerStreamPipeline(args: {
   });
 
   return {
-    quality, autoCapActive: cap.active, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration,
+    quality, autoCapActive: cap.active, sourceQuality, mediaSource, mediaSourceId, streams, jellyfinDuration, frameRate,
     reloadNonce, setReloadNonce, softReloadRef, reloadFrameSec, setReloadFrameSec,
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,

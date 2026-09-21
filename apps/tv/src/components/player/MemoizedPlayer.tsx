@@ -20,6 +20,8 @@ interface MemoizedPlayerProps {
   isDirectPlay?: boolean;
   /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
   prismTextTrackIndex?: number | null;
+  /** Android TV : cadence du flux (ExoPlayer seulement — mpv ne bascule rien). */
+  frameRate?: number;
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
@@ -29,7 +31,7 @@ interface MemoizedPlayerProps {
 }
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay, prismTextTrackIndex,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay, prismTextTrackIndex, frameRate,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
@@ -39,6 +41,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       paused={paused}
       progressInterval={1000}
       audioPassthrough
+      frameRate={frameRate}
       textTracks={textTracks}
       subtitleIndex={subtitleIndex}
       isDirectPlay={isDirectPlay}
