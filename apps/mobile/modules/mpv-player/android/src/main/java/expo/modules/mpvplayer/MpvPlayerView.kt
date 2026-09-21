@@ -94,6 +94,13 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
             pendingConfig = config
             return
         }
+        // Après un `stop`, le handle est mort : on en refait un et on lui
+        // redonne la surface avant de charger.
+        if (!renderer.isRunning) {
+            if (!renderer.start()) return
+            renderer.attachSurface(surfaceView.holder.surface)
+            if (surfaceView.width > 0 && surfaceView.height > 0) renderer.updateSurfaceSize(surfaceView.width, surfaceView.height)
+        }
         currentConfig = config
         renderer.load(config)
     }
@@ -102,12 +109,20 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     fun seekTo(seconds: Double) = renderer.seekTo(seconds)
     fun getPosition(): Double = renderer.cachedPosition
 
-    /** Arrête et lâche l'instance mpv ; la vue reste utilisable (nouveau handle au prochain chargement). */
+    /** Arrête et lâche l'instance mpv ; la vue reste utilisable (`load` refait un handle). */
     fun stop() {
         renderer.stop()
         currentConfig = null
-        renderer.start()
-        if (surfaceReady) renderer.attachSurface(surfaceView.holder.surface)
+        pendingConfig = null
+    }
+
+    /** Destruction par React Native : plus rien ne remonte, le handle meurt. */
+    fun destroy() {
+        renderer.delegate = null
+        renderer.stop()
+        surfaceReady = false
+        pendingConfig = null
+        currentConfig = null
     }
 
     // MARK: - Image dans l'image (minimale : le système la gère, on lui donne le format)
@@ -126,8 +141,10 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         if (!isPictureInPictureSupported()) return
         val ratio = if (videoWidth > 0 && videoHeight > 0) Rational(videoWidth, videoHeight) else Rational(16, 9)
         val params = PictureInPictureParams.Builder().setAspectRatio(ratio).build()
-        act.enterPictureInPictureMode(params)
-        onPipChanged(mapOf("active" to true))
+        // L'activité ne déclare pas `supportsPictureInPicture` : hors périmètre
+        // de cette version, l'appel refuse sans faire tomber l'app.
+        val entered = try { act.enterPictureInPictureMode(params) } catch (e: IllegalStateException) { false }
+        onPipChanged(mapOf("active" to entered))
     }
 
     fun stopPictureInPicture() {
@@ -135,33 +152,41 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
         onPipChanged(mapOf("active" to isPictureInPictureActive()))
     }
 
-    // MARK: - MpvRendererDelegate
+    // MARK: - MpvRendererDelegate (les `onX` ci-dessous sont les événements JS)
 
-    override fun onLoad(info: Map<String, Any?>) {
+    override fun rendererDidLoad(info: Map<String, Any>) {
         videoWidth = (info["width"] as? Int) ?: 0
         videoHeight = (info["height"] as? Int) ?: 0
         onLoad(info)
     }
 
-    override fun onTracksChanged(tracks: List<Map<String, Any?>>) = onTracksChanged(mapOf("tracks" to tracks))
-    override fun onVideoParams(params: Map<String, Any?>) {
+    override fun rendererDidUpdateTracks(tracks: List<Map<String, Any>>) {
+        onTracksChanged(mapOf("tracks" to tracks))
+    }
+
+    override fun rendererDidUpdateVideoParams(params: Map<String, Any>) {
         videoWidth = (params["width"] as? Int) ?: videoWidth
         videoHeight = (params["height"] as? Int) ?: videoHeight
         onVideoParams(params)
     }
-    override fun onPosition(position: Double, duration: Double, cacheSeconds: Double) =
-        onProgress(mapOf("position" to position, "duration" to duration, "cacheSeconds" to cacheSeconds))
-    override fun onPauseChanged(isPaused: Boolean) = onPlaybackStateChange(mapOf("paused" to isPaused))
-    override fun onBufferingChanged(isBuffering: Boolean) = onBuffering(mapOf("buffering" to isBuffering))
-    override fun onError(message: String) = onError(mapOf("message" to message))
-    override fun onEnd() = onEnd(emptyMap<String, Any>())
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        renderer.stop()
-        renderer.delegate = null
-        surfaceReady = false
-        pendingConfig = null
-        currentConfig = null
+    override fun rendererDidProgress(position: Double, duration: Double, cacheSeconds: Double) {
+        onProgress(mapOf("position" to position, "duration" to duration, "cacheSeconds" to cacheSeconds))
+    }
+
+    override fun rendererDidChangePause(isPaused: Boolean) {
+        onPlaybackStateChange(mapOf("paused" to isPaused))
+    }
+
+    override fun rendererDidChangeBuffering(isBuffering: Boolean) {
+        onBuffering(mapOf("buffering" to isBuffering))
+    }
+
+    override fun rendererDidFail(message: String) {
+        onError(mapOf("message" to message))
+    }
+
+    override fun rendererDidEnd() {
+        onEnd(emptyMap())
     }
 }

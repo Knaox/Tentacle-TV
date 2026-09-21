@@ -6,28 +6,37 @@
 package expo.modules.mpvplayer
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
 
-/** Ce que le rendu remonte à la vue. Tous les appels arrivent sur le thread principal. */
+/**
+ * Ce que le rendu remonte à la vue. Tous les appels arrivent sur le thread
+ * principal. Les noms ne sont PAS ceux des événements JS (`onLoad`…) : dans la
+ * vue, ces noms sont des propriétés `EventDispatcher` à `invoke`, et Kotlin
+ * préfère une fonction membre homonyme à l'`invoke` d'une propriété — la vue
+ * s'appelait elle-même, sans fin.
+ */
 interface MpvRendererDelegate {
-    fun onLoad(info: Map<String, Any?>)
-    fun onTracksChanged(tracks: List<Map<String, Any?>>)
-    fun onVideoParams(params: Map<String, Any?>)
-    fun onPosition(position: Double, duration: Double, cacheSeconds: Double)
-    fun onPauseChanged(isPaused: Boolean)
-    fun onBufferingChanged(isBuffering: Boolean)
-    fun onError(message: String)
-    fun onEnd()
+    fun rendererDidLoad(info: Map<String, Any>)
+    fun rendererDidUpdateTracks(tracks: List<Map<String, Any>>)
+    fun rendererDidUpdateVideoParams(params: Map<String, Any>)
+    fun rendererDidProgress(position: Double, duration: Double, cacheSeconds: Double)
+    fun rendererDidChangePause(isPaused: Boolean)
+    fun rendererDidChangeBuffering(isBuffering: Boolean)
+    fun rendererDidFail(message: String)
+    fun rendererDidEnd()
 }
 
 /**
  * libmpv sur une `Surface` Android (`vo=gpu-next`, `gpu-context=android`).
- * Le handle mpv est par instance ; on ne le détruit jamais explicitement
- * (voir [MPVLib]). Les extensions (`MpvRendererOptions`, `MpvRendererTracks`,
- * `MpvRendererEvents`) partagent les membres `internal`.
+ * Le handle mpv est par instance. Les extensions (`MpvRendererOptions`,
+ * `MpvRendererTracks`, `MpvRendererEvents`) partagent les membres `internal` ;
+ * ils sont écrits sur le thread principal et lus sur celui de libmpv, d'où
+ * `@Volatile`.
  */
 class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
 
@@ -38,40 +47,50 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
     var delegate: MpvRendererDelegate? = null
 
     internal val mainHandler = Handler(Looper.getMainLooper())
-    internal var mpv: MPVLib? = null
+    @Volatile internal var mpv: MPVLib? = null
     @Volatile internal var isRunning = false
 
     /** La demande de chargement en cours, lue par FILE_LOADED. */
-    internal var pendingConfig: MpvLoadConfig? = null
-    internal var fileLoaded = false
-    internal var suspendedVideoTrack: String? = null
-    internal var lastBufferingReported = false
+    @Volatile internal var pendingConfig: MpvLoadConfig? = null
+    /** START_FILE reçu pour la demande en cours : un END_FILE d'avant est celui de l'ancien fichier. */
+    @Volatile internal var startedCurrentLoad = false
+    @Volatile internal var fileLoaded = false
+    @Volatile internal var suspendedVideoTrack: String? = null
+    @Volatile internal var lastBufferingReported = false
 
-    internal var cachedPosition = 0.0
-    internal var cachedDuration = 0.0
-    internal var cachedCacheSeconds = 0.0
-    internal var isPaused = true
-    internal var isLoading = false
-    internal var pausedForCache = false
-    internal var isSeeking = false
-    internal var lastProgressUpdateTime = 0L
+    @Volatile internal var cachedPosition = 0.0
+    @Volatile internal var cachedDuration = 0.0
+    @Volatile internal var cachedCacheSeconds = 0.0
+    @Volatile internal var isPaused = true
+    @Volatile internal var isLoading = false
+    @Volatile internal var pausedForCache = false
+    @Volatile internal var isSeeking = false
+    @Volatile internal var lastProgressUpdateTime = 0L
 
-    /** Crée le handle, pose les options, initialise. Idempotent. */
-    fun start() {
-        if (isRunning) return
+    /** Crée le handle, pose les options, initialise. Idempotent ; vrai si un handle vit. */
+    fun start(): Boolean {
+        if (isRunning) return true
         try {
             val handle = MPVLib.create(context)
             mpv = handle
             handle.addObserver(this)
+            MpvLogger.verboseToLogcat = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            handle.addLogObserver(MpvLogger)
             applyInitOptions(handle)
             handle.initialize()
             observeProperties(handle)
             isRunning = true
             Log.i(TAG, "rendu mpv démarré")
-        } catch (e: Exception) {
+            return true
+        } catch (e: Throwable) {
+            // `Throwable`, pas `Exception` : une bibliothèque native qui ne se
+            // charge pas est une `Error` (`UnsatisfiedLinkError`) — elle
+            // planterait le constructeur de la vue au lieu de laisser JS se
+            // replier sur le lecteur système.
             Log.e(TAG, "démarrage du rendu impossible : ${e.message}")
             mpv = null
-            notify { it.onError("démarrage du rendu impossible : ${e.message}") }
+            notify { it.rendererDidFail("démarrage du rendu impossible : ${e.message}") }
+            return false
         }
     }
 
@@ -79,20 +98,23 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
      * Arrête la lecture et lâche le handle. Le `stop` mpv libère le décodeur
      * MediaCodec : travail JNI synchrone qui peut bloquer des centaines de
      * millisecondes — sur un thread d'arrière-plan, jamais sur le principal.
+     * Le handle est oublié AVANT : plus personne ne lui parle pendant qu'il meurt.
      */
     fun stop() {
         val handle = mpv ?: return
         mpv = null
         isRunning = false
         fileLoaded = false
+        startedCurrentLoad = false
         pendingConfig = null
         Thread {
-            // `force-window=no` AVANT `stop` : avec `keep-open=always`, mpv
-            // garde le VO vivant et tente une reconfiguration sur une surface
-            // détachée — « Missing surface pointer », fatal (mesuré par Streamyfin).
+            // `force-window=no` AVANT `stop` : avec keep-open, mpv garde le VO
+            // vivant et tente une reconfiguration sur une surface détachée —
+            // « Missing surface pointer », fatal (mesuré par Streamyfin).
             try { handle.setOptionString("force-window", "no") } catch (e: Exception) { Log.w(TAG, "force-window : ${e.message}") }
             try { handle.command(arrayOf("stop")) } catch (e: Exception) { Log.w(TAG, "stop : ${e.message}") }
             try { handle.removeObserver(this) } catch (e: Exception) { Log.w(TAG, "observer : ${e.message}") }
+            try { handle.removeLogObserver(MpvLogger) } catch (e: Exception) { Log.w(TAG, "log observer : ${e.message}") }
             try { handle.detachSurface() } catch (e: Exception) { Log.w(TAG, "detachSurface : ${e.message}") }
         }.also { it.isDaemon = true }.start()
     }
@@ -124,10 +146,11 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
     fun load(config: MpvLoadConfig) {
         val handle = mpv ?: return
         pendingConfig = config
+        startedCurrentLoad = false
         fileLoaded = false
         suspendedVideoTrack = null
         isSeeking = false
-        setLoading(true)
+        updateLoading(true)
         handle.command(arrayOf("stop"))
         updateHttpHeaders(handle, config.headers)
         val start = config.startPosition
@@ -135,7 +158,13 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
         // Aucun sous-titre avant la sélection explicite de FILE_LOADED.
         handle.setPropertyString("sid", "no")
         handle.setPropertyString("aid", "auto")
-        handle.command(arrayOf("loadfile", config.url, "replace"))
+        handle.command(arrayOf("loadfile", loadTarget(config.url), "replace"))
+    }
+
+    /** Un fichier de l'appareil se donne par son chemin décodé : mpv ne dé-percent-encode pas un `file://`. */
+    private fun loadTarget(url: String): String {
+        if (!url.startsWith("file://", ignoreCase = true)) return url
+        return Uri.parse(url).path ?: url
     }
 
     fun play() { mpv?.setPropertyBoolean("pause", false) }
@@ -168,7 +197,8 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
         }
     }
 
-    internal fun setLoading(loading: Boolean) {
+    /** Nommé ainsi et non `setLoading` : le setter de `isLoading` porte déjà cette signature JVM. */
+    internal fun updateLoading(loading: Boolean) {
         isLoading = loading
         reportBuffering()
     }
@@ -177,7 +207,7 @@ class MpvRenderer(internal val context: Context) : MPVLib.EventObserver {
         val buffering = isLoading || pausedForCache
         if (buffering == lastBufferingReported) return
         lastBufferingReported = buffering
-        notify { it.onBufferingChanged(buffering) }
+        notify { it.rendererDidChangeBuffering(buffering) }
     }
 
     internal fun notify(block: (MpvRendererDelegate) -> Unit) {

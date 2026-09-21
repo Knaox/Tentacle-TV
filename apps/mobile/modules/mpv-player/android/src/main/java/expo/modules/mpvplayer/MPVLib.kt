@@ -31,7 +31,13 @@ class MPVLib private constructor(private val instance: LibMPV) {
         fun event(eventId: Int)
     }
 
+    /** Miroir de `dev.jdtech.mpv.MPVLib.LogObserver` : une ligne du journal mpv (`mpv_log_level` en entier). */
+    interface LogObserver {
+        fun logMessage(prefix: String, level: Int, text: String)
+    }
+
     private val observers = mutableListOf<EventObserver>()
+    private val logAdapters = mutableMapOf<LogObserver, LibMPV.LogObserver>()
 
     private val libObserver = object : LibMPV.EventObserver {
         override fun eventProperty(property: String) = dispatch { it.eventProperty(property) }
@@ -41,7 +47,7 @@ class MPVLib private constructor(private val instance: LibMPV) {
         override fun eventProperty(property: String, value: Double) = dispatch { it.eventProperty(property, value) }
         override fun event(eventId: Int) = dispatch { it.event(eventId) }
 
-        private inline fun dispatch(block: (EventObserver) -> Unit) {
+        private fun dispatch(block: (EventObserver) -> Unit) {
             synchronized(observers) { observers.forEach(block) }
         }
     }
@@ -53,6 +59,22 @@ class MPVLib private constructor(private val instance: LibMPV) {
     fun removeObserver(observer: EventObserver) {
         synchronized(observers) { observers.remove(observer) }
     }
+
+    fun addLogObserver(observer: LogObserver) {
+        val adapter = object : LibMPV.LogObserver {
+            override fun logMessage(prefix: String, level: Int, text: String) = observer.logMessage(prefix, level, text)
+        }
+        synchronized(logAdapters) { logAdapters[observer] = adapter }
+        instance.addLogObserver(adapter)
+    }
+
+    fun removeLogObserver(observer: LogObserver) {
+        val adapter = synchronized(logAdapters) { logAdapters.remove(observer) } ?: return
+        instance.removeLogObserver(adapter)
+    }
+
+    /** Arrêt du thread d'événements, `mpv_terminate_destroy`, refs globales libérées (voir [MpvRenderer.stop]). */
+    fun destroy() = instance.destroy()
 
     fun initialize() = instance.init()
     fun attachSurface(surface: android.view.Surface) = instance.attachSurface(surface)
@@ -88,6 +110,7 @@ class MPVLib private constructor(private val instance: LibMPV) {
 
         // Identifiants d'événements (mpv_event_id)
         const val MPV_EVENT_SHUTDOWN = 1
+        const val MPV_EVENT_START_FILE = 6
         const val MPV_EVENT_END_FILE = 7
         const val MPV_EVENT_FILE_LOADED = 8
         const val MPV_EVENT_SEEK = 20

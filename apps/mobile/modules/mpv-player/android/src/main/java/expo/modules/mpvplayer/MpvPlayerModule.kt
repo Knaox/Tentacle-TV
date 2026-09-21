@@ -9,10 +9,27 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 /** Le module Expo « MpvPlayer » sur Android : mêmes props, fonctions et événements qu'iOS. */
 class MpvPlayerModule : Module() {
+    private var logListener: ((String, String) -> Unit)? = null
+
     override fun definition() = ModuleDefinition {
         Name("MpvPlayer")
 
         Events("onNativeLog")
+
+        // Le journal natif ne traverse le pont que si JS écoute.
+        OnStartObserving {
+            if (logListener != null) return@OnStartObserving
+            val listener: (String, String) -> Unit = { message, type ->
+                sendEvent("onNativeLog", mapOf("message" to message, "type" to type))
+            }
+            logListener = listener
+            MpvLogger.addListener(listener)
+        }
+
+        OnStopObserving {
+            logListener?.let { MpvLogger.removeListener(it) }
+            logListener = null
+        }
 
         // Sans AirPlay sur Android : jamais actif.
         Function("isAirPlayRouteActive") { false }
@@ -53,6 +70,11 @@ class MpvPlayerModule : Module() {
             AsyncFunction("isPictureInPictureSupported") { view: MpvPlayerView -> view.isPictureInPictureSupported() }
             AsyncFunction("isPictureInPictureActive") { view: MpvPlayerView -> view.isPictureInPictureActive() }
             AsyncFunction("stop") { view: MpvPlayerView -> view.stop() }
+
+            // Le démontage se fait ici, à la destruction par React Native — pas
+            // à `onDetachedFromWindow`, qu'un rattachement sans destruction
+            // (transition d'écran) rendrait définitif.
+            OnViewDestroys { view: MpvPlayerView -> view.destroy() }
         }
     }
 }
