@@ -15,6 +15,7 @@ import { useTVMpvTracks } from "./useTVMpvTracks";
 import { useTVSeekControl } from "./useTVSeekControl";
 import type { PlayerMediaState } from "./usePlayerMediaState";
 import { prismBitmapRenditionIndex } from "../utils/prismSubtitleMatch";
+import { plog } from "../utils/playerDiag";
 
 type Ancestors = Parameters<typeof useTVTrackResolution>[0]["ancestors"];
 type PlayerRefs = Pick<Parameters<typeof useTVPlayerRouting>[0], "exoRef" | "mpvRef">;
@@ -141,6 +142,28 @@ export function usePlayerStreamPipeline(args: {
     [isPrismCore, streams, subtitleIndex, prismRenditions],
   );
 
+  // Master PrismCore refusé par AVPlayer : rejouer en forme muxée, UNE fois par
+  // session (PrismCore ne mint qu'un successeur) ; si c'est impossible, transcode
+  // serveur à la position courante. Refs : le handler d'erreur vit à deps figées.
+  const retryMuxedRef = useRef(retryMuxed);
+  retryMuxedRef.current = retryMuxed;
+  const prismGenRef = useRef(0);
+  prismGenRef.current = prism?.gen ?? 0;
+  const muxedTriedGenRef = useRef(0);
+  const onMasterRejected = useCallback(() => {
+    const gen = prismGenRef.current;
+    const bail = () => { captureReloadTicks(); setForceTranscode(true); };
+    if (gen <= 0 || muxedTriedGenRef.current === gen) { bail(); return; }
+    muxedTriedGenRef.current = gen;
+    softReloadRef.current = true;
+    setReloadFrameSec(positionRef.current);
+    void retryMuxedRef.current(positionRef.current).then((ok) => {
+      if (ok) return;
+      plog("prism", "forme muxée impossible → transcode forcé");
+      bail();
+    });
+  }, [captureReloadTicks, setForceTranscode, softReloadRef, setReloadFrameSec, positionRef]);
+
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
 
   const { reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
@@ -185,7 +208,7 @@ export function usePlayerStreamPipeline(args: {
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
-    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed,
+    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, prismTextTrackIndex, failed, retryMuxed, onMasterRejected,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,
   };

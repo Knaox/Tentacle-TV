@@ -214,6 +214,13 @@ export const AVPlayerSurface = forwardRef<MPVPlayerHandle, AVPlayerSurfaceProps>
         const err = e?.error;
         const detail = err?.localizedDescription || err?.localizedFailureReason || JSON.stringify(err ?? e);
         plog("averr", `AVPlayer BRUT code=${err?.code ?? "?"} local=${isLoopback ? 1 : 0} : ${detail}`);
+        // Master HLS de PrismCore REFUSÉ en bloc (-11868 / -11848 / -1002) : typiquement
+        // « Adapter la plage dynamique » coupé sur un panneau HDR. Récupérable — la
+        // session se rejoue en forme muxée (useTVErrorHandler → retryMuxed).
+        if (isLoopback && (err?.code === -11868 || err?.code === -11848 || err?.code === -1002)) {
+          onError?.("PRISM_MASTER_REJECTED");
+          return;
+        }
         const codecLike =
           err?.code === -11828 || err?.code === -11800
           || /format|codec|cannot open|decode/i.test(detail);
