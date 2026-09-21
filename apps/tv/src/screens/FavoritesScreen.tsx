@@ -44,8 +44,7 @@ function FavoritesScreenInner({ navigation }: Props) {
   const items = data ?? [];
 
   return (
-    <TVScreenFrame>
-      <TVAmbientBackdrop />
+    <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
       <View style={{ flex: 1 }}>
         <Text style={{
           color: Colors.textPrimary, ...Typography.pageTitle,

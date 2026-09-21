@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, memo } from "react";
-import { View, Image, AccessibilityInfo, Dimensions } from "react-native";
+import { View, Image, AccessibilityInfo } from "react-native";
 import Animated, {
   runOnJS,
   useSharedValue,
@@ -12,10 +12,12 @@ import { ambientTargetId, useAmbientItem } from "../../contexts/AmbientFocusCont
 import type { AmbientTarget } from "../../contexts/AmbientFocusContext";
 import { Colors, AmbientConfig } from "../../theme/colors";
 
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
-
 /**
  * Full-screen backdrop that fades to whatever item is currently focused.
+ * Dimensionné par son PARENT (`inset: 0`) : il se monte dans l'emplacement à
+ * fond perdu de `TVScreenFrame`, donc jusqu'aux bords de la dalle. Aucune
+ * lecture de `Dimensions` à l'import — elle figeait une taille qui n'était pas
+ * forcément finale, et plaçait la couche depuis la marge du cadre.
  * The signature "ambient swap" feature: as the user navigates through cards
  * with the D-pad, the backdrop softly crossfades to the focused item's
  * Jellyfin Backdrop image.
@@ -103,17 +105,7 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
   const bStyle = useAnimatedStyle(() => ({ opacity: bOpacity.value }));
 
   return (
-    <View
-      pointerEvents="none"
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: SCREEN_W,
-        height: SCREEN_H,
-        zIndex: 0,
-      }}
-    >
+    <View pointerEvents="none" style={{ position: "absolute", inset: 0, zIndex: 0 }}>
       <Layer item={layers.a} client={client} style={aStyle} onLoaded={(id) => handleLayerLoaded("a", id)} />
       <Layer item={layers.b} client={client} style={bStyle} onLoaded={(id) => handleLayerLoaded("b", id)} />
 
@@ -125,7 +117,7 @@ export const TVAmbientBackdrop = memo(function TVAmbientBackdrop() {
           Colors.bgDeep,
         ]}
         locations={[0, 0.55, 1]}
-        style={{ position: "absolute", inset: 0, width: SCREEN_W, height: SCREEN_H }}
+        style={{ position: "absolute", inset: 0 }}
       />
     </View>
   );
@@ -158,7 +150,7 @@ function Layer({ item, client, style, onLoaded }: LayerProps) {
     <Animated.View style={[{ position: "absolute", inset: 0 }, style]}>
       <Image
         source={{ uri }}
-        style={{ width: SCREEN_W, height: SCREEN_H }}
+        style={{ width: "100%", height: "100%" }}
         resizeMode="cover"
         // Fresco enchaîne un fondu de 300 ms sur CHAQUE image d'Android, en
         // plus du nôtre : deux fondus superposés, et une couche redessinée à
