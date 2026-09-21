@@ -5,11 +5,7 @@ PODS:
   - DoubleConversion (1.1.6)
   - fast_float (8.0.0)
   - FBLazyVector (0.81.5-2)
-  - FFmpegTVOS (7.1.0)
   - fmt (11.0.2)
-  - GCDWebServer (3.5.4):
-    - GCDWebServer/Core (= 3.5.4)
-  - GCDWebServer/Core (3.5.4)
   - glog (0.3.5)
   - hermes-engine (0.81.5):
     - hermes-engine/Pre-built (= 0.81.5)
@@ -2531,9 +2527,7 @@ DEPENDENCIES:
   - DoubleConversion (from `../node_modules/react-native/third-party-podspecs/DoubleConversion.podspec`)
   - fast_float (from `../node_modules/react-native/third-party-podspecs/fast_float.podspec`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
-  - FFmpegTVOS (from `Frameworks/ffmpeg`)
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
-  - GCDWebServer (~> 3.5)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
@@ -2612,7 +2606,6 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - GCDWebServer
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -2626,8 +2619,6 @@ EXTERNAL SOURCES:
     :podspec: "../node_modules/react-native/third-party-podspecs/fast_float.podspec"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
-  FFmpegTVOS:
-    :path: Frameworks/ffmpeg
   fmt:
     :podspec: "../node_modules/react-native/third-party-podspecs/fmt.podspec"
   glog:
@@ -2784,9 +2775,7 @@ SPEC CHECKSUMS:
   DoubleConversion: 9a8708fb8299350a38a3425761aaea31263b7443
   fast_float: e5fcbcd2323e2174e3c40b371b8d5ffa5b0adfef
   FBLazyVector: 35a496225a489ef529c0528fe2e48b958b49a33c
-  FFmpegTVOS: 79e98a413915e9529a501c4093a8b4c82eec5784
   fmt: c358e29b79c2957a8958c4169de5ad5cdd458216
-  GCDWebServer: 2c156a56c8226e2d5c0c3f208a3621ccffbe3ce4
   glog: 9ab333e271c177cecb6362fe27832c88667cb7e9
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
   RCT-Folly: 3fc78fcbfe96ce79e811d19ad0d5e4c70c812c8c
@@ -2862,6 +2851,6 @@ SPEC CHECKSUMS:
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 81b6cfdeb77edc850c3bfb61e7bf16e142c2fdb8
 
-PODFILE CHECKSUM: c9428337ea216396b5f2eb25d9c0d60e49bb34cb
+PODFILE CHECKSUM: 54c0caa564963dd63ec3e85ad1c60a6f47c432e6
 
 COCOAPODS: 1.16.2
