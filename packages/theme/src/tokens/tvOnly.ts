@@ -119,6 +119,29 @@ export const TV_HERO_SCRIM_DIAGONAL =
  * portage va de 1 (cartes) à 100 (recherche).
  *
  * Côté natif, ces mêmes rangs alimentent `zIndex`/`elevation`. */
+/** Le voile du rail AU REPOS.
+ *
+ * Le rail n'avait aucun fond, et la règle était juste : la lisibilité venait du
+ * voile de la bannière, qui passait sous lui. Elle ne l'est plus. La bannière
+ * d'accueil est redevenue une CARTE en retrait — elle ne passe plus sous le
+ * rail — et le décor ambiant, lui, va désormais d'un bord à l'autre : les
+ * icônes se lisaient sur une photographie.
+ *
+ * Ce n'est PAS le mur opaque qu'on avait retiré : 0,75 au bord, éteint à la
+ * colonne de contenu. C'est ce que font Google TV et tvOS. Même source pour la
+ * LG (`--rail-voile`) et pour React Native (`TV_RAIL_SCRIM_NATIVE`). */
+export const TV_RAIL_SCRIM = {
+  stops: [
+    { color: "rgba(0, 0, 0, 0.75)", at: 0 },
+    { color: "rgba(0, 0, 0, 0.42)", at: 0.55 },
+    { color: "rgba(0, 0, 0, 0)", at: 1 },
+  ],
+} as const;
+
+/** Le voile du rail en CSS : un dégradé horizontal, du bord vers le contenu. */
+export const tvRailScrimCss = (): string =>
+  `linear-gradient(90deg, ${TV_RAIL_SCRIM.stops.map((s) => `${s.color} ${Math.round(s.at * 1000) / 10}%`).join(", ")})`;
+
 export const TV_PLAYER_LAYERS = {
   thumbnail: 100,
   veil: 110,
@@ -160,6 +183,7 @@ export const tvOnlyCssVarEntries = (): Array<[string, string]> => [
   ["--hero-ambilight-blur", TV_HERO_AMBILIGHT.blur],
   ["--hero-ambilight-sat", TV_HERO_AMBILIGHT.saturation],
   ["--hero-scrim-diagonal", TV_HERO_SCRIM_DIAGONAL],
+  ["--rail-voile", tvRailScrimCss()],
 ];
 
 /**

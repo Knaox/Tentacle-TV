@@ -4,6 +4,7 @@ import {
   TV_HERO_AMBILIGHT,
   TV_OVERSCAN,
   TV_PLAYER_LAYERS,
+  TV_RAIL_SCRIM,
 } from "../tokens/tvOnly";
 import { TV_THEME_TOKEN_OVERRIDES } from "../tokens/tv";
 import { parsePx, parseShadow, type NativeShadow } from "./units";
@@ -98,4 +99,10 @@ export const TV_SHADOW: Record<"elev1" | "elev2" | "elev3", NativeShadow> = {
   elev1: shadowOrThrow(TV_TOKENS.shadow.elev1, "elev1"),
   elev2: shadowOrThrow(TV_TOKENS.shadow.elev2, "elev2"),
   elev3: shadowOrThrow(TV_TOKENS.shadow.elev3, "elev3"),
+};
+
+/** Le voile du rail au repos, en forme `react-native-linear-gradient`. */
+export const TV_RAIL_SCRIM_NATIVE: { colors: string[]; locations: number[] } = {
+  colors: TV_RAIL_SCRIM.stops.map((s) => s.color),
+  locations: TV_RAIL_SCRIM.stops.map((s) => s.at),
 };
