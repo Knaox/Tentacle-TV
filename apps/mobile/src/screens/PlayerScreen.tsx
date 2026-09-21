@@ -95,6 +95,15 @@ export function PlayerScreen({ itemId }: Props) {
     setPlayerError(null);
   }, [pb.streamUrl, pb.fetchNonce]);
 
+  // La relance transcodée vise le lecteur système : un flux HLS h264/aac se
+  // lit partout, et c'est souvent le lecteur avancé qui vient d'échouer
+  // (bibliothèque absente, codec). La façade est prévenue, pour que les
+  // négociations suivantes (piste, palier) restent sur ce moteur.
+  const retryTranscoded = useCallback(() => {
+    if (eng.engine === "mpv") eng.forceEngine("native", "fallback");
+    pb.retry({ engine: "native" });
+  }, [eng, pb.retry]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Android loading timeout — if onLoad hasn't fired after 20s, show error
   useEffect(() => {
     if (!pb.streamUrl || videoReady) return;
@@ -104,7 +113,7 @@ export function PlayerScreen({ itemId }: Props) {
         if (retryCount.current < 1) {
           retryCount.current++;
           retryingRef.current = true;
-          pb.retry();
+          retryTranscoded();
         } else {
           setPlayerError(t("playbackError"));
         }
@@ -193,7 +202,7 @@ export function PlayerScreen({ itemId }: Props) {
     handleLoad, handleProgress, handleEnd, handleError, handleSeek,
     leavePlayer, handleNextEpisode, handlePrevEpisode,
   } = usePlayerHandlers({
-    itemId, pb, engineRef, paused,
+    itemId, pb: { ...pb, retry: retryTranscoded }, engineRef, paused,
     resumeApplied, retryCount, retryingRef, hasEverPlayed,
     setCurrentTime, setBufferedTime, setIsBuffering, setVideoReady, setPlayerError, setPlayerDetail,
     onDirectPlayFailed,
@@ -235,7 +244,7 @@ export function PlayerScreen({ itemId }: Props) {
           setPlayerDetail(null);
           retryCount.current = 0;
           retryingRef.current = false;
-          pb.retry();
+          retryTranscoded();
         }}
         onBack={leavePlayer}
       />
