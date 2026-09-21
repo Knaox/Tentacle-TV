@@ -1,13 +1,20 @@
-name: Store Watch (manifeste macOS)
+name: Store Watch (manifeste stores)
 
-# Aligne le bloc macAppStore du manifeste d'auto-update sur ce qu'App Store
-# Connect declare REELLEMENT en vente (READY_FOR_SALE). Le tag desktop-v* ne
-# patche plus ce bloc : entre le tag et l'approbation Apple il s'ecoule des
-# heures, et patcher au tag faisait annoncer aux utilisateurs une version
-# encore introuvable sur le store — pop-up vers le vide.
+# Aligne le manifeste d'auto-update sur ce que les stores servent REELLEMENT.
+#
+# macOS : le cran store de desktop.yml ne patche pas ce bloc, et c'est voulu —
+# entre la soumission et l'approbation d'Apple il s'ecoule des heures, et
+# patcher tout de suite faisait annoncer aux utilisateurs une version encore
+# introuvable sur le store : une pop-up vers le vide.
+#
+# Play (mobile + TV) : depuis que play-publish.mjs pose les releases en
+# « completed », le workflow de livraison patche lui-meme son bloc. Le veilleur
+# ne sert plus qu'a rattraper ce qui lui echappe — une promotion faite a la main
+# dans la console, ou un examen Google qui traine. Il n'interroge donc Play QUE
+# si le manifeste et versions.json divergent : rien a detecter, aucun appel.
 #
 # Toutes les 30 minutes + declenchable a la main. Idempotent : ne committe que
-# si la version en vente differe du manifeste ET que son bloc changelog existe.
+# si la version servie differe du manifeste ET que son bloc changelog existe.
 
 on:
   schedule:
@@ -57,12 +64,45 @@ jobs:
         if: steps.cmp.outputs.changed == 'true'
         run: |
           node .github/scripts/patch-store-manifest.mjs "${{ steps.live.outputs.live }}" --only=mac
-      - name: Commit + push sur main
-        if: steps.cmp.outputs.changed == 'true'
+      # ── Play : uniquement s'il y a quelque chose a rattraper ──────────────
+      - name: Pistes Play a verifier
+        id: play
         run: |
-          git config user.name "tentacle-bot"
-          git config user.email "bot@tentacletv.app"
-          git add updates/store-versions.json
-          git commit -m "chore(update): manifeste macAppStore ${{ steps.live.outputs.live }} (en vente sur ASC)" || { echo "rien à committer"; exit 0; }
-          git pull --rebase origin main
-          git push origin main
+          set -euo pipefail
+          CHECKS=""
+          MOBILE_MANIFEST=$(node -p "require('./updates/store-versions.json').playMobile.version")
+          TV_MANIFEST=$(node -p "require('./updates/store-versions.json').playTv.version")
+          MOBILE_WANTED=$(jq -r .mobile versions.json)
+          TV_WANTED=$(jq -r .tv versions.json)
+          [ "$MOBILE_MANIFEST" != "$MOBILE_WANTED" ] && CHECKS="$CHECKS mobile"
+          [ "$TV_MANIFEST" != "$TV_WANTED" ] && CHECKS="$CHECKS tv"
+          echo "A verifier :${CHECKS:- rien}"
+          echo "checks=$CHECKS" >> "$GITHUB_OUTPUT"
+
+      - name: Aligner les blocs Play
+        if: steps.play.outputs.checks != ''
+        continue-on-error: true
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          CHECKS: ${{ steps.play.outputs.checks }}
+        run: |
+          set -uo pipefail
+          for what in $CHECKS; do
+            if [ "$what" = "mobile" ]; then
+              TRACK="alpha"; CL="changelogs/mobile.md"; ONLY="play-mobile"; KEY="playMobile"
+            else
+              TRACK="tv:Alpha"; CL="changelogs/tv.md"; ONLY="play-tv"; KEY="playTv"
+            fi
+            LIVE=$(node .github/scripts/play-live-version.mjs --package com.tentacletv.mobile --track "$TRACK") || continue
+            CURRENT=$(node -p "require('./updates/store-versions.json').${KEY}.version")
+            [ "$LIVE" = "$CURRENT" ] && { echo "${KEY} : deja ${LIVE}."; continue; }
+            echo "${KEY} : ${CURRENT} -> ${LIVE}"
+            node .github/scripts/patch-store-manifest.mjs "$LIVE" --changelog="$CL" --only="$ONLY" || true
+          done
+
+      # Un seul commit pour les blocs qui ont bouge — l'action ne fait rien si
+      # rien n'a change, et rejoue le rebase si quelqu'un est passe devant.
+      - uses: ./.github/actions/push-main
+        with:
+          paths: updates/store-versions.json
+          message: "chore(update) : manifeste des versions en ligne (veilleur)"
