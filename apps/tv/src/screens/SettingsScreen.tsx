@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, TVFocusGuideView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
@@ -42,15 +42,25 @@ export function SettingsScreen({ navigation }: Props) {
         <View style={{ flex: 1, flexDirection: "row", gap: 40 }}>
           <TVSettingsTabs active={section} onSelect={setSection} entryRef={contentEntry} />
 
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ paddingBottom: 48, paddingRight: 8 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {section === "account" && <TVSettingsAccountSection />}
-            {section === "playback" && <TVSettingsPlaybackSection />}
-            {section === "about" && <TVSettingsAboutSection />}
-          </ScrollView>
+          {/* Le panneau, sur TOUTE la hauteur de la rangée : une pression DROITE
+              depuis n'importe quel onglet le rencontre, quelle que soit la hauteur
+              du premier focusable. Sans ce guide, tvOS ne trouvait rien : le
+              premier bouton de « Compte » est plus bas que les trois onglets et
+              aucune bande verticale ne se chevauche. `autoFocus` sans
+              `destinations` : première visite → premier focusable, ensuite → là
+              où on l'avait laissé. « À propos » n'a aucun focusable : la recherche
+              échoue et le focus reste sur l'onglet — le no-op voulu. */}
+          <TVFocusGuideView autoFocus style={{ flex: 1 }}>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 48, paddingRight: 8 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {section === "account" && <TVSettingsAccountSection />}
+              {section === "playback" && <TVSettingsPlaybackSection />}
+              {section === "about" && <TVSettingsAboutSection />}
+            </ScrollView>
+          </TVFocusGuideView>
         </View>
       </View>
     </TVScreenFrame>
