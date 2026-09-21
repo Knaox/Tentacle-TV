@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import type { MPVPlayerHandle, MpvTrack } from "../components/player/MPVPlayer";
+import { matchAudioTracks } from "../utils/audioTrackMatch";
+import type { PrismAudioTrack } from "../utils/prismCoreStart";
 
 /**
  * Encapsule la gestion des pistes MPV/Exo côté direct play :
  *  - Mapping Jellyfin index → MPV track ID via `handleTracks`
  *  - Application réactive de la sélection audio courante
+ *
+ * Mapping AUDIO : par langue + titre, puis langue au rang, puis position
+ * (cf. utils/audioTrackMatch). Sur PrismCore (tvOS), `prismAudio` restreint
+ * d'abord aux pistes réellement transportées — les autres n'ont pas de
+ * rendition — et le master met la piste préférée en tête : un zip positionnel
+ * se serait décalé d'un cran sur la plupart des rips multi-langues.
  *
  * Mapping SOUS-TITRES (ExoPlayer) — deux familles de pistes natives :
  *  1) Side-loadées (VTT/ASS Jellyfin) : `nativeId` = "jf:<jellyfinIndex>"
@@ -33,8 +41,10 @@ export function useTVMpvTracks(args: {
   isDirectPlay: boolean;
   itemId?: string;
   mediaSourceId?: string;
+  /** Pistes audio vues par PrismCore (tvOS) ; absent → toutes candidates. */
+  prismAudio?: PrismAudioTrack[];
 }) {
-  const { playerRef, streams, audioIndex, isDirectPlay } = args;
+  const { playerRef, streams, audioIndex, isDirectPlay, prismAudio } = args;
   const [mpvTrackMap, setMpvTrackMap] = useState<Record<number, number>>({});
   // jellyfinIndex (sous-titre) → id de piste native ExoPlayer
   const [subtitleTrackMap, setSubtitleTrackMap] = useState<Record<number, number>>({});
@@ -45,8 +55,10 @@ export function useTVMpvTracks(args: {
     const subTracks = tracks.filter((t) => t.type === "sub");
     const jellyfinAudio = streams.filter((s) => s.Type === "Audio");
     const jellyfinSubs = streams.filter((s) => s.Type === "Subtitle");
-    const map: Record<number, number> = {};
-    jellyfinAudio.forEach((s, i) => { if (i < audioTracks.length) map[s.Index] = audioTracks[i].id; });
+    const carriable = prismAudio
+      ? new Set(prismAudio.filter((t) => t.delivery !== "unavailable").map((t) => t.streamIndex))
+      : undefined;
+    const map: Record<number, number> = matchAudioTracks({ jellyfinAudio, nativeTracks: audioTracks, carriable });
     jellyfinSubs.forEach((s, i) => { if (i < subTracks.length) map[s.Index] = subTracks[i].id; });
     setMpvTrackMap(map);
 
@@ -64,7 +76,7 @@ export function useTVMpvTracks(args: {
       });
     }
     setSubtitleTrackMap(sub);
-  }, [streams, isDirectPlay]);
+  }, [streams, isDirectPlay, prismAudio]);
 
   // Applique la piste audio via MPV en direct play (changement de track natif sans rebuilder l'URL)
   useEffect(() => {

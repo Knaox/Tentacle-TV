@@ -87,7 +87,9 @@ export function useTVStreamUrl(args: {
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
   // `isPrismCore`/`prism`/`retryMuxed` : PrismCore = tvOS uniquement, inertes ici ; `failed`
   // toujours false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité `.ios.ts`.
-  const prism: PrismStart | undefined = undefined;
+  // (`undefined as …` : sans l'assertion, TypeScript rétrécit la constante à `undefined`
+  // et le type de retour perdrait les champs de `PrismStart` pour les consommateurs.)
+  const prism = undefined as PrismStart | undefined;
   const retryMuxed = async (_positionSec: number): Promise<boolean> => false;
   return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed };
 }

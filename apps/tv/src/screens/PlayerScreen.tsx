@@ -211,8 +211,14 @@ export function PlayerScreen({ route, navigation }: Props) {
     bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
   });
 
+  // Sur PrismCore, une piste ni copiable ni pontée n'a pas de rendition : la
+  // proposer, c'est proposer une bascule qui n'aura jamais lieu.
+  const unavailableAudio = useMemo(() => new Set(
+    (p.prism?.audioTracks ?? []).filter((t) => t.delivery === "unavailable").map((t) => t.streamIndex),
+  ), [p.prism]);
   const audioTracksList = useMemo(() =>
-    p.streams.filter((st) => st.Type === "Audio").map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams]);
+    p.streams.filter((st) => st.Type === "Audio" && !unavailableAudio.has(st.Index))
+      .map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams, unavailableAudio]);
   const subtitleTracksList = useMemo(() =>
     p.streams.filter((st) => st.Type === "Subtitle").map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams]);
 
