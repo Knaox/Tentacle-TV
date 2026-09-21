@@ -13,7 +13,7 @@ Deux moteurs par plateforme derrière **une** façade JavaScript :
 | | Lecteur système (« natif ») | Lecteur avancé (« mpv ») |
 |---|---|---|
 | iOS | AVPlayer via react-native-video | libmpv par **MPVKit** (fork Streamyfin, `vo=avfoundation` → `AVSampleBufferDisplayLayer`, `ao=audiounit`, `hwdec=videotoolbox`) |
-| Android | ExoPlayer/Media3 via react-native-video (+ extension FFmpeg de Jellyfin) | libmpv par **libmpv-android** (`vo=gpu-next`, `gpu-context=android`, `hwdec=mediacodec-copy`, `ao=aaudio`) — **écrit, jamais compilé** |
+| Android | ExoPlayer/Media3 via react-native-video (+ extension FFmpeg de Jellyfin) | libmpv par **libmpv-android** 1.0.0 (`vo=gpu-next,gpu`, `gpu-context=android`, `hwdec=mediacodec-copy` — `no` à l'émulateur —, `ao=audiotrack,opensles`, `profile=fast`) — **vérifié à l'émulateur, §4 bis** |
 
 - Module natif : `apps/mobile/modules/mpv-player/` (Swift et Kotlin, dérivés de
   Streamyfin, en-têtes MPL-2.0). Contrat identique des deux côtés : événements
@@ -104,6 +104,48 @@ Spécificités du simulateur : `hwdec=no`, `avfoundation-composite-osd=no` (les
 sous-titres y sont dessinés grands, dans une couche séparée — artefact du
 simulateur), PiP « non pris en charge », pas d'AirPlay.
 
+## 4 bis. Vérifié sur Android (émulateurs Pixel 9 et Pixel Tablet, Android 16, x86_64)
+
+Chantier du 21 septembre 2026. Le module Kotlin, écrit sans compilateur, a
+demandé : le NDK 29 pour l'app (le libc++ du 27 n'a pas le `std::from_chars`
+flottant que `libmpv.so` importe — « cannot locate symbol » au premier
+`create`), les noms du délégué (`onLoad`/`onVideoParams` s'appelaient
+eux-mêmes), des charges sans `null`, START_FILE pour ne plus prendre l'END_FILE
+de l'ancien fichier pour un échec, le cycle de vie de la surface selon
+mpv-android (`vo=null` quand elle meurt, `vo=gpu-next,gpu` quand elle renaît),
+`destroy()` au démontage, et une seule `AudioFocusRequest` par vue.
+
+Preuve = `GET /Sessions` (`PlayMethod`, `TranscodingInfo`), `adb logcat`
+(le JNI de libmpv-android journalise TOUT en verbeux sous le tag `mpv`),
+captures, et le crochet `__tentaclePlayer` piloté par `scripts/dev-hook.mjs`.
+
+| Cas | Résultat |
+|---|---|
+| FLV h264 + ADPCM (conteneur hors ExoPlayer) | mpv ; audio transcodé par le serveur (`adpcm_swf` hors profil), vidéo copiée |
+| MKV h264 + ASS (One Piece), téléphone ET tablette | DirectPlay, mpv, ASS rendu par libass avec ses styles ; rotation paysage ↔ portrait suivie (`android-surface-size`) |
+| MKV HEVC 10 bits + ASS (My Hero Academia) | DirectPlay, mpv logiciel (`hwdec=no` à l'émulateur), 0 image perdue, sous-titre changé dans le moteur (`sid`), index remonté à Jellyfin |
+| MKV AV1 10 bits (Du mouvement de la Terre) | DirectPlay, mpv (dav1d), `yuv420p10` |
+| MKV h264 + DTS + PGS (L'attaque des Titans), auto | lecteur système, `FfmpegAudioRenderer` chargé, piste audio active — DirectPlay une fois le plafond automatique désarmé (« Originale ») ; avant, `ContainerBitrateExceedsLimit` : liste fermée, cas 1 |
+| Hors ligne : MKV HEVC 10 bits original gardé, puis lu | `LocalPlayerScreen` → mpv sur le chemin décodé, aucune session serveur |
+| AirPlay simulé (`simulateAirPlay`) : mpv → système → mpv | natif à 188 s (relance transcodée : pas de HEVC 10 bits à l'émulateur), **retour mpv à 204 s en lecture directe** |
+| Accueil / retour, verrouillage / déverrouillage | `pause=true` → `VO: [null]` ; au retour `VO: [gpu-next]` puis `pause=false` (JS non prévenu, sa prop reste la vérité) |
+| Appel entrant (`adb emu gsm call`) | `AUDIOFOCUS_LOSS_TRANSIENT` → pause, annoncée à JS ; pas de reprise automatique |
+| Retour ×5 (`OnViewDestroys` → `destroy()`) | tas natif 551 → 313 Mo, 78 → 63 threads, aucun plantage |
+| Réglages › Lecture | section « Lecteur vidéo » présente (moteur, sous-titres stylés, taille, position) |
+
+Non vérifié sur Android : `hwdec=mediacodec-copy` (appareil réel seulement),
+TLS (`tls-ca-file` posé, banc en http), PGS sur le lecteur système (Media3),
+la lecture 4K en logiciel (saccade attendue à l'émulateur). Un délai
+d'attente de 20 s sur la toute première ouverture de la tablette (Metro
+construisait son bundle) n'a pas été reproduit.
+
+Pièges mesurés : `stream-lavf-o-append` est refusé par
+`mpv_set_option_string` (-5) — la virgule se protège par `%7%4xx,5xx` ; le
+même défaut existe sur iOS, où le refus n'est pas journalisé. `load-osd-console`
+s'appelle `load-console`. Le JNI demande le niveau « v » sans condition, release
+compris : logcat reçoit tout, on n'y redouble que warn+. Le libc++ paqueté est
+celui du NDK de l'app, pas celui de l'AAR.
+
 ## 5. Obligations de licence avant soumission à l'App Store
 
 Les binaires du tag `0.41.0-av5` du fork sont **GPL** (Samba, `-Dgpl=true`) :
@@ -152,9 +194,10 @@ développement et TestFlight seulement.
   (`wantsExtendedDynamicRangeContent`, iOS 17+), AirPlay réel vers « Chambre »,
   PiP mpv et natif, arrière-plan (audio continue, `vid=no`), composite OSD des
   sous-titres, `tls-verify` face au certificat du serveur https.
-- **Tout Android** : react-native-video 6.19.3 + patch, Media3 1.9, décodeur
-  FFmpeg de Jellyfin, minSdk 26, module Kotlin — la CI Android sera le premier
-  compilateur.
+- **Android sur appareil réel** : `hwdec=mediacodec-copy`, TLS face à un
+  serveur https (le paquet Mozilla est en place), taille de l'AAB par ABI. Le
+  reste est vérifié à l'émulateur (§4 bis). Image dans l'image et MediaSession
+  (`nowPlaying`) restent hors périmètre sur Android.
 - Le chien de garde « rien après 20 s » relance en **transcodage** : un premier
   chargement mpv lent (probe de 10 Mo, cache) peut déclencher une conversion
   serveur non voulue ; mesurer sur appareil, ajuster le délai pour mpv.
@@ -168,9 +211,15 @@ développement et TestFlight seulement.
 
 ## 7. Outils de développement
 
-- `__tentaclePlayer` (lecteur, en ligne et local) et `__tentacleOffline`
-  (garder hors ligne, lister) : globaux `__DEV__`, pilotés par l'inspecteur
-  Hermes de Metro (`/json/list` → CDP `Runtime.evaluate`).
+- `__tentaclePlayer` (lecteur, en ligne et local : moteur, pistes, saut,
+  pause, `simulateAirPlay`, `changeQuality`, `technicalInfo`) et
+  `__tentacleOffline` (garder hors ligne, lister) : globaux `__DEV__`, pilotés
+  par `node scripts/dev-hook.mjs '<expression>'` (inspecteur Hermes de Metro ;
+  `--device gphone|tablet` avec deux émulateurs ; une promesse rendue est
+  attendue).
+- Android : `adb shell run-as com.tentacletv.mobile sh -c 'cat > files/mpv/mpv.conf'`
+  surcharge les options mpv (chargé à l'init) ; `adb logcat -s mpv` montre le
+  journal complet ; `ANDROID_SERIAL=emulator-5556` cible la tablette.
 - `TENTACLE_MPV_OPTS="nom=valeur;…"` (DEBUG) : options mpv d'initialisation
   supplémentaires ; au simulateur, `SIMCTL_CHILD_TENTACLE_MPV_OPTS`.
 - Lien profond `tentacle://watch/<itemId>` ; relancer l'app entre deux cas (un
