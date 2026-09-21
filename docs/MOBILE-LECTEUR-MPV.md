@@ -33,6 +33,34 @@ Deux moteurs par plateforme derrière **une** façade JavaScript :
   `track-list/N/ff-index` de mpv ; les externes se retrouvent par
   `external-filename`. Sélection appliquée après `MPV_EVENT_FILE_LOADED`.
 
+## 1 bis. TLS — les racines de confiance viennent avec l'app
+
+Aucun des deux FFmpeg ne connaît le magasin de certificats du système :
+libmpv-android est construit avec **mbedTLS** (3.6.6), MPVKit avec **GnuTLS**
+compilé en croisé sans magasin par défaut (`--without-p11-kit`, pas de
+`--with-default-trust-store-file` ; la détection automatique de GnuTLS ne
+joue qu'en compilation native, jamais pour iOS). Avec `tls-verify=yes` — la
+règle, comme `fetch` — et sans `tls-ca-file`, la vérification n'a AUCUNE
+racine et refuse tout serveur https, valide ou non ; mpv échoue à l'ouverture
+après les 4 tentatives de reconnexion de FFmpeg (~5 s).
+
+Le paquet de racines Mozilla (extrait par curl, `https://curl.se/ca/cacert.pem`)
+vit à **un seul endroit** : `apps/mobile/modules/mpv-player/ios/Resources/mpv/cacert.pem`.
+CocoaPods ne lit rien hors du dossier du podspec, Gradle lit n'importe où :
+le podspec le copie à la racine du bundle (`Bundle.main`, lu en place par
+`setupTlsTrust`), `build.gradle` monte `../ios/Resources` en assets
+(`mpv/cacert.pem`, copié dans `files/mpv/` par `installCaBundle`). Même
+confiance que les lecteurs système : les autorités publiques, pas le magasin
+de l'utilisateur — un certificat auto-signé ou une autorité privée ne passe
+pas par le lecteur avancé (repli sur le lecteur système, qui lui suit le
+magasin de l'appareil). Rafraîchir le paquet : remplacer le fichier, vérifier
+l'en-tête « Certificate data from Mozilla as of ».
+
+Pour les sous-requêtes HLS (playlists, segments), FFmpeg ne propage pas
+`ca_file` ni `tls_verify` : elles partent avec `tls_verify=0` — seule la
+playlist maître est vérifiée. Mesuré à l'émulateur : le palier transcodé se
+lit en https (§4 bis).
+
 ## 2. Règles du routeur (`decideEngine`)
 
 Décidé une fois par élément, AVANT PlaybackInfo, sur les flux et les pistes par
@@ -132,16 +160,19 @@ captures, et le crochet `__tentaclePlayer` piloté par `scripts/dev-hook.mjs`.
 | Appel entrant (`adb emu gsm call`) | `AUDIOFOCUS_LOSS_TRANSIENT` → pause, annoncée à JS ; pas de reprise automatique |
 | Retour ×5 (`OnViewDestroys` → `destroy()`) | tas natif 551 → 313 Mo, 78 → 63 threads, aucun plantage |
 | Réglages › Lecture | section « Lecteur vidéo » présente (moteur, sous-titres stylés, taille, position) |
+| **https** (poulpy, Let's Encrypt, chaîne ECDSA P-384 en 4 certificats, TLS 1.3) : DirectPlay par `/jellyfin` (direct streaming) et par `/api/jellyfin` (proxy), puis palier 720p = HLS transcodé | mbedTLS 3.6.6 + paquet Mozilla : lu, ASS rendu, reprise exacte ; HLS : master, main et segments ouverts en https (§1 bis) |
+| https SANS racines (mpv.conf `tls-ca-file=/data/nonexistent.pem`) — la situation de l'iPhone avant correctif | `mbedtls_x509_crt_parse_file … returned -15872`, 4 tentatives FFmpeg (0, 1, 3 s), échec remonté à JS en 5 s, **repli sur le lecteur système** (MKV lu par ExoPlayer) |
 
 Non vérifié sur Android : `hwdec=mediacodec-copy` (appareil réel seulement),
-TLS (`tls-ca-file` posé, banc en http), PGS sur le lecteur système (Media3),
-la lecture 4K en logiciel (saccade attendue à l'émulateur). Un délai
+PGS sur le lecteur système (Media3), la lecture 4K en logiciel (saccade
+attendue à l'émulateur). Un délai
 d'attente de 20 s sur la toute première ouverture de la tablette (Metro
 construisait son bundle) n'a pas été reproduit.
 
 Pièges mesurés : `stream-lavf-o-append` est refusé par
-`mpv_set_option_string` (-5) — la virgule se protège par `%7%4xx,5xx` ; le
-même défaut existe sur iOS, où le refus n'est pas journalisé. `load-osd-console`
+`mpv_set_option_string` (-5) — la virgule se protège par `%7%4xx,5xx` ; iOS
+portait le même défaut (refus journalisé seulement), aligné le 21 septembre
+2026 après vérification avec un mpv de bureau (FFmpeg retente sur un 400). `load-osd-console`
 s'appelle `load-console`. Le JNI demande le niveau « v » sans condition, release
 compris : logcat reçoit tout, on n'y redouble que warn+. Le libc++ paqueté est
 celui du NDK de l'app, pas celui de l'AAR.
@@ -193,19 +224,25 @@ développement et TestFlight seulement.
 - **Appareil réel** (iPhone) : `hwdec-current=videotoolbox`, HDR/EDR
   (`wantsExtendedDynamicRangeContent`, iOS 17+), AirPlay réel vers « Chambre »,
   PiP mpv et natif, arrière-plan (audio continue, `vid=no`), composite OSD des
-  sous-titres, `tls-verify` face au certificat du serveur https.
-- **Android sur appareil réel** : `hwdec=mediacodec-copy`, TLS face à un
-  serveur https (le paquet Mozilla est en place), taille de l'AAB par ABI. Le
-  reste est vérifié à l'émulateur (§4 bis). Image dans l'image et MediaSession
-  (`nowPlaying`) restent hors périmètre sur Android.
+  sous-titres, et **https** : jusqu'au 21 septembre 2026, iOS posait
+  `tls-verify=yes` sans aucun fichier de racines (§1 bis) — tout serveur https
+  était refusé par mpv, valide ou non. Le correctif (`setupTlsTrust`) est écrit
+  sans compilateur Swift sous la main : à confirmer au simulateur ou sur
+  iPhone face à `https://poulpy.rouge-informatique.ch` (journal mpv : aucun
+  « Peer certificate failed verification », lecture directe sans repli).
+- **Android sur appareil réel** : `hwdec=mediacodec-copy`, taille de l'AAB par
+  ABI. Le reste — https compris — est vérifié à l'émulateur (§4 bis). Image
+  dans l'image et MediaSession (`nowPlaying`) restent hors périmètre sur
+  Android.
 - Le chien de garde « rien après 20 s » relance en **transcodage** : un premier
   chargement mpv lent (probe de 10 Mo, cache) peut déclencher une conversion
   serveur non voulue ; mesurer sur appareil, ajuster le délai pour mpv.
 - Police de repli des sous-titres : Noto Sans (latin) ; le CJK dépend de
   CoreText (PingFang) — acceptable, non vérifié à l'écran.
 - `stream-lavf-o` : la virgule de `reconnect_on_http_error=4xx,5xx` coupait la
-  liste (corrigé au mobile par `-append`) ; **le bureau porte le même défaut**
-  (`apps/web/src/hooks/mpvRuntime.ts`), hors périmètre de ce chantier.
+  liste (corrigé au mobile, iOS et Android, par la forme `%7%`) ; **le bureau
+  porte le même défaut** (`apps/web/src/hooks/mpvRuntime.ts`), hors périmètre
+  de ce chantier.
 - Entrées hors ligne `pmax` (remux) existantes : lecture inchangée par le code,
   non rejouée (aucune entrée sur le simulateur).
 
