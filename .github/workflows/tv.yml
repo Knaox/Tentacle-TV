@@ -1,7 +1,23 @@
-# Tentacle TV — TV (Android TV + Apple TV), UN SEUL TAG
+# Tentacle TV — TV (Android TV + Apple TV), UN SEUL DÉCLENCHEMENT
 #
-# Déclenché par le tag `tv-vX.Y.Z` (ou manuellement). La version vient de
-# versions.json → champ `tv` (SOURCE UNIQUE — garde-fou au job `version`).
+# TROIS CRANS, choisis au lancement (`channel`) :
+#   • build — construire et archiver les artefacts. Rien ne part nulle part.
+#   • test  — piste Play FERMÉE « tv:Alpha » en `completed` (donc PUBLIÉE, plus
+#             de draft à promouvoir à la main) et TestFlight tvOS distribué au
+#             groupe externe avec demande d'examen bêta.
+#   • store — production Play à 100 %, et App Store tvOS soumis à l'examen avec
+#             mise en vente automatique à l'approbation. Aucun clic ensuite.
+#
+# `promote` (par défaut vrai, au cran store seulement) REPREND LE BINAIRE DÉJÀ
+# TESTÉ au lieu d'en reconstruire un autre.
+#
+# TOUT EST FIGÉ SUR UN COMMIT : le job `prepare` publie un `sha`, et chaque job
+# checkout CE sha — y compris `apple-tv-attach`, qui attend jusqu'à 35 minutes.
+#
+# La version vient de versions.json → `tv` (SOURCE UNIQUE). L'entrée `version`
+# du dispatch la BUMPE : prepare écrit versions.json, aligne
+# apps/tv/package.json, commite, tague `tv-vX.Y.Z` et pousse.
+#
 # Builds AUTO-INCRÉMENTÉS (minutes depuis 2024-01-01 UTC) :
 #   • tvOS CFBundleVersion = BUILD
 #   • Android versionCode  = 2000000000 + BUILD (préfixe form-factor TV : jamais
@@ -10,19 +26,18 @@
 #
 # Android TV — distribution PLAY UNIQUEMENT (plus d'APK GitHub / tv-latest) :
 #   • AAB signé release (keystore d'upload MOBILE_* réutilisé) → Play Console,
-#     MÊME app que le mobile (com.tentacletv.mobile), piste de tests fermés
-#     « Tests fermés - Alpha » (env PLAY_TV_TRACK, id API `alpha`), status draft
-#     → déploiement/promotion manuel dans la console.
-#   • L'AAB signé est aussi archivé en ARTEFACT du run (1re soumission manuelle
-#     dans la console, secours si l'API échoue).
-#   • Sans secrets keystore : build debug-signed, upload Play sauté.
+#     MÊME app que le mobile (com.tentacletv.mobile).
+#   • L'AAB signé est aussi archivé en ARTEFACT du run.
+#   • Sans secrets keystore : build debug-signed, publication Play sautée.
 #
 # Apple TV (continue-on-error : n'empêche jamais l'Android TV de sortir) :
 #   • xcodebuild tvOS, signature MANUELLE (profil TVOS_PROVISIONING_PROFILE_BASE64),
 #     upload TestFlight via clé API ASC. Fiche partagée com.tentacle.mobile.
 #
-# Notes de version : changelogs/tv.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
-# Limites : Play 500 car., App Store 4000, GitHub illimité.
+# Notes de version : changelogs/tv.md (bloc « ## [X.Y.Z] », ### FR / ### EN),
+# EXIGÉ par le pré-vol de `prepare`. Limites : Play 500 car., App Store 4000.
+# (Plus de Release GitHub depuis que la TV passe par Play : l'ancien en-tête
+# annonçait encore « GitHub illimité ».)
 
 name: Release TV
 
@@ -31,15 +46,23 @@ on:
     tags: ["tv-v*"]
   workflow_dispatch:
     inputs:
-      submit:
-        description: "Soumettre aux stores (Play Console / TestFlight) — sinon artefacts seulement"
+      targets:
+        description: "Cibles : all, ou une liste séparée par des virgules (androidtv, appletv)"
+        type: string
+        default: all
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
+        type: string
+        default: ""
+      promote:
+        description: "Au cran store : reprendre le binaire déjà testé au lieu de reconstruire"
         type: boolean
         default: true
-      target:
-        description: "Quelle plateforme construire"
-        type: choice
-        options: [all, android, apple]
-        default: all
 
 concurrency:
   group: release-tv-${{ github.ref }}
@@ -54,51 +77,136 @@ env:
   # (≠ « alpha » qui est la piste MOBILE, homonyme dans l'UI de la console).
   # Lister les identifiants exacts : workflow « Play — lister les pistes ».
   PLAY_TV_TRACK: "tv:Alpha"
+  # Même règle pour la production : le form factor TV a la sienne. Le préfixe
+  # exact NE SE DEVINE PAS — play-publish.mjs refuse une piste inconnue en
+  # listant celles qui existent, et « Play — lister les pistes »
+  # (play-tracks.yml) les affiche à la demande. À confirmer avant la première
+  # livraison au cran store.
+  PLAY_TV_PRODUCTION: "tv:production"
+  PLAY_PACKAGE: "com.tentacletv.mobile"
 
 jobs:
-  # 0) Version depuis versions.json + builds auto-incrémentés + garde-fou tag.
-  version:
+  # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
+  prepare:
+    name: Préparer la livraison
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      build: ${{ steps.v.outputs.build }}
-      vcode: ${{ steps.v.outputs.vcode }}
-      submit: ${{ steps.v.outputs.submit }}
-      is_tag: ${{ steps.v.outputs.is_tag }}
+      sha: ${{ steps.plan.outputs.sha }}
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      vcode: ${{ steps.plan.outputs.vcode }}
+      channel: ${{ steps.plan.outputs.channel }}
+      androidtv: ${{ steps.plan.outputs.androidtv }}
+      appletv: ${{ steps.plan.outputs.appletv }}
+      play_track: ${{ steps.plan.outputs.play_track }}
+      tag: ${{ steps.plan.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - id: v
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump versions.json (si une version est demandée)
+        id: bump
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          WANTED: ${{ inputs.version }}
+        run: node .github/scripts/bump-version.mjs tv "$WANTED"
+
+      - uses: ./.github/actions/push-main
+        id: pushed
+        if: steps.bump.outputs.changed == 'true'
+        with:
+          paths: ${{ steps.bump.outputs.files }}
+          message: "release(tv) : v${{ inputs.version }}"
+
+      - name: Poser le tag tv-v*
+        if: steps.pushed.outputs.committed == 'true'
+        env:
+          TAG: tv-v${{ inputs.version }}
         run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::warning::le tag $TAG existe déjà — on le laisse en place."
+          else
+            git tag "$TAG" "${{ steps.pushed.outputs.sha }}"
+            git push origin "$TAG"
+          fi
+
+      - name: Plan du run
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_TARGETS: ${{ inputs.targets }}
+          IN_CHANNEL: ${{ inputs.channel }}
+          IN_PROMOTE: ${{ inputs.promote }}
+          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${BUMPED_SHA:-${{ github.sha }}}"
+          git checkout --quiet "$SHA"
           VERSION=$(jq -r .tv versions.json)
           BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
           VCODE=$(( 2000000000 + BUILD ))
-          if [ "${{ github.event_name }}" = "push" ]; then
-            IS_TAG=true; SUBMIT=true
-            # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
-            # unique, version marketing inchangée, build auto-incrémenté).
+
+          if [ "$EVENT" = "push" ]; then
+            TARGETS="androidtv,appletv"; CHANNEL=store; PROMOTE=false
             if [[ ! "${GITHUB_REF_NAME}" =~ ^tv-v${VERSION}(-r[0-9]+)?$ ]]; then
               echo "::error::Tag ${GITHUB_REF_NAME} ≠ tv-v${VERSION}[-rN] (versions.json → tv). Mets à jour versions.json (source unique) ou corrige le tag."
               exit 1
             fi
           else
-            IS_TAG=false; SUBMIT="${{ inputs.submit }}"
+            TARGETS="$IN_TARGETS"; CHANNEL="$IN_CHANNEL"; PROMOTE="$IN_PROMOTE"
           fi
-          echo "TV ${VERSION} (build ${BUILD}, versionCode ${VCODE}, submit=${SUBMIT})"
-          { echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"; echo "submit=$SUBMIT"; echo "is_tag=$IS_TAG"; } >> "$GITHUB_OUTPUT"
+          [ "$TARGETS" = "all" ] && TARGETS="androidtv,appletv"
 
-  # ── Android TV : AAB → Play Console (piste de tests fermés TV) ───────────
+          want() { case ",$TARGETS," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+          plan() {
+            want "$1" || { echo skip; return; }
+            if [ "$CHANNEL" = "store" ] && [ "$PROMOTE" = "true" ]; then echo promote; else echo build; fi
+          }
+          ANDROID=$(plan androidtv); APPLE=$(plan appletv)
+          [ "$CHANNEL" = "store" ] && TRACK="${PLAY_TV_PRODUCTION}" || TRACK="${PLAY_TV_TRACK}"
+
+          echo "TV ${VERSION} — cran ${CHANNEL} · androidtv=${ANDROID} · appletv=${APPLE} · piste ${TRACK} · build ${BUILD} · sha ${SHA}"
+          {
+            echo "sha=$SHA"; echo "version=$VERSION"; echo "build=$BUILD"; echo "vcode=$VCODE"
+            echo "channel=$CHANNEL"; echo "androidtv=$ANDROID"; echo "appletv=$APPLE"
+            echo "play_track=$TRACK"; echo "tag=tv-v$VERSION"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Pré-vol des notes de version
+        if: steps.plan.outputs.channel != 'build'
+        run: |
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/tv.md --version "${{ steps.plan.outputs.version }}" \
+            --check play --check asc:atv
+
+  # ── Android TV : l'AAB seulement, la publication est le job « play ». ──────
   android-tv:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'android'
-    name: Android TV (AAB → Play Console)
+    needs: prepare
+    if: needs.prepare.outputs.androidtv == 'build'
+    name: Android TV (AAB)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -166,11 +274,11 @@ jobs:
           KS_ALIAS: ${{ secrets.MOBILE_KEY_ALIAS }}
           KS_KEY_PASSWORD: ${{ secrets.MOBILE_KEY_PASSWORD }}
         run: |
-          ARGS="-PtvVersionName=${{ needs.version.outputs.version }} -PtvVersionCode=${{ needs.version.outputs.vcode }}"
+          ARGS="-PtvVersionName=${{ needs.prepare.outputs.version }} -PtvVersionCode=${{ needs.prepare.outputs.vcode }}"
           if [ "${{ steps.keystore.outputs.present }}" = "true" ]; then
             ARGS="$ARGS -PtvKeystoreFile=$RUNNER_TEMP/upload.jks -PtvKeystorePassword=$KS_PASSWORD -PtvKeyAlias=$KS_ALIAS -PtvKeyPassword=$KS_KEY_PASSWORD"
           fi
-          echo "Android TV build → versionName=${{ needs.version.outputs.version }} versionCode=${{ needs.version.outputs.vcode }}"
+          echo "Android TV build → versionName=${{ needs.prepare.outputs.version }} versionCode=${{ needs.prepare.outputs.vcode }}"
           chmod +x ./gradlew
           ./gradlew bundleRelease --no-daemon $ARGS
 
@@ -183,38 +291,89 @@ jobs:
           path: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
 
-      - name: Notes Play (whatsnew FR/EN)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        run: |
-          mkdir -p distribution/whatsnew
-          V="${{ needs.version.outputs.version }}"
-          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
-            --version "$V" --lang fr --format play --out distribution/whatsnew/whatsnew-fr-FR || true
-          node .github/scripts/release-notes.mjs --changelog changelogs/tv.md \
-            --version "$V" --lang en --format play --out distribution/whatsnew/whatsnew-en-US || true
-          ls -l distribution/whatsnew || true
-
-      - name: Upload AAB → Play Console (piste « Tests fermés - Alpha »)
-        if: steps.keystore.outputs.present == 'true' && needs.version.outputs.submit == 'true'
-        uses: r0adkll/upload-google-play@v1
+  # ── Play : envoi OU promotion. MÊME groupe de concurrence que mobile.yml —
+  #    les deux écrivent la fiche com.tentacletv.mobile, et deux éditions
+  #    concurrentes s'invalident l'une l'autre.
+  play:
+    needs: [prepare, android-tv]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel != 'build'
+      && (needs.prepare.outputs.androidtv == 'promote'
+          || (needs.prepare.outputs.androidtv == 'build' && needs['android-tv'].result == 'success'))
+    name: Play Console (${{ needs.prepare.outputs.play_track }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: play-com.tentacletv.mobile
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
         with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.tentacletv.mobile
-          releaseFiles: apps/tv/android/app/build/outputs/bundle/release/app-release.aab
-          track: ${{ env.PLAY_TV_TRACK }}
-          status: draft
-          whatsNewDirectory: distribution/whatsnew
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  # ── Apple TV (tvOS → TestFlight) — n'empêche jamais l'Android TV de sortir ──
+      - name: Récupérer l'AAB
+        if: needs.prepare.outputs.androidtv == 'build'
+        uses: actions/download-artifact@v4
+        with:
+          name: tentacle-tv-aab
+          path: aab
+
+      - name: Publier
+        id: publish
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ "${{ needs.prepare.outputs.androidtv }}" = "promote" ]; then
+            SOURCE="--promote-from ${{ env.PLAY_TV_TRACK }}"
+          else
+            SOURCE="--aab aab/app-release.aab"
+          fi
+          # shellcheck disable=SC2086
+          node .github/scripts/play-publish.mjs \
+            --package "${{ env.PLAY_PACKAGE }}" \
+            --track "${{ needs.prepare.outputs.play_track }}" \
+            --version "${{ needs.prepare.outputs.version }}" \
+            --changelog changelogs/tv.md $SOURCE
+
+      # Le manifeste est repris de `main` et non du sha figé : d'autres jobs
+      # écrivent le même fichier, repartir d'une copie périmée effacerait leur
+      # bloc. Le CHANGELOG, lui, reste celui du sha figé.
+      - name: Aligner updates/store-versions.json
+        if: steps.publish.outputs.committed == 'true'
+        run: |
+          git fetch --depth=1 origin main
+          git checkout FETCH_HEAD -- updates/store-versions.json
+          node .github/scripts/patch-store-manifest.mjs "${{ needs.prepare.outputs.version }}" \
+            --changelog=changelogs/tv.md --only=play-tv
+      - uses: ./.github/actions/push-main
+        if: steps.publish.outputs.committed == 'true'
+        with:
+          paths: updates/store-versions.json
+          message: "chore(update) : manifeste Play TV ${{ needs.prepare.outputs.version }} (${{ needs.prepare.outputs.play_track }})"
+
+  # ── Apple TV ───────────────────────────────────────────────────────────────
   apple-tv:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'apple'
+    needs: prepare
+    if: needs.prepare.outputs.appletv == 'build'
     name: Apple TV (tvOS TestFlight)
     runs-on: macos-latest
     timeout-minutes: 90
+    # L'app tvOS reste à finaliser : son échec ne doit jamais retenir l'Android TV.
     continue-on-error: true
+    # Ce `continue-on-error` fait passer un ÉCHEC pour un succès auprès de
+    # `needs` : les jobs suivants ne peuvent donc pas se fier à `result`. Cette
+    # sortie dit la vérité — l'envoi a-t-il vraiment eu lieu.
+    outputs:
+      uploaded: ${{ steps.upload.outputs.uploaded }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -279,8 +438,8 @@ jobs:
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER="Tentacle TV tvOS App Store" \
-            MARKETING_VERSION="${{ needs.version.outputs.version }}" \
-            CURRENT_PROJECT_VERSION="${{ needs.version.outputs.build }}"
+            MARKETING_VERSION="${{ needs.prepare.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ needs.prepare.outputs.build }}"
 
       - name: Export .ipa (App Store, tvOS)
         run: |
@@ -315,17 +474,19 @@ jobs:
           path: ${{ runner.temp }}/ipa/*.ipa
           if-no-files-found: error
 
-      - name: Submit to TestFlight (tvOS)
-        if: needs.version.outputs.submit == 'true'
+      - name: Envoi TestFlight (tvOS)
+        id: upload
+        if: needs.prepare.outputs.channel != 'build'
         env:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           xcrun altool --upload-app -f "$RUNNER_TEMP"/ipa/*.ipa -t tvos \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
 
-      - name: Set release notes (App Store / TestFlight tvOS)
-        if: needs.version.outputs.submit == 'true'
+      - name: Poser les notes (App Store / TestFlight tvOS)
+        if: needs.prepare.outputs.channel != 'build'
         continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
@@ -333,32 +494,79 @@ jobs:
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: TV_OS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/tv.md
         run: node .github/scripts/asc-release-notes.mjs
 
-  # Attend le traitement ASC puis rattache le build tvOS à la version App Store.
+  # Attend le traitement ASC puis rattache et distribue. Le job amont est
+  # `continue-on-error`, donc son échec passerait pour un succès auprès de
+  # `needs` : on teste explicitement `outcome`, sans quoi ce job sonderait
+  # pendant 35 minutes un build qui n'a jamais été envoyé.
   apple-tv-attach:
-    needs: [version, apple-tv]
-    if: needs.version.outputs.submit == 'true'
-    name: Apple TV attach build
+    needs: [prepare, apple-tv]
+    if: >-
+      needs.prepare.outputs.appletv == 'build'
+      && needs.prepare.outputs.channel != 'build'
+      && needs['apple-tv'].outputs.uploaded == 'true'
+    name: Apple TV — rattacher et distribuer
     runs-on: ubuntu-latest
     timeout-minutes: 50
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Wait for ASC processing + attach build
+      - name: Attendre le traitement ASC + rattacher le build
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: TV_OS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/tv.md
         run: node .github/scripts/asc-attach-build.mjs
+      - name: Distribuer au groupe de test
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: TV_OS
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
+          ASC_BETA_GROUP_ID: ${{ secrets.ASC_BETA_GROUP_TVOS_ID }}
+        run: node .github/scripts/asc-testflight-distribute.mjs
+
+  apple-tv-review:
+    needs: [prepare, apple-tv-attach]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel == 'store'
+      && needs.prepare.outputs.appletv != 'skip'
+      && (needs.prepare.outputs.appletv == 'promote' || needs['apple-tv-attach'].result == 'success')
+    name: Apple TV — soumettre à l'examen
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Soumettre à l'examen App Store (tvOS)
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: TV_OS
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node .github/scripts/asc-submit-review.mjs
+

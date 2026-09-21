@@ -100,6 +100,18 @@ async function publish(play) {
       console.log(`[play] promotion de « ${promoteFrom} » vers « ${track} » : versionCode ${versionCodes.join(', ')}.`);
     }
 
+    // Une piste inconnue donnerait un 404 opaque. Les pistes par form factor
+    // sont PRÉFIXÉES dans l'API (« tv:Alpha », « tv:production »), et le
+    // préfixe exact ne se devine pas : on le vérifie, et on liste ce qui existe
+    // vraiment si la cible n'y est pas.
+    const known = ((await play.call(`${base}/edits/${editId}/tracks`)).tracks ?? []).map((t) => t.track);
+    if (!known.includes(track)) {
+      console.error(`::error::la piste « ${track} » n'existe pas sur ${pkg}.`);
+      console.error(`Pistes réelles : ${known.join(', ')}`);
+      console.error('Le workflow « Play — lister les pistes » (play-tracks.yml) les affiche avec leurs releases.');
+      process.exit(1);
+    }
+
     const notes = releaseNotes();
     const release = {
       name: version,
