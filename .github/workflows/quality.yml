@@ -16,6 +16,20 @@
 # ferait naître ce workflow rouge et l'apprendrait à être ignoré. Le typecheck
 # est le seul gate de qualité tant que ce n'est pas réparé.
 #
+# ⚠️ IL GARDE LES LIVRAISONS. Les cinq workflows de livraison refusent de partir
+# si ce workflow n'est pas vert sur le commit visé (`.github/actions/
+# require-quality`). C'est le filet de la garde locale : le crochet `pre-push`
+# refuse le push avant qu'il parte, celle-ci rattrape un `--no-verify` ou une
+# machine dont `core.hooksPath` n'est pas posé.
+#
+# ⚠️ PORTÉE : il ne contrôle QUE les paquets touchés et ceux qui en dépendent
+# (sélecteur pnpm `...[ref]`, même primitive que le crochet). Toucher
+# apps/mobile ne réveille pas le web ; toucher packages/shared réveille tout ce
+# qui en dépend. `--filter "!tentacle-tv"` est OBLIGATOIRE : le projet racine est
+# toujours retenu par le sélecteur, et son `typecheck` vaut `pnpm -r typecheck`
+# — le laisser passer relance tout le dépôt et annule la portée (mesuré : un
+# commit mobile seul donnait « Scope: 13 of 14 workspace projects »).
+#
 # ⚠️ `prisma generate` AVANT `typecheck`. Le client Prisma du backend est un stub
 # tant qu'il n'a pas tourné : chaque résultat de requête devient `any` et une
 # quinzaine de TS7006 tombent sur du code parfaitement sain. Elles ne se voient
@@ -41,7 +55,11 @@ jobs:
     name: Typecheck et tests
     runs-on: ubuntu-latest
     steps:
+      # `fetch-depth: 0` : la base de comparaison est un commit du passé
+      # (github.event.before), il doit exister dans le clone.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
@@ -54,16 +72,45 @@ jobs:
       - name: Installer les dépendances
         run: pnpm install --frozen-lockfile
 
+      # Base de comparaison. Sur une PR : le point de départ de la branche. Sur
+      # une poussée : ce que `main` portait avant. Sur un dispatch, une
+      # réécriture d'historique ou une branche neuve, la base est introuvable →
+      # on contrôle TOUT le dépôt, jamais moins.
+      - name: Portée des contrôles
+        run: |
+          BASE=""
+          case "${{ github.event_name }}" in
+            pull_request) CAND="${{ github.event.pull_request.base.sha }}" ;;
+            push)         CAND="${{ github.event.before }}" ;;
+            *)            CAND="" ;;
+          esac
+          if [ -n "$CAND" ] && git rev-parse --verify --quiet "${CAND}^{commit}" >/dev/null; then
+            BASE="$CAND"
+          fi
+          if [ -n "$BASE" ]; then
+            FILTER="--filter \"...[$BASE]\" --filter \"!tentacle-tv\""
+            echo "Base : $BASE"
+          else
+            FILTER="--filter \"!tentacle-tv\""
+            echo "Base introuvable — contrôle de tout le dépôt."
+          fi
+          # GITHUB_ENV et non GITHUB_OUTPUT : la valeur porte des guillemets, et
+          # l'interpoler par ${{ }} dans un `run` est une porte d'injection.
+          echo "QUALITY_FILTER=$FILTER" >> "$GITHUB_ENV"
+          eval pnpm $FILTER list --depth -1 --json | node -e \
+            "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{const n=JSON.parse(s).map(p=>p.name);console.log(n.length?'Paquets retenus : '+n.join(', '):'Aucun paquet touché.')})"
+
+      # Le client Prisma est un stub tant que « db:generate » n'a pas tourné.
+      # Joué sans condition : il coûte quelques secondes et rate moins souvent
+      # qu'une détection de portée.
       - name: Générer le client Prisma
         run: pnpm --filter @tentacle-tv/backend db:generate
 
       # Deux étapes et non une : quand ça casse, l'onglet doit dire tout de suite
-      # lequel des deux a lâché.
+      # lequel des deux a lâché. `--if-present` parce qu'apps/tv et packages/ui
+      # n'ont pas de script `test`.
       - name: Typecheck
-        run: pnpm typecheck
+        run: eval pnpm $QUALITY_FILTER --if-present run typecheck
 
-      # `pnpm -r test` couvre les neuf paquets qui en ont un — web, bureau,
-      # backend, webOS, et les cinq paquets partagés. Aucun n'a besoin d'une base
-      # de données ni d'un service tiers.
       - name: Tests
-        run: pnpm test
+        run: eval pnpm $QUALITY_FILTER --if-present run test
