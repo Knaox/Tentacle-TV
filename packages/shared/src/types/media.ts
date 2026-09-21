@@ -144,6 +144,15 @@ export interface MediaStream {
   BitDepth?: number;
   /** Profil du codec (« Main 10 », « High »…). */
   Profile?: string;
+  /**
+   * Cadence RÉELLE du flux (24000/1001 = 23,976…), calculée par Jellyfin depuis
+   * la durée d'image du conteneur : la seule valeur EXACTE disponible. Les
+   * horodatages Matroska sont arrondis à la milliseconde — un estimateur qui
+   * les lit annonce 23,81 ou 24,39, et le téléviseur choisit le mauvais mode.
+   */
+  RealFrameRate?: number;
+  /** Cadence moyenne — repli quand `RealFrameRate` manque (certains conteneurs). */
+  AverageFrameRate?: number;
 }
 
 export interface UserItemData {

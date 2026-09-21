@@ -46,6 +46,10 @@ interface ExoPlayerProps {
   isDirectPlay?: boolean;
   /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
   prismTextTrackIndex?: number | null;
+  /** Cadence EXACTE du flux (Jellyfin `RealFrameRate`) : la vue native cale la
+   *  fréquence d'affichage dessus — ExoPlayer, lui, la devine depuis des
+   *  horodatages arrondis à la milliseconde et demande 24,39 ou 23,81. */
+  frameRate?: number;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
@@ -61,6 +65,7 @@ const NativeExoView = requireNativeComponent<{
   paused: boolean;
   progressInterval: number;
   audioPassthrough: boolean;
+  frameRate?: number;
   textTracks?: ExoTextTrack[];
   onExoEvent: (event: ExoEvent) => void;
   style?: ViewStyle;
@@ -74,7 +79,7 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
@@ -124,6 +129,7 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
         paused={paused}
         progressInterval={progressInterval}
         audioPassthrough={audioPassthrough}
+        frameRate={frameRate}
         textTracks={textTracks}
         onExoEvent={handleEvent}
         style={style}

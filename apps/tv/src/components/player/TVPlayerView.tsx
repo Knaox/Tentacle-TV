@@ -61,6 +61,8 @@ export interface TVPlayerViewProps {
   isDirectPlay: boolean;
   /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
   prismTextTrackIndex?: number | null;
+  /** Android TV : cadence du flux, pour caler la fréquence d'affichage (ExoPlayer). */
+  frameRate?: number;
   exoRef: React.Ref<MPVPlayerHandle>;
   mpvRef: React.Ref<MPVPlayerHandle>;
   backgroundRef: React.Ref<ElementRef<typeof TouchableOpacity>>;
@@ -120,7 +122,7 @@ export interface TVPlayerViewProps {
 export function TVPlayerView({
   item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, autoCapActive, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, isDirectPlay, prismTextTrackIndex, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isDirectPlay, prismTextTrackIndex, frameRate, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
   autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
@@ -164,6 +166,7 @@ export function TVPlayerView({
         // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
         muted={reloadFrameSec != null && hasStarted}
         textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay} prismTextTrackIndex={prismTextTrackIndex}
+        frameRate={frameRate}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />

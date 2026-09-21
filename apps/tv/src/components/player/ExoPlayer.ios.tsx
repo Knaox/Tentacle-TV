@@ -16,6 +16,8 @@ interface ExoPlayerProps {
   paused: boolean;
   progressInterval?: number;
   audioPassthrough?: boolean;
+  /** Parité Android (bascule de fréquence) ; sans objet sur tvOS. */
+  frameRate?: number;
   textTracks?: ExoTextTrack[];
   /** Index Jellyfin du sous-titre sélectionné (rendu natif tvOS). */
   subtitleIndex?: number;
@@ -33,10 +35,10 @@ interface ExoPlayerProps {
 }
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
-  // `audioPassthrough` est extrait pour NE PAS être transmis : la surface AVPlayer
-  // ne le connaît pas, et le laisser passer poserait un attribut inconnu sur la
-  // vue native. Le tiret bas dit au linter que l'omission est voulue.
-  function ExoPlayer({ audioPassthrough: _audioPassthrough, ...rest }, ref) {
+  // `audioPassthrough` et `frameRate` sont extraits pour NE PAS être transmis : la
+  // surface AVPlayer ne les connaît pas, et les laisser passer poserait un attribut
+  // inconnu sur la vue native. Le tiret bas dit au linter que l'omission est voulue.
+  function ExoPlayer({ audioPassthrough: _audioPassthrough, frameRate: _frameRate, ...rest }, ref) {
     // `textTracks` + `subtitleIndex` transmis à la surface (sous-titres natifs).
     return <AVPlayerSurface ref={ref} {...rest} />;
   },

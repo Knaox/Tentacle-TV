@@ -25,3 +25,14 @@ export function formatTrackLabel(s: JfStream): string {
   const codec = s.Codec?.toUpperCase();
   return codec && !title.toUpperCase().includes(codec) ? `${title} (${codec})` : title;
 }
+
+/**
+ * La cadence du flux vidéo, pour caler le téléviseur dessus (Android TV).
+ * `RealFrameRate` d'abord (exacte), `AverageFrameRate` en repli. Les valeurs
+ * aberrantes sont refusées : mieux vaut ne rien basculer que basculer de travers.
+ */
+export function videoFrameRate(streams: JfStream[]): number | undefined {
+  const video = streams.find((s) => s.Type === "Video");
+  const fps = video?.RealFrameRate ?? video?.AverageFrameRate;
+  return typeof fps === "number" && fps >= 5 && fps <= 480 ? fps : undefined;
+}
