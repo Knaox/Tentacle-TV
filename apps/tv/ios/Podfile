@@ -5,7 +5,8 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :tvos, min_ios_version_supported
+# Plancher de PrismCore (README « Requirements ») — pas un choix à nous.
+platform :tvos, '17.0'
 
 # Ancienne architecture, pour s'ALIGNER sur Android (`newArchEnabled=false`
 # dans android/gradle.properties). RN l'active par défaut depuis 0.76 ; on la
