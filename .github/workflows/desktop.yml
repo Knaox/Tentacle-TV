@@ -1,26 +1,39 @@
-# Tentacle TV — DESKTOP (macOS App Store + Microsoft Store + Linux), UN SEUL TAG
+# Tentacle TV — BUREAU (macOS App Store + Microsoft Store + Linux)
 #
-# Déclenché par le tag `desktop-vX.Y.Z` (ou manuellement). La version vient de
-# versions.json → champ `desktop` (SOURCE UNIQUE — le tag doit correspondre,
-# garde-fou au job `version`). Le numéro de build (CFBundleVersion) est
-# AUTO-INCRÉMENTÉ : minutes écoulées depuis 2024-01-01 UTC — strictement
-# croissant, jamais réutilisé (exigence App Store Connect).
+# TROIS CRANS, choisis au lancement (`channel`) :
+#   • build — construire et archiver les artefacts. Rien ne part nulle part.
+#   • test  — macOS : TestFlight + distribution au groupe externe.
+#             Linux : Release GitHub en PRÉ-VERSION, manifeste NON patché — donc
+#             l'auto-updater ne propose rien, mais le paquet est téléchargeable.
+#             Windows : artefact MSIX seulement. Le Microsoft Store n'a PAS de
+#             canal de test : une soumission y est publique par construction.
+#   • store — macOS soumis à l'examen, mise en vente automatique à l'approbation.
+#             Windows soumis au Microsoft Store (publication immédiate).
+#             Linux : Release publiée et manifeste patché. Aucun clic ensuite.
 #
-# Coquille de bureau : Electron pour les trois systèmes. Tauri a été retiré.
+# `promote` (par défaut vrai, au cran store) reprend ce qui a déjà été testé :
+# macOS soumet le build DÉJÀ rattaché, Linux bascule sa pré-version en version
+# publiée sans rien reconstruire. Windows fait exception — le Microsoft Store
+# exige le paquet à chaque soumission, donc il rebâtit toujours.
 #
-# Jobs indépendants (un échec Apple ne bloque pas Linux, etc.) :
-#   • mac-*        → app Electron universelle (arm64+x86_64), dylibs mpv/FFmpeg
-#     LGPL vendorées, bac à sable → App Store / TestFlight
-#   • windows-store → MSIX non signé (makeappx) → soumission API Microsoft Store
-#   • linux/arch/manifest → .deb/.rpm/AppImage/.pkg.tar.zst → Release GitHub
-#     `desktop-vX.Y.Z` + manifeste d'auto-update (updates/store-versions.json)
+# TOUT EST FIGÉ SUR UN COMMIT : le job `prepare` publie un `sha`, et chaque job
+# checkout CE sha — y compris `mac-attach`, qui attend jusqu'à 35 minutes, et
+# les jobs de manifeste, qui lisaient jusqu'ici le changelog à `main`.
 #
-# Notes de version : changelogs/desktop.md (bloc « ## [X.Y.Z] », ### FR / ### EN).
-# Limites gérées : App Store 4000 car., Microsoft Store 1500, GitHub illimité.
+# La version vient de versions.json → `desktop` (SOURCE UNIQUE). L'entrée
+# `version` du dispatch la BUMPE : prepare écrit versions.json, aligne
+# apps/desktop-electron/package.json (la version du bundle, lue par « À
+# propos »), commite, tague `desktop-vX.Y.Z` et pousse.
 #
-# Secrets : APPLE_DISTRIBUTION_CERT_BASE64/_PASSWORD, MAC_INSTALLER_CERT_BASE64/_PASSWORD,
-#   MAS_PROVISIONING_PROFILE_BASE64, APPLE_API_KEY/_ISSUER/_KEY_CONTENT,
-#   PARTNER_TENANT_ID / PARTNER_CLIENT_ID / PARTNER_CLIENT_SECRET.
+# Build AUTO-INCRÉMENTÉ : minutes depuis 2024-01-01 UTC (CFBundleVersion).
+#
+# ⚠️ Microsoft Store : la version soumise doit être STRICTEMENT SUPÉRIEURE à la
+# publiée. Re-livrer Windows exige donc un vrai bump, un suffixe -rN ne suffit pas.
+#
+# Notes de version : changelogs/desktop.md. Les blocs par canal « ## [mac-X.Y.Z] »
+# et « ## [win-X.Y.Z] » remplacent le bloc nu pour ces cibles-là — le bloc nu
+# dépasse régulièrement les 1500 caractères du Microsoft Store, qui coupe à la
+# puce en silence. Le pré-vol de `prepare` dit AVANT le build de combien ça mord.
 
 name: Release Desktop
 
@@ -29,79 +42,166 @@ on:
     tags: ["desktop-v*"]
   workflow_dispatch:
     inputs:
-      submit:
-        description: "Soumettre aux stores (App Store / Microsoft Store) — sinon artefacts seulement"
+      targets:
+        description: "Cibles : all, ou une liste séparée par des virgules (macos, windows, linux)"
+        type: string
+        default: all
+      channel:
+        description: "Jusqu'où aller"
+        type: choice
+        options: [build, test, store]
+        default: test
+      version:
+        description: "Version X.Y.Z à livrer (vide = versions.json inchangé)"
+        type: string
+        default: ""
+      promote:
+        description: "Au cran store : reprendre ce qui a déjà été testé (sans effet sur Windows)"
         type: boolean
         default: true
-      target:
-        description: "Quel OS construire (build partiel via dispatch)"
-        type: choice
-        options: [all, macos, windows, linux]
-        default: all
-      publish:
-        description: "Publier aussi (Release GitHub + manifeste) — un tag le fait toujours"
-        type: boolean
-        default: false
 
 concurrency:
   group: release-desktop-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  CARGO_INCREMENTAL: 0
   SIGN_APP: "Apple Distribution: Damien ROUGE (96K3M57W49)"
   SIGN_PKG: "3rd Party Mac Developer Installer: Damien ROUGE (96K3M57W49)"
   STORE_ID: "9NKHL0T84245"
-  DESKTOP_CHANGELOG: "changelogs/desktop.md"
 
 jobs:
-  # 0) Version depuis versions.json + build auto-incrémenté + garde-fou tag.
-  version:
+  # ── Ce qui rend tout le reste reproductible (voir mobile.yml, même forme) ──
+  prepare:
+    name: Préparer la livraison
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: read
     outputs:
-      version: ${{ steps.v.outputs.version }}
-      build: ${{ steps.v.outputs.build }}
-      submit: ${{ steps.v.outputs.submit }}
-      # Publier = créer la Release et patcher le manifeste. Un tag le fait
-      # toujours ; un déclenchement manuel le fait sur demande (`publish`).
-      # C'est ce qui permet de livrer UN SEUL système sans réveiller les
-      # autres — un tag, lui, lance les trois, macOS compris, avec soumission.
-      release: ${{ steps.v.outputs.release }}
-      # Le tag à viser. Sur un tag c'est lui ; sur un dispatch il est déduit de
-      # versions.json, et `action-gh-release` le créera avec GITHUB_TOKEN — un
-      # tag posé par ce jeton NE redéclenche AUCUN workflow, ce qui est
-      # exactement ce qu'on veut ici.
-      tag: ${{ steps.v.outputs.tag }}
+      sha: ${{ steps.plan.outputs.sha }}
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      channel: ${{ steps.plan.outputs.channel }}
+      macos: ${{ steps.plan.outputs.macos }}
+      windows: ${{ steps.plan.outputs.windows }}
+      linux: ${{ steps.plan.outputs.linux }}
+      tag: ${{ steps.plan.outputs.tag }}
+      siblings: ${{ steps.plan.outputs.siblings }}
     steps:
       - uses: actions/checkout@v4
-      - id: v
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/require-quality
+        with:
+          sha: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bump versions.json (si une version est demandée)
+        id: bump
+        if: github.event_name == 'workflow_dispatch' && inputs.version != ''
+        env:
+          WANTED: ${{ inputs.version }}
+        run: node .github/scripts/bump-version.mjs desktop "$WANTED"
+
+      - uses: ./.github/actions/push-main
+        id: pushed
+        if: steps.bump.outputs.changed == 'true'
+        with:
+          paths: ${{ steps.bump.outputs.files }}
+          message: "release(desktop) : v${{ inputs.version }}"
+
+      - name: Poser le tag desktop-v*
+        if: steps.pushed.outputs.committed == 'true'
+        env:
+          TAG: desktop-v${{ inputs.version }}
         run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::warning::le tag $TAG existe déjà — on le laisse en place."
+          else
+            git tag "$TAG" "${{ steps.pushed.outputs.sha }}"
+            git push origin "$TAG"
+          fi
+
+      - name: Plan du run
+        id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          IN_TARGETS: ${{ inputs.targets }}
+          IN_CHANNEL: ${{ inputs.channel }}
+          IN_PROMOTE: ${{ inputs.promote }}
+          BUMPED_SHA: ${{ steps.pushed.outputs.sha }}
+        run: |
+          set -euo pipefail
+          SHA="${BUMPED_SHA:-${{ github.sha }}}"
+          git checkout --quiet "$SHA"
           VERSION=$(jq -r .desktop versions.json)
           BUILD=$(( ( $(date +%s) - 1704067200 ) / 60 ))
-          if [ "${{ github.event_name }}" = "push" ]; then
-            RELEASE=true; SUBMIT=true; TAG="${GITHUB_REF_NAME}"
-            # Suffixe -rN optionnel = RE-LIVRAISON de la même version (tag git
-            # unique, version marketing inchangée, build auto-incrémenté).
+          TAG="desktop-v$VERSION"
+
+          if [ "$EVENT" = "push" ]; then
+            TARGETS="macos,windows,linux"; CHANNEL=store; PROMOTE=false
+            TAG="${GITHUB_REF_NAME}"
             if [[ ! "${GITHUB_REF_NAME}" =~ ^desktop-v${VERSION}(-r[0-9]+)?$ ]]; then
               echo "::error::Tag ${GITHUB_REF_NAME} ≠ desktop-v${VERSION}[-rN] (versions.json → desktop). Mets à jour versions.json (source unique) ou corrige le tag."
               exit 1
             fi
           else
-            RELEASE="${{ inputs.publish }}"; SUBMIT="${{ inputs.submit }}"
-            TAG="desktop-v${VERSION}"
+            TARGETS="$IN_TARGETS"; CHANNEL="$IN_CHANNEL"; PROMOTE="$IN_PROMOTE"
           fi
-          echo "Desktop ${VERSION} (build ${BUILD}, submit=${SUBMIT}, release=${RELEASE}, tag=${TAG})"
-          { echo "version=$VERSION"; echo "build=$BUILD"; echo "submit=$SUBMIT"
-            echo "release=$RELEASE"; echo "tag=$TAG"; } >> "$GITHUB_OUTPUT"
+          [ "$TARGETS" = "all" ] && TARGETS="macos,windows,linux"
 
+          want() { case ",$TARGETS," in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+          plan() {
+            want "$1" || { echo skip; return; }
+            if [ "$CHANNEL" = "store" ] && [ "$PROMOTE" = "true" ]; then echo promote; else echo build; fi
+          }
+          MACOS=$(plan macos); LINUX=$(plan linux)
+          # Windows ne connaît pas la promotion : le Microsoft Store veut le
+          # paquet à chaque soumission, il n'y a rien à « faire monter ».
+          want windows && WINDOWS=build || WINDOWS=skip
+
+          # Ce que la Release Linux peut honnêtement annoncer comme partant
+          # avec elle. Une livraison Linux seule ne doit pas promettre l'App
+          # Store et le Microsoft Store, comme elle le faisait en dur.
+          SIBLINGS=""
+          [ "$MACOS" != skip ] && SIBLINGS="macOS : App Store"
+          if [ "$WINDOWS" != skip ]; then
+            [ -n "$SIBLINGS" ] && SIBLINGS="$SIBLINGS — Windows : Microsoft Store" || SIBLINGS="Windows : Microsoft Store"
+          fi
+
+          echo "Desktop ${VERSION} — cran ${CHANNEL} · macos=${MACOS} · windows=${WINDOWS} · linux=${LINUX} · build ${BUILD} · sha ${SHA}"
+          {
+            echo "sha=$SHA"; echo "version=$VERSION"; echo "build=$BUILD"; echo "channel=$CHANNEL"
+            echo "macos=$MACOS"; echo "windows=$WINDOWS"; echo "linux=$LINUX"
+            echo "tag=$TAG"; echo "siblings=$SIBLINGS"
+          } >> "$GITHUB_OUTPUT"
+
+      # Le pré-vol demande les TROIS jeux de notes que le bureau consomme : le
+      # canal « mac » pour App Store Connect, « win » pour le Microsoft Store,
+      # et le bloc nu pour la Release Linux.
+      - name: Pré-vol des notes de version
+        if: steps.plan.outputs.channel != 'build'
+        run: |
+          CHECKS=""
+          [ "${{ steps.plan.outputs.macos }}" != skip ] && CHECKS="$CHECKS --check asc:mac"
+          [ "${{ steps.plan.outputs.windows }}" != skip ] && CHECKS="$CHECKS --check msstore:win"
+          [ "${{ steps.plan.outputs.linux }}" != skip ] && CHECKS="$CHECKS --check github"
+          # shellcheck disable=SC2086
+          node .github/scripts/check-changelog.mjs \
+            --changelog changelogs/desktop.md --version "${{ steps.plan.outputs.version }}" $CHECKS
   # ── macOS App Store (Electron) ───────────────────────────────────────────
   # 1) Chaîne LGPL par architecture : dylibs mpv/FFmpeg + paquet natif de koffi.
-  #    Plus aucune chaîne Rust ici : la coquille macOS sort d'Electron, comme
-  #    Windows. Ce qui reste par architecture, c'est ce qui se COMPILE : mpv et
-  #    FFmpeg (~1 h par runner), donc les deux tournent en parallèle.
+  #    Ce qui reste par architecture, c'est ce qui se COMPILE : mpv et FFmpeg
+  #    (~1 h par runner), donc les deux tournent en parallèle.
   mac-libs:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos'
+    needs: prepare
+    if: needs.prepare.outputs.macos == 'build'
     name: macOS libs LGPL (${{ matrix.label }})
     strategy:
       fail-fast: true
@@ -117,6 +217,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -152,13 +254,15 @@ jobs:
 
   # 2) Paquet Electron universel + signature App Store + .pkg + envoi + notes
   mac-package:
-    needs: [version, mac-libs]
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos'
-    name: macOS universal package + submit
+    needs: [prepare, mac-libs]
+    if: needs.prepare.outputs.macos == 'build'
+    name: macOS universal package + envoi
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           # 24 et non 20 : la coquille s'appuie sur `node:sqlite`, et sa
@@ -222,8 +326,8 @@ jobs:
           node apps/desktop-electron/scripts/package-macos.mjs \
             --lib /tmp/lib-universal \
             --arch universal \
-            --version "${{ needs.version.outputs.version }}" \
-            --build "${{ needs.version.outputs.build }}" \
+            --version "${{ needs.prepare.outputs.version }}" \
+            --build "${{ needs.prepare.outputs.build }}" \
             --sign "$SIGN_APP" \
             --pkg-sign "$SIGN_PKG" \
             --profile /tmp/embedded.provisionprofile \
@@ -235,8 +339,8 @@ jobs:
           name: Tentacle-TV-AppStore-pkg
           path: "*.pkg"
 
-      - name: Submit to App Store Connect
-        if: needs.version.outputs.submit == 'true'
+      - name: Envoi à App Store Connect
+        if: needs.prepare.outputs.channel != 'build'
         env:
           API_KEY: ${{ secrets.APPLE_API_KEY }}
           API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -247,9 +351,10 @@ jobs:
           xcrun altool --upload-app -f *.pkg -t macos \
             --apiKey "$API_KEY" --apiIssuer "$API_ISSUER"
 
-      # Notes FR+EN depuis changelogs/desktop.md (bloc « ## [X.Y.Z] »). Non bloquant.
-      - name: Set release notes (App Store / TestFlight)
-        if: needs.version.outputs.submit == 'true'
+      # Notes FR+EN depuis changelogs/desktop.md (canal « mac »). Non bloquant :
+      # le pré-vol a déjà garanti le bloc, et asc-attach-build les repose.
+      - name: Poser les notes (App Store / TestFlight)
+        if: needs.prepare.outputs.channel != 'build'
         continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
@@ -257,51 +362,88 @@ jobs:
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: MAC_OS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/desktop.md
         run: node .github/scripts/asc-release-notes.mjs
 
-  # 3) Attend le traitement ASC puis rattache le build à la version App Store.
+  # 3) Attend le traitement ASC (~10-35 min), rattache le build et le distribue.
   mac-attach:
-    needs: [version, mac-package]
-    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'macos') && needs.version.outputs.submit == 'true'
-    name: macOS attach build to App Store version
+    needs: [prepare, mac-package]
+    if: needs.prepare.outputs.macos == 'build' && needs.prepare.outputs.channel != 'build' && needs['mac-package'].result == 'success'
+    name: macOS — rattacher et distribuer
     runs-on: ubuntu-latest
     timeout-minutes: 50
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Wait for ASC processing + attach build
+      - name: Attendre le traitement ASC + rattacher le build
         env:
           ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
           ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
           BUNDLE_ID: com.tentacle.mobile
           PLATFORM: MAC_OS
-          VERSION: ${{ needs.version.outputs.version }}
-          BUILD: ${{ needs.version.outputs.build }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
           CHANGELOG: changelogs/desktop.md
         run: node .github/scripts/asc-attach-build.mjs
+      - name: Distribuer au groupe de test
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD: ${{ needs.prepare.outputs.build }}
+          ASC_BETA_GROUP_ID: ${{ secrets.ASC_BETA_GROUP_MACOS_ID }}
+        run: node .github/scripts/asc-testflight-distribute.mjs
 
-  # ── Microsoft Store (MSIX) ───────────────────────────────────────────────
-  # Windows sort d'ELECTRON depuis la 1.20.0, macOS l'a rejoint — seul Linux
-  # reste sur Tauri.
-  # Ce job n'a donc plus de chaîne Rust : le lecteur reste le même libmpv,
-  # piloté par koffi. Le MSIX, lui, ne change pas d'identité (Name + Publisher
-  # inchangés), ce qui préserve la mise à jour et le conteneur de données de
-  # l'utilisateur — donc sa session et ses films téléchargés.
+  # 4) Le dernier geste manuel côté Apple. Au cran store seulement.
+  mac-review:
+    needs: [prepare, mac-attach]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel == 'store'
+      && needs.prepare.outputs.macos != 'skip'
+      && (needs.prepare.outputs.macos == 'promote' || needs['mac-attach'].result == 'success')
+    name: macOS — soumettre à l'examen
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Soumettre à l'examen App Store
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY }}
+          ASC_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_P8: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          BUNDLE_ID: com.tentacle.mobile
+          PLATFORM: MAC_OS
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: node .github/scripts/asc-submit-review.mjs
+
+  # ── Windows : MSIX + soumission Microsoft Store ────────────────────────────
+  # Le Microsoft Store n'a PAS de canal de test : une soumission y est publique
+  # par construction. Au cran « test », on s'arrête donc à l'artefact MSIX.
   windows-store:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows'
+    needs: prepare
+    if: needs.prepare.outputs.windows == 'build'
     name: Windows MSIX + soumission Store
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       - uses: actions/setup-node@v4
         with:
@@ -320,7 +462,7 @@ jobs:
         # du dépôt au lieu de celle du tag. Même geste que côté Tauri, où la
         # version vivait dans `tauri.conf.json`.
         shell: pwsh
-        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
+        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.prepare.outputs.version }}"
 
       - name: Build + empaquetage Electron
         # `pnpm package` enchaîne le build web, la compilation de la coquille et
@@ -332,7 +474,7 @@ jobs:
       - name: Assemble MSIX payload + manifest versionné
         shell: pwsh
         run: |
-          $ver = "${{ needs.version.outputs.version }}"
+          $ver = "${{ needs.prepare.outputs.version }}"
           $stage = Join-Path $env:RUNNER_TEMP "msixstage"
           Remove-Item -Recurse -Force $stage -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
@@ -384,9 +526,10 @@ jobs:
           Compress-Archive -Path $env:MSIX_PATH -DestinationPath $zip -Force
           "PACKAGE_ZIP=$zip" >> $env:GITHUB_ENV
 
-      # Notes FR/EN depuis changelogs/desktop.md (repli « ## [X.Y.Z] » nu).
+      # Notes FR/EN depuis changelogs/desktop.md (canal « win », repli sur le
+      # bloc nu). La soumission publie IMMÉDIATEMENT — d'où le cran store seul.
       - name: Soumettre au Microsoft Store (API, notes FR/EN, publication auto)
-        if: needs.version.outputs.submit == 'true'
+        if: needs.prepare.outputs.channel == 'store'
         env:
           PARTNER_TENANT_ID: ${{ secrets.PARTNER_TENANT_ID }}
           PARTNER_CLIENT_ID: ${{ secrets.PARTNER_CLIENT_ID }}
@@ -394,28 +537,27 @@ jobs:
           STORE_ID: ${{ env.STORE_ID }}
           PACKAGE_ZIP: ${{ env.PACKAGE_ZIP }}
           PACKAGE_FILE_NAME: TentacleTV.msix
-          VERSION: ${{ needs.version.outputs.version }}
+          VERSION: ${{ needs.prepare.outputs.version }}
           CHANGELOG: changelogs/desktop.md
         run: node .github/scripts/msstore-submit.mjs
 
   # ── Linux (.deb / .rpm / .pkg.tar.zst / AppImage) → Release desktop-vX.Y.Z ──
   #
-  # Electron, comme Windows et macOS. La coquille Tauri a été retirée.
-  #
   # ⚠️ `ubuntu-22.04` et pas plus récent, DÉLIBÉRÉMENT : la glibc est compatible
   # vers l'avant et jamais vers l'arrière. Une chaîne bâtie ici tourne sur Arch ;
-  # bâtie sur Arch, elle ne tournerait pas ici.
+  # l'inverse serait faux.
   linux:
-    needs: version
-    if: github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'linux'
+    needs: prepare
+    if: needs.prepare.outputs.linux == 'build'
     name: Linux .deb / .rpm / .pkg.tar.zst / AppImage
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     permissions:
       contents: write
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
 
       # `rpm` fournit rpmbuild, `libarchive-tools` fournit bsdtar — fpm en a
       # besoin pour le .rpm et le .pkg.tar.zst respectivement, et échoue sans.
@@ -455,7 +597,7 @@ jobs:
       # package.json EMBARQUÉ, et c'est cette version que l'auto-updater compare
       # au manifeste. Sans ce patch, l'application se croirait à jour à vie.
       - name: Injecter la version (versions.json) dans le paquet Electron
-        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.version.outputs.version }}"
+        run: node -e "const f='apps/desktop-electron/package.json';const fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');" "${{ needs.prepare.outputs.version }}"
 
       - name: Empaqueter (les quatre formats)
         run: |
@@ -509,15 +651,21 @@ jobs:
           if-no-files-found: error
 
       - name: Corps de release (notes changelog + guide d'installation)
-        if: needs.version.outputs.release == 'true'
+        if: needs.prepare.outputs.channel != 'build'
+        env:
+          SIBLINGS: ${{ needs.prepare.outputs.siblings }}
+          CHANNEL: ${{ needs.prepare.outputs.channel }}
         run: |
-          V="${{ needs.version.outputs.version }}"
+          V="${{ needs.prepare.outputs.version }}"
           node .github/scripts/release-notes.mjs \
             --changelog changelogs/desktop.md --version "$V" \
-            --format github --out notes.md || true
+            --format github --out notes.md
           {
             echo "Application desktop **Tentacle TV** ${V} pour Linux."
-            echo "(macOS : App Store — Windows : Microsoft Store, publiés par ce même tag.)"
+            # Cette ligne était écrite EN DUR : une livraison Linux seule
+            # promettait l'App Store et le Microsoft Store sans rien y envoyer.
+            [ -n "$SIBLINGS" ] && echo "(${SIBLINGS}, publiés par le même run.)"
+            [ "$CHANNEL" = "test" ] && echo "" && echo "> **Pré-version** — la mise à jour automatique ne la propose pas encore."
             echo ""
             if [ -s notes.md ]; then echo "## Nouveautés"; echo ""; cat notes.md; echo ""; fi
             echo "| Paquet | Distributions |"
@@ -544,13 +692,16 @@ jobs:
           } > release-body.md
           cat release-body.md
 
-      - name: Create versioned GitHub Release
-        if: needs.version.outputs.release == 'true'
+      # PRÉ-VERSION au cran test : le paquet est téléchargeable, mais le
+      # manifeste n'est pas patché — l'auto-updater ne propose rien.
+      - name: Créer la Release GitHub
+        if: needs.prepare.outputs.channel != 'build'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.version.outputs.tag }}
-          name: "Tentacle TV Desktop ${{ needs.version.outputs.version }}"
-          prerelease: false
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          target_commitish: ${{ needs.prepare.outputs.sha }}
+          name: "Tentacle TV Desktop ${{ needs.prepare.outputs.version }}"
+          prerelease: ${{ needs.prepare.outputs.channel == 'test' }}
           body_path: release-body.md
           files: |
             dist-linux/*.deb
@@ -560,94 +711,130 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
-  manifest:
-    name: Publier le manifeste d'auto-update
-    needs: [version, linux]
-    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'linux') && needs.version.outputs.release == 'true'
+  # Promotion Linux : la pré-version déjà publiée au cran test devient une
+  # version pleine. Rien n'est reconstruit — ce sont les paquets TESTÉS qui
+  # deviennent ceux que l'auto-updater propose.
+  linux-promote:
+    needs: prepare
+    if: needs.prepare.outputs.linux == 'promote'
+    name: Linux — publier la pré-version testée
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ needs.prepare.outputs.sha }}
+      - name: Basculer la Release en version pleine
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::aucune Release ${TAG} à promouvoir. Livre d'abord au cran « test », ou relance au cran « store » sans « reprendre ce qui a été testé »."
+            exit 1
+          fi
+          gh release edit "$TAG" --prerelease=false --latest
+          echo "Release ${TAG} publiée."
+
+  # ── Manifeste d'auto-update (updates/store-versions.json, bloc « linux ») ──
+  # Au cran STORE seulement : au cran test, la Release est une pré-version et
+  # l'auto-updater ne doit rien proposer.
+  manifest:
+    needs: [prepare, linux, linux-promote]
+    if: >-
+      !cancelled() && needs.prepare.outputs.channel == 'store'
+      && needs.prepare.outputs.linux != 'skip'
+      && (needs.linux.result == 'success' || needs['linux-promote'].result == 'success')
+    name: Manifeste auto-update (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: actions/download-artifact@v4
+
+      # En promotion, les sommes viennent de la Release elle-même : le job de
+      # build n'a pas tourné, mais ses paquets sont en ligne.
+      - name: Récupérer SHA256SUMS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if [ "${{ needs.prepare.outputs.linux }}" = "promote" ]; then
+            gh release download "$TAG" --pattern SHA256SUMS --clobber
+          fi
+
+      - name: Récupérer SHA256SUMS (artefact du build)
+        if: needs.prepare.outputs.linux == 'build'
+        uses: actions/download-artifact@v4
         with:
           name: tentacle-sums-main
-          path: sums-main
-      - name: Reprendre le SHA256SUMS
-        # Un seul fichier depuis que les quatre formats sortent du même job :
-        # electron-builder produit le paquet pacman lui-même, il n'y a plus de
-        # conteneur Arch à faire tourner ni de deuxième somme à recoller.
-        run: |
-          cp sums-main/SHA256SUMS SHA256SUMS
-          echo "SHA256SUMS complet :"; cat SHA256SUMS
+
       - name: Ajouter SHA256SUMS à la Release
+        if: needs.prepare.outputs.linux == 'build'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.version.outputs.tag }}
+          tag_name: ${{ needs.prepare.outputs.tag }}
           files: SHA256SUMS
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Patch du bloc linux (version/tag/assets/sha256)
-        run: |
-          node .github/scripts/patch-linux-manifest.mjs "${{ needs.version.outputs.version }}" "${{ needs.version.outputs.tag }}" SHA256SUMS
-      - name: Patch des notes du bloc linux
-        # Elles étaient écrites par le job des stores, dans la même branche que
-        # `microsoftStore`. Livrer Linux seul laissait donc la bannière de mise
-        # à jour annoncer la nouvelle version avec les nouveautés de l'ancienne.
-        run: |
-          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}" --only=linux
-      - name: Commit + push sur main
-        run: |
-          git config user.name "tentacle-bot"
-          git config user.email "bot@tentacletv.app"
-          git add updates/store-versions.json
-          git commit -m "chore(update): manifeste linux ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
-          git pull --rebase origin main
-          git push origin main
 
-  # ── Manifeste stores (macAppStore + microsoftStore) — job INDEPENDANT ──────
-  # Volontairement decouple du job linux : les blocs stores etaient patches en
-  # queue du job manifest (needs: linux+arch, gate target linux/all). Un job
-  # Linux en echec — ou une relivraison en dispatch cible macos/windows —
-  # laissait donc le manifeste macOS/Windows perime : c'est exactement ce qui
-  # est arrive au tag desktop-v1.13.1, reste annonce 1.13.0, et AUCUNE notif de
-  # mise a jour n'est partie alors que la version etait sur l'App Store. Ce job
-  # ne depend que du tag. Les deux jobs committent le meme fichier (blocs
-  # differents) : le `git pull --rebase` de chacun resout la course.
+      # Le manifeste est repris de `main` : c'est un fichier que d'autres jobs
+      # écrivent aussi, et repartir d'une copie périmée effacerait leur bloc.
+      # Le CHANGELOG, lui, reste celui du sha figé — c'est tout l'objet du
+      # changement : ces jobs lisaient main, donc une retouche poussée pendant
+      # le run partait dans le manifeste.
+      - name: Patcher le bloc linux (version/tag/assets/sha256 + notes)
+        run: |
+          git fetch --depth=1 origin main
+          git checkout FETCH_HEAD -- updates/store-versions.json
+          node .github/scripts/patch-linux-manifest.mjs \
+            "${{ needs.prepare.outputs.version }}" "${{ needs.prepare.outputs.tag }}" SHA256SUMS
+          node .github/scripts/patch-store-manifest.mjs \
+            "${{ needs.prepare.outputs.version }}" --only=linux
+      - uses: ./.github/actions/push-main
+        with:
+          paths: updates/store-versions.json
+          message: "chore(update) : manifeste linux ${{ needs.prepare.outputs.tag }}"
+
+  # Bloc microsoftStore, DÉCOUPLÉ du job linux : une livraison Windows seule
+  # doit patcher son bloc, et desktop-v1.13.1 était parti avec un manifeste
+  # périmé parce que ce patch vivait en queue du job Linux.
+  #
+  # Le bloc macAppStore, lui, n'est PAS patché ici : entre la soumission et
+  # l'approbation d'Apple il s'écoule des heures, et l'annoncer au run faisait
+  # pointer la pop-up de mise à jour vers une version introuvable. C'est
+  # store-watch.yml qui le pose quand ASC la déclare en vente.
   manifest-stores:
-    name: Publier le manifeste stores
-    needs: version
-    # La cible compte désormais : sur une livraison Linux seule, patcher le
-    # bloc `microsoftStore` annoncerait une version absente du Store.
-    if: (github.event_name == 'push' || inputs.target == 'all' || inputs.target == 'windows') && needs.version.outputs.release == 'true'
+    needs: [prepare, windows-store]
+    if: needs.prepare.outputs.channel == 'store' && needs.prepare.outputs.windows == 'build' && needs['windows-store'].result == 'success'
+    name: Manifeste stores (Microsoft)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ needs.prepare.outputs.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Patch des blocs stores (microsoftStore + notes linux)
-        # --only=ms : le bloc macAppStore n'est PLUS patche au tag. Le tag
-        # precede la review Apple de plusieurs heures — patcher ici faisait
-        # annoncer une version introuvable sur le store. C'est store-watch.yml
-        # qui l'aligne sur l'etat READY_FOR_SALE d'App Store Connect.
+      - name: Patcher le bloc microsoftStore
         run: |
-          node .github/scripts/patch-store-manifest.mjs "${{ needs.version.outputs.version }}" --only=ms
-      - name: Commit + push sur main
-        run: |
-          git config user.name "tentacle-bot"
-          git config user.email "bot@tentacletv.app"
-          git add updates/store-versions.json
-          git commit -m "chore(update): manifeste stores ${GITHUB_REF_NAME}" || { echo "rien à committer"; exit 0; }
-          git pull --rebase origin main
-          git push origin main
+          git fetch --depth=1 origin main
+          git checkout FETCH_HEAD -- updates/store-versions.json
+          node .github/scripts/patch-store-manifest.mjs \
+            "${{ needs.prepare.outputs.version }}" --only=ms
+      - uses: ./.github/actions/push-main
+        with:
+          paths: updates/store-versions.json
+          message: "chore(update) : manifeste Microsoft Store ${{ needs.prepare.outputs.version }}"
+
