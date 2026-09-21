@@ -123,9 +123,11 @@ internal fun MpvRenderer.applyInitOptions(handle: MPVLib) {
 }
 
 /**
- * Le paquet de certificats racine de Mozilla (extrait par curl, embarqué dans
- * les assets), copié une fois dans le dossier mpv. Même confiance que le
+ * Le paquet de certificats racine de Mozilla (extrait par curl ; le fichier
+ * est `ios/Resources/mpv/cacert.pem` du module, monté en asset par
+ * `build.gradle`), copié une fois dans le dossier mpv. Même confiance que le
  * lecteur système : les autorités du système, pas celles de l'utilisateur.
+ * Vérifié à l'émulateur face à un serveur Let's Encrypt (chaîne ECDSA P-384).
  */
 private fun MpvRenderer.installCaBundle(mpvDir: File): File? {
     val target = File(mpvDir, "cacert.pem")
