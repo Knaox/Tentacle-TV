@@ -24,7 +24,8 @@ Correctifs livrés :
 ## A FAIRE sur le Mac (ordre important)
 1. `git pull` sur `main`.
 2. **Redéployer le backend prod** (image docker) AVANT de tester macOS, pour qu'il serve `/yt-embed.html` :
-   `docker compose pull && docker compose up -d` (l'image `ghcr.io/knaox/tentacle-tv:latest` est rebuildée à chaque push main).
+   `docker compose pull && docker compose up -d` (l'image `ghcr.io/knaox/tentacle-tv:latest` ne bouge plus à chaque push : elle est
+   republiée quand on lance `server.yml` au cran `store` — cf. `docs/RELEASE-TAGS.md`).
 3. Récupérer le **dmg 1.8.4** : https://github.com/Knaox/Tentacle-TV/releases/tag/v1.8.4 (ou via l'auto-updater).
 4. **Tester sur macOS** :
    - lecture d'une **bande-annonce** YouTube (valide le correctif 1.8.2 via `yt-embed.html`) ;
