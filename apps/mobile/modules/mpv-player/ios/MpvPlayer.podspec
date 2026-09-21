@@ -28,5 +28,7 @@ Pod::Spec.new do |s|
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
   # Police latine de repli de libass (Noto Sans, licence OFL 1.1) : copiée dans
   # le bundle principal, d'où `Bundle.main` la relie au dossier de polices mpv.
-  s.resources = "Fonts/*.{ttf,otf}"
+  # Paquet de racines Mozilla (`Resources/mpv/cacert.pem`, aussi l'asset Android
+  # par `build.gradle`) : copié à la racine du bundle, donné à mpv en `tls-ca-file`.
+  s.resources = ["Fonts/*.{ttf,otf}", "Resources/mpv/cacert.pem"]
 end

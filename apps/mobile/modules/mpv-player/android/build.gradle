@@ -21,6 +21,14 @@ android {
   lintOptions {
     abortOnError false
   }
+  sourceSets {
+    main {
+      // Le paquet de certificats racine (`mpv/cacert.pem`) vit dans les
+      // ressources iOS du module : CocoaPods ne lit rien hors de son dossier,
+      // Gradle lit n'importe où — une seule copie pour les deux plateformes.
+      assets.srcDirs += ['../ios/Resources']
+    }
+  }
 }
 
 dependencies {

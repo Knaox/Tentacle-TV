@@ -40,6 +40,7 @@ extension MpvRenderer {
     for (name, value) in Self.baseOptions {
       setInitOption(handle, name, value)
     }
+    setupTlsTrust(handle)
     setupSubtitleFonts(handle)
     #if DEBUG
     applyDeveloperOverrides(handle)
@@ -97,7 +98,8 @@ extension MpvRenderer {
     // `-append` ajoute UN couple sans le redécouper.
     ("stream-lavf-o-append", "reconnect_on_http_error=4xx,5xx"),
     ("demuxer-lavf-o", "probesize=10000000,analyzeduration=10000000"),
-    // fetch vérifie les certificats : mpv aussi.
+    // fetch vérifie les certificats : mpv aussi — avec les racines de
+    // `setupTlsTrust`, sans lesquelles ce `yes` refuse TOUT serveur https.
     ("tls-verify", "yes"),
 
     // Sous-titres : on ajoute les externes nous-mêmes ; jamais de
@@ -130,6 +132,24 @@ extension MpvRenderer {
     ("audio-client-name", "Tentacle TV"),
     ("force-media-title", "Tentacle TV"),
   ]
+
+  // MARK: - Racines de confiance TLS
+
+  /// Le FFmpeg de MPVKit parle GnuTLS, compilé en croisé sans aucun magasin
+  /// de confiance (`--without-p11-kit`, pas de `--with-default-trust-store-file`,
+  /// et la détection automatique de GnuTLS ne joue qu'en compilation native) :
+  /// `gnutls_certificate_set_x509_system_trust` ne fournit rien sur iOS, et
+  /// `tls-verify=yes` refuse alors tout certificat, même valide. Le paquet de
+  /// racines Mozilla du module (`Resources/mpv/cacert.pem`, copié à la racine
+  /// du bundle) est donné en `tls-ca-file` — le même fichier qu'Android. Il se
+  /// lit dans le bundle à chaque démarrage : rien à copier ni à relier.
+  func setupTlsTrust(_ handle: OpaquePointer) {
+    guard let bundleFile = Bundle.main.url(forResource: "cacert", withExtension: "pem") else {
+      MpvLogger.shared.log("cacert.pem absent du bundle : tls-verify refusera tout serveur https", type: "Warn")
+      return
+    }
+    setInitOption(handle, "tls-ca-file", bundleFile.path)
+  }
 
   // MARK: - Police de repli
 
