@@ -6,6 +6,13 @@ import { useTVRemote } from "./useTVRemote";
 import { useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
+/** Débordement vertical laissé à l'anneau, au halo et à l'ombre de la carte
+ *  focalisée. La fenêtre de rognage est plus haute d'autant EN HAUT ET EN BAS,
+ *  et décalée de la même valeur : la mise en page ne bouge pas d'un point.
+ *  Mesuré : 1,08 d'échelle sur ~310 pt ≈ 25 pt vers le haut, plus 6 de halo,
+ *  plus 18 de rayon d'ombre — les 32 pt de réserve haute ne suffisaient pas. */
+const ROW_CLIP_BLEED = 40;
+
 interface FocusableRowProps<T> {
   title?: string;
   /** Juste après le titre, toujours visible (la pastille du filtre de
@@ -100,6 +107,13 @@ export function FocusableRow<T>({
           {titleAccessory}
         </View>
       )}
+      {/* La piste est ROGNÉE à la colonne de contenu. Sans cela, les cartes
+          défilées à gauche restaient peintes sous le rail — qui n'a qu'un voile —
+          et le menu devenait illisible (`overflow: visible` sur la liste, dans un
+          ScrollView élargi à tout l'écran pour le halo de la bannière). Le rognage
+          est horizontal en pratique : la fenêtre déborde de ROW_CLIP_BLEED en haut
+          et en bas, là où l'anneau et l'ombre de la carte focalisée passent. */}
+      <View style={{ overflow: "hidden", marginVertical: -ROW_CLIP_BLEED, paddingVertical: ROW_CLIP_BLEED }}>
       {/* Pas de trapFocusLeft : LEFT depuis la 1re carte doit atteindre le rail. */}
       <TVFocusGuideView trapFocusRight>
       <FlatList
@@ -144,6 +158,7 @@ export function FocusableRow<T>({
         )}
       />
       </TVFocusGuideView>
+      </View>
     </View>
   );
 }
