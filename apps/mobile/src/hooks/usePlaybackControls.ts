@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import type { MutableRefObject } from "react";
 import { TICKS_PER_SECOND } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream, QualityKey, QualityPreset } from "@tentacle-tv/shared";
+import type { PlayerEngineKind } from "@/player/engine/types";
 import { isBitmapSub, type PlaybackFetchOptions } from "./usePlaybackInfoFetch";
 import type { PlaybackState } from "./usePlayerPlayback";
 import type { usePlayerQuality } from "./usePlayerQuality";
@@ -86,7 +87,12 @@ export function usePlaybackControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPlaybackInfo, quality]);
 
-  const retry = useCallback(() => {
+  /**
+   * Relance sans lecture directe (transcodage). `engine` : le moteur pour
+   * lequel négocier — l'écran vise le lecteur système, un flux HLS h264/aac se
+   * lit partout et c'est souvent le lecteur avancé qui vient d'échouer.
+   */
+  const retry = useCallback((opts?: { engine?: PlayerEngineKind }) => {
     onRetry();
     // Déjà en transcodage : retirer les DirectPlayProfiles (isRetry) ne change
     // RIEN à la négociation — Jellyfin resservirait le même encodage. Pour que
@@ -99,6 +105,7 @@ export function usePlaybackControls({
     }
     fetchPlaybackInfo({
       isRetry: true,
+      engine: opts?.engine,
       ...(degraded
         ? { maxBitrate: degraded.bitrate ?? 0, maxWidth: degraded.width ?? 0, maxHeight: degraded.height ?? 0 }
         : {}),

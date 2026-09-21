@@ -67,7 +67,7 @@ export interface PlayerSessionCore {
   episodeNav: { nextEpisode?: MediaItem | null; previousEpisode?: MediaItem | null };
   segments: ReturnType<typeof usePlaybackSegments>;
   reporting: PlaybackReporter;
-  retry: () => void;
+  retry: (opts?: { engine?: PlayerEngineKind }) => void;
   fetchNonce: number;
   streamUrl: string | null;
   mediaSourceId: string;
