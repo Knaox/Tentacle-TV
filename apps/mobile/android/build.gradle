@@ -14,6 +14,15 @@ buildscript {
   }
 }
 
+// Le NDK de l'app est celui de `android.ndkVersion` (gradle.properties) : posé
+// ici, avant le plugin racine d'Expo, qui ne fixe `ndkVersion` que s'il manque —
+// expo-build-properties 1.0 ne connaît pas cette clé, et la table des propriétés
+// `android.*` du plugin de settings non plus.
+def requestedNdk = findProperty('android.ndkVersion')
+if (requestedNdk) {
+  ext.ndkVersion = requestedNdk
+}
+
 allprojects {
   repositories {
     google()
