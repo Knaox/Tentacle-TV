@@ -6,14 +6,14 @@
 package expo.modules.mpvplayer
 
 /** Toutes les pistes telles que mpv les voit, avec l'identité qui compte pour Jellyfin. */
-internal fun MpvRenderer.trackList(handle: MPVLib): List<Map<String, Any?>> {
-    val tracks = mutableListOf<Map<String, Any?>>()
+internal fun MpvRenderer.trackList(handle: MPVLib): List<Map<String, Any>> {
+    val tracks = mutableListOf<Map<String, Any>>()
     val count = handle.getPropertyInt("track-list/count") ?: 0
     for (index in 0 until count) {
         val prefix = "track-list/$index/"
         val type = handle.getPropertyString(prefix + "type") ?: continue
         val id = handle.getPropertyInt(prefix + "id") ?: continue
-        val track = mutableMapOf<String, Any?>("id" to id, "type" to type)
+        val track = mutableMapOf<String, Any>("id" to id, "type" to type)
         handle.getPropertyInt(prefix + "ff-index")?.let { track["ffIndex"] = it }
         val external = handle.getPropertyBoolean(prefix + "external") ?: false
         track["external"] = external
@@ -65,7 +65,7 @@ internal fun MpvRenderer.applyBidiMode(handle: MPVLib, trackId: Int) {
     handle.setPropertyString("sub-ass-style-overrides", if (isAss) "Encoding=-1" else "")
 }
 
-fun MpvRenderer.getTracks(): List<Map<String, Any?>> = mpv?.let { trackList(it) } ?: emptyList()
+fun MpvRenderer.getTracks(): List<Map<String, Any>> = mpv?.let { trackList(it) } ?: emptyList()
 
 /** `id` mpv ; négatif = aucune piste audio. */
 fun MpvRenderer.setAudioTrack(id: Int) {
@@ -88,9 +88,9 @@ fun MpvRenderer.addSubtitle(url: String, select: Boolean) {
 }
 
 /** Instantané pour le panneau « Détails ». */
-fun MpvRenderer.getTechnicalInfo(): Map<String, Any?> {
+fun MpvRenderer.getTechnicalInfo(): Map<String, Any> {
     val handle = mpv ?: return emptyMap()
-    val info = mutableMapOf<String, Any?>()
+    val info = mutableMapOf<String, Any>()
     handle.getPropertyInt("video-params/w")?.takeIf { it > 0 }?.let { info["videoWidth"] = it }
     handle.getPropertyInt("video-params/h")?.takeIf { it > 0 }?.let { info["videoHeight"] = it }
     handle.getPropertyString("video-format")?.let { info["videoCodec"] = it }
@@ -102,7 +102,9 @@ fun MpvRenderer.getTechnicalInfo(): Map<String, Any?> {
     handle.getPropertyInt("frame-drop-count")?.let { info["droppedFrames"] = it }
     handle.getPropertyString("hwdec-current")?.let { info["hwdec"] = it }
     handle.getPropertyString("current-ao")?.let { info["audioOutput"] = it }
+    handle.getPropertyString("audio-params/channels")?.let { info["audioChannels"] = it }
     info["hdr"] = hdrMode(handle)
+    info["log"] = MpvLogger.recent()
     return info
 }
 

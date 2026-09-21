@@ -3,8 +3,9 @@
 // MPEG-2, DivX, VobSub) et pour l'ASS stylé. Code Kotlin dérivé du module
 // `mpv-player` de Streamyfin (MPL-2.0) — voir apps/mobile/THIRD-PARTY-LICENSES.md.
 //
-// ⚠️ Écrit sans compilation dans la session qui l'a produit : la CI Android
-// est son premier compilateur.
+// Les ABI viennent de l'AAR (arm64-v8a, armeabi-v7a, x86, x86_64, 64 bits
+// alignés 16 Ko) et se filtrent par `reactNativeArchitectures` de l'application :
+// un `abiFilters` ici ne toucherait que du code natif que ce module ne construit pas.
 apply plugin: 'com.android.library'
 apply plugin: 'expo-module-gradle-plugin'
 
@@ -16,10 +17,6 @@ android {
   defaultConfig {
     versionCode 1
     versionName "1.0.0"
-    ndk {
-      // Les ABI livrées par libmpv-android 1.0.0 (64 bits alignés 16 Ko).
-      abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86_64'
-    }
   }
   lintOptions {
     abortOnError false
