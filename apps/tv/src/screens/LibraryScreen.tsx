@@ -113,8 +113,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
   ), [libraryId, displayName, collectionType, lf.filters, lf.hasActiveFilters, lf.setStatusFilter, lf.setIsFavorite, lf.resetFilters, total, openMenuAt]);
 
   return (
-    <TVScreenFrame>
-      <TVAmbientBackdrop />
+    <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
       {/* @ts-expect-error — TVFocusGuideView (react-native-tvos). `autoFocus` le
           rend guide de focus au sens du moteur natif : il devient le plus proche
           ancêtre de la grille, donc celui vers qui la récupération de focus se

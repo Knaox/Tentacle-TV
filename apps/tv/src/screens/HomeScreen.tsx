@@ -179,9 +179,7 @@ function HomeScreenInner({ navigation }: Props) {
   }, [jfClient, storage, queryClient]);
 
   return (
-    <TVScreenFrame>
-      {/* Ambient backdrop — sits behind everything, fades to focused item */}
-      <TVAmbientBackdrop />
+    <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
       {/* @ts-expect-error — TVFocusGuideView props from react-native-tvos. `autoFocus`
           garantit que le focus revient toujours sur un enfant focusable quand
           l'écran regagne le focus (retour d'un player figé qui avait perdu le
