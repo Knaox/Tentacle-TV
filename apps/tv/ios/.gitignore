@@ -22,3 +22,6 @@ xcuserdata/
 
 # CocoaPods (régénéré via `pod install`)
 Pods/
+
+# SwiftPM (PrismCore) : cache local de résolution — Package.resolved reste SUIVI.
+*.xcworkspace/xcshareddata/swiftpm/configuration/
