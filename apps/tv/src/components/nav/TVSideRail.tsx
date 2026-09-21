@@ -6,7 +6,7 @@ import { useTentacleConfig, useJellyfinClient, useUserId, prefetchLibraryCatalog
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { RAIL, railHintWidth } from "@tentacle-tv/tv-core";
-import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
+import { TV_OVERSCAN_PT, TV_RAIL_SCRIM_NATIVE } from "@tentacle-tv/theme";
 import { RailRow } from "./RailRow";
 import { useRailEntries } from "./railEntries";
 import { useRailPinning } from "./railPinning";
@@ -40,8 +40,12 @@ interface TVSideRailProps {
  * moteur de focus vient de calculer sa géométrie sur ces positions — si elles
  * bougeaient pendant la transition, il viserait des cases qui n'existent plus.
  *
- * Aucun fond au repos : le rail flotte au-dessus de l'affiche, et la lisibilité
- * des icônes vient du voile de la bannière elle-même.
+ * Un VOILE au repos (TV_RAIL_SCRIM) : 0,75 au bord, éteint à la colonne de
+ * contenu. L'ancienne règle — aucun fond, la lisibilité venait du voile de la
+ * bannière qui passait sous le rail — est morte le jour où la bannière est
+ * redevenue une carte en retrait et où le décor ambiant a gagné les bords :
+ * les icônes se lisaient sur une photographie. Ce n'est PAS le mur opaque
+ * retiré autrefois, et il ne s'anime jamais (aucun coût par image).
  */
 export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, grabFocusSignal }: TVSideRailProps) {
   const { t } = useTranslation("nav");
@@ -202,6 +206,15 @@ export const TVSideRail = memo(function TVSideRail({ currentRoute, onNavigate, g
       pointerEvents="box-none"
       style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED, zIndex: 100 }}
     >
+      {/* Le voile de repos — statique, sous le panneau. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={TV_RAIL_SCRIM_NATIVE.colors}
+        locations={TV_RAIL_SCRIM_NATIVE.locations}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: RAIL_COLLAPSED }}
+      />
       {/* Le panneau, DERRIÈRE le rail : il déborde largement à droite et s'y
           éteint, ce qui évite une arête verticale au milieu de l'affiche. */}
       <Animated.View

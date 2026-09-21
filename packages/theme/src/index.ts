@@ -119,7 +119,9 @@ export {
   TV_PLAYER_NEXT_CARD,
   TV_PLAYER_PANEL,
   TV_PLAYER_SKIP,
+  TV_RAIL_SCRIM,
   tvOnlyCssVarEntries,
+  tvRailScrimCss,
 } from "./tokens/tvOnly";
 
 export {
@@ -136,5 +138,6 @@ export {
   TV_LAYERS,
   TV_OVERSCAN_PT,
   TV_RADIUS,
+  TV_RAIL_SCRIM_NATIVE,
   TV_SHADOW,
 } from "./native/tvTokens";
