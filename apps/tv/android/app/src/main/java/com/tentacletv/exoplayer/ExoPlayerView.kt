@@ -6,7 +6,6 @@ import android.net.Uri
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
-import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -17,18 +16,8 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.text.CueGroup
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.HttpDataSource
-import androidx.media3.exoplayer.DefaultLoadControl
-import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.Renderer
-import androidx.media3.exoplayer.audio.AudioCapabilities
-import androidx.media3.exoplayer.audio.AudioSink
-import androidx.media3.exoplayer.audio.DefaultAudioSink
-import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.text.TextOutput
 import androidx.media3.exoplayer.text.TextRenderer
-import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.facebook.react.bridge.Arguments
@@ -116,118 +105,15 @@ class ExoPlayerView(
         if (player != null) return
         Log.w(TAG, ">>> initPlayer START")
 
-        val audioCapabilities = if (audioPassthrough) {
-            AudioCapabilities.getCapabilities(reactContext)
-        } else {
-            AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES
-        }
-
-        val renderersFactory = object : DefaultRenderersFactory(reactContext) {
-            init {
-                setExtensionRendererMode(EXTENSION_RENDERER_MODE_ON)
-                setEnableDecoderFallback(true)
-            }
-
-            override fun buildAudioSink(
-                context: android.content.Context,
-                enableFloatOutput: Boolean,
-                enableAudioTrackPlaybackParams: Boolean,
-            ): AudioSink {
-                return DefaultAudioSink.Builder(context)
-                    .setAudioCapabilities(audioCapabilities)
-                    .setEnableFloatOutput(enableFloatOutput)
-                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                    .build()
-            }
-
-            override fun buildVideoRenderers(
-                context: android.content.Context,
-                extensionRendererMode: Int,
-                mediaCodecSelector: MediaCodecSelector,
-                enableDecoderFallback: Boolean,
-                eventHandler: android.os.Handler,
-                eventListener: androidx.media3.exoplayer.video.VideoRendererEventListener,
-                allowedVideoJoiningTimeMs: Long,
-                out: java.util.ArrayList<androidx.media3.exoplayer.Renderer>,
-            ) {
-                out.add(DvCompatRenderer(
-                    context, mediaCodecSelector, enableDecoderFallback,
-                    eventHandler, eventListener, allowedVideoJoiningTimeMs,
-                ))
-                super.buildVideoRenderers(
-                    context, extensionRendererMode, mediaCodecSelector,
-                    enableDecoderFallback, eventHandler, eventListener,
-                    allowedVideoJoiningTimeMs, out,
-                )
-            }
-
-            // Force legacy subtitle decoding — TextRenderer actively decodes SSA/ASS
-            // instead of relying on extraction-time parsing (broken for onCues in 1.8)
-            override fun buildTextRenderers(
-                context: android.content.Context,
-                output: TextOutput,
-                outputLooper: android.os.Looper,
-                extensionRendererMode: Int,
-                out: java.util.ArrayList<Renderer>,
-            ) {
-                super.buildTextRenderers(context, output, outputLooper, extensionRendererMode, out)
-                for (renderer in out) {
-                    if (renderer is TextRenderer) {
-                        renderer.experimentalSetLegacyDecodingEnabled(true)
-                        Log.w(TAG, ">>> TextRenderer legacy decoding ENABLED")
-                    }
-                }
-            }
-        }
-
-        // Disable extraction-time subtitle parsing (pair with TextRenderer legacy mode)
-        val mediaSourceFactory = DefaultMediaSourceFactory(reactContext)
-            .experimentalParseSubtitlesDuringExtraction(false)
-
-        val preferredMimeTypes = mutableListOf<String>()
-        if (audioPassthrough) {
-            val caps = AudioCapabilities.getCapabilities(reactContext)
-            val candidates = mapOf(
-                MimeTypes.AUDIO_TRUEHD to android.media.AudioFormat.ENCODING_DOLBY_TRUEHD,
-                MimeTypes.AUDIO_DTS_HD to android.media.AudioFormat.ENCODING_DTS_HD,
-                MimeTypes.AUDIO_E_AC3 to android.media.AudioFormat.ENCODING_E_AC3,
-                MimeTypes.AUDIO_AC3 to android.media.AudioFormat.ENCODING_AC3,
-                MimeTypes.AUDIO_DTS to android.media.AudioFormat.ENCODING_DTS,
-            )
-            for ((mime, encoding) in candidates) {
-                if (caps.supportsEncoding(encoding)) preferredMimeTypes.add(mime)
-            }
-            Log.w(TAG, ">>> Audio passthrough: $preferredMimeTypes")
-        }
-
-        val trackSelector = DefaultTrackSelector(reactContext).apply {
-            parameters = buildUponParameters()
-                .setPreferredAudioLanguage("und")
-                .setPreferredAudioMimeTypes(*preferredMimeTypes.toTypedArray())
-                // Démarrer SANS sous-titre (subtitleIndex=-1 côté JS) — la
-                // sélection se fait ensuite explicitement via setSubtitleTrack.
-                .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-                .build()
-        }
-
-        val loadControl = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(50_000, 300_000, 2_500, 5_000)
-            .build()
-
+        val preferredMimeTypes = ExoPlayerFactory.preferredAudioMimeTypes(reactContext, audioPassthrough)
         player = ExoPlayer.Builder(reactContext)
-            .setRenderersFactory(renderersFactory)
-            .setMediaSourceFactory(mediaSourceFactory)
-            .setTrackSelector(trackSelector)
-            .setLoadControl(loadControl)
+            .setRenderersFactory(ExoPlayerFactory.createRenderersFactory(reactContext, audioPassthrough))
+            .setMediaSourceFactory(ExoPlayerFactory.createMediaSourceFactory(reactContext))
+            .setTrackSelector(ExoPlayerFactory.createTrackSelector(reactContext, preferredMimeTypes, tunneling = false))
+            .setLoadControl(ExoPlayerFactory.createLoadControl())
             .build()
             .also { exo ->
-                exo.setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(C.USAGE_MEDIA)
-                        .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                        .build(),
-                    false,
-                )
+                exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)
 
                 exo.addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
