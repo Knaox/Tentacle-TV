@@ -91,12 +91,14 @@ extension MpvRenderer {
     ("cache-pause-initial", "yes"),
     ("cache-pause-wait", "10"),
     ("network-timeout", "30"),
+    // La dernière valeur contient une virgule, le séparateur de la liste :
+    // `\,` n'est pas un échappement pour mpv (mesuré : « Could not set
+    // AVOption 5xx,… ») et `-append` est refusé par mpv_set_option_string
+    // (mesuré sur Android : -5 ; ici le refus passait par le journal). La
+    // forme `%n%` de mpv — longueur, puis la chaîne — la protège : vérifié
+    // avec un mpv de bureau, FFmpeg retente bien sur un 400.
     ("stream-lavf-o",
-     "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5,reconnect_max_retries=8"),
-    // La valeur contient une virgule, le séparateur de la liste : `\,` n'est pas
-    // un échappement pour mpv (mesuré : « Could not set AVOption 5xx,… »),
-    // `-append` ajoute UN couple sans le redécouper.
-    ("stream-lavf-o-append", "reconnect_on_http_error=4xx,5xx"),
+     "reconnect=1,reconnect_streamed=1,reconnect_on_network_error=1,reconnect_delay_max=5,reconnect_max_retries=8,reconnect_on_http_error=%7%4xx,5xx"),
     ("demuxer-lavf-o", "probesize=10000000,analyzeduration=10000000"),
     // fetch vérifie les certificats : mpv aussi — avec les racines de
     // `setupTlsTrust`, sans lesquelles ce `yes` refuse TOUT serveur https.
