@@ -3,6 +3,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
+import type { PrismStart } from "../utils/prismCoreStart";
 
 /**
  * Construit l'URL Jellyfin selon le mode de lecture :
@@ -84,7 +85,9 @@ export function useTVStreamUrl(args: {
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
-  // `isPrismCore` toujours false ici (lecture directe PrismCore = tvOS uniquement) ; `failed`
+  // `isPrismCore`/`prism`/`retryMuxed` : PrismCore = tvOS uniquement, inertes ici ; `failed`
   // toujours false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité `.ios.ts`.
-  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, failed: false };
+  const prism: PrismStart | undefined = undefined;
+  const retryMuxed = async (_positionSec: number): Promise<boolean> => false;
+  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed };
 }

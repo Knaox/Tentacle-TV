@@ -117,7 +117,7 @@ export function usePlayerStreamPipeline(args: {
   // position posée par un changement de piste/qualité (startTicks).
   const { startSeconds } = useTVInitialResume({ item, startTicks, started: hasStarted });
 
-  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, failed } = useTVStreamUrl({
+  const { streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed } = useTVStreamUrl({
     itemId, mediaSourceId, container: mediaSource?.Container, streams, audioIndex, subtitleIndex, startTicks,
     startSeconds,
     forceTranscode, isTranscodingQuality: transcodingQuality,
@@ -174,7 +174,7 @@ export function usePlayerStreamPipeline(args: {
     startTicks, setStartTicks, forceTranscode, setForceTranscode, captureReloadTicks,
     useExoPlayer, playerRef, isDirectStream,
     audioIndex, handleAudioChange, subtitleIndex, handleSubtitleChange,
-    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, failed,
+    startSeconds, streamUrl, playSessionId, isDirectPlay, isPrismCore, prism, failed, retryMuxed,
     reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef,
     mpvTracks, handleSeek,
   };
