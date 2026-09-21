@@ -146,6 +146,8 @@ export function LocalPlayerScreen({ itemId, localSource, onMediaMissing }: Props
     engine: eng.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: true,
     changeAudio: pb.changeAudio, changeSubtitle: pb.changeSubtitle, seek: handleSeek, setPaused,
     simulateAirPlay: () => undefined,
+    changeQuality: () => undefined,
+    technicalInfo: () => engineRef.current?.getTechnicalInfo?.() ?? Promise.resolve({}),
   }), [eng.engine, pb.audioIndex, pb.subtitleIndex, pb.changeAudio, pb.changeSubtitle, handleSeek]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);

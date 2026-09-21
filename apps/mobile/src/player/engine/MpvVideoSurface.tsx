@@ -36,6 +36,7 @@ export function MpvVideoSurface({
 
   useImperativeHandle(engineRef, () => ({
     seek: (seconds: number) => { void viewRef.current?.seekTo(seconds); },
+    getTechnicalInfo: async () => ({ ...(await viewRef.current?.getTechnicalInfo()) }),
   }), []);
 
   // La source, mémoïsée sur ses valeurs (une prop identique ne recharge rien).

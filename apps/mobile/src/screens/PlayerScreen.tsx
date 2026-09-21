@@ -229,7 +229,9 @@ export function PlayerScreen({ itemId }: Props) {
     engine: pb.engine, audioIndex: pb.audioIndex, subtitleIndex: pb.subtitleIndex, isDirectPlay: pb.isDirectPlay,
     changeAudio: handleSelectAudio, changeSubtitle: handleSelectSubtitle, seek: handleSeek, setPaused,
     simulateAirPlay: onAirPlayRoute,
-  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute]));
+    changeQuality: (key) => pb.changeQuality(key as Parameters<typeof pb.changeQuality>[0]),
+    technicalInfo: () => engineRef.current?.getTechnicalInfo?.() ?? Promise.resolve({}),
+  }), [pb.engine, pb.audioIndex, pb.subtitleIndex, pb.isDirectPlay, pb.changeQuality, handleSelectAudio, handleSelectSubtitle, handleSeek, onAirPlayRoute]));
 
   const toggleOverlay = useCallback(() => setOverlayVisible((v) => !v), []);
 

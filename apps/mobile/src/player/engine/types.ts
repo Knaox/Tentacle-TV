@@ -44,6 +44,8 @@ export interface ExternalSubtitleSource {
 /** Ce que les gestionnaires commandent au moteur, quel qu'il soit. */
 export interface PlayerEngineHandle {
   seek(seconds: number): void;
+  /** Lecteur avancé : l'instantané technique (décodeur, images perdues, journal) pour « Détails » et le crochet de dev. */
+  getTechnicalInfo?(): Promise<Record<string, unknown>>;
 }
 
 /**

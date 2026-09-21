@@ -55,8 +55,23 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
     /** L'intention de JS (la prop `paused`) : la reprise après une perte de surface s'y réfère. */
     private var jsPaused = false
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-    private var focusRequest: AudioFocusRequest? = null
     private var hasAudioFocus = false
+    /**
+     * UNE requête pour toute la vie de la vue. En refaire une à chaque reprise
+     * faisait perdre le focus à la précédente : Android annonçait la perte à
+     * l'instant même où l'on relançait, et la lecture se remettait en pause
+     * (mesuré à l'émulateur, après un appel entrant).
+     */
+    private val focusRequest: AudioFocusRequest by lazy {
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+            .build()
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(attributes)
+            .setOnAudioFocusChangeListener(this)
+            .build()
+    }
 
     init {
         setBackgroundColor(Color.BLACK)
@@ -154,21 +169,11 @@ class MpvPlayerView(context: Context, appContext: AppContext) :
 
     private fun requestAudioFocus() {
         if (hasAudioFocus) return
-        val attributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-            .build()
-        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-            .setAudioAttributes(attributes)
-            .setOnAudioFocusChangeListener(this)
-            .build()
-        focusRequest = request
-        hasAudioFocus = audioManager.requestAudioFocus(request) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        hasAudioFocus = audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
     private fun abandonAudioFocus() {
-        focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-        focusRequest = null
+        audioManager.abandonAudioFocusRequest(focusRequest)
         hasAudioFocus = false
     }
 
