@@ -13,6 +13,10 @@ export interface PlayerDevHook {
   setPaused: (paused: boolean) => void;
   /** Simule un changement de route AirPlay (le simulateur n'en a pas). */
   simulateAirPlay: (active: boolean) => void;
+  /** Palier de qualité (« original » désarme le plafond automatique). */
+  changeQuality: (key: string) => void;
+  /** Lecteur avancé : décodeur, images perdues, journal natif. */
+  technicalInfo: () => Promise<Record<string, unknown>>;
 }
 
 type DevGlobal = typeof globalThis & { __tentaclePlayer?: PlayerDevHook };
