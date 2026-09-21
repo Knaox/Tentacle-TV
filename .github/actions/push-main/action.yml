@@ -1,0 +1,76 @@
+name: Commiter sur main
+description: >-
+  Commite des chemins précis sur `main` et pousse, en rejouant le rebase tant
+  qu'un autre job a poussé entre-temps. Ne fait rien si rien n'a changé.
+
+# POURQUOI UNE ACTION. Quatre endroits recopiaient le même bloc
+# « commit / pull --rebase / push » (desktop.yml deux fois, mobile.yml,
+# store-watch.yml), et desktop.yml comptait explicitement sur le rebase pour
+# départager deux de ses propres jobs qui écrivent le MÊME fichier. Un seul
+# `pull --rebase` ne suffit pas : il peut lui-même se faire doubler. D'où la
+# boucle.
+#
+# PATHSPEC OBLIGATOIRE. `git add` ne prend QUE les chemins demandés. Un `git add
+# -A` embarquerait ce que le job a fabriqué au passage (artefacts, package.json
+# réécrit pour le build) et écraserait le travail de quelqu'un d'autre.
+
+inputs:
+  paths:
+    description: Chemins à commiter, séparés par des espaces.
+    required: true
+  message:
+    description: Message de commit.
+    required: true
+  attempts:
+    description: Nombre de tentatives de rebase avant abandon.
+    required: false
+    default: "5"
+
+outputs:
+  committed:
+    description: "true si un commit a été poussé."
+    value: ${{ steps.push.outputs.committed }}
+  sha:
+    description: SHA du commit poussé (vide sinon).
+    value: ${{ steps.push.outputs.sha }}
+
+runs:
+  using: composite
+  steps:
+    - id: push
+      shell: bash
+      env:
+        PATHS: ${{ inputs.paths }}
+        MESSAGE: ${{ inputs.message }}
+        ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -euo pipefail
+        git config user.name "tentacle-bot"
+        git config user.email "bot@tentacletv.app"
+
+        # shellcheck disable=SC2086  # PATHS est une liste de chemins, volontairement éclatée
+        git add -- $PATHS
+        if git diff --cached --quiet; then
+          echo "rien à committer sur ${PATHS}."
+          { echo "committed=false"; echo "sha="; } >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        git commit -m "$MESSAGE"
+
+        for i in $(seq 1 "$ATTEMPTS"); do
+          if git push origin HEAD:main; then
+            SHA=$(git rev-parse HEAD)
+            echo "poussé sur main : ${SHA}"
+            { echo "committed=true"; echo "sha=${SHA}"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "push refusé (essai ${i}/${ATTEMPTS}) — quelqu'un est passé devant, on rebase."
+          git fetch origin main
+          # --rebase sans --autostash : l'arbre doit être propre ici. S'il ne
+          # l'est pas, mieux vaut échouer que de rebaser sur un état inconnu.
+          git rebase origin/main
+          sleep $(( i * 3 ))
+        done
+
+        echo "::error::${ATTEMPTS} tentatives de push sur main, toutes doublées. Rien n'est perdu : le commit est local au runner."
+        exit 1
