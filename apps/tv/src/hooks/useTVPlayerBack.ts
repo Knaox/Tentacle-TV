@@ -21,6 +21,11 @@ const BACK_GRACE_MS = 600;
  *
  * `routeBack()` est AUSSI la première étape des chemins Retour JS (BackHandler Android,
  * bouton Retour de l'OSD) → une seule source de vérité pour « que fait Retour ».
+ *
+ * Le bouton de saut AUTOMATIQUE y est entré pour cette raison exactement :
+ * Android le masquait au Retour, Apple TV quittait la lecture. Le lecteur doit
+ * se comporter pareil des deux côtés, et la seule voie qui marche sur tvOS
+ * passe par ici.
  */
 export function useTVPlayerBack(args: {
   /** État de scrub RENDU (la prévention native se base sur le dernier rendu). */
@@ -36,6 +41,20 @@ export function useTVPlayerBack(args: {
    * fermer l'affiche.
    */
   surfaceActive: boolean;
+  /**
+   * Un bouton de saut AUTOMATIQUE est-il affiché ? — état rendu.
+   *
+   * Sur Android, le Retour le masque depuis toujours (`useTVRemote`). Sur
+   * Apple TV, ce code est mort — le Menu physique n'atteint pas le JS — et le
+   * Retour QUITTAIT donc la lecture au moment précis où l'utilisateur voulait
+   * seulement garder son intro. Le geste doit être le même des deux côtés.
+   *
+   * Automatique seulement : un bouton qu'il faut demander n'est qu'une
+   * proposition, et Retour doit y rester le Retour.
+   */
+  skipRefusable: boolean;
+  /** Met en sourdine le passage courant — le geste du bouton « Masquer ». */
+  dismissSegment: () => void;
   /** L'overlay COURANT en miroir synchrone (`usePlaybackOverlay.overlayRef`) :
    *  une carte « à suivre » ou une affiche de fin est une surface montée. */
   surfaceRef: { readonly current: PlayerOverlay };
@@ -43,7 +62,10 @@ export function useTVPlayerBack(args: {
    *  dans ce cas la grâce n'est PAS armée (elle bloquerait le dispatch différé). */
   dismissAutoPlay: () => boolean;
 }) {
-  const { scrubbing, cancelScrub, surfaceActive, surfaceRef, dismissAutoPlay } = args;
+  const {
+    scrubbing, cancelScrub, surfaceActive, skipRefusable, dismissSegment,
+    surfaceRef, dismissAutoPlay,
+  } = args;
 
   const scrubbingRef = useRef(scrubbing);
   scrubbingRef.current = scrubbing;
@@ -51,6 +73,8 @@ export function useTVPlayerBack(args: {
   cancelScrubRef.current = cancelScrub;
   const dismissRef = useRef(dismissAutoPlay);
   dismissRef.current = dismissAutoPlay;
+  const dismissSegmentRef = useRef(dismissSegment);
+  dismissSegmentRef.current = dismissSegment;
 
   const [graceActive, setGraceActive] = useState(false);
   const graceUntilRef = useRef(0);
@@ -77,10 +101,23 @@ export function useTVPlayerBack(args: {
       if (!navigating) armGrace();   // navigation engagée → la grâce bloquerait son dispatch
       return true;
     }
+    // Un passage qui part tout seul : Retour le garde, comme sur Android.
+    // Déjà en sourdine (`dismissible: false`), il n'y a plus rien à refuser —
+    // le bouton n'est là que le temps de l'habillage, et Retour reprend son
+    // office ordinaire.
+    const surface = surfaceRef.current;
+    if (surface.kind === "skip" && surface.auto && surface.dismissible) {
+      dismissSegmentRef.current();
+      armGrace();
+      return true;
+    }
     return false;
   }, [armGrace, surfaceRef]);
 
-  usePreventRemove(scrubbing || surfaceActive || graceActive, () => { routeBack(); });
+  usePreventRemove(
+    scrubbing || surfaceActive || skipRefusable || graceActive,
+    () => { routeBack(); },
+  );
 
   return { routeBack };
 }

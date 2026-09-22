@@ -164,6 +164,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const back = useTVPlayerBack({
     scrubbing: controls.scrubbing, cancelScrub: controls.cancelScrub,
     surfaceActive: autoPlay.source !== null, surfaceRef: playback.surfaceRef,
+    // Un passage qui part tout seul : le Retour le garde au lieu de quitter.
+    skipRefusable:
+      playback.overlay.kind === "skip" && playback.overlay.auto && playback.overlay.dismissible,
+    dismissSegment: playback.dismissOverlay,
     dismissAutoPlay,
   });
   routeBackRef.current = back.routeBack;
