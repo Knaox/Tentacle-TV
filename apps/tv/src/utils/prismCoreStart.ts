@@ -144,7 +144,8 @@ export function stopPrismCore(gen: number): void {
   if (gen > 0) PrismBridge?.stop?.(gen);
 }
 
-/** Master refusé par AVPlayer (-11868 / -11848 / -1002) : rejoue en forme muxée. */
+/** Master refusé par AVPlayer (toute erreur sur le flux local — cf.
+ *  `AVPlayerSurface.handleError`) : rejoue la session en forme muxée. */
 export async function fallbackMuxedPrismCore(gen: number): Promise<PrismStart | null> {
   if (!PrismBridge?.fallbackMuxed || gen <= 0) return null;
   try {
