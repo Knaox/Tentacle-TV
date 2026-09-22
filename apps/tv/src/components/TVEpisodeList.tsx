@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { View, Text, ScrollView } from "react-native";
-import { useSeasons, useEpisodes, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
+import { useCallback, useRef, useState } from "react";
+import { View } from "react-native";
+import { useSeasons, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { Focusable } from "./focus/Focusable";
-import { TVEpisodeRow } from "./TVEpisodeRow";
-import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
-import { Colors, Spacing, Fonts, Radius, brandAlpha } from "../theme/colors";
+import { TVSeasonPills } from "./episodes/TVSeasonPills";
+import { TVEpisodePanelList } from "./episodes/TVEpisodePanelList";
+import { TVEpisodePageList } from "./episodes/TVEpisodePageList";
+import { EPISODE_ROW_GAP, episodeRowHeight } from "./TVEpisodeRow";
+import { useSeasonEpisodes } from "../hooks/useSeasonEpisodes";
+import { Radius, Spacing } from "../theme/colors";
 
 interface TVEpisodeListProps {
   seriesId: string;
@@ -19,173 +21,116 @@ interface TVEpisodeListProps {
   currentBadgeLabel?: string;
   /** Focus D-pad initial sur la row de l'épisode surligné (panneau du lecteur) */
   autoFocusCurrent?: boolean;
-  /** Liste en flex:1 avec son propre défilement (panneau plein écran du
-   *  lecteur). Sans lui (fiche média), la liste vit à hauteur NATURELLE dans
-   *  le défilement de la page : un ScrollView borné imbriqué dans celui de la
-   *  fiche piégeait le focus D-pad. */
+  /** Liste en flex:1 avec son propre défilement, virtualisée (panneau plein
+   *  écran du lecteur). Sans lui (fiche média), la liste vit à hauteur
+   *  NATURELLE dans le défilement de la page : un ScrollView borné imbriqué
+   *  dans celui de la fiche piégeait le focus D-pad. */
   fillHeight?: boolean;
   /** Largeur de vignette relayée aux lignes (160 dans le panneau du lecteur). */
   thumbWidth?: number;
-  /** Fiche média : Y local (relatif à la liste) de la ligne focusée — la PAGE
+  /** Fiche média : Y local (relatif à la liste) de la ligne focalisée — la PAGE
    *  défile pour la suivre, la liste n'ayant pas de défilement propre. */
   onEpisodeFocus?: (y: number) => void;
 }
 
-const EPISODE_ROW_HEIGHT = 170; // paddingVertical 14*2 + thumbnail 112 + méta/chips ~22 + gap 8
-
 export function TVEpisodeList({
-  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent, fillHeight, thumbWidth, onEpisodeFocus,
+  seriesId, onPlay, currentEpisodeId, initialSeasonId, currentBadgeLabel, autoFocusCurrent,
+  fillHeight, thumbWidth = 200, onEpisodeFocus,
 }: TVEpisodeListProps) {
   const client = useJellyfinClient();
   const { t } = useTranslation("common");
   const { data: seasons } = useSeasons(seriesId);
   // Épisode « courant » (à reprendre / prochain) — surligné comme sur le web,
-  // et sa saison est présélectionnée. `currentEpisodeId` (fiche épisode) prime.
-  const { data: watchState } = useSeriesWatchState(seriesId);
+  // et sa saison est présélectionnée. Le lecteur n'en a pas l'usage : il nomme
+  // l'épisode ET son badge, et la requête parcourt TOUTE la série.
+  const watch = useSeriesWatchState(currentBadgeLabel ? undefined : seriesId);
+  const watchState = watch.data;
   const currentEp = watchState && watchState.type !== "completed" ? watchState.episode : undefined;
   const [selectedSeason, setSelectedSeason] = useState<string | undefined>(undefined);
-  const activeSeasonId = selectedSeason ?? initialSeasonId ?? currentEp?.SeasonId ?? seasons?.[0]?.Id;
-  const { data: episodes } = useEpisodes(seriesId, activeSeasonId);
-  const episodeScrollRef = useRef<ScrollView>(null);
-  const seasonScrollRef = useRef<ScrollView>(null);
-  // Scroll initial unique vers la pill de saison active (ex. Saison 4 hors écran)
-  const seasonScrolled = useRef(false);
-  const { makeOnFocus } = useTVScrollToFocused(episodeScrollRef, 60);
+  // Fiche série : tant que l'état de visionnage n'a pas répondu, on ne sait
+  // pas quelle saison ouvrir — la première partait pour rien, puis la liste
+  // sautait à la bonne une fois la réponse arrivée.
+  const watchPending = !currentEpisodeId && !initialSeasonId && watchState === undefined && !watch.isError;
+  const activeSeasonId = selectedSeason ?? initialSeasonId
+    ?? (watchPending ? undefined : currentEp?.SeasonId ?? seasons?.[0]?.Id);
+  const episodes = useSeasonEpisodes(seriesId, activeSeasonId);
 
   const highlightId = currentEpisodeId ?? currentEp?.Id;
-  const highlightIndex = episodes?.findIndex((e) => e.Id === highlightId) ?? -1;
 
   /**
-   * Amener l'épisode en cours SOUS LES YEUX avant de lui donner le focus.
-   *
-   * Rien ne défilait : la liste s'ouvrait en haut, et sur une saison un peu
-   * longue l'épisode en cours était hors écran. Le focus s'y posait quand même
-   * — sur une ligne qu'on ne voyait pas —, ce qui donnait une liste qui semble
-   * immobile et un premier appui qui saute.
-   *
-   * Sans animation : au montage il n'y a rien à accompagner, et un défilement
-   * animé se battrait avec celui que la prise de focus déclenche.
+   * Choisir une saison mène à ses épisodes (parité LG) : la première ligne de
+   * la saison choisie prend le focus dès qu'elle est montée — ou l'épisode en
+   * cours, si c'est sa saison. Sans cela on restait sur la bande, à devoir
+   * redescendre à la main après chaque changement.
    */
-  const scrolledFor = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    if (!fillHeight || !autoFocusCurrent || highlightIndex < 0) return;
-    const key = `${activeSeasonId}|${highlightId}`;
-    if (scrolledFor.current === key) return;
-    scrolledFor.current = key;
-    const y = Math.max(0, highlightIndex * EPISODE_ROW_HEIGHT - EPISODE_ROW_HEIGHT);
-    // Après le rendu des lignes : la ScrollView n'a pas de contenu avant.
-    const id = setTimeout(() => episodeScrollRef.current?.scrollTo({ y, animated: false }), 0);
-    return () => clearTimeout(id);
-  }, [fillHeight, autoFocusCurrent, highlightIndex, activeSeasonId, highlightId]);
+  const [seasonNonce, setSeasonNonce] = useState(0);
+  const chooseSeason = useCallback((seasonId: string) => {
+    setSelectedSeason(seasonId);
+    setSeasonNonce((n) => n + 1);
+  }, []);
+
+  const highlightIndex = episodes?.findIndex((e) => e.Id === highlightId) ?? -1;
+  const claimIndex = seasonNonce > 0 || autoFocusCurrent ? Math.max(0, highlightIndex) : -1;
 
   // Badge violet : override (lecteur : « En cours de visionnage ») sinon
   // Reprendre (en cours) / À suivre (watch state) / Épisode actuel (fiche épisode)
+  const currentEpId = currentEp?.Id;
   const badgeFor = useCallback((ep: MediaItem): string | null => {
     if (ep.Id !== highlightId) return null;
     if (currentBadgeLabel) return currentBadgeLabel;
     if ((ep.UserData?.PlaybackPositionTicks ?? 0) > 0) return t("resume");
-    if (ep.Id === currentEp?.Id) return t("nextEpisode");
+    if (ep.Id === currentEpId) return t("nextEpisode");
     return t("currentEpisode");
-  }, [highlightId, currentBadgeLabel, currentEp?.Id, t]);
+  }, [highlightId, currentBadgeLabel, currentEpId, t]);
+
+  // La vignette au double de sa largeur en points : l'Apple TV 4K rend à ×2.
+  const thumbUrlFor = useCallback(
+    (ep: MediaItem) => client.getImageUrl(ep.Id, "Primary", { width: thumbWidth * 2, quality: 80 }),
+    [client, thumbWidth],
+  );
+
+  // Rappel STABLE : la fiche passe une flèche neuve à chaque rendu, et elle
+  // redessinerait chaque ligne mémoïsée.
+  const onPlayRef = useRef(onPlay);
+  onPlayRef.current = onPlay;
+  const handlePress = useCallback((ep: MediaItem) => onPlayRef.current(ep), []);
+
+  const rows = episodes && episodes.length > 0 ? {
+    episodes, claimIndex, claimNonce: seasonNonce, highlightId, badgeFor, thumbUrlFor, thumbWidth,
+    onPress: handlePress,
+  } : null;
 
   return (
     <View style={fillHeight ? { flex: 1 } : undefined}>
-      {/* Season pills — flexGrow:0 : dans le panneau plein écran (fillHeight),
-          un ScrollView horizontal s'étire sinon dans la colonne flex et pousse
-          la liste d'épisodes tout en bas */}
-      <ScrollView
-        ref={seasonScrollRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 10 }}
-      >
-        {(seasons ?? []).map((season) => {
-          const active = season.Id === activeSeasonId;
-          return (
-            // Wrapper enfant direct du ScrollView : son layout.x est relatif au
-            // contenu → scroll initial fiable vers la saison active.
-            <View
-              key={season.Id}
-              onLayout={active && !seasonScrolled.current ? (e) => {
-                seasonScrolled.current = true;
-                seasonScrollRef.current?.scrollTo({
-                  x: Math.max(0, e.nativeEvent.layout.x - Spacing.screenPadding),
-                  animated: false,
-                });
-              } : undefined}
-            >
-              <Focusable variant="button" focusRadius={Radius.pill} onPress={() => setSelectedSeason(season.Id)}>
-                <View style={{
-                  paddingHorizontal: 24, paddingVertical: 12, borderRadius: Radius.pill,
-                  backgroundColor: active ? brandAlpha(0.18) : Colors.ctaGhostBg,
-                  borderWidth: 1,
-                  borderColor: active ? brandAlpha(0.45) : Colors.glassBorder,
-                }}>
-                  <Text style={{
-                    color: active ? Colors.accentPurpleLight : Colors.textSecondary,
-                    fontSize: 15,
-                    fontFamily: active ? Fonts.bold : Fonts.medium,
-                  }}>
-                    {season.Name}
-                  </Text>
-                </View>
-              </Focusable>
-            </View>
-          );
-        })}
-      </ScrollView>
+      <TVSeasonPills seasons={seasons} activeSeasonId={activeSeasonId} onSelect={chooseSeason} />
+      {/* Une liste par saison (clé) : le focus d'entrée et la position de
+          départ se recalculent à chaque changement, sans reste de la précédente. */}
+      {rows == null ? (
+        episodes === undefined ? <EpisodeGhosts thumbWidth={thumbWidth} /> : null
+      ) : fillHeight ? (
+        <TVEpisodePanelList key={activeSeasonId} {...rows} />
+      ) : (
+        <TVEpisodePageList key={activeSeasonId} {...rows} onEpisodeFocus={onEpisodeFocus} />
+      )}
+    </View>
+  );
+}
 
-      {/* Episodes — panneau : défilement propre ; fiche : hauteur naturelle,
-          la ligne focusée publie son Y et la page défile. */}
-      {(() => {
-        const rows = (episodes ?? []).map((ep, epIndex) => (
-          <TVEpisodeRow
-            thumbWidth={thumbWidth}
-            key={ep.Id}
-            episode={ep}
-            thumbUrl={client.getImageUrl(ep.Id, "Primary", { width: 400, quality: 80 })}
-            isCurrent={ep.Id === highlightId}
-            badgeLabel={badgeFor(ep)}
-            autoFocus={autoFocusCurrent && ep.Id === highlightId}
-            onPress={() => onPlay(ep)}
-            onFocus={
-              fillHeight
-                ? makeOnFocus(epIndex, EPISODE_ROW_HEIGHT)
-                : () => onEpisodeFocus?.(epIndex * EPISODE_ROW_HEIGHT)
-            }
-          />
-        ));
-        // Tant que la saison n'a pas répondu, le panneau paraissait VIDE — on
-        // ne savait pas s'il chargeait ou s'il n'y avait rien. Des lignes
-        // fantômes à la bonne hauteur disent l'attente et réservent la place,
-        // donc la liste ne saute pas quand elle arrive.
-        const pending = episodes === undefined;
-        const ghosts = pending
-          ? Array.from({ length: 4 }, (_, i) => (
-              <View
-                key={`ghost-${i}`}
-                style={{
-                  height: EPISODE_ROW_HEIGHT - 8, borderRadius: Radius.card,
-                  backgroundColor: "rgba(255,255,255,0.04)",
-                }}
-              />
-            ))
-          : null;
-        return fillHeight ? (
-          <ScrollView
-            ref={episodeScrollRef}
-            style={{ marginTop: 24, flex: 1 }}
-            contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8, paddingBottom: 40 }}
-          >
-            {ghosts ?? rows}
-          </ScrollView>
-        ) : (
-          <View style={{ marginTop: 24, paddingHorizontal: Spacing.screenPadding, gap: 8 }}>
-            {rows}
-          </View>
-        );
-      })()}
+/**
+ * Tant que la saison n'a pas répondu, des lignes fantômes à la hauteur exacte
+ * des vraies disent l'attente et réservent la place : la liste ne saute pas
+ * quand elle arrive.
+ */
+function EpisodeGhosts({ thumbWidth }: { thumbWidth: number }) {
+  const height = episodeRowHeight(thumbWidth);
+  return (
+    <View style={{ marginTop: 16, paddingTop: 8, paddingHorizontal: Spacing.screenPadding, gap: EPISODE_ROW_GAP }}>
+      {Array.from({ length: 4 }, (_, i) => (
+        <View
+          key={i}
+          style={{ height, borderRadius: Radius.card, backgroundColor: "rgba(255,255,255,0.04)" }}
+        />
+      ))}
     </View>
   );
 }

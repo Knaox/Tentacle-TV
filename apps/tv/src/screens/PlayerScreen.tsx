@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
-import { formatTrackLabel } from "../utils/playerHelpers";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { TVPlayerView } from "../components/player/TVPlayerView";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
@@ -25,6 +24,8 @@ import { useTVPanelControls } from "../hooks/useTVPanelControls";
 import { useTVSettingsBridge } from "../hooks/useTVSettingsBridge";
 import { useTVSubtitleSync } from "../hooks/useTVSubtitleSync";
 import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
+import { useTVTrackLists } from "../hooks/useTVTrackLists";
+import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
 
@@ -247,16 +248,9 @@ export function PlayerScreen({ route, navigation }: Props) {
     bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
   });
 
-  // Sur PrismCore, une piste ni copiable ni pontée n'a pas de rendition : la
-  // proposer, c'est proposer une bascule qui n'aura jamais lieu.
-  const unavailableAudio = useMemo(() => new Set(
-    (p.prism?.audioTracks ?? []).filter((t) => t.delivery === "unavailable").map((t) => t.streamIndex),
-  ), [p.prism]);
-  const audioTracksList = useMemo(() =>
-    p.streams.filter((st) => st.Type === "Audio" && !unavailableAudio.has(st.Index))
-      .map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams, unavailableAudio]);
-  const subtitleTracksList = useMemo(() =>
-    p.streams.filter((st) => st.Type === "Subtitle").map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams]);
+  const { audioTracksList, subtitleTracksList } = useTVTrackLists(p.streams, p.prism?.audioTracks);
+  // Le panneau des épisodes s'ouvre déjà rempli : saisons et saison en cours préchargées.
+  useEpisodePanelPrefetch(item, hasStarted);
 
   // Pont vers la route MODALE Réglages/Qualité.
   const { handleCloseSettings } = useTVSettingsBridge({
