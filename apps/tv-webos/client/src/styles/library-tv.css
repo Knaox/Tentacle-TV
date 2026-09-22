@@ -35,6 +35,15 @@
   padding-right: 12px;
 }
 
+/* La croix de l'en-tête : une case, pas une ligne. La règle ci-dessus lui
+   donnait la hauteur d'une ligne sans largeur — l'anneau aurait épousé une
+   bande verticale, comme la croix des panneaux du lecteur avant elle. */
+[role="menu"] [data-menu-close] {
+  width: 46px;
+  min-width: 46px;
+  padding: 0;
+}
+
 /* La coche d'une ligne suivait la taille du texte : à 14 px elle disparaît. */
 [role="menu"] button > span:first-child {
   width: 22px;
