@@ -6,13 +6,13 @@ import { useTVRemote } from "./useTVRemote";
 import { RowEntryGuide, useRowEntry } from "./RowEntryGuide";
 import { useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
+import { CARD_FOCUS_BLEED } from "../../theme/focus";
 
 /** Débordement vertical laissé à l'anneau, au halo et à l'ombre de la carte
- *  focalisée. La fenêtre de rognage est plus haute d'autant EN HAUT ET EN BAS,
- *  et décalée de la même valeur : la mise en page ne bouge pas d'un point.
- *  Mesuré : 1,08 d'échelle sur ~310 pt ≈ 25 pt vers le haut, plus 6 de halo,
- *  plus 18 de rayon d'ombre — les 32 pt de réserve haute ne suffisaient pas. */
-const ROW_CLIP_BLEED = 40;
+ *  focalisée (`CARD_FOCUS_BLEED`). La fenêtre de rognage est plus haute
+ *  d'autant EN HAUT ET EN BAS, et décalée de la même valeur : la mise en page
+ *  ne bouge pas d'un point. */
+const ROW_CLIP_BLEED = CARD_FOCUS_BLEED;
 
 interface FocusableRowProps<T> {
   title?: string;

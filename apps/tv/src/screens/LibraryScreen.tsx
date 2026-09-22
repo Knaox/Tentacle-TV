@@ -27,6 +27,7 @@ import { hasPlatformFilter } from "../hooks/libraryCatalogParams";
 import { usePlatformFilter } from "../hooks/usePlatformFilter";
 import { possessiveLibraryName } from "../utils/libraryLabel";
 import { Spacing } from "../theme/colors";
+import { CARD_FOCUS_BLEED } from "../theme/focus";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Library">;
 
@@ -206,6 +207,7 @@ function LibraryLoading({ header }: { header: React.ReactElement }) {
   return (
     <View style={{ paddingHorizontal: Spacing.rowGutter }}>
       {header}
+      <View style={{ height: CARD_FOCUS_BLEED }} />
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
         {Array.from({ length: 12 }).map((_, i) => (
           <Skeleton key={i} width={cardW} height={cardH} />
