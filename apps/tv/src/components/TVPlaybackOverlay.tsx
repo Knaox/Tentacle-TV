@@ -18,6 +18,9 @@ interface TVPlaybackOverlayProps {
   overlay: PlayerOverlay;
   onSkip: () => void;
   onDismiss: () => void;
+  /** « Aller à l'épisode suivant » — le geste de la PILULE, qui n'est pas un
+   *  saut dans le média mais mène au même bouton. */
+  onPlayNow: () => void;
   /** Habillage visible : le bouton monte pour ne pas couvrir la barre. */
   overlayVisible?: boolean;
   showSettings?: boolean;
@@ -61,6 +64,15 @@ interface TVPlaybackOverlayProps {
  * L'arbitre rend `none` en déplacement (`scrubbing`), donc il n'y a rien à
  * masquer ici : le bouton n'existe simplement pas.
  *
+ * # La pilule « épisode suivant », le même bouton
+ *
+ * L'arbitre la propose quand la fiche « à suivre » ne parle pas — scène
+ * post-générique en cours, fiche éteinte ou refusée. Le web et le téléviseur
+ * LG la rendaient ; ici, rien ne la lisait, et sauter le générique d'un média
+ * à scène finale faisait DISPARAÎTRE l'accès à la suite jusqu'au bout du
+ * fichier. C'est le même dessin et le même geste : un seul bouton pour un
+ * seul objet.
+ *
  * Les mécanismes de focus, tous payés par une régression :
  *
  * 1. `useTVFocusGrab` sur front MONTANT — jamais sur un retour par l'habillage ;
@@ -74,23 +86,27 @@ interface TVPlaybackOverlayProps {
  *    la mise en page à chaque image au-dessus d'un décodeur.
  */
 export function TVPlaybackOverlay({
-  overlay, onSkip, onDismiss,
+  overlay, onSkip, onDismiss, onPlayNow,
   overlayVisible = false, showSettings = false, showEpisodes = false,
 }: TVPlaybackOverlayProps) {
   const { t } = useTranslation("player");
   const skipRef = useRef<View>(null);
   const dismissRef = useRef<View>(null);
 
+  // Les deux surfaces qui portent CE bouton : un passage à sauter, ou la suite
+  // à rejoindre. Même dessin, même place, un seul objet.
+  const pill = overlay.kind === "skip" || overlay.kind === "nextButton" ? overlay : null;
   const skip = overlay.kind === "skip" ? overlay : null;
-  const visible = skip !== null && !showEpisodes;
+  const visible = pill !== null && !showEpisodes;
   const countdown = skip?.countdownSeconds ?? null;
   // Le refus suit le caractère AUTOMATIQUE du passage, pas l'affichage des
   // secondes : un saut auto dont le décompte est masqué doit lui aussi pouvoir
-  // être empêché, et il ne le pouvait pas.
+  // être empêché, et il ne le pouvait pas. La pilule de la suite, elle,
+  // n'arme rien — il n'y a rien à empêcher.
   const refusable = skip?.auto === true;
   // Ce qui revient par l'habillage a déjà été refusé : il se montre, il ne
   // s'impose pas.
-  const grabs = visible && skip?.dismissible === true && !showSettings;
+  const grabs = visible && pill.dismissible && !showSettings;
 
   useTVFocusGrab(refusable ? dismissRef : skipRef, grabs);
 
@@ -116,7 +132,7 @@ export function TVPlaybackOverlay({
     transform: [{ translateY: raise.value }],
   }));
 
-  if (skip === null) return null;
+  if (pill === null) return null;
 
   return (
     <Animated.View
@@ -137,7 +153,7 @@ export function TVPlaybackOverlay({
         <Focusable
           ref={skipRef}
           variant="button"
-          onPress={onSkip}
+          onPress={skip !== null ? onSkip : onPlayNow}
           focusRadius={TV_PLAYER_SKIP.radius}
           hasTVPreferredFocus={grabs && !refusable}
           // L'anneau est blanc, la pilule aussi : seul le halo de marque dit
@@ -157,9 +173,11 @@ export function TVPlaybackOverlay({
               fontSize: TV_PLAYER_SKIP.text,
               fontWeight: "700",
             }}>
-              {countdown !== null
-                ? t(`player:${skip.labelKey}In`, { seconds: countdown })
-                : t(`player:${skip.labelKey}`)}
+              {skip === null
+                ? t("player:goToNextEpisode")
+                : countdown !== null
+                  ? t(`player:${skip.labelKey}In`, { seconds: countdown })
+                  : t(`player:${skip.labelKey}`)}
             </Text>
           </View>
         </Focusable>
