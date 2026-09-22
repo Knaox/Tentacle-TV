@@ -339,16 +339,43 @@ export const TV_PLAYER_PANEL = {
   episodeThumb: { width: 160, height: 90 },
 } as const;
 
-/** Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
- *  il s'écarte de la barre quand l'habillage est visible (transform, jamais
- *  `bottom` — une position animée relance la mise en page). */
+/**
+ * Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
+ * il s'écarte de la barre quand l'habillage est visible (transform, jamais
+ * `bottom` — une position animée relance la mise en page).
+ *
+ * # Le dessin, décrit UNE fois pour les trois téléviseurs
+ *
+ * Les mesures vivaient ici, les couleurs non : la feuille du LG les écrivait
+ * en clair, et le natif — Android TV comme Apple TV — portait encore l'ancien
+ * dessin, noir translucide, quand le web et le LG étaient déjà passés au
+ * blanc. Trois copies, deux vérités. Elles sont donc ici, et les trois cibles
+ * les lisent (le test `tvOnly.player.test.ts` recroise la feuille du LG).
+ *
+ * Le vocabulaire est celui du bouton principal de l'application, le « Lire »
+ * d'une fiche : pilule BLANCHE, texte noir appuyé, coins pleinement arrondis.
+ * Le refus reste le rôle SECONDAIRE — sombre, en retrait : deux pilules
+ * blanches côte à côte ne diraient plus laquelle est l'action proposée.
+ *
+ * Pas d'ombre, à la différence du web : sur une dalle, du blanc opaque posé
+ * sur de la vidéo ressort tout seul, et une ombre se paie en couche composée
+ * à chaque image au-dessus d'un décodeur.
+ */
 export const TV_PLAYER_SKIP = {
   bottom: 148,
   lift: 56,
   paddingV: 14,
   paddingH: 28,
-  radius: 10,
+  /** Pilule pleine, comme le `rounded-full` du web. */
+  radius: 999,
   text: 20,
+  /** L'écart entre « passer » et « masquer » — deux cibles de télécommande. */
+  gap: 12,
+  bg: "#FFFFFF",
+  fg: "#000000",
+  dismissBg: "rgba(0, 0, 0, 0.45)",
+  dismissFg: "rgba(255, 255, 255, 0.7)",
+  dismissBorder: "rgba(255, 255, 255, 0.12)",
 } as const;
 
 /** La carte « épisode suivant », au coin bas-droit du retrait d'overscan. */

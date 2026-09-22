@@ -17,7 +17,11 @@
 
 /* BLANC, comme les boutons principaux de l'application (refonte segments) :
  * même vocabulaire que le « Lire » d'une fiche. Le refus, lui, reste sombre —
- * c'est le rôle secondaire (.saut-tv--refus, plus bas). */
+ * c'est le rôle secondaire (.saut-tv--refus, plus bas).
+ *
+ * Les valeurs viennent de `TV_PLAYER_SKIP` (packages/theme) et le test
+ * `tvOnly.player.test.ts` les recroise ici : cette feuille et les téléviseurs
+ * natifs décrivent LE MÊME bouton, ils ne peuvent plus diverger. */
 .saut-tv {
   position: absolute;
   right: var(--tv-overscan-x);
@@ -25,8 +29,8 @@
   z-index: var(--z-lecteur-saut);
   padding: 14px 28px;
   border: 1px solid transparent;
-  border-radius: 10px;
-  background: #ffffff;
+  border-radius: 999px;
+  background: #FFFFFF;
   color: #000000;
   font-size: 20px;
   font-weight: 700;
