@@ -133,8 +133,8 @@
 
     <script src="/tv/harness-shims.js"></script>
     <script type="module">
-      import { installerMoteurFocus } from "/tv/src/focus/moteur.ts";
-      import { amorcerFocus } from "/tv/src/focus/entree.ts";
+      import { installFocusEngine } from "/tv/src/focus/engine.ts";
+      import { primeFocus } from "/tv/src/focus/entry.ts";
 
       // Les extras sont des <button> nus, hors de toute zone — le vrai DOM de
       // la rangée de bandes-annonces, et le vrai gagnant géométrique du bug.
@@ -172,8 +172,8 @@
         episodes.appendChild(ligne);
       }
 
-      installerMoteurFocus();
-      amorcerFocus(true);
+      installFocusEngine();
+      primeFocus(true);
     </script>
   </body>
 </html>
