@@ -376,6 +376,13 @@ export const TV_PLAYER_SKIP = {
   dismissBg: "rgba(0, 0, 0, 0.45)",
   dismissFg: "rgba(255, 255, 255, 0.7)",
   dismissBorder: "rgba(255, 255, 255, 0.12)",
+  /**
+   * Le halo de marque au focus — la seule chose qui désigne une pilule
+   * BLANCHE, dont l'anneau blanc se confond avec le fond. La valeur est celle
+   * de l'anneau commun (`TV_FOCUS_RING.haloOpacity`), que le LG applique déjà
+   * partout ; les boutons natifs, eux, n'en ont aucun par défaut.
+   */
+  focusGlow: 0.5,
 } as const;
 
 /** La carte « épisode suivant », au coin bas-droit du retrait d'overscan. */
