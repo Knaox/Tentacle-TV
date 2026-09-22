@@ -19,6 +19,11 @@ export interface MenuAnchor {
   y: number;
   width: number;
   height: number;
+  /** La pastille qui a ouvert le menu (handle natif) : on y revient en sortant
+   *  par le haut. */
+  trigger?: number;
+  /** La même, en instance : c'est elle qui reprend le focus à la fermeture. */
+  triggerView?: View | null;
 }
 
 /**
@@ -26,8 +31,14 @@ export interface MenuAnchor {
  * note, plateformes). Règles héritées de la LG (`FilterMenuTv`) :
  *
  *  - le PIÈGE de focus est sur la racine du panneau (autoFocus + trapFocus
- *    des quatre côtés) : le D-pad ne s'échappe pas vers la grille pendant que
- *    le panneau est affiché ;
+ *    à gauche, à droite et en bas) : le D-pad ne s'échappe pas vers la grille
+ *    que le panneau recouvre ;
+ *  - on en SORT en remontant, parité LG (`closeExpandedMenu`) : « haut »
+ *    depuis la croix de l'en-tête rend le focus à la pastille qui a ouvert le
+ *    menu, et la pastille, en le recevant, referme le menu. La géométrie n'y
+ *    suffit pas : posé PAR-DESSUS la liste défilante de l'écran, le menu ne
+ *    voit rien de ce qu'elle contient (mesuré sur tvOS : de la croix, seul le
+ *    rail restait atteignable). D'où `nextFocusUp` sur la croix ;
  *  - on entre par l'option COCHÉE (chaque ligne pose `hasTVPreferredFocus`
  *    sur son état coché), TOUT DE SUITE — sauf si `autoFocus` est coupé
  *    (menu des années : deux champs de saisie, rien ne doit faire monter un
@@ -68,7 +79,6 @@ export function TVLibraryFilterMenu({
     >
       <TVFocusGuideView
         autoFocus={autoFocus}
-        trapFocusUp
         trapFocusDown
         trapFocusLeft
         trapFocusRight
@@ -94,7 +104,7 @@ export function TVLibraryFilterMenu({
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 18, fontFamily: Fonts.semibold, color: Colors.textPrimary }}>
             {title}
           </Text>
-          <TVCloseButton onPress={onClose} />
+          <TVCloseButton onPress={onClose} nextFocusUp={anchor.trigger} />
         </View>
         <ScrollView showsVerticalScrollIndicator={false} style={{ flexShrink: 1 }}>{children}</ScrollView>
       </TVFocusGuideView>

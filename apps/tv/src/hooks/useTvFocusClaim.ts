@@ -45,29 +45,37 @@ export function useTvFocusClaim(
     previous.current = active;
     seenNonce.current = nonce;
     if (!rising && !renewed) return;
-
-    const node = ref.current as FocusableNode;
-    if (!node?.setNativeProps) return;
-
-    if (Platform.OS !== "ios") {
-      // Android : le moteur de focus honore la demande immédiatement. Le délai
-      // laisse la vue être posée quand la réclamation part de son montage.
-      const id = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 120);
-      return () => clearTimeout(id);
-    }
-
-    let id2: ReturnType<typeof setTimeout>;
-    let id3: ReturnType<typeof setTimeout>;
-    const id1 = setTimeout(() => {
-      node.setNativeProps?.({ hasTVPreferredFocus: false });
-      id2 = setTimeout(() => {
-        node.setNativeProps?.({ hasTVPreferredFocus: true });
-        // Relâche la préférence une fois le focus pris → l'utilisateur peut
-        // repartir au D-pad (sinon la surface « piège » le focus).
-        id3 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: false }), 120);
-      }, 50);
-    }, 40);
-    return () => { clearTimeout(id1); clearTimeout(id2); clearTimeout(id3); };
+    return claimTvFocus(ref.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, nonce]);
+}
+
+/**
+ * La réclamation elle-même, hors cycle de rendu — pour un geste qui DÉCIDE où
+ * va le focus (fermer un menu rend le focus à ce qui l'a ouvert). Rend
+ * l'annulation des minuteurs.
+ */
+export function claimTvFocus(target: unknown): () => void {
+  const node = target as FocusableNode;
+  if (!node?.setNativeProps) return () => {};
+
+  if (Platform.OS !== "ios") {
+    // Android : le moteur de focus honore la demande immédiatement. Le délai
+    // laisse la vue être posée quand la réclamation part de son montage.
+    const id = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: true }), 120);
+    return () => clearTimeout(id);
+  }
+
+  let id2: ReturnType<typeof setTimeout>;
+  let id3: ReturnType<typeof setTimeout>;
+  const id1 = setTimeout(() => {
+    node.setNativeProps?.({ hasTVPreferredFocus: false });
+    id2 = setTimeout(() => {
+      node.setNativeProps?.({ hasTVPreferredFocus: true });
+      // Relâche la préférence une fois le focus pris → l'utilisateur peut
+      // repartir au D-pad (sinon la surface « piège » le focus).
+      id3 = setTimeout(() => node.setNativeProps?.({ hasTVPreferredFocus: false }), 120);
+    }, 50);
+  }, 40);
+  return () => { clearTimeout(id1); clearTimeout(id2); clearTimeout(id3); };
 }
