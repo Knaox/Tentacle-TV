@@ -50,6 +50,11 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
         view.contentFrameRate = fps
     }
 
+    @ReactProp(name = "tunneling", defaultBoolean = false)
+    fun setTunneling(view: ExoPlayerView, enabled: Boolean) {
+        view.tunneling = enabled
+    }
+
     @ReactProp(name = "textTracks")
     fun setTextTracks(view: ExoPlayerView, tracks: ReadableArray?) {
         view.setTextTracks(tracks)

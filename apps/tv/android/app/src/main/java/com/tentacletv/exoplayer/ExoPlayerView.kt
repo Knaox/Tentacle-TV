@@ -39,6 +39,9 @@ class ExoPlayerView(
     /** Cadence EXACTE du flux (Jellyfin `RealFrameRate`), 0 = inconnue. Lue à
      *  l'attachement : les props React arrivent avant `onAttachedToWindow`. */
     var contentFrameRate = 0f
+    /** Lecture tunnelisée (réglage d'appareil, éteint par défaut) : lu à la
+     *  construction du sélecteur ; un changement vaut pour la lecture suivante. */
+    var tunneling = false
 
     // Évènements, listener et sondeur — hors de la vue (ExoEvents.kt,
     // ExoPlaybackListener.kt) ; la vue ne garde que la machine d'état.
@@ -111,7 +114,7 @@ class ExoPlayerView(
         player = ExoPlayer.Builder(reactContext)
             .setRenderersFactory(ExoPlayerFactory.createRenderersFactory(reactContext, audioPassthrough))
             .setMediaSourceFactory(ExoPlayerFactory.createMediaSourceFactory(reactContext))
-            .setTrackSelector(ExoPlayerFactory.createTrackSelector(reactContext, preferredMimeTypes, tunneling = false))
+            .setTrackSelector(ExoPlayerFactory.createTrackSelector(reactContext, preferredMimeTypes, tunneling))
             .setLoadControl(ExoPlayerFactory.createLoadControl())
             .build()
             .also { exo ->
@@ -123,7 +126,7 @@ class ExoPlayerView(
                 // c'est DisplayModeSwitcher qui parle au panneau, avec la valeur exacte,
                 // et qui pose le raffinement seamless sur la surface vidéo. Cadence
                 // inconnue → l'estimateur reste : imparfait vaut mieux que rien.
-                Log.w(TAG, ">>> initPlayer frameRate=$contentFrameRate")
+                Log.w(TAG, ">>> initPlayer frameRate=$contentFrameRate tunneling=$tunneling")
                 if (contentFrameRate > 0f) {
                     exo.setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF)
                     displayModeSwitcher.attachSurface(playerView.videoSurfaceView as? SurfaceView, contentFrameRate)
