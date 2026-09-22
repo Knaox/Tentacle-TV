@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 import { Focusable } from "../focus/Focusable";
-import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
+import { TVLibraryFilterMenu, TVCheckRow, MENU_ROW_FOCUS_SCALE, type MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { Colors } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
@@ -54,6 +54,7 @@ export function TVSortMenu({
       <Focusable
         variant="button"
         focusRadius={Button.medium.borderRadius}
+        scaleOverride={MENU_ROW_FOCUS_SCALE}
         onPress={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
         accessibilityLabel={desc ? t("sortOrderDesc") : t("sortOrderAsc")}
       >

@@ -3,7 +3,7 @@ import { Text, TextInput, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
-import { TVLibraryFilterMenu, type MenuAnchor } from "./TVLibraryFilterMenu";
+import { TVLibraryFilterMenu, MENU_ROW_FOCUS_SCALE, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { Colors } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
@@ -116,6 +116,7 @@ export function TVRatingMenu({
         <Focusable
           variant="button"
           focusRadius={Button.medium.borderRadius}
+          scaleOverride={MENU_ROW_FOCUS_SCALE}
           hasTVPreferredFocus
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
