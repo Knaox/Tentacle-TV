@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, type ElementRef } from "react";
 import type { TouchableOpacity } from "react-native";
+import type { TransportKey } from "../components/player/focus/overlayFocusCore";
 import { usePreventRemove } from "@react-navigation/native";
 import { useFocusRecovery } from "./useFocusRecovery";
 
@@ -27,10 +28,24 @@ export function useTVPanelControls(args: {
   const showEpisodesRef = useRef(false);
   showEpisodesRef.current = showEpisodes;
 
-  // Refocus de l'OSD : à chaque incrément, l'overlay redonne le focus au
-  // dernier bouton de transport utilisé (fermeture de panneau, réapparition).
+  /**
+   * Refocus de l'OSD : à chaque incrément, l'habillage redonne le focus.
+   *
+   * La CIBLE se dit maintenant, au lieu de se deviner. Elle se devinait
+   * jusqu'ici — « le dernier bouton utilisé » —, et deux moments y échappaient :
+   * l'ENTRÉE dans la vidéo, où il n'y a pas encore de dernier bouton (le focus
+   * partait alors sur « quitter », premier élément de l'habillage), et la
+   * FERMETURE D'UN PANNEAU, où le dernier bouton utilisé est bien celui qui l'a
+   * ouvert mais où rien ne garantissait qu'on y revienne.
+   *
+   * `undefined` garde l'ancien comportement : le dernier bouton utilisé.
+   */
   const [osdFocusSignal, setOsdFocusSignal] = useState(0);
-  const bumpOsdFocus = useCallback(() => setOsdFocusSignal((s) => s + 1), []);
+  const osdFocusTargetRef = useRef<TransportKey | undefined>(undefined);
+  const bumpOsdFocus = useCallback((target?: TransportKey) => {
+    osdFocusTargetRef.current = target;
+    setOsdFocusSignal((s) => s + 1);
+  }, []);
 
   // tvOS : le bouton Menu déclenche un dismiss NATIF du native-stack (qui quittait
   // l'épisode depuis un panneau in-player). `usePreventRemove` (API officielle
@@ -45,7 +60,8 @@ export function useTVPanelControls(args: {
     if (showEpisodesRef.current) {
       setShowEpisodes(false);
     }
-    bumpOsdFocus();
+    // Quitter le panneau rend le focus au bouton qui l'a ouvert.
+    bumpOsdFocus("episodes");
   });
 
   // Filet de sécurité : si le focus se perd hors panneau, recible le fond
@@ -54,6 +70,6 @@ export function useTVPanelControls(args: {
   return {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
-    osdFocusSignal, bumpOsdFocus,
+    osdFocusSignal, osdFocusTargetRef, bumpOsdFocus,
   };
 }

@@ -62,7 +62,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
-    osdFocusSignal, bumpOsdFocus,
+    osdFocusSignal, osdFocusTargetRef, bumpOsdFocus,
   } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
@@ -128,15 +128,17 @@ export function PlayerScreen({ route, navigation }: Props) {
     onSeek: handleSeek,
     onBack: () => {
       if (routeBackRef.current()) return;   // scrub/overlay auto-play/grâce (source unique)
+      // Quitter un panneau rend le focus au bouton qui l'a OUVERT — pas au
+      // « dernier bouton utilisé », qui se devinait et se trompait.
       if (showSettingsRef.current) {
         setShowSettings(false);
         showSettingsRef.current = false;
-        bumpOsdFocus();
+        bumpOsdFocus("settings");
         return;
       }
       if (showEpisodesRef.current) {
         setShowEpisodes(false);
-        bumpOsdFocus();
+        bumpOsdFocus("episodes");
         return;
       }
       lifecycle.leavePlayer();
@@ -178,6 +180,25 @@ export function PlayerScreen({ route, navigation }: Props) {
     if (controls.overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus();
     prevOverlayVisibleRef.current = controls.overlayVisible;
   }, [controls.overlayVisible, bumpOsdFocus]);
+
+  /**
+   * L'ENTRÉE dans la vidéo : le focus va à lecture/pause.
+   *
+   * Personne ne le réclamait — l'effet ci-dessus ne se déclenche qu'à une
+   * RÉAPPARITION de l'habillage, et il est déjà visible au premier rendu. Le
+   * guide de l'habillage prenait donc son premier enfant focusable, qui est
+   * « quitter la vidéo » : un appui sur OK au lancement sortait du lecteur.
+   *
+   * À la première image, pas au montage : avant elle, l'écran de chargement
+   * occupe la dalle et tait l'habillage, dont les boutons ne sont pas
+   * focusables.
+   */
+  const entryClaimedRef = useRef(false);
+  useEffect(() => {
+    if (!hasStarted || entryClaimedRef.current) return;
+    entryClaimedRef.current = true;
+    bumpOsdFocus("playpause");
+  }, [hasStarted, bumpOsdFocus]);
 
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
@@ -300,10 +321,11 @@ export function PlayerScreen({ route, navigation }: Props) {
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
       trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} osdFocusSignal={osdFocusSignal}
+      osdFocusTargetRef={osdFocusTargetRef}
       subtitleCue={subtitleCue} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
-      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus(); }}
+      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); }}
       onSelectEpisode={(ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); }}
       onEofDismiss={() => { dismissAutoPlay(); }}
     />

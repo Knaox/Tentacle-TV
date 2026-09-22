@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
+import type { TransportKey } from "./focus/overlayFocusCore";
 import { TVPlaybackOverlay } from "../TVPlaybackOverlay";
 import { TVAutoPlaySwitch, type AutoPlayCtx } from "./TVAutoPlaySwitch";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
@@ -83,6 +84,8 @@ export interface TVPlayerViewProps {
   /** La PILULE « aller à l'épisode suivant » — l'arbitre la propose quand la
    *  fiche « à suivre » ne parle pas (scène post-générique, fiche éteinte). */
   onPlayNextNow: () => void;
+  /** Le bouton d'habillage visé par `osdFocusSignal`, quand il est nommé. */
+  osdFocusTargetRef?: { readonly current: TransportKey | undefined };
   autoPlay: AutoPlayCtx;
   controls: ControlsCtx;
 
@@ -133,7 +136,7 @@ export function TVPlayerView({
   
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
-  overlay, onSkipSegment, onDismissSegment, onPlayNextNow,
+  overlay, onSkipSegment, onDismissSegment, onPlayNextNow, osdFocusTargetRef,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -242,7 +245,7 @@ export function TVPlayerView({
         visible={controls.overlayVisible && !autoPlayActive && !loadingShown}
         speedLabel={controls.speedLabel}
         scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
-        focusSignal={osdFocusSignal}
+        focusSignal={osdFocusSignal} focusTargetRef={osdFocusTargetRef}
         onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
         onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
         onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}

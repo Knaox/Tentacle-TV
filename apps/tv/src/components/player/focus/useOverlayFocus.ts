@@ -3,6 +3,7 @@ import {
   useOverlayFocusCore,
   type FocusNode,
   type OverlayFocusControl,
+  type TransportKey,
 } from "./overlayFocusCore";
 
 export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./overlayFocusCore";
@@ -10,6 +11,8 @@ export type { TransportKey, OverlayFocusControl, OverlayButtonProps } from "./ov
 interface UseOverlayFocusArgs {
   focusSignal: number;
   scrubbing: boolean;
+  /** Le bouton visé par le signal courant — cf. `overlayFocusCore`. */
+  focusTargetRef?: { readonly current: TransportKey | undefined };
 }
 
 /**
@@ -18,9 +21,9 @@ interface UseOverlayFocusArgs {
  * simple `setNativeProps({ hasTVPreferredFocus: true })` suffit à déplacer le
  * focus. (tvOS exige un cycle false→true, cf. `useOverlayFocus.ios.ts`.)
  */
-export function useOverlayFocus({ focusSignal, scrubbing }: UseOverlayFocusArgs): OverlayFocusControl {
+export function useOverlayFocus({ focusSignal, scrubbing, focusTargetRef }: UseOverlayFocusArgs): OverlayFocusControl {
   const restore = useCallback((node: FocusNode) => {
     node?.setNativeProps?.({ hasTVPreferredFocus: true });
   }, []);
-  return useOverlayFocusCore({ focusSignal, scrubbing, restore });
+  return useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef });
 }
