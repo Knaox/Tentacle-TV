@@ -28,6 +28,7 @@ import { showOsd, setPlaying, useTvPlayerState } from "@tentacle-tv/tv-core";
 export function useControlsAutoHide(playing: boolean): {
   showControls: boolean;
   scheduleHide: () => void;
+  scrubbing: boolean;
 } {
   const state = useTvPlayerState();
 
@@ -42,5 +43,12 @@ export function useControlsAutoHide(playing: boolean): {
     showOsd();
   }, []);
 
-  return { showControls: state.mode !== "idle", scheduleHide };
+  // `showControls` reste vrai en déplacement — c'est ce qui laisse la surcouche
+  // de scrub visible. Le déplacement est donc rendu À PART : l'arbitre doit
+  // pouvoir suspendre ses décomptes sans que l'habillage s'éteigne.
+  return {
+    showControls: state.mode !== "idle",
+    scheduleHide,
+    scrubbing: state.mode === "scrub",
+  };
 }

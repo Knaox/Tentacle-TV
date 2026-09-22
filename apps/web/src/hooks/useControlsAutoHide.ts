@@ -14,6 +14,18 @@ import { isChatActive, registerControlsWaker } from "../watchTogether/chat/chatU
 export function useControlsAutoHide(playing: boolean): {
   showControls: boolean;
   scheduleHide: () => void;
+  /**
+   * L'utilisateur déplace-t-il le curseur (avance rapide) ?
+   *
+   * Toujours faux ici : le web n'a pas de mode « curseur fantôme », son
+   * déplacement se fait à la souris sur la barre et le lecteur le sait déjà.
+   * Le champ existe pour la SUBSTITUTION du téléviseur LG, qui, lui, a ce
+   * mode — et dont l'arbitre ignorait tout : les décomptes de saut couraient
+   * pendant une avance rapide, si bien qu'un saut automatique pouvait partir
+   * au milieu d'un déplacement. Le rendu, lui, était bien masqué — ce qui
+   * rendait la chose invisible jusqu'à ce qu'elle agisse.
+   */
+  scrubbing: boolean;
 } {
   const [showControls, setShowControls] = useState(true);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -49,5 +61,5 @@ export function useControlsAutoHide(playing: boolean): {
   useEffect(() => registerControlsWaker(scheduleHide), [scheduleHide]);
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
-  return { showControls, scheduleHide };
+  return { showControls, scheduleHide, scrubbing: false };
 }

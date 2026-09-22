@@ -27,6 +27,10 @@ interface UseWebSegmentsOverlayArgs {
   /** Les contrôles du lecteur sont-ils à l'écran ? (un passage mis en sourdine
    *  par la croix n'est plus rendu qu'avec eux). */
   controlsVisible: boolean;
+  /** Une avance rapide est en cours : aucune surcouche, et les décomptes se
+   *  suspendent. Toujours faux sur le web ; vrai sur le téléviseur LG, dont le
+   *  curseur fantôme est un mode à part entière. */
+  scrubbing?: boolean;
   onSeekSeconds: (seconds: number) => void;
   onNextEpisode?: () => void;
   onEndOfPlayback: () => void;
@@ -38,7 +42,7 @@ interface UseWebSegmentsOverlayArgs {
 
 export function useWebSegmentsOverlay({
   itemId, isEpisode, hasNextEpisode, positionSeconds, durationSeconds,
-  hasStarted, playbackEnded, segments, runtimeMs, libraryId, controlsVisible,
+  hasStarted, playbackEnded, segments, runtimeMs, libraryId, controlsVisible, scrubbing,
   onSeekSeconds, onNextEpisode, onEndOfPlayback, onAutoNextDismiss, inGroupSession,
 }: UseWebSegmentsOverlayArgs): PlaybackOverlayResult {
   // ── L'arbitre partagé : boutons de saut, carte, affiche de fin — toutes les
@@ -58,6 +62,7 @@ export function useWebSegmentsOverlay({
     segments,
     runtimeMs,
     libraryId,
+    scrubbing,
     groupSession: inGroupSession,
     groupSkip, onSkipPropose,
     controlsVisible,

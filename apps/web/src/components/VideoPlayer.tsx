@@ -60,7 +60,7 @@ export function VideoPlayer({
   } = useVideoClock();
 
   const [videoDuration, setVideoDuration] = useState(0);
-  const { showControls, scheduleHide } = useControlsAutoHide(playing);
+  const { showControls, scheduleHide, scrubbing } = useControlsAutoHide(playing);
   // Overlays externes (avatars Watch Together…) alignés sur l'overlay lecteur.
   useEffect(() => { onControlsVisibilityChange?.(showControls); }, [showControls, onControlsVisibilityChange]);
   const [fullscreen, setFullscreen] = useState(false);
@@ -121,7 +121,12 @@ export function VideoPlayer({
   const playback = useWebSegmentsOverlay({
     itemId, isEpisode: item?.Type === "Episode" && !!item.SeriesId, hasNextEpisode,
     positionSeconds: currentTime, durationSeconds: duration, hasStarted, playbackEnded: ended,
-    segments, runtimeMs, libraryId, controlsVisible: showControls,
+    segments, runtimeMs, libraryId,
+    // En déplacement, l'habillage reste allumé (le téléviseur y loge sa
+    // surcouche de scrub) mais il ne doit pas pour autant rendre un passage
+    // mis en sourdine : on cherche une position, pas un bouton.
+    controlsVisible: showControls && !scrubbing,
+    scrubbing,
     onSeekSeconds: handleSeek, onNextEpisode,
     // Fin de lecture sans suite (film, dernier épisode) : retour à la fiche.
     onEndOfPlayback: () => { markPlayerExit(); navigate(`/media/${itemId}`, { replace: true }); },
