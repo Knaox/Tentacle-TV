@@ -110,10 +110,16 @@ export function TVPlaybackOverlay({
   // secondes : un saut auto dont le décompte est masqué doit lui aussi pouvoir
   // être empêché, et il ne le pouvait pas. La pilule de la suite, elle,
   // n'arme rien — il n'y a rien à empêcher.
-  const refusable = skip?.auto === true;
+  //
+  // Et il disparaît une fois le passage MIS EN SOURDINE : le bouton ne revient
+  // alors que le temps de l'habillage, où il n'y a plus rien à refuser
+  // (`dismissible`, tranché par l'arbitre — c'est la même règle que la croix
+  // du web). Sans cette condition, « Masquer » restait là après qu'on l'eut
+  // pressé, sans effet, et retenait le focus que « Passer » aurait dû avoir.
+  const refusable = skip?.auto === true && skip.dismissible;
   // Ce qui revient par l'habillage a déjà été refusé : il se montre, il ne
   // s'impose pas.
-  const grabs = visible && pill.dismissible && !showSettings;
+  const grabs = visible && pill?.dismissible === true && !showSettings;
 
   // Le SECOND moment où le focus doit revenir ici : l'habillage s'éteint. Ses
   // boutons cessent alors d'être focusables et le focus se perd — le bouton
