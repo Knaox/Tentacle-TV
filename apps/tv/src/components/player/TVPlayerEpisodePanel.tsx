@@ -9,11 +9,10 @@ import Animated, {
 import { useTranslation } from "react-i18next";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { TVEpisodeList } from "../TVEpisodeList";
-import { Focusable } from "../focus/Focusable";
+import { TVCloseButton } from "../TVCloseButton";
 import { useTVRemote } from "../focus/useTVRemote";
 import { TV_OVERSCAN_PT, TV_PLAYER_PANEL, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Colors, Spacing, Typography } from "../../theme/colors";
-import { Button } from "../../theme/buttons";
 
 interface TVPlayerEpisodePanelProps {
   seriesId: string;
@@ -26,9 +25,9 @@ interface TVPlayerEpisodePanelProps {
 /**
  * Panneau « Saisons & épisodes » DANS le lecteur (séries) — panneau LATÉRAL
  * droit (la vidéo reste visible à gauche), aligné sur le pattern de
- * `TVTrackSelector` : scrim de lisibilité, glissement depuis la droite, header
- * avec bouton « Fermer » focusable, focus piégé dans le panneau. BACK referme
- * sans quitter la lecture (PlayerScreen + useTVRemote local, LIFO).
+ * `TVTrackSelector` : scrim de lisibilité, header avec la croix de fermeture
+ * (`TVCloseButton`, la même sur tous les menus), focus piégé dans le panneau.
+ * BACK referme sans quitter la lecture (PlayerScreen + useTVRemote local, LIFO).
  */
 export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode, onClose }: TVPlayerEpisodePanelProps) {
   const { t } = useTranslation(["common", "player"]);
@@ -89,16 +88,7 @@ export function TVPlayerEpisodePanel({ seriesId, currentEpisode, onSelectEpisode
                 </Text>
               )}
             </View>
-            <Focusable ref={setCloseNode} variant="button" focusRadius={Button.small.borderRadius} onPress={onClose}>
-              <View style={{
-                paddingHorizontal: 16, paddingVertical: 8, ...Button.small,
-                backgroundColor: "rgba(255,255,255,0.06)",
-              }}>
-                <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
-                  {t("common:close")}
-                </Text>
-              </View>
-            </Focusable>
+            <TVCloseButton ref={setCloseNode} onPress={onClose} />
           </TVFocusGuideView>
           <View style={{ height: 1, backgroundColor: Colors.divider, marginHorizontal: Spacing.screenPadding, marginBottom: 14 }} />
 

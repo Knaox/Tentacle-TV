@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { PLATFORMS } from "../../hooks/usePlatformFilter";
 
@@ -6,19 +7,22 @@ import { PLATFORMS } from "../../hooks/usePlatformFilter";
  *  comme la LG. Le filtrage lui-même est `usePlatformFilter`. */
 export function TVPlatformMenu({
   anchor,
+  onClose,
   selectedIds,
   onToggle,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   selectedIds: number[];
   onToggle: (id: number) => void;
 }) {
   // Figée à l'ouverture : cocher ne doit pas re-saisir le focus.
   const entryRef = useRef(PLATFORMS.find((p) => selectedIds.includes(p.id))?.id ?? PLATFORMS[0]?.id);
   const firstChecked = entryRef.current;
+  const { t } = useTranslation("common");
 
   return (
-    <TVLibraryFilterMenu anchor={anchor}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("platforms")} onClose={onClose}>
       {PLATFORMS.map((platform) => (
         <TVCheckRow
           key={platform.id}

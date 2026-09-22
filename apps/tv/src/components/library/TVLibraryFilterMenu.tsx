@@ -3,8 +3,9 @@ import { TVFocusGuideView } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { TV_OVERSCAN_PT, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
+import { TVCloseButton } from "../TVCloseButton";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
-import { Colors, brandAlpha } from "../../theme/colors";
+import { Colors, Fonts, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
 /** Largeur minimale d'un panneau, à trois mètres (`FilterMenuTv` webOS). */
@@ -29,7 +30,8 @@ export interface MenuAnchor {
  *    (menu des années : deux champs de saisie, rien ne doit faire monter un
  *    clavier sans un geste explicite) ;
  *  - choisir une option NE FERME PAS le menu (genres et plateformes se
- *    cochent en série) ; la fermeture est le Retour, géré par l'écran.
+ *    cochent en série) ; on le ferme par la croix de son en-tête, ou par
+ *    Retour, géré par l'écran.
  *
  * Positionné sous son déclencheur : les coordonnées d'ancrage sont mesurées
  * en fenêtre (`measureInWindow`), le panneau vit dans le cadre padté de
@@ -37,11 +39,16 @@ export interface MenuAnchor {
  */
 export function TVLibraryFilterMenu({
   anchor,
+  title,
+  onClose,
   autoFocus = true,
   width = MENU_MIN_WIDTH,
   children,
 }: {
   anchor: MenuAnchor;
+  /** Le critère réglé (« Genres », « Trier par »…), en tête du panneau. */
+  title: string;
+  onClose: () => void;
   autoFocus?: boolean;
   width?: number;
   children: React.ReactNode;
@@ -78,7 +85,15 @@ export function TVLibraryFilterMenu({
           ...TV_SHADOW.elev3,
         }}
       >
-        <ScrollView showsVerticalScrollIndicator={false}>{children}</ScrollView>
+        {/* L'en-tête : ce qu'on règle, et la croix — la sortie visible, la
+            même que sur les panneaux du lecteur. */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 12, marginBottom: 6 }}>
+          <Text numberOfLines={1} style={{ flex: 1, fontSize: 18, fontFamily: Fonts.semibold, color: Colors.textPrimary }}>
+            {title}
+          </Text>
+          <TVCloseButton onPress={onClose} />
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flexShrink: 1 }}>{children}</ScrollView>
       </TVFocusGuideView>
     </View>
   );

@@ -93,6 +93,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const openMenuAt = useCallback((kind: FilterMenuKind, anchor: MenuAnchor) => {
     setOpenMenu({ kind, anchor });
   }, []);
+  const closeMenu = useCallback(() => setOpenMenu(null), []);
 
   const header = useMemo(() => (
     <View>
@@ -149,19 +150,19 @@ function LibraryScreenInner({ route, navigation }: Props) {
       </TVFocusGuideView>
 
       {openMenu?.kind === "sort" && (
-        <TVSortMenu anchor={openMenu.anchor} filters={lf.filters} onSortByChange={lf.setSortBy} onSortOrderChange={lf.setSortOrder} />
+        <TVSortMenu anchor={openMenu.anchor} onClose={closeMenu} filters={lf.filters} onSortByChange={lf.setSortBy} onSortOrderChange={lf.setSortOrder} />
       )}
       {openMenu?.kind === "genres" && (
-        <TVGenreMenu anchor={openMenu.anchor} genres={genresList ?? []} selectedIds={lf.filters.genreIds} onToggle={lf.toggleGenre} />
+        <TVGenreMenu anchor={openMenu.anchor} onClose={closeMenu} genres={genresList ?? []} selectedIds={lf.filters.genreIds} onToggle={lf.toggleGenre} />
       )}
       {openMenu?.kind === "years" && (
-        <TVYearMenu anchor={openMenu.anchor} yearFrom={lf.filters.yearFrom} yearTo={lf.filters.yearTo} onYearFromChange={lf.setYearFrom} onYearToChange={lf.setYearTo} />
+        <TVYearMenu anchor={openMenu.anchor} onClose={closeMenu} yearFrom={lf.filters.yearFrom} yearTo={lf.filters.yearTo} onYearFromChange={lf.setYearFrom} onYearToChange={lf.setYearTo} />
       )}
       {openMenu?.kind === "rating" && (
-        <TVRatingMenu anchor={openMenu.anchor} ratingMin={lf.filters.ratingMin} onRatingMinChange={lf.setRatingMin} />
+        <TVRatingMenu anchor={openMenu.anchor} onClose={closeMenu} ratingMin={lf.filters.ratingMin} onRatingMinChange={lf.setRatingMin} />
       )}
       {openMenu?.kind === "platforms" && (
-        <TVPlatformMenu anchor={openMenu.anchor} selectedIds={lf.filters.platformIds} onToggle={lf.togglePlatform} />
+        <TVPlatformMenu anchor={openMenu.anchor} onClose={closeMenu} selectedIds={lf.filters.platformIds} onToggle={lf.togglePlatform} />
       )}
     </TVScreenFrame>
   );

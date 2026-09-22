@@ -15,12 +15,14 @@ import { Button } from "../../theme/buttons";
  */
 export function TVYearMenu({
   anchor,
+  onClose,
   yearFrom,
   yearTo,
   onYearFromChange,
   onYearToChange,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   yearFrom: number | null;
   yearTo: number | null;
   onYearFromChange: (v: number | null) => void;
@@ -48,7 +50,7 @@ export function TVYearMenu({
   } as const;
 
   return (
-    <TVLibraryFilterMenu anchor={anchor} autoFocus={false}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("sortYear")} onClose={onClose} autoFocus={false}>
       <View style={{ flexDirection: "row", gap: 10, padding: 6 }}>
         <TextInput
           defaultValue={yearFrom != null ? String(yearFrom) : ""}
@@ -79,10 +81,12 @@ export function TVYearMenu({
  */
 export function TVRatingMenu({
   anchor,
+  onClose,
   ratingMin,
   onRatingMinChange,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   ratingMin: number | null;
   onRatingMinChange: (v: number | null) => void;
 }) {
@@ -101,10 +105,10 @@ export function TVRatingMenu({
   });
 
   return (
-    <TVLibraryFilterMenu anchor={anchor}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("ratingMin")} onClose={onClose}>
       <View style={{ padding: 8 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-          <Text style={{ color: Colors.textMuted, fontSize: 16 }}>{t("ratingMin")}</Text>
+        {/* Le nom du critère est dans l'en-tête : ici, la valeur seule. */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 12 }}>
           <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
             {current > 0 ? `★ ${current.toFixed(1)}+` : t("ratingAny")}
           </Text>
