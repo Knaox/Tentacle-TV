@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePlaybackReporting, useWatchStopInvalidation } from "@tentacle-tv/api-client";
@@ -19,10 +20,15 @@ import { useRememberItemTracks } from "../hooks/useRememberItemTracks";
 import { wtLog } from "../watchTogether/wtLog";
 import { useReportPlayerOverlay } from "../watchTogether/chat/chatUiStore";
 import { stripOverviewHtml } from "../lib/overviewHtml";
+import { markPlayerExit } from "../components/detail/detailTransition";
 
 export function WatchWeb() {
   const { t } = useTranslation("common");
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // La sortie de l'écran de chargement — le MÊME geste que le bouton Retour du
+  // lecteur (`VideoPlayer`), qui n'est pas encore monté à ce moment-là.
+  const cancelLoading = useCallback(() => { markPlayerExit(); navigate(-1); }, [navigate]);
   const {
     itemId, item, isLoading, client, streams, mediaSourceId,
     audioIndex, setAudioIndex, subtitleIndex, setSubtitleIndex,
@@ -330,7 +336,10 @@ export function WatchWeb() {
           applyToSeries={applyToSeries}
         />
       ) : (
-        <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />
+        <PlayerLoadingScreen
+          posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
+          onCancel={cancelLoading}
+        />
       )}
       <GroupPlaybackOverlay itemId={itemId} controlsVisible={controlsVisible} />
     </div>

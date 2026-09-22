@@ -257,7 +257,7 @@ export function PlayerScreen({ itemId }: Props) {
   if (!pb.streamUrl) {
     return (
       <View style={{ flex: 1, backgroundColor: PLAYER.bg }}>
-        <PlayerLoadingView />
+        <PlayerLoadingView onCancel={leavePlayer} />
       </View>
     );
   }

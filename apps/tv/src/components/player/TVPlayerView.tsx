@@ -152,6 +152,10 @@ export function TVPlayerView({
   // existe : D-pad muet sur tvOS), et ne connaissait que deux types sur cinq.
   const skipActive = overlay.kind === "skip" || overlay.kind === "nextButton";
 
+  /** L'écran de chargement occupe-t-il la dalle ? Il prend alors tout : le
+   *  focus va à SA sortie, et l'habillage se tait. */
+  const loadingShown = !hasStarted && !videoError;
+
   // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
   // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
   // et puisse rallumer l'OSD (parité avec useFocusRecovery côté Android).
@@ -194,7 +198,7 @@ export function TVPlayerView({
       {/* Chargement initial OU rechargement de flux (piste/qualité) : écran
           contextualisé couvrant jusqu'à la première position réelle (parité
           PlayerLoadingScreen web) ; rebuffering : spinner discret */}
-      {!hasStarted && !videoError && <TVPlayerLoadingScreen item={item} />}
+      {loadingShown && <TVPlayerLoadingScreen item={item} onCancel={onBack} />}
       {/* Reload doux (audio/qualité) : « dernière image » (vignette trickplay)
           pour masquer le noir d'AVPlayer pendant le re-buffer, sous le spinner. */}
       {reloadFrameSec != null && hasStarted && (
@@ -232,7 +236,10 @@ export function TVPlayerView({
         currentTime={displayTime}
         bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused}
-        visible={controls.overlayVisible && !autoPlayActive}
+        // L'écran de chargement couvre l'habillage SANS le rendre inerte : ses
+        // boutons restaient focusables sous lui, et le focus se posait sur des
+        // cibles invisibles — c'est ce qui rendait la sortie introuvable.
+        visible={controls.overlayVisible && !autoPlayActive && !loadingShown}
         speedLabel={controls.speedLabel}
         scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
         focusSignal={osdFocusSignal}
