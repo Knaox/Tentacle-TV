@@ -26,8 +26,17 @@ export interface OverlayFocusControl {
 }
 
 interface CoreArgs {
-  /** Incrément : redonne le focus au dernier bouton utilisé (réapparition OSD). */
+  /** Incrément : redonne le focus (réapparition de l'habillage, fermeture d'un
+   *  panneau, entrée dans la vidéo). */
   focusSignal: number;
+  /**
+   * Le bouton VISÉ par le signal courant, s'il est connu.
+   *
+   * Lu au moment du signal, jamais avant : c'est un ref parce que la cible est
+   * décidée par celui qui déclenche (« rends le focus aux épisodes »), pas par
+   * un rendu. Absent → le dernier bouton utilisé, comme auparavant.
+   */
+  focusTargetRef?: { readonly current: TransportKey | undefined };
   /** En scrub (OSD masqué, fond focusable) : verrou de navigation en filet et
    *  gel de la mémoire de focus. */
   scrubbing: boolean;
@@ -49,7 +58,7 @@ const TRANSPORT_ROW: TransportKey[] = [
   "prev", "skipback", "playpause", "skipforward", "scrub", "next", "episodes", "settings",
 ];
 
-export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArgs): OverlayFocusControl {
+export function useOverlayFocusCore({ focusSignal, scrubbing, restore, focusTargetRef }: CoreArgs): OverlayFocusControl {
   const btnRefs = useRef<Partial<Record<TransportKey, FocusNode>>>({});
   // Node handles natifs par bouton — alimentent nextFocusLeft/Right (Android :
   // moteur de proximité ; tvOS : ignorés mais inoffensifs). Une map + un compteur
@@ -118,15 +127,30 @@ export function useOverlayFocusCore({ focusSignal, scrubbing, restore }: CoreArg
     return cb;
   }, [bumpHandles]);
 
-  // Restauration du dernier bouton utilisé à chaque signal.
+  // Restauration à chaque signal : la cible demandée, sinon le dernier bouton
+  // utilisé, sinon play/pause.
+  //
+  // Le délai est passé de 100 à 220 ms, et ce n'est pas du confort : le signal
+  // part À LA FERMETURE d'un panneau, avant que ses vues soient démontées. Tant
+  // qu'elles le sont, le moteur de focus tient encore un élément à l'intérieur
+  // et refuse la préférence qu'on vient de poser — la restauration tombait dans
+  // le vide, et le guide de l'habillage reprenait alors son PREMIER enfant,
+  // c'est-à-dire « quitter la vidéo ».
   useEffect(() => {
     if (!focusSignal) return;
     restoringFocusRef.current = true;
-    const target = btnRefs.current[lastFocusedRef.current] ?? btnRefs.current.playpause ?? null;
-    const t1 = setTimeout(() => restore(target), 100);
-    const t2 = setTimeout(() => { restoringFocusRef.current = false; }, 350);
+    const t1 = setTimeout(() => {
+      const wanted = focusTargetRef?.current;
+      const target = (wanted ? btnRefs.current[wanted] : undefined)
+        ?? btnRefs.current[lastFocusedRef.current]
+        ?? btnRefs.current.playpause
+        ?? null;
+      if (wanted) lastFocusedRef.current = wanted;
+      restore(target);
+    }, 220);
+    const t2 = setTimeout(() => { restoringFocusRef.current = false; }, 520);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [focusSignal, restore]);
+  }, [focusSignal, restore, focusTargetRef]);
 
   // NB : pendant un scrub, l'OSD est MASQUÉ (boutons non focusables, le fond
   // reprend le focus) — le verrou de navigation ci-dessous n'est qu'un filet si

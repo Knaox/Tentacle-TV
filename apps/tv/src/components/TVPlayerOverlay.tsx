@@ -9,7 +9,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, ScrubIcon } from "./icons/TVIcons";
 import { SpeedPill } from "./player/SpeedPill";
-import { useOverlayFocus } from "./player/focus/useOverlayFocus";
+import { useOverlayFocus, type TransportKey } from "./player/focus/useOverlayFocus";
 import { useSkipNode } from "./player/focus/osdFocusBus";
 import { TV_OSD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
@@ -51,6 +51,8 @@ interface TVPlayerOverlayProps {
   hasPreviousEpisode?: boolean;
   /** Ouvre le panneau Saisons & épisodes (séries uniquement). */
   onEpisodes?: () => void;
+  /** Le bouton visé par `focusSignal` — cf. `overlayFocusCore`. */
+  focusTargetRef?: { readonly current: TransportKey | undefined };
 }
 
 function formatTime(seconds: number): string {
@@ -67,7 +69,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   onPlayPause, onSkipBack, onSkipForward, onScrub,
   onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
-  onEpisodes,
+  onEpisodes, focusTargetRef,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -87,7 +89,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
 
   // --- Mémoire de focus de l'OSD (source unique partagée ; primitive de
   //     restauration spécifique plateforme injectée par le hook résolu Metro) ---
-  const focus = useOverlayFocus({ focusSignal, scrubbing });
+  const focus = useOverlayFocus({ focusSignal, scrubbing, focusTargetRef });
   // La cible du pont montant — `null` quand aucun bouton de saut n'est posé.
   const skipNode = useSkipNode();
 

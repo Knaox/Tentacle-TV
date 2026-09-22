@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from "react";
 import { ticksToSeconds, extractSourceQuality } from "@tentacle-tv/shared";
 import type { MediaItem, MediaStream as JfStream, QualityKey } from "@tentacle-tv/shared";
-import { usePlaybackReporting } from "@tentacle-tv/api-client";
+import { usePlaybackReporting, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTVPlaybackQuality } from "./useTVPlaybackQuality";
 import { useTVAutoQualityCap } from "./useTVAutoQualityCap";
 import { useTVReloadState } from "./useTVReloadState";
@@ -192,10 +192,18 @@ export function usePlayerStreamPipeline(args: {
    * ce que le serveur a retenu.
    */
   const reportStopRaw = reporting.reportStop;
+  const client = useJellyfinClient();
   const reportStop = useCallback((): Promise<void> => {
-    plog("stop", `arrêt signalé à ${Math.round(positionRef.current)}s (session ${playSessionIdRef.current ?? "—"})`);
+    // La VOIE compte autant que la position : par le proxy, Jellyfin 10.11
+    // écrit le playstate sous la clé ADMIN — la position atterrit alors sur un
+    // autre compte que celui qui regarde, et la reprise ne revient jamais. La
+    // voie directe (token Jellyfin de l'appareil) est la seule qui l'attribue
+    // au bon utilisateur.
+    const ds = client.getDirectStreaming?.();
+    const voie = ds?.enabled && ds.mediaBaseUrl && ds.jellyfinToken ? "directe" : "PROXY (clé admin)";
+    plog("stop", `arrêt signalé à ${Math.round(positionRef.current)}s (session ${playSessionIdRef.current ?? "—"}, voie ${voie})`);
     return reportStopRaw();
-  }, [reportStopRaw, positionRef]);
+  }, [reportStopRaw, positionRef, client]);
 
   const trackRes = useTVTrackResolution({
     streams, item, ancestors,
