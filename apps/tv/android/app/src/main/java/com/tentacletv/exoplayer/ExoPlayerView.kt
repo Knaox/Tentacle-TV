@@ -46,6 +46,8 @@ class ExoPlayerView(
     private val listener = ExoPlaybackListener(emitter, { player }) { keepScreenOn = false }
     private val poller = ExoProgressPoller(this, { player }, emitter) { progressInterval }
     private val displayModeSwitcher = DisplayModeSwitcher(reactContext)
+    // Les codecs préférés suivent le branchement HDMI (cf. ExoPlayerFactory.kt).
+    private val capabilitiesFollower = ExoAudioCapabilitiesFollower(reactContext) { player }
     // Ceinture : l'activité meurt sans passer par destroy() → le panneau
     // revient quand même à son mode par défaut (jellyfin-androidtv #3114).
     private val hostLifecycle = object : LifecycleEventListener {
@@ -141,6 +143,7 @@ class ExoPlayerView(
                 }
             }
 
+        if (audioPassthrough) capabilitiesFollower.start()
         poller.start()
         Log.w(TAG, ">>> initPlayer DONE")
     }
@@ -272,6 +275,7 @@ class ExoPlayerView(
         keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
         emitter.enabled = false
         poller.stop()
+        capabilitiesFollower.stop()
         reactContext.removeLifecycleEventListener(hostLifecycle)
         // Retour au mode d'affichage d'origine AVANT de lâcher le lecteur (#3114).
         displayModeSwitcher.reset(reactContext.currentActivity)

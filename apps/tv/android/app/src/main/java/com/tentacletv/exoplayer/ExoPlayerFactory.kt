@@ -14,7 +14,9 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.LoadControl
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.RenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioCapabilities
+import androidx.media3.exoplayer.audio.AudioCapabilitiesReceiver
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
@@ -42,7 +44,7 @@ object ExoPlayerFactory {
 
     /** Capacités audio réelles (HDMI / ampli) en passthrough, sinon PCM stéréo. */
     fun audioCapabilitiesFor(context: Context, passthrough: Boolean): AudioCapabilities =
-        if (passthrough) AudioCapabilities.getCapabilities(context)
+        if (passthrough) AudioCapabilities.getCapabilities(context, mediaAudioAttributes, null)
         else AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES
 
     /**
@@ -51,20 +53,26 @@ object ExoPlayerFactory {
      * décodage legacy des sous-titres texte (SSA/ASS décodés par le TextRenderer).
      */
     fun createRenderersFactory(context: Context, passthrough: Boolean): RenderersFactory {
-        val audioCapabilities = audioCapabilitiesFor(context, passthrough)
         return object : DefaultRenderersFactory(context) {
             init {
                 setExtensionRendererMode(EXTENSION_RENDERER_MODE_ON)
                 setEnableDecoderFallback(true)
             }
 
+            // Avec un Context, le puits IGNORE `setAudioCapabilities` (constructeur de
+            // DefaultAudioSink : `audioCapabilities = context != null ? null : …`) et
+            // suit lui-même le branchement HDMI par son AudioCapabilitiesReceiver — c'est
+            // ce qu'on veut en passthrough. Forcer le PCM exige la forme SANS Context,
+            // dépréciée mais seule à honorer des capacités figées.
+            @Suppress("DEPRECATION")
             override fun buildAudioSink(
                 context: Context,
                 enableFloatOutput: Boolean,
                 enableAudioTrackPlaybackParams: Boolean,
             ): AudioSink {
-                return DefaultAudioSink.Builder(context)
-                    .setAudioCapabilities(audioCapabilities)
+                val builder = if (passthrough) DefaultAudioSink.Builder(context)
+                else DefaultAudioSink.Builder().setAudioCapabilities(AudioCapabilities.DEFAULT_AUDIO_CAPABILITIES)
+                return builder
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .build()
@@ -122,9 +130,12 @@ object ExoPlayerFactory {
      * en passthrough : `preferredMimeTypeMatchIndex` passe avant
      * `usesHardwareAcceleration` dans le sélecteur.
      */
-    fun preferredAudioMimeTypes(context: Context, passthrough: Boolean): List<String> {
+    fun preferredAudioMimeTypes(context: Context, passthrough: Boolean): List<String> =
+        preferredAudioMimeTypes(audioCapabilitiesFor(context, passthrough), passthrough)
+
+    /** Même liste, depuis des capacités déjà connues (le suiveur ci-dessous). */
+    fun preferredAudioMimeTypes(caps: AudioCapabilities, passthrough: Boolean): List<String> {
         if (!passthrough) return emptyList()
-        val caps = AudioCapabilities.getCapabilities(context)
         val candidates = linkedMapOf(
             MimeTypes.AUDIO_TRUEHD to AudioFormat.ENCODING_DOLBY_TRUEHD,
             MimeTypes.AUDIO_DTS_HD to AudioFormat.ENCODING_DTS_HD,
@@ -157,4 +168,41 @@ object ExoPlayerFactory {
         DefaultLoadControl.Builder()
             .setBufferDurationsMs(50_000, 300_000, 2_500, 5_000)
             .build()
+}
+
+/**
+ * Suit le branchement HDMI : la liste de codecs préférés du sélecteur était
+ * sondée UNE fois, à la construction — pendant une renégociation (bascule de
+ * mode d'affichage, ampli allumé après coup), elle ne voyait que du PCM et le
+ * restait toute la session (jellyfin-androidtv #4067). À chaque changement de
+ * capacités, la liste est recalculée et ExoPlayer resélectionne l'audio.
+ */
+@UnstableApi
+class ExoAudioCapabilitiesFollower(
+    private val context: Context,
+    private val playerProvider: () -> ExoPlayer?,
+) {
+    private var receiver: AudioCapabilitiesReceiver? = null
+
+    /** À appeler sur le thread principal (le receveur veut un Looper). */
+    fun start() {
+        if (receiver != null) return
+        receiver = AudioCapabilitiesReceiver(
+            context, { caps -> apply(caps) }, ExoPlayerFactory.mediaAudioAttributes, null,
+        ).also { it.register() }
+    }
+
+    fun stop() {
+        receiver?.unregister()
+        receiver = null
+    }
+
+    private fun apply(caps: AudioCapabilities) {
+        val player = playerProvider() ?: return
+        val mimes = ExoPlayerFactory.preferredAudioMimeTypes(caps, passthrough = true)
+        Log.w("ExoPlayerView", ">>> capacités audio changées → codecs préférés $mimes")
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .setPreferredAudioMimeTypes(*mimes.toTypedArray())
+            .build()
+    }
 }
