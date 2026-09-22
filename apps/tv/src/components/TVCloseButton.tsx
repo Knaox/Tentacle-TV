@@ -22,10 +22,12 @@ const SIZE = TV_PLAYER_PANEL.buttonMinHeight;
  * Un bouton sans texte : son nom passe par `accessibilityLabel`, et c'est
  * l'anneau de focus des boutons qui dit qu'on est dessus.
  */
-export const TVCloseButton = forwardRef<View, { onPress: () => void }>(function TVCloseButton(
-  { onPress },
-  ref,
-) {
+export const TVCloseButton = forwardRef<View, {
+  onPress: () => void;
+  /** HAUT depuis la croix → ce focusable (handle natif) : la sortie d'un menu
+   *  posé par-dessus une liste, que la géométrie seule ne trouve pas. */
+  nextFocusUp?: number;
+}>(function TVCloseButton({ onPress, nextFocusUp }, ref) {
   const { t } = useTranslation("common");
   return (
     <Focusable
@@ -33,6 +35,7 @@ export const TVCloseButton = forwardRef<View, { onPress: () => void }>(function 
       variant="button"
       focusRadius={Button.small.borderRadius}
       onPress={onPress}
+      nextFocusUp={nextFocusUp}
       accessibilityLabel={t("close")}
     >
       <View style={{

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, TVFocusGuideView } from "react-native";
 import { useGenres, useLibraries, useLibraryCatalog } from "@tentacle-tv/api-client";
 import type { MediaItem } from "@tentacle-tv/shared";
@@ -10,6 +10,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { Skeleton } from "../components/SkeletonLoader";
 import { useTVRemote } from "../components/focus/useTVRemote";
 import { useTVContentEntry } from "../hooks/useTVContentEntry";
+import { claimTvFocus } from "../hooks/useTvFocusClaim";
 import { TVScreenFrame } from "../components/nav/TVScreenFrame";
 import { TVLibraryGrid, useTVGridLayout } from "../components/library/TVLibraryGrid";
 import { TVLibraryHero } from "../components/library/TVLibraryHero";
@@ -65,10 +66,37 @@ function LibraryScreenInner({ route, navigation }: Props) {
     ? filteredItems.length
     : data?.pages[0]?.TotalRecordCount ?? undefined;
 
+  /**
+   * Fermer un menu rend le focus à la pastille qui l'a OUVERT.
+   *
+   * La fermeture démontait l'élément focalisé, et le moteur retombait sur la
+   * première pastille — « Tous », loin du critère qu'on réglait. On vise donc
+   * d'abord la pastille, et c'est elle qui, en recevant le focus, referme le
+   * menu (`closeMenuIfOpen`) : aucun passage par un autre élément. Un filet
+   * ferme quand même si le focus ne suit pas.
+   */
+  const openMenuRef = useRef(openMenu);
+  openMenuRef.current = openMenu;
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (fallbackTimer.current) clearTimeout(fallbackTimer.current); }, []);
+  const dismissMenu = useCallback(() => {
+    const menu = openMenuRef.current;
+    if (!menu) return;
+    if (!menu.anchor.triggerView) {
+      setOpenMenu(null);
+      return;
+    }
+    claimTvFocus(menu.anchor.triggerView);
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current);
+    fallbackTimer.current = setTimeout(() => {
+      setOpenMenu((current) => (current === menu ? null : current));
+    }, 400);
+  }, []);
+
   // Un seul propriétaire du Retour : menu ouvert → le fermer ; sinon quitter.
   useTVRemote({
     onBack: () => {
-      if (openMenu) setOpenMenu(null);
+      if (openMenu) dismissMenu();
       else navigation.goBack();
     },
   });
@@ -77,7 +105,7 @@ function LibraryScreenInner({ route, navigation }: Props) {
   // (le BackHandler de useTVRemote est Android only). Menu de filtre ouvert →
   // bloquer le pop et ne fermer QUE le menu — sans quoi Retour depuis un menu
   // quittait toute la bibliothèque.
-  usePreventRemove(openMenu != null, () => setOpenMenu(null));
+  usePreventRemove(openMenu != null, dismissMenu);
 
   // Sélection d'une bibliothèque au rail → focus sur la 1ʳᵉ carte.
   const contentEntry = useTVContentEntry();
@@ -93,7 +121,10 @@ function LibraryScreenInner({ route, navigation }: Props) {
   const openMenuAt = useCallback((kind: FilterMenuKind, anchor: MenuAnchor) => {
     setOpenMenu({ kind, anchor });
   }, []);
-  const closeMenu = useCallback(() => setOpenMenu(null), []);
+  // Une pastille reprend le focus : on est sorti du menu en naviguant.
+  const closeMenuIfOpen = useCallback(() => {
+    setOpenMenu((current) => (current ? null : current));
+  }, []);
 
   const header = useMemo(() => (
     <View>
@@ -107,11 +138,12 @@ function LibraryScreenInner({ route, navigation }: Props) {
           onStatusChange={lf.setStatusFilter}
           onFavoriteChange={lf.setIsFavorite}
           onOpenMenu={openMenuAt}
+          onChipFocus={closeMenuIfOpen}
           onReset={lf.resetFilters}
         />
       </View>
     </View>
-  ), [libraryId, displayName, collectionType, lf.filters, lf.hasActiveFilters, lf.setStatusFilter, lf.setIsFavorite, lf.resetFilters, total, openMenuAt]);
+  ), [libraryId, displayName, collectionType, lf.filters, lf.hasActiveFilters, lf.setStatusFilter, lf.setIsFavorite, lf.resetFilters, total, openMenuAt, closeMenuIfOpen]);
 
   return (
     <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
@@ -150,19 +182,19 @@ function LibraryScreenInner({ route, navigation }: Props) {
       </TVFocusGuideView>
 
       {openMenu?.kind === "sort" && (
-        <TVSortMenu anchor={openMenu.anchor} onClose={closeMenu} filters={lf.filters} onSortByChange={lf.setSortBy} onSortOrderChange={lf.setSortOrder} />
+        <TVSortMenu anchor={openMenu.anchor} onClose={dismissMenu} filters={lf.filters} onSortByChange={lf.setSortBy} onSortOrderChange={lf.setSortOrder} />
       )}
       {openMenu?.kind === "genres" && (
-        <TVGenreMenu anchor={openMenu.anchor} onClose={closeMenu} genres={genresList ?? []} selectedIds={lf.filters.genreIds} onToggle={lf.toggleGenre} />
+        <TVGenreMenu anchor={openMenu.anchor} onClose={dismissMenu} genres={genresList ?? []} selectedIds={lf.filters.genreIds} onToggle={lf.toggleGenre} />
       )}
       {openMenu?.kind === "years" && (
-        <TVYearMenu anchor={openMenu.anchor} onClose={closeMenu} yearFrom={lf.filters.yearFrom} yearTo={lf.filters.yearTo} onYearFromChange={lf.setYearFrom} onYearToChange={lf.setYearTo} />
+        <TVYearMenu anchor={openMenu.anchor} onClose={dismissMenu} yearFrom={lf.filters.yearFrom} yearTo={lf.filters.yearTo} onYearFromChange={lf.setYearFrom} onYearToChange={lf.setYearTo} />
       )}
       {openMenu?.kind === "rating" && (
-        <TVRatingMenu anchor={openMenu.anchor} onClose={closeMenu} ratingMin={lf.filters.ratingMin} onRatingMinChange={lf.setRatingMin} />
+        <TVRatingMenu anchor={openMenu.anchor} onClose={dismissMenu} ratingMin={lf.filters.ratingMin} onRatingMinChange={lf.setRatingMin} />
       )}
       {openMenu?.kind === "platforms" && (
-        <TVPlatformMenu anchor={openMenu.anchor} onClose={closeMenu} selectedIds={lf.filters.platformIds} onToggle={lf.togglePlatform} />
+        <TVPlatformMenu anchor={openMenu.anchor} onClose={dismissMenu} selectedIds={lf.filters.platformIds} onToggle={lf.togglePlatform} />
       )}
     </TVScreenFrame>
   );
