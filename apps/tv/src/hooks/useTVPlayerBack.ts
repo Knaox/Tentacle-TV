@@ -13,11 +13,12 @@ const BACK_GRACE_MS = 600;
  * n'est appelé nulle part — vérifié dans react-native-tvos) : le système POP l'écran
  * nativement. Tous les `useTVRemote({ onBack })` du lecteur sont du code mort pour ce
  * bouton — c'est pour ça qu'un Retour sur l'overlay « épisode suivant » quittait la
- * vidéo. La SEULE interception qui fonctionne est `usePreventRemove` (le mécanisme du
- * panneau épisodes, pop-restore react-native-screens, invisible avec animation:"none") :
- * tant que scrub / surface « épisode suivant » / grâce est actif, le pop natif est annulé et
- * `routeBack` consomme l'appui. Android : le BackHandler LIFO consomme l'appui AVANT la
- * navigation → cette prévention n'y est jamais atteinte par Retour (inerte).
+ * vidéo. La SEULE interception qui fonctionne est `usePreventRemove` : tant que scrub /
+ * surface « épisode suivant » / grâce est actif, le patch tvOS de react-native-screens
+ * AVALE l'appui avant UIKit (plus de dépilement suivi d'une restauration, qui faisait
+ * clignoter l'écran précédent) et `routeBack` consomme l'appui. Android : le BackHandler
+ * LIFO consomme l'appui AVANT la navigation → cette prévention n'y est jamais atteinte
+ * par Retour (inerte).
  *
  * `routeBack()` est AUSSI la première étape des chemins Retour JS (BackHandler Android,
  * bouton Retour de l'OSD) → une seule source de vérité pour « que fait Retour ».

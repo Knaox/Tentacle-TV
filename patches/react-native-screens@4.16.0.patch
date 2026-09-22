@@ -1,0 +1,61 @@
+diff --git a/ios/RNSScreen.mm b/ios/RNSScreen.mm
+index b62a2e2..d783c6f 100644
+--- a/ios/RNSScreen.mm
++++ b/ios/RNSScreen.mm
+@@ -1451,6 +1451,56 @@ Class<RCTComponentViewProtocol> RNSScreenCls(void)
+   return self;
+ }
+ 
++#if TARGET_OS_TV
++#pragma mark - tvOS Menu button (Tentacle patch)
++
++// Tentacle patch : tant que l'écran EMPÊCHE sa fermeture (`usePreventRemove`),
++// le bouton Menu de la télécommande ne doit pas le dépiler.
++//
++// UIKit le dépilait quand même : l'annulation n'intervenait qu'APRÈS coup
++// (transition interactive annulée, ou `viewDidDisappear` qui réempile l'écran
++// par `updateContainer`). Avec `animation: "none"`, la transition dure zéro
++// seconde et l'écran précédent s'affichait le temps d'une image : chaque Retour
++// qui ne devait fermer qu'un panneau faisait CLIGNOTER tout l'écran. Un fondu
++// ne masque rien : il devient un fondu enchaîné visible avant la restauration.
++//
++// On avale donc l'appui AVANT UIKit, et on prévient le JS exactement comme
++// l'aurait fait l'annulation native (`onNativeDismissCancelled` → react-
++// navigation rejoue le retrait, que `usePreventRemove` intercepte).
++//
++// Seulement si aucune modale n'est présentée par-dessus : c'est alors à elle
++// de traiter le Menu (sa propre fermeture).
++- (BOOL)rnscreens_isPreventedMenuPress:(NSSet<UIPress *> *)presses
++{
++  if (!self.screenView.preventNativeDismiss || self.presentedViewController != nil) {
++    return NO;
++  }
++  for (UIPress *press in presses) {
++    if (press.type == UIPressTypeMenu) {
++      return YES;
++    }
++  }
++  return NO;
++}
++
++- (void)pressesBegan:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
++{
++  if ([self rnscreens_isPreventedMenuPress:presses]) {
++    return;
++  }
++  [super pressesBegan:presses withEvent:event];
++}
++
++- (void)pressesEnded:(NSSet<UIPress *> *)presses withEvent:(UIPressesEvent *)event
++{
++  if ([self rnscreens_isPreventedMenuPress:presses]) {
++    [self.screenView notifyDismissCancelledWithDismissCount:1];
++    return;
++  }
++  [super pressesEnded:presses withEvent:event];
++}
++#endif // TARGET_OS_TV
++
+ // TODO: Find out why this is executed when screen is going out
+ - (void)viewWillAppear:(BOOL)animated
+ {
