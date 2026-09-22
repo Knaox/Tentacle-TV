@@ -165,15 +165,37 @@ export function usePlayerStreamPipeline(args: {
     });
   }, [captureReloadTicks, setForceTranscode, softReloadRef, setReloadFrameSec, positionRef]);
 
+  const playSessionIdRef = useRef<string | undefined>(undefined);
+  playSessionIdRef.current = playSessionId;
+
   const jellyfinDuration = useMemo(() => ticksToSeconds(item?.RunTimeTicks), [item]);
   // Cadence du flux (Android TV : bascule de fréquence d'affichage dans la vue native).
   const frameRate = useMemo(() => videoFrameRate(streams), [streams]);
 
-  const { reportStart, reportStop, updatePosition, reportSeek, lastStopPromiseRef } = usePlaybackReporting({
+  const reporting = usePlaybackReporting({
     itemId, mediaSourceId, isDirectPlay, isDirectStream, playSessionId,
     audioStreamIndex: audioIndex,
     subtitleStreamIndex: subtitleIndex === -1 ? null : subtitleIndex,
   });
+  const { reportStart, updatePosition, reportSeek, lastStopPromiseRef } = reporting;
+
+  /**
+   * L'arrêt, TRACÉ — la position de reprise se perd sans rien dire.
+   *
+   * `reportStop` est gardé par « la lecture a-t-elle démarré » et sa position
+   * vient d'un ref que seul `onProgress` alimente : quand la reprise ne revient
+   * pas, la question est de savoir lequel des deux a manqué, et rien ne le
+   * disait. Le transport, lui, ne journalise que ses ÉCHECS — un envoi parti
+   * sur la mauvaise identité est parfaitement muet.
+   *
+   * La trace porte donc la position partante : c'est elle qu'on recroise avec
+   * ce que le serveur a retenu.
+   */
+  const reportStopRaw = reporting.reportStop;
+  const reportStop = useCallback((): Promise<void> => {
+    plog("stop", `arrêt signalé à ${Math.round(positionRef.current)}s (session ${playSessionIdRef.current ?? "—"})`);
+    return reportStopRaw();
+  }, [reportStopRaw, positionRef]);
 
   const trackRes = useTVTrackResolution({
     streams, item, ancestors,
