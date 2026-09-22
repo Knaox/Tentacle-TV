@@ -65,6 +65,7 @@
          du moteur — atteindre la piste depuis la grille EXIGE le protocole
          « défiler d'un pas, viser à nouveau ». */
       .piste-section { margin-top: 500px; max-width: 1000px; }
+      .piste-section.piste-suivante { margin-top: 24px; }
       .piste-section h2 { font-size: 15px; margin-bottom: 10px; }
       [data-tv-piste] { display: flex; gap: 14px; overflow-x: auto; }
       [data-tv-piste] [data-tv-carte] {
@@ -105,6 +106,14 @@
         <div data-tv-piste data-harness-piste></div>
       </section>
 
+      <!-- Une seconde piste juste dessous : défiler la première puis
+           descendre doit viser la PREMIÈRE carte visible de celle-ci, pas la
+           carte située sous le point de départ (`trackEntry`). -->
+      <section class="piste-section piste-suivante">
+        <h2>Une seconde piste</h2>
+        <div data-tv-piste data-harness-piste-2></div>
+      </section>
+
       <!-- Du décor non focusable après le contenu : c'est lui qui donne à la
            page une marge de défilement sans cible, le cas où un pas doit se
            rendre. -->
@@ -113,8 +122,8 @@
 
     <script src="/tv/harness-shims.js"></script>
     <script type="module">
-      import { installerMoteurFocus } from "/tv/src/focus/moteur.ts";
-      import { amorcerFocus } from "/tv/src/focus/entree.ts";
+      import { installFocusEngine } from "/tv/src/focus/engine.ts";
+      import { primeFocus } from "/tv/src/focus/entry.ts";
 
       // La grille : 5 colonnes × 8 rangées, comme une bibliothèque — la
       // dernière rangée est incomplète (3 cartes), comme presque toujours, et
@@ -228,8 +237,19 @@
         piste.appendChild(carte);
       }
 
-      installerMoteurFocus();
-      amorcerFocus(true);
+      const piste2 = document.querySelector("[data-harness-piste-2]");
+      for (let index = 0; index < 12; index++) {
+        const carte = document.createElement("div");
+        carte.setAttribute("role", "button");
+        carte.setAttribute("tabindex", "0");
+        carte.setAttribute("data-tv-carte", "");
+        carte.setAttribute("data-tv-cle", `q-${index}`);
+        carte.textContent = `q${index}`;
+        piste2.appendChild(carte);
+      }
+
+      installFocusEngine();
+      primeFocus(true);
     </script>
   </body>
 </html>
