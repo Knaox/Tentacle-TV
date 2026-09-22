@@ -18,7 +18,7 @@ interface TVPlaybackOverlayProps {
   overlay: PlayerOverlay;
   onSkip: () => void;
   onDismiss: () => void;
-  /** Habillage visible : on ne vole pas le focus, et le bouton monte. */
+  /** Habillage visible : le bouton monte pour ne pas couvrir la barre. */
   overlayVisible?: boolean;
   showSettings?: boolean;
   /** Panneau épisodes ouvert → masquer le bouton (il le recouvrirait). */
@@ -31,14 +31,41 @@ interface TVPlaybackOverlayProps {
  * Il remplace `TVSkipSegmentButton`, qui portait sa propre fenêtre de segment,
  * son propre refus et son propre décompte. Tout cela vient désormais de
  * l'arbitre partagé : ici, il ne reste QUE ce qui est vraiment de la
- * télévision — le focus, et il est repris mot pour mot.
+ * télévision — le dessin à trois mètres et le focus.
  *
- * Les quatre mécanismes de focus, tous payés par une régression :
+ * # Le focus va au bouton UTILE, pas toujours au même
  *
- * 1. `useTVFocusGrab` sur front MONTANT, jamais quand l'habillage est ouvert :
- *    le bouton n'a aucune sortie géométrique, voler le focus l'y piégerait ;
+ * La règle tient en une phrase : on donne le focus au geste que l'utilisateur
+ * aurait à faire. Quand le passage part TOUT SEUL (`overlay.auto`), ce geste
+ * est de l'en empêcher — le focus va donc à « Masquer ». Quand il faut le
+ * demander, c'est « Passer ». L'ancienne version focalisait « Passer » dans
+ * les deux cas : sur un saut automatique, il fallait naviguer à droite pour
+ * atteindre le refus, pendant que le décompte courait.
+ *
+ * Et la prise de focus ne dépend plus de l'habillage. Elle en dépendait par
+ * prudence — un bouton sans sortie géométrique piège la télécommande — mais la
+ * sortie existe : le guide vers play/pause, monté justement quand l'habillage
+ * est là. `useTVFocusGrab` n'agit qu'au front MONTANT, donc le bouton prend le
+ * focus quand IL apparaît, et l'habillage qui s'ouvre ensuite garde le sien.
+ *
+ * # Ce qui revient par l'habillage ne vole rien
+ *
+ * Un passage mis en sourdine sort de l'image et ne reparaît qu'avec
+ * l'habillage (`dismissible: false`, tranché par l'arbitre). Là, l'utilisateur
+ * est déjà en train de faire autre chose : le bouton se montre, reste
+ * atteignable à la navigation, et ne prend pas le focus. C'est exactement ce
+ * que `dismissible` distingue — inutile d'un second témoin.
+ *
+ * # Rien pendant l'avance rapide
+ *
+ * L'arbitre rend `none` en déplacement (`scrubbing`), donc il n'y a rien à
+ * masquer ici : le bouton n'existe simplement pas.
+ *
+ * Les mécanismes de focus, tous payés par une régression :
+ *
+ * 1. `useTVFocusGrab` sur front MONTANT — jamais sur un retour par l'habillage ;
  * 2. l'îlot `TVFocusGuideView autoFocus` avec pièges ←/→ pendant le décompte,
- *    pour que « sauter » et « garder » se répondent sans que la télécommande
+ *    pour que « passer » et « masquer » se répondent sans que la télécommande
  *    s'en échappe — piège LEVÉ quand l'habillage est là, sinon il entre en
  *    conflit avec le guide de sortie ;
  * 3. le guide de SORTIE vers play/pause, monté seulement OSD visible : tvOS
@@ -52,17 +79,26 @@ export function TVPlaybackOverlay({
 }: TVPlaybackOverlayProps) {
   const { t } = useTranslation("player");
   const skipRef = useRef<View>(null);
+  const dismissRef = useRef<View>(null);
 
   const skip = overlay.kind === "skip" ? overlay : null;
   const visible = skip !== null && !showEpisodes;
   const countdown = skip?.countdownSeconds ?? null;
+  // Le refus suit le caractère AUTOMATIQUE du passage, pas l'affichage des
+  // secondes : un saut auto dont le décompte est masqué doit lui aussi pouvoir
+  // être empêché, et il ne le pouvait pas.
+  const refusable = skip?.auto === true;
+  // Ce qui revient par l'habillage a déjà été refusé : il se montre, il ne
+  // s'impose pas.
+  const grabs = visible && skip?.dismissible === true && !showSettings;
 
-  useTVFocusGrab(skipRef, visible && !showSettings && !overlayVisible);
+  useTVFocusGrab(refusable ? dismissRef : skipRef, grabs);
 
   // Sur Android, le Retour est empilé et peut donc « garder ce passage » sans
-  // quitter la vidéo. On ne le prend QUE pendant un décompte : sans échéance,
-  // le bouton n'est qu'une proposition, et Retour doit rester le Retour.
-  useTVRemote({ onBack: visible && countdown !== null ? onDismiss : undefined });
+  // quitter la vidéo. On ne le prend QUE si le passage part tout seul : sans
+  // échéance, le bouton n'est qu'une proposition, et Retour doit rester le
+  // Retour.
+  useTVRemote({ onBack: visible && refusable ? onDismiss : undefined });
 
   const opacity = useSharedValue(0);
   const raise = useSharedValue(0);
@@ -94,23 +130,32 @@ export function TVPlaybackOverlay({
     >
       <TVFocusGuideView
         autoFocus
-        trapFocusLeft={countdown !== null && !overlayVisible}
-        trapFocusRight={countdown !== null && !overlayVisible}
-        style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+        trapFocusLeft={refusable && !overlayVisible}
+        trapFocusRight={refusable && !overlayVisible}
+        style={{ flexDirection: "row", alignItems: "center", gap: TV_PLAYER_SKIP.gap }}
       >
-        <Focusable ref={skipRef} variant="button" onPress={onSkip} focusRadius={8} hasTVPreferredFocus={!overlayVisible && !showSettings && !showEpisodes}>
+        <Focusable
+          ref={skipRef}
+          variant="button"
+          onPress={onSkip}
+          focusRadius={TV_PLAYER_SKIP.radius}
+          hasTVPreferredFocus={grabs && !refusable}
+          // L'anneau est blanc, la pilule aussi : seul le halo de marque dit
+          // où l'on est. Même parti que la feuille du téléviseur LG.
+          glowOverride={TV_PLAYER_SKIP.focusGlow}
+        >
           <View style={{
             paddingHorizontal: TV_PLAYER_SKIP.paddingH,
             paddingVertical: TV_PLAYER_SKIP.paddingV,
-            backgroundColor: "rgba(0,0,0,0.6)",
+            backgroundColor: TV_PLAYER_SKIP.bg,
             borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.2)",
+            borderColor: "transparent",
             borderRadius: TV_PLAYER_SKIP.radius,
           }}>
             <Text style={{
-              color: "#ffffff",
+              color: TV_PLAYER_SKIP.fg,
               fontSize: TV_PLAYER_SKIP.text,
-              fontWeight: "600",
+              fontWeight: "700",
             }}>
               {countdown !== null
                 ? t(`player:${skip.labelKey}In`, { seconds: countdown })
@@ -118,20 +163,28 @@ export function TVPlaybackOverlay({
             </Text>
           </View>
         </Focusable>
-        {/* Pas de croix : à trois mètres, une cible de 32 points ne se vise pas.
-            Un second bouton, lisible, que la navigation atteint d'un appui. */}
-        {countdown !== null && (
-          <Focusable variant="button" onPress={onDismiss} focusRadius={8}>
+        {/* Pas une croix : à trois mètres, une cible de 32 points ne se vise pas.
+            Un second bouton, lisible, que la navigation atteint d'un appui —
+            et qui reçoit le focus quand le saut est automatique. */}
+        {refusable && (
+          <Focusable
+            ref={dismissRef}
+            variant="button"
+            onPress={onDismiss}
+            focusRadius={TV_PLAYER_SKIP.radius}
+            hasTVPreferredFocus={grabs}
+            glowOverride={TV_PLAYER_SKIP.focusGlow}
+          >
             <View style={{
               paddingHorizontal: TV_PLAYER_SKIP.paddingH,
               paddingVertical: TV_PLAYER_SKIP.paddingV,
-              backgroundColor: "rgba(0,0,0,0.45)",
+              backgroundColor: TV_PLAYER_SKIP.dismissBg,
               borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.12)",
+              borderColor: TV_PLAYER_SKIP.dismissBorder,
               borderRadius: TV_PLAYER_SKIP.radius,
             }}>
               <Text style={{
-                color: "rgba(255,255,255,0.7)",
+                color: TV_PLAYER_SKIP.dismissFg,
                 fontSize: TV_PLAYER_SKIP.text,
                 fontWeight: "500",
               }}>

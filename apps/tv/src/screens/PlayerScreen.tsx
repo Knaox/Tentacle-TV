@@ -105,14 +105,17 @@ export function PlayerScreen({ route, navigation }: Props) {
 
   /** La fin du média, en état : c'est une ENTRÉE de l'arbitre. */
   const [ended, setEnded] = useState(false);
-  // Le scrub en MIROIR d'état : l'arbitre en a besoin (il suspend son décompte)
-  // et les contrôles ont besoin de l'arbitre (`panelOpen`) — quelqu'un doit
-  // passer en premier. Un rendu de retard, invisible ; une ref resterait périmée.
+  // Le scrub et l'habillage en MIROIR d'état : l'arbitre en a besoin (il
+  // suspend son décompte, et il ne rend un passage mis en sourdine que le temps
+  // de l'habillage) et les contrôles ont besoin de l'arbitre (`panelOpen`) —
+  // quelqu'un doit passer en premier. Un rendu de retard, invisible ; une ref
+  // resterait périmée.
   const [scrubbing, setScrubbing] = useState(false);
+  const [osdVisible, setOsdVisible] = useState(false);
 
   const playback = useTVPlaybackOverlay({
     itemId, item, displayTime, displayDuration: jellyfinDuration ?? 0,
-    hasStarted, ended, scrubbing,
+    hasStarted, ended, scrubbing, controlsVisible: osdVisible,
     onSeek: handleSeek,
     navigateToEpisode,
     onFinished: () => { void lifecycle.handleFinished(); },
@@ -146,6 +149,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
   });
   useEffect(() => { setScrubbing(controls.scrubbing); }, [controls.scrubbing]);
+  // En déplacement, l'habillage est masqué — le dire à l'arbitre, sinon un
+  // passage mis en sourdine ressortirait le temps d'une avance rapide.
+  useEffect(() => {
+    setOsdVisible(controls.overlayVisible && !controls.scrubbing);
+  }, [controls.overlayVisible, controls.scrubbing]);
 
   // La croix de l'affiche de fin — la sortie elle-même (fin sans suite, refus,
   // réglage éteint) part de la coquille partagée, par `onFinished` ci-dessus.
