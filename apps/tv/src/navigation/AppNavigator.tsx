@@ -85,9 +85,11 @@ export function AppNavigator() {
       <Stack.Screen name="Home" component={HomeScreen} options={{ animation: "none" }} />
       <Stack.Screen name="Library" component={LibraryScreen} options={{ animation: "none" }} />
       <Stack.Screen name="MediaDetail" component={MediaDetailScreen} />
-      {/* `animation: none` : sur tvOS, le Menu déclenche un dismiss natif annulé
-          par usePreventRemove (panneau ouvert) ; sans animation, le pop-restore
-          est instantané → pas de flash de l'écran précédent. */}
+      {/* `animation: none` : une sortie instantanée. Le Menu qu'un panneau
+          ouvert doit consommer (usePreventRemove) ne dépile plus rien : le
+          patch tvOS de react-native-screens l'avale avant UIKit. Avant lui,
+          l'écran était dépilé puis restauré — et l'accueil CLIGNOTAIT une
+          image, animation ou pas (un fondu devenait un fondu enchaîné). */}
       <Stack.Screen name="Player" component={PlayerScreen} options={{ animation: "none" }} />
       {/* Réglages/Qualité en MODALE transparente : ESC ferme la modale
           proprement (révèle l'épisode), pas de flash de page précédente. */}
