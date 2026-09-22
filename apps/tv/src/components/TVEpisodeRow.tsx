@@ -1,8 +1,9 @@
-import { memo } from "react";
+import { memo, useRef } from "react";
 import { View, Text, Image } from "react-native";
 import type { MediaItem } from "@tentacle-tv/shared";
 import { formatDuration } from "@tentacle-tv/shared";
 import { Focusable } from "./focus/Focusable";
+import { useTvFocusClaim } from "../hooks/useTvFocusClaim";
 import { CheckIcon } from "./icons/TVIcons";
 import { TVMetaChips } from "./TVMetaChips";
 import { Colors, Typography, Fonts, Radius, CardConfig, brandAlpha } from "../theme/colors";
@@ -30,6 +31,20 @@ interface TVEpisodeRowProps {
 export const TVEpisodeRow = memo(function TVEpisodeRow({
   episode: ep, thumbUrl, isCurrent, badgeLabel, autoFocus, thumbWidth = 200, onPress, onFocus,
 }: TVEpisodeRowProps) {
+  /**
+   * Le focus de la ligne COURANTE : réclamé une fois, puis RELÂCHÉ.
+   *
+   * `hasTVPreferredFocus` y était posé en permanence, et une préférence qui ne
+   * retombe jamais retient le focus : le moteur y ramenait la sélection à
+   * chaque occasion, si bien que la liste ne se parcourait pas — on revenait
+   * sur l'épisode en cours à la moindre flèche.
+   *
+   * La réclamation partagée fait le geste juste sur chaque plateforme (cycle
+   * false→true sur tvOS, pose directe sur Android) et le relâche derrière elle.
+   */
+  const rowRef = useRef<View>(null);
+  useTvFocusClaim(rowRef, !!autoFocus);
+
   const progress = ep.UserData?.PlayedPercentage ?? 0;
   const isWatched = ep.UserData?.Played === true;
   const runtime = ep.RunTimeTicks ? formatDuration(ep.RunTimeTicks) : null;
@@ -39,7 +54,7 @@ export const TVEpisodeRow = memo(function TVEpisodeRow({
     : null;
 
   return (
-    <Focusable variant="row" onPress={onPress} onFocus={onFocus} hasTVPreferredFocus={autoFocus}>
+    <Focusable ref={rowRef} variant="row" onPress={onPress} onFocus={onFocus}>
       <View style={{
         flexDirection: "row", alignItems: "center", gap: 20,
         paddingVertical: 14, paddingHorizontal: 16,

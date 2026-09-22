@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { useSeasons, useEpisodes, useSeriesWatchState, useJellyfinClient } from "@tentacle-tv/api-client";
 import { useTranslation } from "react-i18next";
@@ -53,6 +53,30 @@ export function TVEpisodeList({
   const { makeOnFocus } = useTVScrollToFocused(episodeScrollRef, 60);
 
   const highlightId = currentEpisodeId ?? currentEp?.Id;
+  const highlightIndex = episodes?.findIndex((e) => e.Id === highlightId) ?? -1;
+
+  /**
+   * Amener l'épisode en cours SOUS LES YEUX avant de lui donner le focus.
+   *
+   * Rien ne défilait : la liste s'ouvrait en haut, et sur une saison un peu
+   * longue l'épisode en cours était hors écran. Le focus s'y posait quand même
+   * — sur une ligne qu'on ne voyait pas —, ce qui donnait une liste qui semble
+   * immobile et un premier appui qui saute.
+   *
+   * Sans animation : au montage il n'y a rien à accompagner, et un défilement
+   * animé se battrait avec celui que la prise de focus déclenche.
+   */
+  const scrolledFor = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!fillHeight || !autoFocusCurrent || highlightIndex < 0) return;
+    const key = `${activeSeasonId}|${highlightId}`;
+    if (scrolledFor.current === key) return;
+    scrolledFor.current = key;
+    const y = Math.max(0, highlightIndex * EPISODE_ROW_HEIGHT - EPISODE_ROW_HEIGHT);
+    // Après le rendu des lignes : la ScrollView n'a pas de contenu avant.
+    const id = setTimeout(() => episodeScrollRef.current?.scrollTo({ y, animated: false }), 0);
+    return () => clearTimeout(id);
+  }, [fillHeight, autoFocusCurrent, highlightIndex, activeSeasonId, highlightId]);
 
   // Badge violet : override (lecteur : « En cours de visionnage ») sinon
   // Reprendre (en cours) / À suivre (watch state) / Épisode actuel (fiche épisode)
@@ -132,13 +156,29 @@ export function TVEpisodeList({
             }
           />
         ));
+        // Tant que la saison n'a pas répondu, le panneau paraissait VIDE — on
+        // ne savait pas s'il chargeait ou s'il n'y avait rien. Des lignes
+        // fantômes à la bonne hauteur disent l'attente et réservent la place,
+        // donc la liste ne saute pas quand elle arrive.
+        const pending = episodes === undefined;
+        const ghosts = pending
+          ? Array.from({ length: 4 }, (_, i) => (
+              <View
+                key={`ghost-${i}`}
+                style={{
+                  height: EPISODE_ROW_HEIGHT - 8, borderRadius: Radius.card,
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                }}
+              />
+            ))
+          : null;
         return fillHeight ? (
           <ScrollView
             ref={episodeScrollRef}
             style={{ marginTop: 24, flex: 1 }}
             contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: 8, paddingBottom: 40 }}
           >
-            {rows}
+            {ghosts ?? rows}
           </ScrollView>
         ) : (
           <View style={{ marginTop: 24, paddingHorizontal: Spacing.screenPadding, gap: 8 }}>
