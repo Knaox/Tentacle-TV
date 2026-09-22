@@ -113,3 +113,14 @@ export const FocusButtonStyle = {
 export const FocusPlayerButtonStyle = {
   bgColor: TV_OSD.buttonFocusBg,
 } as const;
+
+/**
+ * La place qu'une affiche focalisée prend AU-DESSUS d'elle : 1,08 d'échelle
+ * par le bas sur ~310 points (≈ 25), le halo (6) et le rayon de l'ombre (18).
+ *
+ * Toute liste qui rogne ses bords doit la réserver au-dessus de sa première
+ * rangée, sinon l'anneau et le haut de l'affiche sont coupés — ou débordent
+ * sur ce qui la précède (la barre de filtres d'une bibliothèque). Mesurée sur
+ * les carrousels, où les 32 points de réserve d'origine ne suffisaient pas.
+ */
+export const CARD_FOCUS_BLEED = 40;

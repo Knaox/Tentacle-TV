@@ -7,6 +7,7 @@ import { TVPosterFrame, TVPosterMeta } from "../cards/TVPosterCard";
 import { Focusable } from "../focus/Focusable";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
 import { Colors, Spacing, CardConfig } from "../../theme/colors";
+import { CARD_FOCUS_BLEED } from "../../theme/focus";
 
 /** Largeur minimale d'une carte et écart — la formule de colonnes de la LG
  *  (`columnsTv.ts` : `max(2, ⌊(largeur + 16) / 196⌋)`). */
@@ -121,7 +122,16 @@ export function TVLibraryGrid({
       estimatedItemSize={estimatedItemSize}
       renderItem={renderItem}
       keyExtractor={(item) => item.Id}
-      ListHeaderComponent={header}
+      // La place de l'agrandissement au focus, au-dessus de la première
+      // rangée : la liste rogne ses bords, et la carte focalisée grandit par
+      // le bas — son anneau était coupé (Ma liste, Favoris) ou recouvrait la
+      // barre de filtres (bibliothèque).
+      ListHeaderComponent={
+        <View>
+          {header}
+          <View style={{ height: CARD_FOCUS_BLEED }} />
+        </View>
+      }
       ListEmptyComponent={emptyComponent}
       contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingBottom: 80 }}
       onEndReached={onEndReached}

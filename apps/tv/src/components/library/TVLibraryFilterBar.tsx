@@ -65,7 +65,9 @@ export function TVLibraryFilterBar({
       : "";
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 20 }}>
+    // Pas de marge basse : la grille réserve elle-même, sous la barre, la
+    // place de l'agrandissement de ses cartes (`CARD_FOCUS_BLEED`).
+    <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 10 }}>
       {STATUS_QUICK.map((opt) => (
         <FilterChip
           key={opt.key}
