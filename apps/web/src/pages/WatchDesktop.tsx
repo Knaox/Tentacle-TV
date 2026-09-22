@@ -239,7 +239,15 @@ export function WatchDesktop({ onFallbackToWeb }: { onFallbackToWeb?: () => void
   // et pistes serveur doivent être là au montage.
   const waitForServerItem = isLoading && !(isLocalPlayback && !online);
   if (waitForServerItem || !streamUrl) {
-    return <PlayerLoadingScreen posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle} />;
+    return (
+      <PlayerLoadingScreen
+        posterUrl={posterUrl} title={title || undefined} subtitle={epSubtitle}
+        // `handleMediaBack` quitte AUSSI le plein écran natif — le lecteur mpv
+        // n'est pas monté pour le faire, et on laisserait la fenêtre sans
+        // habillage sur le bureau.
+        onCancel={() => { void handleMediaBack(); }}
+      />
+    );
   }
 
   if (mediaMissing) {
