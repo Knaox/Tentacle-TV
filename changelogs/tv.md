@@ -7,15 +7,17 @@ en `[X.Y.Z]` au moment d'envoyer (la version vient de `versions.json` → `tv`).
 
 ## [1.3.0]
 ### FR
-- **L'accueil suit votre compte** : les rangées et leur ordre choisis dans les réglages du web s'appliquent sur le téléviseur — « Mes favoris » compris ; rien ne se règle depuis la TV
-- **Les recommandations arrivent sur l'accueil** : « Pour vous » et les autres rangées, celles du web, limitées aux titres de votre bibliothèque ; appui long : Plus d'infos, Lecture, Ne plus me proposer
-- **Le filtre de plateformes** du compte s'applique ; une pastille à côté du titre le retire, le menu d'appui long aussi
-- **Ma liste suit vos visionnages, pas vos clics** : un titre n'en sort plus parce qu'on a ouvert son lecteur, ni parce qu'on l'a marqué vu à la main — seulement une fois réellement regardé jusqu'au bout, un film ou le dernier épisode disponible d'une série, même en cours de diffusion ; une série sortie ainsi y revient d'elle-même dès qu'un nouvel épisode arrive, jamais si vous l'avez retirée vous-même
+- **L'accueil suit votre compte** : rangées, favoris et filtre de plateformes du web s'appliquent, recommandations comprises
+- **Ma liste** ne retire un titre qu'une fois vraiment vu jusqu'au bout
+- **Apple TV** : langue et sous-titres changent sans recharger, pause sans limite, retour loin en arrière, Atmos et Dolby Vision profil 7 lus
+- **L'image remplit l'écran**, les rangées ne passent plus sous le menu, les réglages se parcourent
+- **Android TV** : l'écran prend la cadence du film ; lecture tunnel en option
 ### EN
-- **The home follows your account**: the rows and their order chosen in the web settings apply on the TV — "My favorites" included; nothing is set from the TV
-- **Recommendations reach the home**: "For you" and the other rows, the web's, limited to titles in your library; long press: More info, Play, Don't suggest again
-- **The account's platform filter** applies; a chip next to the title removes it, and so does the long-press menu
-- **My List follows what you watch, not what you click**: a title no longer leaves it because its player was opened, nor because it was marked watched by hand — only once actually watched to the end, a movie or a series' last available episode, even one still airing; a series that left this way comes back on its own as soon as a new episode arrives, never if you removed it yourself
+- **The home follows your account**: rows, favorites and the platform filter set on the web apply; recommendations arrive
+- **My List** only drops a title once actually watched to the end
+- **Apple TV**: language and subtitles switch without reloading, unlimited pause, far backward seeks, Atmos and Dolby Vision profile 7 play
+- **The picture fills the screen**, rows no longer slide under the menu, settings navigate
+- **Android TV**: the screen takes the film's frame rate; tunneled playback as an option
 
 ## [1.2.2]
 ### FR
