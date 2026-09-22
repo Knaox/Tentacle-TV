@@ -13,6 +13,26 @@ import type { HdrCapabilities } from "./hdrCapabilities.types";
  * au lieu de tone-mapper vers SDR. Gating calqué sur Swiftfin `nativeHDRProfiles`
  * (client Jellyfin tvOS officiel). `hdr` absent → repli prudent (HDR10/HLG, pas
  * de Dolby Vision pour ne jamais réclamer une plage non décodable).
+ *
+ * # Le profil 7 n'est JAMAIS déclaré
+ *
+ * `DOVIWithEL` et `DOVIWithELHDR10Plus` désignent le Dolby Vision profil 7, à
+ * DEUX couches — le format des disques UHD, et de la plupart des remux qui en
+ * viennent. L'Apple TV ne décode pas sa couche d'amélioration : `dvhe.07` ne
+ * figure dans aucune de ses tables, et VideoToolbox n'annonce le Dolby Vision
+ * que pour les profils à couche unique.
+ *
+ * `DOVIWithELHDR10Plus` était pourtant déclaré, et c'est une promesse qu'on ne
+ * tient pas : Jellyfin en conclut que le client sait lire le fichier tel quel,
+ * le laisse partir en lecture directe, et AVPlayer reçoit un flux dont la
+ * couche d'amélioration est entrelacée avec la base — d'où l'échec.
+ *
+ * En le taisant, le serveur retombe de lui-même sur la couche de BASE, qui est
+ * du HDR10 complet et juste. On perd le Dolby Vision sur ces fichiers-là — que
+ * l'appareil n'a de toute façon jamais su afficher — et on gagne une lecture.
+ *
+ * C'est exactement la règle que le téléviseur LG applique déjà, pour la même
+ * raison et dans les mêmes termes (`codecsWebos.ts`).
  */
 function videoRangeValues(hdr?: HdrCapabilities): string {
   const h: Pick<HdrCapabilities, "hdr10" | "hlg" | "dolbyVision"> =
@@ -20,7 +40,7 @@ function videoRangeValues(hdr?: HdrCapabilities): string {
   const ranges = ["SDR", "DOVIWithSDR"];
   if (h.hlg) ranges.push("HLG", "DOVIWithHLG");
   if (h.hdr10) ranges.push("HDR10", "HDR10Plus");
-  if (h.hdr10 || h.dolbyVision) ranges.push("DOVIWithHDR10", "DOVIWithHDR10Plus", "DOVIWithELHDR10Plus");
+  if (h.hdr10 || h.dolbyVision) ranges.push("DOVIWithHDR10", "DOVIWithHDR10Plus");
   if (h.dolbyVision) ranges.push("DOVI");
   return ranges.join("|");
 }
