@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState, type Component } from "react";
 import { View, Text, TVFocusGuideView } from "react-native";
 import Animated, {
   useSharedValue,
@@ -8,8 +8,8 @@ import Animated, {
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
-import { useTVFocusGrab } from "../hooks/useTVFocusGrab";
-import { osdPlayPauseNodeRef } from "./player/focus/osdFocusBus";
+import { useTvFocusClaim } from "../hooks/useTvFocusClaim";
+import { osdPlayPauseNodeRef, setSkipNode } from "./player/focus/osdFocusBus";
 import type { PlayerOverlay } from "@tentacle-tv/shared";
 import { TV_OVERSCAN_PT, TV_PLAYER_SKIP } from "@tentacle-tv/theme";
 
@@ -75,14 +75,21 @@ interface TVPlaybackOverlayProps {
  *
  * Les mécanismes de focus, tous payés par une régression :
  *
- * 1. `useTVFocusGrab` sur front MONTANT — jamais sur un retour par l'habillage ;
+ * 1. `useTvFocusClaim` au front MONTANT — jamais sur un retour par l'habillage —,
+ *    et RENOUVELÉE quand l'habillage s'éteint : ses boutons cessent alors
+ *    d'être focusables, le focus se perd, et le bouton resté à l'écran
+ *    n'était plus atteignable ;
  * 2. l'îlot `TVFocusGuideView autoFocus` avec pièges ←/→ pendant le décompte,
  *    pour que « passer » et « masquer » se répondent sans que la télécommande
  *    s'en échappe — piège LEVÉ quand l'habillage est là, sinon il entre en
  *    conflit avec le guide de sortie ;
- * 3. le guide de SORTIE vers play/pause, monté seulement OSD visible : tvOS
- *    ignore les `nextFocus*`, un guide `destinations` est le seul pont fiable ;
- * 4. la montée en `transform`, jamais en `bottom` — une position animée relance
+ * 3. le guide de SORTIE vers play/pause, monté seulement tant que le focus est
+ *    DANS l'îlot : tvOS ignore les `nextFocus*`, un guide `destinations` est le
+ *    seul pont fiable — mais sa zone recouvre la barre de progression, et
+ *    posé en permanence il happait la remontée depuis le transport ;
+ * 4. le pont MONTANT, lui, appartient à l'habillage (`osdFocusBus`) : le
+ *    bouton y publie son node, la barre de progression le vise ;
+ * 5. la montée en `transform`, jamais en `bottom` — une position animée relance
  *    la mise en page à chaque image au-dessus d'un décodeur.
  */
 export function TVPlaybackOverlay({
@@ -108,7 +115,33 @@ export function TVPlaybackOverlay({
   // s'impose pas.
   const grabs = visible && pill.dismissible && !showSettings;
 
-  useTVFocusGrab(refusable ? dismissRef : skipRef, grabs);
+  // Le SECOND moment où le focus doit revenir ici : l'habillage s'éteint. Ses
+  // boutons cessent alors d'être focusables et le focus se perd — le bouton
+  // restait à l'écran sans que le D-pad puisse l'atteindre. Rien n'apparaît,
+  // donc rien ne monte : c'est le nonce qui réclame de nouveau.
+  const [claim, setClaim] = useState(0);
+  const wasOverlayVisible = useRef(overlayVisible);
+  useEffect(() => {
+    const closing = wasOverlayVisible.current && !overlayVisible;
+    wasOverlayVisible.current = overlayVisible;
+    if (closing && grabs) setClaim((n) => n + 1);
+  }, [overlayVisible, grabs]);
+
+  useTvFocusClaim(refusable ? dismissRef : skipRef, grabs, claim);
+
+  // Lequel des deux boutons tient le focus ? Deux états plutôt qu'un seul :
+  // passer de l'un à l'autre émet un blur et un focus dont l'ordre n'est pas
+  // garanti, et un drapeau unique clignoterait au passage.
+  const [skipFocused, setSkipFocused] = useState(false);
+  const [dismissFocused, setDismissFocused] = useState(false);
+  const islandFocused = skipFocused || dismissFocused;
+
+  /** Le nœud que le guide MONTANT de l'habillage vise — publié tant qu'il vit. */
+  const publishSkipNode = useCallback((node: unknown) => {
+    skipRef.current = node as View | null;
+    setSkipNode((node as Component | null) ?? null);
+  }, []);
+  useEffect(() => () => { setSkipNode(null); }, []);
 
   // Sur Android, le Retour est empilé et peut donc « garder ce passage » sans
   // quitter la vidéo. On ne le prend QUE si le passage part tout seul : sans
@@ -151,11 +184,13 @@ export function TVPlaybackOverlay({
         style={{ flexDirection: "row", alignItems: "center", gap: TV_PLAYER_SKIP.gap }}
       >
         <Focusable
-          ref={skipRef}
+          ref={publishSkipNode}
           variant="button"
           onPress={skip !== null ? onSkip : onPlayNow}
           focusRadius={TV_PLAYER_SKIP.radius}
           hasTVPreferredFocus={grabs && !refusable}
+          onFocus={() => setSkipFocused(true)}
+          onBlur={() => setSkipFocused(false)}
           // L'anneau est blanc, la pilule aussi : seul le halo de marque dit
           // où l'on est. Même parti que la feuille du téléviseur LG.
           glowOverride={TV_PLAYER_SKIP.focusGlow}
@@ -191,6 +226,8 @@ export function TVPlaybackOverlay({
             onPress={onDismiss}
             focusRadius={TV_PLAYER_SKIP.radius}
             hasTVPreferredFocus={grabs}
+            onFocus={() => setDismissFocused(true)}
+            onBlur={() => setDismissFocused(false)}
             glowOverride={TV_PLAYER_SKIP.focusGlow}
           >
             <View style={{
@@ -212,7 +249,14 @@ export function TVPlaybackOverlay({
           </Focusable>
         )}
       </TVFocusGuideView>
-      {overlayVisible && osdPlayPauseNodeRef.current && (
+      {/* La SORTIE vers play/pause — montée seulement tant que le focus est
+          DANS l'îlot, et c'était le défaut : posée en permanence, sa zone
+          recouvre la barre de progression, c'est-à-dire précisément ce que le
+          focus traverse en REMONTANT depuis le transport. Elle happait donc
+          la remontée et la renvoyait d'où elle venait — le bouton était à
+          l'écran et restait inatteignable. Un guide ne sert qu'à celui qui en
+          part : hors de l'îlot, il n'a rien à faire là. */}
+      {overlayVisible && islandFocused && osdPlayPauseNodeRef.current && (
         <TVFocusGuideView
           destinations={[osdPlayPauseNodeRef.current]}
           style={{ position: "absolute", top: "100%", left: -80, right: 0, height: 140 }}
