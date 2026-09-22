@@ -22,11 +22,28 @@ const BASE: TextStyle = {
   fontWeight: "500",
 };
 
-// Contour noir : 8 copies noires décalées sous la copie blanche (±o en
-// diagonale, ±2o en cardinal) — équivalent RN du text-shadow 8 directions du
-// web/desktop. Même formule d'épaisseur que le mobile (1 px à 16 pt).
-const O = Math.max(1, Math.round(FONT_SIZE / 16));
-const O2 = O * 2;
+/**
+ * Contour noir : 8 copies décalées sous la copie blanche — l'équivalent RN du
+ * `text-shadow` à huit directions de `video::cue` (apps/web/src/index.css),
+ * React Native n'ayant ni contour de texte ni ombres multiples.
+ *
+ * # L'ÉCHELLE, et le contour qui n'en était plus un
+ *
+ * La référence du web est 1 px en diagonale et 2 px en cardinal sur un texte
+ * de 1,3 em, soit environ 20,8 px : le contour y vaut un vingtième du corps.
+ * Ici la formule partait du mobile — « 1 px à 16 pt » —, et l'arrondi la
+ * poussait encore : à 40 pt elle donnait 3 et 6. Sur une dalle 4K, où un point
+ * en vaut deux, ces six points faisaient DOUZE pixels de noir. Les huit copies
+ * ne se rejoignaient plus : au lieu d'un contour, une étoile à huit branches
+ * avec des trous entre elles — ce qui se lit comme un crénelage.
+ *
+ * Le rapport du web, appliqué tel quel, et SANS arrondi : un décalage
+ * fractionnaire se compose en sous-pixel, là où l'entier durcit les bords.
+ */
+const OUTLINE_DIAGONAL = 1 / 20.8;
+const OUTLINE_CARDINAL = 2 / 20.8;
+const O = FONT_SIZE * OUTLINE_DIAGONAL;
+const O2 = FONT_SIZE * OUTLINE_CARDINAL;
 const OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [-O, -O], [O, -O], [-O, O], [O, O],
   [-O2, 0], [O2, 0], [0, -O2], [0, O2],
