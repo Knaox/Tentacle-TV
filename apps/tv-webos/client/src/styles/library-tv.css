@@ -73,6 +73,19 @@
   font-size: 18px;
 }
 
+/* La place de l'agrandissement au focus, sous les filtres.
+ *
+ * Une affiche focalisée grandit de 8 % PAR LE BAS, et son anneau puis son
+ * halo débordent encore au-dessus : une quarantaine de pixels au-dessus de la
+ * première rangée. La barre n'en laissait que vingt-quatre (`mb-6` du web) —
+ * l'anneau touchait les pastilles et le halo passait dessus. Même réserve que
+ * les téléviseurs natifs (`CARD_FOCUS_BLEED`). En PADDING de la zone, et non
+ * sur la grille : le virtualiseur prend l'origine de la grille pour marge de
+ * défilement (`scrollMargin`), et tout ce qui la précède en fait partie. */
+[data-tv-zone="filtres-bibliotheque"] {
+  padding-bottom: 20px;
+}
+
 /* ── La bannière de bibliothèque est une CARTE ────────────────────────────
  *
  * Le même objet que sur l'accueil, avec le même comportement et le même halo,
