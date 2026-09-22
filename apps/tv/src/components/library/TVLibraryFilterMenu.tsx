@@ -11,6 +11,9 @@ import { Button } from "../../theme/buttons";
 /** Largeur minimale d'un panneau, à trois mètres (`FilterMenuTv` webOS). */
 export const MENU_MIN_WIDTH = 380;
 
+/** Les lignes d'un menu ne grandissent pas au focus (cf. `TVCheckRow`). */
+export const MENU_ROW_FOCUS_SCALE = 1;
+
 export interface MenuAnchor {
   x: number;
   y: number;
@@ -116,6 +119,10 @@ export function TVCheckRow({
     <Focusable
       variant="button"
       focusRadius={Button.medium.borderRadius}
+      // Pas d'agrandissement dans un menu : la ligne occupe toute la largeur
+      // de son défilement, qui ROGNAIT l'anneau agrandi — il n'en restait
+      // qu'un trait sous la ligne. L'anneau seul, comme sur la LG.
+      scaleOverride={MENU_ROW_FOCUS_SCALE}
       onPress={onPress}
       hasTVPreferredFocus={preferred}
       accessibilityLabel={label}
