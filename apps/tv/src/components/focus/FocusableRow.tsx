@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
-import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
+import { FlatList, View, Text, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
+import { RowEntryGuide, useRowEntry } from "./RowEntryGuide";
 import { useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
 
@@ -73,6 +74,9 @@ export function FocusableRow<T>({
     []
   );
 
+  // L'entrée par la première carte visible — cf. `RowEntryGuide`.
+  const entry = useRowEntry({ itemWidth, gap, count: data.length });
+
   // When the first item has focus and user presses left, fire onEdgeLeft
   useTVRemote({
     onLeft: onEdgeLeft
@@ -114,8 +118,7 @@ export function FocusableRow<T>({
           est horizontal en pratique : la fenêtre déborde de ROW_CLIP_BLEED en haut
           et en bas, là où l'anneau et l'ombre de la carte focalisée passent. */}
       <View style={{ overflow: "hidden", marginVertical: -ROW_CLIP_BLEED, paddingVertical: ROW_CLIP_BLEED }}>
-      {/* Pas de trapFocusLeft : LEFT depuis la 1re carte doit atteindre le rail. */}
-      <TVFocusGuideView trapFocusRight>
+      <RowEntryGuide ref={entry.guideRef}>
       <FlatList
         ref={listRef}
         data={data}
@@ -126,6 +129,8 @@ export function FocusableRow<T>({
         // 1.08 (origine bas) de la carte focusée, sans rognage ni chevauchement.
         contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingTop: 32, paddingBottom: 24 }}
         keyExtractor={keyExtractor}
+        onScroll={entry.onScroll}
+        scrollEventThrottle={32}
         initialNumToRender={6}
         windowSize={21}
         maxToRenderPerBatch={10}
@@ -154,26 +159,34 @@ export function FocusableRow<T>({
             onPress={onItemPress ? () => onItemPress(item) : undefined}
             onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
             nextFocusUp={cellNextFocusUp}
+            onNode={entry.onNode}
           />
         )}
       />
-      </TVFocusGuideView>
+      </RowEntryGuide>
       </View>
     </View>
   );
 }
 
 /** Cellule à état de focus local — seule la cellule re-render au focus. */
-function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp }: {
+function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp, onNode }: {
   item: T; index: number; itemWidth: number; gap: number;
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
   onCellFocus: () => void; onCellBlur: () => void;
   onPress?: () => void; onLongPress?: () => void;
   nextFocusUp?: number;
+  /** Publie la carte montée à son index — l'annuaire du guide d'entrée. */
+  onNode: (index: number, node: View | null) => void;
 }) {
   const [focused, setFocused] = useState(false);
   const cellRef = useRef<View>(null);
   const { lastContentNodeRef } = useTVNavActions();
+
+  useEffect(() => {
+    onNode(index, cellRef.current);
+    return () => onNode(index, null);
+  }, [index, onNode]);
 
   /**
    * La cellule EFFACE la mémoire de focus en mourant, tant qu'elle la désigne.
