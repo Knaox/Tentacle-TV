@@ -2,13 +2,10 @@ package com.tentacletv.exoplayer
 
 import android.graphics.Color
 import android.graphics.Typeface
-import android.net.Uri
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -47,9 +44,6 @@ class ExoPlayerView(
     // Pistes texte side-loadées (VTT Jellyfin) fournies par la prop `textTracks`.
     // Chargées dans le MediaItem au prepare initial → rendu natif par le
     // subtitleView, switch via setSubtitleTrack SANS re-prepare.
-    private data class TextTrackConfig(
-        val uri: String, val language: String, val label: String, val jellyfinIndex: Int,
-    )
     private var pendingTextTracks: List<TextTrackConfig> = emptyList()
 
     init {
@@ -124,17 +118,6 @@ class ExoPlayerView(
 
     private var currentSubtitleUrl: String? = null
 
-    /** Extracts the `#tnt-start=<seconds>` fragment appended by the JS layer.
-     *  Returns the clean URL + start position in ms. Fragments are never sent
-     *  over HTTP, this is purely a side-channel for the initial position. */
-    private fun parseStartFragment(url: String): Pair<String, Long> {
-        val marker = "#tnt-start="
-        val idx = url.indexOf(marker)
-        if (idx < 0) return Pair(url, 0L)
-        val sec = url.substring(idx + marker.length).toDoubleOrNull() ?: 0.0
-        return Pair(url.substring(0, idx), (sec * 1000).toLong())
-    }
-
     fun loadFile(url: String) {
         Log.w(TAG, ">>> loadFile url=${url.take(120)}...")
         currentUrl = url
@@ -153,26 +136,8 @@ class ExoPlayerView(
         // Start playback AT the requested position (resume / track-change
         // reload) — no frame from 0:00 is ever decoded, unlike a post-prepare
         // seek which briefly shows the beginning of the media.
-        val (cleanUrl, startMs) = parseStartFragment(url)
-        val builder = MediaItem.Builder().setUri(Uri.parse(cleanUrl))
-        if (pendingTextTracks.isNotEmpty()) {
-            // Toutes les pistes texte VTT chargées d'emblée → rendu natif par le
-            // subtitleView, sélection via setSubtitleTrack sans re-prepare.
-            // setId("jf:<jellyfinIndex>") : clé de mapping fiable, le préfixe la
-            // distingue des Format.id NUMÉRIQUES des pistes embarquées du
-            // conteneur (numéros de piste Matroska — cf. buildTrackList).
-            // PAS de SELECTION_FLAG_DEFAULT → état initial OFF.
-            builder.setSubtitleConfigurations(pendingTextTracks.map { t ->
-                MediaItem.SubtitleConfiguration.Builder(Uri.parse(t.uri))
-                    .setId("jf:${t.jellyfinIndex}")
-                    .setMimeType(mimeForSubtitleUrl(t.uri))
-                    .setLanguage(t.language.ifEmpty { null })
-                    .setLabel(t.label.ifEmpty { null })
-                    .build()
-            })
-            Log.w(TAG, ">>> loadFile with ${pendingTextTracks.size} text track(s)")
-        }
-        val item = builder.build()
+        val (item, startMs) = ExoMediaSource.buildMediaItem(url, pendingTextTracks)
+        if (pendingTextTracks.isNotEmpty()) Log.w(TAG, ">>> loadFile with ${pendingTextTracks.size} text track(s)")
         if (startMs > 0) p.setMediaItem(item, startMs) else p.setMediaItem(item)
         p.prepare()
         p.playWhenReady = pendingPaused != true
@@ -182,34 +147,10 @@ class ExoPlayerView(
         keepScreenOn = p.playWhenReady
     }
 
-    /** MimeType d'une piste de sous-titre selon l'extension de l'URL Jellyfin.
-     *  ASS/SSA → text/x-ssa (rendu natif via SsaParser + legacy decoding),
-     *  SRT → application/x-subrip, sinon WebVTT. */
-    private fun mimeForSubtitleUrl(url: String): String {
-        val path = url.substringBefore('?').lowercase()
-        return when {
-            path.endsWith(".ass") || path.endsWith(".ssa") -> MimeTypes.TEXT_SSA
-            path.endsWith(".srt") -> MimeTypes.APPLICATION_SUBRIP
-            else -> MimeTypes.TEXT_VTT
-        }
-    }
-
     /** Pistes texte VTT (prop `textTracks`) — mémorisées puis appliquées au
      *  prochain loadFile. Si la source est déjà chargée, re-applique. */
     fun setTextTracks(tracks: ReadableArray?) {
-        val list = mutableListOf<TextTrackConfig>()
-        if (tracks != null) {
-            for (i in 0 until tracks.size()) {
-                val m = tracks.getMap(i) ?: continue
-                val uri = m.getString("uri") ?: continue
-                list.add(TextTrackConfig(
-                    uri = uri,
-                    language = m.getString("language") ?: "",
-                    label = m.getString("label") ?: "",
-                    jellyfinIndex = if (m.hasKey("jellyfinIndex")) m.getInt("jellyfinIndex") else -1,
-                ))
-            }
-        }
+        val list = ExoMediaSource.parseTextTracks(tracks)
         if (list.map { it.uri } == pendingTextTracks.map { it.uri }) return
         pendingTextTracks = list
         currentUrl?.let { loadFile(it) }
@@ -226,19 +167,9 @@ class ExoPlayerView(
         listener.loadEmitted = false
         poller.lastSubtitleText = ""
 
-        val builder = MediaItem.Builder().setUri(Uri.parse(parseStartFragment(videoUrl).first))
-        if (subtitleUrl != null && subtitleUrl.isNotEmpty()) {
-            Log.w(TAG, ">>> loadSubtitle url=${subtitleUrl.take(120)}")
-            builder.setSubtitleConfigurations(listOf(
-                MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitleUrl))
-                    .setMimeType(MimeTypes.TEXT_VTT)
-                    .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
-                    .build()
-            ))
-        } else {
-            Log.w(TAG, ">>> loadSubtitle DISABLED")
-            builder.setSubtitleConfigurations(emptyList())
-        }
+        if (subtitleUrl != null && subtitleUrl.isNotEmpty()) Log.w(TAG, ">>> loadSubtitle url=${subtitleUrl.take(120)}")
+        else Log.w(TAG, ">>> loadSubtitle DISABLED")
+        val item = ExoMediaSource.buildSubtitleItem(videoUrl, subtitleUrl)
 
         // Flag to enable text tracks AFTER prepare completes (onTracksChanged)
         listener.pendingSubtitleEnable = subtitleUrl != null && subtitleUrl.isNotEmpty()
@@ -246,7 +177,7 @@ class ExoPlayerView(
         // Re-prepare AT the current position (Media3 requires a new MediaItem
         // for side-loaded subtitles) — a post-prepare seekTo briefly showed
         // frames from 0:00.
-        p.setMediaItem(builder.build(), posMs)
+        p.setMediaItem(item, posMs)
         p.prepare()
         p.playWhenReady = wasPlaying
         keepScreenOn = wasPlaying // anti-veille : reprend l'état d'avant le re-prepare
