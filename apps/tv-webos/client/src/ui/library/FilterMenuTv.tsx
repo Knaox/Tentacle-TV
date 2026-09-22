@@ -66,7 +66,10 @@ export function FilterMenu(props: ComponentProps<typeof MenuWeb>) {
 
   return (
     <div ref={frame}>
-      <MenuWeb {...props} width={Math.max(props.width ?? 0, MIN_WIDTH)} />
+      {/* La croix : la sortie visible, comme sur les panneaux du lecteur et
+          les menus des téléviseurs natifs. « Haut » depuis elle referme aussi
+          le menu (le piège n'a plus rien au-dessus). */}
+      <MenuWeb {...props} closeButton width={Math.max(props.width ?? 0, MIN_WIDTH)} />
     </div>
   );
 }
@@ -104,9 +107,13 @@ function equipPanel(frame: HTMLElement, served: { current: HTMLElement | null })
  * document, et désignait le champ de recherche.
  */
 function markEntry(panel: HTMLElement): void {
+  // Le curseur de la note en dernier recours : sans cases à cocher, la cascade
+  // tombait sur le premier focusable du panneau — la croix de l'en-tête depuis
+  // qu'il en a une —, et l'on n'entrait plus dans le seul contrôle du menu.
   const target =
     panel.querySelector<HTMLElement>('[aria-checked="true"]') ??
-    panel.querySelector<HTMLElement>('[role="menuitemcheckbox"]');
+    panel.querySelector<HTMLElement>('[role="menuitemcheckbox"]') ??
+    panel.querySelector<HTMLElement>('input[type="range"]');
   const current2 = panel.querySelector<HTMLElement>(`[${ENTRY_ATTRIBUTE}]`);
   if (current2 === target) return;
 
