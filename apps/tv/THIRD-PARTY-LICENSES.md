@@ -45,6 +45,8 @@ et Dolby Vision natifs) ; libmpv ne sert qu'au transcodage.
 | Media3 / ExoPlayer (`androidx.media3`, version dans `apps/tv/android/app/build.gradle`) | Apache 2.0 | https://github.com/androidx/media |
 | libmpv-android (`dev.jdtech.mpv:libmpv`, version dans le même fichier) : mpv, FFmpeg (`--enable-gpl --enable-version3`), libass, dav1d | **GPL v3** | https://github.com/jarnedemeulemeester/libmpv-android |
 | `org.jellyfin.media3:media3-ffmpeg-decoder` (extension audio FFmpeg pour Media3) | **GPL v3** | https://github.com/jellyfin/jellyfin-androidx-media |
+| `com/tentacletv/mpv/MPVLib.kt` — enveloppe par instance de libmpv-android, dérivée du module `mpv-player` de Streamyfin (révision `4faddc5f` du 2026-09-12) ; chaque modification y reste sous la même licence | **MPL-2.0** | https://github.com/streamyfin/streamyfin — https://mozilla.org/MPL/2.0/ |
+| `app/src/main/assets/mpv/cacert.pem` — certificats racine de Mozilla (extrait par curl, https://curl.se/docs/caextract.html), même copie que le mobile ; le FFmpeg de libmpv-android parle mbedTLS, sans magasin système | **MPL-2.0** | https://curl.se/docs/caextract.html |
 
 Ces composants GPL sont compatibles avec la licence MIT de l'application, dont
 les sources sont publiées ; Google Play n'y oppose aucune règle.

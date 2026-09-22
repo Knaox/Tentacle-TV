@@ -71,7 +71,9 @@ android {
 
 dependencies {
     implementation("com.facebook.react:react-android")
-    implementation("dev.jdtech.mpv:libmpv:0.5.1")
+    // libmpv-android 1.0.0 — la version du mobile (API par instance, cf. mpv/MPVLib.kt).
+    // GPL v3 (mpv 0.41, FFmpeg 8.1) : apps/tv/THIRD-PARTY-LICENSES.md.
+    implementation("dev.jdtech.mpv:libmpv:1.0.0")
 
     // Media3 ExoPlayer — aligned with react-native-video (1.8.0)
     implementation "androidx.media3:media3-exoplayer:1.8.0"
