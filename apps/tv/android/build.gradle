@@ -8,13 +8,17 @@ buildscript {
         // comportement runtime sans rien apporter ici.
         compileSdkVersion = 36
         targetSdkVersion = 34
-        // NDK 27 EXIGÉ par la règle Play « tailles de page de mémoire de 16 Ko » :
-        // lui seul aligne les segments ELF sur 16 Ko, et lui seul honore le
-        // -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON que reanimated et screens
-        // passent DÉJÀ à CMake — le NDK 26 l'ignorait en silence, d'où des
-        // libreanimated/libworklets/librnscreens à 4 Ko et l'AAB rejeté.
-        // Le workflow tv.yml installe la MÊME version (sdkmanager "ndk;…").
-        ndkVersion = "27.1.12297006"
+        // NDK 29 : libmpv-android 1.0.0 est construit avec (LLVM 20), et son
+        // libmpv.so attend le `std::from_chars` flottant d'un libc++ de cette
+        // génération. Le libc++_shared.so de l'app (celui du NDK de l'app) gagne
+        // au paquetage sur celui de l'AAR : construit avec le 27.1, libmpv ne se
+        // chargeait pas (« cannot locate symbol », mesuré à l'émulateur sur le
+        // mobile). Un libc++ plus récent lit les binaires plus anciens, pas
+        // l'inverse. La règle Play « pages de 16 Ko » est acquise depuis le
+        // NDK 28 (alignement ELF 16 Ko par défaut ; le
+        // -DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON de reanimated/screens devient
+        // redondant). Le workflow tv.yml installe la MÊME version (sdkmanager).
+        ndkVersion = "29.0.14206865"
         kotlinVersion = "2.1.20"
     }
 }
