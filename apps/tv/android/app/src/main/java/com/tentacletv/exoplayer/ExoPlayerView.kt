@@ -3,6 +3,7 @@ package com.tentacletv.exoplayer
 import android.graphics.Color
 import android.graphics.Typeface
 import android.util.Log
+import android.view.SurfaceView
 import android.view.View
 import android.widget.FrameLayout
 import androidx.media3.common.C
@@ -12,6 +13,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.text.TextRenderer
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.uimanager.ThemedReactContext
 
@@ -34,12 +36,23 @@ class ExoPlayerView(
     private var pendingPaused: Boolean? = null
     var progressInterval = 1000L
     var audioPassthrough = true
+    /** Cadence EXACTE du flux (Jellyfin `RealFrameRate`), 0 = inconnue. Lue à
+     *  l'attachement : les props React arrivent avant `onAttachedToWindow`. */
+    var contentFrameRate = 0f
 
     // Évènements, listener et sondeur — hors de la vue (ExoEvents.kt,
     // ExoPlaybackListener.kt) ; la vue ne garde que la machine d'état.
     private val emitter = ExoEventEmitter(reactContext) { id }
     private val listener = ExoPlaybackListener(emitter, { player }) { keepScreenOn = false }
     private val poller = ExoProgressPoller(this, { player }, emitter) { progressInterval }
+    private val displayModeSwitcher = DisplayModeSwitcher(reactContext)
+    // Ceinture : l'activité meurt sans passer par destroy() → le panneau
+    // revient quand même à son mode par défaut (jellyfin-androidtv #3114).
+    private val hostLifecycle = object : LifecycleEventListener {
+        override fun onHostResume() {}
+        override fun onHostPause() {}
+        override fun onHostDestroy() { displayModeSwitcher.reset(reactContext.currentActivity) }
+    }
 
     // Pistes texte side-loadées (VTT Jellyfin) fournies par la prop `textTracks`.
     // Chargées dans le MediaItem au prepare initial → rendu natif par le
@@ -67,12 +80,19 @@ class ExoPlayerView(
             }
         }
         addView(playerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        reactContext.addLifecycleEventListener(hostLifecycle)
     }
 
     // PlayerView handles surface lifecycle internally — init player on first attach
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (!destroyed && player == null) {
+        if (destroyed || player != null) return
+        // La bascule d'affichage AVANT la construction du lecteur : pendant la
+        // renégociation HDMI, les capacités audio ne voient plus que du PCM
+        // (jellyfin-androidtv #4067) — le lecteur naît une fois le panneau posé.
+        // Synchrone quand il n'y a rien à basculer : le comportement d'avant.
+        displayModeSwitcher.prepareFor(reactContext.currentActivity, contentFrameRate) {
+            if (destroyed || player != null) return@prepareFor
             initPlayer()
             currentUrl?.let { loadFile(it) }
             pendingPaused?.let { setPaused(it) }
@@ -95,6 +115,17 @@ class ExoPlayerView(
             .also { exo ->
                 exo.setAudioAttributes(ExoPlayerFactory.mediaAudioAttributes, false)
                 exo.addListener(listener)
+
+                // Cadence connue → l'estimateur d'ExoPlayer est coupé (il lit des
+                // horodatages arrondis à la milliseconde et demande 24,39 ou 23,81) ;
+                // c'est DisplayModeSwitcher qui parle au panneau, avec la valeur exacte,
+                // et qui pose le raffinement seamless sur la surface vidéo. Cadence
+                // inconnue → l'estimateur reste : imparfait vaut mieux que rien.
+                Log.w(TAG, ">>> initPlayer frameRate=$contentFrameRate")
+                if (contentFrameRate > 0f) {
+                    exo.setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF)
+                    displayModeSwitcher.attachSurface(playerView.videoSurfaceView as? SurfaceView, contentFrameRate)
+                }
 
                 // Attach player to PlayerView — handles video surface + subtitle rendering
                 playerView.player = exo
@@ -241,6 +272,9 @@ class ExoPlayerView(
         keepScreenOn = false // anti-veille : la vue meurt, la veille reprend ses droits
         emitter.enabled = false
         poller.stop()
+        reactContext.removeLifecycleEventListener(hostLifecycle)
+        // Retour au mode d'affichage d'origine AVANT de lâcher le lecteur (#3114).
+        displayModeSwitcher.reset(reactContext.currentActivity)
         playerView.player = null
         player?.release()
         player = null
