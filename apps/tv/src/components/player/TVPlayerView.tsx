@@ -80,6 +80,9 @@ export interface TVPlayerViewProps {
   /** Saut manuel du bouton, et refus du passage courant. */
   onSkipSegment: () => void;
   onDismissSegment: () => void;
+  /** La PILULE « aller à l'épisode suivant » — l'arbitre la propose quand la
+   *  fiche « à suivre » ne parle pas (scène post-générique, fiche éteinte). */
+  onPlayNextNow: () => void;
   autoPlay: AutoPlayCtx;
   controls: ControlsCtx;
 
@@ -130,7 +133,7 @@ export function TVPlayerView({
   
   onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
-  overlay, onSkipSegment, onDismissSegment,
+  overlay, onSkipSegment, onDismissSegment, onPlayNextNow,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -147,7 +150,7 @@ export function TVPlayerView({
   // ici : l'ancienne règle ignorait le refus, le panneau épisodes et le
   // démarrage de lecture (le fond renonçait au focus sans qu'aucun bouton
   // existe : D-pad muet sur tvOS), et ne connaissait que deux types sur cinq.
-  const skipActive = overlay.kind === "skip";
+  const skipActive = overlay.kind === "skip" || overlay.kind === "nextButton";
 
   // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
   // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
@@ -269,6 +272,7 @@ export function TVPlayerView({
         overlay={overlay}
         onSkip={controls.guardScrub(onSkipSegment)}
         onDismiss={onDismissSegment}
+        onPlayNow={controls.guardScrub(onPlayNextNow)}
         overlayVisible={controls.overlayVisible}
         showSettings={showSettings}
         showEpisodes={!!showEpisodes}
