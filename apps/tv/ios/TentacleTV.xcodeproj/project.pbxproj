@@ -15,10 +15,13 @@
 		57C010109388BEA9DAC690CB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		7699B88040F8A987B510C191 /* libPods-TentacleTV-TentacleTVTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-TentacleTV-TentacleTVTests.a */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		AB12CD34EF5601234567AA01 /* Empty.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567AA02 /* Empty.swift */; };
 		AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB02 /* HDRCapabilities.m */; };
-		AB12CD34EF5601234567BB03 /* TVDisplayCriteria.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */; };
-		AB12CD34EF5601234567BB05 /* TVLocalRemux.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567BB06 /* TVLocalRemux.m */; };
+		AB12CD34EF5601234567CC01 /* PrismBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC02 /* PrismBridge.swift */; };
+		AB12CD34EF5601234567CC03 /* PrismBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC04 /* PrismBridge.m */; };
+		AB12CD34EF5601234567CC05 /* PrismSessionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */; };
+		AB12CD34EF5601234567CC07 /* PrismSessionConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */; };
+		AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */; };
+		AB12CD34EF5601234567DD03 /* PrismCore in Frameworks */ = {isa = PBXBuildFile; productRef = AB12CD34EF5601234567DD02 /* PrismCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,10 +52,13 @@
 		5DCACB8F33CDC322A6C60F78 /* libPods-TentacleTV.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TentacleTV.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = TentacleTV/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		89C6BE57DB24E9ADA2F236DE /* Pods-TentacleTV-TentacleTVTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TentacleTV-TentacleTVTests.release.xcconfig"; path = "Target Support Files/Pods-TentacleTV-TentacleTVTests/Pods-TentacleTV-TentacleTVTests.release.xcconfig"; sourceTree = "<group>"; };
-		AB12CD34EF5601234567AA02 /* Empty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Empty.swift; path = TentacleTV/Empty.swift; sourceTree = "<group>"; };
 		AB12CD34EF5601234567BB02 /* HDRCapabilities.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = HDRCapabilities.m; path = TentacleTV/HDRCapabilities.m; sourceTree = "<group>"; };
-		AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TVDisplayCriteria.m; path = TentacleTV/TVDisplayCriteria.m; sourceTree = "<group>"; };
-		AB12CD34EF5601234567BB06 /* TVLocalRemux.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = TVLocalRemux.m; path = TentacleTV/TVLocalRemux.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC02 /* PrismBridge.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismBridge.swift; path = TentacleTV/PrismBridge.swift; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC04 /* PrismBridge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PrismBridge.m; path = TentacleTV/PrismBridge.m; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismSessionRegistry.swift; path = TentacleTV/PrismSessionRegistry.swift; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismSessionConfig.swift; path = TentacleTV/PrismSessionConfig.swift; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = PrismErrorCode.swift; path = TentacleTV/PrismErrorCode.swift; sourceTree = "<group>"; };
+		AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "TentacleTV-Bridging-Header.h"; path = "TentacleTV/TentacleTV-Bridging-Header.h"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -70,6 +76,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C80B921A6F3F58F76C31292 /* libPods-TentacleTV.a in Frameworks */,
+				AB12CD34EF5601234567DD03 /* PrismCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,10 +105,13 @@
 			children = (
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
-				AB12CD34EF5601234567AA02 /* Empty.swift */,
 				AB12CD34EF5601234567BB02 /* HDRCapabilities.m */,
-				AB12CD34EF5601234567BB04 /* TVDisplayCriteria.m */,
-				AB12CD34EF5601234567BB06 /* TVLocalRemux.m */,
+				AB12CD34EF5601234567CC02 /* PrismBridge.swift */,
+				AB12CD34EF5601234567CC04 /* PrismBridge.m */,
+				AB12CD34EF5601234567CC06 /* PrismSessionRegistry.swift */,
+				AB12CD34EF5601234567CC08 /* PrismSessionConfig.swift */,
+				AB12CD34EF5601234567CC0A /* PrismErrorCode.swift */,
+				AB12CD34EF5601234567CC0C /* TentacleTV-Bridging-Header.h */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
@@ -204,6 +214,9 @@
 			dependencies = (
 			);
 			name = TentacleTV;
+			packageProductDependencies = (
+				AB12CD34EF5601234567DD02 /* PrismCore */,
+			);
 			productName = TentacleTV;
 			productReference = 13B07F961A680F5B00A75B9A /* TentacleTV.app */;
 			productType = "com.apple.product-type.application";
@@ -234,6 +247,9 @@
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
+			packageReferences = (
+				AB12CD34EF5601234567DD01 /* XCRemoteSwiftPackageReference "PrismCore" */,
+			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -409,10 +425,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
-				AB12CD34EF5601234567AA01 /* Empty.swift in Sources */,
 				AB12CD34EF5601234567BB01 /* HDRCapabilities.m in Sources */,
-				AB12CD34EF5601234567BB03 /* TVDisplayCriteria.m in Sources */,
-				AB12CD34EF5601234567BB05 /* TVLocalRemux.m in Sources */,
+				AB12CD34EF5601234567CC01 /* PrismBridge.swift in Sources */,
+				AB12CD34EF5601234567CC03 /* PrismBridge.m in Sources */,
+				AB12CD34EF5601234567CC05 /* PrismSessionRegistry.swift in Sources */,
+				AB12CD34EF5601234567CC07 /* PrismSessionConfig.swift in Sources */,
+				AB12CD34EF5601234567CC09 /* PrismErrorCode.swift in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -451,7 +469,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TentacleTV.app/TentacleTV";
-				TVOS_DEPLOYMENT_TARGET = 15.1;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
 			};
 			name = Debug;
 		};
@@ -475,7 +493,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TentacleTV.app/TentacleTV";
-				TVOS_DEPLOYMENT_TARGET = 15.1;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
 			};
 			name = Release;
 		};
@@ -489,7 +507,7 @@
 				DEVELOPMENT_TEAM = 96K3M57W49;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = TentacleTV/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -503,6 +521,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile;
 				PRODUCT_NAME = TentacleTV;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_OBJC_BRIDGING_HEADER = "TentacleTV/TentacleTV-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -517,7 +536,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 96K3M57W49;
 				INFOPLIST_FILE = TentacleTV/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -530,6 +549,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.tentacle.mobile;
 				PRODUCT_NAME = TentacleTV;
+				SWIFT_OBJC_BRIDGING_HEADER = "TentacleTV/TentacleTV-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -610,7 +630,7 @@
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = appletvos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
-				TVOS_DEPLOYMENT_TARGET = 15.1;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
 				USE_HERMES = true;
 			};
 			name = Debug;
@@ -681,7 +701,7 @@
 				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = appletvos;
-				TVOS_DEPLOYMENT_TARGET = 15.1;
+				TVOS_DEPLOYMENT_TARGET = 17.0;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -718,6 +738,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AB12CD34EF5601234567DD01 /* XCRemoteSwiftPackageReference "PrismCore" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Wenzlik/PrismCore.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AB12CD34EF5601234567DD02 /* PrismCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AB12CD34EF5601234567DD01 /* XCRemoteSwiftPackageReference "PrismCore" */;
+			productName = PrismCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }

@@ -25,6 +25,16 @@ interface FocusableBaseProps {
   /** Scale au focus — override du variant (ex: 1.03 en grille dense pour
    *  éviter que la carte focusée déborde sur ses voisines). */
   scaleOverride?: number;
+  /**
+   * Opacité du halo de marque — override du variant.
+   *
+   * Les boutons n'en ont pas : leur anneau BLANC suffit sur les fonds sombres
+   * de l'application. Il ne suffit plus sur un bouton lui-même blanc — la
+   * pilule « passer l'intro » —, où le trait se confond avec le fond et où il
+   * ne reste que l'agrandissement pour dire où l'on est. Le halo violet, lui,
+   * se voit : c'est déjà ainsi que le téléviseur LG s'en sort (`focus.css`).
+   */
+  glowOverride?: number;
   /** Directional focus navigation — react-native-tvos nativeID refs */
   nextFocusUp?: number;
   nextFocusDown?: number;
@@ -111,6 +121,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   variant = "default",
   focusRadius = 12,
   scaleOverride,
+  glowOverride,
   nextFocusUp,
   nextFocusDown,
   nextFocusLeft,
@@ -167,7 +178,7 @@ export const Focusable = memo(forwardRef<View, FocusableProps>(function Focusabl
   }, [phantomPressGuard, onPress]);
 
   const scaleTarget = scaleOverride ?? FocusScale[variant];
-  const glowOpacity = GLOW_VARIANTS[variant];
+  const glowOpacity = glowOverride ?? GLOW_VARIANTS[variant];
   const hasShadow = HAS_SHADOW[variant];
   const hasGap = HAS_GAP[variant];
   const isRow = variant === "row";

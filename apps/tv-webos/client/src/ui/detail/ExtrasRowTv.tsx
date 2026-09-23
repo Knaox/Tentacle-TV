@@ -1,4 +1,4 @@
-import { ExtrasRow as WebRow } from "@/components/detail/ExtrasRow";
+import { ExtrasRow as WebRow } from "@/components/detail/ExtrasRow?original";
 import type { ComponentProps } from "react";
 import { useMarker } from "../marker";
 

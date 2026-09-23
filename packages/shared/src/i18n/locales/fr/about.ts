@@ -52,4 +52,7 @@ export default {
     "Le lecteur avancé du mobile embarque libmpv : sur iOS un build LGPL de MPVKit (mpv, FFmpeg, libass, libplacebo, MoltenVK, dav1d, libdovi), sur Android libmpv-android et l'extension FFmpeg de Jellyfin pour Media3, sous GPL v3. Le module qui les pilote dérive de Streamyfin (MPL-2.0). Les sources de ces composants, leurs licences et la recette de construction sont publiés avec le code de Tentacle TV (apps/mobile/THIRD-PARTY-LICENSES.md).",
   serviceJellyfin: "Serveur multimédia open-source",
   privacyPolicy: "Politique de confidentialité",
+  // « À propos » des téléviseurs : la mention qu'exige l'exception App Store de PrismCore.
+  licenseTextTv:
+    "L'application Apple TV embarque PrismCore (github.com/Wenzlik/PrismCore), sous licence LGPL-2.1-or-later avec exception pour les boutiques d'applications, utilisé sans modification ; le texte de la licence est le fichier LICENSE de ce dépôt. PrismCore s'appuie sur FFmpeg (LGPL v2.1+, ffmpeg.org), fourni par MPVKit (github.com/mpvkit/MPVKit) en bibliothèques liées dynamiquement, et sur libdovi (MIT). Sur Android TV, la lecture repose sur Media3/ExoPlayer (Apache 2.0), libmpv-android et le décodeur FFmpeg de Jellyfin pour Media3 (GPL v3). Détail complet : apps/tv/THIRD-PARTY-LICENSES.md dans le dépôt de Tentacle TV.",
 } as const;

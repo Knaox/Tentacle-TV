@@ -11,6 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import type { MpvTrack, MPVPlayerHandle, ExoTextTrack } from "./playerTypes";
+import { useExoTunneling } from "../../lib/exoSettings";
 
 // Re-export types — ExoPlayer uses the same track/handle interface
 export type { MpvTrack as ExoTrack, MPVPlayerHandle as ExoPlayerHandle };
@@ -44,6 +45,12 @@ interface ExoPlayerProps {
   /** Parité de signature tvOS (gate sideload HLS) ; ignoré côté Android (ExoPlayer
    *  sait sideloader sur HLS). */
   isDirectPlay?: boolean;
+  /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
+  prismTextTrackIndex?: number | null;
+  /** Cadence EXACTE du flux (Jellyfin `RealFrameRate`) : la vue native cale la
+   *  fréquence d'affichage dessus — ExoPlayer, lui, la devine depuis des
+   *  horodatages arrondis à la milliseconde et demande 24,39 ou 23,81. */
+  frameRate?: number;
   style?: ViewStyle;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
@@ -59,6 +66,8 @@ const NativeExoView = requireNativeComponent<{
   paused: boolean;
   progressInterval: number;
   audioPassthrough: boolean;
+  frameRate?: number;
+  tunneling: boolean;
   textTracks?: ExoTextTrack[];
   onExoEvent: (event: ExoEvent) => void;
   style?: ViewStyle;
@@ -72,10 +81,14 @@ function dispatchCommand(ref: React.RefObject<any>, command: string, args: any[]
 
 export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
   function ExoPlayer(
-    { source, paused, progressInterval = 1000, audioPassthrough = true, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
+    { source, paused, progressInterval = 1000, audioPassthrough = true, frameRate, textTracks, style, onProgress, onLoad, onEnd, onError, onTracks, onVideoSize, onSubtitles },
     ref,
   ) {
     const nativeRef = useRef(null);
+    // Réglage d'appareil, lu ICI (fichier Android seul) : rien à faire remonter
+    // par PlayerScreen, et le lecteur se construit avec — un changement vaut
+    // pour la lecture suivante.
+    const tunneling = useExoTunneling();
 
     useImperativeHandle(ref, () => ({
       seek: (seconds: number) => dispatchCommand(nativeRef, "seek", [seconds]),
@@ -122,6 +135,8 @@ export const ExoPlayer = forwardRef<MPVPlayerHandle, ExoPlayerProps>(
         paused={paused}
         progressInterval={progressInterval}
         audioPassthrough={audioPassthrough}
+        frameRate={frameRate}
+        tunneling={tunneling}
         textTracks={textTracks}
         onExoEvent={handleEvent}
         style={style}

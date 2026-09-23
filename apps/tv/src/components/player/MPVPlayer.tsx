@@ -43,6 +43,8 @@ interface MPVPlayerProps {
   subtitleIndex?: number;
   /** Parité de signature tvOS (gate sideload HLS) ; ignoré côté Android. */
   isDirectPlay?: boolean;
+  /** Parité de signature tvOS (rendition OCR PrismCore) ; ignoré côté Android. */
+  prismTextTrackIndex?: number | null;
   onProgress?: (currentTime: number, bufferedTime: number) => void;
   onLoad?: (duration: number) => void;
   onEnd?: () => void;

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { Plugin } from "vite";
+import { normalizePath, type Plugin } from "vite";
 
 /**
  * Les harness de navigation, servis en développement et nulle part ailleurs.
@@ -31,6 +31,20 @@ const TYPES: Record<string, string> = {
 /** Le nom de fichier, et lui seul : pas de `..`, pas de sous-chemin. */
 const EXPECTED_NAME = /^harness-[a-z0-9-]+\.(html|js)$/;
 
+/**
+ * Le préfixe des modules d'un harnais, que sa page écrit `%HARNESS_MODULES%`.
+ *
+ * Une page de harnais est servie telle quelle, sans passer par Vite : un module
+ * TSX voisin ne s'y charge que par `/@fs/` et un chemin ABSOLU, propre à chaque
+ * machine. Le serveur, qui le connaît, le substitue au marqueur.
+ */
+const MODULES_MARK = "%HARNESS_MODULES%";
+
+function modulesPrefix(directory: string): string {
+  const path = normalizePath(directory);
+  return encodeURI(`/tv/@fs${path.startsWith("/") ? "" : "/"}${path}`);
+}
+
 export function serveHarness(directory: string): Plugin {
   return {
     name: "tentacle-servir-harness",
@@ -43,7 +57,9 @@ export function serveHarness(directory: string): Plugin {
 
         const extension = name.slice(name.lastIndexOf("."));
         readFile(resolve(directory, name))
-          .then((content) => {
+          .then((raw) => {
+            const content =
+              extension === ".html" ? raw.toString("utf8").replaceAll(MODULES_MARK, modulesPrefix(directory)) : raw;
             response.setHeader("Content-Type", TYPES[extension]);
             // Un banc d'essai qu'on modifie entre deux rafales : le relire à
             // chaque requête ne coûte rien, et un cache ferait mentir le test.

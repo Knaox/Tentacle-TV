@@ -94,4 +94,10 @@ export default {
   // l'action, et n'a d'emploi que la ou se deplacer est un mode — la
   // telecommande.
   seekMode: "Déplacement",
+  // Écran de chargement tvOS : ce que PrismCore fait pendant l'ouverture.
+  prismOpening: "Ouverture du fichier…",
+  prismResolving: "Lecture des pistes…",
+  prismIndexing: "Indexation (premier visionnage)…",
+  prismPreparing: "Préparation…",
+  prismStarting: "Démarrage de la lecture…",
 } as const;

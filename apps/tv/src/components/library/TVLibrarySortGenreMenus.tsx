@@ -3,7 +3,7 @@ import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import Svg, { Path } from "react-native-svg";
 import { Focusable } from "../focus/Focusable";
-import { TVLibraryFilterMenu, TVCheckRow, type MenuAnchor } from "./TVLibraryFilterMenu";
+import { TVLibraryFilterMenu, TVCheckRow, MENU_ROW_FOCUS_SCALE, type MenuAnchor } from "./TVLibraryFilterMenu";
 import type { LibraryFilterState } from "../../hooks/useLibraryFilters";
 import { Colors } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
@@ -22,11 +22,13 @@ export const SORT_OPTIONS = [
 
 export function TVSortMenu({
   anchor,
+  onClose,
   filters,
   onSortByChange,
   onSortOrderChange,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   filters: LibraryFilterState;
   onSortByChange: (v: string) => void;
   onSortOrderChange: (v: string) => void;
@@ -38,7 +40,7 @@ export function TVSortMenu({
   const entryRef = useRef(filters.sortBy);
 
   return (
-    <TVLibraryFilterMenu anchor={anchor}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("sortBy")} onClose={onClose}>
       {SORT_OPTIONS.map((opt) => (
         <TVCheckRow
           key={opt.value}
@@ -52,6 +54,7 @@ export function TVSortMenu({
       <Focusable
         variant="button"
         focusRadius={Button.medium.borderRadius}
+        scaleOverride={MENU_ROW_FOCUS_SCALE}
         onPress={() => onSortOrderChange(desc ? "Ascending" : "Descending")}
         accessibilityLabel={desc ? t("sortOrderDesc") : t("sortOrderAsc")}
       >
@@ -70,11 +73,13 @@ export function TVSortMenu({
 
 export function TVGenreMenu({
   anchor,
+  onClose,
   genres,
   selectedIds,
   onToggle,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   genres: Array<{ Id: string; Name: string }>;
   selectedIds: string[];
   onToggle: (id: string) => void;
@@ -83,9 +88,10 @@ export function TVGenreMenu({
   // figée : cocher/décocher ne doit pas re-saisir le focus.
   const entryRef = useRef(genres.find((g) => selectedIds.includes(g.Id))?.Id ?? genres[0]?.Id);
   const firstChecked = entryRef.current;
+  const { t } = useTranslation("common");
 
   return (
-    <TVLibraryFilterMenu anchor={anchor}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("genres")} onClose={onClose}>
       {genres.map((genre) => (
         <TVCheckRow
           key={genre.Id}

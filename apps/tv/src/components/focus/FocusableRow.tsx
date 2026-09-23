@@ -1,10 +1,18 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
-import { FlatList, View, Text, TVFocusGuideView, type ViewStyle, type LayoutChangeEvent } from "react-native";
+import { FlatList, View, Text, type ViewStyle, type LayoutChangeEvent } from "react-native";
 import { Focusable } from "./Focusable";
 import { useTVRemote } from "./useTVRemote";
+import { RowEntryGuide, useRowEntry } from "./RowEntryGuide";
 import { useTVNavActions } from "../../context/TVNavContext";
 import { Colors, Spacing, Typography } from "../../theme/colors";
+import { CARD_FOCUS_BLEED } from "../../theme/focus";
+
+/** Débordement vertical laissé à l'anneau, au halo et à l'ombre de la carte
+ *  focalisée (`CARD_FOCUS_BLEED`). La fenêtre de rognage est plus haute
+ *  d'autant EN HAUT ET EN BAS, et décalée de la même valeur : la mise en page
+ *  ne bouge pas d'un point. */
+const ROW_CLIP_BLEED = CARD_FOCUS_BLEED;
 
 interface FocusableRowProps<T> {
   title?: string;
@@ -66,6 +74,9 @@ export function FocusableRow<T>({
     []
   );
 
+  // L'entrée par la première carte visible — cf. `RowEntryGuide`.
+  const entry = useRowEntry({ itemWidth, gap, count: data.length });
+
   // When the first item has focus and user presses left, fire onEdgeLeft
   useTVRemote({
     onLeft: onEdgeLeft
@@ -100,8 +111,14 @@ export function FocusableRow<T>({
           {titleAccessory}
         </View>
       )}
-      {/* Pas de trapFocusLeft : LEFT depuis la 1re carte doit atteindre le rail. */}
-      <TVFocusGuideView trapFocusRight>
+      {/* La piste est ROGNÉE à la colonne de contenu. Sans cela, les cartes
+          défilées à gauche restaient peintes sous le rail — qui n'a qu'un voile —
+          et le menu devenait illisible (`overflow: visible` sur la liste, dans un
+          ScrollView élargi à tout l'écran pour le halo de la bannière). Le rognage
+          est horizontal en pratique : la fenêtre déborde de ROW_CLIP_BLEED en haut
+          et en bas, là où l'anneau et l'ombre de la carte focalisée passent. */}
+      <View style={{ overflow: "hidden", marginVertical: -ROW_CLIP_BLEED, paddingVertical: ROW_CLIP_BLEED }}>
+      <RowEntryGuide ref={entry.guideRef}>
       <FlatList
         ref={listRef}
         data={data}
@@ -112,6 +129,8 @@ export function FocusableRow<T>({
         // 1.08 (origine bas) de la carte focusée, sans rognage ni chevauchement.
         contentContainerStyle={{ paddingHorizontal: Spacing.rowGutter, paddingTop: 32, paddingBottom: 24 }}
         keyExtractor={keyExtractor}
+        onScroll={entry.onScroll}
+        scrollEventThrottle={32}
         initialNumToRender={6}
         windowSize={21}
         maxToRenderPerBatch={10}
@@ -140,25 +159,34 @@ export function FocusableRow<T>({
             onPress={onItemPress ? () => onItemPress(item) : undefined}
             onLongPress={onItemLongPress ? () => onItemLongPress(item) : undefined}
             nextFocusUp={cellNextFocusUp}
+            onNode={entry.onNode}
           />
         )}
       />
-      </TVFocusGuideView>
+      </RowEntryGuide>
+      </View>
     </View>
   );
 }
 
 /** Cellule à état de focus local — seule la cellule re-render au focus. */
-function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp }: {
+function RowCell<T>({ item, index, itemWidth, gap, renderItem, onCellFocus, onCellBlur, onPress, onLongPress, nextFocusUp, onNode }: {
   item: T; index: number; itemWidth: number; gap: number;
   renderItem: (item: T, index: number, focused: boolean) => React.ReactNode;
   onCellFocus: () => void; onCellBlur: () => void;
   onPress?: () => void; onLongPress?: () => void;
   nextFocusUp?: number;
+  /** Publie la carte montée à son index — l'annuaire du guide d'entrée. */
+  onNode: (index: number, node: View | null) => void;
 }) {
   const [focused, setFocused] = useState(false);
   const cellRef = useRef<View>(null);
   const { lastContentNodeRef } = useTVNavActions();
+
+  useEffect(() => {
+    onNode(index, cellRef.current);
+    return () => onNode(index, null);
+  }, [index, onNode]);
 
   /**
    * La cellule EFFACE la mémoire de focus en mourant, tant qu'elle la désigne.

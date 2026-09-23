@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface FilterMenuProps {
@@ -9,6 +10,13 @@ interface FilterMenuProps {
   onClear?: () => void;
   /** Largeur du panneau. Les listes longues en demandent davantage. */
   width?: number;
+  /**
+   * Un en-tête — le critère et une croix — en tête du panneau. Éteint sur le
+   * bureau, où un clic à côté referme le menu ; allumé par le téléviseur LG,
+   * où il n'y a pas de « à côté » et où la croix est la sortie visible, comme
+   * sur ses panneaux et sur les téléviseurs natifs.
+   */
+  closeButton?: boolean;
   children: ReactNode;
 }
 
@@ -20,10 +28,19 @@ interface FilterMenuProps {
  * genre : on filtrait à l'aveugle, sans jamais voir l'effet sur les résultats
  * avant d'avoir refermé le panneau.
  */
-export function FilterMenu({ label, value, onClear, width = 260, children }: FilterMenuProps) {
+export function FilterMenu({ label, value, onClear, width = 260, closeButton = false, children }: FilterMenuProps) {
+  const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const active = Boolean(value);
+
+  // La croix rend le focus à la pastille : sans cela, il disparaissait avec
+  // le panneau démonté.
+  const closeFromPanel = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -42,6 +59,7 @@ export function FilterMenu({ label, value, onClear, width = 260, children }: Fil
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
@@ -101,6 +119,22 @@ export function FilterMenu({ label, value, onClear, width = 260, children }: Fil
             className="absolute left-0 top-full z-40 mt-2 origin-top-left overflow-hidden rounded-[var(--radius-lg)] bg-surface-dropdown p-3 backdrop-blur-[var(--blur-dropdown)]"
             style={{ width, boxShadow: "var(--shadow-dropdown)" }}
           >
+            {closeButton && (
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <span className="truncate text-sm font-semibold text-content-primary">{label}</span>
+                <button
+                  type="button"
+                  data-menu-close
+                  onClick={closeFromPanel}
+                  aria-label={t("close")}
+                  className="flex shrink-0 items-center justify-center rounded-[var(--radius-sm)] text-content-tertiary transition-colors hover:text-content-primary"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+                    <path strokeLinecap="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
             {children}
           </motion.div>
         )}

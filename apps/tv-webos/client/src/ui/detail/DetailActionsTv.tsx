@@ -1,5 +1,5 @@
 import type { MediaItem } from "@tentacle-tv/shared";
-import { DetailActions as WebActions } from "@/components/detail/DetailActions";
+import { DetailActions as WebActions } from "@/components/detail/DetailActions?original";
 import { useMarker } from "../marker";
 import { ENTRY_ATTRIBUTE } from "../../focus/zones";
 

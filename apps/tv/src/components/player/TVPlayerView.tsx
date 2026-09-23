@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { MediaItem, PlayerOverlay, QualityKey, SourceQuality } from "@tentacle-tv/shared";
 import { MemoizedPlayer } from "./MemoizedPlayer";
 import { TVPlayerOverlay } from "../TVPlayerOverlay";
+import type { TransportKey } from "./focus/overlayFocusCore";
 import { TVPlaybackOverlay } from "../TVPlaybackOverlay";
 import { TVAutoPlaySwitch, type AutoPlayCtx } from "./TVAutoPlaySwitch";
 import { TVPlayerEpisodePanel } from "./TVPlayerEpisodePanel";
@@ -40,7 +41,7 @@ export interface TVPlayerViewProps {
   streamUrl: string;
   paused: boolean;
   /** Pause EFFECTIVE de la surface (paused || reloadHold) : garde le lecteur en pause pendant un reload
-   *  remux (anti son sortant) sans changer l'intention `paused` (OSD/reporting). Défaut = paused. */
+   *  de piste ou de qualité (anti son sortant) sans changer l'intention `paused` (OSD/reporting). Défaut = paused. */
   playerPaused?: boolean;
   isLoading: boolean;
   /** Lecture déjà démarrée — distingue chargement initial / rebuffering */
@@ -59,6 +60,10 @@ export interface TVPlayerViewProps {
   useExoPlayer: boolean;
   /** Direct play vs transcode HLS (décision serveur) — gate le sideload tvOS. */
   isDirectPlay: boolean;
+  /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
+  prismTextTrackIndex?: number | null;
+  /** Android TV : cadence du flux, pour caler la fréquence d'affichage (ExoPlayer). */
+  frameRate?: number;
   exoRef: React.Ref<MPVPlayerHandle>;
   mpvRef: React.Ref<MPVPlayerHandle>;
   backgroundRef: React.Ref<ElementRef<typeof TouchableOpacity>>;
@@ -76,6 +81,11 @@ export interface TVPlayerViewProps {
   /** Saut manuel du bouton, et refus du passage courant. */
   onSkipSegment: () => void;
   onDismissSegment: () => void;
+  /** La PILULE « aller à l'épisode suivant » — l'arbitre la propose quand la
+   *  fiche « à suivre » ne parle pas (scène post-générique, fiche éteinte). */
+  onPlayNextNow: () => void;
+  /** Le bouton d'habillage visé par `osdFocusSignal`, quand il est nommé. */
+  osdFocusTargetRef?: { readonly current: TransportKey | undefined };
   autoPlay: AutoPlayCtx;
   controls: ControlsCtx;
 
@@ -100,9 +110,6 @@ export interface TVPlayerViewProps {
   /** Position figée (s) à afficher pendant un reload doux (audio/qualité) ;
    *  null = pas de reload doux en cours. */
   reloadFrameSec?: number | null;
-  /** Capture réelle de la dernière frame (pause longue remux) — prioritaire
-   *  sur la vignette trickplay dans TVReloadFrame. */
-  pauseFrameUri?: string | null;
   /** Incrémenter pour refocus le dernier bouton OSD utilisé */
   osdFocusSignal?: number;
   /** Cue de sous-titres texte rendue en JS (useTVSubtitles) — MPV/transcode */
@@ -121,15 +128,15 @@ export interface TVPlayerViewProps {
 export function TVPlayerView({
   item, streamUrl, paused, playerPaused, isLoading, hasStarted, videoError, autoCapActive, displayTime, bufferedTime,
   displayDuration, showSettings, autoPlayActive, hasPreviousEpisode,
-  useExoPlayer, isDirectPlay, exoRef, mpvRef, backgroundRef, playerStyle,
+  useExoPlayer, isDirectPlay, prismTextTrackIndex, frameRate, exoRef, mpvRef, backgroundRef, playerStyle,
   subtitleIndex,
   autoPlay, controls,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
   onPlayPause, onBack, onToggleSettings,
   
-  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, pauseFrameUri, osdFocusSignal, subtitleCue, textTracks,
+  onPrevEpisode, onNextEpisode, trickplay, reloadFrameSec, osdFocusSignal, subtitleCue, textTracks,
   showEpisodes, onToggleEpisodes, onCloseEpisodes, onSelectEpisode, onEofDismiss,
-  overlay, onSkipSegment, onDismissSegment,
+  overlay, onSkipSegment, onDismissSegment, onPlayNextNow, osdFocusTargetRef,
 }: TVPlayerViewProps) {
   const { t } = useTranslation("player");
 
@@ -146,7 +153,11 @@ export function TVPlayerView({
   // ici : l'ancienne règle ignorait le refus, le panneau épisodes et le
   // démarrage de lecture (le fond renonçait au focus sans qu'aucun bouton
   // existe : D-pad muet sur tvOS), et ne connaissait que deux types sur cinq.
-  const skipActive = overlay.kind === "skip";
+  const skipActive = overlay.kind === "skip" || overlay.kind === "nextButton";
+
+  /** L'écran de chargement occupe-t-il la dalle ? Il prend alors tout : le
+   *  focus va à SA sortie, et l'habillage se tait. */
+  const loadingShown = !hasStarted && !videoError;
 
   // tvOS : dès que l'OSD se cache (et qu'aucun panneau / skip n'est actif),
   // ramener le focus sur le fond pour que le D-pad continue d'émettre ses events
@@ -164,7 +175,8 @@ export function TVPlayerView({
         // Mute de transition (filet secondaire) : tant que l'image figée masque la vidéo, couper l'audio de
         // la session sortante. Le vrai blocage du son vient du « hold » (playerPaused) côté PlayerScreen.
         muted={reloadFrameSec != null && hasStarted}
-        textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay}
+        textTracks={textTracks} subtitleIndex={subtitleIndex} isDirectPlay={isDirectPlay} prismTextTrackIndex={prismTextTrackIndex}
+        frameRate={frameRate}
         onLoad={onLoad} onProgress={onProgress} onEnd={onEnd}
         onError={onError} onTracks={onTracks} onVideoSize={onVideoSize}
       />
@@ -189,7 +201,7 @@ export function TVPlayerView({
       {/* Chargement initial OU rechargement de flux (piste/qualité) : écran
           contextualisé couvrant jusqu'à la première position réelle (parité
           PlayerLoadingScreen web) ; rebuffering : spinner discret */}
-      {!hasStarted && !videoError && <TVPlayerLoadingScreen item={item} />}
+      {loadingShown && <TVPlayerLoadingScreen item={item} onCancel={onBack} />}
       {/* Reload doux (audio/qualité) : « dernière image » (vignette trickplay)
           pour masquer le noir d'AVPlayer pendant le re-buffer, sous le spinner. */}
       {reloadFrameSec != null && hasStarted && (
@@ -200,7 +212,6 @@ export function TVPlayerView({
           <TVReloadFrame
             trickplay={trickplay}
             positionSeconds={reloadFrameSec}
-            captureUri={pauseFrameUri}
             width={typeof playerStyle.width === "number" ? playerStyle.width : 0}
             height={typeof playerStyle.height === "number" ? playerStyle.height : 0}
           />
@@ -228,10 +239,13 @@ export function TVPlayerView({
         currentTime={displayTime}
         bufferedTime={bufferedTime}
         duration={displayDuration} paused={paused}
-        visible={controls.overlayVisible && !autoPlayActive}
+        // L'écran de chargement couvre l'habillage SANS le rendre inerte : ses
+        // boutons restaient focusables sous lui, et le focus se posait sur des
+        // cibles invisibles — c'est ce qui rendait la sortie introuvable.
+        visible={controls.overlayVisible && !autoPlayActive && !loadingShown}
         speedLabel={controls.speedLabel}
         scrubbing={controls.scrubbing} scrubPosition={controls.scrubPosition}
-        focusSignal={osdFocusSignal}
+        focusSignal={osdFocusSignal} focusTargetRef={osdFocusTargetRef}
         onPlayPause={controls.guardScrub(() => { onPlayPause(); controls.showOverlay(); })}
         onSkipBack={controls.guardScrub(() => { controls.handleSkipBack(); controls.showOverlay(); })}
         onSkipForward={controls.guardScrub(() => { controls.handleSkipForward(); controls.showOverlay(); })}
@@ -268,6 +282,7 @@ export function TVPlayerView({
         overlay={overlay}
         onSkip={controls.guardScrub(onSkipSegment)}
         onDismiss={onDismissSegment}
+        onPlayNow={controls.guardScrub(onPlayNextNow)}
         overlayVisible={controls.overlayVisible}
         showSettings={showSettings}
         showEpisodes={!!showEpisodes}

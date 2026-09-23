@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * « Hold » de reload (remux tvOS) — extrait de PlayerScreen (budget 300 lignes).
- * Pendant un reload de reprise/seek, garde le LECTEUR en pause
+ * « Hold » de reload — extrait de PlayerScreen (budget 300 lignes).
+ * Pendant un reload de piste/qualité, garde le LECTEUR en pause
  * (paused || reloadHold) SANS toucher l'état `paused` (intention utilisateur)
  * → la session sortante ne joue ni son ni image pendant le chargement.
  * Dé-pause automatique au onLoad de la nouvelle session (isLoading repasse
  * false). Remplace le `muted` (non fiable sur AVPlayer). Safety : levée
- * forcée à 15 s — un re-remux à froid peut dépasser 10 s (3 tentatives de
- * start × backoff) et la levée prématurée faisait « bliper » l'audio de la
- * session sortante.
+ * forcée à 35 s — l'ouverture d'une session PrismCore a un budget de 30 s
+ * (cf. PrismSessionRegistry), et une levée prématurée faisait « bliper »
+ * l'audio de la session sortante.
  */
 export function useTVReloadHold(args: {
   isLoading: boolean;
@@ -17,7 +17,7 @@ export function useTVReloadHold(args: {
 }) {
   const { isLoading, setIsLoading } = args;
   const [reloadHold, setReloadHold] = useState(false);
-  // Miroir lu par les callbacks à deps [] (useTVRemuxStallRecovery).
+  // Miroir lu par les callbacks à deps [].
   const reloadHoldRef = useRef(false);
   reloadHoldRef.current = reloadHold;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -26,7 +26,7 @@ export function useTVReloadHold(args: {
     setIsLoading(true);
     setReloadHold(true);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setReloadHold(false), 15000);
+    timerRef.current = setTimeout(() => setReloadHold(false), 35000);
   }, [setIsLoading]);
 
   useEffect(() => {

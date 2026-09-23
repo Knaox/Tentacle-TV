@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=1280, initial-scale=1" />
+    <title>Tentacle TV — harnais de la bibliothèque</title>
+    <!--
+      La VRAIE bibliothèque de la LG, sans compte ni serveur : la grille du web
+      avec toutes les substitutions du téléviseur — cartes, barre de filtres,
+      menus et leur croix —, sur une doublure du client Jellyfin, et le vrai
+      moteur de focus. Les flèches du clavier la pilotent comme la
+      télécommande ; « OK » est le clic natif du bouton focalisé.
+
+      Le module est un TSX voisin : `serveHarness` remplace le marqueur des
+      modules par le chemin `/@fs/` de ce dossier sur la machine qui sert.
+    -->
+    <style>
+      html, body { background: #000; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="/tv/harness-shims.js"></script>
+    <!-- Le préambule de React Refresh, que Vite n'injecte que dans index.html. -->
+    <script type="module">
+      import RefreshRuntime from "/tv/@react-refresh";
+      RefreshRuntime.injectIntoGlobalHook(window);
+      window.$RefreshReg$ = () => {};
+      window.$RefreshSig$ = () => (type) => type;
+      window.__vite_plugin_react_preamble_installed__ = true;
+    </script>
+    <script type="module" src="%HARNESS_MODULES%/harness-library-entry.tsx"></script>
+  </body>
+</html>

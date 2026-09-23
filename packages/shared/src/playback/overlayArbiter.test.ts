@@ -185,6 +185,31 @@ describe("priorités et gardes", () => {
     expect(withoutCountdown).toMatchObject({ countdownSeconds: null });
   });
 
+  it("`auto` dit que le passage part tout seul, décompte affiché ou non", () => {
+    // Le cas qui a motivé le champ : décompte ÉTEINT et saut automatique quand
+    // même. À s'en tenir aux secondes affichées, les téléviseurs lisaient
+    // « manuel » — donc pas de bouton de refus, et un saut qu'on ne pouvait pas
+    // empêcher à la télécommande.
+    const hiddenCountdown = arbitrateOverlay(
+      makeInput({
+        segments: [INTRO],
+        positionMs: 60_000,
+        settings: makeSettings({ intro: { countdownVisible: false } }),
+        countdowns: { skip: 3, next: null },
+      }),
+    );
+    expect(hiddenCountdown).toMatchObject({ countdownSeconds: null, auto: true });
+
+    const manual = arbitrateOverlay(
+      makeInput({
+        segments: [INTRO],
+        positionMs: 60_000,
+        settings: makeSettings({ intro: { action: "button" } }),
+      }),
+    );
+    expect(manual).toMatchObject({ auto: false });
+  });
+
   it("un segment désactivé ou refusé ne montre rien — et le refus du générique rend la main à la PILULE", () => {
     const off = arbitrateOverlay(
       makeInput({ segments: [INTRO], positionMs: 60_000, settings: makeSettings({ intro: { action: "off" } }) }),

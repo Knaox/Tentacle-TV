@@ -3,6 +3,7 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { BURN_IN_SUBTITLE_CODECS } from "@tentacle-tv/shared";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
+import type { PrismStart } from "../utils/prismCoreStart";
 
 /**
  * Construit l'URL Jellyfin selon le mode de lecture :
@@ -16,7 +17,7 @@ import { randomSessionId } from "../utils/playerHelpers";
 export function useTVStreamUrl(args: {
   itemId: string;
   mediaSourceId?: string;
-  /** Parité de signature tvOS (gate remux par conteneur) ; ignoré côté Android. */
+  /** Parité de signature tvOS (gate PrismCore par conteneur) ; ignoré côté Android. */
   container?: string;
   streams: JfStream[];
   audioIndex: number;
@@ -84,7 +85,11 @@ export function useTVStreamUrl(args: {
 
   // `isDirectPlay` est renvoyé tel quel (décidé côté client sur Android) pour
   // aligner le contrat sur la variante tvOS (où c'est le serveur qui décide).
-  // `isLocalRemux` toujours false ici (remux on-device = tvOS uniquement) ; `failed` toujours
-  // false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité de type `.ios.ts`.
-  return { streamUrl, playSessionId, isDirectPlay, isLocalRemux: false, failed: false };
+  // `isPrismCore`/`prism`/`retryMuxed` : PrismCore = tvOS uniquement, inertes ici ; `failed`
+  // toujours false (URL construite en synchrone, aucun fetch qui puisse échouer) : parité `.ios.ts`.
+  // (`undefined as …` : sans l'assertion, TypeScript rétrécit la constante à `undefined`
+  // et le type de retour perdrait les champs de `PrismStart` pour les consommateurs.)
+  const prism = undefined as PrismStart | undefined;
+  const retryMuxed = async (_positionSec: number): Promise<boolean> => false;
+  return { streamUrl, playSessionId, isDirectPlay, isPrismCore: false, prism, failed: false, retryMuxed };
 }

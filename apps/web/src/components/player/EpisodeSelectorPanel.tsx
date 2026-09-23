@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import {
   useSeasons,
-  useEpisodes,
+  useSeasonEpisodesLite,
   useJellyfinClient,
   useMediaItem,
   useMyEpisodeRatings,
@@ -40,7 +40,10 @@ export function EpisodeSelectorPanel({
   const { data: seasons } = useSeasons(seriesId);
   const [seasonId, setSeasonId] = useState<string | undefined>(currentSeasonId);
   const effectiveSeasonId = seasonId ?? currentSeasonId ?? seasons?.[0]?.Id;
-  const { data: episodes } = useEpisodes(seriesId, effectiveSeasonId);
+  // Sans leurs sources : le panneau n'affiche ni qualité ni langues, et le
+  // serveur mettait une demi-seconde à calculer les sources d'une longue saison
+  // (196 épisodes : 2,7 Mo contre 0,3). Le bureau et la LG en profitent.
+  const { data: episodes } = useSeasonEpisodesLite(seriesId, effectiveSeasonId);
   // Notes des épisodes (TMDB + compte) : un cache par saison, un seul abonnement.
   const { data: series } = useMediaItem(seriesId);
   const seriesTmdbId = tmdbIdForItem(series);

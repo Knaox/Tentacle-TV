@@ -9,7 +9,7 @@ interface MemoizedPlayerProps {
   mpvRef: React.Ref<MPVPlayerHandle>;
   source: string;
   paused: boolean;
-  /** Mute de transition (reload/reprise remux tvOS) : coupe l'audio de la session sortante. */
+  /** Mute de transition (reload de piste/qualité, tvOS) : coupe l'audio de la session sortante. */
   muted?: boolean;
   playerStyle: ViewStyle;
   /** Pistes texte VTT pour le rendu natif (ExoPlayer Android + AVPlayer tvOS) */
@@ -18,6 +18,10 @@ interface MemoizedPlayerProps {
   subtitleIndex?: number;
   /** Direct play vs transcode HLS — gate le sideload des sous-titres sur tvOS */
   isDirectPlay?: boolean;
+  /** tvOS/PrismCore : rendition OCR du sous-titre image sélectionné (index AVPlayer). */
+  prismTextTrackIndex?: number | null;
+  /** Android TV : cadence du flux (ExoPlayer seulement — mpv ne bascule rien). */
+  frameRate?: number;
   onLoad: (duration: number) => void;
   onProgress: (currentTime: number, buffered: number) => void;
   onEnd: () => void;
@@ -27,7 +31,7 @@ interface MemoizedPlayerProps {
 }
 
 export const MemoizedPlayer = memo(function MemoizedPlayer({
-  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay,
+  useExoPlayer: isExo, exoRef, mpvRef, source, paused, muted, playerStyle, textTracks, subtitleIndex, isDirectPlay, prismTextTrackIndex, frameRate,
   onLoad, onProgress, onEnd, onError, onTracks, onVideoSize,
 }: MemoizedPlayerProps) {
   return isExo ? (
@@ -37,9 +41,11 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       paused={paused}
       progressInterval={1000}
       audioPassthrough
+      frameRate={frameRate}
       textTracks={textTracks}
       subtitleIndex={subtitleIndex}
       isDirectPlay={isDirectPlay}
+      prismTextTrackIndex={prismTextTrackIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}
@@ -58,6 +64,7 @@ export const MemoizedPlayer = memo(function MemoizedPlayer({
       textTracks={textTracks}
       subtitleIndex={subtitleIndex}
       isDirectPlay={isDirectPlay}
+      prismTextTrackIndex={prismTextTrackIndex}
       style={playerStyle}
       onLoad={onLoad}
       onProgress={onProgress}

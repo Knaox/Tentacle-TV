@@ -45,6 +45,34 @@ declare module "@/hooks/usePlaybackInfo?original" {
   export * from "@/hooks/usePlaybackInfo";
 }
 
+declare module "@/components/LibraryGridCard?original" {
+  export * from "@/components/LibraryGridCard";
+}
+
+declare module "@/components/collection/CollectionGridCard?original" {
+  export * from "@/components/collection/CollectionGridCard";
+}
+
+declare module "@/components/cards/CardFrame?original" {
+  export * from "@/components/cards/CardFrame";
+}
+
+declare module "@/components/LibraryFilters?original" {
+  export * from "@/components/LibraryFilters";
+}
+
+declare module "@/components/library/FilterMenu?original" {
+  export * from "@/components/library/FilterMenu";
+}
+
+declare module "@/components/detail/DetailActions?original" {
+  export * from "@/components/detail/DetailActions";
+}
+
+declare module "@/components/detail/ExtrasRow?original" {
+  export * from "@/components/detail/ExtrasRow";
+}
+
 /**
  * Le pont vers les services Luna, injecté par le gestionnaire d'applications.
  *
