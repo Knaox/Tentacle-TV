@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { TopNavLinks } from "./TopNavLinks";
 import { useScrollScrim } from "./useScrollScrim";
-import { GlobalSearch } from "../GlobalSearch";
+import { SearchLauncher } from "../search/SearchLauncher";
 import { NotificationBell } from "../NotificationBell";
 import { UserAvatarMenu } from "../UserAvatarMenu";
 import { TentacleLogo } from "../ui/TentacleLogo";
@@ -98,7 +98,7 @@ export function TopNav({ showSearch = true }: TopNavProps) {
           <ConnectivityChip />
           <DataSaverChip />
           <DownloadsNavButton />
-          {showSearch && !offline && <GlobalSearch />}
+          {showSearch && !offline && <SearchLauncher variant="field" className="w-[clamp(200px,22vw,320px)]" />}
           {!offline && <WatchTogetherButton />}
           {!offline && <NotificationBell />}
           <UserAvatarMenu />

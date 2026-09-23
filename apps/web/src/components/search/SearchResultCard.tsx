@@ -1,8 +1,8 @@
 /**
- * Une carte de la grille de résultats de recherche.
+ * Une carte de la grille de résultats de recherche (page `/search`).
  *
- * Extraite de `SearchOverlay` pour lui rendre de la place : elle a désormais un
- * état de survol et un bouton de téléchargement.
+ * Elle a un état de survol et un bouton de téléchargement. Elle lit un
+ * `MediaItem` — les résultats du moteur (`SearchMediaItem`) en ont la forme.
  */
 
 import { useRef } from "react";

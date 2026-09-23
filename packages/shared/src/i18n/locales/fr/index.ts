@@ -21,10 +21,11 @@ import reco from "./reco";
 import whatsNew from "./whatsNew";
 import offline from "./offline";
 import sessions from "./sessions";
+import search from "./search";
 
 export default {
   common, auth, setup, player, admin,
   tickets, pairing, preferences, about, notifications, nav,
   adminPlugins, media, errors, profile, disclaimer,
-  watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions,
+  watchTogether, downloads, easterEggs, reco, whatsNew, offline, sessions, search,
 };

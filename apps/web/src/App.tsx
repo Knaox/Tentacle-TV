@@ -15,12 +15,13 @@ import { AppBindings } from "./AppBindings";
 import { ToastProvider } from "./contexts/ToastContext";
 import { WatchTogetherProvider } from "./watchTogether/WatchTogetherProvider";
 import { SessionMessageHost } from "./components/session/SessionMessageHost";
+import { OmniboxHost } from "./components/search/OmniboxHost";
 import { isDesktopApp } from "./desktop/bridge";
 import { Disclaimer } from "./pages/Disclaimer";
 
 /* -- Lazy-loaded pages (code-split) -- */
 import {
-  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
+  Home, Login, Register, SharedListView, SharedItemDetail, Watch, MediaDetail, Library, Search, Support, AdminLayout, AdminInvites, Preferences, SettingsLayout, SettingsIndex, SettingsAppearance, SettingsSecurity, About, Credits, PairDevice, AdminPlugins, AdminUsers, AdminTicketsPage, AdminServicesPage, AdminMetadata, AdminSessions, Watchlist, Favorites, Recommendations, MobileProfile, NotFound, DownloadsPage, SettingsDownloads, SettingsData, SettingsPersonalization, OfflineCatalog, OfflineSeriesView, AdminDownloads
 } from "./lazyPages";
 import { useOfflineMode } from "./offline/useOfflineMode";
 
@@ -128,6 +129,8 @@ export function App() {
             <Route path="watchlist" element={onlineOnly(<Watchlist />)} />
             <Route path="favorites" element={onlineOnly(<Favorites />)} />
             <Route path="recommendations" element={onlineOnly(<Recommendations />)} />
+            {/* La recherche pleine page — l'omnibox (⌘K) y mène pour « tous les résultats ». */}
+            <Route path="search" element={onlineOnly(<Search />)} />
             {/* Desktop uniquement — la page se redirige elle-même hors droit
                 et hors contenu local (invisibilité stricte). */}
             <Route path="downloads" element={<DownloadsPage />} />
@@ -228,6 +231,9 @@ export function App() {
         </Routes>
       </Suspense>
       <StartupOverlays authed={authed} disclaimerAccepted={disclaimerAccepted} />
+      {/* La recherche de toute l'application (⌘K, « / », la barre) — au-dessus
+          des pages avec ou sans navigation, jamais pendant la lecture. */}
+      <OmniboxHost enabled={authed && !offlineMode} />
       {authed && <OfflineSessionGate />}
       {/* Overlay bloquant « serveur injoignable » : comportement WEB uniquement.
           Sur desktop, le mode Hors ligne (connectivityStore + pastille TopNav)
