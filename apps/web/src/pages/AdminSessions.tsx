@@ -1,5 +1,6 @@
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence } from "framer-motion";
 import { MonitorPlay } from "lucide-react";
 import type { AdminPlaystateCommand, AdminSessionDto, AdminWatchGroupDto } from "@tentacle-tv/shared";
 import { useToast } from "../contexts/ToastContext";
@@ -9,6 +10,8 @@ import { IdleSessions } from "../components/admin/sessions/IdleSessions";
 import { WatchGroupCard } from "../components/admin/sessions/WatchGroupCard";
 import { MessageComposer } from "../components/admin/sessions/MessageComposer";
 import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
+import { useCommandFeedback } from "../components/admin/sessions/useCommandFeedback";
+import type { CommandKind, TargetState } from "../components/admin/sessions/commandFeedback";
 import { cls } from "./adminUtils";
 
 /**
@@ -16,6 +19,10 @@ import { cls } from "./adminUtils";
  * Tentacle : qui regarde quoi, comment le média arrive, et la main pour
  * mettre en pause, arrêter ou écrire. Les salles Watch Together y ont leur
  * section : un message, un arrêt, partent à tout le groupe.
+ *
+ * Chaque commande est suivie jusqu'à son effet (`useCommandFeedback`) : le
+ * bouton travaille, la carte dit « demandé » puis « fait », un arrêt constaté
+ * s'annonce.
  */
 
 type ComposerTarget =
@@ -33,7 +40,6 @@ export function AdminSessions() {
   const query = useAdminSessions();
   const { playstate, message, groupMessage, groupStop } = useAdminSessionActions();
   const [composer, setComposer] = useState<ComposerTarget>(null);
-  const [pendingId, setPendingId] = useState<string | null>(null);
   const ids = { playing: useId(), groups: useId(), idle: useId() };
   const data = query.data;
 
@@ -45,49 +51,101 @@ export function AdminSessions() {
   // Au repos, l'heure suit au moins les relèves (les « actif il y a… »).
   const now = Math.max(useNowTick(moving), query.dataUpdatedAt);
 
+  // Ce que l'instantané dit de chaque cible : c'est lui qui constate l'effet
+  // d'une commande. Une salle « lit » tant qu'un de ses membres lit.
+  const targets = useMemo(() => {
+    const map = new Map<string, TargetState>();
+    for (const s of data?.sessions ?? []) map.set(s.id, { playing: s.nowPlaying !== null, isPaused: s.isPaused });
+    for (const g of data?.groups ?? []) {
+      const reading = g.members.some((m) => m.sessionId !== null && sessionsById.get(m.sessionId)?.nowPlaying != null);
+      map.set(g.groupId, { playing: reading, isPaused: g.isPaused });
+    }
+    return map;
+  }, [data, sessionsById]);
+
+  // Le nom de la cible, pour annoncer un arrêt constaté — relu à l'instant de
+  // l'annonce, la session a pu changer depuis l'appui.
+  const namesRef = useRef(sessionsById);
+  namesRef.current = sessionsById;
+  const onConfirmed = useCallback((id: string, command: CommandKind) => {
+    if (command !== "Stop") return;
+    const name = namesRef.current.get(id)?.userName;
+    toast.show("success", name ? t("stoppedWho", { name }) : t("stopped"));
+  }, [toast, t]);
+  const feedback = useCommandFeedback(targets, onConfirmed);
+  const { begin, accept, fail } = feedback;
+
+  // `mutateAsync`, et non les rappels de `mutate` : ceux-là ne répondent que
+  // pour le DERNIER appel d'une mutation. Deux commandes en une seconde (une
+  // pause ici, un arrêt là) laissaient la première tourner sans fin.
+  const sendPlaystate = playstate.mutateAsync;
   const onPlaystate = useCallback((session: AdminSessionDto, command: AdminPlaystateCommand) => {
-    setPendingId(session.id);
-    playstate.mutate({ sessionId: session.id, command }, {
-      onSuccess: () => { if (command === "Stop") toast.show("success", t("stopped")); },
-      onError: () => toast.show("error", t("actionFailed")),
-      onSettled: () => setPendingId(null),
-    });
-  }, [playstate, toast, t]);
+    begin(session.id, command);
+    sendPlaystate({ sessionId: session.id, command }).then(
+      () => accept(session.id),
+      () => {
+        fail(session.id);
+        toast.show("error", t("actionFailed"));
+      },
+    );
+  }, [begin, accept, fail, sendPlaystate, toast, t]);
 
   const actions = useMemo<SessionCardActions>(() => ({
     onPlaystate,
     onMessage: (session) => setComposer({ kind: "session", session }),
-    pendingId,
-  }), [onPlaystate, pendingId]);
+  }), [onPlaystate]);
 
   const onGroupMessage = useCallback((group: AdminWatchGroupDto) => setComposer({ kind: "group", group }), []);
 
+  const sendGroupStop = groupStop.mutateAsync;
   const onGroupStop = useCallback((group: AdminWatchGroupDto) => {
-    setPendingId(group.groupId);
-    groupStop.mutate({ groupId: group.groupId }, {
-      onSuccess: (r) => toast.show(r.delivered > 0 ? "success" : "error", t("stoppedGroup", { count: r.delivered, delivered: r.delivered, total: r.total })),
-      onError: () => toast.show("error", t("actionFailed")),
-      onSettled: () => setPendingId(null),
-    });
-  }, [groupStop, toast, t]);
+    begin(group.groupId, "Stop");
+    sendGroupStop({ groupId: group.groupId }).then(
+      (r) => {
+        if (r.delivered > 0) accept(group.groupId);
+        else fail(group.groupId);
+        toast.show(r.delivered > 0 ? "success" : "error", t("stoppedGroup", { count: r.delivered, delivered: r.delivered, total: r.total }));
+      },
+      () => {
+        fail(group.groupId);
+        toast.show("error", t("actionFailed"));
+      },
+    );
+  }, [begin, accept, fail, sendGroupStop, toast, t]);
 
   const send = (input: MessageInput) => {
     if (composer === null) return;
     const done = () => setComposer(null);
     if (composer.kind === "session") {
-      message.mutate({ sessionId: composer.session.id, input }, {
-        onSuccess: () => { toast.show("success", t("sent")); done(); },
-        onError: () => toast.show("error", t("actionFailed")),
-      });
+      const { id, userName } = composer.session;
+      begin(id, "message");
+      message.mutateAsync({ sessionId: id, input }).then(
+        () => {
+          accept(id);
+          toast.show("success", t("sentTo", { name: userName }));
+          done();
+        },
+        () => {
+          fail(id);
+          toast.show("error", t("actionFailed"));
+        },
+      );
       return;
     }
-    groupMessage.mutate({ groupId: composer.group.groupId, input }, {
-      onSuccess: (r) => {
+    const { groupId } = composer.group;
+    begin(groupId, "message");
+    groupMessage.mutateAsync({ groupId, input }).then(
+      (r) => {
+        if (r.delivered > 0) accept(groupId);
+        else fail(groupId);
         toast.show(r.delivered > 0 ? "success" : "error", t("sentGroup", { count: r.delivered, delivered: r.delivered, total: r.total }));
         done();
       },
-      onError: () => toast.show("error", t("actionFailed")),
-    });
+      () => {
+        fail(groupId);
+        toast.show("error", t("actionFailed"));
+      },
+    );
   };
 
   return (
@@ -130,9 +188,18 @@ export function AdminSessions() {
         <section aria-labelledby={ids.playing}>
           <SectionTitle id={ids.playing}>{t("sectionPlaying")}</SectionTitle>
           <div className="grid gap-4 xl:grid-cols-2">
-            {playing.map((session) => (
-              <SessionCard key={session.id} session={session} now={now} clockOffsetMs={data.clockOffsetMs} actions={actions} />
-            ))}
+            <AnimatePresence initial={false}>
+              {playing.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  now={now}
+                  clockOffsetMs={data.clockOffsetMs}
+                  actions={actions}
+                  feedback={feedback.entries.get(session.id)}
+                />
+              ))}
+            </AnimatePresence>
           </div>
         </section>
       )}
@@ -141,18 +208,20 @@ export function AdminSessions() {
         <section aria-labelledby={ids.groups}>
           <SectionTitle id={ids.groups}>{t("sectionGroups")}</SectionTitle>
           <div className="grid gap-4 xl:grid-cols-2">
-            {data.groups.map((group) => (
-              <WatchGroupCard
-                key={group.groupId}
-                group={group}
-                sessionsById={sessionsById}
-                now={now}
-                clockOffsetMs={data.clockOffsetMs}
-                pending={pendingId === group.groupId}
-                onMessage={onGroupMessage}
-                onStop={onGroupStop}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {data.groups.map((group) => (
+                <WatchGroupCard
+                  key={group.groupId}
+                  group={group}
+                  sessionsById={sessionsById}
+                  now={now}
+                  clockOffsetMs={data.clockOffsetMs}
+                  feedback={feedback.entries.get(group.groupId)}
+                  onMessage={onGroupMessage}
+                  onStop={onGroupStop}
+                />
+              ))}
+            </AnimatePresence>
           </div>
         </section>
       )}
@@ -160,7 +229,7 @@ export function AdminSessions() {
       {data && idle.length > 0 && (
         <section aria-labelledby={ids.idle}>
           <SectionTitle id={ids.idle}>{t("sectionIdle")}</SectionTitle>
-          <IdleSessions sessions={idle} now={now} onMessage={actions.onMessage} />
+          <IdleSessions sessions={idle} now={now} feedback={feedback.entries} onMessage={actions.onMessage} />
         </section>
       )}
 

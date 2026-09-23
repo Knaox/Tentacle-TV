@@ -53,6 +53,9 @@ export default {
         "ken-burns": "kenBurns 32s steps(48) infinite alternate",
         "fade-out": "fadeOut 0.3s ease forwards",
         "loading-bar": "loadingBar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite",
+        // Un refus qui SE VOIT : le bouton dont la commande a échoué tremble
+        // une fois, de trois pixels — en `transform` seul, rien n'est repeint.
+        shake: "shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both",
       },
       keyframes: {
         fadeSlideUp: {
@@ -111,6 +114,12 @@ export default {
         loadingBar: {
           "0%":   { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(400%)" },
+        },
+        shake: {
+          "10%, 90%": { transform: "translateX(-1px)" },
+          "20%, 80%": { transform: "translateX(2px)" },
+          "30%, 50%, 70%": { transform: "translateX(-3px)" },
+          "40%, 60%": { transform: "translateX(3px)" },
         },
         fadeOut: {
           from: { opacity: "1", transform: "translateX(0)" },
