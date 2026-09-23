@@ -4,6 +4,7 @@ import { LibraryGrid } from "../components/LibraryGrid";
 import { LibraryHero } from "../components/library/LibraryHero";
 import { PageTransition } from "../components/PageTransition";
 import { ContentErrorState } from "../components/ContentErrorState";
+import { NotFound } from "./NotFound";
 
 export function Library() {
   const { libraryId } = useParams<{ libraryId: string }>();
@@ -21,6 +22,12 @@ export function Library() {
       </PageTransition>
     );
   }
+
+  // Une bibliothèque absente de la liste n'a pas de page. Le serveur ne rend
+  // que les films, les séries et les bibliothèques mixtes (`libraryViews` du
+  // backend) : l'adresse d'une bibliothèque de musique ou de livres — comme
+  // celle d'une bibliothèque supprimée — ouvrait une page vide, sans titre.
+  if (libraries && !library) return <NotFound />;
 
   return (
     <PageTransition>
