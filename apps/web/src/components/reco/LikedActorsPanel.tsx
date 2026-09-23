@@ -10,6 +10,7 @@ import {
 } from "@tentacle-tv/api-client";
 import type { PersonSearchResult } from "@tentacle-tv/api-client";
 import { RowHeader } from "../rows/RowHeader";
+import { ScopedSearchField } from "../search/ScopedSearchField";
 
 const TMDB_PROFILE = "https://image.tmdb.org/t/p/w185";
 
@@ -122,13 +123,11 @@ export function LikedActorsPanel() {
       <RowHeader title={t("actorsTitle")} />
       <div className="row-gutter">
         <p className="mb-4 max-w-2xl text-sm text-content-tertiary">{t("actorsHint")}</p>
-        <input
-          type="search"
+        <ScopedSearchField
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={setInput}
           placeholder={t("actorsSearchPlaceholder")}
-          aria-label={t("actorsSearchPlaceholder")}
-          className="h-10 w-full max-w-sm rounded-full border border-line-subtle bg-fill-subtle px-4 text-sm text-content-primary outline-none transition focus:border-[var(--brand)] focus:ring-2 focus:ring-[rgba(var(--brand-rgb),0.3)] placeholder:text-content-quaternary"
+          className="max-w-sm"
         />
 
         {liked.length > 0 && (

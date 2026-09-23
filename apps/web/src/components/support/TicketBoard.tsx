@@ -12,6 +12,7 @@ import { TICKET_STATUSES, type TicketStatus } from "./ticketMeta";
 import { useTicketBoard, type TicketBoardScope } from "./useTicketBoard";
 import { useTicketBoardUrlState } from "./useTicketBoardUrlState";
 import { useTicketSelection } from "./useTicketSelection";
+import { ScopedSearchField } from "../search/ScopedSearchField";
 
 /**
  * Le tableau des tickets, façon Jira : une colonne par statut. La page de
@@ -48,13 +49,11 @@ export function TicketBoard({ scope }: { scope: TicketBoardScope }) {
         {scope === "mine" && (
           <h2 className="text-lg font-semibold text-content-primary">{t("myTickets")}</h2>
         )}
-        <input
-          type="search"
+        <ScopedSearchField
           value={board.search}
-          onChange={(e) => board.setSearch(e.target.value)}
+          onChange={board.setSearch}
           placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="h-11 w-full rounded-lg border border-line-subtle bg-tentacle-surface px-4 text-sm text-content-primary placeholder-content-quaternary outline-none focus:ring-1 focus:ring-[rgba(var(--brand-rgb),0.5)] sm:w-64"
+          className="sm:w-72"
         />
         <div className="flex-1" />
         {scope === "mine" && (

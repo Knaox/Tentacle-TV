@@ -9,6 +9,7 @@ import { PageTransition } from "../components/PageTransition";
 import { getUserInfo } from "../components/userMenu/menuItems";
 import { startImpersonation } from "../lib/impersonation";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { ScopedSearchField } from "../components/search/ScopedSearchField";
 
 interface AdminUser {
   id: string;
@@ -112,13 +113,11 @@ export function AdminUsers() {
 
           {/* Barre d'outils : recherche + filtres */}
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              type="search"
+            <ScopedSearchField
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={setSearch}
               placeholder={t("searchUsers")}
-              aria-label={t("searchUsers")}
-              className={`${cls.inp} sm:max-w-xs`}
+              className="sm:max-w-xs"
             />
             <div className="flex flex-wrap gap-2" role="group" aria-label={t("usersTitle")}>
               {FILTERS.map((f) => {
