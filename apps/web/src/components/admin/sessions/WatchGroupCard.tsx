@@ -1,11 +1,15 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, MessageSquare, Pause, Play, Square, Users } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Crown, MessageSquare, Users } from "lucide-react";
 import type { AdminSessionDto, AdminWatchGroupDto } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { easeOut } from "../../../theme/motion";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
-import { cls } from "../../../pages/adminUtils";
+import { ActionPill } from "./ActionPill";
+import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
+import { buttonStatus, type Feedback } from "./commandFeedback";
 import { DeliveryChip } from "./DeliveryChip";
 import { deliveryOf } from "./delivery";
 import { formatClock, joinParts, livePositionTicks } from "./format";
@@ -24,7 +28,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   sessionsById,
   now,
   clockOffsetMs,
-  pending,
+  feedback,
   onMessage,
   onStop,
 }: {
@@ -32,12 +36,13 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   sessionsById: ReadonlyMap<string, AdminSessionDto>;
   now: number;
   clockOffsetMs: number;
-  pending: boolean;
+  feedback: Feedback | undefined;
   onMessage: (group: AdminWatchGroupDto) => void;
   onStop: (group: AdminWatchGroupDto) => void;
 }) {
   const { t } = useTranslation("sessions");
   const client = useJellyfinClient();
+  const reduced = useReducedMotion();
   // Ce que regarde la salle, lu sur la session d'un membre qui le lit.
   const item = group.members
     .map((m) => (m.sessionId ? sessionsById.get(m.sessionId)?.nowPlaying : undefined))
@@ -47,7 +52,13 @@ export const WatchGroupCard = memo(function WatchGroupCard({
   const subtitle = item?.seriesName ? item.name : undefined;
 
   return (
-    <article aria-label={`${t("sectionGroups")} — ${title}`} className="space-y-4 rounded-xl border border-line-subtle bg-fill-faint p-4">
+    <motion.article
+      aria-label={`${t("sectionGroups")} — ${title}`}
+      initial={reduced ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
+      exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
+      className="space-y-4 rounded-xl border border-line-subtle bg-fill-faint p-4"
+    >
       <header className="flex items-start gap-4">
         {item && (
           <Poster
@@ -62,10 +73,7 @@ export const WatchGroupCard = memo(function WatchGroupCard({
           {subtitle && <p className="truncate text-sm text-content-tertiary">{subtitle}</p>}
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs tabular-nums text-content-tertiary">
             <span className="inline-flex items-center gap-1"><Users size={12} aria-hidden />{t("groupOf", { count: group.members.length })}</span>
-            <span className="inline-flex items-center gap-1">
-              {group.isPaused ? <Pause size={12} aria-hidden /> : <Play size={12} aria-hidden />}
-              {group.isPaused ? t("paused") : t("playing")}
-            </span>
+            <CommandStatus isPaused={group.isPaused} feedback={feedback} />
             <span>{formatClock(position)}{item?.runTimeTicks ? ` / ${formatClock(item.runTimeTicks)}` : ""}</span>
           </p>
         </div>
@@ -103,21 +111,28 @@ export const WatchGroupCard = memo(function WatchGroupCard({
         })}
       </ul>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className={`${cls.bbrand} px-4`} onClick={() => onMessage(group)}>
-          <MessageSquare size={16} aria-hidden />
-          {t("messageGroup")}
-        </button>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
+        <ActionPill
+          tone="brand"
+          icon={MessageSquare}
+          label={t("messageGroup")}
+          doneLabel={t("sentShort")}
+          errorLabel={t("failedShort")}
+          status={buttonStatus(feedback, ["message"])}
+          onClick={() => onMessage(group)}
+        />
         <ConfirmButton
+          className="ml-auto"
           label={t("stopAll")}
-          icon={<Square size={14} aria-hidden />}
-          prompt={t("stopAllConfirm")}
+          busyLabel={t("stopping")}
+          title={t("stopAllConfirm")}
+          body={t("stopAllConfirmBody", { count: group.members.length })}
           confirmLabel={t("confirmStop")}
           cancelLabel={t("cancel")}
-          pending={pending}
+          status={buttonStatus(feedback, ["Stop"])}
           onConfirm={() => onStop(group)}
         />
       </div>
-    </article>
+    </motion.article>
   );
 });

@@ -1,25 +1,32 @@
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
-import { MessageSquare, Pause, Play, Radio, Square } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Lock, MessageSquare, Pause, Play, Radio } from "lucide-react";
 import type { AdminSessionDto } from "@tentacle-tv/shared";
 import { useJellyfinClient } from "@tentacle-tv/api-client";
+import { easeOut } from "../../../theme/motion";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
-import { cls } from "../../../pages/adminUtils";
+import { ActionPill } from "./ActionPill";
+import { CommandStatus } from "./CommandStatus";
 import { ConfirmButton } from "./ConfirmButton";
 import { PlaybackDetails } from "./PlaybackDetails";
 import { Poster } from "./Poster";
+import { buttonStatus, type Feedback } from "./commandFeedback";
 import { formatClock, joinParts, livePositionTicks } from "./format";
 
 /**
  * Une lecture en cours : qui, sur quoi, où en est-on, comment le média
  * arrive — et la main pour intervenir. La barre de progression avance entre
  * deux instantanés (position extrapolée par la page, à la seconde).
+ *
+ * Chaque appui se voit jusqu'au bout : le bouton travaille (anneau), la ligne
+ * d'état dit ce qui est demandé puis ce qui est fait (`CommandStatus`), et
+ * une lecture arrêtée quitte la grille en s'effaçant.
  */
 
 export interface SessionCardActions {
   onPlaystate: (session: AdminSessionDto, command: "Pause" | "Unpause" | "Stop") => void;
   onMessage: (session: AdminSessionDto) => void;
-  pendingId: string | null;
 }
 
 export const SessionCard = memo(function SessionCard({
@@ -27,14 +34,17 @@ export const SessionCard = memo(function SessionCard({
   now,
   clockOffsetMs,
   actions,
+  feedback,
 }: {
   session: AdminSessionDto;
   now: number;
   clockOffsetMs: number;
   actions: SessionCardActions;
+  feedback: Feedback | undefined;
 }) {
   const { t } = useTranslation("sessions");
   const client = useJellyfinClient();
+  const reduced = useReducedMotion();
   const item = session.nowPlaying;
   if (!item) return null;
 
@@ -50,11 +60,14 @@ export const SessionCard = memo(function SessionCard({
       ])
     : item.productionYear !== undefined ? String(item.productionYear) : "";
   const poster = client.getImageUrl(item.imageItemId, "Primary", { width: 160, quality: 80, tag: item.imageTag });
-  const pending = actions.pendingId === session.id;
+  const device = session.deviceName || session.client;
 
   return (
-    <article
+    <motion.article
       aria-label={`${session.userName} — ${title}`}
+      initial={reduced ? false : { opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } }}
+      exit={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.97, transition: { duration: 0.16 } }}
       className="flex flex-col gap-4 rounded-xl border border-line-subtle bg-fill-faint p-4 sm:flex-row"
     >
       <Poster src={poster} width={80} height={120} className="h-[120px] w-20 shrink-0 rounded-lg bg-fill-soft" />
@@ -69,7 +82,10 @@ export const SessionCard = memo(function SessionCard({
           <span className="font-medium text-content-primary">{session.userName}</span>
           <span className="truncate text-content-tertiary">{joinParts([session.client, session.deviceName])}</span>
           {session.viaTentacle && (
-            <span className={`${cls.chip} bg-[var(--brand-soft)] text-content-primary`} title={t("viaTentacleHint")}>
+            <span
+              className="inline-flex h-6 items-center gap-1 rounded-full bg-[var(--brand-soft)] px-2 text-[11px] font-semibold tracking-wide text-content-primary"
+              title={t("viaTentacleHint")}
+            >
               <Radio size={12} aria-hidden />
               {t("viaTentacle")}
             </span>
@@ -90,10 +106,7 @@ export const SessionCard = memo(function SessionCard({
             <div className="h-full origin-left rounded-full bg-brand" style={{ transform: `scaleX(${fraction})` }} />
           </div>
           <div className="flex items-center justify-between text-xs tabular-nums text-content-tertiary">
-            <span className="inline-flex items-center gap-1">
-              {session.isPaused ? <Pause size={12} aria-hidden /> : <Play size={12} aria-hidden />}
-              {session.isPaused ? t("paused") : t("playing")}
-            </span>
+            <CommandStatus isPaused={session.isPaused} feedback={feedback} />
             <span>
               {formatClock(position)}
               {item.runTimeTicks ? ` / ${formatClock(item.runTimeTicks)}` : ""}
@@ -104,34 +117,42 @@ export const SessionCard = memo(function SessionCard({
         <PlaybackDetails session={session} />
 
         {session.supportsRemoteControl ? (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <button
-              type="button"
-              className={`${cls.bs} px-4`}
-              disabled={pending}
+          <div className="flex flex-wrap items-center gap-2 border-t border-line-subtle pt-3">
+            <ActionPill
+              icon={session.isPaused ? Play : Pause}
+              label={session.isPaused ? t("resume") : t("pause")}
+              errorLabel={t("failedShort")}
+              status={buttonStatus(feedback, ["Pause", "Unpause"])}
               onClick={() => actions.onPlaystate(session, session.isPaused ? "Unpause" : "Pause")}
-            >
-              {session.isPaused ? <Play size={16} aria-hidden /> : <Pause size={16} aria-hidden />}
-              {session.isPaused ? t("resume") : t("pause")}
-            </button>
-            <button type="button" className={`${cls.bbrand} px-4`} onClick={() => actions.onMessage(session)}>
-              <MessageSquare size={16} aria-hidden />
-              {t("message")}
-            </button>
+            />
+            <ActionPill
+              tone="brand"
+              icon={MessageSquare}
+              label={t("message")}
+              doneLabel={t("sentShort")}
+              errorLabel={t("failedShort")}
+              status={buttonStatus(feedback, ["message"])}
+              onClick={() => actions.onMessage(session)}
+            />
             <ConfirmButton
+              className="ml-auto"
               label={t("stop")}
-              icon={<Square size={14} aria-hidden />}
-              prompt={t("stopConfirm")}
+              busyLabel={t("stopping")}
+              title={t("stopConfirm")}
+              body={t("stopConfirmBody", { name: session.userName, device })}
               confirmLabel={t("confirmStop")}
               cancelLabel={t("cancel")}
-              pending={pending}
+              status={buttonStatus(feedback, ["Stop"])}
               onConfirm={() => actions.onPlaystate(session, "Stop")}
             />
           </div>
         ) : (
-          <p className="text-xs text-content-tertiary">{t("noRemote")}</p>
+          <p className="flex items-center gap-1.5 border-t border-line-subtle pt-3 text-xs text-content-tertiary">
+            <Lock size={12} aria-hidden />
+            {t("noRemote")}
+          </p>
         )}
       </div>
-    </article>
+    </motion.article>
   );
 });

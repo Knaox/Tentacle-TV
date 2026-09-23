@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { MessageSquare, Radio } from "lucide-react";
 import type { AdminSessionDto } from "@tentacle-tv/shared";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
-import { cls } from "../../../pages/adminUtils";
+import { ActionPill } from "./ActionPill";
+import { buttonStatus, type Feedback } from "./commandFeedback";
 import { joinParts } from "./format";
 
 /**
@@ -23,10 +24,12 @@ function relativeTime(iso: string, now: number, locale: string): string {
 export const IdleSessions = memo(function IdleSessions({
   sessions,
   now,
+  feedback,
   onMessage,
 }: {
   sessions: AdminSessionDto[];
   now: number;
+  feedback: ReadonlyMap<string, Feedback>;
   onMessage: (session: AdminSessionDto) => void;
 }) {
   const { t, i18n } = useTranslation("sessions");
@@ -47,14 +50,15 @@ export const IdleSessions = memo(function IdleSessions({
             </p>
           </div>
           {session.supportsRemoteControl && (
-            <button
-              type="button"
-              className={`${cls.bs} w-11 px-0`}
-              aria-label={`${t("message")} — ${session.userName}`}
+            <ActionPill
+              iconOnly
+              icon={MessageSquare}
+              label={`${t("message")} — ${session.userName}`}
+              doneLabel={t("sentShort")}
+              errorLabel={t("failedShort")}
+              status={buttonStatus(feedback.get(session.id), ["message"])}
               onClick={() => onMessage(session)}
-            >
-              <MessageSquare size={16} aria-hidden />
-            </button>
+            />
           )}
         </li>
       ))}
