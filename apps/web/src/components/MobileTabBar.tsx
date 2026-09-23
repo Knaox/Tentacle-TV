@@ -125,10 +125,10 @@ export function MobileTabBar() {
                 active ? "text-content-primary" : "text-content-quaternary"
               }`}
             >
-              {/* Liseré actif sobre, aligné sur la TopNav : le dégradé de marque
-                  surmonté d'un halo employait deux valeurs d'opacité differentes
-                  entre les deux barres (0.55 ici, 0.6 dans TopNavLinks) — un
-                  écart invisible mais révélateur d'une duplication. */}
+              {/* Liseré actif sobre : le dégradé de marque surmonté d'un halo
+                  employait deux valeurs d'opacité différentes entre cette barre
+                  et l'ancienne barre desktop (0.55 ici, 0.6 là-bas) — un écart
+                  invisible mais révélateur d'une duplication. */}
               {active && (
                 <span
                   className="absolute inset-x-6 top-0 h-[2px] rounded-full bg-tentacle-accent"

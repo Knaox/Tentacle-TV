@@ -38,6 +38,10 @@ export default {
   railLabel: "Navigation principale",
   railHint: "Maintenir OK pour masquer une entrée",
   railShowAll: "Tout afficher",
-  scrollLeft: "Défiler la navigation vers la gauche",
-  scrollRight: "Défiler la navigation vers la droite",
+  lists: "Mes listes",
+  pinToBar: "Épingler dans la barre",
+  unpinFromBar: "Retirer de la barre",
+  brandHome: "Tentacle TV — Accueil",
+  libraryTitles_one: "{{count}} titre",
+  libraryTitles_other: "{{count}} titres",
 } as const;

@@ -1,7 +1,7 @@
 /** Tentacle search — the omnibox (⌘K) and the results page of the web and desktop apps. */
 export default {
   placeholder: "Search for a movie, a show, an actor…",
-  placeholderShort: "Search",
+  launcher: "Titles, people, genres…",
   open: "Open search",
   dialog: "Search",
   clear: "Clear search",

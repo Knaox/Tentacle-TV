@@ -22,7 +22,7 @@ interface ScrollScrimOptions {
  * Deux coûts se cumulaient, et le second est le vrai sujet :
  *
  *  1. tout le contenu de la barre était re-rendu — recherche, cloche, avatar,
- *     liens — dont la pastille active de `TopNavLinks`, un `layoutId` Framer
+ *     onglets — dont la pastille active (`NavTab`), un `layoutId` Framer
  *     qui re-mesure sa géométrie à chaque rendu ;
  *  2. changer le `background` d'un élément le fait REPEINDRE. Or cette barre
  *     porte un `backdrop-filter` et couvre toute la largeur : chaque image de

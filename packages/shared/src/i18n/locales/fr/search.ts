@@ -5,7 +5,8 @@
  */
 export default {
   placeholder: "Rechercher un film, une série, un acteur…",
-  placeholderShort: "Rechercher",
+  // Le faux champ de la barre : court, il dit CE QUE l'on peut chercher.
+  launcher: "Titres, acteurs, genres…",
   open: "Ouvrir la recherche",
   dialog: "Recherche",
   clear: "Effacer la recherche",

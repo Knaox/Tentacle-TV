@@ -45,7 +45,7 @@ export const SearchLauncher = memo(function SearchLauncher({ variant, className 
       className={`group flex h-10 items-center gap-2.5 rounded-xl border border-line-subtle bg-fill-subtle px-3.5 text-left text-sm text-content-tertiary transition-colors duration-150 hover:border-line-strong hover:bg-fill-soft hover:text-content-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-line-focus ${className}`}
     >
       <SearchIcon className="h-4 w-4 shrink-0 transition-colors group-hover:text-[var(--brand-light)]" />
-      <span className="min-w-0 flex-1 truncate">{t("placeholder")}</span>
+      <span className="min-w-0 flex-1 truncate">{t("launcher")}</span>
       <kbd className="hidden shrink-0 rounded-md border border-line-subtle bg-fill-soft px-1.5 py-0.5 font-sans text-[11px] font-medium text-content-quaternary xl:inline">
         {searchShortcutLabel()}
       </kbd>
