@@ -7,18 +7,19 @@ import { FauxSessionCard } from "./FauxSessionCard";
 const STEPS = [900, 900, 700, 400, 1500] as const;
 const LEFT = 24;
 const W = 592;
-/** Les deux lectures avancent d'un pas à l'autre : c'est la page en direct. */
-const PROGRESS = [
-  [0.18, 0.21, 0.24, 0.24, 0.27],
-  [0.61, 0.63, 0.66, 0.66, 0.68],
-] as const;
+/**
+ * Une salle lit UN fichier, au même instant pour tous : les deux membres
+ * avancent ensemble, d'un pas à l'autre — c'est la page en direct. Ce qui les
+ * distingue, c'est l'appareil, et la façon dont le média lui arrive.
+ */
+const PROGRESS = [0.42, 0.44, 0.46, 0.46, 0.47] as const;
 /** Le bouton « Arrêter pour tous », au bout de la ligne de la salle. */
 const STOP_ALL = { x: LEFT + W - 62, y: 272 } as const;
 
 /**
- * « Sessions en direct » (administrateurs) : qui regarde quoi, comment le média
- * arrive — lecture directe ou transcodage — et la salle Watch Together de ces
- * deux lectures, que « Arrêter pour tous » arrête d'un geste.
+ * « Sessions en direct » (administrateurs) : une salle Watch Together, ses deux
+ * membres sur la MÊME œuvre, qui transcode et qui lit en direct — et
+ * « Arrêter pour tous », qui arrête la salle d'un geste.
  */
 export function LiveSessionsScene({ active, reduced }: SceneProps) {
   const { t } = useTranslation();
@@ -27,8 +28,9 @@ export function LiveSessionsScene({ active, reduced }: SceneProps) {
   const aiming = step >= 2;
   const pressed = step === 3;
   const stopped = step >= 4;
-  const first = posterAt(media, 0);
-  const second = posterAt(media, 1);
+  const work = posterAt(media, 0);
+  const title = work?.title ?? t("whatsNew:sceneNowPlaying");
+  const progress = PROGRESS[step] ?? 0;
   return (
     <SceneStage cycle={cycle}>
       <Place x={LEFT} y={16} w={W}>
@@ -38,22 +40,22 @@ export function LiveSessionsScene({ active, reduced }: SceneProps) {
         x={LEFT}
         y={46}
         w={W}
-        poster={first}
+        poster={work}
         tone={0}
-        title={first?.title ?? t("whatsNew:sceneNowPlaying")}
+        title={title}
         subtitle="Tentacle TV - Web · Chrome"
-        progress={PROGRESS[0][step] ?? 0}
+        progress={progress}
         chip={stopped ? { label: t("sessions:stopped"), tone: "neutral" } : { label: t("sessions:directPlay"), tone: "success" }}
       />
       <FauxSessionCard
         x={LEFT}
         y={148}
         w={W}
-        poster={second}
-        tone={2}
-        title={second?.title ?? t("whatsNew:sceneNowPlaying")}
+        poster={work}
+        tone={0}
+        title={title}
         subtitle="Tentacle TV - Desktop · HEVC 4K → H.264 1080p"
-        progress={PROGRESS[1][step] ?? 0}
+        progress={progress}
         chip={stopped ? { label: t("sessions:stopped"), tone: "neutral" } : { label: t("sessions:transcode"), tone: "warning" }}
       />
       <Place x={LEFT} y={250} w={W}>
