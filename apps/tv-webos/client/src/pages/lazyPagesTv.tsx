@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { preloadable } from "@/lib/preloadable";
 import { UnavailableScreen } from "./unavailableScreen";
@@ -6,6 +6,7 @@ import { UnpairedScreen } from "../ui/screens/UnpairedScreen";
 import { AccountScreenTv } from "../ui/settings/AccountScreenTv";
 import { AboutScreenTv } from "../ui/settings/AboutScreenTv";
 import { PlaybackScreenTv } from "../ui/settings/PlaybackScreenTv";
+import { openSearch } from "../ui/search/searchState";
 
 /**
  * Sécurité n'existe plus, mais son adresse reste déclarée dans `App.tsx` — et
@@ -15,6 +16,22 @@ import { PlaybackScreenTv } from "../ui/settings/PlaybackScreenTv";
  */
 function AccountRedirect() {
   return <Navigate to="/settings/data" replace />;
+}
+
+/**
+ * `/search` est la page de résultats du web, et le téléviseur ne la compile
+ * pas : sa recherche à lui est une surcouche, pas une adresse
+ * (`ui/search/searchState.ts`), et elle s'en tient à la bibliothèque — les
+ * résultats hors bibliothèque que la page du web tire des plugins n'ont pas
+ * cours ici. Mais chercher fait partie du périmètre, et l'écran
+ * « Indisponible » y mentirait. L'adresse ouvre donc la surcouche, par-dessus
+ * l'accueil.
+ */
+function SearchRedirect() {
+  useEffect(() => {
+    openSearch();
+  }, []);
+  return <Navigate to="/" replace />;
 }
 
 /**
@@ -44,6 +61,8 @@ export const Register = UnpairedScreen;
 export const Watch = lazy(() => import("@/pages/Watch").then((m) => ({ default: m.Watch })));
 export const MediaDetail = lazy(() => import("@/pages/MediaDetail").then((m) => ({ default: m.MediaDetail })));
 export const Library = lazy(() => import("@/pages/Library").then((m) => ({ default: m.Library })));
+// Chercher en fait partie, mais pas comme une page : voir `SearchRedirect`.
+export const Search = SearchRedirect;
 export const Watchlist = lazy(() => import("@/pages/Watchlist").then((m) => ({ default: m.Watchlist })));
 export const Favorites = lazy(() => import("@/pages/Favorites").then((m) => ({ default: m.Favorites })));
 export const PairDevice = lazy(() => import("@/pages/PairDevice").then((m) => ({ default: m.PairDevice })));
@@ -95,6 +114,7 @@ export const AdminUsers = Unavailable;
 export const AdminDownloads = Unavailable;
 export const AdminTicketsPage = Unavailable;
 export const AdminServicesPage = Unavailable;
+export const AdminSessions = Unavailable;
 
 // Téléchargements et mode hors ligne : le stockage d'une dalle ne s'y prête pas.
 export const DownloadsPage = Unavailable;
