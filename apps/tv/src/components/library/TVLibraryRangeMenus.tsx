@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { Text, TextInput, TVFocusGuideView, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
 import { useTVRemote } from "../focus/useTVRemote";
-import { TVLibraryFilterMenu, type MenuAnchor } from "./TVLibraryFilterMenu";
+import { TVLibraryFilterMenu, MENU_ROW_FOCUS_SCALE, type MenuAnchor } from "./TVLibraryFilterMenu";
 import { Colors } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
@@ -15,12 +15,14 @@ import { Button } from "../../theme/buttons";
  */
 export function TVYearMenu({
   anchor,
+  onClose,
   yearFrom,
   yearTo,
   onYearFromChange,
   onYearToChange,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   yearFrom: number | null;
   yearTo: number | null;
   onYearFromChange: (v: number | null) => void;
@@ -48,7 +50,7 @@ export function TVYearMenu({
   } as const;
 
   return (
-    <TVLibraryFilterMenu anchor={anchor} autoFocus={false}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("sortYear")} onClose={onClose} autoFocus={false}>
       <View style={{ flexDirection: "row", gap: 10, padding: 6 }}>
         <TextInput
           defaultValue={yearFrom != null ? String(yearFrom) : ""}
@@ -79,10 +81,12 @@ export function TVYearMenu({
  */
 export function TVRatingMenu({
   anchor,
+  onClose,
   ratingMin,
   onRatingMinChange,
 }: {
   anchor: MenuAnchor;
+  onClose: () => void;
   ratingMin: number | null;
   onRatingMinChange: (v: number | null) => void;
 }) {
@@ -101,35 +105,42 @@ export function TVRatingMenu({
   });
 
   return (
-    <TVLibraryFilterMenu anchor={anchor}>
+    <TVLibraryFilterMenu anchor={anchor} title={t("ratingMin")} onClose={onClose}>
       <View style={{ padding: 8 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
-          <Text style={{ color: Colors.textMuted, fontSize: 16 }}>{t("ratingMin")}</Text>
+        {/* Le nom du critère est dans l'en-tête : ici, la valeur seule. */}
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 12 }}>
           <Text style={{ color: Colors.textSecondary, fontSize: 16, fontWeight: "600" }}>
             {current > 0 ? `★ ${current.toFixed(1)}+` : t("ratingAny")}
           </Text>
         </View>
-        <Focusable
-          variant="button"
-          focusRadius={Button.medium.borderRadius}
-          hasTVPreferredFocus
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          accessibilityLabel={t("ratingMin")}
-        >
-          <View style={{ paddingVertical: 14, paddingHorizontal: 8 }}>
-            <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
-              <View
-                style={{
-                  width: `${(current / 10) * 100}%`,
-                  height: "100%",
-                  backgroundColor: Colors.accentPurple,
-                  borderRadius: 3,
-                }}
-              />
+        {/* Gauche et droite RÈGLENT la valeur : le focus ne doit pas partir
+            avec. Depuis que l'en-tête porte la croix, Android la trouvait « à
+            droite » du curseur — un appui montait la note ET quittait le
+            curseur. Le piège le garde, comme le curseur de la LG. */}
+        <TVFocusGuideView trapFocusLeft trapFocusRight>
+          <Focusable
+            variant="button"
+            focusRadius={Button.medium.borderRadius}
+            scaleOverride={MENU_ROW_FOCUS_SCALE}
+            hasTVPreferredFocus
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            accessibilityLabel={t("ratingMin")}
+          >
+            <View style={{ paddingVertical: 14, paddingHorizontal: 8 }}>
+              <View style={{ height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+                <View
+                  style={{
+                    width: `${(current / 10) * 100}%`,
+                    height: "100%",
+                    backgroundColor: Colors.accentPurple,
+                    borderRadius: 3,
+                  }}
+                />
+              </View>
             </View>
-          </View>
-        </Focusable>
+          </Focusable>
+        </TVFocusGuideView>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
           <Text style={{ color: Colors.textTertiary, fontSize: 12 }}>0</Text>
           <Text style={{ color: Colors.textTertiary, fontSize: 12 }}>5</Text>

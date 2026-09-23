@@ -3,18 +3,27 @@ import { TVFocusGuideView } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { TV_OVERSCAN_PT, TV_RADIUS, TV_SHADOW } from "@tentacle-tv/theme";
 import { Focusable } from "../focus/Focusable";
+import { TVCloseButton } from "../TVCloseButton";
 import { RAIL_COLLAPSED } from "../nav/TVSideRail";
-import { Colors, brandAlpha } from "../../theme/colors";
+import { Colors, Fonts, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
 /** Largeur minimale d'un panneau, à trois mètres (`FilterMenuTv` webOS). */
 export const MENU_MIN_WIDTH = 380;
+
+/** Les lignes d'un menu ne grandissent pas au focus (cf. `TVCheckRow`). */
+export const MENU_ROW_FOCUS_SCALE = 1;
 
 export interface MenuAnchor {
   x: number;
   y: number;
   width: number;
   height: number;
+  /** La pastille qui a ouvert le menu (handle natif) : on y revient en sortant
+   *  par le haut. */
+  trigger?: number;
+  /** La même, en instance : c'est elle qui reprend le focus à la fermeture. */
+  triggerView?: View | null;
 }
 
 /**
@@ -22,14 +31,21 @@ export interface MenuAnchor {
  * note, plateformes). Règles héritées de la LG (`FilterMenuTv`) :
  *
  *  - le PIÈGE de focus est sur la racine du panneau (autoFocus + trapFocus
- *    des quatre côtés) : le D-pad ne s'échappe pas vers la grille pendant que
- *    le panneau est affiché ;
+ *    à gauche, à droite et en bas) : le D-pad ne s'échappe pas vers la grille
+ *    que le panneau recouvre ;
+ *  - on en SORT en remontant, parité LG (`closeExpandedMenu`) : « haut »
+ *    depuis la croix de l'en-tête rend le focus à la pastille qui a ouvert le
+ *    menu, et la pastille, en le recevant, referme le menu. La géométrie n'y
+ *    suffit pas : posé PAR-DESSUS la liste défilante de l'écran, le menu ne
+ *    voit rien de ce qu'elle contient (mesuré sur tvOS : de la croix, seul le
+ *    rail restait atteignable). D'où `nextFocusUp` sur la croix ;
  *  - on entre par l'option COCHÉE (chaque ligne pose `hasTVPreferredFocus`
  *    sur son état coché), TOUT DE SUITE — sauf si `autoFocus` est coupé
  *    (menu des années : deux champs de saisie, rien ne doit faire monter un
  *    clavier sans un geste explicite) ;
  *  - choisir une option NE FERME PAS le menu (genres et plateformes se
- *    cochent en série) ; la fermeture est le Retour, géré par l'écran.
+ *    cochent en série) ; on le ferme par la croix de son en-tête, ou par
+ *    Retour, géré par l'écran.
  *
  * Positionné sous son déclencheur : les coordonnées d'ancrage sont mesurées
  * en fenêtre (`measureInWindow`), le panneau vit dans le cadre padté de
@@ -37,11 +53,16 @@ export interface MenuAnchor {
  */
 export function TVLibraryFilterMenu({
   anchor,
+  title,
+  onClose,
   autoFocus = true,
   width = MENU_MIN_WIDTH,
   children,
 }: {
   anchor: MenuAnchor;
+  /** Le critère réglé (« Genres », « Trier par »…), en tête du panneau. */
+  title: string;
+  onClose: () => void;
   autoFocus?: boolean;
   width?: number;
   children: React.ReactNode;
@@ -58,7 +79,6 @@ export function TVLibraryFilterMenu({
     >
       <TVFocusGuideView
         autoFocus={autoFocus}
-        trapFocusUp
         trapFocusDown
         trapFocusLeft
         trapFocusRight
@@ -78,7 +98,15 @@ export function TVLibraryFilterMenu({
           ...TV_SHADOW.elev3,
         }}
       >
-        <ScrollView showsVerticalScrollIndicator={false}>{children}</ScrollView>
+        {/* L'en-tête : ce qu'on règle, et la croix — la sortie visible, la
+            même que sur les panneaux du lecteur. */}
+        <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 12, marginBottom: 6 }}>
+          <Text numberOfLines={1} style={{ flex: 1, fontSize: 18, fontFamily: Fonts.semibold, color: Colors.textPrimary }}>
+            {title}
+          </Text>
+          <TVCloseButton onPress={onClose} nextFocusUp={anchor.trigger} />
+        </View>
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flexShrink: 1 }}>{children}</ScrollView>
       </TVFocusGuideView>
     </View>
   );
@@ -101,6 +129,10 @@ export function TVCheckRow({
     <Focusable
       variant="button"
       focusRadius={Button.medium.borderRadius}
+      // Pas d'agrandissement dans un menu : la ligne occupe toute la largeur
+      // de son défilement, qui ROGNAIT l'anneau agrandi — il n'en restait
+      // qu'un trait sous la ligne. L'anneau seul, comme sur la LG.
+      scaleOverride={MENU_ROW_FOCUS_SCALE}
       onPress={onPress}
       hasTVPreferredFocus={preferred}
       accessibilityLabel={label}

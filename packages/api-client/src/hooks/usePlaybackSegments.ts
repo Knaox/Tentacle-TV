@@ -27,6 +27,24 @@ const EMPTY: PlaybackSegmentsResponse = emptyPlaybackSegments("", "");
 /** Cadence de relance tant que le serveur analyse les vignettes d'un média. */
 const ANALYSIS_POLL_MS = 10_000;
 
+/**
+ * La cadence de relance, sous les DEUX signatures. v5 appelle
+ * `refetchInterval(query)`, v4 (la TV, au runtime) appelle
+ * `refetchInterval(data, query)` : on reconnaît la query à son `state` OBJET —
+ * le contrat de segments n'a pas de champ `state`, c'est le discriminant.
+ * Exportée pour être testée sous les deux formes (même motif que
+ * `recoPagePollInterval`). Sans ça, la TV lit `undefined.state` et le rendu du
+ * lecteur meurt AVANT la première image.
+ */
+export function segmentsPollInterval(...args: unknown[]): number | false {
+  const first = args[0] as { state?: unknown } | undefined;
+  const contract =
+    first && typeof first.state === "object" && first.state !== null
+      ? (first.state as { data?: PlaybackSegmentsResponse | null }).data
+      : (first as PlaybackSegmentsResponse | null | undefined);
+  return contract?.analysisPending === true ? ANALYSIS_POLL_MS : false;
+}
+
 export function usePlaybackSegments(
   itemId: string | undefined,
   options?: { enabled?: boolean },
@@ -50,8 +68,7 @@ export function usePlaybackSegments(
     // de loin en loin, jusqu'à ce qu'il cesse de le dire. Elle prend moins
     // d'une seconde, mais elle peut attendre son tour derrière un autre média —
     // et de toute façon le générique n'arrive qu'à la fin, on a le temps.
-    refetchInterval: (query) =>
-      query.state.data?.analysisPending === true ? ANALYSIS_POLL_MS : false,
+    refetchInterval: (...args: unknown[]) => segmentsPollInterval(...args),
     refetchIntervalInBackground: false,
   });
 

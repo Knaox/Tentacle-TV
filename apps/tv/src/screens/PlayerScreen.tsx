@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useTVPlayerControls } from "../hooks/useTVPlayerControls";
-import { formatTrackLabel } from "../utils/playerHelpers";
 import type { MPVPlayerHandle } from "../components/player/MPVPlayer";
 import { TVPlayerView } from "../components/player/TVPlayerView";
 import { usePlayerMediaState } from "../hooks/usePlayerMediaState";
@@ -19,12 +18,14 @@ import { useTVEpisodeNav } from "../hooks/useTVEpisodeNav";
 import { useTVPlaybackOverlay } from "../hooks/useTVPlaybackOverlay";
 import { useTVPlaybackExit } from "../hooks/useTVPlaybackExit";
 import { useTVSourceReset } from "../hooks/useTVSourceReset";
-import { useTVEndFallback } from "../hooks/useTVEndFallback";
 import { useTVPlayerBack } from "../hooks/useTVPlayerBack";
 import { useTVErrorHandler } from "../hooks/useTVErrorHandler";
 import { useTVPanelControls } from "../hooks/useTVPanelControls";
 import { useTVSettingsBridge } from "../hooks/useTVSettingsBridge";
 import { useTVSubtitleSync } from "../hooks/useTVSubtitleSync";
+import { useTVPrismProgress } from "../hooks/useTVPrismProgress";
+import { useTVTrackLists } from "../hooks/useTVTrackLists";
+import { useEpisodePanelPrefetch } from "../hooks/useSeasonEpisodes";
 import { findCachedMediaItem } from "../utils/findCachedMediaItem";
 import { TVPlayerLoadingScreen } from "../components/player/TVPlayerLoadingScreen";
 
@@ -62,7 +63,7 @@ export function PlayerScreen({ route, navigation }: Props) {
   const {
     showSettings, setShowSettings, showSettingsRef,
     showEpisodes, setShowEpisodes, showEpisodesRef,
-    osdFocusSignal, bumpOsdFocus,
+    osdFocusSignal, osdFocusTargetRef, bumpOsdFocus,
   } = useTVPanelControls({ backgroundRef, recoverySuppressedRef: eofActiveRef });
 
   // Bus d'état partagé (positions, gates, refs miroir) + pipeline de flux.
@@ -71,12 +72,14 @@ export function PlayerScreen({ route, navigation }: Props) {
   const {
     paused, setPaused, displayTime, setDisplayTime, bufferedTime, setBufferedTime,
     displayTimeRef, bufferedTimeRef, lastDisplayUpdate, positionRef, controlsCurrentTimeRef,
-    pausedStateRef, endedRef, handleEndRef, pauseFrameUri,
+    pausedStateRef, endedRef, handleEndRef,
     videoError, setVideoError, isLoading, setIsLoading, hasStarted, setHasStarted, lastProgressTime,
-    reloadHold, reloadHoldRef,
+    reloadHold,
     notifySeekRef, resetLoadedRef, routeBackRef,
   } = s;
-  const { streamUrl, isDirectPlay, isLocalRemux, jellyfinDuration, seekOrRemux, quality } = p;
+  const { streamUrl, isDirectPlay, jellyfinDuration, handleSeek, quality } = p;
+  // Jalons d'ouverture PrismCore (tvOS) pour l'écran de chargement, tant que l'URL manque.
+  const prismProgress = useTVPrismProgress(!!item && !streamUrl);
 
   // Refs stables pour les listeners à deps [] (AppState de lifecycle).
   const reportSeekRef = useRef(p.reportSeek);
@@ -98,20 +101,23 @@ export function PlayerScreen({ route, navigation }: Props) {
     previousEpisode, navigateToEpisode, handlePrevEpisode, handleNextEpisode, handlePlayPause,
   } = useTVEpisodeNav({
     item, reportStop: p.reportStop, queryClient, itemId, navigation,
-    handleSeek: seekOrRemux, setPaused,
+    handleSeek, setPaused,
   });
 
   /** La fin du média, en état : c'est une ENTRÉE de l'arbitre. */
   const [ended, setEnded] = useState(false);
-  // Le scrub en MIROIR d'état : l'arbitre en a besoin (il suspend son décompte)
-  // et les contrôles ont besoin de l'arbitre (`panelOpen`) — quelqu'un doit
-  // passer en premier. Un rendu de retard, invisible ; une ref resterait périmée.
+  // Le scrub et l'habillage en MIROIR d'état : l'arbitre en a besoin (il
+  // suspend son décompte, et il ne rend un passage mis en sourdine que le temps
+  // de l'habillage) et les contrôles ont besoin de l'arbitre (`panelOpen`) —
+  // quelqu'un doit passer en premier. Un rendu de retard, invisible ; une ref
+  // resterait périmée.
   const [scrubbing, setScrubbing] = useState(false);
+  const [osdVisible, setOsdVisible] = useState(false);
 
   const playback = useTVPlaybackOverlay({
     itemId, item, displayTime, displayDuration: jellyfinDuration ?? 0,
-    hasStarted, ended, scrubbing,
-    onSeek: seekOrRemux,
+    hasStarted, ended, scrubbing, controlsVisible: osdVisible,
+    onSeek: handleSeek,
     navigateToEpisode,
     onFinished: () => { void lifecycle.handleFinished(); },
   });
@@ -120,18 +126,20 @@ export function PlayerScreen({ route, navigation }: Props) {
   const controls = useTVPlayerControls({
     paused, jellyfinDuration: jellyfinDuration ?? 0,
     currentTimeRef: controlsCurrentTimeRef,
-    onSeek: seekOrRemux,
+    onSeek: handleSeek,
     onBack: () => {
       if (routeBackRef.current()) return;   // scrub/overlay auto-play/grâce (source unique)
+      // Quitter un panneau rend le focus au bouton qui l'a OUVERT — pas au
+      // « dernier bouton utilisé », qui se devinait et se trompait.
       if (showSettingsRef.current) {
         setShowSettings(false);
         showSettingsRef.current = false;
-        bumpOsdFocus();
+        bumpOsdFocus("settings");
         return;
       }
       if (showEpisodesRef.current) {
         setShowEpisodes(false);
-        bumpOsdFocus();
+        bumpOsdFocus("episodes");
         return;
       }
       lifecycle.leavePlayer();
@@ -144,6 +152,11 @@ export function PlayerScreen({ route, navigation }: Props) {
     panelOpen: showSettings || showEpisodes || autoPlay.source === "eof",
   });
   useEffect(() => { setScrubbing(controls.scrubbing); }, [controls.scrubbing]);
+  // En déplacement, l'habillage est masqué — le dire à l'arbitre, sinon un
+  // passage mis en sourdine ressortirait le temps d'une avance rapide.
+  useEffect(() => {
+    setOsdVisible(controls.overlayVisible && !controls.scrubbing);
+  }, [controls.overlayVisible, controls.scrubbing]);
 
   // La croix de l'affiche de fin — la sortie elle-même (fin sans suite, refus,
   // réglage éteint) part de la coquille partagée, par `onFinished` ci-dessus.
@@ -154,6 +167,10 @@ export function PlayerScreen({ route, navigation }: Props) {
   const back = useTVPlayerBack({
     scrubbing: controls.scrubbing, cancelScrub: controls.cancelScrub,
     surfaceActive: autoPlay.source !== null, surfaceRef: playback.surfaceRef,
+    // Un passage qui part tout seul : le Retour le garde au lieu de quitter.
+    skipRefusable:
+      playback.overlay.kind === "skip" && playback.overlay.auto && playback.overlay.dismissible,
+    dismissSegment: playback.dismissOverlay,
     dismissAutoPlay,
   });
   routeBackRef.current = back.routeBack;
@@ -164,6 +181,25 @@ export function PlayerScreen({ route, navigation }: Props) {
     if (controls.overlayVisible && !prevOverlayVisibleRef.current) bumpOsdFocus();
     prevOverlayVisibleRef.current = controls.overlayVisible;
   }, [controls.overlayVisible, bumpOsdFocus]);
+
+  /**
+   * L'ENTRÉE dans la vidéo : le focus va à lecture/pause.
+   *
+   * Personne ne le réclamait — l'effet ci-dessus ne se déclenche qu'à une
+   * RÉAPPARITION de l'habillage, et il est déjà visible au premier rendu. Le
+   * guide de l'habillage prenait donc son premier enfant focusable, qui est
+   * « quitter la vidéo » : un appui sur OK au lancement sortait du lecteur.
+   *
+   * À la première image, pas au montage : avant elle, l'écran de chargement
+   * occupe la dalle et tait l'habillage, dont les boutons ne sont pas
+   * focusables.
+   */
+  const entryClaimedRef = useRef(false);
+  useEffect(() => {
+    if (!hasStarted || entryClaimedRef.current) return;
+    entryClaimedRef.current = true;
+    bumpOsdFocus("playpause");
+  }, [hasStarted, bumpOsdFocus]);
 
   // Vignettes de prévisualisation (Jellyfin Trickplay) pour le mode scrub
   const trickplay = useTVTrickplay(item, p.mediaSource?.Id);
@@ -193,14 +229,6 @@ export function PlayerScreen({ route, navigation }: Props) {
   resetLoadedRef.current = events.resetLoaded;
   handleEndRef.current = handleEnd;
 
-  // Filet de FIN (remux local uniquement) : l'onEnd AVPlayer peut ne JAMAIS venir sur la
-  // playlist EVENT (bug durée indéfinie post-ENDLIST) → détecteur de stagnation près de
-  // la fin réelle. No-op Android/direct play/transcode (cf. useTVEndFallback[.ios]).
-  useTVEndFallback({
-    isLocalRemux, paused, jellyfinDuration, positionRef, infoRef: p.remuxInfoRef,
-    reloadHoldRef, softReloadRef: p.softReloadRef, endedRef, onEndRef: handleEndRef,
-  });
-
   // Remise à zéro de la source — voir `useTVSourceReset`.
   useTVSourceReset({
     streamUrl, softReloadRef: p.softReloadRef, endedRef, resetLoadedRef, notifySeekRef,
@@ -212,18 +240,17 @@ export function PlayerScreen({ route, navigation }: Props) {
     softReloadRef: p.softReloadRef, setReloadFrameSec: p.setReloadFrameSec,
   });
 
-  // Erreur de codec en direct play → bascule transcode ; stall remux → recovery ;
-  // 401 direct streaming → token frais + reload (useTVDirectStreamRecovery).
+  // Erreur de codec en direct play → bascule transcode ; 401 direct streaming →
+  // token frais + reload (useTVDirectStreamRecovery).
   const { handleError } = useTVErrorHandler({
     forceTranscode: p.forceTranscode, captureReloadTicks: p.captureReloadTicks,
-    setVideoError, setForceTranscode: p.setForceTranscode, onRemuxStall: p.onRemuxStall, pausedStateRef,
+    setVideoError, setForceTranscode: p.setForceTranscode, onMasterRejected: p.onMasterRejected,
     bumpReloadNonce: () => p.setReloadNonce((n) => n + 1), setIsLoading,
   });
 
-  const audioTracksList = useMemo(() =>
-    p.streams.filter((st) => st.Type === "Audio").map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams]);
-  const subtitleTracksList = useMemo(() =>
-    p.streams.filter((st) => st.Type === "Subtitle").map((st) => ({ index: st.Index, label: formatTrackLabel(st) })), [p.streams]);
+  const { audioTracksList, subtitleTracksList } = useTVTrackLists(p.streams, p.prism?.audioTracks);
+  // Le panneau des épisodes s'ouvre déjà rempli : saisons et saison en cours préchargées.
+  useEpisodePanelPrefetch(item, hasStarted);
 
   // Pont vers la route MODALE Réglages/Qualité.
   const { handleCloseSettings } = useTVSettingsBridge({
@@ -247,7 +274,7 @@ export function PlayerScreen({ route, navigation }: Props) {
       <View style={{ flex: 1, backgroundColor: "#000" }}>
         <TVPlayerLoadingScreen
           item={item ?? placeholderItem}
-          failed={p.failed}
+          failed={p.failed} progressLabel={prismProgress.label}
           onRetry={() => p.setReloadNonce((n) => n + 1)}
         />
       </View>
@@ -261,13 +288,14 @@ export function PlayerScreen({ route, navigation }: Props) {
       videoError={videoError} displayTime={displayTime} bufferedTime={bufferedTime}
       displayDuration={displayDuration} showSettings={showSettings}
       autoPlayActive={autoPlayActive} hasPreviousEpisode={!!previousEpisode}
-      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} exoRef={exoRef} mpvRef={mpvRef}
+      useExoPlayer={p.useExoPlayer} isDirectPlay={isDirectPlay} prismTextTrackIndex={p.prismTextTrackIndex} frameRate={p.frameRate} exoRef={exoRef} mpvRef={mpvRef}
       backgroundRef={backgroundRef} playerStyle={playerStyle}
       audioTracksList={audioTracksList} subtitleTracksList={subtitleTracksList}
       audioIndex={p.audioIndex} subtitleIndex={p.subtitleIndex}
       qualityKey={quality.qualityKey} sourceQuality={p.sourceQuality} autoCapActive={p.autoCapActive}
       overlay={playback.overlay} onSkipSegment={playback.skipNow}
       onDismissSegment={playback.dismissOverlay}
+      onPlayNextNow={playback.playNow}
       autoPlay={autoPlay} controls={controls}
       onLoad={handleLoad} onProgress={handleProgress} onEnd={handleEnd}
       onError={handleError} onTracks={p.mpvTracks.handleTracks} onVideoSize={handleVideoSize}
@@ -286,11 +314,12 @@ export function PlayerScreen({ route, navigation }: Props) {
       onSelectQuality={handleQualityChange}
       onCloseSettings={handleCloseSettings}
       onPrevEpisode={handlePrevEpisode} onNextEpisode={handleNextEpisode}
-      trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} pauseFrameUri={pauseFrameUri} osdFocusSignal={osdFocusSignal}
+      trickplay={trickplay} reloadFrameSec={p.reloadFrameSec} osdFocusSignal={osdFocusSignal}
+      osdFocusTargetRef={osdFocusTargetRef}
       subtitleCue={subtitleCue} textTracks={textTracks}
       showEpisodes={showEpisodes}
       onToggleEpisodes={() => { setShowEpisodes((v) => !v); controls.showOverlay(); }}
-      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus(); }}
+      onCloseEpisodes={() => { setShowEpisodes(false); controls.showOverlay(); bumpOsdFocus("episodes"); }}
       onSelectEpisode={(ep) => { setShowEpisodes(false); navigateToEpisode(ep.Id); }}
       onEofDismiss={() => { dismissAutoPlay(); }}
     />

@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "../focus/Focusable";
+import { useTvFocusClaim } from "../../hooks/useTvFocusClaim";
+import { BackIcon } from "../icons/TVIcons";
+import { TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +20,11 @@ import { Colors, Spacing, Fonts, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** La sortie de l'écran de chargement : pilule, et le halo de marque pour la
+ *  désigner — l'anneau blanc seul se perd sur une bannière claire. */
+const CANCEL_RADIUS = 999;
+const CANCEL_GLOW = 0.5;
 
 /**
  * Barre de chargement — réplique de LoadingBar (web) : piste 3px white/12,
@@ -69,11 +77,28 @@ function TVLoadingBar() {
  * titre + sous-titre (S##E## — épisode) bas-gauche, barre de chargement animée.
  * `failed` : la résolution du flux a échoué → message + bouton « Réessayer »
  * (avant : la barre tournait pour toujours, sans erreur ni issue).
+ * `progressLabel` : ce que l'ouverture fait en ce moment (jalons PrismCore sur
+ * tvOS, cf. useTVPrismProgress) — la seule attente longue et explicable est
+ * l'indexation d'un premier visionnage, et elle mérite d'être dite.
+ *
+ * # La SORTIE, et pourquoi elle manquait
+ *
+ * L'écran couvre tout, y compris l'habillage : rien de ce qui permet
+ * habituellement de quitter n'était atteignable, et une ouverture qui traîne —
+ * un serveur lent, une indexation — enfermait devant une barre qui tourne. Le
+ * bouton est ici la SEULE chose focusable, et il réclame le focus : sans cela,
+ * il resterait sous l'habillage invisible, qui garde le sien.
  */
-export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
+export function TVPlayerLoadingScreen({ item, failed, onRetry, onCancel, progressLabel }: {
   item?: MediaItem | null; failed?: boolean; onRetry?: () => void;
+  /** Quitter la lecture sans attendre son démarrage. */
+  onCancel?: () => void;
+  progressLabel?: string | null;
 }) {
   const { t } = useTranslation("player");
+  const cancelRef = useRef<View>(null);
+  // Le bouton « Réessayer » a déjà le sien : ne pas le lui voler.
+  useTvFocusClaim(cancelRef, !!onCancel && !failed);
   const client = useJellyfinClient();
   const backdropOpacity = useSharedValue(0);
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
@@ -99,7 +124,7 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
     : null;
 
   return (
-    <View pointerEvents={failed ? "auto" : "none"} style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0a0a12", zIndex: 50, elevation: 50, overflow: "hidden" }]}>
+    <View pointerEvents="box-none" style={[StyleSheet.absoluteFillObject, { backgroundColor: "#0a0a12", zIndex: 50, elevation: 50, overflow: "hidden" }]}>
       {/* Halo brand (équivalent du gradient radial web, visible avant le backdrop) */}
       <LinearGradient
         colors={[brandAlpha(0.20), "transparent"]}
@@ -132,6 +157,34 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
       />
+      {/* La sortie — au coin du retrait d'overscan, là où le bouton Retour de
+          l'habillage se tient déjà : c'est le même geste, au même endroit. */}
+      {onCancel && (
+        <View style={{ position: "absolute", top: TV_OVERSCAN_PT.y, left: TV_OVERSCAN_PT.x }}>
+          <Focusable
+            ref={cancelRef}
+            variant="button"
+            focusRadius={CANCEL_RADIUS}
+            onPress={onCancel}
+            hasTVPreferredFocus={!failed}
+            glowOverride={CANCEL_GLOW}
+          >
+            <View style={{
+              flexDirection: "row", alignItems: "center", gap: 12,
+              paddingHorizontal: 24, paddingVertical: 12,
+              borderRadius: CANCEL_RADIUS,
+              borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
+              backgroundColor: "rgba(0,0,0,0.45)",
+            }}>
+              <BackIcon size={24} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 18, fontFamily: Fonts.semibold }}>
+                {t("back")}
+              </Text>
+            </View>
+          </Focusable>
+        </View>
+      )}
+
       {/* Titre + sous-titre + barre, bas de l'écran */}
       <View style={{
         position: "absolute", left: 0, right: 0, bottom: 0,
@@ -145,6 +198,11 @@ export function TVPlayerLoadingScreen({ item, failed, onRetry }: {
         {!!subtitle && (
           <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.55)", fontSize: 16, marginTop: 6, maxWidth: "75%" }}>
             {subtitle}
+          </Text>
+        )}
+        {!failed && !!progressLabel && (
+          <Text numberOfLines={1} style={{ color: "rgba(255,255,255,0.45)", fontSize: 14, marginTop: 10, maxWidth: "75%" }}>
+            {progressLabel}
           </Text>
         )}
         <View style={{ marginTop: 24 }}>

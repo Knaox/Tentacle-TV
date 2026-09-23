@@ -175,6 +175,21 @@ describe("les surcouches suivent TV_PLAYER_SKIP et TV_PLAYER_NEXT_CARD", () => {
     expect(propIn(block, "font-size")).toBe(`${TV_PLAYER_SKIP.text}px`);
   });
 
+  it("bouton passer : la feuille tient les couleurs du jeton, pas les siennes", () => {
+    // Le défaut réparé : la feuille écrivait le blanc en clair, et le natif
+    // était resté au noir translucide d'avant. Une seule source, recroisée.
+    const block = blockFor(overlays, ".saut-tv");
+    expect(propIn(block, "background")).toBe(TV_PLAYER_SKIP.bg);
+    expect(propIn(block, "color")).toBe(TV_PLAYER_SKIP.fg);
+
+    const refusal = blockFor(overlays, ".saut-tv--refus");
+    expect(propIn(refusal, "background")).toBe(TV_PLAYER_SKIP.dismissBg);
+    expect(propIn(refusal, "color")).toBe(TV_PLAYER_SKIP.dismissFg);
+    expect(propIn(refusal, "border-color")).toBe(TV_PLAYER_SKIP.dismissBorder);
+
+    expect(propIn(blockFor(overlays, ".saut-tv-ilot"), "gap")).toBe(`${TV_PLAYER_SKIP.gap}px`);
+  });
+
   it("bouton passer : il s'écarte quand l'habillage est visible", () => {
     const block = blockFor(overlays, 'html[data-tv-lecteur="osd"] .saut-tv');
     expect(propIn(block, "transform")).toBe(

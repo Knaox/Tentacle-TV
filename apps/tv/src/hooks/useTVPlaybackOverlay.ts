@@ -47,6 +47,16 @@ export function useTVPlaybackOverlay(args: {
   ended: boolean;
   /** Pendant un scrub, aucune surcouche ne paraît et le décompte se suspend. */
   scrubbing: boolean;
+  /**
+   * L'habillage du lecteur est-il à l'écran ?
+   *
+   * C'est ce qui manquait pour que la règle commune tienne ici : un passage
+   * refusé sort de l'image et ne se REMONTRE que le temps de l'habillage
+   * (`isSegmentSilenced`). Sans cette entrée, l'arbitre lisait « surface sans
+   * habillage connu » et masquait le bouton pour de bon — le refus valait
+   * suppression, et le geste ne se rattrapait plus.
+   */
+  controlsVisible: boolean;
   onSeek: (seconds: number) => void;
   navigateToEpisode: (episodeId: string) => void;
   /** Plus rien à proposer : retour à la fiche média. */
@@ -54,7 +64,7 @@ export function useTVPlaybackOverlay(args: {
 }): TVPlaybackOverlay {
   const {
     itemId, item, displayTime, displayDuration, hasStarted, ended, scrubbing,
-    onSeek, navigateToEpisode, onFinished,
+    controlsVisible, onSeek, navigateToEpisode, onFinished,
   } = args;
 
   const segments = usePlaybackSegments(itemId);
@@ -79,6 +89,7 @@ export function useTVPlaybackOverlay(args: {
     // Règles « avant la fin » par bibliothèque — le contrat résolu la porte.
     libraryId: segments.libraryId ?? null,
     scrubbing,
+    controlsVisible,
     onSeekSeconds: onSeek,
     onNextEpisode: goToNext,
     onEndOfPlayback: onFinished,

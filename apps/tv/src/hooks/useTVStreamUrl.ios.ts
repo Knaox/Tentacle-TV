@@ -4,16 +4,21 @@ import { isBurnInSubtitleCodec } from "../utils/subtitleBurnIn";
 import type { MediaStream as JfStream } from "@tentacle-tv/shared";
 import { randomSessionId } from "../utils/playerHelpers";
 import { plog } from "../utils/playerDiag";
-import { remuxEligible, startLocalRemux, TVRemux } from "../utils/tvLocalRemuxStart";
 import { buildTvosDeviceProfile } from "../lib/tvosDeviceProfile";
+import {
+  fallbackMuxedPrismCore, preferredAudioLanguageOf, prismEligible, prismHeaders, startPrismCore, stopPrismCore,
+  type PrismStart,
+} from "../utils/prismCoreStart";
 import { getHdrCapabilities } from "../lib/hdrCapabilities";
 
 /**
  * Variante tvOS de `useTVStreamUrl` (résolue par Metro sur iOS ; Android garde
- * `useTVStreamUrl.ts` intact). Pilotée par `POST PlaybackInfo` + DeviceProfile
- * AVPlayer : le SERVEUR décide DirectPlay / transcode (DirectStream remux,
- * re-encode…), ce qui maximise les formats lisibles par Apple TV et évite
- * l'écran noir des MKV.
+ * `useTVStreamUrl.ts` intact). Deux chemins, dans cet ordre :
+ *  1. PrismCore (utils/prismCoreStart.ts) — lecture DIRECTE des HEVC/H.264 que
+ *     AVPlayer ne sait pas ouvrir tel quel (MKV/TS, DTS/TrueHD, HDR/DV) : HLS
+ *     local VOD, multi-audio natif, badge HDR/DV programmé avant le chargement ;
+ *  2. sinon, ou en cas de refus, `POST PlaybackInfo` + DeviceProfile AVPlayer :
+ *     le SERVEUR décide DirectPlay / transcode (DirectStream, re-encode…).
  *
  * IMPORTANT : l'URL est construite via `client.getStreamUrl()` (et NON à la main)
  * afin de passer par `resolveMediaUrl` (réécriture proxy same-origin → host de
@@ -27,7 +32,7 @@ import { getHdrCapabilities } from "../lib/hdrCapabilities";
 export function useTVStreamUrl(args: {
   itemId: string;
   mediaSourceId?: string;
-  /** Conteneur Jellyfin (mp4/mkv/mov/ts…) — gate le remux : MP4/MOV/M4V = Direct Play natif. */
+  /** Conteneur Jellyfin (mp4/mkv/mov/ts…) — gate PrismCore : MP4/MOV/M4V = Direct Play natif. */
   container?: string;
   streams: JfStream[];
   audioIndex: number;
@@ -51,9 +56,9 @@ export function useTVStreamUrl(args: {
   const userId = useUserId();
 
   // URL de BASE + fragment de reprise `#tnt-start` CUITS ENSEMBLE (atomiques). Le
-  // fragment N'EST PLUS dérivé live du `startSeconds` courant : il était décorrélé
+  // fragment N'EST PAS dérivé live du `startSeconds` courant : il serait décorrélé
   // de `baseUrl` (async), d'où un DOUBLE reload au changement d'audio (le fragment
-  // changeait SYNCHRONE via startTicks pendant que baseUrl attendait le re-remux →
+  // changerait SYNCHRONE via startTicks pendant que baseUrl attend le nouveau flux →
   // 1er reload ancien flux + nouvelle position, 2e reload nouveau flux). En le
   // figeant dans `result` au moment de l'émission, `streamUrl` ne change qu'UNE
   // fois par reload. L'effet se ré-exécute déjà sur `vcodec` (cold start, où
@@ -65,9 +70,12 @@ export function useTVStreamUrl(args: {
     resumeFrag?: string;
     playSessionId?: string;
     isDirectPlay: boolean;
-    isLocalRemux?: boolean;
-    /** Résolution du flux ÉCHOUÉE (remux + PlaybackInfo) : l'écran de chargement
-     *  affiche une erreur + « Réessayer » au lieu de tourner pour toujours. */
+    /** Lecture directe servie par PrismCore (HLS local, timeline absolue). */
+    isPrismCore?: boolean;
+    /** Ce que PrismCore a rendu au démarrage (pistes transportées, renditions…). */
+    prism?: PrismStart;
+    /** Résolution du flux ÉCHOUÉE : l'écran de chargement affiche une erreur +
+     *  « Réessayer » au lieu de tourner pour toujours. */
     failed?: boolean;
   }>({ baseUrl: null, isDirectPlay: true });
 
@@ -78,7 +86,7 @@ export function useTVStreamUrl(args: {
   audioRef.current = audioIndex;
 
   // Sous-titre à INCRUSTER (burn-in → transcode) : IMAGES uniquement (PGS/VOBSUB/DVB).
-  // Tout sous-titre TEXTE est rendu par l'overlay JS (remux, direct play, transcode)
+  // Tout sous-titre TEXTE est rendu par l'overlay JS (direct play, transcode)
   // → ne bloque jamais la lecture directe et ne déclenche aucun refetch.
   const burnInIndex = subtitleIndex != null && subtitleIndex >= 0
     && isBurnInSubtitleCodec(streams.find((s) => s.Type === "Subtitle" && s.Index === subtitleIndex)?.Codec)
@@ -86,19 +94,19 @@ export function useTVStreamUrl(args: {
     : -1;
 
   // Codec vidéo dérivé AU NIVEAU DU HOOK → AJOUTÉ aux deps du useEffect. `streams` charge en
-  // ASYNC (react-query `useMediaItem`) : au 1ᵉʳ rendu il est VIDE → sans cette dép, la décision
-  // remux resterait figée sur cet état vide (codec undefined → transcode persistant au 1ᵉʳ play
-  // après démarrage app et au switch de média). Avec la dép, on re-décide dès le codec connu.
+  // ASYNC (react-query `useMediaItem`) : au 1ᵉʳ rendu il est VIDE → sans cette dép, la
+  // décision resterait figée sur cet état vide (piste audio effective inconnue). Avec la
+  // dép, on re-décide dès le codec connu.
   const vcodec = streams.find((s) => s.Type === "Video")?.Codec?.toLowerCase();
   // Position de reprise ARRONDIE → ajoutée aux deps de l'effet : si la reprise se RAFRAÎCHIT avant le
-  // démarrage (item périmé venu du cache média-détail puis re-fetché), l'URL/le remux se reconstruit à la
+  // démarrage (item périmé venu du cache média-détail puis re-fetché), l'URL se reconstruit à la
   // BONNE position (parité avec un lancement depuis l'accueil). Stable pendant la lecture (figée).
   const resumeSec = Math.max(0, Math.floor(startSeconds ?? 0));
 
   const fetchIdRef = useRef(0);
-  // Bascule ERREUR → transcode (fallback codec/-19601) : reload « dur » forcé, même contenu.
-  // Sans ça le reload serait « doux » (même contentKey) → le player resterait gelé sur le flux
-  // remux MORT pendant le fetch PlaybackInfo ; avec, baseUrl=null → TVPlayerLoadingScreen
+  // Bascule ERREUR → transcode (fallback codec) : reload « dur » forcé, même contenu.
+  // Sans ça le reload serait « doux » (même contentKey) → le player resterait gelé sur
+  // le flux MORT pendant le fetch PlaybackInfo ; avec, baseUrl=null → TVPlayerLoadingScreen
   // (le bel écran de chargement) s'affiche jusqu'au démarrage du transcode.
   const prevFTRef = useRef(forceTranscode);
   // Clé de CONTENU : ne change qu'au changement d'item/source (≠ changement de
@@ -106,24 +114,22 @@ export function useTVStreamUrl(args: {
   // écran de chargement) d'un reload « doux » (audio/qualité → on GARDE l'ancienne
   // URL pour ne pas démonter le player ; juste un re-buffer discret).
   const contentKeyRef = useRef("");
-  // Idempotence remux : ne relancer le remux que si le CONTENU change (≠ reprise/
-  // piste/qualité qui re-déclenchent l'effet) → évite plusieurs serveurs locaux
-  // et le churn AVPlayer (cause du -16156 / fallback transcode). Le frag exact
-  // (origine réelle de session) est caché AVEC l'URL pour rester cohérent.
-  const remuxCacheRef = useRef<{ key: string; url: string; frag: string } | null>(null);
-  // Jeton de session natif (gen) : cancel() au démontage n'annule que SA session.
-  const remuxGenRef = useRef(0);
+  // Session PrismCore courante : clé = CONTENU seul. Le changement de piste audio
+  // est natif (groupe de sélection AVPlayer), la position est absolue, la reprise
+  // ne reconstruit rien → un seul start() par titre, réutilisé à chaque
+  // ré-exécution de l'effet (reload de piste/qualité, bump de nonce).
+  const prismCacheRef = useRef<{ key: string; start: PrismStart } | null>(null);
+  // Jeton de session natif (gen) : stop() au démontage n'arrête que LA nôtre.
+  const prismGenRef = useRef(0);
+  const dropPrismSession = () => {
+    stopPrismCore(prismGenRef.current);
+    prismGenRef.current = 0;
+    prismCacheRef.current = null;
+  };
 
-  // Démontage du player : annuler la session remux native — sans ça le producteur
-  // FFmpeg restait garé dans sa boucle de pacing (thread bloqué) et jusqu'à 1,6 Go
-  // de segments traînaient sur disque jusqu'au prochain start(). Gen-gardé côté
-  // natif : le start() du prochain écran (replace épisode suivant) a déjà bumpé
-  // gGen → le cancel de l'ancien écran est un no-op. Bump de fetchIdRef : les
-  // fetchs en vol ne setState plus après démontage.
-  useEffect(() => () => {
-    fetchIdRef.current++;
-    if (remuxGenRef.current > 0) TVRemux?.cancel?.(remuxGenRef.current);
-  }, []);
+  // Démontage du player : les fetchs en vol ne setState plus, la session
+  // PrismCore s'arrête (le start() de l'écran suivant a déjà sa propre gen).
+  useEffect(() => () => { fetchIdRef.current++; dropPrismSession(); }, []);
 
   useEffect(() => {
     if (!itemId || !userId) return;
@@ -147,11 +153,10 @@ export function useTVStreamUrl(args: {
     // Piste audio EFFECTIVE. `audioIndex` démarre à 0 (= flux vidéo) et son
     // alignement sur le défaut (useTVReloadState) est un setState ASYNCHRONE :
     // au cold start, cet effet (déclenché par `vcodec`, même flush) lisait
-    // l'index périmé → le natif retombait en silence sur la PREMIÈRE piste
-    // audio du fichier (FR entendu alors que l'UI affichait la piste défaut).
-    // Si l'index courant ne pointe pas une piste audio réelle, on résout ici le
-    // MÊME défaut que l'UI (IsDefault puis première) — quel que soit l'ordre
-    // des effets.
+    // l'index périmé → le serveur retombait sur la PREMIÈRE piste audio du fichier
+    // (FR entendu alors que l'UI affichait la piste défaut). Si l'index courant
+    // ne pointe pas une piste audio réelle, on résout ici le MÊME défaut que
+    // l'UI (IsDefault puis première) — quel que soit l'ordre des effets.
     const audios = streams.filter((s) => s.Type === "Audio");
     const effAudio = audios.some((s) => s.Index === audioRef.current)
       ? audioRef.current
@@ -161,56 +166,35 @@ export function useTVStreamUrl(args: {
 
     (async () => {
       try {
-        // Lecteur local « façon Infuse » : contenu HEVC/H264 (souvent en MKV non
-        // lisible par AVPlayer) → Jellyfin sert le fichier BRUT, on le remuxe en
-        // MP4 fragmenté localement (FFmpeg, copie de flux) → Direct Play → badge
-        // HDR/DV. Zéro transcodage serveur. Repli sur le flux Jellyfin si échec.
-        // Décision + start natif (retries) : cf. utils/tvLocalRemuxStart.ts.
-        if (remuxEligible({
-          container, streams, audioIndex: effAudio, vcodec,
-          forceTranscode, isTranscodingQuality, burnInIndex,
-        })) {
-          try {
-            // Clé incluant la PISTE AUDIO (changement de langue → re-remux : AVPlayer ne commute pas
-            // le multi-audio HLS) ET la position de SESSION (startSeconds) : un SEEK lointain (JS pose
-            // un nouveau startTicks → startSeconds) force un re-remux d'une nouvelle session depuis T
-            // (av_seek_frame natif → gros sauts/reprise rapides). Le natif arbitre (withinAvail) si la
-            // position est en réalité déjà disponible → réutilise alors la session courante.
-            // `|n<reloadNonce>` : une reprise après pause longue (useTVRemuxPause) bump le nonce → BUST de la
-            // clé → start() est rappelé (consomme gResumePending → nouvelle session à P), au lieu du
-            // court-circuit de réutilisation qui renverrait l'URL de l'ancienne session (offset faux).
-            const remuxKey = contentKey + "|a" + effAudio + "|t" + Math.floor(startSeconds ?? 0) + "|n" + (args.reloadNonce ?? 0);
-            // Idempotent : même contenu + même audio + même nonce déjà remuxé → réutiliser l'URL locale
-            // (ET son frag d'origine exact) sans relancer start(). Cache-buster `&r` : force AVPlayer à
-            // re-fetch le manifeste (anti-cache EVENT→VOD).
-            const cached = remuxCacheRef.current;
-            if (cached && cached.key === remuxKey) {
-              plog("stream", "remux: session en cache réutilisée");
-              const busted = cached.url + (cached.url.includes("?") ? "&" : "?") + "r=" + (args.reloadNonce ?? 0);
-              setResult({ baseUrl: busted, resumeFrag: cached.frag, isDirectPlay: true, isLocalRemux: true });
-              return;
-            }
-            plog("stream", `remux éligible → start(audio=${effAudio}, t=${Math.floor(startSeconds ?? 0)}s)`);
-            const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
-            const res = await startLocalRemux({
-              rawUrl, streams, audioIndex: effAudio, startSeconds: startSeconds ?? 0,
-              isCancelled: () => fetchIdRef.current !== fetchId,
-            });
-            if (fetchIdRef.current !== fetchId) return;
-            if (res) {
-              // Frag = origine RÉELLE de la timeline de session (keyframe ≤ T, renvoyée par le
-              // natif) → l'offset absolu⇄relatif d'AVPlayerSurface est EXACT (fini le skew d'un
-              // GOP sur scrubber/sous-titres/+30 après un gros saut ou une reprise).
-              const frag = res.actualStartSec > 0.5 ? `#tnt-start=${res.actualStartSec.toFixed(2)}` : "";
-              remuxCacheRef.current = { key: remuxKey, url: res.url, frag };
-              remuxGenRef.current = res.gen;
-              plog("stream", `remux OK gen=${res.gen} origine=${res.actualStartSec.toFixed(1)}s`);
-              setResult({ baseUrl: res.url, resumeFrag: frag, isDirectPlay: true, isLocalRemux: true });
-              return;
-            }
-            plog("stream", "remux ÉCHOUÉ (3 tentatives) → repli PlaybackInfo serveur");
-            // tous les essais ont échoué → repli silencieux sur PlaybackInfo (transcode/direct serveur)
-          } catch { /* repli PlaybackInfo */ }
+        if (prismEligible({ container, streams, audioIndex: effAudio, vcodec, forceTranscode, isTranscodingQuality })) {
+          const cached = prismCacheRef.current;
+          if (cached && cached.key === contentKey) {
+            plog("prism", "session en cache réutilisée");
+            setResult({ baseUrl: cached.start.url, resumeFrag, isDirectPlay: true, isPrismCore: true, prism: cached.start });
+            return;
+          }
+          // Une session d'un AUTRE titre traîne encore (changement de source sans
+          // démontage) : on la stoppe avant d'en ouvrir une nouvelle.
+          if (prismGenRef.current > 0) dropPrismSession();
+          plog("prism", `éligible → start(audio=${effAudio}, t=${Math.floor(startSeconds ?? 0)}s)`);
+          const rawUrl = client.getStreamUrl(itemId, { directPlay: true, mediaSourceId });
+          const start = await startPrismCore({
+            rawUrl, headers: prismHeaders(client),
+            preferredAudioLanguage: preferredAudioLanguageOf(streams, effAudio),
+            isCancelled: () => fetchIdRef.current !== fetchId,
+          });
+          if (fetchIdRef.current !== fetchId) return;
+          if (start) {
+            prismCacheRef.current = { key: contentKey, start };
+            prismGenRef.current = start.gen;
+            setResult({ baseUrl: start.url, resumeFrag, isDirectPlay: true, isPrismCore: true, prism: start });
+            return;
+          }
+          plog("prism", "refusé → repli PlaybackInfo serveur");
+        } else if (prismGenRef.current > 0) {
+          // Plus éligible (transcode forcé par une erreur codec, palier de qualité
+          // transcodé) : la session ne sert plus à rien, on la libère.
+          dropPrismSession();
         }
 
         // Un preset de qualité OU un fallback codec force le transcode (DirectPlayProfiles vidés).
@@ -220,7 +204,7 @@ export function useTVStreamUrl(args: {
         // n'incruste plus jamais : l'overlay JS interprète le VTT (parser partagé).
         // Capacités de décodage HDR/DV de cette Apple TV (module natif, mis en
         // cache) → gate le VideoRangeType du profil pour préserver un vrai signal
-        // HDR/Dolby Vision (remux) au lieu d'un tone-mapping serveur vers SDR.
+        // HDR/Dolby Vision au lieu d'un tone-mapping serveur vers SDR.
         const hdr = await getHdrCapabilities();
         const profile = buildTvosDeviceProfile(cap, forceTranscode || isTranscodingQuality, burnInIndex >= 0, hdr);
 
@@ -252,7 +236,7 @@ export function useTVStreamUrl(args: {
             audioIndex: effAudio, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
           });
         } else {
-          // Remux / fallback codec : HLS 8 Mbps (parité avec le fallback Android).
+          // Fallback codec : HLS 8 Mbps (parité avec le fallback Android).
           streamUrl = client.getStreamUrl(itemId, {
             directPlay: false, maxBitrate: 8_000_000,
             audioIndex: effAudio, subtitleStreamIndex: sub, burnInSubtitle: burnInIndex >= 0, playSessionId, mediaSourceId,
@@ -264,9 +248,9 @@ export function useTVStreamUrl(args: {
         setResult({ baseUrl: streamUrl, resumeFrag, playSessionId, isDirectPlay: directPlay });
       } catch {
         if (fetchIdRef.current !== fetchId) return;
-        // Échec TOTAL (remux + PlaybackInfo) : surfacer au lieu de laisser l'écran de
-        // chargement tourner pour toujours (baseUrl null silencieux).
-        plog("stream", "résolution du flux ÉCHOUÉE (remux + PlaybackInfo) → écran d'erreur");
+        // Échec TOTAL : surfacer au lieu de laisser l'écran de chargement tourner
+        // pour toujours (baseUrl null silencieux).
+        plog("stream", "résolution du flux ÉCHOUÉE (PlaybackInfo) → écran d'erreur");
         setResult({ baseUrl: null, isDirectPlay: false, failed: true });
       }
     })();
@@ -280,15 +264,31 @@ export function useTVStreamUrl(args: {
   // `streamUrl` = baseUrl + fragment de reprise, TOUS DEUX cuits ensemble dans
   // `result` (cf. plus haut) → change exactement une fois par reload (plus de
   // double rechargement audio). Le fragment `#tnt-start` est lu par AVPlayerSurface
-  // (seek client). Pour le remux, le natif gate aussi la reprise (gWrittenSec ≥
-  // gWantStartSec) pour ne pas résoudre sur un offset pas encore écrit (anti -16156).
+  // (seek client).
   const streamUrl = result.baseUrl != null
     ? result.baseUrl + (result.resumeFrag ?? "")
     : null;
 
+  // Master refusé par AVPlayer (-11868 / -11848 / -1002 — « Adapter la plage
+  // dynamique » coupé sur un panneau HDR) : la même session rejouée en forme
+  // muxée (une piste audio, sans renditions), à la position courante. Rend
+  // false si PrismCore ne peut plus (successeur déjà minté, session stoppée) :
+  // le caller replie alors sur PlaybackInfo en forçant le transcode.
+  const retryMuxed = async (positionSec: number): Promise<boolean> => {
+    const gen = prismGenRef.current;
+    if (gen <= 0) return false;
+    const start = await fallbackMuxedPrismCore(gen);
+    if (!start) return false;
+    prismGenRef.current = start.gen;
+    prismCacheRef.current = { key: contentKeyRef.current, start };
+    const frag = positionSec > 1 ? `#tnt-start=${Math.floor(positionSec)}` : "";
+    setResult({ baseUrl: start.url, resumeFrag: frag, isDirectPlay: true, isPrismCore: true, prism: start });
+    return true;
+  };
+
   return {
     streamUrl, playSessionId: result.playSessionId,
-    isDirectPlay: result.isDirectPlay, isLocalRemux: result.isLocalRemux,
-    failed: result.failed ?? false,
+    isDirectPlay: result.isDirectPlay, isPrismCore: result.isPrismCore ?? false, prism: result.prism,
+    failed: result.failed ?? false, retryMuxed,
   };
 }

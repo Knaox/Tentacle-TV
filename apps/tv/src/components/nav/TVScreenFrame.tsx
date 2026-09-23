@@ -13,6 +13,15 @@ import { TVFocusBridgeRight } from "./TVFocusBridgeRight";
  * Le rail lui-même est monté UNE SEULE FOIS par TVNavChrome (overlay au niveau
  * navigation).
  *
+ * # Ce qui va aux bords, et ce qui reste dans la zone sûre
+ *
+ * Les COUCHES DE FOND (décor ambiant, image et halo de bannière, dégradés)
+ * atteignent les bords physiques de la dalle ; seul le CONTENU qui se lit —
+ * textes, cartes, focusables — reste dans la zone sûre. Un fond posé DANS la
+ * marge laissait une bande non peinte de 186 pt à gauche et 54 pt en haut :
+ * c'est exactement la « bordure » que l'utilisateur voit sur un grand
+ * téléviseur. D'où `backdrop`, rendu AVANT la marge.
+ *
  * `contentFocusNode` (cible du pont droit et de la saisie de focus après
  * navigation) est publié par CHAQUE écran via `useTVContentEntry` sur son 1er
  * Focusable réel — un `setNativeProps` hasTVPreferredFocus n'a d'effet que sur
@@ -43,9 +52,18 @@ import { TVFocusBridgeRight } from "./TVFocusBridgeRight";
  * la récupération de focus native, qui exige un guide ancêtre (`recoverFocus`)
  * — sans quoi le D-pad devient muet dès que la vue focalisée se démonte.
  */
-export function TVScreenFrame({ children }: { children: React.ReactNode }) {
+export function TVScreenFrame({ backdrop, children }: {
+  /** Couche de fond à FOND PERDU : posée avant la marge, elle touche les bords. */
+  backdrop?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <View style={{ flex: 1, backgroundColor: Colors.bgDeep }}>
+      {backdrop != null && (
+        <View pointerEvents="none" style={{ position: "absolute", inset: 0 }}>
+          {backdrop}
+        </View>
+      )}
       <View
         style={{
           flex: 1,

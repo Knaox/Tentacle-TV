@@ -9,7 +9,8 @@ import LinearGradient from "react-native-linear-gradient";
 import { Focusable } from "./focus/Focusable";
 import { PlayIcon, PauseIcon, BackIcon, SettingsIcon, NextTrackIcon, PrevTrackIcon, MenuIcon, ScrubIcon } from "./icons/TVIcons";
 import { SpeedPill } from "./player/SpeedPill";
-import { useOverlayFocus } from "./player/focus/useOverlayFocus";
+import { useOverlayFocus, type TransportKey } from "./player/focus/useOverlayFocus";
+import { useSkipNode } from "./player/focus/osdFocusBus";
 import { TV_OSD, TV_OVERSCAN_PT } from "@tentacle-tv/theme";
 import { Colors } from "../theme/colors";
 
@@ -50,6 +51,8 @@ interface TVPlayerOverlayProps {
   hasPreviousEpisode?: boolean;
   /** Ouvre le panneau Saisons & épisodes (séries uniquement). */
   onEpisodes?: () => void;
+  /** Le bouton visé par `focusSignal` — cf. `overlayFocusCore`. */
+  focusTargetRef?: { readonly current: TransportKey | undefined };
 }
 
 function formatTime(seconds: number): string {
@@ -66,7 +69,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
   onPlayPause, onSkipBack, onSkipForward, onScrub,
   onBack, onSettings,
   onNextEpisode, onPrevEpisode, hasNextEpisode, hasPreviousEpisode,
-  onEpisodes,
+  onEpisodes, focusTargetRef,
 }: TVPlayerOverlayProps) {
   const opacity = useSharedValue(visible ? 1 : 0);
 
@@ -86,7 +89,9 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
 
   // --- Mémoire de focus de l'OSD (source unique partagée ; primitive de
   //     restauration spécifique plateforme injectée par le hook résolu Metro) ---
-  const focus = useOverlayFocus({ focusSignal, scrubbing });
+  const focus = useOverlayFocus({ focusSignal, scrubbing, focusTargetRef });
+  // La cible du pont montant — `null` quand aucun bouton de saut n'est posé.
+  const skipNode = useSkipNode();
 
   return (
     <Animated.View
@@ -155,7 +160,14 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
       >
         {/* Progress bar — passive (jamais focusable) ; le scrub se pilote au
             D-pad avec curseur fantôme + vignette trickplay */}
-        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
+        {/* La barre EST le pont montant vers le bouton de saut : c'est la seule
+            bande non focusable entre le transport et lui, donc exactement ce
+            que le focus traverse en montant. Sans cible, le guide est inerte —
+            `destinations` vide ne redirige rien. */}
+        <TVFocusGuideView
+          destinations={skipNode ? [skipNode] : []}
+          style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}
+        >
           <Text style={{
             color: scrubbing ? Colors.textPrimary : Colors.textSecondary,
             fontSize: 16, fontWeight: scrubbing ? "700" : "500", width: 76,
@@ -219,7 +231,7 @@ export const TVPlayerOverlay = memo(function TVPlayerOverlay({
           }}>
             {formatTime(duration)}
           </Text>
-        </View>
+        </TVFocusGuideView>
 
         {/* Transport controls */}
         <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 32 }}>

@@ -9,7 +9,13 @@ import { Colors, Fonts, brandAlpha } from "../theme/colors";
  * `compact` = densité réduite pour les overlays d'affiches (CardMetaOverlay
  * web `density="compact"`) : fond sombre lisible sur image.
  */
-export const TVMetaChips = memo(function TVMetaChips({ item, compact = false }: { item: MediaItem; compact?: boolean }) {
+export const TVMetaChips = memo(function TVMetaChips({ item, compact = false, wrap = true }: {
+  item: MediaItem;
+  compact?: boolean;
+  /** Faux : une seule ligne, rognée — pour une ligne de liste à hauteur fixe,
+   *  où un retour à la ligne pousserait le synopsis hors de la case. */
+  wrap?: boolean;
+}) {
   const q = extractMediaQuality(item);
   const chips: Array<{ label: string; accent?: boolean }> = [];
 
@@ -23,7 +29,7 @@ export const TVMetaChips = memo(function TVMetaChips({ item, compact = false }: 
   if (chips.length === 0) return null;
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: compact ? 4 : 6 }}>
+    <View style={{ flexDirection: "row", flexWrap: wrap ? "wrap" : "nowrap", overflow: wrap ? "visible" : "hidden", gap: compact ? 4 : 6 }}>
       {chips.map((c) => (
         <View
           key={c.label}

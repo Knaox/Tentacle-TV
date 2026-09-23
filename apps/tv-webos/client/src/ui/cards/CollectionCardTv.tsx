@@ -1,6 +1,6 @@
 import { memo, useCallback } from "react";
 import type { MediaItem } from "@tentacle-tv/shared";
-import { CollectionGridCard as WebCard } from "@/components/collection/CollectionGridCard";
+import { CollectionGridCard as WebCard } from "@/components/collection/CollectionGridCard?original";
 import type { SelectionMode } from "@/components/collection/selectionMode";
 import { FocusableCard } from "./FocusableCard";
 

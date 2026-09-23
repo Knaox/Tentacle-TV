@@ -119,6 +119,29 @@ export const TV_HERO_SCRIM_DIAGONAL =
  * portage va de 1 (cartes) à 100 (recherche).
  *
  * Côté natif, ces mêmes rangs alimentent `zIndex`/`elevation`. */
+/** Le voile du rail AU REPOS.
+ *
+ * Le rail n'avait aucun fond, et la règle était juste : la lisibilité venait du
+ * voile de la bannière, qui passait sous lui. Elle ne l'est plus. La bannière
+ * d'accueil est redevenue une CARTE en retrait — elle ne passe plus sous le
+ * rail — et le décor ambiant, lui, va désormais d'un bord à l'autre : les
+ * icônes se lisaient sur une photographie.
+ *
+ * Ce n'est PAS le mur opaque qu'on avait retiré : 0,75 au bord, éteint à la
+ * colonne de contenu. C'est ce que font Google TV et tvOS. Même source pour la
+ * LG (`--rail-voile`) et pour React Native (`TV_RAIL_SCRIM_NATIVE`). */
+export const TV_RAIL_SCRIM = {
+  stops: [
+    { color: "rgba(0, 0, 0, 0.75)", at: 0 },
+    { color: "rgba(0, 0, 0, 0.42)", at: 0.55 },
+    { color: "rgba(0, 0, 0, 0)", at: 1 },
+  ],
+} as const;
+
+/** Le voile du rail en CSS : un dégradé horizontal, du bord vers le contenu. */
+export const tvRailScrimCss = (): string =>
+  `linear-gradient(90deg, ${TV_RAIL_SCRIM.stops.map((s) => `${s.color} ${Math.round(s.at * 1000) / 10}%`).join(", ")})`;
+
 export const TV_PLAYER_LAYERS = {
   thumbnail: 100,
   veil: 110,
@@ -160,6 +183,7 @@ export const tvOnlyCssVarEntries = (): Array<[string, string]> => [
   ["--hero-ambilight-blur", TV_HERO_AMBILIGHT.blur],
   ["--hero-ambilight-sat", TV_HERO_AMBILIGHT.saturation],
   ["--hero-scrim-diagonal", TV_HERO_SCRIM_DIAGONAL],
+  ["--rail-voile", tvRailScrimCss()],
 ];
 
 /**
@@ -315,16 +339,50 @@ export const TV_PLAYER_PANEL = {
   episodeThumb: { width: 160, height: 90 },
 } as const;
 
-/** Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
- *  il s'écarte de la barre quand l'habillage est visible (transform, jamais
- *  `bottom` — une position animée relance la mise en page). */
+/**
+ * Le bouton « passer l'intro / le générique » : ancré au retrait d'overscan,
+ * il s'écarte de la barre quand l'habillage est visible (transform, jamais
+ * `bottom` — une position animée relance la mise en page).
+ *
+ * # Le dessin, décrit UNE fois pour les trois téléviseurs
+ *
+ * Les mesures vivaient ici, les couleurs non : la feuille du LG les écrivait
+ * en clair, et le natif — Android TV comme Apple TV — portait encore l'ancien
+ * dessin, noir translucide, quand le web et le LG étaient déjà passés au
+ * blanc. Trois copies, deux vérités. Elles sont donc ici, et les trois cibles
+ * les lisent (le test `tvOnly.player.test.ts` recroise la feuille du LG).
+ *
+ * Le vocabulaire est celui du bouton principal de l'application, le « Lire »
+ * d'une fiche : pilule BLANCHE, texte noir appuyé, coins pleinement arrondis.
+ * Le refus reste le rôle SECONDAIRE — sombre, en retrait : deux pilules
+ * blanches côte à côte ne diraient plus laquelle est l'action proposée.
+ *
+ * Pas d'ombre, à la différence du web : sur une dalle, du blanc opaque posé
+ * sur de la vidéo ressort tout seul, et une ombre se paie en couche composée
+ * à chaque image au-dessus d'un décodeur.
+ */
 export const TV_PLAYER_SKIP = {
   bottom: 148,
   lift: 56,
   paddingV: 14,
   paddingH: 28,
-  radius: 10,
+  /** Pilule pleine, comme le `rounded-full` du web. */
+  radius: 999,
   text: 20,
+  /** L'écart entre « passer » et « masquer » — deux cibles de télécommande. */
+  gap: 12,
+  bg: "#FFFFFF",
+  fg: "#000000",
+  dismissBg: "rgba(0, 0, 0, 0.45)",
+  dismissFg: "rgba(255, 255, 255, 0.7)",
+  dismissBorder: "rgba(255, 255, 255, 0.12)",
+  /**
+   * Le halo de marque au focus — la seule chose qui désigne une pilule
+   * BLANCHE, dont l'anneau blanc se confond avec le fond. La valeur est celle
+   * de l'anneau commun (`TV_FOCUS_RING.haloOpacity`), que le LG applique déjà
+   * partout ; les boutons natifs, eux, n'en ont aucun par défaut.
+   */
+  focusGlow: 0.5,
 } as const;
 
 /** La carte « épisode suivant », au coin bas-droit du retrait d'overscan. */

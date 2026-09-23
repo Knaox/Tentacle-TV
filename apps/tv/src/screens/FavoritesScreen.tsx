@@ -44,12 +44,13 @@ function FavoritesScreenInner({ navigation }: Props) {
   const items = data ?? [];
 
   return (
-    <TVScreenFrame>
-      <TVAmbientBackdrop />
+    <TVScreenFrame backdrop={<TVAmbientBackdrop />}>
       <View style={{ flex: 1 }}>
         <Text style={{
           color: Colors.textPrimary, ...Typography.pageTitle,
-          paddingHorizontal: Spacing.rowGutter, marginBottom: 20,
+          // Pas de marge basse : la grille réserve sous le titre la place
+          // de l'agrandissement de ses cartes (`CARD_FOCUS_BLEED`).
+          paddingHorizontal: Spacing.rowGutter,
         }}>
           {t("myFavorites")}
         </Text>

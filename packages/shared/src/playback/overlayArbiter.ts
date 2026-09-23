@@ -47,6 +47,20 @@ export type PlayerOverlay =
       /** Secondes affichées, null = bouton sans décompte. */
       countdownSeconds: number | null;
       /**
+       * Ce passage part-il TOUT SEUL ?
+       *
+       * Distinct de `countdownSeconds`, et c'est le fond de l'affaire : un
+       * saut automatique dont on a éteint l'affichage du décompte n'affiche
+       * aucune seconde, et se lit pourtant « manuel » si l'on se fie au
+       * décompte. Les trois téléviseurs en ont besoin pour deux choses que la
+       * souris n'a jamais demandées — donner le focus au bouton UTILE (le
+       * refus quand ça part tout seul, le saut quand il faut le demander), et
+       * offrir un refus même sans décompte visible : sans lui, un saut
+       * automatique à décompte caché ne pouvait tout simplement pas être
+       * empêché à la télécommande.
+       */
+      auto: boolean;
+      /**
        * La croix a-t-elle encore un office ?
        *
        * Non, une fois le passage mis en sourdine : le bouton ne reparaît alors
@@ -129,7 +143,10 @@ function skipOverlay(
 ): PlayerOverlay {
   const countdownSeconds =
     settings.action === "auto" && settings.countdownVisible ? countdowns.skip : null;
-  return { kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds, dismissible };
+  return {
+    kind: "skip", segmentType: segment.type, labelKey, action, countdownSeconds,
+    auto: settings.action === "auto", dismissible,
+  };
 }
 
 export function arbitrateOverlay(input: ArbiterInput): PlayerOverlay {

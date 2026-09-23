@@ -84,23 +84,6 @@ export function useLibraryItems(
   });
 }
 
-export function useSeasons(seriesId: string | undefined) {
-  const client = useJellyfinClient();
-  const userId = useUserId();
-
-  return useQuery({
-    queryKey: ["seasons", seriesId],
-    queryFn: () =>
-      client
-        .fetch<{ Items: MediaItem[] }>(
-          `/Shows/${seriesId}/Seasons?userId=${userId}&Fields=PrimaryImageAspectRatio,RemoteTrailers`
-        )
-        .then((r) => r.Items),
-    enabled: !!userId && !!seriesId,
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
 /**
  * TOUS les épisodes d'une série en une requête — le périmètre « toute la
  * série » des dialogues de mise hors ligne, sur le téléphone comme sur le

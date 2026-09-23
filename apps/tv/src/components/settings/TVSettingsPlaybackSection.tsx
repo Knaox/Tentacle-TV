@@ -14,6 +14,7 @@ import { SelectionModal } from "../SelectionModal";
 import { TVLibraryPrefCard, type TvSetting } from "./TVLibraryPrefCard";
 import { LANGUAGE_KEYS, LANGUAGE_CODES, INTERFACE_LANGUAGES, SUBTITLE_MODES } from "../../utils/languageKeys";
 import { TVPlaybackSettingsSection } from "./TVPlaybackSettingsSection";
+import { TVDevicePlaybackSection } from "./TVDevicePlaybackSection";
 import { Colors, brandAlpha } from "../../theme/colors";
 import { Button } from "../../theme/buttons";
 
@@ -87,6 +88,8 @@ export function TVSettingsPlaybackSection() {
       {/* Passages d'un épisode, puis sa fin — réglages de COMPTE, partagés
           avec le téléphone et le web (cf. `TVPlaybackSettingsSection`). */}
       <TVPlaybackSettingsSection />
+      {/* Réglages d'APPAREIL (Android TV) : le décodeur de ce téléviseur. */}
+      <TVDevicePlaybackSection />
       <Text
         style={{
           color: Colors.textTertiary,

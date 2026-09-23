@@ -14,11 +14,10 @@ import { plog } from "../utils/playerDiag";
  *  - un choix MANUEL de l'utilisateur prime toujours : le cap ne s'applique
  *    que si la qualité est restée sur « Originale » ;
  *  - le cap est une PHOTOGRAPHIE par (item, session de flux) : prise quand la
- *    source est connue, re-prise à chaque RECONSTRUCTION de session (seek
- *    lointain re-remuxé, reload — startTicks bouge) — jamais en cours de
- *    lecture continue. Une lecture partie en Originale-remux parce que la
- *    mesure n'était pas prête bascule ainsi au premier seek, au lieu de ramer
- *    à vie. Mesure absente (serveur sans BitrateTest au proxy, échec réseau)
+ *    source est connue, re-prise à chaque RECONSTRUCTION de session (reload de
+ *    piste/qualité — startTicks bouge) — jamais en cours de lecture continue.
+ *    Une lecture partie en Originale parce que la mesure n'était pas prête
+ *    bascule ainsi au premier reload, au lieu de ramer à vie. Mesure absente (serveur sans BitrateTest au proxy, échec réseau)
  *    → aucun cap, lecture comme avant.
  */
 export function useTVAutoQualityCap(args: {
@@ -43,12 +42,12 @@ export function useTVAutoQualityCap(args: {
 
   // Filet : si l'accueil n'a pas déjà préchauffé la mesure, l'amorcer ici —
   // trop tard pour CETTE lecture (la décision de flux part immédiatement),
-  // à temps pour les suivantes (et pour le premier seek re-remuxé).
+  // à temps pour les suivantes (et pour le premier reload).
   useEffect(() => { primeBitrateMeasure(client); }, [client]);
 
   // Photographie par (item, session) : re-prise quand startTicks bouge — un
-  // seek re-remuxé ou un reload reconstruit le flux de toute façon, c'est le
-  // seul moment où changer de palier ne coûte rien de plus.
+  // reload reconstruit le flux de toute façon, c'est le seul moment où changer
+  // de palier ne coûte rien de plus.
   const sessionKey = `${itemId}|${startTicks}`;
   const evaluatedRef = useRef<string | undefined>(undefined);
   const capRef = useRef<QualityPreset | null>(null);

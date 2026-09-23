@@ -198,6 +198,10 @@ export default {
   // télécommande, un pouce qui coulisse ne veut rien dire.
   reglageActive: "Activé",
   reglageDesactive: "Désactivé",
+  // Réglage d'appareil Android TV (TVDevicePlaybackSection) : le tunneling ExoPlayer.
+  exoTunnelingLabel: "Décodage tunnelisé",
+  exoTunnelingHint:
+    "Le décodeur et l'affichage travaillent directement ensemble, sans passer par l'application : l'image et le son se recalent mieux, et le boîtier chauffe moins. Certains appareils le supportent mal — image noire, ou image figée quand on met en pause pour se déplacer dans le film. Si quelque chose cloche, éteignez-le. Le changement prend effet à la lecture suivante.",
 
   // L'aperçu vivant du panneau avancé : la vraie pilule du lecteur, montée dans
   // un cadre qui imite l'image. Voir `settings/PlaybackPreview.tsx`.

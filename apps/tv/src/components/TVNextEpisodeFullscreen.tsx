@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { View, Text, Image, TVFocusGuideView, Platform, useWindowDimensions } from "react-native";
+import { View, Text, Image, TVFocusGuideView, useWindowDimensions } from "react-native";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 import LinearGradient from "react-native-linear-gradient";
 import { useTranslation } from "react-i18next";
 import { Focusable } from "./focus/Focusable";
 import { useTVRemote } from "./focus/useTVRemote";
+import { useTvFocusClaim } from "../hooks/useTvFocusClaim";
 import { PlayIcon } from "./icons/TVIcons";
 import { Colors, Fonts, Radius, brandAlpha } from "../theme/colors";
 
@@ -57,18 +58,17 @@ export function TVNextEpisodeFullscreen({
   }, [opacity]);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  // Android : à l'apparition, le focus natif peut être resté sur une vue du
-  // player devenue non-focusable (fond/OSD) → la fiche était innavigable au
-  // D-pad. Grab explicite du bouton principal (set = requestFocus immédiat).
+  // À l'apparition, le focus natif peut être resté sur une vue du lecteur
+  // devenue non-focusable (fond, habillage) → l'affiche est innavigable au
+  // D-pad : ni « Lire maintenant » ni « Masquer » ne se laissent atteindre.
+  //
+  // Le geste était posé pour Android SEULEMENT (`if (Platform.OS === "ios")
+  // return`), et sur Apple TV `hasTVPreferredFocus` ne suffit pas : il n'est
+  // honoré qu'au montage, et le moteur l'ignore tant qu'il tient un élément
+  // valide ailleurs. D'où la réclamation partagée, qui connaît le geste des
+  // deux plateformes.
   const playBtnRef = useRef<View>(null);
-  useEffect(() => {
-    if (Platform.OS === "ios") return;
-    const id = setTimeout(() => {
-      (playBtnRef.current as { setNativeProps?: (p: object) => void } | null)
-        ?.setNativeProps?.({ hasTVPreferredFocus: true });
-    }, 120);
-    return () => clearTimeout(id);
-  }, []);
+  useTvFocusClaim(playBtnRef, true);
 
   const thumbWidth = Math.min(460, Math.round(sw * 0.32));
 

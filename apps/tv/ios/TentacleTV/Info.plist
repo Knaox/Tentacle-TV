@@ -22,6 +22,15 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- L'ancienne architecture, comme Android (`newArchEnabled=false` dans
+	     android/gradle.properties) et comme le Podfile qui bâtit les pods tiers.
+	     SANS cette clé, RCTIsNewArchEnabled() renvoie YES (clé absente = activée,
+	     cf. RCTUtils.mm) : le runtime passait en bridgeless pendant que
+	     Reanimated, svg et screens restaient en paper. Les vues legacy passent
+	     alors par la couche d'interop, où les styles animés ne s'appliquent plus
+	     — le focus se déplaçait, son anneau ne se peignait jamais. -->
+	<key>RCTNewArchEnabled</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -34,6 +43,11 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string></string>
+	<!-- Apparence FORCÉE sombre : RCTAppDelegate peint la vue racine en BLANC quand
+	     l'Apparence tvOS est Claire, et elle transparaît dans les fondus de la pile
+	     native et derrière la modale transparente. L'app n'a pas de thème clair. -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

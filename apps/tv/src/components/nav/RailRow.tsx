@@ -76,7 +76,13 @@ export const RailRow = memo(function RailRow({
       // focus (overlay de la variante « ligne ») épouse le Pressable — posée à
       // l'intérieur, elle débordait et le fond focus s'arrêtait à l'icône,
       // alors que la LG surligne l'entrée déployée entière.
-      style={{ width: expanded ? EXPANDED_WIDTH : RAIL.collapsedWidth }}
+      //
+      // L'écart avec l'entrée suivante aussi, et pour la raison inverse : posé
+      // sur la vue interne, il faisait partie de la case, et le fond de focus
+      // le recouvrait — 72 points de surlignage pour une entrée de 64, une
+      // bande claire sous chaque entrée focalisée. Hors de la case, le fond
+      // épouse l'entrée au point près, comme son fond « page active ».
+      style={{ width: expanded ? EXPANDED_WIDTH : RAIL.collapsedWidth, marginBottom: RAIL.itemGap }}
       onPress={() => onNavigate(item.key)}
       onLongPress={item.hideable ? handleLongPress : undefined}
       onFocus={() => {
@@ -92,7 +98,6 @@ export const RailRow = memo(function RailRow({
           alignItems: "center",
           height: RAIL.itemHeight,
           minHeight: RAIL.itemMinHeight,
-          marginBottom: RAIL.itemGap,
           paddingLeft: RAIL.itemInset,
           borderRadius: TV_RADIUS.md,
           // Le fond de l'entrée ACTIVE. Celui du focus est peint par-dessus par

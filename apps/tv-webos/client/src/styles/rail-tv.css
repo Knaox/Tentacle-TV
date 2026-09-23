@@ -52,15 +52,16 @@
   padding-bottom: var(--tv-overscan-y);
   padding-left: var(--tv-overscan-x);
   box-sizing: border-box;
-  /* AUCUN fond au repos.
+  /* Un VOILE au repos (`--rail-voile`, source : tvOnly.ts).
    *
-   * Le rail posait un dégradé opaque sur toute sa hauteur. Par-dessus une
-   * bannière plein cadre, cela redonnait exactement la bande noire qu'on venait
-   * de supprimer — le rail redevenait un mur à gauche de l'image. Android TV et
-   * Apple TV laissent leur barre latérale flotter SUR l'image ; la lisibilité
-   * vient du dégradé de la bannière elle-même, pas d'un aplat sous les icônes.
-   * Là où il n'y a pas d'image, le fond de page suffit. */
-  background: none;
+   * Le rail n'avait aucun fond : un dégradé opaque sur toute sa hauteur avait
+   * redonné la bande noire qu'on venait de supprimer, et la lisibilité venait du
+   * voile de la bannière plein cadre qui passait sous lui. Elle ne l'est plus :
+   * la bannière est redevenue une carte en retrait, et le décor `.fond-focus`
+   * va d'un bord à l'autre — les icônes se lisaient sur une photographie. Ce
+   * voile n'est pas le mur d'avant : 0,75 au bord, éteint à la colonne de
+   * contenu, comme Google TV et tvOS. */
+  background: var(--rail-voile);
   /* Les libellés débordent du rail : c'est le principe du panneau. */
   overflow: visible;
 }

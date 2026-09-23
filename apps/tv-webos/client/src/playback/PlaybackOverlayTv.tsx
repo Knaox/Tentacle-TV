@@ -1,11 +1,20 @@
 /**
  * La projection de l'ARBITRE, version téléviseur LG — le pendant du
  * `PlaybackOverlay` web, avec ce qui change à trois mètres : l'ancrage
- * d'overscan (classes `.saut-tv`, `.carte-next-tv`, `.affiche-fin-tv`),
- * la prise de focus quand l'habillage s'est éteint, et le refus en SECOND
- * BOUTON plutôt qu'en croix (une cible de trente-deux pixels ne se vise pas
- * à la télécommande). Aucune décision ici non plus : qui s'affiche, quand et
- * avec quel décompte vient de la coquille partagée, comme partout.
+ * d'overscan (classes `.saut-tv`, `.carte-next-tv`, `.affiche-fin-tv`), la
+ * prise de focus, et le refus en SECOND BOUTON plutôt qu'en croix (une cible
+ * de trente-deux pixels ne se vise pas à la télécommande). Aucune décision ici
+ * non plus : qui s'affiche, quand et avec quel décompte vient de la coquille
+ * partagée, comme partout.
+ *
+ * # Le focus va au bouton UTILE
+ *
+ * Même règle que sur Android TV et Apple TV : le geste que l'utilisateur
+ * aurait à faire. Le passage part tout seul → le focus va au refus ; il faut
+ * le demander → au saut. Et il ne se prend plus seulement quand l'habillage
+ * est éteint : un bouton paru pendant que les commandes sont à l'écran restait
+ * sinon à côté de la télécommande. Ce qui revient PAR l'habillage, lui, a déjà
+ * été refusé une fois : il se montre sans rien voler (`dismissible`).
  *
  * L'affiche de fin garde la règle historique : la refuser, c'est en avoir
  * fini — l'épisode est terminé, la masquer laisserait un écran noir sans
@@ -82,7 +91,6 @@ export function PlaybackOverlayTv({
   const cardRef = useRef<HTMLDivElement>(null);
   const posterRef = useRef<HTMLDivElement>(null);
 
-  const isSkip = overlay.kind === "skip" || overlay.kind === "nextButton";
   const isCard = overlay.kind === "nextCard" && !overlay.final;
   const isPoster = overlay.kind === "nextCard" && overlay.final;
 
@@ -91,7 +99,27 @@ export function PlaybackOverlayTv({
   // plus de position à chercher.
   const hidden = state.mode === "scrub" && !isPoster;
 
-  useOverlayFocus(skipRef, isSkip && !hidden, (r) => r.querySelector("button"));
+  // Le passage part-il tout seul ? Alors le geste utile est de l'en empêcher,
+  // et le focus va au refus. Sinon il va au saut. La question ne se pose pas à
+  // l'affichage des secondes : un saut automatique dont le décompte est masqué
+  // reste un saut automatique (`auto`, tranché par l'arbitre).
+  const autoSkip = overlay.kind === "skip" && overlay.auto;
+  // Ce qui n'a PAS été refusé s'impose, habillage allumé ou non : la prise de
+  // focus attendait l'habillage éteint, si bien qu'un bouton paru pendant que
+  // les commandes étaient à l'écran restait à côté de la télécommande. Ce qui
+  // revient PAR l'habillage, lui, a déjà été écarté une fois — il se montre,
+  // reste atteignable à la navigation, et ne vole rien.
+  const grabs =
+    !hidden &&
+    (overlay.kind === "skip" || overlay.kind === "nextButton") &&
+    overlay.dismissible;
+
+  useOverlayFocus(
+    skipRef,
+    grabs,
+    (r) => r.querySelector(autoSkip ? ".saut-tv--refus" : "button"),
+    true,
+  );
   useOverlayFocus(cardRef, isCard && !hidden, zoneEntryDestination);
   // L'affiche recouvre tout, l'habillage compris : le focus s'impose, sur
   // « Lire maintenant » plutôt que sur la croix qui la précède dans le document.
@@ -119,9 +147,11 @@ export function PlaybackOverlayTv({
         {label}
       </button>
     );
-    // Hors décompte, le bouton reste seul, à sa place. L'îlot n'apparaît que
-    // le temps du décompte, avec le refus en second bouton.
-    if (!armed) return <div ref={skipRef}>{skip}</div>;
+    // Le refus suit le caractère AUTOMATIQUE du passage, et non l'affichage
+    // des secondes : un saut qui part tout seul avec le décompte masqué
+    // n'offrait aucun bouton pour l'empêcher. Un passage qu'il faut demander,
+    // lui, n'a rien à refuser — le bouton reste seul, à sa place.
+    if (!overlay.auto) return <div ref={skipRef}>{skip}</div>;
     return (
       <div ref={skipRef} className="saut-tv-ilot">
         {skip}

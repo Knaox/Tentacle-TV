@@ -47,6 +47,7 @@
   --hero-ambilight-blur: 48px;
   --hero-ambilight-sat: 1.7;
   --hero-scrim-diagonal: linear-gradient(72deg, rgba(var(--scrim-media-rgb), 0.62) 0%, rgba(var(--scrim-media-rgb), 0.38) 26%, rgba(var(--scrim-media-rgb), 0.14) 48%, rgba(var(--scrim-media-rgb), 0.03) 66%, transparent 78%);
+  --rail-voile: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.42) 55%, rgba(0, 0, 0, 0) 100%);
 }
 
 /* Le thème clair reste possible — certains préfèrent une dalle moins sombre

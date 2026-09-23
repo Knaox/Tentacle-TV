@@ -43,6 +43,18 @@ class ExoViewManager : SimpleViewManager<ExoPlayerView>() {
         view.audioPassthrough = enabled
     }
 
+    // `Float` non nullable + `defaultFloat` : un `Float?` planterait au démarrage
+    // (« Unrecognized type » dans ViewManagersPropertyCache).
+    @ReactProp(name = "frameRate", defaultFloat = 0f)
+    fun setFrameRate(view: ExoPlayerView, fps: Float) {
+        view.contentFrameRate = fps
+    }
+
+    @ReactProp(name = "tunneling", defaultBoolean = false)
+    fun setTunneling(view: ExoPlayerView, enabled: Boolean) {
+        view.tunneling = enabled
+    }
+
     @ReactProp(name = "textTracks")
     fun setTextTracks(view: ExoPlayerView, tracks: ReadableArray?) {
         view.setTextTracks(tracks)

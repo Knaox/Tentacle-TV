@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Modal } from "react-native";
 import { Focusable } from "./focus/Focusable";
 import { useTVScrollToFocused } from "../hooks/useTVScrollToFocused";
 import { CheckIcon } from "./icons/TVIcons";
+import { TVCloseButton } from "./TVCloseButton";
 import { Colors, Radius, brandAlpha } from "../theme/colors";
 
 interface SelectionOption {
@@ -50,12 +51,13 @@ export function SelectionModal({ title, options, selectedValue, onSelect, onClos
           {/* Header */}
           <View style={{
             flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-            paddingHorizontal: 28, paddingVertical: 20,
+            paddingLeft: 28, paddingRight: 16, paddingVertical: 14,
             borderBottomWidth: 1, borderBottomColor: Colors.divider,
           }}>
-            <Text style={{ color: Colors.textPrimary, fontSize: 20, fontWeight: "700" }}>
+            <Text numberOfLines={1} style={{ flex: 1, color: Colors.textPrimary, fontSize: 20, fontWeight: "700", marginRight: 16 }}>
               {title}
             </Text>
+            <TVCloseButton onPress={onClose} />
           </View>
 
           {/* Options list */}

@@ -12,6 +12,7 @@ import { navBox } from "./measure";
 import { scrollByStep } from "./scroll";
 import { reviewAfterMount } from "./wait";
 import { closeExpandedMenu } from "./expandedMenu";
+import { redirectTrackEntry } from "./trackEntry";
 import {
   RAIL_SELECTOR,
   inRail,
@@ -249,7 +250,10 @@ export function aim(direction: Direction): boolean {
   // À l'arrivée dans une zone déclarée, la destination l'emporte sur la
   // géométrie — entrer par « Lecture », par la saison active. Les déplacements
   // INTERNES à la zone ne sont pas redirigés, sans quoi elle serait un piège.
-  const redirected = redirectZoneEntry(start, chosen.element);
+  // Hors zone, une arrivée verticale dans une piste vise sa première carte
+  // visible (`trackEntry`).
+  const redirected =
+    redirectZoneEntry(start, chosen.element) ?? redirectTrackEntry(start, chosen.element, direction);
   giveFocus(redirected ?? chosen.element);
   return true;
 }
