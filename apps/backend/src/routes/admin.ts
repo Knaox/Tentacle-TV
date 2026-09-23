@@ -16,6 +16,7 @@ import { adminUsersRoutes } from "./adminUsers";
 import { adminProvisioningRoutes } from "./adminProvisioning";
 import { adminJellyfinKeyRoutes } from "./adminJellyfinKey";
 import { adminWatchTimeRoutes } from "./adminWatchTime";
+import { adminSessionsRoutes } from "./adminSessions";
 import { restartJellyfinWs } from "../services/jellyfinWs";
 import { invalidateAdminKeyHealth } from "../services/jellyfinKeyHealth";
 import { getDatabaseUrl, saveDatabaseUrl } from "../services/db";
@@ -59,6 +60,9 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
 
   // Diagnostic du collecteur de temps de visionnage (hérite de requireAdmin).
   await app.register(adminWatchTimeRoutes);
+
+  // Sessions de lecture en direct + salles Watch Together (hérite de requireAdmin).
+  await app.register(adminSessionsRoutes);
 
   /** GET /api/admin/services — Status of all configured services. */
   app.get("/services", async () => {
