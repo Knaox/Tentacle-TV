@@ -109,6 +109,18 @@ describe("buildSnapshot", () => {
     expect(snap.sessions[0]).toMatchObject({ viaTentacle: true, positionTicks: 642 * 10_000_000, positionAt: NOW, isPaused: true });
   });
 
+  it("deux onglets d'un même appareil : la position vient de celui qui lit", () => {
+    const view = (playback: ConnectionView["playback"]): ConnectionView => ({
+      userId: "u1", username: "Alice", deviceId: "dev1", remoteControl: true, connectedAt: 0, playback,
+    });
+    const snap = buildSnapshot({
+      ...base,
+      raw: [rawSession()],
+      connections: [view(null), view({ itemId: "ep1", playMethod: "Transcode", positionTicks: 700 * 10_000_000, isPaused: false })],
+    });
+    expect(snap.sessions[0]).toMatchObject({ viaTentacle: true, positionTicks: 700 * 10_000_000, positionAt: NOW });
+  });
+
   it("une salle se relie aux sessions de ses membres, position extrapolée", () => {
     const snap = buildSnapshot({
       ...base,
