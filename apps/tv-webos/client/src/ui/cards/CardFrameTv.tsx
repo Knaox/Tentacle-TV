@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CardFrame as WebFrame } from "@/components/cards/CardFrame";
+import { CardFrame as WebFrame } from "@/components/cards/CardFrame?original";
 
 interface CardFrameProps {
   hovered: boolean;
