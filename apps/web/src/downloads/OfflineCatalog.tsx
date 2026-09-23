@@ -31,6 +31,7 @@ import { RevealCell, RevealScope } from "../components/grid/RevealCell";
 import { useOfflineMode } from "../offline/useOfflineMode";
 import { OfflineDeviceSummary } from "./OfflineDeviceSummary";
 import { OfflineHomeHero } from "./OfflineHomeHero";
+import { ScopedSearchField } from "../components/search/ScopedSearchField";
 import {
   groupOfflineEntries,
   groupSeasonsBySeries,
@@ -103,12 +104,11 @@ export function OfflineCatalog() {
       {complete.length > 0 && <OfflineDeviceSummary complete={complete} />}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <input
-          type="search"
+        <ScopedSearchField
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={setSearch}
           placeholder={t("downloads:offlineSearchPlaceholder")}
-          className="h-9 w-80 max-w-full rounded-md border border-line-subtle bg-fill-subtle px-3 text-sm text-content-primary placeholder:text-content-quaternary"
+          className="max-w-full sm:w-80"
         />
         {/* Une seule bibliothèque : la puce « Tout » n'arbitre rien. */}
         {libraries.length > 1 &&
