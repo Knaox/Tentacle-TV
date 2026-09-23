@@ -12,6 +12,11 @@ export * from "./utils/scrubStep";
 export * from "./utils/playbackRates";
 export * from "./utils/episodeCode";
 export * from "./utils/textSearch";
+// Le moteur de recherche du serveur : le texte plié (index, requête,
+// surlignage — une seule forme pour les trois) et le contrat de /api/search.
+export * from "./search/searchText";
+export * from "./search/searchHighlight";
+export * from "./search/searchTypes";
 export * from "./types/websocket";
 export * from "./types/sessionChannelMessages";
 export * from "./types/adminSessionsDto";
