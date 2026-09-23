@@ -8,6 +8,7 @@ import { SessionCard, type SessionCardActions } from "../components/admin/sessio
 import { IdleSessions } from "../components/admin/sessions/IdleSessions";
 import { WatchGroupCard } from "../components/admin/sessions/WatchGroupCard";
 import { MessageComposer } from "../components/admin/sessions/MessageComposer";
+import { SessionsSummary } from "../components/admin/sessions/SessionsSummary";
 import { cls } from "./adminUtils";
 
 /**
@@ -39,7 +40,6 @@ export function AdminSessions() {
   const playing = useMemo(() => data?.sessions.filter((s) => s.nowPlaying !== null) ?? [], [data]);
   const idle = useMemo(() => data?.sessions.filter((s) => s.nowPlaying === null) ?? [], [data]);
   const sessionsById = useMemo(() => new Map((data?.sessions ?? []).map((s) => [s.id, s])), [data]);
-  const transcodes = playing.filter((s) => s.playMethod === "Transcode").length;
   // Les barres n'avancent que si quelque chose lit : sinon, pas un rendu par seconde.
   const moving = playing.some((s) => !s.isPaused) || (data?.groups.some((g) => !g.isPaused) ?? false);
   // Au repos, l'heure suit au moins les relèves (les « actif il y a… »).
@@ -101,11 +101,7 @@ export function AdminSessions() {
           </span>
         </div>
         <p className="text-sm text-content-tertiary">{t("description")}</p>
-        {data && (
-          <p className="text-sm tabular-nums text-content-secondary">
-            {t("playingCount", { count: playing.length })} · {t("transcodingCount", { count: transcodes })}
-          </p>
-        )}
+        {data && <SessionsSummary sessions={playing} />}
       </header>
 
       {query.isLoading && (
