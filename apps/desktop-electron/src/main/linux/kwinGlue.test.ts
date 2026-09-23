@@ -90,7 +90,7 @@ describe("gabaritColle", () => {
     // Le panneau du bureau passe devant une fenêtre ordinaire : en plein écran,
     // il s'intercalait entre mpv et notre fenêtre transparente, donc se voyait.
     expect(qml).toContain(
-      "racine.video.keepAbove = racine.hote.fullScreen && racine.hote.active",
+      "racine.video.keepAbove = racine.hote.keepAbove || (racine.hote.fullScreen && racine.hote.active)",
     );
     expect(qml).toContain("w.fullScreenChanged.connect(racine.suivreCouche)");
     // Sans la condition d'activation, un hôte plein écran qui perd le focus
@@ -109,10 +109,80 @@ describe("gabaritColle", () => {
     expect(qml).toContain("racine.hote.closed.disconnect(racine.hoteFerme)");
     expect(qml).toContain("racine.video.closed.disconnect(racine.videoFermee)");
     expect(qml).toContain("racine.video.activeChanged.disconnect(racine.reprendreActivation)");
+    expect(qml).toContain("racine.video.minimizedChanged.disconnect(racine.suivreMinimiseVideo)");
+    expect(qml).toContain("racine.video.captionNormalChanged.disconnect(racine.suivreSelecteur)");
+    expect(qml).toContain("racine.hote.keepAboveChanged.disconnect(racine.suivreCouche)");
+    expect(qml).toContain("racine.hote.keepBelowChanged.disconnect(racine.suivreCouche)");
+    expect(qml).toContain("racine.hote.minimizedChanged.disconnect(racine.suivreMinimise)");
+    expect(qml).toContain("racine.hote.desktopsChanged.disconnect(racine.suivreBureaux)");
+    expect(qml).toContain("racine.hote.activitiesChanged.disconnect(racine.suivreActivites)");
+    // Chaque connexion a sa déconnexion : même nombre des deux côtés.
+    expect(qml.match(/\.connect\(racine\./g)?.length).toBe(qml.match(/\.disconnect\(racine\./g)?.length);
     // Une fermeture anonyme ne se déconnecte pas : plus aucune dans le gabarit.
     expect(qml).not.toContain("connect(function");
     // Et la couche est rendue AVANT de lâcher la fenêtre.
     expect(qml).toContain("racine.video.keepAbove = false;");
+  });
+
+  it("ne rend JAMAIS l'activation à un hôte réduit — la réduction s'annulait elle-même", () => {
+    const qml = glueTemplate(1);
+    // KWin passe le focus à mpv PENDANT la réduction de l'hôte, et
+    // activateWindow dé-réduit ce qu'il active (sources de KWin 6.7).
+    const body = qml.slice(qml.indexOf("function reprendreActivation()"), qml.indexOf("function reduireAvecHote()"));
+    expect(body.indexOf("if (racine.hote.minimized)")).toBeGreaterThan(-1);
+    expect(body.indexOf("if (racine.hote.minimized)")).toBeLessThan(
+      body.indexOf("Kwin.Workspace.activeWindow = racine.hote"),
+    );
+    // La vidéo est réduite un tour de boucle plus tard, hors de la pile de KWin.
+    expect(body).toContain("racine.reduction.restart()");
+    expect(qml).toContain("interval: 0");
+    expect(qml).toContain("racine.video.minimized = true");
+  });
+
+  it("la vidéo rendue à l'écran ramène l'hôte ; l'hôte réduit emmène la vidéo", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain("w.minimizedChanged.connect(racine.suivreMinimiseVideo)");
+    expect(qml).toContain("if (!racine.video.minimized && racine.hote.minimized) racine.hote.minimized = false");
+    expect(qml).toContain("w.minimizedChanged.connect(racine.suivreMinimise)");
+    expect(qml).toContain("racine.video.minimized = racine.hote.minimized");
+  });
+
+  it("suit les bureaux virtuels et les activités de l'hôte", () => {
+    const qml = glueTemplate(1);
+    expect(qml).toContain("racine.video.desktops = racine.hote.desktops");
+    expect(qml).toContain("racine.video.activities = racine.hote.activities");
+    expect(qml).toContain("w.desktopsChanged.connect(racine.suivreBureaux)");
+    expect(qml).toContain("w.activitiesChanged.connect(racine.suivreActivites)");
+  });
+
+  it("Alt+Tab : la vidéo représente l'application pendant la lecture, l'hôte sinon", () => {
+    const qml = glueTemplate(1);
+    // La vignette du sélecteur ne rend qu'UNE fenêtre : celle de l'hôte est
+    // transparente là où la vidéo se trouve.
+    expect(qml).toContain('var lecture = racine.video !== null && racine.video.captionNormal !== "";');
+    expect(qml).toContain("racine.video.skipSwitcher = !lecture;");
+    expect(qml).toContain("racine.hote.skipSwitcher = lecture;");
+    expect(qml).toContain("w.captionNormalChanged.connect(racine.suivreSelecteur)");
+    // La vidéo fermée rend sa place à l'hôte, la colle décrochée aussi.
+    expect(qml).toMatch(/function videoFermee\(\) \{\s+racine\.video = null;\s+racine\.suivreSelecteur\(\);/);
+    expect(qml).toContain("racine.hote.skipSwitcher = false;");
+  });
+
+  it("reconnaît la vidéo par son app-id, inliné en littéral JSON — « mpv » reste accepté", () => {
+    const appId = '/home/a b/.config/Tentacle "TV"/video-window/tentacle-tv-video';
+    const qml = glueTemplate(1, appId);
+    expect(qml).not.toContain("__VIDEO_CLASS__");
+    expect(qml).toContain(`w.resourceClass === "mpv" || w.resourceClass === ${JSON.stringify(appId)}`);
+    expect(glueTemplate(1)).toContain('w.resourceClass === "mpv" || w.resourceClass === "mpv"');
+  });
+
+  it("reste un QML bien parenthésé — aucun reste de gabarit", () => {
+    const qml = glueTemplate(4242, "/x/tentacle-tv-video");
+    const count = (c: string) => qml.split(c).length - 1;
+    expect(count("{")).toBe(count("}"));
+    expect(count("(")).toBe(count(")"));
+    expect(qml).not.toContain("${");
+    expect(qml).not.toMatch(/__[A-Z_]+__/);
   });
 
   it("rejoue le premier coller par minuterie unique, jamais par le signal de la vidéo", () => {
