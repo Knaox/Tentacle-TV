@@ -154,6 +154,25 @@ export async function sessionPost(
     // Fall through to proxy on failure
   }
 
+  // Coquille : la voie proxy passe elle aussi par la couche native. Ce n'est
+  // pas une question de CORS (le backend autorise l'origine applicative) :
+  // c'est le processus principal qui, à la fermeture de la fenêtre, annonce
+  // l'arrêt de ce qui est encore ouvert — et il ne connaît que ce qu'il a
+  // relayé. Le proxy lit le jeton dans `X-Emby-Token`, comme pour la page.
+  const proxyToken = client.getToken();
+  if (client.nativeSessionPost && proxyToken) {
+    try {
+      const status = await client.nativeSessionPost(
+        client.getBaseUrl(), path, proxyToken, client.getAuthHeader(), bodyStr,
+      );
+      if ((status >= 200 && status < 300) || status === 401 || status === 403) return;
+      console.error(DBG, `${label} natif via proxy: ${status}`);
+    } catch (err: unknown) {
+      console.error(DBG, `${label} natif via proxy FAILED:`, err instanceof Error ? err.message : String(err));
+    }
+    // Repli sur le fetch de la page ci-dessous.
+  }
+
   // Proxy path. `noAuthExpiry` : un 401 de reporting (token Jellyfin du device
   // périmé p.ex.) ne doit JAMAIS compter dans le seuil auth-expired ni
   // déconnecter — c'est de la télémétrie fire-and-forget.

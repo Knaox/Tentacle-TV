@@ -6,13 +6,14 @@
  * passage en arrière-plan on bascule donc sur `sendBeacon` (fire-and-forget,
  * survit à l'étranglement), et on restaure l'intervalle normal au retour.
  *
- * `beforeunload` envoie un `/Sessions/Playing/Stopped` par beacon : c'est LE
- * filet qui sauve la position quand l'application est fermée en pleine lecture.
+ * `beforeunload` / `pagehide` envoient un `/Sessions/Playing/Stopped` par
+ * beacon — par le relais natif sur la coquille, où le beacon ne passe pas :
+ * c'est LE filet qui sauve la position quand on ferme en pleine lecture.
  */
 
 import { useEffect, type MutableRefObject } from "react";
 import type { JellyfinClient } from "../jellyfin";
-import { beaconUrl, killActiveEncoding, safePositionTicks } from "./playbackTransport";
+import { beaconUrl, killActiveEncoding, safePositionTicks, sessionPost } from "./playbackTransport";
 
 export interface PlaybackBeaconRefs {
   client: MutableRefObject<JellyfinClient>;
@@ -79,19 +80,31 @@ export function usePlaybackBeacons({
       refs.bgInterval.current = setInterval(sendProgressBeacon, reportIntervalMs);
     };
 
-    const onBeforeUnload = () => {
+    // `beforeunload` ET `pagehide` : le second est le seul que les navigateurs
+    // garantissent à la sortie d'un onglet (mobile, cache de navigation) ; le
+    // garde `started` empêche le double envoi quand les deux arrivent.
+    const onPageLeave = () => {
       if (!refs.itemId.current || !refs.started.current) return;
       clearProgressInterval();
       refs.started.current = false;
-      killActiveEncoding(refs.client.current, refs.playSessionId.current, true);
+      const client = refs.client.current;
+      killActiveEncoding(client, refs.playSessionId.current, true);
       // Envoyé même en mode « bords » : c'est un message de fin, pas un
       // battement — et c'est ce qui sauve la position à la fermeture.
-      post("/Sessions/Playing/Stopped", {
+      const stopped = {
         ItemId: refs.itemId.current,
         MediaSourceId: refs.mediaSourceId.current ?? refs.itemId.current,
         PlaySessionId: refs.playSessionId.current ?? undefined,
         PositionTicks: safePositionTicks(refs.position.current),
-      });
+      };
+      // Coquille : le beacon de la page ne part pas (JSON préflighté depuis
+      // l'origine applicative). Le relais natif, lui, passe — et le processus
+      // principal retient la sortie jusqu'à ce que l'arrêt soit posté.
+      if (client.nativeSessionPost) {
+        void sessionPost(client, "/Sessions/Playing/Stopped", stopped, "pageLeave");
+        return;
+      }
+      post("/Sessions/Playing/Stopped", stopped);
     };
 
     const onVisibilityChange = () => {
@@ -117,10 +130,12 @@ export function usePlaybackBeacons({
       }
     };
 
-    window.addEventListener("beforeunload", onBeforeUnload);
+    window.addEventListener("beforeunload", onPageLeave);
+    window.addEventListener("pagehide", onPageLeave);
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("beforeunload", onPageLeave);
+      window.removeEventListener("pagehide", onPageLeave);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
