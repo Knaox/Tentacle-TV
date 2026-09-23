@@ -1,8 +1,9 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, CircleCheck, Cpu, Repeat } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import type { AdminSessionDto } from "@tentacle-tv/shared";
-import { cls } from "../../../pages/adminUtils";
+import { DeliveryChip } from "./DeliveryChip";
+import { deliveryOf, type DeliveryKind } from "./delivery";
 import {
   acceleratorLabel,
   channelsLabel,
@@ -15,24 +16,24 @@ import {
 } from "./format";
 
 /**
- * Comment le média arrive à l'appareil : lecture directe, remux ou
- * transcodage — la source, ce qui est envoyé, et pourquoi le serveur
- * travaille. L'état se lit dans le libellé et l'icône, pas dans la seule
- * couleur.
+ * Comment le média arrive à l'appareil : lecture directe, remux, transcodage
+ * audio ou transcodage — la source, ce qui est envoyé, et pourquoi le serveur
+ * travaille. La sorte se lit dans le libellé et l'icône, pas dans la seule
+ * couleur (`DeliveryChip`).
  */
 
-const METHOD_STYLE = {
-  DirectPlay: { key: "directPlay", hint: "directPlayHint", tone: "bg-status-success-bg text-status-success-fg", Icon: CircleCheck },
-  DirectStream: { key: "directStream", hint: "directStreamHint", tone: "bg-status-info-bg text-status-info-fg", Icon: Repeat },
-  Transcode: { key: "transcode", hint: "transcodeHint", tone: "bg-status-warning-bg text-status-warning-fg", Icon: Cpu },
-} as const;
+const REASONS_KEY: Record<Exclude<DeliveryKind, "direct">, string> = {
+  remux: "reasonsRemux",
+  audio: "reasonsAudio",
+  video: "reasons",
+};
 
 export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   const { t, i18n } = useTranslation("sessions");
   const [showReasons, setShowReasons] = useState(false);
   const reasonsId = useId();
   const { source, transcoding } = session;
-  const method = METHOD_STYLE[session.playMethod ?? "DirectPlay"];
+  const kind = deliveryOf(session);
   const locale = i18n.language;
 
   const sourceLine = source
@@ -43,17 +44,20 @@ export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
       ])
     : "";
 
+  // Un remux ne change QUE le conteneur : c'est lui qu'on nomme.
   const outputLine = transcoding
-    ? joinParts([
-        transcoding.isVideoDirect
-          ? t("videoDirect")
-          : joinParts([codecLabel(transcoding.videoCodec), resolutionLabel(transcoding.width, transcoding.height)]),
-        transcoding.isAudioDirect
-          ? t("audioDirect")
-          : joinParts([codecLabel(transcoding.audioCodec), channelsLabel(transcoding.audioChannels)]),
-        formatBitrate(transcoding.bitrate, locale),
-        transcoding.isVideoDirect ? null : acceleratorLabel(transcoding.hardwareAccelerationType) ?? t("software"),
-      ])
+    ? kind === "remux"
+      ? joinParts([t("streamsCopied"), transcoding.container ? t("container", { name: transcoding.container.toUpperCase() }) : null])
+      : joinParts([
+          transcoding.isVideoDirect
+            ? kind === "audio" ? t("videoDirect") : null
+            : joinParts([codecLabel(transcoding.videoCodec), resolutionLabel(transcoding.width, transcoding.height)]),
+          transcoding.isAudioDirect
+            ? t("audioDirect")
+            : joinParts([codecLabel(transcoding.audioCodec), channelsLabel(transcoding.audioChannels)]),
+          formatBitrate(transcoding.bitrate, locale),
+          kind === "video" ? acceleratorLabel(transcoding.hardwareAccelerationType) ?? t("software") : null,
+        ])
     : "";
 
   const reasons = transcoding?.reasons ?? [];
@@ -62,11 +66,8 @@ export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <span className={`${cls.chip} ${method.tone}`} title={t(method.hint)}>
-          <method.Icon size={13} aria-hidden />
-          {t(method.key)}
-        </span>
-        {completion !== undefined && session.playMethod === "Transcode" && (
+        <DeliveryChip kind={kind} />
+        {completion !== undefined && kind !== "direct" && (
           <span className="text-xs tabular-nums text-content-tertiary">
             {t("completion", { percent: Math.round(completion) })}
           </span>
@@ -84,17 +85,17 @@ export function PlaybackDetails({ session }: { session: AdminSessionDto }) {
           {outputLine}
         </p>
       )}
-      {reasons.length > 0 && (
+      {reasons.length > 0 && kind !== "direct" && (
         <div>
           <button
             type="button"
             aria-expanded={showReasons}
             aria-controls={reasonsId}
             onClick={() => setShowReasons((open) => !open)}
-            className="inline-flex min-h-11 cursor-pointer items-center gap-1 text-xs font-medium text-content-tertiary hover:text-content-primary"
+            className="-ml-1 inline-flex min-h-11 cursor-pointer items-center gap-1 rounded-md px-1 text-xs font-medium text-content-tertiary outline-none transition-colors hover:text-content-primary focus-visible:ring-2 focus-visible:ring-line-focus"
           >
-            {t("reasons")}
-            <ChevronDown size={14} aria-hidden className={showReasons ? "rotate-180" : undefined} />
+            {t(REASONS_KEY[kind])}
+            <ChevronDown size={14} aria-hidden className={`transition-transform duration-200 ${showReasons ? "rotate-180" : ""}`} />
           </button>
           {showReasons && (
             <ul id={reasonsId} className="list-disc space-y-0.5 pl-5 text-xs text-content-secondary">

@@ -6,16 +6,18 @@ import { useJellyfinClient } from "@tentacle-tv/api-client";
 import { LeaderboardAvatar } from "../../easterEggs/LeaderboardAvatar";
 import { cls } from "../../../pages/adminUtils";
 import { ConfirmButton } from "./ConfirmButton";
+import { DeliveryChip } from "./DeliveryChip";
+import { deliveryOf } from "./delivery";
 import { formatClock, joinParts, livePositionTicks } from "./format";
 import { Poster } from "./Poster";
 
 /**
  * Une salle Watch Together : ce qu'elle regarde, où elle en est, chacun de
  * ses membres — statut, écart au rythme de la salle, et la façon dont le
- * média lui arrive (qui transcode quoi). Un message ou un arrêt part à TOUS.
+ * média lui arrive (qui transcode quoi : la salle lit UN fichier, c'est
+ * l'appareil de chacun qui fait la différence). Un message ou un arrêt part à
+ * TOUS.
  */
-
-const METHOD_KEY = { DirectPlay: "directPlay", DirectStream: "directStream", Transcode: "transcode" } as const;
 
 export const WatchGroupCard = memo(function WatchGroupCard({
   group,
@@ -90,11 +92,12 @@ export const WatchGroupCard = memo(function WatchGroupCard({
                 <p className="truncate text-xs text-content-tertiary">
                   {joinParts([
                     status,
-                    session?.playMethod ? t(METHOD_KEY[session.playMethod]) : member.inPlayback ? t("noSession") : null,
+                    !session && member.inPlayback ? t("noSession") : null,
                     session ? joinParts([session.client, session.deviceName]) : null,
                   ])}
                 </p>
               </div>
+              {session?.nowPlaying && <DeliveryChip kind={deliveryOf(session)} size="sm" />}
             </li>
           );
         })}
